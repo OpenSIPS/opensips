@@ -39,12 +39,12 @@ static struct clusterer_binds c_api;
 
 int ds_cluster_shtag_is_active(void)
 {
-	if ( ds_cluster_id<=0 || (ds_cluster_shtag.s &&
-	c_api.shtag_get(&ds_cluster_shtag,ds_cluster_id)!=SHTAG_STATE_ACTIVE) )
-		/* no clustering support or sharing tag found on not-active */
-		return 0;
+	if ( ds_cluster_id<=0 || ds_cluster_shtag.s==NULL ||
+	c_api.shtag_get(&ds_cluster_shtag,ds_cluster_id)==SHTAG_STATE_ACTIVE )
+		/* no clustering support or sharing tag found active */
+		return 1;
 
-	return 1;
+	return 0;
 }
 
 void replicate_ds_status_event(str *partition, int group, str *address,

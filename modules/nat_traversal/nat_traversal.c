@@ -1652,7 +1652,7 @@ keepalive_timer(unsigned int ticks, void *counter)
     time_t now;
     int i;
 
-    if ( nt_cluster_shtag_is_active()!=0 )
+    if ( !nt_cluster_shtag_is_active() )
         return;
 
     now = time(NULL);

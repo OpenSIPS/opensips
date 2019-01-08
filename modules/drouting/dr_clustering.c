@@ -46,12 +46,12 @@ extern struct head_db * head_db_start;
 
 int dr_cluster_shtag_is_active(void)
 {
-	if ( dr_cluster_id<=0 || (dr_cluster_shtag.s &&
-	c_api.shtag_get(&dr_cluster_shtag,dr_cluster_id)!=SHTAG_STATE_ACTIVE) )
-		/* no clustering support or sharing tag found on not-active */
-		return 0;
+	if ( dr_cluster_id<=0 || dr_cluster_shtag.s==NULL ||
+	c_api.shtag_get(&dr_cluster_shtag,dr_cluster_id)==SHTAG_STATE_ACTIVE )
+		/* no clustering support or sharing tag found active */
+		return 1;
 
-	return 1;
+	return 0;
 }
 
 void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw)

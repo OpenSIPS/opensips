@@ -2332,7 +2332,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 	ds_set_p list;
 	int j;
 
-	if ( ds_cluster_shtag_is_active()!=0 )
+	if ( !ds_cluster_shtag_is_active() )
 		return;
 
 	for (partition = partitions; partition; partition = partition->next){

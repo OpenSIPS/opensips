@@ -31,12 +31,12 @@ static struct clusterer_binds c_api;
 
 int nt_cluster_shtag_is_active(void)
 {
-	if ( nt_cluster_id<=0 || (nt_cluster_shtag.s &&
-	c_api.shtag_get(&nt_cluster_shtag,nt_cluster_id)!=SHTAG_STATE_ACTIVE) )
-		/* no clustering support or sharing tag found on not-active */
-		return 0;
+	if ( nt_cluster_id<=0 || nt_cluster_shtag.s==NULL ||
+	c_api.shtag_get(&nt_cluster_shtag,nt_cluster_id)==SHTAG_STATE_ACTIVE )
+		/* no clustering support or sharing tag found active */
+		return 1;
 
-	return 1;
+	return 0;
 }
 
 

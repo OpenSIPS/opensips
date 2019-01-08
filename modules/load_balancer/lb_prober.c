@@ -58,7 +58,7 @@ void lb_do_probing(struct lb_data *data)
 {
 	struct lb_dst *dst;
 
-	if ( lb_cluster_shtag_is_active()!=0 )
+	if ( !lb_cluster_shtag_is_active() )
 		return;
 
 	/* go through all destinations */

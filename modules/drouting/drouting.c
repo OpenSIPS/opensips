@@ -724,7 +724,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 	struct head_db *it = head_db_start;
 
 	if ((*dr_enable_probing_state) == 0 ||
-	dr_cluster_shtag_is_active()!=0 )
+	!dr_cluster_shtag_is_active() )
 		return;
 
 	while( it!=NULL ) {

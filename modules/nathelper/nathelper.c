@@ -1387,8 +1387,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 	udomain_t *d;
 
-	if ( (*natping_state) == 0 
-	|| nh_cluster_shtag_is_active()!=0 )
+	if ( (*natping_state) == 0 || !nh_cluster_shtag_is_active() )
 		goto done;
 
 	if (cblen > 0) {
