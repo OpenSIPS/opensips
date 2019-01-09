@@ -54,7 +54,7 @@ void print_publ(publ_info_t* p)
 }
 
 static str* build_dialoginfo(str *callid, int branch, char *state,
-		struct to_body *entity, struct to_body *peer,
+		struct dlginfo_part *entity, struct dlginfo_part *peer,
 		unsigned int initiator, str *localtag, str *remotetag)
 {
 	xmlDocPtr  doc = NULL;
@@ -294,7 +294,8 @@ error:
 	return NULL;
 }
 
-void dialog_publish(char *state, struct to_body* entity, struct to_body *peer,
+void dialog_publish(char *state,
+	struct dlginfo_part* entity, struct dlginfo_part *peer,
 	str *callid, int branch, unsigned int initiator, unsigned int lifetime,
 	str *localtag, str *remotetag)
 {
