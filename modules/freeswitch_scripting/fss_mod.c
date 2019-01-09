@@ -50,10 +50,14 @@ static int fixup_fs_esl(void **param, int param_no);
 
 static int fs_sub_add_url(modparam_t type, void *string);
 
-struct mi_root *mi_fs_subscribe(struct mi_root *cmd, void *_);
-struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd, void *_);
-struct mi_root *mi_fs_list(struct mi_root *cmd, void *_);
-struct mi_root *mi_fs_reload(struct mi_root *cmd, void *_);
+mi_response_t *mi_fs_subscribe(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_fs_unsubscribe(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_fs_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_fs_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static cmd_export_t cmds[] = {
 	{ "freeswitch_esl", (cmd_function)fs_esl, 2, fixup_fs_esl, 0, ALL_ROUTES },
@@ -73,12 +77,25 @@ static param_export_t mod_params[] = {
 	{ 0, 0, 0 }
 };
 
+
 static mi_export_t mi_cmds[] = {
-	{ "fs_subscribe",       0, mi_fs_subscribe,   0,  0,              0 },
-	{ "fs_unsubscribe",     0, mi_fs_unsubscribe, 0,  0,              0 },
-	{ "fs_list",            0, mi_fs_list,        0,  0,              0 },
-	{ "fs_reload",          0, mi_fs_reload,      0,  0, fss_db_connect },
-	{ 0, 0, 0, 0, 0, 0 }
+	{ "fs_subscribe", 0,0,0,{
+		{mi_fs_subscribe, {"freeswitch_url", "events", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "fs_unsubscribe", 0,0,0,{
+		{mi_fs_unsubscribe, {"freeswitch_url", "events", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "fs_list", 0,0,0,{
+		{mi_fs_list, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "fs_reload", 0,0,fss_db_connect,{
+		{mi_fs_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -242,23 +259,24 @@ out:
 }
 
 /* fs_subscribe 10.0.0.10 DTMF HEARTBEAT CHANNEL_STATE FOO ... */
-struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
+mi_response_t *mi_fs_subscribe(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *param, *event;
-	struct mi_root *reply;
+	mi_response_t *resp = NULL;
+	mi_item_t *events;
+	str event_str;
+	int i, no_events;
 	struct str_list *evlist = NULL, *li, **last = &evlist;
 	fs_evs *sock;
-	str *url;
+	str url;
 
-	param = cmd_tree->node.kids;
-	if (!param || ZSTR(param->value))
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+	if (get_mi_string_param(params, "freeswitch_url", &url.s, &url.len) < 0)
+		return init_mi_param_error();
 
-	url = &param->value;
-	sock = fs_api.get_evs_by_url(url);
+	sock = fs_api.get_evs_by_url(&url);
 	if (!sock) {
-		LM_ERR("failed to get a socket for FS URL %.*s\n", url->len, url->s);
-		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
+		LM_ERR("failed to get a socket for FS URL %.*s\n", url.len, url.s);
+		return init_mi_error(500, MI_SSTR("Internal Error"));
 	}
 
 	lock_start_write(db_reload_lk);
@@ -268,7 +286,7 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 			lock_stop_write(db_reload_lk);
 			fs_api.put_evs(sock);
 			LM_ERR("failed to ref socket\n");
-			return init_mi_tree(501, MI_SSTR(MI_INTERNAL_ERR));
+			return init_mi_error(501, MI_SSTR("Internal Error"));
 		}
 	} else {
 		/* we're already referencing this socket */
@@ -276,21 +294,31 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 	}
 
 	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
-	       url->len, url->s);
+	       url.len, url.s);
 
-	for (event = param->next; event; event = event->next) {
-		if (ZSTR(event->value) || add_to_fss_sockets(sock, &event->value) <= 0)
+	if (get_mi_array_param(params, "events", &events, &no_events) < 0) {
+		lock_stop_write(db_reload_lk);
+		return init_mi_param_error();
+	}
+
+	for (i = 0; i < no_events; i++) {
+		if (get_mi_arr_param_string(events, i, &event_str.s, &event_str.len) < 0) {
+			resp = init_mi_param_error();
+			goto out_free;
+		}
+
+		if (ZSTR(event_str) || add_to_fss_sockets(sock, &event_str) <= 0)
 			continue;
 
 		li = pkg_malloc(sizeof *li);
 		if (!li) {
 			LM_ERR("oom\n");
-			reply = init_mi_tree(502, MI_SSTR(MI_INTERNAL_ERR));
+			resp = init_mi_error(502, MI_SSTR("Internal Error"));
 			goto out_free;
 		}
 		memset(li, 0, sizeof *li);
 
-		li->s = event->value;
+		li->s = event_str;
 		*last = li;
 		last = &li->next;
 
@@ -301,38 +329,39 @@ struct mi_root *mi_fs_subscribe(struct mi_root *cmd_tree, void *_)
 		LM_ERR("failed to subscribe for one or more events on %s:%d\n",
 		       sock->host.s, sock->port);
 		fs_api.evs_unsub(sock, &fss_mod_tag, evlist);
-		reply = init_mi_tree(503, MI_SSTR(MI_INTERNAL_ERR));
+		resp = init_mi_error(503, MI_SSTR("Internal Error"));
 		goto out_free;
 	}
 
-	reply = init_mi_tree(200, MI_SSTR(MI_OK));
+	resp = init_mi_result_ok();
 
 out_free:
 	lock_stop_write(db_reload_lk);
 
 	_free_str_list(evlist, osips_pkg_free, NULL);
-	return reply;
+	return resp;
 }
 
 /* fs_unsubscribe 10.0.0.10 DTMF HEARTBEAT CHANNEL_STATE FOO ... */
-struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
+mi_response_t *mi_fs_unsubscribe(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *param, *event;
-	struct mi_root *reply;
+	mi_response_t *resp = NULL;
+	mi_item_t *events;
+	str event_str;
+	int i, no_events;
 	struct str_list *evlist = NULL, *li, **last = &evlist;
 	fs_evs *sock;
-	str *url;
+	str url;
 	int rc, do_unref = 0;
 
-	param = cmd_tree->node.kids;
-	if (!param || ZSTR(param->value))
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+	if (get_mi_string_param(params, "freeswitch_url", &url.s, &url.len) < 0)
+		return init_mi_param_error();
 
-	url = &param->value;
-	sock = fs_api.get_evs_by_url(url);
+	sock = fs_api.get_evs_by_url(&url);
 	if (!sock) {
-		LM_ERR("failed to get a socket for FS URL %.*s\n", url->len, url->s);
-		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
+		LM_ERR("failed to get a socket for FS URL %.*s\n", url.len, url.s);
+		return init_mi_error(500, MI_SSTR("Internal Error"));
 	}
 
 	lock_start_write(db_reload_lk);
@@ -342,20 +371,30 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 		LM_DBG("we're not even referencing this socket: %s:%d\n",
 		       sock->host.s, sock->port);
 		fs_api.put_evs(sock);
-		return init_mi_tree(200, MI_SSTR(MI_OK));
+		return init_mi_result_ok();
 	}
 
 	/* we're already referencing this socket */
 	fs_api.put_evs(sock);
 
 	LM_DBG("found socket %s:%d for URL '%.*s'\n", sock->host.s, sock->port,
-	       url->len, url->s);
+	       url.len, url.s);
 
-	for (event = param->next; event; event = event->next) {
-		if (ZSTR(event->value))
+	if (get_mi_array_param(params, "events", &events, &no_events) < 0) {
+		lock_stop_write(db_reload_lk);
+		return init_mi_param_error();
+	}
+
+	for (i = 0; i < no_events; i++) {
+		if (get_mi_arr_param_string(events, i, &event_str.s, &event_str.len) < 0) {
+			resp = init_mi_param_error();
+			goto out_free;
+		}
+
+		if (ZSTR(event_str))
 			continue;
 
-		rc = del_from_fss_sockets(sock, &event->value);
+		rc = del_from_fss_sockets(sock, &event_str);
 		if (rc < 0)
 			continue;
 
@@ -365,12 +404,12 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 		li = pkg_malloc(sizeof *li);
 		if (!li) {
 			LM_ERR("oom\n");
-			reply = init_mi_tree(501, MI_SSTR(MI_INTERNAL_ERR));
+			resp = init_mi_error(501, MI_SSTR("Internal Error"));
 			goto out_free;
 		}
 		memset(li, 0, sizeof *li);
 
-		li->s = event->value;
+		li->s = event_str;
 		*last = li;
 		last = &li->next;
 
@@ -378,7 +417,7 @@ struct mi_root *mi_fs_unsubscribe(struct mi_root *cmd_tree, void *_)
 	}
 
 	fs_api.evs_unsub(sock, &fss_mod_tag, evlist);
-	reply = init_mi_tree(200, MI_SSTR(MI_OK));
+	resp = init_mi_result_ok();
 
 out_free:
 	lock_stop_write(db_reload_lk);
@@ -388,75 +427,70 @@ out_free:
 		LM_DBG("unreffing sock %s:%d\n", sock->host.s, sock->port);
 		fs_api.put_evs(sock);
 	}
-	return reply;
+	return resp;
 }
 
-struct mi_root *mi_fs_list(struct mi_root *cmd, void *_param)
+mi_response_t *mi_fs_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	struct list_head *_;
 	struct fs_evs_list *sock_list;
-	struct mi_root *rpl_tree;
-	struct mi_node *node, *_node, *rpl;
-	struct mi_attr *attr;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *sockets_arr, *socket_item, *events_arr;
 	struct str_list *event;
 
-	rpl_tree = init_mi_tree(200, MI_SSTR(MI_OK));
-	if (!rpl_tree) {
-		LM_ERR("oom\n");
-		return NULL;
-	}
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
 
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
+	sockets_arr = add_mi_array(resp_obj, MI_SSTR("Sockets"));
+	if (!sockets_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	lock_start_read(db_reload_lk);
 
 	list_for_each(_, fss_sockets) {
 		sock_list = list_entry(_, struct fs_evs_list, list);
 
-		node = add_mi_node_child(rpl, 0, "socket", 6, NULL, 0);
-		if (!node)
+		socket_item = add_mi_object(sockets_arr, NULL, 0);
+		if (!socket_item)
 			goto out_err;
 
-		attr = addf_mi_attr(node, 0, "if", 2, "%s:%d",
-		                    sock_list->sock->host.s, sock_list->sock->port);
-		if (!attr)
+		if (add_mi_string_fmt(socket_item, MI_SSTR("if"), "%s:%d",
+			sock_list->sock->host.s, sock_list->sock->port) < 0)
 			goto out_err;
 
-		node = add_mi_node_child(node, MI_IS_ARRAY, "events", 6, NULL, 0);
-		if (!node)
+		events_arr = add_mi_array(socket_item, MI_SSTR("Events"));
+		if (!events_arr)
 			goto out_err;
 
-		for (event = sock_list->events; event; event = event->next) {
-			_node = add_mi_node_child(node, 0, "event", 5, NULL, 0);
-			if (!_node)
+		for (event = sock_list->events; event; event = event->next)
+			if (add_mi_string(events_arr, 0, 0, event->s.s, event->s.len) < 0)
 				goto out_err;
-
-			if (!add_mi_node_child(_node, 0, "name", 4,
-			                       event->s.s, event->s.len))
-				goto out_err;
-		}
 	}
 
 	lock_stop_read(db_reload_lk);
-	return rpl_tree;
+	return resp;
 
 out_err:
 	lock_stop_read(db_reload_lk);
 	LM_ERR("failed to list FS sockets\n");
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return NULL;
 }
 
-struct mi_root *mi_fs_reload(struct mi_root *cmd, void *param)
+mi_response_t *mi_fs_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	if (!have_db())
 		return NULL;
 
 	if (fss_db_reload() != 0) {
 		LM_ERR("failed to reload DB data, keeping old data set\n");
-		return init_mi_tree(500, MI_SSTR(MI_INTERNAL_ERR));
+		return init_mi_error(500, MI_SSTR("Internal Error"));
 	}
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
