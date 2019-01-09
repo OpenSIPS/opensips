@@ -63,7 +63,7 @@ int shtag_register_callback(str *tag_name, int c_id, void *param,
 	struct shtag_cb *cb;
 
 	cb = (struct shtag_cb*)pkg_malloc
-		(sizeof(struct shtag_cb) + tag_name?tag_name->len:0);
+		(sizeof(struct shtag_cb) + (tag_name?tag_name->len:0));
 	if (cb==NULL) {
 		LM_ERR("failed to allocate pkg mem for a new shtag callback\n");
 		return -1;
