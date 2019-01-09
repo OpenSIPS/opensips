@@ -237,14 +237,14 @@ static int pv_get_rtpstat_f(struct sip_msg *, pv_param_t *, pv_value_t *);
 static int pv_get_rtpquery_f(struct sip_msg *, pv_param_t *, pv_value_t *);
 
 /*mi commands*/
-static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
-		void* param );
-static struct mi_root* mi_show_rtpengines(struct mi_root* cmd_tree,
-		void* param);
-static struct mi_root* mi_teardown_call(struct mi_root* cmd_tree,
-		void* param);
-static struct mi_root* mi_reload_rtpengines(struct mi_root* cmd_tree,
-                void* param);
+static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_show_rtpengines(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_teardown_call(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_reload_rtpengines(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 
 static int rtpengine_stats_used = 0;
@@ -449,12 +449,23 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{MI_ENABLE_RTP_ENGINE,    0, mi_enable_rtp_proxy,  0,                0, 0},
-	{MI_SHOW_RTP_ENGINES,     0, mi_show_rtpengines,   MI_NO_INPUT_FLAG, 0, 0},
-	{MI_RELOAD_RTP_ENGINES,   0, mi_reload_rtpengines, MI_NO_INPUT_FLAG, 0,
-		mi_child_init},
-	{"teardown",              0, mi_teardown_call,     0,                0, 0},
-	{ 0, 0, 0, 0, 0, 0}
+	{ MI_ENABLE_RTP_ENGINE, 0, 0, 0, {
+		{mi_enable_rtp_proxy, {"url", "enable", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_SHOW_RTP_ENGINES, 0, 0, 0, {
+		{mi_show_rtpengines, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_RELOAD_RTP_ENGINES, 0, 0, mi_child_init, {
+		{mi_reload_rtpengines, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "teardown", 0, 0, 0, {
+		{mi_teardown_call, {"url", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -845,11 +856,11 @@ static int fixup_set_id(void ** param, int param_no)
 	return 0;
 }
 
-static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
-												void* param )
-{	struct mi_node* node;
+static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
 	str rtpe_url;
-	unsigned int enable;
+	int enable;
 	struct rtpe_set * rtpe_list;
 	struct rtpe_node * crt_rtpe;
 	int found;
@@ -859,22 +870,13 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 	if(*rtpe_set_list ==NULL)
 		goto end;
 
-	node = cmd_tree->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "url", &rtpe_url.s, &rtpe_url.len) < 0)
+		return init_mi_param_error();
+	if(rtpe_url.s == NULL || rtpe_url.len ==0)
+		return init_mi_error(400, MI_SSTR("Empty url"));
 
-	if(node->value.s == NULL || node->value.len ==0)
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-
-	rtpe_url = node->value;
-
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	enable = 0;
-	if( strno2int( &node->value, &enable) <0)
-		goto error;
+	if (get_mi_int_param(params, "enable", &enable) < 0)
+		return init_mi_param_error();
 
 	RTPE_START_READ();
 	for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
@@ -900,107 +902,83 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 
 end:
 	if(found)
-		return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	return init_mi_tree(404,MI_RTP_ENGINE_NOT_FOUND,MI_RTP_ENGINE_NOT_FOUND_LEN);
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_result_ok();
+	return init_mi_error(404,MI_RTP_ENGINE_NOT_FOUND,MI_RTP_ENGINE_NOT_FOUND_LEN);
 }
 
 
-
-#define add_rtpe_node_int_info(_parent, _name, _name_len, _value, _attr,\
-								_len, _string, _error)\
-	do {\
-		(_string) = int2str((_value), &(_len));\
-		if((_string) == 0){\
-			LM_ERR("cannot convert int value\n");\
-				goto _error;\
-		}\
-		if(((_attr) = add_mi_attr((_parent), MI_DUP_VALUE, (_name), \
-				(_name_len), (_string), (_len))   ) == 0)\
-			goto _error;\
-	}while(0);
-
-static struct mi_root* mi_show_rtpengines(struct mi_root* cmd_tree,
-												void* param)
+static mi_response_t *mi_show_rtpengines(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node, *crt_node, *set_node;
-	struct mi_root* root;
-	struct mi_attr * attr;
+	mi_response_t *resp;
+	mi_item_t *sets_arr, *set_item, *nodes_arr, *node_item;
 	struct rtpe_set * rtpe_list;
 	struct rtpe_node * crt_rtpe;
-	char * string, *id;
-	int id_len, len;
 
-	string = id = 0;
-
-	root = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (!root) {
-		LM_ERR("the MI tree cannot be initialized!\n");
+	resp = init_mi_result_array(&sets_arr);
+	if (!resp)
 		return 0;
-	}
 
 	if(*rtpe_set_list ==NULL)
-		return root;
-
-	node = &root->node;
-	node->flags |= MI_IS_ARRAY;
+		return resp;
 
 	RTPE_START_READ();
 	for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
 					rtpe_list = rtpe_list->rset_next){
 
-		id =  int2str(rtpe_list->id_set, &id_len);
-		if(!id){
-			LM_ERR("cannot convert set id\n");
+		set_item = add_mi_object(sets_arr, NULL, 0);
+		if (!set_item)
 			goto error;
-		}
 
-		if(!(set_node = add_mi_node_child(node, MI_IS_ARRAY|MI_DUP_VALUE, MI_SET, MI_SET_LEN,
-									id, id_len))) {
-			LM_ERR("cannot add the set node to the tree\n");
+		if (add_mi_number(set_item, MI_SET, MI_SET_LEN, rtpe_list->id_set) < 0)
 			goto error;
-		}
+
+		nodes_arr = add_mi_array(set_item, MI_SSTR("Nodes"));
+		if (!nodes_arr)
+			goto error;
 
 		for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
 						crt_rtpe = crt_rtpe->rn_next){
 
-			if(!(crt_node = add_mi_node_child(set_node, MI_DUP_VALUE,
-					MI_NODE, MI_NODE_LEN,
-					crt_rtpe->rn_url.s, crt_rtpe->rn_url.len)) ) {
-				LM_ERR("cannot add the child node to the tree\n");
+			node_item = add_mi_object(nodes_arr, NULL, 0);
+			if (node_item)
 				goto error;
-			}
 
-			LM_DBG("adding node name %s \n",crt_rtpe->rn_url.s );
+			if (add_mi_string(node_item, MI_SSTR("url"),
+				crt_rtpe->rn_url.s, crt_rtpe->rn_url.len) < 0)
+				goto error;
 
-			add_rtpe_node_int_info(crt_node, MI_INDEX, MI_INDEX_LEN,
-				crt_rtpe->idx, attr, len,string,error);
-			add_rtpe_node_int_info(crt_node, MI_DISABLED, MI_DISABLED_LEN,
-				crt_rtpe->rn_disabled, attr, len,string,error);
-			add_rtpe_node_int_info(crt_node, MI_WEIGHT, MI_WEIGHT_LEN,
-				crt_rtpe->rn_weight, attr, len, string,error);
-			add_rtpe_node_int_info(crt_node, MI_RECHECK_TICKS,MI_RECHECK_T_LEN,
-				crt_rtpe->rn_recheck_ticks, attr, len, string, error);
+			if (add_mi_number(node_item, MI_INDEX, MI_INDEX_LEN,
+				crt_rtpe->idx) < 0)
+				goto error;
+			if (add_mi_number(node_item, MI_DISABLED, MI_DISABLED_LEN,
+				crt_rtpe->rn_disabled) < 0)
+				goto error;
+			if (add_mi_number(node_item, MI_WEIGHT, MI_WEIGHT_LEN,
+				crt_rtpe->rn_weight) < 0)
+				goto error;
+			if (add_mi_number(node_item, MI_RECHECK_TICKS, MI_RECHECK_T_LEN,
+				crt_rtpe->rn_recheck_ticks) < 0)
+				goto error;
 		}
 	}
 	RTPE_STOP_READ();
 
-	return root;
+	return resp;
 error:
 	RTPE_STOP_READ();
-	if (root)
-		free_mi_tree(root);
+	if (resp)
+		free_mi_response(resp);
 	return 0;
 }
 
-static struct mi_root* mi_reload_rtpengines(struct mi_root* cmd_tree,
-                void* param)
+static mi_response_t *mi_reload_rtpengines(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	struct rtpe_set *it;
 	if(db_url.s == NULL) {
 		LM_ERR("Dynamic loading of rtpengines not enabled\n");
-		return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_error(400, MI_SSTR("Dynamic loading not enabled"));
 	}
 
 	lock_start_write(rtpe_lock);
@@ -1028,30 +1006,19 @@ static struct mi_root* mi_reload_rtpengines(struct mi_root* cmd_tree,
 	/* release the readers */
 	lock_stop_write(rtpe_lock);
 
-	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 error:
 	lock_stop_write(rtpe_lock);
-	return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+	return init_mi_error(500, MI_SSTR("Internal error"));
 }
 
-
-static struct mi_root* mi_teardown_call(struct mi_root* cmd_tree,
-																void* param)
+static mi_response_t *mi_teardown_call(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	static struct mi_cmd *dlg_end_dlg = NULL;
+	/* TODO: use 'terminate_dlg' from dialog api or
+	 * find a way to call 'dlg_end_dlg' MI command */
 
-	/* this MI function is a simple alias to the dlg_end_dlg function
-	 * provided by the dialog module */
-	if (dlg_end_dlg==NULL) {
-		dlg_end_dlg = lookup_mi_cmd("dlg_end_dlg", 11);
-		if (dlg_end_dlg==NULL) {
-			LM_ERR("cannot find 'dlg_end_dlg' MI command - "
-				"is dialog module loaded ??\n");
-			return init_mi_tree( 503, MI_SSTR("Command not available") );
-		}
-	}
-
-	return run_mi_cmd( dlg_end_dlg, cmd_tree, NULL, param);
+	return init_mi_result_ok();
 }
 
 
