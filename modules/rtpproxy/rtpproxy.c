@@ -285,12 +285,14 @@ static int mi_child_init(void);
 static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg);
 
 /*mi commands*/
-static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
-		void* param );
-static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
-		void* param);
-static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree,
-                void* param);
+static mi_response_t *mi_enable_rtp_proxy_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_enable_rtp_proxy_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_show_rtpproxies(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_reload_rtpproxies(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 void free_rtpp_nodes(struct rtpp_set *);
 void free_rtpp_sets();
@@ -525,11 +527,20 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{MI_ENABLE_RTP_PROXY,   0, mi_enable_rtp_proxy,  0,                0, 0},
-	{MI_SHOW_RTP_PROXIES,   0, mi_show_rtpproxies,   MI_NO_INPUT_FLAG, 0, 0},
-	{MI_RELOAD_RTP_PROXIES, 0, mi_reload_rtpproxies, MI_NO_INPUT_FLAG, 0,
-		mi_child_init},
-	{ 0, 0, 0, 0, 0, 0}
+	{ MI_ENABLE_RTP_PROXY, 0, 0, 0, {
+		{mi_enable_rtp_proxy_1, {"url", "enable", 0}},
+		{mi_enable_rtp_proxy_2, {"url", "enable", "setid", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_SHOW_RTP_PROXIES, 0, 0, 0, {
+		{mi_show_rtpproxies, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ MI_RELOAD_RTP_PROXIES, 0, 0, mi_child_init, {
+		{mi_reload_rtpproxies, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static proc_export_t procs[] = {
@@ -978,12 +989,11 @@ static int fixup_engage(void** param, int param_no)
 	return fixup_offer_answer(param, param_no);
 }
 
-static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
-												void* param )
-{	struct mi_node* node;
+static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
+											unsigned int set_id)
+{
 	str rtpp_url;
-	unsigned int enable;
-	unsigned int set_id;
+	int enable;
 	struct rtpp_set * rtpp_list;
 	struct rtpp_node * crt_rtpp;
 	int found;
@@ -993,37 +1003,13 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 	if(*rtpp_set_list ==NULL)
 		goto end;
 
-	node = cmd_tree->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "url", &rtpp_url.s, &rtpp_url.len) < 0)
+		return init_mi_param_error();
+	if(rtpp_url.s == NULL || rtpp_url.len ==0)
+		return init_mi_error(400, MI_SSTR("Empty url"));
 
-	/* RTPP URL node */
-	if(node->value.s == NULL || node->value.len ==0)
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-
-	rtpp_url = node->value;
-
-	/* enable/disable node */
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	enable = 0;
-	if( strno2int( &node->value, &enable) <0)
-		goto error;
-
-	/* set id ?? */
-	node = node->next;
-	if(node != NULL) {
-		/* shift params -> move enable over set id */
-		set_id = enable;
-		/* read again the disable */
-		enable = 0;
-		if( strno2int( &node->value, &enable) <0)
-			goto error;
-	} else {
-		set_id = (unsigned int)(-1);
-	}
+	if (get_mi_int_param(params, "enable", &enable) < 0)
+		return init_mi_param_error();
 
 	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 					rtpp_list = rtpp_list->rset_next){
@@ -1052,32 +1038,35 @@ static struct mi_root* mi_enable_rtp_proxy(struct mi_root* cmd_tree,
 
 end:
 	if(found)
-		return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	return init_mi_tree(404,MI_RTP_PROXY_NOT_FOUND,MI_RTP_PROXY_NOT_FOUND_LEN);
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_result_ok();
+	return init_mi_error(404,MI_RTP_PROXY_NOT_FOUND,MI_RTP_PROXY_NOT_FOUND_LEN);
+}
+
+static mi_response_t *mi_enable_rtp_proxy_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_enable_rtp_proxy(params, (unsigned int)(-1));
+}
+
+static mi_response_t *mi_enable_rtp_proxy_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int set_id;
+
+	if (get_mi_int_param(params, "setid", &set_id) < 0)
+		return init_mi_param_error();
+
+	return mi_enable_rtp_proxy(params, (unsigned int)set_id);
 }
 
 
-#define add_rtpp_node_int_info(_parent, _name, _name_len, _value, _attr,\
-								_len, _string, _error)\
-	do {\
-		(_string) = int2str((_value), &(_len));\
-		if((_string) == 0){\
-			LM_ERR("cannot convert int value\n");\
-				goto _error;\
-		}\
-		if(((_attr) = add_mi_attr((_parent), MI_DUP_VALUE, (_name), \
-				(_name_len), (_string), (_len))   ) == 0)\
-			goto _error;\
-	}while(0);
-
-static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree, void* param)
+static mi_response_t *mi_reload_rtpproxies(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	struct rtpp_set *it;
 	if(db_url.s == NULL) {
 		LM_ERR("Dynamic loading of rtpproxies not enabled\n");
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_error(400, MI_SSTR("Dynamic loading not enabled"));
 	}
 
 	lock_start_write( nh_lock );
@@ -1115,79 +1104,71 @@ static struct mi_root* mi_reload_rtpproxies(struct mi_root* cmd_tree, void* para
 	/* release the readers */
 	lock_stop_write( nh_lock );
 
-	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 error:
 	lock_stop_write( nh_lock );
-	return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+	return init_mi_error(500, MI_SSTR("Internal error"));
 }
 
-static struct mi_root* mi_show_rtpproxies(struct mi_root* cmd_tree,
-												void* param)
+static mi_response_t *mi_show_rtpproxies(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node, *crt_node, *set_node;
-	struct mi_root* root;
-	struct mi_attr * attr;
+	mi_response_t *resp;
+	mi_item_t *sets_arr, *set_item, *nodes_arr, *node_item;
 	struct rtpp_set * rtpp_list;
 	struct rtpp_node * crt_rtpp;
-	char * string, *id;
-	int id_len, len;
 
-	string = id = 0;
-
-	root = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (!root) {
-		LM_ERR("the MI tree cannot be initialized!\n");
+	resp = init_mi_result_array(&sets_arr);
+	if (!resp)
 		return 0;
-	}
 
 	if(*rtpp_set_list ==NULL)
-		return root;
-
-	node = &root->node;
-	node->flags |= MI_IS_ARRAY;
+		return resp;
 
 	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != NULL;
 					rtpp_list = rtpp_list->rset_next){
 
-		id =  int2str(rtpp_list->id_set, &id_len);
-		if(!id){
-			LM_ERR("cannot convert set id\n");
+		set_item = add_mi_object(sets_arr, NULL, 0);
+		if (!set_item)
 			goto error;
-		}
 
-		if(!(set_node = add_mi_node_child(node, MI_IS_ARRAY|MI_DUP_VALUE, MI_SET, MI_SET_LEN,
-									id, id_len))) {
-			LM_ERR("cannot add the set node to the tree\n");
+		if (add_mi_number(set_item, MI_SET, MI_SET_LEN, rtpp_list->id_set) < 0)
 			goto error;
-		}
+
+		nodes_arr = add_mi_array(set_item, MI_SSTR("Nodes"));
+		if (!nodes_arr)
+			goto error;
 
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next){
 
-			if(!(crt_node = add_mi_node_child(set_node, MI_DUP_VALUE,
-					MI_NODE, MI_NODE_LEN,
-					crt_rtpp->rn_url.s,	crt_rtpp->rn_url.len)) ) {
-				LM_ERR("cannot add the child node to the tree\n");
+			node_item = add_mi_object(nodes_arr, NULL, 0);
+			if (node_item)
 				goto error;
-			}
 
-			LM_DBG("adding node name %s \n",crt_rtpp->rn_url.s );
+			if (add_mi_string(node_item, MI_SSTR("url"),
+				crt_rtpp->rn_url.s, crt_rtpp->rn_url.len) < 0)
+				goto error;
 
-			add_rtpp_node_int_info(crt_node, MI_INDEX, MI_INDEX_LEN,
-				crt_rtpp->idx, attr, len,string,error);
-			add_rtpp_node_int_info(crt_node, MI_DISABLED, MI_DISABLED_LEN,
-				crt_rtpp->rn_disabled, attr, len,string,error);
-			add_rtpp_node_int_info(crt_node, MI_WEIGHT, MI_WEIGHT_LEN,
-				crt_rtpp->rn_weight,  attr, len, string,error);
-			add_rtpp_node_int_info(crt_node, MI_RECHECK_TICKS,MI_RECHECK_T_LEN,
-				crt_rtpp->rn_recheck_ticks, attr, len, string, error);
+			if (add_mi_number(node_item, MI_INDEX, MI_INDEX_LEN,
+				crt_rtpp->idx) < 0)
+				goto error;
+			if (add_mi_number(node_item, MI_DISABLED, MI_DISABLED_LEN,
+				crt_rtpp->rn_disabled) < 0)
+				goto error;
+			if (add_mi_number(node_item, MI_WEIGHT, MI_WEIGHT_LEN,
+				crt_rtpp->rn_weight) < 0)
+				goto error;
+			if (add_mi_number(node_item, MI_RECHECK_TICKS, MI_RECHECK_T_LEN,
+				crt_rtpp->rn_recheck_ticks) < 0)
+				goto error;
 		}
 	}
 
-	return root;
+	return resp;
 error:
-	if (root)
-		free_mi_tree(root);
+	if (resp)
+		free_mi_response(resp);
 	return 0;
 }
 
