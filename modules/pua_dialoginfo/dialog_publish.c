@@ -53,8 +53,9 @@ void print_publ(publ_info_t* p)
 	LM_DBG("expires= %d\n", p->expires);
 }
 
-str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
-		str *callid, unsigned int initiator, str *localtag, str *remotetag)
+static str* build_dialoginfo(str *callid, int branch, char *state,
+		struct to_body *entity, struct to_body *peer,
+		unsigned int initiator, str *localtag, str *remotetag)
 {
 	xmlDocPtr  doc = NULL;
 	xmlNodePtr root_node = NULL;
@@ -65,7 +66,9 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 	xmlNodePtr tag_node = NULL;
 	xmlNodePtr id_node = NULL;
 	str *body= NULL;
-	char buf[MAX_URI_SIZE+1];
+	char buf[MAX_URI_SIZE+1+2+1];
+	char *p;
+	int l;
 
 	if (entity->uri.len > MAX_URI_SIZE) {
 		LM_ERR("entity URI '%.*s' too long, maximum=%d\n",entity->uri.len,
@@ -109,15 +112,24 @@ str* build_dialoginfo(char *state, struct to_body *entity, struct to_body *peer,
 		goto error;
 	}
 
+	/* compute the dialog id as "callid.branch" format */
 	if (callid->len > MAX_URI_SIZE) {
-		LM_ERR("call-id '%.*s' too long, maximum=%d\n", callid->len, callid->s, MAX_URI_SIZE);
+		LM_ERR("call-id '%.*s' too long, maximum=%d\n",
+			callid->len, callid->s, MAX_URI_SIZE);
 		return NULL;
 	}
-    memcpy(buf, callid->s, callid->len);
-	buf[callid->len]= '\0';
+	p = buf;
+	memcpy(p, callid->s, callid->len);
+	p += callid->len;
+	*(p++) = '.';
+	l = 2; /* 2 hexa digits -> 256 branches */
+	int2reverse_hex( &p, &l, branch );
+	*(p++) = '\0';
 
 	xmlNewProp(dialog_node, BAD_CAST "id", BAD_CAST buf);
+
 	if (include_callid) {
+		buf[callid->len] =  '\0';
 		xmlNewProp(dialog_node, BAD_CAST "call-id", BAD_CAST buf);
 	}
 	if (include_tags) {
@@ -282,14 +294,16 @@ error:
 	return NULL;
 }
 
-void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, str *callid,
-	unsigned int initiator, unsigned int lifetime, str *localtag, str *remotetag)
+void dialog_publish(char *state, struct to_body* entity, struct to_body *peer,
+	str *callid, int branch, unsigned int initiator, unsigned int lifetime,
+	str *localtag, str *remotetag)
 {
 	str* body= NULL;
 	publ_info_t publ;
 	int ret_code;
 
-	body= build_dialoginfo(state, entity, peer, callid, initiator, localtag, remotetag);
+	body= build_dialoginfo(callid, branch, state, entity, peer, initiator,
+		localtag, remotetag);
 	if(body == NULL || body->s == NULL)
 	{
 		LM_ERR("failed to construct dialoginfo body\n");

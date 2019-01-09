@@ -70,6 +70,7 @@
 pua_api_t pua;
 
 struct dlg_binds dlg_api;
+struct tm_binds   tm_api;
 
 /* Module parameter variables */
 int include_callid      = DEF_INCLUDE_CALLID;
@@ -79,7 +80,6 @@ int caller_confirmed    = DEF_CALLER_ALWAYS_CONFIRMED;
 str presence_server = {0, 0};
 static str peer_dlg_var = {"dlg_peer", 8};
 static str entity_dlg_var = {"dlg_entity", 10};
-static str flag_dlg_var = {"dlginfo_flag", 12};
 static str caller_spec_param= {0, 0};
 static str callee_spec_param= {0, 0};
 static pv_spec_t caller_spec;
@@ -121,6 +121,7 @@ static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "pua",    DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "tm",     DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -247,24 +248,27 @@ __dialog_cbtest(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 }
 #endif
 
+
 static void
-__dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+__tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
+{
+}
+
+
+static void
+__dialog_sendpublish(struct dlg_cell *dlg, int type,
+												struct dlg_cb_params *_params)
 {
 	str tag = {0,0};
 	struct to_body from;
 	str peer_uri= {0, 0};
-	char flag = DLG_PUB_AB;
-	str flag_str;
+	char flag;
 	struct to_body peer_to_body;
 	str entity_uri= {0, 0};
 	int buf_len = 255;
 	struct sip_msg* msg = _params->msg;
 
-	flag_str.s = &flag;
-	flag_str.len = 1;
-
-	memset(&from, 0, sizeof(struct to_body));
-	memset(&peer_to_body, 0, sizeof(struct to_body));
+	flag = (char)(long)(*_params->param);
 
 	from.uri = dlg->from_uri;
 
@@ -290,10 +294,6 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 		LM_ERR("Failed to peer uri [%.*s]\n", peer_uri.len, peer_uri.s);
 		goto error;
 	}
-
-	/* try to extract the flag */
-	dlg_api.fetch_dlg_value(dlg, &flag_dlg_var, &flag_str, 1);
-	LM_DBG("flag = %c\n", flag);
 
 	entity_uri.len = buf_len;
 	entity_uri.s = (char*)pkg_malloc(buf_len);
@@ -322,9 +322,11 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 	case DLGCB_EXPIRED:
 		LM_DBG("dialog over, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
-			dialog_publish("terminated", &from, &peer_to_body, &(dlg->callid), 1, 0, 0, 0);
+			dialog_publish("terminated", &from, &peer_to_body,
+				&(dlg->callid), 0, 1, 0, 0, 0);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
-			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, 0, 0, 0);
+			dialog_publish("terminated", &peer_to_body, &from,
+				&(dlg->callid), 0, 0, 0, 0, 0);
 		break;
 	case DLGCB_RESPONSE_WITHIN:
 		if (get_cseq(msg)->method_id==METHOD_INVITE) {
@@ -338,17 +340,21 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 			break;
 		}
 	case DLGCB_CONFIRMED:
-		LM_DBG("dialog confirmed, from=%.*s\n", dlg->from_uri.len, dlg->from_uri.s);
+		LM_DBG("dialog confirmed, from=%.*s\n",
+			dlg->from_uri.len, dlg->from_uri.s);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
-			dialog_publish("confirmed", &from, &peer_to_body, &(dlg->callid), 1, dlg->lifetime, 0, 0);
+			dialog_publish("confirmed", &from, &peer_to_body,
+				&(dlg->callid), 0, 1, dlg->lifetime, 0, 0);
 		if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
-			dialog_publish("confirmed", &peer_to_body, &from, &(dlg->callid), 0, dlg->lifetime, 0, 0);
+			dialog_publish("confirmed", &peer_to_body, &from,
+				&(dlg->callid), 0, 0, dlg->lifetime, 0, 0);
 		break;
 	case DLGCB_EARLY:
 		LM_DBG("dialog is early, from=%.*s\n", from.uri.len, from.uri.s);
 		if (include_tags) {
 			/* get to tag*/
-			if ( !_params->msg->to && ((parse_headers(_params->msg, HDR_TO_F,0)<0) || !_params->msg->to) ) {
+			if ( !_params->msg->to &&
+			((parse_headers(_params->msg,HDR_TO_F,0)<0) || !_params->msg->to)){
 				LM_ERR("bad reply or missing TO hdr :-/\n");
 				tag.s = 0;
 				tag.len = 0;
@@ -363,44 +369,45 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type, struct dlg_cb_params *_para
 			if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
 			{
 				if (caller_confirmed) {
-					dialog_publish("confirmed", &from, &peer_to_body, &(dlg->callid), 1,
-						dlg->lifetime, &(dlg->legs[DLG_CALLER_LEG].tag), &tag);
+					dialog_publish("confirmed", &from, &peer_to_body,
+						&(dlg->callid), 0, 1, dlg->lifetime,
+						&(dlg->legs[DLG_CALLER_LEG].tag), &tag);
 				} else {
-					dialog_publish("early", &from, &peer_to_body, &(dlg->callid), 1,
-						dlg->lifetime, &(dlg->legs[DLG_CALLER_LEG].tag), &tag);
+					dialog_publish("early", &from, &peer_to_body,
+						&(dlg->callid), 0, 1, dlg->lifetime,
+						&(dlg->legs[DLG_CALLER_LEG].tag), &tag);
 				}
 			}
 
 			if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
 			{
-				dialog_publish("early", &peer_to_body, &from, &(dlg->callid), 0,
-					dlg->lifetime, &tag, &(dlg->legs[DLG_CALLER_LEG].tag));
+				dialog_publish("early", &peer_to_body, &from,
+					&(dlg->callid), 0, 0, dlg->lifetime, &tag,
+					&(dlg->legs[DLG_CALLER_LEG].tag));
 			}
 		} else {
 			if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
 			{
 				if (caller_confirmed) {
-					dialog_publish("confirmed", &from, &peer_to_body, &(dlg->callid), 1,
-						dlg->lifetime, 0, 0);
+					dialog_publish("confirmed", &from, &peer_to_body,
+						&(dlg->callid), 0, 1, dlg->lifetime, 0, 0);
 				} else {
-					dialog_publish("early", &from, &peer_to_body, &(dlg->callid), 1,
-						dlg->lifetime, 0, 0);
+					dialog_publish("early", &from, &peer_to_body,
+						&(dlg->callid), 0, 1, dlg->lifetime, 0, 0);
 				}
 			}
 			if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
 			{
-				dialog_publish("early", &peer_to_body, &from, &(dlg->callid), 0,
-					dlg->lifetime, 0, 0);
+				dialog_publish("early", &peer_to_body, &from,
+					&(dlg->callid), 0, 0, dlg->lifetime, 0, 0);
 			}
 		}
 		break;
 	default:
-		LM_ERR("unhandled dialog callback type %d received, from=%.*s\n", type, dlg->from_uri.len, dlg->from_uri.s);
-		if(flag == DLG_PUB_AB || flag == DLG_PUB_A)
-			dialog_publish("terminated", &from, &peer_to_body, &(dlg->callid), 1, 0, 0, 0);
-		if(flag == DLG_PUB_AB || flag == DLG_PUB_B)
-			dialog_publish("terminated", &peer_to_body, &from, &(dlg->callid), 0, 0, 0, 0);
+		LM_ERR("unhandled dialog callback type %d received, from=%.*s\n",
+			type, dlg->from_uri.len, dlg->from_uri.s);
 	}
+
 error:
 	if(peer_uri.s)
 		pkg_free(peer_uri.s);
@@ -540,6 +547,12 @@ static int mod_init(void)
 		LM_CRIT("cannot register callback for dialogs loaded from the database\n");
 	}
 
+	/* load the TM API */
+	if (load_tm_api(&tm_api)!=0) {
+		LM_ERR("can't load TM API\n");
+		return -1;
+	}
+
 	if(presence_server.s)
 		presence_server.len = strlen(presence_server.s);
 
@@ -616,7 +629,6 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 	char flag= DLG_PUB_AB;
 	static char buf[256];
 	int buf_len= 255;
-	str flag_str;
 	char caller_buf[256], callee_buf[256];
 	pv_value_t tok;
 
@@ -770,20 +782,20 @@ default_callee:
 			goto end;
 		}
 		flag = buf[0];
-		flag_str.s = buf;
-		flag_str.len = buf_len;
-		if(dlg_api.store_dlg_value(dlg, &flag_dlg_var, &flag_str)< 0)
-		{
-			LM_ERR("Failed to store dialog ruri\n");
-			goto end;
-		}
+	}
+
+	/* register TM callback to get access to recevied replies */
+	if (tm_api.register_tmcb( msg, NULL, TMCB_RESPONSE_IN,
+		__tm_sendpublish, 0, 0) != 0) {
+		LM_ERR("cannot register TM callback for incoming replies\n");
+		goto end;
 	}
 
 	/* register dialog callbacks which triggers sending PUBLISH */
 	if (dlg_api.register_dlgcb(dlg,
 		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
 		DLGCB_RESPONSE_WITHIN | DLGCB_EARLY,
-		__dialog_sendpublish, 0, 0) != 0) {
+		__dialog_sendpublish, (void*)(long)flag, NULL) != 0) {
 		LM_ERR("cannot register callback for interesting dialog types\n");
 		goto end;
 	}
@@ -794,19 +806,20 @@ default_callee:
 		DLGCB_FAILED| DLGCB_CONFIRMED | DLGCB_REQ_WITHIN | DLGCB_TERMINATED |
 		DLGCB_EXPIRED | DLGCB_EARLY | DLGCB_RESPONSE_FWDED |
 		DLGCB_RESPONSE_WITHIN  | DLGCB_MI_CONTEXT | DLGCB_DESTROY,
-		__dialog_cbtest, NULL, NULL) != 0) {
+		__dialog_cbtest, (void*)(long)flag, NULL) != 0) {
 		LM_ERR("cannot register callback for all dialog types\n");
 		goto end;
 	}
 #endif
 
-        if(publish_on_trying) {
-	        if(flag == DLG_PUB_A || flag == DLG_PUB_AB)
-		        dialog_publish("trying", from, &peer_to_body, &(dlg->callid), 1, DEFAULT_CREATED_LIFETIME, 0, 0);
-
-	        if(flag == DLG_PUB_B || flag == DLG_PUB_AB)
-		        dialog_publish("trying", &peer_to_body, from, &(dlg->callid), 0, DEFAULT_CREATED_LIFETIME, 0, 0);
-        }
+	if (publish_on_trying) {
+		if (flag == DLG_PUB_A || flag == DLG_PUB_AB)
+			dialog_publish("trying", from, &peer_to_body, &(dlg->callid), 0,
+				1, DEFAULT_CREATED_LIFETIME, 0, 0);
+		if (flag == DLG_PUB_B || flag == DLG_PUB_AB)
+			dialog_publish("trying", &peer_to_body, from, &(dlg->callid), 0,
+				0, DEFAULT_CREATED_LIFETIME, 0, 0);
+	}
 
 	ret=1;
 end:
