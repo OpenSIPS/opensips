@@ -70,13 +70,20 @@ static int child_init(int rank);
 static void destroy(void);
 
 /* MI functions */
-static struct mi_root* clusterer_reload(struct mi_root* root, void *param);
-static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param);
-static struct mi_root* clusterer_list(struct mi_root *root, void *param);
-static struct mi_root* clusterer_list_topology(struct mi_root *cmd_tree, void *param);
-static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param);
-static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param);
-static struct mi_root* clusterer_list_cap(struct mi_root *cmd_tree, void *param);
+static mi_response_t *clusterer_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *clusterer_set_status(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *clusterer_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *clusterer_list_topology(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *cluster_send_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *cluster_bcast_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *clusterer_list_cap(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static void heartbeats_timer_handler(unsigned int ticks, void *param);
 static void heartbeats_utimer_handler(utime_t ticks, void *param);
@@ -148,21 +155,35 @@ static param_export_t params[] = {
  * Exported MI functions
  */	
 static mi_export_t mi_cmds[] = {
-	{ "clusterer_reload", "reloads stored data from the database",
-	clusterer_reload, 0, 0, 0},
-	{ "clusterer_set_status", "sets the status for a specified connection",
-	clusterer_set_status, 0, 0, 0},
-	{ "clusterer_list", "lists the available connections for the specified server",
-	clusterer_list, 0, 0, 0},
-	{ "clusterer_list_topology", "lists the topology as known by the current node",
-	clusterer_list_topology, 0, 0, 0},
-	{ "cluster_send_mi", "sends an MI command to be run on a specific node in a cluster",
-	cluster_send_mi, MI_ASYNC_RPL_FLAG, 0, 0},
-	{ "cluster_broadcast_mi", "dispatches an MI command to be run on all nodes in a cluster",
-	cluster_bcast_mi, MI_ASYNC_RPL_FLAG, 0, 0},
-	{ "clusterer_list_cap", "lists registered capabilities and their states",
-	clusterer_list_cap, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{ "clusterer_reload", "reloads stored data from the database", 0,0,{
+		{clusterer_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "clusterer_set_status", "sets the status for a specified connection", 0,0,{
+		{clusterer_set_status, {"cluster_id", "status", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "clusterer_list", "lists the available connections for the specified server", 0,0,{
+		{clusterer_list, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "clusterer_list_topology", "lists the topology as known by the current node", 0,0,{
+		{clusterer_list_topology, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "cluster_send_mi", "sends an MI command to be run on a specific node in a cluster", 0,0,{
+		{cluster_send_mi, {"cluster_id", "destination", "cmd_name", "cmd_params", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "cluster_broadcast_mi", "dispatches an MI command to be run on all nodes in a cluster", 0,0,{
+		{cluster_bcast_mi, {"cluster_id", "cmd_name", "cmd_params", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "clusterer_list_cap", "lists registered capabilities and their states", 0,0,{
+		{clusterer_list_cap, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static module_dependency_t *get_deps_db_mode(param_export_t *param)
@@ -407,19 +428,20 @@ static int child_init(int rank)
 	return 0;
 }
 
-static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
+mi_response_t *clusterer_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	cluster_info_t *new_info;
 	cluster_info_t *old_info;
 
 	if (!db_mode) {
 		LM_ERR("Running in non-DB mode\n");
-		return init_mi_tree(400, "Non-DB mode", 11);
+		return init_mi_error(400, MI_SSTR("Non-DB mode"));
 	}
 
 	if (load_db_info(&dr_dbf, db_hdl, &db_table, &new_info) != 0) {
 		LM_ERR("Failed to load info from DB\n");
-		return init_mi_tree(500, "Failed to reload", 16);
+		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
 
 	lock_start_write(cl_list_lock);
@@ -432,91 +454,95 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 
 	LM_INFO("Reloaded DB info\n");
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
 
-static struct mi_root* clusterer_set_status(struct mi_root *cmd, void *param)
+static mi_response_t *clusterer_set_status(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	unsigned int cluster_id;
-	unsigned int state;
+	int cluster_id;
+	int state;
 	int rc;
-	struct mi_node *node;
 
-	node = cmd->node.kids;
+	if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0)
+		return init_mi_param_error();
+	if (cluster_id < 1)
+		return init_mi_error(400, MI_SSTR("Bad value for 'cluster_id'"));
 
-	if (node == NULL || node->next == NULL || node->next->next != NULL)
-		return init_mi_tree(400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	rc = str2int(&node->value, &cluster_id);
-	if (rc < 0 || cluster_id < 1)
-		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
-
-	rc = str2int(&node->next->value, &state);
-	if (rc < 0 || (state != STATE_DISABLED && state != STATE_ENABLED))
-		return init_mi_tree(400, MI_SSTR(MI_BAD_PARM));
+	if (get_mi_int_param(params, "status", &state) < 0)
+		return init_mi_param_error();
+	if (state != STATE_DISABLED && state != STATE_ENABLED)
+		return init_mi_error(400, MI_SSTR("Bad value for 'status'"));
 
 	rc = cl_set_state(cluster_id, state);
 	if (rc == -1)
-		return init_mi_tree(404, "Cluster id not found", 20);
+		return init_mi_error(404, MI_SSTR("Cluster id not found"));
 	if (rc == 1)
-		return init_mi_tree(404, "Node id not found", 17);
+		return init_mi_error(404, MI_SSTR("Node id not found"));
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
 
-static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
+static mi_response_t *clusterer_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	cluster_info_t *cl;
 	node_info_t *n_info;
-	struct mi_root *rpl_tree = NULL;
-	struct mi_node *node = NULL;
-	struct mi_node *node_s = NULL;
-	struct mi_attr* attr;
 	str val;
+	mi_response_t *resp = NULL;
+	mi_item_t *resp_obj;
+	mi_item_t *clusters_arr, *cluster_item, *nodes_arr, *node_item;
 	static str str_up   = 	str_init("Up     ");
 	static str str_prob = 	str_init("Probe  ");
 	static str str_down = 	str_init("Down   ");
 	static str str_none = 	str_init("none");
 	int n_hop;
 
-	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (!rpl_tree)
-		return NULL;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	clusters_arr = add_mi_array(resp_obj, MI_SSTR("Clusters"));
+	if (!clusters_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	lock_start_read(cl_list_lock);
 
 	/* iterate through clusters */
 	for (cl = *cluster_list; cl; cl = cl->next) {
+		cluster_item = add_mi_object(clusters_arr, NULL, 0);
+		if (!cluster_item)
+			goto error;
 
-		val.s = int2str(cl->cluster_id, &val.len);
-		node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE|MI_IS_ARRAY,
-			MI_SSTR("Cluster"), val.s, val.len);
-		if (!node) goto error;
+		if (add_mi_number(cluster_item, MI_SSTR("cluster_id"), cl->cluster_id) < 0)
+			goto error;
 
-		/* iterate through servers */
+		nodes_arr = add_mi_array(cluster_item, MI_SSTR("Nodes"));
+		if (!nodes_arr)
+			goto error;
+
+		/* iterate through nodes */
 		for (n_info = cl->node_list; n_info; n_info = n_info->next) {
+			node_item = add_mi_object(nodes_arr, NULL, 0);
+			if (!node_item)
+				goto error;
 
-			val.s = int2str(n_info->node_id, &val.len);
-			node_s = add_mi_node_child(node, MI_DUP_VALUE,
-				MI_SSTR("Node"), val.s, val.len);
-			if (!node) goto error;
+			if (add_mi_number(node_item, MI_SSTR("node_id"), n_info->node_id) < 0)
+				goto error;
 
-			val.s = sint2str(n_info->id, &val.len);
-			attr = add_mi_attr(node_s, MI_DUP_VALUE,
-				MI_SSTR("DB_ID"), val.s, val.len);
-			if (!attr) goto error;
+			if (add_mi_number(node_item, MI_SSTR("db_id"), n_info->id) < 0)
+				goto error;
 
-			attr = add_mi_attr(node_s, MI_DUP_VALUE,
-				MI_SSTR("URL"), n_info->url.s, n_info->url.len);
-			if (!attr) goto error;
+			if (add_mi_string(node_item, MI_SSTR("url"),
+				n_info->url.s, n_info->url.len) < 0)
+				goto error;
 
 			lock_get(n_info->lock);
 
-			val.s = int2str(n_info->flags & NODE_STATE_ENABLED ? 1 : 0, &val.len);
-			attr = add_mi_attr(node_s, MI_DUP_VALUE,
-				MI_SSTR("Enabled"), val.s, val.len);
-			if (!attr) {
+			if (add_mi_bool(node_item, MI_SSTR("Enabled"),
+				n_info->flags & NODE_STATE_ENABLED ? 1 : 0) < 0) {
 				lock_release(n_info->lock);
 				goto error;
 			}
@@ -527,9 +553,9 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				val = str_down;
 			else
 				val = str_prob;
-			attr = add_mi_attr(node_s, MI_DUP_VALUE,
-				MI_SSTR("Link_state"), val.s, val.len);
-			if (!attr) {
+
+			if (add_mi_string(node_item, MI_SSTR("link_state"),
+				val.s, val.len) < 0) {
 				lock_release(n_info->lock);
 				goto error;
 			}
@@ -541,162 +567,187 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 				val = str_none;
 			else
 				val.s = int2str(n_hop, &val.len);
-			attr = add_mi_attr(node_s, MI_DUP_VALUE,
-				MI_SSTR("Next_hop"), val.s, val.len);
-			if (!attr)
+
+			if (add_mi_string(node_item, MI_SSTR("next_hop"), val.s, val.len) < 0)
 				goto error;
 
-			if (n_info->description.s)
-				attr = add_mi_attr(node_s, MI_DUP_VALUE,
-					MI_SSTR("Description"),
-					n_info->description.s, n_info->description.len);
-			else
-				attr = add_mi_attr(node_s, MI_DUP_VALUE,
-					MI_SSTR("Description"),
-					"none", 4);
-			if (!attr) goto error;
+			if (n_info->description.s) {
+				if (add_mi_string(node_item, MI_SSTR("description"),
+					n_info->description.s, n_info->description.len) < 0)
+					goto error;
+			} else
+				if (add_mi_string(node_item, MI_SSTR("description"),
+					MI_SSTR("none")) < 0)
+					goto error;
 		}
 	}
 
 	lock_stop_read(cl_list_lock);
-	return rpl_tree;
+	return resp;
 error:
 	lock_stop_read(cl_list_lock);
-	if (rpl_tree) free_mi_tree(rpl_tree);
+	if (resp) free_mi_response(resp);
 	return NULL;
 }
 
-static struct mi_root * clusterer_list_cap(struct mi_root *cmd_tree, void *param)
+static mi_response_t *clusterer_list_cap(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
+	mi_response_t *resp = NULL;
+	mi_item_t *resp_obj;
+	mi_item_t *clusters_arr, *cluster_item;
+	mi_item_t *cap_arr, *cap_item;
 	cluster_info_t *cl;
 	struct local_cap *cap;
-	struct mi_root *rpl_tree = NULL;
-	struct mi_node *node = NULL;
-	struct mi_node *node_s = NULL;
-	struct mi_attr* attr;
-	str val;
 	static str str_ok = str_init("Ok");
 	static str str_not_synced = str_init("not synced");
 
-	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (!rpl_tree)
-		return NULL;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	clusters_arr = add_mi_array(resp_obj, MI_SSTR("Clusters"));
+	if (!clusters_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	lock_start_read(cl_list_lock);
 
 	for (cl = *cluster_list; cl; cl = cl->next) {
-		val.s = int2str(cl->cluster_id, &val.len);
-		node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE|MI_IS_ARRAY,
-			MI_SSTR("Cluster"), val.s, val.len);
-		if (!node) goto error;
+		cluster_item = add_mi_object(clusters_arr, NULL, 0);
+		if (!cluster_item)
+			goto error;
+
+		if (add_mi_number(cluster_item, MI_SSTR("cluster_id"), cl->cluster_id) < 0)
+			goto error;
+
+		cap_arr = add_mi_array(cluster_item, MI_SSTR("Capabilities"));
+		if (!cap_arr)
+			goto error;
 
 		for (cap = cl->capabilities; cap; cap = cap->next) {
-			val.s = cap->reg.name.s;
-			val.len = cap->reg.name.len;
-			node_s = add_mi_node_child(node, MI_DUP_VALUE|MI_IS_ARRAY,
-			   MI_SSTR("Capability"), val.s, val.len);
-			if (!node_s) goto error;
+			cap_item = add_mi_object(cap_arr, NULL, 0);
+			if (!cap_item)
+				goto error;
+
+			if (add_mi_string(cap_item, MI_SSTR("name"),
+				cap->reg.name.s, cap->reg.name.len) < 0)
+				goto error;
 
 			lock_get(cl->lock);
-			val.s = int2str((cap->flags & CAP_STATE_OK) ? 1 : 0, &val.len);
-			lock_release(cl->lock);
-			attr = add_mi_attr(node_s, MI_DUP_VALUE, MI_SSTR("State"),
+
+			if (add_mi_string(cap_item, MI_SSTR("state"),
 				(cap->flags & CAP_STATE_OK) ? str_ok.s : str_not_synced.s,
-				(cap->flags & CAP_STATE_OK) ? str_ok.len : str_not_synced.len);
-			if (!attr) goto error;
+				(cap->flags & CAP_STATE_OK) ? str_ok.len : str_not_synced.len) < 0) {
+				lock_release(cl->lock);
+				goto error;
+			}
+
+			lock_release(cl->lock);
 	   }
 	}
 
 	lock_stop_read(cl_list_lock);
-	return rpl_tree;
+	return resp;
 
 error:
 	lock_stop_read(cl_list_lock);
-	if (rpl_tree) free_mi_tree(rpl_tree);
+	if (resp) free_mi_response(resp);
 	return NULL;
 }
 
 /* lists the clusters' topology as viewed by the current node*/
-static struct mi_root * clusterer_list_topology(struct mi_root *cmd_tree, void *param)
+static mi_response_t *clusterer_list_topology(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
+	mi_response_t *resp = NULL;
+	mi_item_t *resp_obj;
+	mi_item_t *clusters_arr, *cluster_item, *nodes_arr, *node_item;
+	mi_item_t *neigh_arr;
 	cluster_info_t *cl;
 	node_info_t *n_info;
-	struct mi_root *rpl_tree = NULL;
-	struct mi_node *node = NULL;
-	struct mi_node *node_s = NULL;
-	struct mi_attr* attr;
-	str val;
-	char neigh_list[512];
 	struct neighbour *neigh;
 
-	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (!rpl_tree)
-		return NULL;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	clusters_arr = add_mi_array(resp_obj, MI_SSTR("Clusters"));
+	if (!clusters_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	lock_start_read(cl_list_lock);
 
 	/* iterate through clusters */
 	for (cl = *cluster_list; cl; cl = cl->next) {
+		cluster_item = add_mi_object(clusters_arr, NULL, 0);
+		if (!cluster_item)
+			goto error;
 
-		val.s = int2str(cl->cluster_id, &val.len);
-		node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE|MI_IS_ARRAY,
-			MI_SSTR("Cluster"), val.s, val.len);
-		if (!node) goto error;
+		if (add_mi_number(cluster_item, MI_SSTR("cluster_id"), cl->cluster_id) < 0)
+			goto error;
 
-		val.s = int2str(current_id, &val.len);
-		node_s = add_mi_node_child(node, MI_DUP_VALUE,
-			MI_SSTR("Node"), val.s, val.len);
-		if (!node_s) goto error;
+		nodes_arr = add_mi_array(cluster_item, MI_SSTR("Nodes"));
+		if (!nodes_arr)
+			goto error;
 
-		memset(neigh_list, 0, 500);
-		for (neigh = cl->current_node->neighbour_list; neigh; neigh = neigh->next) {
-			sprintf(neigh_list + strlen(neigh_list), "%d ", neigh->node->node_id);
-		}
-		val.s = neigh_list;
-		val.len = strlen(neigh_list);
+		node_item = add_mi_object(nodes_arr, 0, 0);
+		if (!node_item)
+			goto error;
 
-		attr = add_mi_attr(node_s, MI_DUP_VALUE,
-			MI_SSTR("Neighbours"), val.s, val.len);
-		if (!attr) goto error;
+		if (add_mi_number(node_item, MI_SSTR("node_id"), current_id) < 0)
+			goto error;
+
+		neigh_arr = add_mi_array(node_item, MI_SSTR("Neighbours"));
+		if (!neigh_arr)
+			goto error;
+
+		for (neigh = cl->current_node->neighbour_list; neigh; neigh = neigh->next)
+			if (add_mi_number(node_item, 0,0, neigh->node->node_id) < 0)
+				goto error;
 
 		for (n_info = cl->node_list; n_info; n_info = n_info->next) {
+			node_item = add_mi_object(nodes_arr, NULL, 0);
+			if (!node_item)
+				goto error;
 
-			val.s = int2str(n_info->node_id, &val.len);
-			node_s = add_mi_node_child(node, MI_DUP_VALUE,
-				MI_SSTR("Node"), val.s, val.len);
-			if (!node_s) goto error;
+			if (add_mi_number(node_item, MI_SSTR("node_id"), n_info->node_id) < 0)
+				goto error;
 
-			memset(neigh_list, 0, 500);
+			neigh_arr = add_mi_array(node_item, MI_SSTR("Neighbours"));
+			if (!neigh_arr)
+				goto error;
 
 			lock_get(n_info->lock);
 
-			for (neigh = n_info->neighbour_list; neigh; neigh = neigh->next) {
-				sprintf(neigh_list + strlen(neigh_list), "%d ", neigh->node->node_id);
-			}
+			for (neigh = cl->current_node->neighbour_list; neigh; neigh = neigh->next)
+				if (add_mi_number(node_item, 0,0, neigh->node->node_id) < 0) {
+					lock_release(n_info->lock);
+					goto error;
+				}
+
 			if (n_info->link_state == LS_UP)
-				sprintf(neigh_list + strlen(neigh_list), "%d ", current_id);
+				if (add_mi_number(node_item, 0,0, current_id) < 0) {
+					lock_release(n_info->lock);
+					goto error;
+				}
 
 			lock_release(n_info->lock);
-
-			val.s = neigh_list;
-			val.len = strlen(neigh_list);
-
-			attr = add_mi_attr(node_s, MI_DUP_VALUE,
-				MI_SSTR("Neighbours"), val.s, val.len);
-			if (!attr) goto error;
 		}
 	}
 
 	lock_stop_read(cl_list_lock);
-	return rpl_tree;
+	return resp;
 error:
 	lock_stop_read(cl_list_lock);
-	if (rpl_tree) free_mi_tree(rpl_tree);
+	if (resp) free_mi_response(resp);
 	return NULL;
 }
 
+/*
 static struct mi_root *run_mi_cmd_local(struct mi_cmd *f, str *cmd_params, int nr_params,
 									struct mi_handler *async_hdl)
 {
@@ -734,7 +785,9 @@ static struct mi_root *run_mi_cmd_local(struct mi_cmd *f, str *cmd_params, int n
 
 	return cmd_rpl;
 }
+*/
 
+/*
 struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params)
 {
 	struct mi_cmd *f;
@@ -779,9 +832,12 @@ struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params)
 
 	return cmd_rpl;
 }
+*/
 
-static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param)
+static mi_response_t *cluster_send_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
+	/*
 	struct mi_node *node, *cmd_params_n;
 	unsigned int cluster_id, node_id;
 	int rc;
@@ -810,7 +866,6 @@ static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param)
 	for (; cmd_params_n; cmd_params_n = cmd_params_n->next, no_params++)
 		cl_cmd_params[no_params] = cmd_params_n->value;
 
-	/* send MI cmd in cluster */
 	rc = send_mi_cmd(cluster_id, node_id, cl_cmd_name, cl_cmd_params, no_params);
 	switch (rc) {
 		case CLUSTERER_SEND_SUCCES:
@@ -829,12 +884,15 @@ static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param)
 				cl_cmd_name.len, cl_cmd_name.s);
 			break;
 	}
+	*/
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
 
-static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param)
+static mi_response_t *cluster_bcast_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
+	/*
 	struct mi_node *node, *cmd_params_n;
 	struct mi_cmd *f;
 	unsigned int cluster_id;
@@ -862,7 +920,6 @@ static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param)
 	for (; cmd_params_n; cmd_params_n = cmd_params_n->next, no_params++)
 		cl_cmd_params[no_params] = cmd_params_n->value;
 
-	/* send MI cmd in cluster */
 	rc = send_mi_cmd(cluster_id, 0, cl_cmd_name, cl_cmd_params, no_params);
 	switch (rc) {
 		case CLUSTERER_SEND_SUCCES:
@@ -882,8 +939,10 @@ static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param)
 			break;
 	}
 
-	/* run MI cmd locally */
 	return run_mi_cmd_local(f, cl_cmd_params, no_params, cmd->async_hdl);
+	*/
+
+	return init_mi_result_ok();
 }
 
 static void heartbeats_timer_handler(unsigned int ticks, void *param)

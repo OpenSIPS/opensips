@@ -832,7 +832,7 @@ Cluster:: 2
 			<emphasis>cmd_name</emphasis> - name of the MI command to be run
 			</para></listitem>
 			<listitem><para>
-			the parameters of the MI command to be run - optional or required, depending on the command
+			<emphasis>cmd_name</emphasis> - the parameters of the MI command to be run, optional or required, depending on the command
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -862,7 +862,7 @@ Cluster:: 2
 			<emphasis>cmd_name</emphasis> - name of the MI command to be run
 			</para></listitem>
 			<listitem><para>
-			the parameters of the MI command to be run - optional or required, depending on the command
+			<emphasis>cmd_name</emphasis> - the parameters of the MI command to be run, optional or required, depending on the command
 			</para></listitem>
 		</itemizedlist>
 		<para>
