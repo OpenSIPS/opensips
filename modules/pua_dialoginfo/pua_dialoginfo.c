@@ -690,7 +690,9 @@ static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
 	}
 	peer_p = &peer;
 
-	/* store flag, if defined  */
+	/* store flag  */
+	flags = 0;
+
 	if (flag_pv) {
 
 		if(pv_printf_s(msg, (pv_elem_t*)flag_pv, &s)<0) {
