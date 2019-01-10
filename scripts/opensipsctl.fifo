@@ -91,19 +91,28 @@ fifo_cmd()
 	path=$CHROOT_DIR/tmp/$name
 
 	# construct the command now
-	CMD=":$1:$name\n";
+	CMD=":$name:{\"jsonrpc\":\"2.0\",\"method\":\"$1\",\"id\":\"$suffix\"";
 	shift
-	while [ -n "$1" ] ; do
-		CMD="${CMD}${1}\n"
+	if [ -n "${1}" ]; then
+		PARAMS=",\"params\":[\"${1}\""
 		shift
-	done
-	CMD="${CMD}\n"
+		while [ -n "${1}" ] ; do
+			PARAMS="${PARAMS},\"${1}\""
+			shift
+		done
+		PARAMS="${PARAMS}]"
+	else
+		PARAMS=""
+	fi
+	CMD="${CMD}${PARAMS}}"
 
 	trap "rm -f $path; kill 0" INT TERM
 
 	# start reader now so that it is ready for replies
 	# immediately after a request was sent out
-	cat < $path | filter_fl &
+	cat $path | json_pp &
+
+	# TODO: handle errors
 
 	if [ -n "$FLOCK" ]; then
 		(
