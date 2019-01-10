@@ -687,8 +687,7 @@ void mi_fifo_server(FILE *fifo_stream)
 		/* make the command null terminated */
 		p[parse_len] = '\0';
 		memset(&request, 0, sizeof request);
-		if (parse_mi_request(p, parse_end, &request) < 0 ||
-				request.invalid) {
+		if (parse_mi_request(p, parse_end, &request) < 0) {
 			LM_ERR("cannot parse command: %.*s\n", parse_len, p);
 			continue;
 		}
