@@ -82,6 +82,9 @@ typedef struct cJSON_Hooks
       void (*free_fn)(void *ptr);
 } cJSON_Hooks;
 
+/* function that is called by cJSON_PrintFlushed to flush the buffered string built */
+typedef int (flush_fn)(unsigned char *buf, int len, void *param);
+
 /* Supply malloc, realloc and free functions to cJSON */
 extern void cJSON_InitHooks(cJSON_Hooks* hooks);
 
@@ -98,6 +101,8 @@ extern char  *cJSON_PrintUnformatted(const cJSON *item);
 extern char *cJSON_PrintBuffered(const cJSON *item, int prebuffer, int fmt);
 /* Render a cJSON entity to text using a buffer already allocated in memory with length buf_len. Returns 1 on success and 0 on failure. */
 extern int cJSON_PrintPreallocated(cJSON *item, char *buf, const int len, const int fmt);
+/* Render a cJSON entity to a limited buffer, and call a flush function when the buffer gets full. Returns 1 on success and 0 on failure. */
+extern int cJSON_PrintFlushed(cJSON *item, char *buf, const int len, const int fmt, flush_fn *func, void *param);
 /* Delete a cJSON entity and all subentities. */
 extern void   cJSON_Delete(cJSON *c);
 
