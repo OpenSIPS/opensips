@@ -150,8 +150,8 @@ int init_ebr_event( ebr_event *ev )
 	return 0;
 
 error:
-	lock_release( &(ev->lock) );
 	ev->event_id = -1;
+	lock_release( &(ev->lock) );
 	return -1;
 }
 
@@ -287,8 +287,8 @@ int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
 	lock_release( &(ev->lock) );
 
 	LM_DBG("new subscription [%s] on event %.*s/%d successfully added from "
-		"process %d\n", (flags&EBR_SUBS_TYPE_WAIT)?"WAIT":"NOTIFY",
-		ev->event_name.len, ev->event_name.s, ev->event_id, process_no);
+		"process %d with timeout %ds\n", (flags&EBR_SUBS_TYPE_WAIT)?"WAIT":"NOTIFY",
+		ev->event_name.len, ev->event_name.s, ev->event_id, process_no,expire);
 
 	return 0;
 
@@ -351,12 +351,9 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 	int matches;
 	char *s;
 	struct usr_avp *avps=(void*)-1;
-	unsigned int my_time;
 
 	LM_DBG("notification received for event %.*s, checking subscriptions\n",
 		ev->event_name.len, ev->event_name.s);
-
-	my_time = get_ticks();
 
 	lock_get( &(ev->lock) );
 
@@ -364,26 +361,6 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 	sub_prev = NULL;
 	for ( sub=ev->subs ; sub ; sub_prev=sub,
 								sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
-
-		/* discard expired NOTIFY subscriptions */
-		if (sub->flags&EBR_SUBS_TYPE_NOTY && sub->expire<my_time) {
-			LM_DBG("subscription type [NOTIFY]from process %d(pid %d) on "
-				"event <%.*s> expired at %d\n",
-				sub->proc_no, pt[sub->proc_no].pid,
-				sub->event->event_name.len, sub->event->event_name.s,
-				sub->expire );
-			/* remove the subscription */
-			sub_next = sub->next;
-			/* unlink it */
-			if (sub_prev) sub_prev->next = sub_next;
-			else ev->subs = sub_next;
-			/* free it */
-			free_ebr_subscription(sub);
-			/* do not count us as prev, as we are removed */
-			sub = sub_prev;
-			continue;
-		}
-
 		/* run the filters */
 		matches = 1;
 		sub_next = NULL;
@@ -508,6 +485,56 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 	return 0;
 }
 
+void expire_ebr_subscriptions(void)
+{
+	ebr_event *ev = NULL;
+	ebr_subscription *sub = NULL;
+
+	int my_time = get_ticks();
+
+	for ( ev=ebr_events ; ev ; ev=ev->next ) {
+		ebr_subscription *sub_prev = NULL;
+		ebr_subscription *sub_next = NULL;
+
+		lock_get( &(ev->lock) );
+		for ( sub=ev->subs ; sub ; sub_prev=sub, sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
+			if (sub->expire < my_time) {
+				LM_INFO("Found expired EBR subscription, removing\n");
+
+				/* remove the subscription */
+				sub_next = sub->next;
+
+				/* unlink it */
+				if (sub_prev) sub_prev->next = sub_next;
+				else ev->subs = sub_next;
+
+				if (sub->flags&EBR_SUBS_TYPE_WAIT) {
+					ebr_ipc_job *job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
+					if (job) {
+						job->ev    = ev;
+						job->avps  = NULL;
+						job->data  = sub->data;
+						job->flags = sub->flags;
+						job->tm    = sub->tm;
+
+						if (ipc_send_job(sub->proc_no, ebr_ipc_type , (void*)job) < 0) {
+							LM_ERR("failed to send expired job via IPC, skipping...\n");
+							shm_free(job);
+						}
+					}
+				}
+
+				/* free */
+				free_ebr_subscription(sub);
+
+				/* do not count us as prev, as we are removed */
+				sub = sub_prev;
+			}
+		}
+		lock_release( &(ev->lock) );
+
+	}
+}
 
 void handle_ebr_ipc(int sender, void *payload)
 {

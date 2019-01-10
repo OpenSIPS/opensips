@@ -22,6 +22,7 @@
 #include "../../ut.h"
 #include "../../ipc.h"
 #include "../../mod_fix.h"
+#include "../../timer.h"
 #include "../../evi/evi_transport.h"
 #include "../../evi/evi_modules.h"
 #include "../tm/tm_load.h"
@@ -36,6 +37,7 @@ static int fixup_notify(void** param, int param_no);
 static int fixup_wait(void** param, int param_no);
 
 static int mod_init(void);
+static void _ebr_timer(unsigned int ticks, void* param);
 static int notify_on_event(struct sip_msg *msg, void *ev, void *avp_filter,
 	void *route, void *timeout);
 static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
@@ -174,9 +176,16 @@ static int mod_init(void)
 		}
 	}
 
+	register_timer("ev-routing", _ebr_timer, 0, 10, TIMER_FLAG_DELAY_ON_DELAY);
+
 	return 0;
 }
 
+/* Timer function */
+static void _ebr_timer(unsigned int ticks, void* param)
+{
+	expire_ebr_subscriptions();
+}
 
 /* Fixes an EBR event (given by name) by coverting to an internal
  * structure (if not already found)

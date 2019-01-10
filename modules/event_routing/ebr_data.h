@@ -74,6 +74,8 @@ int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
 
 int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params);
 
+void expire_ebr_subscriptions(void);
+
 void handle_ebr_ipc(int sender, void *payload);
 
 int ebr_resume_from_wait(int *fd, struct sip_msg *msg, void *param);
