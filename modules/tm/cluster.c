@@ -414,7 +414,7 @@ int tm_reply_replicate(struct sip_msg *msg)
 	}
 	LM_DBG("reply should get to node %d\n", cid);
 	tm_replicate_reply(msg, cid);
-	return 0;
+	return 1;
 }
 
 static int tm_existing_trans(struct sip_msg *msg)
