@@ -49,6 +49,7 @@
 typedef cJSON mi_item_t;
 
 typedef mi_item_t mi_response_t;
+typedef flush_fn mi_flush_f;
 
 typedef struct mi_params_ {
 	mi_item_t *item;

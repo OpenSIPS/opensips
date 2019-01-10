@@ -147,6 +147,12 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
  */
 int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf, int pretty);
 
+/* similar to print_mi_response, but calls a flush function when the buffer
+ * gets filled up
+ */
+int print_mi_response_flush(mi_response_t *resp, mi_item_t *id,
+		mi_flush_f *func, void *func_p, str *buf, int pretty);
+
 /* Frees the objects in the struct allocated when parsing the request
  */
 void free_mi_request_parsed(mi_request_t *request);

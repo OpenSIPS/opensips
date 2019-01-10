@@ -450,7 +450,7 @@ int add_id_to_response(mi_item_t *id, mi_response_t *resp)
 	return 0;
 }
 
-int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf, int pretty)
+static int prepare_mi_response(mi_response_t *resp, mi_item_t *id)
 {
 	mi_item_t *res_err, *res_err_code = NULL;
 
@@ -477,7 +477,33 @@ int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf, int pretty)
 	if (add_id_to_response(id, resp) < 0)
 		return -1;
 
+	return 0;
+}
+
+int print_mi_response(mi_response_t *resp, mi_item_t *id, str *buf, int pretty)
+{
+	int ret = prepare_mi_response(resp, id);
+
+	if (ret != 0)
+		return ret;
+
 	if (cJSON_PrintPreallocated(resp, buf->s, buf->len, pretty) == 0) {
+		LM_ERR("Failed to print JSON\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int print_mi_response_flush(mi_response_t *resp, mi_item_t *id,
+		mi_flush_f *func, void *func_p, str *buf, int pretty)
+{
+	int ret = prepare_mi_response(resp, id);
+
+	if (ret != 0)
+		return ret;
+
+	if (cJSON_PrintFlushed(resp, buf->s, buf->len, pretty, func, func_p) == 0) {
 		LM_ERR("Failed to print JSON\n");
 		return -1;
 	}
