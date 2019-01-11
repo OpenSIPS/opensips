@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2015 - OpenSIPS Foundation
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2019 - OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,11 +17,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
- *
- * History:
- * -------
- *  2017-09-**  first version (victor.ciurel)
  */
+
 #include <poll.h>
 #include <errno.h>
 #include <unistd.h>
