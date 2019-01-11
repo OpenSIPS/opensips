@@ -1,0 +1,1151 @@
+/*
+ * Copyright (C) 2019 - OpenSIPS Project
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ *
+ */
+
+#include <poll.h>
+#include <errno.h>
+#include <unistd.h>
+#include <netinet/tcp.h>
+
+#include "../../timer.h"
+#include "../../sr_module.h"
+#include "../../net/api_proto.h"
+#include "../../net/api_proto_net.h"
+#include "../../net/net_tcp.h"
+#include "../../socket_info.h"
+#include "../../tsend.h"
+#include "../../net/proto_tcp/tcp_common_defs.h"
+#include "../../pt.h"
+#include "../../ut.h"
+#include "../../resolve.h"
+#include "../../forward.h"
+#include "../../receive.h"
+#include "../tm/tm_load.h"
+#include "../../parser/parse_from.h"
+
+#include "proto_smpp.h"
+#include "smpp.h"
+#include "utils.h"
+
+str smpp_outbound_uri;
+
+static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn);
+static void send_enquire_link_request(smpp_session_t *session);
+
+static uint32_t increment_sequence_number(smpp_session_t *session);
+
+
+/** TM bind */
+struct tm_binds tmb;
+
+static smpp_session_t **g_sessions = NULL;
+
+static uint32_t get_payload_from_header(char *payload, smpp_header_t *header)
+{
+	if (!payload || !header) {
+		LM_ERR("NULL params");
+		return 0;
+	}
+
+	char *p = payload;
+	p += copy_u32(p, header->command_length);
+	p += copy_u32(p, header->command_id);
+	p += copy_u32(p, header->command_status);
+	p += copy_u32(p, header->sequence_number);
+
+	return p - payload;
+}
+
+static uint32_t get_payload_from_bind_transceiver_body(char *body, smpp_bind_transceiver_t *transceiver)
+{
+	if (!body || !transceiver) {
+		LM_ERR("NULL params");
+		return 0;
+	}
+
+	char *p = body;
+	p += copy_var_str(p, transceiver->system_id);
+	p += copy_var_str(p, transceiver->password);
+	p += copy_var_str(p, transceiver->system_type);
+	p += copy_u8(p, transceiver->interface_version);
+	p += copy_u8(p, transceiver->addr_ton);
+	p += copy_u8(p, transceiver->addr_npi);
+	p += copy_var_str(p, transceiver->address_range);
+
+	return p - body;
+}
+
+static uint32_t get_payload_from_bind_transceiver_resp_body(char *body, smpp_bind_transceiver_resp_t *transceiver_resp)
+{
+	if (!body || !transceiver_resp) {
+		LM_ERR("NULL params");
+		return 0;
+	}
+
+	char *p = body;
+	p += copy_var_str(p, transceiver_resp->system_id);
+
+	return p - body;
+}
+
+uint32_t get_payload_from_submit_sm_body(char *body, smpp_submit_sm_t *submit_sm)
+{
+	if (!body || !submit_sm) {
+		LM_ERR("NULL params");
+		return 0;
+	}
+
+	char *p = body;
+	p += copy_var_str(p, submit_sm->service_type);
+	p += copy_u8(p, submit_sm->source_addr_ton);
+	p += copy_u8(p, submit_sm->source_addr_npi);
+	p += copy_var_str(p, submit_sm->source_addr);
+	p += copy_u8(p, submit_sm->dest_addr_ton);
+	p += copy_u8(p, submit_sm->dest_addr_npi);
+	p += copy_var_str(p, submit_sm->destination_addr);
+	p += copy_u8(p, submit_sm->esm_class);
+	p += copy_u8(p, submit_sm->protocol_id);
+	p += copy_u8(p, submit_sm->protocol_flag);
+	p += copy_var_str(p, submit_sm->schedule_delivery_time);
+	p += copy_var_str(p, submit_sm->validity_period);
+	p += copy_u8(p, submit_sm->registered_delivery);
+	p += copy_u8(p, submit_sm->replace_if_present_flag);
+	p += copy_u8(p, submit_sm->data_coding);
+	p += copy_u8(p, submit_sm->sm_default_msg_id);
+	p += copy_u8(p, submit_sm->sm_length);
+	p += copy_fixed_str(p, submit_sm->short_message, submit_sm->sm_length);
+
+	return p - body;
+}
+
+uint32_t get_payload_from_deliver_sm_resp_body(char *body, smpp_deliver_sm_resp_t *deliver_sm_resp)
+{
+	if (!body || !deliver_sm_resp) {
+		LM_ERR("NULL params");
+		return 0;
+	}
+
+	body[0] = deliver_sm_resp->message_id[0];
+	return 1;
+}
+
+uint32_t get_payload_from_submit_sm_resp_body(char *body, smpp_submit_sm_resp_t *submit_sm_resp)
+{
+	if (!body || !submit_sm_resp) {
+		LM_ERR("NULL params");
+		return 0;
+	}
+
+	body[0] = submit_sm_resp->message_id[0];
+	return 1;
+}
+
+static int build_bind_transceiver_request(smpp_bind_transceiver_req_t **preq, smpp_session_t *session)
+{
+	if (!preq || !session) {
+		LM_ERR("NULL params");
+		goto err;
+	}
+
+	/* request allocations */
+	smpp_bind_transceiver_req_t *req = pkg_malloc(sizeof(*req));
+	*preq = req;
+	if (!req) {
+		LM_ERR("malloc error for request");
+		goto err;
+	}
+
+	smpp_header_t *header = pkg_malloc(sizeof(*header));
+	if (!header) {
+		LM_ERR("malloc error for header");
+		goto header_err;
+	}
+
+	smpp_bind_transceiver_t *body = pkg_malloc(sizeof(*body));
+	if (!body) {
+		LM_ERR("malloc error for body");
+		goto body_err;
+	}
+
+	req->payload.s = pkg_malloc(REQ_MAX_SZ(BIND_RECEIVER));
+	if (!req->payload.s) {
+		LM_ERR("malloc error for payload");
+		goto payload_err;
+	}
+
+	req->header = header;
+	req->body = body;
+
+	/* copy body fields */
+	smpp_bind_transceiver_t *transceiver = &session->bind.transceiver;
+	copy_var_str(body->system_id, transceiver->system_id);
+	copy_var_str(body->password, transceiver->password);
+	copy_var_str(body->system_type, transceiver->system_type);
+	body->interface_version = transceiver->interface_version;
+	body->addr_ton = transceiver->addr_ton;
+	body->addr_npi = transceiver->addr_npi;
+	copy_var_str(body->address_range, transceiver->address_range);
+
+	uint32_t body_len = get_payload_from_bind_transceiver_body(req->payload.s + HEADER_SZ, transceiver);
+	header->command_length = HEADER_SZ + body_len;
+	header->command_id = BIND_TRANSCEIVER_CID;
+	header->command_status = 0;
+	header->sequence_number = increment_sequence_number(session);
+
+	get_payload_from_header(req->payload.s, header);
+
+	req->payload.len = header->command_length;
+
+	return 0;
+
+payload_err:
+	pkg_free(body);
+body_err:
+	pkg_free(header);
+header_err:
+	pkg_free(req);
+err:
+	return -1;
+}
+
+static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint32_t command_id, uint32_t command_status, uint32_t seq_no, struct tcp_connection *conn)
+{
+	if (!preq || !conn) {
+		LM_ERR("NULL params");
+		goto err;
+	}
+
+	/* request allocations */
+	smpp_bind_transceiver_resp_req_t *req = pkg_malloc(sizeof(*req));
+	*preq = req;
+	if (!req) {
+		LM_ERR("malloc error for request");
+		goto err;
+	}
+
+	smpp_header_t *header = pkg_malloc(sizeof(*header));
+	if (!header) {
+		LM_ERR("malloc error for header");
+		goto header_err;
+	}
+
+	smpp_bind_transceiver_resp_t *body = pkg_malloc(sizeof(*body));
+	if (!body) {
+		LM_ERR("malloc error for body");
+		goto body_err;
+	}
+
+	req->payload.s = pkg_malloc(REQ_MAX_SZ(BIND_TRANSCEIVER_RESP));
+	if (!req->payload.s) {
+		LM_ERR("malloc error for payload");
+		goto payload_err;
+	}
+
+	req->header = header;
+	req->body = body;
+
+	/* copy body fields */
+	smpp_bind_transceiver_resp_t transceiver_resp;
+	copy_var_str(body->system_id, transceiver_resp.system_id);
+
+	uint32_t body_len = get_payload_from_bind_transceiver_resp_body(req->payload.s + HEADER_SZ, &transceiver_resp);
+	header->command_length = HEADER_SZ + body_len;
+	header->command_id = command_id;
+	header->command_status = command_status;
+	header->sequence_number = seq_no;
+
+	get_payload_from_header(req->payload.s, header);
+
+	req->payload.len = header->command_length;
+
+	return 0;
+
+payload_err:
+	pkg_free(body);
+body_err:
+	pkg_free(header);
+header_err:
+	pkg_free(req);
+err:
+	return -1;
+}
+
+static int build_enquire_link_request(smpp_enquire_link_req_t **preq, smpp_session_t *session)
+{
+	if (!preq || !session) {
+		LM_ERR("NULL param");
+		goto err;
+	}
+
+	/* request allocations */
+	smpp_enquire_link_req_t *req = pkg_malloc(sizeof(*req));
+	*preq = req;
+	if (!req) {
+		LM_ERR("malloc error for request");
+		goto err;
+	}
+
+	smpp_header_t *header = pkg_malloc(sizeof(*header));
+	if (!header) {
+		LM_ERR("malloc error for header");
+		goto header_err;
+	}
+
+	req->payload.s = pkg_malloc(REQ_MAX_SZ(ENQUIRE_LINK));
+	if (!req->payload.s) {
+		LM_ERR("malloc error for payload");
+		goto payload_err;
+	}
+
+	req->header = header;
+
+	header->command_length = HEADER_SZ;
+	header->command_id = ENQUIRE_LINK_CID;
+	header->command_status = 0;
+	header->sequence_number = increment_sequence_number(session);
+
+	get_payload_from_header(req->payload.s, header);
+
+	req->payload.len = header->command_length;
+
+	return 0;
+
+payload_err:
+	pkg_free(header);
+header_err:
+	pkg_free(req);
+err:
+	return -1;
+}
+
+static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, str *src, str *dst, str *message, smpp_session_t *session)
+{
+	if (!preq || !src || !dst || !message) {
+		LM_ERR("NULL params");
+		goto err;
+	}
+
+	/* request allocations */
+	smpp_submit_sm_req_t *req = pkg_malloc(sizeof(*req));
+	*preq = req;
+	if (!req) {
+		LM_ERR("malloc error for request");
+		goto err;
+	}
+
+	smpp_header_t *header = pkg_malloc(sizeof(*header));
+	if (!header) {
+		LM_ERR("malloc error for header");
+		goto header_err;
+	}
+
+	smpp_submit_sm_t *body = pkg_malloc(sizeof(*body));
+	if (!body) {
+		LM_ERR("malloc error for body");
+		goto body_err;
+	}
+
+	req->payload.s = pkg_malloc(REQ_MAX_SZ(SUBMIT_SM));
+	if (!req->payload.s) {
+		LM_ERR("malloc error for payload");
+		goto payload_err;
+	}
+
+	req->header = header;
+	req->body = body;
+
+	memset(body, 0, sizeof(*body));
+	body->source_addr_ton = session->source_addr_ton;
+	body->source_addr_npi = session->source_addr_npi;
+	strncpy(body->source_addr, src->s, src->len);
+	body->dest_addr_ton = session->dest_addr_ton;
+	body->dest_addr_npi = session->dest_addr_npi;
+	strncpy(body->destination_addr, dst->s, dst->len);
+	body->sm_length = message->len;
+	strncpy(body->short_message, message->s, message->len);
+
+	uint32_t body_len = get_payload_from_submit_sm_body(req->payload.s + HEADER_SZ, body);
+
+	header->command_length = HEADER_SZ + body_len;
+	if (session->session_type == SMPP_OUTBIND) // we are a SMSC
+	    header->command_id = DELIVER_SM_CID;
+	else // we are an ESME
+	    header->command_id = SUBMIT_SM_CID;
+	header->command_status = ESME_ROK;
+	header->sequence_number = increment_sequence_number(session);
+
+	get_payload_from_header(req->payload.s, header);
+
+	req->payload.len = header->command_length;
+
+	return 0;
+
+payload_err:
+	pkg_free(body);
+body_err:
+	pkg_free(header);
+header_err:
+	pkg_free(req);
+err:
+	return -1;
+}
+
+static int build_submit_or_deliver_resp_request(smpp_submit_sm_resp_req_t **preq, uint32_t command_id, uint32_t command_status, uint32_t sequence_number)
+{
+	if (!preq) {
+		LM_ERR("NULL param");
+		goto err;
+	}
+
+	/* request allocations */
+	smpp_submit_sm_resp_req_t *req = pkg_malloc(sizeof(*req));
+	*preq = req;
+	if (!req) {
+		LM_ERR("malloc error for request");
+		goto err;
+	}
+
+	smpp_header_t *header = pkg_malloc(sizeof(*header));
+	if (!header) {
+		LM_ERR("malloc error for header");
+		goto header_err;
+	}
+
+	smpp_submit_sm_resp_t *body = pkg_malloc(sizeof(*body));
+	if (!body) {
+		LM_ERR("malloc error for body");
+		goto body_err;
+	}
+
+	req->payload.s = pkg_malloc(REQ_MAX_SZ(SUBMIT_SM_RESP));
+	if (!req->payload.s) {
+		LM_ERR("malloc error for payload");
+		goto payload_err;
+	}
+
+	req->header = header;
+	req->body = body;
+
+	memset(body, 0, sizeof(*body));
+
+	uint32_t body_len = get_payload_from_submit_sm_resp_body(req->payload.s + HEADER_SZ, body);
+	header->command_length = HEADER_SZ + body_len;
+	header->command_id = command_id;
+	header->command_status = command_status;
+	header->sequence_number = sequence_number;
+
+	get_payload_from_header(req->payload.s, header);
+
+	req->payload.len = header->command_length;
+
+	return 0;
+
+payload_err:
+	pkg_free(body);
+body_err:
+	pkg_free(header);
+header_err:
+	pkg_free(req);
+err:
+	return -1;
+}
+
+
+static uint32_t increment_sequence_number(smpp_session_t *session)
+{
+	uint32_t seq_no;
+	lock_get(&session->sequence_number_lock);
+	seq_no = session->sequence_number++;
+	lock_release(&session->sequence_number_lock);
+	return seq_no;
+}
+
+void send_outbind(smpp_session_t *session)
+{
+	LM_INFO("sending outbind to esme \"%s\"\n", session->bind.outbind.system_id);
+}
+
+static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
+{
+	union sockaddr_union to;
+	union sockaddr_union server;
+	struct socket_info *send_socket;
+
+	if (init_su(&to, &session->ip, session->port)) {
+		LM_ERR("error creating su from ipaddr and port\n");
+		return NULL;
+	}
+	if (init_su(&server, &session->ip, session->port)) {
+		LM_ERR("error creating su from ipaddr and port\n");
+		return NULL;
+	}
+	send_socket = get_send_socket(NULL, &to, PROTO_SMPP);
+	if (!send_socket) {
+		LM_ERR("error getting send socket\n");
+		return NULL;
+	}
+	return smpp_sync_connect(send_socket, &server, fd);
+}
+
+void send_bind(smpp_session_t *session)
+{
+	int fd, n = -1;
+	struct tcp_connection *conn;
+	smpp_bind_transceiver_req_t *req = NULL;
+
+	if (!session)
+		LM_ERR("NULL param\n");
+
+	LM_INFO("binding session with system_id \"%s\"\n", session->bind.transceiver.system_id);
+
+	if (build_bind_transceiver_request(&req, session)) {
+		LM_ERR("error creating request\n");
+		return;
+	}
+	conn = smpp_connect(session, &fd);
+	if (!conn) {
+		LM_ERR("cannot create a TCP connection!\n");
+		goto free_req;
+	}
+
+	session->conn = conn;
+	conn->proto_data = session;
+	n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
+free_req:
+	pkg_free(req);
+}
+
+void rpc_bind_sessions(int sender_id, void *param)
+{
+	int n = 0;
+	smpp_session_t *session_it = *g_sessions;
+	while (session_it) {
+		if (session_it->session_type == SMPP_OUTBIND)
+			send_outbind(session_it);
+		else
+			send_bind(session_it);
+		session_it = session_it->next;
+		n++;
+	}
+	LM_INFO("sent %d\n", n);
+}
+
+
+void enquire_link(unsigned int ticks, void *params)
+{
+	smpp_session_t *session_it = *g_sessions;
+	while (session_it) {
+	    send_enquire_link_request(session_it);
+	    session_it = session_it->next;
+	}
+}
+
+
+static void smpp_parse_header(smpp_header_t *header, char *buffer)
+{
+	if (!header || !buffer)
+		LM_ERR("NULL params");
+
+	uint32_t *p = (uint32_t*)buffer;
+
+	header->command_length = ntohl(*p++);
+	header->command_id = ntohl(*p++);
+	header->command_status = ntohl(*p++);
+	header->sequence_number = ntohl(*p++);
+}
+
+static void parse_submit_or_deliver_body(smpp_submit_sm_t *body, smpp_header_t *header, char *buffer)
+{
+	if (!body || !header || !buffer) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	char *p = buffer;
+	p += copy_var_str(body->service_type, p);
+	body->source_addr_ton = *p++;
+	body->source_addr_npi = *p++;
+	p += copy_var_str(body->source_addr, p);
+	body->dest_addr_ton = *p++;
+	body->dest_addr_npi = *p++;
+	p += copy_var_str(body->destination_addr, p);
+	body->esm_class = *p++;
+	body->protocol_id = *p++;
+	body->protocol_flag = *p++;
+	body->schedule_delivery_time[0] = *p++;
+	body->validity_period[0] = *p++;
+	body->registered_delivery = *p++;
+	body->replace_if_present_flag = *p++;
+	body->data_coding = *p++;
+	body->sm_default_msg_id = *p++;
+	body->sm_length = *p++;
+	copy_fixed_str(body->short_message, p, body->sm_length);
+}
+
+void parse_bind_receiver_body(smpp_bind_receiver_t *body, smpp_header_t *header, char *buffer)
+{
+	if (!body || !header || !buffer) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	char *p = buffer;
+	p += copy_var_str(body->system_id, p);
+	p += copy_var_str(body->password, p);
+	p += copy_var_str(body->system_type, p);
+	body->interface_version = *p++;
+	body->addr_ton = *p++;
+	body->addr_npi = *p++;
+	p += copy_var_str(body->address_range, p);
+}
+
+void parse_bind_receiver_resp_body(smpp_bind_receiver_resp_t *body, smpp_header_t *header, char *buffer)
+{
+	if (!body || !header || !buffer) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	copy_var_str(body->system_id, buffer);
+}
+
+void parse_bind_transmitter_body(smpp_bind_transmitter_t *body, smpp_header_t *header, char *buffer)
+{
+	parse_bind_receiver_body((smpp_bind_receiver_t*)body, header, buffer);
+}
+
+void parse_bind_transmitter_resp_body(smpp_bind_transmitter_resp_t *body, smpp_header_t *header, char *buffer)
+{
+	parse_bind_receiver_resp_body((smpp_bind_receiver_resp_t*)body, header, buffer);
+}
+
+void parse_bind_transceiver_body(smpp_bind_transceiver_t *body, smpp_header_t *header, char *buffer)
+{
+	parse_bind_receiver_body((smpp_bind_receiver_t*)body, header, buffer);
+}
+
+void parse_bind_transceiver_resp_body(smpp_bind_transceiver_resp_t *body, smpp_header_t *header, char *buffer)
+{
+	parse_bind_receiver_resp_body((smpp_bind_receiver_resp_t*)body, header, buffer);
+}
+
+void parse_submit_or_deliver_resp_body(smpp_submit_sm_resp_t *body, smpp_header_t *header, char *buffer)
+{
+	if (!body || !header || !buffer) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	copy_var_str(body->message_id, buffer);
+}
+
+void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, struct tcp_connection *conn)
+{
+	if (!req || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	smpp_submit_sm_resp_req_t *resp;
+	uint32_t command_status = ESME_ROK;
+	uint32_t seq_no = req->header->sequence_number;
+	uint32_t command_id = req->header->command_id + 0x80000000; // transform command to resp command
+	if (build_submit_or_deliver_resp_request(&resp, command_id, command_status, seq_no)) {
+		LM_ERR("error creating request\n");
+		return;
+	}
+
+	int fd;
+	//TODO use pointer from session to get the connection
+	int ret = tcp_conn_get(conn->rcv.proto_reserved1, &conn->rcv.src_ip, conn->rcv.src_port, conn->rcv.proto, &conn, &fd);
+	if (ret < 0) {
+		LM_ERR("return code %d\n", ret);
+		goto free_req;
+	}
+	int n = tsend_stream(fd, resp->payload.s, resp->payload.len, 1000);
+	LM_INFO("send %d bytes\n", n);
+
+free_req:
+	pkg_free(resp);
+}
+
+uint32_t bind_session(smpp_bind_transceiver_t *body, struct tcp_connection *conn)
+{
+	smpp_session_t *session_it = *g_sessions;
+	for (session_it = *g_sessions; session_it; session_it = session_it->next) {
+		// TODO what if there is no \0 at the end, but they
+		// match
+		if (strncmp(session_it->bind.transceiver.system_id, body->system_id, MAX_SYSTEM_ID_LEN) != 0)
+			continue;
+		if (strncmp(session_it->bind.transceiver.password, body->password, MAX_PASSWORD_LEN) != 0) {
+			LM_WARN("wrong password when trying to bind \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
+			return ESME_RBINDFAIL;
+		}
+		if (session_it->session_type != SMPP_OUTBIND) {
+			LM_WARN("cannot receive bind command on ESME type interface for \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
+			return ESME_RBINDFAIL;
+		}
+		LM_INFO("successfully found \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
+		session_it->conn = conn;
+		conn->proto_data = session_it;
+		return ESME_ROK;
+	}
+	LM_WARN("no system_id matched \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
+	return ESME_RBINDFAIL;
+}
+
+void send_bind_resp(smpp_header_t *header, smpp_bind_transceiver_t *body, uint32_t command_status, struct tcp_connection *conn)
+{
+	if (!header || !body || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	smpp_bind_transceiver_resp_req_t *req;
+	uint32_t seq_no = header->sequence_number;
+	uint32_t command_id = header->command_id + 0x80000000; // transform command to resp command
+	if (build_bind_resp_request(&req, command_id, command_status, seq_no, conn)) {
+		LM_ERR("error creating request\n");
+		return;
+	}
+
+	int fd;
+	//TODO use pointer from session to get the connection
+	int ret = tcp_conn_get(conn->rcv.proto_reserved1, &conn->rcv.src_ip, conn->rcv.src_port, conn->rcv.proto, &conn, &fd);
+	if (ret < 0) {
+		LM_ERR("return code %d\n", ret);
+		goto free_req;
+	}
+	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	LM_INFO("send %d bytes\n", n);
+
+free_req:
+	pkg_free(req);
+}
+
+void handle_generic_nack_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received generic_nack command\n");
+}
+
+void handle_bind_receiver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received bind_receiver command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	smpp_bind_receiver_t body;
+	memset(&body, 0, sizeof(body));
+	parse_bind_receiver_body(&body, header, buffer);
+	uint32_t command_status = bind_session(&body, conn);
+	send_bind_resp(header, &body, command_status, conn);
+}
+
+void handle_bind_receiver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received bind_receiver_resp command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+}
+
+void handle_bind_transmitter_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received bind_transmitter command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	smpp_bind_transmitter_t body;
+	memset(&body, 0, sizeof(body));
+	parse_bind_transmitter_body(&body, header, buffer);
+	uint32_t command_status = bind_session(&body, conn);
+	send_bind_resp(header, &body, command_status, conn);
+}
+
+void handle_bind_transmitter_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received bind_transmitter_resp command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+}
+
+void handle_submit_or_deliver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	if (header->command_status) {
+		LM_ERR("Error in submit_sm %08x\n", header->command_status);
+		return;
+	}
+
+	smpp_submit_sm_t body;
+	memset(&body, 0, sizeof(body));
+	parse_submit_or_deliver_body(&body, header, buffer);
+	LM_DBG("Received SMPP message\n"
+			"FROM:\t%02x %02x %s\n"
+			"TO:\t%02x %02x %s\nLEN:\t%d\n%.*s\n",
+			body.source_addr_ton, body.source_addr_npi, body.source_addr,
+			body.dest_addr_ton, body.dest_addr_npi, body.destination_addr,
+			body.sm_length,
+			body.sm_length, body.short_message);
+	smpp_submit_sm_req_t req;
+	req.header = header;
+	req.body = &body;
+	req.optionals = NULL;
+	send_submit_or_deliver_resp(&req, conn);
+	recv_smpp_msg(header, &body, conn);
+}
+
+void handle_submit_or_deliver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	if (header->command_status) {
+		LM_ERR("Error in submit_sm_resp %08x\n", header->command_status);
+		return;
+	}
+
+	smpp_submit_sm_resp_t body;
+	memset(&body, 0, sizeof(body));
+	parse_submit_or_deliver_resp_body(&body, header, buffer);
+	LM_INFO("Successfully sent message \"%s\"\n", body.message_id);
+}
+
+void handle_submit_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received submit_sm command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	handle_submit_or_deliver_cmd(header, buffer, conn);
+}
+
+void handle_submit_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received submit_sm_resp command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+	handle_submit_or_deliver_resp_cmd(header, buffer, conn);
+}
+
+void handle_deliver_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received deliver_sm command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+
+	handle_submit_or_deliver_cmd(header, buffer, conn);
+}
+
+void handle_deliver_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received deliver_sm_resp command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+	handle_submit_or_deliver_resp_cmd(header, buffer, conn);
+}
+
+void handle_unbind_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received unbind_resp command\n");
+}
+
+void handle_bind_transceiver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received bind_transceiver command\n");
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+	smpp_bind_transceiver_t body;
+	memset(&body, 0, sizeof(body));
+	parse_bind_transceiver_body(&body, header, buffer);
+	uint32_t command_status = bind_session(&body, conn);
+	send_bind_resp(header, &body, command_status, conn);
+}
+
+void handle_bind_transceiver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	if (!header || !buffer || !conn) {
+		LM_ERR("NULL params\n");
+		return;
+	}
+	LM_DBG("Received bind_transceiver_resp command\n");
+	if (header->command_status) {
+		LM_ERR("Error in bind_transceiver_resp %08x\n", header->command_status);
+		return;
+	}
+	smpp_bind_transceiver_resp_t body;
+	memset(&body, 0, sizeof(body));
+	parse_bind_transceiver_resp_body(&body, header, buffer);
+	LM_INFO("Successfully bound transceiver \"%s\"\n", body.system_id);
+}
+void handle_data_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received data_sm command\n");
+}
+void handle_data_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received data_sm_resp command\n");
+}
+
+void handle_enquire_link_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received enquire_link command\n");
+}
+
+void handle_enquire_link_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+{
+	LM_DBG("Received enquire_link_resp command\n");
+}
+
+void handle_smpp_msg(char *buffer, struct tcp_connection *conn)
+{
+	smpp_header_t header;
+	smpp_parse_header(&header, buffer);
+	buffer += HEADER_SZ;
+
+	LM_DBG("Received SMPP command %08x\n", header.command_id);
+
+	switch (header.command_id) {
+		case GENERIC_NACK_CID:
+			handle_generic_nack_cmd(&header, buffer, conn);
+			break;
+		case BIND_RECEIVER_CID:
+			handle_bind_receiver_cmd(&header, buffer, conn);
+			break;
+		case BIND_RECEIVER_RESP_CID:
+			handle_bind_receiver_resp_cmd(&header, buffer, conn);
+			break;
+		case BIND_TRANSMITTER_RESP_CID:
+			handle_bind_transmitter_resp_cmd(&header, buffer, conn);
+			break;
+		case BIND_TRANSMITTER_CID:
+			handle_bind_transmitter_cmd(&header, buffer, conn);
+			break;
+		case SUBMIT_SM_CID:
+			handle_submit_sm_cmd(&header, buffer, conn);
+			break;
+		case SUBMIT_SM_RESP_CID:
+			handle_submit_sm_resp_cmd(&header, buffer, conn);
+			break;
+		case DELIVER_SM_CID:
+			handle_deliver_sm_cmd(&header, buffer, conn);
+			break;
+		case DELIVER_SM_RESP_CID:
+			handle_deliver_sm_resp_cmd(&header, buffer, conn);
+			break;
+		case UNBIND_RESP_CID:
+			handle_unbind_resp_cmd(&header, buffer, conn);
+			break;
+		case BIND_TRANSCEIVER_CID:
+			handle_bind_transceiver_cmd(&header, buffer, conn);
+			break;
+		case BIND_TRANSCEIVER_RESP_CID:
+			handle_bind_transceiver_resp_cmd(&header, buffer, conn);
+			break;
+		case DATA_SM_CID:
+			handle_data_sm_cmd(&header, buffer, conn);
+			break;
+		case DATA_SM_RESP_CID:
+			handle_data_sm_resp_cmd(&header, buffer, conn);
+			break;
+		case ENQUIRE_LINK_CID:
+			handle_enquire_link_cmd(&header, buffer, conn);
+			break;
+		case ENQUIRE_LINK_RESP_CID:
+			handle_enquire_link_resp_cmd(&header, buffer, conn);
+			break;
+		default:
+			LM_WARN("Unknown or unsupported command received %08X\n", header.command_id);
+	}
+}
+
+
+void send_submit_or_deliver_request(str *msg, str *src, str *dst,
+		smpp_session_t *session)
+{
+	/* TODO: fix this */
+	session = *g_sessions;
+
+	smpp_submit_sm_req_t *req;
+	LM_DBG("sending submit_sm\n");
+	LM_DBG("FROM: %.*s\n", src->len, src->s);
+	LM_DBG("TO: %.*s\n", dst->len, dst->s);
+	LM_DBG("MESSAGE: %.*s\n", msg->len, msg->s);
+
+	if (build_submit_or_deliver_request(&req, src, dst, msg, session)) {
+		LM_ERR("error creating submit_sm request\n");
+		return;
+	}
+	struct tcp_connection *conn;
+	int fd;
+	int ret = tcp_conn_get(0, &(*g_sessions)->ip, (*g_sessions)->port,
+			PROTO_SMPP, &conn, &fd);
+	if (ret < 0) {
+		LM_ERR("return code %d\n", ret);
+		goto free_req;
+	}
+	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	LM_INFO("send %d bytes\n", n);
+
+free_req:
+	pkg_free(req);
+}
+
+static void send_enquire_link_request(smpp_session_t *session)
+{
+	smpp_enquire_link_req_t *req;
+	if (build_enquire_link_request(&req, session)) {
+		LM_ERR("error creating enquire_link_sm request\n");
+		return;
+	}
+
+	struct tcp_connection *conn;
+	int fd;
+	int ret = tcp_conn_get(0, &(*g_sessions)->ip, (*g_sessions)->port,
+			PROTO_SMPP, &conn, &fd);
+	if (ret < 0) {
+		LM_ERR("return code %d\n", ret);
+		goto free_req;
+	}
+	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	LM_INFO("send %d bytes\n", n);
+
+free_req:
+	pkg_free(req);
+}
+
+static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn)
+{
+	static str msg_type = str_init("MESSAGE");
+
+	char hdrs[1024];
+	char *p = hdrs;
+	char src[128];
+	sprintf(src, "sip:%s@%s:%d", body->source_addr, ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
+	char dst[128];
+	sprintf(dst, "sip:%s@%s:%d", body->destination_addr, ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
+	p += sprintf(p, "Content-Type:text/plain\r\n");
+
+	str hdr_str;
+	hdr_str.s = hdrs;
+	hdr_str.len = p - hdrs;
+
+	str src_str;
+	src_str.s = src;
+	src_str.len = strlen(src);
+
+	str dst_str;
+	dst_str.s = dst;
+	dst_str.len = strlen(dst);
+
+	str body_str;
+	body_str.s = body->short_message;
+	body_str.len = body->sm_length;
+
+	tmb.t_request(&msg_type, /* Type of the message */
+		      &dst_str,            /* Request-URI */
+		      &dst_str,            /* To */
+		      &src_str,     /* From */
+		      &hdr_str,         /* Optional headers including CRLF */
+		      &body_str, /* Message body */
+		      &smpp_outbound_uri,
+		      /* outbound uri */
+		      NULL,
+		      NULL,
+		      NULL
+		     );
+	return 0;
+}
+
+int smpp_sessions_init(void)
+{
+	g_sessions = shm_malloc(sizeof(smpp_session_t*));
+	if (!g_sessions) {
+		LM_CRIT("failed to allocate shared memory for sessions pointer\n");
+		return -1;
+	}
+	return 0;
+}
+
+smpp_session_t *smpp_session_new(struct ip_addr *ip, int port, str *system_id,
+		str *password, str *system_type, int src_addr_ton, int src_addr_npi,
+		int dst_addr_ton, int dst_addr_npi, int stype)
+{
+	smpp_session_t *session;
+
+	session = shm_malloc(sizeof(smpp_session_t));
+
+	memset(session, 0, sizeof(smpp_session_t));
+
+	session->bind.transceiver.interface_version = SMPP_VERSION;
+	lock_init(&session->sequence_number_lock);
+	session->session_status = SMPP_UNKNOWN;
+	session->sequence_number = 0;
+
+	if (system_id->len > MAX_SYSTEM_ID_LEN) {
+		LM_INFO("system id %.*s is too long, trimming it to %d\n",
+				system_id->len, system_id->s, MAX_SYSTEM_ID_LEN);
+		system_id->len = MAX_SYSTEM_ID_LEN;
+	}
+	if (password->len > MAX_PASSWORD_LEN) {
+		LM_INFO("password for %.*s is too long, trimming it to %d\n",
+				system_id->len, system_id->s, MAX_PASSWORD_LEN);
+		password->len = MAX_PASSWORD_LEN;
+	}
+	if (system_type->len > MAX_SYSTEM_TYPE_LEN) {
+		LM_INFO("system type %.*s of %.*s is too long, trimming it to %d\n",
+				system_type->len, system_type->s, system_id->len,
+				system_id->s, MAX_SYSTEM_TYPE_LEN);
+		system_type->len = MAX_SYSTEM_TYPE_LEN;
+	}
+	memcpy(&session->ip, ip, sizeof(struct ip_addr));
+	memcpy(session->bind.transceiver.system_id, system_id->s, system_id->len);
+	memcpy(session->bind.transceiver.password, password->s, password->len);
+	memcpy(session->bind.transceiver.system_type, system_type->s, system_type->len);
+
+	session->port = port;
+	session->bind.transceiver.addr_ton = src_addr_ton;
+	session->bind.transceiver.addr_npi = src_addr_npi;
+	session->source_addr_ton = src_addr_ton;
+	session->source_addr_npi = src_addr_npi;
+	session->dest_addr_ton = dst_addr_ton;
+	session->dest_addr_npi = dst_addr_npi;
+	session->session_type = stype;
+
+	/* TODO: now link it to global list, but in the future, add it tmp list */
+	if (*g_sessions)
+		session->next = *g_sessions;
+	*g_sessions = session;
+	return session;
+}

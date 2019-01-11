@@ -42,9 +42,9 @@
 #include "../tm/tm_load.h"
 #include "../../parser/parse_from.h"
 
-#include "db.h"
 #include "proto_smpp.h"
 #include "utils.h"
+#include "db.h"
 
 extern int proto_tcp_read(struct tcp_connection* ,struct tcp_req* );
 
@@ -58,45 +58,12 @@ static int smpp_read_req(struct tcp_connection* conn, int* bytes_read);
 static int smpp_write_async_req(struct tcp_connection* con,int fd);
 static int smpp_conn_init(struct tcp_connection* c);
 static void smpp_conn_clean(struct tcp_connection* c);
-static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn);
 static int send_smpp_msg(struct sip_msg* msg);
-static void send_enquire_link_request(smpp_session_t *session);
-
-static void build_smpp_sessions_from_db(void);
-static void rpc_bind_sessions(int sender_id, void *param);
-static int register_enquire_link_timer(void);
-
-static uint32_t increment_sequence_number(smpp_session_t *session);
-
-void enquire_link(unsigned int ticks, void *param);
-
-/** TM bind */
-struct tm_binds tmb;
 
 static unsigned smpp_port = 2775;
-static smpp_session_t **g_sessions = NULL;
-static struct tcp_req smpp_current_req;
-
-char _ip_addr_A_buff[IP_ADDR_MAX_STR_SIZE];
-
-str msg_type = str_init("MESSAGE");
-
-str outbound_uri;
-
 
 str db_url = {NULL, 0};
 int db_mode = 0;			/* Database usage mode: 0 = no cache, 1 = cache */
-str smpp_table = str_init("smpp"); /* Name of smpp table */
-str ip_col = str_init("ip");       /* Name of ip address column */
-str port_col = str_init("port"); /* Name of port column */
-str system_id_col = str_init("system_id");
-str password_col = str_init("password");
-str system_type_col = str_init("system_type");
-str src_ton_col = str_init("src_ton");
-str src_npi_col = str_init("src_npi");
-str dst_ton_col = str_init("dst_ton");
-str dst_npi_col = str_init("dst_npi");
-str session_type_col = str_init("session_type");
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)smpp_init, 0, 0, 0, 0},
@@ -107,7 +74,8 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"smpp_port", INT_PARAM, &smpp_port},
 	{"db_url", STR_PARAM, &db_url},
-	{"outbound_uri", STR_PARAM, &outbound_uri},
+	{"outbound_uri", STR_PARAM, &smpp_outbound_uri},
+	/* TODO: columns */
 	{0, 0, 0}
 };
 
@@ -156,23 +124,24 @@ static int mod_init(void)
 	LM_INFO("initializing SMPP protocol\n");
 
 	db_url.len = strlen(db_url.s);
-	outbound_uri.len = strlen(outbound_uri.s);
+	smpp_outbound_uri.len = strlen(smpp_outbound_uri.s);
 
-	if (smpp_db_bind(&db_url) < 0) {
+	if (smpp_db_bind(&db_url) < 0)
 		return -1;
-	}
-	if (smpp_db_init(&db_url) < 0) {
+
+	if (smpp_db_init(&db_url) < 0)
 		return -1;
-	}
+
+	if (smpp_sessions_init() < 0)
+		return -1;
 
 	build_smpp_sessions_from_db();
 
 	smpp_db_close();
 
-	if (register_enquire_link_timer() < 0) {
-	    LM_ERR("could not register timer\n");
-	    return -1;
-	}
+	if (register_timer("enquire-link-timer", enquire_link, NULL, 5,
+			TIMER_FLAG_DELAY_ON_DELAY)<0 )
+		return -1;
 
 	/* load the TM API */
 	if (load_tm_api(&tmb)!=0) {
@@ -184,417 +153,8 @@ static int mod_init(void)
 	return 0;
 }
 
-static uint32_t get_payload_from_header(char *payload, smpp_header_t *header)
-{
-	if (!payload || !header) {
-		LM_ERR("NULL params");
-		return 0;
-	}
 
-	char *p = payload;
-	p += copy_u32(p, header->command_length);
-	p += copy_u32(p, header->command_id);
-	p += copy_u32(p, header->command_status);
-	p += copy_u32(p, header->sequence_number);
-
-	return p - payload;
-}
-
-static uint32_t get_payload_from_bind_transceiver_body(char *body, smpp_bind_transceiver_t *transceiver)
-{
-	if (!body || !transceiver) {
-		LM_ERR("NULL params");
-		return 0;
-	}
-
-	char *p = body;
-	p += copy_var_str(p, transceiver->system_id);
-	p += copy_var_str(p, transceiver->password);
-	p += copy_var_str(p, transceiver->system_type);
-	p += copy_u8(p, transceiver->interface_version);
-	p += copy_u8(p, transceiver->addr_ton);
-	p += copy_u8(p, transceiver->addr_npi);
-	p += copy_var_str(p, transceiver->address_range);
-
-	return p - body;
-}
-
-static uint32_t get_payload_from_bind_transceiver_resp_body(char *body, smpp_bind_transceiver_resp_t *transceiver_resp)
-{
-	if (!body || !transceiver_resp) {
-		LM_ERR("NULL params");
-		return 0;
-	}
-
-	char *p = body;
-	p += copy_var_str(p, transceiver_resp->system_id);
-
-	return p - body;
-}
-
-uint32_t get_payload_from_submit_sm_body(char *body, smpp_submit_sm_t *submit_sm)
-{
-	if (!body || !submit_sm) {
-		LM_ERR("NULL params");
-		return 0;
-	}
-
-	char *p = body;
-	p += copy_var_str(p, submit_sm->service_type);
-	p += copy_u8(p, submit_sm->source_addr_ton);
-	p += copy_u8(p, submit_sm->source_addr_npi);
-	p += copy_var_str(p, submit_sm->source_addr);
-	p += copy_u8(p, submit_sm->dest_addr_ton);
-	p += copy_u8(p, submit_sm->dest_addr_npi);
-	p += copy_var_str(p, submit_sm->destination_addr);
-	p += copy_u8(p, submit_sm->esm_class);
-	p += copy_u8(p, submit_sm->protocol_id);
-	p += copy_u8(p, submit_sm->protocol_flag);
-	p += copy_var_str(p, submit_sm->schedule_delivery_time);
-	p += copy_var_str(p, submit_sm->validity_period);
-	p += copy_u8(p, submit_sm->registered_delivery);
-	p += copy_u8(p, submit_sm->replace_if_present_flag);
-	p += copy_u8(p, submit_sm->data_coding);
-	p += copy_u8(p, submit_sm->sm_default_msg_id);
-	p += copy_u8(p, submit_sm->sm_length);
-	p += copy_fixed_str(p, submit_sm->short_message, submit_sm->sm_length);
-
-	return p - body;
-}
-
-uint32_t get_payload_from_deliver_sm_resp_body(char *body, smpp_deliver_sm_resp_t *deliver_sm_resp)
-{
-	if (!body || !deliver_sm_resp) {
-		LM_ERR("NULL params");
-		return 0;
-	}
-
-	body[0] = deliver_sm_resp->message_id[0];
-	return 1;
-}
-
-uint32_t get_payload_from_submit_sm_resp_body(char *body, smpp_submit_sm_resp_t *submit_sm_resp)
-{
-	if (!body || !submit_sm_resp) {
-		LM_ERR("NULL params");
-		return 0;
-	}
-
-	body[0] = submit_sm_resp->message_id[0];
-	return 1;
-}
-
-static int build_bind_transceiver_request(smpp_bind_transceiver_req_t **preq, smpp_session_t *session)
-{
-	if (!preq || !session) {
-		LM_ERR("NULL params");
-		goto err;
-	}
-
-	/* request allocations */
-	smpp_bind_transceiver_req_t *req = pkg_malloc(sizeof(*req));
-	*preq = req;
-	if (!req) {
-		LM_ERR("malloc error for request");
-		goto err;
-	}
-
-	smpp_header_t *header = pkg_malloc(sizeof(*header));
-	if (!header) {
-		LM_ERR("malloc error for header");
-		goto header_err;
-	}
-
-	smpp_bind_transceiver_t *body = pkg_malloc(sizeof(*body));
-	if (!body) {
-		LM_ERR("malloc error for body");
-		goto body_err;
-	}
-
-	req->payload.s = pkg_malloc(REQ_MAX_SZ(BIND_RECEIVER));
-	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
-		goto payload_err;
-	}
-
-	req->header = header;
-	req->body = body;
-
-	/* copy body fields */
-	smpp_bind_transceiver_t *transceiver = &session->bind.transceiver;
-	copy_var_str(body->system_id, transceiver->system_id);
-	copy_var_str(body->password, transceiver->password);
-	copy_var_str(body->system_type, transceiver->system_type);
-	body->interface_version = transceiver->interface_version;
-	body->addr_ton = transceiver->addr_ton;
-	body->addr_npi = transceiver->addr_npi;
-	copy_var_str(body->address_range, transceiver->address_range);
-
-	uint32_t body_len = get_payload_from_bind_transceiver_body(req->payload.s + HEADER_SZ, transceiver);
-	header->command_length = HEADER_SZ + body_len;
-	header->command_id = BIND_TRANSCEIVER_CID;
-	header->command_status = 0;
-	header->sequence_number = increment_sequence_number(session);
-
-	get_payload_from_header(req->payload.s, header);
-
-	req->payload.len = header->command_length;
-
-	return 0;
-
-payload_err:
-	pkg_free(body);
-body_err:
-	pkg_free(header);
-header_err:
-	pkg_free(req);
-err:
-	return -1;
-}
-
-static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint32_t command_id, uint32_t command_status, uint32_t seq_no, struct tcp_connection *conn)
-{
-	if (!preq || !conn) {
-		LM_ERR("NULL params");
-		goto err;
-	}
-
-	/* request allocations */
-	smpp_bind_transceiver_resp_req_t *req = pkg_malloc(sizeof(*req));
-	*preq = req;
-	if (!req) {
-		LM_ERR("malloc error for request");
-		goto err;
-	}
-
-	smpp_header_t *header = pkg_malloc(sizeof(*header));
-	if (!header) {
-		LM_ERR("malloc error for header");
-		goto header_err;
-	}
-
-	smpp_bind_transceiver_resp_t *body = pkg_malloc(sizeof(*body));
-	if (!body) {
-		LM_ERR("malloc error for body");
-		goto body_err;
-	}
-
-	req->payload.s = pkg_malloc(REQ_MAX_SZ(BIND_TRANSCEIVER_RESP));
-	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
-		goto payload_err;
-	}
-
-	req->header = header;
-	req->body = body;
-
-	/* copy body fields */
-	smpp_bind_transceiver_resp_t transceiver_resp;
-	copy_var_str(body->system_id, transceiver_resp.system_id);
-
-	uint32_t body_len = get_payload_from_bind_transceiver_resp_body(req->payload.s + HEADER_SZ, &transceiver_resp);
-	header->command_length = HEADER_SZ + body_len;
-	header->command_id = command_id;
-	header->command_status = command_status;
-	header->sequence_number = seq_no;
-
-	get_payload_from_header(req->payload.s, header);
-
-	req->payload.len = header->command_length;
-
-	return 0;
-
-payload_err:
-	pkg_free(body);
-body_err:
-	pkg_free(header);
-header_err:
-	pkg_free(req);
-err:
-	return -1;
-}
-
-static int build_enquire_link_request(smpp_enquire_link_req_t **preq, smpp_session_t *session)
-{
-	if (!preq || !session) {
-		LM_ERR("NULL param");
-		goto err;
-	}
-
-	/* request allocations */
-	smpp_enquire_link_req_t *req = pkg_malloc(sizeof(*req));
-	*preq = req;
-	if (!req) {
-		LM_ERR("malloc error for request");
-		goto err;
-	}
-
-	smpp_header_t *header = pkg_malloc(sizeof(*header));
-	if (!header) {
-		LM_ERR("malloc error for header");
-		goto header_err;
-	}
-
-	req->payload.s = pkg_malloc(REQ_MAX_SZ(ENQUIRE_LINK));
-	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
-		goto payload_err;
-	}
-
-	req->header = header;
-
-	header->command_length = HEADER_SZ;
-	header->command_id = ENQUIRE_LINK_CID;
-	header->command_status = 0;
-	header->sequence_number = increment_sequence_number(session);
-
-	get_payload_from_header(req->payload.s, header);
-
-	req->payload.len = header->command_length;
-
-	return 0;
-
-payload_err:
-	pkg_free(header);
-header_err:
-	pkg_free(req);
-err:
-	return -1;
-}
-
-static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, str *src, str *dst, str *message, smpp_session_t *session)
-{
-	if (!preq || !src || !dst || !message) {
-		LM_ERR("NULL params");
-		goto err;
-	}
-
-	/* request allocations */
-	smpp_submit_sm_req_t *req = pkg_malloc(sizeof(*req));
-	*preq = req;
-	if (!req) {
-		LM_ERR("malloc error for request");
-		goto err;
-	}
-
-	smpp_header_t *header = pkg_malloc(sizeof(*header));
-	if (!header) {
-		LM_ERR("malloc error for header");
-		goto header_err;
-	}
-
-	smpp_submit_sm_t *body = pkg_malloc(sizeof(*body));
-	if (!body) {
-		LM_ERR("malloc error for body");
-		goto body_err;
-	}
-
-	req->payload.s = pkg_malloc(REQ_MAX_SZ(SUBMIT_SM));
-	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
-		goto payload_err;
-	}
-
-	req->header = header;
-	req->body = body;
-
-	memset(body, 0, sizeof(*body));
-	body->source_addr_ton = session->source_addr_ton;
-	body->source_addr_npi = session->source_addr_npi;
-	strncpy(body->source_addr, src->s, src->len);
-	body->dest_addr_ton = session->dest_addr_ton;
-	body->dest_addr_npi = session->dest_addr_npi;
-	strncpy(body->destination_addr, dst->s, dst->len);
-	body->sm_length = message->len;
-	strncpy(body->short_message, message->s, message->len);
-
-	uint32_t body_len = get_payload_from_submit_sm_body(req->payload.s + HEADER_SZ, body);
-
-	header->command_length = HEADER_SZ + body_len;
-	if (session->session_type == SMPP_OUTBIND) // we are a SMSC
-	    header->command_id = DELIVER_SM_CID;
-	else // we are an ESME
-	    header->command_id = SUBMIT_SM_CID;
-	header->command_status = ESME_ROK;
-	header->sequence_number = increment_sequence_number(session);
-
-	get_payload_from_header(req->payload.s, header);
-
-	req->payload.len = header->command_length;
-
-	return 0;
-
-payload_err:
-	pkg_free(body);
-body_err:
-	pkg_free(header);
-header_err:
-	pkg_free(req);
-err:
-	return -1;
-}
-
-static int build_submit_or_deliver_resp_request(smpp_submit_sm_resp_req_t **preq, uint32_t command_id, uint32_t command_status, uint32_t sequence_number)
-{
-	if (!preq) {
-		LM_ERR("NULL param");
-		goto err;
-	}
-
-	/* request allocations */
-	smpp_submit_sm_resp_req_t *req = pkg_malloc(sizeof(*req));
-	*preq = req;
-	if (!req) {
-		LM_ERR("malloc error for request");
-		goto err;
-	}
-
-	smpp_header_t *header = pkg_malloc(sizeof(*header));
-	if (!header) {
-		LM_ERR("malloc error for header");
-		goto header_err;
-	}
-
-	smpp_submit_sm_resp_t *body = pkg_malloc(sizeof(*body));
-	if (!body) {
-		LM_ERR("malloc error for body");
-		goto body_err;
-	}
-
-	req->payload.s = pkg_malloc(REQ_MAX_SZ(SUBMIT_SM_RESP));
-	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
-		goto payload_err;
-	}
-
-	req->header = header;
-	req->body = body;
-
-	memset(body, 0, sizeof(*body));
-
-	uint32_t body_len = get_payload_from_submit_sm_resp_body(req->payload.s + HEADER_SZ, body);
-	header->command_length = HEADER_SZ + body_len;
-	header->command_id = command_id;
-	header->command_status = command_status;
-	header->sequence_number = sequence_number;
-
-	get_payload_from_header(req->payload.s, header);
-
-	req->payload.len = header->command_length;
-
-	return 0;
-
-payload_err:
-	pkg_free(body);
-body_err:
-	pkg_free(header);
-header_err:
-	pkg_free(req);
-err:
-	return -1;
-}
-
-static struct tcp_connection* smpp_sync_connect(struct socket_info* send_sock,
+struct tcp_connection* smpp_sync_connect(struct socket_info* send_sock,
 		union sockaddr_union* server, int *fd)
 {
 	int s;
@@ -637,168 +197,16 @@ error:
 	return 0;
 }
 
-static uint32_t increment_sequence_number(smpp_session_t *session)
-{
-	uint32_t seq_no;
-	lock_get(&session->sequence_number_lock);
-	seq_no = session->sequence_number++;
-	lock_release(&session->sequence_number_lock);
-	return seq_no;
-}
-
-void send_outbind(smpp_session_t *session)
-{
-	LM_INFO("sending outbind to esme \"%s\"\n", session->bind.outbind.system_id);
-}
-
-void send_bind(smpp_session_t *session)
-{
-	if (!session)
-		LM_ERR("NULL param\n");
-
-	LM_INFO("binding session with system_id \"%s\"\n", session->bind.transceiver.system_id);
-	smpp_bind_transceiver_req_t *req = NULL;
-
-	if (build_bind_transceiver_request(&req, session)) {
-		LM_ERR("error creating request\n");
-		return;
-	}
-
-	union sockaddr_union to;
-	if (init_su(&to, session->ip, session->port)) {
-		LM_ERR("error creating su from ipaddr and port\n");
-		goto free_req;
-	}
-	struct socket_info *send_socket = get_send_socket(NULL, &to, PROTO_SMPP);
-	if (!send_socket) {
-		LM_ERR("error getting send socket\n");
-		goto free_req;
-	}
-	union sockaddr_union server;
-	if (init_su(&server, session->ip, session->port)) {
-		LM_ERR("error creating su from ipaddr and port\n");
-		goto free_req;
-	}
-	int fd;
-	struct tcp_connection *conn = smpp_sync_connect(send_socket, &server, &fd);
-	session->conn = conn;
-	conn->proto_data = session;
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
-
-	LM_INFO("received connection with return code %d\n", n);
-
-free_req:
-	pkg_free(req);
-}
-
-static void rpc_bind_sessions(int sender_id, void *param)
-{
-	smpp_session_t *session_it = (smpp_session_t*)param;
-	while (session_it) {
-		if (session_it->session_type == SMPP_OUTBIND)
-			send_outbind(session_it);
-		else
-			send_bind(session_it);
-		session_it = session_it->next;
-	}
-}
-
 static int child_init(int rank)
 {
 	LM_INFO("initializing child #%d\n", rank);
 
-	if ((rank == 1) && ipc_dispatch_rpc(rpc_bind_sessions, *g_sessions) < 0) {
+	if ((rank == 1) && ipc_dispatch_rpc(rpc_bind_sessions, NULL) < 0) {
 		LM_CRIT("failed to RPC the data loading\n");
 		return -1;
 	}
 
 	return 0;
-}
-
-static void build_smpp_sessions_from_db(void)
-{
-	db_key_t cols[10];
-	db_res_t* res = NULL;
-	db_row_t* row;
-	db_val_t* val;
-
-	int i;
-
-	cols[0] = &ip_col;
-	cols[1] = &port_col;
-	cols[2] = &system_id_col;
-	cols[3] = &password_col;
-	cols[4] = &system_type_col;
-	cols[5] = &src_ton_col;
-	cols[6] = &src_npi_col;
-	cols[7] = &dst_ton_col;
-	cols[8] = &dst_npi_col;
-	cols[9] = &session_type_col;
-
-	if (smpp_query(&smpp_table, cols, 10, &res) < 0) {
-		return;
-	}
-
-	row = RES_ROWS(res);
-
-	LM_DBG("Number of rows in domain table: %d\n", RES_ROW_N(res));
-
-	g_sessions = shm_malloc(sizeof(smpp_session_t*));
-	if (!g_sessions) {
-		LM_CRIT("failed to allocate shared memory for sessions pointer\n");
-		return;
-	}
-	smpp_session_t *sessions = shm_malloc(RES_ROW_N(res) * sizeof(smpp_session_t));
-	if (!sessions) {
-		LM_CRIT("failed to allocate shared memory for session\n");
-		return;
-	}
-	memset(sessions, 0, RES_ROW_N(res) * sizeof(smpp_session_t));
-	for (i = 0; i < RES_ROW_N(res); i++) {
-		val = ROW_VALUES(row + i);
-		sessions[i].session_status = SMPP_UNKNOWN;
-		char *ip = strdup(VAL_STRING(val));
-		str ip_str = {ip, strlen(ip)};
-		sessions[i].ip = str2ip(&ip_str);
-		sessions[i].port = VAL_INT(val + 1);
-		strncpy(sessions[i].bind.transceiver.system_id, VAL_STRING(val + 2), 16);
-		strncpy(sessions[i].bind.transceiver.password, VAL_STRING(val + 3), 16);
-		strncpy(sessions[i].bind.transceiver.system_type, VAL_STRING(val + 4), 16);
-		sessions[i].bind.transceiver.interface_version = SMPP_VERSION;
-		sessions[i].bind.transceiver.addr_ton = VAL_INT(val + 5);
-		sessions[i].bind.transceiver.addr_npi = VAL_INT(val + 6);
-		sessions[i].source_addr_ton = VAL_INT(val + 5);
-		sessions[i].source_addr_npi = VAL_INT(val + 6);
-		sessions[i].dest_addr_ton = VAL_INT(val + 7);
-		sessions[i].dest_addr_npi = VAL_INT(val + 8);
-		sessions[i].session_type = VAL_INT(val + 9);
-		lock_init(&sessions[i].sequence_number_lock);
-		sessions[i].sequence_number = 0;
-		sessions[i].conn = NULL;
-		if (i != 0)
-			sessions[i-1].next = &sessions[i];
-
-	}
-	*g_sessions = sessions;
-	smpp_free_results(res);
-}
-
-static int register_enquire_link_timer(void)
-{
-	if (register_timer("enquire-link-timer", enquire_link, NULL, 5,
-	TIMER_FLAG_DELAY_ON_DELAY)<0 ) {
-		return -1;
-	}
-	return 0;
-}
-
-void enquire_link(unsigned int ticks, void *params)
-{
-	smpp_session_t *session_it = *g_sessions;
-	while (session_it) {
-	    send_enquire_link_request(session_it);
-	    session_it = session_it->next;
-	}
 }
 
 static int smpp_conn_init(struct tcp_connection* c)
@@ -827,464 +235,9 @@ static int smpp_send(struct socket_info* send_sock,
 	return 0;
 }
 
-static void smpp_parse_headers(struct tcp_req *req)
-{
-	if (req->content_len == 0 && req->pos - req->buf < HEADER_SZ){
-		req->parsed = req->pos;
-		return;
-	}
-	//validity ? TODO
-
-	uint32_t *px = (uint32_t*)req->buf;
-	req->content_len = ntohl(*px);
-	if (req->pos - req->buf == req->content_len) {
-		LM_DBG("received a complete message\n");
-		req->complete = 1;
-		req->parsed = req->buf +req->content_len;
-	} else if (req->pos - req->buf > req->content_len) {
-		LM_DBG("received more then a message\n");
-		req->complete = 1;
-		req->parsed = req->buf + req->content_len;
-	} else {
-		LM_DBG("received only part of a message\n");
-		req->parsed = req->pos;
-	}
-}
-
-
-static void smpp_parse_header(smpp_header_t *header, char *buffer)
-{
-	if (!header || !buffer)
-		LM_ERR("NULL params");
-
-	uint32_t *p = (uint32_t*)buffer;
-
-	header->command_length = ntohl(*p++);
-	header->command_id = ntohl(*p++);
-	header->command_status = ntohl(*p++);
-	header->sequence_number = ntohl(*p++);
-}
-
-void parse_submit_or_deliver_body(smpp_submit_sm_t *body, smpp_header_t *header, char *buffer)
-{
-	if (!body || !header || !buffer) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	char *p = buffer;
-	p += copy_var_str(body->service_type, p);
-	body->source_addr_ton = *p++;
-	body->source_addr_npi = *p++;
-	p += copy_var_str(body->source_addr, p);
-	body->dest_addr_ton = *p++;
-	body->dest_addr_npi = *p++;
-	p += copy_var_str(body->destination_addr, p);
-	body->esm_class = *p++;
-	body->protocol_id = *p++;
-	body->protocol_flag = *p++;
-	body->schedule_delivery_time[0] = *p++;
-	body->validity_period[0] = *p++;
-	body->registered_delivery = *p++;
-	body->replace_if_present_flag = *p++;
-	body->data_coding = *p++;
-	body->sm_default_msg_id = *p++;
-	body->sm_length = *p++;
-	copy_fixed_str(body->short_message, p, body->sm_length);
-}
-
-void parse_bind_receiver_body(smpp_bind_receiver_t *body, smpp_header_t *header, char *buffer)
-{
-	if (!body || !header || !buffer) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	char *p = buffer;
-	p += copy_var_str(body->system_id, p);
-	p += copy_var_str(body->password, p);
-	p += copy_var_str(body->system_type, p);
-	body->interface_version = *p++;
-	body->addr_ton = *p++;
-	body->addr_npi = *p++;
-	p += copy_var_str(body->address_range, p);
-}
-
-void parse_bind_receiver_resp_body(smpp_bind_receiver_resp_t *body, smpp_header_t *header, char *buffer)
-{
-	if (!body || !header || !buffer) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	copy_var_str(body->system_id, buffer);
-}
-
-void parse_bind_transmitter_body(smpp_bind_transmitter_t *body, smpp_header_t *header, char *buffer)
-{
-	parse_bind_receiver_body((smpp_bind_receiver_t*)body, header, buffer);
-}
-
-void parse_bind_transmitter_resp_body(smpp_bind_transmitter_resp_t *body, smpp_header_t *header, char *buffer)
-{
-	parse_bind_receiver_resp_body((smpp_bind_receiver_resp_t*)body, header, buffer);
-}
-
-void parse_bind_transceiver_body(smpp_bind_transceiver_t *body, smpp_header_t *header, char *buffer)
-{
-	parse_bind_receiver_body((smpp_bind_receiver_t*)body, header, buffer);
-}
-
-void parse_bind_transceiver_resp_body(smpp_bind_transceiver_resp_t *body, smpp_header_t *header, char *buffer)
-{
-	parse_bind_receiver_resp_body((smpp_bind_receiver_resp_t*)body, header, buffer);
-}
-
-void parse_submit_or_deliver_resp_body(smpp_submit_sm_resp_t *body, smpp_header_t *header, char *buffer)
-{
-	if (!body || !header || !buffer) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	copy_var_str(body->message_id, buffer);
-}
-
-void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, struct tcp_connection *conn)
-{
-	if (!req || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	smpp_submit_sm_resp_req_t *resp;
-	uint32_t command_status = ESME_ROK;
-	uint32_t seq_no = req->header->sequence_number;
-	uint32_t command_id = req->header->command_id + 0x80000000; // transform command to resp command
-	if (build_submit_or_deliver_resp_request(&resp, command_id, command_status, seq_no)) {
-		LM_ERR("error creating request\n");
-		return;
-	}
-
-	int fd;
-	//TODO use pointer from session to get the connection
-	int ret = tcp_conn_get(conn->rcv.proto_reserved1, &conn->rcv.src_ip, conn->rcv.src_port, conn->rcv.proto, &conn, &fd);
-	if (ret < 0) {
-		LM_ERR("return code %d\n", ret);
-		goto free_req;
-	}
-	int n = tsend_stream(fd, resp->payload.s, resp->payload.len, 1000);
-	LM_INFO("send %d bytes\n", n);
-
-free_req:
-	pkg_free(resp);
-}
-
-uint32_t bind_session(smpp_bind_transceiver_t *body, struct tcp_connection *conn)
-{
-	smpp_session_t *session_it = *g_sessions;
-	for (session_it = *g_sessions; session_it; session_it = session_it->next) {
-		// TODO what if there is no \0 at the end, but they
-		// match
-		if (strncmp(session_it->bind.transceiver.system_id, body->system_id, MAX_SYSTEM_ID_LEN) != 0)
-			continue;
-		if (strncmp(session_it->bind.transceiver.password, body->password, MAX_PASSWORD_LEN) != 0) {
-			LM_WARN("wrong password when trying to bind \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
-			return ESME_RBINDFAIL;
-		}
-		if (session_it->session_type != SMPP_OUTBIND) {
-			LM_WARN("cannot receive bind command on ESME type interface for \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
-			return ESME_RBINDFAIL;
-		}
-		LM_INFO("successfully found \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
-		session_it->conn = conn;
-		conn->proto_data = session_it;
-		return ESME_ROK;
-	}
-	LM_WARN("no system_id matched \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
-	return ESME_RBINDFAIL;
-}
-
-void send_bind_resp(smpp_header_t *header, smpp_bind_transceiver_t *body, uint32_t command_status, struct tcp_connection *conn)
-{
-	if (!header || !body || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	smpp_bind_transceiver_resp_req_t *req;
-	uint32_t seq_no = header->sequence_number;
-	uint32_t command_id = header->command_id + 0x80000000; // transform command to resp command
-	if (build_bind_resp_request(&req, command_id, command_status, seq_no, conn)) {
-		LM_ERR("error creating request\n");
-		return;
-	}
-
-	int fd;
-	//TODO use pointer from session to get the connection
-	int ret = tcp_conn_get(conn->rcv.proto_reserved1, &conn->rcv.src_ip, conn->rcv.src_port, conn->rcv.proto, &conn, &fd);
-	if (ret < 0) {
-		LM_ERR("return code %d\n", ret);
-		goto free_req;
-	}
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
-	LM_INFO("send %d bytes\n", n);
-
-free_req:
-	pkg_free(req);
-}
-
-void handle_generic_nack_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received generic_nack command\n");
-}
-
-void handle_bind_receiver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received bind_receiver command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	smpp_bind_receiver_t body;
-	memset(&body, 0, sizeof(body));
-	parse_bind_receiver_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, conn);
-	send_bind_resp(header, &body, command_status, conn);
-}
-
-void handle_bind_receiver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received bind_receiver_resp command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-}
-
-void handle_bind_transmitter_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received bind_transmitter command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	smpp_bind_transmitter_t body;
-	memset(&body, 0, sizeof(body));
-	parse_bind_transmitter_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, conn);
-	send_bind_resp(header, &body, command_status, conn);
-}
-
-void handle_bind_transmitter_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received bind_transmitter_resp command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-}
-
-void handle_submit_or_deliver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	if (header->command_status) {
-		LM_ERR("Error in submit_sm %08x\n", header->command_status);
-		return;
-	}
-
-	smpp_submit_sm_t body;
-	memset(&body, 0, sizeof(body));
-	parse_submit_or_deliver_body(&body, header, buffer);
-	LM_DBG("Received SMPP message\n"
-			"FROM:\t%02x %02x %s\n"
-			"TO:\t%02x %02x %s\nLEN:\t%d\n%.*s\n",
-			body.source_addr_ton, body.source_addr_npi, body.source_addr,
-			body.dest_addr_ton, body.dest_addr_npi, body.destination_addr,
-			body.sm_length,
-			body.sm_length, body.short_message);
-	smpp_submit_sm_req_t req;
-	req.header = header;
-	req.body = &body;
-	req.optionals = NULL;
-	send_submit_or_deliver_resp(&req, conn);
-	recv_smpp_msg(header, &body, conn);
-}
-
-void handle_submit_or_deliver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	if (header->command_status) {
-		LM_ERR("Error in submit_sm_resp %08x\n", header->command_status);
-		return;
-	}
-
-	smpp_submit_sm_resp_t body;
-	memset(&body, 0, sizeof(body));
-	parse_submit_or_deliver_resp_body(&body, header, buffer);
-	LM_INFO("Successfully sent message \"%s\"\n", body.message_id);
-}
-
-void handle_submit_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received submit_sm command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	handle_submit_or_deliver_cmd(header, buffer, conn);
-}
-
-void handle_submit_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received submit_sm_resp command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-	handle_submit_or_deliver_resp_cmd(header, buffer, conn);
-}
-
-void handle_deliver_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received deliver_sm command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-
-	handle_submit_or_deliver_cmd(header, buffer, conn);
-}
-
-void handle_deliver_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received deliver_sm_resp command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-	handle_submit_or_deliver_resp_cmd(header, buffer, conn);
-}
-
-void handle_unbind_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received unbind_resp command\n");
-}
-
-void handle_bind_transceiver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received bind_transceiver command\n");
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-	smpp_bind_transceiver_t body;
-	memset(&body, 0, sizeof(body));
-	parse_bind_transceiver_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, conn);
-	send_bind_resp(header, &body, command_status, conn);
-}
-
-void handle_bind_transceiver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	if (!header || !buffer || !conn) {
-		LM_ERR("NULL params\n");
-		return;
-	}
-	LM_DBG("Received bind_transceiver_resp command\n");
-	if (header->command_status) {
-		LM_ERR("Error in bind_transceiver_resp %08x\n", header->command_status);
-		return;
-	}
-	smpp_bind_transceiver_resp_t body;
-	memset(&body, 0, sizeof(body));
-	parse_bind_transceiver_resp_body(&body, header, buffer);
-	LM_INFO("Successfully bound transceiver \"%s\"\n", body.system_id);
-}
-void handle_data_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received data_sm command\n");
-}
-void handle_data_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received data_sm_resp command\n");
-}
-
-void handle_enquire_link_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received enquire_link command\n");
-}
-
-void handle_enquire_link_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
-{
-	LM_DBG("Received enquire_link_resp command\n");
-}
-
-static void handle_smpp_msg(char *buffer, struct tcp_connection *conn)
-{
-	smpp_header_t header;
-	smpp_parse_header(&header, buffer);
-	buffer += HEADER_SZ;
-
-	LM_DBG("Received SMPP command %08x\n", header.command_id);
-
-	switch (header.command_id) {
-		case GENERIC_NACK_CID:
-			handle_generic_nack_cmd(&header, buffer, conn);
-			break;
-		case BIND_RECEIVER_CID:
-			handle_bind_receiver_cmd(&header, buffer, conn);
-			break;
-		case BIND_RECEIVER_RESP_CID:
-			handle_bind_receiver_resp_cmd(&header, buffer, conn);
-			break;
-		case BIND_TRANSMITTER_RESP_CID:
-			handle_bind_transmitter_resp_cmd(&header, buffer, conn);
-			break;
-		case BIND_TRANSMITTER_CID:
-			handle_bind_transmitter_cmd(&header, buffer, conn);
-			break;
-		case SUBMIT_SM_CID:
-			handle_submit_sm_cmd(&header, buffer, conn);
-			break;
-		case SUBMIT_SM_RESP_CID:
-			handle_submit_sm_resp_cmd(&header, buffer, conn);
-			break;
-		case DELIVER_SM_CID:
-			handle_deliver_sm_cmd(&header, buffer, conn);
-			break;
-		case DELIVER_SM_RESP_CID:
-			handle_deliver_sm_resp_cmd(&header, buffer, conn);
-			break;
-		case UNBIND_RESP_CID:
-			handle_unbind_resp_cmd(&header, buffer, conn);
-			break;
-		case BIND_TRANSCEIVER_CID:
-			handle_bind_transceiver_cmd(&header, buffer, conn);
-			break;
-		case BIND_TRANSCEIVER_RESP_CID:
-			handle_bind_transceiver_resp_cmd(&header, buffer, conn);
-			break;
-		case DATA_SM_CID:
-			handle_data_sm_cmd(&header, buffer, conn);
-			break;
-		case DATA_SM_RESP_CID:
-			handle_data_sm_resp_cmd(&header, buffer, conn);
-			break;
-		case ENQUIRE_LINK_CID:
-			handle_enquire_link_cmd(&header, buffer, conn);
-			break;
-		case ENQUIRE_LINK_RESP_CID:
-			handle_enquire_link_resp_cmd(&header, buffer, conn);
-			break;
-		default:
-			LM_WARN("Unknown or unsupported command received %08X\n", header.command_id);
-	}
-}
-
+static struct tcp_req smpp_current_req;
 static int smpp_handle_req(struct tcp_req *req,
-							struct tcp_connection *con, int _max_msg_chunks)
+		struct tcp_connection *con, int _max_msg_chunks)
 {
 	long size;
 
@@ -1319,7 +272,6 @@ static int smpp_handle_req(struct tcp_req *req,
 		/* give the message to the registered functions */
 		handle_smpp_msg(req->buf, con);
 
-
 		if (!size && req != &smpp_current_req) {
 			/* if we no longer need this tcp_req
 			 * we can free it now */
@@ -1338,6 +290,30 @@ static int smpp_handle_req(struct tcp_req *req,
 	} 
 
 	return 0;
+}
+
+static inline void smpp_parse_headers(struct tcp_req *req)
+{
+	uint32_t *px = (uint32_t*)req->buf;
+
+	if (req->content_len == 0 && req->pos - req->buf < HEADER_SZ){
+		req->parsed = req->pos;
+		return;
+	}
+
+	req->content_len = ntohl(*px);
+	if (req->pos - req->buf == req->content_len) {
+		LM_DBG("received a complete message\n");
+		req->complete = 1;
+		req->parsed = req->buf +req->content_len;
+	} else if (req->pos - req->buf > req->content_len) {
+		LM_DBG("received more then a message\n");
+		req->complete = 1;
+		req->parsed = req->buf + req->content_len;
+	} else {
+		LM_DBG("received only part of a message\n");
+		req->parsed = req->pos;
+	}
 }
 
 static int smpp_read_req(struct tcp_connection* con, int* bytes_read)
@@ -1420,103 +396,15 @@ static int smpp_write_async_req(struct tcp_connection* con,int fd)
 	return 0;
 }
 
-
-void send_submit_or_deliver_request(str *msg, str *src, str *dst, smpp_session_t *session)
-{
-	smpp_submit_sm_req_t *req;
-	LM_INFO("sending submit_sm\n");
-	LM_INFO("FROM: %.*s\n", src->len, src->s);
-	LM_INFO("TO: %.*s\n", dst->len, dst->s);
-	LM_INFO("MESSAGE: %.*s\n", msg->len, msg->s);
-	if (build_submit_or_deliver_request(&req, src, dst, msg, session)) {
-		LM_ERR("error creating submit_sm request\n");
-		return;
-	}
-	struct tcp_connection *conn;
-	int fd;
-	int ret = tcp_conn_get(0, (*g_sessions)->ip, (*g_sessions)->port, PROTO_SMPP, &conn, &fd);
-	if (ret < 0) {
-		LM_ERR("return code %d\n", ret);
-		goto free_req;
-	}
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
-	LM_INFO("send %d bytes\n", n);
-
-free_req:
-	pkg_free(req);
-}
-
-static void send_enquire_link_request(smpp_session_t *session)
-{
-	smpp_enquire_link_req_t *req;
-	if (build_enquire_link_request(&req, session)) {
-		LM_ERR("error creating enquire_link_sm request\n");
-		return;
-	}
-
-	struct tcp_connection *conn;
-	int fd;
-	int ret = tcp_conn_get(0, (*g_sessions)->ip, (*g_sessions)->port, PROTO_SMPP, &conn, &fd);
-	if (ret < 0) {
-		LM_ERR("return code %d\n", ret);
-		goto free_req;
-	}
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
-	LM_INFO("send %d bytes\n", n);
-
-free_req:
-	pkg_free(req);
-}
-
 static int send_smpp_msg(struct sip_msg *msg)
 {
-	LM_INFO("send_smpp_msg called\n");
+	str body;
 	if(msg->parsed_uri_ok==0)
 	    parse_sip_msg_uri(msg);
 
-	str body;
 	get_body(msg, &body);
-	send_submit_or_deliver_request(&body, &parse_from_uri(msg)->user, &msg->parsed_uri.user, *g_sessions);
+	send_submit_or_deliver_request(&body, &parse_from_uri(msg)->user,
+			&msg->parsed_uri.user, /* TODO: find session */NULL);
 	return 0;
 }
 
-static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn)
-{
-	char hdrs[1024];
-	char *p = hdrs;
-	char src[128];
-	sprintf(src, "sip:%s@%s:%d", body->source_addr, ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
-	char dst[128];
-	sprintf(dst, "sip:%s@%s:%d", body->destination_addr, ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
-	p += sprintf(p, "Content-Type:text/plain\r\n");
-
-	str hdr_str;
-	hdr_str.s = hdrs;
-	hdr_str.len = p - hdrs;
-
-	str src_str;
-	src_str.s = src;
-	src_str.len = strlen(src);
-
-	str dst_str;
-	dst_str.s = dst;
-	dst_str.len = strlen(dst);
-
-	str body_str;
-	body_str.s = body->short_message;
-	body_str.len = body->sm_length;
-
-	tmb.t_request(&msg_type, /* Type of the message */
-		      &dst_str,            /* Request-URI */
-		      &dst_str,            /* To */
-		      &src_str,     /* From */
-		      &hdr_str,         /* Optional headers including CRLF */
-		      &body_str, /* Message body */
-		      &outbound_uri,
-		      /* outbound uri */
-		      NULL,
-		      NULL,
-		      NULL
-		     );
-	return 0;
-}

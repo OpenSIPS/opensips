@@ -25,6 +25,19 @@
 #include "../../db/db.h"
 #include "../../str.h"
 
+extern str smpp_table;
+extern str smpp_ip_col;
+extern str smpp_port_col;
+extern str smpp_system_id_col;
+extern str smpp_password_col;
+extern str smpp_system_type_col;
+extern str smpp_src_ton_col;
+extern str smpp_src_npi_col;
+extern str smpp_dst_ton_col;
+extern str smpp_dst_npi_col;
+extern str smpp_session_type_col;
+extern str smpp_outbound_uri;
+
 int smpp_db_bind(const str *db_url);
 int smpp_db_init(const str *db_url);
 int smpp_query(const str *smpp_table, db_key_t *cols, int col_nr, db_res_t **res);
