@@ -29,6 +29,7 @@ static db_con_t* smpp_db_handle;
 static db_func_t smpp_dbf;
 
 str smpp_table = str_init("smpp"); /* Name of smpp table */
+str smpp_name_col = str_init("name"); /* Name of the SMSC table */
 str smpp_ip_col = str_init("ip");       /* Name of ip address column */
 str smpp_port_col = str_init("port"); /* Name of port column */
 str smpp_system_id_col = str_init("system_id");
@@ -94,104 +95,128 @@ void smpp_db_close(void)
 void build_smpp_sessions_from_db(void)
 {
 	struct ip_addr *ip;
-	db_key_t cols[10];
+	db_key_t cols[11];
 	db_res_t* res = NULL;
 	db_row_t* row;
 	db_val_t* val;
 	smpp_session_t *session;
-	str ip_s, system_s, pass_s, type_s;
+	str ip_s, system_s, pass_s, type_s, name_s;
 
 	int i;
 
-	cols[0] = &smpp_ip_col;
-	cols[1] = &smpp_port_col;
-	cols[2] = &smpp_system_id_col;
-	cols[3] = &smpp_password_col;
-	cols[4] = &smpp_system_type_col;
-	cols[5] = &smpp_src_ton_col;
-	cols[6] = &smpp_src_npi_col;
-	cols[7] = &smpp_dst_ton_col;
-	cols[8] = &smpp_dst_npi_col;
-	cols[9] = &smpp_session_type_col;
+	cols[0] = &smpp_name_col;
+	cols[1] = &smpp_ip_col;
+	cols[2] = &smpp_port_col;
+	cols[3] = &smpp_system_id_col;
+	cols[4] = &smpp_password_col;
+	cols[5] = &smpp_system_type_col;
+	cols[6] = &smpp_src_ton_col;
+	cols[7] = &smpp_src_npi_col;
+	cols[8] = &smpp_dst_ton_col;
+	cols[9] = &smpp_dst_npi_col;
+	cols[10] = &smpp_session_type_col;
 
-	if (smpp_query(&smpp_table, cols, 10, &res) < 0)
+	if (smpp_query(&smpp_table, cols, 11, &res) < 0)
 		return;
 
 	row = RES_ROWS(res);
 
-	LM_DBG("Number of rows in domain table: %d\n", RES_ROW_N(res));
+	LM_DBG("Number of rows in %.*s table: %d\n",
+			smpp_table.len, smpp_table.s, RES_ROW_N(res));
 
 	for (i = 0; i < RES_ROW_N(res); i++) {
 		val = ROW_VALUES(row + i);
+
 		if (VAL_TYPE(val) == DB_STRING) {
-			ip_s.s = (char *)VAL_STRING(val);
-			ip_s.len = strlen(ip_s.s);
+			name_s.s = (char *)VAL_STRING(val);
+			name_s.len = strlen(name_s.s);
 		} else if (VAL_TYPE(val) == DB_STR) {
-			ip_s = VAL_STR(val);
+			name_s = VAL_STR(val);
 		} else {
-			LM_ERR("invalid column type %d for ip (row %d)\n", VAL_TYPE(val), i);
+			LM_ERR("invalid column type %d for name (row %d)\n", VAL_TYPE(val), i);
+			continue;
+		}
+		if (VAL_TYPE(val+ 1) == DB_STRING) {
+			ip_s.s = (char *)VAL_STRING(val + 1);
+			ip_s.len = strlen(ip_s.s);
+		} else if (VAL_TYPE(val + 1) == DB_STR) {
+			ip_s = VAL_STR(val + 1);
+		} else {
+			LM_ERR("invalid column type %d for ip (row %d, %.*s)\n",
+					VAL_TYPE(val + 1), i, name_s.len, name_s.s);
 			continue;
 		}
 		ip = str2ip(&ip_s);
 		if (!ip) {
-			LM_ERR("Invalid IP [%.*s] for row %d\n", ip_s.len, ip_s.s, i);
+			LM_ERR("Invalid IP [%.*s] for row %d, %.*s\n",
+					ip_s.len, ip_s.s, i, name_s.len, name_s.s);
 		}
-		if (VAL_TYPE(val + 1) != DB_INT) {
-			LM_ERR("invalid column type %d for port (row %d)\n", VAL_TYPE(val + 1), i);
-			continue;
-		}
-		if (VAL_TYPE(val + 2) == DB_STRING) {
-			system_s.s = (char *)VAL_STRING(val + 2);
-			system_s.len = strlen(system_s.s);
-		} else if (VAL_TYPE(val + 2) == DB_STR) {
-			system_s = VAL_STR(val + 2);
-		} else {
-			LM_ERR("invalid column type %d for system id (row %d)\n", VAL_TYPE(val + 2), i);
+		if (VAL_TYPE(val + 2) != DB_INT) {
+			LM_ERR("invalid column type %d for port (row %d, %.*s)\n",
+					VAL_TYPE(val + 2), i, name_s.len, name_s.s);
 			continue;
 		}
 		if (VAL_TYPE(val + 3) == DB_STRING) {
-			pass_s.s = (char *)VAL_STRING(val + 3);
-			pass_s.len = strlen(pass_s.s);
+			system_s.s = (char *)VAL_STRING(val + 3);
+			system_s.len = strlen(system_s.s);
 		} else if (VAL_TYPE(val + 3) == DB_STR) {
-			pass_s = VAL_STR(val + 3);
+			system_s = VAL_STR(val + 3);
 		} else {
-			LM_ERR("invalid column type %d for password (row %d)\n", VAL_TYPE(val + 3), i);
+			LM_ERR("invalid column type %d for system id (row %d, %.*s)\n",
+					VAL_TYPE(val + 3), i, name_s.len, name_s.s);
 			continue;
 		}
 		if (VAL_TYPE(val + 4) == DB_STRING) {
-			type_s.s = (char *)VAL_STRING(val + 4);
-			type_s.len = strlen(type_s.s);
+			pass_s.s = (char *)VAL_STRING(val + 4);
+			pass_s.len = strlen(pass_s.s);
 		} else if (VAL_TYPE(val + 4) == DB_STR) {
-			type_s = VAL_STR(val + 4);
+			pass_s = VAL_STR(val + 4);
 		} else {
-			LM_ERR("invalid column type %d for password (row %d)\n", VAL_TYPE(val + 4), i);
+			LM_ERR("invalid column type %d for password (row %d, %.*s)\n",
+					VAL_TYPE(val + 4), i, name_s.len, name_s.s);
 			continue;
 		}
-		if (VAL_TYPE(val + 5) != DB_INT) {
-			LM_ERR("invalid column type %d for src ton (row %d)\n", VAL_TYPE(val + 5), i);
+		if (VAL_TYPE(val + 5) == DB_STRING) {
+			type_s.s = (char *)VAL_STRING(val + 5);
+			type_s.len = strlen(type_s.s);
+		} else if (VAL_TYPE(val + 5) == DB_STR) {
+			type_s = VAL_STR(val + 5);
+		} else {
+			LM_ERR("invalid column type %d for password (row %d, %.*s)\n",
+					VAL_TYPE(val + 5), i, name_s.len, name_s.s);
 			continue;
 		}
 		if (VAL_TYPE(val + 6) != DB_INT) {
-			LM_ERR("invalid column type %d for src npi (row %d)\n", VAL_TYPE(val + 6), i);
+			LM_ERR("invalid column type %d for src ton (row %d, %.*s)\n",
+					VAL_TYPE(val + 6), i, name_s.len, name_s.s);
 			continue;
 		}
 		if (VAL_TYPE(val + 7) != DB_INT) {
-			LM_ERR("invalid column type %d for dst ton (row %d)\n", VAL_TYPE(val + 7), i);
+			LM_ERR("invalid column type %d for src npi (row %d, %.*s)\n",
+					VAL_TYPE(val + 7), i, name_s.len, name_s.s);
 			continue;
 		}
 		if (VAL_TYPE(val + 8) != DB_INT) {
-			LM_ERR("invalid column type %d for dst npi (row %d)\n", VAL_TYPE(val + 8), i);
+			LM_ERR("invalid column type %d for dst ton (row %d, %.*s)\n",
+					VAL_TYPE(val + 8), i, name_s.len, name_s.s);
 			continue;
 		}
 		if (VAL_TYPE(val + 9) != DB_INT) {
-			LM_ERR("invalid column type %d for session type (row %d)\n", VAL_TYPE(val + 9), i);
+			LM_ERR("invalid column type %d for dst npi (row %d, %.*s)\n",
+					VAL_TYPE(val + 9), i, name_s.len, name_s.s);
 			continue;
 		}
-		session = smpp_session_new(ip, VAL_INT(val + 1), &system_s,
-				&pass_s, &type_s, VAL_INT(val + 5), VAL_INT(val + 6),
-				VAL_INT(val + 7), VAL_INT(val + 8), VAL_INT(val + 9));
+		if (VAL_TYPE(val + 10) != DB_INT) {
+			LM_ERR("invalid column type %d for session type (row %d, %.*s)\n",
+					VAL_TYPE(val + 10), i, name_s.len, name_s.s);
+			continue;
+		}
+		session = smpp_session_new(&name_s, ip, VAL_INT(val + 2), &system_s,
+				&pass_s, &type_s, VAL_INT(val + 6), VAL_INT(val + 7),
+				VAL_INT(val + 8), VAL_INT(val + 9), VAL_INT(val + 10));
 		if (!session) {
-			LM_ERR("cannot add session in row %d\n", i);
+			LM_ERR("cannot add session in row %d, %.*s\n",
+					i, name_s.len, name_s.s);
 			continue;
 		}
 	}

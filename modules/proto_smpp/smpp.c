@@ -1098,15 +1098,20 @@ int smpp_sessions_init(void)
 	return 0;
 }
 
-smpp_session_t *smpp_session_new(struct ip_addr *ip, int port, str *system_id,
-		str *password, str *system_type, int src_addr_ton, int src_addr_npi,
-		int dst_addr_ton, int dst_addr_npi, int stype)
+smpp_session_t *smpp_session_new(str *name, struct ip_addr *ip, int port,
+		str *system_id, str *password, str *system_type, int src_addr_ton,
+		int src_addr_npi, int dst_addr_ton, int dst_addr_npi, int stype)
 {
 	smpp_session_t *session;
 
-	session = shm_malloc(sizeof(smpp_session_t));
+	session = shm_malloc(sizeof(smpp_session_t) + name->len);
+	if (!session) {
+		LM_ERR("no more shm memory!\n");
+		return NULL;
+	}
 
 	memset(session, 0, sizeof(smpp_session_t));
+	session->name.s = (char *)session + sizeof(smpp_session_t);
 
 	session->bind.transceiver.interface_version = SMPP_VERSION;
 	lock_init(&session->sequence_number_lock);
@@ -1114,21 +1119,26 @@ smpp_session_t *smpp_session_new(struct ip_addr *ip, int port, str *system_id,
 	session->sequence_number = 0;
 
 	if (system_id->len > MAX_SYSTEM_ID_LEN) {
-		LM_INFO("system id %.*s is too long, trimming it to %d\n",
-				system_id->len, system_id->s, MAX_SYSTEM_ID_LEN);
+		LM_INFO("[%.*s] system id %.*s is too long, trimming it to %d\n",
+				name->len, name->s, system_id->len, system_id->s,
+				MAX_SYSTEM_ID_LEN);
 		system_id->len = MAX_SYSTEM_ID_LEN;
 	}
 	if (password->len > MAX_PASSWORD_LEN) {
-		LM_INFO("password for %.*s is too long, trimming it to %d\n",
-				system_id->len, system_id->s, MAX_PASSWORD_LEN);
+		LM_INFO("[%.*s] password for %.*s is too long, trimming it to %d\n",
+				name->len, name->s, system_id->len, system_id->s,
+				MAX_PASSWORD_LEN);
 		password->len = MAX_PASSWORD_LEN;
 	}
 	if (system_type->len > MAX_SYSTEM_TYPE_LEN) {
-		LM_INFO("system type %.*s of %.*s is too long, trimming it to %d\n",
-				system_type->len, system_type->s, system_id->len,
-				system_id->s, MAX_SYSTEM_TYPE_LEN);
+		LM_INFO("[%.*s] system type %.*s of %.*s is too long, trimming it to %d\n",
+				name->len, name->s, system_type->len, system_type->s,
+				system_id->len, system_id->s, MAX_SYSTEM_TYPE_LEN);
 		system_type->len = MAX_SYSTEM_TYPE_LEN;
 	}
+
+	session->name.len = name->len;
+	memcpy(session->name.s, name->s, name->len);
 	memcpy(&session->ip, ip, sizeof(struct ip_addr));
 	memcpy(session->bind.transceiver.system_id, system_id->s, system_id->len);
 	memcpy(session->bind.transceiver.password, password->s, password->len);
@@ -1142,6 +1152,8 @@ smpp_session_t *smpp_session_new(struct ip_addr *ip, int port, str *system_id,
 	session->dest_addr_ton = dst_addr_ton;
 	session->dest_addr_npi = dst_addr_npi;
 	session->session_type = stype;
+
+	LM_DBG("Added %.*s SMSC\n", name->len, name->s);
 
 	/* TODO: now link it to global list, but in the future, add it tmp list */
 	if (*g_sessions)

@@ -26,6 +26,7 @@
 #include "../../str.h"
 
 extern str smpp_table;
+extern str smpp_name_col;
 extern str smpp_ip_col;
 extern str smpp_port_col;
 extern str smpp_system_id_col;

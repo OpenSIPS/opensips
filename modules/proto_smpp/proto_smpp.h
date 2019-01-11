@@ -27,6 +27,9 @@
 
 typedef struct smpp_session {
 	uint32_t id;
+
+	str name;
+
 	uint8_t session_status;
 	uint8_t session_type;
 
@@ -66,8 +69,8 @@ void rpc_bind_sessions(int sender_id, void *param);
 void handle_smpp_msg(char *buffer, struct tcp_connection *conn);
 void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 		smpp_session_t *session);
-smpp_session_t *smpp_session_new(struct ip_addr *ip, int port, str *system_id,
-		str *password, str *system_type, int src_addr_ton, int src_addr_npi,
-		int dst_addr_ton, int dst_addr_npi, int stype);
+smpp_session_t *smpp_session_new(str *name, struct ip_addr *ip, int port,
+		str *system_id, str *password, str *system_type, int src_addr_ton,
+		int src_addr_npi, int dst_addr_ton, int dst_addr_npi, int stype);
 
 #endif
