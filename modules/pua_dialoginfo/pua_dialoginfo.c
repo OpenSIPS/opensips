@@ -306,11 +306,43 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 		type, entity->uri.len, entity->uri.s,
 		peer->uri.len, peer->uri.s, param->flags);
 
+	/* get rid of ACKs that are delivered as WITHIN requests */
+	if (type==DLGCB_REQ_WITHIN && _params->msg->REQ_METHOD==METHOD_ACK)
+		return;
+
 	if (include_tags) {
 		ftag = &(dlg->legs[DLG_CALLER_LEG].tag);
 		ttag = &(dlg->legs[callee_idx(dlg)].tag);
 	} else {
 		ftag = ttag = NULL;
+	}
+
+	if (type==DLGCB_CONFIRMED) {
+
+		/* this is triggered in the context of a reply, so its branch
+		 * is available here */
+		branch = tm_api.get_branch_index();
+
+		s.s = int2str((uint64_t)branch, &s.len);
+		if (dlg_api.store_dlg_value(dlg, &dlg_branch_var, &s)< 0) {
+			LM_ERR("Failed to store wining branch in dialog\n");
+		}
+
+		LM_DBG("stored branch is %d\n", branch);
+
+	} else {
+
+		s.s = int2str((uint64_t)branch, &s.len);
+		if (dlg_api.fetch_dlg_value(dlg, &dlg_branch_var, &s, 0)< 0) {
+			LM_ERR("Failed to retrieve wining branch from dialog\n");
+			branch = 0;
+		} else {
+			if (str2int(&s, (unsigned int*)&branch)<0)
+				branch = 0;
+		}
+
+		LM_DBG("retrieved branch is %d\n", branch);
+
 	}
 
 	memset( &custom, 0, sizeof(custom) );
@@ -335,22 +367,12 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 
 	switch (type) {
 	case DLGCB_REQ_WITHIN:
+
 		expire = dlg->lifetime;
 		state = "confirmed";
 
 	case DLGCB_TERMINATED:
 	case DLGCB_EXPIRED:
-		s.s = int2str((uint64_t)branch, &s.len);
-		if (dlg_api.fetch_dlg_value(dlg, &dlg_branch_var, &s, 0)< 0) {
-			LM_ERR("Failed to retrieve wining branch from dialog\n");
-			branch = 0;
-		} else {
-			if (str2int(&s, (unsigned int*)&branch)<0)
-				branch = 0;
-		}
-
-		LM_DBG("branch is %d, state is [%s] expires is %d\n",
-			branch, state, expire);
 
 		if(param->flags & DLG_PUB_A)
 			dialog_publish(state, entity, peer,
@@ -361,17 +383,6 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 		break;
 
 	case DLGCB_CONFIRMED:
-		/* this is triggered in the context of a reply, so its branch
-		 * is available here */
-		branch = tm_api.get_branch_index();
-
-		s.s = int2str((uint64_t)branch, &s.len);
-		if (dlg_api.store_dlg_value(dlg, &dlg_branch_var, &s)< 0) {
-			LM_ERR("Failed to store wining branch in dialog\n");
-		}
-
-		LM_DBG("branch is %d, state is [%s] expires is %d\n",
-			branch, "confirmed", dlg->lifetime);
 
 		if(param->flags & DLG_PUB_A)
 			dialog_publish("confirmed", entity, peer,
@@ -818,7 +829,7 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 
 	/* register TM callback to get access to recevied replies */
 	if (tm_api.register_tmcb( msg, NULL, TMCB_RESPONSE_IN,
-		__tm_sendpublish, (void*)param_tm, free_cb_param) != 0) {
+		__tm_sendpublish, (void*)param_tm, free_cb_param) != 1) {
 		LM_ERR("cannot register TM callback for incoming replies\n");
 		goto end;
 	}
@@ -867,23 +878,27 @@ static int fixup_dlginfo(void** param, int param_no)
 }
 
 
-static void build_branch_callee_var_names( int branch, str *var_b, str *var_u)
+static void build_branch_callee_var_names( int branch, str *var_d, str *var_u)
 {
+	#define DISPLAY_PATTERN "__dlginfo_br_CALLEED_XXXX"
+	#define URI_PATTERN "__dlginfo_br_CALLEEU_XXXX"
 	#define br_callee_var_end_offset 3
-	static str br_calleeD_var = str_init("__dlginfo_br_CALLEED_XXXX");
-	static str br_calleeU_var = str_init("__dlginfo_br_CALLEEU_XXXX");
+	static char br_calleeD_var[] = DISPLAY_PATTERN;
+	static char br_calleeU_var[] = URI_PATTERN;
 	char *p;
 	int s;
 
-	p = br_calleeD_var.s + br_calleeD_var.len - br_callee_var_end_offset;
+	p = br_calleeD_var + sizeof(DISPLAY_PATTERN)-1 - br_callee_var_end_offset;
 	s = br_callee_var_end_offset;
 	int2reverse_hex( &p, &s, (unsigned int)branch );
-	*var_b = br_calleeD_var;
+	var_d->s = br_calleeD_var;
+	var_d->len = sizeof(DISPLAY_PATTERN)-1 - s;
 
-	p = br_calleeU_var.s + br_calleeU_var.len - br_callee_var_end_offset;
+	p = br_calleeU_var + sizeof(URI_PATTERN)-1 - br_callee_var_end_offset;
 	s = br_callee_var_end_offset;
 	int2reverse_hex( &p, &s, (unsigned int)branch );
-	*var_u = br_calleeU_var;
+	var_u->s = br_calleeU_var;
+	var_u->len = sizeof(URI_PATTERN)-1 - s;
 
 }
 
