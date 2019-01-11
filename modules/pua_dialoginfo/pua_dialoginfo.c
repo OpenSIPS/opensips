@@ -42,6 +42,7 @@
 #include "../../trim.h"
 #include "../../mem/mem.h"
 #include "../../pt.h"
+#include "../../mod_fix.h"
 #include "../../parser/parse_from.h"
 #include "../dialog/dlg_load.h"
 #include "../dialog/dlg_hash.h"
@@ -87,7 +88,9 @@ static int nopublish_flag = -1;
 
 static int mod_init(void);
 int dialoginfo_set(struct sip_msg* msg, char* str1, char* str2);
+int set_branch_callee(struct sip_msg* msg, char* callee);
 static int fixup_dlginfo(void** param, int param_no);
+static void build_branch_callee_var_names( int branch, str *var_b, str *var_u);
 
 struct dlginfo_cb_params {
 	char flags;
@@ -100,9 +103,13 @@ struct dlginfo_cb_params {
 
 static cmd_export_t cmds[]=
 {
-	{"dialoginfo_set",(cmd_function)dialoginfo_set,0, 0, 0, REQUEST_ROUTE},
-	{"dialoginfo_set",(cmd_function)dialoginfo_set,1,fixup_dlginfo,0, REQUEST_ROUTE},
-	{0,                   0,                       0, 0, 0, 0}
+	{"dialoginfo_set", (cmd_function)dialoginfo_set, 0,
+		0, 0, REQUEST_ROUTE},
+	{"dialoginfo_set", (cmd_function)dialoginfo_set, 1,
+		fixup_dlginfo, 0, REQUEST_ROUTE},
+	{"dialoginfo_set_branch_callee", (cmd_function)set_branch_callee, 1,
+		fixup_spve_null, 0, BRANCH_ROUTE},
+	{0, 0, 0, 0, 0, 0}
 };
 
 static param_export_t params[]={
@@ -131,6 +138,7 @@ static dep_export_t deps = {
 	},
 };
 
+
 struct module_exports exports= {
 	"pua_dialoginfo",		/* module name */
 	MOD_TYPE_DEFAULT,       /* class of this module */
@@ -157,8 +165,10 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 {
 	struct sip_msg* msg = _params->rpl;
 	struct dlginfo_cb_params *param;
-	struct dlginfo_part *peer, *entity;
+	struct dlginfo_part *peer, *entity, custom;
+	struct dlg_cell *dlg;
 	str callid, *ttag, *ftag;
+	str name_d, name_u;
 	int branch, n, expire;
 
 	param = (struct dlginfo_cb_params*)(*_params->param);
@@ -185,6 +195,24 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 	} else {
 		ftag = ttag = NULL;
 	}
+
+	memset( &custom, 0, sizeof(custom) );
+	dlg = dlg_api.get_dlg();
+	if (dlg && param->flags & DLG_PUB_B) {
+		build_branch_callee_var_names( branch, &name_d, &name_u);
+		if (dlg_api.fetch_dlg_value(dlg, &name_u, &custom.uri, 1)== 0) {
+			/* there is a custom URI for the branch, check for display too */
+			dlg_api.fetch_dlg_value(dlg, &name_d, &custom.display, 1);
+			peer = &custom;
+			LM_DBG("per-branch callee/peer information was found\n");
+		}
+	}
+
+	LM_DBG("using entity [%.*s]/[%.*s] and peer [%.*s]-/[%.*s]\n",
+		entity->display.len, entity->display.s,
+		entity->uri.len, entity->uri.s,
+		peer->display.len, peer->display.s,
+		peer->uri.len, peer->uri.s);
 
 	/* depending on the reply code, see what to publish */
 	if (_params->code<180 && _params->code>=100) {
@@ -252,6 +280,9 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 		}
 
 	}
+
+	if (custom.uri.s) pkg_free(custom.uri.s);
+	if (custom.display.s) pkg_free(custom.display.s);
 }
 
 
@@ -261,8 +292,9 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 {
 	static str dlg_branch_var = str_init("__dlg_brX");
 	struct dlginfo_cb_params *param;
-	struct dlginfo_part *peer, *entity;
+	struct dlginfo_part *peer, *entity, custom;
 	str *ftag, *ttag, s;
+	str name_d, name_u;
 	int branch, expire;
 	char *state;
 
@@ -280,6 +312,23 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 	} else {
 		ftag = ttag = NULL;
 	}
+
+	memset( &custom, 0, sizeof(custom) );
+	if (param->flags & DLG_PUB_B) {
+		build_branch_callee_var_names( branch, &name_d, &name_u);
+		if (dlg_api.fetch_dlg_value(dlg, &name_u, &custom.uri, 1)== 0) {
+			/* there is a custom URI for the branch, check for display too */
+			dlg_api.fetch_dlg_value(dlg, &name_d, &custom.display, 1);
+			peer = &custom;
+			LM_DBG("per-branch callee/peer information was found\n");
+		}
+	}
+
+	LM_DBG("using entity [%.*s]/[%.*s] and peer [%.*s]-/[%.*s]\n",
+		entity->display.len, entity->display.s,
+		entity->uri.len, entity->uri.s,
+		peer->display.len, peer->display.s,
+		peer->uri.len, peer->uri.s);
 
 	expire = 0;
 	state = "terminated";
@@ -334,6 +383,9 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 	default:
 		LM_ERR("unhandled dialog callback type %d received\n", type);
 	}
+
+	if (custom.uri.s) pkg_free(custom.uri.s);
+	if (custom.display.s) pkg_free(custom.display.s);
 }
 
 
@@ -602,7 +654,6 @@ static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
 
 		parse_to( c_buf, c_buf+len , &entity);
 		if (entity.error != PARSE_OK) {
-			LM_ERR("Failed to parse caller specification - not a valid uri\n");
 			LM_ERR("Failed to parse entity nameaddr [%.*s]\n", len, c_buf);
 			goto error1;
 		}
@@ -716,12 +767,12 @@ static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
 error2:
 	if (p_buf) {
 		pkg_free(p_buf);
-		free_to( &peer );
+		free_to_params( &peer );
 	}
 error1:
 	if (c_buf) {
 		pkg_free(c_buf);
-		free_to( &entity );
+		free_to_params( &entity );
 	}
 	return ret;
 }
@@ -813,5 +864,106 @@ static int fixup_dlginfo(void** param, int param_no)
 	}
 	LM_ERR( "null format\n");
 	return E_UNSPEC;
+}
+
+
+static void build_branch_callee_var_names( int branch, str *var_b, str *var_u)
+{
+	#define br_callee_var_end_offset 3
+	static str br_calleeD_var = str_init("__dlginfo_br_CALLEED_XXXX");
+	static str br_calleeU_var = str_init("__dlginfo_br_CALLEEU_XXXX");
+	char *p;
+	int s;
+
+	p = br_calleeD_var.s + br_calleeD_var.len - br_callee_var_end_offset;
+	s = br_callee_var_end_offset;
+	int2reverse_hex( &p, &s, (unsigned int)branch );
+	*var_b = br_calleeD_var;
+
+	p = br_calleeU_var.s + br_calleeU_var.len - br_callee_var_end_offset;
+	s = br_callee_var_end_offset;
+	int2reverse_hex( &p, &s, (unsigned int)branch );
+	*var_u = br_calleeU_var;
+
+}
+
+int set_branch_callee(struct sip_msg* msg, char* callee)
+{
+	struct dlg_cell * dlg;
+	struct to_body to_b;
+	int branch, len;
+	str v, name_u, name_d;
+	char *c_buf;
+
+	if (fixup_get_svalue(msg, (gparam_p)callee, &v)!=0) {
+		LM_ERR("cannot print the format for callee\n");
+		return -1;
+	}
+
+	dlg = dlg_api.get_dlg();
+
+	if (dlg==NULL)
+		return -1;
+
+	branch = tm_api.get_branch_index();
+
+	/* build var name */
+	build_branch_callee_var_names( branch, &name_d, &name_u );
+
+	if (v.s!=NULL || v.len!=0) {
+
+		/* parse input as nameaddr */
+		trim( &v );
+		c_buf = (char*)pkg_malloc(v.len + CRLF_LEN + 1);
+		if (c_buf==NULL) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
+		memcpy(c_buf, v.s, v.len);
+		len = v.len;
+		memcpy(c_buf + len, CRLF, CRLF_LEN);
+		len += CRLF_LEN;
+
+		parse_to( c_buf, c_buf+len , &to_b);
+		if (to_b.error != PARSE_OK) {
+			LM_ERR("Failed to parse entity nameaddr [%.*s]\n", len, c_buf);
+			goto error;
+		}
+
+		LM_DBG("storing [%.*s]->[%.*s] and [%.*s]->[%.*s]\n",
+			name_d.len, name_d.s, to_b.display.len, to_b.display.s,
+			name_u.len, name_u.s, to_b.uri.len, to_b.uri.s);
+
+		if (dlg_api.store_dlg_value(dlg, &name_u, &to_b.uri)< 0) {
+			LM_ERR("Failed to store display for branch %d\n",branch);
+			return -1;
+		}
+		if (dlg_api.store_dlg_value(dlg, &name_d,
+		to_b.display.len?&to_b.display:NULL)< 0) {
+			LM_ERR("Failed to store URI for branch %d\n",branch);
+			return -1;
+		}
+
+		pkg_free(c_buf);
+		free_to_params(&to_b);
+
+	} else {
+
+		if (dlg_api.store_dlg_value(dlg, &name_d, NULL)< 0) {
+			LM_ERR("Failed to remove display for branch %d\n",branch);
+			return -1;
+		}
+		if (dlg_api.store_dlg_value(dlg, &name_u, NULL)< 0) {
+			LM_ERR("Failed to remove URI for branch %d\n",branch);
+			return -1;
+		}
+
+	}
+
+	return 1;
+error:
+	pkg_free(c_buf);
+	free_to_params(&to_b);
+	return -1;
 }
 
