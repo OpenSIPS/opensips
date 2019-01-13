@@ -25,7 +25,8 @@ Load Balancer Module
               1.5.8. lb_define_blacklist (string)
               1.5.9. fetch_freeswitch_stats (integer)
               1.5.10. initial_freeswitch_load (integer)
-              1.5.11. status_replication_cluster (integer)
+              1.5.11. cluster_id (integer)
+              1.5.12. cluster_sharing_tag (string)
 
         1.6. Exported Functions
 
@@ -83,15 +84,16 @@ Load Balancer Module
    1.8. Set the lb_define_blacklist parameter
    1.9. Set the fetch_freeswitch_load parameter
    1.10. Set the initial_freeswitch_load parameter
-   1.11. Set status_replication_cluster parameter
-   1.12. lb_start usage
-   1.13. lb_next() usage
+   1.11. Set cluster_id parameter
+   1.12. Set cluster_sharing_tag parameter
+   1.13. lb_start usage
    1.14. lb_next() usage
-   1.15. lb_disable_dst() usage
-   1.16. lb_is_destination usage
-   1.17. lb_count_call usage
-   1.18. lb_list usage
-   1.19. lb_status usage
+   1.15. lb_next() usage
+   1.16. lb_disable_dst() usage
+   1.17. lb_is_destination usage
+   1.18. lb_count_call usage
+   1.19. lb_list usage
+   1.20. lb_status usage
 
 Chapter 1. Admin Guide
 
@@ -161,8 +163,7 @@ Chapter 1. Admin Guide
      * Dialog - Dialog module
        freeswitch. - only if "fetch_freeswitch_stats" is enabled.
      * dialog - TM module (only if probing is enabled)
-     * clustere - only if "status_replication_cluster" option is
-       enabled.
+     * clusterer - only if "cluster_id" option is enabled.
      * database - one of the DB modules
 
 1.4.2. External Libraries or Applications
@@ -335,25 +336,58 @@ modparam("load_balancer", "fetch_freeswitch_stats", 1)
 modparam("load_balancer", "initial_freeswitch_load", 200)
 ...
 
-1.5.11. status_replication_cluster (integer)
+1.5.11. cluster_id (integer)
 
-   A cluster ID for sharing any change in the status of the
-   destinations with other OpenSIPS instances that are part of a
-   cluster. Whenever such a status changes (following an MI
-   command, a probing result, a script command), the module will
-   replicate this status change to all the nodes in the given
-   cluster. A value of 0 means that sending replication data is
-   disabled.
+   The ID of the cluster the module is part of. The clustering
+   support is used in load-balancer module for two purposes: for
+   sharing the status of the destinations and for controlling the
+   pinging to destinations.
+
+   If clustering enbled, the module will automatically share
+   changes over the status of the destinations with the other
+   OpenSIPS instances that are part of a cluster. Whenever such a
+   status changes (following an MI command, a probing result, a
+   script command), the module will replicate this status change
+   to all the nodes in this given cluster.
+
+   The clustering with sharing tag support may be used to control
+   which node in the cluster will perform the pinging/probing to
+   destinations. See the cluster_sharing_tag option.
 
    For more info on how to define and populate a cluster (with
    OpenSIPS nodes) see the "clusterer" module.
 
-   Default value is “0”.
+   Default value is “0 (none)”.
 
-   Example 1.11. Set status_replication_cluster parameter
+   Example 1.11. Set cluster_id parameter
 ...
-# replicate LB status with all OpenSIPS in cluster ID 9
-modparam("load_balancer", "status_replication_cluster", 9)
+# replicate destination status with all OpenSIPS in cluster ID 9
+modparam("load_balancer", "cluster_id", 9)
+...
+
+1.5.12. cluster_sharing_tag (string)
+
+   The name of the sharing tag (as defined per clusterer modules)
+   to control which node is responsible for perform the
+   self-triggered actions in the module. Such actions may be the
+   destination probing or sharing the changes in the destination
+   status. If defined, only the node with active status of this
+   tag will perform the actions (pinging and sharing status).
+
+   The cluster_id must be defined for this option to work.
+
+   This is an optional parameter. If not set, all the nodes in the
+   cluster will individually do the probing and share the status
+   changes.
+
+   Default value is “empty (none)”.
+
+   Example 1.12. Set cluster_sharing_tag parameter
+...
+# only the node with the active "vip" sharing tag will perform pinging
+# and broadcast the status changes
+modparam("load_balancer", "cluster_id", 9)
+modparam("load_balancer", "cluster_sharing_tag", "vip")
 ...
 
 1.6. Exported Functions
@@ -411,7 +445,7 @@ modparam("load_balancer", "status_replication_cluster", 9)
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.12. lb_start usage
+   Example 1.13. lb_start usage
 ...
 if (lb_start("1","trascoding;conference")) {
         # dst URI points to the new destination
@@ -443,7 +477,7 @@ if (lb_start("1","trascoding;conference")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.13. lb_next() usage
+   Example 1.14. lb_next() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         /* check next available LB destination */
@@ -478,7 +512,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.14. lb_next() usage
+   Example 1.15. lb_next() usage
 ...
 if (t_check_status("(5[0-9][0-9])")) {
         /* check next available LB destination */
@@ -514,7 +548,7 @@ if (t_check_status("(5[0-9][0-9])")) {
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.15. lb_disable_dst() usage
+   Example 1.16. lb_disable_dst() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         lb_disable_dst();
@@ -549,7 +583,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
        "active" (not disabled) destinations. If missing, the
        search will consider any kind of destinations.
 
-   Example 1.16. lb_is_destination usage
+   Example 1.17. lb_is_destination usage
 ...
 if (lb_is_destination("$si","$sp") ) {
         # request from a LB destination
@@ -583,7 +617,7 @@ if (lb_is_destination("$si","$sp") ) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.17. lb_count_call usage
+   Example 1.18. lb_count_call usage
 ...
 # count as load also the calls orgininated by lb destinations
 if (lb_is_destination("$si","$sp") ) {
@@ -628,7 +662,7 @@ if (lb_is_destination("$si","$sp") ) {
    Lists all the destinations and the maximum and current load for
    each resource of the destination.
 
-   Example 1.18. lb_list usage
+   Example 1.19. lb_list usage
 $ ./opensipsctl fifo lb_list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
@@ -650,7 +684,7 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
        given (0 - disable, 1 - enable), this status will be forced
        for the destination.
 
-   Example 1.19. lb_status usage
+   Example 1.20. lb_status usage
 $ ./opensipsctl fifo lb_status 2
 enable:: no
 $ ./opensipsctl fifo lb_status 2 1
@@ -716,11 +750,11 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 101 60 3966 496
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 113 65 4259 728
    2. Liviu Chircu (@liviuchircu) 38 29 678 166
    3. Razvan Crainea (@razvancrainea) 20 15 251 135
    4. Sergey Khripchenko 19 6 649 366
-   5. Vlad Patrascu (@rvlad-patrascu) 14 10 124 163
+   5. Vlad Patrascu (@rvlad-patrascu) 15 11 124 164
    6. shripchenko 11 4 409 150
    7. Vlad Paiu (@vladpaiu) 5 3 7 5
    8. Walter Doekes (@wdoekes) 5 3 3 3
@@ -750,10 +784,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Sep 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - May 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Jan 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Dec 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Oct 2010 - Dec 2017
    6.  Jeremy Martinez                     Feb 2017 - Feb 2017
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
@@ -771,9 +805,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Sergey Khripchenko, Razvan Crainea
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Sergey Khripchenko, Razvan Crainea
    (@razvancrainea), Ezequiel Lovelle, Walter Doekes (@wdoekes),
    Vlad Paiu (@vladpaiu).
 

@@ -124,11 +124,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 103 43 1887 2504
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 106 44 2130 2504
    2. Henning Westerholt (@henningw) 70 29 554 1963
    3. Greg Fausak 40 3 4472 2
    4. Daniel-Constantin Mierla (@miconda) 27 20 350 203
-   5. Liviu Chircu (@liviuchircu) 13 10 27 62
+   5. Liviu Chircu (@liviuchircu) 14 11 29 64
    6. Jan Janak (@janakj) 12 8 300 23
    7. Razvan Crainea (@razvancrainea) 10 7 205 24
    8. Klaus Darilion 10 6 139 67
@@ -162,15 +162,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Sep 2012 - Oct 2018
-   2.  Razvan Crainea (@razvancrainea)          Oct 2011 - Oct 2018
-   3.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
-   5.  Jarrod Baumann (@jarrodb)                Mar 2016 - Mar 2016
-   6.  Dusan Klinec                             Dec 2015 - Dec 2015
-   7.  Aron Podrigal                            Jul 2015 - Jul 2015
-   8.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
-   9.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jul 2005 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jul 2005 - Jan 2019
+   2.  Liviu Chircu (@liviuchircu)              Sep 2012 - Nov 2018
+   3.  Razvan Crainea (@razvancrainea)          Oct 2011 - Oct 2018
+   4.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
+   6.  Jarrod Baumann (@jarrodb)                Mar 2016 - Mar 2016
+   7.  Dusan Klinec                             Dec 2015 - Dec 2015
+   8.  Aron Podrigal                            Jul 2015 - Jul 2015
+   9.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
    10. Vlad Paiu (@vladpaiu)                    Jan 2011 - Mar 2012
 
    All remaining contributors: Razvan Pistolea, Ruslan Bukin,

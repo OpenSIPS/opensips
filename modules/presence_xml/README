@@ -198,16 +198,16 @@ Chapter 3. Contributors
    1. Anca Vamanu 124 54 4745 1776
    2. Saúl Ibarra Corretgé (@saghul) 30 9 1499 471
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 21 76 125
-   4. Liviu Chircu (@liviuchircu) 11 8 35 61
+   4. Liviu Chircu (@liviuchircu) 12 9 42 68
    5. Razvan Crainea (@razvancrainea) 10 8 28 27
    6. Daniel-Constantin Mierla (@miconda) 8 6 15 14
    7. Henning Westerholt (@henningw) 6 4 45 50
-   8. Ovidiu Sas (@ovidiusas) 3 2 6 0
-   9. Kennard White 3 1 27 11
-   10. Vlad Paiu (@vladpaiu) 3 1 20 1
+   8. Dan Pascu (@danpascu) 4 2 3 3
+   9. Ovidiu Sas (@ovidiusas) 3 2 6 0
+   10. Kennard White 3 1 27 11
 
-   All remaining contributors: Walter Doekes (@wdoekes),
-   Konstantin Bokarius, Dan Pascu (@danpascu), Peter Lemenkov
+   All remaining contributors: Vlad Paiu (@vladpaiu), Walter
+   Doekes (@wdoekes), Konstantin Bokarius, Peter Lemenkov
    (@lemenkov), UnixDev, Edson Gellert Schubert, Denis Bilenko,
    Vlad Patrascu (@rvlad-patrascu).
 
@@ -231,21 +231,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2015
-   6.  Saúl Ibarra Corretgé (@saghul)      May 2012 - Mar 2013
-   7.  Anca Vamanu                         Apr 2007 - Jun 2012
-   8.  Vlad Paiu (@vladpaiu)               Oct 2011 - Oct 2011
-   9.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Mar 2011
-   10. Kennard White                       Jul 2010 - Jul 2010
+   1.  Dan Pascu (@danpascu)               Oct 2007 - Nov 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2015
+   7.  Saúl Ibarra Corretgé (@saghul)      May 2012 - Mar 2013
+   8.  Anca Vamanu                         Apr 2007 - Jun 2012
+   9.  Vlad Paiu (@vladpaiu)               Oct 2011 - Oct 2011
+   10. Ovidiu Sas (@ovidiusas)             Oct 2010 - Mar 2011
 
-   All remaining contributors: Walter Doekes (@wdoekes), UnixDev,
-   Denis Bilenko, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Dan Pascu (@danpascu).
+   All remaining contributors: Kennard White, Walter Doekes
+   (@wdoekes), UnixDev, Denis Bilenko, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert.
 
    (1) including any documentation-related commits, excluding
    merge commits

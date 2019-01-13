@@ -27,6 +27,7 @@ pua dialoginfo
         1.4. Exported Functions
 
               1.4.1. dialoginfo_set([side])
+              1.4.2. dialoginfo_set_branch_callee(callee)
 
    2. Contributors
 
@@ -58,6 +59,7 @@ pua dialoginfo
    1.10. Set caller_spec_param parameter
    1.11. Set osips_ps parameter
    1.12. dialoginfo_set usage
+   1.13. dialoginfo_set_branch_callee usage
 
 Chapter 1. Admin Guide
 
@@ -195,7 +197,7 @@ Chapter 1. Admin Guide
    possible to specify what URIs should be used for caller and
    callee by setting the the pseudovariables with the names
    defined as module parameter "caller_spec_param" and
-   "callee_spec_param" before calling dialoginfo_set function.
+   "callee_spec_param" before calling dialoginfo_set() function.
    Please read the description of this parameters in Exported
    Parameters section. If this parameters are not set, the default
    sources will be used, From header for the caller and display
@@ -292,7 +294,7 @@ modparam("pua_dialoginfo", "caller_confirmed", 1)
 
    Usually the dialog-info of the caller will be "trying -> early
    -> confirmed". The "trying" state will be triggered as soon as
-   you call dialoginfo_set on the caller, while "early" is
+   you call dialoginfo_set() on the caller, while "early" is
    triggered as soon as the callee is ringing (triggered by a 180
    or 183 provisional reply). Sometimes, it is advisable to be
    notified only when the callee reaches the early state and not
@@ -452,8 +454,9 @@ modparam("pua_dialoginfo", "osips_ps", 0)
    published.
 
    Meaning of the parameters:
-     * side (optional) - can be "A" or "B" for caller or callee
-       PUBLISH only - if missing, both sides will be published.
+     * side (optional) - can be "A" or/and "B" for caller or
+       callee PUBLISH only - if missing, both sides will be
+       published.
 
    Example 1.12. dialoginfo_set usage
 ...
@@ -462,6 +465,32 @@ modparam("pua_dialoginfo", "osips_ps", 0)
                         dialoginfo_set();
 ...
 
+1.4.2.  dialoginfo_set_branch_callee(callee)
+
+   This function is to be used only from a branch route for
+   setting a per-branch callee/peer specification. This peer value
+   will be used onyl for the dialoginfo record created for that
+   particular branch.
+
+   This function makes sense only in call forking (serial /
+   parallel) scenarios, where a caller may be in relation with
+   multiple different callees.
+
+   Meaning of the parameters:
+     * callee - a SIP nams addr description of the callee (the
+       name_addr format is '[display] <uri>' or 'uri', as in the
+       To or From headers)
+
+   Example 1.13. dialoginfo_set_branch_callee usage
+...
+branch_route[out]
+{
+....
+        #align the published info with the RURI of the branch
+        dialoginfo_set_branch_callee("sip:$rU@opensips.org");
+...
+}
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -469,9 +498,9 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Anca Vamanu 27 16 713 231
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 13 92 82
-   3. Liviu Chircu (@liviuchircu) 11 8 42 74
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 38 19 863 647
+   2. Anca Vamanu 27 16 713 231
+   3. Liviu Chircu (@liviuchircu) 12 9 44 76
    4. Klaus Darilion 10 1 1109 0
    5. Razvan Crainea (@razvancrainea) 8 6 11 15
    6. Ovidiu Sas (@ovidiusas) 7 5 104 9
@@ -503,11 +532,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jan 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
    6.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Jan 2014
    7.  Damien Sandras (@dsandras)          Jul 2013 - Aug 2013
    8.  Vlad Paiu (@vladpaiu)               Aug 2011 - Aug 2011
@@ -524,10 +553,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Damien Sandras (@dsandras), Vallimamod
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
+   Ovidiu Sas (@ovidiusas), Damien Sandras (@dsandras), Vallimamod
    Abdullah, Anca Vamanu, Walter Doekes (@wdoekes), Klaus
    Darilion.
 

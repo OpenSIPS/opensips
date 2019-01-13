@@ -6,24 +6,27 @@ cachedb_local Module
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. Clustering
+        1.3. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
 
-        1.3. Exported Parameters
+        1.4. Exported Parameters
 
-              1.3.1. cachedb_url (string)
-              1.3.2. cache_collections (string)
-              1.3.3. cache_clean_period (int)
+              1.4.1. cachedb_url (string)
+              1.4.2. cache_collections (string)
+              1.4.3. cache_clean_period (int)
+              1.4.4. cluster_id (int)
+              1.4.5. cluster_persistency (string)
 
-        1.4. Exported Functions
+        1.5. Exported Functions
 
-              1.4.1. cache_remove_chunk([collection,] glob)
+              1.5.1. cache_remove_chunk([collection,] glob)
 
-        1.5. Exported MI Functions
+        1.6. Exported MI Functions
 
-              1.5.1. cache_remove_chunk
+              1.6.1. cache_remove_chunk
 
    2. Frequently Asked Questions
    3. Contributors
@@ -47,7 +50,9 @@ cachedb_local Module
    1.1. Set cachedb_url parameter
    1.2. Set cache_collections parameter
    1.3. Set cache_clean_period parameter
-   1.4. cache_remove_chunk usage
+   1.4. Setting the cluster_id parameter
+   1.5. Set cluster_persistency parameter
+   1.6. cache_remove_chunk usage
 
 Chapter 1. Admin Guide
 
@@ -60,21 +65,52 @@ Chapter 1. Admin Guide
    url for cachedb_local module points to one collection. One
    collection can be shared between multiple urls.
 
-1.2. Dependencies
+1.2. Clustering
 
-1.2.1. OpenSIPS Modules
+   Cachedb_local clustering is a mechanism used to mirror local
+   cache changes taking place in one OpenSIPS instance to one or
+   multiple other instances without the need of third party
+   dependencies. The process is simplified by using the clusterer
+   module which facilitates the management of a cluster of
+   OpenSIPS noeds and the sending of replication-related BIN
+   packets (binary-encoded, using proto_bin). This might be
+   usefull for implementing a hot stand-by system, where the
+   stand-by instance can take over without the need of filling the
+   cache by its own.
 
-   None.
+   The following cache operations will be distributet within the
+   cluster:
+     * cache_store
+     * cache_remove
+     * cache_add
+     * cache_sub
 
-1.2.2. External Libraries or Applications
+   In addition to the event-driven replication, an OpenSIPS
+   instance will first try to learn all the local cache
+   information from antoher node in the cluster at startup. The
+   data synchronization mechanism requires defining one of the
+   nodes in the cluster as a "seed" node. See the clusterer module
+   for details on how to do this and why is it needed.
+
+   Limitations: The clustering operations are not atomic and
+   constistency over the cluster nodes is not guaranteed.
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * clusterer, if cluster_id is set.
+
+1.3.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * none
 
-1.3. Exported Parameters
+1.4. Exported Parameters
 
-1.3.1. cachedb_url (string)
+1.4.1. cachedb_url (string)
 
    URL parameter used to define cachedb_local collections. One
    collection can belong to multiple URLs, but one URL can have
@@ -110,7 +146,7 @@ cache_store("local", ...)
 cache_store("local:group2", ...)
 ...
 
-1.3.2. cache_collections (string)
+1.4.2. cache_collections (string)
 
    Using this parameter collections(hash tables) and their sizes
    can be defined. Each collection definition must be separated
@@ -133,7 +169,7 @@ modparam("cachedb_local", "cache_collections", "collection1; collection2
 =5; default=4")
 ...
 
-1.3.3. cache_clean_period (int)
+1.4.3. cache_clean_period (int)
 
    The time interval in seconds at which to go through all the
    records and delete the expired ones.
@@ -145,9 +181,44 @@ modparam("cachedb_local", "cache_collections", "collection1; collection2
 modparam("cachedb_local", "cache_clean_period", 1200)
 ...
 
-1.4. Exported Functions
+1.4.4. cluster_id (int)
 
-1.4.1.  cache_remove_chunk([collection,] glob)
+   Specifies the cluster ID which this instance will send to and
+   receive cache data.
+
+   Default value is 0 (replication disabled).
+
+   Example 1.4. Setting the cluster_id parameter
+...
+modparam("cachedb_local", "cluster_id", 1)
+...
+
+1.4.5. cluster_persistency (string)
+
+   Controls the behavior of the OpenSIPS local cachedb clustering
+   following a restart.
+
+   This parameter may take the following values:
+     * "none" - no explicit data synchronization following a
+       restart. The node starts empty.
+     * "sync-from-cluster" - enable cluster-based restart
+       persistency. Following a restart, an OpenSIPS cluster node
+       will search for a healthy "donor" node from which to mirror
+       the entire user location dataset via direct cluster sync
+       (TCP-based, binary-encoded data transfer). This will
+       require the configuration of one or multiple "seed" nodes
+       in the cluster.
+
+   Default value is "sync-from-cluster".
+
+   Example 1.5. Set cluster_persistency parameter
+...
+modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
+...
+
+1.5. Exported Functions
+
+1.5.1.  cache_remove_chunk([collection,] glob)
 
    Remove all keys from local cache that match the glob pattern
    corresponding to a certain collection or the 'default'
@@ -157,15 +228,15 @@ modparam("cachedb_local", "cache_clean_period", 1200)
 
    This function can be used from all routes
 
-   Example 1.4. cache_remove_chunk usage
+   Example 1.6. cache_remove_chunk usage
         ...
         cache_remove_chunk("myinfo_*");
         cache_remove_chunk("collection1", "myinfo_*");
         ...
 
-1.5. Exported MI Functions
+1.6. Exported MI Functions
 
-1.5.1.  cache_remove_chunk
+1.6.1.  cache_remove_chunk
 
    Removes all local cache entries that match the provided glob
    param.
@@ -203,18 +274,18 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 33 10 1155 693
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 40 46
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 44 49
    3. Anca Vamanu 12 5 739 54
    4. Liviu Chircu (@liviuchircu) 11 8 23 61
    5. Andrei Dragus 10 4 182 181
    6. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
-   7. Razvan Crainea (@razvancrainea) 4 2 5 5
-   8. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
-   9. Dusan Klinec 3 1 4 4
-   10. Ryan Bullock (@rrb3942) 3 1 2 4
+   7. Fabian Gast 6 1 446 5
+   8. Fabian Gast 4 2 71 43
+   9. Razvan Crainea (@razvancrainea) 4 2 5 5
+   10. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
 
-   All remaining contributors: Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov).
+   All remaining contributors: Dusan Klinec, Ryan Bullock
+   (@rrb3942), Julián Moreno Patiño, Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -236,18 +307,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Aug 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - May 2017
-   5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
-   6.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Dusan Klinec                        Dec 2015 - Dec 2015
-   9.  Ryan Bullock (@rrb3942)             Jan 2014 - Jan 2014
-   10. Vlad Paiu (@vladpaiu)               Oct 2011 - Nov 2013
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jan 2019
+   2.  Fabian Gast                         Dec 2018 - Dec 2018
+   3.  Fabian Gast                         Dec 2018 - Dec 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   6.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - May 2017
+   7.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
+   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Dusan Klinec                        Dec 2015 - Dec 2015
 
-   All remaining contributors: Andrei Dragus, Anca Vamanu.
+   All remaining contributors: Ryan Bullock (@rrb3942), Vlad Paiu
+   (@vladpaiu), Andrei Dragus, Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -256,10 +328,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Andrei Dragus,
-   Anca Vamanu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
+   Gast, Fabian Gast, Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
+   (@vladpaiu), Andrei Dragus, Anca Vamanu.
 
    Documentation Copyrights:
 

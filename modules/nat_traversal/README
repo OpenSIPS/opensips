@@ -24,6 +24,8 @@ NAT Traversal Module
               1.4.3. keepalive_from (string)
               1.4.4. keepalive_extra_headers (string)
               1.4.5. keepalive_state_file (string)
+              1.4.6. cluster_id (integer)
+              1.4.7. cluster_sharing_tag (string)
 
         1.5. Exported Functions
 
@@ -74,12 +76,14 @@ NAT Traversal Module
    1.3. Setting the keepalive_from parameter
    1.4. Setting the keepalive_extra_headers parameter
    1.5. Setting the keepalive_state_file parameter
-   1.6. Using the client_nat_test function
-   1.7. Using the fix_contact function
-   1.8. Using the nat_keepalive function
-   1.9. Using $keepalive.socket in multi-proxy environments
-   1.10. Using $source_uri to set the received AVP on registrars
-   1.11. Using $source_uri in multi-proxy environments
+   1.6. Set cluster_id parameter
+   1.7. Set cluster_sharing_tag parameter
+   1.8. Using the client_nat_test function
+   1.9. Using the fix_contact function
+   1.10. Using the nat_keepalive function
+   1.11. Using $keepalive.socket in multi-proxy environments
+   1.12. Using $source_uri to set the received AVP on registrars
+   1.13. Using $source_uri in multi-proxy environments
 
 Chapter 1. Admin Guide
 
@@ -365,6 +369,7 @@ Chapter 1. Admin Guide
      * tm module - if keepalive is enabled.
      * dialog module - if keepalive is enabled and keeping alive
        INVITE dialogs is needed.
+     * clusterer - only if "cluster_id" option is enabled.
 
 1.3.2. External Libraries or Applications
 
@@ -477,6 +482,50 @@ modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/kee
 palive_state")
 ...
 
+1.4.6. cluster_id (integer)
+
+   The ID of the cluster the module is part of. The clustering
+   support is used by the nat_traversal module for controlling the
+   pinging process. When part of a cluster of multiple nodes, the
+   nodes can agree upon which node is the one responsible for
+   pinging.
+
+   The clustering with sharing tag support may be used to control
+   which node in the cluster will perform the pinging/probing to
+   the contacts. See the cluster_sharing_tag option.
+
+   For more info on how to define and populate a cluster (with
+   OpenSIPS nodes) see the "clusterer" module.
+
+   Default value is “0 (none)”.
+
+   Example 1.6. Set cluster_id parameter
+...
+# Be part of cluster ID 9
+modparam("nat_traversal", "cluster_id", 9)
+...
+
+1.4.7. cluster_sharing_tag (string)
+
+   The name of the sharing tag (as defined per clusterer modules)
+   to control which node is responsible for perform pinging of the
+   contacts. If defined, only the node with active status of this
+   tag will perform the pinging.
+
+   The cluster_id must be defined for this option to work.
+
+   This is an optional parameter. If not set, all the nodes in the
+   cluster will individually do the pinging.
+
+   Default value is “empty (none)”.
+
+   Example 1.7. Set cluster_sharing_tag parameter
+...
+# only the node with the active "vip" sharing tag will perform pinging
+modparam("nat_traversal", "cluster_id", 9)
+modparam("nat_traversal", "cluster_sharing_tag", "vip")
+...
+
 1.5. Exported Functions
 
 1.5.1.  client_nat_test(type)
@@ -505,7 +554,7 @@ palive_state")
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.6. Using the client_nat_test function
+   Example 1.8. Using the client_nat_test function
 ...
 if (client_nat_test("3")) {
     .....
@@ -521,7 +570,7 @@ if (client_nat_test("3")) {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.7. Using the fix_contact function
+   Example 1.9. Using the fix_contact function
 ...
 if (client_nat_test("3")) {
     fix_contact();
@@ -552,7 +601,7 @@ if (client_nat_test("3")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.8. Using the nat_keepalive function
+   Example 1.10. Using the nat_keepalive function
 ...
 if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
     ($rm=="INVITE" && !has_totag())) && client_nat_test("3"))
@@ -620,7 +669,7 @@ if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
    message is sent to P1 for being relayed back to the user agent
    by P1 which has the NAT open with it.
 
-   Example 1.9. Using $keepalive.socket in multi-proxy
+   Example 1.11. Using $keepalive.socket in multi-proxy
    environments
 ...
 # This code runs on P1 which has received an INVITE from P2 to forward
@@ -654,7 +703,7 @@ if ($rm=="INVITE" && $hdr(X-Scope)=="nat-relay") {
    to indicate the NAT endpoint URI to P2, so that P2 can include
    it later for incoming INVITE requests to this user agent.
 
-   Example 1.10. Using $source_uri to set the received AVP on
+   Example 1.12. Using $source_uri to set the received AVP on
    registrars
 ...
 modparam("registrar", "received_avp", "$avp(received_uri)")
@@ -691,7 +740,7 @@ if ($rm=="REGISTER") {
 }
 ...
 
-   Example 1.11. Using $source_uri in multi-proxy environments
+   Example 1.13. Using $source_uri in multi-proxy environments
 ...
 # This code runs on P1 which received the REGISTER request and has to
 # forward it to the registrar P2.
@@ -814,7 +863,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Dan Pascu (@danpascu) 43 17 3061 81
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 29 26 108 86
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 33 28 302 93
    3. Liviu Chircu (@liviuchircu) 16 13 59 81
    4. Saúl Ibarra Corretgé (@saghul) 9 5 188 102
    5. Razvan Crainea (@razvancrainea) 6 4 8 5
@@ -847,7 +896,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Oct 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Jan 2019
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Dan Pascu (@danpascu)               May 2008 - Feb 2018

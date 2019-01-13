@@ -33,17 +33,19 @@ dispatcher Module
               1.3.18. sock_avp (str)
               1.3.19. pvar_algo_pattern (str)
               1.3.20. persistent_state (int)
-              1.3.21. table_name (string)
-              1.3.22. partition (string)
-              1.3.23. setid_col (string)
-              1.3.24. destination_col (string)
-              1.3.25. state_col (string)
-              1.3.26. weight_col (string)
-              1.3.27. priority_col (string)
-              1.3.28. attrs_col (string)
-              1.3.29. socket_col (string)
-              1.3.30. fetch_freeswitch_stats (integer)
-              1.3.31. max_freeswitch_weight (integer)
+              1.3.21. cluster_id (integer)
+              1.3.22. cluster_sharing_tag (string)
+              1.3.23. partition (string)
+              1.3.24. table_name (string)
+              1.3.25. setid_col (string)
+              1.3.26. destination_col (string)
+              1.3.27. state_col (string)
+              1.3.28. weight_col (string)
+              1.3.29. priority_col (string)
+              1.3.30. attrs_col (string)
+              1.3.31. socket_col (string)
+              1.3.32. fetch_freeswitch_stats (integer)
+              1.3.33. max_freeswitch_weight (integer)
 
         1.4. Exported Functions
 
@@ -116,21 +118,23 @@ dispatcher Module
    1.19. Set the 'default' partition's “sock_avp” parameter
    1.20. Set the “pvar_algo_pattern” parameter
    1.21. Set the persistent_state parameter
-   1.22. Set the 'default' partition's “table_name” parameter
-   1.23. Create a new partition called 'part2'
-   1.24. Set “setid_col” parameter
-   1.25. Set “destination_col” parameter
-   1.26. Set “state_col” parameter
-   1.27. Set “weight_col” parameter
-   1.28. Set “priority_col” parameter
-   1.29. Set “attrs_col” parameter
-   1.30. Set “socket_col” parameter
-   1.31. Set the fetch_freeswitch_load parameter
-   1.32. Set the max_freeswitch_weight parameter
-   1.33. ds_select_dst usage
-   1.34. ds_count usage
-   1.35. ds_is_in_list usage
-   1.36. OpenSIPS config script - sample dispatcher usage
+   1.22. Set cluster_id parameter
+   1.23. Set cluster_sharing_tag parameter
+   1.24. Create a new partition called 'part2'
+   1.25. Set the 'default' partition's “table_name” parameter
+   1.26. Set “setid_col” parameter
+   1.27. Set “destination_col” parameter
+   1.28. Set “state_col” parameter
+   1.29. Set “weight_col” parameter
+   1.30. Set “priority_col” parameter
+   1.31. Set “attrs_col” parameter
+   1.32. Set “socket_col” parameter
+   1.33. Set the fetch_freeswitch_load parameter
+   1.34. Set the max_freeswitch_weight parameter
+   1.35. ds_select_dst usage
+   1.36. ds_count usage
+   1.37. ds_is_in_list usage
+   1.38. OpenSIPS config script - sample dispatcher usage
 
 Chapter 1. Admin Guide
 
@@ -179,7 +183,9 @@ Chapter 1. Admin Guide
 
    The following modules must be loaded before this module:
      * TM - only if active recovery of failed hosts is required.
-       freeswitch - only if "fetch_freeswitch_stats" is enabled..
+     * clusterer - only if "cluster_id" option is enabled.
+     * database - one of the DB SQL modules
+     * freeswitch - only if "fetch_freeswitch_stats" is enabled..
 
 1.2.2. External libraries or applications
 
@@ -513,23 +519,61 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 modparam("dispatcher", "persistent_state", 0)
 ...
 
-1.3.21. table_name (string)
+1.3.21. cluster_id (integer)
 
-   If you want to load the sets of gateways from the database you
-   must set this parameter as the database name. Setting this
-   parameter will only change the default partition's table_name.
-   Use the partition parameter to create and alter other
-   partitions.
+   The ID of the cluster the module is part of. The clustering
+   support is used in dispatcher module for two purposes: for
+   sharing the status of the destinations and for controlling the
+   pinging to destinations.
 
-   For every partition the default value is “dispatcher”.
+   If clustering enbled, the module will automatically share
+   changes over the status of the destinations with the other
+   OpenSIPS instances that are part of a cluster. Whenever such a
+   status changes (following an MI command, a probing result, a
+   script command), the module will replicate this status change
+   to all the nodes in this given cluster.
 
-   Example 1.22. Set the 'default' partition's “table_name”
-   parameter
+   The clustering with sharing tag support may be used to control
+   which node in the cluster will perform the pinging/probing to
+   destinations. See the cluster_sharing_tag option.
+
+   For more info on how to define and populate a cluster (with
+   OpenSIPS nodes) see the "clusterer" module.
+
+   Default value is “0 (none)”.
+
+   Example 1.22. Set cluster_id parameter
 ...
-modparam("dispatcher", "table_name", "my_dispatcher")
+# replicate destination status with all OpenSIPS in cluster ID 9
+modparam("dispatcher", "cluster_id", 9)
 ...
 
-1.3.22. partition (string)
+1.3.22. cluster_sharing_tag (string)
+
+   The name of the sharing tag (as defined per clusterer modules)
+   to control which node is responsible for perform the
+   self-triggered actions in the module. Such actions may be the
+   destination probing or sharing the changes in the destination
+   status. If defined, only the node with active status of this
+   tag will perform the actions (pinging and sharing status).
+
+   The cluster_id must be defined for this option to work.
+
+   This is an optional parameter. If not set, all the nodes in the
+   cluster will individually do the probing and share the status
+   changes.
+
+   Default value is “empty (none)”.
+
+   Example 1.23. Set cluster_sharing_tag parameter
+...
+# only the node with the active "vip" sharing tag will perform pinging
+# and broadcast the status changes
+modparam("dispatcher", "cluster_id", 9)
+modparam("dispatcher", "cluster_sharing_tag", "vip")
+...
+
+1.3.23. partition (string)
 
    Using this parameter the partition specific parameters (db_url,
    table_name, dst_avp, grp_avp, cnt_avp, sock_avp, attrs_avp,
@@ -543,7 +587,7 @@ modparam("dispatcher", "table_name", "my_dispatcher")
    be automatically created. The 'default' partition can also be
    defined using this parameter.
 
-   Example 1.23.  Create a new partition called 'part2'
+   Example 1.24.  Create a new partition called 'part2'
 ...
 modparam("dispatcher", "partition",
                 "part2:
@@ -553,91 +597,107 @@ modparam("dispatcher", "partition",
                     ds_define_blacklist = list2 = 4,6;")
 ...
 
-1.3.23. setid_col (string)
+1.3.24. table_name (string)
+
+   If you want to load the sets of gateways from the database you
+   must set this parameter as the database name. Setting this
+   parameter will only change the default partition's table_name.
+   Use the partition parameter to create and alter other
+   partitions.
+
+   For every partition the default value is “dispatcher”.
+
+   Example 1.25. Set the 'default' partition's “table_name”
+   parameter
+...
+modparam("dispatcher", "table_name", "my_dispatcher")
+...
+
+1.3.25. setid_col (string)
 
    The column's name in the database storing the gateway's group
    id.
 
    Default value is “setid”.
 
-   Example 1.24. Set “setid_col” parameter
+   Example 1.26. Set “setid_col” parameter
 ...
 modparam("dispatcher", "setid_col", "groupid")
 ...
 
-1.3.24. destination_col (string)
+1.3.26. destination_col (string)
 
    The column's name in the database storing the destination's sip
    uri.
 
    Default value is “destination”.
 
-   Example 1.25. Set “destination_col” parameter
+   Example 1.27. Set “destination_col” parameter
 ...
 modparam("dispatcher", "destination_col", "uri")
 ...
 
-1.3.25. state_col (string)
+1.3.27. state_col (string)
 
    The column's name in the database storing the state of the
    destination uri.
 
    Default value is “state”.
 
-   Example 1.26. Set “state_col” parameter
+   Example 1.28. Set “state_col” parameter
 ...
 modparam("dispatcher", "state_col", "dststate")
 ...
 
-1.3.26. weight_col (string)
+1.3.28. weight_col (string)
 
    The column's name in the database storing the weight for
    destination uri.
 
    Default value is “weight”.
 
-   Example 1.27. Set “weight_col” parameter
+   Example 1.29. Set “weight_col” parameter
 ...
 modparam("dispatcher", "weight_col", "dstweight")
 ...
 
-1.3.27. priority_col (string)
+1.3.29. priority_col (string)
 
    The column's name in the database storing the priority for
    destination uri.
 
    Default value is “priority”.
 
-   Example 1.28. Set “priority_col” parameter
+   Example 1.30. Set “priority_col” parameter
 ...
 modparam("dispatcher", "priority_col", "dstprio")
 ...
 
-1.3.28. attrs_col (string)
+1.3.30. attrs_col (string)
 
    The column's name in the database storing the attributes
    (opaque string) for destination uri.
 
    Default value is “attrs”.
 
-   Example 1.29. Set “attrs_col” parameter
+   Example 1.31. Set “attrs_col” parameter
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
 ...
 
-1.3.29. socket_col (string)
+1.3.31. socket_col (string)
 
    The column's name in the database storing the socket (as
    string) for destination uri.
 
    Default value is “socket”.
 
-   Example 1.30. Set “socket_col” parameter
+   Example 1.32. Set “socket_col” parameter
 ...
 modparam("dispatcher", "socket_col", "my_sock")
 ...
 
-1.3.30. fetch_freeswitch_stats (integer)
+1.3.32. fetch_freeswitch_stats (integer)
 
    If enabled, FreeSWITCH destinations may have dynamic
    dispatching weights, refreshed at runtime, using the FreeSWITCH
@@ -665,12 +725,12 @@ modparam("dispatcher", "socket_col", "my_sock")
 
    Default value is 0 (disabled).
 
-   Example 1.31. Set the fetch_freeswitch_load parameter
+   Example 1.33. Set the fetch_freeswitch_load parameter
 ...
 modparam("dispatcher", "fetch_freeswitch_stats", 1)
 ...
 
-1.3.31. max_freeswitch_weight (integer)
+1.3.33. max_freeswitch_weight (integer)
 
    The maximum weight of a FreeSWITCH ESL-enabled destination.
    This value is also used during startup/reload, when no stats
@@ -689,7 +749,7 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
 
    Default value is 100.
 
-   Example 1.32. Set the max_freeswitch_weight parameter
+   Example 1.34. Set the max_freeswitch_weight parameter
 ...
 modparam("dispatcher", "max_freeswitch_weight", 1000)
 ...
@@ -765,7 +825,7 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.33. ds_select_dst usage
+   Example 1.35. ds_select_dst usage
 ...
 ds_select_dst("1", "0");
 ...
@@ -874,7 +934,7 @@ ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
-   Example 1.34. ds_count usage
+   Example 1.36. ds_count usage
 ...
 if (ds_count("1", "a", "$avp(result)")) {
         ...
@@ -912,7 +972,7 @@ if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.35. ds_is_in_list usage
+   Example 1.37. ds_is_in_list usage
 ...
 if (ds_is_in_list("$si", "$sp")) {
         # source IP:PORT is in a dispatcher list
@@ -999,7 +1059,7 @@ opensipsctl fifo ds_reload
 
    Next picture displays a sample usage of dispatcher.
 
-   Example 1.36. OpenSIPS config script - sample dispatcher usage
+   Example 1.38. OpenSIPS config script - sample dispatcher usage
 ...
 #
 # sample config file for dispatcher module
@@ -1146,9 +1206,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 137 86 2388 1783
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 145 89 2764 1893
    2. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
-   3. Liviu Chircu (@liviuchircu) 61 44 1155 366
+   3. Liviu Chircu (@liviuchircu) 63 45 1158 396
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
    5. Ionut Ionita (@ionutrazvanionita) 44 17 1145 969
    6. Ovidiu Sas (@ovidiusas) 31 17 705 434
@@ -1187,8 +1247,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Oct 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Sep 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jan 2019
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Dec 2018
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
    5.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
@@ -1214,16 +1274,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Nick Altmann
-   (@nikbyte), Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ionel Cerghit (@ionel-cerghit), Jarrod
-   Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
-   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Vlad Paiu
-   (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw Pitucha, Anca
-   Vamanu, Klaus Darilion, Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Carsten Bock, Edson Gellert Schubert,
-   Elena-Ramona Modroiu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Nick Altmann (@nikbyte), Razvan
+   Crainea (@razvancrainea), Ionel Cerghit (@ionel-cerghit),
+   Jarrod Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut
+   Ionita (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Vlad
+   Paiu (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw Pitucha,
+   Anca Vamanu, Klaus Darilion, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Carsten Bock, Edson Gellert
+   Schubert, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

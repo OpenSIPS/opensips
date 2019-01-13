@@ -727,7 +727,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 32 174 262
    3. Andrei Pelinescu-Onciul 18 10 115 382
    4. Jan Janak (@janakj) 16 11 126 168
-   5. Liviu Chircu (@liviuchircu) 14 11 64 78
+   5. Liviu Chircu (@liviuchircu) 15 12 66 80
    6. Jiri Kuthan (@jiriatipteldotorg) 9 6 180 33
    7. Henning Westerholt (@henningw) 9 6 114 110
    8. Vlad Paiu (@vladpaiu) 7 4 90 80
@@ -761,8 +761,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2002 - Mar 2016

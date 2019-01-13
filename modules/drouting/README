@@ -44,7 +44,7 @@ Dynamic Routing Module
               1.3.21. probing_from (string)
               1.3.22. probing_reply_codes (string)
               1.3.23. probing_socket (string)
-              1.3.24. status_replication_cluster (integer)
+              1.3.24. cluster_id (integer)
               1.3.25. cluster_sharing_tag (string)
               1.3.26. use_domain (int)
               1.3.27. drg_user_col (str)
@@ -758,23 +758,23 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 ...
 
-1.3.24. status_replication_cluster (integer)
+1.3.24. cluster_id (integer)
 
    The ID of the cluster the module is part of. The clustering
-   support is used in drouting module for tw purposes: for sharing
-   the status of the gateways/carriers and for controlling the
-   pinging to gateways.
+   support is used in drouting module for two purposes: for
+   sharing the status of the gateways/carriers and for controlling
+   the pinging to gateways.
 
-   If clustering enbled, the module will automatically sharing the
-   gateways/destinations/carriers status changes with other
-   OpenSIPS instances that are part of a cluster. Whenever such a
-   status changes (following an MI command, a probing result, a
-   script command), the module will replicate this status change
-   to all the nodes in this given cluster.
+   If clustering enbled, the module will automatically share
+   changes over the status of the gateways/destinations/carriers
+   with the other OpenSIPS instances that are part of a cluster.
+   Whenever such a status changes (following an MI command, a
+   probing result, a script command), the module will replicate
+   this status change to all the nodes in this given cluster.
 
    The clustering with sharing tag support may be used to control
    which node in the cluster will perform the pinging/probing to
-   gatewayss. See the cluster_sharing_tag option.
+   gateways. See the cluster_sharing_tag option.
 
    For more info on how to define and populate a cluster (with
    OpenSIPS nodes) see the "clusterer" module.
@@ -790,20 +790,24 @@ modparam("drouting", "cluster_id", 9)
 1.3.25. cluster_sharing_tag (string)
 
    The name of the sharing tag (as defined per clusterer modules)
-   to control which node is responsible for perform the gateway
-   probing. If defined, only the node with active status of this
-   tag will perform the probing.
+   to control which node is responsible for perform the
+   self-triggered actions in the module. Such actions may be the
+   gateway probing or sharing the gateway/carrier status changes.
+   If defined, only the node with active status of this tag will
+   perform the actions (pinging and sharing status).
 
    The cluster_id must be defined for this option to work.
 
    This is an optional parameter. If not set, all the nodes in the
-   cluster will do the probing, individually.
+   cluster will individually do the probing and share the status
+   changes.
 
    Default value is “empty (none)”.
 
    Example 1.25. Set cluster_sharing_tag parameter
 ...
 # only the node with the active "vip" sharing tag will perform pinging
+# and broadcast the status changes
 modparam("drouting", "cluster_id", 9)
 modparam("drouting", "cluster_sharing_tag", "vip")
 ...
@@ -1602,13 +1606,13 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 310 149 11663 3816
-   2. Razvan Crainea (@razvancrainea) 63 32 282 1527
-   3. Liviu Chircu (@liviuchircu) 49 32 845 523
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 319 154 11873 3936
+   2. Razvan Crainea (@razvancrainea) 64 33 294 1528
+   3. Liviu Chircu (@liviuchircu) 50 33 855 533
    4. Mihai Tiganus (@tallicamike) 48 10 3130 710
    5. Vlad Paiu (@vladpaiu) 23 20 244 47
    6. Andrei Datcu (@andrei-datcu) 20 12 551 134
-   7. Vlad Patrascu (@rvlad-patrascu) 17 10 241 249
+   7. Vlad Patrascu (@rvlad-patrascu) 18 11 241 250
    8. Ovidiu Sas (@ovidiusas) 15 11 132 70
    9. Ionut Ionita (@ionutrazvanionita) 14 9 370 108
    10. Andrei Dragus 10 3 657 40
@@ -1639,13 +1643,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2018
-   2.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
-   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2018
-   4.  Alexey Vasilyev                     Oct 2018 - Oct 2018
-   5.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jul 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - May 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jan 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Dec 2018
+   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2018
+   4.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2018
+   5.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
+   6.  Alexey Vasilyev                     Oct 2018 - Oct 2018
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Ovidiu Sas (@ovidiusas)             May 2012 - Mar 2017
    9.  Jeremy Martinez                     Feb 2017 - Feb 2017
    10. Le Roy Christophe                   Feb 2017 - Feb 2017
@@ -1663,8 +1667,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Alexey Vasilyev,
-   Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Alexey Vasilyev, Razvan Crainea
    (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
    (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
    (@vladpaiu), Mihai Tiganus (@tallicamike), Andrei Datcu
