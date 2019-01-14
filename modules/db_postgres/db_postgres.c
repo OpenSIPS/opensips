@@ -112,16 +112,19 @@ int db_postgres_bind_api(const str* mod, db_func_t *dbb)
 
 	memset(dbb, 0, sizeof(db_func_t));
 
-	dbb->use_table        = db_postgres_use_table;
-	dbb->init             = db_postgres_init;
-	dbb->close            = db_postgres_close;
-	dbb->query            = db_postgres_query;
-	dbb->fetch_result     = db_postgres_fetch_result;
-	dbb->raw_query        = db_postgres_raw_query;
-	dbb->free_result      = db_postgres_free_result;
-	dbb->insert           = db_postgres_insert;
-	dbb->delete           = db_postgres_delete;
-	dbb->update           = db_postgres_update;
+	dbb->use_table         = db_postgres_use_table;
+	dbb->init              = db_postgres_init;
+	dbb->close             = db_postgres_close;
+	dbb->query             = db_postgres_query;
+	dbb->fetch_result      = db_postgres_fetch_result;
+	dbb->raw_query         = db_postgres_raw_query;
+	dbb->free_result       = db_postgres_free_result;
+	dbb->insert            = db_postgres_insert;
+	dbb->delete            = db_postgres_delete;
+	dbb->update            = db_postgres_update;
+	dbb->async_raw_query   = db_postgres_async_raw_query;
+	dbb->async_resume      = db_postgres_async_resume;
+	dbb->async_free_result = db_postgres_async_free_result;
 
 	dbb->cap |= DB_CAP_MULTIPLE_INSERT;
 	return 0;
