@@ -17,13 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- *
- * History:
- * ---------
- *  2007-06-25  first version (ancuta)
  */
-
-
 
 #include <stdlib.h>
 #include <string.h>
@@ -40,7 +34,6 @@
 #include <stdio.h>
 #include <fcntl.h>
 
-
 #include "../../sr_module.h"
 #include "../../resolve.h"
 #include "../../dprint.h"
@@ -51,10 +44,7 @@
 #include "../../ip_addr.h"
 #include "mi_datagram.h"
 #include "datagram_fnc.h"
-#include "mi_datagram_parser.h"
-#include "mi_datagram_writer.h"
 #include "../../mi/mi_trace.h"
-
 
 /* AF_LOCAL is not defined on solaris */
 
@@ -64,7 +54,6 @@
 #if !defined(PF_LOCAL)
 #define PF_LOCAL PF_UNIX
 #endif
-
 
 #define MAX_CTIME_LEN 128
 #define MAX_NB_PORT	  65535
@@ -92,9 +81,6 @@ static int  mi_unix_socket_gid = -1;
 static char *mi_unix_socket_gid_s = 0;
 static int mi_unix_socket_mode = S_IRUSR| S_IWUSR| S_IRGRP| S_IWGRP;
 
-/* mi specific parameters */
-static char *mi_reply_indent = DEFAULT_MI_REPLY_IDENT;
-
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 
@@ -102,6 +88,7 @@ trace_dest t_dst;
 int mi_trace_mod_id = -1;
 char* mi_trace_bwlist_s;
 
+int mi_datagram_pp;
 
 
 static proc_export_t mi_procs[] = {
@@ -120,9 +107,9 @@ static param_export_t mi_params[] = {
 	{"unix_socket_group",   INT_PARAM,    &mi_unix_socket_gid       },
 	{"unix_socket_user",    STR_PARAM,    &mi_unix_socket_uid_s     },
 	{"unix_socket_user",    INT_PARAM,    &mi_unix_socket_uid       },
-	{"reply_indent",        STR_PARAM,    &mi_reply_indent          },
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
 	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s        },
+	{"pretty_printing",		INT_PARAM,	&mi_datagram_pp},
 	{0,0,0}
 };
 
@@ -287,13 +274,6 @@ static int mi_mod_init(void)
 
 static int mi_child_init(int rank)
 {
-	if ( rank>PROC_MAIN ) {
-		if(mi_datagram_writer_init( DATAGRAM_SOCK_BUF_SIZE ,
-		mi_reply_indent )!= 0){
-			LM_CRIT("failed to initiate mi_datagram_writer\n");
-			return -1;
-		}
-	}
 	return 0;
 }
 
@@ -327,12 +307,6 @@ static void datagram_process(int rank)
 	}
 	if (mi_init_datagram_buffer()!=0){
 		LM_ERR("failed to allocate datagram buffer\n");
-		exit(-1);
-	}
-
-	if (mi_datagram_writer_init( DATAGRAM_SOCK_BUF_SIZE ,
-	mi_reply_indent )!= 0){
-		LM_CRIT("failed to initiate mi_datagram_writer\n");
 		exit(-1);
 	}
 

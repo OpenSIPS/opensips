@@ -28,14 +28,6 @@
 
 #include <sys/socket.h>
 
-#define DEFAULT_MI_REPLY_IDENT "\t"
-#define MI_CMD_SEPARATOR       ':'
-
-/* the 2-chars separator between name and value */
-#define MI_ATTR_VAL_SEP1 ':'
-#define MI_ATTR_VAL_SEP2 ':'
-
-
 /* maximum size for the socket reply name */
 #define MAX_MI_FILENAME 128
 
