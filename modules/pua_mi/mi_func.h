@@ -23,8 +23,26 @@
 #ifndef _PUA_MI
 #define _PUA_MI
 
-struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param);
-struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param);
+mi_response_t *mi_pua_publish_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_pua_publish_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_pua_publish_3(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_pua_publish_4(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_pua_publish_5(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_pua_publish_6(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_pua_publish_7(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_pua_publish_8(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_pua_subscribe(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
 int mi_publ_rpl_cback(ua_pres_t* hentity, struct sip_msg* reply);
 
 #endif

@@ -46,186 +46,85 @@
  *		<publish_body>     - may not be present in case of update for expire
  */
 
-struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param)
+mi_response_t *mi_pua_publish(const mi_params_t *params,
+					struct mi_handler *async_hdl, str *etag, str *extra_headers,
+					str *content_type, str *body)
 {
 	int exp;
-	struct mi_node* node= NULL;
-	str pres_uri, expires;
-	str body= {0, 0};
+	str pres_uri;
 	struct sip_uri uri;
 	publ_info_t publ;
 	str event;
-	str content_type;
-	str etag;
-	str extra_headers;
 	int result;
-	int sign= 1;
 
 	LM_DBG("start\n");
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return 0;
+	if (get_mi_string_param(params, "presentity_uri",
+		&pres_uri.s, &pres_uri.len) < 0)
+		return init_mi_param_error();
 
-	/* Get presentity URI */
-	pres_uri = node->value;
 	if(pres_uri.s == NULL || pres_uri.s== 0)
 	{
 		LM_ERR("empty uri\n");
-		return init_mi_tree(404, "Empty presentity URI", 20);
+		return init_mi_error(404, MI_SSTR("Empty presentity URI"));
 	}
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)<0 )
 	{
 		LM_ERR("bad uri\n");
-		return init_mi_tree(404, "Bad presentity URI", 18);
+		return init_mi_error(404, MI_SSTR("Bad presentity URI"));
 	}
 	LM_DBG("pres_uri '%.*s'\n", pres_uri.len, pres_uri.s);
 
-	node = node->next;
-	if(node == NULL)
-		return 0;
-
-	/* Get expires */
-	expires= node->value;
-	if(expires.s== NULL || expires.len== 0)
-	{
-		LM_ERR("empty expires parameter\n");
-		return init_mi_tree(400, "Empty expires parameter", 23);
-	}
-	if(expires.s[0]== '-')
-	{
-		sign= -1;
-		expires.s++;
-		expires.len--;
-	}
-	if( str2int(&expires, (unsigned int*) &exp)< 0)
-	{
-		LM_ERR("invalid expires parameter\n" );
-		goto error;
-	}
-
-	exp= exp* sign;
+	if (get_mi_int_param(params, "expires", &exp) < 0)
+		return init_mi_param_error();
 
 	LM_DBG("expires '%d'\n", exp);
 
-	node = node->next;
-	if(node == NULL)
-		return 0;
+	if (get_mi_string_param(params, "event_package", &event.s, &event.len) < 0)
+		return init_mi_param_error();
 
-	/* Get event */
-	event= node->value;
 	if(event.s== NULL || event.len== 0)
 	{
 		LM_ERR("empty event parameter\n");
-		return init_mi_tree(400, "Empty event parameter", 21);
+		return init_mi_error(400, MI_SSTR("Empty event parameter"));
 	}
 	LM_DBG("event '%.*s'\n",
 	    event.len, event.s);
-
-	node = node->next;
-	if(node == NULL)
-		return 0;
-
-	/* Get content type */
-	content_type= node->value;
-	if(content_type.s== NULL || content_type.len== 0)
-	{
-		LM_ERR("empty content type\n");
-		return init_mi_tree(400, "Empty content type parameter", 28);
-	}
-	LM_DBG("content type '%.*s'\n",
-	    content_type.len, content_type.s);
-
-	node = node->next;
-	if(node == NULL)
-		return 0;
-
-	/* Get etag */
-	etag= node->value;
-	if(etag.s== NULL || etag.len== 0)
-	{
-		LM_ERR("empty etag parameter\n");
-		return init_mi_tree(400, "Empty etag parameter", 20);
-	}
-	LM_DBG("etag '%.*s'\n", etag.len, etag.s);
-
-	node = node->next;
-	if(node == NULL)
-		return 0;
-
-	/* Get extra_headers */
-	extra_headers = node->value;
-	if(extra_headers.s== NULL || extra_headers.len== 0)
-	{
-		LM_ERR("empty extra_headers parameter\n");
-		return init_mi_tree(400, "Empty extra_headers", 19);
-	}
-	LM_DBG("extra_headers '%.*s'\n",
-	    extra_headers.len, extra_headers.s);
-
-	node = node->next;
-
-	/* Get body */
-	if(node == NULL )
-	{
-		body.s= NULL;
-		body.len= 0;
-	}
-	else
-	{
-		if(node->next!=NULL)
-			return init_mi_tree(400, "Too many parameters", 19);
-
-		body= node->value;
-		if(body.s == NULL || body.s== 0)
-		{
-			LM_ERR("empty body parameter\n");
-			return init_mi_tree(400, "Empty body parameter", 20);
-		}
-	}
-	LM_DBG("body '%.*s'\n", body.len, body.s);
-
-	/* Check that body is NULL if content type is . */
-	if(body.s== NULL && (content_type.len!= 1 || content_type.s[0]!= '.'))
-	{
-		LM_ERR("body is missing, but content type is not .\n");
-		return init_mi_tree(400, "Body parameter is missing", 25);
-	}
 
 	/* Create the publ_info_t structure */
 	memset(&publ, 0, sizeof(publ_info_t));
 
 	publ.pres_uri= &pres_uri;
-	if(body.s)
+	if(body)
 	{
-		publ.body= &body;
+		publ.body= body;
 	}
 
 	publ.event= get_event_flag(&event);
 	if(publ.event< 0)
 	{
 		LM_ERR("unknown event\n");
-		return init_mi_tree(400, "Unknown event", 13);
+		return init_mi_error(400, MI_SSTR("Unknown event"));
 	}
-	if(content_type.len!= 1)
+	if(content_type)
 	{
-		publ.content_type= content_type;
+		publ.content_type= *content_type;
 	}
 
-	if(! (etag.len== 1 && etag.s[0]== '.'))
+	if(etag)
 	{
-		publ.etag= &etag;
+		publ.etag= etag;
 	}
 	publ.expires= exp;
 
-	if (!(extra_headers.len == 1 && extra_headers.s[0] == '.')) {
-	    publ.extra_headers = &extra_headers;
+	if (extra_headers) {
+	    publ.extra_headers = extra_headers;
 	}
 
-	if (cmd->async_hdl!=NULL)
+	if (async_hdl)
 	{
 		publ.source_flag= MI_ASYN_PUBLISH;
-		publ.cb_param= (void*)cmd->async_hdl;
+		publ.cb_param= (void*)async_hdl;
 	}
 	else
 		publ.source_flag|= MI_PUBLISH;
@@ -237,24 +136,181 @@ struct mi_root* mi_pua_publish(struct mi_root* cmd, void* param)
 	if(result< 0)
 	{
 		LM_ERR("sending publish failed\n");
-		return init_mi_tree(500, "MI/PUBLISH failed", 17);
+		return init_mi_error(500, MI_SSTR("MI/PUBLISH failed"));
 	}
 	if(result== 418)
-		return init_mi_tree(418, "Wrong ETag", 10);
+		return init_mi_error(418, MI_SSTR("Wrong ETag"));
 
-	if (cmd->async_hdl==NULL)
-			return init_mi_tree( 202, "Accepted", 8);
+	if (async_hdl==NULL)
+			return init_mi_result_string(MI_SSTR("Accepted"));
 	else
-			return MI_ROOT_ASYNC_RPL;
+			return MI_ASYNC_RPL;
+}
 
-error:
+mi_response_t *get_ctype_body_params(const mi_params_t *params,
+										str *content_type, str *body)
+{
+	if (get_mi_string_param(params, "content_type",
+		&content_type->s, &content_type->len) < 0)
+		return init_mi_param_error();
 
-	return 0;
+	if(content_type->s== NULL || content_type->len== 0)
+	{
+		LM_ERR("empty content type\n");
+		return init_mi_error(400, MI_SSTR("Empty content type parameter"));
+	}
+	LM_DBG("content type '%.*s'\n",
+	    content_type->len, content_type->s);
+
+	if (get_mi_string_param(params, "body", &body->s, &body->len) < 0)
+		return init_mi_param_error();
+
+	if(body->s == NULL || body->s== 0)
+	{
+		LM_ERR("empty body parameter\n");
+		return init_mi_error(400, MI_SSTR("Empty body parameter"));
+	}
+	LM_DBG("body '%.*s'\n", body->len, body->s);
+
+	return NULL;
+}
+
+mi_response_t *get_etag_param(const mi_params_t *params, str *etag)
+{
+	if (get_mi_string_param(params, "etag", &etag->s, &etag->len) < 0)
+		return init_mi_param_error();
+
+	if(etag->s== NULL || etag->len== 0)
+	{
+		LM_ERR("empty etag parameter\n");
+		return init_mi_error(400, MI_SSTR("Empty etag parameter"));
+	}
+	LM_DBG("etag '%.*s'\n", etag->len, etag->s);
+
+	return NULL;
+}
+
+mi_response_t *get_extra_hdrs_param(const mi_params_t *params, str *extra_hdrs)
+{
+	if (get_mi_string_param(params, "extra_headers",
+		&extra_hdrs->s, &extra_hdrs->len) < 0)
+		return init_mi_param_error();
+
+	if(extra_hdrs->s== NULL || extra_hdrs->len== 0)
+	{
+		LM_ERR("empty extra_headers parameter\n");
+		return init_mi_error(400, MI_SSTR("Empty extra_headers"));
+	}
+	LM_DBG("extra_headers '%.*s'\n",
+	    extra_hdrs->len, extra_hdrs->s);
+
+	return NULL;
+}
+
+mi_response_t *mi_pua_publish_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_pua_publish(params, async_hdl, NULL,NULL,NULL,NULL);
+}
+
+mi_response_t *mi_pua_publish_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str etag;
+	mi_response_t *err;
+
+	if ((err = get_etag_param(params, &etag)) != NULL)
+		return err;
+
+	return mi_pua_publish(params, async_hdl, &etag, NULL,NULL,NULL);
+}
+
+mi_response_t *mi_pua_publish_3(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str extra_hdrs;
+	mi_response_t *err;
+
+	if ((err = get_extra_hdrs_param(params, &extra_hdrs)) != NULL)
+		return err;
+
+	return mi_pua_publish(params, async_hdl, NULL, &extra_hdrs,NULL,NULL);
+}
+
+mi_response_t *mi_pua_publish_4(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str content_type, body;
+	mi_response_t *err;
+
+	if ((err = get_ctype_body_params(params, &content_type, &body)) != NULL)
+		return err;
+
+	return mi_pua_publish(params, async_hdl, NULL,NULL, &content_type, &body);
+}
+
+mi_response_t *mi_pua_publish_5(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str etag, extra_hdrs;
+	mi_response_t *err;
+
+	if ((err = get_etag_param(params, &etag)) != NULL)
+		return err;
+	if ((err = get_extra_hdrs_param(params, &extra_hdrs)) != NULL)
+		return err;
+
+	return mi_pua_publish(params, async_hdl, &etag, &extra_hdrs,NULL,NULL);
+}
+
+mi_response_t *mi_pua_publish_6(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str etag, content_type, body;
+	mi_response_t *err;
+
+	if ((err = get_etag_param(params, &etag)) != NULL)
+		return err;
+	if ((err = get_ctype_body_params(params, &content_type, &body)) != NULL)
+		return err;	
+
+	return mi_pua_publish(params, async_hdl, &etag, NULL, &content_type, &body);
+}
+
+mi_response_t *mi_pua_publish_7(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str extra_hdrs, content_type, body;
+	mi_response_t *err;
+
+	if ((err = get_extra_hdrs_param(params, &extra_hdrs)) != NULL)
+		return err;
+	if ((err = get_ctype_body_params(params, &content_type, &body)) != NULL)
+		return err;	
+
+	return mi_pua_publish(params, async_hdl, NULL, &extra_hdrs, &content_type, &body);
+}
+
+mi_response_t *mi_pua_publish_8(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str etag, extra_hdrs, content_type, body;
+	mi_response_t *err;
+
+	if ((err = get_etag_param(params, &etag)) != NULL)
+		return err;
+	if ((err = get_extra_hdrs_param(params, &extra_hdrs)) != NULL)
+		return err;
+	if ((err = get_ctype_body_params(params, &content_type, &body)) != NULL)
+		return err;	
+
+	return mi_pua_publish(params, async_hdl, &etag, &extra_hdrs, &content_type, &body);
 }
 
 int mi_publ_rpl_cback( ua_pres_t* hentity, struct sip_msg* reply)
 {
-	struct mi_root *rpl_tree= NULL;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	struct mi_handler* mi_hdl= NULL;
 	struct hdr_field* hdr= NULL;
 	int statuscode;
@@ -286,13 +342,13 @@ int mi_publ_rpl_cback( ua_pres_t* hentity, struct sip_msg* reply)
 
 	mi_hdl = (struct mi_handler *)(hentity->cb_param);
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		goto done;
 
-	addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%d %.*s",
-		statuscode, reason.len, reason.s);
-
+	if (add_mi_string_fmt(resp_obj, MI_SSTR("reply"), "%d %.*s",
+		statuscode, reason.len, reason.s) < 0)
+		goto error;
 
 	if(statuscode== 200)
 	{
@@ -308,19 +364,21 @@ int mi_publ_rpl_cback( ua_pres_t* hentity, struct sip_msg* reply)
 		}
 		etag= hdr->body;
 
-		addf_mi_node_child( &rpl_tree->node, 0, "ETag", 4, "%.*s", etag.len, etag.s);
+		if (add_mi_string(resp_obj, MI_SSTR("ETag"), etag.s, etag.len) < 0)
+			goto error;
 
-		addf_mi_node_child( &rpl_tree->node, 0, "Expires", 7, "%d", lexpire);
+		if (add_mi_number(resp_obj, MI_SSTR("Expires"), lexpire) < 0)
+			goto error;
 	}
 
 done:
 	if ( statuscode >= 200)
 	{
-		mi_hdl->handler_f( rpl_tree, mi_hdl, 1);
+		mi_hdl->handler_f( resp, mi_hdl, 1);
 	}
 	else
 	{
-		mi_hdl->handler_f( rpl_tree, mi_hdl, 0 );
+		mi_hdl->handler_f( resp, mi_hdl, 0 );
 	}
 	hentity->cb_param = 0;
 	return 0;
@@ -339,86 +397,56 @@ error:
  * */
 
 
-struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param)
+mi_response_t *mi_pua_subscribe(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	int exp= 0;
-	str pres_uri, watcher_uri, expires;
-	struct mi_node* node= NULL;
-	struct mi_root* rpl= NULL;
+	str pres_uri, watcher_uri;
 	struct sip_uri uri;
 	subs_info_t subs;
-	int sign= 1;
 	str event;
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return 0;
+	if (get_mi_string_param(params, "presentity_uri",
+		&pres_uri.s, &pres_uri.len) < 0)
+		return init_mi_param_error();
 
-	pres_uri= node->value;
 	if(pres_uri.s == NULL || pres_uri.s== 0)
 	{
-		return init_mi_tree(400, "Bad uri", 7);
+		return init_mi_error(400, MI_SSTR("Bad uri"));
 	}
 	if(parse_uri(pres_uri.s, pres_uri.len, &uri)<0 )
 	{
 		LM_ERR("bad uri\n");
-		return init_mi_tree(400, "Bad uri", 7);
+		return init_mi_error(400, MI_SSTR("Bad uri"));
 	}
 
-	node = node->next;
-	if(node == NULL)
-		return 0;
+	if (get_mi_string_param(params, "watcher_uri",
+		&watcher_uri.s, &watcher_uri.len) < 0)
+		return init_mi_param_error();
 
-	watcher_uri= node->value;
 	if(watcher_uri.s == NULL || watcher_uri.s== 0)
 	{
-		return init_mi_tree(400, "Bad uri", 7);
+		return init_mi_error(400, MI_SSTR("Bad uri"));
 	}
 	if(parse_uri(watcher_uri.s, watcher_uri.len, &uri)<0 )
 	{
 		LM_ERR("bad uri\n");
-		return init_mi_tree(400, "Bad uri", 7);
+		return init_mi_error(400, MI_SSTR("Bad uri"));
 	}
 
-	/* Get event */
-	node = node->next;
-	if(node == NULL)
-		return 0;
+	if (get_mi_string_param(params, "event",
+		&event.s, &event.len) < 0)
+		return init_mi_param_error();
 
-	event= node->value;
 	if(event.s== NULL || event.len== 0)
 	{
 		LM_ERR("empty event parameter\n");
-		return init_mi_tree(400, "Empty event parameter", 21);
+		return init_mi_error(400, MI_SSTR("Empty event parameter"));
 	}
 	LM_DBG("event '%.*s'\n", event.len, event.s);
 
-	node = node->next;
-	if(node == NULL || node->next!=NULL)
-	{
-		LM_ERR("Too much or too many parameters\n");
-		return 0;
-	}
-
-	expires= node->value;
-	if(expires.s== NULL || expires.len== 0)
-	{
-		LM_ERR("Bad expires parameter\n");
-		return init_mi_tree(400, "Bad expires", 11);
-	}
-	if(expires.s[0]== '-')
-	{
-		sign= -1;
-		expires.s++;
-		expires.len--;
-	}
-	if( str2int(&expires, (unsigned int*) &exp)< 0)
-	{
-		LM_ERR("invalid expires parameter\n" );
+	if (get_mi_int_param(params, "expires", &exp) < 0)
 		goto error;
-	}
-
-	exp= exp* sign;
 
 	LM_DBG("expires '%d'\n", exp);
 
@@ -436,7 +464,7 @@ struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param)
 	if(subs.event< 0)
 	{
 		LM_ERR("unknown event\n");
-		return init_mi_tree(400, "Unknown event", 13);
+		return init_mi_error(400, MI_SSTR("Unknown event"));
 	}
 
 	if(pua_send_subscribe(&subs)< 0)
@@ -445,11 +473,7 @@ struct mi_root* mi_pua_subscribe(struct mi_root* cmd, void* param)
 		goto error;
 	}
 
-	rpl= init_mi_tree(202, "accepted", 8);
-	if(rpl == NULL)
-		return 0;
-
-	return rpl;
+	return init_mi_result_string(MI_SSTR("accepted"));
 
 error:
 
