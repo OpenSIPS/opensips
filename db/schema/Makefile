@@ -135,7 +135,7 @@ oracle:
 	done
 
 oracle_clean:
-	-@rm -f $(ROOT)/scripts/oracle/*
+	-@rm -f $(ROOT)/scripts/oracle/*.sql
 
 .PHONY: dbtext dbtext_clean
 dbtext:
