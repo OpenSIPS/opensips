@@ -55,7 +55,7 @@
 #include "udomain.h"         /* {insert,delete,get,release}_urecord */
 #include "urecord.h"         /* {insert,delete,get}_ucontact */
 #include "ucontact.h"        /* update_ucontact */
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
@@ -480,32 +480,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (location_cluster < 0) {
-		LM_ERR("Invalid cluster id to replicate contacts to, must be 0 or "
-			"a positive number\n");
+	if (ul_init_cluster() < 0) {
+		LM_ERR("failed to init clustering support!\n");
 		return -1;
-	}
-
-	if (location_cluster) {
-		if (load_clusterer_api(&clusterer_api) != 0) {
-			LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
-			return -1;
-		}
-
-		/* register handler for processing usrloc packets to the clusterer module */
-		if (clusterer_api.register_capability(&contact_repl_cap,
-			receive_binary_packets, receive_cluster_event, location_cluster,
-			rr_persist == RRP_SYNC_FROM_CLUSTER? 1 : 0,
-			(cluster_mode == CM_FEDERATION
-			 || cluster_mode == CM_FEDERATION_CACHEDB) ?
-				NODE_CMP_EQ_SIP_ADDR : NODE_CMP_ANY) < 0) {
-			LM_ERR("cannot register callbacks to clusterer module!\n");
-			return -1;
-		}
-
-		if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
-		    clusterer_api.request_sync(&contact_repl_cap, location_cluster, 0) < 0)
-			LM_ERR("Sync request failed\n");
 	}
 
 	init_flag = 1;

@@ -42,7 +42,7 @@
 #include "ul_mod.h"
 #include "utime.h"
 #include "ul_callback.h"
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "udomain.h"
 #include "dlist.h"
 #include "usrloc.h"

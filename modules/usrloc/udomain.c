@@ -47,7 +47,7 @@
 
 #include "ul_mod.h"            /* usrloc module parameters */
 #include "utime.h"
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "ul_callback.h"
 #include "usrloc.h"
 

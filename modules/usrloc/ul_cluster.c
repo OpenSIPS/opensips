@@ -1,7 +1,7 @@
 /*
- * Usrloc record and contact replication
+ * user location clustering
  *
- * Copyright (C) 2013 OpenSIPS Solutions
+ * Copyright (C) 2013-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,16 +17,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2013-10-09 initial version (Liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "../../forward.h"
 
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "ul_mod.h"
 #include "dlist.h"
 #include "kv_store.h"
@@ -34,6 +30,36 @@
 str contact_repl_cap = str_init("usrloc-contact-repl");
 
 struct clusterer_binds clusterer_api;
+
+int ul_init_cluster(void)
+{
+	if (location_cluster <= 0) {
+		LM_ERR("Invalid 'location_cluster'! It must be a positive integer!\n");
+		return -1;
+	}
+
+	if (load_clusterer_api(&clusterer_api) != 0) {
+		LM_ERR("failed to load clusterer API\n");
+		return -1;
+	}
+
+	/* register handler for processing usrloc packets to the clusterer module */
+	if (clusterer_api.register_capability(&contact_repl_cap,
+		receive_binary_packets, receive_cluster_event, location_cluster,
+		rr_persist == RRP_SYNC_FROM_CLUSTER? 1 : 0,
+		(cluster_mode == CM_FEDERATION
+		 || cluster_mode == CM_FEDERATION_CACHEDB) ?
+			NODE_CMP_EQ_SIP_ADDR : NODE_CMP_ANY) < 0) {
+		LM_ERR("cannot register callbacks to clusterer module!\n");
+		return -1;
+	}
+
+	if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
+	    clusterer_api.request_sync(&contact_repl_cap, location_cluster, 0) < 0)
+		LM_ERR("Sync request failed\n");
+
+	return 0;
+}
 
 /* packet sending */
 

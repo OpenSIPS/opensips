@@ -46,7 +46,7 @@
 #include "ul_callback.h"
 #include "urecord.h"
 #include "ucontact.h"
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "udomain.h"
 #include "dlist.h"
 #include "utime.h"
