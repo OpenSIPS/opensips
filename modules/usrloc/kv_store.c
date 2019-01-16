@@ -90,6 +90,18 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
 	return new_val;
 }
 
+void kv_del(map_t _store, const str* _key)
+{
+	int_str_t *val;
+
+	val = (int_str_t *)map_remove(_store, *_key);
+	if (!val)
+		return;
+
+	if (val->is_str)
+		shm_free(val->s.s);
+}
+
 static int push_kv_to_json(void *param, str key, void *value)
 {
 	cJSON *flat_map = (cJSON *)param, *val_json;

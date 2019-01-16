@@ -42,6 +42,7 @@
 
 extern int location_cluster;
 extern struct clusterer_binds clusterer_api;
+extern str ul_shtag_key;
 
 extern str contact_repl_cap;
 

@@ -27,6 +27,7 @@
 
 int_str_t *kv_get(map_t _store, const str* _key);
 int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val);
+void       kv_del(map_t _store, const str* _key);
 
 /*
  * Serialize the given K/V store as a JSON, SHM mem string.

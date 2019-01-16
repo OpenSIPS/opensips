@@ -30,6 +30,7 @@
 str contact_repl_cap = str_init("usrloc-contact-repl");
 
 struct clusterer_binds clusterer_api;
+str ul_shtag_key = str_init("_st");
 
 int ul_init_cluster(void)
 {
