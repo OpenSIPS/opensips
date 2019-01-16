@@ -84,7 +84,7 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
 
 		memcpy(new_val->s.s, _val->s.s, _val->s.len);
 		new_val->s.s[_val->s.len] = '\0';
-		new_val->s.len--;
+		new_val->s.len = _val->s.len;
 	}
 
 	return new_val;
