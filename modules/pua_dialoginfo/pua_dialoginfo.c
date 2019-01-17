@@ -332,7 +332,6 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 
 	} else {
 
-		s.s = int2str((uint64_t)branch, &s.len);
 		if (dlg_api.fetch_dlg_value(dlg, &dlg_branch_var, &s, 0)< 0) {
 			LM_ERR("Failed to retrieve wining branch from dialog\n");
 			branch = 0;
