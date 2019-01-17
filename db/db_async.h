@@ -34,6 +34,12 @@
 
 #include "db_con.h"
 
+/**
+ * Used to indicate when an async trasferrer connection is not available.
+ * ie. max transferres exceeded.
+ */
+#define ASYNC_CON_UNAVAILABLE -128
+
 typedef int (*get_con_fd_f) (void *con);
 
 /**

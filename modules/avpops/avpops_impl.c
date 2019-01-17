@@ -824,7 +824,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
 		pv_elem_t *query, struct db_url *url, pvname_list_t *dest)
 {
 	int printbuf_len;
-	int rc, read_fd;
+	int rc, read_fd = ASYNC_CON_UNAVAILABLE;
 	query_async_param *param;
 	str qstr;
 
@@ -848,8 +848,14 @@ int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
 	qstr.s = printbuf;
 	qstr.len = printbuf_len;
 
-	/* No async capabilities - just run it in blocking mode */
-	if (!DB_CAPABILITY(url->dbf, DB_CAP_ASYNC_RAW_QUERY))
+	/* Try async mode */
+	if (DB_CAPABILITY(url->dbf, DB_CAP_ASYNC_RAW_QUERY))
+	{
+		read_fd = url->dbf.async_raw_query(url->hdl, &qstr, &_priv);
+	}
+
+	/* No async capabilities or could not get an async connection - just run it in blocking mode */
+	if (read_fd == ASYNC_CON_UNAVAILABLE)
 	{
 		rc = db_query_avp(url, msg, &qstr, dest);
 		LM_DBG("sync query \"%.*s\" returned: %d\n", qstr.len, qstr.s, rc);
@@ -862,7 +868,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
 		return rc == 1 ? -2 : (rc != 0 ? -1 : 1);
 	}
 
-	read_fd = url->dbf.async_raw_query(url->hdl, &qstr, &_priv);
+	/* other errors */
 	if (read_fd < 0)
 	{
 		ctx->resume_param = NULL;

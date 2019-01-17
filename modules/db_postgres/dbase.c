@@ -124,6 +124,72 @@ void db_postgres_close(db_con_t* _h)
 	db_do_close(_h, db_postgres_free_connection);
 }
 
+
+static inline int db_postgres_conn_ok(const db_con_t* _con)
+{
+	switch(PQstatus(CON_CONNECTION(_con)))
+	{
+		case CONNECTION_OK:
+			return 1;
+
+		case CONNECTION_BAD:
+			LM_DBG("connection reset (%s)\n", CON_SQLURL(_con));
+			PQreset(CON_CONNECTION(_con));
+
+			if (PQstatus(CON_CONNECTION(_con)) == CONNECTION_OK) {
+				LM_DBG("connection reset success (%s)\n", CON_SQLURL(_con));
+				return 1;
+			}
+			break;
+
+		default:
+			goto connection_err;
+	}
+
+	connection_err:
+	LM_ERR("%p PQstatus(%s) invalid: (%s)\n", _con,
+		   PQerrorMessage(CON_CONNECTION(_con)), CON_SQLURL(_con));
+	return -1;
+}
+
+
+/**
+ *  Helper function to pick a result from multiple statements in a single query.
+ *  Picks one and frees the other.
+ *
+ *  Arguments :
+ *	    PGresult *new:  the new result.
+ *      PGresult *old:  the previous result.
+ *
+ *  Returns :
+ *  	the result with tuples or the newer one.
+ */
+inline static PGresult* db_postgres_pick_result(PGresult *new, PGresult *old)
+{
+	ExecStatusType status_new = PQresultStatus(new);
+	ExecStatusType status_old = PQresultStatus(old);
+
+	if (!old) {
+		LM_DBG("PQgetResult: %s\n", PQresStatus(status_new));
+		return new;
+	}
+
+	/*
+	 * we do not call PQsetSingleRowMode() the query always fetches all
+	 * rows so we do not expect to get PGRES_SINGLE_TUPLE.
+	 */
+	if (status_new != PGRES_TUPLES_OK && status_old == PGRES_TUPLES_OK) {
+		LM_DBG("PQgetResult: picking old [%s] over new [%s]\n", PQresStatus(status_old), PQresStatus(status_new));
+		PQclear(new);
+		return old;
+	}
+
+	LM_DBG("PQgetResult: picking new [%s] over old [%s]\n", PQresStatus(status_new), PQresStatus(status_old));
+	PQclear(old);
+	return new;
+}
+
+
 /*
 ** submit_query	run a query
 **
@@ -139,9 +205,9 @@ void db_postgres_close(db_con_t* _h)
 static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 {
 	int i,ret=0;
-	ExecStatusType result;
 	PGresult *res = NULL;
 	struct timeval start;
+	int failed_query, successful_query = 0;
 
 	if(! _con || !_s || !_s->s)
 	{
@@ -149,35 +215,14 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 		return(-1);
 	}
 
-	submit_func_called = 1;
-
-	/* this bit of nonsense in case our connection get screwed up */
-	switch(PQstatus(CON_CONNECTION(_con)))
-	{
-		case CONNECTION_OK:
-			break;
-		case CONNECTION_BAD:
-			LM_DBG("connection reset\n");
-			PQreset(CON_CONNECTION(_con));
-			break;
-		case CONNECTION_STARTED:
-		case CONNECTION_MADE:
-		case CONNECTION_AWAITING_RESPONSE:
-		case CONNECTION_AUTH_OK:
-		case CONNECTION_SETENV:
-		case CONNECTION_SSL_STARTUP:
-		case CONNECTION_NEEDED:
-		default:
-			LM_ERR("%p PQstatus(%s) invalid: %.*s\n", _con,
-				PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
-			return -1;
-	}
-
-	for (i=0;i<max_db_queries;i++) {
+	for (i=0; i<max_db_queries && !successful_query; i++) {
+		failed_query = 0;
 		/* free any previous query that is laying about */
-		if(CON_RESULT(_con)) {
-			free_query(_con);
+		free_query(_con);
+		if ( db_postgres_conn_ok(_con) < 0 ) {
+			continue;
 		}
+
 		start_expire_timer(start,db_postgres_exec_query_threshold);
 		ret = PQsendQuery(CON_CONNECTION(_con), _s->s);
 		stop_expire_timer(start,db_postgres_exec_query_threshold,"pgsql query",_s->s,_s->len,0);
@@ -185,38 +230,45 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 		if (ret) {
 			LM_DBG("%p PQsendQuery(%.*s)\n", _con, _s->len, _s->s);
 
-			while (1) {
-				if ((res = PQgetResult(CON_CONNECTION(_con)))) {
-					CON_RESULT(_con) = res;
+			while ((res = PQgetResult(CON_CONNECTION(_con)))) {
+				/* If this query included multiple statements
+				 * if one statement already completed, it could be unsafe to resend the query.
+				 *
+				 * In addition, if multiple queries were sent at once.
+				 * Let's return to the user the last query with result rows.
+				 * So if a query like BEGIN; UPDATE ...; DELETE RETURNING *; COMMIT;
+				 * we get the results of the DELETE instead of COMMIT;
+				 */
+				if (PQresultStatus(res) != PGRES_FATAL_ERROR) {
+					successful_query++;
 				} else {
-					break;
+					failed_query++;
 				}
-			}
 
-			result = PQresultStatus(CON_RESULT(_con));
-			if(result==PGRES_FATAL_ERROR)
-				goto reconnect;
-			else return 0;
-		} else {
-reconnect:
-			/*  reconnection attempt - if this is the case */
-			LM_DBG("%p PQsendQuery failed: %s Query: %.*s\n", _con,
-			PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
-			if(PQstatus(CON_CONNECTION(_con))!=CONNECTION_OK) {
-				LM_DBG("connection reset\n");
-				PQreset(CON_CONNECTION(_con));
-			} else {
-				/* failure not due to connection loss - no point in retrying */
-				if(CON_RESULT(_con)) {
-					free_query(_con);
-				}
-				break;
+				CON_RESULT(_con) = db_postgres_pick_result(res, CON_RESULT(_con));
 			}
 		}
+
+		if(successful_query) {
+			if (! failed_query)
+				return 0;
+			else
+				goto err;
+		}
+
+		if ( PQstatus(CON_CONNECTION(_con)) == CONNECTION_OK ) {
+			// server disconnect unexpectedly, retry.
+			break;
+		}
+
+		LM_ERR("%p PQsendQuery Failed: %s Query: %.*s\n", _con,
+			   PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
 	}
 
+err:
 	LM_ERR("%p PQsendQuery Error: %s Query: %.*s\n", _con,
-	PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
+			PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
+	free_query(_con);
 	return -1;
 }
 
@@ -245,33 +297,13 @@ static int db_postgres_submit_async_query(const db_con_t* _con, const str* _s)
 
 	submit_func_called = 1;
 
-	/* this bit of nonsense in case our connection get screwed up */
-	switch(PQstatus(CON_CONNECTION(_con)))
-	{
-		case CONNECTION_OK:
-			break;
-		case CONNECTION_BAD:
-			LM_DBG("connection reset\n");
-			PQreset(CON_CONNECTION(_con));
-			break;
-		case CONNECTION_STARTED:
-		case CONNECTION_MADE:
-		case CONNECTION_AWAITING_RESPONSE:
-		case CONNECTION_AUTH_OK:
-		case CONNECTION_SETENV:
-		case CONNECTION_SSL_STARTUP:
-		case CONNECTION_NEEDED:
-		default:
-			LM_ERR("%p PQstatus(%s) invalid: %.*s\n", _con,
-				PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
-			return -1;
-	}
-
 	for (i=0;i<max_db_queries;i++) {
-		/* free any previous query that is laying about */
-		if(CON_RESULT(_con)) {
-			free_query(_con);
+		if ( db_postgres_conn_ok(_con) < 0 ) {
+			continue;
 		}
+
+		/* free any previous query that is laying about */
+		free_query(_con);
 		start_expire_timer(start,db_postgres_exec_query_threshold);
 		ret = PQsendQuery(CON_CONNECTION(_con), _s->s);
 		stop_expire_timer(start,db_postgres_exec_query_threshold,"pgsql query",_s->s,_s->len,0);
@@ -279,19 +311,17 @@ static int db_postgres_submit_async_query(const db_con_t* _con, const str* _s)
 		if (ret) {
 			LM_DBG("%p PQsendQuery(%.*s)\n", _con, _s->len, _s->s);
 			return 0;
+		}
+
+		LM_DBG("%p PQsendQuery failed: %s Query: %.*s\n", _con,
+		PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
+		if( PQstatus(CON_CONNECTION(_con)) != CONNECTION_OK ) {
+			LM_DBG("connection reset\n");
+			PQreset(CON_CONNECTION(_con));
 		} else {
-			LM_DBG("%p PQsendQuery failed: %s Query: %.*s\n", _con,
-			PQerrorMessage(CON_CONNECTION(_con)), _s->len, _s->s);
-			if(PQstatus(CON_CONNECTION(_con))!=CONNECTION_OK) {
-				LM_DBG("connection reset\n");
-				PQreset(CON_CONNECTION(_con));
-			} else {
-				/* failure not due to connection loss - no point in retrying */
-				if(CON_RESULT(_con)) {
-					free_query(_con);
-				}
-				break;
-			}
+			/* failure not due to connection loss - no point in retrying */
+			free_query(_con);
+			break;
 		}
 	}
 
@@ -520,8 +550,17 @@ int db_postgres_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r)
 
 int db_postgres_store_result(const db_con_t* _con, db_res_t** _r)
 {
-	ExecStatusType pqresult;
 	int rc = 0;
+	ExecStatusType pqresult = PQresultStatus(CON_RESULT(_con));
+
+	LM_DBG("%p PQresultStatus(%s) PQgetResult(%p)\n", _con,
+		PQresStatus(pqresult), CON_RESULT(_con));
+
+	if (_r == NULL) {
+		// Not an error
+		LM_DBG("result output param not provided\n");
+		goto done;
+	}
 
 	*_r = db_new_result();
 	if (*_r==NULL) {
@@ -529,11 +568,6 @@ int db_postgres_store_result(const db_con_t* _con, db_res_t** _r)
 		rc = -1;
 		goto done;
 	}
-
-	pqresult = PQresultStatus(CON_RESULT(_con));
-
-	LM_DBG("%p PQresultStatus(%s) PQgetResult(%p)\n", _con,
-		PQresStatus(pqresult), CON_RESULT(_con));
 
 	switch(pqresult) {
 		case PGRES_COMMAND_OK:
@@ -716,51 +750,38 @@ int db_postgres_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
 {
 	int *fd_ref;
 	int code;
-	struct timeval start;
-	struct my_con *con;
+	struct pg_con *con;
 
 	if (!_h || !_s || !_s->s) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
 	}
 
-	con = (struct my_con *)db_init_async(_h, db_postgres_get_con_fd,
+	con = (struct pg_con *)db_init_async(_h, db_postgres_get_con_fd,
 	                           &fd_ref, (void *)db_postgres_new_async_connection);
 	*_priv = con;
-	if (!con)
+	if (!con) {
 		LM_INFO("Failed to open new connection (current: 1 + %d). Running "
-				"in sync mode!\n", ((struct pool_con *)_h->tail)->no_transfers);
+				"in sync mode!\n", ((struct pool_con *) _h->tail)->no_transfers);
+		return ASYNC_CON_UNAVAILABLE;
+	}
 
 	/* no prepared statements support */
 	CON_RESET_CURR_PS(_h);
-	start_expire_timer(start, db_postgres_exec_query_threshold);
 
-	/* async mode */
-	if (con) {
-		code = db_postgres_submit_async_query(_h, _s);
-	/* sync mode */
-	} else {
-		code = db_postgres_submit_query(_h, _s);
-	}
-	stop_expire_timer(start, db_postgres_exec_query_threshold,
-		"postgres async query", _s->s, _s->len, 0);
+	code = db_postgres_submit_async_query(_h, _s);
+
 	if (code < 0) {
 		LM_ERR("failed to send postgres query %.*s",_s->len,_s->s);
 		goto out;
 	} else {
 		/* success */
-		if (!con)
-			return -1;
-
 		*fd_ref = db_postgres_get_con_fd(con);
 		db_switch_to_sync(_h);
 		return *fd_ref;
 	}
 
 out:
-	if (!con)
-		return -1;
-
 	db_switch_to_sync(_h);
 	db_store_async_con(_h, (struct pool_con *)con);
 
@@ -771,6 +792,7 @@ int db_postgres_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
 {
 	struct pool_con *con = (struct pool_con *)_priv;
 	PGresult *res = NULL;
+	int ret = 0;
 
 #ifdef EXTRA_DEBUG
 	if (!db_match_async_con(fd, _h)) {
@@ -779,45 +801,50 @@ int db_postgres_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
 	}
 #endif
 
-
 	db_switch_to_async(_h, con);
 
-	if( PQconsumeInput(CON_CONNECTION(_h)) == 0) {
-		LM_ERR("Unable to consume input\n");
-		db_switch_to_sync(_h);
-		db_store_async_con(_h, con);
-		return -1;
-	}
-
-	if(PQisBusy(CON_CONNECTION(_h))) {
-		async_status = ASYNC_CONTINUE;
-
-		db_switch_to_sync(_h);
-		return 1;
-	}
-
 	while (1) {
-		if ((res = PQgetResult(CON_CONNECTION(_h)))) {
-			CON_RESULT(_h) = res;
-		} else {
+		if (! PQconsumeInput(CON_CONNECTION(_h))) {
+			LM_ERR("Unable to consume input: (%s)\n", PQerrorMessage(CON_CONNECTION(_h)));
+			ret = -1;
+			goto out;
+		}
+
+		if (PQisBusy(CON_CONNECTION(_h))) {
+			async_status = ASYNC_CONTINUE;
+			db_switch_to_sync(_h);
+			return 1;
+		}
+
+		res = PQgetResult(CON_CONNECTION(_h));
+
+		if (!res) {
 			break;
 		}
-	}
 
-	if (_r) {
-		if (db_postgres_store_result(_h, _r) != 0) {
-			LM_ERR("failed to store result\n");
-			db_switch_to_sync(_h);
-			db_store_async_con(_h, con);
-			return -2;
+		/* If this query included multiple statements, return error if any of them failed.
+		 * In addition, if multiple queries were sent at once.
+		 */
+		if (PQresultStatus(res) == PGRES_FATAL_ERROR) {
+			ret = -2;
 		}
+
+		CON_RESULT(_h) = db_postgres_pick_result(res, CON_RESULT(_h));
 	}
 
+	/* from here on the result is freed by
+	 * db_postgres_store_result` or `resume_async_dbquery`*/
+	if (db_postgres_store_result(_h, _r) != 0) {
+		LM_ERR("failed to store result\n");
+		ret = -3;
+	}
+
+out:
 	db_switch_to_sync(_h);
 	db_store_async_con(_h, con);
-
-	return 0;
+	return ret;
 }
+
 
 int db_postgres_async_free_result(db_con_t *_h, db_res_t *_r, void *_priv)
 {

@@ -29,6 +29,7 @@
 #define _AVP_OPS_DB_H_
 
 #include "../../db/db.h"
+#include "../../db/db_async.h"
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
 #include "../../sr_module.h"

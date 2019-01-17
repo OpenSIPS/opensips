@@ -1144,23 +1144,18 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
 	con = (struct my_con *)db_init_async(_h, db_mysql_get_con_fd,
 	                           &fd_ref, (void *)db_mysql_new_connection);
 	*_priv = con;
-	if (!con)
+	if (!con) {
 		LM_INFO("Failed to open new connection (current: 1 + %d). Running "
-				"in sync mode!\n", ((struct pool_con *)_h->tail)->no_transfers);
+				"in sync mode!\n", ((struct pool_con *) _h->tail)->no_transfers);
+		return ASYNC_CON_UNAVAILABLE;
+	}
 
 	/* no prepared statements support */
 	CON_RESET_CURR_PS(_h);
 
 	for (i = 0; i < max_db_queries; i++) {
 		start_expire_timer(start, db_mysql_exec_query_threshold);
-
-		/* async mode */
-		if (con) {
-			code = wrapper_single_mysql_send_query(_h, _s);
-		/* sync mode */
-		} else {
-			code = wrapper_single_mysql_real_query(_h, _s);
-		}
+		code = wrapper_single_mysql_send_query(_h, _s);
 		stop_expire_timer(start, db_mysql_exec_query_threshold,
 						  "mysql async query", _s->s, _s->len, 0);
 		if (code < 0) {
@@ -1180,9 +1175,6 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
 			/* success */
 			mysql_raise_event(_h);
 
-			if (!con)
-				return -1;
-
 			*fd_ref = db_mysql_get_con_fd(con);
 			db_switch_to_sync(_h);
 			return *fd_ref;
@@ -1193,9 +1185,6 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
 	LM_CRIT("too many mysql server reconnection failures\n");
 
 out:
-	if (!con)
-		return -1;
-
 	db_switch_to_sync(_h);
 	db_store_async_con(_h, (struct pool_con *)con);
 
