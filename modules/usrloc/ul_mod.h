@@ -41,6 +41,7 @@
 extern enum ul_cluster_mode cluster_mode;
 extern enum ul_rr_persist rr_persist;
 extern enum ul_sql_write_mode sql_wmode;
+extern enum ul_pinging_mode pinging_mode;
 
 /* manner in which node data should be restored (or not) following a restart */
 enum ul_rr_persist {
@@ -58,6 +59,12 @@ enum ul_sql_write_mode {
 	SQL_WRITE_BACK,
 } ul_sql_write_mode_t;
 #define bad_sql_write_mode(wm) ((wm) < SQL_NO_WRITE || (wm) > SQL_WRITE_BACK)
+
+enum ul_pinging_mode {
+	PMD_OWNERSHIP,
+	PMD_COOPERATION,
+} ul_pinging_mode_t;
+#define bad_pinging_mode(pm) ((pm) < PMD_OWNERSHIP || (pm) > PMD_COOPERATION)
 
 #define bad_cluster_mode(mode) ((mode) < CM_NONE || (mode) > CM_SQL_ONLY)
 
@@ -120,7 +127,6 @@ extern int cseq_delay;
 extern int ul_hash_size;
 extern int latency_event_min_us_delta;
 extern int latency_event_min_us;
-extern int shared_pinging;
 
 extern db_con_t* ul_dbh;   /* Database connection handle */
 extern db_func_t ul_dbf;

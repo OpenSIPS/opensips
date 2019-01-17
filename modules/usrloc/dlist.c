@@ -531,9 +531,8 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 	enum cdb_filter_op rhs_op;
 	int shortage;
 
-	if (shared_pinging)
-		cur_node_idx = clusterer_api.get_my_index(
-		                 location_cluster, &contact_repl_cap, &nr_nodes);
+	cur_node_idx = clusterer_api.get_my_index(
+	                 location_cluster, &contact_repl_cap, &nr_nodes);
 
 	unit = MAX_DB_AOR_HASH / (double)(part_max * nr_nodes);
 	min = (int)(unit * part_max * cur_node_idx + unit * part_idx);
@@ -646,11 +645,9 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	if (zero_end)
 		*len -= (int)sizeof(c->c.len);
 
-	if (shared_pinging && (cluster_mode == CM_FULL_SHARING
-	    || cluster_mode == CM_FULL_SHARING_CACHEDB)) {
+	if (pinging_mode == PMD_COOPERATION)
 		cur_node_idx = clusterer_api.get_my_index(
 		         location_cluster, &contact_repl_cap, &nr_nodes);
-	}
 
 	/* this is a very noisy log :( */
 	//LM_DBG("part/max: %d/%d, idx/nodes: %d/%d\n",

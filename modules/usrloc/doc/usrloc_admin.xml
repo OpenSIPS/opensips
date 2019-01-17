@@ -166,7 +166,9 @@
 		which makes all nodes aware of each others' presence. Thus, the
 		distributed user location node topologies are able to collectively
 		partition the pinging workload and spread it evenly across the current
-		number of cluster nodes, at any given point in time.
+		number of cluster nodes, at any given point in time.  The
+		<xref linkend="param_pinging_mode"/> module parameter describes the
+		built-in pinging heuristics in more detail.
 		</para>
 	</section>
 	</section>
@@ -1350,31 +1352,75 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 		</example>
 	</section>
 
-	<section id="param_shared_pinging" xreflabel="shared_pinging">
-		<title><varname>shared_pinging</varname> (integer)</title>
+	<section id="param_pinging_mode" xreflabel="pinging_mode">
+		<title><varname>pinging_mode</varname> (string)</title>
 		<para>
-		Only relevant in a "full sharing" or "full sharing cachedb"
-		<xref linkend="param_cluster_mode"/>.  If set to non-zero, the overall
-		pinging workload will be equally spread across cluster nodes with the
-		help of the clustering layer that keeps track of the current number of
-		active nodes.
+		Depending on the <xref linkend="param_cluster_mode"/>, the module
+		will perform contact pinging using one of at most two possible
+		heuristics:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis role='bold'>"ownership"</emphasis> - this instance
+				will only attempt to ping a contact if it decides it is the
+				logical owner of the contact.  If a shared tag is attached to
+				a contact, a node will keep sending pings to that contact as
+				long as it owns the respective tag.  If no shared tag has been
+				specified for a given contact, the default is to assume
+				permanent ownership of the contact and always ping it.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis role='bold'>"cooperation"</emphasis> - the
+				assumption behind this pinging heuristic is that all
+				user location cluster nodes are symmetrical (possibly
+				front-ended by a SIP traffic balancing entity), such that
+				<emphasis role='bold'>either </emphasis> of them can ping
+				<emphasis role='bold'>any</emphasis> contact.
+				Under this assumption, all currently online user location
+				cluster nodes will cooperate and evenly split the pinging
+				workload between them by hashing AoRs modulo
+				current_number_of_online_nodes, and only picking the ones that
+				they are responsible for.
+			</para>
+		</listitem>
+		</itemizedlist>
 		</para>
+		<table frame='all'><title>Possible values for the "pinging_mode",
+				depending on the current "cluster_mode"</title>
+		<tgroup cols='6' align='left' colsep='1' rowsep='1'>
+		<tbody>
+		<row>
+			<entry><xref linkend="param_cluster_mode"/></entry>
+			<entry align="center">none</entry>
+			<entry align="center">federation-cachedb</entry>
+			<entry align="center">full-sharing</entry>
+			<entry align="center">full-sharing-cachedb</entry>
+			<entry align="center">sql-only</entry>
+		</row>
+		<row>
+			<entry><xref linkend="param_pinging_mode"/></entry>
+			<entry align="center"><emphasis role='bold'>ownership</emphasis></entry>
+			<entry align="center"><emphasis role='bold'>ownership</emphasis></entry>
+			<entry align="center"><emphasis role='bold'>cooperation</emphasis> / ownership</entry>
+			<entry align="center"><emphasis role='bold'>cooperation</emphasis></entry>
+			<entry align="center"><emphasis>unmaintained</emphasis></entry>
+		</row>
+		</tbody>
+		</tgroup>
+		</table>
 		<para>
-		Disabling this parameter may be useful in simple active/backup
-		setups, where only the active node must perform the pinging.
+			Notice that only the <emphasis role='bold'>"full-sharing"</emphasis>
+			clustering mode allows some flexibility -- all other modes are
+			logically tied to a single pinging logic.  Any unaccepted value,
+			according to the above table, set
+			for those modes will be silently discarded.
 		</para>
-		<para>
-			<emphasis>
-				Default value is <quote>1 (enabled)</quote>.
-			</emphasis>
-		</para>
-
 		<example>
-		<title>Set <varname>shared_pinging</varname> parameter</title>
+		<title>Set <varname>pinging_mode</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# do not partition the pinging workload across cluster nodes
-modparam("usrloc", "shared_pinging", 0)
+# prepare an active/backup "full-sharing" setup, with no front-end
+modparam("usrloc", "pinging_mode", "ownership")
 ...
 </programlisting>
 		</example>
