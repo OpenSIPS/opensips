@@ -61,9 +61,9 @@ static void smpp_conn_clean(struct tcp_connection* c);
 static int send_smpp_msg(struct sip_msg* msg);
 
 static unsigned smpp_port = 2775;
+static int smpp_max_msg_chunks = 8;
 
 str db_url = {NULL, 0};
-int db_mode = 0;			/* Database usage mode: 0 = no cache, 1 = cache */
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)smpp_init, 0, 0, 0, 0},
@@ -73,6 +73,7 @@ static cmd_export_t cmds[] = {
 
 static param_export_t params[] = {
 	{"smpp_port", INT_PARAM, &smpp_port},
+	{"smpp_max_msg_chunks", INT_PARAM, &smpp_max_msg_chunks},
 	{"db_url", STR_PARAM, &db_url},
 	{"outbound_uri", STR_PARAM, &smpp_outbound_uri},
 	/* TODO: columns */
@@ -236,8 +237,7 @@ static int smpp_send(struct socket_info* send_sock,
 }
 
 static struct tcp_req smpp_current_req;
-static int smpp_handle_req(struct tcp_req *req,
-		struct tcp_connection *con, int _max_msg_chunks)
+static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 {
 	long size;
 
@@ -268,7 +268,7 @@ static int smpp_handle_req(struct tcp_req *req,
 			LM_DBG("We still have things on the pipe - "
 				"keeping connection \n");
 		}
-		
+
 		/* give the message to the registered functions */
 		handle_smpp_msg(req->buf, con);
 
@@ -278,16 +278,53 @@ static int smpp_handle_req(struct tcp_req *req,
 			pkg_free(req);
 		}
 
-		if (size)
-			memmove(req->buf, req->parsed, size);
-
-		init_tcp_req(req, size);
 		con->msg_attempts = 0;
 
-		/* if we still have some unparsed bytes, try to  parse them too*/
-		if (size) 
+		if (size) {
+			memmove(req->buf, req->parsed, size);
+
+			init_tcp_req(req, size);
+
+			/* if we still have some unparsed bytes, try to  parse them too*/
 			return 1;
-	} 
+		}
+	} else {
+
+		con->msg_attempts ++;
+		if (con->msg_attempts == smpp_max_msg_chunks) {
+			LM_ERR("Made %u read attempts but message is not complete yet - "
+				   "closing connection \n",con->msg_attempts);
+			return -1;
+		}
+
+		if (req == &smpp_current_req) {
+			/* let's duplicate this - most likely another conn will come in */
+
+			LM_DBG("We didn't manage to read a full request\n");
+			con->con_req = pkg_malloc(sizeof(struct tcp_req));
+			if (con->con_req == NULL) {
+				LM_ERR("No more mem for dynamic con request buffer\n");
+				return -1;
+			}
+
+			if (req->pos != req->buf) {
+				/* we have read some bytes */
+				memcpy(con->con_req->buf,req->buf,req->pos-req->buf);
+				con->con_req->pos = con->con_req->buf + (req->pos-req->buf);
+			} else {
+				con->con_req->pos = con->con_req->buf;
+			}
+
+			if (req->parsed != req->buf)
+				con->con_req->parsed =con->con_req->buf+(req->parsed-req->buf);
+			else
+				con->con_req->parsed = con->con_req->buf;
+
+			con->con_req->complete=req->complete;
+			con->con_req->content_len=req->content_len;
+			con->con_req->error = req->error;
+		}
+	}
 
 	return 0;
 }
@@ -372,8 +409,7 @@ static int smpp_read_req(struct tcp_connection* con, int* bytes_read)
 		goto error;
 	}
 
-	//TODO max_msg_chunks
-	switch (smpp_handle_req(req, con, 32) ) {
+	switch (smpp_handle_req(req, con) ) {
 		case 1:
 			goto again;
 		case -1:
