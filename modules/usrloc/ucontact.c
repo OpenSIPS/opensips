@@ -101,7 +101,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 {
 	struct sip_uri tmp_uri;
 	ucontact_t *c;
-	int_str_t shtag;
+	int_str_t shtag, *shtagp;
 
 	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
 	if (!c) {
@@ -157,6 +157,10 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		shtag.is_str = 1;
 		shtag.s = *_ci->shtag;
 		if (!kv_put(c->kv_storage, &ul_shtag_key, &shtag))
+			goto mem_error;
+	} else if (have_mem_storage()) {
+		shtagp = kv_get(c->kv_storage, &ul_shtag_key);
+		if (shtagp && shm_str_dup(&c->shtag, &shtagp->s) < 0)
 			goto mem_error;
 	}
 
@@ -253,7 +257,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	} while(0)
 
 	char* ptr;
-	int_str_t shtag;
+	int_str_t shtag, *shtagp;
 
 	/* RFC 3261 states 'All registrations from a UAC SHOULD use
 	 * the same Call-ID header field value for registrations sent
@@ -318,15 +322,19 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		shtag.s = *_ci->shtag;
 		if (!kv_put(_c->kv_storage, &ul_shtag_key, &shtag))
 			goto out_oom;
-	} else {
-		if (_c->shtag.s)
-			shm_free(_c->shtag.s);
+	} else if (have_mem_storage()) {
+		shtagp = kv_get(_c->kv_storage, &ul_shtag_key);
+		if (shtagp) {
+			update_str(&_c->shtag, &shtagp->s, 0);
+		} else {
+			if (_c->shtag.s)
+				shm_free(_c->shtag.s);
 
-		_c->shtag.s = NULL;
-		_c->shtag.len = 0;
+			_c->shtag.s = NULL;
+			_c->shtag.len = 0;
 
-		if (have_mem_storage())
 			kv_del(_c->kv_storage, &ul_shtag_key);
+		}
 	}
 
 	if (compute_next_hop(_c) != 0)
