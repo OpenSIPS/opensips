@@ -76,7 +76,18 @@ static param_export_t params[] = {
 	{"smpp_max_msg_chunks", INT_PARAM, &smpp_max_msg_chunks},
 	{"db_url", STR_PARAM, &db_url},
 	{"outbound_uri", STR_PARAM, &smpp_outbound_uri},
-	/* TODO: columns */
+	{"smpp_table", STR_PARAM, &smpp_table},
+	{"name_col", STR_PARAM, &smpp_name_col.s},
+	{"ip_col", STR_PARAM, &smpp_ip_col.s},
+	{"port_col", STR_PARAM, &smpp_port_col.s},
+	{"system_id_col", STR_PARAM, &smpp_system_id_col.s},
+	{"password_col", STR_PARAM, &smpp_password_col.s},
+	{"system_type_col", STR_PARAM, &smpp_system_type_col.s},
+	{"src_ton_col", STR_PARAM, &smpp_src_ton_col.s},
+	{"src_npi_col", STR_PARAM, &smpp_src_npi_col.s},
+	{"dst_ton_col", STR_PARAM, &smpp_dst_ton_col.s},
+	{"dst_npi_col", STR_PARAM, &smpp_dst_npi_col.s},
+	{"session_type_col", STR_PARAM, &smpp_session_type_col.s},
 	{0, 0, 0}
 };
 

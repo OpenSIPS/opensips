@@ -61,6 +61,20 @@ int smpp_db_init(const str *db_url)
 		LM_ERR("cannot initialize database connection\n");
 		return -1;
 	}
+
+	smpp_table.len = strlen(smpp_table.s);
+	smpp_name_col.len = strlen(smpp_name_col.s);
+	smpp_ip_col.len = strlen(smpp_ip_col.s);
+	smpp_port_col.len = strlen(smpp_port_col.s);
+	smpp_system_id_col.len = strlen(smpp_system_id_col.s);
+	smpp_password_col.len = strlen(smpp_password_col.s);
+	smpp_system_type_col.len = strlen(smpp_system_type_col.s);
+	smpp_src_ton_col.len = strlen(smpp_src_ton_col.s);
+	smpp_src_npi_col.len = strlen(smpp_src_npi_col.s);
+	smpp_dst_ton_col.len = strlen(smpp_dst_ton_col.s);
+	smpp_dst_npi_col.len = strlen(smpp_dst_npi_col.s);
+	smpp_session_type_col.len = strlen(smpp_session_type_col.s);
+
 	return 0;
 }
 
