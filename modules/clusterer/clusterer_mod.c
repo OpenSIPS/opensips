@@ -368,6 +368,7 @@ static int mod_init(void)
 			LM_ERR("Failed to load info from DB\n");
 			goto error;
 		}
+		dr_dbf.close(db_hdl);
 	}
 
 	/* register timer */
@@ -427,6 +428,13 @@ error:
 /* initialize child */
 static int child_init(int rank)
 {
+	if (db_mode) {
+		/* init DB connection */
+		if ((db_hdl = dr_dbf.init(&clusterer_db_url)) == 0) {
+			LM_ERR("cannot initialize database connection\n");
+			return -1;
+		}
+	}
 	return 0;
 }
 
