@@ -215,6 +215,8 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 		return(-1);
 	}
 
+	submit_func_called = 1;
+
 	for (i=0; i<max_db_queries && !successful_query; i++) {
 		failed_query = 0;
 		/* free any previous query that is laying about */
@@ -294,8 +296,6 @@ static int db_postgres_submit_async_query(const db_con_t* _con, const str* _s)
 		LM_ERR("invalid parameter value\n");
 		return(-1);
 	}
-
-	submit_func_called = 1;
 
 	for (i=0;i<max_db_queries;i++) {
 		if ( db_postgres_conn_ok(_con) < 0 ) {
