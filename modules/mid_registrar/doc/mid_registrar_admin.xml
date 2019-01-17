@@ -692,7 +692,7 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 	<title>Exported Functions</title>
 	<section id="func_mid_registrar_save" xreflabel="mid_registrar_save()">
 		<title>
-		<function moreinfo="none">mid_registrar_save(domain[, [flags][, [aor][, [outgoing_expires]]]])</function>
+		<function moreinfo="none">mid_registrar_save(domain[, flags[, aor[, outgoing_expires[, ownership_tag]]]])</function>
 		</title>
 		<para>
 		Function to be called when handling REGISTER requests. This function
@@ -843,6 +843,19 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 		for the contact expiration interval of the outgoing REGISTER
 		request, which overrides the default
 			<emphasis><xref linkend="param_outgoing_expires"/></emphasis> module parameter.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>ownership_tag</emphasis> (optional) - a cluster-shared
+			tag (see the clusterer module documentation for more details) which
+			will be attached to each contact saved from the current request.
+			This tag is only relevant in clustered user location scenarios and
+			helps determine the current logical owner node of a contact.  This,
+			in turn, is useful in order to restrict nodes which are not
+			currently responsible for this contact from performing certain
+			actions (for example: incorrectly originating pings from a
+			non-owned virtual IP address in highly-available setups).
 			</para>
 		</listitem>
 		</itemizedlist>
