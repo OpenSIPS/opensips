@@ -577,7 +577,7 @@ modparam("registrar", "disable_gruu", 0)
 	<title>Exported Functions</title>
 	<section id="func_save" xreflabel="save()">
 		<title>
-		<function moreinfo="none">save(domain [,flags ,[aor]])</function>
+		<function moreinfo="none">save(domain[, flags[, aor[, ownership_tag]]])</function>
 		</title>
 		<para>
 		The function processes a REGISTER message. It can add, remove or
@@ -694,9 +694,22 @@ modparam("registrar", "disable_gruu", 0)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>aor</emphasis> (optional) - Variable contain a custom
+			<emphasis>aor</emphasis> (optional) - Variable containing a custom
 			AOR; if missing, the AOR will be taken from the default place -
 			the TO header URI.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>ownership_tag</emphasis> (optional) - a cluster-shared
+			tag (see the clusterer module documentation for more details) which
+			will be attached to each contact saved from the current request.
+			This tag is only relevant in clustered user location scenarios and
+			helps determine the current logical owner node of a contact.  This,
+			in turn, is useful in order to restrict nodes which are not
+			currently responsible for this contact from performing certain
+			actions (for example: incorrectly originating pings from a
+			non-owned virtual IP address in highly-available setups).
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -721,8 +734,12 @@ save("location","mc5");
 # save into 'location', no flags, use as AOR the FROM URI
 save("location","","$fu");
 ...
-# save into 'location',no DB update, no reply to send, take AOR from AVP
+# save into 'location', no DB update, force registration, take AOR from AVP
 save("location","mr", "$avp(aor)");
+...
+# save into 'location', mark the contacts with the "vip" ownership tag and
+# replicate these contacts to the backup node, which does not currently own "vip"
+save("location", , , "vip");
 ...
 </programlisting>
 		</example>
