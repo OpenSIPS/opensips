@@ -144,7 +144,7 @@ typedef struct ucontact_info {
 	time_t last_modified;
 	str *packed_kv_storage;
 	str *attr;
-	str *shtag;
+	str shtag;
 } ucontact_info_t;
 
 /*! \brief

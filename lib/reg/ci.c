@@ -37,7 +37,8 @@
  * Fills the common part (for all contacts) of the info structure
  */
 ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
-             unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags)
+             unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags,
+			 str *ownership_tag)
 {
 	static ucontact_info_t ci;
 	static str no_ua = str_init("n/a");
@@ -111,6 +112,9 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 			ci.cflags |= _nat_flag;
 			ci.received = path_received;
 		}
+
+		if (ownership_tag)
+			ci.shtag = *ownership_tag;
 
 		allow_parsed = 0; /* not parsed yet */
 		received_searched = 0; /* not searched yet */

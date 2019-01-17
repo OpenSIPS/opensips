@@ -84,6 +84,11 @@ static inline int have_mem_storage(void)
 	       cluster_mode == CM_FULL_SHARING;
 }
 
+static inline int tags_in_use(void)
+{
+	return pinging_mode == PMD_OWNERSHIP;
+}
+
 #define have_data_replication() \
 	(cluster_mode == CM_FEDERATION_CACHEDB || \
 	 cluster_mode == CM_FEDERATION || \

@@ -58,7 +58,10 @@ enum usrloc_modes {
 typedef struct usrloc_api {
 	int use_domain;
 	enum ul_cluster_mode cluster_mode;
+	/* whether the user location caches contacts in memory */
 	int (*have_mem_storage) (void);
+	/* whether the user location makes use of contact ownership tags */
+	int (*tags_in_use) (void);
 	unsigned int nat_flag;
 
 	register_udomain_t     register_udomain;

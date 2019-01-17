@@ -150,12 +150,12 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		if (shm_str_dup( &c->attr, _ci->attr) < 0) goto mem_error;
 	}
 
-	if (_ci->shtag && _ci->shtag->s) {
-		if (shm_str_dup(&c->shtag, _ci->shtag) < 0)
+	if (_ci->shtag.s) {
+		if (shm_str_dup(&c->shtag, &_ci->shtag) < 0)
 			goto mem_error;
 
 		shtag.is_str = 1;
-		shtag.s = *_ci->shtag;
+		shtag.s = _ci->shtag;
 		if (!kv_put(c->kv_storage, &ul_shtag_key, &shtag))
 			goto mem_error;
 	} else if (have_mem_storage()) {
@@ -315,11 +315,11 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		}
 	}
 
-	if (_ci->shtag && _ci->shtag->s) {
-		update_str(&_c->shtag, _ci->shtag, 0);
+	if (_ci->shtag.s) {
+		update_str(&_c->shtag, &_ci->shtag, 0);
 
 		shtag.is_str = 1;
-		shtag.s = *_ci->shtag;
+		shtag.s = _ci->shtag;
 		if (!kv_put(_c->kv_storage, &ul_shtag_key, &shtag))
 			goto out_oom;
 	} else if (have_mem_storage()) {

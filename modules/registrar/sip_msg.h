@@ -36,6 +36,7 @@
 struct save_ctx {
 	unsigned int flags;
 	str aor;
+	str ownership_tag;
 	unsigned int max_contacts;
 	unsigned int min_expires;
 	unsigned int max_expires;
