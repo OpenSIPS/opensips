@@ -119,7 +119,8 @@ typedef int (*get_my_sip_addr_f)(int cluster_id, str *out_addr);
  * This function operates on a set of nodes which are reachable and
  * synchronized/OK (for a certain capability).
  *
- * @nr_nodes - output parameter, the number of nodes in the set.
+ * @nr_nodes - output parameter, the number of nodes in the set.  Guaranteed
+ *             to be a positive integer!
  */
 typedef int (*get_my_index_f)(int cluster_id, str *capability, int *nr_nodes);
 

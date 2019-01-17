@@ -679,8 +679,9 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 			r =( urecord_t * ) *dest;
 
 			/* distribute ping workload across cluster nodes */
-			if (nr_nodes && r->aorhash % nr_nodes != cur_node_idx)
-				continue;
+			if (pinging_mode == PMD_COOPERATION &&
+				r->aorhash % nr_nodes != cur_node_idx)
+					continue;
 
 			for (c = r->contacts; c != NULL; c = c->next) {
 				if (c->c.len <= 0)
@@ -690,6 +691,12 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 				 * flags set
 				 */
 				if ((c->cflags & flags) != flags)
+					continue;
+
+				/* a lot slower than fetching all tags before the outermost
+				 * loop, but at least we have proper responsiveness to tag
+				 * switches! */
+				if (pinging_mode == PMD_OWNERSHIP && !is_my_contact(c))
 					continue;
 
 				if (c->received.s) {

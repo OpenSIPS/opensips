@@ -47,7 +47,10 @@ extern str ul_shtag_key;
 extern str contact_repl_cap;
 
 int ul_init_cluster(void);
-int is_my_contact(ucontact_t *c);
+#define is_my_contact(__ct) \
+	(!__ct->shtag.s || \
+	 clusterer_api.shtag_get(&__ct->shtag, location_cluster) \
+		== SHTAG_STATE_ACTIVE)
 
 /* duplicate local events to other OpenSIPS instances */
 void replicate_urecord_insert(urecord_t *r);
