@@ -1788,6 +1788,15 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 				successful ping for this contact. Until the first ping reply
 				for a given contact arrives, its pinging latency will be 0.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>shtag</emphasis> - The shared tag of the contact,
+				which helps determine if the current node owns the contact
+				(e.g. possibly using the <emphasis role='bold'>$cluster.sh_tag
+				</emphasis> pseudo-variable in order to perform the check).
+			</para>
+			<para><emphasis>NOTICE: </emphasis>If a contact has no shared tag
+				attached to it, this key will map to a "" (empty string) value!
+			</para></listitem>
 		</itemizedlist>
 	</section>
 
@@ -1822,7 +1831,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		<function moreinfo="none">E_UL_LATENCY_UPDATE</function>
 		</title>
 		<para>
-		This event is raised when a contact pinging latency passes either
+		This event is raised when a contact pinging latency matches either
 		of the <xref linkend="param_latency_event_min_us"/> or
 		<xref linkend="param_latency_event_min_us_delta"/> filters. If none of
 		these filters is set, this event will get raised for each successful
