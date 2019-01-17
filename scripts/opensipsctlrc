@@ -95,7 +95,7 @@
 
 # opensips standard modules
 # STANDARD_MODULES="standard acc domain group permissions usrloc 
-#                   msilo alias_db uri_db speeddial avpops auth_db dialog 
+#                   msilo alias_db speeddial avpops auth_db dialog
 #                   dispatcher dialplan drouting nathelper load_balancer"
 
 # opensips extra modules

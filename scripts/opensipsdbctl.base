@@ -141,7 +141,6 @@ STANDARD_MODULES=${STANDARD_MODULES:-
 	rtpengine
 	speeddial
 	tls_mgm
-	uri_db
 	usrloc
 }
 
