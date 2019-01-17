@@ -142,6 +142,8 @@ static cmd_export_t cmds[] = {
 	  registrar_fixup, NULL, REQUEST_ROUTE },
 	{ "mid_registrar_save", (cmd_function)mid_reg_save, 4,
 	  registrar_fixup, NULL, REQUEST_ROUTE },
+	{ "mid_registrar_save", (cmd_function)mid_reg_save, 5,
+	  registrar_fixup, NULL, REQUEST_ROUTE },
 	{ "mid_registrar_lookup", (cmd_function)mid_reg_lookup, 1,
 	  registrar_fixup, NULL, REQUEST_ROUTE },
 	{ "mid_registrar_lookup", (cmd_function)mid_reg_lookup, 2,
@@ -253,6 +255,9 @@ static int registrar_fixup(void** param, int param_no)
 	case 4:
 		/* outgoing registration interval */
 		return fixup_igp(param);
+	case 5:
+		/* ownership tag */
+		return fixup_sgp(param);
 	}
 
 	return E_BUG;
@@ -277,6 +282,13 @@ static int mod_init(void)
 
 	if(load_sig_api(&sig_api)< 0) {
 		LM_ERR("can't load signaling functions\n");
+		return -1;
+	}
+
+	if (is_script_func_used("mid_registrar_save",5) && !ul_api.tags_in_use()) {
+		LM_ERR("as per your current usrloc module configuration, "
+				"mid_registrar_save() ownership tags "
+				"will be completely ignored!\n");
 		return -1;
 	}
 
@@ -476,6 +488,9 @@ void mri_free(struct mid_reg_info *mri)
 
 	if (mri->user_agent.s)
 		shm_free(mri->user_agent.s);
+
+	if (mri->ownership_tag.s)
+		shm_free(mri->ownership_tag.s);
 
 	free_ct_mappings(&mri->ct_mappings);
 

@@ -1042,6 +1042,7 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 	ci.flags = mri->ul_flags;
 	ci.cflags = mri->cflags;
 	ci.expires = ctmap->expires + get_act_time();
+	ci.shtag = mri->ownership_tag;
 
 	ci.q = ctmap->q;
 	ci.methods = ctmap->methods;
@@ -1586,7 +1587,6 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 {
 	struct mid_reg_info *mri;
 	struct to_body *to, *from;
-	str *aor = &sctx->aor;
 
 	LM_DBG("from: '%.*s'\n", msg->from->body.len, msg->from->body.s);
 	LM_DBG("Call-ID: '%.*s'\n", msg->callid->body.len, msg->callid->body.s);
@@ -1604,11 +1604,15 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	mri->reg_flags = sctx->flags;
 	mri->star = sctx->star;
 
-	if (aor) {
-		if (shm_str_dup(&mri->aor, aor) != 0) {
-			LM_ERR("oom\n");
-			goto out_free;
-		}
+	if (shm_str_dup(&mri->aor, &sctx->aor) != 0) {
+		LM_ERR("oom\n");
+		goto out_free;
+	}
+
+	if (sctx->ownership_tag.s
+		&& shm_str_dup(&mri->ownership_tag, &sctx->ownership_tag) != 0) {
+		LM_ERR("oom\n");
+		goto out_free;
 	}
 
 	if (parse_from_header(msg) != 0) {
@@ -1946,7 +1950,7 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
  * return: fwd / nfwd / error
  */
 static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
-                                  unsigned int flags)
+                                  unsigned int flags, str *ownership_tag)
 {
 	int e, expires_out, ret, cflags;
 	unsigned int last_reg_ts;
@@ -1959,7 +1963,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(msg, 0, 0, 0, ul_api.nat_flag, cflags))==0 ) {
+	if ( (ci=pack_ci(msg, 0, 0, 0, ul_api.nat_flag, cflags,
+						ownership_tag))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -2003,7 +2008,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 			} else {
 				/* pack the contact specific info */
 				ci = pack_ci(msg, ct, e + get_act_time(), 0,
-				             ul_api.nat_flag, cflags);
+				             ul_api.nat_flag, cflags, ownership_tag);
 				if (!ci) {
 					LM_ERR("failed to pack contact specific info\n");
 					rerrno = R_UL_UPD_C;
@@ -2088,7 +2093,7 @@ static int calc_max_ct_diff(urecord_t *urec)
  * return: fwd / nfwd / error
  */
 static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
-                                   unsigned int flags)
+                                   unsigned int flags, str *ownership_tag)
 {
 	int e, ret, ctno = 0, cflags, max_diff = -1;
 	ucontact_info_t *ci;
@@ -2120,7 +2125,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(req, 0, 0, 0, ul_api.nat_flag, cflags))==0 ) {
+	if ( (ci=pack_ci(req, 0, 0, 0, ul_api.nat_flag, cflags,
+						ownership_tag))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -2161,7 +2167,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), 0,
-			             ul_api.nat_flag, cflags);
+			             ul_api.nat_flag, cflags, ownership_tag);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2184,7 +2190,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), 0,
-			             ul_api.nat_flag, cflags);
+			             ul_api.nat_flag, cflags, ownership_tag);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2268,7 +2274,7 @@ static void parse_save_flags(str *flags_s, struct save_ctx *out_sctx)
 }
 
 int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
-                          char *to_uri_gp, char *expires_gp)
+                          char *to_uri_gp, char *expires_gp, char *owtag_gp)
 {
 	udomain_t *ud = (udomain_t *)dom;
 	urecord_t *rec = NULL;
@@ -2314,6 +2320,12 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		return -1;
 	}
 
+	if (owtag_gp && fixup_get_svalue(msg, (gparam_p)owtag_gp,
+		                              &sctx.ownership_tag) < 0) {
+		LM_ERR("failed to extract the ownership tag!\n");
+		return -1;
+	}
+
 	if (extract_aor(&to_uri, &sctx.aor, 0, 0) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		return -1;
@@ -2344,9 +2356,9 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	}
 
 	if (reg_mode == MID_REG_THROTTLE_CT)
-		rc = process_contacts_by_ct(msg, rec, sctx.flags);
+		rc = process_contacts_by_ct(msg, rec, sctx.flags, &sctx.ownership_tag);
 	else if (reg_mode == MID_REG_THROTTLE_AOR)
-		rc = process_contacts_by_aor(msg, rec, sctx.flags);
+		rc = process_contacts_by_aor(msg,rec, sctx.flags, &sctx.ownership_tag);
 
 	if (rc == -1)
 		goto out_error;
