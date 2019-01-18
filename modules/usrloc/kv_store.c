@@ -84,10 +84,22 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
 
 		memcpy(new_val->s.s, _val->s.s, _val->s.len);
 		new_val->s.s[_val->s.len] = '\0';
-		new_val->s.len--;
+		new_val->s.len = _val->s.len;
 	}
 
 	return new_val;
+}
+
+void kv_del(map_t _store, const str* _key)
+{
+	int_str_t *val;
+
+	val = (int_str_t *)map_remove(_store, *_key);
+	if (!val)
+		return;
+
+	if (val->is_str)
+		shm_free(val->s.s);
 }
 
 static int push_kv_to_json(void *param, str key, void *value)

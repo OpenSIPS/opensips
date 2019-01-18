@@ -262,8 +262,8 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		}
 
 		/* pack the contact_info */
-		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags,
-			             ul.nat_flag, _sctx->flags))==0 ) {
+		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags, ul.nat_flag,
+						_sctx->flags, &_sctx->ownership_tag))==0 ) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
@@ -351,7 +351,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 	cflags = (_sctx->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci( _m, 0, 0, cflags, ul.nat_flag, _sctx->flags))==0 ) {
+	if ( (ci=pack_ci( _m, 0, 0, cflags, ul.nat_flag, _sctx->flags,
+					&_sctx->ownership_tag))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		goto error;
 	}
@@ -424,7 +425,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 			}
 
 			/* pack the contact_info */
-			if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags))==0 ) {
+			if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
+							&_sctx->ownership_tag))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
@@ -485,7 +487,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				}
 
 				/* pack the contact specific info */
-				if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags))==0 ) {
+				if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
+								&_sctx->ownership_tag))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}
@@ -566,7 +569,8 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
  * Process REGISTER request and save it's contacts
  */
 #define is_cflag_set(_name) ((sctx.flags)&(_name))
-int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* _s)
+int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f,
+				char* _s, char* _owtag_gp)
 {
 	struct save_ctx  sctx;
 	contact_t* c;
@@ -677,6 +681,12 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 		uri = get_to(_m)->uri;
 	}
 
+	if (_owtag_gp && fixup_get_svalue(_m, (gparam_p)_owtag_gp,
+		                              &sctx.ownership_tag) < 0) {
+		LM_ERR("failed to extract the ownership tag!\n");
+		goto error;
+	}
+
 	if (extract_aor( &uri, &sctx.aor,0,0) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		goto error;
@@ -717,7 +727,7 @@ return_minus_one:
 }
 
 #define MAX_FORCED_BINDING_LEN 256
-int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
+int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp)
 {
 	struct sip_msg* msg = _m;
 	struct cell* t = NULL;
@@ -736,7 +746,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 	str *binding_uri;
 
 	if(_m->first_line.type != SIP_REPLY)
-		return save_aux(_m, NULL, _d, _f, _s);
+		return save_aux(_m, NULL, _d, _f, _s, _owtag_gp);
 
 	memset(&val, 0, sizeof(int_str));
 	if(!tmb.t_gett) {
@@ -842,7 +852,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s)
 				_c = get_next_contact(_c);
 			}
 		}
-		ret = save_aux(msg, forced_binding.s?&forced_binding:NULL, _d, _f, _s);
+		ret = save_aux(msg, forced_binding.s?&forced_binding:NULL, _d, _f, _s, _owtag_gp);
 	} else {
 		LM_DBG("No Contact in request => this is an interogation\n");
 		ret = 1;

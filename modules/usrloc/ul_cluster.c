@@ -1,7 +1,7 @@
 /*
- * Usrloc record and contact replication
+ * user location clustering
  *
- * Copyright (C) 2013 OpenSIPS Solutions
+ * Copyright (C) 2013-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,16 +17,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2013-10-09 initial version (Liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "../../forward.h"
 
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "ul_mod.h"
 #include "dlist.h"
 #include "kv_store.h"
@@ -34,6 +30,40 @@
 str contact_repl_cap = str_init("usrloc-contact-repl");
 
 struct clusterer_binds clusterer_api;
+str ul_shtag_key = str_init("_st");
+
+int ul_init_cluster(void)
+{
+	if (location_cluster == 0)
+		return 0;
+
+	if (location_cluster < 0) {
+		LM_ERR("Invalid 'location_cluster'!  It must be a positive integer!\n");
+		return -1;
+	}
+
+	if (load_clusterer_api(&clusterer_api) != 0) {
+		LM_ERR("failed to load clusterer API\n");
+		return -1;
+	}
+
+	/* register handler for processing usrloc packets to the clusterer module */
+	if (clusterer_api.register_capability(&contact_repl_cap,
+		receive_binary_packets, receive_cluster_event, location_cluster,
+		rr_persist == RRP_SYNC_FROM_CLUSTER? 1 : 0,
+		(cluster_mode == CM_FEDERATION
+		 || cluster_mode == CM_FEDERATION_CACHEDB) ?
+			NODE_CMP_EQ_SIP_ADDR : NODE_CMP_ANY) < 0) {
+		LM_ERR("cannot register callbacks to clusterer module!\n");
+		return -1;
+	}
+
+	if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
+	    clusterer_api.request_sync(&contact_repl_cap, location_cluster, 0) < 0)
+		LM_ERR("Sync request failed\n");
+
+	return 0;
+}
 
 /* packet sending */
 
@@ -151,6 +181,10 @@ void bin_push_contact(bin_packet_t *packet, urecord_t *r, ucontact_t *c)
 	st.s   = (char *)&c->last_modified;
 	st.len = sizeof c->last_modified;
 	bin_push_str(packet, &st);
+
+	st = store_serialize(c->kv_storage);
+	bin_push_str(packet, &st);
+	store_free_buffer(&st);
 }
 
 void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_t *c)
@@ -380,7 +414,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, host, contact_str, callid,
-		user_agent, path, attr, st, sock;
+		user_agent, path, attr, st, sock, kv_str;
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
@@ -446,6 +480,9 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 
 	bin_pop_str(packet, &st);
 	memcpy(&ci.last_modified, st.s, sizeof ci.last_modified);
+
+	bin_pop_str(packet, &kv_str);
+	ci.packed_kv_storage = &kv_str;
 
 	if (skip_replicated_db_ops)
 		ci.flags |= FL_MEM;

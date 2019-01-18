@@ -46,7 +46,7 @@
 #include "ul_callback.h"
 #include "urecord.h"
 #include "ucontact.h"
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "udomain.h"
 #include "dlist.h"
 #include "utime.h"
@@ -101,6 +101,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 {
 	struct sip_uri tmp_uri;
 	ucontact_t *c;
+	int_str_t shtag, *shtagp;
 
 	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
 	if (!c) {
@@ -149,6 +150,20 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		if (shm_str_dup( &c->attr, _ci->attr) < 0) goto mem_error;
 	}
 
+	if (_ci->shtag.s) {
+		if (shm_str_dup(&c->shtag, &_ci->shtag) < 0)
+			goto mem_error;
+
+		shtag.is_str = 1;
+		shtag.s = _ci->shtag;
+		if (!kv_put(c->kv_storage, &ul_shtag_key, &shtag))
+			goto mem_error;
+	} else if (have_mem_storage()) {
+		shtagp = kv_get(c->kv_storage, &ul_shtag_key);
+		if (shtagp && shm_str_dup(&c->shtag, &shtagp->s) < 0)
+			goto mem_error;
+	}
+
 	get_act_time();
 
 	c->domain = _dom;
@@ -185,6 +200,7 @@ out_free:
 	if (c->c.s) shm_free(c->c.s);
 	if (c->instance.s) shm_free(c->instance.s);
 	if (c->attr.s) shm_free(c->attr.s);
+	if (c->shtag.s) shm_free(c->shtag.s);
 	if (c->kv_storage) store_destroy(c->kv_storage);
 	shm_free(c);
 	return NULL;
@@ -209,6 +225,7 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->callid.s) shm_free(_c->callid.s);
 	if (_c->c.s) shm_free(_c->c.s);
 	if (_c->attr.s) shm_free(_c->attr.s);
+	if (_c->shtag.s) shm_free(_c->shtag.s);
 	if (_c->kv_storage) store_destroy(_c->kv_storage);
 
 skip_fields:
@@ -226,10 +243,8 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	do{\
 		if ((_old)->len < (_new)->len) { \
 			ptr = shm_malloc((_new)->len + ((_nt) ? 1 : 0)); \
-			if (ptr == 0) { \
-				LM_ERR("no more shm memory\n"); \
-				return -1; \
-			}\
+			if (ptr == 0) \
+				goto out_oom; \
 			memcpy(ptr, (_new)->s, (_new)->len);\
 			if ((_old)->s) shm_free((_old)->s);\
 			(_old)->s = ptr;\
@@ -242,6 +257,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	} while(0)
 
 	char* ptr;
+	int_str_t shtag, *shtagp;
 
 	/* RFC 3261 states 'All registrations from a UAC SHOULD use
 	 * the same Call-ID header field value for registrations sent
@@ -255,7 +271,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		update_str( &_c->received, &_ci->received, 0);
 	} else {
 		if (_c->received.s) shm_free(_c->received.s);
-		_c->received.s = 0;
+		_c->received.s = NULL;
 		_c->received.len = 0;
 	}
 
@@ -263,7 +279,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		update_str( &_c->path, _ci->path, 0);
 	} else {
 		if (_c->path.s) shm_free(_c->path.s);
-		_c->path.s = 0;
+		_c->path.s = NULL;
 		_c->path.len = 0;
 	}
 
@@ -271,7 +287,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		update_str( &_c->attr, _ci->attr, 0);
 	} else {
 		if (_c->attr.s) shm_free(_c->attr.s);
-		_c->attr.s = 0;
+		_c->attr.s = NULL;
 		_c->attr.len = 0;
 	}
 
@@ -295,7 +311,29 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 
 			_c->kv_storage = store_deserialize(_ci->packed_kv_storage);
 			if (!_c->kv_storage)
-				LM_ERR("oom\n");
+				goto out_oom;
+		}
+	}
+
+	if (_ci->shtag.s) {
+		update_str(&_c->shtag, &_ci->shtag, 0);
+
+		shtag.is_str = 1;
+		shtag.s = _ci->shtag;
+		if (!kv_put(_c->kv_storage, &ul_shtag_key, &shtag))
+			goto out_oom;
+	} else if (have_mem_storage()) {
+		shtagp = kv_get(_c->kv_storage, &ul_shtag_key);
+		if (shtagp) {
+			update_str(&_c->shtag, &shtagp->s, 0);
+		} else {
+			if (_c->shtag.s)
+				shm_free(_c->shtag.s);
+
+			_c->shtag.s = NULL;
+			_c->shtag.len = 0;
+
+			kv_del(_c->kv_storage, &ul_shtag_key);
 		}
 	}
 
@@ -306,6 +344,10 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	ul_raise_contact_event(ei_c_update_id, _c);
 
 	return 0;
+
+out_oom:
+	LM_ERR("oom\n");
+	return -1;
 }
 
 

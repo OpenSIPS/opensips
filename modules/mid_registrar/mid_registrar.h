@@ -100,6 +100,7 @@ struct mid_reg_info {
 
 	udomain_t *dom; /* used during 200 OK ul_api operations */
 	str aor;        /* used during both "reg out" and "resp in" */
+	str ownership_tag; /* used during both "reg out" and "resp in" */
 
 	/* ucontact_info dup'ed fields */
 	str user_agent;
@@ -113,6 +114,7 @@ struct mid_reg_info {
 struct save_ctx {
 	unsigned int flags;
 	str aor;
+	str ownership_tag;
 	unsigned int max_contacts;
 	unsigned int expires;
 	int expires_out;

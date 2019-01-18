@@ -47,7 +47,7 @@
 
 #include "ul_mod.h"            /* usrloc module parameters */
 #include "utime.h"
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "ul_callback.h"
 #include "usrloc.h"
 
@@ -133,16 +133,19 @@ error0:
 
 static event_id_t ei_ins_id = EVI_ERROR;
 static event_id_t ei_del_id = EVI_ERROR;
+
 event_id_t ei_c_ins_id = EVI_ERROR;
 event_id_t ei_c_del_id = EVI_ERROR;
 event_id_t ei_c_update_id = EVI_ERROR;
 event_id_t ei_c_latency_update_id = EVI_ERROR;
+
 static str ei_ins_name = str_init("E_UL_AOR_INSERT");
 static str ei_del_name = str_init("E_UL_AOR_DELETE");
 static str ei_contact_ins_name = str_init("E_UL_CONTACT_INSERT");
 static str ei_contact_del_name = str_init("E_UL_CONTACT_DELETE");
 static str ei_contact_update_name = str_init("E_UL_CONTACT_UPDATE");
 static str ei_contact_latency_update_name = str_init("E_UL_LATENCY_UPDATE");
+
 static str ei_aor_name = str_init("aor");
 static str ei_c_uri_name = str_init("uri");
 static str ei_c_recv_name = str_init("received");
@@ -155,8 +158,11 @@ static str ei_callid_name = str_init("callid");
 static str ei_cseq_name = str_init("cseq");
 static str ei_attr_name = str_init("attr");
 static str ei_latency_name = str_init("latency");
+static str ei_shtag_name = str_init("shtag");
+
 static evi_params_p ul_contact_event_params;
 static evi_params_p ul_event_params;
+
 static evi_param_p ul_aor_param;
 static evi_param_p ul_c_aor_param;
 static evi_param_p ul_c_uri_param;
@@ -170,6 +176,7 @@ static evi_param_p ul_c_callid_param;
 static evi_param_p ul_c_cseq_param;
 static evi_param_p ul_c_attr_param;
 static evi_param_p ul_c_latency_param;
+static evi_param_p ul_c_shtag_param;
 
 /*! \brief
  * Initialize event structures
@@ -311,7 +318,11 @@ int ul_event_init(void)
 		return -1;
 	}
 
-
+	ul_c_shtag_param = evi_param_create(ul_contact_event_params, &ei_shtag_name);
+	if (!ul_c_shtag_param) {
+		LM_ERR("cannot create shtag parameter\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -412,6 +423,13 @@ void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 	/* the last known ping latency */
 	if (evi_param_set_int(ul_c_latency_param, &_c->sipping_latency) < 0) {
 		LM_ERR("cannot set latency parameter\n");
+		return;
+	}
+
+	/* the shared tag */
+	if (evi_param_set_str(ul_c_shtag_param,
+		                   _c->shtag.s ? &_c->shtag : &str_empty) < 0) {
+		LM_ERR("cannot set shtag parameter\n");
 		return;
 	}
 

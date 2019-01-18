@@ -42,7 +42,7 @@
 /*! \brief
  * Process REGISTER request and save it's contacts
  */
-int save(struct sip_msg* _m, char* _d, char* _cflags, char* _s);
+int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp);
 
 int w_remove_2(struct sip_msg *msg, char *udomain, char *aor_gp);
 int w_remove_3(struct sip_msg *msg, char *udomain, char *aor_gp,

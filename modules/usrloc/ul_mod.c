@@ -55,7 +55,7 @@
 #include "udomain.h"         /* {insert,delete,get,release}_urecord */
 #include "urecord.h"         /* {insert,delete,get}_ucontact */
 #include "ucontact.h"        /* update_ucontact */
-#include "ureplication.h"
+#include "ul_cluster.h"
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
@@ -87,6 +87,7 @@ static void _synchronize_all_udomains(unsigned int ticks, void* param);
 static int child_init(int rank);  /*!< Per-child init function */
 static int mi_child_init(void);
 int check_runtime_config(void);
+int ul_deprec_shp(modparam_t _, void *modparam);
 
 //static int add_replication_dest(modparam_t type, void *val);
 
@@ -146,7 +147,9 @@ char *rr_persist_str;
 /*!< SQL write mode */
 enum ul_sql_write_mode sql_wmode = SQL_NO_WRITE;
 char *sql_wmode_str;
-int shared_pinging;
+
+enum ul_pinging_mode pinging_mode = PMD_OWNERSHIP;
+char *pinging_mode_str;
 
 int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
 int desc_time_order = 0;   /*!< By default do not enable timestamp ordering */
@@ -215,7 +218,8 @@ static param_export_t params[] = {
 	{"cluster_mode",       STR_PARAM, &cluster_mode_str  },
 	{"restart_persistency",STR_PARAM, &rr_persist_str    },
 	{"sql_write_mode",     STR_PARAM, &sql_wmode_str     },
-	{"shared_pinging",     INT_PARAM, &shared_pinging    },
+	{"shared_pinging",     INT_PARAM|USE_FUNC_PARAM, ul_deprec_shp },
+	{"pinging_mode",       STR_PARAM, &pinging_mode_str  },
 
 	{"use_domain",         INT_PARAM, &use_domain        },
 	{"desc_time_order",    INT_PARAM, &desc_time_order   },
@@ -480,32 +484,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (location_cluster < 0) {
-		LM_ERR("Invalid cluster id to replicate contacts to, must be 0 or "
-			"a positive number\n");
+	if (ul_init_cluster() < 0) {
+		LM_ERR("failed to init clustering support!\n");
 		return -1;
-	}
-
-	if (location_cluster) {
-		if (load_clusterer_api(&clusterer_api) != 0) {
-			LM_DBG("failed to find clusterer API - is clusterer module loaded?\n");
-			return -1;
-		}
-
-		/* register handler for processing usrloc packets to the clusterer module */
-		if (clusterer_api.register_capability(&contact_repl_cap,
-			receive_binary_packets, receive_cluster_event, location_cluster,
-			rr_persist == RRP_SYNC_FROM_CLUSTER? 1 : 0,
-			(cluster_mode == CM_FEDERATION
-			 || cluster_mode == CM_FEDERATION_CACHEDB) ?
-				NODE_CMP_EQ_SIP_ADDR : NODE_CMP_ANY) < 0) {
-			LM_ERR("cannot register callbacks to clusterer module!\n");
-			return -1;
-		}
-
-		if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
-		    clusterer_api.request_sync(&contact_repl_cap, location_cluster, 0) < 0)
-			LM_ERR("Sync request failed\n");
 	}
 
 	init_flag = 1;
@@ -679,42 +660,66 @@ int check_runtime_config(void)
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
+			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset,
 		           "single-instance-sql-write-through")) {
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_LOAD_FROM_SQL;
 			sql_wmode = SQL_WRITE_THROUGH;
+			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset,
 		           "single-instance-sql-write-back")) {
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_LOAD_FROM_SQL;
 			sql_wmode = SQL_WRITE_BACK;
+			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset, "federation-cluster")) {
 			cluster_mode = CM_FEDERATION;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
+			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset, "federation-cachedb-cluster")) {
 			cluster_mode = CM_FEDERATION_CACHEDB;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
+			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset, "full-sharing-cluster")) {
 			cluster_mode = CM_FULL_SHARING;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
+			if (pinging_mode_str) {
+				if (!strcasecmp(pinging_mode_str, "ownership"))
+					pinging_mode = PMD_OWNERSHIP;
+				else if (!strcasecmp(pinging_mode_str, "cooperation"))
+					pinging_mode = PMD_COOPERATION;
+				else {
+					LM_ERR("unrecognized 'pinging_mode': %s, defaulting to "
+					       "'cooperation'\n", pinging_mode_str);
+					pinging_mode = PMD_COOPERATION;
+				}
+			} else if (bad_pinging_mode(pinging_mode)) {
+				LM_ERR("unrecognized 'pinging_mode': %d, defaulting to "
+				       "'cooperation'\n", pinging_mode);
+				pinging_mode = PMD_COOPERATION;
+			}
+
 		} else if (!strcasecmp(runtime_preset, "full-sharing-cachedb-cluster")) {
 			cluster_mode = CM_FULL_SHARING_CACHEDB;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
+			pinging_mode = PMD_COOPERATION;
 		} else if (!strcasecmp(runtime_preset, "sql-only")) {
 			cluster_mode = CM_SQL_ONLY;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
+			pinging_mode = PMD_COOPERATION;
 		} else {
 			LM_ERR("unrecognized preset: %s, defaulting to "
 			       "'single-instance-no-db'\n", runtime_preset);
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
+			pinging_mode = PMD_OWNERSHIP;
 		}
 	} else {
 		if (cluster_mode_str) {
@@ -882,4 +887,17 @@ int check_runtime_config(void)
 	       db_mode, cluster_mode, rr_persist, sql_wmode);
 
 	return 0;
+}
+
+int ul_deprec_shp(modparam_t _, void *modparam)
+{
+	LM_NOTICE("the 'shared_pinging' module parameter has been deprecated "
+				"in favour of 'pinging_mode'\n");
+
+	if (*(int *)modparam == 0)
+		pinging_mode = PMD_OWNERSHIP;
+	else
+		pinging_mode = PMD_COOPERATION;
+
+	return 1;
 }

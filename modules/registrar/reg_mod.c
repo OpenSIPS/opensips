@@ -150,6 +150,8 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"save",         (cmd_function)save,         3,  registrar_fixup,  0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
+	{"save",         (cmd_function)save,         4,  registrar_fixup,  0,
+		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"remove",       (cmd_function)w_remove_2,   2,  fixup_remove,     0,
 		REQUEST_ROUTE|ONREPLY_ROUTE },
 	{"remove",       (cmd_function)w_remove_3,   3,  fixup_remove,     0,
@@ -346,6 +348,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (is_script_func_used("save", 4) && !ul.tags_in_use()) {
+		LM_ERR("as per your current usrloc module configuration, "
+				"save() ownership tags will be completely ignored!\n");
+		return -1;
+	}
+
 	/* Normalize default_q parameter */
 	if (default_q != Q_UNSPECIFIED) {
 		if (default_q > MAX_Q) {
@@ -447,9 +455,12 @@ static int registrar_fixup(void** param, int param_no)
 	} else if (param_no == 2) {
 		/* flags */
 		return fixup_spve(param);
-	} else {
+	} else if (param_no == 3) {
 		/* AOR - from PVAR */
 		return fixup_pvar(param);
+	} else {
+		/* ownership tag */
+		return fixup_sgp(param);
 	}
 }
 

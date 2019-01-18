@@ -1,7 +1,7 @@
 /*
- * Usrloc record and contact replication
+ * user location clustering
  *
- * Copyright (C) 2013 OpenSIPS Solutions
+ * Copyright (C) 2013-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,15 +17,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2013-10-09 initial version (Liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef _USRLOC_REPLICATION_H_
-#define _USRLOC_REPLICATION_H_
+#ifndef _USRLOC_CLUSTER_H_
+#define _USRLOC_CLUSTER_H_
 
 #include "../../ut.h"
 #include "../../bin_interface.h"
@@ -33,6 +29,7 @@
 #include "../../resolve.h"
 #include "../../timer.h"
 #include "../clusterer/api.h"
+
 #include "urecord.h"
 
 #define REPL_URECORD_INSERT  1
@@ -45,8 +42,15 @@
 
 extern int location_cluster;
 extern struct clusterer_binds clusterer_api;
+extern str ul_shtag_key;
 
 extern str contact_repl_cap;
+
+int ul_init_cluster(void);
+#define is_my_contact(__ct) \
+	(!__ct->shtag.s || \
+	 clusterer_api.shtag_get(&__ct->shtag, location_cluster) \
+		== SHTAG_STATE_ACTIVE)
 
 /* duplicate local events to other OpenSIPS instances */
 void replicate_urecord_insert(urecord_t *r);
@@ -58,5 +62,4 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c);
 void receive_binary_packets(bin_packet_t *packet);
 void receive_cluster_event(enum clusterer_event ev, int node_id);
 
-#endif /* _USRLOC_REPLICATION_H_ */
-
+#endif /* _USRLOC_CLUSTER_H_ */

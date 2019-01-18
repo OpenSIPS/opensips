@@ -86,6 +86,7 @@ int bind_usrloc(usrloc_api_t* api)
 	api->cluster_mode    = cluster_mode;
 	api->nat_flag   = nat_bflag;
 	api->have_mem_storage = have_mem_storage;
+	api->tags_in_use = tags_in_use;
 
 	return 0;
 }

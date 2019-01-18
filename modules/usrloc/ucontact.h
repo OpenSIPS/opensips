@@ -112,6 +112,7 @@ typedef struct ucontact {
 	struct proxy_l next_hop;/*!< SIP-wise determined next hop */
 	unsigned int label;     /*!< label to find the contact in contact list>*/
 	int sipping_latency;    /*!< useconds; not restart-persistent >*/
+	str shtag;              /*!< helps determine the logical owner node */
 
 	map_t kv_storage;       /*!< data attached by API subscribers >*/
 
@@ -143,6 +144,7 @@ typedef struct ucontact_info {
 	time_t last_modified;
 	str *packed_kv_storage;
 	str *attr;
+	str shtag;
 } ucontact_info_t;
 
 /*! \brief

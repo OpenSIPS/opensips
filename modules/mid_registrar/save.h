@@ -76,6 +76,6 @@
 #define CONTACT_SEP_LEN (sizeof(CONTACT_SEP) - 1)
 
 int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
-                          char *to_uri_gp, char *expires_gp);
+                          char *to_uri_gp, char *expires_gp, char *owtag_gp);
 
 #endif /* __MID_REG_SAVE_ */
