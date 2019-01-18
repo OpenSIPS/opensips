@@ -68,6 +68,7 @@ static int send_smpp_msg(struct sip_msg* msg);
 
 static unsigned smpp_port = 2775;
 static int smpp_max_msg_chunks = 8;
+extern int smpp_send_timeout;
 
 str db_url = {NULL, 0};
 
@@ -80,7 +81,8 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"smpp_port", INT_PARAM, &smpp_port},
 	{"smpp_max_msg_chunks", INT_PARAM, &smpp_max_msg_chunks},
-	{"db_url", STR_PARAM, &db_url},
+	{"smpp_send_timeout", INT_PARAM, &smpp_send_timeout},
+	{"db_url", STR_PARAM, &db_url.s},
 	{"outbound_uri", STR_PARAM, &smpp_outbound_uri},
 	{"smpp_table", STR_PARAM, &smpp_table},
 	{"name_col", STR_PARAM, &smpp_name_col.s},

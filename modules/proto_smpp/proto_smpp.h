@@ -26,6 +26,8 @@
 #include "../../str.h"
 #include "smpp.h"
 
+#define DEFAULT_SMPP_SEND_TIMEOUT 100
+
 typedef struct smpp_session {
 	uint32_t id;
 

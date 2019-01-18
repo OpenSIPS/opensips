@@ -46,6 +46,7 @@
 #include "db.h"
 
 str smpp_outbound_uri;
+int smpp_send_timeout = DEFAULT_SMPP_SEND_TIMEOUT;
 
 static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn);
 static void send_enquire_link_request(smpp_session_t *session);
@@ -530,7 +531,7 @@ void send_bind(smpp_session_t *session)
 
 	session->conn = conn;
 	conn->proto_data = session;
-	n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
 	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
 free_req:
 	pkg_free(req);
@@ -696,7 +697,7 @@ void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, struct tcp_connectio
 		LM_ERR("return code %d\n", ret);
 		goto free_req;
 	}
-	int n = tsend_stream(fd, resp->payload.s, resp->payload.len, 1000);
+	int n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
 	LM_INFO("send %d bytes\n", n);
 
 free_req:
@@ -757,7 +758,7 @@ void send_bind_resp(smpp_header_t *header, smpp_bind_transceiver_t *body, uint32
 		LM_ERR("return code %d\n", ret);
 		goto free_req;
 	}
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	int n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
 	LM_INFO("send %d bytes\n", n);
 
 free_req:
@@ -1041,7 +1042,7 @@ void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 		goto free_req;
 	}
 	/* TODO: handle send timeout */
-	n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
 	LM_INFO("send %d bytes\n", n);
 
 free_req:
@@ -1069,7 +1070,7 @@ static void send_enquire_link_request(smpp_session_t *session)
 		LM_ERR("return code %d\n", ret);
 		goto free_req;
 	}
-	n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
 	LM_INFO("send %d bytes\n", n);
 
 free_req:
