@@ -100,6 +100,10 @@ struct dlginfo_cb_params {
 	long long bitmask_failed;
 };
 
+static void free_cb_param(void *param);
+static struct dlginfo_cb_params * build_cb_param(int flags,
+		struct to_body *entity_p, struct to_body *peer_p);
+
 
 static cmd_export_t cmds[]=
 {
@@ -399,24 +403,123 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 }
 
 
-static void
-__dump_dlginfo(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+static void __build_param_var(char idx, str *name)
 {
-	/* TODO
-	 * This function should store all the context data into dlg variables,
-	 * so they can be saved into DB and later restored 
-	 * This is a pair function of __dialog_loaded()
-	 */
+	#define VAR_PATTERN "__blf_param_XX"
+	#define var_pattern_offset 2
+	static char param_var[] = VAR_PATTERN;
+	char *p;
+	int n;
+
+	p = param_var + sizeof(VAR_PATTERN)-1 - var_pattern_offset;
+	n = var_pattern_offset;
+	int2reverse_hex( &p, &n, (unsigned int)idx );
+	name->s = param_var;
+	name->len = sizeof(VAR_PATTERN)-1 - n;
 }
 
 
+static int __save_dlg_param(struct dlg_cell *dlg, char idx, str *val)
+{
+	str name;
+
+	if (val==NULL || val->len==0)
+		return 0;
+
+	__build_param_var(idx, &name);
+
+	if (dlg_api.store_dlg_value(dlg, &name, val)< 0) {
+		LM_ERR("Failed to store param %d with value [%.*s]\n",
+			idx, val->len, val->s);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/* This function stores all the context data into dlg variables,
+ * so they can be saved into DB and later restored 
+ * This is a pair function of __dialog_loaded()
+ */
+static void
+__dump_dlginfo(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+{
+	struct dlginfo_cb_params *param;
+	str flags;
+
+	param = (struct dlginfo_cb_params*)(*_params->param);
+
+	flags.s = &(param->flags);
+	flags.len = 1;
+
+	if ( __save_dlg_param(dlg, 1, &(param->entity.uri) )<0 ||
+	   __save_dlg_param(dlg, 2, &(param->entity.display) )<0 ||
+	   __save_dlg_param(dlg, 3, &(param->peer.uri) )<0 ||
+	   __save_dlg_param(dlg, 4, &(param->peer.display) )<0 ||
+	   __save_dlg_param(dlg, 5, &(flags) )<0
+	) {
+		LM_ERR("failed to convert params tp dlg_vals for DB storing\n");
+	}
+
+}
+
+
+static int __restore_dlg_param(struct dlg_cell *dlg, char idx, str *val)
+{
+	str name;
+
+	__build_param_var(idx, &name);
+
+	/* returns 0 if var found */
+	return dlg_api.fetch_dlg_value(dlg, &name, val, 1);
+}
+
+
+/* This function restore the context data (cbs and their params)
+ * after loading dialog from DB.
+*/
 static void
 __load_dlginfo(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
-	/* TODO
-	 * This funcion should restore the context data (cbs and their params)
-	 * after loading data from DB.
-	*/
+	struct dlginfo_cb_params *param;
+	struct to_body entity, peer;
+	str flags;
+
+	memset( &entity, 0, sizeof(struct to_body));
+	memset( &peer,   0, sizeof(struct to_body));
+	flags.s = NULL; flags.len = 0;
+
+	if (__restore_dlg_param(dlg, 1, &(entity.uri))!=0 ||
+	   __restore_dlg_param(dlg, 3, &(peer.uri))!=0 ||
+	   __restore_dlg_param(dlg, 5, &(flags))!=0
+	)
+		/* mandatory params are missing, give up on this */
+		goto cleanup;
+
+	__restore_dlg_param(dlg, 2, &(entity.display));
+	__restore_dlg_param(dlg, 4, &(peer.display));
+
+	param = build_cb_param(flags.s[0], &entity, &peer);
+	if (param==NULL) {
+		LM_ERR("failed to pack parameters for dialog callback\n");
+		goto cleanup;
+	}
+
+	/* register dialog callbacks which triggers sending PUBLISH */
+	if (dlg_api.register_dlgcb(dlg,
+		DLGCB_CONFIRMED | DLGCB_TERMINATED | DLGCB_EXPIRED |
+		DLGCB_REQ_WITHIN ,
+		__dialog_sendpublish, (void*)param, free_cb_param) != 0) {
+		LM_ERR("cannot register callback for interesting dialog types\n");
+	}
+
+cleanup:
+	if (entity.uri.s) pkg_free(entity.uri.s);
+	if (entity.display.s) pkg_free(entity.display.s);
+	if (peer.uri.s) pkg_free(peer.uri.s);
+	if (peer.display.s) pkg_free(peer.display.s);
+	if (flags.s) pkg_free(flags.s);
 }
 
 
