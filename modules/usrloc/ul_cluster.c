@@ -178,6 +178,10 @@ void bin_push_contact(bin_packet_t *packet, urecord_t *r, ucontact_t *c)
 	st.s   = (char *)&c->last_modified;
 	st.len = sizeof c->last_modified;
 	bin_push_str(packet, &st);
+
+	st = store_serialize(c->kv_storage);
+	bin_push_str(packet, &st);
+	store_free_buffer(&st);
 }
 
 void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_t *c)
@@ -407,7 +411,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
 	static str d, aor, host, contact_str, callid,
-		user_agent, path, attr, st, sock;
+		user_agent, path, attr, st, sock, kv_str;
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
@@ -473,6 +477,9 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 
 	bin_pop_str(packet, &st);
 	memcpy(&ci.last_modified, st.s, sizeof ci.last_modified);
+
+	bin_pop_str(packet, &kv_str);
+	ci.packed_kv_storage = &kv_str;
 
 	if (skip_replicated_db_ops)
 		ci.flags |= FL_MEM;
