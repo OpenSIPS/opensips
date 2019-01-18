@@ -148,7 +148,7 @@ char *rr_persist_str;
 enum ul_sql_write_mode sql_wmode = SQL_NO_WRITE;
 char *sql_wmode_str;
 
-enum ul_pinging_mode pinging_mode = PMD_OWNERSHIP;
+enum ul_pinging_mode pinging_mode = PMD_COOPERATION;
 char *pinging_mode_str;
 
 int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
