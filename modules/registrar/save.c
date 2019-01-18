@@ -728,7 +728,6 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	int st;
 	str uri;
 	str flags_s;
-	pv_value_t val;
 
 	rerrno = R_FINE;
 	memset( &sctx, 0 , sizeof(sctx));
@@ -818,15 +817,10 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 	get_act_time();
 
 	if (_s) {
-		if (pv_get_spec_value( _m, (pv_spec_p)_s, &val)!=0) {
+		if (fixup_get_svalue( _m, (gparam_p)_s, &uri)!=0) {
 			LM_ERR("failed to get PV value\n");
 			goto return_minus_one;
 		}
-		if ( (val.flags&PV_VAL_STR)==0 ) {
-			LM_ERR("PV vals is not string\n");
-			goto return_minus_one;
-		}
-		uri = val.rs;
 	} else {
 		uri = get_to(_m)->uri;
 	}
