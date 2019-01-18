@@ -149,7 +149,7 @@ enum ul_sql_write_mode sql_wmode = SQL_NO_WRITE;
 char *sql_wmode_str;
 
 enum ul_pinging_mode pinging_mode = PMD_OWNERSHIP;
-char pinging_mode_str;
+char *pinging_mode_str;
 
 int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
 int desc_time_order = 0;   /*!< By default do not enable timestamp ordering */
@@ -687,8 +687,22 @@ int check_runtime_config(void)
 			cluster_mode = CM_FULL_SHARING;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
-			if (bad_pinging_mode(pinging_mode))
+			if (pinging_mode_str) {
+				if (!strcasecmp(pinging_mode_str, "ownership"))
+					pinging_mode = PMD_OWNERSHIP;
+				else if (!strcasecmp(pinging_mode_str, "cooperation"))
+					pinging_mode = PMD_COOPERATION;
+				else {
+					LM_ERR("unrecognized 'pinging_mode': %s, defaulting to "
+					       "'cooperation'\n", pinging_mode_str);
+					pinging_mode = PMD_COOPERATION;
+				}
+			} else if (bad_pinging_mode(pinging_mode)) {
+				LM_ERR("unrecognized 'pinging_mode': %d, defaulting to "
+				       "'cooperation'\n", pinging_mode);
 				pinging_mode = PMD_COOPERATION;
+			}
+
 		} else if (!strcasecmp(runtime_preset, "full-sharing-cachedb-cluster")) {
 			cluster_mode = CM_FULL_SHARING_CACHEDB;
 			rr_persist = RRP_NONE;
