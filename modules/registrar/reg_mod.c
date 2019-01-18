@@ -447,7 +447,7 @@ static int registrar_fixup(void** param, int param_no)
 		return fixup_spve(param);
 	} else {
 		/* AOR - from PVAR */
-		return fixup_pvar(param);
+		return fixup_sgp(param);
 	}
 }
 
