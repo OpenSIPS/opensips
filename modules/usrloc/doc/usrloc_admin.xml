@@ -1360,12 +1360,12 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 		active nodes.
 		</para>
 		<para>
-		Disabling this parameter may be useful in simple active/backup
+		Keeping this parameter disabled may be useful in simple active/backup
 		setups, where only the active node must perform the pinging.
 		</para>
 		<para>
 			<emphasis>
-				Default value is <quote>1 (enabled)</quote>.
+				Default value is <quote>0 (disabled)</quote>.
 			</emphasis>
 		</para>
 
@@ -1373,8 +1373,8 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 		<title>Set <varname>shared_pinging</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# do not partition the pinging workload across cluster nodes
-modparam("usrloc", "shared_pinging", 0)
+# partition the pinging workload across cluster nodes in a "full-sharing" mode
+modparam("usrloc", "shared_pinging", 1)
 ...
 </programlisting>
 		</example>
