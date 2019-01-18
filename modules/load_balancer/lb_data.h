@@ -37,6 +37,7 @@
 #define LB_FLAGS_RELATIVE (1<<0) /* do relative versus absolute estimation. default is absolute */
 #define LB_FLAGS_NEGATIVE (1<<1) /* do not skip negative loads. default to skip */
 #define LB_FLAGS_RANDOM   (1<<2) /* pick a random destination among all selected dsts with equal load */
+#define LB_FLAGS_QUEUE    (1<<3) /* picks the next destination in the virtual queue*/
 #define LB_FLAGS_DEFAULT  0
 
 #define LB_DST_PING_DSBL_FLAG   (1<<0)
@@ -78,6 +79,7 @@ struct lb_dst {
 	unsigned short ips_cnt;
 	fs_evs *fs_sock;
 	struct lb_dst *next;
+	unsigned int queue_loc;
 };
 
 struct lb_data {
