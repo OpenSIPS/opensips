@@ -457,7 +457,7 @@ static int registrar_fixup(void** param, int param_no)
 		return fixup_spve(param);
 	} else if (param_no == 3) {
 		/* AOR - from PVAR */
-		return fixup_pvar(param);
+		return fixup_sgp(param);
 	} else {
 		/* ownership tag */
 		return fixup_sgp(param);
