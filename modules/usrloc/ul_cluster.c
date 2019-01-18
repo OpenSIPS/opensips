@@ -34,8 +34,11 @@ str ul_shtag_key = str_init("_st");
 
 int ul_init_cluster(void)
 {
-	if (location_cluster <= 0) {
-		LM_ERR("Invalid 'location_cluster'! It must be a positive integer!\n");
+	if (location_cluster == 0)
+		return 0;
+
+	if (location_cluster < 0) {
+		LM_ERR("Invalid 'location_cluster'!  It must be a positive integer!\n");
 		return -1;
 	}
 
