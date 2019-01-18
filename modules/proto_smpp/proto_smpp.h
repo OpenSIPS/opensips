@@ -74,5 +74,6 @@ void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 smpp_session_t *smpp_session_new(str *name, struct ip_addr *ip, int port,
 		str *system_id, str *password, str *system_type, int src_addr_ton,
 		int src_addr_npi, int dst_addr_ton, int dst_addr_npi, int stype);
+smpp_session_t *smpp_session_get(str *name);
 
 #endif

@@ -1194,3 +1194,23 @@ smpp_session_t *smpp_session_new(str *name, struct ip_addr *ip, int port,
 
 	return session;
 }
+
+
+smpp_session_t *smpp_session_get(str *name)
+{
+	struct list_head *l;
+	smpp_session_t *session = NULL;
+
+	lock_start_read(smpp_lock);
+
+	list_for_each(l, g_sessions) {
+		session = list_entry(l, smpp_session_t, list);
+		if (session->name.len == name->len &&
+				memcmp(session->name.s, name->s, name->len) == 0)
+			goto found;
+	}
+	session = NULL;
+found:
+	lock_stop_read(smpp_lock);
+	return session;
+}
