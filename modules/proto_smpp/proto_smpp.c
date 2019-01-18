@@ -46,6 +46,12 @@
 #include "utils.h"
 #include "db.h"
 
+/*
+ * TODO:
+ *  - implement reload
+ *  - reconnect when connection is down
+ */
+
 extern int proto_tcp_read(struct tcp_connection* ,struct tcp_req* );
 
 static int mod_init(void);
@@ -147,8 +153,6 @@ static int mod_init(void)
 	if (smpp_sessions_init() < 0)
 		return -1;
 
-	build_smpp_sessions_from_db();
-
 	smpp_db_close();
 
 	if (register_timer("enquire-link-timer", enquire_link, NULL, 5,
@@ -212,6 +216,9 @@ error:
 static int child_init(int rank)
 {
 	LM_INFO("initializing child #%d\n", rank);
+
+	if (smpp_db_init(&db_url) < 0)
+		return -1;
 
 	if ((rank == 1) && ipc_dispatch_rpc(rpc_bind_sessions, NULL) < 0) {
 		LM_CRIT("failed to RPC the data loading\n");

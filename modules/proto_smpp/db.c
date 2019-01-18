@@ -21,6 +21,7 @@
 
 #include "../../str.h"
 #include "../../resolve.h"
+#include "../../lib/list.h"
 #include "proto_smpp.h"
 #include "../../db/db.h"
 #include "db.h"
@@ -43,6 +44,19 @@ str smpp_session_type_col = str_init("session_type");
 
 int smpp_db_bind(const str *db_url)
 {
+	smpp_table.len = strlen(smpp_table.s);
+	smpp_name_col.len = strlen(smpp_name_col.s);
+	smpp_ip_col.len = strlen(smpp_ip_col.s);
+	smpp_port_col.len = strlen(smpp_port_col.s);
+	smpp_system_id_col.len = strlen(smpp_system_id_col.s);
+	smpp_password_col.len = strlen(smpp_password_col.s);
+	smpp_system_type_col.len = strlen(smpp_system_type_col.s);
+	smpp_src_ton_col.len = strlen(smpp_src_ton_col.s);
+	smpp_src_npi_col.len = strlen(smpp_src_npi_col.s);
+	smpp_dst_ton_col.len = strlen(smpp_dst_ton_col.s);
+	smpp_dst_npi_col.len = strlen(smpp_dst_npi_col.s);
+	smpp_session_type_col.len = strlen(smpp_session_type_col.s);
+
 	if (db_bind_mod(db_url, &smpp_dbf)) {
 		LM_ERR("cannot bind module database\n");
 		return -1;
@@ -62,40 +76,12 @@ int smpp_db_init(const str *db_url)
 		return -1;
 	}
 
-	smpp_table.len = strlen(smpp_table.s);
-	smpp_name_col.len = strlen(smpp_name_col.s);
-	smpp_ip_col.len = strlen(smpp_ip_col.s);
-	smpp_port_col.len = strlen(smpp_port_col.s);
-	smpp_system_id_col.len = strlen(smpp_system_id_col.s);
-	smpp_password_col.len = strlen(smpp_password_col.s);
-	smpp_system_type_col.len = strlen(smpp_system_type_col.s);
-	smpp_src_ton_col.len = strlen(smpp_src_ton_col.s);
-	smpp_src_npi_col.len = strlen(smpp_src_npi_col.s);
-	smpp_dst_ton_col.len = strlen(smpp_dst_ton_col.s);
-	smpp_dst_npi_col.len = strlen(smpp_dst_npi_col.s);
-	smpp_session_type_col.len = strlen(smpp_session_type_col.s);
-
 	return 0;
 }
 
 int smpp_query(const str *smpp_table, db_key_t *cols, int col_nr, db_res_t **res)
 {
-	if (smpp_dbf.use_table(smpp_db_handle, smpp_table) < 0) {
-		LM_ERR("error while trying to use smpp table\n");
-		return -1;
-	}
-
-	if (smpp_dbf.query(smpp_db_handle, NULL, 0, NULL, cols, 0, col_nr, 0, res) < 0) {
-		LM_ERR("error while querying database\n");
-		return -1;
-	}
-
 	return 0;
-}
-
-void smpp_free_results(db_res_t *res)
-{
-	smpp_dbf.free_result(smpp_db_handle, res);
 }
 
 void smpp_db_close(void)
@@ -106,7 +92,7 @@ void smpp_db_close(void)
 	}
 }
 
-void build_smpp_sessions_from_db(void)
+int load_smpp_sessions_from_db(struct list_head *head)
 {
 	struct ip_addr *ip;
 	db_key_t cols[11];
@@ -116,7 +102,7 @@ void build_smpp_sessions_from_db(void)
 	smpp_session_t *session;
 	str ip_s, system_s, pass_s, type_s, name_s;
 
-	int i;
+	int i, n = 0;
 
 	cols[0] = &smpp_name_col;
 	cols[1] = &smpp_ip_col;
@@ -130,8 +116,18 @@ void build_smpp_sessions_from_db(void)
 	cols[9] = &smpp_dst_npi_col;
 	cols[10] = &smpp_session_type_col;
 
-	if (smpp_query(&smpp_table, cols, 11, &res) < 0)
-		return;
+	INIT_LIST_HEAD(head);
+
+	if (smpp_dbf.use_table(smpp_db_handle, &smpp_table) < 0) {
+		LM_ERR("error while trying to use smpp table\n");
+		return -1;
+	}
+
+	if (smpp_dbf.query(smpp_db_handle, NULL, 0, NULL, cols, 0, 11, 0, &res) < 0) {
+		LM_ERR("error while querying database\n");
+		return -1;
+	}
+
 
 	row = RES_ROWS(res);
 
@@ -233,6 +229,10 @@ void build_smpp_sessions_from_db(void)
 					i, name_s.len, name_s.s);
 			continue;
 		}
+		list_add(&session->list, head);
+		n++;
 	}
-	smpp_free_results(res);
+	smpp_dbf.free_result(smpp_db_handle, res);
+	LM_INFO("Loaded %d SMSc servers\n", n);
+	return n;
 }

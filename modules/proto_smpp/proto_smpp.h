@@ -22,6 +22,7 @@
 #ifndef _PROTO_SMPP_H_
 #define _PROTO_SMPP_H_
 
+#include "../../lib/list.h"
 #include "../../str.h"
 #include "smpp.h"
 
@@ -53,7 +54,7 @@ typedef struct smpp_session {
 	uint8_t dest_addr_ton;
 	uint8_t dest_addr_npi;
 
-	struct smpp_session *next;
+	struct list_head list;
 } smpp_session_t;
 
 extern struct tm_binds tmb;
@@ -64,7 +65,6 @@ struct tcp_connection* smpp_sync_connect(struct socket_info* send_sock,
 		union sockaddr_union* server, int *fd);
 
 void enquire_link(unsigned int ticks, void *param);
-void build_smpp_sessions_from_db(void);
 void rpc_bind_sessions(int sender_id, void *param);
 void handle_smpp_msg(char *buffer, struct tcp_connection *conn);
 void send_submit_or_deliver_request(str *msg, str *src, str *dst,

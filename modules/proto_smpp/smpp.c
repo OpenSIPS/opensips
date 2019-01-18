@@ -41,8 +41,9 @@
 #include "../../parser/parse_from.h"
 
 #include "proto_smpp.h"
-#include "smpp.h"
 #include "utils.h"
+#include "smpp.h"
+#include "db.h"
 
 str smpp_outbound_uri;
 
@@ -55,7 +56,9 @@ static uint32_t increment_sequence_number(smpp_session_t *session);
 /** TM bind */
 struct tm_binds tmb;
 
-static smpp_session_t **g_sessions = NULL;
+//static smpp_session_t **g_sessions = NULL;
+struct list_head *g_sessions;
+rw_lock_t *smpp_lock;       /* reader-writers lock for reloading the data */
 
 static uint32_t get_payload_from_header(char *payload, smpp_header_t *header)
 {
@@ -533,29 +536,42 @@ free_req:
 	pkg_free(req);
 }
 
+void smpp_bind_sessions(struct list_head *list)
+{
+	struct list_head *l;
+	smpp_session_t *session;
+
+	list_for_each(l, list) {
+		session = list_entry(l, smpp_session_t, list);
+		if (session->session_type == SMPP_OUTBIND)
+			send_outbind(session);
+		else
+			send_bind(session);
+	}
+}
+
 void rpc_bind_sessions(int sender_id, void *param)
 {
-	int n = 0;
-	smpp_session_t *session_it = *g_sessions;
-	while (session_it) {
-		if (session_it->session_type == SMPP_OUTBIND)
-			send_outbind(session_it);
-		else
-			send_bind(session_it);
-		session_it = session_it->next;
-		n++;
+	if (load_smpp_sessions_from_db(g_sessions) < 0) {
+		LM_INFO("cannot load smpp sessions!\n");
+		return;
 	}
-	LM_INFO("sent %d\n", n);
+	smpp_bind_sessions(g_sessions);
 }
 
 
 void enquire_link(unsigned int ticks, void *params)
 {
-	smpp_session_t *session_it = *g_sessions;
-	while (session_it) {
-	    send_enquire_link_request(session_it);
-	    session_it = session_it->next;
+	struct list_head *l;
+	smpp_session_t *session;
+
+	lock_start_read(smpp_lock);
+
+	list_for_each(l, g_sessions) {
+		session = list_entry(l, smpp_session_t, list);
+	    send_enquire_link_request(session);
 	}
+	lock_stop_read(smpp_lock);
 }
 
 
@@ -689,8 +705,13 @@ free_req:
 
 uint32_t bind_session(smpp_bind_transceiver_t *body, struct tcp_connection *conn)
 {
-	smpp_session_t *session_it = *g_sessions;
-	for (session_it = *g_sessions; session_it; session_it = session_it->next) {
+	struct list_head *l;
+	smpp_session_t *session_it;
+
+	lock_start_read(smpp_lock);
+
+	list_for_each(l, g_sessions) {
+		session_it = list_entry(l, smpp_session_t, list);
 		// TODO what if there is no \0 at the end, but they
 		// match
 		if (strncmp(session_it->bind.transceiver.system_id, body->system_id, MAX_SYSTEM_ID_LEN) != 0)
@@ -706,8 +727,10 @@ uint32_t bind_session(smpp_bind_transceiver_t *body, struct tcp_connection *conn
 		LM_INFO("successfully found \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
 		session_it->conn = conn;
 		conn->proto_data = session_it;
+		lock_stop_read(smpp_lock);
 		return ESME_ROK;
 	}
+	lock_stop_read(smpp_lock);
 	LM_WARN("no system_id matched \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
 	return ESME_RBINDFAIL;
 }
@@ -994,8 +1017,12 @@ void handle_smpp_msg(char *buffer, struct tcp_connection *conn)
 void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 		smpp_session_t *session)
 {
+	struct tcp_connection *conn;
+	int ret, fd, n;
+
 	/* TODO: fix this */
-	session = *g_sessions;
+	if (!session)
+		session = list_entry(g_sessions->next, smpp_session_t, list);
 
 	smpp_submit_sm_req_t *req;
 	LM_DBG("sending submit_sm\n");
@@ -1007,15 +1034,14 @@ void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 		LM_ERR("error creating submit_sm request\n");
 		return;
 	}
-	struct tcp_connection *conn;
-	int fd;
-	int ret = tcp_conn_get(0, &(*g_sessions)->ip, (*g_sessions)->port,
+	ret = tcp_conn_get(0, &session->ip, session->port,
 			PROTO_SMPP, &conn, &fd);
 	if (ret < 0) {
 		LM_ERR("return code %d\n", ret);
 		goto free_req;
 	}
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	/* TODO: handle send timeout */
+	n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
 	LM_INFO("send %d bytes\n", n);
 
 free_req:
@@ -1024,21 +1050,26 @@ free_req:
 
 static void send_enquire_link_request(smpp_session_t *session)
 {
+	struct tcp_connection *conn;
+	int fd, ret, n;
+
 	smpp_enquire_link_req_t *req;
 	if (build_enquire_link_request(&req, session)) {
 		LM_ERR("error creating enquire_link_sm request\n");
 		return;
 	}
 
-	struct tcp_connection *conn;
-	int fd;
-	int ret = tcp_conn_get(0, &(*g_sessions)->ip, (*g_sessions)->port,
+	/* TODO: fix this */
+	if (!session)
+		session = list_entry(g_sessions->next, smpp_session_t, list);
+
+	ret = tcp_conn_get(0, &session->ip, session->port,
 			PROTO_SMPP, &conn, &fd);
 	if (ret < 0) {
 		LM_ERR("return code %d\n", ret);
 		goto free_req;
 	}
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
+	n = tsend_stream(fd, req->payload.s, req->payload.len, 1000);
 	LM_INFO("send %d bytes\n", n);
 
 free_req:
@@ -1090,9 +1121,14 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct 
 
 int smpp_sessions_init(void)
 {
-	g_sessions = shm_malloc(sizeof(smpp_session_t*));
+	g_sessions = shm_malloc(sizeof(*g_sessions));
 	if (!g_sessions) {
 		LM_CRIT("failed to allocate shared memory for sessions pointer\n");
+		return -1;
+	}
+	smpp_lock = lock_init_rw();
+	if (!smpp_lock) {
+		LM_CRIT("cannot allocate shared memory fir smpp_lock\n");
 		return -1;
 	}
 	return 0;
@@ -1153,11 +1189,7 @@ smpp_session_t *smpp_session_new(str *name, struct ip_addr *ip, int port,
 	session->dest_addr_npi = dst_addr_npi;
 	session->session_type = stype;
 
-	LM_DBG("Added %.*s SMSC\n", name->len, name->s);
+	LM_DBG("Added %.*s SMSC %p\n", name->len, name->s, session);
 
-	/* TODO: now link it to global list, but in the future, add it tmp list */
-	if (*g_sessions)
-		session->next = *g_sessions;
-	*g_sessions = session;
 	return session;
 }
