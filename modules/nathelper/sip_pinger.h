@@ -114,7 +114,7 @@ static int parse_branch(str branch)
 	if (!end) {
 		/* if reverse hex2int succeeds on this it's a simple
 		 * ping based on sipping_callid_cnt label */
-		if (reverse_hex2int(branch.s, end - branch.s, &label) == 0)
+		if (reverse_hex2int(branch.s, branch.len, &label) == 0)
 			return 0;
 
 		return 1;
