@@ -58,7 +58,7 @@ usrloc Module
               1.5.36. regen_broken_contactid (integer)
               1.5.37. latency_event_min_us (integer)
               1.5.38. latency_event_min_us_delta (integer)
-              1.5.39. shared_pinging (integer)
+              1.5.39. pinging_mode (string)
               1.5.40. mi_dump_kv_store (integer)
 
         1.6. Exported Functions
@@ -135,6 +135,9 @@ usrloc Module
 
    List of Tables
 
+   1.1. Possible values for the "pinging_mode", depending on the
+          current "cluster_mode"
+
    3.1. Top contributors by DevScore^(1), authored commits^(2) and
           lines added/removed^(3)
 
@@ -180,7 +183,7 @@ usrloc Module
    1.36. Set regen_broken_contactid parameter
    1.37. Set latency_event_min_us parameter
    1.38. Set latency_event_min_us_delta parameter
-   1.39. Set shared_pinging parameter
+   1.39. Set pinging_mode parameter
    1.40. Set mi_dump_kv_store parameter
 
 Chapter 1. Admin Guide
@@ -321,7 +324,8 @@ Chapter 1. Admin Guide
    Thus, the distributed user location node topologies are able to
    collectively partition the pinging workload and spread it
    evenly across the current number of cluster nodes, at any given
-   point in time.
+   point in time. The pinging_mode module parameter describes the
+   built-in pinging heuristics in more detail.
 
 1.3. Contact matching
 
@@ -999,23 +1003,43 @@ modparam("usrloc", "latency_event_min_us", 425000)
 modparam("usrloc", "latency_event_min_us_delta", 300000)
 ...
 
-1.5.39. shared_pinging (integer)
+1.5.39. pinging_mode (string)
 
-   Only relevant in a "full sharing" or "full sharing cachedb"
-   cluster_mode. If set to non-zero, the overall pinging workload
-   will be equally spread across cluster nodes with the help of
-   the clustering layer that keeps track of the current number of
-   active nodes.
+   Depending on the cluster_mode, the module will perform contact
+   pinging using one of at most two possible heuristics:
+     * "ownership" - this instance will only attempt to ping a
+       contact if it decides it is the logical owner of the
+       contact. If a shared tag is attached to a contact, a node
+       will keep sending pings to that contact as long as it owns
+       the respective tag. If no shared tag has been specified for
+       a given contact, the default is to assume permanent
+       ownership of the contact and always ping it.
+     * "cooperation" - the assumption behind this pinging
+       heuristic is that all user location cluster nodes are
+       symmetrical (possibly front-ended by a SIP traffic
+       balancing entity), such that either of them can ping any
+       contact. Under this assumption, all currently online user
+       location cluster nodes will cooperate and evenly split the
+       pinging workload between them by hashing AoRs modulo
+       current_number_of_online_nodes, and only picking the ones
+       that they are responsible for.
 
-   Disabling this parameter may be useful in simple active/backup
-   setups, where only the active node must perform the pinging.
+   Table 1.1. Possible values for the "pinging_mode", depending on
+   the current "cluster_mode"
+   cluster_mode none federation-cachedb full-sharing
+   full-sharing-cachedb sql-only
+   pinging_mode ownership ownership cooperation / ownership
+   cooperation unmaintained
 
-   Default value is “1 (enabled)”.
+   Notice that only the "full-sharing" clustering mode allows some
+   flexibility -- all other modes are logically tied to a single
+   pinging logic. Any unaccepted value, according to the above
+   table, set for those modes will be silently discarded.
 
-   Example 1.39. Set shared_pinging parameter
+   Example 1.39. Set pinging_mode parameter
 ...
-# do not partition the pinging workload across cluster nodes
-modparam("usrloc", "shared_pinging", 0)
+# prepare an active/backup "full-sharing" setup, with no front-end
+modparam("usrloc", "pinging_mode", "ownership")
 ...
 
 1.5.40. mi_dump_kv_store (integer)
@@ -1205,6 +1229,12 @@ modparam("usrloc", "mi_dump_kv_store", 1)
      * latency - The latency of the last successful ping for this
        contact. Until the first ping reply for a given contact
        arrives, its pinging latency will be 0.
+     * shtag - The shared tag of the contact, which helps
+       determine if the current node owns the contact (e.g.
+       possibly using the $cluster.sh_tag pseudo-variable in order
+       to perform the check).
+       NOTICE: If a contact has no shared tag attached to it, this
+       key will map to a "" (empty string) value!
 
 1.9.4.  E_UL_CONTACT_DELETE
 
@@ -1224,7 +1254,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
 1.9.6.  E_UL_LATENCY_UPDATE
 
-   This event is raised when a contact pinging latency passes
+   This event is raised when a contact pinging latency matches
    either of the latency_event_min_us or
    latency_event_min_us_delta filters. If none of these filters is
    set, this event will get raised for each successful contact
@@ -1472,7 +1502,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 230 135 3959 3493
-   3. Liviu Chircu (@liviuchircu) 202 123 5772 1845
+   3. Liviu Chircu (@liviuchircu) 218 135 6081 1947
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
@@ -1512,7 +1542,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2019
    2.  Razvan Crainea (@razvancrainea)     Jul 2011 - Nov 2018
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Aug 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Aug 2018

@@ -36,7 +36,8 @@ registrar Module
 
         1.4. Exported Functions
 
-              1.4.1. save(domain [,flags ,[aor]])
+              1.4.1. save(domain[, flags[, aor[, ownership_tag]]])
+
               1.4.2. remove(domain, AOR[, [contact][, [next_hop][,
                       [sip_instance]]]])
 
@@ -467,7 +468,7 @@ modparam("registrar", "disable_gruu", 0)
 
 1.4. Exported Functions
 
-1.4.1.  save(domain [,flags ,[aor]])
+1.4.1.  save(domain[, flags[, aor[, ownership_tag]]])
 
    The function processes a REGISTER message. It can add, remove
    or modify usrloc records depending on Contact and Expires HFs
@@ -532,9 +533,19 @@ modparam("registrar", "disable_gruu", 0)
             behind a SIP loadbalancer, which passes the nat'ed UAC
             address as “received” parameter in it's Path uri.
        This parameter is a string composed of a set of flags.
-     * aor (optional) - Variable contain a custom AOR; if missing,
-       the AOR will be taken from the default place - the TO
-       header URI.
+     * aor (optional) - Variable containing a custom AOR; if
+       missing, the AOR will be taken from the default place - the
+       TO header URI.
+     * ownership_tag (optional) - a cluster-shared tag (see the
+       clusterer module documentation for more details) which will
+       be attached to each contact saved from the current request.
+       This tag is only relevant in clustered user location
+       scenarios and helps determine the current logical owner
+       node of a contact. This, in turn, is useful in order to
+       restrict nodes which are not currently responsible for this
+       contact from performing certain actions (for example:
+       incorrectly originating pings from a non-owned virtual IP
+       address in highly-available setups).
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
@@ -553,8 +564,15 @@ save("location","mc5");
 # save into 'location', no flags, use as AOR the FROM URI
 save("location","","$fu");
 ...
-# save into 'location',no DB update, no reply to send, take AOR from AVP
+# save into 'location', no DB update, force registration, take AOR from
+AVP
 save("location","mr", "$avp(aor)");
+...
+# save into 'location', mark the contacts with the "vip" ownership tag a
+nd
+# replicate these contacts to the backup node, which does not currently
+own "vip"
+save("location", , , "vip");
 ...
 
 1.4.2.  remove(domain, AOR[, [contact][, [next_hop][,
@@ -993,7 +1011,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 157 103 2298 1948
    2. Jan Janak (@janakj) 121 73 3465 1102
-   3. Liviu Chircu (@liviuchircu) 88 49 1439 1499
+   3. Liviu Chircu (@liviuchircu) 92 52 1494 1521
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
    5. Razvan Crainea (@razvancrainea) 16 11 262 72
    6. Vlad Paiu (@vladpaiu) 16 10 489 81
@@ -1033,8 +1051,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jan 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Dec 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jan 2019
    3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Nov 2018
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  @jalung                             Aug 2017 - Aug 2017
@@ -1063,8 +1081,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Razvan
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Razvan
    Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
    Julián Moreno Patiño, Nick Altmann (@nikbyte), Vlad Paiu
    (@vladpaiu), Ovidiu Sas (@ovidiusas), Irina-Maria Stanescu,

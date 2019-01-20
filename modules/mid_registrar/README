@@ -41,8 +41,8 @@ mid_registrar Module
 
         1.6. Exported Functions
 
-              1.6.1. mid_registrar_save(domain[, [flags][, [aor][,
-                      [outgoing_expires]]]])
+              1.6.1. mid_registrar_save(domain[, flags[, aor[,
+                      outgoing_expires[, ownership_tag]]]])
 
               1.6.2. mid_registrar_lookup(domain[, [flags][,
                       [aor]]])
@@ -542,8 +542,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 
 1.6. Exported Functions
 
-1.6.1.  mid_registrar_save(domain[, [flags][, [aor][,
-[outgoing_expires]]]])
+1.6.1.  mid_registrar_save(domain[, flags[, aor[, outgoing_expires[,
+ownership_tag]]]])
 
    Function to be called when handling REGISTER requests. This
    function decides if a REGISTER should be forwarded to the main
@@ -610,6 +610,16 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
        throttling modes) - custom value for the contact expiration
        interval of the outgoing REGISTER request, which overrides
        the default outgoing_expires module parameter.
+     * ownership_tag (optional) - a cluster-shared tag (see the
+       clusterer module documentation for more details) which will
+       be attached to each contact saved from the current request.
+       This tag is only relevant in clustered user location
+       scenarios and helps determine the current logical owner
+       node of a contact. This, in turn, is useful in order to
+       restrict nodes which are not currently responsible for this
+       contact from performing certain actions (for example:
+       incorrectly originating pings from a non-owned virtual IP
+       address in highly-available setups).
 
    Return value
      * 1 (success) - current REGISTER request must be dispatched
@@ -771,7 +781,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 384 113 14631 8713
+   1. Liviu Chircu (@liviuchircu) 388 115 14688 8728
    2. Chad Attermann (@attermann) 7 5 19 5
    3. Razvan Crainea (@razvancrainea) 5 3 16 13
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 2
