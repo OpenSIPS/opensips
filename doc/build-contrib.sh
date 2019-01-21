@@ -156,6 +156,7 @@ github_handles=(
   ["Vlad Paiu"]="vladpaiu"
   ["Vlad Patrascu"]="rvlad-patrascu"
   ["Walter Doekes"]="wdoekes"
+  ["Victor Ciurel <victor.ciurel@gmail.com>"]="victor-ciurel"
 )
 
 # Commits which have been done on behalf of the original authors
