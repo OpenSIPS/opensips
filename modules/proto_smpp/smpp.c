@@ -48,7 +48,8 @@
 str smpp_outbound_uri;
 int smpp_send_timeout = DEFAULT_SMPP_SEND_TIMEOUT;
 
-static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn);
+static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
+		smpp_session_t *session, struct receive_info *rcv);
 static void send_enquire_link_request(smpp_session_t *session);
 
 static uint32_t increment_sequence_number(smpp_session_t *session);
@@ -229,9 +230,10 @@ err:
 	return -1;
 }
 
-static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint32_t command_id, uint32_t command_status, uint32_t seq_no, struct tcp_connection *conn)
+static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint32_t command_id,
+		uint32_t command_status, uint32_t seq_no)
 {
-	if (!preq || !conn) {
+	if (!preq) {
 		LM_ERR("NULL params");
 		goto err;
 	}
@@ -508,7 +510,33 @@ static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
 	return smpp_sync_connect(send_socket, &server, fd);
 }
 
-void send_bind(smpp_session_t *session)
+static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
+{
+	int ret, fd;
+	struct tcp_connection *conn;
+	/* first try to acquire the connection */
+	ret = tcp_conn_get(smsc->conn_id, &smsc->ip, smsc->port, PROTO_SMPP, &conn, &fd);
+	if (ret < 0) {
+		LM_ERR("cannot fetch connection for %.*s (%d)\n",
+				smsc->name.len, smsc->name.s, ret);
+		return ret;
+	}
+	/* update connection in case it has changed */
+	smsc->conn_id = conn->id;
+	ret = tsend_stream(fd, buffer->s, buffer->len, smpp_send_timeout);
+	tcp_conn_set_lifetime(conn, tcp_con_lifetime);
+	if (ret < 0) {
+		LM_ERR("failed to send data!\n");
+		conn->state=S_CONN_BAD;
+	}
+	if (conn->proc_id != process_no)
+		close(fd);
+	tcp_conn_release(conn, 0);
+	return ret;
+}
+
+
+static void send_bind(smpp_session_t *session)
 {
 	int fd, n = -1;
 	struct tcp_connection *conn;
@@ -529,7 +557,7 @@ void send_bind(smpp_session_t *session)
 		goto free_req;
 	}
 
-	session->conn = conn;
+	session->conn_id = conn->id;
 	conn->proto_data = session;
 	n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
 	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
@@ -674,9 +702,9 @@ void parse_submit_or_deliver_resp_body(smpp_submit_sm_resp_t *body, smpp_header_
 	copy_var_str(body->message_id, buffer);
 }
 
-void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, struct tcp_connection *conn)
+void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, smpp_session_t *session)
 {
-	if (!req || !conn) {
+	if (!req || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
@@ -690,55 +718,34 @@ void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, struct tcp_connectio
 		return;
 	}
 
-	int fd;
-	//TODO use pointer from session to get the connection
-	int ret = tcp_conn_get(conn->rcv.proto_reserved1, &conn->rcv.src_ip, conn->rcv.src_port, conn->rcv.proto, &conn, &fd);
-	if (ret < 0) {
-		LM_ERR("return code %d\n", ret);
-		goto free_req;
-	}
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
-	LM_INFO("send %d bytes\n", n);
-
-free_req:
+	smpp_send_msg(session, &req->payload);
 	pkg_free(resp);
 }
 
-uint32_t bind_session(smpp_bind_transceiver_t *body, struct tcp_connection *conn)
+uint32_t bind_session(smpp_bind_transceiver_t *body, smpp_session_t *session)
 {
-	struct list_head *l;
-	smpp_session_t *session_it;
-
-	lock_start_read(smpp_lock);
-
-	list_for_each(l, g_sessions) {
-		session_it = list_entry(l, smpp_session_t, list);
-		// TODO what if there is no \0 at the end, but they
-		// match
-		if (strncmp(session_it->bind.transceiver.system_id, body->system_id, MAX_SYSTEM_ID_LEN) != 0)
-			continue;
-		if (strncmp(session_it->bind.transceiver.password, body->password, MAX_PASSWORD_LEN) != 0) {
-			LM_WARN("wrong password when trying to bind \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
-			return ESME_RBINDFAIL;
-		}
-		if (session_it->session_type != SMPP_OUTBIND) {
-			LM_WARN("cannot receive bind command on ESME type interface for \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
-			return ESME_RBINDFAIL;
-		}
-		LM_INFO("successfully found \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
-		session_it->conn = conn;
-		conn->proto_data = session_it;
-		lock_stop_read(smpp_lock);
-		return ESME_ROK;
+	if (memcmp(session->bind.transceiver.system_id, body->system_id, MAX_SYSTEM_ID_LEN) != 0) {
+		LM_WARN("wrong system id when trying to bind \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
+		return ESME_RBINDFAIL;
 	}
-	lock_stop_read(smpp_lock);
-	LM_WARN("no system_id matched \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
-	return ESME_RBINDFAIL;
+
+	if (memcmp(session->bind.transceiver.password, body->password, MAX_PASSWORD_LEN) != 0) {
+		LM_WARN("wrong password when trying to bind \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
+		return ESME_RBINDFAIL;
+	}
+	if (session->session_type != SMPP_OUTBIND) {
+		LM_WARN("cannot receive bind command on ESME type interface for \"%.*s\"\n",
+				MAX_SYSTEM_ID_LEN, body->system_id);
+		return ESME_RBINDFAIL;
+	}
+	LM_INFO("successfully found \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
+	return ESME_ROK;
 }
 
-void send_bind_resp(smpp_header_t *header, smpp_bind_transceiver_t *body, uint32_t command_status, struct tcp_connection *conn)
+void send_bind_resp(smpp_header_t *header, smpp_bind_transceiver_t *body, uint32_t command_status,
+		smpp_session_t *session)
 {
-	if (!header || !body || !conn) {
+	if (!header || !body || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
@@ -746,34 +753,24 @@ void send_bind_resp(smpp_header_t *header, smpp_bind_transceiver_t *body, uint32
 	smpp_bind_transceiver_resp_req_t *req;
 	uint32_t seq_no = header->sequence_number;
 	uint32_t command_id = header->command_id + 0x80000000; // transform command to resp command
-	if (build_bind_resp_request(&req, command_id, command_status, seq_no, conn)) {
+	if (build_bind_resp_request(&req, command_id, command_status, seq_no)) {
 		LM_ERR("error creating request\n");
 		return;
 	}
 
-	int fd;
-	//TODO use pointer from session to get the connection
-	int ret = tcp_conn_get(conn->rcv.proto_reserved1, &conn->rcv.src_ip, conn->rcv.src_port, conn->rcv.proto, &conn, &fd);
-	if (ret < 0) {
-		LM_ERR("return code %d\n", ret);
-		goto free_req;
-	}
-	int n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
-	LM_INFO("send %d bytes\n", n);
-
-free_req:
+	smpp_send_msg(session, &req->payload);
 	pkg_free(req);
 }
 
-void handle_generic_nack_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+void handle_generic_nack_cmd(smpp_header_t *header, char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received generic_nack command\n");
 }
 
-void handle_bind_receiver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+void handle_bind_receiver_cmd(smpp_header_t *header, char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received bind_receiver command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
@@ -781,23 +778,23 @@ void handle_bind_receiver_cmd(smpp_header_t *header, char *buffer, struct tcp_co
 	smpp_bind_receiver_t body;
 	memset(&body, 0, sizeof(body));
 	parse_bind_receiver_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, conn);
-	send_bind_resp(header, &body, command_status, conn);
+	uint32_t command_status = bind_session(&body, session);
+	send_bind_resp(header, &body, command_status, session);
 }
 
-void handle_bind_receiver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+void handle_bind_receiver_resp_cmd(smpp_header_t *header, char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received bind_receiver_resp command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
 }
 
-void handle_bind_transmitter_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+void handle_bind_transmitter_cmd(smpp_header_t *header, char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received bind_transmitter command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
@@ -805,20 +802,21 @@ void handle_bind_transmitter_cmd(smpp_header_t *header, char *buffer, struct tcp
 	smpp_bind_transmitter_t body;
 	memset(&body, 0, sizeof(body));
 	parse_bind_transmitter_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, conn);
-	send_bind_resp(header, &body, command_status, conn);
+	uint32_t command_status = bind_session(&body, session);
+	send_bind_resp(header, &body, command_status, session);
 }
 
-void handle_bind_transmitter_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+void handle_bind_transmitter_resp_cmd(smpp_header_t *header, char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received bind_transmitter_resp command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
 }
 
-void handle_submit_or_deliver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+void handle_submit_or_deliver_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session, struct receive_info *rcv)
 {
 	if (header->command_status) {
 		LM_ERR("Error in submit_sm %08x\n", header->command_status);
@@ -839,11 +837,12 @@ void handle_submit_or_deliver_cmd(smpp_header_t *header, char *buffer, struct tc
 	req.header = header;
 	req.body = &body;
 	req.optionals = NULL;
-	send_submit_or_deliver_resp(&req, conn);
-	recv_smpp_msg(header, &body, conn);
+	send_submit_or_deliver_resp(&req, session);
+	recv_smpp_msg(header, &body, session, rcv);
 }
 
-void handle_submit_or_deliver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+void handle_submit_or_deliver_resp_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session, struct receive_info *rcv)
 {
 	if (header->command_status) {
 		LM_ERR("Error in submit_sm_resp %08x\n", header->command_status);
@@ -856,70 +855,77 @@ void handle_submit_or_deliver_resp_cmd(smpp_header_t *header, char *buffer, stru
 	LM_INFO("Successfully sent message \"%s\"\n", body.message_id);
 }
 
-void handle_submit_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+void handle_submit_sm_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session, struct receive_info *rcv)
 {
 	LM_DBG("Received submit_sm command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
 
-	handle_submit_or_deliver_cmd(header, buffer, conn);
+	handle_submit_or_deliver_cmd(header, buffer, session, rcv);
 }
 
-void handle_submit_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+static void handle_submit_sm_resp_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session, struct receive_info *rcv)
 {
 	LM_DBG("Received submit_sm_resp command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
-	handle_submit_or_deliver_resp_cmd(header, buffer, conn);
+	handle_submit_or_deliver_resp_cmd(header, buffer, session, rcv);
 }
 
-void handle_deliver_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+static void handle_deliver_sm_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session, struct receive_info *rcv)
 {
 	LM_DBG("Received deliver_sm command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
 
-	handle_submit_or_deliver_cmd(header, buffer, conn);
+	handle_submit_or_deliver_cmd(header, buffer, session, rcv);
 }
 
-void handle_deliver_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+static void handle_deliver_sm_resp_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session, struct receive_info *rcv)
 {
 	LM_DBG("Received deliver_sm_resp command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
-	handle_submit_or_deliver_resp_cmd(header, buffer, conn);
+	handle_submit_or_deliver_resp_cmd(header, buffer, session, rcv);
 }
 
-void handle_unbind_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+static void handle_unbind_resp_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session)
 {
 	LM_DBG("Received unbind_resp command\n");
 }
 
-void handle_bind_transceiver_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+static void handle_bind_transceiver_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session)
 {
 	LM_DBG("Received bind_transceiver command\n");
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
 	smpp_bind_transceiver_t body;
 	memset(&body, 0, sizeof(body));
 	parse_bind_transceiver_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, conn);
-	send_bind_resp(header, &body, command_status, conn);
+	uint32_t command_status = bind_session(&body, session);
+	send_bind_resp(header, &body, command_status, session);
 }
 
-void handle_bind_transceiver_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+static void handle_bind_transceiver_resp_cmd(smpp_header_t *header,
+		char *buffer, smpp_session_t *session)
 {
-	if (!header || !buffer || !conn) {
+	if (!header || !buffer || !session) {
 		LM_ERR("NULL params\n");
 		return;
 	}
@@ -933,26 +939,32 @@ void handle_bind_transceiver_resp_cmd(smpp_header_t *header, char *buffer, struc
 	parse_bind_transceiver_resp_body(&body, header, buffer);
 	LM_INFO("Successfully bound transceiver \"%s\"\n", body.system_id);
 }
-void handle_data_sm_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+
+static void handle_data_sm_cmd(smpp_header_t *header,
+		char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received data_sm command\n");
 }
-void handle_data_sm_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+
+static void handle_data_sm_resp_cmd(smpp_header_t *header,
+		char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received data_sm_resp command\n");
 }
 
-void handle_enquire_link_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+static void handle_enquire_link_cmd(smpp_header_t *header,
+		char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received enquire_link command\n");
 }
 
-void handle_enquire_link_resp_cmd(smpp_header_t *header, char *buffer, struct tcp_connection *conn)
+static void handle_enquire_link_resp_cmd(smpp_header_t *header,
+		char *buffer, smpp_session_t *session)
 {
 	LM_DBG("Received enquire_link_resp command\n");
 }
 
-void handle_smpp_msg(char *buffer, struct tcp_connection *conn)
+void handle_smpp_msg(char *buffer, smpp_session_t *session, struct receive_info *rcv)
 {
 	smpp_header_t header;
 	smpp_parse_header(&header, buffer);
@@ -962,52 +974,52 @@ void handle_smpp_msg(char *buffer, struct tcp_connection *conn)
 
 	switch (header.command_id) {
 		case GENERIC_NACK_CID:
-			handle_generic_nack_cmd(&header, buffer, conn);
+			handle_generic_nack_cmd(&header, buffer, session);
 			break;
 		case BIND_RECEIVER_CID:
-			handle_bind_receiver_cmd(&header, buffer, conn);
+			handle_bind_receiver_cmd(&header, buffer, session);
 			break;
 		case BIND_RECEIVER_RESP_CID:
-			handle_bind_receiver_resp_cmd(&header, buffer, conn);
+			handle_bind_receiver_resp_cmd(&header, buffer, session);
 			break;
 		case BIND_TRANSMITTER_RESP_CID:
-			handle_bind_transmitter_resp_cmd(&header, buffer, conn);
+			handle_bind_transmitter_resp_cmd(&header, buffer, session);
 			break;
 		case BIND_TRANSMITTER_CID:
-			handle_bind_transmitter_cmd(&header, buffer, conn);
+			handle_bind_transmitter_cmd(&header, buffer, session);
 			break;
 		case SUBMIT_SM_CID:
-			handle_submit_sm_cmd(&header, buffer, conn);
+			handle_submit_sm_cmd(&header, buffer, session, rcv);
 			break;
 		case SUBMIT_SM_RESP_CID:
-			handle_submit_sm_resp_cmd(&header, buffer, conn);
+			handle_submit_sm_resp_cmd(&header, buffer, session, rcv);
 			break;
 		case DELIVER_SM_CID:
-			handle_deliver_sm_cmd(&header, buffer, conn);
+			handle_deliver_sm_cmd(&header, buffer, session, rcv);
 			break;
 		case DELIVER_SM_RESP_CID:
-			handle_deliver_sm_resp_cmd(&header, buffer, conn);
+			handle_deliver_sm_resp_cmd(&header, buffer, session, rcv);
 			break;
 		case UNBIND_RESP_CID:
-			handle_unbind_resp_cmd(&header, buffer, conn);
+			handle_unbind_resp_cmd(&header, buffer, session);
 			break;
 		case BIND_TRANSCEIVER_CID:
-			handle_bind_transceiver_cmd(&header, buffer, conn);
+			handle_bind_transceiver_cmd(&header, buffer, session);
 			break;
 		case BIND_TRANSCEIVER_RESP_CID:
-			handle_bind_transceiver_resp_cmd(&header, buffer, conn);
+			handle_bind_transceiver_resp_cmd(&header, buffer, session);
 			break;
 		case DATA_SM_CID:
-			handle_data_sm_cmd(&header, buffer, conn);
+			handle_data_sm_cmd(&header, buffer, session);
 			break;
 		case DATA_SM_RESP_CID:
-			handle_data_sm_resp_cmd(&header, buffer, conn);
+			handle_data_sm_resp_cmd(&header, buffer, session);
 			break;
 		case ENQUIRE_LINK_CID:
-			handle_enquire_link_cmd(&header, buffer, conn);
+			handle_enquire_link_cmd(&header, buffer, session);
 			break;
 		case ENQUIRE_LINK_RESP_CID:
-			handle_enquire_link_resp_cmd(&header, buffer, conn);
+			handle_enquire_link_resp_cmd(&header, buffer, session);
 			break;
 		default:
 			LM_WARN("Unknown or unsupported command received %08X\n", header.command_id);
@@ -1018,13 +1030,6 @@ void handle_smpp_msg(char *buffer, struct tcp_connection *conn)
 void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 		smpp_session_t *session)
 {
-	struct tcp_connection *conn;
-	int ret, fd, n;
-
-	/* TODO: fix this */
-	if (!session)
-		session = list_entry(g_sessions->next, smpp_session_t, list);
-
 	smpp_submit_sm_req_t *req;
 	LM_DBG("sending submit_sm\n");
 	LM_DBG("FROM: %.*s\n", src->len, src->s);
@@ -1035,25 +1040,12 @@ void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 		LM_ERR("error creating submit_sm request\n");
 		return;
 	}
-	ret = tcp_conn_get(0, &session->ip, session->port,
-			PROTO_SMPP, &conn, &fd);
-	if (ret < 0) {
-		LM_ERR("return code %d\n", ret);
-		goto free_req;
-	}
-	/* TODO: handle send timeout */
-	n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
-	LM_INFO("send %d bytes\n", n);
-
-free_req:
+	smpp_send_msg(session, &req->payload);
 	pkg_free(req);
 }
 
 static void send_enquire_link_request(smpp_session_t *session)
 {
-	struct tcp_connection *conn;
-	int fd, ret, n;
-
 	smpp_enquire_link_req_t *req;
 	if (build_enquire_link_request(&req, session)) {
 		LM_ERR("error creating enquire_link_sm request\n");
@@ -1064,29 +1056,21 @@ static void send_enquire_link_request(smpp_session_t *session)
 	if (!session)
 		session = list_entry(g_sessions->next, smpp_session_t, list);
 
-	ret = tcp_conn_get(0, &session->ip, session->port,
-			PROTO_SMPP, &conn, &fd);
-	if (ret < 0) {
-		LM_ERR("return code %d\n", ret);
-		goto free_req;
-	}
-	n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
-	LM_INFO("send %d bytes\n", n);
-
-free_req:
+	smpp_send_msg(session, &req->payload);
 	pkg_free(req);
 }
 
-static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body, struct tcp_connection *conn)
+static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
+		smpp_session_t *session, struct receive_info *rcv)
 {
 	static str msg_type = str_init("MESSAGE");
 
 	char hdrs[1024];
 	char *p = hdrs;
 	char src[128];
-	sprintf(src, "sip:%s@%s:%d", body->source_addr, ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
+	sprintf(src, "sip:%s@%s:%d", body->source_addr, ip_addr2a(&rcv->src_ip), rcv->src_port);
 	char dst[128];
-	sprintf(dst, "sip:%s@%s:%d", body->destination_addr, ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
+	sprintf(dst, "sip:%s@%s:%d", body->destination_addr, ip_addr2a(&rcv->dst_ip), rcv->dst_port);
 	p += sprintf(p, "Content-Type:text/plain\r\n");
 
 	str hdr_str;

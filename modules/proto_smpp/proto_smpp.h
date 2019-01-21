@@ -42,7 +42,7 @@ typedef struct smpp_session {
 	struct ip_addr ip;
 	int port;
 
-	struct tcp_connection *conn;
+	int conn_id;
 
 	union {
 		smpp_bind_receiver_t receiver;
@@ -68,7 +68,7 @@ struct tcp_connection* smpp_sync_connect(struct socket_info* send_sock,
 
 void enquire_link(unsigned int ticks, void *param);
 void rpc_bind_sessions(int sender_id, void *param);
-void handle_smpp_msg(char *buffer, struct tcp_connection *conn);
+void handle_smpp_msg(char *buffer, smpp_session_t *session, struct receive_info *rcv);
 void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 		smpp_session_t *session);
 smpp_session_t *smpp_session_new(str *name, struct ip_addr *ip, int port,

@@ -259,6 +259,7 @@ static struct tcp_req smpp_current_req;
 static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 {
 	long size;
+	struct receive_info local_rcv;
 
 	if (req->complete){
 		/* update the timeout - we successfully read the request */
@@ -287,9 +288,10 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 			LM_DBG("We still have things on the pipe - "
 				"keeping connection \n");
 		}
+		local_rcv = con->rcv;
 
 		/* give the message to the registered functions */
-		handle_smpp_msg(req->buf, con);
+		handle_smpp_msg(req->buf, (smpp_session_t *)con->proto_data, &local_rcv);
 
 		if (!size && req != &smpp_current_req) {
 			/* if we no longer need this tcp_req
