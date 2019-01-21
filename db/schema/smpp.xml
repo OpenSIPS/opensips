@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="smpp" xmlns:db="http://docbook.org/ns/docbook">
+	<name>smpp</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>
+			This table is used to provision Short Message Service Center (SMSC)
+			information to connect to over the SMPP (Short Message Peer-to-Peer).
+			More information can be found at: &OPENSIPS_MOD_DOC;proto_smpp.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Unique ID</description>
+	</column>
+
+	<column id="name">
+		<name>name</name>
+		<type>string</type>
+		<size>255</size>
+		<description>An arbitrary name of the SMSC, used to uniquely identify the binding.
+		</description>
+	</column>
+
+	<column id="ip">
+		<name>ip</name>
+		<type>string</type>
+		<size>&ip_add_len;</size>
+		<description>The IP address used to connect to the SMSC.</description>
+	</column>
+
+	<column id="port">
+		<name>port</name>
+		<type>unsigned int</type>
+		<size>5</size>
+		<description>The port used to connect to the SMSC.</description>
+	</column>
+
+	<column id="system_id">
+		<name>system_id</name>
+		<type>string</type>
+		<size>16</size>
+		<description>The System ID (also called user name) for the gateway
+		to use when connecting to the SMPP server.</description>
+	</column>
+
+	<column id="password">
+		<name>password</name>
+		<type>string</type>
+		<size>9</size>
+		<description>The password for the gateway to use when connecting to
+		the SMPP server.</description>
+	</column>
+
+	<column id="system_type">
+		<name>system_type</name>
+		<type>string</type>
+		<size>13</size>
+		<description>Configures the System Type parameter of the
+		the SMPP server.</description>
+	</column>
+
+	<column id="src_ton">
+		<name>src_ton</name>
+		<type>unsigned int</type>
+		<description>Specifies the Source TON (Type of Number).</description>
+	</column>
+
+	<column id="src_npi">
+		<name>src_npi</name>
+		<type>unsigned int</type>
+		<description>Specifies the Source NPI (Numbering Plan Indicator).</description>
+	</column>
+
+	<column id="dst_ton">
+		<name>dst_ton</name>
+		<type>unsigned int</type>
+		<description>Specifies the Destination TON (Type of Number).</description>
+	</column>
+
+	<column id="dst_npi">
+		<name>dst_npi</name>
+		<type>unsigned int</type>
+		<description>Specifies the Destination NPI (Numbering Plan Indicator).</description>
+	</column>
+
+	<column id="session_type">
+		<name>session_type</name>
+		<type>unsigned int</type>
+		<description>Sepecifies the type of binding: 1 - transciever,
+			2 - transmitter, 3 - receiver, 4 - outbind.</description>
+	</column>
+
+</table>

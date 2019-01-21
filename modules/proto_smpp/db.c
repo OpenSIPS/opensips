@@ -42,7 +42,7 @@ str smpp_dst_ton_col = str_init("dst_ton");
 str smpp_dst_npi_col = str_init("dst_npi");
 str smpp_session_type_col = str_init("session_type");
 
-int smpp_db_bind(const str *db_url)
+int smpp_db_init(const str *db_url)
 {
 	smpp_table.len = strlen(smpp_table.s);
 	smpp_name_col.len = strlen(smpp_name_col.s);
@@ -61,10 +61,19 @@ int smpp_db_bind(const str *db_url)
 		LM_ERR("cannot bind module database\n");
 		return -1;
 	}
+
+	if (smpp_db_connect(db_url) < 0)
+		return -1;
+
+	if(db_check_table_version(&smpp_dbf, smpp_db_handle,
+			&smpp_table, SMPP_TABLE_VERSION) < 0) {
+		LM_ERR("error during table version check.\n");
+		return -1;
+	}
 	return 0;
 }
 
-int smpp_db_init(const str *db_url)
+int smpp_db_connect(const str *db_url)
 {
 	if (smpp_dbf.init == 0) {
 		LM_ERR("unbound database module\n");

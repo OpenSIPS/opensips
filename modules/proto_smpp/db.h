@@ -25,6 +25,8 @@
 #include "../../db/db.h"
 #include "../../str.h"
 
+#define SMPP_TABLE_VERSION 1
+
 extern str smpp_table;
 extern str smpp_name_col;
 extern str smpp_ip_col;
@@ -39,8 +41,8 @@ extern str smpp_dst_npi_col;
 extern str smpp_session_type_col;
 extern str smpp_outbound_uri;
 
-int smpp_db_bind(const str *db_url);
 int smpp_db_init(const str *db_url);
+int smpp_db_connect(const str *db_url);
 int load_smpp_sessions_from_db(struct list_head *head);
 int smpp_query(const str *smpp_table, db_key_t *cols, int col_nr, db_res_t **res);
 void smpp_free_results(db_res_t *res);

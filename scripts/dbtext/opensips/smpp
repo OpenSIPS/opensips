@@ -1,0 +1,1 @@
+id(int,auto) name(string) ip(string) port(int) system_id(string) password(string) system_type(string) src_ton(int) src_npi(int) dst_ton(int) dst_npi(int) session_type(int) 

@@ -148,9 +148,6 @@ static int mod_init(void)
 	db_url.len = strlen(db_url.s);
 	smpp_outbound_uri.len = strlen(smpp_outbound_uri.s);
 
-	if (smpp_db_bind(&db_url) < 0)
-		return -1;
-
 	if (smpp_db_init(&db_url) < 0)
 		return -1;
 
@@ -221,7 +218,7 @@ static int child_init(int rank)
 {
 	LM_INFO("initializing child #%d\n", rank);
 
-	if (smpp_db_init(&db_url) < 0)
+	if (smpp_db_connect(&db_url) < 0)
 		return -1;
 
 	if ((rank == 1) && ipc_dispatch_rpc(rpc_bind_sessions, NULL) < 0) {

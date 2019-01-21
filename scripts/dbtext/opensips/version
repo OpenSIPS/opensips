@@ -48,6 +48,7 @@ rtpengine:1
 rtpproxy_sockets:0
 silo:6
 sip_trace:5
+smpp:1
 speed_dial:3
 subscriber:7
 tls_mgm:3

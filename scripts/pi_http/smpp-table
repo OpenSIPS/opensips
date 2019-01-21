@@ -1,0 +1,17 @@
+	<!-- Declaration of smpp table-->
+	<db_table id="smpp">
+		<table_name>smpp</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>name</field><type>DB_STR</type></column>
+		<column><field>ip</field><type>DB_STR</type></column>
+		<column><field>port</field><type>DB_INT</type></column>
+		<column><field>system_id</field><type>DB_STR</type></column>
+		<column><field>password</field><type>DB_STR</type></column>
+		<column><field>system_type</field><type>DB_STR</type></column>
+		<column><field>src_ton</field><type>DB_INT</type></column>
+		<column><field>src_npi</field><type>DB_INT</type></column>
+		<column><field>dst_ton</field><type>DB_INT</type></column>
+		<column><field>dst_npi</field><type>DB_INT</type></column>
+		<column><field>session_type</field><type>DB_INT</type></column>
+	</db_table>
