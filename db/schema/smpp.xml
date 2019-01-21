@@ -72,6 +72,7 @@
 		<name>system_type</name>
 		<type>string</type>
 		<size>13</size>
+		<default></default>
 		<description>Configures the System Type parameter of the
 		the SMPP server.</description>
 	</column>
@@ -79,31 +80,36 @@
 	<column id="src_ton">
 		<name>src_ton</name>
 		<type>unsigned int</type>
+		<default>0</default>
 		<description>Specifies the Source TON (Type of Number).</description>
 	</column>
 
 	<column id="src_npi">
 		<name>src_npi</name>
 		<type>unsigned int</type>
+		<default>0</default>
 		<description>Specifies the Source NPI (Numbering Plan Indicator).</description>
 	</column>
 
 	<column id="dst_ton">
 		<name>dst_ton</name>
 		<type>unsigned int</type>
+		<default>0</default>
 		<description>Specifies the Destination TON (Type of Number).</description>
 	</column>
 
 	<column id="dst_npi">
 		<name>dst_npi</name>
 		<type>unsigned int</type>
+		<default>0</default>
 		<description>Specifies the Destination NPI (Numbering Plan Indicator).</description>
 	</column>
 
 	<column id="session_type">
 		<name>session_type</name>
 		<type>unsigned int</type>
-		<description>Sepecifies the type of binding: 1 - transciever,
+		<default>1</default>
+		<description>Specifies the type of binding: 1 - transciever,
 			2 - transmitter, 3 - receiver, 4 - outbind.</description>
 	</column>
 
