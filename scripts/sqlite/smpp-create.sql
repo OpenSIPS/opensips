@@ -6,11 +6,12 @@ CREATE TABLE smpp (
     port INTEGER NOT NULL,
     system_id CHAR(16) NOT NULL,
     password CHAR(9) NOT NULL,
-    system_type CHAR(13) NOT NULL,
-    src_ton INTEGER NOT NULL,
-    src_npi INTEGER NOT NULL,
-    dst_ton INTEGER NOT NULL,
-    dst_npi INTEGER NOT NULL,
-    session_type INTEGER NOT NULL
+    system_type CHAR(13) DEFAULT '' NOT NULL,
+    src_ton INTEGER DEFAULT 0 NOT NULL,
+    src_npi INTEGER DEFAULT 0 NOT NULL,
+    dst_ton INTEGER DEFAULT 0 NOT NULL,
+    dst_npi INTEGER DEFAULT 0 NOT NULL,
+    session_type INTEGER DEFAULT 1 NOT NULL,
+    CONSTRAINT smpp_unique_name  UNIQUE (name)
 );
 

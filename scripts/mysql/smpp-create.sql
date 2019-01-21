@@ -6,11 +6,12 @@ CREATE TABLE smpp (
     port INT(5) UNSIGNED NOT NULL,
     system_id CHAR(16) NOT NULL,
     password CHAR(9) NOT NULL,
-    system_type CHAR(13) NOT NULL,
-    src_ton INT UNSIGNED NOT NULL,
-    src_npi INT UNSIGNED NOT NULL,
-    dst_ton INT UNSIGNED NOT NULL,
-    dst_npi INT UNSIGNED NOT NULL,
-    session_type INT UNSIGNED NOT NULL
+    system_type CHAR(13) DEFAULT '' NOT NULL,
+    src_ton INT UNSIGNED DEFAULT 0 NOT NULL,
+    src_npi INT UNSIGNED DEFAULT 0 NOT NULL,
+    dst_ton INT UNSIGNED DEFAULT 0 NOT NULL,
+    dst_npi INT UNSIGNED DEFAULT 0 NOT NULL,
+    session_type INT UNSIGNED DEFAULT 1 NOT NULL,
+    CONSTRAINT unique_name UNIQUE (name)
 ) ENGINE=InnoDB;
 

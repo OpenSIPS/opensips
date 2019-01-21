@@ -113,4 +113,10 @@
 			2 - transmitter, 3 - receiver, 4 - outbind.</description>
 	</column>
 
+	<index>
+		<name>unique_name</name>
+		<colref linkend="name"/>
+		<unique/>
+	</index>
+
 </table>
