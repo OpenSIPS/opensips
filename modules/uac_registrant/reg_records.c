@@ -230,7 +230,7 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
 
 	/* Setting the clustering options */
 	record->cluster_id = uac->cluster_id;
-	if (record->cluster_shtag.len) {
+	if (uac->cluster_shtag.len) {
 		record->cluster_shtag.s = p;
 		record->cluster_shtag.len = uac->cluster_shtag.len;
 		memcpy(p, uac->cluster_shtag.s, uac->cluster_shtag.len);
