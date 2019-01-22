@@ -6,157 +6,147 @@
 	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
-		TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies
-		and can be used to secure the SIP signalling on a hop-by-hop basis
-		(not end-to-end). TLS works on top of TCP. DTLS, or TLS over UDP is
-		already defined by IETF and may become available in the future.
+			This module offers interoperability between SIP and SMPP
+			(Short Message Peer-to-Peer) protocols. It provides the
+			means to build a messaging gateway/bridge between the two
+			protocols, being able to convert messages from both directions.
+		</para>
+
+		<para>
+		<itemizedlist>
+			<listitem><para>
+			SIP to SMPP - messages coming from SIP can be converted to a
+			SMPP PDU (Protocol Data Unit) message and sent further to a
+			SMSC (Short Message Service Center).
+			</para></listitem>
+			<listitem><para>
+			SMPP to SIP - the module can act as an ESME (External Short
+			Messaging Entity), receiving messages from a SMSC and converting
+			them to a SIP Message that is sent further to a SIP proxy.
+			</para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+			The module is compatible with the
+			<ulink url="http://opensmpp.org/specs/SMPP_v3_4_Issue1_2.pdf">
+				SMPP v3.4</ulink> specifications.
 		</para>
 	</section>
 
 	<section>
-		<title>History</title>
+		<title>SIP to SMPP bridging</title>
 		<para>
-		The TLS support was originally developed by Peter Griffiths and posted
-		as a patch on SER development mailing list. Thanks to Cesc
-		Santasusana, several problems were fixed and some improvements were
-		added.
-		</para>
-		<para>
-		The TLS support was simultaneously added in both projects. In SER,
-		the support was committed in a separate <quote>experimental</quote>
-		CVS tree, as patch to the main CVS tree. In OpenSIPS, the support was
-		integrated directly into the CVS tree, as a built-in component, and is
-		part of stable OpenSIPS since release >=1.0.0.
-		</para>
-		<para>
-		Starting with OpenSIPS 2.1, the TLS has been moved to a separate
-		transport module, that implements the more generic Transport
-		Interface.
+			In order to convert a SIP message to a SMPP all you need to do
+			is to call the <xref linkend="func_send_smpp_message"/> function,
+			indicating the SMSc you want to send the message to. The module
+			will build the PDU according to the parameters provisioned
+			in the database.
 		</para>
 	</section>
 
 	<section>
-		<title>Scenario</title>
+		<title>SMPP to SIP bridging</title>
 		<para>
-		By the increased number of providers the SIP world is continuously
-		growing. More users means more calls and more calls means a high
-		probability for a user to receive calls from totally unknown people
-		or, in the worst case, to receive unwanted calls. To prevent this, a
-		defense mechanism must be adopted by the SIP provider. Since only the
-		called user is fully able to classify a call as being unwanted, the
-		SIP server, based on all information regarding the call should notify
-		the user about the desirability of the call. Information like the
-		caller domain, the received source or the incoming protocol can be
-		very useful for a SIP server to establish the nature of the call.
+			When bridging a message received over the SMPP interface,
+			OpenSIPS builds a SIP Message and sends it to the outbound
+			proxy identified by the <xref linkend="param_smpp_outbound_uri"/>
+			module's parameter.
+		</para>
+	</section>
+
+	<section>
+		<title>SMSC binding</title>
+		<para>
+			In order to be able to deliver messages to SMSc, an ESME needs to
+			first bind to the SMSc. This is done at &osips; startup by sending
+			a SMPP <emphasis>bind_transciever</emphasis> command to connect
+			to the SMSc, or an <emphasis>outbind</emphasis> command to inform
+			an SMSc it can now bind to our gateway.
 		</para>
 		<para>
-		As this information is quite limited, is very improbable for a server
-		to be able detect the unwanted calls - there are many calls that it
-		cannot predict anything about its status (neutral calls). So, instead
-		on alerting the called user about unwanted calls, the server can
-		notify the user about calls that are considered trusted - calls for
-		which the server is 100% sure there are not unwanted.
+			The description of all SMSc servers is provisioned in the database.
+			For each server, one can cofigure the following information:
+			<itemizedlist>
+			<listitem><para><emphasis>Name</emphasis> - an unique name given to
+			the SMSc that is used to reference this SMSc in the &osips; script.
+			</para></listitem>
+			<listitem><para><emphasis>IP</emphasis> - The IP the SMSc is listening
+			on for new bindings/connections.
+			</para></listitem>
+			<listitem><para><emphasis>Port</emphasis> - The TCP port that the SMSc
+			is listening on for new bindings/connections.
+			</para></listitem>
+			<listitem><para><emphasis>System ID</emphasis> - Also known as the
+			User name that is used to authenticate to the SMSc.
+			</para></listitem>
+			<listitem><para><emphasis>Password</emphasis> - A password used to
+			authenticate to the SMSc.
+			</para></listitem>
+			<listitem><para><emphasis>System Type</emphasis> - Usually
+			<quote>SMPP</quote>, this field is required by some SMPP providers.
+			</para></listitem>
+			<listitem><para><emphasis>Source Type of Number (TON)</emphasis> - Specifies
+			the format of the number used to send messages from. Some comon values are:
+			<itemizedlist>
+				<listitem><para><emphasis>0</emphasis> - Unknown</para></listitem>
+				<listitem><para><emphasis>1</emphasis> - International</para></listitem>
+				<listitem><para><emphasis>2</emphasis> - National</para></listitem>
+				<listitem><para><emphasis>3</emphasis> - Network Specific</para></listitem>
+				<listitem><para><emphasis>4</emphasis> - Subscriber Number</para></listitem>
+				<listitem><para><emphasis>5</emphasis> - Alphanumeric</para></listitem>
+				<listitem><para><emphasis>6</emphasis> - Abbreviated</para></listitem>
+			</itemizedlist>
+			Default value is <emphasis>0 - Unknown</emphasis>.
+			</para></listitem>
+			<listitem><para><emphasis>Source Number Plan Indicator (NPI)</emphasis> - Specifies
+			the numbering scheme of the number used to send messages from. Some comon values are:
+			<itemizedlist>
+				<listitem><para><emphasis>0</emphasis> - Unknown</para></listitem>
+				<listitem><para><emphasis>1</emphasis> - ISDN/telephone numbering plan (E163/E164)</para></listitem>
+				<listitem><para><emphasis>3</emphasis> - Data numbering plan (X.121)</para></listitem>
+				<listitem><para><emphasis>4</emphasis> - Telex numbering plan (F.69)</para></listitem>
+				<listitem><para><emphasis>6</emphasis> - Land Mobile (E.212)</para></listitem>
+				<listitem><para><emphasis>8</emphasis> - National numbering plan</para></listitem>
+				<listitem><para><emphasis>9</emphasis> - Private numbering plan</para></listitem>
+				<listitem><para><emphasis>10</emphasis> - ERMES numbering plan (ETSI DE/PS 3 01-3) </para></listitem>
+				<listitem><para><emphasis>13</emphasis> - Internet (IP)</para></listitem>
+				<listitem><para><emphasis>18</emphasis> - WAP Client Id (to be defined by WAP Forum)</para></listitem>
+			</itemizedlist>
+			Default value is <emphasis>0 - Unknown</emphasis>.
+			</para></listitem>
+			<listitem><para><emphasis>Destination Type of Number (TON)</emphasis> - Specifies
+			the format of the number used to send messages to. Can have the same values as
+			<emphasis>Source Type of Number (TON)</emphasis> and default value is <emphasis>0 -
+			Unknown</emphasis>.
+			</para></listitem>
+			<listitem><para><emphasis>Destination Number Plan Indicator (NPI)</emphasis> -
+			Specifies the numbering scheme of the number used to send messages to. Can have
+			the same values as <emphasis>Source Number Plan Indicator (NPI)</emphasis>
+			and default value is <emphasis>0 - Unknown</emphasis>.
+			</para></listitem>
+			<listitem><para><emphasis>Session Type</emphasis> - Specifies what type of session
+			should be used to connecto th the SMSc. Possible values are:
+			<itemizedlist>
+				<listitem><para><emphasis>1</emphasis> - Transciever</para></listitem>
+				<listitem><para><emphasis>2</emphasis> - Transmitter</para></listitem>
+				<listitem><para><emphasis>3</emphasis> - Receiver</para></listitem>
+				<listitem><para><emphasis>4</emphasis> - Outbind</para></listitem>
+			</itemizedlist>
+			Default value is <emphasis>1 - Transciever</emphasis>.
+			</para></listitem>
+			</itemizedlist>
 		</para>
 		<para>
-		So, a trust concept must be defined for SIP servers. Which calls
-		are trusted and which are not? A call is trusted if the caller can
-		be identify as a trustable user - a user about we have reliable
-		information.
+			When &osips; starts up, it reads all SMSc specifications from the
+			database and triggers a binding with them. <emphasis>Note: </emphasis>
+			reloading the SMSc database is not yet supported, but it is a work in
+			progress.
 		</para>
 		<para>
-		Since all the user from its domain are authenticated (or should be),
-		a SIP server can consider all the calls generated by its user as
-		trusted. Now we have to extend the trust concept to the multi-domain
-		level. A mutual agreement, between several domains, can establish a
-		trusting relationship. So, a domain (called A) will consider also as
-		trusted calls all the calls generated by user from a different domain
-		(called B) and vice-versa. But just an agreement is not enough; since
-		the authentication information is strictly limited to a domain
-		(a domain can authenticate only its own user, not the user from other
-		domains), there is still the problem of checking the authenticity of
-		the caller - he can impersonate (by a false FROM header) a user from
-		a domain that is trusted.
+			Each SMPP connection is periodically pinged (currently every 5 seconds)
+			using <emphasis>enquire_link</emphasis> SMPP commands to keep the
+			connection active.
 		</para>
-		<para>
-		The answer to this problem is TLS (Transport Layer Security). All
-		calls via domain A and domain B will be done via TLS. Authentication
-		in origin domain plus TLS transport between domains will make the
-		call 100% trusted for the target domain.
-		</para>
-		<para>
-		For such a mechanism to work, the following requirements must be met:
-		</para>
-		<itemizedlist>
-			<listitem>
-			<para>
-			all UA must have set as outbound proxy their home server.
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-			all SIP servers must authenticated all the calls generated by
-			their own users.
-			</para>
-			</listitem>
-			<listitem>
-			<para>all SIP servers must relay the calls generated be their
-			user to a trusted domain via TLS.
-			</para>
-			</listitem>
-		</itemizedlist>
-		<para>
-		Based on this, a server can classify as trusted a call for one of
-		its user only if the call is also generated by one of its users or
-		is the call is received from a trusted domain ( which is equivalent
-		with a call received via TLS). Untrusted call will be calls received
-		from users belonging to untrusted domains or from users from trusted
-		domains, but whose calls are not routed via their home server
-		(so, they are not authenticated by there home servers).
-		</para>
-		<para>
-		Once the server is able to tell if the call is trusted or not, the
-		still open issue is about the mechanism used by server to notify the
-		called user about the nature of the incoming call.
-		</para>
-		<para>
-		One way to do it is by remotely changing the ringing type of the
-		called user's phone. This can be done by inserting special header
-		into the INVITE request. Such feature is supported by now by several
-		hardphones like CISCO ATA, CISCO 7960 and SNOM. This phones can
-		change their ringing tone based on the present or content of the
-		"Alert-Info" SIP header as follows:
-		</para>
-		<itemizedlist>
-			<listitem>
-			<para><emphasis>CISCO ATA</emphasis> - it has 4 pre-defined
-			ringing types. The Alert-Info header must look like
-			<quote>Alert-info: Bellcore-drX EOH</quote> where X can be
-			between 1 and 4. Note that 1 is the phone default ringing tone.
-			</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>CISCO 7960</emphasis> - it has 2 pre-defined
-			ringing types and the possibility of uploading new ones.
-			The <quote>Alert-Info</quote> header must look like
-			<quote>Alert-info: X EOH</quote> where X can be whatever number.
-			When this header is present, the phones will not change the
-			ringing tone, but the ringing pattern. Normally, the phone rings
-			like [ring.........ring..........ring] where [ring] is the
-			ringing tone; if the header is present, the ringing pattern will
-			be [ring.ring.........ring.ring........]. So, to be able to hear
-			some difference between the two patterns (and not only as length),
-			its strongly recommended to have a highly asymmetric ringing type
-			(as the pre-defined are not!!).
-			</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>SNOM</emphasis> - The <quote>Alert-Info</quote>
-			header must look like <quote>Alert-info: URL EOH"</quote> where
-			URL can be a HTTP URL (for example) from where the phone can
-			retrieve a ringing tone.
-			</para>
-			</listitem>
-		</itemizedlist>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
@@ -165,10 +155,10 @@
 		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
-                    <itemizedlist>
+			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>tls_mgm</emphasis>.
+				<emphasis>database</emphasis> -- Any database module
 			</para>
 			</listitem>
                     </itemizedlist>
@@ -177,33 +167,12 @@
 	<section>
 		<title>Dependencies of external libraries</title>
 		<para>
-			&osips; TLS v1.0 support requires the following packages:
 			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 0.9.6
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
-			</itemizedlist>
-		</para>
-		<para>
-			&osips; TLS v1.1/1.2 support requires the following packages:
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 1.0.1e
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
 	</section>
@@ -213,267 +182,400 @@
 		<title>&osips; Exported parameters</title>
 		<para>
 		All these parameters can be used from the opensips.cfg file,
-		to configure the behavior of &osips;-TLS.
+		to configure the behavior of &osips;-SMPP gateway.
 		</para>
 
-		<section id="param_listen" xreflabel="listen">
-			<title><varname>listen</varname>=interface</title>
-			<para>
-			Not specific to TLS. Allows to specify the protocol
-			(udp, tcp, tls), the IP address and the port where the
-			listening server will be.
-			</para>
-			<example>
-				<title>Set <varname>listen</varname> variable</title>
-				<programlisting format="linespecific">
-...
-listen = tls:1.2.3.4:5061
-...
-				</programlisting>
-			</example>
-		</section>
-
-		<section id="param_tls_port" xreflabel="tls_port">
-			<title><varname>tls_port</varname> (integer)</title>
-			<para>
-			The default port to be used for all TLS related operation. Be 
-			careful as the default port impacts both the SIP listening part 
-			(if no port is defined in the TLS listeners) and the SIP sending 
-			part (if the destination URI has no explicit port).
-			</para>
-			<para>
-			If you want to change only the listening port for TLS, use the port
-			option in the SIP listener defintion.
-			</para>
-			<para><emphasis>
-				Default value is 5061.
-			</emphasis></para>
-			<example>
-				<title>Set <varname>tls_port</varname> variable</title>
-				<programlisting format="linespecific">
-...
-modparam("proto_tls", "tls_port", 5062)
-...
-				</programlisting>
-			</example>
-		</section>
-
-	<section id="param_tls_crlf_pingpong" xreflabel="tls_crlf_pingpong">
-		<title><varname>tls_crlf_pingpong</varname> (integer)</title>
+	<section id="param_smpp_port" xreflabel="smpp_port">
+		<title><varname>smpp_port</varname> (integer)</title>
 		<para>
-			Send CRLF pong (\r\n) to incoming CRLFCRLF ping messages over TLS.
-			By default it is enabled (1).
+			Used to change the default value of the SMPP port used to
+			listen for new connections.
 		</para>
-		<para>
-		<emphasis>
-			Default value is 1 (enabled).
-		</emphasis>
-		</para>
+		<para><emphasis>
+			Default value is 2775.
+		</emphasis></para>
 		<example>
-		<title>Set <varname>tls_crlf_pingpong</varname> parameter</title>
+		<title>Set <varname>smpp_port</varname> variable</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_tls", "tls_crlf_pingpong", 0)
+modparam("proto_smpp", "smpp_port", 27775)
 ...
-</programlisting>
-		</example>
-	</section>
-	<section id="param_tls_crlf_drop" xreflabel="tls_crlf_drop">
-		<title><varname>tls_crlf_drop</varname> (integer)</title>
-		<para>
-			Drop CRLF (\r\n) ping messages. When this parameter is enabled,
-			the TLS layer drops packets that contains a single CRLF message.
-			If a CRLFCRLF message is received, it is handled according to the
-			<emphasis>tls_crlf_pingpong</emphasis> parameter.
-		</para>
-		<para>
-		<emphasis>
-			Default value is 0 (disabled).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>tls_crlf_drop</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("proto_tls", "tls_crlf_drop", 1)
-...
-</programlisting>
+		</programlisting>
 		</example>
 	</section>
 
-	<section id="param_tls_max_msg_chunks" xreflabel="tls_max_msg_chunks">
-		<title><varname>tls_max_msg_chunks</varname> (integer)</title>
+	<section id="param_smpp_max_msg_chunks" xreflabel="smpp_max_msg_chunks">
+		<title><varname>smpp_max_msg_chunks</varname> (integer)</title>
 		<para>
-			The maximum number of chunks that a SIP message is expected to
-			arrive via TLS. If a packet is received more fragmented than this,
+			The maximum number of chunks in which a SMPP message is expected to
+			arrive via TCP. If a received packet is more fragmented than this,
 			the connection is dropped (either the connection is very
 			overloaded and this leads to high fragmentation - or we are the
-			victim of an ongoing attack where the attacker is sending the
-			traffic very fragmented in order to decrease server performance).
+			victim of an ongoing attack where the attacker is sending very
+			fragmented traffic in order to decrease server performance).
 		</para>
 		<para>
 		<emphasis>
-			Default value is 4.
+			Default value is 8.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>tls_max_msg_chunks</varname> parameter</title>
+		<title>Set <varname>smpp_max_msg_chunks</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_tls", "tls_max_msg_chunks", 8)
-...
-</programlisting>
-		</example>
-	</section>
-	<section id="trace-destination">
-		<title><varname>trace_destination</varname> (string)</title>
-		<para>
-			Trace destination as defined in the tracing module. Currently
-		the only tracing module is <emphasis role="bold">proto_hep</emphasis>.
-		Network events such as connect, accept and connection closed events
-		shall be traced along with errors that could appear in the process.
-		For each connection that is created an event containing information
-		about the client and server certificates, master key and network layer
-		information shall be sent.
-		</para>
-		<para>
-			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
-			loaded in order for this parameter to work. (for example
-			<emphasis role="bold">proto_hep</emphasis>).
-		</para>
-		<para>
-		<emphasis>
-			Default value is none(not defined).
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>trace_destination</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
-
-modparam("proto_tls", "trace_destination", "hep_dest")
+modparam("proto_smpp", "smpp_max_msg_chunks", 32)
 ...
 </programlisting>
 		</example>
 	</section>
 
-	<section id="param_trace_on" xreflabel="trace_on">
-		<title><varname>trace_on</varname> (int)</title>
+	<section id="param_smpp_send_timeout" xreflabel="smpp_send_timeout">
+		<title><varname>smpp_send_timeout</varname> (integer)</title>
 		<para>
-			This controls whether tracing for tls is on or not. You still need to define
-			<xref linkend="trace-destination"/>in order to work, but this value will be
-			controlled using mi function <xref linkend="mi_tls_trace"/>.
+		Time in milliseconds after a TCP connection will be closed if it is
+		not available for blocking writing in this interval (and &osips; wants
+		to send something on it).
 		</para>
+		<para>
 		<emphasis>
-			Default value is 0(tracing inactive).
+			Default value is 100 ms.
 		</emphasis>
+		</para>
 		<example>
-		<title>Set <varname>trace_on</varname> parameter</title>
+		<title>Set <varname>smpp_send_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_tls", "trace_on", 1)
+modparam("proto_smpp", "smpp_send_timeout", 200)
 ...
 </programlisting>
 		</example>
 	</section>
 
-	<section id="param_trace_filter_route" xreflabel="trace_filter_route">
-		<title><varname>trace_filter_route</varname> (string)</title>
+	<section id="param_smpp_outbound_uri" xreflabel="outbound_uri">
+		<title><varname>outbound_uri</varname> (string)</title>
 		<para>
-			Define the name of a route in which you can filter which connections will
-			be trace and which connections won't be. In this route you will have
-			information regarding source and destination ips and ports for the current
-			connection. To disable tracing for a specific connection the last call in
-			this route must be <emphasis role="bold">drop</emphasis>, any other exit
-			mode resulting in tracing the current connection ( of course you still
-			have to define a <xref linkend="trace-destination"/> and trace must be
-			on at the time this connection is opened.
+		This parameter represents the URI of the outbound proxy used to send
+		a message converted from SMPP to SIP.
 		</para>
 		<para>
-			<emphasis role="bold">IMPORTANT</emphasis>
-			Filtering on ip addresses and ports can be made using <emphasis role="bold">
-			$si</emphasis> and <emphasis role="bold">$sp</emphasis> for matching
-			either the entity that is connecting to &osips; or the entity to which
-			&osips; is connecting. The name might be misleading (<emphasis role="bold">
-				$si</emphasis> meaning the source ip if you read the docs) but in reality
-			it is simply the socket other than the &osips; socket. In order to match
-			&osips; interface (either the one that accepted the connection or the one
-			that initiated a connection) <emphasis role="bold">$Ri</emphasis> (ip) and
-			<emphasis role="bold">$Rp</emphasis> (port) can be used.
-		</para>
-
-		<para>
-			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="param_trace_on"/> is
-			set to 0 or tracing is deactived via the mi command <xref linkend="mi_tls_trace"/>
-			this route won't be called.
-		</para>
 		<emphasis>
-			Default value is none(no route is set).
+			Default value is <emphasis>None</emphasis>.
 		</emphasis>
+		</para>
 		<example>
-		<title>Set <varname>trace_filter_route</varname> parameter</title>
+		<title>Set <varname>outbound_uri</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_tls", "trace_filter_route", "tls_filter")
+modparam("proto_smpp", "outbound_uri", "sip:127.0.0.1:5060")
 ...
-/* all tls connections will go through this route if tracing is activated
- * and a trace destination is defined */
-route[tls_filter] {
-	...
-	/* all connections opened from/by ip 1.1.1.1:8000 will be traced
-	   on interface 1.1.1.10:5060(opensips listener)
-	   all the other connections won't be */
-	 if ( $si == "1.1.1.1" &amp;&amp; $sp == 8000 &amp;&amp;
-		$Ri == "1.1.1.10"  &amp;&amp; $Rp == 5060)
-		exit;
-	else
-		drop;
-}
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_table" xreflabel="smpp_table">
+		<title><varname>smpp_table</varname> (string)</title>
+		<para>
+			The name of the database table containing definitions
+			of the SMSc servers used to connect to.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>smpp</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>smpp_table</varname> parameter</title>
+		<programlisting format="linespecific">
 ...
+modparam("proto_smpp", "smpp_table", "smsc")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_name_col" xreflabel="smpp_name_col">
+		<title><varname>name_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the SMSc identifier used by
+			the <emphasis>send_smpp_message()</emphasis> function.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>name</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>name_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "name_col", "smsc_name")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_ip_col" xreflabel="smpp_ip_col">
+		<title><varname>ip_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the IP of the SMSc.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>ip</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>ip_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "ip_col", "smsc_ip")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_port_col" xreflabel="smpp_port_col">
+		<title><varname>port_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the SMSc port.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>port</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>port_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "port_col", "smsc_port")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_system_id_col" xreflabel="smpp_system_id_col">
+		<title><varname>system_id_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the SMSc System ID.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>system_id</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>system_id_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "system_id_col", "smsc_system_id")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_password_col" xreflabel="smpp_password_col">
+		<title><varname>password_col</varname> (string)</title>
+		<para>
+			The name of the password column used to authenticate the SMSc.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>password</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>password_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "password_col", "smsc_password")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_system_type_col" xreflabel="smpp_system_type_col">
+		<title><varname>system_type_col</varname> (string)</title>
+		<para>
+			The name of the System Type column used to bind the SMSc.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>system_type</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>system_type_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "system_type_col", "smsc_system_type")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_src_ton_col" xreflabel="smpp_src_ton_col">
+		<title><varname>src_ton_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the Source TON values.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>src_ton</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>src_ton_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "src_ton_col", "smsc_src_ton")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_src_npi_col" xreflabel="smpp_src_npi_col">
+		<title><varname>src_npi_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the Source NPI values.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>src_npi</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>src_npi_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "src_npi_col", "smsc_src_npi")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_dst_ton_col" xreflabel="smpp_dst_ton_col">
+		<title><varname>dst_ton_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the Destination TON values.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>dst_ton</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>dst_ton_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "dst_ton_col", "smsc_dst_ton")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_dst_npi_col" xreflabel="smpp_dst_npi_col">
+		<title><varname>dst_npi_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the Destination NPI values.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>dst_npi</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>dst_npi_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "dst_npi_col", "smsc_dst_npi")
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_smpp_session_type_col" xreflabel="smpp_session_type_col">
+		<title><varname>session_type_col</varname> (string)</title>
+		<para>
+			The name of the column that holds the Session Type of the SMSc.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>session_type</quote>.
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>session_type_col</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "session_type_col", "smsc_session_type")
+...
+
 </programlisting>
 		</example>
 	</section>
 
 	</section>
 
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
 
-	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
-	<title>Exported MI Functions</title>
-
-		<section id="mi_tls_trace" xreflabel="tls_trace">
-			<title>
-			<function moreinfo="none">tls_trace</function>
-			</title>
-
-			<para>
-			</para>
-
-			<para>
-			Name: <emphasis>tls_trace</emphasis>
-			</para>
-
-			<para>Parameters: </para>
-			<itemizedlist>
-				<listitem>
-					<para>trace_mode(optional): set tls tracing on and off. This parameter
-						can be missing and the command will show the current tracing
-						status for this module( on or off );
-						Possible values:
-						<itemizedlist>
-							<listitem><para> on </para></listitem>
-							<listitem><para> off </para></listitem>
-						</itemizedlist>
-					</para>
-				</listitem>
-			</itemizedlist>
-
-			<para>
-			MI FIFO Command Format:
-			</para>
-			<programlisting  format="linespecific">
-			opensipsctl fifo tls_trace on
-			</programlisting>
-		</section>
+	<section id="func_send_smpp_message" xreflabel="send_smpp_message()">
+		<title>
+		<function moreinfo="none">send_smpp_message(smsc_name)</function>
+		</title>
+		<para>
+			This function is used to convert a SIP message received in the
+			&osips; script to a SMPP PDU and send it to the
+			<emphasis>smsc_name</emphasis> received as parameter.
+			The SMPP parameters used to construct the PDU are provisione
+			in the database, and the command sent is either
+			<emphasis>submit_sm</emphasis> or <emphasis>deliver_sm</emphasis>,
+			depending on the type of the SMSc.
+		</para>
+		<para>
+			The function returns <emphasis>-2</emphasis> if the SMSc
+			the message should be sent does not exist in the database,
+			<emphasis>-1</emphasis> if there was an internal error,
+			or positive value in case of success.
+		</para>
+		<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
+			or BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>send_smpp_message()</function> usage</title>
+		<programlisting format="linespecific">
+...
+    if (is_method("MESSAGE"))
+			send_smpp_message("MY_SMSC");
+...
+</programlisting>
+		</example>
 	</section>
+	</section>
+
 </chapter>
