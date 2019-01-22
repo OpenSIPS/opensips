@@ -267,7 +267,7 @@ static int match_named_params(mi_recipe_t *recipe, mi_item_t *req_params,
 
 	for (i = 0; recipe->params[i]; i++) {
 		for (param = req_params->child; param; param = param->next)
-			if (!strcmp(recipe->params[i], param->string))
+			if (param->string && !strcmp(recipe->params[i], param->string))
 				break;
 
 		if (!param)
