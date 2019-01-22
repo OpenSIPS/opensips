@@ -186,6 +186,8 @@ extern void cJSON_Minify(char *json);
 extern double cJSON_SetNumberHelper(cJSON *object, double number);
 #define cJSON_SetNumberValue(object, number) ((object) ? cJSON_SetNumberHelper(object, (double)number) : (number))
 
+int cJSON_NumberIsInt(cJSON *item);
+
 /* Macro for iterating over an array */
 #define cJSON_ArrayForEach(pos, head) for(pos = (head)->child; pos != NULL; pos = pos->next)
 

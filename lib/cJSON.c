@@ -82,6 +82,12 @@ typedef int cjbool;
 
 static const unsigned char *global_ep = NULL;
 
+int cJSON_NumberIsInt(cJSON *item)
+{
+   return ((FABS((double)item->valueint - item->valuedouble) <= DBL_EPSILON) &&
+   (item->valuedouble <= INT_MAX) && (item->valuedouble >= INT_MIN));
+}
+
 const char *cJSON_GetErrorPtr(void)
 {
     return (const char*) global_ep;

@@ -17,9 +17,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * History:
- * ---------
- *  2013-03-04  first version (osas)
  */
 
 #include <stdlib.h>
@@ -35,39 +32,15 @@
 #include "http_fnc.h"
 #include "../../mi/mi_trace.h"
 
-static struct xml_errors {
-	str reason;
-	int code;
-	str err_page;
-}
-xml_strerr[] = {
-	/* request errors */
-	{ str_init("Empty request"), 401,
-		str_init(INIT_XMLRPC_FAULT("401","Empty request")) },
-	{ str_init("Invalid request"), 404,
-		str_init(INIT_XMLRPC_FAULT("404", "Invalid request")) },
-	{ str_init("Command not available"), 405,
-		str_init(INIT_XMLRPC_FAULT("405", "Command not available")) },
-	{ str_init("Unexpected method (only POST is accepted)"), 406,
-		str_init(INIT_XMLRPC_FAULT("405", "Unexpected method (only POST is accepted)")) },
-	{ str_init("Missing node 'MethodCall'"), 407,
-		str_init(INIT_XMLRPC_FAULT("407", "Missing node 'Method Call'")) },
-	{ str_init("Missing node 'MethodName'"), 407,
-		str_init(INIT_XMLRPC_FAULT("407", "Missing node 'MethodName'")) },
-	{ str_init("Missing node 'value'"), 407,
-		str_init(INIT_XMLRPC_FAULT("407", "Missing node 'value'")) },
-	{ str_init("Missing node 'string'"), 407,
-		str_init(INIT_XMLRPC_FAULT("407", "Missing node 'string'")) },
-	{ str_init("Empty 'string' node"), 408,
-		str_init(INIT_XMLRPC_FAULT("408", "Empty 'string' node")) },
-
-	/* internal errors */
-	{ str_init("Internal server error"), 500,
-		str_init(INIT_XMLRPC_FAULT("500", "Internal server error")) },
-	{ str_init("Failed to run command"), 501,
-		str_init(INIT_XMLRPC_FAULT("501", "Failed to run command")) },
-
-	{{0, 0}, 0, {0, 0} }
+str xml_strerr[] = {
+	str_init(INIT_XMLRPC_FAULT("32700", "parse error. not well formed")),
+	str_init(INIT_XMLRPC_FAULT("-32600",
+		"server error. invalid xml-rpc. not conforming to spec.")),
+	str_init(INIT_XMLRPC_FAULT("-32601",
+		"server error. requested method not found")),
+	str_init(INIT_XMLRPC_FAULT("-32602",
+		"server error. invalid method parameters")),
+	str_init(INIT_XMLRPC_FAULT("-32000", "server error"))
 };
 
 /* module functions */
@@ -76,17 +49,22 @@ static int destroy(void);
 int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
-		size_t *upload_data_size, void **con_cls,
+		size_t upload_data_size, void **con_cls,
 		str *buffer, str *page, union sockaddr_union* cl_socket);
 static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 
 str http_root = str_init("RPC2");
-int version = 2;
 httpd_api_t httpd_api;
 
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
 static str backend = str_init("xmlrpc");
+
+static const char *unknown_method = "unknown";
+
+static const str MI_XMLRPC_U_METHOD = str_init("405 Method Not Allowed");
+static const str MI_XMLRPC_U_BAD_REQ = str_init("400 Bad Request");
+static const str MI_XMLRPC_U_ERROR = str_init("500 Internal Server Error");
 
 static union sockaddr_union* sv_socket = NULL;
 
@@ -94,21 +72,9 @@ static union sockaddr_union* sv_socket = NULL;
 int mi_trace_mod_id = -1;
 char* mi_trace_bwlist_s;
 
-#define MI_XML_ERROR_BUF_MAX_LEN 1024
-static char err_buf[MI_XML_ERROR_BUF_MAX_LEN];
-
-#define MI_XMLRPC_PRINT_FAULT(page, code, message) \
-	do { \
-	page->len = snprintf(page->s, MI_XML_ERROR_BUF_MAX_LEN, \
-			XMLRPC_FAULT_FORMAT, \
-			code, message.len, message.s); \
-	} while(0);
-
-
 /* module parameters */
 static param_export_t mi_params[] = {
 	{"http_root",        STR_PARAM, &http_root.s},
-	{"format_version",   INT_PARAM, &version},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
 	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s  },
 	{0,0,0}
@@ -212,74 +178,18 @@ int destroy(void)
 
 static ssize_t mi_xmlrpc_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max)
 {
-	struct mi_handler *hdl = (struct mi_handler*)cls;
-	gen_lock_t *lock;
-	mi_xmlrpc_http_async_resp_data_t *async_resp_data;
-	str page = {NULL, 0};
-
-	if (hdl==NULL) {
-		LM_ERR("Unexpected NULL mi handler!\n");
-		return -1;
-	}
-	LM_DBG("hdl=[%p], hdl->param=[%p], pos=[%d], buf=[%p], max=[%d]\n",
-		 hdl, hdl->param, (int)pos, buf, (int)max);
-
-	if (pos){
-		LM_DBG("freeing hdl=[%p]: hdl->param=[%p], "
-			" pos=[%d], buf=[%p], max=[%d]\n",
-			 hdl, hdl->param, (int)pos, buf, (int)max);
-		shm_free(hdl);
-		return -1;
-	}
-	async_resp_data =
-		(mi_xmlrpc_http_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
-	lock = async_resp_data->lock;
-	lock_get(lock);
-	if (hdl->param) {
-		if (*(struct mi_root**)hdl->param) {
-			page.s = buf;
-			LM_DBG("tree=[%p]\n", *(struct mi_root**)hdl->param);
-			if (mi_xmlrpc_http_build_page(&page, max,
-						*(struct mi_root**)hdl->param)!=0){
-				LM_ERR("Unable to build response\n");
-				shm_free(*(void**)hdl->param);
-				*(void**)hdl->param = NULL;
-				lock_release(lock);
-				memcpy(buf, xml_strerr[ERR_INTERNAL].err_page.s,
-						xml_strerr[ERR_INTERNAL].err_page.len);
-				return xml_strerr[ERR_INTERNAL].err_page.len;
-			} else {
-				shm_free(*(void**)hdl->param);
-				*(void**)hdl->param = NULL;
-				lock_release(lock);
-				return page.len;
-			}
-		} else {
-			LM_DBG("data not ready yet\n");
-			lock_release(lock);
-			return 0;
-		}
-	} else {
-		lock_release(lock);
-		LM_ERR("Invalid async reply\n");
-		memcpy(buf, xml_strerr[ERR_INTERNAL].err_page.s,
-				xml_strerr[ERR_INTERNAL].err_page.len);
-		return xml_strerr[ERR_INTERNAL].err_page.len;
-	}
-	lock_release(lock);
-	LM_CRIT("done?\n");
-	shm_free(hdl);
+	/* if no content for the response, just inform httpd */
 	return -1;
 }
 
 
 #define MI_XMLRPC_MAX_WAIT       2*60*4
-static inline struct mi_root*
+static inline mi_response_t *
 mi_xmlrpc_wait_async_reply(struct mi_handler *hdl)
 {
 	mi_xmlrpc_http_async_resp_data_t *async_resp_data =
 		(mi_xmlrpc_http_async_resp_data_t*)(hdl+1);
-	struct mi_root *mi_rpl;
+	mi_response_t *mi_resp;
 	int i;
 	int x;
 
@@ -305,150 +215,133 @@ mi_xmlrpc_wait_async_reply(struct mi_handler *hdl)
 		}
 	}
 
-	mi_rpl = (struct mi_root *)hdl->param;
-	if (mi_rpl==MI_XMLRPC_ASYNC_FAILED)
-		mi_rpl = NULL;
+	mi_resp = (mi_response_t *)hdl->param;
+	if (mi_resp==MI_XMLRPC_ASYNC_FAILED)
+		mi_resp = NULL;
 
 	/* free the async handler*/
 	shm_free(hdl);
 
-	return mi_rpl;
+	return mi_resp;
 }
-
 
 #define MI_XMLRPC_OK				200
-#define MI_XMLRPC_NOT_ACCEPTABLE	406
+#define MI_XMLRPC_BAD_REQUEST		400
+#define MI_XMLRPC_METHOD_ERR		405
 #define MI_XMLRPC_INTERNAL_ERROR	500
 
-static inline void trace_xml( union sockaddr_union* cl_socket, char* url,
-		struct mi_root* mi_req, str* error, int code, str* message)
+static inline void trace_xml_err(union sockaddr_union* cl_socket, str* message)
 {
-	char* command;
+	char *req_method = (char *)unknown_method;
 
 	if ( !sv_socket ) {
 		sv_socket = httpd_api.get_server_info();
 	}
 
-	if ( url )
-		command = url;
-	else
-		command = "";
+	mi_trace_request(cl_socket, sv_socket, req_method, strlen(req_method),
+		NULL, &backend, t_dst);
 
-	mi_trace_request( cl_socket, sv_socket, command,
-								strlen(command), mi_req, &backend, t_dst);
-
-	mi_trace_reply( sv_socket, cl_socket, code, error, message, t_dst);
+	mi_trace_reply( sv_socket, cl_socket, message, t_dst);
 }
 
-void trace_xml_request( union sockaddr_union* cl_socket, char* url,
-		struct mi_root* mi_req )
+void trace_xml_request(struct mi_cmd* f, char *req_method,
+					union sockaddr_union* cl_socket, mi_item_t *params)
 {
-	char* command;
+	if (!req_method)
+		req_method = (char *)unknown_method;
 
 	if ( !sv_socket ) {
 		sv_socket = httpd_api.get_server_info();
 	}
 
-	if ( url )
-		command = url;
-	else
-		command = "";
-
-	mi_trace_request( cl_socket, sv_socket, command,
-								strlen(command), mi_req, &backend, t_dst);
+	mi_trace_request(cl_socket, sv_socket, req_method, strlen(req_method),
+		params, &backend, t_dst);
 }
 
-
-static inline void trace_xml_reply( union sockaddr_union* cl_socket,
-			str* error, int code, str* message)
+static inline void trace_xml_reply(struct mi_cmd* f,
+			union sockaddr_union* cl_socket, str* message)
 {
 	if ( !sv_socket ) {
 		sv_socket = httpd_api.get_server_info();
 	}
 
-	mi_trace_reply( sv_socket, cl_socket, code, error, message, t_dst);
+	mi_trace_reply(sv_socket, cl_socket, message, t_dst);
 }
+
 
 int mi_xmlrpc_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
-		size_t *upload_data_size, void **con_cls,
+		size_t upload_data_size, void **con_cls,
 		str *buffer, str *page, union sockaddr_union* cl_socket)
 {
-	str arg = {NULL, 0};
-	struct mi_root *tree = NULL;
+	mi_response_t *response;
 	struct mi_handler *async_hdl;
-	int ret_code = MI_XMLRPC_OK;
+	struct mi_cmd *cmd = NULL;
+	int ret_code;
 	int is_shm = 0, is_cmd_traced=0;
 
-	page->s = err_buf;
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
-			(int)*upload_data_size, upload_data, *con_cls);
-	if (strncmp(method, "POST", 4)==0) {
-		httpd_api.lookup_arg(connection, "1", *con_cls, &arg);
-		if (arg.s) {
-			tree = mi_xmlrpc_http_run_mi_cmd(&arg,
-						page, buffer, &async_hdl, cl_socket, &is_cmd_traced);
-			if (tree == MI_ROOT_ASYNC_RPL) {
-				LM_DBG("got an async reply\n");
-				tree = mi_xmlrpc_wait_async_reply(async_hdl);
-				async_hdl = NULL;
-				is_shm = 1;
-			}
+			(int)upload_data_size, upload_data, *con_cls);
 
-			if (tree == NULL) {
-				LM_ERR("no reply\n");
-				*page = xml_strerr[xml_errcode].err_page;
+	page->s = NULL;
+	page->len = 0;
 
-				if ( is_cmd_traced ) {
-					trace_xml( cl_socket, (char *)url, 0,
-						&xml_strerr[xml_errcode].reason,
-						xml_strerr[xml_errcode].code, 0);
-				}
-			} else {
-				LM_DBG("building on page [%p:%d]\n",
-					page->s, page->len);
-				if(0!=mi_xmlrpc_http_build_page(page, buffer->len, tree)){
-					LM_ERR("unable to build response\n");
-					*page = xml_strerr[ERR_INTERNAL].err_page;
+	if (strncmp(method, "POST", 4)) {
+		LM_ERR("unexpected http method [%s]\n", method);
+		trace_xml_err(cl_socket, (str *)&MI_XMLRPC_U_METHOD);
 
-					if ( is_cmd_traced )
-						trace_xml_reply( cl_socket, &xml_strerr[ERR_INTERNAL].reason,
-								xml_strerr[ERR_INTERNAL].code, 0);
-				} else {
-					if (tree->code >= 400) {
-						MI_XMLRPC_PRINT_FAULT(page, tree->code, tree->reason);
-					}
+		return MI_XMLRPC_METHOD_ERR;
+	}
 
-					if ( is_cmd_traced) {
-						trace_xml_reply( cl_socket,
-								&tree->reason, tree->code, page);
-					}
-				}
-			}
-		} else {
-			page->s = buffer->s;
-			LM_ERR("unable to build response for empty request\n");
-			*page = xml_strerr[ERR_EMPTY].err_page;
+	if (upload_data_size == 0) {
+		LM_ERR("empty request\n");
+		trace_xml_err(cl_socket, (str *)&MI_XMLRPC_U_BAD_REQ);
 
-			trace_xml_reply( cl_socket, &xml_strerr[ERR_EMPTY].reason,
-						xml_strerr[ERR_EMPTY].code, page);
-		}
-		if (tree) {
-			is_shm?free_shm_mi_tree(tree):free_mi_tree(tree);
-			tree = NULL;
-		}
+		return MI_XMLRPC_BAD_REQUEST;
+	}
+
+	response = mi_xmlrpc_run_mi_cmd(upload_data, upload_data_size,
+					&async_hdl, cl_socket, &is_cmd_traced);
+
+	if (response == MI_ASYNC_RPL) {
+		LM_DBG("got an async reply\n");
+		response = mi_xmlrpc_wait_async_reply(async_hdl);
+		is_shm = 1;
+	}
+
+	if (response == NULL) {
+		LM_ERR("failed to build MI response\n");
+		if (is_cmd_traced)
+			trace_xml_reply(cmd, cl_socket, (str *)&MI_XMLRPC_U_ERROR);
+
+		ret_code = MI_XMLRPC_INTERNAL_ERROR;
 	} else {
-		LM_ERR("unexpected method [%s]\n", method);
-		*page = xml_strerr[ERR_UNEXPECTED].err_page;
+		LM_DBG("building on page\n");
 
-		trace_xml( cl_socket, (char *)url, 0,
-				&xml_strerr[ERR_UNEXPECTED].reason,
-				xml_strerr[ERR_UNEXPECTED].code, 0);
+		page->s = buffer->s;
+		page->len = 0;
+
+		if (mi_xmlrpc_build_page(page, buffer->len, response) < 0) {
+			LM_ERR("failed to print xmlrpc response\n");
+			if (is_cmd_traced)
+				trace_xml_reply(cmd, cl_socket, (str *)&MI_XMLRPC_U_ERROR);
+
+			ret_code = MI_XMLRPC_INTERNAL_ERROR;
+		} else {
+			if (is_cmd_traced)
+				trace_xml_reply(cmd, cl_socket, page);
+
+			ret_code = MI_XMLRPC_OK;
+		}
+
+		if (is_shm)
+			free_shm_mi_response(response);
+		else
+			free_mi_response(response);
 	}
 
 	return ret_code;
 }
-
