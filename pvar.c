@@ -4967,6 +4967,7 @@ static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 		if(pv_get_spec_value(msg, (pv_spec_p)(ip->pvn.u.dname), &tv)!=0)
 		{
 			LM_ERR("cannot get spec value\n");
+			route_rec_level++;
 			return -1;
 		}
 		route_rec_level++;
@@ -4993,7 +4994,6 @@ static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 	index--;
 	switch (route_params[route_rec_level][index].type)
 	{
-
 	case NULLV_ST:
 		res->rs.s = NULL;
 		res->rs.len = res->ri = 0;
@@ -5017,15 +5017,16 @@ static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 		if(pv_get_spec_value(msg, (pv_spec_p)route_params[route_rec_level + 1][index].u.data, res)!=0)
 		{
 			LM_ERR("cannot get spec value\n");
+			route_rec_level++;
 			return -1;
 		}
 		route_rec_level++;
 		break;
 
-		default:
-			LM_ALERT("BUG: invalid parameter type %d\n",
-					 route_params[route_rec_level][index].type);
-			return -1;
+	default:
+		LM_ALERT("BUG: invalid parameter type %d\n",
+				 route_params[route_rec_level][index].type);
+		return -1;
 	}
 
 	return 0;
