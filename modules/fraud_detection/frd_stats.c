@@ -58,17 +58,21 @@ int init_stats_table(void)
 
 frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 {
+	rw_lock_t *item_lock;
+
 	/* First go one level below using the user key */
 	frd_users_map_item_t **hm =
-		(frd_users_map_item_t **)get_item(&stats_table, user);
+		(frd_users_map_item_t **)get_item(&stats_table, user, &item_lock);
 
 	if (*hm == NULL) {
 		/* First time the user is seen, we must create a hashmap */
 		*hm = shm_malloc(sizeof(frd_users_map_item_t));
 		if (*hm == NULL) {
+			lock_stop_write(item_lock);
 			LM_ERR("no more shm memory\n");
 			return NULL;
 		}
+		lock_stop_write(item_lock);
 
 		(*hm)->numbers_hm.size = FRD_PREFIX_HASH_SIZE;
 		if (init_hash_map(&(*hm)->numbers_hm) != 0) {
@@ -83,19 +87,23 @@ frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 			return NULL;
 		}
 	}
+	lock_stop_write(item_lock);
 
 	if (shm_user)
 		*shm_user = (*hm)->user;
 
 	frd_stats_entry_t **stats_entry =
-		(frd_stats_entry_t**)get_item(&(*hm)->numbers_hm, prefix);
+		(frd_stats_entry_t**)get_item(&(*hm)->numbers_hm, prefix, &item_lock);
+
 	if (*stats_entry == NULL) {
 		/* First time the prefix is seen for this user */
 		*stats_entry = shm_malloc(sizeof(frd_stats_entry_t));
 		if (*stats_entry == NULL) {
+			lock_stop_write(item_lock);
 			LM_ERR("no more shm memory\n");
 			return NULL;
 		}
+		lock_stop_write(item_lock);
 
 		/* Now init the auxiliary info for a stats structure */
 		if (!lock_init(&(*stats_entry)->lock)) {
@@ -105,6 +113,7 @@ frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 		}
 		memset(&((*stats_entry)->stats), 0, sizeof(frd_stats_t));
 	}
+	lock_stop_write(item_lock);
 
 	return *stats_entry;
 }
@@ -112,17 +121,26 @@ frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 
 int stats_exist(str user, str prefix)
 {
+	rw_lock_t *item_lock;
+
 	/* First go one level below using the user key */
 	frd_users_map_item_t **hm =
-		(frd_users_map_item_t **)get_item(&stats_table, user);
+		(frd_users_map_item_t **)get_item(&stats_table, user, &item_lock);
 
-	if (*hm == NULL)
+	if (*hm == NULL) {
+		lock_stop_write(item_lock);
 		return 0;
+	}
+	lock_stop_write(item_lock);
 
 	frd_stats_entry_t **stats_entry =
-		(frd_stats_entry_t**)get_item(&(*hm)->numbers_hm, prefix);
-	if (*stats_entry == NULL)
+		(frd_stats_entry_t**)get_item(&(*hm)->numbers_hm, prefix, &item_lock);
+
+	if (*stats_entry == NULL) {
+		lock_stop_write(item_lock);
 		return 0;
+	}
+	lock_stop_write(item_lock);
 
 	return 1;
 }

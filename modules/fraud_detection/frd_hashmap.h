@@ -43,7 +43,7 @@ typedef struct {
 
 
 int init_hash_map(hash_map_t* hm);
-void** get_item (hash_map_t *hm, str key);
+void** get_item (hash_map_t *hm, str key, rw_lock_t **unlock);
 void free_hash_map(hash_map_t* hm, void (*value_destroy_func)(void *));
 
 #endif
