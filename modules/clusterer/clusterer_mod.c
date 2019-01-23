@@ -368,7 +368,9 @@ static int mod_init(void)
 			LM_ERR("Failed to load info from DB\n");
 			goto error;
 		}
+
 		dr_dbf.close(db_hdl);
+		db_hdl = NULL;
 	}
 
 	/* register timer */
