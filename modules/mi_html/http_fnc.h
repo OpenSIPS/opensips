@@ -17,9 +17,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * History:
- * ---------
- *  2011-09-20  first version (osas)
  */
 
 
@@ -34,18 +31,8 @@ typedef struct http_mi_cmd_ {
 	int size;
 }http_mi_cmd_t;
 
-typedef struct mi_http_html_page_data_ {
-	str page;
-	str buffer;
-	int mod;
-	int cmd;
-}mi_http_html_page_data_t;
-
 typedef struct mi_http_async_resp_data_ {
-	int mod;
-	int cmd;
 	gen_lock_t* lock;
-	struct mi_root* tree;
 }mi_http_async_resp_data_t;
 
 
@@ -54,11 +41,11 @@ void mi_http_destroy_async_lock(void);
 
 int mi_http_init_cmds(void);
 int mi_http_parse_url(const char* url, int* mod, int* cmd);
-struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
-			str *page, str *buffer, struct mi_handler **async_hdl,
-			union sockaddr_union* cl_socket, int* is_cmd_traced);
-int mi_http_build_page(str* page, int max_page_len,
-				int mod, int cmd, struct mi_root* tree);
+mi_response_t *mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
+			struct mi_handler **async_hdl,
+			union sockaddr_union* cl_socket, int* is_traced);
+int mi_http_build_page(str *page, int max_page_len,
+				int mod, int cmd, mi_response_t *response);
 
 static str backend = str_init("http");
 static union sockaddr_union* sv_socket = NULL;

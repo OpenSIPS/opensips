@@ -17,9 +17,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * History:
- * ---------
- *  2011-09-20  first version (osas)
  */
 
 
@@ -46,7 +43,6 @@ str upSinceCTime;
 
 http_mi_cmd_t* http_mi_cmds;
 int http_mi_cmds_size;
-mi_http_html_page_data_t html_page_data;
 
 gen_lock_t* mi_http_lock;
 
@@ -126,41 +122,6 @@ do{	\
 	memcpy((p), (s5).s, (s5).len); (p) += (s5).len;	\
 	memcpy((p), (s6).s, (s6).len); (p) += (s6).len;	\
 	memcpy((p), (s7).s, (s7).len); (p) += (s7).len;	\
-}while(0)
-
-#define MI_HTTP_COPY_10(p,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10)	\
-do{	\
-	if ((int)((p)-buf)+(s1).len+(s2).len+(s3).len+(s4).len+(s5).len+(s6).len+(s7).len+(s8).len+(s9).len+(s10).len>max_page_len) {	\
-		goto error;	\
-	}	\
-	memcpy((p), (s1).s, (s1).len); (p) += (s1).len;	\
-	memcpy((p), (s2).s, (s2).len); (p) += (s2).len;	\
-	memcpy((p), (s3).s, (s3).len); (p) += (s3).len;	\
-	memcpy((p), (s4).s, (s4).len); (p) += (s4).len;	\
-	memcpy((p), (s5).s, (s5).len); (p) += (s5).len;	\
-	memcpy((p), (s6).s, (s6).len); (p) += (s6).len;	\
-	memcpy((p), (s7).s, (s7).len); (p) += (s7).len;	\
-	memcpy((p), (s8).s, (s8).len); (p) += (s8).len;	\
-	memcpy((p), (s9).s, (s9).len); (p) += (s9).len;	\
-	memcpy((p), (s10).s, (s10).len); (p) += (s10).len;	\
-}while(0)
-
-#define MI_HTTP_COPY_11(p,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11)	\
-do{	\
-	if ((int)((p)-buf)+(s1).len+(s2).len+(s3).len+(s4).len+(s5).len+(s6).len+(s7).len+(s8).len+(s9).len+(s10).len+(s11).len>max_page_len) {	\
-		goto error;	\
-	}	\
-	memcpy((p), (s1).s, (s1).len); (p) += (s1).len;	\
-	memcpy((p), (s2).s, (s2).len); (p) += (s2).len;	\
-	memcpy((p), (s3).s, (s3).len); (p) += (s3).len;	\
-	memcpy((p), (s4).s, (s4).len); (p) += (s4).len;	\
-	memcpy((p), (s5).s, (s5).len); (p) += (s5).len;	\
-	memcpy((p), (s6).s, (s6).len); (p) += (s6).len;	\
-	memcpy((p), (s7).s, (s7).len); (p) += (s7).len;	\
-	memcpy((p), (s8).s, (s8).len); (p) += (s8).len;	\
-	memcpy((p), (s9).s, (s9).len); (p) += (s9).len;	\
-	memcpy((p), (s10).s, (s10).len); (p) += (s10).len;	\
-	memcpy((p), (s11).s, (s11).len); (p) += (s11).len;	\
 }while(0)
 
 #define MI_HTTP_COPY_12(p,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12)	\
@@ -283,15 +244,6 @@ static const str MI_HTTP_Response_Menu_Cmd_Table_2 = str_init("</tbody></table>\
 
 static const str MI_HTTP_NBSP = str_init("&nbsp;");
 static const str MI_HTTP_SLASH = str_init("/");
-static const str MI_HTTP_SEMICOLON = str_init(" : ");
-
-static const str MI_HTTP_NODE_INDENT = str_init("\t");
-static const str MI_HTTP_NODE_SEPARATOR = str_init(":: ");
-static const str MI_HTTP_ATTR_SEPARATOR = str_init(" ");
-static const str MI_HTTP_ATTR_VAL_SEPARATOR = str_init("=");
-
-static const str MI_HTTP_BREAK = str_init("<br/>");
-static const str MI_HTTP_CODE_1 = str_init("<pre>");
 static const str MI_HTTP_CODE_2 = str_init("</pre>");
 
 static const str MI_HTTP_Post_1 = str_init("\n"\
@@ -415,80 +367,10 @@ int mi_http_parse_url(const char* url, int* mod, int* cmd)
 	return 0;
 }
 
-
-static int mi_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
-					struct mi_node *tree, int level);
-
-int mi_http_flush_content(str *page, int max_page_len,
-				int mod, int cmd, struct mi_root* tree);
-
-
-
-int mi_http_flush_tree(void* param, struct mi_root *tree)
-{
-	if (param==NULL) {
-		LM_CRIT("null param\n");
-		return 0;
-	}
-	mi_http_html_page_data_t* html_p_data = (mi_http_html_page_data_t*)param;
-	mi_http_flush_content(&html_p_data->page,
-				html_p_data->buffer.len,
-				html_p_data->mod,
-				html_p_data->cmd,
-				tree);
-	return 0;
-}
-
-
-struct mi_root* mi_http_parse_tree(str* buf)
-{
-	struct mi_root *root;
-	struct mi_node *node;
-	str name = {NULL, 0};
-	str value = {NULL, 0};
-	char *start, *pmax;
-
-	root = init_mi_tree(0,0,0);
-	if (!root) {
-		LM_ERR("the MI tree cannot be initialized!\n");
-		return NULL;
-	}
-	if (buf->len == 0)
-		return root;
-
-	node = &root->node;
-	start = buf->s;
-	pmax = buf->s + buf->len;
-	LM_DBG("original: [%.*s]\n",(int)(pmax-start),start);
-	while (start<=pmax) {
-		/* remove leading spaces */
-		//for(;start<pmax&&isspace((int)*start);start++);
-		for(;start<pmax&&*start==' ';start++);
-		if (start==pmax)
-			return root;
-		value.s=start;
-		/* skip to the next space */
-		//for(;start<pmax&&!isspace((int)*start);start++);
-		for(;start<pmax&&*start!=' ';start++);
-		value.len=(int)(start-value.s);
-		LM_DBG("[%.*s]\n",value.len,value.s);
-		if(!add_mi_node_child(node,0,name.s,name.len,value.s,value.len)){
-			LM_ERR("cannot add the child node to the tree\n");
-			if (root) free_mi_tree(root);
-			return NULL;
-		}
-	}
-
-	LM_ERR("Parse error!\n");
-	if (root) free_mi_tree(root);
-	return NULL;
-}
-
-
-static void mi_http_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl,
+static void mi_http_close_async(mi_response_t *resp, struct mi_handler *hdl,
 																	int done)
 {
-	struct mi_root *shm_rpl = NULL;
+	mi_response_t *shm_resp = NULL;
 	gen_lock_t* lock;
 	mi_http_async_resp_data_t *async_resp_data;
 	int x;
@@ -498,46 +380,46 @@ static void mi_http_close_async(struct mi_root *mi_rpl, struct mi_handler *hdl,
 		return;
 	}
 
-	LM_DBG("mi_root [%p], hdl [%p], hdl->param [%p], and done [%u]\n",
-		mi_rpl, hdl, hdl->param, done);
+	LM_DBG("resp [%p], hdl [%p], hdl->param [%p], and done [%u]\n",
+		resp, hdl, hdl->param, done);
 
 	if (!done) {
 		/* we do not pass provisional stuff (yet) */
-		if (mi_rpl) free_mi_tree( mi_rpl );
+		if (resp) free_mi_response( resp );
 		return;
 	}
 
 	async_resp_data = (mi_http_async_resp_data_t*)(hdl+1);
 	lock = async_resp_data->lock;
 
-	if (mi_rpl==NULL || (shm_rpl=clone_mi_tree( mi_rpl, 1))==NULL) {
-		LM_WARN("Unable to process async reply [%p]\n", mi_rpl);
+	if (resp==NULL || (shm_resp=shm_clone_mi_response(resp))==NULL) {
+		LM_WARN("Unable to process async reply [%p]\n", resp);
 		/* mark it as invalid */
-		shm_rpl = MI_HTTP_ASYNC_FAILED;
+		shm_resp = MI_HTTP_ASYNC_FAILED;
 	}
-	if (mi_rpl) free_mi_tree(mi_rpl);
+	if (resp) free_mi_response(resp);
 
 	lock_get(lock);
 	if (hdl->param==NULL) {
-		hdl->param = shm_rpl;
+		hdl->param = shm_resp;
 		x = 0;
 	} else {
 		x = 1;
 	}
-	LM_DBG("shm_rpl [%p], hdl [%p], hdl->param [%p]\n",
-		shm_rpl, hdl, hdl->param);
+	LM_DBG("shm_resp [%p], hdl [%p], hdl->param [%p]\n",
+		shm_resp, hdl, hdl->param);
 	lock_release(lock);
 
 	if (x) {
-		if (shm_rpl!=MI_HTTP_ASYNC_FAILED)
-			free_shm_mi_tree(shm_rpl);
+		if (shm_resp!=MI_HTTP_ASYNC_FAILED)
+			free_shm_mi_response(shm_resp);
 		shm_free(hdl);
 	}
 
 	return;
 }
 
-static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
+static inline struct mi_handler* mi_http_build_async_handler(void)
 {
 	struct mi_handler *hdl;
 	mi_http_async_resp_data_t *async_resp_data;
@@ -556,8 +438,6 @@ static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
 	hdl->handler_f = mi_http_close_async;
 	hdl->param = NULL;
 
-	async_resp_data->mod = mod;
-	async_resp_data->cmd = cmd;
 	async_resp_data->lock = mi_http_lock;
 
 	LM_DBG("hdl [%p], hdl->param [%p], mi_http_lock=[%p]\n",
@@ -566,17 +446,16 @@ static inline struct mi_handler* mi_http_build_async_handler(int mod, int cmd)
 	return hdl;
 }
 
-struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
-			str *page, str *buffer, struct mi_handler **async_hdl,
+mi_response_t *mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
+			struct mi_handler **async_hdl,
 			union sockaddr_union* cl_socket, int* is_traced)
 {
 	struct mi_cmd *f;
-	struct mi_root *mi_cmd = NULL;
-	struct mi_root *mi_rpl = NULL;
 	struct mi_handler *hdl = NULL;
-	/* avoid uninit str when tracing */
 	str miCmd={NULL, 0};
-	str buf;
+	char *buf;
+	mi_request_t req_item;
+	mi_response_t *resp = NULL;
 
 	if (mod<0 && cmd<0) {
 		LM_ERR("Incorect params: mod=[%d], cmd=[%d]\n", mod, cmd);
@@ -603,7 +482,7 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 
 	if (f->flags&MI_ASYNC_RPL_FLAG) {
 		/* We need to build an async handler */
-		hdl = mi_http_build_async_handler(mod, cmd);
+		hdl = mi_http_build_async_handler();
 		if (hdl==NULL) {
 			LM_ERR("failed to build async handler\n");
 			goto error;
@@ -612,58 +491,61 @@ struct mi_root* mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 		hdl = NULL;
 	}
 
-	if (f->flags&MI_NO_INPUT_FLAG) {
-		mi_cmd = NULL;
-	} else {
-		if (arg->s) {
-			buf.s = arg->s;
-			buf.len = arg->len;
-			LM_DBG("start parsing [%d][%s]\n", buf.len, buf.s);
-			mi_cmd = mi_http_parse_tree(&buf);
-			if (mi_cmd==NULL)
-				goto error;
-			mi_cmd->async_hdl = hdl;
-		} else {
-			mi_cmd = NULL;
-		}
-	}
+	memset(&req_item, 0, sizeof req_item);
 
-	html_page_data.page.s = buffer->s;
-	html_page_data.page.len = 0;
-	html_page_data.buffer.s = buffer->s;
-	html_page_data.buffer.len = buffer->len;
-	html_page_data.mod = mod;
-	html_page_data.cmd = cmd;
-
-	mi_rpl = run_mi_cmd(f, mi_cmd,
-				(mi_flush_f *)mi_http_flush_tree, &html_page_data);
-	if (mi_rpl == NULL) {
-		LM_ERR("failed to process the command\n");
+	req_item.req_obj = cJSON_CreateObject();
+	if (!req_item.req_obj) {
+		LM_ERR("Failed to build temporary json request\n");
 		goto error;
-	} else {
-		*page = html_page_data.page;
 	}
-	LM_DBG("got mi_rpl=[%p]\n",mi_rpl);
 
+	if (arg->s && arg->len) {
+		buf = pkg_malloc(arg->len + 1);
+		if (!buf) {
+			LM_ERR("oom!\n");
+			goto error;
+		}
+		memcpy(buf, arg->s, arg->len);
+		buf[arg->len] = 0;
+
+		req_item.params = cJSON_Parse(buf);
+		if (!req_item.params) {
+			LM_ERR("Failed to parse command params\n");
+			goto error;
+		}
+
+		cJSON_AddItemToObject(req_item.req_obj, JSONRPC_PARAMS_S,
+			req_item.params);
+	}
+
+	resp = handle_mi_request(&req_item, f, hdl);
+	LM_DBG("got mi response = [%p]\n", resp);
 
 	if ( !sv_socket ) {
 		sv_socket = httpd_api.get_server_info();
 	}
 
 	if ( *is_traced ) {
-		mi_trace_request( cl_socket, sv_socket, miCmd.s, miCmd.len, mi_cmd, &backend, t_dst);
+		mi_trace_request(cl_socket, sv_socket, miCmd.s, miCmd.len,
+			req_item.params, &backend, t_dst);
 	}
 
 	*async_hdl = hdl;
 
-	if (mi_cmd) free_mi_tree(mi_cmd);
-	return mi_rpl;
+	if (req_item.req_obj)
+		cJSON_Delete(req_item.req_obj);
+
+	return resp;
+
 error:
-	mi_trace_request( cl_socket, sv_socket, miCmd.s, miCmd.len, mi_cmd, &backend, t_dst);
+	mi_trace_request(cl_socket, sv_socket, miCmd.s, miCmd.len,
+		NULL, &backend, t_dst);
 	/* trace all errors */
 	*is_traced = 1;
 
-	if (mi_cmd) free_mi_tree(mi_cmd);
+	if (req_item.req_obj)
+		cJSON_Delete(req_item.req_obj);
+
 	if (hdl) shm_free(hdl);
 	*async_hdl  = NULL;
 	return NULL;
@@ -733,115 +615,45 @@ int mi_http_init_cmds(void)
 	return init_upSinceCTime();
 }
 
-
-
-static inline int mi_http_write_node(char** pointer, char* buf, int max_page_len,
-					struct mi_node *node, int level)
+static int mi_http_write_resp(char** p, char *buf, int max_page_len,
+						mi_response_t *resp)
 {
-	struct mi_attr *attr;
-	int temp_counter;
-	str temp_holder;
+	mi_item_t *res;
+	str unesc_buf;
+	str tmp_s;
+	int tmp_i;
 
-	/* name and value */
-	if (node->name.s!=NULL) {
-		for(;level>0;level--) {
-			MI_HTTP_COPY(*pointer,MI_HTTP_NODE_INDENT);
-		}
-		MI_HTTP_COPY(*pointer,node->name);
+	res = cJSON_GetObjectItem(resp, JSONRPC_ERROR_S);
+	if (!res)
+		res = cJSON_GetObjectItem(resp, JSONRPC_RESULT_S);
+	if (!res) {
+		LM_ERR("Invalid jsonrpc response object\n");
+		return -1;
 	}
-	if (node->value.s!=NULL) {
-		MI_HTTP_COPY(*pointer,MI_HTTP_NODE_SEPARATOR);
-		MI_HTTP_ESC_COPY(*pointer, node->value,
-				temp_holder, temp_counter);
+
+	unesc_buf.s = cJSON_Print(res);
+	if (!unesc_buf.s) {
+		LM_ERR("Failed to print json response\n");
+		return -1;
 	}
-	/* attributes */
-	for(attr=node->attributes;attr!=NULL;attr=attr->next) {
-		if (attr->name.s!=NULL) {
-			MI_HTTP_COPY_3(*pointer,
-						MI_HTTP_ATTR_SEPARATOR,
-						attr->name,
-						MI_HTTP_ATTR_VAL_SEPARATOR);
-			if(attr->value.len) {
-				MI_HTTP_ESC_COPY(*pointer, attr->value,
-							temp_holder, temp_counter);
-			}
-		}
-	}
-	MI_HTTP_COPY(*pointer,MI_HTTP_BREAK);
+	unesc_buf.len = strlen(unesc_buf.s);
+
+	MI_HTTP_ESC_COPY(*p, unesc_buf, tmp_s, tmp_i);
+
+	cJSON_PurgeString(unesc_buf.s);
+
 	return 0;
+
 error:
-	LM_ERR("buffer 2 small: *pointer=[%p] buf=[%p] max_page_len=[%d]\n",
-			*pointer, buf, max_page_len);
+	LM_ERR("buffer 2 small\n");
 	return -1;
 }
 
-
-static int mi_http_recur_flush_tree(char** pointer, char *buf, int max_page_len,
-					struct mi_node *tree, int level)
-{
-	struct mi_node *kid, *tmp;
-	int ret;
-
-	for(kid = tree->kids ; kid ; ){
-		if (!(kid->flags & MI_WRITTEN)) {
-			if (mi_http_write_node(pointer, buf, max_page_len,
-							kid, level)!=0)
-				return -1;
-			kid->flags |= MI_WRITTEN;
-		}
-		if ((ret = mi_http_recur_flush_tree(pointer, buf, max_page_len,
-							tree->kids, level+1))<0){
-			return -1;
-		} else if (ret > 0) {
-			return ret;
-		}
-		if (!(kid->flags & MI_NOT_COMPLETED)){
-			tmp = kid;
-			kid = kid->next;
-			tree->kids = kid;
-
-			if(!tmp->kids){
-				/* this node does not have any kids */
-				free_mi_node(tmp);
-			}
-		} else {
-			/* the node will have more kids =>
-			 * to keep the tree shape,
-			 * do not flush any other node for now */
-			return 1;
-		}
-	}
-	return 0;
-}
-
-
-static int mi_http_recur_write_tree(char** pointer, char *buf, int max_page_len,
-					struct mi_node *tree, int level)
-{
-	for( ; tree ; tree=tree->next ) {
-		if (!(tree->flags & MI_WRITTEN)) {
-			if (mi_http_write_node(pointer, buf, max_page_len,
-									tree, level)!=0){
-				return -1;
-			}
-		}
-		if (tree->kids) {
-			if (mi_http_recur_write_tree(pointer, buf, max_page_len,
-						tree->kids, level+1)<0){
-				return -1;
-			}
-		}
-	}
-	return 0;
-}
-
-
-int mi_http_build_header(str *page, int max_page_len,
-				int mod, int cmd, struct mi_root *tree, int flush)
+int mi_http_build_content(str *page, int max_page_len,
+				int mod, int cmd, mi_response_t *response)
 {
 	int i, j;
 	char *p, *buf;
-	str code;
 
 	if (page->s == NULL) {
 		LM_ERR("Please provide a valid page\n");
@@ -883,7 +695,7 @@ int mi_http_build_header(str *page, int max_page_len,
 	}
 	MI_HTTP_COPY(p,MI_HTTP_Response_Menu_Table_5);
 
-	if (tree) { /* Build mi reply */
+	if (response) { /* Build mi reply */
 		/* Print comand name */
 		MI_HTTP_COPY_4(p,MI_HTTP_Response_Menu_Cmd_Table_1,
 				MI_HTTP_Response_Menu_Cmd_tr_1,
@@ -898,32 +710,10 @@ int mi_http_build_header(str *page, int max_page_len,
 				MI_HTTP_Response_Menu_Cmd_td_3a,
 				http_mi_cmds[mod].cmds[cmd].name,
 				MI_HTTP_Response_Menu_Cmd_td_4a);
-		/* Print response code */
-		MI_HTTP_COPY(p,MI_HTTP_Response_Menu_Cmd_td_1d);
-		if (!(tree->node.flags & MI_WRITTEN)) {
-			code.s = int2str((unsigned long)tree->code, &code.len);
-			MI_HTTP_COPY_11(p,code,
-					MI_HTTP_SEMICOLON,
-					tree->reason,
-					MI_HTTP_Response_Menu_Cmd_td_4d,
-					MI_HTTP_Response_Menu_Cmd_tr_2,
-					MI_HTTP_Response_Menu_Cmd_tr_1,
-					MI_HTTP_Response_Menu_Cmd_td_1d,
-					MI_HTTP_NBSP,
-					MI_HTTP_Response_Menu_Cmd_td_4d,
-					MI_HTTP_Response_Menu_Cmd_td_1d,
-					MI_HTTP_CODE_1);
-			tree->node.flags |= MI_WRITTEN;
-		}
-		if (flush) {
-			if (mi_http_recur_flush_tree(&p, buf, max_page_len,
-							&tree->node, 0)<0)
-				return -1;
-		} else {
-			if (mi_http_recur_write_tree(&p, buf, max_page_len,
-							tree->node.kids, 0)<0)
-				return -1;
-		}
+
+		if (mi_http_write_resp(&p, buf, max_page_len, response) < 0)
+			return -1;
+
 	} else if (mod>=0) { /* Building command menu */
 		/* Build the list of comands for the selected module */
 		MI_HTTP_COPY_4(p,MI_HTTP_Response_Menu_Cmd_Table_1,
@@ -1015,42 +805,18 @@ error:
 	return -1;
 }
 
-
-int mi_http_build_content(str *page, int max_page_len,
-				int mod, int cmd, struct mi_root* tree)
-{
-	char *p, *buf;
-
-	if (page->len==0) {
-		if (0!=mi_http_build_header(page, max_page_len, mod, cmd, tree, 0))
-			return -1;
-	} else {
-		buf = page->s;
-		p = page->s + page->len;
-
-		if (tree) { /* Build mi reply */
-			if (mi_http_recur_write_tree(&p, buf, max_page_len,
-							tree->node.kids, 0)<0)
-				return -1;
-
-			page->len = p - page->s;
-		}
-	}
-	return 0;
-}
-
-
 int mi_http_build_page(str *page, int max_page_len,
-				int mod, int cmd, struct mi_root *tree)
+				int mod, int cmd, mi_response_t *response)
 {
 	char *p, *buf;
 
-	if (0!=mi_http_build_content(page, max_page_len, mod, cmd, tree))
+	if (0!=mi_http_build_content(page, max_page_len, mod, cmd, response))
 		return -1;
+
 	buf = page->s;
 	p = page->s + page->len;
 
-	if (tree) { /* Build foot reply */
+	if (response) { /* Build foot reply */
 		MI_HTTP_COPY_5(p,MI_HTTP_CODE_2,
 				MI_HTTP_Response_Menu_Cmd_td_4d,
 				MI_HTTP_Response_Menu_Cmd_tr_2,
@@ -1064,25 +830,4 @@ error:
 	LM_ERR("buffer 2 small\n");
 	page->len = p - page->s;
 	return -1;
-}
-
-
-int mi_http_flush_content(str *page, int max_page_len,
-				int mod, int cmd, struct mi_root* tree)
-{
-	char *p, *buf;
-
-	if (page->len==0)
-		if (0!=mi_http_build_header(page, max_page_len, mod, cmd, tree, 1))
-			return -1;
-	buf = page->s;
-	p = page->s + page->len;
-
-	if (tree) { /* Build mi reply */
-		if (mi_http_recur_flush_tree(&p, buf, max_page_len,
-						&tree->node, 0)<0)
-			return -1;
-		page->len = p - page->s;
-	}
-	return 0;
 }

@@ -17,9 +17,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  *
- * History:
- * ---------
- *  2011-09-20  first version (osas)
  */
 
 #include <stdlib.h>
@@ -41,7 +38,7 @@ static int destroy(void);
 int mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
-		size_t *upload_data_size, void **con_cls,
+		size_t upload_data_size, void **con_cls,
 		str *buffer, str *page, union sockaddr_union* cl_socket);
 static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max);
 
@@ -58,6 +55,7 @@ extern http_mi_cmd_t* http_mi_cmds;
 int mi_trace_mod_id = -1;
 char* mi_trace_bwlist_s;
 
+static const char *unknown_method = "unknown";
 
 static const str MI_HTTP_U_ERROR = str_init("<html><body>"
 "Internal server error!</body></html>");
@@ -66,9 +64,9 @@ static const str MI_HTTP_U_URL = str_init("<html><body>"
 static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 "Unexpected method (only GET is accepted)!</body></html>");
 
-static str MI_HTTP_U_ERROR_REASON = str_init("Internal server error!");
-static str MI_HTTP_U_URL_REASON = str_init("Unable to parse URL!");
-static str MI_HTTP_U_METHOD_REASON = str_init("Unexpected method! Only GET is accepted!");
+static str MI_HTTP_U_ERROR_REASON = str_init("500 Internal server error!");
+static str MI_HTTP_U_URL_REASON = str_init("406 Unable to parse URL!");
+static str MI_HTTP_U_METHOD_REASON = str_init("500 Unexpected method! Only GET is accepted!");
 
 
 /* module parameters */
@@ -185,63 +183,7 @@ int destroy(void)
 
 static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max)
 {
-	struct mi_handler *hdl = (struct mi_handler*)cls;
-	gen_lock_t *lock;
-	mi_http_async_resp_data_t *async_resp_data;
-	str page = {NULL, 0};
-
-	if (hdl==NULL) {
-		LM_ERR("Unexpected NULL mi handler!\n");
-		return -1;
-	}
-	LM_DBG("hdl=[%p], hdl->param=[%p], pos=[%d], buf=[%p], max=[%d]\n",
-		 hdl, hdl->param, (int)pos, buf, (int)max);
-
-	if (pos){
-		LM_DBG("freeing hdl=[%p]: hdl->param=[%p], "
-			" pos=[%d], buf=[%p], max=[%d]\n",
-			 hdl, hdl->param, (int)pos, buf, (int)max);
-		shm_free(hdl);
-		return -1;
-	}
-	async_resp_data =
-		(mi_http_async_resp_data_t*)((char*)hdl+sizeof(struct mi_handler));
-	lock = async_resp_data->lock;
-	lock_get(lock);
-	if (hdl->param) {
-		if (*(struct mi_root**)hdl->param) {
-			page.s = buf;
-			LM_DBG("tree=[%p]\n", *(struct mi_root**)hdl->param);
-			if (mi_http_build_page(&page, max,
-						async_resp_data->mod,
-						async_resp_data->cmd,
-						*(struct mi_root**)hdl->param)!=0){
-				LM_ERR("Unable to build response\n");
-				shm_free(*(void**)hdl->param);
-				*(void**)hdl->param = NULL;
-				lock_release(lock);
-				memcpy(buf, MI_HTTP_U_ERROR.s, MI_HTTP_U_ERROR.len);
-				return MI_HTTP_U_ERROR.len;
-			} else {
-				shm_free(*(void**)hdl->param);
-				*(void**)hdl->param = NULL;
-				lock_release(lock);
-				return page.len;
-			}
-		} else {
-			LM_DBG("data not ready yet\n");
-			lock_release(lock);
-			return 0;
-		}
-	} else {
-		lock_release(lock);
-		LM_ERR("Invalid async reply\n");
-		memcpy(buf, MI_HTTP_U_ERROR.s, MI_HTTP_U_ERROR.len);
-		return MI_HTTP_U_ERROR.len;
-	}
-	lock_release(lock);
-	LM_CRIT("done?\n");
-	shm_free(hdl);
+	/* if no content for the response, just inform httpd */
 	return -1;
 }
 
@@ -250,11 +192,11 @@ static ssize_t mi_http_flush_data(void *cls, uint64_t pos, char *buf, size_t max
 #define MI_HTTP_INTERNAL_ERROR	500
 
 #define MI_HTTP_MAX_WAIT       2*60*4
-static inline struct mi_root* mi_http_wait_async_reply(struct mi_handler *hdl)
+static inline mi_response_t *mi_http_wait_async_reply(struct mi_handler *hdl)
 {
 	mi_http_async_resp_data_t *async_resp_data =
 		(mi_http_async_resp_data_t*)(hdl+1);
-	struct mi_root *mi_rpl;
+	mi_response_t *mi_resp;
 	int i;
 	int x;
 
@@ -280,85 +222,84 @@ static inline struct mi_root* mi_http_wait_async_reply(struct mi_handler *hdl)
 		}
 	}
 
-	mi_rpl = (struct mi_root *)hdl->param;
-	if (mi_rpl==MI_HTTP_ASYNC_FAILED)
-		mi_rpl = NULL;
+	mi_resp = (mi_response_t *)hdl->param;
+	if (mi_resp==MI_HTTP_ASYNC_FAILED)
+		mi_resp = NULL;
 
 	/* free the async handler*/
 	shm_free(hdl);
 
-	return mi_rpl;
+	return mi_resp;
 }
 
-static inline void trace_http( union sockaddr_union* cl_socket, char* url,
-		struct mi_root* mi_req, str* error, int code, str* message)
+static inline void trace_http( union sockaddr_union* cl_socket,
+						char *cmd_name, str* message)
 {
-
-	char* command;
+	if (!cmd_name)
+		cmd_name = (char *)unknown_method;
 
 	if ( !sv_socket ) {
 		sv_socket = httpd_api.get_server_info();
 	}
 
-	if ( url )
-		command = url;
-	else
-		command = "";
+	mi_trace_request(cl_socket, sv_socket, cmd_name, strlen(cmd_name),
+		NULL, &backend, t_dst);
 
-	mi_trace_request( cl_socket, sv_socket, command,
-									strlen(command), mi_req, &backend, t_dst);
-
-	mi_trace_reply( sv_socket, cl_socket, code, error, message, t_dst);
+	mi_trace_reply( sv_socket, cl_socket, message, t_dst);
 }
 
 
 int mi_http_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
-		size_t *upload_data_size, void **con_cls,
+		size_t upload_data_size, void **con_cls,
 		str *buffer, str *page, union sockaddr_union* cl_socket)
 {
 	int mod = -1;
 	int cmd = -1;
 	str arg = {NULL, 0};
-	struct mi_root *tree = NULL;
 	struct mi_handler *async_hdl;
 	int ret_code = MI_HTTP_OK;
 	int is_shm = 0, is_cmd_traced=0;
-
-	static const str ok_trace_reason = str_init("OK");
+	mi_response_t *response;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 		"versio=%s, upload_data[%d]=%p, *con_cls=%p\n",
 			cls, connection, url, method, version,
-			(int)*upload_data_size, upload_data, *con_cls);
+			(int)upload_data_size, upload_data, *con_cls);
+
 	if (strncmp(method, "GET", 3)==0 || strncmp(method, "POST", 4)==0) {
 		if(0 == mi_http_parse_url(url, &mod, &cmd)) {
 			httpd_api.lookup_arg(connection, "arg", *con_cls, &arg);
+
 			if (mod>=0 && cmd>=0 && arg.s) {
 				LM_DBG("arg [%p]->[%.*s]\n", arg.s, arg.len, arg.s);
-				tree = mi_http_run_mi_cmd(mod, cmd, &arg,
-							page, buffer, &async_hdl, cl_socket, &is_cmd_traced);
-				if (tree == MI_ROOT_ASYNC_RPL) {
+
+				response = mi_http_run_mi_cmd(mod, cmd, &arg,
+					&async_hdl, cl_socket, &is_cmd_traced);
+
+				if (response == MI_ASYNC_RPL) {
 					LM_DBG("got an async reply\n");
-					tree = mi_http_wait_async_reply(async_hdl);
-					async_hdl = NULL;
+					response = mi_http_wait_async_reply(async_hdl);
 					is_shm = 1;
 				}
 
-				if (tree == NULL) {
-					LM_ERR("no reply\n");
+				if (response == NULL) {
+					LM_ERR("failed to build MI response\n");
 					*page = MI_HTTP_U_ERROR;
 					ret_code = MI_HTTP_INTERNAL_ERROR;
 
 					if ( is_cmd_traced )
-						trace_http( cl_socket, http_mi_cmds[mod].cmds[cmd].name.s,
-							0, &MI_HTTP_U_ERROR_REASON, MI_HTTP_INTERNAL_ERROR, 0);
+						trace_http(cl_socket, http_mi_cmds[mod].cmds[cmd].name.s,
+							&MI_HTTP_U_ERROR_REASON);
 				} else {
 					LM_DBG("building on page [%p:%d]\n",
 						page->s, page->len);
 
-					if(0!=mi_http_build_page(page,buffer->len,mod,cmd,tree)){
+					page->s = buffer->s;
+					page->len = 0;
+
+					if(0!=mi_http_build_page(page,buffer->len,mod,cmd,response)){
 						LM_ERR("unable to build response"
 							"for cmd [%d] w/ args [%.*s]\n",
 							cmd, arg.len, arg.s);
@@ -368,52 +309,52 @@ int mi_http_answer_to_connection (void *cls, void *connection,
 						/* already traced the request; trace the reply only */
 						if ( is_cmd_traced )
 							mi_trace_reply( sv_socket, cl_socket,
-								MI_HTTP_INTERNAL_ERROR, &MI_HTTP_U_ERROR_REASON,
-								0, t_dst);
+								&MI_HTTP_U_ERROR_REASON, t_dst);
 					} else {
-						ret_code = tree->code;
+						ret_code = MI_HTTP_OK;
 
 						if ( is_cmd_traced )
 							mi_trace_reply( sv_socket, cl_socket,
-								tree->code, &tree->reason, page, t_dst);
+								page, t_dst);
 					}
+
+					if (is_shm)
+						free_shm_mi_response(response);
+					else
+						free_mi_response(response);
 				}
 			} else {
 				page->s = buffer->s;
+				page->len = 0;
+
 				if(0 != mi_http_build_page(page, buffer->len,
-							mod, cmd, tree)) {
+							mod, cmd, NULL)) {
 					LM_ERR("unable to build response\n");
 					*page = MI_HTTP_U_ERROR;
 					ret_code = MI_HTTP_INTERNAL_ERROR;
 
-					trace_http( cl_socket, http_mi_cmds[mod].cmds[cmd].name.s, 0,
-							&MI_HTTP_U_ERROR_REASON, MI_HTTP_INTERNAL_ERROR, 0);
+					trace_http(cl_socket, http_mi_cmds[mod].cmds[cmd].name.s,
+							&MI_HTTP_U_ERROR_REASON);
 				}
 				/* trace only mi commands */
 				if (mod > 0 && cmd > 0) {
-					trace_http( cl_socket, http_mi_cmds[mod].cmds[cmd].name.s, 0,
-							(str *)&ok_trace_reason, MI_HTTP_OK, page);
+					trace_http(cl_socket, http_mi_cmds[mod].cmds[cmd].name.s,
+						page);
 				}
-			}
-			if (tree) {
-				is_shm?free_shm_mi_tree(tree):free_mi_tree(tree);
-				tree = NULL;
 			}
 		} else {
 			LM_ERR("unable to parse URL [%s]\n", url);
 			*page = MI_HTTP_U_URL;
 			ret_code = MI_HTTP_NOT_ACCEPTABLE;
 
-			trace_http( cl_socket, (char *)url, 0, &MI_HTTP_U_URL_REASON,
-										MI_HTTP_NOT_ACCEPTABLE, 0);
+			trace_http(cl_socket, NULL, &MI_HTTP_U_URL_REASON);
 		}
 	} else {
 		LM_ERR("unexpected method [%s]\n", method);
 		*page = MI_HTTP_U_METHOD;
 		ret_code = MI_HTTP_INTERNAL_ERROR;
 
-		trace_http( cl_socket, (char *)url, 0, &MI_HTTP_U_METHOD_REASON,
-									MI_HTTP_INTERNAL_ERROR, 0);
+		trace_http(cl_socket, NULL, &MI_HTTP_U_METHOD_REASON);
 	}
 
 	return ret_code;
