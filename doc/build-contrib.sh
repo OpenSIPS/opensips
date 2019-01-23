@@ -444,6 +444,9 @@ fix_authors=(
   # presence_xml
   ["09717cf71cb28e9cb7b7747b170c45bb49d540df"]="Kennard White"
 
+  # proto_smpp
+  ["09b42266130943905938566752bf2e7855c13355"]="Victor Ciurel <victor.ciurel@gmail.com>"
+
   # pua
   ["2fb5fb43c22513ca50f2d84135339c7f7dd6b7a8"]="Alex Hermann"
   ["1639775961bdedec0a89269330324297f675d54a"]="Denis Bilenko <denis@ag-projects.com>"
