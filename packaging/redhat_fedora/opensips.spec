@@ -722,6 +722,17 @@ The proto_sctp module is an optional transport module (shared library) which exp
 the required logic in order to handle SCTP-based communication. (socket initialization
 and send/recv primitives to be used by higher-level network layers)
 
+%package  proto_smpp
+Summary:  SMPP (Short Message Peer-to-Peer) protocol support
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  proto_smpp
+This module offers interoperability between SIP and SMPP
+(Short Message Peer-to-Peer) protocols. It provides the
+means to build a messaging gateway/bridge between the two
+protocols, being able to convert messages from both directions.
+
 %package  proto_tls
 Summary:  TLS protocol module - implements TLS transport for SIP
 Group:    System Environment/Daemons
@@ -1646,6 +1657,10 @@ fi
 %files proto_sctp
 %{_libdir}/opensips/modules/proto_sctp.so
 %doc docdir/README.proto_sctp
+
+%files proto_smpp
+%{_libdir}/opensips/modules/proto_smpp.so
+%doc docdir/README.proto_smpp
 
 %files proto_tls
 %{_libdir}/opensips/modules/proto_tls.so
