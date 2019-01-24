@@ -185,6 +185,27 @@
 		to configure the behavior of &osips;-SMPP gateway.
 		</para>
 
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+			The database handler where the SMPP connection will be
+			stored. This parameter is mandatory.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>unset</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_smpp", "db_url", "&exampledb;")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_smpp_port" xreflabel="smpp_port">
 		<title><varname>smpp_port</varname> (integer)</title>
 		<para>
