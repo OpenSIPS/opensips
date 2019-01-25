@@ -336,7 +336,6 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 	dlist_t* dl;
 	udomain_t* dom;
 	time_t t;
-	int n;
 	int i;
 	map_iterator_t it;
 	void ** dest;
@@ -374,7 +373,7 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 			goto error;
 
 		/* add the entries per hash */
-		for(i=0,n=0; i<dom->size; i++) {
+		for(i=0; i<dom->size; i++) {
 			lock_ulslot( dom, i);
 
 			for ( map_first( dom->table[i].records, &it);
