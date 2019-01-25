@@ -702,6 +702,8 @@ static struct dlginfo_cb_params * build_cb_param(int flags,
 		return NULL;
 	}
 
+	memset( param, 0, sizeof(struct dlginfo_cb_params));
+
 	param->flags = flags;
 
 	p = (char*)(param + 1);
@@ -716,9 +718,6 @@ static struct dlginfo_cb_params * build_cb_param(int flags,
 		param->entity.display.s = p;
 		param->entity.display.len = entity_p->display.len;
 		p+= entity_p->display.len;
-	} else {
-		param->entity.display.s = NULL;
-		param->entity.display.len = 0;
 	}
 
 	memcpy( p, peer_p->uri.s, peer_p->uri.len);
@@ -731,9 +730,6 @@ static struct dlginfo_cb_params * build_cb_param(int flags,
 		param->peer.display.s = p;
 		param->peer.display.len = peer_p->display.len;
 		p+= peer_p->display.len;
-	} else {
-		param->peer.display.s = NULL;
-		param->peer.display.len = 0;
 	}
 
 	return param;
