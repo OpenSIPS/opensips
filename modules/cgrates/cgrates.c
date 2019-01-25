@@ -139,10 +139,6 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
-	{ 0, 0, 0, 0, 0, 0}
-};
-
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
@@ -162,7 +158,7 @@ struct module_exports exports = {
 	acmds,
 	params,
 	0,           /* exported statistics */
-	mi_cmds,     /* exported MI functions */
+	0,
 	pvars,       /* exported pseudo-variables */
 	0,			 /* exported transformations */
 	0,           /* extra processes */
