@@ -1132,11 +1132,11 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 218 69 8913 4396
    2. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
-   3. Liviu Chircu (@liviuchircu) 35 24 485 378
+   3. Liviu Chircu (@liviuchircu) 36 25 487 378
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 19 8 1114 101
    5. Razvan Crainea (@razvancrainea) 18 12 306 132
    6. Ionel Cerghit (@ionel-cerghit) 8 2 250 212
-   7. Fabian Gast 3 1 1 1
+   7. Fabian Gast (@fgast) 3 1 1 1
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1159,11 +1159,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Razvan Crainea (@razvancrainea)          Nov 2015 - Jan 2019
-   2. Liviu Chircu (@liviuchircu)              Mar 2016 - Jan 2019
+   1. Liviu Chircu (@liviuchircu)              Mar 2016 - Jan 2019
+   2. Razvan Crainea (@razvancrainea)          Nov 2015 - Jan 2019
    3. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Jan 2019
    4. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Dec 2018
-   5. Fabian Gast                              Nov 2018 - Nov 2018
+   5. Fabian Gast (@fgast)                     Nov 2018 - Nov 2018
    6. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    7. Ionel Cerghit (@ionel-cerghit)           Dec 2016 - Dec 2016
    8. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Sep 2015
@@ -1176,7 +1176,7 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
-   Gast, Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   Gast (@fgast), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
    (@liviuchircu), Peter Lemenkov (@lemenkov), Razvan Crainea
    (@razvancrainea), Eseanu Marius Cristian (@eseanucristian).
 

@@ -278,14 +278,14 @@ Chapter 3. Contributors
    3. Anca Vamanu 12 5 739 54
    4. Liviu Chircu (@liviuchircu) 11 8 23 61
    5. Andrei Dragus 10 4 182 181
-   6. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
-   7. Fabian Gast 6 1 446 5
-   8. Fabian Gast 4 2 71 43
-   9. Razvan Crainea (@razvancrainea) 4 2 5 5
-   10. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
+   6. Fabian Gast (@fgast) 9 3 517 48
+   7. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
+   8. Razvan Crainea (@razvancrainea) 4 2 5 5
+   9. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
+   10. Dusan Klinec 3 1 4 4
 
-   All remaining contributors: Dusan Klinec, Ryan Bullock
-   (@rrb3942), Julián Moreno Patiño, Peter Lemenkov (@lemenkov).
+   All remaining contributors: Ryan Bullock (@rrb3942), Julián
+   Moreno Patiño, Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -308,18 +308,18 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jan 2019
-   2.  Fabian Gast                         Dec 2018 - Dec 2018
-   3.  Fabian Gast                         Dec 2018 - Dec 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - May 2017
-   7.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
-   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Dusan Klinec                        Dec 2015 - Dec 2015
+   2.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - May 2017
+   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
+   7.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9.  Dusan Klinec                        Dec 2015 - Dec 2015
+   10. Ryan Bullock (@rrb3942)             Jan 2014 - Jan 2014
 
-   All remaining contributors: Ryan Bullock (@rrb3942), Vlad Paiu
-   (@vladpaiu), Andrei Dragus, Anca Vamanu.
+   All remaining contributors: Vlad Paiu (@vladpaiu), Andrei
+   Dragus, Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -329,7 +329,7 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
-   Gast, Fabian Gast, Peter Lemenkov (@lemenkov), Liviu Chircu
+   Gast (@fgast), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
    (@vladpaiu), Andrei Dragus, Anca Vamanu.
 

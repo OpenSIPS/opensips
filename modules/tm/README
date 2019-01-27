@@ -1572,9 +1572,10 @@ Chapter 4. Contributors
    Saúl Ibarra Corretgé (@saghul), Elena-Ramona Modroiu, John
    Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues,
    Konstantin Bokarius, Aron Podrigal, Anonymous, Dusan Klinec,
-   Mark Dalby, Walter Doekes (@wdoekes), Alexey Vasilyev, Nick
-   Altmann (@nikbyte), Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Ingo Wolfsberger, Daniel Hsueh.
+   Mark Dalby, Walter Doekes (@wdoekes), Alexey Vasilyev
+   (@vasilevalex), Nick Altmann (@nikbyte), Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert, Ingo Wolfsberger, Daniel
+   Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1600,7 +1601,7 @@ Chapter 4. Contributors
    2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jan 2019
    3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
    4.  Aron Podrigal                       Nov 2018 - Nov 2018
-   5.  Alexey Vasilyev                     Sep 2018 - Sep 2018
+   5.  Alexey Vasilyev (@vasilevalex)      Sep 2018 - Sep 2018
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2018
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
@@ -1628,14 +1629,15 @@ Chapter 5. Documentation
 5.1. Contributors
 
    Last edited by: Razvan Crainea (@razvancrainea), Alexey
-   Vasilyev, Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Nick Altmann (@nikbyte), Ovidiu Sas
-   (@ovidiusas), Vlad Paiu (@vladpaiu), Anca Vamanu, Henning
-   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Dan Pascu (@danpascu), Juha Heinanen (@juha-h), Elena-Ramona
-   Modroiu, Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
+   Vasilyev (@vasilevalex), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Nick Altmann (@nikbyte),
+   Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu), Anca Vamanu,
+   Henning Westerholt (@henningw), Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Dan Pascu (@danpascu), Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
+   Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 
