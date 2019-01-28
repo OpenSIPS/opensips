@@ -162,6 +162,8 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg*, char*, char*, char*, char
 static int w_get_dlg_vals(struct sip_msg*, char*, char*, char*);
 static int w_tsl_dlg_flag(struct sip_msg *msg, char *_idx, char *_val);
 static int w_set_dlg_shtag(struct sip_msg *msg, char *shtag);
+static int load_dlg_ctx(struct sip_msg *msg, char *callid);
+static int unload_dlg_ctx(struct sip_msg *msg);
 
 /* item/pseudo-variables functions */
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
@@ -242,6 +244,10 @@ static cmd_export_t cmds[]={
 			0, REQUEST_ROUTE},
 	{"set_dlg_sharing_tag", (cmd_function)w_set_dlg_shtag, 1,
 			fixup_spve_null, 0, REQUEST_ROUTE},
+	{"load_dialog_ctx",(cmd_function)load_dlg_ctx,         1, fixup_sgp_null,
+			0, ALL_ROUTES },
+	{"unload_dialog_ctx",(cmd_function)unload_dlg_ctx,     0, NULL,
+			0, ALL_ROUTES },
 	{"load_dlg",  (cmd_function)load_dlg,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
 };
@@ -1639,7 +1645,7 @@ static int w_get_dlg_vals(struct sip_msg *msg, char *v_name, char  *v_val,
 		return -1;
 	}
 
-	dlg = get_dlg_by_callid( &callid_s );
+	dlg = get_dlg_by_callid( &callid_s, 1 );
 
 	if (dlg==NULL) {
 		/* nothing found */
@@ -2372,3 +2378,60 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, char *attr, char *att
 
 	return n;
 }
+
+
+static struct dlg_cell *load_ctx_backup = NULL;
+static int dlg_ctx_loaded = 0;
+
+static int load_dlg_ctx(struct sip_msg *msg, char *callid)
+{
+	struct dlg_cell *dlg;
+	str callid_s;
+
+	if (dlg_ctx_loaded) {
+		LM_ERR("nested call of load dlg ctx\n");
+		return -1;
+	}
+
+	if (fixup_get_svalue(msg, (gparam_p)callid, &callid_s)!=0 ||
+	callid_s.len == 0 || callid_s.s == NULL) {
+		LM_WARN("cannot get string for dialog callid\n");
+		return -1;
+	}
+
+	dlg = get_dlg_by_callid( &callid_s, 0 );
+
+	if (dlg==NULL) {
+		/* nothing found */
+		LM_DBG("no dialog found\n");
+		return -1;
+	}
+
+	/* this will 'inherit' the ref, no need to add a new one */
+	load_ctx_backup = ctx_dialog_get();
+
+	/* the dlg is already ref'ed by the lookup function */
+	ctx_dialog_set(dlg);
+	dlg_ctx_loaded = 1;
+
+	return 1;
+}
+
+
+static int unload_dlg_ctx(struct sip_msg *msg)
+{
+	struct dlg_cell *dlg;
+
+	if (!dlg_ctx_loaded)
+		return -1;
+
+	if ( (dlg=ctx_dialog_get())!=NULL )
+		unref_dlg(dlg,1);
+
+	ctx_dialog_set(load_ctx_backup);
+	load_ctx_backup = NULL;
+	dlg_ctx_loaded = 0;
+
+	return 1;
+}
+

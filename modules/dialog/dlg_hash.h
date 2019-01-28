@@ -373,7 +373,7 @@ struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag,
 
 struct dlg_cell* get_dlg_by_val(str *attr, str *val);
 
-struct dlg_cell* get_dlg_by_callid( str *callid);
+struct dlg_cell* get_dlg_by_callid( str *callid, int active_only);
 
 void link_dlg(struct dlg_cell *dlg, int n);
 

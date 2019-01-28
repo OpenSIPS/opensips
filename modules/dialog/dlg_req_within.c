@@ -538,7 +538,7 @@ struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param ){
 		/* the ID is not a number, so let's consider
 		 * the value a SIP call-id */
 		LM_DBG("Call-ID: <%.*s>\n", dialog_id.len, dialog_id.s);
-		dlg = get_dlg_by_callid( &dialog_id );
+		dlg = get_dlg_by_callid( &dialog_id, 1 );
 	}
 
 	if (dlg) {
