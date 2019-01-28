@@ -120,7 +120,7 @@
 		<size>&user_len;</size>
 		<null/>
 		<default><null/></default>
-		<description>cluster sharing tag in [tag_name/cluster_id] format].</description>
+		<description>A cluster sharing tag (as [tag_name/custer_id]) used to control this registration in clustering scenarios</description>
 	</column>
 
 	<index>
