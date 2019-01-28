@@ -36,6 +36,7 @@ typedef struct _http_conn
 {
 
 	CURL * handle;
+	struct curl_slist *headers;
 	str  start;
 	int last_id;
 } http_conn_t;
@@ -1038,6 +1039,12 @@ db_con_t* db_http_init(const str* url)
 	}
 
 	curl->handle = curl_easy_init();
+
+	//Disable Expect: 100-continue
+	curl->headers = NULL;
+	curl->headers = curl_slist_append(curl->headers, "Expect:");
+	curl_easy_setopt(curl->handle,CURLOPT_HTTPHEADER,curl->headers);
+
 	curl_easy_setopt(curl->handle,CURLOPT_SSL_VERIFYPEER,0);
 	curl_easy_setopt(curl->handle,CURLOPT_SSL_VERIFYHOST,0);
 
@@ -1093,6 +1100,9 @@ db_con_t* db_http_init(const str* url)
 	{
 		pkg_free(path);
 		curl_easy_cleanup(curl->handle);
+		if (curl->headers != NULL) {
+			curl_slist_free_all(curl->headers);
+		}
 		pkg_free(curl);
 
 		LM_ERR("Out of memory\n");
@@ -1121,6 +1131,9 @@ error:
 		pkg_free(path);
 	if (curl) {
 		curl_easy_cleanup(curl->handle);
+		if (curl->headers != NULL) {
+			curl_slist_free_all(curl->headers);
+		}
 		pkg_free(curl);
 	}
 	LM_CRIT("Initialization error\n");
@@ -1133,6 +1146,7 @@ void db_http_close(db_con_t* _h)
 
 	http_conn_t* conn = (http_conn_t*) _h->tail;
 	curl_easy_cleanup(conn->handle);
+	curl_slist_free_all(conn->headers);
 	pkg_free(_h);
 }
 
