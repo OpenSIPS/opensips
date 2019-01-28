@@ -28,8 +28,8 @@ static struct clusterer_binds c_api;
 
 int ureg_cluster_shtag_is_active( str *tag_name, int c_id)
 {
-	if ( !enable_clustering || c_id<=0 || tag_name->len==0 ||
-	c_api.shtag_get( tag_name, c_id)==SHTAG_STATE_ACTIVE )
+	if ( c_id<=0 || tag_name->len==0 ||
+	(enable_clustering && c_api.shtag_get( tag_name, c_id)==SHTAG_STATE_ACTIVE) )
 		/* no clustering support or sharing tag found on active */
 		return 1;
 
