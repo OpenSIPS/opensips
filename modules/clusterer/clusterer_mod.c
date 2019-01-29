@@ -433,7 +433,15 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 	}
 
 	lock_start_write(cl_list_lock);
-	preserve_reg_caps(new_info);
+	if (preserve_reg_caps(new_info) < 0) {
+		lock_stop_write(cl_list_lock);
+		LM_ERR("Failed to preserve registered capabilities\n");
+
+		if (new_info)
+			free_info(new_info);
+
+		return init_mi_tree(500, "Failed to reload", 16);
+	}
 	old_info = *cluster_list;
 	*cluster_list = new_info;
 	lock_stop_write(cl_list_lock);
