@@ -1884,6 +1884,10 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	}
 
 	cap = (struct capability_reg *)ptr;
+	if (!cap) {
+		LM_ERR("Failed to get bin callback parameter\n");
+		return;
+	}
 
 	lock_start_read(cl_list_lock);
 
@@ -2639,7 +2643,8 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	new_cl_cap->next = cluster->capabilities;
 	cluster->capabilities = new_cl_cap;
 
-	bin_register_cb(cap, bin_rcv_mod_packets, &new_cl_cap->reg);
+	bin_register_cb(cap, bin_rcv_mod_packets, &new_cl_cap->reg,
+		sizeof new_cl_cap->reg);
 
 	LM_DBG("Registered capability: %.*s\n", cap->len, cap->s);
 

@@ -378,11 +378,11 @@ static int mod_init(void)
 		}
 	}
 
-	if (bin_register_cb(&cl_internal_cap, bin_rcv_cl_packets, NULL) < 0) {
+	if (bin_register_cb(&cl_internal_cap, bin_rcv_cl_packets, NULL, 0) < 0) {
 		LM_CRIT("Cannot register clusterer binary packet callback!\n");
 		goto error;
 	}
-	if (bin_register_cb(&cl_extra_cap, bin_rcv_cl_extra_packets, NULL) < 0) {
+	if (bin_register_cb(&cl_extra_cap, bin_rcv_cl_extra_packets, NULL, 0) < 0) {
 		LM_CRIT("Cannot register extra clusterer binary packet callback!\n");
 		goto error;
 	}

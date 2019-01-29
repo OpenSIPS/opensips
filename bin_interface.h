@@ -89,7 +89,7 @@ void call_callbacks(char* buffer, struct receive_info *rcv);
  * binary packet marked with the @cap capability
  */
 int bin_register_cb(str *cap, void (*cb)(bin_packet_t *, int,
-                    struct receive_info *, void * atr), void *att);
+        struct receive_info *, void * atr), void *att, int att_len);
 
 
 /**
