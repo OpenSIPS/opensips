@@ -51,6 +51,7 @@
 #define CAP_STATE_OK		(1<<0)
 #define CAP_SYNC_PENDING	(1<<1)
 #define CAP_PKT_BUFFERING	(1<<2)
+#define CAP_REQUIRE_SYNC	(1<<3)
 
 
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
@@ -157,6 +158,8 @@ cl_send_all_having(bin_packet_t *packet, int dst_cluster_id,
                    enum cl_node_match_op match_op);
 int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
             int cluster_id, int require_sync, enum cl_node_match_op sync_cond);
+
+void preserve_reg_caps(struct cluster_info *new_info);
 
 struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params);
 

@@ -456,6 +456,7 @@ static struct mi_root* clusterer_reload(struct mi_root* root, void *param)
 	}
 
 	lock_start_write(cl_list_lock);
+	preserve_reg_caps(new_info);
 	old_info = *cluster_list;
 	*cluster_list = new_info;
 	lock_stop_write(cl_list_lock);

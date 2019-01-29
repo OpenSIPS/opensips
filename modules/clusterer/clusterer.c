@@ -2693,6 +2693,9 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	new_cl_cap->reg.packet_cb = packet_cb;
 	new_cl_cap->reg.event_cb = event_cb;
 
+	if (require_sync)
+		new_cl_cap->flags |= CAP_REQUIRE_SYNC;
+
 	if (cluster->current_node->flags & NODE_IS_SEED || !require_sync)
 		new_cl_cap->flags |= CAP_STATE_OK;
 
@@ -2704,6 +2707,42 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	LM_DBG("Registered capability: %.*s\n", cap->len, cap->s);
 
 	return 0;
+}
+
+void preserve_reg_caps(cluster_info_t *new_info)
+{
+	cluster_info_t *cl, *new_cl;
+	struct local_cap *cap;
+	struct buf_bin_pkt *buf_pkt, *tmp;
+
+	for (cl = *cluster_list; cl; cl = cl->next)
+		for (new_cl = new_info; new_cl; new_cl = new_cl->next)
+			if (new_cl->cluster_id == cl->cluster_id && cl->capabilities) {
+				new_cl->capabilities = cl->capabilities;
+
+				for (cap = new_cl->capabilities; cap; cap = cap->next) {
+					if (cap->flags & CAP_STATE_OK)
+						cap->flags &= ~CAP_STATE_OK;
+
+					if (new_cl->current_node->flags & NODE_IS_SEED ||
+						!(cap->flags & CAP_REQUIRE_SYNC))
+						cap->flags |= CAP_STATE_OK;
+
+					if (cap->flags & CAP_PKT_BUFFERING) {
+						cap->flags &= ~CAP_PKT_BUFFERING;
+
+						buf_pkt = cap->pkt_q_front;
+						while (buf_pkt) {
+							tmp = buf_pkt;
+							buf_pkt = buf_pkt->next;
+							shm_free(tmp->buf.s);
+							shm_free(tmp);
+						}
+						cap->pkt_q_front = NULL;
+						cap->pkt_q_back = NULL;
+					}
+				}
+			}
 }
 
 int gen_rcv_evs_init(void)
