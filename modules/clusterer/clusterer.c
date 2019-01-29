@@ -2693,9 +2693,6 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	new_cl_cap->reg.packet_cb = packet_cb;
 	new_cl_cap->reg.event_cb = event_cb;
 
-	if (require_sync)
-		new_cl_cap->flags |= CAP_REQUIRE_SYNC;
-
 	if (cluster->current_node->flags & NODE_IS_SEED || !require_sync)
 		new_cl_cap->flags |= CAP_STATE_OK;
 
@@ -2709,40 +2706,45 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	return 0;
 }
 
-void preserve_reg_caps(cluster_info_t *new_info)
+struct local_cap *dup_caps(struct local_cap *caps)
+{
+	struct local_cap *cap, *ret = NULL;
+
+	for (; caps; caps = caps->next) {
+		cap = shm_malloc(sizeof *cap);
+		if (!cap) {
+			LM_ERR("No more shm memory\n");
+			return NULL;
+		}
+		memcpy(cap, caps, sizeof *caps);
+
+		cap->next = NULL;
+
+		add_last(cap, ret);
+	}
+
+	return ret;
+}
+
+int preserve_reg_caps(cluster_info_t *new_info)
 {
 	cluster_info_t *cl, *new_cl;
 	struct local_cap *cap;
-	struct buf_bin_pkt *buf_pkt, *tmp;
 
 	for (cl = *cluster_list; cl; cl = cl->next)
 		for (new_cl = new_info; new_cl; new_cl = new_cl->next)
 			if (new_cl->cluster_id == cl->cluster_id && cl->capabilities) {
-				new_cl->capabilities = cl->capabilities;
+				new_cl->capabilities = dup_caps(cl->capabilities);
+				if (!new_cl->capabilities)
+					return -1;
 
-				for (cap = new_cl->capabilities; cap; cap = cap->next) {
-					if (cap->flags & CAP_STATE_OK)
-						cap->flags &= ~CAP_STATE_OK;
-
-					if (new_cl->current_node->flags & NODE_IS_SEED ||
-						!(cap->flags & CAP_REQUIRE_SYNC))
+				for (cap = new_cl->capabilities; cap; cap = cap->next)
+					if (!(cap->flags & CAP_STATE_OK) &&
+						(new_cl->current_node->flags & NODE_IS_SEED))
 						cap->flags |= CAP_STATE_OK;
-
-					if (cap->flags & CAP_PKT_BUFFERING) {
-						cap->flags &= ~CAP_PKT_BUFFERING;
-
-						buf_pkt = cap->pkt_q_front;
-						while (buf_pkt) {
-							tmp = buf_pkt;
-							buf_pkt = buf_pkt->next;
-							shm_free(tmp->buf.s);
-							shm_free(tmp);
-						}
-						cap->pkt_q_front = NULL;
-						cap->pkt_q_back = NULL;
-					}
-				}
 			}
+
+	return 0;
 }
 
 int gen_rcv_evs_init(void)
