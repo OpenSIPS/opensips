@@ -62,16 +62,6 @@ static param_export_t params[] = {
   { 0, 0, 0 }
 };
 
-/*
- * Exported MI functions
- */
-static mi_export_t mi_cmds[] = {
-  { "lua_reload", 0,siplua_mi_reload, 0, 0, 0 },
-  { "bla" , 0,siplua_mi_bla, 0, 0, 0 },
-  { "watch", 0,siplua_mi_watch, 0, 0, 0 },
-  { 0, 0, 0, 0, 0, 0 }
-};
-
 static mi_export_t mi_cmds[] = {
   { "watch", 0,0,0, {
     {siplua_mi_watch, {0}},
