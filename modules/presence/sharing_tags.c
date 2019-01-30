@@ -301,33 +301,3 @@ int handle_repltag_active_msg(bin_packet_t *packet)
 
 	return 0;
 }
-
-
-int list_shtags(struct mi_node *rpl)
-{
-	struct sharing_tag *tag;
-	struct mi_node *node;
-	struct mi_attr *attr;
-	str val;
-
-	rpl->flags |= MI_IS_ARRAY;
-
-	lock_start_read(shtags_lock);
-	for (tag = *shtags_list; tag; tag = tag->next) {
-		node = add_mi_node_child(rpl, MI_DUP_VALUE,
-			MI_SSTR("Tag"), tag->name.s, tag->name.len);
-		if (!node) goto error;
-
-		val.s = int2str(tag->state, &val.len);
-		attr = add_mi_attr(node, MI_DUP_VALUE,
-			MI_SSTR("State"), val.s, val.len);
-		if (!attr) goto error;
-	}
-
-	lock_stop_read(shtags_lock);
-	return 0;
-error:
-	lock_stop_read(shtags_lock);
-	return -1;
-
-}

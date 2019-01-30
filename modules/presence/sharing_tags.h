@@ -62,8 +62,6 @@ str** get_all_active_shtags(void);
 
 int handle_repltag_active_msg(bin_packet_t *packet);
 
-int list_shtags(struct mi_node *rpl);
-
 
 #endif
 

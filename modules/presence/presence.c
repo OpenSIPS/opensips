@@ -96,11 +96,20 @@ static void destroy(void);
 int stored_pres_info(struct sip_msg* msg, char* pres_uri, char* s);
 static int fixup_presence(void** param, int param_no);
 static int fixup_subscribe(void** param, int param_no);
-static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param);
-static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param);
-static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param);
-static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param);
-static struct mi_root* mi_pres_expose(struct mi_root* cmd, void* param);
+static mi_response_t *mi_refreshWatchers(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_cleanup(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_list_phtable(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_list_shtable_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_list_shtable_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_pres_expose_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_pres_expose_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs_array);
 int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc);
 int refresh_send_winfo_notify(watcher_t* watcher, str pres_uri,
@@ -185,16 +194,30 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "refreshWatchers",            0, mi_refreshWatchers,    0,  0,  0},
-	{ "cleanup",                    0, mi_cleanup,            0,  0,  0},
-	{ "pres_expose",                0, mi_pres_expose,        0,  0,  0},
-	{ "pres_phtable_list",          0, mi_list_phtable,       0,  0,  0},
-	{ "subs_phtable_list" ,         0, mi_list_shtable,       0,  0,  0},
-	{ "pres_set_sharing_tag_active",0, mi_set_shtag_active,   0,  0,  0},
-	{ "pres_list_sharing_tags",     0, mi_list_shtags,        0,  0,  0},
-	{  0,                           0, 0,                     0,  0,  0}
+	{ "refreshWatchers", 0,0,0, {
+		{mi_refreshWatchers, {"presentity_uri", "event", "refresh_type", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "cleanup", 0,0,0, {
+		{mi_cleanup, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "pres_expose", 0,0,0, {
+		{mi_pres_expose_1, {"event", 0}},
+		{mi_pres_expose_2, {"event", "filter", 0}},
+		{EMPTY_MI_RECIPE}} 
+	},
+	{ "pres_phtable_list", 0,0,0, {
+		{mi_list_phtable, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "subs_phtable_list", 0,0,0, {
+		{mi_list_shtable_1, {0}},
+		{mi_list_shtable_2, {"from", "to", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
-
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -548,60 +571,37 @@ static int fixup_subscribe(void** param, int param_no)
  *									  != 0 -> publish type //
  *		* */
 
-static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param)
+static mi_response_t *mi_refreshWatchers(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node= NULL;
 	str pres_uri, event;
 	struct sip_uri uri;
 	pres_ev_t* ev;
 	str* rules_doc= NULL;
 	int result;
-	unsigned int refresh_type;
+	int refresh_type;
 
 	LM_DBG("start\n");
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return init_mi_tree(404, "No parameters", 13);
-
-	/* Get presentity URI */
-	pres_uri = node->value;
+	if (get_mi_string_param(params, "presentity_uri", &pres_uri.s, &pres_uri.len) < 0)
+		return init_mi_param_error();
 	if(pres_uri.s == NULL || pres_uri.len== 0)
 	{
 		LM_ERR( "empty uri\n");
-		return init_mi_tree(404, "Empty presentity URI", 20);
+		return init_mi_error(404, MI_SSTR("Empty presentity URI"));
 	}
 
-	node = node->next;
-	if(node == NULL)
-		return 0;
-	event= node->value;
+	if (get_mi_string_param(params, "event", &event.s, &event.len) < 0)
+		return init_mi_param_error();
 	if(event.s== NULL || event.len== 0)
 	{
 		LM_ERR( "empty event parameter\n");
-		return init_mi_tree(400, "Empty event parameter", 21);
+		return init_mi_error(400, MI_SSTR("Empty event parameter"));
 	}
 	LM_DBG("event '%.*s'\n",  event.len, event.s);
 
-	node = node->next;
-	if(node == NULL)
-		return 0;
-	if(node->value.s== NULL || node->value.len== 0)
-	{
-		LM_ERR( "empty event parameter\n");
-		return init_mi_tree(400, "Empty event parameter", 21);
-	}
-	if(str2int(&node->value, &refresh_type)< 0)
-	{
-		LM_ERR("converting string to int\n");
-		goto error;
-	}
-
-	if(node->next!= NULL)
-	{
-		LM_ERR( "Too many parameters\n");
-		return init_mi_tree(400, "Too many parameters", 19);
-	}
+	if (get_mi_int_param(params, "refresh_type", &refresh_type) < 0)
+		return init_mi_param_error();
 
 	ev= contains_event(&event, NULL);
 	if(ev== NULL)
@@ -653,7 +653,7 @@ static struct mi_root* mi_refreshWatchers(struct mi_root* cmd, void* param)
 
 	}
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 
 error:
 	if(rules_doc)
@@ -668,41 +668,38 @@ error:
 /*
  *  mi cmd: cleanup
  *		* */
-
-static struct mi_root* mi_cleanup(struct mi_root* cmd, void* param)
+static mi_response_t *mi_cleanup(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	LM_DBG("mi_cleanup:start\n");
 
 	(void)msg_watchers_clean(0,0);
 	(void)msg_presentity_clean(0,0);
 
-	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
 
-static inline int mi_print_phtable_record(struct mi_node *rpl, pres_entry_t* pres)
+static inline int mi_print_phtable_record(mi_item_t *item, pres_entry_t* pres)
 {
-	struct mi_node* node;
-	struct mi_attr* attr;
-	char* p;
-	int len;
+	if (add_mi_string(item, MI_SSTR("pres_uri"),
+		pres->pres_uri.s, pres->pres_uri.len) < 0)
+		goto error;
+	
+	if (add_mi_number(item, MI_SSTR("event"), pres->event) < 0)
+		goto error;
+	
+	if (add_mi_number(item, MI_SSTR("etag_count"), pres->etag_count) < 0)
+		goto error;
 
-	node = add_mi_node_child(rpl, 0, "pres_uri", 8, pres->pres_uri.s, pres->pres_uri.len);
-	if(node == NULL) goto error;
-	p= int2str((unsigned long)pres->event, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "event", 5, p, len);
-	if(attr == NULL) goto error;
-	p= int2str((unsigned long)pres->etag_count, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "etag_count", 10, p, len);
-	if(attr == NULL) goto error;
 	if (pres->sphere)
-	{
-		attr = add_mi_attr(node, MI_DUP_VALUE, "sphere", 6,
-						pres->sphere, strlen(pres->sphere));
-		if(attr == NULL) goto error;
-	}
-	attr = add_mi_attr(node, MI_DUP_VALUE, "etag", 4, pres->etag, pres->etag_len);
-	if(attr == NULL) goto error;
+		if (add_mi_string(item, MI_SSTR("sphere"),
+			pres->sphere, strlen(pres->sphere)) < 0)
+			goto error;
+
+	if (add_mi_string(item, MI_SSTR("etag"),
+		pres->etag, pres->etag_len) < 0)
+		goto error;
 
 	return 0;
 error:
@@ -710,54 +707,57 @@ error:
 	return -1;
 }
 
-static struct mi_root* mi_list_phtable(struct mi_root* cmd, void* param)
+static mi_response_t *mi_list_phtable(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-
-	struct mi_root *rpl_tree;
-	struct mi_node* rpl;
+	mi_response_t *resp;
+	mi_item_t *resp_arr, *arr_item;
 	pres_entry_t* p;
 	unsigned int i;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL) return NULL;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
+		return 0;
 
 	for(i= 0; i<phtable_size; i++)
 	{
+		arr_item = add_mi_object(resp_arr, NULL, 0);
+		if (!arr_item)
+			goto error;
+
 		lock_get(&pres_htable[i].lock);
 		p = pres_htable[i].entries->next;
 		while(p)
 		{
-			if(mi_print_phtable_record(rpl, p)<0) goto error;
+			if(mi_print_phtable_record(arr_item, p)<0) goto error;
 			p= p->next;;
 		}
 		lock_release(&pres_htable[i].lock);
 	}
-	return rpl_tree;
+	return resp;
 error:
 	lock_release(&pres_htable[i].lock);
 	LM_ERR("Unable to create reply\n");
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return NULL;
 }
 
 
-static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
+static inline int mi_print_shtable_record(mi_item_t *item, subs_t* s)
 {
-	struct mi_node *node, *node1;
-	struct mi_attr *attr;
 	time_t _ts;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
-	char *p;
-	int len;
 	rr_t *rr_head = NULL;
 
-	node = add_mi_node_child(rpl, 0, "pres_uri", 8, s->pres_uri.s, s->pres_uri.len);
-	if (node==NULL) goto error;
-	attr = add_mi_attr(node, MI_DUP_VALUE, "event", 5, s->event->name.s, s->event->name.len);
-	if (attr==NULL) goto error;
+	if (add_mi_string(item, MI_SSTR("pres_uri"),
+		s->pres_uri.s, s->pres_uri.len) < 0)
+		goto error;
+	
+	if (add_mi_string(item, MI_SSTR("event"),
+		s->event->name.s, s->event->name.len) < 0)
+		goto error;
+
 	/*
 	attr = add_mi_attr(node, MI_DUP_VALUE, "event_id", 8, s->event_id.s, s->event_id.len);
 	if (attr==NULL) goto error;
@@ -766,54 +766,62 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 	date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
 						"%Y-%m-%d %H:%M:%S", localtime(&_ts));
 	if (date_buf_len != 0) {
-		attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, date_buf, date_buf_len);
+		if (add_mi_string(item, MI_SSTR("expires"),
+			date_buf, date_buf_len) < 0)
+			goto error;
 	} else {
-		p= int2str((unsigned long)s->expires, &len);
-		attr = add_mi_attr(node, MI_DUP_VALUE, "expires", 7, p, len);
+		if (add_mi_number(item, MI_SSTR("expires"), s->expires) < 0)
+			goto error;
 	}
-	if (attr==NULL) goto error;
-	p= int2str((unsigned long)s->db_flag, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "db_flag", 7, p, len);
-	if (attr==NULL) goto error;
-	p= int2str((unsigned long)s->version, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "version", 7, p, len);
-	if (attr==NULL) goto error;
 
-	node1 = add_mi_node_child(node, 0, "to_user", 7, s->to_user.s, s->to_user.len);
-	if (node1==NULL) goto error;
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "to_domain", 9, s->to_domain.s, s->to_domain.len);
-	if (attr==NULL) goto error;
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "to_tag", 6, s->to_tag.s, s->to_tag.len);
-	if (attr==NULL) goto error;
+	if (add_mi_number(item, MI_SSTR("db_flag"), s->db_flag) < 0)
+		goto error;
 
-	node1 = add_mi_node_child(node, 0, "from_user", 9, s->from_user.s, s->from_user.len);
-	if (node1==NULL) goto error;
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "from_domain", 11,
-				s->from_domain.s, s->from_domain.len);
-	if (attr==NULL) goto error;
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "from_tag", 8, s->from_tag.s, s->from_tag.len);
-	if (attr==NULL) goto error;
+	if (add_mi_number(item, MI_SSTR("version"), s->version) < 0)
+		goto error;
 
-	node1 = add_mi_node_child(node, 0, "contact", 7, s->contact.s, s->contact.len);
-	if (node1==NULL) goto error;
+	if (add_mi_string(item, MI_SSTR("to_user"),
+		s->to_user.s, s->to_user.len) < 0)
+		goto error;
+	if (add_mi_string(item, MI_SSTR("to_domain"),
+		s->to_domain.s, s->to_domain.len) < 0)
+		goto error;
+	if (add_mi_string(item, MI_SSTR("to_tag"),
+		s->to_tag.s, s->to_tag.len) < 0)
+		goto error;
+
+	if (add_mi_string(item, MI_SSTR("from_user"),
+		s->from_user.s, s->from_user.len) < 0)
+		goto error;
+	if (add_mi_string(item, MI_SSTR("from_domain"),
+		s->from_domain.s, s->from_domain.len) < 0)
+		goto error;
+	if (add_mi_string(item, MI_SSTR("from_tag"),
+		s->from_tag.s, s->from_tag.len) < 0)
+		goto error;
+
+	if (add_mi_string(item, MI_SSTR("contact"),
+		s->contact.s, s->contact.len) < 0)
+		goto error;
 
 	if (s->record_route.s && s->record_route.len &&
 		parse_rr_body(s->record_route.s, s->record_route.len, &rr_head) < 0)
 		goto error;
 	if (rr_head) {
-		node1 = add_mi_node_child(node, 0, "next_hop", 8, rr_head->nameaddr.uri.s,
-								rr_head->nameaddr.uri.len);
-		if (node1==NULL) goto error;
+		if (add_mi_string(item, MI_SSTR("next_hop"),
+			rr_head->nameaddr.uri.s, rr_head->nameaddr.uri.len) < 0)
+			goto error;
 	}
 
-	node1 = add_mi_node_child(node, 0, "callid", 6, s->callid.s, s->callid.len);
-	if (node1==NULL) goto error;
-	p= int2str((unsigned long)s->local_cseq, &len);
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "local_cseq", 10, p, len);
-	if (attr==NULL) goto error;
-	p= int2str((unsigned long)s->remote_cseq, &len);
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "remote_cseq", 11, p, len);
-	if (attr==NULL) goto error;
+	if (add_mi_string(item, MI_SSTR("callid"),
+		s->callid.s, s->callid.len) < 0)
+		goto error;
+
+	if (add_mi_number(item, MI_SSTR("local_cseq"), s->local_cseq) < 0)
+		goto error;
+
+	if (add_mi_number(item, MI_SSTR("remote_cseq"), s->remote_cseq) < 0)
+		goto error;
 
 	return 0;
 error:
@@ -842,47 +850,45 @@ static inline int from_to_match_subs(subs_t *s, str *match_from, str *match_to,
 }
 
 
-static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
+static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str *to)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl, *node;
+	mi_response_t *resp;
+	mi_item_t *resp_arr, *arr_item;
 	subs_t *s;
 	unsigned int i,j;
 	char from_w[256], to_w[256];
 	str match_from = {0,0}, match_to = {0,0};
-	int filter = 0;
 	int rc;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree == NULL)
-		return NULL;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
+		return 0;
 
 	/* from wildcard */
-	node = cmd->node.kids;
-	if (node && node->value.len && node->value.s) {
-		memcpy(from_w, node->value.s, node->value.len);
-		from_w[node->value.len] = 0;
-		filter = 1;
+	if (from) {
+		memcpy(from_w, from->s, from->len);
+		from_w[from->len] = 0;
 	}
 
 	/* to wildcard */
-	if (node)
-		node = node->next;
-	if (filter && (!node || !node->value.len || !node->value.s)) {
-		LM_ERR("no <To> uri wildcard param in MI command\n");
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
-	}
-	if (filter) {
-		memcpy(to_w, node->value.s, node->value.len);
-		to_w[node->value.len] = 0;
+	if (to) {
+		memcpy(to_w, to->s, to->len);
+		from_w[to->len] = 0;
+	} else {
+		free_mi_response(resp);
+		return 0;
 	}
 
 	for (i = 0, j = 0; i < shtable_size; i++) {
+		arr_item = add_mi_object(resp_arr, NULL, 0);
+		if (!arr_item) {
+			free_mi_response(resp);
+			return 0;
+		}
+
 		lock_get(&subs_htable[i].lock);
 		for (s = subs_htable[i].entries->next; s; s = s->next) {
-			if (filter) {
+			if (from) {
 				/* print subscribtion if "from" and "to" match with given wildcard */
 				rc = from_to_match_subs(s, &match_from, &match_to, from_w, to_w);
 				if (rc < 0)
@@ -891,14 +897,11 @@ static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
 					continue;
 			}
 
-			if (mi_print_shtable_record(rpl, s) < 0)
+			if (mi_print_shtable_record(arr_item, s) < 0)
 				goto error;
 			j++;
 		}
 		lock_release(&subs_htable[i].lock);
-
-		if ((j % 50) == 0)
-			flush_mi_tree(rpl_tree);
 	}
 
 	if (match_from.s)
@@ -906,7 +909,7 @@ static struct mi_root* mi_list_shtable(struct mi_root* cmd, void* param)
 	if (match_to.s)
 		pkg_free(match_to.s);
 
-	return rpl_tree;
+	return resp;
 
 error:
 	if (match_from.s)
@@ -915,10 +918,28 @@ error:
 		pkg_free(match_to.s);
 	lock_release(&subs_htable[i].lock);
 	LM_ERR("Unable to create reply\n");
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return NULL;
 }
 
+static mi_response_t *mi_list_shtable_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_list_shtable(params, NULL, NULL);
+}
+
+static mi_response_t *mi_list_shtable_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str from, to;
+
+	if (get_mi_string_param(params, "from", &from.s, &from.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "to", &to.s, &to.len) < 0)
+		return init_mi_param_error();
+
+	return mi_list_shtable(params, &from, &to);
+}
 
 int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
         db_val_t* query_vals, int n_query_cols, subs_t** subs_array)
@@ -1509,31 +1530,47 @@ static int update_pw_dialogs(subs_t* subs, unsigned int hash_code, subs_t** subs
     return 0;
 }
 
-static struct mi_root* mi_pres_expose(struct mi_root* cmd, void* param)
+static mi_response_t *mi_pres_expose_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node= NULL;
-	str event, *pres_fn;
 	pres_ev_t* ev;
+	str event;
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return init_mi_tree(404, "No parameters", 13);
-
-	event = node->value;
+	if (get_mi_string_param(params, "event", &event.s, &event.len) < 0)
+		return init_mi_param_error();
 	if (event.s == NULL || event.len == 0)
-		return init_mi_tree(404, "Invalid event", 13);
+		return init_mi_error(404, MI_SSTR("Invalid event"));
 
 	ev = contains_event(&event, NULL);
 	if (!ev)
-		return init_mi_tree(404, "unknown event", 13);
+		return init_mi_error(404, MI_SSTR("unknown event"));
 
-	if (node->next && node->next->value.s != NULL && node->next->value.len)
-		pres_fn = &node->next->value;
-	else
-		pres_fn = NULL;
-
-	if (pres_expose_evi(ev, pres_fn) < 0)
+	if (pres_expose_evi(ev, NULL) < 0)
 		return NULL;
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
+}
+
+static mi_response_t *mi_pres_expose_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str event, pres_fn;
+	pres_ev_t* ev;
+
+	if (get_mi_string_param(params, "event", &event.s, &event.len) < 0)
+		return init_mi_param_error();
+	if (event.s == NULL || event.len == 0)
+		return init_mi_error(404, MI_SSTR("Invalid event"));
+
+	ev = contains_event(&event, NULL);
+	if (!ev)
+		return init_mi_error(404, MI_SSTR("unknown event"));
+
+	if (get_mi_string_param(params, "filter", &pres_fn.s, &pres_fn.len) < 0)
+		return init_mi_param_error();
+
+	if (pres_expose_evi(ev, &pres_fn) < 0)
+		return NULL;
+
+	return init_mi_result_ok();
 }
