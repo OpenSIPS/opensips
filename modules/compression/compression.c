@@ -153,10 +153,6 @@ static param_export_t mod_params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[]= {
-	{0, 0, 0, 0, 0, 0}
-};
-
 static cmd_export_t cmds[]={
 	{"mc_compact",	  (cmd_function)mc_compact_no_args, 0, NULL,
 				0,
@@ -183,7 +179,7 @@ struct module_exports exports= {
 	0,				/* exported async functions */
 	mod_params,		/* param exports */
 	0,			/* exported statistics */
-	mi_cmds,		/* exported MI functions */
+	0,			/* exported MI functions */
 	0,			/* exported pseudo-variables */
 	0,			/* exported transformations */
 	0,			/* additional processes */
