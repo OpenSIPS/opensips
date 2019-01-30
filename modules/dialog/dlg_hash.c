@@ -1334,7 +1334,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 
 		/* print external context info */
 		run_dlg_callbacks( DLGCB_MI_CONTEXT, dlg, NULL,
-			DLG_DIR_NONE, (void *)dialog_obj, 0);
+			DLG_DIR_NONE, (void *)context_obj, 0);
 	}
 
 	return 0;
