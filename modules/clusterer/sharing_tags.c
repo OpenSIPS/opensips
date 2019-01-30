@@ -346,16 +346,10 @@ static int shtag_send_active_info(int c_id, str *tag_name, int node_id)
 	if (bin_push_str(&packet, tag_name) < 0)
 		return CLUSTERER_SEND_ERR;
 
-	if (node_id) {
-		if (cl_send_to(&packet, c_id, node_id) != CLUSTERER_SEND_SUCCES) {
-			bin_free_packet(&packet);
-			return CLUSTERER_SEND_ERR;
-		}
-	} else
-		if (cl_send_all(&packet, c_id) != CLUSTERER_SEND_SUCCES) {
-			bin_free_packet(&packet);
-			return -1;
-		}
+	if (cl_send_to(&packet, c_id, node_id) != CLUSTERER_SEND_SUCCES) {
+		bin_free_packet(&packet);
+		return CLUSTERER_SEND_ERR;
+	}
 
 	bin_free_packet(&packet);
 
@@ -368,6 +362,9 @@ int shtag_activate(str *tag_name, int cluster_id)
 	struct sharing_tag *tag;
 	int lock_old_flag;
 	int ret, old_state;
+	struct n_send_info *ni;
+	node_info_t *node;
+	cluster_info_t *cl;
 
 	lock_start_sw_read(shtags_lock);
 	tag = __shtag_get_safe( tag_name, cluster_id);
@@ -378,19 +375,54 @@ int shtag_activate(str *tag_name, int cluster_id)
 		lock_switch_read(shtags_lock, lock_old_flag);
 	}
 	ret = (tag==NULL)? -1 : tag->state ;
-	lock_stop_sw_read(shtags_lock);
 
 	/* do we have a transition from BACKUP to ACTIVE? */
 	if (ret==SHTAG_STATE_ACTIVE && old_state!=SHTAG_STATE_ACTIVE) {
 
+		cl = get_cluster_by_id(cluster_id);
+		if (!cl) {
+			LM_ERR("Bad cluster id: %d\n", cluster_id);
+			lock_stop_sw_read(shtags_lock);
+			return ret;
+		}
+
 		/* inform the other nodes that we are active now */
-		if (shtag_send_active_info(cluster_id, tag_name, 0) < 0)
-		LM_ERR("Failed to broadcast message about tag [%.*s/%d] "
-			"going active\n", tag_name->len, tag_name->s, cluster_id);
+		for (node = cl->node_list; node; node = node->next) {
+			if (tag->send_active_msg)
+				for (ni = tag->active_msgs_sent;
+					ni && ni->node_id != node->node_id; ni = ni->next) ;
+			if (!tag->send_active_msg || !ni) {
+				if (shtag_send_active_info(cluster_id,&tag->name,node->node_id)<0){
+					LM_ERR("Failed to send message about tag [%.*s/%d] "
+						"going active to node: %d\n", tag_name->len, tag_name->s,
+						cluster_id, node->node_id);
+
+					lock_switch_write(shtags_lock, lock_old_flag);
+					tag->send_active_msg = 1;
+					lock_switch_read(shtags_lock, lock_old_flag);
+
+					continue;
+				}
+				ni = shm_malloc(sizeof *ni);
+				if (!ni) {
+					LM_ERR("No more shm memory!\n");
+					lock_stop_sw_read(shtags_lock);
+					return ret;
+				}
+				ni->node_id = node->node_id;
+				ni->next = tag->active_msgs_sent;
+				lock_switch_write(shtags_lock, lock_old_flag);
+				tag->active_msgs_sent = ni;
+				lock_switch_read(shtags_lock, lock_old_flag);
+			}
+		}
+
+		lock_stop_sw_read(shtags_lock);
 
 		/* run the callbacks */
 		shtag_run_callbacks( tag_name, SHTAG_STATE_ACTIVE, cluster_id);
-	}
+	} else
+		lock_stop_sw_read(shtags_lock);
 
 	return ret;
 }
