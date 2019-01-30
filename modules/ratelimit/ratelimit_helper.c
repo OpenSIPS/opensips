@@ -631,11 +631,11 @@ int rl_stats(mi_item_t *resp_obj, str * value)
 		/* iterate through each map */
 		pipe_arr = add_mi_array(resp_obj, MI_SSTR("Pipes"));
 		if (!pipe_arr)
-			goto error;
+			return -1;
 		for (i = 0; i < rl_htable.size; i++) {
 			pipe_item = add_mi_object(pipe_arr, NULL, 0);
 			if (!pipe_item)
-				goto error;
+				return -1;
 			RL_GET_LOCK(i);
 			if (map_for_each(rl_htable.maps[i], rl_map_print, pipe_item)) {
 				LM_ERR("cannot print values\n");
