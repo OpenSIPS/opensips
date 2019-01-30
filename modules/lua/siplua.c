@@ -72,6 +72,15 @@ static mi_export_t mi_cmds[] = {
   { 0, 0, 0, 0, 0, 0 }
 };
 
+static mi_export_t mi_cmds[] = {
+  { "watch", 0,0,0, {
+    {siplua_mi_watch, {0}},
+    {siplua_mi_watch_2, {"action", "extension", 0}},
+    {EMPTY_MI_RECIPE}}
+  },
+  {EMPTY_MI_EXPORT}
+};
+
 /*
  * Module interface
  */
