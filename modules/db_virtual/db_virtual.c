@@ -563,9 +563,9 @@ mi_response_t *db_get_info(const mi_params_t *params,
 
             if (add_mi_number(set_item, MI_SSTR("can"), can_use) < 0)
                 goto error;
-            if (add_mi_number(set_item, MI_SSTR("may"), can_use) < 0)
+            if (add_mi_number(set_item, MI_SSTR("may"), may_use) < 0)
                 goto error;
-            if (add_mi_number(set_item, MI_SSTR("r_rec"), can_use) < 0)
+            if (add_mi_number(set_item, MI_SSTR("r_rec"), recon) < 0)
                 goto error;
         }
     }
