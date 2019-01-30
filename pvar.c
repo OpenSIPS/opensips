@@ -2625,8 +2625,8 @@ int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
 	{
 		memset(&act, 0, sizeof(act));
 		act.type = SET_USER_T;
-		act.elem[0].type = STRING_ST;
-		act.elem[0].u.string = "";
+		act.elem[0].type = STR_ST;
+		act.elem[0].u.s = str_empty;
 		if (do_action(&act, msg)<0)
 		{
 			LM_ERR("do action failed)\n");
