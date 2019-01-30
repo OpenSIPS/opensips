@@ -34,39 +34,22 @@
  */
 void sst_dialog_mi_context_CB(struct dlg_cell* did, int type, struct dlg_cb_params * params)
 {
-	struct mi_node* parent_node = (struct mi_node*)(params->dlg_data);
-	struct mi_node* node;
-	struct mi_attr* attr;
 	sst_info_t* sst_info = (sst_info_t*)*(params->param);
-	char* p;
-	int len;
+	mi_item_t *context_item = (mi_item_t *)(params->dlg_data);
+	mi_item_t *sst_item;
 
-	node = add_mi_node_child(parent_node, 0, "sst", 3, NULL, 0);
-	if (node==NULL) {
-		LM_ERR("oom\n");
+	sst_item = add_mi_object(context_item, MI_SSTR("sst"));
+	if (!sst_item)
 		return;
-	}
 
-	p = int2str((unsigned long)(sst_info->requester), &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "requester_flags", 15, p, len);
-	if(attr == NULL) {
-		LM_ERR("oom requester_flags\n");
-		return;
-	}
+	if (add_mi_number(sst_item, MI_SSTR("requester_flags"),
+		sst_info->requester) < 0)
 
-	p = int2str((unsigned long)(sst_info->supported), &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "supported_flags", 15, p, len);
-	if(attr == NULL) {
-		LM_ERR("oom supported_flags\n");
-		return;
-	}
+	if (add_mi_number(sst_item, MI_SSTR("supported_flags"),
+		sst_info->supported) < 0)
 
-	p = int2str((unsigned long)(sst_info->interval), &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "interval", 8, p, len);
-	if(attr == NULL) {
-		LM_ERR("oom interval\n");
-		return;
-	}
+	if (add_mi_number(sst_item, MI_SSTR("interval"),
+		sst_info->interval) < 0)
 
 	return;
 }
