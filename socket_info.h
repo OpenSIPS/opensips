@@ -62,14 +62,6 @@ struct socket_info {
 #define PROTO_NAME_MAX_SIZE  8 /* CHANGEME if you define a bigger protocol name
 						   * currently hep_tcp - biggest proto */
 
-int add_listen_iface(char* name, unsigned short port, unsigned short proto,
-							char *adv_name, unsigned short adv_port,
-							unsigned short children, enum si_flags flags);
-struct socket_info *
-new_sock_info(char* name, unsigned short port, unsigned short proto,
-							char *adv_name, unsigned short adv_port,
-							unsigned short children, enum si_flags flags);
-
 int new_sock2list(char* name, unsigned short port, unsigned short proto,
 		char *adv_name, unsigned short adv_port, unsigned short children,
 		enum si_flags flags, struct socket_info** list);

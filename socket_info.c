@@ -109,7 +109,7 @@
 
 
 /* another helper function, it just creates a socket_info struct */
-struct socket_info* new_sock_info(	char* name,
+static struct socket_info* new_sock_info(	char* name,
 								unsigned short port, unsigned short proto,
 								char *adv_name, unsigned short adv_port,
 								unsigned short children,enum si_flags flags)
@@ -341,37 +341,6 @@ int new_sock2list(char* name, unsigned short port, unsigned short proto,
 		goto error;
 	}
 	sock_listadd(list, si);
-	return 0;
-error:
-	return -1;
-}
-
-
-
-/* adds a sock_info structure to the corresponding proto list
- * return  0 on success, -1 on error */
-int add_listen_iface(char* name, unsigned short port, unsigned short proto,
-			char *adv_name, unsigned short adv_port, unsigned short children,
-			enum si_flags flags)
-{
-	struct socket_info** list;
-	unsigned short c_proto;
-
-	c_proto=(proto)?proto:PROTO_UDP;
-	do{
-		list=get_sock_info_list(c_proto);
-		if (list==0){
-			LM_ERR("get_sock_info_list failed\n");
-			goto error;
-		}
-		if (port==0) /* use default port */
-			port=protos[c_proto].default_port;
-		if (new_sock2list(name, port, c_proto, adv_name, adv_port, children,
-		flags, list)<0){
-			LM_ERR("new_sock2list failed\n");
-			goto error;
-		}
-	}while( (proto==0) && (c_proto=next_proto(c_proto)));
 	return 0;
 error:
 	return -1;
