@@ -40,6 +40,7 @@
 struct socket_info {
 	int socket;
 	str name; /*!< name - eg.: foo.bar or 10.0.0.1 */
+	str tag;  /* the tag of the interface, use only in OpenSIPS ecosystem */
 	struct ip_addr address; /*!< ip address */
 	str address_str;        /*!< ip address converted to string -- optimization*/
 	unsigned short port_no;  /*!< port number */
@@ -49,6 +50,7 @@ struct socket_info {
 	int proto; /*!< tcp or udp*/
 	str sock_str;
 	str adv_sock_str;
+	str tag_sock_str;
 	str adv_name_str; /* Advertised name of this interface */
 	str adv_port_str; /* Advertised port of this interface */
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
@@ -58,13 +60,23 @@ struct socket_info {
 	struct socket_info* prev;
 };
 
+
+#define get_socket_real_name(_s) \
+	(&(_s)->sock_str)
+
+#define get_socket_sip_name(_s) \
+	((_s)->adv_sock_str.len?&(_s)->adv_sock_str:&(_s)->sock_str)
+
+#define get_socket_internal_name(_s) \
+	((_s)->tag_sock_str.len?&(_s)->tag_sock_str:&(_s)->sock_str)
+
 #define NUM_IP_OCTETS	4
 #define PROTO_NAME_MAX_SIZE  8 /* CHANGEME if you define a bigger protocol name
 						   * currently hep_tcp - biggest proto */
 
 int new_sock2list(char* name, unsigned short port, unsigned short proto,
-		char *adv_name, unsigned short adv_port, unsigned short children,
-		enum si_flags flags, struct socket_info** list);
+		char *adv_name, unsigned short adv_port, char *tag,
+		unsigned short children, enum si_flags flags,struct socket_info** list);
 
 int fix_socket_list(struct socket_info **);
 
@@ -114,8 +126,15 @@ int get_total_bytes_waiting(int only_proto);
 
 void print_aliases();
 
-struct socket_info* grep_sock_info(str* host, unsigned short port,
-										unsigned short proto);
+#define grep_sock_info(_host, _port, _proto) \
+	grep_sock_info_ext(_host, _port, _proto, 0)
+
+#define grep_internal_sock_info(_host, _port, _proto) \
+	grep_sock_info_ext(_host, _port, _proto, 1)
+
+struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
+										unsigned short proto, int check_tag);
+
 struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 												unsigned short proto);
 
@@ -379,13 +398,12 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'c';
 			*(p++) = 'p';
 			break;
-    case PROTO_SMPP:
-      *(p++) = 's';
-      *(p++) = 'm';
-      *(p++) = 'p';
-      *(p++) = 'p';
-      break;
-
+		case PROTO_SMPP:
+			*(p++) = 's';
+			*(p++) = 'm';
+			*(p++) = 'p';
+			*(p++) = 'p';
+			break;
 		default:
 			LM_CRIT("unsupported proto %d\n", proto);
 			return 0;
@@ -411,17 +429,26 @@ static inline char *proto2a(int proto)
 
 
 #define MAX_SOCKET_STR ( 4 + 1 + IP_ADDR_MAX_STR_SIZE+1+INT2STR_MAX_LEN+1)
-#define sock_str_len(_sock) ( 3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
-		(_sock)->address_str.len + 1 + (_sock)->port_no_str.len)
+#define sock_str_len(_sock,_type) ( 3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
+		((_type==1)?(_sock)->address_str.len:\
+			((_type==2)?(_sock)->adv_name_str.len:(_sock)->tag.len)) + \
+		1 + (_sock)->port_no_str.len)
 
-static inline char* socket2str(struct socket_info *sock, char *s, int* len, int adv)
+/* builds the full name of the socket ( proto:name[:port] ), using different
+   naming for it, depending on the "type" parameter :
+      0 - real name
+      1 - advertised name
+      2 - tagged name
+*/
+static inline char* socket2str(struct socket_info *sock, char *s, int* len,
+															int type)
 {
 	static char buf[MAX_SOCKET_STR];
 	char *p,*p1;
 
 	if (s) {
 		/* buffer provided -> check lenght */
-		if ( sock_str_len(sock) > *len ) {
+		if ( sock_str_len(sock,type) > *len ) {
 			LM_ERR("buffer too short\n");
 			return 0;
 		}
@@ -434,19 +461,29 @@ static inline char* socket2str(struct socket_info *sock, char *s, int* len, int 
 	if (p==NULL) return 0;
 
 	*(p++) = ':';
- 	if(adv) {
- 		memcpy( p, sock->adv_name_str.s, sock->adv_name_str.len);
- 		p += sock->adv_name_str.len;
- 		*(p++) = ':';
- 		memcpy( p, sock->adv_port_str.s, sock->adv_port_str.len);
- 		p += sock->adv_port_str.len;
- 	} else {
- 		memcpy( p, sock->address_str.s, sock->address_str.len);
- 		p += sock->address_str.len;
- 		*(p++) = ':';
- 		memcpy( p, sock->port_no_str.s, sock->port_no_str.len);
- 		p += sock->port_no_str.len;
- 	}
+	switch (type) {
+	case 0:
+		memcpy( p, sock->address_str.s, sock->address_str.len);
+		p += sock->address_str.len;
+		*(p++) = ':';
+		memcpy( p, sock->port_no_str.s, sock->port_no_str.len);
+		p += sock->port_no_str.len;
+		break;
+	case 1:
+		memcpy( p, sock->adv_name_str.s, sock->adv_name_str.len);
+		p += sock->adv_name_str.len;
+		*(p++) = ':';
+		memcpy( p, sock->adv_port_str.s, sock->adv_port_str.len);
+		p += sock->adv_port_str.len;
+		break;
+	case 2:
+		memcpy( p, sock->tag.s, sock->tag.len);
+		p += sock->tag.len;
+		break;
+	default:
+		LM_BUG("unsupported type %d in printing socket name <%.*s>\n",
+			type, sock->name.len, sock->name.s);
+	}
 	*len = (int)(long)(p-p1);
 	LM_DBG("<%.*s>\n",*len,p1);
 	return p1;

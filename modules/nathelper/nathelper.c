@@ -541,7 +541,7 @@ mod_init(void)
 		if (force_socket_str) {
 			socket_str.s=force_socket_str;
 			socket_str.len=strlen(socket_str.s);
-			force_socket=grep_sock_info(&socket_str,0,0);
+			force_socket=grep_internal_sock_info(&socket_str,0,0);
 		}
 
 		/* create raw socket? */

@@ -109,6 +109,7 @@ struct dest_info {
 struct socket_id {
 	char* name;
 	char* adv_name;
+	char* tag;
 	int adv_port;
 	int proto;
 	int port;

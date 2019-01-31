@@ -144,7 +144,6 @@ action_elem_t *a_tmp;
 static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
-static struct socket_id* set_listen_id_tag(struct socket_id *, char *);
 static struct multi_str *new_string(char *s);
 static int parse_ipnet(char *in, int len, struct net **ipnet);
 
@@ -2728,7 +2727,7 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 		pkg_free(param->socket);
 	}
 	if (param->tag)
-		set_listen_id_tag(s, param->tag);
+		s->tag = param->tag;
 	pkg_free(param);
 }
 
@@ -2761,12 +2760,6 @@ static struct socket_id* set_listen_id_adv(struct socket_id* sock,
 {
 	sock->adv_name=adv_name;
 	sock->adv_port=adv_port;
-	return sock;
-}
-
-static struct socket_id* set_listen_id_tag(struct socket_id *sock,
-											char *tag_name)
-{
 	return sock;
 }
 

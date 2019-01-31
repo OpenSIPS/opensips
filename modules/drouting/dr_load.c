@@ -357,7 +357,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 							str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
 					sock = NULL;
 				} else {
-					sock = grep_sock_info( &host, port, proto);
+					sock = grep_internal_sock_info( &host, port, proto);
 					if (sock == NULL) {
 						LM_ERR("GW <%s>(%s): socket <%.*s> is not local to "
 								"OpenSIPS (we must listen on it) -> ignoring socket\n",
