@@ -739,7 +739,7 @@ xlog("translate to var $var(y) partition $var(partition)")
 		<para>Parameters: <emphasis>1</emphasis></para>
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>table_name</emphasis> - Partition to be reloaded.
+				<para><emphasis>table_name</emphasis> (optional) - Partition to be reloaded.
 				If no table is specified, the table specified in the "partition"
 				parameter (default "default") will be reloaded.</para>
 				</listitem>
@@ -764,7 +764,7 @@ xlog("translate to var $var(y) partition $var(partition)")
         <para>Parameters: <emphasis>2</emphasis></para>
         	<itemizedlist>
                 <listitem>
-                <para><emphasis>[Partition Name:]Dialplan ID</emphasis> - The dpid of the rules used to match the input string. The table name can be ommited. The default table is dialplan.</para>
+                <para><emphasis>dpid</emphasis> - Given in the format "[Partition Name:]Dialplan ID" this parameter represents the dpid of the rules used to match the input string. The table name can be ommited. The default table is dialplan.</para>
                 </listitem>
                 <listitem>
                 <para><emphasis>Input String</emphasis></para>
@@ -789,7 +789,7 @@ xlog("translate to var $var(y) partition $var(partition)")
         <para>Parameters: <emphasis>2</emphasis></para>
         	<itemizedlist>
                 <listitem>
-                <para><emphasis>Partition Name</emphasis> - The partition name.
+                <para><emphasis>partition</emphasis> (optional) - The partition name.
                 If no partition is specified, all known partitions will be listed.</para>
                 </listitem>
             </itemizedlist>

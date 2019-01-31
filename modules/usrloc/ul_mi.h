@@ -41,18 +41,32 @@
 #define MI_USRLOC_CL_SYNC      "ul_cluster_sync"
 
 
-struct mi_root* mi_usrloc_rm_aor(struct mi_root *cmd, void *param);
+mi_response_t *mi_usrloc_rm_aor(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_usrloc_rm_contact(struct mi_root *cmd, void *param);
+mi_response_t *mi_usrloc_rm_contact(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param);
+mi_response_t *w_mi_usrloc_dump(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_usrloc_flush(struct mi_root *cmd, void *param);
+mi_response_t *mi_usrloc_flush(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param);
+mi_response_t *mi_usrloc_add(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param);
-struct mi_root* mi_usrloc_sync(struct mi_root *cmd, void *param);
-struct mi_root* mi_usrloc_cl_sync(struct mi_root *cmd, void *param);
+mi_response_t *mi_usrloc_show_contact(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_usrloc_sync_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_usrloc_sync_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_usrloc_cl_sync(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #endif

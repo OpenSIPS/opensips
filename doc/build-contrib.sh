@@ -584,8 +584,8 @@ mod_renames=(
   [auth_aaa]=auth_radius
   [cachedb_local]=localcache
   [uac_registrant]=registrant
-  #[mi_http]=mi_json:1540473075:  # old_module:new_module_since:old_module_until
-  #[mi_html]=mi_http::1540473075
+  [mi_html]=mi_http
+  [mi_http]=mi_json
 )
 
 mk_git_handle() {

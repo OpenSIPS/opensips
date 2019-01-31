@@ -86,8 +86,11 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ MI_BDB_RELOAD, 0, mi_bdb_reload, 0, 0, 0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ MI_BDB_RELOAD, 0, 0, 0, {
+		{mi_bdb_reload, {"table_path", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 struct module_exports exports = {

@@ -55,6 +55,8 @@
 #include "../lock_ops.h" /* we don't include locking.h on purpose */
 #include "common.h"
 
+#include "../mi/mi.h"
+
 #ifdef SHM_EXTRA_STATS
 #include "module_info.h"
 #include "mem_stats.h"
@@ -630,7 +632,8 @@ inline static void shm_info(struct mem_info* mi)
 /*
  * performs a full shared memory pool scan for any corruptions or inconsistencies
  */
-struct mi_root *mi_shm_check(struct mi_root *cmd, void *param);
+mi_response_t *mi_shm_check(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #ifdef STATISTICS
 extern stat_export_t shm_stats[];

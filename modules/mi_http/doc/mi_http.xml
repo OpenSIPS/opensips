@@ -2,7 +2,6 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
-
 <!ENTITY admin SYSTEM "mi_http_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
@@ -17,7 +16,7 @@
     <bookinfo>
 	<title>mi_http Module</title>
 	<productname class="trade">&osipsname;</productname>
-  </bookinfo>
+	</bookinfo>
     <toc></toc>
     
     &admin;
@@ -25,7 +24,7 @@
 	&contrib;
 
 	&docCopyrights;
-	<para>&copyright; 2011-2013 <ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink></para>
+	<para>&copyright; 2013 <ulink url="http://shimaore.net">shimaore.net</ulink></para>
     
 </book>
 

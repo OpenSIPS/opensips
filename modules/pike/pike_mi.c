@@ -40,11 +40,11 @@ static struct 		 ip_node *ip_stack[MAX_IP_LEN];
 extern int    		 pike_log_level;
 
 
-static inline void print_ip_stack( int level, struct mi_node *node)
+static inline int print_ip_stack( int level, mi_item_t *ips_arr)
 {
 	if (level==IPv6_LEN) {
 		/* IPv6 */
-		addf_mi_node_child( node, 0, 0, 0,
+		if (add_mi_string_fmt(ips_arr, 0, 0,
 			"%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x:%x%x",
 			ip_stack[0]->byte,  ip_stack[1]->byte,
 			ip_stack[2]->byte,  ip_stack[3]->byte,
@@ -53,59 +53,66 @@ static inline void print_ip_stack( int level, struct mi_node *node)
 			ip_stack[8]->byte,  ip_stack[9]->byte,
 			ip_stack[10]->byte, ip_stack[11]->byte,
 			ip_stack[12]->byte, ip_stack[13]->byte,
-			ip_stack[14]->byte, ip_stack[15]->byte );
+			ip_stack[14]->byte, ip_stack[15]->byte) < 0)
+			return -1;
 	} else if (level==IPv4_LEN) {
 		/* IPv4 */
-		addf_mi_node_child( node, 0, 0, 0, "%d.%d.%d.%d",
+		if (add_mi_string_fmt(ips_arr, 0, 0, "%d.%d.%d.%d",
 			ip_stack[0]->byte,
 			ip_stack[1]->byte,
 			ip_stack[2]->byte,
-			ip_stack[3]->byte );
+			ip_stack[3]->byte) < 0)
+			return -1;
 	} else {
 		LM_CRIT("leaf node at depth %d!!!\n", level);
-		return;
+		return -1;
 	}
+
+	return 0;
 }
 
 
-static void print_red_ips( struct ip_node *ip, int level, struct mi_node *node)
+static int print_red_ips( struct ip_node *ip, int level, mi_item_t *ips_arr)
 {
 	struct ip_node *foo;
 
 	if (level==MAX_IP_LEN) {
 		LM_CRIT("tree deeper than %d!!!\n", MAX_IP_LEN);
-		return;
+		return -1;
 	}
 	ip_stack[level] = ip;
 
 	/* is the node marked red? */
 	if ( ip->flags&NODE_ISRED_FLAG)
-		print_ip_stack(level+1,node);
+		if (print_ip_stack(level+1,ips_arr) < 0)
+			return -1;
 
 	/* go through all kids */
 	foo = ip->kids;
 	while(foo){
-		print_red_ips( foo, level+1, node);
+		if (print_red_ips( foo, level+1, ips_arr) < 0)
+			return -1;
 		foo = foo->next;
 	}
 
+	return 0;
 }
 
-struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param)
+mi_response_t *mi_pike_rm(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-    struct mi_node   *mn;
     struct ip_node   *node;
     struct ip_node   *kid;
     struct ip_addr   *ip;
     int byte_pos;
+    str ip_param;
 
-    mn = cmd->node.kids;
-    if (mn==NULL)
-	return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+    if (get_mi_string_param(params, "ip", &ip_param.s, &ip_param.len) < 0)
+		return init_mi_param_error();
 
-    ip = str2ip(&mn->value);
+    ip = str2ip(&ip_param);
     if (ip==0)
-	return init_mi_tree( 500, "Bad IP", 6);
+	return init_mi_error(500, MI_SSTR("Bad IP"));
 
     node = 0;
     byte_pos = 0;
@@ -126,12 +133,12 @@ struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param)
 
     /* If all octets weren't matched, 404 */
     if (byte_pos!=ip->len) {
-	return init_mi_tree( 404, "Match not found", 15);
+	return init_mi_error(404, MI_SSTR("Match not found"));
     }
 
     /* If the node exists, check to see if it's really blocked */
     if (!(node->flags&NODE_ISRED_FLAG)) {
-	return init_mi_tree( 400, "IP not blocked", 14);
+	return init_mi_error(400, MI_SSTR("IP not blocked"));
     }
 
     /* reset the node block flag and counters */
@@ -145,7 +152,7 @@ struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param)
     LM_GEN1(pike_log_level,
 	    "PIKE - UNBLOCKing ip %s, node=%p\n",ip_addr2a(ip),node);
 
-    return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+    return init_mi_result_ok();
 }
 
 
@@ -153,16 +160,22 @@ struct mi_root* mi_pike_rm(struct mi_root *cmd, void *param)
   Syntax of "pike_list" :
     no nodes
 */
-struct mi_root* mi_pike_list(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_pike_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl_tree;
 	struct ip_node *ip;
 	int i;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *ips_arr;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+
+	ips_arr = add_mi_array(resp_obj, MI_SSTR("IPs"));
+	if (!ips_arr)
+		goto error;
 
 	for( i=0 ; i<MAX_IP_BRANCHES ; i++ ) {
 
@@ -172,12 +185,17 @@ struct mi_root* mi_pike_list(struct mi_root* cmd_tree, void* param)
 		lock_tree_branch(i);
 
 		if ( (ip=get_tree_branch(i))!=NULL )
-			print_red_ips( ip, 0, &rpl_tree->node );
+			if (print_red_ips(ip, 0, ips_arr) < 0)
+				goto error;
 
 		unlock_tree_branch(i);
 	}
 
-	return rpl_tree;
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
 }
 
 

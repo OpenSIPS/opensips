@@ -64,9 +64,17 @@ static int child_init(int rank);
 static int mi_child_init(void);
 static void mod_destroy();
 
-static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree,void *param);
-static struct mi_root * mi_translate(struct mi_root *cmd_tree, void *param);
-static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param);
+static mi_response_t *mi_reload_rules(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_reload_rules_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_translate(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_show_partition(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_show_partition_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
 static int dp_translate_f(struct sip_msg *m, char *id, char *out, char *attrs);
 static int dp_trans_fixup(void ** param, int param_no);
 static int dp_set_partition(modparam_t type, void* val);
@@ -97,10 +105,21 @@ static param_export_t mod_params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "dp_reload",  0, mi_reload_rules,   0,       0,  mi_child_init},
-	{ "dp_translate",  0, mi_translate,   0,       0,              0},
-	{ "dp_show_partition",  0, mi_show_partition,   0,       0,              0},
-	{ 0, 0, 0, 0, 0, 0}
+	{ "dp_reload", 0, 0, mi_child_init, {
+		{mi_reload_rules, {0}},
+		{mi_reload_rules_1, {"table_name", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dp_translate", 0, 0, 0, {
+		{mi_translate, {"dpid", "input", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dp_show_partition", 0, 0, mi_child_init, {
+		{mi_show_partition, {0}},
+		{mi_show_partition_1, {"partition", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static cmd_export_t cmds[]={
@@ -982,89 +1001,125 @@ static void db_get_url(const str* url){
 	free_db_id(id);
 }
 
-static struct mi_root * mi_show_partition(struct mi_root *cmd_tree, void *param)
+static mi_response_t *mi_show_partition(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node = NULL;
-	struct mi_root *rpl_tree = NULL;
-	struct mi_node* root= NULL;
-	struct mi_attr* attr;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *parts_arr, *part_item;
 	dp_connection_list_t *el;
 
-
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL) return NULL;
-
-	if (cmd_tree) node = cmd_tree->node.kids;
-	if (node == NULL) {
-		el = dp_get_connections();
-		root = &rpl_tree->node;
-		while (el) {
-			node = add_mi_node_child(root, 0, "Partition", 9, el->partition.s, el->partition.len);
-			if( node == NULL) goto error;
-			attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
-			if(attr == NULL) goto error;
-			db_get_url(&el->db_url);
-			if(database_url.len == 0) goto error;
-			attr = add_mi_attr(node, MI_DUP_VALUE, "db_url", 6, database_url.s, database_url.len);
-			if(attr == NULL) goto error;
-			el = el->next;
-		}
-	} else {
-		el = dp_get_connection(&node->value);
-		if (!el) goto error;
-		root = &rpl_tree->node;
-		node = add_mi_node_child(root, 0, "Partition", 9, el->partition.s, el->partition.len);
-		if( node == NULL) goto error;
-		attr = add_mi_attr(node, 0, "table", 5, el->table_name.s, el->table_name.len);
-		if(attr == NULL) goto error;
-		db_get_url(&el->db_url);
-		if(database_url.len == 0) goto error;
-		attr = add_mi_attr(node, MI_DUP_VALUE, "db_url", 6, database_url.s, database_url.len);
-		if(attr == NULL) goto error;
-	}
-
-	return rpl_tree;
-
-error:
-	if(rpl_tree) free_mi_tree(rpl_tree);
-	return NULL;
-}
-
-static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
-{
-	struct mi_node *node = NULL;
-	struct mi_root *rpl_tree = NULL;
-	dp_connection_list_t *el;
-
-
-	if (cmd_tree)
-		node = cmd_tree->node.kids;
-
-	if (node == NULL) {
-			/* Reload rules from all partitions */
-			if(dp_load_all_db() != 0){
-					LM_ERR("failed to reload database\n");
-					return 0;
-			}
-	} else if (node->value.s == NULL || node->value.len == 0) {
-			return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-	} else {
-			el = dp_get_connection(&node->value);
-			if (!el)
-					return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-			/* Reload rules from specified  partition */
-			LM_DBG("Reloading rules from table %.*s\n", node->value.len, node->value.s);
-			if(dp_load_db(el) != 0){
-					LM_ERR("failed to reload database data\n");
-					return 0;
-			}
-	}
-
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
 
-	return rpl_tree;
+	parts_arr = add_mi_array(resp_obj, MI_SSTR("Partitions"));
+	if (parts_arr)
+		goto error;
+
+	el = dp_get_connections();
+	while (el) {
+		part_item = add_mi_object(parts_arr, NULL, 0);
+		if (!part_item)
+			goto error;
+
+		if (add_mi_string(part_item, MI_SSTR("name"),
+			el->partition.s, el->partition.len) < 0)
+			goto error;
+
+		if (add_mi_string(resp_obj, MI_SSTR("Table"),
+				el->table_name.s, el->table_name.len) < 0)
+				goto error;
+
+		db_get_url(&el->db_url);
+		if(database_url.len == 0) goto error;
+
+		if (add_mi_string(resp_obj, MI_SSTR("db_url"),
+			database_url.s, database_url.len) < 0)
+			goto error;
+
+		el = el->next;
+	}
+
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *mi_show_partition_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	str part;
+	dp_connection_list_t *el;
+
+	if (get_mi_string_param(params, "partition", &part.s, &part.len) < 0)
+		return init_mi_param_error();
+
+	el = dp_get_connection(&part);
+	if (!el)
+		return 0;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_string(resp_obj, MI_SSTR("Partition"),
+		el->partition.s, el->partition.len) < 0)
+		goto error;
+
+	if (add_mi_string(resp_obj, MI_SSTR("Table"),
+		el->table_name.s, el->table_name.len) < 0)
+		goto error;
+
+	db_get_url(&el->db_url);
+	if(database_url.len == 0) goto error;
+
+	if (add_mi_string(resp_obj, MI_SSTR("db_url"),
+		database_url.s, database_url.len) < 0)
+		goto error;
+
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *mi_reload_rules(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	if(dp_load_all_db() != 0){
+			LM_ERR("failed to reload database\n");
+			return 0;
+	}
+
+	return init_mi_result_ok();
+}
+
+static mi_response_t *mi_reload_rules_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	dp_connection_list_t *el;
+	str table;
+
+	if (get_mi_string_param(params, "table_name", &table.s, &table.len) < 0)
+		return init_mi_param_error();
+
+	el = dp_get_connection(&table);
+	if (!el)
+			return init_mi_error( 400, MI_SSTR("Bad parameter value"));
+	/* Reload rules from specified  partition */
+	LM_DBG("Reloading rules from table %.*s\n", table.len, table.s);
+	if(dp_load_db(el) != 0){
+			LM_ERR("failed to reload database data\n");
+			return 0;
+	}
+
+	return init_mi_result_ok();
 }
 
 /*
@@ -1073,10 +1128,11 @@ static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
  *			<input>
  *		* */
 
-static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
+static mi_response_t *mi_translate(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl= NULL;
-	struct mi_node* root, *node;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	char *p;
 	dpl_id_p idp;
 	str dpid_str, partition_str;
@@ -1086,22 +1142,19 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	str output= {0, 0};
 	dp_connection_list_p connection = NULL;
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "dpid", &dpid_str.s, &dpid_str.len) < 0)
+		return init_mi_param_error();
 
-	/* Get the id parameter */
-	dpid_str = node->value;
 	if(dpid_str.s == NULL || dpid_str.len== 0)	{
 		LM_ERR( "empty idp parameter\n");
-		return init_mi_tree(404, "Empty id parameter", 18);
+		return init_mi_error(404, MI_SSTR("Empty id parameter"));
 	}
 
 	p = parse_dp_command(dpid_str.s, dpid_str.len, &partition_str);
 
 	if (p == NULL) {
 		LM_ERR("Invalid dp command\n");
-		return init_mi_tree(404, "Invalid dp command", 18);
+		return init_mi_error(404, MI_SSTR("Invalid dp command"));
 	}
 
 	if (partition_str.s == NULL || partition_str.len == 0) {
@@ -1116,24 +1169,20 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 
 	if (!connection) {
 		LM_ERR("Unable to get connection\n");
-		return init_mi_tree(400, "Wrong db connection parameter", 24);
+		return init_mi_error(400, MI_SSTR("Wrong db connection parameter"));
 	}
 
 	if(str2sint(&dpid_str, &dpid) != 0)	{
 		LM_ERR("Wrong id parameter - should be an integer\n");
-		return init_mi_tree(404, "Wrong id parameter", 18);
+		return init_mi_error(404, MI_SSTR("Wrong id parameter"));
 	}
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
 
-	if(node->next!= NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "input", &input.s, &input.len) < 0)
+		return init_mi_param_error();
 
-	input = node->value;
 	if(input.s == NULL || input.len== 0)	{
 		LM_ERR( "empty input parameter\n");
-		return init_mi_tree(404, "Empty input parameter", 21);
+		return init_mi_error(404, MI_SSTR("Empty input parameter"));
 	}
 
 	/* ref the data for reading */
@@ -1142,14 +1191,14 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	if ((idp = select_dpid(connection, dpid, connection->crt_index)) ==0 ){
 		LM_ERR("no information available for dpid %i\n", dpid);
 		lock_stop_read( connection->ref_lock );
-		return init_mi_tree(404, "No information available for dpid", 33);
+		return init_mi_error(404, MI_SSTR("No information available for dpid"));
 	}
 
 	if (translate(NULL, input, &output, idp, &attrs)!=0){
 		LM_DBG("could not translate %.*s with dpid %i\n",
 			input.len, input.s, idp->dp_id);
 		lock_stop_read( connection->ref_lock );
-		return init_mi_tree(404, "No translation", 14);
+		return init_mi_error(404, MI_SSTR("No translation"));
 	}
 	/* we are done reading -> unref the data */
 	lock_stop_read( connection->ref_lock );
@@ -1157,25 +1206,20 @@ static struct mi_root * mi_translate(struct mi_root *cmd, void *param)
 	LM_DBG("input %.*s with dpid %i => output %.*s\n",
 			input.len, input.s, idp->dp_id, output.len, output.s);
 
-	rpl = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_string(resp_obj, MI_SSTR("Output"), output.s, output.len) < 0)
+		goto error;
+	
+	if (add_mi_string(resp_obj, MI_SSTR("ATTRIBUTES"), attrs.s, attrs.len) < 0)
 		goto error;
 
-	root= &rpl->node;
-
-	node = add_mi_node_child(root, 0, "Output", 6, output.s, output.len );
-	if( node == NULL)
-		goto error;
-
-	node = add_mi_node_child(root, 0, "ATTRIBUTES", 10, attrs.s, attrs.len);
-	if( node == NULL)
-		goto error;
-
-	return rpl;
+	return resp;
 
 error:
-	if(rpl)
-		free_mi_tree(rpl);
+	free_mi_response(resp);
 	return 0;
 }
 

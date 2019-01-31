@@ -62,7 +62,8 @@ int dlg_replicated_delete(bin_packet_t *packet);
 void receive_dlg_repl(bin_packet_t *packet);
 void rcv_cluster_event(enum clusterer_event ev, int node_id);
 
-struct mi_root *mi_sync_cl_dlg(struct mi_root *cmd, void *param);
+mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 int get_shtag_state(struct dlg_cell *dlg);
 int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name);

@@ -2,7 +2,8 @@
 
 include ../../Makefile.defs
 auto_gen=
-NAME=mi_json.so
+NAME=mi_html.so
 LIBS=
 
 include ../../Makefile.modules
+

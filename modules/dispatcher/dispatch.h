@@ -209,7 +209,7 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_set_state_repl(int group, str *address, int state, int type,
 		ds_partition_t *partition, int do_repl);
 int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
-int ds_print_mi_list(struct mi_node* rpl, ds_partition_t *partition, int flags);
+int ds_print_mi_list(mi_item_t *part_item, ds_partition_t *partition, int full);
 int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 				ds_partition_t *partition);
 

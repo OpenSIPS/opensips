@@ -104,40 +104,41 @@ modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
 			</listitem>
 			<listitem>
 				<para>
-					<emphasis>event package</emphasis>
+					<emphasis>event_package</emphasis>
 					- Event package that is
 		target of published information (e.g. presence).
 				    </para> 
 			</listitem>
 			<listitem>
 				<para>
-					<emphasis>content type</emphasis>
+					<emphasis>content_type</emphasis> (optional)
 					- Content type of published
-		information (e.g. application/pidf+xml) or . if no
-		information is enclosed.
+		information (e.g. application/pidf+xml). If this parameter
+		is provided, the <emphasis>body</emphasis> parameter is also required.
 			       </para> 
 			</listitem>
 			<listitem>
 				<para>
-					<emphasis>ETag</emphasis>
+					<emphasis>etag</emphasis> (optional)
 					- ETag that publish should
-		match or . if no ETag is given.
+		match.
 		                </para> 
 			</listitem>
 			<listitem>
 				<para>
-					<emphasis>extra_headers</emphasis>
+					<emphasis>extra_headers</emphasis> (optional)
 					- Extra headers added to PUBLISH
-		request or . if no extra headers.
+		request.
 		                </para> 
 			</listitem>
 			<listitem>
 				<para>
-					<emphasis>body</emphasis>
+					<emphasis>body</emphasis> (optioanl)
 					- The body of the publish
 		request containing published information or missing if
 		no published information.
-		It has to be a single line for FIFO transport.
+		It has to be a single line for FIFO transport. If this parameter
+		is provided, the <emphasis>content_type</emphasis> parameter is also required.
 				 </para>
 			</listitem>
 			</itemizedlist>

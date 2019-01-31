@@ -141,6 +141,13 @@ int slinkedl_traverse(slinkedl_list_t *list,
 		slinkedl_run_data_f run_data, void *data, void *r_data);
 
 /**
+ * Retrieve the first element in the list.
+ *
+ * @param list The list to retrieve the first element from.
+ */
+void *slinkedl_peek(slinkedl_list_t *list);
+
+/**
  * Destroy the list.
  * Any element in the list will be silently destroyed.
  * If you want to perform some actions on list elemnts before destroying it,

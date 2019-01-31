@@ -35,12 +35,36 @@
 #define MI_TM_HASH     "t_hash"
 #define MI_TM_REPLY    "t_reply"
 
-struct mi_root* mi_tm_uac_dlg(struct mi_root* cmd_tree, void* param);
+mi_response_t *mi_tm_uac_dlg_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_uac_dlg_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_uac_dlg_3(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_uac_dlg_4(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_uac_dlg_5(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_uac_dlg_6(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_uac_dlg_7(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_uac_dlg_8(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_tm_cancel(struct mi_root* cmd_tree, void* param);
+mi_response_t *mi_tm_cancel(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_tm_hash(struct mi_root* cmd_tree, void* param);
+mi_response_t *mi_tm_hash(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root* mi_tm_reply(struct mi_root* cmd_tree, void* param);
+mi_response_t *mi_tm_reply_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_reply_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_reply_3(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_tm_reply_4(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #endif

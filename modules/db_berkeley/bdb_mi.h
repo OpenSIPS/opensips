@@ -28,7 +28,8 @@
 
 #define MI_BDB_RELOAD "bdb_reload"
 
-struct mi_root* mi_bdb_reload(struct mi_root *cmd, void *param);
+mi_response_t *mi_bdb_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 
 #endif

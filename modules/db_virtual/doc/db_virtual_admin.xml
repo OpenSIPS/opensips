@@ -282,7 +282,7 @@ modparam("db_virtual", "db_max_consec_retrys", 20)
 				<listitem>set_index [int]</listitem>
 				<listitem>db_url_index [int]</listitem>
 				<listitem>may_use_db_flag [boolean]</listitem>
-				<listitem>ignore db_max_consec_retrys[boolean](optional)</listitem>
+				<listitem>ignore_retries[boolean](optional)</listitem>
 			</itemizedlist>
 
 			<para>db_set 3 2 0 1 means: </para>

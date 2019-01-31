@@ -22,8 +22,9 @@
 #ifndef SIPLUAMI_H_
 # define SIPLUAMI_H_
 
-struct mi_root *siplua_mi_reload(struct mi_root *cmd_tree, void *param);
-struct mi_root *siplua_mi_bla(struct mi_root *cmd_tree, void *param);
-struct mi_root *siplua_mi_watch(struct mi_root *cmd_tree, void *param);
+mi_response_t *siplua_mi_watch(const mi_params_t *params,
+                struct mi_handler *async_hdl);
+mi_response_t *siplua_mi_watch_2(const mi_params_t *params,
+                struct mi_handler *async_hdl);
 
 #endif /* !SIPLUAMI_H_ */

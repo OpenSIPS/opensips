@@ -75,7 +75,8 @@ static int child_init(int rank);
 static void mod_destroy(void);
 
 /* --- fifo functions */
-struct mi_root * mi_reload_blacklist(struct mi_root* cmd, void* param);  /* usage: opensipsctl fifo reload_blacklist */
+mi_response_t *mi_reload_blacklist(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 
 static cmd_export_t cmds[]={
@@ -97,8 +98,11 @@ static param_export_t params[] = {
 
 /* Exported MI functions */
 static mi_export_t mi_cmds[] = {
-	{ "reload_blacklist", 0, mi_reload_blacklist, MI_NO_INPUT_FLAG, 0, 0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ "reload_blacklist", 0, 0, 0, {
+		{mi_reload_blacklist, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -533,17 +537,13 @@ static void destroy_shmlock(void)
 }
 
 
-struct mi_root * mi_reload_blacklist(struct mi_root* cmd, void* param)
+mi_response_t *mi_reload_blacklist(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root * tmp = NULL;
-
-	if(reload_sources() == 0) {
-		tmp = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	} else {
-		tmp = init_mi_tree( 500, "cannot reload blacklist", 21);
-	}
-
-	return tmp;
+	if(reload_sources() == 0)
+		return init_mi_result_ok();
+	else
+		return init_mi_error(500, MI_SSTR("cannot reload blacklist"));
 }
 
 

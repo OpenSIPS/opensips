@@ -42,12 +42,6 @@
 #include "../../mem/shm_mem.h"
 #include "mi_fifo.h"
 #include "fifo_fnc.h"
-#include "mi_parser.h"
-#include "mi_writer.h"
-
-#define INTERNAL_ERR_CODE 500
-#define PARSE_ERR_CODE 400
-#define ERR_BUF_SIZE 256
 
 static char *mi_buf = 0;
 static char *reply_fifo_s = 0;
@@ -62,6 +56,7 @@ static int volatile mi_reload_fifo = 0;
 
 str correlation_value;
 extern int mi_trace_mod_id;
+int mi_fifo_pp;
 
 FILE* mi_create_fifo(void)
 {
@@ -147,7 +142,7 @@ FILE* mi_init_fifo_server(char *fifo_name, int fifo_mode,
 
 
 	/* allocate all static buffers */
-	mi_buf = pkg_malloc(MAX_MI_FIFO_BUFFER);
+	mi_buf = pkg_malloc(MAX_MI_FIFO_BUFFER + 1);
 	reply_fifo_s = pkg_malloc(MAX_MI_FILENAME);
 	if ( mi_buf==NULL|| reply_fifo_s==NULL) {
 		LM_ERR("no more private memory\n");
@@ -334,6 +329,59 @@ static FILE *mi_init_read(FILE *stream, int *fd, fd_set *fds)
 }
 
 
+static int mi_read_fifo(char *b, int max, FILE **stream, int *read_len)
+{
+	int ret = 0;
+	int done, i, fd;
+	struct timeval tv;
+	fd_set fds, init_fds;
+	FILE *new_stream;
+
+	/* first check if we need to update our fifo file */
+	if (!(new_stream = mi_init_read(*stream, &fd, &init_fds)))
+		return -1;
+
+	done = 0;
+	for (i = 0; !done && i < max; i++) {
+		fds = init_fds;
+		tv.tv_sec = FIFO_CHECK_WAIT;
+		tv.tv_usec = 0;
+retry:
+		ret = select(fd + 1, &fds, NULL, NULL, &tv);
+		if (ret < 0)  {
+			if (errno == EAGAIN)
+				goto retry;
+			/* interrupted by signal or ... */
+			if (errno == EINTR) {
+				if (!(new_stream = mi_init_read(new_stream, &fd, &init_fds)))
+					return -1;
+			} else {
+				kill(0, SIGTERM);
+			}
+		} else if (ret == 0) {
+			if (!(new_stream = mi_init_read(new_stream, &fd, &init_fds)))
+				return -1;
+			--i;
+			continue;
+		}
+		ret = read(fd, b, max);
+		if (ret < 0)
+			return ret;
+		else
+			done = 1;
+	}
+
+	if (!done) {
+		LM_ERR("request line too long\n");
+		fclose(new_stream);
+		return -1;
+	}
+	*read_len = ret;
+	*stream = new_stream;
+
+	return 0;
+}
+
 int mi_read_line( char *b, int max, FILE **stream, int *read_len)
 {
 	int ret = 0;
@@ -391,7 +439,7 @@ retry:
 
 static inline char *get_reply_filename( char * file, int len )
 {
-	if ( strchr(file,'.') || strchr(file,'/') || strchr(file, '\\') ) {
+	if (memchr(file,'.',len) || memchr(file,'/',len) || memchr(file,'\\', len)) {
 		LM_ERR("forbidden filename: %s\n", file);
 		return 0;
 	}
@@ -404,10 +452,8 @@ static inline char *get_reply_filename( char * file, int len )
 	memcpy( reply_fifo_s+reply_fifo_len, file, len );
 	reply_fifo_s[reply_fifo_len+len]=0;
 
-
 	return reply_fifo_s;
 }
-
 
 static inline void free_async_handler( struct mi_handler *hdl )
 {
@@ -416,18 +462,14 @@ static inline void free_async_handler( struct mi_handler *hdl )
 }
 
 
-static void fifo_close_async( struct mi_root *mi_rpl, struct mi_handler *hdl,
-																	int done)
+static void fifo_close_async(mi_response_t *resp, struct mi_handler *hdl, int done)
 {
 	FILE *reply_stream;
 	char *name;
 
-	static const int code = 500;
-	static str reason = str_init("command failed");
-
 	name = (char*)hdl->param;
 
-	if ( mi_rpl!=0 || done ) {
+	if (resp || done) {
 		/*open fifo reply*/
 		reply_stream = mi_open_reply_pipe( name );
 		if (reply_stream==NULL) {
@@ -435,6 +477,7 @@ static void fifo_close_async( struct mi_root *mi_rpl, struct mi_handler *hdl,
 			return;
 		}
 
+		/* TODO: handle reply
 		if (mi_rpl!=0) {
 			mi_write_tree( reply_stream, mi_rpl, 0);
 			free_mi_tree( mi_rpl );
@@ -442,6 +485,7 @@ static void fifo_close_async( struct mi_root *mi_rpl, struct mi_handler *hdl,
 			mi_fifo_reply( reply_stream, "%d %.*s\n", code, reason.len, reason.s);
 			mi_trace_reply( 0, 0, code, &reason, 0, t_dst);
 		}
+		*/
 
 		fclose(reply_stream);
 	}
@@ -473,23 +517,14 @@ static inline struct mi_handler* build_async_handler( char *name, int len)
 }
 
 
-#define mi_do_consume() \
-	do { \
-		LM_DBG("entered consume\n"); \
-		/* consume the rest of the fifo request */ \
-		do { \
-			mi_read_line(mi_buf,MAX_MI_FIFO_BUFFER,&fifo_stream,&line_len); \
-		} while(line_len>1); \
-		LM_DBG("**** done consume\n"); \
-	} while(0)
-
-
 #define mi_open_reply(_name,_file,_err) \
 	do { \
-		_file = mi_open_reply_pipe( _name ); \
-		if (_file==NULL) { \
-			LM_ERR("cannot open reply pipe %s\n", _name); \
-			goto _err; \
+		if (_file==NULL && _name) { \
+			_file = mi_open_reply_pipe( _name ); \
+			if (_file==NULL && !(_name)) { \
+				LM_ERR("cannot open reply pipe %s\n", _name); \
+				goto _err; \
+			} \
 		} \
 	} while(0)
 
@@ -502,177 +537,226 @@ static inline struct mi_handler* build_async_handler( char *name, int len)
 		} \
 	} while(0);
 
-#define mi_throw_error( f, _stream, _buf, _code, _err, ...) \
+#define mi_trace_fifo_request(method, params) \
 	do { \
-		mi_write_err2buf( _buf, _code, _err, __VA_ARGS__); \
-		mi_fifo_reply(_stream, "%d %.*s\n", _code, _buf.len, _buf.s); \
-		if ( (f && is_mi_cmd_traced( mi_trace_mod_id, f)) || !f ) \
-			mi_trace_reply( 0, 0, _code, &_buf, 0, t_dst); \
+		if ((is_mi_cmd_traced(mi_trace_mod_id, cmd)) || !cmd) { \
+			mi_trace_request(0, 0, method, strlen(method), \
+						params, &backend, t_dst); \
+		} \
+	} while(0)
+
+#define mi_trace_fifo_reply(message) \
+	do { \
+		if ((is_mi_cmd_traced(mi_trace_mod_id, cmd)) || !cmd) { \
+			mi_trace_reply(0, 0, message, t_dst); \
+		} \
+	} while(0)
+
+#define mi_throw_error(_stream, _file, _err, _msg) \
+	do { \
+		if (_file) { \
+			str _s = str_init(_msg); \
+			mi_open_reply( file, _stream, _err); \
+			if (mi_fifo_write(_file, _stream, &_s, cmd) < 0) { \
+				LM_ERR("cannot reply %s error\n", _msg); \
+				goto _err; \
+			} \
+			mi_trace_fifo_reply(&_s); \
+		} \
 	} while(0);
 
+struct mi_fifo_flush_params {
+	FILE *stream;
+	char *file;
+	struct mi_cmd *cmd;
+};
 
+static int mi_fifo_write(char *file, FILE *stream, str *msg, struct mi_cmd *cmd)
+{
+	int ret, written;
+
+	mi_open_reply(file, stream, error);
+
+	written = 0;
+	do {
+		ret = fwrite(msg->s + written, 1, msg->len - written, stream);
+		if (ret <= 0) {
+			if (errno!=EINTR && errno!=EAGAIN && errno!=EWOULDBLOCK)
+				goto error;
+		} else
+			written += ret;
+	} while (msg->len > written);
+
+	mi_trace_fifo_reply(msg);
+
+	return written;
+
+error:
+	if (stream)
+		fclose(stream);
+	return -1;
+}
+
+static int mi_fifo_flush(unsigned char *buf, int len, void *param)
+{
+	str msg;
+	struct mi_fifo_flush_params *params =
+		(struct mi_fifo_flush_params *)param;
+
+	if (!params)
+		return len;
+
+	msg.s = (char *)buf;
+	msg.len = len;
+
+	return mi_fifo_write(params->file, params->stream, &msg, params->cmd);
+}
 
 
 void mi_fifo_server(FILE *fifo_stream)
 {
-	struct mi_root *mi_cmd;
-	struct mi_root *mi_rpl;
-	struct mi_handler *hdl;
-	int line_len;
-	char *file_sep, *command, *file;
-	struct mi_cmd *f;
+	struct mi_fifo_flush_params params;
+	const char **parse_end = NULL;
+	mi_request_t request;
+	int read_len, parse_len;
+	char *req_method = NULL;
+	char *file_sep, *file, *p;
+	struct mi_cmd *cmd = NULL;
 	FILE *reply_stream;
-
-	static char err_rpl_buf[ERR_BUF_SIZE];
-	static str err_reason = { err_rpl_buf, 0};
+	int remain_len = 0;
+	struct mi_handler *hdl = NULL;
+	mi_response_t *response = NULL;
+	int rc;
+	str buf;
 
 	while(1) {
 		reply_stream = NULL;
 
-		/* commands must look this way ':<command>:[filename]' */
-		if (mi_read_line(mi_buf,MAX_MI_FIFO_BUFFER,&fifo_stream, &line_len)) {
+		/* commands must look this way ':[filename]:' */
+		if (mi_read_fifo(mi_buf + remain_len,
+				MAX_MI_FIFO_BUFFER - remain_len,
+				&fifo_stream, &read_len)) {
 			LM_ERR("failed to read command\n");
-			continue;
+			goto skip_unparsed;
+		}
+		remain_len = read_len;
+		parse_len = read_len;
+		p = mi_buf;
+
+		while (parse_len && is_ws(*p)) {
+			p++;
+			parse_len--;
 		}
 
-		/* trim from right */
-		while(line_len) {
-			if(mi_buf[line_len-1]=='\n' || mi_buf[line_len-1]=='\r'
-				|| mi_buf[line_len-1]==' ' || mi_buf[line_len-1]=='\t' ) {
-				line_len--;
-				mi_buf[line_len]=0;
-			} else break;
+		if (parse_len==0) {
+			LM_DBG("command file is empty\n");
+			goto skip_unparsed;
 		}
-
-		if (line_len==0) {
-			LM_DBG("command empty\n");
+		if (parse_len<3) {
+			LM_DBG("command must have at least 3 chars (has %d)\n", parse_len);
 			continue;
 		}
-		if (line_len<3) {
-			LM_ERR("command must have at least 3 chars\n");
-			continue;
+		if (*p!=MI_CMD_SEPARATOR) {
+			LM_ERR("command must begin with %c: %.*s\n", MI_CMD_SEPARATOR, parse_len, p);
+			goto skip_unparsed;
 		}
-		if (*mi_buf!=MI_CMD_SEPARATOR) {
-			LM_ERR("command must begin with %c: %.*s\n", MI_CMD_SEPARATOR, line_len, mi_buf );
-			goto consume1;
-		}
-		command = mi_buf+1;
-		file_sep=strchr(command, MI_CMD_SEPARATOR );
+		p++;
+		parse_len--;
+		file = p;
+		file_sep=memchr(p, MI_CMD_SEPARATOR , parse_len);
 		if (file_sep==NULL) {
-			LM_ERR("file separator missing\n");
-			goto consume1;
+			LM_ERR("file separator missing: %.*s\n", read_len, mi_buf);
+			goto skip_unparsed;
 		}
-		if (file_sep==command) {
-			LM_ERR("empty command\n");
-			goto consume1;
+		if (file_sep - file + 1 >= parse_len) {
+			LM_DBG("no command specified yet: %.*s\n", read_len, mi_buf);
+			continue;
 		}
-		if (*(file_sep+1)==0) {
-			file = NULL;
+		p = file_sep + 1;
+		parse_len -= file_sep - file + 1;
+		if (file_sep==file) {
+			file = NULL; /* no reply expected */
 		} else {
-			file = file_sep+1;
-			file = get_reply_filename(file, mi_buf+line_len-file);
+			file = get_reply_filename(file, file_sep - file);
 			if (file==NULL) {
-				LM_ERR("trimming filename\n");
-				goto consume1;
+				LM_ERR("error trimming filename: %.*s\n", (int)(file_sep - file), file);
+				goto skip_unparsed;
 			}
 		}
-		/* make command zero-terminated */
-		*file_sep=0;
 
-		f=lookup_mi_cmd( command, strlen(command) );
-		if (f==0) {
-			LM_ERR("command %s is not available\n", command);
-			mi_open_reply( file, reply_stream, consume1);
-
-			mi_trace_request( 0, 0, command, strlen(command),
-											0, &backend, t_dst);
-			mi_throw_error( 0, reply_stream, err_reason, INTERNAL_ERR_CODE,
-				consume2, "command '%s' not available", command);
-
-			goto consume2;
+		/* make the command null terminated */
+		p[parse_len] = '\0';
+		memset(&request, 0, sizeof request);
+		if (parse_mi_request(p, parse_end, &request) < 0) {
+			LM_ERR("cannot parse command: %.*s\n", parse_len, p);
+			continue;
 		}
 
+		if (parse_end) {
+			parse_len -= *parse_end - p;
+			p = (char *)*parse_end;
+			memmove(mi_buf, p, parse_len);
+		} else
+			parse_len = 0;
+		remain_len = parse_len;
+
+		req_method = mi_get_req_method(&request);
+		if (req_method)
+			cmd = lookup_mi_cmd(req_method, strlen(req_method));
 		/* if asyncron cmd, build the async handler */
-		if (f->flags&MI_ASYNC_RPL_FLAG) {
-			hdl = build_async_handler( file, strlen(file) );
+		if (cmd && cmd->flags&MI_ASYNC_RPL_FLAG) {
+			hdl = build_async_handler(file, strlen(file));
 			if (hdl==0) {
 				LM_ERR("failed to build async handler\n");
-				mi_open_reply( file, reply_stream, consume1);
 
-				mi_throw_error( f, reply_stream, err_reason, INTERNAL_ERR_CODE,
-					consume2, "Internal server error");
+				mi_throw_error(reply_stream, file, free_request,
+						"failed to build async handler");
 
-				goto consume2;
+				goto free_request;
 			}
 		} else {
 			hdl = 0;
-			mi_open_reply( file, reply_stream, consume1);
+			mi_open_reply( file, reply_stream, free_request);
+			if (!cmd)
+				LM_INFO("command %s not found!\n", req_method);
 		}
 
-		if (f->flags&MI_NO_INPUT_FLAG) {
-			mi_cmd = 0;
-			mi_do_consume();
-		} else {
-			mi_cmd = mi_parse_tree(fifo_stream);
-			if (mi_cmd==NULL){
-				LM_ERR("error parsing MI tree\n");
-				if (!reply_stream)
-					mi_open_reply( file, reply_stream, consume3);
+		mi_trace_fifo_request(req_method, request.params);
+		response = handle_mi_request(&request, cmd, hdl);
+		LM_DBG("got mi response = [%p]\n", response);
 
-				mi_throw_error( f, reply_stream, err_reason, PARSE_ERR_CODE,
-					consume3, "Parse error in command '%s'", command);
-				goto consume3;
+		if (response == NULL) {
+			LM_ERR("failed to build response!\n");
+			mi_throw_error(reply_stream, file, free_request,
+					"failed to build response");
+		} else if (response != MI_ASYNC_RPL) {
+			buf.s = mi_buf + remain_len;
+			buf.len = MAX_MI_FIFO_BUFFER - remain_len;
+			if (file) {
+				params.file = file;
+				params.stream = reply_stream;
+				params.cmd = cmd;
+				rc = print_mi_response_flush(response, request.id,
+						mi_fifo_flush, &params, &buf, mi_fifo_pp);
+				if (rc == MI_NO_RPL) {
+					LM_DBG("No reply for jsonrpc notification\n");
+				} else if (rc < 0) {
+					LM_ERR("failed to print json response\n");
+					mi_throw_error(reply_stream, file, free_request,
+							"failed to print response");
+				} else
+					free_mi_response(response);
 			}
-			mi_cmd->async_hdl = hdl;
+			/* if there is no file specified, there is nothing to reply */
 		}
 
-		LM_DBG("done parsing the mi tree\n");
-
-		if ( (is_mi_cmd_traced(mi_trace_mod_id, f)) || !f ) {
-			mi_trace_request( 0, 0, command, file_sep - command,
-											mi_cmd, &backend, t_dst);
-		}
-
-		if ( (mi_rpl=run_mi_cmd(f, mi_cmd,
-		(mi_flush_f *)mi_flush_tree, reply_stream))==0 ) {
-			if (!reply_stream)
-				mi_open_reply( file, reply_stream, failure);
-
-			mi_throw_error( f, reply_stream, err_reason, INTERNAL_ERR_CODE,
-					consume3, "command '%s' failed", command);
-		} else if (mi_rpl!=MI_ROOT_ASYNC_RPL) {
-			if (!reply_stream)
-				mi_open_reply( file, reply_stream, failure);
-			mi_write_tree( reply_stream, mi_rpl,
-					( f && is_mi_cmd_traced( mi_trace_mod_id, f) ) );
-
-			free_mi_tree( mi_rpl );
-		} else {
-			if (mi_cmd) free_mi_tree( mi_cmd );
-			continue;
-		}
-
+free_request:
 		free_async_handler(hdl);
-		/* close reply fifo */
-		fclose(reply_stream);
-		/* destroy request tree */
-		if (mi_cmd) free_mi_tree( mi_cmd );
-		continue;
-
-failure:
-		free_async_handler(hdl);
-		/* destroy request tree */
-		if (mi_cmd) free_mi_tree( mi_cmd );
-		/* destroy the reply tree */
-		if (mi_rpl) free_mi_tree(mi_rpl);
-		continue;
-
-consume3:
-		free_async_handler(hdl);
+		free_mi_request_parsed(&request);
 		if (reply_stream)
-consume2:
-		fclose(reply_stream);
-consume1:
-		mi_do_consume();
+			fclose(reply_stream);
+		continue;
+skip_unparsed:
+		remain_len = 0;
 	}
 }

@@ -327,21 +327,66 @@ static stat_export_t mod_stats[] = {
 
 
 static mi_export_t mi_cmds[] = {
-	{ "dlg_list",           0, mi_print_dlgs,         0,  0,  0},
-	{ "dlg_list_ctx",       0, mi_print_dlgs_ctx,     0,  0,  0},
-	{ "dlg_end_dlg",        0, mi_terminate_dlg,      0,  0,  0},
-	{ "dlg_db_sync",        0, mi_sync_db_dlg,        0,  0,  0},
-	{ "dlg_restore_db",     0, mi_restore_dlg_db,     0,  0,  0},
-	{ "dlg_cluster_sync",   0, mi_sync_cl_dlg,   	  0,  0,  0},
-	{ "profile_get_size",   0, mi_get_profile,        0,  0,  0},
-	{ "profile_list_dlgs",  0, mi_profile_list,       0,  0,  0},
-	{ "profile_get_values", 0, mi_get_profile_values, 0,  0,  0},
-	{ "list_all_profiles",  0, mi_list_all_profiles,  0,  0,  0},
-	{ "profile_end_dlgs",   0, mi_profile_terminate,  0,  0,  0},
-	{ "dlg_push_var",	0, mi_push_dlg_var,	  0,  0,  0},
-	{ 0, 0, 0, 0, 0, 0}
+	{ "dlg_list", 0, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_print_dlgs, {0}},
+		{mi_print_dlgs_1, {"callid", 0}},
+		{mi_print_dlgs_2, {"callid", "from_tag", 0}},
+		{mi_print_dlgs_cnt, {"index", "counter", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dlg_list_ctx", 0, MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_print_dlgs_ctx, {0}},
+		{mi_print_dlgs_1_ctx, {"callid", 0}},
+		{mi_print_dlgs_2_ctx, {"callid", "from_tag", 0}},
+		{mi_print_dlgs_cnt_ctx, {"index", "counter", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dlg_end_dlg", 0, 0, 0, {
+		{mi_terminate_dlg_1, {"dialog_id", 0}},
+		{mi_terminate_dlg_2, {"dialog_id", "extra_hdrs", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dlg_db_sync", 0, 0, 0, {
+		{mi_sync_db_dlg, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dlg_restore_db", 0, 0, 0, {
+		{mi_restore_dlg_db, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dlg_cluster_sync", 0, 0, 0, {
+		{mi_sync_cl_dlg, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "profile_get_size", 0, 0, 0, {
+		{mi_get_profile_1, {"profile", 0}},
+		{mi_get_profile_2, {"profile", "value", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "profile_list_dlgs", 0, 0, 0, {
+		{mi_profile_list_1, {"profile", 0}},
+		{mi_profile_list_2, {"profile", "value", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "profile_get_values", 0, 0, 0, {
+		{mi_get_profile_values, {"profile", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "list_all_profiles", 0, 0, 0, {
+		{mi_list_all_profiles, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "profile_end_dlgs", 0, 0, 0, {
+		{mi_profile_terminate_1, {"profile", 0}},
+		{mi_profile_terminate_2, {"profile", "value", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dlg_push_var", 0, 0, 0, {
+		{mi_push_dlg_var, {"dlg_val_name", "dlg_val_value", "DID", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
-
 
 static pv_export_t mod_items[] = {
 	{ {"DLG_count",  sizeof("DLG_count")-1},     1000, pv_get_dlg_count,

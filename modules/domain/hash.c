@@ -92,28 +92,28 @@ int hash_table_lookup (struct sip_msg *msg, str *domain, pv_spec_t *pv)
 }
 
 
-int hash_table_mi_print(struct domain_list **hash_table, struct mi_node* rpl)
+int hash_table_mi_print(struct domain_list **hash_table, mi_item_t *domains_arr)
 {
 	int i;
 	struct domain_list *np;
-	struct mi_node* node;
+	mi_item_t *domain_item;
 
 	if(hash_table==0)
 		return -1;
 	for (i = 0; i < DOM_HASH_SIZE; i++) {
 		np = hash_table[i];
 		while (np) {
-			node = add_mi_node_child(rpl, 0, 0, 0,
-					np->domain.s, np->domain.len);
-			if(node == 0)
+			domain_item = add_mi_object(domains_arr, NULL, 0);
+			if (!domain_item)
 				return -1;
-			if (np->attrs.s) {
-				if (!add_mi_attr(node, 0, "attributes", 10,
-						np->attrs.s, np->attrs.len)) {
-					LM_ERR("cannot add attributes\n");
+
+			if (add_mi_string(domain_item, MI_SSTR("name"),
+				np->domain.s, np->domain.len) < 0)
+				return -1;
+			if (np->attrs.s)
+				if (add_mi_string(domain_item, MI_SSTR("attributes"),
+					np->attrs.s, np->attrs.len) < 0)
 					return -1;
-				}
-			}
 
 			np = np->next;
 		}

@@ -33,7 +33,6 @@
 #include "../../bin_interface.h"
 #include "../../timer.h"
 #include "../../forward.h"
-#include "../../mi/tree.h"
 
 #include "api.h"
 #include "node_info.h"
@@ -1692,6 +1691,7 @@ static void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_i
 
 static void handle_cl_mi_msg(bin_packet_t *packet)
 {
+	/*
 	str cmd_params[MI_CMD_MAX_NR_PARAMS];
 	str cmd_name;
 	int i, no_params;
@@ -1712,6 +1712,7 @@ static void handle_cl_mi_msg(bin_packet_t *packet)
 
 	LM_INFO("MI command <%.*s> returned with: code <%d>, reason <%.*s>\n",
 		cmd_name.len, cmd_name.s, cmd_rpl->code, cmd_rpl->reason.len, cmd_rpl->reason.s);
+	*/
 }
 
 void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,

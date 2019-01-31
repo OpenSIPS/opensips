@@ -87,7 +87,7 @@ int hash_match(struct sip_msg *msg, struct address_list** table,
  * Print entries stored in hash table
  */
 //void hash_print(struct address_list** hash_table, FILE* reply_file);
-int hash_mi_print(struct address_list **table, struct mi_node* rpl,
+int hash_mi_print(struct address_list **table, mi_item_t *part_item,
 		struct pm_part_struct *pm);
 
 /*
@@ -166,7 +166,7 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
  * Print subnets stored in subnet table
  */
 /*void subnet_table_print(struct subnet* table, FILE* reply_file);*/
-int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
+int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
 		struct pm_part_struct *pm);
 
 

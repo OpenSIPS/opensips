@@ -83,7 +83,8 @@ static int mod_init(void);
 /*
  * Reload perl interpreter - reload perl script. Forward declaration.
  */
-struct mi_root* perl_mi_reload(struct mi_root *cmd_tree, void *param);
+mi_response_t *perl_mi_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 
 
@@ -123,9 +124,12 @@ static param_export_t params[] = {
  */
 static mi_export_t mi_cmds[] = {
 	/* FIXME This does not yet work...
-	{ "perl_reload",  perl_mi_reload, MI_NO_INPUT_FLAG,  0,  0  },*/
-	{ 0, 0, 0, 0, 0, 0}
-
+	{ "perl_reload", 0,0,0, {
+		{perl_mi_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	*/
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -294,14 +298,14 @@ int perl_reload(struct sip_msg *m, char *a, char *b) {
  * Reinit through fifo.
  * Currently does not seem to work :((
  */
-struct mi_root* perl_mi_reload(struct mi_root *cmd_tree, void *param)
+mi_response_t *perl_mi_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	if (perl_reload(NULL, NULL, NULL)) {
-		return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+		return init_mi_result_ok();
 	} else {
-		return init_mi_tree( 500, "Perl reload failed", 18);
+		return init_mi_error(500, MI_SSTR("Perl reload failed"));
 	}
-
 }
 
 

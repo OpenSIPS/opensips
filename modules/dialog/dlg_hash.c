@@ -1146,188 +1146,139 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 
 /**************************** MI functions ******************************/
 static char *dlg_val_buf;
-static inline int internal_mi_print_dlg(struct mi_node *rpl,
+static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 									struct dlg_cell *dlg, int with_context)
 {
-	struct mi_node* node= NULL;
-	struct mi_node* node1 = NULL;
-	struct mi_node* node2 = NULL;
-	struct mi_node* node3 = NULL;
-	struct mi_attr* attr= NULL;
 	struct dlg_profile_link *dl;
 	struct dlg_val* dv;
-	int len;
 	char* p;
 	int i, j;
 	time_t _ts;
 	struct tm* t;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
+	mi_item_t *callees_arr, *values_arr, *profiles_arr;
+	mi_item_t *context_obj, *callee_item, *values_item, *profiles_item;
 
-	node = add_mi_node_child(rpl, 0, "dialog",6 , 0, 0 );
-	if (node==0)
+	if (add_mi_string_fmt(dialog_obj, MI_SSTR("ID"), "%llu",
+		(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id) < 0)
 		goto error;
-
-	attr = addf_mi_attr( node, 0, "ID", 2, "%llu",
-			(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id );
-	if (attr==0)
+	if (add_mi_number(dialog_obj, MI_SSTR("state"), dlg->state) < 0)
 		goto error;
-
-	p= int2str((unsigned long)dlg->state, &len);
-	node1 = add_mi_node_child( node, MI_DUP_VALUE, "state", 5, p, len);
-	if (node1==0)
-		goto error;
-
-	p= int2str((unsigned long)dlg->user_flags, &len);
-	node1 = add_mi_node_child( node, MI_DUP_VALUE, "user_flags", 10, p, len);
-	if (node1==0)
+	if (add_mi_number(dialog_obj, MI_SSTR("user_flags"), dlg->user_flags) < 0)
 		goto error;
 
 	_ts = (time_t)dlg->start_ts;
-	p= int2str((unsigned long)_ts, &len);
-	node1 = add_mi_node_child(node,MI_DUP_VALUE,"timestart",9, p, len);
-	if (node1==0)
+	if (add_mi_number(dialog_obj, MI_SSTR("timestart"), _ts) < 0)
 		goto error;
 	if (_ts) {
 		t = localtime(&_ts);
 		date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
 						"%Y-%m-%d %H:%M:%S", t);
-		if (date_buf_len != 0) {
-			node1 = add_mi_node_child(node,MI_DUP_VALUE, "datestart", 9,
-						date_buf, date_buf_len);
-			if (node1==0)
+		if (date_buf_len != 0)
+			if (add_mi_string(dialog_obj, MI_SSTR("datestart"),
+				date_buf, date_buf_len) < 0)
 				goto error;
-		}
 	}
 
 	_ts = (time_t)(dlg->tl.timeout?((unsigned int)time(0) +
                 dlg->tl.timeout - get_ticks()):0);
-	p= int2str((unsigned long)_ts, &len);
-	node1 = add_mi_node_child(node,MI_DUP_VALUE, "timeout", 7, p, len);
-	if (node1==0)
+	if (add_mi_number(dialog_obj, MI_SSTR("timeout"), _ts) < 0)
 		goto error;
 	if (_ts) {
 		t = localtime(&_ts);
 		date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
 						"%Y-%m-%d %H:%M:%S", t);
-		if (date_buf_len != 0) {
-			node1 = add_mi_node_child(node,MI_DUP_VALUE, "dateout", 7,
-						date_buf, date_buf_len);
-			if (node1==0)
+		if (date_buf_len != 0)
+			if (add_mi_string(dialog_obj, MI_SSTR("dateout"),
+				date_buf, date_buf_len) < 0)
 				goto error;
-		}
 	}
 
-	node1 = add_mi_node_child(node, MI_DUP_VALUE, "callid", 6,
-			dlg->callid.s, dlg->callid.len);
-	if(node1 == 0)
+	if (add_mi_string(dialog_obj, MI_SSTR("callid"),
+		dlg->callid.s, dlg->callid.len) < 0)
 		goto error;
-
-	node1 = add_mi_node_child(node, MI_DUP_VALUE, "from_uri", 8,
-			dlg->from_uri.s, dlg->from_uri.len);
-	if(node1 == 0)
+	if (add_mi_string(dialog_obj, MI_SSTR("from_uri"),
+		dlg->from_uri.s, dlg->from_uri.len) < 0)
 		goto error;
-
-	node1 = add_mi_node_child(node, MI_DUP_VALUE, "to_uri", 6,
-			dlg->to_uri.s, dlg->to_uri.len);
-	if(node1 == 0)
+	if (add_mi_string(dialog_obj, MI_SSTR("to_uri"),
+		dlg->to_uri.s, dlg->to_uri.len) < 0)
 		goto error;
 
 	if (dlg->legs_no[DLG_LEGS_USED]>0) {
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "caller_tag", 10,
-				dlg->legs[DLG_CALLER_LEG].tag.s,
-				dlg->legs[DLG_CALLER_LEG].tag.len);
-		if(node1 == 0)
+		if (add_mi_string(dialog_obj, MI_SSTR("caller_tag"),
+			dlg->legs[DLG_CALLER_LEG].tag.s,
+			dlg->legs[DLG_CALLER_LEG].tag.len) < 0)
 			goto error;
-
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "caller_contact", 14,
-				dlg->legs[DLG_CALLER_LEG].contact.s,
-				dlg->legs[DLG_CALLER_LEG].contact.len);
-		if(node1 == 0)
+		if (add_mi_string(dialog_obj, MI_SSTR("caller_contact"),
+			dlg->legs[DLG_CALLER_LEG].contact.s,
+			dlg->legs[DLG_CALLER_LEG].contact.len) < 0)
 			goto error;
-
-		node1 = add_mi_node_child(node, MI_DUP_VALUE, "callee_cseq", 11,
-				dlg->legs[DLG_CALLER_LEG].r_cseq.s,
-				dlg->legs[DLG_CALLER_LEG].r_cseq.len);
-		if(node1 == 0)
+		if (add_mi_string(dialog_obj, MI_SSTR("callee_cseq"),
+			dlg->legs[DLG_CALLER_LEG].r_cseq.s,
+			dlg->legs[DLG_CALLER_LEG].r_cseq.len) < 0)
 			goto error;
-
-		node1 = add_mi_node_child(node, MI_DUP_VALUE,"caller_route_set",16,
-				dlg->legs[DLG_CALLER_LEG].route_set.s,
-				dlg->legs[DLG_CALLER_LEG].route_set.len);
-		if(node1 == 0)
+		if (add_mi_string(dialog_obj, MI_SSTR("caller_route_set"),
+			dlg->legs[DLG_CALLER_LEG].route_set.s,
+			dlg->legs[DLG_CALLER_LEG].route_set.len) < 0)
 			goto error;
-
-		node1 = add_mi_node_child(node, 0,"caller_bind_addr",16,
-				dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.s,
-				dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.len);
-		if(node1 == 0)
+		if (add_mi_string(dialog_obj, MI_SSTR("caller_bind_addr"),
+			dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.s,
+			dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.len) < 0)
 			goto error;
-
-		node1 = add_mi_node_child(node, MI_DUP_VALUE,"caller_sdp",10,
-				dlg->legs[DLG_CALLER_LEG].adv_sdp.s,
-				dlg->legs[DLG_CALLER_LEG].adv_sdp.len);
-		if(node1 == 0)
+		if (add_mi_string(dialog_obj, MI_SSTR("caller_sdp"),
+			dlg->legs[DLG_CALLER_LEG].adv_sdp.s,
+			dlg->legs[DLG_CALLER_LEG].adv_sdp.len) < 0)
 			goto error;
 	}
 
-	node1 = add_mi_node_child(node, MI_IS_ARRAY, "CALLEES", 7, NULL, 0);
-	if(node1 == 0)
+	callees_arr = add_mi_array(dialog_obj, MI_SSTR("CALLEES"));
+	if (!callees_arr)
 		goto error;
 
 	for( i=1 ; i < dlg->legs_no[DLG_LEGS_USED] ; i++  ) {
-
-		node2 = add_mi_node_child(node1, 0, "callee", 6, NULL, 0);
-		if(node2 == 0)
+		callee_item = add_mi_object(callees_arr, NULL, 0);
+		if (!callee_item)
 			goto error;
 
-		node3 = add_mi_node_child(node2, MI_DUP_VALUE, "callee_tag", 10,
-				dlg->legs[i].tag.s, dlg->legs[i].tag.len);
-		if(node3 == 0)
+		if (add_mi_string(callee_item, MI_SSTR("callee_tag"),
+			dlg->legs[i].tag.s, dlg->legs[i].tag.len) < 0)
 			goto error;
-
-		node3 = add_mi_node_child(node2, MI_DUP_VALUE, "callee_contact", 14,
-				dlg->legs[i].contact.s, dlg->legs[i].contact.len);
-		if(node3 == 0)
+		if (add_mi_string(callee_item, MI_SSTR("callee_contact"),
+			dlg->legs[i].contact.s, dlg->legs[i].contact.len) < 0)
 			goto error;
-
-		node3 = add_mi_node_child(node2, MI_DUP_VALUE, "caller_cseq", 11,
-				dlg->legs[i].r_cseq.s, dlg->legs[i].r_cseq.len);
-		if(node3 == 0)
+		if (add_mi_string(callee_item, MI_SSTR("caller_cseq"),
+			dlg->legs[i].r_cseq.s, dlg->legs[i].r_cseq.len) < 0)
 			goto error;
-
-		node3 = add_mi_node_child(node2, MI_DUP_VALUE,"callee_route_set",16,
-				dlg->legs[i].route_set.s, dlg->legs[i].route_set.len);
-		if(node3 == 0)
+		if (add_mi_string(callee_item, MI_SSTR("callee_route_set"),
+			dlg->legs[i].route_set.s, dlg->legs[i].route_set.len) < 0)
 			goto error;
 
 		if (dlg->legs[i].bind_addr) {
-			node3 = add_mi_node_child(node2, 0,
-				"callee_bind_addr",16,
+			if (add_mi_string(callee_item, MI_SSTR("callee_bind_addr"),
 				dlg->legs[i].bind_addr->sock_str.s,
-				dlg->legs[i].bind_addr->sock_str.len);
+				dlg->legs[i].bind_addr->sock_str.len) < 0)
+				goto error;
 		} else {
-			node3 = add_mi_node_child(node2, 0,
-				"callee_bind_addr",16,0,0);
+			if (add_mi_null(callee_item, MI_SSTR("callee_bind_addr")) < 0)
+				goto error;
 		}
-		if(node3 == 0)
-			goto error;
-		
-		node3 = add_mi_node_child(node2, MI_DUP_VALUE,"callee_sdp",10,
-				dlg->legs[i].adv_sdp.s,
-				dlg->legs[i].adv_sdp.len);
-		if(node3 == 0)
+
+		if (add_mi_string(callee_item, MI_SSTR("callee_sdp"),
+			dlg->legs[i].adv_sdp.s, dlg->legs[i].adv_sdp.len) < 0)
 			goto error;
 	}
 
 	if (with_context) {
-		node1 = add_mi_node_child(node, 0, "context", 7, 0, 0);
-		if(node1 == 0)
+		context_obj = add_mi_object(dialog_obj, MI_SSTR("context"));
+		if (!context_obj)
 			goto error;
+
 		if (dlg->vals) {
-			node2 = add_mi_node_child(node1, 0, "values", 6, 0, 0);
-			if(node2 == 0)
+			values_arr = add_mi_array(context_obj, MI_SSTR("values"));
+			if (!values_arr)
 				goto error;
+
 			/* print dlg values -> iterate the list */
 			for( dv=dlg->vals ; dv ; dv=dv->next) {
 				/* escape non-printable chars */
@@ -1355,84 +1306,109 @@ static inline int internal_mi_print_dlg(struct mi_node *rpl,
 						p[j++] = dv->val.s[i];
 					}
 				}
-				add_mi_node_child(node2, MI_DUP_NAME|MI_DUP_VALUE,dv->name.s,dv->name.len,
-					p,j);
+
+				values_item = add_mi_object(values_arr, NULL, 0);
+				if (!values_item)
+					goto error;
+				if (add_mi_string(values_item,dv->name.s,dv->name.len,p,j) < 0)
+					goto error;
+
 				dlg_val_buf = p;
 			}
 		}
+
 		/* print dlg profiles */
 		if (dlg->profile_links) {
-			node3 = add_mi_node_child(node1, 0, "profiles", 8, 0, 0);
-			if(node3 == 0)
+			profiles_arr = add_mi_array(context_obj, MI_SSTR("profiles"));
+			if (!profiles_arr)
 				goto error;
+
 			for( dl=dlg->profile_links ; dl ; dl=dl->next) {
-				add_mi_node_child(node3, MI_DUP_NAME|MI_DUP_VALUE,
-					dl->profile->name.s,dl->profile->name.len,
-					ZSW(dl->value.s),dl->value.len);
+				profiles_item = add_mi_object(profiles_arr, NULL, 0);
+				if (!profiles_item)
+					goto error;
+				if (add_mi_string(profiles_item, dl->profile->name.s,
+					dl->profile->name.len, ZSW(dl->value.s),dl->value.len) < 0)
+					goto error;
 			}
 		}
+
 		/* print external context info */
 		run_dlg_callbacks(DLGCB_MI_CONTEXT, dlg, NULL,
-			DLG_DIR_NONE, (void *)node1, 0, 1);
+			DLG_DIR_NONE, (void *)context_obj, 0, 1);
 	}
 
 	return 0;
 
 error:
-	LM_ERR("failed to add node\n");
+	LM_ERR("failed to add MI item\n");
 	return -1;
 }
 
 
-int mi_print_dlg(struct mi_node *rpl, struct dlg_cell *dlg, int with_context)
+int mi_print_dlg(mi_item_t *dialog_obj, struct dlg_cell *dlg, int with_context)
 {
-	return internal_mi_print_dlg( rpl, dlg, with_context);
+	return internal_mi_print_dlg(dialog_obj, dlg, with_context);
 }
 
 
-static int internal_mi_print_dlgs(struct mi_root *rpl_tree,struct mi_node *rpl,
-						int with_context, unsigned int idx, unsigned int cnt)
+static mi_response_t *internal_mi_print_dlgs(int with_context,
+								unsigned int idx, unsigned int cnt)
 {
 	struct dlg_cell *dlg;
 	unsigned int i;
 	unsigned int n;
 	unsigned int total;
-	char *p;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *dialogs_arr, *dialog_item;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
 
 	total = 0;
 	if (cnt) {
 		for(i=0;i<d_table->size ; total+=d_table->entries[i++].cnt );
-		p = int2str((unsigned long)total, (int*)&n);
-		if (add_mi_node_child(rpl,MI_DUP_VALUE,"dlg_counter",11,p,n)==0)
-			return -1;
+		if (add_mi_number(resp_obj, MI_SSTR("count"), total) < 0)
+			goto error;
 	}
 
 	LM_DBG("printing %i dialogs, idx=%d, cnt=%d\n", total,idx,cnt);
-	rpl->flags |= MI_NOT_COMPLETED;
+
+	dialogs_arr = add_mi_array(resp_obj, MI_SSTR("Dialogs"));
+	if (!dialogs_arr)
+		goto error;
 
 	for( i=0,n=0 ; i<d_table->size ; i++ ) {
 		dlg_lock( d_table, &(d_table->entries[i]) );
 
 		for( dlg=d_table->entries[i].first ; dlg ; dlg=dlg->next ) {
 			if (cnt && n<idx) {n++;continue;}
-			if (internal_mi_print_dlg(rpl, dlg, with_context)!=0)
-				goto error;
+
+			dialog_item = add_mi_object(dialogs_arr, NULL, 0);
+			if (!dialog_item)
+				goto error_unlock;
+
+			if (internal_mi_print_dlg(dialog_item, dlg, with_context)!=0)
+				goto error_unlock;
 			n++;
 			if (cnt && n>=idx+cnt) {
 				dlg_unlock( d_table, &(d_table->entries[i]) );
-				return 0;
+				return resp;
 			}
-			if ( (n % 50) == 0 )
-				flush_mi_tree(rpl_tree);
 		}
 		dlg_unlock( d_table, &(d_table->entries[i]) );
 	}
-	return 0;
 
-error:
+	return resp;
+
+error_unlock:
 	dlg_unlock( d_table, &(d_table->entries[i]) );
+error:
 	LM_ERR("failed to print dialog\n");
-	return -1;
+	free_mi_response(resp);
+	return NULL;
 }
 
 
@@ -1448,191 +1424,165 @@ static int match_downstream_dialog(struct dlg_cell *dlg,
 }
 
 
-/*
- * IMPORTANT: if a dialog reference is returned, the dialog hash entry will
-   be kept locked when this function returns
-   NOTE: if a reply tree is returned, no dialog reference is returned.
- */
-static inline struct mi_root* process_mi_params(struct mi_root *cmd_tree,
-			struct dlg_cell **dlg_p, unsigned int *idx, unsigned int *cnt)
+static mi_response_t *mi_match_print_dlg(int with_context,
+					const mi_params_t *params, str *from_tag)
 {
-	struct mi_node* node;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *dialog_obj;
+	str callid;
 	struct dlg_entry *d_entry;
-	struct dlg_cell *dlg;
-	str *p1;
-	str *p2;
+	struct dlg_cell *dlg, *match_dlg = NULL;
 	unsigned int h_entry;
 
-	node = cmd_tree->node.kids;
-	if (node == NULL) {
-		/* no parameters at all */
-		*dlg_p = NULL;
-		*idx = *cnt = 0;
-		return NULL;
-	}
+	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
+		return init_mi_param_error();
 
-	/* we have params -> get p1 and p2 */
-	p1 = &node->value;
-	LM_DBG("p1='%.*s'\n", p1->len, p1->s);
-
-	node = node->next;
-	if ( !node || !node->value.s || !node->value.len) {
-		p2 = NULL;
-	} else {
-		p2 = &node->value;
-		LM_DBG("p2='%.*s'\n", p2->len, p2->s);
-		if ( node->next!=NULL )
-			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-	}
-
-	/* check the params */
-	if (p2 && str2int(p1,idx)==0 && str2int(p2,cnt)==0) {
-		/* 2 numerical params -> index and counter */
-		*dlg_p = NULL;
-		return NULL;
-	}
-
-	*idx = *cnt = 0;
-
-        if (!p1->s)
-                return init_mi_tree( 400, "Invalid Call-ID specified", 25);
-
-	h_entry = dlg_hash( p1/*callid*/ );
+	h_entry = dlg_hash(&callid);
 
 	d_entry = &(d_table->entries[h_entry]);
-	dlg_lock( d_table, d_entry);
+	dlg_lock(d_table, d_entry);
 
 	for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
-		if (match_downstream_dialog( dlg, p1/*callid*/, p2/*from_tag*/)==1) {
+		if (match_downstream_dialog(dlg, &callid, from_tag) == 1) {
 			if (dlg->state==DLG_STATE_DELETED) {
-				*dlg_p = NULL;
+				match_dlg = NULL;
 				break;
 			} else {
-				*dlg_p = dlg;
-				return 0;
+				match_dlg = dlg;
+				break;
 			}
 		}
 	}
-	dlg_unlock( d_table, d_entry);
 
-	return init_mi_tree( 404, MI_SSTR("No such dialog"));
-}
-
-
-struct mi_root * mi_print_dlgs(struct mi_root *cmd_tree, void *param )
-{
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* rpl = NULL;
-	struct dlg_cell* dlg = NULL;
-	unsigned int idx = 0;
-	unsigned int cnt = 0;
-
-	rpl_tree = process_mi_params( cmd_tree, &dlg, &idx, &cnt);
-	if (rpl_tree)
-		/* param error - no dialog returned */
-		return rpl_tree;
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-		goto error;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
-
-	if (dlg==NULL) {
-		if ( internal_mi_print_dlgs(rpl_tree, rpl, 0, idx, cnt)!=0 )
-			goto error;
-	} else {
-		if ( internal_mi_print_dlg(rpl,dlg,0)!=0 )
-			goto error;
-		/* done with the dialog -> unlock it */
-		dlg_unlock_dlg(dlg);
+	if (!match_dlg) {
+		dlg_unlock(d_table, d_entry);
+		return init_mi_error(404, MI_SSTR("No such dialog"));
 	}
 
-	return rpl_tree;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
+
+	dialog_obj = add_mi_object(resp_obj, MI_SSTR("Dialog"));
+	if (!dialog_obj)
+		goto error;
+
+	if (internal_mi_print_dlg(dialog_obj, match_dlg, with_context) != 0)
+		goto error;
+
+	dlg_unlock(d_table, d_entry);
+
 error:
-	/* if a dialog ref was returned, unlock it now */
-	if (dlg) dlg_unlock_dlg(dlg);
-	/* trash everything that was built so far */
-	if (rpl_tree) free_mi_tree(rpl_tree);
+	dlg_unlock(d_table, d_entry);
+	free_mi_response(resp);
 	return NULL;
 }
 
-
-struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd_tree, void *param )
+mi_response_t *mi_print_dlgs(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* rpl = NULL;
-	struct dlg_cell* dlg = NULL;
-	unsigned int idx = 0;
-	unsigned int cnt = 0;
+	return internal_mi_print_dlgs(0, 0, 0);
+}
 
-	rpl_tree = process_mi_params( cmd_tree, &dlg, &idx, &cnt);
-	if (rpl_tree)
-		/* param error */
-		return rpl_tree;
+mi_response_t *mi_print_dlgs_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_match_print_dlg(0, params, 0);
+}
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-		goto error;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
+mi_response_t *mi_print_dlgs_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str from_tag;
 
-	if (dlg==NULL) {
-		if ( internal_mi_print_dlgs(rpl_tree, rpl, 1, idx, cnt)!=0 )
-			goto error;
-	} else {
-		if ( internal_mi_print_dlg(rpl,dlg,1)!=0 )
-			goto error;
-		/* done with the dialog -> unlock it */
-		dlg_unlock_dlg(dlg);
-	}
+	if (get_mi_string_param(params, "from_tag", &from_tag.s, &from_tag.len) < 0)
+		return init_mi_param_error();
 
-	return rpl_tree;
-error:
-	/* if a dialog ref was returned, unlock it now */
-	if (dlg) dlg_unlock_dlg(dlg);
-	/* trash everything that was built so far */
-	if (rpl_tree) free_mi_tree(rpl_tree);
-	return NULL;
+	return mi_match_print_dlg(0, params, &from_tag);
+}
+
+mi_response_t *mi_print_dlgs_cnt(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int index, counter;
+
+	if (get_mi_int_param(params, "index", &index) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "counter", &counter) < 0)
+		return init_mi_param_error();
+
+	return internal_mi_print_dlgs(0, index, counter);
 }
 
 
-struct mi_root * mi_push_dlg_var(struct mi_root *cmd_tree, void *param )
+mi_response_t *mi_print_dlgs_ctx(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node;
+	return internal_mi_print_dlgs(1, 0, 0);
+}
+
+mi_response_t *mi_print_dlgs_1_ctx(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_match_print_dlg(1, params, 0);
+}
+
+mi_response_t *mi_print_dlgs_2_ctx(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str from_tag;
+
+	if (get_mi_string_param(params, "from_tag", &from_tag.s, &from_tag.len) < 0)
+		return init_mi_param_error();
+
+	return mi_match_print_dlg(1, params, &from_tag);
+}
+
+mi_response_t *mi_print_dlgs_cnt_ctx(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int index, counter;
+
+	if (get_mi_int_param(params, "index", &index) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "counter", &counter) < 0)
+		return init_mi_param_error();
+
+	return internal_mi_print_dlgs(1, index, counter);
+}
+
+mi_response_t *mi_push_dlg_var(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
 	unsigned int h_entry, h_id;
 	unsigned long long d_id;
 	str dlg_var_name,dlg_var_value,dialog_id;
 	char bkp, *end;
 	struct dlg_cell * dlg = NULL;
 	int shtag_state = 1, db_update = 0;
+	mi_item_t *did_param_arr;
+	int i, no_dids;
 
 	if ( d_table == NULL)
 		goto not_found;	
 
-	node = cmd_tree->node.kids;
 	h_entry = h_id = 0;
 
-	/* min 3 params : dlg_var_name dlg_var_value dialog_id */
-	if (node==NULL || node->next == NULL || node->next->next == NULL)
-		goto bad_param; 
+	if (get_mi_string_param(params, "dlg_val_name",
+		&dlg_var_name.s, &dlg_var_name.len) < 0)
+		return init_mi_param_error();
 
-	/* first param is the dialog var name */
-	if ( node->value.s==NULL || node->value.len==0 )
-		goto bad_param;
-	dlg_var_name = node->value;
+	if (get_mi_string_param(params, "dlg_val_value",
+		&dlg_var_value.s, &dlg_var_value.len) < 0)
+		return init_mi_param_error();
 
-	/* second param is the dialog var value */
-	node = node->next;
-	if ( node->value.s==NULL || node->value.len==0 )
-		goto bad_param;
-	dlg_var_value = node->value;
+	if (get_mi_array_param(params, "DID", &did_param_arr, &no_dids) < 0)
+		return init_mi_param_error();
 
-	/* third param is the dlg identifier */
-	
-	node = node->next;
-	while (node && node->value.s !=NULL && node->value.len!=0) {
-		dialog_id = node->value;
+	for (i = 0; i < no_dids; i++) {
+		if (get_mi_arr_param_string(did_param_arr, i,
+			&dialog_id.s, &dialog_id.len) < 0)
+			return init_mi_param_error();
 
 		/* Get the dialog based of the dialog_id. This may be a
 		 * numerical DID or a string SIP Call-ID */
@@ -1665,7 +1615,7 @@ callid_lookup:
 
 		if (dlg == NULL) {
 			/* XXX - not_found or loop_end here ? */
-			goto loop_end;
+			continue;
 		}
 
 		if (dialog_repl_cluster) {
@@ -1676,8 +1626,7 @@ callid_lookup:
 			} else if (shtag_state == SHTAG_STATE_BACKUP) {
 				/* editing dlg vars on backup servers - no no */
 				unref_dlg(dlg, 1);
-				return init_mi_tree(403, MI_DIALOG_BACKUP_ERR,
-				MI_DIALOG_BACKUP_ERR_LEN);
+				return init_mi_error(403, MI_SSTR(MI_DIALOG_BACKUP_ERR));
 			}
 		}
 
@@ -1703,15 +1652,12 @@ callid_lookup:
 			replicate_dialog_updated(dlg);
 			
 		unref_dlg(dlg, 1);
-loop_end:
-		node = node->next;
 	}
-	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+
+	return init_mi_result_ok();
 
 not_found:
-	return init_mi_tree(404, MI_DIALOG_NOT_FOUND, MI_DIALOG_NOT_FOUND_LEN);
-bad_param:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	return init_mi_error(404, MI_SSTR(MI_DIALOG_NOT_FOUND));
 dlg_error:
-	return init_mi_tree(403, MI_DLG_OPERATION_ERR, MI_DLG_OPERATION_ERR_LEN);
+	return init_mi_error(403, MI_SSTR(MI_DLG_OPERATION_ERR));
 }

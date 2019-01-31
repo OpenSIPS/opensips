@@ -85,12 +85,16 @@ int mask_avp_name;
 int id_avp_name;
 int res_avp_name;
 
-
-
-static struct mi_root* mi_lb_reload(struct mi_root *cmd_tree, void *param);
-static struct mi_root* mi_lb_resize(struct mi_root *cmd_tree, void *param);
-static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param);
-static struct mi_root* mi_lb_status(struct mi_root *cmd_tree, void *param);
+mi_response_t *mi_lb_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_lb_resize(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_lb_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_lb_status(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_lb_status_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static int fixup_resources(void** param, int param_no);
 static int fixup_is_dst(void** param, int param_no);
@@ -167,11 +171,24 @@ static param_export_t mod_params[]={
 
 
 static mi_export_t mi_cmds[] = {
-	{ "lb_reload",   0, mi_lb_reload,   MI_NO_INPUT_FLAG,   0,  mi_child_init},
-	{ "lb_resize",   0, mi_lb_resize,   0,                  0,  0},
-	{ "lb_list",     0, mi_lb_list,     MI_NO_INPUT_FLAG,   0,  0},
-	{ "lb_status",   0, mi_lb_status,   0,                  0,  0},
-	{ 0, 0, 0, 0, 0, 0}
+	{ "lb_reload", 0, 0, mi_child_init, {
+		{mi_lb_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "lb_resize", 0, 0, 0, {
+		{mi_lb_resize, {"destination_id", "res_name", "new_capacity", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "lb_list", 0, 0, 0, {
+		{mi_lb_list, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "lb_status", 0, 0, 0, {
+		{mi_lb_status, {"destination_id", 0}},
+		{mi_lb_status_1, {"destination_id", "new_status", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static module_dependency_t *get_deps_probing_interval(param_export_t *param)
@@ -1006,8 +1023,8 @@ static void lb_update_max_loads(unsigned int ticks, void *param)
 }
 
 /******************** MI commands ***********************/
-
-static struct mi_root* mi_lb_reload(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_lb_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	LM_INFO("\"lb_reload\" MI command received!\n");
 
@@ -1016,9 +1033,9 @@ static struct mi_root* mi_lb_reload(struct mi_root *cmd_tree, void *param)
 		goto error;
 	}
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 error:
-	return init_mi_tree( 500, "Failed to reload",16);
+	return init_mi_error( 500, MI_SSTR("Failed to reload"));
 }
 
 /*! \brief
@@ -1028,238 +1045,215 @@ error:
  *        size (number)
  */
 
-static struct mi_root* mi_lb_resize(struct mi_root *cmd, void *param)
+mi_response_t *mi_lb_resize(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
 	struct lb_dst *dst;
-	struct mi_node *node;
-	unsigned int  id, size;
-	str *name;
-	int n;
+	int n, size;
+	int id;
+	str name;
 
-	for( n=0,node = cmd->node.kids; n<3 && node ; n++,node=node->next );
-	if (n!=3 || node!=0)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	node = cmd->node.kids;
-
-	/* id (param 1) */
-	if (str2int( &node->value, &id) < 0)
-		goto bad_syntax;
-
-	/* resource (param 2) */
-	node = node->next;
-	name = &node->value;
-
-	/* id (param 3) */
-	node = node->next;
-	if (str2int( &node->value, &size) < 0)
-		goto bad_syntax;
+	if (get_mi_int_param(params, "destination_id", &id) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "res_name", &name.s, &name.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "destination_id", &size) < 0)
+		return init_mi_param_error();
 
 	lock_start_read( ref_lock );
 
 	/* get destination */
 	for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
 	if (dst==NULL) {
-		rpl_tree = init_mi_tree( 404, MI_SSTR("Destination ID not found"));
+		lock_stop_read( ref_lock );
+		return init_mi_error( 404, MI_SSTR("Destination ID not found"));
 	} else {
 		/* get resource */
 		for( n=0 ; n<dst->rmap_no ; n++)
-			if (dst->rmap[n].resource->name.len == name->len &&
-			memcmp( dst->rmap[n].resource->name.s, name->s, name->len)==0)
+			if (dst->rmap[n].resource->name.len == name.len &&
+			memcmp( dst->rmap[n].resource->name.s, name.s, name.len)==0)
 				break;
 		if (n==dst->rmap_no) {
-			rpl_tree = init_mi_tree( 404,
+			lock_stop_read( ref_lock );
+			return init_mi_error( 404,
 				MI_SSTR("Destination has no such resource"));
 		} else {
 			dst->rmap[n].max_load = size;
-			rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK_S));
 		}
 	}
 
 	lock_stop_read( ref_lock );
 
-	return rpl_tree;
-bad_syntax:
-	return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
-
+	return init_mi_result_ok();
 }
 
 
-/*! \brief
- * Expects 2 nodes:
- *        destination ID (number)
- *        status (number)
- */
-
-static struct mi_root* mi_lb_status(struct mi_root *cmd, void *param)
+mi_response_t *mi_lb_status(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
+	int id;
 	struct lb_dst *dst;
-	struct mi_node *node;
-	unsigned int  id, stat;
-	unsigned int old_flags;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 
-	node = cmd->node.kids;
-	if (node==NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
 
-	/* id (param 1) */
-	if (str2int( &node->value, &id) < 0)
-		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+	if (get_mi_int_param(params, "destination_id", &id) < 0)
+		return init_mi_param_error();
 
 	lock_start_read( ref_lock );
 
-	/* status (param 2) */
-	node = node->next;
-	if (node == NULL) {
-		/* return the status -> find the destination */
-		for(dst=(*curr_data)->dsts; dst && dst->id!=id ;dst=dst->next);
-		if (dst==NULL) {
-			rpl_tree = init_mi_tree( 404,
-				MI_SSTR("Destination ID not found"));
-		} else {
-			rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-			if (rpl_tree!=NULL) {
-				if (dst->flags&LB_DST_STAT_DSBL_FLAG) {
-					node = add_mi_node_child( &rpl_tree->node, 0, "enable", 6,
-							"no", 2);
-				} else {
-					node = add_mi_node_child( &rpl_tree->node, 0, "enable", 6,
-							"yes", 3);
-				}
-				if (node==NULL) {free_mi_tree(rpl_tree); rpl_tree=NULL;}
-			}
-		}
+	for(dst=(*curr_data)->dsts; dst && dst->id!=id ;dst=dst->next);
+	if (dst==NULL) {
+		lock_stop_read( ref_lock );
+		return init_mi_error(404, MI_SSTR("Destination ID not found"));
 	} else {
-		/* set the status */
-		if (node->next) {
-			rpl_tree = init_mi_tree( 400,
-				MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-		} else if (str2int( &node->value, &stat) < 0) {
-			rpl_tree = init_mi_tree( 400, MI_SSTR(MI_BAD_PARM_S));
+		if (dst->flags&LB_DST_STAT_DSBL_FLAG) {
+			if (add_mi_string(resp_obj, MI_SSTR("enable"), MI_SSTR("no")) < 0)
+				goto error;
 		} else {
-			/* find the destination */
-			for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
-			if (dst==NULL) {
-				rpl_tree =  init_mi_tree( 404,
-					MI_SSTR("Destination ID not found"));
-			} else {
-				/* set the disable/enable */
-				old_flags = dst->flags;
-				if (stat) {
-					dst->flags &=
-						~ (LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG);
-				} else {
-					dst->flags |=
-						LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
-				}
-				if (old_flags != dst->flags) {
-					lb_status_changed(dst);
-					if( lb_prob_verbose )
-						LM_INFO("manually %s destination %d <%.*s>\n",
-							(stat ? "enable" : "disable"),
-							dst->id, dst->uri.len, dst->uri.s
-						);
-				}
-				lock_stop_read( ref_lock );
-				return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-			}
+			if (add_mi_string(resp_obj, MI_SSTR("enable"), MI_SSTR("yes")) < 0)
+				goto error;
 		}
 	}
 
 	lock_stop_read( ref_lock );
+	return resp;
 
-	return rpl_tree;
+error:
+	lock_stop_read( ref_lock );
+	free_mi_response(resp);
+	return 0;
+}
+
+mi_response_t *mi_lb_status_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int id;
+	int stat;
+	unsigned int old_flags;
+	struct lb_dst *dst;
+
+	if (get_mi_int_param(params, "destination_id", &id) < 0)
+		return init_mi_param_error();
+	if (get_mi_int_param(params, "new_status", &stat) < 0)
+		return init_mi_param_error();
+
+	lock_start_read( ref_lock );
+
+	for( dst=(*curr_data)->dsts ; dst && dst->id!=id ; dst=dst->next);
+	if (dst==NULL) {
+		lock_stop_read( ref_lock );
+		return init_mi_error(404, MI_SSTR("Destination ID not found"));
+	} else {
+		/* set the disable/enable */
+		old_flags = dst->flags;
+		if (stat) {
+			dst->flags &=
+				~ (LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG);
+		} else {
+			dst->flags |=
+				LB_DST_STAT_DSBL_FLAG|LB_DST_STAT_NOEN_FLAG;
+		}
+		if (old_flags != dst->flags) {
+			lb_status_changed(dst);
+			if( lb_prob_verbose )
+				LM_INFO("manually %s destination %d <%.*s>\n",
+					(stat ? "enable" : "disable"),
+					dst->id, dst->uri.len, dst->uri.s
+				);
+		}
+	}
+
+	lock_stop_read( ref_lock );
+	return init_mi_result_ok();
 }
 
 
-
-
-static struct mi_root* mi_lb_list(struct mi_root *cmd_tree, void *param)
+mi_response_t *mi_lb_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *dst_node;
-	struct mi_node *node, *node1;
-	struct mi_attr *attr;
 	struct lb_dst *dst;
-	char *p;
-	int len;
 	int i;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *dests_arr, *dest_item, *res_arr, *res_item;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL)
-		return NULL;
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	dests_arr = add_mi_array(resp_obj, MI_SSTR("Destinations"));
+	if (!dests_arr)
+		goto error;
 
 	lock_start_read( ref_lock );
 
 	/* go through all destination */
 	for( dst=(*curr_data)->dsts ; dst ; dst=dst->next) {
-		/* add a destination node */
-		dst_node = add_mi_node_child( &rpl_tree->node, 0, "Destination", 11,
-					dst->uri.s, dst->uri.len);
-		if (dst_node==0)
+		dest_item = add_mi_object(dests_arr, NULL, 0);
+		if (!dest_item)
 			goto error;
 
-		/* add some attributes to the destination node */
-		p= int2str((unsigned long)dst->id, &len);
-		attr = add_mi_attr( dst_node, MI_DUP_VALUE, "id", 2, p, len);
-		if (attr==0)
+		if (add_mi_string(dest_item, MI_SSTR("uri"), dst->uri.s, dst->uri.len) < 0)
 			goto error;
 
-		p= int2str((unsigned long)dst->group, &len);
-		attr = add_mi_attr( dst_node, MI_DUP_VALUE, "group", 5, p, len);
-		if (attr==0)
+		if (add_mi_number(dest_item, MI_SSTR("id"), dst->id) < 0)
+			goto error;
+
+		if (add_mi_number(dest_item, MI_SSTR("group"), dst->group) < 0)
 			goto error;
 
 		if (dst->flags&LB_DST_STAT_DSBL_FLAG) {
-			attr = add_mi_attr( dst_node, 0, "enabled", 7, "no", 2);
+			if (add_mi_string(dest_item, MI_SSTR("enabled"), MI_SSTR("no")) < 0)
+				goto error;
 		} else {
-			attr = add_mi_attr( dst_node, 0, "enabled", 7, "yes", 3);
+			if (add_mi_string(dest_item, MI_SSTR("enabled"), MI_SSTR("yes")) < 0)
+				goto error;
 		}
-		if (attr==0)
-			goto error;
 
 		if (dst->flags&LB_DST_STAT_NOEN_FLAG) {
-			attr = add_mi_attr( dst_node, 0, "auto-reenable", 13, "off", 3);
+			if (add_mi_string(dest_item, MI_SSTR("auto-reenable"),
+				MI_SSTR("off")) < 0)
+				goto error;
 		} else {
-			attr = add_mi_attr( dst_node, 0, "auto-reenable", 13, "on", 2);
+			if (add_mi_string(dest_item, MI_SSTR("auto-reenable"),
+				MI_SSTR("on")) < 0)
+				goto error;
 		}
-		if (attr==0)
-			goto error;
 
-		node = add_mi_node_child( dst_node, MI_IS_ARRAY, "Resources", 9, NULL, 0);
-		if (node==0)
+		res_arr = add_mi_array(resp_obj, MI_SSTR("Resources"));
+		if (!res_arr)
 			goto error;
 
 		/* go through all resources */
 		for( i=0 ; i<dst->rmap_no ; i++) {
-		/* add a resource node */
-			node1 = add_mi_node_child( node, 0, "Resource", 8,
-				dst->rmap[i].resource->name.s,dst->rmap[i].resource->name.len);
-			if (node1==0)
+			res_item = add_mi_object(res_arr, NULL, 0);
+			if (!res_item)
 				goto error;
 
-			/* add some attributes to the destination node */
-			p= int2str((unsigned long)dst->rmap[i].max_load, &len);
-			attr = add_mi_attr( node1, MI_DUP_VALUE, "max", 3, p, len);
-			if (attr==0)
+			if (add_mi_string(res_item, MI_SSTR("name"),
+				dst->rmap[i].resource->name.s,dst->rmap[i].resource->name.len) < 0)
 				goto error;
 
-			p= int2str((unsigned long)lb_dlg_binds.get_profile_size
-				(dst->rmap[i].resource->profile, &dst->profile_id), &len);
-			attr = add_mi_attr( node1, MI_DUP_VALUE, "load", 4, p, len);
-			if (attr==0)
+			if (add_mi_number(res_item, MI_SSTR("max"), dst->rmap[i].max_load) < 0)
+				goto error;
+
+			if (add_mi_number(res_item, MI_SSTR("load"),
+				lb_dlg_binds.get_profile_size
+				(dst->rmap[i].resource->profile, &dst->profile_id)) < 0)
 				goto error;
 		}
 	}
 
 	lock_stop_read( ref_lock );
-	return rpl_tree;
+	return resp;
+
 error:
 	lock_stop_read( ref_lock );
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return 0;
 }
 

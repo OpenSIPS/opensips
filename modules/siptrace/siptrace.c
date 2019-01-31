@@ -138,7 +138,14 @@ static void trace_slack_in(struct sip_msg* req, str *buffer,int rpl_code,
 				union sockaddr_union *dst, struct socket_info *sock, int proto);
 #endif
 
-static struct mi_root* sip_trace_mi(struct mi_root* cmd, void* param );
+static mi_response_t *sip_trace_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *sip_trace_mi_tid(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
 static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_info_p info);
@@ -199,10 +206,16 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "sip_trace", 0, sip_trace_mi,   0,  0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ "sip_trace", 0, MI_NAMED_PARAMS_ONLY, 0, {
+		{sip_trace_mi, {0}},
+		{sip_trace_mi_tid,  {"trace_id", 0}},
+		{sip_trace_mi_mode, {"trace_mode", 0}},
+		{sip_trace_mi_2,{"trace_id", "trace_mode", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{EMPTY_MI_EXPORT}
 };
-
 
 #ifdef STATISTICS
 #include "../../statistics.h"
@@ -2220,147 +2233,201 @@ static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps)
 	}
 }
 
-
-/**
- * MI command format:
- * name: sip_trace
- * attribute: name=none, value=[on|off]
- */
-static struct mi_root* sip_trace_mi(struct mi_root* cmd_tree, void* param )
+static int mi_tid_info(tlist_elem_p tid_el, mi_item_t *dests_arr)
 {
-	#define TID_INFO(_tid_el, _node, _rpl)                                          \
-		do {                                                                        \
-			_node=add_mi_node_child(_rpl, 0, _tid_el->name.s,                       \
-					_tid_el->name.len, 0, 0);                                       \
-			if (_tid_el->type==TYPE_HEP) {                                            \
-				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("HEP")); \
-				addf_mi_attr(_node, 0,  MI_SSTR("uri"), "%.*s:%.*s", \
-					_tid_el->el.hep.hep_id->ip.len, _tid_el->el.hep.hep_id->ip.s, \
-					_tid_el->el.hep.hep_id->port.len, _tid_el->el.hep.hep_id->port.s); \
-			} else if (_tid_el->type==TYPE_SIP) {                                   \
-				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("SIP"));             \
-				addf_mi_attr(_node, 0,  MI_SSTR("uri"), "%.*s:%.*s", \
-					_tid_el->el.uri.host.len, _tid_el->el.uri.host.s, \
-					_tid_el->el.uri.port.len, _tid_el->el.uri.port.s); \
-			} else if (_tid_el->type==TYPE_DB) {                                    \
-				add_mi_attr(_node, 0, MI_SSTR("type"), MI_SSTR("Database"));        \
-				add_mi_attr(_node, MI_DUP_VALUE,  MI_SSTR("uri"), \
-					_tid_el->el.db->url.s, _tid_el->el.db->url.len); \
-			}                                                                       \
-			if (*_tid_el->traceable)                                                \
-				add_mi_attr(_node, 0, MI_SSTR("state"), MI_SSTR("on"));         \
-			else                                                                    \
-				add_mi_attr(_node, 0, MI_SSTR("state"), MI_SSTR("off"));        \
-		} while(0);
+	mi_item_t *dest_item;
 
-	struct mi_node* node;
+	dest_item = add_mi_object(dests_arr, NULL, 0);
+	if (!dest_item)
+		return -1;
 
-	struct mi_node *rpl;
-	struct mi_root *rpl_tree ;
+	if (add_mi_string(dest_item, MI_SSTR("name"),
+		tid_el->name.s, tid_el->name.len) < 0)
+		return -1;
 
-	tlist_elem_p it;
-
-	unsigned int hash;
-	unsigned int tid_trace_flag=1;
-
-	node = cmd_tree->node.kids;
-	if(node == NULL) {
-		/* display name, type and state for all ids */
-		rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-		if (rpl_tree == 0)
-			return 0;
-		rpl = &rpl_tree->node;
-
-		if (*trace_on_flag == 0 ) {
-			node = add_mi_node_child(rpl,0,MI_SSTR("global"),MI_SSTR("off"));
-		} else if (*trace_on_flag == 1) {
-			node = add_mi_node_child(rpl,0,MI_SSTR("global"),MI_SSTR("on"));
-		}
-
-		for (it=trace_list;it;it=it->next)
-			TID_INFO(it, node, rpl);
-
-
-		return rpl_tree ;
-	} else {
-		if(trace_on_flag==NULL)
-			return init_mi_tree( 500, MI_SSTR(MI_INTERNAL_ERR));
-
-		/* <on/off> global or trace_id name */
-		if (node && !node->next) {
-			/* if on/off set global accordingly
-			 * else display trace_id info */
-			if ( node->value.len==2 &&
-			(node->value.s[0]=='o'|| node->value.s[0]=='O') &&
-			(node->value.s[1]=='n'|| node->value.s[1]=='N'))
-			{
-				*trace_on_flag = 1;
-				return init_mi_tree( 200, MI_SSTR(MI_OK));
-			} else if ( node->value.len==3 &&
-			(node->value.s[0]=='o'|| node->value.s[0]=='O') &&
-			(node->value.s[1]=='f'|| node->value.s[1]=='F') &&
-			(node->value.s[2]=='f'|| node->value.s[2]=='F'))
-			{
-				*trace_on_flag = 0;
-				return init_mi_tree( 200, MI_SSTR(MI_OK));
-			}
-
-			/* display trace id content here */
-			rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-			if (rpl_tree == 0)
-				return 0;
-			rpl = &rpl_tree->node;
-
-			if ( node->value.len && node->value.s ) {
-				it=get_list_start(&node->value);
-				if ( it ) {
-					hash=it->hash;
-					for (;it&&it->hash==hash;it=it->next)
-						TID_INFO(it, node, rpl);
-				} else {
-					return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-				}
-			} else {
-				return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-			}
-
-			return rpl_tree;
-		} else if (node && node->next && !node->next->next) {
-			/* trace on off for an id */
-			if ( node->next->value.len==2 &&
-			(node->next->value.s[0]=='o'|| node->next->value.s[0]=='O') &&
-			(node->next->value.s[1]=='n'|| node->next->value.s[1]=='N'))
-			{
-				tid_trace_flag=1;
-			} else if ( node->next->value.len==3 &&
-			(node->next->value.s[0]=='o'|| node->next->value.s[0]=='O') &&
-			(node->next->value.s[1]=='f'|| node->next->value.s[1]=='F') &&
-			(node->next->value.s[2]=='f'|| node->next->value.s[2]=='F'))
-			{
-				tid_trace_flag=0;
-			} else {
-				return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-			}
-
-			it=get_list_start(&node->value);
-                        if (!it) {
-                               return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-                        }
-
-			hash=it->hash;
-
-			for (;it&&it->hash==hash;it=it->next)
-				*it->traceable=tid_trace_flag;
-
-			return init_mi_tree(200, MI_SSTR(MI_OK));
-		}
-		/* error here */
-		return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
+	if (tid_el->type == TYPE_HEP) {
+		if (add_mi_string(dest_item, MI_SSTR("type"), MI_SSTR("HEP")) < 0)
+			return -1;
+		if (add_mi_string_fmt(dest_item, MI_SSTR("uri"), "%.*s:%.*s",
+			tid_el->el.hep.hep_id->ip.len, tid_el->el.hep.hep_id->ip.s,
+			tid_el->el.hep.hep_id->port.len, tid_el->el.hep.hep_id->port.s) < 0)
+			return -1;
+	} else if (tid_el->type == TYPE_SIP) {
+		if (add_mi_string(dest_item, MI_SSTR("type"), MI_SSTR("SIP")) < 0)
+			return -1;
+		if (add_mi_string_fmt(dest_item, MI_SSTR("uri"), "%.*s:%.*s",
+			tid_el->el.uri.host.len, tid_el->el.uri.host.s,
+			tid_el->el.uri.port.len, tid_el->el.uri.port.s) < 0)
+			return -1;
+	} else if (tid_el->type == TYPE_DB) {
+		if (add_mi_string(dest_item, MI_SSTR("type"), MI_SSTR("Database")) < 0)
+			return -1;
+		if (add_mi_string(dest_item, MI_SSTR("uri"),
+			tid_el->el.db->url.s, tid_el->el.db->url.len) < 0)
+			return -1;
 	}
 
-	return NULL;
+	if (tid_el->traceable) {
+		if (add_mi_string(dest_item, MI_SSTR("state"), MI_SSTR("on")) < 0)
+			return -1;
+	} else {
+		if (add_mi_string(dest_item, MI_SSTR("state"), MI_SSTR("off")) < 0)
+			return -1;
+	}
+
+	return 0;
 }
 
+static mi_response_t *sip_trace_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *dests_arr;
+	tlist_elem_p it;
+
+	if (trace_on_flag==NULL)
+		return init_mi_error(500, MI_SSTR("Internal error"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if ( *trace_on_flag ) {
+		if (add_mi_string(resp_obj, MI_SSTR("global"), MI_SSTR("on")) < 0) {
+			goto error;
+		}
+	} else {
+		if (add_mi_string(resp_obj, MI_SSTR("global"), MI_SSTR("off")) < 0) {
+			goto error;
+		}
+	}
+
+	dests_arr = add_mi_array(resp_obj, MI_SSTR("trace destinations"));
+	if (!dests_arr)
+		goto error;
+
+	for (it=trace_list;it;it=it->next)
+		if (mi_tid_info(it, dests_arr) < 0)
+			goto error;
+
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *sip_trace_mi_tid(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	tlist_elem_p it;
+	unsigned int hash;
+	str tid_s;
+	mi_response_t *resp = NULL;
+	mi_item_t *resp_obj;
+	mi_item_t *dests_arr;
+
+	if (get_mi_string_param(params, "trace_id", &tid_s.s, &tid_s.len) < 0)
+		return init_mi_param_error();
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	it=get_list_start(&tid_s);
+	if ( it ) {
+		dests_arr = add_mi_array(resp_obj, MI_SSTR("trace destinations"));
+		if (!dests_arr)
+			goto error;
+
+		hash=it->hash;
+		for (;it&&it->hash==hash;it=it->next)
+			if (mi_tid_info(it, dests_arr) < 0)
+				goto error;
+	} else {
+		resp = init_mi_error(400, MI_SSTR("Bad trace_id value"));
+		goto error;
+	}
+
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return resp;
+}
+
+static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str new_mode;
+
+	if (trace_on_flag==NULL)
+		return init_mi_error(500, MI_SSTR("Internal error"));
+
+	if (get_mi_string_param(params, "trace_mode", &new_mode.s, &new_mode.len) < 0)
+		return init_mi_param_error();
+
+	if ( new_mode.len==2 &&
+	(new_mode.s[0]=='o'|| new_mode.s[0]=='O') &&
+	(new_mode.s[1]=='n'|| new_mode.s[1]=='N'))
+	{
+		*trace_on_flag = 1;
+		return init_mi_result_ok();
+	} else if ( new_mode.len==3 &&
+	(new_mode.s[0]=='o'|| new_mode.s[0]=='O') &&
+	(new_mode.s[1]=='f'|| new_mode.s[1]=='F') &&
+	(new_mode.s[2]=='f'|| new_mode.s[2]=='F'))
+	{
+		*trace_on_flag = 0;
+		return init_mi_result_ok();
+	} else
+		return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
+			MI_SSTR("trace_mode should be 'on' or 'off'"));
+}
+
+static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	unsigned int tid_trace_flag=1;
+	str tid_s;
+	str new_mode;
+	tlist_elem_p it;
+	unsigned int hash;
+
+	if (get_mi_string_param(params, "trace_id", &tid_s.s, &tid_s.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "trace_mode", &new_mode.s, &new_mode.len) < 0)
+		return init_mi_param_error();
+
+	if ( new_mode.len==2 &&
+	(new_mode.s[0]=='o'|| new_mode.s[0]=='O') &&
+	(new_mode.s[1]=='n'|| new_mode.s[1]=='N'))
+	{
+		tid_trace_flag=1;
+	} else if ( new_mode.len==3 &&
+	(new_mode.s[0]=='o'|| new_mode.s[0]=='O') &&
+	(new_mode.s[1]=='f'|| new_mode.s[1]=='F') &&
+	(new_mode.s[2]=='f'|| new_mode.s[2]=='F'))
+	{
+		tid_trace_flag=0;
+	} else {
+		return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
+					MI_SSTR("trace_mode should be 'on' or 'off'"));
+	}
+
+	it=get_list_start(&tid_s);
+	if (!it) {
+		return init_mi_error(400, MI_SSTR("Bad parameter value"));
+	}
+
+	hash=it->hash;
+
+	for (;it&&it->hash==hash;it=it->next)
+		*it->traceable=tid_trace_flag;
+
+	return init_mi_result_ok();
+}
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri)
 {
 	union sockaddr_union* to;

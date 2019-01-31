@@ -584,5 +584,3 @@ static void bin_packet_handler(bin_packet_t *packet)
 	}
 	return;
 }
-
-

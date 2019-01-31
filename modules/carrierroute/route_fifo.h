@@ -126,18 +126,19 @@ fifo_opt_t;
 
 #define OPT_STAR "*"
 
-struct mi_root* reload_fifo (struct mi_root* cmd_tree, void *param);
-
-struct mi_root* dump_fifo (struct mi_root* cmd_tree, void *param);
-
-struct mi_root* replace_host (struct mi_root* cmd_tree, void *param);
-
-struct mi_root* deactivate_host (struct mi_root* cmd_tree, void *param);
-
-struct mi_root* activate_host (struct mi_root* cmd_tree, void *param);
-
-struct mi_root* add_host (struct mi_root* cmd_tree, void *param);
-
-struct mi_root* delete_host (struct mi_root* cmd_tree, void * param);
+mi_response_t *reload_fifo(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *dump_fifo(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *replace_host(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *deactivate_host(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *activate_host(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *add_host(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *delete_host(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #endif

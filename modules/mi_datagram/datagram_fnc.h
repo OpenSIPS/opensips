@@ -39,41 +39,17 @@
 
 #include "mi_datagram.h"
 
+#define DATAGRAM_SOCK_BUF_SIZE 65457
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
-#define MI_ERR( CODE, REASON) TOSTRING(CODE##_ERR_CODE) " " REASON##_REASON "\n"
-
-#define MI_INTERNAL_ERR_CODE             500
-#define MI_PARSE_ERR_CODE                400
-
-#define MI_COMMAND_FAILED_REASON         "command failed"
-
-#define MI_COMMAND_FAILED                MI_ERR(MI_INTERNAL, MI_COMMAND_FAILED)
-#define MI_COMMAND_FAILED_LEN            (sizeof(MI_COMMAND_FAILED)-1)
-
-#define MI_COMMAND_NOT_AVAILABLE_REASON  "command not available"
-#define MI_COMMAND_NOT_AVAILABLE         MI_ERR(MI_INTERNAL, MI_COMMAND_NOT_AVAILABLE)
-#define MI_COMMAND_AVAILABLE_LEN         (sizeof(MI_COMMAND_NOT_AVAILABLE)-1)
-
-#define MI_PARSE_ERROR_REASON            "parse_error"
-#define MI_PARSE_ERROR                   MI_ERR(MI_PARSE, MI_PARSE_ERROR)
+#define MI_PARSE_ERROR					 "400 Parse_error"
 #define MI_PARSE_ERROR_LEN               (sizeof(MI_PARSE_ERROR)-1)
 
-#define MI_INTERNAL_ERROR_REASON         "Internal server error"
-#define MI_INTERNAL_ERROR                MI_ERR(MI_INTERNAL, MI_INTERNAL_ERROR)
+#define MI_INTERNAL_ERROR                "500 Internal error"
 #define MI_INTERNAL_ERROR_LEN            (sizeof(MI_INTERNAL_ERROR)-1)
-
-typedef struct datagram_str{
-	char * start, * current;
-	int len;
-}datagram_stream;
 
 typedef struct rx_tx{
 	int rx_sock, tx_sock;
 }rx_tx_sockets;
-
 
 int  mi_init_datagram_server(sockaddr_dtgram * address, unsigned int domain,
 								rx_tx_sockets * socks,int mode,

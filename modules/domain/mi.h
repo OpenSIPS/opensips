@@ -30,9 +30,10 @@
 #define MI_DOMAIN_DUMP   "domain_dump"
 
 
-struct mi_root* mi_domain_reload(struct mi_root *cmd, void *param);
-
-struct mi_root* mi_domain_dump(struct mi_root *cmd, void *param);
+mi_response_t *mi_domain_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_domain_dump(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 
 #endif

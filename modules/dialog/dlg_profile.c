@@ -1125,121 +1125,100 @@ int noval_get_local_count(struct dlg_profile_table *profile)
 
 /****************************** MI commands *********************************/
 
-struct mi_root * mi_get_profile(struct mi_root *cmd_tree, void *param )
+mi_response_t *mi_get_profile(const mi_params_t *params, str *value)
 {
-	struct mi_node* node;
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* rpl = NULL;
-	struct mi_attr* attr;
 	struct dlg_profile_table *profile;
-	str *value;
-	str *profile_name;
+	str profile_name;
 	unsigned int size;
-	int len;
-	char *p;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *profile_obj;
 
-	node = cmd_tree->node.kids;
-	if (node==NULL || !node->value.s || !node->value.len)
-		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-	profile_name = &node->value;
-
-	if (node->next) {
-		node = node->next;
-		if (!node->value.s || !node->value.len)
-			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-		if (node->next)
-			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-		value = &node->value;
-	} else {
-		value = NULL;
-	}
+	if (get_mi_string_param(params, "profile",
+		&profile_name.s, &profile_name.len) < 0)
+		return init_mi_param_error();
 
 	/* search for the profile */
-	profile = search_dlg_profile( profile_name );
+	profile = search_dlg_profile(&profile_name);
 	if (profile==NULL)
-		return init_mi_tree( 404, MI_SSTR("Profile not found"));
+		return init_mi_error(404, MI_SSTR("Profile not found"));
 
 	size = get_profile_size( profile , value );
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
 
-	node = add_mi_node_child(rpl, MI_DUP_VALUE, "profile", 7, NULL, 0);
-	if (node==0) {
-		free_mi_tree(rpl_tree);
-		return NULL;
-	}
-
-	attr = add_mi_attr(node, MI_DUP_VALUE, "name", 4,
-		profile->name.s, profile->name.len);
-	if(attr == NULL) {
+	profile_obj = add_mi_object(resp_obj, MI_SSTR("Profile"));
+	if (!profile_obj)
 		goto error;
-	}
+
+	if (add_mi_string(profile_obj, MI_SSTR("name"),
+		profile->name.s, profile->name.len) < 0)
+		goto error;
 
 	if (value) {
-		attr = add_mi_attr(node, MI_DUP_VALUE, "value", 5, value->s, value->len);
+		if (add_mi_string(profile_obj, MI_SSTR("value"),
+			value->s, value->len) < 0)
+			goto error;
 	} else {
-		attr = add_mi_attr(node, MI_DUP_VALUE, "value", 5, NULL, 0);
-	}
-	if(attr == NULL) {
-		goto error;
+		if (add_mi_null(profile_obj, MI_SSTR("value")) < 0)
+			goto error;
 	}
 
-	p= int2str((unsigned long)size, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5, p, len);
-	if(attr == NULL) {
+	if (add_mi_number(profile_obj, MI_SSTR("count"), size) < 0)
 		goto error;
-	}
 
 	if (profile->repl_type == REPL_CACHEDB) {
-		attr = add_mi_attr(node, MI_DUP_VALUE, "shared", 6, "yes", 3);
+		if (add_mi_string(profile_obj, MI_SSTR("shared"), MI_SSTR("yes")) < 0)
+			goto error;
 	} else {
-		attr = add_mi_attr(node, MI_DUP_VALUE, "shared", 6, "no", 2);
-	}
-	if (attr == NULL) {
-		goto error;
+		if (add_mi_string(profile_obj, MI_SSTR("shared"), MI_SSTR("no")) < 0)
+			goto error;
 	}
 
 	if (profile->repl_type == REPL_PROTOBIN) {
-		attr = add_mi_attr(node, MI_DUP_VALUE, "replicated", 10, "yes", 3);
+		if (add_mi_string(profile_obj, MI_SSTR("replicated"), MI_SSTR("yes")) < 0)
+			goto error;
 	} else {
-		attr = add_mi_attr(node, MI_DUP_VALUE, "replicated", 10, "no", 2);
-	}
-	if (attr == NULL) {
-		goto error;
+		if (add_mi_string(profile_obj, MI_SSTR("replicated"), MI_SSTR("no")) < 0)
+			goto error;
 	}
 
+	return resp;
 
-
-	return rpl_tree;
 error:
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return NULL;
 }
 
+mi_response_t *mi_get_profile_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_get_profile(params, 0);
+}
 
+mi_response_t *mi_get_profile_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str value;
+
+	if (get_mi_string_param(params, "value", &value.s, &value.len) < 0)
+		return init_mi_param_error();
+
+	return mi_get_profile(params, &value);
+}
 
 static inline int add_val_to_rpl(void * param, str key, void * val)
 {
-	struct mi_node* rpl = (struct mi_node* ) param;
-	struct mi_node* node;
-	struct mi_attr* attr;
-	int len;
-	char *p;
-	int counter;
+	mi_item_t *val_item;
 
-	node = add_mi_node_child(rpl, MI_DUP_VALUE, "value", 5, key.s , key.len );
-
-	if( node == NULL )
+	val_item = add_mi_object((mi_item_t *)param, NULL, 0);
+	if (!val_item)
 		return -1;
 
-	counter = prof_val_get_count(&val, 0);
-	p= int2str((unsigned long)counter, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
-
-	if( attr == NULL )
+	if (add_mi_string(val_item, MI_SSTR("value"), key.s , key.len) < 0)
+		return -1;
+	if (add_mi_number(val_item, MI_SSTR("count"), prof_val_get_count(&val, 0)) < 0)
 		return -1;
 
 	return 0;
@@ -1247,68 +1226,52 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 
 static inline int add_counter_no_val_to_rpl(void * param, int counter)
 {
-	struct mi_node* rpl = (struct mi_node* ) param;
-	struct mi_node* node;
-	struct mi_attr* attr;
-	int len;
-	char *p;
+	mi_item_t *val_item;
 
-	node = add_mi_node_child(rpl, MI_DUP_VALUE,
-	                         MI_SSTR("value"), MI_SSTR("WITHOUT VALUE"));
-
-	if( node == NULL )
+	val_item = add_mi_object((mi_item_t *)param, NULL, 0);
+	if (!val_item)
 		return -1;
 
-	p= int2str((unsigned long)counter, &len);
-	attr = add_mi_attr(node, MI_DUP_VALUE, "count", 5,  p, len );
-
-	if( attr == NULL )
+	if (add_mi_null(val_item, MI_SSTR("value")) < 0)
+		return -1;
+	if (add_mi_number(val_item, MI_SSTR("count"), counter) < 0)
 		return -1;
 
 	return 0;
 }
 
-struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
+mi_response_t *mi_get_profile_values(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node;
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* rpl = NULL;
 	struct dlg_profile_table *profile;
-	str *profile_name;
+	str profile_name;
 	int i, ret,n;
 
-	node = cmd_tree->node.kids;
-	if (node==NULL || !node->value.s || !node->value.len)
-		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-	profile_name = &node->value;
-	if (node->next) {
-		node = node->next;
-		if (!node->value.s || !node->value.len)
-			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-		if (node->next)
-			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-	}
-	profile = search_dlg_profile( profile_name );
+	mi_response_t *resp;
+	mi_item_t *resp_arr;
+
+	if (get_mi_string_param(params, "profile",
+		&profile_name.s, &profile_name.len) < 0)
+		return init_mi_param_error();
+
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
+		return NULL;
+
+	profile = search_dlg_profile( &profile_name );
 	if (profile==NULL)
-		return init_mi_tree( 404, MI_SSTR("Profile not found"));
+		return init_mi_error(404, MI_SSTR("Profile not found"));
 	if (profile->repl_type == REPL_CACHEDB)
-		return init_mi_tree( 405, MI_SSTR("Unsupported command for shared profiles"));
+		return init_mi_error(405, MI_SSTR("Unsupported command for shared profiles"));
 
 	/* gather dialog count for all values in this profile */
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-		goto error;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
-
 	ret = 0;
-
 	if( profile->has_value )
 	{
 		for( i=0; i<profile->size; i++ )
 		{
 			lock_set_get( profile->locks, i);
-			ret |= map_for_each( profile->entries[i], add_val_to_rpl, rpl);
+			ret |= map_for_each(profile->entries[i], add_val_to_rpl, resp_arr);
 			lock_set_release( profile->locks, i);
 		}
 	}
@@ -1321,62 +1284,50 @@ struct mi_root * mi_get_profile_values(struct mi_root *cmd_tree, void *param )
 		if (profile->repl_type != REPL_CACHEDB)
 			n += replicate_profiles_count(profile->noval_rcv_counters);
 
-		ret = add_counter_no_val_to_rpl(rpl, n);
+		ret = add_counter_no_val_to_rpl(resp_arr, n);
 	}
 
 	if ( ret )
 		goto error;
 
-	return rpl_tree;
+	return resp;
+
 error:
-	if (rpl_tree)
-		free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return NULL;
 }
 
-struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
+static mi_response_t *mi_profile_list(const mi_params_t *params, str *value)
 {
-	struct mi_node* node;
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* rpl = NULL;
 	struct dlg_profile_table *profile;
-	str *profile_name;
-	str *value;
-	unsigned int i,found,n;
+	str profile_name;
+	unsigned int i,found;
 	struct dlg_entry *d_entry;
 	struct dlg_cell    *cur_dlg;
 	struct dlg_profile_link *cur_link;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *dialogs_arr, *dialog_item;
 
-	node = cmd_tree->node.kids;
-	if (node==NULL || !node->value.s || !node->value.len)
-		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-	profile_name = &node->value;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
 
-	if (node->next) {
-		node = node->next;
-		if (!node->value.s || !node->value.len)
-			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-		if (node->next)
-			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-		value = &node->value;
-	} else {
-		value = NULL;
-	}
+	if (get_mi_string_param(params, "profile",
+		&profile_name.s, &profile_name.len) < 0)
+		return init_mi_param_error();
 
 	/* search for the profile */
-	profile = search_dlg_profile( profile_name );
+	profile = search_dlg_profile( &profile_name );
 	if (profile==NULL)
-		return init_mi_tree( 404, MI_SSTR("Profile not found"));
+		return init_mi_error(404, MI_SSTR("Profile not found"));
 
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-		return 0;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
+	dialogs_arr = add_mi_array(resp_obj, MI_SSTR("Dialogs"));
+	if (!dialogs_arr)
+		goto error;
 
 	/* go through the hash and print the dialogs */
-
-	for( n=0,i=0; i<d_table->size; i++)
+	for(i=0; i<d_table->size; i++)
 	{
 		d_entry = &(d_table->entries[i]);
 		lock_set_get(d_table->locks,d_entry->lock_idx);
@@ -1404,16 +1355,16 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 			}
 
 			if( found ) {
-
-				if( mi_print_dlg( rpl, cur_dlg, 0) ) {
+				dialog_item = add_mi_object(dialogs_arr, NULL, 0);
+				if (!dialog_item) {
 					lock_set_release(d_table->locks,d_entry->lock_idx);
 					goto error;
 				}
 
-				n++;
-
-				if ( (n % 50) == 0 )
-					flush_mi_tree(rpl_tree);
+				if( mi_print_dlg(dialog_item, cur_dlg, 0) ) {
+					lock_set_release(d_table->locks,d_entry->lock_idx);
+					goto error;
+				}
 			}
 
 			cur_dlg = cur_dlg->next;
@@ -1422,52 +1373,69 @@ struct mi_root * mi_profile_list(struct mi_root *cmd_tree, void *param )
 		lock_set_release(d_table->locks,d_entry->lock_idx);
 	}
 
+	return resp;
 
-	return rpl_tree;
 error:
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return NULL;
 }
 
-
-struct mi_root * mi_list_all_profiles(struct mi_root *cmd_tree, void *param )
+mi_response_t *mi_profile_list_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node* node;
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* rpl = NULL;
+	return mi_profile_list(params, 0);
+}
+
+mi_response_t *mi_profile_list_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str value;
+
+	if (get_mi_string_param(params, "value", &value.s, &value.len) < 0)
+		return init_mi_param_error();
+
+	return mi_profile_list(params, &value);
+}
+
+mi_response_t *mi_list_all_profiles(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
 	struct dlg_profile_table *profile;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *profiles_arr, *profile_item;
 
-	node = cmd_tree->node.kids;
-	if (node!=NULL)
-		return init_mi_tree( 401, MI_SSTR(MI_MISSING_PARM));
-
-	rpl_tree = init_mi_tree( 200, MI_SSTR(MI_OK));
-	if (rpl_tree==0)
-		return 0;
-
-	rpl = &rpl_tree->node;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
+	profiles_arr = add_mi_array(resp_obj, MI_SSTR("Profiles"));
+	if (profiles_arr)
+		goto error;
 
 	profile = profiles;
 	while (profile) {
+		profile_item = add_mi_object(profiles_arr, NULL, 0);
+		if (!profile_item)
+			goto error;
 
-		if (add_mi_node_child(rpl, 0, profile->name.s, profile->name.len,
-							 (profile->has_value? "1" : "0"), 1) == NULL) {
-			LM_ERR("Out of mem\n");
-			free_mi_tree(rpl_tree);
-			return init_mi_tree( 401, MI_SSTR(MI_INTERNAL_ERR));
-		}
-
+		if (add_mi_string(profile_item, MI_SSTR("name"),
+			profile->name.s, profile->name.len) < 0)
+			goto error;
+		if (add_mi_bool(profile_item, MI_SSTR("has value"),
+			profile->has_value) < 0)
+			goto error;
 		profile = profile->next;
 	}
 
-	return rpl_tree;
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return NULL;
 }
 
-struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
-	struct mi_node* node;
+static mi_response_t *mi_profile_terminate(const mi_params_t *params, str *value) {
 	struct dlg_profile_table *profile;
-	str *profile_name;
-	str *value;
+	str profile_name;
 	unsigned int i;
 	struct dlg_entry *d_entry;
 	struct dlg_cell    *cur_dlg;
@@ -1475,26 +1443,14 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 	struct dialog_list *deleted = NULL, *delete_entry ;
 	int shtag_state;
 
-	node = cmd_tree->node.kids;
-	if (node==NULL || !node->value.s || !node->value.len)
-		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-	profile_name = &node->value;
+	if (get_mi_string_param(params, "profile",
+		&profile_name.s, &profile_name.len) < 0)
+		return init_mi_param_error();
 
-	if (node->next) {
-		node = node->next;
-		if (!node->value.s || !node->value.len)
-			return init_mi_tree( 400, MI_SSTR(MI_BAD_PARM));
-		if (node->next)
-			return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-		value = &node->value;
-	} else {
-		value = NULL;
-	}
-
-	profile = search_dlg_profile( profile_name );
+	profile = search_dlg_profile( &profile_name );
 
 	if (profile==NULL)
-		return init_mi_tree( 404, MI_SSTR("Profile not found"));
+		return init_mi_error(404, MI_SSTR("Profile not found"));
 
 	for (i = 0; i < d_table->size; i++) {
 		d_entry = &(d_table->entries[i]);
@@ -1515,7 +1471,7 @@ struct mi_root * mi_profile_terminate(struct mi_root *cmd_tree, void *param ) {
 					if (!delete_entry) {
 						LM_CRIT("no more pkg memory\n");
 						lock_set_release(d_table->locks,d_entry->lock_idx);
-						return init_mi_tree( 400, MI_SSTR(MI_INTERNAL_ERR));
+						return init_mi_error(400, MI_SSTR("Internal error"));
 					}
 
 					delete_entry->dlg = cur_dlg;
@@ -1568,5 +1524,22 @@ next_dlg:
 		deleted = NULL;
 	}
 
-	return init_mi_tree(200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
+}
+
+mi_response_t *mi_profile_terminate_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_profile_terminate(params, 0);
+}
+
+mi_response_t *mi_profile_terminate_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str value;
+
+	if (get_mi_string_param(params, "value", &value.s, &value.len) < 0)
+		return init_mi_param_error();
+
+	return mi_profile_terminate(params, &value);
 }

@@ -2290,14 +2290,16 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 		<function moreinfo="none">dr_enable_probing</function>
 		</title>
 		<para>
-		Enables gateways probing if parameter value greater than 0.
-		Disables probing if parameter value is 0. With no parameter,
-		it returns the current gateways probing status.
+		Enables/disables gateway probing or returns the current gateway
+		probing status.
 		</para>
-		<para>
-		The function may takean optional parameter (for set operations)
-		- a number in decimal format.
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>status</emphasis> (optional) - 1 - enable,
+				0 - disable gateway probing</para>
+			</listitem>
+		</itemizedlist>
 		<example>
 		<title><function>dr_enable_probing</function> usage</title>
 		<programlisting  format="linespecific">

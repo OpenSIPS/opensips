@@ -49,13 +49,17 @@ static unsigned int used_heads;
 static int bl_ctx_idx = -1;
 
 static void delete_expired_routine(unsigned int ticks, void *param);
-static struct mi_root *mi_print_blacklists(struct mi_root *cmd, void *param);
+static mi_response_t *mi_print_blacklists(const mi_params_t *params,
+											struct mi_handler *async_hdl);
 
 
 static mi_export_t mi_bl_cmds[] = {
-	{ "list_blacklists", "lists all the defined (static or learned) blacklists",
-		mi_print_blacklists,  MI_NO_INPUT_FLAG  ,  0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ "list_blacklists", "lists all the defined (static or learned) blacklists", 0, 0, {
+		{mi_print_blacklists, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 int init_black_lists(void)
@@ -627,23 +631,26 @@ int check_against_blacklist(struct ip_addr *ip, str *text,
 
 
 
-static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param)
+static mi_response_t *mi_print_blacklists(const mi_params_t *params,
+											struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl;
-	struct mi_node *node;
-	struct mi_node *node1;
-	struct mi_node *node2;
-	struct mi_attr *attr;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *lists_arr, *list_item, *rules_arr, *rule_item;
 	unsigned int i;
 	struct bl_rule *blr;
 	char *p;
 	int len;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
+
+	lists_arr = add_mi_array(resp_obj, MI_SSTR("Lists"));
+	if (!lists_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	for ( i=0 ; i<used_heads ; i++ ) {
 
@@ -659,71 +666,58 @@ static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param)
 			lock_release(blst_heads[i].lock);
 		}
 
-		/* add a list node */
-		node = add_mi_node_child( rpl, 0, "List", 4,
-					blst_heads[i].name.s, blst_heads[i].name.len );
-		if (node==0)
+		list_item = add_mi_object(lists_arr, NULL, 0);
+		if (!list_item)
 			goto error;
 
-		/* add some attributes to the list node */
-		p= int2str((unsigned long)blst_heads[i].owner, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, "owner", 5, p, len);
-		if (attr==0)
+		if (add_mi_string(list_item, MI_SSTR("name"),
+			blst_heads[i].name.s, blst_heads[i].name.len) < 0)
 			goto error;
-		p= int2str((unsigned long)blst_heads[i].flags, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, "flags", 5, p, len);
-		if (attr==0)
+
+		if (add_mi_number(list_item, MI_SSTR("owner"), blst_heads[i].owner) < 0)
+			goto error;
+		if (add_mi_number(list_item, MI_SSTR("flags"), blst_heads[i].flags) < 0)
+			goto error;
+
+		rules_arr = add_mi_array(list_item, MI_SSTR("Rules"));
+		if (!rules_arr)
 			goto error;
 
 		for( blr = blst_heads[i].first ; blr ; blr = blr->next) {
-			/* add a rule node */
-			node1 = add_mi_node_child( node, 0, "Rule", 4, 0, 0 );
-			if (node1==0)
-				goto error;
-			/* add attributes to the rule node */
-			p= int2str((unsigned long)blr->flags, &len);
-			attr = add_mi_attr( node1, MI_DUP_VALUE, "flags", 5, p, len);
-			if (attr==0)
+			rule_item = add_mi_object(rules_arr, NULL, 0);
+			if (!rule_item)
 				goto error;
 
-			/* add to rule node */
+			if (add_mi_number(rule_item, MI_SSTR("flags"), blr->flags) < 0)
+				goto error;
+
 			p = ip_addr2a(&blr->ip_net.ip);
 			len = p?strlen(p):0;
-			node2 = add_mi_node_child( node1, MI_DUP_VALUE, "IP", 2, p, len);
-			if (node2==0)
+			if (add_mi_string(rule_item, MI_SSTR("IP"), p, len) < 0)
 				goto error;
 
 			p = ip_addr2a(&blr->ip_net.mask);
 			len = p?strlen(p):0;
-			node2 = add_mi_node_child( node1, MI_DUP_VALUE, "Mask", 4, p, len);
-			if (node2==0)
+			if (add_mi_string(rule_item, MI_SSTR("Mask"), p, len) < 0)
 				goto error;
 
-			p= int2str((unsigned long)blr->proto, &len);
-			node2 = add_mi_node_child( node1, MI_DUP_VALUE, "Proto", 5, p,len);
-			if (node2==0)
+			if (add_mi_number(rule_item, MI_SSTR("Proto"), blr->proto) < 0)
 				goto error;
 
-			p= int2str((unsigned long)blr->port, &len);
-			node2 = add_mi_node_child( node1, MI_DUP_VALUE, "Port", 4, p,len);
-			if (node2==0)
+			if (add_mi_number(rule_item, MI_SSTR("Port"), blr->port) < 0)
 				goto error;
 
 			if (blr->body.s) {
-				node2 = add_mi_node_child( node1, MI_DUP_VALUE, "Match", 5,
-					blr->body.s, blr->body.len);
-				if (node2==0)
+				if (add_mi_string(rule_item, MI_SSTR("Match"),
+					blr->body.s, blr->body.len) < 0)
 					goto error;
+
 			}
 
 			if (blst_heads[i].flags&BL_DO_EXPIRE) {
-				p= int2str((unsigned long)blr->expire_end, &len);
-				node2 = add_mi_node_child( node1, MI_DUP_VALUE, "Expire", 6,
-					p, len);
-				if (node2==0)
+				if (add_mi_number(rule_item, MI_SSTR("Expire"), blr->expire_end) < 0)
 					goto error;
 			}
-
 		}
 
 		if( !(blst_heads[i].flags&BL_READONLY_LIST) ) {
@@ -734,15 +728,15 @@ static struct mi_root* mi_print_blacklists(struct mi_root *cmd, void *param)
 
 	}
 
-	return rpl_tree;
+	return resp;
+
 error:
 	if( !(blst_heads[i].flags&BL_READONLY_LIST) ) {
 		lock_get( blst_heads[i].lock );
 		blst_heads[i].count_read--;
 		lock_release(blst_heads[i].lock);
 	}
-	free_mi_tree(rpl_tree);
+
+	free_mi_response(resp);
 	return 0;
 }
-
-

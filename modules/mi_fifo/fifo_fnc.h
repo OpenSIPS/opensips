@@ -40,33 +40,13 @@
 #define FIFO_REPLY_WAIT     80000
 
 extern trace_dest t_dst;
+extern int mi_fifo_pp;
 
 
 FILE* mi_init_fifo_server(char *fifo_name, int mode, int uid, int gid,
 		char* fifo_reply_dir);
 
 void  mi_fifo_server(FILE *fifostream);
-
-int   mi_read_line( char *b, int max, FILE **stream, int *read);
-
-static inline int mi_fifo_reply( FILE *stream, char *reply_fmt, ... )
-{
-	int r;
-	va_list ap;
-
-retry:
-	va_start(ap, reply_fmt);
-	r = vfprintf( stream, reply_fmt, ap);
-	va_end(ap);
-	if (r<=0) {
-		if ((errno==EINTR)||(errno==EAGAIN)||(errno==EWOULDBLOCK)) {
-			goto retry;
-		}
-		LM_ERR("fifo_error: write error: %s\n", strerror(errno));
-		return -1;
-	}
-	return 0;
-}
 
 #endif /* _FIFO_FNC_H */
 

@@ -108,7 +108,8 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2);
 /*
  * MI functions
  */
-static struct mi_root* mi_pcres_reload(struct mi_root* cmd, void* param);
+mi_response_t *mi_pcres_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 
 /*
@@ -148,10 +149,12 @@ static param_export_t params[] = {
  * Exported MI functions
  */
 static mi_export_t mi_cmds[] = {
-	{ "regex_reload", 0, mi_pcres_reload, MI_NO_INPUT_FLAG, 0, 0 },
-	{ 0, 0, 0, 0, 0 ,0 }
+	{ "regex_reload", 0, 0, 0, {
+		{mi_pcres_reload, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
-
 
 /*
  * Module interface
@@ -676,19 +679,20 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
  */
 
 /*! \brief Reload pcres by reading the file again */
-static struct mi_root* mi_pcres_reload(struct mi_root* cmd, void* param)
+mi_response_t *mi_pcres_reload(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	/* Check if group matching feature is enabled */
 	if (file == NULL) {
 		LM_NOTICE("'file' parameter is not set, group matching disabled\n");
-		return init_mi_tree(403, MI_SSTR("Group matching not enabled"));
+		return init_mi_error(403, MI_SSTR("Group matching not enabled"));
 	}
 
 	LM_NOTICE("reloading pcres...\n");
 	if (load_pcres(RELOAD)) {
 		LM_ERR("failed to reload pcres\n");
-		return init_mi_tree(500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+		return init_mi_error(500, MI_SSTR("Internal error"));
 	}
 	LM_NOTICE("reload success\n");
-	return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }

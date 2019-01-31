@@ -125,6 +125,13 @@ int slinkedl_traverse(slinkedl_list_t *list,
 	return 0;
 }
 
+void *slinkedl_peek(slinkedl_list_t *list)
+{
+	if (!list)
+		return NULL;
+
+	return list->head->data;
+}
 
 void slinkedl_list_destroy(slinkedl_list_t *list)
 {

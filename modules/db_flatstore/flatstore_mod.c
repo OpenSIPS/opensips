@@ -102,13 +102,12 @@ static param_export_t params[] = {
 
 
 #define MI_FLAT_HELP "Params: none ; Rotates the logging file."
-/*
- * Exported parameters
- */
 static mi_export_t mi_cmds[] = {
-	{ MI_FLAT_ROTATE, MI_FLAT_HELP, mi_flat_rotate_cmd,
-		MI_NO_INPUT_FLAG, 0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ MI_FLAT_ROTATE, MI_FLAT_HELP, 0, 0, {
+		{mi_flat_rotate_cmd, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 struct module_exports exports = {

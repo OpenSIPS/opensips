@@ -82,6 +82,12 @@ typedef int cjbool;
 
 static const unsigned char *global_ep = NULL;
 
+int cJSON_NumberIsInt(cJSON *item)
+{
+   return ((FABS((double)item->valueint - item->valuedouble) <= DBL_EPSILON) &&
+   (item->valuedouble <= INT_MAX) && (item->valuedouble >= INT_MIN));
+}
+
 const char *cJSON_GetErrorPtr(void)
 {
     return (const char*) global_ep;
@@ -292,6 +298,8 @@ typedef struct
     size_t length;
     size_t offset;
     cjbool noalloc;
+	flush_fn *flush;
+	void *flush_p;
 } printbuffer;
 
 /* realloc printbuffer if necessary to have at least "needed" bytes more */
@@ -299,6 +307,8 @@ static unsigned char* ensure(printbuffer *p, size_t needed)
 {
     unsigned char *newbuffer = NULL;
     size_t newsize = 0;
+	int written;
+	int flushed = 0;
 
     if (needed > INT_MAX)
     {
@@ -310,16 +320,29 @@ static unsigned char* ensure(printbuffer *p, size_t needed)
     {
         return NULL;
     }
-    needed += p->offset;
-    if (needed <= p->length)
+
+retry:
+    if (p->offset + needed <= p->length)
     {
         return p->buffer + p->offset;
     }
 
     if (p->noalloc) {
-        return NULL;
+		if (!p->flush)
+			return NULL;
+		/* we will try to flush everything, so we can re-use the same buffer */
+		if (flushed)
+			return NULL; /* TODO: cannot flush what's in here - shall we "remember" the error? */
+		written = (p->flush)(p->buffer, p->offset, p->flush_p);
+		if (written <= 0)
+			return NULL;
+		memmove(p->buffer, p->buffer + written, p->offset - written);
+		p->offset -= written;
+		flushed = 1;
+		goto retry;
     }
 
+    needed += p->offset;
     newsize = (size_t) pow2gt((int)needed);
     newbuffer = (unsigned char*)cJSON_malloc(newsize);
     if (!newbuffer)
@@ -914,6 +937,7 @@ char *cJSON_PrintBuffered(const cJSON *item, int prebuffer, cjbool fmt)
         return NULL;
     }
 
+	memset(&p, 0, sizeof(p));
     p.length = (size_t)prebuffer;
     p.offset = 0;
     p.noalloc = false;
@@ -930,11 +954,36 @@ int cJSON_PrintPreallocated(cJSON *item, char *buf, const int len, const cjbool 
         return false;
     }
 
+	memset(&p, 0, sizeof(p));
     p.buffer = (unsigned char*)buf;
     p.length = (size_t)len;
     p.offset = 0;
     p.noalloc = true;
     return print_value(item, 0, fmt, &p) != NULL;
+}
+
+int cJSON_PrintFlushed(cJSON *item, char *buf, const int len, const int fmt, flush_fn *func, void *param)
+{
+    printbuffer p;
+	int ret;
+
+    if (len < 0)
+    {
+        return false;
+    }
+
+	memset(&p, 0, sizeof(p));
+    p.buffer = (unsigned char*)buf;
+    p.length = (size_t)len;
+    p.offset = 0;
+    p.noalloc = true;
+    p.flush = func;
+    p.flush_p = param;
+    ret = (print_value(item, 0, fmt, &p) != NULL);
+	if (!ret || !p.offset)
+		return ret;
+		/* flush everything in the end */
+	return (p.flush)(p.buffer, p.offset + 1/* last } */, p.flush_p) > 0;
 }
 
 /* Parser core - when encountering text, process appropriately. */

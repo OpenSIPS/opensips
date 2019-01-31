@@ -47,7 +47,8 @@ static void flat_free(evi_reply_sock *sock);
 static str flat_print(evi_reply_sock *sock);
 static int flat_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static evi_reply_sock* flat_parse(str socket);
-static struct mi_root* mi_rotate(struct mi_root* root, void *param);
+mi_response_t *mi_rotate(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static int flat_raise(struct sip_msg *msg, str* ev_name,
 					 evi_reply_sock *sock, evi_params_t * params);
 
@@ -69,8 +70,11 @@ static str file_permissions;
 static mode_t file_permissions_oct;
 
 static mi_export_t mi_cmds[] = {
-	{ "evi_flat_rotate","rotates the files the module dumps events into",mi_rotate,0,0,0},
-	{0,0,0,0,0,0}
+	{ "evi_flat_rotate", "rotates the files the module dumps events into", 0,0,{
+		{mi_rotate, {"path_to_file", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static param_export_t mod_params[] = {
@@ -249,31 +253,26 @@ static struct flat_socket *search_for_fd(str value){
 	return NULL;
 }
 
-static struct mi_root* mi_rotate(struct mi_root* root, void *param){
-	/* sanity checks */
+mi_response_t *mi_rotate(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str path;
 
-	if (!root || !root->node.kids) {
-		LM_ERR("empty root tree\n");
-		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-	}
-
-	if (root->node.kids->value.s == NULL || root->node.kids->value.len == 0) {
-		LM_ERR("Missing value\n");
-		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM));
-	}
+	if (get_mi_string_param(params, "path_to_file", &path.s, &path.len) < 0)
+		return init_mi_param_error();
 
 	/* search for a flat_socket structure that contains the file descriptor
 	 * we need to rotate
 	 */
 	lock_get(global_lock);
 
-	struct flat_socket *found_fd = search_for_fd(root->node.kids->value);
+	struct flat_socket *found_fd = search_for_fd(path);
 
 	if (found_fd == NULL) {
-		LM_DBG("Path: %.*s is not valid\n", root->node.kids->value.len,
-			root->node.kids->value.s);
+		LM_DBG("Path: %.*s is not valid\n", path.len,
+			path.s);
 		lock_release(global_lock);
-		return init_mi_tree( 400, MI_SSTR("File not found"));
+		return init_mi_error(400, MI_SSTR("File not found"));
 	}
 
 	LM_DBG("Found file descriptor and updating rotating version for %s, to %d\n",
@@ -283,8 +282,7 @@ static struct mi_root* mi_rotate(struct mi_root* root, void *param){
 
 	lock_release(global_lock);
 
-	/* return a mi_root structure with a success return code*/
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
 
 static int flat_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {

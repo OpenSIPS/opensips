@@ -418,58 +418,47 @@ error:
 	return -1;
 }
 
-struct mi_root* mi_shvar_set(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_shvar_set(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	str sp;
 	str name;
-	int ival;
 	int_str isv;
 	int flags;
-	struct mi_node* node;
 	sh_var_t *shv = NULL;
 
-	node = cmd_tree->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_SSTR(MI_MISSING_PARM_S));
-	name = node->value;
+	if (get_mi_string_param(params, "name", &name.s, &name.len) < 0)
+		return init_mi_param_error();
 	if(name.len<=0 || name.s==NULL)
 	{
 		LM_ERR("bad shv name\n");
-		return init_mi_tree( 500, MI_SSTR("bad shv name"));
+		return init_mi_error( 500, MI_SSTR("bad shv name"));
 	}
+
 	shv = get_shvar_by_name(&name);
 	if(shv==NULL)
-		return init_mi_tree(404, MI_SSTR("Not found"));
+		return init_mi_error(404, MI_SSTR("Not found"));
 
-	node = node->next;
-	if(node == NULL)
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM_S));
-	sp = node->value;
-	if(sp.s == NULL)
-		return init_mi_tree(500, MI_SSTR("type not found"));
+	if (get_mi_string_param(params, "type", &sp.s, &sp.len) < 0)
+		return init_mi_param_error();
+	if(sp.len<=0 || sp.s==NULL)
+		return init_mi_error(500, MI_SSTR("type not found"));
+
 	flags = 0;
 	if(sp.s[0]=='s' || sp.s[0]=='S')
 		flags = VAR_VAL_STR;
 
-	node= node->next;
-	if(node == NULL)
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM_S));
-
-	sp = node->value;
-	if(sp.s == NULL)
-	{
-		return init_mi_tree(500, MI_SSTR("value not found"));
-	}
 	if(flags == 0)
 	{
-		if(str2sint(&sp, &ival))
-		{
-			LM_ERR("bad integer value\n");
-			return init_mi_tree( 500, MI_SSTR("bad integer value"));
-		}
-		isv.n = ival;
+		if (get_mi_int_param(params, "value", &isv.n) < 0)
+			return init_mi_param_error();
 	} else {
-		isv.s = sp;
+		if (get_mi_string_param(params, "value", &isv.s.s, &isv.s.len) < 0)
+			return init_mi_param_error();
+		if(isv.s.len<=0 || isv.s.s==NULL)
+		{
+			return init_mi_error(500, MI_SSTR("value not found"));
+		}
 	}
 
 	lock_shvar(shv);
@@ -477,125 +466,119 @@ struct mi_root* mi_shvar_set(struct mi_root* cmd_tree, void* param)
 	{
 		unlock_shvar(shv);
 		LM_ERR("cannot set shv value\n");
-		return init_mi_tree( 500, MI_SSTR("cannot set shv value"));
+		return init_mi_error( 500, MI_SSTR("cannot set shv value"));
 	}
 
 	unlock_shvar(shv);
 	LM_DBG("$shv(%.*s) updated\n", name.len, name.s);
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
-struct mi_root* mi_shvar_get(struct mi_root* cmd_tree, void* param)
+int mi_print_var(sh_var_t *shv, mi_item_t *var_item)
 {
-	struct mi_root* rpl_tree = NULL;
-	struct mi_node* node;
-	struct mi_attr* attr = NULL;
-	str name;
 	int ival;
-	sh_var_t *shv = NULL;
 
-	node = cmd_tree->node.kids;
-	if(node != NULL)
+	lock_shvar(shv);
+	if(shv->v.flags&VAR_VAL_STR)
 	{
-		name = node->value;
-		if(name.len<=0 || name.s==NULL)
-		{
-			LM_ERR("bad shv name\n");
-			return init_mi_tree( 500, MI_SSTR("bad shv name"));
-		}
-		shv = get_shvar_by_name(&name);
-		if(shv==NULL)
-			return init_mi_tree(404, MI_SSTR("Not found"));
-
-		rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-		if (rpl_tree==NULL)
-			return NULL;
-
-		node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,
-				"VAR",3, name.s, name.len);
-  		if(node == NULL)
-  			goto error;
-		lock_shvar(shv);
-		if(shv->v.flags&VAR_VAL_STR)
-		{
-			attr = add_mi_attr (node, MI_DUP_VALUE, "type", 4, "string", 6);
-			if(attr == 0)
-			{
-				unlock_shvar(shv);
-				goto error;
-			}
-			attr = add_mi_attr (node, MI_DUP_VALUE, "value", 5,
-					shv->v.value.s.s, shv->v.value.s.len);
-	  		if(attr == 0)
-			{
-				unlock_shvar(shv);
-				goto error;
-			}
+		if (add_mi_string(var_item, MI_SSTR("type"), MI_SSTR("string")) < 0) {
 			unlock_shvar(shv);
-		} else {
-			ival = shv->v.value.n;
-			unlock_shvar(shv);
-			attr = add_mi_attr (node, MI_DUP_VALUE, "type",4, "integer", 7);
-			if(attr == 0)
-				goto error;
-			name.s = sint2str(ival, &name.len);
-			attr = add_mi_attr (node, MI_DUP_VALUE, "value",5,
-					name.s, name.len);
-	  		if(attr == 0)
-				goto error;
+			return -1;
 		}
 
-		goto done;
+		if (add_mi_string(var_item, MI_SSTR("value"),
+			shv->v.value.s.s, shv->v.value.s.len) < 0) {
+			unlock_shvar(shv);
+			return -1;
+		}
+
+		unlock_shvar(shv);
+	} else {
+		ival = shv->v.value.n;
+		unlock_shvar(shv);
+		if (add_mi_string(var_item, MI_SSTR("type"), MI_SSTR("integer")) < 0)
+			return -1;
+
+		if (add_mi_number(var_item, MI_SSTR("value"), ival) < 0)
+			return -1;
 	}
 
-	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL)
-		return NULL;
+	return 0;
+}
+
+mi_response_t *mi_shvar_get(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *var_arr, *var_item;
+	sh_var_t *shv = NULL;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+	var_arr = add_mi_array(resp_obj, MI_SSTR("VARs"));
+	if (!var_arr)
+		goto error;
 
 	for(shv=sh_vars; shv; shv=shv->next)
 	{
-		node = add_mi_node_child(&rpl_tree->node, MI_DUP_VALUE,
-				"VAR", 3, shv->name.s, shv->name.len);
-  		if(node == NULL)
-  			goto error;
+		var_item = add_mi_object(var_arr, NULL, 0);
+		if (!var_item)
+			goto error;
 
-		lock_shvar(shv);
-		if(shv->v.flags&VAR_VAL_STR)
-		{
-			attr = add_mi_attr (node, MI_DUP_VALUE, "type", 4, "string", 6);
-			if(attr == 0)
-			{
-				unlock_shvar(shv);
-				goto error;
-			}
-			attr = add_mi_attr (node, MI_DUP_VALUE, "value", 5,
-					shv->v.value.s.s, shv->v.value.s.len);
-	  		if(attr == 0)
-			{
-				unlock_shvar(shv);
-				goto error;
-			}
-			unlock_shvar(shv);
-		} else {
-			ival = shv->v.value.n;
-			unlock_shvar(shv);
-			attr = add_mi_attr (node, MI_DUP_VALUE, "type",4, "integer", 7);
-			if(attr == 0)
-				goto error;
-			name.s = sint2str(ival, &name.len);
-			attr = add_mi_attr (node, MI_DUP_VALUE, "value",5,
-					name.s, name.len);
-	  		if(attr == 0)
-				goto error;
-		}
+		if (add_mi_string(var_item, MI_SSTR("name"),
+			shv->name.s, shv->name.len) < 0)
+			goto error;
+
+		if (mi_print_var(shv, var_item) < 0)
+			goto error;
 	}
 
-done:
-	return rpl_tree;
+	return resp;
+
 error:
-	if(rpl_tree!=NULL)
-		free_mi_tree(rpl_tree);
-	return NULL;
+	free_mi_response(resp);
+	return 0;
+}
+
+mi_response_t *mi_shvar_get_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *var_obj;
+	str name;
+	sh_var_t *shv = NULL;
+
+	if (get_mi_string_param(params, "name", &name.s, &name.len) < 0)
+		return init_mi_param_error();
+
+	if(name.len==0 || name.s==NULL)
+	{
+		LM_ERR("bad shv name\n");
+		return init_mi_error( 500, MI_SSTR("bad shv name"));
+	}
+	shv = get_shvar_by_name(&name);
+	if(shv==NULL)
+		return init_mi_error(404, MI_SSTR("Not found"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	var_obj = add_mi_object(resp_obj, MI_SSTR("VAR"));
+	if (!var_obj)
+		goto error;
+
+	if (mi_print_var(shv, var_obj) < 0)
+		goto error;
+
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
 }
 
 int param_set_xvar( modparam_t type, void* val, int mode)

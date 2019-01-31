@@ -40,11 +40,8 @@
 #define RCV_BYE_REPLY	1
 
 #define MI_DIALOG_NOT_FOUND 		"Requested Dialog not found"
-#define MI_DIALOG_NOT_FOUND_LEN 	(sizeof(MI_DIALOG_NOT_FOUND)-1)
 #define MI_DIALOG_BACKUP_ERR		"Node is backup for requested dialog"
-#define MI_DIALOG_BACKUP_ERR_LEN	(sizeof(MI_DIALOG_BACKUP_ERR)-1)
 #define MI_DLG_OPERATION_ERR		"Operation failed"
-#define MI_DLG_OPERATION_ERR_LEN	(sizeof(MI_DLG_OPERATION_ERR)-1)
 
 #define DLG_PING_PENDING	(1<<0)
 #define DLG_PING_SUCCESS	(1<<1)
@@ -119,7 +116,10 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 
 int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes);
 
-struct mi_root * mi_terminate_dlg(struct mi_root *cmd_tree, void *param );
+mi_response_t *mi_terminate_dlg_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_terminate_dlg_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		str *hdrs,str *body,dlg_request_callback func,void *param,

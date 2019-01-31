@@ -2219,23 +2219,25 @@ static int restore_dlg_db(void)
 	return 0;
 }
 
-struct mi_root* mi_sync_db_dlg(struct mi_root *cmd, void *param)
+mi_response_t *mi_sync_db_dlg(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	if (dlg_db_mode == 0)
-		return init_mi_tree( 400, MI_SSTR("Cannot sync in no-db mode"));
+		return init_mi_error(400, MI_SSTR("Cannot sync in no-db mode"));
 	if (sync_dlg_db_mem() < 0)
-		return init_mi_tree( 400, MI_SSTR("Sync mem with DB failed"));
+		return init_mi_error(400, MI_SSTR("Sync mem with DB failed"));
 	else
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
+		return init_mi_result_ok();
 }
 
-struct mi_root* mi_restore_dlg_db(struct mi_root *cmd, void *param)
+mi_response_t *mi_restore_dlg_db(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	if (dlg_db_mode == 0)
-		return init_mi_tree( 400, MI_SSTR("Cannot restore db in no-db mode!"));
+		return init_mi_error(400, MI_SSTR("Cannot restore db in no-db mode!"));
 	if (restore_dlg_db() < 0)
-		return init_mi_tree( 400, MI_SSTR("Restore dlg DB failed!"));
+		return init_mi_error(400, MI_SSTR("Restore dlg DB failed!"));
 	else
-		return init_mi_tree( 200, MI_SSTR(MI_OK));
+		return init_mi_result_ok();
 }
 

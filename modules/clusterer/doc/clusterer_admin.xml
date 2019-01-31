@@ -861,7 +861,7 @@ Cluster:: 2
 			<emphasis>cmd_name</emphasis> - name of the MI command to be run
 			</para></listitem>
 			<listitem><para>
-			the parameters of the MI command to be run - optional or required, depending on the command
+			<emphasis>cmd_name</emphasis> - the parameters of the MI command to be run, optional or required, depending on the command
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -891,7 +891,7 @@ Cluster:: 2
 			<emphasis>cmd_name</emphasis> - name of the MI command to be run
 			</para></listitem>
 			<listitem><para>
-			the parameters of the MI command to be run - optional or required, depending on the command
+			<emphasis>cmd_name</emphasis> - the parameters of the MI command to be run, optional or required, depending on the command
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -935,8 +935,9 @@ Cluster:: 1
 		<para>
 		Name: <emphasis>clusterer_shtag_set_active</emphasis>
 		</para>
-		<para>Parameters: <emphasis>tag/cluster_id</emphasis> - the name of 
-		the tag to be set active and the cluster it belogs to.
+		<para>Parameters: <emphasis>tag</emphasis> - the name of
+		the tag to be set active and the cluster it belogs to, in the
+		format 'tag/cluster_id'.
 		</para>
 		<para>
 		MI FIFO Command Format:

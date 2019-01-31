@@ -33,7 +33,6 @@
 #include "shm_mem.h"
 #include "../config.h"
 #include "../globals.h"
-#include "../mi/tree.h"
 
 #ifdef  SHM_MMAP
 
@@ -440,26 +439,30 @@ int shm_mem_init(void)
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
 }
 
-struct mi_root *mi_shm_check(struct mi_root *cmd, void *param)
+mi_response_t *mi_shm_check(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 #if defined(QM_MALLOC) && defined(DBG_MALLOC)
-	struct mi_root *root;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 	int ret;
 
 	shm_lock();
 	ret = qm_mem_check(shm_block);
 	shm_unlock();
 
-	/* any return means success; print the number of fragments now */
-	root = init_mi_tree(200, MI_SSTR(MI_OK));
+	/* print the number of fragments */
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
 
-	if (!addf_mi_node_child(&root->node, 0, MI_SSTR("total_fragments"), "%d", ret)) {
-		LM_ERR("failed to add MI node\n");
-		free_mi_tree(root);
+	if (add_mi_number(resp, MI_SSTR("total_fragments"), ret) < 0) {
+		LM_ERR("failed to add MI item\n");
+		free_mi_response(resp);
 		return NULL;
 	}
 
-	return root;
+	return resp;
 #endif
 
 	return NULL;

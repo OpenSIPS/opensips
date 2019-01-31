@@ -41,10 +41,11 @@ void shtag_flush_state(int c_id, int node_id);
 
 void shtag_event_handler(int cluster_id, enum clusterer_event ev, int node_id);
 
-struct mi_root *shtag_mi_list(struct mi_root *cmd, void *param);
+mi_response_t *shtag_mi_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
-struct mi_root *shtag_mi_set_active(struct mi_root *cmd, void *param);
-
+mi_response_t *shtag_mi_set_active(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 /* API functions */
 int shtag_get(str *tag_name, int cluster_id);

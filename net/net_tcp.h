@@ -60,7 +60,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done);
 int tcp_start_listener(void);
 
 /* MI function to list all existing TCP connections */
-struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param);
+mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
+							struct mi_handler *async_hdl);
 
 
 /************************* TCP net helper functions **************************/

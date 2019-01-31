@@ -281,5 +281,28 @@ modparam("b2b_entities", "replication_mode", 1)
 		in configuration script.</para>
 	</section>
 
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+	<section id="mi_b2be_list" xreflabel="b2be_list">
+		<title>
+		<function moreinfo="none">b2be_list</function>
+		</title>
+		<para>
+			This command can be used to list the internals of the b2b entities.
+		</para>
+		<para>
+		Name: <emphasis>b2be_list</emphasis>
+		</para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+		<itemizedlist>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+	<programlisting  format="linespecific">
+	opensipsctl fifo b2be_list
+	</programlisting>
+	</section>
+
+</section>
+
 </chapter>
 

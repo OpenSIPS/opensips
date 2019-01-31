@@ -41,12 +41,9 @@
 #include "../../mi/mi.h"
 #include "../../mi/mi_trace.h"
 #include "mi_fifo.h"
-#include "mi_parser.h"
-#include "mi_writer.h"
 #include "fifo_fnc.h"
 
 static int mi_mod_init(void);
-static int mi_child_init(int rank);
 static void fifo_process(int rank);
 static int mi_destroy(void);
 
@@ -55,13 +52,11 @@ static int mi_destroy(void);
 static char *mi_fifo = 0;
 /* dir where reply fifos are allowed */
 static char *mi_fifo_reply_dir = DEFAULT_MI_REPLY_DIR;
-static char *mi_reply_indent = DEFAULT_MI_REPLY_IDENT;
 static int  mi_fifo_uid = -1;
 static char *mi_fifo_uid_s = 0;
 static int  mi_fifo_gid = -1;
 static char *mi_fifo_gid_s = 0;
 static int  mi_fifo_mode = S_IRUSR| S_IWUSR| S_IRGRP| S_IWGRP; /* rw-rw---- */
-static int  read_buf_size = MAX_MI_FIFO_READ;
 
 static str trace_destination_name = {NULL, 0};
 trace_dest t_dst;
@@ -79,9 +74,9 @@ static param_export_t mi_params[] = {
 	{"fifo_user",             STR_PARAM, &mi_fifo_uid_s},
 	{"fifo_user",             INT_PARAM, &mi_fifo_uid},
 	{"reply_dir",             STR_PARAM, &mi_fifo_reply_dir},
-	{"reply_indent",          STR_PARAM, &mi_reply_indent},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
 	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s        },
+	{"pretty_printing",		INT_PARAM,	&mi_fifo_pp},
 	{0,0,0}
 };
 
@@ -109,7 +104,7 @@ struct module_exports exports = {
 	mi_mod_init,                   /* module initialization function */
 	(response_function) 0,         /* response handling function */
 	(destroy_function) mi_destroy, /* destroy function */
-	mi_child_init                  /* per-child init function */
+	0                              /* per-child init function */
 };
 
 
@@ -188,20 +183,6 @@ static int mi_mod_init(void)
 	return 0;
 }
 
-
-static int mi_child_init(int rank)
-{
-	if (rank>PROC_MAIN ) {
-		if ( mi_writer_init(read_buf_size, mi_reply_indent)!=0 ) {
-			LM_CRIT("failed to init the reply writer\n");
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-
 static void fifo_process(int rank)
 {
 	FILE *fifo_stream;
@@ -217,16 +198,6 @@ static void fifo_process(int rank)
 
 	if( init_mi_child()!=0) {
 		LM_CRIT("failed to init the mi process\n");
-		exit(-1);
-	}
-
-	if ( mi_parser_init(read_buf_size)!=0 ) {
-		LM_CRIT("failed to init the command parser\n");
-		exit(-1);
-	}
-
-	if ( mi_writer_init(read_buf_size, mi_reply_indent)!=0 ) {
-		LM_CRIT("failed to init the reply writer\n");
 		exit(-1);
 	}
 

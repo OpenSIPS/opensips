@@ -82,8 +82,10 @@ static int child_init(int);
 
 static int imc_manager(struct sip_msg*, char *, char *);
 
-static struct mi_root* imc_mi_list_rooms(struct mi_root* cmd, void* param);
-static struct mi_root* imc_mi_list_members(struct mi_root* cmd, void* param);
+mi_response_t *imc_mi_list_rooms(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *imc_mi_list_members(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 void destroy(void);
 
@@ -122,9 +124,15 @@ static stat_export_t imc_stats[] = {
 #endif
 
 static mi_export_t mi_cmds[] = {
-	{ "imc_list_rooms",    0, imc_mi_list_rooms,    MI_NO_INPUT_FLAG,  0,  0 },
-	{ "imc_list_members",  0, imc_mi_list_members,  0,                 0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ "imc_list_rooms", 0, 0, 0, {
+		{imc_mi_list_rooms, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "imc_list_members", 0, 0, 0, {
+		{imc_mi_list_members, {"room", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static dep_export_t deps = {
@@ -681,44 +689,44 @@ done:
 
 
 /************************* MI ***********************/
-static struct mi_root* imc_mi_list_rooms(struct mi_root* cmd_tree, void* param)
+mi_response_t *imc_mi_list_rooms(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	int i, len;
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* rpl= NULL;
-	struct mi_node* node= NULL;
-	struct mi_attr* attr= NULL;
+	int i;
 	imc_room_p irp = NULL;
-	char* p = NULL;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *rooms_arr, *room_item;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if(rpl_tree == NULL)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
+
+	rooms_arr = add_mi_array(resp_obj, MI_SSTR("ROOMS"));
+	if (!rooms_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
 
 	for(i=0; i<imc_hash_size; i++)
 	{
 		lock_get(&_imc_htable[i].lock);
 		irp = _imc_htable[i].rooms;
 			while(irp){
-				node = add_mi_node_child(rpl, 0, "ROOM", 4, 0, 0);
-				if( node == NULL)
+				room_item = add_mi_object(rooms_arr, NULL, 0);
+				if (!room_item)
 					goto error;
 
-				attr= add_mi_attr(node, MI_DUP_VALUE, "URI", 3, irp->uri.s,
-					irp->uri.len);
-				if(attr == NULL)
+				if (add_mi_string(room_item, MI_SSTR("URI"),
+					irp->uri.s, irp->uri.len) < 0)
 					goto error;
 
-				p = int2str(irp->nr_of_members, &len);
-				attr= add_mi_attr(node, 0, "MEMBERS", 7,p, len );
-				if(attr == NULL)
+				if (add_mi_number(room_item, MI_SSTR("MEMBERS"),
+					irp->nr_of_members) < 0)
 					goto error;
 
-				attr= add_mi_attr(node, MI_DUP_VALUE, "OWNER", 5,
-						irp->members->uri.s, irp->members->uri.len);
-				if(attr == NULL)
+				if (add_mi_string(room_item, MI_SSTR("OWNER"),
+					irp->members->uri.s, irp->members->uri.len) < 0)
 					goto error;
 
 				irp = irp->next;
@@ -726,55 +734,45 @@ static struct mi_root* imc_mi_list_rooms(struct mi_root* cmd_tree, void* param)
 		lock_release(&_imc_htable[i].lock);
 	}
 
-	return rpl_tree;
+	return resp;
 
 error:
 	lock_release(&_imc_htable[i].lock);
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return 0;
-
 }
 
 
-static struct mi_root* imc_mi_list_members(struct mi_root* cmd_tree,
-																void* param)
+mi_response_t *imc_mi_list_members(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	int i, len;
-	struct mi_root* rpl_tree = NULL;
-	struct mi_node* node= NULL;
-	struct mi_node* node_r= NULL;
-	struct mi_attr* attr= NULL;
+	int i;
 	char rnbuf[256];
 	str room_name;
 	imc_room_p room;
 	struct sip_uri inv_uri, *pinv_uri;
 	imc_member_p imp=NULL;
-	char* p = NULL;
+	mi_response_t *resp = NULL;
+	mi_item_t *resp_obj;
+	mi_item_t *members_arr;
 
-	node= cmd_tree->node.kids;
-	if(node == NULL|| node->next!=NULL)
-		return 0;
+	if (get_mi_string_param(params, "room", &room_name.s, &room_name.len) < 0)
+		return init_mi_param_error();
 
-	/* room name */
-	room_name.s = rnbuf;
-	room_name.len= node->value.len;
-	memcpy(room_name.s, node->value.s, node->value.len);
 	if(room_name.s == NULL || room_name.len == 0)
 	{
-		LM_ERR(" no room name!\n");
-		return init_mi_tree( 404, "room name not found", 19);
+		LM_ERR("empty room name\n");
+		return init_mi_error(400, MI_SSTR("empty param"));
 	}
+
+	memcpy(rnbuf, room_name.s, room_name.len);
 	rnbuf[room_name.len] = '\0';
-	if(*room_name.s=='\0' || *room_name.s=='.')
-	{
-		LM_INFO("empty room name\n");
-		return init_mi_tree( 400, "empty param", 11);
-	}
+	room_name.s = rnbuf;
 
 	/* find room */
 	if (parse_uri(room_name.s,room_name.len, &inv_uri) < 0) {
 		LM_ERR("cannot parse uri!\n");
-		return init_mi_tree( 400, "bad param", 9);
+		return init_mi_error(400, MI_SSTR("bad param"));
 	}
 	pinv_uri=&inv_uri;
 	room=imc_get_room(&pinv_uri->user, &pinv_uri->host);
@@ -782,42 +780,41 @@ static struct mi_root* imc_mi_list_members(struct mi_root* cmd_tree,
 	if(room==NULL)
 	{
 		LM_ERR("no such room!\n");
-		return init_mi_tree( 404, "no such room", 14);
+		return init_mi_error(404, MI_SSTR("no such room"));
 	}
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if(rpl_tree == NULL)
-		return 0;
-
-	node_r = add_mi_node_child( &rpl_tree->node, MI_IS_ARRAY|MI_DUP_VALUE,
-		"ROOM", 4, room_name.s, room_name.len);
-	if(node_r == NULL)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		goto error;
 
+	if (add_mi_string(resp_obj, MI_SSTR("ROOM"),room_name.s, room_name.len) < 0)
+		goto error;
+
+	members_arr = add_mi_array(resp_obj, MI_SSTR("MEMBERS"));
+	if (!members_arr)
+		goto error;
 
 	imp = room->members;
 	i=0;
 	while(imp)
 	{
-		i++;
-		node = add_mi_node_child(node_r, MI_DUP_VALUE, "MEMBER",6, imp->uri.s,
-			imp->uri.len);
-		if(node == NULL)
+		if (add_mi_string(members_arr, 0, 0, imp->uri.s, imp->uri.len) < 0)
 			goto error;
+
+		i++;
 		imp = imp->next;
 	}
 
-	p = int2str(i, &len);
-	attr= add_mi_attr(node_r, MI_DUP_VALUE, "NR_OF_MEMBERS", 13, p, len);
-	if(attr == 0)
+	if (add_mi_number(resp_obj, MI_SSTR("NO_MEMBERS"), i) < 0)
 		goto error;
 
 	imc_release_room(room);
 
-	return rpl_tree;
+	return resp;
 
 error:
 	imc_release_room(room);
-	free_mi_tree(rpl_tree);
+	if (resp)
+		free_mi_response(resp);
 	return 0;
 }

@@ -384,9 +384,25 @@ void ref_dlg(struct dlg_cell *dlg, unsigned int cnt);
 void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 		int *new_state, int *unref, int last_dst_leg, char replicate_events);
 
-struct mi_root * mi_print_dlgs(struct mi_root *cmd, void *param );
-struct mi_root * mi_print_dlgs_ctx(struct mi_root *cmd, void *param );
-struct mi_root * mi_push_dlg_var(struct mi_root *cmd_tree, void *param );
+mi_response_t *mi_print_dlgs(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_print_dlgs_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_print_dlgs_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_print_dlgs_cnt(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_print_dlgs_ctx(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_print_dlgs_1_ctx(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_print_dlgs_2_ctx(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_print_dlgs_cnt_ctx(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_push_dlg_var(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static inline void unref_dlg_destroy_safe(struct dlg_cell *dlg, unsigned int cnt)
 {
@@ -515,7 +531,7 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 */
 }
 
-int mi_print_dlg(struct mi_node *rpl, struct dlg_cell *dlg, int with_context);
+int mi_print_dlg(mi_item_t *dialog_obj, struct dlg_cell *dlg, int with_context);
 
 static inline void init_dlg_term_reason(struct dlg_cell *dlg,char *reason,int reason_len)
 {

@@ -275,7 +275,7 @@ modparam("sql_cacher", "reload_interval", 5)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>id</emphasis> (optional) - the caching entry's id
+				<emphasis>id</emphasis> - the caching entry's id
 			</para></listitem>
 			<listitem><para>
 				<emphasis>key</emphasis> (optional) - the specific key to be reloaded, 

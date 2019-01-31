@@ -29,58 +29,46 @@
 #include "sipwatch.h"
 #include "sipluami.h"
 
-#define SIPLUAMI_USAGE	"usage: watch [add | delete | show] [extension]"
-
-struct mi_root *siplua_mi_reload(struct mi_root *cmd_tree, void *param)
+mi_response_t *siplua_mi_watch(const mi_params_t *params,
+                struct mi_handler *async_hdl)
 {
-  struct mi_root *answer;
+  int i;
+  mi_response_t *resp;
+  mi_item_t *resp_arr;
 
-  answer = init_mi_tree(200, "xOK", 3);
-  addf_mi_node_child(&answer->node, 0, "pid", 3, "%d", (int)getpid());
-  return answer;
-}
+  resp = init_mi_result_object(&resp_arr);
+  if (!resp)
+    return 0;
 
-struct mi_root *siplua_mi_bla(struct mi_root *cmd_tree, void *param)
-{
-  return init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-}
-
-struct mi_root *siplua_mi_watch(struct mi_root *cmd_tree, void *param)
-{
-  struct mi_root *answer;
-  struct mi_node *node;
-  str action;
-
-  node = cmd_tree->node.kids;
-  if (!node)
-    return init_mi_tree(200, SIPLUAMI_USAGE, sizeof(SIPLUAMI_USAGE) - 1);
-  action = node->value;
-  node = node->next;
-  if (action.len == 3 && !strncmp("add", action.s, action.len))
-    {
-      if (!node)
-	return init_mi_tree(200, "usage: missing extension", 24);
-      sipwatch_add(node->value.s, node->value.len);
-    }
-  if (action.len == 6 && !strncmp("delete", action.s, action.len))
-    {
-      if (!node)
-	return init_mi_tree(200, "usage: missing extension", 24);
-      sipwatch_delete(node->value.s, node->value.len);
-    }
-  if (action.len == 4 && !strncmp("show", action.s, action.len))
-    {
-      int i;
-
-      answer = init_mi_tree(200, "xOK", 3);
-      answer->node.flags |= MI_IS_ARRAY;
-      sipwatch_lock();
-      for (i = 0; i < siplua_watch->nb; ++i)
-	addf_mi_node_child(&answer->node, 0, "extension", 9, "%s",
-			   siplua_watch->ext[i].str);
+  sipwatch_lock();
+  for (i = 0; i < siplua_watch->nb; ++i)
+    if (add_mi_string_fmt(resp_arr, MI_SSTR("extension"), "%s",
+      siplua_watch->ext[i].str) < 0) {
       sipwatch_unlock();
-      return answer;
+      free_mi_response(resp);
+      return 0;
     }
-  answer = init_mi_tree(200, "xOK", 3);
-  return answer;
+
+  sipwatch_unlock();
+  return resp;
+}
+
+mi_response_t *siplua_mi_watch_2(const mi_params_t *params,
+                struct mi_handler *async_hdl)
+{
+  str action, extension;
+
+  if (get_mi_string_param(params, "action", &action.s, &action.len) < 0)
+    return init_mi_param_error();
+  if (get_mi_string_param(params, "extension", &extension.s, &extension.len) < 0)
+    return init_mi_param_error();
+
+  if (action.len == 3 && !strncmp("add", action.s, action.len))
+      sipwatch_add(extension.s, extension.len);
+  else if (action.len == 6 && !strncmp("delete", action.s, action.len))
+      sipwatch_delete(extension.s, extension.len);
+  else
+    return init_mi_error(400, MI_SSTR("Bad action, should be 'add' or 'delete'"));
+
+  return init_mi_result_ok();
 }

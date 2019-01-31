@@ -6,4 +6,3 @@ NAME=mi_http.so
 LIBS=
 
 include ../../Makefile.modules
-

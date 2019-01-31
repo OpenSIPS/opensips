@@ -125,19 +125,39 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */
-static struct mi_root* mi_bm_enable_global(struct mi_root *cmd, void *param);
-static struct mi_root* mi_bm_enable_timer(struct mi_root *cmd, void *param);
-static struct mi_root* mi_bm_granularity(struct mi_root *cmd, void *param);
-static struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param);
-static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param);
+mi_response_t *mi_bm_enable_global(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_bm_enable_timer(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_bm_granularity(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_bm_loglevel(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_bm_poll_results(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static mi_export_t mi_cmds[] = {
-	{ "bm_enable_global", 0, mi_bm_enable_global,  0,  0,  0  },
-	{ "bm_enable_timer",  0, mi_bm_enable_timer,   0,  0,  0  },
-	{ "bm_granularity",   0, mi_bm_granularity,    0,  0,  0  },
-	{ "bm_loglevel",      0, mi_bm_loglevel,       0,  0,  0  },
-	{ "bm_poll_results",  0, mi_bm_poll_results,   0,  0,  0  },
-	{ 0, 0, 0, 0, 0, 0}
+	{ "bm_enable_global", 0,0,0, {
+		{mi_bm_enable_global, {"enable", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "bm_enable_timer", 0,0,0, {
+		{mi_bm_enable_timer, {"timer", "enable", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "bm_granularity", 0,0,0, {
+		{mi_bm_granularity, {"granularity", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "bm_loglevel", 0,0,0, {
+		{mi_bm_loglevel, {"log_level", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "bm_poll_results", 0,0,0, {
+		{mi_bm_poll_results, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static int bm_get_time_diff(struct sip_msg *msg, pv_param_t *param,
@@ -511,187 +531,152 @@ static inline char * pkg_strndup( char* _p, int _len)
 /*
  * Expects 1 node: 0 for disable, 1 for enable
  */
-static struct mi_root* mi_bm_enable_global(struct mi_root *cmd, void *param)
+mi_response_t *mi_bm_enable_global(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
+	int v1;
 
-	char *p1, *e1;
-	long int v1;
+	if (get_mi_int_param(params, "enable", &v1) < 0)
+		init_mi_param_error();
 
-	node = cmd->node.kids;
-
-	if ((node == NULL) || (node->next != NULL))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	//p1 = strndup(node->value.s, node->value.len);
-	p1 = pkg_strndup(node->value.s, node->value.len);
-
-	v1 = strtol(p1, &e1, 0);
-
-	if ((*e1 != '\0') || (*p1 == '\0')) {
-		pkg_free(p1);
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-	}
-
-	if ((v1 < -1) || (v1 > 1)) {
-		pkg_free(p1);
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
-	}
+	if ((v1 < -1) || (v1 > 1))
+		return init_mi_error(400, MI_SSTR("Bad parameter value"));
 
 	bm_mycfg->enable_global = v1;
 
-	pkg_free(p1);
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
-static struct mi_root* mi_bm_enable_timer(struct mi_root *cmd, void *param)
+mi_response_t *mi_bm_enable_timer(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
-
-	char *p1, *p2, *e2;
-	long int v2;
+	char *p1;
+	int v2;
 	unsigned int id;
+	str timer;
 
-	node = cmd->node.kids;
+	if (get_mi_string_param(params, "timer", &timer.s, &timer.len) < 0)
+		return init_mi_param_error();
 
-	if ((node == NULL) || (node->next == NULL) || (node->next->next != NULL))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	/* replace to pkg stuff - or get rid of */
-	//p1 = strndup(node->value.s, node->value.len);
-	p1 = pkg_strndup(node->value.s, node->value.len);
+	p1 = pkg_strndup(timer.s, timer.len);
 
 	if(_bm_register_timer(p1, 0, &id)!=0)
 	{
 		pkg_free(p1);
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_error(400, MI_SSTR("Failed to register timer"));
 	}
-	//p2 = strndup(node->next->value.s, node->next->value.len);
-	p2 = pkg_strndup(node->next->value.s, node->next->value.len);
-	v2 = strtol(p2, &e2, 0);
 
 	pkg_free(p1);
-	pkg_free(p2);
 
-	if (*e2 != '\0' || *p2 == '\0')
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	if (get_mi_int_param(params, "enable", &v2) < 0)
+		init_mi_param_error();	
 
 	if ((v2 < 0) || (v2 > 1))
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_error(400, MI_SSTR("Bad parameter value"));
 
 	bm_mycfg->timers[id].enabled = v2;
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
-static struct mi_root* mi_bm_granularity(struct mi_root *cmd, void *param)
+mi_response_t *mi_bm_granularity(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
+	int v1;
 
-	char *p1, *e1;
-	long int v1;
-
-	node = cmd->node.kids;
-
-	if ((node == NULL) || (node->next != NULL))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	/* replace to pkg stuff */
-	//p1 = strndup(node->value.s, node->value.len);
-	p1 = pkg_strndup(node->value.s, node->value.len);
-
-	v1 = strtol(p1, &e1, 0);
-
-	pkg_free(p1);
-
-	if ((*e1 != '\0') || (*p1 == '\0'))
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	if (get_mi_int_param(params, "granularity", &v1) < 0)
+		init_mi_param_error();
 
 	if (v1 < 0)
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_error(400, MI_SSTR("Bad value for parameter"));
 
 	bm_mycfg->granularity = v1;
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
-static struct mi_root* mi_bm_loglevel(struct mi_root *cmd, void *param)
+mi_response_t *mi_bm_loglevel(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
+	int v1;
 
-	char *p1, *e1;
-	long int v1;
-
-	node = cmd->node.kids;
-
-	if ((node == NULL) || (node->next != NULL))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	/* replace to pkg stuff */
-	//p1 = strndup(node->value.s, node->value.len);
-	p1 = pkg_strndup(node->value.s, node->value.len);
-
-	v1 = strtol(p1, &e1, 0);
-
-	pkg_free(p1);
-
-	if ((*e1 != '\0') || (*p1 == '\0'))
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	if (get_mi_int_param(params, "log_level", &v1) < 0)
+		init_mi_param_error();	
 
 	if ((v1 < -3) || (v1 > 4)) /* Maximum log levels */
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_error(400, MI_SSTR("Bad value for parameter"));
 
 	bm_mycfg->enable_global = v1;
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 }
 
-static void add_results_node(struct mi_node *node, benchmark_timer_t *timer) {
-	struct mi_node *timer_node;
+static int add_results_item(mi_item_t *timer_item, benchmark_timer_t *timer)
+{
+	if (add_mi_string(timer_item, MI_SSTR("name"),
+		timer->name, strlen(timer->name)) < 0)
+		return -1;
 
-	timer_node = addf_mi_node_child(node, 0, 0, 0, "%s", timer->name);
-	timer_node->flags |= MI_IS_ARRAY;
-	addf_mi_node_child(timer_node, 0, 0, 0,
-			"%i/%lld/%lld/%lld/%f",
-			timer->calls,
-			timer->last_sum,
-			timer->last_min==STARTING_MIN_VALUE?0:timer->last_min,
-			timer->last_max,
-			timer->calls?((double)timer->last_sum)/timer->calls:0.);
-	addf_mi_node_child(timer_node, 0, 0, 0,
-			"%lld/%lld/%lld/%lld/%f",
-			timer->global_calls,
+	if (add_mi_string_fmt(timer_item, MI_SSTR("global"), "%i/%lld/%lld/%lld/%f",
+		timer->calls,
+		timer->last_sum,
+		timer->last_min==STARTING_MIN_VALUE?0:timer->last_min,
+		timer->last_max,
+		timer->calls?((double)timer->last_sum)/timer->calls:0.) < 0)
+		return -1;
+
+	if (add_mi_string_fmt(timer_item, MI_SSTR("local"), "%lld/%lld/%lld/%lld/%f",
+		timer->global_calls,
 			timer->sum,
 			timer->global_min==STARTING_MIN_VALUE?0:timer->global_min,
 			timer->global_max,
-			timer->global_calls?((double)timer->sum)/timer->global_calls:0.);
+			timer->global_calls?((double)timer->sum)/timer->global_calls:0.) < 0)
+		return -1;
+
+	return 0;
 }
 
-static struct mi_root* mi_bm_poll_results(struct mi_root *cmd, void *param)
+mi_response_t *mi_bm_poll_results(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *timers_arr, *timer_item;
 	benchmark_timer_t *bmt;
+	int rc;
 
 	if (bm_mycfg->granularity!=0)
-		return init_mi_tree( 400, MI_CALL_INVALID_S, MI_CALL_INVALID_LEN);
+		return init_mi_error(400, MI_CALL_INVALID_S, MI_CALL_INVALID_LEN);
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL) {
-		LM_ERR("Could not allocate the reply mi tree\n");
-		return NULL;
-	}
-	rpl_tree->node.flags |= MI_IS_ARRAY;
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	timers_arr = add_mi_array(resp_obj, MI_SSTR("Timers"));
+	if (timers_arr)
+		goto error;
 
 	for(bmt = bm_mycfg->timers; bmt!=NULL; bmt=bmt->next) {
+		timer_item = add_mi_object(timers_arr, NULL, 0);
+		if (!timer_item)
+			goto error;
+
 		lock_get(bmt->lock);
 
-		add_results_node(&rpl_tree->node, bmt);
+		rc = add_results_item(timer_item, bmt);
 		soft_reset_timer(bmt);
 
 		lock_release(bmt->lock);
+
+		if (rc < 0)
+			goto error;
 	}
 
-	return rpl_tree;
+	return resp;
+
+error:
+	free_mi_response(resp);
+	return 0;
 }
 
 /* item functions */

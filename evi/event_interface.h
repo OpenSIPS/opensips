@@ -49,14 +49,23 @@ typedef struct evi_event {
 } evi_event_t, *evi_event_p;
 
 
-/* function used to subscribe for an event */
-struct mi_root * mi_event_subscribe(struct mi_root *cmd_tree, void *param);
+/* used to subscribe for an event */
+mi_response_t *w_mi_event_subscribe(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *w_mi_event_subscribe_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 /* used to list all the registered events */
-struct mi_root * mi_events_list(struct mi_root *cmd_tree, void *param);
+mi_response_t *mi_events_list(const mi_params_t *params,
+							struct mi_handler *async_hdl);
 
 /* used to listt all subscribers */
-struct mi_root * mi_subscribers_list(struct mi_root *cmd_tree, void *param);
+mi_response_t *w_mi_subscribers_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *w_mi_subscribers_list_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *w_mi_subscribers_list_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 /* returns the transport export */
 evi_export_t* get_trans_mod(str* tran);

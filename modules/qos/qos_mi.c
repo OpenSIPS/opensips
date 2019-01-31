@@ -32,75 +32,68 @@
 #include "qos_ctx_helpers.h"
 
 
-int add_mi_sdp_payload_nodes(struct mi_node* node, int index, sdp_payload_attr_t* sdp_payload)
+int add_mi_sdp_payload_nodes(mi_item_t *payload_item, int index,
+						sdp_payload_attr_t* sdp_payload)
 {
-	struct mi_node* node1;
-	struct mi_attr* attr;
-	char* p;
-	int len;
-
-	p = int2str((unsigned long)(index), &len);
-	node1 = add_mi_node_child( node, MI_DUP_VALUE, "payload", 7, p, len);
-	if (node1==NULL)
+	if (add_mi_number(payload_item, MI_SSTR("index"), index) < 0)
 		return 1;
-
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "rtpmap", 6, sdp_payload->rtp_payload.s, sdp_payload->rtp_payload.len);
-	if (attr==NULL)
+	
+	if (add_mi_string(payload_item, MI_SSTR("rtpmap"), 
+		sdp_payload->rtp_payload.s, sdp_payload->rtp_payload.len) < 0)
 		return 1;
 
 	if (sdp_payload->rtp_enc.s!=NULL && sdp_payload->rtp_enc.len!=0) {
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "codec", 5, sdp_payload->rtp_enc.s, sdp_payload->rtp_enc.len);
-		if(attr == NULL)
+		if (add_mi_string(payload_item, MI_SSTR("codec"), 
+			sdp_payload->rtp_enc.s, sdp_payload->rtp_enc.len) < 0)
 			return 1;
 	}
 
 	return 0;
 }
 
-int add_mi_stream_nodes(struct mi_node* node, int index, sdp_stream_cell_t* stream)
+int add_mi_stream_nodes(mi_item_t *stream_item, int index, sdp_stream_cell_t* stream)
 {
-	struct mi_node* node1;
-	struct mi_attr* attr;
+	mi_item_t *payload_arr, *payload_item;
 	sdp_payload_attr_t* sdp_payload;
-	char* p;
-	int i, len;
+	int i;
 
-	p = int2str((unsigned long)(index), &len);
-	node1 = add_mi_node_child( node,  MI_IS_ARRAY|MI_DUP_VALUE, "stream", 6, p, len);
-	if (node1==NULL)
+	if (add_mi_number(stream_item, MI_SSTR("index"), index) < 0)
 		return 1;
 
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "media", 5, stream->media.s, stream->media.len);
-	if(attr == NULL)
+	if (add_mi_string(stream_item, MI_SSTR("media"),
+		stream->media.s, stream->media.len) < 0)
 		return 1;
 
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "IP", 2, stream->ip_addr.s, stream->ip_addr.len);
-	if(attr == NULL)
+	if (add_mi_string(stream_item, MI_SSTR("IP"),
+		stream->ip_addr.s, stream->ip_addr.len) < 0)
 		return 1;
 
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "port", 4, stream->port.s, stream->port.len);
-	if(attr == NULL)
+	if (add_mi_string(stream_item, MI_SSTR("port"),
+		stream->port.s, stream->port.len) < 0)
 		return 1;
 
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "transport", 9, stream->transport.s, stream->transport.len);
-	if(attr == NULL)
+	if (add_mi_string(stream_item, MI_SSTR("transport"),
+		stream->transport.s, stream->transport.len) < 0)
 		return 1;
 
 	if (stream->sendrecv_mode.s!=NULL && stream->sendrecv_mode.len!=0) {
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "sendrecv", 8, stream->sendrecv_mode.s, stream->sendrecv_mode.len);
-		if(attr == NULL)
+		if (add_mi_string(stream_item, MI_SSTR("sendrecv"),
+			stream->sendrecv_mode.s, stream->sendrecv_mode.len) < 0)
 			return 1;
 	}
 
 	if (stream->ptime.s!=NULL && stream->ptime.len!=0) {
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "ptime", 5, stream->ptime.s, stream->ptime.len);
-		if(attr == NULL)
+		if (add_mi_string(stream_item, MI_SSTR("transport"),
+			stream->ptime.s, stream->ptime.len) < 0)
 			return 1;
 	}
 
-	p = int2str((unsigned long)(stream->payloads_num), &len);
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "payloads_num", 12, p, len);
-	if(attr == NULL)
+	if (add_mi_number(stream_item, MI_SSTR("payloads_num"),
+		stream->payloads_num) < 0)
+		return 1;
+
+	payload_arr = add_mi_array(stream_item, MI_SSTR("payload"));
+	if (!payload_arr)
 		return 1;
 
 	sdp_payload = stream->payload_attr;
@@ -109,7 +102,11 @@ int add_mi_stream_nodes(struct mi_node* node, int index, sdp_stream_cell_t* stre
 			LM_ERR("got NULL sdp_payload\n");
 			return 1;
 		}
-		if (0!=add_mi_sdp_payload_nodes(node1, i, sdp_payload)){
+		payload_item = add_mi_object(payload_arr, NULL, 0);
+		if (!payload_item)
+			return 1;
+
+		if (0!=add_mi_sdp_payload_nodes(payload_item, i, sdp_payload)){
 			return 1;
 		}
 		sdp_payload = sdp_payload->next;
@@ -118,46 +115,44 @@ int add_mi_stream_nodes(struct mi_node* node, int index, sdp_stream_cell_t* stre
 	return 0;
 }
 
-int add_mi_session_nodes(struct mi_node* node, int index, sdp_session_cell_t* session)
+int add_mi_session_nodes(mi_item_t *sess_item, int index, sdp_session_cell_t* session)
 {
-	struct mi_node* node1;
-	struct mi_attr* attr;
 	sdp_stream_cell_t* stream;
-	char* p;
-	int i, len;
+	int i;
+
+	mi_item_t *streams_arr, *stream_item;
 
 	switch (index) {
 		case 0:
-			node1 = add_mi_node_child( node, MI_IS_ARRAY|MI_DUP_VALUE,
-				"session", 7, "caller", 6);
-			if (node1==NULL)
+			if (add_mi_string(sess_item, MI_SSTR("entity"), MI_SSTR("caller")) < 0)
 				return 1;
 			break;
 		case 1:
-			node1 = add_mi_node_child( node,  MI_IS_ARRAY|MI_DUP_VALUE,
-				"session", 7, "callee", 6);
-			if (node1==NULL)
+			if (add_mi_string(sess_item, MI_SSTR("entity type"), MI_SSTR("callee")) < 0)
 				return 1;
 			break;
 		default:
 			return 1;
 	}
 
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "cnt_disp", 8, session->cnt_disp.s, session->cnt_disp.len);
-	if(attr == NULL)
+	if (add_mi_string(sess_item, MI_SSTR("cnt_disp"),
+		session->cnt_disp.s, session->cnt_disp.len) < 0)
 		return 1;
 
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "bw_type", 7, session->bw_type.s, session->bw_type.len);
-	if(attr == NULL)
+	if (add_mi_string(sess_item, MI_SSTR("bw_type"),
+		session->bw_type.s, session->bw_type.len) < 0)
 		return 1;
 
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "bw_width", 8, session->bw_width.s, session->bw_width.len);
-	if(attr == NULL)
+	if (add_mi_string(sess_item, MI_SSTR("bw_width"),
+		session->bw_width.s, session->bw_width.len) < 0)
 		return 1;
 
-	p = int2str((unsigned long)(session->streams_num), &len);
-	attr = add_mi_attr(node1, MI_DUP_VALUE, "streams", 7, p, len);
-	if(attr == NULL)
+	if (add_mi_number(sess_item, MI_SSTR("no. streams"), 
+		session->streams_num) < 0)
+		return 1;
+
+	streams_arr = add_mi_array(sess_item, MI_SSTR("streams"));
+	if (!streams_arr)
 		return 1;
 
 	stream = session->streams;
@@ -166,7 +161,11 @@ int add_mi_session_nodes(struct mi_node* node, int index, sdp_session_cell_t* se
 			LM_ERR("got NULL stream\n");
 			return 1;
 		}
-		if (0!=add_mi_stream_nodes(node1, i, stream)){
+		stream_item = add_mi_object(streams_arr, NULL, 0);
+		if (!stream_item)
+			return 1;
+
+		if (0!=add_mi_stream_nodes(stream_item, i, stream)){
 			return 1;
 		}
 		stream = stream->next;
@@ -175,48 +174,53 @@ int add_mi_session_nodes(struct mi_node* node, int index, sdp_session_cell_t* se
 	return 0;
 }
 
-int add_mi_sdp_nodes(struct mi_node* node, qos_sdp_t* qos_sdp)
+int add_mi_sdp_nodes(mi_item_t *item, qos_sdp_t* qos_sdp)
 {
-	struct mi_node* node1;
-	struct mi_attr* attr;
-	char* p;
-	int i, len;
+	int i;
 	sdp_session_cell_t* session;
+
+	mi_item_t *sdp_arr, *sdp_item, *sess_arr, *sess_item;
 
 	if ( qos_sdp->prev != NULL ) LM_ERR("got qos_sdp->prev=%p\n", qos_sdp->prev);
 
+	sdp_arr = add_mi_array(item, MI_SSTR("sdp"));
+	if (!sdp_arr)
+		return 1;
+
 	while (qos_sdp) {
-		node1 = add_mi_node_child( node, MI_IS_ARRAY|MI_DUP_VALUE, "sdp", 3, NULL, 0);
-		if (node1==NULL)
+		sdp_item = add_mi_object(sdp_arr, NULL, 0);
+		if (!sdp_item)
 			return 1;
 
-		p = int2str((unsigned long)(qos_sdp->method_dir), &len);
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "m_dir", 5, p, len);
-		if(attr == NULL)
+		if (add_mi_number(sdp_item, MI_SSTR("m_dir"), qos_sdp->method_dir) < 0)
 			return 1;
 
-		p = int2str((unsigned long)(qos_sdp->method_id), &len);
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "m_id", 4, p, len);
-		if(attr == NULL)
+		if (add_mi_number(sdp_item, MI_SSTR("m_id"), qos_sdp->method_id) < 0)
 			return 1;
 
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "method", 6, qos_sdp->method.s, qos_sdp->method.len);
-		if(attr == NULL)
+		if (add_mi_string(sdp_item, MI_SSTR("method"),
+			qos_sdp->method.s, qos_sdp->method.len) < 0)
 			return 1;
 
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "cseq", 4, qos_sdp->cseq.s, qos_sdp->cseq.len);
-		if(attr == NULL)
+		if (add_mi_string(sdp_item, MI_SSTR("cseq"),
+			qos_sdp->cseq.s, qos_sdp->cseq.len) < 0)
 			return 1;
 
-		p = int2str((unsigned long)(qos_sdp->negotiation), &len);
-		attr = add_mi_attr(node1, MI_DUP_VALUE, "negotiation", 11, p, len);
-		if(attr == NULL)
+		if (add_mi_number(sdp_item, MI_SSTR("negotiation"), qos_sdp->negotiation) < 0)
+			return 1;
+
+		sess_arr = add_mi_array(item, MI_SSTR("sessions"));
+		if (!sess_arr)
 			return 1;
 
 		for (i=1;i>=0;i--){
 			session = qos_sdp->sdp_session[i];
 			if (session) {
-				if (0 != add_mi_session_nodes(node1, i, session))
+				sess_item = add_mi_object(sess_arr, NULL, 0);
+				if (!sess_item)
+					return 1;
+
+				if (0 != add_mi_session_nodes(sess_item, i, session))
 					return 1;
 			}
 		}
@@ -228,35 +232,33 @@ int add_mi_sdp_nodes(struct mi_node* node, qos_sdp_t* qos_sdp)
 
 void qos_dialog_mi_context_CB(struct dlg_cell* did, int type, struct dlg_cb_params * params)
 {
-	struct mi_node* parent_node = (struct mi_node*)(params->dlg_data);
-	struct mi_node* node;
+	mi_item_t *context_item = (mi_item_t *)(params->dlg_data);
+	mi_item_t *pend_sdp, *neg_sdp;
 	qos_ctx_t* qos_ctx = (qos_ctx_t*)*(params->param);
 	qos_sdp_t* qos_sdp;
 
 	qos_sdp = qos_ctx->pending_sdp;
 	if (qos_sdp) {
-		node = add_mi_node_child(parent_node, MI_IS_ARRAY|MI_DUP_VALUE,
-			"qos_pending_sdp", 15, NULL, 0);
-		if (node==NULL) {
-			LM_ERR("oom\n");
+		pend_sdp = add_mi_object(context_item, MI_SSTR("qos_pending_sdp"));
+		if (!pend_sdp) {
+			LM_ERR("Failed to add MI item\n");
 			return;
 		}
 
-		if (0 != add_mi_sdp_nodes( node, qos_sdp))
+		if (0 != add_mi_sdp_nodes(pend_sdp, qos_sdp))
 			return;
 	}
 
 
 	qos_sdp = qos_ctx->negotiated_sdp;
 	if (qos_sdp) {
-		node = add_mi_node_child(parent_node, MI_IS_ARRAY|MI_DUP_VALUE,
-			"qos_negotiated_sdp", 18, NULL, 0);
-		if (node==NULL) {
-			LM_ERR("oom\n");
+		neg_sdp = add_mi_object(context_item, MI_SSTR("qos_negotiated_sdp"));
+		if (!neg_sdp) {
+			LM_ERR("Failed to add MI item\n");
 			return;
 		}
 
-		if (0 != add_mi_sdp_nodes( node, qos_sdp))
+		if (0 != add_mi_sdp_nodes( neg_sdp, qos_sdp))
 			return;
 	}
 

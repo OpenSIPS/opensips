@@ -119,7 +119,7 @@ int w_rl_check_3(struct sip_msg*, char *, char *, char *);
 int w_rl_dec(struct sip_msg*, char *);
 int w_rl_reset(struct sip_msg*, char *);
 int w_rl_set_count(str, int);
-int rl_stats(struct mi_root *, str *);
+int rl_stats(mi_item_t *, str *);
 int rl_pipe_check(rl_pipe_t *);
 int rl_get_counter_value(str *);
 /* update load */
@@ -141,7 +141,6 @@ extern unsigned int rl_repl_timer_expire;
 int rl_repl_init(void);
 int rl_get_all_counters(rl_pipe_t *pipe);
 int rl_add_repl_dst(modparam_t type, void *val);
-int rl_bin_status(struct mi_node *root, int cluster_id, char *type, int type_len);
 
 void hist_set_count(rl_pipe_t *pipe, long int value);
 int hist_get_count(rl_pipe_t *pipe);

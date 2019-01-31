@@ -544,79 +544,77 @@ void shtag_event_handler(int cluster_id, enum clusterer_event ev, int node_id)
 		shtag_flush_state( cluster_id, node_id);
 }
 
-
-struct mi_root *shtag_mi_list(struct mi_root *cmd, void *param)
+mi_response_t *shtag_mi_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
+	mi_response_t *resp;
+	mi_item_t *resp_arr, *tag_item;
 	struct sharing_tag *tag;
-	struct mi_node *node;
-	struct mi_attr *attr;
-	struct mi_root *rpl;
-	str val;
 
-	rpl = init_mi_tree(200, MI_SSTR(MI_OK));
-	if (rpl==0)
-		return NULL;
-
-	rpl->node.flags |= MI_IS_ARRAY;
+	resp = init_mi_result_object(&resp_arr);
+	if (!resp)
+		return 0;
 
 	lock_start_read(shtags_lock);
 
 	for (tag = *shtags_list; tag; tag = tag->next) {
+		tag_item = add_mi_object(resp_arr, NULL, 0);
+		if (!tag_item)
+			goto error;
 
-		node = add_mi_node_child(&rpl->node, MI_DUP_VALUE,
-			MI_SSTR("Tag"), tag->name.s, tag->name.len);
-		if (!node) continue;
+		if (add_mi_string(tag_item, MI_SSTR("Tag"),
+			tag->name.s, tag->name.len) < 0)
+			goto error;
 
-		val.s = int2str( tag->cluster_id, &val.len);
-		attr = add_mi_attr(node, MI_DUP_VALUE,
-			MI_SSTR("Cluster"), val.s, val.len);
-		if (!attr) continue;
+		if (add_mi_number(tag_item, MI_SSTR("Cluster"), tag->cluster_id) < 0)
+			goto error;
 
-		if (tag->state == SHTAG_STATE_ACTIVE)
-			attr = add_mi_attr(node, MI_DUP_VALUE,
-				MI_SSTR("State"), MI_SSTR("active"));
-		else
-			attr = add_mi_attr(node, MI_DUP_VALUE,
-				MI_SSTR("State"), MI_SSTR("backup"));
-		if (!attr) continue;
-
+		if (tag->state == SHTAG_STATE_ACTIVE) {
+			if (add_mi_string(tag_item, MI_SSTR("State"), MI_SSTR("active")) < 0)
+				goto error;
+		} else
+			if (add_mi_string(tag_item, MI_SSTR("State"), MI_SSTR("backup")) < 0)
+				goto error;
 	}
 
 	lock_stop_read(shtags_lock);
-	return rpl;
+	return resp;
+
+error:
+	lock_stop_read(shtags_lock);
+	free_mi_response(resp);
+	return 0;
 }
 
-
-struct mi_root *shtag_mi_set_active(struct mi_root *cmd, void *param)
+mi_response_t *shtag_mi_set_active(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
 	str tag;
 	str s;
 	int c_id;
 	char *p;
 
-	node = cmd->node.kids;
-	if (node == NULL || !node->value.s || !node->value.len)
-		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
+	if (get_mi_string_param(params, "tag", &tag.s, &tag.len) < 0)
+		return init_mi_param_error();
 
-	p = memchr(node->value.s, '/', node->value.len);
+	p = memchr(tag.s, '/', tag.len);
 	if (!p) {
 		LM_ERR("Bad naming for sharing tag param <%.*s>, <name/cluster_id> "
-			"expected\n", node->value.len, node->value.s);
-		return init_mi_tree(400, MI_SSTR("Bad tag format <name/cluster_id>"));
+			"expected\n", tag.len, tag.s);
+		return init_mi_error(400, MI_SSTR("Bad tag format <name/cluster_id>"));
 	}
-	tag.s = node->value.s;
+	tag.s = tag.s;
 	tag.len = p - tag.s;
 	trim_spaces_lr( tag );
 
 	/* get the cluster ID */
 	s.s = p + 1;
-	s.len = node->value.s + node->value.len - s.s;
+	s.len = tag.s + tag.len - s.s;
 	trim_spaces_lr( s );
 	if (str2int( &s, (unsigned int*)&c_id)<0) {
 		LM_ERR("Invalid cluster id <%.*s> for sharing tag param <%.*s> \n",
-			s.len, s.s, node->value.len, node->value.s);
-		return init_mi_tree(400, MI_SSTR("Bad cluster ID in tag"));
+			s.len, s.s, tag.len, tag.s);
+		return init_mi_error(400, MI_SSTR("Bad cluster ID in tag"));
 	}
 
 	LM_DBG("requested to activate tag <%.*s> in cluster %d\n",
@@ -625,18 +623,18 @@ struct mi_root *shtag_mi_set_active(struct mi_root *cmd, void *param)
 	lock_start_read(cl_list_lock);
 	if (!get_cluster_by_id(c_id)) {
 		lock_stop_read(cl_list_lock);
-		return init_mi_tree(404, MI_SSTR("Cluster ID not found"));
+		return init_mi_error(404, MI_SSTR("Cluster ID not found"));
 	}
 	lock_stop_read(cl_list_lock);
 
 	if (shtag_activate( &tag, c_id)<0) {
 		LM_ERR("Failed set active the tag [%.*s/%d] \n",
 			tag.len, tag.s, c_id);
-		return init_mi_tree(500, MI_SSTR("Internal failure when activating "
+		return init_mi_error(500, MI_SSTR("Internal failure when activating "
 			"tag"));
 	}
 
-	return init_mi_tree( 200, MI_SSTR(MI_OK));
+	return init_mi_result_ok();
 }
 
 

@@ -39,44 +39,42 @@ struct mi_trace_req {
 	char params[MAX_TRACE_FIELD];
 } mi_treq;
 
-struct mi_trace_rpl {
-	char code[MAX_TRACE_FIELD];
-	str reason;
-	str rpl;
-} mi_trpl;
+str mi_trpl;
 
 enum mi_trace_type { MI_TRACE_REQ, MI_TRACE_RPL};
 struct mi_trace_param {
 	enum mi_trace_type type;
 	union {
 		struct mi_trace_req* req;
-		struct mi_trace_rpl* rpl;
+		str *rpl;
 	} d;
 } mi_tparam;
 
 void try_load_trace_api(void);
+
 int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
-		struct mi_trace_param* pld_param, str* correlation_value, trace_dest trace_dst);
-struct mi_trace_req* build_mi_trace_request( str* cmd,
-		struct mi_root* mi_req, str* backend);
-struct mi_trace_rpl* build_mi_trace_reply( int code, str* reason, str* rpl_msg );
+	struct mi_trace_param* pld_param, str* correlation_value, trace_dest trace_dst);
+
+struct mi_trace_req* build_mi_trace_request(str *cmd, mi_item_t *params,
+										str* backend);
+
+str *build_mi_trace_reply(str *rpl_msg);
 char* generate_correlation_id(int* len);;
 int load_correlation_id(void);
 
 static inline void mi_trace_reply( union sockaddr_union* src, union sockaddr_union* dst,
-		int code, str* reason, str* message, trace_dest t_dst)
+		str* message, trace_dest t_dst)
 {
 	/* trace disabled */
 	if ( !t_dst )
 		return;
 
-	/* message can be null */
-	if ( !reason ) {
-		LM_ERR("traced reply needs to have a reason!\n");
+	if (!message) {
+		LM_ERR("Empty MI reply!\n");
 		return;
 	}
 
-	mi_tparam.d.rpl = build_mi_trace_reply( code, reason, message);
+	mi_tparam.d.rpl = build_mi_trace_reply(message);
 	mi_tparam.type = MI_TRACE_RPL;
 
 	if ( !correlation_value.s ) {
@@ -91,14 +89,18 @@ static inline void mi_trace_reply( union sockaddr_union* src, union sockaddr_uni
 
 
 static inline void mi_trace_request( union sockaddr_union* src, union sockaddr_union* dst,
-		char* command, int len, struct mi_root* mi_req, str* backend, trace_dest t_dst )
+		char* command, int len, mi_item_t *params, str* backend, trace_dest t_dst )
 {
 	str comm_s = { command, len };
 
 	if ( !t_dst || !backend )
 		return;
 
-	mi_tparam.d.req = build_mi_trace_request( &comm_s, mi_req, backend);
+	mi_tparam.d.req = build_mi_trace_request( &comm_s, params, backend);
+	if (!mi_tparam.d.req) {
+		LM_ERR("Failed to prepare payload for tracing request\n");
+		return;
+	}
 	mi_tparam.type = MI_TRACE_REQ;
 
 	correlation_value.s = generate_correlation_id(&correlation_value.len);

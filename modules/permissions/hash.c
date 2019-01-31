@@ -247,48 +247,41 @@ int find_group_in_hash_table(struct address_list** table,
 
 
 
-int hash_mi_print(struct address_list **table, struct mi_node* rpl,
-		struct pm_part_struct *pm) {
+int hash_mi_print(struct address_list **table, mi_item_t *part_item,
+		struct pm_part_struct *pm)
+{
 	int i, len;
 	struct address_list *node;
-	struct mi_node *dst;
 	char *p, prbuf[PROTO_NAME_MAX_SIZE];
+	mi_item_t *dests_arr, *dest_item;
+
+	dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
+	if (dests_arr)
+		return -1;
 
 	for (i = 0; i < PERM_HASH_SIZE; i++) {
 		for (node = table[i]; node; node=node->next) {
-
-			dst = add_mi_node_child(rpl, 0, MI_SSTR("dest"), NULL, 0);
-			if (!dst) {
-				LM_ERR("oom!\n");
+			dest_item = add_mi_object(dests_arr, NULL, 0);
+			if (!dest_item)
 				return -1;
-			}
 
-			p = int2str(node->grp, &len);
-			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("grp"), p, len)) {
-				goto out_free;
-			}
+			if (add_mi_number(dest_item, MI_SSTR("grp"), node->grp) < 0)
+				return -1;
 
 			p = ip_addr2a(node->ip);
-			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("ip"), p, strlen(p))) {
-				goto out_free;
-			}
+			if (add_mi_string(dest_item, MI_SSTR("ip"), p, strlen(p)) < 0)
+				return -1;
 
 			if (node->ip->af==AF_INET) {
-				if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("mask"),
-				MI_SSTR("32"))) {
-					goto out_free;
-				}
+				if (add_mi_string(dest_item, MI_SSTR("mask"), MI_SSTR("32")) < 0)
+					return -1;
 			} else {
-				if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("mask"),
-				MI_SSTR("128"))) {
-					goto out_free;
-				}
+				if (add_mi_string(dest_item, MI_SSTR("mask"), MI_SSTR("128")) < 0)
+					return -1;
 			}
 
-			p = int2str(node->port, &len);
-			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("port"), p, len)) {
-				goto out_free;
-			}
+			if (add_mi_number(dest_item, MI_SSTR("port"), node->port) < 0)
+				return -1;
 
 			if (node->proto == PROTO_NONE) {
 				p = "any";
@@ -298,29 +291,22 @@ int hash_mi_print(struct address_list **table, struct mi_node* rpl,
 				len = p - prbuf;
 				p = prbuf;
 			}
-			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("proto"), p, len)) {
-				goto out_free;
-			}
+			if (add_mi_string(dest_item, MI_SSTR("proto"), p, len) < 0)
+				return -1;
 
-			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("pattern"),
-			                 node->pattern,
-			                 node->pattern ? strlen(node->pattern) : 0)) {
-				goto out_free;
-			}
+			if (add_mi_string(dest_item, MI_SSTR("pattern"),
+				node->pattern,
+			    node->pattern ? strlen(node->pattern) : 0) < 0)
+			    return -1;
 
-			if (!add_mi_attr(dst, MI_DUP_VALUE, MI_SSTR("context_info"),
-			                 node->info,
-			                 node->info ? strlen(node->info) : 0)) {
-				LM_ERR("oom!\n");
-				goto out_free;
-			}
+			if (add_mi_string(dest_item, MI_SSTR("context_info"),
+				node->info,
+			    node->info ? strlen(node->info) : 0) < 0)
+			    return -1;
 		}
 	}
-	return 0;
 
-out_free:
-	free_mi_node(dst);
-	return -1;
+	return 0;
 }
 
 void empty_hash(struct address_list** table) {
@@ -527,18 +513,26 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 /*
  * Print subnets stored in subnet table
  */
-int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
+int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
 		struct pm_part_struct *pm)
 {
     unsigned int count, i;
 	char *p, *ip, *mask, prbuf[PROTO_NAME_MAX_SIZE];
 	int len;
 	static char ip_buff[IP_ADDR_MAX_STR_SIZE];
-	struct mi_node *net;
+	mi_item_t *dests_arr, *dest_item;
 
     count = table[PERM_MAX_SUBNETS].grp;
 
+    dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
+	if (dests_arr)
+		return -1;
+
     for (i = 0; i < count; i++) {
+    	dest_item = add_mi_object(dests_arr, NULL, 0);
+    	if (!dest_item)
+    		return -1;
+
 		ip = ip_addr2a(&table[i].subnet->ip);
 		if (!ip) {
 			LM_ERR("cannot print ip address\n");
@@ -551,31 +545,17 @@ int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
 			continue;
 		}
 
-		net = add_mi_node_child(rpl, 0, MI_SSTR("dest"), NULL, 0);
-		if (!net) {
-			LM_ERR("oom!\n");
+		if (add_mi_number(dest_item, MI_SSTR("grp"), table[i].grp) < 0)
 			return -1;
-		}
 
-		p = int2str(table[i].grp, &len);
-		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("grp"), p, len)) {
-			goto out_free;
-		}
+		if (add_mi_string(dest_item, MI_SSTR("ip"), ip_buff, strlen(ip_buff)) < 0)
+			return -1;
 
-		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("ip"), ip_buff,
-		                 strlen(ip_buff))) {
-			goto out_free;
-		}
+		if (add_mi_string(dest_item, MI_SSTR("ip"), mask, strlen(mask)) < 0)
+			return -1;
 
-		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("mask"), mask,
-		                 strlen(mask))) {
-			goto out_free;
-		}
-
-		p = int2str(table[i].port, &len);
-		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("port"), p, len)) {
-			goto out_free;
-		}
+		if (add_mi_number(dest_item, MI_SSTR("port"), table[i].port) < 0)
+			return -1;
 
 		if (table[i].proto == PROTO_NONE) {
 			p = "any";
@@ -585,29 +565,21 @@ int subnet_table_mi_print(struct subnet* table, struct mi_node* rpl,
 			len = p - prbuf;
 			p = prbuf;
 		}
-		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("proto"), p, len)) {
-			goto out_free;
-		}
+		if (add_mi_string(dest_item, MI_SSTR("proto"), p, len) < 0)
+			return -1;
 
-		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("pattern"),
-		                 table[i].pattern,
-		                 table[i].pattern ? strlen(table[i].pattern) : 0)) {
-			goto out_free;
-		}
+		if (add_mi_string(dest_item, MI_SSTR("pattern"),
+			table[i].pattern,
+		    table[i].pattern ? strlen(table[i].pattern) : 0) < 0)
+		    return -1;
 
-		if (!add_mi_attr(net, MI_DUP_VALUE, MI_SSTR("context_info"),
-		                 table[i].info,
-		                 table[i].info ? strlen(table[i].info) : 0)) {
-			LM_ERR("oom!\n");
-			goto out_free;
-		}
+		if (add_mi_string(dest_item, MI_SSTR("context_info"),
+			table[i].info,
+		    table[i].info ? strlen(table[i].info) : 0) < 0)
+		    return -1;
     }
 
 	return 0;
-
-out_free:
-	free_mi_node(net);
-	return -1;
 }
 
 

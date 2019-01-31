@@ -86,11 +86,16 @@ static int dbg_shm_status(struct sip_msg*, char*,char*);
 static int pv_set_count(struct sip_msg*, char*,char*);
 static int pv_sel_weight(struct sip_msg*, char*,char*);
 
-static struct mi_root* mi_set_prob(struct mi_root* cmd, void* param );
-static struct mi_root* mi_reset_prob(struct mi_root* cmd, void* param );
-static struct mi_root* mi_get_prob(struct mi_root* cmd, void* param );
-static struct mi_root* mi_get_hash(struct mi_root* cmd, void* param );
-static struct mi_root* mi_check_hash(struct mi_root* cmd, void* param );
+mi_response_t *mi_set_prob(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_reset_prob(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_get_prob(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_get_hash(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_check_hash(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -208,14 +213,36 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
-	{ FIFO_SET_PROB,   0, mi_set_prob,   0,                 0,  0 },
-	{ FIFO_RESET_PROB, 0, mi_reset_prob, MI_NO_INPUT_FLAG,  0,  0 },
-	{ FIFO_GET_PROB,   0, mi_get_prob,   MI_NO_INPUT_FLAG,  0,  0 },
-	{ FIFO_GET_HASH,   0, mi_get_hash,   MI_NO_INPUT_FLAG,  0,  0 },
-	{ FIFO_CHECK_HASH, 0, mi_check_hash, MI_NO_INPUT_FLAG,  0,  0 },
-	{ "shv_get",       0, mi_shvar_get,  0,                 0,  0 },
-	{ "shv_set" ,      0, mi_shvar_set,  0,                 0,  0 },
-	{ 0, 0, 0, 0, 0, 0}
+	{ FIFO_SET_PROB, 0, 0, 0, {
+		{mi_set_prob, {"prob_proc", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ FIFO_RESET_PROB, 0, 0, 0, {
+		{mi_reset_prob, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ FIFO_GET_PROB, 0, 0, 0, {
+		{mi_get_prob, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ FIFO_GET_HASH, 0, 0, 0, {
+		{mi_get_hash, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ FIFO_CHECK_HASH, 0, 0, 0, {
+		{mi_check_hash, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "shv_get", 0, 0, 0, {
+		{mi_shvar_get, {0}},
+		{mi_shvar_get_1, {"name", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "shv_set", 0, 0, 0, {
+		{mi_shvar_set, {"name", "type", "value", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static pv_export_t mod_items[] = {
@@ -292,112 +319,83 @@ static int fixup_delta( void **param, int param_no)
 
 /************************** module functions **********************************/
 
-static struct mi_root* mi_set_prob(struct mi_root* cmd, void* param )
+mi_response_t *mi_set_prob(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	unsigned int percent;
-	struct mi_node* node;
+	int percent;
 
-	node = cmd->node.kids;
-	if(node == NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_int_param(params, "prob_proc", &percent) < 0)
+		return init_mi_param_error();
 
-	if( str2int( &node->value, &percent) <0)
-		goto error;
 	if (percent > 100) {
 		LM_ERR("incorrect probability <%u>\n", percent);
-		goto error;
+		return init_mi_error(400, MI_SSTR("Bad parameter value"));
 	}
-	*probability = percent;
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
 
-error:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	*probability = percent;
+
+	return init_mi_result_ok();
 }
 
-static struct mi_root* mi_reset_prob(struct mi_root* cmd, void* param )
+mi_response_t *mi_reset_prob(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 
 	*probability = initial;
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN );
+	return init_mi_result_ok();
 }
 
-static struct mi_root* mi_get_prob(struct mi_root* cmd, void* param )
+mi_response_t *mi_get_prob(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* node= NULL;
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN );
-	if(rpl_tree == NULL)
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	node = addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "actual probability: %u percent\n",(*probability));
-	if(node == NULL)
-		goto error;
+	if (add_mi_number(resp_obj, MI_SSTR("actual probability percent"),
+		*probability) < 0) {
+		free_mi_response(resp);
+		return 0;
+	}
 
-	return rpl_tree;
-
-error:
-	free_mi_tree(rpl_tree);
-	return 0;
+	return resp;
 }
 
-static struct mi_root* mi_get_hash(struct mi_root* cmd, void* param )
+mi_response_t *mi_get_hash(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* node= NULL;
-
 	if (!hash_file) {
 		LM_INFO("no hash_file given, disable hash functionality\n");
-		rpl_tree = init_mi_tree(404, "Functionality disabled\n", 23);
+		return init_mi_error(404, MI_SSTR("Functionality disabled"));
 	} else {
-		rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN );
-		if(rpl_tree == NULL)
-			return 0;
-		node = addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%.*s\n", MD5_LEN, config_hash);
-		if(node == NULL)
-			goto error;
+		return init_mi_result_string(config_hash, MD5_LEN);
 	}
-	return rpl_tree;
-
-error:
-	free_mi_tree(rpl_tree);
-	return 0;
 }
 
-static struct mi_root* mi_check_hash(struct mi_root* cmd, void* param )
+mi_response_t *mi_check_hash(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root* rpl_tree= NULL;
-	struct mi_node* node= NULL;
 	char tmp[MD5_LEN];
 	memset(tmp, 0, MD5_LEN);
 
 	if (!hash_file) {
 		LM_INFO("no hash_file given, disable hash functionality\n");
-		rpl_tree = init_mi_tree(404, "Functionality disabled\n", 23);
+		return init_mi_error(404, MI_SSTR("Functionality disabled"));
 	} else {
 		if (MD5File(tmp, hash_file) != 0) {
-			LM_ERR("could not hash the config file\n");
-			rpl_tree = init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN );
+			LM_ERR("could not hash the config file");
+			return init_mi_error(500, MI_SSTR("Internal error"));
 		}
 
-		if (strncmp(config_hash, tmp, MD5_LEN) == 0) {
-			rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN );
-			if(rpl_tree == NULL)
-				return 0;
-			node = addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "The actual config file hash is identical to the stored one.\n");
-		} else {
-			rpl_tree = init_mi_tree( 400, "Error", 5 );
-			if(rpl_tree == NULL)
-				return 0;
-			node = addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "The actual config file hash is not identical to the stored one.\n");
-		}
-		if(node == NULL)
-			goto error;
+		if (strncmp(config_hash, tmp, MD5_LEN) == 0)
+			return init_mi_result_string(MI_SSTR("The actual config file hash "
+				"is identical to the stored one."));
+		else
+			return init_mi_error(400, MI_SSTR("The actual config file hash is not "
+				"identical to the stored one.")); 
 	}
-
-	return rpl_tree;
-
-error:
-	free_mi_tree(rpl_tree);
-	return 0;
 }
 
 static int set_prob(struct sip_msg *bar, char *percent_par, char *foo)

@@ -1256,15 +1256,16 @@ done:
 #undef REPL_PROF_TRYSEND
 }
 
-struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param)
+mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	if (!dialog_repl_cluster)
-		return init_mi_tree(400, MI_SSTR("Dialog replication disabled"));
+		return init_mi_error(400, MI_SSTR("Dialog replication disabled"));
 
 	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 1) < 0)
-		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
+		return init_mi_error(400, MI_SSTR("Failed to send sync request"));
 	else
-		return init_mi_tree(200, MI_SSTR(MI_OK));
+		return init_mi_result_ok();
 }
 
 int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name)

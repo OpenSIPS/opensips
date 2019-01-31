@@ -104,11 +104,16 @@ static int mod_child(int);
 /* fixup prototype */
 static int fixup_rl_check(void **param, int param_no);
 
-struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param);
-struct mi_root* mi_reset_pipe(struct mi_root* cmd_tree, void* param);
-struct mi_root* mi_set_pid(struct mi_root* cmd_tree, void* param);
-struct mi_root* mi_get_pid(struct mi_root* cmd_tree, void* param);
-struct mi_root* mi_bin_status(struct mi_root* cmd_tree, void* param);
+mi_response_t *mi_stats(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_stats_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_reset_pipe(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_set_pid(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_get_pid(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -156,12 +161,24 @@ static param_export_t params[] = {
 #define RLH5 "Params: none ; Shows the status of the other SIP instances."
 
 static mi_export_t mi_cmds [] = {
-	{"rl_list",       RLH1, mi_stats,      0,                0, 0},
-	{"rl_reset_pipe", RLH2, mi_reset_pipe, 0,                0, 0},
-	{"rl_set_pid",    RLH3, mi_set_pid,    0,                0, 0},
-	{"rl_get_pid",    RLH4, mi_get_pid,    MI_NO_INPUT_FLAG, 0, 0},
-	{"rl_bin_status", RLH5, mi_bin_status, MI_NO_INPUT_FLAG, 0, 0},
-	{0,0,0,0,0,0}
+	{"rl_list", RLH1, 0, 0, {
+		{mi_stats, {0}},
+		{mi_stats_1, {"pipe", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"rl_reset_pipe", RLH2, 0, 0, {
+		{mi_reset_pipe, {"pipe", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"rl_set_pid", RLH3, 0, 0, {
+		{mi_set_pid, {"ki", "kp", "kd", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"rl_get_pid", RLH4, 0, 0, {
+		{mi_get_pid, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static pv_export_t mod_items[] = {
@@ -620,72 +637,98 @@ int rl_pipe_check(rl_pipe_t *pipe)
  */
 
 /* mi function implementations */
-struct mi_root* mi_stats(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_stats(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *node=NULL, *rpl=NULL;
-	struct mi_attr *attr;
-	int len;
-	char * p;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
 
-	node = cmd_tree->node.kids;
-
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
 
-	if (rl_stats(rpl_tree, &node->value)) {
+	if (rl_stats(resp_obj, NULL)) {
 		LM_ERR("cannot mi print values\n");
 		goto free;
 	}
 
-	if (!(node = add_mi_node_child(rpl, 0, "PIPE", 4, NULL, 0)))
-		goto free;
-
 	LOCK_GET(rl_lock);
-	p = int2str((unsigned long)(*drop_rate), &len);
-	if (!(attr = add_mi_attr(node, MI_DUP_VALUE, "drop_rate", 9, p, len))) {
+	if (add_mi_number(resp_obj, MI_SSTR("drop_rate"), *drop_rate) < 0) {
 		LOCK_RELEASE(rl_lock);
 		goto free;
 	}
-
 	LOCK_RELEASE(rl_lock);
-	return rpl_tree;
+
+	return resp;
+
 free:
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return 0;
 }
 
-struct mi_root* mi_set_pid(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_stats_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	str pipe_name;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (get_mi_string_param(params, "pipe", &pipe_name.s, &pipe_name.len) < 0)
+		return init_mi_param_error();
+
+	if (rl_stats(resp_obj, &pipe_name)) {
+		LM_ERR("cannot mi print values\n");
+		goto free;
+	}
+
+	LOCK_GET(rl_lock);
+	if (add_mi_number(resp_obj, MI_SSTR("drop_rate"), *drop_rate) < 0) {
+		LOCK_RELEASE(rl_lock);
+		goto free;
+	}
+	LOCK_RELEASE(rl_lock);
+
+	return resp;
+
+free:
+	free_mi_response(resp);
+	return 0;
+}
+
+mi_response_t *mi_set_pid(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
 	char buf[5];
 	int rl_ki, rl_kp, rl_kd;
+	str ki_s, kp_s, kd_s;
 
-	if (!(node = cmd_tree->node.kids))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "ki", &ki_s.s, &ki_s.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "kp", &kp_s.s, &kp_s.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "kd", &kd_s.s, &kd_s.len) < 0)
+		return init_mi_param_error();
 
-	if ( !node->value.s || !node->value.len || node->value.len >= 5)
+	if ( !ki_s.s || !ki_s.len || ki_s.len >= 5)
 		goto bad_syntax;
-
-	memcpy(buf, node->value.s, node->value.len);
-	buf[node->value.len] = '\0';
+	memcpy(buf, ki_s.s, ki_s.len);
+	buf[ki_s.len] = '\0';
 	rl_ki = strtod(buf, NULL);
 
-	node = node->next;
-	if ( !node->value.s || !node->value.len || node->value.len >= 5)
+	if ( !kp_s.s || !kp_s.len || kp_s.len >= 5)
 		goto bad_syntax;
-	memcpy(buf, node->value.s, node->value.len);
-	buf[node->value.len] = '\0';
+	memcpy(buf, kp_s.s, kp_s.len);
+	buf[kp_s.len] = '\0';
 	rl_kp = strtod(buf, NULL);
 
-	node = node->next;
-	if ( !node->value.s || !node->value.len || node->value.len >= 5)
+	if ( !kd_s.s || !kd_s.len || kd_s.len >= 5)
 		goto bad_syntax;
-	memcpy(buf, node->value.s, node->value.len);
-	buf[node->value.len] = '\0';
+	memcpy(buf, kd_s.s, kd_s.len);
+	buf[kd_s.len] = '\0';
 	rl_kd = strtod(buf, NULL);
 
 	LOCK_GET(rl_lock);
@@ -694,85 +737,56 @@ struct mi_root* mi_set_pid(struct mi_root* cmd_tree, void* param)
 	*pid_kd = rl_kd;
 	LOCK_RELEASE(rl_lock);
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
+
 bad_syntax:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	return init_mi_error(400, MI_SSTR("Bad parameter value"));
 }
 
-struct mi_root* mi_get_pid(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_get_pid(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *node=NULL, *rpl=NULL;
-	struct mi_attr* attr;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *pid_obj;
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
-	node = add_mi_node_child(rpl, 0, "PID", 3, 0, 0);
-	if(node == NULL)
-		goto error;
-	LOCK_GET(rl_lock);
-	attr= addf_mi_attr(node, 0, "ki", 2, "%0.3f", *pid_ki);
-	if(attr == NULL)
-		goto error;
-	attr= addf_mi_attr(node, 0, "kp", 2, "%0.3f", *pid_kp);
-	if(attr == NULL)
-		goto error;
-	attr= addf_mi_attr(node, 0, "kd", 2, "%0.3f", *pid_kd);
-	LOCK_RELEASE(rl_lock);
-	if(attr == NULL)
+
+	pid_obj = add_mi_object(resp_obj, MI_SSTR("PID"));
+	if (!pid_obj)
 		goto error;
 
-	return rpl_tree;
+	LOCK_GET(rl_lock);
+	if (add_mi_string_fmt(pid_obj, MI_SSTR("ki"), "%0.3f", *pid_ki) < 0)
+		goto error;
+	if (add_mi_string_fmt(pid_obj, MI_SSTR("kp"), "%0.3f", *pid_kp) < 0)
+		goto error;
+	if (add_mi_string_fmt(pid_obj, MI_SSTR("kd"), "%0.3f", *pid_kd) < 0)
+		goto error;
+	LOCK_RELEASE(rl_lock);
+
+	return resp;
 
 error:
 	LOCK_RELEASE(rl_lock);
 	LM_ERR("Unable to create reply\n");
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return 0;
 }
 
-struct mi_root* mi_reset_pipe(struct mi_root* cmd_tree, void* param)
+mi_response_t *mi_reset_pipe(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
+	str pipe_name;
 
-	if (!(node = cmd_tree->node.kids))
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "pipe", &pipe_name.s, &pipe_name.len) < 0)
+		return init_mi_param_error();
 
-	if (w_rl_set_count(node->value, 0))
-		return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	if (w_rl_set_count(pipe_name, 0))
+		return init_mi_error(500, MI_SSTR("Internal error"));
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-}
-
-struct mi_root* mi_bin_status(struct mi_root* cmd_tree, void* param)
-{
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl=NULL;
-
-	rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
-		return 0;
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
-
-	if (rl_repl_cluster &&
-		rl_bin_status(&rpl_tree->node, rl_repl_cluster, "repl_pipes_dest", 15)<0) {
-		LM_ERR("cannot print status\n");
-		goto free;
-	}
-
-	if (rl_repl_cluster &&
-		rl_bin_status(&rpl_tree->node, rl_repl_cluster, "repl_pipes_source", 17)<0) {
-		LM_ERR("cannot print status\n");
-		goto free;
-	}
-
-	return rpl_tree;
-free:
-	free_mi_tree(rpl_tree);
-	return 0;
+	return init_mi_result_ok();
 }
 
 /* fixup functions */

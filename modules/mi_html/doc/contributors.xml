@@ -20,35 +20,35 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Stephane Alnet</entry>
-		<entry align="center">20</entry>
-		<entry align="center">5</entry>
-		<entry align="center">1265</entry>
-		<entry align="center">233</entry>
+		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
+		<entry align="center">60</entry>
+		<entry align="center">29</entry>
+		<entry align="center">2222</entry>
+		<entry align="center">691</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
-		<entry align="center">14</entry>
-		<entry align="center">10</entry>
-		<entry align="center">273</entry>
-		<entry align="center">52</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">11</entry>
-		<entry align="center">8</entry>
-		<entry align="center">167</entry>
-		<entry align="center">32</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">9</entry>
 		<entry align="center">7</entry>
-		<entry align="center">30</entry>
-		<entry align="center">36</entry>
+		<entry align="center">29</entry>
+		<entry align="center">41</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
+		<entry align="center">8</entry>
+		<entry align="center">5</entry>
+		<entry align="center">217</entry>
+		<entry align="center">10</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">7</entry>
+		<entry align="center">5</entry>
+		<entry align="center">107</entry>
+		<entry align="center">43</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -60,14 +60,6 @@
 	</row>
 	<row>
 		<entry>6. </entry>
-		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
-		<entry align="center">5</entry>
-		<entry align="center">3</entry>
-		<entry align="center">8</entry>
-		<entry align="center">3</entry>
-	</row>
-	<row>
-		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -75,12 +67,20 @@
 		<entry align="center">1</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>7. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">2</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
 		<entry align="center">0</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
+		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+		<entry align="center">0</entry>
+		<entry align="center">1</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -132,23 +132,23 @@
 	</row>
 	<row>
 		<entry>5. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Dec 2013 - Apr 2017</entry>
+		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
+		<entry align="center">Jan 2017 - Feb 2017</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
-		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
-		<entry align="center">May 2016 - Feb 2017</entry>
+		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
+		<entry align="center">Jan 2016 - Jan 2016</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
-		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
-		<entry align="center">Nov 2013 - Jan 2016</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Mar 2015 - Aug 2015</entry>
 	</row>
 	<row>
 		<entry>8. </entry>
-		<entry>Stephane Alnet</entry>
-		<entry align="center">Oct 2013 - Nov 2013</entry>
+		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
+		<entry align="center">Oct 2011 - Mar 2015</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -164,7 +164,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Stephane Alnet.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>).</para>
 </section>
 
 </chapter>

@@ -146,10 +146,10 @@ modparam("xcap_client", "query_period", 50)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem>
-				<para>document uri: the uri of the document</para>
+				<para>doc_uri: the uri of the document</para>
 			</listitem>
 			<listitem>
-				<para>xcap server port: the port of the xcap server</para>
+				<para>port: the port of the xcap server</para>
 			</listitem>
 		 </itemizedlist>
 

@@ -87,168 +87,130 @@ static inline int mi_fix_aor(str *aor)
 
 
 
-static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r,
+static inline int mi_add_aor_node(mi_item_t *aor_item, urecord_t* r,
 													time_t t, int short_dump)
 {
-	struct mi_node *anode;
-	struct mi_node *cnode;
-	struct mi_node *node;
-	struct mi_attr *attr;
+	mi_item_t *cts_arr, *ct_item;
 	ucontact_t* c;
 	str st, kv_buf;
 	char *p;
 	int len;
 
-	anode = add_mi_node_child( parent, MI_IS_ARRAY|MI_DUP_VALUE, "AOR", 3,
-			r->aor.s, r->aor.len);
-	if (anode==0)
+	if (add_mi_string(aor_item, MI_SSTR("AOR"), r->aor.s, r->aor.len) < 0)
 		return -1;
 
 	if (short_dump)
 		return 0;
 
+	cts_arr = add_mi_array(aor_item, MI_SSTR("Contacts"));
+	if (cts_arr)
+		return -1;
+
 	for( c=r->contacts ; c ; c=c->next) {
 		/* contact */
-		cnode = add_mi_node_child( anode, MI_DUP_VALUE, "Contact", 7,
-			c->c.s, c->c.len);
-		if (cnode==0)
+		ct_item = add_mi_object(cts_arr, NULL, 0);
+		if (!ct_item)
 			return -1;
 
-		/* contact ID */
-		node = addf_mi_node_child( cnode, 0, "ContactID", 9,
-			"%llu", c->contact_id);
-		if (node==0)
+		if (add_mi_string(ct_item, MI_SSTR("Contact"), c->c.s, c->c.len) < 0)
 			return -1;
 
-		/* expires */
+		if (add_mi_number(ct_item, MI_SSTR("ContactID"), c->contact_id) < 0)
+			return -1;
+
 		if (c->expires == 0) {
-			node = add_mi_node_child( cnode, 0, "Expires", 7, "permanent", 9);
+			if (add_mi_string(ct_item, MI_SSTR("Expires"), MI_SSTR("permanent")) < 0)
+				return -1;
 		} else if (c->expires == UL_EXPIRED_TIME) {
-			node = add_mi_node_child( cnode, 0, "Expires", 7, "deleted", 7);
+			if (add_mi_string(ct_item, MI_SSTR("Expires"), MI_SSTR("deleted")) < 0)
+				return -1;
 		} else if (t > c->expires) {
-			node = add_mi_node_child( cnode, 0, "Expires", 7, "expired", 7);
+			if (add_mi_string(ct_item, MI_SSTR("Expires"), MI_SSTR("expired")) < 0)
+				return -1;
 		} else {
-			p = int2str((unsigned long)(c->expires - t), &len);
-			node = add_mi_node_child( cnode, MI_DUP_VALUE, "Expires", 7,p,len);
+			if (add_mi_number(ct_item, MI_SSTR("Expires"), c->expires - t) < 0)
+				return -1;
 		}
-		if (node==0)
-			return -1;
 
-		/* q */
 		p = q2str(c->q, (unsigned int*)&len);
-		attr = add_mi_attr( cnode, MI_DUP_VALUE, "Q", 1, p, len);
-		if (attr==0)
+		if (add_mi_string(ct_item, MI_SSTR("Q"), p, len) < 0)
 			return -1;
 
-		/* callid */
-		node = add_mi_node_child( cnode, MI_DUP_VALUE, "Callid", 6,
-			c->callid.s, c->callid.len);
-		if (node==0)
+		if (add_mi_string(ct_item, MI_SSTR("Callid"),
+			c->callid.s, c->callid.len) < 0)
 			return -1;
 
-		/* cseq */
-		p = int2str((unsigned long)c->cseq, &len);
-		node = add_mi_node_child( cnode, MI_DUP_VALUE, "Cseq", 4, p, len);
-		if (node==0)
+		if (add_mi_number(ct_item, MI_SSTR("Cseq"), c->cseq) < 0)
 			return -1;
 
-		/* User-Agent */
-		if (c->user_agent.len) {
-			node = add_mi_node_child( cnode, MI_DUP_VALUE, "User-agent", 10,
-				c->user_agent.s, c->user_agent.len);
-			if (node==0)
+		if (c->user_agent.len)
+			if (add_mi_string(ct_item, MI_SSTR("User-agent"),
+				c->user_agent.s, c->user_agent.len) < 0)
 				return -1;
-		}
 
-		/* received */
-		if (c->received.len) {
-			node = add_mi_node_child( cnode, MI_DUP_VALUE, "Received", 8,
-				c->received.s, c->received.len);
-			if (node==0)
+		if (c->received.len)
+			if (add_mi_string(ct_item, MI_SSTR("Received"),
+				c->received.s, c->received.len) < 0)
 				return -1;
-		}
 
-		/* path */
-		if (c->path.len) {
-			node = add_mi_node_child( cnode, MI_DUP_VALUE, "Path", 4,
-				c->path.s, c->path.len);
-			if (node==0)
+		if (c->path.len)
+			if (add_mi_string(ct_item, MI_SSTR("Path"),
+				c->path.s, c->path.len) < 0)
 				return -1;
-		}
 
-		/* state */
 		if (c->state == CS_NEW) {
-			node = add_mi_node_child( cnode, 0, "State", 5, "CS_NEW", 6);
+			if (add_mi_string(ct_item, MI_SSTR("State"), MI_SSTR("CS_NEW")) < 0)
+				return -1;
 		} else if (c->state == CS_SYNC) {
-			node = add_mi_node_child( cnode, 0, "State", 5, "CS_SYNC", 7);
+			if (add_mi_string(ct_item, MI_SSTR("State"), MI_SSTR("CS_SYNC")) < 0)
+				return -1;
 		} else if (c->state== CS_DIRTY) {
-			node = add_mi_node_child( cnode, 0, "State", 5, "CS_DIRTY", 8);
+			if (add_mi_string(ct_item, MI_SSTR("State"), MI_SSTR("CS_DIRTY")) < 0)
+				return -1;
 		} else {
-			node = add_mi_node_child( cnode, 0, "State", 5, "CS_UNKNOWN", 10);
+			if (add_mi_string(ct_item, MI_SSTR("State"), MI_SSTR("CS_UNKNOWN")) < 0)
+				return -1;
 		}
-		if (node==0)
+
+		if (add_mi_number(ct_item, MI_SSTR("Flags"), c->flags) < 0)
 			return -1;
 
-		/* flags */
-		p = int2str((unsigned long)c->flags, &len);
-		node = add_mi_node_child( cnode, MI_DUP_VALUE, "Flags", 5, p, len);
-		if (node==0)
-			return -1;
-
-		/* cflags */
 		st = bitmask_to_flag_list(FLAG_TYPE_BRANCH, c->cflags);
-		node = add_mi_node_child( cnode, MI_DUP_VALUE, "Cflags", 6, st.s, st.len);
-		if (node==0)
+		if (add_mi_string(ct_item, MI_SSTR("Cflags"), st.s, st.len) < 0)
 			return -1;
 
-		/* socket */
 		if (c->sock) {
 			if(c->sock->adv_sock_str.len) {
-				node = add_mi_node_child( cnode, 0, "Socket", 6,
-					c->sock->adv_sock_str.s, c->sock->adv_sock_str.len);
+				if (add_mi_string(ct_item, MI_SSTR("Socket"),
+					c->sock->adv_sock_str.s, c->sock->adv_sock_str.len) < 0)
+					return -1;
 			} else {
-				node = add_mi_node_child( cnode, 0, "Socket", 6,
-					c->sock->sock_str.s, c->sock->sock_str.len);
+				if (add_mi_string(ct_item, MI_SSTR("Socket"),
+					c->sock->sock_str.s, c->sock->sock_str.len) < 0)
+					return -1;
 			}
-			if (node==0)
-				return -1;
 		}
 
-		/* methods */
-		p = int2str((unsigned long)c->methods, &len);
-		node = add_mi_node_child( cnode, MI_DUP_VALUE, "Methods", 7, p, len);
-		if (node==0)
+		if (add_mi_number(ct_item, MI_SSTR("Methods"), c->methods) < 0)
 			return -1;
 
-		/* additional information */
-		if (c->attr.len) {
-			node = add_mi_node_child( cnode, MI_DUP_VALUE, "Attr", 4,
-				c->attr.s, c->attr.len);
-			if (node==0)
+		if (c->attr.len)
+			if (add_mi_string(ct_item, MI_SSTR("Attr"), c->attr.s, c->attr.len) < 0)
 				return -1;
-		}
 
-		/* sip_instance */
-		if (c->instance.len && c->instance.s) {
-			node = add_mi_node_child( cnode, MI_DUP_VALUE, "SIP_instance", 12,
-				c->instance.s, c->instance.len);
-			if (node==0)
+		if (c->instance.len && c->instance.s)
+			if (add_mi_string(ct_item, MI_SSTR("SIP_instance"),
+				c->instance.s, c->instance.len) < 0)
 				return -1;
-		}
 
-		/* ping latency */
-		if (c->sipping_latency > 0) {
-			p = int2str((unsigned long)c->sipping_latency, &len);
-			node = add_mi_node_child(cnode, MI_DUP_VALUE,
-			                         MI_SSTR("Ping-Latency"), p, len);
-			if (node==0)
-				return -1;
-		}
+		if (c->sipping_latency > 0)
+			if (add_mi_number(ct_item, MI_SSTR("Ping-Latency"),
+				c->sipping_latency) < 0)
 
 		if (mi_dump_kv_store) {
 			kv_buf = store_serialize(c->kv_storage);
-			if (!ZSTR(kv_buf) && !add_mi_node_child(cnode, MI_DUP_VALUE,
-			                      MI_SSTR("KV-Store"), kv_buf.s, kv_buf.len)) {
+			if (!ZSTR(kv_buf) && (add_mi_string(ct_item, MI_SSTR("KV-Store"),
+				kv_buf.s, kv_buf.len) < 0)) {
 				store_free_buffer(&kv_buf);
 				return -1;
 			}
@@ -260,11 +222,11 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r,
 
 	if (mi_dump_kv_store) {
 		kv_buf = store_serialize(r->kv_storage);
-		if (!ZSTR(kv_buf) && !add_mi_node_child(anode, MI_DUP_VALUE,
-		                          MI_SSTR("KV-Store"), kv_buf.s, kv_buf.len)) {
-			store_free_buffer(&kv_buf);
-			return -1;
-		}
+		if (!ZSTR(kv_buf) && (add_mi_string(ct_item, MI_SSTR("KV-Store"),
+				kv_buf.s, kv_buf.len) < 0)) {
+				store_free_buffer(&kv_buf);
+				return -1;
+			}
 
 		store_free_buffer(&kv_buf);
 	}
@@ -280,148 +242,138 @@ static inline int mi_add_aor_node(struct mi_node *parent, urecord_t* r,
 /*! \brief
  * Expects 2 nodes: the table name and the AOR
  */
-struct mi_root* mi_usrloc_rm_aor(struct mi_root *cmd, void *param)
+mi_response_t *mi_usrloc_rm_aor(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
 	udomain_t *dom;
-	str *aor;
+	str aor;
+	str table;
 
-	node = cmd->node.kids;
-	if (node==NULL || node->next==NULL || node->next->next!=NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "table_name", &table.s, &table.len) < 0)
+		return init_mi_param_error();
 
-	/* look for table */
-	dom = mi_find_domain( &node->value );
+	dom = mi_find_domain(&table);
 	if (dom==NULL)
-		return init_mi_tree( 404, "Table not found", 15);
+		return init_mi_error(404, MI_SSTR("Table not found"));
 
-	/* process the aor */
-	aor = &node->next->value;
-	if ( mi_fix_aor(aor)!=0 )
-		return init_mi_tree( 400, "Domain missing in AOR", 21);
+	if (get_mi_string_param(params, "aor", &aor.s, &aor.len) < 0)
+		return init_mi_param_error();
+	if ( mi_fix_aor(&aor)!=0 )
+		return init_mi_error(400, MI_SSTR("Domain missing in AOR"));
 
-	lock_udomain( dom, aor);
-	if (delete_urecord( dom, aor, NULL, 0) < 0) {
-		unlock_udomain( dom, aor);
-		return init_mi_tree( 500, "Failed to delete AOR", 20);
+	lock_udomain( dom, &aor);
+	if (delete_urecord( dom, &aor, NULL, 0) < 0) {
+		unlock_udomain( dom, &aor);
+		return init_mi_error(500, MI_SSTR("Failed to delete AOR"));
 	}
 
-	unlock_udomain( dom, aor);
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	unlock_udomain( dom, &aor);
+	return init_mi_result_ok();
 }
 
 
 /*! \brief
  * Expects 3 nodes: the table name, the AOR and contact
  */
-struct mi_root* mi_usrloc_rm_contact(struct mi_root *cmd, void *param)
+mi_response_t *mi_usrloc_rm_contact(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
 	udomain_t *dom;
 	urecord_t *rec;
 	ucontact_t* con;
-	str *aor;
-	str *contact;
+	str aor;
+	str contact;
 	int ret;
+	str table;
 
-	node = cmd->node.kids;
-	if (node==NULL || node->next==NULL || node->next->next==NULL ||
-	node->next->next->next!=NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "table_name", &table.s, &table.len) < 0)
+		return init_mi_param_error();
 
-	/* look for table */
-	dom = mi_find_domain( &node->value );
+	dom = mi_find_domain(&table);
 	if (dom==NULL)
-		return init_mi_tree( 404, "Table not found", 15);
+		return init_mi_error(404, MI_SSTR("Table not found"));
 
 	/* process the aor */
-	aor = &node->next->value;
-	if ( mi_fix_aor(aor)!=0 )
-		return init_mi_tree( 400, "Domain missing in AOR", 21);
+	if (get_mi_string_param(params, "aor", &aor.s, &aor.len) < 0)
+		return init_mi_param_error();
+	if ( mi_fix_aor(&aor)!=0 )
+		return init_mi_error(400, MI_SSTR("Domain missing in AOR"));
 
-	lock_udomain( dom, aor);
+	lock_udomain( dom, &aor);
 
-	ret = get_urecord( dom, aor, &rec);
+	ret = get_urecord( dom, &aor, &rec);
 	if (ret == 1) {
-		unlock_udomain( dom, aor);
-		return init_mi_tree( 404, "AOR not found", 13);
+		unlock_udomain( dom, &aor);
+		return init_mi_error(404, MI_SSTR("AOR not found"));
 	}
 
-	contact = &node->next->next->value;
-	ret = get_simple_ucontact( rec, contact, &con);
+	if (get_mi_string_param(params, "contact", &contact.s, &contact.len) < 0)
+		return init_mi_param_error();
+	ret = get_simple_ucontact( rec, &contact, &con);
 	if (ret < 0) {
-		unlock_udomain( dom, aor);
+		unlock_udomain( dom, &aor);
 		return 0;
 	}
 	if (ret > 0) {
-		unlock_udomain( dom, aor);
-		return init_mi_tree( 404, "Contact not found", 17);
+		unlock_udomain( dom, &aor);
+		return init_mi_error(404, MI_SSTR("Contact not found"));
 	}
 
 	if (delete_ucontact(rec, con, 0) < 0) {
-		unlock_udomain( dom, aor);
+		unlock_udomain( dom, &aor);
 		return 0;
 	}
 
 	release_urecord(rec, 0);
-	unlock_udomain( dom, aor);
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	unlock_udomain( dom, &aor);
+	return init_mi_result_ok();
 }
 
 
-struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
+mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl;
-	struct mi_node *node;
-	struct mi_attr *attr;
 	struct urecord* r;
 	dlist_t* dl;
 	udomain_t* dom;
 	time_t t;
-	char *p;
-	int len;
-	int n;
 	int i;
-	int short_dump;
 	map_iterator_t it;
 	void ** dest;
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	mi_item_t *domains_arr, *domain_item, *aors_arr, *aor_item;
 
-	node = cmd->node.kids;
-	if (node && node->next)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
-	if (node && node->value.len==5 && !strncasecmp(node->value.s, "brief", 5)){
-		/* short version */
-		short_dump = 1;
-	} else {
-		short_dump = 0;
-	}
-
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		return 0;
-	rpl = &rpl_tree->node;
-	/* all domains go under this node as array */
-	rpl->flags |= MI_IS_ARRAY;
+
+	domains_arr = add_mi_array(resp_obj, MI_SSTR("Domains"));
+	if (domains_arr)
+		goto error;
+
 	t = time(0);
 
 	for( dl=root ; dl ; dl=dl->next ) {
 		/* add a domain node */
-		node = add_mi_node_child( rpl, MI_IS_ARRAY|MI_NOT_COMPLETED,
-					"Domain", 6, dl->name.s, dl->name.len);
-		if (node==0)
+		domain_item = add_mi_object(domains_arr, NULL, 0);
+		if (!domain_item)
+			goto error;
+
+		if (add_mi_string(domain_item, MI_SSTR("name"),
+			dl->name.s, dl->name.len) < 0)
 			goto error;
 
 		dom = dl->d;
-		/* add some attributes to the domain node */
-		p= int2str((unsigned long)dom->size, &len);
-		attr = add_mi_attr( node, MI_DUP_VALUE, "hash_size", 9, p, len);
-		if (attr==0)
+
+		if (add_mi_number(domain_item, MI_SSTR("hash_size"), dom->size) < 0)
+			goto error;
+
+		aors_arr = add_mi_array(domain_item, MI_SSTR("AORs"));
+		if (aors_arr)
 			goto error;
 
 		/* add the entries per hash */
-		for(i=0,n=0; i<dom->size; i++) {
+		for(i=0; i<dom->size; i++) {
 			lock_ulslot( dom, i);
 
 			for ( map_first( dom->table[i].records, &it);
@@ -433,14 +385,13 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 					goto error_unlock;
 				r =( urecord_t * ) *dest;
 
+				aor_item = add_mi_object(aors_arr, NULL, 0);
+				if (!aor_item)
+					goto error_unlock;
 
 				/* add entry */
-				if (mi_add_aor_node( node, r, t, short_dump)!=0)
+				if (mi_add_aor_node(aor_item, r, t, short_dump)!=0)
 					goto error_unlock;
-				n++;
-				/* at each 50 AORs, flush the tree */
-				if ( (n % 50) == 0 )
-					flush_mi_tree(rpl_tree);
 			}
 
 			unlock_ulslot( dom, i);
@@ -448,26 +399,37 @@ struct mi_root* mi_usrloc_dump(struct mi_root *cmd, void *param)
 
 	}
 
-	return rpl_tree;
+	return resp;
 
 error_unlock:
 	unlock_ulslot( dom, i);
 error:
-	free_mi_tree(rpl_tree);
+	free_mi_response(resp);
 	return 0;
 }
 
-
-struct mi_root* mi_usrloc_flush(struct mi_root *cmd, void *param)
+mi_response_t *w_mi_usrloc_dump(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
+	return mi_usrloc_dump(params, 1);
+}
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==NULL)
-		return 0;
+mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int brief;
 
+	if (get_mi_int_param(params, "brief", &brief) < 0)
+		return init_mi_param_error();
+
+	return mi_usrloc_dump(params, brief);
+}
+
+mi_response_t *mi_usrloc_flush(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
 	synchronize_all_udomains();
-	return rpl_tree;
+	return init_mi_result_ok();
 }
 
 
@@ -483,80 +445,66 @@ struct mi_root* mi_usrloc_flush(struct mi_root *cmd, void *param)
  *        cflags
  *        methods
  */
-struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param)
+mi_response_t *mi_usrloc_add(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	ucontact_info_t ci;
 	urecord_t* r;
 	ucontact_t* c;
-	struct mi_node *node;
 	udomain_t *dom;
-	str *aor;
-	str *contact;
-	unsigned int ui_val;
+	str aor;
+	str contact;
+	int expires_val;
 	int n;
+	str table;
+	str qval;
 
-	for( n=0,node = cmd->node.kids; n<9 && node ; n++,node=node->next );
-	if (n!=9 || node!=0)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "table", &table.s, &table.len) < 0)
+		return init_mi_param_error();
 
-	node = cmd->node.kids;
-
-	/* look for table (param 1) */
-	dom = mi_find_domain( &node->value );
+	dom = mi_find_domain(&table);
 	if (dom==NULL)
-		return init_mi_tree( 404, "Table not found", 15);
+		return init_mi_error(404, MI_SSTR("Table not found"));
 
-	/* process the aor (param 2) */
-	node = node->next;
-	aor = &node->value;
-	if ( mi_fix_aor(aor)!=0 )
-		return init_mi_tree( 400, "Domain missing in AOR", 21);
+	if (get_mi_string_param(params, "aor", &aor.s, &aor.len) < 0)
+		return init_mi_param_error();
+	if ( mi_fix_aor(&aor)!=0 )
+		return init_mi_error(400, MI_SSTR("Domain missing in AOR"));
 
-	/* contact (param 3) */
-	node = node->next;
-	contact = &node->value;
-
+	if (get_mi_string_param(params, "contact", &contact.s, &contact.len) < 0)
+		return init_mi_param_error();
 	memset( &ci, 0, sizeof(ucontact_info_t));
 
-	/* expire (param 4) */
-	node = node->next;
-	if (str2int( &node->value, &ui_val) < 0)
-		goto bad_syntax;
-	ci.expires = ui_val;
+	if (get_mi_int_param(params, "expires", &expires_val) < 0)
+		return init_mi_param_error();
+	ci.expires = expires_val;
 
-	/* q value (param 5) */
-	node = node->next;
-	if (str2q( &ci.q, node->value.s, node->value.len) < 0)
+	if (get_mi_string_param(params, "q", &qval.s, &qval.len) < 0)
+		return init_mi_param_error();
+	if (str2q( &ci.q, qval.s, qval.len) < 0)
 		goto bad_syntax;
 
-	/* unused value (param 6) FIXME */
-	node = node->next;
-
-	/* flags value (param 7) */
-	node = node->next;
-	if (str2int( &node->value, (unsigned int*)&ci.flags) < 0)
-		goto bad_syntax;
+	if (get_mi_int_param(params, "flags", (int*)&ci.flags) < 0)
+		return init_mi_param_error();
 
 	/* branch flags value (param 8) */
-	node = node->next;
-	if (str2int( &node->value, (unsigned int*)&ci.cflags) < 0)
-		goto bad_syntax;
+	if (get_mi_int_param(params, "cflags", (int*)&ci.cflags) < 0)
+		return init_mi_param_error();
 
 	/* methods value (param 9) */
-	node = node->next;
-	if (str2int( &node->value, (unsigned int*)&ci.methods) < 0)
-		goto bad_syntax;
+	if (get_mi_int_param(params, "methods", (int*)&ci.methods) < 0)
+		return init_mi_param_error();
 
-	lock_udomain( dom, aor);
+	lock_udomain( dom, &aor);
 
-	n = get_urecord( dom, aor, &r);
+	n = get_urecord( dom, &aor, &r);
 	if ( n==1) {
-		if (insert_urecord( dom, aor, &r, 0) < 0)
+		if (insert_urecord( dom, &aor, &r, 0) < 0)
 			goto lock_error;
 
 		c = 0;
 	} else {
-		if (get_simple_ucontact( r, contact, &c) < 0)
+		if (get_simple_ucontact( r, &contact, &c) < 0)
 			goto lock_error;
 	}
 
@@ -577,85 +525,80 @@ struct mi_root* mi_usrloc_add(struct mi_root *cmd, void *param)
 		/* new contact record */
 		ci.callid = &mi_ul_cid;
 		ci.cseq = MI_UL_CSEQ;
-		if ( insert_ucontact( r, contact, &ci, &c, 0) < 0 )
+		if ( insert_ucontact( r, &contact, &ci, &c, 0) < 0 )
 			goto release_error;
 	}
 
 	release_urecord(r, 0);
 
-	unlock_udomain( dom, aor);
+	unlock_udomain( dom, &aor);
 
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 bad_syntax:
-	return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+	return init_mi_error(400, MI_SSTR("Bad parameter value"));
 release_error:
 	release_urecord(r, 0);
 lock_error:
-	unlock_udomain( dom, aor);
-	return init_mi_tree( 500, MI_INTERNAL_ERR_S, MI_INTERNAL_ERR_LEN);
+	unlock_udomain( dom, &aor);
+	return init_mi_error(500, MI_SSTR("Internal Error"));
 }
 
 
 /*! \brief
  * Expects 2 nodes: the table name and the AOR
  */
-struct mi_root* mi_usrloc_show_contact(struct mi_root *cmd, void *param)
+mi_response_t *mi_usrloc_show_contact(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_root *rpl_tree;
-	struct mi_node *rpl;
-	struct mi_node *node;
+	mi_response_t *resp = NULL;
+	mi_item_t *resp_obj;
 	udomain_t *dom;
 	urecord_t *rec;
-	str *aor;
+	str aor;
 	int ret;
 	time_t t;
+	str table;
 
-	node = cmd->node.kids;
-	if (node==NULL || node->next==NULL || node->next->next!=NULL)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-
+	if (get_mi_string_param(params, "table_name", &table.s, &table.len) < 0)
+		return init_mi_param_error();
 	/* look for table */
-	dom = mi_find_domain( &node->value );
+	dom = mi_find_domain(&table);
 	if (dom==NULL)
-		return init_mi_tree( 404, "Table not found", 15);
+		return init_mi_error(404, MI_SSTR("Table not found"));
 
 	/* process the aor */
-	aor = &node->next->value;
-	if ( mi_fix_aor(aor)!=0 )
-		return init_mi_tree( 400, "Domain missing in AOR", 21);
+	if (get_mi_string_param(params, "aor", &aor.s, &aor.len) < 0)
+		return init_mi_param_error();
+	if ( mi_fix_aor(&aor)!=0 )
+		return init_mi_error(400, MI_SSTR("Domain missing in AOR"));
 
 	t = time(0);
 
-	lock_udomain( dom, aor);
+	lock_udomain( dom, &aor);
 
-	ret = get_urecord( dom, aor, &rec);
+	ret = get_urecord( dom, &aor, &rec);
 	if (ret == 1) {
-		unlock_udomain( dom, aor);
-		return init_mi_tree( 404, "AOR not found", 13);
+		unlock_udomain( dom, &aor);
+		return init_mi_error(404, MI_SSTR("AOR not found"));
 	}
 
 	get_act_time();
 
-	rpl_tree = init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
-	if (rpl_tree==0)
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
 		goto error;
 
-	rpl = &rpl_tree->node;
-	rpl->flags |= MI_IS_ARRAY;
-
-	if (mi_add_aor_node(rpl, rec, t, 0)!=0)
+	if (mi_add_aor_node(resp_obj, rec, t, 0)!=0)
 		goto error;
 
-	unlock_udomain( dom, aor);
+	unlock_udomain( dom, &aor);
 
-	if (rpl_tree==0)
-		return init_mi_tree( 404 , "AOR has no contacts", 18);
+	return resp;
 
-	return rpl_tree;
 error:
-	if (rpl_tree)
-		free_mi_tree( rpl_tree );
-	unlock_udomain( dom, aor);
+	unlock_udomain( dom, &aor);
+	if (resp)
+		free_mi_response(resp);
 	return 0;
 }
 
@@ -675,7 +618,7 @@ static int mi_process_sync(void *param, str key, void *value)
 	return 0;
 }
 
-static struct mi_root * mi_sync_domain(udomain_t *dom)
+static mi_response_t *mi_sync_domain(udomain_t *dom)
 {
 	int i;
 	static db_ps_t my_ps = NULL;
@@ -703,20 +646,20 @@ static struct mi_root * mi_sync_domain(udomain_t *dom)
 
 		unlock_ulslot(dom, i);
 	}
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 error:
 	unlock_ulslot(dom, i);
 	return 0;
 }
 
-static struct mi_root* mi_sync_aor(udomain_t *dom, str *aor)
+static mi_response_t *mi_sync_aor(udomain_t *dom, str *aor)
 {
 	urecord_t *rec;
 
 	lock_udomain( dom, aor);
 	if (get_urecord( dom, aor, &rec) == 1) {
 		unlock_udomain( dom, aor);
-		return init_mi_tree( 404, "AOR not found", 13);
+		return init_mi_error(404, MI_SSTR("AOR not found"));
 	}
 
 	if (db_delete_urecord(rec) < 0) {
@@ -728,55 +671,68 @@ static struct mi_root* mi_sync_aor(udomain_t *dom, str *aor)
 		goto error;
 
 	unlock_udomain( dom, aor);
-	return init_mi_tree( 200, MI_OK_S, MI_OK_LEN);
+	return init_mi_result_ok();
 error:
 	unlock_udomain( dom, aor);
 	return 0;
 }
 
-/*! \brief
- * Expects the table name
- */
-struct mi_root* mi_usrloc_sync(struct mi_root *cmd, void *param)
+mi_response_t *mi_usrloc_sync_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
-	struct mi_node *node;
 	udomain_t *dom;
+	str table;
+	mi_response_t *res;
 
 	if (sql_wmode == SQL_NO_WRITE)
-		return init_mi_tree( 200, MI_SSTR("Contacts already synced"));
+		return init_mi_error(200, MI_SSTR("Contacts already synced"));
 
-	node = cmd->node.kids;
-	if (!node)
-		return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
+	if (get_mi_string_param(params, "table_name", &table.s, &table.len) < 0)
+		return init_mi_param_error();
 
-	/* look for table */
-	dom = mi_find_domain( &node->value );
+	dom = mi_find_domain(&table);
 	if (dom==NULL)
-		return init_mi_tree( 404, MI_SSTR("Table not found"));
+		return init_mi_error(404, MI_SSTR("Table not found"));
 
-	node = node->next;
-	if (node) {
-		if (node->next)
-			return init_mi_tree( 400, MI_MISSING_PARM_S, MI_MISSING_PARM_LEN);
-		return mi_sync_aor(dom, &node->value);
-	} else {
-		struct mi_root *ret;
-		if (sync_lock)
-			lock_start_write(sync_lock);
-		ret = mi_sync_domain(dom);
-		if (sync_lock)
-			lock_stop_write(sync_lock);
-		return ret;
-	}
+	if (sync_lock)
+		lock_start_write(sync_lock);
+	res = mi_sync_domain(dom);
+	if (sync_lock)
+		lock_stop_write(sync_lock);
+	return res;
 }
 
-struct mi_root* mi_usrloc_cl_sync(struct mi_root *cmd, void *param)
+mi_response_t *mi_usrloc_sync_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	udomain_t *dom;
+	str table;
+	str aor;
+
+	if (sql_wmode == SQL_NO_WRITE)
+		return init_mi_error(200, MI_SSTR("Contacts already synced"));
+
+	if (get_mi_string_param(params, "table_name", &table.s, &table.len) < 0)
+		return init_mi_param_error();
+
+	dom = mi_find_domain(&table);
+	if (dom==NULL)
+		return init_mi_error(404, MI_SSTR("Table not found"));
+
+	if (get_mi_string_param(params, "aor", &aor.s, &aor.len) < 0)
+		return init_mi_param_error();
+
+	return mi_sync_aor(dom, &aor);
+}
+
+mi_response_t *mi_usrloc_cl_sync(const mi_params_t *params,
+								struct mi_handler *async_hdl)
 {
 	if (!location_cluster)
-		return init_mi_tree(400, MI_SSTR("Clustering not enabled"));
+		return init_mi_error(400, MI_SSTR("Clustering not enabled"));
 
 	if (clusterer_api.request_sync(&contact_repl_cap, location_cluster, 1) < 0)
-		return init_mi_tree(400, MI_SSTR("Failed to send sync request"));
+		return init_mi_error(400, MI_SSTR("Failed to send sync request"));
 	else
-		return init_mi_tree(200, MI_SSTR(MI_OK));
+		return init_mi_result_ok();
 }

@@ -414,6 +414,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	str_str_t *kv;
 	char *p;
 	int ret_code = MHD_HTTP_OK;
+	str saved_body;
 
 #if ( MHD_VERSION >= 0x000092800 )
 	int sv_sockfd;
@@ -471,61 +472,10 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 											post_buf_size,
 											&post_iterator,
 											pr);
-			if(pr->pp==NULL) {
-				if (*upload_data_size == 0) {
-					/* We need to wait for more data before
-					 * handling the POST request */
-					return MHD_YES;
-				}
-				LM_DBG("NOT a regular POST :o)\n");
-				if (pr->content_type==0 && pr->content_len==0)
-					MHD_get_connection_values(connection, MHD_HEADER_KIND,
-											&getConnectionHeader, pr);
-				if (pr->content_type==0) {
-					LM_ERR("missing Content-Type header\n");
-					return MHD_NO;
-				}
-				if (pr->content_type<0) {
-					/* Unexpected Content-Type header:
-					err log printed in getConnectionHeader() */
-					return MHD_NO;
-				}
-				if (*upload_data_size != pr->content_len) {
-					/* For now, we don't support large POST with truncated data */
-					LM_ERR("got a truncated POST request\n");
-					return MHD_NO;
-				}
-				LM_DBG("got ContentType [%d] with len [%d]: %.*s\\n",
-					pr->content_type, pr->content_len,
-					(int)*upload_data_size, upload_data);
-				/* Here we save data. */
-				switch (pr->content_type) {
-				case HTTPD_TEXT_XML_CNT_TYPE:
-				case HTTPD_APPLICATION_JSON_CNT_TYPE:
-					/* Save the entire body as 'body' */
-					kv = (str_str_t*)slinkedl_append(pr->p_list,
-							sizeof(str_str_t) + 1 +
-							*upload_data_size);
-					p = (char*)(kv + 1);
-					kv->key.len = 1; kv->key.s = p;
-					memcpy(p, "1", 1);
-					p += 1;
-					kv->val.len = *upload_data_size;
-					kv->val.s = p;
-					memcpy(p, upload_data, *upload_data_size);
-					break;
-				default:
-					LM_ERR("Unhandled data for ContentType [%d]\n",
-							pr->content_type);
-					return MHD_NO;
-				}
-				/* Mark the fact that we consumed all data */
-				*upload_data_size = 0;
-				return MHD_YES;
-			}
-
 			LM_DBG("pr=[%p] pp=[%p] p_list=[%p]\n",
 					pr, pr->pp, pr->p_list);
+
+			/* We need to wait for the actual data in the POST request */
 			return MHD_YES;
 		} else {
 			if (pr->pp==NULL) {
@@ -535,11 +485,12 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 					if (cb) {
 						normalised_url = &url[cb->http_root->len+1];
 						LM_DBG("normalised_url=[%s]\n", normalised_url);
+						saved_body = ((str_str_t *)slinkedl_peek(pr->p_list))->val;
 						ret_code = cb->callback(cls, (void*)connection,
 								normalised_url,
 								method, version,
-								upload_data, upload_data_size, con_cls,
-								&buffer, &page, cl_socket);
+								saved_body.s, saved_body.len,
+								con_cls, &buffer, &page, cl_socket);
 					} else {
 						page = MI_HTTP_U_URL;
 						ret_code = MHD_HTTP_BAD_REQUEST;
@@ -575,7 +526,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				switch (pr->content_type) {
 				case HTTPD_TEXT_XML_CNT_TYPE:
 				case HTTPD_APPLICATION_JSON_CNT_TYPE:
-					/* Save the entire body as 'body' */
+					/* Save the entire body as the '1' key */
 					kv = (str_str_t*)slinkedl_append(pr->p_list,
 							sizeof(str_str_t) + 1 +
 							*upload_data_size);
@@ -629,7 +580,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 				ret_code = cb->callback(cls, (void*)connection,
 						normalised_url,
 						method, version,
-						upload_data, upload_data_size, con_cls,
+						upload_data, *upload_data_size, con_cls,
 						&buffer, &page, cl_socket);
 			} else {
 				page = MI_HTTP_U_URL;
@@ -651,7 +602,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 			ret_code = cb->callback(cls, (void*)connection,
 					normalised_url,
 					method, version,
-					upload_data, upload_data_size, con_cls,
+					upload_data, *upload_data_size, con_cls,
 					&buffer, &page, cl_socket);
 		} else {
 			page = MI_HTTP_U_URL;
@@ -805,7 +756,7 @@ void httpd_proc(int rank)
 			}
 		}
 		//LM_DBG("select returned %d\n", status);
-		status = MHD_run(dmn);
+		status = MHD_run_from_select(dmn, &rs, &ws, &es);
 		if (status == MHD_NO) {
 			LM_ERR("unable to run http daemon\n");
 			return;
