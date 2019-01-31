@@ -153,6 +153,14 @@ extern int column;
 extern int startcolumn;
 extern char *finame;
 
+struct listen_param {
+	enum si_flags flags;
+	int children;
+	struct socket_id *socket;
+};
+static struct listen_param* mk_listen_param(void);
+static void fill_socket_id(struct listen_param *param, struct socket_id *s);
+
 #ifndef SHM_EXTRA_STATS
 struct multi_str{
 	char *s;
@@ -212,6 +220,7 @@ static struct multi_str *tmp_mod;
 	struct net* ipnet;
 	struct ip_addr* ipaddr;
 	struct socket_id* sockid;
+	struct listen_param* listen_param;
 	struct _pv_spec *specval;
 	struct multi_str* multistr;
 }
@@ -463,7 +472,9 @@ static struct multi_str *tmp_mod;
 %type <sockid> listen_def
 %type <sockid> id_lst
 %type <sockid> alias_def
+%type <sockid> listen_id_def
 %type <sockid> phostport panyhostport
+%type <listen_param> listen_def_param listen_def_params
 %type <intval> proto port any_proto
 %type <strval> host_sep
 %type <intval> equalop compop matchop strop intop
@@ -593,45 +604,46 @@ id_lst:		alias_def		{  $$=$1 ; }
 		| alias_def id_lst	{ $$=$1; $$->next=$2; }
 		;
 
+listen_id_def:	listen_id					{ $$=mk_listen_id($1, PROTO_NONE, 0); }
+			 |	listen_id COLON port		{ $$=mk_listen_id($1, PROTO_NONE, $3); }
+			 |	listen_id COLON error {
+					$$=0;
+					yyerror(" port number expected");
+					}
+			 ;
+
+listen_def_param: ANYCAST {
+					$$=mk_listen_param();
+					$$->flags |= SI_IS_ANYCAST;
+					}
+				| USE_CHILDREN NUMBER {
+					$$=mk_listen_param();
+					$$->children=$2;
+					}
+				| AS listen_id_def {
+					$$=mk_listen_param();
+					$$->socket=$2;
+					}
+				;
+
+listen_def_params:	listen_def_param { $$=$1; }
+				 |	listen_def_param listen_def_params {
+						$$=$1;
+						/* flags get "summed up" */
+						$$->flags |= $2->flags;
+						/* store only initial value of the others params */
+						if ($$->children != 0)
+							$$->children = $2->children;
+						if ($$->socket != NULL)
+							$$->socket = $2->socket;
+						pkg_free($2);
+					}
+				 ;
 
 listen_def:	panyhostport			{ $$=$1; }
-			| panyhostport USE_CHILDREN NUMBER { $$=$1; $$->children=$3; }
 			| phostport				{ $$=$1; }
-			| phostport ANYCAST		{ $$=$1; $$->flags=SI_IS_ANYCAST; }
-			| phostport USE_CHILDREN NUMBER { $$=$1; $$->children=$3; }
-			| phostport ANYCAST USE_CHILDREN NUMBER {
-				$$=$1; $$->children=$4; $$->flags=SI_IS_ANYCAST;
-				}
-			| phostport AS listen_id {
-				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060);
-				}
-			| phostport AS listen_id ANYCAST {
-				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060);
-				$$->flags=SI_IS_ANYCAST;
-				}
-			| phostport AS listen_id USE_CHILDREN NUMBER {
-				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060);
-				$1->children=$5;
-				}
-			| phostport AS listen_id ANYCAST USE_CHILDREN NUMBER {
-				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, 5060);
-				$1->children=$6; $$->flags=SI_IS_ANYCAST;
-				}
-			| phostport AS listen_id COLON port {
-				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5);
-				}
-			| phostport AS listen_id COLON port ANYCAST {
-				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5);
-				$$->flags=SI_IS_ANYCAST;
-				}
-			| phostport AS listen_id COLON port USE_CHILDREN NUMBER {
-				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5);
-				$1->children=$7;
-				}
-			| phostport AS listen_id COLON port ANYCAST USE_CHILDREN NUMBER {
-				$$=$1; set_listen_id_adv((struct socket_id *)$1, $3, $5);
-				$1->children=$8; $$->flags=SI_IS_ANYCAST;
-				}
+			| panyhostport listen_def_params	{ $$=$1; fill_socket_id($2, $$); }
+			| phostport listen_def_params	{ $$=$1; fill_socket_id($2, $$); }
 			;
 
 any_proto:	  ANY	{ $$=PROTO_NONE; }
@@ -2696,6 +2708,28 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 		l->next     = NULL;
 	}
 
+	return l;
+}
+
+static void fill_socket_id(struct listen_param *param, struct socket_id *s)
+{
+	s->flags |= param->flags;
+	s->children = param->children;
+	if (param->socket) {
+		set_listen_id_adv(s, param->socket->name, param->socket->port);
+		pkg_free(param->socket);
+	}
+	pkg_free(param);
+}
+
+static struct listen_param* mk_listen_param(void)
+{
+	struct listen_param *l;
+	l=pkg_malloc(sizeof(struct socket_id));
+	if (l==0)
+		LM_CRIT("cfg. parser: out of memory.\n");
+	else
+		memset(l, 0, sizeof *l);
 	return l;
 }
 
