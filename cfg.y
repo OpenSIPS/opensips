@@ -144,7 +144,7 @@ action_elem_t *a_tmp;
 static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
-static struct socket_id* set_listen_id_alias(struct socket_id *, char *, int);
+static struct socket_id* set_listen_id_tag(struct socket_id *, char *);
 static struct multi_str *new_string(char *s);
 static int parse_ipnet(char *in, int len, struct net **ipnet);
 
@@ -157,6 +157,7 @@ struct listen_param {
 	enum si_flags flags;
 	int children;
 	struct socket_id *socket;
+	char *tag;
 };
 static struct listen_param* mk_listen_param(void);
 static void fill_socket_id(struct listen_param *param, struct socket_id *s);
@@ -326,6 +327,7 @@ static struct multi_str *tmp_mod;
 %token MEMGROUP
 %token ALIAS
 %token AUTO_ALIASES
+%token TAG
 %token DNS
 %token REV_DNS
 %token DNS_TRY_IPV6
@@ -624,6 +626,10 @@ listen_def_param: ANYCAST {
 					$$=mk_listen_param();
 					$$->socket=$2;
 					}
+				| TAG ID {
+					$$=mk_listen_param();
+					$$->tag=$2;
+					}
 				;
 
 listen_def_params:	listen_def_param { $$=$1; }
@@ -636,6 +642,8 @@ listen_def_params:	listen_def_param { $$=$1; }
 							$$->children = $2->children;
 						if ($$->socket != NULL)
 							$$->socket = $2->socket;
+						if ($$->tag != NULL)
+							$$->tag = $2->tag;
 						pkg_free($2);
 					}
 				 ;
@@ -2719,6 +2727,8 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 		set_listen_id_adv(s, param->socket->name, param->socket->port);
 		pkg_free(param->socket);
 	}
+	if (param->tag)
+		set_listen_id_tag(s, param->tag);
 	pkg_free(param);
 }
 
@@ -2754,9 +2764,8 @@ static struct socket_id* set_listen_id_adv(struct socket_id* sock,
 	return sock;
 }
 
-static struct socket_id* set_listen_id_alias(struct socket_id *sock,
-											char *alias_name,
-											int alias_port)
+static struct socket_id* set_listen_id_tag(struct socket_id *sock,
+											char *tag_name)
 {
 	return sock;
 }

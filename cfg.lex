@@ -280,6 +280,7 @@ LISTEN		listen
 MEMGROUP	mem-group
 ALIAS		alias
 AUTO_ALIASES	auto_aliases
+TAG		 tag
 DNS		 dns
 REV_DNS	 rev_dns
 DNS_TRY_IPV6    dns_try_ipv6
@@ -541,6 +542,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
 <INITIAL>{AUTO_ALIASES}	{ count(); yylval.strval=yytext; return AUTO_ALIASES; }
 <INITIAL>{DNS}	{ count(); yylval.strval=yytext; return DNS; }
+<INITIAL>{TAG}	{ count(); yylval.strval=yytext; return TAG; }
 <INITIAL>{REV_DNS}	{ count(); yylval.strval=yytext; return REV_DNS; }
 <INITIAL>{DNS_TRY_IPV6}		{ count(); yylval.strval=yytext;
 								return DNS_TRY_IPV6; }
