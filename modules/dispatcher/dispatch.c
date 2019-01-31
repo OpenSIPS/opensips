@@ -874,7 +874,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 					attrs.len,attrs.s);
 				sock = NULL;
 			} else {
-				sock = grep_sock_info( &host, port, proto);
+				sock = grep_internal_sock_info( &host, port, proto);
 				if (sock == NULL) {
 					LM_ERR("socket <%.*s> is not local to opensips (we must "
 						"listen on it) -> ignoring it\n", attrs.len, attrs.s);

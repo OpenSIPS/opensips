@@ -403,7 +403,7 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	&port,&proto)!=0)
 		return init_mi_error( 404, MI_SSTR("Invalid local socket"));
 	set_sip_defaults( port, proto);
-	sock = grep_sock_info( &s, (unsigned short)port, proto);
+	sock = grep_internal_sock_info( &s, (unsigned short)port, proto);
 	if (sock==0)
 		return init_mi_error( 404, MI_SSTR("Local socket not found"));
 

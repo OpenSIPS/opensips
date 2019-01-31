@@ -739,7 +739,8 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 			LM_ERR("could not parse send_socket, return with error ...\n");
 			return -1;
 		}
-		si = grep_sock_info( &host, (unsigned short) port, (unsigned short) proto);
+		si = grep_internal_sock_info( &host, (unsigned short) port,
+			(unsigned short) proto);
 		if (si) {
 			_msg->force_send_socket = si;
 		} else {

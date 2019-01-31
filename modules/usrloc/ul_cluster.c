@@ -172,7 +172,7 @@ void bin_push_contact(bin_packet_t *packet, urecord_t *r, ucontact_t *c)
 	st.len = sizeof c->q;
 	bin_push_str(packet, &st);
 
-	bin_push_str(packet, c->sock?&c->sock->sock_str:NULL);
+	bin_push_str(packet, c->sock?get_socket_internal_name(c->sock):NULL);
 	bin_push_int(packet, c->cseq);
 	bin_push_int(packet, c->flags);
 	bin_push_int(packet, c->cflags);
@@ -254,7 +254,7 @@ void replicate_ucontact_update(urecord_t *r, ucontact_t *ct)
 	st.len = sizeof ct->q;
 	bin_push_str(&packet, &st);
 
-	bin_push_str(&packet, ct->sock?&ct->sock->sock_str:NULL);
+	bin_push_str(&packet, ct->sock?get_socket_internal_name(ct->sock):NULL);
 	bin_push_int(&packet, ct->cseq);
 	bin_push_int(&packet, ct->flags);
 	bin_push_int(&packet, ct->cflags);
@@ -465,7 +465,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 			goto error;
 		}
 
-		ci.sock = grep_sock_info(&host, (unsigned short) port,
+		ci.sock = grep_internal_sock_info(&host, (unsigned short) port,
 			(unsigned short) proto);
 		if (!ci.sock)
 			LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
@@ -586,7 +586,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 			goto error;
 		}
 
-		ci.sock = grep_sock_info(&host, (unsigned short) port,
+		ci.sock = grep_internal_sock_info(&host, (unsigned short) port,
 			(unsigned short) proto);
 		if (!ci.sock)
 			LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);

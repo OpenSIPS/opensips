@@ -1750,7 +1750,7 @@ skip:
 					dr_probe_sock_s);
 				return -1;
 			}
-			dr_probe_sock = grep_sock_info( &host, port, proto);
+			dr_probe_sock = grep_internal_sock_info( &host, port, proto);
 			if (dr_probe_sock==NULL) {
 				LM_ERR("socket <%s> is not local to opensips (we must listen "
 					"on it\n", dr_probe_sock_s);

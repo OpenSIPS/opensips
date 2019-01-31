@@ -3064,7 +3064,7 @@ int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 					return -1;
 				}
 				set_sip_defaults( port, proto);
-				si = grep_sock_info(&host, (unsigned short)port,
+				si = grep_internal_sock_info(&host, (unsigned short)port,
 					(unsigned short)proto);
 				if (si==NULL)
 					return -1;
@@ -3108,7 +3108,8 @@ int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
 		goto error;
 	}
 	set_sip_defaults( port, proto);
-	si = grep_sock_info(&host, (unsigned short)port, (unsigned short)proto);
+	si = grep_internal_sock_info(&host, (unsigned short)port,
+		(unsigned short)proto);
 	if (si!=NULL)
 	{
 		msg->force_send_socket = si;

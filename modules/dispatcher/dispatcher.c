@@ -849,7 +849,7 @@ static int mod_init(void)
 					probing_sock_s);
 				return -1;
 			}
-			probing_sock = grep_sock_info( &host, port, proto);
+			probing_sock = grep_internal_sock_info( &host, port, proto);
 			if (probing_sock==NULL) {
 				LM_ERR("socket <%s> is not local to opensips (we must listen "
 					"on it\n", probing_sock_s);

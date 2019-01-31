@@ -109,10 +109,10 @@
 
 
 /* another helper function, it just creates a socket_info struct */
-struct socket_info* new_sock_info(	char* name,
-								unsigned short port, unsigned short proto,
-								char *adv_name, unsigned short adv_port,
-								unsigned short children,enum si_flags flags)
+static struct socket_info* new_sock_info( char* name,
+						unsigned short port, unsigned short proto,
+						char *adv_name, unsigned short adv_port, char *tag,
+						unsigned short children,enum si_flags flags)
 {
 	struct socket_info* si;
 
@@ -131,27 +131,36 @@ struct socket_info* new_sock_info(	char* name,
 	si->proto=proto;
 	si->flags=flags;
 
-    /* advertised socket information */
+	/* advertised socket information */
 	/* Make sure the adv_sock_string is initialized, because if there is
 	 * no adv_sock_name, no other code will initialize it!
 	 */
 	si->adv_sock_str.s=NULL;
 	si->adv_sock_str.len=0;
+	si->adv_port = 0; /* Here to help grep_sock_info along. */
 	if(adv_name) {
 		si->adv_name_str.len=strlen(adv_name);
 		si->adv_name_str.s=(char *)pkg_malloc(si->adv_name_str.len+1);
 		if (si->adv_name_str.s==0) goto error;
 		memcpy(si->adv_name_str.s, adv_name, si->adv_name_str.len+1);
-	}
-	si->adv_port = 0; /* Here to help grep_sock_info along. */
-	if(adv_port) {
+		if (!adv_port) adv_port=protos[proto].default_port ;
 		si->adv_port_str.s=pkg_malloc(10);
 		if (si->adv_port_str.s==0) goto error;
 		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu", adv_port);
 		si->adv_port = adv_port;
 	}
+
+	/* store the tag info too */
+	if (tag) {
+		si->tag.len = strlen(tag);
+		si->tag.s=(char*)pkg_malloc(si->tag.len+1); /* include \0 */
+		if (si->tag.s==0) goto error;
+		memcpy(si->tag.s, tag, si->tag.len+1);
+	}
+
 	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && children) {
-		LM_WARN("number of children per TCP/TLS listener not supported -> ignoring...\n");
+		LM_WARN("number of children per TCP/TLS listener not supported -> "
+			"ignoring...\n");
 	} else {
 		si->children = children;
 	}
@@ -169,12 +178,14 @@ static void free_sock_info(struct socket_info* si)
 {
 	if(si){
 		if(si->name.s) pkg_free(si->name.s);
+		if(si->tag.s) pkg_free(si->tag.s);
 		if(si->sock_str.s) pkg_free(si->sock_str.s);
 		if(si->address_str.s) pkg_free(si->address_str.s);
 		if(si->port_no_str.s) pkg_free(si->port_no_str.s);
 		if(si->adv_name_str.s) pkg_free(si->adv_name_str.s);
 		if(si->adv_port_str.s) pkg_free(si->adv_port_str.s);
 		if(si->adv_sock_str.s) pkg_free(si->adv_sock_str.s);
+		if(si->tag_sock_str.s) pkg_free(si->tag_sock_str.s);
 	}
 }
 
@@ -187,8 +198,8 @@ static void free_sock_info(struct socket_info* si)
  * WARNING: uses str2ip6 so it will overwrite any previous
  *  unsaved result of this function (static buffer)
  */
-struct socket_info* grep_sock_info(str* host, unsigned short port,
-												unsigned short proto)
+struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
+										unsigned short proto, int check_tags)
 {
 	char* hname;
 	int h_len;
@@ -223,6 +234,11 @@ struct socket_info* grep_sock_info(str* host, unsigned short port,
 						h_len, hname,
 						si->name.len, si->name.s
 				);
+
+			if (check_tags && port==0 && si->tag.s && h_len==si->tag.len &&
+			strncasecmp(hname, si->tag.s, si->tag.len)==0 )
+				goto found;
+
 			if (port) {
 				LM_DBG("checking if port %d matches port %d\n",
 						si->port_no, port);
@@ -330,48 +346,18 @@ found:
 /* adds a new sock_info structure to the corresponding list
  * return  0 on success, -1 on error */
 int new_sock2list(char* name, unsigned short port, unsigned short proto,
-		char *adv_name, unsigned short adv_port, unsigned short children,
-		enum si_flags flags, struct socket_info** list)
+		char *adv_name, unsigned short adv_port, char *tag,
+		unsigned short children, enum si_flags flags,struct socket_info** list)
 {
 	struct socket_info* si;
 
-	si=new_sock_info(name, port, proto, adv_name, adv_port, children, flags);
+	si=new_sock_info(name, port, proto, adv_name, adv_port, tag,
+		children, flags);
 	if (si==0){
 		LM_ERR("new_sock_info failed\n");
 		goto error;
 	}
 	sock_listadd(list, si);
-	return 0;
-error:
-	return -1;
-}
-
-
-
-/* adds a sock_info structure to the corresponding proto list
- * return  0 on success, -1 on error */
-int add_listen_iface(char* name, unsigned short port, unsigned short proto,
-			char *adv_name, unsigned short adv_port, unsigned short children,
-			enum si_flags flags)
-{
-	struct socket_info** list;
-	unsigned short c_proto;
-
-	c_proto=(proto)?proto:PROTO_UDP;
-	do{
-		list=get_sock_info_list(c_proto);
-		if (list==0){
-			LM_ERR("get_sock_info_list failed\n");
-			goto error;
-		}
-		if (port==0) /* use default port */
-			port=protos[c_proto].default_port;
-		if (new_sock2list(name, port, c_proto, adv_name, adv_port, children,
-		flags, list)<0){
-			LM_ERR("new_sock2list failed\n");
-			goto error;
-		}
-	}while( (proto==0) && (c_proto=next_proto(c_proto)));
 	return 0;
 error:
 	return -1;
@@ -423,7 +409,8 @@ int add_interfaces(char* if_name, unsigned short port,
 				goto end;
 			if (it->ifa_flags & IFF_LOOPBACK)
 				flags |= SI_IS_LO;
-			if (new_sock2list(tmp, port, proto, 0, 0, children, flags, list)!=0){
+			if (new_sock2list(tmp, port, proto, NULL, 0, NULL,
+			children, flags, list)!=0){
 				LM_ERR("new_sock2list failed\n");
 				goto end;
 			}
@@ -522,7 +509,8 @@ end:
 			if (ifrcopy.ifr_flags & IFF_LOOPBACK)
 				flags|=SI_IS_LO;
 			/* add it to one of the lists */
-			if (new_sock2list(tmp, port, proto, 0, 0, children, flags, list)!=0){
+			if (new_sock2list(tmp, port, proto, NULL, 0, NULL,
+			children, flags, list)!=0){
 				LM_ERR("new_sock2list failed\n");
 				goto error;
 			}
@@ -711,6 +699,21 @@ int fix_socket_list(struct socket_info **list)
 				goto error;
 			}
 			memcpy(si->adv_sock_str.s, tmp, si->adv_sock_str.len);
+		}
+
+		if (si->tag.len) {
+			/* build and set string encoding for the tagged socket info */
+			tmp = socket2str( si, 0, &si->tag_sock_str.len, 2);
+			if (tmp==0) {
+				LM_ERR("failed to convert tag socket to string\n");
+				goto error;
+			}
+			si->tag_sock_str.s=(char*)pkg_malloc(si->tag_sock_str.len);
+			if (si->tag_sock_str.s==0) {
+				LM_ERR("out of pkg memory.\n");
+				goto error;
+			}
+			memcpy(si->tag_sock_str.s, tmp, si->tag_sock_str.len);
 		}
 
 		/* build and set string encoding for the real socket info */

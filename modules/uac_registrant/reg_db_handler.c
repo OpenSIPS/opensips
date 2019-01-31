@@ -310,7 +310,7 @@ int load_reg_info_from_db(unsigned int plist)
 							forced_socket.len, forced_socket.s);
 						continue;
 					}
-					uac_param.send_sock = grep_sock_info(&host,
+					uac_param.send_sock = grep_internal_sock_info(&host,
 								(unsigned short) port,
 								(unsigned short) proto);
 					if (uac_param.send_sock==NULL) {

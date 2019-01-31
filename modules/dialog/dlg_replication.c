@@ -68,7 +68,8 @@ static struct socket_info * fetch_socket_info(str *addr)
 		return NULL;
 	}
 
-	sock = grep_sock_info(&host, (unsigned short) port, (unsigned short) proto);
+	sock = grep_internal_sock_info(&host, (unsigned short) port,
+		(unsigned short) proto);
 	if (!sock) {
 		LM_WARN("non-local socket <%.*s>...ignoring\n", addr->len, addr->s);
 	}
@@ -493,9 +494,11 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_int(packet, dlg->start_ts);
 	bin_push_int(packet, dlg->state);
 
-	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+	bin_push_str(packet,
+		get_socket_internal_name(dlg->legs[DLG_CALLER_LEG].bind_addr));
 	if (dlg->legs[callee_leg].bind_addr)
-		bin_push_str(packet, &dlg->legs[callee_leg].bind_addr->sock_str);
+		bin_push_str(packet,
+			get_socket_internal_name(dlg->legs[callee_leg].bind_addr));
 	else
 		bin_push_str(packet, NULL);
 
