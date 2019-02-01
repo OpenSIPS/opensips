@@ -136,9 +136,6 @@ static int fs_sub_add_url(modparam_t type, void *string)
 	struct str_dlist *strl;
 	str url = {string, strlen(string)};
 
-	if (!startup_fs_subs.next)
-		INIT_LIST_HEAD(&startup_fs_subs);
-
 	strl = shm_malloc(sizeof *strl);
 	if (!strl) {
 		LM_ERR("oom\n");
