@@ -52,7 +52,7 @@
         <type>int</type>
         <size>1</size>
         <default>1</default>
-        <description>state of the  machine 0 - Enabled, 1 - Disabled</description>
+        <description>state of the  machine 1 - Enabled, 0 - Disabled</description>
     </column>
 
     <column id="no_ping_retries">
