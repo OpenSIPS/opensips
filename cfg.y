@@ -2734,7 +2734,7 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 static struct listen_param* mk_listen_param(void)
 {
 	struct listen_param *l;
-	l=pkg_malloc(sizeof(struct socket_id));
+	l=pkg_malloc(sizeof(struct listen_param));
 	if (l==0)
 		LM_CRIT("cfg. parser: out of memory.\n");
 	else
