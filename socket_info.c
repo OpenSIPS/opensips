@@ -109,10 +109,7 @@
 
 
 /* another helper function, it just creates a socket_info struct */
-static struct socket_info* new_sock_info( char* name,
-						unsigned short port, unsigned short proto,
-						char *adv_name, unsigned short adv_port, char *tag,
-						unsigned short children,enum si_flags flags)
+static struct socket_info* new_sock_info( struct socket_id *sid)
 {
 	struct socket_info* si;
 
@@ -120,16 +117,16 @@ static struct socket_info* new_sock_info( char* name,
 	if (si==0) goto error;
 	memset(si, 0, sizeof(struct socket_info));
 	si->socket=-1;
-	if (name) {
-		si->name.len=strlen(name);
-		si->name.s=(char*)pkg_malloc(si->name.len+1); /* include \0 */
-		if (si->name.s==0) goto error;
-		memcpy(si->name.s, name, si->name.len+1);
-	}
+
+	si->name.len=strlen(sid->name);
+	si->name.s=(char*)pkg_malloc(si->name.len+1); /* include \0 */
+	if (si->name.s==0) goto error;
+	memcpy(si->name.s, sid->name, si->name.len+1);
+
 	/* set port & proto */
-	si->port_no=port;
-	si->proto=proto;
-	si->flags=flags;
+	si->port_no=sid->port;
+	si->proto=sid->proto;
+	si->flags=sid->flags;
 
 	/* advertised socket information */
 	/* Make sure the adv_sock_string is initialized, because if there is
@@ -138,31 +135,32 @@ static struct socket_info* new_sock_info( char* name,
 	si->adv_sock_str.s=NULL;
 	si->adv_sock_str.len=0;
 	si->adv_port = 0; /* Here to help grep_sock_info along. */
-	if(adv_name) {
-		si->adv_name_str.len=strlen(adv_name);
+	if(sid->adv_name) {
+		si->adv_name_str.len=strlen(sid->adv_name);
 		si->adv_name_str.s=(char *)pkg_malloc(si->adv_name_str.len+1);
 		if (si->adv_name_str.s==0) goto error;
-		memcpy(si->adv_name_str.s, adv_name, si->adv_name_str.len+1);
-		if (!adv_port) adv_port=protos[proto].default_port ;
+		memcpy(si->adv_name_str.s, sid->adv_name, si->adv_name_str.len+1);
+		if (!sid->adv_port) sid->adv_port=protos[sid->proto].default_port ;
 		si->adv_port_str.s=pkg_malloc(10);
 		if (si->adv_port_str.s==0) goto error;
-		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu", adv_port);
-		si->adv_port = adv_port;
+		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu",
+			sid->adv_port);
+		si->adv_port = sid->adv_port;
 	}
 
 	/* store the tag info too */
-	if (tag) {
-		si->tag.len = strlen(tag);
+	if (sid->tag) {
+		si->tag.len = strlen(sid->tag);
 		si->tag.s=(char*)pkg_malloc(si->tag.len+1); /* include \0 */
 		if (si->tag.s==0) goto error;
-		memcpy(si->tag.s, tag, si->tag.len+1);
+		memcpy(si->tag.s, sid->tag, si->tag.len+1);
 	}
 
-	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && children) {
+	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && sid->children) {
 		LM_WARN("number of children per TCP/TLS listener not supported -> "
 			"ignoring...\n");
 	} else {
-		si->children = children;
+		si->children = sid->children;
 	}
 	return si;
 error:
@@ -345,14 +343,11 @@ found:
 
 /* adds a new sock_info structure to the corresponding list
  * return  0 on success, -1 on error */
-int new_sock2list(char* name, unsigned short port, unsigned short proto,
-		char *adv_name, unsigned short adv_port, char *tag,
-		unsigned short children, enum si_flags flags,struct socket_info** list)
+int new_sock2list(struct socket_id *sid, struct socket_info** list)
 {
 	struct socket_info* si;
 
-	si=new_sock_info(name, port, proto, adv_name, adv_port, tag,
-		children, flags);
+	si=new_sock_info(sid);
 	if (si==0){
 		LM_ERR("new_sock_info failed\n");
 		goto error;
@@ -366,18 +361,23 @@ error:
 
 
 /* add all family type addresses of interface if_name to the socket_info array
- * if if_name==0, adds all addresses on all interfaces
  * WARNING: it only works with ipv6 addresses on FreeBSD
  * return: -1 on error, 0 on success
  */
-int add_interfaces(char* if_name, unsigned short port,
-					unsigned short proto, unsigned short children,
-					struct socket_info** list)
+int expand_interface(struct socket_info *si, struct socket_info** list)
 {
-	char* tmp;
 	int ret = -1;
 	struct ip_addr addr;
-	enum si_flags flags = SI_NONE;
+	struct socket_id sid;
+
+	sid.port = si->port_no;
+	sid.proto = si->proto;
+	sid.children = si->children;
+	sid.children_min = si->children_min;
+	sid.children_max = si->children_max;
+	sid.adv_port = si->adv_port;
+	sid.adv_name = si->adv_name_str.s; /* it is NULL terminated */
+	sid.tag = si->tag.s; /* it is NULL terminated */
 #ifdef HAVE_IFADDRS
 	/* use the getifaddrs interface to get all the interfaces */
 	struct ifaddrs *addrs;
@@ -392,7 +392,7 @@ int add_interfaces(char* if_name, unsigned short port,
 		if (!it->ifa_addr)
 			continue;
 
-		if ((if_name == 0) || (strcmp(if_name, it->ifa_name) == 0)) {
+		if ((strcmp(si->name.s, it->ifa_name) == 0)) {
 			if (it->ifa_addr->sa_family != AF_INET &&
 					it->ifa_addr->sa_family != AF_INET6)
 				continue;
@@ -405,13 +405,13 @@ int add_interfaces(char* if_name, unsigned short port,
 
 				continue;
 			sockaddr2ip_addr(&addr, it->ifa_addr);
-			if ((tmp = ip_addr2a(&addr)) == 0)
+			if ((sid.name = ip_addr2a(&addr)) == 0)
 				goto end;
+			sid.flags = si->flags;
 			if (it->ifa_flags & IFF_LOOPBACK)
-				flags |= SI_IS_LO;
-			if (new_sock2list(tmp, port, proto, NULL, 0, NULL,
-			children, flags, list)!=0){
-				LM_ERR("new_sock2list failed\n");
+				sid.flags |= SI_IS_LO;
+			if (new_sock2list( &sid, list)!=0){
+				LM_ERR("clone_sock2list failed\n");
 				goto end;
 			}
 			ret = 0;
@@ -490,28 +490,21 @@ end:
 		ifrcopy=ifr;
 		if (ioctl(s, SIOCGIFFLAGS,  &ifrcopy)!=-1){ /* ignore errors */
 			/* ignore down ifs only if listening on all of them*/
-			if (if_name==0){
-				/* if if not up, skip it*/
-				if (!(ifrcopy.ifr_flags & IFF_UP)) continue;
-			}
 		}
 
-
-
-		if ((if_name==0)||
-			(strncmp(if_name, ifr.ifr_name, sizeof(ifr.ifr_name))==0)){
+		if (strncmp(si->name.s, ifr.ifr_name, sizeof(ifr.ifr_name))==0){
 
 			/*add address*/
 			sockaddr2ip_addr(&addr,
 					(struct sockaddr*)(p+(long)&((struct ifreq*)0)->ifr_addr));
-			if ((tmp=ip_addr2a(&addr))==0) goto error;
+			if ((sid.name=ip_addr2a(&addr))==0) goto error;
+			sid.flags = si->flags;
 			/* check if loopback */
 			if (ifrcopy.ifr_flags & IFF_LOOPBACK)
-				flags|=SI_IS_LO;
+				sid.flags|=SI_IS_LO;
 			/* add it to one of the lists */
-			if (new_sock2list(tmp, port, proto, NULL, 0, NULL,
-			children, flags, list)!=0){
-				LM_ERR("new_sock2list failed\n");
+			if (new_sock2list( &si, list)!=0){
+				LM_ERR("clone_sock2list failed\n");
 				goto error;
 			}
 			ret=0;
@@ -553,8 +546,7 @@ int fix_socket_list(struct socket_info **list)
 
 	for (si=*list;si;){
 		next=si->next;
-		if (add_interfaces(si->name.s, si->port_no,
-							si->proto, si->children, list)!=-1){
+		if (expand_interface(si, list)!=-1){
 			/* success => remove current entry (shift the entire array)*/
 			sock_listrm(list, si);
 			free_sock_info(si);

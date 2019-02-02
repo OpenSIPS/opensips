@@ -155,6 +155,8 @@ extern char *finame;
 struct listen_param {
 	enum si_flags flags;
 	int children;
+	int children_max;
+	int children_min;
 	struct socket_id *socket;
 	char *tag;
 };
@@ -451,6 +453,8 @@ static struct multi_str *tmp_mod;
 %token SLASH
 %token AS
 %token USE_CHILDREN
+%token MAX
+%token MIN
 %token DOT
 %token CR
 %token COLON
@@ -618,6 +622,10 @@ listen_def_param: ANYCAST {
 					$$->flags |= SI_IS_ANYCAST;
 					}
 				| USE_CHILDREN NUMBER {
+					$$=mk_listen_param();
+					$$->children=$2;
+					}
+				| USE_CHILDREN NUMBER MAX NUMBER MIN NUMBER {
 					$$=mk_listen_param();
 					$$->children=$2;
 					}
@@ -2722,6 +2730,8 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 {
 	s->flags |= param->flags;
 	s->children = param->children;
+	s->children_max = param->children_max;
+	s->children_min = param->children_min;
 	if (param->socket) {
 		set_listen_id_adv(s, param->socket->name, param->socket->port);
 		pkg_free(param->socket);
@@ -2734,7 +2744,7 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 static struct listen_param* mk_listen_param(void)
 {
 	struct listen_param *l;
-	l=pkg_malloc(sizeof(struct socket_id));
+	l=pkg_malloc(sizeof(struct listen_param));
 	if (l==0)
 		LM_CRIT("cfg. parser: out of memory.\n");
 	else

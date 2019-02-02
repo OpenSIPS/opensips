@@ -114,6 +114,8 @@ struct socket_id {
 	int proto;
 	int port;
 	int children;
+	int children_max;
+	int children_min;
 	enum si_flags flags;
 	struct socket_id* next;
 };

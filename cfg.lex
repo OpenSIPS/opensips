@@ -364,6 +364,8 @@ TICK		\'
 SLASH		"/"
 AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
 USE_CHILDREN	{EAT_ABLE}("use_children"|"USE_CHILDREN"){EAT_ABLE}
+MAX			{EAT_ABLE}("max"|"MAX"){EAT_ABLE}
+MIN			{EAT_ABLE}("min"|"MIN"){EAT_ABLE}
 SEMICOLON	;
 RPAREN		\)
 LPAREN		\(
@@ -679,6 +681,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
 <INITIAL>{USE_CHILDREN} { count(); return USE_CHILDREN; }
+<INITIAL>{MAX} { count(); return MAX; }
+<INITIAL>{MIN} { count(); return MIN; }
 <INITIAL>{COLON}	{ count(); return COLON; }
 <INITIAL>{RPAREN}	{ count(); return RPAREN; }
 <INITIAL>{LPAREN}	{ count(); return LPAREN; }
