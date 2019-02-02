@@ -131,6 +131,7 @@ static int mod_init(void)
 	topo_hiding_prefix.len = strlen(topo_hiding_prefix.s);
 	topo_hiding_seed.len = strlen(topo_hiding_seed.s);
 	th_contact_encode_param.len = strlen(th_contact_encode_param.s);
+	topo_hiding_ct_encode_pw.len = strlen(topo_hiding_ct_encode_pw.s);
 	if (topo_hiding_ct_params.s) {
 		topo_hiding_ct_params.len = strlen(topo_hiding_ct_params.s);
 		topo_parse_passed_ct_params(&topo_hiding_ct_params);
