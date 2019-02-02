@@ -686,10 +686,6 @@ Files: modules/mi_http/http_fnc.c
 Copyright: 2010-2014, VoIP Embedded, Inc
 License: GPL-2+
 
-Files: modules/mi_json/*
-Copyright: 2013 shimaore.net
-License: GPL-2+
-
 Files: modules/mi_xmlrpc_ng/*
 Copyright: 2011-2013, VoIP Embedded Inc
 License: GPL-2+
