@@ -41,13 +41,20 @@
 struct process_table *pt=0;
 
 /* variable keeping the number of created processes READONLY!! */
-unsigned int counted_processes = 0;
+unsigned int *counted_processes_p = NULL;
 
 
 int init_multi_proc_support(void)
 {
 	unsigned short proc_no;
 	unsigned int i;
+
+	/* allocate the number of proc variable in shm  */
+	counted_processes_p = shm_malloc(sizeof(unsigned int));
+	if (counted_processes_p==NULL){
+		LM_ERR("out of memory\n");
+		return -1;
+	}
 
 	proc_no = 0;
 
@@ -85,7 +92,7 @@ int init_multi_proc_support(void)
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
 
-	counted_processes = proc_no;
+	*counted_processes_p = proc_no;
 
 	/* create the IPC pipes */
 	if (create_ipc_pipes( proc_no )<0) {
@@ -130,8 +137,6 @@ int init_multi_proc_support(void)
 		LM_ERR("failed to add RT global load stat\n");
 		return -1;
 	}
-
-
 
 	return 0;
 }

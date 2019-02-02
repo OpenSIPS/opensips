@@ -67,7 +67,7 @@ typedef void(*forked_proc_func)(int i);
 
 extern struct process_table *pt;
 extern int process_no;
-extern unsigned int counted_processes;
+extern unsigned int *counted_processes_p;
 
 int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
@@ -77,6 +77,8 @@ int   count_init_children(int flags);
 #define OSS_FORK_NO_LOAD       (1<<1)
 #define OSS_FORK_IS_EXTRA      (1<<2)
 #define OSS_TAKING_A_DUMP      (1<<3) /* this process is writing a corefile */
+
+#define counted_processes (counted_processes_p?*counted_processes_p:0)
 
 pid_t internal_fork(char *proc_desc, unsigned int flags);
 
