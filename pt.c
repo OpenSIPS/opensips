@@ -169,7 +169,8 @@ static int register_process_stats(int process_no)
 
 /* This function is to be called only by the main process!
  * */
-pid_t internal_fork(char *proc_desc, unsigned int flags)
+pid_t internal_fork(char *proc_desc, unsigned int flags,
+												enum processes_group group)
 {
 	#define CHILD_COUNTER_STOP  656565656
 	static int process_counter = 1;
@@ -223,6 +224,7 @@ pid_t internal_fork(char *proc_desc, unsigned int flags)
 		process_no = process_counter;
 		pt[process_no].pid = getpid();
 		pt[process_no].flags = flags;
+		pt[process_no].group = group;
 		process_counter = CHILD_COUNTER_STOP;
 		/* each children need a unique seed */
 		seed_child(seed);
@@ -281,3 +283,39 @@ int count_init_children(int flags)
 	return ret;
 }
 
+
+struct process_group {
+	enum processes_group group;
+	struct socket_info *si_filter;
+	fork_new_process_f *fork_func;
+	struct process_group *next;
+};
+
+struct process_group *pg_head = NULL;
+
+int register_process_group(enum processes_group group,
+						struct socket_info *si_filter, fork_new_process_f *f)
+{
+	struct process_group *pg, *it;
+
+	pg = (struct process_group*)shm_malloc( sizeof(struct process_group) );
+	if (pg==NULL) {
+		LM_ERR("failed to allocate memory for a new process group\n");
+		return -1;
+	}
+
+	pg->group = group;
+	pg->si_filter = si_filter;
+	pg->fork_func = f;
+	pg->next = NULL;
+
+	/* add at the end of list, to avoid changing the head of the list due
+	 * forking */
+	for( it=pg_head ; it && it->next ; it=it->next);
+	if (it==NULL)
+		pg_head = pg;
+	else
+		it->next = pg;
+
+	return 0;
+}

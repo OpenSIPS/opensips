@@ -339,6 +339,7 @@ DB_VERSION_TABLE "db_version_table"
 DB_DEFAULT_URL "db_default_url"
 DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
+ENABLE_DYNAMIC_WORKERS "enable_dynamic_workers"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -631,6 +632,8 @@ IMPORTFILE      "import_file"
 									return DB_MAX_ASYNC_CONNECTIONS; }
 <INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
 									return DISABLE_503_TRANSLATION; }
+<INITIAL>{ENABLE_DYNAMIC_WORKERS}	{	count(); yylval.strval=yytext;
+									return ENABLE_DYNAMIC_WORKERS; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }

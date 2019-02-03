@@ -342,9 +342,15 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 		for(si=protos[p].listeners; si ; si=si->next ) {
 
+			if (enable_dynamic_workers &&
+			register_process_group( GROUP_UDP, si, NULL)!=0)
+				LM_ERR("failed to create group of UDP processes for <%.*s>, "
+					"auto forking will not be possible\n",
+					si->name.len, si->name.s);
+
 			for (i=0;i<si->workers;i++) {
 				(*chd_rank)++;
-				if ( (pid=internal_fork( "UDP receiver", 0))<0 ) {
+				if ( (pid=internal_fork( "UDP receiver", 0, GROUP_UDP))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
 				} else if (pid==0) {

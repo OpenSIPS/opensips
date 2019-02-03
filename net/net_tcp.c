@@ -1853,7 +1853,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		}
 
 		(*chd_rank)++;
-		pid=internal_fork("SIP receiver TCP", 0);
+		pid=internal_fork("SIP receiver TCP", 0, GROUP_TCP);
 		if (pid<0){
 			LM_ERR("fork failed\n");
 			goto error;
@@ -1916,7 +1916,7 @@ int tcp_start_listener(void)
 		return 0;
 
 	/* start the TCP manager process */
-	if ( (pid=internal_fork( "TCP main", 0))<0 ) {
+	if ( (pid=internal_fork( "TCP main", 0, GROUP_NONE))<0 ) {
 		LM_CRIT("cannot fork tcp main process\n");
 		goto error;
 	}else if (pid==0){

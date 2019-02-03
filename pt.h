@@ -32,15 +32,20 @@
 #include <unistd.h>
 
 #include "pt_load.h"
+#include "socket_info.h"
 
 #define MAX_PT_DESC	128
+
+enum processes_group { GROUP_NONE=0, GROUP_UDP, GROUP_TCP,
+	GROUP_TIMER, GROUP_MODULE};
 
 struct process_table {
 	/* the UNIX pid of this process */
 	int pid;
+	/* the group this proc is part of - optional, used by dynamic forking */
+	enum processes_group group;
 	/* name/description of the process (null terminated) */
 	char desc[MAX_PT_DESC];
-
 	/* various flags describing properties of this process */
 	unsigned int flags;
 
@@ -80,7 +85,8 @@ int   count_init_children(int flags);
 
 #define counted_processes (counted_processes_p?*counted_processes_p:0)
 
-pid_t internal_fork(char *proc_desc, unsigned int flags);
+pid_t internal_fork(char *proc_desc, unsigned int flags,
+		enum processes_group group);
 
 /* return processes pid */
 inline static int my_pid(void)
@@ -100,5 +106,12 @@ inline static int get_process_ID_by_PID(pid_t pid)
 
 	return -1;
 }
+
+
+typedef int (fork_new_process_f)(void *);
+
+int register_process_group(enum processes_group group,
+						struct socket_info *si_filter, fork_new_process_f *f);
+
 
 #endif

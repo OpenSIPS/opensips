@@ -398,6 +398,7 @@ static struct multi_str *tmp_mod;
 %token SYNC_TOKEN
 %token ASYNC_TOKEN
 %token LAUNCH_TOKEN
+%token ENABLE_DYNAMIC_WORKERS
 
 
 
@@ -757,6 +758,8 @@ assign_stm: DEBUG EQUAL snumber
 		| CHILDREN EQUAL error { yyerror("number expected"); }
 		| UDP_WORKERS EQUAL NUMBER { udp_workers_no=$3; }
 		| UDP_WORKERS EQUAL error { yyerror("number expected"); }
+		| ENABLE_DYNAMIC_WORKERS EQUAL NUMBER { enable_dynamic_workers=$3; }
+		| ENABLE_DYNAMIC_WORKERS EQUAL error { yyerror("number expected"); }
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER {

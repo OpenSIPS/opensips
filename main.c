@@ -192,6 +192,7 @@ unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  be re-configured */
 /* number of UDP workers processing requests */
 int udp_workers_no = UDP_WORKERS_NO;
+int enable_dynamic_workers = 0;
 /*!< by default choose the best method */
 enum poll_types io_poll_method=0;
 /* last signal received */
