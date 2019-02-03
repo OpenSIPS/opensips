@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">319</entry>
-		<entry align="center">154</entry>
-		<entry align="center">11873</entry>
-		<entry align="center">3936</entry>
+		<entry align="center">320</entry>
+		<entry align="center">155</entry>
+		<entry align="center">11875</entry>
+		<entry align="center">3938</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -52,6 +52,14 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">31</entry>
+		<entry align="center">12</entry>
+		<entry align="center">846</entry>
+		<entry align="center">618</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">23</entry>
 		<entry align="center">20</entry>
@@ -59,20 +67,12 @@
 		<entry align="center">47</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>)</entry>
 		<entry align="center">20</entry>
 		<entry align="center">12</entry>
 		<entry align="center">551</entry>
 		<entry align="center">134</entry>
-	</row>
-	<row>
-		<entry>7. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">18</entry>
-		<entry align="center">11</entry>
-		<entry align="center">241</entry>
-		<entry align="center">250</entry>
 	</row>
 	<row>
 		<entry>8. </entry>
@@ -133,13 +133,13 @@
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Mar 2017 - Dec 2018</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Sep 2010 - Dec 2018</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Sep 2010 - Dec 2018</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Mar 2017 - Dec 2018</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

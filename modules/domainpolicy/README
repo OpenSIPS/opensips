@@ -510,7 +510,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Klaus Darilion 21 1 2456 0
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 19 13 174 212
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 20 14 176 213
    3. Liviu Chircu (@liviuchircu) 11 8 37 62
    4. Daniel-Constantin Mierla (@miconda) 10 8 19 21
    5. Razvan Crainea (@razvancrainea) 10 5 56 170
@@ -542,11 +542,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Jan 2019
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
    6.  UnixDev                             Feb 2009 - Feb 2009
    7.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
    8.  Konstantin Bokarius                 Mar 2008 - Mar 2008

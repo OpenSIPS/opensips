@@ -295,10 +295,10 @@ Chapter 3. Contributors
    7. Andrei Pelinescu-Onciul 9 4 186 121
    8. Dan Pascu (@danpascu) 8 4 232 101
    9. Henning Westerholt (@henningw) 7 5 44 48
-   10. Edson Gellert Schubert 5 1 0 195
+   10. Vlad Patrascu (@rvlad-patrascu) 5 3 52 38
 
-   All remaining contributors: Elena-Ramona Modroiu, Vlad Patrascu
-   (@rvlad-patrascu), Jiri Kuthan (@jiriatipteldotorg), @coxx,
+   All remaining contributors: Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Jiri Kuthan (@jiriatipteldotorg), @coxx,
    Konstantin Bokarius, Klaus Darilion, Anca Vamanu, Norman
    Brandinger (@NormB), Peter Lemenkov (@lemenkov), UnixDev,
    Andreas Granig.
@@ -323,9 +323,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2016
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2014
    6.  @coxx                               Mar 2010 - Mar 2010

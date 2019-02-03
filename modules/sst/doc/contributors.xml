@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Anca Vamanu</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">5</entry>
-		<entry align="center">2</entry>
-		<entry align="center">63</entry>
-		<entry align="center">68</entry>
+		<entry align="center">3</entry>
+		<entry align="center">14</entry>
+		<entry align="center">30</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Edson Gellert Schubert, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Elena-Ramona Modroiu.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Edson Gellert Schubert, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Elena-Ramona Modroiu.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Jan 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Jan 2013 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Jun 2011 - Oct 2017</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Jul 2017</entry>
 	</row>
 	<row>
 		<entry>5. </entry>

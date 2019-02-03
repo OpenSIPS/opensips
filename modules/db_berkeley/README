@@ -148,7 +148,7 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
    Name: bdb_reload
 
    Parameters:
-     * table/path - to reload a particular table provide the
+     * table_path - to reload a particular table provide the
        tablename as the arguement; to reload all tables provide
        the db_path to the db files. The path can be found in
        opensipsctlrc DB_PATH variable.
@@ -495,8 +495,8 @@ Chapter 2. Contributors
    5. Razvan Crainea (@razvancrainea) 16 14 102 37
    6. Liviu Chircu (@liviuchircu) 11 8 19 66
    7. Daniel-Constantin Mierla (@miconda) 10 8 47 30
-   8. Andrei Dragus 5 1 135 103
-   9. Vlad Patrascu (@rvlad-patrascu) 4 2 16 7
+   8. Vlad Patrascu (@rvlad-patrascu) 5 3 32 25
+   9. Andrei Dragus 5 1 135 103
    10. Jan Janak (@janakj) 3 1 4 2
 
    All remaining contributors: Konstantin Bokarius, Razvan
@@ -523,9 +523,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2017
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Oct 2014
    6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
@@ -545,12 +545,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Anonymous,
-   William Quan.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Ovidiu Sas (@ovidiusas), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Anonymous, William Quan.
 
    Documentation Copyrights:
 

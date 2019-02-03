@@ -814,10 +814,10 @@ Chapter 2. Contributors
    9. Henning Westerholt (@henningw) 15 10 136 148
    10. Andrei Pelinescu-Onciul 11 7 136 107
 
-   All remaining contributors: Miklos Tirpak, Dan Pascu
-   (@danpascu), Ancuta Onofrei, Saúl Ibarra Corretgé (@saghul),
-   Jiri Kuthan (@jiriatipteldotorg), Elena-Ramona Modroiu, Vlad
-   Patrascu (@rvlad-patrascu), Dusan Klinec, Anca Vamanu, wuhanck,
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Miklos Tirpak, Dan Pascu (@danpascu), Ancuta Onofrei, Saúl
+   Ibarra Corretgé (@saghul), Jiri Kuthan (@jiriatipteldotorg),
+   Elena-Ramona Modroiu, Dusan Klinec, Anca Vamanu, wuhanck,
    Konstantin Bokarius, Norman Brandinger (@NormB), UnixDev,
    Andreas Granig, Baptiste Cholley, Julián Moreno Patiño, Peter
    Lemenkov (@lemenkov), Edson Gellert Schubert.
@@ -842,12 +842,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  wuhanck                             Apr 2018 - Apr 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2018
-   5.  Dan Pascu (@danpascu)               Nov 2006 - Feb 2018
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  wuhanck                             Apr 2018 - Apr 2018
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2018
+   6.  Dan Pascu (@danpascu)               Nov 2006 - Feb 2018
    7.  Razvan Crainea (@razvancrainea)     Jan 2011 - Nov 2016
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Dusan Klinec                        Dec 2015 - Dec 2015

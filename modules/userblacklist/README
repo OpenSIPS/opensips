@@ -252,13 +252,13 @@ Chapter 2. Contributors
    4. Henning Westerholt (@henningw) 9 5 204 72
    5. Daniel-Constantin Mierla (@miconda) 8 6 17 12
    6. Razvan Crainea (@razvancrainea) 6 4 13 10
-   7. Ruslan Bukin 3 1 21 10
-   8. Julián Moreno Patiño 3 1 1 1
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
-   10. UnixDev 3 1 1 1
+   7. Vlad Patrascu (@rvlad-patrascu) 4 2 14 13
+   8. Ruslan Bukin 3 1 21 10
+   9. Julián Moreno Patiño 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
-   All remaining contributors: Edson Gellert Schubert, Vlad Paiu
-   (@vladpaiu), Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: UnixDev, Edson Gellert Schubert,
+   Vlad Paiu (@vladpaiu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -280,10 +280,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Oct 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Oct 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2016
    6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Vlad Paiu (@vladpaiu)               Apr 2011 - Apr 2011

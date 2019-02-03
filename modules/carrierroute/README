@@ -1241,14 +1241,14 @@ Chapter 2. Contributors
    5. Razvan Crainea (@razvancrainea) 15 12 82 74
    6. Liviu Chircu (@liviuchircu) 14 10 73 133
    7. Daniel-Constantin Mierla (@miconda) 9 7 34 30
-   8. Carsten Bock 3 1 64 15
-   9. Bob Atkins 3 1 29 1
-   10. Julián Moreno Patiño 3 1 24 24
+   8. Vlad Patrascu (@rvlad-patrascu) 9 2 212 232
+   9. Carsten Bock 3 1 64 15
+   10. Bob Atkins 3 1 29 1
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Sergio
-   Gutierrez, Iouri Kharon, UnixDev, Peter Lemenkov (@lemenkov),
-   Walter Doekes (@wdoekes), Edson Gellert Schubert, Vlad Patrascu
-   (@rvlad-patrascu).
+   All remaining contributors: Julián Moreno Patiño, Ovidiu Sas
+   (@ovidiusas), Sergio Gutierrez, Iouri Kharon, UnixDev, Peter
+   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1270,9 +1270,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2017
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Oct 2014

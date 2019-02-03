@@ -322,7 +322,7 @@ Chapter 3. Contributors
    4. Liviu Chircu (@liviuchircu) 11 8 28 66
    5. Razvan Crainea (@razvancrainea) 9 7 89 15
    6. Jan Janak (@janakj) 9 4 386 34
-   7. Vlad Patrascu (@rvlad-patrascu) 6 4 12 13
+   7. Vlad Patrascu (@rvlad-patrascu) 7 5 70 49
    8. Jiri Kuthan (@jiriatipteldotorg) 6 3 257 0
    9. Jarrod Baumann (@jarrodb) 5 3 111 22
    10. Henning Westerholt (@henningw) 4 2 2 2
@@ -352,9 +352,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4.  Razvan Crainea (@razvancrainea)     May 2011 - Jan 2018
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Jarrod Baumann (@jarrodb)           Apr 2015 - Apr 2015

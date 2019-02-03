@@ -1011,9 +1011,9 @@ Chapter 3. Contributors
    4. Razvan Crainea (@razvancrainea) 26 20 371 130
    5. Daniel-Constantin Mierla (@miconda) 24 19 174 165
    6. Liviu Chircu (@liviuchircu) 23 14 240 365
-   7. Henning Westerholt (@henningw) 15 6 340 302
-   8. Dan Pascu (@danpascu) 9 7 13 32
-   9. Vlad Patrascu (@rvlad-patrascu) 8 6 117 35
+   7. Vlad Patrascu (@rvlad-patrascu) 16 7 328 281
+   8. Henning Westerholt (@henningw) 15 6 340 302
+   9. Dan Pascu (@danpascu) 9 7 13 32
    10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
 
    All remaining contributors: Walter Doekes (@wdoekes), Edson
@@ -1045,11 +1045,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Dec 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Dec 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  James Criscuolo                     Mar 2016 - Mar 2016
    7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016

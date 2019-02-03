@@ -14,9 +14,8 @@ mi_xmlrpc_ng Module
         1.3. Exported Parameters
 
               1.3.1. http_root(string)
-              1.3.2. format_version(integer)
-              1.3.3. trace_destination (string)
-              1.3.4. trace_bwlist (string)
+              1.3.2. trace_destination (string)
+              1.3.3. trace_bwlist (string)
 
         1.4. Exported Functions
         1.5. Known issues
@@ -41,10 +40,9 @@ mi_xmlrpc_ng Module
    List of Examples
 
    1.1. Set http_root parameter
-   1.2. Set format_version parameter
+   1.2. Set trace_destination parameter
    1.3. Set trace_destination parameter
-   1.4. Set trace_destination parameter
-   1.5. XMLRPC request
+   1.4. XMLRPC request
 
 Chapter 1. Admin Guide
 
@@ -89,23 +87,7 @@ Chapter 1. Admin Guide
 modparam("mi_xmlrpc_ng", "http_root", "opensips_mi_xmlrpc")
 ...
 
-1.3.2. format_version(integer)
-
-   Specifies which formatting to be used for the output generated
-   by the module. The value of 2 will generate a response broken
-   in many tags which doesn't require string parsing, only xml
-   parsing, this is the newer version. The other accepted value is
-   1 which will generate a long simple sting response, this is the
-   older vesion.
-
-   The default value is 2.
-
-   Example 1.2. Set format_version parameter
-...
-modparam("mi_xmlrpc_ng", "format_version", 1)
-...
-
-1.3.3. trace_destination (string)
+1.3.2. trace_destination (string)
 
    Trace destination as defined in the tracing module. Currently
    the only tracing module is proto_hep. This is where traced mi
@@ -116,7 +98,7 @@ modparam("mi_xmlrpc_ng", "format_version", 1)
 
    Default value is none(not defined).
 
-   Example 1.3. Set trace_destination parameter
+   Example 1.2. Set trace_destination parameter
 ...
 modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
 =tcp;version=3")
@@ -124,7 +106,7 @@ modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
 modparam("mi_xmlrpc_ng", "trace_destination", "hep_dest")
 ...
 
-1.3.4. trace_bwlist (string)
+1.3.3. trace_bwlist (string)
 
    Filter traced mi commands based on a blacklist or a whitelist.
    trace_destination must be defined for this parameter to have
@@ -145,7 +127,7 @@ modparam("mi_xmlrpc_ng", "trace_destination", "hep_dest")
 
    Default value is none(not defined).
 
-   Example 1.4. Set trace_destination parameter
+   Example 1.3. Set trace_destination parameter
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced
@@ -172,9 +154,9 @@ modparam("mi_xmlrpc_ng", "trace_bwlist", "w: sip_trace")
 1.6. Example
 
    This is an example showing the xmlrpc format for the
-   “get_statistics net: uri:” MI commad: response.
+   “get_statistics net: shmem:” MI commad: response.
 
-   Example 1.5. XMLRPC request
+   Example 1.4. XMLRPC request
 
 POST /xmlrpc HTTP/1.0
 Host: my.host.com
@@ -187,10 +169,21 @@ Content-Length: 216
         <methodName>get_statistics</methodName>
         <params>
                 <param>
-                        <value><string>net:</string></value>
-                </param>
-                <param>
-                        <value><string>uri:</string></value>
+                <value>
+                <struct>
+                <member>
+                        <name>statistics</name>
+                        <value>
+                        <array>
+                        <data>
+                                <value><string>shmem:</string></value>
+                                <value><string>core:</string></value>
+                        </data>
+                        </array>
+                        </value>
+                </member>
+                </struct>
+                </value>
                 </param>
         </params>
 </methodCall>
@@ -201,13 +194,22 @@ Content-Length: 236
 Content-Type: text/xml; charset=utf-8
 Date: Mon, 8 Mar 2013 12:00:00 GMT
 
-<?xml version="1.0" encoding="UTF-8"?><methodResponse><params><param><va
-lue><string>
-:: net:waiting_udp = 0
-:: net:waiting_tcp = 0
-:: uri:positive checks = 0
-:: uri:negative_checks = 0
-</string></value></param></params></methodResponse>
+<?xml version="1.0" encoding="UTF-8"?>.
+<methodResponse>
+<params><param>
+<value><struct><member><name>net:waiting_udp</name><value><string>0</str
+ing></value></member><member><name>net:waiting_tcp</name><value><string>
+0</string></value></member><member><name>net:waiting_tls</name><value><s
+tring>0</string></value></member><member><name>shmem:total_size</name><v
+alue><string>268435456</string></value></member><member><name>shmem:used
+_size</name><value><string>40032</string></value></member><member><name>
+shmem:real_used_size</name><value><string>277112</string></value></membe
+r><member><name>shmem:max_used_size</name><value><string>277112</string>
+</value></member><member><name>shmem:free_size</name><value><string>2681
+58344</string></value></member><member><name>shmem:fragments</name><valu
+e><string>194</string></value></member></struct></value></param></params
+>
+</methodResponse>.
 
 
 Chapter 2. Contributors
@@ -218,12 +220,12 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 28 15 1375 101
-   2. Ionut Ionita (@ionutrazvanionita) 15 9 383 68
-   3. Liviu Chircu (@liviuchircu) 13 11 44 52
-   4. Razvan Crainea (@razvancrainea) 11 9 46 32
-   5. Ionel Cerghit (@ionel-cerghit) 11 3 515 166
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 124 54
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 17 3
+   2. Vlad Patrascu (@rvlad-patrascu) 27 3 614 1041
+   3. Ionut Ionita (@ionutrazvanionita) 15 9 383 68
+   4. Liviu Chircu (@liviuchircu) 13 11 44 52
+   5. Razvan Crainea (@razvancrainea) 11 9 46 32
+   6. Ionel Cerghit (@ionel-cerghit) 11 3 515 166
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 124 54
    8. Vlad Paiu (@vladpaiu) 3 2 0 6
    9. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -247,10 +249,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jan 2019
-   2. Liviu Chircu (@liviuchircu)         Jul 2014 - Nov 2018
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jan 2019
+   3. Liviu Chircu (@liviuchircu)         Jul 2014 - Nov 2018
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5. Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
    6. Razvan Crainea (@razvancrainea)     Nov 2014 - Dec 2016
    7. Vlad Paiu (@vladpaiu)               Mar 2014 - Jan 2016
@@ -264,10 +266,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Ionel Cerghit
-   (@ionel-cerghit), Ovidiu Sas (@ovidiusas).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Ionel Cerghit (@ionel-cerghit), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

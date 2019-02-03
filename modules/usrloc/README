@@ -1069,9 +1069,9 @@ modparam("usrloc", "mi_dump_kv_store", 1)
    Deletes an entire AOR record (including its contacts).
 
    Parameters:
-     * table name - table where the AOR is removed from (Ex:
+     * table_name - table where the AOR is removed from (Ex:
        location).
-     * AOR - user AOR in username[@domain] format (domain must be
+     * aor - user AOR in username[@domain] format (domain must be
        supplied only if use_domain option is on).
 
 1.7.2.  ul_rm_contact
@@ -1105,11 +1105,11 @@ modparam("usrloc", "mi_dump_kv_store", 1)
    Parameters:
      * table name - table where the contact will be added (Ex:
        location).
-     * AOR - user AOR in username[@domain] format (domain must be
+     * aor - user AOR in username[@domain] format (domain must be
        supplied only if use_domain option is on).
      * contact - contact string to be added
      * expires - expires value of the contact
-     * Q - Q value of the contact
+     * q - Q value of the contact
      * unused - unused attribute (kept for backword compatibility)
      * flags - internal USRLOC flags of the contact
      * cflags - per branch flags of the contact
@@ -1120,8 +1120,8 @@ modparam("usrloc", "mi_dump_kv_store", 1)
    Dumps the contacts of an user AOR.
 
    Parameters:
-     * table name - table where the AOR resides (Ex: location).
-     * AOR - user AOR in username[@domain] format (domain must be
+     * table_name - table where the AOR resides (Ex: location).
+     * aor - user AOR in username[@domain] format (domain must be
        supplied only if use_domain option is on).
 
 1.7.7.  ul_sync
@@ -1501,12 +1501,12 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 230 135 3959 3493
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 231 136 3963 3497
    3. Liviu Chircu (@liviuchircu) 218 135 6081 1947
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
-   7. Vlad Patrascu (@rvlad-patrascu) 23 14 404 269
+   7. Vlad Patrascu (@rvlad-patrascu) 33 16 730 607
    8. Henning Westerholt (@henningw) 22 11 462 356
    9. Razvan Crainea (@razvancrainea) 21 16 337 70
    10. Andrei Pelinescu-Onciul 17 13 151 91
@@ -1542,10 +1542,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2019
-   2.  Razvan Crainea (@razvancrainea)     Jul 2011 - Nov 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Aug 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Aug 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Jan 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jan 2019
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2019
+   4.  Razvan Crainea (@razvancrainea)     Jul 2011 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Shlomi Gutman                       Mar 2018 - Mar 2018
    7.  @jalung                             Aug 2017 - Aug 2017

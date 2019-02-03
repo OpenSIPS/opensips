@@ -326,13 +326,13 @@ Chapter 2. Contributors
    7. Vlad Paiu (@vladpaiu) 6 4 7 15
    8. Ovidiu Sas (@ovidiusas) 6 3 171 44
    9. Henning Westerholt (@henningw) 5 3 15 18
-   10. Anca Vamanu 5 2 63 68
+   10. Vlad Patrascu (@rvlad-patrascu) 5 3 14 30
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
-   Edson Gellert Schubert, Christophe Sollet (@csollet), Ionut
-   Ionita (@ionutrazvanionita), Damien Sandras (@dsandras),
-   Konstantin Bokarius, Dan Pascu (@danpascu), Ezequiel Lovelle,
-   Peter Lemenkov (@lemenkov), Elena-Ramona Modroiu.
+   All remaining contributors: Anca Vamanu, Edson Gellert
+   Schubert, Christophe Sollet (@csollet), Ionut Ionita
+   (@ionutrazvanionita), Damien Sandras (@dsandras), Konstantin
+   Bokarius, Dan Pascu (@danpascu), Ezequiel Lovelle, Peter
+   Lemenkov (@lemenkov), Elena-Ramona Modroiu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -354,10 +354,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2017
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2017
    5.  Ionut Ionita (@ionutrazvanionita)   Oct 2016 - Oct 2016
    6.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2015
    7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014

@@ -1206,7 +1206,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 145 89 2764 1893
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 146 90 2766 1895
    2. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
    3. Liviu Chircu (@liviuchircu) 63 45 1158 396
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
@@ -1217,8 +1217,8 @@ Chapter 3. Contributors
    9. Carsten Bock 11 4 713 18
    10. Vlad Paiu (@vladpaiu) 9 7 17 29
 
-   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
-   Elena-Ramona Modroiu, Vlad Patrascu (@rvlad-patrascu), Klaus
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Ionel Cerghit (@ionel-cerghit), Elena-Ramona Modroiu, Klaus
    Darilion, Anca Vamanu, Jarrod Baumann (@jarrodb), Walter Doekes
    (@wdoekes), Nick Altmann (@nikbyte), Jan Janak (@janakj),
    Andrei Pelinescu-Onciul, Stanislaw Pitucha, Federico Cabiddu,
@@ -1249,8 +1249,8 @@ Chapter 3. Contributors
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jan 2019
    2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Dec 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
    6.  Razvan Crainea (@razvancrainea)     May 2011 - Dec 2017
    7.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016

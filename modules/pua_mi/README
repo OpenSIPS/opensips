@@ -95,17 +95,19 @@ modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
    Command parameters:
      * presentity_uri - e.g. sip:system@opensips.org
      * expires - Relative expires time in seconds (e.g. 3600).
-     * event package - Event package that is target of published
+     * event_package - Event package that is target of published
        information (e.g. presence).
-     * content type - Content type of published information (e.g.
-       application/pidf+xml) or . if no information is enclosed.
-     * ETag - ETag that publish should match or . if no ETag is
-       given.
-     * extra_headers - Extra headers added to PUBLISH request or .
-       if no extra headers.
-     * body - The body of the publish request containing published
-       information or missing if no published information. It has
-       to be a single line for FIFO transport.
+     * content_type (optional) - Content type of published
+       information (e.g. application/pidf+xml). If this parameter
+       is provided, the body parameter is also required.
+     * etag (optional) - ETag that publish should match.
+     * extra_headers (optional) - Extra headers added to PUBLISH
+       request.
+     * body (optioanl) - The body of the publish request
+       containing published information or missing if no published
+       information. It has to be a single line for FIFO transport.
+       If this parameter is provided, the content_type parameter
+       is also required.
 
    Example 1.2. pua_publish FIFO example
 ...
@@ -140,9 +142,9 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 40 52
    3. Juha Heinanen (@juha-h) 11 7 160 73
    4. Liviu Chircu (@liviuchircu) 10 8 26 41
-   5. Daniel-Constantin Mierla (@miconda) 9 7 32 29
-   6. Razvan Crainea (@razvancrainea) 6 4 11 14
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 2 8
+   5. Vlad Patrascu (@rvlad-patrascu) 10 3 278 220
+   6. Daniel-Constantin Mierla (@miconda) 9 7 32 29
+   7. Razvan Crainea (@razvancrainea) 6 4 11 14
    8. Ovidiu Sas (@ovidiusas) 3 1 13 2
    9. Konstantin Bokarius 3 1 2 5
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -170,9 +172,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Oct 2014
    6.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
@@ -191,11 +193,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Anca
-   Vamanu, Juha Heinanen (@juha-h), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Anca Vamanu,
+   Juha Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert.
 
    Documentation Copyrights:
 

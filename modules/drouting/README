@@ -1553,12 +1553,11 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 
 1.5.6.  dr_enable_probing
 
-   Enables gateways probing if parameter value greater than 0.
-   Disables probing if parameter value is 0. With no parameter, it
-   returns the current gateways probing status.
+   Enables/disables gateway probing or returns the current gateway
+   probing status.
 
-   The function may takean optional parameter (for set operations)
-   - a number in decimal format.
+   Parameters:
+     * status (optional) - 1 - enable, 0 - disable gateway probing
 
    Example 1.56. dr_enable_probing usage
 $ opensipsctl fifo dr_enable_probing
@@ -1606,13 +1605,13 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 319 154 11873 3936
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 320 155 11875 3938
    2. Razvan Crainea (@razvancrainea) 64 33 294 1528
    3. Liviu Chircu (@liviuchircu) 50 33 855 533
    4. Mihai Tiganus (@tallicamike) 48 10 3130 710
-   5. Vlad Paiu (@vladpaiu) 23 20 244 47
-   6. Andrei Datcu (@andrei-datcu) 20 12 551 134
-   7. Vlad Patrascu (@rvlad-patrascu) 18 11 241 250
+   5. Vlad Patrascu (@rvlad-patrascu) 31 12 846 618
+   6. Vlad Paiu (@vladpaiu) 23 20 244 47
+   7. Andrei Datcu (@andrei-datcu) 20 12 551 134
    8. Ovidiu Sas (@ovidiusas) 15 11 132 70
    9. Ionut Ionita (@ionutrazvanionita) 14 9 370 108
    10. Andrei Dragus 10 3 657 40
@@ -1644,8 +1643,8 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jan 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Dec 2018
-   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2018
+   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2018
+   3.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Dec 2018
    4.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2018
    5.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
    6.  Alexey Vasilyev (@vasilevalex)      Oct 2018 - Oct 2018

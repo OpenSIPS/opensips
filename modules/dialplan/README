@@ -483,9 +483,9 @@ xlog("translate to var $var(y) partition $var(partition)")
    Name: dp_reload
 
    Parameters: 1
-     * table_name - Partition to be reloaded. If no table is
-       specified, the table specified in the "partition" parameter
-       (default "default") will be reloaded.
+     * table_name (optional) - Partition to be reloaded. If no
+       table is specified, the table specified in the "partition"
+       parameter (default "default") will be reloaded.
 
    MI DATAGRAM Command Format:
                 opensipsctl fifo dp_reload
@@ -498,9 +498,10 @@ xlog("translate to var $var(y) partition $var(partition)")
    Name: dp_translate
 
    Parameters: 2
-     * [Partition Name:]Dialplan ID - The dpid of the rules used
-       to match the input string. The table name can be ommited.
-       The default table is dialplan.
+     * dpid - Given in the format "[Partition Name:]Dialplan ID"
+       this parameter represents the dpid of the rules used to
+       match the input string. The table name can be ommited. The
+       default table is dialplan.
      * Input String
 
    MI DATAGRAM Command Format:
@@ -513,8 +514,8 @@ xlog("translate to var $var(y) partition $var(partition)")
    Name: dp_show_partiton
 
    Parameters: 2
-     * Partition Name - The partition name. If no partition is
-       specified, all known partitions will be listed.
+     * partition (optional) - The partition name. If no partition
+       is specified, all known partitions will be listed.
 
    MI DATAGRAM Command Format:
         opensipsctl fifo dp_translate default
@@ -550,8 +551,8 @@ Chapter 3. Contributors
    5. Andrei Dragus 25 3 382 1029
    6. Ovidiu Sas (@ovidiusas) 16 13 144 37
    7. Razvan Crainea (@razvancrainea) 16 12 81 128
-   8. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
-   9. Vlad Patrascu (@rvlad-patrascu) 5 3 6 11
+   8. Vlad Patrascu (@rvlad-patrascu) 8 4 144 105
+   9. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
    10. Henning Westerholt (@henningw) 5 3 5 14
 
    All remaining contributors: Parantido Julius De Rica
@@ -579,9 +580,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Jul 2012 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Dec 2018
+   2.  Liviu Chircu (@liviuchircu)              Jul 2012 - Nov 2018
+   3.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Jan 2018
    5.  Razvan Crainea (@razvancrainea)          Dec 2010 - Jun 2017
    6.  Ovidiu Sas (@ovidiusas)                  Sep 2008 - Nov 2015
@@ -602,8 +603,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
    (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu
    Sas (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei
    Dragus, Anca Vamanu.

@@ -890,9 +890,9 @@ Chapter 3. Contributors
    2. Maksym Sobolyev (@sobomax) 40 3 4527 3
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 21 18 113 107
    4. Liviu Chircu (@liviuchircu) 21 16 91 183
-   5. Vlad Paiu (@vladpaiu) 6 4 15 9
-   6. Peter Lemenkov (@lemenkov) 5 3 60 9
-   7. Vlad Patrascu (@rvlad-patrascu) 5 3 41 46
+   5. Vlad Patrascu (@rvlad-patrascu) 9 4 131 155
+   6. Vlad Paiu (@vladpaiu) 6 4 15 9
+   7. Peter Lemenkov (@lemenkov) 5 3 60 9
    8. Ovidiu Sas (@ovidiusas) 5 3 15 11
    9. Dave Sidwell (@davesidwell) 4 2 8 2
    10. Ezequiel Lovelle 4 2 6 6
@@ -921,10 +921,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
-   2.  Razvan Crainea (@razvancrainea)     Mar 2011 - Oct 2018
-   3.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   2.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
+   3.  Razvan Crainea (@razvancrainea)     Mar 2011 - Oct 2018
+   4.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
    5.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Feb 2018
    6.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jul 2017
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Oct 2016

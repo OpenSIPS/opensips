@@ -26,6 +26,10 @@ lua Module
               1.6.1. lua_exec(func, [param])
               1.6.2. lua_meminfo()
 
+        1.7. Exported MI Functions
+
+              1.7.1. watch
+
    2. OpenSIPS Lua API
 
         2.1. Available functions
@@ -199,6 +203,19 @@ if (lua_exec("mongo_alias")) {
 
    Logs informations about memory.
 
+1.7. Exported MI Functions
+
+1.7.1.  watch
+
+   Name: watch
+
+   Parameters: none
+     * action (optional) - 'add' or 'delete'
+     * extension (optional) - required if action is provided
+
+   MI FIFO Command Format:
+  opensipsctl fifo watch
+
 Chapter 2. OpenSIPS Lua API
 
 2.1. Available functions
@@ -318,11 +335,11 @@ Chapter 3. Contributors
    1. Arnaud Chong + Eric Gouyer 35 1 4335 0
    2. Razvan Crainea (@razvancrainea) 20 15 144 136
    3. Liviu Chircu (@liviuchircu) 12 9 14 62
-   4. Vlad Paiu (@vladpaiu) 5 3 7 9
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 3 1
-   6. Julián Moreno Patiño 3 1 1 1
-   7. Peter Lemenkov (@lemenkov) 3 1 1 1
-   8. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   4. Vlad Patrascu (@rvlad-patrascu) 6 3 75 58
+   5. Vlad Paiu (@vladpaiu) 5 3 7 9
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 3 1
+   7. Julián Moreno Patiño 3 1 1 1
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -344,9 +361,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4. Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
    5. Julián Moreno Patiño                Feb 2016 - Feb 2016
    6. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Nov 2014
@@ -360,9 +377,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad Paiu
-   (@vladpaiu), Arnaud Chong + Eric Gouyer.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Paiu (@vladpaiu), Arnaud Chong + Eric
+   Gouyer.
 
    Documentation Copyrights:
 

@@ -68,6 +68,14 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">2</entry>
+		<entry align="center">64</entry>
+		<entry align="center">61</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry>Richard Revels</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">11</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Anca Vamanu</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">3</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Konstantin Bokarius</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">2</entry>
 		<entry align="center">5</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Andrei Pelinescu-Onciul</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Klaus Darilion, Ancuta Onofrei, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Klaus Darilion, Ancuta Onofrei.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Dec 2018</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Jun 2018</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - May 2017</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

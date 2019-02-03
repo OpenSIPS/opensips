@@ -138,8 +138,8 @@ modparam("xcap_client", "query_period", 50)
    Name: refreshXcapDoc
 
    Parameters:
-     * document uri: the uri of the document
-     * xcap server port: the port of the xcap server
+     * doc_uri: the uri of the document
+     * port: the port of the xcap server
 
    MI FIFO Command Format:
 ...
@@ -278,8 +278,8 @@ Chapter 3. Contributors
    5. Henning Westerholt (@henningw) 8 6 60 49
    6. Razvan Crainea (@razvancrainea) 6 4 11 13
    7. Saúl Ibarra Corretgé (@saghul) 6 3 55 89
-   8. Dan Pascu (@danpascu) 4 2 8 9
-   9. Vlad Patrascu (@rvlad-patrascu) 4 2 2 4
+   8. Vlad Patrascu (@rvlad-patrascu) 5 3 20 33
+   9. Dan Pascu (@danpascu) 4 2 8 9
    10. Romanov Vladimir 3 1 29 21
 
    All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad Paiu
@@ -306,9 +306,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Oct 2014
    6.  Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
@@ -328,12 +328,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan
-   Crainea (@razvancrainea), Anca Vamanu, Henning Westerholt
-   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan Crainea
+   (@razvancrainea), Anca Vamanu, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert.
 
    Documentation Copyrights:
 
