@@ -355,12 +355,6 @@ static struct multi_str *tmp_mod;
 %token QUERYBUFFERSIZE
 %token QUERYFLUSHTIME
 %token SIP_WARNING
-%token SOCK_MODE
-%token SOCK_USER
-%token SOCK_GROUP
-%token UNIX_SOCK
-%token UNIX_SOCK_CHILDREN
-%token UNIX_TX_TIMEOUT
 %token SERVER_SIGNATURE
 %token SERVER_HEADER
 %token USER_AGENT_HEADER
