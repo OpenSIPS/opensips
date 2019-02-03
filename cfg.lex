@@ -265,6 +265,7 @@ SCRIPTVAR_START	"$"
 DEBUG_MODE	debug_mode
 FORK		fork
 CHILDREN	children
+UDP_WORKERS	udp_workers
 CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 DISABLE_CORE		"disable_core_dump"
@@ -312,6 +313,7 @@ USER_AGENT_HEADER user_agent_header
 MHOMED		mhomed
 POLL_METHOD		"poll_method"
 TCP_CHILDREN	"tcp_children"
+TCP_WORKERS		"tcp_workers"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
@@ -364,6 +366,7 @@ TICK		\'
 SLASH		"/"
 AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
 USE_CHILDREN	{EAT_ABLE}("use_children"|"USE_CHILDREN"){EAT_ABLE}
+USE_WORKERS	{EAT_ABLE}("use_workers"|"USE_WORKERS"){EAT_ABLE}
 MAX			{EAT_ABLE}("max"|"MAX"){EAT_ABLE}
 MIN			{EAT_ABLE}("min"|"MIN"){EAT_ABLE}
 SEMICOLON	;
@@ -525,6 +528,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
+<INITIAL>{UDP_WORKERS}	{ count(); yylval.strval=yytext; return UDP_WORKERS; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{DISABLE_CORE}		{	count(); yylval.strval=yytext;
@@ -580,6 +584,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
+<INITIAL>{TCP_WORKERS}	{ count(); yylval.strval=yytext; return TCP_WORKERS; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
 									return TCP_ACCEPT_ALIASES; }
 <INITIAL>{TCP_CONNECT_TIMEOUT}		{ count(); yylval.strval=yytext;
@@ -681,6 +686,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
 <INITIAL>{USE_CHILDREN} { count(); return USE_CHILDREN; }
+<INITIAL>{USE_WORKERS} { count(); return USE_WORKERS; }
 <INITIAL>{MAX} { count(); return MAX; }
 <INITIAL>{MIN} { count(); return MIN; }
 <INITIAL>{COLON}	{ count(); return COLON; }

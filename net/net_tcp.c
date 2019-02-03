@@ -61,9 +61,9 @@
 struct struct_hist_list *con_hist;
 
 /* definition of a TCP worker */
-struct tcp_child {
+struct tcp_worker {
 	pid_t pid;
-	int unix_sock;		/*!< unix "read child" sock fd */
+	int unix_sock;		/*!< unix "read worker" sock fd */
 	int busy;
 	int n_reqs;		/*!< number of requests serviced so far */
 };
@@ -79,7 +79,7 @@ struct tcp_partition {
 
 
 /* array of TCP workers - to be used only by TCP MAIN */
-struct tcp_child *tcp_children=0;
+struct tcp_worker *tcp_workers=0;
 
 /* unique for each connection, used for
  * quickly finding the corresponding connection for a reply */
@@ -106,7 +106,7 @@ int tcp_listen_backlog=DEFAULT_TCP_LISTEN_BACKLOG;
 enum poll_types tcp_poll_method=0;
 int tcp_max_connections=DEFAULT_TCP_MAX_CONNECTIONS;
 /* number of TCP workers */
-int tcp_children_no = CHILD_NO;
+int tcp_workers_no = UDP_WORKERS_NO;
 /* Max number of seconds that we except a full SIP message
  * to arrive in - anything above will lead to the connection to closed */
 int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;
@@ -350,37 +350,37 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 
 
 
-static int send2child(struct tcp_connection* tcpconn,int rw)
+static int send2worker(struct tcp_connection* tcpconn,int rw)
 {
 	int i;
 	int min_busy;
 	int idx;
 	long response[2];
 
-	min_busy=tcp_children[0].busy;
+	min_busy=tcp_workers[0].busy;
 	idx=0;
-	for (i=0; i<tcp_children_no; i++){
-		if (!tcp_children[i].busy){
+	for (i=0; i<tcp_workers_no; i++){
+		if (!tcp_workers[i].busy){
 			idx=i;
 			min_busy=0;
 			break;
-		}else if (min_busy>tcp_children[i].busy){
-			min_busy=tcp_children[i].busy;
+		}else if (min_busy>tcp_workers[i].busy){
+			min_busy=tcp_workers[i].busy;
 			idx=i;
 		}
 	}
 
-	tcp_children[idx].busy++;
-	tcp_children[idx].n_reqs++;
+	tcp_workers[idx].busy++;
+	tcp_workers[idx].n_reqs++;
 	if (min_busy) {
 		LM_DBG("no free tcp receiver, connection passed to the least "
 		       "busy one (proc #%d, %d con)\n", idx, min_busy);
 	}
-	LM_DBG("to tcp child %d (%d), %p rw %d\n", idx,
-		tcp_children[idx].pid, tcpconn,rw);
+	LM_DBG("to tcp worker %d (%d), %p rw %d\n", idx,
+		tcp_workers[idx].pid, tcpconn,rw);
 	response[0]=(long)tcpconn;
 	response[1]=rw;
-	if (send_fd(tcp_children[idx].unix_sock, response, sizeof(response),
+	if (send_fd(tcp_workers[idx].unix_sock, response, sizeof(response),
 			tcpconn->s)<=0){
 		LM_ERR("send_fd failed\n");
 		return -1;
@@ -1052,10 +1052,10 @@ static inline int handle_new_connect(struct socket_info* si)
 		tcpconn_add(tcpconn);
 		LM_DBG("new connection: %p %d flags: %04x\n",
 				tcpconn, tcpconn->s, tcpconn->flags);
-		/* pass it to a child */
+		/* pass it to a workerr */
 		sh_log(tcpconn->hist, TCP_SEND2CHILD, "accept");
-		if(send2child(tcpconn,IO_WATCH_READ)<0){
-			LM_ERR("no children available\n");
+		if(send2worker(tcpconn,IO_WATCH_READ)<0){
+			LM_ERR("no TCP workers available\n");
 			id = tcpconn->id;
 			sh_log(tcpconn->hist, TCP_UNREF, "accept, (%d)", tcpconn->refcnt);
 			TCPCONN_LOCK(id);
@@ -1083,7 +1083,7 @@ static inline int handle_new_connect(struct socket_info* si)
  * \param    fd_i    - index in the fd_array table (needed for delete)
  * \return   handle_* return convention, but on success it always returns 0
  *           (because it's one-shot, after a successful execution the fd is
- *            removed from tcp_main's watch fd list and passed to a child =>
+ *            removed from tcp_main's watch fd list and passed to a worker =>
  *            tcp_main is not interested in further io events that might be
  *            queued for this fd)
  */
@@ -1096,7 +1096,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 	unsigned int err_len;
 
 	if (event_type == IO_WATCH_READ) {
-		/* pass it to child, so remove it from the io watch list */
+		/* pass it to worker, so remove it from the io watch list */
 		LM_DBG("data available on %p %d\n", tcpconn, tcpconn->s);
 		if (reactor_del_reader(tcpconn->s, fd_i, 0)==-1)
 			return -1;
@@ -1104,8 +1104,8 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 		tcpconn_ref(tcpconn); /* refcnt ++ */
 		sh_log(tcpconn->hist, TCP_REF, "tcpconn read, (%d)", tcpconn->refcnt);
 		sh_log(tcpconn->hist, TCP_SEND2CHILD, "read");
-		if (send2child(tcpconn,IO_WATCH_READ)<0){
-			LM_ERR("no children available\n");
+		if (send2worker(tcpconn,IO_WATCH_READ)<0){
+			LM_ERR("no TCP workers available\n");
 			id = tcpconn->id;
 			TCPCONN_LOCK(id);
 			tcpconn->refcnt--;
@@ -1120,7 +1120,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			TCPCONN_UNLOCK(id);
 		}
 		return 0; /* we are not interested in possibly queued io events,
-					 the fd was either passed to a child, or closed */
+					 the fd was either passed to a worker, or closed */
 	} else {
 		LM_DBG("connection %p fd %d is now writable\n", tcpconn, tcpconn->s);
 		/* we received a write event */
@@ -1155,7 +1155,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 			goto async_write;
 		} else {
 			/* we're coming from an async write -
-			 * just pass to child and have it write
+			 * just pass to worker and have it write
 			 * our TCP chunks */
 async_write:
 			/* no more write events for now */
@@ -1163,14 +1163,16 @@ async_write:
 				return -1;
 			tcpconn->flags|=F_CONN_REMOVED_WRITE;
 			tcpconn_ref(tcpconn); /* refcnt ++ */
-			sh_log(tcpconn->hist, TCP_REF, "tcpconn write, (%d)", tcpconn->refcnt);
+			sh_log(tcpconn->hist, TCP_REF, "tcpconn write, (%d)",
+				tcpconn->refcnt);
 			sh_log(tcpconn->hist, TCP_SEND2CHILD, "write");
-			if (send2child(tcpconn,IO_WATCH_WRITE)<0){
-				LM_ERR("no children available\n");
+			if (send2worker(tcpconn,IO_WATCH_WRITE)<0){
+				LM_ERR("no TCP worker available\n");
 				id = tcpconn->id;
 				TCPCONN_LOCK(id);
 				tcpconn->refcnt--;
-				sh_log(tcpconn->hist, TCP_UNREF, "tcpconn write, (%d)", tcpconn->refcnt);
+				sh_log(tcpconn->hist, TCP_UNREF, "tcpconn write, (%d)",
+					tcpconn->refcnt);
 				if (tcpconn->refcnt==0){
 					fd=tcpconn->s;
 					tcp_trigger_report(tcpconn, TCP_REPORT_CLOSE,
@@ -1187,7 +1189,7 @@ async_write:
 
 
 /*! \brief handles io from a tcp worker process
- * \param  tcp_c - pointer in the tcp_children array, to the entry for
+ * \param  tcp_c - pointer in the tcp_workers array, to the entry for
  *                 which an io event was detected
  * \param  fd_i  - fd index in the fd_array (useful for optimizing
  *                 io_watch_deletes)
@@ -1195,7 +1197,7 @@ async_write:
  *           io events queued), >0 on success. success/error refer only to
  *           the reads from the fd.
  */
-inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
+inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 {
 	struct tcp_connection* tcpconn;
 	long response[2];
@@ -1205,7 +1207,7 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 	if (tcp_c->unix_sock<=0){
 		/* (we can't have a fd==0, 0 is never closed )*/
 		LM_CRIT("fd %d for %d (pid %d)\n", tcp_c->unix_sock,
-				(int)(tcp_c-&tcp_children[0]), tcp_c->pid);
+				(int)(tcp_c-&tcp_workers[0]), tcp_c->pid);
 		goto error;
 	}
 	/* read until sizeof(response)
@@ -1213,10 +1215,10 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 	bytes=recv_all(tcp_c->unix_sock, response, sizeof(response), MSG_DONTWAIT);
 	if (bytes<(int)sizeof(response)){
 		if (bytes==0){
-			/* EOF -> bad, child has died */
+			/* EOF -> bad, worker has died */
 			if (get_osips_state()!=STATE_TERMINATING)
 				LM_CRIT("dead tcp worker %d (EOF received), pid %d\n",
-					(int)(tcp_c-&tcp_children[0]), tcp_c->pid );
+					(int)(tcp_c-&tcp_workers[0]), tcp_c->pid );
 			/* don't listen on it any more */
 			reactor_del_reader( tcp_c->unix_sock, fd_i, 0/*flags*/);
 			/* eof. so no more io here, it's ok to return error */
@@ -1226,7 +1228,7 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 			 * e.g.: SIGIO_RT overflow mode or EPOLL ET */
 			if ((errno!=EAGAIN) && (errno!=EWOULDBLOCK)){
 				LM_CRIT("read from tcp worker %ld (pid %d) %s [%d]\n",
-						(long)(tcp_c-&tcp_children[0]), tcp_c->pid,
+						(long)(tcp_c-&tcp_workers[0]), tcp_c->pid,
 						strerror(errno), errno );
 			}else{
 				bytes=0;
@@ -1244,14 +1246,14 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 	}
 
 	LM_DBG("response= %lx, %ld from tcp worker %d (%d)\n",
-		response[0], response[1], tcp_c->pid, (int)(tcp_c-&tcp_children[0]));
+		response[0], response[1], tcp_c->pid, (int)(tcp_c-&tcp_workers[0]));
 
 	cmd=response[1];
 	tcpconn=(struct tcp_connection*)response[0];
 	if (tcpconn==0){
 		/* should never happen */
-		LM_CRIT("null tcpconn pointer received from tcp child %d (pid %d):"
-			"%lx, %lx\n", (int)(tcp_c-&tcp_children[0]), tcp_c->pid,
+		LM_CRIT("null tcpconn pointer received from tcp worker %d (pid %d):"
+			"%lx, %lx\n", (int)(tcp_c-&tcp_workers[0]), tcp_c->pid,
 			response[0], response[1]) ;
 		goto end;
 	}
@@ -1307,7 +1309,7 @@ inline static int handle_tcp_worker(struct tcp_child* tcp_c, int fd_i)
 			break;
 		default:
 			LM_CRIT("unknown cmd %d from tcp worker %d (%d)\n",
-				cmd, tcp_c->pid, (int)(tcp_c-&tcp_children[0]));
+				cmd, tcp_c->pid, (int)(tcp_c-&tcp_workers[0]));
 	}
 end:
 	return bytes;
@@ -1353,18 +1355,18 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 	if (bytes<(int)sizeof(response)){
 		/* too few bytes read */
 		if (bytes==0){
-			/* EOF -> bad, child has died */
+			/* EOF -> bad, worker has died */
 			if (get_osips_state()!=STATE_TERMINATING)
-				LM_CRIT("dead child %d (EOF received), pid %d\n",
+				LM_CRIT("dead tcp worker %d (EOF received), pid %d\n",
 					(int)(p-&pt[0]), p->pid);
 			/* don't listen on it any more */
 			reactor_del_reader( p->unix_sock, fd_i, 0/*flags*/);
-			goto error; /* child dead => no further io events from it */
+			goto error; /* worker dead => no further io events from it */
 		}else if (bytes<0){
 			/* EAGAIN is ok if we try to empty the buffer
 			 * e.g: SIGIO_RT overflow mode or EPOLL ET */
 			if ((errno!=EAGAIN) && (errno!=EWOULDBLOCK)){
-				LM_CRIT("read from child %d (pid %d):  %s [%d]\n",
+				LM_CRIT("read from worker %d (pid %d):  %s [%d]\n",
 						(int)(p-&pt[0]), p->pid, strerror(errno), errno);
 				ret=-1;
 			}else{
@@ -1387,7 +1389,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 	cmd=response[1];
 	tcpconn=(struct tcp_connection*)response[0];
 	if (tcpconn==0){
-		LM_CRIT("null tcpconn pointer received from child %d (pid %d)"
+		LM_CRIT("null tcpconn pointer received from worker %d (pid %d)"
 			"%lx, %lx\n", (int)(p-&pt[0]), p->pid, response[0], response[1]) ;
 		goto end;
 	}
@@ -1455,7 +1457,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
 		default:
-			LM_CRIT("unknown cmd %d from child %d (pid %d)\n", cmd,
+			LM_CRIT("unknown cmd %d from worker %d (pid %d)\n", cmd,
 				(int)(p-&pt[0]), p->pid);
 	}
 end:
@@ -1492,7 +1494,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 				event_type);
 			break;
 		case F_TCP_TCPWORKER:
-			ret = handle_tcp_worker((struct tcp_child*)fm->data, idx);
+			ret = handle_tcp_worker((struct tcp_worker*)fm->data, idx);
 			break;
 		case F_TCP_WORKER:
 			ret = handle_worker((struct process_table*)fm->data, idx);
@@ -1624,25 +1626,25 @@ static void tcp_main_server(void)
 				goto error;
 			}
 	}
-	/* add all the unix sokets used for communication with the tcp childs */
-	for (n=0; n<tcp_children_no; n++) {
+	/* add all the unix sokets used for communication with the tcp workers */
+	for (n=0; n<tcp_workers_no; n++) {
 		/*we can't have 0, we never close it!*/
-		if (tcp_children[n].unix_sock>0) {
+		if (tcp_workers[n].unix_sock>0) {
 			/* make socket non-blocking */
-			flags=fcntl(tcp_children[n].unix_sock, F_GETFL);
+			flags=fcntl(tcp_workers[n].unix_sock, F_GETFL);
 			if (flags==-1){
 				LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 				goto error;
 			}
-			if (fcntl(tcp_children[n].unix_sock,F_SETFL,flags|O_NONBLOCK)==-1){
+			if (fcntl(tcp_workers[n].unix_sock,F_SETFL,flags|O_NONBLOCK)==-1){
 				LM_ERR("set non-blocking failed: (%d) %s\n",
 					errno, strerror(errno));
 				goto error;
 			}
 			/* add socket for listening */
-			if (reactor_add_reader( tcp_children[n].unix_sock,
-			F_TCP_TCPWORKER, RCT_PRIO_PROC, &tcp_children[n])<0) {
-				LM_ERR("failed to add tcp child %d unix socket to "
+			if (reactor_add_reader( tcp_workers[n].unix_sock,
+			F_TCP_TCPWORKER, RCT_PRIO_PROC, &tcp_workers[n])<0) {
+				LM_ERR("failed to add tcp worker %d unix socket to "
 						"the fd list\n", n);
 				goto error;
 			}
@@ -1696,14 +1698,14 @@ int tcp_init(void)
 	}
 #endif
 
-	/* init tcp children array */
-	tcp_children = (struct tcp_child*)pkg_malloc
-		( tcp_children_no*sizeof(struct tcp_child) );
-	if (tcp_children==0) {
-		LM_CRIT("could not alloc tcp_children array in pkg memory\n");
+	/* init tcp workers array */
+	tcp_workers = (struct tcp_worker*)pkg_malloc
+		( tcp_workers_no*sizeof(struct tcp_worker) );
+	if (tcp_workers==0) {
+		LM_CRIT("could not alloc tcp_workers array in pkg memory\n");
 		goto error;
 	}
-	memset( tcp_children, 0, tcp_children_no*sizeof(struct tcp_child));
+	memset( tcp_workers, 0, tcp_workers_no*sizeof(struct tcp_worker));
 	/* init globals */
 	connection_id=(int*)shm_malloc(sizeof(int));
 	if (connection_id==0){
@@ -1805,12 +1807,12 @@ int tcp_pre_connect_proc_to_tcp_main( int proc_no)
 }
 
 
-void tcp_connect_proc_to_tcp_main( int proc_no, int child )
+void tcp_connect_proc_to_tcp_main( int proc_no, int worker )
 {
 	if (tcp_disabled)
 		return;
 
-	if (child) {
+	if (worker) {
 		close( pt[proc_no].unix_sock );
 	} else {
 		close(unix_tcp_sock);
@@ -1821,13 +1823,13 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int child )
 
 int tcp_count_processes(void)
 {
-	return ((!tcp_disabled)?( 1/* tcp main */ + tcp_children_no ):0);
+	return ((!tcp_disabled)?( 1/* tcp main */ + tcp_workers_no ):0);
 }
 
 int tcp_start_processes(int *chd_rank, int *startup_done)
 {
 	int r, n;
-	int reader_fd[2]; /* for comm. with the tcp children read  */
+	int reader_fd[2]; /* for comm. with the tcp workers read  */
 	pid_t pid;
 	struct socket_info *si;
 
@@ -1836,14 +1838,14 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 
 	/* estimate max fd. no:
 	 * 1 tcp send unix socket/all_proc,
-	 *  + 1 udp sock/udp proc + 1 tcp_child sock/tcp child*
+	 *  + 1 udp sock/udp proc + 1 tcp_worker sock/tcp worker*
 	 *  + no_listen_tcp */
 	for( r=0,n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
 		if ( is_tcp_based_proto(n) )
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
 
 	/* start the TCP workers & create the socket pairs */
-	for(r=0; r<tcp_children_no; r++){
+	for(r=0; r<tcp_workers_no; r++){
 		/* create sock to communicate from TCP main to worker */
 		if (socketpair(AF_UNIX, SOCK_STREAM, 0, reader_fd)<0){
 			LM_ERR("socketpair failed: %s\n", strerror(errno));
@@ -1858,10 +1860,10 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		}else if (pid>0){
 			/* parent */
 			close(reader_fd[1]);
-			tcp_children[r].pid=pid;
-			tcp_children[r].busy=0;
-			tcp_children[r].n_reqs=0;
-			tcp_children[r].unix_sock=reader_fd[0];
+			tcp_workers[r].pid=pid;
+			tcp_workers[r].busy=0;
+			tcp_workers[r].n_reqs=0;
+			tcp_workers[r].unix_sock=reader_fd[0];
 		}else{
 			/* child */
 			set_proc_attrs("TCP receiver");

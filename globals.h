@@ -48,11 +48,11 @@ extern struct socket_info* bind_address; /*!< pointer to the crt. proc.  listeni
 extern int auto_aliases;
 
 extern unsigned int maxbuffer;
-extern int children_no;
+extern int udp_workers_no;
 extern enum poll_types io_poll_method;
 
 /* TCP network layer related parameters */
-extern int tcp_children_no;
+extern int tcp_workers_no;
 extern int tcp_disable;
 extern int tcp_accept_aliases;
 extern int tcp_connect_timeout;

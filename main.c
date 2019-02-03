@@ -190,9 +190,12 @@ unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  not want to exceed during the
 												  auto-probing procedure; may
 												  be re-configured */
-int children_no = CHILD_NO;		/* number of children processing requests */
-enum poll_types io_poll_method=0; 	/*!< by default choose the best method */
-int sig_flag = 0;              /* last signal received */
+/* number of UDP workers processing requests */
+int udp_workers_no = UDP_WORKERS_NO;
+/*!< by default choose the best method */
+enum poll_types io_poll_method=0;
+/* last signal received */
+int sig_flag = 0;
 
 /* activate debug mode */
 int debug_mode = 0;
@@ -958,9 +961,9 @@ int main(int argc, char** argv)
 					}
 					break;
 			case 'n':
-					children_no=strtol(optarg, &tmp, 10);
+					udp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
-						LM_ERR("bad process number: -n %s\n", optarg);
+						LM_ERR("bad UDP workers number: -n %s\n", optarg);
 						goto error00;
 					}
 					break;
@@ -987,9 +990,9 @@ int main(int argc, char** argv)
 					cfg_log_stderr=1;
 					break;
 			case 'N':
-					tcp_children_no=strtol(optarg, &tmp, 10);
+					tcp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
-						LM_ERR("bad process number: -N %s\n", optarg);
+						LM_ERR("bad TCP workers number: -N %s\n", optarg);
 						goto error00;
 					}
 					break;
@@ -1235,17 +1238,17 @@ try_again:
 			disable_core_dump = 0;
 		}
 		if (udp_count_processes()!=0) {
-			if (children_no!=2) {
+			if (udp_workers_no!=2) {
 				LM_NOTICE("setting UDP children to 2 (found %d)\n",
-					children_no);
-				children_no = 2;
+					udp_workers_no);
+				udp_workers_no = 2;
 			}
 		}
 		if (tcp_count_processes()!=0) {
-			if (tcp_children_no!=2) {
+			if (tcp_workers_no!=2) {
 				LM_NOTICE("setting TCP children to 2 (found %d)\n",
-					tcp_children_no);
-				tcp_children_no = 2;
+					tcp_workers_no);
+				tcp_workers_no = 2;
 			}
 		}
 

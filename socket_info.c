@@ -156,11 +156,11 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 		memcpy(si->tag.s, sid->tag, si->tag.len+1);
 	}
 
-	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && sid->children) {
-		LM_WARN("number of children per TCP/TLS listener not supported -> "
+	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && sid->workers) {
+		LM_WARN("number of workers per TCP/TLS listener not supported -> "
 			"ignoring...\n");
 	} else {
-		si->children = sid->children;
+		si->workers = sid->workers;
 	}
 	return si;
 error:
@@ -372,9 +372,9 @@ int expand_interface(struct socket_info *si, struct socket_info** list)
 
 	sid.port = si->port_no;
 	sid.proto = si->proto;
-	sid.children = si->children;
-	sid.children_min = si->children_min;
-	sid.children_max = si->children_max;
+	sid.workers = si->workers;
+	sid.workers_min = si->workers_min;
+	sid.workers_max = si->workers_max;
 	sid.adv_port = si->adv_port;
 	sid.adv_name = si->adv_name_str.s; /* it is NULL terminated */
 	sid.tag = si->tag.s; /* it is NULL terminated */
@@ -559,8 +559,8 @@ int fix_socket_list(struct socket_info **list)
 #endif
 	for (si=*list;si;si=si->next){
 		/* fix the number of processes per interface */
-		if (!si->children && is_udp_based_proto(si->proto))
-			si->children = children_no;
+		if (!si->workers && is_udp_based_proto(si->proto))
+			si->workers = udp_workers_no;
 		if (si->port_no==0)
 			si->port_no= protos[si->proto].default_port;
 

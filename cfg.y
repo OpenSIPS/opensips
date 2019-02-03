@@ -154,9 +154,9 @@ extern char *finame;
 
 struct listen_param {
 	enum si_flags flags;
-	int children;
-	int children_max;
-	int children_min;
+	int workers;
+	int workers_max;
+	int workers_min;
 	struct socket_id *socket;
 	char *tag;
 };
@@ -339,6 +339,7 @@ static struct multi_str *tmp_mod;
 %token DNS_USE_SEARCH
 %token MAX_WHILE_LOOPS
 %token CHILDREN
+%token UDP_WORKERS
 %token CHECK_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
 %token SHM_SECONDARY_HASH_SIZE
@@ -368,6 +369,7 @@ static struct multi_str *tmp_mod;
 %token POLL_METHOD
 %token TCP_ACCEPT_ALIASES
 %token TCP_CHILDREN
+%token TCP_WORKERS
 %token TCP_CONNECT_TIMEOUT
 %token TCP_CON_LIFETIME
 %token TCP_LISTEN_BACKLOG
@@ -447,6 +449,7 @@ static struct multi_str *tmp_mod;
 %token SLASH
 %token AS
 %token USE_CHILDREN
+%token USE_WORKERS
 %token MAX
 %token MIN
 %token DOT
@@ -616,12 +619,24 @@ listen_def_param: ANYCAST {
 					$$->flags |= SI_IS_ANYCAST;
 					}
 				| USE_CHILDREN NUMBER {
+					warn("'USE_CHILDREN' syntax is deprecated, use "
+						"'USE_WORKERS' instead");
 					$$=mk_listen_param();
-					$$->children=$2;
+					$$->workers=$2;
 					}
 				| USE_CHILDREN NUMBER MAX NUMBER MIN NUMBER {
+					warn("'USE_CHILDREN' syntax is deprecated, use "
+						"'USE_WORKERS' instead");
 					$$=mk_listen_param();
-					$$->children=$2;
+					$$->workers=$2;
+					}
+				| USE_WORKERS NUMBER {
+					$$=mk_listen_param();
+					$$->workers=$2;
+					}
+				| USE_WORKERS NUMBER MAX NUMBER MIN NUMBER {
+					$$=mk_listen_param();
+					$$->workers=$2;
 					}
 				| AS listen_id_def {
 					$$=mk_listen_param();
@@ -639,8 +654,8 @@ listen_def_params:	listen_def_param { $$=$1; }
 						/* flags get "summed up" */
 						$$->flags |= $2->flags;
 						/* store only initial value of the others params */
-						if ($$->children != 0)
-							$$->children = $2->children;
+						if ($$->workers != 0)
+							$$->workers = $2->workers;
 						if ($$->socket != NULL)
 							$$->socket = $2->socket;
 						if ($$->tag != NULL)
@@ -736,8 +751,12 @@ assign_stm: DEBUG EQUAL snumber
 		| MAX_WHILE_LOOPS EQUAL error { yyerror("number expected"); }
 		| MAXBUFFER EQUAL NUMBER { maxbuffer=$3; }
 		| MAXBUFFER EQUAL error { yyerror("number expected"); }
-		| CHILDREN EQUAL NUMBER { children_no=$3; }
+		| CHILDREN EQUAL NUMBER { warn("'children' option is deprecated, "
+			"use 'udp_workers' instead");
+			udp_workers_no=$3; }
 		| CHILDREN EQUAL error { yyerror("number expected"); }
+		| UDP_WORKERS EQUAL NUMBER { udp_workers_no=$3; }
+		| UDP_WORKERS EQUAL error { yyerror("number expected"); }
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER {
@@ -902,9 +921,15 @@ assign_stm: DEBUG EQUAL snumber
 		}
 		| TCP_ACCEPT_ALIASES EQUAL error { yyerror("boolean value expected"); }
 		| TCP_CHILDREN EQUAL NUMBER {
-				tcp_children_no=$3;
+				warn("'tcp_children' option is deprecated, "
+					"use 'tcp_workers' instead");
+				tcp_workers_no=$3;
 		}
 		| TCP_CHILDREN EQUAL error { yyerror("number expected"); }
+		| TCP_WORKERS EQUAL NUMBER {
+				tcp_workers_no=$3;
+		}
+		| TCP_WORKERS EQUAL error { yyerror("number expected"); }
 		| TCP_CONNECT_TIMEOUT EQUAL NUMBER {
 				tcp_connect_timeout=$3;
 		}
@@ -2713,7 +2738,7 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 		l->adv_port = 0;
 		l->proto    = proto;
 		l->port     = port;
-		l->children = 0;
+		l->workers  = 0;
 		l->next     = NULL;
 	}
 
@@ -2723,9 +2748,9 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 {
 	s->flags |= param->flags;
-	s->children = param->children;
-	s->children_max = param->children_max;
-	s->children_min = param->children_min;
+	s->workers = param->workers;
+	s->workers_max = param->workers_max;
+	s->workers_min = param->workers_min;
 	if (param->socket) {
 		set_listen_id_adv(s, param->socket->name, param->socket->port);
 		pkg_free(param->socket);

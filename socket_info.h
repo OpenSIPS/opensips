@@ -55,9 +55,9 @@ struct socket_info {
 	str adv_port_str; /* Advertised port of this interface */
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
-	unsigned short children;
-	unsigned short children_min;
-	unsigned short children_max;
+	unsigned short workers;
+	unsigned short workers_min;
+	unsigned short workers_max;
 	struct socket_info* next;
 	struct socket_info* prev;
 };

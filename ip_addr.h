@@ -113,9 +113,9 @@ struct socket_id {
 	int adv_port;
 	int proto;
 	int port;
-	int children;
-	int children_max;
-	int children_min;
+	int workers;
+	int workers_max;
+	int workers_min;
 	enum si_flags flags;
 	struct socket_id* next;
 };

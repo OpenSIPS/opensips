@@ -73,7 +73,7 @@ int udp_count_processes(void)
 	for( i=0,n=0 ; i<PROTO_LAST ; i++)
 		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
 			for( si=protos[i].listeners ; si; si=si->next)
-				n+=si->children;
+				n+=si->workers;
 
 	return n;
 }
@@ -342,7 +342,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 		for(si=protos[p].listeners; si ; si=si->next ) {
 
-			for (i=0;i<si->children;i++) {
+			for (i=0;i<si->workers;i++) {
 				(*chd_rank)++;
 				if ( (pid=internal_fork( "UDP receiver", 0))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
