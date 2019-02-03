@@ -586,7 +586,7 @@ int start_timer_processes(void)
 	 */
 
 	if ( (pid=internal_fork("time_keeper",
-	OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD, GROUP_NONE))<0 ) {
+	OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD, TYPE_NONE))<0 ) {
 		LM_CRIT("cannot fork time keeper process\n");
 		goto error;
 	} else if (pid==0) {
@@ -599,7 +599,7 @@ int start_timer_processes(void)
 
 	/* fork a timer-trigger process */
 	if ( (pid=internal_fork("timer", OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD,
-	GROUP_NONE))<0 ) {
+	TYPE_NONE))<0 ) {
 		LM_CRIT("cannot fork timer process\n");
 		goto error;
 	} else if (pid==0) {
@@ -678,12 +678,12 @@ int start_timer_extra_processes(int *chd_rank)
 	pid_t pid;
 
 	if (enable_dynamic_workers &&
-	register_process_group( GROUP_TIMER, NULL, NULL)!=0)
+	create_process_group( TYPE_TIMER, NULL, 0, 0,NULL)!=0)
 		LM_ERR("failed to create group of TIMER processes, "
 			"auto forking will not be possible\n");
 
 	(*chd_rank)++;
-	if ( (pid=internal_fork( "Timer handler", 0, GROUP_TIMER))<0 ) {
+	if ( (pid=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {
 		LM_CRIT("cannot fork Timer handler process\n");
 		return -1;
 	} else if (pid==0) {

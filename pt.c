@@ -170,7 +170,7 @@ static int register_process_stats(int process_no)
 /* This function is to be called only by the main process!
  * */
 pid_t internal_fork(char *proc_desc, unsigned int flags,
-												enum processes_group group)
+												enum process_type type)
 {
 	#define CHILD_COUNTER_STOP  656565656
 	static int process_counter = 1;
@@ -224,7 +224,7 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 		process_no = process_counter;
 		pt[process_no].pid = getpid();
 		pt[process_no].flags = flags;
-		pt[process_no].group = group;
+		pt[process_no].type = type;
 		process_counter = CHILD_COUNTER_STOP;
 		/* each children need a unique seed */
 		seed_child(seed);
@@ -285,16 +285,20 @@ int count_init_children(int flags)
 
 
 struct process_group {
-	enum processes_group group;
+	enum process_type type;
 	struct socket_info *si_filter;
 	fork_new_process_f *fork_func;
+	unsigned int max_procs;
+	unsigned int min_procs;
 	struct process_group *next;
 };
 
 struct process_group *pg_head = NULL;
 
-int register_process_group(enum processes_group group,
-						struct socket_info *si_filter, fork_new_process_f *f)
+int create_process_group(enum process_type type,
+						struct socket_info *si_filter,
+						unsigned int min_procs, unsigned int max_procs,
+						fork_new_process_f *f)
 {
 	struct process_group *pg, *it;
 
@@ -304,8 +308,13 @@ int register_process_group(enum processes_group group,
 		return -1;
 	}
 
-	pg->group = group;
+	LM_DBG("registering group of processes type %d, socket filter %p, "
+		"process range [%d,%d]\n", type, si_filter, min_procs, max_procs );
+
+	pg->type = type;
 	pg->si_filter = si_filter;
+	pg->max_procs = max_procs;
+	pg->min_procs = min_procs;
 	pg->fork_func = f;
 	pg->next = NULL;
 

@@ -36,14 +36,14 @@
 
 #define MAX_PT_DESC	128
 
-enum processes_group { GROUP_NONE=0, GROUP_UDP, GROUP_TCP,
-	GROUP_TIMER, GROUP_MODULE};
+enum process_type { TYPE_NONE=0, TYPE_UDP, TYPE_TCP,
+	TYPE_TIMER, TYPE_MODULE};
 
 struct process_table {
 	/* the UNIX pid of this process */
 	int pid;
-	/* the group this proc is part of - optional, used by dynamic forking */
-	enum processes_group group;
+	/* the type/group of this process - optional, used by dynamic forking */
+	enum process_type type;
 	/* name/description of the process (null terminated) */
 	char desc[MAX_PT_DESC];
 	/* various flags describing properties of this process */
@@ -86,7 +86,7 @@ int   count_init_children(int flags);
 #define counted_processes (counted_processes_p?*counted_processes_p:0)
 
 pid_t internal_fork(char *proc_desc, unsigned int flags,
-		enum processes_group group);
+		enum process_type type);
 
 /* return processes pid */
 inline static int my_pid(void)
@@ -110,8 +110,10 @@ inline static int get_process_ID_by_PID(pid_t pid)
 
 typedef int (fork_new_process_f)(void *);
 
-int register_process_group(enum processes_group group,
-						struct socket_info *si_filter, fork_new_process_f *f);
+int create_process_group(enum process_type type,
+		struct socket_info *si_filter,
+		unsigned int min_procs, unsigned int max_procs,
+		fork_new_process_f *f);
 
 
 #endif
