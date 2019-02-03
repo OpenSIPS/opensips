@@ -1261,6 +1261,7 @@ fi
 %{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_http.so
+%{_libdir}/opensips/modules/mi_html.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nat_traversal.so
 %{_libdir}/opensips/modules/nathelper.so
@@ -1326,6 +1327,7 @@ fi
 %doc docdir/README.mi_datagram
 %doc docdir/README.mi_fifo
 %doc docdir/README.mi_http
+%doc docdir/README.mi_html
 %doc docdir/README.msilo
 %doc docdir/README.nat_traversal
 %doc docdir/README.nathelper
