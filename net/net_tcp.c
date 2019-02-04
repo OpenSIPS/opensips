@@ -1821,8 +1821,9 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int worker )
 }
 
 
-int tcp_count_processes(void)
+int tcp_count_processes(unsigned int *extra)
 {
+	if (extra) *extra = 0;
 	return ((!tcp_disabled)?( 1/* tcp main */ + tcp_workers_no ):0);
 }
 

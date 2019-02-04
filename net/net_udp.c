@@ -62,19 +62,22 @@ void udp_destroy(void)
 }
 
 /* tells how many processes the UDP layer will create */
-int udp_count_processes(void)
+int udp_count_processes(unsigned int *extra)
 {
 	struct socket_info *si;
-	int n, i;
+	unsigned int n, e, i;
 
 	if (udp_disabled)
 		return 0;
 
-	for( i=0,n=0 ; i<PROTO_LAST ; i++)
+	for( i=0,n=0,e=0 ; i<PROTO_LAST ; i++)
 		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
-			for( si=protos[i].listeners ; si; si=si->next)
+			for( si=protos[i].listeners ; si; si=si->next) {
 				n+=si->workers;
+				e+=si->workers_max?(si->workers_max-si->workers):0;
+			}
 
+	if (extra) *extra = e;
 	return n;
 }
 

@@ -1238,14 +1238,14 @@ try_again:
 			LM_NOTICE("enabling core dumping (found off)\n");
 			disable_core_dump = 0;
 		}
-		if (udp_count_processes()!=0) {
+		if (udp_count_processes(NULL)!=0) {
 			if (udp_workers_no!=2) {
 				LM_NOTICE("setting UDP children to 2 (found %d)\n",
 					udp_workers_no);
 				udp_workers_no = 2;
 			}
 		}
-		if (tcp_count_processes()!=0) {
+		if (tcp_count_processes(NULL)!=0) {
 			if (tcp_workers_no!=2) {
 				LM_NOTICE("setting TCP children to 2 (found %d)\n",
 					tcp_workers_no);

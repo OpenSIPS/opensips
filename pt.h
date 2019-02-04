@@ -73,10 +73,11 @@ typedef void(*forked_proc_func)(int i);
 extern struct process_table *pt;
 extern int process_no;
 extern unsigned int *counted_processes_p;
+extern unsigned int counted_max_processes;
 
 int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
-int   count_init_children(int flags);
+int   count_init_child_processes(void);
 
 #define OSS_FORK_NO_IPC        (1<<0)
 #define OSS_FORK_NO_LOAD       (1<<1)

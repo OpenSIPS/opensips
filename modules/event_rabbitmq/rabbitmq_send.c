@@ -43,7 +43,6 @@
 #endif
 
 unsigned rmq_sync_mode = 0;
-static unsigned nr_procs = 0;
 
 /* used to communicate with the sending process */
 static int rmq_pipe[2];
@@ -78,9 +77,7 @@ int rmq_create_pipe(void)
 int rmq_create_status_pipes(void) {
 	int rc, i;
 
-	nr_procs = count_init_children(0) + 2;	/* + 2 timer processes */
-
-	rmq_status_pipes = shm_malloc(nr_procs * sizeof(rmq_pipe));
+	rmq_status_pipes = shm_malloc(counted_max_processes * sizeof(rmq_pipe));
 
 	if (!rmq_status_pipes) {
 		LM_ERR("cannot allocate rmq_status_pipes\n");
@@ -88,7 +85,7 @@ int rmq_create_status_pipes(void) {
 	}
 
 	/* create pipes */
-	for (i = 0; i < nr_procs; i++) {
+	for (i = 0; i < counted_max_processes; i++) {
 		do {
 			rc = pipe(rmq_status_pipes[i]);
 		} while (rc < 0 && IS_ERR(EINTR));
@@ -116,7 +113,7 @@ void rmq_destroy_status_pipes(void)
 {
 	int i;
 
-	for(i = 0; i < nr_procs; i++) {
+	for(i = 0; i < counted_max_processes; i++) {
 		close(rmq_status_pipes[i][0]);
 		close(rmq_status_pipes[i][1]);
 	}
@@ -221,7 +218,7 @@ static void rmq_init_reader(void)
 	}
 
 	if (rmq_sync_mode)
-		for(i = 0; i < nr_procs; i++) {
+		for(i = 0; i < counted_max_processes; i++) {
 			close(rmq_status_pipes[i][0]);
 
 			/* Turn non-blocking mode on for sending*/
@@ -555,7 +552,7 @@ send_status_reply:
 			retries = RMQ_SEND_RETRY;
 
 			/* check rmqs->process_idx sanity */
-			if (rmqs->process_idx >= 0 && rmqs->process_idx < nr_procs) {
+			if (rmqs->process_idx >= 0 && rmqs->process_idx < counted_max_processes) {
 				do {
 					rc = write(rmq_status_pipes[rmqs->process_idx][1], &send_status, sizeof(int));
 				} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));

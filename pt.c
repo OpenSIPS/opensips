@@ -43,10 +43,15 @@ struct process_table *pt=0;
 /* variable keeping the number of created processes READONLY!! */
 unsigned int *counted_processes_p = NULL;
 
+unsigned int counted_max_processes = 0;
+
+
 
 int init_multi_proc_support(void)
 {
-	unsigned short proc_no;
+	unsigned int proc_no;
+	unsigned int proc_extra_no;
+	unsigned int extra;
 	unsigned int i;
 
 	/* allocate the number of proc variable in shm  */
@@ -57,11 +62,14 @@ int init_multi_proc_support(void)
 	}
 
 	proc_no = 0;
+	proc_extra_no = 0;
 
 	/* UDP based listeners */
-	proc_no += udp_count_processes();
+	proc_no += udp_count_processes( &extra );
+	proc_extra_no += extra;
 	/* TCP based listeners */
-	proc_no += tcp_count_processes();
+	proc_no += tcp_count_processes( &extra );
+	proc_extra_no += extra;
 	/* attendent */
 	proc_no++;
 
@@ -69,19 +77,28 @@ int init_multi_proc_support(void)
 
 	/* timer processes */
 	proc_no += 3 /* timer keeper + timer trigger + dedicated */;
+	proc_extra_no += 0; /* the dedicated proc may turn into multiple */;
 
 	/* count the processes requested by modules */
-	proc_no += count_module_procs();
+	proc_no += count_module_procs(0);
 
-	/* allocate the PID table */
-	pt = shm_malloc(sizeof(struct process_table)*proc_no);
+	/* for the beginning, count only the processes we are starting with */
+	*counted_processes_p = proc_no;
+
+	counted_max_processes = proc_no + proc_extra_no;
+
+
+	/* allocate the PID table to accomodate the maximum possible number of
+	 * process we may have during runtime (covering extra procs created 
+	 * due auto-scaling) */
+	pt = shm_malloc(sizeof(struct process_table)*counted_max_processes);
 	if (pt==0){
 		LM_ERR("out of memory\n");
 		return -1;
 	}
-	memset(pt, 0, sizeof(struct process_table)*proc_no);
+	memset(pt, 0, sizeof(struct process_table)*counted_max_processes);
 
-	for( i=0 ; i<proc_no ; i++ ) {
+	for( i=0 ; i<counted_max_processes ; i++ ) {
 		pt[i].unix_sock = -1;
 		pt[i].idx = -1;
 		pt[i].pid = -1;
@@ -89,16 +106,14 @@ int init_multi_proc_support(void)
 	}
 
 
-	/* set the pid for the starter process */
-	set_proc_attrs("starter");
-
-	*counted_processes_p = proc_no;
-
-	/* create the IPC pipes */
-	if (create_ipc_pipes( proc_no )<0) {
+	/* create the IPC pipes for all possible procs */
+	if (create_ipc_pipes( counted_max_processes )<0) {
 		LM_ERR("failed to create IPC pipes, aborting\n");
 		return -1;
 	}
+
+	/* set the pid for the starter process */
+	set_proc_attrs("starter");
 
 	/* register the stats for the global load */
 	if ( register_stat2( "load", "load", (stat_var**)pt_get_rt_load,
@@ -246,19 +261,19 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 	}
 }
 
-/* returns the number of child processes
- * filter all processes that have set the flags set
+
+/* counts the number of processes created by OpenSIPS at startup. processes
+ * that also do child_init() (the per-process module init)
  *
  * used for proper status return code
  */
-int count_init_children(int flags)
+int count_init_child_processes(void)
 {
-	int ret=0,i;
-	struct sr_module *m;
+	int ret=0;
 
-	/* listening children */
-	ret += udp_count_processes();
-	ret += tcp_count_processes();
+	/* listening children to be create at startup */
+	ret += udp_count_processes(NULL);
+	ret += tcp_count_processes(NULL);
 
 	/* attendent */
 	ret++;
@@ -267,17 +282,7 @@ int count_init_children(int flags)
 	ret++;
 
 	/* count number of module procs going to be initialised */
-	for (m=modules;m;m=m->next) {
-		if (m->exports->procs==NULL)
-			continue;
-		for (i=0;m->exports->procs[i].name;i++) {
-			if (!m->exports->procs[i].no || !m->exports->procs[i].function)
-				continue;
-
-			if (!flags || (m->exports->procs[i].flags & flags))
-				ret+=m->exports->procs[i].no;
-		}
-	}
+	ret += count_module_procs(PROC_FLAG_INITCHILD);
 
 	LM_DBG("%d children are going to be inited\n",ret);
 	return ret;

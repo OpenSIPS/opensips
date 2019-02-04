@@ -724,17 +724,21 @@ int module_loaded(char *name)
 
 
 /* Counts the additional the number of processes requested by modules */
-int count_module_procs(void)
+int count_module_procs(int flags)
 {
 	struct sr_module *m;
 	unsigned int cnt;
 	unsigned int n;
 
 	for( m=modules,cnt=0 ; m ; m=m->next) {
-		if (m->exports->procs) {
-			for( n=0 ; m->exports->procs[n].name ; n++)
-				if (m->exports->procs[n].function)
-					cnt += m->exports->procs[n].no;
+		if (m->exports->procs==NULL)
+			continue;
+		for ( n=0 ; m->exports->procs[n].name ; n++) {
+			if (!m->exports->procs[n].no || !m->exports->procs[n].function)
+				continue;
+
+			if (!flags || (m->exports->procs[n].flags & flags))
+				cnt+=m->exports->procs[n].no;
 		}
 	}
 	LM_DBG("modules require %d extra processes\n",cnt);
