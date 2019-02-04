@@ -53,7 +53,13 @@ struct process_table {
 	 * [1] for writting into by other process,
 	 * [0] to listen on by this process */
 	int ipc_pipe[2];
+	/* same as above, but the holder used when the corresponding process
+	 * does not exist */
+	int ipc_pipe_holder[2];
 
+	/* holder for the unixsocks used by TCP layer for inter-proc communication;
+	 * used when the corresponding process does not exist */
+	int tcp_socks_holder[2];
 	/* unix socket on which TCP MAIN listens */
 	int unix_sock;
 	/* tcp child index, -1 for other processes */

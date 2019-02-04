@@ -112,6 +112,12 @@ int init_multi_proc_support(void)
 		return -1;
 	}
 
+	/* create the IPC pipes for all possible procs */
+	if (tcp_create_comm_proc_socks( counted_max_processes )<0) {
+		LM_ERR("failed to create TCP layer communication, aborting\n");
+		return -1;
+	}
+
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
 
@@ -202,21 +208,23 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 	LM_DBG("forking new process \"%s\"\n",proc_desc);
 
 	/* set TCP communication */
-	if (tcp_pre_connect_proc_to_tcp_main(process_counter)<0){
+	if (tcp_activate_comm_proc_socks(process_counter)<0){
 		LM_ERR("failed to connect future proc %d to TCP main\n",
 			process_no);
 		return -1;
 	}
 
-	/* check the IPC pipe */
+	/* set the IPC pipes */
 	if ( (flags & OSS_FORK_NO_IPC) ) {
-		/* close the listening end */
-		close(pt[process_counter].ipc_pipe[0]);
 		/* advertise no IPC to the rest of the procs */
 		pt[process_counter].ipc_pipe[0] = -1;
 		pt[process_counter].ipc_pipe[1] = -1;
 		/* NOTE: the IPC fds will remain open in the other processes,
 		 * but they will not be known */
+	} else {
+		/* activate the IPC pipes */
+		pt[process_counter].ipc_pipe[0]=pt[process_counter].ipc_pipe_holder[0];
+		pt[process_counter].ipc_pipe[1]=pt[process_counter].ipc_pipe_holder[1];
 	}
 
 	if (register_process_stats(process_counter)<0) {

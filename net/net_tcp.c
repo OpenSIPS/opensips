@@ -1788,7 +1788,26 @@ void tcp_destroy(void)
 }
 
 
-int tcp_pre_connect_proc_to_tcp_main( int proc_no)
+int tcp_create_comm_proc_socks( int proc_no)
+{
+	int i;
+
+	if (tcp_disabled)
+		return 0;
+
+	for( i=0 ; i<proc_no ; i++ ) {
+		if (socketpair(AF_UNIX, SOCK_STREAM, 0, pt[i].tcp_socks_holder)<0){
+			LM_ERR("socketpair failed for process %d: %d/%s\n",
+				i, errno, strerror(errno));
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
+int tcp_activate_comm_proc_socks( int proc_no)
 {
 	int sockfd[2];
 
@@ -1800,8 +1819,8 @@ int tcp_pre_connect_proc_to_tcp_main( int proc_no)
 		return -1;
 	}
 
-	unix_tcp_sock = sockfd[1];
-	pt[proc_no].unix_sock = sockfd[0];
+	unix_tcp_sock = pt[proc_no].tcp_socks_holder[1];
+	pt[proc_no].unix_sock = pt[proc_no].tcp_socks_holder[0];
 
 	return 0;
 }
