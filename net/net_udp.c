@@ -329,6 +329,41 @@ error:
 }
 
 
+int fork_dynamic_udp_process(void *si_filter)
+{
+	struct socket_info *si = (struct socket_info*)si_filter;
+	pid_t pid;
+
+	if ( (pid=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
+		LM_CRIT("cannot fork UDP process\n");
+		goto error;
+	} else if (pid==0) {
+		/* new UDP process */
+		/* set a more detailed description */
+		set_proc_attrs("SIP receiver %.*s ",
+			si->sock_str.len, si->sock_str.s);
+		pt[process_no].pg_filter = si;
+		bind_address=si; /* shortcut */
+		/* we first need to init the reactor to be able to add fd
+		 * into it in child_init routines */
+		if (udp_proc_reactor_init(si) < 0 ||
+		init_child(10000/*FIXME*/) < 0) {
+			/* FIXME - how to handle a failure in process start?? */
+			exit(-1);
+		}
+
+		reactor_main_loop(UDP_SELECT_TIMEOUT, error, );
+		destroy_worker_reactor();
+error:
+		/* FIXME - how to handle a failure in process start?? */
+		exit(-1);
+	} else {
+		/*parent/main*/
+		return 0;
+	}
+}
+
+
 /* starts all UDP related processes */
 int udp_start_processes(int *chd_rank, int *startup_done)
 {
@@ -347,7 +382,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 			if (enable_dynamic_workers &&
 			create_process_group( TYPE_UDP, si, si->workers_min,
-			si->workers_max, NULL)!=0)
+			si->workers_max, fork_dynamic_udp_process)!=0)
 				LM_ERR("failed to create group of UDP processes for <%.*s>, "
 					"auto forking will not be possible\n",
 					si->name.len, si->name.s);
@@ -362,6 +397,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 					/* set a more detailed description */
 					set_proc_attrs("SIP receiver %.*s ",
 						si->sock_str.len, si->sock_str.s);
+					pt[process_no].pg_filter = si;
 					bind_address=si; /* shortcut */
 					/* we first need to init the reactor to be able to add fd
 					 * into it in child_init routines */
