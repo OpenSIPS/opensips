@@ -180,6 +180,18 @@ do{	\
 			(temp_holder).s = (str).s + (temp_counter) + 1;	\
 			(temp_holder).len = (temp_counter) + 1;	\
 			break;	\
+		case '\n': \
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_BREAK);	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
+		case '\t': \
+			(temp_holder).len = (temp_counter) - (temp_holder).len;	\
+			MI_HTTP_COPY_2(p, (temp_holder), MI_HTTP_ESC_TAB);	\
+			(temp_holder).s = (str).s + (temp_counter) + 1;	\
+			(temp_holder).len = (temp_counter) + 1;	\
+			break;	\
 		}	\
 	}	\
 	(temp_holder).len = (temp_counter) - (temp_holder).len;	\
@@ -229,12 +241,13 @@ static const str MI_HTTP_Response_Menu_Table_5 = str_init("</tr></tbody></table>
 
 static const str MI_HTTP_Response_Menu_Cmd_Table_1 = str_init("<table border=\"0\" cellpadding=\"3\" cellspacing=\"0\" width=\"90%\"><tbody>\n");
 static const str MI_HTTP_Response_Menu_Cmd_tr_1 = str_init("<tr>\n");
-static const str MI_HTTP_Response_Menu_Cmd_td_1a = str_init("	<td width=\"10%\"><a href='");
+static const str MI_HTTP_Response_Menu_Cmd_td_1a = str_init("	<td valign=\"top\" width=\"10%\"><a href='");
 static const str MI_HTTP_Response_Menu_Cmd_td_3a = str_init("'>");
 static const str MI_HTTP_Response_Menu_Cmd_td_4a = str_init("</a></td>\n");
 static const str MI_HTTP_Response_Menu_Cmd_td_1b = str_init("	<td align=\"left\"><b>");
 static const str MI_HTTP_Response_Menu_Cmd_td_1c = str_init("	<td valign=\"top\" align=\"left\" rowspan=\"");
 static const str MI_HTTP_Response_Menu_Cmd_td_1d = str_init("	<td>");
+static const str MI_HTTP_Response_Menu_Cmd_td_1e = str_init("	<td align=\"left\">");
 static const str MI_HTTP_Response_Menu_Cmd_td_3c = str_init("\">");
 static const str MI_HTTP_Response_Menu_Cmd_td_4b = str_init("</b></td>\n");
 static const str MI_HTTP_Response_Menu_Cmd_td_4c = str_init("	</td>\n");
@@ -270,6 +283,8 @@ static const str MI_HTTP_ESC_GT =    str_init("&gt;");   /* > */
 static const str MI_HTTP_ESC_AMP =   str_init("&amp;");  /* & */
 static const str MI_HTTP_ESC_QUOT =  str_init("&quot;"); /* " */
 static const str MI_HTTP_ESC_SQUOT = str_init("&#39;");  /* ' */
+static const str MI_HTTP_ESC_BREAK = str_init("<br>\n");
+static const str MI_HTTP_ESC_TAB = str_init("&emsp;");
 
 
 int mi_http_init_async_lock(void)
@@ -704,16 +719,16 @@ int mi_http_build_content(str *page, int max_page_len,
 		if (http_root.len) {
 			MI_HTTP_COPY_2(p,http_root, MI_HTTP_SLASH);
 		}
-		MI_HTTP_COPY_6(p,http_mi_cmds[mod].cmds[cmd].module,
+		MI_HTTP_COPY_7(p,http_mi_cmds[mod].cmds[cmd].module,
 				MI_HTTP_SLASH,
 				http_mi_cmds[mod].cmds[cmd].name,
 				MI_HTTP_Response_Menu_Cmd_td_3a,
 				http_mi_cmds[mod].cmds[cmd].name,
-				MI_HTTP_Response_Menu_Cmd_td_4a);
-
+				MI_HTTP_Response_Menu_Cmd_td_4a,
+				MI_HTTP_Response_Menu_Cmd_td_1e);
 		if (mi_http_write_resp(&p, buf, max_page_len, response) < 0)
 			return -1;
-
+		MI_HTTP_COPY(p,MI_HTTP_Response_Menu_Cmd_td_4d);
 	} else if (mod>=0) { /* Building command menu */
 		/* Build the list of comands for the selected module */
 		MI_HTTP_COPY_4(p,MI_HTTP_Response_Menu_Cmd_Table_1,
