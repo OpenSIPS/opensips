@@ -34,6 +34,7 @@
 #include "pt.h"
 #include "bin_interface.h"
 #include "ipc.h"
+#include "daemonize.h"
 
 
 /* array with children pids, 0= main proc,
@@ -419,9 +420,11 @@ void check_and_adjust_number_of_workers(void)
 					"(with %d procs)\n", cnt_over, PG_HISTORY_DEFAULT_SIZE,
 					pg->type, procs_no);
 				/* we need to fork one more process here */
-				if (pg->fork_func(pg->si_filter)!=0) {
+				if ( pg->fork_func(pg->si_filter)!=0 ||
+				wait_for_one_children() ) {
 					LM_ERR("failed to fork new process for group %d "
 						"(current %d procs)\n",pg->type,procs_no);
+					// FIXME - _purge_process_slot();
 				} else {
 					pg->no_downscale_cycles = 10*PG_HISTORY_DEFAULT_SIZE;
 				}

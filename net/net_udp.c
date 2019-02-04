@@ -348,17 +348,18 @@ int fork_dynamic_udp_process(void *si_filter)
 		 * into it in child_init routines */
 		if (udp_proc_reactor_init(si) < 0 ||
 		init_child(10000/*FIXME*/) < 0) {
-			/* FIXME - how to handle a failure in process start?? */
-			exit(-1);
+			goto error;
 		}
 
 		reactor_main_loop(UDP_SELECT_TIMEOUT, error, );
 		destroy_worker_reactor();
 error:
-		/* FIXME - how to handle a failure in process start?? */
+		report_failure_status();
+		LM_ERR("Initializing new process failed, exiting with error \n");
 		exit(-1);
 	} else {
 		/*parent/main*/
+		report_conditional_status( 1, 0); /*report success*/
 		return 0;
 	}
 }

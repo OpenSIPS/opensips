@@ -156,6 +156,17 @@ error:
 	return -1;
 }
 
+int wait_for_one_children(void)
+{
+	char rc;
+
+	if (wait_status_code(&rc)<0 || rc < 0)
+		return -1;
+
+	return 0;
+
+}
+
 int wait_for_all_children(void)
 {
 	int procs_no,i,ret;

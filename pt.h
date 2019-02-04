@@ -90,6 +90,7 @@ int   count_init_child_processes(void);
 #define OSS_FORK_NO_LOAD       (1<<1)
 #define OSS_FORK_IS_EXTRA      (1<<2)
 #define OSS_TAKING_A_DUMP      (1<<3) /* this process is writing a corefile */
+#define OSS_FORK_DYNAMIC       (1<<4) /* proc was created at runtime */
 
 #define counted_processes (counted_processes_p?*counted_processes_p:0)
 

@@ -35,6 +35,7 @@ int set_core_dump(int enable, unsigned int size);
 int send_status_code(char val);
 void clean_write_pipeend(void);
 int create_status_pipe(void);
+int wait_for_one_children(void);
 int wait_for_all_children(void);
 void inc_init_timer(void);
 
