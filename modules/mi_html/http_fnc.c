@@ -214,7 +214,7 @@ static const str MI_HTTP_Response_Title_Table_1 = str_init(\
 "<table cellspacing=\"0\" cellpadding=\"5\" width=\"100%%\" border=\"0\">"\
 	"<tr bgcolor=\"#BBDDFF\">"\
 	"<td colspan=2 valign=\"top\" align=\"left\" bgcolor=\"#EFF7FF\" width=\"100%%\">"\
-	"<br/><h2 align=\"center\">OpenSIPS MI HTTP Interface</h2>"\
+	"<br/><h2 align=\"center\">OpenSIPS MI HTML Interface</h2>"\
 	"<p align=\"center\">");
 static const str MI_HTTP_Response_Title_Table_2 = str_init(" is running since <i>");
 static const str MI_HTTP_Response_Title_Table_3 = str_init("</i></p><br/></td></tr></table>\n<center>\n");
