@@ -44,6 +44,7 @@ struct process_table {
 	int pid;
 	/* the type/group of this process - optional, used by dynamic forking */
 	enum process_type type;
+	void *pg_filter;
 	/* name/description of the process (null terminated) */
 	char desc[MAX_PT_DESC];
 	/* various flags describing properties of this process */
@@ -74,7 +75,7 @@ struct process_table {
 	struct proc_load load;
 };
 
-typedef void(*forked_proc_func)(int i);
+typedef int (*forked_proc_func)(int i);
 
 extern struct process_table *pt;
 extern int process_no;
@@ -122,5 +123,6 @@ int create_process_group(enum process_type type,
 		unsigned int min_procs, unsigned int max_procs,
 		fork_new_process_f *f);
 
+void check_and_adjust_number_of_workers(void);
 
 #endif

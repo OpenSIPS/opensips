@@ -817,7 +817,11 @@ static int main_loop(void)
 
 	for(;;){
 			handle_sigs();
-			pause();
+			if (enable_dynamic_workers) {
+				sleep(1);
+				check_and_adjust_number_of_workers();
+			} else
+				pause();
 	}
 
 	/*return 0; */

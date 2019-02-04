@@ -198,6 +198,12 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 	pid_t pid;
 	unsigned int seed;
 
+	// TODO - add startup/runtime detection based on the opensips status
+
+	/* process_counter will keep increment in the main process.
+	 * When adding the process ripping, we will have to compute the
+	 * process_counter based on the gaps in the process table */
+
 	if (process_counter==CHILD_COUNTER_STOP) {
 		LM_CRIT("buggy call from non-main process!!!");
 		return -1;
@@ -256,6 +262,7 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 		/* set attributes */
 		set_proc_attrs(proc_desc);
 		tcp_connect_proc_to_tcp_main( process_no, 1);
+		// FIXME ^^ this is runtime safe and recoverable (after ripping)
 		return 0;
 	}else{
 		/* parent process */
@@ -296,15 +303,24 @@ int count_init_child_processes(void)
 	return ret;
 }
 
-
 struct process_group {
 	enum process_type type;
 	struct socket_info *si_filter;
 	fork_new_process_f *fork_func;
 	unsigned int max_procs;
 	unsigned int min_procs;
+	/* some reference to a profile to give us params for fork/rip procs  */
+	unsigned char history_size;
+	unsigned char history_idx;
+	unsigned short no_downscale_cycles;
+	unsigned char *history_map;
 	struct process_group *next;
 };
+
+#define PG_HISTORY_DEFAULT_SIZE  6 /*to be replaced with val from profile*/
+#define PG_HIGH_MIN_SCORE        3 /*to be replaced with val from profile*/
+#define PG_HLOAD_TRESHOLD       70 /*to be replaced with val from profile*/
+#define PG_LLOAD_TRESHOLD       20 /*to be replaced with val from profile*/
 
 struct process_group *pg_head = NULL;
 
@@ -315,11 +331,14 @@ int create_process_group(enum process_type type,
 {
 	struct process_group *pg, *it;
 
-	pg = (struct process_group*)shm_malloc( sizeof(struct process_group) );
+	pg = (struct process_group*)shm_malloc( sizeof(struct process_group) +
+		sizeof(char)*PG_HISTORY_DEFAULT_SIZE );
 	if (pg==NULL) {
 		LM_ERR("failed to allocate memory for a new process group\n");
 		return -1;
 	}
+	memset( pg, 0, sizeof(struct process_group) +
+		sizeof(char)*PG_HISTORY_DEFAULT_SIZE );
 
 	LM_DBG("registering group of processes type %d, socket filter %p, "
 		"process range [%d,%d]\n", type, si_filter, min_procs, max_procs );
@@ -331,6 +350,11 @@ int create_process_group(enum process_type type,
 	pg->fork_func = f;
 	pg->next = NULL;
 
+	pg->history_size = PG_HISTORY_DEFAULT_SIZE;
+	pg->history_map = (unsigned char*)(pg+1);
+	pg->history_idx = 0;
+	pg->no_downscale_cycles = 10*PG_HISTORY_DEFAULT_SIZE;
+
 	/* add at the end of list, to avoid changing the head of the list due
 	 * forking */
 	for( it=pg_head ; it && it->next ; it=it->next);
@@ -340,4 +364,79 @@ int create_process_group(enum process_type type,
 		it->next = pg;
 
 	return 0;
+}
+
+
+void check_and_adjust_number_of_workers(void)
+{
+	struct process_group *pg;
+	unsigned int i, k, idx;
+	unsigned int load;
+	unsigned int procs_no;
+	unsigned char cnt_under, cnt_over;
+
+	/* iterate all the groups we have */
+	for ( pg=pg_head ; pg ; pg=pg->next ) {
+
+		load = 0;
+		procs_no = 0;
+
+		/* find the processes belonging to this group */
+		for ( i=0 ; i<counted_processes ; i++) {
+
+			if (pt[i].type != pg->type || pg->si_filter!=pt[i].pg_filter)
+				continue;
+
+			load += get_stat_val( pt[i].load.load_rt );
+			procs_no++;
+
+		}
+
+		/* set the current value */
+		idx = (pg->history_idx+1)%PG_HISTORY_DEFAULT_SIZE;
+		pg->history_map[idx] = (unsigned char) ( load / procs_no );
+
+		LM_DBG("group %d (with %d procs) has average load of %d\n",
+			pg->type, procs_no, pg->history_map[idx]);
+
+
+		/* do the check over the history */
+		cnt_over = 0;
+		cnt_under = 0;
+		k = idx;
+		do {
+			if (pg->history_map[k]>PG_HLOAD_TRESHOLD)
+				cnt_over++;
+			else if (pg->history_map[k]<PG_LLOAD_TRESHOLD)
+				cnt_under++;
+
+			k = k ? (k-1) : (PG_HISTORY_DEFAULT_SIZE-1) ;
+		} while(k!=idx);
+
+		/* decide what to do */
+		if (cnt_over>=PG_HIGH_MIN_SCORE) {
+			if (procs_no<pg->max_procs) {
+				LM_DBG("score %d/%d -> forking new proc in group %d "
+					"(with %d procs)\n", cnt_over, PG_HISTORY_DEFAULT_SIZE,
+					pg->type, procs_no);
+				/* we need to fork one more process here */
+				if (pg->fork_func(pg->si_filter)!=0) {
+					LM_ERR("failed to fork new process for group %d "
+						"(current %d procs)\n",pg->type,procs_no);
+				} else {
+					pg->no_downscale_cycles = 10*PG_HISTORY_DEFAULT_SIZE;
+				}
+			}
+		} else if (cnt_under==PG_HISTORY_DEFAULT_SIZE) {
+			if (procs_no>pg->min_procs && pg->no_downscale_cycles==0) {
+				/* down scale one more process here */
+				LM_DBG("score %d/%d -> ripping new proc in group %d "
+					"(with %d procs)\n", cnt_under, PG_HISTORY_DEFAULT_SIZE,
+					pg->type, procs_no);
+			}
+		}
+
+		pg->history_idx++;
+		if (pg->no_downscale_cycles) pg->no_downscale_cycles--;
+	}
 }
