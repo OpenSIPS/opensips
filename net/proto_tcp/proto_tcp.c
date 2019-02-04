@@ -1201,7 +1201,7 @@ error:
 	return -1;
 }
 
-static mi_response_t *w_tcp_trace_mi(const mi_params_t *params,
+static mi_response_t *w_tcp_trace_mi(const mi_params_t *mi_params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
@@ -1220,12 +1220,12 @@ static mi_response_t *w_tcp_trace_mi(const mi_params_t *params,
 	return resp;
 }
 
-static mi_response_t *w_tcp_trace_mi_1(const mi_params_t *params,
+static mi_response_t *w_tcp_trace_mi_1(const mi_params_t *mi_params,
 								struct mi_handler *async_hdl)
 {
 	str new_mode;
 
-	if (get_mi_string_param(params, "trace_mode", &new_mode.s, &new_mode.len) < 0)
+	if (get_mi_string_param(mi_params, "trace_mode", &new_mode.s, &new_mode.len) < 0)
 		return init_mi_param_error();
 
 	if ((new_mode.s[0] | 0x20) == 'o' &&

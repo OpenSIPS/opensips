@@ -30,8 +30,6 @@
 
 static int bin_extend(bin_packet_t *packet, int size);
 
-struct socket_info *bin;
-
 static struct packet_cb_list *reg_cbs;
 
 

@@ -941,8 +941,12 @@ struct txt_rdata* dns_txt_parser( unsigned char* msg, unsigned char* end,
 	len = *rdata;
 	if (rdata + 1 + len >= end)
 		goto error;	/*  something fishy in the record */
+
+#if 0
+	/* Comparison is always false because len <= 255. */
 	if (len >= sizeof(txt->txt))
 		goto error; /* not enough space? */
+#endif
 	memcpy(txt->txt, rdata+1, len);
 	txt->txt[len] = 0;		/* 0-terminate string */
 	return txt;

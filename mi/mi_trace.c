@@ -128,7 +128,7 @@ char* generate_correlation_id(int* len)
 
 
 int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
-		struct mi_trace_param* pld_param, str* correlation_value, trace_dest trace_dst)
+		struct mi_trace_param* pld_param, str* correlation_val, trace_dest trace_dst)
 {
 	/* FIXME is this the case for all mi impelementations?? */
 	const int proto = IPPROTO_TCP;
@@ -149,7 +149,7 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 		return -1;
 	}
 
-	if ( correlation_value ) {
+	if ( correlation_val ) {
 		if ( correlation_id < 0 || correlation_vendor < 0 ) {
 			if ( load_correlation_id() < 0 ) {
 				LM_ERR("can't load correlation id!\n");
@@ -157,8 +157,8 @@ int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
 			}
 		}
 
-		if ( mi_trace_api->add_chunk( message, correlation_value->s,
-				correlation_value->len, TRACE_TYPE_STR,
+		if ( mi_trace_api->add_chunk( message, correlation_val->s,
+				correlation_val->len, TRACE_TYPE_STR,
 					correlation_id, correlation_vendor) < 0 ) {
 			LM_ERR("can't set the correlation id!\n");
 			goto error;

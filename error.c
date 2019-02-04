@@ -45,7 +45,7 @@ int ser_error=-1;
 int prev_ser_error=-1;
 
 int err2reason_phrase(
-	int ser_error,  	/*!< current internal ser error */
+	int error,			/*!< current internal ser error */
 	int *sip_error,  	/*!< the sip error code to which ser error will be turned */
 	char *phrase,    	/*!< resulting error text */
 	int etl, 		/*!< error text buffer length */
@@ -54,26 +54,26 @@ int err2reason_phrase(
 
 	char *error_txt;
 
-	switch( ser_error ) {
+	switch( error ) {
 		case E_IP_BLOCKED:
 			error_txt="Filtered destination";
-			*sip_error=-ser_error;
+			*sip_error=-error;
 			break;
 		case E_SEND:
 			error_txt="Send failed";
-			*sip_error=-ser_error;
+			*sip_error=-error;
 			break;
 		case E_BAD_ADDRESS:
 			error_txt="Unresolvable destination";
-			*sip_error=-ser_error;
+			*sip_error=-error;
 			break;
 		case E_BAD_REQ:
 			error_txt="Bad Request";
-			*sip_error=-ser_error;
+			*sip_error=-error;
 			break;
 		case E_BAD_URI:
 			error_txt="Bad URI";
-			*sip_error=-ser_error;
+			*sip_error=-error;
 			break;
 		case E_BAD_TUPEL:
 			error_txt="Transaction tuple incomplete";
@@ -120,7 +120,7 @@ int err2reason_phrase(
 			break;
 	}
 	return snprintf( phrase, etl, "%s (%d/%s)", error_txt,
-		-ser_error, signature );
+		-error, signature );
 }
 
 char *error_text( int code )

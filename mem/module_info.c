@@ -41,7 +41,7 @@ void* main_handle = NULL;
 volatile struct module_info* memory_mods_stats = NULL;
 int core_index;
 
-int set_mem_idx(char* mod_name, int  mem_free_idx) {
+int set_mem_idx(char* mod_name, int  new_mem_free_idx) {
 
 	int *var;
 	if(!main_handle){
@@ -53,7 +53,7 @@ int set_mem_idx(char* mod_name, int  mem_free_idx) {
 	}
 
 	if(strlen(mod_name) == 4 && (strncmp("core", mod_name, 4) == 0))
-		core_index = mem_free_idx;
+		core_index = new_mem_free_idx;
 
 	strcpy(buff, mod_name);
 	strcat(buff, STAT_SUFIX);
@@ -66,7 +66,7 @@ int set_mem_idx(char* mod_name, int  mem_free_idx) {
 		return -1;
 	}
 
-	*var = mem_free_idx;
+	*var = new_mem_free_idx;
 	LM_DBG("changed module variable %s = %d\n", buff, *var);
 
 	return 0;

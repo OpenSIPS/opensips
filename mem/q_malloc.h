@@ -30,7 +30,7 @@
 
 
 #if !defined(q_malloc_h) && !defined(VQ_MALLOC) && !defined(F_MALLOC) && \
-	!defined(HP_MALLOC)
+	!defined(HP_MALLOC) /* lgtm [cpp/missing-header-guard] */
 #define q_malloc_h
 
 #include "meminfo.h"

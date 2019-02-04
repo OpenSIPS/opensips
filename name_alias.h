@@ -26,6 +26,9 @@
  *              the aliases (bogdan)
  */
 
+#ifndef NAME_ALIAS_H
+#define NAME_ALIAS_H
+
 
 #include <strings.h>
 #include "str.h"
@@ -88,4 +91,4 @@ int add_alias(char* name, int len, unsigned short port, unsigned short proto);
 /* register a new function for detecting aliases */
 int register_alias_fct( is_alias_fct *fct );
 
-
+#endif /* NAME_ALIAS_H */

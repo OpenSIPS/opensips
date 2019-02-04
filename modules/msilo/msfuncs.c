@@ -212,7 +212,7 @@ int m_build_headers(str *buf, str ctype, str contact, time_t date)
 		p += 14;
 		memcpy(p, ctype.s, ctype.len);
 		p += ctype.len;
-		strncpy(p, CRLF, CRLF_LEN);
+		memcpy(p, CRLF, CRLF_LEN);
 		p += CRLF_LEN;
 
 	}
@@ -251,18 +251,18 @@ int m_build_body(str *body, time_t date, str msg, time_t sdate)
 	{
 		if(sdate!=0)
 		{
-			strncpy(p, "[Reminder message - ", 20);
+			memcpy(p, "[Reminder message - ", 20);
 			p += 20;
 
-			strncpy(p, ctime(&sdate), 24);
+			memcpy(p, ctime(&sdate), 24);
 			p += 24;
 
 			*p++ = ']';
 		} else {
-			strncpy(p, "[Offline message - ", 19);
+			memcpy(p, "[Offline message - ", 19);
 			p += 19;
 
-			strncpy(p, ctime(&date), 24);
+			memcpy(p, ctime(&date), 24);
 			p += 24;
 
 			*p++ = ']';

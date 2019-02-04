@@ -873,7 +873,8 @@ int get_socket_list_from_proto(unsigned int **ipList, int protocol) {
 		return 0;
 	}
 
-	*ipList = pkg_malloc(numberOfSockets * (num_ip_octets + 1) * sizeof(int));
+	*ipList = pkg_malloc(numberOfSockets *
+			(num_ip_octets + 1) * (int)sizeof(int));
 
 	/* We couldn't allocate memory for the IP List.  So all we can do is
 	 * fail. */
