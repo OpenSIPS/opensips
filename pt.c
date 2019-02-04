@@ -399,7 +399,6 @@ void check_and_adjust_number_of_workers(void)
 		LM_DBG("group %d (with %d procs) has average load of %d\n",
 			pg->type, procs_no, pg->history_map[idx]);
 
-
 		/* do the check over the history */
 		cnt_over = 0;
 		cnt_under = 0;
@@ -428,11 +427,17 @@ void check_and_adjust_number_of_workers(void)
 				}
 			}
 		} else if (cnt_under==PG_HISTORY_DEFAULT_SIZE) {
-			if (procs_no>pg->min_procs && pg->no_downscale_cycles==0) {
-				/* down scale one more process here */
-				LM_DBG("score %d/%d -> ripping new proc in group %d "
-					"(with %d procs)\n", cnt_under, PG_HISTORY_DEFAULT_SIZE,
-					pg->type, procs_no);
+			if (procs_no>pg->min_procs && procs_no!=1 &&
+			pg->no_downscale_cycles==0) {
+				/* try to estimate the load after downscaling */
+				load = (pg->history_map[idx]*procs_no) / (procs_no-1);
+				if (load<PG_HLOAD_TRESHOLD) {
+					/* down scale one more process here */
+					LM_DBG("score %d/%d -> ripping one proc from group %d "
+						"(with %d procs), estimated load -> %d\n", cnt_under,
+						PG_HISTORY_DEFAULT_SIZE, pg->type, procs_no,
+						load );
+				}
 			}
 		}
 
