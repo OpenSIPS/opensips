@@ -121,6 +121,7 @@ int init_multi_proc_support(void)
 
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
+	pt[process_no].flags = OSS_PROC_IS_RUNNING;
 
 	/* register the stats for the global load */
 	if ( register_stat2( "load", "load", (stat_var**)pt_get_rt_load,
@@ -194,28 +195,29 @@ static int register_process_stats(int process_no)
 pid_t internal_fork(char *proc_desc, unsigned int flags,
 												enum process_type type)
 {
-	#define CHILD_COUNTER_STOP  656565656
-	static int process_counter = 1;
+	int new_idx;
 	pid_t pid;
 	unsigned int seed;
 
-	// TODO - add startup/runtime detection based on the opensips status
+	if (is_main==0) {
+		LM_BUG("buggy call from non-main process!!!");
+		return -1;
+	}
 
-	/* process_counter will keep increment in the main process.
-	 * When adding the process ripping, we will have to compute the
-	 * process_counter based on the gaps in the process table */
-
-	if (process_counter==CHILD_COUNTER_STOP) {
-		LM_CRIT("buggy call from non-main process!!!");
+	new_idx = 1; /* start from 1 as 0 (attendent) is always running */
+	for( ; new_idx<counted_max_processes ; new_idx++)
+		if ( (pt[new_idx].flags&OSS_PROC_IS_RUNNING)==0 ) break;
+	if (new_idx==counted_max_processes) {
+		LM_BUG("no free process slot found while trying to fork again\n");
 		return -1;
 	}
 
 	seed = rand();
 
-	LM_DBG("forking new process \"%s\"\n",proc_desc);
+	LM_DBG("forking new process \"%s\" on slot %d\n", proc_desc, new_idx);
 
 	/* set TCP communication */
-	if (tcp_activate_comm_proc_socks(process_counter)<0){
+	if (tcp_activate_comm_proc_socks(new_idx)<0){
 		LM_ERR("failed to connect future proc %d to TCP main\n",
 			process_no);
 		return -1;
@@ -224,22 +226,23 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 	/* set the IPC pipes */
 	if ( (flags & OSS_PROC_NO_IPC) ) {
 		/* advertise no IPC to the rest of the procs */
-		pt[process_counter].ipc_pipe[0] = -1;
-		pt[process_counter].ipc_pipe[1] = -1;
+		pt[new_idx].ipc_pipe[0] = -1;
+		pt[new_idx].ipc_pipe[1] = -1;
 		/* NOTE: the IPC fds will remain open in the other processes,
 		 * but they will not be known */
 	} else {
 		/* activate the IPC pipes */
-		pt[process_counter].ipc_pipe[0]=pt[process_counter].ipc_pipe_holder[0];
-		pt[process_counter].ipc_pipe[1]=pt[process_counter].ipc_pipe_holder[1];
+		pt[new_idx].ipc_pipe[0]=pt[new_idx].ipc_pipe_holder[0];
+		pt[new_idx].ipc_pipe[1]=pt[new_idx].ipc_pipe_holder[1];
 	}
 
-	if (register_process_stats(process_counter)<0) {
+	if (register_process_stats(new_idx)<0) {
 		LM_ERR("failed to create stats for future proc %d\n", process_no);
 		return -1;
 	}
 
-	pt[process_counter].pid = 0;
+	pt[new_idx].pid = 0;
+	pt[new_idx].flags = OSS_PROC_IS_RUNNING;
 
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
@@ -251,11 +254,10 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 		/* child process */
 		is_main = 0; /* a child is not main process */
 		/* set uid and pid */
-		process_no = process_counter;
+		process_no = new_idx;
 		pt[process_no].pid = getpid();
-		pt[process_no].flags = flags;
+		pt[process_no].flags |= flags;
 		pt[process_no].type = type;
-		process_counter = CHILD_COUNTER_STOP;
 		/* each children need a unique seed */
 		seed_child(seed);
 		init_log_level();
@@ -270,9 +272,8 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 		/* Do not set PID for child in the main process. Let the child do
 		 * that as this will act as a marker to tell us that the init 
 		 * sequance of the child proc was completed.
-		 * pt[process_counter].pid = pid; */
-		tcp_connect_proc_to_tcp_main( process_counter, 0);
-		process_counter++;
+		 * pt[new_idx].pid = pid; */
+		tcp_connect_proc_to_tcp_main( new_idx, 0);
 		return pid;
 	}
 }
