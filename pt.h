@@ -79,7 +79,6 @@ typedef int (*forked_proc_func)(int i);
 
 extern struct process_table *pt;
 extern int process_no;
-extern unsigned int *counted_processes_p;
 extern unsigned int counted_max_processes;
 
 int   init_multi_proc_support();
@@ -93,7 +92,8 @@ int   count_init_child_processes(void);
 #define OSS_PROC_DYNAMIC       (1<<4) /* proc was created at runtime */
 #define OSS_PROC_IS_RUNNING    (1<<5) /* proc is running */
 
-#define counted_processes (counted_processes_p?*counted_processes_p:0)
+#define is_process_running(_idx) \
+	( (pt[_idx].flags&OSS_PROC_IS_RUNNING)?1:0 )
 
 pid_t internal_fork(char *proc_desc, unsigned int flags,
 		enum process_type type);
@@ -110,7 +110,7 @@ inline static int get_process_ID_by_PID(pid_t pid)
 {
 	int i;
 
-	for( i=0 ; i<counted_processes ; i++ )
+	for( i=0 ; i<counted_max_processes ; i++ )
 		if (pt[i].pid==pid)
 			return i;
 

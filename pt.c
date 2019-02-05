@@ -41,9 +41,9 @@
  * alloc'ed in shared mem if possible */
 struct process_table *pt=0;
 
-/* variable keeping the number of created processes READONLY!! */
-unsigned int *counted_processes_p = NULL;
-
+/* The maximum number of processes that will ever exist in OpenSIPS. This is
+ * actually the size of the process table
+ * This is READONLY!! */
 unsigned int counted_max_processes = 0;
 
 
@@ -54,13 +54,6 @@ int init_multi_proc_support(void)
 	unsigned int proc_extra_no;
 	unsigned int extra;
 	unsigned int i;
-
-	/* allocate the number of proc variable in shm  */
-	counted_processes_p = shm_malloc(sizeof(unsigned int));
-	if (counted_processes_p==NULL){
-		LM_ERR("out of memory\n");
-		return -1;
-	}
 
 	proc_no = 0;
 	proc_extra_no = 0;
@@ -82,9 +75,6 @@ int init_multi_proc_support(void)
 
 	/* count the processes requested by modules */
 	proc_no += count_module_procs(0);
-
-	/* for the beginning, count only the processes we are starting with */
-	*counted_processes_p = proc_no;
 
 	counted_max_processes = proc_no + proc_extra_no;
 
@@ -417,7 +407,7 @@ void check_and_adjust_number_of_workers(void)
 		procs_no = 0;
 
 		/* find the processes belonging to this group */
-		for ( i=0 ; i<counted_processes ; i++) {
+		for ( i=0 ; i<counted_max_processes ; i++) {
 
 			if (pt[i].type != pg->type || pg->si_filter!=pt[i].pg_filter)
 				continue;

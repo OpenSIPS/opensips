@@ -1600,7 +1600,7 @@ static void tcp_main_server(void)
 	if (init_worker_reactor("TCP_main", RCT_PRIO_MAX)<0)
 		goto error;
 
-	/* now start watching all the fds*/
+	/* now start watching all the fds */
 
 	/* add all the sockets we listens on for connections */
 	for( n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
@@ -1615,7 +1615,7 @@ static void tcp_main_server(void)
 			}
 	/* add all the unix sockets used for communcation with other opensips
 	 * processes (get fd, new connection a.s.o) */
-	for (n=1; n<counted_processes; n++) {
+	for (n=1; n<counted_max_processes; n++) {
 		/* skip myslef (as process) and -1 socks (disabled)
 		   (we can't have 0, we never close it!) */
 		if (n!=process_no && pt[n].unix_sock>0)

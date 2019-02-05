@@ -379,7 +379,7 @@ static void kill_all_children(int signum)
 	if (!pt)
 		return;
 
-	for (r = 1; r < counted_processes; r++) {
+	for (r = 1; r < counted_max_processes; r++) {
 		if (pt[r].pid == -1 || (pt[r].flags & OSS_PROC_DOING_DUMP))
 			continue;
 
@@ -439,7 +439,7 @@ static void shutdown_opensips( int status )
 	/* terminate all processes */
 
 	/* first we try to terminate the processes via the IPC channel */
-	for( i=1,n=0 ; i<counted_processes; i++) {
+	for( i=1,n=0 ; i<counted_max_processes; i++) {
 		/* Depending on the processes status, its PID may be:
 		 *   -1 - process not forked yet
 		 *    0 - process forked but not fully configured by core
@@ -1390,7 +1390,7 @@ try_again:
 
 	#ifdef PKG_MALLOC
 	/* init stats support for pkg mem */
-	if (init_pkg_stats(counted_processes)!=0) {
+	if (init_pkg_stats(counted_max_processes)!=0) {
 		LM_ERR("failed to init stats for pkg\n");
 		goto error;
 	}

@@ -338,7 +338,7 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 
 	row_q_size = sizeof(db_val_t *) * query_buffer_size;
 	size = sizeof(query_list_t) +
-		counted_processes * sizeof(db_con_t *) +
+		counted_max_processes * sizeof(db_con_t *) +
 		con->table->len + key_size + row_q_size + con->url.len;
 
 	entry = shm_malloc(size);
