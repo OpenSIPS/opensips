@@ -161,6 +161,8 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 			"ignoring...\n");
 	} else {
 		si->workers = sid->workers;
+		si->workers_max = sid->workers_max;
+		si->workers_min = sid->workers_min;
 	}
 	return si;
 error:

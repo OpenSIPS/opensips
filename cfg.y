@@ -625,19 +625,23 @@ listen_def_param: ANYCAST {
 					$$=mk_listen_param();
 					$$->workers=$2;
 					}
-				| USE_CHILDREN NUMBER MAX NUMBER MIN NUMBER {
+				| USE_CHILDREN NUMBER MIN NUMBER MAX NUMBER {
 					warn("'USE_CHILDREN' syntax is deprecated, use "
 						"'USE_WORKERS' instead");
 					$$=mk_listen_param();
 					$$->workers=$2;
+					$$->workers_min=$4;
+					$$->workers_max=$6;
 					}
 				| USE_WORKERS NUMBER {
 					$$=mk_listen_param();
 					$$->workers=$2;
 					}
-				| USE_WORKERS NUMBER MAX NUMBER MIN NUMBER {
+				| USE_WORKERS NUMBER MIN NUMBER MAX NUMBER {
 					$$=mk_listen_param();
 					$$->workers=$2;
+					$$->workers_min=$4;
+					$$->workers_max=$6;
 					}
 				| AS listen_id_def {
 					$$=mk_listen_param();
