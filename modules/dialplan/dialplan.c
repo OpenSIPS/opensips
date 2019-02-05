@@ -534,7 +534,11 @@ static int child_init(int rank)
 
 static int mi_child_init(void)
 {
+	static int mi_child_initialized = 0;
 	dp_connection_list_p el;
+
+	if (mi_child_initialized)
+		return 0;
 
 	/* Connect to DB s */
 	for(el = dp_conns; el; el = el->next){
@@ -545,6 +549,7 @@ static int mi_child_init(void)
 		}
 	}
 
+	mi_child_initialized = 1;
 	return 0;
 }
 
