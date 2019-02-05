@@ -593,6 +593,7 @@ mi_response_t *shtag_mi_set_active(const mi_params_t *params,
 	str s;
 	int c_id;
 	char *p;
+	int len;
 
 	if (get_mi_string_param(params, "tag", &tag.s, &tag.len) < 0)
 		return init_mi_param_error();
@@ -603,13 +604,13 @@ mi_response_t *shtag_mi_set_active(const mi_params_t *params,
 			"expected\n", tag.len, tag.s);
 		return init_mi_error(400, MI_SSTR("Bad tag format <name/cluster_id>"));
 	}
-	tag.s = tag.s;
+	len = tag.len;
 	tag.len = p - tag.s;
 	trim_spaces_lr( tag );
 
 	/* get the cluster ID */
 	s.s = p + 1;
-	s.len = tag.s + tag.len - s.s;
+	s.len = tag.s + len - s.s;
 	trim_spaces_lr( s );
 	if (str2int( &s, (unsigned int*)&c_id)<0) {
 		LM_ERR("Invalid cluster id <%.*s> for sharing tag param <%.*s> \n",
