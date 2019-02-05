@@ -189,6 +189,36 @@ static int register_process_stats(int process_no)
 	return 0;
 }
 
+/* Resets all the values in the process table for a given id (a slot) so that
+ * it can be reused later 
+ * WARNING: this should be called only by main process and when it is 100% 
+ *  that the process mapped on this slot is not running anymore */
+static void _reset_process_slot( int p_id )
+{
+	if (is_main==0) {
+		LM_BUG("buggy call from non-main process!!!");
+		return;
+	}
+
+	/* we cannot simply do a memset here, as we need to preserve the holders
+	 * with the inter-process communication fds */
+	pt[p_id].pid = -1;
+	pt[p_id].type = TYPE_NONE;
+	pt[p_id].pg_filter = NULL;
+	pt[p_id].desc[0] = 0;
+	pt[p_id].flags = 0;
+
+	pt[p_id].ipc_pipe[0] = pt[p_id].ipc_pipe[1] = -1;
+	pt[p_id].unix_sock = -1;
+	pt[p_id].idx = -1;
+
+	pt[p_id].log_level = pt[p_id].default_log_level = 0; /*not really needed*/
+
+	/* purge all load-related data */
+	memset( &pt[p_id].load, 0, sizeof(struct proc_load));
+	// FIXME ^^^ we need to remove the stat_vars also !!!!
+}
+
 
 /* This function is to be called only by the main process!
  * Returns, on success, the ID (non zero) in the process table of the
@@ -249,6 +279,7 @@ int internal_fork(char *proc_desc, unsigned int flags,
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
 				errno, strerror(errno));
+		_reset_process_slot( new_idx );
 		return -1;
 	}
 
@@ -267,7 +298,6 @@ int internal_fork(char *proc_desc, unsigned int flags,
 		/* set attributes */
 		set_proc_attrs(proc_desc);
 		tcp_connect_proc_to_tcp_main( process_no, 1);
-		// FIXME ^^ this is runtime safe and recoverable (after ripping)
 		return 0;
 	}else{
 		/* parent process */
@@ -378,6 +408,7 @@ void check_and_adjust_number_of_workers(void)
 	unsigned int load;
 	unsigned int procs_no;
 	unsigned char cnt_under, cnt_over;
+	int p_id;
 
 	/* iterate all the groups we have */
 	for ( pg=pg_head ; pg ; pg=pg->next ) {
@@ -423,11 +454,12 @@ void check_and_adjust_number_of_workers(void)
 					"(with %d procs)\n", cnt_over, PG_HISTORY_DEFAULT_SIZE,
 					pg->type, procs_no);
 				/* we need to fork one more process here */
-				if ( pg->fork_func(pg->si_filter)!=0 ||
+				if ( (p_id=pg->fork_func(pg->si_filter))<0 ||
 				wait_for_one_children() ) {
 					LM_ERR("failed to fork new process for group %d "
 						"(current %d procs)\n",pg->type,procs_no);
-					// FIXME - _purge_process_slot();
+					if (p_id>0)
+						_reset_process_slot( p_id );
 				} else {
 					pg->no_downscale_cycles = 10*PG_HISTORY_DEFAULT_SIZE;
 				}

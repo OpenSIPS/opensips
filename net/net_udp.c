@@ -336,7 +336,7 @@ int fork_dynamic_udp_process(void *si_filter)
 
 	if ( (p_id=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
 		LM_CRIT("cannot fork UDP process\n");
-		goto error;
+		return(-1);
 	} else if (p_id==0) {
 		/* new UDP process */
 		/* set a more detailed description */
@@ -360,7 +360,7 @@ error:
 	} else {
 		/*parent/main*/
 		report_conditional_status( 1, 0); /*report success*/
-		return 0;
+		return p_id;
 	}
 }
 
