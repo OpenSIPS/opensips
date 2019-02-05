@@ -208,7 +208,10 @@ static mi_item_t *_add_mi_item(mi_item_t *to, char *name, int name_len,
 		item = cJSON_CreateObject();
 		break;
 	case cJSON_String:
-		item = cJSON_CreateStr(sval, sval_len);
+		if (!sval || sval_len == 0)
+			item = cJSON_CreateStr("", 0);
+		else
+			item = cJSON_CreateStr(sval, sval_len);
 		break;
 	case cJSON_Number:
 		item = cJSON_CreateNumber(dval);
