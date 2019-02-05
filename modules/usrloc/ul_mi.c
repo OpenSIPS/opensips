@@ -103,7 +103,7 @@ static inline int mi_add_aor_node(mi_item_t *aor_item, urecord_t* r,
 		return 0;
 
 	cts_arr = add_mi_array(aor_item, MI_SSTR("Contacts"));
-	if (cts_arr)
+	if (!cts_arr)
 		return -1;
 
 	for( c=r->contacts ; c ; c=c->next) {
@@ -115,7 +115,7 @@ static inline int mi_add_aor_node(mi_item_t *aor_item, urecord_t* r,
 		if (add_mi_string(ct_item, MI_SSTR("Contact"), c->c.s, c->c.len) < 0)
 			return -1;
 
-		if (add_mi_number(ct_item, MI_SSTR("ContactID"), c->contact_id) < 0)
+		if (add_mi_string_fmt(ct_item, MI_SSTR("ContactID"), "%llu", c->contact_id) < 0)
 			return -1;
 
 		if (c->expires == 0) {
@@ -344,33 +344,45 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 	mi_item_t *domains_arr, *domain_item, *aors_arr, *aor_item;
 
 	resp = init_mi_result_object(&resp_obj);
-	if (!resp)
+	if (!resp) {
+		LM_ERR("Failed to init mi result\n");
 		return 0;
+	}
 
 	domains_arr = add_mi_array(resp_obj, MI_SSTR("Domains"));
-	if (domains_arr)
+	if (!domains_arr) {
+		LM_ERR("Failed to add mi item\n");
 		goto error;
+	}
 
 	t = time(0);
 
 	for( dl=root ; dl ; dl=dl->next ) {
 		/* add a domain node */
 		domain_item = add_mi_object(domains_arr, NULL, 0);
-		if (!domain_item)
+		if (!domain_item) {
+			LM_ERR("Failed to add mi item\n");
 			goto error;
+		}
 
 		if (add_mi_string(domain_item, MI_SSTR("name"),
-			dl->name.s, dl->name.len) < 0)
+			dl->name.s, dl->name.len) < 0) {
+			LM_ERR("Failed to add mi item\n");
 			goto error;
+		}
 
 		dom = dl->d;
 
-		if (add_mi_number(domain_item, MI_SSTR("hash_size"), dom->size) < 0)
+		if (add_mi_number(domain_item, MI_SSTR("hash_size"), dom->size) < 0) {
+			LM_ERR("Failed to add mi item\n");
 			goto error;
+		}
 
 		aors_arr = add_mi_array(domain_item, MI_SSTR("AORs"));
-		if (aors_arr)
+		if (!aors_arr) {
+			LM_ERR("Failed to add mi item\n");
 			goto error;
+		}
 
 		/* add the entries per hash */
 		for(i=0; i<dom->size; i++) {
@@ -381,17 +393,23 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 				iterator_next(&it) ) {
 
 				dest = iterator_val(&it);
-				if( dest == NULL )
+				if( dest == NULL ) {
+					LM_ERR("Failed to get urecord\n");
 					goto error_unlock;
+				}
 				r =( urecord_t * ) *dest;
 
 				aor_item = add_mi_object(aors_arr, NULL, 0);
-				if (!aor_item)
+				if (!aor_item) {
+					LM_ERR("Failed to add mi item\n");
 					goto error_unlock;
+				}
 
 				/* add entry */
-				if (mi_add_aor_node(aor_item, r, t, short_dump)!=0)
+				if (mi_add_aor_node(aor_item, r, t, short_dump)!=0) {
+					LM_ERR("Failed to add AOR info\n");
 					goto error_unlock;
+				}
 			}
 
 			unlock_ulslot( dom, i);
@@ -404,6 +422,7 @@ mi_response_t *mi_usrloc_dump(const mi_params_t *params, int short_dump)
 error_unlock:
 	unlock_ulslot( dom, i);
 error:
+	LM_ERR("Failed to build mi response\n");
 	free_mi_response(resp);
 	return 0;
 }
@@ -411,7 +430,7 @@ error:
 mi_response_t *w_mi_usrloc_dump(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	return mi_usrloc_dump(params, 1);
+	return mi_usrloc_dump(params, 0);
 }
 
 mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
