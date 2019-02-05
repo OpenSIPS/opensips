@@ -239,17 +239,19 @@ unsigned int pt_get_rt_load(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n;
+	int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
 	for( n=0 ; n<counted_processes; n++)
-		if ( (pt[n].flags&(OSS_PROC_NO_LOAD|OSS_PROC_IS_EXTRA))==0 )
+		if ( (pt[n].flags&(OSS_PROC_NO_LOAD|OSS_PROC_IS_EXTRA))==0 ) {
 			SUM_UP_LOAD( usec_now, n, ST, 1);
+			summed_procs++;
+		}
 
-	return (used*100/(ST_WINDOW_TIME*counted_processes));
+	return (used*100/(ST_WINDOW_TIME*summed_procs));
 }
 
 
@@ -258,17 +260,19 @@ unsigned int pt_get_1m_load(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n;
+	int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
 	for( n=0 ; n<counted_processes; n++)
-		if ( (pt[n].flags&(OSS_PROC_NO_LOAD|OSS_PROC_IS_EXTRA))==0 )
+		if ( (pt[n].flags&(OSS_PROC_NO_LOAD|OSS_PROC_IS_EXTRA))==0 ) {
 			SUM_UP_LOAD( usec_now, n, LT, LT_1m_RATIO);
+			summed_procs++;
+		}
 
-	return (used*100/(LT_WINDOW_TIME*counted_processes*LT_1m_RATIO));
+	return (used*100/(LT_WINDOW_TIME*summed_procs*LT_1m_RATIO));
 }
 
 
@@ -277,17 +281,19 @@ unsigned int pt_get_10m_load(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n;
+	int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
 	for( n=0 ; n<counted_processes; n++)
-		if ( (pt[n].flags&(OSS_PROC_NO_LOAD|OSS_PROC_IS_EXTRA))==0 )
+		if ( (pt[n].flags&(OSS_PROC_NO_LOAD|OSS_PROC_IS_EXTRA))==0 ) {
 			SUM_UP_LOAD( usec_now, n, LT, 1);
+			summed_procs++;
+		}
 
-	return (used*100/(LT_WINDOW_TIME*counted_processes));
+	return (used*100/(LT_WINDOW_TIME*summed_procs));
 }
 
 
@@ -296,17 +302,19 @@ unsigned int pt_get_rt_loadall(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n;
+	int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
-	for( n=0 ; n<counted_processes; n++)
+	for( n=0 ; n<counted_processes; n++) {
 		if ( (pt[n].flags&OSS_PROC_NO_LOAD)==0 )
 			SUM_UP_LOAD( usec_now, n, ST, 1);
+			summed_procs++;
+		}
 
-	return (used*100/(ST_WINDOW_TIME*counted_processes));
+	return (used*100/(ST_WINDOW_TIME*summed_procs));
 }
 
 
@@ -315,17 +323,19 @@ unsigned int pt_get_1m_loadall(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n;
+	int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
 	for( n=0 ; n<counted_processes; n++)
-		if ( (pt[n].flags&OSS_PROC_NO_LOAD)==0 )
+		if ( (pt[n].flags&OSS_PROC_NO_LOAD)==0 ) {
 			SUM_UP_LOAD( usec_now, n, LT, LT_1m_RATIO);
+			summed_procs++;
+		}
 
-	return (used*100/(LT_WINDOW_TIME*counted_processes*LT_1m_RATIO));
+	return (used*100/(LT_WINDOW_TIME*summed_procs*LT_1m_RATIO));
 }
 
 
@@ -334,17 +344,19 @@ unsigned int pt_get_10m_loadall(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n;
+	int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
 	for( n=0 ; n<counted_processes; n++)
-		if ( (pt[n].flags&OSS_PROC_NO_LOAD)==0 )
+		if ( (pt[n].flags&OSS_PROC_NO_LOAD)==0 ) {
 			SUM_UP_LOAD( usec_now, n, LT, 1);
+			summed_procs++;
+		}
 
-	return (used*100/(LT_WINDOW_TIME*counted_processes));
+	return (used*100/(LT_WINDOW_TIME*summed_procs));
 }
 
 
