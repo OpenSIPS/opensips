@@ -193,7 +193,7 @@ void free_mi_response(mi_response_t *response)
 }
 
 static mi_item_t *_add_mi_item(mi_item_t *to, char *name, int name_len,
-							int type, int dval, const char *sval, int sval_len)
+							int type, double dval, const char *sval, int sval_len)
 {
 	mi_item_t *item = NULL;
 	str name_str;
