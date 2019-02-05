@@ -311,8 +311,8 @@ unsigned int pt_get_rt_loadall(int _)
 	gettimeofday( &tv, NULL);
 	usec_now = ((utime_t)(tv.tv_sec)) * 1000000 + tv.tv_usec;
 
-	for( n=0 ; n<counted_max_processes; n++) {
-		if ( is_process_running(n) && (pt[n].flags&OSS_PROC_NO_LOAD)==0 )
+	for( n=0 ; n<counted_max_processes; n++)
+		if ( is_process_running(n) && (pt[n].flags&OSS_PROC_NO_LOAD)==0 ) {
 			SUM_UP_LOAD( usec_now, n, ST, 1);
 			summed_procs++;
 		}
