@@ -222,7 +222,7 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 	}
 
 	/* set the IPC pipes */
-	if ( (flags & OSS_FORK_NO_IPC) ) {
+	if ( (flags & OSS_PROC_NO_IPC) ) {
 		/* advertise no IPC to the rest of the procs */
 		pt[process_counter].ipc_pipe[0] = -1;
 		pt[process_counter].ipc_pipe[1] = -1;

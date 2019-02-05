@@ -380,7 +380,7 @@ static void kill_all_children(int signum)
 		return;
 
 	for (r = 1; r < counted_processes; r++) {
-		if (pt[r].pid == -1 || (pt[r].flags & OSS_TAKING_A_DUMP))
+		if (pt[r].pid == -1 || (pt[r].flags & OSS_PROC_DOING_DUMP))
 			continue;
 
 		/* as the PIDs are filled in by child processes, a 0 PID means
@@ -540,7 +540,7 @@ void handle_sigs(void)
 					LM_DBG("unknown child process %d ended. Ignoring\n",chld);
 					continue;
 				}
-				if (pt[i].flags & OSS_FORK_DYNAMIC) {
+				if (pt[i].flags & OSS_PROC_DYNAMIC) {
 					LM_DBG("dynamic forked process %d/%d ended with "
 						"status %d\n", i, chld,  WTERMSIG(chld_status));
 					continue;
@@ -663,7 +663,7 @@ static void sig_usr(int signo)
 					/* looks like we ate some spicy SIP */
 					LM_CRIT("segfault in process pid: %d, id: %d\n",
 					        pt[process_no].pid, process_no);
-					pt[process_no].flags |= OSS_TAKING_A_DUMP;
+					pt[process_no].flags |= OSS_PROC_DOING_DUMP;
 					if (restore_segv_handler() != 0)
 						exit(-1);
 		}
@@ -799,7 +799,7 @@ static int main_loop(void)
 	/* main process left */
 	is_main=1;
 	set_proc_attrs("attendant");
-	pt[process_no].flags = OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD;
+	pt[process_no].flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD;
 
 	if (testing_framework) {
 		if (init_child(1) < 0) {

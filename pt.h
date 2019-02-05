@@ -86,11 +86,12 @@ int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
 int   count_init_child_processes(void);
 
-#define OSS_FORK_NO_IPC        (1<<0)
-#define OSS_FORK_NO_LOAD       (1<<1)
-#define OSS_FORK_IS_EXTRA      (1<<2)
-#define OSS_TAKING_A_DUMP      (1<<3) /* this process is writing a corefile */
-#define OSS_FORK_DYNAMIC       (1<<4) /* proc was created at runtime */
+#define OSS_PROC_NO_IPC        (1<<0)
+#define OSS_PROC_NO_LOAD       (1<<1)
+#define OSS_PROC_IS_EXTRA      (1<<2)
+#define OSS_PROC_DOING_DUMP    (1<<3) /* this process is writing a corefile */
+#define OSS_PROC_DYNAMIC       (1<<4) /* proc was created at runtime */
+#define OSS_PROC_IS_RUNNING    (1<<5) /* proc is running */
 
 #define counted_processes (counted_processes_p?*counted_processes_p:0)
 
