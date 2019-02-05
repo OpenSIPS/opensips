@@ -241,10 +241,13 @@ int parse_mi_request(const char *req, const char **end_ptr, mi_request_t *parsed
 
 	/* check 'params' member */
 	parsed->params = cJSON_GetObjectItem(parsed->req_obj, JSONRPC_PARAMS_S);
-	if (parsed->params &&
-		(!(parsed->params->type & (cJSON_Array|cJSON_Object)) ||
-		!parsed->params->child))
-		parsed->invalid = 1;
+	if (parsed->params) {
+		if (!(parsed->params->type & (cJSON_Array|cJSON_Object)))
+			parsed->invalid = 1;
+		else if (!parsed->params->child) {
+			parsed->params = NULL;
+		}
+	}
 
 	_init_mi_pkg_mem_hooks();
 
