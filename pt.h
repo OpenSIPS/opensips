@@ -71,8 +71,20 @@ struct process_table {
 	/* used when resetting the log level */
 	int default_log_level;
 
+	/* statistics of this process - they do not change during runtime,
+	 * even when the proc is terminated or respawn - we just hide/unhide */
+	stat_var *load_rt;
+	stat_var *load_1m;
+	stat_var *load_10m;
+	stat_var *pkg_total;
+	stat_var *pkg_used;
+	stat_var *pkg_rused;
+	stat_var *pkg_mused;
+	stat_var *pkg_free;
+	stat_var *pkg_frags;
+
 	/* the load statistic of this process */
-	struct proc_load load;
+	struct proc_load_info load;
 };
 
 typedef int (*forked_proc_func)(int i);

@@ -35,6 +35,7 @@
 #include "bin_interface.h"
 #include "ipc.h"
 #include "daemonize.h"
+#include "core_stats.h"
 
 
 /* array with children pids, 0= main proc,
@@ -90,12 +91,19 @@ int init_multi_proc_support(void)
 	memset(pt, 0, sizeof(struct process_table)*counted_max_processes);
 
 	for( i=0 ; i<counted_max_processes ; i++ ) {
+		/* reset fds to prevent bogus ops */
 		pt[i].unix_sock = -1;
 		pt[i].idx = -1;
 		pt[i].pid = -1;
 		pt[i].ipc_pipe[0] = pt[i].ipc_pipe[1] = -1;
 	}
 
+	/* create the load-related stats (initially marked as hidden */
+	/* until the proc starts) */
+	if (register_processes_load_stats( counted_max_processes ) != 0) {
+		LM_ERR("failed to create load stats\n");
+		return -1;
+	}
 
 	/* create the IPC pipes for all possible procs */
 	if (create_ipc_pipes( counted_max_processes )<0) {
@@ -108,6 +116,14 @@ int init_multi_proc_support(void)
 		LM_ERR("failed to create TCP layer communication, aborting\n");
 		return -1;
 	}
+
+	/* create the pkg_mem stats */
+	#ifdef PKG_MALLOC
+	if (init_pkg_stats(counted_max_processes)!=0) {
+		LM_ERR("failed to init stats for pkg\n");
+		return -1;
+	}
+	#endif
 
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
@@ -169,16 +185,6 @@ void set_proc_attrs( char *fmt, ...)
 }
 
 
-static int register_process_stats(int process_no)
-{
-	if (register_process_load_stats(process_no) != 0) {
-		LM_ERR("failed to create load stats\n");
-		return -1;
-	}
-
-	return 0;
-}
-
 /* Resets all the values in the process table for a given id (a slot) so that
  * it can be reused later 
  * WARNING: this should be called only by main process and when it is 100% 
@@ -205,8 +211,19 @@ static void _reset_process_slot( int p_id )
 	pt[p_id].log_level = pt[p_id].default_log_level = 0; /*not really needed*/
 
 	/* purge all load-related data */
-	memset( &pt[p_id].load, 0, sizeof(struct proc_load));
-	// FIXME ^^^ we need to remove the stat_vars also !!!!
+	memset( &pt[p_id].load, 0, sizeof(struct proc_load_info));
+	/* hide the load stats */
+	pt[p_id].load_rt->flags |= STAT_HIDDEN;
+	pt[p_id].load_1m->flags |= STAT_HIDDEN;
+	pt[p_id].load_10m->flags |= STAT_HIDDEN;
+	#ifdef PKG_MALLOC
+	pt[p_id].pkg_total->flags |= STAT_HIDDEN;
+	pt[p_id].pkg_used->flags |= STAT_HIDDEN;
+	pt[p_id].pkg_rused->flags |= STAT_HIDDEN;
+	pt[p_id].pkg_mused->flags |= STAT_HIDDEN;
+	pt[p_id].pkg_free->flags |= STAT_HIDDEN;
+	pt[p_id].pkg_frags->flags |= STAT_HIDDEN;
+	#endif
 }
 
 
@@ -258,11 +275,6 @@ int internal_fork(char *proc_desc, unsigned int flags,
 		pt[new_idx].ipc_pipe[1]=pt[new_idx].ipc_pipe_holder[1];
 	}
 
-	if (register_process_stats(new_idx)<0) {
-		LM_ERR("failed to create stats for future proc %d\n", process_no);
-		return -1;
-	}
-
 	pt[new_idx].pid = 0;
 	pt[new_idx].flags = OSS_PROC_IS_RUNNING;
 
@@ -281,6 +293,17 @@ int internal_fork(char *proc_desc, unsigned int flags,
 		pt[process_no].pid = getpid();
 		pt[process_no].flags |= flags;
 		pt[process_no].type = type;
+		/* activate its load & pkg statistics */
+		pt[process_no].load_rt->flags &= (~STAT_HIDDEN);
+		pt[process_no].load_1m->flags &= (~STAT_HIDDEN);
+		pt[process_no].load_10m->flags &= (~STAT_HIDDEN);
+		#ifdef PKG_MALLOC
+		pt[process_no].pkg_used->flags &= (~STAT_HIDDEN);
+		pt[process_no].pkg_rused->flags &= (~STAT_HIDDEN);
+		pt[process_no].pkg_mused->flags &= (~STAT_HIDDEN);
+		pt[process_no].pkg_free->flags &= (~STAT_HIDDEN);
+		pt[process_no].pkg_frags->flags &= (~STAT_HIDDEN);
+		#endif
 		/* each children need a unique seed */
 		seed_child(seed);
 		init_log_level();
@@ -412,7 +435,7 @@ void check_and_adjust_number_of_workers(void)
 			if (pt[i].type != pg->type || pg->si_filter!=pt[i].pg_filter)
 				continue;
 
-			load += get_stat_val( pt[i].load.load_rt );
+			load += get_stat_val( pt[i].load_rt );
 			procs_no++;
 
 		}

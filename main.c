@@ -1388,14 +1388,6 @@ try_again:
 		goto error;
 	}
 
-	#ifdef PKG_MALLOC
-	/* init stats support for pkg mem */
-	if (init_pkg_stats(counted_max_processes)!=0) {
-		LM_ERR("failed to init stats for pkg\n");
-		goto error;
-	}
-	#endif
-
 	/* init avps */
 	if (init_extra_avps() != 0) {
 		LM_ERR("error while initializing avps\n");
