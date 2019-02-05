@@ -332,12 +332,12 @@ error:
 int fork_dynamic_udp_process(void *si_filter)
 {
 	struct socket_info *si = (struct socket_info*)si_filter;
-	pid_t pid;
+	int p_id;
 
-	if ( (pid=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
+	if ( (p_id=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
 		LM_CRIT("cannot fork UDP process\n");
 		goto error;
-	} else if (pid==0) {
+	} else if (p_id==0) {
 		/* new UDP process */
 		/* set a more detailed description */
 		set_proc_attrs("SIP receiver %.*s ",
@@ -369,7 +369,7 @@ error:
 int udp_start_processes(int *chd_rank, int *startup_done)
 {
 	struct socket_info *si;
-	pid_t pid;
+	int p_id;
 	int i,p;
 
 	if (udp_disabled)
@@ -390,10 +390,10 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 			for (i=0;i<si->workers;i++) {
 				(*chd_rank)++;
-				if ( (pid=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
+				if ( (p_id=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
-				} else if (pid==0) {
+				} else if (p_id==0) {
 					/* new UDP process */
 					/* set a more detailed description */
 					set_proc_attrs("SIP receiver %.*s ",

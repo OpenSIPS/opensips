@@ -1848,9 +1848,8 @@ int tcp_count_processes(unsigned int *extra)
 
 int tcp_start_processes(int *chd_rank, int *startup_done)
 {
-	int r, n;
+	int r, n, p_id;
 	int reader_fd[2]; /* for comm. with the tcp workers read  */
-	pid_t pid;
 	struct socket_info *si;
 
 	if (tcp_disabled)
@@ -1873,20 +1872,20 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		}
 
 		(*chd_rank)++;
-		pid=internal_fork("SIP receiver TCP", 0, TYPE_TCP);
-		if (pid<0){
+		p_id=internal_fork("SIP receiver TCP", 0, TYPE_TCP);
+		if (p_id<0){
 			LM_ERR("fork failed\n");
 			goto error;
-		}else if (pid>0){
+		}else if (p_id>0){
 			/* parent */
 			close(reader_fd[1]);
-			tcp_workers[r].pid=pid;
 			tcp_workers[r].busy=0;
 			tcp_workers[r].n_reqs=0;
 			tcp_workers[r].unix_sock=reader_fd[0];
 		}else{
 			/* child */
 			set_proc_attrs("TCP receiver");
+			tcp_workers[r].pid = getpid();
 			pt[process_no].idx=r;
 			if (tcp_worker_proc_reactor_init(reader_fd[1]) < 0 ||
 					init_child(*chd_rank) < 0) {
@@ -1930,16 +1929,16 @@ error:
 
 int tcp_start_listener(void)
 {
-	pid_t pid;
+	int p_id;
 
 	if (tcp_disabled)
 		return 0;
 
 	/* start the TCP manager process */
-	if ( (pid=internal_fork( "TCP main", 0, TYPE_NONE))<0 ) {
+	if ( (p_id=internal_fork( "TCP main", 0, TYPE_NONE))<0 ) {
 		LM_CRIT("cannot fork tcp main process\n");
 		goto error;
-	}else if (pid==0){
+	}else if (p_id==0){
 			/* child */
 		/* close the TCP inter-process sockets */
 		close(unix_tcp_sock);

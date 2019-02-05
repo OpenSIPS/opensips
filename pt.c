@@ -191,8 +191,10 @@ static int register_process_stats(int process_no)
 
 
 /* This function is to be called only by the main process!
+ * Returns, on success, the ID (non zero) in the process table of the
+ * newly forked procees.
  * */
-pid_t internal_fork(char *proc_desc, unsigned int flags,
+int internal_fork(char *proc_desc, unsigned int flags,
 												enum process_type type)
 {
 	int new_idx;
@@ -274,7 +276,7 @@ pid_t internal_fork(char *proc_desc, unsigned int flags,
 		 * sequance of the child proc was completed.
 		 * pt[new_idx].pid = pid; */
 		tcp_connect_proc_to_tcp_main( new_idx, 0);
-		return pid;
+		return new_idx;
 	}
 }
 

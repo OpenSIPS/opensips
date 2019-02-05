@@ -751,7 +751,7 @@ int start_module_procs(void)
 	struct sr_module *m;
 	unsigned int n;
 	unsigned int l;
-	pid_t x;
+	int x;
 
 	for( m=modules ; m ; m=m->next) {
 		if (m->exports->procs==NULL)

@@ -571,7 +571,7 @@ static void run_timer_process_jif(void)
 
 int start_timer_processes(void)
 {
-	pid_t pid;
+	int id;
 
 	/*
 	 * A change of the way timers were run. In the pre-1.5 times,
@@ -585,11 +585,11 @@ int start_timer_processes(void)
 	 * was unable to detect timeouts.
 	 */
 
-	if ( (pid=internal_fork("time_keeper",
+	if ( (id=internal_fork("time_keeper",
 	OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD, TYPE_NONE))<0 ) {
 		LM_CRIT("cannot fork time keeper process\n");
 		goto error;
-	} else if (pid==0) {
+	} else if (id==0) {
 		/* new process */
 		clean_write_pipeend();
 
@@ -598,11 +598,11 @@ int start_timer_processes(void)
 	}
 
 	/* fork a timer-trigger process */
-	if ( (pid=internal_fork("timer", OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
+	if ( (id=internal_fork("timer", OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
 	TYPE_NONE))<0 ) {
 		LM_CRIT("cannot fork timer process\n");
 		goto error;
-	} else if (pid==0) {
+	} else if (id==0) {
 		/* new process */
 		clean_write_pipeend();
 
