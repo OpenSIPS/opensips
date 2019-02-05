@@ -239,7 +239,7 @@ unsigned int pt_get_rt_load(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n, summed_procs=0;
+	unsigned int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
@@ -260,7 +260,7 @@ unsigned int pt_get_1m_load(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n, summed_procs=0;
+	unsigned int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
@@ -281,7 +281,7 @@ unsigned int pt_get_10m_load(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n, summed_procs=0;
+	unsigned int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
@@ -302,7 +302,7 @@ unsigned int pt_get_rt_loadall(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n, summed_procs=0;
+	unsigned int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
@@ -323,7 +323,7 @@ unsigned int pt_get_1m_loadall(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n, summed_procs=0;
+	unsigned int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
@@ -344,7 +344,7 @@ unsigned int pt_get_10m_loadall(int _)
 	utime_t usec_now;
 	struct timeval tv;
 	int idx_old, idx_new, idx_start, i; /* used inside the macro */
-	int n, summed_procs=0;
+	unsigned int n, summed_procs=0;
 	unsigned long long used = 0;
 
 	gettimeofday( &tv, NULL);
