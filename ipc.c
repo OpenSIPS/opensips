@@ -224,3 +224,12 @@ void ipc_handle_job(int fd)
 	return;
 }
 
+
+void ipc_handle_all_pending_jobs(int fd)
+{
+	char buf;
+
+	while ( recv(fd, &buf, 1, MSG_DONTWAIT|MSG_PEEK)==1 )
+		ipc_handle_job(fd);
+}
+
