@@ -143,7 +143,7 @@ retry:
 	if (rc < 0 && errno == EINTR)
 			goto retry;
 
-	LM_WARN("read code %d ? rc = %d, errno=%s\n",*code,rc,strerror(errno));
+	LM_DBG("read code %d ? rc = %d, errno=%s\n",*code,rc,strerror(errno));
 
 	if (rc == 1)
 		return 0;
