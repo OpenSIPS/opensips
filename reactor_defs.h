@@ -98,5 +98,8 @@ int init_reactor_size(void);
 #define reactor_has_async() \
 	(io_poll_method==POLL_POLL || io_poll_method==POLL_EPOLL)
 
+#define reactor_is_empty() \
+	(_worker_io.fd_no==0)
+
 #endif
 
