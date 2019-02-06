@@ -737,6 +737,7 @@ static int main_loop(void)
 {
 	static int chd_rank;
 	int* startup_done = NULL;
+	utime_t last_check;
 	int rc;
 
 	chd_rank=0;
@@ -820,11 +821,27 @@ static int main_loop(void)
 
 	report_conditional_status( (!no_daemon_mode), 0);
 
+	if (enable_dynamic_workers) {
+		/* re-create the status pipes to collect the status of the
+		 * dynamically forked processes */
+		if (create_status_pipe(1) < 0) {
+			LM_ERR("failed to create status pipe\n");
+			goto error;
+		}
+		/* keep both ends on the status pipe as we will keep forking 
+		 * processes, so we will need to pass write-end to the new children;
+		 * of course, we will need the read-end, here in the main proc */
+		last_check = get_uticks();
+	}
+
 	for(;;){
 			handle_sigs();
 			if (enable_dynamic_workers) {
 				sleep(1);
-				check_and_adjust_number_of_workers();
+				if ( (get_uticks()-last_check) >= 1000000) {
+					check_and_adjust_number_of_workers();
+					last_check = get_uticks();
+				}
 			} else
 				pause();
 	}
