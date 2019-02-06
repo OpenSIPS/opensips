@@ -70,7 +70,7 @@ static enum opensips_states *osips_state = NULL;
  * proper status code returning
  *
  * must be called before any forking */
-int create_status_pipe(void)
+int create_status_pipe( int no_timers )
 {
 	int rc;
 
@@ -83,6 +83,9 @@ retry:
 		goto retry;
 
 	LM_DBG("pipe created ? rc = %d, errno = %s\n",rc,strerror(errno));
+
+	if (no_timers)
+		return rc;
 
 	/* also create SHM var which the attendent will use
 	 * to notify us about the overall number of timers
@@ -156,7 +159,7 @@ error:
 	return -1;
 }
 
-int wait_for_one_children(void)
+int wait_for_one_child(void)
 {
 	char rc;
 
@@ -164,7 +167,6 @@ int wait_for_one_children(void)
 		return -1;
 
 	return 0;
-
 }
 
 int wait_for_all_children(void)

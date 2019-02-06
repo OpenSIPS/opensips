@@ -1220,7 +1220,7 @@ try_again:
 		goto error;
 	}
 
-	if (create_status_pipe() < 0) {
+	if (create_status_pipe(0) < 0) {
 		LM_ERR("failed to create status pipe\n");
 		goto error;
 	}
