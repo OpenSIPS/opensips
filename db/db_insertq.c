@@ -635,12 +635,14 @@ void ql_force_process_disconnect(int p_id)
 {
 	query_list_t *it;
 
-	for (it=*query_list;it;it=it->next) {
-		lock_get(it->lock);
+	if (query_list) {
+		for (it=*query_list;it;it=it->next) {
+			lock_get(it->lock);
 
-		if (it->conn[p_id]) {
-			it->dbf.close(it->conn[p_id]);
-			it->conn[p_id]=NULL;
+			if (it->conn[p_id]) {
+				it->dbf.close(it->conn[p_id]);
+				it->conn[p_id]=NULL;
+			}
 		}
 	}
 }
