@@ -39,6 +39,8 @@
 
 /* if the UDP network layer is used or not by some protos */
 static int udp_disabled = 1;
+/* flag per process to control the termination stages */
+static int _termination_in_progress = 0;
 
 extern void handle_sigs(void);
 
@@ -284,6 +286,14 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			n = -1;
 			break;
 	}
+
+	if (reactor_is_empty() && _termination_in_progress==1) {
+		LM_WARN("reactor got empty while termination in progress\n");
+		ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
+		if (reactor_is_empty())
+			dynamic_process_final_exit();
+	}
+
 	pt_become_idle();
 	return n;
 }
@@ -329,12 +339,12 @@ error:
 }
 
 
-int fork_dynamic_udp_process(void *si_filter)
+static int fork_dynamic_udp_process(void *si_filter)
 {
 	struct socket_info *si = (struct socket_info*)si_filter;
 	int p_id;
 
-	if ( (p_id=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
+	if ((p_id=internal_fork( "UDP receiver", OSS_PROC_DYNAMIC, TYPE_UDP))<0) {
 		LM_CRIT("cannot fork UDP process\n");
 		return(-1);
 	} else if (p_id==0) {
@@ -359,11 +369,49 @@ int fork_dynamic_udp_process(void *si_filter)
 error:
 		report_failure_status();
 		LM_ERR("Initializing new process failed, exiting with error \n");
-		exit(-1);
+		pt[process_no].flags |= OSS_PROC_SELFEXIT;
+		exit( -1);
 	} else {
 		/*parent/main*/
 		return p_id;
 	}
+}
+
+
+static void udp_process_graceful_terminate(int sender, void *param)
+{
+	/* we accept this only from the main proccess */
+	if (sender!=0) {
+		LM_BUG("graceful terminate received from a non-main process!!\n");
+		return;
+	}
+	LM_NOTICE("process %d received RPC to terminate from Main\n",process_no);
+
+	/*remove from reactor all the shared fds, so we stop reading from them */
+
+	/*remove timer jobs pipe */
+	reactor_del_reader( timer_fd_out, -1, 0);
+
+	/*remove IPC dispatcher pipe */
+	reactor_del_reader( IPC_FD_READ_SHARED, -1, 0);
+
+	/*remove network interface */
+	reactor_del_reader( bind_address->socket, -1, 0);
+
+	/*remove private IPC pipe */
+	reactor_del_reader( IPC_FD_READ_SELF, -1, 0);
+
+	/* let's drain the private IPC */
+	ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
+
+	/* what is left now is the reactor are async fd's, so we need to 
+	 * wait to complete all of them */
+	if (reactor_is_empty())
+		dynamic_process_final_exit();
+
+	/* the exit will be triggered by the reactor, when empty */
+	_termination_in_progress = 1;
+	LM_WARN("reactor not empty, waiting for pending async\n");
 }
 
 
@@ -385,7 +433,8 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 			if (enable_dynamic_workers &&
 			create_process_group( TYPE_UDP, si, si->workers_min,
-			si->workers_max, fork_dynamic_udp_process)!=0)
+			si->workers_max, fork_dynamic_udp_process,
+			udp_process_graceful_terminate)!=0)
 				LM_ERR("failed to create group of UDP processes for <%.*s>, "
 					"auto forking will not be possible\n",
 					si->name.len, si->name.s);

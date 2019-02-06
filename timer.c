@@ -678,7 +678,7 @@ int start_timer_extra_processes(int *chd_rank)
 	pid_t pid;
 
 	if (enable_dynamic_workers &&
-	create_process_group( TYPE_TIMER, NULL, 0, 0,NULL)!=0)
+	create_process_group( TYPE_TIMER, NULL, 0, 0,NULL,NULL)!=0)
 		LM_ERR("failed to create group of TIMER processes, "
 			"auto forking will not be possible\n");
 

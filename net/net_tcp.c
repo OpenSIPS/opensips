@@ -1614,7 +1614,11 @@ static void tcp_main_server(void)
 				}
 			}
 	/* add all the unix sockets used for communcation with other opensips
-	 * processes (get fd, new connection a.s.o) */
+	 * processes (get fd, new connection a.s.o)
+	 * NOTE: we add even the socks for the inactive/unfork processes - the
+	 *       socks are already created, but the triggering is from proc to
+	 *       main, having them into reactor is harmless - thye will never
+	 *       trigger as there is no proc on the other end to write us */
 	for (n=1; n<counted_max_processes; n++) {
 		/* skip myslef (as process) and -1 socks (disabled)
 		   (we can't have 0, we never close it!) */

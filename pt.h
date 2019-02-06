@@ -33,6 +33,7 @@
 
 #include "pt_load.h"
 #include "socket_info.h"
+#include "ipc.h"
 
 #define MAX_PT_DESC	128
 
@@ -87,7 +88,6 @@ struct process_table {
 	struct proc_load_info load;
 };
 
-typedef int (*forked_proc_func)(int i);
 
 extern struct process_table *pt;
 extern int process_no;
@@ -103,6 +103,7 @@ int   count_init_child_processes(void);
 #define OSS_PROC_DOING_DUMP    (1<<3) /* this process is writing a corefile */
 #define OSS_PROC_DYNAMIC       (1<<4) /* proc was created at runtime */
 #define OSS_PROC_IS_RUNNING    (1<<5) /* proc is running */
+#define OSS_PROC_SELFEXIT      (1<<6) /* proc does controlled exit */
 
 #define is_process_running(_idx) \
 	( (pt[_idx].flags&OSS_PROC_IS_RUNNING)?1:0 )
@@ -131,12 +132,17 @@ inline static int get_process_ID_by_PID(pid_t pid)
 
 
 typedef int (fork_new_process_f)(void *);
+typedef ipc_rpc_f terminate_process_f;
 
 int create_process_group(enum process_type type,
 		struct socket_info *si_filter,
 		unsigned int min_procs, unsigned int max_procs,
-		fork_new_process_f *f);
+		fork_new_process_f *f1, terminate_process_f *f2);
 
 void check_and_adjust_number_of_workers(void);
+
+void reset_process_slot(int p_id);
+
+void dynamic_process_final_exit(void);
 
 #endif

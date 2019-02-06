@@ -28,6 +28,7 @@
 #include "mem/shm_mem.h"
 #include "net/net_tcp.h"
 #include "net/net_udp.h"
+#include "db/db_insertq.h"
 #include "socket_info.h"
 #include "sr_module.h"
 #include "dprint.h"
@@ -189,7 +190,7 @@ void set_proc_attrs( char *fmt, ...)
  * it can be reused later 
  * WARNING: this should be called only by main process and when it is 100% 
  *  that the process mapped on this slot is not running anymore */
-static void _reset_process_slot( int p_id )
+void reset_process_slot( int p_id )
 {
 	if (is_main==0) {
 		LM_BUG("buggy call from non-main process!!!");
@@ -281,7 +282,7 @@ int internal_fork(char *proc_desc, unsigned int flags,
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
 				errno, strerror(errno));
-		_reset_process_slot( new_idx );
+		reset_process_slot( new_idx );
 		return -1;
 	}
 
@@ -354,6 +355,7 @@ struct process_group {
 	enum process_type type;
 	struct socket_info *si_filter;
 	fork_new_process_f *fork_func;
+	terminate_process_f *term_func;
 	unsigned int max_procs;
 	unsigned int min_procs;
 	/* some reference to a profile to give us params for fork/rip procs  */
@@ -364,9 +366,9 @@ struct process_group {
 	struct process_group *next;
 };
 
-#define PG_HISTORY_DEFAULT_SIZE  6 /*to be replaced with val from profile*/
-#define PG_HIGH_MIN_SCORE        3 /*to be replaced with val from profile*/
-#define PG_HLOAD_TRESHOLD       70 /*to be replaced with val from profile*/
+#define PG_HISTORY_DEFAULT_SIZE  5 /*to be replaced with val from profile*/
+#define PG_HIGH_MIN_SCORE        4 /*to be replaced with val from profile*/
+#define PG_HLOAD_TRESHOLD       50 /*to be replaced with val from profile*/
 #define PG_LLOAD_TRESHOLD       20 /*to be replaced with val from profile*/
 
 struct process_group *pg_head = NULL;
@@ -374,7 +376,7 @@ struct process_group *pg_head = NULL;
 int create_process_group(enum process_type type,
 						struct socket_info *si_filter,
 						unsigned int min_procs, unsigned int max_procs,
-						fork_new_process_f *f)
+						fork_new_process_f *f1, terminate_process_f *f2)
 {
 	struct process_group *pg, *it;
 
@@ -394,7 +396,8 @@ int create_process_group(enum process_type type,
 	pg->si_filter = si_filter;
 	pg->max_procs = max_procs;
 	pg->min_procs = min_procs;
-	pg->fork_func = f;
+	pg->fork_func = f1;
+	pg->term_func = f2;
 	pg->next = NULL;
 
 	pg->history_size = PG_HISTORY_DEFAULT_SIZE;
@@ -414,6 +417,24 @@ int create_process_group(enum process_type type,
 }
 
 
+void rescale_group_history(struct process_group *pg, unsigned int idx,
+		int org_size, int offset)
+{
+	unsigned int k;
+	unsigned char old;
+
+	k = idx;
+	do {
+		old = pg->history_map[k] ;
+		pg->history_map[k] = (pg->history_map[k]*org_size)/(org_size+offset);
+		LM_DBG("rescaling old %d to %d [idx %d]\n",
+			old, pg->history_map[k], k);
+
+		k = k ? (k-1) : (PG_HISTORY_DEFAULT_SIZE-1) ;
+	} while(k!=idx);
+}
+
+
 void check_and_adjust_number_of_workers(void)
 {
 	struct process_group *pg;
@@ -421,13 +442,14 @@ void check_and_adjust_number_of_workers(void)
 	unsigned int load;
 	unsigned int procs_no;
 	unsigned char cnt_under, cnt_over;
-	int p_id;
+	int p_id, last_idx_in_pg;
 
 	/* iterate all the groups we have */
 	for ( pg=pg_head ; pg ; pg=pg->next ) {
 
 		load = 0;
 		procs_no = 0;
+		last_idx_in_pg = -1;
 
 		/* find the processes belonging to this group */
 		for ( i=0 ; i<counted_max_processes ; i++) {
@@ -436,6 +458,7 @@ void check_and_adjust_number_of_workers(void)
 				continue;
 
 			load += get_stat_val( pt[i].load_rt );
+			last_idx_in_pg = i;
 			procs_no++;
 
 		}
@@ -463,7 +486,7 @@ void check_and_adjust_number_of_workers(void)
 		/* decide what to do */
 		if (cnt_over>=PG_HIGH_MIN_SCORE) {
 			if (procs_no<pg->max_procs) {
-				LM_DBG("score %d/%d -> forking new proc in group %d "
+				LM_NOTICE("score %d/%d -> forking new proc in group %d "
 					"(with %d procs)\n", cnt_over, PG_HISTORY_DEFAULT_SIZE,
 					pg->type, procs_no);
 				/* we need to fork one more process here */
@@ -471,9 +494,8 @@ void check_and_adjust_number_of_workers(void)
 				wait_for_one_child()<0 ) {
 					LM_ERR("failed to fork new process for group %d "
 						"(current %d procs)\n",pg->type,procs_no);
-					if (p_id>0)
-						_reset_process_slot( p_id );
 				} else {
+					rescale_group_history( pg, idx, procs_no, +1);
 					pg->no_downscale_cycles = 10*PG_HISTORY_DEFAULT_SIZE;
 				}
 			}
@@ -481,13 +503,20 @@ void check_and_adjust_number_of_workers(void)
 			if (procs_no>pg->min_procs && procs_no!=1 &&
 			pg->no_downscale_cycles==0) {
 				/* try to estimate the load after downscaling */
-				load = (pg->history_map[idx]*procs_no) / (procs_no-1);
+				load = 0;
+				k = idx;
+				do {
+					load += pg->history_map[k];
+					k = k ? (k-1) : (PG_HISTORY_DEFAULT_SIZE-1) ;
+				} while(k!=idx);
+				load = (load*procs_no) / (procs_no-1);
 				if (load<PG_HLOAD_TRESHOLD) {
 					/* down scale one more process here */
 					LM_DBG("score %d/%d -> ripping one proc from group %d "
 						"(with %d procs), estimated load -> %d\n", cnt_under,
 						PG_HISTORY_DEFAULT_SIZE, pg->type, procs_no,
 						load );
+					ipc_send_rpc( last_idx_in_pg, pg->term_func, NULL);
 				}
 			}
 		}
@@ -495,4 +524,21 @@ void check_and_adjust_number_of_workers(void)
 		pg->history_idx++;
 		if (pg->no_downscale_cycles) pg->no_downscale_cycles--;
 	}
+}
+
+
+void dynamic_process_final_exit(void)
+{
+	/* prevent any more IPC */
+	pt[process_no].ipc_pipe[0] = -1;
+	pt[process_no].ipc_pipe[1] = -1;
+
+	/* clear the per-process connection from the DB queues */
+	ql_force_process_disconnect(process_no);
+
+	/* mark myself as DYNAMIC (just in case) to have an err-less terminatio */
+	pt[process_no].flags |= OSS_PROC_SELFEXIT;
+
+	/* the process slot in the proc table will be purge on SIGCHLG by main */
+	exit(0);
 }

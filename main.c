@@ -540,9 +540,10 @@ void handle_sigs(void)
 					LM_DBG("unknown child process %d ended. Ignoring\n",chld);
 					continue;
 				}
-				if (pt[i].flags & OSS_PROC_DYNAMIC) {
-					LM_DBG("dynamic forked process %d/%d ended with "
+				if (pt[i].flags & OSS_PROC_SELFEXIT) {
+					LM_WARN("process %d/%d did selfexit with "
 						"status %d\n", i, chld,  WTERMSIG(chld_status));
+					reset_process_slot(i);
 					continue;
 				}
 				do_exit = 1;
