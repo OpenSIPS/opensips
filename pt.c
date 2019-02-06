@@ -468,7 +468,7 @@ void check_and_adjust_number_of_workers(void)
 					pg->type, procs_no);
 				/* we need to fork one more process here */
 				if ( (p_id=pg->fork_func(pg->si_filter))<0 ||
-				wait_for_one_children() ) {
+				wait_for_one_child()<0 ) {
 					LM_ERR("failed to fork new process for group %d "
 						"(current %d procs)\n",pg->type,procs_no);
 					if (p_id>0)
