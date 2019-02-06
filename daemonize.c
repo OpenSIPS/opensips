@@ -129,15 +129,9 @@ retry:
 
 /* blockingly waits on the pipe
  * until a child sends a status code */
-int wait_status_code(char *code)
+static int wait_status_code(char *code)
 {
 	int rc;
-
-	/* close writing end */
-	if (status_pipe[1] != -1) {
-			close(status_pipe[1]);
-			status_pipe[1] = -1;
-	}
 
 	if (status_pipe[0] == -1) {
 		LM_DBG("invalid read pipe\n");
@@ -149,7 +143,7 @@ retry:
 	if (rc < 0 && errno == EINTR)
 			goto retry;
 
-	LM_DBG("read code %d ? rc = %d, errno=%s\n",*code,rc,strerror(errno));
+	LM_WARN("read code %d ? rc = %d, errno=%s\n",*code,rc,strerror(errno));
 
 	if (rc == 1)
 		return 0;
@@ -173,6 +167,8 @@ int wait_for_all_children(void)
 {
 	int procs_no,i,ret;
 	char rc;
+
+	clean_write_pipeend();
 
 	procs_no = count_init_child_processes();
 	for (i=0;i<procs_no;i++) {
