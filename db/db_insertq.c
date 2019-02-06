@@ -630,3 +630,18 @@ int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry)
 
 	return 0;
 }
+
+void ql_force_process_disconnect(int p_id)
+{
+	query_list_t *it;
+
+	for (it=*query_list;it;it=it->next) {
+		lock_get(it->lock);
+
+		if (it->conn[p_id]) {
+			it->dbf.close(it->conn[p_id]);
+			it->conn[p_id]=NULL;
+		}
+	}
+}
+
