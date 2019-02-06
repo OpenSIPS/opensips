@@ -350,6 +350,9 @@ int fork_dynamic_udp_process(void *si_filter)
 		init_child(10000/*FIXME*/) < 0) {
 			goto error;
 		}
+		report_conditional_status( 1, 0); /*report success*/
+		/* the child proc is done read&write) dealing with the status pipe */
+		clean_read_pipeend();
 
 		reactor_main_loop(UDP_SELECT_TIMEOUT, error, );
 		destroy_worker_reactor();
@@ -359,7 +362,6 @@ error:
 		exit(-1);
 	} else {
 		/*parent/main*/
-		report_conditional_status( 1, 0); /*report success*/
 		return p_id;
 	}
 }
