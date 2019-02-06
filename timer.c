@@ -642,6 +642,14 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			n = -1;
 			break;
 	}
+
+	if (reactor_is_empty() && _termination_in_progress==1) {
+		LM_WARN("reactor got empty while termination in progress\n");
+		ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
+		if (reactor_is_empty())
+			dynamic_process_final_exit();
+	}
+
 	pt_become_idle();
 	return n;
 }
@@ -673,20 +681,88 @@ error:
 	return -1;
 }
 
+
+static int fork_dynamic_timer_process(void *si_filter)
+{
+	int p_id;
+
+	if ((p_id=internal_fork( "Timer handler", OSS_PROC_DYNAMIC,TYPE_TIMER))<0){
+		LM_CRIT("cannot fork Timer handler process\n");
+		return -1;
+	} else if (p_id==0) {
+		/* new Timer process */
+		/* set a more detailed description */
+		set_proc_attrs("Timer handler");
+		if (timer_proc_reactor_init() < 0 ||
+		init_child(20000) < 0) {
+			goto error;
+		}
+
+		report_conditional_status( 1, 0); /*report success*/
+		/* the child proc is done read&write) dealing with the status pipe */
+		clean_read_pipeend();
+
+		/* launch the reactor */
+		reactor_main_loop( 1/*timeout in sec*/, error , );
+		destroy_worker_reactor();
+error:
+		report_failure_status();
+		LM_ERR("Initializing new process failed, exiting with error \n");
+		pt[process_no].flags |= OSS_PROC_SELFEXIT;
+		exit( -1);
+	} else {
+		/*parent/main*/
+		return p_id;
+	}
+}
+
+
+static void timer_process_graceful_terminate(int sender, void *param)
+{
+	/* we accept this only from the main proccess */
+	if (sender!=0) {
+		LM_BUG("graceful terminate received from a non-main process!!\n");
+		return;
+	}
+	LM_NOTICE("process %d received RPC to terminate from Main\n",process_no);
+
+	/*remove from reactor all the shared fds, so we stop reading from them */
+
+	/*remove timer jobs pipe */
+	reactor_del_reader( timer_fd_out, -1, 0);
+
+	/*remove private IPC pipe */
+	reactor_del_reader( IPC_FD_READ_SELF, -1, 0);
+
+	/* let's drain the private IPC */
+	ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
+
+	/* what is left now is the reactor are async fd's, so we need to 
+	 * wait to complete all of them */
+	if (reactor_is_empty())
+		dynamic_process_final_exit();
+
+	/* the exit will be triggered by the reactor, when empty */
+	_termination_in_progress = 1;
+	LM_WARN("reactor not empty, waiting for pending async\n");
+}
+
+
 int start_timer_extra_processes(int *chd_rank)
 {
-	pid_t pid;
+	int p_id;
 
 	if (enable_dynamic_workers &&
-	create_process_group( TYPE_TIMER, NULL, 0, 0,NULL,NULL)!=0)
+	create_process_group( TYPE_TIMER, NULL, 1, 5,
+	fork_dynamic_timer_process, timer_process_graceful_terminate)!=0)
 		LM_ERR("failed to create group of TIMER processes, "
 			"auto forking will not be possible\n");
 
 	(*chd_rank)++;
-	if ( (pid=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {
+	if ( (p_id=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {
 		LM_CRIT("cannot fork Timer handler process\n");
 		return -1;
-	} else if (pid==0) {
+	} else if (p_id==0) {
 		/* new Timer process */
 		/* set a more detailed description */
 			set_proc_attrs("Timer handler");

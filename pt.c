@@ -48,6 +48,9 @@ struct process_table *pt=0;
  * This is READONLY!! */
 unsigned int counted_max_processes = 0;
 
+/* flag per process to control the termination stages */
+int _termination_in_progress = 0;
+
 
 
 int init_multi_proc_support(void)

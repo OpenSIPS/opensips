@@ -39,8 +39,6 @@
 
 /* if the UDP network layer is used or not by some protos */
 static int udp_disabled = 1;
-/* flag per process to control the termination stages */
-static int _termination_in_progress = 0;
 
 extern void handle_sigs(void);
 
