@@ -69,8 +69,10 @@ static utime_t       *ujiffies=0;
 static utime_t       *ijiffies=0;
 static unsigned short timer_id=0;
 static int            timer_pipe[2];
+static struct scaling_profile *s_profile=NULL;
 
 int timer_fd_out = -1 ;
+char *auto_scaling_timer_profile = NULL;
 
 
 /* ret 0 on success, <0 on error*/
@@ -119,6 +121,16 @@ int init_timer(void)
 	}
 	/* make visible the "read" part of the pipe */
 	timer_fd_out = timer_pipe[0];
+
+	if (auto_scaling_timer_profile) {
+		s_profile = get_scaling_profile(auto_scaling_timer_profile);
+		if ( s_profile==NULL) {
+			LM_ERR("undefined auto-scaling profile <%s> for timers\n",
+				auto_scaling_timer_profile);
+			return E_UNSPEC;
+		}
+		auto_scaling_enabled = 1;
+	}
 
 	return 0;
 }
@@ -752,11 +764,11 @@ int start_timer_extra_processes(int *chd_rank)
 {
 	int p_id;
 
-	//if (auto_scaling_enabled &&
-	//create_process_group( TYPE_TIMER, NULL, ??? ,
-	//fork_dynamic_timer_process, timer_process_graceful_terminate)!=0)
-	//	LM_ERR("failed to create group of TIMER processes, "
-	//		"auto forking will not be possible\n");
+	if (auto_scaling_enabled && s_profile &&
+	create_process_group( TYPE_TIMER, NULL, s_profile ,
+	fork_dynamic_timer_process, timer_process_graceful_terminate)!=0)
+		LM_ERR("failed to create group of TIMER processes, "
+			"auto forking will not be possible\n");
 
 	(*chd_rank)++;
 	if ( (p_id=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {

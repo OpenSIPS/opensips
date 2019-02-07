@@ -400,6 +400,7 @@ static struct multi_str *tmp_mod;
 %token LAUNCH_TOKEN
 %token AUTO_SCALING_PROFILE
 %token AUTO_SCALING_CYCLE
+%token AUTO_SCALING_TIMER_PROFILE
 
 
 
@@ -1233,6 +1234,10 @@ assign_stm: DEBUG EQUAL snumber
 		| AUTO_SCALING_CYCLE EQUAL NUMBER { auto_scaling_cycle=$3; }
 		| AUTO_SCALING_CYCLE EQUAL error {
 				yyerror("integer value expected");
+				}
+		| AUTO_SCALING_TIMER_PROFILE EQUAL ID { auto_scaling_timer_profile=$3;}
+		| AUTO_SCALING_TIMER_PROFILE EQUAL error {
+				yyerror("ID value expected");
 				}
 
 		| error EQUAL { yyerror("unknown config variable"); }

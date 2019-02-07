@@ -85,6 +85,8 @@ struct os_timer{
 
 extern int timer_fd_out;
 
+extern char *auto_scaling_timer_profile;
+
 int init_timer(void);
 
 void destroy_timer(void);
