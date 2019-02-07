@@ -280,7 +280,7 @@ int init_stats_collector(void)
 		goto error;
 	}
 
-	/* register sh_mem statistics */
+	/* register network-level statistics */
 	if (register_module_stats( "net", net_stats)!=0 ) {
 		LM_ERR("failed to register network statistics\n");
 		goto error;
