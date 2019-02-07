@@ -1210,7 +1210,7 @@ void receive_prof_repl(bin_packet_t *packet)
 				if (!rp->rcv_counters)
 					rp->rcv_counters = repl_prof_allocate();
 				if (rp->rcv_counters) {
-					lock_release(&rp->rcv_counters->lock);
+					lock_get(&rp->rcv_counters->lock);
 					destination = find_destination(rp->rcv_counters, packet->src_id);
 					if (destination == NULL) {
 						lock_release(&rp->rcv_counters->lock);
@@ -1398,8 +1398,10 @@ static void broadcast_profiles(utime_t ticks, void *param)
 						goto next_val;
 					}
 					count = prof_val_get_local_count(dst, 0);
-					if ((ret = repl_prof_add(&packet, &profile->name, 1, value, count)) < 0)
+					if ((ret = repl_prof_add(&packet, &profile->name, 1, value, count)) < 0) {
+						lock_set_release(profile->locks, i);
 						goto error;
+					}
 					/* check if the profile should be sent */
 					REPL_PROF_TRYSEND();
 
