@@ -192,7 +192,10 @@ unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  be re-configured */
 /* number of UDP workers processing requests */
 int udp_workers_no = UDP_WORKERS_NO;
-int enable_dynamic_workers = 0;
+/* if the auto-scaling engine is enabled or not - this is autodetected */
+int auto_scaling_enabled = 0;
+/* auto-scaling sampling and checking time cycle is 1 sec by default */
+int auto_scaling_cycle = 1;
 /*!< by default choose the best method */
 enum poll_types io_poll_method=0;
 /* last signal received */
@@ -822,7 +825,7 @@ static int main_loop(void)
 
 	report_conditional_status( (!no_daemon_mode), 0);
 
-	if (enable_dynamic_workers) {
+	if (auto_scaling_enabled) {
 		/* re-create the status pipes to collect the status of the
 		 * dynamically forked processes */
 		if (create_status_pipe(1) < 0) {
@@ -837,7 +840,7 @@ static int main_loop(void)
 
 	for(;;){
 			handle_sigs();
-			if (enable_dynamic_workers) {
+			if (auto_scaling_enabled) {
 				sleep(1);
 				if ( (get_uticks()-last_check) >= 1000000) {
 					check_and_adjust_number_of_workers();

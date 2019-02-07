@@ -339,7 +339,8 @@ DB_VERSION_TABLE "db_version_table"
 DB_DEFAULT_URL "db_default_url"
 DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
-ENABLE_DYNAMIC_WORKERS "enable_dynamic_workers"
+AUTO_SCALING_PROFILE "auto_scaling_profile"
+AUTO_SCALING_CYCLE "auto_scaling_cycle"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -368,8 +369,12 @@ SLASH		"/"
 AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
 USE_CHILDREN	{EAT_ABLE}("use_children"|"USE_CHILDREN"){EAT_ABLE}
 USE_WORKERS	{EAT_ABLE}("use_workers"|"USE_WORKERS"){EAT_ABLE}
-MAX			{EAT_ABLE}("max"|"MAX"){EAT_ABLE}
-MIN			{EAT_ABLE}("min"|"MIN"){EAT_ABLE}
+USE_AUTO_SCALING_PROFILE {EAT_ABLE}("use_auto_scaling_profile"|"USE_AUTO_SCALING_PROFILE"){EAT_ABLE}
+SCALE_UP_TO		{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("up"|"UP"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
+SCALE_DOWN_TO	{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("down"|"DOWN"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
+ON			{EAT_ABLE}("on"|"ON"){EAT_ABLE}
+CYCLES		{EAT_ABLE}("cycles"|"CYCLES")
+CYCLES_WITHIN	{EAT_ABLE}("cycles"|"CYCLES"){EAT_ABLE}+("within"|"WITHIN"){EAT_ABLE}
 SEMICOLON	;
 RPAREN		\)
 LPAREN		\(
@@ -632,8 +637,10 @@ IMPORTFILE      "import_file"
 									return DB_MAX_ASYNC_CONNECTIONS; }
 <INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
 									return DISABLE_503_TRANSLATION; }
-<INITIAL>{ENABLE_DYNAMIC_WORKERS}	{	count(); yylval.strval=yytext;
-									return ENABLE_DYNAMIC_WORKERS; }
+<INITIAL>{AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
+									return AUTO_SCALING_PROFILE; }
+<INITIAL>{AUTO_SCALING_CYCLE}	{	count(); yylval.strval=yytext;
+									return AUTO_SCALING_CYCLE; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }
@@ -689,9 +696,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
 <INITIAL>{USE_CHILDREN} { count(); return USE_CHILDREN; }
-<INITIAL>{USE_WORKERS} { count(); return USE_WORKERS; }
-<INITIAL>{MAX} { count(); return MAX; }
-<INITIAL>{MIN} { count(); return MIN; }
+<INITIAL>{USE_WORKERS}  { count(); return USE_WORKERS; }
+<INITIAL>{USE_AUTO_SCALING_PROFILE}  { count(); return USE_AUTO_SCALING_PROFILE; }
 <INITIAL>{COLON}	{ count(); return COLON; }
 <INITIAL>{RPAREN}	{ count(); return RPAREN; }
 <INITIAL>{LPAREN}	{ count(); return LPAREN; }
@@ -699,13 +705,18 @@ IMPORTFILE      "import_file"
 <INITIAL>{RBRACE}	{ count(); return RBRACE; }
 <INITIAL>{LBRACK}	{ count(); return LBRACK; }
 <INITIAL>{RBRACK}	{ count(); return RBRACK; }
-<INITIAL>{AS}       { count(); return AS; }
+<INITIAL>{AS}		{ count(); return AS; }
 <INITIAL>{DOT}		{ count(); return DOT; }
 <INITIAL>\\{CR}		{count(); } /* eat the escaped CR */
 <INITIAL>{CR}		{ count();/* return CR;*/ }
-<INITIAL>{ANY}	{ count(); return ANY; }
+<INITIAL>{ANY}		{ count(); return ANY; }
 <INITIAL>{ANYCAST}	{ count(); return ANYCAST; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
+<INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }
+<INITIAL>{SCALE_DOWN_TO}	{ count(); return SCALE_DOWN_TO; }
+<INITIAL>{ON}				{ count(); return ON; }
+<INITIAL>{CYCLES}			{ count(); return CYCLES; }
+<INITIAL>{CYCLES_WITHIN}	{ count(); return CYCLES_WITHIN; }
 
 <INITIAL>{SCRIPTVAR_START} { np=0; state=SCRIPTVAR_S;
 								svar_tlen = yyleng;

@@ -161,8 +161,7 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 			"ignoring...\n");
 	} else {
 		si->workers = sid->workers;
-		si->workers_max = sid->workers_max;
-		si->workers_min = sid->workers_min;
+		/* FIXME - search and link the scaling profile */
 	}
 	return si;
 error:
@@ -375,8 +374,7 @@ int expand_interface(struct socket_info *si, struct socket_info** list)
 	sid.port = si->port_no;
 	sid.proto = si->proto;
 	sid.workers = si->workers;
-	sid.workers_min = si->workers_min;
-	sid.workers_max = si->workers_max;
+	//sid.auto_scaling_profile = ; FIXME
 	sid.adv_port = si->adv_port;
 	sid.adv_name = si->adv_name_str.s; /* it is NULL terminated */
 	sid.tag = si->tag.s; /* it is NULL terminated */

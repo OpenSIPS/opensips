@@ -429,7 +429,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 		for(si=protos[p].listeners; si ; si=si->next ) {
 
-			if (enable_dynamic_workers &&
+			if ( auto_scaling_enabled &&
 			create_process_group( TYPE_UDP, si, si->workers_min,
 			si->workers_max, fork_dynamic_udp_process,
 			udp_process_graceful_terminate)!=0)

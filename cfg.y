@@ -155,10 +155,9 @@ extern char *finame;
 struct listen_param {
 	enum si_flags flags;
 	int workers;
-	int workers_max;
-	int workers_min;
 	struct socket_id *socket;
 	char *tag;
+	char *auto_scaling_profile;
 };
 static struct listen_param* mk_listen_param(void);
 static void fill_socket_id(struct listen_param *param, struct socket_id *s);
@@ -398,7 +397,8 @@ static struct multi_str *tmp_mod;
 %token SYNC_TOKEN
 %token ASYNC_TOKEN
 %token LAUNCH_TOKEN
-%token ENABLE_DYNAMIC_WORKERS
+%token AUTO_SCALING_PROFILE
+%token AUTO_SCALING_CYCLE
 
 
 
@@ -451,6 +451,7 @@ static struct multi_str *tmp_mod;
 %token AS
 %token USE_CHILDREN
 %token USE_WORKERS
+%token USE_AUTO_SCALING_PROFILE
 %token MAX
 %token MIN
 %token DOT
@@ -459,6 +460,12 @@ static struct multi_str *tmp_mod;
 %token ANY
 %token ANYCAST
 %token SCRIPTVARERR
+%token SCALE_UP_TO
+%token SCALE_DOWN_TO
+%token ON
+%token CYCLES
+%token CYCLES_WITHIN
+%token PERCENTAGE
 
 
 /*non-terminals */
@@ -625,23 +632,9 @@ listen_def_param: ANYCAST {
 					$$=mk_listen_param();
 					$$->workers=$2;
 					}
-				| USE_CHILDREN NUMBER MIN NUMBER MAX NUMBER {
-					warn("'USE_CHILDREN' syntax is deprecated, use "
-						"'USE_WORKERS' instead");
-					$$=mk_listen_param();
-					$$->workers=$2;
-					$$->workers_min=$4;
-					$$->workers_max=$6;
-					}
 				| USE_WORKERS NUMBER {
 					$$=mk_listen_param();
 					$$->workers=$2;
-					}
-				| USE_WORKERS NUMBER MIN NUMBER MAX NUMBER {
-					$$=mk_listen_param();
-					$$->workers=$2;
-					$$->workers_min=$4;
-					$$->workers_max=$6;
 					}
 				| AS listen_id_def {
 					$$=mk_listen_param();
@@ -650,6 +643,11 @@ listen_def_param: ANYCAST {
 				| TAG ID {
 					$$=mk_listen_param();
 					$$->tag=$2;
+					}
+				| USE_AUTO_SCALING_PROFILE ID {
+					$$=mk_listen_param();
+					$$->auto_scaling_profile=$2;
+					auto_scaling_enabled = 1;
 					}
 				;
 
@@ -665,6 +663,8 @@ listen_def_params:	listen_def_param { $$=$1; }
 							$$->socket = $2->socket;
 						if ($$->tag != NULL)
 							$$->tag = $2->tag;
+						if ($$->auto_scaling_profile != NULL)
+							$$->auto_scaling_profile=$2->auto_scaling_profile;
 						pkg_free($2);
 					}
 				 ;
@@ -702,6 +702,37 @@ blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 blst_elem_list: blst_elem_list COMMA blst_elem {}
 		| blst_elem {}
 		| blst_elem_list error { yyerror("bad black list element");}
+		;
+
+auto_scale_profile_def:
+		  ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES_WITHIN NUMBER
+		  SCALE_DOWN_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES {
+			//if (create_auto_scaling_profile($1,$3,$5,$8,$10,
+			//$12, $14, $17)<0)
+			//	yyerror("failed to create auto scaling profile");
+		 }
+		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES
+		  SCALE_DOWN_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES {
+			//if (create_auto_scaling_profile($1,$3,$5,$8,$8,
+			//$12, $14, $17)<0)
+			//	yyerror("failed to create auto scaling profile");
+		 }
+		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES_WITHIN NUMBER {
+			//if (create_auto_scaling_profile($1,$3,$5,$8,$10,
+			//0, 0, 0)<0)
+			//	yyerror("failed to create auto scaling profile");
+		}
+		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES {
+			//if (create_auto_scaling_profile($1,$3,$5,$8,$8,
+			//0, 0, 0)<0)
+			//	yyerror("failed to create auto scaling profile");
+		}
 		;
 
 
@@ -762,8 +793,6 @@ assign_stm: DEBUG EQUAL snumber
 		| CHILDREN EQUAL error { yyerror("number expected"); }
 		| UDP_WORKERS EQUAL NUMBER { udp_workers_no=$3; }
 		| UDP_WORKERS EQUAL error { yyerror("number expected"); }
-		| ENABLE_DYNAMIC_WORKERS EQUAL NUMBER { enable_dynamic_workers=$3; }
-		| ENABLE_DYNAMIC_WORKERS EQUAL error { yyerror("number expected"); }
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER {
@@ -1197,6 +1226,15 @@ assign_stm: DEBUG EQUAL snumber
 		| DISABLE_503_TRANSLATION EQUAL error {
 				yyerror("integer value expected");
 				}
+		| AUTO_SCALING_PROFILE EQUAL auto_scale_profile_def {}
+		| AUTO_SCALING_PROFILE EQUAL error {
+				yyerror("bad auto-scaling profile definition");
+				}
+		| AUTO_SCALING_CYCLE EQUAL NUMBER { auto_scaling_cycle=$3; }
+		| AUTO_SCALING_CYCLE EQUAL error {
+				yyerror("integer value expected");
+				}
+
 		| error EQUAL { yyerror("unknown config variable"); }
 	;
 
@@ -2756,8 +2794,7 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 {
 	s->flags |= param->flags;
 	s->workers = param->workers;
-	s->workers_max = param->workers_max;
-	s->workers_min = param->workers_min;
+	s->auto_scaling_profile = param->auto_scaling_profile;
 	if (param->socket) {
 		set_listen_id_adv(s, param->socket->name, param->socket->port);
 		pkg_free(param->socket);

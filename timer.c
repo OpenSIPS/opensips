@@ -752,7 +752,7 @@ int start_timer_extra_processes(int *chd_rank)
 {
 	int p_id;
 
-	if (enable_dynamic_workers &&
+	if (auto_scaling_enabled &&
 	create_process_group( TYPE_TIMER, NULL, 1, 5,
 	fork_dynamic_timer_process, timer_process_graceful_terminate)!=0)
 		LM_ERR("failed to create group of TIMER processes, "
