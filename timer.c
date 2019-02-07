@@ -752,11 +752,11 @@ int start_timer_extra_processes(int *chd_rank)
 {
 	int p_id;
 
-	if (auto_scaling_enabled &&
-	create_process_group( TYPE_TIMER, NULL, 1, 5,
-	fork_dynamic_timer_process, timer_process_graceful_terminate)!=0)
-		LM_ERR("failed to create group of TIMER processes, "
-			"auto forking will not be possible\n");
+	//if (auto_scaling_enabled &&
+	//create_process_group( TYPE_TIMER, NULL, ??? ,
+	//fork_dynamic_timer_process, timer_process_graceful_terminate)!=0)
+	//	LM_ERR("failed to create group of TIMER processes, "
+	//		"auto forking will not be possible\n");
 
 	(*chd_rank)++;
 	if ( (p_id=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {

@@ -99,6 +99,7 @@
 #include "socket_info.h"
 #include "name_alias.h"
 #include "ut.h"
+#include "pt_scaling.h"
 #include "dset.h"
 #include "pvar.h"
 #include "blacklists.h"
@@ -647,7 +648,6 @@ listen_def_param: ANYCAST {
 				| USE_AUTO_SCALING_PROFILE ID {
 					$$=mk_listen_param();
 					$$->auto_scaling_profile=$2;
-					auto_scaling_enabled = 1;
 					}
 				;
 
@@ -709,29 +709,29 @@ auto_scale_profile_def:
 				NUMBER CYCLES_WITHIN NUMBER
 		  SCALE_DOWN_TO NUMBER ON NUMBER MODULO FOR
 				NUMBER CYCLES {
-			//if (create_auto_scaling_profile($1,$3,$5,$8,$10,
-			//$12, $14, $17)<0)
-			//	yyerror("failed to create auto scaling profile");
+			if (create_auto_scaling_profile($1,$3,$5,$8,$10,
+			$12, $14, $17,10*$17)<0)
+				yyerror("failed to create auto scaling profile");
 		 }
 		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
 				NUMBER CYCLES
 		  SCALE_DOWN_TO NUMBER ON NUMBER MODULO FOR
 				NUMBER CYCLES {
-			//if (create_auto_scaling_profile($1,$3,$5,$8,$8,
-			//$12, $14, $17)<0)
-			//	yyerror("failed to create auto scaling profile");
+			if (create_auto_scaling_profile($1,$3,$5,$8,$8,
+			$11, $13, $16, 10*$16)<0)
+				yyerror("failed to create auto scaling profile");
 		 }
 		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
 				NUMBER CYCLES_WITHIN NUMBER {
-			//if (create_auto_scaling_profile($1,$3,$5,$8,$10,
-			//0, 0, 0)<0)
-			//	yyerror("failed to create auto scaling profile");
+			if (create_auto_scaling_profile($1,$3,$5,$8,$10,
+			0, 0, 0, 0)<0)
+				yyerror("failed to create auto scaling profile");
 		}
 		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
 				NUMBER CYCLES {
-			//if (create_auto_scaling_profile($1,$3,$5,$8,$8,
-			//0, 0, 0)<0)
-			//	yyerror("failed to create auto scaling profile");
+			if (create_auto_scaling_profile($1,$3,$5,$8,$8,
+			0, 0, 0, 0)<0)
+				yyerror("failed to create auto scaling profile");
 		}
 		;
 

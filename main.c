@@ -544,7 +544,7 @@ void handle_sigs(void)
 					continue;
 				}
 				if (pt[i].flags & OSS_PROC_SELFEXIT) {
-					LM_WARN("process %d/%d did selfexit with "
+					LM_NOTICE("process %d/%d did selfexit with "
 						"status %d\n", i, chld,  WTERMSIG(chld_status));
 					reset_process_slot(i);
 					continue;
@@ -843,7 +843,7 @@ static int main_loop(void)
 			if (auto_scaling_enabled) {
 				sleep(1);
 				if ( (get_uticks()-last_check) >= 1000000) {
-					check_and_adjust_number_of_workers();
+					do_workers_auto_scaling();
 					last_check = get_uticks();
 				}
 			} else

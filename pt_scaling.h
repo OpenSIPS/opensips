@@ -31,15 +31,51 @@
 #include "socket_info.h"
 #include "ipc.h"
 
+
+
+struct scaling_profile {
+	/* the name of the profile */
+	char *name;
+
+	/* the maximum number of processes to scale to */
+	unsigned int max_procs;
+	/* the load threshold (in percentages) to trigger up scaling */
+	unsigned int up_threshold;
+	/* the number of cycles needed to be over the TH in order to up scale */
+	unsigned int up_cycles_needed;
+	/* the number of cycles to check for spotting the needed ones */
+	unsigned int up_cycles_tocheck;
+
+	/* the minimum number of processes to scale (if 0 -> no downscale) */
+	unsigned int min_procs;
+	/* the load threshold (in percentages) to trigger down scaling */
+	unsigned int down_threshold;
+	/* the number of cycles needed to be below the TH in order to down scale */
+	unsigned int down_cycles_tocheck;
+	/* the number of cycles to wait before down scaling (after up or start) */
+	unsigned short down_cycles_delay;
+
+	struct scaling_profile *next;
+};
+
+
+int create_auto_scaling_profile( char *name,
+	unsigned int max_procs, unsigned int up_threshold,
+	unsigned int up_cycles_needed, unsigned int up_cycles_tocheck,
+	unsigned int min_procs, unsigned int down_threshold,
+	unsigned int down_cycles_tocheck, unsigned short down_cycles_delay);
+
+struct scaling_profile *get_scaling_profile(char *name);
+
+
 typedef int (fork_new_process_f)(void *);
 typedef ipc_rpc_f terminate_process_f;
 
 int create_process_group(enum process_type type,
-		struct socket_info *si_filter,
-		unsigned int min_procs, unsigned int max_procs,
+		struct socket_info *si_filter, struct scaling_profile *prof,
 		fork_new_process_f *f1, terminate_process_f *f2);
 
-void check_and_adjust_number_of_workers(void);
+void do_workers_auto_scaling(void);
 
 
 #endif

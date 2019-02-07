@@ -74,7 +74,7 @@ int udp_count_processes(unsigned int *extra)
 		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
 			for( si=protos[i].listeners ; si; si=si->next) {
 				n+=si->workers;
-				e+=si->workers_max?(si->workers_max-si->workers):0;
+				e+=si->s_profile?(si->s_profile->max_procs-si->workers):0;
 			}
 
 	if (extra) *extra = e;
@@ -429,10 +429,9 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 		for(si=protos[p].listeners; si ; si=si->next ) {
 
-			if ( auto_scaling_enabled &&
-			create_process_group( TYPE_UDP, si, si->workers_min,
-			si->workers_max, fork_dynamic_udp_process,
-			udp_process_graceful_terminate)!=0)
+			if ( auto_scaling_enabled && si->s_profile &&
+			create_process_group( TYPE_UDP, si, si->s_profile,
+			fork_dynamic_udp_process, udp_process_graceful_terminate)!=0)
 				LM_ERR("failed to create group of UDP processes for <%.*s>, "
 					"auto forking will not be possible\n",
 					si->name.len, si->name.s);

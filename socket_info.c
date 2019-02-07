@@ -54,6 +54,7 @@
 #include "dprint.h"
 #include "mem/mem.h"
 #include "ut.h"
+#include "pt_scaling.h"
 #include "resolve.h"
 #include "name_alias.h"
 #include "net/trans.h"
@@ -156,12 +157,26 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 		memcpy(si->tag.s, sid->tag, si->tag.len+1);
 	}
 
-	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && sid->workers) {
-		LM_WARN("number of workers per TCP/TLS listener not supported -> "
-			"ignoring...\n");
+	if ( si->proto!=PROTO_UDP ) {
+		if (sid->workers)
+			LM_WARN("number of workers per non UDP <%.*s> listener not "
+				"supported -> ignoring...\n", si->name.len, si->name.s);
+		if (sid->auto_scaling_profile)
+			LM_WARN("auto-scaling for non UDP <%.*s> listener not supported "
+				"-> ignoring...\n", si->name.len, si->name.s);
 	} else {
-		si->workers = sid->workers;
-		/* FIXME - search and link the scaling profile */
+		if (sid->workers)
+			si->workers = sid->workers;
+		if (sid->auto_scaling_profile) {
+			si->s_profile = get_scaling_profile(sid->auto_scaling_profile);
+			if (si->s_profile==NULL) {
+				LM_WARN("scalig profile <%s> in listener <%.*s> not defined "
+					"-> ignoring it..\n", sid->auto_scaling_profile,
+					si->name.len, si->name.s);
+			} else {
+				auto_scaling_enabled = 1;
+			}
+		}
 	}
 	return si;
 error:
@@ -374,7 +389,7 @@ int expand_interface(struct socket_info *si, struct socket_info** list)
 	sid.port = si->port_no;
 	sid.proto = si->proto;
 	sid.workers = si->workers;
-	//sid.auto_scaling_profile = ; FIXME
+	sid.auto_scaling_profile = si->s_profile->name;
 	sid.adv_port = si->adv_port;
 	sid.adv_name = si->adv_name_str.s; /* it is NULL terminated */
 	sid.tag = si->tag.s; /* it is NULL terminated */
