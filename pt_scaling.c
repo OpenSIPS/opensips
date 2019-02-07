@@ -55,6 +55,39 @@ int create_auto_scaling_profile( char *name,
 {
 	struct scaling_profile *p;
 
+	/* check for duplicates */
+	if ( get_scaling_profile(name) ) {
+		LM_ERR("profile <%s> (case insensitive) already created"
+			" - double definition?? \n", name);
+		return -1;
+	}
+
+	/* some sanity checks */
+	if (min_procs==0) {
+		down_threshold = 0;
+		down_cycles_tocheck = 0;
+		down_cycles_delay = 0;
+	}
+	if (max_procs <= min_procs || max_procs==0 || max_procs>=1000) {
+		LM_ERR("invalid relation or range for MIN/MAX processes [%d,%d]\n",
+			min_procs, max_procs);
+		return -1;
+	}
+	if (up_threshold <= down_threshold || up_threshold==0 ||
+	up_threshold>100 || down_threshold>100) {
+		LM_ERR("invalid relation or range DOWN/UP thresholds percentages "
+			"[%d,%d]\n", down_threshold, up_threshold);
+		return -1;
+	}
+	if (up_cycles_needed==0 || up_cycles_tocheck==0 ||
+	up_cycles_tocheck<up_cycles_needed) {
+		LM_ERR("invalid relation or values for upscaling check [%d of %d]\n",
+			up_cycles_needed, up_cycles_tocheck);
+		return -1;
+	}
+
+	/* all good, create it*/
+
 	p = (struct scaling_profile*)pkg_malloc( sizeof(struct scaling_profile) +
 		strlen(name) + 1 );
 	if (p==NULL) {
@@ -75,6 +108,11 @@ int create_auto_scaling_profile( char *name,
 	p->down_cycles_delay = down_cycles_delay;
 	p->name = (char*)(p+1);
 	strcpy( p->name, name);
+
+	LM_DBG("profile <%s> created UP [max=%d, th=%d%%, check %d/%d] DOWN "
+		"[min=%d, th=%d%%, check %d, delay=%d]\n", name,
+		max_procs, up_threshold, up_cycles_needed, up_cycles_tocheck,
+		min_procs, down_threshold, down_cycles_tocheck, down_cycles_delay);
 
 	p->next = profiles_head;
 	profiles_head = p;
@@ -192,7 +230,7 @@ void do_workers_auto_scaling(void)
 		idx = (pg->history_idx+1)%pg->history_size;
 		pg->history_map[idx] = (unsigned char) ( load / procs_no );
 
-		LM_DBG("group %d (with %d procs) has average load of %d\n",
+		LM_WARN("group %d (with %d procs) has average load of %d\n",
 			pg->type, procs_no, pg->history_map[idx]);
 
 		/* do the check over the history */
