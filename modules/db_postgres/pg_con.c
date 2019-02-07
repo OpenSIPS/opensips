@@ -149,7 +149,9 @@ struct pg_con* db_postgres_new_connection(struct db_id* id)
 struct pg_con* db_postgres_new_async_connection(struct db_id* id)
 {
 	struct pg_con * ret = db_postgres_new_connection(id);
-	PQsetnonblocking(ret->con, 1);
+	if (ret) {
+		PQsetnonblocking(ret->con, 1);
+	}
 
 	return ret;
 }
