@@ -48,6 +48,7 @@ extern uac_auth_api_t uac_auth_api;
 extern str rr_uac_cseq_param;
 extern struct rr_binds uac_rrb;
 extern struct dlg_binds dlg_api;
+extern int increment_cseq;
 
 static inline int apply_urihdr_changes( struct sip_msg *req,
 													str *uri, str *hdr)
@@ -120,7 +121,9 @@ int apply_cseq_op(struct sip_msg *msg,int val)
 		return -1;
 	}
 
-	cseq_no=cseq_no+val;
+	if (increment_cseq) {
+		cseq_no=cseq_no+val;
+	}
 	obuf = int2str(cseq_no,&olen);
 	if (obuf == NULL) {
 		LM_ERR("Failed to convert new integer to string \n");
