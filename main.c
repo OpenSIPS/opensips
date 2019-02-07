@@ -841,10 +841,13 @@ static int main_loop(void)
 	for(;;){
 			handle_sigs();
 			if (auto_scaling_enabled) {
-				sleep(1);
-				if ( (get_uticks()-last_check) >= 1000000) {
+				sleep( auto_scaling_cycle );
+				if ( (get_uticks()-last_check) >= auto_scaling_cycle*1000000) {
 					do_workers_auto_scaling();
 					last_check = get_uticks();
+				} else {
+					sleep_us( last_check + auto_scaling_cycle*1000000 -
+						get_uticks() );
 				}
 			} else
 				pause();
