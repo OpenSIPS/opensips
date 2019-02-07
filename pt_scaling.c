@@ -230,7 +230,7 @@ void do_workers_auto_scaling(void)
 		idx = (pg->history_idx+1)%pg->history_size;
 		pg->history_map[idx] = (unsigned char) ( load / procs_no );
 
-		LM_WARN("group %d (with %d procs) has average load of %d\n",
+		LM_DBG("group %d (with %d procs) has average load of %d\n",
 			pg->type, procs_no, pg->history_map[idx]);
 
 		/* do the check over the history */
