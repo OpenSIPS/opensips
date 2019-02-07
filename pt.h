@@ -2,6 +2,7 @@
  * Process Table
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2008-2019 OpenSIPS Project
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,11 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2003-04-15  added tcp_disable support (andrei)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -32,13 +29,13 @@
 #include <unistd.h>
 
 #include "pt_load.h"
-#include "socket_info.h"
-#include "ipc.h"
 
 #define MAX_PT_DESC	128
 
 enum process_type { TYPE_NONE=0, TYPE_UDP, TYPE_TCP,
 	TYPE_TIMER, TYPE_MODULE};
+
+#include "pt_scaling.h"
 
 struct process_table {
 	/* the UNIX pid of this process */
@@ -130,17 +127,6 @@ inline static int get_process_ID_by_PID(pid_t pid)
 
 	return -1;
 }
-
-
-typedef int (fork_new_process_f)(void *);
-typedef ipc_rpc_f terminate_process_f;
-
-int create_process_group(enum process_type type,
-		struct socket_info *si_filter,
-		unsigned int min_procs, unsigned int max_procs,
-		fork_new_process_f *f1, terminate_process_f *f2);
-
-void check_and_adjust_number_of_workers(void);
 
 void reset_process_slot(int p_id);
 
