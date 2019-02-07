@@ -35,7 +35,7 @@
 
 /* array with children pids, 0= main proc,
  * alloc'ed in shared mem if possible */
-struct process_table *pt=0;
+struct process_table *pt = NULL;
 
 /* The maximum number of processes that will ever exist in OpenSIPS. This is
  * actually the size of the process table
@@ -45,6 +45,18 @@ unsigned int counted_max_processes = 0;
 /* flag per process to control the termination stages */
 int _termination_in_progress = 0;
 
+
+static unsigned long count_running_processes(void *x)
+{
+	int i,cnt=0;
+
+	if (pt)
+		for ( i=0 ; i<counted_max_processes ; i++ )
+			if (is_process_running(i))
+				cnt++;
+
+	return cnt;
+}
 
 
 int init_multi_proc_support(void)
@@ -162,6 +174,13 @@ int init_multi_proc_support(void)
 	if ( register_stat2( "load", "load10m-all", (stat_var**)pt_get_10m_loadall,
 	STAT_IS_FUNC, NULL, 0) != 0) {
 		LM_ERR("failed to add RT global load stat\n");
+		return -1;
+	}
+
+	if ( register_stat2( "load", "processes_number",
+	(stat_var**)count_running_processes,
+	STAT_IS_FUNC, NULL, 0) != 0) {
+		LM_ERR("failed to add processes_number stat\n");
 		return -1;
 	}
 
