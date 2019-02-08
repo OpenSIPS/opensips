@@ -18,6 +18,7 @@ UAC Module
               1.3.3. rr_from_store_param (string)
               1.3.4. rr_to_store_param (string)
               1.3.5. force_dialog (int)
+              1.3.6. increment_cseq (int)
 
         1.4. Exported Functions
 
@@ -161,6 +162,19 @@ modparam("uac","rr_to_store_param","my_Tparam")
    Example 1.5. Set force_dialog parameter
 ...
 modparam("uac", "force_dialog", yes)
+...
+
+1.3.6. increment_cseq (int)
+
+   Under most circumstances, SIP Authenication can fail if the
+   second INVITE (with the Authorization header) uses the same
+   CSEQ value.  The default behavior is to increment the CSEQ.
+
+   Default value is 1.
+
+   Example 1.6. Set increment_cseq parameter
+...
+modparam("uac", "increment_cseq", 1)
 ...
 
 1.4. Exported Functions
