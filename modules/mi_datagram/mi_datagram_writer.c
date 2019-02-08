@@ -65,7 +65,7 @@ static inline int mi_datagram_write_node(datagram_stream * dtgram,
 
 
 	start = p = dtgram->current;
-	end = dtgram->start + dtgram->len;
+	end = dtgram->current + dtgram->len;
 	LM_DBG("writing the name <%.*s> and value <%.*s> \n",
 			node->name.len, node->name.s, node->value.len, node->value.s);
 	/* write indents */
@@ -200,12 +200,12 @@ int mi_datagram_write_tree(datagram_stream * dtgram, struct mi_root *tree)
 	if (datagram_recur_write_tree(dtgram, tree->node.kids, 0)!=0)
 		return -1;
 
-	if (dtgram->len<=0) {
+	if (dtgram->len <= 1) {
 		LM_ERR("failed to write - EOC does not fit in!!!\n");
 		return -1;
 	}
 
-	*(dtgram->current) = '\n';
+	*(dtgram->current++) = '\n';
 	dtgram->len--;
 	*(dtgram->current) = '\0';
 
@@ -297,8 +297,6 @@ int mi_datagram_flush_tree(datagram_stream * dtgram, struct mi_root *tree)
 		return -1;
 	}
 
-	*(dtgram->current) = '\n';
-	dtgram->len--;
 	*(dtgram->current) = '\0';
 
 	return 0;
