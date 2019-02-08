@@ -212,6 +212,24 @@ modparam("uac", "force_dialog", yes)
 				</programlisting>
 			</example>
 		</section>
+
+		<section id="param_increment_cseq" xreflabel="increment_cseq">
+			<title><varname>increment_cseq</varname> (int)</title>
+			<para>
+				Increment the CSEQ value when calling uac_auth().
+			</para>
+			<para>
+				Default value is yes.
+			</para>
+			<example>
+				<title>Set <varname>increment_cseq</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("uac", "increment_cseq", 1)
+...
+				</programlisting>
+			</example>
+		</section>
 	</section>
 
 
