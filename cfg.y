@@ -157,8 +157,7 @@ struct listen_param {
 	int children;
 	struct socket_id *socket;
 	char *tag;
-};
-static struct listen_param* mk_listen_param(void);
+} p_tmp;
 static void fill_socket_id(struct listen_param *param, struct socket_id *s);
 
 #ifndef SHM_EXTRA_STATS
@@ -475,7 +474,6 @@ static struct multi_str *tmp_mod;
 %type <sockid> alias_def
 %type <sockid> listen_id_def
 %type <sockid> phostport panyhostport
-%type <listen_param> listen_def_param listen_def_params
 %type <intval> proto port any_proto
 %type <strval> host_sep
 %type <intval> equalop compop matchop strop intop
@@ -614,43 +612,35 @@ listen_id_def:	listen_id					{ $$=mk_listen_id($1, PROTO_NONE, 0); }
 			 ;
 
 listen_def_param: ANYCAST {
-					$$=mk_listen_param();
-					$$->flags |= SI_IS_ANYCAST;
+					p_tmp.flags |= SI_IS_ANYCAST;
 					}
 				| USE_CHILDREN NUMBER {
-					$$=mk_listen_param();
-					$$->children=$2;
+					p_tmp.children |= $2;
 					}
 				| AS listen_id_def {
-					$$=mk_listen_param();
-					$$->socket=$2;
+					p_tmp.socket = $2;
 					}
 				| TAG ID {
-					$$=mk_listen_param();
-					$$->tag=$2;
+					p_tmp.tag = $2;
 					}
 				;
 
-listen_def_params:	listen_def_param { $$=$1; }
-				 |	listen_def_param listen_def_params {
-						$$=$1;
-						/* flags get "summed up" */
-						$$->flags |= $2->flags;
-						/* store only initial value of the others params */
-						if ($$->children != 0)
-							$$->children = $2->children;
-						if ($$->socket != NULL)
-							$$->socket = $2->socket;
-						if ($$->tag != NULL)
-							$$->tag = $2->tag;
-						pkg_free($2);
-					}
+listen_def_params:	listen_def_param
+				 |	listen_def_param listen_def_params
 				 ;
 
 listen_def:	panyhostport			{ $$=$1; }
 			| phostport				{ $$=$1; }
-			| panyhostport listen_def_params	{ $$=$1; fill_socket_id($2, $$); }
-			| phostport listen_def_params	{ $$=$1; fill_socket_id($2, $$); }
+			| panyhostport {
+					memset(&p_tmp, 0, sizeof(p_tmp));
+				} listen_def_params	{
+					$$=$1; fill_socket_id(&p_tmp, $$);
+				}
+			| phostport {
+					memset(&p_tmp, 0, sizeof(p_tmp));
+				} listen_def_params	{
+					$$=$1; fill_socket_id(&p_tmp, $$);
+				}
 			;
 
 any_proto:	  ANY	{ $$=PROTO_NONE; }
@@ -2722,24 +2712,9 @@ static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 {
 	s->flags |= param->flags;
 	s->children = param->children;
-	if (param->socket) {
+	if (param->socket)
 		set_listen_id_adv(s, param->socket->name, param->socket->port);
-		pkg_free(param->socket);
-	}
-	if (param->tag)
-		s->tag = param->tag;
-	pkg_free(param);
-}
-
-static struct listen_param* mk_listen_param(void)
-{
-	struct listen_param *l;
-	l=pkg_malloc(sizeof(struct listen_param));
-	if (l==0)
-		LM_CRIT("cfg. parser: out of memory.\n");
-	else
-		memset(l, 0, sizeof *l);
-	return l;
+	s->tag = param->tag;
 }
 
 static struct multi_str *new_string(char *s)
