@@ -280,7 +280,6 @@ struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* miCmd,
           node = &mi_cmd->node;
           if(!add_mi_node_child(node,0,NULL,0,val.s,val.len)){
             LM_ERR("cannot add the child node to the tree\n");
-            free_mi_tree(mi_cmd);
             goto error;
           }
           j = i+1;
@@ -293,7 +292,6 @@ struct mi_root* mi_json_run_mi_cmd(struct mi_cmd *f, const str* miCmd,
         node = &mi_cmd->node;
         if(!add_mi_node_child(node,0,NULL,0,val.s,val.len)){
           LM_ERR("cannot add the child node to the tree\n");
-          free_mi_tree(mi_cmd);
           goto error;
         }
       }
