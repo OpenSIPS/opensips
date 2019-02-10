@@ -132,7 +132,7 @@ Chapter 2. Contributors
    6. Jan Janak (@janakj) 12 8 300 23
    7. Razvan Crainea (@razvancrainea) 10 7 205 24
    8. Klaus Darilion 10 6 139 67
-   9. Vlad Paiu (@vladpaiu) 8 6 100 34
+   9. Vlad Paiu (@vladpaiu) 9 7 102 34
    10. Ancuta Onofrei 7 1 186 191
 
    All remaining contributors: Norman Brandinger, Maksym Sobolyev
@@ -162,16 +162,17 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jul 2005 - Jan 2019
-   2.  Liviu Chircu (@liviuchircu)              Sep 2012 - Nov 2018
-   3.  Razvan Crainea (@razvancrainea)          Oct 2011 - Oct 2018
-   4.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
-   6.  Jarrod Baumann (@jarrodb)                Mar 2016 - Mar 2016
-   7.  Dusan Klinec                             Dec 2015 - Dec 2015
-   8.  Aron Podrigal                            Jul 2015 - Jul 2015
-   9.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
-   10. Vlad Paiu (@vladpaiu)                    Jan 2011 - Mar 2012
+   1.  Vlad Paiu (@vladpaiu)                    Jan 2011 - Feb 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jul 2005 - Jan 2019
+   3.  Liviu Chircu (@liviuchircu)              Sep 2012 - Nov 2018
+   4.  Razvan Crainea (@razvancrainea)          Oct 2011 - Oct 2018
+   5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   6.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
+   7.  Jarrod Baumann (@jarrodb)                Mar 2016 - Mar 2016
+   8.  Dusan Klinec                             Dec 2015 - Dec 2015
+   9.  Aron Podrigal                            Jul 2015 - Jul 2015
+   10. Eseanu Marius Cristian (@eseanucristian)   Jul 2015 - Jul
+                                                2015
 
    All remaining contributors: Razvan Pistolea, Ruslan Bukin,
    Henning Westerholt (@henningw), Daniel-Constantin Mierla
