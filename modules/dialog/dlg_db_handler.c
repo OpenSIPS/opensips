@@ -504,6 +504,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	struct socket_info *caller_sock,*callee_sock;
 	int found_ended_dlgs=0;
 	unsigned int hash_entry,hash_id;
+	str tag_name;
+	int rc;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -704,6 +706,12 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					ref_dlg(dlg,1);
 				}
 			}
+
+			if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
+				if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
+					LM_ERR("No more shm memory\n");
+			} else if (rc == -1)
+				LM_ERR("Failed to get dlg value for sharing tag\n");
 
 			if (dlg_db_mode == DB_MODE_DELAYED) {
 				/* to be later removed by timer */
@@ -1352,6 +1360,11 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 			LM_ERR("failed to persist some Re-INVITE pinging info\n");
 	}
 
+	/* save sharing tag name as dlg val */
+	if (cell->shtag.s && store_dlg_value_unsafe(cell, &shtag_dlg_val,
+		&cell->shtag) < 0)
+		LM_ERR("Failed to store sharing tag name as dlg val\n");
+
 	if (on_shutdown || (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED))) {
 		if (cell->vals==NULL) {
 			VAL_NULL(vals) = 1;
@@ -1630,6 +1643,8 @@ static int sync_dlg_db_mem(void)
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
 	int hash_entry,hash_id;
+	str tag_name;
+	int rc;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -1850,6 +1865,12 @@ static int sync_dlg_db_mem(void)
 						ref_dlg(dlg,1);
 					}
 				}
+
+				if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
+					if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
+						LM_ERR("No more shm memory\n");
+				} else if (rc == -1)
+					LM_ERR("Failed to get dlg value for sharing tag\n");
 
 				if (dlg_db_mode == DB_MODE_DELAYED) {
 					/* to be later removed by timer */

@@ -103,6 +103,8 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	struct dlg_cell *dlg = NULL;
 	struct socket_info *caller_sock, *callee_sock;
 	struct dlg_entry *d_entry;
+	str tag_name;
+	int rc;
 
 	LM_DBG("Received replicated dialog!\n");
 	if (!cell) {
@@ -268,6 +270,12 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 		read_dialog_vars(vars.s, vars.len, dlg);
 
 	dlg_unlock(d_table, d_entry);
+
+	if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
+		if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
+			LM_ERR("No more shm memory\n");
+	} else if (rc == -1)
+		LM_ERR("Failed to get dlg value for sharing tag\n");
 
 	if (profiles.s && profiles.len != 0)
 		read_dialog_profiles(profiles.s, profiles.len, dlg, 0, 1);
@@ -517,6 +525,10 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 
 	/* give modules the chance to write values/profiles before replicating */
 	run_dlg_callbacks(DLGCB_WRITE_VP, dlg, NULL, DLG_DIR_NONE, NULL, 1, 1);
+
+   /* save sharing tag name as dlg val */
+	if (dlg->shtag.s && store_dlg_value_unsafe(dlg, &shtag_dlg_val, &dlg->shtag) < 0)
+		LM_ERR("Failed to store sharing tag name as dlg val\n");
 
 	vars = write_dialog_vars(dlg->vals);
 	profiles = write_dialog_profiles(dlg->profile_links);
@@ -1285,9 +1297,8 @@ int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name)
 		return -1;
 	}
 
-	if (store_dlg_value(dlg, &shtag_dlg_val, tag_name) < 0) {
-		LM_ERR("Failed to store dlg value for sharing tag: <%.*s>\n",
-			tag_name->len, tag_name->s);
+	if (shm_str_dup(&dlg->shtag, tag_name) < 0) {
+		LM_ERR("No more shm memory\n");
 		return -1;
 	}
 
@@ -1298,28 +1309,23 @@ int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name)
  *	0 - backup
  *	1 - active
  * -1 - error
- * -2 - dlg val not found
+ * -2 - tag not found
  */
 int get_shtag_state(struct dlg_cell *dlg)
 {
-	str tag_name;
 	int rc;
 
 	if (!dlg)
 		return -1;
 
-	rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0);
-	if (rc == -1) {
-		LM_ERR("Unable to fetch dlg value holding the sharing tag\n");
-		return -1;
-	} else if (rc == -2) {
-		LM_DBG("dlg value holding the sharing tag not found\n");
+	if (!dlg->shtag.s || dlg->shtag.len == 0) {
+		LM_DBG("Sharing tag not set\n");
 		return -2;
 	}
 
-	if ((rc = clusterer_api.shtag_get(&tag_name, dialog_repl_cluster)) < 0) {
+	if ((rc = clusterer_api.shtag_get(&dlg->shtag, dialog_repl_cluster)) < 0) {
 		LM_ERR("Failed to get state for sharing tag: <%.*s>\n",
-			tag_name.len, tag_name.s);
+			dlg->shtag.len, dlg->shtag.s);
 		return -1;
 	}
 

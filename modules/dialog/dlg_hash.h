@@ -162,6 +162,7 @@ struct dlg_cell
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
 	struct dlg_val       *vals;
+	str                  shtag;
 };
 
 
