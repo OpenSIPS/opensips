@@ -3888,8 +3888,10 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 					vcnt = 23;
 					STR2IOVEC(rtpp_notify_socket, v[20]);
 					if (!HAS_CAP(args->node, NOTIFY_WILD)) {
-						v[20].iov_base += 4;
-						v[20].iov_len -= 4;
+						if (!rtpp_notify_socket_un) {
+							v[20].iov_base += 4;
+							v[20].iov_len -= 4;
+						}
 					}
 				} else {
 					vcnt = (to_tag.len > 0) ? 19 : 15;
