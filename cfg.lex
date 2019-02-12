@@ -341,7 +341,7 @@ DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
 AUTO_SCALING_PROFILE "auto_scaling_profile"
 AUTO_SCALING_CYCLE "auto_scaling_cycle"
-AUTO_SCALING_TIMER_PROFILE "auto_scaling_timer_profile"
+TIMER_WORKERS "timer_workers"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -642,8 +642,8 @@ IMPORTFILE      "import_file"
 									return AUTO_SCALING_PROFILE; }
 <INITIAL>{AUTO_SCALING_CYCLE}	{	count(); yylval.strval=yytext;
 									return AUTO_SCALING_CYCLE; }
-<INITIAL>{AUTO_SCALING_TIMER_PROFILE}	{	count(); yylval.strval=yytext;
-									return AUTO_SCALING_TIMER_PROFILE; }
+<INITIAL>{TIMER_WORKERS}	{	count(); yylval.strval=yytext;
+									return TIMER_WORKERS; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }

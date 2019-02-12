@@ -400,7 +400,7 @@ static struct multi_str *tmp_mod;
 %token LAUNCH_TOKEN
 %token AUTO_SCALING_PROFILE
 %token AUTO_SCALING_CYCLE
-%token AUTO_SCALING_TIMER_PROFILE
+%token TIMER_WORKERS
 
 
 
@@ -794,6 +794,13 @@ assign_stm: DEBUG EQUAL snumber
 		| CHILDREN EQUAL error { yyerror("number expected"); }
 		| UDP_WORKERS EQUAL NUMBER { udp_workers_no=$3; }
 		| UDP_WORKERS EQUAL error { yyerror("number expected"); }
+		| TIMER_WORKERS EQUAL NUMBER {
+				timer_workers_no=$3;
+		}
+		| TIMER_WORKERS EQUAL NUMBER USE_AUTO_SCALING_PROFILE ID{
+				timer_workers_no=$3;
+				timer_auto_scaling_profile=$5;
+		}
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER {
@@ -1239,11 +1246,6 @@ assign_stm: DEBUG EQUAL snumber
 		| AUTO_SCALING_CYCLE EQUAL error {
 				yyerror("integer value expected");
 				}
-		| AUTO_SCALING_TIMER_PROFILE EQUAL ID { auto_scaling_timer_profile=$3;}
-		| AUTO_SCALING_TIMER_PROFILE EQUAL error {
-				yyerror("ID value expected");
-				}
-
 		| error EQUAL { yyerror("unknown config variable"); }
 	;
 

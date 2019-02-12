@@ -72,7 +72,25 @@ static int            timer_pipe[2];
 static struct scaling_profile *s_profile=NULL;
 
 int timer_fd_out = -1 ;
-char *auto_scaling_timer_profile = NULL;
+char *timer_auto_scaling_profile = NULL;
+int timer_workers_no = 1;
+
+
+
+/* counts the number of timer processes to start with; this number may 
+ * change during runtime due auto-scaling */
+int timer_count_processes(unsigned int *extra)
+{
+	if (extra) *extra = 0;
+
+	if (s_profile && extra) {
+		/* how many can be forked over th number of procs to start with ?*/
+		if (s_profile->max_procs > timer_workers_no)
+			*extra = s_profile->max_procs - timer_workers_no;
+	}
+
+	return 2/*keeper & trigger*/ + timer_workers_no /*workers to start with*/;
+}
 
 
 /* ret 0 on success, <0 on error*/
@@ -122,11 +140,11 @@ int init_timer(void)
 	/* make visible the "read" part of the pipe */
 	timer_fd_out = timer_pipe[0];
 
-	if (auto_scaling_timer_profile) {
-		s_profile = get_scaling_profile(auto_scaling_timer_profile);
+	if (timer_auto_scaling_profile) {
+		s_profile = get_scaling_profile(timer_auto_scaling_profile);
 		if ( s_profile==NULL) {
 			LM_ERR("undefined auto-scaling profile <%s> for timers\n",
-				auto_scaling_timer_profile);
+				timer_auto_scaling_profile);
 			return E_UNSPEC;
 		}
 		auto_scaling_enabled = 1;
@@ -762,7 +780,7 @@ static void timer_process_graceful_terminate(int sender, void *param)
 
 int start_timer_extra_processes(int *chd_rank)
 {
-	int p_id;
+	int i, p_id;
 
 	if (auto_scaling_enabled && s_profile &&
 	create_process_group( TYPE_TIMER, NULL, s_profile ,
@@ -770,29 +788,34 @@ int start_timer_extra_processes(int *chd_rank)
 		LM_ERR("failed to create group of TIMER processes, "
 			"auto forking will not be possible\n");
 
-	(*chd_rank)++;
-	if ( (p_id=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {
-		LM_CRIT("cannot fork Timer handler process\n");
-		return -1;
-	} else if (p_id==0) {
-		/* new Timer process */
-		/* set a more detailed description */
-			set_proc_attrs("Timer handler");
-			if (timer_proc_reactor_init() < 0 ||
-					init_child(*chd_rank) < 0) {
-				report_failure_status();
-				goto error;
-			}
+	for( i=0 ; i<timer_workers_no ; i++ ) {
 
-			report_conditional_status( 1, 0);
+		(*chd_rank)++;
+		if ( (p_id=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {
+			LM_CRIT("cannot fork Timer handler process\n");
+			return -1;
+		} else if (p_id==0) {
+			/* new Timer process */
+			/* set a more detailed description */
+				set_proc_attrs("Timer handler");
+				if (timer_proc_reactor_init() < 0 ||
+						init_child(*chd_rank) < 0) {
+					report_failure_status();
+					goto error;
+				}
 
-			/* launch the reactor */
-			reactor_main_loop( 1/*timeout in sec*/, error , );
-			destroy_worker_reactor();
+				report_conditional_status( 1, 0);
 
-			exit(-1);
+				/* launch the reactor */
+				reactor_main_loop( 1/*timeout in sec*/, error , );
+				destroy_worker_reactor();
+
+				exit(-1);
+		}
+		/*parent*/
+
 	}
-	/*parent*/
+
 	return 0;
 
 /* only from child process */

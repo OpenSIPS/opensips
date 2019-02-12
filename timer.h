@@ -85,7 +85,11 @@ struct os_timer{
 
 extern int timer_fd_out;
 
-extern char *auto_scaling_timer_profile;
+extern char *timer_auto_scaling_profile;
+
+extern int timer_workers_no;
+
+int timer_count_processes(unsigned int *extra);
 
 int init_timer(void);
 

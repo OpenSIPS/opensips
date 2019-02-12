@@ -72,23 +72,22 @@ int init_multi_proc_support(void)
 	/* UDP based listeners */
 	proc_no += udp_count_processes( &extra );
 	proc_extra_no += extra;
+
 	/* TCP based listeners */
 	proc_no += tcp_count_processes( &extra );
 	proc_extra_no += extra;
+
+	/* Timer related processes */
+	proc_no += timer_count_processes( &extra );
+	proc_extra_no += extra;
+
 	/* attendent */
 	proc_no++;
-
-	/* info packet UDP receivers */
-
-	/* timer processes */
-	proc_no += 3 /* timer keeper + timer trigger + dedicated */;
-	proc_extra_no += 0; /* the dedicated proc may turn into multiple */;
 
 	/* count the processes requested by modules */
 	proc_no += count_module_procs(0);
 
 	counted_max_processes = proc_no + proc_extra_no;
-
 
 	/* allocate the PID table to accomodate the maximum possible number of
 	 * process we may have during runtime (covering extra procs created 
@@ -351,11 +350,9 @@ int count_init_child_processes(void)
 	/* listening children to be create at startup */
 	ret += udp_count_processes(NULL);
 	ret += tcp_count_processes(NULL);
+	ret += timer_count_processes(NULL) - 2/*for keeper & trigger*/;
 
 	/* attendent */
-	ret++;
-
-	/* dedicated timer */
 	ret++;
 
 	/* count number of module procs going to be initialised */
