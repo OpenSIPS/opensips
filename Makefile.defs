@@ -1310,8 +1310,6 @@ endif	#ARCH, ppc
 
 endif   # CFLAGS not set
 
-CFLAGS+= $(CC_EXTRA_OPTS)
-
 LD_EXTRA_OPTS ?=
 
 # setting LDFLAGS
@@ -1621,6 +1619,7 @@ ifdef DEBUG_PARSER
 endif
 
 
+CFLAGS+= $(CC_EXTRA_OPTS)
 LDFLAGS+= $(LD_EXTRA_OPTS)
 
 ifneq (,$(findstring CYGWIN, $(OS)))
