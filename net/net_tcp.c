@@ -1883,7 +1883,6 @@ static int fork_dynamic_tcp_process(void *foo)
 		/* new TCP process */
 		set_proc_attrs("TCP receiver");
 		tcp_workers[r].pid = getpid();
-		pt[process_no].idx=r;
 
 		if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock)<0||
 		init_child(20000) < 0) {
@@ -1976,7 +1975,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			/* child */
 			set_proc_attrs("TCP receiver");
 			tcp_workers[r].pid = getpid();
-			pt[process_no].idx=r;
 			if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock)<0||
 					init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");

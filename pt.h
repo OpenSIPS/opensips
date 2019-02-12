@@ -61,8 +61,6 @@ struct process_table {
 	int tcp_socks_holder[2];
 	/* unix socket on which TCP MAIN listens */
 	int unix_sock;
-	/* tcp child index, -1 for other processes */
-	int idx;
 
 	/* logging level of this process */
 	int log_level;

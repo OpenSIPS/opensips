@@ -103,7 +103,6 @@ int init_multi_proc_support(void)
 	for( i=0 ; i<counted_max_processes ; i++ ) {
 		/* reset fds to prevent bogus ops */
 		pt[i].unix_sock = -1;
-		pt[i].idx = -1;
 		pt[i].pid = -1;
 		pt[i].ipc_pipe[0] = pt[i].ipc_pipe[1] = -1;
 	}
@@ -223,7 +222,6 @@ void reset_process_slot( int p_id )
 
 	pt[p_id].ipc_pipe[0] = pt[p_id].ipc_pipe[1] = -1;
 	pt[p_id].unix_sock = -1;
-	pt[p_id].idx = -1;
 
 	pt[p_id].log_level = pt[p_id].default_log_level = 0; /*not really needed*/
 
