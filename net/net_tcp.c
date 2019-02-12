@@ -1907,9 +1907,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	if ( auto_scaling_enabled && s_profile &&
 	create_process_group( TYPE_TCP, NULL, s_profile,
 	fork_dynamic_tcp_process, tcp_process_graceful_terminate)!=0)
-		LM_ERR("failed to create group of UDP processes for <%.*s>, "
-			"auto forking will not be possible\n",
-			si->name.len, si->name.s);
+		LM_ERR("failed to create group of TCP processes for, "
+			"auto forking will not be possible\n");
 
 	/* start the TCP workers */
 	for(r=0; r<tcp_workers_no; r++){
