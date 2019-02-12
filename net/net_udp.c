@@ -74,7 +74,9 @@ int udp_count_processes(unsigned int *extra)
 		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
 			for( si=protos[i].listeners ; si; si=si->next) {
 				n+=si->workers;
-				e+=si->s_profile?(si->s_profile->max_procs-si->workers):0;
+				if (si->s_profile)
+					if (si->s_profile->max_procs > si->workers)
+						e+=si->s_profile->max_procs-si->workers;
 			}
 
 	if (extra) *extra = e;
@@ -409,7 +411,7 @@ static void udp_process_graceful_terminate(int sender, void *param)
 
 	/* the exit will be triggered by the reactor, when empty */
 	_termination_in_progress = 1;
-	LM_WARN("reactor not empty, waiting for pending async\n");
+	LM_INFO("reactor not empty, waiting for pending async\n");
 }
 
 
