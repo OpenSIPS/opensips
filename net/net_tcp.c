@@ -1865,6 +1865,17 @@ static int fork_dynamic_tcp_process(void *foo)
 	int p_id;
 	int r;
 
+	/* search for free slot in the TCP workers table */
+	for( r=0 ; r<tcp_workers_max_no ; r++ )
+		if (tcp_workers[r].state==STATE_INACTIVE)
+			break;
+
+	if (r==tcp_workers_max_no) {
+		LM_BUG("trying to fork one more TCP worker but no free slots in "
+			"the TCP table\n");
+		return -1;
+	}
+
 	if((p_id=internal_fork("SIP receiver TCP", OSS_PROC_DYNAMIC, TYPE_TCP))<0){
 		LM_ERR("cannot fork dynamic TCP worker process\n");
 		return(-1);
@@ -1874,25 +1885,30 @@ static int fork_dynamic_tcp_process(void *foo)
 		tcp_workers[r].pid = getpid();
 		pt[process_no].idx=r;
 
-			if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock)<0||
-					init_child(*chd_rank) < 0) {
-				LM_ERR("init_children failed\n");
-				report_failure_status();
-				if (startup_done)
-					*startup_done = -1;
-				exit(-1);
-			}
-
-			report_conditional_status( 1, 0);
-
-			tcp_worker_proc_loop();
+		if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock)<0||
+		init_child(20000) < 0) {
+			goto error;
 		}
-	}
 
-			/* parent */
-			tcp_workers[r].state=STATE_ACTIVE;
-			tcp_workers[r].busy=0;
-			tcp_workers[r].n_reqs=0;
+		report_conditional_status( 1, 0);/*report success*/
+		/* the child proc is done read&write) dealing with the status pipe */
+		clean_read_pipeend();
+
+		tcp_worker_proc_loop();
+		destroy_worker_reactor();
+
+error:
+		report_failure_status();
+		LM_ERR("Initializing new process failed, exiting with error \n");
+		pt[process_no].flags |= OSS_PROC_SELFEXIT;
+		exit( -1);
+	} else {
+		/*parent/main*/
+		tcp_workers[r].state=STATE_ACTIVE;
+		tcp_workers[r].busy=0;
+		tcp_workers[r].n_reqs=0;
+		return p_id;
+	}
 
 	return 0;
 }
