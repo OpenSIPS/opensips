@@ -375,8 +375,12 @@ void dynamic_process_final_exit(void)
 	/* clear the per-process connection from the DB queues */
 	ql_force_process_disconnect(process_no);
 
+	/* if a TCP proc by chance, reset the tcp-related data */
+	tcp_reset_worker_slot();
+
 	/* mark myself as DYNAMIC (just in case) to have an err-less terminatio */
 	pt[process_no].flags |= OSS_PROC_SELFEXIT;
+	LM_INFO("doing self termination\n");
 
 	/* the process slot in the proc table will be purge on SIGCHLG by main */
 	exit(0);

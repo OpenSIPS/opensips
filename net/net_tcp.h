@@ -64,6 +64,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done);
 /* starts the TCP listening process */
 int tcp_start_listener(void);
 
+void tcp_reset_worker_slot(void);
+
 /* MI function to list all existing TCP connections */
 mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 							struct mi_handler *async_hdl);

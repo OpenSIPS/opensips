@@ -30,6 +30,10 @@
 void tcp_worker_proc_loop(void);
 int tcp_worker_proc_reactor_init( int fd);
 
+/* function to terminate TCP workers at runtime; it must be call within
+ * the context of the process to be terminated */
+void tcp_terminate_worker(void);
+
 /*! \brief  releases expired connections and cleans up bad ones (state<0) */
 void tcp_receive_timeout(void);
 

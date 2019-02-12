@@ -1860,6 +1860,32 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int worker )
 }
 
 
+int _get_own_tcp_worker_id(void)
+{
+	pid_t pid;
+	int i;
+
+	pid = getpid();
+	for( i=0 ; i<tcp_workers_max_no ; i++)
+		if(tcp_workers[i].pid==pid)
+			return i;
+
+	return -1;
+}
+
+
+void tcp_reset_worker_slot(void)
+{
+	int i;
+
+	if ((i=_get_own_tcp_worker_id())>=0) {
+		tcp_workers[i].state=STATE_INACTIVE;
+		tcp_workers[i].pid=0;
+		tcp_workers[i].busy=0;
+	}
+}
+
+
 static int fork_dynamic_tcp_process(void *foo)
 {
 	int p_id;
@@ -1915,15 +1941,46 @@ error:
 
 static void tcp_process_graceful_terminate(int sender, void *param)
 {
+	int i;
+
+	/* we accept this only from the main proccess */
+	if (sender!=0) {
+		LM_BUG("graceful terminate received from a non-main process!!\n");
+		return;
+	}
+	LM_NOTICE("process %d received RPC to terminate from Main\n",process_no);
+
+	/* going into "draining" state will avoid:
+	 *  - getting jobs from TCP MAIN (active state required for that)
+	 *  - having othe worker slot re-used (inactive state required for that) */
+	if ((i=_get_own_tcp_worker_id())>=0)
+		tcp_workers[i].state=STATE_DRAINING;
+
+	tcp_terminate_worker();
+
+	return;
 }
+
 
 /* counts the number of TPC process to start with; this number may 
  * change during runtime due auto-scaling */
 int tcp_count_processes(unsigned int *extra)
 {
 	if (extra) *extra = 0;
-	return ((!tcp_disabled)?( 1/* tcp main */ + tcp_workers_no ):0);
+
+	if (tcp_disabled)
+		return 0;
+
+
+	if (s_profile && extra) {
+		/* how many can be forked over th number of procs to start with ?*/
+		if (s_profile->max_procs > tcp_workers_no)
+			*extra = s_profile->max_procs - tcp_workers_no;
+	}
+
+	return 1/* tcp main */ + tcp_workers_no /*workers to start with*/;
 }
+
 
 int tcp_start_processes(int *chd_rank, int *startup_done)
 {

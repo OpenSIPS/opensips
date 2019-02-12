@@ -37,6 +37,9 @@
 #include "trans.h"
 
 
+/*!< the FD currently used by the process to communicate with TCP MAIN*/
+static int _my_fd_to_tcp_main = -1;
+
 /*!< list of tcp connections handled by this process */
 static struct tcp_connection* tcp_conn_lst=0;
 
@@ -102,6 +105,59 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 		return;
 	}
 	tcpconn_put(c);
+}
+
+
+/*! \brief  releases expired connections and cleans up bad ones (state<0) */
+static void tcp_receive_timeout(void)
+{
+	struct tcp_connection* con;
+	struct tcp_connection* next;
+	unsigned int ticks;
+
+	ticks=get_ticks();
+	for (con=tcp_conn_lst; con; con=next) {
+		next=con->c_next; /* safe for removing */
+		if (con->state<0){   /* kill bad connections */
+			/* S_CONN_BAD or S_CONN_ERROR, remove it */
+			/* fd will be closed in tcpconn_release */
+
+			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
+			tcpconn_check_del(con);
+			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+			con->proc_id = -1;
+			con->state=S_CONN_BAD;
+			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+			sh_log(con->hist, TCP_SEND2MAIN, "state: %d, att: %d",
+			       con->state, con->msg_attempts);
+			tcpconn_release_error(con, 0, "Unknown reason");
+			continue;
+		}
+		/* pass back to Main connections that are inactive (expired) or
+		 * if we are in termination mode (this worker is doing graceful 
+		 * shutdown) and there is no pending data on the conn. */
+		if (con->timeout<=ticks ||
+		(_termination_in_progress && !con->msg_attempts) ){
+			LM_DBG("%p expired - (%d, %d) lt=%d\n",
+					con, con->timeout, ticks,con->lifetime);
+			/* fd will be closed in tcpconn_release */
+			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
+			tcpconn_check_del(con);
+			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+
+			/* connection is going to main */
+			con->proc_id = -1;
+			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+
+			sh_log(con->hist, TCP_SEND2MAIN, "timeout: %d, att: %d",
+			       con->timeout, con->msg_attempts);
+			if (con->msg_attempts)
+				tcpconn_release_error(con, 0, "Read timeout with"
+					"incomplete SIP message");
+			else
+				tcpconn_release(con, CONN_RELEASE,0);
+		}
+	}
 }
 
 
@@ -278,6 +334,18 @@ again:
 			goto error;
 	}
 
+	if (_termination_in_progress==1) {
+		/* force (again) passing back all the active conns */
+		tcp_receive_timeout();
+		/* check if anything is still left */
+		if (reactor_is_empty()) {
+			LM_WARN("reactor got empty while termination in progress\n");
+			ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
+			if (reactor_is_empty())
+				dynamic_process_final_exit();
+		}
+	}
+
 	pt_become_idle();
 	return ret;
 con_error:
@@ -288,56 +356,6 @@ con_error:
 error:
 	pt_become_idle();
 	return -1;
-}
-
-
-
-/*! \brief  releases expired connections and cleans up bad ones (state<0) */
-void tcp_receive_timeout(void)
-{
-	struct tcp_connection* con;
-	struct tcp_connection* next;
-	unsigned int ticks;
-
-	ticks=get_ticks();
-	for (con=tcp_conn_lst; con; con=next) {
-		next=con->c_next; /* safe for removing */
-		if (con->state<0){   /* kill bad connections */
-			/* S_CONN_BAD or S_CONN_ERROR, remove it */
-			/* fd will be closed in tcpconn_release */
-
-			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
-			tcpconn_check_del(con);
-			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-			con->proc_id = -1;
-			con->state=S_CONN_BAD;
-			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-			sh_log(con->hist, TCP_SEND2MAIN, "state: %d, att: %d",
-			       con->state, con->msg_attempts);
-			tcpconn_release_error(con, 0, "Unknown reason");
-			continue;
-		}
-		if (con->timeout<=ticks){
-			LM_DBG("%p expired - (%d, %d) lt=%d\n",
-					con, con->timeout, ticks,con->lifetime);
-			/* fd will be closed in tcpconn_release */
-			reactor_del_reader(con->fd, -1/*idx*/, IO_FD_CLOSING/*io_flags*/ );
-			tcpconn_check_del(con);
-			tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
-
-			/* connection is going to main */
-			con->proc_id = -1;
-			if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-
-			sh_log(con->hist, TCP_SEND2MAIN, "timeout: %d, att: %d",
-			       con->timeout, con->msg_attempts);
-			if (con->msg_attempts)
-				tcpconn_release_error(con, 0, "Read timeout with"
-					"incomplete SIP message");
-			else
-				tcpconn_release(con, CONN_RELEASE,0);
-		}
-	}
 }
 
 
@@ -373,6 +391,7 @@ int tcp_worker_proc_reactor_init( int unix_sock)
 		LM_CRIT("failed to add socket to the fd list\n");
 		goto error;
 	}
+	_my_fd_to_tcp_main = tcpmain_sock;
 
 	return 0;
 error:
@@ -388,5 +407,39 @@ void tcp_worker_proc_loop(void)
 	exit(-1);
 error:
 	destroy_worker_reactor();
+}
+
+
+void tcp_terminate_worker(void)
+{
+	/*remove from reactor all the shared fds, so we stop reading from them */
+
+	/*remove timer jobs pipe */
+	reactor_del_reader( timer_fd_out, -1, 0);
+
+	/*remove IPC dispatcher pipe */
+	reactor_del_reader( IPC_FD_READ_SHARED, -1, 0);
+
+	/*remove private IPC pipe */
+	reactor_del_reader( IPC_FD_READ_SELF, -1, 0);
+
+	/*remove unix sock to TCP main */
+	reactor_del_reader( _my_fd_to_tcp_main, -1, 0);
+
+	_termination_in_progress = 1;
+
+	/* let's drain the private IPC */
+	ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
+
+	/* force passing back all the active conns */
+	tcp_receive_timeout();
+
+	/* what is left now is the reactor are async fd's, so we need to 
+	 * wait to complete all of them */
+	if (reactor_is_empty())
+		dynamic_process_final_exit();
+
+	/* the exit will be triggered by the reactor, when empty */
+	LM_INFO("reactor not empty, waiting for pending async/conns\n");
 }
 
