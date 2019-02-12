@@ -389,7 +389,7 @@ int expand_interface(struct socket_info *si, struct socket_info** list)
 	sid.port = si->port_no;
 	sid.proto = si->proto;
 	sid.workers = si->workers;
-	sid.auto_scaling_profile = si->s_profile->name;
+	sid.auto_scaling_profile = si->s_profile?si->s_profile->name:NULL;
 	sid.adv_port = si->adv_port;
 	sid.adv_name = si->adv_name_str.s; /* it is NULL terminated */
 	sid.tag = si->tag.s; /* it is NULL terminated */
