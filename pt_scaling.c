@@ -217,7 +217,13 @@ void do_workers_auto_scaling(void)
 		/* find the processes belonging to this group */
 		for ( i=0 ; i<counted_max_processes ; i++) {
 
-			if (pt[i].type != pg->type || pg->si_filter!=pt[i].pg_filter)
+			/* skip processes:
+			 * - not running
+			 * - runing, but marked for termination
+			 * - not part of the group
+			 * - with a different group filter (socket interface) */
+			if (!is_process_running(i) || pt[i].flags&OSS_PROC_TO_TERMINATE ||
+			pt[i].type != pg->type || pg->si_filter!=pt[i].pg_filter)
 				continue;
 
 			load += get_stat_val( pt[i].load_rt );
@@ -282,10 +288,11 @@ void do_workers_auto_scaling(void)
 					(pg->prof->down_cycles_tocheck * (procs_no-1));
 				if ( load < pg->prof->up_threshold ) {
 					/* down scale one more process here */
-					LM_NOTICE("score %d/%d -> ripping one proc from group %d "
+					LM_NOTICE("score %d/%d -> ripping proc %d from group %d "
 						"(with %d procs), estimated load -> %d\n", cnt_under,
-						pg->prof->down_cycles_tocheck, pg->type, procs_no,
-						load );
+						pg->prof->down_cycles_tocheck, last_idx_in_pg,
+						pg->type, procs_no, load );
+					pt[last_idx_in_pg].flags |= OSS_PROC_TO_TERMINATE;
 					ipc_send_rpc( last_idx_in_pg, pg->term_func, NULL);
 				}
 			}
