@@ -1813,15 +1813,8 @@ int tcp_create_comm_proc_socks( int proc_no)
 
 int tcp_activate_comm_proc_socks( int proc_no)
 {
-	int sockfd[2];
-
 	if (tcp_disabled)
 		return 0;
-
-	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockfd)<0){
-		LM_ERR("socketpair failed: %s\n", strerror(errno));
-		return -1;
-	}
 
 	unix_tcp_sock = pt[proc_no].tcp_socks_holder[1];
 	pt[proc_no].unix_sock = pt[proc_no].tcp_socks_holder[0];
@@ -1838,7 +1831,6 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int worker )
 	if (worker) {
 		close( pt[proc_no].unix_sock );
 	} else {
-		close(unix_tcp_sock);
 		unix_tcp_sock = -1;
 	}
 }
