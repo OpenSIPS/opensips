@@ -26,6 +26,7 @@
 #ifndef DB_HTTP_H
 #define DB_HTTP_H
 
+extern int disable_expect;
 extern unsigned int db_http_timeout;
 
 #endif /* DB_HTTP_H */

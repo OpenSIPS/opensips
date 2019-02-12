@@ -1040,10 +1040,13 @@ db_con_t* db_http_init(const str* url)
 
 	curl->handle = curl_easy_init();
 
-	//Disable Expect: 100-continue
 	curl->headers = NULL;
-	curl->headers = curl_slist_append(curl->headers, "Expect:");
-	curl_easy_setopt(curl->handle,CURLOPT_HTTPHEADER,curl->headers);
+
+	//Disable Expect: 100-continue behavior
+	if (disable_expect) {
+		curl->headers = curl_slist_append(curl->headers, "Expect:");
+		curl_easy_setopt(curl->handle,CURLOPT_HTTPHEADER,curl->headers);
+	}
 
 	curl_easy_setopt(curl->handle,CURLOPT_SSL_VERIFYPEER,0);
 	curl_easy_setopt(curl->handle,CURLOPT_SSL_VERIFYHOST,0);
