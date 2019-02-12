@@ -60,13 +60,15 @@
 
 struct struct_hist_list *con_hist;
 
+enum tcp_worker_state { STATE_INACTIVE=0, STATE_ACTIVE, STATE_DRAINING};
+
 /* definition of a TCP worker */
 struct tcp_worker {
 	pid_t pid;
 	int unix_sock;		/*!< Main-Worker comm, worker end */
 	int main_unix_sock;	/*!< Main-Worker comm, TCP Main end */
 	int busy;
-	int active;
+	enum tcp_worker_state state;
 	int n_reqs;		/*!< number of requests serviced so far */
 };
 
@@ -367,7 +369,7 @@ static int send2worker(struct tcp_connection* tcpconn,int rw)
 	min_busy=INT_MAX;
 	idx=0;
 	for (i=0; i<tcp_workers_max_no; i++){
-		if (tcp_workers[i].active) {
+		if (tcp_workers[i].state==STATE_ACTIVE) {
 			if (!tcp_workers[i].busy){
 				idx=i;
 				min_busy=0;
@@ -1860,6 +1862,38 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int worker )
 
 static int fork_dynamic_tcp_process(void *foo)
 {
+	int p_id;
+	int r;
+
+	if((p_id=internal_fork("SIP receiver TCP", OSS_PROC_DYNAMIC, TYPE_TCP))<0){
+		LM_ERR("cannot fork dynamic TCP worker process\n");
+		return(-1);
+	}else if (p_id==0){
+		/* new TCP process */
+		set_proc_attrs("TCP receiver");
+		tcp_workers[r].pid = getpid();
+		pt[process_no].idx=r;
+
+			if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock)<0||
+					init_child(*chd_rank) < 0) {
+				LM_ERR("init_children failed\n");
+				report_failure_status();
+				if (startup_done)
+					*startup_done = -1;
+				exit(-1);
+			}
+
+			report_conditional_status( 1, 0);
+
+			tcp_worker_proc_loop();
+		}
+	}
+
+			/* parent */
+			tcp_workers[r].state=STATE_ACTIVE;
+			tcp_workers[r].busy=0;
+			tcp_workers[r].n_reqs=0;
+
 	return 0;
 }
 
@@ -1919,7 +1953,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			goto error;
 		}else if (p_id>0){
 			/* parent */
-			tcp_workers[r].active=1;
+			tcp_workers[r].state=STATE_ACTIVE;
 			tcp_workers[r].busy=0;
 			tcp_workers[r].n_reqs=0;
 		}else{
