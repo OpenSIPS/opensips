@@ -966,6 +966,10 @@ assign_stm: DEBUG EQUAL snumber
 		| TCP_WORKERS EQUAL NUMBER {
 				tcp_workers_no=$3;
 		}
+		| TCP_WORKERS EQUAL NUMBER USE_AUTO_SCALING_PROFILE ID{
+				tcp_workers_no=$3;
+				tcp_auto_scaling_profile=$5;
+		}
 		| TCP_WORKERS EQUAL error { yyerror("number expected"); }
 		| TCP_CONNECT_TIMEOUT EQUAL NUMBER {
 				tcp_connect_timeout=$3;

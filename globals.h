@@ -54,6 +54,7 @@ extern int auto_scaling_enabled;
 extern int auto_scaling_cycle;
 
 /* TCP network layer related parameters */
+extern char* tcp_auto_scaling_profile;
 extern int tcp_workers_no;
 extern int tcp_disable;
 extern int tcp_accept_aliases;

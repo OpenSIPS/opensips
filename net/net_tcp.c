@@ -63,8 +63,10 @@ struct struct_hist_list *con_hist;
 /* definition of a TCP worker */
 struct tcp_worker {
 	pid_t pid;
-	int unix_sock;		/*!< unix "read worker" sock fd */
+	int unix_sock;		/*!< Main-Worker comm, worker end */
+	int main_unix_sock;	/*!< Main-Worker comm, TCP Main end */
 	int busy;
+	int active;
 	int n_reqs;		/*!< number of requests serviced so far */
 };
 
@@ -105,8 +107,12 @@ int tcp_listen_backlog=DEFAULT_TCP_LISTEN_BACKLOG;
 /*!< by default choose the best method */
 enum poll_types tcp_poll_method=0;
 int tcp_max_connections=DEFAULT_TCP_MAX_CONNECTIONS;
-/* number of TCP workers */
+/* the configured/starting number of TCP workers */
 int tcp_workers_no = UDP_WORKERS_NO;
+/* the maximum numbers of TCP workers */
+int tcp_workers_max_no;
+/* the name of the auto-scaling profile (optional) */
+char* tcp_auto_scaling_profile = NULL;
 /* Max number of seconds that we except a full SIP message
  * to arrive in - anything above will lead to the connection to closed */
 int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;
@@ -138,6 +144,7 @@ int is_tcp_main = 0;
  * current process - attention, this is a really ugly HACK here */
 int last_outgoing_tcp_id = 0;
 
+static struct scaling_profile *s_profile = NULL;
 
 /****************************** helper functions *****************************/
 extern void handle_sigs(void);
@@ -357,16 +364,18 @@ static int send2worker(struct tcp_connection* tcpconn,int rw)
 	int idx;
 	long response[2];
 
-	min_busy=tcp_workers[0].busy;
+	min_busy=INT_MAX;
 	idx=0;
-	for (i=0; i<tcp_workers_no; i++){
-		if (!tcp_workers[i].busy){
-			idx=i;
-			min_busy=0;
-			break;
-		}else if (min_busy>tcp_workers[i].busy){
-			min_busy=tcp_workers[i].busy;
-			idx=i;
+	for (i=0; i<tcp_workers_max_no; i++){
+		if (tcp_workers[i].active) {
+			if (!tcp_workers[i].busy){
+				idx=i;
+				min_busy=0;
+				break;
+			}else if (min_busy>tcp_workers[i].busy){
+				min_busy=tcp_workers[i].busy;
+				idx=i;
+			}
 		}
 	}
 
@@ -1631,7 +1640,7 @@ static void tcp_main_server(void)
 			}
 	}
 	/* add all the unix sokets used for communication with the tcp workers */
-	for (n=0; n<tcp_workers_no; n++) {
+	for (n=0; n<tcp_workers_max_no; n++) {
 		/*we can't have 0, we never close it!*/
 		if (tcp_workers[n].unix_sock>0) {
 			/* make socket non-blocking */
@@ -1702,14 +1711,27 @@ int tcp_init(void)
 	}
 #endif
 
+	if (tcp_auto_scaling_profile) {
+		s_profile = get_scaling_profile(tcp_auto_scaling_profile);
+		if (s_profile==NULL) {
+			LM_WARN("TCP scalig profile <%s> not defined "
+				"-> ignoring it..\n", tcp_auto_scaling_profile);
+		} else {
+			auto_scaling_enabled = 1;
+		}
+	}
+
+	tcp_workers_max_no = (s_profile && (tcp_workers_no<s_profile->max_procs)) ?
+		s_profile->max_procs : tcp_workers_no ;
+
 	/* init tcp workers array */
 	tcp_workers = (struct tcp_worker*)pkg_malloc
-		( tcp_workers_no*sizeof(struct tcp_worker) );
+		( tcp_workers_max_no*sizeof(struct tcp_worker) );
 	if (tcp_workers==0) {
 		LM_CRIT("could not alloc tcp_workers array in pkg memory\n");
 		goto error;
 	}
-	memset( tcp_workers, 0, tcp_workers_no*sizeof(struct tcp_worker));
+	memset( tcp_workers, 0, tcp_workers_max_no*sizeof(struct tcp_worker));
 	/* init globals */
 	connection_id=(int*)shm_malloc(sizeof(int));
 	if (connection_id==0){
@@ -1836,6 +1858,18 @@ void tcp_connect_proc_to_tcp_main( int proc_no, int worker )
 }
 
 
+static int fork_dynamic_tcp_process(void *foo)
+{
+	return 0;
+}
+
+
+static void tcp_process_graceful_terminate(int sender, void *param)
+{
+}
+
+/* counts the number of TPC process to start with; this number may 
+ * change during runtime due auto-scaling */
 int tcp_count_processes(unsigned int *extra)
 {
 	if (extra) *extra = 0;
@@ -1859,14 +1893,26 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		if ( is_tcp_based_proto(n) )
 			for(si=protos[n].listeners; si ; si=si->next,r++ );
 
-	/* start the TCP workers & create the socket pairs */
-	for(r=0; r<tcp_workers_no; r++){
+	/* create the socket pairs for ALL potential processes */
+	for(r=0; r<tcp_workers_max_no; r++){
 		/* create sock to communicate from TCP main to worker */
 		if (socketpair(AF_UNIX, SOCK_STREAM, 0, reader_fd)<0){
 			LM_ERR("socketpair failed: %s\n", strerror(errno));
 			goto error;
 		}
+		tcp_workers[r].unix_sock = reader_fd[0]; /* worker's end */
+		tcp_workers[r].main_unix_sock = reader_fd[1]; /* main's end */
+	}
 
+	if ( auto_scaling_enabled && s_profile &&
+	create_process_group( TYPE_TCP, NULL, s_profile,
+	fork_dynamic_tcp_process, tcp_process_graceful_terminate)!=0)
+		LM_ERR("failed to create group of UDP processes for <%.*s>, "
+			"auto forking will not be possible\n",
+			si->name.len, si->name.s);
+
+	/* start the TCP workers */
+	for(r=0; r<tcp_workers_no; r++){
 		(*chd_rank)++;
 		p_id=internal_fork("SIP receiver TCP", 0, TYPE_TCP);
 		if (p_id<0){
@@ -1874,16 +1920,15 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 			goto error;
 		}else if (p_id>0){
 			/* parent */
-			close(reader_fd[1]);
+			tcp_workers[r].active=1;
 			tcp_workers[r].busy=0;
 			tcp_workers[r].n_reqs=0;
-			tcp_workers[r].unix_sock=reader_fd[0];
 		}else{
 			/* child */
 			set_proc_attrs("TCP receiver");
 			tcp_workers[r].pid = getpid();
 			pt[process_no].idx=r;
-			if (tcp_worker_proc_reactor_init(reader_fd[1]) < 0 ||
+			if (tcp_worker_proc_reactor_init(tcp_workers[r].main_unix_sock)<0||
 					init_child(*chd_rank) < 0) {
 				LM_ERR("init_children failed\n");
 				report_failure_status();
