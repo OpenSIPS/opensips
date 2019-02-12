@@ -1962,7 +1962,7 @@ static void tcp_process_graceful_terminate(int sender, void *param)
 }
 
 
-/* counts the number of TPC process to start with; this number may 
+/* counts the number of TPC processes to start with; this number may 
  * change during runtime due auto-scaling */
 int tcp_count_processes(unsigned int *extra)
 {
