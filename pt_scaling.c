@@ -180,7 +180,84 @@ int create_process_group(enum process_type type,
 }
 
 
-void rescale_group_history(struct process_group *pg, unsigned int idx,
+static void _pt_raise_event(struct process_group *pg, int p_id, int load,
+																char *scale)
+{
+	static str pt_ev_type = str_init("group_type");
+	static str pt_ev_filter = str_init("group_filter");
+	static str pt_ev_load = str_init("group_load");
+	static str pt_ev_scale = str_init("scale");
+	static str pt_ev_p_id = str_init("process_id");
+	static str pt_ev_pid = str_init("pid");
+	evi_params_p list = NULL;
+	str s;
+
+	if (!evi_probe_event(EVI_PROC_AUTO_SCALE_ID))
+		return;
+
+	list = evi_get_params();
+	if (!list) {
+		LM_ERR("cannot create event params\n");
+		return;
+	}
+
+	if (pg->type==TYPE_UDP) {
+		s.s = "UDP"; s.len = 3;
+	} else if (pg->type==TYPE_TCP) {
+		s.s = "TCP"; s.len = 3;
+	} else if (pg->type==TYPE_TIMER) {
+		s.s = "TIMER"; s.len = 5;
+	} else {
+		LM_BUG("trying to raise event for unsupported group %d\n",pg->type);
+		return;
+	}
+	if (evi_param_add_str(list, &pt_ev_type, &s) < 0) {
+		LM_ERR("cannot add group type\n");
+		goto error;
+	}
+
+	if (pg->si_filter==NULL) {
+		s.s = "none"; s.len = 4;
+	} else {
+		s = pg->si_filter->sock_str;
+	}
+	if (evi_param_add_str(list, &pt_ev_filter, &s) < 0) {
+		LM_ERR("cannot add group filter\n");
+		goto error;
+	}
+
+	if (evi_param_add_int(list, &pt_ev_load, &load) < 0) {
+		LM_ERR("cannot add group load\n");
+		goto error;
+	}
+
+	s.s = scale; s.len = strlen(s.s);
+	if (evi_param_add_str(list, &pt_ev_scale, &s) < 0) {
+		LM_ERR("cannot add scaling type\n");
+		goto error;
+	}
+
+	if (evi_param_add_int(list, &pt_ev_p_id, &p_id) < 0) {
+		LM_ERR("cannot add process id\n");
+		goto error;
+	}
+
+	if (evi_param_add_int(list, &pt_ev_pid, &(pt[p_id].pid)) < 0) {
+		LM_ERR("cannot add process pid\n");
+		goto error;
+	}
+
+	if (evi_raise_event(EVI_PROC_AUTO_SCALE_ID, list)) {
+		LM_ERR("unable to send auto scaling event\n");
+	}
+	return;
+
+error:
+	evi_free_params(list);
+}
+
+
+static void rescale_group_history(struct process_group *pg, unsigned int idx,
 		int org_size, int offset)
 {
 	unsigned int k;
@@ -268,6 +345,7 @@ void do_workers_auto_scaling(void)
 					LM_ERR("failed to fork new process for group %d "
 						"(current %d procs)\n",pg->type,procs_no);
 				} else {
+					_pt_raise_event( pg, p_id, pg->history_map[idx] ,"up");
 					rescale_group_history( pg, idx, procs_no, +1);
 					pg->no_downscale_cycles = pg->prof->down_cycles_delay;
 				}
@@ -294,6 +372,8 @@ void do_workers_auto_scaling(void)
 						pg->type, procs_no, load );
 					pt[last_idx_in_pg].flags |= OSS_PROC_TO_TERMINATE;
 					ipc_send_rpc( last_idx_in_pg, pg->term_func, NULL);
+					_pt_raise_event( pg, last_idx_in_pg,
+						pg->history_map[idx], "down");
 				}
 			}
 		}
