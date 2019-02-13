@@ -265,6 +265,7 @@ SCRIPTVAR_START	"$"
 DEBUG_MODE	debug_mode
 FORK		fork
 CHILDREN	children
+UDP_WORKERS	udp_workers
 CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 DISABLE_CORE		"disable_core_dump"
@@ -312,6 +313,7 @@ USER_AGENT_HEADER user_agent_header
 MHOMED		mhomed
 POLL_METHOD		"poll_method"
 TCP_CHILDREN	"tcp_children"
+TCP_WORKERS		"tcp_workers"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
@@ -337,6 +339,9 @@ DB_VERSION_TABLE "db_version_table"
 DB_DEFAULT_URL "db_default_url"
 DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
+AUTO_SCALING_PROFILE "auto_scaling_profile"
+AUTO_SCALING_CYCLE "auto_scaling_cycle"
+TIMER_WORKERS "timer_workers"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -364,6 +369,13 @@ TICK		\'
 SLASH		"/"
 AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
 USE_CHILDREN	{EAT_ABLE}("use_children"|"USE_CHILDREN"){EAT_ABLE}
+USE_WORKERS	{EAT_ABLE}("use_workers"|"USE_WORKERS"){EAT_ABLE}
+USE_AUTO_SCALING_PROFILE {EAT_ABLE}("use_auto_scaling_profile"|"USE_AUTO_SCALING_PROFILE"){EAT_ABLE}
+SCALE_UP_TO		{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("up"|"UP"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
+SCALE_DOWN_TO	{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("down"|"DOWN"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
+ON			{EAT_ABLE}("on"|"ON"){EAT_ABLE}
+CYCLES		{EAT_ABLE}("cycles"|"CYCLES")
+CYCLES_WITHIN	{EAT_ABLE}("cycles"|"CYCLES"){EAT_ABLE}+("within"|"WITHIN"){EAT_ABLE}
 SEMICOLON	;
 RPAREN		\)
 LPAREN		\(
@@ -523,6 +535,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
+<INITIAL>{UDP_WORKERS}	{ count(); yylval.strval=yytext; return UDP_WORKERS; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{DISABLE_CORE}		{	count(); yylval.strval=yytext;
@@ -578,6 +591,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
+<INITIAL>{TCP_WORKERS}	{ count(); yylval.strval=yytext; return TCP_WORKERS; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
 									return TCP_ACCEPT_ALIASES; }
 <INITIAL>{TCP_CONNECT_TIMEOUT}		{ count(); yylval.strval=yytext;
@@ -624,6 +638,12 @@ IMPORTFILE      "import_file"
 									return DB_MAX_ASYNC_CONNECTIONS; }
 <INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
 									return DISABLE_503_TRANSLATION; }
+<INITIAL>{AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
+									return AUTO_SCALING_PROFILE; }
+<INITIAL>{AUTO_SCALING_CYCLE}	{	count(); yylval.strval=yytext;
+									return AUTO_SCALING_CYCLE; }
+<INITIAL>{TIMER_WORKERS}	{	count(); yylval.strval=yytext;
+									return TIMER_WORKERS; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }
@@ -679,6 +699,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
 <INITIAL>{USE_CHILDREN} { count(); return USE_CHILDREN; }
+<INITIAL>{USE_WORKERS}  { count(); return USE_WORKERS; }
+<INITIAL>{USE_AUTO_SCALING_PROFILE}  { count(); return USE_AUTO_SCALING_PROFILE; }
 <INITIAL>{COLON}	{ count(); return COLON; }
 <INITIAL>{RPAREN}	{ count(); return RPAREN; }
 <INITIAL>{LPAREN}	{ count(); return LPAREN; }
@@ -686,13 +708,18 @@ IMPORTFILE      "import_file"
 <INITIAL>{RBRACE}	{ count(); return RBRACE; }
 <INITIAL>{LBRACK}	{ count(); return LBRACK; }
 <INITIAL>{RBRACK}	{ count(); return RBRACK; }
-<INITIAL>{AS}       { count(); return AS; }
+<INITIAL>{AS}		{ count(); return AS; }
 <INITIAL>{DOT}		{ count(); return DOT; }
 <INITIAL>\\{CR}		{count(); } /* eat the escaped CR */
 <INITIAL>{CR}		{ count();/* return CR;*/ }
-<INITIAL>{ANY}	{ count(); return ANY; }
+<INITIAL>{ANY}		{ count(); return ANY; }
 <INITIAL>{ANYCAST}	{ count(); return ANYCAST; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
+<INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }
+<INITIAL>{SCALE_DOWN_TO}	{ count(); return SCALE_DOWN_TO; }
+<INITIAL>{ON}				{ count(); return ON; }
+<INITIAL>{CYCLES}			{ count(); return CYCLES; }
+<INITIAL>{CYCLES_WITHIN}	{ count(); return CYCLES_WITHIN; }
 
 <INITIAL>{SCRIPTVAR_START} { np=0; state=SCRIPTVAR_S;
 								svar_tlen = yyleng;

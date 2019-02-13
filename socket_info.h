@@ -55,7 +55,9 @@ struct socket_info {
 	str adv_port_str; /* Advertised port of this interface */
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
-	unsigned short children;
+	unsigned short workers;
+	struct scaling_profile *s_profile;
+
 	struct socket_info* next;
 	struct socket_info* prev;
 };
@@ -74,9 +76,7 @@ struct socket_info {
 #define PROTO_NAME_MAX_SIZE  8 /* CHANGEME if you define a bigger protocol name
 						   * currently hep_tcp - biggest proto */
 
-int new_sock2list(char* name, unsigned short port, unsigned short proto,
-		char *adv_name, unsigned short adv_port, char *tag,
-		unsigned short children, enum si_flags flags,struct socket_info** list);
+int new_sock2list(struct socket_id *sid, struct socket_info** list);
 
 int fix_socket_list(struct socket_info **);
 

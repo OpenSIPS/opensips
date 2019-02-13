@@ -48,7 +48,6 @@ static unsigned xmlrpc_met_name_index = 0;
 static unsigned xmlrpc_ev_name_index = 0;
 static unsigned xmlrpc_params_index = 0;
 static unsigned xmlrpc_xmlbody_index = 0;
-static unsigned nr_procs = 0;
 
 int xmlrpc_init_buffers(void)
 {
@@ -95,9 +94,7 @@ int xmlrpc_create_pipe(void)
 int xmlrpc_create_status_pipes(void) {
 	int rc, i;
 
-	nr_procs = count_init_children(0) + 2;	/* + 2 timer processes */
-
-	xmlrpc_status_pipes = shm_malloc(nr_procs * sizeof(xmlrpc_pipe));
+	xmlrpc_status_pipes = shm_malloc(counted_max_processes * sizeof(xmlrpc_pipe));
 
 	if (!xmlrpc_status_pipes) {
 		LM_ERR("cannot allocate xmlrpc_status_pipes\n");
@@ -105,7 +102,7 @@ int xmlrpc_create_status_pipes(void) {
 	}
 
 	/* create pipes */
-	for (i = 0; i < nr_procs; i++) {
+	for (i = 0; i < counted_max_processes; i++) {
 		do {
 			rc = pipe(xmlrpc_status_pipes[i]);
 		} while (rc < 0 && IS_ERR(EINTR));
@@ -133,7 +130,7 @@ void xmlrpc_destroy_status_pipes(void)
 {
 	int i;
 
-	for(i = 0; i < nr_procs; i++) {
+	for(i = 0; i < counted_max_processes; i++) {
 		close(xmlrpc_status_pipes[i][0]);
 		close(xmlrpc_status_pipes[i][1]);
 	}
@@ -237,7 +234,7 @@ static void xmlrpc_init_reader(void)
 	}
 
 	if (xmlrpc_sync_mode)
-		for(i = 0; i < nr_procs; i++) {
+		for(i = 0; i < counted_max_processes; i++) {
 			close(xmlrpc_status_pipes[i][0]);
 
 			/* Turn non-blocking mode on for sending*/
@@ -604,7 +601,7 @@ void xmlrpc_process(int rank)
 		if (xmlrpc_sync_mode) {
 			retries = XMLRPC_SEND_RETRY;
 
-			if (xmlrpcs->process_idx >= 0 && xmlrpcs->process_idx < nr_procs) {
+			if (xmlrpcs->process_idx >= 0 && xmlrpcs->process_idx < counted_max_processes) {
 				do {
 					rc = write(xmlrpc_status_pipes[xmlrpcs->process_idx][1], &send_status, sizeof(int));
 				} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));

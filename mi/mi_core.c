@@ -255,7 +255,9 @@ static mi_response_t *mi_ps(const mi_params_t *params,
 		return 0;
 	}
 
-	for ( i=0 ; i<counted_processes ; i++ ) {
+	for ( i=0 ; i<counted_max_processes ; i++ ) {
+		if (!is_process_running(i))
+			continue;
 		proc_item = add_mi_object(procs_arr, 0, 0);
 		if (!proc_item)
 			goto error;
@@ -350,7 +352,9 @@ static mi_response_t *w_log_level(const mi_params_t *params,
 		return 0;
 	}
 
-	for (i = 0; i < counted_processes; i++) {
+	for (i = 0; i < counted_max_processes; i++) {
+		if (!is_process_running(i))
+			continue;
 		proc_item = add_mi_object(procs_arr, NULL, 0);
 		if (!proc_item)
 			goto error;

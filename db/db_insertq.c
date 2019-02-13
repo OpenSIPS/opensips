@@ -338,7 +338,7 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 
 	row_q_size = sizeof(db_val_t *) * query_buffer_size;
 	size = sizeof(query_list_t) +
-		counted_processes * sizeof(db_con_t *) +
+		counted_max_processes * sizeof(db_con_t *) +
 		con->table->len + key_size + row_q_size + con->url.len;
 
 	entry = shm_malloc(size);
@@ -630,3 +630,20 @@ int ql_flush_rows(db_func_t *dbf,db_con_t *conn,query_list_t *entry)
 
 	return 0;
 }
+
+void ql_force_process_disconnect(int p_id)
+{
+	query_list_t *it;
+
+	if (query_list) {
+		for (it=*query_list;it;it=it->next) {
+			lock_get(it->lock);
+
+			if (it->conn[p_id]) {
+				it->dbf.close(it->conn[p_id]);
+				it->conn[p_id]=NULL;
+			}
+		}
+	}
+}
+

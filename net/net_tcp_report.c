@@ -108,8 +108,7 @@ void tcp_trigger_report(struct tcp_connection *conn, int type, void *extra)
 		job->conn_flags = conn->flags;
 		job->proto = conn->type;
 		job->extra = extra;
-		/* ...sending it to the last TCP worker for now
-		 * The last TCP worker is the prev,prev to TCP MAIN */
+		/* ...sending it any worker via RPC dispatching */
 		if (ipc_dispatch_rpc( tcp_report_ipc_handler, job)<0) {
 			LM_ERR("failed to send IPC job, discarding report\n");
 			shm_free(job);

@@ -69,8 +69,28 @@ static utime_t       *ujiffies=0;
 static utime_t       *ijiffies=0;
 static unsigned short timer_id=0;
 static int            timer_pipe[2];
+static struct scaling_profile *s_profile=NULL;
 
 int timer_fd_out = -1 ;
+char *timer_auto_scaling_profile = NULL;
+int timer_workers_no = 1;
+
+
+
+/* counts the number of timer processes to start with; this number may 
+ * change during runtime due auto-scaling */
+int timer_count_processes(unsigned int *extra)
+{
+	if (extra) *extra = 0;
+
+	if (s_profile && extra) {
+		/* how many can be forked over th number of procs to start with ?*/
+		if (s_profile->max_procs > timer_workers_no)
+			*extra = s_profile->max_procs - timer_workers_no;
+	}
+
+	return 2/*keeper & trigger*/ + timer_workers_no /*workers to start with*/;
+}
 
 
 /* ret 0 on success, <0 on error*/
@@ -119,6 +139,16 @@ int init_timer(void)
 	}
 	/* make visible the "read" part of the pipe */
 	timer_fd_out = timer_pipe[0];
+
+	if (timer_auto_scaling_profile) {
+		s_profile = get_scaling_profile(timer_auto_scaling_profile);
+		if ( s_profile==NULL) {
+			LM_ERR("undefined auto-scaling profile <%s> for timers\n",
+				timer_auto_scaling_profile);
+			return E_UNSPEC;
+		}
+		auto_scaling_enabled = 1;
+	}
 
 	return 0;
 }
@@ -571,7 +601,7 @@ static void run_timer_process_jif(void)
 
 int start_timer_processes(void)
 {
-	pid_t pid;
+	int id;
 
 	/*
 	 * A change of the way timers were run. In the pre-1.5 times,
@@ -585,11 +615,11 @@ int start_timer_processes(void)
 	 * was unable to detect timeouts.
 	 */
 
-	if ( (pid=internal_fork("time_keeper",
-	OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD))<0 ) {
+	if ( (id=internal_fork("time_keeper",
+	OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD, TYPE_NONE))<0 ) {
 		LM_CRIT("cannot fork time keeper process\n");
 		goto error;
-	} else if (pid==0) {
+	} else if (id==0) {
 		/* new process */
 		clean_write_pipeend();
 
@@ -598,10 +628,11 @@ int start_timer_processes(void)
 	}
 
 	/* fork a timer-trigger process */
-	if ( (pid=internal_fork("timer", OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD))<0 ) {
+	if ( (id=internal_fork("timer", OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
+	TYPE_NONE))<0 ) {
 		LM_CRIT("cannot fork timer process\n");
 		goto error;
-	} else if (pid==0) {
+	} else if (id==0) {
 		/* new process */
 		clean_write_pipeend();
 
@@ -641,6 +672,14 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			n = -1;
 			break;
 	}
+
+	if (reactor_is_empty() && _termination_in_progress==1) {
+		LM_WARN("reactor got empty while termination in progress\n");
+		ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
+		if (reactor_is_empty())
+			dynamic_process_final_exit();
+	}
+
 	pt_become_idle();
 	return n;
 }
@@ -672,33 +711,111 @@ error:
 	return -1;
 }
 
-int start_timer_extra_processes(int *chd_rank)
-{
-	pid_t pid;
 
-	(*chd_rank)++;
-	if ( (pid=internal_fork( "Timer handler", 0))<0 ) {
+static int fork_dynamic_timer_process(void *si_filter)
+{
+	int p_id;
+
+	if ((p_id=internal_fork( "Timer handler", OSS_PROC_DYNAMIC,TYPE_TIMER))<0){
 		LM_CRIT("cannot fork Timer handler process\n");
 		return -1;
-	} else if (pid==0) {
+	} else if (p_id==0) {
 		/* new Timer process */
 		/* set a more detailed description */
-			set_proc_attrs("Timer handler");
-			if (timer_proc_reactor_init() < 0 ||
-					init_child(*chd_rank) < 0) {
-				report_failure_status();
-				goto error;
-			}
+		set_proc_attrs("Timer handler");
+		if (timer_proc_reactor_init() < 0 ||
+		init_child(20000) < 0) {
+			goto error;
+		}
 
-			report_conditional_status( 1, 0);
+		report_conditional_status( 1, 0); /*report success*/
+		/* the child proc is done read&write) dealing with the status pipe */
+		clean_read_pipeend();
 
-			/* launch the reactor */
-			reactor_main_loop( 1/*timeout in sec*/, error , );
-			destroy_worker_reactor();
-
-			exit(-1);
+		/* launch the reactor */
+		reactor_main_loop( 1/*timeout in sec*/, error , );
+		destroy_worker_reactor();
+error:
+		report_failure_status();
+		LM_ERR("Initializing new process failed, exiting with error \n");
+		pt[process_no].flags |= OSS_PROC_SELFEXIT;
+		exit( -1);
+	} else {
+		/*parent/main*/
+		return p_id;
 	}
-	/*parent*/
+}
+
+
+static void timer_process_graceful_terminate(int sender, void *param)
+{
+	/* we accept this only from the main proccess */
+	if (sender!=0) {
+		LM_BUG("graceful terminate received from a non-main process!!\n");
+		return;
+	}
+	LM_NOTICE("process %d received RPC to terminate from Main\n",process_no);
+
+	/*remove from reactor all the shared fds, so we stop reading from them */
+
+	/*remove timer jobs pipe */
+	reactor_del_reader( timer_fd_out, -1, 0);
+
+	/*remove private IPC pipe */
+	reactor_del_reader( IPC_FD_READ_SELF, -1, 0);
+
+	/* let's drain the private IPC */
+	ipc_handle_all_pending_jobs(IPC_FD_READ_SELF);
+
+	/* what is left now is the reactor are async fd's, so we need to 
+	 * wait to complete all of them */
+	if (reactor_is_empty())
+		dynamic_process_final_exit();
+
+	/* the exit will be triggered by the reactor, when empty */
+	_termination_in_progress = 1;
+	LM_WARN("reactor not empty, waiting for pending async\n");
+}
+
+
+int start_timer_extra_processes(int *chd_rank)
+{
+	int i, p_id;
+
+	if (auto_scaling_enabled && s_profile &&
+	create_process_group( TYPE_TIMER, NULL, s_profile ,
+	fork_dynamic_timer_process, timer_process_graceful_terminate)!=0)
+		LM_ERR("failed to create group of TIMER processes, "
+			"auto forking will not be possible\n");
+
+	for( i=0 ; i<timer_workers_no ; i++ ) {
+
+		(*chd_rank)++;
+		if ( (p_id=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {
+			LM_CRIT("cannot fork Timer handler process\n");
+			return -1;
+		} else if (p_id==0) {
+			/* new Timer process */
+			/* set a more detailed description */
+				set_proc_attrs("Timer handler");
+				if (timer_proc_reactor_init() < 0 ||
+						init_child(*chd_rank) < 0) {
+					report_failure_status();
+					goto error;
+				}
+
+				report_conditional_status( 1, 0);
+
+				/* launch the reactor */
+				reactor_main_loop( 1/*timeout in sec*/, error , );
+				destroy_worker_reactor();
+
+				exit(-1);
+		}
+		/*parent*/
+
+	}
+
 	return 0;
 
 /* only from child process */

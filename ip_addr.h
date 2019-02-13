@@ -110,10 +110,11 @@ struct socket_id {
 	char* name;
 	char* adv_name;
 	char* tag;
+	char* auto_scaling_profile;
 	int adv_port;
 	int proto;
 	int port;
-	int children;
+	int workers;
 	enum si_flags flags;
 	struct socket_id* next;
 };

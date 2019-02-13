@@ -106,9 +106,6 @@ int *sip_workers_pipes;
 /* pipe for the sangoma worker */
 int sangoma_pipe[2];
 
-static int *proc_counter;
-gen_lock_t *index_lock;
-
 /* generic module functions */
 static int mod_init(void);
 static int child_init(int rank);
@@ -296,7 +293,7 @@ void sngtc_dlg_terminated(struct dlg_cell *dlg, int type,
 
 static int mod_init(void)
 {
-	int i, sip_workers_no;
+	int i;
 
 	LM_INFO("initializing module\n");
 
@@ -312,35 +309,14 @@ static int mod_init(void)
 		return -1;
 	}
 
-	sip_workers_no = udp_count_processes() + tcp_count_processes();
+	LM_DBG("Children: %d\n", counted_max_processes);
 
-	LM_DBG("Children: %d\n", sip_workers_no);
-
-    sip_workers_pipes = pkg_malloc(2 * sip_workers_no *
+    sip_workers_pipes = pkg_malloc(2 * counted_max_processes *
 	                                sizeof(*sip_workers_pipes));
     if (!sip_workers_pipes) {
         LM_ERR("Not enough pkg mem\n");
         return -1;
     }
-
-	index_lock = shm_malloc(sizeof(*index_lock));
-	if (!index_lock) {
-		LM_ERR("No more shm mem\n");
-		return -1;
-	}
-
-	if (!lock_init(index_lock)) {
-		LM_ERR("Failed to init lock\n");
-		return -1;
-	}
-
-	proc_counter = shm_malloc(sizeof(*proc_counter));
-	if (!proc_counter) {
-		LM_ERR("Not enough shm mem\n");
-		return -1;
-	}
-
-	*proc_counter = 0;
 
 	if (pipe(sangoma_pipe) != 0) {
 		LM_ERR("Failed to create sangoma worker pipe\n");
@@ -349,7 +325,7 @@ static int mod_init(void)
 
 	LM_DBG("Sangoma pipe: [%d %d]\n", sangoma_pipe[0], sangoma_pipe[1]);
 
-	for (i = 0; i < sip_workers_no; i++) {
+	for (i = 0; i < counted_max_processes; i++) {
 		if (pipe(sip_workers_pipes + 2 * i) != 0) {
 			LM_ERR("Failed to create pipe for UDP receiver %d\n", i);
 			return -1;
@@ -390,13 +366,9 @@ static int child_init(int rank)
 	if (rank <= PROC_MAIN)
 		return 0;
 
-	lock_get(index_lock);
-
-	pipe_index = 2 * (*proc_counter)++;
+	pipe_index = 2 * (process_no);
 
 	close(sip_workers_pipes[pipe_index + WRITE_END]);
-
-	lock_release(index_lock);
 
 	LM_DBG("proc index: %d\n", pipe_index / 2);
 

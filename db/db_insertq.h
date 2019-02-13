@@ -67,6 +67,7 @@ int con_set_inslist(db_func_t *dbf,db_con_t *con,
 							query_list_t **list,db_key_t *cols,int col_no);
 void ql_timer_routine(unsigned int ticks,void *param);
 int ql_flush_rows(db_func_t *dbf, db_con_t *conn,query_list_t *entry);
+void ql_force_process_disconnect(int p_id);
 
 #define CON_RESET_INSLIST(con) \
 	do { \

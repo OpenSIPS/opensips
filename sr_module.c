@@ -724,17 +724,21 @@ int module_loaded(char *name)
 
 
 /* Counts the additional the number of processes requested by modules */
-int count_module_procs(void)
+int count_module_procs(int flags)
 {
 	struct sr_module *m;
 	unsigned int cnt;
 	unsigned int n;
 
 	for( m=modules,cnt=0 ; m ; m=m->next) {
-		if (m->exports->procs) {
-			for( n=0 ; m->exports->procs[n].name ; n++)
-				if (m->exports->procs[n].function)
-					cnt += m->exports->procs[n].no;
+		if (m->exports->procs==NULL)
+			continue;
+		for ( n=0 ; m->exports->procs[n].name ; n++) {
+			if (!m->exports->procs[n].no || !m->exports->procs[n].function)
+				continue;
+
+			if (!flags || (m->exports->procs[n].flags & flags))
+				cnt+=m->exports->procs[n].no;
 		}
 	}
 	LM_DBG("modules require %d extra processes\n",cnt);
@@ -747,7 +751,7 @@ int start_module_procs(void)
 	struct sr_module *m;
 	unsigned int n;
 	unsigned int l;
-	pid_t x;
+	int x;
 
 	for( m=modules ; m ; m=m->next) {
 		if (m->exports->procs==NULL)
@@ -769,7 +773,7 @@ int start_module_procs(void)
 					m->exports->procs[n].name, l, m->exports->name);
 				x = internal_fork( m->exports->procs[n].name,
 						((m->exports->procs[n].flags&PROC_FLAG_HAS_IPC) ?
-						0 : OSS_FORK_NO_IPC)|OSS_FORK_IS_EXTRA );
+						0 : OSS_PROC_NO_IPC)|OSS_PROC_IS_EXTRA, TYPE_MODULE );
 				if (x<0) {
 					LM_ERR("failed to fork process \"%s\"/%d for module %s\n",
 						m->exports->procs[n].name, l, m->exports->name);

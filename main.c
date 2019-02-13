@@ -190,9 +190,16 @@ unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  not want to exceed during the
 												  auto-probing procedure; may
 												  be re-configured */
-int children_no = CHILD_NO;		/* number of children processing requests */
-enum poll_types io_poll_method=0; 	/*!< by default choose the best method */
-int sig_flag = 0;              /* last signal received */
+/* number of UDP workers processing requests */
+int udp_workers_no = UDP_WORKERS_NO;
+/* if the auto-scaling engine is enabled or not - this is autodetected */
+int auto_scaling_enabled = 0;
+/* auto-scaling sampling and checking time cycle is 1 sec by default */
+int auto_scaling_cycle = 1;
+/*!< by default choose the best method */
+enum poll_types io_poll_method=0;
+/* last signal received */
+int sig_flag = 0;
 
 /* activate debug mode */
 int debug_mode = 0;
@@ -375,8 +382,8 @@ static void kill_all_children(int signum)
 	if (!pt)
 		return;
 
-	for (r = 1; r < counted_processes; r++) {
-		if (pt[r].pid == -1 || (pt[r].flags & OSS_TAKING_A_DUMP))
+	for (r = 1; r < counted_max_processes; r++) {
+		if (pt[r].pid == -1 || (pt[r].flags & OSS_PROC_DOING_DUMP))
 			continue;
 
 		/* as the PIDs are filled in by child processes, a 0 PID means
@@ -435,7 +442,7 @@ static void shutdown_opensips( int status )
 	/* terminate all processes */
 
 	/* first we try to terminate the processes via the IPC channel */
-	for( i=1,n=0 ; i<counted_processes; i++) {
+	for( i=1,n=0 ; i<counted_max_processes; i++) {
 		/* Depending on the processes status, its PID may be:
 		 *   -1 - process not forked yet
 		 *    0 - process forked but not fully configured by core
@@ -534,6 +541,12 @@ void handle_sigs(void)
 				/* is it a process we know about? */
 				if ( (i=get_process_ID_by_PID( chld )) == -1 ) {
 					LM_DBG("unknown child process %d ended. Ignoring\n",chld);
+					continue;
+				}
+				if (pt[i].flags & OSS_PROC_SELFEXIT) {
+					LM_NOTICE("process %d/%d did selfexit with "
+						"status %d\n", i, chld,  WTERMSIG(chld_status));
+					reset_process_slot(i);
 					continue;
 				}
 				do_exit = 1;
@@ -654,7 +667,7 @@ static void sig_usr(int signo)
 					/* looks like we ate some spicy SIP */
 					LM_CRIT("segfault in process pid: %d, id: %d\n",
 					        pt[process_no].pid, process_no);
-					pt[process_no].flags |= OSS_TAKING_A_DUMP;
+					pt[process_no].flags |= OSS_PROC_DOING_DUMP;
 					if (restore_segv_handler() != 0)
 						exit(-1);
 		}
@@ -728,6 +741,7 @@ static int main_loop(void)
 {
 	static int chd_rank;
 	int* startup_done = NULL;
+	utime_t last_check;
 	int rc;
 
 	chd_rank=0;
@@ -790,7 +804,7 @@ static int main_loop(void)
 	/* main process left */
 	is_main=1;
 	set_proc_attrs("attendant");
-	pt[process_no].flags = OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD;
+	pt[process_no].flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD;
 
 	if (testing_framework) {
 		if (init_child(1) < 0) {
@@ -811,9 +825,32 @@ static int main_loop(void)
 
 	report_conditional_status( (!no_daemon_mode), 0);
 
+	if (auto_scaling_enabled) {
+		/* re-create the status pipes to collect the status of the
+		 * dynamically forked processes */
+		if (create_status_pipe(1) < 0) {
+			LM_ERR("failed to create status pipe\n");
+			goto error;
+		}
+		/* keep both ends on the status pipe as we will keep forking 
+		 * processes, so we will need to pass write-end to the new children;
+		 * of course, we will need the read-end, here in the main proc */
+		last_check = get_uticks();
+	}
+
 	for(;;){
 			handle_sigs();
-			pause();
+			if (auto_scaling_enabled) {
+				sleep( auto_scaling_cycle );
+				if ( (get_uticks()-last_check) >= auto_scaling_cycle*1000000) {
+					do_workers_auto_scaling();
+					last_check = get_uticks();
+				} else {
+					sleep_us( last_check + auto_scaling_cycle*1000000 -
+						get_uticks() );
+				}
+			} else
+				pause();
 	}
 
 	/*return 0; */
@@ -958,9 +995,9 @@ int main(int argc, char** argv)
 					}
 					break;
 			case 'n':
-					children_no=strtol(optarg, &tmp, 10);
+					udp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
-						LM_ERR("bad process number: -n %s\n", optarg);
+						LM_ERR("bad UDP workers number: -n %s\n", optarg);
 						goto error00;
 					}
 					break;
@@ -987,9 +1024,9 @@ int main(int argc, char** argv)
 					cfg_log_stderr=1;
 					break;
 			case 'N':
-					tcp_children_no=strtol(optarg, &tmp, 10);
+					tcp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
-						LM_ERR("bad process number: -N %s\n", optarg);
+						LM_ERR("bad TCP workers number: -N %s\n", optarg);
 						goto error00;
 					}
 					break;
@@ -1207,7 +1244,7 @@ try_again:
 		goto error;
 	}
 
-	if (create_status_pipe() < 0) {
+	if (create_status_pipe(0) < 0) {
 		LM_ERR("failed to create status pipe\n");
 		goto error;
 	}
@@ -1234,18 +1271,18 @@ try_again:
 			LM_NOTICE("enabling core dumping (found off)\n");
 			disable_core_dump = 0;
 		}
-		if (udp_count_processes()!=0) {
-			if (children_no!=2) {
+		if (udp_count_processes(NULL)!=0) {
+			if (udp_workers_no!=2) {
 				LM_NOTICE("setting UDP children to 2 (found %d)\n",
-					children_no);
-				children_no = 2;
+					udp_workers_no);
+				udp_workers_no = 2;
 			}
 		}
-		if (tcp_count_processes()!=0) {
-			if (tcp_children_no!=2) {
+		if (tcp_count_processes(NULL)!=0) {
+			if (tcp_workers_no!=2) {
 				LM_NOTICE("setting TCP children to 2 (found %d)\n",
-					tcp_children_no);
-				tcp_children_no = 2;
+					tcp_workers_no);
+				tcp_workers_no = 2;
 			}
 		}
 
@@ -1374,14 +1411,6 @@ try_again:
 		LM_ERR("failed to init multi-proc support\n");
 		goto error;
 	}
-
-	#ifdef PKG_MALLOC
-	/* init stats support for pkg mem */
-	if (init_pkg_stats(counted_processes)!=0) {
-		LM_ERR("failed to init stats for pkg\n");
-		goto error;
-	}
-	#endif
 
 	/* init avps */
 	if (init_extra_avps() != 0) {

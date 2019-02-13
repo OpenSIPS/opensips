@@ -99,6 +99,7 @@
 #include "socket_info.h"
 #include "name_alias.h"
 #include "ut.h"
+#include "pt_scaling.h"
 #include "dset.h"
 #include "pvar.h"
 #include "blacklists.h"
@@ -154,9 +155,10 @@ extern char *finame;
 
 struct listen_param {
 	enum si_flags flags;
-	int children;
+	int workers;
 	struct socket_id *socket;
 	char *tag;
+	char *auto_scaling_profile;
 } p_tmp;
 static void fill_socket_id(struct listen_param *param, struct socket_id *s);
 
@@ -336,6 +338,7 @@ static struct multi_str *tmp_mod;
 %token DNS_USE_SEARCH
 %token MAX_WHILE_LOOPS
 %token CHILDREN
+%token UDP_WORKERS
 %token CHECK_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
 %token SHM_SECONDARY_HASH_SIZE
@@ -352,12 +355,6 @@ static struct multi_str *tmp_mod;
 %token QUERYBUFFERSIZE
 %token QUERYFLUSHTIME
 %token SIP_WARNING
-%token SOCK_MODE
-%token SOCK_USER
-%token SOCK_GROUP
-%token UNIX_SOCK
-%token UNIX_SOCK_CHILDREN
-%token UNIX_TX_TIMEOUT
 %token SERVER_SIGNATURE
 %token SERVER_HEADER
 %token USER_AGENT_HEADER
@@ -371,6 +368,7 @@ static struct multi_str *tmp_mod;
 %token POLL_METHOD
 %token TCP_ACCEPT_ALIASES
 %token TCP_CHILDREN
+%token TCP_WORKERS
 %token TCP_CONNECT_TIMEOUT
 %token TCP_CON_LIFETIME
 %token TCP_LISTEN_BACKLOG
@@ -399,6 +397,9 @@ static struct multi_str *tmp_mod;
 %token SYNC_TOKEN
 %token ASYNC_TOKEN
 %token LAUNCH_TOKEN
+%token AUTO_SCALING_PROFILE
+%token AUTO_SCALING_CYCLE
+%token TIMER_WORKERS
 
 
 
@@ -450,12 +451,22 @@ static struct multi_str *tmp_mod;
 %token SLASH
 %token AS
 %token USE_CHILDREN
+%token USE_WORKERS
+%token USE_AUTO_SCALING_PROFILE
+%token MAX
+%token MIN
 %token DOT
 %token CR
 %token COLON
 %token ANY
 %token ANYCAST
 %token SCRIPTVARERR
+%token SCALE_UP_TO
+%token SCALE_DOWN_TO
+%token ON
+%token CYCLES
+%token CYCLES_WITHIN
+%token PERCENTAGE
 
 
 /*non-terminals */
@@ -615,13 +626,21 @@ listen_def_param: ANYCAST {
 					p_tmp.flags |= SI_IS_ANYCAST;
 					}
 				| USE_CHILDREN NUMBER {
-					p_tmp.children |= $2;
+					warn("'USE_CHILDREN' syntax is deprecated, use "
+						"'USE_WORKERS' instead");
+					p_tmp.workers=$2;
+					}
+				| USE_WORKERS NUMBER {
+					p_tmp.workers=$2;
 					}
 				| AS listen_id_def {
 					p_tmp.socket = $2;
 					}
 				| TAG ID {
 					p_tmp.tag = $2;
+					}
+				| USE_AUTO_SCALING_PROFILE ID {
+					p_tmp.auto_scaling_profile=$2;
 					}
 				;
 
@@ -670,6 +689,37 @@ blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 blst_elem_list: blst_elem_list COMMA blst_elem {}
 		| blst_elem {}
 		| blst_elem_list error { yyerror("bad black list element");}
+		;
+
+auto_scale_profile_def:
+		  ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES_WITHIN NUMBER
+		  SCALE_DOWN_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES {
+			if (create_auto_scaling_profile($1,$3,$5,$8,$10,
+			$12, $14, $17,10*$17)<0)
+				yyerror("failed to create auto scaling profile");
+		 }
+		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES
+		  SCALE_DOWN_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES {
+			if (create_auto_scaling_profile($1,$3,$5,$8,$8,
+			$11, $13, $16, 10*$16)<0)
+				yyerror("failed to create auto scaling profile");
+		 }
+		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES_WITHIN NUMBER {
+			if (create_auto_scaling_profile($1,$3,$5,$8,$10,
+			0, 0, 0, 0)<0)
+				yyerror("failed to create auto scaling profile");
+		}
+		| ID SCALE_UP_TO NUMBER ON NUMBER MODULO FOR
+				NUMBER CYCLES {
+			if (create_auto_scaling_profile($1,$3,$5,$8,$8,
+			0, 0, 0, 0)<0)
+				yyerror("failed to create auto scaling profile");
+		}
 		;
 
 
@@ -724,8 +774,19 @@ assign_stm: DEBUG EQUAL snumber
 		| MAX_WHILE_LOOPS EQUAL error { yyerror("number expected"); }
 		| MAXBUFFER EQUAL NUMBER { maxbuffer=$3; }
 		| MAXBUFFER EQUAL error { yyerror("number expected"); }
-		| CHILDREN EQUAL NUMBER { children_no=$3; }
+		| CHILDREN EQUAL NUMBER { warn("'children' option is deprecated, "
+			"use 'udp_workers' instead");
+			udp_workers_no=$3; }
 		| CHILDREN EQUAL error { yyerror("number expected"); }
+		| UDP_WORKERS EQUAL NUMBER { udp_workers_no=$3; }
+		| UDP_WORKERS EQUAL error { yyerror("number expected"); }
+		| TIMER_WORKERS EQUAL NUMBER {
+				timer_workers_no=$3;
+		}
+		| TIMER_WORKERS EQUAL NUMBER USE_AUTO_SCALING_PROFILE ID{
+				timer_workers_no=$3;
+				timer_auto_scaling_profile=$5;
+		}
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER {
@@ -890,9 +951,19 @@ assign_stm: DEBUG EQUAL snumber
 		}
 		| TCP_ACCEPT_ALIASES EQUAL error { yyerror("boolean value expected"); }
 		| TCP_CHILDREN EQUAL NUMBER {
-				tcp_children_no=$3;
+				warn("'tcp_children' option is deprecated, "
+					"use 'tcp_workers' instead");
+				tcp_workers_no=$3;
 		}
 		| TCP_CHILDREN EQUAL error { yyerror("number expected"); }
+		| TCP_WORKERS EQUAL NUMBER {
+				tcp_workers_no=$3;
+		}
+		| TCP_WORKERS EQUAL NUMBER USE_AUTO_SCALING_PROFILE ID{
+				tcp_workers_no=$3;
+				tcp_auto_scaling_profile=$5;
+		}
+		| TCP_WORKERS EQUAL error { yyerror("number expected"); }
 		| TCP_CONNECT_TIMEOUT EQUAL NUMBER {
 				tcp_connect_timeout=$3;
 		}
@@ -1151,6 +1222,14 @@ assign_stm: DEBUG EQUAL snumber
 				}
 		| DISABLE_503_TRANSLATION EQUAL NUMBER { disable_503_translation=$3; }
 		| DISABLE_503_TRANSLATION EQUAL error {
+				yyerror("integer value expected");
+				}
+		| AUTO_SCALING_PROFILE EQUAL auto_scale_profile_def {}
+		| AUTO_SCALING_PROFILE EQUAL error {
+				yyerror("bad auto-scaling profile definition");
+				}
+		| AUTO_SCALING_CYCLE EQUAL NUMBER { auto_scaling_cycle=$3; }
+		| AUTO_SCALING_CYCLE EQUAL error {
 				yyerror("integer value expected");
 				}
 		| error EQUAL { yyerror("unknown config variable"); }
@@ -2701,7 +2780,7 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 		l->adv_port = 0;
 		l->proto    = proto;
 		l->port     = port;
-		l->children = 0;
+		l->workers  = 0;
 		l->next     = NULL;
 	}
 
@@ -2711,7 +2790,8 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 {
 	s->flags |= param->flags;
-	s->children = param->children;
+	s->workers = param->workers;
+	s->auto_scaling_profile = param->auto_scaling_profile;
 	if (param->socket)
 		set_listen_id_adv(s, param->socket->name, param->socket->port);
 	s->tag = param->tag;

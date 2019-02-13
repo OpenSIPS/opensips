@@ -47,6 +47,7 @@
 #define STAT_SHM_NAME  (1<<2)
 #define STAT_IS_FUNC   (1<<3)
 #define STAT_NO_ALLOC  (1<<4)
+#define STAT_HIDDEN    (1<<5)
 
 #ifdef NO_ATOMIC_OPS
 typedef unsigned int stat_val;

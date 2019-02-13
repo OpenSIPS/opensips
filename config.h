@@ -50,7 +50,7 @@
 
 #define MAX_LISTEN 16		/*!< maximum number of addresses on which we will listen */
 
-#define CHILD_NO    8		/*!< default number of child processes started */
+#define UDP_WORKERS_NO    8		/*!< default number of UDP workers started */
 
 /*! \brief maximum allowed execution time of a high-priority, graceful
  *    shutdown job broadcast before the attendant process SIGKILLs any

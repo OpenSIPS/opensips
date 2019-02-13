@@ -94,6 +94,8 @@ gen_lock_t *stat_lock = 0;
 
 #define stat_hash(_s) core_hash( _s, 0, STATS_HASH_SIZE)
 
+#define stat_is_hidden(_s)  ((_s)->flags&STAT_HIDDEN)
+
 
 /*! \brief
  * Returns the statistic associated with 'numerical_code' and 'out_codes'.
@@ -278,7 +280,7 @@ int init_stats_collector(void)
 		goto error;
 	}
 
-	/* register sh_mem statistics */
+	/* register network-level statistics */
 	if (register_module_stats( "net", net_stats)!=0 ) {
 		LM_ERR("failed to register network statistics\n");
 		goto error;
@@ -612,7 +614,7 @@ stat_var* __get_stat( str *name, int mod_idx )
 
 	/* and look for it , first in the hash for static stats */
 	for( stat=collector->hstats[hash] ; stat ; stat=stat->hnext ) {
-		if ( (stat->name.len==name->len) &&
+		if ( !stat_is_hidden(stat) && (stat->name.len==name->len) &&
 		(strncasecmp( stat->name.s, name->s, name->len)==0) &&
 		(mod_idx < 0 || stat->mod_idx == mod_idx))
 			return stat;
@@ -620,7 +622,7 @@ stat_var* __get_stat( str *name, int mod_idx )
 	/* and then in the hash for dynamic stats */
 	lock_start_read((rw_lock_t *)collector->rwl);
 	for( stat=collector->dy_hstats[hash] ; stat ; stat=stat->hnext ) {
-		if ( (stat->name.len==name->len) &&
+		if ( !stat_is_hidden(stat) && (stat->name.len==name->len) &&
 		(strncasecmp( stat->name.s, name->s, name->len)==0) &&
 		(mod_idx < 0 || stat->mod_idx == mod_idx)) {
 			lock_stop_read((rw_lock_t *)collector->rwl);
@@ -723,6 +725,8 @@ inline static int mi_add_module_stats(mi_item_t *resp_obj, module_stats *mods)
 		lock_start_read((rw_lock_t *)collector->rwl);
 
 	for( stat=mods->head ; stat ; stat=stat->lnext) {
+		if (stat_is_hidden(stat))
+			continue;
 		ret = mi_print_stat(resp_obj, &mods->name, &stat->name,
 				get_stat_val(stat));
 		if (ret < 0)
@@ -744,6 +748,8 @@ inline static int mi_list_module_stats(mi_item_t *resp_obj, module_stats *mods)
 		lock_start_read((rw_lock_t *)collector->rwl);
 
 	for( stat=mods->head ; stat ; stat=stat->lnext) {
+		if (stat_is_hidden(stat))
+			continue;
 		ret = mi_list_stat(resp_obj, &mods->name, stat);
 		if (ret < 0)
 			break;

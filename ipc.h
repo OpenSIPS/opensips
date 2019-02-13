@@ -22,7 +22,6 @@
 #ifndef _CORE_IPC_H
 #define _CORE_IPC_H
 
-#include "pt.h"
 
 typedef short ipc_handler_type;
 extern int ipc_shared_fd_read;
@@ -93,9 +92,18 @@ int ipc_dispatch_rpc( ipc_rpc_f *rpc, void *param);
 void ipc_handle_job(int fd);
 
 
+/*
+ * reads and execute all the jobs available on the pipe, without blocking
+ */
+void ipc_handle_all_pending_jobs(int fd);
+
+
 /* internal functions */
 int init_ipc(void);
 
 int create_ipc_pipes(int proc_no);
+
+/* required by the IPC PIPE macros */
+#include "pt.h"
 
 #endif

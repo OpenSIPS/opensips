@@ -38,7 +38,7 @@ int udp_init(void);
 void udp_destroy(void);
 
 /* tells how mnay processes the UDP layer will create */
-int udp_count_processes(void);
+int udp_count_processes(unsigned int *extra);
 
 /* starts all UDP related processes */
 int udp_start_processes(int *chd_rank, int *startup_done);

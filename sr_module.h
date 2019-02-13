@@ -247,10 +247,10 @@ int module_loaded(char *name);
  * NULL otherwise */
 
 /*! \brief Counts the additional the number of processes requested by modules */
-int count_module_procs();
+int count_module_procs(int flags);
 
 /*! \brief Forks and starts the additional processes required by modules */
-int start_module_procs();
+int start_module_procs(void);
 
 
 #endif

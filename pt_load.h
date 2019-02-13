@@ -39,7 +39,7 @@
 #define LT_1m_RATIO           (0.1)
 
 
-struct proc_load {
+struct proc_load_info {
 	/* sampling array for the Short Time load calculation (real time
 	 * load or 1 second time-window load)*/
 	unsigned short ST_window[ST_WINDOW_SIZE];
@@ -53,11 +53,6 @@ struct proc_load {
 
 	/* set to 1 when the process switched to busy; set on 0 if idle */
 	unsigned char is_busy;
-
-	/* the load statistics of the process */
-	stat_var *load_rt;
-	stat_var *load_1m;
-	stat_var *load_10m;
 
 };
 
@@ -78,6 +73,6 @@ unsigned int pt_get_1m_proc_load(int pid);
 unsigned int pt_get_10m_proc_load(int pid);
 
 /* OpenSIPS startup */
-int register_process_load_stats(int process_no);
+int register_processes_load_stats(int procs_no);
 
 #endif
