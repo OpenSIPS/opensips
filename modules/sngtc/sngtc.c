@@ -106,9 +106,6 @@ int *sip_workers_pipes;
 /* pipe for the sangoma worker */
 int sangoma_pipe[2];
 
-static int *proc_counter;
-gen_lock_t *index_lock;
-
 /* generic module functions */
 static int mod_init(void);
 static int child_init(int rank);
@@ -321,25 +318,6 @@ static int mod_init(void)
         return -1;
     }
 
-	index_lock = shm_malloc(sizeof(*index_lock));
-	if (!index_lock) {
-		LM_ERR("No more shm mem\n");
-		return -1;
-	}
-
-	if (!lock_init(index_lock)) {
-		LM_ERR("Failed to init lock\n");
-		return -1;
-	}
-
-	proc_counter = shm_malloc(sizeof(*proc_counter));
-	if (!proc_counter) {
-		LM_ERR("Not enough shm mem\n");
-		return -1;
-	}
-
-	*proc_counter = 0;
-
 	if (pipe(sangoma_pipe) != 0) {
 		LM_ERR("Failed to create sangoma worker pipe\n");
 		return -1;
@@ -388,13 +366,9 @@ static int child_init(int rank)
 	if (rank <= PROC_MAIN)
 		return 0;
 
-	lock_get(index_lock);
-
-	pipe_index = 2 * (*proc_counter)++;
+	pipe_index = 2 * (process_no);
 
 	close(sip_workers_pipes[pipe_index + WRITE_END]);
-
-	lock_release(index_lock);
 
 	LM_DBG("proc index: %d\n", pipe_index / 2);
 
