@@ -199,21 +199,22 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 		if (ctid_insertion == MR_APPEND_PARAM) {
 			pos = get_uri_param_idx(&ctid_param, &puri);
 			if (pos < 0) {
-				LM_ERR("failed to locate our ';%.*s=' param, ci = %.*s!\n",
-				       ctid_param.len, ctid_param.s,
-				       req->callid->body.len, req->callid->body.s);
+				LM_ERR("failed to locate our ';%.*s=' param in %sURI '%.*s', "
+				       "ci = %.*s!\n", ctid_param.len, ctid_param.s,
+				       _s ? "" : "R-", uri.len, uri.s, req->callid->body.len,
+				       req->callid->body.s);
 				return -1;
 			}
 			if (str2int64(&puri.u_val[pos], &contact_id) != 0) {
-				LM_ERR("invalid contact_id in R-URI <%.*s>, ci: %.*s\n",
-				       uri.len, uri.s, req->callid->body.len,
+				LM_ERR("invalid contact_id in %sURI '%.*s', ci: %.*s\n",
+				       _s ? "" : "R-", uri.len, uri.s, req->callid->body.len,
 				       req->callid->body.s);
 				return -1;
 			}
 		} else {
 			if (str2int64(&puri.user, &contact_id) != 0) {
-				LM_ERR("invalid contact_id in R-URI <%.*s>, ci: %.*s\n",
-				       uri.len, uri.s, req->callid->body.len,
+				LM_ERR("invalid contact_id in %sURI '%.*s', ci: %.*s\n",
+				       _s ? "" : "R-", uri.len, uri.s, req->callid->body.len,
 				       req->callid->body.s);
 				return -1;
 			}
