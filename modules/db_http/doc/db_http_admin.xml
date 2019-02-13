@@ -261,6 +261,27 @@ modparam("db_http", "timeout",5000)
 		</example>
 	</section>
 
+	<section id="param_disable_expect" xreflabel="disable_expect">
+		<title><varname>disable_expect</varname> (int)</title>
+		<para>
+		Disables automatic 'Expect: 100-continue' behavior in libcurl for requests over 1024 bytes in size.
+		This can help reduce latency by saving a network round-trip for large records.
+		For more information on this behavior please seee rfc2616 section 8.2.3.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 (off)</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>disable_expect</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_http", "disable_expect",1)
+...
+</programlisting>
+		</example>
+	</section>
+
 
 </section>
 
