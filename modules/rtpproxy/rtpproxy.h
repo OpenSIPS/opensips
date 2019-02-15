@@ -40,6 +40,7 @@ struct rtpp_node {
 	str					rn_url;			/* unparsed, deletable */
 	int					rn_umode;
 	char				*rn_address;	/* substring of rn_url */
+	char				*adv_address;	/* advertised address of rtpproxy */
 	int					rn_disabled;	/* found unaccessible? */
 	unsigned			rn_weight;		/* for load balancing */
 	unsigned int		rn_recheck_ticks;

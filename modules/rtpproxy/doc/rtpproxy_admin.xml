@@ -200,6 +200,13 @@
 		specify a UNIX socket or an IPv4/IPv6 UDP socket.
 		</para>
 		<para>
+			The definition also supports to specify a different IP that will
+			be advertised instead of the one returned by RTPProxy. This is
+			useful when having multiple RTPProxy servers that are located
+			behind NAT, and listen only on private intefaces, but need to
+			advertise a public one.
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>NONE</quote> (disabled).
 		</emphasis>
@@ -218,6 +225,8 @@ modparam("rtpproxy", "rtpproxy_sock",
 	"1 == udp:localhost:12221 udp:localhost:12222")
 modparam("rtpproxy", "rtpproxy_sock",
 	"2 == udp:localhost:12225")
+modparam("rtpproxy", "rtpproxy_sock",
+	"2 == udp:localhost:12225|8.8.8.8")
 ...
 </programlisting>
 		</example>

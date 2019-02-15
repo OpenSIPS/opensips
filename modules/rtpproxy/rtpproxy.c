@@ -627,7 +627,7 @@ static int rtpproxy_set_store(modparam_t type, void * val){
 static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 										char * rtpproxy){
 	/* Make rtp proxies list. */
-	char *p, *p1, *p2, *plim;
+	char *p, *p1, *p2, *p3, *p4, *plim;
 	struct rtpp_node *pnode;
 	int weight;
 
@@ -652,29 +652,43 @@ static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 		} else {
 			p2 = p;
 		}
-		pnode = shm_malloc(sizeof(struct rtpp_node));
+		/* check to see if anything was advertised */
+		p3 = q_memrchr(p1, '|', p2 - p1);
+		if (p3) {
+			p4 = p2;
+			p2 = p3;
+			p3++;
+			while (p3 < p2 && isspace((int)*p3))
+				p3++;
+			while (p2 > p1 && isspace((int)*p2))
+				p2--;
+		}
+		pnode = shm_malloc(sizeof(struct rtpp_node) +
+				(p2 - p1 + 1) /* socket */ +
+				(p3 ? (p4 - p3 + 1): 0));
 		if (pnode == NULL) {
 			LM_ERR("no shm memory left\n");
 			return -1;
 		}
 		memset(pnode, 0, sizeof(*pnode));
+		pnode->rn_url.s = (char *)(pnode + 1);
 		pnode->idx = *rtpp_no;
 		*rtpp_no = *rtpp_no + 1;
 		pnode->rn_recheck_ticks = 0;
 		pnode->rn_weight = weight;
 		pnode->rn_umode = 0;
 		pnode->rn_disabled = 0;
-		pnode->rn_url.s = shm_malloc(p2 - p1 + 1);
-		if (pnode->rn_url.s == NULL) {
-			shm_free(pnode);
-			LM_ERR("no shm memory left\n");
-			return -1;
-		}
-		memmove(pnode->rn_url.s, p1, p2 - p1);
+		memcpy(pnode->rn_url.s, p1, p2 - p1);
 		pnode->rn_url.s[p2 - p1] 	= 0;
 		pnode->rn_url.len 			= p2-p1;
+		if (p3) {
+			pnode->adv_address = pnode->rn_url.s + pnode->rn_url.len + 1;
+			memcpy(pnode->adv_address, p3, p4 - p3);
+			pnode->adv_address[p4 - p3] = 0;
+		}
 
-		LM_DBG("url is %s, len is %i\n", pnode->rn_url.s, pnode->rn_url.len);
+		LM_DBG("url is %s, len is %i, adv is [%s]\n",
+				pnode->rn_url.s, pnode->rn_url.len, pnode->adv_address);
 		/* Leave only address in rn_address */
 		pnode->rn_address = pnode->rn_url.s;
 		if (strncasecmp(pnode->rn_address, "udp:", 4) == 0) {
@@ -1614,9 +1628,6 @@ void free_rtpp_nodes(struct rtpp_set *list)
 	struct rtpp_node * crt_rtpp, *last_rtpp;
 
 	for(crt_rtpp = list->rn_first; crt_rtpp != NULL;  ){
-
-		if(crt_rtpp->rn_url.s)
-			shm_free(crt_rtpp->rn_url.s);
 
 		last_rtpp = crt_rtpp;
 		crt_rtpp = last_rtpp->rn_next;
@@ -3460,6 +3471,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	int c1p_altered;
 	int vcnt;
 	pv_value_t val;
+	char *adv_address = NULL;
 
 	memset(&opts, '\0', sizeof(opts));
 	memset(&rep_opts, '\0', sizeof(rep_opts));
@@ -3809,6 +3821,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 						goto error;
 					}
 					LM_DBG("trying new rtpproxy node %s\n", args->node->rn_address);
+					adv_address = args->node->adv_address;
 				}
 				/* if we don't have, we should choose a new node */
 				if (rep_opts.oidx > 0) {
@@ -3948,8 +3961,13 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				 * 3) no ip in rtpproxy response (started using unix socket and no -l param)
 				 *    must revert to default of proxy ip
 				 */
-				newip.s = args->arg2 ? args->arg2 : argv[1];
-				if (newip.s == NULL) {
+				if (args->arg2)
+					newip.s = args->arg2;
+				else if (adv_address)
+					newip.s = adv_address;
+				else if (argv[1])
+					newip.s = argv[1];
+				else {
 					newip.s = ip_addr2a(&msg->rcv.dst_ip);
 					pf1 = msg->rcv.dst_ip.af;
 				}
