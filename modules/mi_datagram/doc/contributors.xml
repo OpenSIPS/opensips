@@ -76,15 +76,15 @@
 	</row>
 	<row>
 		<entry>8. </entry>
-		<entry>Klaus Darilion</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
+		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
 		<entry align="center">4</entry>
-		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">7</entry>
+		<entry align="center">9</entry>
 	</row>
 	<row>
 		<entry>9. </entry>
-		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
+		<entry>Klaus Darilion</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">4</entry>
@@ -128,43 +128,43 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
+		<entry align="center">May 2014 - Feb 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Nov 2018</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Jun 2007 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - May 2017</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">Jan 2017 - Feb 2017</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Oct 2011 - Nov 2016</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Julián Moreno Patiño</entry>
 		<entry align="center">Feb 2016 - Feb 2016</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Dusan Klinec</entry>
 		<entry align="center">Dec 2015 - Dec 2015</entry>
-	</row>
-	<row>
-		<entry>8. </entry>
-		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
-		<entry align="center">May 2014 - May 2014</entry>
 	</row>
 	<row>
 		<entry>9. </entry>
