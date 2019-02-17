@@ -23,6 +23,7 @@ DB_HTTP Module
               1.3.8. quote_delimiter (str)
               1.3.9. value_delimiter (str)
               1.3.10. timeout (int)
+              1.3.11. disable_expect (int)
 
         1.4. Exported Functions
         1.5. Server specifications
@@ -65,12 +66,13 @@ DB_HTTP Module
    1.9. Set quote_delimiter parameter
    1.10. Set value_delimiter parameter
    1.11. Set timeout parameter
-   1.12. Example query.
-   1.13. Example query with variables.
-   1.14. More query examples.
-   1.15. NULL query example.
-   1.16. Example Reply.
-   1.17. Quoting Example.
+   1.12. Set disable_expect parameter
+   1.13. Example query.
+   1.14. Example query with variables.
+   1.15. More query examples.
+   1.16. NULL query example.
+   1.17. Example Reply.
+   1.18. Quoting Example.
 
 Chapter 1. Admin Guide
 
@@ -237,6 +239,21 @@ modparam("db_http", "value_delimiter",";")
 modparam("db_http", "timeout",5000)
 ...
 
+1.3.11. disable_expect (int)
+
+   Disables automatic 'Expect: 100-continue' behavior in libcurl
+   for requests over 1024 bytes in size. This can help reduce
+   latency by saving a network round-trip for large records. For
+   more information on this behavior please seee rfc2616 section
+   8.2.3.
+
+   Default value is “0 (off)”
+
+   Example 1.12. Set disable_expect parameter
+...
+modparam("db_http", "disable_expect",1)
+...
+
 1.4. Exported Functions
 
    This module does not export any functions.
@@ -255,7 +272,7 @@ modparam("db_http", "timeout",5000)
    apart by the query_type variable. Each type of query uses
    specific variables simillar to those in the opensips db_api.
 
-   Example 1.12. Example query.
+   Example 1.13. Example query.
 ...
 GET /presentity/?c=username,domain,event,expires HTTP/1.1
 ...
@@ -300,7 +317,7 @@ GET /presentity/?c=username,domain,event,expires HTTP/1.1
        value. Will be present in all queries except the "SELECT"
        (normal query).
 
-   Example 1.13. Example query with variables.
+   Example 1.14. Example query with variables.
 ...
 GET /presentity/?c=username,domain,event,expires HTTP/1.1
 GET /version/?k=table_name&v=xcap&c=table_version HTTP/1.1
@@ -341,7 +358,7 @@ k=id&v=100&query_type=insert
        Uses the q variable. This is an optional type of query. If
        the module is not configured to use it it will not.
 
-   Example 1.14. More query examples.
+   Example 1.15. More query examples.
 
 ...
 POST /active_watchers HTTP/1.1
@@ -361,7 +378,7 @@ k=id&op=%3D&v=100&uk=id&uv=101&query_type=update
    NULL values in queries are represented as a string of length 1
    containing a single character with value '\0'.
 
-   Example 1.15. NULL query example.
+   Example 1.16. NULL query example.
 
 ...
 POST /active_watchers HTTP/1.1
@@ -396,7 +413,7 @@ k=id&op=%3D&v=%00&query_type=delete
    If the query produced an error the server must reply with a
    HTTP 500 reply, or with a corresponding error code (404, 401).
 
-   Example 1.16. Example Reply.
+   Example 1.17. Example Reply.
 ...
 int;string;blob
 6;something=something;1000
@@ -416,7 +433,7 @@ int;string;blob
    be placed under quotes. A quote delimiter inside a value must
    be preceeded by another quote delimiter.
 
-   Example 1.17. Quoting Example.
+   Example 1.18. Quoting Example.
 ...
 int;string;blob
 6;|ana;maria|;1000
@@ -454,13 +471,14 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 9 7 24 46
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 45 50
    5. Vlad Paiu (@vladpaiu) 6 4 65 7
-   6. Dusan Klinec 3 1 50 26
-   7. Anca Vamanu 3 1 1 1
-   8. Ezequiel Lovelle 3 1 1 1
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
-   10. Stephane Alnet 3 1 1 1
+   6. Ryan Bullock (@rrb3942) 5 3 42 1
+   7. Dusan Klinec 3 1 50 26
+   8. Anca Vamanu 3 1 1 1
+   9. Ezequiel Lovelle 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Stephane Alnet, Vlad Patrascu
+   (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -482,18 +500,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Apr 2017
-   5.  Dusan Klinec                        Dec 2015 - Dec 2015
-   6.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2009 - Oct 2014
-   8.  Stephane Alnet                      Nov 2013 - Nov 2013
-   9.  Vlad Paiu (@vladpaiu)               Apr 2013 - Aug 2013
-   10. Anca Vamanu                         Jan 2011 - Jan 2011
+   1.  Ryan Bullock (@rrb3942)             Jan 2019 - Feb 2019
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5.  Razvan Crainea (@razvancrainea)     Oct 2011 - Apr 2017
+   6.  Dusan Klinec                        Dec 2015 - Dec 2015
+   7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2009 - Oct 2014
+   9.  Stephane Alnet                      Nov 2013 - Nov 2013
+   10. Vlad Paiu (@vladpaiu)               Apr 2013 - Aug 2013
 
-   All remaining contributors: Andrei Dragus.
+   All remaining contributors: Anca Vamanu, Andrei Dragus.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -502,10 +520,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Stephane
-   Alnet, Vlad Paiu (@vladpaiu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Andrei Dragus.
+   Last edited by: Ryan Bullock (@rrb3942), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Stephane Alnet, Vlad Paiu (@vladpaiu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Andrei Dragus.
 
    Documentation Copyrights:
 
