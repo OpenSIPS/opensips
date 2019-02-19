@@ -119,10 +119,12 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 	memset(si, 0, sizeof(struct socket_info));
 	si->socket=-1;
 
-	si->name.len=strlen(sid->name);
-	si->name.s=(char*)pkg_malloc(si->name.len+1); /* include \0 */
-	if (si->name.s==0) goto error;
-	memcpy(si->name.s, sid->name, si->name.len+1);
+	if (sid->name) {
+		si->name.len=strlen(sid->name);
+		si->name.s=(char*)pkg_malloc(si->name.len+1); /* include \0 */
+		if (si->name.s==0) goto error;
+		memcpy(si->name.s, sid->name, si->name.len+1);
+	}
 
 	/* set port & proto */
 	si->port_no=sid->port;
@@ -407,7 +409,7 @@ int expand_interface(struct socket_info *si, struct socket_info** list)
 		if (!it->ifa_addr)
 			continue;
 
-		if ((strcmp(si->name.s, it->ifa_name) == 0)) {
+		if (si->name.len == 0 || (strcmp(si->name.s, it->ifa_name) == 0)) {
 			if (it->ifa_addr->sa_family != AF_INET &&
 					it->ifa_addr->sa_family != AF_INET6)
 				continue;
@@ -505,9 +507,14 @@ end:
 		ifrcopy=ifr;
 		if (ioctl(s, SIOCGIFFLAGS,  &ifrcopy)!=-1){ /* ignore errors */
 			/* ignore down ifs only if listening on all of them*/
+			if (si->name.len==0){
+				/* if if not up, skip it*/
+				if (!(ifrcopy.ifr_flags & IFF_UP)) continue;
+			}
 		}
 
-		if (strncmp(si->name.s, ifr.ifr_name, sizeof(ifr.ifr_name))==0){
+		if (si->name.len == 0 ||
+			strncmp(si->name.s, ifr.ifr_name, sizeof(ifr.ifr_name))==0){
 
 			/*add address*/
 			sockaddr2ip_addr(&addr,
