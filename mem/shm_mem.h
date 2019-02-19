@@ -206,6 +206,7 @@ extern gen_lock_t* mem_locks;
 extern enum osips_mm mem_allocator_shm;
 
 
+#define INVALID_MAP ((void *)-1)
 int shm_mem_init(); /* calls shm_getmem & shm_mem_init_mallocs */
 
 /*
@@ -214,11 +215,8 @@ int shm_mem_init(); /* calls shm_getmem & shm_mem_init_mallocs */
  *	- performs memory warming with HP_MALLOC
  */
 void init_shm_post_yyparse(void);
-
-int shm_getmem();   /* allocates the memory (mmap or sysv shmap) */
-int shm_mem_init_mallocs(void* mempool, unsigned long size); /* initialize
-																the mallocs
-																& the lock */
+void *shm_getmem(int, void *, unsigned long);   /* allocates the memory (mmap or sysv shmap) */
+void shm_relmem(void *, unsigned long); /* deallocates the memory allocated by shm_getmem() */
 void shm_mem_destroy();
 
 

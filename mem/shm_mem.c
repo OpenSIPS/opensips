@@ -110,7 +110,7 @@ gen_lock_t *mem_lock;
 gen_lock_t *mem_locks;
 #endif
 
-static void *shm_mempool = (void *)-1;
+static void* shm_mempool=INVALID_MAP;
 void *shm_block;
 
 /*
@@ -211,56 +211,93 @@ end:
 }
 #endif
 
-int shm_getmem(void)
-{
 
-#ifdef SHM_MMAP
-	int fd;
+
+inline static void* sh_realloc(void* p, unsigned int size)
+{
+	void *r;
+
+	shm_lock(); 
+
+#ifndef HP_MALLOC
+	shm_free_unsafe(p);
+	r = shm_malloc_unsafe(size);
 #else
+	shm_free(p);
+	r = shm_malloc(size);
+#endif
+
+	shm_threshold_check();
+
+	shm_unlock(); 
+
+	return r;
+}
+
+/* look at a buffer if there is perhaps enough space for the new size
+    if so, we return current buffer again; otherwise, we free it,
+	allocate a new one and return it; no guarantee for buffer content;
+	if allocation fails, we return NULL
+*/
+
+#ifdef DBG_MALLOC
+void* _shm_resize( void* p, unsigned int s, const char* file, const char* func,
+							int line)
+#else
+void* _shm_resize( void* p , unsigned int s)
+#endif
+{
+	if (p==0) {
+		LM_DBG("resize(0) called\n");
+		return shm_malloc( s );
+	}
+
+	return sh_realloc( p, s );
+}
+
+
+
+
+/*
+ * Allocates memory using mmap or sysv shmap
+ *  - fd: a handler to a file descriptor pointing to a map file
+ *  - force_addr: force mapping to a specific address
+ *  - size: how large the mmap should be
+ */
+void *shm_getmem(int fd, void *force_addr, unsigned long size)
+{
+	void *ret_addr;
+	int flags;
+
+#ifndef SHM_MMAP
 	struct shmid_ds shm_info;
 #endif
 
 #ifdef SHM_MMAP
-	if (shm_mempool && (shm_mempool!=(void*)-1)){
-#else
-	if ((shm_shmid!=-1)||(shm_mempool!=(void*)-1)){
-#endif
-		LM_CRIT("shm already initialized\n");
-		return -1;
-	}
+	flags = MAP_SHARED;
+	if (force_addr)
+		flags |= MAP_FIXED;
+	if (fd == -1)
+		flags |= MAP_ANON;
+	ret_addr=mmap(force_addr, size, PROT_READ|PROT_WRITE,
+					 flags, fd, 0);
+	if (fd > 0)
+		close(fd);
+#else /* USE_MMAP */
+/* TODO: handle persistent storage for SysV */
+	#warn "Cannot have persistent storage using SysV"
+	if (force_addr || fd == -1)
+		return INVALID_MAP;
 
-#ifdef SHM_MMAP
-#ifdef USE_ANON_MMAP
-	shm_mempool=mmap(0, shm_mem_size, PROT_READ|PROT_WRITE,
-					 MAP_ANON|MAP_SHARED, -1 ,0);
-#else
-	fd=open("/dev/zero", O_RDWR);
-	if (fd==-1){
-		LM_CRIT("could not open /dev/zero: %s\n", strerror(errno));
-		return -1;
-	}
-	shm_mempool=mmap(0, shm_mem_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd ,0);
-	/* close /dev/zero */
-	close(fd);
-#endif /* USE_ANON_MMAP */
-#else
-
-	shm_shmid=shmget(IPC_PRIVATE, /* SHM_MEM_SIZE */ shm_mem_size , 0700);
+	shm_shmid=shmget(IPC_PRIVATE, /* SHM_MEM_SIZE */ shm_mem_size, 0700);
 	if (shm_shmid==-1){
 		LM_CRIT("could not allocate shared memory segment: %s\n",
 				strerror(errno));
-		return -1;
+		return INVALID_MAP;
 	}
 	shm_mempool=shmat(shm_shmid, 0, 0);
 #endif
-	if (shm_mempool==(void*)-1){
-		LM_CRIT("could not attach shared memory segment: %s\n",
-				strerror(errno));
-		/* destroy segment*/
-		shm_mem_destroy();
-		return -1;
-	}
-	return 0;
+	return ret_addr;
 }
 
 
@@ -588,13 +625,34 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 
 int shm_mem_init(void)
 {
-	int ret;
-
+	int fd = -1;
 	LM_INFO("allocating SHM block\n");
 
-	ret = shm_getmem();
-	if (ret < 0)
-		return ret;
+#ifdef SHM_MMAP
+	if (shm_mempool && (shm_mempool!=(void*)-1)){
+#else
+	if ((shm_shmid!=-1)||(shm_mempool!=(void*)-1)){
+#endif
+		LM_CRIT("shm already initialized\n");
+		return -1;
+	}
+
+#ifndef USE_ANON_MMAP
+	fd=open("/dev/zero", O_RDWR);
+	if (fd==-1){
+		LM_CRIT("could not open /dev/zero: %s\n", strerror(errno));
+		return -1;
+	}
+#endif /* USE_ANON_MMAP */
+
+	shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
+	if (shm_mempool == INVALID_MAP) {
+		LM_CRIT("could not attach shared memory segment: %s\n",
+				strerror(errno));
+		/* destroy segment*/
+		shm_mem_destroy();
+		return -1;
+	}
 
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
 }
@@ -816,20 +874,25 @@ void shm_mem_destroy(void)
 		}
 	#endif
 	}
+	shm_relmem(shm_mempool, shm_mem_size);
+	shm_mempool=INVALID_MAP;
 
-	if (shm_mempool && (shm_mempool!=(void*)-1)) {
-#ifdef SHM_MMAP
-		munmap(shm_mempool, /* SHM_MEM_SIZE */ shm_mem_size );
-#else
-		shmdt(shm_mempool);
-#endif
-		shm_mempool=(void*)-1;
-	}
 #ifndef SHM_MMAP
 	if (shm_shmid!=-1) {
 		shmctl(shm_shmid, IPC_RMID, &shm_info);
 		shm_shmid=-1;
 	}
 #endif
+}
+
+void shm_relmem(void *mempool, unsigned long size)
+{
+	if (mempool && (mempool!=INVALID_MAP)) {
+#ifdef SHM_MMAP
+		munmap(mempool, size);
+#else
+		shmdt(mempool);
+#endif
+	}
 }
 
