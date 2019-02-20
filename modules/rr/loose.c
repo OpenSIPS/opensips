@@ -574,11 +574,6 @@ static inline int after_strict(struct sip_msg* _m)
 		}
 	}
 
-	/* set the hooks for the params -bogdan
-	 * important note: RURI is already parsed by the above function, so
-	 * we just used it without any checking */
-	ctx_rrparam_set( &_m->parsed_uri.params );
-
 	if (is_strict(&puri.params)) {
 		LM_DBG("Next hop: '%.*s' is strict router\n", uri.len, ZSW(uri.s));
 		ctx_routing_set( ROUTING_SS );
@@ -689,8 +684,15 @@ static inline int after_strict(struct sip_msg* _m)
 
 	}
 
-	/* run RR callbacks -bogdan */
-	run_rr_callbacks( _m, ctx_rrparam_get() );
+	/* we now have our own outbound Route set as R-URI */
+	if (parse_sip_msg_uri(_m) < 0) {
+		LM_ERR("failed to parse Request URI\n");
+		return RR_ERROR;
+	}
+
+	ctx_rrparam_set(&_m->parsed_uri.params);
+
+	run_rr_callbacks(_m, &_m->parsed_uri.params);
 
 	return RR_DRIVEN;
 }
