@@ -1141,7 +1141,7 @@ try_again:
 	set_osips_state( STATE_STARTING );
 
 	if (!testing_framework && parse_opensips_cfg(cfg_file, preproc) < 0) {
-		LM_ERR("failed to parse config file\n");
+		LM_ERR("failed to parse config file %s\n", cfg_file);
 		goto error00;
 	}
 
