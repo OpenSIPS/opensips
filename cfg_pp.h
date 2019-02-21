@@ -1,5 +1,5 @@
 /*
- * OpenSIPS configuration file parsing
+ * OpenSIPS configuration file pre-processing
  *
  * Copyright (C) 2019 OpenSIPS Solutions
  *
@@ -20,9 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-#ifndef __OSS_CFG_H__
-#define __OSS_CFG_H__
+#ifndef __OSS_CFG_PP_H__
+#define __OSS_CFG_PP_H__
+
+#define CFG_MAX_INCLUDE_DEPTH	20
 
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline);
+int cfg_push(const char *cfg_file);
+int cfg_pop(void);
 
-#endif /* __OSS_CFG_H__ */
+#endif /* __OSS_CFG_PP_H__ */

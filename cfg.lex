@@ -91,7 +91,7 @@
 	int column=1;
 	int startcolumn=1;
 	int startline=1;
-	char *finame = 0;
+	const char *finame = 0;
 
 	static char* addchar(struct str_buf *, char);
 	static char* addstr(struct str_buf *, char*, int);
@@ -215,6 +215,9 @@ SYNC_TOKEN      "sync"
 ASYNC_TOKEN     "async"
 LAUNCH_TOKEN    "launch"
 IS_MYSELF		"is_myself"
+PPTOK_LINE      "__OSSPP_LINE__"
+PPTOK_FILEBEG   "__OSSPP_FILEBEGIN__"
+PPTOK_FILEEND   "__OSSPP_FILEEND__"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -531,6 +534,12 @@ IMPORTFILE      "import_file"
 									return LAUNCH_TOKEN;}
 <INITIAL>{IS_MYSELF}		{ count(); yylval.strval=yytext;
 									return IS_MYSELF;}
+<INITIAL>{PPTOK_LINE}		{ count(); yylval.strval=yytext;
+									return PPTOK_LINE;}
+<INITIAL>{PPTOK_FILEBEG}	{ count(); yylval.strval=yytext;
+									return PPTOK_FILEBEG;}
+<INITIAL>{PPTOK_FILEEND}	{ count(); yylval.strval=yytext;
+									return PPTOK_FILEEND;}
 
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
@@ -945,7 +954,6 @@ static void count(void)
 	startcolumn=column;
 	for (i=0; i<yyleng;i++){
 		if (yytext[i]=='\n'){
-			line++;
 			column=startcolumn=1;
 		}else if (yytext[i]=='\t'){
 			column++;

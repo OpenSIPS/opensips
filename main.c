@@ -100,7 +100,7 @@
 
 #include "help_msg.h"
 #include "config.h"
-#include "cfg.h"
+#include "cfg_pp.h"
 #include "dprint.h"
 #include "daemonize.h"
 #include "route.h"

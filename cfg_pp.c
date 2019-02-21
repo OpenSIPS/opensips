@@ -1,5 +1,5 @@
 /*
- * OpenSIPS configuration file parsing
+ * OpenSIPS configuration file pre-processing
  *
  * Copyright (C) 2019 OpenSIPS Solutions
  *
@@ -26,8 +26,12 @@
 
 #include "config.h"
 #include "globals.h"
-#include "cfg.h"
+#include "cfg_pp.h"
 #include "ut.h"
+
+extern const char *finame;
+extern int startline;
+extern int column;
 
 extern FILE *yyin;
 extern int yyparse();
@@ -321,4 +325,44 @@ static FILE *flatten_opensips_cfg(FILE *cfg, const char *cfg_path)
 		LM_ERR("failed to obtain file for flattened cfg buffer\n");
 
 	return cfg;
+}
+
+const char *cfg_include_stack[CFG_MAX_INCLUDE_DEPTH];
+const char **cfg_include_stackp;
+int cfg_push(const char *cfg_file)
+{
+	if (!cfg_include_stackp) {
+		cfg_include_stackp = cfg_include_stack;
+	} else if (cfg_include_stackp - cfg_include_stack + 1 >=
+	           CFG_MAX_INCLUDE_DEPTH) {
+		LM_ERR("max nested cfg files reached! (%d)\n", CFG_MAX_INCLUDE_DEPTH);
+		return -1;
+	} else {
+		cfg_include_stackp++;
+	}
+
+	*cfg_include_stackp = cfg_file;
+
+	finame = cfg_file;
+	startline = 1;
+	column = 1;
+	return 0;
+}
+
+int cfg_pop(void)
+{
+	if (!cfg_include_stackp) {
+		LM_ERR("no more files to pop!\n");
+		return -1;
+	}
+
+	if (cfg_include_stackp == cfg_include_stack) {
+		cfg_include_stackp = NULL;
+	} else {
+		cfg_include_stackp--;
+		finame = *cfg_include_stackp;
+		column = 1;
+	}
+
+	return 0;
 }
