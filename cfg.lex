@@ -81,7 +81,6 @@
 		int left;
 	};
 
-
 	static int comment_nest=0;
 	static int state=0;
 	static struct str_buf s_buf;
@@ -97,27 +96,6 @@
 	static char* addstr(struct str_buf *, char*, int);
 	static void count();
 
-#define MAX_INCLUDE_DEPTH	10
-#define MAX_INCLUDE_FNAME	128
-
-	static struct oss_yy_state {
-		YY_BUFFER_STATE state;
-		int line;
-		int column;
-		int startcolumn;
-		int startline;
-		char *finame;
-	} include_stack[MAX_INCLUDE_DEPTH];
-	static int include_stack_ptr = 0;
-
-	static int oss_push_yy_state(char *fin, int mode);
-	static int oss_pop_yy_state(void);
-
-	static struct oss_yy_fname {
-	       char *fname;
-	       struct oss_yy_fname *next;
-	} *oss_yy_fname_list = 0;
-
 	/* hack to solve the duplicate declaration of 'isatty' function */
 #if YY_FLEX_MAJOR_VERSION <= 2 && YY_FLEX_MINOR_VERSION <= 5 && YY_FLEX_SUBMINOR_VERSION < 36
 	#define YY_NO_UNISTD_H
@@ -132,7 +110,6 @@
 
 /* start conditions */
 %x STRING1 STRING2 COMMENT COMMENT_LN SCRIPTVARS
-%x INCLF IMPTF
 
 /* action keywords */
 FORWARD	forward
@@ -472,9 +449,6 @@ IMPORTFILE      "import_file"
 <INITIAL>{WHILE}	{ count(); yylval.strval=yytext; return WHILE; }
 <INITIAL>{FOR}		{ count(); yylval.strval=yytext; return FOR; }
 <INITIAL>{IN}		{ count(); yylval.strval=yytext; return IN; }
-
-<INITIAL>{INCLUDEFILE}  { count(); BEGIN(INCLF); }
-<INITIAL>{IMPORTFILE}  { count(); BEGIN(IMPTF); }
 
 <INITIAL>{SET_ADV_ADDRESS}	{ count(); yylval.strval=yytext;
 										return SET_ADV_ADDRESS; }
@@ -849,32 +823,6 @@ IMPORTFILE      "import_file"
 									memset(&s_buf, 0, sizeof(s_buf));
 									return ID; }
 
-<INCLF>[ \t]*      /* eat the whitespace */
-<INCLF>[^ \t\n]+   { /* get the include file name */
-				memset(&s_buf, 0, sizeof(s_buf));
-				addstr(&s_buf, yytext, yyleng);
-				if(oss_push_yy_state(s_buf.s, 0)<0)
-				{
-					LM_CRIT("error at %s line %d\n", (finame)?finame:"cfg", line);
-					exit(-1);
-				}
-				memset(&s_buf, 0, sizeof(s_buf));
-				BEGIN(INITIAL);
-}
-
-<IMPTF>[ \t]*      /* eat the whitespace */
-<IMPTF>[^ \t\n]+   { /* get the import file name */
-				memset(&s_buf, 0, sizeof(s_buf));
-				addstr(&s_buf, yytext, yyleng);
-				if(oss_push_yy_state(s_buf.s, 1)<0)
-				{
-					LM_CRIT("error at %s line %d\n", (finame)?finame:"cfg", line);
-					exit(-1);
-				}
-				memset(&s_buf, 0, sizeof(s_buf));
-				BEGIN(INITIAL);
-}
-
 <<EOF>>							{
 									switch(state){
 										case STRING_S:
@@ -899,8 +847,8 @@ IMPORTFILE      "import_file"
 														" unclosed variable\n");
 											break;
 									}
-									if(oss_pop_yy_state()<0)
-										return 0;
+
+									return 0;
 								}
 
 %%
@@ -965,204 +913,3 @@ static void count(void)
 }
 
 int yywrap(void) { return 1; }
-
-
-static int oss_push_yy_state(char *fin, int mode)
-{
-	struct oss_yy_fname *fn = NULL;
-	FILE *fp = NULL;
-	char *x = NULL;
-	char *newf = NULL;
-	char fbuf[MAX_INCLUDE_FNAME];
-	int i, j, l;
-	char *tmpfiname = 0;
-
-	if ( include_stack_ptr >= MAX_INCLUDE_DEPTH )
-	{
-		LM_CRIT("too many includes\n");
-		return -1;
-	}
-	l = strlen(fin);
-	if(l>=MAX_INCLUDE_FNAME)
-	{
-		LM_CRIT("included file name too long: %s\n", fin);
-		return -1;
-	}
-	if(fin[0]!='"' || fin[l-1]!='"')
-	{
-		LM_CRIT("included file name must be between quotes: %s\n", fin);
-		return -1;
-	}
-	j = 0;
-	for(i=1; i<l-1; i++)
-	{
-		switch(fin[i]) {
-			case '\\':
-				if(i+1==l-1)
-				{
-					LM_CRIT("invalid escape at %d in included file name: %s\n", i, fin);
-					return -1;
-				}
-				i++;
-				switch(fin[i]) {
-					case 't':
-						fbuf[j++] = '\t';
-					break;
-					case 'n':
-						fbuf[j++] = '\n';
-					break;
-					case 'r':
-						fbuf[j++] = '\r';
-					break;
-					default:
-						fbuf[j++] = fin[i];
-				}
-			break;
-			default:
-				fbuf[j++] = fin[i];
-		}
-	}
-	if(j==0)
-	{
-		LM_CRIT("invalid included file name: %s\n", fin);
-		return -1;
-	}
-	fbuf[j] = '\0';
-
-	fp = fopen(fbuf, "r" );
-
-	if ( ! fp )
-	{
-		tmpfiname = (finame==0)?cfg_file:finame;
-		if(tmpfiname==0 || fbuf[0]=='/')
-		{
-			if(mode==0)
-			{
-				LM_CRIT("cannot open included file: %s\n", fin);
-				return -1;
-			} else {
-				LM_DBG("importing file ignored: %s\n", fin);
-				return 0;
-			}
-		}
-		x = strrchr(tmpfiname, '/');
-		if(x==NULL)
-		{
-			/* nothing else to try */
-			if(mode==0)
-			{
-				LM_CRIT("cannot open included file: %s\n", fin);
-				return -1;
-			} else {
-				LM_DBG("importing file ignored: %s\n", fin);
-				return 0;
-			}
-		}
-
-		newf = (char*)pkg_malloc(x-tmpfiname+strlen(fbuf)+2);
-		if(newf==0)
-		{
-			LM_CRIT("no more pkg\n");
-			return -1;
-		}
-		newf[0] = '\0';
-		strncat(newf, tmpfiname, x-tmpfiname);
-		strcat(newf, "/");
-		strcat(newf, fbuf);
-
-		fp = fopen(newf, "r" );
-		if ( fp==NULL )
-		{
-			pkg_free(newf);
-			if(mode==0)
-			{
-				LM_CRIT("cannot open included file: %s (%s)\n", fbuf, newf);
-				return -1;
-			} else {
-				LM_DBG("importing file ignored: %s (%s)\n", fbuf, newf);
-				return 0;
-			}
-		}
-		LM_DBG("including file: %s (%s)\n", fbuf, newf);
-	} else {
-		newf = fbuf;
-	}
-
-	include_stack[include_stack_ptr].state = YY_CURRENT_BUFFER;
-	include_stack[include_stack_ptr].line = line;
-	include_stack[include_stack_ptr].column = column;
-	include_stack[include_stack_ptr].startline = startline;
-	include_stack[include_stack_ptr].startcolumn = startcolumn;
-	include_stack[include_stack_ptr].finame = finame;
-	include_stack_ptr++;
-
-	line=1;
-	column=1;
-	startline=1;
-	startcolumn=1;
-
-	yyin = fp;
-
-	/* make a copy in PKG if does not exist */
-	fn = oss_yy_fname_list;
-	while(fn!=0)
-	{
-		if(strcmp(fn->fname, newf)==0)
-		{
-			if(newf!=fbuf)
-				pkg_free(newf);
-			newf = fbuf;
-			break;
-		}
-		fn = fn->next;
-	}
-	if(fn==0)
-	{
-		fn = (struct oss_yy_fname*)pkg_malloc(sizeof(struct oss_yy_fname));
-		if(fn==0)
-		{
-			if(newf!=fbuf)
-				pkg_free(newf);
-			LM_CRIT("no more pkg\n");
-			return -1;
-		}
-		if(newf==fbuf)
-		{
-			fn->fname = (char*)pkg_malloc(strlen(fbuf)+1);
-			if(fn->fname==0)
-			{
-				pkg_free(fn);
-				LM_CRIT("no more pkg!\n");
-				return -1;
-			}
-			strcpy(fn->fname, fbuf);
-		} else {
-			fn->fname = newf;
-		}
-		fn->next = oss_yy_fname_list;
-		oss_yy_fname_list = fn;
-	}
-
-	finame = fn->fname;
-
-	yy_switch_to_buffer( yy_create_buffer(yyin, YY_BUF_SIZE ) );
-
-	return 0;
-
-}
-
-static int oss_pop_yy_state(void)
-{
-	include_stack_ptr--;
-	if (include_stack_ptr<0 )
-		return -1;
-
-	yy_delete_buffer( YY_CURRENT_BUFFER );
-	yy_switch_to_buffer(include_stack[include_stack_ptr].state);
-	line=include_stack[include_stack_ptr].line;
-	column=include_stack[include_stack_ptr].column;
-	startline=include_stack[include_stack_ptr].startline;
-	startcolumn=include_stack[include_stack_ptr].startcolumn;
-	finame = include_stack[include_stack_ptr].finame;
-	return 0;
-}
