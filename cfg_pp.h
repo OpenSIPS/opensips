@@ -28,5 +28,6 @@
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline);
 int cfg_push(const char *cfg_file);
 int cfg_pop(void);
+void cfg_dump_backtrace(int loglevel);
 
 #endif /* __OSS_CFG_PP_H__ */
