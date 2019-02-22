@@ -47,6 +47,7 @@ str cfgtok_filebegin = str_init("__OSSPP_FILEBEGIN__");
 str cfgtok_fileend = str_init("__OSSPP_FILEEND__");
 
 static FILE *flatten_opensips_cfg(FILE *cfg, const char *cfg_path);
+static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline);
 
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline)
 {
@@ -76,9 +77,11 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline)
 	}
 
 	if (preproc_cmdline) {
-		// TODO: some dup magic, to push into pp stdin / read from its stdout
-		// TODO: execvp(chopped(preproc_cmdline), flattened_cfg)
-		// TODO: cfg_stream = fdopen(stdout_fd);
+		cfg_stream = exec_preprocessor(cfg_stream, preproc_cmdline);
+		if (!cfg_stream) {
+			LM_ERR("failed to exec preprocessor cmd: '%s'\n", preproc_cmdline);
+			return -1;
+		}
 	}
 
 #ifdef DEBUG_PARSER
@@ -367,11 +370,112 @@ void cfg_dump_backtrace(int loglevel)
 	char **it;
 	int frame = 0;
 
-	if (called_before)
+	if (called_before || !cfg_include_stackp)
 		return;
 
 	called_before = 1;
 	LM_GEN1(loglevel, "IncludeStack (last included file at the bottom)\n");
 	for (it = cfg_include_stack; it <= cfg_include_stackp; it++)
 		LM_GEN1(loglevel, "%2d. %s\n", frame++, *it);
+}
+
+static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
+{
+	FILE *final_cfg;
+	int parent_w[2], parent_r[2];
+	char chunk[1024];
+	ssize_t left, written;
+	size_t bytes;
+	char *p, *tok, *cmd, **argv = NULL, *pp_binary = NULL;
+	int argv_len = 0;
+
+	if (strlen(preproc_cmdline) == 0) {
+		LM_ERR("preprocessor command (-p) is an empty string!\n");
+		goto out_err;
+	}
+
+	if (pipe(parent_w) != 0 || pipe(parent_r) != 0) {
+		LM_ERR("failed to create pipe: %d (%s)\n", errno, strerror(errno));
+		goto out_err;
+	}
+
+	/* fork a data-hungry preprocessor beast! (a.k.a. some tiny sed) */
+	if (fork() == 0) {
+		close(parent_w[1]);
+		if (dup2(parent_w[0], STDIN_FILENO) < 0) {
+			LM_ERR("dup2 failed with: %d (%s)\n", errno, strerror(errno));
+			exit(-1);
+		}
+		close(parent_w[0]);
+
+		close(parent_r[0]);
+		if (dup2(parent_r[1], STDOUT_FILENO) < 0) {
+			LM_ERR("dup2 failed with: %d (%s)\n", errno, strerror(errno));
+			exit(-1);
+		}
+		close(parent_w[1]);
+
+		for (cmd = strdup(preproc_cmdline); ; cmd = NULL) {
+			tok = strtok(cmd, " \t\r\n");
+			if (!tok)
+				break;
+
+			if (!pp_binary)
+				pp_binary = tok;
+
+			argv = realloc(argv, (argv_len + 1) * sizeof *argv);
+			argv[argv_len++] = tok;
+		}
+
+		argv = realloc(argv, (argv_len + 1) * sizeof *argv);
+		argv[argv_len++] = NULL;
+
+		execvp(pp_binary, argv);
+		LM_ERR("failed to exec preprocessor '%s': %d (%s)\n",
+		       preproc_cmdline, errno, strerror(errno));
+		exit(-1);
+	}
+
+	close(parent_w[0]);
+	close(parent_r[1]);
+
+	/* push the cfg file into the new process' stdin */
+	do {
+		bytes = fread(chunk, 1, 1024, flat_cfg);
+		if (ferror(flat_cfg)) {
+			LM_ERR("failed to read from flat cfg: %d (%s)\n",
+			       errno, strerror(errno));
+			goto out_err_pipes;
+		}
+
+		if (bytes == 0)
+			continue;
+
+		left = bytes;
+		p = chunk;
+		do {
+			written = write(parent_w[1], p, left);
+			left -= written;
+			p += written;
+		} while (left > 0);
+
+	} while (!feof(flat_cfg));
+
+	fclose(flat_cfg);
+	close(parent_w[1]);
+
+	/* and we're done, let's see what the process barfed up! */
+	final_cfg = fdopen(parent_r[0], "r");
+	if (!final_cfg)
+		LM_ERR("failed to open final cfg file: %d (%s)\n",
+		       errno, strerror(errno));
+
+	return final_cfg;
+
+out_err_pipes:
+	close(parent_w[1]);
+	close(parent_r[0]);
+out_err:
+	fclose(flat_cfg);
+	return NULL;
 }
