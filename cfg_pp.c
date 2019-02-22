@@ -355,9 +355,14 @@ int cfg_pop(void)
 
 void cfg_dump_backtrace(int loglevel)
 {
+	static int called_before;
 	const char **it;
 	int frame = 0;
 
+	if (called_before)
+		return;
+
+	called_before = 1;
 	LM_GEN1(loglevel, "IncludeStack (last included file at the bottom)\n");
 	for (it = cfg_include_stack; it <= cfg_include_stackp; it++)
 		LM_GEN1(loglevel, "%2d. %s\n", frame++, *it);
