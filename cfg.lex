@@ -379,10 +379,6 @@ COM_END		"\*/"
 EAT_ABLE	[\ \t\b\r]
 WHITESPACE	[ \t\r\n]
 
-/* include files */
-INCLUDEFILE     "include_file"
-IMPORTFILE      "import_file"
-
 %%
 
 

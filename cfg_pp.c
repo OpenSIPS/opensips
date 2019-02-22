@@ -115,11 +115,7 @@ static int extend_cfg_buf(char **buf, int *sz, int *bytes_left)
 /* search for '(include|import)_file "filepath"' patterns */
 int extract_included_file(char *line, int line_len, char **out_path)
 {
-	str lin;
-	char *fstart, *p = NULL, enclose = 0;
-
-	lin.s = line;
-	lin.len = line_len;
+	char *p = NULL, enclose = 0;
 
 	if (line_len > include_v1.len &&
 	        !memcmp(line, include_v1.s, include_v1.len)) {
@@ -148,23 +144,17 @@ int extract_included_file(char *line, int line_len, char **out_path)
 	enclose = *p++;
 	line_len--;
 
-	fstart = p;
+	*out_path = p;
 
 	while (line_len > 0 && *p != enclose) {
 		line_len--;
 		p++;
 	}
 
-	if (line_len == 0 || p - fstart < 2) // ""_
+	if (line_len == 0 || p - *out_path < 2) // ""_
 		return -1;
 
-	*out_path = malloc(p - fstart);
-	if (!*out_path) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-
-	memcpy(*out_path, fstart, p - fstart);
+	*p = '\0';
 	return 0;
 }
 
@@ -259,12 +249,8 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 			if (__flatten_opensips_cfg(included_cfg, included_cfg_path,
 			                           flattened, sz, bytes_left)) {
 				LM_ERR("failed to flatten cfg file (internal err), oom?\n");
-				fclose(included_cfg);
 				goto out_err;
 			}
-
-			free(included_cfg_path);
-			fclose(included_cfg);
 		} else {
 			if (*bytes_left < line_len) {
 				if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
@@ -320,7 +306,7 @@ static FILE *flatten_opensips_cfg(FILE *cfg, const char *cfg_path)
 	LM_NOTICE("flattened config file:\n%.*s\n", sz - bytes_left, flattened);
 #endif
 
-	cfg = fmemopen(flattened, sz, "r");
+	cfg = fmemopen(flattened, sz - bytes_left, "r");
 	if (!cfg)
 		LM_ERR("failed to obtain file for flattened cfg buffer\n");
 
