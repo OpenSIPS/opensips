@@ -100,6 +100,7 @@
 
 #include "help_msg.h"
 #include "config.h"
+#include "cfg_pp.h"
 #include "dprint.h"
 #include "daemonize.h"
 #include "route.h"
@@ -299,13 +300,6 @@ unsigned long pkg_mem_size=PKG_MEM_SIZE * 1024 * 1024;
 /* export command-line to anywhere else */
 int my_argc;
 char **my_argv;
-
-extern FILE* yyin;
-extern int yyparse();
-#ifdef DEBUG_PARSER
-extern int yydebug;
-#endif
-
 
 int is_main = 1; /* flag = is this the  "main" process? */
 
@@ -876,9 +870,8 @@ int main(int argc, char** argv)
 {
 	/* configure by default logging to syslog */
 	int cfg_log_stderr = 1;
-	FILE* cfg_stream = NULL;
 	int c,r;
-	char *tmp;
+	char *tmp, *preproc = NULL;
 	int tmp_len;
 	int port;
 	int proto;
@@ -895,7 +888,7 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:P:G:W:o:"
+	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:"
 #ifdef UNIT_TESTS
 	"T"
 #endif
@@ -1063,6 +1056,9 @@ int main(int argc, char** argv)
 			case 'g':
 					/* ignoring it, parsed previously */
 					break;
+			case 'p':
+					preproc=optarg;
+					break;
 			case 'P':
 					pid_file=optarg;
 					break;
@@ -1094,23 +1090,6 @@ int main(int argc, char** argv)
 	}
 
 	log_stderr = cfg_log_stderr;
-
-	if (!testing_framework) {
-		/* fill missing arguments with the default values*/
-		if (cfg_file==0) cfg_file=CFG_FILE;
-
-		if (strlen(cfg_file) == 1 && cfg_file[0] == '-') {
-			cfg_stream = stdin;
-		} else {
-			/* load config file or die */
-			cfg_stream=fopen (cfg_file, "r");
-			if (cfg_stream==0){
-				LM_ERR("loading config file(%s): %s\n", cfg_file,
-						strerror(errno));
-				goto error00;
-			}
-		}
-	}
 
 	/* seed the prng, try to use /dev/urandom if possible */
 	/* no debugging information is logged, because the standard
@@ -1144,11 +1123,6 @@ try_again:
 		goto error;
 	}
 
-	/* used for parser debugging */
-#ifdef DEBUG_PARSER
-	yydebug = 1;
-#endif
-
 	/*  init shm mallocs
 	 *  this must be here
 	 *     -to allow setting shm mem size from the command line
@@ -1166,14 +1140,9 @@ try_again:
 
 	set_osips_state( STATE_STARTING );
 
-	if (!testing_framework) {
-		/* parse the config file, prior to this only default values
-		   e.g. for debugging settings will be used */
-		yyin=cfg_stream;
-		if ((yyparse()!=0)||(cfg_errors)){
-			LM_ERR("bad config file (%d errors)\n", cfg_errors);
-			goto error00;
-		}
+	if (!testing_framework && parse_opensips_cfg(cfg_file, preproc) < 0) {
+		LM_ERR("failed to parse config file %s\n", cfg_file);
+		goto error00;
 	}
 
 	/* shm statistics, module stat groups, memory warming */

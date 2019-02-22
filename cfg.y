@@ -92,6 +92,7 @@
 #include "globals.h"
 #include "route.h"
 #include "dprint.h"
+#include "cfg_pp.h"
 #include "sr_module.h"
 #include "modparam.h"
 #include "ip_addr.h"
@@ -513,7 +514,7 @@ statements:	statements statement {}
 		| statements error { yyerror(""); YYABORT;}
 	;
 
-statement:	assign_stm
+statement: assign_stm
 		| module_stm
 		| {rt=REQUEST_ROUTE;} route_stm
 		| {rt=FAILURE_ROUTE;} failure_route_stm
@@ -721,7 +722,6 @@ auto_scale_profile_def:
 				yyerror("failed to create auto scaling profile");
 		}
 		;
-
 
 assign_stm: DEBUG EQUAL snumber
 			{ yyerror("\'debug\' is deprecated, use \'log_level\' instead\n");}
@@ -2747,6 +2747,7 @@ static inline void ALLOW_UNUSED warn(char* s)
 
 static void yyerror(char* s)
 {
+	cfg_dump_backtrace(L_CRIT);
 	LM_CRIT("parse error in config file %s, line %d, column %d-%d: %s\n",
 			get_cfg_file_name, line, startcolumn, column, s);
 	cfg_errors++;
