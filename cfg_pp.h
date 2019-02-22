@@ -23,10 +23,12 @@
 #ifndef __OSS_CFG_PP_H__
 #define __OSS_CFG_PP_H__
 
+#include "str.h"
+
 #define CFG_MAX_INCLUDE_DEPTH	20
 
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline);
-int cfg_push(const char *cfg_file);
+int cfg_push(const str *cfg_file);
 int cfg_pop(void);
 void cfg_dump_backtrace(int loglevel);
 

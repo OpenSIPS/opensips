@@ -401,9 +401,6 @@ static struct multi_str *tmp_mod;
 %token AUTO_SCALING_PROFILE
 %token AUTO_SCALING_CYCLE
 %token TIMER_WORKERS
-%token PPTOK_LINE
-%token PPTOK_FILEBEG
-%token PPTOK_FILEEND
 
 
 
@@ -517,8 +514,7 @@ statements:	statements statement {}
 		| statements error { yyerror(""); YYABORT;}
 	;
 
-statement: preproc_stm
-		| assign_stm
+statement: assign_stm
 		| module_stm
 		| {rt=REQUEST_ROUTE;} route_stm
 		| {rt=FAILURE_ROUTE;} failure_route_stm
@@ -726,26 +722,6 @@ auto_scale_profile_def:
 				yyerror("failed to create auto scaling profile");
 		}
 		;
-
-preproc_stm: PPTOK_LINE NUMBER {
-				line = $2;
-			}
-		| PPTOK_LINE error {
-				yyerror("BUG: PPTOK_LINE followed by non-number!");
-			}
-		| PPTOK_FILEBEG STRING {
-				if (cfg_push($2) != 0) {
-					yyerror("max nested includes reached!\n");
-				}
-			}
-		| PPTOK_FILEBEG error {
-				yyerror("BUG: PPTOK_FILEBEG followed by non-string!");
-			}
-		| PPTOK_FILEEND {
-				if (cfg_pop() != 0) {
-					yyerror("internal error during cfg_pop()\n");
-				}
-			}
 
 assign_stm: DEBUG EQUAL snumber
 			{ yyerror("\'debug\' is deprecated, use \'log_level\' instead\n");}

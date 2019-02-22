@@ -29,7 +29,7 @@
 #include "cfg_pp.h"
 #include "ut.h"
 
-extern const char *finame;
+extern char *finame;
 extern int startline;
 extern int column;
 
@@ -313,9 +313,9 @@ static FILE *flatten_opensips_cfg(FILE *cfg, const char *cfg_path)
 	return cfg;
 }
 
-const char *cfg_include_stack[CFG_MAX_INCLUDE_DEPTH];
-const char **cfg_include_stackp;
-int cfg_push(const char *cfg_file)
+static char *cfg_include_stack[CFG_MAX_INCLUDE_DEPTH];
+static char **cfg_include_stackp;
+int cfg_push(const str *cfg_file)
 {
 	if (!cfg_include_stackp) {
 		cfg_include_stackp = cfg_include_stack;
@@ -327,9 +327,15 @@ int cfg_push(const char *cfg_file)
 		cfg_include_stackp++;
 	}
 
-	*cfg_include_stackp = cfg_file;
+	*cfg_include_stackp = malloc(cfg_file->len + 1);
+	if (!*cfg_include_stackp) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memcpy(*cfg_include_stackp, cfg_file->s, cfg_file->len);
+	(*cfg_include_stackp)[cfg_file->len] = '\0';
 
-	finame = cfg_file;
+	finame = *cfg_include_stackp;
 	startline = 1;
 	column = 1;
 	return 0;
@@ -341,6 +347,8 @@ int cfg_pop(void)
 		LM_ERR("no more files to pop!\n");
 		return -1;
 	}
+
+	free(*cfg_include_stackp);
 
 	if (cfg_include_stackp == cfg_include_stack) {
 		cfg_include_stackp = NULL;
@@ -356,7 +364,7 @@ int cfg_pop(void)
 void cfg_dump_backtrace(int loglevel)
 {
 	static int called_before;
-	const char **it;
+	char **it;
 	int frame = 0;
 
 	if (called_before)

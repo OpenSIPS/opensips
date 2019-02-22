@@ -59,12 +59,14 @@
 
 %{
 	#include "cfg.tab.h"
+	#include "cfg_pp.h"
 	#include "dprint.h"
 	#include "globals.h"
 	#include "mem/mem.h"
 	#include <string.h>
 	#include <stdlib.h>
 	#include "ip_addr.h"
+	#include "ut.h"
 
 
 	/* states */
@@ -83,6 +85,7 @@
 
 	static int comment_nest=0;
 	static int state=0;
+	static str st;
 	static struct str_buf s_buf;
 	int line=1;
 	int np=0;
@@ -90,7 +93,7 @@
 	int column=1;
 	int startcolumn=1;
 	int startline=1;
-	const char *finame = 0;
+	char *finame = 0;
 
 	static char* addchar(struct str_buf *, char);
 	static char* addstr(struct str_buf *, char*, int);
@@ -110,6 +113,7 @@
 
 /* start conditions */
 %x STRING1 STRING2 COMMENT COMMENT_LN SCRIPTVARS
+%x PPTOK_LINE PPTOK_FILEBEG PPTOK_FILEEND
 
 /* action keywords */
 FORWARD	forward
@@ -378,6 +382,7 @@ COM_END		"\*/"
 
 EAT_ABLE	[\ \t\b\r]
 WHITESPACE	[ \t\r\n]
+SPACE		[ ]
 
 %%
 
@@ -446,6 +451,10 @@ WHITESPACE	[ \t\r\n]
 <INITIAL>{FOR}		{ count(); yylval.strval=yytext; return FOR; }
 <INITIAL>{IN}		{ count(); yylval.strval=yytext; return IN; }
 
+<INITIAL>{PPTOK_LINE}  { count(); BEGIN(PPTOK_LINE); }
+<INITIAL>{PPTOK_FILEBEG}  { count(); BEGIN(PPTOK_FILEBEG); }
+<INITIAL>{PPTOK_FILEEND}  { count(); BEGIN(PPTOK_FILEEND); }
+
 <INITIAL>{SET_ADV_ADDRESS}	{ count(); yylval.strval=yytext;
 										return SET_ADV_ADDRESS; }
 <INITIAL>{SET_ADV_PORT}	{ count(); yylval.strval=yytext;
@@ -504,12 +513,6 @@ WHITESPACE	[ \t\r\n]
 									return LAUNCH_TOKEN;}
 <INITIAL>{IS_MYSELF}		{ count(); yylval.strval=yytext;
 									return IS_MYSELF;}
-<INITIAL>{PPTOK_LINE}		{ count(); yylval.strval=yytext;
-									return PPTOK_LINE;}
-<INITIAL>{PPTOK_FILEBEG}	{ count(); yylval.strval=yytext;
-									return PPTOK_FILEBEG;}
-<INITIAL>{PPTOK_FILEEND}	{ count(); yylval.strval=yytext;
-									return PPTOK_FILEEND;}
 
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
@@ -818,6 +821,33 @@ WHITESPACE	[ \t\r\n]
 									yylval.strval=s_buf.s;
 									memset(&s_buf, 0, sizeof(s_buf));
 									return ID; }
+<PPTOK_LINE>{SPACE}[^\n]+ { /* grab the line number */
+		st.s = yytext + 1;
+		st.len = yyleng - 1;
+		if (str2int(&st, (unsigned int *)&line) != 0) {
+			LM_CRIT("bad line number integer: '%.*s'\n", st.len, st.s);
+			exit(-1);
+		}
+		BEGIN(INITIAL);
+}
+
+<PPTOK_FILEBEG>{SPACE}{QUOTES}.*{QUOTES} { /* grab the file path */
+		st.s = yytext + 2;
+		st.len = yyleng - 3;
+		if (cfg_push(&st) != 0) {
+			LM_ERR("max nested includes reached!\n");
+			exit(-1);
+		}
+		BEGIN(INITIAL);
+}
+
+<PPTOK_FILEEND> {
+		if (cfg_pop() != 0) {
+			LM_ERR("internal error during cfg_pop()\n");
+			exit(-1);
+		}
+		BEGIN(INITIAL);
+}
 
 <<EOF>>							{
 									switch(state){
