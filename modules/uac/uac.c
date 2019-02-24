@@ -75,7 +75,6 @@ struct rr_binds uac_rrb;
 uac_auth_api_t uac_auth_api;
 int force_dialog = 0;
 struct dlg_binds dlg_api;
-int increment_cseq = 1;
 
 static int w_replace_from(struct sip_msg* msg, char* p1, char* p2);
 static int w_restore_from(struct sip_msg* msg);
@@ -125,7 +124,6 @@ static param_export_t params[] = {
 	{"restore_mode",        STR_PARAM,                &restore_mode_str      },
 	{"restore_passwd",      STR_PARAM,                &uac_passwd.s          },
 	{"force_dialog",        INT_PARAM,                &force_dialog          },
-	{"increment_cseq",      INT_PARAM,                &increment_cseq        },
 	{0, 0, 0}
 };
 
