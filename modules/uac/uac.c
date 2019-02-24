@@ -530,7 +530,16 @@ static int w_replace_to(struct sip_msg* msg, char* p1, char* p2)
 
 static int w_uac_auth(struct sip_msg* msg, char* p1, char* p2)
 {
-	return (uac_auth(msg)==0)?1:-1;
+	str cseq_skip_s;
+	str *cseq_skip = NULL;
+
+	if ( p1!=NULL ) {
+		if (pv_printf_s( msg, (pv_elem_p)p1, &cseq_skip_s)!=0)
+			return -1;
+		cseq_skip = &cseq_skip_s;
+	}
+
+	return (uac_auth(msg,cseq_skip)==0)?1:-1;
 }
 
 
