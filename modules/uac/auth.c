@@ -178,7 +178,7 @@ void apply_cseq_decrement(struct cell* t, int type, struct tmcb_params *p)
 	apply_cseq_op(rpl,-1);
 }
 
-int uac_auth( struct sip_msg *msg)
+int uac_auth( struct sip_msg *msg, str *cseq_skip)
 {
 	struct authenticate_body *auth = NULL;
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
@@ -271,6 +271,13 @@ int uac_auth( struct sip_msg *msg)
 	/* the Authorization hdr was already pushed into the message as a lump
 	 * along with the buffer, so detach the buffer from new_hdr var */
 	new_hdr->s = NULL; new_hdr->len = 0;
+
+	if (cseq_skip) {
+		if (strcmp(cseq_skip->s, "CSEQ_SKIP")) {
+			LM_DBG("Intentionally skipping CSEQ operation.\n");
+			return 0;
+		}
+	}
 
 	if ( (new_cseq = apply_cseq_op(msg,1)) < 0) {
 		LM_WARN("Failure to increment the CSEQ header - continue \n");
