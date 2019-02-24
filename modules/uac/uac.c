@@ -83,6 +83,7 @@ static int w_replace_to(struct sip_msg* msg, char* p1, char* p2);
 static int w_restore_to(struct sip_msg* msg);
 
 static int w_uac_auth(struct sip_msg* msg, char* str, char* str2);
+static int fixup_uac_auth(void** param, int param_no);
 static int fixup_replace_uri(void** param, int param_no);
 static int fixup_replace_disp_uri(void** param, int param_no);
 static int mod_init(void);
@@ -111,6 +112,9 @@ static cmd_export_t cmds[]={
 			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
 	{"uac_auth",        (cmd_function)w_uac_auth,     0,
 			0, 0,
+			FAILURE_ROUTE },
+	{"uac_auth",        (cmd_function)w_uac_auth,     1,
+			fixup_uac_auth, 0,
 			FAILURE_ROUTE },
 	{0,0,0,0,0,0}
 };
@@ -399,6 +403,28 @@ unquoted:
 	return 0;
 }
 
+static int fixup_uac_auth(void** param, int param_no)
+{
+	if (param_no == 1) {
+		pv_elem_t *model;
+		str s;
+
+		model=NULL;
+		s.s = (char*)(*param); s.len = strlen(s.s);
+		if(pv_parse_format(&s, &model)<0)
+		{
+			LM_ERR("wrong format[%s]!\n",(char*)(*param));
+			return E_UNSPEC;
+		}
+		if (model==NULL)
+		{
+			LM_ERR("empty parameter!\n");
+			return E_UNSPEC;
+		}
+		*param = (void*)model;
+	}
+	return 0;
+}
 
 
 /************************** wrapper functions ******************************/
