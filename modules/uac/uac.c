@@ -82,7 +82,7 @@ static int w_restore_from(struct sip_msg* msg);
 static int w_replace_to(struct sip_msg* msg, char* p1, char* p2);
 static int w_restore_to(struct sip_msg* msg);
 
-static int w_uac_auth(struct sip_msg* msg, char* str, char* str2);
+static int w_uac_auth(struct sip_msg* msg, char* p1, char* p2);
 static int fixup_uac_auth(void** param, int param_no);
 static int fixup_replace_uri(void** param, int param_no);
 static int fixup_replace_disp_uri(void** param, int param_no);
@@ -528,7 +528,7 @@ static int w_replace_to(struct sip_msg* msg, char* p1, char* p2)
 
 
 
-static int w_uac_auth(struct sip_msg* msg, char* str, char* str2)
+static int w_uac_auth(struct sip_msg* msg, char* p1, char* p2)
 {
 	return (uac_auth(msg)==0)?1:-1;
 }
