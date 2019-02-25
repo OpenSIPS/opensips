@@ -841,7 +841,7 @@ SPACE		[ ]
 		BEGIN(INITIAL);
 }
 
-<PPTOK_FILEEND> {
+<PPTOK_FILEEND>{CR} {
 		if (cfg_pop() != 0) {
 			LM_ERR("internal error during cfg_pop()\n");
 			exit(-1);
