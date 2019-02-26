@@ -471,11 +471,16 @@ abort_update:
 		REF_UNSAFE(new_cell);
 	}
 
+	if (new_cell->uac[0].br_flags & tcp_no_new_conn_bflag)
+		tcp_no_new_conn = 1;
+
 	if (SEND_BUFFER(request) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n",
 			dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 	}
+
+	tcp_no_new_conn = 0;
 
 	if (method->len==ACK_LEN && memcmp(method->s, ACK, ACK_LEN)==0 ) {
 		t_release_transaction(new_cell);

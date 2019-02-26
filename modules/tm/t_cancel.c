@@ -110,6 +110,8 @@ void cancel_branch( struct cell *t, int branch )
 	crb->activ_type=TYPE_LOCAL_CANCEL;
 
 	LM_DBG("sending cancel...\n");
+	if (t->uac[branch].br_flags & tcp_no_new_conn_bflag)
+		tcp_no_new_conn = 1;
 	if (SEND_BUFFER( crb )==0) {
 		if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT) ) {
 			set_extra_tmcb_params( &crb->buffer, &crb->dst);
@@ -117,6 +119,7 @@ void cancel_branch( struct cell *t, int branch )
 				t, t->uas.request, 0, 0);
 		}
 	}
+	tcp_no_new_conn = 0;
 
 	/*sets and starts the FINAL RESPONSE timer */
 	start_retr( crb );
