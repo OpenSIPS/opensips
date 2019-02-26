@@ -129,9 +129,12 @@ int tcp_keepcount = 0;
 int tcp_keepidle = 0;
 int tcp_keepinterval = 0;
 
-/*!< should a new TCP conn be open if needed? - branch flag to be set in
- * the SIP messages - configuration option */
+/*!< should we allow opening a new TCP conn when sending data 
+ * over UAC branches? - branch flag to be set in the SIP messages */
 int tcp_no_new_conn_bflag = 0;
+/*!< should we allow opening a new TCP conn when sending data 
+ * back to UAS (replies)? - msg flag to be set in the SIP messages */
+int tcp_no_new_conn_rplflag = 0;
 /*!< should a new TCP conn be open if needed? - variable used to used for
  * signalizing between SIP layer (branch flag) and TCP layer (tcp_send func)*/
 int tcp_no_new_conn = 0;

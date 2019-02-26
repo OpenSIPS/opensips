@@ -375,6 +375,7 @@ static struct multi_str *tmp_mod;
 %token TCP_LISTEN_BACKLOG
 %token TCP_MAX_CONNECTIONS
 %token TCP_NO_NEW_CONN_BFLAG
+%token TCP_NO_NEW_CONN_RPLFLAG
 %token TCP_KEEPALIVE
 %token TCP_KEEPCOUNT
 %token TCP_KEEPIDLE
@@ -997,6 +998,15 @@ assign_stm: DEBUG EQUAL snumber
 				flag_idx2mask( &tcp_no_new_conn_bflag );
 		}
 		| TCP_NO_NEW_CONN_BFLAG EQUAL error { yyerror("number value expected"); }
+		| TCP_NO_NEW_CONN_RPLFLAG EQUAL ID {
+				tcp_no_new_conn_rplflag =
+					get_flag_id_by_name(FLAG_TYPE_MSG, $3);
+				if (!flag_in_range( (flag_t)tcp_no_new_conn_rplflag ) )
+					yyerror("invalid TCP no_new_conn RePLy Flag");
+				flag_idx2mask( &tcp_no_new_conn_rplflag );
+		}
+		| TCP_NO_NEW_CONN_RPLFLAG EQUAL error { yyerror("number value expected"); }
+
 		| TCP_KEEPALIVE EQUAL NUMBER {
 				tcp_keepalive=$3;
 		}

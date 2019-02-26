@@ -304,6 +304,7 @@ TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
+TCP_NO_NEW_CONN_RPLFLAG "tcp_no_new_conn_rplflag"
 TCP_KEEPALIVE           "tcp_keepalive"
 TCP_KEEPCOUNT           "tcp_keepcount"
 TCP_KEEPIDLE            "tcp_keepidle"
@@ -572,6 +573,7 @@ SPACE		[ ]
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
+<INITIAL>{TCP_NO_NEW_CONN_RPLFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_RPLFLAG; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
 <INITIAL>{TCP_WORKERS}	{ count(); yylval.strval=yytext; return TCP_WORKERS; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
