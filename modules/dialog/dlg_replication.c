@@ -1419,7 +1419,6 @@ next_entry:
 
 error:
 	LM_ERR("cannot add any more profiles in buffer\n");
-	bin_free_packet(&packet);
 done:
 	/* check if there is anything else left to replicate */
 	if (nr)
