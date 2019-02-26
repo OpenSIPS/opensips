@@ -1342,7 +1342,6 @@ static void broadcast_profiles(utime_t ticks, void *param)
 {
 #define REPL_PROF_TRYSEND() \
 	do { \
-		nr++; \
 		if (ret > repl_prof_buffer_th) { \
 			/* send the buffer */ \
 			if (nr) \
@@ -1378,6 +1377,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 			if ((ret = repl_prof_add(&packet, &profile->name, 0, NULL, count)) < 0)
 				goto error;
 			/* check if the profile should be sent */
+			nr++;
 			REPL_PROF_TRYSEND();
 		} else {
 			for (i = 0; i < profile->size; i++) {
@@ -1402,8 +1402,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 						lock_set_release(profile->locks, i);
 						goto error;
 					}
-					/* check if the profile should be sent */
-					REPL_PROF_TRYSEND();
+					nr++;
 
 next_val:
 					if (iterator_next(&it) < 0)
@@ -1411,6 +1410,8 @@ next_val:
 				}
 next_entry:
 				lock_set_release(profile->locks, i);
+				/* check if the profile should be sent */
+				REPL_PROF_TRYSEND();
 			}
 		}
 	}
