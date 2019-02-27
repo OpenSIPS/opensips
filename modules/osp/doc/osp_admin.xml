@@ -68,7 +68,7 @@
         <para><emphasis>usrloc</emphasis> -- User location implementation module</para>
       </listitem>
       <listitem>
-        <para><emphasis>OSP Toolkit</emphasis> -- The OSP Toolkit, available from http://sourceforge.net/projects/osp-toolkit, must be built before building OpenSIPS with the OSP module. For instructions on building OpenSIPS with the OSP Toolkit, see http://www.http://transnexus.com/wp-content/uploads/OSP-Routing-and-CDR-Collection-Server-with-OpenSIPS-1.7.2.pdf. For OpenSIPS 2.1.0, OSP Toolkit 4.5.0 or later versions should be used.</para>
+        <para><emphasis>OSP Toolkit</emphasis> -- The OSP Toolkit, available from https://github.com/TransNexus/osptoolkit, must be built before building OpenSIPS with the OSP module. For instructions on building OpenSIPS with the OSP Toolkit, see http://www.http://transnexus.com/wp-content/uploads/OSP-Routing-and-CDR-Collection-Server-with-OpenSIPS-1.7.2.pdf. For OpenSIPS 2.4.0, OSP Toolkit 4.16.0 or later versions should be used.</para>
       </listitem>
     </itemizedlist>
   </section>
