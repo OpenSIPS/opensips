@@ -2019,11 +2019,6 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 
 			dlg_unlock_dlg(dlg);
 
-			if (db_update)
-				update_dialog_timeout_info(dlg);
-			if (dialog_repl_cluster)
-				replicate_dialog_updated(dlg);
-
 			if (timer_update) {
 				switch ( update_dlg_timer(&dlg->tl, timeout) ) {
 				case -1:
@@ -2037,6 +2032,12 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 					break;
 				}
 			}
+
+			if (db_update)
+				update_dialog_timeout_info(dlg);
+			if (dialog_repl_cluster)
+				replicate_dialog_updated(dlg);
+
 		} else {
 			LM_DBG("Set timeout for race condition dlg %.*s - ignoring\n",
 			dlg->callid.len,dlg->callid.s);
