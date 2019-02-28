@@ -1240,10 +1240,6 @@ static int w_get_profile_size(struct sip_msg *msg, char *profile,
 	str val_s;
 	pv_spec_t *sp_dest;
 	pv_value_t size;
-	int_str res;
-	int avp_name;
-	unsigned short avp_type;
-	script_var_t * sc_var;
 
 	pve = (pv_elem_t *)value;
 	sp_dest = (pv_spec_t *)result;
