@@ -446,21 +446,10 @@ static int fix_actions(struct action* a)
 			case MODULE_T:
 				cmd = (cmd_export_t*)t->elem[0].u.data;
 				LM_DBG("fixing %s, %s:%d\n", cmd->name, t->file, t->line);
-				if (cmd->fixup){
-					if (cmd->param_no==0){
-						ret=cmd->fixup( 0, 0);
-						if (ret<0) goto error;
-					}
-					else {
-						for (i=1; i<=cmd->param_no; i++) {
-							/* we only call the fixup for non-null arguments */
-							if (t->elem[i].type != NULLV_ST) {
-								ret=cmd->fixup(&t->elem[i].u.data, i);
-								t->elem[i].type=MODFIXUP_ST;
-								if (ret<0) goto error;
-							}
-						}
-					}
+
+				if ((ret = fix_cmd(cmd->params, t->elem)) < 0) {
+					LM_ERR("Failed to fix command <%s>\n", cmd->name);
+					goto error;
 				}
 				break;
 			case ASYNC_T:
@@ -473,21 +462,10 @@ static int fix_actions(struct action* a)
 			case AMODULE_T:
 				acmd = (acmd_export_t*)t->elem[0].u.data;
 				LM_DBG("fixing async %s, %s:%d\n", acmd->name, t->file, t->line);
-				if (acmd->fixup){
-					if (acmd->param_no==0){
-						ret=acmd->fixup( 0, 0);
-						if (ret<0) goto error;
-					}
-					else {
-						for (i=1; i<=acmd->param_no; i++) {
-							/* we only call the fixup for non-null arguments */
-							if (t->elem[i].type != NULLV_ST) {
-								ret=acmd->fixup(&t->elem[i].u.data, i);
-								t->elem[i].type=MODFIXUP_ST;
-								if (ret<0) goto error;
-							}
-						}
-					}
+
+				if ((ret = fix_cmd(acmd->params, t->elem)) < 0) {
+					LM_ERR("Failed to fix command <%s>\n", acmd->name);
+					goto error;
 				}
 				break;
 			case FORCE_SEND_SOCKET_T:

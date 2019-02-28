@@ -249,7 +249,7 @@ restore:
 
 
 int async_script_launch(struct sip_msg *msg, struct action* a,
-															int report_route)
+					int report_route, void **params)
 {
 	struct sip_msg req;
 	async_launch_ctx *ctx;
@@ -273,9 +273,8 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 
 	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
 			(async_ctx*)ctx,
-			(char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
-			(char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
-			(char*)a->elem[5].u.data, (char*)a->elem[6].u.data );
+			params[0], params[1], params[2],
+			params[3], params[4], params[5]);
 	/* what to do now ? */
 	if (async_status>=0) {
 		/* async I/O was successfully launched */

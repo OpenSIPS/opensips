@@ -141,8 +141,8 @@ struct tcp_data {
 
 
 static cmd_export_t cmds[] = {
-	{"proto_init", (cmd_function)proto_tcp_init, 0, 0, 0, 0},
-	{0,0,0,0,0,0}
+	{"proto_init", (cmd_function)proto_tcp_init, {{0, 0, 0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 

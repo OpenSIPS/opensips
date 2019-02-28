@@ -35,6 +35,7 @@
 #define GPARAM_TYPE_PVE		3
 #define GPARAM_TYPE_FLAGS	4
 #define GPARAM_TYPE_REGEX	5
+#define GPARAM_TYPE_FIXUP	6
 
 #define GPARAM_INT_VALUE_FLAG	(1U<<0)
 #define GPARAM_STR_VALUE_FLAG	(1U<<1)
@@ -52,6 +53,7 @@ typedef struct _gparam
 		pv_spec_t *pvs;
 		pv_elem_t *pve;
 		regex_t *re;
+		void *val;
 	} v;
 } gparam_t, *gparam_p;
 

@@ -46,7 +46,7 @@
 #include "ip_addr.h"
 #include "mem/mem.h"
 #include "ut.h" /* ZSW() */
-
+#include "mod_fix.h"
 
 struct expr* mk_exp(int op, struct expr* left, struct expr* right)
 {
@@ -623,8 +623,7 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 		if (a->type==MODULE_T) {
 			/* first param is the name of the function */
 			cmd = (cmd_export_t*)a->elem[0].u.data;
-			if (strcasecmp(cmd->name, name)==0 &&
-			(param_no==cmd->param_no || param_no==-1) ) {
+			if (strcasecmp(cmd->name, name)==0 || param_no==-1) {
 				LM_DBG("function %s found to be used in script\n",name);
 				return 1;
 			}
@@ -674,8 +673,7 @@ int is_mod_async_func_used(struct action *a, char *name, int param_no)
 			acmd = ((struct action *)(a->elem[0].u.data))->elem[0].u.data;
 
 			LM_DBG("checking %s against %s\n", name, acmd->name);
-			if (strcasecmp(acmd->name, name) == 0
-				&& (param_no == acmd->param_no || param_no == -1))
+			if (strcasecmp(acmd->name, name) == 0 || param_no == -1)
 				return 1;
 		}
 
@@ -695,6 +693,283 @@ int is_mod_async_func_used(struct action *a, char *name, int param_no)
 				if (is_mod_async_func_used((struct action*)a->elem[2].u.data,
 				name,param_no)==1)
 					return 1;
+	}
+
+	return 0;
+}
+
+int fix_cmd(struct cmd_param *params, action_elem_t *elems)
+{
+	int i;
+	struct cmd_param *param;
+	gparam_p gp = NULL;
+	int ret;
+	pv_elem_t *pve;
+
+	for (param=params, i=1; param->flags; param++, i++) {
+		if ((elems[i].type == NOSUBTYPE) ||
+			(elems[i].type == NULLV_ST)) {
+			if (param->flags & CMD_PARAM_OPT)
+				continue;
+			else {
+				LM_BUG("Mandatory parameter missing\n");
+				ret = E_BUG;
+				goto error;
+			}
+		}
+
+		gp = pkg_malloc(sizeof *gp);
+		if (!gp) {
+			LM_ERR("no more pkg memory\n");
+			ret = E_OUT_OF_MEM;
+			goto error;
+		}
+		memset(gp, 0, sizeof *gp);
+
+		if (param->flags & CMD_PARAM_INT) {
+
+			if (elems[i].type == NUMBER_ST) {
+				if (param->fixup) {
+					gp->v.val = (void *)&elems[i].u.number;
+					if (param->fixup(&gp->v.val) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+						goto error;
+					}
+					gp->type = GPARAM_TYPE_FIXUP;
+				} else {
+					gp->v.ival = elems[i].u.number;
+					gp->type = GPARAM_TYPE_INT;
+				}
+			} else if (elems[i].type == SCRIPTVAR_ST) {
+				gp->v.pvs = elems[i].u.data;
+				gp->type = GPARAM_TYPE_PVS;
+			} else {
+				LM_ERR("Param [%d] expected to be an integer "
+					"or variable\n", i);
+				return E_CFG;
+			}
+
+		} else if (param->flags & CMD_PARAM_STR) {
+
+			if (elems[i].type == STR_ST) {
+				if (pv_parse_format(&elems[i].u.s, &pve) < 0) {
+					LM_ERR("Failed to parse formatted string in param "
+						"[%d]\n",i);
+					ret = E_UNSPEC;
+					goto error;
+				}
+				if (!pve->next && pve->spec.type == PVT_NONE) {
+					/* no variables in the provided string */
+					pv_elem_free_all(pve);
+
+					if (param->fixup) {
+						gp->v.val = (void *)&elems[i].u.s;
+						if (param->fixup(&gp->v.val) < 0) {
+							LM_ERR("Fixup failed for param [%d]\n", i);
+							ret = E_UNSPEC;
+							goto error;
+						}
+						gp->type = GPARAM_TYPE_FIXUP;
+					} else {
+						gp->v.sval = elems[i].u.s;
+						gp->type = GPARAM_TYPE_STR;
+					}
+				} else {
+					gp->v.pve = pve;
+					gp->type = GPARAM_TYPE_PVE;
+				}
+			} else if (elems[i].type == SCRIPTVAR_ST) {
+				gp->v.pvs = elems[i].u.data;
+				gp->type = GPARAM_TYPE_PVS;
+			} else {
+				LM_ERR("Param [%d] expected to be a string "
+					"or variable\n", i);
+				ret = E_CFG;
+				goto error;
+			}
+
+		} else if (param->flags & CMD_PARAM_VAR) {
+
+			if (elems[i].type != SCRIPTVAR_ST) {
+				LM_ERR("Param [%d] expected to be a variable\n",i);
+				ret = E_CFG;
+				goto error;
+			}
+
+			gp->v.pvs = elems[i].u.data;
+			gp->type = GPARAM_TYPE_PVS;
+
+		} else {
+			LM_BUG("Bad command parameter type\n");
+			ret = E_BUG;
+			goto error;
+		}
+
+		elems[i].u.data = (void*)gp;
+	}
+
+	return 0;
+error:
+	if (gp)
+		pkg_free(gp);
+	return ret;
+}
+
+int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
+				action_elem_t *elems, void **cmdp)
+{
+	int i;
+	struct cmd_param *param;
+	gparam_p gp;
+	pv_value_t pv_val;
+	str sval;
+
+	for (param=params, i=1; param->flags; param++, i++) {
+		gp = (gparam_p)elems[i].u.data;
+		if (!gp) {
+			cmdp[i-1] = NULL;
+			continue;
+		}
+
+		if (param->flags & CMD_PARAM_INT) {
+
+			switch (gp->type) {
+			case GPARAM_TYPE_INT:
+				cmdp[i-1] = (void*)&gp->v.ival;
+				break;
+			case GPARAM_TYPE_PVS:
+				if (pv_get_spec_value(msg, gp->v.pvs, &pv_val) != 0) {
+					LM_ERR("Failed to get spec value in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+				if (pv_val.flags & PV_VAL_NULL ||
+					!(pv_val.flags & PV_VAL_INT)) {
+					LM_ERR("Variable in param [%d] is not an integer\n", i);
+					return E_UNSPEC;
+				}
+
+				cmdp[i-1] = &pv_val.ri;
+
+				/* run fixup as we now have the value of the variable */
+				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				break;
+			case GPARAM_TYPE_FIXUP:
+				/* fixup was possible at startup */
+				cmdp[i-1] = gp->v.val;
+				break;
+			default:
+				LM_BUG("Bad type for generic parameter\n");
+				return E_BUG;
+			}
+
+		} else if (param->flags & CMD_PARAM_STR) {
+
+			switch (gp->type) {
+			case GPARAM_TYPE_STR:
+				cmdp[i-1] = (void*)&gp->v.sval;
+				break;
+			case GPARAM_TYPE_PVE:
+				if (pv_printf_s(msg, gp->v.pve, &sval) != 0) {
+					LM_ERR("Failed to print formatted string in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				cmdp[i-1] = &sval;
+
+				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				break;
+			case GPARAM_TYPE_PVS:
+				if (pv_get_spec_value(msg, gp->v.pvs, &pv_val) != 0) {
+					LM_ERR("Failed to get spec value in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+				if (pv_val.flags & PV_VAL_NULL ||
+					!(pv_val.flags & PV_VAL_STR)) {
+					LM_ERR("Variable in param [%d] is not a string\n", i);
+					return E_UNSPEC;
+				}
+
+				cmdp[i-1] = &pv_val.rs;
+
+				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				break;
+			case GPARAM_TYPE_FIXUP:
+				cmdp[i-1] = gp->v.val;
+				break;
+			default:
+				LM_BUG("Bad type for generic parameter\n");
+				return E_BUG;
+			}
+
+		} else if (param->flags & CMD_PARAM_VAR) {
+			if (gp->type != GPARAM_TYPE_PVS) {
+				LM_BUG("Bad type for generic parameter\n");
+				return E_BUG;
+			}
+
+			cmdp[i-1] = gp->v.pvs;
+
+			if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
+				LM_ERR("Fixup failed for param [%d]\n", i);
+				return E_UNSPEC;
+			}
+
+		} else {
+			LM_BUG("Bad command parameter type\n");
+			return E_BUG;
+		}
+	}
+
+	return 0;
+}
+
+int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp)
+{
+	int i;
+	struct cmd_param *param;
+	gparam_p gp;
+
+	for (param=params, i=1; param->flags; param++, i++) {
+		gp = (gparam_p)elems[i].u.data;
+		if (!gp)
+			continue;
+
+		if (param->flags & CMD_PARAM_INT) {
+			if (param->free_fixup && gp->type == GPARAM_TYPE_PVS)
+				if (param->free_fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Failed to free fixup for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+		} else if (param->flags & CMD_PARAM_STR) {
+			if (param->free_fixup && (gp->type == GPARAM_TYPE_PVS ||
+				gp->type == GPARAM_TYPE_PVE))
+				if (param->free_fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Failed to free fixup for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+		} else if (param->flags & CMD_PARAM_VAR) {
+			if (param->free_fixup)
+				if (param->free_fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Failed to free fixup for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+		} else {
+			LM_BUG("Bad command parameter type\n");
+			return E_BUG;
+		}
 	}
 
 	return 0;

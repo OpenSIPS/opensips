@@ -207,7 +207,8 @@ restore:
 }
 
 
-int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
+int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
+				void **params)
 {
 	async_tm_ctx *ctx = NULL;
 	struct cell *t;
@@ -253,9 +254,8 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route)
 	async_status = ASYNC_NO_IO; /*assume default status "no IO done" */
 	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
 			(async_ctx*)ctx,
-			(char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
-			(char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
-			(char*)a->elem[5].u.data, (char*)a->elem[6].u.data );
+			params[0], params[1], params[2],
+			params[3], params[4], params[5]);
 	/* what to do now ? */
 	if (async_status>=0) {
 		/* async I/O was successfully launched */

@@ -438,6 +438,9 @@ int do_action(struct action* a, struct sip_msg* msg)
 	struct timeval start;
 	int end_time;
 	int aux_counter;
+	cmd_export_t *cmd = NULL;
+	acmd_export_t *acmd;
+	void* cmdp[MAX_CMD_PARAMS];
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -1860,31 +1863,58 @@ next_avp:
 			ret=return_code;
 			break;
 		case MODULE_T:
-			script_trace("module", ((cmd_export_t*)(a->elem[0].u.data))->name,
-				msg, a->file, a->line) ;
-			if ( (a->elem[0].type==CMD_ST) && a->elem[0].u.data ) {
-				ret=((cmd_export_t*)(a->elem[0].u.data))->function(msg,
-						 (char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
-						 (char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
-						 (char*)a->elem[5].u.data, (char*)a->elem[6].u.data);
-			}else{
+			if (a->elem[0].type != CMD_ST ||
+				((cmd = (cmd_export_t*)a->elem[0].u.data) == NULL)) {
 				LM_ALERT("BUG in module call\n");
+				break;
 			}
+
+			script_trace("module", cmd->name, msg, a->file, a->line);
+
+			if ((ret = get_cmd_fixups(msg, cmd->params, a->elem, cmdp)) < 0) {
+				LM_ERR("Failed to get fixups for command <%s>\n",
+					cmd->name);
+				break;
+			}
+
+			ret = cmd->function(msg,
+				cmdp[0],cmdp[1],cmdp[2],
+				cmdp[3],cmdp[4],cmdp[5]);
+
+			if ((ret = free_cmd_fixups(cmd->params, a->elem, cmdp)) < 0) {
+				LM_ERR("Failed to free fixups for command <%s>\n",
+					cmd->name);
+				break;
+			}
+
 			break;
 		case ASYNC_T:
 			/* first param - an ACTIONS_ST containing an ACMD_ST
 			 * second param - a NUMBER_ST pointing to resume route */
 			aitem = (struct action *)(a->elem[0].u.data);
+			acmd = (acmd_export_t *)aitem->elem[0].u.data;
+
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
 			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
 				LM_ALERT("BUG in async expression\n");
 			} else {
-				script_trace("async",
-					((acmd_export_t*)(aitem->elem[0].u.data))->name,
-					msg, a->file, a->line) ;
-				ret = async_script_start_f( msg, aitem, a->elem[1].u.number);
+				script_trace("async", acmd->name, msg, a->file, a->line);
+
+				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem, cmdp)) < 0) {
+					LM_ERR("Failed to get fixups for async command <%s>\n",
+						acmd->name);
+					break;
+				}
+
+				ret = async_script_start_f(msg, aitem, a->elem[1].u.number, cmdp);
 				if (ret>=0)
 					action_flags |= ACT_FL_TBCONT;
+
+				if ((ret = free_cmd_fixups(acmd->params, aitem->elem, cmdp)) < 0) {
+					LM_ERR("Failed to free fixups for command <%s>\n",
+						cmd->name);
+					break;
+				}
 			}
 			ret = 0;
 			break;
@@ -1892,16 +1922,29 @@ next_avp:
 			/* first param - an ACTIONS_ST containing an ACMD_ST
 			 * second param - an optional NUMBER_ST pointing to an end route */
 			aitem = (struct action *)(a->elem[0].u.data);
+			acmd = (acmd_export_t *)aitem->elem[0].u.data;
+
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
 			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
 				LM_ALERT("BUG in launch expression\n");
 			} else {
-				script_trace("launch",
-					((acmd_export_t*)(aitem->elem[0].u.data))->name,
-					msg, a->file, a->line) ;
+				script_trace("launch", acmd->name, msg, a->file, a->line);
 				/* NOTE that the routeID (a->elem[1].u.number) is set to 
 				 * -1 if no reporting route is set */
-				ret = async_script_launch( msg, aitem, a->elem[1].u.number);
+
+				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem, cmdp)) < 0) {
+					LM_ERR("Failed to get fixups for async command <%s>\n",
+						acmd->name);
+					break;
+				}
+
+				ret = async_script_launch( msg, aitem, a->elem[1].u.number, cmdp);
+
+				if ((ret = free_cmd_fixups(acmd->params, aitem->elem, cmdp)) < 0) {
+					LM_ERR("Failed to free fixups for command <%s>\n",
+						cmd->name);
+					break;
+				}
 			}
 			break;
 		case FORCE_RPORT_T:

@@ -157,8 +157,12 @@ void print_actions(struct action* a);
 int is_mod_func_used(struct action *a, char *name, int param_no);
 int is_mod_async_func_used(struct action *a, char *name, int param_no);
 
+struct cmd_param;
 
-
+int fix_cmd(struct cmd_param *params, action_elem_t *elems);
+int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
+				action_elem_t *elems, void **cmdp);
+int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp);
 
 #endif
 
