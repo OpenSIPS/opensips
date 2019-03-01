@@ -49,6 +49,10 @@ str cfgtok_fileend = str_init("__OSSPP_FILEEND__");
 static FILE *flatten_opensips_cfg(FILE *cfg, const char *cfg_path);
 static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline);
 
+static struct cfg_context *cfg_context_new_file(const char *path);
+static void cfg_context_append_line(struct cfg_context *con,
+                                    char *line, int len);
+
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline)
 {
 	FILE *cfg_stream;
@@ -170,12 +174,14 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	unsigned long line_buf_sz = 0;
 	int cfg_path_len = strlen(cfg_path);
 	int line_counter = 1, printed;
+	struct cfg_context *con = NULL;
 
 	if (cfg_path_len >= 2048) {
 		LM_ERR("file path too large: %.*s...\n", 2048, cfg_path);
 		goto out_err;
 	}
 
+	con = cfg_context_new_file(cfg_path);
 	if (*bytes_left < cfgtok_filebegin.len + 1 + 1+cfg_path_len+1 + 1) {
 		if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
 			LM_ERR("oom\n");
@@ -239,6 +245,9 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	                      cfgtok_line.len, cfgtok_line.s, line_counter);
 		line_counter++;
 		*bytes_left -= printed;
+
+		if (con)
+			cfg_context_append_line(con, line, line_len);
 
 		/* if it's an include, skip printing the line, but do print the file */
 		if (extract_included_file(line, line_len, &included_cfg_path) == 0) {
@@ -364,7 +373,107 @@ int cfg_pop(void)
 	return 0;
 }
 
-void cfg_dump_backtrace(int loglevel)
+static struct cfg_context {
+	const char *path;
+	int loc;
+	char **lines;
+	int bufsz;
+	struct cfg_context *next;
+} *__ccon;
+
+static struct cfg_context *cfg_context_new_file(const char *path)
+{
+	struct cfg_context *con, *it;
+
+	for (it = __ccon; it; it = it->next)
+		if (!strcmp(it->path, path))
+			return NULL;
+
+	con = malloc(sizeof *con);
+	memset(con, 0, sizeof *con);
+
+	con->path = strdup(path);
+	con->lines = malloc(32 * sizeof *con->lines);
+	con->bufsz = 32;
+
+	add_last(con, __ccon);
+	return con;
+}
+
+static void cfg_context_append_line(struct cfg_context *con,
+                                    char *line, int len)
+{
+	if (con->loc == con->bufsz) {
+		con->bufsz *= 2;
+		con->lines = realloc(con->lines, con->bufsz * sizeof *con->lines);
+	}
+
+	con->lines[con->loc] = malloc(len + 1);
+	memcpy(con->lines[con->loc], line, len);
+	con->lines[con->loc][len] = '\0';
+
+	con->loc++;
+}
+
+void cfg_dump_context(const char *file, int line, int colstart, int colend)
+{
+	static int called_before;
+	struct cfg_context *con;
+	int i, iter = 1, len;
+	char *p, *end, *wsbuf, *wb, *hiline;
+
+	for (con = __ccon; con; con = con->next)
+		if (!strcmp(con->path, file))
+			break;
+
+	if (!con || called_before)
+		return;
+
+	called_before = 1;
+
+	/* 2 lines above */
+	if (line >= 3) {
+		startline = line - 2;
+		iter += 2;
+	} else {
+		startline = 1;
+		iter += line - 1;
+	}
+
+	for (i = startline - 1; iter > 0; i++, iter--)
+		LM_GEN1(L_CRIT, "%s", con->lines[i]);
+
+	/* error indicator line */
+	len = strlen(con->lines[i-1]);
+	wsbuf = malloc(len + 1);
+	wb = wsbuf;
+	for (p = con->lines[i-1], end = p + len; p < end && is_ws(*p); p++)
+		*wb++ = *p;
+	*wb = '\0';
+
+	if (colend < colstart) {
+		hiline = NULL;
+	} else {
+		hiline = malloc(colend - colstart);
+		memset(hiline, '~', colend - colstart);
+	}
+
+	LM_GEN1(L_CRIT, "%s^%.*s\n", wsbuf,
+	        colend >= colstart ? colend - colstart : 0, hiline);
+	free(hiline);
+	free(wsbuf);
+
+	/* 2 lines below */
+	if (line <= con->loc - 2)
+		iter = 2;
+	else
+		iter = line <= con->loc ? con->loc - line : 0;
+
+	for (; iter > 0; i++, iter--)
+		LM_GEN1(L_CRIT, "%s", con->lines[i]);
+}
+
+void cfg_dump_backtrace(void)
 {
 	static int called_before;
 	char **it;
@@ -374,9 +483,9 @@ void cfg_dump_backtrace(int loglevel)
 		return;
 
 	called_before = 1;
-	LM_GEN1(loglevel, "IncludeStack (last included file at the bottom)\n");
+	LM_GEN1(L_CRIT, "Traceback (last included file at the bottom):\n");
 	for (it = cfg_include_stack; it <= cfg_include_stackp; it++)
-		LM_GEN1(loglevel, "%2d. %s\n", frame++, *it);
+		LM_GEN1(L_CRIT, "%2d. %s\n", frame++, *it);
 }
 
 static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)

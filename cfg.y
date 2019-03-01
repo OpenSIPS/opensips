@@ -2757,9 +2757,10 @@ static inline void ALLOW_UNUSED warn(char* s)
 
 static void yyerror(char* s)
 {
-	cfg_dump_backtrace(L_CRIT);
-	LM_CRIT("parse error in config file %s, line %d, column %d-%d: %s\n",
+	cfg_dump_backtrace();
+	LM_CRIT("parse error in %s:%d:%d-%d: %s\n",
 			get_cfg_file_name, line, startcolumn, column, s);
+	cfg_dump_context(get_cfg_file_name, line, startcolumn, column);
 	cfg_errors++;
 }
 
