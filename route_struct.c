@@ -817,13 +817,11 @@ error:
 }
 
 int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
-				action_elem_t *elems, void **cmdp)
+				action_elem_t *elems, void **cmdp, pv_value_t *tmp_vals)
 {
 	int i;
 	struct cmd_param *param;
 	gparam_p gp;
-	pv_value_t pv_val;
-	str sval;
 
 	for (param=params, i=1; param->flags; param++, i++) {
 		gp = (gparam_p)elems[i].u.data;
@@ -839,17 +837,17 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 				cmdp[i-1] = (void*)&gp->v.ival;
 				break;
 			case GPARAM_TYPE_PVS:
-				if (pv_get_spec_value(msg, gp->v.pvs, &pv_val) != 0) {
+				if (pv_get_spec_value(msg, gp->v.pvs, &tmp_vals[i]) != 0) {
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
-				if (pv_val.flags & PV_VAL_NULL ||
-					!(pv_val.flags & PV_VAL_INT)) {
+				if (tmp_vals[i].flags & PV_VAL_NULL ||
+					!(tmp_vals[i].flags & PV_VAL_INT)) {
 					LM_ERR("Variable in param [%d] is not an integer\n", i);
 					return E_UNSPEC;
 				}
 
-				cmdp[i-1] = &pv_val.ri;
+				cmdp[i-1] = (void *)&tmp_vals[i].ri;
 
 				/* run fixup as we now have the value of the variable */
 				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
@@ -874,12 +872,12 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 				cmdp[i-1] = (void*)&gp->v.sval;
 				break;
 			case GPARAM_TYPE_PVE:
-				if (pv_printf_s(msg, gp->v.pve, &sval) != 0) {
+				if (pv_printf_s(msg, gp->v.pve, &tmp_vals[i].rs) != 0) {
 					LM_ERR("Failed to print formatted string in param [%d]\n", i);
 					return E_UNSPEC;
 				}
 
-				cmdp[i-1] = &sval;
+				cmdp[i-1] = &tmp_vals[i].rs;
 
 				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
 					LM_ERR("Fixup failed for param [%d]\n", i);
@@ -888,17 +886,17 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 
 				break;
 			case GPARAM_TYPE_PVS:
-				if (pv_get_spec_value(msg, gp->v.pvs, &pv_val) != 0) {
+				if (pv_get_spec_value(msg, gp->v.pvs, &tmp_vals[i]) != 0) {
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
-				if (pv_val.flags & PV_VAL_NULL ||
-					!(pv_val.flags & PV_VAL_STR)) {
+				if (tmp_vals[i].flags & PV_VAL_NULL ||
+					!(tmp_vals[i].flags & PV_VAL_STR)) {
 					LM_ERR("Variable in param [%d] is not a string\n", i);
 					return E_UNSPEC;
 				}
 
-				cmdp[i-1] = &pv_val.rs;
+				cmdp[i-1] = &tmp_vals[i].rs;
 
 				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
 					LM_ERR("Fixup failed for param [%d]\n", i);

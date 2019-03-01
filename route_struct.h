@@ -161,7 +161,7 @@ struct cmd_param;
 
 int fix_cmd(struct cmd_param *params, action_elem_t *elems);
 int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
-				action_elem_t *elems, void **cmdp);
+				action_elem_t *elems, void **cmdp, pv_value_t *tmp_val);
 int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp);
 
 #endif

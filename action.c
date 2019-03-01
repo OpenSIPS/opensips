@@ -441,6 +441,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	cmd_export_t *cmd = NULL;
 	acmd_export_t *acmd;
 	void* cmdp[MAX_CMD_PARAMS];
+	pv_value_t tmp_vals[MAX_CMD_PARAMS];
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -1871,7 +1872,8 @@ next_avp:
 
 			script_trace("module", cmd->name, msg, a->file, a->line);
 
-			if ((ret = get_cmd_fixups(msg, cmd->params, a->elem, cmdp)) < 0) {
+			if ((ret = get_cmd_fixups(msg, cmd->params, a->elem, cmdp,
+				tmp_vals)) < 0) {
 				LM_ERR("Failed to get fixups for command <%s>\n",
 					cmd->name);
 				break;
@@ -1900,7 +1902,8 @@ next_avp:
 			} else {
 				script_trace("async", acmd->name, msg, a->file, a->line);
 
-				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem, cmdp)) < 0) {
+				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem, cmdp,
+					tmp_vals)) < 0) {
 					LM_ERR("Failed to get fixups for async command <%s>\n",
 						acmd->name);
 					break;
@@ -1932,7 +1935,8 @@ next_avp:
 				/* NOTE that the routeID (a->elem[1].u.number) is set to 
 				 * -1 if no reporting route is set */
 
-				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem, cmdp)) < 0) {
+				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem,
+					cmdp, tmp_vals)) < 0) {
 					LM_ERR("Failed to get fixups for async command <%s>\n",
 						acmd->name);
 					break;
