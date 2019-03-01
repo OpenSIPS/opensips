@@ -360,8 +360,6 @@ int cfg_pop(void)
 		return -1;
 	}
 
-	free(*cfg_include_stackp);
-
 	if (cfg_include_stackp == cfg_include_stack) {
 		cfg_include_stackp = NULL;
 	} else {
