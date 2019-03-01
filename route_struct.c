@@ -698,6 +698,43 @@ int is_mod_async_func_used(struct action *a, char *name, int param_no)
 	return 0;
 }
 
+static char *re_buff=NULL;
+static int re_buff_len = 0;
+int fixup_regcomp(regex_t **re, str *re_str, int dup_nt)
+{
+	char *regex;
+
+	if (dup_nt) {
+		if (re_str->len + 1 > re_buff_len) {
+			re_buff = pkg_realloc(re_buff,re_str->len + 1);
+			if (re_buff == NULL) {
+				LM_ERR("No more pkg \n");
+				return E_OUT_OF_MEM;
+			}
+
+			re_buff_len = re_str->len + 1;
+		}
+
+		memcpy(re_buff,re_str->s,re_str->len);
+		re_buff[re_str->len] = 0;
+
+		regex = re_buff;
+	} else
+		regex = re_str->s;
+
+	if ((*re = pkg_malloc(sizeof **re)) == 0) {
+		LM_ERR("no more pkg memory\n");
+		return E_OUT_OF_MEM;
+	}
+	if (regcomp(*re, regex, (REG_EXTENDED|REG_ICASE|REG_NEWLINE))) {
+		LM_ERR("bad re %s\n", regex);
+		pkg_free(*re);
+		return E_BAD_RE;
+	}
+
+	return 0;
+}
+
 int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 {
 	int i;
@@ -705,6 +742,7 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 	gparam_p gp = NULL;
 	int ret;
 	pv_elem_t *pve;
+	regex_t *re = NULL;
 
 	for (param=params, i=1; param->flags; param++, i++) {
 		if ((elems[i].type == NOSUBTYPE) ||
@@ -800,6 +838,49 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 			gp->v.pvs = elems[i].u.data;
 			gp->type = GPARAM_TYPE_PVS;
 
+		} else if (param->flags & CMD_PARAM_REGEX) {
+
+			if (elems[i].type == STR_ST) {
+				if (pv_parse_format(&elems[i].u.s, &pve) < 0) {
+					LM_ERR("Failed to parse formatted string in param "
+						"[%d]\n",i);
+					ret = E_UNSPEC;
+					goto error;
+				}
+				if (!pve->next && pve->spec.type == PVT_NONE) {
+					/* no variables in the provided string */
+					pv_elem_free_all(pve);
+
+					ret = fixup_regcomp(&re, &elems[i].u.s, 0);
+					if (ret < 0)
+						return ret;
+
+					if (param->fixup) {
+						gp->v.val = re;
+						if (param->fixup(&gp->v.val) < 0) {
+							LM_ERR("Fixup failed for param [%d]\n", i);
+							ret = E_UNSPEC;
+							goto error;
+						}
+						gp->type = GPARAM_TYPE_FIXUP;
+					} else {
+						gp->v.re = re;
+						gp->type = GPARAM_TYPE_REGEX;
+					}
+				} else {
+					gp->v.pve = pve;
+					gp->type = GPARAM_TYPE_PVE;
+				}
+			} else if (elems[i].type == SCRIPTVAR_ST) {
+				gp->v.pvs = elems[i].u.data;
+				gp->type = GPARAM_TYPE_PVS;
+			} else {
+				LM_ERR("Param [%d] expected to be a string "
+					"or variable\n", i);
+				ret = E_CFG;
+				goto error;
+			}
+
 		} else {
 			LM_BUG("Bad command parameter type\n");
 			ret = E_BUG;
@@ -813,6 +894,8 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 error:
 	if (gp)
 		pkg_free(gp);
+	if (re)
+		pkg_free(re);
 	return ret;
 }
 
@@ -822,6 +905,8 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 	int i;
 	struct cmd_param *param;
 	gparam_p gp;
+	regex_t *re = NULL;
+	int ret;
 
 	for (param=params, i=1; param->flags; param++, i++) {
 		gp = (gparam_p)elems[i].u.data;
@@ -925,6 +1010,75 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 				return E_UNSPEC;
 			}
 
+		} else if (param->flags & CMD_PARAM_REGEX) {
+
+			switch (gp->type) {
+			case GPARAM_TYPE_REGEX:
+				cmdp[i-1] = (void*)&gp->v.re;
+				break;
+			case GPARAM_TYPE_PVE:
+				if (pv_printf_s(msg, gp->v.pve, &tmp_vals[i].rs) != 0) {
+					LM_ERR("Failed to print formatted string in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				ret = fixup_regcomp(&re, &tmp_vals[i].rs, 1);
+				if (ret < 0)
+					return ret;
+				cmdp[i-1] = re;
+
+				if (param->fixup) {
+					if (param->fixup(&cmdp[i-1]) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+					}
+
+					regfree(re);
+					pkg_free(re);
+
+					if (ret < 0)
+						return ret;
+				}
+
+				break;
+			case GPARAM_TYPE_PVS:
+				if (pv_get_spec_value(msg, gp->v.pvs, &tmp_vals[i]) != 0) {
+					LM_ERR("Failed to get spec value in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+				if (tmp_vals[i].flags & PV_VAL_NULL ||
+					!(tmp_vals[i].flags & PV_VAL_STR)) {
+					LM_ERR("Variable in param [%d] is not a string\n", i);
+					return E_UNSPEC;
+				}
+
+				ret = fixup_regcomp(&re, &tmp_vals[i].rs, 1);
+				if (ret < 0)
+					return ret;
+				cmdp[i-1] = re;
+
+				if (param->fixup) {
+					if (param->fixup(&cmdp[i-1]) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+					}
+
+					regfree(re);
+					pkg_free(re);
+
+					if (ret < 0)
+						return ret;
+				}
+
+				break;
+			case GPARAM_TYPE_FIXUP:
+				cmdp[i-1] = gp->v.val;
+				break;
+			default:
+				LM_BUG("Bad type for generic parameter\n");
+				return E_BUG;
+			}
+
 		} else {
 			LM_BUG("Bad command parameter type\n");
 			return E_BUG;
@@ -964,6 +1118,18 @@ int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp)
 					LM_ERR("Failed to free fixup for param [%d]\n", i);
 					return E_UNSPEC;
 				}
+		} else if (param->flags & CMD_PARAM_REGEX) {
+			if (gp->type == GPARAM_TYPE_PVS || gp->type == GPARAM_TYPE_PVE) {
+				if (param->fixup) {
+					if (param->free_fixup && param->free_fixup(&cmdp[i-1]) < 0) {
+						LM_ERR("Failed to free fixup for param [%d]\n", i);
+						return E_UNSPEC;
+					}
+				} else {
+					regfree((regex_t*)cmdp[i-1]);
+					pkg_free(cmdp[i-1]);
+				}
+			}
 		} else {
 			LM_BUG("Bad command parameter type\n");
 			return E_BUG;
