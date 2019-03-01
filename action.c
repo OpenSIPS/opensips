@@ -2244,16 +2244,10 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 void __script_trace(char *class, char *action, struct sip_msg *msg,
 														char *file, int line)
 {
-	gparam_t param;
 	str val;
 
-	param.type = GPARAM_TYPE_PVE;
-	param.v.pve = &script_trace_elem;
-
-	val.s = NULL;
-	val.len = 0;
-	if (fixup_get_svalue(msg, &param, &val) != 0) {
-		LM_ERR("Failed to get pv elem value!\n");
+	if (pv_printf_s(msg, &script_trace_elem, &val) != 0) {
+		LM_ERR("Failed to evaluate variables\n");
 		return;
 	}
 

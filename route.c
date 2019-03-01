@@ -70,7 +70,7 @@
 #include "mem/mem.h"
 #include "xlog.h"
 #include "evi/evi_modules.h"
-
+#include "mod_fix.h"
 
 /* main routing script table  */
 struct script_route rlist[RT_NO];
