@@ -1356,7 +1356,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 	unsigned int count;
 	int i;
 	int nr = 0;
-	int ret;
+	int ret = 0;
 	void **dst;
 	str *value;
 	bin_packet_t packet;
