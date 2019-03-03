@@ -176,12 +176,12 @@ Chapter 1. Admin Guide
      * uac_auth -- UAC Authentication functionality
      * usrloc -- User location implementation module
      * OSP Toolkit -- The OSP Toolkit, available from
-       http://sourceforge.net/projects/osp-toolkit, must be built
+       https://github.com/TransNexus/osptoolkit, must be built
        before building OpenSIPS with the OSP module. For
        instructions on building OpenSIPS with the OSP Toolkit, see
        http://www.http://transnexus.com/wp-content/uploads/OSP-Rou
        ting-and-CDR-Collection-Server-with-OpenSIPS-1.7.2.pdf. For
-       OpenSIPS 2.1.0, OSP Toolkit 4.5.0 or later versions should
+       OpenSIPS 2.4.0, OSP Toolkit 4.16.0 or later versions should
        be used.
 
 1.3. Exported Parameters
@@ -973,7 +973,7 @@ Chapter 3. Contributors
    1. Di-Shi Sun (@di-shi) 280 101 10368 5372
    2. Dmitry Isakbayev 41 5 4120 159
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 30 24 217 209
-   4. Di-Shi Sun 16 1 1005 385
+   4. Di-Shi Sun 17 2 1006 386
    5. Daniel-Constantin Mierla (@miconda) 15 13 81 48
    6. Liviu Chircu (@liviuchircu) 15 12 83 92
    7. Ancuta Onofrei 9 1 206 318
@@ -1006,8 +1006,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
-   2.  Di-Shi Sun                          Oct 2018 - Oct 2018
+   1.  Di-Shi Sun                          Oct 2018 - Feb 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
@@ -1029,7 +1029,7 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Di-Shi Sun,
+   Last edited by: Di-Shi Sun, Liviu Chircu (@liviuchircu),
    Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Patrascu
    (@rvlad-patrascu), Di-Shi Sun (@di-shi), Razvan Crainea
    (@razvancrainea), Daniel-Constantin Mierla (@miconda),
