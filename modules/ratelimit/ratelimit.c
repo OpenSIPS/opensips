@@ -508,9 +508,9 @@ static inline int hist_check(rl_pipe_t *pipe, int update)
 
 	if ( (pipe->rwin.start_time.tv_sec == 0) ||   /* first run*/
 	(now_time - start_time >= rl_win_ms) ) {      /* or more than one window */
-		LM_INFO("case 1 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
-			start_time, pipe->rwin.start_index, now_time, now_index,
-			now_time-start_time);
+		//LM_DBG("case 1 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
+		//	start_time, pipe->rwin.start_index, now_time, now_index,
+		//	now_time-start_time);
 		memset(pipe->rwin.window, 0,
 			pipe->rwin.window_size * sizeof(long int));
 		pipe->rwin.start_time = tv;
@@ -520,9 +520,9 @@ static inline int hist_check(rl_pipe_t *pipe, int update)
 	} else
 	if (now_time - start_time >= rl_slot_period) {
 		/* different slot */
-		LM_INFO("case 2 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
-			start_time, pipe->rwin.start_index, now_time, now_index,
-			now_time-start_time);
+		//LM_DBG("case 2 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
+		//	start_time, pipe->rwin.start_index, now_time, now_index,
+		//	now_time-start_time);
 		/* zero the gap between old/start index and current/now index */
 		for ( i=(pipe->rwin.start_index+1)%pipe->rwin.window_size;
 			i != now_index;
@@ -539,9 +539,9 @@ static inline int hist_check(rl_pipe_t *pipe, int update)
 		/* index the same slot */
 		/* we just need to increment the number of calls for
 		 * the current slot*/
-		LM_INFO("case 3 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
-			start_time, pipe->rwin.start_index, now_time, now_index,
-			now_time-start_time);
+		//LM_DBG("case 3 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
+		//	start_time, pipe->rwin.start_index, now_time, now_index,
+		//	now_time-start_time);
 		pipe->rwin.window[pipe->rwin.start_index] += update;
 	}
 
