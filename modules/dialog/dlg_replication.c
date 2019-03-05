@@ -731,33 +731,30 @@ struct dlg_sharing_tag *get_shtag_unsafe(str *tag_name)
 	return tag;
 }
 
-/* you must release the lock for switchable reading if @lock_stop_r = 0
- * in case of error the lock is released by the function
- */
-struct dlg_sharing_tag *get_shtag(str *tag_name, int lock_stop_r)
+int get_shtag(str *tag_name)
 {
 	struct dlg_sharing_tag *tag;
-	int lock_old_flag;
+	int ret;
 
-	lock_start_sw_read(shtags_lock);
+	lock_start_read(shtags_lock);
 
 	for (tag = *shtags_list; tag && str_strcmp(&tag->name, tag_name);
 		tag = tag->next) ;
 	if (!tag) {
-		lock_switch_write(shtags_lock, lock_old_flag);
-		if ((tag = create_dlg_shtag(tag_name)) == NULL) {
-			LM_ERR("Failed to create sharing tag\n");
-			lock_switch_read(shtags_lock, lock_old_flag);
-			lock_stop_sw_read(shtags_lock);
-			return NULL;
-		}
-		lock_switch_read(shtags_lock, lock_old_flag);
+		lock_stop_read(shtags_lock);
+		lock_start_write(shtags_lock);
+
+		tag = get_shtag_unsafe(tag_name);
+		ret = (tag == NULL) ? -1 : tag->state;
+
+		lock_stop_write(shtags_lock);
+	} else {
+		ret = tag->state;
+
+		lock_stop_read(shtags_lock);
 	}
 
-	if (lock_stop_r)
-		lock_stop_sw_read(shtags_lock);
-
-	return tag;
+	return ret;
 }
 
 void free_active_msgs_info(struct dlg_sharing_tag *tag)
@@ -1441,7 +1438,7 @@ struct mi_root* mi_sync_cl_dlg(struct mi_root *cmd, void *param)
 
 int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name)
 {
-	if (get_shtag(tag_name, 1) == NULL) {
+	if (get_shtag(tag_name) < 0) {
 		LM_ERR("Unable to fetch sharing tag\n");
 		return -1;
 	}
@@ -1491,7 +1488,6 @@ struct mi_root *mi_set_shtag_active(struct mi_root *cmd_tree, void *param)
 int get_shtag_state(struct dlg_cell *dlg)
 {
 	str tag_name;
-	struct dlg_sharing_tag *tag;
 	int rc;
 
 	if (!dlg)
@@ -1506,16 +1502,7 @@ int get_shtag_state(struct dlg_cell *dlg)
 		return -2;
 	}
 
-	if ((tag = get_shtag(&tag_name, 0)) == NULL) {
-		LM_ERR("Unable to fetch sharing tag\n");
-		return -1;
-	}
-
-	rc = tag->state;
-
-	lock_stop_sw_read(shtags_lock);
-
-	return rc;
+	return get_shtag(&tag_name);
 }
 
 int dlg_sharing_tag_paramf(modparam_t type, void *val)
