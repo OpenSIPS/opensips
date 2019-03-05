@@ -854,6 +854,7 @@ static int pv_parse_rl_count(pv_spec_p sp, str *in)
 	}
 	sp->pvp.pvn.type = PV_NAME_INTSTR;
 	sp->pvp.pvn.u.isname.name.s = *in;
+	sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
 	return 0;
 
 }
