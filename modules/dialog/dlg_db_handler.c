@@ -317,10 +317,14 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 {
 	/* read name */
 	name->s = b;
-	while( b<end && !( (*b=='|'|| *b=='#') &&
-				(*(b-1)!='\\' || *(b-2)=='\\')) )
+	while (b<end) {
+		if (*b=='|' || *b=='#')
+			break;
+		else if (*b == '\\')
+			b++;
 		b++;
-	if (b==end) return NULL;
+	}
+	if (b>=end) return NULL;
 	if (*b=='|') goto skip;
 	name->len = b - name->s;
 	if (name->len==0) goto skip;
@@ -332,10 +336,14 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 
 	/* read value */
 	val->s = b;
-	while( b<end && !( (*b=='|'|| *b=='#') &&
-				(*(b-1)!='\\' || *(b-2)=='\\')) )
+	while (b<end) {
+		if (*b=='|' || *b=='#')
+			break;
+		else if (*b == '\\')
+			b++;
 		b++;
-	if (b==end) return NULL;
+	}
+	if (b>=end) return NULL;
 	if (*b=='#') goto skip;
 	val->len = b - val->s;
 	if (val->len==0) val->s = 0;
