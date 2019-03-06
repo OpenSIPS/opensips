@@ -1749,6 +1749,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 
 	lock_get(cl->current_node->lock);
 	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
+		lock_release(cl->current_node->lock);
 		LM_INFO("Current node disabled, ignoring received bin packet\n");
 		goto exit;
 	}
@@ -1853,8 +1854,8 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 
 	lock_get(cl->current_node->lock);
 	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
-		LM_INFO("Current node disabled, ignoring received clusterer bin packet\n");
 		lock_release(cl->current_node->lock);
+		LM_INFO("Current node disabled, ignoring received clusterer bin packet\n");
 		goto exit;
 	}
 	lock_release(cl->current_node->lock);
