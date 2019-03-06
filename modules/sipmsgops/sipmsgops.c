@@ -1594,7 +1594,7 @@ static int check_hostname(str *domain)
 	}
 
 	/* always starts with a ALPHANUM */
-	if (!IS_ALPHANUM(domain->s[0])) {
+	if (!IS_ALPHANUM(domain->s[0]) && (domain->s[0] != '[')) {
 		LM_DBG("invalid starting character in domain: %c[%d]\n", domain->s[0], domain->s[0]);
 		return -1;
 	}
@@ -1603,7 +1603,7 @@ static int check_hostname(str *domain)
 	end = domain->s + domain->len - 1;
 
 	for (p = domain->s + 1; p < end; p++) {
-		if (!IS_ALPHANUM(*p) && (*p != '-')) {
+		if (!IS_ALPHANUM(*p) && (*p != '-') && (*p != ':')) {
 			if (*p != '.') {
 				LM_DBG("invalid character in hostname: %c[%d]\n", *p, *p);
 				return -1;
@@ -1615,7 +1615,7 @@ static int check_hostname(str *domain)
 	}
 
 	/* check if the last character is a '-' */
-	if (!IS_ALPHANUM(*end) && (*end != '.')) {
+	if (!IS_ALPHANUM(*end) && (*end != '.') && (*end != ']')) {
 		LM_DBG("invalid character at the end of the domain: %c[%d]\n", *end, *end);
 		return -1;
 	}
