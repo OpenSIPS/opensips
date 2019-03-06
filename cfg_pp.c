@@ -493,7 +493,7 @@ static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 	char chunk[1024];
 	ssize_t left, written;
 	size_t bytes;
-	char *p, *tok, *cmd, **argv = NULL, *pp_binary = NULL;
+	char *p, *tok, *cmd, **argv = NULL, *pp_binary = NULL, ch;
 	int argv_len = 0;
 
 	if (strlen(preproc_cmdline) == 0) {
@@ -573,9 +573,20 @@ static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 
 	/* and we're done, let's see what the process barfed up! */
 	final_cfg = fdopen(parent_r[0], "r");
-	if (!final_cfg)
+	if (!final_cfg) {
 		LM_ERR("failed to open final cfg file: %d (%s)\n",
 		       errno, strerror(errno));
+	} else {
+		ch = fgetc(final_cfg);
+		if (ch == EOF) {
+			LM_ERR("no output from the preprocessor!  "
+					"Make sure it prints to standard output!\n");
+			fclose(final_cfg);
+			final_cfg = NULL;
+		} else {
+			ungetc(ch, final_cfg);
+		}
+	}
 
 	return final_cfg;
 
