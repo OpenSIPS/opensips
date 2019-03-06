@@ -493,8 +493,8 @@ static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 	char chunk[1024];
 	ssize_t left, written;
 	size_t bytes;
-	char *p, *tok, *cmd, **argv = NULL, *pp_binary = NULL, ch;
-	int argv_len = 0;
+	char *p, *tok, *cmd, **argv = NULL, *pp_binary = NULL;
+	int argv_len = 0, ch;
 
 	if (strlen(preproc_cmdline) == 0) {
 		LM_ERR("preprocessor command (-p) is an empty string!\n");
