@@ -71,12 +71,6 @@
  * is valid
  */
 #define ACC_DLG_CB_USED (((unsigned long long)1<<(8*6)) * (1<<2))
-/*
- * flag to signal that the callback for missed calls has been registered;
- * this way if the missed calls flag is set twice, we won't register the
- * callback twice
- */
-#define ACC_TMCB_MISSED_REGISTERED (((unsigned long long)1<<(8*6)) * (1<<5))
 
 #define ACC_MASK_REF_BYTE (((unsigned long long)(0xFF)<<(8*7))
 
