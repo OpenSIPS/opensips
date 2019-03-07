@@ -602,7 +602,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		/* send 200 OK and exit */
 		tmb.t_reply(msg, 200, &reason);
 		tm_tran = tmb.t_gett();
-		if(tm_tran)
+		if(tm_tran && tm_tran!=T_UNDEFINED)
 			tmb.unref_cell(tm_tran);
 
 		/* No need to apply lumps */
