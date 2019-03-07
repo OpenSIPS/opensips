@@ -6,7 +6,7 @@
 #
 
 PORTNAME=	opensips
-PORTVERSION=	2.4.4
+PORTVERSION=	2.4.5
 CATEGORIES=	net
 MASTER_SITES=	http://opensips.org/pub/opensips/${PORTVERSION}/src/
 DISTNAME=	${PORTNAME}-${PORTVERSION}-tls_src
