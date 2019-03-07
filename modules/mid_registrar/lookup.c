@@ -224,7 +224,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 
 		ptr = ul_api.get_ucontact_from_id((udomain_t *)_t, contact_id, &r);
 		if (!ptr) {
-			LM_ERR("no record found for %.*s, ci: %.*s\n", uri.len, uri.s,
+			LM_DBG("no record found for %.*s, ci: %.*s\n", uri.len, uri.s,
 			       req->callid->body.len, req->callid->body.s);
 			return -1;
 		}
