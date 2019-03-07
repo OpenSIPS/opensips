@@ -170,8 +170,18 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 				goto error;
 			}
 
-			gp->v.pvs = elems[i].u.data;
-			gp->type = GPARAM_TYPE_PVS;
+			if (param->fixup) {
+				gp->v.val = elems[i].u.data;
+				if (param->fixup(&gp->v.val) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					ret = E_UNSPEC;
+					goto error;
+				}
+				gp->type = GPARAM_TYPE_FIXUP;
+			} else {
+				gp->v.pvs = elems[i].u.data;
+				gp->type = GPARAM_TYPE_PVS;
+			}
 
 		} else if (param->flags & CMD_PARAM_REGEX) {
 
@@ -333,16 +343,17 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 			}
 
 		} else if (param->flags & CMD_PARAM_VAR) {
-			if (gp->type != GPARAM_TYPE_PVS) {
+
+			switch (gp->type) {
+			case GPARAM_TYPE_PVS:
+				cmdp[i-1] = (void *)gp->v.pvs;
+				break;
+			case GPARAM_TYPE_FIXUP:
+				cmdp[i-1] = gp->v.val;
+				break;
+			default:
 				LM_BUG("Bad type for generic parameter\n");
 				return E_BUG;
-			}
-
-			cmdp[i-1] = gp->v.pvs;
-
-			if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
-				LM_ERR("Fixup failed for param [%d]\n", i);
-				return E_UNSPEC;
 			}
 
 		} else if (param->flags & CMD_PARAM_REGEX) {
@@ -447,12 +458,6 @@ int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp)
 					LM_ERR("Failed to free fixup for param [%d]\n", i);
 					return E_UNSPEC;
 				}
-		} else if (param->flags & CMD_PARAM_VAR) {
-			if (param->free_fixup)
-				if (param->free_fixup(&cmdp[i-1]) < 0) {
-					LM_ERR("Failed to free fixup for param [%d]\n", i);
-					return E_UNSPEC;
-				}
 		} else if (param->flags & CMD_PARAM_REGEX) {
 			if (gp->type == GPARAM_TYPE_PVS || gp->type == GPARAM_TYPE_PVE) {
 				if (param->fixup) {
@@ -465,6 +470,8 @@ int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp)
 					pkg_free(cmdp[i-1]);
 				}
 			}
+		} else if (param->flags & CMD_PARAM_VAR) {
+			continue;
 		} else {
 			LM_BUG("Bad command parameter type\n");
 			return E_BUG;
