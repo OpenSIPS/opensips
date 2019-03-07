@@ -209,9 +209,47 @@ static mi_response_t *mi_arg(const mi_params_t *params,
 	return resp;
 }
 
+static mi_response_t *mi_which_cmd(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	mi_item_t *resp_arr, *cmd_arr;
+	mi_response_t *resp;
+	struct mi_cmd *cmd;
+	str cmd_str;
+	int i, j;
 
-static mi_response_t *mi_which(const mi_params_t *params,
-							struct mi_handler *async_hdl)
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
+		return 0;
+
+	if (get_mi_string_param(params, "command", &cmd_str.s, &cmd_str.len) < 0)
+		return init_mi_param_error();
+
+	cmd = lookup_mi_cmd(cmd_str.s, cmd_str.len);
+	if (!cmd)
+		return init_mi_error(404, MI_SSTR("unknown MI command"));
+	for (i = 0; i < MAX_MI_RECIPES && cmd->recipes[i].cmd; i++) {
+		cmd_arr = add_mi_array(resp_arr, NULL, 0);
+		if (! cmd_arr) {
+			LM_ERR("failed to add mi array\n");
+			free_mi_response(resp);
+			return 0;
+		}
+		for (j = 0; j < MAX_MI_PARAMS && cmd->recipes[i].params[j]; j++) {
+			if (add_mi_string(cmd_arr, 0, 0,
+					cmd->recipes[i].params[j],
+					strlen(cmd->recipes[i].params[j])) < 0) {
+				LM_ERR("failed to add mi item\n");
+				free_mi_response(resp);
+				return 0;
+			}
+		}
+	}
+
+	return resp;
+}
+
+static mi_response_t *mi_which(const mi_params_t *params, struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_arr;
@@ -665,6 +703,7 @@ static mi_export_t mi_core_cmds[] = {
 	},
 	{ "which", "lists all available MI commands", 0, 0, {
 		{mi_which, {0}},
+		{mi_which_cmd, {"command", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
