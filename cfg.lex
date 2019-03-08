@@ -186,6 +186,7 @@ XDBG			"xdbg"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
 XLOG_PRINT_LEVEL	"xlog_print_level"
+XLOG_LEVEL		"xlog_level"
 XLOG			"xlog"
 RAISE_EVENT		"raise_event"
 SUBSCRIBE_EVENT	"subscribe_event"
@@ -496,6 +497,8 @@ SPACE		[ ]
 									return XLOG_FORCE_COLOR;}
 <INITIAL>{XLOG_PRINT_LEVEL}	{	count(); yylval.strval=yytext;
 									return XLOG_PRINT_LEVEL;}
+<INITIAL>{XLOG_LEVEL}		{	count(); yylval.strval=yytext;
+									return XLOG_LEVEL;}
 <INITIAL>{RAISE_EVENT}		{	count(); yylval.strval=yytext;
 									return RAISE_EVENT;}
 <INITIAL>{SUBSCRIBE_EVENT}		{	count(); yylval.strval=yytext;

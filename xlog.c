@@ -46,12 +46,23 @@ char *log_buf = NULL;
 
 int xlog_buf_size = 4096;
 int xlog_force_color = 0;
+
+/* the log level used when printing xlog messages */
 int xlog_print_level = L_ERR;
 
-/* this variable is used by the xlog_level to print (inside an xlog)
- * the current logging level of that xlog() ; it has no meaning outside
- * the scope of an xlog() ! */
-int xlog_level = INT_MAX;
+/* the logging level/threshold for filtering the xlog messages for printing */
+static int xlog_level_default = L_NOTICE;
+static int xlog_level_local = L_NOTICE;
+static int *xlog_level_shared = NULL;
+
+/* current logging level for this process.
+ * During init it points the 'xlog_level_default' in order to store the
+ * original configured value
+ * During runtime it may point to:
+ *    - xlog_level_shared - the shared xlog level between all procs
+ *    - &xlog_level_local - for a per-proc changed xlog level
+ */
+int *xlog_level = &xlog_level_default;
 
 /* id with which xlog will be identified by siptrace module
  * and will identify an xlog tracing packet */
@@ -59,9 +70,52 @@ int xlog_proto_id;
 /* tracing module api */
 static trace_proto_t tprot;
 
-
 /* xlog string identifier */
 static const char* xlog_id_s="xlog";
+
+#define is_xlog_printable(_level)  \
+	(((int)(*xlog_level)) >= ((int)(_level)))
+
+
+void set_shared_xlog_level(int new_level)
+{
+	/* do not accept setting as time the xlog_level still points to the
+	 * starting/default holder as we will loose the original value */
+	if (xlog_level==&xlog_level_default)
+		return;
+
+	*xlog_level_shared = new_level;
+}
+
+
+void set_local_xlog_level(int new_level)
+{
+	/* do not accept setting as time the xlog_level still points to the
+	 * starting/default holder as we will loose the original value */
+	if (xlog_level==&xlog_level_default)
+		return;
+
+	xlog_level_local = new_level;
+	xlog_level = &xlog_level_local;
+}
+
+
+void reset_xlog_level(void)
+{
+	if (xlog_level==&xlog_level_default)
+		return; /* still init, very unlikely */
+
+	if (xlog_level==&xlog_level_local) {
+		/* points a local/per-proc xlog level hodler,
+		 * so reset it to the shared value */
+		xlog_level = xlog_level_shared;
+		return;
+	}
+
+	/* points to the shared holder, so reset the shred value */
+	*xlog_level_shared = xlog_level_default;
+}
+
 
 static int buf_init(void)
 {
@@ -75,6 +129,7 @@ static int buf_init(void)
 	return 0;
 }
 
+
 int init_xlog(void)
 {
 	if (log_buf == NULL) {
@@ -83,6 +138,13 @@ int init_xlog(void)
 			return -1;
 		}
 	}
+
+	xlog_level_shared = (int*)shm_malloc(sizeof(int));
+	if (xlog_level_shared==NULL) {
+		LM_ERR("failed to allocate shared holder for xlog\n");
+		return -1;
+	}
+	xlog_level = xlog_level_shared;
 
 	if (register_trace_type)
 		xlog_proto_id = register_trace_type((char *)xlog_id_s);
@@ -107,8 +169,7 @@ static inline void add_xlog_data(trace_message message, void* param)
 	xl_trace_t* xtrace_param = param;
 
 
-	/* FIXME FIXME */
-	switch (xlog_level) {
+	switch (xlog_print_level) {
 		case L_ALERT:
 			str_level.s = DP_ALERT_TEXT; break;
 		case L_CRIT:
@@ -126,7 +187,7 @@ static inline void add_xlog_data(trace_message message, void* param)
 			str_level.len = sizeof(DP_DBG_TEXT) - 2;
 			break;
 		default:
-			LM_BUG("Unexpected log level [%d]\n", xlog_level);
+			LM_BUG("Unexpected log level [%d]\n", xlog_print_level);
 			return;
 	}
 
@@ -212,22 +273,24 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 		level = xlp->v.level;
 	}
 
-	if(!is_printable((int)level))
+	if(!is_xlog_printable((int)level))
 		return 1;
 
 	log_len = xlog_buf_size;
 
-	xlog_level = level;
 	ret = xl_print_log(msg, (pv_elem_t*)frm, &log_len);
 	if (ret == -1) {
 		LM_ERR("global print buffer too small, increase 'xlog_buf_size'\n");
-		xlog_level = INT_MAX;
 		return -1;
 	}
-	xlog_level = INT_MAX;
+
+	/* set the xlog as log level to trick "LM_GEN" */
+	set_proc_log_level( *xlog_level );
 
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1((int)level, "%.*s", log_len, log_buf);
+
+	reset_proc_log_level();
 
 	return ret;
 }
@@ -237,22 +300,24 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 {
 	int log_len, ret;
 
-	if(!is_printable(L_ERR))
+	if(!is_xlog_printable(xlog_print_level))
 		return 1;
 
 	log_len = xlog_buf_size;
 
-	xlog_level = xlog_print_level;
 	ret = xl_print_log(msg, (pv_elem_t*)frm, &log_len);
 	if (ret == -1) {
 		LM_ERR("global print buffer too small, increase 'xlog_buf_size'\n");
-		xlog_level = INT_MAX;
 		return -1;
 	}
-	xlog_level = INT_MAX;
+
+	/* set the xlog as log level to trick "LM_GEN" */
+	set_proc_log_level( *xlog_level );
 
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1(xlog_print_level, "%.*s", log_len, log_buf);
+
+	reset_proc_log_level();
 
 	return ret;
 }
@@ -263,22 +328,24 @@ int xdbg(struct sip_msg* msg, char* frm, char* str2)
 {
 	int log_len, ret;
 
-	if(!is_printable(L_DBG))
+	if(!is_xlog_printable(L_DBG))
 		return 1;
 
 	log_len = xlog_buf_size;
 
-	xlog_level = L_DBG;
 	ret = xl_print_log(msg, (pv_elem_t*)frm, &log_len);
 	if (ret == -1) {
 		LM_ERR("global print buffer too small, increase 'xlog_buf_size'\n");
-		xlog_level = INT_MAX;
 		return -1;
 	}
-	xlog_level = INT_MAX;
+
+	/* set the xlog as log level to trick "LM_GEN" */
+	set_proc_log_level( *xlog_level );
 
 	/* log_buf[log_len] = '\0'; */
 	LM_GEN1(L_DBG, "%.*s", log_len, log_buf);
+
+	reset_proc_log_level();
 
 	return ret;
 }

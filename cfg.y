@@ -307,6 +307,7 @@ static struct multi_str *tmp_mod;
 %token XLOG_BUF_SIZE
 %token XLOG_FORCE_COLOR
 %token XLOG_PRINT_LEVEL
+%token XLOG_LEVEL
 %token RAISE_EVENT
 %token SUBSCRIBE_EVENT
 %token CONSTRUCT_URI
@@ -1055,6 +1056,8 @@ assign_stm: DEBUG EQUAL snumber
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
 		| XLOG_PRINT_LEVEL EQUAL error { yyerror("number expected"); }
+		| XLOG_LEVEL EQUAL NUMBER { *xlog_level = $3; }
+		| XLOG_LEVEL EQUAL error { yyerror("number expected"); }
 		| LISTEN EQUAL listen_def {
 							if (add_listener($3)!=0){
 								LM_CRIT("cfg. parser: failed"

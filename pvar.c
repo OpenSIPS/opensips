@@ -3409,7 +3409,7 @@ int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		return -1;
 	}
 
-	switch(xlog_level) {
+	switch(1) {
 	case L_ALERT:
 		_set_static_string( res->rs, DP_ALERT_TEXT);
 		break;
