@@ -362,7 +362,8 @@ int get_mi_int_param(const mi_params_t *params, const char *name, int *value)
 		st.s = p->valuestring;
 		st.len = strlen(st.s);
 		if (str2sint(&st, value) < 0) {
-			LM_ERR("Parameter: %s is not an integer\n", name);
+			LM_ERR("Parameter: %s is not an integer: [%.*s]\n",
+					name, st.len, st.s);
 			param_err_type = -2;
 			return -1;
 		}
