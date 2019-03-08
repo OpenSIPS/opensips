@@ -46,6 +46,7 @@
 #include "../cachedb/cachedb.h"
 #include "../evi/event_interface.h"
 #include "../ipc.h"
+#include "../xlog.h"
 #include "mi.h"
 #include "mi_trace.h"
 
@@ -432,6 +433,51 @@ static mi_response_t *w_log_level_2(const mi_params_t *params,
 	return mi_log_level(params, pid);
 }
 
+static mi_response_t *w_xlog_level(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_number(resp_obj, MI_SSTR("xLog Level"), *xlog_level) < 0) {
+		LM_ERR("failed to add mi item\n");
+		free_mi_response(resp);
+		return 0;
+	}
+
+	return resp;
+}
+
+
+static mi_response_t *w_xlog_level_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	int new_level;
+
+	if (get_mi_int_param(params, "level", &new_level) < 0)
+		return init_mi_param_error();
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_number(resp_obj, MI_SSTR("New xLog level"), new_level) < 0) {
+		free_mi_response(resp);
+		return 0;
+	}
+
+	set_shared_xlog_level(new_level);
+
+	return resp;
+}
+
+
 
 static mi_response_t *mi_cachestore(const 	mi_params_t *params, unsigned int expire)
 {
@@ -725,6 +771,14 @@ static mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
+	{ "xlog_level", "gets/sets the per process or global xlog level in OpenSIPS",
+		0, 0, {
+		{w_xlog_level, 	{0}},
+		{w_xlog_level_1, {"level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+
 #if defined(QM_MALLOC) && defined(DBG_MALLOC)
 	{ "shm_check", "complete scan of the shared memory pool "
 		"(if any error is found, OpenSIPS will abort!)", 0, 0, {
