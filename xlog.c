@@ -46,7 +46,7 @@ char *log_buf = NULL;
 
 int xlog_buf_size = 4096;
 int xlog_force_color = 0;
-int xlog_default_level = L_ERR;
+int xlog_print_level = L_ERR;
 
 /* this variable is used by the xlog_level to print (inside an xlog)
  * the current logging level of that xlog() ; it has no meaning outside
@@ -242,7 +242,7 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 
 	log_len = xlog_buf_size;
 
-	xlog_level = xlog_default_level;
+	xlog_level = xlog_print_level;
 	ret = xl_print_log(msg, (pv_elem_t*)frm, &log_len);
 	if (ret == -1) {
 		LM_ERR("global print buffer too small, increase 'xlog_buf_size'\n");
@@ -252,7 +252,7 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 	xlog_level = INT_MAX;
 
 	/* log_buf[log_len] = '\0'; */
-	LM_GEN1(xlog_default_level, "%.*s", log_len, log_buf);
+	LM_GEN1(xlog_print_level, "%.*s", log_len, log_buf);
 
 	return ret;
 }
