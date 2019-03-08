@@ -1011,9 +1011,11 @@ if (is_method("REGISTER")) {
 
 			<listitem>
 				<para>
-				<emphasis>'m' (Method filtering)</emphasis> - this flag tells
-				if the contact filtering based on supported methods should be
-				performed during lookup.
+				<emphasis>'m' (Method filtering)</emphasis> - setting this flag
+				will enable contact filtering based on the supported methods
+				listed in the "Allow" header field during registration.
+				Contacts which did not present an "Allow" header field during
+				registration are assumed to support all standard SIP methods.
 				</para>
 			</listitem>
 			<listitem>
