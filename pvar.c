@@ -3402,40 +3402,47 @@ int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
+int pv_set_xlog_level(struct sip_msg* msg, pv_param_t *param, int op,
+															pv_value_t *val)
+{
+	if(param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(val==NULL || (val->flags&(PV_VAL_NULL|PV_VAL_NONE))!=0) {
+		/* reset the value to default */
+		reset_xlog_level();
+	} else {
+		if ((val->flags&PV_TYPE_INT)==0) {
+			LM_ERR("input for $xlog_level found not to be an integer\n");
+			return -1;
+		}
+		set_local_xlog_level( val->ri );
+	}
+
+	return 0;
+}
+
 int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
-#define _set_static_string(_s,_ss) {_s.s=_ss;_s.len=sizeof(_ss)-1;}
+	int l;
+
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
 	if(res == NULL) {
 		return -1;
 	}
 
-	switch(1) {
-	case L_ALERT:
-		_set_static_string( res->rs, DP_ALERT_TEXT);
-		break;
-	case L_CRIT:
-		_set_static_string( res->rs, DP_CRIT_TEXT);
-		break;
-	case L_ERR:
-		_set_static_string( res->rs, DP_ERR_TEXT);
-		break;
-	case L_WARN:
-		_set_static_string( res->rs, DP_WARN_TEXT);
-		break;
-	case L_NOTICE:
-		_set_static_string( res->rs, DP_NOTICE_TEXT);
-		break;
-	case L_INFO:
-		_set_static_string( res->rs, DP_INFO_TEXT);
-		break;
-	case L_DBG:
-		_set_static_string( res->rs, DP_DBG_TEXT);
-		break;
-	default:
-		return pv_get_null(msg, param, res);
-	}
+	res->ri = *xlog_level;
+	res->rs.s = int2str( (unsigned long)res->ri, &l);
+	res->rs.len = l;
 
-	res->flags = PV_VAL_STR;
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 
 	return 0;
 }
@@ -3779,8 +3786,8 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0 },
 	{{"cfg_file", sizeof("cfg_file")-1}, PVT_CFG_FILE_NAME, pv_get_cfg_file_name, 0,
 	0, 0, 0, 0 },
-	{{"xlog_level", sizeof("xlog_level")-1}, PVT_XLOG_LEVEL, pv_get_xlog_level, 0,
-	0, 0, 0, 0 },
+	{{"xlog_level", sizeof("xlog_level")-1}, PVT_XLOG_LEVEL, pv_get_xlog_level,
+		pv_set_xlog_level, 0, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
