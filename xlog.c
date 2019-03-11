@@ -145,6 +145,7 @@ int init_xlog(void)
 		return -1;
 	}
 	xlog_level = xlog_level_shared;
+	*xlog_level = xlog_level_default;
 
 	if (register_trace_type)
 		xlog_proto_id = register_trace_type((char *)xlog_id_s);
