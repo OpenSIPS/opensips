@@ -3317,7 +3317,7 @@ int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	}
 
 	res->ri = *log_level;
-	res->rs.s = int2str( (unsigned long)res->ri, &l);
+	res->rs.s = sint2str( (long)res->ri, &l);
 	res->rs.len = l;
 
 	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
