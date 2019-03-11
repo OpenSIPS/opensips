@@ -1903,7 +1903,7 @@ static int fork_dynamic_tcp_process(void *foo)
 
 	if (r==tcp_workers_max_no) {
 		LM_BUG("trying to fork one more TCP worker but no free slots in "
-			"the TCP table\n");
+			"the TCP table (size=%d)\n",tcp_workers_max_no);
 		return -1;
 	}
 
