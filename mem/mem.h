@@ -62,13 +62,7 @@ void set_pkg_stats(pkg_status_holder*);
 #ifdef __SUNPRO_C
 		#define __FUNCTION__ ""  /* gcc specific */
 #endif
-#		ifdef VQ_MALLOC
-#			define pkg_malloc(s) vqm_malloc(mem_block, (s),__FILE__, \
-				__FUNCTION__, __LINE__)
-#			define pkg_free(p)   vqm_free(mem_block, (p), __FILE__,  \
-				__FUNCTION__, __LINE__)
-#			warn "no proper realloc implementation, use another mem. alloc"
-#		elif defined F_MALLOC
+#		if defined F_MALLOC
 #			define pkg_malloc(s) fm_malloc(mem_block, (s),__FILE__, \
 				__FUNCTION__, __LINE__)
 #			define pkg_free(p)   fm_free(mem_block, (p), __FILE__,  \
@@ -96,11 +90,7 @@ void set_pkg_stats(pkg_status_holder*);
 #			error "no memory allocator selected"
 #		endif
 #	else
-#		ifdef VQ_MALLOC
-#			define pkg_malloc(s) vqm_malloc(mem_block, (s))
-#			define pkg_free(p)   vqm_free(mem_block, (p))
-
-#		elif defined F_MALLOC
+#		if defined F_MALLOC
 #       include "../error.h"
 #			define pkg_malloc(s) fm_malloc(mem_block, (s))
 #		ifdef F_MALLOC_OPTIMIZATIONS
@@ -154,9 +144,7 @@ void set_pkg_stats(pkg_status_holder*);
 #			error "no memory allocator selected"
 #		endif
 #	endif
-#	ifdef VQ_MALLOC
-#		define pkg_status()  vqm_status(mem_block)
-#	elif defined F_MALLOC
+#	if defined F_MALLOC
 #		define pkg_status()        fm_status(mem_block)
 #		define MY_PKG_GET_SIZE()   fm_get_size(mem_block)
 #		define MY_PKG_GET_USED()   fm_get_used(mem_block)

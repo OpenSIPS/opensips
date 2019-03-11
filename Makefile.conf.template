@@ -73,7 +73,6 @@ DEFS+= -DDISABLE_NAGLE #Disabled the TCP NAgle Algorithm ( lower delay )
 DEFS+= -DSTATISTICS #Enables the statistics manager
 DEFS+= -DHAVE_RESOLV_RES #Support for changing some of the resolver parameters
 #DEFS_GROUP_START
-##DEFS+= -DVQ_MALLOC #Very quick & wasteful mem allocator (currently disabled)
 DEFS+= -DQM_MALLOC #Quality assurance memory allocator with runtime safety checks
 #DEFS+= -DF_MALLOC #Fast memory allocator with minimal runtime overhead
 #DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
@@ -92,7 +91,7 @@ DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
 #DEFS+= -DDBG_LOCK #Attach debug info to all lock structures
 #DEFS+= -DDBG_STRUCT_HIST #Include support for struct history logging
 #DEFS+= -DDBG_TCPCON #Attach struct history info to all TCP connections
-#DEFS+= -DNOSMP #Do not use SMP sompliant locking. Faster but won't work on SMP machines
+#DEFS+= -DNOSMP #Do not use SMP compliant locking. Faster but won't work on SMP machines
 #DEFS+= -DEXTRA_DEBUG #Compiles in some extra debugging code
 #DEFS+= -DORACLE_USRLOC #Uses Oracle compatible queries for USRLOC
 DEFS+= -DSHM_EXTRA_STATS #Provides tools to get extra statistics for the shared memory used

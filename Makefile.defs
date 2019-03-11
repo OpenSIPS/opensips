@@ -578,10 +578,6 @@ MKTAGS=ctags -R .
 #		extra error checking (trying to free the same pointer
 #		twice, trying to free a pointer alloc'ed with a different
 #		malloc etc.)
-# -DVQ_MALLOC
-#		additional option of PKG_MALLOC which utilizes faster then the
-#		QM version
-#		(this is not true anymore, q_malloc performs approx. the same)
 # -DQM_MALLOC
 #		memory allocator recommended for debugging
 # -DF_MALLOC

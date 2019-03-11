@@ -29,7 +29,7 @@
  */
 
 
-#if !defined(q_malloc_h) && !defined(VQ_MALLOC) && !defined(F_MALLOC) && \
+#if !defined(q_malloc_h) && !defined(F_MALLOC) && \
 	!defined(HP_MALLOC) /* lgtm [cpp/missing-header-guard] */
 #define q_malloc_h
 

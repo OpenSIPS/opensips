@@ -32,11 +32,7 @@
 	"not enough free %s memory (need %lu), please increase the \"-%s\" " \
 	"command line parameter!\n"
 
-#	ifdef VQ_MALLOC
-#		include "vq_malloc.h"
-		extern struct vqm_block* mem_block;
-		extern struct vqm_block* shm_block;
-#	elif defined F_MALLOC
+#	if defined F_MALLOC
 #		include "f_malloc.h"
 		extern struct fm_block* mem_block;
 		extern struct fm_block* shm_block;

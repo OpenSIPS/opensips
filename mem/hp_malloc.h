@@ -24,8 +24,7 @@
  *  2014-01-19 initial version (liviu)
  */
 
-#if !defined(HP_MALLOC_H) && !defined(VQ_MALLOC) && !defined(QM_MALLOC) && \
-	!defined(F_MALLOC)
+#if !defined(HP_MALLOC_H) && !defined(QM_MALLOC) && !defined(F_MALLOC)
 
 #define HP_MALLOC_H
 

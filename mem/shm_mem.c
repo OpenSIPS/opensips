@@ -78,9 +78,7 @@ static int shm_shmid=-1; /*shared memory id*/
 gen_lock_t *mem_lock = NULL;
 
 static void* shm_mempool=(void*)-1;
-#ifdef VQ_MALLOC
-	struct vqm_block* shm_block;
-#elif F_MALLOC
+#if F_MALLOC
 	struct fm_block* shm_block;
 #elif HP_MALLOC
 	struct hp_block* shm_block;
@@ -202,12 +200,9 @@ inline static void* sh_realloc(void* p, unsigned int size)
 }
 
 /* look at a buffer if there is perhaps enough space for the new size
-   (It is beneficial to do so because vq_malloc is pretty stateful
-    and if we ask for a new buffer size, we can still make it happy
-    with current buffer); if so, we return current buffer again;
-    otherwise, we free it, allocate a new one and return it; no
-    guarantee for buffer content; if allocation fails, we return
-    NULL
+    if so, we return current buffer again; otherwise, we free it,
+	allocate a new one and return it; no guarantee for buffer content;
+	if allocation fails, we return NULL
 */
 
 #ifdef DBG_MALLOC
@@ -217,25 +212,11 @@ void* _shm_resize( void* p, unsigned int s, const char* file, const char* func,
 void* _shm_resize( void* p , unsigned int s)
 #endif
 {
-#ifdef VQ_MALLOC
-	struct vqm_frag *f;
-#endif
 	if (p==0) {
 		LM_DBG("resize(0) called\n");
 		return shm_malloc( s );
 	}
-#	ifdef DBG_MALLOC
-#	ifdef VQ_MALLOC
-	f=(struct  vqm_frag*) ((char*)p-sizeof(struct vqm_frag));
-	LM_DBG("params (%p, %d), called from %s: %s(%d)\n",
-			p, s, file, func, line);
-	VQM_DEBUG_FRAG(shm_block, f);
-	if (p>(void *)shm_block->core_end || p<(void*)shm_block->init_core){
-		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
-		abort();
-	}
-#endif
-#	endif
+
 	return sh_realloc( p, s );
 }
 

@@ -62,14 +62,7 @@
 #include "mem_stats.h"
 #endif
 
-#ifdef VQ_MALLOC
-#	include "vq_malloc.h"
-#	define MY_MALLOC vqm_malloc
-#	define MY_FREE vqm_free
-#	define MY_STATUS vqm_status
-#	define  shm_malloc_init vqm_malloc_init
-#	warn "no proper vq_realloc implementation, try another memory allocator"
-#elif defined F_MALLOC
+#if defined F_MALLOC
 #	include "f_malloc.h"
 #	define MY_MALLOC fm_malloc
 #	define MY_FREE fm_free

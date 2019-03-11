@@ -34,8 +34,7 @@
  */
 
 
-#if !(defined VQ_MALLOC) && !(defined F_MALLOC) && !defined(HP_MALLOC) && \
- 	(defined QM_MALLOC)
+#if !(defined F_MALLOC) && !defined(HP_MALLOC) && (defined QM_MALLOC)
 
 #include <stdlib.h>
 #include <string.h>

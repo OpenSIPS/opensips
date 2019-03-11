@@ -36,9 +36,7 @@
 
 #ifdef PKG_MALLOC
 	char* mem_pool = NULL;
-	#ifdef VQ_MALLOC
-		struct vqm_block* mem_block;
-	#elif defined F_MALLOC
+	#if defined F_MALLOC
 		struct fm_block* mem_block;
 	#elif defined HP_MALLOC
 		struct hp_block* mem_block;
@@ -60,9 +58,7 @@ int init_pkg_mallocs(void)
 			pkg_mem_size);
 		return -1;
 	}
-	#ifdef VQ_MALLOC
-		mem_block=vqm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-	#elif F_MALLOC
+	#if F_MALLOC
 		mem_block=fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 	#elif HP_MALLOC
 		mem_block=hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");

@@ -24,8 +24,7 @@
  *  2014-01-19 initial version (liviu)
  */
 
-#if !defined(q_malloc) && !(defined VQ_MALLOC)  && !(defined F_MALLOC) && \
-	(defined HP_MALLOC)
+#if !defined(q_malloc) && !(defined F_MALLOC) && (defined HP_MALLOC)
 
 #include <string.h>
 #include <stdio.h>
