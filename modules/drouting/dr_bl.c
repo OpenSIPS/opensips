@@ -119,7 +119,7 @@ int init_dr_bls(struct head_db * head_db_start)
 			name.s = it_blk->def;
 		}
 		p = strchr( name.s, '=');
-		if (p==NULL || p== it_blk->def) {
+		if (p==NULL || p==name.s) {
 			LM_ERR("blacklist definition <%s> has no name",it_blk->def);
 			return -1;
 		}
