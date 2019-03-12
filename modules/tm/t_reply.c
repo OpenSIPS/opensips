@@ -1703,6 +1703,8 @@ int w_t_reply_body(struct sip_msg* msg, str* code, str *text,
 			return -1;
 		}
 		t=get_t();
+	} else {
+		update_cloned_msg_from_msg( t->uas.request, msg);
 	}
 	return t_reply_with_body(t, code_i, &code_s, &body_s, 0, 0);
 }
