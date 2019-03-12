@@ -350,7 +350,7 @@ static int fork_dynamic_udp_process(void *si_filter)
 	} else if (p_id==0) {
 		/* new UDP process */
 		/* set a more detailed description */
-		set_proc_attrs("SIP receiver %.*s ",
+		set_proc_attrs("SIP receiver %.*s",
 			si->sock_str.len, si->sock_str.s);
 		pt[process_no].pg_filter = si;
 		bind_address=si; /* shortcut */
@@ -446,7 +446,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 				} else if (p_id==0) {
 					/* new UDP process */
 					/* set a more detailed description */
-					set_proc_attrs("SIP receiver %.*s ",
+					set_proc_attrs("SIP receiver %.*s",
 						si->sock_str.len, si->sock_str.s);
 					pt[process_no].pg_filter = si;
 					bind_address=si; /* shortcut */
