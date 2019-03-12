@@ -1045,12 +1045,10 @@ dr_fix_avp_definition(_pv_spec, _avp_id, _name);
 memcpy(_name_w_part.s, _spec.s, _spec.len);\
 memcpy(_name_w_part.s + _spec.len, _p_name.s, _p_name.len);
 
-static int cleanup_head_config( struct head_config *hd) {
-	LM_DBG("Cleanup started\n");
-	if( hd==NULL ) {
-		LM_CRIT(" Cleanup head_config failed. Null pointer supplied\n");
-		return -1;
-	}
+static int cleanup_head_config( struct head_config *hd)
+{
+	if( hd==NULL )
+		return 0;
 
 	if( hd->db_url.s ) {
 		shm_free( hd->db_url.s );
@@ -1152,9 +1150,6 @@ static int cleanup_head_db( struct head_db *hd) {
 		hd->gw_attrs_avp = -1;
 		hd->rule_attrs_avp = -1;
 		hd->carrier_attrs_avp = -1;
-	} else {
-		LM_CRIT(" No head_db to clean supplied\n");
-		return -1;
 	}
 	return 0;
 }
