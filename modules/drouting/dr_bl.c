@@ -110,19 +110,19 @@ int init_dr_bls(struct head_db * head_db_start)
 						it_blk->def);
 				return -1;
 			}
-
+			name.s = p+1;
 		} else {
 			current_partition = head_db_start;
 			if( current_partition == 0 ) {
 				LM_CRIT("Default partition not registered\n");
 			}
+			name.s = it_blk->def;
 		}
-		p = strchr( it_blk->def, '=');
+		p = strchr( name.s, '=');
 		if (p==NULL || p== it_blk->def) {
 			LM_ERR("blacklist definition <%s> has no name",it_blk->def);
 			return -1;
 		}
-		name.s = it_blk->def;
 		name.len = p - name.s;
 		trim(&name);
 		if (name.len==0) {
