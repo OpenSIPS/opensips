@@ -716,8 +716,13 @@ modparam("drouting", "rule_attrs_avp", '$avp(11)')
 	<section id="param_define_blacklist" xreflabel="define_blacklist">
 		<title><varname>define_blacklist</varname> (str)</title>
 		<para>
-		Defines a blacklist based on a list of GW types - the list will contain
-		the IPs (no port, all protocols) of the GWs with the specified types.
+		Defines a blacklist based on a list of GW types - the blacklist will 
+		be populated with the IPs (no port, all protocols) of the GWs having 
+		the specified types.
+		</para>
+		<para>
+		If partitions are used, prefix the blacklist definition string with 
+		the name of the partition followed by ":" separator.
 		</para>
 		<para>
 		Multiple instances of this param are allowed.
@@ -732,6 +737,8 @@ modparam("drouting", "rule_attrs_avp", '$avp(11)')
 ...
 modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
+modparam("drouting", "define_blacklist", 'pstn:list2 = 5,6')
+modparam("drouting", "define_blacklist", 'pstn:list3 = 7,8')
 ...
 	</programlisting>
 		</example>
