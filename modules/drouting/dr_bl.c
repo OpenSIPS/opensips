@@ -103,7 +103,6 @@ int init_dr_bls(struct head_db * head_db_start)
 				return -1;
 			}
 			trim(&part_name);
-			p = NULL;
 			if( (current_partition = get_partition(&part_name))==NULL ) {
 				LM_ERR("could not find partition name <%.*s> from blacklist "
 						"definition <%s>\n", part_name.len, part_name.s,
