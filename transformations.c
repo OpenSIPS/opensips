@@ -928,6 +928,28 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 			trim_leading(&val->rs);
 			break;
+		case TR_S_REVERSE:
+			if (!(val->flags & PV_VAL_STR))
+			{
+				val->rs.s = int2str(val->ri, &val->rs.len);
+				val->flags |= PV_VAL_STR;
+			}
+
+			/*To big for buffer*/
+			if(val->rs.len>TR_BUFFER_SIZE-1)
+				goto error;
+
+			p = _tr_buffer;
+
+			/*Reverse Order*/
+			for (i=0; i < val->rs.len; i++) {
+				p[val->rs.len - 1 - i] = val->rs.s[i];
+			}
+
+			/*Save Result*/
+			val->rs.s = _tr_buffer;
+			val->flags = PV_VAL_STR;
+			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
 					subtype);
@@ -3017,7 +3039,11 @@ int tr_parse_string(str* in, trans_t *t)
 		}
 
 		return 0;
+	} else if(name.len==7 && strncasecmp(name.s, "reverse", 7)==0) {
+		t->subtype = TR_S_REVERSE;
+		return 0;
 	}
+
 
 	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
 			name.len, name.s, name.len);
