@@ -129,24 +129,17 @@ unsigned long frag_size(void* p);
 struct fm_block* fm_malloc_init(char* address, unsigned long size, char* name);
 
 #ifdef DBG_MALLOC
-#ifdef INLINE_ALLOC
 void *fm_malloc(struct fm_block* qm, unsigned long size,
                 const char* file, const char* func, unsigned int line);
 void fm_free(struct fm_block* qm, void* p, const char* file,
              const char* func, unsigned int line);
 void *fm_realloc(struct fm_block* qm, void* p, unsigned long size,
                  const char* file, const char* func, unsigned int line);
-#else
-void *fm_malloc(struct fm_block* qm, unsigned long size,
-                const char* file, const char* func, unsigned int line);
+#ifndef INLINE_ALLOC
 void *fm_malloc_dbg(struct fm_block* qm, unsigned long size,
                     const char* file, const char* func, unsigned int line);
-void fm_free(struct fm_block* qm, void* p, const char* file,
-             const char* func, unsigned int line);
 void fm_free_dbg(struct fm_block* qm, void* p, const char* file,
                  const char* func, unsigned int line);
-void *fm_realloc(struct fm_block* qm, void* p, unsigned long size,
-                 const char* file, const char* func, unsigned int line);
 void *fm_realloc_dbg(struct fm_block* qm, void* p, unsigned long size,
                      const char* file, const char* func, unsigned int line);
 #endif

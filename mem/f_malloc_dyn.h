@@ -19,7 +19,7 @@
  */
 
 /*
- * If you have to deal with this spaghetti, here are its requirements:
+ * If you have to deal with the ifdef spaghetti, here are its requirements:
  *   - be able to compile an inlined allocator (fm_split_frag short)
  *   - be able to compile an inlined, dbg allocator (fm_split_frag long)
  *   - be able to compile multiple allocators (fm_split_frag short)
@@ -184,11 +184,12 @@ found:
 
 	/*see if we'll use full frag, or we'll split it in 2*/
 
-	#ifdef DBG_MALLOC
-	#ifdef INLINE_ALLOC
-	fm_split_frag(qm, frag, size, file, "fm_malloc split frag", line);
+	#if !defined INLINE_ALLOC && defined DBG_MALLOC
+	fm_split_frag_dbg(qm, frag, size, file, "fm_malloc frag", line);
+	#elif !defined F_MALLOC_DYN && !defined DBG_MALLOC
+	fm_split_frag(qm, frag, size);
 	#else
-	fm_split_frag_dbg(qm, frag, size, file, "fm_malloc split frag", line);
+	fm_split_frag(qm, frag, size, file, "fm_malloc frag", line);
 	#endif
 
 	frag->file=file;
@@ -301,8 +302,8 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size,
 	void *ptr;
 
 	#ifdef DBG_MALLOC
-	LM_GEN1(memlog, "%s_realloc(%p, %lu->%lu), called from %s: %s(%d)\n", qm->name,
-	        p, p ? FRAG_OF(p)->size : 0, size, file, func, line);
+	LM_GEN1(memlog, "%s_realloc(%p, %lu->%lu), called from %s: %s(%d)\n",
+	        qm->name, p, p ? FRAG_OF(p)->size : 0, size, file, func, line);
 	if (p && (p > (void *)qm->last_frag || p < (void *)qm->first_frag)) {
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
@@ -311,28 +312,24 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size,
 
 	if (size == 0) {
 		if (p)
-			#ifdef DBG_MALLOC
-			#ifdef INLINE_ALLOC
-			fm_free(qm, p, file, func, line);
-			#else
+			#if !defined INLINE_ALLOC && defined DBG_MALLOC
 			fm_free_dbg(qm, p, file, func, line);
-			#endif
-			#else
+			#elif !defined F_MALLOC_DYN && !defined DBG_MALLOC
 			fm_free(qm, p);
+			#else
+			fm_free(qm, p, file, func, line);
 			#endif
 		pkg_threshold_check();
 		return 0;
 	}
 
 	if (!p)
-		#ifdef DBG_MALLOC
-		#ifdef INLINE_ALLOC
-		return fm_malloc(qm, size, file, func, line);
-		#else
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
 		return fm_malloc_dbg(qm, size, file, func, line);
-		#endif
-		#else
+		#elif !defined F_MALLOC_DYN && !defined DBG_MALLOC
 		return fm_malloc(qm, size);
+		#else
+		return fm_malloc(qm, size, file, func, line);
 		#endif
 
 	f = FRAG_OF(p);
@@ -349,13 +346,14 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size,
 		/* shrink */
 		#ifdef DBG_MALLOC
 		LM_GEN1(memlog, "shrinking from %lu to %lu\n", f->size, size);
-		#ifdef INLINE_ALLOC
-		fm_split_frag(qm, f, size, file, "fm_realloc split frag", line);
-		#else
-		fm_split_frag_dbg(qm, f, size, file, "fm_realloc split frag", line);
 		#endif
-		#else
+
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		fm_split_frag_dbg(qm, f, size, file, "fm_realloc frag", line);
+		#elif !defined F_MALLOC_DYN && !defined DBG_MALLOC
 		fm_split_frag(qm, f, size);
+		#else
+		fm_split_frag(qm, f, size, file, "fm_realloc frag", line);
 		#endif
 
 	} else if (f->size < size) {
@@ -381,40 +379,35 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size,
 
 			/* split it if necessary */
 			if (f->size > size){
-				#ifdef DBG_MALLOC
-				#ifdef INLINE_ALLOC
-				fm_split_frag(qm, f, size, file, "fm_realloc split frag", line);
-				#else
-				fm_split_frag_dbg(qm, f, size, file, "fm_realloc split frag", line);
-				#endif
-				#else
+				#if !defined INLINE_ALLOC && defined DBG_MALLOC
+				fm_split_frag_dbg(qm, f, size, file, "fm_realloc frag", line);
+				#elif !defined F_MALLOC_DYN && !defined DBG_MALLOC
 				fm_split_frag(qm, f, size);
+				#else
+				fm_split_frag(qm, f, size, file, "fm_realloc frag", line);
 				#endif
 			}
 		} else {
 			/* could not join => realloc */
 
-			#ifdef DBG_MALLOC
-			#ifdef INLINE_ALLOC
-			ptr = fm_malloc(qm, size, file, func, line);
-			#else
+			#if !defined INLINE_ALLOC && defined DBG_MALLOC
 			ptr = fm_malloc_dbg(qm, size, file, func, line);
-			#endif
-			#else
+			#elif !defined F_MALLOC_DYN && !defined DBG_MALLOC
 			ptr = fm_malloc(qm, size);
+			#else
+			ptr = fm_malloc(qm, size, file, func, line);
 			#endif
 
 			if (ptr) {
 				/* copy, need by libssl */
 				memcpy(ptr, p, orig_size);
-				#ifdef DBG_MALLOC
-				#ifdef INLINE_ALLOC
-				fm_free(qm, p, file, func, line);
-				#else
+
+				#if !defined INLINE_ALLOC && defined DBG_MALLOC
 				fm_free_dbg(qm, p, file, func, line);
-				#endif
-				#else
+				#elif !defined F_MALLOC_DYN && !defined DBG_MALLOC
 				fm_free(qm, p);
+				#else
+				fm_free(qm, p, file, func, line);
 				#endif
 			}
 			p = ptr;

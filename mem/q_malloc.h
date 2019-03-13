@@ -2,6 +2,7 @@
  * simple & fast malloc library
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,17 +18,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2003-05-21  on sparc64 roundto 8 even in debugging mode (so malloc'ed
- *               long longs will be 64 bit aligned) (andrei)
- *  2004-07-19  support for 64 bit (2^64 mem. block) and more info
- *               for the future de-fragmentation support (andrei)
- *  2004-11-10  support for > 4Gb mem. (switched to long) (andrei)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
 
 #if !defined(q_malloc_h) && !defined(F_MALLOC) && \
 	!defined(HP_MALLOC) /* lgtm [cpp/missing-header-guard] */
@@ -130,22 +122,23 @@ struct qm_block* qm_malloc_init(char* address, unsigned long size, char* name);
 unsigned long frag_size(void* p);
 
 #ifdef DBG_MALLOC
-void* qm_malloc(struct qm_block*, unsigned long size, const char* file,
-					const char* func, unsigned int line);
-#else
-void* qm_malloc(struct qm_block*, unsigned long size);
-#endif
-
-#ifdef DBG_MALLOC
+void *qm_malloc(struct qm_block*, unsigned long size, const char* file,
+                const char* func, unsigned int line);
 void  qm_free(struct qm_block*, void* p, const char* file, const char* func,
 				unsigned int line);
-#else
-void  qm_free(struct qm_block*, void* p);
-#endif
-#ifdef DBG_MALLOC
 void* qm_realloc(struct qm_block*, void* p, unsigned long size,
 					const char* file, const char* func, unsigned int line);
+#ifndef INLINE_ALLOC
+void *qm_malloc_dbg(struct qm_block*, unsigned long size, const char* file,
+                    const char* func, unsigned int line);
+void qm_free_dbg(struct qm_block*, void* p, const char* file, const char* func,
+				unsigned int line);
+void* qm_realloc_dbg(struct qm_block*, void* p, unsigned long size,
+					const char* file, const char* func, unsigned int line);
+#endif
 #else
+void *qm_malloc(struct qm_block*, unsigned long size);
+void  qm_free(struct qm_block*, void* p);
 void* qm_realloc(struct qm_block*, void* p, unsigned long size);
 #endif
 
