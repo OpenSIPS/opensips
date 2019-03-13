@@ -266,7 +266,7 @@ static int l_sipstate_getpkginfo(lua_State *L)
 {
   struct mem_info info;
 
-  MY_MEMINFO(mem_block, &info);
+  SHM_INFO(mem_block, &info);
   return sipstate_getmeminfo(L, &info);
 }
 

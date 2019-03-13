@@ -62,71 +62,95 @@
 #include "mem_stats.h"
 #endif
 
-#if defined F_MALLOC
-#	include "f_malloc.h"
-#	define MY_MALLOC fm_malloc
-#	define MY_FREE fm_free
-#	define MY_REALLOC fm_realloc
-#	define MY_STATUS fm_status
-#	define MY_MEMINFO	fm_info
-#	ifdef STATISTICS
-#		define MY_SHM_GET_SIZE	fm_get_size
-#		define MY_SHM_GET_USED	fm_get_used
-#		define MY_SHM_GET_RUSED	fm_get_real_used
-#		define MY_SHM_GET_MUSED	fm_get_max_real_used
-#		define MY_SHM_GET_FREE	fm_get_free
-#		define MY_SHM_GET_FRAGS	fm_get_frags
-#	endif
-#	define  shm_malloc_init fm_malloc_init
-#	define MY_MALLOC_UNSAFE MY_MALLOC
-#	define MY_FREE_UNSAFE MY_FREE
-#	define MY_REALLOC_UNSAFE MY_REALLOC
-#elif defined HP_MALLOC
-#	include "hp_malloc.h"
-#	define MY_MALLOC hp_shm_malloc
-#	define MY_MALLOC_UNSAFE hp_shm_malloc_unsafe
-#	define MY_FREE hp_shm_free
-#	define MY_FREE_UNSAFE hp_shm_free_unsafe
-#	define MY_REALLOC hp_shm_realloc
-#	define MY_REALLOC_UNSAFE hp_shm_realloc_unsafe
-#	define MY_STATUS hp_status
-#	define MY_MEMINFO	hp_info
-#	ifdef STATISTICS
-#		define MY_SHM_GET_SIZE	hp_shm_get_size
-#		define MY_SHM_GET_USED	hp_shm_get_used
-#		define MY_SHM_GET_RUSED	hp_shm_get_real_used
-#		define MY_SHM_GET_MUSED	hp_shm_get_max_real_used
-#		define MY_SHM_GET_FREE	hp_shm_get_free
-#		define MY_SHM_GET_FRAGS	hp_shm_get_frags
-#	endif
-#	define  shm_malloc_init hp_shm_malloc_init
-#	define  shm_mem_warming hp_mem_warming
-#	define  update_mem_pattern_file hp_update_mem_pattern_file
-#elif defined QM_MALLOC
-#	include "q_malloc.h"
-#	define MY_MALLOC qm_malloc
-#	define MY_FREE qm_free
-#	define MY_REALLOC qm_realloc
-#	define MY_STATUS qm_status
-#	define MY_MEMINFO	qm_info
-#	define MY_MALLOC_UNSAFE MY_MALLOC
-#	define MY_FREE_UNSAFE MY_FREE
-#	define MY_REALLOC_UNSAFE MY_REALLOC
-#	ifdef STATISTICS
-#		define MY_SHM_GET_SIZE	qm_get_size
-#		define MY_SHM_GET_USED	qm_get_used
-#		define MY_SHM_GET_RUSED	qm_get_real_used
-#		define MY_SHM_GET_MUSED	qm_get_max_real_used
-#		define MY_SHM_GET_FREE	qm_get_free
-#		define MY_SHM_GET_FRAGS	qm_get_frags
-#	endif
-#	define  shm_malloc_init qm_malloc_init
+#ifndef INLINE_ALLOC
+#ifdef DBG_MALLOC
+extern void *(*gen_shm_malloc)(void *blk, unsigned long size,
+                        const char *file, const char *func, unsigned int line);
+extern void *(*gen_shm_realloc)(void *blk, void *p, unsigned long size,
+                        const char *file, const char *func, unsigned int line);
+extern void *(*gen_shm_free)(void *blk, void *p,
+                        const char *file, const char *func, unsigned int line);
 #else
-#	error "no memory allocator selected"
+extern void *(*gen_shm_malloc)(void *blk, unsigned long size);
+extern void *(*gen_shm_realloc)(void *blk, void *p, unsigned long size);
+extern void *(*gen_shm_free)(void *blk, void *p);
+#endif
+extern void (*gen_shm_info)(void *blk, struct mem_info *info);
+extern void (*gen_shm_status)(void *blk);
+extern unsigned long (*gen_shm_get_size)(void *blk);
+extern unsigned long (*gen_shm_get_used)(void *blk);
+extern unsigned long (*gen_shm_get_rused)(void *blk);
+extern unsigned long (*gen_shm_get_mused)(void *blk);
+extern unsigned long (*gen_shm_get_free)(void *blk);
+extern unsigned long (*gen_shm_get_frags)(void *blk);
 #endif
 
+#ifdef INLINE_ALLOC
+#ifdef F_MALLOC
+#define SHM_MALLOC             fm_malloc
+#define SHM_MALLOC_UNSAFE      fm_malloc
+#define SHM_REALLOC            fm_realloc
+#define SHM_REALLOC_UNSAFE     fm_realloc
+#define SHM_FREE               fm_free
+#define SHM_FREE_UNSAFE        fm_free
+#define SHM_INFO               fm_info
+#define SHM_STATUS             fm_status
+#define SHM_GET_SIZE           fm_get_size
+#define SHM_GET_USED           fm_get_used
+#define SHM_GET_RUSED          fm_get_real_used
+#define SHM_GET_MUSED          fm_get_max_real_used
+#define SHM_GET_FREE           fm_get_free
+#define SHM_GET_FRAGS          fm_get_frags
+#elif defined QM_MALLOC
+#define SHM_MALLOC             qm_malloc
+#define SHM_MALLOC_UNSAFE      qm_malloc
+#define SHM_REALLOC            qm_realloc
+#define SHM_REALLOC_UNSAFE     qm_realloc
+#define SHM_FREE               qm_free
+#define SHM_FREE_UNSAFE        qm_free
+#define SHM_INFO               qm_info
+#define SHM_STATUS             qm_status
+#define SHM_GET_SIZE           qm_get_size
+#define SHM_GET_USED           qm_get_used
+#define SHM_GET_RUSED          qm_get_real_used
+#define SHM_GET_MUSED          qm_get_max_real_used
+#define SHM_GET_FREE           qm_get_free
+#define SHM_GET_FRAGS          qm_get_frags
+#elif defined HP_MALLOC
+#define SHM_MALLOC             hp_malloc
+#define SHM_MALLOC_UNSAFE      hp_malloc
+#define SHM_REALLOC            hp_realloc
+#define SHM_REALLOC_UNSAFE     hp_realloc
+#define SHM_FREE               hp_free
+#define SHM_FREE_UNSAFE        hp_free
+#define SHM_INFO               hp_info
+#define SHM_STATUS             hp_status
+#define SHM_GET_SIZE           hp_shm_get_size
+#define SHM_GET_USED           hp_shm_get_used
+#define SHM_GET_RUSED          hp_shm_get_real_used
+#define SHM_GET_MUSED          hp_shm_get_max_real_used
+#define SHM_GET_FREE           hp_shm_get_free
+#define SHM_GET_FRAGS          hp_shm_get_frags
+#endif /* F_MALLOC || QM_MALLOC || HP_MALLOC */
+#else
+#define SHM_MALLOC             gen_shm_malloc
+#define SHM_MALLOC_UNSAFE      gen_shm_malloc
+#define SHM_REALLOC            gen_shm_realloc
+#define SHM_REALLOC_UNSAFE     gen_shm_realloc
+#define SHM_FREE               gen_shm_free
+#define SHM_FREE_UNSAFE        gen_shm_free
+#define SHM_INFO               gen_shm_info
+#define SHM_STATUS             gen_shm_status
+#define SHM_GET_SIZE           gen_shm_get_size
+#define SHM_GET_USED           gen_shm_get_used
+#define SHM_GET_RUSED          gen_shm_get_real_used
+#define SHM_GET_MUSED          gen_shm_get_max_real_used
+#define SHM_GET_FREE           gen_shm_get_free
+#define SHM_GET_FRAGS          gen_shm_get_frags
+#endif /* INLINE_ALLOC */
 
 extern gen_lock_t* mem_lock;
+extern enum osips_mm mem_allocator_shm;
 
 
 int shm_mem_init(); /* calls shm_getmem & shm_mem_init_mallocs */
@@ -176,8 +200,8 @@ inline static void shm_threshold_check(void)
 	}
 
 	// compute the percentage here to avoid a function call
-	used = MY_SHM_GET_RUSED(shm_block);
-	size = MY_SHM_GET_SIZE(shm_block);
+	used = SHM_GET_RUSED(shm_block);
+	size = SHM_GET_SIZE(shm_block);
 	shm_perc = used * 100 / size;
 
 	/* check if the event has to be raised or if it was already notified */
@@ -216,7 +240,7 @@ inline static void* _shm_malloc_unsafe(unsigned int size,
 {
 	void *p;
 
-	p = MY_MALLOC_UNSAFE(shm_block, size, file, function, line);
+	p = SHM_MALLOC_UNSAFE(shm_block, size, file, function, line);
 	shm_threshold_check();
 
 #ifdef SHM_EXTRA_STATS
@@ -239,7 +263,7 @@ inline static void* _shm_malloc(unsigned int size,
 		shm_lock();
 	#endif
 
-	p = MY_MALLOC(shm_block, size, file, function, line);
+	p = SHM_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
 
 	#ifndef HP_MALLOC
@@ -275,7 +299,7 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 	shm_lock();
 #endif
 
-	p = MY_REALLOC(shm_block, ptr, size, file, function, line);
+	p = SHM_REALLOC(shm_block, ptr, size, file, function, line);
 	shm_threshold_check();
 
 #ifndef HP_MALLOC
@@ -310,7 +334,7 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned int size,
 		}
 	#endif
 
-	p = MY_REALLOC_UNSAFE(shm_block, ptr, size, file, function, line);
+	p = SHM_REALLOC_UNSAFE(shm_block, ptr, size, file, function, line);
 	shm_threshold_check();
 
 	#ifdef SHM_EXTRA_STATS
@@ -342,7 +366,7 @@ inline static void _shm_free_unsafe(void *ptr,
 		update_module_stats(-frag_size(ptr), -(frag_size(ptr) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME));
 	}
 #endif /* SHM_EXTRA_STATS */
-	MY_FREE_UNSAFE(shm_block, ptr, file, function, line);
+	SHM_FREE_UNSAFE(shm_block, ptr, file, function, line);
 	shm_threshold_check();
 }
 
@@ -361,7 +385,7 @@ inline static void _shm_free(void *ptr,
 		update_module_stats(-frag_size(ptr), -(frag_size(ptr) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME));
 	}
 #endif /* SHM_EXTRA_STATS */
-	MY_FREE( shm_block, ptr, file, function, line);
+	SHM_FREE( shm_block, ptr, file, function, line);
 	shm_threshold_check();
 #else /* HP_MALLOC */
 	shm_lock();
@@ -406,7 +430,7 @@ inline static void* shm_malloc_unsafe(unsigned int size)
 {
 	void *p;
 
-	p = MY_MALLOC_UNSAFE(shm_block, size);
+	p = SHM_MALLOC_UNSAFE(shm_block, size);
 
 	shm_threshold_check();
 
@@ -429,7 +453,7 @@ inline static void* shm_malloc(unsigned long size)
 	shm_lock();
 #endif
 
-	p = MY_MALLOC(shm_block, size);
+	p = SHM_MALLOC(shm_block, size);
 	shm_threshold_check();
 
 #ifndef HP_MALLOC
@@ -453,17 +477,6 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 
 #ifndef HP_MALLOC
 	shm_lock();
-#if (defined F_MALLOC) && !(defined F_MALLOC_OPTIMIZATIONS)
-	if (ptr >= (void *)mem_block->first_frag &&
-		ptr <= (void *)mem_block->last_frag) {
-		LM_BUG("shm_realloc(%u) on pkg ptr %p - aborting!\n", size, ptr);
-		abort();
-	} else if (ptr && (ptr < (void *)shm_block->first_frag ||
-			   ptr > (void *)shm_block->last_frag)) {
-		LM_BUG("shm_realloc(%u) on non-shm ptr %p - aborting!\n", size, ptr);
-		abort();
-	}
-#endif
 #endif
 
 #ifdef SHM_EXTRA_STATS
@@ -474,7 +487,7 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 	}
 #endif
 
-	p = MY_REALLOC(shm_block, ptr, size);
+	p = SHM_REALLOC(shm_block, ptr, size);
 	shm_threshold_check();
 
 #ifndef HP_MALLOC
@@ -507,7 +520,7 @@ inline static void* shm_realloc_unsafe(void *ptr, unsigned int size)
 	}
 #endif
 
-	p = MY_REALLOC_UNSAFE(shm_block, ptr, size);
+	p = SHM_REALLOC_UNSAFE(shm_block, ptr, size);
 	shm_threshold_check();
 
 #ifdef SHM_EXTRA_STATS
@@ -527,7 +540,7 @@ inline static void* shm_realloc_unsafe(void *ptr, unsigned int size)
 #ifndef SHM_EXTRA_STATS
 #define shm_free_unsafe( _p ) \
 do { \
-	MY_FREE_UNSAFE(shm_block, (_p)); \
+	SHM_FREE_UNSAFE(shm_block, (_p)); \
 	shm_threshold_check(); \
 } while(0)
 #else
@@ -541,7 +554,7 @@ do { \
 		} else { \
 			update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME)); \
 		} \
-	MY_FREE_UNSAFE(shm_block, (_p)); \
+	SHM_FREE_UNSAFE(shm_block, (_p)); \
 	shm_threshold_check(); \
 } while(0)
 
@@ -554,17 +567,6 @@ inline static void shm_free(void *_p)
 {
 #ifndef HP_MALLOC
 	shm_lock();
-#if defined(F_MALLOC) && !defined(F_MALLOC_OPTIMIZATIONS)
-	if (_p >= (void *)mem_block->first_frag &&
-		_p <= (void *)mem_block->last_frag) {
-		LM_BUG("shm_free() on pkg ptr %p - aborting!\n", _p);
-		abort();
-	} else if (_p && (_p < (void *)shm_block->first_frag ||
-					  _p > (void *)shm_block->last_frag)) {
-		LM_BUG("shm_free() on non-shm ptr %p - aborting!\n", _p);
-		abort();
-	}
-#endif
 #endif
 
 #ifdef HP_MALLOC
@@ -578,7 +580,7 @@ inline static void shm_free(void *_p)
 			update_module_stats(-frag_size(_p), -(frag_size(_p) + FRAG_OVERHEAD), -1, VAR_STAT(MOD_NAME));
 		}
 	#endif
-	MY_FREE(shm_block, _p);
+	SHM_FREE(shm_block, _p);
 #else
 	shm_free_unsafe( (_p));
 #endif
@@ -603,7 +605,7 @@ inline static void shm_status(void)
 		shm_lock();
 #endif
 
-		MY_STATUS(shm_block);
+		SHM_STATUS(shm_block);
 
 #ifndef HP_MALLOC
 		shm_unlock();
@@ -616,7 +618,7 @@ inline static void shm_info(struct mem_info* mi)
 #ifndef HP_MALLOC
 	shm_lock();
 #endif
-	MY_MEMINFO(shm_block, mi);
+	SHM_INFO(shm_block, mi);
 #ifndef HP_MALLOC
 	shm_unlock();
 #endif
@@ -632,22 +634,22 @@ mi_response_t *mi_shm_check(const mi_params_t *params,
 extern stat_export_t shm_stats[];
 
 inline static unsigned long shm_get_size(unsigned short foo) {
-	return MY_SHM_GET_SIZE(shm_block);
+	return SHM_GET_SIZE(shm_block);
 }
 inline static unsigned long shm_get_used(unsigned short foo) {
-	return MY_SHM_GET_USED(shm_block);
+	return SHM_GET_USED(shm_block);
 }
 inline static unsigned long shm_get_rused(unsigned short foo) {
-	return MY_SHM_GET_RUSED(shm_block);
+	return SHM_GET_RUSED(shm_block);
 }
 inline static unsigned long shm_get_mused(unsigned short foo) {
-	return MY_SHM_GET_MUSED(shm_block);
+	return SHM_GET_MUSED(shm_block);
 }
 inline static unsigned long shm_get_free(unsigned short foo) {
-	return MY_SHM_GET_FREE(shm_block);
+	return SHM_GET_FREE(shm_block);
 }
 inline static unsigned long shm_get_frags(unsigned short foo) {
-	return MY_SHM_GET_FRAGS(shm_block);
+	return SHM_GET_FRAGS(shm_block);
 }
 #endif /*STATISTICS*/
 

@@ -70,6 +70,13 @@
 #define FRAG_OVERHEAD	(sizeof(struct fm_frag))
 #define frag_is_free(_f) ((_f)->prev)
 
+#define FRAG_NEXT(f) \
+	((struct fm_frag *)((char *)(f) + sizeof(struct fm_frag) + (f)->size))
+
+/* get the fragment which corresponds to a pointer */
+#define FRAG_OF(p) \
+	((struct fm_frag *)((char *)(p) - sizeof(struct fm_frag)))
+
 struct fm_frag{
 	unsigned long size;
 	union{
@@ -122,28 +129,35 @@ unsigned long frag_size(void* p);
 struct fm_block* fm_malloc_init(char* address, unsigned long size, char* name);
 
 #ifdef DBG_MALLOC
-void* fm_malloc(struct fm_block*, unsigned long size,
-					const char* file, const char* func, unsigned int line);
+#ifdef INLINE_ALLOC
+void *fm_malloc(struct fm_block* qm, unsigned long size,
+                const char* file, const char* func, unsigned int line);
+void fm_free(struct fm_block* qm, void* p, const char* file,
+             const char* func, unsigned int line);
+void *fm_realloc(struct fm_block* qm, void* p, unsigned long size,
+                 const char* file, const char* func, unsigned int line);
 #else
-void* fm_malloc(struct fm_block*, unsigned long size);
+void *fm_malloc(struct fm_block* qm, unsigned long size,
+                const char* file, const char* func, unsigned int line);
+void *fm_malloc_dbg(struct fm_block* qm, unsigned long size,
+                    const char* file, const char* func, unsigned int line);
+void fm_free(struct fm_block* qm, void* p, const char* file,
+             const char* func, unsigned int line);
+void fm_free_dbg(struct fm_block* qm, void* p, const char* file,
+                 const char* func, unsigned int line);
+void *fm_realloc(struct fm_block* qm, void* p, unsigned long size,
+                 const char* file, const char* func, unsigned int line);
+void *fm_realloc_dbg(struct fm_block* qm, void* p, unsigned long size,
+                     const char* file, const char* func, unsigned int line);
+#endif
+#else
+void *fm_malloc(struct fm_block* qm, unsigned long size);
+void fm_free(struct fm_block* qm, void* p);
+void *fm_realloc(struct fm_block* qm, void* p, unsigned long size);
 #endif
 
-#ifdef DBG_MALLOC
-void  fm_free(struct fm_block*, void* p, const char* file, const char* func,
-				unsigned int line);
-#else
-void  fm_free(struct fm_block*, void* p);
-#endif
-
-#ifdef DBG_MALLOC
-void*  fm_realloc(struct fm_block*, void* p, unsigned long size,
-					const char* file, const char* func, unsigned int line);
-#else
-void*  fm_realloc(struct fm_block*, void* p, unsigned long size);
-#endif
-
-void  fm_status(struct fm_block*);
-void  fm_info(struct fm_block*, struct mem_info*);
+void fm_status(struct fm_block*);
+void fm_info(struct fm_block*, struct mem_info*);
 
 #ifdef SHM_EXTRA_STATS
 void set_stat_index (void *ptr, unsigned long idx);

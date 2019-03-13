@@ -78,7 +78,6 @@ DEFS+= -DQM_MALLOC #Quality assurance memory allocator with runtime safety check
 #DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 #DEFS_GROUP_END
 DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
-#DEFS+= -DF_MALLOC_OPTIMIZATIONS #Remove all safety checks in F_MALLOC
 #DEFS+= -DNO_DEBUG #Turns off all debug messages
 #DEFS+= -DNO_LOG #Completely turns off all the logging
 #DEFS+= -DFAST_LOCK #Uses fast architecture specific locking
