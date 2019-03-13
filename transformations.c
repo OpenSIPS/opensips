@@ -1795,11 +1795,16 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		pv_value_t *val)
 {
 	char *buffer;
-	struct ip_addr *binary_ip;
+	struct ip_addr *p_ip;
 	str inet = str_init("INET");
 	str inet6 = str_init("INET6");
 	struct hostent *server;
 	struct ip_addr ip;
+	unsigned int len;
+	struct net *mask;
+	pv_value_t v;
+	str sv;
+	char *p;
 
 	if (!val)
 		return -1;
@@ -1807,10 +1812,8 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	if (val->flags & PV_VAL_NULL)
 		return 0;
 
-	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0) {
-		val->flags = PV_VAL_NULL;
-		return -1;
-	}
+	if(!(val->flags&PV_VAL_STR) || val->rs.len<=0)
+		goto error;
 
 	switch (subtype)
 	{
@@ -1827,9 +1830,9 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			}
 			else
 			{
-				LM_ERR("Invalid ip address provided for ip.family. Binary format expected !\n");
-				val->flags = PV_VAL_NULL;
-				return -1;
+				LM_ERR("Invalid ip address provided for ip.family. "
+					"Binary format expected !\n");
+				goto error;
 			}
 
 			val->flags = PV_VAL_STR;
@@ -1841,9 +1844,9 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				ip.af = AF_INET6;
 			else
 			{
-				LM_ERR("Invalid ip address provided for ip.ntop. Binary format expected !\n");
-				val->flags = PV_VAL_NULL;
-				return -1;
+				LM_ERR("Invalid ip address provided for ip.ntop. "
+					"Binary format expected !\n");
+				goto error;
 			}
 
 			memcpy(ip.u.addr,val->rs.s,val->rs.len);
@@ -1866,19 +1869,18 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			val->rs.s = int2str(val->ri, &val->rs.len);
 			break;
 		case TR_IP_PTON:
-			binary_ip = str2ip(&(val->rs));
-			if (!binary_ip)
+			p_ip = str2ip(&(val->rs));
+			if (!p_ip)
 			{
-				binary_ip = str2ip6(&(val->rs));
-				if (!binary_ip)
+				p_ip = str2ip6(&(val->rs));
+				if (!p_ip)
 				{
 					LM_ERR("pton transformation applied to invalid IP\n");
-					val->flags = PV_VAL_NULL;
-					return -1;
+					goto error;
 				}
 			}
-			val->rs.s = (char *)binary_ip->u.addr;
-			val->rs.len = binary_ip->len;
+			val->rs.s = (char *)p_ip->u.addr;
+			val->rs.len = p_ip->len;
 			val->flags = PV_VAL_STR;
 			break;
 		case TR_IP_RESOLVE:
@@ -1886,8 +1888,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			buffer = pkg_malloc(val->rs.len + 1);
 			if (!buffer) {
 				LM_ERR("out of pkg memory!\n");
-				val->flags = PV_VAL_NULL;
-				return -1;
+				goto error;
 			}
 			memcpy(buffer, val->rs.s, val->rs.len);
 			buffer[val->rs.len] = '\0';
@@ -1914,22 +1915,77 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			else
 			{
 				LM_ERR("Unexpected IP address type \n");
-				val->flags = PV_VAL_NULL;
-				return 0;
+				goto error;
 			}
 
 			buffer = ip_addr2a(&ip);
 			val->rs.s = buffer;
 			val->rs.len = strlen(buffer);
 			break;
+		case TR_IP_MATCHES:
+			/* get the input which must be an IP addr as string */
+			if ( (p_ip=str2ip(&val->rs))==NULL &&
+			(p_ip=str2ip6(&val->rs)) ) {
+				LM_ERR("Invalid input IP address <%.*s>\n",
+					val->rs.len,val->rs.s);
+				goto error;
+			}
+			ip = *p_ip;
+			/* get the parameter which must be IP/netlen */
+			if (tp->type == TR_PARAM_STRING) {
+				sv = tp->v.s;
+			} else {
+				if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0) {
+					LM_ERR("cannot get value from spec\n");
+					goto error;
+				}
+				sv = v.rs;
+			}
+			/* the value must be in "ip/marsklen" format */
+			if ( (p=q_memchr(sv.s, '/', sv.len))==NULL) {
+				LM_ERR("value not in ip/len format, separator not found\n");
+				goto error;
+			}
+			val->rs.s = sv.s;
+			val->rs.len = p-sv.s;
+			if ( (p_ip=str2ip(&val->rs))==NULL &&
+			(p_ip=str2ip6(&val->rs)) ) {
+				LM_ERR("Invalid parameter IP address <%.*s>\n",
+					val->rs.len,val->rs.s);
+				goto error;
+			}
+			val->rs.s = p+1;
+			val->rs.len = sv.s+sv.len-p-1;
+			if (str2int(&val->rs, &len)!=0 || len>p_ip->len*8) {
+				LM_ERR("Invalid mask len in parameter <%.*s>\n",
+					val->rs.len,val->rs.s);
+				goto error;
+			}
+			mask = mk_net_bitlen(p_ip, len);
+			switch ( matchnet( &ip, mask) ) {
+				case 1: /* matches */
+					val->ri = 1; break;
+				case 0: /* does not matches */
+					val->ri = 0; break;
+				default:
+					LM_ERR("cannot compare, different AF?\n");
+					goto error;
+			}
+
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
 
 		default:
 			LM_ERR("unknown subtype %d\n",subtype);
-			val->flags = PV_VAL_NULL;
-			return -1;
+			goto error;
 	}
 
 	return 0;
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 #define RE_MAX_SIZE 1024
@@ -3563,7 +3619,21 @@ int tr_parse_ip(str *in, trans_t *t)
 	} else if (name.len == 7 && strncasecmp(name.s,"resolve",7) == 0) {
 		t->subtype = TR_IP_RESOLVE;
 		return 0;
+	} else if (name.len == 7 && strncasecmp(name.s,"matches",5) == 0) {
+		t->subtype = TR_IP_MATCHES;
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid value transformation: %.*s\n",
+					in->len, in->s);
+			goto error;
+		}
+		p++;
+		LM_DBG("preparing to parse param\n");
+		if (tr_parse_sparam(p, in, &t->params, 0) == NULL)
+			goto error;
+		return 0;
 	}
+
 
 	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
 			name.len, name.s, name.len);
@@ -3605,7 +3675,7 @@ int tr_parse_re(str *in,trans_t *t)
 			goto error;
 		}
 		p++;
-		LM_INFO("preparing to parse param\n");
+		LM_DBG("preparing to parse param\n");
 		if (tr_parse_sparam(p, in, &tp, 0) == NULL)
 			goto error;
 		t->params = tp;
