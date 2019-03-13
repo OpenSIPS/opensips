@@ -238,7 +238,7 @@ if (!pike_check_req()) { exit; };
    Parameters: none
 
    MI FIFO Command Format:
-                opensipsctl fifo pike_list
+                opensips-cli -x mi pike_list
 
 1.6.2.  pike_rm
 
@@ -250,7 +250,7 @@ if (!pike_check_req()) { exit; };
      * IP - IP address currently blocked.
 
    MI FIFO Command Format:
-                opensipsctl fifo pike_rm 10.0.0.106
+                opensips-cli -x mi pike_rm 10.0.0.106
 
 1.7. Exported Events
 
@@ -320,7 +320,7 @@ Chapter 3. Contributors
    2. Andrei Pelinescu-Onciul 16 8 120 336
    3. Daniel-Constantin Mierla (@miconda) 11 9 24 20
    4. Liviu Chircu (@liviuchircu) 11 8 28 66
-   5. Razvan Crainea (@razvancrainea) 9 7 89 15
+   5. Razvan Crainea (@razvancrainea) 10 8 91 17
    6. Jan Janak (@janakj) 9 4 386 34
    7. Vlad Patrascu (@rvlad-patrascu) 7 5 70 49
    8. Jiri Kuthan (@jiriatipteldotorg) 6 3 257 0
@@ -352,10 +352,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4.  Razvan Crainea (@razvancrainea)     May 2011 - Jan 2018
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Mar 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Jarrod Baumann (@jarrodb)           Apr 2015 - Apr 2015
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Oct 2014
@@ -375,9 +375,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Julián Moreno Patiño, Jarrod Baumann
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Julián Moreno Patiño, Jarrod Baumann
    (@jarrodb), Norman Brandinger (@NormB), Bogdan-Andrei Iancu
    (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues,

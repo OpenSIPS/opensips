@@ -250,7 +250,7 @@ route[ws_filter] {
           + off
 
    MI FIFO Command Format:
-                        opensipsctl fifo ws_trace on
+                        opensips-cli -x mi ws_trace on
 
 Chapter 2. Frequently Asked Questions
 
@@ -274,7 +274,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 75 32 3882 624
+   1. Razvan Crainea (@razvancrainea) 76 33 3884 626
    2. Ionut Ionita (@ionutrazvanionita) 22 14 609 114
    3. Liviu Chircu (@liviuchircu) 10 7 61 91
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 44 12
@@ -304,10 +304,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2015 - Nov 2018
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4. Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2018
+   1. Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   3. Liviu Chircu (@liviuchircu)         Mar 2015 - Nov 2018
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Feb 2018
    6. Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Apr 2017
    7. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
@@ -321,10 +321,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita),
-   Razvan Crainea (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
+   Ionita (@ionutrazvanionita).
 
    Documentation Copyrights:
 

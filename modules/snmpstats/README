@@ -568,7 +568,8 @@ odules/snmpstats.so>:
     LD_LIBRARY_PATH=/path/noted/in/step/one/above
 
    For example, on my system I ran:
-    LD_LIBRARY_PATH=/usr/local/lib opensipsctl start
+                        LD_LIBRARY_PATH=/usr/local/lib /etc/init.d/opens
+ips start
 
    2.6.
 
@@ -694,7 +695,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jeffrey Magder 110 4 13157 64
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 50 35 517 525
-   3. Razvan Crainea (@razvancrainea) 16 13 80 56
+   3. Razvan Crainea (@razvancrainea) 17 14 81 57
    4. Liviu Chircu (@liviuchircu) 15 11 44 116
    5. Ovidiu Sas (@ovidiusas) 14 3 6 505
    6. Daniel-Constantin Mierla (@miconda) 12 10 48 41
@@ -729,8 +730,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2018
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -752,13 +753,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Julián Moreno Patiño, Ionut Ionita
-   (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Henning Westerholt
-   (@henningw), Klaus Darilion, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jeffrey Magder.
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Julián Moreno Patiño,
+   Ionut Ionita (@ionutrazvanionita), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Henning Westerholt (@henningw), Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jeffrey Magder.
 
    Documentation Copyrights:
 

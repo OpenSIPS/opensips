@@ -155,8 +155,8 @@ if(is_gflag("4"))
 
    Example 1.5. set_gflag usage
 ...
-$ opensipsctl fifo set_gflag 1
-$ opensipsctl fifo set_gflag 0x3
+$ opensips-cli -x mi set_gflag 1
+$ opensips-cli -x mi set_gflag 0x3
 ...
 
 1.5.2. reset_gflag
@@ -168,8 +168,8 @@ $ opensipsctl fifo set_gflag 0x3
 
    Example 1.6.  reset_gflag usage
 ...
-$ opensipsctl fifo reset_gflag 1
-$ opensipsctl fifo reset_gflag 0x3
+$ opensips-cli -x mi reset_gflag 1
+$ opensips-cli -x mi reset_gflag 0x3
 ...
 
 1.5.3. is_gflag
@@ -184,19 +184,19 @@ $ opensipsctl fifo reset_gflag 0x3
 
    Example 1.7. is_gflag usage
 ...
-$ opensipsctl fifo set_gflag 1024
-$ opensipsctl fifo is_gflag 1024
+$ opensips-cli -x mi set_gflag 1024
+$ opensips-cli -x mi is_gflag 1024
 TRUE
-$ opensipsctl fifo is_gflag 1025
+$ opensips-cli -x mi is_gflag 1025
 TRUE
-$ opensipsctl fifo is_gflag 1023
+$ opensips-cli -x mi is_gflag 1023
 FALSE
-$ opensipsctl fifo set_gflag 0x10
-$ opensipsctl fifo is_gflag 1023
+$ opensips-cli -x mi set_gflag 0x10
+$ opensips-cli -x mi is_gflag 1023
 TRUE
-$ opensipsctl fifo is_gflag 1007
+$ opensips-cli -x mi is_gflag 1007
 FALSE
-$ opensipsctl fifo is_gflag 16
+$ opensips-cli -x mi is_gflag 16
 TRUE
 ...
 
@@ -207,7 +207,7 @@ TRUE
 
    Example 1.8.  get_gflags usage
 ...
-$ opensipsctl fifo get_gflags
+$ opensips-cli -x mi get_gflags
 0x3039
 12345
 ...
@@ -224,7 +224,7 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 9 7 21 43
    4. Henning Westerholt (@henningw) 8 6 42 31
    5. Jiri Kuthan (@jiriatipteldotorg) 8 4 278 4
-   6. Razvan Crainea (@razvancrainea) 6 4 10 10
+   6. Razvan Crainea (@razvancrainea) 7 5 23 23
    7. Vlad Patrascu (@rvlad-patrascu) 5 2 64 61
    8. Richard Revels 3 1 24 11
    9. Anca Vamanu 3 1 6 3
@@ -254,10 +254,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2014
    6.  Anca Vamanu                         Sep 2009 - Sep 2009
    7.  Richard Revels                      Aug 2008 - Aug 2008
@@ -276,10 +276,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Richard Revels, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Richard Revels, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Henning Westerholt (@henningw), Klaus Darilion.
 
    Documentation Copyrights:

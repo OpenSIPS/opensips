@@ -643,7 +643,7 @@ if (lb_is_destination("$si","$sp") ) {
    Trigers the reload of the load balancing data from the DB.
 
    MI FIFO Command Format:
-                opensipsctl fifo lb_reload
+                opensips-cli -x mi lb_reload
 
 1.7.2. lb_resize
 
@@ -655,7 +655,7 @@ if (lb_is_destination("$si","$sp") ) {
      * new_capacity - new resource capacity.
 
    MI FIFO Command Format:
-                opensipsctl fifo lb_resize 11 voicemail 56
+                opensips-cli -x mi lb_resize 11 voicemail 56
 
 1.7.3. lb_list
 
@@ -663,7 +663,7 @@ if (lb_is_destination("$si","$sp") ) {
    each resource of the destination.
 
    Example 1.19. lb_list usage
-$ ./opensipsctl fifo lb_list
+$ opensips-cli -x mi lb_list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
         Resource:: transc max=5 load=1
@@ -685,10 +685,10 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
        for the destination.
 
    Example 1.20. lb_status usage
-$ ./opensipsctl fifo lb_status 2
+$ opensips-cli -x mi lb_status 2
 enable:: no
-$ ./opensipsctl fifo lb_status 2 1
-$ ./opensipsctl fifo lb_status 2
+$ opensips-cli -x mi lb_status 2 1
+$ opensips-cli -x mi lb_status 2
 enable:: yes
 
 1.8. Exported Events
@@ -752,8 +752,8 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 113 65 4259 728
    2. Liviu Chircu (@liviuchircu) 38 29 678 166
-   3. Vlad Patrascu (@rvlad-patrascu) 21 12 262 308
-   4. Razvan Crainea (@razvancrainea) 20 15 251 135
+   3. Razvan Crainea (@razvancrainea) 22 16 257 141
+   4. Vlad Patrascu (@rvlad-patrascu) 21 12 262 308
    5. Sergey Khripchenko 19 6 649 366
    6. shripchenko 11 4 409 150
    7. Vlad Paiu (@vladpaiu) 5 3 7 5
@@ -784,11 +784,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Jan 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Dec 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Oct 2010 - Dec 2017
+   1.  Razvan Crainea (@razvancrainea)     Oct 2010 - Mar 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Jan 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Dec 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
    6.  Jeremy Martinez                     Feb 2017 - Feb 2017
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
    8.  Sergey Khripchenko                  Nov 2014 - Oct 2015
@@ -805,11 +805,11 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
-   Patrascu (@rvlad-patrascu), Sergey Khripchenko, Razvan Crainea
-   (@razvancrainea), Ezequiel Lovelle, Walter Doekes (@wdoekes),
-   Vlad Paiu (@vladpaiu).
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sergey
+   Khripchenko, Ezequiel Lovelle, Walter Doekes (@wdoekes), Vlad
+   Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

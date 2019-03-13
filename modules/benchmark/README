@@ -233,7 +233,7 @@ bm_log_timer("test");
        "enable" parameter.
 
    MI FIFO Command Format:
-                        opensipsctl fifo bm_enable_global 1
+                        opensips-cli -x mi bm_enable_global 1
 
 1.6.2. bm_enable_timer
 
@@ -247,7 +247,7 @@ bm_log_timer("test");
 
    Example 1.6. Enabling a timer
 ...
-opensipsctl fifo bm_enable_timer test 1
+opensips-cli -x mi bm_enable_timer test 1
 ...
 
 1.6.3. bm_granularity
@@ -258,7 +258,7 @@ opensipsctl fifo bm_enable_timer test 1
      * granularity - See discription of "granularity" parameter.
 
    MI FIFO Command Format:
-                        opensipsctl fifo bm_granularity 300
+                        opensips-cli -x mi bm_granularity 300
 
 1.6.4. bm_loglevel
 
@@ -268,7 +268,7 @@ opensipsctl fifo bm_enable_timer test 1
      * log_level - See discription of "loglevel" parameter.
 
    MI FIFO Command Format:
-                        opensipsctl fifo bm_loglevel 4
+                        opensips-cli -x mi bm_loglevel 4
 
 1.6.5. bm_poll_results
 
@@ -288,7 +288,7 @@ opensipsctl fifo bm_enable_timer test 1
 
    Example 1.7. Getting the results via FIFO interface
 ...
-opensipsctl fifo bm_poll_results
+opensips-cli -x mi bm_poll_results
 register_timer
         3/40/12/14/13.333333
         9/204/12/97/22.666667
@@ -370,8 +370,8 @@ Chapter 3. Contributors
    1. Daniel-Constantin Mierla (@miconda) 22 10 1391 50
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 20 18 86 52
    3. Liviu Chircu (@liviuchircu) 12 9 27 58
-   4. Vlad Patrascu (@rvlad-patrascu) 8 3 162 127
-   5. Razvan Crainea (@razvancrainea) 7 5 15 15
+   4. Razvan Crainea (@razvancrainea) 8 6 20 20
+   5. Vlad Patrascu (@rvlad-patrascu) 8 3 162 127
    6. Stanislaw Pitucha 7 3 170 65
    7. Henning Westerholt (@henningw) 6 4 11 10
    8. David Sanders 4 2 8 1
@@ -401,11 +401,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2018
-   5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2018
    6.  David Sanders                       Aug 2012 - Jan 2013
    7.  Anca Vamanu                         Sep 2009 - Sep 2009
    8.  Stanislaw Pitucha                   Aug 2009 - Sep 2009
@@ -422,11 +422,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Stanislaw Pitucha, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Stanislaw Pitucha, Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw).
 
    Documentation Copyrights:
 

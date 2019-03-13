@@ -1713,13 +1713,13 @@ set_dlg_sharing_tag("vip1");
 
    MI FIFO Command Format:
                 ## list all ongoing dialogs
-                opensipsctl fifo dlg_list
+                opensips-cli -x mi dlg_list
                 ## list the dialog by callid and From TAG
-                opensipsctl fifo dlg_list abcdrssfrs122444@192.168.1.1 A
-AdfeEFF33
+                opensips-cli -x mi dlg_list abcdrssfrs122444@192.168.1.1
+ AAdfeEFF33
                 ## list 10 dialogs, starting from the position 40
                 ## (in the list of all ongoing dialogs)
-                opensipsctl fifo dlg_list 40 10
+                opensips-cli -x mi dlg_list 40 10
 
 1.9.2. dlg_list_ctx
 
@@ -1734,7 +1734,7 @@ AdfeEFF33
    Parameters: see “dlg_list”
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_list_ctx
+                opensips-cli -x mi dlg_list_ctx
 
 1.9.3. dlg_end_dlg
 
@@ -1758,10 +1758,10 @@ AdfeEFF33
 
    MI FIFO Command Format:
                 # terminate the dialog via the internal Dialog-ID
-                opensipsctl fifo dlg_end_dlg 1391569858236
+                opensips-cli -x mi dlg_end_dlg 1391569858236
                 # terminate the dialog via its SIP Call-ID
-                opensipsctl fifo dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGI
-wZjAzNGM1ZDY
+                opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZ
+GIwZjAzNGM1ZDY
 
 1.9.4. profile_get_size
 
@@ -1780,7 +1780,7 @@ wZjAzNGM1ZDY
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensipsctl fifo profile_get_size inbound_calls
+                opensips-cli -x mi profile_get_size inbound_calls
 
 1.9.5. profile_list_dlgs
 
@@ -1801,7 +1801,7 @@ wZjAzNGM1ZDY
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensipsctl fifo profile_list_dlgs inbound_calls
+                opensips-cli -x mi profile_list_dlgs inbound_calls
 
 1.9.6. profile_get_values
 
@@ -1816,7 +1816,7 @@ wZjAzNGM1ZDY
      * profile - name of the profile to list the dialog for.
 
    MI FIFO Command Format:
-                opensipsctl fifo profile_get_values inbound_calls
+                opensips-cli -x mi profile_get_values inbound_calls
 
 1.9.7. profile_end_dlgs
 
@@ -1833,7 +1833,7 @@ wZjAzNGM1ZDY
        only the dialogs with the specified value
 
    MI FIFO Command Format:
-                opensipsctl fifo profile_end_dlgs inbound_calls
+                opensips-cli -x mi profile_end_dlgs inbound_calls
 
 1.9.8. dlg_db_sync
 
@@ -1848,7 +1848,7 @@ wZjAzNGM1ZDY
    It takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_db_sync
+                opensips-cli -x mi dlg_db_sync
 
 1.9.9. dlg_cluster_sync
 
@@ -1867,7 +1867,7 @@ wZjAzNGM1ZDY
    It takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_cluster_sync
+                opensips-cli -x mi dlg_cluster_sync
 
 1.9.10. dlg_restore_db
 
@@ -1880,7 +1880,7 @@ wZjAzNGM1ZDY
    It takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_restore_db
+                opensips-cli -x mi dlg_restore_db
 
 1.9.11. list_all_profiles
 
@@ -1892,7 +1892,7 @@ wZjAzNGM1ZDY
    Parameters: It takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo list_all_profiles
+                opensips-cli -x mi list_all_profiles
 
 1.9.12. dlg_push_var
 
@@ -1909,8 +1909,8 @@ wZjAzNGM1ZDY
        actual Call-ID.
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_push_var var_name var_value DID1 [
-DID2 DID3 ...  DIDN ]
+                opensips-cli -x mi dlg_push_var var_name var_value DID1
+[ DID2 DID3 ...  DIDN ]
 
 1.10. Exported Pseudo-Variables
 
@@ -2173,7 +2173,7 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 394 248 11836 2951
    2. Vlad Paiu (@vladpaiu) 250 140 7051 3004
-   3. Razvan Crainea (@razvancrainea) 140 106 2753 633
+   3. Razvan Crainea (@razvancrainea) 141 107 2768 648
    4. Vlad Patrascu (@rvlad-patrascu) 124 58 2854 2366
    5. Liviu Chircu (@liviuchircu) 101 70 2245 722
    6. Ovidiu Sas (@ovidiusas) 27 21 482 107
@@ -2246,8 +2246,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Paiu (@vladpaiu), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Julián Moreno Patiño, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter

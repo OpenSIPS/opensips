@@ -147,7 +147,7 @@ modparam("httpd", "post_buf_size", 4096)
    Parameters: none
 
    MI FIFO Command Format:
-opensipsctl fifo httpd_list_root_path
+opensips-cli -x mi httpd_list_root_path
 
 1.5. Exported Functions
 
@@ -200,7 +200,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 47 30 1667 147
-   2. Razvan Crainea (@razvancrainea) 14 12 43 48
+   2. Razvan Crainea (@razvancrainea) 15 13 44 49
    3. Liviu Chircu (@liviuchircu) 10 8 22 47
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 35 18
    5. Ionut Ionita (@ionutrazvanionita) 8 6 65 21
@@ -230,12 +230,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Jan 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2018
+   1.  Razvan Crainea (@razvancrainea)     Mar 2015 - Mar 2019
+   2.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Jan 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    7.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
    8.  Dusan Klinec                        Dec 2015 - Dec 2015
    9.  Stas Kobzar                         Feb 2015 - Feb 2015
@@ -248,9 +248,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
-   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
+   (@bogdan-iancu).
 
    Documentation Copyrights:
 

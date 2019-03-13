@@ -201,7 +201,7 @@ if(is_method("MESSAGE)
    Parameters: none
 
    MI FIFO Command Format:
-                opensipsctl fifo imc_list_rooms
+                opensips-cli -x mi imc_list_rooms
 
 1.5.2.  imc_list_members
 
@@ -213,8 +213,8 @@ if(is_method("MESSAGE)
      * room : the room for which you want to list the members
 
    MI FIFO Command Format:
-                opensipsctl fifo imc_list_members sip:chat-000@opensips.
-org
+                opensips-cli -x mi imc_list_members sip:chat-000@opensip
+s.org
 
 1.6. Exported Statistics
 
@@ -321,7 +321,7 @@ Chapter 2. Contributors
    1. Daniel-Constantin Mierla (@miconda) 44 12 1604 1007
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 26 303 545
    3. Anca Vamanu 30 5 3014 16
-   4. Razvan Crainea (@razvancrainea) 13 11 26 35
+   4. Razvan Crainea (@razvancrainea) 14 12 28 37
    5. Liviu Chircu (@liviuchircu) 12 9 34 59
    6. Henning Westerholt (@henningw) 10 7 76 105
    7. Vlad Patrascu (@rvlad-patrascu) 8 5 72 77
@@ -352,7 +352,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2019
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
    2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
@@ -373,9 +373,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea),
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Anca Vamanu, Henning Westerholt (@henningw),
    Elena-Ramona Modroiu.

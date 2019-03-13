@@ -804,9 +804,9 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
    Example 1.21.  rtpproxy_enable usage
 ...
 ## disable a RTPProxy by URL only
-$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
-$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
 
 1.7.2. rtpproxy_show
@@ -818,7 +818,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 
    Example 1.22.  rtpproxy_show usage
 ...
-$ opensipsctl fifo rtpproxy_show
+$ opensips-cli -x mi rtpproxy_show
 ...
 
 1.7.3. rtpproxy_reload
@@ -832,7 +832,7 @@ $ opensipsctl fifo rtpproxy_show
 
    Example 1.23.  rtpproxy_reload usage
 ...
-$ opensipsctl fifo rtpproxy_reload
+$ opensips-cli -x mi rtpproxy_reload
 ...
 
 1.8. Exported Events
@@ -894,7 +894,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 149 96 3216 1496
+   1. Razvan Crainea (@razvancrainea) 150 97 3220 1500
    2. Maksym Sobolyev (@sobomax) 40 3 4527 3
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 21 18 113 107
    4. Liviu Chircu (@liviuchircu) 21 16 91 183
@@ -929,7 +929,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Feb 2019
+   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Mar 2019
    2.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
    4.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018

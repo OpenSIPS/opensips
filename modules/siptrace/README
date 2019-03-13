@@ -77,10 +77,10 @@ Chapter 1. Admin Guide
 
    The tracing tracing can be turned on/off using fifo command.
 
-   opensipsctl fifo sip_trace on opensipsctl fifo sip_trace
+   opensips-cli -x mi sip_trace on opensips-cli -x mi sip_trace
    [some_trace_id] on
 
-   opensipsctl fifo sip_trace off opensipsctl fifo sip_trace
+   opensips-cli -x mi sip_trace off opensips-cli -x mi sip_trace
    [some_trace_id] off
 
 1.2. Dependencies
@@ -317,7 +317,7 @@ var(user)");
        global tracing state and dump info for each trace_id.
 
    MI FIFO Command Format:
-                opensipsctl fifo sip_trace tid2 on
+                opensips-cli -x mi sip_trace tid2 on
 
 1.6. Database setup
 
@@ -348,7 +348,7 @@ Chapter 2. Contributors
    1. Ionut Ionita (@ionutrazvanionita) 107 52 2676 1887
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 89 69 822 710
    3. Daniel-Constantin Mierla (@miconda) 48 26 2215 191
-   4. Razvan Crainea (@razvancrainea) 22 19 126 87
+   4. Razvan Crainea (@razvancrainea) 24 20 131 92
    5. Vlad Paiu (@vladpaiu) 21 8 335 528
    6. Liviu Chircu (@liviuchircu) 20 17 74 72
    7. Henning Westerholt (@henningw) 11 6 146 155
@@ -381,11 +381,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Oct 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2018
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2018
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Oct 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
    7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2017
    8.  Dusan Klinec                        Dec 2015 - Dec 2015
@@ -405,14 +405,13 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Ionut Ionita
-   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
-   (@razvancrainea), Alexandr Dubovikov (@adubovikov),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Elena-Ramona
-   Modroiu.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Andrei
+   Datcu (@andrei-datcu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Alexandr Dubovikov (@adubovikov), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

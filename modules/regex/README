@@ -275,7 +275,7 @@ if (pcre_match_group("$rU", "2")) {
    Parameters: none
 
    MI FIFO Command Format:
-opensipsctl fifo regex_reload
+opensips-cli -x mi regex_reload
 
 1.6. Installation and Running
 
@@ -385,7 +385,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Iñaki Baz Castillo 14 3 1242 2
    2. Liviu Chircu (@liviuchircu) 12 10 25 42
-   3. Razvan Crainea (@razvancrainea) 9 7 37 22
+   3. Razvan Crainea (@razvancrainea) 10 8 38 23
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 10 6
    5. Vlad Patrascu (@rvlad-patrascu) 5 3 14 10
    6. Sergio Gutierrez 3 1 19 1
@@ -413,9 +413,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3. Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2016
+   1. Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   3. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Oct 2014
    5. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
    6. Marius Zbihlei                      Sep 2010 - Sep 2010
@@ -430,9 +430,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Iñaki
-   Baz Castillo.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Iñaki Baz Castillo.
 
    Documentation Copyrights:
 

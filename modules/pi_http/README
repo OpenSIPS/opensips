@@ -260,7 +260,7 @@ modparam("pi_http", "pi_http_method", 1)
    Parameters: none
 
    MI FIFO Command Format:
-opensipsctl fifo pi_reload_tbls_and_cmds
+opensips-cli -x mi pi_reload_tbls_and_cmds
 
 Chapter 2. Contributors
 
@@ -271,7 +271,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 70 31 4389 206
    2. Liviu Chircu (@liviuchircu) 12 10 33 49
-   3. Razvan Crainea (@razvancrainea) 9 7 26 29
+   3. Razvan Crainea (@razvancrainea) 10 8 27 30
    4. Vlad Patrascu (@rvlad-patrascu) 6 4 21 19
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 3 1
    6. Ionut Ionita (@ionutrazvanionita) 4 2 53 28
@@ -298,11 +298,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Jan 2019
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   5. Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2017
+   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Jan 2019
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    6. Ionut Ionita (@ionutrazvanionita)   Nov 2015 - Jan 2017
    7. Ovidiu Sas (@ovidiusas)             Oct 2012 - Apr 2016
    8. Vlad Paiu (@vladpaiu)               May 2013 - May 2013
@@ -314,9 +314,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
-   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
+   (@bogdan-iancu).
 
    Documentation Copyrights:
 

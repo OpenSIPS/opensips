@@ -1419,9 +1419,9 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
        “Content-Type” and “Content-length” headers)
 
    MI FIFO Command Format:
-                opensipsctl fifo t_uac_dlg INVITE "sip:123456@127.0.0.1:
-5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:te
-st@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
+                opensips-cli -x mi t_uac_dlg INVITE "sip:123456@127.0.0.
+1:5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:
+test@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
 
 1.6.2.  t_uac_cancel
 
@@ -1432,8 +1432,8 @@ st@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
      * cseq - cseq of the INVITE request to be cancelled.
 
    MI FIFO Command Format:
-                opensipsctl fifo t_uac_cancel "1-23454@127.0.0.1" "1 INV
-ITE"
+                opensips-cli -x mi t_uac_cancel "1-23454@127.0.0.1" "1 I
+NVITE"
 
 1.6.3.  t_hash
 
@@ -1443,7 +1443,7 @@ ITE"
      * none
 
    MI FIFO Command Format:
-                opensipsctl fifo t_hash
+                opensips-cli -x mi t_hash
 
 1.6.4.  t_reply
 
@@ -1462,8 +1462,8 @@ ITE"
        “Content-Type” and “Content-length” headers)
 
    MI FIFO Command Format:
-                opensipsctl fifo t_reply 403 Forbidden 46961:1279687637
-abcde .
+                opensips-cli -x mi t_reply 403 Forbidden 46961:127968763
+7 abcde .
 
 1.7. Exported Statistics
 
@@ -1551,11 +1551,11 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1016 572 20531 15794
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1017 573 20533 15794
    2. Jiri Kuthan (@jiriatipteldotorg) 545 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 147 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 87 67 1532 371
+   5. Razvan Crainea (@razvancrainea) 88 68 1536 375
    6. Liviu Chircu (@liviuchircu) 79 57 1048 696
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 38 19 778 651
@@ -1596,8 +1596,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Feb 2019
-   2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jan 2019
+   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Mar 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Mar 2019
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
    4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
    5.  Aron Podrigal                       Nov 2018 - Nov 2018
@@ -1627,8 +1627,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Alexey Vasilyev (@vasilevalex), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Alexey Vasilyev (@vasilevalex), Liviu Chircu
    (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
    (@bogdan-iancu), Nick Altmann (@nikbyte), Ovidiu Sas
    (@ovidiusas), Vlad Paiu (@vladpaiu), Anca Vamanu, Henning

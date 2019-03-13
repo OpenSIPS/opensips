@@ -424,7 +424,7 @@ cc_agent_login("agentX","0");
    It takes no parameter.
 
    MI FIFO Command usage:
-opensipsctl fifo cc_reload
+opensips-cli -x mi cc_reload
 
 1.7.2.  cc_agent_login
 
@@ -435,7 +435,7 @@ opensipsctl fifo cc_reload
      * state - the new login state (0 - log off, 1 - log in)
 
    MI FIFO Command usage:
-opensipsctl fifo cc_agent_login agentX 0
+opensips-cli -x mi cc_agent_login agentX 0
 
 1.7.3.  cc_list_queue
 
@@ -447,7 +447,7 @@ opensipsctl fifo cc_agent_login agentX 0
    It takes no parameter.
 
    MI FIFO Command usage:
-opensipsctl fifo cc_list_queue
+opensips-cli -x mi cc_list_queue
 
 1.7.4.  cc_list_flows
 
@@ -459,7 +459,7 @@ opensipsctl fifo cc_list_queue
    It takes no parameter.
 
    MI FIFO Command usage:
-opensipsctl fifo cc_list_flows
+opensips-cli -x mi cc_list_flows
 
 1.7.5.  cc_list_agents
 
@@ -470,7 +470,7 @@ opensipsctl fifo cc_list_flows
    It takes no parameter.
 
    MI FIFO Command usage:
-opensipsctl fifo cc_list_agents
+opensips-cli -x mi cc_list_agents
 
 1.7.6.  cc_list_calls
 
@@ -482,7 +482,7 @@ opensipsctl fifo cc_list_agents
    It takes no parameter.
 
    MI FIFO Command usage:
-opensipsctl fifo cc_list_agents
+opensips-cli -x mi cc_list_agents
 
 1.7.7.  cc_reset_stats
 
@@ -491,7 +491,7 @@ opensipsctl fifo cc_list_agents
    It takes no parameter.
 
    MI FIFO Command usage:
-opensipsctl fifo cc_reset_stats
+opensips-cli -x mi cc_reset_stats
 
 1.8. Exported Pseudo-Variables
 
@@ -544,7 +544,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 51 12 4744 33
-   2. Razvan Crainea (@razvancrainea) 17 14 85 87
+   2. Razvan Crainea (@razvancrainea) 18 15 92 94
    3. Liviu Chircu (@liviuchircu) 12 9 71 76
    4. Vlad Patrascu (@rvlad-patrascu) 10 4 225 182
    5. Peter Lemenkov (@lemenkov) 4 2 1 1
@@ -571,7 +571,7 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Mar 2014 - Feb 2019
+   1. Razvan Crainea (@razvancrainea)     Mar 2014 - Mar 2019
    2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
    3. Liviu Chircu (@liviuchircu)         Jun 2014 - Sep 2018
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
@@ -586,9 +586,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

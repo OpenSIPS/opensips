@@ -1009,7 +1009,7 @@ the partition called 'part2'
      * address: address of the destination in the group
 
    MI FIFO Command Format:
-opensipsctl fifo ds_set_state a 2 sip:10.0.0.202
+opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
 
 1.5.2.  ds_list
 
@@ -1023,7 +1023,7 @@ opensipsctl fifo ds_set_state a 2 sip:10.0.0.202
        fields to the listing
 
    MI FIFO Command Format:
-opensipsctl fifo ds_list
+opensips-cli -x mi ds_list
 
 1.5.3.  ds_reload
 
@@ -1037,7 +1037,7 @@ opensipsctl fifo ds_list
        reloaded.
 
    MI FIFO Command Format:
-opensipsctl fifo ds_reload
+opensips-cli -x mi ds_reload
 
 1.6. Exported Events
 
@@ -1212,7 +1212,7 @@ Chapter 3. Contributors
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
    5. Ionut Ionita (@ionutrazvanionita) 44 17 1145 969
    6. Ovidiu Sas (@ovidiusas) 31 17 705 434
-   7. Razvan Crainea (@razvancrainea) 26 20 403 77
+   7. Razvan Crainea (@razvancrainea) 27 21 406 80
    8. Henning Westerholt (@henningw) 11 7 93 125
    9. Carsten Bock 11 4 713 18
    10. Vlad Paiu (@vladpaiu) 9 7 17 29
@@ -1247,12 +1247,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jan 2019
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Dec 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
-   6.  Razvan Crainea (@razvancrainea)     May 2011 - Dec 2017
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Mar 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jan 2019
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Dec 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
    7.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016
    8.  Ionut Ionita (@ionutrazvanionita)   Jul 2014 - May 2016
    9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -1274,16 +1274,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
-   Patrascu (@rvlad-patrascu), Nick Altmann (@nikbyte), Razvan
-   Crainea (@razvancrainea), Ionel Cerghit (@ionel-cerghit),
-   Jarrod Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut
-   Ionita (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Vlad
-   Paiu (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw Pitucha,
-   Anca Vamanu, Klaus Darilion, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Carsten Bock, Edson Gellert
-   Schubert, Elena-Ramona Modroiu.
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Nick Altmann
+   (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod Baumann
+   (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Vlad Paiu
+   (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw Pitucha, Anca
+   Vamanu, Klaus Darilion, Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Carsten Bock, Edson Gellert Schubert,
+   Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 
