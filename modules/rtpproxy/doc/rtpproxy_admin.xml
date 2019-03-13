@@ -1068,9 +1068,9 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 			<programlisting format="linespecific">
 ...
 ## disable a RTPProxy by URL only
-$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
-$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
 			</programlisting>
 			</example>
@@ -1090,7 +1090,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 				<function moreinfo="none">rtpproxy_show</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rtpproxy_show
+$ opensips-cli -x mi rtpproxy_show
 ...
 			</programlisting>
 			</example>
@@ -1112,7 +1112,7 @@ $ opensipsctl fifo rtpproxy_show
 				<function moreinfo="none">rtpproxy_reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rtpproxy_reload
+$ opensips-cli -x mi rtpproxy_reload
 ...
 			</programlisting>
 			</example>

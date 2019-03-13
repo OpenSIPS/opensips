@@ -668,7 +668,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo rl_list gw_10.0.0.1
+		opensips-cli -x mi rl_list gw_10.0.0.1
 		</programlisting>
 	</section>
 	<section id="mi_rl_reset_pipe" xreflabel="rl_reset_pipe">
@@ -692,7 +692,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo rl_reset_pipe gw_10.0.0.1
+		opensips-cli -x mi rl_reset_pipe gw_10.0.0.1
 		</programlisting>
 	</section>
 	<section id="mi_rl_set_pid" xreflabel="rl_set_pid">
@@ -721,7 +721,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo rl_set_pid 0.5 0.5 0.5
+		opensips-cli -x mi rl_set_pid 0.5 0.5 0.5
 		</programlisting>
 	</section>
 	<section id="mi_rl_get_pid" xreflabel="rl_get_pid">
@@ -739,7 +739,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo rl_get_pid
+		opensips-cli -x mi rl_get_pid
 		</programlisting>
 	</section>
 	<section id="mi_rl_bin_status" xreflabel="rl_bin_status">
@@ -758,7 +758,7 @@ modparam("ratelimit", "slot_period", 100)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo rl_bin_status
+		opensips-cli -x mi rl_bin_status
 		</programlisting>
 	</section>
 	</section>

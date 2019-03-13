@@ -871,7 +871,7 @@ route[after_usleep] {
 				<title><function moreinfo="none">rand_set_prob</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rand_set_prob 10
+$ opensips-cli -x mi rand_set_prob 10
 ...
 </programlisting>
 			</example>
@@ -890,7 +890,7 @@ $ opensipsctl fifo rand_set_prob 10
 					<function moreinfo="none">rand_reset_prob</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rand_reset_prob
+$ opensips-cli -x mi rand_reset_prob
 ...
 </programlisting>
 			</example>
@@ -907,7 +907,7 @@ $ opensipsctl fifo rand_reset_prob
 				<title><function moreinfo="none">rand_get_prob</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensipsctl fifo get_prob
+$ opensips-cli -x mi get_prob
 The actual probability is 50 percent.
 ...
 </programlisting>
@@ -927,7 +927,7 @@ The actual probability is 50 percent.
 				<title><function moreinfo="none">check_config_hash</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensipsctl fifo check_config_hash
+$ opensips-cli -x mi check_config_hash
 The actual config file hash is identical to the stored one.
 ...
 </programlisting>
@@ -946,7 +946,7 @@ The actual config file hash is identical to the stored one.
 				<title><function moreinfo="none">get_config_hash</function> usage</title>
 				<programlisting format="linespecific">
 ...
-$ opensipsctl fifo get_config_hash
+$ opensips-cli -x mi get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
 ...
 </programlisting>
@@ -974,7 +974,7 @@ $ opensipsctl fifo get_config_hash
 		<title><function moreinfo="none">shv_set</function> usage</title>
 		<programlisting format="linespecific">
 ...
-$ opensipsctl fifo shv_set debug int 0
+$ opensips-cli -x mi shv_set debug int 0
 ...
 </programlisting>
 			</example>
@@ -993,8 +993,8 @@ $ opensipsctl fifo shv_set debug int 0
 		<title><function moreinfo="none">shv_get</function> usage</title>
 		<programlisting format="linespecific">
 ...
-$ opensipsctl fifo shv_get debug
-$ opensipsctl fifo shv_get
+$ opensips-cli -x mi shv_get debug
+$ opensips-cli -x mi shv_get
 ...
 </programlisting>
 			</example>

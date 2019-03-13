@@ -892,7 +892,7 @@ if (lb_is_destination("$si","$sp") ) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo lb_reload
+		opensips-cli -x mi lb_reload
 		</programlisting>
 		</section>
 
@@ -917,7 +917,7 @@ if (lb_is_destination("$si","$sp") ) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo lb_resize 11 voicemail 56
+		opensips-cli -x mi lb_resize 11 voicemail 56
 		</programlisting>
 		</section>
 
@@ -930,7 +930,7 @@ if (lb_is_destination("$si","$sp") ) {
 		<example>
 		<title><function>lb_list</function> usage</title>
 		<programlisting format="linespecific">
-$ ./opensipsctl fifo lb_list
+$ opensips-cli -x mi lb_list
 Destination:: sip:127.0.0.1:5100 id=1 enabled=yes auto-re=on
         Resource:: pstn max=3 load=0
         Resource:: transc max=5 load=1
@@ -963,10 +963,10 @@ Destination:: sip:127.0.0.1:5200 id=2 enabled=no auto-re=on
 		<example>
 		<title><function>lb_status</function> usage</title>
 		<programlisting format="linespecific">
-$ ./opensipsctl fifo lb_status 2
+$ opensips-cli -x mi lb_status 2
 enable:: no
-$ ./opensipsctl fifo lb_status 2 1
-$ ./opensipsctl fifo lb_status 2
+$ opensips-cli -x mi lb_status 2 1
+$ opensips-cli -x mi lb_status 2
 enable:: yes
 </programlisting>
 		</example>

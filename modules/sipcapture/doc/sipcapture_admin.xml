@@ -40,10 +40,10 @@
 	The capturing can be turned on/off using fifo commad.
 	</para>
 	<para>
-	opensipsctl fifo sip_capture on
+	opensips-cli -x mi sip_capture on
 	</para>
 	<para>
-	opensipsctl fifo sip_capture off
+	opensips-cli -x mi sip_capture off
 	</para>
 	</section>
 	<section id="dependencies" xreflabel="Dependencies">
@@ -1061,7 +1061,7 @@ route[capture_resume] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo sip_capture off
+		opensips-cli -x mi sip_capture off
 		</programlisting>
 	</section>
 	</section>

@@ -2337,12 +2337,12 @@ set_dlg_sharing_tag("vip1");
 		</para>
 		<programlisting  format="linespecific">
 		## list all ongoing dialogs
-		opensipsctl fifo dlg_list
+		opensips-cli -x mi dlg_list
 		## list the dialog by callid and From TAG
-		opensipsctl fifo dlg_list abcdrssfrs122444@192.168.1.1 AAdfeEFF33
+		opensips-cli -x mi dlg_list abcdrssfrs122444@192.168.1.1 AAdfeEFF33
 		## list 10 dialogs, starting from the position 40
 		## (in the list of all ongoing dialogs)
-		opensipsctl fifo dlg_list 40 10
+		opensips-cli -x mi dlg_list 40 10
 		</programlisting>
 		</section>
 
@@ -2366,7 +2366,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_list_ctx
+		opensips-cli -x mi dlg_list_ctx
 		</programlisting>
 		</section>
 
@@ -2405,9 +2405,9 @@ set_dlg_sharing_tag("vip1");
 		</para>
 		<programlisting  format="linespecific">
 		# terminate the dialog via the internal Dialog-ID
-		opensipsctl fifo dlg_end_dlg 1391569858236
+		opensips-cli -x mi dlg_end_dlg 1391569858236
 		# terminate the dialog via its SIP Call-ID
-		opensipsctl fifo dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
+		opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
 		</programlisting>
 		</section>
 
@@ -2439,7 +2439,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo profile_get_size inbound_calls
+		opensips-cli -x mi profile_get_size inbound_calls
 		</programlisting>
 		</section>
 
@@ -2473,7 +2473,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo profile_list_dlgs inbound_calls
+		opensips-cli -x mi profile_list_dlgs inbound_calls
 		</programlisting>
 		</section>
 
@@ -2499,7 +2499,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo profile_get_values inbound_calls
+		opensips-cli -x mi profile_get_values inbound_calls
 		</programlisting>
 		</section>
 		<section id="mi_profile_end_dlgs" xreflabel="profile_end_dlgs">
@@ -2525,7 +2525,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo profile_end_dlgs inbound_calls
+		opensips-cli -x mi profile_end_dlgs inbound_calls
 		</programlisting>
 		</section>
 		<section id="mi_dlg_db_sync" xreflabel="dlg_db_sync">
@@ -2544,7 +2544,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_db_sync
+		opensips-cli -x mi dlg_db_sync
 		</programlisting>
 		</section>
 
@@ -2569,7 +2569,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_cluster_sync
+		opensips-cli -x mi dlg_cluster_sync
 		</programlisting>
 		</section>
 
@@ -2587,7 +2587,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_restore_db
+		opensips-cli -x mi dlg_restore_db
 		</programlisting>
 		</section>
 
@@ -2606,7 +2606,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo list_all_profiles
+		opensips-cli -x mi list_all_profiles
 		</programlisting>
 		</section>
 
@@ -2635,7 +2635,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
+		opensips-cli -x mi dlg_push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
 		</programlisting>
 		</section>
 

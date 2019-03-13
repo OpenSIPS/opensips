@@ -32,12 +32,12 @@
 	The tracing tracing can be turned on/off using fifo command.
 	</para>
 	<para>
-	opensipsctl fifo sip_trace on
-	opensipsctl fifo sip_trace [some_trace_id] on
+	opensips-cli -x mi sip_trace on
+	opensips-cli -x mi sip_trace [some_trace_id] on
 	</para>
 	<para>
-	opensipsctl fifo sip_trace off
-	opensipsctl fifo sip_trace [some_trace_id] off
+	opensips-cli -x mi sip_trace off
+	opensips-cli -x mi sip_trace [some_trace_id] off
 	</para>
 	</section>
 	<section id="dependencies" xreflabel="Dependencies">
@@ -386,7 +386,7 @@ modparam("siptrace", "trace_id",
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo sip_trace tid2 on
+		opensips-cli -x mi sip_trace tid2 on
 		</programlisting>
 	</section>
 

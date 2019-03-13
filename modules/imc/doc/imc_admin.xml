@@ -230,7 +230,7 @@ if(is_method("MESSAGE)
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensipsctl fifo imc_list_rooms
+		opensips-cli -x mi imc_list_rooms
 		</programlisting>
 	</section>
 
@@ -253,7 +253,7 @@ if(is_method("MESSAGE)
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensipsctl fifo imc_list_members sip:chat-000@opensips.org
+		opensips-cli -x mi imc_list_members sip:chat-000@opensips.org
 		</programlisting>
 	</section>
 	</section>

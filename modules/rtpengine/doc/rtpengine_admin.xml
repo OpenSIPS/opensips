@@ -965,7 +965,7 @@ rtpengine_start_recording();
 			<function moreinfo="none">rtpengine_enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
+$ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
 ...
 			</programlisting>
 			</example>
@@ -985,7 +985,7 @@ $ opensipsctl fifo rtpengine_enable udp:192.168.2.133:8081 0
 				<function moreinfo="none">rtpengine_show</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rtpengine_show
+$ opensips-cli -x mi rtpengine_show
 ...
 			</programlisting>
 			</example>
@@ -1005,7 +1005,7 @@ $ opensipsctl fifo rtpengine_show
 				<function moreinfo="none">rtpengine_reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rtpengine_reload
+$ opensips-cli -x mi rtpengine_reload
 ...
 			</programlisting>
 			</example>
@@ -1034,7 +1034,7 @@ $ opensipsctl fifo rtpengine_reload
 				<function moreinfo="none">teardown</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
+$ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 ...
 			</programlisting>
 			</example>

@@ -469,7 +469,7 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo reg_list
+opensips-cli -x mi reg_list
 		</programlisting>
 	</section>
 	<section id="mi_reg_reload" xreflabel="reg_reload">
@@ -479,7 +479,7 @@ opensipsctl fifo reg_list
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo reg_reload
+opensips-cli -x mi reg_reload
 		</programlisting>
 	</section>
 	</section>

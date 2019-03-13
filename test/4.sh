@@ -32,7 +32,7 @@ cd ../scripts
 
 if [ "$ret" -eq 0 ] ; then
 	sleep 1
-	./opensipsctl ps > /dev/null
+	opensips-cli -x mi ps > /dev/null
 	ret=$?
 fi ;
 

@@ -1172,7 +1172,7 @@ cr_tree_rewrite_uri(tree, domain)
 		<title><function>cr_replace_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
+opensips-cli -x mi cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 ...
 		</programlisting>
 	    </example>
@@ -1205,7 +1205,7 @@ opensipsctl fifo cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 		<title><function>cr_deactivate_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_deactivate_host "-d proxy -p 49 -h proxy1"
+opensips-cli -x mi cr_deactivate_host "-d proxy -p 49 -h proxy1"
 ...
 		</programlisting>
 	    </example>
@@ -1232,7 +1232,7 @@ opensipsctl fifo cr_deactivate_host "-d proxy -p 49 -h proxy1"
 		<title><function>cr_activate_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_activate_host "-d proxy -p 49 -h proxy1"
+opensips-cli -x mi cr_activate_host "-d proxy -p 49 -h proxy1"
 ...
 		</programlisting>
 	    </example>
@@ -1275,7 +1275,7 @@ opensipsctl fifo cr_activate_host "-d proxy -p 49 -h proxy1"
 		<title><function>cr_add_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensips-cli -x mi cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
 		</programlisting>
 	    </example>
@@ -1319,7 +1319,7 @@ opensipsctl fifo cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 		<title><function>cr_delete_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensips-cli -x mi cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
 		</programlisting>
 	    </example>

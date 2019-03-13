@@ -1374,7 +1374,7 @@ if (ds_is_in_list("$rd", "$rp", "part2:2")) {
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensipsctl fifo ds_set_state a 2 sip:10.0.0.202
+opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
 </programlisting>
 	</section>
 	<section id="mi_ds_list" xreflabel="ds_list">
@@ -1398,7 +1398,7 @@ opensipsctl fifo ds_set_state a 2 sip:10.0.0.202
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensipsctl fifo ds_list
+opensips-cli -x mi ds_list
 </programlisting>
 	</section>
 	<section id="mi_ds_reload" xreflabel="ds_reload">
@@ -1423,7 +1423,7 @@ opensipsctl fifo ds_list
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensipsctl fifo ds_reload
+opensips-cli -x mi ds_reload
 </programlisting>
 	</section>
 

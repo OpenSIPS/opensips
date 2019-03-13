@@ -194,7 +194,7 @@ if (lua_exec("mongo_alias")) {
     </itemizedlist>
     <para>MI FIFO Command Format:</para>
   <programlisting  format="linespecific">
-  opensipsctl fifo watch
+  opensips-cli -x mi watch
   </programlisting>
   </section>
 

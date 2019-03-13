@@ -286,9 +286,9 @@ modparam("sql_cacher", "reload_interval", 5)
 			<title><function moreinfo="none">sql_cacher_reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo sql_cacher_reload subs_caching
+$ opensips-cli -x mi sql_cacher_reload subs_caching
 ...
-$ opensipsctl fifo sql_cacher_reload subs_caching alice@domain.com
+$ opensips-cli -x mi sql_cacher_reload subs_caching alice@domain.com
 ...
 </programlisting>
 			</example>	

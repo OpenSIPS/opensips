@@ -1966,7 +1966,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo t_uac_dlg INVITE "sip:123456@127.0.0.1:5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:test@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
+		opensips-cli -x mi t_uac_dlg INVITE "sip:123456@127.0.0.1:5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:test@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
 		</programlisting>
 	</section>
 
@@ -1992,7 +1992,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo t_uac_cancel "1-23454@127.0.0.1" "1 INVITE"
+		opensips-cli -x mi t_uac_cancel "1-23454@127.0.0.1" "1 INVITE"
 		</programlisting>
 	</section>
 
@@ -2013,7 +2013,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo t_hash
+		opensips-cli -x mi t_hash
 		</programlisting>
 	</section>
 
@@ -2053,7 +2053,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo t_reply 403 Forbidden 46961:1279687637 abcde .
+		opensips-cli -x mi t_reply 403 Forbidden 46961:1279687637 abcde .
 		</programlisting>
 	</section>
 

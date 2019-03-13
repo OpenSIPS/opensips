@@ -748,7 +748,7 @@ xlog("translate to var $var(y) partition $var(partition)")
 		MI DATAGRAM Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensipsctl fifo dp_reload
+		opensips-cli -x mi dp_reload
 		</programlisting>
 		</section>
 
@@ -774,7 +774,7 @@ xlog("translate to var $var(y) partition $var(partition)")
 		MI DATAGRAM Command Format:
 		</para>
         <programlisting  format="linespecific">
-        opensipsctl fifo dp_translate 10 +40123456789
+        opensips-cli -x mi dp_translate 10 +40123456789
 		</programlisting>
 		</section>
 
@@ -797,7 +797,7 @@ xlog("translate to var $var(y) partition $var(partition)")
 		MI DATAGRAM Command Format:
 		</para>
         <programlisting  format="linespecific">
-        opensipsctl fifo dp_translate default
+        opensips-cli -x mi dp_translate default
 		</programlisting>
 		</section>
 	</section>
