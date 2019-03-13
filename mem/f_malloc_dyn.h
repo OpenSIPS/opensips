@@ -192,14 +192,13 @@ found:
 	fm_split_frag(qm, frag, size, file, "fm_malloc frag", line);
 	#endif
 
+	#ifdef DBG_MALLOC
 	frag->file=file;
 	frag->func=func;
 	frag->line=line;
 	frag->check=ST_CHECK_PATTERN;
 	LM_GEN1(memlog, "%s_malloc(%lu), returns address %p\n", qm->name, size,
 		(char*)frag+sizeof(struct fm_frag));
-	#else
-	fm_split_frag(qm, frag, size);
 	#endif
 
 solved:
