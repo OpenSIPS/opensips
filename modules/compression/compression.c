@@ -216,6 +216,7 @@ int compact_form_hdrs[]={
 	HDR_TO_T,
 	HDR_VIA_T,
 	HDR_SUPPORTED_T,
+	HDR_SESSION_EXPIRES_T,
 	HDR_OTHER_T
 };
 
