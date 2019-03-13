@@ -796,7 +796,7 @@ static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
 		len = tok.rs.len;
 		memcpy(p_buf + len, CRLF, CRLF_LEN);
 		len += CRLF_LEN;
-		LM_DBG("extracted peer nameaddr is [%.*s]\n", len, c_buf);
+		LM_DBG("extracted peer nameaddr is [%.*s]\n", len, p_buf);
 
 	} else {
 
@@ -820,12 +820,12 @@ static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
 			p_buf[len++]='>';
 		memcpy(p_buf + len, CRLF, CRLF_LEN);
 		len+= CRLF_LEN;
-		LM_DBG("computed peer nameaddr is [%.*s]\n", len, c_buf);
+		LM_DBG("computed peer nameaddr is [%.*s]\n", len, p_buf);
 
 	}
 
 	parse_to( p_buf, p_buf+len , &peer);
-	if (entity.error != PARSE_OK) {
+	if (peer.error != PARSE_OK) {
 		LM_ERR("Failed to parse peer nameaddr [%.*s]\n", len, p_buf);
 		goto error2;
 	}
