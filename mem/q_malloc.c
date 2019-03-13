@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if !(defined F_MALLOC) && !defined(HP_MALLOC) && (defined QM_MALLOC)
+#ifdef QM_MALLOC
 
 #include <stdlib.h>
 #include <string.h>
@@ -54,6 +54,7 @@
 #define FRAG(f) \
 	((struct qm_frag*)((char*)(f)-sizeof(struct qm_frag)))
 
+#define FRAG_OVERHEAD	(sizeof(struct qm_frag)+sizeof(struct qm_frag_end))
 
 #define ROUNDTO_MASK	(~((unsigned long)ROUNDTO-1))
 #define ROUNDUP(s)		(((s)+(ROUNDTO-1))&ROUNDTO_MASK)
@@ -78,7 +79,6 @@
 								QM_MALLOC_OPTIMIZE_FACTOR-1)\
 					)
 
-
 /* mark/test used/unused frags */
 #define FRAG_MARK_USED(f)
 #define FRAG_CLEAR_USED(f)
@@ -86,12 +86,7 @@
 
 /* other frag related defines:
  * MEM_COALESCE_FRAGS
- * MEM_FRAG_AVOIDANCE
  */
-
-#define MEM_FRAG_AVOIDANCE
-
-
 
 /* computes hash number for big buckets*/
 inline static unsigned long big_hash_idx(unsigned long s)
@@ -152,11 +147,13 @@ static  void qm_debug_frag(struct qm_block* qm, struct qm_frag* f)
 }
 #endif
 
+#ifdef SHM_EXTRA_STATS
 unsigned long frag_size(void* p){
 	if(!p)
 		return 0;
 	return FRAG(p)->size;
 }
+#endif
 
 #ifdef SHM_EXTRA_STATS
 #include "module_info.h"

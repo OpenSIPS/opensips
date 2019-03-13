@@ -91,13 +91,16 @@ void* qm_malloc(struct qm_block* qm, unsigned long size,
 	struct qm_frag* f;
 	int hash;
 
-#ifdef DBG_MALLOC
+#if defined DBG_MALLOC || defined QM_MALLOC_DYN
 	unsigned int list_cntr;
-
 	list_cntr = 0;
+#endif
+
+#if defined DBG_MALLOC
 	LM_GEN1(memlog, "%s_malloc (%lu), called from %s: %s(%d)\n",
 		qm->name, size, file, func, line);
 #endif
+
 	/*size must be a multiple of 8*/
 	size=ROUNDUP(size);
 	if (size>(qm->size-qm->real_used)) {
@@ -108,10 +111,12 @@ void* qm_malloc(struct qm_block* qm, unsigned long size,
 	}
 
 	/*search for a suitable free frag*/
-#ifdef DBG_MALLOC
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
 	if ((f=qm_find_free(qm, size, &hash, &list_cntr))!=0){
-#else
+#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
 	if ((f=qm_find_free(qm, size, &hash))!=0){
+#else
+	if ((f=qm_find_free(qm, size, &hash, &list_cntr))!=0){
 #endif
 		/* we found it!*/
 		/*detach it from the free list*/

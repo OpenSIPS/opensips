@@ -1,5 +1,8 @@
 /*
+ * simple, very fast, malloc library
+ *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -15,23 +18,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *              created by andrei
- *  2003-07-06  added fm_realloc (andrei)
- *  2004-07-19  fragments book keeping code and support for 64 bits
- *               memory blocks (64 bits machine & size >=2^32)
- *              GET_HASH s/</<=/ (avoids waste of 1 hash cell)   (andrei)
- *  2004-11-10  support for > 4Gb mem., switched to long (andrei)
- *  2005-03-02  added fm_info() (andrei)
- *  2005-12-12  fixed realloc shrink real_used accounting (andrei)
- *              fixed initial size (andrei)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
-#if !defined(QM_MALLOC) && !(defined HP_MALLOC) && (defined F_MALLOC)
+#ifdef F_MALLOC
 
 #include <string.h>
 #include <stdio.h>
@@ -47,26 +37,24 @@
 #include "mem_dbg_hash.h"
 #endif
 
-/*useful macros*/
+#define FRAG_OVERHEAD	(sizeof(struct fm_frag))
+#define frag_is_free(_f) ((_f)->prev)
+
+#define FRAG_NEXT(f) \
+	((struct fm_frag *)((char *)(f) + sizeof(struct fm_frag) + (f)->size))
+
+/* get the fragment which corresponds to a pointer */
+#define FRAG_OF(p) \
+	((struct fm_frag *)((char *)(p) - sizeof(struct fm_frag)))
 
 #define max(a,b) ( (a)>(b)?(a):(b))
-
-
-
 
 /* ROUNDTO= 2^k so the following works */
 #define ROUNDTO_MASK	(~((unsigned long)ROUNDTO-1))
 #define ROUNDUP(s)		(((s)+(ROUNDTO-1))&ROUNDTO_MASK)
 #define ROUNDDOWN(s)	((s)&ROUNDTO_MASK)
 
-/*
- #define ROUNDUP(s)		(((s)%ROUNDTO)?((s)+ROUNDTO)/ROUNDTO*ROUNDTO:(s))
- #define ROUNDDOWN(s)	(((s)%ROUNDTO)?((s)-ROUNDTO)/ROUNDTO*ROUNDTO:(s))
-*/
-
-
-
-	/* finds the hash value for s, s=ROUNDTO multiple*/
+/* finds the hash value for s, s=ROUNDTO multiple*/
 #define GET_HASH(s)   ( ((unsigned long)(s)<=F_MALLOC_OPTIMIZE)?\
 							(unsigned long)(s)/ROUNDTO: \
 							F_MALLOC_OPTIMIZE/ROUNDTO+big_hash_idx((s))- \
@@ -78,18 +66,17 @@
 							F_MALLOC_OPTIMIZE_FACTOR-1)\
 					)
 
-#define MEM_FRAG_AVOIDANCE
-
-
 #define F_MALLOC_LARGE_LIMIT    F_MALLOC_OPTIMIZE
 #define F_MALLOC_DEFRAG_LIMIT (F_MALLOC_LARGE_LIMIT * 5)
 #define F_MALLOC_DEFRAG_PERCENT 5
 
+#ifdef SHM_EXTRA_STATS
 unsigned long frag_size(void* p){
 	if(!p)
 		return 0;
 	return (((struct fm_frag*) ((char*)p-sizeof(struct fm_frag)))->size);
 }
+#endif
 
 static inline void free_minus(struct fm_block* qm, unsigned long size )
 {

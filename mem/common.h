@@ -21,6 +21,8 @@
 #ifndef mem_common_h
 #define mem_common_h
 
+#include "meminfo.h"
+
 #if !defined(F_MALLOC) && !defined(QM_MALLOC) && !defined(HP_MALLOC)
 #error "no memory allocator selected"
 #endif
@@ -45,9 +47,22 @@ enum osips_mm {
 extern void *mem_block;
 extern void *shm_block;
 
+#ifdef DBG_MALLOC
+typedef void *(*osips_malloc_f) (void *block, unsigned long size,
+                      const char *file, const char *func, unsigned int line);
+typedef void *(*osips_realloc_f) (void *block, void *ptr, unsigned long size,
+                      const char *file, const char *func, unsigned int line);
+typedef void (*osips_free_f) (void *block, void *ptr,
+                      const char *file, const char *func, unsigned int line);
+#else
 typedef void *(*osips_malloc_f) (void *block, unsigned long size);
 typedef void *(*osips_realloc_f) (void *block, void *ptr, unsigned long size);
 typedef void (*osips_free_f) (void *block, void *ptr);
+#endif
+
+typedef void (*osips_mem_info_f) (void *block, struct mem_info *i);
+typedef void (*osips_mem_status_f) (void *block);
+typedef unsigned long (*osips_get_mmstat_f) (void *block);
 
 #if defined F_MALLOC
 #include "f_malloc.h"

@@ -55,12 +55,12 @@ extern void *(*gen_pkg_malloc)(void *blk, unsigned long size,
                         const char *file, const char *func, unsigned int line);
 extern void *(*gen_pkg_realloc)(void *blk, void *p, unsigned long size,
                         const char *file, const char *func, unsigned int line);
-extern void *(*gen_pkg_free)(void *blk, void *p,
+extern void (*gen_pkg_free)(void *blk, void *p,
                         const char *file, const char *func, unsigned int line);
 #else
 extern void *(*gen_pkg_malloc)(void *blk, unsigned long size);
 extern void *(*gen_pkg_realloc)(void *blk, void *p, unsigned long size);
-extern void *(*gen_pkg_free)(void *blk, void *p);
+extern void (*gen_pkg_free)(void *blk, void *p);
 #endif
 extern void (*gen_pkg_info)(void *blk, struct mem_info *info);
 extern void (*gen_pkg_status)(void *blk);
@@ -118,8 +118,8 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #define PKG_STATUS             gen_pkg_status
 #define PKG_GET_SIZE()         gen_pkg_get_size(mem_block)
 #define PKG_GET_USED()         gen_pkg_get_used(mem_block)
-#define PKG_GET_RUSED()        gen_pkg_get_real_used(mem_block)
-#define PKG_GET_MUSED()        gen_pkg_get_max_real_used(mem_block)
+#define PKG_GET_RUSED()        gen_pkg_get_rused(mem_block)
+#define PKG_GET_MUSED()        gen_pkg_get_mused(mem_block)
 #define PKG_GET_FREE()         gen_pkg_get_free(mem_block)
 #define PKG_GET_FRAGS()        gen_pkg_get_frags(mem_block)
 #endif /* INLINE_ALLOC */

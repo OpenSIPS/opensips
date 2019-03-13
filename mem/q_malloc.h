@@ -21,13 +21,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if !defined(q_malloc_h) && !defined(F_MALLOC) && \
-	!defined(HP_MALLOC) /* lgtm [cpp/missing-header-guard] */
+#ifndef q_malloc_h
 #define q_malloc_h
 
 #include "meminfo.h"
 
-/* defs*/
+#undef ROUNDTO
+#undef MIN_FRAG_SIZE
+
 #ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
@@ -57,7 +58,6 @@
 #define QM_HASH_SIZE ((unsigned long)(QM_MALLOC_OPTIMIZE/ROUNDTO + \
 		(sizeof(long)*8-QM_MALLOC_OPTIMIZE_FACTOR)+1))
 
-#define FRAG_OVERHEAD	(sizeof(struct qm_frag)+sizeof(struct qm_frag_end))
 /* hash structure:
  * 0 .... QM_MALLOC_OPTIMIE/ROUNDTO  - small buckets, size increases with
  *                            ROUNDTO from bucket to bucket
@@ -119,7 +119,9 @@ struct qm_block{
 
 
 struct qm_block* qm_malloc_init(char* address, unsigned long size, char* name);
+#ifdef SHM_EXTRA_STATS
 unsigned long frag_size(void* p);
+#endif
 
 #ifdef DBG_MALLOC
 void *qm_malloc(struct qm_block*, unsigned long size, const char* file,
@@ -158,6 +160,9 @@ void set_indexes(int core_index);
 #endif
 
 #ifdef DBG_MALLOC
+	#undef _FRAG_FILE
+	#undef _FRAG_FUNC
+	#undef _FRAG_LINE
 	#define _FRAG_FILE(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->file
 	#define _FRAG_FUNC(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->func
 	#define _FRAG_LINE(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->line

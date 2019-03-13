@@ -72,17 +72,17 @@ extern void *(*gen_shm_realloc)(void *blk, void *p, unsigned long size,
                         const char *file, const char *func, unsigned int line);
 extern void *(*gen_shm_realloc_unsafe)(void *blk, void *p, unsigned long size,
                         const char *file, const char *func, unsigned int line);
-extern void *(*gen_shm_free)(void *blk, void *p,
+extern void (*gen_shm_free)(void *blk, void *p,
                         const char *file, const char *func, unsigned int line);
-extern void *(*gen_shm_free_unsafe)(void *blk, void *p,
+extern void (*gen_shm_free_unsafe)(void *blk, void *p,
                         const char *file, const char *func, unsigned int line);
 #else
 extern void *(*gen_shm_malloc)(void *blk, unsigned long size);
 extern void *(*gen_shm_malloc_unsafe)(void *blk, unsigned long size);
 extern void *(*gen_shm_realloc)(void *blk, void *p, unsigned long size);
 extern void *(*gen_shm_realloc_unsafe)(void *blk, void *p, unsigned long size);
-extern void *(*gen_shm_free)(void *blk, void *p);
-extern void *(*gen_shm_free_unsafe)(void *blk, void *p);
+extern void (*gen_shm_free)(void *blk, void *p);
+extern void (*gen_shm_free_unsafe)(void *blk, void *p);
 #endif
 extern void (*gen_shm_info)(void *blk, struct mem_info *info);
 extern void (*gen_shm_status)(void *blk);
@@ -152,8 +152,8 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 #define SHM_STATUS             gen_shm_status
 #define SHM_GET_SIZE           gen_shm_get_size
 #define SHM_GET_USED           gen_shm_get_used
-#define SHM_GET_RUSED          gen_shm_get_real_used
-#define SHM_GET_MUSED          gen_shm_get_max_real_used
+#define SHM_GET_RUSED          gen_shm_get_rused
+#define SHM_GET_MUSED          gen_shm_get_mused
 #define SHM_GET_FREE           gen_shm_get_free
 #define SHM_GET_FRAGS          gen_shm_get_frags
 #endif /* INLINE_ALLOC */
