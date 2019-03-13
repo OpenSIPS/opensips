@@ -37,6 +37,7 @@
 #include "mem_dbg_hash.h"
 #endif
 
+#define MIN_FRAG_SIZE	ROUNDTO
 #define FRAG_OVERHEAD	(sizeof(struct fm_frag))
 #define frag_is_free(_f) ((_f)->prev)
 

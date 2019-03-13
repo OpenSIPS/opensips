@@ -29,9 +29,6 @@
 
 #include "../lock_ops.h"
 
-/* specified in microseconds */
-#define SHM_STATS_SAMPLING_PERIOD 200000L
-
 extern gen_lock_t *hp_stats_lock;
 
 #ifdef STATISTICS

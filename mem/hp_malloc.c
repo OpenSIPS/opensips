@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if !defined(q_malloc) && !(defined F_MALLOC) && (defined HP_MALLOC)
+#ifdef HP_MALLOC
 
 #include <string.h>
 #include <stdio.h>
@@ -40,6 +40,75 @@
 #ifdef DBG_MALLOC
 #include "mem_dbg_hash.h"
 #endif
+
+#define MIN_FRAG_SIZE	ROUNDTO
+#define FRAG_NEXT(f) ((struct hp_frag *) \
+		((char *)(f) + sizeof(struct hp_frag) + ((struct hp_frag *)(f))->size))
+
+/* get the fragment which corresponds to a pointer */
+#define FRAG_OF(p) \
+	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
+
+#define FRAG_OVERHEAD	(sizeof(struct hp_frag))
+#define frag_is_free(_f) ((_f)->prev)
+
+/* used when detaching free fragments */
+static unsigned int optimized_get_indexes[HP_HASH_SIZE];
+
+/* used when attaching free fragments */
+static unsigned int optimized_put_indexes[HP_HASH_SIZE];
+
+/* finds the hash value for s, s=ROUNDTO multiple */
+#define GET_HASH(s)  (((unsigned long)(s) <= HP_MALLOC_OPTIMIZE) ? \
+	(unsigned long)(s) / ROUNDTO : \
+	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
+
+/*
+ * - for heavily used sizes (which need some optimizing) it returns
+ *   a hash entry for the given size in a round-robin manner
+ * - for the non-optimized sizes, behaviour is identical to GET_HASH
+ */
+#define GET_HASH_RR(fmb, s)  (((unsigned long)(s) <= HP_MALLOC_OPTIMIZE) ? \
+	({ \
+		unsigned int ___hash, ___idx, ___ret; \
+		___hash = (unsigned long)(s) / ROUNDTO; \
+		!fmb->free_hash[___hash].is_optimized ? \
+			___hash : \
+			({ \
+				___idx = optimized_put_indexes[___hash]; \
+				___ret = HP_HASH_SIZE + \
+				         ___hash * shm_secondary_hash_size + ___idx; \
+				optimized_put_indexes[___hash] = \
+					(___idx + 1) % shm_secondary_hash_size; \
+				___ret; \
+			}); \
+	}) : \
+	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
+
+/*
+ * peek at the next round-robin assigned hash
+ *
+ * unlike GET_HASH_RR, it always returns the same result
+ */
+#define PEEK_HASH_RR(fmb, s)  (((unsigned long)(s) <= HP_MALLOC_OPTIMIZE) ? \
+	({ \
+		unsigned int ___hash; \
+		___hash = (unsigned long)(s) / ROUNDTO; \
+		!fmb->free_hash[___hash].is_optimized ? \
+			___hash : \
+			HP_HASH_SIZE + ___hash * shm_secondary_hash_size + \
+			optimized_put_indexes[___hash]; \
+	}) : \
+	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
+
+#define UN_HASH(h)	(((unsigned long)(h) <= (HP_MALLOC_OPTIMIZE/ROUNDTO)) ?\
+						(unsigned long)(h)*ROUNDTO: \
+						1UL<<((unsigned long)(h)-HP_MALLOC_OPTIMIZE/ROUNDTO+\
+							HP_MALLOC_OPTIMIZE_FACTOR - 1)\
+					)
+
+
+
 
 extern unsigned long *mem_hash_usage;
 
@@ -96,13 +165,13 @@ inline static unsigned long big_hash_idx(unsigned long s)
 	return idx;
 }
 
+#ifdef SHM_EXTRA_STATS
 unsigned long frag_size(void* p){
 	if(!p)
 		return 0;
 	return ((struct hp_frag*) ((char*)p - sizeof(struct hp_frag)))->size;
 }
 
-#ifdef SHM_EXTRA_STATS
 #include "module_info.h"
 void set_stat_index (void *ptr, unsigned long idx) {
 	struct hp_frag *f;

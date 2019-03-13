@@ -27,7 +27,6 @@
 #include "meminfo.h"
 
 #undef ROUNDTO
-#undef MIN_FRAG_SIZE
 
 #ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
@@ -42,8 +41,6 @@
 #else /* DBG_MALLOC */
 	#define ROUNDTO 8UL
 #endif
-
-#define MIN_FRAG_SIZE	ROUNDTO
 
 #define F_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
 

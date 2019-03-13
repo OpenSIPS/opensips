@@ -58,7 +58,7 @@
 #define shm_frag_split_unsafe_dbg(blk, frag, sz, fl, fnc, ln) \
 	do { \
 		if (can_split_frag(frag, sz)) { \
-			__shm_frag_split_unsafe(blk, frag, sz, fl, fnc, ln); \
+			__shm_frag_split_unsafe_dbg(blk, frag, sz, fl, fnc, ln); \
 			if (stats_are_ready()) { \
 				update_stats_shm_frag_split(); \
 			} else { \
@@ -104,7 +104,7 @@
 #define shm_frag_split_dbg(blk, frag, sz, hash, fl, fnc, ln) \
 	do { \
 		if (can_split_frag(frag, sz)) { \
-			__shm_frag_split(blk, frag, sz, hash, fl, fnc, ln); \
+			__shm_frag_split_dbg(blk, frag, sz, hash, fl, fnc, ln); \
 			update_stats_shm_frag_split(); \
 		} \
 	} while (0)
