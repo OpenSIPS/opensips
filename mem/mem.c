@@ -115,9 +115,9 @@ int init_pkg_mallocs(void)
 #ifdef HP_MALLOC
 	case MM_HP_MALLOC:
 		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
-		gen_pkg_malloc            = (osips_malloc_f)hp_malloc;
-		gen_pkg_realloc           = (osips_realloc_f)hp_realloc;
-		gen_pkg_free              = (osips_free_f)hp_free;
+		gen_pkg_malloc            = (osips_malloc_f)hp_pkg_malloc;
+		gen_pkg_realloc           = (osips_realloc_f)hp_pkg_realloc;
+		gen_pkg_free              = (osips_free_f)hp_pkg_free;
 		gen_pkg_info              = hp_info;
 		gen_pkg_status            = hp_status;
 		gen_pkg_get_size          = hp_pkg_get_size;
@@ -164,9 +164,9 @@ int init_pkg_mallocs(void)
 #ifdef HP_MALLOC
 	case MM_HP_MALLOC_DBG:
 		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
-		gen_pkg_malloc            = (osips_malloc_f)hp_malloc_dbg;
-		gen_pkg_realloc           = (osips_realloc_f)hp_realloc_dbg;
-		gen_pkg_free              = (osips_free_f)hp_free_dbg;
+		gen_pkg_malloc            = (osips_malloc_f)hp_pkg_malloc_dbg;
+		gen_pkg_realloc           = (osips_realloc_f)hp_pkg_realloc_dbg;
+		gen_pkg_free              = (osips_free_f)hp_pkg_free_dbg;
 		gen_pkg_info              = hp_info;
 		gen_pkg_status            = hp_status;
 		gen_pkg_get_size          = hp_pkg_get_size;

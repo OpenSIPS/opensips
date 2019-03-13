@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* for any questions on the complex ifdef logic, see f_malloc_dyn.h */
+/* for any questions on the complex ifdef logic, see mem/f_malloc_dyn.h */
 
 /* returns 0 on success, -1 on error;
  * new_size < size & rounded-up already!*/
@@ -134,6 +134,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size,
 
 		if (qm->max_real_used<qm->real_used)
 			qm->max_real_used=qm->real_used;
+
 #ifdef DBG_MALLOC
 		f->file=file;
 		f->func=func;
@@ -145,6 +146,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size,
 			"(size=%lu) on %d -th hit\n",
 			 qm->name, size, (char*)f+sizeof(struct qm_frag), f, f->size, list_cntr );
 #endif
+
 		pkg_threshold_check();
 		qm->fragments += 1;
 		return (char*)f+sizeof(struct qm_frag);

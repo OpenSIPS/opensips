@@ -98,9 +98,9 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #define PKG_GET_FREE()         qm_get_free(mem_block)
 #define PKG_GET_FRAGS()        qm_get_frags(mem_block)
 #elif defined HP_MALLOC
-#define PKG_MALLOC_            hp_malloc
-#define PKG_REALLOC            hp_realloc
-#define PKG_FREE               hp_free
+#define PKG_MALLOC_            hp_pkg_malloc
+#define PKG_REALLOC            hp_pkg_realloc
+#define PKG_FREE               hp_pkg_free
 #define PKG_INFO               hp_info
 #define PKG_STATUS             hp_status
 #define PKG_GET_SIZE()         hp_pkg_get_size(mem_block)

@@ -86,6 +86,8 @@ typedef void (*osips_free_f) (void *block, void *ptr);
 			abort(); \
 		} \
 	} while (0)
+#else
+#define check_double_free(ptr, frag, block)
 #endif
 
 #endif

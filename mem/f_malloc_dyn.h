@@ -239,11 +239,11 @@ void fm_free(struct fm_block* qm, void* p, const char* file,
 	}
 	f=(struct fm_frag*) ((char*)p-sizeof(struct fm_frag));
 
-#ifdef DBG_MALLOC
 	check_double_free(p, f, qm);
 
-	LM_GEN1(memlog, "freeing block alloc'ed from %s: %s(%ld)\n", f->file, f->func,
-			f->line);
+#ifdef DBG_MALLOC
+	LM_GEN1(memlog, "freeing block alloc'ed from %s: %s(%ld)\n",
+	        f->file, f->func, f->line);
 #endif
 
 join:

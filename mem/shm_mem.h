@@ -66,14 +66,23 @@
 #ifdef DBG_MALLOC
 extern void *(*gen_shm_malloc)(void *blk, unsigned long size,
                         const char *file, const char *func, unsigned int line);
+extern void *(*gen_shm_malloc_unsafe)(void *blk, unsigned long size,
+                        const char *file, const char *func, unsigned int line);
 extern void *(*gen_shm_realloc)(void *blk, void *p, unsigned long size,
+                        const char *file, const char *func, unsigned int line);
+extern void *(*gen_shm_realloc_unsafe)(void *blk, void *p, unsigned long size,
                         const char *file, const char *func, unsigned int line);
 extern void *(*gen_shm_free)(void *blk, void *p,
                         const char *file, const char *func, unsigned int line);
+extern void *(*gen_shm_free_unsafe)(void *blk, void *p,
+                        const char *file, const char *func, unsigned int line);
 #else
 extern void *(*gen_shm_malloc)(void *blk, unsigned long size);
+extern void *(*gen_shm_malloc_unsafe)(void *blk, unsigned long size);
 extern void *(*gen_shm_realloc)(void *blk, void *p, unsigned long size);
+extern void *(*gen_shm_realloc_unsafe)(void *blk, void *p, unsigned long size);
 extern void *(*gen_shm_free)(void *blk, void *p);
+extern void *(*gen_shm_free_unsafe)(void *blk, void *p);
 #endif
 extern void (*gen_shm_info)(void *blk, struct mem_info *info);
 extern void (*gen_shm_status)(void *blk);
@@ -117,12 +126,12 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 #define SHM_GET_FREE           qm_get_free
 #define SHM_GET_FRAGS          qm_get_frags
 #elif defined HP_MALLOC
-#define SHM_MALLOC             hp_malloc
-#define SHM_MALLOC_UNSAFE      hp_malloc
-#define SHM_REALLOC            hp_realloc
-#define SHM_REALLOC_UNSAFE     hp_realloc
-#define SHM_FREE               hp_free
-#define SHM_FREE_UNSAFE        hp_free
+#define SHM_MALLOC             hp_shm_malloc
+#define SHM_MALLOC_UNSAFE      hp_shm_malloc_unsafe
+#define SHM_REALLOC            hp_shm_realloc
+#define SHM_REALLOC_UNSAFE     hp_shm_realloc_unsafe
+#define SHM_FREE               hp_shm_free
+#define SHM_FREE_UNSAFE        hp_shm_free_unsafe
 #define SHM_INFO               hp_info
 #define SHM_STATUS             hp_status
 #define SHM_GET_SIZE           hp_shm_get_size
@@ -134,11 +143,11 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 #endif /* F_MALLOC || QM_MALLOC || HP_MALLOC */
 #else
 #define SHM_MALLOC             gen_shm_malloc
-#define SHM_MALLOC_UNSAFE      gen_shm_malloc
+#define SHM_MALLOC_UNSAFE      gen_shm_malloc_unsafe
 #define SHM_REALLOC            gen_shm_realloc
-#define SHM_REALLOC_UNSAFE     gen_shm_realloc
+#define SHM_REALLOC_UNSAFE     gen_shm_realloc_unsafe
 #define SHM_FREE               gen_shm_free
-#define SHM_FREE_UNSAFE        gen_shm_free
+#define SHM_FREE_UNSAFE        gen_shm_free_unsafe
 #define SHM_INFO               gen_shm_info
 #define SHM_STATUS             gen_shm_status
 #define SHM_GET_SIZE           gen_shm_get_size
