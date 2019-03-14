@@ -679,8 +679,14 @@ static mi_response_t *mi_cleanup(const mi_params_t *params,
 }
 
 
-static inline int mi_print_phtable_record(mi_item_t *item, pres_entry_t* pres)
+static inline int mi_print_phtable_record(mi_item_t *p_item,pres_entry_t* pres)
 {
+	mi_item_t *item;
+
+	item = add_mi_object(p_item, NULL, 0);
+	if (!item)
+		goto error;
+
 	if (add_mi_string(item, MI_SSTR("pres_uri"),
 		pres->pres_uri.s, pres->pres_uri.len) < 0)
 		goto error;
@@ -710,7 +716,7 @@ static mi_response_t *mi_list_phtable(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
-	mi_item_t *resp_arr, *arr_item;
+	mi_item_t *resp_arr;
 	pres_entry_t* p;
 	unsigned int i;
 
@@ -720,15 +726,11 @@ static mi_response_t *mi_list_phtable(const mi_params_t *params,
 
 	for(i= 0; i<phtable_size; i++)
 	{
-		arr_item = add_mi_object(resp_arr, NULL, 0);
-		if (!arr_item)
-			goto error;
-
 		lock_get(&pres_htable[i].lock);
 		p = pres_htable[i].entries->next;
 		while(p)
 		{
-			if(mi_print_phtable_record(arr_item, p)<0) goto error;
+			if(mi_print_phtable_record(resp_arr, p)<0) goto error;
 			p= p->next;;
 		}
 		lock_release(&pres_htable[i].lock);
@@ -742,12 +744,17 @@ error:
 }
 
 
-static inline int mi_print_shtable_record(mi_item_t *item, subs_t* s)
+static inline int mi_print_shtable_record(mi_item_t *p_item, subs_t* s)
 {
 	time_t _ts;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
 	rr_t *rr_head = NULL;
+	mi_item_t *item;
+
+	item = add_mi_object(p_item, NULL, 0);
+	if (!item)
+		return 0;
 
 	if (add_mi_string(item, MI_SSTR("pres_uri"),
 		s->pres_uri.s, s->pres_uri.len) < 0)
@@ -852,7 +859,7 @@ static inline int from_to_match_subs(subs_t *s, str *match_from, str *match_to,
 static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str *to)
 {
 	mi_response_t *resp;
-	mi_item_t *resp_arr, *arr_item;
+	mi_item_t *resp_arr;
 	subs_t *s;
 	unsigned int i,j;
 	char from_w[256], to_w[256];
@@ -873,17 +880,9 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 	if (to) {
 		memcpy(to_w, to->s, to->len);
 		from_w[to->len] = 0;
-	} else {
-		free_mi_response(resp);
-		return 0;
 	}
 
 	for (i = 0, j = 0; i < shtable_size; i++) {
-		arr_item = add_mi_object(resp_arr, NULL, 0);
-		if (!arr_item) {
-			free_mi_response(resp);
-			return 0;
-		}
 
 		lock_get(&subs_htable[i].lock);
 		for (s = subs_htable[i].entries->next; s; s = s->next) {
@@ -896,7 +895,7 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 					continue;
 			}
 
-			if (mi_print_shtable_record(arr_item, s) < 0)
+			if (mi_print_shtable_record(resp_arr, s) < 0)
 				goto error;
 			j++;
 		}
