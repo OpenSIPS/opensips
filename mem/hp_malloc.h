@@ -44,6 +44,7 @@ extern stat_var *shm_frags;
 #include "meminfo.h"
 
 #undef ROUNDTO
+
 #define ROUNDTO 8UL
 
 #define HP_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
@@ -59,6 +60,10 @@ extern stat_var *shm_frags;
 #define HP_EXTRA_HASH_SIZE (HP_LINEAR_HASH_SIZE * SHM_MAX_SECONDARY_HASH_SIZE)
 
 #define HP_TOTAL_HASH_SIZE (HP_HASH_SIZE + HP_EXTRA_HASH_SIZE)
+
+/* get the fragment which corresponds to a pointer */
+#define HP_FRAG(p) \
+	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
 
 /* hash structure:
  * 0 .... HP_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with
@@ -96,6 +101,8 @@ struct hp_frag {
 	unsigned long statistic_index;
 #endif
 };
+
+#define HP_FRAG_OVERHEAD (sizeof(struct hp_frag))
 
 struct hp_frag_lnk {
 	/*
@@ -198,19 +205,27 @@ void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size);
 #endif
 
 #ifdef SHM_EXTRA_STATS
-unsigned long frag_size(void* p);
-void set_stat_index (void *ptr, unsigned long idx);
-unsigned long get_stat_index(void *ptr);
-void set_indexes(int core_index);
-#endif
+static inline unsigned long hp_frag_size(void *p)
+{
+	if (!p)
+		return 0;
+
+	return HP_FRAG(p)->size;
+}
+
+void hp_stats_core_init(struct hp_block *hp, int core_index);
+unsigned long hp_stats_get_index(void *ptr);
+void hp_stats_set_index(void *ptr, unsigned long idx);
 
 #ifdef DBG_MALLOC
-	#undef _FRAG_FILE
-	#undef _FRAG_FUNC
-	#undef _FRAG_LINE
-	#define _FRAG_FILE(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->file
-	#define _FRAG_FUNC(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->func
-	#define _FRAG_LINE(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->line
+static inline const char *hp_frag_file(void *p) { return HP_FRAG(p)->file; }
+static inline const char *hp_frag_func(void *p) { return HP_FRAG(p)->func; }
+static inline unsigned long hp_frag_line(void *p) { return HP_FRAG(p)->line; }
+#else
+static inline const char *hp_frag_file(void *p) { return NULL; }
+static inline const char *hp_frag_func(void *p) { return NULL; }
+static inline unsigned long hp_frag_line(void *p) { return 0; }
+#endif
 #endif
 
 void hp_status(struct hp_block *);

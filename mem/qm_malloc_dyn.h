@@ -194,7 +194,7 @@ void qm_free(struct qm_block* qm, void* p,
 		abort();
 	}
 #endif
-	f=FRAG(p);
+	f=QM_FRAG(p);
 #ifdef DBG_MALLOC
 	qm_debug_frag(qm, f);
 	if (f->u.is_free){
@@ -274,7 +274,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 
 	#ifdef DBG_MALLOC
 	LM_GEN1(memlog, "%s_realloc(%p, %lu->%lu), called from %s: %s(%d)\n",
-			qm->name, p, p ? FRAG(p)->size:0, size, file, func, line);
+			qm->name, p, p ? QM_FRAG(p)->size:0, size, file, func, line);
 	if (p && (p > (void *)qm->last_frag_end || p < (void *)qm->first_frag)) {
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
@@ -303,7 +303,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 		return qm_malloc(qm, size, file, func, line);
 		#endif
 
-	f = FRAG(p);
+	f = QM_FRAG(p);
 
 	#ifdef DBG_MALLOC
 	qm_debug_frag(qm, f);

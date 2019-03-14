@@ -45,10 +45,6 @@
 #define FRAG_NEXT(f) ((struct hp_frag *) \
 		((char *)(f) + sizeof(struct hp_frag) + ((struct hp_frag *)(f))->size))
 
-/* get the fragment which corresponds to a pointer */
-#define FRAG_OF(p) \
-	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
-
 #define FRAG_OVERHEAD	(sizeof(struct hp_frag))
 #define frag_is_free(_f) ((_f)->prev)
 
@@ -166,31 +162,21 @@ inline static unsigned long big_hash_idx(unsigned long s)
 }
 
 #ifdef SHM_EXTRA_STATS
-unsigned long frag_size(void* p){
-	if(!p)
-		return 0;
-	return ((struct hp_frag*) ((char*)p - sizeof(struct hp_frag)))->size;
-}
-
 #include "module_info.h"
-void set_stat_index (void *ptr, unsigned long idx) {
-	struct hp_frag *f;
-
-	if (!ptr)
-		return;
-
-	f = (struct hp_frag *)((char*)ptr - sizeof(struct hp_frag));
-	f->statistic_index = idx;
-}
-
-unsigned long get_stat_index(void *ptr) {
-	struct hp_frag *f;
-
+unsigned long hp_stats_get_index(void *ptr)
+{
 	if (!ptr)
 		return GROUP_IDX_INVALID;
 
-	f = (struct hp_frag *)((char*)ptr - sizeof(struct hp_frag));
-	return f->statistic_index;
+	return HP_FRAG(ptr)->statistic_index;
+}
+
+void hp_stats_set_index(void *ptr, unsigned long idx)
+{
+	if (!ptr)
+		return;
+
+	HP_FRAG(ptr)->statistic_index = idx;
 }
 #endif
 
@@ -635,10 +621,11 @@ struct hp_block *hp_shm_malloc_init(char *address, unsigned long size,
 
 
 #ifdef SHM_EXTRA_STATS
-void set_indexes(int core_index) {
+void hp_stats_core_init(struct hp_block *hp, int core_index)
+{
+	struct hp_frag *f;
 
-	struct hp_frag* f;
-	for (f=shm_block->first_frag; (char*)f<(char*)shm_block->last_frag; f=FRAG_NEXT(f))
+	for (f=hp->first_frag; (char*)f<(char*)hp->last_frag; f=FRAG_NEXT(f))
 		if (!f->is_free)
 			f->statistic_index = core_index;
 }

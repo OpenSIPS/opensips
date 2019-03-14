@@ -58,8 +58,11 @@
 #define QM_HASH_SIZE ((unsigned long)(QM_MALLOC_OPTIMIZE/ROUNDTO + \
 		(sizeof(long)*8-QM_MALLOC_OPTIMIZE_FACTOR)+1))
 
+#define QM_FRAG(p) \
+	((struct qm_frag *)((char *)(p) - sizeof(struct qm_frag)))
+
 /* hash structure:
- * 0 .... QM_MALLOC_OPTIMIE/ROUNDTO  - small buckets, size increases with
+ * 0 .... QM_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with
  *                            ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 
@@ -79,6 +82,8 @@ struct qm_frag{
 	unsigned long statistic_index;
 #endif
 };
+
+#define QM_FRAG_OVERHEAD (sizeof(struct qm_frag))
 
 struct qm_frag_end{
 #ifdef DBG_MALLOC
@@ -116,11 +121,16 @@ struct qm_block{
 	/*struct qm_frag_end free_lst_end;*/
 };
 
-
-
 struct qm_block* qm_malloc_init(char* address, unsigned long size, char* name);
+
 #ifdef SHM_EXTRA_STATS
-unsigned long frag_size(void* p);
+static inline unsigned long qm_frag_size(void *p)
+{
+	if (!p)
+		return 0;
+
+	return QM_FRAG(p)->size;
+}
 #endif
 
 #ifdef DBG_MALLOC
@@ -154,18 +164,19 @@ void  qm_info(struct qm_block*, struct mem_info*);
 int qm_mem_check(struct qm_block *qm);
 
 #ifdef SHM_EXTRA_STATS
-void set_stat_index (void *ptr, unsigned long idx);
-unsigned long get_stat_index(void *ptr);
-void set_indexes(int core_index);
-#endif
+void qm_stats_core_init(struct qm_block *qm, int core_index);
+unsigned long qm_stats_get_index(void *ptr);
+void qm_stats_set_index(void *ptr, unsigned long idx);
 
 #ifdef DBG_MALLOC
-	#undef _FRAG_FILE
-	#undef _FRAG_FUNC
-	#undef _FRAG_LINE
-	#define _FRAG_FILE(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->file
-	#define _FRAG_FUNC(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->func
-	#define _FRAG_LINE(_p) ((struct qm_frag*)((char *)_p - sizeof(struct qm_frag)))->line
+static inline const char *qm_frag_file(void *p) { return QM_FRAG(p)->file; }
+static inline const char *qm_frag_func(void *p) { return QM_FRAG(p)->func; }
+static inline unsigned long qm_frag_line(void *p) { return QM_FRAG(p)->line; }
+#else
+static inline const char *qm_frag_file(void *p) { return NULL; }
+static inline const char *qm_frag_func(void *p) { return NULL; }
+static inline unsigned long qm_frag_line(void *p) { return 0; }
+#endif
 #endif
 
 #ifdef STATISTICS

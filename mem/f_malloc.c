@@ -44,10 +44,6 @@
 #define FRAG_NEXT(f) \
 	((struct fm_frag *)((char *)(f) + sizeof(struct fm_frag) + (f)->size))
 
-/* get the fragment which corresponds to a pointer */
-#define FRAG_OF(p) \
-	((struct fm_frag *)((char *)(p) - sizeof(struct fm_frag)))
-
 #define max(a,b) ( (a)>(b)?(a):(b))
 
 /* ROUNDTO= 2^k so the following works */
@@ -70,14 +66,6 @@
 #define F_MALLOC_LARGE_LIMIT    F_MALLOC_OPTIMIZE
 #define F_MALLOC_DEFRAG_LIMIT (F_MALLOC_LARGE_LIMIT * 5)
 #define F_MALLOC_DEFRAG_PERCENT 5
-
-#ifdef SHM_EXTRA_STATS
-unsigned long frag_size(void* p){
-	if(!p)
-		return 0;
-	return (((struct fm_frag*) ((char*)p-sizeof(struct fm_frag)))->size);
-}
-#endif
 
 static inline void free_minus(struct fm_block* qm, unsigned long size )
 {
@@ -127,24 +115,20 @@ inline static unsigned long big_hash_idx(unsigned long s)
 
 #ifdef SHM_EXTRA_STATS
 #include "module_info.h"
-void set_stat_index (void *ptr, unsigned long idx) {
-	struct fm_frag *f;
-
-	if (!ptr)
-		return;
-
-	f = (struct fm_frag *)((char*)ptr - sizeof(struct fm_frag));
-	f->statistic_index = idx;
-}
-
-unsigned long get_stat_index(void *ptr) {
-	struct fm_frag *f;
-
+unsigned long fm_stats_get_index(void *ptr)
+{
 	if (!ptr)
 		return GROUP_IDX_INVALID;
 
-	f = (struct fm_frag *)((char*)ptr - sizeof(struct fm_frag));
-	return f->statistic_index;
+	return FM_FRAG(ptr)->statistic_index;
+}
+
+void fm_stats_set_index(void *ptr, unsigned long idx)
+{
+	if (!ptr)
+		return;
+
+	FM_FRAG(ptr)->statistic_index = idx;
 }
 #endif
 
@@ -287,10 +271,11 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size, char *name)
 #endif
 
 #ifdef SHM_EXTRA_STATS
-void set_indexes(int core_index) {
+void fm_stats_core_init(struct fm_block *fm, int core_index)
+{
+	struct fm_frag *f;
 
-	struct fm_frag* f;
-	for (f=shm_block->first_frag; (char*)f<(char*)shm_block->last_frag; f=FRAG_NEXT(f))
+	for (f=fm->first_frag; (char *)f < (char *)fm->last_frag; f=FRAG_NEXT(f))
 		if (!f->is_free)
 			f->statistic_index = core_index;
 }

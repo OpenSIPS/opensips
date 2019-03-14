@@ -51,9 +51,6 @@
 #define PREV_FRAG_END(f) \
 	((struct qm_frag_end*)((char*)(f)-sizeof(struct qm_frag_end)))
 
-#define FRAG(f) \
-	((struct qm_frag*)((char*)(f)-sizeof(struct qm_frag)))
-
 #define FRAG_OVERHEAD	(sizeof(struct qm_frag)+sizeof(struct qm_frag_end))
 
 #define ROUNDTO_MASK	(~((unsigned long)ROUNDTO-1))
@@ -148,24 +145,16 @@ static  void qm_debug_frag(struct qm_block* qm, struct qm_frag* f)
 #endif
 
 #ifdef SHM_EXTRA_STATS
-unsigned long frag_size(void* p){
-	if(!p)
-		return 0;
-	return FRAG(p)->size;
-}
-#endif
-
-#ifdef SHM_EXTRA_STATS
 #include "module_info.h"
-void set_stat_index (void *ptr, unsigned long idx) {
+unsigned long qm_stats_get_index(void *ptr) {
+	return !ptr ? GROUP_IDX_INVALID : QM_FRAG(ptr)->statistic_index;
+}
+
+void qm_stats_set_index(void *ptr, unsigned long idx) {
 	if (!ptr)
 		return;
 
-	FRAG(ptr)->statistic_index = idx;
-}
-
-unsigned long get_stat_index(void *ptr) {
-	return !ptr ? GROUP_IDX_INVALID : FRAG(ptr)->statistic_index;
+	QM_FRAG(ptr)->statistic_index = idx;
 }
 #endif
 
@@ -324,13 +313,13 @@ static inline struct qm_frag* qm_find_free(struct qm_block* qm,
 #endif
 
 #ifdef SHM_EXTRA_STATS
-void set_indexes(int core_index) {
+void qm_stats_core_init(struct qm_block *qm, int core_index)
+{
+	struct qm_frag *f;
 
-	struct qm_frag* f;
-	for (f=shm_block->first_frag; (char*)f<(char*)shm_block->last_frag_end; f=FRAG_NEXT(f))
+	for (f=qm->first_frag; (char*)f<(char*)qm->last_frag_end; f=FRAG_NEXT(f))
 		if (!f->u.is_free)
 			f->statistic_index = core_index;
-
 }
 #endif
 

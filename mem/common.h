@@ -1,4 +1,6 @@
 /*
+ * shared code between all memory allocators
+ *
  * Copyright (C) 2014-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -61,6 +63,7 @@ typedef void (*osips_free_f) (void *block, void *ptr);
 typedef void (*osips_mem_info_f) (void *block, struct mem_info *i);
 typedef void (*osips_mem_status_f) (void *block);
 typedef unsigned long (*osips_get_mmstat_f) (void *block);
+typedef void (*osips_shm_stats_init_f) (void *block, int core_index);
 
 #if defined F_MALLOC
 #include "f_malloc.h"

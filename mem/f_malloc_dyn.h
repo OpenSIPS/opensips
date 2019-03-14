@@ -237,7 +237,8 @@ void fm_free(struct fm_block* qm, void* p, const char* file,
 		LM_GEN1(memlog, "free(0) called\n");
 		return;
 	}
-	f=(struct fm_frag*) ((char*)p-sizeof(struct fm_frag));
+
+	f = FM_FRAG(p);
 
 	check_double_free(p, f, qm);
 
@@ -302,7 +303,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size,
 
 	#ifdef DBG_MALLOC
 	LM_GEN1(memlog, "%s_realloc(%p, %lu->%lu), called from %s: %s(%d)\n",
-	        qm->name, p, p ? FRAG_OF(p)->size : 0, size, file, func, line);
+	        qm->name, p, p ? FM_FRAG(p)->size : 0, size, file, func, line);
 	if (p && (p > (void *)qm->last_frag || p < (void *)qm->first_frag)) {
 		LM_CRIT("bad pointer %p (out of memory block!) - aborting\n", p);
 		abort();
@@ -331,7 +332,7 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size,
 		return fm_malloc(qm, size, file, func, line);
 		#endif
 
-	f = FRAG_OF(p);
+	f = FM_FRAG(p);
 
 	#ifdef DBG_MALLOC
 	LM_GEN1(memlog, "realloc'ing frag %p alloc'ed from %s: %s(%ld)\n",

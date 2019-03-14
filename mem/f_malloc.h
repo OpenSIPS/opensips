@@ -50,6 +50,10 @@
 #define F_HASH_SIZE (F_MALLOC_OPTIMIZE/ROUNDTO + \
 		(sizeof(long)*8-F_MALLOC_OPTIMIZE_FACTOR)+1)
 
+/* get the fragment which corresponds to a pointer */
+#define FM_FRAG(p) \
+	((struct fm_frag *)((char *)(p) - sizeof(struct fm_frag)))
+
 /* hash structure:
  * 0 .... F_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with
  *                            ROUNDTO from bucket to bucket
@@ -68,6 +72,8 @@ struct fm_frag {
 	unsigned long line;
 	unsigned long check;
 #endif
+
+#define FM_FRAG_OVERHEAD (sizeof(struct fm_frag))
 
 #if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
 	char is_free;
@@ -103,7 +109,13 @@ struct fm_block {
 };
 
 #ifdef SHM_EXTRA_STATS
-unsigned long frag_size(void* p);
+static inline unsigned long fm_frag_size(void *p)
+{
+	if (!p)
+		return 0;
+
+	return FM_FRAG(p)->size;
+}
 #endif
 
 struct fm_block* fm_malloc_init(char* address, unsigned long size, char* name);
@@ -133,18 +145,19 @@ void fm_status(struct fm_block*);
 void fm_info(struct fm_block*, struct mem_info*);
 
 #ifdef SHM_EXTRA_STATS
-void set_stat_index (void *ptr, unsigned long idx);
-unsigned long get_stat_index(void *ptr);
-void set_indexes(int core_index);
-#endif
+void fm_stats_core_init(struct fm_block *fm, int core_index);
+unsigned long fm_stats_get_index(void *ptr);
+void fm_stats_set_index(void *ptr, unsigned long idx);
 
 #ifdef DBG_MALLOC
-	#undef _FRAG_FILE
-	#undef _FRAG_FUNC
-	#undef _FRAG_LINE
-	#define _FRAG_FILE(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->file
-	#define _FRAG_FUNC(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->func
-	#define _FRAG_LINE(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->line
+static inline const char *fm_frag_file(void *p) { return FM_FRAG(p)->file; }
+static inline const char *fm_frag_func(void *p) { return FM_FRAG(p)->func; }
+static inline unsigned long fm_frag_line(void *p) { return FM_FRAG(p)->line; }
+#else
+static inline const char *fm_frag_file(void *p) { return NULL; }
+static inline const char *fm_frag_func(void *p) { return NULL; }
+static inline unsigned long fm_frag_line(void *p) { return 0; }
+#endif
 #endif
 
 #ifdef STATISTICS

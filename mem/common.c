@@ -1,4 +1,6 @@
 /*
+ * shared code between all memory allocators
+ *
  * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.

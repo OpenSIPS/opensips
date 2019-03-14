@@ -621,7 +621,7 @@ void hp_pkg_free(struct hp_block *hpb, void *p,
 		return;
 	}
 
-	f = FRAG_OF(p);
+	f = HP_FRAG(p);
 	check_double_free(p, f, hpb);
 
 	/*
@@ -681,7 +681,7 @@ void hp_shm_free_unsafe(struct hp_block *hpb, void *p,
 		return;
 	}
 
-	f = FRAG_OF(p);
+	f = HP_FRAG(p);
 	check_double_free(p, f, hpb);
 
 	hp_frag_attach(hpb, f);
@@ -711,7 +711,7 @@ void hp_shm_free(struct hp_block *hpb, void *p,
 		return;
 	}
 
-	f = FRAG_OF(p);
+	f = HP_FRAG(p);
 	check_double_free(p, f, hpb);
 
 	hash = PEEK_HASH_RR(hpb, f->size);
@@ -766,7 +766,7 @@ void *hp_pkg_realloc(struct hp_block *hpb, void *p, unsigned long size,
 		return hp_pkg_malloc(hpb, size, file, func, line);
 		#endif
 
-	f = FRAG_OF(p);
+	f = HP_FRAG(p);
 
 	size = ROUNDUP(size);
 	orig_size = f->size;
@@ -884,7 +884,7 @@ void *hp_shm_realloc_unsafe(struct hp_block *hpb, void *p,
 		return hp_shm_malloc_unsafe(hpb, size, file, func, line);
 		#endif
 
-	f = FRAG_OF(p);
+	f = HP_FRAG(p);
 	size = ROUNDUP(size);
 
 	orig_size = f->size;
@@ -962,7 +962,7 @@ void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size,
 		return hp_shm_malloc(hpb, size, file, func, line);
 		#endif
 
-	f = FRAG_OF(p);
+	f = HP_FRAG(p);
 	size = ROUNDUP(size);
 
 	hash = PEEK_HASH_RR(hpb, f->size);
