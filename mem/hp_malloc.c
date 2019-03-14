@@ -110,7 +110,7 @@ static unsigned int optimized_put_indexes[HP_HASH_SIZE];
 
 
 
-extern unsigned long *mem_hash_usage;
+extern unsigned long *shm_hash_usage;
 
 /*
  * adaptive image of OpenSIPS's memory usage during runtime
@@ -136,8 +136,8 @@ stat_var *shm_frags;
 #define ROUNDUP(s)		(((s)+(ROUNDTO-1))&ROUNDTO_MASK)
 #define ROUNDDOWN(s)	((s)&ROUNDTO_MASK)
 
-#define SHM_LOCK(i) lock_get(&mem_lock[i])
-#define SHM_UNLOCK(i) lock_release(&mem_lock[i])
+#define SHM_LOCK(i) lock_get(&mem_locks[i])
+#define SHM_UNLOCK(i) lock_release(&mem_locks[i])
 
 #define MEM_FRAG_AVOIDANCE
 
@@ -282,20 +282,20 @@ void hp_update_shm_pattern_file(void)
 
 	/* first compute sum of all malloc requests since startup */
 	for (i = 0; i < HP_MALLOC_OPTIMIZE / ROUNDTO; i++)
-		sum += mem_hash_usage[i] * (i * ROUNDTO + FRAG_OVERHEAD);
+		sum += shm_hash_usage[i] * (i * ROUNDTO + FRAG_OVERHEAD);
 
 	LM_DBG("mem warming hash sum: %llu\n", sum);
 
 	/* save the usage rate of each bucket to the memory pattern file */
 	for (i = 0; i < HP_MALLOC_OPTIMIZE / ROUNDTO; i++) {
-		LM_DBG("[%d] %lf %.8lf\n", i, (double)mem_hash_usage[i],
-				(double)mem_hash_usage[i] / sum * (i * ROUNDTO + FRAG_OVERHEAD));
+		LM_DBG("[%d] %lf %.8lf\n", i, (double)shm_hash_usage[i],
+				(double)shm_hash_usage[i] / sum * (i * ROUNDTO + FRAG_OVERHEAD));
 
-		verification += (double)mem_hash_usage[i] /
+		verification += (double)shm_hash_usage[i] /
 					     sum * (i * ROUNDTO + FRAG_OVERHEAD);
 
 		if (fprintf(f, "%.12lf ",
-		            (double)mem_hash_usage[i] / sum * (i * ROUNDTO + FRAG_OVERHEAD)) < 0)
+		            (double)shm_hash_usage[i] / sum * (i * ROUNDTO + FRAG_OVERHEAD)) < 0)
 			goto write_error;
 
 		if (i % 10 == 9)

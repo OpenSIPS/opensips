@@ -314,22 +314,30 @@ char* pgid_file = 0;
 void cleanup(int show_status)
 {
 	LM_INFO("cleanup\n");
+
 	/*clean-up*/
 
-	/* hack: force-unlock the shared memory lock in case
+	/* hack: force-unlock the shared memory lock(s) in case
 	   		 some process crashed and let it locked; this will
 	   		 allow an almost gracious shutdown */
-	if (mem_lock)
-#ifdef HP_MALLOC
-	{
-		int i;
-
-		for (i = 0; i < HP_HASH_SIZE; i++)
-			shm_unlock(i);
-	}
-#else
-		shm_unlock();
+	if (0
+#if defined F_MALLOC || defined QM_MALLOC
+		|| mem_lock
 #endif
+#ifdef HP_MALLOC
+		|| mem_locks
+#endif
+	) {
+		if (mem_allocator_shm == MM_HP_MALLOC ||
+		        mem_allocator_shm == MM_HP_MALLOC_DBG) {
+			int i;
+
+			for (i = 0; i < HP_HASH_SIZE; i++)
+				lock_release(&mem_locks[i]);
+		} else {
+			shm_unlock();
+		}
+	}
 
 	handle_ql_shutdown();
 	destroy_modules();
@@ -350,7 +358,14 @@ void cleanup(int show_status)
 #endif
 	cleanup_log_level();
 
-	if (mem_lock && pt)
+	if (pt && (0
+#if defined F_MALLOC || defined QM_MALLOC
+		|| mem_lock
+#endif
+#ifdef HP_MALLOC
+		|| mem_locks
+#endif
+		))
 		shm_free(pt);
 	pt=0;
 	if (show_status){

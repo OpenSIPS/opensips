@@ -20,4 +20,4 @@
 
 #include "common.h"
 
-enum osips_mm mem_allocator = MM_F_MALLOC;
+enum osips_mm mem_allocator = MM_F_MALLOC_DBG;

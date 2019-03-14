@@ -37,11 +37,9 @@ enum osips_mm {
 	MM_F_MALLOC,
 	MM_QM_MALLOC,
 	MM_HP_MALLOC,
-#ifdef DBG_MALLOC
 	MM_F_MALLOC_DBG,
 	MM_QM_MALLOC_DBG,
 	MM_HP_MALLOC_DBG,
-#endif
 };
 
 extern void *mem_block;

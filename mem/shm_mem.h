@@ -158,7 +158,14 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 #define SHM_GET_FRAGS          gen_shm_get_frags
 #endif /* INLINE_ALLOC */
 
+#if defined F_MALLOC || defined QM_MALLOC
 extern gen_lock_t* mem_lock;
+#endif
+
+#ifdef HP_MALLOC
+extern gen_lock_t* mem_locks;
+#endif
+
 extern enum osips_mm mem_allocator_shm;
 
 
@@ -224,13 +231,26 @@ inline static void shm_threshold_check(void)
  #define shm_threshold_check()
 #endif
 
-
-#ifndef HP_MALLOC
+#ifdef HP_MALLOC
+	#ifdef INLINE_ALLOC
+	#define shm_lock()
+	#define shm_unlock()
+	#else
+	extern int shm_use_global_lock;
+	#define shm_lock() \
+		do { \
+			if (shm_use_global_lock) \
+				lock_get(mem_lock); \
+		} while (0)
+	#define shm_unlock() \
+		do { \
+			if (shm_use_global_lock) \
+				lock_release(mem_lock); \
+		} while (0)
+	#endif
+#else
 #define shm_lock()    lock_get(mem_lock)
 #define shm_unlock()  lock_release(mem_lock)
-#else
-#define shm_lock(i)    lock_get(&mem_lock[i])
-#define shm_unlock(i)  lock_release(&mem_lock[i])
 #endif
 
 #ifdef SHM_EXTRA_STATS
@@ -268,16 +288,12 @@ inline static void* _shm_malloc(unsigned int size,
 {
 	void *p;
 
-	#ifndef HP_MALLOC
-		shm_lock();
-	#endif
+	shm_lock();
 
 	p = SHM_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
 
-	#ifndef HP_MALLOC
-		shm_unlock();
-	#endif
+	shm_unlock();
 
 	#ifdef SHM_EXTRA_STATS
 	if (p) {
@@ -304,16 +320,12 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 		}
 	#endif
 
-#ifndef HP_MALLOC
 	shm_lock();
-#endif
 
 	p = SHM_REALLOC(shm_block, ptr, size, file, function, line);
 	shm_threshold_check();
 
-#ifndef HP_MALLOC
 	shm_unlock();
-#endif
 
 	#ifdef SHM_EXTRA_STATS
 	if (p) {
@@ -422,7 +434,7 @@ inline static void _shm_free(void *ptr,
 	__FILE__, __FUNCTION__, __LINE__ )
 
 #ifndef	HP_MALLOC
-extern unsigned long long *mem_hash_usage;
+extern unsigned long long *shm_hash_usage;
 #endif
 
 void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
@@ -458,16 +470,12 @@ inline static void* shm_malloc(unsigned long size)
 {
 	void *p;
 
-#ifndef HP_MALLOC
 	shm_lock();
-#endif
 
 	p = SHM_MALLOC(shm_block, size);
 	shm_threshold_check();
 
-#ifndef HP_MALLOC
 	shm_unlock();
-#endif
 
 #ifdef SHM_EXTRA_STATS
 	if (p) {
@@ -484,9 +492,7 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 {
 	void *p;
 
-#ifndef HP_MALLOC
 	shm_lock();
-#endif
 
 #ifdef SHM_EXTRA_STATS
 	unsigned long origin = 0;
@@ -499,9 +505,7 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 	p = SHM_REALLOC(shm_block, ptr, size);
 	shm_threshold_check();
 
-#ifndef HP_MALLOC
 	shm_unlock();
-#endif
 
 #ifdef SHM_EXTRA_STATS
 	if (p) {
@@ -574,9 +578,7 @@ do { \
  */
 inline static void shm_free(void *_p)
 {
-#ifndef HP_MALLOC
 	shm_lock();
-#endif
 
 #ifdef HP_MALLOC
 	#ifdef SHM_EXTRA_STATS
@@ -594,9 +596,7 @@ inline static void shm_free(void *_p)
 	shm_free_unsafe( (_p));
 #endif
 
-#ifndef HP_MALLOC
 	shm_unlock();
-#endif
 }
 
 
@@ -610,27 +610,17 @@ void* _shm_resize(void* ptr, unsigned int size);
 
 inline static void shm_status(void)
 {
-#ifndef HP_MALLOC
-		shm_lock();
-#endif
-
-		SHM_STATUS(shm_block);
-
-#ifndef HP_MALLOC
-		shm_unlock();
-#endif
+	shm_lock();
+	SHM_STATUS(shm_block);
+	shm_unlock();
 }
 
 
 inline static void shm_info(struct mem_info* mi)
 {
-#ifndef HP_MALLOC
 	shm_lock();
-#endif
 	SHM_INFO(shm_block, mi);
-#ifndef HP_MALLOC
 	shm_unlock();
-#endif
 }
 
 /*

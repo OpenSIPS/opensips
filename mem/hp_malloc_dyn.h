@@ -482,8 +482,8 @@ found:
 			hpb->max_real_used = hpb->real_used;
 #endif
 
-	if (mem_hash_usage)
-		mem_hash_usage[init_hash]++;
+	if (shm_hash_usage)
+		shm_hash_usage[init_hash]++;
 
 	return (char *)frag + sizeof *frag;
 }
@@ -599,7 +599,7 @@ found:
 #endif
 
 	/* ignore concurrency issues, simply obtaining an estimate is enough */
-	mem_hash_usage[init_hash]++;
+	shm_hash_usage[init_hash]++;
 
 	return (char *)frag + sizeof *frag;
 }
