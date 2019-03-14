@@ -65,7 +65,6 @@ include_modules?=
 
 #DEFS_GROUP_START
 DEFS+= -DPKG_MALLOC #Uses a faster malloc
-#DEFS+= -DUSE_SHM_MEM #All PKG allocations are mapped to SHM
 #DEFS_GROUP_END
 DEFS+= -DSHM_MMAP #Use mmap instead of SYSV shared memory
 DEFS+= -DUSE_MCAST #Compile in support for IP Multicast

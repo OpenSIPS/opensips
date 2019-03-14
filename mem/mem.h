@@ -156,18 +156,6 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #	else
 #		error "no memory allocator selected"
 #	endif
-#elif defined(USE_SHM_MEM)
-#	include "shm_mem.h"
-#	define pkg_malloc(s) shm_malloc((s))
-#	define pkg_realloc(p, s) shm_realloc((p), (s))
-#	define pkg_free(p)   shm_free((p))
-#	define pkg_status()  shm_status()
-#	define PKG_GET_SIZE()
-#	define PKG_GET_USED()
-#	define PKG_GET_RUSED()
-#	define PKG_GET_MUSED()
-#	define PKG_GET_FREE()
-#	define PKG_GET_FRAGS()
 #else
 #	include <stdlib.h>
 

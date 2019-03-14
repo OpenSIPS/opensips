@@ -566,11 +566,7 @@ MKTAGS=ctags -R .
 # -DSHM_MMAP
 #		use mmap instead of SYSV shared memory
 # -DPKG_MALLOC
-#		uses a faster malloc (exclusive w/ USE_SHM_MEM)
-# -DUSE_SHM_MEM
-#		all pkg_malloc are mapped to shm_malloc (most mallocs use
-#		a common shared mem. segment); don't define PKG_MALLOC
-#		if you want this!
+#		uses a faster malloc
 # -DDBG_MALLOC
 #		inserts debug code, will cause pkg_malloc and shm_malloc
 #		to keep and display lot of debuging information: file name,

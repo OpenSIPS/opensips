@@ -894,16 +894,10 @@ assign_stm: DEBUG EQUAL snumber
 		| EVENT_PKG_THRESHOLD EQUAL NUMBER {
 			#ifdef PKG_MALLOC
 			#ifdef STATISTICS
-			#ifdef USE_SHM_MEM
-				warn("No PKG memory, all allocations are mapped to SHM; "
-					"Use event_shm_threshold instead or recompile with PKG_MALLOC "
-					"instead of USE_SHM_MEM in order to have separate PKG memory");
-			#else
 			if ($3 < 0 || $3 > 100)
 				yyerror("PKG threshold has to be a percentage between "
 					"0 and 100");
 			event_pkg_threshold=$3;
-			#endif
 			#else
 			yyerror("statistics support not compiled in");
 			#endif
