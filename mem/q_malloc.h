@@ -24,30 +24,25 @@
 #ifndef q_malloc_h
 #define q_malloc_h
 
+#include <stdio.h>
 #include "meminfo.h"
-
-#undef ROUNDTO
-#undef MIN_FRAG_SIZE
 
 #ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
  * but long can be 32 bits aligned => malloc should return long long
  * aligned memory */
-	#define ROUNDTO		sizeof(long long)
+	#define QM_ROUNDTO		sizeof(long long)
 #else
-	#define ROUNDTO		sizeof(void*) /* minimum possible ROUNDTO ->heavy
-										 debugging*/
+	#define QM_ROUNDTO		sizeof(void*) /* minimum possible QM_ROUNDTO
+										     -> heavy debugging */
 #endif
 #else /* DBG_MALLOC */
-	#define ROUNDTO		16UL /* size we round to, must be = 2^n  and also
+	#define QM_ROUNDTO		16UL /* size we round to, must be = 2^n  and also
 							 sizeof(qm_frag)+sizeof(qm_frag_end)
-							 must be multiple of ROUNDTO!
+							 must be multiple of QM_ROUNDTO!
 						   */
 #endif
-#define MIN_FRAG_SIZE	ROUNDTO
-
-
 
 #define QM_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
 #define QM_MALLOC_OPTIMIZE  ((unsigned long)(1UL<<QM_MALLOC_OPTIMIZE_FACTOR))
@@ -55,15 +50,15 @@
 									(most allocs <= this size),
 									must be 2^k */
 
-#define QM_HASH_SIZE ((unsigned long)(QM_MALLOC_OPTIMIZE/ROUNDTO + \
+#define QM_HASH_SIZE ((unsigned long)(QM_MALLOC_OPTIMIZE/QM_ROUNDTO + \
 		(sizeof(long)*8-QM_MALLOC_OPTIMIZE_FACTOR)+1))
 
 #define QM_FRAG(p) \
 	((struct qm_frag *)((char *)(p) - sizeof(struct qm_frag)))
 
 /* hash structure:
- * 0 .... QM_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with
- *                            ROUNDTO from bucket to bucket
+ * 0 .... QM_MALLOC_OPTIMIZE/QM_ROUNDTO  - small buckets, size increases with
+ *                            QM_ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 
 struct qm_frag{

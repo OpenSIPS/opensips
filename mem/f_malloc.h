@@ -24,6 +24,7 @@
 #ifndef f_malloc_h
 #define f_malloc_h
 
+#include <stdio.h>
 #include "meminfo.h"
 
 #undef ROUNDTO

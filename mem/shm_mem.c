@@ -342,6 +342,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 
 #ifdef SHM_EXTRA_STATS
 	switch (mem_allocator_shm) {
+#ifdef F_MALLOC
 	case MM_F_MALLOC:
 	case MM_F_MALLOC_DBG:
 		shm_stats_core_init = (osips_shm_stats_init_f)fm_stats_core_init;
@@ -353,28 +354,33 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_frag_func = fm_frag_func;
 		shm_frag_line = fm_frag_line;
 		break;
+#endif
+#ifdef QM_MALLOC
 	case MM_QM_MALLOC:
 	case MM_QM_MALLOC_DBG:
 		shm_stats_core_init = (osips_shm_stats_init_f)qm_stats_core_init;
-		shm_stats_get_index = fm_stats_get_index;
-		shm_stats_set_index = fm_stats_set_index;
+		shm_stats_get_index = qm_stats_get_index;
+		shm_stats_set_index = qm_stats_set_index;
 		shm_frag_overhead = QM_FRAG_OVERHEAD;
 		shm_frag_size = qm_frag_size;
 		shm_frag_file = qm_frag_file;
 		shm_frag_func = qm_frag_func;
 		shm_frag_line = qm_frag_line;
 		break;
+#endif
+#ifdef HP_MALLOC
 	case MM_HP_MALLOC:
 	case MM_HP_MALLOC_DBG:
 		shm_stats_core_init = (osips_shm_stats_init_f)hp_stats_core_init;
-		shm_stats_get_index = fm_stats_get_index;
-		shm_stats_set_index = fm_stats_set_index;
+		shm_stats_get_index = hp_stats_get_index;
+		shm_stats_set_index = hp_stats_set_index;
 		shm_frag_overhead = HP_FRAG_OVERHEAD;
 		shm_frag_size = hp_frag_size;
 		shm_frag_file = hp_frag_file;
 		shm_frag_func = hp_frag_func;
 		shm_frag_line = hp_frag_line;
 		break;
+#endif
 	default:
 		LM_ERR("current build does not include support for "
 		       "selected allocator (%d)\n", mem_allocator_shm);

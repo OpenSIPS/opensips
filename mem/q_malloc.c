@@ -51,28 +51,29 @@
 #define PREV_FRAG_END(f) \
 	((struct qm_frag_end*)((char*)(f)-sizeof(struct qm_frag_end)))
 
+#define MIN_FRAG_SIZE	QM_ROUNDTO
 #define FRAG_OVERHEAD	(sizeof(struct qm_frag)+sizeof(struct qm_frag_end))
 
-#define ROUNDTO_MASK	(~((unsigned long)ROUNDTO-1))
-#define ROUNDUP(s)		(((s)+(ROUNDTO-1))&ROUNDTO_MASK)
+#define ROUNDTO_MASK	(~((unsigned long)QM_ROUNDTO-1))
+#define ROUNDUP(s)		(((s)+(QM_ROUNDTO-1))&ROUNDTO_MASK)
 #define ROUNDDOWN(s)	((s)&ROUNDTO_MASK)
 
 /*
-#define ROUNDUP(s)		(((s)%ROUNDTO)?((s)+ROUNDTO)/ROUNDTO*ROUNDTO:(s))
-#define ROUNDDOWN(s)	(((s)%ROUNDTO)?((s)-ROUNDTO)/ROUNDTO*ROUNDTO:(s))
+#define ROUNDUP(s)		(((s)%QM_ROUNDTO)?((s)+QM_ROUNDTO)/QM_ROUNDTO*QM_ROUNDTO:(s))
+#define ROUNDDOWN(s)	(((s)%QM_ROUNDTO)?((s)-QM_ROUNDTO)/QM_ROUNDTO*QM_ROUNDTO:(s))
 */
 
 
 
-	/* finds the hash value for s, s=ROUNDTO multiple*/
+	/* finds the hash value for s, s=QM_ROUNDTO multiple*/
 #define GET_HASH(s)   ( ((unsigned long)(s)<=QM_MALLOC_OPTIMIZE)?\
-							(unsigned long)(s)/ROUNDTO: \
-							QM_MALLOC_OPTIMIZE/ROUNDTO+big_hash_idx((s))- \
+							(unsigned long)(s)/QM_ROUNDTO: \
+							QM_MALLOC_OPTIMIZE/QM_ROUNDTO+big_hash_idx((s))- \
 								QM_MALLOC_OPTIMIZE_FACTOR+1 )
 
-#define UN_HASH(h)	( ((unsigned long)(h)<=(QM_MALLOC_OPTIMIZE/ROUNDTO))?\
-							(unsigned long)(h)*ROUNDTO: \
-							1UL<<((h)-QM_MALLOC_OPTIMIZE/ROUNDTO+\
+#define UN_HASH(h)	( ((unsigned long)(h)<=(QM_MALLOC_OPTIMIZE/QM_ROUNDTO))?\
+							(unsigned long)(h)*QM_ROUNDTO: \
+							1UL<<((h)-QM_MALLOC_OPTIMIZE/QM_ROUNDTO+\
 								QM_MALLOC_OPTIMIZE_FACTOR-1)\
 					)
 
@@ -89,7 +90,7 @@
 inline static unsigned long big_hash_idx(unsigned long s)
 {
 	int idx;
-	/* s is rounded => s = k*2^n (ROUNDTO=2^n)
+	/* s is rounded => s = k*2^n (QM_ROUNDTO=2^n)
 	 * index= i such that 2^i > s >= 2^(i-1)
 	 *
 	 * => index = number of the first non null bit in s*/
@@ -196,7 +197,7 @@ struct qm_block* qm_malloc_init(char* address, unsigned long size, char *name)
 	/* make address and size multiple of 8*/
 	start=(char*)ROUNDUP((unsigned long) address);
 	LM_DBG("QM_OPTIMIZE=%lu, /ROUNDTO=%lu\n",
-			QM_MALLOC_OPTIMIZE, QM_MALLOC_OPTIMIZE/ROUNDTO);
+			QM_MALLOC_OPTIMIZE, QM_MALLOC_OPTIMIZE/QM_ROUNDTO);
 	LM_DBG("QM_HASH_SIZE=%lu, qm_block size=%lu\n",
 			QM_HASH_SIZE, (long)sizeof(struct qm_block));
 	LM_DBG("params (%p, %lu), start=%p\n", address, size, start);
@@ -392,7 +393,7 @@ void qm_status(struct qm_block* qm)
 		if (j) LM_GEN1(memdump, "hash= %3d. fragments no.: %5d, unused: %5d\n"
 					"\t\t bucket size: %9lu - %9ld (first %9lu)\n",
 					h, j, unused, UN_HASH(h),
-					((h<=QM_MALLOC_OPTIMIZE/ROUNDTO)?1:2)*UN_HASH(h),
+					((h<=QM_MALLOC_OPTIMIZE/QM_ROUNDTO)?1:2)*UN_HASH(h),
 					qm->free_hash[h].head.u.nxt_free->size
 				);
 		if (j!=qm->free_hash[h].no){
