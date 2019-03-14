@@ -478,6 +478,13 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	if (read_fd == ASYNC_NO_IO) {
 		ctx->resume_param = NULL;
 		ctx->resume_f = NULL;
+		if (code_pv) {
+			val.flags = PV_VAL_INT|PV_TYPE_INT;
+			val.ri = 0;
+			if (pv_set_value(msg, (pv_spec_p)code_pv, 0, &val) != 0)
+				LM_ERR("failed to set output code pv\n");
+		}
+
 		/* keep default async status of NO_IO */
 		pkg_free(param);
 		return rc;
