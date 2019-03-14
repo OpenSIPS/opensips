@@ -69,10 +69,11 @@ DEFS+= -DUSE_MCAST #Compile in support for IP Multicast
 DEFS+= -DDISABLE_NAGLE #Disabled the TCP NAgle Algorithm ( lower delay )
 DEFS+= -DSTATISTICS #Enables the statistics manager
 DEFS+= -DHAVE_RESOLV_RES #Support for changing some of the resolver parameters
-DEFS+= -DQM_MALLOC #Quality assurance memory allocator with runtime safety checks
+# Including exactly 1 allocator will cause it to be inlined (fastest)
 DEFS+= -DF_MALLOC #Fast memory allocator with minimal runtime overhead
+DEFS+= -DQM_MALLOC #Quality assurance memory allocator with runtime safety checks
 DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
-DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
+DEFS+= -DDBG_MALLOC #Include additional, debug-enabled allocator flavors
 #DEFS+= -DNO_DEBUG #Turns off all debug messages
 #DEFS+= -DNO_LOG #Completely turns off all the logging
 #DEFS_GROUP_START
@@ -90,7 +91,7 @@ DEFS+= -DDBG_MALLOC #Enables debugging for memory allocators
 #DEFS+= -DNOSMP #Do not use SMP compliant locking. Faster but won't work on SMP machines
 #DEFS+= -DEXTRA_DEBUG #Compiles in some extra debugging code
 #DEFS+= -DORACLE_USRLOC #Uses Oracle compatible queries for USRLOC
-DEFS+= -DSHM_EXTRA_STATS #Provides tools to get extra statistics for the shared memory used
+#DEFS+= -DSHM_EXTRA_STATS #Provides tools to get extra statistics for the shared memory used
 #DEFS+= -DUNIT_TESTS #Include unit testing code into opensips and modules
 
 PREFIX ?= /usr/local/
