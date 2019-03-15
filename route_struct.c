@@ -148,15 +148,23 @@ static void free_expr( struct expr *e)
 	if (e->type==ELEM_T) {
 
 		/* left ... */
-		if (e->left.type==EXPR_O)
-			free_expr( e->left.v.expr );
-		else if (e->right.type==ACTION_O)
-			free_action_list( (struct action*)e->right.v.data );
+		switch (e->left.type) {
+			case EXPR_O:
+				free_expr( e->left.v.expr ); break;
+			case ACTION_O:
+				free_action_list( (struct action*)e->left.v.data ); break;
+			case SCRIPTVAR_O:
+				pkg_free( e->left.v.data ); break;
+		}
 		/* ... and right */
-		if (e->right.type==EXPR_ST)
-			free_expr( e->right.v.expr );
-		else if (e->right.type==ACTIONS_ST)
-			free_action_list( (struct action*)e->right.v.data );
+		switch (e->right.type) {
+			case EXPR_ST:
+				free_expr( e->right.v.expr ); break;
+			case ACTIONS_ST:
+				free_action_list( (struct action*)e->right.v.data ); break;
+			case SCRIPTVAR_ST:
+				pkg_free( e->right.v.data ); break;
+		}
 
 	} else if (e->type==EXP_T) {
 
@@ -179,6 +187,8 @@ static void free_action_elem( action_elem_t *e )
 		free_expr( (struct expr*)e->u.data );
 	else if (e->type==ACTIONS_ST)
 		free_action_list( (struct action*)e->u.data );
+	else if (e->type==SCRIPTVAR_ST)
+		pkg_free(e->u.data);
 }
 
 
