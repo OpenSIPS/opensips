@@ -337,10 +337,6 @@ found:
 	hp_frag_detach(hpb, frag);
 	update_stats_pkg_frag_detach(hpb, frag);
 
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	/* mark fragment as "busy" */
-	frag->is_free = 0;
-#endif
 #ifndef STATISTICS
 	hpb->used += frag->size;
 	hpb->real_used += frag->size + FRAG_OVERHEAD;
@@ -449,11 +445,6 @@ found:
 		hpb->used += frag->size;
 		hpb->real_used += frag->size + FRAG_OVERHEAD;
 	}
-
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	/* mark it as "busy" */
-	frag->is_free = 0;
-#endif
 
 	/* split the fragment if possible */
 	#if !defined INLINE_ALLOC && defined DBG_MALLOC
@@ -566,11 +557,6 @@ found:
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	hpb->used += (frag)->size;
 	hpb->real_used += (frag)->size + FRAG_OVERHEAD;
-#endif
-
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	/* mark fragment as "busy" */
-	frag->is_free = 0;
 #endif
 
 	#if !defined INLINE_ALLOC && defined DBG_MALLOC
@@ -1052,7 +1038,7 @@ void hp_status(struct hp_block *hpb)
 	dbg_ht_init(allocd);
 
 	for (f=hpb->first_frag; (char*)f<(char*)hpb->last_frag; f=FRAG_NEXT(f))
-		if (!f->is_free)
+		if (!frag_is_free(f))
 			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
 				LM_ERR("Unable to update alloc'ed. memory summary\n");
 				dbg_ht_free(allocd);

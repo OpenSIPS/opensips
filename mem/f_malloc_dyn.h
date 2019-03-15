@@ -147,14 +147,8 @@ void* fm_malloc(struct fm_block* qm, unsigned long size,
 				qm->used += FRAG_OVERHEAD;
 				#endif
 
-				if( frag->size >size ) {
-					#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-					/* mark it as "busy" */
-					frag->is_free = 0;
-					#endif
-
+				if (frag->size >size)
 					goto solved;
-				}
 
 				n = FRAG_NEXT(frag);
 			}
@@ -177,11 +171,6 @@ found:
 	/* we found it!*/
 
 	fm_remove_free(qm,frag);
-
-	#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	/* mark it as "busy" */
-	frag->is_free = 0;
-	#endif
 
 	/*see if we'll use full frag, or we'll split it in 2*/
 
@@ -464,7 +453,7 @@ void fm_status(struct fm_block* qm)
 	dbg_ht_init(allocd);
 
 	for (f=qm->first_frag; (char*)f<(char*)qm->last_frag; f=FRAG_NEXT(f))
-		if (!f->is_free)
+		if (!frag_is_free(f))
 			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
 				LM_ERR("Unable to update alloc'ed. memory summary\n");
 				dbg_ht_free(allocd);

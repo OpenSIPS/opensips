@@ -154,11 +154,6 @@ static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
 	if( *f )
 		(*f)->prev = &(frag->u.nxt_free);
 
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	/* mark fragment as "free" */
-	frag->is_free = 1;
-#endif
-
 	*f=frag;
 	qm->free_hash[hash].no++;
 
@@ -276,7 +271,7 @@ void fm_stats_core_init(struct fm_block *fm, int core_index)
 	struct fm_frag *f;
 
 	for (f=fm->first_frag; (char *)f < (char *)fm->last_frag; f=FRAG_NEXT(f))
-		if (!f->is_free)
+		if (!frag_is_free(f))
 			f->statistic_index = core_index;
 }
 

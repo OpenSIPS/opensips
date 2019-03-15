@@ -201,11 +201,6 @@ static inline void hp_frag_attach(struct hp_block *hpb, struct hp_frag *frag)
 	if (*f)
 		(*f)->prev = &(frag->u.nxt_free);
 
-	/* mark fragment as "free" */
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	frag->is_free = 1;
-#endif
-
 	*f = frag;
 
 #ifdef HP_MALLOC_FAST_STATS
@@ -626,7 +621,7 @@ void hp_stats_core_init(struct hp_block *hp, int core_index)
 	struct hp_frag *f;
 
 	for (f=hp->first_frag; (char*)f<(char*)hp->last_frag; f=FRAG_NEXT(f))
-		if (!f->is_free)
+		if (!frag_is_free(f))
 			f->statistic_index = core_index;
 }
 #endif

@@ -74,16 +74,12 @@ struct fm_frag {
 	unsigned long check;
 #endif
 
-#define FM_FRAG_OVERHEAD (sizeof(struct fm_frag))
-
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	char is_free;
-#endif
-
 #ifdef SHM_EXTRA_STATS
 	unsigned long statistic_index;
 #endif
 };
+
+#define FM_FRAG_OVERHEAD (sizeof(struct fm_frag))
 
 struct fm_frag_lnk {
 	struct fm_frag* first;
