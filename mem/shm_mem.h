@@ -102,6 +102,8 @@ extern unsigned long (*shm_frag_line)(void *p);
 #endif
 #endif
 
+int set_shm_mm(const char *mm_name);
+
 #ifndef INLINE_ALLOC
 #ifdef DBG_MALLOC
 extern void *(*gen_shm_malloc)(void *blk, unsigned long size,

@@ -32,6 +32,8 @@
 #ifdef PKG_MALLOC
 #include "common.h"
 
+int set_pkg_mm(const char *mm_name);
+
 extern char *mem_pool;
 extern enum osips_mm mem_allocator_pkg;
 

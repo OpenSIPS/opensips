@@ -44,6 +44,12 @@ enum osips_mm {
 	MM_HP_MALLOC_DBG,
 };
 
+/* returns -1 if @mm_name is unrecognized */
+int set_global_mm(const char *mm_name);
+
+/* returns -1 if @mm_name is unrecognized */
+int parse_mm(const char *mm_name, enum osips_mm *mm);
+
 #define mm_str(mm) \
 	((mm) == MM_NONE ? "NONE" : \
 	 (mm) == MM_F_MALLOC ? "F_MALLOC" : \

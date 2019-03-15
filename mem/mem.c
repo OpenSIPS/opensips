@@ -58,6 +58,14 @@ unsigned long (*gen_pkg_get_frags)(void *blk);
 	void *mem_block;
 #endif
 
+int set_pkg_mm(const char *mm_name)
+{
+	if (parse_mm(mm_name, &mem_allocator_pkg) < 0)
+		return -1;
+
+	return 0;
+}
+
 int init_pkg_mallocs(void)
 {
 #ifdef PKG_MALLOC

@@ -23,3 +23,50 @@
 #include "common.h"
 
 enum osips_mm mem_allocator = MM_F_MALLOC;
+
+/* returns -1 if @mm_name is unrecognized */
+int set_global_mm(const char *mm_name)
+{
+	if (parse_mm(mm_name, &mem_allocator) < 0)
+		return -1;
+
+	return 0;
+}
+
+/* returns -1 if @mm_name is unrecognized */
+int parse_mm(const char *mm_name, enum osips_mm *mm)
+{
+	if (!strcasecmp(mm_name, "F_MALLOC")) {
+		*mm = MM_F_MALLOC;
+		return 0;
+	}
+
+	if (!strcasecmp(mm_name, "Q_MALLOC")) {
+		*mm = MM_Q_MALLOC;
+		return 0;
+	}
+
+	if (!strcasecmp(mm_name, "HP_MALLOC")) {
+		*mm = MM_HP_MALLOC;
+		return 0;
+	}
+
+#ifdef DBG_MALLOC
+	if (!strcasecmp(mm_name, "F_MALLOC_DBG")) {
+		*mm = MM_F_MALLOC_DBG;
+		return 0;
+	}
+
+	if (!strcasecmp(mm_name, "Q_MALLOC_DBG")) {
+		*mm = MM_Q_MALLOC_DBG;
+		return 0;
+	}
+
+	if (!strcasecmp(mm_name, "HP_MALLOC_DBG")) {
+		*mm = MM_HP_MALLOC_DBG;
+		return 0;
+	}
+#endif
+
+	return -1;
+}

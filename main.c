@@ -912,7 +912,7 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:"
+	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
 #ifdef UNIT_TESTS
 	"T"
 #endif
@@ -940,6 +940,27 @@ int main(int argc, char** argv)
 					break;
 			case 'g':
 					group=optarg;
+					break;
+			case 'a':
+					if (set_global_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-a %s)\n", optarg);
+						goto error00;
+					}
+					break;
+			case 'k':
+					if (set_pkg_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-k %s)\n", optarg);
+						goto error00;
+					}
+					break;
+			case 's':
+					if (set_shm_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-s %s)\n", optarg);
+						goto error00;
+					}
 					break;
 		}
 	}
@@ -986,10 +1007,11 @@ int main(int argc, char** argv)
 					cfg_log_stderr=1; /* force stderr logging */
 					break;
 			case 'm':
-					/* ignoring it, parsed previously */
-					break;
 			case 'M':
-					/* ignoring it, parsed previously */
+			case 'a':
+			case 'k':
+			case 's':
+					/* ignoring, parsed previously */
 					break;
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);

@@ -158,6 +158,13 @@ static str shm_threshold_str = { "threshold", 9 };
 static str shm_used_str = { "used", 4 };
 static str shm_size_str = { "size", 4 };
 
+int set_shm_mm(const char *mm_name)
+{
+	if (parse_mm(mm_name, &mem_allocator_shm) < 0)
+		return -1;
+
+	return 0;
+}
 
 void shm_event_raise(long used, long size, long perc)
 {
