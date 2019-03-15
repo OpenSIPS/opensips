@@ -85,7 +85,7 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #define PKG_GET_MUSED()        fm_get_max_real_used(mem_block)
 #define PKG_GET_FREE()         fm_get_free(mem_block)
 #define PKG_GET_FRAGS()        fm_get_frags(mem_block)
-#elif defined QM_MALLOC
+#elif defined Q_MALLOC
 #define PKG_MALLOC_            qm_malloc
 #define PKG_REALLOC            qm_realloc
 #define PKG_FREE               qm_free
@@ -129,7 +129,7 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #ifdef __SUNPRO_C
 		#define __FUNCTION__ ""  /* gcc specific */
 #endif
-#		if defined F_MALLOC || defined QM_MALLOC || defined HP_MALLOC
+#		if defined F_MALLOC || defined Q_MALLOC || defined HP_MALLOC
 #			define pkg_malloc(s) \
 				PKG_MALLOC_(mem_block, (s),__FILE__, __FUNCTION__, __LINE__)
 #			define pkg_free(p) \
@@ -141,7 +141,7 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #			error "no memory allocator selected"
 #		endif
 #	else
-#		if defined F_MALLOC || defined QM_MALLOC || defined HP_MALLOC
+#		if defined F_MALLOC || defined Q_MALLOC || defined HP_MALLOC
 #			define pkg_malloc(s)     PKG_MALLOC_(mem_block, (s))
 #			define pkg_realloc(p, s) PKG_REALLOC(mem_block, (p), (s))
 #			define pkg_free(p)       PKG_FREE(mem_block, (p))
@@ -151,7 +151,7 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #		endif
 #	endif
 
-#	if defined F_MALLOC || defined HP_MALLOC || defined QM_MALLOC
+#	if defined F_MALLOC || defined HP_MALLOC || defined Q_MALLOC
 #		define pkg_status()        PKG_STATUS(mem_block)
 #	else
 #		error "no memory allocator selected"

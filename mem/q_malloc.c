@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifdef QM_MALLOC
+#ifdef Q_MALLOC
 
 #include <stdlib.h>
 #include <string.h>
@@ -66,15 +66,15 @@
 
 
 	/* finds the hash value for s, s=QM_ROUNDTO multiple*/
-#define GET_HASH(s)   ( ((unsigned long)(s)<=QM_MALLOC_OPTIMIZE)?\
+#define GET_HASH(s)   ( ((unsigned long)(s)<=Q_MALLOC_OPTIMIZE)?\
 							(unsigned long)(s)/QM_ROUNDTO: \
-							QM_MALLOC_OPTIMIZE/QM_ROUNDTO+big_hash_idx((s))- \
-								QM_MALLOC_OPTIMIZE_FACTOR+1 )
+							Q_MALLOC_OPTIMIZE/QM_ROUNDTO+big_hash_idx((s))- \
+								Q_MALLOC_OPTIMIZE_FACTOR+1 )
 
-#define UN_HASH(h)	( ((unsigned long)(h)<=(QM_MALLOC_OPTIMIZE/QM_ROUNDTO))?\
+#define UN_HASH(h)	( ((unsigned long)(h)<=(Q_MALLOC_OPTIMIZE/QM_ROUNDTO))?\
 							(unsigned long)(h)*QM_ROUNDTO: \
-							1UL<<((h)-QM_MALLOC_OPTIMIZE/QM_ROUNDTO+\
-								QM_MALLOC_OPTIMIZE_FACTOR-1)\
+							1UL<<((h)-Q_MALLOC_OPTIMIZE/QM_ROUNDTO+\
+								Q_MALLOC_OPTIMIZE_FACTOR-1)\
 					)
 
 /* mark/test used/unused frags */
@@ -194,7 +194,7 @@ struct qm_block* qm_malloc_init(char* address, unsigned long size, char *name)
 	/* make address and size multiple of 8*/
 	start=(char*)ROUNDUP((unsigned long) address);
 	LM_DBG("QM_OPTIMIZE=%lu, /ROUNDTO=%lu\n",
-			QM_MALLOC_OPTIMIZE, QM_MALLOC_OPTIMIZE/QM_ROUNDTO);
+			Q_MALLOC_OPTIMIZE, Q_MALLOC_OPTIMIZE/QM_ROUNDTO);
 	LM_DBG("QM_HASH_SIZE=%lu, qm_block size=%lu\n",
 			QM_HASH_SIZE, (long)sizeof(struct qm_block));
 	LM_DBG("params (%p, %lu), start=%p\n", address, size, start);
@@ -302,11 +302,11 @@ static inline struct qm_frag* qm_find_free(struct qm_block* qm,
 	return 0;
 }
 
-#include "qm_malloc_dyn.h"
+#include "q_malloc_dyn.h"
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 #undef DBG_MALLOC
-#include "qm_malloc_dyn.h"
+#include "q_malloc_dyn.h"
 #define DBG_MALLOC
 #endif
 

@@ -44,20 +44,20 @@
 						   */
 #endif
 
-#define QM_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
-#define QM_MALLOC_OPTIMIZE  ((unsigned long)(1UL<<QM_MALLOC_OPTIMIZE_FACTOR))
+#define Q_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
+#define Q_MALLOC_OPTIMIZE  ((unsigned long)(1UL<<Q_MALLOC_OPTIMIZE_FACTOR))
 								/* size to optimize for,
 									(most allocs <= this size),
 									must be 2^k */
 
-#define QM_HASH_SIZE ((unsigned long)(QM_MALLOC_OPTIMIZE/QM_ROUNDTO + \
-		(sizeof(long)*8-QM_MALLOC_OPTIMIZE_FACTOR)+1))
+#define QM_HASH_SIZE ((unsigned long)(Q_MALLOC_OPTIMIZE/QM_ROUNDTO + \
+		(sizeof(long)*8-Q_MALLOC_OPTIMIZE_FACTOR)+1))
 
 #define QM_FRAG(p) \
 	((struct qm_frag *)((char *)(p) - sizeof(struct qm_frag)))
 
 /* hash structure:
- * 0 .... QM_MALLOC_OPTIMIZE/QM_ROUNDTO  - small buckets, size increases with
+ * 0 .... Q_MALLOC_OPTIMIZE/QM_ROUNDTO  - small buckets, size increases with
  *                            QM_ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 

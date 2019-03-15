@@ -321,14 +321,14 @@ void cleanup(int show_status)
 	   		 some process crashed and let it locked; this will
 	   		 allow an almost gracious shutdown */
 	if (0
-#if defined F_MALLOC || defined QM_MALLOC
+#if defined F_MALLOC || defined Q_MALLOC
 		|| mem_lock
 #endif
 #ifdef HP_MALLOC
 		|| mem_locks
 #endif
 	) {
-#if defined HP_MALLOC && (defined F_MALLOC || defined QM_MALLOC)
+#if defined HP_MALLOC && (defined F_MALLOC || defined Q_MALLOC)
 		if (mem_allocator_shm == MM_HP_MALLOC ||
 		        mem_allocator_shm == MM_HP_MALLOC_DBG) {
 			int i;
@@ -368,7 +368,7 @@ void cleanup(int show_status)
 	cleanup_log_level();
 
 	if (pt && (0
-#if defined F_MALLOC || defined QM_MALLOC
+#if defined F_MALLOC || defined Q_MALLOC
 		|| mem_lock
 #endif
 #ifdef HP_MALLOC

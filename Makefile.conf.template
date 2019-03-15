@@ -71,7 +71,7 @@ DEFS+= -DSTATISTICS #Enables the statistics manager
 DEFS+= -DHAVE_RESOLV_RES #Support for changing some of the resolver parameters
 # Including exactly 1 allocator will cause it to be inlined (fastest)
 DEFS+= -DF_MALLOC #Fast memory allocator with minimal runtime overhead
-DEFS+= -DQM_MALLOC #Quality assurance memory allocator with runtime safety checks
+DEFS+= -DQ_MALLOC #Quality assurance memory allocator with runtime safety checks
 DEFS+= -DHP_MALLOC #High performance allocator with fine-grained locking
 DEFS+= -DDBG_MALLOC #Include additional, debug-enabled allocator flavors
 #DEFS+= -DNO_DEBUG #Turns off all debug messages

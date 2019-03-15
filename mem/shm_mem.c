@@ -108,7 +108,7 @@ stat_export_t shm_stats[] = {
 static int shm_shmid=-1; /*shared memory id*/
 #endif
 
-#if defined F_MALLOC || defined QM_MALLOC
+#if defined F_MALLOC || defined Q_MALLOC
 gen_lock_t *mem_lock;
 #endif
 
@@ -325,7 +325,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #ifdef INLINE_ALLOC
 #if defined F_MALLOC
 	shm_block = fm_malloc_init(mempool, pool_size, "shm");
-#elif defined QM_MALLOC
+#elif defined Q_MALLOC
 	shm_block = qm_malloc_init(mempool, pool_size, "shm");
 #elif defined HP_MALLOC
 	shm_block = hp_shm_malloc_init(mempool, pool_size, "shm");
@@ -355,9 +355,9 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_frag_line = fm_frag_line;
 		break;
 #endif
-#ifdef QM_MALLOC
-	case MM_QM_MALLOC:
-	case MM_QM_MALLOC_DBG:
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
+	case MM_Q_MALLOC_DBG:
 		shm_stats_core_init = (osips_shm_stats_init_f)qm_stats_core_init;
 		shm_stats_get_index = qm_stats_get_index;
 		shm_stats_set_index = qm_stats_set_index;
@@ -408,8 +408,8 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		gen_shm_get_frags      = (osips_get_mmstat_f)fm_get_frags;
 		break;
 #endif
-#ifdef QM_MALLOC
-	case MM_QM_MALLOC:
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
 		shm_block = qm_malloc_init(mempool, pool_size, "shm");
 		gen_shm_malloc         = (osips_malloc_f)qm_malloc;
 		gen_shm_malloc_unsafe  = (osips_malloc_f)qm_malloc;
@@ -466,8 +466,8 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		gen_shm_get_frags      = (osips_get_mmstat_f)fm_get_frags;
 		break;
 #endif
-#ifdef QM_MALLOC
-	case MM_QM_MALLOC_DBG:
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC_DBG:
 		shm_block = qm_malloc_init(mempool, pool_size, "shm");
 		gen_shm_malloc         = (osips_malloc_f)qm_malloc_dbg;
 		gen_shm_malloc_unsafe  = (osips_malloc_f)qm_malloc_dbg;
@@ -592,7 +592,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	memset(shm_hash_usage, 0, HP_TOTAL_HASH_SIZE * sizeof *shm_hash_usage);
 #endif
 
-#if defined F_MALLOC || defined QM_MALLOC
+#if defined F_MALLOC || defined Q_MALLOC
 	mem_lock = shm_malloc_unsafe(sizeof *mem_lock);
 	if (!mem_lock) {
 		LM_CRIT("could not allocate the shm lock\n");
@@ -649,13 +649,13 @@ int shm_mem_init(void)
 mi_response_t *mi_shm_check(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-#if defined(QM_MALLOC) && defined(DBG_MALLOC)
+#if defined(Q_MALLOC) && defined(DBG_MALLOC)
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
 	int ret;
 
 #ifndef INLINE_ALLOC
-	if (mem_allocator_shm == MM_QM_MALLOC_DBG) {
+	if (mem_allocator_shm == MM_Q_MALLOC_DBG) {
 #endif
 
 	shm_lock();
@@ -788,7 +788,7 @@ void shm_mem_destroy(void)
 #ifdef HP_MALLOC
 			|| mem_locks
 #endif
-#if defined F_MALLOC || defined QM_MALLOC
+#if defined F_MALLOC || defined Q_MALLOC
 			|| mem_lock
 #endif
 			)) {
@@ -831,14 +831,14 @@ void shm_mem_destroy(void)
 #endif
 
 	if (0
-#if defined F_MALLOC || defined QM_MALLOC
+#if defined F_MALLOC || defined Q_MALLOC
 		|| mem_lock
 #endif
 #ifdef HP_MALLOC
 		|| mem_locks
 #endif
 	) {
-	#if defined F_MALLOC || defined QM_MALLOC
+	#if defined F_MALLOC || defined Q_MALLOC
 		if (mem_lock) {
 			LM_DBG("destroying the shared memory lock\n");
 			lock_destroy(mem_lock); /* we don't need to dealloc it*/

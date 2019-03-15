@@ -27,7 +27,7 @@ static inline
 int qm_split_frag_dbg(struct qm_block* qm, struct qm_frag* f,
                       unsigned long new_size, const char* file,
                       const char* func, unsigned int line)
-#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 int qm_split_frag(struct qm_block* qm, struct qm_frag* f,
                   unsigned long new_size)
 #else
@@ -42,7 +42,7 @@ int qm_split_frag(struct qm_block* qm, struct qm_frag* f,
 
 	rest=f->size-new_size;
 #ifdef MEM_FRAG_AVOIDANCE
-	if ((rest> (FRAG_OVERHEAD+QM_MALLOC_OPTIMIZE))||
+	if ((rest> (FRAG_OVERHEAD+Q_MALLOC_OPTIMIZE))||
 		(rest>=(FRAG_OVERHEAD+new_size))){/* the residue fragm. is big enough*/
 #else
 	if (rest>(FRAG_OVERHEAD+MIN_FRAG_SIZE)){
@@ -81,7 +81,7 @@ int qm_split_frag(struct qm_block* qm, struct qm_frag* f,
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void* qm_malloc_dbg(struct qm_block* qm, unsigned long size,
 					const char* file, const char* func, unsigned int line)
-#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 void* qm_malloc(struct qm_block* qm, unsigned long size)
 #else
 void* qm_malloc(struct qm_block* qm, unsigned long size,
@@ -91,7 +91,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size,
 	struct qm_frag* f;
 	int hash;
 
-#if defined DBG_MALLOC || defined QM_MALLOC_DYN
+#if defined DBG_MALLOC || defined Q_MALLOC_DYN
 	unsigned int list_cntr;
 	list_cntr = 0;
 #endif
@@ -113,7 +113,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size,
 	/*search for a suitable free frag*/
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 	if ((f=qm_find_free(qm, size, &hash, &list_cntr))!=0){
-#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 	if ((f=qm_find_free(qm, size, &hash))!=0){
 #else
 	if ((f=qm_find_free(qm, size, &hash, &list_cntr))!=0){
@@ -131,7 +131,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size,
 
 		#if !defined INLINE_ALLOC && defined DBG_MALLOC
 		qm_split_frag_dbg(qm, f, size, file, "qm_malloc frag", line);
-		#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+		#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 		qm_split_frag(qm, f, size);
 		#else
 		qm_split_frag(qm, f, size, file, "qm_malloc frag", line);
@@ -168,7 +168,7 @@ void* qm_malloc(struct qm_block* qm, unsigned long size,
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void qm_free_dbg(struct qm_block* qm, void* p,
                  const char* file, const char* func, unsigned int line)
-#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 void qm_free(struct qm_block* qm, void* p)
 #else
 void qm_free(struct qm_block* qm, void* p,
@@ -259,7 +259,7 @@ void qm_free(struct qm_block* qm, void* p,
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void* qm_realloc_dbg(struct qm_block* qm, void* p, unsigned long size,
                      const char* file, const char* func, unsigned int line)
-#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 void* qm_realloc(struct qm_block* qm, void* p, unsigned long size)
 #else
 void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
@@ -285,7 +285,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 		if (p)
 			#if !defined INLINE_ALLOC && defined DBG_MALLOC
 			qm_free_dbg(qm, p, file, func, line);
-			#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+			#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 			qm_free(qm, p);
 			#else
 			qm_free(qm, p, file, func, line);
@@ -297,7 +297,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 	if (!p)
 		#if !defined INLINE_ALLOC && defined DBG_MALLOC
 		return qm_malloc_dbg(qm, size, file, func, line);
-		#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+		#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 		return qm_malloc(qm, size);
 		#else
 		return qm_malloc(qm, size, file, func, line);
@@ -327,7 +327,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 
 		#if !defined INLINE_ALLOC && defined DBG_MALLOC
 		qm_split_frag_dbg(qm, f, size, file, "fragm. from qm_realloc", line);
-		#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+		#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 		qm_split_frag(qm, f, size);
 		#else
 		qm_split_frag(qm, f, size, file, "fragm. from qm_realloc", line);
@@ -357,7 +357,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 			if (f->size > size ) {
 				#if !defined INLINE_ALLOC && defined DBG_MALLOC
 				qm_split_frag_dbg(qm, f, size, file, "qm_realloc frag", line);
-				#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+				#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 				qm_split_frag(qm, f, size);
 				#else
 				qm_split_frag(qm, f, size, file, "qm_realloc frag", line);
@@ -367,7 +367,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 			/* could not join => realloc */
 			#if !defined INLINE_ALLOC && defined DBG_MALLOC
 			ptr = qm_malloc_dbg(qm, size, file, func, line);
-			#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+			#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 			ptr = qm_malloc(qm, size);
 			#else
 			ptr = qm_malloc(qm, size, file, func, line);
@@ -379,7 +379,7 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 
 				#if !defined INLINE_ALLOC && defined DBG_MALLOC
 				qm_free_dbg(qm, p, file, func, line);
-				#elif !defined QM_MALLOC_DYN && !defined DBG_MALLOC
+				#elif !defined Q_MALLOC_DYN && !defined DBG_MALLOC
 				qm_free(qm, p);
 				#else
 				qm_free(qm, p, file, func, line);
@@ -476,7 +476,7 @@ void qm_status(struct qm_block* qm)
 		if (j) LM_GEN1(memdump, "hash= %3d. fragments no.: %5d, unused: %5d\n"
 					"\t\t bucket size: %9lu - %9ld (first %9lu)\n",
 					h, j, unused, UN_HASH(h),
-					((h<=QM_MALLOC_OPTIMIZE/QM_ROUNDTO)?1:2)*UN_HASH(h),
+					((h<=Q_MALLOC_OPTIMIZE/QM_ROUNDTO)?1:2)*UN_HASH(h),
 					qm->free_hash[h].head.u.nxt_free->size
 				);
 		if (j!=qm->free_hash[h].no){
@@ -488,4 +488,4 @@ void qm_status(struct qm_block* qm)
 	LM_GEN1(memdump, "-----------------------------\n");
 }
 
-#define QM_MALLOC_DYN
+#define Q_MALLOC_DYN

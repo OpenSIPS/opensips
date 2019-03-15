@@ -25,7 +25,7 @@
 
 #include "meminfo.h"
 
-#if !defined(F_MALLOC) && !defined(QM_MALLOC) && !defined(HP_MALLOC)
+#if !defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC)
 #error "no memory allocator selected"
 #endif
 
@@ -37,20 +37,20 @@ extern enum osips_mm mem_allocator;
 enum osips_mm {
 	MM_NONE,
 	MM_F_MALLOC,
-	MM_QM_MALLOC,
+	MM_Q_MALLOC,
 	MM_HP_MALLOC,
 	MM_F_MALLOC_DBG,
-	MM_QM_MALLOC_DBG,
+	MM_Q_MALLOC_DBG,
 	MM_HP_MALLOC_DBG,
 };
 
 #define mm_str(mm) \
 	((mm) == MM_NONE ? "NONE" : \
 	 (mm) == MM_F_MALLOC ? "F_MALLOC" : \
-	 (mm) == MM_QM_MALLOC ? "QM_MALLOC" : \
+	 (mm) == MM_Q_MALLOC ? "Q_MALLOC" : \
 	 (mm) == MM_HP_MALLOC ? "HP_MALLOC" : \
 	 (mm) == MM_F_MALLOC_DBG ? "F_MALLOC_DBG" : \
-	 (mm) == MM_QM_MALLOC_DBG ? "QM_MALLOC_DBG" : \
+	 (mm) == MM_Q_MALLOC_DBG ? "Q_MALLOC_DBG" : \
 	 (mm) == MM_HP_MALLOC_DBG ? "HP_MALLOC_DBG" : "unknown")
 
 extern void *mem_block;
@@ -78,7 +78,7 @@ typedef void (*osips_shm_stats_init_f) (void *block, int core_index);
 #include "f_malloc.h"
 #endif
 
-#if defined QM_MALLOC
+#if defined Q_MALLOC
 #include "q_malloc.h"
 #endif
 
@@ -95,9 +95,9 @@ typedef void (*osips_shm_stats_init_f) (void *block, int core_index);
 	"command line parameter!\n"
 
 /* if exactly an allocator was selected, let's inline it! */
-#if ((!defined QM_MALLOC && !defined HP_MALLOC) || \
+#if ((!defined Q_MALLOC && !defined HP_MALLOC) || \
 	 (!defined F_MALLOC && !defined HP_MALLOC) || \
-	 (!defined F_MALLOC && !defined QM_MALLOC))
+	 (!defined F_MALLOC && !defined Q_MALLOC))
 #define INLINE_ALLOC
 #endif
 

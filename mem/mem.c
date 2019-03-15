@@ -70,7 +70,7 @@ int init_pkg_mallocs(void)
 #ifdef INLINE_ALLOC
 #if defined F_MALLOC
 		mem_block = fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-#elif defined QM_MALLOC
+#elif defined Q_MALLOC
 		mem_block = qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 #elif defined HP_MALLOC
 		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
@@ -96,8 +96,8 @@ int init_pkg_mallocs(void)
 		gen_pkg_get_frags = (osips_get_mmstat_f)fm_get_frags;
 		break;
 #endif
-#ifdef QM_MALLOC
-	case MM_QM_MALLOC:
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
 		mem_block = qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 		gen_pkg_malloc    = (osips_malloc_f)qm_malloc;
 		gen_pkg_realloc   = (osips_realloc_f)qm_realloc;
@@ -145,8 +145,8 @@ int init_pkg_mallocs(void)
 		gen_pkg_get_frags = (osips_get_mmstat_f)fm_get_frags;
 		break;
 #endif
-#ifdef QM_MALLOC
-	case MM_QM_MALLOC_DBG:
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC_DBG:
 		mem_block = qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
 		gen_pkg_malloc    = (osips_malloc_f)qm_malloc_dbg;
 		gen_pkg_realloc   = (osips_realloc_f)qm_realloc_dbg;

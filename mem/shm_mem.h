@@ -71,7 +71,7 @@
 #define shm_frag_file fm_frag_file
 #define shm_frag_func fm_frag_func
 #define shm_frag_line fm_frag_line
-#elif defined QM_MALLOC
+#elif defined Q_MALLOC
 #define shm_stats_core_init qm_stats_core_init
 #define shm_stats_get_index qm_stats_get_index
 #define shm_stats_set_index qm_stats_set_index
@@ -150,7 +150,7 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 #define SHM_GET_MUSED          fm_get_max_real_used
 #define SHM_GET_FREE           fm_get_free
 #define SHM_GET_FRAGS          fm_get_frags
-#elif defined QM_MALLOC
+#elif defined Q_MALLOC
 #define SHM_MALLOC             qm_malloc
 #define SHM_MALLOC_UNSAFE      qm_malloc
 #define SHM_REALLOC            qm_realloc
@@ -180,7 +180,7 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 #define SHM_GET_MUSED          hp_shm_get_max_real_used
 #define SHM_GET_FREE           hp_shm_get_free
 #define SHM_GET_FRAGS          hp_shm_get_frags
-#endif /* F_MALLOC || QM_MALLOC || HP_MALLOC */
+#endif /* F_MALLOC || Q_MALLOC || HP_MALLOC */
 #else
 #define SHM_MALLOC             gen_shm_malloc
 #define SHM_MALLOC_UNSAFE      gen_shm_malloc_unsafe
@@ -198,7 +198,7 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 #define SHM_GET_FRAGS          gen_shm_get_frags
 #endif /* INLINE_ALLOC */
 
-#if defined F_MALLOC || defined QM_MALLOC
+#if defined F_MALLOC || defined Q_MALLOC
 extern gen_lock_t* mem_lock;
 #endif
 
