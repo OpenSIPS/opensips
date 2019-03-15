@@ -127,7 +127,7 @@ struct cmd_export_ {
 	char* name;                 /* null terminated command name */
 	cmd_function function;      /* pointer to the corresponding function */
 	struct cmd_param
-		params[MAX_CMD_PARAMS]; /* array of parameters */
+		params[MAX_CMD_PARAMS+1]; /* array of parameters */
 	int flags;                  /* Function flags */
 };
 
@@ -136,7 +136,7 @@ struct acmd_export_ {
 	char* name;                 /* null terminated command name */
 	acmd_function function;     /* pointer to the corresponding function */
 	struct cmd_param
-		params[MAX_CMD_PARAMS]; /* array of parameters */
+		params[MAX_CMD_PARAMS+1]; /* array of parameters */
 };
 
 
