@@ -786,7 +786,7 @@ endif
 CFLAGS=$(shell echo "$${CFLAGS}")
 LDFLAGS+=
 
-ifneq (,$(findstring DBG_MALLOC, $(DEFS)))
+ifneq (,$(findstring CC_O0, $(DEFS)))
 	CC_OPTIMIZE_FLAG?=-O0
 endif
 
