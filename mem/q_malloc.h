@@ -118,16 +118,6 @@ struct qm_block{
 
 struct qm_block* qm_malloc_init(char* address, unsigned long size, char* name);
 
-#ifdef SHM_EXTRA_STATS
-static inline unsigned long qm_frag_size(void *p)
-{
-	if (!p)
-		return 0;
-
-	return QM_FRAG(p)->size;
-}
-#endif
-
 #ifdef DBG_MALLOC
 void *qm_malloc(struct qm_block*, unsigned long size, const char* file,
                 const char* func, unsigned int line);
@@ -162,6 +152,14 @@ void qm_info(struct qm_block*, struct mem_info*);
 int qm_mem_check(struct qm_block *qm);
 
 #ifdef SHM_EXTRA_STATS
+static inline unsigned long qm_frag_size(void *p)
+{
+	if (!p)
+		return 0;
+
+	return QM_FRAG(p)->size;
+}
+
 void qm_stats_core_init(struct qm_block *qm, int core_index);
 unsigned long qm_stats_get_index(void *ptr);
 void qm_stats_set_index(void *ptr, unsigned long idx);

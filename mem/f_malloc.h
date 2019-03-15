@@ -109,16 +109,6 @@ struct fm_block {
 	struct fm_frag_lnk free_hash[F_HASH_SIZE];
 };
 
-#ifdef SHM_EXTRA_STATS
-static inline unsigned long fm_frag_size(void *p)
-{
-	if (!p)
-		return 0;
-
-	return FM_FRAG(p)->size;
-}
-#endif
-
 struct fm_block* fm_malloc_init(char* address, unsigned long size, char* name);
 
 #ifdef DBG_MALLOC
@@ -149,6 +139,14 @@ void fm_status_dbg(struct fm_block*);
 void fm_info(struct fm_block*, struct mem_info*);
 
 #ifdef SHM_EXTRA_STATS
+static inline unsigned long fm_frag_size(void *p)
+{
+	if (!p)
+		return 0;
+
+	return FM_FRAG(p)->size;
+}
+
 void fm_stats_core_init(struct fm_block *fm, int core_index);
 unsigned long fm_stats_get_index(void *ptr);
 void fm_stats_set_index(void *ptr, unsigned long idx);
