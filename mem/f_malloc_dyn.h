@@ -24,7 +24,8 @@
  *   - be able to compile an inlined, dbg allocator (fm_split_frag long)
  *   - be able to compile multiple allocators (fm_split_frag short)
  *   - be able to compile multiple, dbg allocators
- *				(fm_split_frag_dbg + fm_split_frag long, requires x2 include)
+ *             (fm_split_frag_dbg + fm_split_frag long,
+ *              requires x2 include, hence the "_dynamic" file suffix)
  *
  * The same idea applies to all below functions.
  */
@@ -432,6 +433,82 @@ void* fm_realloc(struct fm_block* qm, void* p, unsigned long size,
 	return p;
 }
 
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void fm_status_dbg(struct fm_block* qm)
+#else
+void fm_status(struct fm_block* qm)
+#endif
+{
+	struct fm_frag* f;
+	unsigned int i,j;
+	unsigned int h;
+	int unused;
+	unsigned long size;
 
+#ifdef DBG_MALLOC
+	mem_dbg_htable_t allocd;
+	struct mem_dbg_entry *it;
+#endif
+
+	LM_GEN1(memdump, "fm_status (%p):\n", qm);
+	if (!qm) return;
+
+	LM_GEN1(memdump, " heap size= %ld\n", qm->size);
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	LM_GEN1(memdump, " used= %lu, used+overhead=%lu, free=%lu\n",
+			qm->used, qm->real_used, qm->size-qm->used);
+	LM_GEN1(memdump, " max used (+overhead)= %lu\n", qm->max_real_used);
+#endif
+
+#if defined(DBG_MALLOC)
+	dbg_ht_init(allocd);
+
+	for (f=qm->first_frag; (char*)f<(char*)qm->last_frag; f=FRAG_NEXT(f))
+		if (!f->is_free)
+			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
+				LM_ERR("Unable to update alloc'ed. memory summary\n");
+				dbg_ht_free(allocd);
+				return;
+			}
+
+	LM_GEN1(memdump, " dumping summary of all alloc'ed. fragments:\n");
+	LM_GEN1(memdump, "------------+---------------------------------------\n");
+	LM_GEN1(memdump, "total_bytes | num_allocations x [file: func, line]\n");
+	LM_GEN1(memdump, "------------+---------------------------------------\n");
+	for(i=0; i < DBG_HASH_SIZE; i++) {
+		it = allocd[i];
+		while (it) {
+			LM_GEN1(memdump, " %10lu : %lu x [%s: %s, line %lu]\n",
+				it->size, it->no_fragments, it->file, it->func, it->line);
+			it = it->next;
+		}
+	}
+	LM_GEN1(memdump, "----------------------------------------------------\n");
+
+	dbg_ht_free(allocd);
+#endif
+
+	LM_GEN1(memdump, "dumping free list:\n");
+	for(h=0,i=0,size=0;h<F_HASH_SIZE;h++){
+		unused=0;
+		for (f=qm->free_hash[h].first,j=0; f;
+				size+=f->size,f=f->u.nxt_free,i++,j++){ }
+		if (j) LM_GEN1(memdump,"hash = %3d fragments no.: %5d, unused: %5d\n\t\t"
+							" bucket size: %9lu - %9lu (first %9lu)\n",
+							h, j, unused, UN_HASH(h),
+						((h<=F_MALLOC_OPTIMIZE/ROUNDTO)?1:2)* UN_HASH(h),
+							qm->free_hash[h].first->size
+				);
+		if (j!=qm->free_hash[h].no){
+			LM_CRIT("different free frag. count: %d!=%ld"
+					" for hash %3d\n", j, qm->free_hash[h].no, h);
+		}
+
+	}
+	LM_GEN1(memdump, "TOTAL: %6d free fragments = %6lu free bytes\n", i, size);
+	LM_GEN1(memdump, "TOTAL: %ld large bytes\n", qm->large_space );
+	LM_GEN1(memdump, "TOTAL: %u overhead\n", (unsigned int)FRAG_OVERHEAD );
+	LM_GEN1(memdump, "-----------------------------\n");
+}
 
 #define F_MALLOC_DYN

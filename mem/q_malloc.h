@@ -149,8 +149,11 @@ void  qm_free(struct qm_block*, void* p);
 void* qm_realloc(struct qm_block*, void* p, unsigned long size);
 #endif
 
-void  qm_status(struct qm_block*);
-void  qm_info(struct qm_block*, struct mem_info*);
+void qm_status(struct qm_block*);
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void qm_status_dbg(struct qm_block*);
+#endif
+void qm_info(struct qm_block*, struct mem_info*);
 
 /*
  * On success, returns the currrent number of fragments

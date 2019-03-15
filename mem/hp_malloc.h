@@ -228,7 +228,10 @@ static inline unsigned long hp_frag_line(void *p) { return 0; }
 #endif
 #endif
 
-void hp_status(struct hp_block *);
+void hp_status(struct hp_block *hpb);
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void hp_status_dbg(struct hp_block *hpb);
+#endif
 void hp_info(struct hp_block *, struct mem_info *);
 
 #endif /* HP_MALLOC_H */

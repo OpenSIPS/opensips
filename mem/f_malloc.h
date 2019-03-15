@@ -143,6 +143,9 @@ void *fm_realloc(struct fm_block* qm, void* p, unsigned long size);
 #endif
 
 void fm_status(struct fm_block*);
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void fm_status_dbg(struct fm_block*);
+#endif
 void fm_info(struct fm_block*, struct mem_info*);
 
 #ifdef SHM_EXTRA_STATS

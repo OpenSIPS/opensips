@@ -1009,4 +1009,114 @@ void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size,
 	return p;
 }
 
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void hp_status_dbg(struct hp_block *hpb)
+#else
+void hp_status(struct hp_block *hpb)
+#endif
+{
+	struct hp_frag *f;
+	int i, j, si, t = 0;
+	int h;
+
+#ifdef DBG_MALLOC
+	mem_dbg_htable_t allocd;
+	struct mem_dbg_entry *it;
+#endif
+
+#if HP_MALLOC_FAST_STATS && (defined(DBG_MALLOC) || defined(STATISTICS))
+	if (hpb == shm_block)
+		update_shm_stats(hpb);
+#endif
+
+	LM_GEN1(memdump, "hp_status (%p, ROUNDTO=%ld):\n", hpb, ROUNDTO);
+	if (!hpb)
+		return;
+
+	LM_GEN1(memdump, "%20s : %ld\n", "HP_HASH_SIZE", HP_HASH_SIZE);
+	LM_GEN1(memdump, "%20s : %ld\n", "HP_EXTRA_HASH_SIZE", HP_HASH_SIZE);
+	LM_GEN1(memdump, "%20s : %ld\n", "HP_TOTAL_SIZE", HP_HASH_SIZE);
+
+	LM_GEN1(memdump, "%20s : %ld\n", "total_size", hpb->size);
+
+#if defined(STATISTICS) || defined(DBG_MALLOC)
+	LM_GEN1(memdump, "%20s : %lu\n%20s : %lu\n%20s : %lu\n",
+			"used", hpb->used,
+			"used+overhead", hpb->real_used,
+			"free", hpb->size - hpb->used);
+
+	LM_GEN1(memdump, "%20s : %lu\n\n", "max_used (+overhead)", hpb->max_real_used);
+#endif
+
+#ifdef DBG_MALLOC
+	dbg_ht_init(allocd);
+
+	for (f=hpb->first_frag; (char*)f<(char*)hpb->last_frag; f=FRAG_NEXT(f))
+		if (!f->is_free)
+			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
+				LM_ERR("Unable to update alloc'ed. memory summary\n");
+				dbg_ht_free(allocd);
+				return;
+			}
+
+	LM_GEN1(memdump, "dumping summary of all alloc'ed. fragments:\n");
+	LM_GEN1(memdump, "------------+---------------------------------------\n");
+	LM_GEN1(memdump, "total_bytes | num_allocations x [file: func, line]\n");
+	LM_GEN1(memdump, "------------+---------------------------------------\n");
+	for(i=0; i < DBG_HASH_SIZE; i++) {
+		it = allocd[i];
+		while (it) {
+			LM_GEN1(memdump, " %10lu : %lu x [%s: %s, line %lu]\n",
+				it->size, it->no_fragments, it->file, it->func, it->line);
+			it = it->next;
+		}
+	}
+	LM_GEN1(memdump, "----------------------------------------------------\n");
+
+	dbg_ht_free(allocd);
+#endif
+
+	LM_GEN1(memdump, "Dumping free fragments:\n");
+
+	for (h = 0; h < HP_HASH_SIZE; h++) {
+		if (hpb->free_hash[h].is_optimized) {
+			LM_GEN1(memdump, "[ %4d ][ %5d B ][ frags: ", h, h * (int)ROUNDTO);
+
+			for (si = HP_HASH_SIZE + h * shm_secondary_hash_size, j = 0;
+				 j < shm_secondary_hash_size; j++, si++, t++) {
+
+				SHM_LOCK(si);
+				for (i=0, f=hpb->free_hash[si].first; f; f=f->u.nxt_free, i++, t++)
+					;
+				SHM_UNLOCK(si);
+
+				LM_GEN1(memdump, "%s%5d ", j == 0 ? "" : "| ", i);
+			}
+
+			LM_GEN1(memdump, "]\n");
+
+		} else {
+			SHM_LOCK(h);
+				for (i=0, f=hpb->free_hash[h].first; f; f=f->u.nxt_free, i++, t++)
+					;
+			SHM_UNLOCK(h);
+
+			if (i == 0)
+				continue;
+
+			if (h > HP_LINEAR_HASH_SIZE) {
+				LM_GEN1(memdump, "[ %4d ][ %8d B -> %7d B ][ frags: %5d ]\n",
+						h, (int)UN_HASH(h), (int)UN_HASH(h+1) - (int)ROUNDTO, i);
+			} else
+				LM_GEN1(memdump, "[ %4d ][ %5d B ][ frags: %5d ]\n",
+						h, h * (int)ROUNDTO, i);
+		}
+	}
+
+	LM_GEN1(memdump, "TOTAL: %6d free fragments\n", t);
+	LM_GEN1(memdump, "TOTAL: %ld large bytes\n", hpb->large_space );
+	LM_GEN1(memdump, "TOTAL: %u overhead\n", (unsigned int)FRAG_OVERHEAD );
+	LM_GEN1(memdump, "-----------------------------\n");
+}
+
 #define HP_MALLOC_DYN

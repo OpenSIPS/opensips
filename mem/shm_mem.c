@@ -457,7 +457,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		gen_shm_free           = (osips_free_f)fm_free_dbg;
 		gen_shm_free_unsafe    = (osips_free_f)fm_free_dbg;
 		gen_shm_info           = (osips_mem_info_f)fm_info;
-		gen_shm_status         = (osips_mem_status_f)fm_status;
+		gen_shm_status         = (osips_mem_status_f)fm_status_dbg;
 		gen_shm_get_size       = (osips_get_mmstat_f)fm_get_size;
 		gen_shm_get_used       = (osips_get_mmstat_f)fm_get_used;
 		gen_shm_get_rused      = (osips_get_mmstat_f)fm_get_real_used;
@@ -476,7 +476,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		gen_shm_free           = (osips_free_f)qm_free_dbg;
 		gen_shm_free_unsafe    = (osips_free_f)qm_free_dbg;
 		gen_shm_info           = (osips_mem_info_f)qm_info;
-		gen_shm_status         = (osips_mem_status_f)qm_status;
+		gen_shm_status         = (osips_mem_status_f)qm_status_dbg;
 		gen_shm_get_size       = (osips_get_mmstat_f)qm_get_size;
 		gen_shm_get_used       = (osips_get_mmstat_f)qm_get_used;
 		gen_shm_get_rused      = (osips_get_mmstat_f)qm_get_real_used;
@@ -495,7 +495,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		gen_shm_free           = (osips_free_f)hp_shm_free_dbg;
 		gen_shm_free_unsafe    = (osips_free_f)hp_shm_free_unsafe_dbg;
 		gen_shm_info           = (osips_mem_info_f)hp_info;
-		gen_shm_status         = (osips_mem_status_f)hp_status;
+		gen_shm_status         = (osips_mem_status_f)hp_status_dbg;
 		gen_shm_get_size       = (osips_get_mmstat_f)hp_shm_get_size;
 		gen_shm_get_used       = (osips_get_mmstat_f)hp_shm_get_used;
 		gen_shm_get_rused      = (osips_get_mmstat_f)hp_shm_get_real_used;

@@ -403,4 +403,89 @@ void* qm_realloc(struct qm_block* qm, void* p, unsigned long size,
 	return p;
 }
 
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void qm_status_dbg(struct qm_block* qm)
+#else
+void qm_status(struct qm_block* qm)
+#endif
+{
+	struct qm_frag* f;
+	int i,j;
+	int h;
+	int unused;
+
+#ifdef DBG_MALLOC
+	mem_dbg_htable_t allocd;
+	struct mem_dbg_entry *it;
+#endif
+
+	LM_GEN1(memdump, "qm_status (%p):\n", qm);
+	if (!qm) return;
+
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	LM_GEN1(memdump, " heap size= %lu\n", qm->size);
+	LM_GEN1(memdump, " used= %lu, used+overhead=%lu, free=%lu\n",
+			qm->used, qm->real_used, qm->size-qm->real_used);
+	LM_GEN1(memdump, " max used (+overhead)= %lu\n", qm->max_real_used);
+#endif
+
+#ifdef DBG_MALLOC
+	dbg_ht_init(allocd);
+
+	for (f=qm->first_frag; (char*)f<(char*)qm->last_frag_end; f=FRAG_NEXT(f))
+		if (!f->u.is_free)
+			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
+				LM_ERR("Unable to update alloc'ed. memory summary\n");
+				dbg_ht_free(allocd);
+				return;
+			}
+
+	LM_GEN1(memdump, " dumping summary of all alloc'ed. fragments:\n");
+	LM_GEN1(memdump, "----------------------------------------------------\n");
+	LM_GEN1(memdump, "total_bytes | num_allocations x [file: func, line]\n");
+	LM_GEN1(memdump, "----------------------------------------------------\n");
+	for(i=0; i < DBG_HASH_SIZE; i++) {
+		it = allocd[i];
+		while (it) {
+			LM_GEN1(memdump, " %10lu : %lu x [%s: %s, line %lu]\n",
+				it->size, it->no_fragments, it->file, it->func, it->line);
+			it = it->next;
+		}
+	}
+	LM_GEN1(memdump, "----------------------------------------------------\n");
+
+	dbg_ht_free(allocd);
+#endif
+
+	LM_GEN1(memdump, " dumping free list stats :\n");
+	for(h=0,i=0;h<QM_HASH_SIZE;h++){
+		unused=0;
+		for (f=qm->free_hash[h].head.u.nxt_free,j=0;
+				f!=&(qm->free_hash[h].head); f=f->u.nxt_free, i++, j++){
+				if (!FRAG_WAS_USED(f)){
+					unused++;
+#ifdef DBG_MALLOC
+					LM_GEN1(memdump, "unused fragm.: hash = %3d, fragment %p,"
+						" address %p size %lu, created from %s: %s(%lu)\n",
+					    h, f, (char*)f+sizeof(struct qm_frag), f->size,
+						f->file, f->func, f->line);
+#endif
+				}
+		}
+
+		if (j) LM_GEN1(memdump, "hash= %3d. fragments no.: %5d, unused: %5d\n"
+					"\t\t bucket size: %9lu - %9ld (first %9lu)\n",
+					h, j, unused, UN_HASH(h),
+					((h<=QM_MALLOC_OPTIMIZE/QM_ROUNDTO)?1:2)*UN_HASH(h),
+					qm->free_hash[h].head.u.nxt_free->size
+				);
+		if (j!=qm->free_hash[h].no){
+			LM_CRIT("different free frag. count: %d!=%lu"
+				" for hash %3d\n", j, qm->free_hash[h].no, h);
+		}
+
+	}
+	LM_GEN1(memdump, "-----------------------------\n");
+}
+
 #define QM_MALLOC_DYN
