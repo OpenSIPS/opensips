@@ -67,28 +67,28 @@
 #define F_MALLOC_DEFRAG_LIMIT (F_MALLOC_LARGE_LIMIT * 5)
 #define F_MALLOC_DEFRAG_PERCENT 5
 
-static inline void free_minus(struct fm_block* qm, unsigned long size )
+static inline void free_minus(struct fm_block *fm, unsigned long size)
 {
 
 	if( size > F_MALLOC_LARGE_LIMIT )
-		qm->large_space -= size;
+		fm->large_space -= size;
 
 	#if defined(DBG_MALLOC) || defined(STATISTICS)
-	qm->real_used+=size;
-	qm->used+=size;
+	fm->real_used+=size;
+	fm->used+=size;
 	#endif
 }
 
 
-static inline void free_plus(struct fm_block* qm, unsigned long size )
+static inline void free_plus(struct fm_block *fm, unsigned long size)
 {
 
 	if( size > F_MALLOC_LARGE_LIMIT )
-		qm->large_space += size;
+		fm->large_space += size;
 
 	#if defined(DBG_MALLOC) || defined(STATISTICS)
-	qm->real_used-=size;
-	qm->used-=size;
+	fm->real_used-=size;
+	fm->used-=size;
 	#endif
 }
 
@@ -133,13 +133,13 @@ void fm_stats_set_index(void *ptr, unsigned long idx)
 #endif
 
 
-static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
+static inline void fm_insert_free(struct fm_block *fm, struct fm_frag *frag)
 {
-	struct fm_frag** f;
+	struct fm_frag **f;
 	int hash;
 
 	hash=GET_HASH(frag->size);
-	f=&(qm->free_hash[hash].first);
+	f=&(fm->free_hash[hash].first);
 	if (frag->size > F_MALLOC_OPTIMIZE){ /* because of '<=' in GET_HASH,
 											(different from 0.8.1[24] on
 											 purpose --andrei ) */
@@ -155,14 +155,14 @@ static inline void fm_insert_free(struct fm_block* qm, struct fm_frag* frag)
 		(*f)->prev = &(frag->u.nxt_free);
 
 	*f=frag;
-	qm->free_hash[hash].no++;
+	fm->free_hash[hash].no++;
 
-	free_plus(qm, frag->size);
+	free_plus(fm, frag->size);
 }
 
-static inline void fm_remove_free(struct fm_block* qm, struct fm_frag* n)
+static inline void fm_remove_free(struct fm_block *fm, struct fm_frag *n)
 {
-	struct fm_frag** pf;
+	struct fm_frag **pf;
 	int hash;
 
 	pf = n->prev;
@@ -174,11 +174,11 @@ static inline void fm_remove_free(struct fm_block* qm, struct fm_frag* n)
 	if( n->u.nxt_free )
 		n->u.nxt_free->prev = pf;
 
-	qm->free_hash[hash].no--;
+	fm->free_hash[hash].no--;
 
 	n->prev = NULL;
 
-	free_minus(qm , n->size);
+	free_minus(fm , n->size);
 
 };
 
@@ -187,12 +187,12 @@ static inline void fm_remove_free(struct fm_block* qm, struct fm_frag* n)
 
 
 /* init malloc and return a fm_block*/
-struct fm_block* fm_malloc_init(char* address, unsigned long size, char *name)
+struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 
 {
-	char* start;
-	char* end;
-	struct fm_block* qm;
+	char *start;
+	char *end;
+	struct fm_block *fm;
 	unsigned long init_overhead;
 
 	/* make address and size multiple of 8*/
@@ -217,44 +217,44 @@ struct fm_block* fm_malloc_init(char* address, unsigned long size, char *name)
 		return 0;
 	}
 	end=start+size;
-	qm=(struct fm_block*)start;
-	memset(qm, 0, sizeof(struct fm_block));
-	qm->name = name;
-	qm->size=size;
+	fm=(struct fm_block *)start;
+	memset(fm, 0, sizeof(struct fm_block));
+	fm->name = name;
+	fm->size=size;
 
 	#if defined(DBG_MALLOC) || defined(STATISTICS)
-	qm->used=size-init_overhead;
-	qm->real_used=size;
-	qm->max_real_used=init_overhead;
-	qm->fragments = 0;
+	fm->used=size-init_overhead;
+	fm->real_used=size;
+	fm->max_real_used=init_overhead;
+	fm->fragments = 0;
 	#endif
 
-	qm->first_frag=(struct fm_frag*)(start+ROUNDUP(sizeof(struct fm_block)));
-	qm->last_frag=(struct fm_frag*)(end-sizeof(struct fm_frag));
+	fm->first_frag=(struct fm_frag *)(start+ROUNDUP(sizeof(struct fm_block)));
+	fm->last_frag=(struct fm_frag *)(end-sizeof(struct fm_frag));
 	/* init initial fragment*/
-	qm->first_frag->size=size-init_overhead;
-	qm->last_frag->size=0;
+	fm->first_frag->size=size-init_overhead;
+	fm->last_frag->size=0;
 
-	qm->last_frag->prev=NULL;
-	qm->first_frag->prev=NULL;
+	fm->last_frag->prev=NULL;
+	fm->first_frag->prev=NULL;
 
 	#ifdef DBG_MALLOC
-	qm->first_frag->check=ST_CHECK_PATTERN;
-	qm->last_frag->check=END_CHECK_PATTERN1;
+	fm->first_frag->check=ST_CHECK_PATTERN;
+	fm->last_frag->check=END_CHECK_PATTERN1;
 	#endif
 
 	/* link initial fragment into the free list*/
 
-	qm->large_space = 0;
-	qm->large_limit = qm->size / 100 * F_MALLOC_DEFRAG_PERCENT;
+	fm->large_space = 0;
+	fm->large_limit = fm->size / 100 * F_MALLOC_DEFRAG_PERCENT;
 
-	if( qm->large_limit < F_MALLOC_DEFRAG_LIMIT )
-		qm->large_limit = F_MALLOC_DEFRAG_LIMIT;
+	if( fm->large_limit < F_MALLOC_DEFRAG_LIMIT )
+		fm->large_limit = F_MALLOC_DEFRAG_LIMIT;
 
-	fm_insert_free(qm, qm->first_frag);
+	fm_insert_free(fm, fm->first_frag);
 
 
-	return qm;
+	return fm;
 }
 
 #include "f_malloc_dyn.h"
@@ -282,35 +282,35 @@ void fm_stats_core_init(struct fm_block *fm, int core_index)
 
 /* fills a malloc info structure with info about the block
  * if a parameter is not supported, it will be filled with 0 */
-void fm_info(struct fm_block* qm, struct mem_info* info)
+void fm_info(struct fm_block *fm, struct mem_info *info)
 {
 	unsigned int r;
 	long total_frags;
 #if !defined(DBG_MALLOC) && !defined(STATISTICS)
-	struct fm_frag* f;
+	struct fm_frag *f;
 #endif
 
 	memset(info,0, sizeof(*info));
 	total_frags=0;
-	info->total_size=qm->size;
+	info->total_size=fm->size;
 	info->min_frag=MIN_FRAG_SIZE;
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	info->free=qm->size-qm->real_used;
-	info->used=qm->used;
-	info->real_used=qm->real_used;
-	info->max_used=qm->max_real_used;
+	info->free=fm->size-fm->real_used;
+	info->used=fm->used;
+	info->real_used=fm->real_used;
+	info->max_used=fm->max_real_used;
 	for(r=0;r<F_HASH_SIZE; r++){
-		total_frags+=qm->free_hash[r].no;
+		total_frags+=fm->free_hash[r].no;
 	}
 #else
 	/* we'll have to compute it all */
 	for (r=0; r<=F_MALLOC_OPTIMIZE/ROUNDTO; r++){
-		info->free+=qm->free_hash[r].no*UN_HASH(r);
-		total_frags+=qm->free_hash[r].no;
+		info->free+=fm->free_hash[r].no*UN_HASH(r);
+		total_frags+=fm->free_hash[r].no;
 	}
 	for(;r<F_HASH_SIZE; r++){
-		total_frags+=qm->free_hash[r].no;
-		for(f=qm->free_hash[r].first;f;f=f->u.nxt_free){
+		total_frags+=fm->free_hash[r].no;
+		for(f=fm->free_hash[r].first;f;f=f->u.nxt_free){
 			info->free+=f->size;
 		}
 	}

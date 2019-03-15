@@ -51,7 +51,7 @@
 									must be 2^k */
 
 #define QM_HASH_SIZE ((unsigned long)(Q_MALLOC_OPTIMIZE/QM_ROUNDTO + \
-		(sizeof(long)*8-Q_MALLOC_OPTIMIZE_FACTOR)+1))
+		(sizeof(long)*8 - Q_MALLOC_OPTIMIZE_FACTOR) + 1))
 
 #define QM_FRAG(p) \
 	((struct qm_frag *)((char *)(p) - sizeof(struct qm_frag)))
@@ -61,15 +61,15 @@
  *                            QM_ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 
-struct qm_frag{
+struct qm_frag {
 	unsigned long size;
-	union{
-		struct qm_frag* nxt_free;
+	union {
+		struct qm_frag *nxt_free;
 		long is_free;
-	}u;
+	} u;
 #ifdef DBG_MALLOC
-	const char* file;
-	const char* func;
+	const char *file;
+	const char *func;
 	unsigned long line;
 	unsigned long check;
 #endif
@@ -80,7 +80,7 @@ struct qm_frag{
 
 #define QM_FRAG_OVERHEAD (sizeof(struct qm_frag))
 
-struct qm_frag_end{
+struct qm_frag_end {
 #ifdef DBG_MALLOC
 	unsigned long check1;
 	unsigned long check2;
@@ -88,19 +88,16 @@ struct qm_frag_end{
 	unsigned long reserved2;
 #endif
 	unsigned long size;
-	struct qm_frag* prev_free;
+	struct qm_frag *prev_free;
 };
 
-
-
-struct qm_frag_lnk{
+struct qm_frag_lnk {
 	struct qm_frag head;
 	struct qm_frag_end tail;
 	unsigned long no;
 };
 
-
-struct qm_block{
+struct qm_block {
 	char *name; /* purpose of this memory block */
 
 	unsigned long size; /* total size */
@@ -109,34 +106,33 @@ struct qm_block{
 	unsigned long max_real_used;
 	unsigned long fragments; /* number of fragments in use */
 
-	struct qm_frag* first_frag;
-	struct qm_frag_end* last_frag_end;
+	struct qm_frag *first_frag;
+	struct qm_frag_end *last_frag_end;
 
 	struct qm_frag_lnk free_hash[QM_HASH_SIZE];
-	/*struct qm_frag_end free_lst_end;*/
 };
 
-struct qm_block* qm_malloc_init(char* address, unsigned long size, char* name);
+struct qm_block *qm_malloc_init(char *address, unsigned long size, char *name);
 
 #ifdef DBG_MALLOC
-void *qm_malloc(struct qm_block*, unsigned long size, const char* file,
-                const char* func, unsigned int line);
-void  qm_free(struct qm_block*, void* p, const char* file, const char* func,
+void *qm_malloc(struct qm_block*, unsigned long size, const char *file,
+                const char *func, unsigned int line);
+void  qm_free(struct qm_block*, void *p, const char *file, const char *func,
 				unsigned int line);
-void* qm_realloc(struct qm_block*, void* p, unsigned long size,
-					const char* file, const char* func, unsigned int line);
+void *qm_realloc(struct qm_block*, void *p, unsigned long size,
+					const char *file, const char *func, unsigned int line);
 #ifndef INLINE_ALLOC
-void *qm_malloc_dbg(struct qm_block*, unsigned long size, const char* file,
-                    const char* func, unsigned int line);
-void qm_free_dbg(struct qm_block*, void* p, const char* file, const char* func,
+void *qm_malloc_dbg(struct qm_block*, unsigned long size, const char *file,
+                    const char *func, unsigned int line);
+void qm_free_dbg(struct qm_block*, void *p, const char *file, const char *func,
 				unsigned int line);
-void* qm_realloc_dbg(struct qm_block*, void* p, unsigned long size,
-					const char* file, const char* func, unsigned int line);
+void *qm_realloc_dbg(struct qm_block*, void *p, unsigned long size,
+					const char *file, const char *func, unsigned int line);
 #endif
 #else
 void *qm_malloc(struct qm_block*, unsigned long size);
-void  qm_free(struct qm_block*, void* p);
-void* qm_realloc(struct qm_block*, void* p, unsigned long size);
+void  qm_free(struct qm_block*, void *p);
+void *qm_realloc(struct qm_block*, void *p, unsigned long size);
 #endif
 
 void qm_status(struct qm_block*);
@@ -176,31 +172,30 @@ static inline unsigned long qm_frag_line(void *p) { return 0; }
 #endif
 
 #ifdef STATISTICS
-static inline unsigned long qm_get_size(struct qm_block* qm)
+static inline unsigned long qm_get_size(struct qm_block *qm)
 {
 	return qm->size;
 }
-static inline unsigned long qm_get_used(struct qm_block* qm)
+static inline unsigned long qm_get_used(struct qm_block *qm)
 {
 	return qm->used;
 }
-static inline unsigned long qm_get_free(struct qm_block* qm)
+static inline unsigned long qm_get_free(struct qm_block *qm)
 {
-	return qm->size-qm->real_used;
+	return qm->size - qm->real_used;
 }
-static inline unsigned long qm_get_real_used(struct qm_block* qm)
+static inline unsigned long qm_get_real_used(struct qm_block *qm)
 {
 	return qm->real_used;
 }
-static inline unsigned long qm_get_max_real_used(struct qm_block* qm)
+static inline unsigned long qm_get_max_real_used(struct qm_block *qm)
 {
 	return qm->max_real_used;
 }
-static inline unsigned long qm_get_frags(struct qm_block* qm)
+static inline unsigned long qm_get_frags(struct qm_block *qm)
 {
 	return qm->fragments;
 }
 #endif /* STATISTICS */
-
 
 #endif

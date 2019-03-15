@@ -113,7 +113,7 @@ inline static unsigned long big_hash_idx(unsigned long s)
 #define END_CHECK_PATTERN2 0xabcdefed
 #endif
 
-static  void qm_debug_frag(struct qm_block* qm, struct qm_frag* f)
+static  void qm_debug_frag(struct qm_block *qm, struct qm_frag *f)
 {
 	if (f->check!=ST_CHECK_PATTERN){
 		LM_CRIT("qm_*: fragm. %p (address %p) "
@@ -156,10 +156,10 @@ void qm_stats_set_index(void *ptr, unsigned long idx) {
 }
 #endif
 
-static inline void qm_insert_free(struct qm_block* qm, struct qm_frag* frag)
+static inline void qm_insert_free(struct qm_block *qm, struct qm_frag *frag)
 {
-	struct qm_frag* f;
-	struct qm_frag* prev;
+	struct qm_frag *f;
+	struct qm_frag *prev;
 	int hash;
 
 	hash=GET_HASH(frag->size);
@@ -183,11 +183,11 @@ static inline void qm_insert_free(struct qm_block* qm, struct qm_frag* frag)
 
 
 /* init malloc and return a qm_block*/
-struct qm_block* qm_malloc_init(char* address, unsigned long size, char *name)
+struct qm_block *qm_malloc_init(char *address, unsigned long size, char *name)
 {
-	char* start;
-	char* end;
-	struct qm_block* qm;
+	char *start;
+	char *end;
+	struct qm_block *qm;
 	unsigned long init_overhead;
 	int h;
 
@@ -256,7 +256,7 @@ struct qm_block* qm_malloc_init(char* address, unsigned long size, char *name)
 
 
 
-static inline void qm_detach_free(struct qm_block* qm, struct qm_frag* frag)
+static inline void qm_detach_free(struct qm_block *qm, struct qm_frag *frag)
 {
 	struct qm_frag *prev;
 	struct qm_frag *next;
@@ -275,18 +275,18 @@ static inline void qm_detach_free(struct qm_block* qm, struct qm_frag* frag)
 
 
 #ifdef DBG_MALLOC
-static inline struct qm_frag* qm_find_free(struct qm_block* qm,
+static inline struct qm_frag *qm_find_free(struct qm_block *qm,
 											unsigned long size,
 											int *h,
 											unsigned int *count)
 #else
-static inline struct qm_frag* qm_find_free(struct qm_block* qm,
+static inline struct qm_frag *qm_find_free(struct qm_block *qm,
 											unsigned long size,
-											int* h)
+											int *h)
 #endif
 {
 	int hash;
-	struct qm_frag* f;
+	struct qm_frag *f;
 
 	for (hash=GET_HASH(size); hash<QM_HASH_SIZE; hash++){
 		for (f=qm->free_hash[hash].head.u.nxt_free;
@@ -325,7 +325,7 @@ void qm_stats_core_init(struct qm_block *qm, int core_index)
 
 /* fills a malloc info structure with info about the block
  * if a parameter is not supported, it will be filled with 0 */
-void qm_info(struct qm_block* qm, struct mem_info* info)
+void qm_info(struct qm_block *qm, struct mem_info *info)
 {
 	int r;
 	long total_frags;

@@ -63,13 +63,13 @@
 struct fm_frag {
 	unsigned long size;
 	union {
-		struct fm_frag* nxt_free;
+		struct fm_frag *nxt_free;
 		long reserved;
 	} u;
-	struct fm_frag ** prev;
+	struct fm_frag **prev;
 #ifdef DBG_MALLOC
-	const char* file;
-	const char* func;
+	const char *file;
+	const char *func;
 	unsigned long line;
 	unsigned long check;
 #endif
@@ -82,7 +82,7 @@ struct fm_frag {
 #define FM_FRAG_OVERHEAD (sizeof(struct fm_frag))
 
 struct fm_frag_lnk {
-	struct fm_frag* first;
+	struct fm_frag *first;
 	unsigned long no;
 };
 
@@ -94,45 +94,45 @@ struct fm_block {
 	unsigned long large_limit;
 	unsigned long fragments; /* number of fragments in use */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	unsigned long used; /* alloc'ed size*/
-	unsigned long real_used; /* used+malloc overhead*/
+	unsigned long used; /* alloc'ed size */
+	unsigned long real_used; /* used + malloc overhead */
 	unsigned long max_real_used;
 #endif
 
-	struct fm_frag* first_frag;
-	struct fm_frag* last_frag;
+	struct fm_frag *first_frag;
+	struct fm_frag *last_frag;
 
 	struct fm_frag_lnk free_hash[F_HASH_SIZE];
 };
 
-struct fm_block* fm_malloc_init(char* address, unsigned long size, char* name);
+struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name);
 
 #ifdef DBG_MALLOC
-void *fm_malloc(struct fm_block* qm, unsigned long size,
-                const char* file, const char* func, unsigned int line);
-void fm_free(struct fm_block* qm, void* p, const char* file,
-             const char* func, unsigned int line);
-void *fm_realloc(struct fm_block* qm, void* p, unsigned long size,
-                 const char* file, const char* func, unsigned int line);
+void *fm_malloc(struct fm_block *fm, unsigned long size,
+                const char *file, const char *func, unsigned int line);
+void fm_free(struct fm_block *fm, void *p, const char *file,
+             const char *func, unsigned int line);
+void *fm_realloc(struct fm_block *fm, void *p, unsigned long size,
+                 const char *file, const char *func, unsigned int line);
 #ifndef INLINE_ALLOC
-void *fm_malloc_dbg(struct fm_block* qm, unsigned long size,
-                    const char* file, const char* func, unsigned int line);
-void fm_free_dbg(struct fm_block* qm, void* p, const char* file,
-                 const char* func, unsigned int line);
-void *fm_realloc_dbg(struct fm_block* qm, void* p, unsigned long size,
-                     const char* file, const char* func, unsigned int line);
+void *fm_malloc_dbg(struct fm_block *fm, unsigned long size,
+                    const char *file, const char *func, unsigned int line);
+void fm_free_dbg(struct fm_block *fm, void *p, const char *file,
+                 const char *func, unsigned int line);
+void *fm_realloc_dbg(struct fm_block *fm, void *p, unsigned long size,
+                     const char *file, const char *func, unsigned int line);
 #endif
 #else
-void *fm_malloc(struct fm_block* qm, unsigned long size);
-void fm_free(struct fm_block* qm, void* p);
-void *fm_realloc(struct fm_block* qm, void* p, unsigned long size);
+void *fm_malloc(struct fm_block *fm, unsigned long size);
+void fm_free(struct fm_block *fm, void *p);
+void *fm_realloc(struct fm_block *fm, void *p, unsigned long size);
 #endif
 
-void fm_status(struct fm_block*);
+void fm_status(struct fm_block *);
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
-void fm_status_dbg(struct fm_block*);
+void fm_status_dbg(struct fm_block *);
 #endif
-void fm_info(struct fm_block*, struct mem_info*);
+void fm_info(struct fm_block *, struct mem_info *);
 
 #ifdef SHM_EXTRA_STATS
 static inline unsigned long fm_frag_size(void *p)
@@ -159,29 +159,29 @@ static inline unsigned long fm_frag_line(void *p) { return 0; }
 #endif
 
 #ifdef STATISTICS
-static inline unsigned long fm_get_size(struct fm_block* qm)
+static inline unsigned long fm_get_size(struct fm_block *fm)
 {
-	return qm->size;
+	return fm->size;
 }
-static inline unsigned long fm_get_used(struct fm_block* qm)
+static inline unsigned long fm_get_used(struct fm_block *fm)
 {
-	return qm->used;
+	return fm->used;
 }
-static inline unsigned long fm_get_free(struct fm_block* qm)
+static inline unsigned long fm_get_free(struct fm_block *fm)
 {
-	return qm->size-qm->real_used;
+	return fm->size - fm->real_used;
 }
-static inline unsigned long fm_get_real_used(struct fm_block* qm)
+static inline unsigned long fm_get_real_used(struct fm_block *fm)
 {
-	return qm->real_used;
+	return fm->real_used;
 }
-static inline unsigned long fm_get_max_real_used(struct fm_block* qm)
+static inline unsigned long fm_get_max_real_used(struct fm_block *fm)
 {
-	return qm->max_real_used;
+	return fm->max_real_used;
 }
-static inline unsigned long fm_get_frags(struct fm_block* qm)
+static inline unsigned long fm_get_frags(struct fm_block *fm)
 {
-	return qm->fragments;
+	return fm->fragments;
 }
 #endif /*STATISTICS*/
 

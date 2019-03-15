@@ -129,15 +129,15 @@
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void __pkg_frag_split_dbg(struct hp_block *hpb, struct hp_frag *frag,
-                          unsigned long size, const char* file,
-                          const char* func, unsigned int line)
+                          unsigned long size, const char *file,
+                          const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void __pkg_frag_split(struct hp_block *hpb, struct hp_frag *frag,
                       unsigned long size)
 #else
 void __pkg_frag_split(struct hp_block *hpb, struct hp_frag *frag,
-                      unsigned long size, const char* file,
-                      const char* func, unsigned int line)
+                      unsigned long size, const char *file,
+                      const char *func, unsigned int line)
 #endif
 {
 	unsigned long rest;
@@ -173,15 +173,15 @@ void __pkg_frag_split(struct hp_block *hpb, struct hp_frag *frag,
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void __shm_frag_split_unsafe_dbg(struct hp_block *hpb, struct hp_frag *frag,
-                                 unsigned long size, const char* file,
-                                 const char* func, unsigned int line)
+                                 unsigned long size, const char *file,
+                                 const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void __shm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
 							unsigned long size)
 #else
 void __shm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
-                             unsigned long size, const char* file,
-                             const char* func, unsigned int line)
+                             unsigned long size, const char *file,
+                             const char *func, unsigned int line)
 #endif
 {
 	unsigned long rest;
@@ -236,14 +236,14 @@ void __shm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void __shm_frag_split_dbg(struct hp_block *hpb, struct hp_frag *frag,
                        unsigned long size, unsigned int old_hash,
-                       const char* file, const char* func, unsigned int line)
+                       const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void __shm_frag_split(struct hp_block *hpb, struct hp_frag *frag,
 					 unsigned long size, unsigned int old_hash)
 #else
 void __shm_frag_split(struct hp_block *hpb, struct hp_frag *frag,
                       unsigned long size, unsigned int old_hash,
-                      const char* file, const char* func, unsigned int line)
+                      const char *file, const char *func, unsigned int line)
 #endif
 {
 	unsigned long rest, hash;
@@ -298,12 +298,12 @@ void __shm_frag_split(struct hp_block *hpb, struct hp_frag *frag,
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void *hp_pkg_malloc_dbg(struct hp_block *hpb, unsigned long size,
-						const char* file, const char* func, unsigned int line)
+						const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void *hp_pkg_malloc(struct hp_block *hpb, unsigned long size)
 #else
 void *hp_pkg_malloc(struct hp_block *hpb, unsigned long size,
-						const char* file, const char* func, unsigned int line)
+						const char *file, const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *frag;
@@ -373,12 +373,12 @@ found:
  */
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void *hp_shm_malloc_unsafe_dbg(struct hp_block *hpb, unsigned long size,
-                      const char* file, const char* func, unsigned int line)
+                      const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void *hp_shm_malloc_unsafe(struct hp_block *hpb, unsigned long size)
 #else
 void *hp_shm_malloc_unsafe(struct hp_block *hpb, unsigned long size,
-                      const char* file, const char* func, unsigned int line)
+                      const char *file, const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *frag;
@@ -485,12 +485,12 @@ found:
  */
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void *hp_shm_malloc_dbg(struct hp_block *hpb, unsigned long size,
-						const char* file, const char* func, unsigned int line)
+						const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void *hp_shm_malloc(struct hp_block *hpb, unsigned long size)
 #else
 void *hp_shm_malloc(struct hp_block *hpb, unsigned long size,
-						const char* file, const char* func, unsigned int line)
+						const char *file, const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *frag;
@@ -592,12 +592,12 @@ found:
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void hp_pkg_free_dbg(struct hp_block *hpb, void *p,
-					const char* file, const char* func, unsigned int line)
+					const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void hp_pkg_free(struct hp_block *hpb, void *p)
 #else
 void hp_pkg_free(struct hp_block *hpb, void *p,
-					const char* file, const char* func, unsigned int line)
+					const char *file, const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *f, *next;
@@ -652,12 +652,12 @@ void hp_pkg_free(struct hp_block *hpb, void *p,
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void hp_shm_free_unsafe_dbg(struct hp_block *hpb, void *p,
-							const char* file, const char* func, unsigned int line)
+							const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void hp_shm_free_unsafe(struct hp_block *hpb, void *p)
 #else
 void hp_shm_free_unsafe(struct hp_block *hpb, void *p,
-							const char* file, const char* func, unsigned int line)
+							const char *file, const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *f;
@@ -681,12 +681,12 @@ void hp_shm_free_unsafe(struct hp_block *hpb, void *p,
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void hp_shm_free_dbg(struct hp_block *hpb, void *p,
-							const char* file, const char* func, unsigned int line)
+							const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void hp_shm_free(struct hp_block *hpb, void *p)
 #else
 void hp_shm_free(struct hp_block *hpb, void *p,
-							const char* file, const char* func, unsigned int line)
+							const char *file, const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *f;
@@ -716,12 +716,12 @@ void hp_shm_free(struct hp_block *hpb, void *p,
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void *hp_pkg_realloc_dbg(struct hp_block *hpb, void *p, unsigned long size,
-						const char* file, const char* func, unsigned int line)
+						const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void *hp_pkg_realloc(struct hp_block *hpb, void *p, unsigned long size)
 #else
 void *hp_pkg_realloc(struct hp_block *hpb, void *p, unsigned long size,
-						const char* file, const char* func, unsigned int line)
+						const char *file, const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *f;
@@ -834,14 +834,14 @@ void *hp_pkg_realloc(struct hp_block *hpb, void *p, unsigned long size,
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void *hp_shm_realloc_unsafe_dbg(struct hp_block *hpb, void *p,
-                                unsigned long size, const char* file,
-                                const char* func, unsigned int line)
+                                unsigned long size, const char *file,
+                                const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void *hp_shm_realloc_unsafe(struct hp_block *hpb, void *p, unsigned long size)
 #else
 void *hp_shm_realloc_unsafe(struct hp_block *hpb, void *p,
-                            unsigned long size, const char* file,
-                            const char* func, unsigned int line)
+                            unsigned long size, const char *file,
+                            const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *f;
@@ -913,12 +913,12 @@ void *hp_shm_realloc_unsafe(struct hp_block *hpb, void *p,
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void *hp_shm_realloc_dbg(struct hp_block *hpb, void *p, unsigned long size,
-						const char* file, const char* func, unsigned int line)
+						const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
 void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size)
 #else
 void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size,
-						const char* file, const char* func, unsigned int line)
+						const char *file, const char *func, unsigned int line)
 #endif
 {
 	struct hp_frag *f;
