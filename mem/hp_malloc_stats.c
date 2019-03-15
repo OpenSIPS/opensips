@@ -38,8 +38,6 @@
 #include "hp_malloc.h"
 #include "hp_malloc_stats.h"
 
-gen_lock_t *hp_stats_lock;
-
 #ifdef STATISTICS
 
 /* specified in microseconds */
@@ -63,6 +61,8 @@ unsigned long hp_shm_get_size(struct hp_block *hpb)
 }
 
 #ifdef HP_MALLOC_FAST_STATS
+gen_lock_t *hp_stats_lock;
+
 void update_shm_stats(struct hp_block *hpb)
 {
 	struct hp_frag_lnk *bucket, *it;

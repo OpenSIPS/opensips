@@ -1038,7 +1038,7 @@ void hp_status(struct hp_block *hpb)
 	dbg_ht_init(allocd);
 
 	for (f=hpb->first_frag; (char*)f<(char*)hpb->last_frag; f=FRAG_NEXT(f))
-		if (!frag_is_free(f))
+		if (!frag_is_free(f) && f->file)
 			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
 				LM_ERR("Unable to update alloc'ed. memory summary\n");
 				dbg_ht_free(allocd);

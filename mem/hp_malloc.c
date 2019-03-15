@@ -595,6 +595,7 @@ struct hp_block *hp_shm_malloc_init(char *address, unsigned long size,
 		hpb->total_fragments++;
 	}
 
+#ifdef HP_MALLOC_FAST_STATS
 #ifdef DBG_MALLOC
 	hp_stats_lock = hp_shm_malloc_unsafe(hpb, sizeof *hp_stats_lock,
 											__FILE__, __FUNCTION__, __LINE__);
@@ -610,6 +611,7 @@ struct hp_block *hp_shm_malloc_init(char *address, unsigned long size,
 		LM_CRIT("could not initialize hp statistics lock\n");
 		return NULL;
 	}
+#endif
 
 	return hpb;
 }
