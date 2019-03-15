@@ -24,6 +24,7 @@
  *  2014-01-19 initial version (liviu)
  */
 
+#ifdef HP_MALLOC
 #ifndef HP_MALLOC_STATS_H
 #define HP_MALLOC_STATS_H
 
@@ -240,4 +241,5 @@ unsigned long hp_pkg_get_frags(struct hp_block *hpb)
 
 #endif /* STATISTICS */
 
-#endif
+#endif /* HP_MALLOC_STATS_H */
+#endif /* HP_MALLOC */

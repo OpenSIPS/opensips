@@ -784,7 +784,14 @@ void shm_mem_destroy(void)
 #endif
 
 #ifdef SHM_EXTRA_STATS
-	if (memory_mods_stats && mem_lock) {
+	if (memory_mods_stats && (0
+#ifdef HP_MALLOC
+			|| mem_locks
+#endif
+#if defined F_MALLOC || defined QM_MALLOC
+			|| mem_lock
+#endif
+			)) {
 		core_group = -1;
 		offset = 0;
 		#ifndef SHM_SHOW_DEFAULT_GROUP

@@ -64,6 +64,8 @@
 #ifdef INLINE_ALLOC
 #if defined F_MALLOC
 #define shm_stats_core_init fm_stats_core_init
+#define shm_stats_get_index fm_stats_get_index
+#define shm_stats_set_index fm_stats_set_index
 #define shm_frag_overhead FM_FRAG_OVERHEAD
 #define shm_frag_size fm_frag_size
 #define shm_frag_file fm_frag_file
@@ -71,6 +73,8 @@
 #define shm_frag_line fm_frag_line
 #elif defined QM_MALLOC
 #define shm_stats_core_init qm_stats_core_init
+#define shm_stats_get_index qm_stats_get_index
+#define shm_stats_set_index qm_stats_set_index
 #define shm_frag_overhead QM_FRAG_OVERHEAD
 #define shm_frag_size qm_frag_size
 #define shm_frag_file qm_frag_file
@@ -78,6 +82,8 @@
 #define shm_frag_line qm_frag_line
 #elif defined HP_MALLOC
 #define shm_stats_core_init hp_stats_core_init
+#define shm_stats_get_index hp_stats_get_index
+#define shm_stats_set_index hp_stats_set_index
 #define shm_frag_overhead HP_FRAG_OVERHEAD
 #define shm_frag_size hp_frag_size
 #define shm_frag_file hp_frag_file

@@ -328,6 +328,7 @@ void cleanup(int show_status)
 		|| mem_locks
 #endif
 	) {
+#if defined HP_MALLOC && (defined F_MALLOC || defined QM_MALLOC)
 		if (mem_allocator_shm == MM_HP_MALLOC ||
 		        mem_allocator_shm == MM_HP_MALLOC_DBG) {
 			int i;
@@ -337,6 +338,14 @@ void cleanup(int show_status)
 		} else {
 			shm_unlock();
 		}
+#elif defined HP_MALLOC
+		int i;
+
+		for (i = 0; i < HP_HASH_SIZE; i++)
+			lock_release(&mem_locks[i]);
+#else
+		shm_unlock();
+#endif
 	}
 
 	handle_ql_shutdown();
