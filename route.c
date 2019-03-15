@@ -101,6 +101,46 @@ int init_route_lists(void)
 }
 
 
+void free_route_lists(struct os_script_routes *sr)
+{
+	int i;
+
+	for( i=0 ; i<RT_NO ; i++ )
+		if (sr->request[i].a)
+			free_action_list(sr->request[i].a);
+
+	for( i=0 ; i<ONREPLY_RT_NO ; i++ )
+		if (sr->onreply[i].a)
+			free_action_list(sr->onreply[i].a);
+
+	for( i=0 ; i<FAILURE_RT_NO ; i++ )
+		if (sr->failure[i].a)
+			free_action_list(sr->failure[i].a);
+
+	for( i=0 ; i<BRANCH_RT_NO ; i++ )
+		if (sr->branch[i].a)
+			free_action_list(sr->branch[i].a);
+
+	if (sr->local.a)
+		free_action_list(sr->local.a);
+
+	if (sr->error.a)
+		free_action_list(sr->error.a);
+
+	if (sr->startup.a)
+		free_action_list(sr->startup.a);
+
+	for( i=0 ; i<TIMER_RT_NO ; i++ )
+		if (sr->timer[i].a)
+			free_action_list(sr->timer[i].a);
+
+	for( i=0 ; i<EVENT_RT_NO ; i++ )
+		if (sr->event[i].a)
+			free_action_list(sr->event[i].a);
+
+}
+
+
 int get_script_route_idx( char* name,struct script_route *sr, int size,int set)
 {
 	unsigned int i;

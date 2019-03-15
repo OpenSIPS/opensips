@@ -342,6 +342,7 @@ void cleanup(int show_status)
 	tr_free_extra_list();
 	destroy_argv_list();
 	destroy_black_lists();
+	free_route_lists(sroutes); // this is just for testing purposes
 #ifdef PKG_MALLOC
 	if (show_status){
 		LM_GEN1(memdump, "Memory status (pkg):\n");

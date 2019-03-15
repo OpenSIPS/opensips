@@ -113,6 +113,8 @@ extern int route_type;
 
 int init_route_lists();
 
+void free_route_lists(struct os_script_routes *sr);
+
 int get_script_route_idx( char* name, struct script_route *sr,
 		int size, int set);
 

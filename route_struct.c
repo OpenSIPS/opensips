@@ -140,6 +140,66 @@ struct action* append_action(struct action* a, struct action* b)
 }
 
 
+static void free_expr( struct expr *e)
+{
+	if (e==NULL)
+		return;
+
+	if (e->type==ELEM_T) {
+
+		/* left ... */
+		if (e->left.type==EXPR_O)
+			free_expr( e->left.v.expr );
+		else if (e->right.type==ACTION_O)
+			free_action_list( (struct action*)e->right.v.data );
+		/* ... and right */
+		if (e->right.type==EXPR_ST)
+			free_expr( e->right.v.expr );
+		else if (e->right.type==ACTIONS_ST)
+			free_action_list( (struct action*)e->right.v.data );
+
+	} else if (e->type==EXP_T) {
+
+		/* left ... */
+		if (e->left.v.expr)
+			free_expr( e->left.v.expr );
+		/* ... and right */
+		if (e->right.v.expr)
+			free_expr( e->right.v.expr );
+
+	}
+
+	pkg_free( e );
+}
+
+
+static void free_action_elem( action_elem_t *e )
+{
+	if (e->type==EXPR_ST)
+		free_expr( (struct expr*)e->u.data );
+	else if (e->type==ACTIONS_ST)
+		free_action_list( (struct action*)e->u.data );
+}
+
+
+void free_action_list( struct action *a)
+{
+	int i;
+
+	if (a==NULL)
+		return;
+
+	for( i=0 ; i<MAX_ACTION_ELEMS ; i++)
+		if (a->elem[i].type)
+			free_action_elem( &a->elem[i] );
+
+	if (a->next)
+		free_action_list(a->next);
+
+	pkg_free(a);
+}
+
+
 
 void print_expr(struct expr* exp)
 {
