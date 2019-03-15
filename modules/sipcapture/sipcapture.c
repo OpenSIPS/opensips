@@ -736,7 +736,8 @@ static int parse_hep_route(char *val)
 			strncasecmp(route_name.s, hep_sip_route.s, hep_sip_route.len ) == 0) {
 		hep_route_id = HEP_SIP_ROUTE;
 	} else {
-		hep_route_id=get_script_route_ID_by_name( route_name.s, rlist, RT_NO);
+		hep_route_id=get_script_route_ID_by_name( route_name.s,
+			sroutes->request, RT_NO);
 		if ( hep_route_id == -1 ) {
 			LM_ERR("route <%s> not defined!\n", route_name.s);
 			return -1;
@@ -2437,7 +2438,7 @@ int hep_msg_received(void)
 		set_route_type( REQUEST_ROUTE );
 
 		/* run given hep route */
-		run_top_route(rlist[hep_route_id].a, &dummy_req);
+		run_top_route( sroutes->request[hep_route_id].a, &dummy_req);
 
 		/* free possible loaded avps */
 		reset_avps();

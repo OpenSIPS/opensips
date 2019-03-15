@@ -2973,11 +2973,11 @@ search_again:
 	}
 
 	if (rt_info->route_idx>0 && rt_info->route_idx<RT_NO) {
-		fret = run_top_route( rlist[rt_info->route_idx].a, msg );
+		fret = run_top_route( sroutes->request[rt_info->route_idx].a, msg );
 		if (fret&ACT_FL_DROP) {
 			/* drop the action */
 			LM_DBG("script route %s drops routing "
-					"by %d\n", rlist[rt_info->route_idx].name, fret);
+				"by %d\n", sroutes->request[rt_info->route_idx].name, fret);
 			goto error2;
 		}
 	}

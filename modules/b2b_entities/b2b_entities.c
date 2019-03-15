@@ -259,7 +259,8 @@ static int mod_init(void)
 
 	if (script_req_route)
 	{
-		req_routeid = get_script_route_ID_by_name( script_req_route, rlist, RT_NO);
+		req_routeid = get_script_route_ID_by_name( script_req_route,
+			sroutes->request, RT_NO);
 		if (req_routeid < 1)
 		{
 			LM_ERR("route <%s> does not exist\n",script_req_route);
@@ -269,7 +270,8 @@ static int mod_init(void)
 
 	if (script_reply_route)
 	{
-		reply_routeid = get_script_route_ID_by_name( script_reply_route, rlist, RT_NO);
+		reply_routeid = get_script_route_ID_by_name( script_reply_route,
+			sroutes->request, RT_NO);
 		if (reply_routeid < 1)
 		{
 			LM_ERR("route <%s> does not exist\n",script_reply_route);

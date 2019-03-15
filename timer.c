@@ -270,16 +270,16 @@ int register_route_timers(void)
 	struct os_timer* t;
 	int i;
 
-	if(timer_rlist[0].a == NULL)
+	if(sroutes->timer[0].a == NULL)
 		return 0;
 
 	/* register the routes */
 	for(i = 0; i< TIMER_RT_NO; i++)
 	{
-		if(timer_rlist[i].a == NULL)
+		if(sroutes->timer[i].a == NULL)
 			return 0;
-		t = new_os_timer( "timer_route", 0, route_timer_f, timer_rlist[i].a,
-				timer_rlist[i].interval);
+		t = new_os_timer( "timer_route", 0, route_timer_f, sroutes->timer[i].a,
+				sroutes->timer[i].interval);
 		if (t==NULL)
 			return E_OUT_OF_MEM;
 

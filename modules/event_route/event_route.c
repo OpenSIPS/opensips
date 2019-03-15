@@ -175,17 +175,17 @@ static int child_init(int rank)
 	buffer[sizeof(SCRIPTROUTE_NAME) - 1] = COLON_C;
 
 	/* subscribe the route events - idx starts at 1 */
-	for (idx = 1; event_rlist[idx].a && event_rlist[idx].name; idx++) {
+	for (idx = 1; sroutes->event[idx].a && sroutes->event[idx].name; idx++) {
 		/* build the socket */
-		event_name.s = event_rlist[idx].name;
-		event_name.len = strlen(event_rlist[idx].name);
+		event_name.s = sroutes->event[idx].name;
+		event_name.len = strlen(sroutes->event[idx].name);
 
 		/* first check if the event exists */
 		if (evi_get_id(&event_name) == EVI_ERROR) {
 			LM_ERR("Event %s not registered\n", event_name.s);
 			return -1;
 		}
-		LM_DBG("Registering event %s\n", event_rlist[idx].name);
+		LM_DBG("Registering event %s\n", sroutes->event[idx].name);
 
 		if (sizeof(SCRIPTROUTE_NAME)+event_name.len > EV_SCRIPTROUTE_MAX_SOCK) {
 			LM_ERR("socket name too big %d (max: %d)\n",
@@ -196,14 +196,14 @@ static int child_init(int rank)
 		memcpy(buffer + sizeof(SCRIPTROUTE_NAME), event_name.s, event_name.len);
 		sock_name.len = event_name.len + sizeof(SCRIPTROUTE_NAME);
 
-		if (sock_name.len + event_rlist[idx].mode+4 /*"sync"*/
+		if (sock_name.len + sroutes->event[idx].mode+4 /*"sync"*/
 				+1 /*'/'*/ > EV_SCRIPTROUTE_MAX_SOCK) {
 			LM_ERR("not enough room in socket name buffer\n");
 			return -1;
 		}
 
 		sock_name.s[sock_name.len++] = EVENT_ROUTE_MODE_SEP;
-		switch (event_rlist[idx].mode) {
+		switch (sroutes->event[idx].mode) {
 			case 0: /*sync*/
 				memcpy(sock_name.s+sock_name.len, "sync", 4);
 				sock_name.len += 4;
@@ -215,7 +215,7 @@ static int child_init(int rank)
 			default:
 				LM_ERR("invalid route mode value (%d)\n!"
 					"Possibility of memory corruption\n",
-						event_rlist[idx].mode);
+						sroutes->event[idx].mode);
 				return -1;
 		}
 
@@ -295,7 +295,7 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	dummy_buffer = name;
 
 	/* try to "resolve" the name of the route */
-	idx = get_script_event_route_ID_by_name(name,event_rlist,EVENT_RT_NO);
+	idx = get_script_event_route_ID_by_name(name,sroutes->event,EVENT_RT_NO);
 	if (idx < 0) {
 		LM_ERR("cannot find route %s\n", name);
 		return NULL;
@@ -384,7 +384,7 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 		parameters = params;
 		event_name = ev_name;
 
-		run_top_route(event_rlist[SR_SOCK_ROUTE(sock)].a, msg);
+		run_top_route(sroutes->event[SR_SOCK_ROUTE(sock)].a, msg);
 
 		/* restore previous parameters */
 		parameters = backup_params;
@@ -392,7 +392,7 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 
 	} else {
 		if (route_build_buffer(ev_name, sock, params, &buf) < 0) goto reset_msb;
-		buf->a = event_rlist[SR_SOCK_ROUTE(sock)].a;
+		buf->a = sroutes->event[SR_SOCK_ROUTE(sock)].a;
 
 		if (route_send(buf) < 0) goto reset_msb;
 

@@ -171,7 +171,7 @@ static int pike_init(void)
 		TIMER_FLAG_DELAY_ON_DELAY );
 
 	if (pike_route_s && *pike_route_s) {
-		rt = get_script_route_ID_by_name( pike_route_s, rlist, RT_NO);
+		rt = get_script_route_ID_by_name(pike_route_s,sroutes->request,RT_NO);
 		if (rt<1) {
 			LM_ERR("route <%s> does not exist\n",pike_route_s);
 			return -1;

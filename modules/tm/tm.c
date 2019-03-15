@@ -417,7 +417,7 @@ static int fixup_froute(void** param, int param_no)
 	int rt;
 
 	rt = get_script_route_ID_by_name( (char *)*param,
-			failure_rlist, FAILURE_RT_NO);
+			sroutes->failure, FAILURE_RT_NO);
 	if (rt==-1) {
 		LM_ERR("failure route <%s> does not exist\n",(char *)*param);
 		return -1;
@@ -433,7 +433,7 @@ static int fixup_rroute(void** param, int param_no)
 	int rt;
 
 	rt = get_script_route_ID_by_name( (char *)*param,
-		onreply_rlist, ONREPLY_RT_NO);
+		sroutes->onreply, ONREPLY_RT_NO);
 	if (rt==-1) {
 		LM_ERR("onreply route <%s> does not exist\n",(char *)*param);
 		return -1;
@@ -449,7 +449,7 @@ static int fixup_broute(void** param, int param_no)
 	int rt;
 
 	rt = get_script_route_ID_by_name( (char *)*param,
-		branch_rlist, BRANCH_RT_NO);
+		sroutes->branch, BRANCH_RT_NO);
 	if (rt==-1) {
 		LM_ERR("branch route <%s> does not exist\n",(char *)*param);
 		return -1;

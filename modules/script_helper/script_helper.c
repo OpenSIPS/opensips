@@ -112,7 +112,8 @@ int mod_init(void)
 	LM_DBG("initializing module...\n");
 
 	if (seq_route) {
-		seq_route_id = get_script_route_ID_by_name(seq_route, rlist, RT_NO);
+		seq_route_id = get_script_route_ID_by_name(seq_route,
+			sroutes->request, RT_NO);
 		if (seq_route_id == -1)
 			LM_ERR("route \"%s\" does not exist! ignoring\n", seq_route);
 	}
@@ -216,7 +217,7 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	if (seq_request) {
 		if (seq_route_id > 0) {
 			LM_DBG("running seq route '%s'\n", seq_route);
-			if (run_top_route(rlist[seq_route_id].a, msg) & ACT_FL_DROP) {
+			if (run_top_route(sroutes->request[seq_route_id].a, msg) & ACT_FL_DROP) {
 				LM_DBG("script exited in the seq route\n");
 
 				return SCB_RUN_POST_CBS;

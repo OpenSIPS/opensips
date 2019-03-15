@@ -230,7 +230,7 @@ run_route:
 	if (ctx->report_route!=-1) {
 		LM_DBG("runinng report route for a launch job\n");
 		set_route_type( REQUEST_ROUTE );
-		run_top_route( rlist[ctx->report_route].a, &req);
+		run_top_route( sroutes->request[ctx->report_route].a, &req);
 
 		/* remove all added AVP */
 		reset_avps( );
@@ -336,7 +336,7 @@ report:
 	/* run the report route inline */
 	init_dummy_request( req );
 	set_route_type( REQUEST_ROUTE );
-	run_top_route( rlist[report_route].a, &req);
+	run_top_route( sroutes->request[report_route].a, &req);
 	/* remove all added AVP */
 	reset_avps( );
 	return 1;

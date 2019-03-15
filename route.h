@@ -59,15 +59,28 @@ struct script_event_route{
 	struct action *a;
 };
 
-extern struct script_route rlist[RT_NO];			/*!< main "script table" */
-extern struct script_route onreply_rlist[ONREPLY_RT_NO];	/*!< main reply route table */
-extern struct script_route failure_rlist[FAILURE_RT_NO];	/*!< Failure route table */
-extern struct script_route branch_rlist[BRANCH_RT_NO];	/*!< Branch routes table */
-extern struct script_route local_rlist;			/*!< Local route table */
-extern struct script_route error_rlist;			/*!< Error route table */
-extern struct script_route startup_rlist;		/*!< Startup route table */
-extern struct script_timer_route timer_rlist[TIMER_RT_NO];	/*!< Timer route table */
-extern struct script_event_route event_rlist[EVENT_RT_NO];	/*!< Events route table */
+
+struct os_script_routes {
+	/* request routing script table  */
+	struct script_route request[RT_NO];
+	/* reply routing table */
+	struct script_route onreply[ONREPLY_RT_NO];
+	/* failure routes */
+	struct script_route failure[FAILURE_RT_NO];
+	/* branch routes */
+	struct script_route branch[BRANCH_RT_NO];
+	/* local requests route */
+	struct script_route local;
+	/* error route */
+	struct script_route error;
+	/* startup route */
+	struct script_route startup;
+	/* timer route */
+	struct script_timer_route timer[TIMER_RT_NO];
+	/* event route */
+	struct script_event_route event[EVENT_RT_NO];
+};
+
 
 #define REQUEST_ROUTE 1   /*!< Request route block */
 #define FAILURE_ROUTE 2   /*!< Negative-reply route block */
@@ -82,6 +95,7 @@ extern struct script_event_route event_rlist[EVENT_RT_NO];	/*!< Events route tab
 	(REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE| \
 	 ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE)
 
+extern struct os_script_routes *sroutes;
 extern int route_type;
 
 #define set_route_type(_new_type) \
@@ -97,7 +111,7 @@ extern int route_type;
 
 #define is_route_type(_type) (route_type==_type)
 
-void init_route_lists();
+int init_route_lists();
 
 int get_script_route_idx( char* name, struct script_route *sr,
 		int size, int set);

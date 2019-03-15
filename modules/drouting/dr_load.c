@@ -607,7 +607,8 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			str_vals[STR_VALS_ROUTEID_DRR_COL][0] ) {
 				int_vals[INT_VALS_SCRIPT_ROUTE_ID] =
 					get_script_route_ID_by_name
-					( str_vals[STR_VALS_ROUTEID_DRR_COL], rlist, RT_NO);
+						( str_vals[STR_VALS_ROUTEID_DRR_COL], sroutes->request,
+						RT_NO);
 				if (int_vals[INT_VALS_SCRIPT_ROUTE_ID]==-1) {
 					LM_WARN("route <%s> does not exist\n",
 							str_vals[STR_VALS_ROUTEID_DRR_COL]);

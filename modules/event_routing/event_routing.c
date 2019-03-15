@@ -211,7 +211,8 @@ static int fix_notification_route(void** param)
 {
 	int route_idx;
 
-	route_idx = get_script_route_ID_by_name( (char*)*param, rlist, RT_NO);
+	route_idx = get_script_route_ID_by_name( (char*)*param, 
+		sroutes->request, RT_NO);
 	if (route_idx==-1) {
 		LM_ERR("notification route <%s> not defined in script\n",
 			(char*)*param);

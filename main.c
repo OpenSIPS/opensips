@@ -745,7 +745,7 @@ static int main_loop(void)
 		goto error;
 	}
 
-	if(startup_rlist.a) {/* if a startup route was defined */
+	if(sroutes->startup.a) {/* if a startup route was defined */
 		startup_done = (int*)shm_malloc(sizeof(int));
 		if(startup_done == NULL) {
 			LM_ERR("No more shared memory\n");
@@ -938,7 +938,8 @@ int main(int argc, char** argv)
 	if (init_pkg_mallocs()==-1)
 		goto error00;
 
-	init_route_lists();
+	if (init_route_lists()<0)
+		goto error00;
 
 	/* we want to be sure that from now on, all the floating numbers are 
 	 * using the dot as separator. This is a real issue when printing the

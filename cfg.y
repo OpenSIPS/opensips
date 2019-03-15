@@ -1348,110 +1348,111 @@ route_name:  ID {
 ;
 
 route_stm:  ROUTE LBRACE actions RBRACE {
-						if (rlist[DEFAULT_RT].a!=0) {
+						if (sroutes->request[DEFAULT_RT].a!=0) {
 							yyerror("overwriting default "
 								"request routing table");
 							YYABORT;
 						}
-						push($3, &rlist[DEFAULT_RT].a);
+						push($3, &sroutes->request[DEFAULT_RT].a);
 					}
 		| ROUTE LBRACK route_name RBRACK LBRACE actions RBRACE {
 						if ( strtol($3,&tmp,10)==0 && *tmp==0) {
 							/* route[0] detected */
-							if (rlist[DEFAULT_RT].a!=0) {
+							if (sroutes->request[DEFAULT_RT].a!=0) {
 								yyerror("overwriting(2) default "
 									"request routing table");
 								YYABORT;
 							}
-							push($6, &rlist[DEFAULT_RT].a);
+							push($6, &sroutes->request[DEFAULT_RT].a);
 						} else {
-							i_tmp = get_script_route_idx($3,rlist,RT_NO,1);
+							i_tmp = get_script_route_idx($3,sroutes->request,
+								RT_NO,1);
 							if (i_tmp==-1) YYABORT;
-							push($6, &rlist[i_tmp].a);
+							push($6, &sroutes->request[i_tmp].a);
 						}
 					}
 		| ROUTE error { yyerror("invalid  route  statement"); }
 	;
 
 failure_route_stm: ROUTE_FAILURE LBRACK route_name RBRACK LBRACE actions RBRACE {
-						i_tmp = get_script_route_idx($3,failure_rlist,
+						i_tmp = get_script_route_idx($3,sroutes->failure,
 								FAILURE_RT_NO,1);
 						if (i_tmp==-1) YYABORT;
-						push($6, &failure_rlist[i_tmp].a);
+						push($6, &sroutes->failure[i_tmp].a);
 					}
 		| ROUTE_FAILURE error { yyerror("invalid failure_route statement"); }
 	;
 
 onreply_route_stm: ROUTE_ONREPLY LBRACE actions RBRACE {
-						if (onreply_rlist[DEFAULT_RT].a!=0) {
+						if (sroutes->onreply[DEFAULT_RT].a!=0) {
 							yyerror("overwriting default "
 								"onreply routing table");
 							YYABORT;
 						}
-						push($3, &onreply_rlist[DEFAULT_RT].a);
+						push($3, &sroutes->onreply[DEFAULT_RT].a);
 					}
 		| ROUTE_ONREPLY LBRACK route_name RBRACK LBRACE actions RBRACE {
-						i_tmp = get_script_route_idx($3,onreply_rlist,
+						i_tmp = get_script_route_idx($3,sroutes->onreply,
 								ONREPLY_RT_NO,1);
 						if (i_tmp==-1) YYABORT;
-						push($6, &onreply_rlist[i_tmp].a);
+						push($6, &sroutes->onreply[i_tmp].a);
 					}
 		| ROUTE_ONREPLY error { yyerror("invalid onreply_route statement"); }
 	;
 
 branch_route_stm: ROUTE_BRANCH LBRACK route_name RBRACK LBRACE actions RBRACE {
-						i_tmp = get_script_route_idx($3,branch_rlist,
+						i_tmp = get_script_route_idx($3,sroutes->branch,
 								BRANCH_RT_NO,1);
 						if (i_tmp==-1) YYABORT;
-						push($6, &branch_rlist[i_tmp].a);
+						push($6, &sroutes->branch[i_tmp].a);
 					}
 		| ROUTE_BRANCH error { yyerror("invalid branch_route statement"); }
 	;
 
 error_route_stm:  ROUTE_ERROR LBRACE actions RBRACE {
-						if (error_rlist.a!=0) {
+						if (sroutes->error.a!=0) {
 							yyerror("overwriting default "
 								"error routing table");
 							YYABORT;
 						}
-						push($3, &error_rlist.a);
+						push($3, &sroutes->error.a);
 					}
 		| ROUTE_ERROR error { yyerror("invalid error_route statement"); }
 	;
 
 local_route_stm:  ROUTE_LOCAL LBRACE actions RBRACE {
-						if (local_rlist.a!=0) {
+						if (sroutes->local.a!=0) {
 							yyerror("re-definition of local "
 								"route detected");
 							YYABORT;
 						}
-						push($3, &local_rlist.a);
+						push($3, &sroutes->local.a);
 					}
 		| ROUTE_LOCAL error { yyerror("invalid local_route statement"); }
 	;
 
 startup_route_stm:  ROUTE_STARTUP LBRACE actions RBRACE {
-						if (startup_rlist.a!=0) {
+						if (sroutes->startup.a!=0) {
 							yyerror("re-definition of startup "
 								"route detected");
 							YYABORT;
 						}
-						push($3, &startup_rlist.a);
+						push($3, &sroutes->startup.a);
 					}
 		| ROUTE_STARTUP error { yyerror("invalid startup_route statement"); }
 	;
 
 timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actions RBRACE {
 						i_tmp = 0;
-						while (timer_rlist[i_tmp].a!=0 && i_tmp < TIMER_RT_NO) {
+						while(sroutes->timer[i_tmp].a!=0 && i_tmp<TIMER_RT_NO){
 							i_tmp++;
 						}
 						if(i_tmp == TIMER_RT_NO) {
 							yyerror("Too many timer routes defined\n");
 							YYABORT;
 						}
-						timer_rlist[i_tmp].interval = $5;
-						push($8, &timer_rlist[i_tmp].a);
+						sroutes->timer[i_tmp].interval = $5;
+						push($8, &sroutes->timer[i_tmp].a);
 					}
 		| ROUTE_TIMER error { yyerror("invalid timer_route statement"); }
 	;
@@ -1459,8 +1460,8 @@ timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actio
 
 event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 						i_tmp = 1;
-						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
-							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
+						while(sroutes->event[i_tmp].a!=0 && i_tmp<EVENT_RT_NO){
+							if (strcmp($3, sroutes->event[i_tmp].name) == 0) {
 								LM_ERR("Script route <%s> redefined\n", $3);
 								YYABORT;
 							}
@@ -1472,16 +1473,16 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 							YYABORT;
 						}
 
-						event_rlist[i_tmp].name = $3;
-						event_rlist[i_tmp].mode = EV_ROUTE_SYNC;
+						sroutes->event[i_tmp].name = $3;
+						sroutes->event[i_tmp].mode = EV_ROUTE_SYNC;
 
-						push($6, &event_rlist[i_tmp].a);
+						push($6, &sroutes->event[i_tmp].a);
 					}
 		| ROUTE_EVENT LBRACK route_name COMMA SYNC_TOKEN RBRACK LBRACE actions RBRACE {
 
 						i_tmp = 1;
-						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
-							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
+						while(sroutes->event[i_tmp].a!=0 && i_tmp<EVENT_RT_NO){
+							if (strcmp($3, sroutes->event[i_tmp].name) == 0) {
 								LM_ERR("Script route <%s> redefined\n", $3);
 								YYABORT;
 							}
@@ -1493,16 +1494,16 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 							YYABORT;
 						}
 
-						event_rlist[i_tmp].name = $3;
-						event_rlist[i_tmp].mode = EV_ROUTE_SYNC;
+						sroutes->event[i_tmp].name = $3;
+						sroutes->event[i_tmp].mode = EV_ROUTE_SYNC;
 
-						push($8, &event_rlist[i_tmp].a);
+						push($8, &sroutes->event[i_tmp].a);
 					}
 		| ROUTE_EVENT LBRACK route_name COMMA ASYNC_TOKEN RBRACK LBRACE actions RBRACE {
 
 						i_tmp = 1;
-						while (event_rlist[i_tmp].a !=0 && i_tmp < EVENT_RT_NO) {
-							if (strcmp($3, event_rlist[i_tmp].name) == 0) {
+						while(sroutes->event[i_tmp].a!=0 && i_tmp<EVENT_RT_NO){
+							if (strcmp($3, sroutes->event[i_tmp].name) == 0) {
 								LM_ERR("Script route <%s> redefined\n", $3);
 								YYABORT;
 							}
@@ -1514,10 +1515,10 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 							YYABORT;
 						}
 
-						event_rlist[i_tmp].name = $3;
-						event_rlist[i_tmp].mode = EV_ROUTE_ASYNC;
+						sroutes->event[i_tmp].name = $3;
+						sroutes->event[i_tmp].mode = EV_ROUTE_ASYNC;
 
-						push($8, &event_rlist[i_tmp].a);
+						push($8, &sroutes->event[i_tmp].a);
 					}
 		| ROUTE_EVENT error { yyerror("invalid event_route statement"); }
 	;
@@ -2211,14 +2212,16 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| ERROR LPAREN error RPAREN { $$=0; yyerror("bad error"
 														"argument"); }
 		| ROUTE LPAREN route_name RPAREN	{
-						i_tmp = get_script_route_idx( $3, rlist, RT_NO, 0);
+						i_tmp = get_script_route_idx( $3, sroutes->request,
+							RT_NO, 0);
 						if (i_tmp==-1) yyerror("too many script routes");
 						mk_action2( $$, ROUTE_T, NUMBER_ST,
 							0, (void*)(long)i_tmp, 0);
 					}
 
 		| ROUTE LPAREN route_name COMMA route_param RPAREN	{
-						i_tmp = get_script_route_idx( $3, rlist, RT_NO, 0);
+						i_tmp = get_script_route_idx( $3, sroutes->request,
+							RT_NO, 0);
 						if (i_tmp==-1) yyerror("too many script routes");
 						if ($5 <= 0) yyerror("too many route parameters");
 
@@ -2726,13 +2729,13 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				mk_action3($$, SCRIPT_TRACE_T, NUMBER_ST,
 						SCRIPTVAR_ELEM_ST, STR_ST, (void *)$3, pvmodel, $7); }
 		| ASYNC_TOKEN LPAREN async_func COMMA route_name RPAREN {
-				i_tmp = get_script_route_idx( $5, rlist, RT_NO, 0);
+				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
 				if (i_tmp==-1) yyerror("too many script routes");
 				mk_action2($$, ASYNC_T, ACTIONS_ST, NUMBER_ST,
 						$3, (void*)(long)i_tmp);
 				}
 		| LAUNCH_TOKEN LPAREN async_func COMMA route_name RPAREN {
-				i_tmp = get_script_route_idx( $5, rlist, RT_NO, 0);
+				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
 				if (i_tmp==-1) yyerror("too many script routes");
 				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
 						$3, (void*)(long)i_tmp);

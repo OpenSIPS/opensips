@@ -156,7 +156,7 @@ void run_error_route(struct sip_msg* msg, int force_reset)
 	int old_route;
 	LM_DBG("triggering\n");
 	swap_route_type(old_route, ERROR_ROUTE);
-	run_actions(error_rlist.a, msg);
+	run_actions(sroutes->error.a, msg);
 	/* reset error info */
 	init_err_info();
 	set_route_type(old_route);
@@ -175,7 +175,7 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 			action_flags |= ACT_FL_EXIT;
 
 		/* check for errors */
-		if (_oser_err_info.eclass!=0 && error_rlist.a!=NULL &&
+		if (_oser_err_info.eclass!=0 && sroutes->error.a!=NULL &&
 		(route_type&(ERROR_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE))==0 )
 			run_error_route(msg,0);
 
@@ -727,7 +727,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case ROUTE_T:
-			script_trace("route", rlist[a->elem[0].u.number].name, msg, a->file, a->line) ;
+			script_trace("route", sroutes->request[a->elem[0].u.number].name,
+				msg, a->file, a->line) ;
 			if (a->elem[0].type!=NUMBER_ST){
 				LM_ALERT("BUG in route() type %d\n",
 						a->elem[0].type);
@@ -751,14 +752,16 @@ int do_action(struct action* a, struct sip_msg* msg)
 				route_rec_level++;
 				route_params[route_rec_level] = (action_elem_t *)a->elem[2].u.data;
 				route_params_number[route_rec_level] = a->elem[1].u.number;
-				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
+				return_code =
+					run_actions(sroutes->request[a->elem[0].u.number].a, msg);
 
 				route_rec_level--;
 			} else {
 				route_rec_level++;
 				route_params[route_rec_level] = NULL;
 				route_params_number[route_rec_level] = 0;
-				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
+				return_code =
+					run_actions(sroutes->request[a->elem[0].u.number].a, msg);
 				route_rec_level--;
 			}
 			ret=return_code;

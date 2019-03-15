@@ -262,7 +262,7 @@ static int cpl_init(void)
 
 	if (proxy_route && proxy_route[0]) {
 		cpl_env.proxy_route = get_script_route_ID_by_name( proxy_route,
-				rlist, RT_NO);
+				sroutes->request, RT_NO);
 		if (cpl_env.proxy_route==-1) {
 			LM_ERR("route <%s> does not exist\n",proxy_route);
 			return -1;
