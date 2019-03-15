@@ -566,26 +566,19 @@ MKTAGS=ctags -R .
 # -DSHM_MMAP
 #		use mmap instead of SYSV shared memory
 # -DPKG_MALLOC
-#		uses a faster malloc (exclusive w/ USE_SHM_MEM)
-# -DUSE_SHM_MEM
-#		all pkg_malloc are mapped to shm_malloc (most mallocs use
-#		a common shared mem. segment); don't define PKG_MALLOC
-#		if you want this!
-# -DDBG_MALLOC
-#		inserts debug code, will cause pkg_malloc and shm_malloc
-#		to keep and display lot of debuging information: file name,
-#		function, line number of malloc/free call for each block,
-#		extra error checking (trying to free the same pointer
-#		twice, trying to free a pointer alloc'ed with a different
-#		malloc etc.)
-# -DVQ_MALLOC
-#		additional option of PKG_MALLOC which utilizes faster then the
-#		QM version
-#		(this is not true anymore, q_malloc performs approx. the same)
-# -DQM_MALLOC
-#		memory allocator recommended for debugging
+#		uses a faster malloc
 # -DF_MALLOC
-#		an even faster malloc, not recommended for debugging
+#		fast allocator with minimal overhead, but no fine-grained locking
+# -DQ_MALLOC
+#		decently fast allocator with extra sanity checks + safety buffers
+# -DHP_MALLOC
+#		high performance allocator optimized for shared memory multiprocessing
+# -DDBG_MALLOC
+#       will cause each of the enabled allocators to also include a "debugging"
+#       flavor of itself;  by running a debugging version of an allocator, you
+#       are able to print a summary of the entire used memory pool (summed up
+#       used fragments, along with the file/func/line which allocated them).
+#       Especially useful in quickly troubleshooting memory leaks.
 # -DFAST_LOCK
 #		uses fast architecture specific locking (see the arch. specific section)
 # -DUSE_FUTEX

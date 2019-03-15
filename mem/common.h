@@ -1,5 +1,7 @@
 /*
- * Copyright (C) 2014 OpenSIPS Solutions
+ * shared code between all memory allocators
+ *
+ * Copyright (C) 2014-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -15,14 +17,80 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef mem_common_h
 #define mem_common_h
+
+#include "meminfo.h"
+
+#if !defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC)
+#error "no memory allocator selected"
+#endif
+
+extern int mem_warming_enabled;
+extern char *mem_warming_pattern_file;
+extern int mem_warming_percentage;
+extern enum osips_mm mem_allocator;
+
+enum osips_mm {
+	MM_NONE,
+	MM_F_MALLOC,
+	MM_Q_MALLOC,
+	MM_HP_MALLOC,
+	MM_F_MALLOC_DBG,
+	MM_Q_MALLOC_DBG,
+	MM_HP_MALLOC_DBG,
+};
+
+/* returns -1 if @mm_name is unrecognized */
+int set_global_mm(const char *mm_name);
+
+/* returns -1 if @mm_name is unrecognized */
+int parse_mm(const char *mm_name, enum osips_mm *mm);
+
+#define mm_str(mm) \
+	((mm) == MM_NONE ? "NONE" : \
+	 (mm) == MM_F_MALLOC ? "F_MALLOC" : \
+	 (mm) == MM_Q_MALLOC ? "Q_MALLOC" : \
+	 (mm) == MM_HP_MALLOC ? "HP_MALLOC" : \
+	 (mm) == MM_F_MALLOC_DBG ? "F_MALLOC_DBG" : \
+	 (mm) == MM_Q_MALLOC_DBG ? "Q_MALLOC_DBG" : \
+	 (mm) == MM_HP_MALLOC_DBG ? "HP_MALLOC_DBG" : "unknown")
+
+extern void *mem_block;
+extern void *shm_block;
+
+#ifdef DBG_MALLOC
+typedef void *(*osips_malloc_f) (void *block, unsigned long size,
+                      const char *file, const char *func, unsigned int line);
+typedef void *(*osips_realloc_f) (void *block, void *ptr, unsigned long size,
+                      const char *file, const char *func, unsigned int line);
+typedef void (*osips_free_f) (void *block, void *ptr,
+                      const char *file, const char *func, unsigned int line);
+#else
+typedef void *(*osips_malloc_f) (void *block, unsigned long size);
+typedef void *(*osips_realloc_f) (void *block, void *ptr, unsigned long size);
+typedef void (*osips_free_f) (void *block, void *ptr);
+#endif
+
+typedef void (*osips_mem_info_f) (void *block, struct mem_info *i);
+typedef void (*osips_mem_status_f) (void *block);
+typedef unsigned long (*osips_get_mmstat_f) (void *block);
+typedef void (*osips_shm_stats_init_f) (void *block, int core_index);
+
+#if defined F_MALLOC
+#include "f_malloc.h"
+#endif
+
+#if defined Q_MALLOC
+#include "q_malloc.h"
+#endif
+
+#if defined HP_MALLOC
+#include "hp_malloc.h"
+#endif
 
 #define oom_errorf \
 	"not enough free %s memory (%lu bytes left, need %lu), " \
@@ -32,25 +100,12 @@
 	"not enough free %s memory (need %lu), please increase the \"-%s\" " \
 	"command line parameter!\n"
 
-#	ifdef VQ_MALLOC
-#		include "vq_malloc.h"
-		extern struct vqm_block* mem_block;
-		extern struct vqm_block* shm_block;
-#	elif defined F_MALLOC
-#		include "f_malloc.h"
-		extern struct fm_block* mem_block;
-		extern struct fm_block* shm_block;
-#	elif defined HP_MALLOC
-#		include "hp_malloc.h"
-		extern struct hp_block* mem_block;
-		extern struct hp_block* shm_block;
-#   elif defined QM_MALLOC
-#		include "q_malloc.h"
-		extern struct qm_block* mem_block;
-		extern struct qm_block* shm_block;
-#	else
-#		error "no memory allocator selected"
-#	endif
+/* if exactly an allocator was selected, let's inline it! */
+#if ((!defined Q_MALLOC && !defined HP_MALLOC) || \
+	 (!defined F_MALLOC && !defined HP_MALLOC) || \
+	 (!defined F_MALLOC && !defined Q_MALLOC))
+#define INLINE_ALLOC
+#endif
 
 #ifdef DBG_MALLOC
 #define check_double_free(ptr, frag, block) \
@@ -63,18 +118,7 @@
 		} \
 	} while (0)
 #else
-#define check_double_free(ptr, frag, block) \
-	do { \
-		if (frag_is_free(frag)) { \
-			LM_CRIT("freeing already freed %s pointer (%p) - skipping!\n", \
-			        (block)->name, ptr); \
-			return; \
-		} \
-	} while (0)
+#define check_double_free(ptr, frag, block)
 #endif
-
-extern int mem_warming_enabled;
-extern char *mem_warming_pattern_file;
-extern int mem_warming_percentage;
 
 #endif

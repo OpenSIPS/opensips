@@ -779,7 +779,7 @@ static mi_export_t mi_core_cmds[] = {
 		}
 	},
 
-#if defined(QM_MALLOC) && defined(DBG_MALLOC)
+#if defined(Q_MALLOC) && defined(DBG_MALLOC)
 	{ "shm_check", "complete scan of the shared memory pool "
 		"(if any error is found, OpenSIPS will abort!)", 0, 0, {
 		{mi_shm_check, {0}},

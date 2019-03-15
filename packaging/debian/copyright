@@ -170,11 +170,6 @@ Files: mem/common.h
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
-Files: mem/vq_malloc.c
-Copyright: 2001-2003, FhG Fokus
-  1983, Regents of the University of California
-License: GPL-2+
-
 Files: menuconfig/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+

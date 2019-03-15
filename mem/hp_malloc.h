@@ -1,7 +1,8 @@
 /**
- * the truly parallel memory allocator
+ * high-performance allocator with fine-grained SHM locking
+ *   (note: may perform worse than F_MALLOC at low CPS values!)
  *
- * Copyright (C) 2014 OpenSIPS Solutions
+ * Copyright (C) 2014-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,16 +18,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2014-01-19 initial version (liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if !defined(HP_MALLOC_H) && !defined(VQ_MALLOC) && !defined(QM_MALLOC) && \
-	!defined(F_MALLOC)
-
+#ifndef HP_MALLOC_H
 #define HP_MALLOC_H
 
 #include <sys/time.h>
@@ -48,18 +43,9 @@ extern stat_var *shm_frags;
 #include "hp_malloc_stats.h"
 #include "meminfo.h"
 
+#undef ROUNDTO
+
 #define ROUNDTO 8UL
-#define MIN_FRAG_SIZE	ROUNDTO
-
-#define FRAG_NEXT(f) ((struct hp_frag *) \
-		((char *)(f) + sizeof(struct hp_frag) + ((struct hp_frag *)(f))->size))
-
-/* get the fragment which corresponds to a pointer */
-#define FRAG_OF(p) \
-	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
-
-#define FRAG_OVERHEAD	(sizeof(struct hp_frag))
-#define frag_is_free(_f) ((_f)->prev)
 
 #define HP_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
 #define HP_MALLOC_OPTIMIZE  (1UL << HP_MALLOC_OPTIMIZE_FACTOR)
@@ -74,6 +60,10 @@ extern stat_var *shm_frags;
 #define HP_EXTRA_HASH_SIZE (HP_LINEAR_HASH_SIZE * SHM_MAX_SECONDARY_HASH_SIZE)
 
 #define HP_TOTAL_HASH_SIZE (HP_HASH_SIZE + HP_EXTRA_HASH_SIZE)
+
+/* get the fragment which corresponds to a pointer */
+#define HP_FRAG(p) \
+	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
 
 /* hash structure:
  * 0 .... HP_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with
@@ -91,61 +81,6 @@ extern stat_var *shm_frags;
  *  sshs = "shm_secondary_hash_size" script parameter
  */
 
-/* used when detaching free fragments */
-unsigned int optimized_get_indexes[HP_HASH_SIZE];
-
-/* used when attaching free fragments */
-unsigned int optimized_put_indexes[HP_HASH_SIZE];
-
-/* finds the hash value for s, s=ROUNDTO multiple */
-#define GET_HASH(s)  (((unsigned long)(s) <= HP_MALLOC_OPTIMIZE) ? \
-	(unsigned long)(s) / ROUNDTO : \
-	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
-
-/* 
- * - for heavily used sizes (which need some optimizing) it returns
- *   a hash entry for the given size in a round-robin manner
- * - for the non-optimized sizes, behaviour is identical to GET_HASH
- */
-#define GET_HASH_RR(fmb, s)  (((unsigned long)(s) <= HP_MALLOC_OPTIMIZE) ? \
-	({ \
-		unsigned int ___hash, ___idx, ___ret; \
-		___hash = (unsigned long)(s) / ROUNDTO; \
-		!fmb->free_hash[___hash].is_optimized ? \
-			___hash : \
-			({ \
-				___idx = optimized_put_indexes[___hash]; \
-				___ret = HP_HASH_SIZE + \
-				         ___hash * shm_secondary_hash_size + ___idx; \
-				optimized_put_indexes[___hash] = \
-					(___idx + 1) % shm_secondary_hash_size; \
-				___ret; \
-			}); \
-	}) : \
-	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
-
-/*
- * peek at the next round-robin assigned hash
- *
- * unlike GET_HASH_RR, it always returns the same result
- */
-#define PEEK_HASH_RR(fmb, s)  (((unsigned long)(s) <= HP_MALLOC_OPTIMIZE) ? \
-	({ \
-		unsigned int ___hash; \
-		___hash = (unsigned long)(s) / ROUNDTO; \
-		!fmb->free_hash[___hash].is_optimized ? \
-			___hash : \
-			HP_HASH_SIZE + ___hash * shm_secondary_hash_size + \
-			optimized_put_indexes[___hash]; \
-	}) : \
-	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
-
-#define UN_HASH(h)	(((unsigned long)(h) <= (HP_MALLOC_OPTIMIZE/ROUNDTO)) ?\
-						(unsigned long)(h)*ROUNDTO: \
-						1UL<<((unsigned long)(h)-HP_MALLOC_OPTIMIZE/ROUNDTO+\
-							HP_MALLOC_OPTIMIZE_FACTOR - 1)\
-					)
-
 struct hp_frag {
 	unsigned long size;
 	union {
@@ -154,18 +89,17 @@ struct hp_frag {
 	} u;
 	struct hp_frag **prev;
 #ifdef DBG_MALLOC
-	const char* file;
-	const char* func;
+	const char *file;
+	const char *func;
 	unsigned long line;
 #endif
 
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	char is_free;
-#endif
 #ifdef SHM_EXTRA_STATS
 	unsigned long statistic_index;
 #endif
 };
+
+#define HP_FRAG_OVERHEAD (sizeof(struct hp_frag))
 
 struct hp_frag_lnk {
 	/*
@@ -210,90 +144,91 @@ struct hp_block {
 	struct hp_frag_lnk free_hash[HP_HASH_SIZE + HP_EXTRA_HASH_SIZE];
 };
 
-unsigned long frag_size(void* p);
-
 struct hp_block *hp_pkg_malloc_init(char *addr, unsigned long size, char *name);
 struct hp_block *hp_shm_malloc_init(char *addr, unsigned long size, char *name);
 
 int hp_mem_warming(struct hp_block *);
-void hp_update_mem_pattern_file(void);
+void hp_update_shm_pattern_file(void);
 
 #ifdef DBG_MALLOC
 void *hp_shm_malloc(struct hp_block *, unsigned long size,
-						const char* file, const char* func, unsigned int line);
+					const char *file, const char *func, unsigned int line);
+void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_pkg_malloc(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void hp_shm_free(struct hp_block *, void *p,
+				const char *file, const char *func, unsigned int line);
+void hp_shm_free_unsafe(struct hp_block *, void *p,
+						const char *file, const char *func, unsigned int line);
+void hp_pkg_free(struct hp_block *, void *p,
+				const char *file, const char *func, unsigned int line);
+void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_shm_realloc_unsafe(struct hp_block *, void *p, unsigned long size,
+						const char *file, const char *func, unsigned int line);
+void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+#ifndef INLINE_ALLOC
+void *hp_shm_malloc_dbg(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_shm_malloc_unsafe_dbg(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_pkg_malloc_dbg(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void hp_shm_free_dbg(struct hp_block *, void *p,
+				const char *file, const char *func, unsigned int line);
+void hp_shm_free_unsafe_dbg(struct hp_block *, void *p,
+						const char *file, const char *func, unsigned int line);
+void hp_pkg_free_dbg(struct hp_block *, void *p,
+				const char *file, const char *func, unsigned int line);
+void *hp_shm_realloc_dbg(struct hp_block *, void *p, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_shm_realloc_unsafe_dbg(struct hp_block *, void *p, unsigned long size,
+						const char *file, const char *func, unsigned int line);
+void *hp_pkg_realloc_dbg(struct hp_block *, void *p, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+#endif
 #else
 void *hp_shm_malloc(struct hp_block *, unsigned long size);
-#endif
-
-#ifdef DBG_MALLOC
-void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size,
-							const char* file, const char* func, unsigned int line);
-#else
 void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size);
-#endif
-
-#ifdef DBG_MALLOC
-void *hp_pkg_malloc(struct hp_block *, unsigned long size,
-						const char* file, const char* func, unsigned int line);
-#else
 void *hp_pkg_malloc(struct hp_block *, unsigned long size);
-#endif
-
-#ifdef DBG_MALLOC
-void hp_shm_free(struct hp_block *, void *p,
-							const char* file, const char* func, unsigned int line);
-#else
 void hp_shm_free(struct hp_block *, void *p);
-#endif
-
-#ifdef DBG_MALLOC
-void hp_shm_free_unsafe(struct hp_block *, void *p,
-							const char* file, const char* func, unsigned int line);
-#else
 void hp_shm_free_unsafe(struct hp_block *, void *p);
-#endif
-
-#ifdef DBG_MALLOC
-void hp_pkg_free(struct hp_block *, void *p,
-					const char* file, const char* func, unsigned int line);
-#else
 void hp_pkg_free(struct hp_block *, void *p);
-#endif
-
-#ifdef DBG_MALLOC
-void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size,
-						const char* file, const char* func, unsigned int line);
-#else
 void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size);
-#endif
-
-#ifdef DBG_MALLOC
-void *hp_shm_realloc_unsafe(struct hp_block *, void *p, unsigned long size,
-								const char* file, const char* func, unsigned int line);
-#else
 void *hp_shm_realloc_unsafe(struct hp_block *, void *p, unsigned long size);
-#endif
-
-#ifdef DBG_MALLOC
-void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size,
-						const char* file, const char* func, unsigned int line);
-#else
 void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size);
 #endif
 
 #ifdef SHM_EXTRA_STATS
-void set_stat_index (void *ptr, unsigned long idx);
-unsigned long get_stat_index(void *ptr);
-void set_indexes(int core_index);
-#endif
+static inline unsigned long hp_frag_size(void *p)
+{
+	if (!p)
+		return 0;
+
+	return HP_FRAG(p)->size;
+}
+
+void hp_stats_core_init(struct hp_block *hp, int core_index);
+unsigned long hp_stats_get_index(void *ptr);
+void hp_stats_set_index(void *ptr, unsigned long idx);
 
 #ifdef DBG_MALLOC
-	#define _FRAG_FILE(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->file
-	#define _FRAG_FUNC(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->func
-	#define _FRAG_LINE(_p) ((struct hp_frag*)((char *)_p - sizeof(struct hp_frag)))->line
+static inline const char *hp_frag_file(void *p) { return HP_FRAG(p)->file; }
+static inline const char *hp_frag_func(void *p) { return HP_FRAG(p)->func; }
+static inline unsigned long hp_frag_line(void *p) { return HP_FRAG(p)->line; }
+#else
+static inline const char *hp_frag_file(void *p) { return NULL; }
+static inline const char *hp_frag_func(void *p) { return NULL; }
+static inline unsigned long hp_frag_line(void *p) { return 0; }
+#endif
 #endif
 
-void hp_status(struct hp_block *);
+void hp_status(struct hp_block *hpb);
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void hp_status_dbg(struct hp_block *hpb);
+#endif
 void hp_info(struct hp_block *, struct mem_info *);
 
 #endif /* HP_MALLOC_H */

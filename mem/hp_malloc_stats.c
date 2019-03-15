@@ -24,8 +24,9 @@
  *  2014-01-19 initial version (liviu)
  */
 
-#if !defined(q_malloc) && !(defined VQ_MALLOC)  && !(defined F_MALLOC) && \
-	(defined HP_MALLOC)
+#ifdef HP_MALLOC
+#ifndef HP_MALLOC_STATS_H
+#define HP_MALLOC_STATS_H
 
 #include <string.h>
 #include <stdio.h>
@@ -37,9 +38,10 @@
 #include "hp_malloc.h"
 #include "hp_malloc_stats.h"
 
-gen_lock_t *hp_stats_lock;
-
 #ifdef STATISTICS
+
+/* specified in microseconds */
+#define SHM_STATS_SAMPLING_PERIOD 200000L
 
 int stats_are_expired(struct hp_block *hpb)
 {
@@ -59,6 +61,8 @@ unsigned long hp_shm_get_size(struct hp_block *hpb)
 }
 
 #ifdef HP_MALLOC_FAST_STATS
+gen_lock_t *hp_stats_lock;
+
 void update_shm_stats(struct hp_block *hpb)
 {
 	struct hp_frag_lnk *bucket, *it;
@@ -237,4 +241,5 @@ unsigned long hp_pkg_get_frags(struct hp_block *hpb)
 
 #endif /* STATISTICS */
 
-#endif
+#endif /* HP_MALLOC_STATS_H */
+#endif /* HP_MALLOC */

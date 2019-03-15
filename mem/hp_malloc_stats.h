@@ -29,12 +29,11 @@
 
 #include "../lock_ops.h"
 
-/* specified in microseconds */
-#define SHM_STATS_SAMPLING_PERIOD 200000L
-
-extern gen_lock_t *hp_stats_lock;
-
 #ifdef STATISTICS
+#ifdef HP_MALLOC_FAST_STATS
+extern gen_lock_t *hp_stats_lock;
+#endif
+
 int stats_are_expired(struct hp_block *hpb);
 void update_shm_stats(struct hp_block *hpb);
 void hp_init_shm_statistics(struct hp_block *hpb);

@@ -314,22 +314,39 @@ char* pgid_file = 0;
 void cleanup(int show_status)
 {
 	LM_INFO("cleanup\n");
+
 	/*clean-up*/
 
-	/* hack: force-unlock the shared memory lock in case
+	/* hack: force-unlock the shared memory lock(s) in case
 	   		 some process crashed and let it locked; this will
 	   		 allow an almost gracious shutdown */
-	if (mem_lock)
+	if (0
+#if defined F_MALLOC || defined Q_MALLOC
+		|| mem_lock
+#endif
 #ifdef HP_MALLOC
-	{
+		|| mem_locks
+#endif
+	) {
+#if defined HP_MALLOC && (defined F_MALLOC || defined Q_MALLOC)
+		if (mem_allocator_shm == MM_HP_MALLOC ||
+		        mem_allocator_shm == MM_HP_MALLOC_DBG) {
+			int i;
+
+			for (i = 0; i < HP_HASH_SIZE; i++)
+				lock_release(&mem_locks[i]);
+		} else {
+			shm_unlock();
+		}
+#elif defined HP_MALLOC
 		int i;
 
 		for (i = 0; i < HP_HASH_SIZE; i++)
-			shm_unlock(i);
-	}
+			lock_release(&mem_locks[i]);
 #else
 		shm_unlock();
 #endif
+	}
 
 	handle_ql_shutdown();
 	destroy_modules();
@@ -350,7 +367,14 @@ void cleanup(int show_status)
 #endif
 	cleanup_log_level();
 
-	if (mem_lock && pt)
+	if (pt && (0
+#if defined F_MALLOC || defined Q_MALLOC
+		|| mem_lock
+#endif
+#ifdef HP_MALLOC
+		|| mem_locks
+#endif
+		))
 		shm_free(pt);
 	pt=0;
 	if (show_status){
@@ -888,7 +912,7 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:"
+	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
 #ifdef UNIT_TESTS
 	"T"
 #endif
@@ -916,6 +940,27 @@ int main(int argc, char** argv)
 					break;
 			case 'g':
 					group=optarg;
+					break;
+			case 'a':
+					if (set_global_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-a %s)\n", optarg);
+						goto error00;
+					}
+					break;
+			case 'k':
+					if (set_pkg_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-k %s)\n", optarg);
+						goto error00;
+					}
+					break;
+			case 's':
+					if (set_shm_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-s %s)\n", optarg);
+						goto error00;
+					}
 					break;
 		}
 	}
@@ -962,10 +1007,11 @@ int main(int argc, char** argv)
 					cfg_log_stderr=1; /* force stderr logging */
 					break;
 			case 'm':
-					/* ignoring it, parsed previously */
-					break;
 			case 'M':
-					/* ignoring it, parsed previously */
+			case 'a':
+			case 'k':
+			case 's':
+					/* ignoring, parsed previously */
 					break;
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);
@@ -1283,8 +1329,6 @@ try_again:
 	LM_INFO("using %ld Mb of shared memory\n", shm_mem_size/1024/1024);
 #if defined(PKG_MALLOC)
 	LM_INFO("using %ld Mb of private process memory\n", pkg_mem_size/1024/1024);
-#elif defined(USE_SHM_MEM)
-	LM_INFO("using shared memory for private process memory\n");
 #else
 	LM_INFO("using system memory for private process memory\n");
 #endif
