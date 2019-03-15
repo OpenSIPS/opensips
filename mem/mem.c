@@ -180,7 +180,7 @@ int init_pkg_mallocs(void)
 #endif
 	default:
 		LM_ERR("current build does not include support for "
-		       "selected allocator (%d)\n", mem_allocator_pkg);
+		       "selected allocator (%s)\n", mm_str(mem_allocator_pkg));
 		return -1;
 	}
 #endif

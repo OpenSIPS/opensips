@@ -383,7 +383,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #endif
 	default:
 		LM_ERR("current build does not include support for "
-		       "selected allocator (%d)\n", mem_allocator_shm);
+		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
 		return -1;
 	}
 #endif
@@ -507,7 +507,7 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #endif
 	default:
 		LM_ERR("current build does not include support for "
-		       "selected allocator (%d)\n", mem_allocator_shm);
+		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
 		return -1;
 	}
 #endif

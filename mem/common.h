@@ -44,6 +44,15 @@ enum osips_mm {
 	MM_HP_MALLOC_DBG,
 };
 
+#define mm_str(mm) \
+	((mm) == MM_NONE ? "NONE" : \
+	 (mm) == MM_F_MALLOC ? "F_MALLOC" : \
+	 (mm) == MM_QM_MALLOC ? "QM_MALLOC" : \
+	 (mm) == MM_HP_MALLOC ? "HP_MALLOC" : \
+	 (mm) == MM_F_MALLOC_DBG ? "F_MALLOC_DBG" : \
+	 (mm) == MM_QM_MALLOC_DBG ? "QM_MALLOC_DBG" : \
+	 (mm) == MM_HP_MALLOC_DBG ? "HP_MALLOC_DBG" : "unknown")
+
 extern void *mem_block;
 extern void *shm_block;
 
