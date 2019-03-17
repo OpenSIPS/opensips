@@ -614,9 +614,12 @@ modparam("drouting", "rule_attrs_avp", '$avp(11)')
 
 1.3.14. define_blacklist (str)
 
-   Defines a blacklist based on a list of GW types - the list will
-   contain the IPs (no port, all protocols) of the GWs with the
-   specified types.
+   Defines a blacklist based on a list of GW types - the blacklist
+   will be populated with the IPs (no port, all protocols) of the
+   GWs having the specified types.
+
+   If partitions are used, prefix the blacklist definition string
+   with the name of the partition followed by ":" separator.
 
    Multiple instances of this param are allowed.
 
@@ -626,6 +629,8 @@ modparam("drouting", "rule_attrs_avp", '$avp(11)')
 ...
 modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
+modparam("drouting", "define_blacklist", 'pstn:list2 = 5,6')
+modparam("drouting", "define_blacklist", 'pstn:list3 = 7,8')
 ...
 
 1.3.15. default_group (int)
@@ -1539,7 +1544,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 308 148 11555 3845
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 315 154 11579 3864
    2. Razvan Crainea (@razvancrainea) 62 31 278 1523
    3. Liviu Chircu (@liviuchircu) 50 33 855 533
    4. Mihai Tiganus (@tallicamike) 48 10 3130 710
@@ -1575,8 +1580,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Mar 2019
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2018
    3.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
    4.  Alexey Vasilyev (@vasilevalex)      Oct 2018 - Oct 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Mar 2018
@@ -1599,8 +1604,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Alexey Vasilyev (@vasilevalex), Vlad
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Alexey Vasilyev (@vasilevalex), Vlad
    Patrascu (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
    Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu), Mihai
    Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
