@@ -81,7 +81,6 @@ static void dp_print_list(void);
 
 static str default_param_s = str_init(DEFAULT_PARAM);
 static str default_dp_partition = {NULL, 0};
-static dp_connection_list_t *default_part_p = NULL;
 dp_param_p default_par2 = NULL;
 static str database_url = {NULL, 0};
 
@@ -129,7 +128,7 @@ static cmd_export_t cmds[]={
 		  {CMD_PARAM_STR, NULL, NULL},
 		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
-		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_partition, NULL},
+		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE|
@@ -490,9 +489,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* remember the pointer to the default partition */
-	default_part_p = dp_get_connection(&def_str);
-
 	return 0;
 #undef init_db_url_part
 }
@@ -594,10 +590,17 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 
 static int fix_partition(void** param)
 {
-	*param = (void*)dp_get_connection( (str*)*param );
+	str def_str = str_init(DEFAULT_PARTITION);
+	str *s=(str*)*param;
+
+	/* handle the special case when the fix is triggered for 
+	   missing parameter */
+	if (s==NULL)
+		s = &def_str;
+
+	*param = (void*)dp_get_connection( s );
 	if (*param==NULL) {
-		LM_ERR("partition <%.*s> not found\n",
-			((str*)*param)->len, ((str*)*param)->s);
+		LM_ERR("partition <%.*s> not found\n", s->len, s->s);
 		return -1;
 	}
 
@@ -947,11 +950,15 @@ error:
 static mi_response_t *mi_translate2(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	if (default_part_p==NULL){
+	str def_str = str_init(DEFAULT_PARTITION);
+	dp_connection_list_t *part;
+
+	part = dp_get_connection(&def_str);
+	if (part==NULL){
 		LM_ERR("translating without partition, but no default defined\n");
 		return init_mi_error(400, MI_SSTR("Default partition not found"));
 	}
-	return mi_translate( params, default_part_p);
+	return mi_translate( params, part);
 }
 
 
