@@ -57,30 +57,11 @@ struct pm_part_struct {
 	struct pm_part_struct *next;
 };
 
-struct part_var {
-	int type;
-	union {
-		struct parsed_part {
-			str partition;
-			union {
-				int ival;
-				str sval;
-			} v;
-		} parsed_part;
-		gparam_p gp;
-	} u;
-};
-
-struct part_pvar {
-	pv_spec_t *sp;
-	gparam_p part;
-};
 
 int parse_partition(modparam_t, void*);
 int set_default_table(modparam_t, void *val);
 int set_default_db_url(modparam_t, void *val);
 struct pm_partition *partition_set(void);
-int check_addr_param1(str *s, struct part_var *pv);
 struct pm_part_struct *get_part_structs(void);
 struct pm_part_struct *get_part_struct(str *name);
 struct pm_partition *get_partitions(void);
