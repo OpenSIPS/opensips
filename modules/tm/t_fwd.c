@@ -112,9 +112,9 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 	/* copy path vector into branch */
 	if (request->path_vec.len) {
 		t->uac[branch].path_vec.s =
-			shm_resize(t->uac[branch].path_vec.s, request->path_vec.len+1);
+			shm_realloc(t->uac[branch].path_vec.s, request->path_vec.len+1);
 		if (t->uac[branch].path_vec.s==NULL) {
-			LM_ERR("shm_resize failed\n");
+			LM_ERR("shm_realloc failed\n");
 			goto error;
 		}
 		t->uac[branch].path_vec.len = request->path_vec.len;
@@ -124,10 +124,10 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 
 	/* do the same for the advertised port & address */
 	if (request->set_global_address.len) {
-		t->uac[branch].adv_address.s = shm_resize(t->uac[branch].adv_address.s,
+		t->uac[branch].adv_address.s = shm_realloc(t->uac[branch].adv_address.s,
 			request->set_global_address.len+1);
 		if (t->uac[branch].adv_address.s==NULL) {
-			LM_ERR("shm_resize failed for storing the advertised address "
+			LM_ERR("shm_realloc failed for storing the advertised address "
 				"(len=%d)\n",request->set_global_address.len);
 			goto error;
 		}
@@ -136,10 +136,10 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 			request->set_global_address.len+1);
 	}
 	if (request->set_global_port.len) {
-		t->uac[branch].adv_port.s = shm_resize(t->uac[branch].adv_port.s,
+		t->uac[branch].adv_port.s = shm_realloc(t->uac[branch].adv_port.s,
 			request->set_global_port.len+1);
 		if (t->uac[branch].adv_port.s==NULL) {
-			LM_ERR("shm_resize failed for storing the advertised port "
+			LM_ERR("shm_realloc failed for storing the advertised port "
 				"(len=%d)\n",request->set_global_port.len);
 			goto error;
 		}
@@ -209,9 +209,9 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 	/* copy dst_uri into branch (after branch route possible updated it) */
 	if (request->dst_uri.len) {
 		t->uac[branch].duri.s =
-			shm_resize(t->uac[branch].duri.s, request->dst_uri.len);
+			shm_realloc(t->uac[branch].duri.s, request->dst_uri.len);
 		if (t->uac[branch].duri.s==NULL) {
-			LM_ERR("shm_resize failed\n");
+			LM_ERR("shm_realloc failed\n");
 			goto error;
 		}
 		t->uac[branch].duri.len = request->dst_uri.len;

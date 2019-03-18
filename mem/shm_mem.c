@@ -2,6 +2,7 @@
  * Shared memory functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,13 +19,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2003-03-12  split shm_mem_init in shm_getmem & shm_mem_init_mallocs
- *               (andrei)
- *  2004-07-27  ANON mmap support, needed on darwin (andrei)
- *  2004-09-19  shm_mem_destroy: destroy first the lock & then unmap (andrei)
  */
 
 
@@ -216,54 +210,6 @@ end:
 	*event_shm_pending = 0;
 }
 #endif
-
-
-
-inline static void* sh_realloc(void* p, unsigned int size)
-{
-	void *r;
-
-	shm_lock(); 
-
-#ifndef HP_MALLOC
-	shm_free_unsafe(p);
-	r = shm_malloc_unsafe(size);
-#else
-	shm_free(p);
-	r = shm_malloc(size);
-#endif
-
-	shm_threshold_check();
-
-	shm_unlock(); 
-
-	return r;
-}
-
-/* look at a buffer if there is perhaps enough space for the new size
-    if so, we return current buffer again; otherwise, we free it,
-	allocate a new one and return it; no guarantee for buffer content;
-	if allocation fails, we return NULL
-*/
-
-#ifdef DBG_MALLOC
-void* _shm_resize( void* p, unsigned int s, const char* file, const char* func,
-							int line)
-#else
-void* _shm_resize( void* p , unsigned int s)
-#endif
-{
-	if (p==0) {
-		LM_DBG("resize(0) called\n");
-		return shm_malloc( s );
-	}
-
-	return sh_realloc( p, s );
-}
-
-
-
-
 
 int shm_getmem(void)
 {

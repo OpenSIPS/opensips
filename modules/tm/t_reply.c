@@ -369,7 +369,7 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 
 	trans->uas.status = code;
 	buf_len = rb->buffer.s ? len : len + REPLY_OVERBUFFER_LEN;
-	rb->buffer.s = (char*)shm_resize( rb->buffer.s, buf_len );
+	rb->buffer.s = shm_realloc( rb->buffer.s, buf_len );
 	/* puts the reply's buffer to uas.response */
 	if (! rb->buffer.s ) {
 			LM_ERR("failed to allocate shmem buffer\n");
@@ -1292,7 +1292,7 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 		      larger messages are likely to follow and we will be
 		      able to reuse the memory frag
 		*/
-		uas_rb->buffer.s = (char*)shm_resize( uas_rb->buffer.s, res_len +
+		uas_rb->buffer.s = shm_realloc( uas_rb->buffer.s, res_len +
 			(msg_status<200 ?  REPLY_OVERBUFFER_LEN : 0));
 		if (!uas_rb->buffer.s) {
 			LM_ERR("no more share memory\n");

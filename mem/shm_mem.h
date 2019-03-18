@@ -1,7 +1,8 @@
 /*
- * shared mem stuff
+ * Shared memory functions
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,12 +19,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2003-06-29  added shm_realloc & replaced shm_resize (andrei)
- *  2003-11-19  reverted shm_resize to the old version, using
- *               realloc causes terrible fragmentation  (andrei)
  */
 
 
@@ -479,14 +474,6 @@ inline static void _shm_free(void *ptr,
 extern unsigned long long *shm_hash_usage;
 #endif
 
-void* _shm_resize(void* ptr, unsigned int size, const char* f, const char* fn,
-					int line);
-#define shm_resize(_p, _s ) _shm_resize((_p), (_s), \
-		__FILE__, __FUNCTION__, __LINE__ )
-/*#define shm_resize(_p, _s ) shm_realloc( (_p), (_s))*/
-
-
-
 #else /*DBG_MALLOC*/
 
 inline static void* shm_malloc_unsafe(unsigned int size)
@@ -638,14 +625,7 @@ inline static void shm_free(void *_p)
 	shm_unlock();
 }
 
-
-void* _shm_resize(void* ptr, unsigned int size);
-#define shm_resize(_p, _s) _shm_resize( (_p), (_s))
-/*#define shm_resize(_p, _s) shm_realloc( (_p), (_s))*/
-
-
 #endif
-
 
 inline static void shm_status(void)
 {
