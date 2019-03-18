@@ -255,7 +255,8 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
 			(async_ctx*)ctx,
 			params[0], params[1], params[2],
-			params[3], params[4], params[5]);
+			params[3], params[4], params[5],
+			params[6], params[7]);
 	/* what to do now ? */
 	if (async_status>=0) {
 		/* async I/O was successfully launched */
