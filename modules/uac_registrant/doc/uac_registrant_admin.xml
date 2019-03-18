@@ -389,7 +389,7 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
 		</itemizedlist>
 		Example of params that will force unique binding:
 		<programlisting format="linespecific">
-;reg-id=1;+sip.instance=&quot;&lt;urn\:uuid\:11111111-AABBCCDDEEFF&gt;&quot;
+;reg-id=1;+sip.instance=&quot;&lt;urn:uuid:11111111-AABBCCDDEEFF&gt;&quot;
 		</programlisting>
 		</para>
 		<para>
