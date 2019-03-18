@@ -759,7 +759,7 @@ static int main_loop(void)
 {
 	static int chd_rank;
 	int* startup_done = NULL;
-	utime_t last_check;
+	utime_t last_check = 0;
 	int rc;
 
 	chd_rank=0;

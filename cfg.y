@@ -541,7 +541,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 									LM_CRIT("cfg. parser: out of memory.\n");
 									YYABORT;
 								}else{
-									strncpy($$, tmp, strlen(tmp)+1);
+									memcpy($$, tmp, strlen(tmp)+1);
 								}
 							}
 						}
@@ -550,7 +550,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 									LM_CRIT("cfg. parser: out of memory.\n");
 									YYABORT;
 							}else{
-									strncpy($$, $1, strlen($1)+1);
+									memcpy($$, $1, strlen($1)+1);
 							}
 						}
 		|	host		{	if ($1==0) {
@@ -561,7 +561,7 @@ listen_id:	ip			{	tmp=ip_addr2a($1);
 									LM_CRIT("cfg. parser: out of memory.\n");
 									YYABORT;
 								}else{
-									strncpy($$, $1, strlen($1)+1);
+									memcpy($$, $1, strlen($1)+1);
 								}
 							}
 						}

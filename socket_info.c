@@ -596,7 +596,7 @@ int fix_socket_list(struct socket_info **list)
 			LM_ERR("out of pkg memory.\n");
 			goto error;
 		}
-		strncpy(si->port_no_str.s, tmp, len+1);
+		memcpy(si->port_no_str.s, tmp, len+1);
 		si->port_no_str.len=len;
 		/* get "official hostnames", all the aliases etc. */
 		he=resolvehost(si->name.s,0);
@@ -618,7 +618,7 @@ int fix_socket_list(struct socket_info **list)
 				goto error;
 			}
 			si->name.len=strlen(he->h_name);
-			strncpy(si->name.s, he->h_name, si->name.len+1);
+			memcpy(si->name.s, he->h_name, si->name.len+1);
 		}
 		/* add the aliases*/
 		if (auto_aliases) {
@@ -637,7 +637,7 @@ int fix_socket_list(struct socket_info **list)
 				goto error;
 			}
 			si->address_str.s[0] = '[';
-			strncpy( si->address_str.s+1 , tmp, strlen(tmp));
+			memcpy( si->address_str.s+1 , tmp, strlen(tmp));
 			si->address_str.s[1+strlen(tmp)] = ']';
 			si->address_str.s[2+strlen(tmp)] = '\0';
 			si->address_str.len=strlen(tmp) + 2;
@@ -647,7 +647,7 @@ int fix_socket_list(struct socket_info **list)
 				LM_ERR("out of pkg memory.\n");
 				goto error;
 			}
-			strncpy(si->address_str.s, tmp, strlen(tmp)+1);
+			memcpy(si->address_str.s, tmp, strlen(tmp)+1);
 			si->address_str.len=strlen(tmp);
 		}
 		/* set is_ip (1 if name is an ip address, 0 otherwise) */
