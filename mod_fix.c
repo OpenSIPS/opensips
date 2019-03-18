@@ -70,6 +70,20 @@ int fixup_regcomp(regex_t **re, str *re_str, int dup_nt)
 	return 0;
 }
 
+static inline gparam_p alloc_gp(void)
+{
+	gparam_p gp;
+
+	gp = pkg_malloc(sizeof *gp);
+	if (!gp) {
+		LM_ERR("no more pkg memory\n");
+		return NULL;
+	}
+	memset(gp, 0, sizeof *gp);
+
+	return gp;
+}
+
 int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 {
 	int i;
@@ -82,22 +96,30 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 	for (param=params, i=1; param->flags; param++, i++) {
 		if ((elems[i].type == NOSUBTYPE) ||
 			(elems[i].type == NULLV_ST)) {
-			if (param->flags & CMD_PARAM_OPT)
+			if (param->flags & CMD_PARAM_OPT) {
+				if (param->fixup && (param->flags & CMD_PARAM_FIX_NULL)) {
+					if ((gp = alloc_gp()) == NULL)
+						return E_OUT_OF_MEM;
+
+					gp->v.val = NULL;
+					if (param->fixup(&gp->v.val) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+						goto error;
+					}
+					gp->type = GPARAM_TYPE_FIXUP;
+				}
+
 				continue;
-			else {
+			} else {
 				LM_BUG("Mandatory parameter missing\n");
 				ret = E_BUG;
 				goto error;
 			}
 		}
 
-		gp = pkg_malloc(sizeof *gp);
-		if (!gp) {
-			LM_ERR("no more pkg memory\n");
-			ret = E_OUT_OF_MEM;
-			goto error;
-		}
-		memset(gp, 0, sizeof *gp);
+		if ((gp = alloc_gp()) == NULL)
+			return E_OUT_OF_MEM;
 
 		if (param->flags & CMD_PARAM_INT) {
 

@@ -108,11 +108,15 @@ typedef int (*mod_proc_wrapper)();
 
 #define MAX_CMD_PARAMS (MAX_ACTION_ELEMS-1)
 
+
+/* parameter type flags */
 #define CMD_PARAM_INT        (1<<0)  /* integer parameter */
 #define CMD_PARAM_STR        (1<<1)  /* string parameter */
 #define CMD_PARAM_VAR        (1<<2)  /* PV spec parameter */
 #define CMD_PARAM_REGEX      (1<<3)  /* regexp string parameter */
+
 #define CMD_PARAM_OPT        (1<<4)  /* optional parameter */
+#define CMD_PARAM_FIX_NULL   (1<<5)  /* run fixup even if optional parameter is omitted */
 
 struct cmd_param {
 	int flags;              /* parameter flags */
