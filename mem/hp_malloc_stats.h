@@ -1,7 +1,8 @@
 /**
- * the truly parallel memory allocator
+ * high-performance allocator with fine-grained SHM locking
+ *   (note: may perform worse than F_MALLOC at low CPS values!)
  *
- * Copyright (C) 2014 OpenSIPS Solutions
+ * Copyright (C) 2014-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,11 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2014-01-19 initial version (liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef HP_MALLOC_STATS_H
