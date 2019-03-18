@@ -126,60 +126,46 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #define PKG_GET_FRAGS()        gen_pkg_get_frags(mem_block)
 #endif /* INLINE_ALLOC */
 
-
-#	ifdef DBG_MALLOC
+#ifdef DBG_MALLOC
 #ifdef __SUNPRO_C
-		#define __FUNCTION__ ""  /* gcc specific */
+#define __FUNCTION__ ""  /* gcc specific */
 #endif
-#		if defined F_MALLOC || defined Q_MALLOC || defined HP_MALLOC
-#			define pkg_malloc(s) \
-				PKG_MALLOC_(mem_block, (s),__FILE__, __FUNCTION__, __LINE__)
-#			define pkg_free(p) \
-				PKG_FREE(mem_block, (p), __FILE__,  __FUNCTION__, __LINE__)
-#			define pkg_realloc(p, s) \
-				PKG_REALLOC(mem_block, (p), (s),__FILE__,__FUNCTION__,__LINE__)
-#			define pkg_info(i) PKG_INFO(mem_block, i)
-#		else
-#			error "no memory allocator selected"
-#		endif
-#	else
-#		if defined F_MALLOC || defined Q_MALLOC || defined HP_MALLOC
-#			define pkg_malloc(s)     PKG_MALLOC_(mem_block, (s))
-#			define pkg_realloc(p, s) PKG_REALLOC(mem_block, (p), (s))
-#			define pkg_free(p)       PKG_FREE(mem_block, (p))
-#			define pkg_info(i)       PKG_INFO(mem_block, i)
-#		else
-#			error "no memory allocator selected"
-#		endif
-#	endif
-
-#	if defined F_MALLOC || defined HP_MALLOC || defined Q_MALLOC
-#		define pkg_status()        PKG_STATUS(mem_block)
-#	else
-#		error "no memory allocator selected"
-#	endif
+#define pkg_malloc(s)     PKG_MALLOC_(mem_block, (s), \
+                                      __FILE__, __FUNCTION__, __LINE__)
+#define pkg_free(p)       PKG_FREE(mem_block, (p), \
+                                      __FILE__, __FUNCTION__, __LINE__)
+#define pkg_realloc(p, s) PKG_REALLOC(mem_block, (p), (s), \
+                                      __FILE__, __FUNCTION__, __LINE__)
+#define pkg_info(i)       PKG_INFO(mem_block, i)
 #else
-#	include <stdlib.h>
+#define pkg_malloc(s)     PKG_MALLOC_(mem_block, (s))
+#define pkg_realloc(p, s) PKG_REALLOC(mem_block, (p), (s))
+#define pkg_free(p)       PKG_FREE(mem_block, (p))
+#define pkg_info(i)       PKG_INFO(mem_block, i)
+#endif
 
+#define pkg_status()      PKG_STATUS(mem_block)
+
+#else
+#include <stdlib.h>
 void *sys_malloc(size_t, const char *, const char *, int);
 void *sys_realloc(void *, size_t, const char *, const char *, int);
 void sys_free(void *, const char *, const char *, int);
 
-#	define SYSTEM_MALLOC
-#	define pkg_malloc(s) sys_malloc((s), __FILE__, __FUNCTION__, __LINE__)
-#	define pkg_realloc(ptr, s) sys_realloc((ptr), (s), __FILE__, __FUNCTION__, __LINE__)
-#	define pkg_free(p) sys_free((p), __FILE__, __FUNCTION__, __LINE__)
-#	define pkg_status()
-#	define PKG_GET_SIZE()
-#	define PKG_GET_USED()
-#	define PKG_GET_RUSED()
-#	define PKG_GET_MUSED()
-#	define PKG_GET_FREE()
-#	define PKG_GET_FRAGS()
+#define SYSTEM_MALLOC
+#define pkg_malloc(s) sys_malloc((s), __FILE__, __FUNCTION__, __LINE__)
+#define pkg_realloc(ptr, s) sys_realloc((ptr), (s), __FILE__, __FUNCTION__, __LINE__)
+#define pkg_free(p) sys_free((p), __FILE__, __FUNCTION__, __LINE__)
+#define pkg_status()
+#define PKG_GET_SIZE()
+#define PKG_GET_USED()
+#define PKG_GET_RUSED()
+#define PKG_GET_MUSED()
+#define PKG_GET_FREE()
+#define PKG_GET_FRAGS()
 #endif
 
 int init_pkg_mallocs();
 int init_shm_mallocs();
-
 
 #endif
