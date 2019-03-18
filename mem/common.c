@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <strings.h>
+
 #include "common.h"
 
 enum osips_mm mem_allocator = MM_F_MALLOC;
