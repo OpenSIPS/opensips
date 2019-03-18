@@ -237,6 +237,9 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int plist)
 		p += uac->cluster_shtag.len;
 	}
 
+	/* Setting the flags */
+	record->flags = uac->flags;
+
 	reg_print_record(record);
 
 	return 0;
