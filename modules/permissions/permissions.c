@@ -293,10 +293,9 @@ static int fix_part(void** param)
 	if (s==NULL)
 		s = &def_part_name;
 
-	part = get_part_struct( (str*)*param );
+	part = get_part_struct( s );
 	if (part==NULL) {
-		LM_ERR("invoked partition <%.*s> not defined\n",
-			((str*)*param)->len, ((str*)*param)->s);
+		LM_ERR("invoked partition <%.*s> not defined\n", s->len, s->s);
 		return -1;
 	}
 
