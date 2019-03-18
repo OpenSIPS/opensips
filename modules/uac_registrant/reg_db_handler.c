@@ -304,7 +304,7 @@ int load_reg_info_from_db(unsigned int plist)
 					LM_DBG("[%.*s][%.*s]\n", _param->name.len, _param->name.s, _param->body.len, _param->body.s);
 					if (reg_id_found == 0 && strncmp(_param->name.s, "reg-id", 6) == 0)
 						reg_id_found = 1;
-					if (sip_instance_found == 0 && strncmp(_param->name.s, "+sip.instance", 6) == 0)
+					if (sip_instance_found == 0 && strncmp(_param->name.s, "+sip.instance", 13) == 0)
 						sip_instance_found = 1;
 					_param = _param->next;
 				}
