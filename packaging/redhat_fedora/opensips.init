@@ -84,7 +84,7 @@ stop() {
 		return 0
 	fi
 
-	killproc $prog 2> /dev/null
+	killproc -d 10 $prog 2> /dev/null
 	RETVAL=$?
 	echo
 	[ $RETVAL = 0 ] && rm -f $lockfile $pidfile
