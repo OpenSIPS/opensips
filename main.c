@@ -939,7 +939,7 @@ int main(int argc, char** argv)
 	if (init_pkg_mallocs()==-1)
 		goto error00;
 
-	if ( (parser_sroutes=new_sroutes_holder())==NULL )
+	if ( (sroutes=new_sroutes_holder())==NULL )
 		goto error00;
 
 	/* we want to be sure that from now on, all the floating numbers are 
@@ -1394,11 +1394,6 @@ try_again:
 		LM_ERR("failed to fix configuration with err code %d\n", r);
 		goto error;
 	}
-
-	/* now that the script routes were fixed, move them
-	 * from parser to interpreter holder */
-	sroutes = parser_sroutes;
-	parser_sroutes = NULL;
 
 	if (init_log_level() != 0) {
 		LM_ERR("failed to init logging levels\n");

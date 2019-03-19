@@ -74,9 +74,6 @@
 /* instance of script routes used for script interpreting */
 struct os_script_routes *sroutes = NULL;
 
-/* instance of script routes used for script parsing */
-struct os_script_routes *parser_sroutes = NULL;
-
 int route_type = REQUEST_ROUTE;
 
 
@@ -152,30 +149,6 @@ void free_route_lists(struct os_script_routes *sr)
 
 
 /************************** Generic functions ***********************/
-
-int get_script_route_idx( char* name,struct script_route *sr, int size,int set)
-{
-	unsigned int i;
-
-	for(i=1;i<size;i++) {
-		if (sr[i].name==NULL) {
-			/* name not found -> allocate it now */
-			sr[i].name = name;
-			return i;
-		}
-		if (strcmp(sr[i].name,name)==0 ) {
-			/* name found */
-			if (sr[i].a && set) {
-				LM_ERR("Script route <%s> is redefined\n",name);
-				return -1;
-			}
-			return i;
-		}
-	}
-	LM_ERR("Too many routes - no socket left for <%s>\n",name);
-	return -1;
-}
-
 
 int get_script_route_ID_by_name(char *name, struct script_route *sr, int size)
 {
@@ -999,6 +972,31 @@ int run_startup_route(void)
 
 /********************* Parsing/fixing related functions *********************/
 
+
+int get_script_route_idx( char* name,struct script_route *sr, int size,int set)
+{
+	unsigned int i;
+
+	for(i=1;i<size;i++) {
+		if (sr[i].name==NULL) {
+			/* name not found -> allocate it now */
+			sr[i].name = name;
+			return i;
+		}
+		if (strcmp(sr[i].name,name)==0 ) {
+			/* name found */
+			if (sr[i].a && set) {
+				LM_ERR("Script route <%s> is redefined\n",name);
+				return -1;
+			}
+			return i;
+		}
+	}
+	LM_ERR("Too many routes - no socket left for <%s>\n",name);
+	return -1;
+}
+
+
 /*! \brief traverses an expression tree and compiles the REs where necessary)
  * \return 0 for ok, <0 if errors
  */
@@ -1120,9 +1118,9 @@ static int fix_actions(struct action* a)
 					ret = E_CFG;
 					goto error;
 				}
-				if ( parser_sroutes->request[t->elem[0].u.number].a==NULL ) {
+				if ( sroutes->request[t->elem[0].u.number].a==NULL ) {
 					LM_ERR("called route [%s] (id=%d) is not defined\n",
-						parser_sroutes->request[t->elem[0].u.number].name,
+						sroutes->request[t->elem[0].u.number].name,
 						(int)t->elem[0].u.number);
 					ret = E_CFG;
 					goto error;
@@ -1786,63 +1784,63 @@ int fix_rls(void)
 {
 	int i,ret;
 	for(i=0;i<RT_NO;i++){
-		if(parser_sroutes->request[i].a){
-			if ((ret=fix_actions(parser_sroutes->request[i].a))!=0){
+		if(sroutes->request[i].a){
+			if ((ret=fix_actions(sroutes->request[i].a))!=0){
 				return ret;
 			}
 		}
 	}
 	for(i=0;i<ONREPLY_RT_NO;i++){
-		if(parser_sroutes->onreply[i].a){
-			if ((ret=fix_actions(parser_sroutes->onreply[i].a))!=0){
+		if(sroutes->onreply[i].a){
+			if ((ret=fix_actions(sroutes->onreply[i].a))!=0){
 				return ret;
 			}
 		}
 	}
 	for(i=0;i<FAILURE_RT_NO;i++){
-		if(parser_sroutes->failure[i].a){
-			if ((ret=fix_actions(parser_sroutes->failure[i].a))!=0){
+		if(sroutes->failure[i].a){
+			if ((ret=fix_actions(sroutes->failure[i].a))!=0){
 				return ret;
 			}
 		}
 	}
 	for(i=0;i<BRANCH_RT_NO;i++){
-		if(parser_sroutes->branch[i].a){
-			if ((ret=fix_actions(parser_sroutes->branch[i].a))!=0){
+		if(sroutes->branch[i].a){
+			if ((ret=fix_actions(sroutes->branch[i].a))!=0){
 				return ret;
 			}
 		}
 	}
-	if(parser_sroutes->error.a){
-		if ((ret=fix_actions(parser_sroutes->error.a))!=0){
+	if(sroutes->error.a){
+		if ((ret=fix_actions(sroutes->error.a))!=0){
 			return ret;
 		}
 	}
-	if(parser_sroutes->local.a){
-		if ((ret=fix_actions(parser_sroutes->local.a))!=0){
+	if(sroutes->local.a){
+		if ((ret=fix_actions(sroutes->local.a))!=0){
 			return ret;
 		}
 	}
-	if(parser_sroutes->startup.a){
-		if ((ret=fix_actions(parser_sroutes->startup.a))!=0){
+	if(sroutes->startup.a){
+		if ((ret=fix_actions(sroutes->startup.a))!=0){
 			return ret;
 		}
 	}
 
 	for(i = 0; i< TIMER_RT_NO; i++) {
-		if(parser_sroutes->timer[i].a == NULL)
+		if(sroutes->timer[i].a == NULL)
 			break;
 
-		if ((ret=fix_actions(parser_sroutes->timer[i].a))!=0){
+		if ((ret=fix_actions(sroutes->timer[i].a))!=0){
 			return ret;
 		}
 	}
 
 	for(i = 1; i< EVENT_RT_NO; i++) {
-		if(parser_sroutes->event[i].a == NULL)
+		if(sroutes->event[i].a == NULL)
 			break;
 
-		if ((ret=fix_actions(parser_sroutes->event[i].a))!=0){
+		if ((ret=fix_actions(sroutes->event[i].a))!=0){
 			return ret;
 		}
 	}
@@ -1877,8 +1875,8 @@ static int check_actions(struct action *a, int r_type)
 					goto error;
 				}
 				rcheck_stack[rcheck_stack_p] = a->elem[0].u.number;
-				if (check_actions(
-				parser_sroutes->request[a->elem[0].u.number].a, r_type)!=0)
+				if (check_actions(sroutes->request[a->elem[0].u.number].a,
+				r_type)!=0)
 					goto error;
 				rcheck_stack_p--;
 				break;
@@ -1938,16 +1936,16 @@ int check_rls(void)
 
 	rcheck_status = 0;
 
-	if(parser_sroutes->request[0].a){
-		if ((ret=check_actions(parser_sroutes->request[0].a,
+	if(sroutes->request[0].a){
+		if ((ret=check_actions(sroutes->request[0].a,
 		REQUEST_ROUTE))!=0){
 			LM_ERR("check failed for main request route\n");
 			return ret;
 		}
 	}
 	for(i=0;i<ONREPLY_RT_NO;i++){
-		if(parser_sroutes->onreply[i].a){
-			if ((ret=check_actions(parser_sroutes->onreply[i].a,
+		if(sroutes->onreply[i].a){
+			if ((ret=check_actions(sroutes->onreply[i].a,
 			ONREPLY_ROUTE))!=0){
 				LM_ERR("check failed for onreply_route[%d]\n",i);
 				return ret;
@@ -1955,8 +1953,8 @@ int check_rls(void)
 		}
 	}
 	for(i=0;i<FAILURE_RT_NO;i++){
-		if(parser_sroutes->failure[i].a){
-			if ((ret=check_actions(parser_sroutes->failure[i].a,
+		if(sroutes->failure[i].a){
+			if ((ret=check_actions(sroutes->failure[i].a,
 			FAILURE_ROUTE))!=0){
 				LM_ERR("check failed for failure_route[%d]\n",i);
 				return ret;
@@ -1964,48 +1962,48 @@ int check_rls(void)
 		}
 	}
 	for(i=0;i<BRANCH_RT_NO;i++){
-		if(parser_sroutes->branch[i].a){
-			if ((ret=check_actions(parser_sroutes->branch[i].a,
+		if(sroutes->branch[i].a){
+			if ((ret=check_actions(sroutes->branch[i].a,
 			BRANCH_ROUTE))!=0){
 				LM_ERR("check failed for branch_route[%d]\n",i);
 				return ret;
 			}
 		}
 	}
-	if(parser_sroutes->error.a){
-		if ((ret=check_actions(parser_sroutes->error.a,ERROR_ROUTE))!=0){
+	if(sroutes->error.a){
+		if ((ret=check_actions(sroutes->error.a,ERROR_ROUTE))!=0){
 			LM_ERR("check failed for error_route\n");
 			return ret;
 		}
 	}
-	if(parser_sroutes->local.a){
-		if ((ret=check_actions(parser_sroutes->local.a,LOCAL_ROUTE))!=0){
+	if(sroutes->local.a){
+		if ((ret=check_actions(sroutes->local.a,LOCAL_ROUTE))!=0){
 			LM_ERR("check failed for local_route\n");
 			return ret;
 		}
 	}
-	if(parser_sroutes->startup.a){
-		if ((ret=check_actions(parser_sroutes->startup.a,STARTUP_ROUTE))!=0){
+	if(sroutes->startup.a){
+		if ((ret=check_actions(sroutes->startup.a,STARTUP_ROUTE))!=0){
 			LM_ERR("check failed for startup_route\n");
 			return ret;
 		}
 	}
 
 	for(i = 0; i< TIMER_RT_NO; i++) {
-		if(parser_sroutes->timer[i].a == NULL)
+		if(sroutes->timer[i].a == NULL)
 			break;
 
-		if ((ret=check_actions(parser_sroutes->timer[i].a,TIMER_ROUTE))!=0){
+		if ((ret=check_actions(sroutes->timer[i].a,TIMER_ROUTE))!=0){
 			LM_ERR("check failed for timer_route\n");
 			return ret;
 		}
 	}
 
 	for(i = 1; i< EVENT_RT_NO; i++) {
-		if(parser_sroutes->event[i].a == NULL)
+		if(sroutes->event[i].a == NULL)
 			break;
 
-		if ((ret=check_actions(parser_sroutes->event[i].a,EVENT_ROUTE))!=0){
+		if ((ret=check_actions(sroutes->event[i].a,EVENT_ROUTE))!=0){
 			LM_ERR("check failed for event_route\n");
 			return ret;
 		}
@@ -2047,45 +2045,45 @@ int is_script_func_used( char *name, int param_no)
 	unsigned int i;
 
 	for( i=0; i<RT_NO ; i++ )
-		if (parser_sroutes->request[i].a &&
-		is_mod_func_used(parser_sroutes->request[i].a,name,param_no) )
+		if (sroutes->request[i].a &&
+		is_mod_func_used(sroutes->request[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<ONREPLY_RT_NO ; i++ )
-		if (parser_sroutes->onreply[i].a &&
-		is_mod_func_used(parser_sroutes->onreply[i].a,name,param_no) )
+		if (sroutes->onreply[i].a &&
+		is_mod_func_used(sroutes->onreply[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<FAILURE_RT_NO ; i++ )
-		if (parser_sroutes->failure[i].a &&
-		is_mod_func_used(parser_sroutes->failure[i].a,name,param_no) )
+		if (sroutes->failure[i].a &&
+		is_mod_func_used(sroutes->failure[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<BRANCH_RT_NO ; i++ )
-		if (parser_sroutes->branch[i].a &&
-		is_mod_func_used(parser_sroutes->branch[i].a,name,param_no) )
+		if (sroutes->branch[i].a &&
+		is_mod_func_used(sroutes->branch[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<TIMER_RT_NO ; i++ )
-		if (parser_sroutes->timer[i].a &&
-		is_mod_func_used(parser_sroutes->timer[i].a,name,param_no) )
+		if (sroutes->timer[i].a &&
+		is_mod_func_used(sroutes->timer[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<EVENT_RT_NO ; i++ )
-		if (parser_sroutes->event[i].a &&
-		is_mod_func_used(parser_sroutes->event[i].a,name,param_no) )
+		if (sroutes->event[i].a &&
+		is_mod_func_used(sroutes->event[i].a,name,param_no) )
 			return 1;
 
-	if (parser_sroutes->error.a &&
-	is_mod_func_used(parser_sroutes->error.a,name,param_no) )
+	if (sroutes->error.a &&
+	is_mod_func_used(sroutes->error.a,name,param_no) )
 		return 1;
 
-	if (parser_sroutes->local.a &&
-	is_mod_func_used(parser_sroutes->local.a,name,param_no) )
+	if (sroutes->local.a &&
+	is_mod_func_used(sroutes->local.a,name,param_no) )
 		return 1;
 
-	if (parser_sroutes->startup.a &&
-	is_mod_func_used(parser_sroutes->startup.a,name,param_no) )
+	if (sroutes->startup.a &&
+	is_mod_func_used(sroutes->startup.a,name,param_no) )
 		return 1;
 
 	return 0;
@@ -2096,45 +2094,45 @@ int is_script_async_func_used( char *name, int param_no)
 	unsigned int i;
 
 	for( i=0; i<RT_NO ; i++ )
-		if (parser_sroutes->request[i].a &&
-		is_mod_async_func_used(parser_sroutes->request[i].a,name,param_no) )
+		if (sroutes->request[i].a &&
+		is_mod_async_func_used(sroutes->request[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<ONREPLY_RT_NO ; i++ )
-		if (parser_sroutes->onreply[i].a &&
-		is_mod_async_func_used(parser_sroutes->onreply[i].a,name,param_no) )
+		if (sroutes->onreply[i].a &&
+		is_mod_async_func_used(sroutes->onreply[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<FAILURE_RT_NO ; i++ )
-		if (parser_sroutes->failure[i].a &&
-		is_mod_async_func_used(parser_sroutes->failure[i].a,name,param_no) )
+		if (sroutes->failure[i].a &&
+		is_mod_async_func_used(sroutes->failure[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<BRANCH_RT_NO ; i++ )
-		if (parser_sroutes->branch[i].a &&
-		is_mod_async_func_used(parser_sroutes->branch[i].a,name,param_no) )
+		if (sroutes->branch[i].a &&
+		is_mod_async_func_used(sroutes->branch[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<TIMER_RT_NO ; i++ )
-		if (parser_sroutes->timer[i].a &&
-		is_mod_async_func_used(parser_sroutes->timer[i].a,name,param_no) )
+		if (sroutes->timer[i].a &&
+		is_mod_async_func_used(sroutes->timer[i].a,name,param_no) )
 			return 1;
 
 	for( i=0; i<EVENT_RT_NO ; i++ )
-		if (parser_sroutes->event[i].a &&
-		is_mod_async_func_used(parser_sroutes->event[i].a,name,param_no) )
+		if (sroutes->event[i].a &&
+		is_mod_async_func_used(sroutes->event[i].a,name,param_no) )
 			return 1;
 
-	if (parser_sroutes->error.a &&
-	is_mod_async_func_used(parser_sroutes->error.a,name,param_no) )
+	if (sroutes->error.a &&
+	is_mod_async_func_used(sroutes->error.a,name,param_no) )
 		return 1;
 
-	if (parser_sroutes->local.a &&
-	is_mod_async_func_used(parser_sroutes->local.a,name,param_no) )
+	if (sroutes->local.a &&
+	is_mod_async_func_used(sroutes->local.a,name,param_no) )
 		return 1;
 
-	if (parser_sroutes->startup.a &&
-	is_mod_async_func_used(parser_sroutes->startup.a,name,param_no) )
+	if (sroutes->startup.a &&
+	is_mod_async_func_used(sroutes->startup.a,name,param_no) )
 		return 1;
 
 	return 0;

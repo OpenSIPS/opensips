@@ -96,7 +96,6 @@ struct os_script_routes {
 	 ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE)
 
 extern struct os_script_routes *sroutes;
-extern struct os_script_routes *parser_sroutes;
 extern int route_type;
 
 #define set_route_type(_new_type) \
