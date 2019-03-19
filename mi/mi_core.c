@@ -47,6 +47,7 @@
 #include "../evi/event_interface.h"
 #include "../ipc.h"
 #include "../xlog.h"
+#include "../cfg_reload.h"
 #include "mi.h"
 #include "mi_trace.h"
 
@@ -723,6 +724,15 @@ static mi_response_t *w_mem_shm_dump_1(const mi_params_t *params,
 	return mi_mem_shm_dump(llevel);
 }
 
+static mi_response_t *w_reload_script(const mi_params_t *params,
+							struct mi_handler *async_hdl)
+{
+	if (reload_routing_script()==0)
+		return init_mi_result_ok();
+	return init_mi_error( 500, MI_SSTR("reload failed"));
+}
+
+
 
 static mi_export_t mi_core_cmds[] = {
 	{ "uptime", "prints various time information about OpenSIPS - "
@@ -840,6 +850,12 @@ static mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
+	{ "reload_script", "triggers the script (routes only) reload", 0, 0, {
+		{w_reload_script, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+
 	{ "help", "prints information about MI commands usage", 0, 0, {
 		{w_mi_help, {0}},
 		{w_mi_help_1, {"mi_cmd", 0}},
