@@ -2069,6 +2069,7 @@ static int send_full_top_update(node_info_t *dest_node, int nr_nodes, int *node_
 	lock_get(dest_node->cluster->current_node->lock);
 
 	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_FULL_TOP_UPDATE, BIN_VERSION, 0) < 0) {
+		lock_release(dest_node->cluster->current_node->lock);
 		LM_ERR("Failed to init bin send buffer\n");
 		return -1;
 	}
@@ -2542,6 +2543,7 @@ static int set_link_w_neigh(clusterer_link_state new_ls, node_info_t *neigh)
 
 		lock_get(neigh->cluster->current_node->lock);
 		if (add_neighbour(neigh->cluster->current_node, neigh) < 0) {
+			lock_release(neigh->cluster->current_node->lock);
 			LM_ERR("Unable to add neighbour [%d] to topology\n", neigh->node_id);
 			return -1;
 		}
