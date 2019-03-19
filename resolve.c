@@ -123,14 +123,14 @@ typedef union {
 		(s) = ntohl (*t_cp); \
 	} while (0)
 
-inline unsigned int dns_get16(const u_char *src) {
+static inline unsigned int dns_get16(const u_char *src) {
 	unsigned int dst;
 
 	DNS_GET16(dst, src);
 	return dst;
 }
 
-inline unsigned int dns_get32(const u_char *src) {
+static inline unsigned int dns_get32(const u_char *src) {
 	unsigned int dst;
 
 	DNS_GET32(dst, src);
