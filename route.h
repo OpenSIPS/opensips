@@ -96,6 +96,7 @@ struct os_script_routes {
 	 ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE)
 
 extern struct os_script_routes *sroutes;
+extern struct os_script_routes *parser_sroutes;
 extern int route_type;
 
 #define set_route_type(_new_type) \
@@ -111,9 +112,12 @@ extern int route_type;
 
 #define is_route_type(_type) (route_type==_type)
 
-int init_route_lists();
+struct os_script_routes* new_sroutes_holder(void);
 
 void free_route_lists(struct os_script_routes *sr);
+
+
+int run_startup_route(void);
 
 int get_script_route_idx( char* name, struct script_route *sr,
 		int size, int set);
@@ -121,24 +125,20 @@ int get_script_route_idx( char* name, struct script_route *sr,
 int get_script_route_ID_by_name(char *name,
 		struct script_route *sr, int size);
 
+int is_script_func_used( char *name, int param_no);
+
+int is_script_async_func_used( char *name, int param_no);
+
+
 void push(struct action* a, struct action** head);
 
-int check_self_op(int op, str* s, unsigned short p);
+void print_rl(struct os_script_routes *srs);
 
-int add_actions(struct action* a, struct action** head);
+int fix_rls(void);
 
-void print_rl();
-
-int fix_rls();
-
-int check_rls();
+int check_rls(void);
 
 int eval_expr(struct expr* e, struct sip_msg* msg, pv_value_t *val);
-
-int run_startup_route(void);
-
-int is_script_func_used( char *name, int param_no);
-int is_script_async_func_used( char *name, int param_no);
 
 
 #endif
