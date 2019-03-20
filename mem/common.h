@@ -27,6 +27,23 @@
 
 #if !defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC)
 #error "no memory allocator selected"
+/* if exactly an allocator was selected, let's inline it! */
+#elif ((!defined Q_MALLOC && !defined HP_MALLOC) || \
+	 (!defined F_MALLOC && !defined HP_MALLOC) || \
+	 (!defined F_MALLOC && !defined Q_MALLOC))
+#define INLINE_ALLOC
+#endif
+
+#if defined F_MALLOC
+#include "f_malloc.h"
+#endif
+
+#if defined Q_MALLOC
+#include "q_malloc.h"
+#endif
+
+#if defined HP_MALLOC
+#include "hp_malloc.h"
 #endif
 
 extern int mem_warming_enabled;
@@ -80,18 +97,6 @@ typedef void (*osips_mem_status_f) (void *block);
 typedef unsigned long (*osips_get_mmstat_f) (void *block);
 typedef void (*osips_shm_stats_init_f) (void *block, int core_index);
 
-#if defined F_MALLOC
-#include "f_malloc.h"
-#endif
-
-#if defined Q_MALLOC
-#include "q_malloc.h"
-#endif
-
-#if defined HP_MALLOC
-#include "hp_malloc.h"
-#endif
-
 #define oom_errorf \
 	"not enough free %s memory (%lu bytes left, need %lu), " \
 	"please increase the \"-%s\" command line parameter!\n"
@@ -99,13 +104,6 @@ typedef void (*osips_shm_stats_init_f) (void *block, int core_index);
 #define oom_nostats_errorf \
 	"not enough free %s memory (need %lu), please increase the \"-%s\" " \
 	"command line parameter!\n"
-
-/* if exactly an allocator was selected, let's inline it! */
-#if ((!defined Q_MALLOC && !defined HP_MALLOC) || \
-	 (!defined F_MALLOC && !defined HP_MALLOC) || \
-	 (!defined F_MALLOC && !defined Q_MALLOC))
-#define INLINE_ALLOC
-#endif
 
 #ifdef DBG_MALLOC
 #define check_double_free(ptr, frag, block) \
