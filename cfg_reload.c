@@ -21,10 +21,15 @@
  */
 
 
+#include <unistd.h>
+#include <errno.h>
+
 #include "mem/mem.h"
 #include "globals.h"
+#include "daemonize.h"
 #include "route.h"
 #include "cfg_pp.h"
+
 
 int cfg_parse_only_routes = 0;
 
@@ -32,6 +37,7 @@ int cfg_parse_only_routes = 0;
 int reload_routing_script(void)
 {
 	struct os_script_routes *sr, *sr_bk;
+	char * curr_wdir=NULL;
 	int ret;
 
 	sr = new_sroutes_holder();
@@ -48,12 +54,34 @@ int reload_routing_script(void)
 	/* parse, but only the routes */
 	cfg_parse_only_routes = 1;
 
-	/* FIXME - the cfg path will be affected by daemonize and working dir,
-	 * so we need full path */
+	/* switch to the startup working dir, to be sure the file pathname 
+	 * (as given at startup via cli) still match */
+	if (startup_wdir) {
+		if ( (curr_wdir=getcwd(NULL,0))==NULL) {
+			LM_ERR("failed to determin the working dir %d/%s\n", errno,
+				strerror(errno));
+			goto error;
+		}
+		if (chdir(startup_wdir)<0){
+			LM_CRIT("Cannot chdir to %s: %s\n", startup_wdir, strerror(errno));
+			goto error;
+		}
+	}
 
 	ret = parse_opensips_cfg( cfg_file, NULL/*preproc FIXME*/);
 
 	cfg_parse_only_routes = 0;
+
+	/* revert to the original working dir */
+	if (curr_wdir) {
+		if (chdir(curr_wdir)<0){
+			LM_CRIT("Cannot chdir to %s: %s\n", curr_wdir, strerror(errno));
+		}
+		free(curr_wdir);
+		curr_wdir=NULL;
+	}
+
+
 
 	if (ret<0) {
 		LM_ERR("parsing failed, abording\n");
@@ -77,6 +105,7 @@ int reload_routing_script(void)
 
 	return 0;
 error:
+	if (curr_wdir) free(curr_wdir);
 	free_route_lists(sr);
 	pkg_free(sr);
 	sroutes = sr_bk;

@@ -27,6 +27,8 @@
 #ifndef _daemonize_h
 #define _daemonize_h
 
+extern char *startup_wdir;
+
 int daemonize(char* name, int * own_pgid);
 int do_suid(const int uid, const int gid);
 int set_open_fds_limit(void);
