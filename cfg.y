@@ -109,6 +109,7 @@
 #include "bin_interface.h"
 #include "net/trans.h"
 #include "config.h"
+#include "mem/rpm_mem.h"
 
 #ifdef SHM_EXTRA_STATS
 #include "mem/module_info.h"
@@ -347,6 +348,8 @@ static struct multi_str *tmp_mod;
 %token MEM_WARMING_ENABLED
 %token MEM_WARMING_PATTERN_FILE
 %token MEM_WARMING_PERCENTAGE
+%token RPM_MEM_FILE
+%token RPM_MEM_SIZE
 %token MEMLOG
 %token MEMDUMP
 %token EXECMSGTHRESHOLD
@@ -871,6 +874,14 @@ assign_stm: DEBUG EQUAL snumber
 				"for HP_MALLOC\n");
 			#endif
 			}
+		| RPM_MEM_FILE EQUAL STRING {
+			rpm_mem_file = $3;
+			}
+		| RPM_MEM_FILE EQUAL error { yyerror("string value expected"); }
+		| RPM_MEM_SIZE EQUAL NUMBER {
+			rpm_mem_size = $3 * 1024 * 1024;
+			}
+		| RPM_MEM_SIZE EQUAL error { yyerror("int value expected"); }
 		| MEMLOG EQUAL snumber { memlog=$3; memdump=$3; }
 		| MEMLOG EQUAL error { yyerror("int value expected"); }
 		| MEMDUMP EQUAL snumber { memdump=$3; }

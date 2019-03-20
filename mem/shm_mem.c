@@ -281,8 +281,6 @@ void *shm_getmem(int fd, void *force_addr, unsigned long size)
 		flags |= MAP_ANON;
 	ret_addr=mmap(force_addr, size, PROT_READ|PROT_WRITE,
 					 flags, fd, 0);
-	if (fd > 0)
-		close(fd);
 #else /* USE_MMAP */
 /* TODO: handle persistent storage for SysV */
 	#warn "Cannot have persistent storage using SysV"
@@ -646,6 +644,9 @@ int shm_mem_init(void)
 #endif /* USE_ANON_MMAP */
 
 	shm_mempool = shm_getmem(fd, NULL, shm_mem_size);
+#ifndef USE_ANON_MMAP
+	close(fd);
+#endif /* USE_ANON_MMAP */
 	if (shm_mempool == INVALID_MAP) {
 		LM_CRIT("could not attach shared memory segment: %s\n",
 				strerror(errno));

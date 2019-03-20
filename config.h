@@ -41,6 +41,7 @@
 #define CFG_FILE CFG_DIR "opensips.cfg"
 #define MEM_WARMING_DEFAULT_PATTERN_FILE CFG_DIR "mem_warming_pattern"
 #define MEM_WARMING_DEFAULT_PERCENTAGE 75
+#define RESTART_PERSISTENCY_MEM_FILE ".restart_persistency.cache"
 
 #define TLS_PKEY_FILE CFG_DIR "tls/ckey.pem"
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"

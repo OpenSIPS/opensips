@@ -78,6 +78,7 @@ int parse_mm(const char *mm_name, enum osips_mm *mm);
 
 extern void *mem_block;
 extern void *shm_block;
+extern void *rpm_block;
 
 #ifdef DBG_MALLOC
 typedef void *(*osips_malloc_f) (void *block, unsigned long size,

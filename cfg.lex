@@ -282,6 +282,8 @@ SHM_SECONDARY_HASH_SIZE "shm_secondary_hash_size"
 MEM_WARMING_ENABLED "mem_warming"|"mem_warming_enabled"
 MEM_WARMING_PATTERN_FILE "mem_warming_pattern_file"
 MEM_WARMING_PERCENTAGE "mem_warming_percentage"
+RPM_MEM_FILE "restart_persistency_cache_file"
+RPM_MEM_SIZE "restart_persistency_size"
 MEMLOG		"memlog"|"mem_log"
 MEMDUMP		"memdump"|"mem_dump"
 EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
@@ -564,6 +566,8 @@ SPACE		[ ]
 <INITIAL>{MEM_WARMING_ENABLED}	{ count(); yylval.strval=yytext; return MEM_WARMING_ENABLED; }
 <INITIAL>{MEM_WARMING_PATTERN_FILE}	{ count(); yylval.strval=yytext; return MEM_WARMING_PATTERN_FILE; }
 <INITIAL>{MEM_WARMING_PERCENTAGE}	{ count(); yylval.strval=yytext; return MEM_WARMING_PERCENTAGE; }
+<INITIAL>{RPM_MEM_FILE}	{ count(); yylval.strval=yytext; return RPM_MEM_FILE; }
+<INITIAL>{RPM_MEM_SIZE}	{ count(); yylval.strval=yytext; return RPM_MEM_SIZE; }
 <INITIAL>{MEMLOG}	{ count(); yylval.strval=yytext; return MEMLOG; }
 <INITIAL>{MEMDUMP}	{ count(); yylval.strval=yytext; return MEMDUMP; }
 <INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }
