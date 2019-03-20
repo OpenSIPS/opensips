@@ -68,7 +68,7 @@ int reload_routing_script(void)
 		}
 	}
 
-	ret = parse_opensips_cfg( cfg_file, NULL/*preproc FIXME*/);
+	ret = parse_opensips_cfg( cfg_file, preproc);
 
 	cfg_parse_only_routes = 0;
 

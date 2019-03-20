@@ -187,6 +187,7 @@ void print_ct_constants(void)
 int own_pgid = 0; /* whether or not we have our own pgid (and it's ok
 					 to use kill(0, sig) */
 char* cfg_file = 0;
+char *preproc = NULL;
 unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  not want to exceed during the
 												  auto-probing procedure; may
@@ -872,7 +873,7 @@ int main(int argc, char** argv)
 	/* configure by default logging to syslog */
 	int cfg_log_stderr = 1;
 	int c,r;
-	char *tmp, *preproc = NULL;
+	char *tmp;
 	int tmp_len;
 	int port;
 	int proto;
