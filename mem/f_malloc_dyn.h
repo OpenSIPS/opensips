@@ -78,7 +78,6 @@ void fm_split_frag(struct fm_block *fm, struct fm_frag *frag,
 		n->file=file;
 		n->func=func;
 		n->line=line;
-		n->check=ST_CHECK_PATTERN;
 		#endif
 		/* reinsert n in free list*/
 		fm_insert_free(fm, n);
@@ -186,7 +185,6 @@ found:
 	frag->file=file;
 	frag->func=func;
 	frag->line=line;
-	frag->check=ST_CHECK_PATTERN;
 	LM_GEN1(memlog, "%s_malloc(%lu), returns address %p\n", fm->name, size,
 		(char*)frag+sizeof(struct fm_frag));
 	#endif

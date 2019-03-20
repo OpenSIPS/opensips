@@ -106,13 +106,6 @@ inline static unsigned long big_hash_idx(unsigned long s)
 	return idx;
 }
 
-
-#ifdef DBG_MALLOC
-#define ST_CHECK_PATTERN   0xf0f0f0f0
-#define END_CHECK_PATTERN1 0xc0c0c0c0
-#define END_CHECK_PATTERN2 0xabcdefed
-#endif
-
 #ifdef SHM_EXTRA_STATS
 #include "module_info.h"
 unsigned long fm_stats_get_index(void *ptr)
@@ -131,7 +124,6 @@ void fm_stats_set_index(void *ptr, unsigned long idx)
 	FM_FRAG(ptr)->statistic_index = idx;
 }
 #endif
-
 
 static inline void fm_insert_free(struct fm_block *fm, struct fm_frag *frag)
 {
@@ -237,11 +229,6 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 
 	fm->last_frag->prev=NULL;
 	fm->first_frag->prev=NULL;
-
-	#ifdef DBG_MALLOC
-	fm->first_frag->check=ST_CHECK_PATTERN;
-	fm->last_frag->check=END_CHECK_PATTERN1;
-	#endif
 
 	/* link initial fragment into the free list*/
 

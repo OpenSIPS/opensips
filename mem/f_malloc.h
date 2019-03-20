@@ -71,7 +71,6 @@ struct fm_frag {
 	const char *file;
 	const char *func;
 	unsigned long line;
-	unsigned long check;
 #endif
 
 #ifdef SHM_EXTRA_STATS
