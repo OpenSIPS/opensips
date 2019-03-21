@@ -54,16 +54,16 @@
 #define RPM_MAP_RETRIES			5
 /* 0RpM - OpenSIPS Restart Persistency Memory */
 #define RPM_MAGIC_CODE			0x0052704Du
-#define RPM_MAX_ZONE_NAME		16
-#define RPM_MAX_ZONES_NO		16
 
-/* returns a pointer towars a restart persistency zone
- * if NULL is returned, this means that the restart persistency zone is not
- * available
- * if the zone itself contains a NULL pointer, it indicates that the zone has
- * just been allocated - there was no data inside - either a new mapping, or
- * first time usage of restart persistency in this file */
-void **get_rpm_zone(char *key);
+/* returns a pointer to a restart persistency zone, identified by the key */
+void *rpm_key_get(char *key);
+/* sets the value of a certain key to the specified value
+ * IMPORTANT: the value has to be within the restart persistency zone! */
+int rpm_key_set(char *key, void *val);
+/* deletes a key from the persistent zone */
+int rpm_key_del(char *key);
+/* initializes the restart persistency memory */
+int rpm_init_mem(void);
 
 extern enum osips_mm mem_allocator_rpm;
 int set_rpm_mm(const char *mm_name);

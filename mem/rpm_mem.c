@@ -73,25 +73,22 @@ unsigned long (*gen_rpm_get_frags)(void *blk);
 
 void rpm_mem_destroy(void);
 
-struct rpmem_zone {
-	char key[RPM_MAX_ZONE_NAME];
-	void *address;
+struct rpm_key {
+	str key;
+	void *value;
+	struct rpm_key *next;
 };
+gen_lock_t *rpm_keys_lock;
 
 struct _rpm_map_block {
 	unsigned magic;						/* magic code used to check if file is valid -
 										   should match - RPM_MAGIC_CODE */
 	unsigned long size;					/* size of the block */
-	int max_zone_name;					/* used to check consistency of file -
-										   should  match RPM_MAX_ZONE_NAME */
-	int max_zones_no;					/* used to check consistency of file -
-										   should match RPM_MAX_ZONES_NO */
 	enum osips_mm alloc;				/* allocator type */
-	int zones_no;						/* number of zones allocated yet */
 	void *mapped_address;				/* address where file should be mapped */
 	void *block_address;				/* block where the OpenSIPS memory starts */
-	struct rpmem_zone zones[0];			/* info about zones */
-} __attribute__((__packed__)) *rpm_map_block;
+	struct rpm_key *keys;				/* pointer to keys */
+} __attribute__((__packed__)) *rpm_map_block = NULL;
 
 
 #if defined F_MALLOC || defined Q_MALLOC
@@ -103,7 +100,7 @@ gen_lock_t *rpmem_locks;
 #endif
 
 static void* rpm_mempool=INVALID_MAP;
-void *rpm_block;
+void *rpm_block=NULL;
 
 #if !defined INLINE_ALLOC && defined HP_MALLOC
 /* startup optimization */
@@ -224,6 +221,18 @@ int rpm_mem_init_allocs(void)
 		return -1;
 	}
 #endif
+
+	rpm_keys_lock = shm_malloc(sizeof *rpm_keys_lock);
+	if (!rpm_keys_lock) {
+		LM_CRIT("could not allocate the rpm keys lock\n");
+		return -1;
+	}
+
+	if (!lock_init(rpm_keys_lock)) {
+		LM_CRIT("could not initialize rpm keys lock\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -335,18 +344,6 @@ int load_rpm_file(void)
 		goto recreate;
 	}
 
-	if (tmp.max_zone_name != RPM_MAX_ZONE_NAME) {
-		LM_WARN("restart persistency file %s max_zone_name size=%d != expected size=%d\n",
-				rpm_mem_file, tmp.max_zone_name, RPM_MAX_ZONE_NAME);
-		goto recreate;
-	}
-
-	if (tmp.max_zones_no != RPM_MAX_ZONES_NO) {
-		LM_WARN("restart persistency file %s max_zones_no size=%d != expected size=%d\n",
-				rpm_mem_file, tmp.max_zones_no, RPM_MAX_ZONE_NAME);
-		goto recreate;
-	}
-
 #ifdef INLINE_ALLOC
 	alloc = MM_NONE;
 #else
@@ -381,7 +378,6 @@ int load_rpm_file(void)
 		goto recreate;
 	}
 
-	LM_INFO("XXX: block is %p %p\n", rpm_map_block, rpm_block);
 	return 0;
 
 recreate:
@@ -394,7 +390,6 @@ int init_rpm_mallocs(void)
 {
 	struct stat fst;
 	int n, fd;
-	int header_meta_size;
 
 	/* if any of the rpm settings is set, then we should turn rpm_enabled on */
 	/* if no custom memory was set, then use the shm size */
@@ -457,19 +452,15 @@ int init_rpm_mallocs(void)
 
 	/* finally, we've got a mempool - populate the block */
 	rpm_map_block = rpm_mempool;
-	header_meta_size = sizeof(*rpm_map_block) +
-			RPM_MAX_ZONES_NO * sizeof(struct rpmem_zone);
-	memset(rpm_mempool, 0, header_meta_size);
+	memset(rpm_mempool, 0, sizeof(*rpm_map_block));
 
 	rpm_map_block->magic = RPM_MAGIC_CODE;
 	rpm_map_block->size = rpm_mem_size;
-	rpm_map_block->max_zone_name = RPM_MAX_ZONE_NAME;
-	rpm_map_block->max_zones_no = RPM_MAX_ZONES_NO;
 	rpm_map_block->mapped_address = rpm_mempool;
-	rpm_map_block->block_address = (char *)rpm_map_block + header_meta_size;
+	rpm_map_block->block_address = (char *)rpm_map_block + sizeof(*rpm_map_block);
 
 	if (rpm_mem_init_mallocs(rpm_map_block->block_address,
-			rpm_mem_size - header_meta_size) < 0) {
+			rpm_mem_size - sizeof(*rpm_map_block)) < 0) {
 		rpm_mem_destroy();
 		return -1;
 	}
@@ -486,55 +477,6 @@ int init_rpm_mallocs(void)
 error:
 	close(fd);
 	return -1;
-}
-
-void **get_rpm_zone(char *key)
-{
-	int zone;
-	unsigned len;
-	void **ret;
-
-	if (rpm_mempool==INVALID_MAP) {
-		/* memory pool not yet initialized */
-		if (init_rpm_mallocs() < 0) {
-			LM_ERR("could not initialize restart persistent memory!\n");
-			rpm_mempool = 0;
-			return NULL;
-		}
-	}
-	if (rpm_mempool == 0) {
-		/* memory pool could not be init */
-		return NULL;
-	}
-
-	len = strlen(key);
-	if (len > RPM_MAX_ZONE_NAME) {
-		LM_ERR("zone key too large for peristent memory (max is %d)!\n",
-				RPM_MAX_ZONE_NAME);
-		return NULL;
-	}
-
-	/* we now have a valid mem pool - search for the requested zone */
-	for (zone = 0; zone < rpm_map_block->zones_no; zone++)
-		if (strncmp(rpm_map_block->zones[zone].key, key, RPM_MAX_ZONE_NAME) == 0)
-			return rpm_map_block->zones[zone].address;
-
-	/* could not find the zone! - try to allocate slot data for it */
-	if (rpm_map_block->zones_no == RPM_MAX_ZONES_NO) {
-		LM_ERR("maximum number of zones reached - %d\n", RPM_MAX_ZONES_NO);
-		return NULL;
-	}
-	ret = rpm_malloc(sizeof(void *));
-	if (!ret) {
-		LM_ERR("cannot allocate space for another zones!\n");
-		return NULL;
-	}
-	/* reset the mem to NULL, to indicate that the zone is new */
-	*ret = NULL;
-	memcpy(rpm_map_block->zones[rpm_map_block->zones_no].key, key, len + 1);
-	rpm_map_block->zones[rpm_map_block->zones_no].address = ret;
-	rpm_map_block->zones_no++;
-	return ret;
 }
 
 void rpm_relmem(void *mempool, unsigned long size)
@@ -577,3 +519,108 @@ void rpm_mem_destroy(void)
 	rpm_block = NULL;
 }
 
+int rpm_init_mem(void)
+{
+	if (rpm_mempool==INVALID_MAP) {
+		/* memory pool not yet initialized */
+		if (init_rpm_mallocs() < 0) {
+			LM_ERR("could not initialize restart persistent memory!\n");
+			rpm_mempool = 0;
+			return -1;
+		}
+	}
+	if (rpm_mempool == 0) {
+		/* memory pool could not be init */
+		LM_DBG("restart persistency could not be initialized!\n");
+		return -1;
+	}
+	return 0;
+}
+
+void *rpm_key_get(char *key)
+{
+	struct rpm_key *k;
+	int len;
+	void *ret = NULL;
+
+	if (!rpm_map_block || !rpm_map_block->keys)
+		return NULL;
+
+	len = strlen(key);
+	lock_get(rpm_keys_lock);
+	for (k = rpm_map_block->keys; k; k = k->next)
+		if (len == k->key.len && memcmp(k->key.s, key, len) == 0) {
+			ret = k->value;
+			goto end;
+		}
+end:
+	lock_release(rpm_keys_lock);
+	return ret;
+}
+
+int rpm_key_set(char *key, void *val)
+{
+	struct rpm_key *k;
+	int len;
+
+	if (!rpm_map_block)
+		return -2;
+
+	len = strlen(key);
+	lock_get(rpm_keys_lock);
+	for (k = rpm_map_block->keys; k; k = k->next)
+		if (len == k->key.len && memcmp(k->key.s, key, len) == 0)
+			break;
+
+	if (k != NULL) {
+		k->value = val;
+		lock_release(rpm_keys_lock);
+		return 0;
+	}
+	/* key does not exist - add it now */
+	k = rpm_malloc(sizeof(*k) + len);
+	if (!k) {
+		LM_ERR("could not add mem for rp key!\n");
+		lock_release(rpm_keys_lock);
+		return -1;
+	}
+	k->key.s = (char *)(k+1);
+	memcpy(k->key.s, key, len);
+	k->key.len = len;
+	k->value = val;
+	k->next = rpm_map_block->keys;
+	rpm_map_block->keys = k;
+	lock_release(rpm_keys_lock);
+	return 0;
+}
+
+int rpm_key_del(char *key)
+{
+	struct rpm_key *k, *p;
+	int len;
+
+	if (!rpm_map_block)
+		return -2;
+	if (!rpm_map_block->keys)
+		return -1;
+
+	len = strlen(key);
+	lock_get(rpm_keys_lock);
+	for (p = NULL, k = rpm_map_block->keys; k; p = k, k = k->next)
+		if (len == k->key.len && memcmp(k->key.s, key, len) == 0)
+			break;
+	if (!k) {
+		LM_DBG("could not find key %s\n", key);
+		lock_release(rpm_keys_lock);
+		return -1;
+	}
+	if (!p) {
+		/* first element */
+		rpm_map_block->keys = k->next;
+	} else {
+		p->next = k->next;
+	}
+	lock_release(rpm_keys_lock);
+	rpm_free(k);
+	return 0;
+}
