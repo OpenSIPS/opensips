@@ -417,7 +417,7 @@ int load_rpm_file(void)
 	/* check if the file is a valid cache file */
 	if (tmp.magic != RPM_MAGIC_CODE) {
 		LM_WARN("restart persistency file %s does not have the expected magic: %u\n",
-				rpm_mem_file, *(unsigned*)(&tmp.magic));
+				rpm_mem_file, tmp.magic);
 		goto recreate;
 	}
 	if (tmp.size != rpm_mem_size) {
