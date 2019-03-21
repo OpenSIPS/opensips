@@ -43,6 +43,7 @@
 #include "../pt.h"
 #include "../net/net_tcp.h"
 #include "../mem/mem.h"
+#include "../mem/rpm_mem.h"
 #include "../cachedb/cachedb.h"
 #include "../evi/event_interface.h"
 #include "../ipc.h"
@@ -723,6 +724,37 @@ static mi_response_t *w_mem_shm_dump_1(const mi_params_t *params,
 	return mi_mem_shm_dump(llevel);
 }
 
+static mi_response_t *mi_mem_rpm_dump(int llevel)
+{
+	int bk;
+
+	bk = memdump;
+	if (llevel!=0)
+		memdump = llevel;
+	LM_GEN1(memdump, "Memory status (rpm):\n");
+	rpm_status();
+	memdump = bk;
+
+	return init_mi_result_ok();
+}
+
+static mi_response_t *w_mem_rpm_dump(const mi_params_t *params,
+									struct mi_handler *async_hdl)
+{
+	return mi_mem_rpm_dump(0);
+}
+
+static mi_response_t *w_mem_rpm_dump_1(const mi_params_t *params,
+									struct mi_handler *async_hdl)
+{
+	int llevel;
+
+	if (get_mi_int_param(params, "log_level", &llevel) < 0)
+		return init_mi_param_error();
+
+	return mi_mem_rpm_dump(llevel);
+}
+
 
 static mi_export_t mi_core_cmds[] = {
 	{ "uptime", "prints various time information about OpenSIPS - "
@@ -837,6 +869,12 @@ static mi_export_t mi_core_cmds[] = {
 	{ "mem_shm_dump", "forces a status dump of the shm memory", 0, 0, {
 		{w_mem_shm_dump, {0}},
 		{w_mem_shm_dump_1, {"log_level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "mem_rpm_dump", "forces a status dump of the restart persistent memory", 0, 0, {
+		{w_mem_rpm_dump, {0}},
+		{w_mem_rpm_dump_1, {"log_level", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},

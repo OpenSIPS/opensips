@@ -39,6 +39,9 @@ extern stat_var *shm_used;
 extern stat_var *shm_rused;
 extern stat_var *shm_frags;
 #endif
+extern stat_var *rpm_used;
+extern stat_var *rpm_rused;
+extern stat_var *rpm_frags;
 
 #include "hp_malloc_stats.h"
 #include "meminfo.h"

@@ -121,10 +121,15 @@ int mem_warming_enabled;
  */
 int mem_warming_percentage = MEM_WARMING_DEFAULT_PERCENTAGE;
 
-#if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
+#if defined(HP_MALLOC)
+stat_var *rpm_used;
+stat_var *rpm_rused;
+stat_var *rpm_frags;
+#if !defined(HP_MALLOC_FAST_STATS)
 stat_var *shm_used;
 stat_var *shm_rused;
 stat_var *shm_frags;
+#endif
 #endif
 
 /* ROUNDTO= 2^k so the following works */
@@ -223,13 +228,6 @@ static inline void hp_frag_detach(struct hp_block *hpb, struct hp_frag *frag)
 		frag->u.nxt_free->prev = pf;
 
 	frag->prev = NULL;
-
-#ifdef HP_MALLOC_FAST_STATS
-	unsigned int hash;
-
-	hash = GET_HASH_RR(hpb, frag->size);
-	hpb->free_hash[hash].no--;
-#endif
 };
 
 #include "hp_malloc_dyn.h"

@@ -38,6 +38,7 @@
 #include <string.h>
 
 #include "mem/shm_mem.h"
+#include "mem/rpm_mem.h"
 #include "mi/mi.h"
 #include "ut.h"
 #include "dprint.h"
@@ -250,6 +251,11 @@ int init_stats_collector(void)
 	 */
 	if (__register_module_stats( "shmem", shm_stats, 1) != 0) {
 		LM_ERR("failed to register sh_mem statistics\n");
+		goto error;
+	}
+
+	if (__register_module_stats( "rpmem", rpm_stats, 1) != 0) {
+		LM_ERR("failed to register rp_mem statistics\n");
 		goto error;
 	}
 

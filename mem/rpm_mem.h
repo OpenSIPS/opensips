@@ -93,6 +93,14 @@ extern void *(*gen_rpm_realloc_unsafe)(void *blk, void *p, unsigned long size);
 extern void (*gen_rpm_free)(void *blk, void *p);
 extern void (*gen_rpm_free_unsafe)(void *blk, void *p);
 #endif
+extern void (*gen_rpm_info)(void *blk, struct mem_info *info);
+extern void (*gen_rpm_status)(void *blk);
+extern unsigned long (*gen_rpm_get_size)(void *blk);
+extern unsigned long (*gen_rpm_get_used)(void *blk);
+extern unsigned long (*gen_rpm_get_rused)(void *blk);
+extern unsigned long (*gen_rpm_get_mused)(void *blk);
+extern unsigned long (*gen_rpm_get_free)(void *blk);
+extern unsigned long (*gen_rpm_get_frags)(void *blk);
 #endif
 
 #ifdef INLINE_ALLOC
@@ -103,6 +111,14 @@ extern void (*gen_rpm_free_unsafe)(void *blk, void *p);
 #define RPM_REALLOC_UNSAFE     fm_realloc
 #define RPM_FREE               fm_free
 #define RPM_FREE_UNSAFE        fm_free
+#define RPM_INFO               fm_info
+#define RPM_STATUS             fm_status
+#define RPM_GET_SIZE           fm_get_size
+#define RPM_GET_USED           fm_get_used
+#define RPM_GET_RUSED          fm_get_real_used
+#define RPM_GET_MUSED          fm_get_max_real_used
+#define RPM_GET_FREE           fm_get_free
+#define RPM_GET_FRAGS          fm_get_frags
 #elif defined Q_MALLOC
 #define RPM_MALLOC             qm_malloc
 #define RPM_MALLOC_UNSAFE      qm_malloc
@@ -110,13 +126,29 @@ extern void (*gen_rpm_free_unsafe)(void *blk, void *p);
 #define RPM_REALLOC_UNSAFE     qm_realloc
 #define RPM_FREE               qm_free
 #define RPM_FREE_UNSAFE        qm_free
+#define RPM_INFO               qm_info
+#define RPM_STATUS             qm_status
+#define RPM_GET_SIZE           qm_get_size
+#define RPM_GET_USED           qm_get_used
+#define RPM_GET_RUSED          qm_get_real_used
+#define RPM_GET_MUSED          qm_get_max_real_used
+#define RPM_GET_FREE           qm_get_free
+#define RPM_GET_FRAGS          qm_get_frags
 #elif defined HP_MALLOC
-#define RPM_MALLOC             hp_shm_malloc
-#define RPM_MALLOC_UNSAFE      hp_shm_malloc_unsafe
-#define RPM_REALLOC            hp_shm_realloc
-#define RPM_REALLOC_UNSAFE     hp_shm_realloc_unsafe
-#define RPM_FREE               hp_shm_free
-#define RPM_FREE_UNSAFE        hp_shm_free_unsafe
+#define RPM_MALLOC             hp_rpm_malloc
+#define RPM_MALLOC_UNSAFE      hp_rpm_malloc_unsafe
+#define RPM_REALLOC            hp_rpm_realloc
+#define RPM_REALLOC_UNSAFE     hp_rpm_realloc_unsafe
+#define RPM_FREE               hp_rpm_free
+#define RPM_FREE_UNSAFE        hp_rpm_free_unsafe
+#define RPM_INFO               hp_info
+#define RPM_STATUS             hp_status
+#define RPM_GET_SIZE           hp_rpm_get_size
+#define RPM_GET_USED           hp_rpm_get_used
+#define RPM_GET_RUSED          hp_rpm_get_real_used
+#define RPM_GET_MUSED          hp_rpm_get_max_real_used
+#define RPM_GET_FREE           hp_rpm_get_free
+#define RPM_GET_FRAGS          hp_rpm_get_frags
 #endif /* F_MALLOC || Q_MALLOC || HP_MALLOC */
 #else
 #define RPM_MALLOC             gen_rpm_malloc
@@ -125,6 +157,14 @@ extern void (*gen_rpm_free_unsafe)(void *blk, void *p);
 #define RPM_REALLOC_UNSAFE     gen_rpm_realloc_unsafe
 #define RPM_FREE               gen_rpm_free
 #define RPM_FREE_UNSAFE        gen_rpm_free_unsafe
+#define RPM_INFO               gen_rpm_info
+#define RPM_STATUS             gen_rpm_status
+#define RPM_GET_SIZE           gen_rpm_get_size
+#define RPM_GET_USED           gen_rpm_get_used
+#define RPM_GET_RUSED          gen_rpm_get_rused
+#define RPM_GET_MUSED          gen_rpm_get_mused
+#define RPM_GET_FREE           gen_rpm_get_free
+#define RPM_GET_FRAGS          gen_rpm_get_frags
 #endif /* INLINE_ALLOC */
 
 #ifdef HP_MALLOC
@@ -253,5 +293,46 @@ inline static void rpm_free(void *_p)
 }
 
 #endif
+
+inline static void rpm_status(void)
+{
+	rpm_lock();
+	RPM_STATUS(rpm_block);
+	rpm_unlock();
+}
+
+
+inline static void rpm_info(struct mem_info* mi)
+{
+	rpm_lock();
+	RPM_INFO(rpm_block, mi);
+	rpm_unlock();
+}
+
+
+#ifdef STATISTICS
+void hp_init_rpm_statistics(struct hp_block *hpb);
+
+extern stat_export_t rpm_stats[];
+
+inline static unsigned long rpm_get_size(unsigned short foo) {
+	return RPM_GET_SIZE(rpm_block);
+}
+inline static unsigned long rpm_get_used(unsigned short foo) {
+	return RPM_GET_USED(rpm_block);
+}
+inline static unsigned long rpm_get_rused(unsigned short foo) {
+	return RPM_GET_RUSED(rpm_block);
+}
+inline static unsigned long rpm_get_mused(unsigned short foo) {
+	return RPM_GET_MUSED(rpm_block);
+}
+inline static unsigned long rpm_get_free(unsigned short foo) {
+	return RPM_GET_FREE(rpm_block);
+}
+inline static unsigned long rpm_get_frags(unsigned short foo) {
+	return RPM_GET_FRAGS(rpm_block);
+}
+#endif /*STATISTICS*/
 
 #endif

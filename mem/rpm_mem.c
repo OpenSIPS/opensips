@@ -71,6 +71,37 @@ unsigned long (*gen_rpm_get_free)(void *blk);
 unsigned long (*gen_rpm_get_frags)(void *blk);
 #endif
 
+#if defined(HP_MALLOC)
+stat_var *rpm_used;
+stat_var *rpm_rused;
+stat_var *rpm_frags;
+#endif
+
+#ifdef STATISTICS
+stat_export_t rpm_stats[] = {
+	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)rpm_get_size  },
+
+#if defined(HP_MALLOC)
+	{"used_size" ,     STAT_NO_RESET,               &rpm_used      },
+	{"real_used_size" ,STAT_NO_RESET,               &rpm_rused     },
+#else
+	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_used  },
+	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)rpm_get_rused },
+#endif
+
+	{"max_used_size" ,  STAT_IS_FUNC,    (stat_var**)rpm_get_mused },
+	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_free  },
+
+#if defined(HP_MALLOC)
+	{"fragments" ,     STAT_NO_RESET,               &rpm_frags     },
+#else
+	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_frags },
+#endif
+
+	{0,0,0}
+};
+#endif
+
 void rpm_mem_destroy(void);
 
 struct rpm_key {
@@ -131,6 +162,14 @@ int rpm_mem_init_allocs(void)
 		gen_rpm_realloc_unsafe = (osips_realloc_f)fm_realloc;
 		gen_rpm_free           = (osips_free_f)fm_free;
 		gen_rpm_free_unsafe    = (osips_free_f)fm_free;
+		gen_rpm_info           = (osips_mem_info_f)fm_info;
+		gen_rpm_status         = (osips_mem_status_f)fm_status;
+		gen_rpm_get_size       = (osips_get_mmstat_f)fm_get_size;
+		gen_rpm_get_used       = (osips_get_mmstat_f)fm_get_used;
+		gen_rpm_get_rused      = (osips_get_mmstat_f)fm_get_real_used;
+		gen_rpm_get_mused      = (osips_get_mmstat_f)fm_get_max_real_used;
+		gen_rpm_get_free       = (osips_get_mmstat_f)fm_get_free;
+		gen_rpm_get_frags      = (osips_get_mmstat_f)fm_get_frags;
 		break;
 #ifdef Q_MALLOC
 	case MM_Q_MALLOC:
@@ -140,6 +179,14 @@ int rpm_mem_init_allocs(void)
 		gen_rpm_realloc_unsafe = (osips_realloc_f)qm_realloc;
 		gen_rpm_free           = (osips_free_f)qm_free;
 		gen_rpm_free_unsafe    = (osips_free_f)qm_free;
+		gen_rpm_info           = (osips_mem_info_f)qm_info;
+		gen_rpm_status         = (osips_mem_status_f)qm_status;
+		gen_rpm_get_size       = (osips_get_mmstat_f)qm_get_size;
+		gen_rpm_get_used       = (osips_get_mmstat_f)qm_get_used;
+		gen_rpm_get_rused      = (osips_get_mmstat_f)qm_get_real_used;
+		gen_rpm_get_mused      = (osips_get_mmstat_f)qm_get_max_real_used;
+		gen_rpm_get_free       = (osips_get_mmstat_f)qm_get_free;
+		gen_rpm_get_frags      = (osips_get_mmstat_f)qm_get_frags;
 		break;
 #endif
 #ifdef HP_MALLOC
@@ -150,6 +197,14 @@ int rpm_mem_init_allocs(void)
 		gen_rpm_realloc_unsafe = (osips_realloc_f)hp_rpm_realloc_unsafe;
 		gen_rpm_free           = (osips_free_f)hp_rpm_free;
 		gen_rpm_free_unsafe    = (osips_free_f)hp_rpm_free_unsafe;
+		gen_rpm_info           = (osips_mem_info_f)hp_info;
+		gen_rpm_status         = (osips_mem_status_f)hp_status;
+		gen_rpm_get_size       = (osips_get_mmstat_f)hp_rpm_get_size;
+		gen_rpm_get_used       = (osips_get_mmstat_f)hp_rpm_get_used;
+		gen_rpm_get_rused      = (osips_get_mmstat_f)hp_rpm_get_real_used;
+		gen_rpm_get_mused      = (osips_get_mmstat_f)hp_rpm_get_max_real_used;
+		gen_rpm_get_free       = (osips_get_mmstat_f)hp_rpm_get_free;
+		gen_rpm_get_frags      = (osips_get_mmstat_f)hp_rpm_get_frags;
 		break;
 #endif
 #ifdef DBG_MALLOC
@@ -161,6 +216,14 @@ int rpm_mem_init_allocs(void)
 		gen_rpm_realloc_unsafe = (osips_realloc_f)fm_realloc_dbg;
 		gen_rpm_free           = (osips_free_f)fm_free_dbg;
 		gen_rpm_free_unsafe    = (osips_free_f)fm_free_dbg;
+		gen_rpm_info           = (osips_mem_info_f)fm_info;
+		gen_rpm_status         = (osips_mem_status_f)fm_status_dbg;
+		gen_rpm_get_size       = (osips_get_mmstat_f)fm_get_size;
+		gen_rpm_get_used       = (osips_get_mmstat_f)fm_get_used;
+		gen_rpm_get_rused      = (osips_get_mmstat_f)fm_get_real_used;
+		gen_rpm_get_mused      = (osips_get_mmstat_f)fm_get_max_real_used;
+		gen_rpm_get_free       = (osips_get_mmstat_f)fm_get_free;
+		gen_rpm_get_frags      = (osips_get_mmstat_f)fm_get_frags;
 		break;
 #endif
 #ifdef Q_MALLOC
@@ -171,6 +234,14 @@ int rpm_mem_init_allocs(void)
 		gen_rpm_realloc_unsafe = (osips_realloc_f)qm_realloc_dbg;
 		gen_rpm_free           = (osips_free_f)qm_free_dbg;
 		gen_rpm_free_unsafe    = (osips_free_f)qm_free_dbg;
+		gen_rpm_info           = (osips_mem_info_f)qm_info;
+		gen_rpm_status         = (osips_mem_status_f)qm_status_dbg;
+		gen_rpm_get_size       = (osips_get_mmstat_f)qm_get_size;
+		gen_rpm_get_used       = (osips_get_mmstat_f)qm_get_used;
+		gen_rpm_get_rused      = (osips_get_mmstat_f)qm_get_real_used;
+		gen_rpm_get_mused      = (osips_get_mmstat_f)qm_get_max_real_used;
+		gen_rpm_get_free       = (osips_get_mmstat_f)qm_get_free;
+		gen_rpm_get_frags      = (osips_get_mmstat_f)qm_get_frags;
 		break;
 #endif
 #ifdef HP_MALLOC
@@ -181,6 +252,14 @@ int rpm_mem_init_allocs(void)
 		gen_rpm_realloc_unsafe = (osips_realloc_f)hp_rpm_realloc_unsafe_dbg;
 		gen_rpm_free           = (osips_free_f)hp_rpm_free_dbg;
 		gen_rpm_free_unsafe    = (osips_free_f)hp_rpm_free_unsafe_dbg;
+		gen_rpm_info           = (osips_mem_info_f)hp_info;
+		gen_rpm_status         = (osips_mem_status_f)hp_status_dbg;
+		gen_rpm_get_size       = (osips_get_mmstat_f)hp_rpm_get_size;
+		gen_rpm_get_used       = (osips_get_mmstat_f)hp_rpm_get_used;
+		gen_rpm_get_rused      = (osips_get_mmstat_f)hp_rpm_get_real_used;
+		gen_rpm_get_mused      = (osips_get_mmstat_f)hp_rpm_get_max_real_used;
+		gen_rpm_get_free       = (osips_get_mmstat_f)hp_rpm_get_free;
+		gen_rpm_get_frags      = (osips_get_mmstat_f)hp_rpm_get_frags;
 		break;
 #endif
 #endif
@@ -232,6 +311,9 @@ int rpm_mem_init_allocs(void)
 		LM_CRIT("could not initialize rpm keys lock\n");
 		return -1;
 	}
+#ifdef HP_MALLOC
+	hp_init_rpm_statistics(rpm_block);
+#endif
 
 	return 0;
 }
