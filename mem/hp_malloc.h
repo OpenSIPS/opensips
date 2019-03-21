@@ -157,18 +157,30 @@ void *hp_shm_malloc_unsafe(struct hp_block *, unsigned long size,
 					const char *file, const char *func, unsigned int line);
 void *hp_pkg_malloc(struct hp_block *, unsigned long size,
 					const char *file, const char *func, unsigned int line);
+void *hp_rpm_malloc(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_rpm_malloc_unsafe(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
 void hp_shm_free(struct hp_block *, void *p,
 				const char *file, const char *func, unsigned int line);
 void hp_shm_free_unsafe(struct hp_block *, void *p,
 						const char *file, const char *func, unsigned int line);
 void hp_pkg_free(struct hp_block *, void *p,
 				const char *file, const char *func, unsigned int line);
+void hp_rpm_free(struct hp_block *, void *p,
+				const char *file, const char *func, unsigned int line);
+void hp_rpm_free_unsafe(struct hp_block *, void *p,
+						const char *file, const char *func, unsigned int line);
 void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size,
 					const char *file, const char *func, unsigned int line);
 void *hp_shm_realloc_unsafe(struct hp_block *, void *p, unsigned long size,
 						const char *file, const char *func, unsigned int line);
 void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size,
 					const char *file, const char *func, unsigned int line);
+void *hp_rpm_realloc(struct hp_block *, void *p, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_rpm_realloc_unsafe(struct hp_block *, void *p, unsigned long size,
+						const char *file, const char *func, unsigned int line);
 #ifndef INLINE_ALLOC
 void *hp_shm_malloc_dbg(struct hp_block *, unsigned long size,
 					const char *file, const char *func, unsigned int line);
@@ -176,18 +188,30 @@ void *hp_shm_malloc_unsafe_dbg(struct hp_block *, unsigned long size,
 					const char *file, const char *func, unsigned int line);
 void *hp_pkg_malloc_dbg(struct hp_block *, unsigned long size,
 					const char *file, const char *func, unsigned int line);
+void *hp_rpm_malloc_dbg(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_rpm_malloc_unsafe_dbg(struct hp_block *, unsigned long size,
+					const char *file, const char *func, unsigned int line);
 void hp_shm_free_dbg(struct hp_block *, void *p,
 				const char *file, const char *func, unsigned int line);
 void hp_shm_free_unsafe_dbg(struct hp_block *, void *p,
 						const char *file, const char *func, unsigned int line);
 void hp_pkg_free_dbg(struct hp_block *, void *p,
 				const char *file, const char *func, unsigned int line);
+void hp_rpm_free_dbg(struct hp_block *, void *p,
+				const char *file, const char *func, unsigned int line);
+void hp_rpm_free_unsafe_dbg(struct hp_block *, void *p,
+						const char *file, const char *func, unsigned int line);
 void *hp_shm_realloc_dbg(struct hp_block *, void *p, unsigned long size,
 					const char *file, const char *func, unsigned int line);
 void *hp_shm_realloc_unsafe_dbg(struct hp_block *, void *p, unsigned long size,
 						const char *file, const char *func, unsigned int line);
 void *hp_pkg_realloc_dbg(struct hp_block *, void *p, unsigned long size,
 					const char *file, const char *func, unsigned int line);
+void *hp_rpm_realloc_dbg(struct hp_block *, void *p, unsigned long size,
+					const char *file, const char *func, unsigned int line);
+void *hp_rpm_realloc_unsafe_dbg(struct hp_block *, void *p, unsigned long size,
+						const char *file, const char *func, unsigned int line);
 #endif
 #else
 void *hp_shm_malloc(struct hp_block *, unsigned long size);
@@ -199,6 +223,12 @@ void hp_pkg_free(struct hp_block *, void *p);
 void *hp_shm_realloc(struct hp_block *, void *p, unsigned long size);
 void *hp_shm_realloc_unsafe(struct hp_block *, void *p, unsigned long size);
 void *hp_pkg_realloc(struct hp_block *, void *p, unsigned long size);
+void *hp_rpm_malloc(struct hp_block *, unsigned long size);
+void *hp_rpm_malloc_unsafe(struct hp_block *, unsigned long size);
+void hp_rpm_free(struct hp_block *, void *p);
+void hp_rpm_free_unsafe(struct hp_block *, void *p);
+void *hp_rpm_realloc(struct hp_block *, void *p, unsigned long size);
+void *hp_rpm_realloc_unsafe(struct hp_block *, void *p, unsigned long size);
 #endif
 
 #ifdef SHM_EXTRA_STATS

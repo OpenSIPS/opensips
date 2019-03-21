@@ -256,7 +256,7 @@ int rpm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #endif
 #ifdef HP_MALLOC
 	case MM_HP_MALLOC:
-		rpm_block = hp_rpm_malloc_init(mempool, pool_size, "rpm");
+		rpm_block = hp_shm_malloc_init(mempool, pool_size, "rpm");
 		break;
 #endif
 #ifdef DBG_MALLOC

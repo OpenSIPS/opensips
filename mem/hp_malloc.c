@@ -134,6 +134,8 @@ stat_var *shm_frags;
 
 #define SHM_LOCK(i) lock_get(&mem_locks[i])
 #define SHM_UNLOCK(i) lock_release(&mem_locks[i])
+#define RPM_LOCK(i) lock_get(&rpmem_locks[i])
+#define RPM_UNLOCK(i) lock_release(&rpmem_locks[i])
 
 #define MEM_FRAG_AVOIDANCE
 

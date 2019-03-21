@@ -127,14 +127,6 @@ extern void (*gen_rpm_free_unsafe)(void *blk, void *p);
 #define RPM_FREE_UNSAFE        gen_rpm_free_unsafe
 #endif /* INLINE_ALLOC */
 
-#if defined F_MALLOC || defined Q_MALLOC
-extern gen_lock_t* rpmem_lock;
-#endif
-
-#ifdef HP_MALLOC
-extern gen_lock_t* rpmem_locks;
-#endif
-
 #ifdef HP_MALLOC
 	#ifdef INLINE_ALLOC
 	#define rpm_lock()

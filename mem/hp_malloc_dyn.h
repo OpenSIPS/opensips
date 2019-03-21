@@ -99,6 +99,29 @@
 #endif
 
 
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+#define rpm_frag_split_unsafe_dbg(blk, frag, sz, fl, fnc, ln) \
+	do { \
+		if (can_split_frag(frag, sz)) { \
+			__rpm_frag_split_unsafe_dbg(blk, frag, sz, fl, fnc, ln); \
+		} \
+	} while (0)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+#define rpm_frag_split_unsafe(blk, frag, sz) \
+	do { \
+		if (can_split_frag(frag, sz)) { \
+			__rpm_frag_split_unsafe(blk, frag, sz); \
+		} \
+	} while (0)
+#else
+#define rpm_frag_split_unsafe(blk, frag, sz, fl, fnc, ln) \
+	do { \
+		if (can_split_frag(frag, sz)) { \
+			__rpm_frag_split_unsafe(blk, frag, sz, fl, fnc, ln); \
+		} \
+	} while (0)
+#endif
+
 /* Note: the shm lock on "hash" must be acquired when this is called */
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 #define shm_frag_split_dbg(blk, frag, sz, hash, fl, fnc, ln) \
@@ -122,6 +145,30 @@
 		if (can_split_frag(frag, sz)) { \
 			__shm_frag_split(blk, frag, sz, hash, fl, fnc, ln); \
 			update_stats_shm_frag_split(); \
+		} \
+	} while (0)
+#endif
+
+/* Note: the shm lock on "hash" must be acquired when this is called */
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+#define rpm_frag_split_dbg(blk, frag, sz, hash, fl, fnc, ln) \
+	do { \
+		if (can_split_frag(frag, sz)) { \
+			__rpm_frag_split_dbg(blk, frag, sz, hash, fl, fnc, ln); \
+		} \
+	} while (0)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+#define rpm_frag_split(blk, frag, sz, hash) \
+	do { \
+		if (can_split_frag(frag, sz)) { \
+			__rpm_frag_split(blk, frag, sz, hash); \
+		} \
+	} while (0)
+#else
+#define rpm_frag_split(blk, frag, sz, hash, fl, fnc, ln) \
+	do { \
+		if (can_split_frag(frag, sz)) { \
+			__rpm_frag_split(blk, frag, sz, hash, fl, fnc, ln); \
 		} \
 	} while (0)
 #endif
@@ -230,6 +277,134 @@ void __shm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
 		hpb->used -= n->size;
 		hpb->real_used -= n->size + FRAG_OVERHEAD;
 	}
+}
+
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void __rpm_frag_split_unsafe_dbg(struct hp_block *hpb, struct hp_frag *frag,
+                                 unsigned long size, const char *file,
+                                 const char *func, unsigned int line)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+void __rpm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
+							unsigned long size)
+#else
+void __rpm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
+                             unsigned long size, const char *file,
+                             const char *func, unsigned int line)
+#endif
+{
+	unsigned long rest;
+	struct hp_frag *n;
+
+	rest = frag->size - size;
+	frag->size = size;
+
+	/* split the fragment */
+	n = FRAG_NEXT(frag);
+	n->size = rest - FRAG_OVERHEAD;
+
+#ifdef DBG_MALLOC
+	/* frag created by malloc, mark it*/
+	n->file=file;
+	n->func=func;
+	n->line=line;
+#endif
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	if (stats_are_ready()) {
+		hpb->used -= FRAG_OVERHEAD;
+		hpb->real_used += FRAG_OVERHEAD;
+		hpb->total_fragments++;
+	}
+#endif
+
+#ifdef HP_MALLOC_FAST_STATS
+	hpb->free_hash[PEEK_HASH_RR(hpb, n->size)].total_no++;
+#endif
+#endif
+
+	hp_frag_attach(hpb, n);
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+	if (stats_are_ready()) {
+		update_stats_shm_frag_attach(n);
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+		hpb->used -= n->size;
+		hpb->real_used -= n->size + FRAG_OVERHEAD;
+#endif
+	} else {
+		hpb->used -= n->size;
+		hpb->real_used -= n->size + FRAG_OVERHEAD;
+	}
+#endif
+}
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void __rpm_frag_split_dbg(struct hp_block *hpb, struct hp_frag *frag,
+                       unsigned long size, unsigned int old_hash,
+                       const char *file, const char *func, unsigned int line)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+void __rpm_frag_split(struct hp_block *hpb, struct hp_frag *frag,
+					 unsigned long size, unsigned int old_hash)
+#else
+void __rpm_frag_split(struct hp_block *hpb, struct hp_frag *frag,
+                      unsigned long size, unsigned int old_hash,
+                      const char *file, const char *func, unsigned int line)
+#endif
+{
+	unsigned long rest, hash;
+	struct hp_frag *n;
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+#ifdef HP_MALLOC_FAST_STATS
+	hpb->free_hash[PEEK_HASH_RR(hpb, frag->size)].total_no--;
+	hpb->free_hash[PEEK_HASH_RR(hpb, size)].total_no++;
+#endif
+#endif
+
+	rest = frag->size - size;
+	frag->size = size;
+
+	/* split the fragment */
+	n = FRAG_NEXT(frag);
+	n->size = rest - FRAG_OVERHEAD;
+
+#ifdef DBG_MALLOC
+	/* frag created by malloc, mark it*/
+	n->file=file;
+	n->func=func;
+	n->line=line;
+#endif
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	hpb->used -= FRAG_OVERHEAD;
+	hpb->real_used += FRAG_OVERHEAD;
+	hpb->total_fragments++;
+#endif
+#endif
+
+	/* insert the newly obtained hp_frag in its free list */
+	hash = PEEK_HASH_RR(hpb, n->size);
+
+	if (hash != old_hash)
+		RPM_LOCK(hash);
+
+	hp_frag_attach(hpb, n);
+#ifdef HP_MALLOC_RPM_STATISTICS
+	update_stats_shm_frag_attach(n);
+
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	hpb->used -= n->size;
+	hpb->real_used -= n->size + FRAG_OVERHEAD;
+#endif
+
+#ifdef HP_MALLOC_FAST_STATS
+	hpb->free_hash[hash].total_no++;
+#endif
+#endif
+
+	if (hash != old_hash)
+		RPM_UNLOCK(hash);
 }
 
  /* size should already be rounded-up */
@@ -479,6 +654,115 @@ found:
 	return (char *)frag + sizeof *frag;
 }
 
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void *hp_rpm_malloc_unsafe_dbg(struct hp_block *hpb, unsigned long size,
+                      const char *file, const char *func, unsigned int line)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+void *hp_rpm_malloc_unsafe(struct hp_block *hpb, unsigned long size)
+#else
+void *hp_rpm_malloc_unsafe(struct hp_block *hpb, unsigned long size,
+                      const char *file, const char *func, unsigned int line)
+#endif
+{
+	struct hp_frag *frag;
+	unsigned int hash, sec_hash;
+	int i;
+
+	/* size must be a multiple of ROUNDTO */
+	size = ROUNDUP(size);
+
+	/*search for a suitable free frag*/
+
+	for (hash = GET_HASH(size); hash < HP_HASH_SIZE; hash++) {
+		if (!hpb->free_hash[hash].is_optimized) {
+			frag = hpb->free_hash[hash].first;
+
+			for (; frag; frag = frag->u.nxt_free)
+				if (frag->size >= size)
+					goto found;
+
+		} else {
+			/* optimized size. search through its own hash! */
+			for (i = 0, sec_hash = HP_HASH_SIZE +
+			                       hash * shm_secondary_hash_size +
+				                   optimized_get_indexes[hash];
+				 i < shm_secondary_hash_size;
+				 i++, sec_hash = (sec_hash + 1) % shm_secondary_hash_size) {
+
+				frag = hpb->free_hash[sec_hash].first;
+				for (; frag; frag = frag->u.nxt_free)
+					if (frag->size >= size) {
+						/* free fragments are detached in a simple round-robin manner */
+						optimized_get_indexes[hash] =
+						    (optimized_get_indexes[hash] + i + 1)
+						     % shm_secondary_hash_size;
+						hash = sec_hash;
+						goto found;
+					}
+			}
+		}
+
+		/* try in a bigger bucket */
+	}
+
+	/* out of memory... we have to shut down */
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used, size,
+			hpb->name[0] == 'p' ? "M" : "m");
+#else
+	LM_ERR(oom_nostats_errorf, hpb->name, size,
+	       hpb->name[0] == 'p' ? "M" : "m");
+#endif
+	return NULL;
+
+found:
+	hp_frag_detach(hpb, frag);
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+	if (stats_are_ready()) {
+		update_stats_shm_frag_detach(frag);
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+		hpb->used += frag->size;
+		hpb->real_used += frag->size + FRAG_OVERHEAD;
+#endif
+	} else {
+		hpb->used += frag->size;
+		hpb->real_used += frag->size + FRAG_OVERHEAD;
+	}
+#endif
+
+	/* split the fragment if possible */
+	#if !defined INLINE_ALLOC && defined DBG_MALLOC
+	rpm_frag_split_unsafe_dbg(hpb, frag, size, file, "hp_malloc frag", line);
+	#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+	rpm_frag_split_unsafe(hpb, frag, size);
+	#else
+	rpm_frag_split_unsafe(hpb, frag, size, file, "hp_malloc frag", line);
+	#endif
+
+	#ifdef DBG_MALLOC
+	frag->file=file;
+	frag->func=func;
+	frag->line=line;
+	#endif
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+#ifndef HP_MALLOC_FAST_STATS
+	if (stats_are_ready()) {
+		unsigned long real_used;
+
+		real_used = get_stat_val(shm_rused);
+		if (real_used > hpb->max_real_used)
+			hpb->max_real_used = real_used;
+	} else
+		if (hpb->real_used > hpb->max_real_used)
+			hpb->max_real_used = hpb->real_used;
+#endif
+#endif
+
+	return (char *)frag + sizeof *frag;
+}
+
 /*
  * Note: as opposed to hp_shm_malloc_unsafe(),
  *       hp_shm_malloc() assumes that the core statistics are initialized
@@ -591,6 +875,114 @@ found:
 }
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
+void *hp_rpm_malloc_dbg(struct hp_block *hpb, unsigned long size,
+						const char *file, const char *func, unsigned int line)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+void *hp_rpm_malloc(struct hp_block *hpb, unsigned long size)
+#else
+void *hp_rpm_malloc(struct hp_block *hpb, unsigned long size,
+						const char *file, const char *func, unsigned int line)
+#endif
+{
+	struct hp_frag *frag;
+	unsigned int hash, sec_hash;
+	int i;
+
+	/* size must be a multiple of ROUNDTO */
+	size = ROUNDUP(size);
+
+	/*search for a suitable free frag*/
+
+	for (hash = GET_HASH(size); hash < HP_HASH_SIZE; hash++) {
+		if (!hpb->free_hash[hash].is_optimized) {
+			RPM_LOCK(hash);
+			frag = hpb->free_hash[hash].first;
+
+			for (; frag; frag = frag->u.nxt_free)
+				if (frag->size >= size)
+					goto found;
+
+			RPM_UNLOCK(hash);
+		} else {
+			/* optimized size. search through its own hash! */
+			for (i = 0, sec_hash = HP_HASH_SIZE +
+			                       hash * shm_secondary_hash_size +
+				                   optimized_get_indexes[hash];
+				 i < shm_secondary_hash_size;
+				 i++, sec_hash = (sec_hash + 1) % shm_secondary_hash_size) {
+
+				RPM_LOCK(sec_hash);
+				frag = hpb->free_hash[sec_hash].first;
+				for (; frag; frag = frag->u.nxt_free)
+					if (frag->size >= size) {
+						/* free fragments are detached in a simple round-robin manner */
+						optimized_get_indexes[hash] =
+						    (optimized_get_indexes[hash] + i + 1)
+						     % shm_secondary_hash_size;
+						hash = sec_hash;
+						goto found;
+					}
+
+				RPM_UNLOCK(sec_hash);
+			}
+		}
+
+		/* try in a bigger bucket */
+	}
+
+	/* out of memory... we have to shut down */
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used, size,
+			hpb->name[0] == 'p' ? "M" : "m");
+#else
+	LM_ERR(oom_nostats_errorf, hpb->name, size,
+	       hpb->name[0] == 'p' ? "M" : "m");
+#endif
+	return NULL;
+
+found:
+	hp_frag_detach(hpb, frag);
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+	update_stats_shm_frag_detach(frag);
+
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	hpb->used += (frag)->size;
+	hpb->real_used += (frag)->size + FRAG_OVERHEAD;
+#endif
+#endif
+
+	#if !defined INLINE_ALLOC && defined DBG_MALLOC
+	/* split the fragment if possible */
+	rpm_frag_split_dbg(hpb, frag, size, hash, file, "hp_malloc frag", line);
+	#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+	rpm_frag_split(hpb, frag, size, hash);
+	#else
+	rpm_frag_split(hpb, frag, size, hash, file, "hp_malloc frag", line);
+	#endif
+
+	#ifdef DBG_MALLOC
+	frag->file=file;
+	frag->func=func;
+	frag->line=line;
+	#endif
+
+	RPM_UNLOCK(hash);
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+#ifndef HP_MALLOC_FAST_STATS
+	unsigned long real_used;
+
+	real_used = get_stat_val(shm_rused);
+	if (real_used > hpb->max_real_used)
+		hpb->max_real_used = real_used;
+#endif
+#endif
+
+	return (char *)frag + sizeof *frag;
+}
+
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
 void hp_pkg_free_dbg(struct hp_block *hpb, void *p,
 					const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
@@ -680,6 +1072,37 @@ void hp_shm_free_unsafe(struct hp_block *hpb, void *p,
 }
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
+void hp_rpm_free_unsafe_dbg(struct hp_block *hpb, void *p,
+							const char *file, const char *func, unsigned int line)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+void hp_rpm_free_unsafe(struct hp_block *hpb, void *p)
+#else
+void hp_rpm_free_unsafe(struct hp_block *hpb, void *p,
+							const char *file, const char *func, unsigned int line)
+#endif
+{
+	struct hp_frag *f;
+
+	if (!p) {
+		LM_WARN("free(0) called\n");
+		return;
+	}
+
+	f = HP_FRAG(p);
+	check_double_free(p, f, hpb);
+
+	hp_frag_attach(hpb, f);
+#ifdef HP_MALLOC_RPM_STATISTICS
+	update_stats_shm_frag_attach(f);
+
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	hpb->used -= f->size;
+	hpb->real_used -= f->size + FRAG_OVERHEAD;
+#endif
+#endif
+}
+
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
 void hp_shm_free_dbg(struct hp_block *hpb, void *p,
 							const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
@@ -711,6 +1134,43 @@ void hp_shm_free(struct hp_block *hpb, void *p,
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	hpb->used -= f->size;
 	hpb->real_used -= f->size + FRAG_OVERHEAD;
+#endif
+}
+
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void hp_rpm_free_dbg(struct hp_block *hpb, void *p,
+							const char *file, const char *func, unsigned int line)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+void hp_rpm_free(struct hp_block *hpb, void *p)
+#else
+void hp_rpm_free(struct hp_block *hpb, void *p,
+							const char *file, const char *func, unsigned int line)
+#endif
+{
+	struct hp_frag *f;
+	unsigned int hash;
+
+	if (!p) {
+		LM_WARN("free(0) called\n");
+		return;
+	}
+
+	f = HP_FRAG(p);
+	check_double_free(p, f, hpb);
+
+	hash = PEEK_HASH_RR(hpb, f->size);
+
+	RPM_LOCK(hash);
+	hp_frag_attach(hpb, f);
+	RPM_UNLOCK(hash);
+
+#ifdef HP_MALLOC_RPM_STATISTICS
+	update_stats_shm_frag_attach(f);
+
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	hpb->used -= f->size;
+	hpb->real_used -= f->size + FRAG_OVERHEAD;
+#endif
 #endif
 }
 
@@ -912,6 +1372,85 @@ void *hp_shm_realloc_unsafe(struct hp_block *hpb, void *p,
 }
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
+void *hp_rpm_realloc_unsafe_dbg(struct hp_block *hpb, void *p,
+                                unsigned long size, const char *file,
+                                const char *func, unsigned int line)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+void *hp_rpm_realloc_unsafe(struct hp_block *hpb, void *p, unsigned long size)
+#else
+void *hp_rpm_realloc_unsafe(struct hp_block *hpb, void *p,
+                            unsigned long size, const char *file,
+                            const char *func, unsigned int line)
+#endif
+{
+	struct hp_frag *f;
+	unsigned long orig_size;
+	void *ptr;
+
+	if (size == 0) {
+		if (p)
+			#if !defined INLINE_ALLOC && defined DBG_MALLOC
+			hp_rpm_free_unsafe_dbg(hpb, p, file, func, line);
+			#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+			hp_rpm_free_unsafe(hpb, p);
+			#else
+			hp_rpm_free_unsafe(hpb, p, file, func, line);
+			#endif
+
+		return NULL;
+	}
+
+	if (!p)
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		return hp_rpm_malloc_unsafe_dbg(hpb, size, file, func, line);
+		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+		return hp_rpm_malloc_unsafe(hpb, size);
+		#else
+		return hp_rpm_malloc_unsafe(hpb, size, file, func, line);
+		#endif
+
+	f = HP_FRAG(p);
+	size = ROUNDUP(size);
+
+	orig_size = f->size;
+
+	/* shrink operation? */
+	if (orig_size > size)
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		rpm_frag_split_unsafe_dbg(hpb, f, size, file, "hp_realloc frag", line);
+		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+		rpm_frag_split_unsafe(hpb, f, size);
+		#else
+		rpm_frag_split_unsafe(hpb, f, size, file, "hp_realloc frag", line);
+		#endif
+	else if (orig_size < size) {
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		ptr = hp_rpm_malloc_unsafe_dbg(hpb, size, file, func, line);
+		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+		ptr = hp_rpm_malloc_unsafe(hpb, size);
+		#else
+		ptr = hp_rpm_malloc_unsafe(hpb, size, file, func, line);
+		#endif
+		if (ptr) {
+			/* copy, need by libssl */
+			memcpy(ptr, p, orig_size);
+
+			#if !defined INLINE_ALLOC && defined DBG_MALLOC
+			hp_rpm_free_unsafe_dbg(hpb, p, file, func, line);
+			#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+			hp_rpm_free_unsafe(hpb, p);
+			#else
+			hp_rpm_free_unsafe(hpb, p, file, func, line);
+			#endif
+		}
+
+		p = ptr;
+	}
+
+	return p;
+}
+
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
 void *hp_shm_realloc_dbg(struct hp_block *hpb, void *p, unsigned long size,
 						const char *file, const char *func, unsigned int line)
 #elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
@@ -994,6 +1533,90 @@ void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size,
 	SHM_UNLOCK(hash);
 	return p;
 }
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void *hp_rpm_realloc_dbg(struct hp_block *hpb, void *p, unsigned long size,
+						const char *file, const char *func, unsigned int line)
+#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+void *hp_rpm_realloc(struct hp_block *hpb, void *p, unsigned long size)
+#else
+void *hp_rpm_realloc(struct hp_block *hpb, void *p, unsigned long size,
+						const char *file, const char *func, unsigned int line)
+#endif
+{
+	struct hp_frag *f;
+	unsigned long orig_size;
+	unsigned int hash;
+	void *ptr;
+
+	if (size == 0) {
+		if (p)
+			#if !defined INLINE_ALLOC && defined DBG_MALLOC
+			hp_rpm_free_dbg(hpb, p, file, func, line);
+			#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+			hp_rpm_free(hpb, p);
+			#else
+			hp_rpm_free(hpb, p, file, func, line);
+			#endif
+
+		return NULL;
+	}
+
+	if (!p)
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		return hp_rpm_malloc_dbg(hpb, size, file, func, line);
+		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+		return hp_rpm_malloc(hpb, size);
+		#else
+		return hp_rpm_malloc(hpb, size, file, func, line);
+		#endif
+
+	f = HP_FRAG(p);
+	size = ROUNDUP(size);
+
+	hash = PEEK_HASH_RR(hpb, f->size);
+
+	RPM_LOCK(hash);
+	orig_size = f->size;
+
+	if (orig_size > size) {
+		/* shrink */
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		rpm_frag_split_unsafe_dbg(hpb, f, size, file, "hp_realloc frag", line);
+		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+		rpm_frag_split_unsafe(hpb, f, size);
+		#else
+		rpm_frag_split_unsafe(hpb, f, size, file, "hp_realloc frag", line);
+		#endif
+
+	} else if (orig_size < size) {
+		RPM_UNLOCK(hash);
+
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		ptr = hp_rpm_malloc_dbg(hpb, size, file, func, line);
+		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+		ptr = hp_rpm_malloc(hpb, size);
+		#else
+		ptr = hp_rpm_malloc(hpb, size, file, func, line);
+		#endif
+		if (ptr) {
+			/* copy, need by libssl */
+			memcpy(ptr, p, orig_size);
+			#if !defined INLINE_ALLOC && defined DBG_MALLOC
+			hp_rpm_free_dbg(hpb, p, file, func, line);
+			#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+			hp_rpm_free(hpb, p);
+			#else
+			hp_rpm_free(hpb, p, file, func, line);
+			#endif
+		}
+
+		return ptr;
+	}
+
+	RPM_UNLOCK(hash);
+	return p;
+}
+
 
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void hp_status_dbg(struct hp_block *hpb)

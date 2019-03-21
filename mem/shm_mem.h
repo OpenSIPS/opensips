@@ -197,10 +197,12 @@ extern unsigned long (*gen_shm_get_frags)(void *blk);
 
 #if defined F_MALLOC || defined Q_MALLOC
 extern gen_lock_t* mem_lock;
+extern gen_lock_t* rpmem_lock;
 #endif
 
 #ifdef HP_MALLOC
 extern gen_lock_t* mem_locks;
+extern gen_lock_t* rpmem_locks;
 #endif
 
 extern enum osips_mm mem_allocator_shm;
