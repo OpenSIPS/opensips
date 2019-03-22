@@ -658,7 +658,7 @@ error:
 	if (res)
 		dr_dbf->free_result(db_hdl, res);
 	if (rdata)
-		free_rt_data( rdata, 1 );
+		free_rt_data( rdata);
 	rdata = NULL;
 	return 0;
 }

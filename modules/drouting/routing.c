@@ -666,8 +666,7 @@ void del_carriers_list(
 
 void
 free_rt_data(
-		rt_data_t* rt_data,
-		int all
+		rt_data_t* rt_data
 		)
 {
 	int j;
@@ -693,6 +692,6 @@ free_rt_data(
 		del_carriers_list(rt_data->carriers_tree);
 		rt_data->carriers_tree=0;
 		/* del top level */
-		if (all) shm_free(rt_data);
+		shm_free(rt_data);
 	}
 }

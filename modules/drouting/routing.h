@@ -136,8 +136,5 @@ del_pgw_list(
 
 
 void
-free_rt_data(
-	rt_data_t*,
-	int
-	);
+free_rt_data(rt_data_t*);
 #endif

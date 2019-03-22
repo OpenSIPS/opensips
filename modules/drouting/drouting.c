@@ -1065,7 +1065,7 @@ static inline int dr_reload_data_head( struct head_db *hd )
 		}
 
 		/* free old data */
-		free_rt_data( old_data, 1 );
+		free_rt_data(old_data);
 	}
 
 	/* generate new blacklist from the routing info */
@@ -1807,7 +1807,7 @@ static int dr_exit(void)
 
 		/* destroy data */
 		if (to_clean->rdata) {
-			free_rt_data(to_clean->rdata, 1);
+			free_rt_data(to_clean->rdata);
 			to_clean->rdata = 0;
 		}
 
