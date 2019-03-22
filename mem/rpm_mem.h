@@ -311,6 +311,7 @@ inline static void rpm_info(struct mem_info* mi)
 
 
 #ifdef STATISTICS
+struct hp_block;
 void hp_init_rpm_statistics(struct hp_block *hpb);
 
 extern stat_export_t rpm_stats[];
