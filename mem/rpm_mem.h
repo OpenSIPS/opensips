@@ -74,17 +74,17 @@ extern char *rpm_mem_file;
 #ifndef INLINE_ALLOC
 #ifdef DBG_MALLOC
 extern void *(*gen_rpm_malloc)(void *blk, unsigned long size,
-                        const char *file, const char *func, unsigned int line);
+                        const char *file, const char *func, int line);
 extern void *(*gen_rpm_malloc_unsafe)(void *blk, unsigned long size,
-                        const char *file, const char *func, unsigned int line);
+                        const char *file, const char *func, int line);
 extern void *(*gen_rpm_realloc)(void *blk, void *p, unsigned long size,
-                        const char *file, const char *func, unsigned int line);
+                        const char *file, const char *func, int line);
 extern void *(*gen_rpm_realloc_unsafe)(void *blk, void *p, unsigned long size,
-                        const char *file, const char *func, unsigned int line);
+                        const char *file, const char *func, int line);
 extern void (*gen_rpm_free)(void *blk, void *p,
-                        const char *file, const char *func, unsigned int line);
+                        const char *file, const char *func, int line);
 extern void (*gen_rpm_free_unsafe)(void *blk, void *p,
-                        const char *file, const char *func, unsigned int line);
+                        const char *file, const char *func, int line);
 #else
 extern void *(*gen_rpm_malloc)(void *blk, unsigned long size);
 extern void *(*gen_rpm_malloc_unsafe)(void *blk, unsigned long size);
@@ -195,8 +195,8 @@ extern unsigned long (*gen_rpm_get_frags)(void *blk);
 			#define __FUNCTION__ ""  /* gcc specific */
 	#endif
 
-inline static void* _rpm_malloc(unsigned int size,
-	const char *file, const char *function, int line )
+inline static void* _rpm_malloc(unsigned long size,
+	const char *file, const char *function, unsigned int line )
 {
 	void *p;
 
@@ -209,7 +209,7 @@ inline static void* _rpm_malloc(unsigned int size,
 
 
 inline static void* _rpm_realloc(void *ptr, unsigned int size,
-		const char* file, const char* function, int line )
+		const char* file, const char* function, unsigned int line )
 {
 	void *p;
 
@@ -221,7 +221,7 @@ inline static void* _rpm_realloc(void *ptr, unsigned int size,
 }
 
 inline static void _rpm_free(void *ptr,
-		const char* file, const char* function, int line)
+		const char* file, const char* function, unsigned int line)
 {
 #ifdef HP_MALLOC
 	RPM_FREE(rpm_block, ptr, file, function, line);

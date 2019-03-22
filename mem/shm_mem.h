@@ -301,8 +301,8 @@ inline static void shm_threshold_check(void)
 			#define __FUNCTION__ ""  /* gcc specific */
 	#endif
 
-inline static void* _shm_malloc_unsafe(unsigned int size,
-	const char *file, const char *function, int line )
+inline static void* _shm_malloc_unsafe(unsigned long size,
+	const char *file, const char *function, unsigned int line )
 {
 	void *p;
 
@@ -320,8 +320,8 @@ inline static void* _shm_malloc_unsafe(unsigned int size,
 	return p;
 }
 
-inline static void* _shm_malloc(unsigned int size, 
-	const char *file, const char *function, int line )
+inline static void* _shm_malloc(unsigned long size,
+	const char *file, const char *function, unsigned int line )
 {
 	void *p;
 
@@ -411,7 +411,7 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned int size,
 }
 
 inline static void _shm_free_unsafe(void *ptr,
-		const char* file, const char* function, int line )
+		const char* file, const char* function, unsigned int line )
 {
 #ifdef SHM_EXTRA_STATS
 	if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
@@ -429,7 +429,7 @@ inline static void _shm_free_unsafe(void *ptr,
 }
 
 inline static void _shm_free(void *ptr,
-		const char* file, const char* function, int line)
+		const char* file, const char* function, unsigned int line)
 {
 #ifdef HP_MALLOC
 #ifdef SHM_EXTRA_STATS

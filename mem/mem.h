@@ -151,9 +151,9 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 
 #else
 #include <stdlib.h>
-void *sys_malloc(size_t, const char *, const char *, int);
-void *sys_realloc(void *, size_t, const char *, const char *, int);
-void sys_free(void *, const char *, const char *, int);
+void *sys_malloc(unsigned long, const char *, const char *, unsigned int);
+void *sys_realloc(void *, unsigned long, const char *, const char *, unsigned int);
+void sys_free(void *, const char *, const char *, unsigned int);
 
 #define SYSTEM_MALLOC
 #define pkg_malloc_func sys_malloc

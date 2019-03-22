@@ -325,7 +325,7 @@ int init_shm_mallocs(void)
 
 #ifdef SYSTEM_MALLOC
 void *
-sys_malloc(size_t s, const char *file, const char *function, int line)
+sys_malloc(unsigned long s, const char *file, const char *function, int line)
 {
 	void *v;
 
@@ -336,7 +336,7 @@ sys_malloc(size_t s, const char *file, const char *function, int line)
 }
 
 void *
-sys_realloc(void *p, size_t s, const char *file, const char *function, int line)
+sys_realloc(void *p, unsigned long s, const char *file, const char *function, int line)
 {
 	void *v;
 
