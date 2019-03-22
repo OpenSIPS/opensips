@@ -74,17 +74,17 @@ extern char *rpm_mem_file;
 #ifndef INLINE_ALLOC
 #ifdef DBG_MALLOC
 extern void *(*gen_rpm_malloc)(void *blk, unsigned long size,
-                        const char *file, const char *func, int line);
+                        const char *file, const char *func, unsigned int line);
 extern void *(*gen_rpm_malloc_unsafe)(void *blk, unsigned long size,
-                        const char *file, const char *func, int line);
+                        const char *file, const char *func, unsigned int line);
 extern void *(*gen_rpm_realloc)(void *blk, void *p, unsigned long size,
-                        const char *file, const char *func, int line);
+                        const char *file, const char *func, unsigned int line);
 extern void *(*gen_rpm_realloc_unsafe)(void *blk, void *p, unsigned long size,
-                        const char *file, const char *func, int line);
+                        const char *file, const char *func, unsigned int line);
 extern void (*gen_rpm_free)(void *blk, void *p,
-                        const char *file, const char *func, int line);
+                        const char *file, const char *func, unsigned int line);
 extern void (*gen_rpm_free_unsafe)(void *blk, void *p,
-                        const char *file, const char *func, int line);
+                        const char *file, const char *func, unsigned int line);
 #else
 extern void *(*gen_rpm_malloc)(void *blk, unsigned long size);
 extern void *(*gen_rpm_malloc_unsafe)(void *blk, unsigned long size);
