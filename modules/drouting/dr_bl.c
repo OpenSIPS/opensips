@@ -229,7 +229,7 @@ int populate_dr_bls(map_t pgw_tree)
 
 	/* each bl list at a time */
 	for( drbl=drbl_lists ; drbl ; drbl = drbl->next ) {
-		if( drbl->part && (*drbl->part->rdata) && (*drbl->part->rdata)->pgw_tree == pgw_tree) { /* check if
+		if( drbl->part && drbl->part->rdata && drbl->part->rdata->pgw_tree == pgw_tree) { /* check if
 			list applies to current
 			partition */
 			drbl_first = drbl_last = NULL;

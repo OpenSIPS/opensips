@@ -47,7 +47,7 @@
 #include "../../mi/mi.h"
 #include "../tm/tm_load.h"
 
-int use_partitions;
+extern int use_partitions;
 
 struct head_db {
 	str db_url;
@@ -75,7 +75,7 @@ struct head_db {
 	int gw_attrs_avp;
 	int rule_attrs_avp;
 	int carrier_attrs_avp;
-	rt_data_t **rdata;
+	rt_data_t *rdata;
 	rw_lock_t *ref_lock;
 	int ongoing_reload;
 	struct head_db *next;
