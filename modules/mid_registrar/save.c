@@ -1180,6 +1180,10 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg*
 		calc_ob_contact_expires(rpl, _c->expires, &e_out, 1);
 		e_out -= get_act_time();
 
+		/* the main registrar might enforce shorter lifetimes */
+		if (e_out < ctmap->expires)
+			ctmap->expires = e_out;
+
 		LM_DBG("    >> REGISTER %ds ------- %ds 200 OK <<!\n", ctmap->expires,
 		       e_out);
 
