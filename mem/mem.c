@@ -91,9 +91,9 @@ int init_pkg_mallocs(void)
 #ifdef F_MALLOC
 	case MM_F_MALLOC:
 		mem_block = fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-		gen_pkg_malloc    = (osips_malloc_f)fm_malloc;
-		gen_pkg_realloc   = (osips_realloc_f)fm_realloc;
-		gen_pkg_free      = (osips_free_f)fm_free;
+		gen_pkg_malloc    = (osips_block_malloc_f)fm_malloc;
+		gen_pkg_realloc   = (osips_block_realloc_f)fm_realloc;
+		gen_pkg_free      = (osips_block_free_f)fm_free;
 		gen_pkg_info      = (osips_mem_info_f)fm_info;
 		gen_pkg_status    = (osips_mem_status_f)fm_status;
 		gen_pkg_get_size  = (osips_get_mmstat_f)fm_get_size;
@@ -107,9 +107,9 @@ int init_pkg_mallocs(void)
 #ifdef Q_MALLOC
 	case MM_Q_MALLOC:
 		mem_block = qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-		gen_pkg_malloc    = (osips_malloc_f)qm_malloc;
-		gen_pkg_realloc   = (osips_realloc_f)qm_realloc;
-		gen_pkg_free      = (osips_free_f)qm_free;
+		gen_pkg_malloc    = (osips_block_malloc_f)qm_malloc;
+		gen_pkg_realloc   = (osips_block_realloc_f)qm_realloc;
+		gen_pkg_free      = (osips_block_free_f)qm_free;
 		gen_pkg_info      = (osips_mem_info_f)qm_info;
 		gen_pkg_status    = (osips_mem_status_f)qm_status;
 		gen_pkg_get_size  = (osips_get_mmstat_f)qm_get_size;
@@ -123,9 +123,9 @@ int init_pkg_mallocs(void)
 #ifdef HP_MALLOC
 	case MM_HP_MALLOC:
 		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
-		gen_pkg_malloc     = (osips_malloc_f)hp_pkg_malloc;
-		gen_pkg_realloc    = (osips_realloc_f)hp_pkg_realloc;
-		gen_pkg_free       = (osips_free_f)hp_pkg_free;
+		gen_pkg_malloc     = (osips_block_malloc_f)hp_pkg_malloc;
+		gen_pkg_realloc    = (osips_block_realloc_f)hp_pkg_realloc;
+		gen_pkg_free       = (osips_block_free_f)hp_pkg_free;
 		gen_pkg_info       = (osips_mem_info_f)hp_info;
 		gen_pkg_status     = (osips_mem_status_f)hp_status;
 		gen_pkg_get_size   = (osips_get_mmstat_f)hp_pkg_get_size;
@@ -140,9 +140,9 @@ int init_pkg_mallocs(void)
 #ifdef F_MALLOC
 	case MM_F_MALLOC_DBG:
 		mem_block = fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-		gen_pkg_malloc    = (osips_malloc_f)fm_malloc_dbg;
-		gen_pkg_realloc   = (osips_realloc_f)fm_realloc_dbg;
-		gen_pkg_free      = (osips_free_f)fm_free_dbg;
+		gen_pkg_malloc    = (osips_block_malloc_f)fm_malloc_dbg;
+		gen_pkg_realloc   = (osips_block_realloc_f)fm_realloc_dbg;
+		gen_pkg_free      = (osips_block_free_f)fm_free_dbg;
 		gen_pkg_info      = (osips_mem_info_f)fm_info;
 		gen_pkg_status    = (osips_mem_status_f)fm_status_dbg;
 		gen_pkg_get_size  = (osips_get_mmstat_f)fm_get_size;
@@ -156,9 +156,9 @@ int init_pkg_mallocs(void)
 #ifdef Q_MALLOC
 	case MM_Q_MALLOC_DBG:
 		mem_block = qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-		gen_pkg_malloc    = (osips_malloc_f)qm_malloc_dbg;
-		gen_pkg_realloc   = (osips_realloc_f)qm_realloc_dbg;
-		gen_pkg_free      = (osips_free_f)qm_free_dbg;
+		gen_pkg_malloc    = (osips_block_malloc_f)qm_malloc_dbg;
+		gen_pkg_realloc   = (osips_block_realloc_f)qm_realloc_dbg;
+		gen_pkg_free      = (osips_block_free_f)qm_free_dbg;
 		gen_pkg_info      = (osips_mem_info_f)qm_info;
 		gen_pkg_status    = (osips_mem_status_f)qm_status_dbg;
 		gen_pkg_get_size  = (osips_get_mmstat_f)qm_get_size;
@@ -172,9 +172,9 @@ int init_pkg_mallocs(void)
 #ifdef HP_MALLOC
 	case MM_HP_MALLOC_DBG:
 		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
-		gen_pkg_malloc    = (osips_malloc_f)hp_pkg_malloc_dbg;
-		gen_pkg_realloc   = (osips_realloc_f)hp_pkg_realloc_dbg;
-		gen_pkg_free      = (osips_free_f)hp_pkg_free_dbg;
+		gen_pkg_malloc    = (osips_block_malloc_f)hp_pkg_malloc_dbg;
+		gen_pkg_realloc   = (osips_block_realloc_f)hp_pkg_realloc_dbg;
+		gen_pkg_free      = (osips_block_free_f)hp_pkg_free_dbg;
 		gen_pkg_info      = (osips_mem_info_f)hp_info;
 		gen_pkg_status    = (osips_mem_status_f)hp_status_dbg;
 		gen_pkg_get_size  = (osips_get_mmstat_f)hp_pkg_get_size;

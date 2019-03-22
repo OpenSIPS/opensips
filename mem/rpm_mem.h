@@ -232,28 +232,37 @@ inline static void _rpm_free(void *ptr,
 #endif /* HP_MALLOC */
 }
 
+#define rpm_malloc_func _rpm_malloc
 #define rpm_malloc( _size) _rpm_malloc((_size), \
 	__FILE__, __FUNCTION__, __LINE__ )
 
+#define rpm_malloc_func_unsafe _rpm_malloc_unsafe
 #define rpm_malloc_unsafe(_size) RPM_MALLOC(rpm_block, (_size), \
 	__FILE__, __FUNCTION__, __LINE__ )
 
+#define rpm_realloc_func _rpm_realloc
 #define rpm_realloc(_ptr, _size) _rpm_realloc((_ptr), (_size), \
 	__FILE__, __FUNCTION__, __LINE__ )
 
+#define rpm_realloc_func_unsafe _rpm_realloc_unsafe
 #define rpm_realloc_unsafe(_ptr, _size) RPM_REALLOC_UNSAFE(rpm_block, (_ptr), (_size), \
 	__FILE__, __FUNCTION__, __LINE__ )
 
+#define rpm_free_func _rpm_free
 #define rpm_free( _ptr ) _rpm_free( (_ptr), \
 	__FILE__, __FUNCTION__, __LINE__ )
 
+#define rpm_free_func_unsafe _rpm_free_unsafe
 #define rpm_free_unsafe( _ptr ) RPM_FREE_UNSAFE(rpm_block, (_ptr), \
 	__FILE__, __FUNCTION__, __LINE__ )
 
 #else /*DBG_MALLOC*/
 
+#define rpm_malloc_func_unsafe	RPM_MALLOC_UNSAFE
 #define rpm_malloc_unsafe(_size) RPM_MALLOC_UNSAFE(rpm_block, (_size))
+#define rpm_realloc_func_unsafe	RPM_REALLOC_UNSAFE
 #define rpm_realloc_unsafe(_ptr, _size) RPM_REALLOC_UNSAFE(rpm_block, (_ptr), (_size))
+#define rpm_free_func_unsafe RPM_FREE_UNSAFE
 #define rpm_free_unsafe( _ptr ) RPM_FREE_UNSAFE(rpm_block, (_ptr))
 
 

@@ -156,12 +156,12 @@ int rpm_mem_init_allocs(void)
 	switch (mem_allocator_rpm) {
 #ifdef F_MALLOC
 	case MM_F_MALLOC:
-		gen_rpm_malloc         = (osips_malloc_f)fm_malloc;
-		gen_rpm_malloc_unsafe  = (osips_malloc_f)fm_malloc;
-		gen_rpm_realloc        = (osips_realloc_f)fm_realloc;
-		gen_rpm_realloc_unsafe = (osips_realloc_f)fm_realloc;
-		gen_rpm_free           = (osips_free_f)fm_free;
-		gen_rpm_free_unsafe    = (osips_free_f)fm_free;
+		gen_rpm_malloc         = (osips_block_malloc_f)fm_malloc;
+		gen_rpm_malloc_unsafe  = (osips_block_malloc_f)fm_malloc;
+		gen_rpm_realloc        = (osips_block_realloc_f)fm_realloc;
+		gen_rpm_realloc_unsafe = (osips_block_realloc_f)fm_realloc;
+		gen_rpm_free           = (osips_block_free_f)fm_free;
+		gen_rpm_free_unsafe    = (osips_block_free_f)fm_free;
 		gen_rpm_info           = (osips_mem_info_f)fm_info;
 		gen_rpm_status         = (osips_mem_status_f)fm_status;
 		gen_rpm_get_size       = (osips_get_mmstat_f)fm_get_size;
@@ -173,12 +173,12 @@ int rpm_mem_init_allocs(void)
 		break;
 #ifdef Q_MALLOC
 	case MM_Q_MALLOC:
-		gen_rpm_malloc         = (osips_malloc_f)qm_malloc;
-		gen_rpm_malloc_unsafe  = (osips_malloc_f)qm_malloc;
-		gen_rpm_realloc        = (osips_realloc_f)qm_realloc;
-		gen_rpm_realloc_unsafe = (osips_realloc_f)qm_realloc;
-		gen_rpm_free           = (osips_free_f)qm_free;
-		gen_rpm_free_unsafe    = (osips_free_f)qm_free;
+		gen_rpm_malloc         = (osips_block_malloc_f)qm_malloc;
+		gen_rpm_malloc_unsafe  = (osips_block_malloc_f)qm_malloc;
+		gen_rpm_realloc        = (osips_block_realloc_f)qm_realloc;
+		gen_rpm_realloc_unsafe = (osips_block_realloc_f)qm_realloc;
+		gen_rpm_free           = (osips_block_free_f)qm_free;
+		gen_rpm_free_unsafe    = (osips_block_free_f)qm_free;
 		gen_rpm_info           = (osips_mem_info_f)qm_info;
 		gen_rpm_status         = (osips_mem_status_f)qm_status;
 		gen_rpm_get_size       = (osips_get_mmstat_f)qm_get_size;
@@ -191,12 +191,12 @@ int rpm_mem_init_allocs(void)
 #endif
 #ifdef HP_MALLOC
 	case MM_HP_MALLOC:
-		gen_rpm_malloc         = (osips_malloc_f)hp_rpm_malloc;
-		gen_rpm_malloc_unsafe  = (osips_malloc_f)hp_rpm_malloc_unsafe;
-		gen_rpm_realloc        = (osips_realloc_f)hp_rpm_realloc;
-		gen_rpm_realloc_unsafe = (osips_realloc_f)hp_rpm_realloc_unsafe;
-		gen_rpm_free           = (osips_free_f)hp_rpm_free;
-		gen_rpm_free_unsafe    = (osips_free_f)hp_rpm_free_unsafe;
+		gen_rpm_malloc         = (osips_block_malloc_f)hp_rpm_malloc;
+		gen_rpm_malloc_unsafe  = (osips_block_malloc_f)hp_rpm_malloc_unsafe;
+		gen_rpm_realloc        = (osips_block_realloc_f)hp_rpm_realloc;
+		gen_rpm_realloc_unsafe = (osips_block_realloc_f)hp_rpm_realloc_unsafe;
+		gen_rpm_free           = (osips_block_free_f)hp_rpm_free;
+		gen_rpm_free_unsafe    = (osips_block_free_f)hp_rpm_free_unsafe;
 		gen_rpm_info           = (osips_mem_info_f)hp_info;
 		gen_rpm_status         = (osips_mem_status_f)hp_status;
 		gen_rpm_get_size       = (osips_get_mmstat_f)hp_rpm_get_size;
@@ -210,12 +210,12 @@ int rpm_mem_init_allocs(void)
 #ifdef DBG_MALLOC
 #ifdef F_MALLOC
 	case MM_F_MALLOC_DBG:
-		gen_rpm_malloc         = (osips_malloc_f)fm_malloc_dbg;
-		gen_rpm_malloc_unsafe  = (osips_malloc_f)fm_malloc_dbg;
-		gen_rpm_realloc        = (osips_realloc_f)fm_realloc_dbg;
-		gen_rpm_realloc_unsafe = (osips_realloc_f)fm_realloc_dbg;
-		gen_rpm_free           = (osips_free_f)fm_free_dbg;
-		gen_rpm_free_unsafe    = (osips_free_f)fm_free_dbg;
+		gen_rpm_malloc         = (osips_block_malloc_f)fm_malloc_dbg;
+		gen_rpm_malloc_unsafe  = (osips_block_malloc_f)fm_malloc_dbg;
+		gen_rpm_realloc        = (osips_block_realloc_f)fm_realloc_dbg;
+		gen_rpm_realloc_unsafe = (osips_block_realloc_f)fm_realloc_dbg;
+		gen_rpm_free           = (osips_block_free_f)fm_free_dbg;
+		gen_rpm_free_unsafe    = (osips_block_free_f)fm_free_dbg;
 		gen_rpm_info           = (osips_mem_info_f)fm_info;
 		gen_rpm_status         = (osips_mem_status_f)fm_status_dbg;
 		gen_rpm_get_size       = (osips_get_mmstat_f)fm_get_size;
@@ -228,12 +228,12 @@ int rpm_mem_init_allocs(void)
 #endif
 #ifdef Q_MALLOC
 	case MM_Q_MALLOC_DBG:
-		gen_rpm_malloc         = (osips_malloc_f)qm_malloc_dbg;
-		gen_rpm_malloc_unsafe  = (osips_malloc_f)qm_malloc_dbg;
-		gen_rpm_realloc        = (osips_realloc_f)qm_realloc_dbg;
-		gen_rpm_realloc_unsafe = (osips_realloc_f)qm_realloc_dbg;
-		gen_rpm_free           = (osips_free_f)qm_free_dbg;
-		gen_rpm_free_unsafe    = (osips_free_f)qm_free_dbg;
+		gen_rpm_malloc         = (osips_block_malloc_f)qm_malloc_dbg;
+		gen_rpm_malloc_unsafe  = (osips_block_malloc_f)qm_malloc_dbg;
+		gen_rpm_realloc        = (osips_block_realloc_f)qm_realloc_dbg;
+		gen_rpm_realloc_unsafe = (osips_block_realloc_f)qm_realloc_dbg;
+		gen_rpm_free           = (osips_block_free_f)qm_free_dbg;
+		gen_rpm_free_unsafe    = (osips_block_free_f)qm_free_dbg;
 		gen_rpm_info           = (osips_mem_info_f)qm_info;
 		gen_rpm_status         = (osips_mem_status_f)qm_status_dbg;
 		gen_rpm_get_size       = (osips_get_mmstat_f)qm_get_size;
@@ -246,12 +246,12 @@ int rpm_mem_init_allocs(void)
 #endif
 #ifdef HP_MALLOC
 	case MM_HP_MALLOC_DBG:
-		gen_rpm_malloc         = (osips_malloc_f)hp_rpm_malloc_dbg;
-		gen_rpm_malloc_unsafe  = (osips_malloc_f)hp_rpm_malloc_unsafe_dbg;
-		gen_rpm_realloc        = (osips_realloc_f)hp_rpm_realloc_dbg;
-		gen_rpm_realloc_unsafe = (osips_realloc_f)hp_rpm_realloc_unsafe_dbg;
-		gen_rpm_free           = (osips_free_f)hp_rpm_free_dbg;
-		gen_rpm_free_unsafe    = (osips_free_f)hp_rpm_free_unsafe_dbg;
+		gen_rpm_malloc         = (osips_block_malloc_f)hp_rpm_malloc_dbg;
+		gen_rpm_malloc_unsafe  = (osips_block_malloc_f)hp_rpm_malloc_unsafe_dbg;
+		gen_rpm_realloc        = (osips_block_realloc_f)hp_rpm_realloc_dbg;
+		gen_rpm_realloc_unsafe = (osips_block_realloc_f)hp_rpm_realloc_unsafe_dbg;
+		gen_rpm_free           = (osips_block_free_f)hp_rpm_free_dbg;
+		gen_rpm_free_unsafe    = (osips_block_free_f)hp_rpm_free_unsafe_dbg;
 		gen_rpm_info           = (osips_mem_info_f)hp_info;
 		gen_rpm_status         = (osips_mem_status_f)hp_status_dbg;
 		gen_rpm_get_size       = (osips_get_mmstat_f)hp_rpm_get_size;

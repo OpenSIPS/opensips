@@ -143,6 +143,9 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #define pkg_free(p)       PKG_FREE(mem_block, (p))
 #define pkg_info(i)       PKG_INFO(mem_block, i)
 #endif
+#define pkg_malloc_func   PKG_MALLOC_
+#define pkg_free_func     PKG_FREE
+#define pkg_realloc_func  PKG_REALLOC
 
 #define pkg_status()      PKG_STATUS(mem_block)
 
@@ -153,8 +156,11 @@ void *sys_realloc(void *, size_t, const char *, const char *, int);
 void sys_free(void *, const char *, const char *, int);
 
 #define SYSTEM_MALLOC
+#define pkg_malloc_func sys_malloc
 #define pkg_malloc(s) sys_malloc((s), __FILE__, __FUNCTION__, __LINE__)
+#define func_pkg_relloc sys_realloc
 #define pkg_realloc(ptr, s) sys_realloc((ptr), (s), __FILE__, __FUNCTION__, __LINE__)
+#define pkg_free_func sys_free
 #define pkg_free(p) sys_free((p), __FILE__, __FUNCTION__, __LINE__)
 #define pkg_status()
 #define PKG_GET_SIZE()
