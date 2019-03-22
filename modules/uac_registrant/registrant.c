@@ -879,14 +879,17 @@ static int cluster_shtag_check(void *e_data, void *data, void *r_data)
 	reg_record_t *rec = (reg_record_t*)e_data;
 	struct shtag_check_data *shtag_data = (struct shtag_check_data*)data;
 
-	if ( rec->cluster_id!=shtag_data->c_id ||
-	rec->cluster_shtag.len!=shtag_data->tag->len ||
-	memcmp(rec->cluster_shtag.s, shtag_data->tag->s, shtag_data->tag->len) )
-		return 0;
+	LM_DBG("checking record with cluster_id [%d] and shtag [%.*s]\n",
+		rec->cluster_id, rec->cluster_shtag.len, rec->cluster_shtag.s);
+	if (rec->cluster_id==shtag_data->c_id &&
+		rec->cluster_shtag.s && rec->cluster_shtag.len &&
+		rec->cluster_shtag.len==shtag_data->tag->len &&
+		0==memcmp(rec->cluster_shtag.s, shtag_data->tag->s, shtag_data->tag->len)) {
+		/* this record matches the shtag + cluster_id, so we need to de-active it */
+		LM_DBG("Moving record to NOT_REGISTERED_STATE\n");
+		rec->state = NOT_REGISTERED_STATE;
+	}
 
-	/* this record matches the shtag + cluster_id, so we need to active it */
-	// TODO - force first an un-register all (expires 0 + contact *) and
-	// when replied, fire a new registration.
 
 	return 0;
 }
@@ -897,13 +900,16 @@ void handle_shtag_change(str *tag_name, int state, int c_id, void *param)
 	struct shtag_check_data shtag_data;
 	int ret, i;
 
-	if (state!=SHTAG_STATE_ACTIVE)
+	if (state!=SHTAG_STATE_BACKUP)
 		return;
 
-	/* a shatg in cluster became active on local node-> check if
+	shtag_data.c_id = c_id;
+	shtag_data.tag = tag_name;
+
+	/* a shatg in cluster became backup on local node-> check if
 	 * one of our uac reg depends on it */
-	LM_DBG("checking for shtag [%.*s] in cluster %d\n",
-		tag_name->len, tag_name->s, c_id);
+	LM_DBG("checking for shtag [%.*s] in cluster [%d]\n",
+		shtag_data.tag->len, shtag_data.tag->s, shtag_data.c_id);
 
 	for( i=0 ; i<reg_hsize ; i++) {
 
@@ -1001,6 +1007,14 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 			rec->td.forced_to_su.s.sa_family) < 0)
 			goto error;
 	}
+
+	if (rec->cluster_shtag.s && rec->cluster_shtag.len) {
+		if (add_mi_string(record_item, MI_SSTR("shtag"),
+			rec->cluster_shtag.s, rec->cluster_shtag.len) < 0)
+			goto error;
+		if (add_mi_number(record_item, MI_SSTR("cluster_id"), rec->cluster_id) < 0)
+			goto error;
+		}
 
 	/* action successfully completed on current list element */
 	return 0; /* continue list traversal */
