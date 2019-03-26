@@ -1306,6 +1306,10 @@ _empty_line_
 		<para>Parameters:</para>
 		 <itemizedlist>
 			<listitem><para>
+				<emphasis>partition</emphasis> (optional) - indicates the
+				partition you want to list destination for.
+			</para></listitem>
+			<listitem><para>
 				<emphasis>full</emphasis> (optional) - adds the weight,
 				priority and description fields to the listing
 			</para></listitem>
