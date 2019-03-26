@@ -897,7 +897,7 @@ static int ip_check(cluster_info_t *cluster, union sockaddr_union *su, str *ip_s
 				return 1;
 		} else {
 			LM_ERR("No address to check\n");
-			return -1;
+			return 0;
 		}
 
 	return 0;
@@ -915,7 +915,7 @@ int clusterer_check_addr(int cluster_id, str *ip_str,
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_WARN("Unknown cluster id [%d]\n", cluster_id);
-		return -1;
+		return 0;
 	}
 
 	if (check_type == NODE_BIN_ADDR) {
@@ -923,20 +923,21 @@ int clusterer_check_addr(int cluster_id, str *ip_str,
 		ip.len = 16;
 		if (inet_pton(AF_INET, ip_str->s, ip.u.addr) <= 0) {
 			LM_ERR("Invalid IP address\n");
-			return -1;
+			return 0;
 		}
 		ip_addr2su(&su, &ip, 0);
 
 		rc = ip_check(cluster, &su, NULL);
+		
 	} else if (check_type == NODE_SIP_ADDR) {
 		rc = ip_check(cluster, NULL, ip_str);
 	} else {
 		LM_ERR("Bad address type\n");
-		rc = -1;
+		rc = 0;
 	}
 
 	lock_stop_read(cl_list_lock);
-
+	/* return 1 if addr matched, 0 for ALL other cases, unless return codes implemented */
 	return rc;
 }
 
