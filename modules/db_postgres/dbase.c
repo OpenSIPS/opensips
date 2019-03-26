@@ -518,24 +518,22 @@ int db_postgres_insert(const db_con_t* _h, const db_key_t* _k,
 	db_res_t* _r = NULL;
 
 	CON_RESET_CURR_PS(_h); /* no prepared statements support */
+
+	/* This needs to be reset before each call to db_do_insert.
+	   This is only used by inserts, but as a side effect delete and updates
+	   will set it to 1 without resetting it. */
+	submit_func_called = 0;
+
 	int tmp = db_do_insert(_h, _k, _v, _n, db_postgres_val2str,
 		db_postgres_submit_query);
 
+	/* For bulk queries the insert may not be submitted until enough rows are queued */
 	if (submit_func_called)
 	{
-		/* finish the async query,
-		 * otherwise the next query will not complete */
-
-		/* only call this if the DB API has effectively called
-		 * our submit_query function
-		 *
-		 * in case of insert queueing,
-		 * it may postpone calling the insert func until
-		 * enough rows have piled up */
+		/* Query was submitted.
+		   Result must be handled. */
 		if (db_postgres_store_result(_h, &_r) != 0)
 			LM_WARN("unexpected result returned\n");
-
-		submit_func_called = 0;
 	}
 
 	if (_r)
