@@ -286,6 +286,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		goto error1;
 	}
 
+	/* set transaction AVP list */
+	backup = set_avp_list( &new_cell->user_avps );
+
 	if (local_rlist.a) {
 		LM_DBG("building sip_msg from buffer\n");
 		req = buf_to_sip_msg(buf, buf_len, dialog);
@@ -295,8 +298,6 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			/* set this transaction as active one */
 			backup_cell = get_t();
 			set_t( new_cell );
-			/* set transaction AVP list */
-			backup = set_avp_list( &new_cell->user_avps );
 			/* disable parallel forking */
 			set_dset_state( 0 /*disable*/);
 
@@ -311,7 +312,6 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			set_t( backup_cell );
 
 			set_dset_state( 1 /*enable*/);
-			set_avp_list( backup );
 
 			/* check for changes - if none, do not regenerate the buffer */
 			dst_changed = 1;
@@ -483,6 +483,7 @@ abort_update:
 		start_retr(request);
 	}
 
+	set_avp_list( backup );
 	free_proxy( proxy );
 	pkg_free( proxy );
 
