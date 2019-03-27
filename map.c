@@ -28,27 +28,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "str.h"
-#include "map.h"
 
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
-
-#define avl_malloc(dest,size,flags) do		\
-{						\
-	if(flags & AVLMAP_SHARED)			\
-		(dest) = shm_malloc(size);	\
-	else					\
-		(dest) = pkg_malloc(size);	\
-} while(0)
-
-#define avl_free(dest,flags)	do		\
-{						\
-	if(flags & AVLMAP_SHARED)			\
-		shm_free(dest);			\
-	else					\
-		pkg_free(dest);			\
-} while(0)
-
+#include "mem/rpm_mem.h"
+#include "map.h"
 
 #define min(a,b)  ((a)<(b))?(a):(b)
 
@@ -75,11 +59,24 @@ static int str_cmp(str s1, str s2)
 map_t map_create(enum map_flags flags)
 {
 	map_t tree;
+	osips_malloc_f m;
+	osips_free_f f;
 
-	avl_malloc(tree, sizeof *tree, flags);
-
+	if (flags & AVLMAP_PERSISTENT) {
+		m = rpm_malloc_func;
+		f = rpm_free_func;
+	} else if (flags & AVLMAP_SHARED) {
+		m = shm_malloc_func;
+		f = shm_free_func;
+	} else {
+		m = pkg_malloc_func;
+		f = pkg_free_func;
+	}
+	tree = func_malloc(m, sizeof *tree);
 	if (tree == NULL)
 		return NULL;
+	tree->malloc = m;
+	tree->free = f;
 
 	tree->avl_root = NULL;
 	tree->flags = flags;
@@ -136,7 +133,7 @@ void ** map_get( map_t tree, str key)
 			y = p;
 	}
 
-	avl_malloc( n, sizeof *n, tree->flags );
+	n = func_malloc(tree->malloc, sizeof *n);
 
 	if (n == NULL)
 		return NULL;
@@ -147,7 +144,7 @@ void ** map_get( map_t tree, str key)
 
 	if( !( tree->flags & AVLMAP_NO_DUPLICATE ) )
 	{
-		avl_malloc(key_copy.s, key.len, tree->flags );
+		key_copy.s = func_malloc(tree->malloc, key.len);
 		if (!key_copy.s)
 			return NULL;
 
@@ -330,9 +327,9 @@ void * delete_node(map_t tree, struct avl_node * p)
 	}
 
 	if(!( tree->flags & AVLMAP_NO_DUPLICATE ) )
-		avl_free(p->key.s,tree->flags);
+		func_free(tree->free, p->key.s);
 
-	avl_free(p,tree->flags);
+	func_free(tree->free, p);
 
 	while (q != (struct avl_node *) & tree->avl_root) {
 		struct avl_node *y = q;
@@ -484,15 +481,15 @@ void map_destroy( map_t tree, value_destroy_func destroy)
 			if (destroy != NULL && p->val != NULL)
 				destroy(p->val);
 			if( !(tree->flags & AVLMAP_NO_DUPLICATE ) )
-				avl_free( p->key.s,tree->flags);
-			avl_free( p, tree->flags );
+				func_free(tree->free, p->key.s);
+			func_free(tree->free, p);
 		} else {
 			q = p->avl_link[0];
 			p->avl_link[0] = q->avl_link[1];
 			q->avl_link[1] = p;
 		}
 
-	avl_free( tree, tree->flags );
+	func_free(tree->free, tree);
 }
 
 int map_size( map_t tree )

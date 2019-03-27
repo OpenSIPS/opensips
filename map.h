@@ -24,6 +24,7 @@
  */
 
 #include "str.h"
+#include "mem/mem.h"
 #include <stddef.h>
 
 #ifndef AVL_H
@@ -41,7 +42,9 @@ enum map_flags
 {
 	AVLMAP_SHARED = 1,		/* determines if the map is to be allocated in
 				shared or private memory */
-	AVLMAP_NO_DUPLICATE = 2	/* determines if the map will duplicate added keys*/
+	AVLMAP_NO_DUPLICATE = 2,	/* determines if the map will duplicate added keys*/
+	AVLMAP_PERSISTENT = 4,	/* determines if the map will be stored in
+				persistent memory */
 
 };
 
@@ -51,6 +54,9 @@ typedef struct avl_table {
 	struct avl_node *avl_root;	/* Tree's root. */
 	size_t avl_count;		/* Number of items in tree. */
 	int ret_code;
+
+	osips_malloc_f malloc;
+	osips_free_f free;
 
 } *map_t;
 
@@ -98,6 +104,7 @@ typedef  int (* process_each_func )(void * param, str key, void * value);
  *
  * AVLMAP_SHARED -> flag for shared memory
  * AVLMAP_NO_DUPLICATE -> flag for key duplication
+ * AVLMAP_PERSISTENT -> flag for persistent shared memory
  *
  */
 
