@@ -137,15 +137,43 @@ extern unsigned long (*gen_pkg_get_frags)(void *blk);
 #define pkg_realloc(p, s) PKG_REALLOC(mem_block, (p), (s), \
                                       __FILE__, __FUNCTION__, __LINE__)
 #define pkg_info(i)       PKG_INFO(mem_block, i)
+inline static void *pkg_malloc_func(unsigned long size,
+		const char *file, const char *function, unsigned int line)
+{
+	return PKG_MALLOC_(mem_block, size, file, function, line);
+}
+
+inline static void* pkg_realloc_func(void *ptr, unsigned int size,
+		const char* file, const char* function, unsigned int line)
+{
+	return PKG_REALLOC(mem_block, ptr, size, file, function, line);
+}
+
+inline static void pkg_free_func(void *ptr,
+		const char* file, const char* function, unsigned int line)
+{
+	return PKG_FREE(mem_block, ptr, file, function, line);
+}
 #else
 #define pkg_malloc(s)     PKG_MALLOC_(mem_block, (s))
 #define pkg_realloc(p, s) PKG_REALLOC(mem_block, (p), (s))
 #define pkg_free(p)       PKG_FREE(mem_block, (p))
 #define pkg_info(i)       PKG_INFO(mem_block, i)
+inline static void *pkg_malloc_func(unsigned long size)
+{
+	return PKG_MALLOC_(mem_block, size);
+}
+
+inline static void* pkg_realloc_func(void *ptr, unsigned int size)
+{
+	return PKG_REALLOC(mem_block, ptr, size);
+}
+
+inline static void pkg_free_func(void *ptr)
+{
+	return PKG_FREE(mem_block, ptr);
+}
 #endif
-#define pkg_malloc_func   PKG_MALLOC_
-#define pkg_free_func     PKG_FREE
-#define pkg_realloc_func  PKG_REALLOC
 
 #define pkg_status()      PKG_STATUS(mem_block)
 
