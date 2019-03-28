@@ -507,6 +507,14 @@ else
   THISREVISION = unknown
 endif
 
+ifeq (,$(findstring F_MALLOC, $(DEFS)))
+ifeq (,$(findstring Q_MALLOC, $(DEFS)))
+ifeq (,$(findstring HP_MALLOC, $(DEFS)))
+	DEFS+= -DQ_MALLOC
+endif
+endif
+endif
+
 ifneq (,$(MEM_STATS_HDR))
 EXPECTED_MD5=$(shell [ -f $(MEM_STATS_HDR) ] && tail -n 1 $(MEM_STATS_HDR) | awk '{print $$4}')
 MODULES_MD5=$(shell find $(dir $(MEM_STATS_HDR))/../modules -name "[Mm]akefile" | \
