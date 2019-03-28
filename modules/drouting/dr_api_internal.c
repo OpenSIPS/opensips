@@ -170,12 +170,14 @@ static int add_rule_api(dr_head_p partition,unsigned int rid,
 	rule->attrs.s = (char*) attr;
 
 	if (prefix->len) {
-		if ( add_prefix(partition->pt, prefix, rule, gr_id)!=0 ) {
+		if ( add_prefix(partition->pt, prefix, rule, gr_id,
+				shm_malloc_func, shm_free_func)!=0 ) {
 			LM_ERR("failed to add prefix route\n");
 			return -1;
 		}
 	} else {
-		if ( add_rt_info( &partition->noprefix, rule, gr_id)!=0 ) {
+		if ( add_rt_info( &partition->noprefix, rule, gr_id,
+				shm_malloc_func, shm_free_func)!=0 ) {
 			LM_ERR("failed to add prefixless route\n");
 			return -1;
 		}

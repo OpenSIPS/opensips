@@ -46,6 +46,7 @@
 #include "dr_api.h"
 #include "dr_api_internal.h"
 
+#include "../../mem/rpm_mem.h"
 
 #define DR_PARAM_USE_WEIGTH         (1<<0)
 #define DR_PARAM_RULE_FALLBACK      (1<<1)
@@ -129,6 +130,9 @@ static str partition_pvar = {NULL, 0};
 pv_spec_t partition_spec;
 
 
+/* restart persistency */
+int dr_rpm_enable = 0;
+struct head_cache *dr_cache;
 
 /*
  * global pointers for faster parameter passing between functions
@@ -225,6 +229,9 @@ typedef struct dr_part_gw {
 
 static int get_config_from_db();
 static int add_head_config();
+struct head_cache *get_head_cache(str *part);
+struct head_cache *add_head_cache(str *part);
+void clean_head_cache(struct head_cache *c);
 void init_head_db(struct head_db *new);
 static int db_load_head(struct head_db*); /* used for populating head_db with
 											 db connections and db funcs */
@@ -463,6 +470,7 @@ static param_export_t params[] = {
 	{"partition_id_pvar", STR_PARAM, &partition_pvar.s},
 	{"cluster_id",        INT_PARAM, &dr_cluster_id },
 	{"cluster_sharing_tag",STR_PARAM, &dr_cluster_shtag },
+	{"enable_restart_persistency",INT_PARAM, &dr_rpm_enable },
 	{0, 0, 0}
 };
 
@@ -990,13 +998,14 @@ static void dr_state_timer(unsigned int ticks, void* param)
  * -1, else return 0
  */
 
-static inline int dr_reload_data_head( struct head_db *hd )
+static inline int dr_reload_data_head(struct head_db *hd, int initial)
 {
 	rt_data_t *new_data;
 	rt_data_t *old_data;
 	pgw_t *gw, *old_gw;
 	pcr_t *cr, *old_cr;
 	time_t rawtime;
+	struct head_cache *cache = NULL;
 
 	void **dest;
 	map_iterator_t it;
@@ -1012,6 +1021,13 @@ static inline int dr_reload_data_head( struct head_db *hd )
 		lock_release( hd->ref_lock->lock );
 	}
 
+	if (initial && hd->cache && hd->cache->rdata) {
+		LM_INFO("starting drouting with cache data %p->%p!\n", hd->cache, hd->cache->rdata);
+		dr_update_head_cache(hd);
+		goto success;
+	}
+
+	LM_INFO("loading drouting data!\n");
 	new_data = dr_load_routing_info(hd, dr_persistent_state);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
@@ -1026,6 +1042,10 @@ static inline int dr_reload_data_head( struct head_db *hd )
 	/* update the time of the last reload for the current partition */
 	time(&rawtime);
 	hd->time_last_update = rawtime;
+
+	/* update cache head */
+	if (hd->cache)
+		hd->cache->rdata = new_data;
 
 	lock_stop_write( (hd->ref_lock) );
 
@@ -1065,12 +1085,13 @@ static inline int dr_reload_data_head( struct head_db *hd )
 		}
 
 		/* free old data */
-		free_rt_data(old_data);
+		free_rt_data(old_data, hd->free);
 	}
 
 	/* generate new blacklist from the routing info */
 	populate_dr_bls(hd->rdata->pgw_tree);
 
+success:
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
 	return 0;
@@ -1078,16 +1099,18 @@ static inline int dr_reload_data_head( struct head_db *hd )
 error:
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
+	if (cache)
+		clean_head_cache(cache);
 	return -1;
 }
 
-static inline int dr_reload_data( void ) {
+static inline int dr_reload_data(int initial) {
 	struct head_db * it_head_db;
 	int ret_val = 0;
 
 	for( it_head_db=head_db_start; it_head_db!=NULL;
 			it_head_db=it_head_db->next ) {
-		if( dr_reload_data_head( it_head_db )!=0 )
+		if( dr_reload_data_head(it_head_db, initial)!=0 )
 			ret_val = -1;
 	}
 	return ret_val;
@@ -1203,8 +1226,6 @@ static void cleanup_head_db(struct head_db *hd)
 		shm_free(hd->drc_table.s);
 	if( hd->drg_table.s && hd->drg_table.s != drg_table.s)
 		shm_free(hd->drg_table.s);
-
-	init_head_db(hd);
 }
 
 static void cleanup_head_db_table(void)
@@ -1280,13 +1301,123 @@ void init_head_w_extern_params(void) {
 			carrier_attrs_avp_spec, "carrier_attrs_avp_spec");
 }
 
+void clean_head_cache(struct head_cache *c)
+{
+	struct head_cache_socket *s, *old;
+	free_rt_data(c->rdata, rpm_free_func);
+	for (s = c->sockets; s; ) {
+		old = s;
+		s = s->next;
+		rpm_free(old);
+	}
+	rpm_free(c);
+}
+
+struct head_cache *add_head_cache(str *part)
+{
+	struct head_cache *c = rpm_malloc(sizeof(*c) + part->len);
+	if (!c) {
+		LM_ERR("cannot allocate persistent mem for cache head!\n");
+		return NULL;
+	}
+	c->partition.s = (char *)(c + 1);
+	c->partition.len = part->len;
+	memcpy(c->partition.s, part->s, part->len);
+	c->rdata = 0;
+	c->next = dr_cache;
+	dr_cache = c;
+	rpm_key_set("drouting", dr_cache);
+
+	return c;
+}
+
+struct head_cache *get_head_cache(str *part)
+{
+	struct head_cache *cache_h;
+
+	for (cache_h = dr_cache; cache_h; cache_h = cache_h->next)
+		if (cache_h->partition.len == part->len &&
+				memcmp(cache_h->partition.s, part->s, part->len) == 0)
+			return cache_h;
+	return NULL;
+}
+
+void fix_cache_sockets(struct head_cache *cache)
+{
+	struct head_cache_socket *prev, *csock, *free;
+	struct socket_info *sock;
+
+	prev = NULL;
+	csock = cache->sockets;
+	while (csock) {
+		sock = grep_internal_sock_info(&csock->host, csock->port, csock->proto);
+		if (!sock) {
+			LM_ERR("socket <%.*s:%d> (%d) is not local to "
+					"OpenSIPS (we must listen on it) -> ignoring socket\n",
+					csock->host.len, csock->host.s, csock->port, csock->proto);
+			free = csock;
+			csock = csock->next;
+			if (prev)
+				prev->next = csock;
+			else
+				cache->sockets = csock;
+
+			rpm_free(free);
+		} else {
+			csock->new_sock = sock;
+			prev = csock;
+			csock = csock->next;
+		}
+	}
+}
+
+void update_cache_info(void)
+{
+	struct head_config * it_head_config = 0;
+	struct head_cache *cache_h, *prev_h = NULL, *free_h;
+
+	if (!dr_cache)
+		return;
+
+	/* now that we know the names of all partitions, cleanup old partitions */
+	cache_h = dr_cache;
+	while (cache_h) {
+		for (it_head_config = head_start; it_head_config != NULL;
+				it_head_config = it_head_config->next) {
+			if (cache_h->partition.len == it_head_config->partition.len &&
+					memcmp(cache_h->partition.s, it_head_config->partition.s,
+						it_head_config->partition.len) == 0)
+				break;
+		}
+		if (it_head_config != NULL) {
+			prev_h = cache_h;
+			cache_h = cache_h->next;
+			continue;
+		}
+		LM_WARN("%.*s partition no longer used - cleaning old data!\n",
+				cache_h->partition.len, cache_h->partition.s);
+
+
+		if (!prev_h) {
+			dr_cache = cache_h->next;
+			rpm_key_set("drouting", dr_cache);
+		} else {
+			prev_h->next = cache_h->next;
+		}
+		free_h = cache_h;
+		cache_h = cache_h->next;
+		clean_head_cache(free_h);
+	}
+}
+
 static int dr_init(void)
 {
 	pv_spec_t avp_spec;
 	unsigned short dummy;
 	str name_w_part;
+	struct head_cache *cache = NULL;
 	struct head_config * it_head_config = 0;
-	struct head_db *db_part;
+	struct head_db *db_part = NULL;
 	char name_w_buf[MAX_LEN_NAME_W_PART];
 	name_w_part.s = name_w_buf;
 
@@ -1298,6 +1429,19 @@ static int dr_init(void)
 	drg_table.len = strlen(drg_table.s);
 	drr_table.len = strlen(drr_table.s);
 	drc_table.len = strlen(drc_table.s);
+
+	if (dr_rpm_enable) {
+		/* if we are using cache, we need to fetch our dr zone */
+		if (rpm_init_mem() < 0) {
+			LM_ERR("could not initilize restart persistency memory!\n");
+			return -1;
+		}
+		dr_cache = (struct head_cache *)rpm_key_get("drouting");
+		if (!dr_cache)
+			LM_INFO("starting drouting with empty cache\n");
+		else
+			LM_INFO("starting drouting with cache head=%p\n", dr_cache);
+	}
 
 	if( use_partitions == 1 ) { /* loading configurations from db */
 		if (get_config_from_db() == -1) {
@@ -1385,6 +1529,8 @@ static int dr_init(void)
 		head_start->partition.s = "Default";
 		head_start->partition.len = strlen(head_start->partition.s);
 	}
+
+	update_cache_info();
 
 	drg_user_col.len = strlen(drg_user_col.s);
 	drg_domain_col.len = strlen(drg_domain_col.s);
@@ -1600,6 +1746,24 @@ static int dr_init(void)
 		/* all good now - add the partition to the list */
 		db_part->next = head_db_start;
 		head_db_start = db_part;
+		db_part->malloc = shm_malloc_func;
+		db_part->free = shm_free_func;
+
+		/* check where we'll be storing data */
+		if (dr_rpm_enable) {
+			cache = get_head_cache(&db_part->partition);
+			if (!cache)
+				cache = add_head_cache(&db_part->partition);
+			if (!cache) {
+				LM_CRIT("could not create cache head - might leak new data!\n");
+				LM_WARN("loading data in shared memory!\n");
+			} else {
+				db_part->cache = cache;
+				db_part->malloc = rpm_malloc_func;
+				db_part->free = rpm_free_func;
+				fix_cache_sockets(cache);
+			}
+		}
 
 		db_part = NULL;
 	}
@@ -1755,7 +1919,7 @@ static int db_load_head(struct head_db *x) {
  * so triggerable via IPC */
 static void rpc_dr_reload_data(int sender_id, void *unused)
 {
-	dr_reload_data();
+	dr_reload_data(1);
 }
 
 
@@ -1795,7 +1959,8 @@ static int dr_exit(void)
 	while( it!=NULL ) {
 		to_clean = it;
 		it = it->next;
-		if (dr_persistent_state && to_clean->db_con && *(to_clean->db_con))
+		if (dr_persistent_state && !to_clean->cache &&
+				to_clean->db_con && *(to_clean->db_con))
 			dr_state_flusher(to_clean);
 
 		/* close DB connection */
@@ -1806,8 +1971,8 @@ static int dr_exit(void)
 		}
 
 		/* destroy data */
-		if (to_clean->rdata) {
-			free_rt_data(to_clean->rdata);
+		if (to_clean->rdata && !to_clean->cache) {
+			free_rt_data(to_clean->rdata, to_clean->free);
 			to_clean->rdata = 0;
 		}
 
@@ -1816,9 +1981,6 @@ static int dr_exit(void)
 			lock_destroy_rw( to_clean->ref_lock );
 			to_clean->ref_lock = 0;
 		}
-
-		if (dr_enable_probing_state)
-			shm_free(dr_enable_probing_state);
 
 		/* free table names stored in head_db */
 		if(to_clean->drd_table.s && to_clean->drd_table.s != drd_table.s) {
@@ -1839,6 +2001,9 @@ static int dr_exit(void)
 
 		shm_free(to_clean);
 	}
+
+	if (dr_enable_probing_state)
+		shm_free(dr_enable_probing_state);
 
 	/* destroy blacklists */
 	destroy_dr_bls();
@@ -1876,7 +2041,7 @@ mi_response_t *dr_reload_cmd(const mi_params_t *params,
 {
 	LM_INFO("dr_reload MI command received!\n");
 
-	if (dr_reload_data() != 0) {
+	if (dr_reload_data(0) != 0) {
 		LM_CRIT("failed to load routing data\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
@@ -1896,7 +2061,7 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 	if (resp)
 		return resp;
 
-	if( dr_reload_data_head(part)<0 ) {
+	if( dr_reload_data_head(part, 0)<0 ) {
 		LM_CRIT("Failed to load data head\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
@@ -2897,7 +3062,7 @@ search_again:
 			tmp = parsed_whitelist.s[parsed_whitelist.len];
 			parsed_whitelist.s[parsed_whitelist.len] = 0;
 			if (parse_destination_list(current_partition->rdata,
-						parsed_whitelist.s, &wl_list, &wl_len, 1)!=0) {
+						parsed_whitelist.s, &wl_list, &wl_len, 1, NULL)!=0) {
 				LM_ERR("invalid format in whitelist-> ignoring...\n");
 				wl_list = NULL;
 			}

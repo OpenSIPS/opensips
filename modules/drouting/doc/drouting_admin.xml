@@ -1197,6 +1197,35 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 		</example>
 	</section>
 
+	<section id="param_enable_restart_persistency" xreflabel="enable_restart_persistency">
+		<title><varname>enable_restart_persistency</varname> (pvar)</title>
+		<para>
+			Parameter set to enable restart persistency for the Dynamic Routing module.
+			When this parameter is set, the drouting module no longer loads the data
+			from the database after restart, but uses the persistent storage file, and loads
+			data from it <quote>on demand</quote>, improving the startup performance.
+		</para>
+		<para>
+			NOTE: If the restart persistent cache is not populated from a previous run,
+			then the data will be loaded from database at startup!
+		</para>
+		<para>
+			NOTE: A reload will update the cached data.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>enable_restart_persistency</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "enable_restart_persistency", yes)
+...
+</programlisting>
+		</example>
+	</section>
+
 
 
 </section>

@@ -33,13 +33,14 @@
 #include <limits.h>
 #include <ctype.h>
 
+#include "dr_partitions.h"
 #include "../../str.h"
 #include "../../resolve.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
+#include "../../mem/rpm_mem.h"
 #include "../../parser/parse_uri.h"
 #include "../../time_rec.h"
-#include "routing.h"
 #include "prefix_tree.h"
 #include "parse.h"
 
@@ -50,20 +51,22 @@
 extern int dr_force_dns;
 
 rt_data_t*
-build_rt_data( void )
+build_rt_data(struct head_db *part)
 {
 	rt_data_t *rdata=NULL;
+	int flags;
 
-	if( NULL==(rdata=shm_malloc(sizeof(rt_data_t)))) {
+	if( NULL==(rdata=func_malloc(part->malloc, sizeof(rt_data_t)))) {
 		LM_ERR("no more shm mem\n");
 		goto err_exit;
 	}
 	memset(rdata, 0, sizeof(rt_data_t));
 
-	INIT_PTREE_NODE(NULL, rdata->pt);
+	INIT_PTREE_NODE(part->malloc, NULL, rdata->pt);
+	flags = (part->cache? AVLMAP_PERSISTENT: AVLMAP_SHARED);
 
-	rdata->pgw_tree = map_create( AVLMAP_SHARED );
-	rdata->carriers_tree = map_create( AVLMAP_SHARED );
+	rdata->pgw_tree = map_create(flags);
+	rdata->carriers_tree = map_create(flags);
 
 	if (rdata->pgw_tree == NULL || rdata->carriers_tree == NULL) {
 		LM_ERR("Initializing avl failed!\n");
@@ -77,13 +80,13 @@ build_rt_data( void )
 	return rdata;
 err_exit:
 	if (rdata)
-		shm_free(rdata);
+		func_free(part->free, rdata);
 	return 0;
 }
 
 
-int parse_destination_list(rt_data_t* rd, char *dstlist,
-					pgw_list_t** pgwl_ret, unsigned short *len, int no_resize)
+int parse_destination_list(rt_data_t* rd, char *dstlist, pgw_list_t** pgwl_ret,
+		unsigned short *len, int no_resize, osips_malloc_f mf)
 {
 #define PGWL_SIZE 32
 	pgw_list_t *pgwl=NULL, *p=NULL;
@@ -207,7 +210,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist,
 		return 0;
 	}
 
-	p=(pgw_list_t*)shm_malloc(size*sizeof(pgw_list_t));
+	p=(pgw_list_t*)func_malloc(mf, size*sizeof(pgw_list_t));
 	if (p==NULL) {
 		LM_ERR("not enough shm mem for final build\n");
 		goto error;
@@ -227,7 +230,8 @@ error:
 
 
 int add_carrier(char *id, int flags, char *gwlist, char *attrs,
-													int state, rt_data_t *rd)
+										int state, rt_data_t *rd,
+										osips_malloc_f mf, osips_free_f ff)
 {
 	pcr_t *cr = NULL;
 	unsigned int i;
@@ -235,7 +239,7 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 	str key;
 
 	/* allocate a new carrier structure */
-	cr = (pcr_t*)shm_malloc(sizeof(pcr_t)+strlen(id)+(attrs?strlen(attrs):0));
+	cr = (pcr_t*)func_malloc(mf, sizeof(pcr_t)+strlen(id)+(attrs?strlen(attrs):0));
 	if (cr==NULL) {
 		LM_ERR("no more shm mem for a new carrier\n");
 		goto error;
@@ -244,7 +248,7 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 
 	if (gwlist && gwlist[0]!=0 ) {
 		/* parse the list of gateways */
-		if (parse_destination_list( rd, gwlist, &cr->pgwl,&cr->pgwa_len,0)!=0){
+		if (parse_destination_list( rd, gwlist, &cr->pgwl,&cr->pgwa_len,0, mf)!=0){
 			LM_ERR("failed to parse the destinations\n");
 			goto error;
 		}
@@ -291,9 +295,9 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 	return 0;
 error:
 	if (cr) {
-		shm_free(cr);
 		if (cr->pgwl)
-			shm_free(cr->pgwl);
+			func_free(ff, cr->pgwl);
+		func_free(ff, cr);
 	}
 	return -1;
 }
@@ -309,14 +313,16 @@ build_rt_info(
 	/* list of destinations indexes */
 	char* dstlst,
 	char* attrs,
-	rt_data_t* rd
+	rt_data_t* rd,
+	osips_malloc_f mf,
+	osips_free_f ff
 	)
 {
 	rt_info_t* rt = NULL;;
 
-	rt = (rt_info_t*)shm_malloc(sizeof(rt_info_t)+(attrs?strlen(attrs):0));
+	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t)+(attrs?strlen(attrs):0));
 	if (rt==NULL) {
-		LM_ERR("no more shm mem(1)\n");
+		LM_ERR("no more mem(1)\n");
 		goto err_exit;
 	}
 	memset(rt, 0, sizeof(rt_info_t));
@@ -332,7 +338,7 @@ build_rt_info(
 	}
 
 	if ( dstlst && dstlst[0]!=0 ) {
-		if (parse_destination_list(rd, dstlst, &rt->pgwl,&rt->pgwa_len,0)!=0){
+		if (parse_destination_list(rd, dstlst, &rt->pgwl,&rt->pgwa_len,0,mf)!=0){
 			LM_ERR("failed to parse the destinations\n");
 			goto err_exit;
 		}
@@ -343,8 +349,8 @@ build_rt_info(
 err_exit:
 	if ((NULL != rt) ) {
 		if (NULL!=rt->pgwl)
-			shm_free(rt->pgwl);
-		shm_free(rt);
+			func_free(ff, rt->pgwl);
+		func_free(ff, rt);
 	}
 	return NULL;
 }
@@ -353,7 +359,9 @@ err_exit:
 int add_rt_info(
 	ptree_node_t *pn,
 	rt_info_t* r,
-	unsigned int rgid
+	unsigned int rgid,
+	osips_malloc_f malloc_f,
+	osips_free_f free_f
 	)
 {
 	rg_entry_t    *trg=NULL;
@@ -364,7 +372,8 @@ int add_rt_info(
 	if((NULL == pn) || (NULL == r))
 		goto err_exit;
 
-	if (NULL == (rtl_wrp = (rt_info_wrp_t*)shm_malloc(sizeof(rt_info_wrp_t)))) {
+	if (NULL == (rtl_wrp = (rt_info_wrp_t*)
+			func_malloc(malloc_f, sizeof(rt_info_wrp_t)))) {
 		LM_ERR("no more shm mem\n");
 		goto err_exit;
 	}
@@ -374,7 +383,7 @@ int add_rt_info(
 	if(NULL==pn->rg) {
 		/* allocate the routing groups array */
 		pn->rg_len = RG_INIT_LEN;
-		if(NULL == (pn->rg = (rg_entry_t*)shm_malloc(
+		if(NULL == (pn->rg = (rg_entry_t*)func_malloc(malloc_f,
 						pn->rg_len*sizeof(rg_entry_t)))) {
 			/* recover the old pointer to be able to shm_free mem */
 			goto err_exit;
@@ -387,7 +396,7 @@ int add_rt_info(
 	if(i==pn->rg_len) {
 		/* realloc & copy the old rg */
 		trg = pn->rg;
-		if(NULL == (pn->rg = (rg_entry_t*)shm_malloc(
+		if(NULL == (pn->rg = (rg_entry_t*)func_malloc(malloc_f,
 				(pn->rg_len + RG_INIT_LEN)*sizeof(rg_entry_t)))) {
 			/* recover the old pointer to be able to shm_free mem */
 			pn->rg = trg;
@@ -396,7 +405,7 @@ int add_rt_info(
 		memset(pn->rg+pn->rg_len, 0, RG_INIT_LEN*sizeof(rg_entry_t));
 		memcpy(pn->rg, trg, pn->rg_len*sizeof(rg_entry_t));
 		pn->rg_len+=RG_INIT_LEN;
-		shm_free( trg );
+		func_free(free_f, trg);
 	}
 	/* insert into list */
 	r->ref_cnt++;
@@ -428,7 +437,7 @@ ok_exit:
 	return 0;
 
 err_exit:
-	if (rtl_wrp) shm_free(rtl_wrp);
+	if (rtl_wrp) func_free(free_f, rtl_wrp);
 	return -1;
 }
 
@@ -452,7 +461,9 @@ add_dst(
 	/* socket */
 	struct socket_info *sock,
 	/* state */
-	int state
+	int state,
+	osips_malloc_f mf,
+	osips_free_f ff
 	)
 {
 	static unsigned id_counter = 0;
@@ -521,7 +532,7 @@ add_dst(
 		sip_prefix += uri.host.s - uri.user.s;
 
 	/* allocate new structure */
-	pgw = (pgw_t*)shm_malloc(sizeof(pgw_t) + l_id + (l_ip-sip_prefix) +
+	pgw = (pgw_t*)func_malloc(mf, sizeof(pgw_t) + l_id + (l_ip-sip_prefix) +
 		l_pri + l_attrs);
 	if (NULL==pgw) {
 		LM_ERR("no more shm mem (%u)\n",
@@ -629,23 +640,33 @@ done:
 
 err_exit:
 	if(NULL!=pgw)
-		shm_free(pgw);
+		func_free(ff, pgw);
 	return -1;
 }
 
 
-void destroy_pgw(void *pgw_p)
-{
-	shm_free((pgw_t *)pgw_p);
-}
-
-void destroy_pcr(void *pcr_p)
+void destroy_pcr_shm_w(void *pcr_p)
 {
 	pcr_t* pcr = pcr_p;
 	if (pcr->pgwl) shm_free(pcr->pgwl);
 	shm_free(pcr);
 }
 
+void destroy_pcr_rpm_w(void *pcr_p)
+{
+	pcr_t* pcr = pcr_p;
+	if (pcr->pgwl) rpm_free(pcr->pgwl);
+	rpm_free(pcr);
+}
+static void shm_free_w(void *p)
+{
+	shm_free(p);
+}
+
+static void rpm_free_w(void *p)
+{
+	rpm_free(p);
+}
 
 /* FIXME FREE AVL HERE */
 void
@@ -653,7 +674,8 @@ del_pgw_list(
 		map_t pgw_tree
 		)
 {
-	map_destroy(pgw_tree, destroy_pgw);
+	map_destroy(pgw_tree,
+			(pgw_tree->flags & AVLMAP_PERSISTENT?rpm_free_w:shm_free_w));
 }
 
 /* FIXME FREE AVL HERE */
@@ -661,12 +683,15 @@ void del_carriers_list(
 		map_t carriers_tree
 		)
 {
-	map_destroy(carriers_tree, destroy_pcr);
+	map_destroy(carriers_tree,
+			(carriers_tree->flags & AVLMAP_PERSISTENT?
+				destroy_pcr_rpm_w:destroy_pcr_shm_w));
 }
 
 void
 free_rt_data(
-		rt_data_t* rt_data
+		rt_data_t* rt_data,
+		osips_free_f free_f
 		)
 {
 	int j;
@@ -675,23 +700,23 @@ free_rt_data(
 		del_pgw_list(rt_data->pgw_tree);
 		rt_data->pgw_tree = 0 ;
 		/* del prefix tree */
-		del_tree(rt_data->pt);
+		del_tree(rt_data->pt, free_f);
 		rt_data->pt = 0 ;
 		/* del prefixless rules */
 		if(NULL!=rt_data->noprefix.rg) {
 			for(j=0;j<rt_data->noprefix.rg_pos;j++) {
 				if(rt_data->noprefix.rg[j].rtlw !=NULL) {
-					del_rt_list(rt_data->noprefix.rg[j].rtlw);
+					del_rt_list(rt_data->noprefix.rg[j].rtlw, free_f);
 					rt_data->noprefix.rg[j].rtlw = 0;
 				}
 			}
-			shm_free(rt_data->noprefix.rg);
+			func_free(free_f, rt_data->noprefix.rg);
 			rt_data->noprefix.rg = 0;
 		}
 		/* del carriers */
 		del_carriers_list(rt_data->carriers_tree);
 		rt_data->carriers_tree=0;
 		/* del top level */
-		shm_free(rt_data);
+		func_free(free_f, rt_data);
 	}
 }
