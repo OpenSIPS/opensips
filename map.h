@@ -41,7 +41,9 @@ enum map_flags
 {
 	AVLMAP_SHARED = 1,		/* determines if the map is to be allocated in
 				shared or private memory */
-	AVLMAP_NO_DUPLICATE = 2	/* determines if the map will duplicate added keys*/
+	AVLMAP_NO_DUPLICATE = 2,	/* determines if the map will duplicate added keys*/
+	AVLMAP_PERSISTENT = 4,	/* determines if the map will be stored in
+				persistent memory */
 
 };
 
@@ -98,6 +100,7 @@ typedef  int (* process_each_func )(void * param, str key, void * value);
  *
  * AVLMAP_SHARED -> flag for shared memory
  * AVLMAP_NO_DUPLICATE -> flag for key duplication
+ * AVLMAP_PERSISTENT -> flag for persistent shared memory
  *
  */
 

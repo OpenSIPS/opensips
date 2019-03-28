@@ -32,21 +32,26 @@
 
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
+#include "mem/rpm_mem.h"
 
-#define avl_malloc(dest,size,flags) do		\
-{						\
-	if(flags & AVLMAP_SHARED)			\
-		(dest) = shm_malloc(size);	\
-	else					\
-		(dest) = pkg_malloc(size);	\
+#define avl_malloc(dest,size,flags) do \
+{ \
+	if(flags & AVLMAP_SHARED) \
+		(dest) = shm_malloc(size); \
+	else if (flags & AVLMAP_PERSISTENT) \
+		(dest) = rpm_malloc(size); \
+	else \
+		(dest) = pkg_malloc(size); \
 } while(0)
 
-#define avl_free(dest,flags)	do		\
-{						\
-	if(flags & AVLMAP_SHARED)			\
-		shm_free(dest);			\
-	else					\
-		pkg_free(dest);			\
+#define avl_free(dest,flags) do \
+{ \
+	if(flags & AVLMAP_SHARED) \
+		shm_free(dest); \
+	else if (flags & AVLMAP_PERSISTENT) \
+		rpm_free(dest); \
+	else \
+		pkg_free(dest); \
 } while(0)
 
 
