@@ -275,7 +275,7 @@ tryagain:
 		if (errno==ENXIO) {
 			/* give up on the client - we can't afford server blocking */
 			if (retries==0) {
-				LM_ERR("no client at %s\n",pipe_name );
+				LM_NOTICE("no client at %s\n", pipe_name );
 				return 0;
 			}
 			/* don't be noisy on the very first try */
@@ -519,10 +519,10 @@ static inline struct mi_handler* build_async_handler( char *name, int len)
 
 #define mi_open_reply(_name,_file,_err) \
 	do { \
-		if (_file==NULL && _name) { \
+		if (!(_file) && (_name)) { \
 			_file = mi_open_reply_pipe( _name ); \
-			if (_file==NULL && !(_name)) { \
-				LM_ERR("cannot open reply pipe %s\n", _name); \
+			if (!(_file)) { \
+				LM_NOTICE("cannot open reply pipe %s\n", _name); \
 				goto _err; \
 			} \
 		} \
