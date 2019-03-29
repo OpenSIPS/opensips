@@ -1079,7 +1079,7 @@ void hp_pkg_free(struct hp_block *hpb, void *p)
 	struct hp_frag *f, *next;
 
 	if (!p) {
-		LM_WARN("free(0) called\n");
+		LM_GEN1(memlog, "free(0) called\n");
 		return;
 	}
 
@@ -1136,7 +1136,7 @@ void hp_shm_free_unsafe(struct hp_block *hpb, void *p)
 	struct hp_frag *f;
 
 	if (!p) {
-		LM_WARN("free(0) called\n");
+		LM_GEN1(memlog, "free(0) called\n");
 		return;
 	}
 
@@ -1163,7 +1163,7 @@ void hp_shm_free(struct hp_block *hpb, void *p)
 	unsigned int hash;
 
 	if (!p) {
-		LM_WARN("free(0) called\n");
+		LM_GEN1(memlog, "free(0) called\n");
 		return;
 	}
 
