@@ -221,8 +221,8 @@ void fm_free(struct fm_block *fm, void *p, const char *file,
 		abort();
 	}
 	#endif
-	if (p==0) {
-		LM_GEN1(memlog, "free(0) called\n");
+	if (!p) {
+		LM_GEN1(memlog, "free(NULL) called\n");
 		return;
 	}
 

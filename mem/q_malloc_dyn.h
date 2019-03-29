@@ -184,8 +184,8 @@ void qm_free(struct qm_block *qm, void *p,
 	LM_GEN1(memlog, "%s_free(%p), called from %s: %s(%d)\n",
 	        qm->name, p, file, func, line);
 #endif
-	if (p==0) {
-		LM_DBG("free(0) called\n");
+	if (!p) {
+		LM_GEN1(memlog, "free(NULL) called\n");
 		return;
 	}
 #ifdef DBG_MALLOC
