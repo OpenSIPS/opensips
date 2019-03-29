@@ -79,23 +79,23 @@ stat_var *rpm_frags;
 
 #ifdef STATISTICS
 stat_export_t rpm_stats[] = {
-	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)rpm_get_size  },
+	{"rpm_total_size" ,     STAT_IS_FUNC,    (stat_var**)rpm_get_size  },
 
 #if defined(HP_MALLOC)
-	{"used_size" ,     STAT_NO_RESET,               &rpm_used      },
-	{"real_used_size" ,STAT_NO_RESET,               &rpm_rused     },
+	{"rpm_used_size" ,     STAT_NO_RESET,               &rpm_used      },
+	{"rpm_real_used_size" ,STAT_NO_RESET,               &rpm_rused     },
 #else
-	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_used  },
-	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)rpm_get_rused },
+	{"rpm_used_size" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_used  },
+	{"rpm_real_used_size" , STAT_IS_FUNC,    (stat_var**)rpm_get_rused },
 #endif
 
-	{"max_used_size" ,  STAT_IS_FUNC,    (stat_var**)rpm_get_mused },
-	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_free  },
+	{"rpm_max_used_size" ,  STAT_IS_FUNC,    (stat_var**)rpm_get_mused },
+	{"rpm_free_size" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_free  },
 
 #if defined(HP_MALLOC)
-	{"fragments" ,     STAT_NO_RESET,               &rpm_frags     },
+	{"rpm_fragments" ,     STAT_NO_RESET,               &rpm_frags     },
 #else
-	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_frags },
+	{"rpm_fragments" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_frags },
 #endif
 
 	{0,0,0}

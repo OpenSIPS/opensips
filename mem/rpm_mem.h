@@ -326,21 +326,33 @@ void hp_init_rpm_statistics(struct hp_block *hpb);
 extern stat_export_t rpm_stats[];
 
 inline static unsigned long rpm_get_size(unsigned short foo) {
+	if (!rpm_block)
+		return 0;
 	return RPM_GET_SIZE(rpm_block);
 }
 inline static unsigned long rpm_get_used(unsigned short foo) {
+	if (!rpm_block)
+		return 0;
 	return RPM_GET_USED(rpm_block);
 }
 inline static unsigned long rpm_get_rused(unsigned short foo) {
+	if (!rpm_block)
+		return 0;
 	return RPM_GET_RUSED(rpm_block);
 }
 inline static unsigned long rpm_get_mused(unsigned short foo) {
+	if (!rpm_block)
+		return 0;
 	return RPM_GET_MUSED(rpm_block);
 }
 inline static unsigned long rpm_get_free(unsigned short foo) {
+	if (!rpm_block)
+		return 0;
 	return RPM_GET_FREE(rpm_block);
 }
 inline static unsigned long rpm_get_frags(unsigned short foo) {
+	if (!rpm_block)
+		return 0;
 	return RPM_GET_FRAGS(rpm_block);
 }
 #endif /*STATISTICS*/
