@@ -455,7 +455,6 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 	int err;
 	static struct hostent *he2 = NULL;
 #endif
-	int usdiff;
 	struct timeval start;
 	struct ip_addr *ip;
 	str s;
@@ -501,12 +500,8 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 		he = gethostbyname(name);
 
 out:
-	usdiff = get_time_diff(&start);
-	if (execdnsthreshold && usdiff > execdnsthreshold) {
-		log_expiry(usdiff, execdnsthreshold, "dns", name, strlen(name), 0);
-		inc_stat(dns_slow_queries);
-	}
-
+	_stop_expire_timer(start, execdnsthreshold, "dns",
+	                   name, strlen(name), 0, dns_slow_queries);
 	inc_stat(dns_total_queries);
 	return he;
 }
@@ -1099,7 +1094,8 @@ struct rdata* get_record(char* name, int type)
 query:
 	start_expire_timer(start,execdnsthreshold);
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
-	stop_expire_timer(start,execdnsthreshold,"dns",name,strlen(name),0);
+	_stop_expire_timer(start, execdnsthreshold, "dns",
+	                   name, strlen(name), 0, dns_slow_queries);
 	inc_stat(dns_total_queries);
 
 	if (size<0) {
