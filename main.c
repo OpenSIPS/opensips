@@ -1214,7 +1214,10 @@ try_again:
 	}
 
 	/* init the resolver, before fixing the config */
-	resolv_init();
+	if (resolv_init() != 0) {
+		LM_ERR("failed to init DNS resolver\n");
+		return -1;
+	}
 
 	fix_poll_method( &io_poll_method );
 

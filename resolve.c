@@ -89,6 +89,9 @@ static char hostbuf[MAX_BUFF_SIZE];
 static char *h_addr_ptrs[MAXADDRS];
 static char *host_aliases[MAXALIASES];
 
+stat_var *dns_total_queries;
+stat_var *dns_slow_queries;
+
 typedef union {
 	int32_t al;
 	char ac;
@@ -452,6 +455,8 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
         int err;
         static struct hostent* he2=0;
 #endif
+		int usdiff;
+		struct timeval start;
         struct ip_addr* ip;
         str s;
 
@@ -467,6 +472,8 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
                         return ip_addr2he(&s, ip);
                 }
         }
+
+		start_expire_timer(start, execdnsthreshold);
 
         if(dns_try_ipv6){
                 /*try ipv6*/
@@ -489,7 +496,7 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
         #endif
                 if (he != 0)
                         /* return the inet6 result if exists */
-                        return he;
+						goto out;
         }
 
         if (dnscache_fetch_func != NULL) {
@@ -498,6 +505,15 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
         else {
                 he=gethostbyname(name);
         }
+
+out:
+		usdiff = get_time_diff(&start);
+		if (execdnsthreshold && usdiff > execdnsthreshold) {
+			log_expiry(usdiff, execdnsthreshold, "dns", name, strlen(name), 0);
+			inc_stat(dns_slow_queries);
+		}
+
+		inc_stat(dns_total_queries);
         return he;
 }
 
@@ -682,6 +698,13 @@ int resolv_init(void)
 #warning "no resolv timeout support"
 	LM_WARN("no resolv options support - resolv options will be ignored\n");
 #endif
+
+	if (register_stat("dns", "dns_total_queries", &dns_total_queries, 0) ||
+	    register_stat("dns", "dns_slow_queries", &dns_slow_queries, 0)) {
+		LM_ERR("failed to register DNS stats\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -1083,6 +1106,8 @@ query:
 	start_expire_timer(start,execdnsthreshold);
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
 	stop_expire_timer(start,execdnsthreshold,"dns",name,strlen(name),0);
+	inc_stat(dns_total_queries);
+
 	if (size<0) {
 		LM_DBG("lookup(%s, %d) failed\n", name, type);
 		if (dnscache_put_func != NULL) {
