@@ -881,6 +881,8 @@ _empty_line_
    Name: ds_list
 
    Parameters:
+     * partition (optional) - indicates the partition you want to
+       list destination for.
      * full (optional) - adds the weight, priority and description
        fields to the listing
 
@@ -1075,7 +1077,7 @@ Chapter 3. Contributors
    4. Ionut Ionita (@ionutrazvanionita) 44 17 1145 969
    5. Liviu Chircu (@liviuchircu) 36 25 792 209
    6. Ovidiu Sas (@ovidiusas) 31 17 705 434
-   7. Razvan Crainea (@razvancrainea) 22 16 393 69
+   7. Razvan Crainea (@razvancrainea) 23 17 415 75
    8. Henning Westerholt (@henningw) 11 7 93 125
    9. Carsten Bock 11 4 713 18
    10. Vlad Paiu (@vladpaiu) 9 7 17 29
@@ -1108,9 +1110,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Oct 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Sep 2018
-   3.  Razvan Crainea (@razvancrainea)     May 2011 - Dec 2017
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Mar 2019
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Oct 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Sep 2018
    4.  Ionut Ionita (@ionutrazvanionita)   Jul 2014 - May 2016
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Jarrod Baumann (@jarrodb)           Feb 2016 - Feb 2016
@@ -1135,11 +1137,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Jarrod Baumann (@jarrodb), Ionel Cerghit
-   (@ionel-cerghit), Ovidiu Sas (@ovidiusas), Razvan Crainea
-   (@razvancrainea), Ionut Ionita (@ionutrazvanionita), Andrei
-   Datcu (@andrei-datcu), Vlad Paiu (@vladpaiu), Walter Doekes
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Jarrod
+   Baumann (@jarrodb), Ionel Cerghit (@ionel-cerghit), Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
+   (@andrei-datcu), Vlad Paiu (@vladpaiu), Walter Doekes
    (@wdoekes), Stanislaw Pitucha, Anca Vamanu, Klaus Darilion,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius,
    Carsten Bock, Edson Gellert Schubert, Elena-Ramona Modroiu.
