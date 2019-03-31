@@ -963,6 +963,8 @@ _empty_line_
    Name: ds_list
 
    Parameters:
+     * partition (optional) - indicates the partition you want to
+       list destination for.
      * full (optional) - adds the weight, priority and description
        fields to the listing
 
@@ -1157,7 +1159,7 @@ Chapter 3. Contributors
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
    5. Ionut Ionita (@ionutrazvanionita) 44 17 1145 969
    6. Ovidiu Sas (@ovidiusas) 31 17 705 434
-   7. Razvan Crainea (@razvancrainea) 26 20 403 77
+   7. Razvan Crainea (@razvancrainea) 27 21 425 83
    8. Henning Westerholt (@henningw) 11 7 93 125
    9. Carsten Bock 11 4 713 18
    10. Vlad Paiu (@vladpaiu) 9 7 17 29
@@ -1191,9 +1193,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Oct 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Sep 2018
-   3.  Razvan Crainea (@razvancrainea)     May 2011 - Dec 2017
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Mar 2019
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Oct 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Sep 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016
    6.  Ionut Ionita (@ionutrazvanionita)   Jul 2014 - May 2016
@@ -1218,8 +1220,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ionel
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Ionel
    Cerghit (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ovidiu Sas
    (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
    (@andrei-datcu), Vlad Paiu (@vladpaiu), Walter Doekes
