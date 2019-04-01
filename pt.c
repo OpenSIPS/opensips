@@ -197,6 +197,9 @@ void set_proc_attrs( char *fmt, ...)
 
 	/* pid */
 	pt[process_no].pid=getpid();
+
+	/* for sure the process is running */
+	pt[process_no].flags |= OSS_PROC_IS_RUNNING;
 }
 
 
