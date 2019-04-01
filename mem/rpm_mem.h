@@ -266,6 +266,7 @@ inline static void _rpm_free(void *ptr,
 #define rpm_free_unsafe( _ptr ) RPM_FREE_UNSAFE(rpm_block, (_ptr))
 
 
+#define rpm_malloc_func			rpm_malloc
 inline static void* rpm_malloc(unsigned long size)
 {
 	void *p;
@@ -277,6 +278,7 @@ inline static void* rpm_malloc(unsigned long size)
 	return p;
 }
 
+#define rpm_realloc_func		rpm_realloc
 inline static void* rpm_realloc(void *ptr, unsigned int size)
 {
 	void *p;
@@ -288,6 +290,7 @@ inline static void* rpm_realloc(void *ptr, unsigned int size)
 	return p;
 }
 
+#define rpm_free_func			rpm_free
 inline static void rpm_free(void *_p)
 {
 	rpm_lock();

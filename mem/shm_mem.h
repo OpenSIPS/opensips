@@ -482,7 +482,7 @@ extern unsigned long long *shm_hash_usage;
 
 #else /*DBG_MALLOC*/
 
-#define func_shm_maloc_unsafe shm_malloc_unsafe
+#define shm_malloc_func_unsafe shm_malloc_unsafe
 inline static void* shm_malloc_unsafe(unsigned int size)
 {
 	void *p;
@@ -502,7 +502,7 @@ inline static void* shm_malloc_unsafe(unsigned int size)
 	return p;
 }
 
-#define func_shm_maloc shm_malloc
+#define shm_malloc_func shm_malloc
 inline static void* shm_malloc(unsigned long size)
 {
 	void *p;
