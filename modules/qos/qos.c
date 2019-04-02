@@ -52,9 +52,9 @@ struct dlg_binds dialog_st;
 struct dlg_binds *dlg_binds = &dialog_st;
 
 
-static cmd_export_t cmds[]={
-	{"load_qos", (cmd_function)load_qos, 0, 0, 0, 0},
-	{0,0,0,0,0,0}
+static cmd_export_t cmds[] = {
+	{"load_qos", (cmd_function)load_qos, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 /*
