@@ -167,39 +167,6 @@ struct module_exports exports= {
 	child_init		/* per-child init function */
 };
 
-static inline char* strchrchr(char* str, char c1, char c2)
-{
-
-	char* ret = NULL;
-
-	if (!str)
-		return NULL;
-
-	for (ret = str; (ret = *ret == '\0' ? NULL : ret)
-			&& *ret !=  c1 && *ret != c2; ret++);
-
-	return ret;
-}
-
-static inline char* memchrchr(char* str, char c1, char c2, int len)
-{
-
-	int i;
-
-	if (len == 0)
-		return NULL;
-
-	for (i = 0; i < len; i++) {
-		register char c = *(str + i);
-		if(c == c1 || c == c2)
-			return str + i;
-	}
-
-	return NULL;
-
-}
-
-
 static dp_head_p dp_get_head(str part_name){
 
 	dp_head_p start;
