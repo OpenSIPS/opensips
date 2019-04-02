@@ -953,7 +953,7 @@ static int w_match_dialog(struct sip_msg *msg, void *seq_match_mode_val)
 	if (!seq_match_mode_val)
 		mm = SEQ_MATCH_DEFAULT;
 	else
-		mm = (int)seq_match_mode_val;
+		mm = (int)(long)seq_match_mode_val;
 
 	return api_match_dialog(msg, mm);
 }
