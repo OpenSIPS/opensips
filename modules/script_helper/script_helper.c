@@ -241,7 +241,7 @@ int parse_dlg_flags(modparam_t type, void *val)
 	input.s = val;
 	input.len = strlen(val);
 
-	create_dialog_flags = parse_create_dlg_flags(input);
+	create_dialog_flags = parse_create_dlg_flags(&input);
 
 	return 1;
 }
