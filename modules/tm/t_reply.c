@@ -1684,43 +1684,11 @@ not_found:
 	return 1;
 }
 
-int w_t_reply_body(struct sip_msg* msg, str* code, str *text,
-								str *body)
+int w_t_reply_body(struct sip_msg* msg, unsigned int* code, str *text,
+				str *body)
 {
 	struct cell *t;
 	int r;
-	str code_s;
-	unsigned int code_i;
-	str body_s;
-
-	if(body==0)
-	{
-		LM_ERR("Wrong argument, body must not be NULL\n");
-		return -1;
-	}
-
-	if(((pv_elem_p)code)->spec.getf!=NULL) {
-		if(pv_printf_s(msg, (pv_elem_p)code, &code_s)!=0)
-			return -1;
-		if(str2int(&code_s, &code_i)!=0 || code_i<100 || code_i>699)
-			return -1;
-	} else {
-		code_i = ((pv_elem_p)code)->spec.pvp.pvn.u.isname.name.n;
-	}
-
-	if(((pv_elem_p)text)->spec.getf!=NULL) {
-		if(pv_printf_s(msg, (pv_elem_p)text, &code_s)!=0 || code_s.len <=0)
-			return -1;
-	} else {
-		code_s = ((pv_elem_p)text)->text;
-	}
-
-	if(((pv_elem_p)body)->spec.getf!=NULL) {
-		if(pv_printf_s(msg, (pv_elem_p)body, &body_s)!=0 || body_s.len <=0)
-			return -1;
-	} else {
-		body_s = ((pv_elem_p)body)->text;
-	}
 
 	t=get_t();
 	if ( t==0 || t==T_UNDEFINED ) {
@@ -1741,7 +1709,7 @@ int w_t_reply_body(struct sip_msg* msg, str* code, str *text,
 	} else {
 		update_cloned_msg_from_msg( t->uas.request, msg);
 	}
-	return t_reply_with_body(t, code_i, &code_s, &body_s, 0, 0);
+	return t_reply_with_body(t, *code, text, body, 0, 0);
 }
 
 

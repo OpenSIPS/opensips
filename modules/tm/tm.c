@@ -61,7 +61,6 @@
 #include "../../usr_avp.h"
 #include "../../mem/mem.h"
 #include "../../pvar.h"
-#include "../../mod_fix.h"
 
 #include "sip_msg.h"
 #include "h_table.h"
@@ -94,18 +93,17 @@ int __set_fr_timer(modparam_t type, void* val);
 int __set_fr_inv_timer(modparam_t type, void* val);
 
 /* fixup functions */
-static int fixup_t_send_reply(void** param, int param_no);
-static int fixup_local_replied(void** param, int param_no);
-static int fixup_t_relay1(void** param, int param_no);
-static int fixup_t_relay2(void** param, int param_no);
-static int fixup_t_replicate(void** param, int param_no);
-static int fixup_cancel_branch(void** param, int param_no);
-static int fixup_froute(void** param, int param_no);
-static int fixup_rroute(void** param, int param_no);
-static int fixup_broute(void** param, int param_no);
-static int fixup_t_new_request(void** param, int param_no);
-static int fixup_inject(void** param, int param_no);
-
+static int fixup_local_replied(void** param);
+static int fixup_cancel_branch(void** param);
+static int fixup_froute(void** param);
+static int fixup_rroute(void** param);
+static int fixup_broute(void** param);
+static int fixup_inject_source(void **param);
+static int fixup_inject_flags(void **param);
+static int fixup_reply_code(void **param);
+static int flag_fixup(void** param);
+static int fixup_phostport2proxy(void** param);
+static int fixup_free_proxy(void **param);
 
 /* init functions */
 static int mod_init(void);
@@ -114,24 +112,24 @@ static int child_init(int rank);
 
 /* exported functions */
 static int w_t_newtran(struct sip_msg* p_msg);
-static int w_t_reply(struct sip_msg *msg, char* code, char* text);
-static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text);
-static int w_t_relay(struct sip_msg *p_msg , char *proxy, char* flags);
-static int w_t_replicate(struct sip_msg *p_msg, char *dst,char* );
-static int w_t_on_negative(struct sip_msg* msg, char *go_to);
-static int w_t_on_reply(struct sip_msg* msg, char *go_to);
-static int w_t_on_branch(struct sip_msg* msg, char *go_to);
-static int t_check_status(struct sip_msg* msg, char *regexp);
+static int w_t_reply(struct sip_msg* msg, unsigned int code, str* text);
+static int w_pv_t_reply(struct sip_msg *msg, unsigned int* code, str* text);
+static int w_t_relay( struct sip_msg  *p_msg , struct proxy_l *proxy, void *flags);
+static int w_t_replicate(struct sip_msg *p_msg, str *dst, void *flags);
+static int w_t_on_negative(struct sip_msg* msg, void *go_to);
+static int w_t_on_reply(struct sip_msg* msg, void *go_to);
+static int w_t_on_branch(struct sip_msg* msg, void *go_to);
+static int t_check_status(struct sip_msg* msg, regex_t *regexp);
 static int t_flush_flags(struct sip_msg* msg);
-static int t_local_replied(struct sip_msg* msg, char *type);
+static int t_local_replied(struct sip_msg* msg, void *type);
 static int t_check_trans(struct sip_msg* msg);
 static int t_was_cancelled(struct sip_msg* msg);
-static int w_t_cancel_branch(struct sip_msg* msg, char *sflags );
-static int w_t_add_hdrs(struct sip_msg* msg, char *val );
+static int w_t_cancel_branch(struct sip_msg* msg, void *sflags);
+static int w_t_add_hdrs(struct sip_msg* msg, str *val);
 static int t_cancel_trans(struct cell *t, str *hdrs);
-static int w_t_new_request(struct sip_msg* msg, char*, char*, 
-		char*, char*, char*, char*);
-static int w_t_inject_branches(struct sip_msg* msg, char *s_flags);
+static int w_t_new_request(struct sip_msg* msg, str *method,
+			str *ruri, str *from, str *to, str *body, str *p_ctx);
+static int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_flags);
 static int w_t_wait_for_new_branches(struct sip_msg* msg);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
@@ -190,70 +188,147 @@ static dep_export_t deps = {
 	},
 };
 
-static cmd_export_t cmds[]={
-	{"t_newtran",       (cmd_function)w_t_newtran,      0, 0,
-		0, REQUEST_ROUTE},
-	{"t_reply",         (cmd_function)w_pv_t_reply,     2, fixup_t_send_reply,
-		0, REQUEST_ROUTE | FAILURE_ROUTE },
-	{"t_replicate",     (cmd_function)w_t_replicate,    1, fixup_t_replicate,
-		0, REQUEST_ROUTE},
-	{"t_replicate",     (cmd_function)w_t_replicate,    2, fixup_t_replicate,
-		0, REQUEST_ROUTE},
-	{"t_relay",         (cmd_function)w_t_relay,        0, 0,
-		0, REQUEST_ROUTE | FAILURE_ROUTE },
-	{"t_relay",         (cmd_function)w_t_relay,        1, fixup_t_relay1,
-		0, REQUEST_ROUTE | FAILURE_ROUTE },
-	{"t_relay",         (cmd_function)w_t_relay,        2, fixup_t_relay2,
-		0, REQUEST_ROUTE | FAILURE_ROUTE },
-	{"t_on_failure",    (cmd_function)w_t_on_negative,  1, fixup_froute,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"t_on_reply",      (cmd_function)w_t_on_reply,     1, fixup_rroute,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"t_on_branch",     (cmd_function)w_t_on_branch,    1, fixup_broute,
-		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{"t_check_status",  (cmd_function)t_check_status,   1, fixup_regexp_null,
-		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{"t_write_req",     (cmd_function)t_write_req,      2, fixup_t_write,
-		0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
-	{"t_write_unix",    (cmd_function)t_write_unix,     2, fixup_t_write,
-		0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
-	{"t_flush_flags",   (cmd_function)t_flush_flags,    0, 0,
-		0, REQUEST_ROUTE | BRANCH_ROUTE  },
-	{"t_local_replied", (cmd_function)t_local_replied,  1, fixup_local_replied,
-		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{"t_check_trans",   (cmd_function)t_check_trans,    0, 0,
-		0, REQUEST_ROUTE | BRANCH_ROUTE },
-	{"t_was_cancelled", (cmd_function)t_was_cancelled,  0, 0,
-		0, FAILURE_ROUTE | ONREPLY_ROUTE },
-	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,0, 0,
-		0, ONREPLY_ROUTE },
-	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,1, fixup_cancel_branch,
-		0, ONREPLY_ROUTE },
-	{"t_add_hdrs",      (cmd_function)w_t_add_hdrs,     1, fixup_spve_null,
-		0, REQUEST_ROUTE },
-	{"t_reply_with_body",(cmd_function)w_t_reply_body,  3,fixup_t_send_reply,
-		0, REQUEST_ROUTE },
-	{"t_new_request",    (cmd_function)w_t_new_request, 4, fixup_t_new_request,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"t_new_request",    (cmd_function)w_t_new_request, 5, fixup_t_new_request,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"t_new_request",    (cmd_function)w_t_new_request, 6, fixup_t_new_request,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"t_add_cancel_reason",(cmd_function)t_add_reason,  1, fixup_spve_null,
-		0, REQUEST_ROUTE},
-	{"t_inject_branches",(cmd_function)w_t_inject_branches,1,fixup_inject,
-		0, REQUEST_ROUTE|ONREPLY_ROUTE},
-	{"t_inject_branches",(cmd_function)w_t_inject_branches,2,fixup_inject,
-		0, REQUEST_ROUTE|ONREPLY_ROUTE},
-	{"t_wait_for_new_branches",(cmd_function)w_t_wait_for_new_branches,0, 0,
-		0, REQUEST_ROUTE},
-	{"t_anycast_replicate", (cmd_function)tm_anycast_replicate, 0, 0,
-		0, REQUEST_ROUTE},
-	{"load_tm",         (cmd_function)load_tm,          0, 0,
-			0, 0},
-	{0,0,0,0,0,0}
-};
+// static cmd_export_t cmds[]={
+// 	{"t_newtran",       (cmd_function)w_t_newtran,      0, 0,
+// 		0, REQUEST_ROUTE},
+// 	{"t_reply",         (cmd_function)w_pv_t_reply,     2, fixup_t_send_reply,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE },
+// 	{"t_replicate",     (cmd_function)w_t_replicate,    1, fixup_t_replicate,
+// 		0, REQUEST_ROUTE},
+// 	{"t_replicate",     (cmd_function)w_t_replicate,    2, fixup_t_replicate,
+// 		0, REQUEST_ROUTE},
+// 	{"t_relay",         (cmd_function)w_t_relay,        0, 0,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE },
+// 	{"t_relay",         (cmd_function)w_t_relay,        1, fixup_t_relay1,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE },
+// 	{"t_relay",         (cmd_function)w_t_relay,        2, fixup_t_relay2,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE },
+// 	{"t_on_failure",    (cmd_function)w_t_on_negative,  1, fixup_froute,
+// 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+// 	{"t_on_reply",      (cmd_function)w_t_on_reply,     1, fixup_rroute,
+// 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+// 	{"t_on_branch",     (cmd_function)w_t_on_branch,    1, fixup_broute,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+// 	{"t_check_status",  (cmd_function)t_check_status,   1, fixup_regexp_null,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+// 	{"t_write_req",     (cmd_function)t_write_req,      2, fixup_t_write,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
+// 	{"t_write_unix",    (cmd_function)t_write_unix,     2, fixup_t_write,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE },
+// 	{"t_flush_flags",   (cmd_function)t_flush_flags,    0, 0,
+// 		0, REQUEST_ROUTE | BRANCH_ROUTE  },
+// 	{"t_local_replied", (cmd_function)t_local_replied,  1, fixup_local_replied,
+// 		0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
+// 	{"t_check_trans",   (cmd_function)t_check_trans,    0, 0,
+// 		0, REQUEST_ROUTE | BRANCH_ROUTE },
+// 	{"t_was_cancelled", (cmd_function)t_was_cancelled,  0, 0,
+// 		0, FAILURE_ROUTE | ONREPLY_ROUTE },
+// 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,0, 0,
+// 		0, ONREPLY_ROUTE },
+// 	{"t_cancel_branch", (cmd_function)w_t_cancel_branch,1, fixup_cancel_branch,
+// 		0, ONREPLY_ROUTE },
+// 	{"t_add_hdrs",      (cmd_function)w_t_add_hdrs,     1, fixup_spve_null,
+// 		0, REQUEST_ROUTE },
+// 	{"t_reply_with_body",(cmd_function)w_t_reply_body,  3,fixup_t_send_reply,
+// 		0, REQUEST_ROUTE },
+// 	{"t_new_request",    (cmd_function)w_t_new_request, 4, fixup_t_new_request,
+// 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+// 	{"t_new_request",    (cmd_function)w_t_new_request, 5, fixup_t_new_request,
+// 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+// 	{"t_new_request",    (cmd_function)w_t_new_request, 6, fixup_t_new_request,
+// 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+// 	{"t_add_cancel_reason",(cmd_function)t_add_reason,  1, fixup_spve_null,
+// 		0, REQUEST_ROUTE},
+// 	{"t_inject_branches",(cmd_function)w_t_inject_branches,1,fixup_inject,
+// 		0, REQUEST_ROUTE|ONREPLY_ROUTE},
+// 	{"t_inject_branches",(cmd_function)w_t_inject_branches,2,fixup_inject,
+// 		0, REQUEST_ROUTE|ONREPLY_ROUTE},
+// 	{"t_wait_for_new_branches",(cmd_function)w_t_wait_for_new_branches,0, 0,
+// 		0, REQUEST_ROUTE},
+// 	{"t_anycast_replicate", (cmd_function)tm_anycast_replicate, 0, 0,
+// 		0, REQUEST_ROUTE},
+// 	{"load_tm",         (cmd_function)load_tm,          0, 0,
+// 			0, 0},
+// 	{0,0,0,0,0,0}
+// };
 
+static cmd_export_t cmds[]={
+	{"t_newtran", (cmd_function)w_t_newtran, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"t_reply", (cmd_function)w_pv_t_reply, {
+		{CMD_PARAM_INT, fixup_reply_code, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE | FAILURE_ROUTE},
+	{"t_replicate", (cmd_function)w_t_replicate, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_INT | CMD_PARAM_OPT, flag_fixup, 0}, {0,0,0}},
+		REQUEST_ROUTE | FAILURE_ROUTE},
+	{"t_relay", (cmd_function)w_t_relay, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_phostport2proxy, fixup_free_proxy},
+		{CMD_PARAM_INT | CMD_PARAM_OPT, flag_fixup, 0}, {0,0,0}},
+		REQUEST_ROUTE | FAILURE_ROUTE},
+	{"t_on_failure", (cmd_function)w_t_on_negative, {
+		{CMD_PARAM_STR, fixup_froute, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"t_on_reply", (cmd_function)w_t_on_reply, {
+		{CMD_PARAM_STR, fixup_rroute, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"t_on_branch", (cmd_function)w_t_on_branch, {
+		{CMD_PARAM_STR, fixup_broute, 0}, {0,0,0}},
+		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
+	{"t_check_status", (cmd_function)t_check_status, {
+		{CMD_PARAM_REGEX, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
+	{"t_write_req", (cmd_function)t_write_req, {
+		{CMD_PARAM_STR, fixup_t_write, fixup_free_t_write},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE},
+	{"t_write_unix", (cmd_function)t_write_unix, {
+		{CMD_PARAM_STR, fixup_t_write, fixup_free_t_write},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE},
+	{"t_flush_flags", (cmd_function)t_flush_flags, {{0,0,0}},
+		REQUEST_ROUTE | BRANCH_ROUTE},
+	{"t_local_replied", (cmd_function)t_local_replied, {
+		{CMD_PARAM_STR, fixup_local_replied, 0}, {0,0,0}},
+		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
+	{"t_check_trans", (cmd_function)t_check_trans, {{0,0,0}},
+		REQUEST_ROUTE | BRANCH_ROUTE},
+	{"t_was_cancelled", (cmd_function)t_was_cancelled, {{0,0,0}},
+		FAILURE_ROUTE | ONREPLY_ROUTE},
+	{"t_cancel_branch", (cmd_function)w_t_cancel_branch, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_cancel_branch, 0}, {0,0,0}},
+		ONREPLY_ROUTE},
+	{"t_add_hdrs", (cmd_function)w_t_add_hdrs, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"t_reply_with_body", (cmd_function)w_t_reply_body, {
+		{CMD_PARAM_INT, fixup_reply_code, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"t_new_request", (cmd_function)w_t_new_request, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"t_add_cancel_reason", (cmd_function)t_add_reason, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"t_inject_branches", (cmd_function)w_t_inject_branches, {
+		{CMD_PARAM_STR, fixup_inject_source, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_inject_flags, 0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"t_wait_for_new_branches", (cmd_function)w_t_wait_for_new_branches, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"t_anycast_replicate", (cmd_function)tm_anycast_replicate, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"load_tm", (cmd_function)load_tm, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
+};
 
 static param_export_t params[]={
 	{"ruri_matching",             INT_PARAM,
@@ -412,120 +487,103 @@ struct module_exports exports= {
 
 
 /**************************** fixup functions ******************************/
-static int fixup_froute(void** param, int param_no)
+static int fixup_froute(void** param)
 {
 	int rt;
+	str rt_name_nt;
 
-	rt = get_script_route_ID_by_name( (char *)*param,
+	if (pkg_nt_str_dup(&rt_name_nt, (str*)*param) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
+
+	rt = get_script_route_ID_by_name(rt_name_nt.s,
 			failure_rlist, FAILURE_RT_NO);
 	if (rt==-1) {
-		LM_ERR("failure route <%s> does not exist\n",(char *)*param);
+		LM_ERR("failure route <%s> does not exist\n",rt_name_nt.s);
+		pkg_free(rt_name_nt.s);
 		return -1;
 	}
-	pkg_free(*param);
+
 	*param = (void*)(unsigned long int)rt;
+
+	pkg_free(rt_name_nt.s);
 	return 0;
 }
 
 
-static int fixup_rroute(void** param, int param_no)
+static int fixup_rroute(void** param)
 {
 	int rt;
+	str rt_name_nt;
 
-	rt = get_script_route_ID_by_name( (char *)*param,
+	if (pkg_nt_str_dup(&rt_name_nt, (str*)*param) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
+
+	rt = get_script_route_ID_by_name(rt_name_nt.s,
 		onreply_rlist, ONREPLY_RT_NO);
 	if (rt==-1) {
-		LM_ERR("onreply route <%s> does not exist\n",(char *)*param);
+		LM_ERR("onreply route <%s> does not exist\n",rt_name_nt.s);
+		pkg_free(rt_name_nt.s);
 		return -1;
 	}
-	pkg_free(*param);
+
 	*param = (void*)(unsigned long int)rt;
+
+	pkg_free(rt_name_nt.s);
 	return 0;
 }
 
 
-static int fixup_broute(void** param, int param_no)
+static int fixup_broute(void** param)
 {
 	int rt;
+	str rt_name_nt;
 
-	rt = get_script_route_ID_by_name( (char *)*param,
-		branch_rlist, BRANCH_RT_NO);
-	if (rt==-1) {
-		LM_ERR("branch route <%s> does not exist\n",(char *)*param);
+	if (pkg_nt_str_dup(&rt_name_nt, (str*)*param) < 0) {
+		LM_ERR("No more pkg memory\n");
 		return -1;
 	}
-	pkg_free(*param);
+
+	rt = get_script_route_ID_by_name(rt_name_nt.s,
+		branch_rlist, BRANCH_RT_NO);
+	if (rt==-1) {
+		LM_ERR("branch route <%s> does not exist\n",rt_name_nt.s);
+		pkg_free(rt_name_nt.s);
+		return -1;
+	}
+
 	*param = (void*)(unsigned long int)rt;
+	
+	pkg_free(rt_name_nt.s);
 	return 0;
 }
 
 
 static int flag_fixup(void** param)
 {
-	unsigned int flags;
-	str s;
-
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
-	flags = 0;
-	if ( strno2int(&s, &flags )<0 ) {
-		return -1;
-	}
-	pkg_free(*param);
-	*param = (void*)(unsigned long int)(flags<<1);
-
+	*param = (void*)(unsigned long int)((*(unsigned int*)*param)<<1);
 	return 0;
 }
 
 
-static int fixup_t_replicate(void** param, int param_no)
-{
-	str s;
-	pv_elem_t *model;
-
-	if (param_no == 1) {
-		s.s = (char*)*param;
-		s.len = strlen(s.s);
-		model = NULL;
-
-		if(pv_parse_format(&s ,&model) || model==NULL) {
-			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
-			return E_CFG;
-		}
-
-		*param = (void*)model;
-	} else {
-		/* flags */
-		if (flag_fixup(param)!=0) {
-			LM_ERR("bad flags <%s>\n", (char *)(*param));
-			return E_CFG;
-		}
-	}
-	return 0;
-}
-
-
-static int fixup_phostport2proxy(void** param, int param_no)
+static int fixup_phostport2proxy(void** param)
 {
 	struct proxy_l *proxy;
-	char *s;
+	str s = *(str*)*param;
 	int port;
 	int proto;
 	str host;
 
-	if (param_no!=1) {
-		LM_CRIT("called with more than one parameter\n");
-		return E_BUG;
-	}
-
-	s = (char *) (*param);
-	if (s==0 || *s==0) {
+	if (s.s == NULL || s.len == 0) {
 		LM_CRIT("empty parameter\n");
 		return E_UNSPEC;
 	}
 
-	if (parse_phostport( s, strlen(s), &host.s, &host.len, &port, &proto)!=0){
-		LM_CRIT("invalid parameter <%s>\n",s);
+	if (parse_phostport(s.s, s.len, &host.s, &host.len, &port, &proto)!=0){
+		LM_CRIT("invalid parameter <%.*s>\n",s.len, s.s);
 		return E_UNSPEC;
 	}
 
@@ -538,112 +596,53 @@ static int fixup_phostport2proxy(void** param, int param_no)
 	return 0;
 }
 
-
-static int fixup_t_relay1(void** param, int param_no)
+static int fixup_free_proxy(void **param)
 {
-	if (flag_fixup(param)==0) {
-		/* param is flag -> move it as second param */
-		*((void**)(((char*)param)+sizeof(action_elem_t))) = *param;
-		*param = 0;
-		return 0;
-	} else if (fixup_phostport2proxy( param, 1)==0 ) {
-		/* param is OBP -> nothing else to do */
-		return 0;
-	} else {
-		LM_ERR("param is neither flag, nor OBP <%s>\n",(char *)(*param));
-		return E_CFG;
-	}
-}
-
-
-static int fixup_t_relay2(void** param, int param_no)
-{
-	if (param_no==1) {
-		return fixup_phostport2proxy( param, param_no);
-	} else if (param_no==2) {
-		if (flag_fixup(param)!=0) {
-			LM_ERR("bad flags <%s>\n", (char *)(*param));
-			return E_CFG;
-		}
-	}
+	free_proxy(*param);
 	return 0;
 }
 
 
-static int fixup_t_send_reply(void** param, int param_no)
+static int fixup_reply_code(void **param)
 {
-	pv_elem_t *model=NULL;
-	str s;
-
-	/* convert to str */
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
-	if (s.len==0) {
-		LM_ERR("param no. %d is empty!\n", param_no);
+	if (*(int*)*param < 100 || *(int*)*param > 699) {
+		LM_ERR("wrong value [%d] for param! - Allowed only"
+			" 1xx - 6xx \n", *(int*)*param);
 		return E_CFG;
-	}
-
-	model=NULL;
-	if (param_no>0 && param_no<4) {
-		if(pv_parse_format(&s ,&model) || model==NULL) {
-			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
-			return E_CFG;
-		}
-		if(model->spec.getf==NULL && param_no==1) {
-			if(str2int(&s,
-			(unsigned int*)&model->spec.pvp.pvn.u.isname.name.n)!=0
-			|| model->spec.pvp.pvn.u.isname.name.n<100
-			|| model->spec.pvp.pvn.u.isname.name.n>699) {
-				LM_ERR("wrong value [%s] for param no %d! - Allowed only"
-					" 1xx - 6xx \n", s.s, param_no);
-				return E_CFG;
-			}
-		}
-		*param = (void*)model;
 	}
 
 	return 0;
 }
 
-
-static int fixup_local_replied(void** param, int param_no)
+static int fixup_local_replied(void** param)
 {
-	char *val;
 	int n = 0;
+	str *s = (str*)*param;
 
-	if (param_no==1) {
-		val = (char*)*param;
-		if (strcasecmp(val,"all")==0) {
-			n = 0;
-		} else if (strcasecmp(val,"branch")==0) {
-			n = 1;
-		} else if (strcasecmp(val,"last")==0) {
-			n = 2;
-		} else {
-			LM_ERR("invalid param \"%s\"\n", val);
-			return E_CFG;
-		}
-		/* free string */
-		pkg_free(*param);
-		/* replace it with the compiled re */
-		*param=(void*)(long)n;
+	if (strncasecmp(s->s,"all",3)==0) {
+		n = 0;
+	} else if (strncasecmp(s->s,"branch",6)==0) {
+		n = 1;
+	} else if (strncasecmp(s->s,"last",4)==0) {
+		n = 2;
 	} else {
-		LM_ERR("called with parameter != 1\n");
-		return E_BUG;
+		LM_ERR("invalid param \"%.*s\"\n", s->len, s->s);
+		return E_CFG;
 	}
+
+	*param=(void*)(long)n;
 	return 0;
 }
 
 
-static int fixup_cancel_branch(void** param, int param_no)
+static int fixup_cancel_branch(void** param)
 {
-	char *c;
-	unsigned int flags;
+	unsigned int flags = 0;
+	str *s = (str*)*param;
+	int i;
 
-	c = (char*)*param;
-	flags = 0;
-	while (*c) {
-		switch (*c) {
+	for (i=0; i < s->len; i++)
+		switch (s->s[i]) {
 			case 'a':
 			case 'A':
 				flags |= TM_CANCEL_BRANCH_ALL;
@@ -653,70 +652,48 @@ static int fixup_cancel_branch(void** param, int param_no)
 				flags |= TM_CANCEL_BRANCH_OTHERS;
 				break;
 			default:
-				LM_ERR("unsupported flag '%c'\n",*c);
+				LM_ERR("unsupported flag '%c'\n",s->s[i]);
 				return -1;
 		}
-		c++;
-	}
-	pkg_free(*param);
+
 	*param = (void*)(unsigned long)flags;
 	return 0;
 }
 
-
-static int fixup_t_new_request(void** param, int param_no)
+static int fixup_inject_source(void **param)
 {
-	/* static string or pv-format for all parameters */
-	return fixup_spve(param);
-}
+	unsigned int flags = 0;
+	str *s = (str *)*param;
 
-
-static int fixup_inject(void** param, int param_no)
-{
-	char *s;
-	void **param1;
-	unsigned int flags;
-
-	s = (char*)*param;
-	flags = 0;
-
-	if (param_no==1) {
-		/* the source of the new branches */
-		if ( strcasecmp(s,"msg")==0 || strcasecmp(s,"message")==0 ) {
-			flags |= TM_INJECT_SRC_MSG;
-		} else
-		if ( strcasecmp(s,"event")==0 || strcasecmp(s,"events")==0 ) {
-			flags |= TM_INJECT_SRC_EVENT;
-		} else {
-			LM_ERR("unsupported injection source '%s'\n",s);
-			return -1;
-		}
+	if ( strncasecmp(s->s, "msg", 3)==0 || strncasecmp(s->s, "message", 7)==0 ) {
+		flags |= TM_INJECT_SRC_MSG;
 	} else
-	if (param_no==2) {
-		/* extra flags about the injection process */
-		if ( strcasecmp(s,"cancel")==0 ) {
-			flags |= TM_INJECT_FLAG_CANCEL;
-		} else {
-			LM_ERR("unsupported injection flag '%s'\n",s);
-			return -1;
-		}
-		/* get the address of the previous param (no. 1) */
-		param1 = (void**)((char*)param - sizeof(action_elem_t));
-		/* and push the flags there too */
-		*param1 = (void*)(unsigned long)
-			( ((unsigned long)(void*)*param1) | flags );
-		flags = 0;
+	if ( strncasecmp(s->s, "event", 5)==0 || strncasecmp(s->s, "events", 6)==0 ) {
+		flags |= TM_INJECT_SRC_EVENT;
 	} else {
-		LM_BUG("unsupported param 3 or higher\n");
+		LM_ERR("unsupported injection source '%.*s'\n", s->len, s->s);
 		return -1;
 	}
 
-	pkg_free(*param);
 	*param = (void*)(unsigned long)flags;
 	return 0;
 }
 
+static int fixup_inject_flags(void **param)
+{
+	unsigned int flags = 0;
+	str *s = (str *)*param;
 
+	if ( strncasecmp(s->s, "cancel", 6)==0 ) {
+		flags |= TM_INJECT_FLAG_CANCEL;
+	} else {
+		LM_ERR("unsupported injection flag '%.*s'\n", s->len, s->s);
+		return -1;
+	}
+
+	*param = (void*)(unsigned long)flags;
+	return 0;
+}
 
 /***************************** init functions *****************************/
 int load_tm( struct tm_binds *tmb)
@@ -994,7 +971,7 @@ static int child_init(int rank)
 
 
 /**************************** wrapper functions ***************************/
-static int t_check_status(struct sip_msg* msg, char *regexp)
+static int t_check_status(struct sip_msg* msg, regex_t *regexp)
 {
 	regmatch_t pmatch;
 	struct cell *t;
@@ -1039,7 +1016,7 @@ static int t_check_status(struct sip_msg* msg, char *regexp)
 
 	LM_DBG("checked status is <%s>\n",status);
 	/* do the checking */
-	n = regexec((regex_t*)regexp, status, 1, &pmatch, 0);
+	n = regexec(regexp, status, 1, &pmatch, 0);
 
 	if (backup) status[msg->first_line.u.reply.status.len] = backup;
 	if (n!=0) return -1;
@@ -1108,7 +1085,7 @@ static int t_flush_flags(struct sip_msg* msg)
 }
 
 
-static int t_local_replied(struct sip_msg* msg, char *type)
+static int t_local_replied(struct sip_msg* msg, void *type)
 {
 	struct cell *t;
 	int branch;
@@ -1177,7 +1154,7 @@ static int t_was_cancelled(struct sip_msg* msg)
 }
 
 
-static int w_t_reply(struct sip_msg* msg, char* code, char* text)
+static int w_t_reply(struct sip_msg* msg, unsigned int code, str* text)
 {
 	struct cell *t;
 	int r;
@@ -1196,7 +1173,7 @@ static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 				LM_ERR("BUG - no transaction found in Failure Route\n");
 				return -1;
 			}
-			return t_reply_unsafe(t, msg, (unsigned int)(long)code,(str*)text);
+			return t_reply_unsafe(t, msg, code, text);
 		case REQUEST_ROUTE:
 			t=get_t();
 			if ( t==0 || t==T_UNDEFINED ) {
@@ -1210,7 +1187,7 @@ static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 				}
 				t=get_t();
 			}
-			return t_reply( t, msg, (unsigned int)(long)code, (str*)text);
+			return t_reply( t, msg, code, text);
 		default:
 			LM_CRIT("unsupported route_type (%d)\n", route_type);
 			return -1;
@@ -1218,28 +1195,9 @@ static int w_t_reply(struct sip_msg* msg, char* code, char* text)
 }
 
 
-static int w_pv_t_reply(struct sip_msg *msg, char* code, char* text)
+static int w_pv_t_reply(struct sip_msg *msg, unsigned int* code, str* text)
 {
-	str code_s;
-	unsigned int code_i;
-
-	if(((pv_elem_p)code)->spec.getf!=NULL) {
-		if(pv_printf_s(msg, (pv_elem_p)code, &code_s)!=0)
-			return -1;
-		if(str2int(&code_s, &code_i)!=0 || code_i<100 || code_i>699)
-			return -1;
-	} else {
-		code_i = ((pv_elem_p)code)->spec.pvp.pvn.u.isname.name.n;
-	}
-
-	if(((pv_elem_p)text)->spec.getf!=NULL) {
-		if(pv_printf_s(msg, (pv_elem_p)text, &code_s)!=0 || code_s.len <=0)
-			return -1;
-	} else {
-		code_s = ((pv_elem_p)text)->text;
-	}
-
-	return w_t_reply(msg, (char*)(unsigned long)code_i, (char*)&code_s);
+	return w_t_reply(msg, *code, text);
 }
 
 
@@ -1251,39 +1209,30 @@ static int w_t_newtran( struct sip_msg* p_msg)
 }
 
 
-static int w_t_on_negative( struct sip_msg* msg, char *go_to)
+static int w_t_on_negative( struct sip_msg* msg, void *go_to)
 {
 	t_on_negative( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-static int w_t_on_reply( struct sip_msg* msg, char *go_to)
+static int w_t_on_reply( struct sip_msg* msg, void *go_to)
 {
 	t_on_reply( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-static int w_t_on_branch( struct sip_msg* msg, char *go_to)
+static int w_t_on_branch( struct sip_msg* msg, void *go_to)
 {
 	t_on_branch( (unsigned int )(long) go_to );
 	return 1;
 }
 
 
-static int w_t_replicate(struct sip_msg *p_msg, char *dst, char *flags)
+static int w_t_replicate(struct sip_msg *p_msg, str *dst, void *flags)
 {
-	str dest;
-
-	if(((pv_elem_p)dst)->spec.getf!=NULL) {
-		if(pv_printf_s(p_msg, (pv_elem_p)dst, &dest)!=0 || dest.len <=0)
-			return -1;
-	} else {
-		dest = ((pv_elem_p)dst)->text;
-	}
-
-	return t_replicate( p_msg, &dest, (int)(long)flags);
+	return t_replicate( p_msg, dst, (int)(long)flags);
 }
 
 static inline int t_relay_inerr2scripterr(void)
@@ -1315,7 +1264,7 @@ static inline int t_relay_inerr2scripterr(void)
 }
 
 
-static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
+static int w_t_relay( struct sip_msg  *p_msg , struct proxy_l *proxy, void *flags)
 {
 	struct proxy_l *p = NULL;
 	struct cell *t;
@@ -1323,7 +1272,7 @@ static int w_t_relay( struct sip_msg  *p_msg , char *proxy, char *flags)
 
 	t=get_t();
 
-	if (proxy && (p=clone_proxy((struct proxy_l*)proxy))==0) {
+	if (proxy && (p=clone_proxy(proxy))==0) {
 		LM_ERR("failed to clone proxy, dropping packet\n");
 		return -1;
 	}
@@ -1417,7 +1366,7 @@ static int t_cancel_trans(struct cell *t, str *extra_hdrs)
 }
 
 extern int _tm_branch_index;
-static int w_t_cancel_branch(struct sip_msg *msg, char *sflags)
+static int w_t_cancel_branch(struct sip_msg *msg, void *sflags)
 {
 	branch_bm_t cancel_bitmap = 0;
 	struct cell *t;
@@ -1470,10 +1419,9 @@ static int w_t_cancel_branch(struct sip_msg *msg, char *sflags)
 }
 
 
-static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
+static int w_t_add_hdrs(struct sip_msg* msg, str *val)
 {
 	struct cell *t;
-	str val;
 
 	t=get_t();
 
@@ -1481,140 +1429,106 @@ static int w_t_add_hdrs(struct sip_msg* msg, char *p_val )
 		/* no transaction */
 		return -1;
 	}
-	if (fixup_get_svalue(msg, (gparam_p)p_val, &val)!=0) {
-		LM_ERR("invalid value\n");
-		return -1;
-	}
+
 	if (t->extra_hdrs.s) shm_free(t->extra_hdrs.s);
-	t->extra_hdrs.s = (char*)shm_malloc(val.len);
+	t->extra_hdrs.s = (char*)shm_malloc(val->len);
 	if (t->extra_hdrs.s==NULL) {
 		LM_ERR("no more shm mem\n");
 		return -1;
 	}
-	t->extra_hdrs.len = val.len;
-	memcpy( t->extra_hdrs.s , val.s, val.len );
+	t->extra_hdrs.len = val->len;
+	memcpy( t->extra_hdrs.s , val->s, val->len );
 
 	return 1;
 }
 
 
-static int w_t_new_request(struct sip_msg* msg, char *p_method,
-			char *p_ruri, char *p_from, char *p_to, char *p_body, char *p_ctx)
+static int w_t_new_request(struct sip_msg* msg, str *method,
+			str *ruri, str *from, str *to, str *body, str *p_ctx)
 {
 #define CONTENT_TYPE_HDR      "Content-Type: "
 #define CONTENT_TYPE_HDR_LEN  (sizeof(CONTENT_TYPE_HDR)-1)
 	static dlg_t dlg;
 	struct usr_avp **avp_list;
-	str ruri;
-	str method;
-	str body;
 	str headers;
-	str s;
 	int_str ctx;
 	char *p;
 
 	memset( &dlg, 0, sizeof(dlg_t));
 
-	/* evaluate the parameters */
-
-	/* method */
-	if ( fixup_get_svalue(msg, (gparam_p)p_method, &method)<0 ) {
-		LM_ERR("failed to extract METHOD param\n");
-		return -1;
-	}
-	LM_DBG("setting METHOD to <%.*s>\n", method.len, method.s);
+	LM_DBG("setting METHOD to <%.*s>\n", method->len, method->s);
 
 	/* ruri - next hop is the same as RURI */
-	dlg.hooks.next_hop = dlg.hooks.request_uri = &ruri;
-	if ( fixup_get_svalue(msg, (gparam_p)p_ruri, &ruri)<0 ) {
-		LM_ERR("failed to extract RURI param\n");
-		return -1;
-	}
+	dlg.hooks.next_hop = dlg.hooks.request_uri = ruri;
 	LM_DBG("setting RURI to <%.*s>\n",
 		dlg.hooks.next_hop->len, dlg.hooks.next_hop->s);
 
 	/* FROM URI + display */
-	if ( fixup_get_svalue(msg, (gparam_p)p_from, &s)<0 ) {
-		LM_ERR("failed to extract FROM param\n");
-		return -1;
-	}
-	if ( (p=q_memrchr(s.s, ' ', s.len))==NULL ) {
+	if ( (p=q_memrchr(from->s, ' ', from->len))==NULL ) {
 		/* no display, only FROM URI */
-		dlg.loc_uri = s;
+		dlg.loc_uri = *from;
 		dlg.loc_dname.s = NULL;
 		dlg.loc_dname.len = 0;
 	} else {
 		/* display + URI */
 		dlg.loc_uri.s = p+1;
-		dlg.loc_uri.len = s.s+s.len - dlg.loc_uri.s;
-		dlg.loc_dname.s = s.s;
-		dlg.loc_dname.len = p - s.s;
+		dlg.loc_uri.len = from->s+from->len - dlg.loc_uri.s;
+		dlg.loc_dname.s = from->s;
+		dlg.loc_dname.len = p - from->s;
 	}
 	LM_DBG("setting FROM to <%.*s> + <%.*s>\n",
 		dlg.loc_dname.len, dlg.loc_dname.s,
 		dlg.loc_uri.len, dlg.loc_uri.s);
 
 	/* TO URI + display */
-	if ( fixup_get_svalue(msg, (gparam_p)p_to, &s)<0 ) {
-		LM_ERR("failed to extract TO param\n");
-		return -1;
-	}
-	if ( (p=q_memrchr(s.s, ' ', s.len))==NULL ) {
+	if ( (p=q_memrchr(to->s, ' ', to->len))==NULL ) {
 		/* no display, only TO URI */
-		dlg.rem_uri = s;
+		dlg.rem_uri = *to;
 		dlg.rem_dname.s = NULL;
 		dlg.rem_dname.len = 0;
 	} else {
 		/* display + URI */
 		dlg.rem_uri.s = p+1;
-		dlg.rem_uri.len = s.s+s.len - dlg.rem_uri.s;
-		dlg.rem_dname.s = s.s;
-		dlg.rem_dname.len = p - s.s;
+		dlg.rem_uri.len = to->s+to->len - dlg.rem_uri.s;
+		dlg.rem_dname.s = to->s;
+		dlg.rem_dname.len = p - to->s;
 	}
 	LM_DBG("setting TO to <%.*s> + <%.*s>\n",
 		dlg.rem_dname.len, dlg.rem_dname.s,
 		dlg.rem_uri.len, dlg.rem_uri.s);
 
 	/* BODY and Content-Type */
-	if (p_body!=NULL) {
-		if ( fixup_get_svalue(msg, (gparam_p)p_body, &body)<0 ) {
-			LM_ERR("failed to extract BODY param\n");
-			return -1;
-		}
-		if ( (p=q_memchr(body.s, ' ', body.len))==NULL ) {
+	if (body!=NULL) {
+		if ( (p=q_memchr(body->s, ' ', body->len))==NULL ) {
 			LM_ERR("Content Type not found in the beginning of body <%.*s>\n",
-				body.len, body.s);
+				body->len, body->s);
 			return -1;
 		}
 		/* build the Content-type header */
-		headers.len = CONTENT_TYPE_HDR_LEN + (p-body.s) + CRLF_LEN;
+		headers.len = CONTENT_TYPE_HDR_LEN + (p-body->s) + CRLF_LEN;
 		if ( (headers.s=(char*)pkg_malloc(headers.len))==NULL ) {
 			LM_ERR("failed to get pkg mem (needed %d)\n",headers.len);
 			return -1;
 		}
 		memcpy( headers.s, CONTENT_TYPE_HDR, CONTENT_TYPE_HDR_LEN);
-		memcpy( headers.s+CONTENT_TYPE_HDR_LEN, body.s, p-body.s);
-		memcpy( headers.s+CONTENT_TYPE_HDR_LEN+(p-body.s), CRLF, CRLF_LEN);
+		memcpy( headers.s+CONTENT_TYPE_HDR_LEN, body->s, p-body->s);
+		memcpy( headers.s+CONTENT_TYPE_HDR_LEN+(p-body->s), CRLF, CRLF_LEN);
 		/* set the body */
-		body.len = body.s + body.len - (p+1);
-		body.s = p + 1;
+		body->len = body->s + body->len - (p+1);
+		body->s = p + 1;
 		LM_DBG("setting BODY to <%.*s> <%.*s>\n",
 			headers.len, headers.s,
-			body.len, body.s );
+			body->len, body->s );
 	} else {
-		body.s = NULL;
-		body.len = 0;
+		body->s = NULL;
+		body->len = 0;
 		headers.s = NULL;
 		headers.len = 0;
 	}
 
 	/* context value */
 	if (p_ctx!=NULL) {
-		if ( fixup_get_svalue(msg, (gparam_p)p_ctx, &ctx.s)<0 ) {
-			LM_ERR("failed to extract BODY param\n");
-			if (p_body) pkg_free(headers.s);
-			return -1;
-		}
+		ctx.s = *p_ctx;
 		LM_DBG("setting CTX AVP to <%.*s>\n", ctx.s.len, ctx.s.s);
 		avp_list = set_avp_list( &dlg.avps );
 		if (add_avp( AVP_VAL_STR, uac_ctx_avp_id, ctx) < 0)
@@ -1636,7 +1550,7 @@ static int w_t_new_request(struct sip_msg* msg, char *p_method,
 	dlg.id.rem_tag.len = 0;
 
 	/* do the actual sending now */
-	if ( t_uac( &method, headers.s?&headers:NULL, body.s?&body:NULL,
+	if ( t_uac(method, headers.s?&headers:NULL, body,
 	&dlg, 0, 0, 0) <= 0 ) {
 		LM_ERR("failed to send the request out\n");
 		if (headers.s) pkg_free(headers.s);
@@ -1650,11 +1564,12 @@ static int w_t_new_request(struct sip_msg* msg, char *p_method,
 }
 
 
-static int w_t_inject_branches(struct sip_msg* msg, char *s_flags)
+static int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_flags)
 {
 	struct cell *t;
 	int is_local=0;
 	int rc;
+	int flags = ((int)(long)source) | ((int)(long)extra_flags);
 
 	/* first get the transaction */
 	t = get_t();
@@ -1685,7 +1600,7 @@ static int w_t_inject_branches(struct sip_msg* msg, char *s_flags)
 		LOCK_REPLIES(t);
 
 	/* we the transaction to operate with, do the stuff now */
-	rc = t_inject_branch( t, msg, (int)(long)s_flags);
+	rc = t_inject_branch( t, msg, flags);
 
 	if (!is_local) {
 		UNLOCK_REPLIES(t);
