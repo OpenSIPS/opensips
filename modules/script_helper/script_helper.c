@@ -52,11 +52,6 @@ int parse_dlg_flags(modparam_t type, void *val);
 
 int mod_init(void);
 
-static cmd_export_t cmds[] =
-{
-	{ NULL, NULL, 0, NULL, NULL, 0 },
-};
-
 static param_export_t params[] =
 {
 	{ "sequential_route", STR_PARAM, &seq_route },
@@ -93,7 +88,7 @@ struct module_exports exports =
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
 	&deps,            /* OpenSIPS module dependencies */
-	cmds,
+	NULL,
 	NULL,
 	params,
 	NULL,
