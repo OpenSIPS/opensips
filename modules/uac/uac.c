@@ -76,45 +76,37 @@ uac_auth_api_t uac_auth_api;
 int force_dialog = 0;
 struct dlg_binds dlg_api;
 
-static int w_replace_from(struct sip_msg* msg, char* p1, char* p2);
+static int w_replace_from(struct sip_msg* msg, str* p1, str* p2);
 static int w_restore_from(struct sip_msg* msg);
 
-static int w_replace_to(struct sip_msg* msg, char* p1, char* p2);
+static int w_replace_to(struct sip_msg* msg, str* p1, str* p2);
 static int w_restore_to(struct sip_msg* msg);
 
-static int w_uac_auth(struct sip_msg* msg, char* str, char* str2);
-static int fixup_replace_uri(void** param, int param_no);
-static int fixup_replace_disp_uri(void** param, int param_no);
+static int w_uac_auth(struct sip_msg* msg);
+static int fixup_replace_disp_uri(void** param);
+static int fixup_free_s(void** param);
 static int mod_init(void);
 static void mod_destroy(void);
 
 
 /* Exported functions */
 static cmd_export_t cmds[]={
-	{"uac_replace_from",  (cmd_function)w_replace_from,  2,
-			fixup_replace_disp_uri, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_replace_from",  (cmd_function)w_replace_from,  1,
-			fixup_replace_uri, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_restore_from",  (cmd_function)w_restore_from,   0,
-			0, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_replace_to",  (cmd_function)w_replace_to,  2,
-			fixup_replace_disp_uri, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_replace_to",  (cmd_function)w_replace_to,  1,
-			fixup_replace_uri, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_restore_to",  (cmd_function)w_restore_to,   0,
-			0, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
-	{"uac_auth",        (cmd_function)w_uac_auth,     0,
-			0, 0,
-			FAILURE_ROUTE },
-	{0,0,0,0,0,0}
+	{"uac_replace_from",  (cmd_function)w_replace_from, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_replace_disp_uri, fixup_free_s}, {0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"uac_restore_from",  (cmd_function)w_restore_from, {{0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"uac_replace_to",  (cmd_function)w_replace_to, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_replace_disp_uri, fixup_free_s}, {0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"uac_restore_to",  (cmd_function)w_restore_to, {{0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"uac_auth",        (cmd_function)w_uac_auth, {{0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
-
 
 
 /* Exported parameters */
@@ -334,71 +326,43 @@ static void mod_destroy(void)
 
 /************************** fixup functions ******************************/
 
-static int fixup_replace_uri(void** param, int param_no)
+static int fixup_replace_disp_uri(void** param)
 {
-	pv_elem_t *model;
-	str s;
-
-	model=NULL;
-	s.s = (char*)(*param); s.len = strlen(s.s);
-	if(pv_parse_format(&s, &model)<0)
-	{
-		LM_ERR("wrong format[%s]!\n",(char*)(*param));
-		return E_UNSPEC;
-	}
-	if (model==NULL)
-	{
-		LM_ERR("empty parameter!\n");
-		return E_UNSPEC;
-	}
-	*param = (void*)model;
-
-	return 0;
-}
-
-
-static int fixup_replace_disp_uri(void** param, int param_no)
-{
-	pv_elem_t *model;
 	char *p;
-	str s;
+	str *s = (str*)*param;
+	str repl;
 
-	/* convert to str */
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
-
-	model=NULL;
-	if (param_no==1 && s.len) {
-		/* check to see if it is already quoted */
-		if ((s.s[0] == '\"' && s.s[s.len - 1] == '\"') ||
-				str_check_token(&s))
-			goto unquoted;
-
-		/* put " around display name */
-		p = (char*)pkg_malloc(s.len+3);
-		if (p==0) {
-			LM_CRIT("no more pkg mem\n");
+	/* check to see if it is already quoted */
+	if ((s->s[0] == '\"' && s->s[s->len - 1] == '\"') ||
+			str_check_token(s)) {
+		if (pkg_nt_str_dup(&repl, s) < 0)
 			return E_OUT_OF_MEM;
-		}
-		p[0] = '\"';
-		memcpy(p+1, s.s, s.len);
-		p[s.len+1] = '\"';
-		p[s.len+2] = '\0';
-		pkg_free(s.s);
-		s.s = p;
-		s.len += 2;
+		*s = repl;
+		return 0;
 	}
-unquoted:
-	if(pv_parse_format(&s ,&model)<0) {
-		LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
-		pkg_free(s.s);
-		return E_UNSPEC;
+
+	/* put " around display name */
+	p = (char*)pkg_malloc(s->len+3);
+	if (p==0) {
+		LM_CRIT("no more pkg mem\n");
+		return E_OUT_OF_MEM;
 	}
-	*param = (void*)model;
+	p[0] = '\"';
+	memcpy(p+1, s->s, s->len);
+	p[s->len+1] = '\"';
+	p[s->len+2] = '\0';
+	pkg_free(s->s);
+	s->s = p;
+	s->len += 2;
 
 	return 0;
 }
 
+static int fixup_free_s(void** param)
+{
+	pkg_free(*param);
+	return 0;
+}
 
 
 /************************** wrapper functions ******************************/
@@ -415,32 +379,8 @@ static int w_restore_from(struct sip_msg *msg)
 }
 
 
-static int w_replace_from(struct sip_msg* msg, char* p1, char* p2)
+static int w_replace_from(struct sip_msg* msg, str* dsp, str* uri)
 {
-	str uri_s;
-	str dsp_s;
-	str *uri;
-	str *dsp = NULL;
-
-	if (p2==NULL) {
-		p2 = p1;
-		p1 = NULL;
-		dsp = NULL;
-	}
-
-	/* p1 dispaly , p2 uri */
-
-	if ( p1!=NULL ) {
-		if(pv_printf_s( msg, (pv_elem_p)p1, &dsp_s)!=0)
-			return -1;
-		dsp = &dsp_s;
-	}
-
-	/* compute the URI string; if empty string -> make it NULL */
-	if (pv_printf_s( msg, (pv_elem_p)p2, &uri_s)!=0)
-		return -1;
-	uri = uri_s.len?&uri_s:NULL;
-
 	if (parse_from_header(msg)<0 ) {
 		LM_ERR("failed to find/parse FROM hdr\n");
 		return -1;
@@ -465,31 +405,8 @@ static int w_restore_to(struct sip_msg *msg)
 }
 
 
-static int w_replace_to(struct sip_msg* msg, char* p1, char* p2)
+static int w_replace_to(struct sip_msg* msg, str *dsp, str *uri)
 {
-	str uri_s;
-	str dsp_s;
-	str *uri;
-	str *dsp = NULL;
-
-	if (p2==NULL) {
-		p2 = p1;
-		p1 = NULL;
-	}
-
-	/* p1 dispaly , p2 uri */
-
-	if ( p1!=NULL ) {
-		if(pv_printf_s( msg, (pv_elem_p)p1, &dsp_s)!=0)
-			return -1;
-		dsp = &dsp_s;
-	}
-
-	/* compute the URI string; if empty string -> make it NULL */
-	if (pv_printf_s( msg, (pv_elem_p)p2, &uri_s)!=0)
-		return -1;
-	uri = uri_s.len?&uri_s:NULL;
-
 	/* parse TO hdr */
 	if ( msg->to==0 && (parse_headers(msg,HDR_TO_F,0)!=0 || msg->to==0) ) {
 		LM_ERR("failed to parse TO hdr\n");
@@ -502,7 +419,7 @@ static int w_replace_to(struct sip_msg* msg, char* p1, char* p2)
 
 
 
-static int w_uac_auth(struct sip_msg* msg, char* str, char* str2)
+static int w_uac_auth(struct sip_msg* msg)
 {
 	return (uac_auth(msg)==0)?1:-1;
 }
