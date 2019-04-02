@@ -356,7 +356,7 @@ int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
  *          -2 : found but method not allowed
  *          -3 : error
  */
-int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
+int lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri)
 {
 	static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
 	static str branch_uris[MAX_BRANCHES-1];
@@ -365,24 +365,19 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 	qvalue_t tq;
 
 	urecord_t* r;
-	str aor, uri;
+	str aor;
 	ucontact_t *ct, **ptr;
 	int max_latency = 0, ruri_is_pushed = 0, regexp_flags = 0;
 	unsigned int flags;
 	int rc, ret = -1;
-	str flags_s, sip_instance = STR_NULL, call_id = STR_NULL;
+	str sip_instance = STR_NULL, call_id = STR_NULL;
 	regex_t ua_re;
 
 	flags = 0;
-	if (_f && _f[0] != '\0') {
-		if (fixup_get_svalue( _m, (gparam_p)_f, &flags_s) != 0) {
-			LM_ERR("invalid flags parameter\n");
-			return -1;
-		}
-
-		if (parse_lookup_flags(&flags_s, &flags, &ua_re, &regexp_flags,
+	if (flags_s && flags_s->s[0] != '\0') {
+		if (parse_lookup_flags(flags_s, &flags, &ua_re, &regexp_flags,
 		                       &max_latency) != 0) {
-			LM_ERR("failed to parse flags: %.*s\n", flags_s.len, flags_s.s);
+			LM_ERR("failed to parse flags: %.*s\n", flags_s->len, flags_s->s);
 			return -1;
 		}
 	}
@@ -407,16 +402,10 @@ int lookup(struct sip_msg* _m, char* _t, char* _f, char* _s)
 		clear_branches();
 	}
 
-	if (_s) {
-		if (fixup_get_svalue(_m, (gparam_p)_s, &uri) != 0) {
-			LM_ERR("failed to get a string value for the 'AoR' parameter\n");
-			return -1;
-		}
-	} else {
-		uri = *GET_RURI(_m);
-	}
+	if (!uri)
+		uri = GET_RURI(_m);
 
-	if (extract_aor(&uri, &aor, &sip_instance, &call_id) < 0) {
+	if (extract_aor(uri, &aor, &sip_instance, &call_id) < 0) {
 		LM_ERR("failed to extract address of record\n");
 		return -3;
 	}
@@ -473,11 +462,11 @@ fetch_urecord:
 		ul.release_urecord(r, 0);
 		ul.unlock_udomain((udomain_t *)_t, &aor);
 
-		uri = branch_uris[idx];
+		uri = &branch_uris[idx];
 		LM_DBG("getting contacts from aor [%.*s] "
 		       "in branch %d\n", aor.len, aor.s, idx);
 
-		if (extract_aor(&uri, &aor, NULL, &call_id) < 0) {
+		if (extract_aor(uri, &aor, NULL, &call_id) < 0) {
 			LM_ERR("failed to extract address of record for branch uri\n");
 			ret = -3;
 			goto out_cleanup;
@@ -536,10 +525,9 @@ struct to_body* select_uri(struct sip_msg* _m)
 		return -2; \
 	}
 
-int msg_aor_parse(struct sip_msg* _m, char *_aor, str *_saor)
+int msg_aor_parse(struct sip_msg* _m, str *_aor, str *_saor)
 {
 	str uri, aor;
-	pv_value_t val;
 	struct to_body *hdr;
 
 	if (parse_reg_headers(_m) < 0) {
@@ -562,16 +550,7 @@ int msg_aor_parse(struct sip_msg* _m, char *_aor, str *_saor)
 
 		uri = hdr->uri;
 	} else {
-		if (pv_get_spec_value(_m, (pv_spec_p)_aor, &val)) {
-			LM_ERR("failed to get aor PV value!\n");
-			return -1;
-		}
-
-		if ((val.flags&PV_VAL_STR) == 0) {
-			LM_ERR("aor PV vals is not string\n");
-			return -1;
-		}
-		uri = val.rs;
+		uri = *_aor;
 	}
 
 	if (extract_aor(&uri, &aor, 0, 0) < 0) {
@@ -593,7 +572,7 @@ int msg_aor_parse(struct sip_msg* _m, char *_aor, str *_saor)
  *	- "to" header on any other SIP REQUEST
  *	- aor parameter of the function
  */
-int is_registered(struct sip_msg* _m, char *_d, char* _a)
+int is_registered(struct sip_msg* _m, void *_d, str* _a)
 {
 	int ret=NOT_FOUND;
 	urecord_t* r;
@@ -644,15 +623,14 @@ int is_registered(struct sip_msg* _m, char *_d, char* _a)
  *  callid params are provided
  *  - the contact parameter (third parameter)
  */
-int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
-							char* _c, char* _cid)
+int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
+							str* _c, str* _cid)
 {
 	int exp;
 
-	str aor;
 	str callid = {NULL, 0};
 	str curi = {NULL, 0};
-	pv_value_t val;
+	str aor;
 
 	udomain_t* ud = (udomain_t*)_d;
 	urecord_t* r;
@@ -688,25 +666,11 @@ int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
 
 		curi = ct->uri;
 	} else {
-		if (_c) {
-			if (pv_get_spec_value(_m, (pv_spec_p)_c, &val)!=0 ||
-			(val.flags&PV_VAL_STR)==0 ) {
-				LM_ERR("failed to retrieve string value from CONTACT "
-					"parameter!\n");
-				return -1;
-			}
-			curi = val.rs;
-		}
+		if (_c)
+			curi = *_c;
 
-		if (_cid) {
-			if (pv_get_spec_value(_m, (pv_spec_p)_cid, &val)!=0 ||
-			(val.flags&PV_VAL_STR)==0 ) {
-				LM_ERR("failed to retrieve string value from CALLID "
-					"parameter!\n");
-				return -1;
-			}
-			callid = val.rs;
-		}
+		if (_cid)
+			callid = *_cid;
 	}
 
 	ul.lock_udomain(ud, &aor);
@@ -759,7 +723,7 @@ out_found_unlock:
  * IPs comes from:
  * - the IPs avp given as a third parameter
  */
-int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
+int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec)
 {
 	str aor;
 	str pv_host={NULL, 0};
@@ -770,7 +734,6 @@ int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_out_pv)
 	urecord_t* r;
 	ucontact_t *c;
 	struct usr_avp *avp;
-	pv_spec_p spec = (pv_spec_p)_out_pv;
 	pv_value_t val;
 	struct ip_addr *ipp, ip;
 
