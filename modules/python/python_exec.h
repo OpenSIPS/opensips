@@ -24,7 +24,6 @@
 
 #include "../../parser/msg_parser.h"
 
-int python_exec1(struct sip_msg *, char *, char *);
-int python_exec2(struct sip_msg *, char *, char *);
+int python_exec(struct sip_msg *_msg, str *_method_name_s, str *_mystr_s);
 
 #endif
