@@ -103,13 +103,13 @@ char buff[JSON_FILE_BUF_SIZE];
 static int mod_init(void);
 static int child_init(int );
 static void mod_destroy(void);
-static int fixup_json_bind(void**, int );
+static int fixup_json_bind(void**);
 static int pv_set_json (struct sip_msg*,  pv_param_t*, int , pv_value_t* );
 static int pv_get_json (struct sip_msg*,  pv_param_t*, pv_value_t* );
 static int pv_get_json_compact(struct sip_msg*,  pv_param_t*, pv_value_t* );
 static int pv_get_json_pretty(struct sip_msg*,  pv_param_t*, pv_value_t* );
 static int pv_get_json_ext(struct sip_msg*,  pv_param_t*, pv_value_t* , int flags);
-static int json_bind(struct sip_msg* , char* , char* );
+static int json_bind(struct sip_msg* , pv_spec_t* , pv_spec_t* );
 static void print_tag_list( json_tag *, json_tag *, int);
 static json_t *get_object(pv_json_t *, pv_param_t *, json_tag **, int, int);
 static int pv_parse_json_name (pv_spec_p , str *);
@@ -119,15 +119,14 @@ static int pv_add_json ( pv_param_t* , json_t * );
 static int expand_tag_list( struct sip_msg*, json_tag *);
 
 
-
 static cmd_export_t cmds[]={
-	{"json_link",    (cmd_function)json_bind,   2,
-		fixup_json_bind, 0,
+	{"json_link",    (cmd_function)json_bind, {
+		{CMD_PARAM_VAR, fixup_json_bind, 0},
+		{CMD_PARAM_VAR, fixup_json_bind, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
-
 
 static pv_export_t mod_items[] = {
 	{ {"json",  sizeof("json")-1},    PVT_JSON, pv_get_json,
@@ -159,16 +158,13 @@ struct module_exports exports= {
 	child_init       /* per-child init function */
 };
 
-int json_bind(struct sip_msg* msg, char* s1, char* s2)
+int json_bind(struct sip_msg* msg, pv_spec_t* dest, pv_spec_t* src)
 {
-	pv_spec_t * src, * dest;
 	pv_json_t * var ;
 	json_t * obj;
 	json_name * id ;
 	pv_param_t *pvp;
 
-	src  = (pv_spec_t *) s2;
-	dest = (pv_spec_t *) s1;
 	pvp = &src->pvp;
 
 	id = (json_name *) pvp->pvn.u.dname;
@@ -198,38 +194,15 @@ int json_bind(struct sip_msg* msg, char* s1, char* s2)
 	return 1;
 };
 
-int fixup_json_bind(void** param, int param_no)
+int fixup_json_bind(void** param)
 {
-		pv_spec_t * var;
-		char * ret;
-		str s;
-		s.s = *param;
-		s.len = strlen(s.s);
+	if(pv_type(((pv_spec_t*)*param)->type) != PVT_JSON)
+	{
+		LM_ERR("Parameter must be a json variable\n");
+		return -1;
+	}
 
-		var = (pv_spec_t *)pkg_malloc(sizeof(pv_spec_t));
-		if( var == NULL )
-		{
-			LM_ERR("Out of memory\n");
-			return -1;
-		}
-
-		ret = pv_parse_spec(&s,var);
-
-		if( ret == NULL )
-		{
-			LM_ERR("Parse error\n");
-			return -1;
-		}
-
-		if(pv_type(var->type) != PVT_JSON)
-		{
-			LM_ERR("Parameter no: %d must be a json variable\n",param_no);
-			return -1;
-		}
-
-		*param = var;
-
-		return 0;
+	return 0;
 }
 
 
