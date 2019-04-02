@@ -40,40 +40,6 @@
 		</para>
 	</section>
 
-	<section>
-		<title>Accounting</title>
-		<para>
-		UAC REDIRECT module allows to log all the redirection (to be later
-		used for CDR aggregation). This functionality may be dynamically
-		enabled for each redirection situation.
-		</para>
-		<para>
-		The logging will be done via the accounting module functions (all are
-		supported). The information to be logged will be the same as the 
-		normal logged information directly via ACC module, but with 
-		following differences:
-		</para>
-		<itemizedlist>
-			<listitem>
-			<para><emphasis>reason phrase</emphasis> - which will be
-			dynamically set by the redirection function;
-			</para>
-			</listitem>
-			<listitem>
-			<para><emphasis>outgoing URI</emphasis> - which will be the
-			redirect URI.
-			</para>
-			</listitem>
-		</itemizedlist>
-		<para>
-		For each redirect contact, a separate record will be logged. For
-		example, if a call is redirected to three new contacts, the 
-		module will log three additional records corresponding to each
-		redirect URI.
-		</para>
-	</section>
-
-
 	<section id="dependencies" xreflabel="Dependencies">
 		<title>Dependencies</title>
 		<section>
@@ -199,71 +165,6 @@ modparam("uac_redirect","accept_filter",".*@siphub\.net")
 				</programlisting>
 			</example>
 		</section>
-		<section id="param_acc_function" xreflabel="acc_function">
-			<title><varname>acc_function</varname> (string)</title>
-			<para>
-			Specifies the accounting function to be used. Just be defining 
-			this parameter, the accounting support will not be enabled. 
-			Accounting may only be enabled via two parameters 
-			<function moreinfo="none">set_accept_filter()</function> 
-			scripting function.
-			</para>
-			<para>
-			Its values my be:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>acc_log_request</emphasis></para>
-				</listitem>
-				<listitem>
-				<para><emphasis>acc_db_request</emphasis></para>
-				</listitem>
-				<listitem>
-				<para><emphasis>acc_rad_request</emphasis></para>
-				</listitem>
-				<listitem>
-				<para><emphasis>acc_diam_request</emphasis></para>
-				</listitem>
-			</itemizedlist>
-			<para>
-				<emphasis>
-					The default value is <quote>acc_log_request</quote>.
-				</emphasis>
-			</para>
-			<example>
-				<title>Set <varname>acc_function</varname> parameter</title>
-				<programlisting format="linespecific">
-...
-modparam("uac_redirect","acc_function","acc_db_request")
-...
-				</programlisting>
-			</example>
-		</section>
-		<section id="param_acc_db_table" xreflabel="acc_db_table">
-			<title><varname>acc_db_table</varname> (string)</title>
-			<para>
-			Specifies the accounting table to be used if DB accounting was 
-			chosen (<varname>acc_function</varname> was set to 
-			<quote>acc_db_request</quote>). Just be defining 
-			this parameter, the accounting support will not be enabled. 
-			Accounting may only be enabled via two parameters 
-			<function moreinfo="none">set_accept_filter()</function> 
-			scripting function.
-			</para>
-			<para>
-				<emphasis>
-					The default value is <quote>acc</quote>.
-				</emphasis>
-			</para>
-			<example>
-				<title>Set <varname>acc_db_table</varname> parameter</title>
-				<programlisting format="linespecific">
-...
-modparam("uac_redirect","acc_db_table","acc_redirect")
-...
-				</programlisting>
-			</example>
-		</section>
 	</section>
 
 
@@ -371,7 +272,7 @@ set_accept_filter(".*@domain1.net","");
 
 		<section id="func_get_redirects" xreflabel="get_redirects()">
 			<title>
-				<function moreinfo="none">get_redirects(max)</function>
+				<function moreinfo="none">get_redirects([max_total[, max_branch]])</function>
 			</title>
 			<para>
 				The function may be called only from failure routes. It will
@@ -381,32 +282,25 @@ set_accept_filter(".*@domain1.net","");
 			</para>
 			<para>
 				How many contacts (in total and per branch) are selected 
-				depends of the <emphasis>max</emphasis> parameter values.
-				Its syntax is:
+				depends on the <emphasis>max_total</emphasis> and
+				<emphasis>max_branch</emphasis> parameters:
 			</para>
 			<itemizedlist>
 				<listitem><para>
-				max = max_total [":" max_branch]
+				max_total (int, optional) - max overall number of contacts to be selected
 				</para></listitem>
 				<listitem><para>
-				max_total = number of total contacts to be selected
-				</para></listitem>
-				<listitem><para>
-				max_branch = number of contacts per branch to be selected
+				max_branch (int, optional) - max number of contacts per branch to be selected
 				</para></listitem>
 			</itemizedlist>
 			<para>
 				Both <quote>max_total</quote> and <quote>max_branch</quote>
-				are positive integer. To specify unlimited values, use 0 value
-				or "*" character.
+				default to 0 (unlimited).
 			</para>
 			<para>
 				NOTE that during the selection process, each set of contacts 
 				from a specific branch are ordered based on <quote>q</quote> 
 				value.
-			</para>
-			<para>
-				This function will produce no accounting records.
 			</para>
 			<para>
 				This function can be used from FAILURE_ROUTE.
@@ -415,48 +309,14 @@ set_accept_filter(".*@domain1.net","");
 				<title><function>get_redirects</function> usage</title>
 				<programlisting format="linespecific">
 ...
-# max 2 contacts per branch, but no overall limit
-get_redirects("*:2");
+# no restrictions
+get_redirects();
 ...
 # no limits per branch, but not more than 6 overall contacts
-get_redirects("6:*");
+get_redirects(6);
 ...
-# no restrictions
-get_redirects("*");
-...
-				</programlisting>
-			</example>
-		</section>
-
-		<section id="func_get_redirects_2" xreflabel="get_redirects()">
-			<title>
-				<function moreinfo="none">get_redirects(max,reason)</function>
-			</title>
-			<para>
-				The function has same functionality as 
-				<function moreinfo="none">get_redirects(max)</function>
-				function, but it will produce accounting records.
-			</para>
-			<para>
-				The accounting records will be mark by the 
-				<emphasis>reason</emphasis> phrase.  This phrase shall be in the same format
-				as the <varname>reason</varname> parameter that would be passed to the
-				accounting function set by the <varname>acc_function</varname> module parameter.
-				See the ACC module documentation for more information.
-			</para>
-			<para>
-				If this function appears in the script, at startup, the module
-				will import the accounting function. Otherwise not.
-			</para>
-			<para>
-			This function can be used from FAILURE_ROUTE.
-			</para>
-			<example>
-				<title><function>get_redirects</function> usage</title>
-				<programlisting format="linespecific">
-...
-get_redirects("4:1","300"); # Record 300, using the default reason string for a 300
-get_redirects("4:1","302 Redirected"); # Record as 302, with custom "Redirected" reason string
+# max 2 contacts per branch, but no overall limit
+get_redirects(, 2);
 ...
 				</programlisting>
 			</example>

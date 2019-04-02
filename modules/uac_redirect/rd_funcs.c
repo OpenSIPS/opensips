@@ -38,12 +38,9 @@
 #define MAX_CONTACTS_PER_REPLY   16
 #define DEFAULT_Q_VALUE          10
 
-static int shmcontact2dset(struct sip_msg *req, struct sip_msg *shrpl,
-		long max, pv_elem_t *reason);
+static int shmcontact2dset(struct sip_msg *req, struct sip_msg *shrpl, long max);
 
-
-int get_redirect( struct sip_msg *msg , int maxt, int maxb,
-												pv_elem_t *reason)
+int get_redirect( struct sip_msg *msg , int maxt, int maxb)
 {
 	struct cell *t;
 	int max;
@@ -80,7 +77,7 @@ int get_redirect( struct sip_msg *msg , int maxt, int maxb,
 		if (max==0)
 			continue;
 		/* get the contact from it */
-		n = shmcontact2dset( msg, t->uac[i].reply, max, reason);
+		n = shmcontact2dset( msg, t->uac[i].reply, max);
 		if ( n<0 ) {
 			LM_ERR("get contact from shm_reply branch %d failed\n",i);
 			/* do not go to error, try next branches */
@@ -158,8 +155,7 @@ static void sort_contacts(contact_t *ct_list, str *ct_array,
  *            0 - ok, but no contact added
  *            n - ok and n contacts added
  */
-static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
-											long max, pv_elem_t *reason)
+static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl, long max)
 {
 	static struct sip_msg  dup_rpl;
 	static str scontacts[MAX_CONTACTS_PER_REPLY];
@@ -167,7 +163,6 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 	struct hdr_field *hdr;
 	struct hdr_field *contact_hdr;
 	contact_t        *contacts;
-	str backup_uri;
 	int n,i;
 	int added;
 	int dup;
@@ -270,15 +265,6 @@ static int shmcontact2dset(struct sip_msg *req, struct sip_msg *sh_rpl,
 			}
 		}
 		added++;
-		if (rd_acc_fct!=0 && reason) {
-			/* log the redirect */
-			backup_uri = req->new_uri;
-			req->new_uri =  scontacts[i];
-			//FIXME
-			rd_acc_fct( req, (char*)reason, acc_db_table,
-					NULL, NULL, NULL, NULL);
-			req->new_uri = backup_uri;
-		}
 	}
 
 	ret = (added==0)?-1:added;
