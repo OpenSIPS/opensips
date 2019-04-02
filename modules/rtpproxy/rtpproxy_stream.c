@@ -38,7 +38,8 @@
 
 
 static int
-rtpproxy_stream(struct sip_msg* msg, str *pname, int count, char *setid, char *var, int stream2uac)
+rtpproxy_stream(struct sip_msg* msg, str *pname, int count,
+            nh_set_param_t *setid, pv_spec_t *var, int stream2uac)
 {
     int nitems, ret = -1;
     str callid, from_tag, to_tag;
@@ -91,13 +92,13 @@ rtpproxy_stream(struct sip_msg* msg, str *pname, int count, char *setid, char *v
 		lock_start_read( nh_lock );
 	}
 
-	set = get_rtpp_set(msg, (nh_set_param_t *)setid);
+	set = get_rtpp_set(setid);
 	if (!set) {
 		LM_ERR("no set found\n");
 		goto end;
 	}
 
-    node = select_rtpp_node(msg, callid, set, (pv_spec_p)var, 1);
+    node = select_rtpp_node(msg, callid, set, var, 1);
     if (!node) {
         LM_ERR("no available proxies\n");
         goto end;
@@ -120,31 +121,32 @@ end:
 }
 
 static int
-rtpproxy_stream4_f(struct sip_msg *msg, char *str1, int count, char *setid, char *var,  int stream2uac)
+rtpproxy_stream4_f(struct sip_msg *msg, str *pname, int count,
+    nh_set_param_t *setid, pv_spec_t *var,  int stream2uac)
 {
-    str pname;
-
-    if (str1 == NULL || pv_printf_s(msg, (pv_elem_p)str1, &pname) != 0)
-	return -1;
-    return rtpproxy_stream(msg, &pname, count, setid, var, stream2uac);
+    return rtpproxy_stream(msg, pname, count, setid, var, stream2uac);
 }
 
 int
-rtpproxy_stream2uac4_f(struct sip_msg* msg, char* str1, char* str2, char *str3, char *str4)
+rtpproxy_stream2uac4_f(struct sip_msg* msg, str *pname, int *count,
+                nh_set_param_t *setid, pv_spec_t *var)
 {
 
-    return rtpproxy_stream4_f(msg, str1, (int)(long)str2, str3, str4, 1);
+    return rtpproxy_stream4_f(msg, pname, *count, setid, var, 1);
 }
 
 int
-rtpproxy_stream2uas4_f(struct sip_msg* msg, char* str1, char* str2, char *str3, char *str4)
+rtpproxy_stream2uas4_f(struct sip_msg* msg, str *pname, int *count,
+                nh_set_param_t *setid, pv_spec_t *var)
 {
 
-    return rtpproxy_stream4_f(msg, str1, (int)(long)str2, str3, str4, 0);
+    return rtpproxy_stream4_f(msg, pname, *count, setid, var, 0);
 }
+
 
 static int
-rtpproxy_stop_stream(struct sip_msg* msg, char *setid, char *var, int stream2uac)
+rtpproxy_stop_stream(struct sip_msg* msg, nh_set_param_t *setid, pv_spec_t *var,
+                int stream2uac)
 {
     int nitems, ret = -1;
     str callid, from_tag, to_tag;
@@ -193,13 +195,13 @@ rtpproxy_stop_stream(struct sip_msg* msg, char *setid, char *var, int stream2uac
 	}
 
     
-	set = get_rtpp_set(msg, (nh_set_param_t *)setid);
+	set = get_rtpp_set(setid);
 	if (!set) {
 		LM_ERR("no set found\n");
 		goto end;
 	}
 
-	node = select_rtpp_node(msg, callid, set, (pv_spec_p)var, 1);
+	node = select_rtpp_node(msg, callid, set, var, 1);
     if (!node) {
         LM_ERR("no available proxies\n");
         goto end;
@@ -221,15 +223,15 @@ end:
 }
 
 int
-rtpproxy_stop_stream2uac2_f(struct sip_msg* msg, char* str1, char *str2)
+rtpproxy_stop_stream2uac2_f(struct sip_msg* msg, nh_set_param_t *setid, pv_spec_t *var)
 {
 
-    return rtpproxy_stop_stream(msg, str1, str2, 1);
+    return rtpproxy_stop_stream(msg, setid, var, 1);
 }
 
 int
-rtpproxy_stop_stream2uas2_f(struct sip_msg* msg, char* str1, char *str2)
+rtpproxy_stop_stream2uas2_f(struct sip_msg* msg, nh_set_param_t *setid, pv_spec_t *var)
 {
 
-    return rtpproxy_stop_stream(msg, str1, str2, 0);
+    return rtpproxy_stop_stream(msg, setid, var, 0);
 }
