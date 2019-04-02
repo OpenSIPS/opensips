@@ -152,8 +152,8 @@ str msg_type = str_init("MESSAGE");
 static int mod_init(void);
 static int child_init(int);
 
-static int m_store(struct sip_msg*, char*, char*);
-static int m_dump(struct sip_msg*, char*, char*);
+static int m_store(struct sip_msg*, str*);
+static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg);
 
 void destroy(void);
 
@@ -168,22 +168,18 @@ int check_message_support(struct sip_msg* msg);
 static void m_tm_callback( struct cell *t, int type, struct tmcb_params *ps);
 
 /* commands wrappers and fixups */
-static int fixup_m_dump(void** param, int param_no);
 
 static cmd_export_t cmds[]={
-	{"m_store",  (cmd_function)m_store, 0, 0, 0,
+	{"m_store",  (cmd_function)m_store, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
-	{"m_store",  (cmd_function)m_store, 1, fixup_spve_null, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE},
-	{"m_dump",   (cmd_function)m_dump,  0, 0, 0,
+	{"m_dump",   (cmd_function)m_dump, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0},
+		{0,0,0}},
 		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
-	{"m_dump",   (cmd_function)m_dump,  1, fixup_spve_null, 0,
-		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
-	{"m_dump",   (cmd_function)m_dump,  2, fixup_m_dump, 0,
-		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
-
 
 static param_export_t params[]={
 	{ "db_url",           STR_PARAM, &ms_db_url.s             },
@@ -472,12 +468,12 @@ static int child_init(int rank)
  * 		= "2" -- look for outgoing URI only at to header
  */
 
-static int m_store(struct sip_msg* msg, char* owner, char* s2)
+static int m_store(struct sip_msg* msg, str* owner)
 {
 	str body, str_hdr, ctaddr;
 	struct to_body *pto, *pfrom;
 	struct sip_uri puri;
-	str duri, owner_s;
+	str duri;
 	db_key_t db_keys[NR_KEYS-1];
 	db_val_t db_vals[NR_KEYS-1];
 	db_key_t db_cols[1];
@@ -519,17 +515,12 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	memset(&puri, 0, sizeof(struct sip_uri));
 	if(owner)
 	{
-		if(fixup_get_svalue(msg, (gparam_p)owner, &owner_s)!=0)
-		{
-			LM_ERR("invalid owner uri parameter\n");
-			return -1;
-		}
-		if(parse_uri(owner_s.s, owner_s.len, &puri)!=0)
+		if(parse_uri(owner->s, owner->len, &puri)!=0)
 		{
 			LM_ERR("bad owner SIP address!\n");
 			goto error;
 		} else {
-			LM_DBG("using user id [%.*s]\n", owner_s.len, owner_s.s);
+			LM_DBG("using user id [%.*s]\n", owner->len, owner->s);
 		}
 	} else { /* get it from R-URI */
 		if(msg->new_uri.len <= 0)
@@ -800,7 +791,7 @@ error:
 /**
  * dump message
  */
-static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
+static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg)
 {
 	struct to_body *pto = NULL;
 	db_key_t db_keys[3];
@@ -815,7 +806,6 @@ static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
 	static char hdr_buf[1024];
 	static char body_buf[1024];
 	struct sip_uri puri;
-	str owner_s;
 
 	str str_vals[4], hdr_str , body_str;
 	time_t rtime;
@@ -849,17 +839,12 @@ static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
 	memset(&puri, 0, sizeof(struct sip_uri));
 	if(owner)
 	{
-		if(fixup_get_svalue(msg, (gparam_p)owner, &owner_s)!=0)
-		{
-			LM_ERR("invalid owner uri parameter\n");
-			return -1;
-		}
-		if(parse_uri(owner_s.s, owner_s.len, &puri)!=0)
+		if(parse_uri(owner->s, owner->len, &puri)!=0)
 		{
 			LM_ERR("bad owner SIP address!\n");
 			goto error;
 		} else {
-			LM_DBG("using user id [%.*s]\n", owner_s.len, owner_s.s);
+			LM_DBG("using user id [%.*s]\n", owner->len, owner->s);
 		}
 	} else { /* get it from  To URI */
 		/* check for TO header */
@@ -1316,16 +1301,6 @@ int ms_reset_stime(int mid)
 	{
 		LM_ERR("failed to make update for [%d]!\n",	mid);
 		return -1;
-	}
-	return 0;
-}
-
-static int fixup_m_dump(void** param, int param_no)
-{
-	if (param_no==1) {
-		return fixup_spve(param);
-	} else if (param_no==2) {
-		return fixup_uint(param);
 	}
 	return 0;
 }
