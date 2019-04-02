@@ -42,7 +42,6 @@
 #include "api.h"
 
 static str auth_400_err = str_init(MESSAGE_400);
-static str auth_500_err = str_init(MESSAGE_500);
 
 
 /*
