@@ -45,7 +45,7 @@ static inline int load_sig_api( struct sig_binds *sigb)
 	load_sig_f load_sig;
 
 	/* import the SL auto-loading function */
-	if ( !(load_sig=(load_sig_f)find_export("load_sig", 1, 0))) {
+	if ( !(load_sig=(load_sig_f)find_export("load_sig", 0))) {
 		LM_ERR("can't import load_sig\n");
 		return -1;
 	}
