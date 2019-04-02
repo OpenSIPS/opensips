@@ -28,7 +28,6 @@
 #include <stdlib.h>
 
 #include "f_malloc.h"
-#include "common.h"
 #include "../dprint.h"
 #include "../globals.h"
 #include "../statistics.h"

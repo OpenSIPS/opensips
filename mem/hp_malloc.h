@@ -29,6 +29,12 @@
 #include "../statistics.h"
 #include "../config.h"
 #include "../globals.h"
+#include "common.h"
+
+#if !defined INLINE_ALLOC && defined HP_MALLOC_FAST_STATS
+#warning "multiple allocators detected -- disabling HP_MALLOC_FAST_STATS"
+#undef HP_MALLOC_FAST_STATS
+#endif
 
 struct hp_frag;
 struct hp_frag_lnk;
@@ -47,6 +53,7 @@ extern stat_var *rpm_frags;
 #include "meminfo.h"
 
 #undef ROUNDTO
+#undef UN_HASH
 
 #define ROUNDTO 8UL
 
@@ -67,6 +74,12 @@ extern stat_var *rpm_frags;
 /* get the fragment which corresponds to a pointer */
 #define HP_FRAG(p) \
 	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
+
+#define UN_HASH(h)	(((unsigned long)(h) <= (HP_MALLOC_OPTIMIZE/ROUNDTO)) ?\
+						(unsigned long)(h)*ROUNDTO: \
+						1UL<<((unsigned long)(h)-HP_MALLOC_OPTIMIZE/ROUNDTO+\
+							HP_MALLOC_OPTIMIZE_FACTOR - 1)\
+					)
 
 /* hash structure:
  * 0 .... HP_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with
@@ -115,8 +128,8 @@ struct hp_frag_lnk {
 
 #ifdef HP_MALLOC_FAST_STATS
 	/*
-	 * no - current number of free fragments in this bucket
-	 * total_no - (no + allocated) free fragments in this bucket
+	 * no: current number of free fragments in this bucket
+	 * total_no: (no + allocated) fragments in this bucket
 	 */
 	long no;
 	long total_no;

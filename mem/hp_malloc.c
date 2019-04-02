@@ -35,7 +35,6 @@
 #include "../locking.h"
 
 #include "hp_malloc.h"
-#include "common.h"
 
 #ifdef DBG_MALLOC
 #include "mem_dbg_hash.h"
@@ -97,11 +96,6 @@ static unsigned int optimized_put_indexes[HP_HASH_SIZE];
 	}) : \
 	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
 
-#define UN_HASH(h)	(((unsigned long)(h) <= (HP_MALLOC_OPTIMIZE/ROUNDTO)) ?\
-						(unsigned long)(h)*ROUNDTO: \
-						1UL<<((unsigned long)(h)-HP_MALLOC_OPTIMIZE/ROUNDTO+\
-							HP_MALLOC_OPTIMIZE_FACTOR - 1)\
-					)
 
 
 
@@ -228,7 +222,11 @@ static inline void hp_frag_detach(struct hp_block *hpb, struct hp_frag *frag)
 		frag->u.nxt_free->prev = pf;
 
 	frag->prev = NULL;
-};
+
+#ifdef HP_MALLOC_FAST_STATS
+	hpb->free_hash[GET_HASH(frag->size)].no--;
+#endif
+}
 
 #include "hp_malloc_dyn.h"
 

@@ -71,11 +71,17 @@ unsigned long (*gen_rpm_get_free)(void *blk);
 unsigned long (*gen_rpm_get_frags)(void *blk);
 #endif
 
+#if defined(HP_MALLOC)
+stat_var *rpm_used;
+stat_var *rpm_rused;
+stat_var *rpm_frags;
+#endif
+
 #ifdef STATISTICS
 stat_export_t rpm_stats[] = {
 	{"rpm_total_size" ,     STAT_IS_FUNC,    (stat_var**)rpm_get_size  },
 
-#if defined HP_MALLOC && defined INLINE_ALLOC && !defined HP_MALLOC_FAST_STATS
+#if defined HP_MALLOC && defined INLINE_ALLOC
 	{"rpm_used_size" ,     STAT_NO_RESET,               &rpm_used      },
 	{"rpm_real_used_size" ,STAT_NO_RESET,               &rpm_rused     },
 	{"rpm_fragments" ,     STAT_NO_RESET,               &rpm_frags     },

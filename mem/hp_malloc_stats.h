@@ -81,10 +81,13 @@ unsigned long hp_rpm_get_frags(struct hp_block *hpb);
 		(blk)->total_fragments--; \
 	} while (0)
 
-#ifdef HP_MALLOC_FAST_STATS
+#if defined HP_MALLOC_FAST_STATS
 	#define update_stats_shm_frag_attach(frag)
 	#define update_stats_shm_frag_detach(frag)
 	#define update_stats_shm_frag_split()
+	#define update_stats_rpm_frag_attach(frag)
+	#define update_stats_rpm_frag_detach(frag)
+	#define update_stats_rpm_frag_split()
 
 #else /* HP_MALLOC_FAST_STATS */
 	#define update_stats_shm_frag_attach(frag) \

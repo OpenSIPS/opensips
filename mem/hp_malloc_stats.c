@@ -39,6 +39,7 @@
 
 /* specified in microseconds */
 #define SHM_STATS_SAMPLING_PERIOD 200000L
+#define FRAG_OVERHEAD	(sizeof(struct hp_frag))
 
 int stats_are_expired(struct hp_block *hpb)
 {

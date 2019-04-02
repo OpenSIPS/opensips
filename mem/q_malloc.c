@@ -25,7 +25,6 @@
 #include <string.h>
 
 #include "q_malloc.h"
-#include "common.h"
 #include "../dprint.h"
 #include "../globals.h"
 #include "../statistics.h"

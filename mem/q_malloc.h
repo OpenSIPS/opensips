@@ -26,6 +26,10 @@
 
 #include <stdio.h>
 #include "meminfo.h"
+#include "../dprint.h"
+#include "common.h"
+
+#undef UN_HASH
 
 #ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
