@@ -30,13 +30,13 @@
 /*
  * Challenge a user agent using WWW-Authenticate header field
  */
-int www_challenge(struct sip_msg* _msg, char* _realm, char* _str2);
+int www_challenge(struct sip_msg* _msg, str* _realm, int* _qop);
 
 
 /*
  * Challenge a user agent using Proxy-Authenticate header field
  */
-int proxy_challenge(struct sip_msg* _msg, char* _realm, char* _str2);
+int proxy_challenge(struct sip_msg* _msg, str* _realm, int* _qop);
 
 
 /*

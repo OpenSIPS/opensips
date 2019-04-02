@@ -141,7 +141,7 @@ static inline char *build_auth_hf(int _retries, int _stale, str* _realm,
 /*
  * Create and send a challenge
  */
-static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
+static inline int challenge(struct sip_msg* _msg, str *realm, int _qop,
 						int _code, char* _message, char* _challenge_msg)
 {
 	int auth_hf_len;
@@ -151,7 +151,6 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 	int ret;
 	hdr_types_t hftype = 0; /* Makes gcc happy */
 	struct sip_uri *uri;
-	str realm;
 	str reason;
 
 	switch(_code) {
@@ -167,15 +166,7 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 
 	if (h) cred = (auth_body_t*)(h->parsed);
 
-	if(fixup_get_svalue(_msg, _realm, &realm)!=0)
-	{
-		LM_ERR("invalid realm parameter\n");
-		if (send_resp(_msg, 500, &auth_500_err, 0, 0)==-1)
-			return -1;
-		else
-			return 0;
-	}
-	if (realm.len == 0) {
+	if (realm->len == 0) {
 		if (get_realm(_msg, hftype, &uri) < 0) {
 			LM_ERR("failed to extract URI\n");
 			if (send_resp(_msg, 400, &auth_400_err, 0, 0) == -1) {
@@ -185,11 +176,11 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 			return 0;
 		}
 
-		realm = uri->host;
-		strip_realm(&realm);
+		realm = &uri->host;
+		strip_realm(realm);
 	}
 
-	auth_hf = build_auth_hf(0, (cred ? cred->stale : 0), &realm,
+	auth_hf = build_auth_hf(0, (cred ? cred->stale : 0), realm,
 			&auth_hf_len, _qop, _challenge_msg);
 	if (!auth_hf) {
 		LM_ERR("failed to generate nonce\n");
@@ -212,10 +203,9 @@ static inline int challenge(struct sip_msg* _msg, gparam_p _realm, int _qop,
 /*
  * Challenge a user to send credentials using WWW-Authorize header field
  */
-int www_challenge(struct sip_msg* _msg, char* _realm, char* _qop)
+int www_challenge(struct sip_msg* _msg, str* _realm, int* _qop)
 {
-	return challenge(_msg, (gparam_p)_realm,
-			!_qop ? 0 : (int)*(unsigned int *)_qop, 401,
+	return challenge(_msg, _realm, *_qop, 401,
 			MESSAGE_401, WWW_AUTH_CHALLENGE);
 }
 
@@ -223,10 +213,9 @@ int www_challenge(struct sip_msg* _msg, char* _realm, char* _qop)
 /*
  * Challenge a user to send credentials using Proxy-Authorize header field
  */
-int proxy_challenge(struct sip_msg* _msg, char* _realm, char* _qop)
+int proxy_challenge(struct sip_msg* _msg, str* _realm, int* _qop)
 {
-	return challenge(_msg, (gparam_p)_realm,
-			!_qop ? 0 : (int)*(unsigned int *)_qop, 407,
+	return challenge(_msg, _realm, *_qop, 407,
 			MESSAGE_407, PROXY_AUTH_CHALLENGE);
 }
 
