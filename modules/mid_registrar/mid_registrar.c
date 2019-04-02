@@ -34,7 +34,6 @@
 #include "../../sr_module.h"
 #include "../../ut.h"
 #include "../../timer.h"
-#include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../rw_locking.h"
 
@@ -114,7 +113,6 @@ int reg_use_domain = 0;
 static int mod_init(void);
 
 static int domain_fixup(void** param);
-static int registrar_fixup(void** param, int param_no);
 
 int solve_avp_defs(void);
 
@@ -134,23 +132,19 @@ char *mp_ctid_insertion = "ct-param";
 str ctid_param = str_init("ctid");
 
 static cmd_export_t cmds[] = {
-	{ "mid_registrar_save", (cmd_function)mid_reg_save, 1,
-	  registrar_fixup, NULL, REQUEST_ROUTE },
-	{ "mid_registrar_save", (cmd_function)mid_reg_save, 2,
-	  registrar_fixup, NULL, REQUEST_ROUTE },
-	{ "mid_registrar_save", (cmd_function)mid_reg_save, 3,
-	  registrar_fixup, NULL, REQUEST_ROUTE },
-	{ "mid_registrar_save", (cmd_function)mid_reg_save, 4,
-	  registrar_fixup, NULL, REQUEST_ROUTE },
-	{ "mid_registrar_save", (cmd_function)mid_reg_save, 5,
-	  registrar_fixup, NULL, REQUEST_ROUTE },
-	{ "mid_registrar_lookup", (cmd_function)mid_reg_lookup, 1,
-	  registrar_fixup, NULL, REQUEST_ROUTE },
-	{ "mid_registrar_lookup", (cmd_function)mid_reg_lookup, 2,
-	  registrar_fixup, NULL, REQUEST_ROUTE },
-	{ "mid_registrar_lookup", (cmd_function)mid_reg_lookup, 3,
-	  registrar_fixup, NULL, REQUEST_ROUTE },
-	{ NULL, NULL, 0, NULL, NULL, 0 }
+	{"mid_registrar_save", (cmd_function)mid_reg_save, {
+		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"mid_registrar_lookup", (cmd_function)mid_reg_lookup, {
+		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t mod_params[] = {
@@ -214,11 +208,18 @@ struct module_exports exports= {
 static int domain_fixup(void** param)
 {
 	udomain_t* d;
+	str dom_s;
 
-	if (ul_api.register_udomain((char*)*param, &d) < 0) {
+	if (pkg_nt_str_dup(&dom_s, (str*)*param) < 0)
+		return E_OUT_OF_MEM;
+
+	if (ul_api.register_udomain(dom_s.s, &d) < 0) {
 		LM_ERR("failed to register domain\n");
+		pkg_free(dom_s.s);
 		return E_UNSPEC;
 	}
+
+	pkg_free(dom_s.s);
 
 	*param = (void*)d;
 	return 0;
@@ -237,31 +238,6 @@ static int mid_reg_post_script(struct sip_msg *foo, void *bar)
 	return SCB_RUN_ALL;
 }
 
-/*! \brief
- * Fixup for "save"+"lookup" functions - domain, flags, AOR params
- */
-static int registrar_fixup(void** param, int param_no)
-{
-	switch (param_no) {
-	case 1:
-		/* table name */
-		return domain_fixup(param);
-	case 2:
-		/* flags */
-		return fixup_spve(param);
-	case 3:
-		/* AoR */
-		return fixup_sgp(param);
-	case 4:
-		/* outgoing registration interval */
-		return fixup_igp(param);
-	case 5:
-		/* ownership tag */
-		return fixup_sgp(param);
-	}
-
-	return E_BUG;
-}
 
 static int mod_init(void)
 {
