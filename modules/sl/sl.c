@@ -47,9 +47,9 @@
 
 
 
-static int w_sl_send_reply(struct sip_msg* msg, char* str1, char* str2);
-static int w_sl_reply_error(struct sip_msg* msg, char* str1, char* str2);
-static int fixup_sl_send_reply(void** param, int param_no);
+static int w_sl_send_reply(struct sip_msg* msg, int* code_i, str* code_s);
+static int w_sl_reply_error(struct sip_msg* msg);
+static int fixup_sl_send_reply(void** param);
 static int mod_init(void);
 static void mod_destroy(void);
 /* module parameter */
@@ -66,7 +66,7 @@ stat_var *sent_rpls;
 stat_var *sent_err_rpls;
 stat_var *rcv_acks;
 
-
+/*
 static cmd_export_t cmds[]={
 	{"sl_send_reply", (cmd_function)w_sl_send_reply, 2, fixup_sl_send_reply, 0,
 			REQUEST_ROUTE | ERROR_ROUTE },
@@ -75,6 +75,19 @@ static cmd_export_t cmds[]={
 	{"load_sl",       (cmd_function)load_sl,         0, 0,                   0,
 			0},
 	{0,0,0,0,0,0}
+};
+*/
+
+static cmd_export_t cmds[]={
+	{"sl_send_reply",(cmd_function)w_sl_send_reply, {	
+		{CMD_PARAM_INT,fixup_sl_send_reply,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE | ERROR_ROUTE},
+	{"sl_reply_error",(cmd_function)w_sl_reply_error, {	
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{"load_sl", (cmd_function)load_sl, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t mod_params[]={
@@ -162,46 +175,12 @@ static void mod_destroy(void)
 }
 
 
-static int fixup_sl_send_reply(void** param, int param_no)
+static int fixup_sl_send_reply(void** param)
 {
-	pv_elem_t *model=NULL;
-	str s;
-
-	/* convert to str */
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
-
-	model=NULL;
-	if (param_no==1 || param_no==2)
-	{
-		if(s.len==0)
-		{
-			LM_ERR("no param %d!\n", param_no);
-			return E_UNSPEC;
-		}
-
-		if(pv_parse_format(&s ,&model) || model==NULL)
-		{
-			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
-			return E_UNSPEC;
-		}
-		if(model->spec.getf==NULL)
-		{
-			if(param_no==1)
-			{
-			   if(str2int(&s,
-					(unsigned int*)&model->spec.pvp.pvn.u.isname.name.n)!=0
-					   || model->spec.pvp.pvn.u.isname.name.n<100
-					   || model->spec.pvp.pvn.u.isname.name.n>699)
-			   {
-					LM_ERR("wrong value [%s] for param no %d!\n",
-						s.s, param_no);
-					LM_ERR("allowed values: 1xx - 6xx only!\n");
-					return E_UNSPEC;
-			   }
-			}
-		}
-		*param = (void*)model;
+	if (*(int*)*param < 100 || *(int*)*param > 699) {
+		LM_ERR("wrong code: %d, allowed values: 1xx - 6xx only!\n",
+			*(int*)*param);
+		return E_UNSPEC;
 	}
 
 	return 0;
@@ -209,36 +188,15 @@ static int fixup_sl_send_reply(void** param, int param_no)
 
 
 
-static int w_sl_reply_error( struct sip_msg* msg, char* str1, char* str2)
+static int w_sl_reply_error( struct sip_msg* msg)
 {
 	return sl_reply_error( msg );
 }
 
 
-static int w_sl_send_reply(struct sip_msg* msg, char* str1, char* str2)
+static int w_sl_send_reply(struct sip_msg* msg, int* code_i, str* code_s)
 {
-	str code_s;
-	unsigned int code_i;
-
-	if(((pv_elem_p)str1)->spec.getf!=NULL)
-	{
-		if(pv_printf_s(msg, (pv_elem_p)str1, &code_s)!=0)
-			return -1;
-		if(str2int(&code_s, &code_i)!=0 || code_i<100 || code_i>699)
-			return -1;
-	} else {
-		code_i = ((pv_elem_p)str1)->spec.pvp.pvn.u.isname.name.n;
-	}
-
-	if(((pv_elem_p)str2)->spec.getf!=NULL)
-	{
-		if(pv_printf_s(msg, (pv_elem_p)str2, &code_s)!=0 || code_s.len <=0)
-			return -1;
-	} else {
-		code_s = ((pv_elem_p)str2)->text;
-	}
-
-	return sl_send_reply(msg, code_i, &code_s);
+	return sl_send_reply(msg, *code_i, code_s);
 }
 
 
