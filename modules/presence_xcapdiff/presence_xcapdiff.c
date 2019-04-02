@@ -30,10 +30,6 @@ str s_content_type = str_init("application/xcap-diff+xml");
 
 static int mod_init(void);
 
-static cmd_export_t cmds[] = {
-    {0, 0, 0, 0, 0, 0}
-};
-
 static param_export_t params[] = {
     {0, 0, 0}
 };
@@ -55,7 +51,7 @@ struct module_exports exports= {
     MODULE_VERSION,             /* module version */
     DEFAULT_DLFLAGS,            /* dlopen flags */
     &deps,                      /* OpenSIPS module dependencies */
-    cmds,                       /* exported functions */
+    0,                          /* exported functions */
     0,                          /* exported async functions */
     params,                     /* exported parameters */
     0,                          /* exported statistics */
