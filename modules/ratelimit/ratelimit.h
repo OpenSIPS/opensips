@@ -114,10 +114,9 @@ void mod_destroy(void);
 int init_rl_table(unsigned int size);
 
 /* exported functions */
-int w_rl_check_2(struct sip_msg*, char *, char *);
-int w_rl_check_3(struct sip_msg*, char *, char *, char *);
-int w_rl_dec(struct sip_msg*, char *);
-int w_rl_reset(struct sip_msg*, char *);
+int w_rl_check(struct sip_msg*, str *, int *, str *);
+int w_rl_dec(struct sip_msg*, str *);
+int w_rl_reset(struct sip_msg*, str *);
 int w_rl_set_count(str, int);
 int rl_stats(mi_item_t *, str *);
 int rl_pipe_check(rl_pipe_t *);

@@ -309,11 +309,6 @@ static str * get_rl_algo_name(rl_algo_t algo)
 	return NULL;
 }
 
-int w_rl_check_2(struct sip_msg *_m, char *_n, char *_l)
-{
-	return w_rl_check_3(_m, _n, _l, NULL);
-}
-
 rl_pipe_t *rl_create_pipe(int limit, rl_algo_t algo)
 {
 	rl_pipe_t *pipe;
@@ -343,32 +338,15 @@ rl_pipe_t *rl_create_pipe(int limit, rl_algo_t algo)
 	return pipe;
 }
 
-int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
+int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 {
-	str name;
-	int limit = 0, ret = 1, should_update = 0;
-	str algorithm;
+	int ret = 1, should_update = 0;
 	unsigned int hash_idx;
 	rl_pipe_t **pipe;
 
 	rl_algo_t algo = -1;
 
-	/* retrieve and check parameters */
-	if (!_n || !_l) {
-		LM_ERR("invalid parameters\n");
-		goto end;
-	}
-	if (fixup_get_svalue(_m, (gparam_p) _n, &name) < 0) {
-		LM_ERR("cannot retrieve identifier\n");
-		goto end;
-	}
-	if (fixup_get_ivalue(_m, (gparam_p) _l, &limit) < 0) {
-		LM_ERR("cannot retrieve limit\n");
-		goto end;
-	}
-	algorithm.s = 0;
-	if (!_a || fixup_get_svalue(_m, (gparam_p) _a, &algorithm) < 0 ||
-		(algo = get_rl_algo(algorithm)) == PIPE_ALGO_NOP) {
+	if (!algorithm || (algo = get_rl_algo(*algorithm)) == PIPE_ALGO_NOP) {
 		algo = PIPE_ALGO_NOP;
 	}
 
@@ -376,30 +354,30 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 	if (algo == PIPE_ALGO_FEEDBACK) {
 		lock_get(rl_lock);
 		if (*rl_feedback_limit) {
-			if (*rl_feedback_limit != limit) {
+			if (*rl_feedback_limit != *limit) {
 				LM_WARN("FEEDBACK limit should be the same for all pipes, but"
 					" new limit %d differs - setting to %d\n",
-					limit, *rl_feedback_limit);
-				limit = *rl_feedback_limit;
+					*limit, *rl_feedback_limit);
+				*limit = *rl_feedback_limit;
 			}
 		} else {
-			if (limit <= 0 || limit >= 100) {
+			if (*limit <= 0 || *limit >= 100) {
 				LM_ERR("invalid limit for FEEDBACK algorithm "
 					"(must be between 0 and 100)\n");
 				lock_release(rl_lock);
 				goto end;
 			}
-			*rl_feedback_limit = limit;
-			pid_setpoint_limit(limit);
+			*rl_feedback_limit = *limit;
+			pid_setpoint_limit(*limit);
 		}
 		lock_release(rl_lock);
 	}
 
-	hash_idx = RL_GET_INDEX(name);
+	hash_idx = RL_GET_INDEX(*name);
 	RL_GET_LOCK(hash_idx);
 
 	/* try to get the value */
-	pipe = RL_GET_PIPE(hash_idx, name);
+	pipe = RL_GET_PIPE(hash_idx, *name);
 	if (!pipe) {
 		LM_ERR("cannot get the index\n");
 		goto release;
@@ -407,29 +385,29 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 
 	if (!*pipe) {
 		/* allocate new pipe */
-		if (!(*pipe = rl_create_pipe(limit, algo)))
+		if (!(*pipe = rl_create_pipe(*limit, algo)))
 			goto release;
 
 		LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
-				name.len, name.s, *pipe);
+				name->len, name->s, *pipe);
 		if ((*pipe)->algo == PIPE_ALGO_NETWORK)
 			should_update = 1;
 	} else {
 		LM_DBG("Pipe %.*s found: %p - last used %lu\n",
-			name.len, name.s, *pipe, (*pipe)->last_used);
+			name->len, name->s, *pipe, (*pipe)->last_used);
 		if (algo != PIPE_ALGO_NOP && (*pipe)->algo != algo) {
 			LM_WARN("algorithm %d different from the initial one %d for pipe "
-				"%.*s", algo, (*pipe)->algo, name.len, name.s);
+				"%.*s", algo, (*pipe)->algo, name->len, name->s);
 		}
 		/* update the limit */
-		(*pipe)->limit = limit;
+		(*pipe)->limit = *limit;
 	}
 
 	/* set the last used time */
 	(*pipe)->last_used = time(0);
 	if (RL_USE_CDB(*pipe)) {
 		/* release the counter for a while */
-		if (rl_change_counter(&name, *pipe, 1) < 0) {
+		if (rl_change_counter(name, *pipe, 1) < 0) {
 			LM_ERR("cannot increase counter\n");
 			goto release;
 		}
@@ -439,7 +417,7 @@ int w_rl_check_3(struct sip_msg *_m, char *_n, char *_l, char *_a)
 
 	ret = rl_pipe_check(*pipe);
 	LM_DBG("Pipe %.*s counter:%d load:%d limit:%d should %sbe blocked (%p)\n",
-		name.len, name.s, (*pipe)->counter, (*pipe)->load,
+		name->len, name->s, (*pipe)->counter, (*pipe)->load,
 		(*pipe)->limit, ret == 1 ? "NOT " : "", *pipe);
 
 
@@ -691,27 +669,21 @@ release:
 	return ret;
 }
 
-static inline int w_rl_change_counter(struct sip_msg *_m, char *_n, int dec)
+static inline int w_rl_change_counter(struct sip_msg *_m, str *name, int dec)
 {
-	str name;
-
-	if (!_n || fixup_get_svalue(_m, (gparam_p) _n, &name) < 0) {
-		LM_ERR("cannot retrieve identifier\n");
-		return -1;
-	}
-	if (w_rl_set_count(name, dec)) {
-		LM_ERR("cannot find any pipe named %.*s\n", name.len, name.s);
+	if (w_rl_set_count(*name, dec)) {
+		LM_ERR("cannot find any pipe named %.*s\n", name->len, name->s);
 		return -1;
 	}
 	return 1;
 }
 
-int w_rl_dec(struct sip_msg *_m, char *_n)
+int w_rl_dec(struct sip_msg *_m, str *_n)
 {
 	return w_rl_change_counter(_m, _n, -1);
 }
 
-int w_rl_reset(struct sip_msg *_m, char *_n)
+int w_rl_reset(struct sip_msg *_m, str *_n)
 {
 	return w_rl_change_counter(_m, _n, 0);
 }
