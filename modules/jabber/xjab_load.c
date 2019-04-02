@@ -24,13 +24,13 @@
 int load_xjab(struct xjab_binds *xjb)
 {
 	if(!( xjb->register_watcher=(pa_register_watcher_f)
-			find_export("jab_register_watcher", XJ_NO_SCRIPT_F, 0)) )
+			find_export("jab_register_watcher", 0)) )
 	{
 		LM_ERR("'jab_register_watcher' not found!\n");
 		return -1;
 	}
 	if(!( xjb->unregister_watcher=(pa_unregister_watcher_f)
-			find_export("jab_unregister_watcher", XJ_NO_SCRIPT_F, 0)) )
+			find_export("jab_unregister_watcher", 0)) )
 	{
 		LM_ERR("'jab_unregister_watcher' not found!\n");
 		return -1;
