@@ -51,7 +51,7 @@ int get_username_domain(struct sip_msg *msg, str *hf_s,
 /*
  * Check if username in specified header field is in a table
  */
-int db_is_user_in(struct sip_msg* _msg, char* _hf, char* _grp);
+int db_is_user_in(struct sip_msg* _msg, str* hf_s, str* grp_s);
 
 /*
  * Check from AAA if a user belongs to a group. User-Name is digest
@@ -59,7 +59,7 @@ int db_is_user_in(struct sip_msg* _msg, char* _hf, char* _grp);
  * is Group-Check.  SIP-Group is SER specific attribute and Group-Check is
  * SER specific service type value.
  */
-int aaa_is_user_in(struct sip_msg* _msg, char* _hf, char* _group);
+int aaa_is_user_in(struct sip_msg* _m, void* _hf, str* grp);
 
 int group_db_init(const str* db_url);
 int group_db_bind(const str* db_url);
