@@ -33,14 +33,12 @@ int perl_fixup(void** param, int param_no);
 /*
  * Run a perl function without a sip message parameter.
  */
-int perl_exec_simple1(struct sip_msg* _msg, char* fnc, char* str2);
-int perl_exec_simple2(struct sip_msg* _msg, char* fnc, char* str2);
+int perl_exec_simple(struct sip_msg* _msg, str *_fnc_s, str *_param_s);
 
 /*
  * Run function with a reference to the current SIP message.
  * An optional string may be passed to perl_exec_string.
  */
-int perl_exec1(struct sip_msg* _msg, char* fnc, char *foobar);
-int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr);
+int perl_exec(struct sip_msg* _msg, str* _fnc_s, str* mystr);
 
 #endif /* PERL_FUNC_H */
