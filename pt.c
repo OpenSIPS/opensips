@@ -135,7 +135,6 @@ int init_multi_proc_support(void)
 
 	/* set the pid for the starter process */
 	set_proc_attrs("starter");
-	pt[process_no].flags = OSS_PROC_IS_RUNNING;
 
 	/* register the stats for the global load */
 	if ( register_stat2( "load", "load", (stat_var**)pt_get_rt_load,
