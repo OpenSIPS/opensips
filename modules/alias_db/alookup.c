@@ -46,29 +46,24 @@ extern db_func_t adbf;  /* DB functions */
 
 char useruri_buf[MAX_USERURI_SIZE];
 
-typedef int (*set_alias_f)(struct sip_msg* _msg, str *alias, int no, void *p);
+typedef int (*set_alias_f)(struct sip_msg* _msg, str *alias, int no, pv_spec_t *p);
 
 
 /**
  *
  */
-static int alias_db_query(struct sip_msg* _msg, char* _table,
+static int alias_db_query(struct sip_msg* _msg, str* table_s,
 								struct sip_uri *puri, unsigned long flags,
-								set_alias_f set_alias, void *param)
+								set_alias_f set_alias, pv_spec_t *param)
 {
 	static db_ps_t my_ps[4] = {NULL,NULL,NULL,NULL};
-	str user_s, table_s;
+	str user_s;
 	db_key_t db_keys[2];
 	db_val_t db_vals[2];
 	db_key_t db_cols[2];
 	db_res_t* db_res = NULL;
 	int i;
 	int ps_idx=0;
-
-	if(_table==NULL || fixup_get_svalue(_msg, (gparam_p)_table, &table_s)!=0) {
-		LM_ERR("invalid table parameter\n");
-		return -1;
-	}
 
 	if (flags&ALIAS_REVERT_FLAG) {
 		/* revert lookup: user->alias */
@@ -107,7 +102,7 @@ static int alias_db_query(struct sip_msg* _msg, char* _table,
 		ps_idx ++;
 	}
 
-	adbf.use_table(db_handle, &table_s);
+	adbf.use_table(db_handle, table_s);
 	if (!ald_append_branches)
 		CON_PS_REFERENCE(db_handle) = my_ps[ps_idx];
 
@@ -217,7 +212,7 @@ err_server:
 }
 
 
-static inline int set_alias_to_ruri(struct sip_msg* _msg, str *alias, int no, void *p)
+static inline int set_alias_to_ruri(struct sip_msg* _msg, str *alias, int no, pv_spec_t *p)
 {
 	/* set the RURI */
 	if(no==0) {
@@ -238,7 +233,7 @@ static inline int set_alias_to_ruri(struct sip_msg* _msg, str *alias, int no, vo
 /**
  *
  */
-int alias_db_lookup(struct sip_msg* _msg, char* _table, char *flags)
+int alias_db_lookup(struct sip_msg* _msg, str* _table, void *flags)
 {
 	if (parse_sip_msg_uri(_msg) < 0)
 		return -1;
@@ -248,10 +243,9 @@ int alias_db_lookup(struct sip_msg* _msg, char* _table, char *flags)
 }
 
 
-static inline int set_alias_to_pvar(struct sip_msg* _msg, str *alias, int no, void *p)
+static inline int set_alias_to_pvar(struct sip_msg* _msg, str *alias, int no, pv_spec_t *pvs)
 {
 	pv_value_t val;
-	pv_spec_t *pvs=(pv_spec_t*)p;
 
 	if(no && !ald_append_branches)
 		return 0;
@@ -269,19 +263,13 @@ static inline int set_alias_to_pvar(struct sip_msg* _msg, str *alias, int no, vo
 }
 
 
-int alias_db_find(struct sip_msg* _msg, char* _table, char* _in, char* _out,
-															char* flags)
+int alias_db_find(struct sip_msg* _msg, str* _table, str* _in_s, pv_spec_t* _out,
+															void* flags)
 {
-	str _in_s;
 	struct sip_uri puri;
 
-	/* get the input value */
-	if(_in==NULL || fixup_get_svalue(_msg, (gparam_p)_in, &_in_s)!=0) {
-		LM_ERR("invalid input parameter\n");
-		return -1;
-	}
-	if (parse_uri(_in_s.s, _in_s.len, &puri)<0) {
-		LM_ERR("failed to parse uri %.*s\n",_in_s.len,_in_s.s);
+	if (parse_uri(_in_s->s, _in_s->len, &puri)<0) {
+		LM_ERR("failed to parse uri %.*s\n",_in_s->len,_in_s->s);
 		return -1;
 	}
 
