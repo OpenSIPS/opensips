@@ -165,18 +165,18 @@ void release_data(struct rewrite_data *data) {
 	lock_release(&data->lock);
 }
 
-int find_tree(str tree){
+int find_tree(str *tree){
 	struct tree_map * tmp;
 	if (!script_trees){
 		return -1;
 	}
-	if (tree.len <= 0) {
+	if (tree->len <= 0) {
 		return -1;
 	}
 	tmp = *script_trees;
 
 	while (tmp) {
-		if (str_strcmp(&tree, &tmp->name) == 0) {
+		if (str_strcmp(tree, &tmp->name) == 0) {
 			return tmp->id;
 		}
 		tmp = tmp->next;

@@ -49,152 +49,35 @@
  * Loads user carrier from subscriber table and stores it in an AVP.
  *
  * @param _msg the current SIP message
- * @param _user the user to determine the route tree
- * @param _domain the domain to determine the route tree
- * @param _dstavp the name of the AVP where to store the carrier tree id
+ * @param user the user to determine the route tree
+ * @param domain the domain to determine the route tree
+ * @param dstavp the name of the AVP where to store the carrier tree id
  *
  * @return 1 on success, -1 on failure
  */
-int cr_load_user_carrier(struct sip_msg * _msg, pv_elem_t *_user, pv_elem_t *_domain, struct multiparam_t *_dstavp) {
-	str user;
-	str domain;
+int cr_load_user_carrier(struct sip_msg * _msg, str *user, str *domain, pv_spec_t *dstavp) {
 	int_str avp_val;
-
-	if (pv_printf_s(_msg, _user, &user)<0)	{
-		LM_ERR("cannot print the user\n");
-		return -1;
-	}
-
-	if (pv_printf_s(_msg, _domain, &domain)<0)	{
-		LM_ERR("cannot print the domain\n");
-		return -1;
-	}
+	int avp_name;
+	unsigned short name_type;
 
 	/* get carrier id */
-	if ((avp_val.n = load_user_carrier(&user, &domain)) < 0) {
+	if ((avp_val.n = load_user_carrier(user, domain)) < 0) {
 		LM_ERR("error in load user carrier\n");
 		return -1;
 	}
 	else {
 		/* set avp ! */
-		if (add_avp(_dstavp->u.a.flags, _dstavp->u.a.name, avp_val)<0) {
+		if(pv_get_avp_name(_msg, &(dstavp->pvp), &avp_name, &name_type)!=0) {
+			LM_ERR("Invalid AVP definition\n");
+			return -1;
+		}
+
+		if (add_avp(name_type, avp_name, avp_val)<0) {
 			LM_ERR("add AVP failed\n");
 			return -1;
 		}
 	}
 	return 1;
-}
-
-
-/**
- * Get the carrier id from multiparam_t structure.
- *
- * @param mp carrier id as integer, pseudo-variable or AVP name of carrier
- * @param _msg SIP message
- * @return carrier id on success, -1 otherwise
- *
- */
-int mp2carrier_id(struct sip_msg * _msg, struct multiparam_t *mp) {
-	int carrier_id;
-	struct usr_avp *avp;
-	int_str avp_val;
-	str tmp;
-
-	/* TODO combine the redundant parts of the logic */
-	switch (mp->type) {
-	case MP_INT:
-		return mp->u.n;
-		break;
-	case MP_AVP:
-		avp = search_first_avp(mp->u.a.flags, mp->u.a.name, &avp_val, 0);
-		if (!avp) {
-			LM_ERR("cannot find AVP '%d'\n", mp->u.a.name);
-			return -1;
-		}
-		if ((avp->flags&AVP_VAL_STR)==0) {
-			return avp_val.n;
-		}
-		else {
-			carrier_id = find_tree(avp_val.s);
-			if (carrier_id < 0) {
-				LM_WARN("could not find carrier tree '%.*s'\n", avp_val.s.len, avp_val.s.s);
-				/* might be using fallback later... */
-			}
-			return carrier_id;
-		}
-		break;
-	case MP_PVE:
-		/* retrieve carrier name from parameter */
-		if (pv_printf_s(_msg, mp->u.p, &tmp)<0) {
-			LM_ERR("cannot print the carrier\n");
-			return -1;
-		}
-		carrier_id = find_tree(tmp);
-		if (carrier_id < 0) {
-			LM_WARN("could not find carrier tree '%.*s'\n", tmp.len, tmp.s);
-			/* might be using fallback later... */
-		}
-		return carrier_id;
-	default:
-		LM_ERR("invalid carrier type\n");
-		return -1;
-	}
-}
-
-
-/**
- * Get the domain id from multiparam_t structure.
- *
- * @param _msg SIP message
- * @param mp carrier id as integer, pseudo-variable or AVP name of carrier
- * @return carrier id on success, -1 otherwise
- *
- */
-int mp2domain_id(struct sip_msg * _msg, struct multiparam_t *mp) {
-	int domain_id;
-	struct usr_avp *avp;
-	int_str avp_val;
-	str tmp;
-
-	/* TODO combine the redundant parts of the logic */
-	switch (mp->type) {
-	case MP_INT:
-		return mp->u.n;
-		break;
-	case MP_AVP:
-		avp = search_first_avp(mp->u.a.flags, mp->u.a.name, &avp_val, 0);
-		if (!avp) {
-			LM_ERR("cannot find AVP '%d'\n", mp->u.a.name);
-			return -1;
-		}
-		if ((avp->flags&AVP_VAL_STR)==0) {
-			return avp_val.n;
-		}
-		else {
-			domain_id = add_domain(&avp_val.s);
-			if (domain_id < 0) {
-				LM_ERR("could not find domain '%.*s'\n", avp_val.s.len, avp_val.s.s);
-				return -1;
-			}
-			return domain_id;
-		}
-		break;
-	case MP_PVE:
-		/* retrieve domain name from parameter */
-		if (pv_printf_s(_msg, mp->u.p, &tmp)<0) {
-			LM_ERR("cannot print the domain\n");
-			return -1;
-		}
-		domain_id = add_domain(&tmp);
-		if (domain_id < 0) {
-			LM_ERR("could not find domain '%.*s'\n", tmp.len, tmp.s);
-			return -1;
-		}
-		return domain_id;
-	default:
-		LM_ERR("invalid domain type\n");
-		return -1;
-	}
 }
 
 
@@ -232,11 +115,14 @@ static inline int reply_code_matcher(const str *rcw, const str *rc) {
  *
  * @return 0 on success, -1 on failure
  */
-static int set_next_domain_on_rule(const struct failure_route_tree_item *failure_tree,
+static int set_next_domain_on_rule(struct sip_msg * _msg,
+		const struct failure_route_tree_item *failure_tree,
 		const str *host, const str *reply_code, const flag_t flags,
-		const struct multiparam_t *dstavp) {
+		const pv_spec_t *dstavp) {
 	struct failure_route_rule * rr;
 	int_str avp_val;
+	int avp_name;
+	unsigned short name_type;
 
 	assert(failure_tree != NULL);
 
@@ -253,7 +139,13 @@ static int set_next_domain_on_rule(const struct failure_route_tree_item *failure
 				((rr->host.len == 0) || (str_strcmp(host, &rr->host)==0)) &&
 				(reply_code_matcher(&(rr->reply_code), reply_code)==0)) {
 			avp_val.n = rr->next_domain;
-			if (add_avp(dstavp->u.a.flags, dstavp->u.a.name, avp_val)<0) {
+
+			if(pv_get_avp_name(_msg, (pv_param_p)&dstavp->pvp, &avp_name, &name_type)!=0) {
+				LM_ERR("Invalid AVP definition\n");
+				return -1;
+			}
+
+			if (add_avp(name_type, avp_name, avp_val)<0) {
 				LM_ERR("set AVP failed\n");
 				return -1;
 			}
@@ -281,9 +173,10 @@ static int set_next_domain_on_rule(const struct failure_route_tree_item *failure
  *
  * @return 0 on success, -1 on failure, 1 on no more matching child node and no rule list
  */
-static int set_next_domain_recursor(const struct failure_route_tree_item *failure_tree,
+static int set_next_domain_recursor(struct sip_msg * _msg,
+		const struct failure_route_tree_item *failure_tree,
 		const str *uri, const str *host, const str *reply_code, const flag_t flags,
-		const struct multiparam_t *dstavp) {
+		const pv_spec_t *dstavp) {
 	int ret;
 	struct failure_route_tree_item *re_tree;
 	str re_uri = *uri;
@@ -298,20 +191,20 @@ static int set_next_domain_recursor(const struct failure_route_tree_item *failur
 			LM_INFO("URI or route tree nodes empty, empty rule list\n");
 			return 1;
 		} else {
-			return set_next_domain_on_rule(failure_tree, host, reply_code, flags, dstavp);
+			return set_next_domain_on_rule(_msg, failure_tree, host, reply_code, flags, dstavp);
 		}
 	} else {
 		/* match, goto the next digit of the uri and try again */
 		re_tree = failure_tree->nodes[*re_uri.s - '0'];
 		re_uri.s++;
 		re_uri.len--;
-		ret = set_next_domain_recursor(re_tree, &re_uri, host, reply_code, flags, dstavp);
+		ret = set_next_domain_recursor(_msg, re_tree, &re_uri, host, reply_code, flags, dstavp);
 		switch (ret) {
 		case 0:
 			return 0;
 		case 1:
 			if (failure_tree->rule_list != NULL) {
-				return set_next_domain_on_rule(failure_tree, host, reply_code, flags, dstavp);
+				return set_next_domain_on_rule(_msg, failure_tree, host, reply_code, flags, dstavp);
 			} else {
 					LM_INFO("empty rule list for host [%.*s]%.*s\n", re_uri.len, re_uri.s,
 						host->len, host->s);
@@ -370,11 +263,13 @@ static struct route_rule * get_rule_by_hash(const struct route_flags * rf,
  * @see rewrite_on_rule()
  */
 static int actually_rewrite(const struct route_rule *rs, str *dest,
-		const struct sip_msg *msg, const str * user, struct multiparam_t *dstavp) {
+		struct sip_msg *msg, const str * user, const pv_spec_t *dstavp) {
 	size_t len;
 	char *p;
   int_str avp_val;
 	int strip = 0;
+	int avp_name;
+	unsigned short name_type;
 
 	strip = (rs->strip > user->len ? user->len : rs->strip);
 	strip = (strip < 0 ? 0 : strip);
@@ -421,8 +316,13 @@ static int actually_rewrite(const struct route_rule *rs, str *dest,
 	*p = '\0';
 
 	if (dstavp) {
+		if(pv_get_avp_name(msg, (pv_param_p)&dstavp->pvp, &avp_name, &name_type)!=0) {
+			LM_ERR("Invalid AVP definition\n");
+			return -1;
+		}
+
 		avp_val.s = rs->host;
-		if (add_avp(AVP_VAL_STR | dstavp->u.a.flags, dstavp->u.a.name, avp_val)<0) {
+		if (add_avp(AVP_VAL_STR | name_type, avp_name, avp_val)<0) {
 			LM_ERR("set AVP failed\n");
 			pkg_free(dest->s);
 			return -1;
@@ -449,7 +349,7 @@ static int actually_rewrite(const struct route_rule *rs, str *dest,
  */
 static int rewrite_on_rule(const struct route_tree_item * route_tree, flag_t flags, str * dest,
 		struct sip_msg * msg, const str * user, const enum hash_source hash_source,
-		const enum hash_algorithm alg, struct multiparam_t *dstavp) {
+		const enum hash_algorithm alg, pv_spec_t *dstavp) {
 	struct route_flags * rf;
 	struct route_rule * rr;
 	int prob;
@@ -543,7 +443,7 @@ static int rewrite_on_rule(const struct route_tree_item * route_tree, flag_t fla
 static int rewrite_uri_recursor(const struct route_tree_item * route_tree,
 		const str * pm, flag_t flags, str * dest, struct sip_msg * msg, const str * user,
 		const enum hash_source hash_source, const enum hash_algorithm alg,
-		struct multiparam_t *dstavp) {
+		pv_spec_t *dstavp) {
 	struct route_tree_item *re_tree;
 	str re_pm;
 
@@ -598,14 +498,12 @@ static int rewrite_uri_recursor(const struct route_tree_item * route_tree,
  *
  * @return 1 on success, -1 on failure
  */
-int cr_do_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
-		struct multiparam_t *_domain, pv_elem_t *_prefix_matching,
-		pv_elem_t *_rewrite_user, enum hash_source _hsrc,
-		enum hash_algorithm _halg, struct multiparam_t *_dstavp) {
+int cr_do_route(struct sip_msg * _msg, void *_carrier,
+		void *_domain, str *prefix_matching,
+		str *rewrite_user, void *_hsrc,
+		enum hash_algorithm _halg, pv_spec_t *_dstavp) {
 	int carrier_id;
 	int domain_id;
-	str rewrite_user;
-	str prefix_matching;
 	flag_t flags;
 	struct rewrite_data * rd;
 	struct carrier_tree * ct;
@@ -616,20 +514,10 @@ int cr_do_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
 
 	ret = -1;
 
-	carrier_id = mp2carrier_id(_msg, _carrier);
-	domain_id = mp2domain_id(_msg, _domain);
+	carrier_id = (int)_carrier;
+	domain_id = (int)_domain;
 	if (domain_id < 0) {
 		LM_ERR("invalid domain id %d\n", domain_id);
-		return -1;
-	}
-
-	if (pv_printf_s(_msg, _rewrite_user, &rewrite_user)<0)	{
-		LM_ERR("cannot print the rewrite_user\n");
-		return -1;
-	}
-
-	if (pv_printf_s(_msg, _prefix_matching, &prefix_matching)<0)	{
-		LM_ERR("cannot print the prefix_matching\n");
 		return -1;
 	}
 
@@ -664,18 +552,19 @@ int cr_do_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
 	rt = get_route_tree_by_id(ct, domain_id);
 	if (rt == NULL) {
 		LM_ERR("desired routing domain doesn't exist, prefix %.*s, carrier %d, domain %d\n",
-			prefix_matching.len, prefix_matching.s, carrier_id, domain_id);
+			prefix_matching->len, prefix_matching->s, carrier_id, domain_id);
 		goto unlock_and_out;
 	}
 
-	if (rewrite_uri_recursor(rt->tree, &prefix_matching, flags, &dest, _msg, &rewrite_user, _hsrc, _halg, _dstavp) != 0) {
+	if (rewrite_uri_recursor(rt->tree, prefix_matching, flags, &dest, _msg, rewrite_user, (enum hash_source)_hsrc, _halg, _dstavp) != 0) {
 		/* this is not necessarily an error, rewrite_recursor does already some error logging */
-		LM_INFO("rewrite_uri_recursor doesn't complete, uri %.*s, carrier %d, domain %d\n", prefix_matching.len,
-			prefix_matching.s, carrier_id, domain_id);
+		LM_INFO("rewrite_uri_recursor doesn't complete, uri %.*s, carrier %d, domain %d\n", prefix_matching->len,
+			prefix_matching->s, carrier_id, domain_id);
 		goto unlock_and_out;
 	}
 
-	LM_INFO("uri %.*s was rewritten to %.*s\n", rewrite_user.len, rewrite_user.s, dest.len, dest.s);
+	LM_INFO("uri %.*s was rewritten to %.*s\n",
+		rewrite_user->len, rewrite_user->s, dest.len, dest.s);
 
 	/* initialize all the act fields */
 	memset(&act, 0, sizeof(act));
@@ -709,10 +598,10 @@ unlock_and_out:
  *
  * @return 1 on success, -1 on failure
  */
-int cr_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
-		struct multiparam_t *_domain, pv_elem_t *_prefix_matching,
-		pv_elem_t *_rewrite_user, enum hash_source _hsrc,
-		struct multiparam_t *_dstavp)
+int cr_route(struct sip_msg * _msg, void *_carrier,
+		void *_domain, str *_prefix_matching,
+		str *_rewrite_user, void *_hsrc,
+		pv_spec_t *_dstavp)
 {
 	return cr_do_route(_msg, _carrier, _domain, _prefix_matching,
 		_rewrite_user, _hsrc, alg_crc32, _dstavp);
@@ -733,10 +622,10 @@ int cr_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
  *
  * @return 1 on success, -1 on failure
  */
-int cr_prime_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
-		struct multiparam_t *_domain, pv_elem_t *_prefix_matching,
-		pv_elem_t *_rewrite_user, enum hash_source _hsrc,
-		struct multiparam_t *_dstavp)
+int cr_prime_route(struct sip_msg * _msg, void *_carrier,
+		str *_domain, str *_prefix_matching,
+		str *_rewrite_user, void *_hsrc,
+		pv_spec_t *_dstavp)
 {
 	return cr_do_route(_msg, _carrier, _domain, _prefix_matching,
 		_rewrite_user, _hsrc, alg_prime, _dstavp);
@@ -758,14 +647,11 @@ int cr_prime_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
  *
  * @return 1 on success, -1 on failure
  */
-int cr_load_next_domain(struct sip_msg * _msg, struct multiparam_t *_carrier,
-		struct multiparam_t *_domain, pv_elem_t *_prefix_matching,
-		pv_elem_t *_host, pv_elem_t *_reply_code, struct multiparam_t *_dstavp) {
+int cr_load_next_domain(struct sip_msg * _msg, void *_carrier,
+		void *_domain, str *prefix_matching,
+		str *host, str *reply_code, pv_spec_t *_dstavp) {
 	int carrier_id;
 	int domain_id;
-	str prefix_matching;
-	str host;
-	str reply_code;
 	flag_t flags;
 	struct rewrite_data * rd;
 	struct carrier_tree * ct;
@@ -774,25 +660,10 @@ int cr_load_next_domain(struct sip_msg * _msg, struct multiparam_t *_carrier,
 
 	ret = -1;
 
-	carrier_id = mp2carrier_id(_msg, _carrier);
-	domain_id = mp2domain_id(_msg, _domain);
+	carrier_id = (int)_carrier;
+	domain_id = (int)_domain;
 	if (domain_id < 0) {
 		LM_ERR("invalid domain id %d\n", domain_id);
-		return -1;
-	}
-
-	if (pv_printf_s(_msg, _prefix_matching, &prefix_matching)<0)	{
-		LM_ERR("cannot print the prefix_matching\n");
-		return -1;
-	}
-
-	if (pv_printf_s(_msg, _host, &host)<0)	{
-		LM_ERR("cannot print the host\n");
-		return -1;
-	}
-
-	if (pv_printf_s(_msg, _reply_code, &reply_code)<0)	{
-		LM_ERR("cannot print the reply_code\n");
 		return -1;
 	}
 
@@ -827,13 +698,13 @@ int cr_load_next_domain(struct sip_msg * _msg, struct multiparam_t *_carrier,
 	rt = get_route_tree_by_id(ct, domain_id);
 	if (rt == NULL) {
 		LM_ERR("desired routing domain doesn't exist, prefix %.*s, carrier %d, domain %d\n",
-			prefix_matching.len, prefix_matching.s, carrier_id, domain_id);
+			prefix_matching->len, prefix_matching->s, carrier_id, domain_id);
 		goto unlock_and_out;
 	}
 
-	if (set_next_domain_recursor(rt->failure_tree, &prefix_matching, &host, &reply_code, flags, _dstavp) != 0) {
-		LM_ERR("during set_next_domain_recursor, prefix '%.*s', carrier %d, domain %d\n", prefix_matching.len,
-			prefix_matching.s, carrier_id, domain_id);
+	if (set_next_domain_recursor(_msg, rt->failure_tree, prefix_matching, host, reply_code, flags, _dstavp) != 0) {
+		LM_ERR("during set_next_domain_recursor, prefix '%.*s', carrier %d, domain %d\n", prefix_matching->len,
+			prefix_matching->s, carrier_id, domain_id);
 		goto unlock_and_out;
 	}
 
