@@ -74,10 +74,10 @@ struct list_link*       timer = 0;
 static str pike_block_event = str_init("E_PIKE_BLOCKED");
 event_id_t pike_event_id = EVI_ERROR;
 
-
 static cmd_export_t cmds[]={
-	{"pike_check_req", (cmd_function)pike_check_req,  0,  0, 0, REQUEST_ROUTE},
-	{0,0,0,0,0,0}
+	{"pike_check_req", (cmd_function)pike_check_req, {{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
