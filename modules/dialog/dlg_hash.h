@@ -307,7 +307,7 @@ void destroy_dlg(struct dlg_cell *dlg);
 	({ \
 		char *___p; \
 		int ___flags = 0; \
-		for (___p=(input).s; ___p < (input).s + (input).len; ___p++) \
+		for (___p=(input)->s; ___p < (input)->s + (input)->len; ___p++) \
 		{ \
 			switch (*___p) \
 			{ \
