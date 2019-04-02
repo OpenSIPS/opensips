@@ -25,6 +25,6 @@ struct sip_msg;
 int sipstate_open(char *allocator);
 void sipstate_close(void);
 int sipstate_load(const char *filename);
-int sipstate_call(struct sip_msg *msg, const char *fnc, const char *mystr);
+int sipstate_call(struct sip_msg *msg, const str *_fnc_s, const str *_mystr_s);
 
 #endif /* !SIPSTATE_H_ */

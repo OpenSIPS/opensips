@@ -427,12 +427,31 @@ int sipstate_load(const char *filename)
     }
 }
 
-int sipstate_call(struct sip_msg *msg, const char *fnc, const char *mystr)
+int sipstate_call(struct sip_msg *msg, const str *_fnc_s, const str *_mystr_s)
 {
   lua_State *L = siplua_L;
   int ref;
   const char *errmsg;
   int n;
+  char *fnc, *mystr = NULL;
+
+  fnc = pkg_malloc(_fnc_s->len);
+  if (!fnc) {
+    LM_ERR("No more pkg mem!\n");
+    return -1;
+  }
+  memcpy(fnc, _fnc_s->s, _fnc_s->len);
+  fnc[_fnc_s->len] = 0;
+
+  if (_mystr_s) {
+    mystr = pkg_malloc(_mystr_s->len);
+    if (!mystr) {
+      LM_ERR("No more pkg mem!\n");
+      return -1;
+    }
+    memcpy(mystr, _mystr_s->s, _mystr_s->len);
+    mystr[_mystr_s->len] = 0;
+  }
 
   if (lua_auto_reload)
     sipstate_load(NULL);
@@ -463,5 +482,10 @@ int sipstate_call(struct sip_msg *msg, const char *fnc, const char *mystr)
       lua_remove(L, -1);
 /*       siplua_log(L_DBG , "siplua Lua function %s returned %d\n", fnc, n); */
     }
+
+  pkg_free(fnc);
+  if (mystr)
+    pkg_free(mystr);
+
   return n;
 }
