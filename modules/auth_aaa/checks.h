@@ -31,24 +31,10 @@
 
 
 /*
- * Check from AAA if Request URI belongs to a local user.
- * If so, loads AVPs based on reply items returned from AAA.
- */
-int aaa_does_uri_exist_0(struct sip_msg* _m, char* _s1, char* _s2);
-
-
-/*
  * Check from AAA if URI giving in pvar argument belongs to a local user.
  * If so, loads AVPs based on reply items returned from AAA.
  */
-int aaa_does_uri_exist_1(struct sip_msg* _m, char* _sp, char* _s2);
-
-
-/*
- * Check from AAA if Request URI user belongs to a local user.
- * If so, loads AVPs based on reply items returned from AAA.
- */
-int aaa_does_uri_user_exist_0(struct sip_msg* _m, char* _s1, char* _s2);
+int aaa_does_uri_exist(struct sip_msg* _m, str* val);
 
 
 /*
@@ -56,6 +42,6 @@ int aaa_does_uri_user_exist_0(struct sip_msg* _m, char* _s1, char* _s2);
  * to a local user. If so, loads AVPs based on reply items returned
  * from AAA.
  */
-int aaa_does_uri_user_exist_1(struct sip_msg* _m, char* _sp, char* _s2);
+int w_aaa_does_uri_user_exist(struct sip_msg* _m, str* val);
 
 #endif /* AAA_CHECKS_H */

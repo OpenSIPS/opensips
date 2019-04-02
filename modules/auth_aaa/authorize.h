@@ -29,21 +29,16 @@
 
 
 /*
- * Authorize using Proxy-Authorize header field (no from parameter given)
- */
-int aaa_proxy_authorize_1(struct sip_msg* _msg, char* _realm, char* _s2);
-
-
-/*
  * Authorize using Proxy-Authorize header field (from parameter given)
  */
-int aaa_proxy_authorize_2(struct sip_msg* _msg, char* _realm, char* _from);
+int aaa_proxy_authorize(struct sip_msg* _msg, str* _realm,
+					str* _uri_user);
 
 
 /*
  * Authorize using WWW-Authorization header field
  */
-int aaa_www_authorize(struct sip_msg* _msg, char* _realm, char* _s2);
+int aaa_www_authorize(struct sip_msg* _msg, str* _realm, str* _s2);
 
 
 #endif /* AUTHORIZE_H */

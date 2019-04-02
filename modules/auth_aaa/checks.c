@@ -104,68 +104,42 @@ error:
 
 
 /*
- * Check from AAA if Request URI belongs to a local user.
- * If so, loads AVPs based on reply items returned from AAA.
- */
-int aaa_does_uri_exist_0(struct sip_msg* _m, char* _s1, char* _s2)
-{
-
-	if (parse_sip_msg_uri(_m) < 0) {
-		LM_ERR("parsing URI failed\n");
-		return -1;
-	}
-
-	if ( _m->callid==NULL &&
-	(parse_headers(_m, HDR_CALLID_F, 0)==-1 || _m->callid==NULL)  ) {
-		LM_ERR("msg parsing failed or callid not present\n");
-		return -1;
-	}
-
-	return aaa_does_uri_user_host_exist(_m->parsed_uri.user,
-			_m->parsed_uri.host, _m->callid->body);
-}
-
-
-/*
  * Check from AAA if URI giving in pvar argument belongs to a local user.
  * If so, loads AVPs based on reply items returned from AAA.
  */
-int aaa_does_uri_exist_1(struct sip_msg* _m, char* _sp, char* _s2)
+int aaa_does_uri_exist(struct sip_msg* _m, str *val)
 {
-	pv_spec_t *sp;
-	pv_value_t pv_val;
 	struct sip_uri parsed_uri;
 
-	sp = (pv_spec_t *)_sp;
-
-	if (sp && (pv_get_spec_value(_m, sp, &pv_val) == 0)) {
-		if (pv_val.flags & PV_VAL_STR) {
-			if (pv_val.rs.len == 0 || pv_val.rs.s == NULL) {
-				LM_ERR("pvar argument is empty\n");
-				return -1;
-			}
-		} else {
-			LM_ERR("pvar value is not string\n");
+	if (val) {
+		if (parse_uri(val->s, val->len, &parsed_uri) < 0) {
+			LM_ERR("parsing of URI in pvar failed\n");
 			return -1;
 		}
+
+		if ( _m->callid == NULL &&
+		(parse_headers(_m, HDR_CALLID_F, 0) == -1 || _m->callid == NULL)) {
+			LM_ERR("msg parsing failed or callid not present\n");
+			return -1;
+		}
+
+		return aaa_does_uri_user_host_exist(parsed_uri.user, parsed_uri.host,
+			_m->callid->body);
 	} else {
-		LM_ERR("cannot get pvar value\n");
-		return -1;
-	}
+		if (parse_sip_msg_uri(_m) < 0) {
+			LM_ERR("parsing URI failed\n");
+			return -1;
+		}
 
-	if (parse_uri(pv_val.rs.s, pv_val.rs.len, &parsed_uri) < 0) {
-		LM_ERR("parsing of URI in pvar failed\n");
-		return -1;
-	}
+		if ( _m->callid==NULL &&
+		(parse_headers(_m, HDR_CALLID_F, 0)==-1 || _m->callid==NULL)  ) {
+			LM_ERR("msg parsing failed or callid not present\n");
+			return -1;
+		}
 
-	if ( _m->callid == NULL &&
-	(parse_headers(_m, HDR_CALLID_F, 0) == -1 || _m->callid == NULL)) {
-		LM_ERR("msg parsing failed or callid not present\n");
-		return -1;
+		return aaa_does_uri_user_host_exist(_m->parsed_uri.user,
+				_m->parsed_uri.host, _m->callid->body);
 	}
-
-	return aaa_does_uri_user_host_exist(parsed_uri.user, parsed_uri.host,
-		_m->callid->body);
 }
 
 
@@ -229,59 +203,32 @@ error:
 
 
 /*
- * Check from AAA if Request URI user belongs to a local user.
- * If so, loads AVPs based on reply items returned from AAA.
- */
-int aaa_does_uri_user_exist_0(struct sip_msg* _m, char* _s1, char* _s2)
-{
-
-	if (parse_sip_msg_uri(_m) < 0) {
-		LM_ERR("parsing URI failed\n");
-		return -1;
-	}
-
-	if ( !_m->callid &&
-			(parse_headers(_m, HDR_CALLID_F, 0) == -1 || !_m->callid)) {
-		LM_ERR("msg parsing failed or callid not present\n");
-		return -1;
-	}
-
-	return aaa_does_uri_user_exist(_m->parsed_uri.user, _m->callid->body);
-}
-
-
-/*
  * Check from AAA if URI user giving in pvar argument belongs
  * to a local user. If so, loads AVPs based on reply items returned
  * from AAA.
  */
-int aaa_does_uri_user_exist_1(struct sip_msg* _m, char* _sp, char* _s2)
+int w_aaa_does_uri_user_exist(struct sip_msg* _m, str *val)
 {
-	pv_spec_t *sp;
-	pv_value_t pv_val;
-
-	sp = (pv_spec_t *)_sp;
-
-	if (sp && (pv_get_spec_value(_m, sp, &pv_val) == 0)) {
-		if (pv_val.flags & PV_VAL_STR) {
-			if (pv_val.rs.len == 0 || pv_val.rs.s == NULL) {
-				LM_ERR("pvar argument is empty\n");
-				return -1;
-			}
-		} else {
-			LM_ERR("pvar value is not string\n");
+	if (val) {
+		if ( !_m->callid &&
+				(parse_headers(_m, HDR_CALLID_F, 0) == -1 || !_m->callid)) {
+			LM_ERR("msg parsing failed or callid not present\n");
 			return -1;
 		}
+
+		return aaa_does_uri_user_exist(*val, _m->callid->body);
 	} else {
-		LM_ERR("cannot get pvar value\n");
-		return -1;
-	}
+		if (parse_sip_msg_uri(_m) < 0) {
+			LM_ERR("parsing URI failed\n");
+			return -1;
+		}
 
-	if ( !_m->callid &&
-			(parse_headers(_m, HDR_CALLID_F, 0) == -1 || !_m->callid)) {
-		LM_ERR("msg parsing failed or callid not present\n");
-		return -1;
-	}
+		if ( !_m->callid &&
+				(parse_headers(_m, HDR_CALLID_F, 0) == -1 || !_m->callid)) {
+			LM_ERR("msg parsing failed or callid not present\n");
+			return -1;
+		}
 
-	return aaa_does_uri_user_exist(pv_val.rs, _m->callid->body);
+		return aaa_does_uri_user_exist(_m->parsed_uri.user, _m->callid->body);
+	}
 }
