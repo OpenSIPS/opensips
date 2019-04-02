@@ -91,7 +91,7 @@ static inline int load_uac_auth_api( uac_auth_api_t *uac_auth_api)
 	load_uac_auth_f load_uac_auth;
 
 	/* import the uac_auth auto-loading function */
-	if ( !(load_uac_auth=(load_uac_auth_f)find_export("load_uac_auth", 1, 0))) {
+	if ( !(load_uac_auth=(load_uac_auth_f)find_export("load_uac_auth", 0))) {
 		return -1;
 	}
 
