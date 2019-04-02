@@ -68,7 +68,7 @@ int ldap_params_search(
 	...);
 
 int ldap_url_search_async(
-	char* _ldap_url,
+	str* _ldap_url,
 	int* _msgidp,
 	struct ld_session **ldsp,
 	struct ld_conn** conn,
