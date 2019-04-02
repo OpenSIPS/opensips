@@ -224,7 +224,7 @@ int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val)
 	if (!seq_match_mode_val)
 		mm = SEQ_MATCH_DEFAULT;
 	else
-		mm = (int)seq_match_mode_val;
+		mm = (int)(long)seq_match_mode_val;
 
 	if (!dlg_api.match_dialog || dlg_api.match_dialog(req, mm) < 0)
 		return topology_hiding_match(req);
