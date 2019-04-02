@@ -144,14 +144,12 @@ static X509_STORE * store = NULL;
 /* needed for certificate verification */
 static X509_STORE_CTX * verify_ctx = NULL;
 
-
-/** module functions */
 static cmd_export_t cmds[]={
-	{"authservice",  (cmd_function)authservice_,  0, 0, 0,
+	{"authservice",(cmd_function)authservice_, {{0,0,0}},
 		REQUEST_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
-	{"verifier",     (cmd_function)verifier_,     0, 0, 0,
+	{"verifier",(cmd_function)verifier_, {{0,0,0}},
 		REQUEST_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
