@@ -1045,7 +1045,7 @@ static inline int rest_trace_enabled(void)
 
 void append_body_to_msg( trace_message message, void* param)
 {
-
+	static str sip_str = str_init("sip");
 	struct rest_append_param* app = param;
 
 	if ( !app ) {
@@ -1059,7 +1059,7 @@ void append_body_to_msg( trace_message message, void* param)
 	if ( app->body.len )
 		tprot.add_payload_part( message, "payload", &app->body );
 
-	tprot.add_extra_correlation( message, "sip", &app->callid );
+	tprot.add_extra_correlation( message, &sip_str, &app->callid );
 }
 
 static int trace_rest_message( rest_trace_param_t* tparam )

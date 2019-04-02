@@ -80,33 +80,26 @@ static int child_init(int rank);
 static void mod_destroy(void);
 
 /*
- * Fixup functions
- */
-static int fixup_rest_get(void **param, int param_no);
-static int fixup_rest_post(void **param, int param_no);
-static int fixup_rest_put(void **param, int param_no);
-
-/*
  * Function headers
  */
-static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
-				char *ctype_pv, char *code_pv);
-static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
-				char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
-static int w_rest_put(struct sip_msg *msg, char *gp_url, char *gp_body,
-				char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv);
+static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
+                      pv_spec_t *ctype_pv, pv_spec_t *code_pv);
+static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
+					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv);
+static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
+					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv);
 
-static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, char *gp_url,
-					 char *body_pv, char *ctype_pv, char *code_pv);
+static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
+				pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv);
 static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
-					 char *gp_url, char *gp_body, char *gp_ctype,
-					 char *body_pv, char *ctype_pv, char *code_pv);
+			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv);
 static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
-					 char *gp_url, char *gp_body, char *gp_ctype,
-					 char *body_pv, char *ctype_pv, char *code_pv);
+			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv);
 
-static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv);
-static int w_rest_init_client_tls(struct sip_msg *msg, char *gp_tls_dom);
+static int w_rest_append_hf(struct sip_msg *msg, str *hfv);
+static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom);
 int validate_curl_http_version(const int *http_version);
 
 /* module dependencies */
@@ -121,36 +114,62 @@ static dep_export_t deps = {
 };
 
 static acmd_export_t acmds[] = {
-	{ "rest_get",  (acmd_function)w_async_rest_get,  2, fixup_rest_get },
-	{ "rest_get",  (acmd_function)w_async_rest_get,  3, fixup_rest_get },
-	{ "rest_get",  (acmd_function)w_async_rest_get,  4, fixup_rest_get },
-	{ "rest_post", (acmd_function)w_async_rest_post, 4, fixup_rest_post },
-	{ "rest_post", (acmd_function)w_async_rest_post, 5, fixup_rest_post },
-	{ "rest_post", (acmd_function)w_async_rest_post, 6, fixup_rest_post },
-	{ "rest_put",  (acmd_function)w_async_rest_put,  4, fixup_rest_put },
-	{ "rest_put",  (acmd_function)w_async_rest_put,  5, fixup_rest_put },
-	{ "rest_put",  (acmd_function)w_async_rest_put,  6, fixup_rest_put },
-	{ 0, 0, 0, 0 }
+	{"rest_get",(acmd_function)w_async_rest_get, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+	{"rest_post",(acmd_function)w_async_rest_post, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+	{"rest_put",(acmd_function)w_async_rest_put, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+	{0,0,{{0,0,0}}}
 };
 
 /*
  * Exported functions
  */
+
 static cmd_export_t cmds[] = {
-	{ "rest_get",(cmd_function)w_rest_get, 2, fixup_rest_get, 0, ALL_ROUTES },
-	{ "rest_get",(cmd_function)w_rest_get, 3, fixup_rest_get, 0, ALL_ROUTES },
-	{ "rest_get",(cmd_function)w_rest_get, 4, fixup_rest_get, 0, ALL_ROUTES },
-	{ "rest_post",(cmd_function)w_rest_post, 4, fixup_rest_post, 0, ALL_ROUTES },
-	{ "rest_post",(cmd_function)w_rest_post, 5, fixup_rest_post, 0, ALL_ROUTES },
-	{ "rest_post",(cmd_function)w_rest_post, 6, fixup_rest_post, 0, ALL_ROUTES },
-	{ "rest_put",(cmd_function)w_rest_put, 4, fixup_rest_put, 0, ALL_ROUTES },
-	{ "rest_put",(cmd_function)w_rest_put, 5, fixup_rest_put, 0, ALL_ROUTES },
-	{ "rest_put",(cmd_function)w_rest_put, 6, fixup_rest_put, 0, ALL_ROUTES },
-	{ "rest_append_hf",(cmd_function)w_rest_append_hf, 1, fixup_spve_null, 0,
-		ALL_ROUTES },
-	{ "rest_init_client_tls",(cmd_function)w_rest_init_client_tls, 1,
-		fixup_spve_null, 0, ALL_ROUTES },
-	{ 0, 0, 0, 0, 0, 0 }
+	{"rest_get",(cmd_function)w_rest_get, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{"rest_post",(cmd_function)w_rest_post, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{"rest_put",(cmd_function)w_rest_put, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{"rest_append_hf",(cmd_function)w_rest_append_hf, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{"rest_init_client_tls",(cmd_function)w_rest_init_client_tls, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{0,0,{{0,0,0}},0}
 };
 
 
@@ -341,60 +360,6 @@ static void mod_destroy(void)
 	curl_global_cleanup();
 }
 
-/**************************** Fixup functions *******************************/
-
-
-static int fixup_rest_get(void **param, int param_no)
-{
-	switch (param_no) {
-	case 1:
-		return fixup_spve(param);
-	case 2:
-	case 3:
-	case 4:
-		return fixup_pvar(param);
-
-	default:
-		LM_ERR("Too many parameters!\n");
-		return -1;
-	}
-}
-
-static int fixup_rest_post(void **param, int param_no)
-{
-	switch (param_no) {
-	case 1:
-	case 2:
-	case 3:
-		return fixup_spve(param);
-	case 4:
-	case 5:
-	case 6:
-		return fixup_pvar(param);
-
-	default:
-		LM_ERR("Too many parameters!\n");
-		return -1;
-	}
-}
-
-static int fixup_rest_put(void **param, int param_no)
-{
-	switch (param_no) {
-	case 1:
-	case 2:
-	case 3:
-		return fixup_spve(param);
-	case 4:
-	case 5:
-	case 6:
-		return fixup_pvar(param);
-
-	default:
-		LM_ERR("Too many parameters!\n");
-		return -1;
-	}
-}
 
 int validate_curl_http_version(const int *http_version)
 {
@@ -426,69 +391,66 @@ int validate_curl_http_version(const int *http_version)
 
 /**************************** Module functions *******************************/
 
-static int w_rest_get(struct sip_msg *msg, char *gp_url, char *body_pv,
-                      char *ctype_pv, char *code_pv)
+static int w_rest_get(struct sip_msg *msg, str *url, pv_spec_t *body_pv,
+                      pv_spec_t *ctype_pv, pv_spec_t *code_pv)
 {
-	str url;
+	str url_nt;
+	int rc;
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
-		LM_ERR("Invalid HTTP URL pseudo variable!\n");
-		return -1;
+	if (pkg_nt_str_dup(&url_nt, url) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return RCL_INTERNAL_ERR;
 	}
 
-	return rest_sync_transfer(REST_CLIENT_GET, msg, url.s, NULL, NULL,
-	                          (pv_spec_p)body_pv, (pv_spec_p)ctype_pv,
-	                          (pv_spec_p)code_pv);
+	rc = rest_sync_transfer(REST_CLIENT_GET, msg, url_nt.s, NULL, NULL,
+	                          body_pv, ctype_pv, code_pv);
+
+	pkg_free(url_nt.s);
+	return rc;
 }
 
-static int w_rest_post(struct sip_msg *msg, char *gp_url, char *gp_body,
-                   char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
+static int w_rest_post(struct sip_msg *msg, str *url, str *body, str *_ctype,
+					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv)
 {
-	str url, body, ctype = { NULL, 0 };
+	str ctype = { NULL, 0 };
+	str url_nt;
+	int rc;
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
-		LM_ERR("Invalid HTTP URL pseudo variable!\n");
-		return -1;
+	if (pkg_nt_str_dup(&url_nt, url) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return RCL_INTERNAL_ERR;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
-		LM_ERR("Invalid HTTP POST body pseudo variable!\n");
-		return -1;
-	}
+	if (_ctype)
+		ctype = *_ctype;
 
-	if (gp_ctype && fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
-		LM_ERR("Invalid HTTP POST content type pseudo variable!\n");
-		return -1;
-	}
+	rc = rest_sync_transfer(REST_CLIENT_POST, msg, url_nt.s, body, &ctype,
+	                          body_pv, ctype_pv, code_pv);
 
-	return rest_sync_transfer(REST_CLIENT_POST, msg, url.s, &body, &ctype,
-	                          (pv_spec_p)body_pv, (pv_spec_p)ctype_pv,
-	                          (pv_spec_p)code_pv);
+	pkg_free(url_nt.s);
+	return rc;
 }
 
-static int w_rest_put(struct sip_msg *msg, char *gp_url, char *gp_body,
-                   char *gp_ctype, char *body_pv, char *ctype_pv, char *code_pv)
+static int w_rest_put(struct sip_msg *msg, str *url, str *body, str *_ctype,
+					pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv)
 {
-	str url, body, ctype = { NULL, 0 };
+	str ctype = { NULL, 0 };
+	str url_nt;
+	int rc;
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
-		LM_ERR("Invalid HTTP URL pseudo variable!\n");
-		return -1;
+	if (pkg_nt_str_dup(&url_nt, url) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return RCL_INTERNAL_ERR;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
-		LM_ERR("Invalid HTTP PUT body pseudo variable!\n");
-		return -1;
-	}
+	if (_ctype)
+		ctype = *_ctype;
 
-	if (gp_ctype && fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
-			LM_ERR("Invalid HTTP PUT content type pseudo variable!\n");
-			return -1;
-	}
+	rc = rest_sync_transfer(REST_CLIENT_PUT, msg, url_nt.s, body, &ctype,
+	                          body_pv, ctype_pv, code_pv);
 
-	return rest_sync_transfer(REST_CLIENT_PUT, msg, url.s, &body, &ctype,
-	                          (pv_spec_p)body_pv, (pv_spec_p)ctype_pv,
-	                          (pv_spec_p)code_pv);
+	pkg_free(url_nt.s);
+	return rc;
 }
 
 int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
@@ -577,99 +539,85 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	return 1;
 }
 
-static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx,
-					char *gp_url, char *body_pv, char *ctype_pv, char *code_pv)
+static int w_async_rest_get(struct sip_msg *msg, async_ctx *ctx, str *url,
+				pv_spec_t *body_pv, pv_spec_t *ctype_pv, pv_spec_t *code_pv)
 {
-	str url;
+	str url_nt;
+	int rc;
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
-		LM_ERR("Invalid HTTP URL pseudo variable!\n");
-		return -1;
+	if (pkg_nt_str_dup(&url_nt, url) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return RCL_INTERNAL_ERR;
 	}
 
-	LM_DBG("async rest get %.*s %p %p %p\n", url.len, url.s,
+	LM_DBG("async rest get %.*s %p %p %p\n", url->len, url->s,
 			body_pv, ctype_pv, code_pv);
 
-	return async_rest_method(REST_CLIENT_GET, msg, url.s, NULL, NULL, ctx,
-				(pv_spec_p)body_pv, (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
+	rc = async_rest_method(REST_CLIENT_GET, msg, url_nt.s, NULL, NULL, ctx,
+				body_pv, ctype_pv, code_pv);
+
+	pkg_free(url_nt.s);
+	return rc;
 }
 
 static int w_async_rest_post(struct sip_msg *msg, async_ctx *ctx,
-							 char *gp_url, char *gp_body, char *gp_ctype,
-							 char *body_pv, char *ctype_pv, char *code_pv)
+			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv)
 {
-	str url, body, ctype = { NULL, 0 };
+	str ctype = { NULL, 0 };
+	str url_nt;
+	int rc;
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
-		LM_ERR("Invalid HTTP URL pseudo variable!\n");
-		return -1;
+	if (pkg_nt_str_dup(&url_nt, url) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return RCL_INTERNAL_ERR;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
-		LM_ERR("Invalid HTTP POST body pseudo variable!\n");
-		return -1;
-	}
+	if (_ctype)
+		ctype = *_ctype;
 
-	if (gp_ctype && fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
-		LM_ERR("Invalid HTTP POST content type pseudo variable!\n");
-		return -1;
-	}
-
-	LM_DBG("async rest post '%.*s' %p %p %p\n", url.len, url.s,
+	LM_DBG("async rest post '%.*s' %p %p %p\n", url->len, url->s,
 			body_pv, ctype_pv, code_pv);
 
-	return async_rest_method(REST_CLIENT_POST, msg, url.s, &body, &ctype, ctx,
-				(pv_spec_p)body_pv, (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
+	rc = async_rest_method(REST_CLIENT_POST, msg, url_nt.s, body, &ctype, ctx,
+							body_pv, ctype_pv, code_pv);
+
+	pkg_free(url_nt.s);
+	return rc;
 }
 
 static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
-							char *gp_url, char *gp_body, char *gp_ctype,
-							char *body_pv, char *ctype_pv, char *code_pv)
+			str *url, str *body, str *_ctype, pv_spec_t *body_pv,
+			pv_spec_t *ctype_pv, pv_spec_t *code_pv)
 {
-	str url, body, ctype = { NULL, 0 };
+	str ctype = { NULL, 0 };
+	str url_nt;
+	int rc;
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_url, &url) != 0) {
-		LM_ERR("Invalid HTTP URL pseudo variable!\n");
-		return -1;
+	if (pkg_nt_str_dup(&url_nt, url) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return RCL_INTERNAL_ERR;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_body, &body) != 0) {
-		LM_ERR("Invalid HTTP PUT body pseudo variable!\n");
-		return -1;
-	}
-
-	if (gp_ctype && fixup_get_svalue(msg, (gparam_p)gp_ctype, &ctype) != 0) {
-		LM_ERR("Invalid HTTP PUT content type pseudo variable!\n");
-		return -1;
-	}
+	if (_ctype)
+		ctype = *_ctype;
 
 	LM_DBG("async rest put '%.*s' %p %p %p\n",
-		url.len, url.s, body_pv, ctype_pv, code_pv);
+		url->len, url->s, body_pv, ctype_pv, code_pv);
 
-	return async_rest_method(REST_CLIENT_PUT, msg, url.s, &body, &ctype, ctx,
-				(pv_spec_p)body_pv, (pv_spec_p)ctype_pv, (pv_spec_p)code_pv);
+	rc = async_rest_method(REST_CLIENT_PUT, msg, url_nt.s, body, &ctype, ctx,
+						body_pv, ctype_pv, code_pv);
+
+	pkg_free(url_nt.s);
+	return rc;
 }
 
-static int w_rest_append_hf(struct sip_msg *msg, char *gp_hfv)
+static int w_rest_append_hf(struct sip_msg *msg, str *hfv)
 {
-	str hfv;
-
-	if (fixup_get_svalue(msg, (gparam_p)gp_hfv, &hfv) != 0) {
-		LM_ERR("cannot retrieve header field value\n");
-		return -1;
-	}
-
-	return rest_append_hf_method(msg, &hfv);
+	return rest_append_hf_method(msg, hfv);
 }
 
-static int w_rest_init_client_tls(struct sip_msg *msg, char *gp_tls_dom)
+static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom)
 {
-	str tls_client_dom;
-
-	if (fixup_get_svalue(msg, (gparam_p)gp_tls_dom, &tls_client_dom) != 0) {
-		LM_ERR("cannot retrieve header field value\n");
-		return -1;
-	}
-
-	return rest_init_client_tls(msg, &tls_client_dom);
+	return rest_init_client_tls(msg, tls_client_dom);
 }
