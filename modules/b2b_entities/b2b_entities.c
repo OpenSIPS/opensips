@@ -81,10 +81,9 @@ struct tm_binds tmb;
 uac_auth_api_t uac_auth_api;
 
 /** Exported functions */
-static cmd_export_t cmds[]=
-{
-	{"load_b2b",  (cmd_function)b2b_entities_bind, 1,  0,  0,  0},
-	{ 0,               0,                          0,  0,  0,  0}
+static cmd_export_t cmds[] = {
+	{"load_b2b",  (cmd_function)b2b_entities_bind, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 /** Exported parameters */
