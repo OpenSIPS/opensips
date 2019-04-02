@@ -23,12 +23,19 @@
 #include <strings.h>
 
 #include "common.h"
+#include "../dprint.h"
 
 enum osips_mm mem_allocator = MM_F_MALLOC;
 
 /* returns -1 if @mm_name is unrecognized */
 int set_global_mm(const char *mm_name)
 {
+#ifdef INLINE_ALLOC
+	LM_NOTICE("this is an inlined allocator build (see opensips -V), "
+	          "cannot set a custom memory allocator (%s)\n", mm_name);
+	return 0;
+#endif
+
 	if (parse_mm(mm_name, &mem_allocator) < 0)
 		return -1;
 

@@ -154,6 +154,12 @@ static str shm_size_str = { "size", 4 };
 
 int set_shm_mm(const char *mm_name)
 {
+#ifdef INLINE_ALLOC
+	LM_NOTICE("this is an inlined allocator build (see opensips -V), "
+	          "cannot set a custom shm allocator (%s)\n", mm_name);
+	return 0;
+#endif
+
 	if (parse_mm(mm_name, &mem_allocator_shm) < 0)
 		return -1;
 
