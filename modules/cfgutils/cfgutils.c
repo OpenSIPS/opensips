@@ -483,9 +483,9 @@ static int m_sleep(struct sip_msg *msg, int *seconds)
 
 static int m_usleep(struct sip_msg *msg, int *useconds)
 {
-	LM_DBG("sleep %d\n", (unsigned int)useconds);
+	LM_DBG("sleep %d\n", *(unsigned int*)useconds);
 
-	sleep_us((unsigned int)useconds);
+	sleep_us(*(unsigned int*)useconds);
 
 	return 1;
 }
