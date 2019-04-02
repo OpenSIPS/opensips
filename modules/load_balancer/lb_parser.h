@@ -40,15 +40,6 @@ struct lb_res_str_list {
 	struct lb_res_str* resources;
 };
 
-#define	RES_TEXT	(1<<0)
-#define	RES_ELEM	(1<<1)
-
-struct lb_res_parse {
-	char type;
-	void *param;
-};
-
-
 struct lb_res_str* search_resource_str( struct lb_res_str_list *lb_rl,
 		str *name);
 
