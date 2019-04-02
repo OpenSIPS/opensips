@@ -87,105 +87,53 @@ static void mod_destroy(void)
 	geoip_close_db();
 }
 
-static int fixup_lookup3(void **param, int param_no)
+static int fixup_check_avp(void **param)
 {
-	str s;
+	if (((pv_spec_t *)*param)->type!=PVT_AVP) {
+		LM_ERR("return parameter must be an AVP\n");
+		return E_SCRIPT;
+	}
 
-	s.s=(char *)(*param);
-	s.len=strlen(s.s);
-	if(!s.len) {
-		LM_ERR("fixup_lookup3:Parameter %d is empty.\n", param_no);
-		return E_CFG;
-	}
-	if(1==param_no || 2==param_no) {
-		/* Expecting input pseudo vars --> pv_elem_t */
-		pv_elem_t *model=0;
-		if(pv_parse_format(&s,&model) || !model) {
-			LM_ERR("Bad format for input PV: '%s'.", s.s);
-			return E_CFG;
-		}
-		*param=(void*)model;
-		return 0;
-	} else if(3==param_no) {
-		/* Expecting AVP spec --> pv_spec_t */
-		pv_spec_t *spec;
-		int ret=fixup_pvar(param);
-		if(ret<0) return ret;
-		spec=(pv_spec_t*)(*param);
-		if(spec->type!=PVT_AVP) {
-			LM_ERR("AVP required for return value!\n");
-			return E_CFG;
-		}
-		return 0;
-	} else {
-		LM_ERR("Invalid parameter number: %d.\n", param_no);
-		return E_CFG;
-	}
 	return 0;
 }
 
-static int fixup_lookup2(void **param, int param_no)
-{
-	if(1==param_no)
-		return fixup_lookup3(param,2);
-	if(2==param_no)
-		return fixup_lookup3(param,3);
-	LM_ERR("Invalid parameter number: %d.\n", param_no);
-	return E_CFG;
-}
-
 #include <string.h>
-static int mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_pv, char *_dst_spec)
+static int mmg_lookup_cmd(struct sip_msg *msg, str *_fields, str *ipaddr_str,
+					pv_spec_t *dst_spec)
 {
-	pv_elem_t *fields_pv=(pv_elem_t*)_fields_pv, *ipaddr_pv=(pv_elem_t*)_ipaddr_pv;
-	pv_spec_t *dst_spec=(pv_spec_t*)_dst_spec;
-	str field_str, ipaddr_str;
 	char rslt_buf[256], ipaddr_buf[256], field_buf[256];
 	char *token=0, *saveptr=0;
 	int dst_name=-1;
 	int_str rslt=(int_str)0;
 	unsigned short dstType=0;
-
 	lookup_res_t lookup_res;
 	int rc;
 
-	/* Sanity checks */
-	if(!(ipaddr_pv && fields_pv && dst_spec)) {
-		LM_ERR("Missing argument(s).\n");
-		return -1;
-	}
-	if(dst_spec->type != PVT_AVP) {
-		LM_ERR("Invalid destination spec -- expected AVP.\n");
-		return -1;
-	}
+	#ifdef GEOIP
+	static str cc_s = str_init("cc");
+	#else
+	static str cc_s = str_init("country.iso_code");
+	#endif
+
+	if (!_fields)
+		_fields = &cc_s;
+
 	if(pv_get_avp_name(msg, &(dst_spec->pvp), &dst_name, &dstType)!=0) {
 		LM_ERR("Internal error getting AVP name.\n");
 		return -1;
 	}
 
-	/* Expand input args: lookup field list and IP address.*/
-	*ipaddr_buf=0;
-	ipaddr_str.s=ipaddr_buf;
-	ipaddr_str.len=sizeof ipaddr_buf;
-	if(pv_printf(msg, ipaddr_pv, ipaddr_buf,  &ipaddr_str.len) || ipaddr_str.len==0) {
-		LM_ERR("Internal error parsing IP address.\n");
-		return -1;
-	}
-
-	*field_buf=0;
-	field_str.s=field_buf;
-	field_str.len=sizeof field_buf;
-	if(pv_printf(msg, fields_pv, field_buf,  &field_str.len) || field_str.len==0) {
-		LM_ERR("Internal error parsing lookup fields.\n");
-		return -1;
-	}
+	memcpy(ipaddr_buf, ipaddr_str->s, ipaddr_str->len);
+	ipaddr_buf[ipaddr_str->len] = 0;
+	memcpy(field_buf, _fields->s, _fields->len);
+	field_buf[_fields->len] = 0;
 
 	lookup_res = geoip_lookup_ip(ipaddr_buf, &rc);
 	if (rc != 0)
 		return -1;
 
 	LM_DBG("ipaddr: '%.*s'; fields: '%.*s'\n",
-		   ipaddr_str.len, ipaddr_str.s, field_str.len, field_str.s);
+		   ipaddr_str->len, ipaddr_str->s, _fields->len, _fields->s);
 	*rslt_buf=0;
 	rslt.s.s=rslt_buf;
 	token=strtok_r(field_buf,MMG_OP_DELIMS,&saveptr);
@@ -208,15 +156,6 @@ static int mmg_lookup_cmd(struct sip_msg *msg, char *_fields_pv, char *_ipaddr_p
 	return 1;
 }
 
-static int w_lookup_cmd2(struct sip_msg *m, char *ipaddr, char *dst)
-{
-	#ifdef GEOIP
-	return mmg_lookup_cmd(m,"cc",ipaddr,dst);
-	#else
-	return mmg_lookup_cmd(m,"country.iso_code",ipaddr,dst);
-	#endif
-}
-
 /*
  * wire module pieces together.
  */
@@ -227,13 +166,12 @@ static param_export_t mod_params[]={
 };
 
 static cmd_export_t cmds[] = {
-	{"mmg_lookup",  (cmd_function)w_lookup_cmd2, 2, fixup_lookup2, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"mmg_lookup",  (cmd_function)mmg_lookup_cmd, 3, fixup_lookup3, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{"mmg_lookup",  (cmd_function)mmg_lookup_cmd, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR, fixup_check_avp, 0}, {0,0,0}},
+		ALL_ROUTES},
+	{0,0,{{0,0,0}},0}
 };
 
 struct module_exports exports= {
