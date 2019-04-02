@@ -259,7 +259,7 @@ static inline int authorize(struct sip_msg* _m, str *domain,
  */
 int proxy_authorize(struct sip_msg* _m, str* _realm, str* _table)
 {
-	return authorize(_m, (gparam_p)_realm, _table, HDR_PROXYAUTH_T);
+	return authorize(_m, _realm, _table, HDR_PROXYAUTH_T);
 }
 
 
@@ -268,5 +268,5 @@ int proxy_authorize(struct sip_msg* _m, str* _realm, str* _table)
  */
 int www_authorize(struct sip_msg* _m, str* _realm, str* _table)
 {
-	return authorize(_m, (gparam_p)_realm, _table, HDR_AUTHORIZATION_T);
+	return authorize(_m, _realm, _table, HDR_AUTHORIZATION_T);
 }
