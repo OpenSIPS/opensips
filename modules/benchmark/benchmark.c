@@ -44,8 +44,8 @@
 #define STARTING_MIN_VALUE 0xffffffff
 
 /* Exported functions */
-static int bm_start_timer(struct sip_msg* _msg, char* timer, char *foobar);
-static int bm_log_timer(struct sip_msg* _msg, char* timer, char* mystr);
+static int bm_start_timer(struct sip_msg* _msg, void* timer);
+static int bm_log_timer(struct sip_msg* _msg, void* timer);
 
 /*
  * Module destroy function prototype
@@ -94,20 +94,22 @@ typedef struct bm_cfg {
 
 bm_cfg_t *bm_mycfg = 0;
 
-static inline int fixup_bm_timer(void** param, int param_no);
+static inline int fixup_bm_timer(void** param);
 
 /*
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{ "bm_start_timer", (cmd_function)bm_start_timer, 1, fixup_bm_timer, 0,
+	{"bm_start_timer", (cmd_function)bm_start_timer, {
+		{CMD_PARAM_STR, fixup_bm_timer, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{ "bm_log_timer",   (cmd_function)bm_log_timer, 1, fixup_bm_timer, 0,
+	{"bm_log_timer",   (cmd_function)bm_log_timer, {
+		{CMD_PARAM_STR, fixup_bm_timer, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"load_bm",         (cmd_function)load_bm, 0, 0, 0, 0},
-	{ 0, 0, 0, 0, 0, 0 }
+	{"load_bm",        (cmd_function)load_bm, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 
@@ -314,7 +316,7 @@ static int _bm_start_timer(unsigned int id)
 	return 1;
 }
 
-static int bm_start_timer(struct sip_msg* _msg, char* timer, char *foobar)
+static int bm_start_timer(struct sip_msg* _msg, void* timer)
 {
 	return _bm_start_timer((unsigned int)(unsigned long)timer);
 }
@@ -396,7 +398,7 @@ static int _bm_log_timer(unsigned int id)
 	return 1;
 }
 
-static int bm_log_timer(struct sip_msg* _msg, char* timer, char* mystr)
+static int bm_log_timer(struct sip_msg* _msg, void* timer)
 {
 	return _bm_log_timer((unsigned int)(unsigned long)timer);
 }
@@ -689,19 +691,24 @@ static int bm_get_time_diff(struct sip_msg *msg, pv_param_t *param,
 }
 
 
-static inline int fixup_bm_timer(void** param, int param_no)
+static inline int fixup_bm_timer(void** param)
 {
 	unsigned int tid = 0;
-	if (param_no == 1)
+	str tname;
+
+	if (pkg_nt_str_dup(&tname, (str*)*param) < 0)
+		return E_UNSPEC;
+	
+	if((_bm_register_timer(tname.s, 1, &tid))!=0)
 	{
-		if((_bm_register_timer((char*)(*param), 1, &tid))!=0)
-		{
-			LM_ERR("cannot register timer [%s]\n", (char*)(*param));
-			return E_UNSPEC;
-		}
-		pkg_free(*param);
-		*param = (void*)(unsigned long)tid;
+		LM_ERR("cannot register timer [%s]\n", (char*)(*param));
+		pkg_free(tname.s);
+		return E_UNSPEC;
 	}
+
+	*param = (void*)(unsigned long)tid;
+
+	pkg_free(tname.s);
 	return 0;
 }
 
