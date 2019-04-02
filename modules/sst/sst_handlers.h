@@ -68,7 +68,7 @@ void sst_dialog_loaded_CB(struct dlg_cell *did, int type,
 /**
  * The script function
  */
-int sst_check_min(struct sip_msg *msg, char *str1, char *str2);
+int sst_check_min(struct sip_msg *msg, int *flag);
 
 /**
  * The handlers initializer function

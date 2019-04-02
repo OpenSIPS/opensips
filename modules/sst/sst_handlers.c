@@ -718,7 +718,7 @@ update_info:
  * NOTE: returning 0 == drop message, 1 == true, -1 == false in the
  *       script.
  */
-int sst_check_min(struct sip_msg *msg, char *flag, char *str2)
+int sst_check_min(struct sip_msg *msg, int *flag)
 {
 	enum parse_sst_result result;
 	struct session_expires se = {0,0};
