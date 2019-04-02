@@ -75,24 +75,18 @@ unsigned long (*gen_shm_get_frags)(void *blk);
 #ifdef STATISTICS
 stat_export_t shm_stats[] = {
 	{"total_size" ,     STAT_IS_FUNC,    (stat_var**)shm_get_size  },
-
-#if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
-	{"used_size" ,     STAT_NO_RESET,               &shm_used      },
-	{"real_used_size" ,STAT_NO_RESET,               &shm_rused     },
-#else
-	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used  },
-	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused },
-#endif
-
 	{"max_used_size" ,  STAT_IS_FUNC,    (stat_var**)shm_get_mused },
 	{"free_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_free  },
-
-#if defined(HP_MALLOC) && !defined(HP_MALLOC_FAST_STATS)
+#if defined HP_MALLOC && defined INLINE_ALLOC && !defined HP_MALLOC_FAST_STATS
+	{"used_size" ,     STAT_NO_RESET,               &shm_used      },
+	{"real_used_size" ,STAT_NO_RESET,               &shm_rused     },
 	{"fragments" ,     STAT_NO_RESET,               &shm_frags     },
 #else
+	/* for HP_MALLOC, these still need to be edited to stats @ startup */
+	{"used_size" ,      STAT_IS_FUNC,    (stat_var**)shm_get_used  },
+	{"real_used_size" , STAT_IS_FUNC,    (stat_var**)shm_get_rused },
 	{"fragments" ,      STAT_IS_FUNC,    (stat_var**)shm_get_frags },
 #endif
-
 	{0,0,0}
 };
 #endif
@@ -329,9 +323,17 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		mem_allocator_shm = mem_allocator;
 
 #ifdef HP_MALLOC
-	if (mem_allocator_shm != MM_HP_MALLOC
-	        && mem_allocator_shm != MM_HP_MALLOC_DBG)
+	if (mem_allocator_shm == MM_HP_MALLOC
+	        || mem_allocator_shm == MM_HP_MALLOC_DBG) {
+		shm_stats[3].flags = STAT_NO_RESET;
+		shm_stats[3].stat_pointer = &shm_used;
+		shm_stats[4].flags = STAT_NO_RESET;
+		shm_stats[4].stat_pointer = &shm_rused;
+		shm_stats[5].flags = STAT_NO_RESET;
+		shm_stats[5].stat_pointer = &shm_frags;
+	} else {
 		shm_use_global_lock = 1;
+	}
 #endif
 
 #ifdef SHM_EXTRA_STATS
@@ -707,7 +709,9 @@ void init_shm_post_yyparse(void)
 	if (mem_warming_enabled && hp_mem_warming(shm_block) != 0) {
 		LM_INFO("skipped memory warming\n");
 	}
-	hp_init_shm_statistics(shm_block);
+	if (mem_allocator_shm == MM_HP_MALLOC ||
+	    mem_allocator_shm == MM_HP_MALLOC_DBG)
+		hp_init_shm_statistics(shm_block);
 #endif
 
 #ifdef SHM_EXTRA_STATS

@@ -71,33 +71,23 @@ unsigned long (*gen_rpm_get_free)(void *blk);
 unsigned long (*gen_rpm_get_frags)(void *blk);
 #endif
 
-#if defined(HP_MALLOC)
-stat_var *rpm_used;
-stat_var *rpm_rused;
-stat_var *rpm_frags;
-#endif
-
 #ifdef STATISTICS
 stat_export_t rpm_stats[] = {
 	{"rpm_total_size" ,     STAT_IS_FUNC,    (stat_var**)rpm_get_size  },
 
-#if defined(HP_MALLOC)
+#if defined HP_MALLOC && defined INLINE_ALLOC && !defined HP_MALLOC_FAST_STATS
 	{"rpm_used_size" ,     STAT_NO_RESET,               &rpm_used      },
 	{"rpm_real_used_size" ,STAT_NO_RESET,               &rpm_rused     },
+	{"rpm_fragments" ,     STAT_NO_RESET,               &rpm_frags     },
 #else
+	/* for HP_MALLOC, these still need to be edited to stats @ startup */
 	{"rpm_used_size" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_used  },
 	{"rpm_real_used_size" , STAT_IS_FUNC,    (stat_var**)rpm_get_rused },
+	{"rpm_fragments" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_frags },
 #endif
 
 	{"rpm_max_used_size" ,  STAT_IS_FUNC,    (stat_var**)rpm_get_mused },
 	{"rpm_free_size" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_free  },
-
-#if defined(HP_MALLOC)
-	{"rpm_fragments" ,     STAT_NO_RESET,               &rpm_frags     },
-#else
-	{"rpm_fragments" ,      STAT_IS_FUNC,    (stat_var**)rpm_get_frags },
-#endif
-
 	{0,0,0}
 };
 #endif
@@ -149,10 +139,19 @@ int rpm_mem_init_allocs(void)
 		mem_allocator_rpm = mem_allocator;
 
 #ifdef HP_MALLOC
-	if (mem_allocator_rpm != MM_HP_MALLOC
-	        && mem_allocator_rpm != MM_HP_MALLOC_DBG)
+	if (mem_allocator_rpm == MM_HP_MALLOC
+	        || mem_allocator_rpm == MM_HP_MALLOC_DBG) {
+		rpm_stats[3].flags = STAT_NO_RESET;
+		rpm_stats[3].stat_pointer = &rpm_used;
+		rpm_stats[4].flags = STAT_NO_RESET;
+		rpm_stats[4].stat_pointer = &rpm_rused;
+		rpm_stats[5].flags = STAT_NO_RESET;
+		rpm_stats[5].stat_pointer = &rpm_frags;
+	} else {
 		rpm_use_global_lock = 1;
+	}
 #endif
+
 	switch (mem_allocator_rpm) {
 #ifdef F_MALLOC
 	case MM_F_MALLOC:
