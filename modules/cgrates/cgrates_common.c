@@ -1038,7 +1038,4 @@ str *cgr_get_dst(struct sip_msg *msg, str *dst_p)
 		return NULL;
 	}
 	return &msg->parsed_uri.user;
-error:
-	LM_ERR("failed fo fetch destination\n");
-	return NULL;
 }
