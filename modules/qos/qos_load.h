@@ -42,7 +42,7 @@ static inline int load_qos_api( struct qos_binds *qosb )
 	load_qos_f load_qos;
 
 	/* import the QOS auto-loading function */
-	if ( !(load_qos=(load_qos_f)find_export("load_qos", 0, 0))) {
+	if ( !(load_qos=(load_qos_f)find_export("load_qos", 0))) {
 		LM_ERR("can't import load_qos\n");
 		return -1;
 	}
