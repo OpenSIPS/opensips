@@ -147,6 +147,7 @@ static int ospInitChild(int);
 static int ospVerifyParameters(void);
 static void ospDumpParameters(void);
 
+/*
 static cmd_export_t cmds[]={
     { "checkospheader",           (cmd_function)ospCheckHeader,           0, 0,               0, REQUEST_ROUTE },
     { "validateospheader",        (cmd_function)ospValidateHeader,        0, 0,               0, REQUEST_ROUTE },
@@ -162,6 +163,37 @@ static cmd_export_t cmds[]={
     { "processsubscribe",         (cmd_function)ospProcessSubscribe,      1, fixup_spve_null, 0, REQUEST_ROUTE },
     { 0, 0, 0, 0, 0, 0 }
 };
+*/
+
+static cmd_export_t cmds[]={
+    {"checkospheader",(cmd_function)ospCheckHeader, {{0,0,0}},
+        REQUEST_ROUTE},
+    {"validateospheader",(cmd_function)ospValidateHeader, {{0,0,0}},
+        REQUEST_ROUTE},
+    {"getlocaladdress",(cmd_function)ospGetLocalAddress, {{0,0,0}},
+        ONREPLY_ROUTE},
+    {"setrequestdate",(cmd_function)ospSetRequestDate, {{0,0,0}},
+        REQUEST_ROUTE},
+    {"requestosprouting",(cmd_function)ospRequestRouting, {{0,0,0}},
+        REQUEST_ROUTE},
+    {"checkosproute",(cmd_function)ospCheckRoute, {{0,0,0}},
+        REQUEST_ROUTE},
+    {"prepareosproute",(cmd_function)ospPrepareRoute, {{0,0,0}},
+        BRANCH_ROUTE},
+    {"prepareospresponse",(cmd_function)ospPrepareResponse, {{0,0,0}},
+        REQUEST_ROUTE},
+    {"prepareallosproutes",(cmd_function)ospPrepareAllRoutes, {{0,0,0}},
+        REQUEST_ROUTE},
+    {"checkcallingtranslation",(cmd_function)ospCheckCalling, {{0,0,0}},
+        BRANCH_ROUTE},
+    {"reportospusage",(cmd_function)ospReportUsage, {
+        {CMD_PARAM_INT,0,0}, {0,0,0}},
+        REQUEST_ROUTE},
+    {"processsubscribe",(cmd_function)ospProcessSubscribe, {
+        {CMD_PARAM_STR,0,0}, {0,0,0}},
+        REQUEST_ROUTE},
+    {0,0,{{0,0,0}},0}
+}
 
 static param_export_t params[]={
     { "enable_crypto_hardware_support",   INT_PARAM, &_osp_crypto_hw },
