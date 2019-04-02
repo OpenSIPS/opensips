@@ -123,13 +123,6 @@ typedef struct reg_tm_cb {
 	reg_record_t *uac;
 }reg_tm_cb_t;
 
-/** Exported functions */
-static cmd_export_t cmds[]=
-{
-	{0,0,0,0,0,0}
-};
-
-
 /** Exported parameters */
 static param_export_t params[]= {
 	{"hash_size",		INT_PARAM,			&reg_hsize},
@@ -185,7 +178,7 @@ struct module_exports exports= {
 	MODULE_VERSION,			/* module version */
 	DEFAULT_DLFLAGS,		/* dlopen flags */
 	&deps,                  /* OpenSIPS module dependencies */
-	cmds,				/* exported functions */
+	0,				/* exported functions */
 	0,					/* exported async functions */
 	params,				/* exported parameters */
 	NULL,				/* exported statistics */
