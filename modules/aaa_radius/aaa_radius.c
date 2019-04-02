@@ -83,13 +83,12 @@ int send_auth_func(struct sip_msg* msg, str* s1, str* s2);
 int send_auth_func_async(struct sip_msg* msg, async_ctx *actx,
 		str* s1, str* s2);
 #endif
-int send_auth_fixup(void** param, int param_no);
+int radius_hdl_fixup(void** param);
 
 int send_acct_func(struct sip_msg* msg, str* s);
 #ifdef RADIUS_ASYNC_SUPPORT
 int send_acct_func_async(struct sip_msg* msg, async_ctx *ctx, str *s);
 #endif
-int send_acct_fixup(void** param, int param_no);
 
 int parse_sets_func(unsigned int type, void *val);
 
@@ -101,27 +100,29 @@ struct rad_ctx {
 };
 #endif
 
-
-
 static acmd_export_t acmds[] = {
 #ifdef RADIUS_ASYNC_SUPPORT
-	{"radius_send_auth", (acmd_function) send_auth_func_async, 2, send_auth_fixup},
-	{"radius_send_acct", (acmd_function) send_acct_func_async, 1, send_acct_fixup},
+	{"radius_send_auth", (acmd_function) send_auth_func_async, {
+		{CMD_PARAM_STR, radius_hdl_fixup, 0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}}},
+	{"radius_send_acct", (acmd_function) send_acct_func_async, {
+		{CMD_PARAM_STR, radius_hdl_fixup, 0}, {0,0,0}}},
 #endif
-	{0, 0, 0, 0}
+	{0,0,{{0,0,0}}}
 };
 
 static cmd_export_t cmds[]= {
-	{"aaa_bind_api",  (cmd_function) aaa_radius_bind_api,  0, 0, 0, 0},
-	{"radius_send_auth", (cmd_function) send_auth_func, 2, send_auth_fixup, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|
-			ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"radius_send_acct", (cmd_function) send_acct_func, 1, send_acct_fixup, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|
-			ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{ 0,      0,                 0,     0,         0,  0}
+	{"radius_send_auth", (cmd_function) send_auth_func, {
+		{CMD_PARAM_STR, radius_hdl_fixup, 0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|
+		ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"radius_send_acct", (cmd_function) send_acct_func, {
+		{CMD_PARAM_STR, radius_hdl_fixup, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|
+		ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
-
 
 
 static param_export_t params[] = {
@@ -564,10 +565,8 @@ int send_auth_func_async(struct sip_msg* msg, async_ctx *actx,
 
 #endif
 
-int send_auth_fixup(void** param, int param_no) {
-
-	str *s;
-
+int radius_hdl_fixup(void** param)
+{
 	if (!rh) {
 		if (init_radius_handle()) {
 			LM_ERR("invalid radius handle\n");
@@ -575,17 +574,7 @@ int send_auth_fixup(void** param, int param_no) {
 		}
     }
 
-	s = (str*) pkg_malloc(sizeof(str));
-	CHECK_ALLOC(s);
-
-	if (param_no == 1 || param_no == 2) {
-		s->s = *param;
-		s->len = strlen(s->s);
-		*param = s;
-		return 0;
-	}
-
-    return E_UNSPEC;
+    return 0;
 }
 
 
@@ -723,28 +712,6 @@ int send_acct_func_async(struct sip_msg* msg, async_ctx *actx, str *s)
 
 }
 #endif
-
-int send_acct_fixup(void** param, int param_no) {
-
-	str *s = (str*) pkg_malloc(sizeof(str));
-	CHECK_ALLOC(s);
-
-	if (!rh) {
-		if (init_radius_handle()) {
-			LM_ERR("invalid radius handle\n");
-    		return E_UNSPEC;
-		}
-    }
-
-	if (param_no == 1) {
-		s->s = *param;
-		s->len = strlen(s->s);
-		*param = s;
-		return 0;
-	}
-
-	return E_UNSPEC;
-}
 
 int init_radius_handle(void) {
 
