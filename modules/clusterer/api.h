@@ -266,7 +266,7 @@ static inline int load_clusterer_api(struct clusterer_binds *binds) {
 	load_clusterer_f load_clusterer;
 
 	/* import the clusterer auto-loading function */
-	if (!(load_clusterer = (load_clusterer_f) find_export("load_clusterer", 0, 0)))
+	if (!(load_clusterer = (load_clusterer_f) find_export("load_clusterer", 0)))
 		return -1;
 
 	/* let the auto-loading function load all clusterer API functions */
