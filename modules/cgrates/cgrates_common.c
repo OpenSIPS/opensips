@@ -1000,18 +1000,15 @@ void cgr_free_local_ctx(void *param)
 
 
 /* functions related to parameters fix */
-str *cgr_get_acc(struct sip_msg *msg, char *acc_p)
+str *cgr_get_acc(struct sip_msg *msg, str *acc_p)
 {
 	static str acc;
 	struct to_body *from;
 	struct sip_uri  uri;
 
-	if (acc_p) {
-		if (fixup_get_svalue(msg, (gparam_p)acc_p, &acc) < 0)
-			goto error;
-		else
-			return &acc;
-	}
+	if (acc_p)
+		return acc_p;
+
 	/* get the username from FROM_HDR */
 	if (parse_from_header(msg) != 0) {
 		LM_ERR("unable to parse from hdr\n");
@@ -1022,21 +1019,20 @@ str *cgr_get_acc(struct sip_msg *msg, char *acc_p)
 		LM_ERR("unable to parse from uri\n");
 		goto error;
 	}
+
+	acc = uri.user;
+	return &acc;
+
 error:
 	LM_ERR("failed fo fetch account's name\n");
 	return NULL;
 }
 
-str *cgr_get_dst(struct sip_msg *msg, char *dst_p)
+str *cgr_get_dst(struct sip_msg *msg, str *dst_p)
 {
-	static str dst;
+	if (dst_p)
+		return dst_p;
 
-	if (dst_p) {
-		if (fixup_get_svalue(msg, (gparam_p)dst_p, &dst) < 0)
-			goto error;
-		else
-			return &dst;
-	}
 	if(msg->parsed_uri_ok == 0 && parse_sip_msg_uri(msg)<0) {
 		LM_ERR("cannot parse Request URI!\n");
 		return NULL;
@@ -1044,14 +1040,5 @@ str *cgr_get_dst(struct sip_msg *msg, char *dst_p)
 	return &msg->parsed_uri.user;
 error:
 	LM_ERR("failed fo fetch destination\n");
-	return NULL;
-}
-
-str *cgr_get_tag(struct sip_msg *msg, char *tag_p)
-{
-	static str tag;
-
-	if (tag_p && fixup_get_svalue(msg, (gparam_p)tag_p, &tag) >= 0)
-		return &tag;
 	return NULL;
 }

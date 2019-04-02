@@ -857,8 +857,8 @@ static void cgr_dlg_onwrite(struct dlg_cell *dlg, int type,
 		pkg_free(sessions_kvs);
 }
 
-int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c,
-		char *tag_c)
+int w_cgr_acc(struct sip_msg* msg, void *flag_c, str* acc_c, str *dst_c,
+		str *tag_c)
 {
 	str *acc;
 	str *dst;
@@ -906,7 +906,7 @@ int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c,
 		LM_ERR("cannot create acc context\n");
 		return -1;
 	}
-	s = cgr_get_sess_new(cgr_get_ctx(), cgr_get_tag(msg, tag_c));
+	s = cgr_get_sess_new(cgr_get_ctx(), tag_c);
 	if (!s) {
 		LM_ERR("cannot create a new session!\n");
 		return -1;
