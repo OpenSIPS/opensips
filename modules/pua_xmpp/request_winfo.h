@@ -28,6 +28,6 @@
 
 #include "../../parser/msg_parser.h"
 
-int request_winfo(struct sip_msg* msg, char* uri, char* expires);
+int request_winfo(struct sip_msg* msg, str* uri, int* expires);
 
 #endif
