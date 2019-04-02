@@ -96,11 +96,12 @@ int port_override_name, transport_override_name, domain_prefix_name,
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"dp_can_connect",  (cmd_function)dp_can_connect,  0, 0, 0, REQUEST_ROUTE},
-	{"dp_apply_policy", (cmd_function)dp_apply_policy, 0, 0, 0, REQUEST_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{"dp_can_connect",  (cmd_function)dp_can_connect, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"dp_apply_policy", (cmd_function)dp_apply_policy, {{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters
