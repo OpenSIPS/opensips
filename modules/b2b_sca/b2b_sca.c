@@ -48,8 +48,8 @@ extern str app_state[];
 static int mod_init(void);
 static void mod_destroy(void);
 static int child_init(int rank);
-int sca_init_request(struct sip_msg* msg);
-int sca_bridge_request(struct sip_msg* msg, str* arg1, str* arg2);
+int sca_init_request(struct sip_msg* msg, int *shared_entity);
+int sca_bridge_request(struct sip_msg* msg, str* arg1);
 mi_response_t *mi_sca_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
@@ -86,9 +86,13 @@ str presence_server = {NULL, 0};
 /** Exported functions */
 static cmd_export_t cmds[]=
 {
-	{"sca_init_request"  ,(cmd_function)sca_init_request  ,1,fixup_pvar_pvar,0,REQUEST_ROUTE},
-	{"sca_bridge_request",(cmd_function)sca_bridge_request,1,fixup_pvar_pvar,0,REQUEST_ROUTE},
-	{ 0,                 0,                              0 , 0 , 0,  0}
+	{"sca_init_request"  ,(cmd_function)sca_init_request, {
+		{CMD_PARAM_INT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"sca_bridge_request",(cmd_function)sca_bridge_request, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 /** Exported parameters */

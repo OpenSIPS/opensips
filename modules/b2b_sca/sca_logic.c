@@ -635,16 +635,15 @@ handle_appearance:
 }
 
 
-int sca_init_request(struct sip_msg* msg, str* p1, str* p2)
+int sca_init_request(struct sip_msg* msg, int *shared_entity)
 {
 	int method_value, ret;
 	//unsigned int size, hash_index, shared_entity;
-	unsigned int hash_index, shared_entity, app_index;
+	unsigned int hash_index, app_index;
 	str *b2bl_key, *host, *port, *display, *uri, *shared_line;
 	//char *p;
 	//uri_type scheme;
 	struct to_body *appearance_name_addr_body;
-	pv_value_t pv_val;
 	b2b_sca_record_t *record = NULL;
 	b2b_sca_call_t *call = NULL;
 	b2bl_cb_ctx_t *cb_params;
@@ -673,26 +672,7 @@ int sca_init_request(struct sip_msg* msg, str* p1, str* p2)
 		return 0;
 	}
 
-	if (p1 && (pv_get_spec_value(msg, (pv_spec_t *)p1, &pv_val) == 0)) {
-		if (pv_val.flags & PV_VAL_INT) {
-			shared_entity = pv_val.ri;
-			LM_DBG("got shared_entity %d\n", shared_entity);
-		} else if (pv_val.flags & PV_VAL_STR) {
-			if(str2int(&(pv_val.rs), (unsigned int*)&shared_entity) != 0) {
-				LM_ERR("Unable to get entity_no from pv '%.*s'\n",
-				pv_val.rs.len, pv_val.rs.s);
-				return -1;
-			}
-		} else {
-			LM_ERR("shared entity not a str or int type\n");
-			return -1;
-		}
-	} else {
-		LM_ERR("Unable to get shared entity from pv:%p\n", p1);
-		return -1;
-	}
-
-	switch (shared_entity) {
+	switch (*shared_entity) {
 	case 0:
 		LM_DBG("Incoming call from shared line\n");
 		break;
@@ -740,7 +720,7 @@ int sca_init_request(struct sip_msg* msg, str* p1, str* p2)
 
 	/* Adding call to the sca_table.  */
 	lock_get(&b2b_sca_htable[hash_index].lock);
-	if (b2b_sca_add_call_record(hash_index, shared_line, shared_entity, app_index,
+	if (b2b_sca_add_call_record(hash_index, shared_line, *shared_entity, app_index,
 			&call_info_uri, &call_info_apperance_uri, &record, &call) != 0) {
 		LM_ERR("unable to add record to sca htable\n");
 		goto error2;
@@ -813,10 +793,8 @@ error1:
 }
 
 
-int sca_bridge_request(struct sip_msg* msg, str* p1, str* p2)
+int sca_bridge_request(struct sip_msg* msg, str* shared_line)
 {
-	pv_value_t pv_val;
-	str shared_line = {NULL, 0};
 	str publish_hdr = {NULL, 0};
 	int method_value, ret;
 	//int entity_no;
@@ -826,23 +804,10 @@ int sca_bridge_request(struct sip_msg* msg, str* p1, str* p2)
 
 	unsigned int appearance;
 
-	if (p1 && (pv_get_spec_value(msg, (pv_spec_t *)p1, &pv_val) == 0)) {
-		if (pv_val.flags & PV_VAL_STR) {
-			LM_DBG("got shared_line:'%.*s'\n", pv_val.rs.len, pv_val.rs.s);
-			shared_line = pv_val.rs;
-		} else {
-			LM_ERR("Unable to get shared_line from PV that is not a string\n");
-			return -1;
-		}
-	} else {
-		LM_ERR("Unable to get shared_line from pv:%p\n", p1);
-		return -1;
-	}
-
 	/* Get the hash index for the shared line. */
-	hash_index = core_hash(&shared_line, NULL, b2b_sca_hsize);
+	hash_index = core_hash(shared_line, NULL, b2b_sca_hsize);
 	LM_DBG("got hash_index=[%d] for shared line [%.*s]\n",
-			hash_index, shared_line.len, shared_line.s);
+			hash_index, shared_line->len, shared_line->s);
 
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
 		LM_ERR("failed to parse message\n");
@@ -873,11 +838,11 @@ int sca_bridge_request(struct sip_msg* msg, str* p1, str* p2)
 	if (appearance==0) return -1;
 
 	lock_get(&b2b_sca_htable[hash_index].lock);
-	record = b2b_sca_search_record_safe(hash_index, &shared_line);
+	record = b2b_sca_search_record_safe(hash_index, shared_line);
 	if (record == NULL) {
 		lock_release(&b2b_sca_htable[hash_index].lock);
 		LM_ERR("record not found for shared line [%.*s] on hash index [%d]\n",
-			shared_line.len, shared_line.s, hash_index);
+			shared_line->len, shared_line->s, hash_index);
 		// FIXME:
 		/* Build an empty PUBLISH header */
 		//if (build_publish_call_info_header(NULL, &publish_hdr) != 0) {
