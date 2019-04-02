@@ -110,7 +110,7 @@ fifo_cmd()
 
 	# start reader now so that it is ready for replies
 	# immediately after a request was sent out
-	cat $path | json_pp &
+	cat $path | python -c "import json,sys; print(json.dumps(json.load(sys.stdin), indent=3))" &
 
 	# TODO: handle errors
 
