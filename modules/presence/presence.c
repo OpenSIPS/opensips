@@ -35,7 +35,6 @@
 #include <time.h>
 #include <fnmatch.h>
 
-#include "../../mod_fix.h"
 #include "../../sr_module.h"
 #include "../../db/db.h"
 #include "../../dprint.h"
@@ -94,8 +93,8 @@ static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 int stored_pres_info(struct sip_msg* msg, char* pres_uri, char* s);
-static int fixup_presence(void** param, int param_no);
-static int fixup_subscribe(void** param, int param_no);
+static int fixup_presence(void** param);
+static int fixup_subscribe(void** param);
 static mi_response_t *mi_refreshWatchers(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_cleanup(const mi_params_t *params,
@@ -148,21 +147,16 @@ static str presence_exposed_event = str_init("E_PRESENCE_EXPOSED");
 event_id_t presence_event_id = EVI_ERROR;
 event_id_t exposed_event_id = EVI_ERROR;
 
-static cmd_export_t cmds[]=
-{
-	{"handle_publish",  (cmd_function)handle_publish,   0,
-		fixup_presence,0, REQUEST_ROUTE},
-	{"handle_publish",  (cmd_function)handle_publish,   1,
-		fixup_presence, 0, REQUEST_ROUTE},
-	{"handle_subscribe",(cmd_function)handle_subscribe, 0,
-		fixup_subscribe,0, REQUEST_ROUTE},
-	{"handle_subscribe",(cmd_function)handle_subscribe, 1,
-		fixup_subscribe,0, REQUEST_ROUTE},
-	{"handle_subscribe",(cmd_function)handle_subscribe, 2,
-		fixup_subscribe,0, REQUEST_ROUTE},
-	{"bind_presence",   (cmd_function)bind_presence,    1,
-		0, 0,  0},
-	{ 0, 0, 0, 0, 0,  0}
+static cmd_export_t cmds[]={
+	{"handle_publish",  (cmd_function)handle_publish, {
+		{CMD_PARAM_STR,fixup_presence,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"handle_subscribe",(cmd_function)handle_subscribe, {
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_subscribe,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_subscribe,0},
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}	
 };
 
 static param_export_t params[]={
@@ -516,49 +510,27 @@ static void destroy(void)
 	destroy_evlist();
 }
 
-static int fixup_presence(void** param, int param_no)
+static int fixup_presence(void** param)
 {
- 	pv_elem_t *model;
-	str s;
-
 	if(library_mode)
 	{
 		LM_ERR("Bad config - you can not call 'handle_publish' function"
 				" (db_url not set)\n");
 		return -1;
 	}
-	if(param_no== 0)
-		return 0;
-
-	if(*param)
- 	{
-		s.s = (char*)(*param); s.len = strlen(s.s);
- 		if(pv_parse_format(&s, &model)<0)
- 		{
- 			LM_ERR( "wrong format[%s]\n",(char*)(*param));
- 			return E_UNSPEC;
- 		}
-
- 		*param = (void*)model;
- 		return 0;
- 	}
- 	LM_ERR( "null format\n");
- 	return E_UNSPEC;
+	
+	return 0;
 }
 
-static int fixup_subscribe(void** param, int param_no)
+static int fixup_subscribe(void** param)
 {
 	if(library_mode)
 	{
 		LM_ERR("Bad config - you can not call 'handle_subscribe' function"
 				" (db_url not set)\n");
 		return -1;
-	} else {
-		if (param_no==2)
-			/* second parameter is the sharing tag, which can be string
-			 * or variable  */
-			return fixup_sgp(param);
 	}
+
 	return 0;
 }
 
