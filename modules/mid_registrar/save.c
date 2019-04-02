@@ -2302,7 +2302,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 	LM_DBG("saving to %.*s...\n", ud->name->len, ud->name->s);
 
 	if (flags_str)
-		parse_save_flags(&flags_str, &sctx);
+		parse_save_flags(flags_str, &sctx);
 
 	if (parse_reg_headers(msg) != 0) {
 		LM_ERR("failed to parse req headers\n");
