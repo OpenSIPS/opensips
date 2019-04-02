@@ -155,7 +155,7 @@ static inline int load_httpd_api(httpd_api_t *api)
 	load_httpd_f load_httpd;
 
 	/* import the httpd auto-loading functions */
-	if ( !(load_httpd=(load_httpd_f)find_export("httpd_bind", 1, 0)))
+	if ( !(load_httpd=(load_httpd_f)find_export("httpd_bind", 0)))
 		return -1;
 
 	/* let the auto-loading function load all httpd suuff */
