@@ -62,9 +62,7 @@ int cluster_id = 0;
 enum cachedb_rr_persist rr_persist = RRP_SYNC_FROM_CLUSTER;
 char *cluster_persist;
 
-static int w_remove_chunk_1(struct sip_msg* msg, char* glob);
-static int w_remove_chunk_2(struct sip_msg* msg, char* collection, char* glob);
-static int remove_chunk_f(struct sip_msg* msg, char* collection, char* glob);
+static int remove_chunk_f(struct sip_msg* msg, str* collection, str* glob);
 mi_response_t *mi_cache_remove_chunk_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_cache_remove_chunk_2(const mi_params_t *params,
@@ -84,13 +82,11 @@ static param_export_t params[]={
 };
 
 static cmd_export_t cmds[]= {
-	{"cache_remove_chunk",        (cmd_function)w_remove_chunk_1,  1,
-	fixup_str_str, 0,
-	REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
-	{"cache_remove_chunk",        (cmd_function)w_remove_chunk_2,  1,
-	fixup_str_str, 0,
-	REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
-	{0,0,0,0,0,0}
+	{"cache_remove_chunk",        (cmd_function)remove_chunk_f, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static mi_export_t mi_cmds[] = {
@@ -137,29 +133,17 @@ static int key_buff_size = 0;
 static char *pat_buff = NULL;
 static int pat_buff_size = 0;
 
-static int w_remove_chunk_1(struct sip_msg* msg, char* glob)
-{
-	return remove_chunk_f(msg, NULL, glob);
-}
 
-static int w_remove_chunk_2(struct sip_msg* msg, char* collection, char* glob)
-{
-	return remove_chunk_f(msg, collection, glob);
-}
-
-
-static int remove_chunk_f(struct sip_msg* msg, char* collection, char* glob)
+static int remove_chunk_f(struct sip_msg* msg, str* col_s, str* pat)
 {
 	int i;
-	str *pat = (str *)glob;
-	str *col_s = (str *)collection;
 	lcache_entry_t* me1, *me2;
 	struct timeval start;
 
 	lcache_col_t* col;
 	lcache_t* cache_htable;
 
-	if ( !collection ) {
+	if ( !col_s ) {
 		/* use default collection; default collection is always first in list */
 		col = lcache_collection;
 	} else {
@@ -249,7 +233,7 @@ mi_response_t *mi_cache_remove_chunk(const mi_params_t *params, str *collection)
 	if (get_mi_string_param(params, "glob", &glob.s, &glob.len) < 0)
 		return init_mi_param_error();
 
-	if (remove_chunk_f(NULL,(collection ? collection->s : NULL),glob.s) < 1)
+	if (remove_chunk_f(NULL,collection, &glob) < 1)
 		return init_mi_error(500, MI_SSTR("Internal error"));
 	else
 		return init_mi_result_ok();
