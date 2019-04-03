@@ -108,6 +108,7 @@
 #include "globals.h"
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
+#include "mem/rpm_mem.h"
 #include "sr_module.h"
 #include "timer.h"
 #include "ipc.h"
@@ -962,6 +963,13 @@ int main(int argc, char** argv)
 						goto error00;
 					}
 					break;
+			case 'e':
+					if (set_rpm_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-e %s)\n", optarg);
+						goto error00;
+					}
+					break;
 		}
 	}
 
@@ -1011,6 +1019,7 @@ int main(int argc, char** argv)
 			case 'a':
 			case 'k':
 			case 's':
+			case 'e':
 					/* ignoring, parsed previously */
 					break;
 			case 'b':

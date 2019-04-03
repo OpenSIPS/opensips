@@ -39,6 +39,20 @@ enum osips_mm mem_allocator_rpm = MM_NONE;
 unsigned long rpm_mem_size = 0;
 char *rpm_mem_file = RESTART_PERSISTENCY_MEM_FILE;
 
+int set_rpm_mm(const char *mm_name)
+{
+#ifdef INLINE_ALLOC
+	LM_NOTICE("this is an inlined allocator build (see opensips -V), "
+	          "cannot set a custom rpm allocator (%s)\n", mm_name);
+	return 0;
+#endif
+
+	if (parse_mm(mm_name, &mem_allocator_rpm) < 0)
+		return -1;
+
+	return 0;
+}
+
 #ifndef INLINE_ALLOC
 #ifdef DBG_MALLOC
 void *(*gen_rpm_malloc)(void *blk, unsigned long size,
