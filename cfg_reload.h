@@ -1,6 +1,4 @@
 /*
- * OpenSIPS configuration file pre-processing
- *
  * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -22,6 +20,8 @@
 
 #ifndef __OSS_CFG_RELOAD_H__
 #define __OSS_CFG_RELOAD_H__
+
+int init_script_reload(void);
 
 int reload_routing_script(void);
 

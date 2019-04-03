@@ -101,6 +101,7 @@
 #include "help_msg.h"
 #include "config.h"
 #include "cfg_pp.h"
+#include "cfg_reload.h"
 #include "dprint.h"
 #include "daemonize.h"
 #include "route.h"
@@ -1143,7 +1144,7 @@ try_again:
 
 	set_osips_state( STATE_STARTING );
 
-	if (!testing_framework && parse_opensips_cfg(cfg_file, preproc) < 0) {
+	if (!testing_framework && parse_opensips_cfg(cfg_file, preproc, NULL) < 0) {
 		LM_ERR("failed to parse config file %s\n", cfg_file);
 		goto error00;
 	}
@@ -1403,6 +1404,11 @@ try_again:
 
 	if (trans_init_all_listeners()<0) {
 		LM_ERR("failed to init all SIP listeners, aborting\n");
+		goto error;
+	}
+
+	if (init_script_reload()<0) {
+		LM_ERR("failed to init cfg reload ctx, aborting\n");
 		goto error;
 	}
 
