@@ -92,7 +92,7 @@ int shm_duplicate_rr(rr_t** _new, rr_t* _r, int _first);
  * print body for all RR headers in comma separated string
  */
 int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
-		unsigned int * nb_recs);
+		int no_change, unsigned int * nb_recs);
 
 /*
  * Function returns the first uri

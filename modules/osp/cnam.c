@@ -184,7 +184,7 @@ static dlg_t* ospCreateDialog(
 
             /* Set Route */
             if (msg->record_route != NULL) {
-                if (print_rr_body(msg->record_route, &record_route, 0, 0) == 0) {
+                if (print_rr_body(msg->record_route, &record_route, 0, 0, NULL) == 0) {
                     if (parse_rr_body(record_route.s, record_route.len, &dialog->route_set) < 0) {
                         LM_ERR("failed to parse record route\n");
                     }

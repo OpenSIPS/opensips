@@ -432,7 +432,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	/*process record route and add it to a string*/
 	if (msg->record_route!=NULL)
 	{
-		rt = print_rr_body(msg->record_route, &record_route, 1, 0);
+		rt = print_rr_body(msg->record_route, &record_route, 1, 0, NULL);
 		if(rt != 0)
 		{
 			LM_ERR("parsing record route [%d]\n", rt);
