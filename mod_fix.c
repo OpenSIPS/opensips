@@ -154,8 +154,11 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 					ret = E_UNSPEC;
 					goto error;
 				}
-				if (!pve->next && pve->spec.type == PVT_NONE) {
-					/* no variables in the provided string */
+
+				if ((param->flags & CMD_PARAM_NO_EXPAND) ||
+				    (!pve->next && pve->spec.type == PVT_NONE)) {
+
+					/* ignoring/no variables in the provided string */
 					pv_elem_free_all(pve);
 
 					if (param->fixup) {
