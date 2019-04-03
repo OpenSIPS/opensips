@@ -848,8 +848,7 @@ static void _th_no_dlg_onreply(struct cell* t, int type, struct tmcb_params *par
 
 	/* pass record route headers */
 	if(req->record_route){
-		if(print_rr_body(req->record_route, &rr_set, 0,
-							0) != 0 ){
+		if(print_rr_body(req->record_route, &rr_set, 0, 1, NULL) != 0 ){
 			LM_ERR("failed to print route records \n");
 			return;
 		}
@@ -1523,8 +1522,7 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 	}
 
 	if(msg->record_route){
-		if(print_rr_body(msg->record_route, &rr_set, !is_req,
-							0) != 0 ){
+		if(print_rr_body(msg->record_route, &rr_set, !is_req, 0, NULL) != 0){
 			LM_ERR("failed to print route records \n");
 			return NULL;
 		}

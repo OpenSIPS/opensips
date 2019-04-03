@@ -911,7 +911,7 @@ int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int mexp,
 	/*process record route and add it to a string*/
 	if(*init_req && msg->record_route!=NULL)
 	{
-		rt = print_rr_body(msg->record_route, &rec_route, 0, 0);
+		rt = print_rr_body(msg->record_route, &rec_route, 0, 0, NULL);
 		if(rt != 0)
 		{
 			LM_ERR("processing the record route [%d]\n", rt);
