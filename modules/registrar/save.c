@@ -738,6 +738,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp)
 	char forced_binding_buf[MAX_FORCED_BINDING_LEN];
 	str forced_binding = {NULL, 0};
 	str *binding_uri;
+	str path_bk;
 
 	if(_m->first_line.type != SIP_REPLY)
 		return save_aux(_m, NULL, _d, _f, _s, _owtag_gp);
@@ -763,6 +764,14 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp)
 	if (parse_reg_headers(msg) < 0) return -1;
 	if (check_contacts(msg, &st) > 0) return -1;
 
+	/* detach the path vec from the msg as it is allocated in shm, and all
+	 * the parse/set ops (done below by save_aux) assume it is in pkg */
+	path_bk = msg->path_vec;
+	msg->path_vec.s = NULL;
+	msg->path_vec.len = 0;
+
+	ret = -1;
+
 	/* msg - request
 	   _m  - reply
 	*/
@@ -780,7 +789,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp)
 			if (str2int(&(request_c->expires->body), (unsigned int*)&requested_exp)<0) {
 				LM_ERR("unable to get expires from [%.*s]\n",
 					request_c->expires->body.len, request_c->expires->body.s);
-				return -1;
+				goto done;
 			}
 		}
 		LM_DBG("Binding received from client [%.*s] with requested expires [%d]\n",
@@ -809,7 +818,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp)
 							LM_ERR("unable to get expires from [%.*s]\n",
 								_c->expires->body.len,
 								_c->expires->body.s);
-							return -1;
+							goto done;
 						}
 						LM_DBG("Binding received from upper registrar"
 							" [%.*s] with imposed expires [%d]\n",
@@ -836,7 +845,7 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp)
 							LM_ERR("forced binding to BIG:"
 								" %d > MAX_FORCED_BINDING_LEN\n",
 								forced_binding.len);
-							return -1;
+							goto done;
 						}
 					}
 				} else {
@@ -883,7 +892,11 @@ int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp)
 	}
 
 done:
+	/* remove whatever was parsed and attached as pkg to the shm cloned req */
 	clean_msg_clone(t->uas.request, t->uas.request, t->uas.end_request);
+	/* free and restore the shm path vec */
+	if (msg->path_vec.s) pkg_free(msg->path_vec.s);
+	msg->path_vec = path_bk;
 
 	return ret;
 }
