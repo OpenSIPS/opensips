@@ -721,7 +721,7 @@ if (is_method("REGISTER"))
 		<listitem>
 			<para><emphasis>vendor id(string value with hex or int, optional, default: "3")</emphasis> - there are
 				some vendor ids already defined; check
-				<ulink url="https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf">
+				<ulink url="http://hep.sipcapture.org/hepfiles/HEP3_rev11.pdf">
 					hep proto docs</ulink>
 				for more details.
 			</para>
