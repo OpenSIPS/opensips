@@ -1884,7 +1884,7 @@ next_avp:
 				cmdp[3],cmdp[4],cmdp[5],
 				cmdp[6],cmdp[7]);
 
-			if ((ret = free_cmd_fixups(cmd->params, a->elem, cmdp)) < 0) {
+			if (free_cmd_fixups(cmd->params, a->elem, cmdp) < 0) {
 				LM_ERR("Failed to free fixups for command <%s>\n",
 					cmd->name);
 				break;
@@ -1914,7 +1914,7 @@ next_avp:
 				if (ret>=0)
 					action_flags |= ACT_FL_TBCONT;
 
-				if ((ret = free_cmd_fixups(acmd->params, aitem->elem, cmdp)) < 0) {
+				if (free_cmd_fixups(acmd->params, aitem->elem, cmdp) < 0) {
 					LM_ERR("Failed to free fixups for command <%s>\n",
 						cmd->name);
 					break;
