@@ -110,7 +110,7 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 					gp->type = GPARAM_TYPE_FIXUP;
 				}
 
-				continue;
+				goto fill_elems;
 			} else {
 				LM_BUG("Mandatory parameter missing\n");
 				ret = E_BUG;
@@ -257,6 +257,7 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 			goto error;
 		}
 
+fill_elems:
 		elems[i].u.data = (void*)gp;
 	}
 
