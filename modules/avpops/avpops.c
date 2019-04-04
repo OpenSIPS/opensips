@@ -74,8 +74,6 @@ static str* db_columns[6] = {&uuid_col, &attribute_col, &value_col,
                              &type_col, &username_col, &domain_col};
 static int need_db=0;
 
-unsigned buf_size=1024;
-
 static int avpops_init(void);
 static int avpops_child_init(int rank);
 
@@ -231,7 +229,6 @@ static param_export_t params[] = {
 	{"username_column",   STR_PARAM, &username_col.s  },
 	{"domain_column",     STR_PARAM, &domain_col.s    },
 	{"db_scheme",         STR_PARAM|USE_FUNC_PARAM, (void*)avp_add_db_scheme },
-	{"buf_size",          INT_PARAM, &buf_size},
 	{0, 0, 0}
 };
 
@@ -322,12 +319,6 @@ static int avpops_init(void)
 			goto error;
 
 		init_store_avps(db_columns);
-	}
-
-	printbuf = (char*)pkg_malloc((buf_size+1)*sizeof(char));
-	if(printbuf==NULL) {
-		LM_ERR("no pkg memory left\n");
-		return -1;
 	}
 
 	return 0;

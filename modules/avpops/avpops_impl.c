@@ -60,9 +60,6 @@ static db_key_t  store_keys[6];
 static db_val_t  store_vals[6];
 static str      empty={"",0};
 
-extern unsigned buf_size;
-extern char *printbuf;
-
 void init_store_avps(str **db_columns)
 {
 	/* unique user id */
