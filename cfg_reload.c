@@ -237,6 +237,11 @@ static void routes_reload_per_proc(int sender, void *param)
 	fclose(cfg);
 	cfg_parse_only_routes = 0;
 
+	if (fix_rls()<0) {
+		LM_ERR("fixing routes failed, abording\n");
+		goto error;
+	}
+
 	sroutes = sr_bk;
 
 	/* keep the parsed routes, waiting for the confirmation to switch */
