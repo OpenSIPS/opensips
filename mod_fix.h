@@ -57,4 +57,10 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 				action_elem_t *elems, void **cmdp, pv_value_t *tmp_val);
 int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp);
 
+static inline int fixup_free_pkg(void **param)
+{
+	pkg_free(*param);
+	return 0;
+}
+
 #endif

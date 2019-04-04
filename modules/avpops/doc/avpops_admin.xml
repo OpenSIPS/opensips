@@ -412,10 +412,10 @@ avp_db_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
 avp_db_load("$ru", "$avp(123)/$some_scheme");
 
 # use DB URL id 3
-avp_db_load("$ru", "$avp(1)", "3");
+avp_db_load("$ru", "$avp(1)", 3);
 
 # precede all loaded AVPs by the "caller_" prefix
-avp_db_load("$ru", "$avp(100)", "", "caller_");
+avp_db_load("$ru", "$avp(100)", , "caller_");
 xlog("Loaded: $avp(caller_100)\n");
 
 ...
@@ -446,7 +446,7 @@ xlog("Loaded: $avp(caller_100)\n");
 avp_db_store("$tu","$avp(678)");
 avp_db_store("$ru/username","$avp(email)");
 # use DB URL id 3
-avp_db_store("$ru","$avp(1)","3");
+avp_db_store("$ru","$avp(1)",3);
 ...
 				</programlisting>
 			</example>
@@ -475,7 +475,7 @@ avp_db_delete("$tu","$avp(678)");
 avp_db_delete("$ru/username","$avp(email)");
 avp_db_delete("$avp(uuid)","$avp(404fwd)/fwd_table");
 # use DB URL id 3
-avp_db_delete("$ru","$avp(1)","3");
+avp_db_delete("$ru","$avp(1)",3);
 ...
 				</programlisting>
 			</example>
@@ -537,10 +537,10 @@ avp_db_delete("$ru","$avp(1)","3");
 avp_db_query("select password, ha1 from subscriber where username='$tu'",
 	"$avp(678);$avp(679)");
 avp_db_query("delete from subscriber");
-avp_db_query("delete from subscriber","","2");
+avp_db_query("delete from subscriber",,2);
 
-$avp(id)=2;#also works $avp(id)="2"
-avp_db_query("delete from subscriber","","$avp(id)");
+$avp(id)=2;
+avp_db_query("delete from subscriber",,$avp(id));
 
 ...
 				</programlisting>
@@ -1022,26 +1022,6 @@ avp_print();
 				</programlisting>
 			</example>
 		</section>
-		<section id="func_avp_insert" xreflabel="avp_insert()">
-			<title>
-				<function moreinfo="none">avp_insert(avp_name, value, index)
-				</function>
-			</title>
-			<para>
-				This function inserts an avp value at a certain position specified
-				by the last parameter. If the index is greater than the count of values
-				the value will be inserted at the end.
-			</para>
-			<example>
-				<title><function>avp_print</function> usage</title>
-				<programlisting format="linespecific">
-...
-avp_insert("avp(20)", "$hdr(From)", 2);
-...
-				</programlisting>
-			</example>
-		</section>
-
 	</section>
 
 	<section>
