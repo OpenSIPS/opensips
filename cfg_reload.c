@@ -68,8 +68,8 @@ struct script_reload_ctx *srr_ctx = NULL;
 
 int init_script_reload(void)
 {
-	srr_ctx = (struct script_reload_ctx *)shm_malloc
-		( sizeof(*srr_ctx) + counted_max_processes*sizeof(char) );
+	srr_ctx = (struct script_reload_ctx *)shm_malloc( sizeof(*srr_ctx) +
+		counted_max_processes*sizeof(enum proc_reload_status) );
 	if (srr_ctx==NULL) {
 		LM_ERR("failed to shm allocate the script reload context\n");
 		return -1;
@@ -244,6 +244,8 @@ static void routes_reload_per_proc(int sender, void *param)
 	srr_ctx->proc_status[process_no] = RELOAD_SUCCESS;
 
 	lock_stop_read(srr_ctx->rw_lock);
+	LM_INFO("process successfully parsed new cfg (seq %d)\n",seq_no);
+
 	return;
 
 error:
@@ -380,6 +382,7 @@ int reload_routing_script(void)
 	LM_DBG("reload triggered into all processes, waiting...\n");
 
 	/* wait until all the processes validate (or not) the new cfg */
+	cnt_sleep = 0;
 	while ( (cnt_sleep++)<MAX_PROC_RELOAD_WAIT &&
 	check_status_of_all_procs( RELOAD_SUCCESS, RELOAD_FAILED)==-1)
 		usleep(1000);
