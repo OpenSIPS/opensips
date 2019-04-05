@@ -33,40 +33,32 @@
  */
 int has_totag(struct sip_msg* _m, char* _foo, char* _bar);
 
+/*
+ * Find if Request URI has a given parameter with/without matching value
+ */
+int ruri_has_param(struct sip_msg* _msg, str* param, str* value);
 
 /*
- * Find if Request URI has a given parameter with no value
+ * Add a new parameter to Request URI
  */
-int ruri_has_param_1(struct sip_msg* _msg, char* _param, char* _str2);
-
+int ruri_add_param(struct sip_msg* _msg, str* _param);
 
 /*
- * Find if Request URI has a given parameter with matching value
+ * Remove a given parameter from Request URI
  */
-int ruri_has_param_2(struct sip_msg* _msg, char* _param, char* _value);
-
-/*
- * Removes a given parameter from Request URI
- */
-int ruri_del_param(struct sip_msg* _msg, char* _param, char* _s);
-
-/*
- * Adds a new parameter to Request URI
- */
-int ruri_add_param(struct sip_msg* _msg, char* _param, char* _s2);
-
+int ruri_del_param(struct sip_msg* _msg, str* _param);
 
 /*
  * Converts Request-URI, if it is tel URI, to SIP URI.  Returns 1, if
  * conversion succeeded or if no conversion was needed, i.e., Request-URI
  * was not tel URI.  Returns -1, if conversion failed.
  */
-int ruri_tel2sip(struct sip_msg* _msg, char* _s1, char* _s2);
+int ruri_tel2sip(struct sip_msg* _msg);
 
 
 /*
  * Check if user part of URI in pseudo variable is an e164 number
  */
-int is_uri_user_e164(struct sip_msg* _m, char* _sp, char* _s2);
+int is_uri_user_e164(struct sip_msg* _m, str* uri);
 
 #endif /* CHECKS_H */
