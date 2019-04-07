@@ -48,7 +48,7 @@ static char* get_name(struct flat_id* id)
 		return 0;
 	}
 	if (flat_suffix) {
-		if (fixup_get_svalue(&flat_dummy_msg, flat_suffix, &suffix) < 0) {
+		if (pv_printf_s(&flat_dummy_msg, flat_suffix, &suffix) != 0) {
 			LM_ERR("bad suffix - using default \"%s\"\n", FILE_SUFFIX);
 			suffix.s = FILE_SUFFIX;
 			suffix.len = FILE_SUFFIX_LEN;
@@ -58,7 +58,7 @@ static char* get_name(struct flat_id* id)
 		suffix.len = 0;
 	}
 	if (flat_prefix) {
-		if (fixup_get_svalue(&flat_dummy_msg, flat_prefix, &prefix) < 0) {
+		if (pv_printf_s(&flat_dummy_msg, flat_prefix, &prefix) != 0) {
 			LM_ERR("bad prefix - discarding\n");
 			prefix.s = 0;
 			prefix.len = 0;
