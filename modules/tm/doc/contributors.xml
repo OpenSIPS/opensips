@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Raphael Coeffic, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Nils Ohlmeier, Klaus Darilion, Andreas Granig, Elias Baixas, Marcus Hunger, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Jeffrey Magder, Ezequiel Lovelle, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Elena-Ramona Modroiu, John Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues, Konstantin Bokarius, Aron Podrigal, Anonymous, Dusan Klinec, Mark Dalby, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Edson Gellert Schubert, Ingo Wolfsberger, Daniel Hsueh.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Raphael Coeffic, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Nils Ohlmeier, Klaus Darilion, Andreas Granig, Elias Baixas, Marcus Hunger, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Jeffrey Magder, Ezequiel Lovelle, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Elena-Ramona Modroiu, John Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues, Konstantin Bokarius, Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>), Anonymous, Dusan Klinec, Mark Dalby, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Edson Gellert Schubert, Ingo Wolfsberger, Daniel Hsueh.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -143,7 +143,7 @@
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Aron Podrigal</entry>
+		<entry>Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>)</entry>
 		<entry align="center">Nov 2018 - Nov 2018</entry>
 	</row>
 	<row>

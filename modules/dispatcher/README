@@ -1169,8 +1169,8 @@ Chapter 3. Contributors
    Baumann (@jarrodb), Walter Doekes (@wdoekes), Jan Janak
    (@janakj), Andrei Pelinescu-Onciul, Stanislaw Pitucha, Federico
    Cabiddu, Nick Altmann (@nikbyte), Konstantin Bokarius, Andreas
-   Granig, John Riordan, Aron Podrigal, Julián Moreno Patiño,
-   Kevin McAllister, UnixDev, David Sanders, Vlad Patrascu
+   Granig, John Riordan, Aron Podrigal (@ar45), Julián Moreno
+   Patiño, Kevin McAllister, UnixDev, David Sanders, Vlad Patrascu
    (@rvlad-patrascu), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1204,7 +1204,7 @@ Chapter 3. Contributors
    9.  Ovidiu Sas (@ovidiusas)             Feb 2014 - Jan 2016
    10. David Sanders                       Sep 2015 - Sep 2015
 
-   All remaining contributors: Aron Podrigal, Andrei Datcu
+   All remaining contributors: Aron Podrigal (@ar45), Andrei Datcu
    (@andrei-datcu), Vlad Paiu (@vladpaiu), Nick Altmann
    (@nikbyte), Walter Doekes (@wdoekes), Stanislaw Pitucha, Anca
    Vamanu, John Riordan, UnixDev, Kevin McAllister, Klaus
