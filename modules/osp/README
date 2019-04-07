@@ -972,7 +972,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Di-Shi Sun (@di-shi) 280 101 10368 5372
    2. Dmitry Isakbayev 41 5 4120 159
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 29 23 216 208
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 30 24 217 209
    4. Di-Shi Sun 17 2 1006 386
    5. Daniel-Constantin Mierla (@miconda) 15 13 81 48
    6. Liviu Chircu (@liviuchircu) 15 12 83 92
@@ -1007,13 +1007,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Di-Shi Sun                          Oct 2018 - Feb 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
-   6.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Mar 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Apr 2019
+   2.  Di-Shi Sun                          Oct 2018 - Feb 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
+   7.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
    10. fabriziopicconi                     Aug 2013 - Aug 2013

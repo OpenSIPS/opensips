@@ -510,7 +510,8 @@ Chapter 2. Contributors
    10. Walter Doekes (@wdoekes) 4 2 19 8
 
    All remaining contributors: Stanislaw Pitucha, Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Aron Podrigal.
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Aron Podrigal
+   (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -533,7 +534,7 @@ Chapter 2. Contributors
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Mar 2019
-   2.  Aron Podrigal                       Jan 2019 - Jan 2019
+   2.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017

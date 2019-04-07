@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Stanislaw Pitucha, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Aron Podrigal.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Stanislaw Pitucha, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -133,7 +133,7 @@
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Aron Podrigal</entry>
+		<entry>Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>)</entry>
 		<entry align="center">Jan 2019 - Jan 2019</entry>
 	</row>
 	<row>

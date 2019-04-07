@@ -1223,7 +1223,7 @@ Chapter 3. Contributors
    (@wdoekes), Nick Altmann (@nikbyte), Jan Janak (@janakj),
    Andrei Pelinescu-Onciul, Stanislaw Pitucha, Federico Cabiddu,
    Konstantin Bokarius, Andreas Granig, John Riordan, Aron
-   Podrigal, Julián Moreno Patiño, Kevin McAllister, Peter
+   Podrigal (@ar45), Julián Moreno Patiño, Kevin McAllister, Peter
    Lemenkov (@lemenkov), UnixDev, David Sanders, Edson Gellert
    Schubert.
 
@@ -1259,13 +1259,14 @@ Chapter 3. Contributors
    10. Jarrod Baumann (@jarrodb)           Feb 2016 - Feb 2016
 
    All remaining contributors: Ovidiu Sas (@ovidiusas), David
-   Sanders, Aron Podrigal, Andrei Datcu (@andrei-datcu), Vlad Paiu
-   (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw Pitucha, Anca
-   Vamanu, John Riordan, UnixDev, Kevin McAllister, Klaus
-   Darilion, Carsten Bock, Daniel-Constantin Mierla (@miconda),
-   Henning Westerholt (@henningw), Konstantin Bokarius, Edson
-   Gellert Schubert, Federico Cabiddu, Elena-Ramona Modroiu,
-   Andreas Granig, Andrei Pelinescu-Onciul, Jan Janak (@janakj).
+   Sanders, Aron Podrigal (@ar45), Andrei Datcu (@andrei-datcu),
+   Vlad Paiu (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw
+   Pitucha, Anca Vamanu, John Riordan, UnixDev, Kevin McAllister,
+   Klaus Darilion, Carsten Bock, Daniel-Constantin Mierla
+   (@miconda), Henning Westerholt (@henningw), Konstantin
+   Bokarius, Edson Gellert Schubert, Federico Cabiddu,
+   Elena-Ramona Modroiu, Andreas Granig, Andrei Pelinescu-Onciul,
+   Jan Janak (@janakj).
 
    (1) including any documentation-related commits, excluding
    merge commits
