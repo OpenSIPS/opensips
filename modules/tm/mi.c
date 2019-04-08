@@ -237,7 +237,7 @@ static inline void mi_print_routes( struct mi_node *node, dlg_t* dlg)
 	ptr = dlg->hooks.first_route;
 
 	if (ptr==NULL) {
-		add_mi_node_child( node, 0, 0, 0, ".",1);
+		add_mi_node_child( node, 0, MI_SSTR("Routes"), ".",1);
 		return;
 	}
 
@@ -275,7 +275,7 @@ static inline void mi_print_routes( struct mi_node *node, dlg_t* dlg)
 		*(p++) = '>';
 	}
 
-	add_mi_node_child( node, MI_DUP_VALUE, 0, 0, s, len);
+	add_mi_node_child( node, MI_DUP_VALUE, MI_SSTR("Routes"), s, len);
 	pkg_free(s);
 }
 
@@ -306,16 +306,16 @@ static inline int mi_print_uris( struct mi_node *node, struct sip_msg* reply)
 	}
 
 	if (dlg->hooks.request_uri->s) {
-		add_mi_node_child( node, MI_DUP_VALUE, 0, 0,
+		add_mi_node_child( node, MI_DUP_VALUE, MI_SSTR("RURI"),
 			dlg->hooks.request_uri->s, dlg->hooks.request_uri->len);
 	} else {
-		add_mi_node_child( node, 0, 0, 0, ".",1);
+		add_mi_node_child( node, 0, MI_SSTR("RURI"), ".",1);
 	}
 	if (dlg->hooks.next_hop->s) {
-		add_mi_node_child( node, MI_DUP_VALUE, 0, 0,
+		add_mi_node_child( node, MI_DUP_VALUE, MI_SSTR("Next-hop"),
 			dlg->hooks.next_hop->s, dlg->hooks.next_hop->len);
 	} else {
-		add_mi_node_child( node, 0, 0, 0, ".",1);
+		add_mi_node_child( node, 0, MI_SSTR("Next-hop"), ".",1);
 	}
 
 	mi_print_routes( node, dlg);
@@ -323,9 +323,9 @@ static inline int mi_print_uris( struct mi_node *node, struct sip_msg* reply)
 	free_dlg(dlg);
 	return 0;
 empty:
-	add_mi_node_child( node, 0, 0, 0, ".",1);
-	add_mi_node_child( node, 0, 0, 0, ".",1);
-	add_mi_node_child( node, 0, 0, 0, ".",1);
+	add_mi_node_child( node, 0, MI_SSTR("RURI"), ".",1);
+	add_mi_node_child( node, 0, MI_SSTR("Next-hop"), ".",1);
+	add_mi_node_child( node, 0, MI_SSTR("Routes"), ".",1);
 	return 0;
 }
 
@@ -354,18 +354,19 @@ static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 			rpl_tree = 0;
 			goto done;
 		}
-		add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, 0, 0,
+		add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, MI_SSTR("Status"),
 			text.s, text.len);
 		pkg_free(text.s);
 		mi_print_uris( &rpl_tree->node, 0 );
-		add_mi_node_child( &rpl_tree->node, 0, 0, 0, ".",1);
+		add_mi_node_child( &rpl_tree->node, 0, MI_SSTR("Message"), ".",1);
 	} else {
-		addf_mi_node_child( &rpl_tree->node, 0, 0, 0, "%d %.*s",
+		addf_mi_node_child( &rpl_tree->node, 0, MI_SSTR("Status"),
+			"%d %.*s",
 			ps->rpl->first_line.u.reply.statuscode,
 			ps->rpl->first_line.u.reply.reason.len,
 			ps->rpl->first_line.u.reply.reason.s);
 		mi_print_uris( &rpl_tree->node, ps->rpl);
-		add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, 0, 0,
+		add_mi_node_child( &rpl_tree->node, MI_DUP_VALUE, MI_SSTR("Message"),
 			ps->rpl->headers->name.s,
 			ps->rpl->len-(ps->rpl->headers->name.s - ps->rpl->buf));
 	}
