@@ -39,17 +39,16 @@ SV* vdbmod;
  * Perl virtual database module interface
  */
 static cmd_export_t cmds[] = {
-	{"db_use_table",	(cmd_function)perlvdb_use_table, 2, 0, 0, 0},
-	{"db_init",			(cmd_function)perlvdb_db_init,   1, 0, 0, 0},
-	{"db_close",		(cmd_function)perlvdb_db_close,  2, 0, 0, 0},
-	{"db_insert",		(cmd_function)perlvdb_db_insert, 2, 0, 0, 0},
-	{"db_update",		(cmd_function)perlvdb_db_update, 2, 0, 0, 0},
-	{"db_delete",		(cmd_function)perlvdb_db_delete, 2, 0, 0, 0},
-	{"db_query",		(cmd_function)perlvdb_db_query, 2, 0, 0, 0},
-	{"db_free_result",	(cmd_function)perlvdb_db_free_result, 2, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"db_use_table",	(cmd_function)perlvdb_use_table, {{0,0,0}},0},
+	{"db_init",			(cmd_function)perlvdb_db_init, {{0,0,0}},0},
+	{"db_close",		(cmd_function)perlvdb_db_close, {{0,0,0}},0},
+	{"db_insert",		(cmd_function)perlvdb_db_insert, {{0,0,0}},0},
+	{"db_update",		(cmd_function)perlvdb_db_update, {{0,0,0}},0},
+	{"db_delete",		(cmd_function)perlvdb_db_delete, {{0,0,0}},0},
+	{"db_query",		(cmd_function)perlvdb_db_query, {{0,0,0}},0},
+	{"db_free_result",	(cmd_function)perlvdb_db_free_result, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters
