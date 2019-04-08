@@ -46,10 +46,9 @@ static int mod_init(void);
 /*
  * PostgreSQL database module interface
  */
-
-static cmd_export_t cmds[]={
-	{"db_bind_api",     (cmd_function)db_postgres_bind_api,     0, 0, 0, 0},
-	{0,0,0,0,0,0}
+static cmd_export_t cmds[] = {
+	{"db_bind_api",     (cmd_function)db_postgres_bind_api, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 /*
