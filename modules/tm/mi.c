@@ -279,7 +279,7 @@ static inline int mi_print_uris(mi_item_t *resp_obj, struct sip_msg* reply)
 			return -1;
 
 	if (dlg->hooks.next_hop->s)
-		if (add_mi_string(resp_obj, MI_SSTR("next hop"),
+		if (add_mi_string(resp_obj, MI_SSTR("Next-hop"),
 			dlg->hooks.next_hop->s, dlg->hooks.next_hop->len) < 0)
 			return -1;
 
@@ -315,13 +315,13 @@ static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 			LM_ERR("get_reply_status failed\n");
 			goto error;
 		}
-		if (add_mi_string(resp_obj, MI_SSTR("reply status"),
+		if (add_mi_string(resp_obj, MI_SSTR("Status"),
 			text.s, text.len) < 0) {
 			goto error;
 		}
 		pkg_free(text.s);
 	} else {
-		if (add_mi_string_fmt(resp_obj, MI_SSTR("reply status"), "%d %.*s",
+		if (add_mi_string_fmt(resp_obj, MI_SSTR("Status"), "%d %.*s",
 			ps->rpl->first_line.u.reply.statuscode,
 			ps->rpl->first_line.u.reply.reason.len,
 			ps->rpl->first_line.u.reply.reason.s) < 0) {
@@ -331,7 +331,7 @@ static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 		if (mi_print_uris(resp_obj, ps->rpl) < 0)
 			goto error;
 
-		if (add_mi_string(resp_obj, MI_SSTR("headers"),
+		if (add_mi_string(resp_obj, MI_SSTR("Message"),
 			ps->rpl->headers->name.s,
 			ps->rpl->len-(ps->rpl->headers->name.s - ps->rpl->buf)) < 0)
 			goto error;
