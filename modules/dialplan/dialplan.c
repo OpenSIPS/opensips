@@ -72,7 +72,7 @@ static mi_response_t *mi_show_partition_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 
-static int dp_translate_f(struct sip_msg *m, int dpid, str *in_str,
+static int dp_translate_f(struct sip_msg *m, int* dpid, str *in_str,
 		pv_spec_t *out_var, pv_spec_t *attr_var, dp_connection_list_t *part);
 static int fix_partition(void** param);
 
@@ -585,7 +585,7 @@ static int fix_partition(void** param)
 	}while(0);
 
 
-static int dp_translate_f(struct sip_msg *msg, int dpid, str *in_str,
+static int dp_translate_f(struct sip_msg *msg, int* dpid, str *in_str,
 		pv_spec_t *out_var, pv_spec_t *attr_var, dp_connection_list_t *part)
 {
 
@@ -596,7 +596,7 @@ static int dp_translate_f(struct sip_msg *msg, int dpid, str *in_str,
 	if (!msg)
 		return -1;
 
-	LM_DBG("dpid is %i partition is %.*s\n", dpid,
+	LM_DBG("dpid is %i partition is %.*s\n", *dpid,
 		part->partition.len, part->partition.s);
 
 	LM_DBG("input is %.*s\n", in_str->len, in_str->s);
@@ -604,8 +604,8 @@ static int dp_translate_f(struct sip_msg *msg, int dpid, str *in_str,
 	/* ref the data for reading */
 	lock_start_read( part->ref_lock );
 
-	if ((idp = select_dpid(part, dpid, part->crt_index)) == 0) {
-		LM_DBG("no information available for dpid %i\n", dpid);
+	if ((idp = select_dpid(part, *dpid, part->crt_index)) == 0) {
+		LM_DBG("no information available for dpid %i\n", *dpid);
 		goto error;
 	}
 	LM_DBG("checking with dpid %i\n", idp->dp_id);
