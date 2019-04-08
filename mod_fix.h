@@ -26,8 +26,9 @@
 #ifndef _mod_fix_h_
 #define _mod_fix_h_
 
-#include "pvar.h"
 #include <regex.h>
+#include "mem/mem.h"
+#include "pvar.h"
 
 #define GPARAM_TYPE_INT		0
 #define GPARAM_TYPE_STR		1
