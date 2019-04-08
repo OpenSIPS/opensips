@@ -62,12 +62,12 @@ int get_source_group(struct sip_msg* msg, pv_spec_t *out_var,
 		struct pm_part_struct *part);
 
 /* Checks based on avp's received as parameter */
-int check_addr(struct sip_msg* msg, int grp,
-		str* s_ip, int port, int proto, pv_spec_t *info, char *pattern,
+int check_addr(struct sip_msg* msg, int *grp,
+		str* s_ip, int *port, long proto, pv_spec_t *info, char *pattern,
 		struct pm_part_struct *part);
 
 /* Checks based on data from the message */
-int check_src_addr(struct sip_msg *msg, int grp,
+int check_src_addr(struct sip_msg *msg, int *grp,
 		pv_spec_t *info, char *pattern, struct pm_part_struct *part);
 
 

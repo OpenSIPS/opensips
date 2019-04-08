@@ -442,7 +442,7 @@ void clean_address(struct pm_part_struct *part_struct)
 /*
  *
  */
-int check_addr(struct sip_msg* msg, int grp, str* s_ip, int port, int proto,
+int check_addr(struct sip_msg* msg, int* grp, str* s_ip, int *port, long proto,
 				pv_spec_t *info, char *pattern, struct pm_part_struct *part)
 {
 	struct ip_addr *ip;
@@ -455,14 +455,14 @@ int check_addr(struct sip_msg* msg, int grp, str* s_ip, int port, int proto,
 	}
 
 	LM_DBG("Looking for : <%.*s:%d, %.*s, %d, %d, %s>\n",
-		part->name.len, part->name.s, grp, 
-		s_ip->len, s_ip->s, proto, port, ZSW(pattern) );
+		part->name.len, part->name.s, *grp,
+		s_ip->len, s_ip->s, (int)proto, *port, ZSW(pattern) );
 
-	hash_ret = hash_match(msg, *part->hash_table, grp,
-			ip, port, proto, pattern, info);
+	hash_ret = hash_match(msg, *part->hash_table, *grp,
+			ip, *port, (int)proto, pattern, info);
 	if (hash_ret < 0) {
-		subnet_ret = match_subnet_table(msg, *part->subnet_table, grp,
-				ip, port, proto, pattern, info);
+		subnet_ret = match_subnet_table(msg, *part->subnet_table, *grp,
+				ip, *port, (int)proto, pattern, info);
 		hash_ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
 	}
 
@@ -470,7 +470,7 @@ int check_addr(struct sip_msg* msg, int grp, str* s_ip, int port, int proto,
 }
 
 
-int check_src_addr(struct sip_msg *msg, int grp,
+int check_src_addr(struct sip_msg *msg, int *grp,
 				pv_spec_t *info, char* pattern, struct pm_part_struct *part)
 {
 
@@ -480,14 +480,14 @@ int check_src_addr(struct sip_msg *msg, int grp,
 	ip = &msg->rcv.src_ip;
 
 	LM_DBG("Looking for : <%.*s:%d, %s, %d, %d, %s>\n",
-		part->name.len, part->name.s, grp,
+		part->name.len, part->name.s, *grp,
 		ip_addr2a(ip), msg->rcv.proto, msg->rcv.src_port, ZSW(pattern) );
 
-	hash_ret = hash_match(msg, *part->hash_table, grp, ip,
+	hash_ret = hash_match(msg, *part->hash_table, *grp, ip,
 		msg->rcv.src_port, msg->rcv.proto, pattern, info);
 	if (hash_ret < 0) {
 			subnet_ret = match_subnet_table(msg, *part->subnet_table,
-				grp, ip, msg->rcv.src_port, msg->rcv.proto, pattern,info);
+				*grp, ip, msg->rcv.src_port, msg->rcv.proto, pattern,info);
 			hash_ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
 	}
 
