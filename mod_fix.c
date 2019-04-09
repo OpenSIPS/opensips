@@ -96,6 +96,7 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 	for (param=params, i=1; param->flags; param++, i++) {
 		if ((elems[i].type == NOSUBTYPE) ||
 			(elems[i].type == NULLV_ST)) {
+			gp = NULL;
 			if (param->flags & CMD_PARAM_OPT) {
 				if (param->fixup && (param->flags & CMD_PARAM_FIX_NULL)) {
 					if ((gp = alloc_gp()) == NULL)
