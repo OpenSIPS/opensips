@@ -48,6 +48,12 @@
 #include "db_ps.h"
 #include "../globals.h"
 
+extern stat_var *sql_total_queries;
+extern stat_var *sql_slow_queries;
+
+/* to be called in the pre-fork phase */
+int init_db_support(void);
+
 /**
  * \brief Specify table name that will be used for subsequent operations.
  *

@@ -1396,6 +1396,12 @@ try_again:
 		goto error;
 	}
 
+	/* init SQL DB support */
+	if (init_db_support() != 0) {
+		LM_ERR("failed to initialise SQL database support\n");
+		goto error;
+	}
+
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
@@ -1418,17 +1424,6 @@ try_again:
 	if(pv_contextlist_check() != 0) {
 		LM_ERR("used pv context that was not defined\n");
 		goto error;
-	}
-
-	/* init query list now in shm
-	 * so all processes that will be forked from now on
-	 * will have access to it
-	 *
-	 * if it fails, give it a try and carry on */
-	if (init_ql_support() != 0) {
-		LM_ERR("failed to initialise buffering query list\n");
-		query_buffer_size = 0;
-		*query_list = NULL;
 	}
 
 	/* init multi processes support */

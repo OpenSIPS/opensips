@@ -51,6 +51,8 @@
 #include "db_pool.h"
 #include "db.h"
 
+#include "db_insertq.h"
+
 char *db_version_table = VERSION_TABLE;
 char *db_default_url = NULL;
 int   db_max_async_connections = 10;
@@ -58,6 +60,31 @@ int   db_max_async_connections = 10;
 /** maximal length of a SQL URL */
 static unsigned int MAX_URL_LENGTH = 255;
 #define COLUMN_OVERHEAD	256
+
+stat_var *sql_total_queries;
+stat_var *sql_slow_queries;
+
+int init_db_support(void)
+{
+	/* init query list now in shm
+	 * so all processes that will be forked from now on
+	 * will have access to it
+	 *
+	 * if it fails, give it a try and carry on */
+	if (init_ql_support() != 0) {
+		LM_ERR("failed to initialise buffering query list\n");
+		query_buffer_size = 0;
+		*query_list = NULL;
+	}
+
+	if (register_stat("sql", "sql_total_queries", &sql_total_queries, 0) ||
+	    register_stat("sql", "sql_slow_queries", &sql_slow_queries, 0)) {
+		LM_ERR("failed to register SQL stats\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 int estimate_available_rows(int payload_size, int column_count)
 {
