@@ -102,9 +102,13 @@ extern err_info_t _oser_err_info;
 action_time longest_action[LONGEST_ACTION_SIZE];
 int min_action_time=0;
 
-action_elem_p route_params[MAX_REC_LEV];
-int route_params_number[MAX_REC_LEV];
-int route_rec_level = -1;
+struct route_params_level {
+	void *params;
+	void *extra; /* extra params used */
+	param_getf_t get_param;
+};
+static struct route_params_level route_params[MAX_REC_LEV];
+static int route_rec_level = -1;
 
 int curr_action_line;
 char *curr_action_file;
@@ -383,6 +387,102 @@ static int do_action_set_adv_port(struct sip_msg *msg, struct action *a)
 
 out:
 	return ret;
+}
+
+
+/* function used to get parameter from a route scope */
+static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
+		pv_value_t *res, void *params, void *extra)
+{
+	int index;
+	pv_value_t tv;
+	action_elem_p actions = (action_elem_p)params;
+	int params_no = (int)(unsigned long)extra;
+
+	if (!params || params_no == 0)
+	{
+		LM_DBG("no parameter specified for this route\n");
+		return pv_get_null(msg, ip, res);
+	}
+
+	if(ip->pvn.type==PV_NAME_INTSTR)
+	{
+		if (ip->pvn.u.isname.type != 0)
+		{
+			LM_ERR("route params name be numbers - names are not accepted!\n");
+			return -1;
+		}
+		index = ip->pvn.u.isname.name.n;
+	} else
+	{
+		/* pvar -> it might be another $param variable! */
+		route_rec_level--;
+		if(pv_get_spec_value(msg, (pv_spec_p)(ip->pvn.u.dname), &tv)!=0)
+		{
+			LM_ERR("cannot get spec value\n");
+			route_rec_level++;
+			return -1;
+		}
+		route_rec_level++;
+
+		if(tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY)
+		{
+			LM_ERR("null or empty name\n");
+			return -1;
+		}
+		if (!(tv.flags&PV_VAL_INT) || str2int(&tv.rs,(unsigned int*)&index) < 0)
+		{
+			LM_ERR("invalid index <%.*s>\n", tv.rs.len, tv.rs.s);
+			return -1;
+		}
+	}
+
+	if (index < 1 || index > params_no)
+	{
+		LM_DBG("no such parameter index %d\n", index);
+		return pv_get_null(msg, ip, res);
+	}
+
+	/* the parameters start at 0, whereas the index starts from 1 */
+	index--;
+	switch (actions[index].type)
+	{
+	case NULLV_ST:
+		res->rs.s = NULL;
+		res->rs.len = res->ri = 0;
+		res->flags = PV_VAL_NULL;
+		break;
+
+	case STRING_ST:
+		res->rs.s = actions[index].u.string;
+		res->rs.len = strlen(res->rs.s);
+		res->flags = PV_VAL_STR;
+		break;
+
+	case NUMBER_ST:
+		res->rs.s = int2str(actions[index].u.number, &res->rs.len);
+		res->ri = actions[index].u.number;
+		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		break;
+
+	case SCRIPTVAR_ST:
+		route_rec_level--;
+		if(pv_get_spec_value(msg, (pv_spec_p)actions[index].u.data, res)!=0)
+		{
+			LM_ERR("cannot get spec value\n");
+			route_rec_level++;
+			return -1;
+		}
+		route_rec_level++;
+		break;
+
+	default:
+		LM_ALERT("BUG: invalid parameter type %d\n",
+				actions[index].type);
+		return -1;
+	}
+
+	return 0;
 }
 
 #define should_skip_updating(action_type) \
@@ -752,18 +852,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_BUG;
 					break;
 				}
-				route_rec_level++;
-				route_params[route_rec_level] = (action_elem_t *)a->elem[2].u.data;
-				route_params_number[route_rec_level] = a->elem[1].u.number;
+				route_params_push_level(a->elem[2].u.data,
+						(void*)(unsigned long)a->elem[1].u.number, route_param_get);
 				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
-
-				route_rec_level--;
+				route_params_pop_level();
 			} else {
-				route_rec_level++;
-				route_params[route_rec_level] = NULL;
-				route_params_number[route_rec_level] = 0;
+				route_params_push_level(NULL, 0, route_param_get);
 				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
-				route_rec_level--;
+				route_params_pop_level();
 			}
 			ret=return_code;
 			break;
@@ -2262,4 +2358,34 @@ void __script_trace(char *class, char *action, struct sip_msg *msg,
 			" -> (%.*s)\n", file, line,
 			class?class:"", action, val.len, val.s);
 	}
+}
+
+/**
+ * functions used to populate $params() vars in the route_param structure
+ */
+
+void route_params_push_level(void *params, void *extra, param_getf_t getf)
+{
+	route_rec_level++;
+	route_params[route_rec_level].params = params;
+	route_params[route_rec_level].extra = extra;
+	route_params[route_rec_level].get_param = getf;
+}
+
+void route_params_pop_level(void)
+{
+	route_rec_level--;
+}
+
+int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
+{
+	if (route_rec_level == -1)
+	{
+		LM_DBG("no parameter specified for this route\n");
+		return pv_get_null(msg, ip, res);
+	}
+
+	return route_params[route_rec_level].get_param(msg, ip, res,
+			route_params[route_rec_level].params,
+			route_params[route_rec_level].extra);
 }
