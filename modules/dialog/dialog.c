@@ -180,7 +180,7 @@ int pv_get_dlg_ctx_json(struct sip_msg *msg, pv_param_t *param,
 
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog, {
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"set_dlg_profile", (cmd_function)w_set_dlg_profile, {
 		{CMD_PARAM_STR,0,0},
@@ -936,7 +936,7 @@ static int w_create_dialog(struct sip_msg *req, str *flags_str)
 	struct cell *t;
 	int flags;
 
-	flags = parse_create_dlg_flags(flags_str);
+	flags = flags_str? parse_create_dlg_flags(flags_str): 0;
 
 	t = d_tmb.t_gett();
 	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req, flags)!=0)
