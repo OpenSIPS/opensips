@@ -501,8 +501,7 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 
 out:
 	_stop_expire_timer(start, execdnsthreshold, "dns",
-	                   name, strlen(name), 0, dns_slow_queries);
-	inc_stat(dns_total_queries);
+	            name, strlen(name), 0, dns_slow_queries, dns_total_queries);
 	return he;
 }
 
@@ -1095,8 +1094,7 @@ query:
 	start_expire_timer(start,execdnsthreshold);
 	size=res_search(name, C_IN, type, buff.buff, sizeof(buff));
 	_stop_expire_timer(start, execdnsthreshold, "dns",
-	                   name, strlen(name), 0, dns_slow_queries);
-	inc_stat(dns_total_queries);
+	            name, strlen(name), 0, dns_slow_queries, dns_total_queries);
 
 	if (size<0) {
 		LM_DBG("lookup(%s, %d) failed\n", name, type);

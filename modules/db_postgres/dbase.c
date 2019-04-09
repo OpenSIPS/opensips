@@ -181,8 +181,8 @@ static int db_postgres_submit_query(const db_con_t* _con, const str* _s)
 		start_expire_timer(start,db_postgres_exec_query_threshold);
 		ret = PQsendQuery(CON_CONNECTION(_con), _s->s);
 		_stop_expire_timer(start, db_postgres_exec_query_threshold,
-		                   "pgsql query", _s->s, _s->len, 0, sql_slow_queries);
-		inc_stat(sql_total_queries);
+							"pgsql query", _s->s, _s->len, 0,
+							sql_slow_queries, sql_total_queries);
 		/* exec the query */
 		if (ret) {
 			LM_DBG("%p PQsendQuery(%.*s)\n", _con, _s->len, _s->s);
@@ -277,8 +277,8 @@ static int db_postgres_submit_async_query(const db_con_t* _con, const str* _s)
 		start_expire_timer(start,db_postgres_exec_query_threshold);
 		ret = PQsendQuery(CON_CONNECTION(_con), _s->s);
 		_stop_expire_timer(start, db_postgres_exec_query_threshold,
-		                   "pgsql query", _s->s, _s->len, 0, sql_slow_queries);
-		inc_stat(sql_total_queries);
+						"pgsql query", _s->s, _s->len, 0,
+						sql_slow_queries, sql_total_queries);
 		/* exec the query */
 		if (ret) {
 			LM_DBG("%p PQsendQuery(%.*s)\n", _con, _s->len, _s->s);
@@ -745,8 +745,9 @@ int db_postgres_async_raw_query(db_con_t *_h, const str *_s, void **_priv)
 		code = db_postgres_submit_query(_h, _s);
 	}
 	_stop_expire_timer(start, db_postgres_exec_query_threshold,
-		"postgres async query", _s->s, _s->len, 0, sql_slow_queries);
-	inc_stat(sql_total_queries);
+		"pgsql async query", _s->s, _s->len, 0,
+		sql_slow_queries, sql_total_queries);
+
 	if (code < 0) {
 		LM_ERR("failed to send postgres query %.*s",_s->len,_s->s);
 		goto out;

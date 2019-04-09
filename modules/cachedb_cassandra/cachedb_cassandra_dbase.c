@@ -299,8 +299,8 @@ const CassResult *execute_query(CassSession* session, CassStatement *statement,
 
 	start_expire_timer(start, cassandra_exec_threshold);
 	rc = cass_future_wait_timed(query_future, 1000*cassandra_query_timeout);
-	stop_expire_timer(start, cassandra_exec_threshold, op_name,
-	                  NULL, 0, 0);
+	_stop_expire_timer(start, cassandra_exec_threshold, op_name,
+						NULL, 0, 0, cdb_slow_queries, cdb_total_queries);
 	if (rc == 0) {
 		LM_ERR("Cassandra query took too long\n");
 		goto error;

@@ -139,6 +139,7 @@
 #include "version.h"
 #include "mi/mi_core.h"
 #include "db/db_insertq.h"
+#include "cachedb/cachedb.h"
 #include "net/trans.h"
 
 #include "test/unit_tests.h"
@@ -1398,7 +1399,13 @@ try_again:
 
 	/* init SQL DB support */
 	if (init_db_support() != 0) {
-		LM_ERR("failed to initialise SQL database support\n");
+		LM_ERR("failed to initialize SQL database support\n");
+		goto error;
+	}
+
+	/* init CacheDB support */
+	if (init_cdb_support() != 0) {
+		LM_ERR("failed to initialize CacheDB support\n");
 		goto error;
 	}
 

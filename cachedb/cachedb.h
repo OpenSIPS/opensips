@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011 OpenSIPS Solutions
+ * Copyright (C) 2011-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -16,13 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- *
- * history:
- * ---------
- *  2011-09-xx  created (vlad-paiu)
  */
-
 
 #ifndef _CACHEDB_H
 #define _CACHEDB_H
@@ -47,6 +41,11 @@ typedef struct {
 		str s;
 	} val;
 } cdb_raw_entry;
+
+extern stat_var *cdb_total_queries;
+extern stat_var *cdb_slow_queries;
+
+int init_cdb_support(void);
 
 int cachedb_store_url(struct cachedb_url **list,char *val);
 void cachedb_free_url(struct cachedb_url *list);
