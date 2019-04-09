@@ -18,10 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/*!
- * \file
- * \brief Generic fixup functions for module function parameter.
- */
 
 #ifndef _mod_fix_h_
 #define _mod_fix_h_
@@ -30,23 +26,17 @@
 #include "mem/mem.h"
 #include "pvar.h"
 
-#define GPARAM_TYPE_INT		0
-#define GPARAM_TYPE_STR		1
-#define GPARAM_TYPE_PVS		2
-#define GPARAM_TYPE_PVE		3
-#define GPARAM_TYPE_REGEX	4
-#define GPARAM_TYPE_FIXUP	5
+#define GPARAM_TYPE_VAL		0
+#define GPARAM_TYPE_PVS		1
+#define GPARAM_TYPE_PVE		2
 
 typedef struct _gparam
 {
 	int type;
+	void *pval;
 	union {
 		int ival;
 		str sval;
-		pv_spec_t *pvs;
-		pv_elem_t *pve;
-		regex_t *re;
-		void *val;
 	} v;
 } gparam_t, *gparam_p;
 

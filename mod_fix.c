@@ -18,11 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/*!
- * \file
- * \brief Generic fixup functions for module function parameter.
- * - \ref FixupNameFormat
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -102,13 +97,15 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 					if ((gp = alloc_gp()) == NULL)
 						return E_OUT_OF_MEM;
 
-					gp->v.val = NULL;
-					if (param->fixup(&gp->v.val) < 0) {
+					gp->pval = NULL;
+					gp->type = GPARAM_TYPE_VAL;
+
+					if (param->fixup(&gp->pval) < 0) {
 						LM_ERR("Fixup failed for param [%d]\n", i);
 						ret = E_UNSPEC;
 						goto error;
 					}
-					gp->type = GPARAM_TYPE_FIXUP;
+
 				}
 
 				goto fill_elems;
@@ -125,20 +122,17 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 		if (param->flags & CMD_PARAM_INT) {
 
 			if (elems[i].type == NUMBER_ST) {
-				if (param->fixup) {
-					gp->v.val = (void *)&elems[i].u.number;
-					if (param->fixup(&gp->v.val) < 0) {
-						LM_ERR("Fixup failed for param [%d]\n", i);
-						ret = E_UNSPEC;
-						goto error;
-					}
-					gp->type = GPARAM_TYPE_FIXUP;
-				} else {
-					gp->v.ival = elems[i].u.number;
-					gp->type = GPARAM_TYPE_INT;
+				gp->v.ival = elems[i].u.number;
+				gp->pval = &gp->v.ival;
+				gp->type = GPARAM_TYPE_VAL;
+
+				if (param->fixup && param->fixup(&gp->pval) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					ret = E_UNSPEC;
+					goto error;
 				}
 			} else if (elems[i].type == SCRIPTVAR_ST) {
-				gp->v.pvs = elems[i].u.data;
+				gp->pval = elems[i].u.data;
 				gp->type = GPARAM_TYPE_PVS;
 			} else {
 				LM_ERR("Param [%d] expected to be an integer "
@@ -158,28 +152,24 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 
 				if ((param->flags & CMD_PARAM_NO_EXPAND) ||
 				    (!pve->next && pve->spec.type == PVT_NONE)) {
-
 					/* ignoring/no variables in the provided string */
 					pv_elem_free_all(pve);
 
-					if (param->fixup) {
-						gp->v.val = (void *)&elems[i].u.s;
-						if (param->fixup(&gp->v.val) < 0) {
-							LM_ERR("Fixup failed for param [%d]\n", i);
-							ret = E_UNSPEC;
-							goto error;
-						}
-						gp->type = GPARAM_TYPE_FIXUP;
-					} else {
-						gp->v.sval = elems[i].u.s;
-						gp->type = GPARAM_TYPE_STR;
+					gp->v.sval = elems[i].u.s;
+					gp->pval = &gp->v.sval;
+					gp->type = GPARAM_TYPE_VAL;
+
+					if (param->fixup && param->fixup(&gp->pval) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+						goto error;
 					}
 				} else {
-					gp->v.pve = pve;
+					gp->pval = pve;
 					gp->type = GPARAM_TYPE_PVE;
 				}
 			} else if (elems[i].type == SCRIPTVAR_ST) {
-				gp->v.pvs = elems[i].u.data;
+				gp->pval = elems[i].u.data;
 				gp->type = GPARAM_TYPE_PVS;
 			} else {
 				LM_ERR("Param [%d] expected to be a string "
@@ -196,17 +186,12 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 				goto error;
 			}
 
-			if (param->fixup) {
-				gp->v.val = elems[i].u.data;
-				if (param->fixup(&gp->v.val) < 0) {
-					LM_ERR("Fixup failed for param [%d]\n", i);
-					ret = E_UNSPEC;
-					goto error;
-				}
-				gp->type = GPARAM_TYPE_FIXUP;
-			} else {
-				gp->v.pvs = elems[i].u.data;
-				gp->type = GPARAM_TYPE_PVS;
+			gp->pval = elems[i].u.data;
+
+			if (param->fixup && param->fixup(&gp->pval) < 0) {
+				LM_ERR("Fixup failed for param [%d]\n", i);
+				ret = E_UNSPEC;
+				goto error;
 			}
 
 		} else if (param->flags & CMD_PARAM_REGEX) {
@@ -226,24 +211,20 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 					if (ret < 0)
 						return ret;
 
-					if (param->fixup) {
-						gp->v.val = re;
-						if (param->fixup(&gp->v.val) < 0) {
-							LM_ERR("Fixup failed for param [%d]\n", i);
-							ret = E_UNSPEC;
-							goto error;
-						}
-						gp->type = GPARAM_TYPE_FIXUP;
-					} else {
-						gp->v.re = re;
-						gp->type = GPARAM_TYPE_REGEX;
+					gp->pval = re;
+					gp->type = GPARAM_TYPE_VAL;
+
+					if (param->fixup && param->fixup(&gp->pval) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+						goto error;
 					}
 				} else {
-					gp->v.pve = pve;
+					gp->pval = pve;
 					gp->type = GPARAM_TYPE_PVE;
 				}
 			} else if (elems[i].type == SCRIPTVAR_ST) {
-				gp->v.pvs = elems[i].u.data;
+				gp->pval = elems[i].u.data;
 				gp->type = GPARAM_TYPE_PVS;
 			} else {
 				LM_ERR("Param [%d] expected to be a string "
@@ -290,11 +271,12 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 		if (param->flags & CMD_PARAM_INT) {
 
 			switch (gp->type) {
-			case GPARAM_TYPE_INT:
-				cmdp[i-1] = (void*)&gp->v.ival;
+			case GPARAM_TYPE_VAL:
+				cmdp[i-1] = gp->pval;
 				break;
 			case GPARAM_TYPE_PVS:
-				if (pv_get_spec_value(msg, gp->v.pvs, &tmp_vals[i]) != 0) {
+				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
+					&tmp_vals[i]) != 0) {
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
@@ -313,10 +295,6 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 				}
 
 				break;
-			case GPARAM_TYPE_FIXUP:
-				/* fixup was possible at startup */
-				cmdp[i-1] = gp->v.val;
-				break;
 			default:
 				LM_BUG("Bad type for generic parameter\n");
 				return E_BUG;
@@ -325,11 +303,12 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 		} else if (param->flags & CMD_PARAM_STR) {
 
 			switch (gp->type) {
-			case GPARAM_TYPE_STR:
-				cmdp[i-1] = (void*)&gp->v.sval;
+			case GPARAM_TYPE_VAL:
+				cmdp[i-1] = gp->pval;
 				break;
 			case GPARAM_TYPE_PVE:
-				if (pv_printf_s(msg, gp->v.pve, &tmp_vals[i].rs) != 0) {
+				if (pv_printf_s(msg, (pv_elem_t *)gp->pval,
+					&tmp_vals[i].rs) != 0) {
 					LM_ERR("Failed to print formatted string in param [%d]\n", i);
 					return E_UNSPEC;
 				}
@@ -343,7 +322,8 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 
 				break;
 			case GPARAM_TYPE_PVS:
-				if (pv_get_spec_value(msg, gp->v.pvs, &tmp_vals[i]) != 0) {
+				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
+					&tmp_vals[i]) != 0) {
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
@@ -360,9 +340,6 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 					return E_UNSPEC;
 				}
 
-				break;
-			case GPARAM_TYPE_FIXUP:
-				cmdp[i-1] = gp->v.val;
 				break;
 			default:
 				LM_BUG("Bad type for generic parameter\n");
@@ -371,26 +348,17 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 
 		} else if (param->flags & CMD_PARAM_VAR) {
 
-			switch (gp->type) {
-			case GPARAM_TYPE_PVS:
-				cmdp[i-1] = (void *)gp->v.pvs;
-				break;
-			case GPARAM_TYPE_FIXUP:
-				cmdp[i-1] = gp->v.val;
-				break;
-			default:
-				LM_BUG("Bad type for generic parameter\n");
-				return E_BUG;
-			}
+			cmdp[i-1] = gp->pval;
 
 		} else if (param->flags & CMD_PARAM_REGEX) {
 
 			switch (gp->type) {
-			case GPARAM_TYPE_REGEX:
-				cmdp[i-1] = (void*)&gp->v.re;
+			case GPARAM_TYPE_VAL:
+				cmdp[i-1] = gp->pval;
 				break;
 			case GPARAM_TYPE_PVE:
-				if (pv_printf_s(msg, gp->v.pve, &tmp_vals[i].rs) != 0) {
+				if (pv_printf_s(msg, (pv_elem_t *)gp->pval,
+					&tmp_vals[i].rs) != 0) {
 					LM_ERR("Failed to print formatted string in param [%d]\n", i);
 					return E_UNSPEC;
 				}
@@ -415,7 +383,8 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 
 				break;
 			case GPARAM_TYPE_PVS:
-				if (pv_get_spec_value(msg, gp->v.pvs, &tmp_vals[i]) != 0) {
+				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
+					&tmp_vals[i]) != 0) {
 					LM_ERR("Failed to get spec value in param [%d]\n", i);
 					return E_UNSPEC;
 				}
@@ -443,9 +412,6 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 						return ret;
 				}
 
-				break;
-			case GPARAM_TYPE_FIXUP:
-				cmdp[i-1] = gp->v.val;
 				break;
 			default:
 				LM_BUG("Bad type for generic parameter\n");
