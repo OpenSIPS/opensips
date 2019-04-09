@@ -17,6 +17,17 @@
 	</qandaentry>
 	<qandaentry>
 		<question>
+			<para>What happened with the <quote>fetch_event_params()</quote> function?</para>
+		</question>
+		<answer>
+		<para>
+			This function has been dropped starting with &osips; 3.0. Its functionality
+			has been replaced by the <quote>$param(name)</quote> variable.
+		</para>
+		</answer>
+	</qandaentry>
+	<qandaentry>
+		<question>
 		<para>Where can I find more about OpenSIPS?</para>
 		</question>
 		<answer>

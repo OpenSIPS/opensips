@@ -36,9 +36,6 @@
 
 #define IS_ERR(_err) (errno == _err)
 
-extern evi_params_t *parameters;
-extern str *event_name;
-
 /* used to communicate with the sending process */
 static int route_pipe[2];
 
@@ -237,27 +234,27 @@ int route_build_buffer(str *event_name, evi_reply_sock *sock,
 	return 0;
 }
 
+#if 0
+void route_params_push_level(void *params, void *extra, param_getf_t getf);
+void route_params_pop_level(void);
+int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
+#endif
 
 void event_route_handler(int rank)
 {
 	/* init blocking reader */
 	route_init_reader();
 	route_send_t *route_s;
-	struct sip_msg* dummy_req;
+	struct sip_msg dummy_req;
 
-	dummy_req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
-	if (dummy_req == NULL) {
-		LM_ERR("oom\n");
-		return;
-	}
-	memset(dummy_req, 0, sizeof(struct sip_msg));
-	dummy_req->first_line.type = SIP_REQUEST;
-	dummy_req->first_line.u.request.method.s= "DUMMY";
-	dummy_req->first_line.u.request.method.len= 5;
-	dummy_req->first_line.u.request.uri.s= "sip:user@domain.com";
-	dummy_req->first_line.u.request.uri.len= 19;
-	dummy_req->rcv.src_ip.af = AF_INET;
-	dummy_req->rcv.dst_ip.af = AF_INET;
+	memset(&dummy_req, 0, sizeof(struct sip_msg));
+	dummy_req.first_line.type = SIP_REQUEST;
+	dummy_req.first_line.u.request.method.s= "DUMMY";
+	dummy_req.first_line.u.request.method.len= 5;
+	dummy_req.first_line.u.request.uri.s= "sip:user@domain.com";
+	dummy_req.first_line.u.request.uri.len= 19;
+	dummy_req.rcv.src_ip.af = AF_INET;
+	dummy_req.rcv.dst_ip.af = AF_INET;
 
 	/* waiting for commands */
 	for (;;) {
@@ -267,11 +264,11 @@ void event_route_handler(int rank)
 			goto end;
 		}
 
-		event_name = &route_s->event;
-		parameters = &route_s->params;
-		run_top_route(route_s->a, dummy_req);
+		route_run(route_s->a, &dummy_req, &route_s->params, &route_s->event);
 end:
 		if (route_s)
 			shm_free(route_s);
+		free_sip_msg(&dummy_req);
+		reset_avps( );
 	}
 }
