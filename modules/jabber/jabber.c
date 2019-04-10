@@ -125,7 +125,6 @@ static int xj_send_message(struct sip_msg*, char*, char*);
 static int xj_join_jconf(struct sip_msg*, char*, char*);
 static int xj_exit_jconf(struct sip_msg*, char*, char*);
 static int xj_go_online(struct sip_msg*, char*, char*);
-static int xj_go_offline(struct sip_msg*, char*, char*);
 
 void destroy(void);
 
@@ -445,15 +444,6 @@ static int xj_go_online(struct sip_msg *msg, char* foo1, char * foo2)
 {
 	LM_DBG("go online in Jabber network\n");
 	return xjab_manage_sipmsg(msg, XJ_GO_ONLINE);
-}
-
-/**
- * go offline in Jabber network
- */
-static int xj_go_offline(struct sip_msg *msg, char* foo1, char * foo2)
-{
-	LM_DBG("go offline in Jabber network\n");
-	return xjab_manage_sipmsg(msg, XJ_GO_OFFLINE);
 }
 
 /**

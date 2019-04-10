@@ -391,24 +391,6 @@ static int mod_init(void) {
  *
  * @return 0 on success, -1 on failure
  */
-static int pv_fixup(void ** param) {
-	pv_elem_t *model;
-	str s;
-
-	s.s = (char *)(*param);
-	s.len = strlen(s.s);
-	if (s.len <= 0) return -1;
-	/* Check the format */
-	if(pv_parse_format(&s, &model)<0) {
-		LM_ERR("pv_parse_format failed for '%s'\n", (char *)(*param));
-		return -1;
-	}
-	*param = (void*)model;
-
-	return 0;
-}
-
-
 /**
  * fixes the module functions' parameter if it is a carrier.
  */
@@ -419,7 +401,7 @@ static int carrier_fixup(void ** param) {
 		return -1;
 	}
 	LM_DBG("carrier tree %.*s has id %d\n",
-		((str*)*param)->len, ((str*)*param)->s, (int)*param);
+		((str*)*param)->len, ((str*)*param)->s, (int)(unsigned long)*param);
 
 	return 0;
 }

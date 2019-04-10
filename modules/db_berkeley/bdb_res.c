@@ -137,8 +137,7 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 						goto error;
 					}
 					LM_DBG("allocated %d bytes for row_buf[%d] at %p\n", len, i, row_buf[i]);
-					memset(row_buf[i], 0, len+1);
-					strncpy(row_buf[i], s, len);
+					memcpy(row_buf[i], s, len+1);
 				}
 
 			}
@@ -156,8 +155,7 @@ int bdb_convert_row(db_res_t* _res, char *bdb_result, int* _lres)
 				return -1;
 			}
 				LM_DBG("allocated %d bytes for row_buf[%d] at %p\n", len, col, row_buf[col]);
-			memset(row_buf[col], 0, len+1);
-			strncpy(row_buf[col], s, len);
+			memcpy(row_buf[col], s, len+1);
 		}
 		s = strsep(&bdb_result, DELIM);
 		col++;
@@ -255,8 +253,7 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 						LM_ERR("no private memory left\n");
 						goto error;
 					}
-					memset(row_buf[i], 0, len+1);
-					strncpy(row_buf[i], s, len);
+					memcpy(row_buf[i], s, len+1);
 				}
 			}
 		}
@@ -277,8 +274,7 @@ int bdb_append_row(db_res_t* _res, char *bdb_result, int* _lres, int _rx)
 				LM_ERR("no private memory left\n");
 				return -1;
 			}
-			memset(row_buf[col], 0, len+1);
-			strncpy(row_buf[col], s, len);
+			memcpy(row_buf[col], s, len+1);
 		}
 		s = strsep(&bdb_result, DELIM);
 		col++;

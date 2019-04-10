@@ -515,16 +515,16 @@ int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
 	static char ip_buff[IP_ADDR_MAX_STR_SIZE];
 	mi_item_t *dests_arr, *dest_item;
 
-    count = table[PERM_MAX_SUBNETS].grp;
+	count = table[PERM_MAX_SUBNETS].grp;
 
-    dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
+	dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
 	if (dests_arr)
 		return -1;
 
-    for (i = 0; i < count; i++) {
-    	dest_item = add_mi_object(dests_arr, NULL, 0);
-    	if (!dest_item)
-    		return -1;
+	for (i = 0; i < count; i++) {
+		dest_item = add_mi_object(dests_arr, NULL, 0);
+		if (!dest_item)
+			return -1;
 
 		ip = ip_addr2a(&table[i].subnet->ip);
 		if (!ip) {

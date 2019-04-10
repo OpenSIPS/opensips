@@ -514,8 +514,8 @@ int cr_do_route(struct sip_msg * _msg, void *_carrier,
 
 	ret = -1;
 
-	carrier_id = (int)_carrier;
-	domain_id = (int)_domain;
+	carrier_id = (int)(unsigned long)_carrier;
+	domain_id = (int)(unsigned long)_domain;
 	if (domain_id < 0) {
 		LM_ERR("invalid domain id %d\n", domain_id);
 		return -1;
@@ -660,8 +660,8 @@ int cr_load_next_domain(struct sip_msg * _msg, void *_carrier,
 
 	ret = -1;
 
-	carrier_id = (int)_carrier;
-	domain_id = (int)_domain;
+	carrier_id = (int)(unsigned long)_carrier;
+	domain_id = (int)(unsigned long)_domain;
 	if (domain_id < 0) {
 		LM_ERR("invalid domain id %d\n", domain_id);
 		return -1;
