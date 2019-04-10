@@ -274,8 +274,8 @@ end:
 		context_destroy(CONTEXT_GLOBAL, ctx);
 
 	current_processing_ctx = NULL;
-	stop_expire_timer( start, execmsgthreshold, "msg processing",
-		msg->buf, msg->len, 0);
+	__stop_expire_timer( start, execmsgthreshold, "msg processing",
+		msg->buf, msg->len, 0, slow_msgs);
 	reset_longest_action_list(execmsgthreshold);
 
 	/* free possible loaded avps -bogdan */

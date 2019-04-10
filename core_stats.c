@@ -57,6 +57,7 @@ stat_var* err_rpls;
 stat_var* bad_URIs;
 stat_var* unsupported_methods;
 stat_var* bad_msg_hdr;
+stat_var* slow_msgs;
 
 
 stat_export_t core_stats[] = {
@@ -71,6 +72,7 @@ stat_export_t core_stats[] = {
 	{"bad_URIs_rcvd",         0,  &bad_URIs              },
 	{"unsupported_methods",   0,  &unsupported_methods   },
 	{"bad_msg_hdr",           0,  &bad_msg_hdr           },
+	{"slow_messages" ,        0,  &slow_msgs             },
 	{"timestamp",  STAT_IS_FUNC, (stat_var**)get_ticks   },
 	{0,0,0}
 };
