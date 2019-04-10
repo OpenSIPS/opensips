@@ -92,8 +92,8 @@ static param_export_t params[]={
 
 static cmd_export_t  cmds[]=
 {
-	{"bind_xcap_client",  (cmd_function)bind_xcap_client,  1,    0, 0,        0},
-	{    0,                     0,           0,    0, 0,        0}
+	{"bind_xcap_client",  (cmd_function)bind_xcap_client,  {{0, 0, 0}},        0},
+	{ 0, 0, {{0, 0, 0}}, 0}
 };
 
 static mi_export_t mi_cmds[] = {

@@ -53,8 +53,8 @@ void destroy(void);
 
 static cmd_export_t cmds[]=
 {
-	{ "bind_xcap", (cmd_function)bind_xcap, 1, 0, 0, 0},
-	{ 0, 0, 0, 0, 0, 0 }
+	{ "bind_xcap", (cmd_function)bind_xcap, {{0, 0, 0}}, 0},
+	{ 0, 0, {{0, 0, 0}}, 0}
 };
 
 static param_export_t params[]={

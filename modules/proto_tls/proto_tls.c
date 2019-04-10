@@ -155,8 +155,8 @@ static int proto_tls_conn_init(struct tcp_connection* c);
 static void proto_tls_conn_clean(struct tcp_connection* c);
 
 static cmd_export_t cmds[] = {
-	{"proto_init", (cmd_function)proto_tls_init, 0, 0, 0, 0},
-	{0,0,0,0,0,0}
+	{"proto_init", (cmd_function)proto_tls_init, {{0, 0, 0}}, 0},
+	{ 0, 0, {{0, 0, 0}}, 0}
 };
 
 
