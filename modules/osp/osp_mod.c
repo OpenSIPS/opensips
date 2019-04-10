@@ -334,7 +334,7 @@ static int ospInitMod(void)
     }
 
     /* Load the AUTH API */
-    bind_auth = (bind_auth_t)find_export("bind_auth", 0, 0);
+    bind_auth = (bind_auth_t)find_export("bind_auth", 0);
     if ((bind_auth == NULL) || (bind_auth(&osp_auth) != 0)) {
         LM_WARN("failed to load the AUTH API. Check if you load the auth module.\n");
         LM_WARN("rpid_avp & rpid_avp_type is required for calling number translation\n");

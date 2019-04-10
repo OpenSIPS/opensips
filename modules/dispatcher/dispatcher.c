@@ -857,7 +857,7 @@ static int mod_init(void)
 			}
 		}
 		/* TM-Bindings */
-		load_tm=(load_tm_f)find_export("load_tm", 0, 0);
+		load_tm=(load_tm_f)find_export("load_tm", 0);
 		if (load_tm==NULL) {
 			LM_ERR("failed to bind to the TM-Module - required for probing\n");
 			return -1;

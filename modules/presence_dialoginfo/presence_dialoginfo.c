@@ -104,7 +104,7 @@ static int mod_init(void)
 	presence_api_t pres;
 	bind_presence_t bind_presence;
 
-	bind_presence= (bind_presence_t)find_export("bind_presence", 1,0);
+	bind_presence= (bind_presence_t)find_export("bind_presence", 0);
 	if (!bind_presence) {
 		LM_ERR("can't bind presence\n");
 		return -1;

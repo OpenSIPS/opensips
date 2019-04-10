@@ -145,7 +145,7 @@ static int mod_init(void)
 	xcap_api_t xcap_api;
 
         /* load XCAP API */
-        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 1, 0);
+        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 0);
         if (!bind_xcap)
         {
                 LM_ERR("Can't bind xcap\n");
