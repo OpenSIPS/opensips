@@ -1663,38 +1663,34 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 		LM_DBG("BYE successfully processed - dst_leg = %d\n",dst_leg);
 
-		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE ||
-		    dlg_has_reinvite_pinging(dlg) || dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
-			dlg_lock (d_table,d_entry);
+		dlg_lock (d_table,d_entry);
+		if (dlg->legs[dst_leg].last_gen_cseq) {
 
-			if (dlg->legs[dst_leg].last_gen_cseq) {
+			update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+			dlg_unlock (d_table,d_entry);
 
-				update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
-				dlg_unlock (d_table,d_entry);
+			if (update_msg_cseq(req,0,update_val) != 0)
+				LM_ERR("failed to update BYE msg cseq\n");
 
-				if (update_msg_cseq(req,0,update_val) != 0)
-					LM_ERR("failed to update BYE msg cseq\n");
+			msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
 
-				msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
-
-				final_cseq = shm_malloc(msg_cseq->len + 1);
-				if (final_cseq == 0) {
-					LM_ERR("no more shm mem\n");
-					goto after_unlock5;
-				}
-
-				memcpy(final_cseq,msg_cseq->s,msg_cseq->len);
-				final_cseq[msg_cseq->len] = 0;
-
-				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-				fix_final_cseq,
-				(void*)final_cseq, 0)<0 ) {
-					LM_ERR("failed to register TMCB (2)\n");
-				}
+			final_cseq = shm_malloc(msg_cseq->len + 1);
+			if (final_cseq == 0) {
+				LM_ERR("no more shm mem\n");
+				goto after_unlock5;
 			}
-			else
-				dlg_unlock (d_table,d_entry);
+
+			memcpy(final_cseq,msg_cseq->s,msg_cseq->len);
+			final_cseq[msg_cseq->len] = 0;
+
+			if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+			fix_final_cseq,
+			(void*)final_cseq, 0)<0 ) {
+				LM_ERR("failed to register TMCB (2)\n");
+			}
 		}
+		else
+			dlg_unlock (d_table,d_entry);
 
 after_unlock5:
 
@@ -1808,38 +1804,32 @@ after_unlock5:
 				}
 			}
 
-			if (dlg->flags & DLG_FLAG_PING_CALLER ||
-			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg_has_reinvite_pinging(dlg) ||
-			dlg->flags & DLG_FLAG_CSEQ_ENFORCE ) {
+			dlg_lock (d_table, d_entry);
 
-				dlg_lock (d_table, d_entry);
+			if (dlg->legs[dst_leg].last_gen_cseq) {
 
-				if (dlg->legs[dst_leg].last_gen_cseq) {
-
-					update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
-					if (req->first_line.u.request.method_value == METHOD_INVITE) {
-						/* save INVITE cseq, in case any requests follow after this
-						( pings or other in-dialog requests until the ACK comes in */
-						dlg->legs[dst_leg].last_inv_gen_cseq = dlg->legs[dst_leg].last_gen_cseq;
-					}
-
-					dlg_unlock( d_table, d_entry );
-
-					if (update_msg_cseq(req,0,update_val) != 0) {
-						LM_ERR("failed to update sequential request msg cseq\n");
-						ok = 0;
-					}
-				} else {
-					if (req->first_line.u.request.method_value == METHOD_INVITE) {
-						/* we did not generate any pings yet - still we need to store the INV cseq,
-						in case there's a race between the ACK for the INVITE and sending of new pings */
-						str2int(&((struct cseq_body *)req->cseq->parsed)->number,
-						&dlg->legs[dst_leg].last_inv_gen_cseq);
-					}
-
-					dlg_unlock( d_table, d_entry );
+				update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+				if (req->first_line.u.request.method_value == METHOD_INVITE) {
+					/* save INVITE cseq, in case any requests follow after this
+					( pings or other in-dialog requests until the ACK comes in */
+					dlg->legs[dst_leg].last_inv_gen_cseq = dlg->legs[dst_leg].last_gen_cseq;
 				}
+
+				dlg_unlock( d_table, d_entry );
+
+				if (update_msg_cseq(req,0,update_val) != 0) {
+					LM_ERR("failed to update sequential request msg cseq\n");
+					ok = 0;
+				}
+			} else {
+				if (req->first_line.u.request.method_value == METHOD_INVITE) {
+					/* we did not generate any pings yet - still we need to store the INV cseq,
+					in case there's a race between the ACK for the INVITE and sending of new pings */
+					str2int(&((struct cseq_body *)req->cseq->parsed)->number,
+					&dlg->legs[dst_leg].last_inv_gen_cseq);
+				}
+
+				dlg_unlock( d_table, d_entry );
 			}
 
 			if (ok) {
@@ -1854,89 +1844,76 @@ after_unlock5:
 					replicate_dialog_updated(dlg);
 			}
 		} else {
-			if (dlg->flags & DLG_FLAG_PING_CALLER ||
-			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg_has_reinvite_pinging(dlg) ||
-			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 
-				dlg_lock (d_table, d_entry);
+			dlg_lock (d_table, d_entry);
 
-				if (dlg->legs[dst_leg].last_gen_cseq ||
-				dlg->legs[dst_leg].last_inv_gen_cseq ) {
-					if (dlg->legs[dst_leg].last_inv_gen_cseq)
-						update_val = dlg->legs[dst_leg].last_inv_gen_cseq;
-					else
-						update_val = dlg->legs[dst_leg].last_gen_cseq;
-					dlg_unlock( d_table, d_entry );
+			if (dlg->legs[dst_leg].last_gen_cseq ||
+			dlg->legs[dst_leg].last_inv_gen_cseq ) {
+				if (dlg->legs[dst_leg].last_inv_gen_cseq)
+					update_val = dlg->legs[dst_leg].last_inv_gen_cseq;
+				else
+					update_val = dlg->legs[dst_leg].last_gen_cseq;
+				dlg_unlock( d_table, d_entry );
 
-					if (update_msg_cseq(req,0,update_val) != 0) {
-						LM_ERR("failed to update ACK msg cseq\n");
-					}
-				} else
-					dlg_unlock( d_table, d_entry );
-			}
+				if (update_msg_cseq(req,0,update_val) != 0) {
+					LM_ERR("failed to update ACK msg cseq\n");
+				}
+			} else
+				dlg_unlock( d_table, d_entry );
 		}
 
 		if ( event!=DLG_EVENT_REQACK) {
 			/* register callback for the replies of this request */
 
-			if (dlg->flags & DLG_FLAG_PING_CALLER ||
-			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg_has_reinvite_pinging(dlg) ||
-			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
-				dlg_lock( d_table, d_entry);
-				if (dlg->legs[dst_leg].last_gen_cseq) {
-					/* ref the dialog as registered into the transaction callback.
-					 * unref will be done when the callback will be destroyed */
-					ref_dlg_unsafe( dlg, 1);
-					dlg_unlock( d_table,d_entry);
+			dlg_lock( d_table, d_entry);
+			if (dlg->legs[dst_leg].last_gen_cseq) {
+				/* ref the dialog as registered into the transaction callback.
+				 * unref will be done when the callback will be destroyed */
+				ref_dlg_unsafe( dlg, 1);
+				dlg_unlock( d_table,d_entry);
 
-					if(parse_headers(req, HDR_CSEQ_F, 0) <0 ) {
-						LM_ERR("failed to parse cseq header \n");
-						unref_dlg(dlg,1);
-						goto early_check;
-					}
+				if(parse_headers(req, HDR_CSEQ_F, 0) <0 ) {
+					LM_ERR("failed to parse cseq header \n");
+					unref_dlg(dlg,1);
+					goto early_check;
+				}
 
-					msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
-					dlg_cseq_wrapper *wrap = shm_malloc(sizeof(dlg_cseq_wrapper) +
-							msg_cseq->len);
+				msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
+				dlg_cseq_wrapper *wrap = shm_malloc(sizeof(dlg_cseq_wrapper) +
+						msg_cseq->len);
 
-					if (wrap == 0){
-						LM_ERR("No more shm mem\n");
-						unref_dlg(dlg, 1);
-						goto early_check;
-					}
+				if (wrap == 0){
+					LM_ERR("No more shm mem\n");
+					unref_dlg(dlg, 1);
+					goto early_check;
+				}
 
-					wrap->dlg = dlg;
-					wrap->cseq.s = (char *)(wrap + 1);
-					wrap->cseq.len = msg_cseq->len;
-					memcpy(wrap->cseq.s,msg_cseq->s,msg_cseq->len);
+				wrap->dlg = dlg;
+				wrap->cseq.s = (char *)(wrap + 1);
+				wrap->cseq.len = msg_cseq->len;
+				memcpy(wrap->cseq.s,msg_cseq->s,msg_cseq->len);
 
-					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-					(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply_mod_cseq:dlg_seq_up_onreply_mod_cseq,
-					(void*)wrap, unreference_dialog_cseq)<0 ) {
-						LM_ERR("failed to register TMCB (2)\n");
+				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+				(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply_mod_cseq:dlg_seq_up_onreply_mod_cseq,
+				(void*)wrap, unreference_dialog_cseq)<0 ) {
+					LM_ERR("failed to register TMCB (2)\n");
+					unref_dlg( dlg , 1);
+					shm_free(wrap);
+				}
+			}
+			else {
+				/* dialog is in ping timer list
+				 * but no pings have been generated yet */
+				dlg_unlock ( d_table, d_entry );
+			}
+			if (dlg->cbs.types & DLGCB_RESPONSE_WITHIN)
+			{
+				ref_dlg( dlg , 1);
+				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+				(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply:dlg_seq_up_onreply,
+				(void*)dlg, unreference_dialog)<0 ) {
+					LM_ERR("failed to register TMCB (2)\n");
 						unref_dlg( dlg , 1);
-						shm_free(wrap);
-					}
-				}
-				else {
-					/* dialog is in ping timer list
-					 * but no pings have been generated yet */
-					dlg_unlock ( d_table, d_entry );
-					goto regular_indlg_req;
-				}
-			} else {
-regular_indlg_req:
-				if (dlg->cbs.types & DLGCB_RESPONSE_WITHIN)
-				{
-					ref_dlg( dlg , 1);
-					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-					(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply:dlg_seq_up_onreply,
-					(void*)dlg, unreference_dialog)<0 ) {
-						LM_ERR("failed to register TMCB (2)\n");
-							unref_dlg( dlg , 1);
-					}
 				}
 			}
 		}

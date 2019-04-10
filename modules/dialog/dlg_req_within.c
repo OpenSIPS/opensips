@@ -70,29 +70,17 @@ dlg_t * build_dlg_t(struct dlg_cell * cell, int dst_leg, int src_leg)
 	}
 	memset(td, 0, sizeof(dlg_t));
 
-	if ((dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_PING_CALLER)) ||
-		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_PING_CALLEE)) || 
-		(dst_leg == DLG_CALLER_LEG && (cell->flags & DLG_FLAG_REINVITE_PING_CALLER)) ||
-		(dst_leg == callee_idx(cell) && (cell->flags & DLG_FLAG_REINVITE_PING_CALLEE)) || 
-		cell->flags & DLG_FLAG_CSEQ_ENFORCE)
+	dlg_lock_dlg(cell);
+	if (cell->legs[dst_leg].last_gen_cseq != 0)
 	{
-		dlg_lock_dlg(cell);
-		if (cell->legs[dst_leg].last_gen_cseq == 0)
-		{
-			/* no OPTIONS pings for this dlg yet */
-			dlg_unlock_dlg(cell);
-			goto before_strcseq;
-		}
-		else
-		{
-			/* OPTIONS pings sent, use new cseq */
-			td->loc_seq.value = ++(cell->legs[dst_leg].last_gen_cseq);
-			td->loc_seq.is_set=1;
-			dlg_unlock_dlg(cell);
-			goto after_strcseq;
-		}
+		/* OPTIONS pings sent, use new cseq */
+		td->loc_seq.value = ++(cell->legs[dst_leg].last_gen_cseq);
+		td->loc_seq.is_set=1;
+		dlg_unlock_dlg(cell);
+		goto after_strcseq;
 	}
-before_strcseq:
+
+	dlg_unlock_dlg(cell);
 	/*local sequence number*/
 	cseq = cell->legs[dst_leg].r_cseq;
 	if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
