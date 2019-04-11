@@ -321,6 +321,28 @@ void free_shm_mi_response(mi_response_t *shm_response)
 	_init_mi_pkg_mem_hooks();
 }
 
+mi_item_t *shm_clone_mi_item(mi_item_t *src)
+{
+	mi_item_t *copy;
+
+	_init_mi_shm_mem_hooks();
+
+	copy = cJSON_Duplicate(src, 1);
+
+	_init_mi_pkg_mem_hooks();
+
+	return copy;
+}
+
+void free_shm_mi_item(mi_item_t *item)
+{
+	_init_mi_shm_mem_hooks();
+
+	cJSON_Delete(item);
+
+	_init_mi_pkg_mem_hooks();
+}
+
 static mi_item_t * _get_mi_param(const mi_params_t *params, const char *name)
 {
 	int i;

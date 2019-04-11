@@ -159,6 +159,14 @@ mi_response_t *shm_clone_mi_response(mi_response_t *src);
  */
 void free_shm_mi_response(mi_response_t *response);
 
+/* Clones a MI item to shm memory
+ */
+mi_item_t *shm_clone_mi_item(mi_item_t *src);
+
+/* Frees a MI item from shm memory
+ */
+void free_shm_mi_item(mi_item_t *response);
+
 /* The string provided in @value will be freed along with the MI request
  * so it should be strdup'ed as necessary
  */
