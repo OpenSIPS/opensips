@@ -455,67 +455,6 @@ static inline char *get_reply_filename( char * file, int len )
 	return reply_fifo_s;
 }
 
-static inline void free_async_handler( struct mi_handler *hdl )
-{
-	if (hdl)
-		shm_free(hdl);
-}
-
-
-static void fifo_close_async(mi_response_t *resp, struct mi_handler *hdl, int done)
-{
-	FILE *reply_stream;
-	char *name;
-
-	name = (char*)hdl->param;
-
-	if (resp || done) {
-		/*open fifo reply*/
-		reply_stream = mi_open_reply_pipe( name );
-		if (reply_stream==NULL) {
-			LM_ERR("cannot open reply pipe %s\n", name );
-			return;
-		}
-
-		/* TODO: handle reply
-		if (mi_rpl!=0) {
-			mi_write_tree( reply_stream, mi_rpl, 0);
-			free_mi_tree( mi_rpl );
-		} else {
-			mi_fifo_reply( reply_stream, "%d %.*s\n", code, reason.len, reason.s);
-			mi_trace_reply( 0, 0, code, &reason, 0, t_dst);
-		}
-		*/
-
-		fclose(reply_stream);
-	}
-
-	if (done)
-		free_async_handler( hdl );
-	return;
-}
-
-
-static inline struct mi_handler* build_async_handler( char *name, int len)
-{
-	struct mi_handler *hdl;
-	char *p;
-
-	hdl = (struct mi_handler*)shm_malloc( sizeof(struct mi_handler) + len + 1);
-	if (hdl==0) {
-		LM_ERR("no more shared memory\n");
-		return 0;
-	}
-
-	p = (char*)(hdl) + sizeof(struct mi_handler);
-	memcpy( p, name, len+1 );
-
-	hdl->handler_f = fifo_close_async;
-	hdl->param = (void*)p;
-
-	return hdl;
-}
-
 
 #define mi_open_reply(_name,_file,_err) \
 	do { \
@@ -556,7 +495,7 @@ static inline struct mi_handler* build_async_handler( char *name, int len)
 	do { \
 		if (_file) { \
 			str _s = str_init(_msg); \
-			mi_open_reply( file, _stream, _err); \
+			mi_open_reply( _file, _stream, _err); \
 			if (mi_fifo_write(_file, _stream, &_s, cmd) < 0) { \
 				LM_ERR("cannot reply %s error\n", _msg); \
 				goto _err; \
@@ -574,6 +513,7 @@ struct mi_fifo_flush_params {
 static int mi_fifo_write(char *file, FILE *stream, str *msg, struct mi_cmd *cmd)
 {
 	int ret, written;
+	FILE *old_stream = stream;
 
 	mi_open_reply(file, stream, error);
 
@@ -589,6 +529,8 @@ static int mi_fifo_write(char *file, FILE *stream, str *msg, struct mi_cmd *cmd)
 
 	mi_trace_fifo_reply(msg);
 
+	if (!old_stream && stream)
+		fclose(stream);
 	return written;
 
 error:
@@ -612,10 +554,100 @@ static int mi_fifo_flush(unsigned char *buf, int len, void *param)
 	return mi_fifo_write(params->file, params->stream, &msg, params->cmd);
 }
 
+struct mi_async_param {
+	mi_item_t *id;
+	char *file;
+};
+
+static inline void free_async_handler(struct mi_handler *hdl)
+{
+	if (hdl) {
+		free_shm_mi_item(((struct mi_async_param *)hdl->param)->id);
+		shm_free(hdl);
+	}
+}
+
+static int mi_fifo_reply(FILE *reply_stream, char *file, str *buf,
+		mi_response_t *response, mi_item_t *id, struct mi_cmd *cmd)
+{
+	struct mi_fifo_flush_params params;
+
+	params.cmd = cmd;
+	params.file = file;
+	params.stream = reply_stream;
+
+	return print_mi_response_flush(response, id,
+			mi_fifo_flush, &params, buf, mi_fifo_pp);
+}
+
+static void fifo_close_async(mi_response_t *resp, struct mi_handler *hdl, int done)
+{
+	FILE *reply_stream = NULL;
+	struct mi_async_param *p;
+	int rc;
+	char buffer[MAX_MI_FIFO_BUFFER];
+	str buf;
+	buf.s = buffer;
+	buf.len = MAX_MI_FIFO_BUFFER;
+	struct mi_cmd *cmd = NULL; /* used by mi_throw_error */
+
+	p = (struct mi_async_param *)hdl->param;
+
+	if (resp || done) {
+		if (resp!=0) {
+			rc = mi_fifo_reply(NULL, p->file, &buf, resp, p->id, NULL);
+			if (rc == MI_NO_RPL) {
+				LM_DBG("No reply for jsonrpc notification\n");
+			} else if (rc < 0) {
+				LM_ERR("failed to print json response\n");
+				mi_throw_error(reply_stream, p->file, free_request,
+						"failed to print response");
+			} else
+				free_mi_response(resp);
+		} else {
+			mi_throw_error(reply_stream, p->file, free_request,
+					"failed to build response");
+		}
+
+		if (reply_stream)
+			fclose(reply_stream);
+	}
+
+free_request:
+	if (done)
+		free_async_handler(hdl);
+	return;
+}
+
+
+static inline struct mi_handler* build_async_handler(char *name, int len, mi_item_t *id)
+{
+	struct mi_handler *hdl;
+	struct mi_async_param *p;
+	char *file;
+
+	hdl = (struct mi_handler*)shm_malloc(sizeof(struct mi_handler) +
+			sizeof(struct mi_async_param) + len + 1);
+	if (hdl==0) {
+		LM_ERR("no more shared memory\n");
+		return 0;
+	}
+	p = (struct mi_async_param*)((char *)hdl + sizeof(struct mi_handler));
+	file = (char *)(p + 1);
+	p->file = file;
+	p->id = shm_clone_mi_item(id);
+
+	memcpy(file, name, len+1 );
+
+	hdl->handler_f = fifo_close_async;
+	hdl->param = (void*)p;
+
+	return hdl;
+}
+
 
 void mi_fifo_server(FILE *fifo_stream)
 {
-	struct mi_fifo_flush_params params;
 	const char **parse_end = NULL;
 	mi_request_t request;
 	int read_len, parse_len;
@@ -705,7 +737,7 @@ void mi_fifo_server(FILE *fifo_stream)
 			cmd = lookup_mi_cmd(req_method, strlen(req_method));
 		/* if asyncron cmd, build the async handler */
 		if (cmd && cmd->flags&MI_ASYNC_RPL_FLAG) {
-			hdl = build_async_handler(file, strlen(file));
+			hdl = build_async_handler(file, strlen(file), request.id);
 			if (hdl==0) {
 				LM_ERR("failed to build async handler\n");
 
@@ -733,11 +765,8 @@ void mi_fifo_server(FILE *fifo_stream)
 			buf.s = mi_buf + remain_len;
 			buf.len = MAX_MI_FIFO_BUFFER - remain_len;
 			if (file) {
-				params.file = file;
-				params.stream = reply_stream;
-				params.cmd = cmd;
-				rc = print_mi_response_flush(response, request.id,
-						mi_fifo_flush, &params, &buf, mi_fifo_pp);
+				rc = mi_fifo_reply(reply_stream, file, &buf,
+						response, request.id, cmd);
 				if (rc == MI_NO_RPL) {
 					LM_DBG("No reply for jsonrpc notification\n");
 				} else if (rc < 0) {
@@ -748,7 +777,8 @@ void mi_fifo_server(FILE *fifo_stream)
 					free_mi_response(response);
 			}
 			/* if there is no file specified, there is nothing to reply */
-		}
+		} else
+			goto skip_unparsed;
 
 free_request:
 		free_async_handler(hdl);
