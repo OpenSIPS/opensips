@@ -114,7 +114,7 @@ struct dlg_cell *get_current_dialog(void)
 		return NULL;
 	}
 	if (current_processing_ctx && trans->dialog_ctx) {
-		/* if we have context, but no dlg info, and we 
+		/* if we have context, but no dlg info, and we
 		   found dlg info into transaction, populate
 		   the dialog too */
 		ref_dlg( trans->dialog_ctx, 1);
@@ -205,8 +205,10 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].from_uri.s);
 			if (dlg->legs[i].to_uri.s)
 				shm_free(dlg->legs[i].to_uri.s);
-			if (dlg->legs[i].adv_sdp.s)
-				shm_free(dlg->legs[i].adv_sdp.s);
+			if (dlg->legs[i].out_sdp.s)
+				shm_free(dlg->legs[i].out_sdp.s);
+			if (dlg->legs[i].in_sdp.s)
+				shm_free(dlg->legs[i].in_sdp.s);
 		}
 		shm_free(dlg->legs);
 	}
@@ -339,18 +341,9 @@ int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
 		return -1;
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
 
-	if (dlg_has_reinvite_pinging(dlg)) {
-		if (shm_str_dup(&leg->adv_sdp, &src_leg->adv_sdp) != 0) {
-			LM_ERR("oom sdp\n");
-			return -1;
-		}
-
-		if (shm_str_dup(&leg->adv_contact, &src_leg->adv_contact) != 0) {
-			LM_ERR("oom contact\n");
-			shm_free(leg->adv_sdp.s);
-			memset(&leg->adv_sdp, 0, sizeof leg->adv_sdp);
-			return -1;
-		}
+	if (shm_str_dup(&leg->adv_contact, &src_leg->adv_contact) != 0) {
+		LM_ERR("oom contact\n");
+		return -1;
 	}
 
 	return dlg->legs_no[DLG_LEGS_USED]++;
@@ -361,7 +354,7 @@ int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
    the CALLEE legs will follow into the array in the same order they came */
 int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
-		str *mangled_from,str *mangled_to,str *sdp)
+		str *mangled_from,str *mangled_to,str *in_sdp, str *out_sdp)
 {
 	struct dlg_leg *leg;
 	rr_t *head = NULL, *rrp;
@@ -452,15 +445,27 @@ int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 		memcpy(leg->to_uri.s,mangled_to->s,mangled_to->len);
 	}
 
-	if (sdp && sdp->s && sdp->len) {
-		leg->adv_sdp.s = shm_malloc(sdp->len);
-		if (!leg->adv_sdp.s) {
+	/* this is the inbound sdp received by the client */
+	if (in_sdp && in_sdp->s && in_sdp->len) {
+		leg->in_sdp.s = shm_malloc(in_sdp->len);
+		if (!leg->in_sdp.s) {
 			LM_ERR("no more shm\n");
 			goto error_all;
 		}
 
-		leg->adv_sdp.len = sdp->len;
-		memcpy(leg->adv_sdp.s,sdp->s,sdp->len);
+		leg->in_sdp.len = in_sdp->len;
+		memcpy(leg->in_sdp.s, in_sdp->s, in_sdp->len);
+	}
+
+	if (out_sdp && out_sdp->s && out_sdp->len) {
+		leg->out_sdp.s = shm_malloc(out_sdp->len);
+		if (!leg->out_sdp.s) {
+			LM_ERR("no more shm\n");
+			goto error_all;
+		}
+
+		leg->out_sdp.len = out_sdp->len;
+		memcpy(leg->out_sdp.s, out_sdp->s, out_sdp->len);
 	}
 
 	/* tag */
@@ -516,6 +521,11 @@ error_all:
 	if (leg->contact.s) {
 		shm_free(leg->contact.s);
 		leg->contact.s = NULL;
+	}
+
+	if (leg->in_sdp.s) {
+		shm_free(leg->in_sdp.s);
+		leg->in_sdp.s = NULL;
 	}
 error2:
 	shm_free(leg->r_cseq.s);
@@ -1229,9 +1239,15 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 			dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.s,
 			dlg->legs[DLG_CALLER_LEG].bind_addr->sock_str.len) < 0)
 			goto error;
-		if (add_mi_string(dialog_obj, MI_SSTR("caller_sdp"),
-			dlg->legs[DLG_CALLER_LEG].adv_sdp.s,
-			dlg->legs[DLG_CALLER_LEG].adv_sdp.len) < 0)
+		if (dlg->legs[DLG_CALLER_LEG].in_sdp.s &&
+			add_mi_string(dialog_obj, MI_SSTR("caller_sdp"),
+			dlg->legs[DLG_CALLER_LEG].in_sdp.s,
+			dlg->legs[DLG_CALLER_LEG].in_sdp.len) < 0)
+			goto error;
+		if (dlg->legs[DLG_CALLER_LEG].out_sdp.s &&
+			add_mi_string(dialog_obj, MI_SSTR("caller_sent_sdp"),
+			dlg->legs[DLG_CALLER_LEG].out_sdp.s,
+			dlg->legs[DLG_CALLER_LEG].out_sdp.len) < 0)
 			goto error;
 	}
 
@@ -1267,8 +1283,13 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 				goto error;
 		}
 
-		if (add_mi_string(callee_item, MI_SSTR("callee_sdp"),
-			dlg->legs[i].adv_sdp.s, dlg->legs[i].adv_sdp.len) < 0)
+		if (dlg->legs[i].in_sdp.s &&
+			add_mi_string(callee_item, MI_SSTR("callee_sdp"),
+			dlg->legs[i].in_sdp.s, dlg->legs[i].in_sdp.len) < 0)
+			goto error;
+		if (dlg->legs[i].out_sdp.s &&
+			add_mi_string(callee_item, MI_SSTR("callee_sent_sdp"),
+			dlg->legs[i].out_sdp.s, dlg->legs[i].out_sdp.len) < 0)
 			goto error;
 	}
 
@@ -1567,7 +1588,7 @@ mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 	int i, no_dids;
 
 	if ( d_table == NULL)
-		goto not_found;	
+		goto not_found;
 
 	h_entry = h_id = 0;
 
@@ -1653,7 +1674,7 @@ callid_lookup:
 			update_dialog_timeout_info(dlg);
 		if (dialog_repl_cluster && shtag_state != SHTAG_STATE_BACKUP)
 			replicate_dialog_updated(dlg);
-			
+
 		unref_dlg(dlg, 1);
 	}
 

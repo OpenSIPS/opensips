@@ -198,6 +198,7 @@ static int update_leg_info(int leg, struct dlg_cell *dlg, struct sip_msg *msg,
 	str contact = STR_NULL;
 	str rr_set;
 	int is_req;
+	str sdp;
 
 	is_req = (msg->first_line.type==SIP_REQUEST)?1:0;
 
@@ -237,8 +238,13 @@ static int update_leg_info(int leg, struct dlg_cell *dlg, struct sip_msg *msg,
 		msg->rcv.bind_address->sock_str.len,
 		msg->rcv.bind_address->sock_str.s);
 
+	if (get_body(msg,&sdp) < 0) {
+		sdp.s = NULL;
+		sdp.len = 0;
+	}
+
 	if (dlg_update_leg_info(leg, dlg, tag, &rr_set, &contact, &cseq,
-	msg->rcv.bind_address,mangled_from,mangled_to,0)!=0) {
+	msg->rcv.bind_address,mangled_from,mangled_to, &sdp, NULL)!=0) {
 		LM_ERR("dlg_update_leg_info failed\n");
 		if (rr_set.s) pkg_free(rr_set.s);
 		goto error0;
@@ -691,9 +697,13 @@ static inline int update_msg_cseq(struct sip_msg *msg,str *new_cseq,
 	return 0;
 }
 
-static void dlg_update_sdp(struct dlg_leg *leg,struct sip_msg *msg)
+
+static void dlg_update_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, struct sip_msg *msg)
 {
 	str sdp;
+	char *tmp;
+	str *in_sdp = &dlg->legs[in_leg].in_sdp;
+	str *out_sdp = &dlg->legs[out_leg].out_sdp;
 
 	if (get_body(msg,&sdp) < 0) {
 		LM_ERR("Failed to extract SDP \n");
@@ -701,16 +711,32 @@ static void dlg_update_sdp(struct dlg_leg *leg,struct sip_msg *msg)
 		sdp.len = 0;
 	}
 
-	if (leg->adv_sdp.len < sdp.len) {
-		leg->adv_sdp.s = shm_realloc(leg->adv_sdp.s,sdp.len);
-		if (!leg->adv_sdp.s) {
+	if (in_sdp->len == sdp.len &&
+			memcmp(in_sdp->s, sdp.s, sdp.len) == 0) {
+		/* we have the same sdp in outbound as the one in inbound */
+		if (out_sdp->s)
+			shm_free(out_sdp->s);
+		memset(out_sdp, 0, sizeof(*out_sdp));
+		return;
+	}
+
+	if (!out_sdp->s) {
+		out_sdp->s = shm_malloc(sdp.len);
+		if (!out_sdp->s) {
+			LM_ERR("Failed to allocate sdp\n");
+			return;
+		}
+	} else if (out_sdp->len < sdp.len) {
+		tmp = shm_realloc(out_sdp->s, sdp.len);
+		if (tmp) {
 			LM_ERR("Failed to reallocate sdp \n");
 			return;
 		}
+		out_sdp->s = tmp;
 	}
 
-	leg->adv_sdp.len = sdp.len;
-	memcpy(leg->adv_sdp.s,sdp.s,sdp.len);
+	out_sdp->len = sdp.len;
+	memcpy(out_sdp->s,sdp.s,sdp.len);
 }
 
 static void dlg_update_callee_sdp(struct cell* t, int type,
@@ -759,7 +785,7 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 			return;
 		}
 
-		dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
+		dlg_update_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
@@ -813,7 +839,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 			return;
 		}
 
-		dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
+		dlg_update_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
@@ -964,7 +990,7 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 {
 	struct sip_msg *msg,*rpl;
 	struct dlg_cell *dlg;
-	str buffer,contact,sdp;
+	str buffer,contact;
 
 	dlg = (struct dlg_cell *)(*ps->param);
 
@@ -993,19 +1019,7 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 			return;
 		}
 
-		/* extract SDP */
-		if (get_body(msg,&sdp) < 0) {
-			LM_ERR("Failed to extract SDP from outgoing invite \n");
-			sdp.s = NULL;
-			sdp.len = 0;
-		}
-
-		if (shm_str_sync(&dlg->legs[DLG_CALLER_LEG].adv_sdp, &sdp) != 0) {
-			LM_ERR("No more shm \n");
-			free_sip_msg(msg);
-			pkg_free(msg);
-			return;
-		}
+		dlg_update_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 
 		/* extract the contact address */
 		if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
@@ -1054,7 +1068,7 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
+	dlg_update_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1085,7 +1099,7 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
+	dlg_update_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1137,7 +1151,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	struct sip_msg *msg;
 	struct dlg_cell *dlg;
 	struct dlg_leg *leg;
-	str buffer, contact, sdp;
+	str buffer, contact;
 
 	buffer.s = ((str*)ps->extra1)->s;
 	buffer.len = ((str*)ps->extra1)->len;
@@ -1171,18 +1185,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	/* store the caller SDP into each callee leg, useful for Re-INVITE pings */
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
 
-	if (get_body(msg,&sdp) < 0) {
-		LM_ERR("Failed to extract SDP from outgoing invite \n");
-		sdp.s = NULL;
-		sdp.len = 0;
-	}
-
-	/* TODO: fix for late negotiation ... */
-
-	if (shm_str_dup(&leg->adv_sdp, &sdp) != 0) {
-		LM_ERR("No more shm\n");
-		goto out_free;
-	}
+	dlg_update_sdp(dlg, DLG_CALLER_LEG, dlg->legs_no[DLG_LEGS_USED], msg);
 
         /* extract the contact address */
 	if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
@@ -1265,8 +1268,7 @@ static void dlg_update_contact_req(struct cell* t, int type, struct tmcb_params 
 static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
 		struct dlg_cell *dlg)
 {
-	if (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REQ) &&
-	    dlg_has_reinvite_pinging(dlg)) {
+	if (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REQ)) {
 		/* register out callback in order to save SDP */
 		if (d_tmb.register_tmcb(req, 0, TMCB_REQUEST_BUILT,
 				dlg_onreq_out, (void *)dlg, 0) <= 0)
@@ -1275,8 +1277,7 @@ static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
 			dlg->flags |= DLG_FLAG_REINVITE_PING_ENGAGED_REQ;
 	}
 
-	if (t && (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REPL) &&
-	          dlg_has_reinvite_pinging(dlg))) {
+	if (t && (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REPL))) {
 		if (d_tmb.register_tmcb(0, t, TMCB_RESPONSE_OUT,
 				dlg_onreply_out, (void *)dlg, 0) <= 0)
 			LM_ERR("can't register trace_onreply_out\n");
@@ -1782,24 +1783,22 @@ after_unlock5:
 					LM_ERR("failed to update inv cseq on leg %d\n",src_leg);
 				}
 
-				if (dlg_has_reinvite_pinging(dlg)) {
-					/* we need to update the SDP for this leg
-					and involve TM to update the SDP for the other side as well */
-					if(d_tmb.register_tmcb( req, 0, TMCB_REQUEST_BUILT,
-					(dir==DLG_DIR_UPSTREAM)?dlg_callee_reinv_onreq_out:dlg_caller_reinv_onreq_out,
-					(void *)dlg, 0) <=0) {
-						LM_ERR("can't register trace_onreq_out\n");
-						ok = 0;
-					}
+				/* we need to update the SDP for this leg
+				and involve TM to update the SDP for the other side as well */
+				if(d_tmb.register_tmcb( req, 0, TMCB_REQUEST_BUILT,
+				(dir==DLG_DIR_UPSTREAM)?dlg_callee_reinv_onreq_out:dlg_caller_reinv_onreq_out,
+				(void *)dlg, 0) <=0) {
+					LM_ERR("can't register trace_onreq_out\n");
+					ok = 0;
+				}
 
-					if (ok) {
-						ref_dlg( dlg , 1);
-						if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_OUT,
-						(dir==DLG_DIR_UPSTREAM)?dlg_update_caller_sdp:dlg_update_callee_sdp,
-						(void*)dlg, unreference_dialog)<0 ) {
-							LM_ERR("failed to register TMCB (2)\n");
-								unref_dlg( dlg , 1);
-						}
+				if (ok) {
+					ref_dlg( dlg , 1);
+					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_OUT,
+					(dir==DLG_DIR_UPSTREAM)?dlg_update_caller_sdp:dlg_update_callee_sdp,
+					(void*)dlg, unreference_dialog)<0 ) {
+						LM_ERR("failed to register TMCB (2)\n");
+							unref_dlg( dlg , 1);
 					}
 				}
 			}
