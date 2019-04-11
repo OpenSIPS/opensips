@@ -32,6 +32,7 @@
 #include "../reactor.h"
 #include "../timer.h"
 #include "../pt_load.h"
+#include "../cfg_reload.h"
 #include "net_udp.h"
 
 
@@ -261,6 +262,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	int read;
 
 	pt_become_active();
+
+	pre_run_handle_script_reload(fm->app_flags);
+
 	switch(fm->type){
 		case F_UDP_READ:
 			n = protos[((struct socket_info*)fm->data)->proto].net.
@@ -293,6 +297,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		if (reactor_is_empty())
 			dynamic_process_final_exit();
 	}
+
+	post_run_handle_script_reload();
 
 	pt_become_idle();
 	return n;
