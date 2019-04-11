@@ -101,5 +101,11 @@ int init_reactor_size(void);
 #define reactor_is_empty() \
 	(_worker_io.fd_no==0)
 
+#define reactor_set_app_flag( _type, _app_flag) \
+	io_set_app_flag( &_worker_io , _type, _app_flag)
+
+#define reactor_check_app_flag(_app_flag) \
+	io_check_app_flag( &_worker_io , _app_flag)
+
 #endif
 
