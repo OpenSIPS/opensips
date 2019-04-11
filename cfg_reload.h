@@ -21,8 +21,45 @@
 #ifndef __OSS_CFG_RELOAD_H__
 #define __OSS_CFG_RELOAD_H__
 
+#define REACTOR_RELOAD_TAINTED_FLAG   (1<<1)
+
+extern int _running_old_script;
+extern int _have_old_script;
+
 int init_script_reload(void);
 
 int reload_routing_script(void);
+
+/* sets as active the old/previous cfg (after a reload) */
+void reload_swap_old_script(void);
+
+/* sets as active the current cfg (after a reload) */
+void reload_swap_current_script(void);
+
+/* frees the in-memory old/previous script (after a reload) */
+void reload_free_old_cfg(void);
+
+#define pre_run_handle_script_reload(_flags) \
+	do { \
+		if ( _have_old_script && (_flags)&REACTOR_RELOAD_TAINTED_FLAG ) { \
+			LM_DBG("triggered FD requires old/prev cfg, switching\n"); \
+			reload_swap_old_script();\
+			_running_old_script = 1; \
+		} \
+	}while(0)
+
+#define post_run_handle_script_reload(_flags) \
+	do { \
+		if ( _have_old_script ) { \
+			if ( _running_old_script ) {\
+				reload_swap_current_script(); \
+				_running_old_script = 0; \
+			} \
+			if (!reactor_check_app_flag(REACTOR_RELOAD_TAINTED_FLAG)) \
+				reload_free_old_cfg(); \
+		} \
+	}while(0)
+
+
 
 #endif /* __OSS_CFG_RELOAD_H__ */

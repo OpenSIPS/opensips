@@ -29,7 +29,9 @@
 #include "daemonize.h"
 #include "pt.h"
 #include "route.h"
+#include "reactor_defs.h"
 #include "cfg_pp.h"
+#include "cfg_reload.h"
 
 extern FILE *yyin;
 extern int yyparse();
@@ -64,6 +66,45 @@ int cfg_parse_only_routes = 0;
 /* scripting routes reload context */
 struct script_reload_ctx *srr_ctx = NULL;
 
+/* if currently we run an older version of the cfg, resulting form a recent
+ * reload - this just a santinel variable when (due async resume) we have to
+ * go back and use the old script (which was used for triggering the async)
+ * Of course, this is per process */
+int _running_old_script = 0;
+
+/* if we still keep the old/previous cfg (as a result of a recent reload)
+ * this will stay on as time as we have in memory the old script. When the
+ * old script is free, this will also be reset (also see the above comment) */
+int _have_old_script = 0;
+
+/* old/prev cfg - we may need to keep it in paralle with the new one in 
+ * order to properly complete the ongoing async operatation */
+static struct os_script_routes *prev_sr=NULL;
+
+static struct os_script_routes *swap_bk = NULL;
+
+
+
+void reload_swap_old_script(void)
+{
+	swap_bk = sroutes;
+	sroutes = prev_sr;
+}
+
+
+void reload_swap_current_script(void)
+{
+	sroutes = swap_bk;
+}
+
+
+void reload_free_old_cfg(void)
+{
+	LM_ERR("finally removing the old/prev cfg\n");
+	free_route_lists(prev_sr);
+	prev_sr = NULL;
+	_have_old_script = 0;
+}
 
 
 int init_script_reload(void)
@@ -280,10 +321,26 @@ static void routes_switch_per_proc(int sender, void *param)
 		return;
 	}
 
-	/* TODO - start the draining of the ongoign script related ops */
+	/* handle the async fd - mark them and see if we have any; if yes, 
+	 * then we need to keep the previous cfg until all the async are done */
+	reactor_set_app_flag( F_SCRIPT_ASYNC, REACTOR_RELOAD_TAINTED_FLAG);
+	reactor_set_app_flag(     F_FD_ASYNC, REACTOR_RELOAD_TAINTED_FLAG);
+	reactor_set_app_flag( F_LAUNCH_ASYNC, REACTOR_RELOAD_TAINTED_FLAG);
+
+	if (reactor_check_app_flag(REACTOR_RELOAD_TAINTED_FLAG)) {
+		/* we do have onlgoing aync fds */
+		LM_DBG("keeping previous cfg until all ongoing async complete\n");
+		prev_sr = sroutes;
+		_have_old_script = 1;
+	} else {
+		/* we can get rid of the script right away*/
+		LM_DBG("no ongoing async, freeing the previous cfg\n");
+		free_route_lists(sroutes);
+		prev_sr = NULL;
+		_have_old_script = 0;
+	}
 
 	/* swap the old route set with the new parsed set */
-	free_route_lists(sroutes);
 	sroutes = parsed_sr;
 	parsed_sr = NULL;
 }
@@ -437,3 +494,4 @@ error:
 		fclose(cfg_stream);
 	return -1;
 }
+
