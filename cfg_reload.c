@@ -236,6 +236,13 @@ static void routes_reload_per_proc(int sender, void *param)
 	LM_DBG("reload cmd received in process %d, with seq no %d\n",
 		process_no, seq_no);
 
+	if (_have_old_script) {
+		LM_ERR("cannot reload again as still having the previous cfg,"
+			" retry later\n");
+		srr_ctx->proc_status[process_no] = RELOAD_FAILED;
+		return;
+	}
+
 	lock_start_read(srr_ctx->rw_lock);
 
 	if (srr_ctx->seq_no==0 || srr_ctx->seq_no!=seq_no) {
