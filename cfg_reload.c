@@ -188,13 +188,11 @@ static inline void send_cmd_to_all_procs(ipc_rpc_f *rpc)
 {
 	int i;
 
-	/* FIXME - some issues here :
-	 *   1) we cannot reach the non-IPC procs, like module or att procs 
-	 *   2) be sure we do not IPC ourselves, but as reload is MI trigger, 
-	 *      this is ok, until MI procs will get IPC */
+	/* send it to all process with IPC and needing SCRIPT */
 
 	for( i=1 ; i<counted_max_processes ; i++) {
-		if ( (pt[i].flags&OSS_PROC_NO_IPC)==0 ) {
+		if ( (pt[i].flags&(OSS_PROC_NO_IPC|OSS_PROC_NEEDS_SCRIPT))==
+		OSS_PROC_NEEDS_SCRIPT ) {
 			if (ipc_send_rpc( i, rpc, (void*)(long)srr_ctx->seq_no)<0)
 				srr_ctx->proc_status[i] = RELOAD_FAILED;
 			else
@@ -210,7 +208,8 @@ static inline int check_status_of_all_procs(enum proc_reload_status min_status,
 	int i;
 
 	for( i=1 ; i<counted_max_processes ; i++) {
-		if ( (pt[i].flags&OSS_PROC_NO_IPC)==0 ) {
+		if ( (pt[i].flags&(OSS_PROC_NO_IPC|OSS_PROC_NEEDS_SCRIPT))==
+		OSS_PROC_NEEDS_SCRIPT ) {
 				if (srr_ctx->proc_status[i]<min_status ||
 				srr_ctx->proc_status[i]>max_status)
 					return -1;
