@@ -574,27 +574,27 @@ static int fix_filename(void** param)
 {
 	char* buffer;
 	void* tmp;
-	int param_len, ret, suffix_len;
+	int ret, suffix_len;
+	str *s = (str*)*param;
 
-	param_len = strlen((char*)*param);
 	if (strlen(allow_suffix) > strlen(deny_suffix)) {
 		suffix_len = strlen(allow_suffix);
 	} else {
 		suffix_len = strlen(deny_suffix);
 	}
 
-	buffer = pkg_malloc(param_len + suffix_len + 1);
+	buffer = pkg_malloc(s->len + suffix_len + 1);
 	if (!buffer) {
 		LM_ERR("no pkg memory left\n");
 		return -1;
 	}
 
-	strcpy(buffer, (char*)*param);
-	strcat(buffer, allow_suffix);
+	memcpy( buffer, s->s, s->len );
+	strcpy( buffer+s->len, allow_suffix);
 	tmp = buffer;
 	ret = load_fixup(&tmp, 1);
 
-	strcpy(buffer + param_len, deny_suffix);
+	strcpy( buffer+s->len, deny_suffix);
 	tmp = buffer;
 	ret |= load_fixup(&tmp, 2);
 
