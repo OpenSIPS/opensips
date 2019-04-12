@@ -1531,75 +1531,15 @@ timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actio
 		| ROUTE_TIMER error { yyerror("invalid timer_route statement"); }
 	;
 
-
 event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
-						i_tmp = 1;
-						while(sroutes->event[i_tmp].a!=0 && i_tmp<EVENT_RT_NO){
-							if (strcmp($3, sroutes->event[i_tmp].name)
-							== 0) {
-								LM_ERR("Script route <%s> redefined\n", $3);
-								YYABORT;
-							}
-							i_tmp++;
-						}
-
-						if (i_tmp == EVENT_RT_NO) {
-							yyerror("Too many event routes defined\n");
-							YYABORT;
-						}
-
-						sroutes->event[i_tmp].name = $3;
-						sroutes->event[i_tmp].mode = EV_ROUTE_SYNC;
-
+						i_tmp = get_script_route_idx($3, sroutes->event,
+								EVENT_RT_NO,1);
+						if (i_tmp==-1) YYABORT;
 						push($6, &sroutes->event[i_tmp].a);
 					}
-		| ROUTE_EVENT LBRACK route_name COMMA SYNC_TOKEN RBRACK LBRACE actions RBRACE {
-
-						i_tmp = 1;
-						while(sroutes->event[i_tmp].a!=0 && i_tmp<EVENT_RT_NO){
-							if (strcmp($3, sroutes->event[i_tmp].name)
-							== 0) {
-								LM_ERR("Script route <%s> redefined\n", $3);
-								YYABORT;
-							}
-							i_tmp++;
-						}
-
-						if (i_tmp == EVENT_RT_NO) {
-							yyerror("Too many event routes defined\n");
-							YYABORT;
-						}
-
-						sroutes->event[i_tmp].name = $3;
-						sroutes->event[i_tmp].mode = EV_ROUTE_SYNC;
-
-						push($8, &sroutes->event[i_tmp].a);
-					}
-		| ROUTE_EVENT LBRACK route_name COMMA ASYNC_TOKEN RBRACK LBRACE actions RBRACE {
-
-						i_tmp = 1;
-						while (sroutes->event[i_tmp].a!=0 &&
-						i_tmp<EVENT_RT_NO) {
-							if (strcmp($3, sroutes->event[i_tmp].name)
-							== 0) {
-								LM_ERR("Script route <%s> redefined\n", $3);
-								YYABORT;
-							}
-							i_tmp++;
-						}
-
-						if (i_tmp == EVENT_RT_NO) {
-							yyerror("Too many event routes defined\n");
-							YYABORT;
-						}
-
-						sroutes->event[i_tmp].name = $3;
-						sroutes->event[i_tmp].mode = EV_ROUTE_ASYNC;
-
-						push($8, &sroutes->event[i_tmp].a);
-					}
-		| ROUTE_EVENT error { yyerror("invalid event_route statement"); }
+		| ROUTE_EVENT error { yyerror("invalid timer_route statement"); }
 	;
+
 
 
 exp:	exp AND exp 	{ $$=mk_exp(AND_OP, $1, $3); }

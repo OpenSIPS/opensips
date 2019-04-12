@@ -50,16 +50,6 @@ struct script_timer_route{
 	struct action* a;
 };
 
-#define EV_ROUTE_SYNC  0
-#define EV_ROUTE_ASYNC 1
-
-struct script_event_route{
-	char *name;
-	int mode;
-	struct action *a;
-};
-
-
 struct os_script_routes {
 	/* request routing script table  */
 	struct script_route request[RT_NO];
@@ -78,7 +68,7 @@ struct os_script_routes {
 	/* timer route */
 	struct script_timer_route timer[TIMER_RT_NO];
 	/* event route */
-	struct script_event_route event[EVENT_RT_NO];
+	struct script_route event[EVENT_RT_NO];
 };
 
 

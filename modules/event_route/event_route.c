@@ -39,11 +39,9 @@
  * module functions
  */
 static int mod_init(void);
-static void destroy(void);
 static int child_init(int rank);
 static int scriptroute_fetch(struct sip_msg *msg, char *list);
 static int fixup_scriptroute_fetch(void **param, int param_no);
-
 
 /**
  * exported functions
@@ -53,12 +51,8 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 							 evi_reply_sock *sock, evi_params_t * params);
 static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static str scriptroute_print(evi_reply_sock *sock);
-static inline int get_script_event_route_ID_by_name(char* name, struct script_event_route *sr, int size);
 
 #define SR_SOCK_ROUTE(_s) ((int)(unsigned long)(_s->params))
-#define EVENT_ROUTE_MODE_SEP '/'
-#define EVENT_ROUTE_SYNC  0
-#define EVENT_ROUTE_ASYNC 1
 
 /**
  *  * module process
@@ -76,10 +70,6 @@ static cmd_export_t cmds[]={
 	{0,0,0,0,0,0}
 };
 
-static param_export_t params[] = {
-	{0, 0, 0}
-};
-
 /**
  * module exports
  */
@@ -91,7 +81,7 @@ struct module_exports exports= {
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,					/* exported functions */
 	0,						/* exported async functions */
-	params,						/* exported parameters */
+	0,						/* exported parameters */
 	0,						/* exported statistics */
 	0,						/* exported MI functions */
 	0,						/* exported pseudo-variables */
@@ -99,7 +89,7 @@ struct module_exports exports= {
 	procs,					/* extra processes */
 	mod_init,				/* module initialization function */
 	0,						/* response handling function */
-	destroy,				/* destroy function */
+	0,						/* destroy function */
 	child_init,				/* per-child init function */
 	0						/* reload confirm function */
 };
@@ -130,36 +120,16 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (create_pipe() < 0) {
-		LM_ERR("cannot create communication pipe\n");
-		return -1;
-	}
-
 	return 0;
 }
 
-/*
- * destroy function
- */
-static void destroy(void)
-{
-	LM_NOTICE("destroy module ...\n");
-	/* closing sockets */
-	destroy_pipe();
-}
 
 static int child_init(int rank)
 {
-
 	char buffer[EV_SCRIPTROUTE_MAX_SOCK];
 	str sock_name;
 	str event_name;
 	int idx;
-
-	if (init_writer() < 0) {
-		LM_ERR("cannot init writing pipe\n");
-		return -1;
-	}
 
 	/*
 	 * Only the first process registers the subscribers
@@ -197,29 +167,6 @@ static int child_init(int rank)
 		memcpy(buffer + sizeof(SCRIPTROUTE_NAME), event_name.s, event_name.len);
 		sock_name.len = event_name.len + sizeof(SCRIPTROUTE_NAME);
 
-		if (sock_name.len + sroutes->event[idx].mode+4 /*"sync"*/
-				+1 /*'/'*/ > EV_SCRIPTROUTE_MAX_SOCK) {
-			LM_ERR("not enough room in socket name buffer\n");
-			return -1;
-		}
-
-		sock_name.s[sock_name.len++] = EVENT_ROUTE_MODE_SEP;
-		switch (sroutes->event[idx].mode) {
-			case 0: /*sync*/
-				memcpy(sock_name.s+sock_name.len, "sync", 4);
-				sock_name.len += 4;
-				break;
-			case 1: /*async*/
-				memcpy(sock_name.s+sock_name.len, "async", 5);
-				sock_name.len += 5;
-				break;
-			default:
-				LM_ERR("invalid route mode value (%d)\n!"
-					"Possibility of memory corruption\n",
-						sroutes->event[idx].mode);
-				return -1;
-		}
-
 		/* register the subscriber - does not expire */
 		if (evi_event_subscribe(event_name, sock_name, 0, 0) < 0) {
 			LM_ERR("cannot subscribe to event %s\n", event_name.s);
@@ -245,68 +192,33 @@ static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 
 static evi_reply_sock* scriptroute_parse(str socket)
 {
-	#define SET_MSB(value, type) ((type)value << (sizeof(type) * 8 /*BYTE SIZE*/ - 1))
-
 	evi_reply_sock *sock = NULL;
 	static char *dummy_buffer = 0, *name;
-	int idx, mode=-1, name_len = 0;
-	char* mode_pos;
+	int idx;
 
 	if (!socket.len || !socket.s) {
 		LM_ERR("no socket specified\n");
 		return NULL;
 	}
 
-	mode_pos = q_memrchr(socket.s, EVENT_ROUTE_MODE_SEP, socket.len);
-	if (mode_pos == NULL)
-		mode = 0; /*default 'sync'*/
-	else
-		mode_pos++;
-
-	if (mode_pos) {
-		if (!strncmp(mode_pos, "sync", 4)) {
-			mode = 0;
-		} else if (!strncmp(mode_pos, "async", 5)) {
-			mode = 1;
-		} else {
-			LM_ERR("invalid sync/async mode\n");
-			return NULL;
-		}
-		name_len = socket.len-(mode/*if async add 1*/+4/*sync len*/+1/*'/'*/);
-		name = pkg_realloc(dummy_buffer, name_len + 1);
-	} else {
-		name_len = 0;
-		name = pkg_realloc(dummy_buffer, socket.len+1);
-	}
-
+	/* try to normalize the route name */
+	name = pkg_realloc(dummy_buffer, socket.len + 1);
 	if (!name) {
 		LM_ERR("no more pkg memory\n");
 		return NULL;
 	}
-
-
-	if (mode_pos) {
-		memcpy(name, socket.s, name_len);
-		name[name_len] = '\0';
-	} else {
-		memcpy(name, socket.s, socket.len);
-		name[socket.len] = '\0';
-	}
-
+	memcpy(name, socket.s, socket.len);
+	name[socket.len] = '\0';
 	dummy_buffer = name;
 
 	/* try to "resolve" the name of the route */
-	idx = get_script_event_route_ID_by_name(name,sroutes->event,EVENT_RT_NO);
+	idx = get_script_route_ID_by_name(name,sroutes->event,EVENT_RT_NO);
 	if (idx < 0) {
 		LM_ERR("cannot find route %s\n", name);
 		return NULL;
 	}
 
-	if (mode_pos)
-		sock = shm_malloc(sizeof(evi_reply_sock) + name_len + 1);
-	else
-		sock = shm_malloc(sizeof(evi_reply_sock) + socket.len + 1);
-
+	sock = shm_malloc(sizeof(evi_reply_sock) + socket.len + 1);
 	if (!sock) {
 		LM_ERR("no more memory for socket\n");
 		return NULL;
@@ -315,26 +227,16 @@ static evi_reply_sock* scriptroute_parse(str socket)
 
 	sock->address.s = (char *)(sock + 1);
 
-	if (mode_pos) {
-		memcpy(sock->address.s, name, name_len + 1);
-		sock->address.len = name_len;
-	} else {
-		memcpy(sock->address.s, name, socket.len + 1);
-		sock->address.len = socket.len;
-	}
+	memcpy(sock->address.s, name, socket.len+1);
+	sock->address.len = socket.len;
 
 	sock->params = (void *)(unsigned long)idx;
-	sock->params = (void *)((unsigned long)sock->params |
-					SET_MSB(mode, unsigned long));
-
 	sock->flags |= EVI_PARAMS;
 
-	LM_DBG("route is <%.*s> idx %d mode %s\n", sock->address.len, sock->address.s, idx, mode==0?"snyc":"async");
+	LM_DBG("route is <%.*s> idx %d\n", sock->address.len, sock->address.s, idx);
 	sock->flags |= EVI_ADDRESS;
 
 	return sock;
-
-	#undef SET_MSB
 }
 
 static str scriptroute_print(evi_reply_sock *sock)
@@ -350,15 +252,7 @@ str *event_name = NULL; // mostly used for debugging
 static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 							 evi_reply_sock *sock, evi_params_t *params)
 {
-	#define GET_MSB(value, type) ((type)((type)value & (((type)1 << (sizeof(type) * 8 /*BYTE SIZE*/ - 1)))))
-	#define UNSET_MSB(value, type) ((type)value & (~((type)1 << (sizeof(type) * 8  - 1))))
-	#define SET_MSB(value, type) ((type)value << (sizeof(type) * 8 /*BYTE SIZE*/ - 1))
-
-	evi_params_t * backup_params;
-	str * backup_name;
 	route_send_t *buf = NULL;
-	int sync_mode;
-
 
 	if (!sock || !(sock->flags & EVI_PARAMS)) {
 		LM_ERR("no socket found\n");
@@ -371,47 +265,16 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 		return -1;
 	}
 
-	sync_mode = GET_MSB(sock->params, unsigned long) ? 0 : 1;
-	sock->params = (void*)UNSET_MSB(sock->params, unsigned long);
-
-	if (sync_mode) {
-		if (exports.procs)
-			exports.procs = 0;
-
-		/* save the previous parameters */
-		backup_params = parameters;
-		backup_name = event_name;
-
-		parameters = params;
-		event_name = ev_name;
-
-		run_top_route(sroutes->event[SR_SOCK_ROUTE(sock)].a, msg);
-
-		/* restore previous parameters */
-		parameters = backup_params;
-		event_name = backup_name;
-
-	} else {
-		if (route_build_buffer(ev_name, sock, params, &buf) < 0) goto reset_msb;
-		buf->a = sroutes->event[SR_SOCK_ROUTE(sock)].a;
-
-		if (route_send(buf) < 0) goto reset_msb;
-
-		sock->params = (void *)((unsigned long)sock->params |
-						SET_MSB(1, unsigned long));
+	if (route_build_buffer(ev_name, sock, params, &buf) < 0) {
+		LM_ERR("failed to serialize event route triggering\n");
+		return -1;
 	}
+	buf->a = sroutes->event[SR_SOCK_ROUTE(sock)].a;
+
+	if (route_send(buf) < 0)
+		return -1;
 
 	return 0;
-
-
-reset_msb:
-	sock->params = (void *)((unsigned long)sock->params |
-					SET_MSB(1, unsigned long));
-	return -1;
-
-	#undef GET_MSB
-	#undef UNSET_MSB
-	#undef SET_MSB
 }
 
 struct scriptroute_params {
@@ -598,18 +461,4 @@ error:
 		shm_free(elem);
 	}
 	return E_CFG;
-}
-
-static inline int get_script_event_route_ID_by_name(char* name, struct script_event_route *sr, int size)
-{
-	unsigned int i;
-
-	for (i=1;i<size;i++) {
-		if (sr[i].name==0)
-			return -1;
-		if (strcmp(sr[i].name, name) == 0)
-			return i;
-	}
-
-	return -1;
 }
