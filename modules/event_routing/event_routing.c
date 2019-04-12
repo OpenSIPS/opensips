@@ -36,6 +36,7 @@ static int fixup_notify(void** param, int param_no);
 static int fixup_wait(void** param, int param_no);
 
 static int mod_init(void);
+static int cfg_validate(void);
 static int notify_on_event(struct sip_msg *msg, void *ev, void *avp_filter,
 	void *route, void *timeout);
 static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
@@ -121,7 +122,7 @@ struct module_exports exports= {
 	/* per-child init function */
 	NULL,
 	/* reload confirm function */
-	NULL
+	cfg_validate
 };
 
 
@@ -177,6 +178,18 @@ static int mod_init(void)
 	}
 
 	return 0;
+}
+
+
+static int cfg_validate(void)
+{
+	if ( ebr_tmb.t_gett==NULL && is_script_func_used("notify_on_event",-1)) {
+		LM_ERR("notify_on_event() was found, but module started without TM "
+			"support/biding, better restart\n");
+		return 0;
+	}
+
+	return 1;
 }
 
 

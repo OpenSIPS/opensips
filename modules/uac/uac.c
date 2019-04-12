@@ -87,7 +87,9 @@ static int fixup_replace_uri(void** param, int param_no);
 static int fixup_replace_disp_uri(void** param, int param_no);
 static int mod_init(void);
 static void mod_destroy(void);
+static int cfg_validate(void);
 
+static int uac_does_replace = 0;
 
 /* Exported functions */
 static cmd_export_t cmds[]={
@@ -171,7 +173,7 @@ struct module_exports exports= {
 	(response_function) 0,
 	mod_destroy,
 	0,          /* per-child init function */
-	0           /* reload confirm function */
+	cfg_validate/* reload confirm function */
 };
 
 
@@ -293,6 +295,7 @@ static int mod_init(void)
 
 		/* init from replacer */
 		init_from_replacer();
+		uac_does_replace = 1;
 	}
 
 	if (is_script_func_used("uac_auth", -1)) {
@@ -331,6 +334,31 @@ static void mod_destroy(void)
 	return;
 }
 
+
+static int cfg_validate(void)
+{
+	/* if the 'uac_auth' func is used, be sure the uac_auth API was loaded */
+	if ( is_script_func_used("uac_auth", -1) ) {
+		if (uac_auth_api._do_uac_auth==NULL) {
+			LM_ERR("uac_auth() was found, but module started without support "
+				"for it, better restart\n");
+			return 0;
+		}
+	}
+
+	/* if the 'uac_replace_*' funcs are used, be sure the support for
+	 * replacing was initialized */
+	if ( is_script_func_used("uac_replace_from", -1) ||
+	is_script_func_used("uac_replace_to", -1) ) {
+		if (!uac_does_replace) {
+			LM_ERR("uac_replace_*() was found, but module started without "
+				"support for replacing, better restart\n");
+			return 0;
+		}
+	}
+
+	return 1;
+}
 
 
 /************************** fixup functions ******************************/

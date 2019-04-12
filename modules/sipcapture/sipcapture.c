@@ -237,6 +237,7 @@ static int mod_init(void);
 static int child_init(int rank);
 static void raw_socket_process(int rank);
 static void destroy(void);
+static int cfg_validate(void);
 static int sip_capture(struct sip_msg *msg, char *s1,
                        char *s2, char *s3, char *s4);
 static int async_sip_capture(struct sip_msg* msg, async_ctx *actx, char *s1,
@@ -721,7 +722,7 @@ struct module_exports exports = {
 	0,          /*!< response function */
 	destroy,    /*!< destroy function */
 	child_init,  /*!< child initialization function */
-	0            /*!< reload confirm function */
+	cfg_validate /*!< reload confirm function */
 };
 
 static int parse_hep_route(char *val)
@@ -1088,6 +1089,38 @@ error:
 	if(raw_sock_desc) close(raw_sock_desc);
 	return -1;
 #endif
+}
+
+
+static int cfg_validate(void)
+{
+	if (hep_capture_on) {
+		/* db_url is mandatory if sip_capture is used */
+		if (((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1)) ||
+				hep_route_id == HEP_NO_ROUTE) ||
+			(is_script_func_used("report_capture", -1) ||
+				is_script_async_func_used("report_capture", -1)))
+		{
+			if (db_funcs.insert==NULL) {
+				LM_ERR("sip_capture() found in new script, but the module "
+					"did not initalized the DB conn, better restart\n");
+				return 0;
+			}
+		}
+	} else {
+		if ((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1)))
+		{
+			if (db_funcs.insert==NULL) {
+				LM_ERR("sip_capture() found in new script, but the module "
+					"did not initalized the DB conn, better restart\n");
+				return 0;
+			}
+		}
+	}
+
+	return 1;
 }
 
 

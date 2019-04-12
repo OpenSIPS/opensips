@@ -78,6 +78,7 @@ static char* rest_id_s = "rest";
 static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy(void);
+static int cfg_validate(void);
 
 /*
  * Fixup functions
@@ -191,7 +192,7 @@ struct module_exports exports = {
 	NULL,     /* response function*/
 	mod_destroy,
 	child_init, /* per-child init function */
-	0         /* reload confirm function */
+	cfg_validate/* reload confirm function */
 };
 
 /*
@@ -325,6 +326,23 @@ static int mod_init(void)
 
 	return 0;
 }
+
+
+static int cfg_validate(void)
+{
+	/* if TLS_MGM was already load, we are fine */
+	if (tls_api.find_server_domain)
+		return 1;
+
+	if (is_script_func_used("rest_init_client_tls", -1)) {
+		LM_ERR("rest_init_client_tls() was found, but module started "
+			"without TLS support, better restart\n");
+		return 0;
+	}
+
+	return 1;
+}
+
 
 static int child_init(int rank)
 {
