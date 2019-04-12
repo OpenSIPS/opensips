@@ -131,7 +131,8 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	destroy,    /* destroy function */
-	child_init  /* child initialization function */
+	child_init, /* child initialization function */
+	0           /* reload confirm function */
 };
 
 static int child_init(int rank)

@@ -261,6 +261,7 @@ struct module_exports exports = {
 	0,
 	mod_destroy, /* destroy function */
 	child_init,  /* Per-child init function */
+	0            /* reload confirm function */
 };
 
 

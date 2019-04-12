@@ -502,7 +502,8 @@ struct module_exports exports = {
 	mod_init,
 	0,           /* reply processing */
 	mod_destroy, /* destroy function */
-	child_init
+	child_init,
+	0            /* reload confirm function */
 };
 
 int msg_has_sdp(struct sip_msg *msg)

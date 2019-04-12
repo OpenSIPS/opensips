@@ -340,6 +340,7 @@ struct module_exports exports= {
 	(response_function) 0,
 	(destroy_function) destroy,
 	ds_child_init, /* per-child init function */
+	0              /* reload confirm function */
 };
 
 

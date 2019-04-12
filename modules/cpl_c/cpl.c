@@ -208,7 +208,8 @@ struct module_exports exports = {
 	cpl_init, /* Module initialization function */
 	(response_function) 0,
 	(destroy_function) cpl_exit,
-	(child_init_function) cpl_child_init /* per-child init function */
+	(child_init_function) cpl_child_init, /* per-child init function */
+	0         /* reload confirm function */
 };
 
 

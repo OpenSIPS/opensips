@@ -114,7 +114,8 @@ struct module_exports exports = {
 	redirect_init, /* Module initialization function */
 	(response_function) 0,
 	(destroy_function) 0,
-	(child_init_function) 0 /* per-child init function */
+	(child_init_function) 0, /* per-child init function */
+	0                        /* reload confirm function */
 };
 
 

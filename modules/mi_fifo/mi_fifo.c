@@ -104,7 +104,8 @@ struct module_exports exports = {
 	mi_mod_init,                   /* module initialization function */
 	(response_function) 0,         /* response handling function */
 	(destroy_function) mi_destroy, /* destroy function */
-	0                              /* per-child init function */
+	0,                             /* per-child init function */
+	0                              /* reload confirm function */
 };
 
 

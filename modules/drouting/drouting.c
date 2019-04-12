@@ -571,7 +571,8 @@ struct module_exports exports = {
 	dr_init,         /* Module initialization function */
 	(response_function) 0,
 	(destroy_function) dr_exit,
-	(child_init_function) dr_child_init /* per-child init function */
+	(child_init_function) dr_child_init, /* per-child init function */
+	0                /* reload confirm function */
 };
 
 

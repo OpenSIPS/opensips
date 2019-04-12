@@ -118,7 +118,8 @@ struct module_exports exports= {
 	pike_init,   /* module initialization function */
 	(response_function) 0,
 	(destroy_function) pike_exit,   /* module exit function */
-	0  /* per-child init function */
+	0,           /* per-child init function */
+	0            /* reload confirm function */
 };
 
 

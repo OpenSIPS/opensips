@@ -67,6 +67,7 @@ typedef  int (*response_function)(struct sip_msg*);
 typedef void (*destroy_function)();
 typedef int (*init_function)(void);
 typedef int (*child_init_function)(int rank);
+typedef int (*reload_confirm_function)(void);
 
 
 #define STR_PARAM        (1U<<0)  /* String parameter type */
@@ -206,6 +207,9 @@ struct module_exports{
 	                                   be "destroyed", e.g: on opensips exit */
 	child_init_function init_child_f;/*!< function called by all processes
 	                                    after the fork */
+	reload_confirm_function reload_ack_f;/*!< function called during a script
+	                                    reload in order to confirm if the 
+	                                    module agrees with the new script */
 };
 
 void set_mpath(const char *new_mpath);

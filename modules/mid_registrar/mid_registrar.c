@@ -205,7 +205,8 @@ struct module_exports exports= {
 	mod_init,        /* module initialization function */
 	NULL,               /* reply processing function */
 	NULL,
-	NULL       /* per-child init function */
+	NULL,       /* per-child init function */
+	NULL        /* reload confirm function */
 };
 
 /*! \brief

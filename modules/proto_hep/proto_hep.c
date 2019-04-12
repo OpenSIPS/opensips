@@ -183,6 +183,7 @@ struct module_exports exports = {
 	0,          /* response function */
 	destroy,	/* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 static int mod_init(void)

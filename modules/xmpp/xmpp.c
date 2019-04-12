@@ -180,6 +180,7 @@ struct module_exports exports = {
 	0,               /* Response function */
 	destroy,         /* Destroy function */
 	child_init,      /* Child init function */
+	0                /* reload confirm function */
 };
 
 /*

@@ -119,6 +119,8 @@ struct module_exports exports= {
 	/* destroy function */
 	NULL,
 	/* per-child init function */
+	NULL,
+	/* reload confirm function */
 	NULL
 };
 

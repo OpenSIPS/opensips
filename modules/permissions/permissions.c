@@ -222,7 +222,8 @@ struct module_exports exports = {
 	mod_init,  /* module initialization function */
 	0,         /* response function */
 	mod_exit,  /* destroy function */
-	child_init /* child initialization function */
+	child_init,/* child initialization function */
+	0          /* reload confirm function */
 };
 
 

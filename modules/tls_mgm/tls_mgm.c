@@ -374,6 +374,7 @@ struct module_exports exports = {
 	0,          /* response function */
 	mod_destroy,/* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 

@@ -105,6 +105,7 @@ struct module_exports exports =
 	NULL,
 	NULL,
 	NULL,
+	NULL              /* reload confirm function */
 };
 
 int mod_init(void)

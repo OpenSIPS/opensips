@@ -406,7 +406,8 @@ struct module_exports exports= {
 	mod_init,  /* module initialization function */
 	(response_function) reply_received,
 	(destroy_function) tm_shutdown,
-	child_init /* per-child init function */
+	child_init,/* per-child init function */
+	0          /* reload confirm function */
 };
 
 

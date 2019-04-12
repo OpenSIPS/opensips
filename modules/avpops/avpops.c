@@ -232,7 +232,9 @@ struct module_exports exports = {
 	avpops_init,/* Module initialization function */
 	(response_function) 0,
 	(destroy_function) 0,
-	(child_init_function) avpops_child_init /* per-child init function */
+	(child_init_function) avpops_child_init, /* per-child init function */
+	0,          /* reload confirm function */
+	0           /* reload confirm function */
 };
 
 

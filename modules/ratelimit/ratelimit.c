@@ -214,7 +214,8 @@ struct module_exports exports= {
 	mod_init,			/* module initialization function */
 	0,
 	mod_destroy,		/* module exit function */
-	mod_child			/* per-child init function */
+	mod_child,			/* per-child init function */
+	0					/* reload confirm function */
 };
 
 

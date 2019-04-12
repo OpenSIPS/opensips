@@ -204,6 +204,7 @@ struct module_exports proto_tcp_exports = {
 	0,          /* response function */
 	0,          /* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 static int proto_tcp_init(struct proto_info *pi)
