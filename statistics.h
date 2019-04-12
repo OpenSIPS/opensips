@@ -240,5 +240,6 @@ extern gen_lock_t *stat_lock;
 	#define if_reset_stat( _c, _var)
 #endif /*STATISTICS*/
 
+#define inc_stat(_var) update_stat(_var, 1)
 
 #endif

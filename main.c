@@ -139,6 +139,7 @@
 #include "version.h"
 #include "mi/mi_core.h"
 #include "db/db_insertq.h"
+#include "cachedb/cachedb.h"
 #include "net/trans.h"
 
 #include "test/unit_tests.h"
@@ -1214,7 +1215,10 @@ try_again:
 	}
 
 	/* init the resolver, before fixing the config */
-	resolv_init();
+	if (resolv_init() != 0) {
+		LM_ERR("failed to init DNS resolver\n");
+		return -1;
+	}
 
 	fix_poll_method( &io_poll_method );
 
@@ -1393,6 +1397,18 @@ try_again:
 		goto error;
 	}
 
+	/* init SQL DB support */
+	if (init_db_support() != 0) {
+		LM_ERR("failed to initialize SQL database support\n");
+		goto error;
+	}
+
+	/* init CacheDB support */
+	if (init_cdb_support() != 0) {
+		LM_ERR("failed to initialize CacheDB support\n");
+		goto error;
+	}
+
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
@@ -1415,17 +1431,6 @@ try_again:
 	if(pv_contextlist_check() != 0) {
 		LM_ERR("used pv context that was not defined\n");
 		goto error;
-	}
-
-	/* init query list now in shm
-	 * so all processes that will be forked from now on
-	 * will have access to it
-	 *
-	 * if it fails, give it a try and carry on */
-	if (init_ql_support() != 0) {
-		LM_ERR("failed to initialise buffering query list\n");
-		query_buffer_size = 0;
-		*query_list = NULL;
 	}
 
 	/* init multi processes support */

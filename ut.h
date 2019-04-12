@@ -1023,16 +1023,33 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 
 #define start_expire_timer(begin,threshold) \
 	do { \
-		if ((threshold))	\
+		if (threshold)	\
 			gettimeofday(&(begin), NULL); \
 	} while(0) \
 
-#define stop_expire_timer(begin,threshold,func_info,extra_s,extra_len,tcp) \
+#define __stop_expire_timer(begin,threshold,func_info, \
+                           extra_s,extra_len,tcp,_slow_stat) \
 	do { \
-		if ((threshold)) \
-			log_expiry(get_time_diff(&(begin)),(threshold),(func_info),(extra_s),(extra_len),tcp); \
+		int __usdiff__ = get_time_diff(&(begin)); \
+		if ((threshold) && __usdiff__ > (threshold)) { \
+			log_expiry(__usdiff__,(threshold),(func_info), \
+			           (extra_s),(extra_len),tcp); \
+			if (_slow_stat) \
+				inc_stat(_slow_stat); \
+		} \
 	} while(0)
 
+#define stop_expire_timer(begin,threshold,func_info,extra_s,extra_len,tcp) \
+	__stop_expire_timer(begin,threshold,func_info, \
+	                   extra_s,extra_len,tcp,(stat_var *)NULL)
+
+#define _stop_expire_timer(begin,threshold,func_info,extra_s,extra_len,tcp, \
+							slow, total) \
+	do { \
+		__stop_expire_timer(begin,threshold,func_info, \
+							extra_s,extra_len,tcp,slow); \
+		inc_stat(total); \
+	} while (0)
 
 
 int tcp_timeout_con_get;

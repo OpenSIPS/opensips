@@ -205,8 +205,9 @@ static int remove_chunk_f(struct sip_msg* msg, char* collection, char* glob)
 					LM_ERR("No more pkg mem\n");
 					key_buff_size = 0;
 					lock_release(&cache_htable[i].lock);
-					stop_expire_timer(start,local_exec_threshold,
-					"cachedb_local remove_chunk",pat->s,pat->len,0);
+					_stop_expire_timer(start,local_exec_threshold,
+						"cachedb_local remove_chunk",pat->s,pat->len,0,
+						cdb_slow_queries, cdb_total_queries);
 					return -1;
 				}
 
@@ -237,8 +238,9 @@ static int remove_chunk_f(struct sip_msg* msg, char* collection, char* glob)
 		lock_release(&cache_htable[i].lock);
 	}
 
-	stop_expire_timer(start,local_exec_threshold,
-	"cachedb_local remove_chunk",pat->s,pat->len,0);
+	_stop_expire_timer(start,local_exec_threshold,
+		"cachedb_local remove_chunk",pat->s,pat->len,0,
+		cdb_slow_queries, cdb_total_queries);
 	return 1;
 }
 
