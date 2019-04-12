@@ -129,8 +129,8 @@ static int w_is_avp_set(struct sip_msg* msg, char* param, char *foo);
 static acmd_export_t acmds[] = {
 	{"avp_db_query", (acmd_function)w_async_dbquery_avps, {
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_pvname_list, fixup_free_pvname_list},
-		{CMD_PARAM_INT, fixup_db_id_async, fixup_free_pkg}, {0, 0, 0}}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND, fixup_pvname_list, fixup_free_pvname_list},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_id_async, fixup_free_pkg}, {0, 0, 0}}},
 	{0, 0, {{0, 0, 0}}}
 };
 
@@ -166,8 +166,8 @@ static cmd_export_t cmds[] = {
 
 	{"avp_db_query", (cmd_function)w_dbquery_avps, {
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_pvname_list, fixup_free_pvname_list},
-		{CMD_PARAM_INT, fixup_db_id_sync, fixup_free_pkg}, {0, 0, 0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND, fixup_pvname_list, fixup_free_pvname_list},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_id_sync, fixup_free_pkg}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
