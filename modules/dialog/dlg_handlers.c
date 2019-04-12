@@ -845,6 +845,11 @@ static void dlg_seq_down_onreply_mod_cseq(struct cell* t, int type,
 	return;
 }
 
+static void free_final_cseq(void *cseq)
+{
+	shm_free(cseq);
+}
+
 static void fix_final_cseq(struct cell *t,int type,
 									struct tmcb_params *param)
 {
@@ -855,8 +860,6 @@ static void fix_final_cseq(struct cell *t,int type,
 
 	if (update_msg_cseq((struct sip_msg *)param->rpl,&cseq,0) != 0)
 		LM_ERR("failed to update CSEQ in msg\n");
-
-	shm_free(cseq.s);
 
 	return ;
 }
@@ -1648,7 +1651,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
 				fix_final_cseq,
-				(void*)final_cseq, 0)<0 ) {
+				(void*)final_cseq, free_final_cseq)<0 ) {
 					LM_ERR("failed to register TMCB (2)\n");
 				}
 			}
