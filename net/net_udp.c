@@ -350,7 +350,8 @@ static int fork_dynamic_udp_process(void *si_filter)
 	struct socket_info *si = (struct socket_info*)si_filter;
 	int p_id;
 
-	if ((p_id=internal_fork( "UDP receiver", OSS_PROC_DYNAMIC, TYPE_UDP))<0) {
+	if ((p_id=internal_fork( "UDP receiver",
+	OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT, TYPE_UDP))<0) {
 		LM_CRIT("cannot fork UDP process\n");
 		return(-1);
 	} else if (p_id==0) {
@@ -446,7 +447,8 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 			for (i=0;i<si->workers;i++) {
 				(*chd_rank)++;
-				if ( (p_id=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
+				if ( (p_id=internal_fork( "UDP receiver",
+				OSS_PROC_NEEDS_SCRIPT, TYPE_UDP))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
 				} else if (p_id==0) {

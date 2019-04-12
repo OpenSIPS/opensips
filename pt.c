@@ -325,6 +325,12 @@ int internal_fork(char *proc_desc, unsigned int flags,
 		/* set attributes */
 		set_proc_attrs(proc_desc);
 		tcp_connect_proc_to_tcp_main( process_no, 1);
+
+		/* free the script if not needed */
+		if (!(flags&OSS_PROC_NEEDS_SCRIPT) && sroutes) {
+			free_route_lists(sroutes);
+			sroutes = NULL;
+		}
 		return 0;
 	}else{
 		/* parent process */

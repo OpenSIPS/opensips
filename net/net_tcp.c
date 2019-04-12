@@ -1907,7 +1907,8 @@ static int fork_dynamic_tcp_process(void *foo)
 		return -1;
 	}
 
-	if((p_id=internal_fork("SIP receiver TCP", OSS_PROC_DYNAMIC, TYPE_TCP))<0){
+	if((p_id=internal_fork("SIP receiver TCP",
+	OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT, TYPE_TCP))<0){
 		LM_ERR("cannot fork dynamic TCP worker process\n");
 		return(-1);
 	}else if (p_id==0){
@@ -2024,7 +2025,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	/* start the TCP workers */
 	for(r=0; r<tcp_workers_no; r++){
 		(*chd_rank)++;
-		p_id=internal_fork("SIP receiver TCP", 0, TYPE_TCP);
+		p_id=internal_fork("SIP receiver TCP", OSS_PROC_NEEDS_SCRIPT,TYPE_TCP);
 		if (p_id<0){
 			LM_ERR("fork failed\n");
 			goto error;
