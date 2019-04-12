@@ -256,5 +256,7 @@ int count_module_procs(int flags);
 /*! \brief Forks and starts the additional processes required by modules */
 int start_module_procs(void);
 
+/*! \brief Runs the reload validation function from all modules */
+int modules_validate_reload(void);
 
 #endif

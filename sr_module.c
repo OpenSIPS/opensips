@@ -811,3 +811,23 @@ int start_module_procs(void)
 
 	return 0;
 }
+
+
+int modules_validate_reload(void)
+{
+	struct sr_module *m;
+	int ret = 1;
+
+	for( m=modules ; m ; m=m->next) {
+		if (m->exports->reload_ack_f==NULL)
+			continue;
+		if (!m->exports->reload_ack_f()) {
+			LM_ERR("module <%s> did not validated the cfg file\n",
+				m->exports->name);
+			ret = 0;
+		}
+	}
+
+	return ret;
+}
+

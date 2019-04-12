@@ -425,8 +425,12 @@ int reload_routing_script(void)
 		goto error;
 	}
 
-	/* TODO - trigger module's callbacks to check if the reload of this 
+	/* trigger module's validation functions to check if the reload of this 
 	 * new route set is "approved" */
+	if (!modules_validate_reload()) {
+		LM_ERR("routes validation by modules failed, abording\n");
+		goto error;
+	}
 
 	/* we do not need the cfg, so free it and restore previous set of routes */
 	sroutes = sr_bk;
