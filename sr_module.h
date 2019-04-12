@@ -118,6 +118,7 @@ typedef int (*mod_proc_wrapper)();
 #define CMD_PARAM_OPT        (1<<4)  /* optional parameter */
 #define CMD_PARAM_FIX_NULL   (1<<5)  /* run fixup even if optional parameter is omitted */
 #define CMD_PARAM_NO_EXPAND  (1<<6)  /* TMPHACK: do not pv-expand strings */
+#define CMD_PARAM_STATIC	 (1<<7)  /* don't accept variables or formatted string */
 
 struct cmd_param {
 	int flags;              /* parameter flags */

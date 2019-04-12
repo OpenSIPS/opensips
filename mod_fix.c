@@ -165,10 +165,20 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 						goto error;
 					}
 				} else {
+					if (param->flags & CMD_PARAM_STATIC) {
+						LM_ERR("Param [%d] does not support formatted strings\n",i);
+						return E_CFG;
+					}
+
 					gp->pval = pve;
 					gp->type = GPARAM_TYPE_PVE;
 				}
 			} else if (elems[i].type == SCRIPTVAR_ST) {
+				if (param->flags & CMD_PARAM_STATIC) {
+					LM_ERR("Param [%d] does not support variables\n",i);
+					return E_CFG;
+				}
+
 				gp->pval = elems[i].u.data;
 				gp->type = GPARAM_TYPE_PVS;
 			} else {
