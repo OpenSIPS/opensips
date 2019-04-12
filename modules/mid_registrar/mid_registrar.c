@@ -133,14 +133,14 @@ str ctid_param = str_init("ctid");
 
 static cmd_export_t cmds[] = {
 	{"mid_registrar_save", (cmd_function)mid_reg_save, {
-		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"mid_registrar_lookup", (cmd_function)mid_reg_lookup, {
-		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},

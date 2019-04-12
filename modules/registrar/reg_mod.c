@@ -138,20 +138,20 @@ struct tm_binds tmb;
 
 static cmd_export_t cmds[] = {
 	{"save", (cmd_function)save, {
-		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
 	{"remove", (cmd_function)_remove, {
-		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
 	{"lookup", (cmd_function)lookup, {
-		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE},
@@ -159,17 +159,17 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_registered", (cmd_function)is_registered, {
-		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_contact_registered", (cmd_function)is_contact_registered, {
-		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_ip_registered", (cmd_function)is_ip_registered, {
-		{CMD_PARAM_STR, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
