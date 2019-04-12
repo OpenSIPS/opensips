@@ -697,6 +697,37 @@ void get_timeout_dlgs(struct dlg_ping_list **expired,
 	*expired = exp;
 }
 
+int dlg_handle_seq_reply(struct dlg_cell *dlg, struct sip_msg* rpl,
+		int statuscode, int leg)
+{
+	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (rpl == FAKED_REPLY || statuscode == 408) {
+		/* timeout occurred, nothing else to do now
+		 * next time timer fires, it will detect ping reply was not received
+		 */
+		LM_INFO("terminating dialog ( due to timeout ) "
+					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+		dlg->legs[leg].reply_received = DLG_PING_FAIL;
+		return -1;
+	}
+
+	if (statuscode == 481)
+	{
+		/* call/transaction does not exist
+		 * terminate the dialog */
+		LM_INFO("terminating dialog ( due to 481 ) "
+				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
+
+		dlg->legs[leg].reply_received = DLG_PING_FAIL;
+		return -1;
+	}
+
+	dlg->legs[leg].reply_received = DLG_PING_SUCCESS;
+	return 0;
+}
+
+
 void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 {
 	struct sip_msg *rpl;
@@ -718,30 +749,7 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 	statuscode = ps->code;
 	dlg = *(ps->param);
 
-	LM_DBG("Status Code received =  [%d]\n", statuscode);
-
-	if (rpl == FAKED_REPLY || statuscode == 408) {
-		/* timeout occurred, nothing else to do now
-		 * next time timer fires, it will detect ping reply was not received
-		 */
-		LM_INFO("terminating dialog ( due to timeout ) "
-					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-		dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_FAIL;
-		return;
-	}
-
-	if (statuscode == 481)
-	{
-		/* call/transaction does not exist
-		 * terminate the dialog */
-		LM_INFO("terminating dialog ( due to 481 ) "
-				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-
-		dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_FAIL;
-		return;
-	}
-
-	dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_SUCCESS;
+	dlg_handle_seq_reply(dlg, rpl, statuscode, DLG_CALLER_LEG);
 }
 
 void reinvite_reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
@@ -765,30 +773,7 @@ void reinvite_reply_from_caller(struct cell* t, int type, struct tmcb_params* ps
 	statuscode = ps->code;
 	dlg = *(ps->param);
 
-	LM_DBG("Status Code received =  [%d]\n", statuscode);
-
-	if (rpl == FAKED_REPLY || statuscode == 408) {
-		/* timeout occurred, nothing else to do now
-		 * next time timer fires, it will detect ping reply was not received
-		 */
-		LM_INFO("terminating dialog ( due to timeout ) "
-					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-		dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_FAIL;
-		return;
-	}
-
-	if (statuscode == 481)
-	{
-		/* call/transaction does not exist
-		 * terminate the dialog */
-		LM_INFO("terminating dialog ( due to 481 ) "
-				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-
-		dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_FAIL;
-		return;
-	}
-
-	dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_SUCCESS;
+	dlg_handle_seq_reply(dlg, rpl, statuscode, DLG_CALLER_LEG);
 }
 
 /* Duplicate code for the sake of quickly knowing where the reply came from,
@@ -814,29 +799,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 	statuscode = ps->code;
 	dlg = *(ps->param);
 
-	LM_DBG("Status Code received =  [%d]\n", statuscode);
-
-	if (rpl == FAKED_REPLY || statuscode == 408) {
-		/* timeout occurred, nothing else to do now
-		 * next time timer fires, it will detect ping reply was not received
-		 */
-		LM_INFO("terminating dialog ( due to timeout ) "
-					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-		dlg->legs[callee_idx(dlg)].reply_received = DLG_PING_FAIL;
-		return;
-	}
-
-	if (statuscode == 481)
-	{
-		/* call/transaction does not exist
-		 * terminate the dialog */
-		LM_INFO("terminating dialog ( due to 481 ) "
-				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-		dlg->legs[callee_idx(dlg)].reply_received = DLG_PING_FAIL;
-		return;
-	}
-
-	dlg->legs[callee_idx(dlg)].reply_received = DLG_PING_SUCCESS;
+	dlg_handle_seq_reply(dlg, rpl, statuscode, callee_idx(dlg));
 }
 
 /* Duplicate code for the sake of quickly knowing where the reply came from,
@@ -862,29 +825,7 @@ void reinvite_reply_from_callee(struct cell* t, int type, struct tmcb_params* ps
 	statuscode = ps->code;
 	dlg = *(ps->param);
 
-	LM_DBG("Status Code received =  [%d]\n", statuscode);
-
-	if (rpl == FAKED_REPLY || statuscode == 408) {
-		/* timeout occurred, nothing else to do now
-		 * next time timer fires, it will detect ping reply was not received
-		 */
-		LM_INFO("terminating dialog ( due to timeout ) "
-					"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-		dlg->legs[callee_idx(dlg)].reinvite_confirmed = DLG_PING_FAIL;
-		return;
-	}
-
-	if (statuscode == 481)
-	{
-		/* call/transaction does not exist
-		 * terminate the dialog */
-		LM_INFO("terminating dialog ( due to 481 ) "
-				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-		dlg->legs[callee_idx(dlg)].reinvite_confirmed = DLG_PING_FAIL;
-		return;
-	}
-
-	dlg->legs[callee_idx(dlg)].reinvite_confirmed = DLG_PING_SUCCESS;
+	dlg_handle_seq_reply(dlg, rpl, statuscode, callee_idx(dlg));
 }
 
 void unref_dlg_cb(void *dlg)
