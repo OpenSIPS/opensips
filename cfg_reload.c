@@ -428,7 +428,8 @@ int reload_routing_script(void)
 	/* trigger module's validation functions to check if the reload of this 
 	 * new route set is "approved" */
 	if (!modules_validate_reload()) {
-		LM_ERR("routes validation by modules failed, abording\n");
+		LM_ERR("routes validation by modules failed, abording reload. "
+			"OpenSIPS restart is recomended to deploy the new script\n");
 		goto error;
 	}
 
