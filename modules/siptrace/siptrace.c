@@ -2236,16 +2236,14 @@ static mi_response_t *sip_trace_mi_tid(const mi_params_t *params,
 		for (;it&&it->hash==hash;it=it->next)
 			if (mi_tid_info(it, dests_arr) < 0)
 				goto error;
-	} else {
+	} else
 		resp = init_mi_error(400, MI_SSTR("Bad trace_id value"));
-		goto error;
-	}
 
 	return resp;
 
 error:
 	free_mi_response(resp);
-	return resp;
+	return NULL;
 }
 
 static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
