@@ -121,6 +121,9 @@ mi_response_t *mi_terminate_dlg_1(const mi_params_t *params,
 mi_response_t *mi_terminate_dlg_2(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
+mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		str *hdrs,str *body,dlg_request_callback func,void *param,
 		dlg_release_func release,char *reply_marker);

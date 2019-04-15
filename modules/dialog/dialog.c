@@ -385,6 +385,19 @@ static mi_export_t mi_cmds[] = {
 		{mi_push_dlg_var, {"dlg_val_name", "dlg_val_value", "DID", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
+	{ "dlg_send_sequential",
+		"send sequential request within dialog",
+		MI_ASYNC_RPL_FLAG|MI_NAMED_PARAMS_ONLY, 0, {
+		{mi_send_sequential_dlg, {"callid", 0}},
+		{mi_send_sequential_dlg, {"callid", "mode", 0}},
+		{mi_send_sequential_dlg, {"callid", "method", 0}},
+		{mi_send_sequential_dlg, {"callid", "body", 0}},
+		{mi_send_sequential_dlg, {"callid", "mode", "method", 0}},
+		{mi_send_sequential_dlg, {"callid", "mode", "body", 0}},
+		{mi_send_sequential_dlg, {"callid", "method", "body", 0}},
+		{mi_send_sequential_dlg, {"callid", "method", "body", "mode", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
 	{EMPTY_MI_EXPORT}
 };
 

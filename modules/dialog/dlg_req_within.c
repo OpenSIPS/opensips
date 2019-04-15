@@ -571,12 +571,15 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		return -1;
 	}
 
+	/*
+	 * we can send INVITEs with body for late negotiation
 	if (method_type == METHOD_INVITE && (body == NULL || body->s == NULL ||
 				body->len == 0))
 	{
 		LM_ERR("Cannot send INVITE without SDP body\n");
 		return -1;
 	}
+	*/
 
 	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg,reply_marker)) == 0)
 	{
@@ -618,4 +621,311 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 
 	free_tm_dlg(dialog_info);
 	return 0;
+}
+
+enum  dlg_challenge { DLG_CHL_START, /* sent request */
+	DLG_CHL_PENDING, /* challenge pending */
+	DLG_CHL_DONE /* challenge ended */};
+
+
+struct dlg_sequential_param {
+	enum dlg_challenge state;
+	char challenge;
+	char ref;
+	int leg;
+	str method;
+	struct dlg_cell *dlg;
+	struct mi_handler *async;
+};
+
+#define other_leg(dlg, l) (l == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG)
+
+void dlg_sequential_free(void *params)
+{
+	struct dlg_sequential_param *p = (struct dlg_sequential_param *)params;
+	unref_dlg_destroy_safe(p->dlg, 1);
+	p->ref--;
+	if (p->ref == 0)
+		shm_free(p);
+}
+
+static void dlg_async_response(struct dlg_sequential_param *p,
+		struct sip_msg *rpl, int statuscode)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	char *reply_msg;
+
+	if (p->state == DLG_CHL_DONE)
+		return;
+
+	if (rpl != FAKED_REPLY) {
+		resp = init_mi_result_object(&resp_obj);
+		if (add_mi_number(resp_obj, MI_SSTR("Code"), statuscode) < 0 ||
+				add_mi_string(resp_obj, MI_SSTR("Reason"),
+					rpl->first_line.u.reply.reason.s,
+					rpl->first_line.u.reply.reason.len) < 0) {
+			free_mi_response(resp);
+			resp = 0;
+		}
+	} else {
+		reply_msg = error_text(statuscode);
+		resp = init_mi_error(statuscode, reply_msg, strlen(reply_msg));
+	}
+	p->state = DLG_CHL_DONE;
+	p->async->handler_f(resp, p->async, 1);
+}
+
+static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* ps)
+{
+	int statuscode;
+	struct sip_msg *rpl;
+	struct dlg_cell *dlg;
+	struct dlg_sequential_param *p;
+	str body;
+
+	if (!ps || !ps->rpl) {
+			LM_ERR("Wrong tmcb params\n");
+			return;
+	}
+	if (!ps->param) {
+			LM_ERR("NULL callback parameter\n");
+			return;
+	}
+
+	rpl = ps->rpl;
+	statuscode = ps->code;
+	p = (struct dlg_sequential_param *)(*ps->param);
+	dlg = p->dlg;
+
+	if (dlg_handle_seq_reply(dlg, rpl, statuscode, p->leg) < 0) {
+		LM_ERR("Bad reply %d for callid %.*s\n",
+				statuscode, dlg->callid.len,dlg->callid.s);
+		dlg_async_response(p, rpl, statuscode);
+		return;
+	}
+	/* waiting for final replies */
+	if (statuscode < 200)
+		return;
+
+	if (p->state == DLG_CHL_DONE) {
+		LM_DBG("Retransmission for reply %d received for callid %.*s\n",
+				statuscode, dlg->callid.len, dlg->callid.s);
+		return;
+	}
+
+	/* if we do not challenge, or we do challenge but this is the leg that
+	 * sent the second reply, this means that we are done, so we shall return
+	 */
+	if (!p->challenge || p->state == DLG_CHL_PENDING) {
+		LM_DBG("Reply %d received for callid %.*s\n", statuscode,
+				dlg->callid.len, dlg->callid.s);
+		return dlg_async_response(p, rpl, statuscode);
+	}
+
+	/* from now on we have negotiate enabled */
+	if (statuscode > 300) {
+		LM_DBG("Negative reply %d received for our challenge in callid %.*s\n",
+		statuscode, dlg->callid.len, dlg->callid.s);
+		return dlg_async_response(p, rpl, statuscode);
+	}
+
+	if (get_body(rpl, &body) < 0 || body.len == 0) {
+		LM_INFO("No body received in reply %d for callid %.*s\n",
+				statuscode, dlg->callid.len, dlg->callid.s);
+		return dlg_async_response(p, rpl, 400);
+	}
+	/* if we have to negotiate, let's do it! */
+	p->ref++;
+	p->state = DLG_CHL_PENDING;
+
+	ref_dlg(dlg, 1);
+	if (send_leg_msg(dlg, &p->method, other_leg(dlg, p->leg), p->leg, NULL, &body,
+			dlg_sequential_reply, p, dlg_sequential_free,
+			&dlg->legs[p->leg].reply_received) < 0) {
+		LM_ERR("cannot send sequential message!\n");
+		goto error;
+	}
+	return;
+error:
+	dlg_sequential_free(p);
+	p->async->handler_f(NULL, p->async, 1);
+}
+
+static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
+		str *method, str *body, int challenge, struct mi_handler *async_hdl)
+{
+	struct dlg_sequential_param *param;
+	int dleg = other_leg(dlg, sleg);
+
+	param = shm_malloc(sizeof(*param) + method->len);
+	if (!param) {
+		LM_ERR("no more shm info!\n");
+		return init_mi_error(500, MI_SSTR("Internal Error"));
+	}
+	param->state = DLG_CHL_START;
+	param->challenge = challenge;
+	param->async = async_hdl;
+	param->dlg = dlg;
+	param->ref = 1;
+	param->leg = sleg;
+	param->method.len = method->len;
+	param->method.s = (char *)(param + 1);
+	memcpy(param->method.s, method->s, method->len);
+
+	if (send_leg_msg(dlg, method, sleg, dleg, NULL, body,
+			dlg_sequential_reply, param, dlg_sequential_free,
+			&dlg->legs[dleg].reply_received) < 0) {
+		dlg_sequential_free(param);
+		LM_ERR("cannot send sequential message!\n");
+		return init_mi_error(500, MI_SSTR("Internal Error"));
+	}
+
+	if (async_hdl==NULL)
+		return init_mi_result_string(MI_SSTR("Accepted"));
+	else
+		return MI_ASYNC_RPL;
+}
+
+/* possible mode values:
+ * - caller (default)
+ * - callee
+ * - challenge
+ * - challenge caller
+ * - challenge callee
+ */
+static int mi_parse_mode(const mi_params_t *params, int *src_leg, int *challenge)
+{
+	str mode_s;
+
+	*src_leg = 1; /* by default, the caller is the destination */
+	*challenge = 0; /* and challenge is disabled */
+
+	if (try_get_mi_string_param(params, "mode", &mode_s.s, &mode_s.len) < 0)
+		return 0;
+
+	if (mode_s.len >= 9) {
+		if (strncasecmp(mode_s.s, "challenge", 9) != 0) {
+			LM_WARN("Invalid challenge mode '%.*s'\n", mode_s.len, mode_s.s);
+			return -1;
+		}
+		/* we are challenging */
+		*challenge = 1;
+		if (mode_s.len == 9)
+			return 0; /* challenge alone, thus caller is challenged */
+		if (mode_s.len < 10) {
+			LM_WARN("Invalid leg in challenge mode '%.*s'\n", mode_s.len, mode_s.s);
+			return -1;
+		}
+		/* 10 because we skip the separator, whatever that is */
+		mode_s.s += 10;
+		mode_s.len += 10;
+	}
+	if (mode_s.len != 6) {
+		LM_WARN("Invalid leg specified '%.*s'\n", mode_s.len, mode_s.s);
+		return -1;
+	}
+	/* if callee */
+	if (strncasecmp(mode_s.s, "callee", 6) == 0)
+		*src_leg = 0;
+	else if (strncasecmp(mode_s.s, "caller", 6) != 0) {
+		/* if not caller */
+		LM_WARN("Invalid leg mode '%.*s'\n", mode_s.len, mode_s.s);
+		return -1;
+	}
+	return 0;
+}
+
+/* possible body mode values:
+ * - none (return 0, default)
+ * - inbound (return 1)
+ * - outbound (return 2)
+ * - custom (return 3 + body)
+ */
+static int mi_parse_body_mode(const mi_params_t *params, str *body)
+{
+	str body_s;
+
+	body_s.len = 0;
+	body_s.s = 0;
+
+	if (try_get_mi_string_param(params, "body", &body_s.s, &body_s.len) < 0)
+		return 0;
+
+	switch (body_s.len) {
+		case 4:
+			if (strncasecmp(body_s.s, "none", 4) != 0)
+				goto error;
+			return 0; /* none */
+		case 7:
+			if (strncasecmp(body_s.s, "inbound", 7) != 0)
+				goto error;
+			return 1; /* inbound */
+		case 8:
+			if (strncasecmp(body_s.s, "outbound", 8) != 0)
+				goto error;
+			return 2; /* outbound */
+		default:
+			if (body_s.len < 8 || strncasecmp(body_s.s, "custom", 6) != 0)
+				goto error;
+			/* we skip 'custom' + the separator after it */
+			body->s = body_s.s + 7;
+			body->len = body_s.len - 7;
+			return 3; /* custom */
+	}
+
+error:
+	LM_ERR("Invalid body mode specified '%.*s'\n", body_s.len, body_s.s);
+	return -1;
+}
+
+mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct dlg_cell *dlg;
+	str method;
+	str callid;
+	str body;
+	int leg, challenge, body_mode;
+
+	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+
+	if (mi_parse_mode(params, &leg, &challenge) < 0)
+		return init_mi_error(400, MI_SSTR("Invalid mode"));
+
+	if (try_get_mi_string_param(params, "method", &method.s, &method.len) < 0) {
+		method.s = "INVITE";
+		method.len = 6;
+	}
+
+	if ((body_mode = mi_parse_body_mode(params, &body)) < 0)
+		return init_mi_error(400, MI_SSTR("Invalid body mode"));
+
+	if (challenge != 0) {
+		/* if challenge is used, the method has to be INVITE or UPDATE */
+		if (method.len != 6 || (strncasecmp(method.s, "UPDATE", 6) != 0 &&
+				strncasecmp(method.s, "INVITE", 6) != 0)) {
+			LM_ERR("cannot challenge with method %.*s\n",
+					method.len, method.s);
+			return init_mi_error(406, MI_SSTR("Not Acceptable"));
+		}
+	}
+
+	dlg = get_dlg_by_callid(&callid, 1);
+	if (!dlg)
+		return init_mi_error(404, MI_SSTR("Dialog Not Found"));
+	/* now that we have the dialog, figure out the leg and body to use */
+	if (leg != 0) /* callee */
+		leg = callee_idx(dlg);
+
+	/* if inbound should be used, our outbound body, but it wasn't changed by
+	 * any function */
+	if (body_mode == 1 || (body_mode == 2 && dlg->legs[leg].out_sdp.s == 0))
+		body = dlg->legs[leg].in_sdp;
+	else if (body_mode == 2)
+		body = dlg->legs[other_leg(dlg, leg)].out_sdp;
+
+	return mi_send_sequential(dlg, leg, &method,
+			(body_mode == 0?NULL:&body), challenge, async_hdl);
 }
