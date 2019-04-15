@@ -210,6 +210,7 @@ struct module_exports exports = {
 	0,          /* response function */
 	mod_destroy,/* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 
@@ -251,7 +252,8 @@ static int mod_init(void)
 	*trace_is_on = trace_is_on_tmp;
 	if ( trace_filter_route ) {
 		trace_filter_route_id =
-			get_script_route_ID_by_name( trace_filter_route, rlist, RT_NO);
+			get_script_route_ID_by_name( trace_filter_route,
+				sroutes->request, RT_NO);
 	}
 
 	return 0;

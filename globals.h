@@ -37,6 +37,7 @@
 extern int testing_framework;
 
 extern char * cfg_file;
+extern char *preproc;
 extern int config_check;
 extern char *stat_file;
 

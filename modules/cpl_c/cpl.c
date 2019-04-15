@@ -211,7 +211,8 @@ struct module_exports exports = {
 	cpl_init, /* Module initialization function */
 	(response_function) 0,
 	(destroy_function) cpl_exit,
-	(child_init_function) cpl_child_init /* per-child init function */
+	(child_init_function) cpl_child_init, /* per-child init function */
+	0         /* reload confirm function */
 };
 
 
@@ -275,7 +276,7 @@ static int cpl_init(void)
 
 	if (proxy_route && proxy_route[0]) {
 		cpl_env.proxy_route = get_script_route_ID_by_name( proxy_route,
-				rlist, RT_NO);
+				sroutes->request, RT_NO);
 		if (cpl_env.proxy_route==-1) {
 			LM_ERR("route <%s> does not exist\n",proxy_route);
 			return -1;

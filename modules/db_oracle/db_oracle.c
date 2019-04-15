@@ -73,7 +73,8 @@ struct module_exports exports = {
 	oracle_mod_init, /* module initialization function */
 	0,               /* response function*/
 	destroy,         /* destroy function */
-	0                /* per-child init function */
+	0,               /* per-child init function */
+	0                /* reload confirm function */
 };
 
 

@@ -61,6 +61,10 @@
 #include "dprint.h"
 #include "pt.h"
 
+/* working dir at startup, before daemonizing; may be NULL if daemonizing 
+ * was not performed. It points to a allocated buffer in system memory */
+char *startup_wdir = NULL;
+
 static int status_pipe[2];
 static int *init_timer_no;
 
@@ -230,6 +234,12 @@ int daemonize(char* name, int * own_pgid)
 	int pid_items;
 
 	p=-1;
+
+	if ( (startup_wdir=getcwd(NULL,0))==NULL) {
+		LM_ERR("failed to determin the working dir %d/%s\n", errno,
+			strerror(errno));
+		goto error;
+	}
 
 	/* flush std file descriptors to avoid flushes after fork
 	 *  (same message appearing multiple times)

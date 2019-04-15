@@ -307,7 +307,8 @@ struct module_exports exports = {
     mod_init,         // module init function (before fork. kids will inherit)
     reply_filter,     // reply processing function
     mod_destroy,      // destroy function
-    child_init        // child init function
+    child_init,       // child init function
+    NULL              /* reload confirm function */
 };
 
 

@@ -29,6 +29,7 @@
 #include "../timer.h"
 #include "../reactor.h"
 #include "../async.h"
+#include "../cfg_reload.h"
 
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
@@ -185,6 +186,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	long response[2];
 
 	pt_become_active();
+
+	pre_run_handle_script_reload(fm->app_flags);
+
 	switch(fm->type){
 		case F_TIMER_JOB:
 			handle_timer_job();
@@ -345,6 +349,8 @@ again:
 				dynamic_process_final_exit();
 		}
 	}
+
+	post_run_handle_script_reload();
 
 	pt_become_idle();
 	return ret;

@@ -76,6 +76,7 @@ static int need_db=0;
 
 static int avpops_init(void);
 static int avpops_child_init(int rank);
+static int avpops_cfg_validate(void);
 
 static int fixup_db_avp_source(void** param);
 static int fixup_db_avp_dbparam_scheme(void** param);
@@ -259,7 +260,8 @@ struct module_exports exports = {
 	avpops_init,/* Module initialization function */
 	(response_function) 0,
 	(destroy_function) 0,
-	(child_init_function) avpops_child_init /* per-child init function */
+	(child_init_function) avpops_child_init, /* per-child init function */
+	avpops_cfg_validate /* reload confirm function */
 };
 
 
@@ -324,6 +326,37 @@ static int avpops_init(void)
 	return 0;
 error:
 	return -1;
+}
+
+
+static int avpops_cfg_validate(void)
+{
+	int i;
+
+	/* if DB already on, everything is ok */
+	if (need_db==1)
+		return 1;
+
+	/* search if any avp_db_* function is used */
+	for (i=0; cmds[i].name != NULL; i++) {
+		if (strncasecmp(cmds[i].name, AVPDB, sizeof(AVPDB)-1) == 0 &&
+				(is_script_func_used(cmds[i].name, -1))) {
+			LM_ERR("%s() was found, but module started without DB support,"
+				" better restart\n",cmds[i].name);
+			return 0;
+		}
+	}
+
+	for (i=0; acmds[i].name != NULL; i++) {
+		if (strncasecmp(acmds[i].name, AVPDB, sizeof(AVPDB)-1) == 0 &&
+				(is_script_async_func_used(acmds[i].name, -1))){
+			LM_ERR("%s() was found, but module started without DB support,"
+				" better restart\n",acmds[i].name);
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 

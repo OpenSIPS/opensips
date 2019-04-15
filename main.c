@@ -101,6 +101,7 @@
 #include "help_msg.h"
 #include "config.h"
 #include "cfg_pp.h"
+#include "cfg_reload.h"
 #include "dprint.h"
 #include "daemonize.h"
 #include "route.h"
@@ -189,6 +190,7 @@ void print_ct_constants(void)
 int own_pgid = 0; /* whether or not we have our own pgid (and it's ok
 					 to use kill(0, sig) */
 char* cfg_file = 0;
+char *preproc = NULL;
 unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  not want to exceed during the
 												  auto-probing procedure; may
@@ -361,6 +363,7 @@ void cleanup(int show_status)
 	tr_free_extra_list();
 	destroy_argv_list();
 	destroy_black_lists();
+	free_route_lists(sroutes); // this is just for testing purposes
 #ifdef PKG_MALLOC
 	if (show_status){
 		LM_GEN1(memdump, "Memory status (pkg):\n");
@@ -771,7 +774,7 @@ static int main_loop(void)
 		goto error;
 	}
 
-	if(startup_rlist.a) {/* if a startup route was defined */
+	if(sroutes->startup.a) {/* if a startup route was defined */
 		startup_done = (int*)shm_malloc(sizeof(int));
 		if(startup_done == NULL) {
 			LM_ERR("No more shared memory\n");
@@ -897,7 +900,7 @@ int main(int argc, char** argv)
 	/* configure by default logging to syslog */
 	int cfg_log_stderr = 1;
 	int c,r;
-	char *tmp, *preproc = NULL;
+	char *tmp;
 	int tmp_len;
 	int port;
 	int proto;
@@ -992,7 +995,8 @@ int main(int argc, char** argv)
 	if (init_pkg_mallocs()==-1)
 		goto error00;
 
-	init_route_lists();
+	if ( (sroutes=new_sroutes_holder())==NULL )
+		goto error00;
 
 	/* we want to be sure that from now on, all the floating numbers are 
 	 * using the dot as separator. This is a real issue when printing the
@@ -1196,7 +1200,7 @@ try_again:
 
 	set_osips_state( STATE_STARTING );
 
-	if (!testing_framework && parse_opensips_cfg(cfg_file, preproc) < 0) {
+	if (!testing_framework && parse_opensips_cfg(cfg_file, preproc, NULL) < 0) {
 		LM_ERR("failed to parse config file %s\n", cfg_file);
 		goto error00;
 	}
@@ -1458,6 +1462,11 @@ try_again:
 
 	if (trans_init_all_listeners()<0) {
 		LM_ERR("failed to init all SIP listeners, aborting\n");
+		goto error;
+	}
+
+	if (init_script_reload()<0) {
+		LM_ERR("failed to init cfg reload ctx, aborting\n");
 		goto error;
 	}
 

@@ -117,6 +117,7 @@ struct module_exports exports = {
 	0,          /* response function */
 	0,          /* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 static int proto_bin_init(struct proto_info *pi)

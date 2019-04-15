@@ -83,6 +83,7 @@ struct module_exports proto_udp_exports = {
 	0,          /* response function */
 	0,          /* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 

@@ -307,6 +307,7 @@ struct module_exports exports = {
     0,                  /* response function*/
     ospDestMod,         /* destroy function */
     ospInitChild,       /* per-child init function */
+    0                   /* reload confirm function */
 };
 
 static int ospCheckAVP(char* avpname, int *avpid, unsigned short *avptype);

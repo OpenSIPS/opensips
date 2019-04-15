@@ -135,7 +135,8 @@ struct module_exports exports= {
 	mod_init,
 	0,
 	mod_destroy,
-	child_init
+	child_init,
+	0                /* reload confirm function */
 };
 
 

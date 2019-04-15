@@ -111,6 +111,7 @@ str realm_prefix;
 int reg_use_domain = 0;
 
 static int mod_init(void);
+static int cfg_validate(void);
 
 static int domain_fixup(void** param);
 
@@ -199,7 +200,8 @@ struct module_exports exports= {
 	mod_init,        /* module initialization function */
 	NULL,               /* reply processing function */
 	NULL,
-	NULL       /* per-child init function */
+	NULL,       /* per-child init function */
+	cfg_validate/* reload confirm function */
 };
 
 /*! \brief
@@ -363,6 +365,18 @@ static int mod_init(void)
 
 	return 0;
 }
+
+
+static int cfg_validate(void)
+{
+	if (is_script_func_used("mid_registrar_save", 5) && !ul_api.tags_in_use()){
+		LM_ERR("mid_registrar_save() with sharing tag was found, but the "
+			"module's configuration has no tag support, better restart\n");
+		return 0;
+	}
+	return 1;
+}
+
 
 void set_ct(struct mid_reg_info *ct)
 {

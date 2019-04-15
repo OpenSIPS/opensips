@@ -237,6 +237,8 @@ static int mod_init(void);
 static int child_init(int rank);
 static void raw_socket_process(int rank);
 static void destroy(void);
+static int cfg_validate(void);
+
 static int sip_capture(struct sip_msg *msg, char *table,
                        str *cf1, str *cf2, str *cf3);
 static int async_sip_capture(struct sip_msg *msg, async_ctx *actx, char *table,
@@ -698,7 +700,8 @@ struct module_exports exports = {
 	mod_init,   /*!< module initialization function */
 	0,          /*!< response function */
 	destroy,    /*!< destroy function */
-	child_init  /*!< child initialization function */
+	child_init,  /*!< child initialization function */
+	cfg_validate /*!< reload confirm function */
 };
 
 static int parse_hep_route(char *val)
@@ -714,7 +717,8 @@ static int parse_hep_route(char *val)
 			strncasecmp(route_name.s, hep_sip_route.s, hep_sip_route.len ) == 0) {
 		hep_route_id = HEP_SIP_ROUTE;
 	} else {
-		hep_route_id=get_script_route_ID_by_name( route_name.s, rlist, RT_NO);
+		hep_route_id=get_script_route_ID_by_name( route_name.s,
+			sroutes->request, RT_NO);
 		if ( hep_route_id == -1 ) {
 			LM_ERR("route <%s> not defined!\n", route_name.s);
 			return -1;
@@ -1064,6 +1068,38 @@ error:
 	if(raw_sock_desc) close(raw_sock_desc);
 	return -1;
 #endif
+}
+
+
+static int cfg_validate(void)
+{
+	if (hep_capture_on) {
+		/* db_url is mandatory if sip_capture is used */
+		if (((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1)) ||
+				hep_route_id == HEP_NO_ROUTE) ||
+			(is_script_func_used("report_capture", -1) ||
+				is_script_async_func_used("report_capture", -1)))
+		{
+			if (db_funcs.insert==NULL) {
+				LM_ERR("sip_capture() found in new script, but the module "
+					"did not initalized the DB conn, better restart\n");
+				return 0;
+			}
+		}
+	} else {
+		if ((is_script_func_used("sip_capture", -1) ||
+				is_script_async_func_used("sip_capture", -1)))
+		{
+			if (db_funcs.insert==NULL) {
+				LM_ERR("sip_capture() found in new script, but the module "
+					"did not initalized the DB conn, better restart\n");
+				return 0;
+			}
+		}
+	}
+
+	return 1;
 }
 
 
@@ -2415,7 +2451,7 @@ int hep_msg_received(void)
 		set_route_type( REQUEST_ROUTE );
 
 		/* run given hep route */
-		run_top_route(rlist[hep_route_id].a, &dummy_req);
+		run_top_route( sroutes->request[hep_route_id].a, &dummy_req);
 
 		/* free possible loaded avps */
 		reset_avps();

@@ -77,6 +77,7 @@
 static int  mod_init(void);
 static int  child_init(int);
 static void mod_destroy(void);
+static int cfg_validate(void);
 
 /*! \brief Fixup functions */
 static int domain_fixup(void** param);
@@ -244,6 +245,7 @@ struct module_exports exports = {
 	0,
 	mod_destroy, /* destroy function */
 	child_init,  /* Per-child init function */
+	cfg_validate /* reload confirm function */
 };
 
 
@@ -372,6 +374,17 @@ static int mod_init(void)
 	}
 
 	return 0;
+}
+
+
+static int cfg_validate(void)
+{
+	if (is_script_func_used("save", 4) && !ul.tags_in_use()) {
+		LM_ERR("save() with sharing tag was found, but the module's "
+			"configuration has no tag support, better restart\n");
+		return 0;
+	}
+	return 1;
 }
 
 

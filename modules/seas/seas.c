@@ -133,7 +133,8 @@ struct module_exports exports=
    seas_init,   /* module initialization function */
    (response_function) 0,
    (destroy_function) seas_exit,   /* module exit function */
-   (child_init_function) seas_child_init  /* per-child init function */
+   (child_init_function) seas_child_init,  /* per-child init function */
+   0                           /* reload confirm function */
 };
 
 static int fixup_as_relay(void** param)

@@ -7,16 +7,29 @@
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
-		This module provides a simple way for handling different events,
-		triggered through the &osips; Event Interface, directly from the &osips;
-		script. For a specific event, a special route
-		(<emphasis>event_route</emphasis>) has to be declared in the script, and
-		should contain the code that handles the event. The route is executed by
-		the module when the corresponding event is raised by the &osips; Event
-		Interface.Since version 1.12, the way an event is handlend (sync/async)
-		should be specified from the configuration script with the desired keyword
-		following the name of the event (<emphasis>event_route[e, sync]</emphasis>).
+		This module provides a simple way for capturing and handling 
+		directly in the &osips; script of different events triggered through
+		the &osips; Event Interface
 	</para>
+	<para>
+		If you want to capture and handle a certian event, you need to
+		define a dedicated route (<emphasis>event_route</emphasis>) into the
+		&osips; script, route having as name the name/code of the
+		desired event. The route is triggered (and executed) by
+		the module when the corresponding event is raised by the &osips;
+	</para>
+	<para>
+		NOTE that there is the triggered <emphasis>event_route</emphasis> is
+		run asyncronus (and in a differen process) in regards to the code or 
+		process that generated the actual event.
+	</para>
+	<para>
+		NOTE that inside the <emphasis>event_route</emphasis> you should
+		NOT rely on anything more than the content provide by the event itself
+		(see below variable). DO NOT assume to have access to any other
+		variable or context, not even to a SIP message.
+	</para>
+
 	</section>
 
 	<section id="event-route-parameters">

@@ -95,7 +95,8 @@ struct module_exports exports = {
 	stun_mod_init,      /* module initialization function */
 	0,                  /* response function*/
 	0,                  /* destroy function */
-	child_init          /* per-child init function */
+	child_init,         /* per-child init function */
+	0                   /* reload confirm function */
 };
 
 /* init */

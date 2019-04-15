@@ -481,7 +481,8 @@ struct module_exports exports= {
 	mod_init,  /* module initialization function */
 	(response_function) reply_received,
 	(destroy_function) tm_shutdown,
-	child_init /* per-child init function */
+	child_init,/* per-child init function */
+	0          /* reload confirm function */
 };
 
 
@@ -497,8 +498,8 @@ static int fixup_froute(void** param)
 		return -1;
 	}
 
-	rt = get_script_route_ID_by_name(rt_name_nt.s,
-			failure_rlist, FAILURE_RT_NO);
+	rt = get_script_route_ID_by_name( rt_name_nt.s,
+			sroutes->failure, FAILURE_RT_NO);
 	if (rt==-1) {
 		LM_ERR("failure route <%s> does not exist\n",rt_name_nt.s);
 		pkg_free(rt_name_nt.s);
@@ -523,7 +524,7 @@ static int fixup_rroute(void** param)
 	}
 
 	rt = get_script_route_ID_by_name(rt_name_nt.s,
-		onreply_rlist, ONREPLY_RT_NO);
+		sroutes->onreply, ONREPLY_RT_NO);
 	if (rt==-1) {
 		LM_ERR("onreply route <%s> does not exist\n",rt_name_nt.s);
 		pkg_free(rt_name_nt.s);
@@ -548,7 +549,7 @@ static int fixup_broute(void** param)
 	}
 
 	rt = get_script_route_ID_by_name(rt_name_nt.s,
-		branch_rlist, BRANCH_RT_NO);
+		sroutes->branch, BRANCH_RT_NO);
 	if (rt==-1) {
 		LM_ERR("branch route <%s> does not exist\n",rt_name_nt.s);
 		pkg_free(rt_name_nt.s);

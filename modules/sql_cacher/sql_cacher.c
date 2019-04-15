@@ -122,7 +122,8 @@ struct module_exports exports = {
 	mod_init,					/* module initialization function */
 	0,							/* response handling function */
 	destroy,					/* destroy function */
-	child_init					/* per-child init function */
+	child_init,					/* per-child init function */
+	0							/* reload confirm function */
 };
 
 static int parse_cache_entry(unsigned int type, void *val)

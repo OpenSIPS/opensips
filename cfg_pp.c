@@ -53,7 +53,8 @@ static struct cfg_context *cfg_context_new_file(const char *path);
 static void cfg_context_append_line(struct cfg_context *con,
                                     char *line, int len);
 
-int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline)
+int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
+															FILE **ret_stream)
 {
 	FILE *cfg_stream;
 
@@ -102,7 +103,12 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline)
 		return -1;
 	}
 
-	fclose(cfg_stream);
+	/* do we have to return the cfg stream? */
+	if (ret_stream)
+		*ret_stream = cfg_stream;
+	else
+		fclose(cfg_stream);
+
 	return 0;
 }
 

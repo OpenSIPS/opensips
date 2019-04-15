@@ -289,7 +289,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	/* set transaction AVP list */
 	backup = set_avp_list( &new_cell->user_avps );
 
-	if (local_rlist.a) {
+	if (sroutes->local.a) {
 		LM_DBG("building sip_msg from buffer\n");
 		req = buf_to_sip_msg(buf, buf_len, dialog);
 		if (req==NULL) {
@@ -303,7 +303,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 
 			/* run the route */
 			swap_route_type( backup_route_type, LOCAL_ROUTE);
-			run_top_route( local_rlist.a, req);
+			run_top_route( sroutes->local.a, req);
 			set_route_type( backup_route_type );
 
 			/* transfer current message context back to t */

@@ -127,7 +127,8 @@ struct module_exports exports = {
 	mod_init,    /* module initialization function */
 	0,           /* response function*/
 	mod_destroy, /* destroy function */
-	child_init   /* per-child init function */
+	child_init,  /* per-child init function */
+	0            /* reload confirm function */
 };
 
 

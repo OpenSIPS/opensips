@@ -35,6 +35,7 @@ static int fix_notification_route(void** param);
 static int fixup_check_avp(void** param);
 
 static int mod_init(void);
+static int cfg_validate(void);
 static int notify_on_event(struct sip_msg *msg, ebr_event* event, pv_spec_t *avp_filter,
 					void *route, int *timeout);
 static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
@@ -135,7 +136,9 @@ struct module_exports exports= {
 	/* destroy function */
 	NULL,
 	/* per-child init function */
-	NULL
+	NULL,
+	/* reload confirm function */
+	cfg_validate
 };
 
 
@@ -194,6 +197,18 @@ static int mod_init(void)
 }
 
 
+static int cfg_validate(void)
+{
+	if ( ebr_tmb.t_gett==NULL && is_script_func_used("notify_on_event",-1)) {
+		LM_ERR("notify_on_event() was found, but module started without TM "
+			"support/biding, better restart\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+
 /* Fixes an EBR event (given by name) by coverting to an internal
  * structure (if not already found)
  */
@@ -227,7 +242,8 @@ static int fix_notification_route(void** param)
 	if (pkg_nt_str_dup(&name_s, (str*)*param) < 0)
 		return -1;
 
-	route_idx = get_script_route_ID_by_name(name_s.s, rlist, RT_NO);
+	route_idx = get_script_route_ID_by_name(name_s.s,
+		sroutes->request, RT_NO);
 	if (route_idx==-1) {
 		LM_ERR("notification route <%s> not defined in script\n",
 			name_s.s);

@@ -147,6 +147,7 @@ struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd);
 struct action* mk_action(int type, int n, action_elem_t *elem,
 		int line, char *file);
 struct action* append_action(struct action* a, struct action* b);
+void free_action_list( struct action *a);
 
 
 void print_action(struct action* a);

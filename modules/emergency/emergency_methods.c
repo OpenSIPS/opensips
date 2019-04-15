@@ -119,7 +119,8 @@ struct module_exports exports = {
 	mod_init, /* module initialization function */
 	0, /* response function*/
 	mod_destroy,
-	child_init /* per-child init function */
+	child_init,/* per-child init function */
+	0          /* reload confirm function */
 };
 
 /*
@@ -1971,8 +1972,10 @@ int check_myself(struct sip_msg *msg) {
 		LM_ERR("cannot parse msg URI\n");
 		return 0;
 	}
-	LM_DBG(" --- opensips host %.*s \n \n", msg->parsed_uri.host.len, msg->parsed_uri.host.s);
-	ret = check_self_op(EQUAL_OP, &msg->parsed_uri.host, 0);
+	LM_DBG(" --- opensips host %.*s \n \n",
+		msg->parsed_uri.host.len, msg->parsed_uri.host.s);
+
+	ret=check_self(&msg->parsed_uri.host, 0, 0);
 	return ret;
 }
 

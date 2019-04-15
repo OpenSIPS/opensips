@@ -102,7 +102,8 @@ struct module_exports exports= {
 	mod_init,					/* module initialization function */
 	0,							/* response handling function */
 	destroy,					/* destroy function */
-	child_init					/* per-child init function */
+	child_init,					/* per-child init function */
+	0							/* reload confirm function */
 };
 
 static evi_export_t trans_export_flat = {

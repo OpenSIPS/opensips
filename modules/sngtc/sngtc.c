@@ -172,7 +172,8 @@ struct module_exports exports= {
 	mod_init,
 	(response_function) 0,
 	(destroy_function)mod_destroy,
-	child_init
+	child_init,
+	0               /* reload confirm function */
 };
 
 int sng_create_rtp(void * usr_priv, sngtc_codec_request_leg_t *codec_reg_leg,

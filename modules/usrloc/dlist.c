@@ -40,6 +40,7 @@
 #include "../../ut.h"
 #include "../../db/db_ut.h"
 #include "../../mem/shm_mem.h"
+#include "../../daemonize.h"
 #include "../../dprint.h"
 #include "../../ip_addr.h"
 #include "../../socket_info.h"
@@ -910,6 +911,11 @@ int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
 static inline int new_dlist(str* _n, dlist_t** _d)
 {
 	dlist_t* ptr;
+
+	if (get_osips_state()>STATE_STARTING) {
+		LM_ERR("cannot register new domain during runtime\n");
+		return -1;
+	}
 
 	/* Domains are created before ser forks,
 	 * so we can create them using pkg_malloc

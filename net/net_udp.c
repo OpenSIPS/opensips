@@ -32,6 +32,7 @@
 #include "../reactor.h"
 #include "../timer.h"
 #include "../pt_load.h"
+#include "../cfg_reload.h"
 #include "net_udp.h"
 
 
@@ -261,6 +262,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	int read;
 
 	pt_become_active();
+
+	pre_run_handle_script_reload(fm->app_flags);
+
 	switch(fm->type){
 		case F_UDP_READ:
 			n = protos[((struct socket_info*)fm->data)->proto].net.
@@ -293,6 +297,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		if (reactor_is_empty())
 			dynamic_process_final_exit();
 	}
+
+	post_run_handle_script_reload();
 
 	pt_become_idle();
 	return n;
@@ -344,7 +350,8 @@ static int fork_dynamic_udp_process(void *si_filter)
 	struct socket_info *si = (struct socket_info*)si_filter;
 	int p_id;
 
-	if ((p_id=internal_fork( "UDP receiver", OSS_PROC_DYNAMIC, TYPE_UDP))<0) {
+	if ((p_id=internal_fork( "UDP receiver",
+	OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT, TYPE_UDP))<0) {
 		LM_CRIT("cannot fork UDP process\n");
 		return(-1);
 	} else if (p_id==0) {
@@ -440,7 +447,8 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 			for (i=0;i<si->workers;i++) {
 				(*chd_rank)++;
-				if ( (p_id=internal_fork( "UDP receiver", 0, TYPE_UDP))<0 ) {
+				if ( (p_id=internal_fork( "UDP receiver",
+				OSS_PROC_NEEDS_SCRIPT, TYPE_UDP))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
 				} else if (p_id==0) {

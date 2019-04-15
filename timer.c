@@ -53,6 +53,7 @@
 #include "config.h"
 #include "sr_module.h"
 #include "daemonize.h"
+#include "cfg_reload.h"
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
 
@@ -270,16 +271,16 @@ int register_route_timers(void)
 	struct os_timer* t;
 	int i;
 
-	if(timer_rlist[0].a == NULL)
+	if(sroutes->timer[0].a == NULL)
 		return 0;
 
 	/* register the routes */
 	for(i = 0; i< TIMER_RT_NO; i++)
 	{
-		if(timer_rlist[i].a == NULL)
+		if(sroutes->timer[i].a == NULL)
 			return 0;
-		t = new_os_timer( "timer_route", 0, route_timer_f, timer_rlist[i].a,
-				timer_rlist[i].interval);
+		t = new_os_timer( "timer_route", 0, route_timer_f, sroutes->timer[i].a,
+				sroutes->timer[i].interval);
 		if (t==NULL)
 			return E_OUT_OF_MEM;
 
@@ -651,6 +652,9 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	int n=0;
 
 	pt_become_active();
+
+	pre_run_handle_script_reload(fm->app_flags);
+
 	switch(fm->type){
 		case F_TIMER_JOB:
 			handle_timer_job();
@@ -679,6 +683,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 		if (reactor_is_empty())
 			dynamic_process_final_exit();
 	}
+
+	post_run_handle_script_reload();
 
 	pt_become_idle();
 	return n;
@@ -716,7 +722,8 @@ static int fork_dynamic_timer_process(void *si_filter)
 {
 	int p_id;
 
-	if ((p_id=internal_fork( "Timer handler", OSS_PROC_DYNAMIC,TYPE_TIMER))<0){
+	if ((p_id=internal_fork( "Timer handler",
+	OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT, TYPE_TIMER))<0){
 		LM_CRIT("cannot fork Timer handler process\n");
 		return -1;
 	} else if (p_id==0) {
@@ -791,7 +798,8 @@ int start_timer_extra_processes(int *chd_rank)
 	for( i=0 ; i<timer_workers_no ; i++ ) {
 
 		(*chd_rank)++;
-		if ( (p_id=internal_fork( "Timer handler", 0, TYPE_TIMER))<0 ) {
+		if ( (p_id=internal_fork( "Timer handler", OSS_PROC_NEEDS_SCRIPT,
+		TYPE_TIMER))<0 ) {
 			LM_CRIT("cannot fork Timer handler process\n");
 			return -1;
 		} else if (p_id==0) {

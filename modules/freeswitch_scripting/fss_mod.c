@@ -129,7 +129,8 @@ struct module_exports exports= {
 	mod_init,         /* module initialization function */
 	NULL,             /* reply processing function */
 	mod_destroy,      /* destroy function */
-	NULL              /* per-child init function */
+	NULL,             /* per-child init function */
+	NULL              /* reload confirm function */
 };
 
 /* temporarily dup the URL modparams in shm until mod_init() runs */

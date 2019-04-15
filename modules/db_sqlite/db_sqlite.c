@@ -81,7 +81,8 @@ struct module_exports exports = {
 	sqlite_mod_init,  /* module initialization function */
 	0,               /* response function*/
 	sqlite_mod_destroy,               /* destroy function */
-	0                /* per-child init function */
+	0,               /* per-child init function */
+	0                /* reload confirm function */
 };
 
 static int sqlite_mod_init(void)

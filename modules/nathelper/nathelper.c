@@ -350,7 +350,8 @@ struct module_exports exports = {
 	mod_init,
 	0,           /* sipping_rpl_filter() - optional reply processing */
 	mod_destroy, /* destroy function */
-	0
+	0,
+	0            /* reload confirm function */
 };
 
 

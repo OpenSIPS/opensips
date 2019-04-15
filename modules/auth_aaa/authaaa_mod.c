@@ -50,6 +50,7 @@ aaa_prot proto;
 auth_api_t auth_api;
 
 static int mod_init(void);         /* Module initialization function */
+static int cfg_validate(void);
 
 /*
  * Module parameter variables
@@ -138,7 +139,8 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	0,          /* destroy function */
-	0           /* child initialization function */
+	0,          /* child initialization function */
+	cfg_validate/* reload confirm function */
 };
 
 
@@ -204,15 +206,20 @@ static int mod_init(void)
 		attrs[A_CISCO_AVPAIR].name = NULL;
 	}
 
-	bind_auth = (bind_auth_t)find_export("bind_auth", 0);
-	if (!bind_auth) {
-		LM_ERR("unable to find bind_auth function. Check if you load the auth module.\n");
-		return -1;
-	}
+	if (is_script_func_used("aaa_www_authorize", -1) ||
+	is_script_func_used("aaa_proxy_authorize", -1) ) {
 
-	if (bind_auth(&auth_api) < 0) {
-		LM_ERR("cannot bind to auth module\n");
-		return -4;
+		bind_auth = (bind_auth_t)find_export("bind_auth", 0);
+		if (!bind_auth) {
+			LM_ERR("unable to find bind_auth function. Check if you "
+				"loaded the auth module.\n");
+			return -1;
+		}
+
+		if (bind_auth(&auth_api) < 0) {
+			LM_ERR("cannot bind to auth module\n");
+			return -4;
+		}
 	}
 
 	INIT_AV(proto, conn, attrs, A_MAX, vals, V_MAX, "auth_aaa", -5, -6);
@@ -222,6 +229,22 @@ static int mod_init(void)
 	if (check_service_type != -1)
 		vals[V_CALL_CHECK].value = check_service_type;
 
+	return 0;
+}
+
+
+static int cfg_validate(void)
+{
+	/* if auth API already loaded, it is fine */
+	if (auth_api.pre_auth)
+		return 1;
+
+	if (is_script_func_used("aaa_www_authorize", -1) ||
+	is_script_func_used("aaa_proxy_authorize", -1) ) {
+		LM_ERR("aaa_xxx_authorize() was found, but module started without "
+			"auth support/binding, better restart\n");
+		return 0;
+	}
 
 	return 0;
 }
