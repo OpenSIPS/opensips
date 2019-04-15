@@ -30,8 +30,33 @@
 #define LIST_DELIM ','
 #define FLAGS_DELIM 'M'
 
+#define DS_TYPE_INT 0
+#define DS_TYPE_PVS 1
+
 extern ds_partition_t *default_partition;
 extern ds_partition_t *partitions;
+
+int fixup_ds_part(void **param)
+{
+	ds_partition_t *it;
+	str *part = (str *)*param;
+
+	if (!part) {
+		*param = default_partition;
+		return 0;
+	}
+
+	for (it = partitions; it; it = it->next)
+		if (!str_strcmp(&it->name, part)) {
+			*param = it;
+			return 0;
+		}
+
+	LM_ERR("could not locate partition %.*s\n", part->len, part->s);
+	*param = NULL;
+
+	return -1;
+}
 
 /*
  * Expand a pvar into a list of ints
@@ -59,7 +84,7 @@ int_list_t *set_list_from_pvs(struct sip_msg *msg, pv_spec_t *pvs, int_list_t *e
 		}
 
 		new_el->v.ival = value.ri;
-		new_el->type = GPARAM_TYPE_INT;
+		new_el->type = DS_TYPE_INT;
 		new_el->next = end;
 
 		return new_el;
@@ -88,7 +113,7 @@ int_list_t *set_list_from_pvs(struct sip_msg *msg, pv_spec_t *pvs, int_list_t *e
 		}
 
 		new_el->v.ival = u_num;
-		new_el->type = GPARAM_TYPE_INT;
+		new_el->type = DS_TYPE_INT;
 		new_el->next = result;
 		result = new_el;
 
@@ -101,7 +126,7 @@ return result;
 
 no_memory:
 	while(result != end) {
-		if (result->type == GPARAM_TYPE_PVS)
+		if (result->type == DS_TYPE_PVS)
 			pkg_free(result->v.pvs);
 		int_list_t *aux = result;
 		result = result->next;
@@ -112,7 +137,7 @@ no_memory:
 
 wrong_value:
 	while(result != end) {
-		if (result->type == GPARAM_TYPE_PVS)
+		if (result->type == DS_TYPE_PVS)
 			pkg_free(result->v.pvs);
 		int_list_t *aux = result;
 		result = result->next;
@@ -144,7 +169,7 @@ int set_list_from_string(str input, int_list_t **result)
 		if (*result == NULL)
 			goto no_memory;
 		(*result)->v.ival = uset;
-		(*result)->type = GPARAM_TYPE_INT;
+		(*result)->type = DS_TYPE_INT;
 		(*result)->next = NULL;
 		return 0;
 	}
@@ -225,7 +250,7 @@ only_max_res:
 					goto no_memory;
 			}
 
-			new_el->type = GPARAM_TYPE_PVS;
+			new_el->type = DS_TYPE_PVS;
 			new_el->v.pvs = pkg_malloc(sizeof(pv_spec_t));
 			if (new_el->v.pvs == NULL) {
 				pkg_free(new_el);
@@ -269,7 +294,7 @@ only_max_res:
 
 only_flags01:
 			new_el->v.ival = def_val > 0 ? def_val : u_num;
-			new_el->type = GPARAM_TYPE_INT;
+			new_el->type = DS_TYPE_INT;
 			if (flags>0)
 				new_el->flags = flags;
 			new_el->next = *result;
@@ -289,7 +314,7 @@ only_flags01:
 
 no_memory:
 	while(*result) {
-		if ((*result)->type == GPARAM_TYPE_PVS)
+		if ((*result)->type == DS_TYPE_PVS)
 			pkg_free((*result)->v.pvs);
 		int_list_t *aux = *result;
 		*result = (*result)->next;
@@ -300,7 +325,7 @@ no_memory:
 
 wrong_value:
 	while(*result) {
-		if ((*result)->type == GPARAM_TYPE_PVS)
+		if ((*result)->type == DS_TYPE_PVS)
 			pkg_free((*result)->v.pvs);
 		int_list_t *aux = *result;
 		*result = (*result)->next;
@@ -308,204 +333,6 @@ wrong_value:
 	}
 	LM_ERR("wrong format for set/set list. Token <%.*s>\n", original_input.len, original_input.s);
 	return -1;
-}
-
-/*
- * Create a general partition from a string (variable or plain-text name)
-*/
-
-static int get_gpart(str *input, gpartition_t *partition)
-{
-
-	if (input->s == NULL) {
-		partition->type = GPART_TYPE_POINTER;
-		partition->v.p = default_partition;
-		return 0;
-	}
-
-	if (input->s[0] == PV_MARKER) {
-
-		partition->type = GPART_TYPE_PVS;
-		partition->v.pvs = shm_malloc(sizeof(pv_spec_t));
-
-		if (partition->v.pvs == NULL) {
-			LM_ERR ("no more shared memory\n");
-			return -1;
-		}
-
-		char *end;
-		if ((end = pv_parse_spec(input, partition->v.pvs)) == NULL) {
-			LM_ERR ("cannot parse variable\n");
-			return -1;
-		}
-		if (end - input->s != input->len) {
-			LM_ERR ("wrong format for partition\n");
-			return -1;
-		}
-
-		return 0;
-	}
-
-	/* We have a static partition name */
-	ds_partition_t *part_it = partitions;
-	for (; part_it; part_it = part_it->next)
-		if (str_strcmp(&part_it->name, input) == 0) {
-			partition->type = GPART_TYPE_POINTER;
-			partition->v.p = part_it;
-			return 0;
-		}
-	LM_ERR ("partition <%.*s> not found\n", input->len, input->s);
-	return -1;
-}
-
-/*
- * Fixup for a string like "partition_name:set1, set2
- * The set list may be missing"
-*/
-
-static int fixup_partition_sets_null(void **param)
-{
-	str s_param = {(char*)*param, strlen(*param)};
-	str part_name = {NULL, 0};
-
-	char *delim = q_memchr(s_param.s, DS_PARTITION_DELIM, s_param.len);
-
-	if (delim) {
-		part_name.s = s_param.s;
-		part_name.len = delim - s_param.s;
-		s_param.s = delim + 1;
-		s_param.len -= part_name.len + 1;
-		trim(&part_name);
-	}
-
-	trim(&s_param);
-
-	ds_param_t *final_param = shm_malloc(sizeof (ds_param_t));
-
-	if (final_param == NULL) {
-		LM_CRIT ("no more shared memory!\n");
-		return -1;
-	}
-
-	if (get_gpart(&part_name, &final_param->partition) != 0) {
-		shm_free(final_param);
-		return -1;
-	}
-
-	if ((set_list_from_string(s_param, &final_param->sets)) != 0){
-		shm_free(final_param);
-		return -1;
-	}
-
-	*param = (void*)final_param;
-	return 0;
-}
-
-/*
- * Fixup for a string like "partition_name:set1, set2
- * The set list is mandatory"
-*/
-
-int fixup_partition_sets(void **param)
-{
-	if (fixup_partition_sets_null(param) != 0)
-		return -1;
-
-	if (((ds_param_t*)*param)->sets == NULL) {
-		/* Null sets are not allowed */
-		LM_ERR("A set must be specified!\n");
-		return -1;
-	}
-	return 0;
-}
-
-/*
- * Fixup for a string like "partition_name:set_no"
- *
- * Only one set number is allowed and it must not be missing
-*/
-
-int fixup_partition_one_set(void **param)
-{
-	if (fixup_partition_sets(param) != 0)
-		return -1;
-	if (((ds_param_t*)*param)->sets->next != NULL) {
-		LM_ERR("Only one set is accepted\n");
-		return -1;
-	}
-	return 0;
-}
-
-/*
- * Fixup for partition_name.
- * Turns char* into gpartition_t (i.e. pvspec or partition_t*)
-*/
-
-int fixup_partition(void **param)
-{
-	gpartition_t *partition = shm_malloc (sizeof(gpartition_t));
-	str input = {(char*)(*param), strlen((char*)(*param))};
-	trim(&input);
-
-	if (get_gpart(&input, partition) != 0) {
-		shm_free(partition);
-		return -1;
-	}
-
-	*param = (void*)partition;
-	return 0;
-}
-
-/*
- * Get the actual partition from a gpartition_t
-*/
-
-int fixup_get_partition(struct sip_msg *msg, const gpartition_t *gpart,
-		ds_partition_t **partition)
-{
-	if (gpart->type == GPART_TYPE_POINTER) {
-		*partition = gpart->v.p;
-		return 0;
-	}
-
-	pv_value_t value;
-
-	if(pv_get_spec_value(msg, gpart->v.pvs, &value)!=0
-		|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_STR)) {
-		LM_ERR("no valid PV value found (error in scripts)\n");
-		return -1;
-	}
-
-	if (value.rs.len == 0) {
-		*partition = default_partition;
-		return 0;
-	}
-
-	ds_partition_t *part_it = partitions;
-
-	for (; part_it; part_it = part_it->next)
-		if (part_it->name.len == value.rs.len &&
-			memcmp(part_it->name.s, value.rs.s, value.rs.len) == 0) {
-			*partition = part_it;
-			return 0;
-		}
-
-	*partition = NULL;
-	return 0;
-}
-
-/*
- * Fixup for an int list
-*/
-
-int fixup_int_list(void **param)
-{
-	str input = {(char*)(*param), strlen((char*)(*param))};
-	int_list_t *lst;
-	if (set_list_from_string(input, &lst) != 0 || lst == NULL)
-		return -1;
-	*param = (void*)(lst);
-	return 0;
 }
 
 /*
@@ -532,9 +359,9 @@ int fixup_flags(str* param)
 			case 'D':
 				ret |= DS_USE_DEFAULT;
 				break;
-			case 's':
-			case 'S':
-				ret |= DS_FORCE_DST;
+			case 'a':
+			case 'A':
+				ret |= DS_APPEND_MODE;
 				break;
 
 			default:
@@ -544,6 +371,42 @@ int fixup_flags(str* param)
 	}
 
 	return ret;
+}
+
+int fixup_ds_flags(void** param)
+{
+	int index, ret=0;
+	str *flags = (str *)*param;
+
+	for (index=0; index < flags->len; index++) {
+		switch (flags->s[index]) {
+			case ' ':
+				break;
+			case 'f':
+			case 'F':
+				ret |= DS_FAILOVER_ON;
+				break;
+			case 'u':
+			case 'U':
+				ret |= DS_HASH_USER_ONLY;
+				break;
+			case 'd':
+			case 'D':
+				ret |= DS_USE_DEFAULT;
+				break;
+			case 'a':
+			case 'A':
+				ret |= DS_APPEND_MODE;
+				break;
+
+			default:
+				LM_ERR("Invalid definition\n");
+				return -1;
+		}
+	}
+
+	*param = (void *)(long)ret;
+	return 0;
 }
 
 /*
@@ -570,211 +433,44 @@ int in_int_list(int_list_t *list, int val)
 {
     int_list_t *tmp;
     for (tmp=list;tmp!=NULL;tmp=tmp->next) {
-        if (tmp->type == GPARAM_TYPE_INT && tmp->v.ival == val)
+        if (tmp->v.ival == val) // TODO: test!
             return 0;
     }
     return -1;
 }
 
-/*
- * Get a partition and a set from a general ds_param structure
-*/
 
-int fixup_get_partition_set(struct sip_msg *msg, const ds_param_t *param,
-		ds_partition_t **partition, unsigned int *uset)
+int fixup_ds_count_filter(void **param)
 {
-	if (fixup_get_partition(msg, &param->partition, partition) != 0)
-		return -1;
-
-	if (*partition == NULL) {
-		LM_ERR("unknown partition\n");
-		return -1;
-	}
-
-	if (param->sets->type == GPARAM_TYPE_INT) {
-		*uset = param->sets->v.ival;
-		return 0;
-	}
-
-	int_list_t *tmp = set_list_from_pvs(msg, param->sets->v.pvs, NULL);
-	if (tmp == NULL || tmp->next != NULL) {
-		LM_ERR("Wrong variable value for set\n");
-		return -1;
-	}
-	*uset = tmp->v.ival;
-	free_int_list(tmp, NULL);
-	return 0;
-}
-
-/* Fixup function for ds_next_dst and ds_next_domain functions */
-int ds_next_fixup(void **param, int param_no)
-{
-	if (param_no > 1) {
-		LM_CRIT ("Too many parameters for ds_next_dst/ds_next_domain\n");
-		return -1;
-	}
-
-	return fixup_partition(param);
-}
-
-/* Fixup function for ds_mark_dst command */
-int ds_mark_fixup(void **param, int param_no)
-{
-	if (param_no == 1)
-		return fixup_partition(param);
-	else if (param_no == 2)
-		return fixup_sgp(param);
-	else
-		return -1;
-}
-
-/* Fixup function for ds_is_in_list command */
-int in_list_fixup(void** param, int param_no)
-{
-	if (param_no==1) {
-		/* the ip to test */
-		return fixup_sgp(param);
-	} else if (param_no==2) {
-		/* the port to test */
-		if (*param==NULL) {
-			return 0;
-		} else if ( *((char*)*param)==0 ) {
-			pkg_free(*param);
-			*param = NULL;
-			return 0;
-		}
-		return fixup_igp(param);
-	} else if (param_no==3) {
-		if (fixup_partition_sets_null(param) != 0)
-			return -1;
-		int_list_t *sets = ((ds_param_t*)*param)->sets;
-		if (sets && sets->next) {
-			LM_ERR("Only one set is accepted\n");
-			return -1;
-		}
-		return 0;
-	} else if (param_no==4) {
-		/*  active only check ? */
-		return fixup_sint(param);
-	} else {
-		LM_CRIT("bug - too many params (%d) in is_in_list()\n",param_no);
-		return -1;
-	}
-}
-
-
-/* Fixup function for ds_select_dst and ds_select_domain commands */
-int ds_select_fixup(void** param, int param_no)
-{
-	if (param_no > 3) {
-		LM_CRIT("Too many params for ds_select_*\n");
-		return -1;
-	}
-
-	pv_elem_t* elem;
-	str s;
-	max_list_param_p maxlst = NULL;
-	int rc = 0;
-
-	switch (param_no) {
-		case 1:
-			return fixup_partition_sets(param);
-		case 2:
-			return fixup_int_list(param);
-		case 3:
-			s.s = *param;
-			s.len = strlen(s.s);
-
-			trim_spaces_lr(s);
-
-			if (s.len == 0) {
-				LM_ERR("3rd parameter (flags max_results) is empty\n");
-				return -1;
-			}
-
-			if (pv_parse_format(&s, &elem)) {
-				LM_ERR("wrong format [%s] for param no %d!\n",
-						(char*)(*param), param_no);
-			}
-
-			maxlst = pkg_malloc(sizeof(max_list_param_t));
-			if (maxlst == NULL) {
-				LM_ERR("no mem\n");
-				return -1;
-			}
-
-			if (elem->text.len > 0 && elem->spec.setf == NULL
-					&& elem->next == NULL) {
-				rc=fixup_int_list(param);
-
-				maxlst->lst.list = *param;
-				maxlst->type = MAX_LIST_TYPE_STR;
-			} else {
-				maxlst->lst.elem = elem;
-				maxlst->type = MAX_LIST_TYPE_PV;
-				rc = 0;
-			}
-			break;
-	}
-
-	*param = maxlst;
-
-	return rc;
-}
-
-/* Fixup function for ds_count command */
-int ds_count_fixup(void** param, int param_no)
-{
-	char *s;
+	str *s = (str *)*param;
 	int i, code = 0;
 
-	if (param_no > 3)
-		return 0;
+	for (i = 0; i < s->len; i++) {
+		switch (s->s[i]) {
+		/* active */
+		case 'a':
+		case 'A':
+		case '1':
+			code |= DS_COUNT_ACTIVE;
+			break;
 
-	s = (char *)*param;
-	i = strlen(s);
+		/* inactive */
+		case 'i':
+		case 'I':
+		case '0':
+			code |= DS_COUNT_INACTIVE;
+			break;
 
-	switch (param_no)
-	{
-		case 1:
-			return fixup_partition_one_set(param);
-		case 2:
-
-		while (i--)
-		{
-			switch (s[i])
-			{
-				/* active */
-				case 'a':
-				case 'A':
-				case '1':
-					code |= DS_COUNT_ACTIVE;
-					break;
-
-				/* inactive */
-				case 'i':
-				case 'I':
-				case '0':
-					code |= DS_COUNT_INACTIVE;
-					break;
-
-				/* probing */
-				case 'p':
-				case 'P':
-				case '2':
-					code |= DS_COUNT_PROBING;
-					break;
-			}
+		/* probing */
+		case 'p':
+		case 'P':
+		case '2':
+			code |= DS_COUNT_PROBING;
+			break;
 		}
-		break;
-
-		case 3:
-			return fixup_igp(param);
 	}
 
-	s[0] = (char)code;
-	s[1] = '\0';
-
+	*param = (void *)(long)code;
 	return 0;
 }
 
