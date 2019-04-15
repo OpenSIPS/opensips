@@ -65,8 +65,10 @@ enum types { TYPE_HEP=0, TYPE_SIP, TYPE_DB, TYPE_END };
 typedef struct tlist_elem {
 	str name;          /* name of the partition */
 	enum types type;   /* SIP-DB-HEP */
-	unsigned int hash; /* hash over the uri*/
-	unsigned char *traceable; /* whether or not this idd is traceable */
+	unsigned int hash; /* hash over the name */
+	unsigned int uri_hash; /* hash over the uri*/
+	unsigned char *traceable; /* whether or not this id is traceable */
+	char dynamic;      /* whether this elem is dynamic or static */
 
 	union {
 		st_db_struct_t  *db;
@@ -77,6 +79,28 @@ typedef struct tlist_elem {
 
 	struct tlist_elem *next;
 } tlist_elem_t, *tlist_elem_p;
+
+
+enum trace_filter_types {
+	TRACE_FILTER_IP,
+	TRACE_FILTER_CALLER,
+	TRACE_FILTER_CALLEE
+};
+struct trace_filter {
+	enum trace_filter_types type;
+	str match;
+	struct trace_filter *next;
+};
+
+/* we are using a similar structure to be able to use most of the other
+ * functions already in place */
+typedef struct tlist_dyn_elem {
+	struct tlist_elem elem; /* XXX: always keep this first */
+	unsigned int ref;
+	unsigned int type;
+	unsigned int scope;
+	struct trace_filter *filters;
+} tlist_dyn_elem_t, *tlist_dyn_elem_p;
 
 
 typedef struct trace_info {

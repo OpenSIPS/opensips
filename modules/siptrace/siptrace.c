@@ -57,6 +57,21 @@ db_val_t db_vals[NR_KEYS];
 static db_ps_t siptrace_ps = NULL;
 //static query_list_t *ins_list = NULL;
 
+#define trace_id(_tid) ((tlist_elem_p)(_tid))
+#define trace_id_dyn(_tid) ((tlist_dyn_elem_p)(_tid))
+#define trace_id_ref(_tid) (trace_id_dyn(_tid)->ref++)
+#define trace_id_unref(_tid) \
+	do { \
+		trace_id_dyn(_tid)->ref--; \
+		if (trace_id_dyn(_tid)->ref == 0) { \
+			if (trace_id(_tid)->type == TYPE_HEP) \
+				tprot.release_trace_dest(trace_id(_tid)->el.hep.hep_id); \
+			if (trace_id_dyn(_tid)->filters) \
+				free_trace_filters(trace_id_dyn(_tid)->filters); \
+			shm_free(_tid); \
+		} \
+	} while (0)
+
 
 struct tm_binds tmb;
 struct dlg_binds dlgb;
@@ -95,7 +110,9 @@ static str trace_local_proto = {NULL, 0};
 static str trace_local_ip = {NULL, 0};
 static unsigned short trace_local_port = 0;
 
-tlist_elem_p trace_list=NULL;
+static tlist_elem_p trace_list=NULL;
+static tlist_elem_p *dyn_trace_list=NULL;
+static gen_lock_t *dyn_trace_lock;
 
 static const char* corr_id_s="correlation_id";
 static int corr_vendor = -1;
@@ -148,6 +165,10 @@ static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *sip_trace_mi_stop(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri);
 static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_info_p info);
@@ -165,6 +186,8 @@ void free_trace_info_pkg(void *param);
 void free_trace_info_shm(void *param);
 
 
+static int init_dyn_tracing(void);
+static void destroy_dyn_tracing(void);
 
 
 /*
@@ -210,6 +233,18 @@ static mi_export_t mi_cmds[] = {
 		{sip_trace_mi_tid,  {"trace_id", 0}},
 		{sip_trace_mi_mode, {"trace_mode", 0}},
 		{sip_trace_mi_2,{"trace_id", "trace_mode", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "sip_trace_start", 0, 0, 0, {
+		{sip_trace_mi_dyn,{"trace_id", "uri", 0}},
+		{sip_trace_mi_dyn,{"trace_id", "uri", "filter", 0}},
+		{sip_trace_mi_dyn,{"trace_id", "uri", "filter", "scope", "type", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "sip_trace_stop", 0, 0, 0, {
+		{sip_trace_mi_stop,{"trace_id", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
@@ -423,27 +458,80 @@ parse_siptrace_uri(str* token, str* uri, str* param1)
 	return 0;
 }
 
+static void get_siptrace_type(str *name, str *trace_uri, str *param1,
+		unsigned int *hash, enum types *type)
+{
+	#define IS_HEP_URI(__url__) ((__url__->len > 3/*O_o*/ \
+				&& (__url__->s[0]|0x20) == 'h' && (__url__->s[1]|0x20) == 'e' \
+					&& (__url__->s[2]|0x20) == 'p'))
+
+	#define IS_SIP_URI(__url__) ((__url__->len > 3/*O_o*/ \
+				&& (__url__->s[0]|0x20) == 's' && (__url__->s[1]|0x20) == 'i' \
+					&& (__url__->s[2]|0x20) == 'p'))
+
+	#define IS_UDP(__url__) ((__url__.len == 3/*O_o*/ \
+				&& (__url__.s[0]|0x20) == 'u' && (__url__.s[1]|0x20) == 'd' \
+					&& (__url__.s[2]|0x20) == 'p'))
+
+	#define IS_TCP(__url__) ((__url__.len == 3/*O_o*/ \
+				&& (__url__.s[0]|0x20) == 't' && (__url__.s[1]|0x20) == 'c' \
+					&& (__url__.s[2]|0x20) == 'p'))
+
+
+	unsigned int param_hash;
+	*hash = core_hash(name, trace_uri, 0);
+
+	if (IS_HEP_URI(trace_uri)) {
+		/* jump over 'hep:' prefix and keep the name; will be loaded in mod init */
+		*type = TYPE_HEP;
+		trace_uri->len -= HEP_PREFIX_LEN;
+		trace_uri->s += HEP_PREFIX_LEN;
+	} else if (IS_SIP_URI(trace_uri)) {
+		*type = TYPE_SIP;
+	} else {
+		/* need to take the table into account */
+		if (param1 && (param1->s == NULL || param1->len == 0))
+			param1 = &siptrace_table;
+
+		param_hash = core_hash(trace_uri, param1, 0);
+		*hash ^= (param_hash>>3);
+		*type = TYPE_DB;
+	}
+
+
+	#undef IS_HEP_URI
+	#undef IS_SIP_URI
+	#undef IS_TCP
+	#undef IS_UDP
+}
+
+static inline tlist_elem_p get_siptrace_id(str *name, unsigned int hash, enum types type)
+{
+	tlist_elem_p el;
+
+	for (el = trace_list; el; el = el->next)
+		if (el->type == type && el->uri_hash == hash)
+			return el;
+	return NULL;
+}
+
+static inline tlist_elem_p get_dyn_siptrace_id(str *name, unsigned int hash, enum types type,
+		int leave_locked)
+{
+	tlist_elem_p el;
+
+	lock_get(dyn_trace_lock);
+
+	for (el = *dyn_trace_list; el; el = el->next)
+		if (el->type == type && el->uri_hash == hash)
+				break;
+	if (!leave_locked)
+		lock_release(dyn_trace_lock);
+	return el;
+}
+
 static int parse_siptrace_id(str *suri)
 {
-	#define LIST_SEARCH(__start, __type, __hash)                        \
-		do {                                                            \
-			tlist_elem_p __el;                                          \
-			for (__el=__start; __el; __el=__el->next) {                 \
-				if (__el->type==__type  &&__el->hash==__hash)           \
-					return 0;                                           \
-			}                                                           \
-		} while (0);
-
-	#define ALLOC_EL(__list_el, __lel_size)                             \
-		do {                                                            \
-			__list_el = pkg_malloc(__lel_size);                         \
-			if (__list_el == NULL) {                                    \
-				LM_ERR("no more pkg memmory!\n");                       \
-				return -1;                                              \
-			}                                                           \
-			memset(__list_el, 0, __lel_size);                           \
-		} while (0);
-
 	#define PARSE_NAME(__uri, __name)                                   \
 		do {                                                            \
 			while (__uri->s[0]==' ')                                    \
@@ -464,24 +552,7 @@ static int parse_siptrace_id(str *suri)
 			(__uri->s++, __uri->len--);                                 \
 		} while(0);
 
-	#define IS_HEP_URI(__url__) ((__url__.len > 3/*O_o*/ \
-				&& (__url__.s[0]|0x20) == 'h' && (__url__.s[1]|0x20) == 'e' \
-					&& (__url__.s[2]|0x20) == 'p'))
-
-	#define IS_SIP_URI(__url__) ((__url__.len > 3/*O_o*/ \
-				&& (__url__.s[0]|0x20) == 's' && (__url__.s[1]|0x20) == 'i' \
-					&& (__url__.s[2]|0x20) == 'p'))
-
-	#define IS_UDP(__url__) ((__url__.len == 3/*O_o*/ \
-				&& (__url__.s[0]|0x20) == 'u' && (__url__.s[1]|0x20) == 'd' \
-					&& (__url__.s[2]|0x20) == 'p'))
-
-	#define IS_TCP(__url__) ((__url__.len == 3/*O_o*/ \
-				&& (__url__.s[0]|0x20) == 't' && (__url__.s[1]|0x20) == 'c' \
-					&& (__url__.s[2]|0x20) == 'p'))
-
-
-	unsigned int hash, param_hash;
+	unsigned int hash;
 
 	str name={NULL, 0};
 	str trace_uri;
@@ -517,32 +588,23 @@ static int parse_siptrace_id(str *suri)
 		return -1;
 	}
 
-	hash = core_hash(&name, &trace_uri, 0);
+	get_siptrace_type(&name, &trace_uri, &param1, &hash, &uri_type);
 
-	if (IS_HEP_URI(trace_uri)) {
-		uri_type = TYPE_HEP;
-	} else if (IS_SIP_URI(trace_uri)) {
-		uri_type = TYPE_SIP;
-	} else {
-		/* need to take the table into account */
-		if (param1.s == NULL || param1.len == 0)
-			param1 = siptrace_table;
+	if (get_siptrace_id(&name, hash, uri_type))
+		return 0;
 
-		param_hash = core_hash(&trace_uri, &param1, 0);
-		hash ^= (param_hash>>3);
-		uri_type = TYPE_DB;
+	LM_INFO("allocating %d [%.*s]\n", hash, name.len, name.s);
+	elem = pkg_malloc(sizeof(tlist_elem_t));
+	if (!elem) {
+		LM_ERR("could not allocate elem for %.*s!\n", name.len, name.s);
+		return -1;
 	}
-
-	LIST_SEARCH(trace_list, uri_type, hash);
-
-	ALLOC_EL(elem, sizeof(tlist_elem_t));
+	memset(elem, 0, sizeof(tlist_elem_t));
 
 	elem->type = uri_type;
-	elem->hash = hash;
+	elem->hash = core_hash(&name, NULL, 0);
+	elem->uri_hash = hash;
 	elem->name = name;
-
-	/* did memset in ALLOC_EL but just to be sure */
-	elem->next = NULL;
 
 	if (uri_type == TYPE_DB) {
 		if (get_db_struct(&trace_uri, &param1, &elem->el.db) < 0) {
@@ -556,22 +618,13 @@ static int parse_siptrace_id(str *suri)
 			return -1;
 		}
 	} else {
-		/* jump over 'hep:' prefix and keep the name; will be loaded in mod init */
-		elem->el.hep.name.s = trace_uri.s + HEP_PREFIX_LEN;
-		elem->el.hep.name.len = trace_uri.len - HEP_PREFIX_LEN;
+		elem->el.hep.name = trace_uri;
 	}
 
 	add_last(elem, trace_list);
 
 	return 0;
-
-	#undef LIST_SEARCH
-	#undef ALLOC_EL
 	#undef PARSE_NAME
-	#undef IS_HEP_URI
-	#undef IS_SIP_URI
-	#undef IS_TCP
-	#undef IS_UDP
 }
 
 
@@ -771,6 +824,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (init_dyn_tracing() < 0) {
+		LM_ERR("could not initiate dynamic tracing!\n");
+		return -1;
+	}
+
 	*trace_on_flag = trace_on;
 
 	/* initialize hep api */
@@ -806,7 +864,6 @@ static int mod_init(void)
 	 * are declared  under the same name in the same
 	 * sip_trace() call */
 	for (it=trace_list; it; it=it->next) {
-		it->hash = core_hash(&it->name, NULL, 0);
 		it->traceable=shm_malloc(sizeof(unsigned char));
 		if (it->traceable==NULL) {
 			LM_ERR("no more shmem!\n");
@@ -931,6 +988,7 @@ static void destroy(void)
 
 	if (trace_on_flag)
 		shm_free(trace_on_flag);
+	destroy_dyn_tracing();
 }
 
 
@@ -986,7 +1044,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 	hash = info->trace_list->hash;
 	/* check where the hash matches and take the proper action */
 	for (it=info->trace_list; it && (it->hash == hash); it=it->next) {
-		if (!(*it->traceable))
+		if (it->traceable && !(*it->traceable))
 			continue;
 
 		switch (it->type) {
@@ -1247,7 +1305,7 @@ int st_parse_types(str* stypes_p)
 }
 
 
-static tlist_elem_p get_list_start(str *name)
+static tlist_elem_p get_list_start(tlist_elem_p list, str *name)
 {
 	unsigned int hash;
 	tlist_elem_p it;
@@ -1256,7 +1314,7 @@ static tlist_elem_p get_list_start(str *name)
 		return NULL;
 
 	hash = core_hash(name, NULL, 0);
-	for (it=trace_list; it; it=it->next)
+	for (it=list; it; it=it->next)
 		if (hash==it->hash)
 			return it;
 
@@ -1268,7 +1326,7 @@ static int fixup_tid(void **param)
 {
 	tlist_elem_p tid;
 
-	tid = get_list_start((str*)*param);
+	tid = get_list_start(trace_list, (str*)*param);
 	if ( tid == NULL) {
 		LM_ERR("Trace id <%.*s> used in sip_trace() function "
 			"not defined!\n", ((str*)*param)->len, ((str*)*param)->s);
@@ -2124,6 +2182,46 @@ static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps)
 	}
 }
 
+static int mi_tid_dyn_filters(tlist_dyn_elem_p tid_el, mi_item_t *dest_item)
+{
+	mi_item_t *filters_arr, *obj;
+	struct trace_filter *filter;
+	char *msg;
+
+	if (!tid_el->filters)
+		return 0;
+
+	filters_arr = add_mi_array(dest_item, MI_SSTR("filters"));
+	if (!filters_arr) {
+		LM_INFO("could not create array!\n");
+		return -1;
+	}
+	for (filter = tid_el->filters; filter; filter = filter->next) {
+		switch (filter->type) {
+			case TRACE_FILTER_IP:
+				msg = "ip";
+				break;
+			case TRACE_FILTER_CALLER:
+				msg = "caller";
+				break;
+			case TRACE_FILTER_CALLEE:
+				msg = "callee";
+				break;
+		}
+		obj = add_mi_object(filters_arr, NULL, 0);
+		if (!obj) {
+			LM_ERR("could not create new MI object!\n");
+			return -1;
+		}
+        if (add_mi_string(obj, msg, strlen(msg),
+				filter->match.s, filter->match.len) < 0) {
+			LM_ERR("could not create new string object!\n");
+			return -1;
+		}
+	}
+	return 0;
+}
+
 static int mi_tid_info(tlist_elem_p tid_el, mi_item_t *dests_arr)
 {
 	mi_item_t *dest_item;
@@ -2158,7 +2256,13 @@ static int mi_tid_info(tlist_elem_p tid_el, mi_item_t *dests_arr)
 			return -1;
 	}
 
-	if (tid_el->traceable) {
+	if (tid_el->dynamic) {
+		if (add_mi_string(dest_item, MI_SSTR("state"), MI_SSTR("dynamic")) < 0)
+			return -1;
+		/* if dynamic, we might need information about the filters */
+		if (mi_tid_dyn_filters(trace_id_dyn(tid_el), dest_item) < 0)
+			return -1;
+	} else if (tid_el->traceable && *tid_el->traceable) {
 		if (add_mi_string(dest_item, MI_SSTR("state"), MI_SSTR("on")) < 0)
 			return -1;
 	} else {
@@ -2202,6 +2306,17 @@ static mi_response_t *sip_trace_mi(const mi_params_t *params,
 		if (mi_tid_info(it, dests_arr) < 0)
 			goto error;
 
+	if (!dyn_trace_list)
+		return resp;
+
+	lock_get(dyn_trace_lock);
+	for (it=(tlist_elem_p)(*dyn_trace_list); it; it = it->next)
+		if (mi_tid_info(it, dests_arr) < 0) {
+			lock_release(dyn_trace_lock);
+			goto error;
+		}
+	lock_release(dyn_trace_lock);
+
 	return resp;
 
 error:
@@ -2218,6 +2333,7 @@ static mi_response_t *sip_trace_mi_tid(const mi_params_t *params,
 	mi_response_t *resp = NULL;
 	mi_item_t *resp_obj;
 	mi_item_t *dests_arr;
+	int dynamic = 0;
 
 	if (get_mi_string_param(params, "trace_id", &tid_s.s, &tid_s.len) < 0)
 		return init_mi_param_error();
@@ -2226,22 +2342,36 @@ static mi_response_t *sip_trace_mi_tid(const mi_params_t *params,
 	if (!resp)
 		return 0;
 
-	it=get_list_start(&tid_s);
-	if ( it ) {
-		dests_arr = add_mi_array(resp_obj, MI_SSTR("trace destinations"));
-		if (!dests_arr)
-			goto error;
+	it=get_list_start(trace_list, &tid_s);
+	if (!it && dyn_trace_list) {
+		lock_get(dyn_trace_lock);
+		it=get_list_start(*dyn_trace_list, &tid_s);
+		if (!it)
+			lock_release(dyn_trace_lock);
+		else
+			dynamic = 1;
+	}
+	if (!it) {
+		free_mi_response(resp);
+		return init_mi_error(400, MI_SSTR("Bad trace_id value"));
+	}
 
-		hash=it->hash;
-		for (;it&&it->hash==hash;it=it->next)
-			if (mi_tid_info(it, dests_arr) < 0)
-				goto error;
-	} else
-		resp = init_mi_error(400, MI_SSTR("Bad trace_id value"));
+	dests_arr = add_mi_array(resp_obj, MI_SSTR("trace destinations"));
+	if (!dests_arr)
+		goto error;
+
+	hash=it->hash;
+	for (;it&&it->hash==hash;it=it->next)
+		if (mi_tid_info(it, dests_arr) < 0)
+			goto error;
+	if (dynamic)
+		lock_release(dyn_trace_lock);
 
 	return resp;
 
 error:
+	if (dynamic)
+		lock_release(dyn_trace_lock);
 	free_mi_response(resp);
 	return NULL;
 }
@@ -2275,6 +2405,227 @@ static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
 			MI_SSTR("trace_mode should be 'on' or 'off'"));
 }
 
+static int parse_trace_filter(str *filter_s, enum trace_filter_types *type)
+{
+	if (filter_s->len > 7) { /* case caller/callee= */
+		if (strncasecmp(filter_s->s, "caller=", 7) == 0) {
+			*type = TRACE_FILTER_CALLER;
+			return 7;
+		} else if (strncasecmp(filter_s->s, "callee=", 7) == 0) {
+			*type = TRACE_FILTER_CALLEE;
+			return 7;
+		}
+	} else if (filter_s->len > 3) { /* case ip= */
+		if (strncasecmp(filter_s->s, "ip=", 3) == 0) {
+			*type = TRACE_FILTER_IP;
+			return 3;
+		}
+	}
+	return 0;
+}
+
+static void free_trace_filters(struct trace_filter *list)
+{
+	struct trace_filter *next, *it;
+
+	for (it = list; it; it = next) {
+		next = it->next;
+		shm_free(it);
+	}
+}
+
+static struct trace_filter *parse_trace_filters(const mi_params_t *params)
+{
+	struct trace_filter *filters = NULL, *filter = NULL;
+	enum trace_filter_types type;
+	int filters_no, i, rc;
+	mi_item_t *fi;
+	str sfilter;
+
+	if (try_get_mi_array_param(params, "filter", &fi, &filters_no) < 0)
+		return 0;
+
+	/* we have filters! */
+	for (i = 0; i < filters_no; i++) {
+		if (try_get_mi_arr_param_string(fi, i, &sfilter.s, &sfilter.len) == 0) {
+			rc = parse_trace_filter(&sfilter, &type);
+			if (rc != 0) {
+				filter = shm_malloc(sizeof(*filter) + sfilter.len - rc);
+				if (!filter) {
+					LM_ERR("could not allocate filters!\n");
+					free_trace_filters(filters);
+					return NULL;
+				}
+				memset(filter, 0, sizeof(*filter));
+				filter->type = type;
+				filter->match.len = sfilter.len - rc;
+				filter->match.s = (char *)(filter + 1);
+				memcpy(filter->match.s, sfilter.s + rc, filter->match.len);
+				/* link in the filters list */
+				filter->next = filters;
+				filters = filter;
+			} else
+				LM_WARN("Unknown filter %.*s\n", sfilter.len, sfilter.s);
+		} else
+			LM_WARN("Bad filter type for index %d\n", i);
+	}
+	return filters;
+}
+
+static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	char *p_uri;
+	char *p_name;
+	unsigned int hash;
+	enum types uri_type;
+	str name, uri, aux;
+	struct trace_filter *filters = NULL;
+	tlist_dyn_elem_p elem = NULL;
+	hid_list_t* hep_id = NULL;
+	int traced_scope, traced_type;
+
+	if (get_mi_string_param(params, "trace_id", &name.s, &name.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "uri", &uri.s, &uri.len) < 0)
+		return init_mi_param_error();
+
+	get_siptrace_type(&name, &uri, NULL, &hash, &uri_type);
+	if (uri_type == TYPE_DB) {
+		LM_WARN("dynamic DB tracing is not yet available!\n");
+		return init_mi_error_extra(406, MI_SSTR("DB not acceptable"),
+					MI_SSTR("dynamic DB tracing is not yet available"));
+	}
+	if (get_siptrace_id(&name, hash, uri_type)) {
+		LM_INFO("trace %.*s with uri %.*s already exists!\n",
+				name.len, name.s, uri.len, uri.s);
+		return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
+					MI_SSTR("trace id already used"));
+	}
+	LM_INFO("allocating %d [%.*s]\n", hash, name.len, name.s);
+
+	if (get_dyn_siptrace_id(&name, hash, uri_type, 1)) {
+		lock_release(dyn_trace_lock);
+		LM_INFO("dynamic trace %.*s with uri %.*s already exists!\n",
+				name.len, name.s, uri.len, uri.s);
+		return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
+					MI_SSTR("dynamic trace id already used"));
+	}
+
+	if (uri_type == TYPE_HEP) {
+		/* check if we can alocate a hep_id */
+		hep_id = tprot.new_trace_dest(&name, &uri);
+		if (!hep_id) {
+			lock_release(dyn_trace_lock);
+			LM_ERR("could not alocate new hep_id\n");
+			return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
+						MI_SSTR("error while alocating new hep_id"));
+		}
+		uri = hep_id->name;
+	}
+	/* default tracing scope is dialog */
+	if (try_get_mi_string_param(params, "scope", &aux.s, &aux.len) < 0 ||
+			((traced_scope = st_parse_flags(&aux)) == 0))
+		traced_type = TRACE_DIALOG;
+
+	/* default tracing scope is everything */
+	if (try_get_mi_string_param(params, "type", &aux.s, &aux.len) < 0 || 
+			((traced_scope = st_parse_types(&aux)) == 0))
+		traced_scope = 0xFFFF;
+
+	filters = parse_trace_filters(params);
+
+	/* first check if the destination exists */
+	elem = shm_malloc(sizeof(tlist_dyn_elem_t) + uri.len + name.len);
+	if (!elem) {
+		LM_ERR("could not allocate dynamic elem!\n");
+		goto error;
+	}
+	memset(elem, 0, sizeof(tlist_dyn_elem_t));
+	p_uri = (char *)(elem + 1);
+	memcpy(p_uri, uri.s, uri.len);
+	p_name = p_uri + uri.len;
+	memcpy(p_name, name.s, name.len);
+
+	if (uri_type == TYPE_HEP) {
+		elem->elem.el.hep.name.s = p_uri;
+		elem->elem.el.hep.name.len = uri.len;
+		elem->elem.el.hep.hep_id = hep_id;
+	} else if (parse_uri(p_uri, uri.len, &elem->elem.el.uri) < 0) {
+		LM_ERR("failed to parse the [%.*s] URI\n", uri.len, p_uri);
+		goto error;
+	}
+
+	elem->ref = 1;
+	elem->scope = traced_scope;
+	elem->type = traced_type;
+	elem->filters = filters;
+	elem->elem.dynamic = 1;
+	elem->elem.type = uri_type;
+	elem->elem.uri_hash = hash;
+	elem->elem.name.s = p_name;
+	elem->elem.name.len = name.len;
+	elem->elem.hash = core_hash(&elem->elem.name, NULL, 0);
+
+	/* all good now, insert the element */
+	elem->elem.next = (*dyn_trace_list);
+	*dyn_trace_list = (tlist_elem_p)elem;
+	do_sort(dyn_trace_list);
+	lock_release(dyn_trace_lock);
+
+	return init_mi_result_ok();
+error:
+	if (filters)
+		free_trace_filters(filters);
+	if (hep_id)
+		tprot.release_trace_dest(hep_id);
+	lock_release(dyn_trace_lock);
+	if (elem)
+		shm_free(elem);
+	return NULL;
+}
+
+static mi_response_t *sip_trace_mi_stop(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str tid_s;
+	tlist_elem_p it, prev, next;
+	unsigned int hash;
+
+	if (!dyn_trace_list)
+		return init_mi_error(500, MI_SSTR("Internal Error"));
+	if (get_mi_string_param(params, "trace_id", &tid_s.s, &tid_s.len) < 0)
+		return init_mi_param_error();
+
+	lock_get(dyn_trace_lock);
+	it=get_list_start(*dyn_trace_list, &tid_s);
+	if (!it) {
+		lock_release(dyn_trace_lock);
+		return init_mi_error(400, MI_SSTR("Bad parameter value"));
+	}
+
+	hash=it->hash;
+
+	/* search for the previous element */
+	for (prev=NULL, it=(*dyn_trace_list); it && it->next; it = it->next) {
+		if (it->next->hash == hash)
+			break;
+		else
+			prev = it;
+	}
+	for (;it&&it->hash==hash;it=next) {
+		next = it->next;
+		if (prev)
+			prev->next = next;
+		else
+			(*dyn_trace_list) = next;
+		trace_id_unref(it);
+	}
+	lock_release(dyn_trace_lock);
+
+	return init_mi_result_ok();
+}
+
 static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
@@ -2305,7 +2656,7 @@ static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
 					MI_SSTR("trace_mode should be 'on' or 'off'"));
 	}
 
-	it=get_list_start(&tid_s);
+	it=get_list_start(trace_list, &tid_s);
 	if (!it) {
 		return init_mi_error(400, MI_SSTR("Bad parameter value"));
 	}
@@ -2317,6 +2668,7 @@ static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
 
 	return init_mi_result_ok();
 }
+
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri)
 {
 	union sockaddr_union* to;
@@ -2549,7 +2901,7 @@ trace_dest get_next_trace_dest(trace_dest last_dest, int hash)
 		found_last = 1;
 
 	for (it=info->trace_list; it && it->hash == hash; it=it->next) {
-		if (it->type == TYPE_HEP && (*it->traceable)) {
+		if (it->type == TYPE_HEP && (it->traceable || !(*it->traceable))) {
 			if (found_last)
 				return it->el.hep.hep_id;
 			else if (it->el.hep.hep_id == last_dest)
@@ -2666,7 +3018,7 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 	for(it=info->trace_list; it; it=it->next)
 		LM_DBG("name %.*s, hash %d, type %d, traceable %d\n",
 			it->name.len,it->name.s,
-			it->hash, it->type, *it->traceable);
+			it->hash, it->type, (it->traceable?(*it->traceable):-1));
 
 	/* iterate through the list of trace URIs but use only those
 	 * with the same name (given by same hash) - keep in midn that
@@ -2674,7 +3026,7 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 	 * name will be grouped */
 	hash = info->trace_list->hash;
 	for (it=info->trace_list; it && (it->hash==hash); it=it->next) {
-		if (it->type != TYPE_HEP || !(*it->traceable))
+		if (it->type != TYPE_HEP || (it->traceable && !(*it->traceable)))
 			continue;
 
 		trace_msg = tprot.create_trace_message(from_su, to_su,
@@ -2719,4 +3071,45 @@ const struct trace_proto* get_traced_protos(void)
 int get_traced_protos_no(void)
 {
 	return traced_protos_no;
+}
+
+static int init_dyn_tracing(void)
+{
+	dyn_trace_lock = lock_alloc();
+	if (!dyn_trace_lock) {
+		LM_ERR("could not allocate dynamic trace lock!\n");
+		return -1;
+	}
+	if (!lock_init(dyn_trace_lock)) {
+		lock_dealloc(dyn_trace_lock);
+		LM_ERR("could not allocate dynamic trace lock!\n");
+		return -1;
+	}
+	dyn_trace_list = shm_malloc(sizeof(*dyn_trace_list));
+	if (!dyn_trace_list) {
+		lock_dealloc(dyn_trace_lock);
+		LM_ERR("could not allocate dynamic trace list!\n");
+		return -1;
+	}
+	*dyn_trace_list = 0;
+	return 0;
+}
+
+static void destroy_dyn_tracing(void)
+{
+	tlist_elem_t *it, *next;
+
+	if (!dyn_trace_list)
+		return;
+
+	lock_get(dyn_trace_lock);
+	for (it=*dyn_trace_list; it; it=next) {
+		next = it->next;
+		trace_id_unref(it);
+	}
+	lock_release(dyn_trace_lock);
+
+	/* release the lock itself */
+	lock_dealloc(dyn_trace_lock);
+	shm_free(dyn_trace_list);
 }
