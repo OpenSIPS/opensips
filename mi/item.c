@@ -563,7 +563,7 @@ int try_get_mi_arr_param_int(const mi_item_t *array, int pos, int *value)
 
 int get_mi_arr_param_int(const mi_item_t *array, int pos, int *value)
 {
-	switch (get_mi_arr_param_int(array, pos, value))
+	switch (try_get_mi_arr_param_int(array, pos, value))
 	{
 		case -1:
 			LM_ERR("Array index out of bounds\n");
