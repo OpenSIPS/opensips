@@ -69,8 +69,8 @@ static void destroy(void);
  */
 static int mod_init(void);
 
-int pv_proxy_authorize(struct sip_msg* msg, char* realm, char* str2);
-int pv_www_authorize(struct sip_msg* msg, char* realm, char* str2);
+int pv_proxy_authorize(struct sip_msg* msg, str* realm);
+int pv_www_authorize(struct sip_msg* msg, str* realm);
 
 /** SIGNALING binds */
 struct sig_binds sigb;
@@ -117,29 +117,33 @@ int disable_nonce_check = 0;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
-	{"www_challenge",       (cmd_function)www_challenge,           2,
-		fixup_spve_uint, 0, REQUEST_ROUTE},
-	{"proxy_challenge",     (cmd_function)proxy_challenge,         2,
-		fixup_spve_uint, 0, REQUEST_ROUTE},
-	{"pv_www_authorize",    (cmd_function)pv_www_authorize,        1,
-		fixup_spve_null, 0, REQUEST_ROUTE},
-	{"pv_proxy_authorize",  (cmd_function)pv_proxy_authorize,      1,
-		fixup_spve_null, 0, REQUEST_ROUTE},
-	{"consume_credentials", (cmd_function)consume_credentials,     0, 0,
-			0, REQUEST_ROUTE},
-	{"is_rpid_user_e164",   (cmd_function)is_rpid_user_e164,       0, 0,
-			0, REQUEST_ROUTE},
-	{"append_rpid_hf",      (cmd_function)append_rpid_hf,          0, 0,
-			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"append_rpid_hf",      (cmd_function)append_rpid_hf_p,        2,
-			fixup_str_str,
-			0, REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"bind_auth",           (cmd_function)bind_auth, 0, 0,
-			0, 0},
-	{0, 0, 0, 0, 0, 0}
-};
 
+static cmd_export_t cmds[] = {
+	{"www_challenge", (cmd_function)www_challenge, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"proxy_challenge", (cmd_function)proxy_challenge, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"pv_www_authorize",    (cmd_function)pv_www_authorize, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"pv_proxy_authorize",  (cmd_function)pv_proxy_authorize, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"consume_credentials", (cmd_function)consume_credentials, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"is_rpid_user_e164",   (cmd_function)is_rpid_user_e164, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"append_rpid_hf",      (cmd_function)append_rpid_hf, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"bind_uath",   (cmd_function)bind_auth, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
+};
 
 /*
  * Exported parameters
@@ -414,7 +418,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 	return 0;
 }
 
-static inline int pv_authorize(struct sip_msg* msg, gparam_p realm,
+static inline int pv_authorize(struct sip_msg* msg, str *domain,
 										hdr_types_t hftype)
 {
 	static char ha1[256];
@@ -422,25 +426,18 @@ static inline int pv_authorize(struct sip_msg* msg, gparam_p realm,
 	struct hdr_field* h;
 	auth_body_t* cred;
 	auth_result_t ret;
-	str domain;
 
-	if(fixup_get_svalue(msg, realm, &domain)!=0)
-	{
-		LM_ERR("invalid realm parameter\n");
-		return -1;
-	}
+	if (domain->len==0)
+		domain->s = 0;
 
-	if (domain.len==0)
-		domain.s = 0;
-
-	ret = pre_auth(msg, &domain, hftype, &h);
+	ret = pre_auth(msg, domain, hftype, &h);
 
 	if (ret != DO_AUTHORIZATION)
 		return ret;
 
 	cred = (auth_body_t*)h->parsed;
 
-	res = auth_get_ha1(msg, &cred->digest.username, &domain, ha1);
+	res = auth_get_ha1(msg, &cred->digest.username, domain, ha1);
 	if (res < 0) {
 		/* Error */
 		if (sigb.reply(msg, 500, &auth_500_err, NULL) == -1) {
@@ -462,14 +459,14 @@ static inline int pv_authorize(struct sip_msg* msg, gparam_p realm,
 }
 
 
-int pv_proxy_authorize(struct sip_msg* msg, char* realm, char* str2)
+int pv_proxy_authorize(struct sip_msg* msg, str* realm)
 {
-	return pv_authorize(msg, (gparam_p)realm, HDR_PROXYAUTH_T);
+	return pv_authorize(msg, realm, HDR_PROXYAUTH_T);
 }
 
 
-int pv_www_authorize(struct sip_msg* msg, char* realm, char* str2)
+int pv_www_authorize(struct sip_msg* msg, str* realm)
 {
-	return pv_authorize(msg, (gparam_p)realm, HDR_AUTHORIZATION_T);
+	return pv_authorize(msg, realm, HDR_AUTHORIZATION_T);
 }
 

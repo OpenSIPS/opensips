@@ -168,11 +168,13 @@ int parse_xcap_root(void);
 mi_response_t *mi_update_subscriptions(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static cmd_export_t cmds[]=
-{
-	{"rls_handle_subscribe",     (cmd_function)rls_handle_subscribe, 0, 0,               0, REQUEST_ROUTE},
-	{"rls_handle_notify",        (cmd_function)rls_handle_notify,    0, 0,               0, REQUEST_ROUTE},
-	{0, 0, 0, 0, 0, 0 }
+
+static cmd_export_t cmds[]={
+	{"rls_handle_subscribe",     (cmd_function)rls_handle_subscribe, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"rls_handle_notify",        (cmd_function)rls_handle_notify, {{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
@@ -263,7 +265,7 @@ static int mod_init(void)
 		presence_server.len= strlen(presence_server.s);
 
         /* load XCAP API */
-        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 1, 0);
+        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 0);
         if (!bind_xcap)
         {
                 LM_ERR("Can't bind xcap\n");
@@ -309,7 +311,7 @@ static int mod_init(void)
 		LM_ERR("can't load tm functions\n");
 		return -1;
 	}
-	bind_presence= (bind_presence_t)find_export("bind_presence", 1,0);
+	bind_presence= (bind_presence_t)find_export("bind_presence",0);
 	if (!bind_presence)
 	{
 		LM_ERR("Can't bind presence\n");
@@ -400,7 +402,7 @@ static int mod_init(void)
 
 	/* bind libxml wrapper functions */
 
-	if((bind_libxml=(bind_libxml_t)find_export("bind_libxml_api", 1, 0))== NULL)
+	if((bind_libxml=(bind_libxml_t)find_export("bind_libxml_api", 0))== NULL)
 	{
 		LM_ERR("can't import bind_libxml_api\n");
 		return -1;
@@ -423,7 +425,7 @@ static int mod_init(void)
 	}
 
 	/* bind pua */
-	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
+	bind_pua= (bind_pua_t)find_export("bind_pua",0);
 	if (!bind_pua)
 	{
 		LM_ERR("Can't bind pua\n");
@@ -459,7 +461,7 @@ static int mod_init(void)
 	if(!rls_integrated_xcap_server)
 	{
 		/* bind xcap */
-		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client", 1, 0);
+		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client", 0);
 		if (!bind_xcap_client)
 		{
 			LM_ERR("Can't bind xcap_client\n");

@@ -28,6 +28,6 @@
 
 #include "../../parser/msg_parser.h"
 
-int sd_lookup(struct sip_msg* _msg, char* _table, char* _str2);
+int sd_lookup(struct sip_msg* _msg, str* _table, str* _str2);
 
 #endif /* _SDLOOKUP_H_ */

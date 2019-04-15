@@ -51,13 +51,12 @@ int verify_source_service_type = -1;
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-    {"verify_destination", (cmd_function)verify_destination, 0, 0, 0,
-     REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-    {"verify_source", (cmd_function)verify_source, 0, 0, 0,
-     REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-    {0, 0, 0, 0, 0, 0}
+    {"verify_destination", (cmd_function)verify_destination, {{0,0,0}},
+        REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+    {"verify_source", (cmd_function)verify_source, {{0,0,0}},
+        REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+    {0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters

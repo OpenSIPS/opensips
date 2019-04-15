@@ -64,14 +64,15 @@ extern int async_status;
 /******** functions related to script async ops *******/
 
 /* function to handle script function in async mode.
-   Input: the sip message, the function/action (MODULE_T) and the ID of
-          the resume route (where to continue after the I/O is done).
+   Input: the sip message, the function/action (MODULE_T), the ID of
+          the resume route (where to continue after the I/O is done) and the
+          array of parameters for the function.
    Output: 0 if the async call was successfully done and script execution
           must be terminated.
           -1 some error happened and the async call did not happened.
  */
 typedef int (async_script_start_function)
-	(struct sip_msg *msg, struct action* a , int resume_route);
+	(struct sip_msg *msg, struct action* a , int resume_route, void **params);
 
 /* Handles periodic progress (data arrival) on behalf of the contained,
  * module-specific resume function, which it must also call
@@ -136,7 +137,7 @@ int async_fd_resume(int fd, void *param);
 /******** functions related to async launch *******/
 
 int async_script_launch(struct sip_msg *msg, struct action* a,
-		int report_route);
+		int report_route, void **params);
 
 /* @fd is always valid */
 int async_launch_resume(int fd, void *param);

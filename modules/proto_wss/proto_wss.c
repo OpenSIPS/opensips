@@ -116,12 +116,9 @@ static mi_response_t *wss_trace_mi_1(const mi_params_t *params,
 
 static int wss_port = WSS_DEFAULT_PORT;
 
-
 static cmd_export_t cmds[] = {
-	{"proto_init", (cmd_function)proto_wss_init, 0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"proto_init", (cmd_function)proto_wss_init, {{0,0,0}},0},
 };
-
 
 static param_export_t params[] = {
 	/* XXX: should we drop the ws prefix? */

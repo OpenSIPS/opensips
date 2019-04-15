@@ -56,11 +56,11 @@ str callid_aux;
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"emergency_call", (cmd_function) emergency_call, 0, 0, 0,
+	{"emergency_call", (cmd_function) emergency_call, {{0, 0, 0}},
 		REQUEST_ROUTE | BRANCH_ROUTE },
-	{"failure", (cmd_function) failure, 0, 0, 0,
+	{"failure", (cmd_function) failure, {{0, 0, 0}},
 		FAILURE_ROUTE | ONREPLY_ROUTE },
-	{ 0, 0, 0, 0, 0, 0}
+	{ 0, 0, {{0, 0, 0}}, 0}
 };
 
 

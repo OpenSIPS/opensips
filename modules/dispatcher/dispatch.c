@@ -1475,14 +1475,6 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 		return -1;
 	}
 
-	if((ds_select_ctl->mode==0) && (ds_flags&DS_FORCE_DST)
-			&& (msg->dst_uri.s!=NULL || msg->dst_uri.len>0))
-	{
-		LM_ERR("destination already set [%.*s]\n", msg->dst_uri.len,
-				msg->dst_uri.s);
-		return -1;
-	}
-
 	/* access ds data under reader's lock */
 	lock_start_read( ds_select_ctl->partition->lock );
 
@@ -1746,7 +1738,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 	if(!(ds_flags&DS_FAILOVER_ON))
 		goto done;
 
-	if(ds_select_ctl->reset_AVP)
+	if (!(ds_select_ctl->ds_flags & DS_APPEND_MODE))
 	{
 		/* do some AVP cleanup before start populating new ones */
 		destroy_avps(0/*all types*/, ds_select_ctl->partition->dst_avp_name,1);
@@ -1756,7 +1748,6 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 		if (ds_select_ctl->partition->attrs_avp_name>0)
 			destroy_avps( 0 /*all types*/,
 					ds_select_ctl->partition->attrs_avp_name, 1 /*all*/);
-		ds_select_ctl->reset_AVP = 0;
 	}
 
 	if((ds_flags&DS_USE_DEFAULT) && ds_id!=idx->nr-1)
@@ -2071,37 +2062,18 @@ int ds_set_state_repl(int group, str *address, int state, int type,
 /* Checks, if the request (sip_msg *_m) comes from a host in a set
  * (set-id or -1 for all sets)
  */
-int ds_is_in_list(struct sip_msg *_m, gparam_t *gp_ip, gparam_t *gp_port,
-					int set, int active_only, ds_partition_t *partition)
+int ds_is_in_list(struct sip_msg *_m, str *_ip, int port, int set,
+                  ds_partition_t *partition, int active_only)
 {
 	pv_value_t val;
 	ds_set_p list;
 	struct ip_addr *ip;
 	int_str avp_val;
-	int port;
 	int j,k;
 
-	/* get the address to test */
-	if (fixup_get_svalue(_m, gp_ip, &val.rs) != 0) {
-		LM_ERR("bad IP pseudo-variable!\n");
-		return -1;
-	}
-
-	if ( (ip=str2ip( &val.rs ))==NULL && (ip=str2ip6( &val.rs ))==NULL ) {
+	if (!(ip = str2ip(_ip)) && !(ip = str2ip6(_ip))) {
 		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
 		return -1;
-	}
-
-	/* get the port to test */
-	if (gp_port) {
-		if (fixup_get_ivalue(_m, gp_port, &val.ri) != 0) {
-			LM_ERR("bad port pseudo-variable!\n");
-			return -1;
-		}
-
-		port = val.ri;
-	} else {
-		port = 0;
 	}
 
 	memset(&val, 0, sizeof(pv_value_t));
@@ -2416,15 +2388,16 @@ void ds_update_weights(unsigned int ticks, void *param)
 	}
 }
 
-int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
-													ds_partition_t *partition)
+int ds_count(struct sip_msg *msg, int set_id, void *_cmp, pv_spec_p ret,
+				ds_partition_t *partition)
 {
 	pv_value_t pv_val;
 	ds_set_p set;
 	ds_dest_p dst;
 	int count, active = 0, inactive = 0, probing = 0;
+	int cmp = (int)(long)_cmp;
 
-	LM_DBG("Searching for set: %d, filtering: %d\n", set_id, *cmp);
+	LM_DBG("Searching for set: %d, filtering: %d\n", set_id, cmp);
 
 	/* access ds data under reader's lock */
 	lock_start_read( partition->lock );
@@ -2453,7 +2426,7 @@ int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 
 	lock_stop_read( partition->lock );
 
-	switch (*cmp)
+	switch (cmp)
 	{
 		case DS_COUNT_ACTIVE:
 			count = active;
@@ -2461,13 +2434,13 @@ int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
 
 		case DS_COUNT_ACTIVE|DS_COUNT_INACTIVE:
 		case DS_COUNT_ACTIVE|DS_COUNT_PROBING:
-			count = (*cmp & DS_COUNT_INACTIVE ? active + inactive :
+			count = (cmp & DS_COUNT_INACTIVE ? active + inactive :
 												active + probing);
 			break;
 
 		case DS_COUNT_INACTIVE:
 		case DS_COUNT_PROBING:
-			count = (*cmp == DS_COUNT_INACTIVE ? inactive : probing);
+			count = (cmp == DS_COUNT_INACTIVE ? inactive : probing);
 			break;
 
 		case DS_COUNT_INACTIVE|DS_COUNT_PROBING:

@@ -229,47 +229,6 @@ out_memfault:
 	return -ERR;
 }
 
-int check_addr_param1(str *s, struct part_var *pv)
-{
-	char *end;
-	unsigned int gid;
-	int ret;
-	str spart, sval;
-
-	ret=0;
-
-	spart.s = s->s;
-
-	end = q_memchr(s->s, ':', s->len);
-
-	ret = -1;
-	if (end == NULL) {
-		ret = str2int(s, &gid);
-		pv->u.parsed_part.partition.s = NULL;
-		if (0 == ret)
-			pv->u.parsed_part.v.ival = gid;
-		else {
-			pv->u.parsed_part.v.sval.s = s->s;
-			pv->u.parsed_part.v.sval.len = s->len;
-		}
-	} else {
-		spart.len = end - spart.s;
-		sval.s = end + 1;
-		sval.len = (s->s + s->len) - sval.s;
-
-		str_trim_spaces_lr(sval);
-		str_trim_spaces_lr(spart);
-
-		pv->u.parsed_part.partition = spart;
-		ret = str2int(&sval, &gid);
-		if (0 == ret)
-			pv->u.parsed_part.v.ival = gid;
-		else
-			pv->u.parsed_part.v.sval = sval;
-	}
-
-	return 0;
-}
 
 /* part struct API */
 void add_part_struct(struct pm_part_struct *part_struct)

@@ -38,23 +38,15 @@
 #define E_H350_INTERNAL -1
 #define E_H350_NO_SUCCESS -2
 
-struct h350_auth_lookup_avp_params
-{
-	pv_spec_t   username_avp_spec;
-	pv_spec_t   password_avp_spec;
-};
-
 int h350_exp_fn_init();
 
-int h350_sipuri_lookup(struct sip_msg* _msg, pv_elem_t* _sip_uri);
+int h350_sipuri_lookup(struct sip_msg* _msg, str* _sip_uri);
 
-int h350_auth_lookup(
-	struct sip_msg* _msg,
-	pv_elem_t* _digest_username,
-	struct h350_auth_lookup_avp_params* _avp_specs);
+int h350_auth_lookup(struct sip_msg* _msg, str *digest_username,
+	pv_spec_t *username_avp, pv_spec_t *pwd_avp);
 
-int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix);
+int h350_call_preferences(struct sip_msg* _msg, str* _avp_name_prefix);
 
-int h350_service_level(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix);
+int h350_service_level(struct sip_msg* _msg, str* _avp_name_prefix);
 
 #endif /* H350_EXP_FN_H */

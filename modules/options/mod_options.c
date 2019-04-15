@@ -53,13 +53,15 @@ static str opt_500_rpl = str_init("Server internal error");
 
 static int mod_init(void);
 
-static int opt_reply(struct sip_msg* _msg, char* _foo, char* _bar);
+static int opt_reply(struct sip_msg* _msg);
 /*
  * Exported functions
  */
+
 static cmd_export_t cmds[] = {
-	{"options_reply", (cmd_function)opt_reply, 0, 0, 0, REQUEST_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{"options_reply", (cmd_function)opt_reply, {{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 /*
@@ -186,7 +188,7 @@ static int mod_init(void) {
 }
 
 
-static int opt_reply(struct sip_msg* _msg, char* _foo, char* _bar) {
+static int opt_reply(struct sip_msg* _msg) {
 
 	/* check if it is called for an OPTIONS request */
 	if (_msg->REQ_METHOD!=METHOD_OPTIONS) {

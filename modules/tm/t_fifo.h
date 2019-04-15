@@ -33,7 +33,8 @@
 
 extern int tm_unix_tx_timeout;
 
-int fixup_t_write( void** param, int param_no);
+int fixup_t_write(void** param);
+int fixup_free_t_write(void **param);
 
 int parse_tw_append( modparam_t type, void* val);
 
@@ -41,8 +42,10 @@ int init_twrite_lines();
 
 int init_twrite_sock(void);
 
-int t_write_req(struct sip_msg* msg, char* info, char* vm_fifo);
+struct tw_info;
 
-int t_write_unix(struct sip_msg* msg, char* info, char* sock_name);
+int t_write_req(struct sip_msg* msg, struct tw_info* info, str* vm_fifo);
+
+int t_write_unix(struct sip_msg* msg, struct tw_info* info, str* socket);
 
 #endif

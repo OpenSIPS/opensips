@@ -57,12 +57,12 @@
 #include "sr_module_deps.h"
 
 typedef  struct module_exports* (*module_register)();
-typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*,
-			char*, char*);
+typedef  int (*cmd_function)(struct sip_msg*, void*, void*, void*, void*,
+			void*, void*, void *, void *);
 typedef  int (*acmd_function)(struct sip_msg*, async_ctx *ctx,
-			char*, char*, char*, char*, char*, char*);
-typedef  int (*fixup_function)(void** param, int param_no);
-typedef  int (*free_fixup_function)(void** param, int param_no);
+			void*, void*, void*, void*, void*, void*, void *, void *);
+typedef  int (*fixup_function)(void** param);
+typedef  int (*free_fixup_function)(void** param);
 typedef  int (*response_function)(struct sip_msg*);
 typedef void (*destroy_function)();
 typedef int (*init_function)(void);
@@ -106,26 +106,43 @@ typedef int (*mod_proc_wrapper)();
 #define PROC_FLAG_INITCHILD  (1<<0)
 #define PROC_FLAG_HAS_IPC    (1<<1)
 
+#define MAX_CMD_PARAMS (MAX_ACTION_ELEMS-1)
 
-struct cmd_export_ {
-	char* name;             /* null terminated command name */
-	cmd_function function;  /* pointer to the corresponding function */
-	int param_no;           /* number of parameters used by the function */
+
+/* parameter type flags */
+#define CMD_PARAM_INT        (1<<0)  /* integer parameter */
+#define CMD_PARAM_STR        (1<<1)  /* string parameter */
+#define CMD_PARAM_VAR        (1<<2)  /* PV spec parameter */
+#define CMD_PARAM_REGEX      (1<<3)  /* regexp string parameter */
+
+#define CMD_PARAM_OPT        (1<<4)  /* optional parameter */
+#define CMD_PARAM_FIX_NULL   (1<<5)  /* run fixup even if optional parameter is omitted */
+#define CMD_PARAM_NO_EXPAND  (1<<6)  /* TMPHACK: do not pv-expand strings */
+#define CMD_PARAM_STATIC	 (1<<7)  /* don't accept variables or formatted string */
+
+struct cmd_param {
+	int flags;              /* parameter flags */
 	fixup_function fixup;   /* pointer to the function called to "fix" the
-							   parameters */
+							   parameter */
 	free_fixup_function
 				free_fixup; /* pointer to the function called to free the
-							   "fixed" parameters */
-	int flags;              /* Function flags */
+							   "fixed" parameter */
+};
+
+struct cmd_export_ {
+	char* name;                 /* null terminated command name */
+	cmd_function function;      /* pointer to the corresponding function */
+	struct cmd_param
+		params[MAX_CMD_PARAMS+1]; /* array of parameters */
+	int flags;                  /* Function flags */
 };
 
 
 struct acmd_export_ {
-	char* name;              /* null terminated command name */
-	acmd_function function;  /* pointer to the corresponding function */
-	int param_no;            /* number of parameters used by the function */
-	fixup_function fixup;    /* pointer to the function called to "fix" the
-							    parameters */
+	char* name;                 /* null terminated command name */
+	acmd_function function;     /* pointer to the corresponding function */
+	struct cmd_param
+		params[MAX_CMD_PARAMS+1]; /* array of parameters */
 };
 
 
@@ -215,10 +232,12 @@ struct sr_module* modules; /*!< global module list*/
 int register_builtin_modules();
 int register_module(struct module_exports*, char*,  void*);
 int load_module(char* name);
-cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags);
-acmd_export_t* find_acmd_export_t(char* name, int param_no);
-cmd_function find_export(char* name, int param_no, int flags);
-cmd_function find_mod_export(char* mod, char* name, int param_no, int flags);
+cmd_export_t* find_cmd_export_t(char* name, int flags);
+acmd_export_t* find_acmd_export_t(char* name);
+int check_cmd_call_params(cmd_export_t *cmd, action_elem_t *elems, int no_params);
+int check_acmd_call_params(acmd_export_t *acmd, action_elem_t *elems, int no_params);
+cmd_function find_export(char* name, int flags);
+cmd_function find_mod_export(char* mod, char* name, int flags);
 void destroy_modules();
 int init_child(int rank);
 int init_modules(void);

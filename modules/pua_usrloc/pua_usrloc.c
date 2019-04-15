@@ -62,10 +62,16 @@ static void destroy(void);
 
 
 
-static cmd_export_t cmds[]=
-{
-	{"pua_set_publish", (cmd_function)pua_set_publish, 0, 0, 0, REQUEST_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+// static cmd_export_t cmds[]=
+// {
+// 	{"pua_set_publish", (cmd_function)pua_set_publish, 0, 0, 0, REQUEST_ROUTE},
+// 	{0, 0, 0, 0, 0, 0}
+// };
+
+static cmd_export_t cmds[]={
+	{"pua_set_publish", (cmd_function)pua_set_publish, {{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
@@ -138,7 +144,7 @@ static int mod_init(void)
 	/* index in global context to keep the on/off state */
 	pul_status_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 
-	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
+	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 0);
 	if (!bind_usrloc)
 	{
 		LM_ERR("Can't bind usrloc\n");
@@ -180,7 +186,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
+	bind_pua= (bind_pua_t)find_export("bind_pua",0);
 	if (!bind_pua)
 	{
 		LM_ERR("Can't bind pua\n");

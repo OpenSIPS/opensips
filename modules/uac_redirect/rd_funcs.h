@@ -40,8 +40,7 @@ extern cmd_function   rd_acc_fct;
 
 extern char *acc_db_table;
 
-int get_redirect( struct sip_msg *msg , int maxt, int maxb,
-		pv_elem_t *reason);
+int get_redirect( struct sip_msg *msg , int maxt, int maxb);
 
 #endif
 

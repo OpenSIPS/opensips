@@ -39,39 +39,6 @@
 #include "perl.h"
 
 
-
-int perl_fixup(void** param, int param_no)
-{
-	int ret=E_UNSPEC;
-	pv_elem_t* model;
-
-	if (param == NULL || (param_no < 1 || param_no > 2)) {
-		LM_ERR("invalid number of parameters\n");
-		return -1;
-	}
-
-	if (param_no == 1) {
-		/* simple fixup */
-		return fixup_spve(param);
-	} else {
-		/* can have more vars for each param */
-		str s = {*param, strlen(*param)};
-
-		ret = pv_parse_format(&s, &model);
-		if (ret) {
-			LM_ERR("wrong format [%s] for param no %d!\n",
-					(char*)*param, param_no);
-			pkg_free(s.s);
-			return E_UNSPEC;
-		}
-
-		*param = (void *)model;
-		ret = 0;
-	}
-
-	return ret;
-}
-
 /*
  * Check for existence of a function.
  */
@@ -84,103 +51,68 @@ int perl_checkfnc(char *fnc) {
 	}
 }
 
-/*
- * parse function and parameters
- * returns p(arsed)fnc name and p(arsed)prm parameters
- * requiers output strs to be allocated
- */
-int perl_parse_params(struct sip_msg *msg, char *fnc, char *prm,
-		str *pfnc, str *pprm)
+
+int perl_exec_simple(struct sip_msg* _msg, str *_fnc_s, str *_param_s)
 {
-	if (!pfnc && !pprm) {
-		LM_ERR("null output parameters given!\n");
+	char *fnc;
+	char* args[2] = {NULL, NULL};
+	int flags = G_DISCARD | G_EVAL;
+	int ret;
+
+	if (_param_s) {
+		args[0] = pkg_malloc(_param_s->len+1);
+		if (!args[0]) {
+			LM_ERR("No more pkg mem!\n");
+			return -1;
+		}
+		memcpy(args[0], _param_s->s, _param_s->len);
+		args[0][_param_s->len] = 0;
+	} else
+		flags |= G_NOARGS;
+
+	fnc = pkg_malloc(_fnc_s->len);
+	if (!fnc) {
+		LM_ERR("No more pkg mem!\n");
 		return -1;
 	}
-
-	if (msg == 0 || fnc == 0) {
-		LM_ERR("null input parameters given!\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_p)fnc, pfnc) != 0) {
-		LM_ERR("invalid function name given\n");
-		return -1;
-	}
-
-	if (prm && pprm && pv_printf_s(msg, (pv_elem_p)prm, pprm)!=0) {
-		LM_ERR("invalid function parameters given!\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
- * Run function without parameters
- */
-
-int perl_exec_simple(char* fnc, char* args[], int flags) {
+	memcpy(fnc, _fnc_s->s, _fnc_s->len);
+	fnc[_fnc_s->len] = 0;
 
 	if (perl_checkfnc(fnc)) {
 		LM_DBG("running perl function \"%s\"", fnc);
 
 		call_argv(fnc, flags, args);
+		ret = 0;
 	} else {
 		LM_ERR("unknown function '%s' called.\n", fnc);
-		return -1;
+		ret = -1;
 	}
 
-	return 1;
-}
+	if (_param_s)
+		pkg_free(args[0]);
+	pkg_free(fnc);
 
-int perl_exec_simple1(struct sip_msg* _msg, char* fnc, char* str2) {
-	char *args[] = { NULL };
-	str pfnc;
-
-	if (perl_parse_params(_msg, fnc, NULL, &pfnc, NULL)) {
-		LM_ERR("failed to parse params\n");
-		return -1;
-	}
-
-
-
-	return perl_exec_simple(pfnc.s, args, G_DISCARD | G_NOARGS | G_EVAL);
-}
-
-int perl_exec_simple2(struct sip_msg* _msg, char* fnc, char* param) {
-	str pfnc, pparam;
-
-	if (perl_parse_params(_msg, fnc, param, &pfnc, &pparam)) {
-		LM_ERR("failed to parse params\n");
-		return -1;
-	}
-
-	char *args[] = { pparam.s, NULL };
-
-	return perl_exec_simple(pfnc.s, args, G_DISCARD | G_EVAL);
+	return ret;
 }
 
 /*
  * Run function, with current SIP message as a parameter
  */
-int perl_exec1(struct sip_msg* _msg, char* fnc, char *foobar) {
-	return perl_exec2(_msg, fnc, NULL);
-}
-
-int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
+int perl_exec(struct sip_msg* _msg, str* _fnc_s, str* mystr)
+{
 	int retval;
 	SV *m;
 	str reason;
 	str pfnc, pparam;
+	char *fnc;
 
-
-	if (perl_parse_params(_msg, fnc, mystr, &pfnc, mystr?&pparam:NULL)) {
-		LM_ERR("failed to parse params\n");
+	fnc = pkg_malloc(_fnc_s->len);
+	if (!fnc) {
+		LM_ERR("No more pkg mem!\n");
 		return -1;
 	}
-
-	fnc = pfnc.s;
-	mystr = mystr ? pparam.s : NULL;
+	memcpy(fnc, _fnc_s->s, _fnc_s->len);
+	fnc[_fnc_s->len] = 0;
 
 	dSP;
 
@@ -192,7 +124,7 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 		{
 			LM_ERR("failed to send reply\n");
 		}
-		return -1;
+		goto error;
 	}
 
 	switch ((_msg->first_line).type) {
@@ -205,14 +137,14 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 			if (sigb.reply(_msg, 400, &reason, NULL) == -1) {
 				LM_ERR("failed to send reply\n");
 			}
-			return -1;
+			goto error;
 		}
 		break;
 	case SIP_REPLY:
 		break;
 	default:
 		LM_ERR("invalid firstline\n");
-		return -1;
+		goto error;
 	}
 
 
@@ -228,7 +160,7 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 	XPUSHs(m);			/* Our reference to the stack... */
 
 	if (mystr)
-		XPUSHs(sv_2mortal(newSVpv(mystr, strlen(mystr))));
+		XPUSHs(sv_2mortal(newSVpv(mystr->s, mystr->len)));
 		/* Our string to the stack... */
 
 	PUTBACK;			/* make local stack pointer global */
@@ -242,4 +174,8 @@ int perl_exec2(struct sip_msg* _msg, char* fnc, char* mystr) {
 	FREETMPS;			/* free that return value        */
 	LEAVE;				/* ...and the XPUSHed "mortal" args.*/
 	return retval;
+
+error:
+	pkg_free(fnc);
+	return -1;
 }

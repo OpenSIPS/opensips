@@ -61,9 +61,9 @@
 
 
 
-static int set_gflag(struct sip_msg*, char *, char *);
-static int reset_gflag(struct sip_msg*, char *, char *);
-static int is_gflag(struct sip_msg*, char *, char *);
+static int set_gflag(struct sip_msg*, void *);
+static int reset_gflag(struct sip_msg*, void *);
+static int is_gflag(struct sip_msg*, void *);
 
 mi_response_t *mi_set_gflag(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -74,7 +74,7 @@ mi_response_t *mi_is_gflag(const mi_params_t *params,
 mi_response_t *mi_get_gflags(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static int fixup_gflags( void** param, int param_no);
+static int fixup_gflags(void** param);
 
 static int  mod_init(void);
 static void mod_destroy(void);
@@ -83,16 +83,17 @@ static int initial=0;
 static unsigned int *gflags=0;
 
 static cmd_export_t cmds[]={
-	{"set_gflag",    (cmd_function)set_gflag,   1,   fixup_gflags, 0,
+	{"set_gflag",    (cmd_function)set_gflag, {
+		{CMD_PARAM_INT, fixup_gflags, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"reset_gflag",  (cmd_function)reset_gflag, 1,   fixup_gflags, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"is_gflag",     (cmd_function)is_gflag,    1,   fixup_gflags, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{"reset_gflag",  (cmd_function)reset_gflag, {
+		{CMD_PARAM_INT, fixup_gflags, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"is_gflag",     (cmd_function)is_gflag, {
+		{CMD_PARAM_INT, fixup_gflags, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
@@ -146,22 +147,12 @@ struct module_exports exports = {
  * convert char* to int and do bitwise right-shift
  * char* must be pkg_alloced and will be freed by the function
  */
-static int fixup_gflags( void** param, int param_no)
+static int fixup_gflags(void** param)
 {
 	unsigned int myint;
-	str param_str;
 
-	/* we only fix the parameter #1 */
-	if (param_no!=1)
-		return 0;
+	myint = *(int*)*param;
 
-	param_str.s=(char*) *param;
-	param_str.len=strlen(param_str.s);
-
-	if (str2int(&param_str, &myint )<0) {
-		LM_ERR("bad number <%s>\n", (char *)(*param));
-		return E_CFG;
-	}
 	if ( myint >= 8*sizeof(*gflags) ) {
 		LM_ERR("flag <%d> out of "
 			"range [0..%lu]\n", myint, ((unsigned long)8*sizeof(*gflags))-1 );
@@ -179,21 +170,21 @@ static int fixup_gflags( void** param, int param_no)
 
 /**************************** module functions ******************************/
 
-static int set_gflag(struct sip_msg *bar, char *flag, char *foo)
+static int set_gflag(struct sip_msg *bar, void *flag)
 {
 	(*gflags) |= (unsigned int)(long)flag;
 	return 1;
 }
 
 
-static int reset_gflag(struct sip_msg *bar, char *flag, char *foo)
+static int reset_gflag(struct sip_msg *bar, void *flag)
 {
 	(*gflags) &= ~ ((unsigned int)(long)flag);
 	return 1;
 }
 
 
-static int is_gflag(struct sip_msg *bar, char *flag, char *foo)
+static int is_gflag(struct sip_msg *bar, void *flag)
 {
 	return ( (*gflags) & ((unsigned int)(long)flag)) ? 1 : -1;
 }

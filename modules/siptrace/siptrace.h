@@ -78,15 +78,6 @@ typedef struct tlist_elem {
 	struct tlist_elem *next;
 } tlist_elem_t, *tlist_elem_p;
 
-enum tid_types {TYPE_LIST=0, TYPE_PVAR};
-typedef struct tid_param {
-	enum tid_types type;
-	union {
-		tlist_elem_p lst;
-		pv_spec_p el;
-	} u;
-} tid_param_t, *tid_param_p;
-
 
 typedef struct trace_info {
 	str *trace_attrs;

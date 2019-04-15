@@ -125,14 +125,14 @@ static str ms_db_table = str_init("silo");
 str  ms_reminder = {NULL, 0};
 str  ms_outbound_proxy = {NULL, 0};
 
-char*  ms_from = NULL; /*"sip:registrar@example.org";*/
-char*  ms_contact = NULL; /*"Contact: <sip:registrar@example.org>\r\n";*/
-char*  ms_content_type = NULL; /*"Content-Type: text/plain\r\n";*/
-char*  ms_offline_message = NULL; /*"<em>I'm offline.</em>"*/
-void**  ms_from_sp = NULL;
-void**  ms_contact_sp = NULL;
-void**  ms_content_type_sp = NULL;
-void**  ms_offline_message_sp = NULL;
+str  ms_from = {0,0}; /*"sip:registrar@example.org";*/
+str  ms_contact = {0,0}; /*"Contact: <sip:registrar@example.org>\r\n";*/
+str  ms_content_type = {0,0}; /*"Content-Type: text/plain\r\n";*/
+str  ms_offline_message = {0,0}; /*"<em>I'm offline.</em>"*/
+pv_elem_t *ms_from_sp = NULL;
+pv_elem_t *ms_contact_sp = NULL;
+pv_elem_t *ms_content_type_sp = NULL;
+pv_elem_t *ms_offline_message_sp = NULL;
 
 int  ms_expire_time = 259200;
 int  ms_check_time = 60;
@@ -152,8 +152,8 @@ str msg_type = str_init("MESSAGE");
 static int mod_init(void);
 static int child_init(int);
 
-static int m_store(struct sip_msg*, char*, char*);
-static int m_dump(struct sip_msg*, char*, char*);
+static int m_store(struct sip_msg*, str*);
+static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg);
 
 void destroy(void);
 
@@ -168,29 +168,25 @@ int check_message_support(struct sip_msg* msg);
 static void m_tm_callback( struct cell *t, int type, struct tmcb_params *ps);
 
 /* commands wrappers and fixups */
-static int fixup_m_dump(void** param, int param_no);
 
 static cmd_export_t cmds[]={
-	{"m_store",  (cmd_function)m_store, 0, 0, 0,
+	{"m_store",  (cmd_function)m_store, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
-	{"m_store",  (cmd_function)m_store, 1, fixup_spve_null, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE},
-	{"m_dump",   (cmd_function)m_dump,  0, 0, 0,
+	{"m_dump",   (cmd_function)m_dump, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0},
+		{0,0,0}},
 		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
-	{"m_dump",   (cmd_function)m_dump,  1, fixup_spve_null, 0,
-		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
-	{"m_dump",   (cmd_function)m_dump,  2, fixup_m_dump, 0,
-		REQUEST_ROUTE | STARTUP_ROUTE | TIMER_ROUTE | EVENT_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
-
 
 static param_export_t params[]={
 	{ "db_url",           STR_PARAM, &ms_db_url.s             },
 	{ "db_table",         STR_PARAM, &ms_db_table.s           },
-	{ "from_address",     STR_PARAM, &ms_from                 },
-	{ "contact_hdr",      STR_PARAM, &ms_contact              },
-	{ "content_type_hdr", STR_PARAM, &ms_content_type         },
+	{ "from_address",     STR_PARAM, &ms_from.s                 },
+	{ "contact_hdr",      STR_PARAM, &ms_contact.s              },
+	{ "content_type_hdr", STR_PARAM, &ms_content_type.s         },
 	{ "offline_message",  STR_PARAM, &ms_offline_message      },
 	{ "reminder",         STR_PARAM, &ms_reminder.s           },
 	{ "outbound_proxy",   STR_PARAM, &ms_outbound_proxy.s     },
@@ -279,6 +275,10 @@ static int mod_init(void)
 
 	init_db_url( ms_db_url , 0 /*cannot be null*/);
 	ms_db_table.len = strlen (ms_db_table.s);
+	ms_from.len = strlen (ms_from.s);
+	ms_contact.len = strlen (ms_contact.s);
+	ms_content_type.len = strlen (ms_content_type.s);
+	ms_offline_message.len = strlen (ms_offline_message.s);
 	sc_mid.len = strlen(sc_mid.s);
 	sc_from.len = strlen(sc_from.s);
 	sc_to.len = strlen(sc_to.s);
@@ -345,67 +345,35 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if(ms_from!=NULL)
+	if(ms_from.s!=NULL)
 	{
-		ms_from_sp = (void**)pkg_malloc(sizeof(void*));
-		if(ms_from_sp==NULL)
-		{
-			LM_ERR("no more pkg\n");
-			return -1;
-		}
-		*ms_from_sp = (void*)ms_from;
-		if(fixup_spve_null(ms_from_sp, 1)!=0)
-		{
-			LM_ERR("bad contact parameter\n");
+		if (pv_parse_format(&ms_from, &ms_from_sp) < 0) {
+			LM_ERR("Failed to parse formatted string in parameter\n");
 			return -1;
 		}
 	}
-	if(ms_contact!=NULL)
+	if(ms_contact.s!=NULL)
 	{
-		ms_contact_sp = (void**)pkg_malloc(sizeof(void*));
-		if(ms_contact_sp==NULL)
-		{
-			LM_ERR("no more pkg\n");
+		if (pv_parse_format(&ms_contact, &ms_contact_sp) < 0) {
+			LM_ERR("Failed to parse formatted string in parameter\n");
 			return -1;
-		}
-		*ms_contact_sp = (void*)ms_contact;
-		if(fixup_spve_null(ms_contact_sp, 1)!=0)
-		{
-			LM_ERR("bad contact parameter\n");
+		}	
+	}
+	if(ms_content_type.s!=NULL)
+	{
+		if (pv_parse_format(&ms_content_type, &ms_content_type_sp) < 0) {
+			LM_ERR("Failed to parse formatted string in parameter\n");
 			return -1;
 		}
 	}
-	if(ms_content_type!=NULL)
+	if(ms_offline_message.s!=NULL)
 	{
-		ms_content_type_sp = (void**)pkg_malloc(sizeof(void*));
-		if(ms_content_type_sp==NULL)
-		{
-			LM_ERR("no more pkg\n");
-			return -1;
-		}
-		*ms_content_type_sp = (void*)ms_content_type;
-		if(fixup_spve_null(ms_content_type_sp, 1)!=0)
-		{
-			LM_ERR("bad content_type parameter\n");
+		if (pv_parse_format(&ms_offline_message, &ms_offline_message_sp) < 0) {
+			LM_ERR("Failed to parse formatted string in parameter\n");
 			return -1;
 		}
 	}
-	if(ms_offline_message!=NULL)
-	{
-		ms_offline_message_sp = (void**)pkg_malloc(sizeof(void*));
-		if(ms_offline_message_sp==NULL)
-		{
-			LM_ERR("no more pkg\n");
-			return -1;
-		}
-		*ms_offline_message_sp = (void*)ms_offline_message;
-		if(fixup_spve_null(ms_offline_message_sp, 1)!=0)
-		{
-			LM_ERR("bad offline_message parameter\n");
-			return -1;
-		}
-	}
-	if(ms_offline_message!=NULL && ms_content_type==NULL)
+	if(ms_offline_message.s!=NULL && ms_content_type.s==NULL)
 	{
 		LM_ERR("content_type parameter must be set\n");
 		return -1;
@@ -472,12 +440,12 @@ static int child_init(int rank)
  * 		= "2" -- look for outgoing URI only at to header
  */
 
-static int m_store(struct sip_msg* msg, char* owner, char* s2)
+static int m_store(struct sip_msg* msg, str* owner)
 {
 	str body, str_hdr, ctaddr;
 	struct to_body *pto, *pfrom;
 	struct sip_uri puri;
-	str duri, owner_s;
+	str duri;
 	db_key_t db_keys[NR_KEYS-1];
 	db_val_t db_vals[NR_KEYS-1];
 	db_key_t db_cols[1];
@@ -519,17 +487,12 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	memset(&puri, 0, sizeof(struct sip_uri));
 	if(owner)
 	{
-		if(fixup_get_svalue(msg, (gparam_p)owner, &owner_s)!=0)
-		{
-			LM_ERR("invalid owner uri parameter\n");
-			return -1;
-		}
-		if(parse_uri(owner_s.s, owner_s.len, &puri)!=0)
+		if(parse_uri(owner->s, owner->len, &puri)!=0)
 		{
 			LM_ERR("bad owner SIP address!\n");
 			goto error;
 		} else {
-			LM_DBG("using user id [%.*s]\n", owner_s.len, owner_s.s);
+			LM_DBG("using user id [%.*s]\n", owner->len, owner->s);
 		}
 	} else { /* get it from R-URI */
 		if(msg->new_uri.len <= 0)
@@ -714,31 +677,27 @@ static int m_store(struct sip_msg* msg, char* owner, char* s2)
 	update_stat(ms_stored_msgs, 1);
 #endif
 
-	if(ms_from==NULL || ms_offline_message == NULL)
+	if(ms_from.s==NULL || ms_offline_message.s == NULL)
 		goto done;
 
 	LM_DBG("sending info message.\n");
-	if(fixup_get_svalue(msg, (gparam_p)*ms_from_sp, &notify_from)!=0
-			|| notify_from.len<=0)
+	if (pv_printf_s(msg, ms_from_sp, &notify_from) != 0)
 	{
 		LM_WARN("cannot get notification From address\n");
 		goto done;
 	}
-	if(fixup_get_svalue(msg, (gparam_p)*ms_offline_message_sp, &notify_body)!=0
-			|| notify_body.len<=0)
+	if (pv_printf_s(msg, ms_offline_message_sp, &notify_body) != 0)
 	{
 		LM_WARN("cannot get notification body\n");
 		goto done;
 	}
-	if(fixup_get_svalue(msg, (gparam_p)*ms_content_type_sp, &notify_ctype)!=0
-			|| notify_ctype.len<=0)
+	if (pv_printf_s(msg, ms_content_type_sp, &notify_ctype) != 0)
 	{
 		LM_WARN("cannot get notification content type\n");
 		goto done;
 	}
 
-	if(ms_contact!=NULL && fixup_get_svalue(msg, (gparam_p)*ms_contact_sp,
-				&notify_contact)==0 && notify_contact.len>0)
+	if (ms_contact.s!=NULL && pv_printf_s(msg, ms_contact_sp, &notify_contact) != 0)
 	{
 		if(notify_contact.len+notify_ctype.len>=MS_BUF1_SIZE)
 		{
@@ -800,7 +759,7 @@ error:
 /**
  * dump message
  */
-static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
+static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg)
 {
 	struct to_body *pto = NULL;
 	db_key_t db_keys[3];
@@ -815,7 +774,6 @@ static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
 	static char hdr_buf[1024];
 	static char body_buf[1024];
 	struct sip_uri puri;
-	str owner_s;
 
 	str str_vals[4], hdr_str , body_str;
 	time_t rtime;
@@ -849,17 +807,12 @@ static int m_dump(struct sip_msg* msg, char* owner, char* maxmsg)
 	memset(&puri, 0, sizeof(struct sip_uri));
 	if(owner)
 	{
-		if(fixup_get_svalue(msg, (gparam_p)owner, &owner_s)!=0)
-		{
-			LM_ERR("invalid owner uri parameter\n");
-			return -1;
-		}
-		if(parse_uri(owner_s.s, owner_s.len, &puri)!=0)
+		if(parse_uri(owner->s, owner->len, &puri)!=0)
 		{
 			LM_ERR("bad owner SIP address!\n");
 			goto error;
 		} else {
-			LM_DBG("using user id [%.*s]\n", owner_s.len, owner_s.s);
+			LM_DBG("using user id [%.*s]\n", owner->len, owner->s);
 		}
 	} else { /* get it from  To URI */
 		/* check for TO header */
@@ -1316,16 +1269,6 @@ int ms_reset_stime(int mid)
 	{
 		LM_ERR("failed to make update for [%d]!\n",	mid);
 		return -1;
-	}
-	return 0;
-}
-
-static int fixup_m_dump(void** param, int param_no)
-{
-	if (param_no==1) {
-		return fixup_spve(param);
-	} else if (param_no==2) {
-		return fixup_uint(param);
 	}
 	return 0;
 }

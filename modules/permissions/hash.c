@@ -134,11 +134,10 @@ int hash_insert(struct address_list** table, struct ip_addr *ip,
 
 int hash_match(struct sip_msg *msg, struct address_list** table,
 		unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
-		char *pattern, char *info) {
+		char *pattern, pv_spec_t *info) {
 
 	struct address_list *node;
 	str str_ip;
-	pv_spec_t *pvs;
 	pv_value_t pvt;
 	int i, match_res;
 
@@ -200,14 +199,11 @@ grp_found:
 
 found:
 	if (info) {
-		pvs = (pv_spec_t *)info;
-		memset(&pvt, 0, sizeof(pv_value_t));
 		pvt.flags = PV_VAL_STR;
-
 		pvt.rs.s = node->info;
 		pvt.rs.len = node->info ? strlen(node->info) : 0;
 
-		if (pv_set_value(msg, pvs, (int)EQ_T, &pvt) < 0) {
+		if (pv_set_value(msg, info, (int)EQ_T, &pvt) < 0) {
 			LM_ERR("setting of avp failed\n");
 			return -1;
 	    }
@@ -424,13 +420,12 @@ int subnet_table_insert(struct subnet* table, unsigned int grp,
  * Check if an entry exists in subnet table that matches given group, ip_addr,
  * and port.  Port 0 in subnet table matches any port.
  */
-int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int grp,
-			struct ip_addr *ip, unsigned int port, int proto,
-			char *pattern, char *info)
+int match_subnet_table(struct sip_msg *msg, struct subnet* table,
+			unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
+			char *pattern, pv_spec_t *info)
 {
         unsigned int count, i;
 	pv_value_t pvt;
-	pv_spec_t *pvs;
 	int match_res, found_group = 0;
 
 	count = table[PERM_MAX_SUBNETS].grp;
@@ -483,13 +478,11 @@ int match_subnet_table(struct sip_msg *msg, struct subnet* table, unsigned int g
 				}
 
 				if (info) {
-					pvs = (pv_spec_t *)info;
-					memset(&pvt, 0, sizeof(pv_value_t));
 					pvt.flags = PV_VAL_STR;
 					pvt.rs.s = table[i].info;
 					pvt.rs.len = table[i].info ? strlen(table[i].info) : 0;
 
-					if (pv_set_value(msg, pvs, (int)EQ_T, &pvt) < 0) {
+					if (pv_set_value(msg, info, (int)EQ_T, &pvt) < 0) {
 						LM_ERR("setting of avp failed\n");
 						return -1;
 	    			}
@@ -522,16 +515,16 @@ int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
 	static char ip_buff[IP_ADDR_MAX_STR_SIZE];
 	mi_item_t *dests_arr, *dest_item;
 
-    count = table[PERM_MAX_SUBNETS].grp;
+	count = table[PERM_MAX_SUBNETS].grp;
 
-    dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
+	dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
 	if (dests_arr)
 		return -1;
 
-    for (i = 0; i < count; i++) {
-    	dest_item = add_mi_object(dests_arr, NULL, 0);
-    	if (!dest_item)
-    		return -1;
+	for (i = 0; i < count; i++) {
+		dest_item = add_mi_object(dests_arr, NULL, 0);
+		if (!dest_item)
+			return -1;
 
 		ip = ip_addr2a(&table[i].subnet->ip);
 		if (!ip) {

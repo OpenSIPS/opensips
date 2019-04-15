@@ -56,12 +56,21 @@ str server_address= {0, 0};
 str presence_server= {0, 0};
 
 
-static cmd_export_t cmds[]=
-{
-	{"bla_set_flag", (cmd_function)bla_set_flag,           0, 0, 0, REQUEST_ROUTE},
-	{"bla_handle_notify", (cmd_function)bla_handle_notify, 0, 0, 0, REQUEST_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+// static cmd_export_t cmds[]=
+// {
+// 	{"bla_set_flag", (cmd_function)bla_set_flag,           0, 0, 0, REQUEST_ROUTE},
+// 	{"bla_handle_notify", (cmd_function)bla_handle_notify, 0, 0, 0, REQUEST_ROUTE},
+// 	{0, 0, 0, 0, 0, 0}
+// };
+
+static cmd_export_t cmds[]={
+	{"bla_set_flag", (cmd_function)bla_set_flag, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"bla_handle_notify", (cmd_function)bla_handle_notify, {{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
+
 static param_export_t params[]=
 {
 	{"server_address",	 STR_PARAM, &server_address.s    },
@@ -144,7 +153,7 @@ static int mod_init(void)
 	else
 		bla_outbound_proxy.len= strlen(bla_outbound_proxy.s);
 
-	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
+	bind_pua= (bind_pua_t)find_export("bind_pua",0);
 	if (!bind_pua)
 	{
 		LM_ERR("Can't bind pua\n");
@@ -183,7 +192,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
+	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 0);
 	if (!bind_usrloc)
 	{
 		LM_ERR("Can't bind usrloc\n");

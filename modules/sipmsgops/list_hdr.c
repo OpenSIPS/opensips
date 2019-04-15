@@ -19,18 +19,17 @@
  */
 
 #include "../../dprint.h"
-#include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../mem/mem.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_list_hdr.h"
 
+#include "list_hdr.h"
 
 static struct hdr_field * _get_first_header(struct sip_msg *msg,
-															gparam_t *gp_hdr)
+                                            int_str_t *hdr)
 {
-	struct hdr_field *hdr;
-	str sval;
+	struct hdr_field *it;
 
 	/* be sure all SIP headers are parsed in the message */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
@@ -38,26 +37,19 @@ static struct hdr_field * _get_first_header(struct sip_msg *msg,
 		return NULL;
 	}
 
-	if (gp_hdr->type == GPARAM_TYPE_INT) {
-
+	if (!hdr->is_str) {
 		/* header given by ID*/
-		for (hdr=msg->headers; hdr; hdr=hdr->next)
-			if (gp_hdr->v.ival==hdr->type)
-				return hdr;
+		for (it = msg->headers; it; it = it->next)
+			if (hdr->i == it->type)
+				return it;
 
 	} else {
-
-		/* header given by string/variable */
-		if (fixup_get_svalue(msg, gp_hdr, &sval) != 0) {
-			LM_ERR("failed to get the string value from variable\n");
-			return NULL;
-		}
-		for (hdr=msg->headers; hdr; hdr=hdr->next)
-			if (hdr->type == HDR_OTHER_T &&
-			hdr->name.len == sval.len &&
-			strncasecmp(hdr->name.s, sval.s, hdr->name.len)==0)
-				return hdr;
-
+		/* header given by string */
+		for (it = msg->headers; it; it = it->next)
+			if (it->type == HDR_OTHER_T &&
+			it->name.len == hdr->s.len &&
+			strncasecmp(it->name.s, hdr->s.s, it->name.len)==0)
+				return it;
 	}
 
 	/* header not found */
@@ -97,12 +89,12 @@ static inline struct hdr_field *_get_next_hdr(struct sip_msg *msg,
  *    - val - the option value (string/spec)
  * Returns true on the first occurace of the option in the header instances.
  */
-int list_hdr_has_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val)
+int list_hdr_has_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 {
 	struct hdr_field *hdr;
 	struct list_hdr *lh, *lh_it;
 
-	hdr = _get_first_header( msg, gp_hdr);
+	hdr = _get_first_header( msg, match_hdr);
 	if (hdr==NULL)
 		/* header not found*/
 		return -1;
@@ -215,11 +207,11 @@ static inline struct lump* _push_changes_into_lumps(struct sip_msg *msg,
  * If the header does not exist, a new one will be added.
  * There is no check if the option already exists.
  * Input:
- *    - gp_hdr - the hdr name (ID or string/spec)
- *    - val - the option value (string/spec)
+ *    - hdr - the hdr name (int if known, string otherwise)
+ *    - val - the option value
  * Returns true upon successfully insertion.
  */
-int list_hdr_add_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val)
+int list_hdr_add_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 {
 	struct hdr_field *hdr;
 	struct list_hdr *lh;
@@ -227,7 +219,7 @@ int list_hdr_add_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val)
 	str body, old_hdr, new_hdr;
 	char *p;
 
-	hdr = _get_first_header( msg, gp_hdr);
+	hdr = _get_first_header( msg, match_hdr);
 	if (hdr==NULL) {
 		/* header not found*/
 		// TODO - adding a completly new header ??
@@ -326,7 +318,7 @@ int list_hdr_add_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val)
 }
 
 
-int list_hdr_remove_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val)
+int list_hdr_remove_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 {
 	struct hdr_field *hdr;
 	struct list_hdr *lh, *lh_it, *lh_prev;
@@ -335,7 +327,7 @@ int list_hdr_remove_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val)
 	char *p;
 	int removed = 0;
 
-	hdr = _get_first_header( msg, gp_hdr);
+	hdr = _get_first_header( msg, match_hdr);
 	if (hdr==NULL)
 		/* header not found*/
 		return -1;

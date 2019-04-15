@@ -3609,11 +3609,10 @@ str* internal_init_scenario(struct sip_msg* msg, str* name,
 }
 
 
-int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
-		str* arg4, str* arg5, str* arg6)
+int b2b_init_request(struct sip_msg* msg, struct b2b_scen_fl *scf,
+				str* arg2, str* arg3, str* arg4, str* arg5, str* arg6)
 {
 	str* args[MAX_SCENARIO_PARAMS];
-	struct b2b_scen_fl *scf;
 	str* key;
 	str auth_header;
 	str* cust_headers;
@@ -3623,7 +3622,6 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
 	/* find the scenario with the corresponding id */
-	scf = (struct b2b_scen_fl*)arg1;
 	b2bl_caller = CALLER_SCRIPT;
 
 	/* process the arguments */
@@ -3658,7 +3656,6 @@ int b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 
 	return ret;
 }
-
 
 int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 {

@@ -91,22 +91,33 @@ mi_response_t *perl_mi_reload(const mi_params_t *params,
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
-	{ "perl_exec_simple", (cmd_function)perl_exec_simple1, 1,  perl_fixup, 0,
-							     REQUEST_ROUTE | FAILURE_ROUTE
-							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{ "perl_exec_simple", (cmd_function)perl_exec_simple2, 2,  perl_fixup, 0,
-							     REQUEST_ROUTE | FAILURE_ROUTE
-							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{ "perl_exec", (cmd_function)perl_exec1, 1,  perl_fixup, 0,
-							     REQUEST_ROUTE | FAILURE_ROUTE
-							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{ "perl_exec", (cmd_function)perl_exec2, 2, perl_fixup, 0,
-							     REQUEST_ROUTE | FAILURE_ROUTE
-							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-	{ 0, 0, 0, 0, 0, 0 }
-};
+// static cmd_export_t cmds[] = {
+// 	{ "perl_exec_simple", (cmd_function)perl_exec_simple1, 1,  perl_fixup, 0,
+// 							     REQUEST_ROUTE | FAILURE_ROUTE
+// 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
+// 	{ "perl_exec_simple", (cmd_function)perl_exec_simple2, 2,  perl_fixup, 0,
+// 							     REQUEST_ROUTE | FAILURE_ROUTE
+// 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
+// 	{ "perl_exec", (cmd_function)perl_exec1, 1,  perl_fixup, 0,
+// 							     REQUEST_ROUTE | FAILURE_ROUTE
+// 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
+// 	{ "perl_exec", (cmd_function)perl_exec2, 2, perl_fixup, 0,
+// 							     REQUEST_ROUTE | FAILURE_ROUTE
+// 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
+// 	{ 0, 0, 0, 0, 0, 0 }
+// };
 
+static cmd_export_t cmds[] = {
+	{"perl_exec_simple", (cmd_function)perl_exec_simple, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+	{"perl_exec", (cmd_function)perl_exec, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+	{0,0,{{0,0,0}},0}
+};
 
 /*
  * Exported parameters

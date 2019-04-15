@@ -38,7 +38,6 @@
 #include "../../db/db.h"
 #include "../../dprint.h"
 #include "../../error.h"
-#include "../../mod_fix.h"
 #include "../../mem/mem.h"
 #include "../auth/api.h"
 #include "../signaling/signaling.h"
@@ -72,7 +71,8 @@ static int child_init(int rank);
 static int mod_init(void);
 
 
-static int auth_fixup(void** param, int param_no);
+static int auth_fixup_table(void** param);
+static int fixup_check_outvar(void **param);
 
 /** SIGNALING binds */
 struct sig_binds sigb;
@@ -117,29 +117,37 @@ int credentials_n           = 0; /* Number of credentials in the list */
 int skip_version_check      = 0; /* skips version check for custom db */
 
 
-static int uri_fixup(void** param, int param_no);
-static int db_fixup_get_auth_id(void** param, int param_no);
-
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
-	{"www_authorize",   (cmd_function)www_authorize,   2, auth_fixup, 0,
-			REQUEST_ROUTE},
-	{"proxy_authorize", (cmd_function)proxy_authorize, 2, auth_fixup, 0,
-			REQUEST_ROUTE},
-	{"db_does_uri_exist", (cmd_function)does_uri_exist, 2, auth_fixup, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE },
-	{"db_is_to_authorized", (cmd_function)check_to, 1, uri_fixup, 0,
-			REQUEST_ROUTE},
-	{"db_is_from_authorized", (cmd_function)check_from, 1, uri_fixup, 0,
-			REQUEST_ROUTE},
-	{"db_get_auth_id", (cmd_function) get_auth_id, 4,
-			db_fixup_get_auth_id, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-	{0, 0, 0, 0, 0, 0}
-};
 
+static cmd_export_t cmds[] = {
+	{"www_authorize", (cmd_function)www_authorize, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, auth_fixup_table, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"proxy_authorize", (cmd_function)proxy_authorize, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, auth_fixup_table, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"db_does_uri_exist", (cmd_function)does_uri_exist, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, auth_fixup_table, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"db_is_to_authorized", (cmd_function)check_to, {
+		{CMD_PARAM_STR, auth_fixup_table, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"db_is_from_authorized", (cmd_function)check_from, {
+		{CMD_PARAM_STR, auth_fixup_table, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"db_get_auth_id", (cmd_function) get_auth_id, {
+		{CMD_PARAM_STR, auth_fixup_table, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_VAR, fixup_check_outvar, 0},
+		{CMD_PARAM_VAR, fixup_check_outvar, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{0,0,{{0,0,0}},0}
+};
 
 /*
  * Exported parameters
@@ -231,7 +239,7 @@ static int mod_init(void)
 	}
 
 	/* bind to auth module and import the API */
-	bind_auth = (bind_auth_t)find_export("bind_auth", 0, 0);
+	bind_auth = (bind_auth_t)find_export("bind_auth", 0);
 	if (!bind_auth) {
 		LM_ERR("unable to find bind_auth function."
 			" Check if you load the auth module.\n");
@@ -272,115 +280,34 @@ static void destroy(void)
 	}
 }
 
-
-/*
- * Convert the char* parameters
- */
-static int auth_fixup(void** param, int param_no)
+static int auth_fixup_table(void** param)
 {
-	db_con_t* dbh = NULL;
+	db_con_t *dbh = NULL;
 
-	if (param_no == 1) {
-		return fixup_spve(param);
-	} else if (param_no == 2) {
-		/* convert char* to str* */
-		if (fixup_str(param)<0)
-			return -1;
-
-		dbh = auth_dbf.init(&db_url);
-		if (!dbh) {
-			LM_ERR("unable to open database connection\n");
-			return -1;
-		}
-		if(skip_version_check == 0 &&
-		db_check_table_version(&auth_dbf, dbh, (str*)*param,
-		SUBSCRIBER_TABLE_VERSION) < 0) {
-			LM_ERR("error during table version check.\n");
-			auth_dbf.close(dbh);
-			return -1;
-		}
+	dbh = auth_dbf.init(&db_url);
+	if (!dbh) {
+		LM_ERR("unable to open database connection\n");
+		return -1;
+	}
+	if(skip_version_check == 0 &&
+	db_check_table_version(&auth_dbf, dbh, (str*)*param,
+	SUBSCRIBER_TABLE_VERSION) < 0) {
+		LM_ERR("error during table version check.\n");
 		auth_dbf.close(dbh);
+		return -1;
 	}
+	auth_dbf.close(dbh);
+
 	return 0;
 }
 
-
-static int uri_fixup(void** param, int param_no)
+static int fixup_check_outvar(void **param)
 {
-	db_con_t* dbh = NULL;
-
-	if (param_no == 1) {
-		/* convert char* to str* */
-		if (fixup_str(param)<0)
-			return -1;
-
-		dbh = auth_dbf.init(&db_url);
-		if (!dbh) {
-			LM_ERR("unable to open database connection\n");
-			return -1;
-		}
-		if(skip_version_check == 0 &&
-		db_check_table_version(&auth_dbf, dbh, (str*)*param,
-		URI_TABLE_VERSION) < 0) {
-			LM_ERR("error during table version check.\n");
-			auth_dbf.close(dbh);
-			return -1;
-		}
-		auth_dbf.close(dbh);
-	}
-	return 0;
-}
-
-
-
-
-/**
- * Check proper configuration for 'get_auth_id()' and
- * convert function parameters.
- */
-static int db_fixup_get_auth_id(void** param, int param_no)
-{
-	pv_elem_t *model = NULL;
-	pv_spec_t *sp;
-	str s;
-	int ret;
-
-	if (param_no > 0 && param_no <= 4) {
-		switch (param_no) {
-			case 1:		// name of the URI like table
-				return uri_fixup( param, 1);
-
-			case 2:		// pv which contains the sip id searched for
-				s.s = (char*) (*param);
-				s.len = strlen(s.s);
-				if (s.len == 0) {
-					LM_ERR("param %d is empty string!\n", param_no);
-					return E_CFG;
-				}
-				if(pv_parse_format(&s ,&model) || model == NULL) {
-					LM_ERR("wrong format [%s] for value param!\n", s.s);
-					return E_CFG;
-				}
-				*param = (void*) model;
-				break;
-
-			case 3:		// pv to return the result auth id
-			case 4:		// pv to return the result auth realm
-				ret = fixup_pvar(param);
-				if (ret < 0) return ret;
-				sp = (pv_spec_t*) (*param);
-				if (sp->type != PVT_AVP && sp->type != PVT_SCRIPTVAR) {
-					LM_ERR("return must be an AVP or SCRIPT VAR!\n");
-					return E_SCRIPT;
-				}
-				break;
-		}
-
-	} else {
-		LM_ERR("wrong number of parameters\n");
-		return E_UNSPEC;
+	if (((pv_spec_t*)*param)->type != PVT_AVP &&
+		((pv_spec_t*)*param)->type != PVT_SCRIPTVAR) {
+		LM_ERR("return must be an AVP or SCRIPT VAR!\n");
+		return E_SCRIPT;
 	}
 
 	return 0;
 }
-

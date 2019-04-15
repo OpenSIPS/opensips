@@ -131,20 +131,18 @@ error:
 }
 
 
-int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c, char *tag_c)
+int w_cgr_auth(struct sip_msg* msg, str* acc_c, str *dst_c, str *tag_c)
 {
 	str *acc;
 	str *dst;
-	str *tag;
 	json_object *jmsg = NULL;
 
 	if ((acc = cgr_get_acc(msg, acc_c)) == NULL)
 		return -4;
 	if ((dst = cgr_get_dst(msg, dst_c)) == NULL)
 		return -4;
-	tag = cgr_get_tag(msg, tag_c);
 
-	jmsg = cgr_get_auth_msg(msg, acc, dst, tag);
+	jmsg = cgr_get_auth_msg(msg, acc, dst, tag_c);
 	if (!jmsg) {
 		LM_ERR("cannot build the json to send to cgrates\n");
 		return -1;
@@ -154,20 +152,18 @@ int w_cgr_auth(struct sip_msg* msg, char* acc_c, char *dst_c, char *tag_c)
 }
 
 int w_acgr_auth(struct sip_msg* msg, async_ctx *ctx,
-		char* acc_c, char *dst_c, char *tag_c)
+		str* acc_c, str *dst_c, str *tag_c)
 {
 	str *acc;
 	str *dst;
-	str *tag;
 	json_object *jmsg = NULL;
 
 	if ((acc = cgr_get_acc(msg, acc_c)) == NULL)
 		return -4;
 	if ((dst = cgr_get_dst(msg, dst_c)) == NULL)
 		return -4;
-	tag = cgr_get_tag(msg, tag_c);
 
-	jmsg = cgr_get_auth_msg(msg, acc, dst, tag);
+	jmsg = cgr_get_auth_msg(msg, acc, dst, tag_c);
 	if (!jmsg) {
 		LM_ERR("cannot build the json to send to cgrates\n");
 		return -1;

@@ -52,11 +52,6 @@ int parse_dlg_flags(modparam_t type, void *val);
 
 int mod_init(void);
 
-static cmd_export_t cmds[] =
-{
-	{ NULL, NULL, 0, NULL, NULL, 0 },
-};
-
 static param_export_t params[] =
 {
 	{ "sequential_route", STR_PARAM, &seq_route },
@@ -93,7 +88,7 @@ struct module_exports exports =
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
 	&deps,            /* OpenSIPS module dependencies */
-	cmds,
+	NULL,
 	NULL,
 	params,
 	NULL,
@@ -183,9 +178,9 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 				       msg->callid->body.len, msg->callid->body.s);
 
 			if (msg->REQ_METHOD == METHOD_ACK) {
-				rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL);
+				rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 				if (rc > 0)
-					tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL);
+					tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 				return SCB_RUN_POST_CBS;
 			}
@@ -198,14 +193,14 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	if (msg->REQ_METHOD == METHOD_CANCEL) {
 		seq_request = 1;
 
-		rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL);
+		rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 		if (rc > 0)
-			tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL);
+			tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 		return SCB_RUN_POST_CBS;
 	}
 
-	if (tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL) == 0)
+	if (tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) == 0)
 		return SCB_RUN_POST_CBS;
 
 	/**
@@ -223,7 +218,7 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 			}
 		}
 
-		if (tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL) < 0)
+		if (tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) < 0)
 			sl_api.reply(msg, 500, &status_500);
 
 		return SCB_RUN_POST_CBS;
@@ -246,7 +241,7 @@ int parse_dlg_flags(modparam_t type, void *val)
 	input.s = val;
 	input.len = strlen(val);
 
-	create_dialog_flags = parse_create_dlg_flags(input);
+	create_dialog_flags = parse_create_dlg_flags(&input);
 
 	return 1;
 }

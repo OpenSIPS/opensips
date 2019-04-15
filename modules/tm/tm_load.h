@@ -103,7 +103,7 @@ static inline int load_tm_api( struct tm_binds *tmb )
 	load_tm_f load_tm;
 
 	/* import the TM auto-loading function */
-	if ( !(load_tm=(load_tm_f)find_export("load_tm", 0, 0))) {
+	if ( !(load_tm=(load_tm_f)find_export("load_tm", 0))) {
 		return -1;
 	}
 	/* let the auto-loading function load all TM stuff */

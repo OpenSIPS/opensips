@@ -118,7 +118,7 @@ static struct dlg_binds dlg_binds;
 /* module specific functions */
 static int sngtc_offer(struct sip_msg *msg);
 static int w_sngtc_callee_answer(struct sip_msg *msg,
-                                 char *gp_ip_a, char *gp_ip_b);
+                                 str *gp_ip_a, str *gp_ip_b);
 static int sngtc_callee_answer(struct sip_msg *msg);
 static int sngtc_caller_answer(struct sip_msg *msg);
 
@@ -134,17 +134,15 @@ static param_export_t params[] = {
 };
 
 static cmd_export_t cmds[] = {
-	{ "sngtc_offer",         (cmd_function)sngtc_offer, 0, 0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{ "sngtc_callee_answer", (cmd_function)w_sngtc_callee_answer, 0, 0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{ "sngtc_callee_answer", (cmd_function)w_sngtc_callee_answer, 1,
-	    fixup_sgp_null, 0, REQUEST_ROUTE|ONREPLY_ROUTE },
-	{ "sngtc_callee_answer", (cmd_function)w_sngtc_callee_answer, 2,
-	    fixup_sgp_sgp, 0, REQUEST_ROUTE|ONREPLY_ROUTE },
-	{ "sngtc_caller_answer", (cmd_function)sngtc_caller_answer, 0, 0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{ 0, 0, 0, 0, 0, 0 }
+	{"sngtc_offer", (cmd_function)sngtc_offer, {{0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"sngtc_caller_answer", (cmd_function)sngtc_caller_answer, {{0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"sngtc_callee_answer", (cmd_function)w_sngtc_callee_answer, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static dep_export_t deps = {
@@ -1202,27 +1200,21 @@ out:
 }
 
 static int w_sngtc_callee_answer(struct sip_msg *msg,
-                                 char *gp_ip_a, char *gp_ip_b)
+                                 str *gp_ip_a, str *gp_ip_b)
 {
 	if (!gp_ip_a) {
 		card_ip_a.s = card_ip_b.s = NULL;
 		goto out;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_ip_a, &card_ip_a) != 0) {
-		LM_ERR("failed to get fixup value for caller: bad pvar\n");
-		return SNGTC_ERR;
-	}
+	card_ip_a = *gp_ip_a;
 
 	if (!gp_ip_b) {
 		card_ip_b.s = NULL;
 		goto out;
 	}
 
-	if (fixup_get_svalue(msg, (gparam_p)gp_ip_b, &card_ip_b) != 0) {
-		LM_ERR("failed to get fixup value for callee: bad pvar\n");
-		return SNGTC_ERR;
-	}
+	card_ip_b = *gp_ip_b;
 
 out:
 	return sngtc_callee_answer(msg);

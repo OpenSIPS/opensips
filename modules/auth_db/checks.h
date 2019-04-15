@@ -40,27 +40,27 @@
  * Check if To header field contains the same username
  * as digest credentials
  */
-int check_to(struct sip_msg* _msg, char* _table);
+int check_to(struct sip_msg* _msg, str* _table);
 
 
 /*
  * Check if From header field contains the same username
  * as digest credentials
  */
-int check_from(struct sip_msg* _msg, char* _table);
+int check_from(struct sip_msg* _msg, str* _table);
 
 
 /*
  * Check if uri belongs to a local user, contributed by Juha Heinanen
  */
-int does_uri_exist(struct sip_msg* _msg, char* _table, char* _uri);
+int does_uri_exist(struct sip_msg* _msg, str* _table, str* _uri);
 
 
 /*
  * Retrieves authentication id and realm for a given uri from uri_table
  */
-int get_auth_id(struct sip_msg* _msg, char* _table, char* _uri,
-		char* _auth_user, char* _auth_realm);
+int get_auth_id(struct sip_msg* _msg, str *_table, str* uri,
+			pv_spec_t* _auth_user, pv_spec_t* _auth_realm);
 
 
 #endif /* DB_CHECKS_H */

@@ -61,7 +61,7 @@ static inline int load_dr_api(struct dr_binds *drb)
 {
 	load_dr_api_f load_dr;
 
-	if ( !(load_dr = (load_dr_api_f)find_export("load_dr", 0, 0)))
+	if ( !(load_dr = (load_dr_api_f)find_export("load_dr", 0)))
 		return -1;
 
 	return load_dr(drb);

@@ -26,6 +26,8 @@
 #include "../../parser/msg_parser.h"
 #include "partitions.h"
 
+int proto_char2int(str *proto);
+
 /*
  * Initialize data structures
  */
@@ -56,28 +58,17 @@ int reload_address_table(struct pm_part_struct*);
  */
 void clean_address(struct pm_part_struct*);
 
-int get_source_group(struct sip_msg *msg, char *arg);
+int get_source_group(struct sip_msg* msg, pv_spec_t *out_var,
+		struct pm_part_struct *part);
 
 /* Checks based on avp's received as parameter */
-int check_addr_4(struct sip_msg *msg,
-		        char *grp, char *src_ip, char *port, char *proto);
-
-int check_addr_5(struct sip_msg* msg,
-		        char *grp, char *src_ip, char *port, char *proto, char *info);
-
-int check_addr_6(struct sip_msg* msg,
-		        char *grp, char *src_ip, char *port, char  *proto,
-				char *info, char *pattern);
+int check_addr(struct sip_msg* msg, int *grp,
+		str* s_ip, int *port, long proto, pv_spec_t *info, char *pattern,
+		struct pm_part_struct *part);
 
 /* Checks based on data from the message */
-int check_src_addr_1(struct sip_msg *msg,
-		                char *grp);
-
-int check_src_addr_2(struct sip_msg *msg,
-		                char *grp, char *info);
-
-int check_src_addr_3(struct sip_msg *msg,
-		                char *grp, char *info, char *pattern);
+int check_src_addr(struct sip_msg *msg, int *grp,
+		pv_spec_t *info, char *pattern, struct pm_part_struct *part);
 
 
 #endif /* TRUSTED_H */

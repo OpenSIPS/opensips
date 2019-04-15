@@ -75,7 +75,7 @@ regex_t *ipExpression;
 	@param unused unused parameter
 	@return negative in case of error or number of replacements - 1
 */
-int sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused);
+int sdp_mangle_port (struct sip_msg *msg, int *offset);
 
 /* may replace all appearances of an ip in lines like c=IN IP4 ip with
 	a new value for ip if the found ip matches the filter
@@ -86,7 +86,7 @@ int sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused);
 	@return negative in case of error or number of replacements - 1
 */
 
-int sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip);
+int sdp_mangle_ip (struct sip_msg *msg, str *oldip, str *newip);
 
 int compile_expressions(char *port,char *ip);
 int free_compiled_expressions();

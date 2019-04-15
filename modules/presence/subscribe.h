@@ -76,7 +76,7 @@ void msg_active_watchers_clean(unsigned int ticks,void *param);
 
 void msg_watchers_clean(unsigned int ticks,void *param);
 
-int handle_subscribe(struct sip_msg*, char*, char*);
+int handle_subscribe(struct sip_msg*, int*, str*);
 
 int delete_db_subs(str pres_uri, str ev_stored_name, str to_tag);
 

@@ -1511,7 +1511,7 @@ int add_hep_chunk(trace_message message, void* data, int len, int type, int data
 	return 0;
 }
 
-int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
+int add_hep_correlation(trace_message message, str* corr_name, str* corr_value)
 {
 	cJSON* root;
 	struct hep_desc* hep_msg;
@@ -1542,9 +1542,9 @@ int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
 			hep_msg->correlation = root;
 		}
 
-		cJSON_AddStrToObject( root, corr_name, corr_value->s, corr_value->len);
+		_cJSON_AddStrToObject( root, corr_name, corr_value->s, corr_value->len);
 	} else {
-		if ( !memcmp( corr_name, "sip", sizeof("sip") ) ) {
+		if ( !memcmp( corr_name->s, "sip", sizeof("sip") ) ) {
 			/* we'll save sip correlation id as the actual correlation */
 			sip_correlation = pkg_malloc( sizeof(str) + corr_value->len );
 			if ( !sip_correlation ) {
@@ -1859,45 +1859,11 @@ int hep_bind_trace_api(trace_proto_t* prot)
 /***************************************************************
  ********************* HEP CORRELATE script function ***********
  ***************************************************************/
-int correlate_fixup(void** param, int param_no)
+int correlate_w(struct sip_msg* msg, str* hep_id,
+		str* type1, str* corr_s1,
+		str* type2, str* corr_s2)
 {
-	gparam_p gp;
-
-	if ( param_no < 1 || param_no > 5 ) {
-		LM_ERR("bad param number %d\n", param_no);
-		return -1;
-	}
-
-	fixup_spve( param );
-	gp = *param;
-
-	if ( param_no == 2 || param_no == 4 ) {
-		if ( gp->type != GPARAM_TYPE_STR ) {
-			LM_ERR("only strings allowed for param %d\n", param_no);
-			return -1;
-		}
-
-		*param = gp->v.sval.s;
-
-		return 0;
-	}
-
-	if ( gp->type != GPARAM_TYPE_PVS && gp->type != GPARAM_TYPE_STR ) {
-		LM_ERR("only strings or single variables allowed to this function!\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-int correlate_w(struct sip_msg* msg, char* hep_id,
-		char* type1, char* correlation1,
-		char* type2, char* correlation2)
-{
-	str corr_s1, corr_s2;
 	hid_list_p h;
-
-	str value;
 	trace_message message;
 
 	if ( !msg ) {
@@ -1905,34 +1871,14 @@ int correlate_w(struct sip_msg* msg, char* hep_id,
 		return -1;
 	}
 
-	if ( !hep_id || !type1 || !type2 || !correlation1 || !correlation2 ) {
-		LM_ERR("all parameters are mandatory for correlate function!\n");
-		return -1;
-	}
-
-	if ( fixup_get_svalue( msg, (gparam_p)hep_id, &value) < 0 ) {
-		LM_ERR("failed to fetch hep destination name!\n");
-		return -1;
-	}
-	h = get_hep_id_by_name( &value );
+	h = get_hep_id_by_name(hep_id);
 	if ( h == NULL ) {
-		LM_ERR("no hep id with name <%.*s>\n", value.len, value.s );
+		LM_ERR("no hep id with name <%.*s>\n", hep_id->len, hep_id->s );
 		return -1;
 	}
 
 	if ( h->version < 3 ) {
 		LM_ERR("only version 3 or higher of HEP supports correlation!\n");
-		return -1;
-	}
-
-
-	if ( fixup_get_svalue( msg, (gparam_p)correlation1, &corr_s1 ) < 0 ) {
-		LM_ERR("failed to fetch hep destination name!\n");
-		return -1;
-	}
-
-	if ( fixup_get_svalue( msg, (gparam_p)correlation2, &corr_s2 ) < 0 ) {
-		LM_ERR("failed to fetch hep destination name!\n");
 		return -1;
 	}
 
@@ -1946,13 +1892,14 @@ int correlate_w(struct sip_msg* msg, char* hep_id,
 		return -1;
 	}
 
-	if ( strcmp( type1, type2 ) ) {
-		LM_ERR("Type1 <%s> must be different from type2!\n", type1);
+	if ( str_strcmp( type1, type2 ) ) {
+		LM_ERR("Type1 <%.*s> must be different from type2!\n",
+			type1->len, type1->s);
 		return -1;
 	}
 
-	add_hep_correlation( message, type1, &corr_s1 );
-	add_hep_correlation( message, type2, &corr_s2 );
+	add_hep_correlation( message, type1, corr_s1 );
+	add_hep_correlation( message, type2, corr_s2 );
 
 	if ( send_hep_message( message, h, 0) < 0 ) {
 		LM_ERR(" failed to send hep message to destination!\n");

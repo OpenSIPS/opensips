@@ -32,28 +32,20 @@
 
 #include "path_mod.h"
 
-/*
- * Prepend own uri to Path header
- */
-int add_path(struct sip_msg* _msg, char* _a, char* _b)
-{
-	str user = {0,0};
-	int rc;
-
-	rc = prepend_path(_msg, &user, 0, enable_double_path);
-
-	return rc == 0 ? 1 : rc;
-}
 
 /*
  * Prepend own uri to Path header and take care of given
  * user.
  */
-int add_path_usr(struct sip_msg* _msg, char* _usr, char* _b)
+int add_path(struct sip_msg* _msg, str* _usr)
 {
+	str user = {0,0};
 	int rc;
 
-	rc = prepend_path(_msg, (str*)_usr, 0, enable_double_path);
+	if (_usr)
+		user = *_usr;
+
+	rc = prepend_path(_msg, &user, 0, enable_double_path);
 	return rc == 0 ? 1 : rc;
 }
 
@@ -61,26 +53,18 @@ int add_path_usr(struct sip_msg* _msg, char* _usr, char* _b)
  * Prepend own uri to Path header and append received address as
  * "received"-param to that uri.
  */
-int add_path_received(struct sip_msg* _msg, char* _a, char* _b)
+int add_path_received(struct sip_msg* _msg, str* _usr)
 {
 	str user = {0,0};
 	int rc;
+
+	if (_usr)
+		user = *_usr;
 
 	rc = prepend_path(_msg, &user, 1, enable_double_path);
 	return rc == 0 ? 1 : rc;
 }
 
-/*
- * Prepend own uri to Path header and append received address as
- * "received"-param to that uri and take care of given user.
- */
-int add_path_received_usr(struct sip_msg* _msg, char* _usr, char* _b)
-{
-	int rc;
-
-	rc = prepend_path(_msg, (str*)_usr, 1, enable_double_path);
-	return rc == 0 ? 1 : rc;
-}
 
 /*
  * rr callback

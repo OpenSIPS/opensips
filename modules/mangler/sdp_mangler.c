@@ -46,10 +46,10 @@
 //#define DEBUG 1
 
 int
-sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
+sdp_mangle_port (struct sip_msg *msg, int *offset)
 {
 	int old_content_length, new_content_length, oldlen, err, oldPort, newPort,
-		diff, offsetValue,len,off,ret,need_to_deallocate;
+		diff,len,off,ret,need_to_deallocate;
 	struct lump *l;
 	regmatch_t pmatch;
 	regex_t *re;
@@ -76,23 +76,15 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 
 	old_content_length = get_content_length(msg);
 
-	if (offset == NULL)
-		return -14;
-	if (sscanf (offset, "%d", &offsetValue) != 1)
-	{
-		LM_ERR("invalid value for offset \n");
-		return -13;
-	}
-
 	//offsetValue = (int)offset;
 #ifdef DEBUG
 	fprintf (stdout,"---START--------MANGLE PORT-----------------\n");
-	fprintf(stdout,"===============OFFSET = %d\n",offsetValue);
+	fprintf(stdout,"===============OFFSET = %d\n",*offset);
 #endif
 
-	if ((offsetValue < MIN_OFFSET_VALUE) || (offsetValue > MAX_OFFSET_VALUE))
+	if ((*offset < MIN_OFFSET_VALUE) || (*offset > MAX_OFFSET_VALUE))
 	{
-		LM_ERR("invalid value %d for offset \n",offsetValue);
+		LM_ERR("invalid value %d for offset \n",*offset);
 		return -3;
 	}
 
@@ -182,8 +174,8 @@ sdp_mangle_port (struct sip_msg *msg, char *offset, char *unused)
 			goto continue1;
 #endif
 		}
-                if ((offset[0] != '+')&&(offset[0] != '-')) newPort = offsetValue;//fix value
-		else newPort = oldPort + offsetValue;
+                if ((offset[0] != '+')&&(offset[0] != '-')) newPort = *offset;//fix value
+		else newPort = oldPort + *offset;
 		/* new port is between 1 and 65536, or so should be */
 		if ((newPort < MIN_MANGLED_PORT) || (newPort > MAX_MANGLED_PORT))	/* we silently fail,we ignore this match */
 		{
@@ -274,16 +266,16 @@ continue1:
 
 
 int
-sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
+sdp_mangle_ip (struct sip_msg *msg, str *oldip, str *newip)
 {
 	int i, old_content_length, new_content_length;
-	int diff, oldlen, len, off, ret, need_to_deallocate;
+	int diff, oldlen, off, ret, need_to_deallocate;
 	unsigned int mask, address, locatedIp;
 	struct lump *l;
 	regmatch_t pmatch;
 	regex_t *re;
 	char *s, *pos, *begin, *key;
-	char buffer[16];	/* 123.456.789.123\0 */
+	char buffer[32];	/* 123.456.789.123/123.456.789.123\0 */
 	str body;
 
 #ifdef DEBUG
@@ -310,19 +302,14 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 
 	old_content_length = get_content_length(msg);
 
-	/* checking oldip */
-	if (oldip == NULL)
-		{
-		LM_ERR("received NULL for oldip\n");
-		return -3;
-		}
-	/* checking newip */
-	if (newip == NULL)
-		{
-		LM_ERR("received NULL for newip\n");
-		return -4;
-		}
-	i = parse_ip_netmask (oldip, &pos, &mask);
+	if (oldip->len > 31) {
+		LM_ERR("invalid value for pattern\n");
+		return -1;
+	}
+	memcpy(buffer, oldip->s, oldip->len);
+	buffer[oldip->len] = 0;
+
+	i = parse_ip_netmask (buffer, &pos, &mask);
 
 	if (i == -1)
 	{
@@ -346,7 +333,6 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 
 	begin = body.s;
 	ret = -1;
-	len = strlen (newip);
 
 	/* try to use pre-compiled expressions */
 	need_to_deallocate = 0;
@@ -434,7 +420,7 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 			goto continue2;	/* not in the same net, skipping */
 		}
 #ifdef DEBUG
-		fprintf(stdout,"Extracted ip is %s and mangling to %s\n",buffer,newip);
+		fprintf(stdout,"Extracted ip is %s and mangling to %.*s\n",buffer,newip->len, newip->s);
 #endif
 
 
@@ -447,21 +433,21 @@ sdp_mangle_ip (struct sip_msg *msg, char *oldip, char *newip)
 			LM_ERR("del_lump failed\n");
 			return -12;
 		}
-		s = pkg_malloc (len);
+		s = pkg_malloc (newip->len);
 		if (s == 0)
 		{
 			LM_ERR("no more pkg mem\n");
 			return -13;
 		}
-		memcpy (s, newip, len);
+		memcpy (s, newip->s, newip->len);
 
-		if (insert_new_lump_after (l, s, len, 0) == 0)
+		if (insert_new_lump_after (l, s, newip->len, 0) == 0)
 		{
 			LM_ERR("could not insert new lump\n");
 			pkg_free (s);
 			return -14;
 		}
-		diff = diff + len /*new length */  - oldlen;
+		diff = diff + newip->len /*new length */  - oldlen;
 		/* new cycle */
 		ret++;
 continue2:

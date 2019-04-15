@@ -55,10 +55,9 @@ unsigned int db_http_timeout = 30000; /* Default is 30 seconds */
  * MySQL database module interface
  */
 static cmd_export_t cmds[] = {
-	{"db_bind_api",         (cmd_function)db_http_bind_api,      0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"db_bind_api",         (cmd_function)db_http_bind_api, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters

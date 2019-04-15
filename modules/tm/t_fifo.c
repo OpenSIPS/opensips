@@ -279,56 +279,59 @@ error:
 }
 
 
-static struct tw_append *search_tw_append(char *name, int len)
+static struct tw_append *search_tw_append(str *name)
 {
 	struct tw_append * app;
 
 	for( app=tw_appends ; app ; app=app->next )
-		if (app->name.len==len && !strncasecmp(app->name.s,name,len) )
+		if (!str_strcasecmp(&app->name, name))
 			return app;
 	return 0;
 }
 
 
-int fixup_t_write( void** param, int param_no)
+int fixup_t_write(void** param)
 {
 	struct tw_info *twi;
-	char *s;
+	str s = *(str*)*param;
+	char *p;
 
-	if (param_no==1) {
-		twi = (struct tw_info*)pkg_malloc( sizeof(struct tw_info) );
-		if (twi==0) {
-			LM_ERR("no more pkg memory\n");
-			return E_OUT_OF_MEM;
+	twi = (struct tw_info*)pkg_malloc( sizeof(struct tw_info) );
+	if (twi==0) {
+		LM_ERR("no more pkg memory\n");
+		return E_OUT_OF_MEM;
+	}
+	memset( twi, 0 , sizeof(struct tw_info));
+	twi->action = s;
+
+	if ( (p=q_memchr(s.s, '/', s.len))!=0) {
+		twi->action.len = p - s.s;
+		if (twi->action.len==0) {
+			LM_ERR("empty action name\n");
+			return E_CFG;
 		}
-		memset( twi, 0 , sizeof(struct tw_info));
-		s = (char*)*param;
-		twi->action.s = s;
-		if ( (s=strchr(s,'/'))!=0) {
-			twi->action.len = s - twi->action.s;
-			if (twi->action.len==0) {
-				LM_ERR("empty action name\n");
-				return E_CFG;
-			}
-			s++;
-			if (*s==0) {
-				LM_ERR("empty append name\n");
-				return E_CFG;
-			}
-			twi->append = search_tw_append( s, strlen(s));
-			if (twi->append==0) {
-				LM_ERR("unknown append name <%s>\n",s);
-				return E_CFG;
-			}
-		} else {
-			twi->action.len = strlen(twi->action.s);
+		s.s = ++p;
+		if (*p==0) {
+			LM_ERR("empty append name\n");
+			return E_CFG;
 		}
-		*param=(void*)twi;
+		s.len = s.len - twi->action.len - 1;
+		twi->append = search_tw_append(&s);
+		if (twi->append==0) {
+			LM_ERR("unknown append name <%.*s>\n",s.len, s.s);
+			return E_CFG;
+		}
 	}
 
+	*param=(void*)twi;
 	return 0;
 }
 
+int fixup_free_t_write(void **param)
+{
+	pkg_free(*param);
+	return 0;
+}
 
 
 int init_twrite_sock(void)
@@ -703,9 +706,9 @@ error:
 }
 
 
-static int write_to_unixsock(char* sockname, int cnt)
+static int write_to_unixsock(str* sockname, int cnt)
 {
-	int len, e;
+	int e;
 	struct sockaddr_un dest;
 
 	if (!sockname) {
@@ -713,20 +716,19 @@ static int write_to_unixsock(char* sockname, int cnt)
 		return E_UNSPEC;
 	}
 
-	len = strlen(sockname);
-	if (len == 0) {
+	if (sockname->len == 0) {
 		LM_ERR("empty socket name\n");
 		return -1;
-	} else if (len > 107) {
+	} else if (sockname->len > 107) {
 		LM_ERR("socket name too long\n");
 		return -1;
 	}
 
 	memset(&dest, 0, sizeof(dest));
 	dest.sun_family = PF_LOCAL;
-	memcpy(dest.sun_path, sockname, len);
+	memcpy(dest.sun_path, sockname->s, sockname->len);
 #ifdef HAVE_SOCKADDR_SA_LEN
-	dest.sun_len = len;
+	dest.sun_len = sockname->len;
 #endif
 
 	e = connect(sock, (struct sockaddr*)&dest, SUN_LEN(&dest));
@@ -755,15 +757,23 @@ static int write_to_unixsock(char* sockname, int cnt)
 }
 
 
-int t_write_req(struct sip_msg* msg, char* info, char* vm_fifo)
+int t_write_req(struct sip_msg* msg, struct tw_info* info, str* vm_fifo)
 {
-	if (assemble_msg(msg, (struct tw_info*)info) < 0) {
+	str vm_fifo_nt;
+
+	if (assemble_msg(msg, info) < 0) {
 		LM_ERR("failed to assemble_msg\n");
 		return -1;
 	}
 
-	if (write_to_fifo(vm_fifo, TWRITE_PARAMS) == -1) {
+	if (pkg_nt_str_dup(&vm_fifo_nt, vm_fifo) < 0) {
+		LM_ERR("No more pkg memory\n");
+		return -1;
+	}
+
+	if (write_to_fifo(vm_fifo_nt.s, TWRITE_PARAMS) == -1) {
 		LM_ERR("write_to_fifo failed\n");
+		pkg_free(vm_fifo_nt.s);
 		return -1;
 	}
 
@@ -771,15 +781,18 @@ int t_write_req(struct sip_msg* msg, char* info, char* vm_fifo)
 	 * timely, a SIP timeout will be sent out */
 	if (add_blind_uac() == -1) {
 		LM_ERR("add_blind failed\n");
+		pkg_free(vm_fifo_nt.s);
 		return -1;
 	}
+
+	pkg_free(vm_fifo_nt.s);
 	return 1;
 }
 
 
-int t_write_unix(struct sip_msg* msg, char* info, char* socket)
+int t_write_unix(struct sip_msg* msg, struct tw_info* info, str* socket)
 {
-	if (assemble_msg(msg, (struct tw_info*)info) < 0) {
+	if (assemble_msg(msg, info) < 0) {
 		LM_ERR("failed to assemble_msg\n");
 		return -1;
 	}

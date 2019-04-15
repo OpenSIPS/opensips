@@ -208,36 +208,24 @@ static int generate_avps(db_res_t* result)
 /*
  * Authorize digest credentials
  */
-static inline int authorize(struct sip_msg* _m, gparam_p _realm,
-									char* _table, hdr_types_t _hftype)
+static inline int authorize(struct sip_msg* _m, str *domain,
+									str* table, hdr_types_t _hftype)
 {
 	char ha1[256];
 	int res;
 	struct hdr_field* h;
 	auth_body_t* cred;
 	auth_result_t ret;
-	str domain, *table;
 	db_res_t* result = NULL;
 
-	table = (str*)_table;
-
-	if(fixup_get_svalue(_m, _realm, &domain)!=0)
-	{
-		LM_ERR("invalid realm parameter\n");
-		return AUTH_ERROR;
-	}
-
-	if (domain.len==0)
-		domain.s = 0;
-
-	ret = auth_api.pre_auth(_m, &domain, _hftype, &h);
+	ret = auth_api.pre_auth(_m, domain, _hftype, &h);
 
 	if (ret != DO_AUTHORIZATION)
 		return ret;
 
 	cred = (auth_body_t*)h->parsed;
 
-	res = get_ha1(&cred->digest.username, &domain, table, ha1, &result);
+	res = get_ha1(&cred->digest.username, domain, table, ha1, &result);
 	if (res < 0) {
 		/* Error while accessing the database */
 		if (sigb.reply(_m, 500, &auth_500_err, NULL) == -1) {
@@ -269,16 +257,16 @@ static inline int authorize(struct sip_msg* _m, gparam_p _realm,
 /*
  * Authorize using Proxy-Authorize header field
  */
-int proxy_authorize(struct sip_msg* _m, char* _realm, char* _table)
+int proxy_authorize(struct sip_msg* _m, str* _realm, str* _table)
 {
-	return authorize(_m, (gparam_p)_realm, _table, HDR_PROXYAUTH_T);
+	return authorize(_m, _realm, _table, HDR_PROXYAUTH_T);
 }
 
 
 /*
  * Authorize using WWW-Authorize header field
  */
-int www_authorize(struct sip_msg* _m, char* _realm, char* _table)
+int www_authorize(struct sip_msg* _m, str* _realm, str* _table)
 {
-	return authorize(_m, (gparam_p)_realm, _table, HDR_AUTHORIZATION_T);
+	return authorize(_m, _realm, _table, HDR_AUTHORIZATION_T);
 }

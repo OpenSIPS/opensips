@@ -47,7 +47,7 @@ static inline int load_sl_api( struct sl_binds *slb )
 	load_sl_f load_sl;
 
 	/* import the SL auto-loading function */
-	if ( !(load_sl=(load_sl_f)find_export("load_sl", 0, 0))) {
+	if ( !(load_sl=(load_sl_f)find_export("load_sl", 0))) {
 		LM_ERR("can't import load_sl\n");
 		return -1;
 	}

@@ -42,10 +42,9 @@ int db_unixodbc_bind_api(const str* mod, db_func_t *dbb);
  * MySQL database module interface
  */
 static cmd_export_t cmds[] = {
-	{"db_bind_api",    (cmd_function)db_unixodbc_bind_api,    0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"db_bind_api",    (cmd_function)db_unixodbc_bind_api, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters

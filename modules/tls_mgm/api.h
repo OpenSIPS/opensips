@@ -64,7 +64,7 @@ static inline int load_tls_mgm_api(struct tls_mgm_binds *binds) {
     load_tls_mgm_f load_tls;
 
     /* import the DLG auto-loading function */
-    if (!(load_tls = (load_tls_mgm_f) find_export("load_tls_mgm", 0, 0)))
+    if (!(load_tls = (load_tls_mgm_f) find_export("load_tls_mgm", 0)))
         return -1;
 
     /* let the auto-loading function load all DLG stuff */

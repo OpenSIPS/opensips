@@ -101,9 +101,6 @@ static unsigned int rl_repl_timer_interval = RL_TIMER_INTERVAL;
 static int mod_init(void);
 static int mod_child(int);
 
-/* fixup prototype */
-static int fixup_rl_check(void **param, int param_no);
-
 mi_response_t *mi_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_stats_1(const mi_params_t *params,
@@ -120,19 +117,21 @@ static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 static int pv_parse_rl_count(pv_spec_p sp, str *in);
 
 static cmd_export_t cmds[] = {
-	{"rl_check", (cmd_function)w_rl_check_2, 2,
-		fixup_rl_check, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"rl_check", (cmd_function)w_rl_check_3, 3,
-		fixup_rl_check, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"rl_dec_count", (cmd_function)w_rl_dec, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"rl_reset_count", (cmd_function)w_rl_reset, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{0,0,0,0,0,0}
+	{"rl_check", (cmd_function)w_rl_check, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"rl_dec_count", (cmd_function)w_rl_dec, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"rl_reset_count", (cmd_function)w_rl_reset, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {
@@ -767,26 +766,6 @@ mi_response_t *mi_reset_pipe(const mi_params_t *params,
 		return init_mi_error(500, MI_SSTR("Internal error"));
 
 	return init_mi_result_ok();
-}
-
-/* fixup functions */
-static int fixup_rl_check(void **param, int param_no)
-{
-	switch (param_no) {
-		/* pipe name */
-		case 1:
-			return fixup_spve(param);
-			/* limit */
-		case 2:
-			return fixup_igp(param);
-			/* algorithm */
-		case 3:
-			return fixup_sgp(param);
-			/* error */
-		default:
-			LM_ERR("[BUG] too many params (%d)\n", param_no);
-	}
-	return E_UNSPEC;
 }
 
 /* pseudo-variable functions */

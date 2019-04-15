@@ -81,7 +81,6 @@ int rmq_server_add(modparam_t type, void * val);
 int rmq_reconnect(struct rmq_server *srv);
 int fixup_rmq_server(void **param);
 struct rmq_server *rmq_get_server(str *cid);
-struct rmq_server *rmq_resolve_server(struct sip_msg *msg, char *param);
 void rmq_connect_servers(void);
 
 int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype,

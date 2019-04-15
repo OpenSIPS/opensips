@@ -101,8 +101,8 @@ static void free_shared_memory(void);
 /*
  * Script functions
  */
-static int w_pcre_match(struct sip_msg* _msg, char* _s1, char* _s2);
-static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2);
+static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s);
+static int w_pcre_match_group(struct sip_msg* _msg, str* string, int* _num_pcre);
 
 
 /*
@@ -115,20 +115,34 @@ mi_response_t *mi_pcres_reload(const mi_params_t *params,
 /*
  * Exported functions
  */
+// static cmd_export_t cmds[] =
+// {
+// 	{ "pcre_match", (cmd_function)w_pcre_match, 2, fixup_spve_spve, 0,
+// 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+// 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+// 	{ "pcre_match_group", (cmd_function)w_pcre_match_group, 2, fixup_spve_uint, 0,
+// 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+// 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+// 	{ "pcre_match_group", (cmd_function)w_pcre_match_group, 1, fixup_spve_null, 0,
+// 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+// 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+// 	{ 0, 0, 0, 0, 0, 0 }
+// };
+
 static cmd_export_t cmds[] =
 {
-	{ "pcre_match", (cmd_function)w_pcre_match, 2, fixup_spve_spve, 0,
+	{"pcre_match", (cmd_function)w_pcre_match, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{ "pcre_match_group", (cmd_function)w_pcre_match_group, 2, fixup_spve_uint, 0,
+	{"pcre_match_group", (cmd_function)w_pcre_match_group, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{ "pcre_match_group", (cmd_function)w_pcre_match_group, 1, fixup_spve_null, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{ 0, 0, 0, 0, 0, 0 }
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters
@@ -539,47 +553,29 @@ static void free_shared_memory(void)
  */
 
 /*! \brief Return true if the argument matches the regular expression parameter */
-static int w_pcre_match(struct sip_msg* _msg, char* _s1, char* _s2)
+static int w_pcre_match(struct sip_msg* _msg, str* string, str* _regex_s)
 {
-	str string;
-	str regex;
 	pcre *pcre_re = NULL;
 	int pcre_rc;
 	const char *pcre_error;
 	int pcre_erroffset;
+	str regex;
 
-	if (_s1 == NULL) {
-		LM_ERR("bad parameters\n");
-		return -2;
-	}
-
-	if (_s2 == NULL) {
-		LM_ERR("bad parameters\n");
-		return -2;
-	}
-
-	if (fixup_get_svalue(_msg, (gparam_p)_s1, &string))
-	{
-		LM_ERR("cannot print the format for string\n");
-		return -3;
-	}
-	if (fixup_get_svalue(_msg, (gparam_p)_s2, &regex))
-	{
-		LM_ERR("cannot print the format for regex\n");
-		return -3;
-	}
+	if (pkg_nt_str_dup(&regex, _regex_s) < 0)
+		return -1;
 
 	pcre_re = pcre_compile(regex.s, pcre_options, &pcre_error, &pcre_erroffset, NULL);
 	if (pcre_re == NULL) {
 		LM_ERR("pcre_re compilation of '%s' failed at offset %d: %s\n", regex.s, pcre_erroffset, pcre_error);
+		pkg_free(regex.s);
 		return -4;
 	}
 
 	pcre_rc = pcre_exec(
 		pcre_re,                    /* the compiled pattern */
 		NULL,                       /* no extra data - we didn't study the pattern */
-		string.s,                   /* the matching string */
-		(int)(string.len),          /* the length of the subject */
+		string->s,                   /* the matching string */
+		(int)(string->len),          /* the length of the subject */
 		0,                          /* start at offset 0 in the string */
 		0,                          /* default options */
 		NULL,                       /* output vector for substring information */
@@ -589,26 +585,27 @@ static int w_pcre_match(struct sip_msg* _msg, char* _s1, char* _s2)
 	if (pcre_rc < 0) {
 		switch(pcre_rc) {
 			case PCRE_ERROR_NOMATCH:
-				LM_DBG("'%s' doesn't match '%s'\n", string.s, regex.s);
+				LM_DBG("'%s' doesn't match '%s'\n", string->s, regex.s);
 				break;
 			default:
 				LM_DBG("matching error '%d'\n", pcre_rc);
 				break;
 		}
 		pcre_free(pcre_re);
+		pkg_free(regex.s);
 		return -1;
 	}
 
 	pcre_free(pcre_re);
-	LM_DBG("'%s' matches '%s'\n", string.s, regex.s);
+	pkg_free(regex.s);
+	LM_DBG("'%s' matches '%s'\n", string->s, regex.s);
 	return 1;
 }
 
 
 /*! \brief Return true if the string argument matches the pattern group parameter */
-static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
+static int w_pcre_match_group(struct sip_msg* _msg, str* string, int* _num_pcre)
 {
-	str string;
 	int num_pcre;
 	int pcre_rc;
 
@@ -618,26 +615,14 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
 		return -2;
 	}
 
-	if (_s1 == NULL) {
-		LM_ERR("bad parameters\n");
-		return -3;
-	}
-
-	if (_s2 == NULL) {
+	if (!_num_pcre)
 		num_pcre = 0;
-	} else {
-		num_pcre = *(unsigned int *)_s2;
-	}
+	else
+		num_pcre = *_num_pcre;
 
 	if (num_pcre >= *num_pcres) {
 		LM_ERR("invalid pcre index '%i', there are %i pcres\n", num_pcre, *num_pcres);
 		return -4;
-	}
-
-	if (fixup_get_svalue(_msg, (gparam_p)_s1, &string))
-	{
-		LM_ERR("cannot print the format\n");
-		return -5;
 	}
 
 	lock_get(reload_lock);
@@ -645,8 +630,8 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
 	pcre_rc = pcre_exec(
 		(*pcres_addr)[num_pcre],    /* the compiled pattern */
 		NULL,                       /* no extra data - we didn't study the pattern */
-		string.s,                   /* the matching string */
-		(int)(string.len),          /* the length of the subject */
+		string->s,                   /* the matching string */
+		(int)(string->len),          /* the length of the subject */
 		0,                          /* start at offset 0 in the string */
 		0,                          /* default options */
 		NULL,                       /* output vector for substring information */
@@ -658,7 +643,7 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
 	if (pcre_rc < 0) {
 		switch(pcre_rc) {
 			case PCRE_ERROR_NOMATCH:
-				LM_DBG("'%s' doesn't match pcres[%i]\n", string.s, num_pcre);
+				LM_DBG("'%s' doesn't match pcres[%i]\n", string->s, num_pcre);
 				break;
 			default:
 				LM_DBG("matching error '%d'\n", pcre_rc);
@@ -667,7 +652,7 @@ static int w_pcre_match_group(struct sip_msg* _msg, char* _s1, char* _s2)
 		return -1;
 	}
 	else {
-		LM_DBG("'%s' matches pcres[%i]\n", string.s, num_pcre);
+		LM_DBG("'%s' matches pcres[%i]\n", string->s, num_pcre);
 		return 1;
 	}
 

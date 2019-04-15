@@ -43,8 +43,7 @@
  *
  * @return 1 on success, -1 on failure
  */
-int cr_load_user_carrier(struct sip_msg * _msg, pv_elem_t *_user,
-		pv_elem_t *_domain, struct multiparam_t *_dstavp);
+int cr_load_user_carrier(struct sip_msg * _msg, str *user, str *domain, pv_spec_t *dstavp);
 
 
 /**
@@ -61,10 +60,10 @@ int cr_load_user_carrier(struct sip_msg * _msg, pv_elem_t *_user,
  *
  * @return 1 on success, -1 on failure
  */
-int cr_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
-		struct multiparam_t *_domain, pv_elem_t *_prefix_matching,
-		pv_elem_t *_rewrite_user, enum hash_source _hsrc,
-		struct multiparam_t *_dstavp);
+int cr_route(struct sip_msg * _msg, void *_carrier,
+		void *_domain, str *_prefix_matching,
+		str *_rewrite_user, void *_hsrc,
+		pv_spec_t *_dstavp);
 
 /**
  * rewrites the request URI of msg after determining the
@@ -80,10 +79,10 @@ int cr_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
  *
  * @return 1 on success, -1 on failure
  */
-int cr_prime_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
-		struct multiparam_t *_domain, pv_elem_t *_prefix_matching,
-		pv_elem_t *_rewrite_user, enum hash_source _hsrc,
-		struct multiparam_t *_dstavp);
+int cr_prime_route(struct sip_msg * _msg, void *_carrier,
+		str *_domain, str *_prefix_matching,
+		str *_rewrite_user, void *_hsrc,
+		pv_spec_t *_dstavp);
 
 
 /**
@@ -99,9 +98,9 @@ int cr_prime_route(struct sip_msg * _msg, struct multiparam_t *_carrier,
  *
  * @return 1 on success, -1 on failure
  */
-int cr_load_next_domain(struct sip_msg * _msg, struct multiparam_t *_carrier,
-		struct multiparam_t *_domain, pv_elem_t *_prefix_matching, pv_elem_t *_host,
-		pv_elem_t *_reply_code, struct multiparam_t *_dstavp);
+int cr_load_next_domain(struct sip_msg * _msg, void *_carrier,
+		void *_domain, str *prefix_matching,
+		str *host, str *reply_code, pv_spec_t *_dstavp);
 
 
 

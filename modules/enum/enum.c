@@ -242,26 +242,10 @@ static inline int is_e164(str* _user)
 
 
 /*
- * Call is_from_user_enum_2 with module parameter suffix and default service.
- */
-int is_from_user_enum_0(struct sip_msg* _msg, char* _str1, char* _str2)
-{
-	return is_from_user_enum_2(_msg, (char *)(&suffix), (char *)(&service));
-}
-
-/*
- * Call is_from_user_enum_2 with given suffix and default service.
- */
-int is_from_user_enum_1(struct sip_msg* _msg, char* _suffix, char* _str2)
-{
-	return is_from_user_enum_2(_msg, _suffix, (char *)(&service));
-}
-
-/*
  * Check if from user is a valid enum based user, and check to make sure
  * that the src_ip == an srv record that maps to the enum from user.
  */
-int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
+int is_from_user_enum(struct sip_msg* _msg, str* suffix, str* service)
 {
 	struct ip_addr addr;
 	struct hostent* he;
@@ -274,9 +258,6 @@ int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
 	struct sip_uri *furi;
 	struct sip_uri luri;
 	struct rdata* head;
-
-	str* suffix;
-	str* service;
 
 	struct rdata* l;
 	struct naptr_rdata* naptr;
@@ -298,9 +279,6 @@ int is_from_user_enum_2(struct sip_msg* _msg, char* _suffix, char* _service)
 	    LM_ERR("Failed to parse From URI\n");
 	    return -1;
 	}
-
-	suffix = (str*)_suffix;
-	service = (str*)_service;
 
 	if (is_e164(&(furi->user)) == -1) {
 	    LM_ERR("From URI user is not an E164 number\n");
@@ -680,90 +658,28 @@ done:
 
 
 /*
- * Call enum_query_2 with module parameter suffix and default service.
- */
-int enum_query_0(struct sip_msg* _msg, char* _str1, char* _str2)
-{
-	return enum_query_2(_msg, NULL, NULL);
-}
-
-
-/*
- * Call enum_query_2 with given suffix and default service.
- */
-int enum_query_1(struct sip_msg* _msg, char* _suffix, char* _str2)
-{
-	return enum_query_2(_msg, _suffix, NULL);
-}
-
-
-/*
  * See documentation in README file.
  */
-int enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
+int enum_query(struct sip_msg* _msg, str* _suffix, str* _service)
 {
 	char *user_s;
 	int user_len, i, j;
 	char name[MAX_DOMAIN_SIZE];
 	char string[17];
-	gparam_p gp = NULL;
-	pv_value_t value;
 
-	str __suffix = {0, 0}, __service = {0, 0};
+	str *__suffix, *__service;
 
 	/* Use the suffix module parameter */
-	if (_suffix == NULL) {
-		__suffix.s = suffix.s;
-		__suffix.len = suffix.len;
-	} else {
-		gp = (gparam_p) _suffix;
-
-		if (gp->type == GPARAM_TYPE_PVS) {
-			if (pv_get_spec_value(_msg, gp->v.pvs, &value) != 0 ||
-				value.flags & PV_VAL_NULL || value.flags & PV_VAL_EMPTY) {
-				LM_ERR("No PV or NULL value specified for suffix\n");
-				return E_CFG;
-			}
-
-			if (value.flags & PV_VAL_STR) {
-				__suffix.s = value.rs.s;
-				__suffix.len = value.rs.len;
-			} else {
-				LM_ERR("Unsupported PV value type\n");
-				return E_CFG;
-			}
-		} else if (gp->type == GPARAM_TYPE_STR) {
-			__suffix.s = gp->v.sval.s;
-			__suffix.len = gp->v.sval.len;
-		}
-	}
+	if (_suffix == NULL)
+		__suffix = &suffix;
+	else
+		__suffix = _suffix;
 
 	/* Use the internal service */
-	if (_service == NULL) {
-		__service.s = service.s;
-		__service.len = service.len;
-	} else {
-		gp = (gparam_p) _service;
-
-		if (gp->type == GPARAM_TYPE_PVS) {
-			if (pv_get_spec_value(_msg, gp->v.pvs, &value) != 0 ||
-				value.flags & PV_VAL_NULL || value.flags & PV_VAL_EMPTY) {
-				LM_ERR("No PV or NULL value specified for suffix\n");
-				return E_CFG;
-			}
-
-			if (value.flags & PV_VAL_STR) {
-				__service.s = value.rs.s;
-				__service.len = value.rs.len;
-			} else {
-				LM_ERR("Unsupported PV value type\n");
-				return E_CFG;
-			}
-		} else if (gp->type == GPARAM_TYPE_STR) {
-			__service.s = gp->v.sval.s;
-			__service.len = gp->v.sval.len;
-		}
-	}
+	if (_service == NULL)
+		__service = &service;
+	else
+		__service = _service;
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 		LM_ERR("Parsing of R-URI failed\n");
@@ -788,34 +704,16 @@ int enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 		j = j + 2;
 	}
 
-	memcpy(name + j, __suffix.s, __suffix.len + 1);
+	memcpy(name + j, __suffix->s, __suffix->len + 1);
 
-	return do_query(_msg, string, name, &__service);
-}
-
-
-/*
- * Call isn_query_2 with module parameter suffix and default service.
- */
-int isn_query_0(struct sip_msg* _msg, char* _str1, char* _str2)
-{
-	return isn_query_2(_msg, (char *)(&isnsuffix), (char *)(&service));
-}
-
-
-/*
- * Call isn_query_2 with given suffix and default service.
- */
-int isn_query_1(struct sip_msg* _msg, char* _suffix, char* _str2)
-{
-	return isn_query_2(_msg, _suffix, (char *)(&service));
+	return do_query(_msg, string, name, __service);
 }
 
 
 /*
  * See documentation in README file.
  */
-int isn_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
+int isn_query_2(struct sip_msg* _msg, str* suffix, str* service)
 {
 	char *user_s = NULL;
 	int user_len, i, j;
@@ -823,11 +721,6 @@ int isn_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 	char string[17] = {0};
 	char szItad[17] = {0};
 	size_t nItlen = 0;
-
-	str *suffix, *service;
-
-	suffix = (str*)_suffix;
-	service = (str*)_service;
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 		LM_ERR("Parsing of R-URI failed\n");
@@ -874,24 +767,7 @@ int isn_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 
 /*********** INFRASTRUCTURE ENUM ***************/
 
-/*
- * Call enum_query_2 with default suffix and service.
- */
-int i_enum_query_0(struct sip_msg* _msg, char* _suffix, char* _service)
-{
-	return i_enum_query_2(_msg, (char *)(&i_suffix), (char *)(&service));
-}
-
-/*
- * Call enum_query_2 with given suffix and default service.
- */
-int i_enum_query_1(struct sip_msg* _msg, char* _suffix, char* _service)
-{
-	return i_enum_query_2(_msg, _suffix, (char *)(&service));
-}
-
-
-int i_enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
+int i_enum_query(struct sip_msg* _msg, str* suffix, str* service)
 {
 	char *user_s;
 	int user_len, i, j;
@@ -903,11 +779,6 @@ int i_enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 	struct rdata* head;
 
 	char string[17];
-
-	str *suffix, *service;
-
-	suffix = (str*)_suffix;
-	service = (str*)_service;
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 		LM_ERR("Parsing of R-URI failed\n");
@@ -1054,30 +925,12 @@ int i_enum_query_2(struct sip_msg* _msg, char* _suffix, char* _service)
 
 /******************* FQUERY *******************/
 
-
-/*
- * Call enum_pv_query_3 with pv arg, module parameter suffix,
- * and default service.
- */
-int enum_pv_query_1(struct sip_msg* _msg, char* _sp)
-{
-    return enum_pv_query_3(_msg, _sp, (char *)(&suffix), (char *)(&service));
-}
-
-/*
- * Call enum_pv_query_3 with pv and suffix args and default service.
- */
-int enum_pv_query_2(struct sip_msg* _msg, char* _sp, char* _suffix)
-{
-    return enum_pv_query_3(_msg, _sp, _suffix, (char *)(&service));
-}
-
 /*
  * See documentation in README file.
  */
 
-int enum_pv_query_3(struct sip_msg* _msg, char* _sp, char* _suffix,
-		    char* _service)
+int enum_pv_query(struct sip_msg* _msg, str* num, str* suffix,
+		    str* service)
 {
 	char *user_s;
 	int user_len, i, j, first;
@@ -1091,14 +944,7 @@ int enum_pv_query_3(struct sip_msg* _msg, char* _sp, char* _suffix,
 	struct rdata* l;
 	struct naptr_rdata* naptr;
 	str pattern, replacement, result, new_result;
-	str *suffix, *service;
 	char string[17];
-	pv_spec_t *sp;
-	pv_value_t pv_val;
-
-	sp = (pv_spec_t *)_sp;
-	suffix = (str*)_suffix;
-	service = (str*)_service;
 
 	/*
 	 *  Get R-URI user to tostring
@@ -1114,30 +960,13 @@ int enum_pv_query_3(struct sip_msg* _msg, char* _sp, char* _suffix,
 	memcpy(&(tostring[0]), user_s, user_len);
 	tostring[user_len] = (char)0;
 
-	/*
-	 * Get E.164 number from pseudo variable
-         */
-	if (sp && (pv_get_spec_value(_msg, sp, &pv_val) == 0)) {
-	    if (pv_val.flags & PV_VAL_STR) {
-		if (pv_val.rs.len == 0 || pv_val.rs.s == NULL) {
-		    LM_DBG("Missing E.164 number\n");
-		    return -1;
-		}
-	    } else {
-		LM_DBG("Pseudo variable value is not string\n");
-		return -1;
-	}
-	} else {
-	    LM_DBG("Cannot get pseudo variable value\n");
-	    return -1;
-	}
-	if (is_e164(&(pv_val.rs)) == -1) {
+	if (is_e164(num) == -1) {
 	    LM_ERR("pseudo variable does not contain an E164 number\n");
 	    return -1;
 	}
 
-	user_s = pv_val.rs.s;
-	user_len = pv_val.rs.len;
+	user_s = num->s;
+	user_len = num->len;
 
 	memcpy(&(string[0]), user_s, user_len);
 	string[user_len] = (char)0;

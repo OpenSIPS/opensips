@@ -107,7 +107,7 @@ static inline int load_ul_api(usrloc_api_t *ul)
 {
 	bind_usrloc_t bind_usrloc;
 
-	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
+	bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 0);
 	if (!bind_usrloc) {
 		LM_ERR("can't bind usrloc\n");
 		return -1;

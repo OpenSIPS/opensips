@@ -54,10 +54,9 @@ unsigned short pwd_avp_type=0;
 
 
 /** Exported functions */
-static cmd_export_t cmds[]=
-{
-	{"load_uac_auth", (cmd_function)uac_auth_bind, 1,  0,  0,  0},
-	{0,0,0,0,0,0}
+static cmd_export_t cmds[] = {
+	{"load_uac_auth", (cmd_function)uac_auth_bind, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 /** Exported parameters */

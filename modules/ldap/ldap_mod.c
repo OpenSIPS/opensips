@@ -57,27 +57,22 @@ static int child_init(int rank);
 /*
 * fixup functions
 */
-static int ldap_search_fixup(void** param, int param_no);
-static int ldap_result_fixup(void** param, int param_no);
-static int ldap_filter_url_encode_fixup(void** param, int param_no);
-static int ldap_result_check_fixup(void** param, int param_no);
+static int fixup_result_avp_type(void **param);
+static int fixup_substre(void** param);
 
 /*
 * exported functions
 */
 
-static int w_ldap_search_async(struct sip_msg* msg, async_ctx *ctx,
-		char* ldap_url, char* param);
-static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param);
-static int w_ldap_result1(struct sip_msg* msg, char* src, char* param);
-static int w_ldap_result2(struct sip_msg* msg, char* src, char* subst);
-static int w_ldap_result_next(struct sip_msg* msg, char* foo, char *bar);
+static int w_ldap_search_async(struct sip_msg* msg, async_ctx *ctx, str* ldap_url);
+static int w_ldap_search(struct sip_msg* msg, str* ldap_url);
+static int w_ldap_result(struct sip_msg* msg, str *attr_name,
+				pv_spec_t *dst_avp, void *avp_type, struct subst_expr *subst);
+static int w_ldap_result_next(struct sip_msg* msg);
 static int w_ldap_filter_url_encode(struct sip_msg* msg,
-		char* filter_component, char* dst_avp_name);
-static int w_ldap_result_check_1(struct sip_msg* msg,
-		char* attr_name_check_str, char* param);
-static int w_ldap_result_check_2(struct sip_msg* msg,
-		char* attr_name_check_str, char* attr_val_re);
+		str* filter_component, pv_spec_t* dst_avp_name);
+static int w_ldap_result_check(struct sip_msg* msg, str* attr_name,
+				str *check_str, struct subst_expr *subst);
 
 
 /*
@@ -93,38 +88,39 @@ str ldap_config = str_init(DEF_LDAP_CONFIG);
 static dictionary* config_vals = NULL;
 
 static acmd_export_t acmds[] = {
-	{"ldap_search", (acmd_function) w_ldap_search_async, 1, ldap_search_fixup},
-	{0, 0, 0, 0}
+	{"ldap_search", (acmd_function)w_ldap_search_async, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}}},
+	{0,0,{{0,0,0}}}
 };
-/*
-* Exported functions
-*/
+
 static cmd_export_t cmds[] = {
-	{"ldap_search",            (cmd_function)w_ldap_search,            1,
-		ldap_search_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+	{"ldap_search", (cmd_function)w_ldap_search, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result",            (cmd_function)w_ldap_result1,           1,
-		ldap_result_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
+	{"ldap_result", (cmd_function)w_ldap_result, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_result_avp_type, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result",            (cmd_function)w_ldap_result2,           2,
-		ldap_result_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
-		ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result_next",       (cmd_function)w_ldap_result_next,       0,
-		0, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|
+	{"ldap_result_next", (cmd_function)w_ldap_result_next, {{0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|
 		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result_check",      (cmd_function)w_ldap_result_check_1,    1,
-		ldap_result_check_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|
+	{"ldap_result_check", (cmd_function)w_ldap_result_check, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|
 		BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_result_check",      (cmd_function)w_ldap_result_check_2,    2,
-		ldap_result_check_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|
+	{"ldap_filter_url_encode", (cmd_function)w_ldap_filter_url_encode, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_VAR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|
 		BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"ldap_filter_url_encode", (cmd_function)w_ldap_filter_url_encode, 2,
-		ldap_filter_url_encode_fixup, 0, REQUEST_ROUTE|FAILURE_ROUTE|
-		BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"load_ldap",              (cmd_function)load_ldap,  0,
-		0, 0,
-		0},
-	{0, 0, 0, 0, 0, 0}
+	{"load_ldap", (cmd_function)load_ldap, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 
@@ -275,265 +271,74 @@ static void destroy(void)
 * EXPORTED functions
 */
 
-static int w_ldap_search_async(struct sip_msg* msg, async_ctx *ctx,
-		char* ldap_url, char* param)
+static int w_ldap_search_async(struct sip_msg* msg, async_ctx *ctx, str* ldap_url)
 {
-	return ldap_search_impl_async(msg, ctx, (pv_elem_t*)ldap_url);
+	return ldap_search_impl_async(msg, ctx, ldap_url);
 }
 
-static int w_ldap_search(struct sip_msg* msg, char* ldap_url, char* param)
+static int w_ldap_search(struct sip_msg* msg, str* ldap_url)
 {
-	return ldap_search_impl(msg, (pv_elem_t*)ldap_url);
+	return ldap_search_impl(msg, ldap_url);
 }
 
-static int w_ldap_result1(struct sip_msg* msg, char* src, char* param)
+static int w_ldap_result(struct sip_msg* msg, str *attr_name,
+				pv_spec_t *dst_avp, void *avp_type, struct subst_expr *subst)
 {
-	return ldap_write_result(msg, (struct ldap_result_params*)src, NULL);
+	return ldap_write_result(msg, attr_name, dst_avp, (int)avp_type, subst);
 }
 
-static int w_ldap_result2(struct sip_msg* msg, char* src, char* subst)
-{
-	return ldap_write_result(msg, (struct ldap_result_params*)src,
-			(struct subst_expr*)subst);
-}
-
-static int w_ldap_result_next(struct sip_msg* msg, char* foo, char *bar)
+static int w_ldap_result_next(struct sip_msg* msg)
 {
 	return ldap_result_next();
 }
 
 static int w_ldap_filter_url_encode(struct sip_msg* msg,
-		char* filter_component, char* dst_avp_name)
+		str* filter_component, pv_spec_t* dst_avp_name)
 {
-	return ldap_filter_url_encode(msg, (pv_elem_t*)filter_component,
-			(pv_spec_t*)dst_avp_name);
+	return ldap_filter_url_encode(msg, filter_component, dst_avp_name);
 }
 
-static int w_ldap_result_check_1(struct sip_msg* msg,
-		char* attr_name_check_str, char* param)
+static int w_ldap_result_check(struct sip_msg* msg, str* attr_name,
+				str *check_str, struct subst_expr *subst)
 {
-	return ldap_result_check(msg,
-			(struct ldap_result_check_params*)attr_name_check_str, NULL);
-}
-
-static int w_ldap_result_check_2(struct sip_msg* msg,
-		char* attr_name_check_str, char* attr_val_re)
-{
-	return ldap_result_check( msg,
-		(struct ldap_result_check_params*)attr_name_check_str,
-		(struct subst_expr*)attr_val_re);
+	return ldap_result_check(msg, attr_name, check_str, subst);
 }
 
 /*
 * FIXUP functions
 */
 
-static int ldap_search_fixup(void** param, int param_no)
+static int fixup_result_avp_type(void **param)
 {
-	pv_elem_t *model;
-	str s;
-
-	if (param_no == 1) {
-		s.s = (char*)*param;
-		s.len = strlen(s.s);
-		if (s.len==0) {
-			LM_ERR("ldap url is empty string!\n");
-			return E_CFG;
-		}
-		if ( pv_parse_format(&s,&model) || model==NULL) {
-			LM_ERR("wrong format [%s] for ldap url!\n", s.s);
-			return E_CFG;
-		}
-		*param = (void*)model;
-	}
-
-	return 0;
-}
-
-static int ldap_result_fixup(void** param, int param_no)
-{
-	struct ldap_result_params* lp;
-	struct subst_expr* se;
-	str subst;
-	char *arg_str, *dst_avp_str, *dst_avp_val_type_str;
-	char *p;
-	str s;
+	static str ints = str_init("int");
+	static str strs = str_init("str");
 	int dst_avp_val_type = 0;
 
-	if (param_no == 1) {
-		arg_str = (char*)*param;
-		if ((dst_avp_str = strchr(arg_str, '/')) == 0)
-		{
-			/* no / found in arg_str */
-			LM_ERR("invalid first argument [%s]\n", arg_str);
-			return E_UNSPEC;
-		}
-		*(dst_avp_str++) = 0;
-
-		if ((dst_avp_val_type_str = strchr(dst_avp_str, '/')))
-		{
-			*(dst_avp_val_type_str++) = 0;
-			if (!strcmp(dst_avp_val_type_str, "int"))
-			{
-				dst_avp_val_type = 1;
-			}
-			else if (strcmp(dst_avp_val_type_str, "str"))
-			{
-				LM_ERR(	"invalid avp_type [%s]\n",
-					dst_avp_val_type_str);
-				return E_UNSPEC;
-			}
-		}
-
-		lp = (struct ldap_result_params*)pkg_malloc(sizeof(struct ldap_result_params));
-		if (lp == NULL) {
-			LM_ERR("no memory\n");
-			return E_OUT_OF_MEM;
-		}
-		memset(lp, 0, sizeof(struct ldap_result_params));
-
-		lp->ldap_attr_name.s = arg_str;
-		lp->ldap_attr_name.len = strlen(arg_str);
-
-		lp->dst_avp_val_type = dst_avp_val_type;
-		s.s = dst_avp_str; s.len = strlen(s.s);
-		p = pv_parse_spec(&s, &lp->dst_avp_spec);
-		if (p == 0) {
-			pkg_free(lp);
-			LM_ERR("parse error for [%s]\n",
-					dst_avp_str);
-			return E_UNSPEC;
-		}
-		if (lp->dst_avp_spec.type != PVT_AVP) {
-			pkg_free(lp);
-			LM_ERR(	"bad attribute name [%s]\n",
-				dst_avp_str);
-			return E_UNSPEC;
-		}
-		*param = (void*)lp;
-
-	} else if (param_no == 2) {
-		subst.s = *param;
-		subst.len = strlen(*param);
-		se = subst_parser(&subst);
-		if (se == 0) {
-			LM_ERR("bad subst re [%s]\n",
-			(char*)*param);
-			return E_BAD_RE;
-		}
-		*param = (void*)se;
+	if (!str_strcmp((str*)*param, &ints))
+	{
+		dst_avp_val_type = 1;
+	}
+	else if (str_strcmp((str*)*param, &strs))
+	{
+		LM_ERR(	"invalid avp_type [%.*s]\n",
+			((str*)*param)->len, ((str*)*param)->s);
+		return E_UNSPEC;
 	}
 
+	*param = (void*)(long)dst_avp_val_type;
 	return 0;
 }
 
-static int ldap_result_check_fixup(void** param, int param_no)
+static int fixup_substre(void** param)
 {
-	struct ldap_result_check_params *lp;
-	struct subst_expr *se;
-	str subst;
-	str s;
-	char *arg_str, *check_str;
-	int arg_str_len;
+	struct subst_expr* se;
 
-	if (param_no == 1)
-	{
-		arg_str = (char*)*param;
-		arg_str_len = strlen(arg_str);
-		if ((check_str = strchr(arg_str, '/')) == 0)
-		{
-			/* no / found in arg_str */
-			LM_ERR(	"invalid first argument [%s] (no '/' found)\n",
-				arg_str);
-			return E_UNSPEC;
-		}
-		*(check_str++) = 0;
-
-		lp = (struct ldap_result_check_params*)pkg_malloc(sizeof(struct ldap_result_check_params));
-		if (lp == NULL) {
-			LM_ERR("no memory\n");
-			return E_OUT_OF_MEM;
-		}
-		memset(lp, 0, sizeof(struct ldap_result_check_params));
-
-		lp->ldap_attr_name.s = arg_str;
-		lp->ldap_attr_name.len = strlen(arg_str);
-
-		if (lp->ldap_attr_name.len + 1 == arg_str_len)
-		{
-			/* empty check_str */
-			lp->check_str_elem_p = 0;
-		}
-		else
-		{
-			s.s = check_str; s.len = strlen(s.s);
-			if (pv_parse_format(&s, &(lp->check_str_elem_p)) < 0)
-			{
-				LM_ERR("pv_parse_format failed\n");
-				return E_OUT_OF_MEM;
-			}
-		}
-		*param = (void*)lp;
-	}
-	else if (param_no == 2)
-	{
-		subst.s = *param;
-		subst.len = strlen(*param);
-		se = subst_parser(&subst);
-		if (se == 0) {
-			LM_ERR(	"bad subst re [%s]\n",
-				(char*)*param);
-			return E_BAD_RE;
-		}
-		*param = (void*)se;
+	se=subst_parser((str*)*param);
+	if (se==0){
+		LM_ERR("bad subst re [%.*s]\n", ((str*)*param)->len, ((str*)*param)->s);
+		return E_BAD_RE;
 	}
 
-	return 0;
-}
-
-static int ldap_filter_url_encode_fixup(void** param, int param_no)
-{
-	pv_elem_t *elem_p;
-	pv_spec_t *spec_p;
-	str s;
-
-	if (param_no == 1) {
-		s.s = (char*)*param;
-		if (s.s==0 || s.s[0]==0) {
-			elem_p = 0;
-		} else {
-			s.len = strlen(s.s);
-			if (pv_parse_format(&s, &elem_p) < 0) {
-				LM_ERR("pv_parse_format failed\n");
-				return E_OUT_OF_MEM;
-			}
-		}
-		*param = (void*)elem_p;
-	}
-	else if (param_no == 2)
-	{
-		spec_p = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
-		if (spec_p == NULL) {
-			LM_ERR("no memory\n");
-			return E_OUT_OF_MEM;
-		}
-		s.s = (char*)*param; s.len = strlen(s.s);
-		if (pv_parse_spec(&s, spec_p)
-				== 0)
-		{
-			pkg_free(spec_p);
-			LM_ERR("parse error for [%s]\n",
-				(char*)*param);
-			return E_UNSPEC;
-		}
-		if (spec_p->type != PVT_AVP) {
-			pkg_free(spec_p);
-			LM_ERR("bad attribute name"
-				" [%s]\n", (char*)*param);
-			return E_UNSPEC;
-		}
-		*param = (void*)spec_p;
-	}
-
+	*param=se;
 	return 0;
 }

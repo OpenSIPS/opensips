@@ -135,7 +135,7 @@ static int mod_init(void)
 	if(presence_server.s)
 		presence_server.len = strlen(presence_server.s);
 
-	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
+	bind_pua= (bind_pua_t)find_export("bind_pua", 0);
 	if (!bind_pua)
 	{
 		LM_ERR("Can't bind pua (check if pua module is loaded)\n");

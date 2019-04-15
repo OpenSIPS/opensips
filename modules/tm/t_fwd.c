@@ -562,16 +562,9 @@ int t_set_reason(struct sip_msg *msg, str *val)
 }
 
 
-int t_add_reason(struct sip_msg *msg, char *val)
+int t_add_reason(struct sip_msg *msg, str *reason)
 {
-	str reason;
-
-	if (fixup_get_svalue(msg, (gparam_p)val, &reason)!=0) {
-		LM_ERR("invalid reason value\n");
-		return -1;
-	}
-
-	return t_set_reason(msg, &reason);
+	return t_set_reason(msg, reason);
 }
 
 void get_cancel_reason(struct sip_msg *msg, int flags, str *reason)

@@ -110,15 +110,16 @@ struct hep_data {
 	int oldest_chunk;
 };
 
-
 static cmd_export_t cmds[] = {
-	{"proto_init",            (cmd_function)proto_hep_init_udp,        0, 0, 0, 0},
-	{"proto_init",            (cmd_function)proto_hep_init_tcp,        0, 0, 0, 0},
-	{"load_hep",			  (cmd_function)bind_proto_hep,        1, 0, 0, 0},
-	{"trace_bind_api",        (cmd_function)hep_bind_trace_api,    1, 0, 0, 0},
-	{"correlate", (cmd_function)correlate_w, 5, correlate_fixup, 0,
+	{"proto_init", (cmd_function)proto_hep_init_udp, {{0,0,0}}, 0},
+	{"proto_init", (cmd_function)proto_hep_init_tcp, {{0,0,0}}, 0},
+	{"load_hep", (cmd_function)bind_proto_hep, {{0,0,0}}, 0},
+	{"trace_bind_api", (cmd_function)hep_bind_trace_api, {{0,0,0}}, 0},
+	{"correlate", (cmd_function)correlate_w, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {
@@ -195,7 +196,7 @@ static int mod_init(void)
 
 	if (payload_compression) {
 		load_compression =
-			(load_compression_f)find_export("load_compression", 1, 0);
+			(load_compression_f)find_export("load_compression", 0);
 		if (!load_compression) {
 			LM_ERR("can't bind compression module!\n");
 			return -1;

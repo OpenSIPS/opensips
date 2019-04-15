@@ -1915,7 +1915,7 @@ default_stm: DEFAULT COLON actions { mk_action2( $$, DEFAULT_T,
 	;
 
 module_func_param: STRING {
-										elems[1].type = STRING_ST;
+										elems[1].type = STR_ST;
 										elems[1].u.data = $1;
 										$$=1;
 										}
@@ -1925,7 +1925,7 @@ module_func_param: STRING {
 												"in function\n");
 											$$=0;
 										}
-										elems[$1+1].type = STRING_ST;
+										elems[$1+1].type = STR_ST;
 										elems[$1+1].u.data = $3;
 										$$=$1+1;
 										}
@@ -1939,7 +1939,7 @@ module_func_param: STRING {
 		| COMMA STRING {
 										elems[1].type = NULLV_ST;
 										elems[1].u.data = NULL;
-										elems[2].type = STRING_ST;
+										elems[2].type = STR_ST;
 										elems[2].u.data = $2;
 										$$=2;
 										}
@@ -1954,19 +1954,48 @@ module_func_param: STRING {
 										$$=$1+1;
 										}
 		| NUMBER {
-										$$=0;
-										yyerror("numbers used as parameters -"
-											" they should be quoted");
+										elems[1].type = NUMBER_ST;
+										elems[1].u.number = $1;
+										$$=1;
 										}
 		| COMMA NUMBER {
-										$$=0;
-										yyerror("numbers used as parameters -"
-											" they should be quoted");
+										elems[1].type = NULLV_ST;
+										elems[1].u.data = NULL;
+										elems[2].type = NUMBER_ST;
+										elems[2].u.number = $2;
+										$$=2;
 										}
 		| module_func_param COMMA NUMBER {
-										$$=0;
-										yyerror("numbers used as parameters -"
-											" they should be quoted");
+										if ($1+1>=MAX_ACTION_ELEMS) {
+											yyerror("too many arguments "
+												"in function\n");
+											$$=0;
+										}
+										elems[$1+1].type = NUMBER_ST;
+										elems[$1+1].u.number = $3;
+										$$=$1+1;
+										}
+		| script_var {
+										elems[1].type = SCRIPTVAR_ST;
+										elems[1].u.data = $1;
+										$$=1;
+										}
+		| COMMA script_var {
+										elems[1].type = NULLV_ST;
+										elems[1].u.data = NULL;
+										elems[2].type = SCRIPTVAR_ST;
+										elems[2].u.data = $2;
+										$$=2;
+										}
+		| module_func_param COMMA script_var {
+										if ($1+1>=MAX_ACTION_ELEMS) {
+											yyerror("too many arguments "
+												"in function\n");
+											$$=0;
+										}
+										elems[$1+1].type = SCRIPTVAR_ST;
+										elems[$1+1].u.data = $3;
+										$$=$1+1;
 										}
 	;
 
@@ -2033,27 +2062,52 @@ route_param: STRING {
 	;
 
 async_func: ID LPAREN RPAREN {
-				cmd_tmp=(void*)find_acmd_export_t($1, 0);
+				cmd_tmp=(void*)find_acmd_export_t($1);
 				if (cmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
 						"missing loadmodule?", $1);
 					$$=0;
 				}else{
-					elems[0].type = ACMD_ST;
-					elems[0].u.data = cmd_tmp;
-					mk_action_($$, AMODULE_T, 1, elems);
+					if (check_acmd_call_params(cmd_tmp,elems,0)<0) {
+						yyerrorf("too few parameters "
+							"for command <%s>\n", $1);
+						$$=0;
+					} else {
+						elems[0].type = ACMD_ST;
+						elems[0].u.data = cmd_tmp;
+						mk_action_($$, AMODULE_T, 1, elems);
+					}
 				}
 			}
 			| ID LPAREN module_func_param RPAREN {
-				cmd_tmp=(void*)find_acmd_export_t($1, $3);
+				cmd_tmp=(void*)find_acmd_export_t($1);
 				if (cmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
 						"missing loadmodule?", $1);
 					$$=0;
 				}else{
-					elems[0].type = ACMD_ST;
-					elems[0].u.data = cmd_tmp;
-					mk_action_($$, AMODULE_T, $3+1, elems);
+					rc = check_acmd_call_params(cmd_tmp,elems,$3);
+					switch (rc) {
+					case -1:
+						yyerrorf("too few parameters "
+							"for async command <%s>\n", $1);
+						$$=0;
+						break;
+					case -2:
+						yyerrorf("too many parameters "
+							"for async command <%s>\n", $1);
+						$$=0;
+						break;
+					case -3:
+						yyerrorf("mandatory parameter "
+							" omitted for async command <%s>\n", $1);
+						$$=0;
+						break;
+					default:
+						elems[0].type = ACMD_ST;
+						elems[0].u.data = cmd_tmp;
+						mk_action_($$, AMODULE_T, $3+1, elems);
+					}
 				}
 			}
 			| ID LPAREN error RPAREN {
@@ -2629,40 +2683,65 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 								elems[1].u.data = $5;
 								mk_action_($$, CACHE_RAW_QUERY_T, 2, elems);
 							}
-		| ID LPAREN RPAREN		{
-						 			cmd_tmp=(void*)find_cmd_export_t($1, 0, rt);
-									if (cmd_tmp==0){
-										if (find_cmd_export_t($1, 0, 0)) {
-											yyerror("Command cannot be "
-												"used in the block\n");
-										} else {
-											yyerrorf("unknown command <%s>, "
-												"missing loadmodule?", $1);
-										}
+		| ID LPAREN RPAREN	{
+								cmd_tmp=(void*)find_cmd_export_t($1, rt);
+								if (cmd_tmp==0){
+									if (find_cmd_export_t($1, 0)) {
+										yyerrorf("Command <%s> cannot be "
+											"used in the block\n", $1);
+									} else {
+										yyerrorf("unknown command <%s>, "
+											"missing loadmodule?", $1);
+									}
+									$$=0;
+								}else{
+									if (check_cmd_call_params(cmd_tmp,elems,0)<0) {
+										yyerrorf("too few parameters "
+											"for command <%s>\n", $1);
 										$$=0;
-									}else{
+									} else {
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
 										mk_action_($$, MODULE_T, 1, elems);
 									}
 								}
-		| ID LPAREN module_func_param RPAREN		{
-									cmd_tmp=(void*)find_cmd_export_t($1,$3,rt);
-									if (cmd_tmp==0){
-										if (find_cmd_export_t($1, $3, 0)) {
-											yyerror("Command cannot be "
-												"used in the block\n");
-										} else {
-											yyerrorf("unknown command <%s>, "
-												"missing loadmodule?", $1);
-										}
+							}
+		| ID LPAREN module_func_param RPAREN	{
+								cmd_tmp=(void*)find_cmd_export_t($1, rt);
+								if (cmd_tmp==0){
+									if (find_cmd_export_t($1, 0)) {
+										yyerrorf("Command <%s> cannot be "
+											"used in the block\n", $1);
+									} else {
+										yyerrorf("unknown command <%s>, "
+											"missing loadmodule?", $1);
+									}
+									$$=0;
+								}else{
+									rc = check_cmd_call_params(cmd_tmp,elems,$3);
+									switch (rc) {
+									case -1:
+										yyerrorf("too few parameters "
+											"for command <%s>\n", $1);
 										$$=0;
-									}else{
+										break;
+									case -2:
+										yyerrorf("too many parameters "
+											"for command <%s>\n", $1);
+										$$=0;
+										break;
+									case -3:
+										yyerrorf("mandatory parameter "
+											"omitted for command <%s>\n", $1);
+										$$=0;
+										break;
+									default:
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
 										mk_action_($$, MODULE_T, $3+1, elems);
 									}
 								}
+							}
 		| ID LPAREN error RPAREN { $$=0; yyerrorf("bad arguments for "
 												"command <%s>", $1); }
 		| ID error { $$=0;

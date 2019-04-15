@@ -275,9 +275,9 @@ int hep_bind_trace_api(trace_proto_t* prot);
 typedef int (*get_hep_ctx_id_t)(void);
 unsigned char* generate_hep_gid(char* cookie);
 
-int correlate_w(struct sip_msg*, char* hep_id,
-		char* type1, char* correlation1,
-		char* type2, char* correlation2);
+int correlate_w(struct sip_msg*, str* hep_id,
+		str* type1, str* correlation1,
+		str* type2, str* correlation2);
 int correlate_fixup(void** param, int param_no);
 #endif
 

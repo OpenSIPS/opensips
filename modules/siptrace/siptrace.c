@@ -107,8 +107,10 @@ static int corr_id=-1;
  * SIPTRACE FUNCTIONS
  *
  * **/
-static int sip_trace_fixup(void **param, int param_no);
-static int sip_trace_w(struct sip_msg*, char*, char*, char*, char*);
+static int fixup_tid(void **param);
+static int fixup_sflags(void **param);
+static int sip_trace_w(struct sip_msg *msg, tlist_elem_p list,
+					void *scope_p, str *trace_types_s, str *trace_attrs);
 static int sip_trace(struct sip_msg*, trace_info_p);
 
 static int trace_dialog(struct sip_msg*, trace_info_p);
@@ -169,17 +171,14 @@ void free_trace_info_shm(void *param);
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"sip_trace", (cmd_function)sip_trace_w, 1, sip_trace_fixup, 0,
+	{"sip_trace", (cmd_function)sip_trace_w, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_tid, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_sflags, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"sip_trace", (cmd_function)sip_trace_w, 2, sip_trace_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"sip_trace", (cmd_function)sip_trace_w, 3, sip_trace_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"sip_trace", (cmd_function)sip_trace_w, 4, sip_trace_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters
@@ -1262,103 +1261,43 @@ static tlist_elem_p get_list_start(str *name)
 	return NULL;
 }
 
-/*
- * build a list with only those elements that belong to this
- * id
- */
-static int sip_trace_fixup(void **param, int param_no)
+
+static int fixup_tid(void **param)
 {
-	int _flags;
-
-	str _sflags;
-	str _trace_attrs;
-
-	gparam_p gp;
-	pv_elem_p el;
-	tid_param_p tparam;
-
-	if (param_no < 1 || param_no > 4) {
-		LM_ERR("bad param number!\n");
+	if ((*param = (void*)get_list_start((str*)*param)) == NULL) {
+		LM_ERR("Trace id <%.*s> used in sip_trace() function "
+			"not defined!\n", ((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	switch (param_no) {
-	case 1:
-		if (fixup_spve(param) < 0) {
-			LM_ERR("trace id fixup failed!\n");
-			return -1;
-		}
+	return 0;
+}
 
-		tparam=pkg_malloc(sizeof(tid_param_t));
-		if (!tparam) {
-			LM_ERR("no more pkg mem!\n");
-			return -1;
-		}
+static int fixup_sflags(void **param)
+{
+	int _flags;
 
-		gp=*param;
-		if (gp->type==GPARAM_TYPE_STR) {
-			tparam->type = TYPE_LIST;
-			if ((tparam->u.lst=get_list_start(&gp->v.sval))==NULL) {
-				LM_ERR("Trace id <%.*s> used in sip_trace() function "
-					"not defined!\n", gp->v.sval.len, gp->v.sval.s);
-				return -1;
-			}
-		} else if (gp->type==GPARAM_TYPE_PVS) {
-			tparam->type = TYPE_PVAR;
-			tparam->u.el = gp->v.pvs;
-		} else {
-			LM_ERR("Only one variable or trace id name allowed!"
-					" Can't have multiple variables!\n");
-			return -1;
-		}
-
-		pkg_free(gp);
-		*param = tparam;
-
-		break;
-	case 2:
-		_sflags.s   = (char *)*param;
-		_sflags.len = strlen(_sflags.s);
-
-		if ((_flags=st_parse_flags(&_sflags)) < 0) {
-			LM_ERR("flag parsing failed!\n");
-			return -1;
-		}
-
-		if (_flags==TRACE_DIALOG) {
-			if (dlgb.create_dlg==NULL) {
-				LM_ERR("Dialog tracing explicitly required, but"
-					"dialog module not loaded\n");
-				return -1;
-			}
-		}else
-		if (_flags==TRACE_TRANSACTION) {
-			if (tmb.t_gett==NULL) {
-				LM_INFO("Will do stateless transaction aware tracing!\n");
-				LM_INFO("Siptrace will catch internally generated replies"
-						" and forwarded requests!\n");
-			}
-		}
-
-		*param = (void *)((unsigned long)_flags);
-
-		break;
-	/* types of messages to be traced */
-	case 3:
-
-		return fixup_spve(param);
-	case 4:
-		_trace_attrs.s = (char *)*param;
-		_trace_attrs.len = strlen(_trace_attrs.s);
-
-		if (pv_parse_format(&_trace_attrs, &el) < 0) {
-			LM_ERR("Parsing trace attrs param failed!\n");
-			return -1;
-		}
-
-		*param = el;
-		break;
+	if ((_flags=st_parse_flags((str*)*param)) < 0) {
+		LM_ERR("flag parsing failed!\n");
+		return -1;
 	}
+
+	if (_flags==TRACE_DIALOG) {
+		if (dlgb.create_dlg==NULL) {
+			LM_ERR("Dialog tracing explicitly required, but"
+				"dialog module not loaded\n");
+			return -1;
+		}
+	}else
+	if (_flags==TRACE_TRANSACTION) {
+		if (tmb.t_gett==NULL) {
+			LM_INFO("Will do stateless transaction aware tracing!\n");
+			LM_INFO("Siptrace will catch internally generated replies"
+					" and forwarded requests!\n");
+		}
+	}
+
+	*param = (void *)((unsigned long)_flags);
 
 	return 0;
 }
@@ -1387,27 +1326,16 @@ int trace_has_totag(struct sip_msg* _m)
 
 
 /* siptrace wrapper that verifies if the trace is on */
-static int sip_trace_w(struct sip_msg *msg, char *param1,
-									char *param2, char *param3, char *param4)
+static int sip_trace_w(struct sip_msg *msg, tlist_elem_p list,
+					void *scope_p, str *trace_types_s, str *trace_attrs)
 {
 
 	int extra_len=0;
 	int trace_flags;
 	int trace_types=0;
 
-	str tid_name;
-	str trace_attrs={NULL, 0};
-	str trace_types_s;
-
-	gparam_p gp;
-
-	tlist_elem_p list;
-	tid_param_p tparam;
-
 	trace_info_p info=NULL;
 	trace_info_t stack_info;
-
-	pv_value_t value;
 
 	if(msg==NULL)
 	{
@@ -1415,35 +1343,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 		return -1;
 	}
 
-	/* NULL trace id; not allowed */
-	if (param1==NULL) {
-		LM_ERR("Null trace id! This is a mandatory parameter!\n");
-		return -1;
-	}
-
-	if ((tparam=(tid_param_p)param1)->type == TYPE_LIST) {
-		list=tparam->u.lst;
-	} else {
-		if (pv_get_spec_value(msg, ((tid_param_p)param1)->u.el, &value) < 0) {
-			LM_ERR("cannot get trace id value from pvar\n");
-			return -1;
-		}
-
-		if ( !(value.flags & PV_VAL_STR) ) {
-			LM_ERR("Trace id variable does not contain a valid string!\n");
-			return -1;
-		}
-
-		tid_name = value.rs;
-
-		if ((list=get_list_start(&tid_name))==NULL) {
-			LM_ERR("Trace id <%.*s> not defined!\n", tid_name.len, tid_name.s);
-			return -1;
-		}
-	}
-
-	if (param2 != NULL) {
-		trace_flags = (int)((unsigned long)param2);
+	if (scope_p != NULL) {
+		trace_flags = (int)((unsigned long)scope_p);
 	} else {
 		/* we use the topmost flag; if dialogs available trace dialog etc. */
 		/* for dialogs check for dialog api and whether it is an initial
@@ -1476,19 +1377,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 
 	/* parse trace types */
 	/* this makes sense only if trace protocol is loaded */
-	if ( tprot.send_message && param3 != NULL) {
-		gp = (gparam_p)param3;
-		if (gp->type == GPARAM_TYPE_PVE) {
-			/* they are already parsed */
-			if (pv_printf_s(msg, gp->v.pve, &trace_types_s) < 0) {
-				LM_ERR("failed to get trace_types param!\n");
-				return -1;
-			}
-		} else {
-			trace_types_s = gp->v.sval;
-		}
-
-		trace_types = st_parse_types(&trace_types_s);
+	if ( tprot.send_message && trace_types_s != NULL) {
+		trace_types = st_parse_types(trace_types_s);
 		if (trace_types == 0) {
 			LM_DBG("no types to be traced, abording!\n");
 			return -1;
@@ -1499,13 +1389,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 		trace_types = sip_trace_id;
 	}
 
-	if (param4 != NULL) {
-		if (pv_printf_s(msg, (pv_elem_p)param4,  &trace_attrs) < 0) {
-			LM_ERR("failed to get trace_attrs param!\n");
-			return -1;
-		}
-		extra_len = sizeof(str) + trace_attrs.len;
-	}
+	if (trace_attrs != NULL)
+		extra_len = sizeof(str) + trace_attrs->len;
 
 
 	if (trace_flags == TRACE_MESSAGE) {
@@ -1515,7 +1400,7 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 
 		memset(info, 0, sizeof(trace_info_t));
 		if (extra_len) {
-			info->trace_attrs = &trace_attrs;
+			info->trace_attrs = trace_attrs;
 		}
 	/* for stateful transactions or dialogs
 	 * we need the structure in the shared memory */
@@ -1533,8 +1418,8 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 			info->trace_attrs = (str*)(info+1);
 			info->trace_attrs->s = (char*)(info->trace_attrs+1);
 
-			memcpy(info->trace_attrs->s, trace_attrs.s, trace_attrs.len);
-			info->trace_attrs->len = trace_attrs.len;
+			memcpy(info->trace_attrs->s, trace_attrs->s, trace_attrs->len);
+			info->trace_attrs->len = trace_attrs->len;
 		}
 	} else if (trace_flags == TRACE_TRANSACTION && tmb.t_gett==NULL) {
 		/* we need this structure in pkg for stateless replies
@@ -1547,7 +1432,7 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 
 		memset(info, 0, sizeof(trace_info_t));
 		if (extra_len)
-			info->trace_attrs = &trace_attrs;
+			info->trace_attrs = trace_attrs;
 	} else {
 		LM_ERR("Unknown trace flags %x\n", trace_flags);
 		return -2;
@@ -2498,6 +2383,7 @@ static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_
 
 	unsigned long long trans_correlation_id;
 	str conn_id_s;
+	static str net_s = str_init("net");
 
 	trace_message trace_msg;
 
@@ -2541,7 +2427,7 @@ static int send_trace_proto_duplicate( trace_dest dest, str* correlation, trace_
 		tcp_get_correlation_id( info->conn_id, &trans_correlation_id);
 
 		conn_id_s.s =  int2str( trans_correlation_id, &conn_id_s.len);
-		if (tprot.add_extra_correlation( trace_msg, "net", &conn_id_s)<0) {
+		if (tprot.add_extra_correlation( trace_msg, &net_s, &conn_id_s)<0) {
 			LM_ERR("failed to add 'net' correlation to trace message\n");
 			goto error;
 		}

@@ -50,7 +50,6 @@
 #include "../../error.h"
 #include "../../pvar.h"
 #include "../../mem/mem.h"
-#include "../../mod_fix.h"
 #include "../../context.h"
 #include "loose.h"
 #include "record.h"
@@ -79,14 +78,13 @@ int enable_socket_mismatch_warning = 1; /* Enable socket mismatch warning */
 static int  mod_init(void);
 static void mod_destroy(void);
 /* fixup functions */
-static int direction_fixup(void** param, int param_no);
-static int it_list_fixup(void** param, int param_no);
+static int direction_fixup(void** param);
 /* wrapper functions */
-static int w_record_route(struct sip_msg *,char *, char *);
-static int w_record_route_preset(struct sip_msg *,char *, char *);
-static int w_add_rr_param(struct sip_msg *,char *, char *);
-static int w_check_route_param(struct sip_msg *,char *, char *);
-static int w_is_direction(struct sip_msg *,char *, char *);
+static int w_record_route(struct sip_msg *,str *);
+static int w_record_route_preset(struct sip_msg *,str *, str *);
+static int w_add_rr_param(struct sip_msg *,str *);
+static int w_check_route_param(struct sip_msg *,regex_t *);
+static int w_is_direction(struct sip_msg *,void *);
 
 static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param,
 	pv_value_t *res);
@@ -96,34 +94,27 @@ static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param,
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"loose_route",          (cmd_function)loose_route,           0,
-			0, 0,
-			REQUEST_ROUTE},
-	{"record_route",         (cmd_function)w_record_route,        0,
-			0, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"record_route",         (cmd_function)w_record_route,        1,
-			it_list_fixup, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"record_route_preset",  (cmd_function)w_record_route_preset, 1,
-			it_list_fixup, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"record_route_preset",  (cmd_function)w_record_route_preset, 2,
-			it_list_fixup, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"add_rr_param",         (cmd_function)w_add_rr_param,        1,
-			it_list_fixup, 0,
-			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"check_route_param",    (cmd_function)w_check_route_param,   1,
-			fixup_regexp_null, fixup_free_regexp_null,
-			REQUEST_ROUTE},
-	{"is_direction",         (cmd_function)w_is_direction,        1,
-			direction_fixup, 0,
-			REQUEST_ROUTE},
-	{"load_rr",              (cmd_function)load_rr, 0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"loose_route", (cmd_function)loose_route, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"record_route", (cmd_function)w_record_route, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT ,0, 0}, {0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"record_route_preset", (cmd_function)w_record_route_preset, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT ,0, 0}, {0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"add_rr_param", (cmd_function)w_add_rr_param, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
+	{"check_route_param", (cmd_function)w_check_route_param, {
+		{CMD_PARAM_REGEX, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"is_direction", (cmd_function)w_is_direction, {
+		{CMD_PARAM_STR, direction_fixup, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"load_rr", (cmd_function)load_rr, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*! \brief
  * Exported parameters
@@ -205,27 +196,9 @@ static void mod_destroy(void)
 }
 
 
-static int it_list_fixup(void** param, int param_no)
+static int direction_fixup(void** param)
 {
-	pv_elem_t *model;
-	str s;
-	if(*param)
-	{
-		s.s = (char*)(*param); s.len = strlen(s.s);
-		if(pv_parse_format(&s, &model)<0)
-		{
-			LM_ERR("wrong format[%s]\n",(char*)(*param));
-			return E_UNSPEC;
-		}
-		*param = (void*)model;
-	}
-	return 0;
-}
-
-
-static int direction_fixup(void** param, int param_no)
-{
-	char *s;
+	str *s = (str*)*param;
 	int n;
 
 	if (!append_fromtag) {
@@ -233,22 +206,18 @@ static int direction_fixup(void** param, int param_no)
 				"\"append_fromtag\" enabled!!");
 		return E_CFG;
 	}
-	if (param_no==1) {
-		n = 0;
-		s = (char*) *param;
-		if ( strcasecmp(s,"downstream")==0 ) {
-			n = RR_FLOW_DOWNSTREAM;
-		} else if ( strcasecmp(s,"upstream")==0 ) {
-			n = RR_FLOW_UPSTREAM;
-		} else {
-			LM_ERR("unknown direction '%s'\n",s);
-			return E_CFG;
-		}
-		/* free string */
-		pkg_free(*param);
-		/* replace it with the flag */
-		*param = (void*)(unsigned long)n;
+
+	if ( strncasecmp(s->s,"downstream",10)==0 ) {
+		n = RR_FLOW_DOWNSTREAM;
+	} else if ( strncasecmp(s->s,"upstream",8)==0 ) {
+		n = RR_FLOW_UPSTREAM;
+	} else {
+		LM_ERR("unknown direction '%.*s'\n",s->len, s->s);
+		return E_CFG;
 	}
+
+	/* replace it with the flag */
+	*param = (void*)(unsigned long)n;
 	return 0;
 }
 
@@ -274,20 +243,14 @@ static int pv_get_rr_params(struct sip_msg *msg, pv_param_t *param,
 }
 
 
-static int w_record_route(struct sip_msg *msg, char *key, char *bar)
+static int w_record_route(struct sip_msg *msg, str *key)
 {
-	str s;
-
 	if (ctx_rrdone_get()==1) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
 	}
 
-	if (key && pv_printf_s(msg, (pv_elem_t*)key, &s)<0) {
-		LM_ERR("failed to print the format\n");
-		return -1;
-	}
-	if ( record_route( msg, key?&s:0 )<0 )
+	if ( record_route( msg, key )<0 )
 		return -1;
 
 	ctx_rrdone_set(1);
@@ -295,10 +258,8 @@ static int w_record_route(struct sip_msg *msg, char *key, char *bar)
 }
 
 
-static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
+static int w_record_route_preset(struct sip_msg *msg, str *key, str *key2)
 {
-	str s;
-
 	if (ctx_rrdone_get()==1) {
 		LM_ERR("Double attempt to record-route\n");
 		return -1;
@@ -309,21 +270,13 @@ static int w_record_route_preset(struct sip_msg *msg, char *key, char *key2)
 		return -1;
 	}
 
-	if (pv_printf_s(msg, (pv_elem_t*)key, &s)<0) {
-		LM_ERR("failed to print the format\n");
-		return -1;
-	}
-	if ( record_route_preset( msg, &s)<0 )
+	if ( record_route_preset( msg, key)<0 )
 		return -1;
 
 	if (!key2)
 		goto done;
 
-	if (pv_printf_s(msg, (pv_elem_t*)key2, &s)<0) {
-		LM_ERR("failed to print the format\n");
-		return -1;
-	}
-	if ( record_route_preset( msg, &s)<0 )
+	if ( record_route_preset( msg, key2)<0 )
 		return -1;
 
 done:
@@ -332,27 +285,21 @@ done:
 }
 
 
-static int w_add_rr_param(struct sip_msg *msg, char *key, char *foo)
+static int w_add_rr_param(struct sip_msg *msg, str *key)
 {
-	str s;
-
-	if (pv_printf_s(msg, (pv_elem_t*)key, &s)<0) {
-		LM_ERR("failed to print the format\n");
-		return -1;
-	}
-	return ((add_rr_param( msg, &s)==0)?1:-1);
+	return ((add_rr_param( msg, key)==0)?1:-1);
 }
 
 
 
-static int w_check_route_param(struct sip_msg *msg,char *re, char *foo)
+static int w_check_route_param(struct sip_msg *msg, regex_t *re)
 {
-	return ((check_route_param(msg,(regex_t*)re)==0)?1:-1);
+	return ((check_route_param(msg,re)==0)?1:-1);
 }
 
 
 
-static int w_is_direction(struct sip_msg *msg,char *dir, char *foo)
+static int w_is_direction(struct sip_msg *msg,void *dir)
 {
 	return ((is_direction(msg,(int)(long)dir)==0)?1:-1);
 }

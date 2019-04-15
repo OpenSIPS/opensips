@@ -81,8 +81,8 @@ struct bin_data {
 };
 
 static cmd_export_t cmds[] = {
-	{"proto_init", (cmd_function)proto_bin_init, 0, 0, 0, 0},
-	{0,0,0,0,0,0}
+	{"proto_init", (cmd_function)proto_bin_init, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {

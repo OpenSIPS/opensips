@@ -310,10 +310,8 @@ static void ospNotifyCallback(
  */
 int ospProcessSubscribe(
     struct sip_msg* msg,
-    char* cnamrecord,
-    char* ignore2)
+    str* cnamrecord)
 {
-    str record;
     int expire;
     str contact = { NULL, 0 };
     str tag = { NULL, 0 };
@@ -323,46 +321,42 @@ int ospProcessSubscribe(
     str headers = { buffer, sizeof(buffer) };
     int result = MODULE_RETURNCODE_FALSE;
 
-    if ((cnamrecord != NULL) && (fixup_get_svalue(msg, (gparam_p)cnamrecord, &record) == 0) && (record.len > 0)) {
-        LM_DBG("cnam record '%.*s'\n", record.len, record.s);
-        /* Parse SUBSCRIBE */
-        if (ospParseSubscribe(msg) == 0) {
-            expire = 0;
-            if (msg->expires != NULL) {
-                expire = ((exp_body_t*)msg->expires->parsed)->val;
-            }
+    LM_DBG("cnam record '%.*s'\n", cnamrecord->len, cnamrecord->s);
+    /* Parse SUBSCRIBE */
+    if (ospParseSubscribe(msg) == 0) {
+        expire = 0;
+        if (msg->expires != NULL) {
+            expire = ((exp_body_t*)msg->expires->parsed)->val;
+        }
 
-            if (get_local_contact(msg->rcv.bind_address, &contact) < 0) {
-                LM_WARN("failed to get contact\n");
-            }
+        if (get_local_contact(msg->rcv.bind_address, &contact) < 0) {
+            LM_WARN("failed to get contact\n");
+        }
 
-            /* Send 200 OK reply */
-            if (ospReply200(msg, expire, &contact, &tag) == 0) {
-                /* Create dialog */
-                if ((dialog = ospCreateDialog(msg, &tag)) != NULL) {
-                    /* Generate extra headers */
-                    if (ospExtraHeaders(msg, expire, &contact, &headers) == 0) {
-                        /* Send NOTIFY */
-                        if (osp_tmb.t_request_within(&notify, &headers, &record, dialog, ospNotifyCallback, NULL, NULL) < 0) {
-                            LM_ERR("failed to send notify\n");
-                        } else {
-                           result = MODULE_RETURNCODE_TRUE;
-                        }
+        /* Send 200 OK reply */
+        if (ospReply200(msg, expire, &contact, &tag) == 0) {
+            /* Create dialog */
+            if ((dialog = ospCreateDialog(msg, &tag)) != NULL) {
+                /* Generate extra headers */
+                if (ospExtraHeaders(msg, expire, &contact, &headers) == 0) {
+                    /* Send NOTIFY */
+                    if (osp_tmb.t_request_within(&notify, &headers, cnamrecord, dialog, ospNotifyCallback, NULL, NULL) < 0) {
+                        LM_ERR("failed to send notify\n");
                     } else {
-                        LM_ERR("failed to generate extre headers\n");
+                       result = MODULE_RETURNCODE_TRUE;
                     }
                 } else {
-                    LM_ERR("failed to create dialog\n");
+                    LM_ERR("failed to generate extre headers\n");
                 }
-                ospFreeDialog(dialog);
             } else {
-                LM_ERR("failed to send ok\n");
+                LM_ERR("failed to create dialog\n");
             }
+            ospFreeDialog(dialog);
         } else {
-            LM_ERR("failed to parse subscribe\n");
+            LM_ERR("failed to send ok\n");
         }
     } else {
-        LM_ERR("invalid CNAM record\n");
+        LM_ERR("failed to parse subscribe\n");
     }
 
     return result;

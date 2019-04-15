@@ -42,7 +42,7 @@ static inline int load_rtpproxy_api(struct rtpproxy_binds *rtpb)
 	load_rtpproxy_f load_rtpproxy;
 
 	/* import the rtpproxy auto-loading function */
-	if ( !(load_rtpproxy=(load_rtpproxy_f)find_export("load_rtpproxy", 0, 0))) {
+	if ( !(load_rtpproxy=(load_rtpproxy_f)find_export("load_rtpproxy", 0))) {
 		LM_ERR("failed to import load_rtpproxy\n");
 		return -1;
 	}

@@ -178,6 +178,7 @@ extern void cJSON_Minify(char *json);
 #define cJSON_AddNumberToObject(object,name,n) cJSON_AddItemToObject(object, name, cJSON_CreateNumber(n))
 #define cJSON_AddStringToObject(object,name,s) cJSON_AddItemToObject(object, name, cJSON_CreateString(s))
 #define cJSON_AddStrToObject(object,name,s,len) cJSON_AddItemToObject(object, name, cJSON_CreateStr(s,len))
+#define _cJSON_AddStrToObject(object,name,s,len) _cJSON_AddItemToObject(object, name, cJSON_CreateStr(s,len))
 #define cJSON_AddRawToObject(object,name,s) cJSON_AddItemToObject(object, name, cJSON_CreateRaw(s))
 
 /* When assigning an integer value, it needs to be propagated to valuedouble too. */

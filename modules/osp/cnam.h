@@ -34,7 +34,7 @@
 
 #include "../../parser/msg_parser.h"
 
-int ospProcessSubscribe(struct sip_msg* msg, char* cnamrecord, char* ignore2);
+int ospProcessSubscribe(struct sip_msg* msg, str* cnamrecord);
 
 #endif /* _OSP_MOD_CNAMFUNC_H_ */
 

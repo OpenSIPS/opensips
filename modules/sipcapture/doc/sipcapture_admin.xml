@@ -487,26 +487,26 @@ if (is_method("REGISTER"))
 
 		<section id="func_report_capture" xreflabel="report_capture()">
 		<title>
-			<function moreinfo="none">report_capture([table_name],correlation_id[,proto_type])</function>
+			<function moreinfo="none">report_capture(correlation_id, [table_name], [proto_type])</function>
 		</title>
 		<para>
 			Save the message into the database. If you want set the protocol type you have to define
-		the table name, even if you pass over it(report_capture(,"$var(cor_id)", "$var(proto_type)")).
+		the table name, even if you pass over it(report_capture("$var(cor_id)",,"$var(proto_type)")).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
-		<listitem>
-			<para><emphasis>table_name (string)</emphasis> - the name of the table to store
-				the packet; it can have a strftime-like formatted suffix in order to change it's name
-				based on time;
-			</para>
-		</listitem>
 		<listitem>
 			<para><emphasis>correlation_id (string)</emphasis>
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>proto_type (int)</emphasis> - protocol type number as defined in hep protocol
+			<para><emphasis>table_name (string, optional)</emphasis> - the name of the table to store
+				the packet; it can have a strftime-like formatted suffix in order to change it's name
+				based on time;
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>proto_type (int, optional)</emphasis> - protocol type number as defined in hep protocol
 				specification.
 			</para>
 		</listitem>
@@ -526,19 +526,18 @@ if (is_method("REGISTER"))
 	<title><function>sip_capture</function> usage</title>
 	<programlisting format="linespecific">
 ...
-
-	hep_get("utf8-string", "0x0011", "$var(correlation_id)");
-	if($var(correlation_id) == $null) {
+	hep_get("0x0011", "utf8-string", , $var(correlation_id));
+	if ($var(correlation_id) == null) {
 		xlog("NO CORRELATION ID! SET SOMETHING OR DROP");
 		$var(correlation_id) = "absdcef";
 	}
 
 	$var(proto_type) = "3"; /* 0x03 - SDP protocol */
 
-	report_capture("rtcp_log", $var(correlation_id)");
-	/* setting the first parameter, even if setting it to null, is mandatory in order to be able to set proto type */
-	report_capture(, $var(correlation_id)", "$var);
-	report_capture("rtcp_log", $var(correlation_id)", "$var);
+	report_capture("$var(correlation_id)", "rtcp_log");
+	/* setting the 2nd parameter, even if setting it to null, is mandatory in order to be able to set proto type */
+	report_capture("$var(correlation_id)", , "$var(proto_type)");
+	report_capture("$var(correlation_id)", "rtcp_log", "$var(proto_type)");
 ...
 	</programlisting>
 	</example>
@@ -549,7 +548,7 @@ if (is_method("REGISTER"))
 
 		<section id="func_hep_set" xreflabel="hep_set()">
 		<title>
-			<function moreinfo="none">hep_set([data_type,] chunk_id, [vendor_id,] chunk_data)</function>
+			<function moreinfo="none">hep_set(chunk_id, chunk_data, [data_type], [vendor_id])</function>
 		</title>
 		<para>
 			Set a hep chunk. If not exists, it shall be added.
@@ -561,36 +560,7 @@ if (is_method("REGISTER"))
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>data_type</emphasis> - data type of the data in the chunk. It can have
-			the following values:
-			</para>
-			<itemizedlist>
-			<listitem>
-			<para>uint8  - byte unsigned integer</para>
-			</listitem>
-			<listitem>
-			<para>uint16 - word unsigned integer </para>
-			</listitem>
-			<listitem>
-			<para>uint32 - 4 byte unsigned integer </para>
-			</listitem>
-			<listitem>
-			<para>inet4-addr - IPv4 address in human readable format</para>
-			</listitem>
-			<listitem>
-			<para>inet6-addr - IPv6 address in human readable format</para>
-			</listitem>
-			<listitem>
-			<para>utf8-string - UTF8 encoded character sequence</para>
-			</listitem>
-			<listitem>
-			<para>octet-string - byte array</para>
-			</listitem>
-			</itemizedlist>
-		</listitem>
-		<listitem>
-			<para>
-				<emphasis>chunk_id(string value with hex/int or string identifiere of chunk)</emphasis>
+				<emphasis>chunk_id(string value with hex/int or string identifier of chunk)</emphasis>
 				- id of the chunk to be added; most of the generic
 			chunks are in the internal hep structure. For these you can skip the data_type
 			and vendor_id since they are already known. Generic chunks that don't have built
@@ -716,16 +686,45 @@ if (is_method("REGISTER"))
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>vendor id(string value with hex or int)</emphasis> - there are
+			<para><emphasis>data(string)</emphasis> - data that the chunk shall contain;
+			internally it shall be converted to the requested data type</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>data_type (string, optional, default: "utf8-string")</emphasis> - data type of the data in the chunk. It can have
+			the following values:
+			</para>
+			<itemizedlist>
+			<listitem>
+			<para>uint8  - byte unsigned integer</para>
+			</listitem>
+			<listitem>
+			<para>uint16 - word unsigned integer </para>
+			</listitem>
+			<listitem>
+			<para>uint32 - 4 byte unsigned integer </para>
+			</listitem>
+			<listitem>
+			<para>inet4-addr - IPv4 address in human readable format</para>
+			</listitem>
+			<listitem>
+			<para>inet6-addr - IPv6 address in human readable format</para>
+			</listitem>
+			<listitem>
+			<para>utf8-string - UTF8 encoded character sequence</para>
+			</listitem>
+			<listitem>
+			<para>octet-string - byte array</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>vendor id(string value with hex or int, optional, default: "3")</emphasis> - there are
 				some vendor ids already defined; check
-				<ulink url="https://github.com/sipcapture/HEP/blob/master/docs/HEP3_rev11.pdf">
+				<ulink url="http://hep.sipcapture.org/hepfiles/HEP3_rev11.pdf">
 					hep proto docs</ulink>
 				for more details.
 			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>data(string)</emphasis> - data that the chunk shall contain;
-			internally it shall be converted to the requested data type</para>
 		</listitem>
 		</itemizedlist>
 	<example>
@@ -736,10 +735,10 @@ if (is_method("REGISTER"))
 hep_set("proto_type", "H321");
 
 /* add a custom chunk - int */
-hep_set("uint32", "31"/*chk id*/, "3"/*opensips vendor*/, "132")
+hep_set("31", "132", "uint32", "3")
 
 /* add a custom chunk - IPv4 address */
-hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
+hep_set("32", "192.168.5.14", "inet4-addr", "3")
 ...
 	</programlisting>
 	</example>
@@ -748,7 +747,7 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
 
 		<section id="func_hep_get" xreflabel="hep_get()">
 		<title>
-			<function moreinfo="none">hep_get([data_type,] chunk_id, vendor_id_pv, chunk_data_pv)</function>
+			<function moreinfo="none">hep_get(chunk_id, data_type, [chunk_data_pv], [vendor_id_pv])</function>
 		</title>
 		<para>
 			Set a hep chunk. If not exists, it shall be added.
@@ -759,19 +758,15 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-		<para><emphasis>data_type(string)</emphasis> - same meaning as in
-			<xref linkend="func_hep_set"/>; can miss if it's a generic chunk</para>
-		</listitem>
-		<listitem>
-		<para><emphasis>chunk_id</emphasis> - same meaning as in
+		<para><emphasis>chunk_id (string)</emphasis> - same meaning as in
 			<xref linkend="func_hep_set"/></para>
 		</listitem>
 		<listitem>
-			<para><emphasis>vendor_id_pv(writable pvar)</emphasis> - will hold the vendor id(int value)
-			of the chunk</para>
+		<para><emphasis>data_type (string)</emphasis> - same meaning as in
+			<xref linkend="func_hep_set"/>; can miss if it's a generic chunk</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>chunk_data_pv(writable pvar)</emphasis> - will hold the data inside the
+			<para><emphasis>chunk_data_pv (writable pvar, optional)</emphasis> - will hold the data inside the
 			chunk; some of the generic chunk data come in specific format, as following:</para>
 			<itemizedlist>
 			<listitem>
@@ -791,6 +786,10 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
 			</listitem>
 			</itemizedlist>
 		</listitem>
+		<listitem>
+			<para><emphasis>vendor_id_pv (writable pvar, optional)</emphasis> - will hold the vendor id(int value)
+			of the chunk</para>
+		</listitem>
 		</itemizedlist>
 
 <example>
@@ -798,10 +797,10 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5.14")
 <programlisting format="linespecific">
 ...
 /* get a generic chunk */
-hep_get("proto_type", "$var(vid)", "$var(data)");
+hep_get("proto_type", , $var(data), $var(vid));
 
 /* get custom chunk - you must know what kind of data is there */
-hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
+hep_set("31", "uint32", $var(data), $var(vid))
 ...
 	</programlisting>
 	</example>
@@ -821,7 +820,7 @@ hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>chunk_id</emphasis> - same meaning as the <emphasis>chunk_id</emphasis> in
+			<para><emphasis>chunk_id (string)</emphasis> - same meaning as the <emphasis>chunk_id</emphasis> in
 				<xref linkend="func_hep_set"/>.
 			</para>
 		</listitem>

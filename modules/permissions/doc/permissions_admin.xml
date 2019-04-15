@@ -575,6 +575,207 @@ modparam("permissions", "info_col", "info_col")
 
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
+
+	<section id="func_check_address" xreflabel="check_address()">
+		<title>
+		<function moreinfo="none">check_address(group_id, ip,
+		port, proto [, context_info], [pattern], [partition])</function>
+		</title>
+		<para>
+		Returns 1 if group id, IP address, port and protocol given as
+		arguments match an IP subnet found in cached address table,
+		as described in <xref linkend="sec-address-permissions"/> .
+		The function takes 4 mandatory arguments and 3 optional ones.
+		</para>
+		<para>
+		This function can be useful to check if a request can be allowed
+		without authentication.
+		</para>
+
+		<para>Meaning of the parameter is as follows:</para>
+
+		<itemizedlist>
+		<listitem>
+			group_id
+		<para>
+			This argument represents the group id to be matched.
+			If the group_id argument is "0", the query can match any group
+			in the cached address table.
+		</para>
+		</listitem>
+		<listitem>
+			ip
+		<para>
+			This argument represents the ip address to be matched.
+			It can be an given directly as string or as a string pvar.
+			This argument cannot be null/empty.
+		</para>
+		</listitem>
+		<listitem>
+			port
+		<para>
+			This argument represents the port to be matched.
+			It can be an given as an integer string or as a string pvar.
+			Cached address table entry containing port value 0
+			matches any port.
+			Also, a "0" value for the argument can match any port in the
+			address table.
+			</para>
+		</listitem>
+		<listitem>
+			proto
+		<para>
+			This argument represents the protocol used for transport;
+			it can be an given as string or as string pvar.
+			Transport protocol is either "ANY" or any
+			valid transport protocol value: "UDP, "TCP", "TLS", and "SCTP".
+		</para>
+		</listitem>
+		<listitem>
+			context_info
+		<para>
+			This argument represents the pvar in wich the context_info field
+			from the cached address table will be stored in case of match.
+			This argument is optional.
+		</para>
+		</listitem>
+		<listitem>
+			pattern
+		<para>
+			This argument is a string to be matched against the wildcard
+			pattern field from the address table.
+			This argument is optional.
+		</para>
+		</listitem>
+		<listitem>
+			partition
+		<para>
+			An optional parition name for the group id. If no partition
+			specified, the <quote>default</quote> one will be used.
+		</para>
+		</listitem>
+
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, BRANCH_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
+		</para>
+		<example>
+		<title><function>check_address()
+		</function> usage</title>
+		<programlisting format="linespecific">
+...
+
+// Checks if the tuple IP address/port (given as strings) and source protocol
+// (given as pvar), belongs to group 4, verifies if the string "texttest"
+// matches the wildcard pattern field in the database table and stores the
+// context information in $avp(ctx)
+if (check_address( 4, "192.168.2.135", 5700, "$proto", $avp(ctx), "texttest")) {
+	t_relay();
+	xlog("$avp(ctx)\n");
+}
+
+if (check_address( 4, "192.168.2.135", 5700, "$proto", , , "my_part")) {
+	t_relay();
+	xlog("$avp(ctx)\n");
+}
+...
+
+// Checks if the tuple IP address/port/protocol of the source message is in group 4
+if (check_address( 4, "$si", "$sp", "$proto")) {
+	t_relay();
+}
+
+...
+
+// Checks if the tuple IP address/port/protocol stored in AVPs s:ip/s:port/s:proto
+// is in group 4 and stores context information in $avp(ctx)
+$avp(ip) = "192.168.2.135";
+$avp(port) = 5061;
+$avp(proto) = "any";
+$avp(partition)="my_part";
+if (check_address( 4, "$avp(ip)", "$avp(port)", "$avp(proto)", $avp(ctx), , "$avp(partition)")) {
+	t_relay();
+	xlog("$avp(ctx)\n");
+}
+
+...
+
+// Checks if the tuple IP address/port (given as strings) and source protocol
+// (given as pvar) is in group 4, verifies if string the "texttest" matches
+// the wildcard pattern field in the database table, without storing any
+// context information
+if (check_address( 4,"$si", 5700, "$proto", ,"texttest")) {
+	t_relay();
+}
+
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_check_source_address" xreflabel="check_source_address()">
+		<title>
+		<function moreinfo="none">check_source_address(group_id , [context_info], [pattern], [partition])</function>
+		</title>
+		<para>
+		Equivalent to check_address(group_id, "$si", "$sp", "$proto", context_info, pattern, partition).
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, BRANCH_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
+		</para>
+		<example>
+		<title><function>check_source_address()</function> usage</title>
+		<programlisting format="linespecific">
+...
+// Check if source address/port/proto is in group 4 and stores
+// context information in $avp(ctx)
+if (check_source_address( 4,"$avp(ctx)", , , "$avp(my_partition)")) {
+	xlog("$avp(ctx)\n");
+}else {
+	sl_send_reply("403", "Forbidden");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_get_source_group" xreflabel="get_source_group()">
+		<title>
+		<function moreinfo="none">get_source_group(var,[partition])</function>
+		</title>
+		<para>
+		Checks if an entry with the source ip/port/protocol is
+		found in cached address or subnet table in any group.
+		If yes, returns that group in the variable parameter.
+		If not returns -1.  Port value 0 in cached address and
+		subnet table matches any port. Optionally, you can also
+		specify the partition. If no partition
+		specified, the <quote>default</quote> one will be used.
+
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		LOCAL_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>get_source_group()</function> usage</title>
+		<programlisting format="linespecific">
+
+...
+
+if ( get_source_group( $var(group)) ) {
+   # do something with $var(group)
+   xlog("group is $var(group)\n");
+};
+...
+
+</programlisting>
+		</example>
+	</section>
+
 	<section id="func_allow_routing" xreflabel="allow_routing()">
 		<title>
 		<function moreinfo="none">allow_routing()</function>
@@ -638,50 +839,6 @@ if (allow_routing("basename")) {
 </programlisting>
 		</example>
 	</section>
-	<section id="func_allow_routing_2" xreflabel="allow_routing()">
-		<title>
-		<function moreinfo="none">allow_routing(allow_file,deny_file)</function>
-		</title>
-		<para>
-		Returns true if all pairs constructed as described in
-		<xref linkend="sec-call-routing"/> have appropriate permissions
-		according to the configuration files given as parameters.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>allow_file</emphasis> - File containing allow rules.
-			</para>
-			<para>
-			If the parameter doesn't contain full pathname then the function
-			expects the file to be located in the same directory as the main
-			configuration file of the server.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>deny_file</emphasis> - File containing deny rules.
-			</para>
-			<para>
-			If the parameter doesn't contain full pathname then the function
-			expects the file to be located in the same directory as the main
-			configuration file of the server.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>allow_routing(allow_file, deny_file)</function> usage</title>
-		<programlisting format="linespecific">
-...
-if (allow_routing("rules.allow", "rules.deny")) {
-	t_relay();
-};
-...
-</programlisting>
-		</example>
-	</section>
 	<section id="func_allow_register" xreflabel="allow_register()">
 		<title>
 		<function moreinfo="none">allow_register(basename)</function>
@@ -725,58 +882,9 @@ if ($rm=="REGISTER") {
 </programlisting>
 		</example>
 	</section>
-	<section id="func_allow_register_2" xreflabel="allow_register()">
-		<title>
-		<function moreinfo="none">allow_register(allow_file, deny_file)</function>
-		</title>
-		<para>
-		The function returns true if all pairs constructed as described in
-		<xref linkend="sec-registration-permissions"/> have appropriate
-		permissions according to the configuration files given as parameters.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>allow_file</emphasis> - File containing allow rules.
-			</para>
-			<para>
-			If the parameter doesn't contain full pathname then the function
-			expects the file to be located in the same directory as the main
-			configuration file of the server.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>deny_file</emphasis> - File containing deny rules.
-			</para>
-			<para>
-			If the parameter doesn't contain full pathname then the function
-			expects the file to be located in the same directory as the main
-			configuration file of the server.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>allow_register(allow_file, deny_file)</function> usage</title>
-		<programlisting format="linespecific">
-...
-if ($rm=="REGISTER") {
-	if (allow_register("register.allow", "register.deny")) {
-		save("location");
-		exit;
-	} else {
-		sl_send_reply("403", "Forbidden");
-	};
-};
-...
-</programlisting>
-		</example>
-	</section>
 	<section id="func_allow_uri" xreflabel="allow_uri()">
 		<title>
-		<function moreinfo="none">allow_uri(basename, pvar)</function>
+		<function moreinfo="none">allow_uri(basename, uri)</function>
 		</title>
 		<para>
 		Returns true if the pair constructed as described in <xref
@@ -798,8 +906,7 @@ if ($rm=="REGISTER") {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>pvar</emphasis> - Any
-			pseudo-variable defined in OpenSIPS.
+			<para><emphasis>uri</emphasis> - SIP URI to be checked.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -807,7 +914,7 @@ if ($rm=="REGISTER") {
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 		</para>
 		<example>
-		<title><function>allow_uri(basename, pvar)</function> usage</title>
+		<title><function>allow_uri(basename, uri)</function> usage</title>
 		<programlisting format="linespecific">
 ...
 if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
@@ -821,198 +928,6 @@ if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(uri)
 		</example>
 	</section>
 
-	<section id="func_check_address" xreflabel="check_address()">
-		<title>
-		<function moreinfo="none">check_address([partition:]group_id, ip,
-		port, proto [, context_info [, pattern]])</function>
-		</title>
-		<para>
-		Returns 1 if group id, IP address, port and protocol given as
-		arguments match an IP subnet found in cached address table,
-		as described in <xref linkend="sec-address-permissions"/> .
-		The function takes 4 mandatory arguments and 2 optional ones.
-		</para>
-		<para>
-		This function can be useful to check if a request can be allowed
-		without authentication.
-		</para>
-
-		<para>Meaning of the parameter is as follows:</para>
-
-		<itemizedlist>
-		<listitem>
-			group_id
-		<para>
-			This argument represents the group id to be matched.
-			It can be an integer string or a string pvar.
-			If the group_id argument is "0", the query can match any group
-			in the cached address table. Since version 2.2, you can also
-			specify the partition(either string or pv). If no partition
-			specified, the <quote>default</quote> one will be used.
-		</para>
-		</listitem>
-		<listitem>
-			ip
-		<para>
-			This argument represents the ip address to be matched.
-			It can be an given directly as string or as a string pvar.
-			This argument cannot be null/empty.
-		</para>
-		</listitem>
-		<listitem>
-			port
-		<para>
-			This argument represents the port to be matched.
-			It can be an given as an integer string or as a string pvar.
-			Cached address table entry containing port value 0
-			matches any port.
-			Also, a "0" value for the argument can match any port in the
-			address table.
-			</para>
-		</listitem>
-		<listitem>
-			proto
-		<para>
-			This argument represents the protocol used for transport;
-			it can be an given as string or as string pvar.
-			Transport protocol is either "ANY" or any
-			valid transport protocol value: "UDP, "TCP", "TLS", and "SCTP".
-		</para>
-		</listitem>
-		<listitem>
-			context_info
-		<para>
-			This argument represents the pvar in wich the context_info field
-			from the cached address table will be stored in case of match.
-			This argument is optional.
-		</para>
-		</listitem>
-		<listitem>
-			pattern
-		<para>
-			This argument is a string to be matched against the wildcard
-			pattern field from the address table.
-			This argument is optional.
-		</para>
-		</listitem>
-
-		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>check_address()
-		</function> usage</title>
-		<programlisting format="linespecific">
-...
-
-// Checks if the tuple IP address/port (given as strings) and source protocol
-// (given as pvar), belongs to group 4, verifies if the string "texttest"
-// matches the wildcard pattern field in the database table and stores the
-// context information in $avp(ctx)
-if (check_address("4","192.168.2.135","5700","$proto","$avp(ctx)", "texttest")) {
-	t_relay();
-	xlog("$avp(ctx)\n");
-}
-
-if (check_address("my_part:4","192.168.2.135","5700","$proto","$avp(ctx)", "texttest")) {
-	t_relay();
-	xlog("$avp(ctx)\n");
-}
-...
-
-// Checks if the tuple IP address/port/protocol of the source message is in group 4
-if (check_address("4","$si","$sp","$proto")) {
-	t_relay();
-}
-
-...
-
-// Checks if the tuple IP address/port/protocol stored in AVPs s:ip/s:port/s:proto
-// is in group 4 and stores context information in $avp(ctx)
-$avp(ip) = "192.168.2.135";
-$avp(port) = 5061;
-$avp(proto) = "any";
-$avp(partition)="my_part";
-if (check_address("$avp(partition):4","$avp(ip)","$avp(port)","$avp(proto)","$avp(ctx))) {
-	t_relay();
-	xlog("$avp(ctx)\n");
-}
-
-...
-
-// Checks if the tuple IP address/port (given as strings) and source protocol
-// (given as pvar) is in group 4, verifies if string the "texttest" matches
-// the wildcard pattern field in the database table, without storing any
-// context information
-if (check_address("4","$si","5700","$proto","", "texttest")) {
-	t_relay();
-}
-
-...
-
-</programlisting>
-		</example>
-	</section>
-
-	<section id="func_check_source_address" xreflabel="check_source_address()">
-		<title>
-		<function moreinfo="none">check_source_address(group_id [, context_info [, pattern]])</function>
-		</title>
-		<para>
-		Equivalent to check_address(group_id, "$si", "$sp", "$proto", context_info, pattern).
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>check_source_address()</function> usage</title>
-		<programlisting format="linespecific">
-...
-// Check if source address/port/proto is in group 4 and stores
-// context information in $avp(ctx)
-if (check_source_address("$avp(partition):4","$avp(ctx)")) {
-	xlog("$avp(ctx)\n");
-}else {
-	sl_send_reply("403", "Forbidden");
-}
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="func_get_source_group" xreflabel="get_source_group()">
-		<title>
-		<function moreinfo="none">get_source_group(pvar)</function>
-		</title>
-		<para>
-		Checks if an entry with the source ip/port/protocol is
-		found in cached address or subnet table in any group.
-		If yes, returns that group in the pvar parameter.
-		If not returns -1.  Port value 0 in cached address and
-		subnet table matches any port. Since version 2.2, you can also
-		specify the partition(either string or pv). If no partition
-		specified, the <quote>default</quote> one will be used.
-
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>get_source_group()</function> usage</title>
-		<programlisting format="linespecific">
-
-...
-
-if ( get_source_group("$var(group)") ) {
-   # do something with $var(group)
-   xlog("group is $var(group)\n");
-};
-...
-
-</programlisting>
-		</example>
-	</section>
 	</section>
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">

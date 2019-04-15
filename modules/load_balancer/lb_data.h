@@ -26,7 +26,6 @@
 #ifndef LB_LB_DATA_H_
 #define LB_LB_DATA_H_
 
-#include "../../mod_fix.h"
 #include "../../str.h"
 #include "../../locking.h"
 #include "../../parser/msg_parser.h"
@@ -108,11 +107,10 @@ int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data,
 		unsigned int verbose);
 
 int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
-		pv_spec_t *pv_ip, gparam_t *pv_port, int group, int active);
+				str *ip_str, int port, int group, int active);
 
-int lb_count_call(struct lb_data *data, struct sip_msg *req,
-		struct ip_addr *ip, int port, int group,
-		struct lb_res_str_list *rl, int dir);
+int lb_count_call(struct lb_data *data, struct sip_msg *req,struct ip_addr *ip,
+					int port, int group, struct lb_res_str_list *rl, int dir);
 
 int lb_init_event(void);
 

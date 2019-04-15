@@ -417,63 +417,52 @@ int load_module(char* name)
  * 0 if not found
  * flags parameter is OR value of all flags that must match
  */
-cmd_function find_export(char* name, int param_no, int flags)
+cmd_function find_export(char* name, int flags)
 {
 	cmd_export_t* cmd;
 
-	cmd = find_cmd_export_t(name, param_no, flags);
+	cmd = find_cmd_export_t(name, flags);
 	if (cmd==0)
 		return 0;
+
 	return cmd->function;
 }
 
 
 
-/* searches the module list and returns pointer to the "name" cmd_export_t
- * structure or 0 if not found
- * In order to find the module the name, flags parameter number and type and
- * the value of all flags in the config must match to the module export
+/* Searches the module list for the "name" cmd_export_t structure.
  */
-cmd_export_t* find_cmd_export_t(char* name, int param_no, int flags)
+cmd_export_t* find_cmd_export_t(char* name, int flags)
 {
 	struct sr_module* t;
 	cmd_export_t* cmd;
 
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
-			if((strcmp(name, cmd->name)==0)&&
-				(cmd->param_no==param_no) &&
-				((cmd->flags & flags) == flags)
-			  ){
-				LM_DBG("found <%s>(%d) in module %s [%s]\n",
-						name, param_no, t->exports->name, t->path);
+			if((strcmp(name, cmd->name)==0)&&((cmd->flags & flags) == flags)){
+				LM_DBG("found <%s> in module %s [%s]\n",
+						name, t->exports->name, t->path);
 				return cmd;
 			}
 		}
 	}
+
 	LM_DBG("<%s> not found \n", name);
 	return 0;
 }
 
-
-
-/* searches the module list and returns pointer to the async "name" cmd_export_t
- * structure or 0 if not found
- * In order to find the module the name, flags parameter number in the config
- * must match to the module export
+/* Searches the module list for the "name" acmd_export_t structure.
  */
-acmd_export_t* find_acmd_export_t(char* name, int param_no)
+acmd_export_t* find_acmd_export_t(char* name)
 {
 	struct sr_module* t;
 	acmd_export_t* cmd;
 
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->acmds; cmd && cmd->name; cmd++){
-			if((strcmp(name, cmd->name)==0)&&
-			   (cmd->param_no==param_no)
-			  ){
-				LM_DBG("found async <%s>(%d) in module %s [%s]\n",
-					name, param_no, t->exports->name, t->path);
+			if((strcmp(name, cmd->name)==0)){
+				LM_DBG("found <%s> in module %s [%s]\n",
+						name, t->exports->name, t->path);
 				return cmd;
 			}
 		}
@@ -482,14 +471,65 @@ acmd_export_t* find_acmd_export_t(char* name, int param_no)
 	return 0;
 }
 
+/* Checks if the module function is called with the right number of parameters
+ * and all mandatory parameters are given
+ * Return:
+ *  0 - correct call
+ * -1 - too few parameters
+ * -2 - too many parameters
+ * -3 - mandatory parameter omitted
+ */
+int check_cmd_call_params(cmd_export_t *cmd, action_elem_t *elems, int no_params)
+{
+	struct cmd_param *param;
+	int n=0, m=0, i;
 
+	for (param=cmd->params; param->flags; param++, n++)
+		if (!(param->flags & CMD_PARAM_OPT))
+			m = n+1;
+
+	if (no_params < m)  /* check the minimum number of arguments for the call,
+						 * including optional params that must be explicitly omitted */
+		return -1;
+	else if (no_params > n)
+		return -2;
+
+	for (i=1, param=cmd->params; i<=no_params; i++, param++)
+		if (!(param->flags & CMD_PARAM_OPT) && elems[i].type == NULLV_ST)
+			return -3;
+
+	return 0;
+}
+
+/* simillar function to check_cmd_call_params but for async cmds */
+int check_acmd_call_params(acmd_export_t *acmd, action_elem_t *elems, int no_params)
+{
+	struct cmd_param *param;
+	int n=0, m=0, i;
+
+	for (param=acmd->params; param->flags; param++, n++)
+		if (!(param->flags & CMD_PARAM_OPT))
+			m = n+1;
+
+	if (no_params < m)  /* check the minimum number of arguments for the call,
+						 * including optional params that must be explicitly omitted */
+		return -1;
+	else if (no_params > n)
+		return -2;
+
+	for (i=1, param=acmd->params; i<=no_params; i++, param++)
+		if (!(param->flags & CMD_PARAM_OPT) && elems[i].type == NULLV_ST)
+			return -3;
+
+	return 0;
+}
 
 /*
  * searches the module list and returns pointer to "name" function in module
  * "mod" or 0 if not found
  * flags parameter is OR value of all flags that must match
  */
-cmd_function find_mod_export(char* mod, char* name, int param_no, int flags)
+cmd_function find_mod_export(char* mod, char* name, int flags)
 {
 	struct sr_module* t;
 	cmd_export_t* cmd;
@@ -498,7 +538,6 @@ cmd_function find_mod_export(char* mod, char* name, int param_no, int flags)
 		if (strcmp(t->exports->name, mod) == 0) {
 			for (cmd = t->exports->cmds;  cmd && cmd->name; cmd++) {
 				if ((strcmp(name, cmd->name) == 0) &&
-				    (cmd->param_no == param_no) &&
 				    ((cmd->flags & flags) == flags)
 				   ){
 					LM_DBG("found <%s> in module %s [%s]\n",

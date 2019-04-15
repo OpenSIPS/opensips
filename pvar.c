@@ -5117,10 +5117,12 @@ static int pv_parse_param_name(pv_spec_p sp, str *in)
 	/* always an int type from now */
 	sp->pvp.pvn.u.isname.type = 0;
 	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	/* do our best to convert it to an index */
 	if (str2int(in, (unsigned int *)&sp->pvp.pvn.u.isname.name.n) < 0)
 	{
-		LM_ERR("bad param index [%.*s]\n", in->len, in->s);
-		return -1;
+		/* remember it was a string, so we can retrieve it later */
+		sp->pvp.pvn.u.isname.name.s = *in;
+		sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
 	}
 	return 0;
 
@@ -5128,94 +5130,12 @@ static int pv_parse_param_name(pv_spec_p sp, str *in)
 
 static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 {
-	int index;
-	pv_value_t tv;
-
 	if (!ip)
 	{
 		LM_ERR("null parameter received\n");
 		return -1;
 	}
-
-	if (route_rec_level == -1 || !route_params[route_rec_level] || route_params_number[route_rec_level] == 0)
-	{
-		LM_DBG("no parameter specified for this route\n");
-		return pv_get_null(msg, ip, res);
-	}
-
-	if(ip->pvn.type==PV_NAME_INTSTR)
-	{
-		index = ip->pvn.u.isname.name.n;
-	} else
-	{
-		/* pvar -> it might be another $param variable! */
-		route_rec_level--;
-		if(pv_get_spec_value(msg, (pv_spec_p)(ip->pvn.u.dname), &tv)!=0)
-		{
-			LM_ERR("cannot get spec value\n");
-			route_rec_level++;
-			return -1;
-		}
-		route_rec_level++;
-
-		if(tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY)
-		{
-			LM_ERR("null or empty name\n");
-			return -1;
-		}
-		if (!(tv.flags&PV_VAL_INT) || str2int(&tv.rs,(unsigned int*)&index) < 0)
-		{
-			LM_ERR("invalid index <%.*s>\n", tv.rs.len, tv.rs.s);
-			return -1;
-		}
-	}
-
-	if (index < 1 || index > route_params_number[route_rec_level])
-	{
-		LM_DBG("no such parameter index %d\n", index);
-		return pv_get_null(msg, ip, res);
-	}
-
-	/* the parameters start at 0, whereas the index starts from 1 */
-	index--;
-	switch (route_params[route_rec_level][index].type)
-	{
-	case NULLV_ST:
-		res->rs.s = NULL;
-		res->rs.len = res->ri = 0;
-		res->flags = PV_VAL_NULL;
-		break;
-
-	case STRING_ST:
-		res->rs.s = route_params[route_rec_level][index].u.string;
-		res->rs.len = strlen(res->rs.s);
-		res->flags = PV_VAL_STR;
-		break;
-
-	case NUMBER_ST:
-		res->rs.s = int2str(route_params[route_rec_level][index].u.number, &res->rs.len);
-		res->ri = route_params[route_rec_level][index].u.number;
-		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-		break;
-
-	case SCRIPTVAR_ST:
-		route_rec_level--;
-		if(pv_get_spec_value(msg, (pv_spec_p)route_params[route_rec_level + 1][index].u.data, res)!=0)
-		{
-			LM_ERR("cannot get spec value\n");
-			route_rec_level++;
-			return -1;
-		}
-		route_rec_level++;
-		break;
-
-	default:
-		LM_ALERT("BUG: invalid parameter type %d\n",
-				 route_params[route_rec_level][index].type);
-		return -1;
-	}
-
-	return 0;
+	return route_params_run(msg, ip, res);
 }
 
 void destroy_argv_list(void)

@@ -37,10 +37,11 @@
 
 static int mod_init(void);
 
-static int fixup_jrpc_req(void** param, int param_no);
-static int fixup_jrpc_notify(void** param, int param_no);
-static int jrpc_request(struct sip_msg *msg, char *_s, char *_m, char *_p, char *_r);
-static int jrpc_notify(struct sip_msg *msg, char *_s, char *_m, char *_p);
+static int fixup_jsonrpc_dest(void** param);
+static int jrpc_request(struct sip_msg *msg, union sockaddr_union *dst,
+				str *method, str *params, pv_spec_p spec);
+static int jrpc_notify(struct sip_msg *msg, union sockaddr_union *dst,
+				str *method, str *params);
 static char *jsonrpc_build_cmd(str *method, str *params, int *id);
 
 #define JSONRPC_PRINT(_su) \
@@ -70,11 +71,18 @@ static dep_export_t deps = {
 
 /* exported commands */
 static cmd_export_t cmds[] = {
-	{"jsonrpc_request",			(cmd_function)jrpc_request, 4,
-		fixup_jrpc_req, 0, ALL_ROUTES },
-	{"jsonrpc_notification",	(cmd_function)jrpc_notify,  3,
-		fixup_jrpc_notify, 0, ALL_ROUTES },
-	{0, 0, 0, 0, 0, 0}
+	{"jsonrpc_request",			(cmd_function)jrpc_request, {
+		{CMD_PARAM_STR, fixup_jsonrpc_dest, 0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{"jsonrpc_notification",	(cmd_function)jrpc_notify, {
+		{CMD_PARAM_STR, fixup_jsonrpc_dest, 0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{0,0,{{0,0,0}},0}
 };
 
 /* module exports */
@@ -183,66 +191,16 @@ static union sockaddr_union *jsonrpc_get_dst(str *ip_port)
 	return &_su;
 }
 
-enum jsonrpc_param_dst { JSONRPC_DST_STATIC, JSONRPC_DST_DYNAMIC };
 
-struct jsonrpc_param_t {
-	enum jsonrpc_param_dst type;
-	union {
-		union sockaddr_union su;
-		gparam_t *param;
-	} v;
-};
-
-static int fixup_jrpc_req(void** param, int param_no)
+static int fixup_jsonrpc_dest(void** param)
 {
-	union sockaddr_union *su = NULL;
-	struct jsonrpc_param_t *jp;
-
-	switch (param_no) {
-		case 1:
-			if (fixup_spve(param) < 0) {
-				LM_ERR("Invalid server specification!\n");
-				return E_UNSPEC;
-			}
-			if (((gparam_t *)(*param))->type == GPARAM_TYPE_STR) {
-				su = jsonrpc_get_dst(&((gparam_t *)(*param))->v.sval);
-				if (!su) {
-					LM_ERR("cannot fetch IP:port from param!\n");
-					return E_UNSPEC;
-				}
-				pkg_free(*param);
-			}
-			jp = pkg_malloc(sizeof *jp);
-			if (!jp) {
-				LM_ERR("cannot allocate memory for jsonrpc param!\n");
-				return E_UNSPEC;
-			}
-			if (su == NULL) {
-				jp->type = JSONRPC_DST_DYNAMIC;
-				jp->v.param = *param;
-			} else {
-				jp->type = JSONRPC_DST_DYNAMIC;
-				jp->v.su = *su;
-			}
-			*param = jp;
-			return 0;
-		case 2:
-		case 3:
-			return fixup_spve(param);
-		case 4:
-			return fixup_pvar(param);
-		default:
-			LM_ERR("Unknown param no %d\n", param_no);
+	*param = (void*)jsonrpc_get_dst((str*)*param);
+	if (!(*param)) {
+		LM_ERR("cannot fetch IP:port from param!\n");
+		return E_UNSPEC;
 	}
-	return E_UNSPEC;
-}
 
-static int fixup_jrpc_notify(void** param, int param_no)
-{
-	if (param_no < 4)
-		return fixup_jrpc_req(param, param_no);
-	LM_ERR("Unknown param no %d\n", param_no);
-	return E_UNSPEC;
+	return 0;
 }
 
 static int jsonrpc_get_fd(union sockaddr_union *addr)
@@ -422,26 +380,6 @@ static inline int jsonrpc_unique_id(void)
 	return jsonrpc_id_index < 0 ? -jsonrpc_id_index : jsonrpc_id_index;
 }
 
-static inline union sockaddr_union *fixup_get_dst(struct sip_msg *msg, struct jsonrpc_param_t *jp)
-{
-	str ip_port;
-
-	if (!jp) {
-		LM_ERR("no destination provided!\n");
-		return NULL;
-	}
-
-	if (jp->type == JSONRPC_DST_DYNAMIC)
-		return &jp->v.su;
-	
-	/* we need to get the value and resolve it */
-	if (fixup_get_svalue(msg, jp->v.param, &ip_port) < 0) {
-		LM_ERR("cannot fetch destination value!\n");
-		return NULL;
-	}
-	return jsonrpc_get_dst(&ip_port);
-}
-
 /**
  * Function that runs a JSON-RPC notification
  * Returns:
@@ -449,29 +387,13 @@ static inline union sockaddr_union *fixup_get_dst(struct sip_msg *msg, struct js
  *  -2: communication error
  *   1: success
  */
-static int jrpc_notify(struct sip_msg *msg, char *_s, char *_m, char *_p)
+static int jrpc_notify(struct sip_msg *msg, union sockaddr_union *dst,
+					str *method, str *params)
 {
 	int ret;
 	char *cmd;
-	str method, params;
-
-	union sockaddr_union *dst = fixup_get_dst(msg, (struct jsonrpc_param_t *)_s);
-	if (!dst) {
-		LM_ERR("cannot fetch destination!\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_t *)_m, &method) < 0) {
-		LM_ERR("cannot fetch method value!\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_t *)_p, &params) < 0) {
-		LM_ERR("cannot fetch params value!\n");
-		return -1;
-	}
 	
-	cmd = jsonrpc_build_cmd(&method, &params, NULL);
+	cmd = jsonrpc_build_cmd(method, params, NULL);
 	if (!cmd) {
 		LM_ERR("cannot build jsonrpc command\n");
 		return -1;
@@ -491,32 +413,15 @@ static int jrpc_notify(struct sip_msg *msg, char *_s, char *_m, char *_p)
  *  -3: reply error
  *   1: success
  */
-static int jrpc_request(struct sip_msg *msg, char *_s, char *_m, char *_p, char *_r)
+static int jrpc_request(struct sip_msg *msg, union sockaddr_union *dst,
+				str *method, str *params, pv_spec_p spec)
 {
 	int id, ret;
 	char *cmd;
-	str method, params;
 	pv_value_t val;
-	pv_spec_p spec = (pv_spec_p)_r;
 
-	union sockaddr_union *dst = fixup_get_dst(msg, (struct jsonrpc_param_t *)_s);
-	if (!dst) {
-		LM_ERR("cannot fetch destination!\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_t *)_m, &method) < 0) {
-		LM_ERR("cannot fetch method value!\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_t *)_p, &params) < 0) {
-		LM_ERR("cannot fetch params value!\n");
-		return -1;
-	}
-	
 	id = jsonrpc_unique_id();
-	cmd = jsonrpc_build_cmd(&method, &params, &id);
+	cmd = jsonrpc_build_cmd(method, params, &id);
 	if (!cmd) {
 		LM_ERR("cannot build jsonrpc command \n");
 		return -1;

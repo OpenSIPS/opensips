@@ -83,16 +83,25 @@ static param_export_t params[] = {
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] =
-{
-	{"sdp_mangle_ip",   (cmd_function)sdp_mangle_ip, 2,0, 0, REQUEST_ROUTE|ONREPLY_ROUTE},
-	{"sdp_mangle_port", (cmd_function)sdp_mangle_port, 1,0, 0, REQUEST_ROUTE|ONREPLY_ROUTE},
-	{"encode_contact",  (cmd_function)encode_contact,2,fixup_encode_ct, 0, REQUEST_ROUTE|ONREPLY_ROUTE},
-	{"decode_contact",  (cmd_function)decode_contact,0,0, 0, REQUEST_ROUTE},
-	{"decode_contact_header", (cmd_function)decode_contact_header,0,0,0,REQUEST_ROUTE|ONREPLY_ROUTE},
-	{0, 0, 0, 0, 0, 0}
-};
 
+static cmd_export_t cmds[] = {
+	{"sdp_mangle_ip",   (cmd_function)sdp_mangle_ip, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"sdp_mangle_port", (cmd_function)sdp_mangle_port, {
+		{CMD_PARAM_INT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"encode_contact",  (cmd_function)encode_contact, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"decode_contact",  (cmd_function)decode_contact, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"decode_contact_header", (cmd_function)decode_contact_header, {{0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{0,0,{{0,0,0}},0}
+};
 
 /*
  * Module interface

@@ -169,7 +169,7 @@ struct ng_flags_parse {
 };
 
 enum rtpe_set_var {
-	RTPE_SET_NONE, RTPE_SET_FIXED, RTPE_SET_PVAR
+	RTPE_SET_NONE, RTPE_SET_FIXED
 };
 
 typedef struct rtpe_set_link {
@@ -177,7 +177,6 @@ typedef struct rtpe_set_link {
 	union {
 		int id;
 		struct rtpe_set *rset;
-		pv_spec_t rpv;
 	} v;
 } rtpe_set_link_t;
 
@@ -200,22 +199,22 @@ static const str stat_maps[] = {
 static char *gencookie();
 static int rtpe_test(struct rtpe_node*, int, int);
 static int start_recording_f(struct sip_msg* msg, pv_spec_t *spvar);
-static int rtpengine_offer_f(struct sip_msg *, gparam_p str1,
-		pv_spec_t *spvar, pv_spec_t *bpvar, gparam_p body);
-static int rtpengine_answer_f(struct sip_msg *, gparam_p str1,
-		pv_spec_t *spvar, pv_spec_t *bpvar, gparam_p body);
-static int rtpengine_manage_f(struct sip_msg *, gparam_p str1,
-		pv_spec_t *spvar, pv_spec_t *bpvar, gparam_p body);
-static int rtpengine_delete_f(struct sip_msg *, gparam_p str1,
-		pv_spec_t *spvar);
+static int rtpengine_offer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
+		pv_spec_t *bpvar, str *body);
+static int rtpengine_answer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
+		pv_spec_t *bpvar, str *body);
+static int rtpengine_manage_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
+		pv_spec_t *bpvar, str *body);
+static int rtpengine_delete_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static void free_rtpe_nodes(struct rtpe_set *list);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
-static int rtpengine_offer_answer(struct sip_msg *msg, const char *flags,
+static int rtpengine_offer_answer(struct sip_msg *msg, str *flags,
 		pv_spec_t *spvar, pv_spec_t *bpvar, str *body, int op);
 static int add_rtpengine_socks(struct rtpe_set * rtpe_list, char * rtpengine);
-static int fixup_set_id(void ** param, int param_no);
+static int fixup_set_id(void ** param);
+static int fixup_free_set_id(void ** param);
 static int set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param);
 static struct rtpe_set * select_rtpe_set(int id_set);
 static struct rtpe_node *select_rtpe_node(str, int, struct rtpe_set *);
@@ -285,71 +284,38 @@ static struct tm_binds tmb;
 
 static pv_elem_t *extra_id_pv = NULL;
 
-int fixup_rtpengine(void** param, int param_no);
-
 #define ANY_ROUTE     (REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE)
+
 static cmd_export_t cmds[] = {
-	{"rtpengine_use_set",  (cmd_function)set_rtpengine_set_f,    1,
-		fixup_set_id, 0,
+	{"rtpengine_use_set", (cmd_function)set_rtpengine_set_f, {
+		{CMD_PARAM_INT, fixup_set_id, fixup_free_set_id}, {0,0,0}},
 		ANY_ROUTE},
-	{"rtpengine_start_recording", (cmd_function)start_recording_f,      0,
-		0, 0,
-		ANY_ROUTE },
-	{"rtpengine_start_recording", (cmd_function)start_recording_f,      0,
-		fixup_pvar_null, 0,
-		ANY_ROUTE },
-	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f,     0,
-		0, 0,
+	{"rtpengine_start_recording", (cmd_function)start_recording_f, {
+		{CMD_PARAM_VAR, fixup_set_id, fixup_free_set_id}, {0,0,0}},
 		ANY_ROUTE},
-	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f,     1,
-		fixup_rtpengine, 0,
+	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ANY_ROUTE},
-	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f,     2,
-		fixup_rtpengine, 0,
+	{"rtpengine_answer", (cmd_function)rtpengine_answer_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ANY_ROUTE},
-	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f,     3,
-		fixup_rtpengine, 0,
+	{"rtpengine_manage", (cmd_function)rtpengine_manage_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ANY_ROUTE},
-	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f,     4,
-		fixup_rtpengine, 0,
+	{"rtpengine_delete", (cmd_function)rtpengine_delete_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ANY_ROUTE},
-	{"rtpengine_answer",	(cmd_function)rtpengine_answer_f,    0,
-		0, 0,
-		ANY_ROUTE},
-	{"rtpengine_answer",	(cmd_function)rtpengine_answer_f,    1,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{"rtpengine_answer",	(cmd_function)rtpengine_answer_f,    2,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{"rtpengine_answer",	(cmd_function)rtpengine_answer_f,    3,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{"rtpengine_answer",	(cmd_function)rtpengine_answer_f,    4,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{"rtpengine_manage",	(cmd_function)rtpengine_manage_f,     0,
-		0, 0,
-		ANY_ROUTE},
-	{"rtpengine_manage",	(cmd_function)rtpengine_manage_f,     1,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{"rtpengine_manage",	(cmd_function)rtpengine_manage_f,     2,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{"rtpengine_manage",	(cmd_function)rtpengine_manage_f,     3,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{"rtpengine_delete",  (cmd_function)rtpengine_delete_f,    0,
-		0, 0,
-		ANY_ROUTE},
-	{"rtpengine_delete",  (cmd_function)rtpengine_delete_f,    1,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{"rtpengine_delete",  (cmd_function)rtpengine_delete_f,    2,
-		fixup_rtpengine, 0,
-		ANY_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{0,0,{{0,0,0}},0}
 };
 
 static int pv_rtpengine_stats_used(pv_spec_p sp, int param)
@@ -820,12 +786,10 @@ error:
 }
 
 
-static int fixup_set_id(void ** param, int param_no)
+static int fixup_set_id(void ** param)
 {
-	int int_val, err;
 	struct rtpe_set* rtpe_list;
 	rtpe_set_link_t *rtpl = NULL;
-	str s;
 
 	rtpl = (rtpe_set_link_t*)pkg_malloc(sizeof(rtpe_set_link_t));
 	if(rtpl==NULL) {
@@ -833,32 +797,22 @@ static int fixup_set_id(void ** param, int param_no)
 		return -1;
 	}
 	memset(rtpl, 0, sizeof(rtpe_set_link_t));
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
 
-	if(s.s[0] == PV_MARKER) {
-		if (pv_parse_spec(&s, &rtpl->v.rpv) == NULL ) {
-			LM_ERR("invalid parameter %s\n", s.s);
-			return -1;
-		}
-		rtpl->type = RTPE_SET_PVAR;
+	if((rtpe_list = select_rtpe_set(*(int*)*param)) ==0){
+		rtpl->type = RTPE_SET_NONE;
+		rtpl->v.id = *(int*)*param;
 	} else {
-		int_val = str2s(*param, strlen(*param), &err);
-		if (err == 0) {
-			pkg_free(*param);
-			if((rtpe_list = select_rtpe_set(int_val)) ==0){
-				rtpl->type = RTPE_SET_NONE;
-				rtpl->v.id = int_val;
-			} else {
-				rtpl->type = RTPE_SET_FIXED;
-				rtpl->v.rset = rtpe_list;
-			}
-		} else {
-			LM_ERR("bad number <%s>\n",	(char *)(*param));
-			return E_CFG;
-		}
+		rtpl->type = RTPE_SET_FIXED;
+		rtpl->v.rset = rtpe_list;
 	}
+
 	*param = (void*)rtpl;
+	return 0;
+}
+
+static int fixup_free_set_id(void **param)
+{
+	pkg_free(*param);
 	return 0;
 }
 
@@ -1702,7 +1656,7 @@ error:
 
 
 static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_msg *msg,
-	enum rtpe_operation op, const char *flags_str, str *body_in, pv_spec_t *spvar)
+	enum rtpe_operation op, str *flags_str, str *body_in, pv_spec_t *spvar)
 {
 	struct ng_flags_parse ng_flags;
 	bencode_item_t *item, *resp;
@@ -1712,6 +1666,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	struct rtpe_set *set;
 	char *cp;
 	pv_value_t val;
+	str flags_nt = {0,0};
 
 	/*** get & init basic stuff needed ***/
 
@@ -1748,7 +1703,12 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	ng_flags.to = (op == OP_DELETE) ? 0 : 1;
 
-	if (parse_flags(&ng_flags, msg, &op, flags_str))
+	if (flags_str && pkg_nt_str_dup(&flags_nt, flags_str) < 0) {
+		LM_ERR("No more pkg mem\n");
+		goto error;
+	}
+
+	if (parse_flags(&ng_flags, msg, &op, flags_nt.s))
 		goto error;
 
 	/* only add those if any flags were given at all */
@@ -1855,15 +1815,20 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		goto error;
 	}
 
+	if (flags_nt.s)
+		pkg_free(flags_nt.s);
+
 	return resp;
 
 error:
+	if (flags_nt.s)
+		pkg_free(flags_nt.s);
 	bencode_buffer_free(bencbuf);
 	return NULL;
 }
 
 static int rtpe_function_call_simple(struct sip_msg *msg, enum rtpe_operation op,
-		const char *flags_str, pv_spec_t *spvar)
+		str *flags_str, pv_spec_t *spvar)
 {
 	bencode_buffer_t bencbuf;
 	struct rtpe_ctx *ctx;
@@ -1896,7 +1861,7 @@ static int rtpe_function_call_simple(struct sip_msg *msg, enum rtpe_operation op
 }
 
 static bencode_item_t *rtpe_function_call_ok(bencode_buffer_t *bencbuf, struct sip_msg *msg,
-		enum rtpe_operation op, const char *flags_str, str *body, pv_spec_t *spvar)
+		enum rtpe_operation op, str *flags_str, str *body, pv_spec_t *spvar)
 {
 	bencode_item_t *ret;
 
@@ -2276,68 +2241,43 @@ set_rtpengine_set_from_avp(struct sip_msg *msg)
 	return 1;
 }
 
-static int rtpengine_delete(struct sip_msg *msg, const char *flags, pv_spec_t *spvar)
+static int rtpengine_delete(struct sip_msg *msg, str *flags, pv_spec_t *spvar)
 {
 	return rtpe_function_call_simple(msg, OP_DELETE, flags, spvar);
 }
 
 static int
-rtpengine_delete_f(struct sip_msg* msg, gparam_p str1, pv_spec_t *spvar)
+rtpengine_delete_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
-	str flags;
-
 	if (set_rtpengine_set_from_avp(msg) == -1)
 		return -1;
 
-	flags.s = NULL;
-	if (str1 && fixup_get_svalue(msg, str1, &flags) < 0) {
-		LM_WARN("cannot fetch the flags!\n");
-		return -1;
-	}
-
-	return rtpengine_delete(msg, flags.s, spvar);
+	return rtpengine_delete(msg, flags, spvar);
 }
 
 /* This function assumes p points to a line of requested type. */
 
 static int
-set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param)
+set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *rtpl)
 {
-	rtpe_set_link_t *rtpl;
 	struct rtpe_set *set;
-	pv_value_t val;
 
-	rtpl = set_param;
-
-	if (rtpl->type != RTPE_SET_FIXED) {
-		if (rtpl->type == RTPE_SET_PVAR) {
-			if(pv_get_spec_value(msg, &rtpl->v.rpv, &val)<0) {
-				LM_ERR("cannot evaluate pv param\n");
-				return -1;
-			}
-			if(!(val.flags & PV_VAL_INT)) {
-				LM_ERR("pv param must hold an integer value\n");
-				return -1;
-			}
-		} else
-			val.ri = rtpl->v.id;
-		set = select_rtpe_set(val.ri);
+	if (rtpl->type == RTPE_SET_NONE) {
+		set = select_rtpe_set(rtpl->v.id);
 		if(set==NULL) {
-			LM_ERR("could not locate rtpengine set %d\n", val.ri);
+			LM_ERR("could not locate rtpengine set %d\n", rtpl->v.id);
 			return -1;
-		} else if (rtpl->type == RTPE_SET_NONE) {
-			/* found the set for this id! */
-			rtpl->type = RTPE_SET_FIXED;
-			rtpl->v.rset = set;
 		}
 	} else
 		set = rtpl->v.rset;
+
 	rtpe_ctx_set_fill(set);
+
 	return 1;
 }
 
 static int
-rtpengine_manage(struct sip_msg *msg, const char *flags, pv_spec_t *spvar,
+rtpengine_manage(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 		pv_spec_t *bpvar, str *body)
 {
 	int method;
@@ -2392,57 +2332,29 @@ rtpengine_manage(struct sip_msg *msg, const char *flags, pv_spec_t *spvar,
 }
 
 static int
-rtpengine_manage_f(struct sip_msg *msg, gparam_p str1, pv_spec_t *spvar,
-		pv_spec_t *bpvar, gparam_p body)
+rtpengine_manage_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
+		pv_spec_t *bpvar, str *body)
 {
-	str flags;
-	str sbody;
-
 	if (set_rtpengine_set_from_avp(msg) == -1)
 	    return -1;
 
-	flags.s = NULL;
-	if (str1 && fixup_get_svalue(msg, str1, &flags) < 0) {
-		LM_WARN("cannot fetch the flags!\n");
-		return -1;
-	}
-
-	if (body && fixup_get_svalue(msg, body, &sbody) < 0) {
-		LM_WARN("cannot fetch the sdp body!\n");
-		return -1;
-	}
-	return rtpengine_manage(msg, flags.s, spvar, bpvar, body? &sbody: NULL);
+	return rtpengine_manage(msg, flags, spvar, bpvar, body);
 }
 
 static int
-rtpengine_offer_f(struct sip_msg *msg, gparam_p str1, pv_spec_t *spvar,
-		pv_spec_t *bpvar, gparam_p body)
+rtpengine_offer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
+		pv_spec_t *bpvar, str *body)
 {
-	str flags;
-	str sbody;
-
 	if (set_rtpengine_set_from_avp(msg) == -1)
 	    return -1;
 
-	flags.s = NULL;
-	if (str1 && fixup_get_svalue(msg, str1, &flags) < 0) {
-		LM_WARN("cannot fetch the flags!\n");
-		return -1;
-	}
-	if (body && fixup_get_svalue(msg, body, &sbody) < 0) {
-		LM_WARN("cannot fetch the sdp body!\n");
-		return -1;
-	}
-	return rtpengine_offer_answer(msg, flags.s, spvar, bpvar, (body? &sbody: NULL), OP_OFFER);
+	return rtpengine_offer_answer(msg, flags, spvar, bpvar, body, OP_OFFER);
 }
 
 static int
-rtpengine_answer_f(struct sip_msg *msg, gparam_p str1, pv_spec_t *spvar,
-		pv_spec_t *bpvar, gparam_p body)
+rtpengine_answer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
+		pv_spec_t *bpvar, str *body)
 {
-	str flags;
-	str sbody;
-
 	if (set_rtpengine_set_from_avp(msg) == -1)
 	    return -1;
 
@@ -2450,21 +2362,11 @@ rtpengine_answer_f(struct sip_msg *msg, gparam_p str1, pv_spec_t *spvar,
 		if (msg->first_line.u.request.method_value != METHOD_ACK)
 			return -1;
 
-	flags.s = NULL;
-	if (str1 && fixup_get_svalue(msg, str1, &flags) < 0) {
-		LM_WARN("cannot fetch the flags!\n");
-		return -1;
-	}
-	if (body && fixup_get_svalue(msg, body, &sbody) < 0) {
-		LM_WARN("cannot fetch the sdp body!\n");
-		return -1;
-	}
-	return rtpengine_offer_answer(msg, flags.s, spvar, bpvar,
-			(body? &sbody: NULL), OP_ANSWER);
+	return rtpengine_offer_answer(msg, flags, spvar, bpvar, body, OP_ANSWER);
 }
 
 static int
-rtpengine_offer_answer(struct sip_msg *msg, const char *flags,
+rtpengine_offer_answer(struct sip_msg *msg, str *flags,
 		pv_spec_t *spvar, pv_spec_t *bpvar, str *body, int op)
 {
 	bencode_buffer_t bencbuf;
@@ -3003,16 +2905,6 @@ error:
 	if (out)
 		cJSON_Delete(out);
 	return -1;
-}
-
-int fixup_rtpengine(void** param, int param_no)
-{
-	if (param_no == 1 || param_no == 4)
-		return fixup_spve(param);
-	if (param_no == 2 || param_no == 3)
-		return fixup_pvar(param);
-	LM_ERR("unsupported param no %d\n", param_no);
-	return E_SCRIPT;
 }
 
 

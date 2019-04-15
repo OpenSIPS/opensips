@@ -2284,12 +2284,10 @@ static void parse_save_flags(str *flags_s, struct save_ctx *out_sctx)
 	}
 }
 
-int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
-                          char *to_uri_gp, char *expires_gp, char *owtag_gp)
+int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
+                          str *to_uri, int *expires, str *owtag)
 {
-	udomain_t *ud = (udomain_t *)dom;
 	urecord_t *rec = NULL;
-	str flags_str = { NULL, 0 }, to_uri = { NULL, 0 };
 	struct save_ctx sctx;
 	int rc = -1, st;
 
@@ -2303,41 +2301,26 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 	LM_DBG("saving to %.*s...\n", ud->name->len, ud->name->s);
 
-	if (flags_gp) {
-		if (fixup_get_svalue(msg, (gparam_p)flags_gp, &flags_str)) {
-			LM_ERR("invalid flags parameter\n");
-			return -1;
-		}
-
-		parse_save_flags(&flags_str, &sctx);
-	}
+	if (flags_str)
+		parse_save_flags(flags_str, &sctx);
 
 	if (parse_reg_headers(msg) != 0) {
 		LM_ERR("failed to parse req headers\n");
 		return -1;
 	}
 
-	if (!to_uri_gp) {
-		to_uri = get_to(msg)->uri;
-	} else if (fixup_get_svalue(msg, (gparam_p)to_uri_gp, &to_uri)) {
-		LM_ERR("invalid AoR parameter\n");
-		return -1;
-	}
+	if (!to_uri)
+		to_uri = &get_to(msg)->uri;
 
-	if (!expires_gp) {
+	if (!expires)
 		sctx.expires_out = outgoing_expires;
-	} else if (fixup_get_ivalue(msg, (gparam_p)expires_gp, &sctx.expires_out)) {
-		LM_ERR("invalid outgoing_expires parameter\n");
-		return -1;
-	}
+	else
+		sctx.expires_out = *expires;
 
-	if (owtag_gp && fixup_get_svalue(msg, (gparam_p)owtag_gp,
-		                              &sctx.ownership_tag) < 0) {
-		LM_ERR("failed to extract the ownership tag!\n");
-		return -1;
-	}
+	if (owtag)
+		sctx.ownership_tag = *owtag;
 
-	if (extract_aor(&to_uri, &sctx.aor, 0, 0) < 0) {
+	if (extract_aor(to_uri, &sctx.aor, 0, 0) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		return -1;
 	}

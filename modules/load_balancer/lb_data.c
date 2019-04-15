@@ -1037,36 +1037,15 @@ int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data, unsigned int ve
 /* Checks, if the IP PORT is a LB destination
  */
 int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
-				pv_spec_t *pv_ip, gparam_t *pv_port, int group, int active)
+				str *ip_str, int port, int group, int active)
 {
-	pv_value_t val;
 	struct ip_addr *ip;
-	int port;
 	struct lb_dst *dst;
 	int k;
 
-	/* get the address to test */
-	if (pv_get_spec_value( _m, pv_ip, &val)!=0) {
-		LM_ERR("failed to get IP value from PV\n");
+	if ( (ip=str2ip(ip_str))==NULL  && (ip=str2ip6(ip_str))==NULL) {
+		LM_ERR("IP val is not IP <%.*s>\n",ip_str->len,ip_str->s);
 		return -1;
-	}
-	if ( (val.flags&PV_VAL_STR)==0 ) {
-		LM_ERR("IP PV val is not string\n");
-		return -1;
-	}
-	if ( (ip=str2ip( &val.rs ))==NULL  && (ip=str2ip6( &val.rs ))==NULL) {
-		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
-		return -1;
-	}
-
-	/* get the port to test */
-	if (pv_port) {
-		if (fixup_get_ivalue(_m, (gparam_p)pv_port, &port) != 0) {
-			LM_ERR("failed to get PORT value from PV\n");
-			return -1;
-		}
-	} else {
-		port = 0;
 	}
 
 	/* and now search !*/

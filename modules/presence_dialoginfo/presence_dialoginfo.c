@@ -56,7 +56,7 @@ int force_single_dialog = 0;
 /* module exported commands */
 static cmd_export_t cmds[] =
 {
-    {0,	0, 0, 0, 0, 0}
+    {0, 0, {{0, 0, 0}}, 0}
 };
 
 /* module exported parameters */
@@ -104,7 +104,7 @@ static int mod_init(void)
 	presence_api_t pres;
 	bind_presence_t bind_presence;
 
-	bind_presence= (bind_presence_t)find_export("bind_presence", 1,0);
+	bind_presence= (bind_presence_t)find_export("bind_presence", 0);
 	if (!bind_presence) {
 		LM_ERR("can't bind presence\n");
 		return -1;

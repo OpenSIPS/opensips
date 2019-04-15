@@ -136,11 +136,11 @@ int ops_dbdelete_avps(struct sip_msg* msg, struct fis_param *sp,
 int ops_dbstore_avps(struct sip_msg* msg, struct fis_param *sp,
 					struct db_param *dbp,  struct db_url *url, int use_domain);
 
-int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
-					struct db_url *url, pvname_list_t* dest);
+int ops_dbquery_avps(struct sip_msg* msg, str* query,
+                     struct db_url *url, pvname_list_t* dest);
 
 int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
-		pv_elem_t *query, struct db_url *url, pvname_list_t *dest);
+		str *query, struct db_url *url, pvname_list_t *dest);
 
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 
@@ -165,8 +165,5 @@ int ops_subst(struct sip_msg* msg, struct fis_param** src,
 int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap);
 
 int ops_print_avp();
-
-int w_insert_avp(struct sip_msg* msg, char* name, char* value,
-		char *index_char);
 #endif
 

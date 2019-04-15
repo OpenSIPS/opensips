@@ -42,7 +42,7 @@ int trace_prot_bind(char* module_name, trace_proto_t* prot)
 	}
 
 	bind_f = (trace_bind_api_f) find_mod_export(module_name,
-						"trace_bind_api", 1, 0);
+						"trace_bind_api", 0);
 
 	if (bind_f) {
 		LM_DBG("using trace bind api for %s\n", module_name);

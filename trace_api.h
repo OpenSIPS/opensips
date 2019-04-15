@@ -93,7 +93,7 @@ typedef int (add_chunk_f)(trace_message message, void* data, int len,
  * @param3 the value of the new correlation element
  * @return 0 for success -1 in case of failure
  */
-typedef int (add_extra_correlation_f)(trace_message message, char* key, str* value);
+typedef int (add_extra_correlation_f)(trace_message message, str* key, str* value);
 
 /*
  * add payload elements other than the basic paylod added when creating the message

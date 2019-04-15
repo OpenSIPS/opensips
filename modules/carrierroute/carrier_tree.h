@@ -160,7 +160,7 @@ int add_tree(const str * tree, int carrier_id);
  * @return values: on success the id of for this carrier,
  * -1 on failure
  */
-int find_tree(str tree);
+int find_tree(str *tree);
 
 /**
  * adds a carrier tree for the given carrier

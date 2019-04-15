@@ -42,7 +42,7 @@
 
 void msg_presentity_clean(unsigned int ticks,void *param);
 
-int handle_publish(struct sip_msg* msg, char* str1 ,char* str2);
+int handle_publish(struct sip_msg* msg, str* str1);
 
 extern event_id_t presence_event_id;
 extern event_id_t exposed_event_id;

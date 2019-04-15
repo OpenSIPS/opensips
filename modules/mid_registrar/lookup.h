@@ -34,6 +34,6 @@
 
 #include "../../parser/msg_parser.h"
 
-int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s);
+int mid_reg_lookup(struct sip_msg* req, void* _t, str* flags_s, str* uri);
 
 #endif /* __MID_REG_LOOKUP_ */

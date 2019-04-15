@@ -69,7 +69,7 @@ static inline int load_hep_api(proto_hep_api_t* api )
 	load_hep_f load_hep;
 
 	/* import the TM auto-loading function */
-	if ( !(load_hep=(load_hep_f)find_export("load_hep", 0, 0))) {
+	if ( !(load_hep=(load_hep_f)find_export("load_hep", 0))) {
 		LM_ERR("failed to import load_hep\n");
 		return -1;
 	}

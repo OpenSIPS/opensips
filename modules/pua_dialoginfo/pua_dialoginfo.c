@@ -87,9 +87,8 @@ static int nopublish_flag = -1;
 /** module functions */
 
 static int mod_init(void);
-int dialoginfo_set(struct sip_msg* msg, char* str1, char* str2);
-int set_branch_callee(struct sip_msg* msg, char* callee);
-static int fixup_dlginfo(void** param, int param_no);
+int dialoginfo_set(struct sip_msg* msg, str* str1);
+int set_branch_callee(struct sip_msg* msg, str* callee);
 static void build_branch_callee_var_names( int branch, str *var_b, str *var_u);
 
 struct dlginfo_cb_params {
@@ -105,15 +104,25 @@ static struct dlginfo_cb_params * build_cb_param(int flags,
 		struct to_body *entity_p, struct to_body *peer_p);
 
 
-static cmd_export_t cmds[]=
-{
-	{"dialoginfo_set", (cmd_function)dialoginfo_set, 0,
-		0, 0, REQUEST_ROUTE},
-	{"dialoginfo_set", (cmd_function)dialoginfo_set, 1,
-		fixup_dlginfo, 0, REQUEST_ROUTE},
-	{"dialoginfo_set_branch_callee", (cmd_function)set_branch_callee, 1,
-		fixup_spve_null, 0, BRANCH_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+// static cmd_export_t cmds[]=
+// {
+// 	{"dialoginfo_set", (cmd_function)dialoginfo_set, 0,
+// 		0, 0, REQUEST_ROUTE},
+// 	{"dialoginfo_set", (cmd_function)dialoginfo_set, 1,
+// 		fixup_dlginfo, 0, REQUEST_ROUTE},
+// 	{"dialoginfo_set_branch_callee", (cmd_function)set_branch_callee, 1,
+// 		fixup_spve_null, 0, BRANCH_ROUTE},
+// 	{0, 0, 0, 0, 0, 0}
+// };
+
+static cmd_export_t cmds[]={
+	{"dialoginfo_set", (cmd_function)dialoginfo_set, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"dialoginfo_set_branch_callee", (cmd_function)set_branch_callee, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		BRANCH_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
@@ -589,7 +598,7 @@ static int mod_init(void)
 	bind_pua_t bind_pua;
 	evs_process_body_t* evp=0;
 
-	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
+	bind_pua= (bind_pua_t)find_export("bind_pua",0);
 	if (!bind_pua)
 	{
 		LM_ERR("Can't bind pua\n");
@@ -736,7 +745,7 @@ static struct dlginfo_cb_params * build_cb_param(int flags,
 }
 
 
-static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
+static int pack_cb_params(struct sip_msg * msg, str* flag_s,
 		struct dlginfo_cb_params **param1, struct dlginfo_cb_params **param2)
 {
 	struct to_body entity, peer;
@@ -745,7 +754,7 @@ static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
 	char *c_buf = NULL;
 	char *p_buf = NULL;
 	int len, flags, i;
-	str *ruri, s;
+	str *ruri;
 	int ret;
 
 	ret = -1;
@@ -834,14 +843,9 @@ static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
 	/* store flag  */
 	flags = 0;
 
-	if (flag_pv) {
-
-		if(pv_printf_s(msg, (pv_elem_t*)flag_pv, &s)<0) {
-			LM_ERR("cannot print the format\n");
-			goto error2;
-		}
-		for( i=0 ; i<s.len ; i++) {
-			switch (s.s[i]) {
+	if (flag_s) {
+		for( i=0 ; i<flag_s->len ; i++) {
+			switch (flag_s->s[i]) {
 				case DLG_PUB_A_CHAR:
 					flags |= DLG_PUB_A;
 					break;
@@ -849,7 +853,7 @@ static int pack_cb_params(struct sip_msg * msg, char* flag_pv,
 					flags |= DLG_PUB_B;
 					break;
 				default:
-					LM_ERR("unsupported flag [%c], ignoring\n",s.s[i]);
+					LM_ERR("unsupported flag [%c], ignoring\n",flag_s->s[i]);
 			}
 		}
 
@@ -906,7 +910,7 @@ static void free_cb_param(void *param)
  *	If the pseudovariables for caller or callee are defined, those values are used
  * */
 
-int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
+int dialoginfo_set(struct sip_msg* msg, str* flag_s)
 {
 	struct dlginfo_cb_params *param_dlg, *param_tm;
 	struct dlg_cell * dlg;
@@ -926,7 +930,7 @@ int dialoginfo_set(struct sip_msg* msg, char* flag_pv, char* str2)
 	LM_DBG("new INVITE dialog created for callid [%.*s]\n",
 		dlg->callid.len, dlg->callid.s);
 
-	if (pack_cb_params( msg, flag_pv, &param_dlg, &param_tm)<0) {
+	if (pack_cb_params( msg, flag_s, &param_dlg, &param_tm)<0) {
 		LM_ERR("Failed to allocate parameters\n");
 		return -1;
 	}
@@ -957,30 +961,6 @@ end:
 	return ret;
 }
 
-static int fixup_dlginfo(void** param, int param_no)
-{
-	pv_elem_t *model;
-	str s;
-
-	if(param_no== 0)
-		return 0;
-
-	if(*param)
-	{
-		s.s = (char*)(*param); s.len = strlen(s.s);
-		if(pv_parse_format(&s, &model)<0)
-		{
-			LM_ERR( "wrong format[%s]\n",(char*)(*param));
-			return E_UNSPEC;
-		}
-
-		*param = (void*)model;
-		return 0;
-	}
-	LM_ERR( "null format\n");
-	return E_UNSPEC;
-}
-
 
 static void build_branch_callee_var_names( int branch, str *var_d, str *var_u)
 {
@@ -1006,18 +986,13 @@ static void build_branch_callee_var_names( int branch, str *var_d, str *var_u)
 
 }
 
-int set_branch_callee(struct sip_msg* msg, char* callee)
+int set_branch_callee(struct sip_msg* msg, str* callee)
 {
 	struct dlg_cell * dlg;
 	struct to_body to_b;
 	int branch, len;
-	str v, name_u, name_d;
+	str name_u, name_d;
 	char *c_buf;
-
-	if (fixup_get_svalue(msg, (gparam_p)callee, &v)!=0) {
-		LM_ERR("cannot print the format for callee\n");
-		return -1;
-	}
 
 	dlg = dlg_api.get_dlg();
 
@@ -1029,17 +1004,17 @@ int set_branch_callee(struct sip_msg* msg, char* callee)
 	/* build var name */
 	build_branch_callee_var_names( branch, &name_d, &name_u );
 
-	if (v.s!=NULL || v.len!=0) {
+	if (callee->s!=NULL || callee->len!=0) {
 
 		/* parse input as nameaddr */
-		trim( &v );
-		c_buf = (char*)pkg_malloc(v.len + CRLF_LEN + 1);
+		trim( callee );
+		c_buf = (char*)pkg_malloc(callee->len + CRLF_LEN + 1);
 		if (c_buf==NULL) {
 			LM_ERR("no more pkg memory\n");
 			return -1;
 		}
-		memcpy(c_buf, v.s, v.len);
-		len = v.len;
+		memcpy(c_buf, callee->s, callee->len);
+		len = callee->len;
 		memcpy(c_buf + len, CRLF, CRLF_LEN);
 		len += CRLF_LEN;
 

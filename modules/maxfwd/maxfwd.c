@@ -50,17 +50,27 @@
 
 static int max_limit = MAXFWD_UPPER_LIMIT;
 
-static int fixup_maxfwd_header(void** param, int param_no);
-static int w_process_maxfwd_header(struct sip_msg* msg,char* str,char* str2);
+static int fixup_maxfwd_header(void** param);
+static int w_process_maxfwd_header(struct sip_msg* msg, int* mval);
 static int is_maxfwd_lt(struct sip_msg *msg, char *slimit, char *foo);
 static int mod_init(void);
 
+// static cmd_export_t cmds[]={
+// 	{"mf_process_maxfwd_header", (cmd_function)w_process_maxfwd_header, 1,
+// 		fixup_maxfwd_header, 0, REQUEST_ROUTE},
+// 	{"is_maxfwd_lt", (cmd_function)is_maxfwd_lt, 1,
+// 		fixup_maxfwd_header, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
+// 	{0,0,0,0,0,0}
+// };
+
 static cmd_export_t cmds[]={
-	{"mf_process_maxfwd_header", (cmd_function)w_process_maxfwd_header, 1,
-		fixup_maxfwd_header, 0, REQUEST_ROUTE},
-	{"is_maxfwd_lt", (cmd_function)is_maxfwd_lt, 1,
-		fixup_maxfwd_header, 0, REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
-	{0,0,0,0,0,0}
+	{"mf_process_maxfwd_header", (cmd_function)w_process_maxfwd_header, {
+		{CMD_PARAM_INT, fixup_maxfwd_header, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"is_maxfwd_lt", (cmd_function)is_maxfwd_lt, {
+		{CMD_PARAM_INT, fixup_maxfwd_header, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
@@ -109,38 +119,25 @@ static int mod_init(void)
 
 
 
-static int fixup_maxfwd_header(void** param, int param_no)
+static int fixup_maxfwd_header(void** param)
 {
-	unsigned long code;
-	int err;
-
-	if (param_no==1){
-		code=str2s(*param, strlen(*param), &err);
-		if (err==0){
-			if (code<1 || code>MAXFWD_UPPER_LIMIT){
-				LM_ERR("invalid MAXFWD number <%ld> [1,%d]\n",
-					code,MAXFWD_UPPER_LIMIT);
-				return E_UNSPEC;
-			}
-			if (code>max_limit) {
-				LM_ERR("default value <%ld> bigger than max limit(%d)\n",
-					code, max_limit);
-				return E_UNSPEC;
-			}
-			pkg_free(*param);
-			*param=(void*)code;
-			return 0;
-		}else{
-			LM_ERR("bad number <%s>\n",(char*)(*param));
-			return E_UNSPEC;
-		}
+	if (*(int*)*param<1 || *(int*)*param>MAXFWD_UPPER_LIMIT){
+		LM_ERR("invalid MAXFWD number <%d> [1,%d]\n",
+			*(int*)*param,MAXFWD_UPPER_LIMIT);
+		return E_UNSPEC;
 	}
+	if (*(int*)*param>max_limit) {
+		LM_ERR("default value <%d> bigger than max limit(%d)\n",
+			*(int*)*param, max_limit);
+		return E_UNSPEC;
+	}
+
 	return 0;
 }
 
 
 
-static int w_process_maxfwd_header(struct sip_msg* msg, char* str1,char* str2)
+static int w_process_maxfwd_header(struct sip_msg* msg, int* mval)
 {
 	int val;
 	str mf_value;
@@ -149,7 +146,7 @@ static int w_process_maxfwd_header(struct sip_msg* msg, char* str1,char* str2)
 	switch (val) {
 		/* header not found */
 		case -1:
-			if (add_maxfwd_header( msg, (unsigned int)(unsigned long)str1)!=0)
+			if (add_maxfwd_header( msg, *mval)!=0)
 				goto error;
 			return 2;
 		/* error */

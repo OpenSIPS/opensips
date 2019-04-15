@@ -31,7 +31,6 @@
 #include "../../mi/mi.h"
 #include "../../timer.h"
 #include "../../bin_interface.h"
-#include "../../mod_fix.h"
 
 #include "api.h"
 #include "node_info.h"
@@ -85,40 +84,45 @@ static mi_response_t *clusterer_list_cap(const mi_params_t *params,
 static void heartbeats_timer_handler(unsigned int ticks, void *param);
 static void heartbeats_utimer_handler(utime_t ticks, void *param);
 
-int cmd_broadcast_req(struct sip_msg *msg, char *param_cluster, char *param_msg,
-									char *param_tag);
-int cmd_send_req(struct sip_msg *msg, char *param_cluster, char *param_node,
-								char *param_msg, char *param_tag);
-int cmd_send_rpl(struct sip_msg *msg, char *param_cluster, char *param_node,
-								char *param_msg, char *param_tag);
-int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip,
-					char *param_addr_type);
+int cmd_broadcast_req(struct sip_msg *msg, int *cluster_id, str *gen_msg,
+									pv_spec_t *param_tag);
+int cmd_send_req(struct sip_msg *msg, int *cluster_id, int *node_id,
+								str *gen_msg, pv_spec_t *param_tag);
+int cmd_send_rpl(struct sip_msg *msg, int *cluster_id, int *node_id,
+								str *gen_msg, pv_spec_t *param_tag);
+int cmd_check_addr(struct sip_msg *msg, int *cluster_id, str *ip_str,
+					str *addr_type_str);
 
-static int fixup_broadcast(void ** param, int param_no);
-static int fixup_send(void ** param, int param_no);
-static int fixup_check_addr(void ** param, int param_no);
 
  /*
  * Exported functionsu
  */
 
 static cmd_export_t cmds[] = {
-	{"load_clusterer",  (cmd_function)load_clusterer, 0, 0, 0, 0},
-	{"cluster_broadcast_req", (cmd_function)cmd_broadcast_req, 2, fixup_broadcast, 0,
+	{"load_clusterer",  (cmd_function)load_clusterer, {{0,0,0}}, 0},
+	{"cluster_broadcast_req", (cmd_function)cmd_broadcast_req, {
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
-	{"cluster_broadcast_req", (cmd_function)cmd_broadcast_req, 3, fixup_broadcast, 0,
+	{"cluster_send_req", (cmd_function)cmd_send_req, {
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
-	{"cluster_send_req", (cmd_function)cmd_send_req, 3, fixup_send, 0,
+	{"cluster_send_rpl", (cmd_function)cmd_send_rpl, {
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
-	{"cluster_send_req", (cmd_function)cmd_send_req, 4, fixup_send, 0,
+	{"cluster_check_addr", (cmd_function)cmd_check_addr, {
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
-	{"cluster_send_rpl", (cmd_function)cmd_send_rpl, 4, fixup_send, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
-	{"cluster_check_addr", (cmd_function)cmd_check_addr, 2, fixup_check_addr, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
-	{"cluster_check_addr", (cmd_function)cmd_check_addr, 3, fixup_check_addr, 0,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
 
 /*
@@ -1004,45 +1008,6 @@ static void heartbeats_utimer_handler(utime_t ticks, void *param)
 	heartbeats_timer();
 }
 
-static int fixup_broadcast(void ** param, int param_no)
-{
-	if (param_no == 1)
-		return fixup_igp(param);
-	else if (param_no == 2)
-		return fixup_spve(param);
-	else if (param_no == 3)
-		return fixup_pvar(param);
-
-	LM_CRIT("Unknown parameter number %d\n", param_no);
-	return E_UNSPEC;
-}
-
-static int fixup_send(void ** param, int param_no)
-{
-	if (param_no == 1 || param_no == 2)
-		return fixup_igp(param);
-	else if (param_no == 3)
-		return fixup_spve(param);
-	else if (param_no == 4)
-		return fixup_pvar(param);
-
-	LM_CRIT("Unknown parameter number %d\n", param_no);
-	return E_UNSPEC;
-}
-
-static int fixup_check_addr(void ** param, int param_no)
-{
-	if (param_no == 1)
-		return fixup_igp(param);
-	else if (param_no == 2)
-		return fixup_spve(param);
-	else if (param_no == 3)
-		return fixup_spve(param);
-
-	LM_CRIT("Unknown parameter number %d\n", param_no);
-	return E_UNSPEC;
-}
-
 static inline void generate_msg_tag(pv_value_t *tag_val, int cluster_id)
 {
 	static char gen_tag_buf[TAG_RAND_LEN+TAG_FIX_MAXLEN];
@@ -1073,33 +1038,21 @@ static inline void generate_msg_tag(pv_value_t *tag_val, int cluster_id)
 	}
 }
 
-int cmd_broadcast_req(struct sip_msg *msg, char *param_cluster, char *param_msg,
-									char *param_tag)
+int cmd_broadcast_req(struct sip_msg *msg, int *cluster_id, str *gen_msg,
+									pv_spec_t *param_tag)
 {
-	int cluster_id;
-	str gen_msg;
 	pv_value_t tag_val;
 	int rc;
 
-	if (fixup_get_ivalue(msg, (gparam_p)param_cluster, &cluster_id) < 0) {
-		LM_ERR("Failed to fetch cluster id parameter\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_p)param_msg, &gen_msg) < 0) {
-		LM_ERR("Failed to fetch message parameter\n");
-		return -1;
-	}
-
 	/* generate tag */
-	generate_msg_tag(&tag_val, cluster_id);
+	generate_msg_tag(&tag_val, *cluster_id);
 
-	if (param_tag && pv_set_value(msg, (pv_spec_p)param_tag, 0, &tag_val) < 0) {
+	if (param_tag && pv_set_value(msg, param_tag, 0, &tag_val) < 0) {
 		LM_ERR("Unable to set tag pvar\n");
 		return -1;
 	}
 
-	rc = bcast_gen_msg(cluster_id, &gen_msg, &tag_val.rs);
+	rc = bcast_gen_msg(*cluster_id, gen_msg, &tag_val.rs);
 	switch (rc) {
 		case 0:
 			return 1;
@@ -1114,37 +1067,21 @@ int cmd_broadcast_req(struct sip_msg *msg, char *param_cluster, char *param_msg,
 	}
 }
 
-int cmd_send_req(struct sip_msg *msg, char *param_cluster, char *param_node,
-								char *param_msg, char *param_tag)
+int cmd_send_req(struct sip_msg *msg, int *cluster_id, int *node_id,
+								str *gen_msg, pv_spec_t *param_tag)
 {
-	int cluster_id, node_id;
-	str gen_msg;
 	pv_value_t tag_val;
 	int rc;
 
-	if (fixup_get_ivalue(msg, (gparam_p)param_cluster, &cluster_id) < 0) {
-		LM_ERR("Failed to fetch cluster id parameter\n");
-		return -1;
-	}
-	if (fixup_get_ivalue(msg, (gparam_p)param_node, &node_id) < 0) {
-		LM_ERR("Failed to fetch node id parameter\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_p)param_msg, &gen_msg) < 0) {
-		LM_ERR("Failed to fetch message parameter\n");
-		return -1;
-	}
-
 	/* generate tag */
-	generate_msg_tag(&tag_val, cluster_id);
+	generate_msg_tag(&tag_val, *cluster_id);
 
-	if (param_tag && pv_set_value(msg, (pv_spec_p)param_tag, 0, &tag_val) < 0) {
+	if (param_tag && pv_set_value(msg, param_tag, 0, &tag_val) < 0) {
 		LM_ERR("Unable to set tag pvar\n");
 		return -1;
 	}
 
-	rc = send_gen_msg(cluster_id, node_id, &gen_msg, &tag_val.rs, 1);
+	rc = send_gen_msg(*cluster_id, *node_id, gen_msg, &tag_val.rs, 1);
 	switch (rc) {
 		case 0:
 			return 1;
@@ -1159,29 +1096,13 @@ int cmd_send_req(struct sip_msg *msg, char *param_cluster, char *param_node,
 	}
 }
 
-int cmd_send_rpl(struct sip_msg *msg, char *param_cluster, char *param_node,
-								char *param_msg, char *param_tag)
+int cmd_send_rpl(struct sip_msg *msg, int *cluster_id, int *node_id,
+								str *gen_msg, pv_spec_t *param_tag)
 {
-	int cluster_id, node_id;
-	str gen_msg;
 	pv_value_t tag_val;
 	int rc;
 
-	if (fixup_get_ivalue(msg, (gparam_p)param_cluster, &cluster_id) < 0) {
-		LM_ERR("Failed to fetch cluster id parameter\n");
-		return -1;
-	}
-	if (fixup_get_ivalue(msg, (gparam_p)param_node, &node_id) < 0) {
-		LM_ERR("Failed to fetch node id parameter\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_p)param_msg, &gen_msg) < 0) {
-		LM_ERR("Failed to fetch message parameter\n");
-		return -1;
-	}
-
-	if (pv_get_spec_value(msg, (pv_spec_p)param_tag, &tag_val) < 0) {
+	if (pv_get_spec_value(msg, param_tag, &tag_val) < 0) {
 		LM_ERR("Failed to fetch tag parameter\n");
 		return -1;
 	}
@@ -1191,7 +1112,7 @@ int cmd_send_rpl(struct sip_msg *msg, char *param_cluster, char *param_node,
 		return -1;
 	}
 
-	rc = send_gen_msg(cluster_id, node_id, &gen_msg, &tag_val.rs, 0);
+	rc = send_gen_msg(*cluster_id, *node_id, gen_msg, &tag_val.rs, 0);
 	switch (rc) {
 		case 0:
 			return 1;
@@ -1206,34 +1127,17 @@ int cmd_send_rpl(struct sip_msg *msg, char *param_cluster, char *param_node,
 	}
 }
 
-int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip,
-					char *param_addr_type)
+int cmd_check_addr(struct sip_msg *msg, int *cluster_id, str *ip_str,
+					str *addr_type_str)
 {
-	int cluster_id;
-	str ip_str;
-	str addr_type_str;
 	static str bin_addr_t = str_init("bin");
 	static str sip_addr_t = str_init("sip");
 	enum node_addr_type check_type;
 
-	if (fixup_get_ivalue(msg, (gparam_p)param_cluster, &cluster_id) < 0) {
-		LM_ERR("Failed to fetch cluster id parameter\n");
-		return -1;
-	}
-	if (fixup_get_svalue(msg, (gparam_p)param_ip, &ip_str) < 0) {
-		LM_ERR("Failed to fetch ip parameter\n");
-		return -1;
-	}
-	if (param_addr_type &&
-		fixup_get_svalue(msg, (gparam_p)param_addr_type, &addr_type_str) < 0) {
-		LM_ERR("Failed to fetch address type parameter\n");
-		return -1;
-	}
-
-	if (param_addr_type) {
-		if (!str_strcasecmp(&addr_type_str, &bin_addr_t))
+	if (addr_type_str) {
+		if (!str_strcasecmp(addr_type_str, &bin_addr_t))
 			check_type = NODE_BIN_ADDR;
-		else if (!str_strcasecmp(&addr_type_str, &sip_addr_t))
+		else if (!str_strcasecmp(addr_type_str, &sip_addr_t))
 			check_type = NODE_SIP_ADDR;
 		else {
 			LM_ERR("Bad address type, should be 'bin' or 'sip'\n");
@@ -1242,7 +1146,7 @@ int cmd_check_addr(struct sip_msg *msg, char *param_cluster, char *param_ip,
 	} else
 		check_type = NODE_SIP_ADDR;
 
-	if (clusterer_check_addr(cluster_id, &ip_str, check_type) == 0)
+	if (clusterer_check_addr(*cluster_id, ip_str, check_type) == 0)
 		return -1;
 	else
 		return 1;

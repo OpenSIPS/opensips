@@ -344,14 +344,14 @@ static inline int acc_preparse_req(struct sip_msg *req)
 
 
 
-int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
+int w_acc_log_request(struct sip_msg *rq, str* comment)
 {
 	struct acc_param accp;
 
 	if (acc_preparse_req(rq)<0)
 		return -1;
 
-	acc_pvel_to_acc_param(rq, comment, &accp);
+	acc_comm_to_acc_param(rq, comment, &accp);
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
@@ -361,7 +361,7 @@ int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 }
 
 
-int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
+int w_acc_aaa_request(struct sip_msg *rq, str* comment)
 {
 	struct acc_param accp;
 
@@ -373,7 +373,7 @@ int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
 	if (acc_preparse_req(rq)<0)
 		return -1;
 
-	acc_pvel_to_acc_param(rq, comment, &accp);
+	acc_comm_to_acc_param(rq, comment, &accp);
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
@@ -382,10 +382,9 @@ int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char* foo)
 }
 
 
-int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
+int w_acc_db_request(struct sip_msg *rq, str* comment, str *table)
 {
 	struct acc_param accp;
-	int table_len;
 
 	if (!table) {
 		LM_ERR("db support not configured\n");
@@ -395,33 +394,31 @@ int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table)
 	if (acc_preparse_req(rq)<0)
 		return -1;
 
-	table_len = strlen(table);
-
-	acc_pvel_to_acc_param(rq, comment, &accp);
+	acc_comm_to_acc_param(rq, comment, &accp);
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
-	env_set_text(table, table_len);
+	env_set_text(table->s, table->len);
 
-	if (table_len == db_table_mc.len && (strncmp(table, db_table_mc.s, table_len) == 0)) {
+	if (str_strcmp(table, &db_table_mc) == 0) {
 		return acc_db_request(rq, NULL, &mc_ins_list, 0);
 	}
 
-	if (table_len == db_table_acc.len && (strncmp(table, db_table_acc.s, table_len) == 0)) {
+	if (str_strcmp(table, &db_table_acc) == 0) {
 		return acc_db_request(rq, NULL, &acc_ins_list, 0);
 	}
 
 	return acc_db_request( rq, NULL,NULL, 0);
 }
 
-int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
+int w_acc_evi_request(struct sip_msg *rq, str* comment)
 {
 	struct acc_param accp;
 
 	if (acc_preparse_req(rq)<0)
 		return -1;
 
-	acc_pvel_to_acc_param(rq, comment, &accp);
+	acc_comm_to_acc_param(rq, comment, &accp);
 
 	env_set_to( rq->to );
 	env_set_comment( &accp );
@@ -447,21 +444,15 @@ int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo)
 	return acc_evi_request( rq, NULL, 0);
 }
 
-int acc_pvel_to_acc_param(struct sip_msg* rq, pv_elem_t* pv_el, struct acc_param* accp)
+int acc_comm_to_acc_param(struct sip_msg* rq, str* comm, struct acc_param* accp)
 {
-	str buf;
-	if(pv_printf_s(rq, pv_el, &buf) < 0) {
-		LM_ERR("Cannot parse comment\n");
-		return 1;
-	}
+	accp->reason = *comm;
 
-	accp->reason = buf;
-
-	if (accp->reason.len>=3 && isdigit((int)buf.s[0])
-	&& isdigit((int)buf.s[1]) && isdigit((int)buf.s[2]) ) {
+	if (accp->reason.len>=3 && isdigit((int)comm->s[0])
+	&& isdigit((int)comm->s[1]) && isdigit((int)comm->s[2]) ) {
 		/* reply code is in the comment string */
-		accp->code = (buf.s[0]-'0')*100 + (buf.s[1]-'0')*10 + (buf.s[2]-'0');
-		accp->code_s.s = buf.s;
+		accp->code = (comm->s[0]-'0')*100 + (comm->s[1]-'0')*10 + (comm->s[2]-'0');
+		accp->code_s.s = comm->s;
 		accp->code_s.len = 3;
 		accp->reason.s += 3;
 		accp->reason.len -= 3;
@@ -1151,85 +1142,38 @@ do_acc_parse(str* in, do_acc_parser parser)
 	return fret;
 }
 
-
-int do_acc_fixup(void** param, int param_no)
+int _do_acc_fixup(void **param, do_acc_parser parser)
 {
-	str s;
-	pv_elem_p el;
+	unsigned long long *ival;
 
-	unsigned long long ival;
-	unsigned long long* ival_p;
+	ival = pkg_malloc(sizeof *ival);
+	if (!ival) {
+		LM_ERR("No more pkg mem!\n");
+		return E_OUT_OF_MEM;
+	}
 
-	acc_type_param_t* acc_param;
-
-	do_acc_parser parser;
-
-	if (param_no < 1 || param_no > 3) {
-		LM_ERR("invalid param_no <%d>!\n", param_no);
+	if ((*ival = do_acc_parse((str*)*param, parser)) == DO_ACC_ERR) {
+		LM_ERR("Invalid value <%.*s>!\n", ((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	switch (param_no) {
-	case 1:
-		parser=do_acc_type_parser;
-		s.s = *param;
-		s.len = strlen(s.s);
+	*param = ival;
+	return 0;
+}
 
-		if (pv_parse_format(&s, &el) < 0) {
-			LM_ERR("invalid format <%.*s>!\n", s.len, s.s);
-			return -1;
-		}
+int do_acc_fixup_type(void **param)
+{
+	return _do_acc_fixup(param, do_acc_type_parser);
+}
 
-		acc_param=pkg_malloc(sizeof(acc_type_param_t));
-		if (acc_param == NULL) {
-			LM_ERR("no more pkg mem!\n");
-			return -1;
-		}
+int do_acc_fixup_flags(void **param)
+{
+	return _do_acc_fixup(param, do_acc_flags_parser);
+}
 
-		memset(acc_param, 0, sizeof(acc_type_param_t));
-
-		if (el->next == 0 && el->spec.getf == 0) {
-			str text = el->text;
-			pv_elem_free_all(el);
-			if ((ival = do_acc_parse(&text, parser)) == DO_ACC_ERR) {
-				LM_ERR("Invalid value <%.*s>!\n", text.len, text.s);
-				return -1;
-			}
-
-			acc_param->t = DO_ACC_PARAM_TYPE_VALUE;
-			acc_param->u.ival = ival;
-		} else {
-			acc_param->t = DO_ACC_PARAM_TYPE_PV;
-			acc_param->u.pval = el;
-		}
-
-		*param = acc_param;
-
-		break;
-
-	case 2:
-		parser=do_acc_flags_parser;
-		s.s = *param;
-		s.len = strlen(s.s);
-
-		if ( (ival=do_acc_parse(&s, parser)) == DO_ACC_ERR) {
-			LM_ERR("Invalid value <%.*s>!\n", s.len, s.s);
-			return -1;
-		}
-
-		if ((ival_p=pkg_malloc(sizeof(unsigned long long))) == NULL) {
-			LM_ERR("no more pkg mem!\n");
-			return -1;
-		}
-
-		*ival_p = ival;
-
-		*param = ival_p;
-		break;
-	case 3:
-		return fixup_sgp(param);
-	}
-
+int do_acc_fixup_free_ival(void **param)
+{
+	pkg_free(*param);
 	return 0;
 }
 
@@ -1291,36 +1235,15 @@ void unref_acc_ctx(void *ctx)
 	acc_unref((acc_ctx_t *)ctx);
 }
 
-
-int w_do_acc_1(struct sip_msg* msg, char* type)
+int w_do_acc(struct sip_msg* msg, unsigned long long *type,
+			unsigned long long *flags, str *table_name)
 {
-	return w_do_acc_3(msg, type, NULL, NULL);
-}
-
-int w_do_acc_2(struct sip_msg* msg, char* type, char* flags)
-{
-	return w_do_acc_3(msg, type, flags, NULL);
-}
-
-int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
-{
-	unsigned long long type=0, flags=0;
 	unsigned long long flag_mask;
 
 	acc_ctx_t* acc_ctx;
 
-	acc_type_param_t* acc_param;
-
-	str in;
-	str table_name;
-
 	int tmcb_types;
 	int is_invite;
-
-	if (type_p == NULL) {
-		LM_ERR("accounting type is mandatory!\n");
-		return -1;
-	}
 
 	if (!msg) {
 		LM_ERR("no SIP message\n");
@@ -1333,33 +1256,7 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		return 1;
 	}
 
-	acc_param = (acc_type_param_t *)type_p;
-	if (acc_param->t == DO_ACC_PARAM_TYPE_VALUE) {
-		type = acc_param->u.ival;
-	} else {
-		if (pv_printf_s(msg, acc_param->u.pval, &in) < 0) {
-			LM_ERR("failed to fetch type value!\n");
-			return -1;
-		}
-
-		if ((type=do_acc_parse(&in, do_acc_type_parser)) == DO_ACC_ERR) {
-			LM_ERR("Invalid expression <%.*s> for acc type!\n", in.len, in.s);
-			return -1;
-		}
-	}
-
-	if (table_p != NULL) {
-		if (fixup_get_svalue(msg, (gparam_p)table_p, &table_name) < 0) {
-			LM_ERR("failed to fetch table name!\n");
-			return -1;
-		}
-	}
-
-	if (flags_p != NULL) {
-		flags= *(unsigned long long*)flags_p;
-	}
-
-	flag_mask = type + type * flags;
+	flag_mask = *type + *type * (flags ? *flags : 0);
 	if (is_cdr_acc_on(flag_mask)) {
 		/* setting this flag will allow us to register everything
 		 * that is needed for CDR accounting only once */
@@ -1378,12 +1275,12 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 		/* do_accounting already called once */
 		/* first check if the accounting table changed  */
 		if (is_db_acc_on(flag_mask) &&
-				(table_p != NULL || ZSTR(acc_ctx->acc_table))) {
-			if (table_p == NULL) {
-				table_name = db_table_acc;
+				(table_name != NULL || ZSTR(acc_ctx->acc_table))) {
+			if (table_name == NULL) {
+				table_name = &db_table_acc;
 			}
 
-			if (store_acc_table( acc_ctx, &table_name) < 0) {
+			if (store_acc_table( acc_ctx, table_name) < 0) {
 				LM_ERR("failed to store acc table!\n");
 				return -1;
 			}
@@ -1415,11 +1312,11 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 
 	/* move acc table in context if we have database accounting */
 	if (is_db_acc_on(flag_mask)) {
-		if (table_p == NULL) {
-			table_name = db_table_acc;
+		if (table_name == NULL) {
+			table_name = &db_table_acc;
 		}
 
-		if (store_acc_table( acc_ctx, &table_name) < 0) {
+		if (store_acc_table( acc_ctx, table_name) < 0) {
 			LM_ERR("failed to store acc table!\n");
 			return -1;
 		}
@@ -1475,28 +1372,12 @@ int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p)
 	return 1;
 }
 
-/* reset all flags */
-int w_drop_acc_0(struct sip_msg* msg) {
-	return w_drop_acc_2(msg, NULL, NULL);
-}
-
-int w_drop_acc_1(struct sip_msg* msg, char* type)
+int w_drop_acc(struct sip_msg* msg, unsigned long long *type,
+			unsigned long long *flags)
 {
-	return w_drop_acc_2(msg, type, NULL);
-}
-
-int w_drop_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
-{
-	unsigned long long type=0;
-	/* if not set, we reset all flags for the type of accounting requested */
-	unsigned long long flags=ALL_ACC_FLAGS;
 	unsigned long long flag_mask;
 
-	acc_type_param_t* acc_param;
-
 	acc_ctx_t* acc_ctx=try_fetch_ctx();
-
-	str in;
 
 	if (acc_ctx == NULL) {
 		LM_ERR("do_accounting() not used! This function resets flags in "
@@ -1504,28 +1385,8 @@ int w_drop_acc_2(struct sip_msg* msg, char* type_p, char* flags_p)
 		return -1;
 	}
 
-	if (type_p != NULL) {
-		acc_param = (acc_type_param_t *)type_p;
-		if (acc_param->t == DO_ACC_PARAM_TYPE_VALUE) {
-			type = acc_param->u.ival;
-		} else {
-			if (pv_printf_s(msg, acc_param->u.pval, &in) < 0) {
-				LM_ERR("failed to fetch type value!\n");
-				return -1;
-			}
-
-			if ((type=do_acc_parse(&in, do_acc_type_parser)) == DO_ACC_ERR) {
-				LM_ERR("Invalid expression <%.*s> for acc type!\n", in.len, in.s);
-				return -1;
-			}
-		}
-	} else
-		type = DO_ACC_LOG | DO_ACC_AAA | DO_ACC_DB | DO_ACC_EVI;
-
-	if (flags_p != NULL)
-		flags= *(unsigned long long*)flags_p;
-
-	flag_mask = type * flags;
+	flag_mask = (type ? *type : DO_ACC_LOG | DO_ACC_AAA | DO_ACC_DB | DO_ACC_EVI) *
+		(flags ? *flags : ALL_ACC_FLAGS);
 
 	reset_flags(acc_ctx->flags, flag_mask);
 

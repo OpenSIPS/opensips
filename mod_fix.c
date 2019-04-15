@@ -18,11 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/*!
- * \file
- * \brief Generic fixup functions for module function parameter.
- * - \ref FixupNameFormat
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,1129 +26,460 @@
 #include "str.h"
 #include "ut.h"
 #include "error.h"
-#include "pvar.h"
 #include "mod_fix.h"
-
-/*!
- * \page FixupNameFormat Fixup Naming format
- * NAMING FORMAT
- * === fixup functions ===
- * + fixup_type1_type2(...)
- * - type1 - is the type the fist parameter gets converted to
- * - type2 - is the type the second parameter gets converted to
- * + if the parameter is missing, then use 'null'
- * + if the parameter is not converted, then use 'none'
- *
- * === fixup free functions ===
- * + free_fixup_type1_type2(...)
- * - type1 and type2 are same as for fixup function
- *
- * === helper functions ===
- * + functions to be used internaly for fixup/free functions
- * + fixup_type(...)
- * + fixup_free_type(...)
- * - type - is the type of the parameter that gets converted to/freed
- */
-
-
-/*! \brief
- * helper function
- * Convert char* parameter to str* parameter
- */
-int fixup_str(void** param)
-{
-	str* s;
-
-	s = (str*)pkg_malloc(sizeof(str));
-	if (!s) {
-		LM_ERR("no more pkg memory\n");
-		return E_UNSPEC;
-	}
-
-	s->s = (char*)*param;
-	s->len = strlen(s->s);
-	*param = (void*)s;
-
-	return 0;
-}
-
-/*! \brief
- * - helper function
- * free the str* parameter
- */
-int fixup_free_str(void** param)
-{
-	if(*param) {
-		pkg_free(*param);
-		*param = 0;
-	}
-	return 0;
-}
-
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to str*
- */
-int fixup_str_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_str(param);
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to str*
- * - second parameter is converted to str*
- */
-int fixup_str_str(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_str(param);
-}
-
-/*! \brief
- * fixup free for functions that get one parameter
- * - first parameter was converted to str*
- */
-int fixup_free_str_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_free_str(param);
-}
-
-/*! \brief
- * fixup free for functions that get two parameters
- * - first parameter was converted to str*
- * - second parameter was converted to str*
- */
-int fixup_free_str_str(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_free_str(param);
-}
-
-/*! \brief
- * - helper function
- * Convert char* parameter to unsigned int
- * - the input parameter must be pkg-allocated and will be freed by function
- *   (it is how it comes from the config parser)
- */
-int fixup_uint(void** param)
-{
-	unsigned int ui;
-	str s;
-
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
-	if(str2int(&s, &ui)==0)
-	{
-		pkg_free(*param);
-		*param = pkg_malloc(sizeof ui);
-		if (!*param) {
-			LM_ERR("oom\n");
-			return E_OUT_OF_MEM;
-		}
-		*(unsigned int *)*param = ui;
-		return 0;
-	}
-	LM_ERR("bad number <%s>\n", (char *)(*param));
-	return E_CFG;
-}
-
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to unsigned int
- */
-int fixup_uint_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_uint(param);
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to unsigned int
- * - second parameter is converted to unsigned int
- */
-int fixup_uint_uint(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_uint(param);
-}
-
-/*! \brief
- * - helper function
- * Convert char* parameter to signed int
- * - the input parameter must be pkg-allocated and will be freed by function
- *   (it is how it comes from the config parser)
- */
-int fixup_sint( void** param)
-{
-	int si;
-	str s;
-
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
-	if(str2sint(&s, &si)==0)
-	{
-		pkg_free(*param);
-		*param = pkg_malloc(sizeof si);
-		if (!*param) {
-			LM_ERR("oom\n");
-			return E_OUT_OF_MEM;
-		}
-		*(int *)*param = si;
-		return 0;
-	}
-	LM_ERR("bad number <%s>\n", (char *)(*param));
-	return E_CFG;
-}
-
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to signed int
- */
-int fixup_sint_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_sint(param);
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to signed int
- * - second parameter is converted to signed int
- */
-int fixup_sint_sint(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_sint(param);
-}
-
-#if 0
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to signed int
- * - second parameter is converted to unsigned int
- */
-int fixup_sint_uint(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	if (param_no == 1)
-		return fixup_sint(param);
-	return fixup_uint(param);
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to unsigned int
- * - second parameter is converted to signed int
- */
-int fixup_uint_sint(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	if (param_no == 1)
-		return fixup_uint(param);
-	return fixup_sint(param);
-}
-#endif
-
-/*! \brief
- * - helper function: Convert char* parameter to regular expression structure
- * - the input parameter must be pkg-allocated and will be freed by function
- *   (it is how it comes from the config parser)
- */
-static int fixup_regexp(void** param, int rflags)
-{
-	regex_t* re;
-
-	if ((re=pkg_malloc(sizeof(regex_t)))==0) {
-		LM_ERR("no more pkg memory\n");
-		return E_OUT_OF_MEM;
-	}
-	if (regcomp(re, *param, (REG_EXTENDED|REG_ICASE|REG_NEWLINE)&(~rflags))) {
-		pkg_free(re);
-		LM_ERR("bad re %s\n", (char*)*param);
-		return E_BAD_RE;
-	}
-	/* free string */
-	pkg_free(*param);
-	/* replace it with the compiled re */
-	*param=re;
-	return 0;
-}
-
-static int fixup_regexp_dynamic(void** param,int rflags)
-{
-	gparam_p gp;
-	int ret;
-	regex_t* re;
-
-	ret = fixup_sgp(param);
-	if (ret < 0)
-		return ret;
-
-	gp = (gparam_p)*param;
-	if (gp->type == GPARAM_TYPE_STR) {
-		/* we can compile the regex right now */
-		if ((re=pkg_malloc(sizeof(regex_t)))==0) {
-			LM_ERR("no more pkg memory\n");
-			return E_OUT_OF_MEM;
-		}
-		if (regcomp(re, gp->v.sval.s, (REG_EXTENDED|REG_ICASE|REG_NEWLINE)&(~rflags))) {
-			pkg_free(re);
-			LM_ERR("bad re %s\n", (char*)*param);
-			return E_BAD_RE;
-		}
-		/* replace it with the compiled re */
-		gp->type=GPARAM_TYPE_REGEX;
-		gp->v.re=re;
-		return 0;
-	}
-
-	/* regex will be compiled at runtime */
-	return 0;
-}
-
-/*! \brief
- * - helper function: free the regular expression parameter
- */
-int fixup_free_regexp(void** param)
-{
-	if(*param)
-	{
-		regfree((regex_t*)(*param));
-		pkg_free(*param);
-		*param = 0;
-	}
-	return 0;
-}
-
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to regular expression structure
- */
-int fixup_regexp_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_regexp(param, 0);
-}
-
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to regular expression structure   - accepts non-plaintext input
- */
-int fixup_regexp_dynamic_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_regexp_dynamic(param, 0);
-}
 
 static char *re_buff=NULL;
 static int re_buff_len = 0;
-regex_t* fixup_get_regex(struct sip_msg* msg, gparam_p gp,int *do_free)
+int fixup_regcomp(regex_t **re, str *re_str, int dup_nt)
 {
-	pv_value_t value;
-	str val;
-	regex_t* ret_re;
+	char *regex;
 
-	if(gp->type==GPARAM_TYPE_REGEX) {
-		/* pre-allocated at startup - just return it */
-		if (do_free)
-			*do_free=0;
-		return gp->v.re;
-	}
-	if(gp->type==GPARAM_TYPE_PVS) {
-		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
-				|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_STR)){
-			LM_ERR("no valid PV value found (error in scripts)\n");
-			return NULL;
-		}
-		val = value.rs;
-		goto build_re;
-	}
-	if(gp->type==GPARAM_TYPE_PVE){
-		if(pv_printf_s( msg, gp->v.pve, &val)!=0){
-			LM_ERR("cannot print the PV-formatted string\n");
-			return NULL;
-		}
-		goto build_re;
-	}
+	if (dup_nt) {
+		if (re_str->len + 1 > re_buff_len) {
+			re_buff = pkg_realloc(re_buff,re_str->len + 1);
+			if (re_buff == NULL) {
+				LM_ERR("No more pkg \n");
+				return E_OUT_OF_MEM;
+			}
 
-	return NULL;
-
-build_re:
-	if (val.len + 1 > re_buff_len) {
-		re_buff = pkg_realloc(re_buff,val.len + 1);
-		if (re_buff == NULL) {
-			LM_ERR("No more pkg \n");
-			return NULL;
+			re_buff_len = re_str->len + 1;
 		}
 
-		re_buff_len = val.len + 1;
+		memcpy(re_buff,re_str->s,re_str->len);
+		re_buff[re_str->len] = 0;
+
+		regex = re_buff;
+	} else
+		regex = re_str->s;
+
+	if ((*re = pkg_malloc(sizeof **re)) == 0) {
+		LM_ERR("no more pkg memory\n");
+		return E_OUT_OF_MEM;
+	}
+	if (regcomp(*re, regex, (REG_EXTENDED|REG_ICASE|REG_NEWLINE))) {
+		LM_ERR("bad re %s\n", regex);
+		pkg_free(*re);
+		return E_BAD_RE;
 	}
 
-	memcpy(re_buff,val.s,val.len);
-	re_buff[val.len] = 0;
+	return 0;
+}
 
-	if ((ret_re=pkg_malloc(sizeof(regex_t)))==0) {
+static inline gparam_p alloc_gp(void)
+{
+	gparam_p gp;
+
+	gp = pkg_malloc(sizeof *gp);
+	if (!gp) {
 		LM_ERR("no more pkg memory\n");
 		return NULL;
 	}
+	memset(gp, 0, sizeof *gp);
 
-	if (regcomp(ret_re, re_buff, (REG_EXTENDED|REG_ICASE|REG_NEWLINE))) {
-		pkg_free(ret_re);
-		LM_ERR("bad re %s\n", re_buff);
-		return NULL;
-	}
-	
-	if (do_free)
-		*do_free=1;
-	return ret_re;
+	return gp;
 }
 
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to regular expression structure
- *   where "match-any-character" operators also match a newline
- */
-int fixup_regexpNL_null(void** param, int param_no)
+int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 {
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_regexp(param, REG_NEWLINE);
-}
-
-/**
- * fixup free for functions that get one parameter
- * - first parameter was converted to regular expression
- */
-int fixup_free_regexp_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_free_regexp(param);
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to regular expression structure
- * - second parameter is not converted
- */
-int fixup_regexp_none(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	if (param_no == 1)
-		return fixup_regexp(param, 0);
-	return 0;
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to regular expression structure
- *   where "match-any-character" operators also match a newline
- * - second parameter is not converted
- */
-int fixup_regexpNL_none(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	if (param_no == 1)
-		return fixup_regexp(param, REG_NEWLINE);
-	return 0;
-}
-
-/**
- * fixup free for functions that get two parameters
- * - first parameter was converted to regular expression
- * - second parameter was notconverted
- */
-int fixup_free_regexp_none(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	if (param_no == 1)
-		return fixup_free_regexp(param);
-	return 0;
-}
-
-
-/*! \brief
- * - helper function: Convert char* parameter to PV spec structure
- */
-int fixup_pvar(void **param)
-{
-	pv_spec_t *sp;
-	str s;
-
-	sp = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
-	if (sp == 0) {
-		LM_ERR("no pkg memory left\n");
-		return E_UNSPEC;
-	}
-	s.s = (char*)*param; s.len = strlen(s.s);
-	if (pv_parse_spec(&s, sp) == 0) {
-		LM_ERR("parsing of pseudo variable %s failed!\n", (char*)*param);
-		pkg_free(sp);
-		return E_UNSPEC;
-	}
-	if (sp->type == PVT_NULL) {
-		LM_ERR("bad pseudo variable\n");
-		pkg_free(sp);
-		return E_UNSPEC;
-	}
-	*param = (void*)sp;
-
-	return 0;
-}
-
-/*! \brief
- * - helper function: free the PV parameter
- */
-int fixup_free_pvar(void** param)
-{
-    if (*param) {
-		pv_spec_free((pv_spec_t*)*param);
-    }
-
-    return 0;
-}
-
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to PV spec
- */
-int fixup_pvar_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_pvar(param);
-}
-
-/*! \brief
- * fixup free for functions that get one parameter
- * - first parameter was converted to PV spec
- */
-int fixup_free_pvar_null(void** param, int param_no)
-{
-	if(param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_free_pvar(param);
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - both parameters are converted to PV spec
- */
-int fixup_pvar_pvar(void** param, int param_no)
-{
-	if (param_no == 1)
-	{
-	    return fixup_pvar(param);
-	}
-	if (param_no != 2)
-	{
-	    LM_ERR("invalid parameter number %d\n", param_no);
-	    return E_UNSPEC;
-	}
-	return fixup_pvar(param);
-}
-
-/*! \brief
- * fixup free for functions that get two parameters
- * - both parameters were converted to PV spec
- */
-int fixup_free_pvar_pvar(void** param, int param_no)
-{
-	if(param_no == 1)
-	{
-	    return fixup_free_pvar(param);
-	}
-	if (param_no != 2)
-	{
-	    LM_ERR("invalid parameter number %d\n", param_no);
-	    return E_UNSPEC;
-	}
-	return fixup_free_pvar(param);
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to PV spec
- * - second parameter is converted to str*
- */
-int fixup_pvar_str(void** param, int param_no)
-{
-	if (param_no == 1)
-	{
-	    return fixup_pvar(param);
-	}
-	if (param_no != 2)
-	{
-	    LM_ERR("invalid parameter number %d\n", param_no);
-	    return E_UNSPEC;
-	}
-	return fixup_str(param);
-}
-
-/*! \brief
- * fixup free for functions that get two parameters
- * - first parameter was converted to PV spec
- * - second parameter was converted to str*
- */
-int fixup_free_pvar_str(void** param, int param_no)
-{
-	if(param_no == 1)
-	{
-	    return fixup_free_pvar(param);
-	}
-	if (param_no != 2)
-	{
-	    LM_ERR("invalid parameter number %d\n", param_no);
-	    return E_UNSPEC;
-	}
-	return fixup_free_str(param);
-}
-
-/*! \brief
- * fixup for functions that get three parameters
- * - first parameter is converted to PV spec
- * - second parameter is converted to str*
- * - third parameter is converted to str*
- */
-int fixup_pvar_str_str(void** param, int param_no)
-{
-	if (param_no == 1)
-	{
-	    return fixup_pvar(param);
-	}
-	if (param_no != 2 && param_no != 3)
-	{
-	    LM_ERR("invalid parameter number %d\n", param_no);
-	    return E_UNSPEC;
-	}
-	return fixup_str(param);
-}
-
-/*! \brief
- * fixup free for functions that get three parameters
- * - first parameter was converted to PV spec
- * - second parameter was converted to str*
- * - third parameter was converted to str*
- */
-int fixup_free_pvar_str_str(void** param, int param_no)
-{
-	if(param_no == 1)
-	{
-	    return fixup_free_pvar(param);
-	}
-	if (param_no != 2 && param_no != 3)
-	{
-	    LM_ERR("invalid parameter number %d\n", param_no);
-	    return E_UNSPEC;
-	}
-	return fixup_free_str(param);
-}
-
-/*! \brief
- * - helper function
- * Convert char* parameter to gparam_t (int or PV)
- */
-int fixup_igp(void** param)
-{
-	str s;
+	int i;
+	struct cmd_param *param;
 	gparam_p gp = NULL;
+	int ret;
+	pv_elem_t *pve;
+	regex_t *re = NULL;
 
-	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
-	if(gp == NULL)
-	{
-		LM_ERR("no more memory\n");
-		return E_UNSPEC;
-	}
-	memset(gp, 0, sizeof(gparam_t));
-	s.s = (char*)*param; s.len = strlen(s.s);
-	if(s.s[0]==PV_MARKER)
-	{
-		gp->type = GPARAM_TYPE_PVS;
-		gp->v.pvs = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
-		if (gp->v.pvs == NULL)
-		{
-			LM_ERR("no pkg memory left for pv_spec_t\n");
-		    pkg_free(gp);
-		    return E_UNSPEC;
+	for (param=params, i=1; param->flags; param++, i++) {
+		if ((elems[i].type == NOSUBTYPE) ||
+			(elems[i].type == NULLV_ST)) {
+			gp = NULL;
+			if (param->flags & CMD_PARAM_OPT) {
+				if (param->fixup && (param->flags & CMD_PARAM_FIX_NULL)) {
+					if ((gp = alloc_gp()) == NULL)
+						return E_OUT_OF_MEM;
+
+					gp->pval = NULL;
+					gp->type = GPARAM_TYPE_VAL;
+
+					if (param->fixup(&gp->pval) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+						goto error;
+					}
+
+				}
+
+				goto fill_elems;
+			} else {
+				LM_BUG("Mandatory parameter missing\n");
+				ret = E_BUG;
+				goto error;
+			}
 		}
 
-		if(pv_parse_spec(&s, gp->v.pvs)==NULL)
-		{
-			LM_ERR("Unsupported User Field identifier\n");
-		    pkg_free(gp->v.pvs);
-		    pkg_free(gp);
-			return E_UNSPEC;
-		}
-	} else {
-		gp->type = GPARAM_TYPE_INT;
-		if(str2sint(&s, &gp->v.ival) != 0)
-		{
-			LM_ERR("Bad number <%s>\n", (char*)(*param));
-			return E_UNSPEC;
-		}
-	}
-	*param = (void*)gp;
-
-	return 0;
-}
-
-int fixup_sgp(void** param)
-{
-	str s;
-	gparam_p gp = NULL;
-
-	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
-	if(gp == NULL)
-	{
-		LM_ERR("no more memory\n");
-		return E_UNSPEC;
-	}
-	memset(gp, 0, sizeof(gparam_t));
-	s.s = (char*)*param; s.len = strlen(s.s);
-	if(s.s[0]==PV_MARKER)
-	{
-		gp->type = GPARAM_TYPE_PVS;
-		gp->v.pvs = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
-		if (gp->v.pvs == NULL)
-		{
-			LM_ERR("no pkg memory left for pv_spec_t\n");
-		    pkg_free(gp);
-		    return E_UNSPEC;
-		}
-
-		if(pv_parse_spec(&s, gp->v.pvs)==NULL)
-		{
-			LM_ERR("Unsupported User Field identifier\n");
-		    pkg_free(gp->v.pvs);
-		    pkg_free(gp);
-			return E_UNSPEC;
-		}
-	} else {
-		gp->type = GPARAM_TYPE_STR;
-		gp->v.sval = s;
-	}
-	*param = (void*)gp;
-
-	return 0;
-}
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to gparam_t (int or PV)
- */
-int fixup_igp_null(void** param, int param_no)
-{
-	if (param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_igp(param);
-}
-
-int fixup_sgp_null(void** param, int param_no)
-{
-	if (param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_sgp(param);
-}
-
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to gparam_t (int or PV)
- * - second parameter is converted to gparam_t (int or PV)
- */
-int fixup_igp_igp(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_igp(param);
-}
-
-/*! \brief
- * fixup for functions that get three parameters
- * - first parameter is converted to gparam_t (int or PV)
- * - second parameter is converted to gparam_t (int or PV)
- * - third parameter is converted to gparam_t (int or PV)
- */
-int fixup_igp_igp_igp(void** param, int param_no)
-{
-	if (param_no < 1 || param_no > 3 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_igp(param);
-}
-
-int fixup_sgp_sgp(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_sgp(param);
-}
-/*! \brief
- * fixup for functions that get three parameters
- * - first parameter is converted to gparam_t (int or PV)
- * - second parameter is converted to PV spec
- * - third parameter is converted to PV spec
- */
-int fixup_igp_pvar_pvar(void** param, int param_no)
-{
-    if(param_no == 1) {
-	return fixup_igp(param);
-    }
-    if (param_no != 2 && param_no != 3)	{
-	LM_ERR("invalid parameter number %d\n", param_no);
-	return E_UNSPEC;
-    }
-    return fixup_pvar(param);
-}
-
-/*! \brief
- * fixup free for functions that get three parameters
- * - first parameter was converted to gparam_t (int or PV)
- * - second parameter was converted to PV spec
- * - third parameter was converted to PV spec
- */
-int fixup_free_igp_pvar_pvar(void** param, int param_no)
-{
-	if(param_no == 1) {
-	    return 0;
-	}
-	if (param_no != 2 && param_no != 3) {
-	    LM_ERR("invalid parameter number %d\n", param_no);
-	    return E_UNSPEC;
-	}
-	return fixup_free_pvar(param);
-}
-
-/*! \brief
- * - helper function
- * Return integer value from a gparam_t
- */
-int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val)
-{
-	pv_value_t value;
-
-	if(gp->type==GPARAM_TYPE_INT)
-	{
-		*val = gp->v.ival;
-		return 0;
-	}
-
-	if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
-			|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_INT))
-	{
-		LM_ERR("no valid PV value found (error in scripts)\n");
-		return -1;
-	}
-	*val = value.ri;
-	return 0;
-}
-
-/*! \brief
- * - helper function
- * Convert char* parameter to gparam_t (str or pv_elem_t)
- */
-int fixup_spve(void** param)
-{
-	str s;
-	gparam_p gp = NULL;
-
-	gp = (gparam_p)pkg_malloc(sizeof(gparam_t));
-	if(gp == NULL)
-	{
-		LM_ERR("no more memory\n");
-		return E_UNSPEC;
-	}
-	memset(gp, 0, sizeof(gparam_t));
-
-	s.s = (char*)(*param); s.len = strlen(s.s);
-	if(pv_parse_format(&s, &gp->v.pve)<0)
-	{
-		LM_ERR("wrong format[%s]\n", s.s);
-		return E_UNSPEC;
-	}
-	if(gp->v.pve->spec.getf==NULL)
-	{
-		gp->type = GPARAM_TYPE_STR;
-		pv_elem_free_all(gp->v.pve);
-		gp->v.sval = s;
-	} else if (!gp->v.pve->next && !gp->v.pve->text.len) {
-		/* avoid going through pv_priinf buffer when there is only one spec */
-		/*
-
-		pv_spec_t spec = gp->v.pve->spec;
-		pv_elem_free_all(gp->v.pve);
-		gp->v.pvs = pkg_malloc(sizeof(spec));
-		if (!gp->v.pvs) {
-			LM_ERR("no more memory!\n");
+		if ((gp = alloc_gp()) == NULL)
 			return E_OUT_OF_MEM;
-		}
-		*gp->v.pvs = spec;
 
-		 * XXX: the line below is an optimization for the code commented above
-		 *
-		 * use the same memory as the pv_elem_t allocated in pv_parse_format
-		 * we can do this because pv_elem_t already contains a pv_spec_t, so
-		 * the structure will definitely fit a single pv_spec_t - razvanc
-		 */
-		*gp->v.pvs = gp->v.pve->spec;
-		gp->type = GPARAM_TYPE_PVS;
-	} else {
-		gp->type = GPARAM_TYPE_PVE;
+		if (param->flags & CMD_PARAM_INT) {
+
+			if (elems[i].type == NUMBER_ST) {
+				gp->v.ival = elems[i].u.number;
+				gp->pval = &gp->v.ival;
+				gp->type = GPARAM_TYPE_VAL;
+
+				if (param->fixup && param->fixup(&gp->pval) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					ret = E_UNSPEC;
+					goto error;
+				}
+			} else if (elems[i].type == SCRIPTVAR_ST) {
+				gp->pval = elems[i].u.data;
+				gp->type = GPARAM_TYPE_PVS;
+			} else {
+				LM_ERR("Param [%d] expected to be an integer "
+					"or variable\n", i);
+				return E_CFG;
+			}
+
+		} else if (param->flags & CMD_PARAM_STR) {
+
+			if (elems[i].type == STR_ST) {
+				if (pv_parse_format(&elems[i].u.s, &pve) < 0) {
+					LM_ERR("Failed to parse formatted string in param "
+						"[%d]\n",i);
+					ret = E_UNSPEC;
+					goto error;
+				}
+
+				if ((param->flags & CMD_PARAM_NO_EXPAND) ||
+				    (!pve->next && pve->spec.type == PVT_NONE)) {
+					/* ignoring/no variables in the provided string */
+					pv_elem_free_all(pve);
+
+					gp->v.sval = elems[i].u.s;
+					gp->pval = &gp->v.sval;
+					gp->type = GPARAM_TYPE_VAL;
+
+					if (param->fixup && param->fixup(&gp->pval) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+						goto error;
+					}
+				} else {
+					if (param->flags & CMD_PARAM_STATIC) {
+						LM_ERR("Param [%d] does not support formatted strings\n",i);
+						return E_CFG;
+					}
+
+					gp->pval = pve;
+					gp->type = GPARAM_TYPE_PVE;
+				}
+			} else if (elems[i].type == SCRIPTVAR_ST) {
+				if (param->flags & CMD_PARAM_STATIC) {
+					LM_ERR("Param [%d] does not support variables\n",i);
+					return E_CFG;
+				}
+
+				gp->pval = elems[i].u.data;
+				gp->type = GPARAM_TYPE_PVS;
+			} else {
+				LM_ERR("Param [%d] expected to be a string "
+					"or variable\n", i);
+				ret = E_CFG;
+				goto error;
+			}
+
+		} else if (param->flags & CMD_PARAM_VAR) {
+
+			if (elems[i].type != SCRIPTVAR_ST) {
+				LM_ERR("Param [%d] expected to be a variable\n",i);
+				ret = E_CFG;
+				goto error;
+			}
+
+			gp->pval = elems[i].u.data;
+
+			if (param->fixup && param->fixup(&gp->pval) < 0) {
+				LM_ERR("Fixup failed for param [%d]\n", i);
+				ret = E_UNSPEC;
+				goto error;
+			}
+
+		} else if (param->flags & CMD_PARAM_REGEX) {
+
+			if (elems[i].type == STR_ST) {
+				if (pv_parse_format(&elems[i].u.s, &pve) < 0) {
+					LM_ERR("Failed to parse formatted string in param "
+						"[%d]\n",i);
+					ret = E_UNSPEC;
+					goto error;
+				}
+				if (!pve->next && pve->spec.type == PVT_NONE) {
+					/* no variables in the provided string */
+					pv_elem_free_all(pve);
+
+					ret = fixup_regcomp(&re, &elems[i].u.s, 0);
+					if (ret < 0)
+						return ret;
+
+					gp->pval = re;
+					gp->type = GPARAM_TYPE_VAL;
+
+					if (param->fixup && param->fixup(&gp->pval) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+						goto error;
+					}
+				} else {
+					gp->pval = pve;
+					gp->type = GPARAM_TYPE_PVE;
+				}
+			} else if (elems[i].type == SCRIPTVAR_ST) {
+				gp->pval = elems[i].u.data;
+				gp->type = GPARAM_TYPE_PVS;
+			} else {
+				LM_ERR("Param [%d] expected to be a string "
+					"or variable\n", i);
+				ret = E_CFG;
+				goto error;
+			}
+
+		} else {
+			LM_BUG("Bad command parameter type\n");
+			ret = E_BUG;
+			goto error;
+		}
+
+fill_elems:
+		elems[i].u.data = (void*)gp;
 	}
-	*param = (void*)gp;
+
+	return 0;
+error:
+	if (gp)
+		pkg_free(gp);
+	if (re)
+		pkg_free(re);
+	return ret;
+}
+
+int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
+				action_elem_t *elems, void **cmdp, pv_value_t *tmp_vals)
+{
+	int i;
+	struct cmd_param *param;
+	gparam_p gp;
+	regex_t *re = NULL;
+	int ret;
+
+	for (param=params, i=1; param->flags; param++, i++) {
+		gp = (gparam_p)elems[i].u.data;
+		if (!gp) {
+			cmdp[i-1] = NULL;
+			continue;
+		}
+
+		if (param->flags & CMD_PARAM_INT) {
+
+			switch (gp->type) {
+			case GPARAM_TYPE_VAL:
+				cmdp[i-1] = gp->pval;
+				break;
+			case GPARAM_TYPE_PVS:
+				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
+					&tmp_vals[i]) != 0) {
+					LM_ERR("Failed to get spec value in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+				if (tmp_vals[i].flags & PV_VAL_NULL ||
+					!(tmp_vals[i].flags & PV_VAL_INT)) {
+					LM_ERR("Variable in param [%d] is not an integer\n", i);
+					return E_UNSPEC;
+				}
+
+				cmdp[i-1] = (void *)&tmp_vals[i].ri;
+
+				/* run fixup as we now have the value of the variable */
+				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				break;
+			default:
+				LM_BUG("Bad type for generic parameter\n");
+				return E_BUG;
+			}
+
+		} else if (param->flags & CMD_PARAM_STR) {
+
+			switch (gp->type) {
+			case GPARAM_TYPE_VAL:
+				cmdp[i-1] = gp->pval;
+				break;
+			case GPARAM_TYPE_PVE:
+				if (pv_printf_s(msg, (pv_elem_t *)gp->pval,
+					&tmp_vals[i].rs) != 0) {
+					LM_ERR("Failed to print formatted string in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				cmdp[i-1] = &tmp_vals[i].rs;
+
+				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				break;
+			case GPARAM_TYPE_PVS:
+				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
+					&tmp_vals[i]) != 0) {
+					LM_ERR("Failed to get spec value in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+				if (tmp_vals[i].flags & PV_VAL_NULL ||
+					!(tmp_vals[i].flags & PV_VAL_STR)) {
+					LM_ERR("Variable in param [%d] is not a string\n", i);
+					return E_UNSPEC;
+				}
+
+				cmdp[i-1] = &tmp_vals[i].rs;
+
+				if (param->fixup && param->fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				break;
+			default:
+				LM_BUG("Bad type for generic parameter\n");
+				return E_BUG;
+			}
+
+		} else if (param->flags & CMD_PARAM_VAR) {
+
+			cmdp[i-1] = gp->pval;
+
+		} else if (param->flags & CMD_PARAM_REGEX) {
+
+			switch (gp->type) {
+			case GPARAM_TYPE_VAL:
+				cmdp[i-1] = gp->pval;
+				break;
+			case GPARAM_TYPE_PVE:
+				if (pv_printf_s(msg, (pv_elem_t *)gp->pval,
+					&tmp_vals[i].rs) != 0) {
+					LM_ERR("Failed to print formatted string in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+
+				ret = fixup_regcomp(&re, &tmp_vals[i].rs, 1);
+				if (ret < 0)
+					return ret;
+				cmdp[i-1] = re;
+
+				if (param->fixup) {
+					if (param->fixup(&cmdp[i-1]) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+					}
+
+					regfree(re);
+					pkg_free(re);
+
+					if (ret < 0)
+						return ret;
+				}
+
+				break;
+			case GPARAM_TYPE_PVS:
+				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
+					&tmp_vals[i]) != 0) {
+					LM_ERR("Failed to get spec value in param [%d]\n", i);
+					return E_UNSPEC;
+				}
+				if (tmp_vals[i].flags & PV_VAL_NULL ||
+					!(tmp_vals[i].flags & PV_VAL_STR)) {
+					LM_ERR("Variable in param [%d] is not a string\n", i);
+					return E_UNSPEC;
+				}
+
+				ret = fixup_regcomp(&re, &tmp_vals[i].rs, 1);
+				if (ret < 0)
+					return ret;
+				cmdp[i-1] = re;
+
+				if (param->fixup) {
+					if (param->fixup(&cmdp[i-1]) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+					}
+
+					regfree(re);
+					pkg_free(re);
+
+					if (ret < 0)
+						return ret;
+				}
+
+				break;
+			default:
+				LM_BUG("Bad type for generic parameter\n");
+				return E_BUG;
+			}
+
+		} else {
+			LM_BUG("Bad command parameter type\n");
+			return E_BUG;
+		}
+	}
+
 	return 0;
 }
 
-/*! \brief
- * fixup for functions that get one parameter
- * - first parameter is converted to gparam_t (str or pv_elem_t)
- */
-int fixup_spve_null(void** param, int param_no)
+int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp)
 {
-	if (param_no != 1)
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_spve(param);
-}
+	int i;
+	struct cmd_param *param;
+	gparam_p gp;
 
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to gparam_t (str or pv_elem_t)
- * - second parameter is converted to gparam_t (str or pv_elem_t)
- */
-int fixup_spve_spve(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	return fixup_spve(param);
-}
+	for (param=params, i=1; param->flags; param++, i++) {
+		gp = (gparam_p)elems[i].u.data;
+		if (!gp)
+			continue;
 
-/*! \brief
- * fixup for functions that get two parameters
- * - first parameter is converted to gparam_t (str or pv_elem_t)
- * - second parameter is converted to uint
- */
-int fixup_spve_uint(void** param, int param_no)
-{
-	if (param_no != 1 && param_no != 2 )
-	{
-		LM_ERR("invalid parameter number %d\n", param_no);
-		return E_UNSPEC;
-	}
-	if (param_no == 1)
-		return fixup_spve(param);
-
-	return fixup_uint(param);
-}
-
-/*! \brief
- * - helper function
- * Return string value from a gparam_t
- */
-int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val)
-{
-	pv_value_t value;
-
-	if(gp->type==GPARAM_TYPE_STR)
-	{
-		*val = gp->v.sval;
-		return 0;
-	}
-
-	if(gp->type==GPARAM_TYPE_PVS)
-	{
-		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
-				|| value.flags&PV_VAL_NULL || !(value.flags&PV_VAL_STR))
-		{
-			LM_ERR("no valid PV value found (error in scripts)\n");
-			return -1;
+		if (param->flags & CMD_PARAM_INT) {
+			if (param->free_fixup && gp->type == GPARAM_TYPE_PVS)
+				if (param->free_fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Failed to free fixup for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+		} else if (param->flags & CMD_PARAM_STR) {
+			if (param->free_fixup && (gp->type == GPARAM_TYPE_PVS ||
+				gp->type == GPARAM_TYPE_PVE))
+				if (param->free_fixup(&cmdp[i-1]) < 0) {
+					LM_ERR("Failed to free fixup for param [%d]\n", i);
+					return E_UNSPEC;
+				}
+		} else if (param->flags & CMD_PARAM_REGEX) {
+			if (gp->type == GPARAM_TYPE_PVS || gp->type == GPARAM_TYPE_PVE) {
+				if (param->fixup) {
+					if (param->free_fixup && param->free_fixup(&cmdp[i-1]) < 0) {
+						LM_ERR("Failed to free fixup for param [%d]\n", i);
+						return E_UNSPEC;
+					}
+				} else {
+					regfree((regex_t*)cmdp[i-1]);
+					pkg_free(cmdp[i-1]);
+				}
+			}
+		} else if (param->flags & CMD_PARAM_VAR) {
+			continue;
+		} else {
+			LM_BUG("Bad command parameter type\n");
+			return E_BUG;
 		}
-		*val = value.rs;
-		return 0;
 	}
-
-	if(gp->type==GPARAM_TYPE_PVE)
-	{
-		if(pv_printf_s( msg, gp->v.pve, val)!=0)
-		{
-			LM_ERR("cannot print the PV-formatted string\n");
-			return -1;
-		}
-		return 0;
-	}
-
-	LM_CRIT("bogus type %d in gparam\n",gp->type);
-	return -1;
-}
-
-/*! \brief
- * - helper function
- * Return string and/or int value from a gparam_t
- */
-int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
-			int *i_val, str *s_val, unsigned int *flags)
-{
-	pv_value_t value;
-
-	*flags = 0;
-	switch(gp->type)
-	{
-	case GPARAM_TYPE_INT:
-		*i_val = gp->v.ival;
-		*flags |= GPARAM_INT_VALUE_FLAG;
-		break;
-	case GPARAM_TYPE_STR:
-		*s_val = gp->v.sval;
-		*flags |= GPARAM_STR_VALUE_FLAG;
-		break;
-	case GPARAM_TYPE_PVE:
-		if(pv_printf_s( msg, gp->v.pve, s_val)!=0)
-		{
-			LM_ERR("cannot print the PV-formatted string\n");
-			return -1;
-		}
-		*flags |= GPARAM_STR_VALUE_FLAG;
-		break;
-	case GPARAM_TYPE_PVS:
-		if(pv_get_spec_value(msg, gp->v.pvs, &value)!=0
-			|| value.flags&PV_VAL_NULL)
-		{
-			LM_ERR("no valid PV value found (error in scripts)\n");
-			return -1;
-		}
-		if(value.flags&PV_VAL_INT)
-		{
-			*i_val = value.ri;
-			*flags |= GPARAM_INT_VALUE_FLAG;
-		}
-		if(value.flags&PV_VAL_STR)
-		{
-			*s_val = value.rs;
-			*flags |= GPARAM_STR_VALUE_FLAG;
-		}
-		break;
-	default:
-		LM_ERR("unexpected gp->type=[%d]\n", gp->type);
-		return -1;
-	}
-
-	/* Let's convert to int, if possible */
-	if (!(*flags & GPARAM_INT_VALUE_FLAG) && (*flags & GPARAM_STR_VALUE_FLAG)
-		&& str2sint(s_val, i_val) == 0)
-		*flags |= GPARAM_INT_VALUE_FLAG;
-
-	if (!*flags) return -1;
-
-	return 0;
-}
-
-int fixup_free_spve(void **param)
-{
-	gparam_p gp = (gparam_p)(*param);
-
-	switch (gp->type) {
-	case GPARAM_TYPE_PVE:
-		pv_elem_free_all(gp->v.pve);
-		break;
-	case GPARAM_TYPE_PVS:
-		pv_spec_free(gp->v.pvs);
-		break;
-	}
-	pkg_free(gp);
-	*param = NULL;
 
 	return 0;
 }

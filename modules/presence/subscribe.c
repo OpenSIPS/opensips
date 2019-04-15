@@ -486,7 +486,7 @@ void msg_watchers_clean(unsigned int ticks,void *param)
  *		- sends a reply in all cases (success or error).
  *	TODO replace -1 return code in error case with 0 ( exit from the script)
  * */
-int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* tag)
+int handle_subscribe(struct sip_msg* msg, int* force_active_param, str* tag)
 {
 	int  init_req = 0;
 	subs_t subs;
@@ -574,10 +574,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* tag)
 	reply_str= pu_500_rpl;
 
 	if (tag) {
-		if (fixup_get_svalue(msg, (gparam_p)tag, &subs.sh_tag)<0) {
-			LM_ERR("failed to get value from sh tag param\n");
-			goto error;
-		}
+		subs.sh_tag = *tag;
 		if (c_api.shtag_get( &subs.sh_tag, pres_cluster_id)<0) {
 			LM_ERR("failed to lookup the <%.*s> sharing tag\n",
 				subs.sh_tag.len, subs.sh_tag.s);
@@ -629,7 +626,7 @@ int handle_subscribe(struct sip_msg* msg, char* force_active_param, char* tag)
 	/* if dialog initiation Subscribe - get subscription state */
 	if(init_req)
 	{
-		if(!event->req_auth ||(force_active_param && force_active_param[0] == '1'))
+		if(!event->req_auth ||(force_active_param && *force_active_param == 1))
 			subs.status = ACTIVE_STATUS;
 		else
 		{

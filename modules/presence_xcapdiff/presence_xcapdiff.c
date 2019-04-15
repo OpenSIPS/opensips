@@ -30,10 +30,6 @@ str s_content_type = str_init("application/xcap-diff+xml");
 
 static int mod_init(void);
 
-static cmd_export_t cmds[] = {
-    {0, 0, 0, 0, 0, 0}
-};
-
 static param_export_t params[] = {
     {0, 0, 0}
 };
@@ -55,7 +51,7 @@ struct module_exports exports= {
     MODULE_VERSION,             /* module version */
     DEFAULT_DLFLAGS,            /* dlopen flags */
     &deps,                      /* OpenSIPS module dependencies */
-    cmds,                       /* exported functions */
+    0,                          /* exported functions */
     0,                          /* exported async functions */
     params,                     /* exported parameters */
     0,                          /* exported statistics */
@@ -80,7 +76,7 @@ mod_init(void)
 
     LM_INFO("initializing...\n");
 
-    bind_presence = (bind_presence_t)find_export("bind_presence", 1, 0);
+    bind_presence = (bind_presence_t)find_export("bind_presence", 0);
     if (bind_presence) {
         if (bind_presence(&pres) < 0) {
             LM_ERR("could not bind to the presence module API\n");
@@ -102,7 +98,7 @@ mod_init(void)
         LM_NOTICE("subscribing to the xcap-diff event is not available as the presence module is not loaded\n");
     }
 
-    bind_pua = (bind_pua_t)find_export("bind_pua", 1, 0);
+    bind_pua = (bind_pua_t)find_export("bind_pua", 0);
     if (bind_pua) {
         if (bind_pua(&pua) < 0) {
             LM_ERR("could not bind to the pua module API\n");

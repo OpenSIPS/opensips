@@ -33,12 +33,12 @@ extern unsigned char* mnd_hdrs_mask;
 #define SEPARATE_COMP_FLG	1 << 3
 
 unsigned char get_compact_form(struct hdr_field*);
-int search_hdr(mc_whitelist_p*, str*);
+int append_hdr(mc_whitelist_p, str*);
 int build_hdr_masks(void);
-int parse_whitelist(void**, mc_whitelist_p*, unsigned char*);
-int mc_get_whitelist(struct sip_msg*, mc_param_p*, mc_whitelist_p*, unsigned char*);
+int parse_whitelist(str*, mc_whitelist_p*, unsigned char*);
 int fixup_compression_flags(void**);
-int free_whitelist(mc_whitelist_p* whitelist);
+int fixup_compression_flags_free(void **);
+int free_whitelist(mc_whitelist_p whitelist);
 int free_hdr_list(struct hdr_field** hdr_lst_p);
 int free_hdr_mask(struct hdr_field** hdr_mask);
 int check_zlib_rc(int rc);

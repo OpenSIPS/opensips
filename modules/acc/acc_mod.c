@@ -147,9 +147,7 @@ int acc_flags_ctx_idx;
 int acc_tm_flags_ctx_idx;
 
 /* ------------- fixup function --------------- */
-static int acc_fixup(void** param, int param_no);
-static int free_acc_fixup(void** param, int param_no);
-
+static int fixup_init_dburl(void **param);
 
 /**
  * pseudo-variables exported by acc module
@@ -167,55 +165,32 @@ static pv_export_t mod_items[] = {
 };
 
 static cmd_export_t cmds[] = {
-	{"acc_log_request", (cmd_function)w_acc_log_request, 1,
-		acc_fixup, free_acc_fixup,
+	{"acc_log_request", (cmd_function)w_acc_log_request, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"acc_db_request",  (cmd_function)w_acc_db_request,  2,
-		acc_fixup, free_acc_fixup,
+	{"acc_db_request",  (cmd_function)w_acc_db_request, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, fixup_init_dburl, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"acc_aaa_request", (cmd_function)w_acc_aaa_request, 1,
-		acc_fixup, free_acc_fixup,
+	{"acc_aaa_request", (cmd_function)w_acc_aaa_request, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"acc_evi_request", (cmd_function)w_acc_evi_request, 1,
-		acc_fixup, free_acc_fixup,
+	{"acc_evi_request", (cmd_function)w_acc_evi_request, {
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
-	/* only the type of acc(db,evi...) */
-	{"do_accounting", (cmd_function)w_do_acc_1, 1,
-		do_acc_fixup, NULL,
+	{"do_accounting", (cmd_function)w_do_acc, {
+		{CMD_PARAM_STR, do_acc_fixup_type, do_acc_fixup_free_ival},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, do_acc_fixup_flags, do_acc_fixup_free_ival},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
-	/* type of acc(db,evi...) and flags(log cdr, log missed) */
-	{"do_accounting", (cmd_function)w_do_acc_2, 2,
-		do_acc_fixup, NULL,
+	{"drop_accounting", (cmd_function)w_drop_acc, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, do_acc_fixup_type, do_acc_fixup_free_ival},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, do_acc_fixup_flags, do_acc_fixup_free_ival}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
-	/* type of acc(db,evi...) and flags(log cdr, log missed)
-	 * and db table */
-	{"do_accounting", (cmd_function)w_do_acc_3, 3,
-		do_acc_fixup, NULL,
+	{"acc_new_leg", (cmd_function)w_new_leg, {{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
-	{"drop_accounting", (cmd_function)w_drop_acc_0, 0, 0, NULL,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
-	/* we use the same fixup function since the parameters
-	 * have the same meanining as for do_accounting  */
-	{"drop_accounting", (cmd_function)w_drop_acc_1, 1,
-		do_acc_fixup, NULL,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
-	{"drop_accounting", (cmd_function)w_drop_acc_2, 2,
-		do_acc_fixup, NULL,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
-	{"acc_new_leg", (cmd_function)w_new_leg, 0, 0, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
-	{0, 0, 0, 0, 0, 0}
+	{0,0,{{0,0,0}},0}
 };
-
-
 
 static param_export_t params[] = {
 	{"early_media",             INT_PARAM, &early_media               },
@@ -302,58 +277,12 @@ struct module_exports exports= {
 
 
 /************************** FIXUP functions ****************************/
-
-
-static int acc_fixup(void** param, int param_no)
+static int fixup_init_dburl(void **param)
 {
-	str s;
-
-	pv_elem_t *model = NULL;
-
-	s.s = (char*)(*param);
-
-	if (s.s==0 || s.s[0]==0) {
-		LM_ERR("first parameter is empty\n");
-		return E_SCRIPT;
-	}
-
-	if (param_no == 1) {
-		if (s.s==NULL) {
-			LM_ERR("null format in P%d\n",
-					param_no);
-		}
-
-		s.len = strlen(s.s);
-
-		if(pv_parse_format(&s, &model)<0) {
-			LM_ERR("wrong format[%s]\n", s.s);
-			return E_UNSPEC;
-		}
-
-		*param = (void*)model;
-		return 0;
-	} else if (param_no == 2) {
+	if (!db_url.s || db_url.len == 0)
 		init_db_url(db_url, 1 /* can be null */);
-
-		/* only for db acc - the table name */
-		if (db_url.s==0) {
-			pkg_free(s.s);
-			*param = 0;
-		}
-	}
-	return 0;
+	return 0;	
 }
-
-static int free_acc_fixup(void** param, int param_no)
-{
-	if(*param)
-	{
-		pkg_free(*param);
-		*param = 0;
-	}
-	return 0;
-}
-
 
 
 /************************** INTERFACE functions ****************************/

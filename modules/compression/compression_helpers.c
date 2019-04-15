@@ -90,11 +90,27 @@ unsigned char get_compact_form(struct hdr_field* hf)
 	return 255;
 }
 
+int append_hdr(mc_whitelist_p wh_list, str* hdr_name)
+{
+	mc_other_hdr_lst_p hdr_lst = NULL;
+	hdr_lst = pkg_malloc(sizeof(mc_other_hdr_lst_t) + hdr_name->len);
+	if (!hdr_lst) {
+		LM_ERR("no more pkg mem\n");
+		return E_OUT_OF_MEM;
+	}
+	hdr_lst->hdr_name.len = hdr_name->len;
+	hdr_lst->hdr_name.s = (char *)(hdr_lst + 1);
+	memcpy(hdr_lst->hdr_name.s, hdr_name->s, hdr_name->len);
+	hdr_lst->next = wh_list->other_hdr;
+	wh_list->other_hdr = hdr_lst;
+	return 0;
+}
+
 /*
  * Function that gets header enum value
  * if exists
  */
-int search_hdr(mc_whitelist_p* wh_list, str* hdr_name)
+int search_hdr(mc_whitelist_p wh_list, str* hdr_name)
 {
 	struct hdr_field hdr;
 	str temp;
@@ -110,76 +126,41 @@ int search_hdr(mc_whitelist_p* wh_list, str* hdr_name)
 	}
 
 	if (hdr.type!=HDR_OTHER_T && hdr.type!=HDR_ERROR_T) {
-		(*wh_list)->hdr_mask[hdr.type/MC_BYTE_SIZE] |=
+		wh_list->hdr_mask[hdr.type/MC_BYTE_SIZE] |=
 				(unsigned char)1 << (hdr.type % MC_BYTE_SIZE);
 		LM_DBG("Using flag for hdr\n");
-	} else {
-		/* if other header put the string */
-		mc_other_hdr_lst_p hdr_lst = NULL;
-
-		/* if list null alloc the head of the list*/
-		if (! (*wh_list)->other_hdr) {
-			hdr_lst = pkg_malloc(sizeof(mc_other_hdr_lst_t));
-			if ( !hdr_lst )
-				goto mem;
-
-			hdr_lst->next = NULL;
-			(*wh_list)->other_hdr = hdr_lst;
-		/* else create the next element and append the string*/
-		} else {
-			hdr_lst = pkg_malloc(sizeof(mc_other_hdr_lst_t));
-			if (!hdr_lst)
-				goto mem;
-			hdr_lst->next = NULL;
-			(*wh_list)->other_hdr->next = hdr_lst;
-			(*wh_list)->other_hdr = (*wh_list)->other_hdr->next;
-		}
-
-		(*wh_list)->other_hdr->hdr_name.s = hdr_name->s;
-		(*wh_list)->other_hdr->hdr_name.len = hdr_name->len;
-		LM_DBG("Using str for hdr\n");
+		return 0;
 	}
 
-	return 0;
-mem :
-	LM_ERR("no more pkg mem\n");
-	return -1;
+	LM_DBG("Using str for hdr for %.*s\n", hdr_name->len, hdr_name->s);
+	return append_hdr(wh_list, hdr_name);
 }
 
 /*
  * Function that parses whitelist string
  */
-int parse_whitelist(void** param, mc_whitelist_p* wh_list_p, unsigned char* def_hdrs_mask)
+int parse_whitelist(str* param, mc_whitelist_p* wh_list_p, unsigned char* def_hdrs_mask)
 {
-	mc_whitelist_p wh_list = *wh_list_p;
-	char* sparam;
+	mc_whitelist_p wh_list;
+	char *sparam, *sparam_end;
 	str hdr_name;
 	int new_hdr = 1, eoh=0;
-	mc_other_hdr_lst_p head = NULL;
 
 	wh_list = pkg_malloc(sizeof(mc_whitelist_t));
 	if (!wh_list) {
 		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
-
-	wh_list->other_hdr = NULL;
-	wh_list->hdr_mask = pkg_malloc(HDR_MASK_SIZE);
-	if (!wh_list->hdr_mask) {
-		LM_ERR("no more pkg mem\n");
-		return -1;
-	}
+	memset(wh_list, 0, sizeof (*wh_list));
 
 	if (def_hdrs_mask)
 		memcpy(wh_list->hdr_mask, def_hdrs_mask, HDR_MASK_SIZE);
-	else
-		memset(wh_list->hdr_mask, 0, HDR_MASK_SIZE);
 
 	if (param == NULL)
 		goto end;
 
-	sparam = *param;
-	for ( ; *sparam != '\0'; sparam++) {
+	sparam_end = param->s + param->len;
+	for (sparam = param->s ; sparam != sparam_end; sparam++) {
 		switch (*sparam) {
 			case ' ' :
 			case ';' :
@@ -188,14 +169,11 @@ int parse_whitelist(void** param, mc_whitelist_p* wh_list_p, unsigned char* def_
 				have to be ':' for parse_hname2 */
 				if (eoh) {
 					eoh = 0;
-					if (search_hdr(&wh_list, &hdr_name)) {
-						LM_ERR("cannot find given header\n");
+					if (search_hdr(wh_list, &hdr_name)) {
+						LM_ERR("cannot find given header [%.*s]\n",
+								hdr_name.len, hdr_name.s);
 						return -1;
 					}
-
-					/* We must keep the head of the list */
-					if (!head && wh_list->other_hdr)
-						head = wh_list->other_hdr;
 				}
 
 				if (*sparam == ' ' || *sparam == ';')
@@ -221,14 +199,11 @@ int parse_whitelist(void** param, mc_whitelist_p* wh_list_p, unsigned char* def_
 
 	/* Last header name which may not have been moved to wh_list */
 	if (eoh) {
-		if (search_hdr(&wh_list, &hdr_name)) {
-			LM_ERR("cannot find given header\n");
+		if (search_hdr(wh_list, &hdr_name)) {
+			LM_ERR("cannot find last given header\n");
 			return -1;
 		}
 	}
-
-	if (head)
-		wh_list->other_hdr = head;
 
 end:
 	*wh_list_p = wh_list;
@@ -238,100 +213,47 @@ end:
 /*
  *
  */
-int mc_get_whitelist(struct sip_msg* msg, mc_param_p* wh_param_p,
-			mc_whitelist_p* wh_list_p, unsigned char* def_hdrs_mask)
-{
-
-	mc_param_p wh_param = *wh_param_p;
-	pv_value_t value;
-
-	if (wh_param == NULL) {
-		if (parse_whitelist(NULL, wh_list_p, def_hdrs_mask) != 0)
-			return-1;
-
-		return 0;
-	}
-
-	/* Get the whitelist value*/
-	if (wh_param->type == WH_TYPE_PVS) {
-		if (pv_get_spec_value(msg, wh_param->v.pvs, &value) != 0
-			|| !(value.flags&PV_VAL_STR)) {
-			LM_ERR("no valid PV value found\n");
-			return -1;
-		}
-
-		if (parse_whitelist((void**)&value.rs.s, wh_list_p,
-							def_hdrs_mask)) {
-			LM_ERR("Cannot parse whitelist\n");
-			return -1;
-		}
-
-	} else {
-		*wh_list_p = wh_param->v.lst;
-	}
-
-	return 0;
-}
-
-/*
- *
- */
 int fixup_compression_flags(void** param)
 {
 
-	gparam_p gp;
-	char* it;
+	int *flags;
+	str *it;
+	char *c, *end;
 
 	if (!*param) {
 		LM_ERR("NULL parameter given\n");
 		return -1;
 	}
 
-	it = *param;
-	gp = pkg_malloc(sizeof(gparam_t));
-	if (!gp) {
+	it = (str *)*param;
+	flags = pkg_malloc(sizeof(*flags));
+	if (!flags) {
 		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
+	*flags = 0;
 
-	memset(gp, 0, sizeof(gparam_t));
-
-	for ( ; *it != '\0'; it++) {
-		switch (*it) {
+	for (c = it->s, end = it->s + it->len; c < end; c++) {
+		switch (*c) {
 			case 'b' :
-				gp->type = GPARAM_TYPE_INT;
-				gp->v.ival |= BODY_COMP_FLG;
+				*flags |= BODY_COMP_FLG;
 				break;
 			case 'e':
-				gp->type = GPARAM_TYPE_INT;
-				gp->v.ival |= B64_ENCODED_FLG;
+				*flags |= B64_ENCODED_FLG;
 				break;
 			case 'h' :
-				gp->type = GPARAM_TYPE_INT;
-				gp->v.ival |= HDR_COMP_FLG;
+				*flags |= HDR_COMP_FLG;
 				break;
 			case 's' :
-				gp->type = GPARAM_TYPE_INT;
-				gp->v.ival |= SEPARATE_COMP_FLG;
+				*flags |= SEPARATE_COMP_FLG;
 				break;
-			case PV_MARKER:
-				gp->type = GPARAM_TYPE_PVS;
-				if (fixup_pvar(param)) {
-					LM_ERR("parsing pvar failed\n");
-					return -1;
-				}
-
-				gp->v.pvs = *param;
-				*param = (void*)gp;
-
-				return 0;
 			default :
-				LM_ERR("Invalid flags definition\n");
-				return -1;
+				LM_ERR("Unknown compression flag: %c\n", *c);
+				break;
 		}
 	}
 
-	*param = (void*)gp;
+	*param = (void*)flags;
 
 	return 0;
 }
@@ -350,10 +272,12 @@ int free_hdr_list(struct hdr_field** hf_p)
 	return 0;
 }
 
-int free_whitelist(mc_whitelist_p* whitelist_p)
+int free_whitelist(mc_whitelist_p whitelist)
 {
-	mc_whitelist_p whitelist = *whitelist_p;
 	mc_other_hdr_lst_p temp;
+
+	if (!whitelist)
+		return 0;
 
 	while (whitelist->other_hdr) {
 		temp = whitelist->other_hdr;
@@ -361,12 +285,18 @@ int free_whitelist(mc_whitelist_p* whitelist_p)
 		pkg_free(temp);
 	}
 
-	pkg_free(whitelist->hdr_mask);
 	pkg_free(whitelist);
 
 	return 0;
 
 }
+
+int fixup_compression_flags_free(void **param)
+{
+	pkg_free(*param);
+	return 0;
+}
+
 
 int free_hdr_mask(struct hdr_field** hdr_mask)
 {

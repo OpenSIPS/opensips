@@ -239,7 +239,7 @@ int db_bind_mod(const str* mod, db_func_t* mydbf)
 		tmp = name;
 	}
 
-	dbind = (db_bind_api_f)find_mod_export(tmp, "db_bind_api", 0, 0);
+	dbind = (db_bind_api_f)find_mod_export(tmp, "db_bind_api", 0);
 	if(dbind != NULL)
 	{
 		LM_DBG("using db bind api for %s\n", tmp);
@@ -252,24 +252,24 @@ int db_bind_mod(const str* mod, db_func_t* mydbf)
 		memset(&dbf, 0, sizeof(db_func_t));
 		LM_DBG("using export interface to bind %s\n", tmp);
 		dbf.use_table = (db_use_table_f)find_mod_export(tmp,
-			"db_use_table", 2, 0);
-		dbf.init = (db_init_f)find_mod_export(tmp, "db_init", 1, 0);
-		dbf.close = (db_close_f)find_mod_export(tmp, "db_close", 2, 0);
-		dbf.query = (db_query_f)find_mod_export(tmp, "db_query", 2, 0);
+			"db_use_table", 0);
+		dbf.init = (db_init_f)find_mod_export(tmp, "db_init", 0);
+		dbf.close = (db_close_f)find_mod_export(tmp, "db_close", 0);
+		dbf.query = (db_query_f)find_mod_export(tmp, "db_query", 0);
 		dbf.fetch_result = (db_fetch_result_f)find_mod_export(tmp,
-			"db_fetch_result", 2, 0);
+			"db_fetch_result", 0);
 		dbf.raw_query = (db_raw_query_f)find_mod_export(tmp,
-			"db_raw_query", 2, 0);
+			"db_raw_query", 0);
 		dbf.free_result = (db_free_result_f)find_mod_export(tmp,
-			"db_free_result", 2, 0);
-		dbf.insert = (db_insert_f)find_mod_export(tmp, "db_insert", 2, 0);
-		dbf.delete = (db_delete_f)find_mod_export(tmp, "db_delete", 2, 0);
-		dbf.update = (db_update_f)find_mod_export(tmp, "db_update", 2, 0);
-		dbf.replace = (db_replace_f)find_mod_export(tmp, "db_replace", 2, 0);
+			"db_free_result", 0);
+		dbf.insert = (db_insert_f)find_mod_export(tmp, "db_insert", 0);
+		dbf.delete = (db_delete_f)find_mod_export(tmp, "db_delete", 0);
+		dbf.update = (db_update_f)find_mod_export(tmp, "db_update", 0);
+		dbf.replace = (db_replace_f)find_mod_export(tmp, "db_replace", 0);
 		dbf.last_inserted_id= (db_last_inserted_id_f)find_mod_export(tmp,
-			"db_last_inserted_id", 1, 0);
+			"db_last_inserted_id", 0);
 		dbf.insert_update = (db_insert_update_f)find_mod_export(tmp,
-			"db_insert_update", 2, 0);
+			"db_insert_update", 0);
 	}
 	/* check if the module pre-populated the capabilities, or we need to
 	 * compute them ourselves - we check for the INSERT capability, because

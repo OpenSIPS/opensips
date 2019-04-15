@@ -158,8 +158,9 @@ AVP_List *init_avps = NULL, *start_avps = NULL, *stop_avps = NULL;
 pv_elem_t *model;
 
 static cmd_export_t commands[] = {
-    {"call_control",  (cmd_function)CallControl, 0, 0, 0, REQUEST_ROUTE },
-    {0, 0, 0, 0, 0, 0}
+    {"call_control",  (cmd_function)CallControl, {{0,0,0}},
+        REQUEST_ROUTE},
+    {0,0,{{0,0,0}},0}
 };
 
 static param_export_t parameters[] = {

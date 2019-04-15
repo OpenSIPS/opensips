@@ -79,10 +79,9 @@ static param_export_t params[] = {
 };
 
 /** Exported functions */
-static cmd_export_t cmds[]=
-{
-	{"httpd_bind",	(cmd_function)httpd_bind,	1, 0, 0, 0},
-	{NULL, NULL, 0, 0, 0, 0}
+static cmd_export_t cmds[] = {
+	{"httpd_bind",	(cmd_function)httpd_bind, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 /** MI commands */

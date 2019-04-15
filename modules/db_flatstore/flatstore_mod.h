@@ -29,7 +29,8 @@
 #define FLATSTORE_MOD_H
 
 #include <time.h>
-#include "../../mod_fix.h"
+
+#include "../../pvar.h"
 
 /*
  * Process number used in filenames
@@ -72,8 +73,8 @@ extern time_t local_timestamp;
 /*
  * Suffix and prefix for logs
  */
-extern gparam_p flat_suffix;
-extern gparam_p flat_prefix;
+extern pv_elem_t *flat_suffix;
+extern pv_elem_t *flat_prefix;
 
 extern int flat_single_file;
 

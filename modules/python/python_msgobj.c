@@ -193,6 +193,8 @@ msg_getHeader(msgobject *self, PyObject *args)
 static PyObject *
 msg_call_function(msgobject *self, PyObject *args)
 {
+/* TODO: adapt to new cmd_export and params interface */
+#if 0
     int i, rval;
     char *fname, *arg1, *arg2;
     cmd_export_t *fexport;
@@ -216,7 +218,7 @@ msg_call_function(msgobject *self, PyObject *args)
     if(!PyArg_ParseTuple(args, "s|ss:call_function", &fname, &arg1, &arg2))
         return NULL;
 
-    fexport = find_cmd_export_t(fname, i - 1, 0);
+    fexport = find_cmd_export_t(fname, 0);
     if (fexport == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "no such function");
         Py_INCREF(Py_None);
@@ -281,6 +283,9 @@ msg_call_function(msgobject *self, PyObject *args)
     pkg_free(act);
 
     return PyInt_FromLong(rval);
+#endif
+
+    return NULL;
 }
 
 PyDoc_STRVAR(copy_doc,
