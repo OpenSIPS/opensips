@@ -32,6 +32,7 @@
 #include "../../ut.h"
 #include "../../db/db.h"
 #include "../../dprint.h"
+#include "../../ipc.h"
 #include "../../config.h"
 #include "../../socket_info.h"
 #include "../../parser/parse_methods.h"
@@ -480,9 +481,31 @@ int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes)
 	return res;
 }
 
+
+struct end_dlg_rpc_param {
+	struct dlg_cell * dlg;
+	str hdrs;
+};
+
+static void dlg_end_dlg_rpc(int sender, void *param)
+{
+	struct end_dlg_rpc_param *rpc_p = (struct end_dlg_rpc_param *)param;
+
+	if (dlg_end_dlg(rpc_p->dlg, rpc_p->hdrs.s?&rpc_p->hdrs:NULL, 1)!=0) {
+		LM_ERR("dlg_end_dlg triggered from MI failed\n");
+	}
+
+	unref_dlg(rpc_p->dlg, 1);
+
+	if (rpc_p->hdrs.s) shm_free(rpc_p->hdrs.s);
+	shm_free(rpc_p);
+}
+
+
 /*parameters from MI: dialog ID of the requested dialog*/
 mi_response_t *mi_terminate_dlg(const mi_params_t *params, str *extra_hdrs)
 {
+	struct end_dlg_rpc_param *rpc_p;
 	unsigned int h_entry, h_id;
 	unsigned long long d_id;
 	struct dlg_cell * dlg = NULL;
@@ -498,6 +521,15 @@ mi_response_t *mi_terminate_dlg(const mi_params_t *params, str *extra_hdrs)
 
 	if (get_mi_string_param(params, "dialog_id", &dialog_id.s, &dialog_id.len) < 0)
 		return init_mi_param_error();
+
+	rpc_p = (struct end_dlg_rpc_param *)shm_malloc
+		(sizeof(struct end_dlg_rpc_param));
+	if (rpc_p==NULL)
+		return init_mi_error(500, MI_SSTR("Internal error"));
+	memset( rpc_p, 0, sizeof(struct end_dlg_rpc_param));
+
+	if (extra_hdrs && shm_str_dup(&rpc_p->hdrs,extra_hdrs)<0 )
+		return init_mi_error(500, MI_SSTR("Internal error"));
 
 	/* Get the dialog based of the dialog_id. This may be a
 	 * numerical DID or a string SIP Call-ID */
@@ -527,24 +559,34 @@ mi_response_t *mi_terminate_dlg(const mi_params_t *params, str *extra_hdrs)
 			shtag_state = get_shtag_state(dlg);
 			if (shtag_state == -1) {
 				unref_dlg(dlg, 1);
+				if (rpc_p->hdrs.s) shm_free(rpc_p->hdrs.s);
+				shm_free(rpc_p);
 				return init_mi_error(403, MI_SSTR(MI_DLG_OPERATION_ERR));
 			} else if (shtag_state == 0) {
 				unref_dlg(dlg, 1);
+				if (rpc_p->hdrs.s) shm_free(rpc_p->hdrs.s);
+				shm_free(rpc_p);
 				return init_mi_error(403, MI_SSTR(MI_DIALOG_BACKUP_ERR));
 			}
 		}
 
 		/* lookup_dlg has incremented the reference count !! */
+		rpc_p->dlg = dlg;
+
 		init_dlg_term_reason(dlg,"MI Termination",sizeof("MI Termination")-1);
 
-		if (dlg_end_dlg(dlg, extra_hdrs, 1)) {
+		if (ipc_dispatch_rpc( dlg_end_dlg_rpc, (void *)rpc_p )<0) {
 			unref_dlg(dlg, 1);
-			return init_mi_error(500, MI_SSTR(MI_DLG_OPERATION_ERR));
-		} else {
-			unref_dlg(dlg, 1);
-			return init_mi_result_ok();
+			if (rpc_p->hdrs.s) shm_free(rpc_p->hdrs.s);
+			shm_free(rpc_p);
+			return init_mi_error(500, MI_SSTR("Internal error"));
 		}
+
+		return init_mi_result_ok();
 	}
+
+	if (rpc_p->hdrs.s) shm_free(rpc_p->hdrs.s);
+	shm_free(rpc_p);
 
 	return init_mi_error(404, MI_SSTR(MI_DIALOG_NOT_FOUND));
 }
