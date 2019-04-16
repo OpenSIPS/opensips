@@ -276,10 +276,6 @@ static int mod_init(void)
 
 	init_db_url( ms_db_url , 0 /*cannot be null*/);
 	ms_db_table.len = strlen (ms_db_table.s);
-	ms_from.len = strlen (ms_from.s);
-	ms_contact.len = strlen (ms_contact.s);
-	ms_content_type.len = strlen (ms_content_type.s);
-	ms_offline_message.len = strlen (ms_offline_message.s);
 	sc_mid.len = strlen(sc_mid.s);
 	sc_from.len = strlen(sc_from.s);
 	sc_to.len = strlen(sc_to.s);
@@ -348,6 +344,7 @@ static int mod_init(void)
 
 	if(ms_from.s!=NULL)
 	{
+		ms_from.len = strlen (ms_from.s);
 		if (pv_parse_format(&ms_from, &ms_from_sp) < 0) {
 			LM_ERR("Failed to parse formatted string in parameter\n");
 			return -1;
@@ -355,6 +352,7 @@ static int mod_init(void)
 	}
 	if(ms_contact.s!=NULL)
 	{
+		ms_contact.len = strlen (ms_contact.s);
 		if (pv_parse_format(&ms_contact, &ms_contact_sp) < 0) {
 			LM_ERR("Failed to parse formatted string in parameter\n");
 			return -1;
@@ -362,6 +360,7 @@ static int mod_init(void)
 	}
 	if(ms_content_type.s!=NULL)
 	{
+		ms_content_type.len = strlen (ms_content_type.s);
 		if (pv_parse_format(&ms_content_type, &ms_content_type_sp) < 0) {
 			LM_ERR("Failed to parse formatted string in parameter\n");
 			return -1;
@@ -369,6 +368,7 @@ static int mod_init(void)
 	}
 	if(ms_offline_message.s!=NULL)
 	{
+		ms_offline_message.len = strlen (ms_offline_message.s);
 		if (pv_parse_format(&ms_offline_message, &ms_offline_message_sp) < 0) {
 			LM_ERR("Failed to parse formatted string in parameter\n");
 			return -1;
