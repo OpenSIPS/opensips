@@ -184,6 +184,7 @@ static int parse_trace_id(unsigned int type, void *val);
 
 void free_trace_info_pkg(void *param);
 void free_trace_info_shm(void *param);
+static void free_trace_filters(struct trace_filter *list);
 
 
 static int init_dyn_tracing(void);
@@ -1111,12 +1112,18 @@ static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 
 void free_trace_info_pkg(void *param)
 {
-	pkg_free((trace_info_p)param);
+	trace_info_p info = (trace_info_p)param;
+	if (info->trace_list->dynamic)
+		trace_id_unref(info->trace_list);
+	pkg_free(param);
 }
 
 void free_trace_info_shm(void *param)
 {
-	shm_free((trace_info_p)param);
+	trace_info_p info = (trace_info_p)param;
+	if (info->trace_list->dynamic)
+		trace_id_unref(info->trace_list);
+	shm_free(param);
 }
 
 static int trace_transaction(struct sip_msg* msg, trace_info_p info,
@@ -3213,7 +3220,8 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param)
 					break;
 			}
 		}
-		sip_trace_handle(msg, it, el->scope, el->type, NULL);
+		if (sip_trace_handle(msg, it, el->scope, el->type, NULL) == 1)
+			trace_id_ref(el);
 skip:
 		continue;
 	}
