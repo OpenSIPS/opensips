@@ -2861,13 +2861,10 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 	if (l==0){
 		LM_CRIT("cfg. parser: out of memory.\n");
 	}else{
+		memset(l, 0, sizeof(*l));
 		l->name     = host;
-		l->adv_name = NULL;
-		l->adv_port = 0;
 		l->proto    = proto;
 		l->port     = port;
-		l->workers  = 0;
-		l->next     = NULL;
 	}
 
 	return l;
