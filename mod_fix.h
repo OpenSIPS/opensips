@@ -29,6 +29,7 @@
 #define GPARAM_TYPE_VAL		0
 #define GPARAM_TYPE_PVS		1
 #define GPARAM_TYPE_PVE		2
+#define GPARAM_TYPE_FIXUP	3
 
 typedef struct _gparam
 {

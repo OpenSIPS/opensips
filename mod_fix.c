@@ -87,6 +87,7 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 	int ret;
 	pv_elem_t *pve;
 	regex_t *re = NULL;
+	void *h;
 
 	for (param=params, i=1; param->flags; param++, i++) {
 		if ((elems[i].type == NOSUBTYPE) ||
@@ -100,11 +101,14 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 					gp->pval = NULL;
 					gp->type = GPARAM_TYPE_VAL;
 
+					h = gp->pval;
 					if (param->fixup(&gp->pval) < 0) {
 						LM_ERR("Fixup failed for param [%d]\n", i);
 						ret = E_UNSPEC;
 						goto error;
 					}
+					if (h!=gp->pval)
+						gp->type = GPARAM_TYPE_FIXUP;
 
 				}
 
@@ -126,10 +130,15 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 				gp->pval = &gp->v.ival;
 				gp->type = GPARAM_TYPE_VAL;
 
-				if (param->fixup && param->fixup(&gp->pval) < 0) {
-					LM_ERR("Fixup failed for param [%d]\n", i);
-					ret = E_UNSPEC;
-					goto error;
+				if (param->fixup) {
+					h = gp->pval;
+					if (param->fixup(&gp->pval) < 0) {
+						LM_ERR("Fixup failed for param [%d]\n", i);
+						ret = E_UNSPEC;
+						goto error;
+					}
+					if (h!=gp->pval)
+						gp->type = GPARAM_TYPE_FIXUP;
 				}
 			} else if (elems[i].type == SCRIPTVAR_ST) {
 				gp->pval = elems[i].u.data;
@@ -159,10 +168,15 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 					gp->pval = &gp->v.sval;
 					gp->type = GPARAM_TYPE_VAL;
 
-					if (param->fixup && param->fixup(&gp->pval) < 0) {
-						LM_ERR("Fixup failed for param [%d]\n", i);
-						ret = E_UNSPEC;
-						goto error;
+					if (param->fixup) {
+						h = gp->pval;
+						if (param->fixup(&gp->pval) < 0) {
+							LM_ERR("Fixup failed for param [%d]\n", i);
+							ret = E_UNSPEC;
+							goto error;
+						}
+						if (h!=gp->pval)
+							gp->type = GPARAM_TYPE_FIXUP;
 					}
 				} else {
 					if (param->flags & CMD_PARAM_STATIC) {
@@ -282,6 +296,10 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 
 			switch (gp->type) {
 			case GPARAM_TYPE_VAL:
+				tmp_vals[i].ri = *(int*)gp->pval;
+				cmdp[i-1] = &tmp_vals[i].ri;
+				break;
+			case GPARAM_TYPE_FIXUP:
 				cmdp[i-1] = gp->pval;
 				break;
 			case GPARAM_TYPE_PVS:
@@ -314,6 +332,10 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 
 			switch (gp->type) {
 			case GPARAM_TYPE_VAL:
+				tmp_vals[i].rs = *(str*)gp->pval;
+				cmdp[i-1] = &tmp_vals[i].rs;
+				break;
+			case GPARAM_TYPE_FIXUP:
 				cmdp[i-1] = gp->pval;
 				break;
 			case GPARAM_TYPE_PVE:
