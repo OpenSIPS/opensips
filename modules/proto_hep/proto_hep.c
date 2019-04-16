@@ -195,6 +195,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (init_hep_id() < 0) {
+		LM_ERR("could not initialize HEP id list!\n");
+		return -1;
+	}
+
 	if (payload_compression) {
 		load_compression =
 			(load_compression_f)find_export("load_compression", 0);
@@ -222,6 +227,7 @@ static int mod_init(void)
 static void destroy(void)
 {
 	free_hep_cbs();
+	destroy_hep_id();
 }
 
 void free_hep_context(void *ptr)

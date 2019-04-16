@@ -126,6 +126,20 @@ typedef int (trace_send_message_f)(trace_message message,
 typedef trace_dest (get_trace_dest_by_name_f)(str *);
 
 /*
+ * creates a trace destination
+ * @param1 name of the destination
+ * @param2 uri of the destination
+ * @return trace destination if success or null otherwise
+ */
+typedef trace_dest (new_trace_dest_f)(str *, str *);
+
+/*
+ * releases a trace destination
+ * @param1 destination to be released
+ */
+typedef void (release_trace_dest_f)(trace_dest);
+
+/*
  * free function
  * @param1 trace message to be freed
  *
@@ -179,6 +193,8 @@ typedef struct _trace_prot {
 	add_payload_part_f*       add_payload_part;
 	trace_send_message_f*     send_message;
 	get_trace_dest_by_name_f* get_trace_dest_by_name;
+	new_trace_dest_f*         new_trace_dest;
+	release_trace_dest_f*     release_trace_dest;
 	free_message_f*           free_message;
 	get_message_id_f*         get_message_id;
 	get_data_id_f*            get_data_id;

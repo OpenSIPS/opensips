@@ -245,6 +245,20 @@ struct hep_context {
 	int resume_with_sip;
 };
 
+#define hid_ref(_h) \
+	do { \
+		if ((_h)->dynamic) \
+			(_h)->ref++; \
+	} while (0)
+#define hid_unref(_h) \
+	do { \
+		if ((_h)->dynamic) { \
+			(_h)->ref--; \
+			if ((_h)->ref == 0) \
+				shm_free(_h); \
+		} \
+	} while (0)
+
 /*
  * structure used for storing hep id's
  * hid = hep_id
@@ -258,7 +272,9 @@ typedef struct _hid_list {
 	str port;
 
 	unsigned int version;
-	int transport;
+	unsigned int ref;
+	char transport;
+	char dynamic;
 
 	struct _hid_list* next;
 } hid_list_t, *hid_list_p;
@@ -268,6 +284,8 @@ int unpack_hepv3(char *buf, int len, struct hep_desc *h);
 int unpack_hep(char *buf, int len, int version, struct hep_desc* h);
 void free_extra_chunks(struct hep_desc* h);
 
+int init_hep_id(void);
+void destroy_hep_id(void);
 int parse_hep_id(unsigned int type, void *val);
 
 int hep_bind_trace_api(trace_proto_t* prot);
