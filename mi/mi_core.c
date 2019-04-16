@@ -756,7 +756,7 @@ static mi_response_t *w_mem_rpm_dump_1(const mi_params_t *params,
 	return mi_mem_rpm_dump(llevel);
 }
 
-static mi_response_t *w_reload_script(const mi_params_t *params,
+static mi_response_t *w_reload_routes(const mi_params_t *params,
 							struct mi_handler *async_hdl)
 {
 	if (reload_routing_script()==0)
@@ -888,8 +888,8 @@ static mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "reload_script", "triggers the script (routes only) reload", 0, 0, {
-		{w_reload_script, {0}},
+	{ "reload_routes", "triggers the script (routes only) reload", 0, 0, {
+		{w_reload_routes, {0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
