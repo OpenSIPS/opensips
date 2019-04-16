@@ -332,8 +332,9 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		using statistics pushed by the FreeSWITCH box.
 		</para>
 		<para>
-		The max value of a resource is updated every 20 seconds, as the stats
-		arrive from FreeSWITCH.
+		The max value of a resource is updated every <emphasis>event_heartbeat_interval</emphasis>
+		seconds (see the "freeswitch" OpenSIPS module for more details
+		regarding this setting), as the stats arrive from FreeSWITCH.
 	</para>
 	<para>
 		Given the following format for FreeSWITCH heartbeat messages:
