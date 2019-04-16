@@ -102,19 +102,11 @@ static int db_restore(void);
 static void db_update(unsigned int ticks,void *param);
 static void hashT_clean(unsigned int ticks,void *param);
 
-// static cmd_export_t cmds[]=
-// {
-// 	{"bind_libxml_api",         (cmd_function)bind_libxml_api,  1, 0, 0, 0},
-// 	{"bind_pua",                (cmd_function)bind_pua,         1, 0, 0, 0},
-// 	{"pua_update_contact",      (cmd_function)update_contact,   0, 0, 0, REQUEST_ROUTE},
-// 	{0,                         0,                              0, 0, 0, 0}
-// };
-
 static cmd_export_t cmds[]={
-	{"bind_libxml_api", (cmd_function)bind_libxml_api, {{0,0,0}}, 0},
-	{"bind_pua", 0, {{0,0,0}}, 0},
-	{"pua_update_contact",(cmd_function)bind_pua, {{0,0,0}},
+	{"pua_update_contact",(cmd_function)update_contact, {{0,0,0}},
 		REQUEST_ROUTE},
+	{"bind_libxml_api", (cmd_function)bind_libxml_api, {{0,0,0}}, 0},
+	{"bind_pua", (cmd_function)bind_pua, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 

@@ -185,7 +185,7 @@ static inline int get_event_flag(str* event)
 	return -1;
 }
 
-int update_contact(struct sip_msg* msg, char* str1, char* str2);
+int update_contact(struct sip_msg* msg);
 void delete_htable_safe(ua_pres_t* p, unsigned int hash_index);
 
 list_entry_t *get_subs_list(str *did);
