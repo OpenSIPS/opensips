@@ -39,6 +39,11 @@
 	opensips-cli -x mi trace off
 	opensips-cli -x mi trace [some_trace_id] off
 	</para>
+
+	<para>
+		Starting with &osips; 3.0 you can use the <emphasis>trace_start</emphasis> to
+		create dynamic dynamic tracing destinations based on some custom filters.
+	</para>
 	</section>
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
@@ -390,6 +395,122 @@ modparam("tracer", "trace_id",
 		opensips-cli -x mi trace tid2 on
 		</programlisting>
 	</section>
+
+	<section id="mi_trace_start" xreflabel="trace">
+		<title>
+		<function moreinfo="none">trace_start</function>
+		</title>
+		<para>
+			Creates a dynamic tracing destination based using custom filters.
+			This function can be used to debug calls for certain destinations
+			real-time.
+		</para>
+		<para>
+			Dynamic destinations are not restart persistent!
+		</para>
+		<para>
+			Name: <emphasis>trace_start</emphasis>
+		</para>
+		<para>
+			Parameters:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>id</emphasis> - the name of the tracing instance.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>uri</emphasis> - the destination uri for this instance.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>filter</emphasis> (optional) - used to filter the traffic
+				received by the sender. This parameter should be an array that can
+				contain multiple filters in the <emphasis>condition=value</emphasis>
+				format.
+				Possible values for the <emphasis>condition</emphasis> argument are:
+			</para>
+			<itemizedlist>
+				<listitem><para>caller</para> - filter based on the caller (From username)</listitem>
+				<listitem><para>callee</para> - filter based on the callee (R-URI username)</listitem>
+				<listitem><para>ip</para> - filter based on the source IP of the message</listitem>
+			</itemizedlist>
+			<para>
+				The <emphasis>condition</emphasis> parameter can consist of multiple different filters.
+				In order to satisfy the overall condition and send traffic to the desired destination,
+				all conditions have to be satisfied.
+			</para>
+			<para>
+				If this parameter is missing all traffic is forwarded to the destination.
+			</para>
+			<para>
+				The filter is applied for any incoming request
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>scope</emphasis> - the scope to engage the tracing for.
+				The format received by this parameter is similar to the one
+				received by the <emphasis>trace()</emphasis> function.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>type</emphasis> - the type of messages you want to receive.
+				The format received by this parameter is similar to the one
+				received by the <emphasis>trace()</emphasis> function.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+		MI FIFO Command to start tracing calls from IP 127.0.0.1 to HEP destination 10.0.0.1:9060:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi trace_start id=ip_filter uri=hep:10.0.0.1:9060 filter=ip=127.0.0.1
+		</programlisting>
+
+		<para>
+		MI FIFO Command to start tracing calls from user Alice to user Bob:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi trace_start id=alice_bob uri=hep:10.0.0.1:9060 filter=caller=Alice filter=caller=Bob
+		</programlisting>
+	</section>
+
+	<section id="mi_trace_stop" xreflabel="trace">
+		<title>
+		<function moreinfo="none">trace_stop</function>
+		</title>
+		<para>
+			Stops &osips; from sending traffic to a dynamic trace id created
+			using the <emphasis>trace_start</emphasis> command.
+		</para>
+		<para>
+			Name: <emphasis>trace_stop</emphasis>
+		</para>
+		<para>
+			Parameters:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>id</emphasis> - the name of the tracing instance to be stopped.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+		MI FIFO Command to stop tracing calls from user Alice to user Bob:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi trace_stop alice_bob
+		</programlisting>
+	</section>
+
 
 	</section>
 
