@@ -201,8 +201,9 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_INT | CMD_PARAM_OPT, flag_fixup, 0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_relay", (cmd_function)w_t_relay, {
-		{CMD_PARAM_INT|CMD_PARAM_OPT, flag_fixup, 0}, {0,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_phostport2proxy,fixup_free_proxy}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, flag_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_phostport2proxy,fixup_free_proxy},
+		{0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_on_failure", (cmd_function)w_t_on_negative, {
 		{CMD_PARAM_STR, fixup_froute, 0}, {0,0,0}},
