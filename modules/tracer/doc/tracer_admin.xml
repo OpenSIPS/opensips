@@ -217,7 +217,7 @@ modparam("tracer", "trace_id",
 		<title>
 		<function moreinfo="none">trace(trace_id, [scope, [type, [trace_attrs]]])</function>
 		</title>
-		<para>This function has replaced the <emph>sip_trace()</emph> in &osips; 3.0.</para>
+		<para>This function has replaced the <emphasis>sip_trace()</emphasis> in &osips; 3.0.</para>
 		<para>
 			Store or replocate current processed SIP message,transaction or dialogin database.
 			It is stored in the form prior applying chages made to it. The traced_user_avp
