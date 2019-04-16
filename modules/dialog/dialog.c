@@ -259,6 +259,7 @@ static cmd_export_t cmds[]={
 		ALL_ROUTES},
 	{"unload_dialog_ctx",(cmd_function)unload_dlg_ctx,
 		{{0,0,0}}, ALL_ROUTES},
+	{"load_dlg", (cmd_function)load_tm, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
