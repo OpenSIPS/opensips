@@ -94,14 +94,16 @@ static int uac_does_replace = 0;
 /* Exported functions */
 static cmd_export_t cmds[]={
 	{"uac_replace_from",  (cmd_function)w_replace_from, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_replace_disp_uri, fixup_free_s},
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_replace_disp_uri, fixup_free_s}, {0,0,0}},
+	       	{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"uac_restore_from",  (cmd_function)w_restore_from, {{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"uac_replace_to",  (cmd_function)w_replace_to, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_replace_disp_uri, fixup_free_s},
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_replace_disp_uri, fixup_free_s}, {0,0,0}},
+	       	{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"uac_restore_to",  (cmd_function)w_restore_to, {{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
@@ -380,7 +382,6 @@ static int fixup_replace_disp_uri(void** param)
 	memcpy(p+1, s->s, s->len);
 	p[s->len+1] = '\"';
 	p[s->len+2] = '\0';
-	pkg_free(s->s);
 	s->s = p;
 	s->len += 2;
 
@@ -389,7 +390,7 @@ static int fixup_replace_disp_uri(void** param)
 
 static int fixup_free_s(void** param)
 {
-	pkg_free(*param);
+	pkg_free( ((str*)(*param))->s );
 	return 0;
 }
 
