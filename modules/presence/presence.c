@@ -149,7 +149,7 @@ event_id_t exposed_event_id = EVI_ERROR;
 
 static cmd_export_t cmds[]={
 	{"handle_publish",  (cmd_function)handle_publish, {
-		{CMD_PARAM_STR,fixup_presence,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_presence,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"handle_subscribe",(cmd_function)handle_subscribe, {
 		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_subscribe,0},

@@ -606,13 +606,16 @@ modparam("presence", "pres_htable_size", 11)
 	<title>Exported Functions</title>
 	<section id="func_handle_publish" xreflabel="handle_publish()">
 		<title>
-		<function moreinfo="none">handle_publish(sender_uri)</function>
+		<function moreinfo="none">handle_publish([sender_uri])</function>
 		</title>
 		<para>
 		The function handles PUBLISH requests. It stores and updates 
 		published information in database and calls functions to send 
 		NOTIFY messages when changes in the published information occur.
-		It takes one argument -> sender_uri. The parameter was added 
+		</para>
+		<para>
+		It may takes one optional string argument, the 'sender_uri' SIP URI.
+		The parameter was added 
 		for enabling BLA implementation. If present, Notification of
 		a change in published state is not sent to the respective uri
 		even though a subscription exists.
