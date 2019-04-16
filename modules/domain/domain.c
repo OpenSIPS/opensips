@@ -202,25 +202,9 @@ int is_uri_host_local(struct sip_msg* _msg, pv_spec_t* _s1)
 /*
  * Check if domain given as value of pseudo variable parameter is local
  */
-int w_is_domain_local(struct sip_msg* _msg, pv_spec_t* sp, pv_spec_t* _s2)
+int w_is_domain_local(struct sip_msg* _msg, str *domain, pv_spec_t* _s2)
 {
-    pv_value_t pv_val;
-
-	if (sp && (pv_get_spec_value(_msg, sp, &pv_val) == 0)) {
-	if (pv_val.flags & PV_VAL_STR) {
-	    if (pv_val.rs.len == 0 || pv_val.rs.s == NULL) {
-		LM_DBG("Missing domain name\n");
-		return -1;
-	    }
-	    return is_domain_local_pvar(_msg, &(pv_val.rs), _s2);
-	} else {
-	   LM_DBG("Pseudo variable value is not string\n");
-	   return -1;
-	}
-    } else {
-	LM_DBG("Cannot get pseudo variable value\n");
-	return -1;
-    }
+	return is_domain_local_pvar(_msg, domain, _s2);
 }
 
 

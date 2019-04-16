@@ -104,7 +104,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_wpvar, 0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"is_domain_local", (cmd_function)w_is_domain_local, {
-		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_wpvar, 0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{"bind_domain", (cmd_function)bind_domain, {{0,0,0}}, 0},
