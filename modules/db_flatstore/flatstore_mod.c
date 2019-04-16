@@ -148,18 +148,15 @@ static int mod_init(void)
 	*flat_rotate = time(0);
 	local_timestamp = *flat_rotate;
 
-	flat_suffix_s.len = strlen(flat_suffix_s.s);
-	flat_prefix_s.len = strlen(flat_prefix_s.s);
-
 	/* parse prefix and suffix */
-	if (flat_suffix_s.s && flat_suffix_s.len) {
+	if (flat_suffix_s.s && (flat_suffix_s.len=strlen(flat_suffix_s.s))!=0) {
 		if (pv_parse_format(&flat_suffix_s, &flat_suffix) < 0) {
 			LM_ERR("cannot parse log suffix\n");
 			return -1;
 		}
 	}
 
-	if (flat_prefix_s.s && flat_prefix_s.len) {
+	if (flat_prefix_s.s && (flat_prefix_s.len=strlen(flat_prefix_s.s))!=0) {
 		if (pv_parse_format(&flat_prefix_s, &flat_prefix) < 0) {
 			LM_ERR("cannot parse log prefix\n");
 			return -1;
