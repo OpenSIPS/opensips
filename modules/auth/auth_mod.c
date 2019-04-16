@@ -141,7 +141,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"bind_uath",   (cmd_function)bind_auth, {{0,0,0}}, 0},
+	{"bind_auth",   (cmd_function)bind_auth, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
