@@ -56,7 +56,6 @@ static str scriptroute_print(evi_reply_sock *sock);
  *  * module process
  *   */
 static proc_export_t procs[] = {
-	{"event-route handler",  0,  0, event_route_handler, 1, 0},
 	{0,0,0,0,0,0}
 };
 /**
