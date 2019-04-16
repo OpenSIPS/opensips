@@ -172,10 +172,10 @@ void free_trace_info_shm(void *param);
  */
 static cmd_export_t cmds[] = {
 	{"sip_trace", (cmd_function)sip_trace_w, {
-		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_tid, 0},
+		{CMD_PARAM_STR, fixup_tid, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_sflags, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
@@ -1265,11 +1265,15 @@ static tlist_elem_p get_list_start(str *name)
 
 static int fixup_tid(void **param)
 {
-	if ((*param = (void*)get_list_start((str*)*param)) == NULL) {
+	tlist_elem_p tid;
+
+	tid = get_list_start((str*)*param);
+	if ( tid == NULL) {
 		LM_ERR("Trace id <%.*s> used in sip_trace() function "
 			"not defined!\n", ((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
+	*param = (void*)tid;
 
 	return 0;
 }
