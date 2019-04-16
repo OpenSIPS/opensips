@@ -1202,29 +1202,30 @@ static int st_parse_flags(str *sflags)
 	return flags;
 }
 
-int st_parse_types(str* stypes)
+int st_parse_types(str* stypes_p)
 {
-	str tok;
+	str tok, stypes;
 	int have_next=1, i, ret=0;
 	char* end;
 	const struct trace_proto* traced_protos;
 	static const char type_delim = '|';
 
 	traced_protos = get_traced_protos();
+	stypes = *stypes_p;
 
 	while (have_next) {
-		end=q_memchr(stypes->s, type_delim, stypes->len);
+		end=q_memchr(stypes.s, type_delim, stypes.len);
 		if (end==NULL) {
 			have_next = 0;
-			tok.len = stypes->len;
+			tok.len = stypes.len;
 		} else {
-			tok.len = end - stypes->s;
+			tok.len = end - stypes.s;
 		}
 
-		tok.s = stypes->s;
+		tok.s = stypes.s;
 
-		stypes->len -= tok.len + 1/* delimiter */;
-		stypes->s = end + 1;
+		stypes.len -= tok.len + 1/* delimiter */;
+		stypes.s = end + 1;
 
 		str_trim_spaces_lr(tok);
 
