@@ -90,6 +90,7 @@ struct trace_filter {
 	enum trace_filter_types type;
 	str match;
 	struct trace_filter *next;
+	char data[0]; /* different custom data hold by each filter */
 };
 
 /* we are using a similar structure to be able to use most of the other

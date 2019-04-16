@@ -188,6 +188,7 @@ void free_trace_info_shm(void *param);
 
 static int init_dyn_tracing(void);
 static void destroy_dyn_tracing(void);
+static int process_dyn_tracing(struct sip_msg *msg, void *param);
 
 
 /*
@@ -940,6 +941,11 @@ static int mod_init(void)
 	sl_ctx_idx=context_register_ptr(CONTEXT_GLOBAL,
 			(tmb.t_gett==NULL)?free_trace_info_pkg:0);
 
+	if (register_script_cb(process_dyn_tracing, PRE_SCRIPT_CB|REQ_TYPE_CB, 0)!=0) {
+		LM_ERR("could not register request dynamic tracing callback\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -1387,6 +1393,99 @@ int trace_has_totag(struct sip_msg* _m)
 	return 1;
 }
 
+static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
+		int trace_types, int trace_flags, str *trace_attrs)
+{
+	int extra_len=0;
+	trace_info_p info=NULL;
+	trace_info_t stack_info;
+
+	if (trace_attrs != NULL)
+		extra_len = sizeof(str) + trace_attrs->len;
+
+	if (trace_flags == TRACE_MESSAGE) {
+		/* we don't need to allocate this structure since it will only be
+		 * used in this function's context */
+		info = &stack_info;
+
+		memset(info, 0, sizeof(trace_info_t));
+		if (extra_len) {
+			info->trace_attrs = trace_attrs;
+		}
+	/* for stateful transactions or dialogs
+	 * we need the structure in the shared memory */
+	} else if(trace_flags == TRACE_DIALOG ||
+	(trace_flags == TRACE_TRANSACTION && tmb.t_gett)) {
+		info=shm_malloc(sizeof(trace_info_t) + extra_len);
+		if (info==NULL) {
+			LM_ERR("no more shm!\n");
+			return -1;
+		}
+
+		memset(info, 0, sizeof(trace_info_t) + extra_len);
+
+		if (extra_len) {
+			info->trace_attrs = (str*)(info+1);
+			info->trace_attrs->s = (char*)(info->trace_attrs+1);
+
+			memcpy(info->trace_attrs->s, trace_attrs->s, trace_attrs->len);
+			info->trace_attrs->len = trace_attrs->len;
+		}
+	} else if (trace_flags == TRACE_TRANSACTION && tmb.t_gett==NULL) {
+		/* we need this structure in pkg for stateless replies
+		 * and request out callback */
+		info=pkg_malloc(sizeof(trace_info_t));
+		if (info==NULL) {
+			LM_ERR("no more pkg!\n");
+			return -1;
+		}
+
+		memset(info, 0, sizeof(trace_info_t));
+		if (extra_len)
+			info->trace_attrs = trace_attrs;
+	} else {
+		LM_ERR("Unknown trace flags %x\n", trace_flags);
+		return -2;
+	}
+
+	info->trace_list=el;
+	info->trace_types = trace_types;
+
+	if (trace_flags != TRACE_MESSAGE) {
+		SET_SIPTRACE_CONTEXT(info);
+		/* this flag here will help catching
+		 * stateless replies(sl_send_reply(...))*/
+		msg->msg_flags |= FL_USE_SIPTRACE;
+	}
+
+	if (trace_flags==TRACE_DIALOG) {
+		if (trace_dialog(msg, info) < 0) {
+			LM_ERR("trace dialog failed!\n");
+			return -1;
+		}
+	} else if (trace_flags==TRACE_TRANSACTION) {
+		if (trace_transaction(msg, info, 0) < 0) {
+			LM_ERR("trace transaction failed!\n");
+			return -1;
+		}
+	}
+
+
+	/* we're safe; nobody will be in conflict with this conn id since evrybody else
+	 * will have a local copy of this structure */
+	if ( msg->rcv.proto != PROTO_UDP ) {
+		info->conn_id = msg->rcv.proto_reserved1;
+	} else {
+		info->conn_id = 0;
+	}
+
+	if (sip_trace(msg, info) < 0) {
+		LM_ERR("sip trace failed!\n");
+		return -1;
+	}
+
+	return 1;
+}
 
 
 /* siptrace wrapper that verifies if the trace is on */
@@ -1394,12 +1493,8 @@ static int sip_trace_w(struct sip_msg *msg, tlist_elem_p list,
 					void *scope_p, str *trace_types_s, str *trace_attrs)
 {
 
-	int extra_len=0;
 	int trace_flags;
 	int trace_types=0;
-
-	trace_info_p info=NULL;
-	trace_info_t stack_info;
 
 	if(msg==NULL)
 	{
@@ -1452,94 +1547,7 @@ static int sip_trace_w(struct sip_msg *msg, tlist_elem_p list,
 		 * else the function will be useless */
 		trace_types = sip_trace_id;
 	}
-
-	if (trace_attrs != NULL)
-		extra_len = sizeof(str) + trace_attrs->len;
-
-
-	if (trace_flags == TRACE_MESSAGE) {
-		/* we don't need to allocate this structure since it will only be
-		 * used in this function's context */
-		info = &stack_info;
-
-		memset(info, 0, sizeof(trace_info_t));
-		if (extra_len) {
-			info->trace_attrs = trace_attrs;
-		}
-	/* for stateful transactions or dialogs
-	 * we need the structure in the shared memory */
-	} else if(trace_flags == TRACE_DIALOG ||
-	(trace_flags == TRACE_TRANSACTION && tmb.t_gett)) {
-		info=shm_malloc(sizeof(trace_info_t) + extra_len);
-		if (info==NULL) {
-			LM_ERR("no more shm!\n");
-			return -1;
-		}
-
-		memset(info, 0, sizeof(trace_info_t) + extra_len);
-
-		if (extra_len) {
-			info->trace_attrs = (str*)(info+1);
-			info->trace_attrs->s = (char*)(info->trace_attrs+1);
-
-			memcpy(info->trace_attrs->s, trace_attrs->s, trace_attrs->len);
-			info->trace_attrs->len = trace_attrs->len;
-		}
-	} else if (trace_flags == TRACE_TRANSACTION && tmb.t_gett==NULL) {
-		/* we need this structure in pkg for stateless replies
-		 * and request out callback */
-		info=pkg_malloc(sizeof(trace_info_t));
-		if (info==NULL) {
-			LM_ERR("no more pkg!\n");
-			return -1;
-		}
-
-		memset(info, 0, sizeof(trace_info_t));
-		if (extra_len)
-			info->trace_attrs = trace_attrs;
-	} else {
-		LM_ERR("Unknown trace flags %x\n", trace_flags);
-		return -2;
-	}
-
-	info->trace_list=list;
-	info->trace_types = trace_types;
-
-	if (trace_flags != TRACE_MESSAGE) {
-		SET_SIPTRACE_CONTEXT(info);
-		/* this flag here will help catching
-		 * stateless replies(sl_send_reply(...))*/
-		msg->msg_flags |= FL_USE_SIPTRACE;
-	}
-
-
-	if (trace_flags==TRACE_DIALOG) {
-		if (trace_dialog(msg, info) < 0) {
-			LM_ERR("trace dialog failed!\n");
-			return -1;
-		}
-	} else if (trace_flags==TRACE_TRANSACTION) {
-		if (trace_transaction(msg, info, 0) < 0) {
-			LM_ERR("trace transaction failed!\n");
-			return -1;
-		}
-	}
-
-
-	/* we're safe; nobody will be in conflict with this conn id since evrybody else
-	 * will have a local copy of this structure */
-	if ( msg->rcv.proto != PROTO_UDP ) {
-		info->conn_id = msg->rcv.proto_reserved1;
-	} else {
-		info->conn_id = 0;
-	}
-
-	if (sip_trace(msg, info) < 0) {
-		LM_ERR("sip trace failed!\n");
-		return -1;
-	}
-
-	return 1;
+	return sip_trace_handle(msg, list, trace_types, trace_flags, trace_attrs);
 }
 
 #define set_sock_columns( _col_proto, _col_ip, _col_port, _buff, _ip, _port, _proto) \
@@ -2407,21 +2415,21 @@ static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
 
 static int parse_trace_filter(str *filter_s, enum trace_filter_types *type)
 {
-	if (filter_s->len > 7) { /* case caller/callee= */
-		if (strncasecmp(filter_s->s, "caller=", 7) == 0) {
-			*type = TRACE_FILTER_CALLER;
-			return 7;
-		} else if (strncasecmp(filter_s->s, "callee=", 7) == 0) {
-			*type = TRACE_FILTER_CALLEE;
-			return 7;
-		}
-	} else if (filter_s->len > 3) { /* case ip= */
-		if (strncasecmp(filter_s->s, "ip=", 3) == 0) {
-			*type = TRACE_FILTER_IP;
-			return 3;
-		}
-	}
-	return 0;
+	if (filter_s->len > 7 && (strncasecmp(filter_s->s, "caller=", 7) == 0)) {
+		filter_s->s += 7;
+		filter_s->len -= 7;
+		*type = TRACE_FILTER_CALLER;
+	} else if (filter_s->len > 7 && (strncasecmp(filter_s->s, "callee=", 7) == 0)) {
+		*type = TRACE_FILTER_CALLEE;
+		filter_s->s += 7;
+		filter_s->len -= 7;
+	} else if (filter_s->len > 3 && (strncasecmp(filter_s->s, "ip=", 3) == 0)) {
+		*type = TRACE_FILTER_IP;
+		filter_s->s += 3;
+		filter_s->len -= 3;
+	} else
+		return 0;
+	return 1;
 }
 
 static void free_trace_filters(struct trace_filter *list)
@@ -2438,8 +2446,9 @@ static struct trace_filter *parse_trace_filters(const mi_params_t *params)
 {
 	struct trace_filter *filters = NULL, *filter = NULL;
 	enum trace_filter_types type;
-	int filters_no, i, rc;
+	int filters_no, i, data_len;
 	mi_item_t *fi;
+	char *data;
 	str sfilter;
 
 	if (try_get_mi_array_param(params, "filter", &fi, &filters_no) < 0)
@@ -2448,26 +2457,45 @@ static struct trace_filter *parse_trace_filters(const mi_params_t *params)
 	/* we have filters! */
 	for (i = 0; i < filters_no; i++) {
 		if (try_get_mi_arr_param_string(fi, i, &sfilter.s, &sfilter.len) == 0) {
-			rc = parse_trace_filter(&sfilter, &type);
-			if (rc != 0) {
-				filter = shm_malloc(sizeof(*filter) + sfilter.len - rc);
-				if (!filter) {
-					LM_ERR("could not allocate filters!\n");
-					free_trace_filters(filters);
-					return NULL;
-				}
-				memset(filter, 0, sizeof(*filter));
-				filter->type = type;
-				filter->match.len = sfilter.len - rc;
-				filter->match.s = (char *)(filter + 1);
-				memcpy(filter->match.s, sfilter.s + rc, filter->match.len);
-				/* link in the filters list */
-				filter->next = filters;
-				filters = filter;
-			} else
+			if (!parse_trace_filter(&sfilter, &type)) {
 				LM_WARN("Unknown filter %.*s\n", sfilter.len, sfilter.s);
+				goto next;
+			}
+			switch (type) {
+				case TRACE_FILTER_IP:
+					data = (char *)str2ip(&sfilter);
+					if (data == NULL) {
+						LM_ERR("Invalid IP in filter [%.*s]\n",
+								sfilter.len, sfilter.s);
+						goto next;
+					}
+					data_len = sizeof(struct ip_addr);
+					break;
+				default:
+					data_len = 0;
+					break;
+			}
+
+			filter = shm_malloc(sizeof(*filter) + sfilter.len + data_len);
+			if (!filter) {
+				LM_ERR("could not allocate filters!\n");
+				free_trace_filters(filters);
+				return NULL;
+			}
+			memset(filter, 0, sizeof(*filter));
+			filter->type = type;
+			filter->match.len = sfilter.len;
+			filter->match.s = (char *)(filter + 1) + data_len;
+			memcpy(filter->match.s, sfilter.s, sfilter.len);
+			if (data_len)
+				memcpy(filter->data, data, data_len);
+			/* link in the filters list */
+			filter->next = filters;
+			filters = filter;
 		} else
 			LM_WARN("Bad filter type for index %d\n", i);
+next:
+		;
 	}
 	return filters;
 }
@@ -3112,4 +3140,85 @@ static void destroy_dyn_tracing(void)
 	/* release the lock itself */
 	lock_dealloc(dyn_trace_lock);
 	shm_free(dyn_trace_list);
+}
+
+static inline int dyn_tracing_uri_match(str *match, struct sip_uri *uri)
+{
+	if (uri->user.len > match->len) /* fail: user too long */
+		return 0;
+	if (memcmp(uri->user.s, match->s, uri->user.len) != 0) /* fail: different user */
+		return 0;
+	if (uri->user.len == match->len) /* success: no domain in matching, full match */
+		return 1;
+	if (match->s[uri->user.len] != '@') /* fail: different user, or domain */
+		return 0;
+	/* domains should be equal */
+	if (match->len - uri->user.len - 1 /* '@' */ != uri->host.len) /* fail: different domains len */
+		return 0;
+	if (memcmp(uri->host.s, match->s + uri->user.len + 1, uri->host.len) != 0) /* fail: different domains */
+		return 0;
+	return 1;
+}
+
+static int process_dyn_tracing(struct sip_msg *msg, void *param)
+{
+	int initial_invite = 0;
+	tlist_elem_p it;
+	tlist_dyn_elem_p el;
+	struct trace_filter *filter;
+	struct ip_addr *ip;
+
+	/* first thing is to check whether this is an initial request */
+	if (msg->REQ_METHOD == METHOD_INVITE) {
+		if (parse_to_header(msg) < 0)
+			goto end;
+
+		if (get_to(msg)->tag_value.len == 0)
+			initial_invite = 1;
+	}
+
+	lock_get(dyn_trace_lock);
+	for (it=*dyn_trace_list; it; it=it->next) {
+		el = trace_id_dyn(it);
+		/* check if it's worth tracing */
+		if (el->type == TRACE_DIALOG && !initial_invite)
+			goto skip;
+
+		for (filter = el->filters; filter; filter = filter->next) {
+			switch (filter->type) {
+				case TRACE_FILTER_CALLER:
+					if (parse_from_uri(msg) < 0)
+						goto skip;
+
+					if (!dyn_tracing_uri_match(&filter->match, &get_from(msg)->parsed_uri))
+						goto skip;
+					/* all good, it does match - go to next filter */
+					break;
+
+				case TRACE_FILTER_CALLEE:
+					if (parse_sip_msg_uri(msg) < 0)
+						goto skip;
+
+					if (!dyn_tracing_uri_match(&filter->match, &msg->parsed_uri))
+						goto skip;
+					/* all good, it does match - go to next filter */
+					break;
+
+				case TRACE_FILTER_IP:
+					ip = (struct ip_addr *)&filter->data;
+					LM_INFO("comparing %s with %s\n",
+							ip_addr2a(ip), ip_addr2a(&msg->rcv.src_ip));
+					if (!ip_addr_cmp(ip, &msg->rcv.src_ip))
+						goto skip;
+					break;
+			}
+		}
+		sip_trace_handle(msg, it, el->scope, el->type, NULL);
+skip:
+		continue;
+	}
+	lock_release(dyn_trace_lock);
+
+end:
+	return SCB_RUN_ALL;
 }
