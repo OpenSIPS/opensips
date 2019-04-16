@@ -220,16 +220,16 @@ modparam("uac", "force_dialog", yes)
 
 		<section id="func_uac_replace_from" xreflabel="uac_replace_from()">
 			<title>
-				<function moreinfo="none">uac_replace_from(display,uri)</function>
-				<function moreinfo="none">uac_replace_to(display,uri)</function>
+				<function moreinfo="none">uac_replace_from([display],uri)</function>
+				<function moreinfo="none">uac_replace_to([display],uri)</function>
 			</title>
 			<para>
-			Replace in FROM/TO header the <emphasis>display</emphasis> name and
+			Replace in FROM/TO header the <emphasis>display</emphasis> name or/and
 			the <emphasis>URI</emphasis> part.
 			</para>
 			<para>
-			<emphasis>display</emphasis> and <emphasis>URI</emphasis> 
-			parameters can include pseudo-variables.
+			Both parameters are string. The <emphasis>display</emphasis> is optional.
+			If missing, only the URI will be changed in the message.
 			</para>
 			<para>
 			IMPORTANT: calling the function more than once per branch will lead
@@ -255,31 +255,8 @@ uac_replace_from("batman","");
 uac_replace_from("","sip:robin@gotham.org");
 # remove display and do not touch uri
 uac_replace_from("","");
-...
-				</programlisting>
-			</example>
-		</section>
-
-		<section id="func_uac_replace_from_2" xreflabel="uac_replace_from()">
-			<title>
-				<function moreinfo="none">uac_replace_from(uri)</function>
-				<function moreinfo="none">uac_replace_to(uri)</function>
-			</title>
-			<para>
-				Replace in FROM/TO header the <emphasis>URI</emphasis> part
-				without altering the display name.
-			</para>
-			<para>
-			<emphasis>URI</emphasis> parameter can include pseudo-variables.
-			</para>
-			<para>
-			This function can be used from REQUEST_ROUTE.
-			</para>
-			<example>
-				<title><function>uac_replace_from</function>/<function>uac_replace_to</function> usage</title>
-				<programlisting format="linespecific">
-...
-uac_replace_from("sip:batman@gotham.org");
+# replace the URI without touching the display
+uac_replace_from( , "sip:batman@gotham.org");
 ...
 				</programlisting>
 			</example>
