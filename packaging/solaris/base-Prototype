@@ -129,9 +129,6 @@ f none /opt/opensips/lib64/opensips/modules/xcap_client.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/xlog.so 0755 root root
 d none /opt/opensips/lib64/opensips/opensipsctl 0755 root root
 f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.base 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.ctlbase 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.fifo 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.unixsock 0644 root root
 f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.sqlbase 0644 root root
 f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.base 0644 root root
 f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.dbtext 0644 root root

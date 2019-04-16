@@ -25,11 +25,9 @@ MAKE_ENV=	CC="${CC}" \
 		PTHREAD_LIBS="${PTHREAD_LIBS}"
 
 PLIST_FILES=	sbin/opensips sbin/opensipsctl sbin/opensipsdbctl sbin/opensipsunix \
-		lib/opensips/opensipsctl/opensipsctl.base lib/opensips/opensipsctl/opensipsctl.ctlbase \
-		lib/opensips/opensipsctl/opensipsctl.dbtext lib/opensips/opensipsctl/opensipsctl.fifo \
-		lib/opensips/opensipsctl/opensipsctl.sqlbase lib/opensips/opensipsctl/opensipsctl.unixsock \
-		lib/opensips/opensipsctl/opensipsdbctl.base lib/opensips/opensipsctl/opensipsdbctl.dbtext \
-		etc/opensips/opensipsctlrc
+		lib/opensips/opensipsctl/opensipsctl.base lib/opensips/opensipsctl/opensipsctl.dbtext \
+		lib/opensips/opensipsctl/opensipsctl.sqlbase lib/opensips/opensipsctl/opensipsdbctl.base \
+		lib/opensips/opensipsctl/opensipsdbctl.dbtext etc/opensips/opensipsctlrc
 
 PLIST_DIRS=	lib/opensips/modules lib/opensips/opensipsctl lib/opensips
 

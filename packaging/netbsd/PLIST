@@ -66,9 +66,6 @@ lib/opensips/modules/xlog.so
 lib/opensips/modules/xmpp.so
 lib/opensipsctl/opensipsctl.base
 lib/opensipsctl/opensipsctl.sqlbase
-lib/opensipsctl/opensipsctl.ctlbase
-lib/opensipsctl/opensipsctl.fifo
-lib/opensipsctl/opensipsctl.unixsock
 lib/opensipsctl/opensipsctl.mysql
 share/doc/opensips/README
 share/doc/opensips/INSTALL

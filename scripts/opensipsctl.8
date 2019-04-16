@@ -16,7 +16,7 @@ opensipsctl \- opensips control tool
 .B opensipsctl
 is a shell script to control
 .B OpenSIPS SIP server
-It can be used to manage users, domains, aliases and other server options
+It can be used to manage users, aliases and other server options
 
 .SH FILES
 .PD 0
@@ -31,21 +31,8 @@ It can be used to manage users, domains, aliases and other server options
 .TP 12
 .B \-h
 Displays a short usage description, including all available options.
-.TP
-.B moni
-show internal status
-.TP
-.B ps
-show running processes
-.TP
-.B fifo
-send raw FIFO commands
-.TP
 .B ping <uri>
 ping a URI (OPTIONS)
-.TP
-.B cisco_restart <uri>
-restart a Cisco phone (NOTIFY)
 .TP 16
 .I SUBSCRIBER management:
 .TP
@@ -91,21 +78,6 @@ remove an alias (*)
 .B alias_db help
 help message
 .TP
-.B dispatcher show
-show dispatcher gateways
-.TP
-.B dispatcher reload
-reload dispatcher gateways
-.TP
-.B dispatcher dump
-show in memory dispatcher gateways
-.TP
-.B dispatcher addgw <setid> <destination> <socket> <flags> <weight> <attrs> [description]
-add gateway
-.TP
-.B dispatcher rmgw <id>
-delete gateway
-.TP
 .B speeddial show <speeddial-id>
 show speeddial details
 .TP
@@ -150,27 +122,7 @@ grant user membership (*)
 grant user membership(s) (*)
 
 .TP 16
-.I USRLOC (User Location) management
-.TP
-.B ul show [<username>]
-show in-RAM online users
-.TP
-.B ul rm <username> [<contact URI>]
-delete user's UsrLoc entries
-.TP
-.B ul add <username> <uri>
-introduce a permanent UrLoc entry
-.TP
-.B ul add <username> <uri> <expires>
-introduce a temporary UrLoc entry
-.TP
-.B showdb [<username>]
-show online users flushed in DB
-.TP 16
 .I DOMAIN management
-.TP
-.B domain show
-show list of served domains
 .TP
 .B domain add <domainname>
 add a new served domain

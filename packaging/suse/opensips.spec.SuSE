@@ -360,13 +360,10 @@ sbin/insserv etc/init.d/
 %{_sbindir}/opensipsdbctl
 %{_libdir}/opensips/opensipsctl/dbtextdb/dbtextdb.py
 %{_libdir}/opensipsctl/opensipsctl.base
-%{_libdir}/opensipsctl/opensipsctl.ctlbase
 %{_libdir}/opensipsctl/opensipsctl.db_berkeley
 %{_libdir}/opensipsctl/opensipsctl.dbtext
 %{_libdir}/opensipsctl/opensipsctl.oracle
 %{_libdir}/opensipsctl/opensipsctl.sqlbase
-%{_libdir}/opensipsctl/opensipsctl.fifo
-%{_libdir}/opensipsctl/opensipsctl.unixsock
 %{_libdir}/opensipsctl/opensipsdbctl.base
 %{_libdir}/opensipsctl/opensipsdbctl.db_berkeley
 %{_libdir}/opensipsctl/opensipsdbctl.dbtext

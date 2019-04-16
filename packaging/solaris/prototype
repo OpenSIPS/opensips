@@ -60,10 +60,7 @@ f none lib/opensips/modules/xlog.so 0755 bin bin
 f none lib/opensips/modules/xmpp.so 0755 bin bin
 d none lib/opensipsctl 0644 bin bin
 f none lib/opensipsctl/opensipsctl.base 0644 bin bin
-f none lib/opensipsctl/opensipsctl.ctlbase 0644 bin bin
 f none lib/opensipsctl/opensipsctl.sqlbase 0644 bin bin
-f none lib/opensipsctl/opensipsctl.fifo 0644 bin bin
-f none lib/opensipsctl/opensipsctl.unixsock 0644 bin bin
 f none lib/opensipsctl/opensipsctl.mysql 0644 bin bin
 d none doc 0755 bin bin
 d none doc/opensips 0755 bin bin

@@ -546,21 +546,6 @@ install-bin: $(bin_prefix)/$(bin_dir) opensipsmc utils
 			$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.base
 		rm -fr /tmp/opensipsctl.base
 		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/opensipsctl.ctlbase > /tmp/opensipsctl.ctlbase
-		$(INSTALL_CFG) /tmp/opensipsctl.ctlbase \
-			$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.ctlbase
-		rm -fr /tmp/opensipsctl.ctlbase
-		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/opensipsctl.fifo > /tmp/opensipsctl.fifo
-		$(INSTALL_CFG) /tmp/opensipsctl.fifo \
-			$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.fifo
-		rm -fr /tmp/opensipsctl.fifo
-		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/opensipsctl.unixsock > /tmp/opensipsctl.unixsock
-		$(INSTALL_CFG) /tmp/opensipsctl.unixsock \
-			$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.unixsock
-		rm -fr /tmp/opensipsctl.unixsock
-		sed -e "s#/usr/local#$(bin-target)#g" \
 			< scripts/opensipsctl.sqlbase > /tmp/opensipsctl.sqlbase
 		$(INSTALL_CFG) /tmp/opensipsctl.sqlbase \
 			$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.sqlbase

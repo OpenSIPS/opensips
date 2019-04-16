@@ -893,11 +893,8 @@ fi
 %config(noreplace) %{_sysconfdir}/opensips/tls/user/user-privkey.pem
 
 %{_libdir}/opensips/opensipsctl/opensipsctl.base
-%{_libdir}/opensips/opensipsctl/opensipsctl.ctlbase
 %{_libdir}/opensips/opensipsctl/opensipsctl.dbtext
-%{_libdir}/opensips/opensipsctl/opensipsctl.fifo
 %{_libdir}/opensips/opensipsctl/opensipsctl.sqlbase
-%{_libdir}/opensips/opensipsctl/opensipsctl.unixsock
 
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.base
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.dbtext
