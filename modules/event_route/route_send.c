@@ -33,10 +33,6 @@
 
 #define IS_ERR(_err) (errno == _err)
 
-extern evi_params_t *parameters;
-extern str *event_name;
-
-
 int route_build_buffer(str *event_name, evi_reply_sock *sock,
 		evi_params_t *params, route_send_t **msg)
 {
@@ -142,10 +138,7 @@ static void route_received(int sender, void *param)
 		req->rcv.dst_ip.af = AF_INET;
 	}
 
-	event_name = &route_s->event;
-	parameters = &route_s->params;
-
-	run_top_route(route_s->a, req);
+	route_run(route_s->a, req, &route_s->params, &route_s->event);
 
 	/* clean whatever extra structures were added by script functions */
 	free_sip_msg(req);
