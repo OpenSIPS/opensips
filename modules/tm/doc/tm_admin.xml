@@ -1352,7 +1352,7 @@ onreply_route[3] {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>from</emphasis> - the SIP To hdr information as
+			<para><emphasis>to</emphasis> - the SIP To hdr information as
 			"[display ]URI"
 			</para>
 		</listitem>
