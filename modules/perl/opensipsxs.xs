@@ -247,7 +247,7 @@ int moduleFunc(struct sip_msg *m, char *func,
 		argv[1] = NULL;
 	}
 
-	exp_func_struct = find_cmd_export_t(func, argc, 0);
+	exp_func_struct = find_cmd_export_t(func, 0);
 	if (!exp_func_struct) {
 		LM_ERR("function '%s' called, but not available.", func);
 		*retval = -1;
