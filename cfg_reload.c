@@ -477,7 +477,7 @@ int reload_routing_script(void)
 {
 	struct os_script_routes *sr, *sr_bk;
 	char * curr_wdir=NULL;
-	FILE *cfg_stream;
+	FILE *cfg_stream=NULL;
 	int cnt_sleep, ret;
 
 	/* one reload at a time */

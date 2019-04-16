@@ -285,7 +285,7 @@ static int w_ldap_search(struct sip_msg* msg, str* ldap_url)
 static int w_ldap_result(struct sip_msg* msg, str *attr_name,
 				pv_spec_t *dst_avp, void *avp_type, struct subst_expr *subst)
 {
-	return ldap_write_result(msg, attr_name, dst_avp, (int)avp_type, subst);
+	return ldap_write_result(msg, attr_name, dst_avp, (int)(unsigned long)avp_type, subst);
 }
 
 static int w_ldap_result_next(struct sip_msg* msg)
