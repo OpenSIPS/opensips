@@ -49,7 +49,6 @@ d none /opt/opensips/etc 0755 root root
 d none /opt/opensips/etc/opensips 0700 root root
 f none /opt/opensips/etc/opensips/opensips.cfg 0500 root root
 f none /opt/opensips/etc/opensips/opensipsctlrc 0644 root root
-f none /opt/opensips/etc/opensips/osipsconsolerc 0644 root root
 f none /opt/opensips/INSTALL 0644 root root
 d none /opt/opensips/lib64 0755 root root
 d none /opt/opensips/lib64/opensips 0755 root root
@@ -227,4 +226,3 @@ f none /opt/opensips/sbin/opensips 0755 root root
 f none /opt/opensips/sbin/opensipsctl 0755 root root
 f none /opt/opensips/sbin/opensipsdbctl 0755 root root
 f none /opt/opensips/sbin/opensipsunix 0755 root root
-f none /opt/opensips/sbin/osipsconsole 0755 root root

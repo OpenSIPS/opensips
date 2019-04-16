@@ -3,7 +3,6 @@ etc/opensips/opensipsctlrc
 sbin/opensips
 sbin/opensipsctl
 sbin/opensipsdbctl
-sbin/osipsconsole
 lib/opensips/modules/acc.so
 lib/opensips/modules/alias_db.so
 lib/opensips/modules/auth.so

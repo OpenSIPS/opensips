@@ -356,7 +356,6 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/xlog.so
 
 %{_sbindir}/opensips
-%{_sbindir}/osipsconsole
 %{_sbindir}/opensipsctl
 %{_sbindir}/opensipsdbctl
 %{_libdir}/opensips/opensipsctl/dbtextdb/dbtextdb.py

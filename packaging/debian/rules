@@ -218,7 +218,6 @@ export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD
 
 # not needed anymore
 #ALL_PACKAGES = opensips $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_PKGNAME)) \
-#	opensips-console
 ALL_MODULES = $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_MODULES))
 BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
 
@@ -348,10 +347,6 @@ override_dh_auto_install:
 		;\
 	done
 
-	# move console binary from opensips to opensips-console
-	mkdir -p $(CURDIR)/debian/opensips-console/$(BIN_PREFIX)/sbin
-	mv $(CURDIR)/debian/opensips/$(BIN_PREFIX)/sbin/osipsconsole \
-		 $(CURDIR)/debian/opensips-console/$(BIN_PREFIX)/sbin/
 	# move binaries of opensips-berkeley-module to opensips-berkeley-bin
 	mkdir -p $(CURDIR)/debian/opensips-berkeley-bin/$(BIN_PREFIX)/
 	mv $(CURDIR)/debian/opensips-berkeley-module/$(BIN_PREFIX)/sbin \

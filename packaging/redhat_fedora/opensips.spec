@@ -195,19 +195,6 @@ per second even on low-budget hardware.
 This package provides the compression module, that is able to compress
 SIP headers and body, as  well as shrink the size of a SIP package.
 
-%package  console
-Summary:  Generic tool for OpenSIPS provisioning
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  console
-OpenSIPS is a very fast and flexible SIP (RFC3261)
-server. Written entirely in C, OpenSIPS can handle thousands calls
-per second even on low-budget hardware.
-.
-This package provides an OpenSIPS Console written in Perl for OpenSIPS
-provisioning.
-
 %if 0%{?_with_cachedb_couchbase:1}
 %package couchbase-module
 Summary:  Interface module to interact with a Couchbase server
@@ -1150,10 +1137,6 @@ fi
 %{_libdir}/opensips/modules/compression.so
 %doc docdir/README.compression
 
-%files console
-%{_sbindir}/osipsconsole
-%attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/osipsconsolerc
-
 %if 0%{?_with_cachedb_couchbase:1}
 %files couchbase-module
 %{_libdir}/opensips/modules/cachedb_couchbase.so
@@ -1418,6 +1401,9 @@ fi
 
 
 %changelog
+* Thu Apr 16 2019 Razvan Crainea <razvan@opensips.org> - 3.0.0-1
+- Remove osipsconsole
+
 * Thu Apr 11 2019 Nick Altmann <nick.altmann@gmail.com> - 3.0.0-1
 - Specification updated for opensips 3.0
 - Package names and layout were changed similar to debian packaging

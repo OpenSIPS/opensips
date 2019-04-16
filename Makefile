@@ -475,7 +475,7 @@ install-app: app mk-install-dirs install-cfg install-bin \
 install-modules-all: install-modules install-modules-doc
 
 # Install everything (except modules-docbook?)
-install: install-app install-console install-modules-all
+install: install-app install-modules-all
 
 opensipsmc: $(cfg_prefix)/$(cfg_dir) $(data_prefix)/$(data_dir)
 	$(MAKE) -C menuconfig proper
@@ -521,27 +521,6 @@ install-cfg: $(cfg_prefix)/$(cfg_dir)
 			mv -f $(cfg_prefix)/$(cfg_dir)/opensipsctlrc.sample \
 				$(cfg_prefix)/$(cfg_dir)/opensipsctlrc; \
 		fi
-		# osipsconsole config
-		$(INSTALL_TOUCH)   $(cfg_prefix)/$(cfg_dir)/osipsconsolerc.sample
-		$(INSTALL_CFG) scripts/osipsconsolerc \
-			$(cfg_prefix)/$(cfg_dir)/osipsconsolerc.sample
-		if [ ! -f $(cfg_prefix)/$(cfg_dir)/osipsconsolerc ]; then \
-			mv -f $(cfg_prefix)/$(cfg_dir)/osipsconsolerc.sample \
-				$(cfg_prefix)/$(cfg_dir)/osipsconsolerc; \
-		fi
-
-install-console: $(bin_prefix)/$(bin_dir)
-		# install osipsconsole
-		cat scripts/osipsconsole | \
-		sed -e "s#PATH_BIN[ \t]*=[ \t]*\"\./\"#PATH_BIN = \"$(bin-target)\"#g" | \
-		sed -e "s#PATH_CTLRC[ \t]*=[ \t]*\"\./scripts/\"#PATH_CTLRC = \"$(cfg_target)\"#g" | \
-		sed -e "s#PATH_LIBS[ \t]*=[ \t]*\"\./scripts/\"#PATH_LIBS = \"$(lib-target)/opensipsctl/\"#g" | \
-		sed -e "s#PATH_SHARE[ \t]*=[ \t]*\"\./scripts/\"#PATH_SHARE = \"$(data_target)\"#g" | \
-		sed -e "s#PATH_ETC[ \t]*=[ \t]*\"\./etc/\"#PATH_ETC = \"$(cfg_target)\"#g" \
-		> /tmp/osipsconsole
-		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/osipsconsole
-		$(INSTALL_BIN) /tmp/osipsconsole $(bin_prefix)/$(bin_dir)
-		rm -fr /tmp/osipsconsole
 
 install-bin: $(bin_prefix)/$(bin_dir) opensipsmc utils
 		# install opensips binary
