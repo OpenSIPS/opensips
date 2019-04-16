@@ -279,8 +279,8 @@ void wrap_tm_compact(struct cell*t, int type, struct tmcb_params* p)
 void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 {
 	int ret = 0;
-	mc_whitelist_p wh_list;
-	struct mc_comp_args* args;
+	mc_whitelist_p wh_list = NULL;
+	struct mc_comp_args* args = NULL;
 	char* buf = t->uac[p->code].request.buffer.s;
 	int olen = t->uac[p->code].request.buffer.len;
 
@@ -1070,10 +1070,10 @@ end:
 int mc_compress_cb(char** buf_p, void* param, int type, int* olen)
 {
 	int rc;
-	int ret;
 	int len;
 	int algo;
 	int flags;
+	int ret = -1;
 	int compress_len=0;
 	int uncompress_len=0;
 	int hdr_compress_len=0;
