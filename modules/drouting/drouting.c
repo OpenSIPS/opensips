@@ -3644,7 +3644,7 @@ static int is_from_gw(struct sip_msg* msg, int *type, long flags,
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
 		for (it = head_db_start; it; it = it->next) {
-			ret = _is_dr_gw(msg, it, (int)flags, *type,
+			ret = _is_dr_gw(msg, it, (int)flags, type?*type:-1,
 				&msg->rcv.src_ip, msg->rcv.src_port);
 			if (ret > 0) {
 				if (partition_pvar.s) {
@@ -3661,7 +3661,7 @@ static int is_from_gw(struct sip_msg* msg, int *type, long flags,
 		return ret;
 	}
 
-	return _is_dr_gw(msg, part, (int)flags, *type,
+	return _is_dr_gw(msg, part, (int)flags, type?*type:-1,
 		&msg->rcv.src_ip, msg->rcv.src_port);
 }
 
@@ -3716,7 +3716,7 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
 		for (it = head_db_start; it; it = it->next) {
-			ret = _is_dr_gw(msg, it, (int)flags, *type, &ip, port);
+			ret = _is_dr_gw(msg, it, (int)flags, type?*type:-1, &ip, port);
 			if (ret > 0) {
 				if (partition_pvar.s) {
 					pv_val.rs = it->partition;
@@ -3732,7 +3732,7 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 		return ret;
 	}
 
-	return _is_dr_gw(msg, part, (int)flags, *type, &ip, port);
+	return _is_dr_gw(msg, part, (int)flags, type?*type:-1, &ip, port);
 }
 
 
@@ -3755,7 +3755,7 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
 		for (it = head_db_start; it; it = it->next) {
-			ret = _is_dr_gw(msg, it, (int)flags, *type, &ip, port);
+			ret = _is_dr_gw(msg, it, (int)flags, type?*type:-1, &ip, port);
 			if (ret > 0) {
 				if (partition_pvar.s) {
 					pv_val.rs = it->partition;
@@ -3771,7 +3771,7 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 		return ret;
 	}
 
-	return _is_dr_gw(msg, part, (int)flags, *type, &ip, port);
+	return _is_dr_gw(msg, part, (int)flags, type?*type:-1, &ip, port);
 }
 
 
