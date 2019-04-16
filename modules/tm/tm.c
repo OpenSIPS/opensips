@@ -114,7 +114,7 @@ static int child_init(int rank);
 static int w_t_newtran(struct sip_msg* p_msg);
 static int w_t_reply(struct sip_msg* msg, unsigned int code, str* text);
 static int w_pv_t_reply(struct sip_msg *msg, unsigned int* code, str* text);
-static int w_t_relay( struct sip_msg  *p_msg , struct proxy_l *proxy, void *flags);
+static int w_t_relay( struct sip_msg  *p_msg , void *flags, struct proxy_l *proxy);
 static int w_t_replicate(struct sip_msg *p_msg, str *dst, void *flags);
 static int w_t_on_negative(struct sip_msg* msg, void *go_to);
 static int w_t_on_reply(struct sip_msg* msg, void *go_to);
@@ -1202,7 +1202,7 @@ static inline int t_relay_inerr2scripterr(void)
 }
 
 
-static int w_t_relay( struct sip_msg  *p_msg , struct proxy_l *proxy, void *flags)
+static int w_t_relay( struct sip_msg  *p_msg , void *flags, struct proxy_l *proxy)
 {
 	struct proxy_l *p = NULL;
 	struct cell *t;
