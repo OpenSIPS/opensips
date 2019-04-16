@@ -112,7 +112,7 @@ f none /opt/opensips/lib64/opensips/modules/rls.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/rr.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/seas.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/signaling.so 0755 root root
-f none /opt/opensips/lib64/opensips/modules/siptrace.so 0755 root root
+f none /opt/opensips/lib64/opensips/modules/tracer.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/sl.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/sms.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/speeddial.so 0755 root root
@@ -206,7 +206,7 @@ f none /opt/opensips/README.rls 0644 root root
 f none /opt/opensips/README.rr 0644 root root
 f none /opt/opensips/README.seas 0644 root root
 f none /opt/opensips/README.signaling 0644 root root
-f none /opt/opensips/README.siptrace 0644 root root
+f none /opt/opensips/README.tracer 0644 root root
 f none /opt/opensips/README.sl 0644 root root
 f none /opt/opensips/README.sms 0644 root root
 f none /opt/opensips/README.speeddial 0644 root root

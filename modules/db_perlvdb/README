@@ -207,7 +207,7 @@ my $cols = new OpenSIPS::VDB::Column(\@types, \@names);
    insert, update, replace, query and/or delete, depending on the
    module which is to be used with the adapter. While modules such
    as alias_db only require a query function, others -- such as
-   siptrace -- depend on inserts only.
+   tracer -- depend on inserts only.
 
 2.4.1. Function parameters
 

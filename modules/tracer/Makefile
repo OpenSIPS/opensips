@@ -7,7 +7,7 @@
 
 include ../../Makefile.defs
 auto_gen=
-NAME=siptrace.so
+NAME=tracer.so
 LIBS=
 
 include ../../Makefile.modules

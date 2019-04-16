@@ -817,7 +817,7 @@ my @rows = $ldap->search(
   </section>
   <section id="ID-8165ac0b808b36ff72ee4032e0f62881"><title>OpenSIPS::VDB::Adapter::AccountingSIPtrace</title>
     <para>
-      This package is an Adapter for the acc and siptrace modules,
+      This package is an Adapter for the acc and tracer modules,
       featuring only an insert operation.
     </para>
   </section>

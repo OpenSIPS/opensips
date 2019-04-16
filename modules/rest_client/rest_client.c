@@ -106,7 +106,7 @@ int validate_curl_http_version(const int *http_version);
 /* module dependencies */
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "siptrace", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "tracer", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 }
 	},
 	{ /* modparam dependencies */

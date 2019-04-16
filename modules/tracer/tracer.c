@@ -1,5 +1,5 @@
 /*
- * siptrace module - helper module to trace sip messages
+ * tracer module - helper module to trace sip messages
  *
  * Copyright (C) 2006-2009 Voice Sistem S.R.L.
  *
@@ -45,7 +45,7 @@
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
 #include "../../mod_fix.h"
-#include "siptrace.h"
+#include "tracer.h"
 
 /* trace info context position */
 int sl_ctx_idx=-1;
@@ -121,12 +121,12 @@ static int corr_id=-1;
 
 
 /**
- * SIPTRACE FUNCTIONS
+ * TRACER FUNCTIONS
  *
  * **/
 static int fixup_tid(void **param);
 static int fixup_sflags(void **param);
-static int sip_trace_w(struct sip_msg *msg, tlist_elem_p list,
+static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 					void *scope_p, str *trace_types_s, str *trace_attrs);
 static int sip_trace(struct sip_msg*, trace_info_p);
 
@@ -196,7 +196,7 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param);
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"sip_trace", (cmd_function)sip_trace_w, {
+	{"trace", (cmd_function)trace_w, {
 		{CMD_PARAM_STR, fixup_tid, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_sflags, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
@@ -230,23 +230,23 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "sip_trace", 0, MI_NAMED_PARAMS_ONLY, 0, {
+	{ "trace", 0, MI_NAMED_PARAMS_ONLY, 0, {
 		{sip_trace_mi, {0}},
-		{sip_trace_mi_tid,  {"trace_id", 0}},
-		{sip_trace_mi_mode, {"trace_mode", 0}},
-		{sip_trace_mi_2,{"trace_id", "trace_mode", 0}},
+		{sip_trace_mi_tid,  {"id", 0}},
+		{sip_trace_mi_mode, {"mode", 0}},
+		{sip_trace_mi_2,{"id", "mode", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "sip_trace_start", 0, 0, 0, {
-		{sip_trace_mi_dyn,{"trace_id", "uri", 0}},
-		{sip_trace_mi_dyn,{"trace_id", "uri", "filter", 0}},
-		{sip_trace_mi_dyn,{"trace_id", "uri", "filter", "scope", "type", 0}},
+	{ "trace_start", 0, 0, 0, {
+		{sip_trace_mi_dyn,{"id", "uri", 0}},
+		{sip_trace_mi_dyn,{"id", "uri", "filter", 0}},
+		{sip_trace_mi_dyn,{"id", "uri", "filter", "scope", "type", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
-	{ "sip_trace_stop", 0, 0, 0, {
-		{sip_trace_mi_stop,{"trace_id", 0}},
+	{ "trace_stop", 0, 0, 0, {
+		{sip_trace_mi_stop,{"id", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
@@ -292,7 +292,7 @@ static dep_export_t deps = {
 
 /* module exports */
 struct module_exports exports = {
-	"siptrace",
+	"tracer",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
@@ -333,7 +333,7 @@ get_db_struct(str *url, str *tb_name, st_db_struct_t **st_db)
 		return -1;
 	}
 
-	/* if not set populated with 'siptrace_table' in parse_siptrace_id() */
+	/* if not set populated with 'tracer_table' in parse_siptrace_id() */
 	dbs->table = *tb_name;
 
 	if (db_bind_mod(url, &dbs->funcs)) {
@@ -352,7 +352,7 @@ get_db_struct(str *url, str *tb_name, st_db_struct_t **st_db)
 	}
 
 	if (db_check_table_version(&dbs->funcs, dbs->con,
-						&dbs->table, SIPTRACE_TABLE_VERSION) < 0) {
+						&dbs->table, TRACER_TABLE_VERSION) < 0) {
 		LM_ERR("error during table version check.\n");
 		return -1;
 	}
@@ -640,7 +640,7 @@ int parse_trace_id(unsigned int type, void *val)
 	str_trim_spaces_lr(suri);
 
 	if (parse_siptrace_id(&suri) < 0) {
-		LM_ERR("failed to parse siptrace uri [%.*s]\n", suri.len, suri.s);
+		LM_ERR("failed to parse tracer uri [%.*s]\n", suri.len, suri.s);
 		return -1;
 	}
 
@@ -1133,7 +1133,7 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 		return 0;
 
 	/* context for the request message */
-	SET_SIPTRACE_CONTEXT(info);
+	SET_TRACER_CONTEXT(info);
 
 	/* allows catching statelessly forwarded ACK in stateful transactions
 	 * and stateless replies */
@@ -1369,7 +1369,7 @@ static int fixup_sflags(void **param)
 	if (_flags==TRACE_TRANSACTION) {
 		if (tmb.t_gett==NULL) {
 			LM_INFO("Will do stateless transaction aware tracing!\n");
-			LM_INFO("Siptrace will catch internally generated replies"
+			LM_INFO("tracer will catch internally generated replies"
 					" and forwarded requests!\n");
 		}
 	}
@@ -1459,7 +1459,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	info->trace_types = trace_types;
 
 	if (trace_flags != TRACE_MESSAGE) {
-		SET_SIPTRACE_CONTEXT(info);
+		SET_TRACER_CONTEXT(info);
 		/* this flag here will help catching
 		 * stateless replies(sl_send_reply(...))*/
 		msg->msg_flags |= FL_USE_SIPTRACE;
@@ -1495,8 +1495,8 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 }
 
 
-/* siptrace wrapper that verifies if the trace is on */
-static int sip_trace_w(struct sip_msg *msg, tlist_elem_p list,
+/* tracer wrapper that verifies if the trace is on */
+static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 					void *scope_p, str *trace_types_s, str *trace_attrs)
 {
 
@@ -1646,7 +1646,7 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info)
 	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
 
 	if (save_siptrace(msg, db_keys,db_vals, info) < 0) {
-		LM_ERR("failed to save siptrace\n");
+		LM_ERR("failed to save tracer\n");
 		goto error;
 	}
 
@@ -1684,7 +1684,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	dest = ps->extra2;
 
 	if (current_processing_ctx)
-		SET_SIPTRACE_CONTEXT(*ps->param);
+		SET_TRACER_CONTEXT(*ps->param);
 
 	if (dest) {
 		if ( dest->proto != PROTO_UDP ) {
@@ -1711,7 +1711,7 @@ static void trace_slreq_out(struct sip_msg* req, str *buffer,int rpl_code,
 {
 	trace_info_p info;
 
-	info = GET_SIPTRACE_CONTEXT;
+	info = GET_TRACER_CONTEXT;
 
 	trace_msg_out(req, buffer, sock, proto, to, info);
 }
@@ -1728,7 +1728,7 @@ static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
 
 	trace_info_p info;
 
-	info = GET_SIPTRACE_CONTEXT;
+	info = GET_TRACER_CONTEXT;
 	if (info == NULL) {
 		LM_DBG("no sip_trace() done so far\n");
 		return;
@@ -1933,7 +1933,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	}
 
 	/* context for replies */
-	SET_SIPTRACE_CONTEXT((trace_info_p)(*ps->param));
+	SET_TRACER_CONTEXT((trace_info_p)(*ps->param));
 
 	msg = ps->rpl;
 
@@ -2350,7 +2350,7 @@ static mi_response_t *sip_trace_mi_tid(const mi_params_t *params,
 	mi_item_t *dests_arr;
 	int dynamic = 0;
 
-	if (get_mi_string_param(params, "trace_id", &tid_s.s, &tid_s.len) < 0)
+	if (get_mi_string_param(params, "id", &tid_s.s, &tid_s.len) < 0)
 		return init_mi_param_error();
 
 	resp = init_mi_result_object(&resp_obj);
@@ -2368,7 +2368,7 @@ static mi_response_t *sip_trace_mi_tid(const mi_params_t *params,
 	}
 	if (!it) {
 		free_mi_response(resp);
-		return init_mi_error(400, MI_SSTR("Bad trace_id value"));
+		return init_mi_error(400, MI_SSTR("Bad trace id value"));
 	}
 
 	dests_arr = add_mi_array(resp_obj, MI_SSTR("trace destinations"));
@@ -2399,7 +2399,7 @@ static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
 	if (trace_on_flag==NULL)
 		return init_mi_error(500, MI_SSTR("Internal error"));
 
-	if (get_mi_string_param(params, "trace_mode", &new_mode.s, &new_mode.len) < 0)
+	if (get_mi_string_param(params, "mode", &new_mode.s, &new_mode.len) < 0)
 		return init_mi_param_error();
 
 	if ( new_mode.len==2 &&
@@ -2417,7 +2417,7 @@ static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
 		return init_mi_result_ok();
 	} else
 		return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
-			MI_SSTR("trace_mode should be 'on' or 'off'"));
+			MI_SSTR("trace mode should be 'on' or 'off'"));
 }
 
 static int parse_trace_filter(str *filter_s, enum trace_filter_types *type)
@@ -2520,7 +2520,7 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 	hid_list_t* hep_id = NULL;
 	int traced_scope, traced_type;
 
-	if (get_mi_string_param(params, "trace_id", &name.s, &name.len) < 0)
+	if (get_mi_string_param(params, "id", &name.s, &name.len) < 0)
 		return init_mi_param_error();
 	if (get_mi_string_param(params, "uri", &uri.s, &uri.len) < 0)
 		return init_mi_param_error();
@@ -2629,7 +2629,7 @@ static mi_response_t *sip_trace_mi_stop(const mi_params_t *params,
 
 	if (!dyn_trace_list)
 		return init_mi_error(500, MI_SSTR("Internal Error"));
-	if (get_mi_string_param(params, "trace_id", &tid_s.s, &tid_s.len) < 0)
+	if (get_mi_string_param(params, "id", &tid_s.s, &tid_s.len) < 0)
 		return init_mi_param_error();
 
 	lock_get(dyn_trace_lock);
@@ -2670,9 +2670,9 @@ static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
 	tlist_elem_p it;
 	unsigned int hash;
 
-	if (get_mi_string_param(params, "trace_id", &tid_s.s, &tid_s.len) < 0)
+	if (get_mi_string_param(params, "id", &tid_s.s, &tid_s.len) < 0)
 		return init_mi_param_error();
-	if (get_mi_string_param(params, "trace_mode", &new_mode.s, &new_mode.len) < 0)
+	if (get_mi_string_param(params, "mode", &new_mode.s, &new_mode.len) < 0)
 		return init_mi_param_error();
 
 	if ( new_mode.len==2 &&
@@ -2688,7 +2688,7 @@ static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
 		tid_trace_flag=0;
 	} else {
 		return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
-					MI_SSTR("trace_mode should be 'on' or 'off'"));
+					MI_SSTR("trace mode should be 'on' or 'off'"));
 	}
 
 	it=get_list_start(trace_list, &tid_s);
@@ -2916,7 +2916,7 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 
 /**
  *
- * SIPTRACE API IMPLEMENTATION
+ * TRACER API IMPLEMENTATION
  *
  */
 static struct trace_proto traced_protos[MAX_TRACED_PROTOS];
@@ -2927,7 +2927,7 @@ trace_dest get_next_trace_dest(trace_dest last_dest, int hash)
 	int found_last=0;
 
 	tlist_elem_p it;
-	trace_info_p info = GET_SIPTRACE_CONTEXT;
+	trace_info_p info = GET_TRACER_CONTEXT;
 
 	if (info==NULL)
 		return NULL;
@@ -3011,7 +3011,7 @@ static int is_id_traced(int id, trace_info_p info)
 
 static int api_is_id_traced(int id)
 {
-	return is_id_traced( id, GET_SIPTRACE_CONTEXT);
+	return is_id_traced( id, GET_TRACER_CONTEXT);
 }
 
 
@@ -3020,7 +3020,7 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		int net_proto, str* correlation_id, struct modify_trace* mod_p)
 {
 	tlist_elem_p it;
-	trace_info_p info = GET_SIPTRACE_CONTEXT;
+	trace_info_p info = GET_TRACER_CONTEXT;
 	int hash;
 	trace_message trace_msg;
 

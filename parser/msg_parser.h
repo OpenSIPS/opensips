@@ -103,7 +103,7 @@ enum request_method {
                                       * callback had already been registered */
 #define FL_NAT_TRACK_DIALOG  (1<<13) /* trigger dialog tracking from the
                                       * nat_traversal module */
-#define FL_USE_SIPTRACE      (1<<14) /* used by siptrace to check if the tm
+#define FL_USE_SIPTRACE      (1<<14) /* used by tracer to check if the tm
                                       * callbacks were registered */
 #define FL_SHM_UPDATABLE     (1<<15) /* a SHM cloned message can be updated
                                       * (TM used, requires FL_SHM_CLONE) */

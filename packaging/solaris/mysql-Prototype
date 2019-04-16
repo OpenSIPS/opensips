@@ -34,7 +34,7 @@ f none /opt/opensips/mysql/permissions-create.sql 0644 root root
 f none /opt/opensips/mysql/presence-create.sql 0644 root root
 f none /opt/opensips/mysql/registrar-create.sql 0644 root root
 f none /opt/opensips/mysql/rls-create.sql 0644 root root
-f none /opt/opensips/mysql/siptrace-create.sql 0644 root root
+f none /opt/opensips/mysql/tracer-create.sql 0644 root root
 f none /opt/opensips/mysql/speeddial-create.sql 0644 root root
 f none /opt/opensips/mysql/standard-create.sql 0644 root root
 f none /opt/opensips/mysql/uri_db-create.sql 0644 root root

@@ -534,7 +534,7 @@ INPUT                  = ./ \
                          modules/registrar \
                          modules/rr \
                          modules/seas \
-                         modules/siptrace \
+                         modules/tracer \
                          modules/sl \
                          modules/sms \
                          modules/snmpstats \

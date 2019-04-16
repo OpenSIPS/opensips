@@ -203,7 +203,7 @@ typedef struct _trace_prot {
 
 /**
  * message scope tracing functions
- * currently only siptrace module populates these functions
+ * currently only tracer module populates these functions
  */
 /**
  * the function registers a name for certain type of messages to be traced
@@ -256,7 +256,7 @@ struct modify_trace {
 
 /**
  * generic tracing function in sip context(currently dirrectly related
- * to siptrace module); if custom message needs to be send
+ * to tracer module); if custom message needs to be send
  * (with custom chunks for example for proto_hep module)
  * one can choose to use the trace api function along with check_is_traced_f
  * and get_next_destination_f

@@ -50,7 +50,7 @@ lib/opensips/modules/registrar.so
 lib/opensips/modules/rr.so
 lib/opensips/modules/seas.so
 lib/opensips/modules/signaling.so
-lib/opensips/modules/siptrace.so
+lib/opensips/modules/tracer.so
 lib/opensips/modules/sl.so
 lib/opensips/modules/sms.so
 lib/opensips/modules/speeddial.so
@@ -122,7 +122,7 @@ share/doc/opensips/README.registrar
 share/doc/opensips/README.rr
 share/doc/opensips/README.seas
 share/doc/opensips/README.signaling
-share/doc/opensips/README.siptrace
+share/doc/opensips/README.tracer
 share/doc/opensips/README.sl
 share/doc/opensips/README.sms
 share/doc/opensips/README.speeddial

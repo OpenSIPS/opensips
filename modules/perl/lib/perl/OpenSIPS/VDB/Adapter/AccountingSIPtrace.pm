@@ -25,7 +25,7 @@
 
 =head1 OpenSIPS::VDB::Adapter::AccountingSIPtrace
 
-This package is an Adapter for the acc and siptrace modules, featuring
+This package is an Adapter for the acc and tracer modules, featuring
 only an insert operation.
 
 =cut

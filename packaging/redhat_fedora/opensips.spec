@@ -1005,7 +1005,7 @@ fi
 %{_libdir}/opensips/modules/sip_i.so
 %{_libdir}/opensips/modules/sipcapture.so
 %{_libdir}/opensips/modules/sipmsgops.so
-%{_libdir}/opensips/modules/siptrace.so
+%{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so
 %{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
@@ -1090,7 +1090,7 @@ fi
 %doc docdir/README.sip_i
 %doc docdir/README.sipcapture
 %doc docdir/README.sipmsgops
-%doc docdir/README.siptrace
+%doc docdir/README.tracer
 %doc docdir/README.sl
 %doc docdir/README.sms
 %doc docdir/README.speeddial

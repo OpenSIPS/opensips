@@ -1,5 +1,5 @@
 /*
- * siptrace module - helper module to trace sip messages
+ * tracer module - helper module to trace sip messages
  *
  * Copyright (C) 2006-2009 Voice Sistem S.R.L.
  *
@@ -20,24 +20,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  *
  */
-#ifndef _SIPTRACE_H
-#define _SIPTRACE_H
+#ifndef _TRACER_H
+#define _TRACER_H
 
 #include "../../db/db.h"
 #include "../../db/db_insertq.h"
 #include "../proto_hep/hep.h"
 
 #define NR_KEYS 14
-#define SIPTRACE_TABLE_VERSION 5
+#define TRACER_TABLE_VERSION 5
 #define HEP_PREFIX_LEN (sizeof("hep:") - 1)
 #define SIP_TRACE_TYPE_STR "sip"
 
-#define GET_SIPTRACE_CONTEXT \
+#define GET_TRACER_CONTEXT \
 	( current_processing_ctx ? \
 	  context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx) : \
 	  0 )
 
-#define SET_SIPTRACE_CONTEXT(st_ctx) \
+#define SET_TRACER_CONTEXT(st_ctx) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx, st_ctx)
 
 enum trace_flags {TRACE_MESSAGE=(1<<0),
