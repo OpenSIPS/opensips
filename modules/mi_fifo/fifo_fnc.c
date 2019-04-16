@@ -478,7 +478,7 @@ static inline char *get_reply_filename( char * file, int len )
 
 #define mi_trace_fifo_request(method, params) \
 	do { \
-		if ((is_mi_cmd_traced(mi_trace_mod_id, cmd)) || !cmd) { \
+		if ((!cmd || is_mi_cmd_traced(mi_trace_mod_id, cmd))) { \
 			mi_trace_request(0, 0, method, strlen(method), \
 						params, &backend, t_dst); \
 		} \
@@ -486,7 +486,7 @@ static inline char *get_reply_filename( char * file, int len )
 
 #define mi_trace_fifo_reply(message) \
 	do { \
-		if ((is_mi_cmd_traced(mi_trace_mod_id, cmd)) || !cmd) { \
+		if ((!cmd || is_mi_cmd_traced(mi_trace_mod_id, cmd))) { \
 			mi_trace_reply(0, 0, message, t_dst); \
 		} \
 	} while(0)
