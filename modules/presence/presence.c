@@ -156,7 +156,8 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_subscribe,0},
 		{0,0,0}},
 		REQUEST_ROUTE},
-	{0,0,{{0,0,0}},0}	
+	{"bind_presence",(cmd_function)bind_presence,{{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
