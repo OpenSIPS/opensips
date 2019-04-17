@@ -1,6 +1,6 @@
 PKG="OpenSIPS-snmp"
 NAME="Programmable SIP Server SNMP Support"
-VERSION="2.1-rc1"
+VERSION="3.1-dev"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"

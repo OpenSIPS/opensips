@@ -1,6 +1,6 @@
 PKG="OpenSIPS-regex"
 NAME="Programmable SIP Server Regex Module"
-VERSION="2.1-rc1"
+VERSION="3.1-dev"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"
