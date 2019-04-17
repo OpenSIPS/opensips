@@ -300,7 +300,7 @@ struct module_exports exports = {
     reply_filter,     // reply processing function
     mod_destroy,      // destroy function
     child_init,       // child init function
-    NULL              /* reload confirm function */
+    NULL              // reload confirm function
 };
 
 
