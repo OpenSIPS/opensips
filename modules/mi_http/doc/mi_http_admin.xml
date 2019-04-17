@@ -7,8 +7,8 @@
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
-		This module implements a JSON server that handles GET
-		requests and generates JSON responses.
+		This module provides a HTTP transport layer implementation
+		for &osips;'s Management Interface.
 	</para>
 	</section>
 
@@ -34,20 +34,20 @@
 
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	<section id="param_mi_json_root" xreflabel="mi_json_root">
-		<title><varname>mi_json_root</varname>(string)</title>
+	<section id="param_root" xreflabel="root">
+		<title><varname>root</varname>(string)</title>
 		<para>
-		Specifies the root path for JSON requests:
-		http://[opensips_IP]:[opensips_httpd_port]/[mi_json_root]
+		Specifies the root path for HTTP requests:
+		http://[opensips_IP]:[opensips_httpd_port]/[root]
 		</para>
 		<para>
-		<emphasis>The default value is "json".</emphasis>
+		<emphasis>The default value is "mi".</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>mi_json_root</varname> parameter</title>
+		<title>Set <varname>root</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("mi_json", "mi_json_root", "opensips_mi_json")
+modparam("mi_http", "root", "opensips_mi")
 ...
 </programlisting>
 		</example>
@@ -76,7 +76,7 @@ modparam("mi_json", "mi_json_root", "opensips_mi_json")
 ...
 modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
-modparam("mi_json", "trace_destination", "hep_dest")
+modparam("mi_http", "trace_destination", "hep_dest")
 ...
 </programlisting>
 		</example>
@@ -116,11 +116,11 @@ modparam("mi_json", "trace_destination", "hep_dest")
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced
-modparam("mi_json", "trace_bwlist", "b: ps, which")
+modparam("mi_http", "trace_bwlist", "b: ps, which")
 ...
 ## allow only sip_trace mi command
 ## all the other commands will not be traced
-modparam("mi_json", "trace_bwlist", "w: sip_trace")
+modparam("mi_http", "trace_bwlist", "w: sip_trace")
 ...
 </programlisting>
 		</example>
@@ -145,53 +145,33 @@ modparam("mi_json", "trace_bwlist", "w: sip_trace")
 		isn't enough pkg memory configured).
 		</para>
 		<para>
-		Future realeases of the httpd and mi_json modules
-		will address this issue.
+		Future realeases of the httpd module will address this issue.
 		</para>
 	</section>
 
 	<section>
 	<title>Examples</title>
 		<para>
-		This is an example showing the JSON format for the
-		<quote>get_statistics net: uri:</quote> MI command.
-		Notice how the parameters are comma-separated then URI-encoded.
+		This is an example showing the JSON-RPC request and reply over HTTP
+		for the <quote>ps</quote> MI command.
 		</para>
 		<example>
-		<title>JSON request</title>
+		<title>JSON-RPC request</title>
 		<programlisting format="linespecific">
 <![CDATA[
-GET /json/get_statistics?params=net%3A%2Curi%3A HTTP/1.1
+POST /mi HTTP/1.1
 Accept: application/json
+Content-Type: application/json
 Host: example.net
 
+{"jsonrpc":"2.0","method":"ps","id":10}
+
 HTTP/1.1 200 OK
-Content-Length: 49
+Content-Length: 317
 Content-Type: application/json
 Date: Fri, 01 Nov 2013 12:00:00 GMT
 
-["net:waiting_udp = 0", "net:waiting_tcp = 0", "uri:positive checks = 0", "uri:negative_checks = 0"]
-]]>
-</programlisting>
-	</example>
-		<para>
-		Here is another example showing the JSON format for the
-		<quote>ps</quote> MI command.
-		</para>
-		<example>
-		<title>JSON request</title>
-		<programlisting format="linespecific">
-<![CDATA[
-GET /json/ps HTTP/1.1
-Accept: application/json
-Host: example.net
-
-HTTP/1.1 200 OK
-Content-Length: 428
-Content-Type: application/json
-Date: Fri, 01 Nov 2013 12:00:00 GMT
-
-[{"name":"Process", "value":null, "attributes":{"ID": "0", "PID": "7400", "Type": "stand-alone SIP receiver udp:127.0.0.1:5060"}}, {"name":"Process", "value":null, "attributes":{"ID": "1", "PID": "7402", "Type": "HTTPD INADDR_ANY:8888"}}, {"name":"Process", "value":null, "attributes":{"ID": "2", "PID": "7403", "Type": "time_keeper"}}, {"name":"Process", "value":null, "attributes":{"ID": "3", "PID": "7404", "Type": "timer"}}]
+{"jsonrpc":"2.0","result":{"Processes":[{"ID":0,"PID":9467,"Type":"attendant"},{"ID":1,"PID":9468,"Type":"HTTPD127.0.0.1:8008"},{"ID":3,"PID":9470,"Type":"time_keeper"},{"ID":4,"PID":9471,"Type":"timer"},{"ID":5,"PID":9472,"Type":"SIPreceiverudp:127.0.0.1:5060"},{"ID":7,"PID":9483,"Type":"Timerhandler"},]},"id":10}
 ]]>
 </programlisting>
 	</example>

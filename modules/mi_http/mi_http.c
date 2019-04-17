@@ -44,7 +44,7 @@ int mi_json_answer_to_connection (void *cls, void *connection,
 static ssize_t mi_json_flush_data(void *cls, uint64_t pos, char *buf,
 		size_t max);
 
-str http_root = str_init("json");
+str http_root = str_init("mi");
 httpd_api_t httpd_api;
 
 static str trace_destination_name = {NULL, 0};
@@ -70,7 +70,7 @@ static union sockaddr_union* sv_socket = NULL;
 
 /* module parameters */
 static param_export_t mi_params[] = {
-	{"mi_json_root",      STR_PARAM, &http_root.s},
+	{"root",      STR_PARAM, &http_root.s},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
 	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s  },
 	{"pretty_printing",		INT_PARAM,	&pretty_print},
