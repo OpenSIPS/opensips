@@ -600,7 +600,7 @@ modparam("nat_traversal", "cluster_sharing_tag", "vip")
       </para>
 
       <para>
-        For example calling client_nat_test("3") will perform test 1 and
+        For example calling client_nat_test(3) will perform test 1 and
         test 2 and return true if at least one succeeds, otherwise false.
       </para>
 
@@ -612,7 +612,7 @@ modparam("nat_traversal", "cluster_sharing_tag", "vip")
       <title>Using the <function>client_nat_test</function> function</title>
         <programlisting format="linespecific">
 ...
-if (client_nat_test("3")) {
+if (client_nat_test(3)) {
     .....
 }
 ...
@@ -638,7 +638,7 @@ if (client_nat_test("3")) {
       <title>Using the <function>fix_contact</function> function</title>
         <programlisting format="linespecific">
 ...
-if (client_nat_test("3")) {
+if (client_nat_test(3)) {
     fix_contact();
 }
 ...
@@ -677,7 +677,7 @@ if (client_nat_test("3")) {
         <programlisting format="linespecific">
 ...
 if (($rm=="REGISTER" || $rm=="SUBSCRIBE" ||
-    ($rm=="INVITE" &amp;&amp; !has_totag())) &amp;&amp; client_nat_test("3"))
+    ($rm=="INVITE" &amp;&amp; !has_totag())) &amp;&amp; client_nat_test(3))
 {
     nat_keepalive();
 }
@@ -802,7 +802,7 @@ modparam("registrar", "tcp_persistent_flag", 10)
 # This code runs on the registrar, assuming it has received the
 # REGISTER request directly from the user agent.
 if ($rm=="REGISTER") {
-    if (client_nat_test("3")) {
+    if (client_nat_test(3)) {
         if ($proto==UDP) {
             nat_keepalive();
         } else {
@@ -839,7 +839,7 @@ if ($rm=="REGISTER") {
 # This code runs on P1 which received the REGISTER request and has to
 # forward it to the registrar P2.
 if ($rm=="REGISTER") {
-    if (client_nat_test("3")) {
+    if (client_nat_test(3)) {
         force_rport();
         nat_keepalive();
         append_hf("X-NAT-URI: $source_uri\r\n");
