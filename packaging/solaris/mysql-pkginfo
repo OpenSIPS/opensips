@@ -1,6 +1,6 @@
 PKG="OpenSIPS-mysql"
 NAME="Programmable SIP Server MySQL Support"
-VERSION="2.1-rc1"
+VERSION="3.0-beta"
 ARCH="sparc"
 CLASSES="none"
 CATEGORY="utility"
