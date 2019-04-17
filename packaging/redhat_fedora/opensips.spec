@@ -1310,6 +1310,8 @@ fi
 %doc docdir/README.event_rabbitmq
 %{_libdir}/opensips/modules/rabbitmq.so
 %doc docdir/README.rabbitmq
+%{_libdir}/opensips/modules/rabbitmq_consumer.so
+%doc docdir/README.rabbitmq_consumer
 
 %files radius-modules
 %{_libdir}/opensips/modules/peering.so
