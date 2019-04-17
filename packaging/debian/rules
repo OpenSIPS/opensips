@@ -217,7 +217,7 @@ PYTHON_MOD_PATH=$(addprefix modules/, $(PYTHON_MODULE))
 export $(foreach pkg,$(ALL_MODPKG_LIST),$(pkg)_PKGNAME $(pkg)_MODULES $(pkg)_MOD_PATH)
 
 # not needed anymore
-#ALL_PACKAGES = opensips $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_PKGNAME)) \
+#ALL_PACKAGES = opensips $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_PKGNAME))
 ALL_MODULES = $(foreach pkg,$(ALL_MODPKG_LIST),$($(pkg)_MODULES))
 BUILD_MODULE_PATHS = $(foreach pkg,$(BUILD_MODPKG_LIST),$($(pkg)_MOD_PATH))
 
