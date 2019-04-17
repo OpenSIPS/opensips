@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2009 Dan Pascu
+ * Copyright (C) 2007-2019 Dan Pascu
  *
  * This file is part of opensips, a free SIP server.
  *
