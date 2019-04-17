@@ -232,14 +232,10 @@ static NatTest NAT_Tests[] = {
 };
 
 static cmd_export_t commands[] = {
-    {"nat_keepalive",   (cmd_function)NAT_Keepalive, {{0,0,0}},
-        REQUEST_ROUTE},
-    {"fix_contact",     (cmd_function)FixContact, {{0,0,0}},
-        REQUEST_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
-    {"client_nat_test", (cmd_function)ClientNatTest, {
-        {CMD_PARAM_INT,0,0}, {0,0,0}},
-        REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
-    {0,0,{{0,0,0}},0}
+    {"nat_keepalive",   (cmd_function)NAT_Keepalive, {{0, 0, 0}}, REQUEST_ROUTE},
+    {"fix_contact",     (cmd_function)FixContact,    {{0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
+    {"client_nat_test", (cmd_function)ClientNatTest, {{CMD_PARAM_INT, 0, 0}, {0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
+    {0, 0, {{0, 0, 0}}, 0}
 };
 
 static param_export_t parameters[] = {
