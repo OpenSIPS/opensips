@@ -38,18 +38,10 @@
 int is_from_user_enum(struct sip_msg* _msg, str* _suffix, str* _service);
 
 /*
- * do source number destination routing.
- * that is, make the ruri based on the from number
- * this is like source ip policy routing
- */
-int enum_pv_query(struct sip_msg* _msg, str* _sp, str* _suffix,
-		    str* _service);
-
-/*
  * Make enum query and if query succeeds, replace current uri with the
  * result of the query
  */
-int enum_query(struct sip_msg* _msg, str* _suffix, str* _service);
+int enum_query(struct sip_msg* _msg, str* _num, str* _suffix, str* _service);
 
 /*
  * Infrastructure ENUM versions.

@@ -41,7 +41,10 @@
  * Module initialization function prototype
  */
 static int mod_init(void);
-
+static int fixup_enum_suffix(void **param);
+static int fixup_enum_i_suffix(void **param);
+static int fixup_enum_isn_suffix(void **param);
+static int fixup_enum_service(void **param);
 
 /*
  * Module parameter variables
@@ -77,24 +80,28 @@ str isnsuffix;
 static cmd_export_t cmds[] = {
 	{"enum_query", (cmd_function)enum_query, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		REQUEST_ROUTE},
-	{"enum_pv_query", (cmd_function)enum_pv_query, {
-		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		REQUEST_ROUTE},
-	{"is_from_user_enum", (cmd_function)is_from_user_enum, {
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_suffix, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_service, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"i_enum_query", (cmd_function)i_enum_query, {
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_i_suffix, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_service, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"isn_query", (cmd_function)isn_query, {
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_isn_suffix, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_service, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"is_from_user_enum", (cmd_function)is_from_user_enum, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_suffix, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_suffix, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
@@ -165,3 +172,34 @@ static int mod_init(void)
 	return 0;
 }
 
+static int fixup_enum_suffix(void **param)
+{
+	if (!*param)
+		*param = (void *)&suffix;
+
+	return 0;
+}
+
+static int fixup_enum_i_suffix(void **param)
+{
+	if (!*param)
+		*param = (void *)&i_suffix;
+
+	return 0;
+}
+
+static int fixup_enum_isn_suffix(void **param)
+{
+	if (!*param)
+		*param = (void *)&isnsuffix;
+
+	return 0;
+}
+
+static int fixup_enum_service(void **param)
+{
+	if (!*param)
+		*param = (void *)&service;
+
+	return 0;
+}

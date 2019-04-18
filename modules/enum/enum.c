@@ -660,39 +660,29 @@ done:
 /*
  * See documentation in README file.
  */
-int enum_query(struct sip_msg* _msg, str* _suffix, str* _service)
+int enum_query(struct sip_msg* _msg, str* _num, str* _suffix, str* _service)
 {
 	char *user_s;
 	int user_len, i, j;
 	char name[MAX_DOMAIN_SIZE];
 	char string[17];
 
-	str *__suffix, *__service;
+	if (!_num) {
+		if (parse_sip_msg_uri(_msg) < 0) {
+			LM_ERR("Parsing of R-URI failed\n");
+			return -1;
+		}
 
-	/* Use the suffix module parameter */
-	if (_suffix == NULL)
-		__suffix = &suffix;
-	else
-		__suffix = _suffix;
+		_num = &_msg->parsed_uri.user;
+	}
 
-	/* Use the internal service */
-	if (_service == NULL)
-		__service = &service;
-	else
-		__service = _service;
-
-	if (parse_sip_msg_uri(_msg) < 0) {
-		LM_ERR("Parsing of R-URI failed\n");
+	if (is_e164(_num) == -1) {
+		LM_ERR("number is not in E164 format\n");
 		return -1;
 	}
 
-	if (is_e164(&(_msg->parsed_uri.user)) == -1) {
-		LM_ERR("R-URI user is not an E164 number\n");
-		return -1;
-	}
-
-	user_s = _msg->parsed_uri.user.s;
-	user_len = _msg->parsed_uri.user.len;
+	user_s = _num->s;
+	user_len = _num->len;
 
 	memcpy(&(string[0]), user_s, user_len);
 	string[user_len] = (char)0;
@@ -704,9 +694,9 @@ int enum_query(struct sip_msg* _msg, str* _suffix, str* _service)
 		j = j + 2;
 	}
 
-	memcpy(name + j, __suffix->s, __suffix->len + 1);
+	memcpy(name + j, _suffix->s, _suffix->len + 1);
 
-	return do_query(_msg, string, name, __service);
+	return do_query(_msg, string, name, _service);
 }
 
 
@@ -920,159 +910,3 @@ int i_enum_query(struct sip_msg* _msg, str* suffix, str* service)
 
 	return do_query(_msg, string, name, service);
 }
-
-
-
-/******************* FQUERY *******************/
-
-/*
- * See documentation in README file.
- */
-
-int enum_pv_query(struct sip_msg* _msg, str* num, str* suffix,
-		    str* service)
-{
-	char *user_s;
-	int user_len, i, j, first;
-	char name[MAX_DOMAIN_SIZE];
-	char uri[MAX_URI_SIZE];
-	char new_uri[MAX_URI_SIZE];
-	unsigned int priority, curr_prio;
-	qvalue_t q;
-	char tostring[17];
-	struct rdata* head;
-	struct rdata* l;
-	struct naptr_rdata* naptr;
-	str pattern, replacement, result, new_result;
-	char string[17];
-
-	/*
-	 *  Get R-URI user to tostring
-	 */
-	if (parse_sip_msg_uri(_msg) < 0) {
-		LM_ERR("R-URI parsing failed\n");
-		return -1;
-	}
-
-	user_s = _msg->parsed_uri.user.s;
-	user_len = _msg->parsed_uri.user.len;
-
-	memcpy(&(tostring[0]), user_s, user_len);
-	tostring[user_len] = (char)0;
-
-	if (is_e164(num) == -1) {
-	    LM_ERR("pseudo variable does not contain an E164 number\n");
-	    return -1;
-	}
-
-	user_s = num->s;
-	user_len = num->len;
-
-	memcpy(&(string[0]), user_s, user_len);
-	string[user_len] = (char)0;
-
-	j = 0;
-	for (i = user_len - 1; i > 0; i--) {
-		name[j] = user_s[i];
-		name[j + 1] = '.';
-		j = j + 2;
-	}
-
-	memcpy(name + j, suffix->s, suffix->len + 1);
-
-	head = get_record(name, T_NAPTR);
-
-	if (head == 0) {
-		LM_DBG("No NAPTR record found for %s.\n", name);
-		return -1;
-	}
-
-	naptr_sort(&head);
-
-	q = MAX_Q - 10;
-	curr_prio = 0;
-	first = 1;
-
-	for (l = head; l; l = l->next) {
-
-		if (l->type != T_NAPTR) continue; /*should never happen*/
-		naptr = (struct naptr_rdata*)l->rdata;
-		if (naptr == 0) {
-			LM_ERR("Null rdata in DNS response\n");
-			continue;
-		}
-
-		LM_DBG("ENUM query on %s: order %u, pref %u, flen %u, flags "
-		       "'%.*s', slen %u, services '%.*s', rlen %u, "
-		       "regexp '%.*s'\n",
-		       name, naptr->order, naptr->pref,
-		    naptr->flags_len, (int)(naptr->flags_len), ZSW(naptr->flags),
-		    naptr->services_len,
-		    (int)(naptr->services_len), ZSW(naptr->services), naptr->regexp_len,
-		    (int)(naptr->regexp_len), ZSW(naptr->regexp));
-
-		if (sip_match(naptr, service) == 0) continue;
-
-		if (parse_naptr_regexp(&(naptr->regexp[0]), naptr->regexp_len,
-				       &pattern, &replacement) < 0) {
-			LM_ERR("Parsing of NAPTR regexp failed\n");
-			continue;
-		}
-		result.s = &(uri[0]);
-		result.len = MAX_URI_SIZE;
-		/* Avoid making copies of pattern and replacement */
-		pattern.s[pattern.len] = (char)0;
-		replacement.s[replacement.len] = (char)0;
-		if (reg_replace(pattern.s, replacement.s, &(tostring[0]),
-				&result) < 0) {
-			pattern.s[pattern.len] = '!';
-			replacement.s[replacement.len] = '!';
-			LM_ERR("Regexp replace failed\n");
-			continue;
-		}
-		LM_DBG("Resulted in replacement: '%.*s'\n",
-		       result.len, ZSW(result.s));
-		pattern.s[pattern.len] = '!';
-		replacement.s[replacement.len] = '!';
-
-		if (param.len > 0) {
-			if (result.len + param.len > MAX_URI_SIZE - 1) {
-				LM_ERR("URI is too long\n");
-				continue;
-			}
-			new_result.s = &(new_uri[0]);
-			new_result.len = MAX_URI_SIZE;
-			if (add_uri_param(&result, &param, &new_result) == 0) {
-				LM_ERR("Parsing of URI <%.*s> failed\n",
-				       result.len, result.s);
-				continue;
-			}
-			if (new_result.len > 0) {
-				result = new_result;
-			}
-		}
-
-		if (first) {
-			if (set_ruri(_msg, &result) == -1) {
-				goto done;
-			}
-			set_ruri_q(_msg, q);
-			first = 0;
-			curr_prio = ((naptr->order) << 16) + naptr->pref;
-		} else {
-			priority = ((naptr->order) << 16) + naptr->pref;
-			if (priority > curr_prio) {
-				q = q - 10;
-				curr_prio = priority;
-			}
-			if (append_branch(_msg, &result, 0, 0, q, 0, 0) == -1) {
-				goto done;
-			}
-		}
-	}
-
-done:
-	free_rdata_list(head);
-	return first ? -1 : 1;
-}
-
