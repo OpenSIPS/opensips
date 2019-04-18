@@ -93,28 +93,6 @@ typedef void *(*osips_block_realloc_f) (void *block, void *ptr, unsigned long si
 typedef void (*osips_block_free_f) (void *block, void *ptr);
 #endif
 
-#ifdef DBG_MALLOC
-typedef void *(*osips_malloc_f) (unsigned long size,
-                      const char *file, const char *func, unsigned int line);
-typedef void *(*osips_realloc_f) (void *ptr, unsigned long size,
-                      const char *file, const char *func, unsigned int line);
-typedef void (*osips_free_f) (void *ptr,
-                      const char *file, const char *func, unsigned int line);
-#define func_malloc(_func, _size) (_func)(_size, \
-		__FILE__, __FUNCTION__, __LINE__ )
-#define func_realloc(_func, _ptr, _size) (_func)(_ptr, _size, \
-		__FILE__, __FUNCTION__, __LINE__ )
-#define func_free(_func, _ptr) (_func)(_ptr, \
-		__FILE__, __FUNCTION__, __LINE__ )
-#else
-typedef void *(*osips_malloc_f) (unsigned long size);
-typedef void *(*osips_realloc_f) (void *ptr, unsigned long size);
-typedef void (*osips_free_f) (void *ptr);
-#define func_malloc(_func, _size) (_func)(_size)
-#define func_realloc(_func, _ptr, _size) (_func)(_ptr, _size)
-#define func_free(_func, _ptr) (_func)(_ptr)
-#endif
-
 typedef void (*osips_mem_info_f) (void *block, struct mem_info *i);
 typedef void (*osips_mem_status_f) (void *block);
 typedef unsigned long (*osips_get_mmstat_f) (void *block);
