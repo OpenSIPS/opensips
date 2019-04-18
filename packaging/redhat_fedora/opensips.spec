@@ -1400,7 +1400,7 @@ fi
 
 
 %changelog
-* Thu Apr 16 2019 Razvan Crainea <razvan@opensips.org> - 3.1.0-1
+* Tue Apr 16 2019 Razvan Crainea <razvan@opensips.org> - 3.1.0-1
 - Remove osipsconsole
 
 * Thu Apr 11 2019 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
