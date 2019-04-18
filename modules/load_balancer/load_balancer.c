@@ -117,17 +117,17 @@ static void lb_update_max_loads(unsigned int ticks, void *param);
 
 static cmd_export_t cmds[]={
 	{"lb_start", (cmd_function)w_lb_start, {
-		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR, fixup_resources, fixup_free_resources},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"load_balance", (cmd_function)w_lb_start_or_next, {
-		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR, fixup_resources, fixup_free_resources},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_start_or_next", (cmd_function)w_lb_start_or_next, {
-		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR, fixup_resources, fixup_free_resources},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
