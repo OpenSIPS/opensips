@@ -1048,7 +1048,8 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 	do { \
 		__stop_expire_timer(begin,threshold,func_info, \
 							extra_s,extra_len,tcp,slow); \
-		inc_stat(total); \
+		if (total) \
+			inc_stat(total); \
 	} while (0)
 
 
