@@ -48,7 +48,7 @@
 #include "../dprint.h"
 #include "../globals.h"
 #include "../lock_ops.h" /* we don't include locking.h on purpose */
-#include "func_mem.h"
+#include "mem_funcs.h"
 #include "common.h"
 
 #include "../mi/mi.h"
