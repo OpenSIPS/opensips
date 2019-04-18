@@ -713,7 +713,7 @@ int enum_query(struct sip_msg* _msg, str* _suffix, str* _service)
 /*
  * See documentation in README file.
  */
-int isn_query_2(struct sip_msg* _msg, str* suffix, str* service)
+int isn_query(struct sip_msg* _msg, str* suffix, str* service)
 {
 	char *user_s = NULL;
 	int user_len, i, j;
