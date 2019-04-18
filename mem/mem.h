@@ -29,7 +29,7 @@
 #include "../config.h"
 #include "../dprint.h"
 
-#include "func_mem.h"
+#include "mem_funcs.h"
 #ifdef PKG_MALLOC
 #include "common.h"
 
