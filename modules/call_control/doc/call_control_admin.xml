@@ -55,7 +55,7 @@
     <para>
       Callcontrol is invoked by calling the call_control() function for the
       initial INVITE of every call we want to apply a limit to. This will end
-      up as a request to the callcontrol application, which will interogate
+      up as a request to the callcontrol application, which will interrogate
       the rating engine for a time limit for the given caller and destination.
       The rating engine will determine if the destination has any associated
       cost and if the caller has any credit limit and if so will return the
@@ -281,7 +281,7 @@ modparam("call_control", "socket_timeout", 500)
       <para>
         This is used by the rating engine which finds the rates to apply to a
         call based on caller's SIP URI, caller's SIP domain or caller's IP
-        address (whichever yields a rate forst, in this order).
+        address (whichever yields a rate first, in this order).
       </para>
 
       <para>
