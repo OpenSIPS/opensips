@@ -33,9 +33,9 @@
 #define SIP_TRACE_TYPE_STR "sip"
 
 #define GET_TRACER_CONTEXT \
-	( current_processing_ctx ? \
+	((trace_info_p)( current_processing_ctx ? \
 	  context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx) : \
-	  0 )
+	  0 ))
 
 #define SET_TRACER_CONTEXT(st_ctx) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, sl_ctx_idx, st_ctx)
@@ -103,14 +103,29 @@ typedef struct tlist_dyn_elem {
 	struct trace_filter *filters;
 } tlist_dyn_elem_t, *tlist_dyn_elem_p;
 
-
-typedef struct trace_info {
+typedef struct trace_instance {
 	str *trace_attrs;
 	int trace_types;
 	tlist_elem_p trace_list;
 
+	struct trace_instance *next;
+} trace_instance_t, *trace_instance_p;
+
+#define TRACE_INFO_STAT		(1<<0)		/* request already traced */
+#define TRACE_INFO_TRAN		(1<<1)		/* registred tm callbacks */
+#define TRACE_INFO_DIALOG	(1<<2)		/* registred dialog callbacks */
+
+#define TRACE_FLAG_SET(_ti, _f) ((_ti)->flags |= (_f))
+#define TRACE_FLAG_UNSET(_ti, _f) ((_ti)->flags &= ~(_f))
+#define TRACE_FLAG_ISSET(_ti, _f) ((_ti)->flags & (_f))
+
+typedef struct trace_info {
+	unsigned long flags;
+
 	/* connection id correlationg sip message with transport messages */
 	unsigned long long conn_id;
+
+	trace_instance_p instances;
 } trace_info_t, *trace_info_p;
 
 /* maximum 32 types to trace; this way we'll
