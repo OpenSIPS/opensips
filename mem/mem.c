@@ -60,6 +60,7 @@ unsigned long (*gen_pkg_get_frags)(void *blk);
 
 int set_pkg_mm(const char *mm_name)
 {
+#ifdef PKG_MALLOC
 #ifdef INLINE_ALLOC
 	LM_NOTICE("this is an inlined allocator build (see opensips -V), "
 	          "cannot set a custom pkg allocator (%s)\n", mm_name);
@@ -70,6 +71,10 @@ int set_pkg_mm(const char *mm_name)
 		return -1;
 
 	return 0;
+#else
+	LM_ERR("cannot change pkg allocator when system malloc is used!\n");
+	return -1;
+#endif
 }
 
 int init_pkg_mallocs(void)
