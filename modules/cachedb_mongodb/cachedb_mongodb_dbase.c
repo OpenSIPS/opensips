@@ -76,6 +76,7 @@ static char *build_mongodb_connect_string(struct cachedb_id *id)
 	      strlen(id->host) + 1 +
 		  5 + 1 + /* port */
 	      strlen(id->database) + 1 +
+		  (id->extra_options ? strlen(id->extra_options) : 0) + 1 +
 		  1;
 
 	ret = pkg_malloc(len);
@@ -90,23 +91,20 @@ static char *build_mongodb_connect_string(struct cachedb_id *id)
 	else
 		db_len = strlen(id->database);
 
-	if (id->username && id->password) {
-		if (id->port == 0) {
-			sprintf(ret, "mongodb://%s:%s@%s/%.*s", id->username, id->password,
-			        id->host, db_len, id->database);
-		} else {
-			sprintf(ret, "mongodb://%s:%s@%s:%d/%.*s", id->username, id->password,
-			        id->host, id->port, db_len, id->database);
-		}
+	len = sprintf(ret, "mongodb://");
 
-	} else {
-		if (id->port == 0) {
-			sprintf(ret, "mongodb://%s/%.*s", id->host, db_len, id->database);
-		} else {
-			sprintf(ret, "mongodb://%s:%d/%.*s", id->host, id->port,
-			        db_len, id->database);
-		}
-	}
+	if (id->username && id->password)
+		len += sprintf(ret + len, "%s:%s@", id->username, id->password);
+
+	len += sprintf(ret + len, "%s", id->host);
+
+	if (id->port != 0)
+		len += sprintf(ret + len, ":%d", id->port);
+
+	len += sprintf(ret + len, "/%.*s", db_len, id->database);
+
+	if (id->extra_options)
+		sprintf(ret + len, "?%s", id->extra_options);
 
 	return ret;
 }
@@ -147,7 +145,8 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 
 	p = memchr(id->database, '.', strlen(id->database));
 	if (!p) {
-		LM_ERR("malformed Mongo database part in %s\n", id->database);
+		LM_ERR("MongoDB URL is missing the '/DB.collection' construct, only "
+		       "have '/DB' so far: /%s\n", id->database);
 		return NULL;
 	}
 
@@ -158,6 +157,9 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 		LM_ERR("oom\n");
 		return NULL;
 	}
+
+	LM_DBG("db: '%s', col: '%s', options: '%s'\n",
+	       con->db, con->col, id->extra_options);
 
 	con->database = mongoc_client_get_database(con->client, id->database);
 	con->collection = mongoc_client_get_collection(con->client, id->database, p+1);

@@ -41,7 +41,7 @@ static int child_init(int);
 static void destroy(void);
 
 static str cache_mod_name = str_init("mongodb");
-struct cachedb_url *mongodb_script_urls = NULL;
+struct cachedb_url *mongodb_script_urls;
 
 int mongo_exec_threshold=0;
 
