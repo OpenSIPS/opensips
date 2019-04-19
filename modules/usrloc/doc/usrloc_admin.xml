@@ -93,8 +93,7 @@
 		Currently, the metadata information may be published to NoSQL databases
 		which support key/multi-value column-like associations. Example known
 		backends to support these abstractions at the time of writing are
-		MongoDB and Cassandra. Of these two, only the MongoDB OpenSIPS driver
-		has been so far extended to implement the required NoSQL API endpoints.
+		MongoDB and Cassandra.
 		</para>
 		<para>
 		The <ulink url="http://www.opensips.org/Documentation/Tutorials-Distributed-User-Location-Federation">
@@ -133,13 +132,10 @@
 		nodes configuration, both of which make use of a shared virtual IP.
 		</para>
 		<para>
-		Currently, registrations may optionally be fully managed inside NoSQL
+		Registrations may optionally be fully managed inside NoSQL
 		databases which support key/multi-value column-like associations.
-		Example known backends to support these abstractions are MongoDB and
-		Apache Cassandra.  In OpenSIPS 2.4, the MongoDB OpenSIPS driver is the
-		only cache DB driver to implement the required capabilities.  The
-		equivalent support for Apache Cassandra 3.x was added for the 3.0
-		OpenSIPS release.
+		Example known backends to currently support these abstractions are MongoDB
+		and Apache Cassandra.
 		</para>
 		<para>
 		The <ulink url="http://www.opensips.org/Documentation/Tutorials-Distributed-User-Location-Full-Sharing">
