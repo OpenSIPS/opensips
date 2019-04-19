@@ -58,7 +58,7 @@
 		"e2u+parameter:sip". When the second parameter starts with a '+' sign, 
 		the ENUM lookup also supports compound NAPTRs 
 		(e.g. "e2u+voice:sip+video:sip") and searching for multiple service 
-		types within one lookup. Multiple service types must be separeted 
+		types within one lookup. Multiple service types must be separated 
 		by a '+' sign.
 	</para>
 	<para>
@@ -306,7 +306,7 @@ enum_query(, "e164.arpa.", "voice");
 # note the '+' sign in front of the second parameter
 enum_query($avp(number), "e164.arpa.", "+sip+voice:sip+video:sip");
 ...
-# quering for service sip and voice:sip
+# querying for service sip and voice:sip
 enum_query(, "e164.arpa.");
 enum_query(, "e164.arpa.", "voice");
 # or use instead
