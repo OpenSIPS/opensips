@@ -366,6 +366,9 @@ int cfg_pop(void)
 		return -1;
 	}
 
+	/* the file path MUST NOT be freed, as the lexer and parser work in tandem,
+	 * so by this point, there are plenty of structures referencing it */
+
 	if (cfg_include_stackp == cfg_include_stack) {
 		cfg_include_stackp = NULL;
 	} else {
@@ -602,4 +605,52 @@ out_err_pipes:
 out_err:
 	fclose(flat_cfg);
 	return NULL;
+}
+
+int eatback_pp_tok(struct str_buf *buf)
+{
+	char *p;
+	str last_line;
+
+	if (!buf->s)
+		return 0;
+
+	for (p = buf->crt - 1; p >= buf->s; p--)
+		if (*p == '\n') {
+			p++;
+			goto match_pp_tok;
+		}
+
+	return 0;
+
+match_pp_tok:
+	last_line.s = p;
+	last_line.len = buf->crt - p;
+
+	if (last_line.len < 0) {
+		LM_BUG("negative line len");
+		return 0;
+	}
+
+	if (last_line.len >= cfgtok_line.len &&
+		!memcmp(last_line.s, cfgtok_line.s, cfgtok_line.len))
+		goto clear_last_line;
+
+	if (last_line.len >= cfgtok_filebegin.len &&
+		!memcmp(last_line.s, cfgtok_filebegin.s, cfgtok_filebegin.len))
+		goto clear_last_line;
+
+	if (last_line.len >= cfgtok_fileend.len &&
+		!memcmp(last_line.s, cfgtok_fileend.s, cfgtok_fileend.len))
+		goto clear_last_line;
+
+	/* don't touch anything, this is an actual script line! */
+	return 0;
+
+clear_last_line:
+	LM_DBG("clearing pp token line: '%.*s'\n", (int)(buf->crt - p), p);
+	buf->left += buf->crt - p;
+	*p = '\0';
+	buf->crt = p;
+	return 1;
 }

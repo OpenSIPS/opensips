@@ -29,11 +29,22 @@
 
 #define CFG_MAX_INCLUDE_DEPTH	20
 
+struct str_buf{
+	char* s;
+	char* crt;
+	int left;
+};
+
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 		FILE **ret_stream);
 int cfg_push(const str *cfg_file);
 int cfg_pop(void);
 void cfg_dump_context(const char *file, int line, int colstart, int colend);
 void cfg_dump_backtrace(void);
+
+/* ultimately helps correctly parse multi-line strings by eating any
+ * additionally inserted preprocessor directive as the last line of the
+ * given string buffer */
+int eatback_pp_tok(struct str_buf *buf);
 
 #endif /* __OSS_CFG_PP_H__ */
