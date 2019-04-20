@@ -77,11 +77,6 @@
 	#define SCRIPTVAR_S		4
 
 	#define STR_BUF_ALLOC_UNIT	128
-	struct str_buf{
-		char* s;
-		char* crt;
-		int left;
-	};
 
 	static int comment_nest=0;
 	static int state=0;
@@ -795,7 +790,9 @@ SPACE		[ ]
 						memset(&s_buf, 0, sizeof(s_buf));
 						return STRING;
 					}
-<STRING2>.|{EAT_ABLE}|{CR}	{ yymore(); }
+<STRING2>.|{EAT_ABLE}	{ addchar(&s_buf, *yytext); }
+<STRING2>{CR}	{ count(); if (!eatback_pp_tok(&s_buf))
+								addchar(&s_buf, *yytext); }
 
 <STRING1>\\n		{ count(); addchar(&s_buf, '\n'); }
 <STRING1>\\r		{ count(); addchar(&s_buf, '\r'); }
@@ -809,8 +806,9 @@ SPACE		[ ]
     subst_uri if allowed (although everybody should use '' in subt_uri) */
 <STRING1>\\[0-7]{2,3}	{ count(); addchar(&s_buf,
 											(char)strtol(yytext+1, 0, 8));  }
-<STRING1>\\{CR}		{ count(); } /* eat escaped CRs */
-<STRING1>{CR}	{ count();addchar(&s_buf, *yytext); }
+<STRING1>\\{CR}		{ count(); eatback_pp_tok(&s_buf); } /* eat escaped CRs */
+<STRING1>{CR}	{ count(); if (!eatback_pp_tok(&s_buf))
+								addchar(&s_buf, *yytext); }
 <STRING1>.|{EAT_ABLE}|{CR}	{ addchar(&s_buf, *yytext); }
 
 
