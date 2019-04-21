@@ -160,20 +160,20 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Henning Westerholt (@henningw) 47 22 385 1129
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 43 30 615 417
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 44 31 617 418
    3. Marco Lorrai 22 1 2660 0
    4. Daniel-Constantin Mierla (@miconda) 20 15 221 140
    5. Liviu Chircu (@liviuchircu) 18 10 136 313
    6. Razvan Crainea (@razvancrainea) 5 3 48 13
-   7. Anca Vamanu 4 1 89 103
-   8. Elena-Ramona Modroiu 3 1 37 1
-   9. Anonymous 3 1 4 3
-   10. Konstantin Bokarius 3 1 3 5
+   7. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
+   8. Anca Vamanu 4 1 89 103
+   9. Elena-Ramona Modroiu 3 1 37 1
+   10. Anonymous 3 1 4 3
 
-   All remaining contributors: Alex Massover, Razvan Pistolea,
-   Norman Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert, Vlad Paiu (@vladpaiu), Carsten Bock, Vlad
-   Patrascu (@rvlad-patrascu).
+   All remaining contributors: Konstantin Bokarius, Alex Massover,
+   Razvan Pistolea, Norman Brandinger (@NormB), Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert, Vlad Paiu (@vladpaiu),
+   Carsten Bock.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -195,11 +195,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Apr 2017
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2005 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2005 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   5.  Razvan Crainea (@razvancrainea)     Oct 2011 - Apr 2017
    6.  Vlad Paiu (@vladpaiu)               Jul 2011 - Jul 2011
    7.  Razvan Pistolea                     Jul 2009 - Jul 2009
    8.  Alex Massover                       Mar 2009 - Mar 2009

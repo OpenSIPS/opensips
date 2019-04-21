@@ -17,8 +17,6 @@ event_route Module
         1.6. Exported Parameters
         1.7. Exported Functions
 
-              1.7.1. fetch_event_params(pvar_list)
-
    2. Frequently Asked Questions
    3. Contributors
 
@@ -39,45 +37,40 @@ event_route Module
    List of Examples
 
    1.1. EVENT_ROUTE usage
-   1.2. fetch_event_params usage
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This module provides a simple way for handling different
-   events, triggered through the OpenSIPS Event Interface,
-   directly from the OpenSIPS script. For a specific event, a
-   special route (event_route) has to be declared in the script,
-   and should contain the code that handles the event. The route
-   is executed by the module when the corresponding event is
-   raised by the OpenSIPS Event Interface.Since version 1.12, the
-   way an event is handlend (sync/async) should be specified from
-   the configuration script with the desired keyword following the
-   name of the event (event_route[e, sync]).
+   This module provides a simple way for capturing and handling
+   directly in the OpenSIPS script of different events triggered
+   through the OpenSIPS Event Interface
+
+   If you want to capture and handle a certian event, you need to
+   define a dedicated route (event_route) into the OpenSIPS
+   script, route having as name the name/code of the desired
+   event. The route is triggered (and executed) by the module when
+   the corresponding event is raised by the OpenSIPS
+
+   NOTE that there is the triggered event_route is run asyncronus
+   (and in a differen process) in regards to the code or process
+   that generated the actual event.
+
+   NOTE that inside the event_route you should NOT rely on
+   anything more than the content provide by the event itself (see
+   below variable). DO NOT assume to have access to any other
+   variable or context, not even to a SIP message.
 
 1.2. ROUTE events parameters
 
    In order to retrieve the parameters of an event, the
-   fetch_event_params(pvar_list) function is used. It receives a
-   single parameter, that consists of a list of parameters names
-   (optional) and the pseudo-variable where the values will be
-   stored. The grammar is:
-
-   [ param_name= ] pvar [; [ param_name= ] pvar ]*
+   $param(name) variable has to be used. It's name can be the
+   parameter's name, or, if an integer is specified, its index
+   inside the parameter's list.
 
    Example:
-fetch_event_params("$avp(first_param)");
-fetch_event_params("ip=$avp(pike_ip)");
-fetch_event_params("source=$avp(src);destination=$avp(dst)");
-
-   If the name of the parameter is not specified, the avp will be
-   populated according to the order of the parameters, as exported
-   by the event. The following code will populate the $avp(first)
-   avp with the first parameter of the event, $avp(second) with
-   the second one and so on.
-
-   fetch_event_params("$avp(first);$avp(second);$avp(third)");
+xlog("first parameters is $param(1)\n");
+xlog("Pike Blocking IP is $param(ip)\n");
 
    NOTE: An event may be triggered within a different event,
    leading to nested processing. This function will retrieve the
@@ -94,8 +87,7 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 
    Example 1.1. EVENT_ROUTE usage
         event_route[E_PIKE_BLOCKED] {
-                fetch_event_params("ip=$avp(pike-ip)");
-                xlog("IP $avp(pike-ip) has been blocked\n");
+                xlog("IP $param(ip) has been blocked\n");
         }
 
 1.4. EVENT_ROUTE socket syntax
@@ -129,24 +121,7 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 
 1.7. Exported Functions
 
-1.7.1.  fetch_event_params(pvar_list)
-
-   Retrieves the parameters of the event. For more information,
-   please read Section 1.2, “ROUTE events parameters”.
-
-   The the pseudo variables list as described in Section 1.2,
-   “ROUTE events parameters”.
-
-   This function can be used from REQUEST_ROUTE and EVENT_ROUTE.
-
-   Example 1.2. fetch_event_params usage
-...
-fetch_event_params("$avp(first_param)"); # fetch the first parameter of
-an event
-fetch_event_params("ip=$avp(pike_ip)");  # fetch the ip parameter
-fetch_event_params("source=$avp(src);destination=$avp(dst)"); # fetch th
-e source and destination parameters
-...
+   The function does not export any function.
 
 Chapter 2. Frequently Asked Questions
 
@@ -159,11 +134,18 @@ Chapter 2. Frequently Asked Questions
 
    2.2.
 
+       What happened with the “fetch_event_params()” function?
+
+       This function has been dropped starting with OpenSIPS 3.0. Its
+       functionality has been replaced by the “$param(name)” variable.
+
+   2.3.
+
        Where can I find more about OpenSIPS?
 
        Take a look at http://www.opensips.org/.
 
-   2.3.
+   2.4.
 
        Where can I post a question about this module?
 
@@ -181,7 +163,7 @@ Chapter 2. Frequently Asked Questions
        If you want to keep the mail private, send it to
        <users@lists.opensips.org>.
 
-   2.4.
+   2.5.
 
        How can I report a bug?
 
@@ -195,11 +177,11 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 22 14 842 28
-   2. Liviu Chircu (@liviuchircu) 11 9 20 41
-   3. Ionut Ionita (@ionutrazvanionita) 8 5 138 51
-   4. Ovidiu Sas (@ovidiusas) 7 2 384 9
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
+   1. Razvan Crainea (@razvancrainea) 31 17 979 310
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 13 5 95 354
+   3. Liviu Chircu (@liviuchircu) 11 9 20 41
+   4. Ionut Ionita (@ionutrazvanionita) 8 5 138 51
+   5. Ovidiu Sas (@ovidiusas) 7 2 384 9
    6. Ionel Cerghit (@ionel-cerghit) 3 1 5 6
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
    8. Vlad Paiu (@vladpaiu) 2 1 1 0
@@ -226,12 +208,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Vlad Paiu (@vladpaiu)               Jun 2016 - Jun 2016
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2016
-   6.  Razvan Crainea (@razvancrainea)     Dec 2012 - Feb 2016
+   1.  Razvan Crainea (@razvancrainea)     Dec 2012 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   6.  Vlad Paiu (@vladpaiu)               Jun 2016 - Jun 2016
    7.  Ionel Cerghit (@ionel-cerghit)      Jun 2015 - Jun 2015
    8.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Oct 2014
    9.  Ovidiu Sas (@ovidiusas)             Jul 2014 - Jul 2014
@@ -244,9 +226,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Ovidiu Sas
-   (@ovidiusas), Razvan Crainea (@razvancrainea).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
+   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

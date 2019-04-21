@@ -34,6 +34,22 @@
 		<entry align="center">1508</entry>
 		<entry align="center">610</entry>
 	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">9</entry>
+		<entry align="center">12</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
+		<entry align="center">0</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -64,11 +80,21 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Apr 2019 - Apr 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Apr 2019 - Apr 2019</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Jan 2019 - Jan 2019</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>4. </entry>
 		<entry>Victor Ciurel (<ulink url="https://github.com/victor-ciurel">@victor-ciurel</ulink>)</entry>
 		<entry align="center">Sep 2017 - Jan 2019</entry>
 	</row>

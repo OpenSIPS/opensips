@@ -260,8 +260,6 @@ Chapter 1. Admin Guide
    databases which support key/multi-value column-like
    associations. Example known backends to support these
    abstractions at the time of writing are MongoDB and Cassandra.
-   Of these two, only the MongoDB OpenSIPS driver has been so far
-   extended to implement the required NoSQL API endpoints.
 
    The federated user location tutorial contains precise details
    on how to achieve this setup (including High Availability
@@ -294,13 +292,10 @@ Chapter 1. Admin Guide
    active-passive registrar nodes configuration, both of which
    make use of a shared virtual IP.
 
-   Currently, registrations may optionally be fully managed inside
-   NoSQL databases which support key/multi-value column-like
-   associations. Example known backends to support these
-   abstractions are MongoDB and Apache Cassandra. In OpenSIPS 2.4,
-   the MongoDB OpenSIPS driver is the only cache DB driver to
-   implement the required capabilities. The equivalent support for
-   Apache Cassandra 3.x was added for the 3.0 OpenSIPS release.
+   Registrations may optionally be fully managed inside NoSQL
+   databases which support key/multi-value column-like
+   associations. Example known backends to currently support these
+   abstractions are MongoDB and Apache Cassandra.
 
    The "full sharing" user location tutorial contains precise
    details on how to achieve this setup (including full NoSQL
@@ -1501,12 +1496,12 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 231 136 3963 3497
-   3. Liviu Chircu (@liviuchircu) 218 135 6081 1947
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 233 138 3971 3498
+   3. Liviu Chircu (@liviuchircu) 219 136 6082 1948
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
-   6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
-   7. Vlad Patrascu (@rvlad-patrascu) 35 17 761 619
+   6. Vlad Patrascu (@rvlad-patrascu) 39 20 768 631
+   7. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
    8. Razvan Crainea (@razvancrainea) 22 17 372 107
    9. Henning Westerholt (@henningw) 22 11 462 356
    10. Andrei Pelinescu-Onciul 17 13 151 91
@@ -1542,10 +1537,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2011 - Mar 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Feb 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Jan 2019
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Apr 2019
+   4.  Razvan Crainea (@razvancrainea)     Jul 2011 - Mar 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Shlomi Gutman                       Mar 2018 - Mar 2018
    7.  @jalung                             Aug 2017 - Aug 2017
@@ -1572,16 +1567,15 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
-   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
-   (@eseanucristian), Ovidiu Sas (@ovidiusas), Andrei Datcu
-   (@andrei-datcu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen
-   (@juha-h), Jan Janak (@janakj), Maksym Sobolyev (@sobomax),
-   Nils Ohlmeier.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut Ionita
+   (@ionutrazvanionita), Eseanu Marius Cristian (@eseanucristian),
+   Ovidiu Sas (@ovidiusas), Andrei Datcu (@andrei-datcu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Marcus
+   Hunger, Elena-Ramona Modroiu, Juha Heinanen (@juha-h), Jan
+   Janak (@janakj), Maksym Sobolyev (@sobomax), Nils Ohlmeier.
 
    Documentation Copyrights:
 

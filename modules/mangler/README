@@ -208,14 +208,14 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Gabriel Vasile 51 13 3118 674
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 24 18 192 196
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 25 19 194 197
    3. Daniel-Constantin Mierla (@miconda) 13 11 25 49
    4. Andrei Pelinescu-Onciul 12 9 71 72
    5. Razvan Crainea (@razvancrainea) 11 9 35 25
    6. Liviu Chircu (@liviuchircu) 9 6 16 59
    7. Jan Janak (@janakj) 9 4 428 48
-   8. Henning Westerholt (@henningw) 8 5 13 104
-   9. Vlad Patrascu (@rvlad-patrascu) 6 4 40 22
+   8. Vlad Patrascu (@rvlad-patrascu) 8 5 96 101
+   9. Henning Westerholt (@henningw) 8 5 13 104
    10. Jiri Kuthan (@jiriatipteldotorg) 3 2 5 0
 
    All remaining contributors: Walter Doekes (@wdoekes),
@@ -242,11 +242,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2018
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2017
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Mar 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2017
    6.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
    7.  Henning Westerholt (@henningw)      May 2007 - Jun 2008
    8.  Daniel-Constantin Mierla (@miconda) Sep 2003 - Mar 2008

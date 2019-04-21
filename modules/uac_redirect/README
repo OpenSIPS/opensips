@@ -6,28 +6,24 @@ UAC_REDIRECT Module
    1. Admin Guide
 
         1.1. Overview
-        1.2. Accounting
-        1.3. Dependencies
+        1.2. Dependencies
 
-              1.3.1. OpenSIPS Modules
-              1.3.2. External Libraries or Applications
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
 
-        1.4. Exported Parameters
+        1.3. Exported Parameters
 
-              1.4.1. default_filter (string)
-              1.4.2. deny_filter (string)
-              1.4.3. accept_filter (string)
-              1.4.4. acc_function (string)
-              1.4.5. acc_db_table (string)
+              1.3.1. default_filter (string)
+              1.3.2. deny_filter (string)
+              1.3.3. accept_filter (string)
 
-        1.5. Exported Functions
+        1.4. Exported Functions
 
-              1.5.1. set_deny_filter(filter,flags)
-              1.5.2. set_accept_filter(filter,flags)
-              1.5.3. get_redirects(max)
-              1.5.4. get_redirects(max,reason)
+              1.4.1. set_deny_filter(filter,flags)
+              1.4.2. set_accept_filter(filter,flags)
+              1.4.3. get_redirects([max_total[, max_branch]])
 
-        1.6. Script Example
+        1.5. Script Example
 
    2. Contributors
 
@@ -50,13 +46,10 @@ UAC_REDIRECT Module
    1.1. Set default_filter module parameter
    1.2. Set deny_filter module parameter
    1.3. Set accept_filter module parameter
-   1.4. Set acc_function parameter
-   1.5. Set acc_db_table parameter
-   1.6. set_deny_filter usage
-   1.7. set_accept_filter usage
-   1.8. get_redirects usage
-   1.9. get_redirects usage
-   1.10. Redirection script example
+   1.4. set_deny_filter usage
+   1.5. set_accept_filter usage
+   1.6. get_redirects usage
+   1.7. Redirection script example
 
 Chapter 1. Admin Guide
 
@@ -83,43 +76,24 @@ Chapter 1. Admin Guide
    contacts will be ordered and prioritized based on the “q”
    value.
 
-1.2. Accounting
+1.2. Dependencies
 
-   UAC REDIRECT module allows to log all the redirection (to be
-   later used for CDR aggregation). This functionality may be
-   dynamically enabled for each redirection situation.
-
-   The logging will be done via the accounting module functions
-   (all are supported). The information to be logged will be the
-   same as the normal logged information directly via ACC module,
-   but with following differences:
-     * reason phrase - which will be dynamically set by the
-       redirection function;
-     * outgoing URI - which will be the redirect URI.
-
-   For each redirect contact, a separate record will be logged.
-   For example, if a call is redirected to three new contacts, the
-   module will log three additional records corresponding to each
-   redirect URI.
-
-1.3. Dependencies
-
-1.3.1. OpenSIPS Modules
+1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * TM - Transaction Module, for accessing replies.
      * ACC - Accounting Module, but only if the logging feature is
        used.
 
-1.3.2. External Libraries or Applications
+1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None
 
-1.4. Exported Parameters
+1.3. Exported Parameters
 
-1.4.1. default_filter (string)
+1.3.1. default_filter (string)
 
    The default behavior in filtering contacts. It may be “accept”
    or “deny”.
@@ -131,7 +105,7 @@ Chapter 1. Admin Guide
 modparam("uac_redirect","default_filter","deny")
 ...
 
-1.4.2. deny_filter (string)
+1.3.2. deny_filter (string)
 
    The regular expression for default deny filtering. It make sens
    to be defined on only if the default_filter parameter is set to
@@ -150,7 +124,7 @@ modparam("uac_redirect","default_filter","deny")
 modparam("uac_redirect","deny_filter",".*@siphub\.net")
 ...
 
-1.4.3. accept_filter (string)
+1.3.3. accept_filter (string)
 
    The regular expression for default accept filtering. It make
    sens to be defined on only if the default_filter parameter is
@@ -169,44 +143,9 @@ modparam("uac_redirect","deny_filter",".*@siphub\.net")
 modparam("uac_redirect","accept_filter",".*@siphub\.net")
 ...
 
-1.4.4. acc_function (string)
+1.4. Exported Functions
 
-   Specifies the accounting function to be used. Just be defining
-   this parameter, the accounting support will not be enabled.
-   Accounting may only be enabled via two parameters
-   set_accept_filter() scripting function.
-
-   Its values my be:
-     * acc_log_request
-     * acc_db_request
-     * acc_rad_request
-     * acc_diam_request
-
-   The default value is “acc_log_request”.
-
-   Example 1.4. Set acc_function parameter
-...
-modparam("uac_redirect","acc_function","acc_db_request")
-...
-
-1.4.5. acc_db_table (string)
-
-   Specifies the accounting table to be used if DB accounting was
-   chosen (acc_function was set to “acc_db_request”). Just be
-   defining this parameter, the accounting support will not be
-   enabled. Accounting may only be enabled via two parameters
-   set_accept_filter() scripting function.
-
-   The default value is “acc”.
-
-   Example 1.5. Set acc_db_table parameter
-...
-modparam("uac_redirect","acc_db_table","acc_redirect")
-...
-
-1.5. Exported Functions
-
-1.5.1.  set_deny_filter(filter,flags)
+1.4.1.  set_deny_filter(filter,flags)
 
    Sets additional deny filters. Maximum 6 may be combined. This
    additional filter will apply only to the current message - it
@@ -222,13 +161,13 @@ modparam("uac_redirect","acc_db_table","acc_redirect")
 
    This function can be used from FAILURE_ROUTE.
 
-   Example 1.6. set_deny_filter usage
+   Example 1.4. set_deny_filter usage
 ...
 set_deny_filter(".*@domain2.net","reset_all");
 set_deny_filter(".*@domain1.net","");
 ...
 
-1.5.2.  set_accept_filter(filter,flags)
+1.4.2.  set_accept_filter(filter,flags)
 
    Sets additional accept filters. Maximum 6 may be combined. This
    additional filter will apply only to the current message - it
@@ -244,13 +183,13 @@ set_deny_filter(".*@domain1.net","");
 
    This function can be used from FAILURE_ROUTE.
 
-   Example 1.7. set_accept_filter usage
+   Example 1.5. set_accept_filter usage
 ...
 set_accept_filter(".*@domain2.net","reset_added");
 set_accept_filter(".*@domain1.net","");
 ...
 
-1.5.3.  get_redirects(max)
+1.4.3.  get_redirects([max_total[, max_branch]])
 
    The function may be called only from failure routes. It will
    extract the contacts from all 3xx branches and append them as
@@ -258,60 +197,34 @@ set_accept_filter(".*@domain1.net","");
    branches, this must be done explicitly from script.
 
    How many contacts (in total and per branch) are selected
-   depends of the max parameter values. Its syntax is:
-     * max = max_total [":" max_branch]
-     * max_total = number of total contacts to be selected
-     * max_branch = number of contacts per branch to be selected
+   depends on the max_total and max_branch parameters:
+     * max_total (int, optional) - max overall number of contacts
+       to be selected
+     * max_branch (int, optional) - max number of contacts per
+       branch to be selected
 
-   Both “max_total” and “max_branch” are positive integer. To
-   specify unlimited values, use 0 value or "*" character.
+   Both “max_total” and “max_branch” default to 0 (unlimited).
 
    NOTE that during the selection process, each set of contacts
    from a specific branch are ordered based on “q” value.
 
-   This function will produce no accounting records.
-
    This function can be used from FAILURE_ROUTE.
 
-   Example 1.8. get_redirects usage
-...
-# max 2 contacts per branch, but no overall limit
-get_redirects("*:2");
-...
-# no limits per branch, but not more than 6 overall contacts
-get_redirects("6:*");
+   Example 1.6. get_redirects usage
 ...
 # no restrictions
-get_redirects("*");
+get_redirects();
+...
+# no limits per branch, but not more than 6 overall contacts
+get_redirects(6);
+...
+# max 2 contacts per branch, but no overall limit
+get_redirects(, 2);
 ...
 
-1.5.4.  get_redirects(max,reason)
+1.5. Script Example
 
-   The function has same functionality as get_redirects(max)
-   function, but it will produce accounting records.
-
-   The accounting records will be mark by the reason phrase. This
-   phrase shall be in the same format as the reason parameter that
-   would be passed to the accounting function set by the
-   acc_function module parameter. See the ACC module documentation
-   for more information.
-
-   If this function appears in the script, at startup, the module
-   will import the accounting function. Otherwise not.
-
-   This function can be used from FAILURE_ROUTE.
-
-   Example 1.9. get_redirects usage
-...
-get_redirects("4:1","300"); # Record 300, using the default reason strin
-g for a 300
-get_redirects("4:1","302 Redirected"); # Record as 302, with custom "Red
-irected" reason string
-...
-
-1.6. Script Example
-
-   Example 1.10. Redirection script example
+   Example 1.7. Redirection script example
 loadmodule "modules/sl/sl.so"
 loadmodule "modules/usrloc/usrloc.so"
 loadmodule "modules/registrar/registrar.so"
@@ -362,9 +275,9 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 44 27 1705 131
-   2. Daniel-Constantin Mierla (@miconda) 12 10 24 20
-   3. Liviu Chircu (@liviuchircu) 12 9 41 59
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 45 28 1707 132
+   2. Liviu Chircu (@liviuchircu) 18 10 106 372
+   3. Daniel-Constantin Mierla (@miconda) 12 10 24 20
    4. Rob Gagnon (@rgagnon24) 8 6 50 48
    5. Henning Westerholt (@henningw) 7 5 12 11
    6. Razvan Crainea (@razvancrainea) 5 3 8 9
@@ -397,12 +310,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2016
-   5.  Rob Gagnon (@rgagnon24)             Mar 2015 - Mar 2015
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Dec 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2016
+   6.  Rob Gagnon (@rgagnon24)             Mar 2015 - Mar 2015
    7.  Walter Doekes (@wdoekes)            May 2014 - May 2014
    8.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
    9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
@@ -418,8 +331,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Rob Gagnon
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Rob Gagnon
    (@rgagnon24), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
    Crainea (@razvancrainea), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt

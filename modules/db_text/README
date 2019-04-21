@@ -433,12 +433,12 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 134 59 6126 1441
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 38 29 306 306
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 30 308 307
    3. Henning Westerholt (@henningw) 25 15 252 410
    4. Liviu Chircu (@liviuchircu) 15 12 39 76
    5. Razvan Crainea (@razvancrainea) 11 9 103 37
    6. Jan Janak (@janakj) 10 7 124 106
-   7. Vlad Patrascu (@rvlad-patrascu) 6 4 75 46
+   7. Vlad Patrascu (@rvlad-patrascu) 7 5 76 49
    8. Ovidiu Sas (@ovidiusas) 6 4 51 8
    9. Sergey Khripchenko 5 2 185 2
    10. Jiri Kuthan (@jiriatipteldotorg) 4 2 8 6
@@ -468,12 +468,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Mar 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Jan 2017
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Mar 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Mar 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Ovidiu Sas (@ovidiusas)             Dec 2012 - Jan 2017
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
    8.  Sergey Khripchenko                  Aug 2015 - Aug 2015
    9.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015

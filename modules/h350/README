@@ -654,14 +654,14 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Christian Schlatter 20 3 1993 1
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 13 11 50 43
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 52 44
    3. Daniel-Constantin Mierla (@miconda) 12 9 79 83
    4. Liviu Chircu (@liviuchircu) 10 8 25 37
-   5. Razvan Crainea (@razvancrainea) 5 2 47 58
-   6. Konstantin Bokarius 3 1 1 4
-   7. Peter Lemenkov (@lemenkov) 3 1 1 1
-   8. Edson Gellert Schubert 3 1 0 85
-   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   5. Vlad Patrascu (@rvlad-patrascu) 8 2 57 224
+   6. Razvan Crainea (@razvancrainea) 5 2 47 58
+   7. Konstantin Bokarius 3 1 1 4
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Edson Gellert Schubert 3 1 0 85
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -683,11 +683,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4. Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Oct 2014
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Apr 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   5. Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
    6. Daniel-Constantin Mierla (@miconda) Sep 2007 - Mar 2008
    7. Konstantin Bokarius                 Mar 2008 - Mar 2008
    8. Edson Gellert Schubert              Feb 2008 - Feb 2008

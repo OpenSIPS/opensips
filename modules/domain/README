@@ -286,7 +286,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 52 38 415 529
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 54 40 424 551
    2. Jan Janak (@janakj) 32 21 999 113
    3. Juha Heinanen (@juha-h) 31 20 700 233
    4. Daniel-Constantin Mierla (@miconda) 19 16 92 79
@@ -295,7 +295,7 @@ Chapter 3. Contributors
    7. Andrei Pelinescu-Onciul 9 4 186 121
    8. Dan Pascu (@danpascu) 8 4 232 101
    9. Henning Westerholt (@henningw) 7 5 44 48
-   10. Vlad Patrascu (@rvlad-patrascu) 5 3 52 38
+   10. Vlad Patrascu (@rvlad-patrascu) 7 4 70 102
 
    All remaining contributors: Edson Gellert Schubert,
    Elena-Ramona Modroiu, Jiri Kuthan (@jiriatipteldotorg), @coxx,
@@ -323,11 +323,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  @coxx                               Mar 2010 - Mar 2010
    7.  Anca Vamanu                         Sep 2009 - Sep 2009
    8.  UnixDev                             Feb 2009 - Feb 2009

@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">71</entry>
-		<entry align="center">51</entry>
-		<entry align="center">850</entry>
-		<entry align="center">694</entry>
+		<entry align="center">72</entry>
+		<entry align="center">52</entry>
+		<entry align="center">852</entry>
+		<entry align="center">695</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -76,6 +76,14 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">2</entry>
+		<entry align="center">26</entry>
+		<entry align="center">67</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">10</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Elena-Ramona Modroiu</entry>
 		<entry align="center">3</entry>
 		<entry align="center">2</entry>
 		<entry align="center">65</entry>
 		<entry align="center">0</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Jeffrey Magder</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">40</entry>
-		<entry align="center">18</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andreas Heise, Konstantin Bokarius, Anca Vamanu, Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jeffrey Magder, Andreas Heise, Konstantin Bokarius, Anca Vamanu, Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Feb 2002 - Apr 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Apr 2019</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Jun 2018</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - May 2017</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Feb 2002 - Apr 2017</entry>
 	</row>
 	<row>
 		<entry>5. </entry>

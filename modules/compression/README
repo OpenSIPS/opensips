@@ -131,18 +131,9 @@ modparam("mc", "mc_level", "3")
 
    Meaning of the parameters is as follows:
      * algo - The algorithm used for compression. Currently
-       implemented are deflate ('0') and gzip ('1'). The algo
-       parameter can have the following types:
-          + integer - the compression algorithm is statically
-            assigned
-          + pvar - the compression algorithm is the value of an
-            existing pseudo-variable (as integer value)
+       implemented are deflate ('0') and gzip ('1').
      * flags - Specifies on what to apply the compression and
-       where to put the result of the compression. The flags
-       parameter can have the following types:
-          + string - the flags parameter is statically assigned
-          + pvar - the flags parameter is the value of an existing
-            pseudo-variable (as string value)
+       where to put the result of the compression.
        The flags parameter can have the following values:
           + “b” - specifies that the body of the message shall be
             compressed. Notice that if the message has no body,
@@ -183,17 +174,16 @@ modparam("mc", "mc_level", "3")
 
    Example 1.2. mc_compress usage
 ...
-if (!mc_compress("0", "bhs", "Max-Forwards|Subject|P-Asserted-Identity")
-)
+if (!mc_compress(0, "bhs", "Max-Forwards|Subject|P-Asserted-Identity"))
         xlog("compression failed\n");
 ...
 
    Example 1.3. mc_compress usage
 ...
-$avp(algo) = "1";
+$avp(algo) = 1;
 $var(flags) = "bs";
 $var(list) = "Max-Forwards | Contact";
-mc_compres("$avp(algo", "$var(flags", "$var(list");
+mc_compres($avp(algo), "$var(flags", "$var(list");
 xlog("compression registered\n");
 ...
 
@@ -201,13 +191,13 @@ xlog("compression registered\n");
 
    This function will realise four different things: headers which
    are not mandatory and are not in the whitelist will be removed,
-   headers of same type will be put together, separated by ',',
+   headers of same type will be merged together, separated by ',',
    header names which have a short form will be reduced to that
-   short form and sdp rtpmap attribute headers which contain a
-   value lower than 98 will be removed, because it is no longer
-   needed. No lumps affected by this function, because it is
-   applied after almost all the processing is done. The mc_compact
-   supported short forms are:
+   short form and SDP rtpmap attribute headers which contain a
+   value lower than 98 will be removed, because they are not
+   mandatory. Lumps are not affected by this function, because it
+   is applied after all messages changes are processed. done. The
+   mc_compact supported short forms are:
      * “c” - Content-Type (RFC 3261)
      * “f” - From (RFC 3261)
      * “i” - Call-ID (RFC 3261)
@@ -222,11 +212,7 @@ xlog("compression registered\n");
    Meaning of the parameters is as follows:
      * whitelist - Whitelist of headers not to be removed, except
        from the mandatory ones. The whitelist header names must pe
-       separated by '|'. The algo parameter can have the following
-       types:
-          + string - the whitelist is statically assigned
-          + pvar - the whitelist is the value of an existing
-            pseudo-variable (as integer value)
+       separated by '|'.
 
    This function can be used from REQUEST_ROUTE, LOCAL_ROUTE,
    FAILURE_ROUTE.
@@ -299,12 +285,12 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ionut Ionita (@ionutrazvanionita) 48 12 3976 192
-   2. Razvan Crainea (@razvancrainea) 16 14 62 38
+   2. Razvan Crainea (@razvancrainea) 29 16 279 517
    3. Liviu Chircu (@liviuchircu) 5 3 12 28
-   4. Vlad Patrascu (@rvlad-patrascu) 4 2 2 5
-   5. Julián Moreno Patiño 3 1 2 2
-   6. Peter Lemenkov (@lemenkov) 3 1 1 1
-   7. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
+   4. Vlad Patrascu (@rvlad-patrascu) 5 3 3 6
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
+   6. Julián Moreno Patiño 3 1 2 2
+   7. Peter Lemenkov (@lemenkov) 3 1 1 1
    8. Ryan Bullock (@rrb3942) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -327,14 +313,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   3. Razvan Crainea (@razvancrainea)     Dec 2014 - Dec 2018
-   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5. Liviu Chircu (@liviuchircu)         Apr 2018 - Jun 2018
-   6. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
-   7. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Dec 2014
+   1. Razvan Crainea (@razvancrainea)     Dec 2014 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Apr 2019
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4. Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
+   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6. Liviu Chircu (@liviuchircu)         Apr 2018 - Jun 2018
+   7. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
+   8. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -343,8 +329,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut Ionita
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
    (@ionutrazvanionita).
 
    Documentation Copyrights:

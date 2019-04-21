@@ -49,18 +49,20 @@ dispatcher Module
 
         1.4. Exported Functions
 
-              1.4.1. ds_select_dst(set, alg [, (flags M
-                      max_results)*])
+              1.4.1. ds_select_dst(set, alg, [flags], [partition],
+                      [max_res])
 
-              1.4.2. ds_select_domain(set, alg [, "[flags] [M
-                      max_results]"])
+              1.4.2. ds_select_domain(set, alg, [flags],
+                      [partition], [max_res])
 
-              1.4.3. ds_next_dst([partition_name])
-              1.4.4. ds_next_domain([partition_name])
-              1.4.5. ds_mark_dst()
-              1.4.6. ds_mark_dst([partition_name], "s")
-              1.4.7. ds_count(set, filter, result)
-              1.4.8. ds_is_in_list(ip, port [,set [,active_only]])
+              1.4.3. ds_next_dst([partition])
+              1.4.4. ds_next_domain([partition])
+              1.4.5. ds_mark_dst([partition], [state])
+              1.4.6. ds_count(set, state_filter, res_var,
+                      [partition])
+
+              1.4.7. ds_is_in_list(ip, port, [set], [partition],
+                      [active_only])
 
         1.5. Exported MI Functions
 
@@ -143,7 +145,8 @@ Chapter 1. Admin Guide
    This modules implements a dispatcher for destination addresses.
    It computes hashes over various parts of the request and
    selects an address from a destination set. The selected address
-   is then used as outbound proxy.
+   may then either overwrite the R-URI of a SIP request or be used
+   as an outbound proxy.
 
    The module can be used as a stateless load balancer, having no
    guarantee of fair distribution.
@@ -152,28 +155,27 @@ Chapter 1. Admin Guide
    definition of weights for the destination. This is useful in
    order to get a different ratio of traffic between destinations.
 
-   Since version 2.1 the dispatcher module keeps its destination
-   sets into different partitions. Each partition is described by
-   its own db_url, table_name, dst_avp, grp_avp, cnt_avp,
-   sock_avp, attr_avp and blacklists. Setting any of this
-   parameters using modparam will alter the default partition's
-   properties. In order to create a new partition the "partition"
-   parameter should be used (see below for more details). If none
-   of the 8 partition specific parameters are defined for the
-   default partition, then this partition will not be created. If
-   the default partition is created each undefined parameter from
-   all other partitions will take the value of the corresponding
-   one from the default partition. If there is no default
-   partition, the default value specified in the parameter's
-   description will be used. Functions taking set arguments will
-   now take a set number preceded by a partition name and
-   colon(i.e "part_name: 5"). If a set is not preceded by any
-   partition name the default partition will be used. Thus, the
-   following arguments are equivalent: "default : 4" vs "4".
-   Remember that in order to be able to use a table from a
-   partition, its name must be found in the "version" table
-   belonging to the database defined in the partition's db_url.
-   Also, in version 2.1 the "flags" parameter has been moved to
+   Starting with version 2.1, the dispatcher module keeps its
+   destination sets into different partitions. Each partition is
+   described by its own "db_url", "table_name", "dst_avp",
+   "grp_avp", "cnt_avp", "sock_avp", "attr_avp" and "blacklists"
+   set of attributes. Setting any of these module parameters will
+   only alter the "default" partition's properties.
+
+   In order to create a new partition, the partition parameter can
+   be used. If none of the 8 partition specific parameters are
+   defined for the "default" partition, then this partition will
+   not be created. Once the "default" partition is created, any
+   undefined parameter from other partitions will inherit the
+   value of the corresponding parameter of the "default"
+   partition. If there is no "default" partition, the default
+   value specified in the parameter's description will be used.
+   Finally, note that each dispatcher table specified using the
+   "table_name" partition attribute requires a corresponding
+   "version" table record within the partition's database,
+   specified through "db_url".
+
+   Since version 2.1, the "flags" parameter has been moved to
    ds_select_dst() and ds_select_domain() along with "force_dst"
    and "use_default" flags.
 
@@ -716,9 +718,11 @@ modparam("dispatcher", "socket_col", "my_sock")
    0 - 100. This is helpful when grouping normal destinations with
    FreeSWITCH ones.
 
-   The dynamic weights are recalculated every 20 seconds, as the
-   stats arrive from FreeSWITCH. The update formula is shown below
-   (FreeSWITCH stats are highlighted in bold):
+   The dynamic weights are recalculated every
+   event_heartbeat_interval seconds (see the "freeswitch" OpenSIPS
+   module for more details regarding this setting), as the stats
+   from FreeSWITCH are expected to arrive. The update formula is
+   shown below (FreeSWITCH stats are highlighted in bold):
 
    weight = 100 * (Idle-CPU / 100) * (1 - Session-Count /
    Max-Sessions)
@@ -756,19 +760,17 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
 
 1.4. Exported Functions
 
-1.4.1.  ds_select_dst(set, alg [, (flags M max_results)*])
+1.4.1.  ds_select_dst(set, alg, [flags], [partition], [max_res])
 
    The method selects a destination from the given set of
-   addresses. It will overwrite the "destination URI" of a SIP
-   request ($du).
+   addresses. It will overwrite the destination URI ($du) of a SIP
+   request.
 
    Meaning of the parameters is as follows:
-     * set - a partition name followed by colon and an id of the
-       set or a list of sets from where to pick up destination
-       address (variables are accepted). If the partition name is
-       missing, the default partition will be used.
-     * alg - the algorithm(s) used to select the destination
-       address (variables are accepted).
+     * set (int) - a set identifier from which to select
+       destinations
+     * alg (int) - the algorithm used to select the destination
+       address
           + “0” - hash over callid
           + “1” - hash over from uri.
           + “2” - hash over to uri.
@@ -789,185 +791,166 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
             chosen.
           + “X” - if the algorithm is not implemented, the first
             entry in set is chosen.
-     * flags M max_results - If specified, this will be the flags
-       which in previous versions were specified at startup. The
-       flags are:
-          + 'f'/'F' - the failover support flag,
-          + 'u'/'U' - the user only flag - will specify that only
-            the uri user part will be used for hashing,
-          + 'S'/'s' - the force destination flag - which will skip
-            overwriting the destination address if it is already
-            set,
-          + 'D'/'d' - the use default flag('D','d') - which will
-            use the last address in destination set as last option
-            to send the message.
-       You can also specify these flags using PVs. The flags are
-       being kept per partition.
-       The second parameter, max_results represents that only a
-       maximum of max_results will be put into the specified avp
-       for failover. This allows having many destinations but
-       limit the useless traffic in case of a number that is bound
-       to fail everywhere. Since version 2.1, the last parameter
-       cand be represented by a list of flags and max_results,
-       separated by comma. You can specify either only the flags,
-       either only the max_results parameter, but if you want to
-       specify them together you have to use the 'M' character
-       like this: flags M max_results.
-
-   If the character 'f' in 'flags' is set, the rest of the
-   addresses from the destination set is stored in AVP list. You
-   can use 'ds_next_dst()' to use next address to achieve serial
-   forking to all possible destinations. If multiple dispatching
-   groups are used, the AVP list is constructed based on the
-   position of each dispatching id in the list: first one has the
-   higher priority, followed by the second one and so on.
+     * flags (string, optional) - a string of flag-settings which
+       tweak the function's behavior:
+          + 'f' (failover support): causes the remaining addresses
+            from the destination set to be stored within an
+            internally managed AVP. You may then use ds_next_dst()
+            to switch to the next address, thus achieving serial
+            forking to all possible destinations
+          + 'u' (user only): will specify that only the URI user
+            part will be used for hashing
+          + 'd' (use default): use the last address in destination
+            set as last option to send the message
+          + 'a' (append destinations): append any new destinations
+            to the current destination list, rather than rewriting
+            the list
+       The flags are being kept per partition.
+     * partition (string, optional) - name of a DB partition
+     * max_res (int, optional) - signifies that only a maximum
+       number of destinations shall be included in the specified
+       failover AVP for failover. This allows having multiple
+       destinations while also preventing excessive failover
+       attempts in case a number is bound to fail globally.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
    Example 1.35. ds_select_dst usage
 ...
-ds_select_dst("1", "0");
+if (!ds_select_dst(1, 0)) {
+        xlog("ERROR: no active destinations found!\n");
+        send_reply(503, "Service Unavailable");
+        exit;
+}
 ...
-ds_select_dst("part2 : 1", "0", "5");
+ds_select_dst(1, 0, , "fs_boxes", 5);
 ...
-ds_select_dst("part3 : 1", "0", "fUsD");
+ds_select_dst(1, 0, "fUsD", "ask_boxes");
 ...
-ds_select_dst("part4 : 2,3", "0,1", "fuD M 5, fuS M 2");
+ds_select_dst(2, 0, "fud", "pstn_gws", 5);
+ds_select_dst(3, 1, "fua", "pstn_gws", 2);
 ...
-# dispatch over multiple dispatching groups
-$var(part_name) = "p4"
-$var(setid) = "1, 2";
-$var(alg) = "4, 2";
-$var(flags) = " sFDU M 2, fuS M 3";
-ds_select_dst("$var(part_name):$var(setid)","$var(alg)","$var(flags)");
+# using variables
+$var(part) = "pstn_gws"
+$var(setid) = 1;
+$var(alg) = 4;
+$var(flags) = "fdu";
+$var(max_res) = 2;
+ds_select_dst($var(setid), $var(alg), $var(flags), $var(part), $var(max_
+res));
 ...
 
-1.4.2.  ds_select_domain(set, alg [, "[flags] [M max_results]"])
+1.4.2.  ds_select_domain(set, alg, [flags], [partition], [max_res])
 
    The method selects a destination from addresses set and
-   rewrites the host and port from R-URI. The parameters have same
-   meaning as for ds_select_dst().
+   rewrites the hostname and port parts of the Request-URI ($ru).
+   Its parameters have same meaning as in ds_select_dst().
 
-   If the character 'f' in 'flags' is set, the rest of the
-   addresses from the destination set is stored in AVP list. You
-   can use 'ds_next_domain()' to use next address to achieve
-   serial forking to all possible destinations.
+   If the "f" (failover support) flag is present, the rest of the
+   addresses from the destination set will be stored in an
+   internally managed AVP. You may then use ds_next_domain() to
+   switch to the next address in the list, thus achieving serial
+   forking to all possible destinations.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-1.4.3.  ds_next_dst([partition_name])
+1.4.3.  ds_next_dst([partition])
 
    Takes the next destination address from the AVPs with id
    partition.'dst_avp_id' and sets the dst_uri (outbound proxy
-   address). If partition_name is omitted, the default partition
-   will be used.This function is using the flags set in
-   ds_select_dst or ds_select_domain.
-
-   This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
-
-1.4.4.  ds_next_domain([partition_name])
-
-   Takes the next destination address from the AVPs with id
-   partition.'dst_avp_id' and sets the domain part of the request
-   uri. If partition_name is omitted, the default partition will
+   address). If "partition" is omitted, the default partition will
    be used.This function is using the flags set in ds_select_dst
    or ds_select_domain.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-1.4.5.  ds_mark_dst()
+1.4.4.  ds_next_domain([partition])
 
-   Mark the last used address from the 'default' partition's
-   destination set as inactive, in order to be ignored in the
-   future. In this way it can be implemented an automatic
-   detection of failed gateways. When an address is marked as
-   inactive, it will be ignored by 'ds_select_dst' and
-   'ds_select_domain'. This function is using the flags set in
-   ds_select_dst or ds_select_domain.
+   Takes the next destination address from the AVPs with id
+   partition.'dst_avp_id' and sets the domain part of the request
+   uri. If "partition" is omitted, the default partition will be
+   used.This function is using the flags set in ds_select_dst or
+   ds_select_domain.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-1.4.6.  ds_mark_dst([partition_name], "s")
+1.4.5.  ds_mark_dst([partition], [state])
 
    Mark the last used address from partition's destination set as
    inactive ("i"/"I"/"0"), active ("a"/"A"/"1") or probing
    ("p"/"P"/"2"). With this function, an automatic detection of
    failed gateways can be implemented. When an address is marked
-   as inactive or probing, it will be ignored by 'ds_select_dst'
-   and 'ds_select_domain'. If partition_name is omitted, the
-   default partition will be used. This function is using the
-   flags set in ds_select_dst or ds_select_domain.
+   as inactive or probing, it will be ignored by ds_select_dst()
+   and ds_select_domain(). If "partition" is omitted, the default
+   partition will be used. This function is using the flags set in
+   ds_select_dst() or ds_select_domain().
 
-   possible parameters:
-     * "i", "I" or "0" - the last destination should be set to
-       inactive and will be ignored in future requests.
-     * "a", "A" or "1" - the last destination should be set to
-       active.
-     * "p", "P" or "2" - the last destination will be set to
-       probing. Note: You will need to call this function
-       "threshold"-times, before it will be actually set to
-       probing.
+   Possible parameters:
+     * partition (string, optional) - name of a DB partition
+     * state (string, optional) - new state for the last attempted
+       destination. Possible values:
+          + "i", "I" or "0" (default) - the last destination
+            should be set to inactive and will be ignored in
+            future requests.
+          + "a", "A" or "1" - the last destination should be set
+            to active.
+          + "p", "P" or "2" - the last destination will be set to
+            probing. Note: You will need to call this function
+            "threshold"-times, before it will be actually set to
+            probing.
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-1.4.7.  ds_count(set, filter, result)
+1.4.6.  ds_count(set, state_filter, res_var, [partition])
 
    Returns the number of active, inactive or probing destinations
    in a partition's set, or combinations between these properties.
 
    Meaning of the parameters:
-     * set - a partition name followed by colon and an id of a set
-       of dispatching destinations (variables are accepted). If
-       the partition name is missing, the default partition will
-       be used.
-     * filter - which destinations should be counted. Either
-       active destinations("a", "A" or "1"), inactive
-       destinations("i", "I" or "0") or probing ones("p", "P" or
-       "2") or different combinations between these flags, such as
-       "pI", "1i", "ipA"... The filter parameter can have the
-       following types:
-          + string - the filtering flags are statically assigned
-     * result - A pseudovariable for storing the result.
+     * set (int) - a set of dispatching destinations
+     * state_filter (string) - which destinations should be
+       counted. Either active ("a", "A" or "1"), inactive ("i",
+       "I" or "0"), probing ("p", "P" or "2") destinations or
+       different combinations between these flags, such as "pI",
+       "1i", "ipA"...
+     * res_var (variable) - a variable which will hold the integer
+       result
+     * partition (string, optional) - name of a DB partition. If
+       omitted, the "default" partition will be used.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
    Example 1.36. ds_count usage
 ...
-if (ds_count("1", "a", "$avp(result)")) {
+if (ds_count(1, "a", $avp(result))) {
         ...
 }
 ...
-if (ds_count("$avp(partition) : $avp(set)", "ip", "$avp(result)")) {
+if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
         ...
 }
 ...
 
-1.4.8.  ds_is_in_list(ip, port [,set [,active_only]])
+1.4.7.  ds_is_in_list(ip, port, [set], [partition], [active_only])
 
-   This function returns true, if the parameters ip and port point
-   to a host from the dispatcher-list; otherwise false.
+   This function returns true only if "ip" and "port" point to a
+   host from the given dispatcher "set".
 
    Meaning of the parameters:
-     * ip - string / pseudo-variable (as string) containing the IP
-       to test against the dispatcher list. This cannot be empty.
-     * port - int / pseudo-variable (as int) containing the PORT
-       to test against the dispatcher list. This can be empty - in
-       this case the port will excluded from the matching of IP
-       against the dispatcher list.
-     * set (optional) - a partition name followed by colon and the
-       set ID of a dispatcher list to test against. If the
-       partition name is omitted the default partition will be
-       used. If the set id is missing, all the dispatching sets
-       will the checked. If a partition name is specified then it
-       must be followed by colon regardless of the set id being
-       specified or not. “-1” can be used as a wildcard to check
-       in all sets.
-     * active_only (optional) - search only through the active
-       destinations (ignore the ones in probing and inactive
-       mode).
+     * ip (string) - an IPv4 or IPv6 address to test against the
+       dispatcher "set"
+     * port (int) - a port to test against the dispatcher list.
+       Use a 0 value in order to match any port
+     * set (int, optional) - a dispatcher set identifier to test
+       against. If missing, all sets will be checked. The -1 set
+       is a special value, acting as a "check all sets" wildcard.
+     * partition (string, optional) - name of a DB partition
+     * active_only (int, optional) - specify a non-zero value in
+       order to only search through the active destinations
+       (ignore the ones in probing and inactive states)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
@@ -978,14 +961,14 @@ if (ds_is_in_list("$si", "$sp")) {
         # source IP:PORT is in a dispatcher list
 }
 ...
-if (ds_is_in_list("$rd", "$rp", "2")) {
-        # source RURI (ip and port) is in the dispatcher list id "2" of
-the default partition
+if (ds_is_in_list("$rd", "$rp", 2)) {
+        # the R-URI (IP and port) is in the dispatcher set 2 of the "def
+ault" partition
 }
 ...
-if (ds_is_in_list("$rd", "$rp", "part2:2")) {
-        # source RURI (ip and port) is in the dispatcher list id "2" of
-the partition called 'part2'
+if (ds_is_in_list("$rd", "$rp", 2, "part2")) {
+        # the R-URI (IP and port) is in the dispatcher set 2 of the "par
+t2" partition
 }
 ...
 
@@ -1065,18 +1048,18 @@ opensips-cli -x mi ds_reload
 # sample config file for dispatcher module
 #
 
-debug_mode=yes
+listen = udp:*:5060
 
-children=2
-check_via=no      # (cmd. line: -v)
-dns=off           # (cmd. line: -r)
-rev_dns=off       # (cmd. line: -R)
-port=5060
+udp_workers = 2
+check_via = off     # (cmd. line: -v)
+dns = off           # (cmd. line: -r)
+rev_dns = off       # (cmd. line: -R)
 
 # for more info: opensips -h
 
 # ------------------ module loading ----------------------------------
-mpath="/usr/local/lib/opensips/modules/"
+mpath = "/usr/lib/x86_64-linux-gnu/opensips/modules"
+
 loadmodule "maxfwd.so"
 loadmodule "signaling.so"
 loadmodule "sl.so"
@@ -1084,22 +1067,20 @@ loadmodule "tm.so"
 loadmodule "db_mysql.so"
 loadmodule "dispatcher.so"
 
+loadmodule "proto_udp.so"
 
 # ----------------- setting module-specific parameters ---------------
-# -- dispatcher params --
-
 modparam("dispatcher", "db_url", "mysql://opensips:opensipsrw@localhost/
 opensips")
 
-route{
-        if ( !mf_process_maxfwd_header("10") )
-        {
-                send_reply("483","To Many Hops");
+route {
+        if (!mf_process_maxfwd_header(10)) {
+                send_reply(483, "Too Many Hops");
                 exit;
-        };
+        }
 
-        if ( !ds_select_dst("2", "0") ) {
-                send_reply("500","Unable to route");
+        if (!ds_select_dst(2, 0)) {
+                send_reply(503, "Service Unavailable");
                 exit;
         }
 
@@ -1135,7 +1116,7 @@ Chapter 2. Frequently Asked Questions
        function that takes as parameters the IP and PORT to test
        against the dispatcher list.
 
-       ds_is_from_list() == ds_is_in_list("$si","$sp")
+       ds_is_from_list() == ds_is_in_list("$si", "$sp")
 
    2.4.
 
@@ -1206,13 +1187,13 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 146 90 2766 1895
-   2. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
-   3. Liviu Chircu (@liviuchircu) 63 45 1158 396
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 147 91 2767 1895
+   2. Liviu Chircu (@liviuchircu) 84 48 1516 1318
+   3. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
    5. Ionut Ionita (@ionutrazvanionita) 44 17 1145 969
    6. Ovidiu Sas (@ovidiusas) 31 17 705 434
-   7. Razvan Crainea (@razvancrainea) 27 21 406 80
+   7. Razvan Crainea (@razvancrainea) 28 22 407 81
    8. Henning Westerholt (@henningw) 11 7 93 125
    9. Carsten Bock 11 4 713 18
    10. Vlad Paiu (@vladpaiu) 9 7 17 29
@@ -1247,9 +1228,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     May 2011 - Mar 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jan 2019
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Dec 2018
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     May 2011 - Apr 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
@@ -1275,11 +1256,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Nick Altmann
-   (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod Baumann
-   (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Nick
+   Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
+   Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Vlad Paiu
    (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw Pitucha, Anca
    Vamanu, Klaus Darilion, Daniel-Constantin Mierla (@miconda),

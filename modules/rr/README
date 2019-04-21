@@ -531,7 +531,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 144 59 4374 2763
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 90 60 1894 832
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 91 61 1896 833
    3. Daniel-Constantin Mierla (@miconda) 18 14 244 92
    4. Liviu Chircu (@liviuchircu) 16 13 62 99
    5. Vlad Paiu (@vladpaiu) 15 10 333 88
@@ -541,12 +541,12 @@ Chapter 4. Contributors
    9. Anca Vamanu 9 3 191 206
    10. Henning Westerholt (@henningw) 7 4 115 73
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Dan Pascu
-   (@danpascu), Konstantin Bokarius, Saúl Ibarra Corretgé
-   (@saghul), Jesus Rodrigues, Julián Moreno Patiño, Norman
-   Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Elena-Ramona Modroiu, Vlad Patrascu
-   (@rvlad-patrascu).
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Ovidiu Sas (@ovidiusas), Dan Pascu (@danpascu), Konstantin
+   Bokarius, Saúl Ibarra Corretgé (@saghul), Jesus Rodrigues,
+   Julián Moreno Patiño, Norman Brandinger (@NormB), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Elena-Ramona
+   Modroiu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -568,10 +568,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Feb 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Sep 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Oct 2013 - Feb 2019
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2015
    7.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Jan 2015

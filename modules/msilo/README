@@ -724,7 +724,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 125 66 4163 1410
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 32 174 262
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 41 34 180 267
    3. Andrei Pelinescu-Onciul 18 10 115 382
    4. Jan Janak (@janakj) 16 11 126 168
    5. Liviu Chircu (@liviuchircu) 15 12 66 80
@@ -732,13 +732,13 @@ Chapter 2. Contributors
    7. Henning Westerholt (@henningw) 9 6 114 110
    8. Razvan Crainea (@razvancrainea) 7 5 19 19
    9. Vlad Paiu (@vladpaiu) 7 4 90 80
-   10. Juha Heinanen (@juha-h) 7 3 234 82
+   10. Vlad Patrascu (@rvlad-patrascu) 7 4 54 110
 
-   All remaining contributors: Ancuta Onofrei, Andrea Giordana,
-   Elena-Ramona Modroiu, Vlad Patrascu (@rvlad-patrascu), Aron
-   Rosenberg, John Riordan, Konstantin Bokarius, Julián Moreno
-   Patiño, Peter Lemenkov (@lemenkov), Sergio Gutierrez, UnixDev,
-   Edson Gellert Schubert, Stanislaw Pitucha.
+   All remaining contributors: Juha Heinanen (@juha-h), Ancuta
+   Onofrei, Andrea Giordana, Elena-Ramona Modroiu, Aron Rosenberg,
+   John Riordan, Konstantin Bokarius, Julián Moreno Patiño, Peter
+   Lemenkov (@lemenkov), Sergio Gutierrez, UnixDev, Edson Gellert
+   Schubert, Stanislaw Pitucha.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -760,11 +760,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2002 - Mar 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2002 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2015
    8.  Stanislaw Pitucha                   Jul 2010 - Jul 2010

@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">18</entry>
-		<entry align="center">2</entry>
-		<entry align="center">147</entry>
-		<entry align="center">771</entry>
+		<entry align="center">20</entry>
+		<entry align="center">3</entry>
+		<entry align="center">170</entry>
+		<entry align="center">814</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -61,10 +61,10 @@
 	<row>
 		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">7</entry>
-		<entry align="center">5</entry>
-		<entry align="center">100</entry>
-		<entry align="center">35</entry>
+		<entry align="center">8</entry>
+		<entry align="center">6</entry>
+		<entry align="center">102</entry>
+		<entry align="center">36</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
@@ -112,18 +112,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Dec 2013 - Jan 2019</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Jul 2014 - Jan 2019</entry>
+		<entry align="center">Jul 2014 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Oct 2018</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Dec 2013 - Jan 2019</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -164,7 +164,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Stephane Alnet.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Stephane Alnet.</para>
 </section>
 
 </chapter>

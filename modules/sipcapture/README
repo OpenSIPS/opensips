@@ -34,15 +34,14 @@ SipCapture Module
               1.4.1. sip_capture([table_name][, [custom_field1][,
                       [custom_field2][, [custom_field3]]]])
 
-              1.4.2.
-                      report_capture([table_name],correlation_id[,pr
-                      oto_type])
+              1.4.2. report_capture(correlation_id, [table_name],
+                      [proto_type])
 
-              1.4.3. hep_set([data_type,] chunk_id, [vendor_id,]
-                      chunk_data)
+              1.4.3. hep_set(chunk_id, chunk_data, [data_type],
+                      [vendor_id])
 
-              1.4.4. hep_get([data_type,] chunk_id, vendor_id_pv,
-                      chunk_data_pv)
+              1.4.4. hep_get(chunk_id, data_type, [chunk_data_pv],
+                      [vendor_id_pv])
 
               1.4.5. hep_del(chunk_id)
               1.4.6. hep_relay()
@@ -401,20 +400,20 @@ if (is_method("REGISTER"))
         sip_capture("homer_%m_%d", , "$hdr(P-Asserted-Identity)");
 ...
 
-1.4.2.  report_capture([table_name],correlation_id[,proto_type])
+1.4.2.  report_capture(correlation_id, [table_name], [proto_type])
 
    Save the message into the database. If you want set the
    protocol type you have to define the table name, even if you
-   pass over it(report_capture(,"$var(cor_id)",
-   "$var(proto_type)")).
+   pass over
+   it(report_capture("$var(cor_id)",,"$var(proto_type)")).
 
    Meaning of the parameters is as follows:
-     * table_name (string) - the name of the table to store the
-       packet; it can have a strftime-like formatted suffix in
-       order to change it's name based on time;
      * correlation_id (string)
-     * proto_type (int) - protocol type number as defined in hep
-       protocol specification.
+     * table_name (string, optional) - the name of the table to
+       store the packet; it can have a strftime-like formatted
+       suffix in order to change it's name based on time;
+     * proto_type (int, optional) - protocol type number as
+       defined in hep protocol specification.
 
    VERY IMPORTANT: Since version 2.3 report_capture function
    behaviour will change depending on homer5_on parameter from
@@ -427,23 +426,23 @@ if (is_method("REGISTER"))
 
    Example 1.17. sip_capture usage
 ...
-
-        hep_get("utf8-string", "0x0011", "$var(correlation_id)");
-        if($var(correlation_id) == $null) {
+        hep_get("0x0011", "utf8-string", , $var(correlation_id));
+        if ($var(correlation_id) == null) {
                 xlog("NO CORRELATION ID! SET SOMETHING OR DROP");
                 $var(correlation_id) = "absdcef";
         }
 
         $var(proto_type) = "3"; /* 0x03 - SDP protocol */
 
-        report_capture("rtcp_log", $var(correlation_id)");
-        /* setting the first parameter, even if setting it to null, is m
-andatory in order to be able to set proto type */
-        report_capture(, $var(correlation_id)", "$var);
-        report_capture("rtcp_log", $var(correlation_id)", "$var);
+        report_capture("$var(correlation_id)", "rtcp_log");
+        /* setting the 2nd parameter, even if setting it to null, is man
+datory in order to be able to set proto type */
+        report_capture("$var(correlation_id)", , "$var(proto_type)");
+        report_capture("$var(correlation_id)", "rtcp_log", "$var(proto_t
+ype)");
 ...
 
-1.4.3.  hep_set([data_type,] chunk_id, [vendor_id,] chunk_data)
+1.4.3.  hep_set(chunk_id, chunk_data, [data_type], [vendor_id])
 
    Set a hep chunk. If not exists, it shall be added.
 
@@ -452,16 +451,7 @@ andatory in order to be able to set proto type */
    UTE.
 
    Meaning of the parameters is as follows:
-     * data_type - data type of the data in the chunk. It can have
-       the following values:
-          + uint8 - byte unsigned integer
-          + uint16 - word unsigned integer
-          + uint32 - 4 byte unsigned integer
-          + inet4-addr - IPv4 address in human readable format
-          + inet6-addr - IPv6 address in human readable format
-          + utf8-string - UTF8 encoded character sequence
-          + octet-string - byte array
-     * chunk_id(string value with hex/int or string identifiere of
+     * chunk_id(string value with hex/int or string identifier of
        chunk) - id of the chunk to be added; most of the generic
        chunks are in the internal hep structure. For these you can
        skip the data_type and vendor_id since they are already
@@ -512,11 +502,21 @@ andatory in order to be able to set proto type */
           + 0x000C - captagent_id
           + 0x000f - payload
           + 0x0010 - payload
-     * vendor id(string value with hex or int) - there are some
-       vendor ids already defined; check hep proto docs for more
-       details.
      * data(string) - data that the chunk shall contain;
        internally it shall be converted to the requested data type
+     * data_type (string, optional, default: "utf8-string") - data
+       type of the data in the chunk. It can have the following
+       values:
+          + uint8 - byte unsigned integer
+          + uint16 - word unsigned integer
+          + uint32 - 4 byte unsigned integer
+          + inet4-addr - IPv4 address in human readable format
+          + inet6-addr - IPv6 address in human readable format
+          + utf8-string - UTF8 encoded character sequence
+          + octet-string - byte array
+     * vendor id(string value with hex or int, optional, default:
+       "3") - there are some vendor ids already defined; check hep
+       proto docs for more details.
 
    Example 1.18. hep_set usage
 ...
@@ -524,14 +524,13 @@ andatory in order to be able to set proto type */
 hep_set("proto_type", "H321");
 
 /* add a custom chunk - int */
-hep_set("uint32", "31"/*chk id*/, "3"/*opensips vendor*/, "132")
+hep_set("31", "132", "uint32", "3")
 
 /* add a custom chunk - IPv4 address */
-hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5
-.14")
+hep_set("32", "192.168.5.14", "inet4-addr", "3")
 ...
 
-1.4.4.  hep_get([data_type,] chunk_id, vendor_id_pv, chunk_data_pv)
+1.4.4.  hep_get(chunk_id, data_type, [chunk_data_pv], [vendor_id_pv])
 
    Set a hep chunk. If not exists, it shall be added.
 
@@ -540,14 +539,12 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5
    UTE.
 
    Meaning of the parameters is as follows:
-     * data_type(string) - same meaning as in hep_set(); can miss
+     * chunk_id (string) - same meaning as in hep_set()
+     * data_type (string) - same meaning as in hep_set(); can miss
        if it's a generic chunk
-     * chunk_id - same meaning as in hep_set()
-     * vendor_id_pv(writable pvar) - will hold the vendor id(int
-       value) of the chunk
-     * chunk_data_pv(writable pvar) - will hold the data inside
-       the chunk; some of the generic chunk data come in specific
-       format, as following:
+     * chunk_data_pv (writable pvar, optional) - will hold the
+       data inside the chunk; some of the generic chunk data come
+       in specific format, as following:
           + 0x0001 - proto_family(string) - AF_INET/AF_INET6
           + 0x0002 proto_id(string) - see hep_set() for possible
             values
@@ -557,14 +554,16 @@ hep_set("inet4-addr", "32"/*chk id*/, "3"/*opensips vendor*/, "192.168.5
             readable format
           + 0x000B proto_type(string) - see hep_set() for possible
             values
+     * vendor_id_pv (writable pvar, optional) - will hold the
+       vendor id(int value) of the chunk
 
    Example 1.19. hep_set usage
 ...
 /* get a generic chunk */
-hep_get("proto_type", "$var(vid)", "$var(data)");
+hep_get("proto_type", , $var(data), $var(vid));
 
 /* get custom chunk - you must know what kind of data is there */
-hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
+hep_set("31", "uint32", $var(data), $var(vid))
 ...
 
 1.4.5.  hep_del(chunk_id)
@@ -576,7 +575,8 @@ hep_set("uint32", "31"/*chk id*/, "$var(vid)", "$var(data)")
    UTE.
 
    Meaning of the parameters is as follows:
-     * chunk_id - same meaning as the chunk_id in hep_set().
+     * chunk_id (string) - same meaning as the chunk_id in
+       hep_set().
 
    Example 1.20. hep_set usage
 ...
@@ -752,10 +752,10 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ionut Ionita (@ionutrazvanionita) 209 45 5927 6525
-   2. Alexandr Dubovikov (@adubovikov) 21 2 2360 0
-   3. Liviu Chircu (@liviuchircu) 20 16 233 109
+   2. Liviu Chircu (@liviuchircu) 39 18 462 919
+   3. Alexandr Dubovikov (@adubovikov) 21 2 2360 0
    4. Razvan Crainea (@razvancrainea) 15 13 29 16
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 12 9 60 86
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 15 12 99 90
    6. Vlad Patrascu (@rvlad-patrascu) 7 5 57 39
    7. Vlad Paiu (@vladpaiu) 3 1 3 3
    8. Dusan Klinec 3 1 1 1
@@ -785,10 +785,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Jul 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -806,8 +806,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
    (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
    (@vladpaiu), Alexandr Dubovikov (@adubovikov).
 

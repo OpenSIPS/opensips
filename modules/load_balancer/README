@@ -292,8 +292,10 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
    periodically update the internal maximum value of the given
    resource using statistics pushed by the FreeSWITCH box.
 
-   The max value of a resource is updated every 20 seconds, as the
-   stats arrive from FreeSWITCH.
+   The max value of a resource is updated every
+   event_heartbeat_interval seconds (see the "freeswitch" OpenSIPS
+   module for more details regarding this setting), as the stats
+   arrive from FreeSWITCH.
 
    Given the following format for FreeSWITCH heartbeat messages:
 {
@@ -750,10 +752,10 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 113 65 4259 728
-   2. Liviu Chircu (@liviuchircu) 38 29 678 166
-   3. Razvan Crainea (@razvancrainea) 22 16 257 141
-   4. Vlad Patrascu (@rvlad-patrascu) 21 12 262 308
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 114 66 4261 729
+   2. Liviu Chircu (@liviuchircu) 40 30 681 168
+   3. Vlad Patrascu (@rvlad-patrascu) 29 14 342 658
+   4. Razvan Crainea (@razvancrainea) 22 16 257 141
    5. Sergey Khripchenko 19 6 649 366
    6. shripchenko 11 4 409 150
    7. Vlad Paiu (@vladpaiu) 5 3 7 5
@@ -784,11 +786,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2010 - Mar 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Jan 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Dec 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Apr 2019
+   4.  Razvan Crainea (@razvancrainea)     Oct 2010 - Mar 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Jeremy Martinez                     Feb 2017 - Feb 2017
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
    8.  Sergey Khripchenko                  Nov 2014 - Oct 2015
@@ -805,9 +807,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sergey
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Sergey
    Khripchenko, Ezequiel Lovelle, Walter Doekes (@wdoekes), Vlad
    Paiu (@vladpaiu).
 

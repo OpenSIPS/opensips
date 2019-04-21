@@ -37,19 +37,17 @@ permissions Module
 
         1.4. Exported Functions
 
-              1.4.1. allow_routing()
-              1.4.2. allow_routing(basename)
-              1.4.3. allow_routing(allow_file,deny_file)
-              1.4.4. allow_register(basename)
-              1.4.5. allow_register(allow_file, deny_file)
-              1.4.6. allow_uri(basename, pvar)
-              1.4.7. check_address([partition:]group_id, ip, port,
-                      proto [, context_info [, pattern]])
+              1.4.1. check_address(group_id, ip, port, proto [,
+                      context_info], [pattern], [partition])
 
-              1.4.8. check_source_address(group_id [, context_info
-                      [, pattern]])
+              1.4.2. check_source_address(group_id ,
+                      [context_info], [pattern], [partition])
 
-              1.4.9. get_source_group(pvar)
+              1.4.3. get_source_group(var,[partition])
+              1.4.4. allow_routing()
+              1.4.5. allow_routing(basename)
+              1.4.6. allow_register(basename)
+              1.4.7. allow_uri(basename, uri)
 
         1.5. Exported MI Functions
 
@@ -91,15 +89,13 @@ permissions Module
    1.13. Set proto_col parameter
    1.14. Set pattern_col parameter
    1.15. Set info_col parameter
-   1.16. allow_routing usage
-   1.17. allow_routing(basename) usage
-   1.18. allow_routing(allow_file, deny_file) usage
-   1.19. allow_register(basename) usage
-   1.20. allow_register(allow_file, deny_file) usage
-   1.21. allow_uri(basename, pvar) usage
-   1.22. check_address() usage
-   1.23. check_source_address() usage
-   1.24. get_source_group() usage
+   1.16. check_address() usage
+   1.17. check_source_address() usage
+   1.18. get_source_group() usage
+   1.19. allow_routing usage
+   1.20. allow_routing(basename) usage
+   1.21. allow_register(basename) usage
+   1.22. allow_uri(basename, uri) usage
 
 Chapter 1. Admin Guide
 
@@ -453,179 +449,22 @@ modparam("permissions", "info_col", "info_col")
 
 1.4. Exported Functions
 
-1.4.1.  allow_routing()
-
-   Returns true if all pairs constructed as described in
-   Section 1.1.1, “Call Routing” have appropriate permissions
-   according to the configuration files. This function uses
-   default configuration files specified in default_allow_file and
-   default_deny_file.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-
-   Example 1.16. allow_routing usage
-...
-if (allow_routing()) {
-        t_relay();
-};
-...
-
-1.4.2.  allow_routing(basename)
-
-   Returns true if all pairs constructed as described in
-   Section 1.1.1, “Call Routing” have appropriate permissions
-   according to the configuration files given as parameters.
-
-   Meaning of the parameters is as follows:
-     * basename - Basename from which allow and deny filenames
-       will be created by appending contents of allow_suffix and
-       deny_suffix parameters.
-       If the parameter doesn't contain full pathname then the
-       function expects the file to be located in the same
-       directory as the main configuration file of the server.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-
-   Example 1.17. allow_routing(basename) usage
-...
-if (allow_routing("basename")) {
-        t_relay();
-};
-...
-
-1.4.3.  allow_routing(allow_file,deny_file)
-
-   Returns true if all pairs constructed as described in
-   Section 1.1.1, “Call Routing” have appropriate permissions
-   according to the configuration files given as parameters.
-
-   Meaning of the parameters is as follows:
-     * allow_file - File containing allow rules.
-       If the parameter doesn't contain full pathname then the
-       function expects the file to be located in the same
-       directory as the main configuration file of the server.
-     * deny_file - File containing deny rules.
-       If the parameter doesn't contain full pathname then the
-       function expects the file to be located in the same
-       directory as the main configuration file of the server.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-
-   Example 1.18. allow_routing(allow_file, deny_file) usage
-...
-if (allow_routing("rules.allow", "rules.deny")) {
-        t_relay();
-};
-...
-
-1.4.4.  allow_register(basename)
-
-   The function returns true if all pairs constructed as described
-   in Section 1.1.2, “Registration Permissions” have appropriate
-   permissions according to the configuration files given as
-   parameters.
-
-   Meaning of the parameters is as follows:
-     * basename - Basename from which allow and deny filenames
-       will be created by appending contents of allow_suffix and
-       deny_suffix parameters.
-       If the parameter doesn't contain full pathname then the
-       function expects the file to be located in the same
-       directory as the main configuration file of the server.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-
-   Example 1.19. allow_register(basename) usage
-...
-if ($rm=="REGISTER") {
-        if (allow_register("register")) {
-                save("location");
-                exit;
-        } else {
-                sl_send_reply("403", "Forbidden");
-        };
-};
-...
-
-1.4.5.  allow_register(allow_file, deny_file)
-
-   The function returns true if all pairs constructed as described
-   in Section 1.1.2, “Registration Permissions” have appropriate
-   permissions according to the configuration files given as
-   parameters.
-
-   Meaning of the parameters is as follows:
-     * allow_file - File containing allow rules.
-       If the parameter doesn't contain full pathname then the
-       function expects the file to be located in the same
-       directory as the main configuration file of the server.
-     * deny_file - File containing deny rules.
-       If the parameter doesn't contain full pathname then the
-       function expects the file to be located in the same
-       directory as the main configuration file of the server.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-
-   Example 1.20. allow_register(allow_file, deny_file) usage
-...
-if ($rm=="REGISTER") {
-        if (allow_register("register.allow", "register.deny")) {
-                save("location");
-                exit;
-        } else {
-                sl_send_reply("403", "Forbidden");
-        };
-};
-...
-
-1.4.6.  allow_uri(basename, pvar)
-
-   Returns true if the pair constructed as described in
-   Section 1.1.3, “URI Permissions” have appropriate permissions
-   according to the configuration files specified by the
-   parameter.
-
-   Meaning of the parameter is as follows:
-     * basename - Basename from which allow and deny filenames
-       will be created by appending contents of allow_suffix and
-       deny_suffix parameters.
-       If the parameter doesn't contain full pathname then the
-       function expects the file to be located in the same
-       directory as the main configuration file of the server.
-     * pvar - Any pseudo-variable defined in OpenSIPS.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-
-   Example 1.21. allow_uri(basename, pvar) usage
-...
-if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
-        t_relay();
-};
-if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(ur
-i)
-        t_relay();
-};
-...
-
-1.4.7.  check_address([partition:]group_id, ip, port, proto [,
-context_info [, pattern]])
+1.4.1.  check_address(group_id, ip, port, proto [, context_info],
+[pattern], [partition])
 
    Returns 1 if group id, IP address, port and protocol given as
    arguments match an IP subnet found in cached address table, as
    described in Section 1.1.4, “Address Permissions” . The
-   function takes 4 mandatory arguments and 2 optional ones.
+   function takes 4 mandatory arguments and 3 optional ones.
 
    This function can be useful to check if a request can be
    allowed without authentication.
 
    Meaning of the parameter is as follows:
      * group_id
-       This argument represents the group id to be matched. It can
-       be an integer string or a string pvar. If the group_id
-       argument is "0", the query can match any group in the
-       cached address table. Since version 2.2, you can also
-       specify the partition(either string or pv). If no partition
-       specified, the “default” one will be used.
+       This argument represents the group id to be matched. If the
+       group_id argument is "0", the query can match any group in
+       the cached address table.
      * ip
        This argument represents the ip address to be matched. It
        can be an given directly as string or as a string pvar.
@@ -649,10 +488,15 @@ context_info [, pattern]])
        This argument is a string to be matched against the
        wildcard pattern field from the address table. This
        argument is optional.
+     * partition
+       An optional parition name for the group id. If no partition
+       specified, the “default” one will be used.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, BRANCH_ROUTE, STARTUP_ROUTE, TIMER_ROUTE,
+   EVENT_ROUTE.
 
-   Example 1.22. check_address() usage
+   Example 1.16. check_address() usage
 ...
 
 // Checks if the tuple IP address/port (given as strings) and source pro
@@ -662,14 +506,13 @@ tocol
 // matches the wildcard pattern field in the database table and stores t
 he
 // context information in $avp(ctx)
-if (check_address("4","192.168.2.135","5700","$proto","$avp(ctx)", "text
-test")) {
+if (check_address( 4, "192.168.2.135", 5700, "$proto", $avp(ctx), "textt
+est")) {
         t_relay();
         xlog("$avp(ctx)\n");
 }
 
-if (check_address("my_part:4","192.168.2.135","5700","$proto","$avp(ctx)
-", "texttest")) {
+if (check_address( 4, "192.168.2.135", 5700, "$proto", , , "my_part")) {
         t_relay();
         xlog("$avp(ctx)\n");
 }
@@ -677,7 +520,7 @@ if (check_address("my_part:4","192.168.2.135","5700","$proto","$avp(ctx)
 
 // Checks if the tuple IP address/port/protocol of the source message is
  in group 4
-if (check_address("4","$si","$sp","$proto")) {
+if (check_address( 4, "$si", "$sp", "$proto")) {
         t_relay();
 }
 
@@ -690,8 +533,8 @@ $avp(ip) = "192.168.2.135";
 $avp(port) = 5061;
 $avp(proto) = "any";
 $avp(partition)="my_part";
-if (check_address("$avp(partition):4","$avp(ip)","$avp(port)","$avp(prot
-o)","$avp(ctx))) {
+if (check_address( 4, "$avp(ip)", "$avp(port)", "$avp(proto)", $avp(ctx)
+, , "$avp(partition)")) {
         t_relay();
         xlog("$avp(ctx)\n");
 }
@@ -704,53 +547,154 @@ tocol
 hes
 // the wildcard pattern field in the database table, without storing any
 // context information
-if (check_address("4","$si","5700","$proto","", "texttest")) {
+if (check_address( 4,"$si", 5700, "$proto", ,"texttest")) {
         t_relay();
 }
 
 ...
 
 
-1.4.8.  check_source_address(group_id [, context_info [, pattern]])
+1.4.2.  check_source_address(group_id , [context_info], [pattern],
+[partition])
 
    Equivalent to check_address(group_id, "$si", "$sp", "$proto",
-   context_info, pattern).
+   context_info, pattern, partition).
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, BRANCH_ROUTE, STARTUP_ROUTE, TIMER_ROUTE,
+   EVENT_ROUTE.
 
-   Example 1.23. check_source_address() usage
+   Example 1.17. check_source_address() usage
 ...
 // Check if source address/port/proto is in group 4 and stores
 // context information in $avp(ctx)
-if (check_source_address("$avp(partition):4","$avp(ctx)")) {
+if (check_source_address( 4,"$avp(ctx)", , , "$avp(my_partition)")) {
         xlog("$avp(ctx)\n");
 }else {
         sl_send_reply("403", "Forbidden");
 }
 ...
 
-1.4.9.  get_source_group(pvar)
+1.4.3.  get_source_group(var,[partition])
 
    Checks if an entry with the source ip/port/protocol is found in
    cached address or subnet table in any group. If yes, returns
-   that group in the pvar parameter. If not returns -1. Port value
-   0 in cached address and subnet table matches any port. Since
-   version 2.2, you can also specify the partition(either string
-   or pv). If no partition specified, the “default” one will be
-   used.
+   that group in the variable parameter. If not returns -1. Port
+   value 0 in cached address and subnet table matches any port.
+   Optionally, you can also specify the partition. If no partition
+   specified, the “default” one will be used.
 
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, BRANCH_ROUTE.
 
-   Example 1.24. get_source_group() usage
+   Example 1.18. get_source_group() usage
 
 ...
 
-if ( get_source_group("$var(group)") ) {
+if ( get_source_group( $var(group)) ) {
    # do something with $var(group)
    xlog("group is $var(group)\n");
 };
 ...
 
+
+1.4.4.  allow_routing()
+
+   Returns true if all pairs constructed as described in
+   Section 1.1.1, “Call Routing” have appropriate permissions
+   according to the configuration files. This function uses
+   default configuration files specified in default_allow_file and
+   default_deny_file.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+   Example 1.19. allow_routing usage
+...
+if (allow_routing()) {
+        t_relay();
+};
+...
+
+1.4.5.  allow_routing(basename)
+
+   Returns true if all pairs constructed as described in
+   Section 1.1.1, “Call Routing” have appropriate permissions
+   according to the configuration files given as parameters.
+
+   Meaning of the parameters is as follows:
+     * basename - Basename from which allow and deny filenames
+       will be created by appending contents of allow_suffix and
+       deny_suffix parameters.
+       If the parameter doesn't contain full pathname then the
+       function expects the file to be located in the same
+       directory as the main configuration file of the server.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+   Example 1.20. allow_routing(basename) usage
+...
+if (allow_routing("basename")) {
+        t_relay();
+};
+...
+
+1.4.6.  allow_register(basename)
+
+   The function returns true if all pairs constructed as described
+   in Section 1.1.2, “Registration Permissions” have appropriate
+   permissions according to the configuration files given as
+   parameters.
+
+   Meaning of the parameters is as follows:
+     * basename - Basename from which allow and deny filenames
+       will be created by appending contents of allow_suffix and
+       deny_suffix parameters.
+       If the parameter doesn't contain full pathname then the
+       function expects the file to be located in the same
+       directory as the main configuration file of the server.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+   Example 1.21. allow_register(basename) usage
+...
+if ($rm=="REGISTER") {
+        if (allow_register("register")) {
+                save("location");
+                exit;
+        } else {
+                sl_send_reply("403", "Forbidden");
+        };
+};
+...
+
+1.4.7.  allow_uri(basename, uri)
+
+   Returns true if the pair constructed as described in
+   Section 1.1.3, “URI Permissions” have appropriate permissions
+   according to the configuration files specified by the
+   parameter.
+
+   Meaning of the parameter is as follows:
+     * basename - Basename from which allow and deny filenames
+       will be created by appending contents of allow_suffix and
+       deny_suffix parameters.
+       If the parameter doesn't contain full pathname then the
+       function expects the file to be located in the same
+       directory as the main configuration file of the server.
+     * uri - SIP URI to be checked.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+
+   Example 1.22. allow_uri(basename, uri) usage
+...
+if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
+        t_relay();
+};
+if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(ur
+i)
+        t_relay();
+};
+...
 
 1.5. Exported MI Functions
 
@@ -803,11 +747,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 94 68 664 1118
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 120 73 1048 2100
    2. Juha Heinanen (@juha-h) 62 21 3406 729
    3. Jan Janak (@janakj) 56 21 2871 621
    4. Irina-Maria Stanescu 54 9 1218 1908
-   5. Razvan Crainea (@razvancrainea) 21 16 169 113
+   5. Razvan Crainea (@razvancrainea) 22 17 169 113
    6. Liviu Chircu (@liviuchircu) 18 13 217 146
    7. Daniel-Constantin Mierla (@miconda) 16 11 126 221
    8. Ionut Ionita (@ionutrazvanionita) 16 4 970 175
@@ -842,13 +786,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  wuhanck                             Apr 2018 - Apr 2018
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2018
-   6.  Dan Pascu (@danpascu)               Nov 2006 - Feb 2018
-   7.  Razvan Crainea (@razvancrainea)     Jan 2011 - Nov 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2019
+   2.  Razvan Crainea (@razvancrainea)     Jan 2011 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  wuhanck                             Apr 2018 - Apr 2018
+   7.  Dan Pascu (@danpascu)               Nov 2006 - Feb 2018
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Dusan Klinec                        Dec 2015 - Dec 2015
    10. Ionut Ionita (@ionutrazvanionita)   May 2015 - Nov 2015
@@ -869,10 +813,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Patrascu
-   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Razvan
-   Crainea (@razvancrainea), Irina-Maria Stanescu, Henning
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad
+   Patrascu (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
+   Razvan Crainea (@razvancrainea), Irina-Maria Stanescu, Henning
    Westerholt (@henningw), Juha Heinanen (@juha-h),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj).
