@@ -140,15 +140,16 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                  Name                DevScore Commits Lines ++ Lines --
- 1. Ionut Ionita (@ionutrazvanionita)    81      28      3744     1276
- 2. Razvan Crainea (@razvancrainea)      7        5       50       22
- 3. Liviu Chircu (@liviuchircu)          7        5       19       29
- 4. Jarrod Baumann (@jarrodb)            5        3       7        4
- 5. Aron Podrigal (@ar45)                3        1       10       1
- 6. Daniel Fussia                        3        1       4        22
- 7. Peter Lemenkov (@lemenkov)           3        1       1        1
- 8. Vlad Patrascu (@rvlad-patrascu)      2        1       1        0
+     Name DevScore Commits Lines ++ Lines --
+   1. Ionut Ionita (@ionutrazvanionita) 81 28 3744 1276
+   2. Razvan Crainea (@razvancrainea) 7 5 50 22
+   3. Liviu Chircu (@liviuchircu) 7 5 19 29
+   4. Jarrod Baumann (@jarrodb) 5 3 7 4
+   5. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
+   6. Aron Podrigal (@ar45) 3 1 10 1
+   7. Daniel Fussia 3 1 4 22
+   8. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -169,15 +170,16 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                    Name                  Commit Activity
-   1. Peter Lemenkov (@lemenkov)        Jun 2018 - Jun 2018
-   2. Liviu Chircu (@liviuchircu)       May 2016 - Jun 2018
-   3. Razvan Crainea (@razvancrainea)   Aug 2015 - Nov 2017
-   4. Vlad Patrascu (@rvlad-patrascu)   May 2017 - May 2017
-   5. Ionut Ionita (@ionutrazvanionita) Apr 2015 - Feb 2017
-   6. Daniel Fussia                     Jun 2016 - Jun 2016
-   7. Jarrod Baumann (@jarrodb)         Apr 2015 - Mar 2016
-   8. Aron Podrigal (@ar45)             Nov 2015 - Nov 2015
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4. Liviu Chircu (@liviuchircu)         May 2016 - Jun 2018
+   5. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2017
+   6. Ionut Ionita (@ionutrazvanionita)   Apr 2015 - Feb 2017
+   7. Daniel Fussia                       Jun 2016 - Jun 2016
+   8. Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
+   9. Aron Podrigal (@ar45)               Nov 2015 - Nov 2015
 
    (1) including any documentation-related commits, excluding
    merge commits

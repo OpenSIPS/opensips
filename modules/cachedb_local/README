@@ -274,13 +274,13 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 33 10 1155 693
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 44 49
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 46 50
    3. Liviu Chircu (@liviuchircu) 12 9 80 99
    4. Anca Vamanu 12 5 739 54
    5. Andrei Dragus 10 4 182 181
    6. Fabian Gast (@fgast) 9 3 517 48
    7. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
-   8. Vlad Patrascu (@rvlad-patrascu) 5 3 34 34
+   8. Vlad Patrascu (@rvlad-patrascu) 7 4 42 58
    9. Razvan Crainea (@razvancrainea) 4 2 5 5
    10. Dusan Klinec 3 1 4 4
 
@@ -307,10 +307,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jan 2019
-   3.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Nov 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Apr 2019
+   4.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
    7.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017

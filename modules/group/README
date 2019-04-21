@@ -362,7 +362,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 44 29 846 394
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 45 30 848 395
    2. Jan Janak (@janakj) 34 20 1370 148
    3. Daniel-Constantin Mierla (@miconda) 25 18 176 226
    4. Liviu Chircu (@liviuchircu) 12 9 40 80
@@ -370,13 +370,13 @@ Chapter 2. Contributors
    6. Andrei Pelinescu-Onciul 7 5 101 40
    7. Henning Westerholt (@henningw) 7 5 27 46
    8. Razvan Crainea (@razvancrainea) 5 3 13 11
-   9. Edson Gellert Schubert 5 1 0 206
-   10. Jiri Kuthan (@jiriatipteldotorg) 4 2 5 1
+   9. Vlad Patrascu (@rvlad-patrascu) 5 2 78 106
+   10. Edson Gellert Schubert 5 1 0 206
 
-   All remaining contributors: Sergio Gutierrez, Konstantin
-   Bokarius, Norman Brandinger (@NormB), UnixDev, Anca Vamanu, Dan
-   Pascu (@danpascu), Peter Lemenkov (@lemenkov), Vlad Patrascu
-   (@rvlad-patrascu).
+   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
+   Sergio Gutierrez, Konstantin Bokarius, Norman Brandinger
+   (@NormB), UnixDev, Anca Vamanu, Dan Pascu (@danpascu), Peter
+   Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -398,11 +398,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
    6.  Irina-Maria Stanescu                Aug 2009 - Dec 2009
    7.  Anca Vamanu                         Sep 2009 - Sep 2009
    8.  UnixDev                             Feb 2009 - Feb 2009

@@ -861,11 +861,11 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Henning Westerholt (@henningw) 29 18 1088 86
    2. Liviu Chircu (@liviuchircu) 26 16 783 124
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 24 19 354 102
-   4. Razvan Crainea (@razvancrainea) 16 11 279 74
-   5. Elena-Ramona Modroiu 14 3 1183 7
-   6. Daniel-Constantin Mierla (@miconda) 12 10 84 32
-   7. Vlad Patrascu (@rvlad-patrascu) 10 4 193 222
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 20 356 103
+   4. Vlad Patrascu (@rvlad-patrascu) 19 6 355 547
+   5. Razvan Crainea (@razvancrainea) 16 11 279 74
+   6. Elena-Ramona Modroiu 14 3 1183 7
+   7. Daniel-Constantin Mierla (@miconda) 12 10 84 32
    8. Anca Vamanu 6 3 220 14
    9. Ionel Cerghit (@ionel-cerghit) 5 1 18 161
    10. Vlad Paiu (@vladpaiu) 3 2 3 0
@@ -894,11 +894,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2010 - Mar 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   3.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Oct 2010 - Mar 2019
+   4.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
    7.  Maksym Sobolyev (@sobomax)          Dec 2015 - Dec 2015
    8.  Walter Doekes (@wdoekes)            Jan 2015 - Jan 2015

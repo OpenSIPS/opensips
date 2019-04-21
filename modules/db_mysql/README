@@ -204,9 +204,9 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 153 53 5336 3190
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 98 70 1571 791
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 99 71 1573 792
    3. Henning Westerholt (@henningw) 59 30 693 1239
-   4. Liviu Chircu (@liviuchircu) 30 23 406 139
+   4. Liviu Chircu (@liviuchircu) 31 24 408 141
    5. Daniel-Constantin Mierla (@miconda) 28 20 571 154
    6. Andrei Pelinescu-Onciul 16 14 52 49
    7. Razvan Crainea (@razvancrainea) 14 11 214 44
@@ -242,16 +242,17 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Mar 2014 - Apr 2019
-   2.  Razvan Crainea (@razvancrainea)          Oct 2011 - Sep 2018
-   3.  Vlad Paiu (@vladpaiu)                    Feb 2011 - Sep 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jul 2018
-   5.  Peter Lemenkov (@lemenkov)               Nov 2017 - Jun 2018
-   6.  Augusto Caringi                          Jul 2017 - Jul 2017
-   7.  Ovidiu Sas (@ovidiusas)                  Mar 2017 - Mar 2017
-   8.  Ionut Ionita (@ionutrazvanionita)        Feb 2016 - Feb 2016
-   9.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
-   10. Bogdan-Andrei Iancu (@bogdan-iancu)      Aug 2002 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Aug 2002 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)              Mar 2014 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)          Oct 2011 - Sep 2018
+   4.  Vlad Paiu (@vladpaiu)                    Feb 2011 - Sep 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jul 2018
+   6.  Peter Lemenkov (@lemenkov)               Nov 2017 - Jun 2018
+   7.  Augusto Caringi                          Jul 2017 - Jul 2017
+   8.  Ovidiu Sas (@ovidiusas)                  Mar 2017 - Mar 2017
+   9.  Ionut Ionita (@ionutrazvanionita)        Feb 2016 - Feb 2016
+   10. Eseanu Marius Cristian (@eseanucristian)   Jul 2015 - Jul
+                                                2015
 
    All remaining contributors: Saúl Ibarra Corretgé (@saghul),
    Razvan Pistolea, Norman Brandinger (@NormB), Sergio Gutierrez,

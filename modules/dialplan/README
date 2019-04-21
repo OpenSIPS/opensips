@@ -35,8 +35,8 @@ dialplan Module
 
         1.7. Exported Functions
 
-              1.7.1. dp_translate([partition:]id, src/dest[,
-                      attrs_pvar])
+              1.7.1. dp_translate( id, input, [out_var],
+                      [attrs_var], [partition])
 
         1.8. Exported MI Functions
 
@@ -379,7 +379,7 @@ modparam("dialplan", "repl_exp_col", "column_name")
 1.6.11. timerec_col (integer)
 
    The column name that indicates an additional time recurrence
-   check within the rule. (column values are RFC 2445-compatible
+   check within the rule (column values are RFC 2445-compatible
    strings)
 
    Default value is “timerec”.
@@ -414,63 +414,52 @@ modparam("dialplan", "attrs_col", "column_name")
 
 1.7. Exported Functions
 
-1.7.1.  dp_translate([partition:]id, src/dest[, attrs_pvar])
+1.7.1.  dp_translate( id, input, [out_var], [attrs_var], [partition])
 
    Will try to translate the src string into dest string according
    to the translation rules with dialplan ID equal to id.
 
    Meaning of the parameters is as follows:
-     * id - the dialplan id of possible matching rules. The id
-       parameter can have the following types:
-          + integer - the dialplan id is statically assigned
-          + pvar - the dialplan id is the value of an existing
-            pseudo-variable (as integer value)
-     * partition - Specifies the partition where the search will
-       take place. This parameter can be ommited. If the parameter
-       is omitted the default partition will be used if exists.
-       The partition parameter can have the following types:
-          + string - the table name is statically assigned
-          + pvar - the partition name is the value of an existing
-            pseudo-variable (as string value)
-     * src/dest - input and output of the function. If this
-       parameter is missing the default parameter
-       “ruri.user/ruri.user” will be used, thus translating the
-       request uri.
-       The “src” variable can be any type of pseudo-variable.
-       The “dest” variable can be also any type of
-       pseudo-variable, but it must be a writable one.
-     * attrs_pvar (output, optional) - a pseudo-variable which
-       will hold the attributes of the matched translation rule.
+     * id - the dialplan id to be used for matching rules
+     * input - input string to be used for rule matching and for
+       computing the output string.
+     * out_var - variable to be populated/written with the output
+       string (if provided by the translation rule).
+     * attrs_var - variable to be populated/written with the
+       atribute string, if provided by the translation rule.
+     * partition - the name of the partition (set of data) to be
+       used for locating the DP ID.
 
-   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE.
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   LOCAL_ROUTE, BRANCH_ROUTE, STARTUP_ROUTE, TIMER_ROUTE and
+   EVENT_ROUTE.
 
    Example 1.15. dp_translate usage
 ...
-dp_translate("240", "$ruri.user/$avp(dest)");
-xlog("translated to var $avp(dest) \n");
+dp_translate(240, "$ru", $var(out));
+xlog("translated into '$var(out)' \n");
 ...
 
    Example 1.16. dp_translate usage
 ...
 $avp(src) = $ruri.user;
-dp_translate("$var(x)", "$avp(src)/$var(y)", "$var(attrs)");
+dp_translate("$var(x)", "$avp(src)", $var(y), $var(attrs));
 xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ...
 
    Example 1.17. dp_translate usage
 ...
-$avp(src) = $uri.user;
-dp_translate("example_partition:$var(x)", "$avp(src)/$var(y)", "$avp(att
-rs)");
-xlog("translated to var $var(y) with attributes: '$avp(attrs)'\n");
+$var(id) = 10;
+dp_translate("$var(id)", "$avp(in)", , $avp(attrs), "example_partition")
+;
+xlog("matched with attributes '$avp(attrs) against example_partition'\n"
+);
 ...
 
    Example 1.18. dp_translate usage
 ...
-$var(partition) = "default";
-$var(id)        = 10;
-dp_translate("$var(partition):$var(id)", "$avp(src)/$var(y)");
-xlog("translate to var $var(y) partition $var(partition)")
+dp_translate( 10, "$var(in)", , , $var(part));
+xlog("'$var(in)' matched against partition '$var(part)'\n")
 ...
 
 1.8. Exported MI Functions
@@ -497,12 +486,12 @@ xlog("translate to var $var(y) partition $var(partition)")
 
    Name: dp_translate
 
-   Parameters: 2
-     * dpid - Given in the format "[Partition Name:]Dialplan ID"
-       this parameter represents the dpid of the rules used to
-       match the input string. The table name can be ommited. The
-       default table is dialplan.
-     * Input String
+   Parameters: 3
+     * dpid - the dpid of the rule set used for match the input
+       string
+     * input - the input string
+     * partition - (optional) the name of the partition when the
+       dpid is located
 
    MI DATAGRAM Command Format:
         opensips-cli -x mi dp_translate 10 +40123456789
@@ -544,8 +533,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 49 37 490 412
-   2. Liviu Chircu (@liviuchircu) 44 28 725 509
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 63 41 657 852
+   2. Liviu Chircu (@liviuchircu) 45 29 725 542
    3. Ionut Ionita (@ionutrazvanionita) 41 20 1149 579
    4. Anca Vamanu 32 5 3263 19
    5. Andrei Dragus 25 3 382 1029
@@ -580,11 +569,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Dec 2010 - Mar 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Dec 2018
-   3.  Liviu Chircu (@liviuchircu)              Jul 2012 - Nov 2018
-   4.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Jan 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)              Jul 2012 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)          Dec 2010 - Mar 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Dec 2018
+   5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    6.  Ovidiu Sas (@ovidiusas)                  Sep 2008 - Nov 2015
    7.  Ionut Ionita (@ionutrazvanionita)        Jul 2014 - Nov 2015
    8.  David Sanders                            Sep 2015 - Sep 2015
@@ -603,11 +592,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
-   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei Dragus,
-   Anca Vamanu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
+   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu
+   Sas (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei
+   Dragus, Anca Vamanu.
 
    Documentation Copyrights:
 

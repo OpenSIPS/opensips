@@ -13,8 +13,8 @@ mi_html Module
 
         1.4. Exported Parameters
 
-              1.4.1. mi_http_root(string)
-              1.4.2. mi_http_method(integer)
+              1.4.1. root(string)
+              1.4.2. http_method(integer)
               1.4.3. trace_destination (string)
               1.4.4. trace_bwlist (string)
 
@@ -39,8 +39,8 @@ mi_html Module
 
    List of Examples
 
-   1.1. Set mi_http_root parameter
-   1.2. Set mi_http_method parameter
+   1.1. Set root parameter
+   1.2. Set http_method parameter
    1.3. Set trace_destination parameter
    1.4. Set trace_destination parameter
 
@@ -48,7 +48,7 @@ Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This module provides an HTTP transport layer implementation for
+   This module provides a minimal web user interface for the
    OpenSIPS's Management Interface.
 
 1.2. To-do
@@ -65,20 +65,20 @@ Chapter 1. Admin Guide
 
 1.4. Exported Parameters
 
-1.4.1. mi_http_root(string)
+1.4.1. root(string)
 
-   Specifies the root path for mi http requests. The link to the
+   Specifies the root path for the HTTP requests. The link to the
    mi web interface must be constructed using the following
-   patern: http://[opensips_IP]:[opensips_mi_port]/[mi_http_root]
+   patern: http://[opensips_IP]:[opensips_mi_port]/[root]
 
    The default value is "mi".
 
-   Example 1.1. Set mi_http_root parameter
+   Example 1.1. Set root parameter
 ...
-modparam("mi_http", "mi_http_root", "opensips_mi")
+modparam("mi_html", "root", "opensips_mi")
 ...
 
-1.4.2. mi_http_method(integer)
+1.4.2. http_method(integer)
 
    Specifies the HTTP request method to be used:
      * 0 - use GET HTTP request
@@ -86,9 +86,9 @@ modparam("mi_http", "mi_http_root", "opensips_mi")
 
    The default value is 0.
 
-   Example 1.2. Set mi_http_method parameter
+   Example 1.2. Set http_method parameter
 ...
-modparam("mi_http", "mi_http_method", 1)
+modparam("mi_html", "http_method", 1)
 ...
 
 1.4.3. trace_destination (string)
@@ -107,7 +107,7 @@ modparam("mi_http", "mi_http_method", 1)
 modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
 =tcp;version=3")
 
-modparam("mi_http", "trace_destination", "hep_dest")
+modparam("mi_html", "trace_destination", "hep_dest")
 ...
 
 1.4.4. trace_bwlist (string)
@@ -135,11 +135,11 @@ modparam("mi_http", "trace_destination", "hep_dest")
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced
-modparam("mi_http", "trace_bwlist", "b: ps, which")
+modparam("mi_html", "trace_bwlist", "b: ps, which")
 ...
 ## allow only sip_trace mi command
 ## all the other commands will not be traced
-modparam("mi_http", "trace_bwlist", "w: sip_trace")
+modparam("mi_html", "trace_bwlist", "w: sip_trace")
 ...
 
 1.5. Exported Functions
@@ -152,8 +152,7 @@ modparam("mi_http", "trace_bwlist", "w: sip_trace")
    configured size of the httpd buffer is to small (or if there
    isn't enough pkg memory configured).
 
-   Future realeases of the httpd and mi_httpd modules will address
-   this issue.
+   Future realeases of the httpd module will address this issue.
 
 Chapter 2. Contributors
 
@@ -163,10 +162,10 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 62 31 2243 697
-   2. Vlad Patrascu (@rvlad-patrascu) 13 2 149 475
+   2. Vlad Patrascu (@rvlad-patrascu) 14 3 167 493
    3. Liviu Chircu (@liviuchircu) 9 7 29 41
-   4. Ionut Ionita (@ionutrazvanionita) 8 5 217 10
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 107 43
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 109 44
+   5. Ionut Ionita (@ionutrazvanionita) 8 5 217 10
    6. Razvan Crainea (@razvancrainea) 4 2 18 6
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
    8. Vlad Paiu (@vladpaiu) 2 1 0 1
@@ -191,11 +190,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Ovidiu Sas (@ovidiusas)             Oct 2011 - Feb 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2011 - Apr 2018
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2011 - Apr 2019
+   3. Ovidiu Sas (@ovidiusas)             Oct 2011 - Feb 2019
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
    6. Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
    7. Vlad Paiu (@vladpaiu)               Jan 2016 - Jan 2016
    8. Razvan Crainea (@razvancrainea)     Mar 2015 - Aug 2015
@@ -207,9 +206,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Ovidiu Sas
-   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   (@ionutrazvanionita), Ovidiu Sas (@ovidiusas), Bogdan-Andrei
+   Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

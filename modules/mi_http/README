@@ -13,7 +13,7 @@ mi_http Module
 
         1.3. Exported Parameters
 
-              1.3.1. mi_json_root(string)
+              1.3.1. root(string)
               1.3.2. trace_destination (string)
               1.3.3. trace_bwlist (string)
 
@@ -39,18 +39,17 @@ mi_http Module
 
    List of Examples
 
-   1.1. Set mi_json_root parameter
+   1.1. Set root parameter
    1.2. Set trace_destination parameter
    1.3. Set trace_destination parameter
-   1.4. JSON request
-   1.5. JSON request
+   1.4. JSON-RPC request
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This module implements a JSON server that handles GET requests
-   and generates JSON responses.
+   This module provides a HTTP transport layer implementation for
+   OpenSIPS's Management Interface.
 
 1.2. Dependencies
 
@@ -65,16 +64,16 @@ Chapter 1. Admin Guide
 
 1.3. Exported Parameters
 
-1.3.1. mi_json_root(string)
+1.3.1. root(string)
 
-   Specifies the root path for JSON requests:
-   http://[opensips_IP]:[opensips_httpd_port]/[mi_json_root]
+   Specifies the root path for HTTP requests:
+   http://[opensips_IP]:[opensips_httpd_port]/[root]
 
-   The default value is "json".
+   The default value is "mi".
 
-   Example 1.1. Set mi_json_root parameter
+   Example 1.1. Set root parameter
 ...
-modparam("mi_json", "mi_json_root", "opensips_mi_json")
+modparam("mi_http", "root", "opensips_mi")
 ...
 
 1.3.2. trace_destination (string)
@@ -93,7 +92,7 @@ modparam("mi_json", "mi_json_root", "opensips_mi_json")
 modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
 =tcp;version=3")
 
-modparam("mi_json", "trace_destination", "hep_dest")
+modparam("mi_http", "trace_destination", "hep_dest")
 ...
 
 1.3.3. trace_bwlist (string)
@@ -121,11 +120,11 @@ modparam("mi_json", "trace_destination", "hep_dest")
 ...
 ## blacklist ps and which mi commands
 ## all the other commands shall be traced
-modparam("mi_json", "trace_bwlist", "b: ps, which")
+modparam("mi_http", "trace_bwlist", "b: ps, which")
 ...
 ## allow only sip_trace mi command
 ## all the other commands will not be traced
-modparam("mi_json", "trace_bwlist", "w: sip_trace")
+modparam("mi_http", "trace_bwlist", "w: sip_trace")
 ...
 
 1.4. Exported Functions
@@ -138,50 +137,32 @@ modparam("mi_json", "trace_bwlist", "w: sip_trace")
    configured size of the httpd buffer is to small (or if there
    isn't enough pkg memory configured).
 
-   Future realeases of the httpd and mi_json modules will address
-   this issue.
+   Future realeases of the httpd module will address this issue.
 
 1.6. Examples
 
-   This is an example showing the JSON format for the
-   “get_statistics net: uri:” MI command. Notice how the
-   parameters are comma-separated then URI-encoded.
+   This is an example showing the JSON-RPC request and reply over
+   HTTP for the “ps” MI command.
 
-   Example 1.4. JSON request
+   Example 1.4. JSON-RPC request
 
-GET /json/get_statistics?params=net%3A%2Curi%3A HTTP/1.1
+POST /mi HTTP/1.1
 Accept: application/json
+Content-Type: application/json
 Host: example.net
 
+{"jsonrpc":"2.0","method":"ps","id":10}
+
 HTTP/1.1 200 OK
-Content-Length: 49
+Content-Length: 317
 Content-Type: application/json
 Date: Fri, 01 Nov 2013 12:00:00 GMT
 
-["net:waiting_udp = 0", "net:waiting_tcp = 0", "uri:positive checks = 0"
-, "uri:negative_checks = 0"]
-
-
-   Here is another example showing the JSON format for the “ps” MI
-   command.
-
-   Example 1.5. JSON request
-
-GET /json/ps HTTP/1.1
-Accept: application/json
-Host: example.net
-
-HTTP/1.1 200 OK
-Content-Length: 428
-Content-Type: application/json
-Date: Fri, 01 Nov 2013 12:00:00 GMT
-
-[{"name":"Process", "value":null, "attributes":{"ID": "0", "PID": "7400"
-, "Type": "stand-alone SIP receiver udp:127.0.0.1:5060"}}, {"name":"Proc
-ess", "value":null, "attributes":{"ID": "1", "PID": "7402", "Type": "HTT
-PD INADDR_ANY:8888"}}, {"name":"Process", "value":null, "attributes":{"I
-D": "2", "PID": "7403", "Type": "time_keeper"}}, {"name":"Process", "val
-ue":null, "attributes":{"ID": "3", "PID": "7404", "Type": "timer"}}]
+{"jsonrpc":"2.0","result":{"Processes":[{"ID":0,"PID":9467,"Type":"atten
+dant"},{"ID":1,"PID":9468,"Type":"HTTPD127.0.0.1:8008"},{"ID":3,"PID":94
+70,"Type":"time_keeper"},{"ID":4,"PID":9471,"Type":"timer"},{"ID":5,"PID
+":9472,"Type":"SIPreceiverudp:127.0.0.1:5060"},{"ID":7,"PID":9483,"Type"
+:"Timerhandler"},]},"id":10}
 
 
 Chapter 2. Contributors
@@ -192,11 +173,11 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Stephane Alnet 20 5 1265 233
-   2. Vlad Patrascu (@rvlad-patrascu) 18 2 147 771
+   2. Vlad Patrascu (@rvlad-patrascu) 20 3 170 814
    3. Ionut Ionita (@ionutrazvanionita) 14 10 273 52
    4. Razvan Crainea (@razvancrainea) 12 9 168 33
    5. Liviu Chircu (@liviuchircu) 9 7 30 36
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 100 35
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 102 36
    7. Vlad Paiu (@vladpaiu) 5 3 8 3
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -220,9 +201,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Dec 2013 - Jan 2019
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2014 - Jan 2019
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2018
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2014 - Apr 2019
+   3. Razvan Crainea (@razvancrainea)     Dec 2013 - Jan 2019
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
    6. Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
@@ -236,10 +217,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut Ionita
-   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Stephane Alnet.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Stephane Alnet.
 
    Documentation Copyrights:
 

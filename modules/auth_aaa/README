@@ -319,20 +319,20 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 90 24 3294 2182
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 40 28 864 251
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 42 30 891 254
    3. Irina-Maria Stanescu 16 8 185 299
    4. Daniel-Constantin Mierla (@miconda) 15 13 67 55
    5. Liviu Chircu (@liviuchircu) 14 11 47 86
    6. Maksym Sobolyev (@sobomax) 12 6 167 171
    7. Juha Heinanen (@juha-h) 8 5 142 53
    8. Andrei Pelinescu-Onciul 7 5 8 2
-   9. Razvan Crainea (@razvancrainea) 6 4 9 13
-   10. Jiri Kuthan (@jiriatipteldotorg) 4 2 3 1
+   9. Vlad Patrascu (@rvlad-patrascu) 7 2 55 213
+   10. Razvan Crainea (@razvancrainea) 6 4 9 13
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Ancuta Onofrei, Anatoly Pidruchny, Peter Nixon, Konstantin
-   Bokarius, Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
-   Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
+   Henning Westerholt (@henningw), Ancuta Onofrei, Anatoly
+   Pidruchny, Peter Nixon, Konstantin Bokarius, Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -354,10 +354,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Oct 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
    6.  Irina-Maria Stanescu                Aug 2009 - Apr 2010
    7.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008

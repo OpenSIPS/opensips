@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">55</entry>
-		<entry align="center">42</entry>
-		<entry align="center">421</entry>
-		<entry align="center">454</entry>
+		<entry align="center">57</entry>
+		<entry align="center">44</entry>
+		<entry align="center">438</entry>
+		<entry align="center">473</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">5</entry>
 		<entry align="center">3</entry>
-		<entry align="center">14</entry>
-		<entry align="center">50</entry>
+		<entry align="center">29</entry>
+		<entry align="center">15</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Denis Bilenko, Vallimamod Abdullah, Alex Hermann, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Sergio Gutierrez, Konstantin Bokarius, Elena-Ramona Modroiu, John Riordan, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dusan Klinec, UnixDev, Stanislaw Pitucha, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Julien Blache.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Denis Bilenko, Vallimamod Abdullah, Alex Hermann, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Sergio Gutierrez, Konstantin Bokarius, Elena-Ramona Modroiu, John Riordan, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dusan Klinec, UnixDev, Stanislaw Pitucha, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Julien Blache.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -133,18 +133,18 @@
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Apr 2019</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Nov 2018</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Jul 2017</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
