@@ -660,7 +660,7 @@ done:
 /*
  * See documentation in README file.
  */
-int enum_query(struct sip_msg* _msg, str* _num, str* _suffix, str* _service)
+int enum_query(struct sip_msg* _msg, str* _suffix, str* _service, str* _num)
 {
 	char *user_s;
 	int user_len, i, j;
