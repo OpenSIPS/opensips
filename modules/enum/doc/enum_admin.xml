@@ -261,7 +261,7 @@ modparam("enum", "bl_algorithm", "txt")
 	<title>Exported Functions</title>
 	<section id="func_enum_query" xreflabel="enum_query()">
 		<title>
-		<function moreinfo="none">enum_query([number], [suffix], [service])</function>
+		<function moreinfo="none">enum_query([suffix], [service], [number])</function>
 		</title>
 		<para>
 		The function performs an ENUM query on a given E.164 "number" (or R-URI
@@ -272,17 +272,18 @@ modparam("enum", "bl_algorithm", "txt")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>number (string, optional)</emphasis> - an E.164 number
-				packed as a string on which the ENUM query is performed
-			</para>
-		</listitem>
-		<listitem>
 			<para><emphasis>suffix (string, optional)</emphasis> - suffix to be appended to the
 				domain name, <xref linkend="param_domain_suffix"/> if missing</para>
 		</listitem>
 		<listitem>
 			<para><emphasis>service (string, optional)</emphasis> - service string to be used in 
 			the service field
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>number (string, optional)</emphasis> - an specific
+			E.164 number packed as a string on which the ENUM query is
+			performed, other the R-URI username ($rU) will be used
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -294,23 +295,23 @@ modparam("enum", "bl_algorithm", "txt")
 		<programlisting format="linespecific">
 ...
 # search for "e2u+sip" in freenum.org 
-enum_query($avp(number), "freenum.org.");
+enum_query("freenum.org.", , $avp(number));
 ...
 # search for "e2u+sip" in default tree (configured as parameter)
 enum_query();
 ...
 # search for "e2u+voice:sip" in e164.arpa
-enum_query(, "e164.arpa.", "voice");
+enum_query("e164.arpa.", "voice");
 ...
 # search for service type "sip" or "voice:sip" or "video:sip"
 # note the '+' sign in front of the second parameter
-enum_query($avp(number), "e164.arpa.", "+sip+voice:sip+video:sip");
+enum_query("e164.arpa.", "+sip+voice:sip+video:sip", $avp(number));
 ...
 # querying for service sip and voice:sip
-enum_query(, "e164.arpa.");
-enum_query(, "e164.arpa.", "voice");
+enum_query("e164.arpa.");
+enum_query("e164.arpa.", "voice");
 # or use instead
-enum_query(, "e164.arpa.", "+sip+voice:sip");
+enum_query("e164.arpa.", "+sip+voice:sip");
 ...
 </programlisting>
 		</example>

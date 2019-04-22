@@ -79,11 +79,11 @@ str isnsuffix;
 
 static cmd_export_t cmds[] = {
 	{"enum_query", (cmd_function)enum_query, {
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
 			fixup_enum_suffix, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
-			fixup_enum_service, 0}, {0,0,0}},
+			fixup_enum_service, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE},
 	{"i_enum_query", (cmd_function)i_enum_query, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
