@@ -314,7 +314,7 @@ modparam("avpops","db_scheme",
 		<title>Exported Functions</title>
 		<section id="func_avp_db_load" xreflabel="avp_db_load()">
 			<title>
-				<function moreinfo="none">avp_db_load(source, name[, db_id[, prefix]])
+				<function moreinfo="none">avp_db_load(source, name, [db_id], [prefix]])
 				</function>
 			</title>
 			<para>
@@ -330,7 +330,7 @@ modparam("avpops","db_scheme",
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>source</emphasis> - what info is used for
+				<para><emphasis>source (string, no expand)</emphasis> - what info is used for
 				identifying the AVPs. Parameter syntax:
 				<itemizedlist>
 					<listitem><para><emphasis>
@@ -347,7 +347,7 @@ modparam("avpops","db_scheme",
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>name</emphasis> - which AVPs will be loaded
+				<para><emphasis>name (string, no expand)</emphasis> - which AVPs will be loaded
 				from DB into memory. Parameter syntax is:
 				<itemizedlist>
 					<listitem><para><emphasis>
@@ -367,13 +367,13 @@ modparam("avpops","db_scheme",
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>db_id</emphasis> - reference to a defined
+				<para><emphasis>db_id (int, optional)</emphasis> - reference to a defined
 				DB URL (a numerical id) - see the <quote>db_url</quote>
 				module parameter.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>prefix</emphasis> - static string which will
+				<para><emphasis>prefix (string, optional)</emphasis> - static string which will
 					precede the names of the AVPs populated by this function.
 				</para>
 			</listitem>
@@ -405,14 +405,14 @@ xlog("Loaded: $avp(caller_100)\n");
 		</section>
 		<section id="func_avp_db_store" xreflabel="avp_db_store()">
 			<title>
-				<function moreinfo="none">avp_db_store(source,name[,db_id])</function>
+				<function moreinfo="none">avp_db_store(source, name, [db_id])</function>
 			</title>
 			<para>
 			Stores to DB the AVPs corresponding to the given
 			<emphasis>source</emphasis>.
 			</para>
 			<para>The meaning and usage of the parameters are identical as for
-			<emphasis>avp_db_load(source,name)</emphasis>
+			<emphasis>avp_db_load(source, name)</emphasis>
 			function. Please refer to its description.
 			</para>
 			<para>
@@ -424,24 +424,24 @@ xlog("Loaded: $avp(caller_100)\n");
 				<title><function>avp_db_store</function> usage</title>
 				<programlisting format="linespecific">
 ...
-avp_db_store("$tu","$avp(678)");
-avp_db_store("$ru/username","$avp(email)");
+avp_db_store("$tu", "$avp(678)");
+avp_db_store("$ru/username", "$avp(email)");
 # use DB URL id 3
-avp_db_store("$ru","$avp(1)",3);
+avp_db_store("$ru", "$avp(1)", 3);
 ...
 				</programlisting>
 			</example>
 		</section>
 		<section id="func_avp_db_delete" xreflabel="avp_db_delete()">
 			<title>
-				<function moreinfo="none">avp_db_delete(source,name[,db_id])</function>
+				<function moreinfo="none">avp_db_delete(source, name, [db_id])</function>
 			</title>
 			<para>
 			Deletes from DB the AVPs corresponding to the given
 			<emphasis>source</emphasis>.
 			</para>
 			<para>The meaning and usage of the parameters are identical as for
-			<emphasis>avp_db_load(source,name)</emphasis>
+			<emphasis>avp_db_load(source, name)</emphasis>
 			function. Please refer to its description.
 			</para>
 			<para>
@@ -452,18 +452,18 @@ avp_db_store("$ru","$avp(1)",3);
 				<title><function>avp_db_delete</function> usage</title>
 				<programlisting format="linespecific">
 ...
-avp_db_delete("$tu","$avp(678)");
-avp_db_delete("$ru/username","$avp(email)");
-avp_db_delete("$avp(uuid)","$avp(404fwd)/fwd_table");
+avp_db_delete("$tu", "$avp(678)");
+avp_db_delete("$ru/username", "$avp(email)");
+avp_db_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
 # use DB URL id 3
-avp_db_delete("$ru","$avp(1)",3);
+avp_db_delete("$ru", "$avp(1)", 3);
 ...
 				</programlisting>
 			</example>
 		</section>
 		<section id="func_avp_db_query" xreflabel="avp_db_query()">
 			<title>
-				<function moreinfo="none">avp_db_query(query[[,dest],db_id])</function>
+				<function moreinfo="none">avp_db_query(query, [res_col_avps], [db_id])</function>
 			</title>
 			<para>
 			Make a database query and store the result in AVPs.
@@ -473,7 +473,7 @@ avp_db_delete("$ru","$avp(1)",3);
 			</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>query</emphasis> - must be a valid SQL
+				<para><emphasis>query (string)</emphasis> - must be a valid SQL
 				query. The parameter can contain pseudo-variables.</para>
 				<para>You must escape any pseudo-variables manually to prevent
 				SQL injection attacks. You can use the existing transformations
@@ -489,18 +489,18 @@ avp_db_delete("$ru","$avp(1)",3);
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>dest</emphasis> - a list with AVP names where
+				<para><emphasis>res_col_avps (string, optional, no expand)</emphasis> - a list with AVP names where
 				to store the result. The format is
 				<quote>$avp(name1);$avp(name2);...</quote>. If this parameter
-				is ommited, the result is stored in
-				<quote>$avp(1);$avp(2);...</quote>. If the result gives
-				many rows, then multiple AVPs with corresponding name will
+				is omitted, the result is stored in
+				<quote>$avp(1);$avp(2);...</quote>. If the result consists of
+				multiple rows, then multiple AVPs with corresponding names will
 				be added. The value type of the AVP (string or integer) will
 				be derived from the type of the columns.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>db_id</emphasis> - reference to a defined
+				<para><emphasis>db_id (int, optional)</emphasis> - reference to a defined
 				DB URL (a numerical id) - see the <quote>db_url</quote>
 				module parameter. It can be either a constant, or a
 				string/int variable.
@@ -515,14 +515,13 @@ avp_db_delete("$ru","$avp(1)",3);
 				<title><function>avp_db_query</function> usage</title>
 				<programlisting format="linespecific">
 ...
-avp_db_query("select password, ha1 from subscriber where username='$tu'",
-	"$avp(678);$avp(679)");
-avp_db_query("delete from subscriber");
-avp_db_query("delete from subscriber",,2);
+avp_db_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
+	"$avp(pass);$avp(hash)");
+avp_db_query("DELETE FROM subscriber");
+avp_db_query("DELETE FROM subscriber", , 2);
 
-$avp(id)=2;
-avp_db_query("delete from subscriber",,$avp(id));
-
+$avp(id) = 2;
+avp_db_query("DELETE FROM subscriber", , $avp(id));
 ...
 				</programlisting>
 			</example>
@@ -539,7 +538,7 @@ avp_db_query("delete from subscriber",,$avp(id));
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>name</emphasis> - which AVPs will be deleted
+				<para><emphasis>name (string, no expand)</emphasis> - which AVPs will be deleted
 				from memory.
 				Parameter syntax is:
 				<itemizedlist>
@@ -574,7 +573,7 @@ avp_delete("a3");
 		</section>
 		<section id="func_avp_pushto" xreflabel="avp_pushto()">
 			<title>
-				<function moreinfo="none">avp_pushto(destination,name)
+				<function moreinfo="none">avp_pushto(destination, name)
 				</function>
 			</title>
 			<para>
@@ -583,7 +582,7 @@ avp_delete("a3");
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>destination</emphasis> - as what will be the
+				<para><emphasis>destination (string, no expand)</emphasis> - as what will be the
 				AVP value pushed into SIP message.
 				Parameter syntax:
 				<itemizedlist>
@@ -606,7 +605,7 @@ avp_delete("a3");
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>name</emphasis> - which AVP(s)/pseudo-variable
+				<para><emphasis>name (string, no expand)</emphasis> - which AVP(s)/pseudo-variable
 				should be pushed
 				into the SIP message.
 				Parameter syntax is:
@@ -629,18 +628,18 @@ avp_delete("a3");
 				<title><function>avp_pushto</function> usage</title>
 				<programlisting format="linespecific">
 ...
-avp_pushto("$ru/domain","$fd");
-avp_pushto("$ru","$avp(678)");
-avp_pushto("$ru/domain","$avp(backup_domains)/g");
-avp_pushto("$du","$avp(679)");
-avp_pushto("$br","$avp(680)");
+avp_pushto("$ru/domain", "$fd");
+avp_pushto("$ru", "$avp(678)");
+avp_pushto("$ru/domain", "$avp(backup_domains)/g");
+avp_pushto("$du", "$avp(679)");
+avp_pushto("$br", "$avp(680)");
 ...
 				</programlisting>
 			</example>
 		</section>
 		<section id="func_avp_check" xreflabel="avp_check()">
 			<title>
-				<function moreinfo="none">avp_check(name,op_value)
+				<function moreinfo="none">avp_check(name, op_value)
 				</function>
 			</title>
 			<para>
@@ -649,7 +648,7 @@ avp_pushto("$br","$avp(680)");
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>name</emphasis> - which AVP(s) should be
+				<para><emphasis>name (string, no expand)</emphasis> - which AVP(s) should be
 				checked.
 				Parameter syntax is:
 				<itemizedlist>
@@ -660,7 +659,7 @@ avp_pushto("$br","$avp(680)");
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>op_value</emphasis> - define the operator,
+				<para><emphasis>op_value (string, no expand)</emphasis> - define the operator,
 				the value and flags for checking.
 				Parameter syntax is:
 				</para>
@@ -726,17 +725,17 @@ avp_pushto("$br","$avp(680)");
 				<programlisting format="linespecific">
 ...
 avp_check("$avp(678)", "lt/345/g");
-avp_check("$fd","eq/$td/I");
-avp_check("$avp(foo)","gt/$avp($bar)/g");
-avp_check("$avp(foo)","re/sip:.*@bar.net/g");
-avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
+avp_check("$fd", "eq/$td/I");
+avp_check("$avp(foo)", "gt/$avp($bar)/g");
+avp_check("$avp(foo)", "re/sip:.*@bar.net/g");
+avp_check("$avp(foo)", "fm/$avp(fm_avp)/g");
 ...
 				</programlisting>
 			</example>
 		</section>
 		<section id="func_avp_copy" xreflabel="avp_copy()">
 			<title>
-				<function moreinfo="none">avp_copy(old_name,new_name)
+				<function moreinfo="none">avp_copy(from_avp, to_avp)
 				</function>
 			</title>
 			<para>
@@ -745,23 +744,23 @@ avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>name1</emphasis> - which AVP(s) should be
+				<para><emphasis>from_avp (string, no expand)</emphasis> - which AVP(s) should be
 				copied/moved.
 				Parameter syntax is:
 				<itemizedlist>
 					<listitem><para><emphasis>
-					name = ( avp_name | avp_alias )
+					from_avp = ( avp_name | avp_alias )
 					</emphasis></para></listitem>
 				</itemizedlist>
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>name2</emphasis> - the new name of the
+				<para><emphasis>to_avp (string, no expand)</emphasis> - the new name of the
 				copied/moved AVP(s).
 				Parameter syntax is:
 				<itemizedlist>
 					<listitem><para><emphasis>
-					name = ( avp_name | avp_alias ) ['/'flags]
+					to_avp = ( avp_name | avp_alias ) ['/'flags]
 					</emphasis></para></listitem>
 					<listitem><para><emphasis>
 					flags = 'g' | 'G' | 'd' | 'D' | 'n' | 'N' | 's' | 'S'
@@ -778,8 +777,8 @@ avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
 				<title><function>avp_copy</function> usage</title>
 				<programlisting format="linespecific">
 ...
-avp_copy("$avp(678)", "$avp(345)/g");
-avp_copy("$avp(old)","$avp(new)/gd");
+avp_copy("$avp(foo)", "$avp(bar)/g");
+avp_copy("$avp(old)", "$avp(new)/gd"); # also deletes $avp(old)
 ...
 				</programlisting>
 			</example>
@@ -794,7 +793,7 @@ avp_copy("$avp(old)","$avp(new)/gd");
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>avps</emphasis> - source AVP, destination AVP
+				<para><emphasis>avps (string, no expand)</emphasis> - source AVP, destination AVP
 				and flags. Parameter syntax is:
 				<itemizedlist>
 					<listitem><para><emphasis>
@@ -815,7 +814,7 @@ avp_copy("$avp(old)","$avp(new)/gd");
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>subst</emphasis> - perl/sed-like reqular expression.
+				<para><emphasis>subst (string)</emphasis> - perl/sed-like reqular expression.
 				Parameter syntax is:
 				<itemizedlist>
 					<listitem><para><emphasis>
@@ -867,7 +866,7 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
 		</section>
 		<section id="func_avp_op" xreflabel="avp_op()">
 			<title>
-				<function moreinfo="none">avp_op(name,op_value)
+				<function moreinfo="none">avp_op(name, op_value)
 				</function>
 			</title>
 			<para>
@@ -876,7 +875,7 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>name</emphasis>
+				<para><emphasis>name (string, no expand)</emphasis>
 				- 'source_avp/destination_avp' - which AVP(s) should be
 				processed and where to store the result. If 'destination_avp'
 				is missing, same name as 'source_avp' is used to store the
@@ -900,7 +899,7 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
 				</itemizedlist>
 			</listitem>
 			<listitem>
-				<para><emphasis>op_value</emphasis> - define the operation,
+				<para><emphasis>op_value (string, no expand)</emphasis> - define the operation,
 				the value and flags.
 				Parameter syntax is:
 				<itemizedlist>
@@ -937,7 +936,7 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
 				<programlisting format="linespecific">
 ...
 avp_op("$avp(678)", "add/345/g");
-avp_op("$avp(number)","sub/$avp(number2)/d");
+avp_op("$avp(number)", "sub/$avp(number2)/d");
 ...
 				</programlisting>
 			</example>
@@ -953,7 +952,7 @@ avp_op("$avp(number)","sub/$avp(number2)/d");
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>name</emphasis> - name of AVP to look for.
+				<para><emphasis>name (string, no expand)</emphasis> - name of AVP to look for.
 				Parameter syntax is:
 				<itemizedlist>
 					<listitem><para><emphasis>
@@ -975,8 +974,8 @@ avp_op("$avp(number)","sub/$avp(number2)/d");
 				<title><function>is_avp_set</function> usage</title>
 				<programlisting format="linespecific">
 ...
-if(is_avp_set("$avp(678)"))
-    log("AVP with integer id 678 exists\n");
+if(is_avp_set("$avp(foo)"))
+    xlog("AVP with name 'foo' is set!\n");
 ...
 				</programlisting>
 			</example>
@@ -1009,49 +1008,15 @@ avp_print();
 	<title>Exported Asynchronous Functions</title>
 		<section id="afunc_avp_db_query" xreflabel="avp_db_query()">
 			<title>
-				<function moreinfo="none">avp_db_query(query[[,dest],db_id])</function>
+				<function moreinfo="none">avp_db_query(query, [dest], [db_id])</function>
 			</title>
 			<para>
-			Make a database query and store the result in AVPs.
+			This function takes the same parameters and behaves identically
+			to <xref linkend="func_avp_db_query"/>, but asynchronously
+			(after launching the query, the current SIP worker pauses the
+			execution of the current SIP message until the result is available
+			and attempts to process more SIP traffic).
 			</para>
-			<para>
-			The meaning and usage of the parameters:
-			</para>
-			<itemizedlist>
-			<listitem>
-				<para><emphasis>query</emphasis> - must be a valid SQL
-				query. The parameter can contain pseudo-variables.</para>
-				<para>You must escape any pseudo-variables manually to prevent
-				SQL injection attacks. You can use the existing transformations
-				<emphasis>escape.common</emphasis> and
-				<emphasis>unescape.common</emphasis>
-				to escape and unescape the content of any pseudo-variable.
-				Failing to escape the variables used in the query makes you
-				vulnerable to SQL injection, e.g. make it possible for an
-				outside attacker to alter your database content.
-				The function returns true if the query was successful, -2 in case
-				the query returned an empty result set, and -1 for all other types
-				of errors
-				</para>
-			</listitem>
-			<listitem>
-				<para><emphasis>dest</emphasis> - a list with AVP names where
-				to store the result. The format is
-				<quote>$avp(name1);$avp(name2);...</quote>. If this parameter
-				is ommited, the result is stored in
-				<quote>$avp(1);$avp(2);...</quote>. If the result gives
-				many rows, then multiple AVPs with corresponding name will
-				be added. The value type of the AVP (string or integer) will
-				be derived from the type of the columns.
-				</para>
-			</listitem>
-			<listitem>
-				<para><emphasis>db_id</emphasis> - reference to a defined
-				DB URL (a numerical id) - see the <quote>db_url</quote>
-				module parameter.
-				</para>
-			</listitem>
-			</itemizedlist>
 			<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.

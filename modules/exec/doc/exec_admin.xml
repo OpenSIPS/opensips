@@ -180,27 +180,29 @@ modparam("exec", "time_to_kill", 20)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>command</emphasis> - command to be executed.It can include
-			pseudovariables.
+			<para><emphasis>command (string)</emphasis> - command to be executed
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>stdin</emphasis> - String to be passed to the standard input
-			of the command. The string can be given as a pseudovariable.
+			<para><emphasis>stdin (string, optional)</emphasis> - string to be
+				passed to the standard input of the command
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>stdout</emphasis> - pseudovariable where to store the output
-			from the standard output of the process.
+			<para><emphasis>stdout (var, optional)</emphasis> - optional
+				output variable which will hold the standard output of the
+				process
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>stderr</emphasis> - pseudovariable where to store the error from
-			the standard error of the process.
+			<para><emphasis>stderr (var, optional)</emphasis> - optional
+				output variable which will hold the standard error of the
+				process
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>envavp</emphasis> - AVP which holds the values for the
+			<para><emphasis>envavp (var, optional)</emphasis> - optional AVP
+				which holds the values for the
 			environment variables to be passed for the command. The names of the environment
 			variables will be "OSIPS_EXEC_#", where "#" starts from 0. For example, if we
 			push two values (e.g. "b" and "a") into an AVP variable, which acts like a stack,
@@ -233,203 +235,24 @@ modparam("exec", "time_to_kill", 20)
 ...
 $avp(env) = "a";
 $avp(env) = "b";
-exec("ls -l", , "$var(out)", "$var(err)", "$avp(env)");
+exec("ls -l", , $var(out), $var(err), $avp(env));
 xlog("The output is $var(out)\n");
 xlog("Received the following error\n$var(err)");
 ...
 $var(input) = "input";
-exec("/home/../myscript.sh", "this is my $var(input) for exec\n", , , "$avp(env)");
+exec("/home/../myscript.sh", "this is my $var(input) for exec\n", , , $avp(env));
 ...
 </programlisting>
 		</example>
 	</section>
 
-	<section id="func_exec_dset" xreflabel="exec_dset()">
-		<title>
-		<function moreinfo="none">exec_dset(command) (DEPRECATED)</function>
-		</title>
-		<para>
-		WARNING - this function is deprecated and it will be remove in the next
-		version - please use the exec() function (  <xref linkend="func_exec"/> ).
-		</para>
-		<para>
-		Executes an external command. The current &ruri; is appended to the command
-		as its last parameter. The output of the command will rewrite the current R-URI.
-		Multiple lines of output lead to multiple branches.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>command (string, pvar)</emphasis> - command to be
-			executed. It can include pseudo-variables or '$$' delimited UNIX
-			environment variables
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		WARNING: most OpenSIPS scripting variables should be quoted before being
-		passed to external commands, as in: exec_avp("log-call.sh '$ct'").
-		This may help avoid some unexpected behaviour
-		(e.g. unwanted extra parameters, errors due to special bash characters, etc.)
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function moreinfo="none">exec_dset</function> usage</title>
-		<programlisting format="linespecific">
-...
-exec_dset("ruri-changer.sh");
-exec_dset("ruri-changer.sh '$ct'");
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="func_exec_msg" xreflabel="exec_msg()">
-		<title>
-		<function moreinfo="none">exec_msg(command) (DEPRECATED)</function>
-		</title>
-		<para>
-		WARNING - this function is deprecated and it will be remove in the next
-		version - please use the exec() function (  <xref linkend="func_exec"/> ).
-		</para>
-		<para>
-		Executes an external command. The current SIP message is passed to it in
-		the standard input, no command-line parameters are added and the output
-		of the command is ignored.
-		</para>
-		<para>
-		See sip-server/modules/exec/etc/exec.cfg in the source tarball for
-		information on usage.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>command (string)</emphasis> - command to be executed. It
-			can include pseudo-variables or '$$' delimited UNIX
-			environment variables
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		WARNING: most OpenSIPS scripting variables should be quoted before being
-		passed to external commands, as in: exec_avp("log-call.sh '$ct'").
-		This may help avoid some unexpected behaviour
-		(e.g. unwanted extra parameters, errors due to special bash characters, etc.)
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, LOCAL_ROUTE,
-		TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
-		</para>
-		<example>
-		<title><function moreinfo="none">exec_msg</function> usage</title>
-		<programlisting format="linespecific">
-...
-exec_msg("call-logger.sh '$ct' >> /var/log/call-logger/'$rU'.calls");
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="func_exec_avp" xreflabel="exec_avp()">
-		<title>
-		<function moreinfo="none">exec_avp(command[, avplist]) (DEPRECATED)</function>
-		</title>
-		<para>
-		WARNING - this function is deprecated and it will be remove in the next
-		version - please use the exec() function (  <xref linkend="func_exec"/> ).
-		</para>
-		<para>
-		Executes an external command. Each output line of the command
-		is saved in its corresponding AVP from <emphasis>avplist</emphasis>.
-		If <emphasis>avplist</emphasis> is missing or is incomplete, the
-		populated AVPs will be 1, 2, 3... or N, N+1, N+2...
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>command (string)</emphasis> - command to be
-			executed. It can include pseudo-variables or '$$' delimited UNIX
-			environment variables
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>avplist (string)</emphasis> - comma separated list with AVP
-			names to store the result in
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		WARNING: most OpenSIPS scripting variables should be quoted before being
-		passed to external commands, as in: exec_avp("log-call.sh '$ct'").
-		This may help avoid some unexpected behaviour
-		(e.g. unwanted extra parameters, errors due to special bash characters, etc.)
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
-		</para>
-		<example>
-		<title><function moreinfo="none">exec_avp</function> usage</title>
-		<programlisting format="linespecific">
-...
-exec_avp("get-subscriber-details.sh '$rU'", "$avp(credit) $avp(contract_model)");
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="func_exec_getenv" xreflabel="exec_getenv()">
-		<title>
-		<function moreinfo="none">exec_getenv(environment_variable[, avp]) (DEPRECATED)</function>
-		</title>
-		<para>
-		WARNING - this function is deprecated and it will be remove in the next
-		version - please use the exec() function (  <xref linkend="func_exec"/> ).
-		</para>
-		<para>
-		Obtains the value of a UNIX evironment_variable. The value is saved
-		in 'avp'. If 'avp' is missing, output will be stored in $avp(1). If there
-		is no such environment variable no value will be returned.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>environment_variable (string)</emphasis> -
-				environent variable name. Can also be specified as a pseudo-variable
-		</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>avp</emphasis> - an AVP to store the  result in
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		WARNING: any OpenSIPS pseudo-vars which may contain special bash
-		characters should be placed inside quotes, e.g. exec_getenv("'$ct'");
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE, ONREPLY_ROUTE.
-		</para>
-		<example>
-		<title><function moreinfo="none">exec_getenv</function> usage</title>
-		<programlisting format="linespecific">
-...
-exec_getenv("HOSTNAME");
-exec_getenv("HOSTNAME", "$avp(localhost)");
-...
-</programlisting>
-		</example>
-	</section>
 	</section>
 
 	<section>
 	<title>Exported Asyncronous Functions</title>
 	<section id="afunc_exec" xreflabel="exec()">
 		<title>
-		<function moreinfo="none">exec(command[,input[,output[,error[,env]]]])</function>
+		<function moreinfo="none">exec(command, [stdin], [stdout], [stderr], [envavp])</function>
 		</title>
 		<para>
 		Executes an external command. This function does exactly the same as
@@ -440,7 +263,7 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 		resumes the script execution on "seeing" EOF on the the output stream).
 		</para>
 		<para>
-		NOTE: this function ignore the "error" parameters for now - the asynchronous waiting is
+		NOTE: this function ignore the "stderr" parameter for now - the asynchronous waiting is
 		done only on the output stream !! This may be fixed in the following versions.
 		</para>
 		<para>
@@ -452,10 +275,10 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 		<programlisting format="linespecific">
 {
 ...
-async( exec("ruri-changer.sh","$ru","$ru"), resume );
+async(exec("ruri-changer.sh", $ru, $ru), resume);
 }
 
-route[resume] {
+route [resume] {
 ...
 }
 </programlisting>
