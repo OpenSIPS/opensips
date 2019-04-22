@@ -597,7 +597,7 @@ static int parse_siptrace_id(str *suri)
 	if (get_siptrace_id(&name, hash, uri_type))
 		return 0;
 
-	LM_INFO("allocating %d [%.*s]\n", hash, name.len, name.s);
+	LM_DBG("allocating %d [%.*s]\n", hash, name.len, name.s);
 	elem = pkg_malloc(sizeof(tlist_elem_t));
 	if (!elem) {
 		LM_ERR("could not allocate elem for %.*s!\n", name.len, name.s);
