@@ -1,19 +1,19 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
-		This module provides functionalities for different methods of group 
+		This module provides functionalities for different methods of group
 		membership checking.
 		</para>
 		<section>
 			<title>Strict membership checking</title>
 			<para>
-			There is a database table that contains list of users and groups 
+			There is a database table that contains list of users and groups
 			they belong to. The module provides the possibility to check if a
 			specific user belongs to a specific group.
 			</para>
@@ -24,14 +24,14 @@
 		<section>
 			<title>Regular Expression based checking</title>
 			<para>
-			Another database table contains list of regular expressions and 
+			Another database table contains list of regular expressions and
 			group IDs. A matching occurs if the user URI match the regular
-			expression. This type of matching may be used to fetch the 
+			expression. This type of matching may be used to fetch the
 			group ID(s) the user belongs to (via RE matching) .
 			</para>
 			<para>
 			Due performance reasons (regular expression evaluation), DB cache
-			support is available: the table content is loaded into memory at 
+			support is available: the table content is loaded into memory at
 			startup and all regular expressions are compiled.
 			</para>
 		</section>
@@ -60,7 +60,7 @@
 	<section>
 		<title>External Libraries or Applications</title>
 		<para>
-		The following libraries or applications must be installed before 
+		The following libraries or applications must be installed before
 		running &osips; with this module loaded:
 			<itemizedlist>
 			<listitem>
@@ -75,17 +75,17 @@
 
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-	
+
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
 		&url; of the database table to be used.
 		</para>
-		
+
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
 ...
@@ -97,7 +97,7 @@ modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
 	<section id="param_table" xreflabel="table">
 		<title><varname>table</varname> (string)</title>
 		<para>
-		Name of the table holding strict definitions of groups and 
+		Name of the table holding strict definitions of groups and
 		their members.
 		</para>
 		<para>
@@ -108,7 +108,7 @@ modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
 		<example>
 		<title>Set <varname>table</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "table", "grp_table")
 ...
@@ -130,7 +130,7 @@ modparam("group", "table", "grp_table")
 		<example>
 		<title>Set <varname>user_column</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "user_column", "user")
 ...
@@ -152,7 +152,7 @@ modparam("group", "user_column", "user")
 		<example>
 		<title>Set <varname>domain_column</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "domain_column", "realm")
 ...
@@ -174,7 +174,7 @@ modparam("group", "domain_column", "realm")
 		<example>
 		<title>Set <varname>group_column</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "group_column", "grp")
 ...
@@ -187,7 +187,7 @@ modparam("group", "group_column", "grp")
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
 		If enabled (set to non zero value) then domain will be used also used
-		for strict group matching; otherwise only the username part will be 
+		for strict group matching; otherwise only the username part will be
 		used.
 		</para>
 		<para>
@@ -198,7 +198,7 @@ modparam("group", "group_column", "grp")
 		<example>
 		<title>Set <varname>use_domain</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "use_domain", 1)
 ...
@@ -210,7 +210,7 @@ modparam("group", "use_domain", 1)
 	<section id="param_re_table" xreflabel="re_table">
 		<title><varname>re_table</varname> (string)</title>
 		<para>
-		Name of the table holding definitions for regular-expression 
+		Name of the table holding definitions for regular-expression
 		based groups. If no table is defined, the regular-expression
 		support is disabled.
 		</para>
@@ -222,7 +222,7 @@ modparam("group", "use_domain", 1)
 		<example>
 		<title>Set <varname>re_table</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "re_table", "re_grp")
 ...
@@ -245,7 +245,7 @@ modparam("group", "re_table", "re_grp")
 		<example>
 		<title>Set <varname>reg_exp_column</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "reg_exp_column", "re")
 ...
@@ -267,7 +267,7 @@ modparam("group", "reg_exp_column", "re")
 		<example>
 		<title>Set <varname>re_gid_column</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "re_gid_column", "grp_id")
 ...
@@ -291,7 +291,7 @@ modparam("group", "re_gid_column", "grp_id")
 		<example>
 		<title>Set <varname>multiple_gid</varname> parameter</title>
 		<programlisting format="linespecific">
-		
+
 ...
 modparam("group", "multiple_gid", 0)
 ...
@@ -320,42 +320,40 @@ modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 	<title>Exported Functions</title>
 	<section id="func_db_is_user_in" xreflabel="db_is_user_in()">
 		<title>
-		<function moreinfo="none">db_is_user_in(URI, group)</function>
+		<function moreinfo="none">db_is_user_in(uri, group)</function>
 		</title>
 		<para>
-		This function is to be used for script group membership. The function 
+		This function is to be used for script group membership. The function
 		returns true if username in the given &uri; is member of the given
 		group and false if not.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>&uri;</emphasis> - &uri; whose username and 
-			optionally domain to be used, this can be one of:
+			<para><emphasis>uri (string)</emphasis> - a SIP &uri; whose
+				username and optionally domain to be used.  Possible values:
 			<itemizedlist>
 				<listitem>
-				<para>Request-URI - Use Request-URI username and 
+				<para>"Request-URI" - Use Request-URI username and
 				(optionally) domain.</para>
 				</listitem>
 				<listitem>
-				<para>To - Use To username and (optionally) domain.</para>
+				<para>"To" - Use To username and (optionally) domain.</para>
 				</listitem>
 				<listitem>
-				<para>From - Use From username and (optionally) domain.</para>
+				<para>"From" - Use From username and (optionally) domain.</para>
 				</listitem>
 				<listitem>
-				<para>Credentials - Use digest credentials username.</para>
+				<para>"Credentials" - Use digest credentials username.</para>
 				</listitem>
 				<listitem>
-				<para>$avp(name) - Use the URI from the AVP
-				specified by this pseudo-variable.</para>
+				<para>(default) - parse the given input as a SIP URI</para>
 				</listitem>
 			</itemizedlist>
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>group</emphasis> - Name of the group to check.
-			The string may contain a pseudovariable.
+			<para><emphasis>group (string)</emphasis> - the group to check
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -365,17 +363,17 @@ modparam("group", "aaa_url", "radius:/etc/radiusclient-ng/radiusclient.conf")
 		<example>
 		<title><function>db_is_user_in</function> usage</title>
 		<programlisting format="linespecific">
-		
+
 ...
 if (db_is_user_in("Request-URI", "ld")) {
 	...
-};
+}
 ...
 $avp(grouptocheck)="offline";
 
-if (db_is_user_in("Credentials", "$avp(grouptocheck)")) {
+if (db_is_user_in("Credentials", $avp(grouptocheck))) {
 	...
-};
+}
 ...
 
 </programlisting>
@@ -385,42 +383,46 @@ if (db_is_user_in("Credentials", "$avp(grouptocheck)")) {
 
 	<section id="func_db_get_user_group" xreflabel="db_get_user_group()">
 		<title>
-		<function moreinfo="none">db_get_user_group(URI, AVP)</function>
+		<function moreinfo="none">db_get_user_group(uri, output_avp)</function>
 		</title>
 		<para>
-		This function is to be used for regular expression based group 
-		membership, using DB support. The function returns true if username in the given &uri; 
-		belongs to at least one group; the group ID(s) are returned as AVPs.
+		This function is to be used for regular expression based group
+		membership, using DB support.  The function returns true if the username in
+		the given "uri" belongs to at least one group.</para>
+		<para>All matching group IDs
+		shall be returned in "output_avp" if <xref linkend="param_multiple_gid"/>
+		is enabled, otherwise only the first one to match (the records are
+		attempted in reversed order of the results returned by the RDBMS).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>&uri;</emphasis> - &uri; to be matched against
-			the regular expressions:
+			<para><emphasis>uri (string)</emphasis> - a SIP &uri; to be matched
+				against the regular expressions:
 			<itemizedlist>
 				<listitem>
-				<para>Request-URI - Use Request-URI</para>
+				<para>"Request-URI" - Use Request-URI</para>
 				</listitem>
 				<listitem>
-				<para>To - Use To URI.</para>
+				<para>"To" - Use To URI.</para>
 				</listitem>
 				<listitem>
-				<para>From - Use From URI</para>
+				<para>"From" - Use From URI</para>
 				</listitem>
 				<listitem>
-				<para>Credentials - Use digest credentials username 
+				<para>"Credentials" - Use digest credentials username
 				and realm.</para>
 				</listitem>
 				<listitem>
-				<para>$avp(name) - Use the URI from the AVP
-				specified by this pseudo-variable.</para>
+				<para>(default) - parse the given input as a SIP URI</para>
 				</listitem>
 			</itemizedlist>
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>AVP</emphasis> - $avp(name) - the matched group
-			IDs are returned in this AVP.</para>
+			<para><emphasis>output_avp (var)</emphasis> - a list of matched
+				group IDs
+			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -429,10 +431,10 @@ if (db_is_user_in("Credentials", "$avp(grouptocheck)")) {
 		<example>
 		<title><function>db_get_user_group</function> usage</title>
 		<programlisting format="linespecific">
-		
+
 ...
-if (db_get_user_group("Request-URI", "$avp(10)")) {
-    xdbg("User $ru belongs to $(avp(10)[*]) group(s)\n");
+if (db_get_user_group("Request-URI", $avp(10))) {
+    xdbg("User $ru belongs to the following groups: $(avp(10)[*])\n");
     ....
 };
 ...
@@ -442,37 +444,37 @@ if (db_get_user_group("Request-URI", "$avp(10)")) {
 	</section>
 	<section id="func_aaa_is_user_in" xreflabel="aaa_is_user_in()">
 		<title>
-		<function moreinfo="none">aaa_is_user_in(URI, group)</function>
+		<function moreinfo="none">aaa_is_user_in(uri, group)</function>
 		</title>
 		<para>
 		This function checks group membership, using AAA support.
-		The function returns true if username in the given &uri; is member of 
+		The function returns true if username in the given "uri" is member of
 		the given group and false if not.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>&uri;</emphasis> - &uri; whose username and 
-			optionally domain to be used, this can be one of:
+			<para><emphasis>uri (string)</emphasis> - a SIP &uri; whose
+				username and optionally domain to be used, this can be one of:
 			<itemizedlist>
 				<listitem>
-				<para>Request-URI - Use Request-URI username and 
+				<para>"Request-URI" - Use Request-URI username and
 				(optionally) domain.</para>
 				</listitem>
 				<listitem>
-				<para>To - Use To username and (optionally) domain.</para>
+				<para>"To" - Use To username and (optionally) domain.</para>
 				</listitem>
 				<listitem>
-				<para>From - Use From username and (optionally) domain.</para>
+				<para>"From" - Use From username and (optionally) domain.</para>
 				</listitem>
 				<listitem>
-				<para>Credentials - Use digest credentials username.</para>
+				<para>"Credentials" - Use digest credentials username.</para>
 				</listitem>
 			</itemizedlist>
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>group</emphasis> - Name of the group to check.
+			<para><emphasis>group (string)</emphasis> - Name of the group to check.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -482,7 +484,7 @@ if (db_get_user_group("Request-URI", "$avp(10)")) {
 		<example>
 		<title><function>aaa_is_user_in</function> usage</title>
 		<programlisting format="linespecific">
-		
+
 ...
 if (aaa_is_user_in("Request-URI", "ld")) {
 	...

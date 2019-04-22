@@ -130,20 +130,6 @@ aaa_map vals[V_MAX];
 /*
  * Exported functions
  */
-// static cmd_export_t cmds[] = {
-// 	{"is_user_in",      (cmd_function)NULL, 2,  obsolete_fixup_0, 0,
-// 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-// 	{"get_user_group",  (cmd_function)NULL, 2,  obsolete_fixup_1, 0,
-// 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-// 	{"aaa_is_user_in", (cmd_function)aaa_is_user_in, 2, aaa_is_user_fixup,     0,
-// 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-// 	{"db_is_user_in",      (cmd_function)db_is_user_in, 2, db_is_user_fixup, 0,
-// 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-// 	{"db_get_user_group",  (cmd_function)get_user_group, 2, db_get_gid_fixup, 0,
-// 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-// 	{0, 0, 0, 0, 0, 0}
-// };
-
 static cmd_export_t cmds[] = {
 	{"is_user_in", (cmd_function)NULL, {
 		{CMD_PARAM_STR,obsolete_fixup_0,0},
