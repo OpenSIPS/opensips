@@ -1,16 +1,16 @@
 <!-- Auth_db Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
-		This module contains all authentication related functions that need 
-		the access to the database. This module should be used together with 
-		auth module, it cannot be used independently because it depends on 
-		the module. Select this module if you want to use database to store 
+		This module contains all authentication related functions that need
+		the access to the database. This module should be used together with
+		auth module, it cannot be used independently because it depends on
+		the module. Select this module if you want to use database to store
 		authentication information like subscriber usernames and passwords. If
 		you want to use radius authentication, then use auth_radius instead.
 	</para>
@@ -21,11 +21,11 @@
 		<section>
 			<title>&osips; Modules</title>
 			<para>
-			The module depends on the following modules (in the other words 
+			The module depends on the following modules (in the other words
 			the listed modules must be loaded before this module):
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>auth</emphasis> -- Generic authentication 
+				<para><emphasis>auth</emphasis> -- Generic authentication
 				functions
 				</para>
 			</listitem>
@@ -40,7 +40,7 @@
 		<section>
 			<title>External Libraries or Applications</title>
 			<para>
-			The following libraries or applications must be installed 
+			The following libraries or applications must be installed
 			before running &osips; with this module loaded:
 			</para>
 			<itemizedlist>
@@ -57,9 +57,9 @@
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		This is URL of the database to be used. Value of the parameter depends 
-		on the database module used. For example for mysql and postgres modules 
-		this is something like mysql://username:password@host:port/database. 
+		This is URL of the database to be used. Value of the parameter depends
+		on the database module used. For example for mysql and postgres modules
+		this is something like mysql://username:password@host:port/database.
 		For dbtext module (which stores data in plaintext files) it is
 		directory in which the database resides.
 		</para>
@@ -80,7 +80,7 @@ modparam("auth_db", "db_url", "&exampledb;")
 		<title><varname>calculate_ha1</varname> (integer)</title>
 		<para>
 		This parameter tells the server whether it should considered the
-		loaded password (for authentification) as plaintext passwords or 
+		loaded password (for authentification) as plaintext passwords or
 		a pre-calculated HA1 string.
 		</para>
 		<para>
@@ -95,14 +95,14 @@ modparam("auth_db", "db_url", "&exampledb;")
 			(by default, this parameter points to <quote>ha1</quote> column);
 			</para></listitem>
 			<listitem><para><emphasis>0 (do NOT calculate HA1)</emphasis> - the
-			loaded password is an already computed HA1 value, so OpenSIPS does 
-			not have do any further computing (for HA1 value). Depending on 
-			the presence of a <quote>@domain</quote> part (some user agents 
+			loaded password is an already computed HA1 value, so OpenSIPS does
+			not have do any further computing (for HA1 value). Depending on
+			the presence of a <quote>@domain</quote> part (some user agents
 			append the domain to the username credentials parameter too),
-			the modules will load the password (pre-computed HA1) from the 
+			the modules will load the password (pre-computed HA1) from the
 			<quote>password_column_2</quote> column (if domain present) or from
 			the <quote>password_column</quote> column (if domain not present).
-			Usually, most of the UAs do NOT include a domain part in the 
+			Usually, most of the UAs do NOT include a domain part in the
 			username credentials parameter.
 			</para></listitem>
 		</itemizedlist>
@@ -132,14 +132,14 @@ modparam("auth_db", "calculate_ha1", 1)
 	<section id="param_use_domain" xreflabel="use_domain">
 		<title><varname>use_domain</varname> (integer)</title>
 		<para>
-		If true (not 0), domain will be also used when looking up in the 
+		If true (not 0), domain will be also used when looking up in the
 		subscriber table. If you have a multi-domain setup, it is strongly
 		recommended to turn on this parameter to avoid username overlapping
 		between domains.
 		</para>
 		<para>
-		IMPORTANT: before turning on this parameter, be sure that the 
-		<varname>domain</varname> column in <varname>subscriber</varname> 
+		IMPORTANT: before turning on this parameter, be sure that the
+		<varname>domain</varname> column in <varname>subscriber</varname>
 		table is properly populated.
 		</para>
 		<para>
@@ -209,7 +209,7 @@ modparam("auth_db", "skip_version_check", 1)
 	<section id="param_user_column" xreflabel="user_column">
 		<title><varname>user_column</varname> (string)</title>
 		<para>
-		This is the name of the column in a 'SUBSCRIBER' like table holding 
+		This is the name of the column in a 'SUBSCRIBER' like table holding
 		the usernames. Default value is fine for most people.
 		Use the parameter if you really need to change it.
 		</para>
@@ -227,9 +227,9 @@ modparam("auth_db", "user_column", "user")
 	<section id="param_domain_column" xreflabel="domain_column">
 		<title><varname>domain_column</varname> (string)</title>
 		<para>
-		This is the name of the column in a 'SUBSCRIBER' like table holding 
+		This is the name of the column in a 'SUBSCRIBER' like table holding
 		the domains of users. Default value is fine for most people.
-		Use the parameter if you really need to 
+		Use the parameter if you really need to
 		change it.
 		</para>
 		<para>
@@ -246,11 +246,11 @@ modparam("auth_db", "domain_column", "domain")
 	<section id="param_password_column" xreflabel="password_column">
 		<title><varname>password_column</varname> (string)</title>
 		<para>
-		This is the name of the column in a 'SUBSCRIBER' like table holding 
-		the passwords. Passwords can be 
-		either stored as plain text or pre-calculated HA1 strings. HA1 strings 
-		are MD5 hashes of username, password, and realm. HA1 strings are more 
-		safe because the server doesn't need to know plaintext passwords and 
+		This is the name of the column in a 'SUBSCRIBER' like table holding
+		the passwords. Passwords can be
+		either stored as plain text or pre-calculated HA1 strings. HA1 strings
+		are MD5 hashes of username, password, and realm. HA1 strings are more
+		safe because the server doesn't need to know plaintext passwords and
 		they cannot be obtained from HA1 strings.
 		</para>
 		<para>
@@ -267,10 +267,10 @@ modparam("auth_db", "password_column", "password")
 	<section id="param_password_column_2" xreflabel="password_column_2">
 		<title><varname>password_column_2</varname> (string)</title>
 		<para>
-		As described in the previous section this parameter contains name of 
-		column holding pre-calculated HA1 string that were calculated including 
-		the domain in the username. This parameter is used only when 
-		<varname>calculate_ha1</varname> is set to 0 and user agent send a 
+		As described in the previous section this parameter contains name of
+		column holding pre-calculated HA1 string that were calculated including
+		the domain in the username. This parameter is used only when
+		<varname>calculate_ha1</varname> is set to 0 and user agent send a
 		credentials containing the domain in the username.
 		</para>
 		<para>
@@ -355,15 +355,15 @@ modparam("auth_db", "uri_uriuser_column", "uri_user")
 			<function moreinfo="none">www_authorize(realm, table)</function>
 		</title>
 		<para>
-		The function verifies the received credentials against a 
+		The function verifies the received credentials against a
 		"SUBSCRIBER"-like table according to digest authentication as per
 		<ulink url="http://www.ietf.org/rfc/rfc2617.txt">RFC2617</ulink>.
-		If the credentials are verified successfully then the function will 
-		succeed and mark the credentials as authorized (marked credentials 
-		can be later used by some other functions). If the function was 
-		unable to verify the 
-		credentials for some reason then it will fail and the script should 
-		call <function moreinfo="none">www_challenge</function> which will 
+		If the credentials are verified successfully then the function will
+		succeed and mark the credentials as authorized (marked credentials
+		can be later used by some other functions). If the function was
+		unable to verify the
+		credentials for some reason then it will fail and the script should
+		call <function moreinfo="none">www_challenge</function> which will
 		challenge the user again.
 		</para>
 		<para>Negative codes may be interpreted as follows:</para>
@@ -380,7 +380,7 @@ modparam("auth_db", "uri_uriuser_column", "uri_user")
 			<emphasis>-3 (stale nonce)</emphasis> - stale nonce;
 			</para></listitem>
 			<listitem><para>
-			<emphasis>-2 (invalid password)</emphasis> - valid user, but 
+			<emphasis>-2 (invalid password)</emphasis> - valid user, but
 			wrong password;
 			</para></listitem>
 			<listitem><para>
@@ -391,16 +391,16 @@ modparam("auth_db", "uri_uriuser_column", "uri_user")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>realm</emphasis> - Realm is an opaque string that 
-			the user agent should present to the user so it can decide what 
-			username and password to use. Usually this is domain of the host 
+			<para><emphasis>realm (string)</emphasis> - Realm is an opaque string that
+			the user agent should present to the user so it can decide what
+			username and password to use. Usually this is domain of the host
 			the server is running on.
 			</para>
 			<para>
-			If an empty string <quote></quote> is used then the server will 
-			generate it from the request. In case of REGISTER requests To 
-			header field domain will be used (because this header field 
-			represents a user being registered), for all other messages From 
+			If an empty string <quote></quote> is used then the server will
+			generate it from the request. In case of REGISTER requests To
+			header field domain will be used (because this header field
+			represents a user being registered), for all other messages From
 			header field domain will be used.
 			</para>
 			<para>
@@ -408,7 +408,7 @@ modparam("auth_db", "uri_uriuser_column", "uri_user")
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>table</emphasis> - Table to be used to lookup 
+			<para><emphasis>table (string)</emphasis> - Table to be used to lookup
 			usernames and passwords (usually subscribers table).
 			</para>
 		</listitem>
@@ -433,25 +433,25 @@ if (!www_authorize("siphub.net", "subscriber")) {
 			<function moreinfo="none">proxy_authorize(realm, table)</function>
 		</title>
 		<para>
-		The function verifies the received credentials against a 
+		The function verifies the received credentials against a
 		"SUBSCRIBER"-like table according to digest authentication as per
-		<ulink url="http://www.ietf.org/rfc/rfc2617.txt">RFC2617</ulink>. If 
-		the credentials are verified successfully then the function will 
-		succeed and mark the credentials as authorized (marked credentials can 
-		be later used by some other functions). If the function was unable to 
+		<ulink url="http://www.ietf.org/rfc/rfc2617.txt">RFC2617</ulink>. If
+		the credentials are verified successfully then the function will
+		succeed and mark the credentials as authorized (marked credentials can
+		be later used by some other functions). If the function was unable to
 		verify the credentials for some reason then it will fail and
-		the script should call 
+		the script should call
 		<function moreinfo="none">proxy_challenge</function> which will
-		challenge the user again. 
+		challenge the user again.
 		</para>
 		<para>Negative codes may be interpreted as follows:</para>
 		<itemizedlist>
 			<listitem><para>
-					<emphasis>-5 (generic error)</emphasis> - some generic 
+					<emphasis>-5 (generic error)</emphasis> - some generic
 					error occurred and no reply was sent out;
 				</para></listitem>
 			<listitem><para>
-					<emphasis>-4 (no credentials)</emphasis> - credentials 
+					<emphasis>-4 (no credentials)</emphasis> - credentials
 					were not found in request;
 				</para></listitem>
 			<listitem><para>
@@ -469,14 +469,14 @@ if (!www_authorize("siphub.net", "subscriber")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>realm</emphasis> - Realm is an opaque string that 
-			the user agent should present to the user so it can decide what 
-			username and password to use. Usually this is domain of the host 
+			<para><emphasis>realm (string)</emphasis> - Realm is an opaque string that
+			the user agent should present to the user so it can decide what
+			username and password to use. Usually this is domain of the host
 			the server is running on.
 			</para>
 			<para>
-			If an empty string <quote></quote> is used then the server will 
-			generate it from the request. From header field domain will be 
+			If an empty string <quote></quote> is used then the server will
+			generate it from the request. From header field domain will be
 			used as realm.
 			</para>
 			<para>
@@ -484,7 +484,7 @@ if (!www_authorize("siphub.net", "subscriber")) {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>table</emphasis> - Table to be used to lookup 
+			<para><emphasis>table (string)</emphasis> - Table to be used to lookup
 			usernames and passwords (usually subscribers table).
 			</para>
 		</listitem>
@@ -509,13 +509,13 @@ if (!proxy_authorize("", "subscriber)) {
 		<function moreinfo="none">db_is_to_authorized(table)</function>
 		</title>
 		<para>
-		The function checks against a  'URI' like table to see if the 
+		The function checks against a  'URI' like table to see if the
 		username extracted from the To header URI is allowed/authorized to
 		use the credentials (authentication username) validated by
 		<xref linkend="func_www_authorize"/>.
 		</para>
 		<para>
-		The function is part of the mechanism that allows to create 
+		The function is part of the mechanism that allows to create
 		mapping between the SIP users (from the FROM/TO headers) and the
 		authentication users (from a SUBSCRIBER-like table) that they use. The
 		mapping is stored into an URI-like table.
@@ -523,7 +523,7 @@ if (!proxy_authorize("", "subscriber)) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>table</emphasis> - Table to be used to lookup 
+			<para><emphasis>table (string)</emphasis> - Table to be used to lookup
 			for the URI/AUTH mappings (usually the URI table).
 			</para>
 		</listitem>
@@ -555,7 +555,7 @@ if (!db_is_to_authorized("uri")) {
 
 	<section id="func_db_does_uri_exist" xreflabel="db_does_uri_exist()">
 		<title>
-		<function moreinfo="none">db_does_uri_exist(uri,table)</function>
+		<function moreinfo="none">db_does_uri_exist(uri, table)</function>
 		</title>
 		<para>
 		Checks if the username@domain from the given &uri; is an existing
@@ -564,10 +564,12 @@ if (!db_is_to_authorized("uri")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>URI</emphasis> - The SIP URI to be tested. It must
+			<para><emphasis>uri (string)</emphasis> - The SIP URI to be tested. It must
 			hold a username part for a valid check. Variables are allowed.
 			</para>
-			<para><emphasis>table</emphasis> - Table to be used to search
+		</listitem>
+		<listitem>
+			<para><emphasis>table (string)</emphasis> - Table to be used to search
 			for the URI (usually the SUBSCRIBER table).
 			</para>
 		</listitem>
@@ -579,7 +581,7 @@ if (!db_is_to_authorized("uri")) {
 		<title><function>db_does_uri_exist</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (db_does_uri_exist("$ru","subscriber")) {
+if (db_does_uri_exist($ru, "subscriber")) {
 	...
 };
 ...
@@ -589,28 +591,34 @@ if (db_does_uri_exist("$ru","subscriber")) {
 
 	<section id="func_db_get_auth_id" xreflabel="db_get_auth_id()">
 		<title>
-		<function moreinfo="none">db_get_auth_id(table,uri,auth,realm)</function>
+		<function moreinfo="none">db_get_auth_id(table, uri, auth, realm)</function>
 		</title>
 		<para>
 		Checks given uri-string username against an 'URI' like table.
-		Returns true if the user exists in the database, and sets the given 
+		Returns true if the user exists in the database, and sets the given
 		variables to the authentication id and realm corresponding to
 		the given uri.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>table</emphasis> - Table to be used to search
+			<para><emphasis>table (string)</emphasis> - Table to be used to search
 			for the URI (usually the URI table).
 			</para>
-			<para><emphasis>uri</emphasis> - The input SIP URI to be tested.
+		</listitem>
+		<listitem>
+			<para><emphasis>uri (string)</emphasis> - The input SIP URI to be tested.
 			It must hold a username part for a valid check.
 			Variables are allowed.
 			</para>
-			<para><emphasis>auth</emphasis> - an output variable to store the
+		</listitem>
+		<listitem>
+			<para><emphasis>auth (var)</emphasis> - an output variable to store the
 			found authentication id matching the given SIP URI.
 			</para>
-			<para><emphasis>realm</emphasis> - an output variable to store the
+		</listitem>
+		<listitem>
+			<para><emphasis>realm (var)</emphasis> - an output variable to store the
 			found authentication realm matching the given SIP URI.
 			</para>
 		</listitem>
@@ -623,9 +631,9 @@ if (db_does_uri_exist("$ru","subscriber")) {
 		<title><function>db_get_auth_id</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (db_get_auth_id("uri", "$ru", "$avp(auth_id)", "$avp(auth_realm)")) {
+if (db_get_auth_id("uri", $ru, $avp(auth_id), $avp(auth_realm))) {
 	...
-};
+}
 ...
 </programlisting>
 		</example>
