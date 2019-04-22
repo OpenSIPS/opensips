@@ -281,9 +281,9 @@ modparam("enum", "bl_algorithm", "txt")
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>number (string, optional)</emphasis> - an specific
+			<para><emphasis>number (string, optional)</emphasis> - a specific
 			E.164 number packed as a string on which the ENUM query is
-			performed, other the R-URI username ($rU) will be used
+			performed (if missing the R-URI username ($rU) will be used).
 			</para>
 		</listitem>
 		</itemizedlist>
