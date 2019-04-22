@@ -199,7 +199,7 @@ modparam("alias_db", "append_branches", 1)
 	<title>Exported Functions</title>
 	<section id="func_alias_db_lookup" xreflabel="alias_db_lookup()">
 		<title>
-		<function moreinfo="none">alias_db_lookup( table_name [,flags] )</function>
+		<function moreinfo="none">alias_db_lookup(table_name, [flags])</function>
 		</title>
 		<para>
 		The function takes the R-URI and search to see whether it is an alias
@@ -213,23 +213,23 @@ modparam("alias_db", "append_branches", 1)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>table_name</emphasis> - any PV (string or PV or mix)
-				the name of the table where to search for alias.
+			<para><emphasis>table_name (string)</emphasis> - the name of the
+				table to search for the alias
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis> (optional) - set of flags 
-			(char based flags) to control the alias lookup process:
+			<para><emphasis>flags (string, optional)</emphasis> - set of
+			character flags to control the alias lookup process:
 			</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>d</emphasis> - do not use domain URI part in
+				<para><emphasis role='bold'>d</emphasis> - do not use domain URI part in
 				the alias lookup query (use only a username-based lookup). By
 				default, both username and domain are used.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>r</emphasis> - do revers alias lookup - lookup
+				<para><emphasis role='bold'>r</emphasis> - do reverse alias lookup - lookup
 				for the alias mapped to the current URI (URI 2 alias 
 				translation); normally, the function looks up for the URI 
 				mapped to the alias (alias 2 URI translation).
@@ -245,7 +245,7 @@ modparam("alias_db", "append_branches", 1)
 		<title><function>alias_db_lookup()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-alias_db_lookup("dbaliases" , "rd");
+alias_db_lookup("dbaliases", "rd");
 alias_db_lookup("dba_$(rU{s.substr,0,1})");
 ...
 </programlisting>
@@ -255,7 +255,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 
 	<section id="func_alias_db_find" xreflabel="alias_db_find()">
 		<title>
-		<function moreinfo="none">alias_db_find( table_name , input, output [,flags] )</function>
+		<function moreinfo="none">alias_db_find(table_name, input_uri, output_var, [flags])</function>
 		</title>
 		<para>
 		The function is very similar to <function>alias_db_lookup()</function>,
@@ -275,22 +275,21 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>table_name</emphasis> - any PV (string or PV or mix)
-				the name of the table where to search for alias.
+			<para><emphasis>table_name (string)</emphasis> - the name of the table to
+				search for the alias
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>input</emphasis> - any PV (string or PV or mix)
-			carrying the SIP URI that needs to be looked up.
+			<para><emphasis>input_uri (string)</emphasis> - a SIP URI to look up
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>output</emphasis> - PV (AVP or script VAR)
-			where to place the SIP URI resulting from the alias lookup.
+			<para><emphasis>output_var (var)</emphasis> - a variable to hold
+				the SIP URI result
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis> (optional) - set of flags 
+			<para><emphasis>flags (string, optional)</emphasis> (optional) - set of flags 
 			(char based flags) to control the alias lookup process:
 			</para>
 			<itemizedlist>
@@ -319,7 +318,7 @@ alias_db_lookup("dba_$(rU{s.substr,0,1})");
 		<programlisting format="linespecific">
 ...
 # do revers alias lookup and find the alias for the FROM URI
-alias_db_find("dbaliases" , "$fu", "$avp(from_alias)", "r");
+alias_db_find("dbaliases", $fu, $avp(from_alias), "r");
 ...
 </programlisting>
 		</example>
