@@ -494,7 +494,7 @@ skip_coords:
 	memcpy(cp, &path.len, sizeof path.len);
 	cp += sizeof path.len;
 	memcpy(cp, path.s, path.len);
-	if (path.len > 0)
+	if (path.len != 0)
 		next_hop_host = cp + (puri.host.s - next_hop_uri.s);
 	cp += path.len;
 
