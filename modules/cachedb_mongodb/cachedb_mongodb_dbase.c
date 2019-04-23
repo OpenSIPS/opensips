@@ -119,6 +119,11 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 	char *p, *conn_str;
 	mongo_con *con;
 
+	if (!id->database) {
+		LM_ERR("bad MongoDB URL (missing \"/database\" part)\n");
+		return NULL;
+	}
+
 	snprintf(osips_appname, MONGOC_HANDSHAKE_APPNAME_MAX, "opensips-%d", my_pid());
 
 	LM_DBG("MongoDB conn for [%s]: %s:%s %s:%s |%s|:%u\n", osips_appname,
