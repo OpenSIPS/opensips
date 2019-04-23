@@ -3162,11 +3162,14 @@ static int is_id_traced(int id, trace_instance_p info)
 
 static int api_is_id_traced(int id)
 {
-	trace_instance_p info = GET_TRACER_CONTEXT->instances;
+	trace_info_p info = GET_TRACER_CONTEXT;
+	if (!info)
+		return 0;
+	trace_instance_p instance = GET_TRACER_CONTEXT->instances;
 	while (info) {
-		if (is_id_traced( id, info))
+		if (is_id_traced( id, instance))
 			return 1;
-		info = info->next;
+		instance = instance->next;
 	}
 	return 0;
 }
