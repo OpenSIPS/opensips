@@ -120,7 +120,7 @@ static cmd_export_t cmds[] = {
 	{"rl_check", (cmd_function)w_rl_check, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_INT,0,0},
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 		BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"rl_dec_count", (cmd_function)w_rl_dec, {
