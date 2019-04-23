@@ -473,7 +473,7 @@ static int parse_siptrace_id(str *suri)
 	str name={NULL, 0};
 	str trace_uri;
 	str param1={NULL, 0};
-	tlist_elem_p    elem;
+	tlist_elem_p elem;
 	enum types uri_type;
 
 
@@ -494,7 +494,8 @@ static int parse_siptrace_id(str *suri)
 		LM_ERR("bad format for uri {%.*s}\n", suri->len, suri->s);
 		return -1;
 	} else {
-		(suri->s++, suri->len--);                                 \
+		suri->s++;
+		suri->len--;
 	}
 
 	PARSE_NAME(suri, name); /*parse '[<name>]'*/
@@ -2219,7 +2220,6 @@ static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps)
 		trace_onreply_out( t, type, ps);
 	}
 }
-
 
 /**
  * MI command format:
