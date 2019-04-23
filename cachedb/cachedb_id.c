@@ -286,7 +286,8 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	}
 
 	if (st == ST_DB) {
-		if (dupl_string(&id->database, begin, url->s + len) < 0) goto err;
+		if (begin < url->s + len &&
+				dupl_string(&id->database, begin, url->s + len) < 0) goto err;
 		return 0;
 	}
 
@@ -308,6 +309,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	if (id && id->password) pkg_free(id->password);
 	if (id && id->host) pkg_free(id->host);
 	if (id && id->database) pkg_free(id->database);
+	if (id && id->extra_options) pkg_free(id->extra_options);
 	if (prev_token) pkg_free(prev_token);
 	return -1;
 }
@@ -386,11 +388,17 @@ int cmp_cachedb_id(struct cachedb_id* id1, struct cachedb_id* id2)
 	if (id1->password && strcmp(id1->password,id2->password)) return 0;
 
 	if (strcmp(id1->host,id2->host)) return 0;
+
 	if ((id1->database == NULL && id2->database != NULL) ||
 			(id1->database != NULL && id2->database == NULL))
 		return 0;
 	if (id1->database && strcmp(id1->database,id2->database)) return 0;
 
+	if ((!id1->extra_options && id2->extra_options) ||
+			(id1->extra_options && !id2->extra_options))
+		return 0;
+	if (id1->extra_options &&
+			strcmp(id1->extra_options, id2->extra_options)) return 0;
 
 	if (id1->flags != CACHEDB_ID_MULTIPLE_HOSTS) {
 		/* also check port as it is not included in host member */
@@ -416,5 +424,6 @@ void free_cachedb_id(struct cachedb_id* id)
 	if (id->password) pkg_free(id->password);
 	if (id->host) pkg_free(id->host);
 	if (id->database) pkg_free(id->database);
+	if (id->extra_options) pkg_free(id->extra_options);
 	pkg_free(id);
 }
