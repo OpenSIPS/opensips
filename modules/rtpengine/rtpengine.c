@@ -291,7 +291,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_INT, fixup_set_id, fixup_free_set_id}, {0,0,0}},
 		ANY_ROUTE},
 	{"rtpengine_start_recording", (cmd_function)start_recording_f, {
-		{CMD_PARAM_VAR, fixup_set_id, fixup_free_set_id}, {0,0,0}},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id}, {0,0,0}},
 		ANY_ROUTE},
 	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
