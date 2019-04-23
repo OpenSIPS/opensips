@@ -401,14 +401,14 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"rtpproxy_stream2uac", (cmd_function)rtpproxy_stream2uac4_f, {
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_INT | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE | ONREPLY_ROUTE},
 	{"rtpproxy_stream2uas", (cmd_function)rtpproxy_stream2uas4_f, {
-		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_INT | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE | ONREPLY_ROUTE},
