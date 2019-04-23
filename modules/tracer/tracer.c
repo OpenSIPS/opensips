@@ -3166,7 +3166,7 @@ static int api_is_id_traced(int id)
 	if (!info)
 		return 0;
 	trace_instance_p instance = GET_TRACER_CONTEXT->instances;
-	while (info) {
+	while (instance) {
 		if (is_id_traced( id, instance))
 			return 1;
 		instance = instance->next;
