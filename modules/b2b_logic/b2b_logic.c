@@ -900,8 +900,7 @@ static int fixup_b2b_logic(void** param)
 	int st;
 	struct b2b_scen_fl *scf;
 
-	s.s = (char*)(*param);
-	s.len = strlen(s.s);
+	s = *(str*)*param;
 
 	scf = prepare_b2b_scen_fl_struct();
 	if (scf == NULL)
@@ -911,11 +910,11 @@ static int fixup_b2b_logic(void** param)
 	}
 	scf->params.init_timeout = b2bl_th_init_timeout;
 
-	if ( (flags_s.s = strchr(s.s,'/')) != NULL)
+	if ( (flags_s.s = q_memchr(s.s,'/',s.len)) != NULL)
 	{
-		s.len = flags_s.s - s.s;
 		flags_s.s++;
-		flags_s.len = strlen(flags_s.s);
+		flags_s.len = s.len - (flags_s.s - s.s);
+		s.len = s.len - flags_s.len - 1;
 
 		/* parse flags */
 		for( st=0 ; st< flags_s.len ; st++ ) {
