@@ -1545,7 +1545,7 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 					if (!clients_item)
 						goto error;
 
-					if (add_mi_number(server_item, MI_SSTR("index"), index) < 0)
+					if (add_mi_number(clients_item, MI_SSTR("index"), index) < 0)
 						goto error;
 					if (internal_mi_print_b2bl_entity_id(clients_item,
 							tuple->clients[index])!=0)
