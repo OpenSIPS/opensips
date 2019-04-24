@@ -729,7 +729,7 @@ again:
  * which says the length of the following message (header and payload).
  * This way, we avoid multiple small reads() to the socket, which (as we know), consumes
  * far more processor because of the kernel read(2) system call. The drawback
- * is the added complexity of mantaining a buffer, the bytes read, and looking
+ * is the added complexity of maintaining a buffer, the bytes read, and looking
  * if there is a complete message already prepared.
  *
  * Actions are supposed to be small, that's why BUF_SIZE is 2000 bytes length.
