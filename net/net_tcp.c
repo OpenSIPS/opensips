@@ -333,7 +333,7 @@ again:
 	}
 error_timeout:
 	/* timeout */
-	LM_ERR("timeout %d ms elapsed from %d s\n", elapsed,
+	LM_ERR("connect timed out, %d us elapsed out of %d us\n", elapsed,
 		timeout*1000);
 error:
 	return -1;
