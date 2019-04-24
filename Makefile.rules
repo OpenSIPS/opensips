@@ -174,15 +174,20 @@ proper realclean distclean: clean
 	-@if [ -d utils/db_berkeley ]; then $(MAKE) -C utils/db_berkeley proper; fi
 	-@if [ -d utils/db_oracle ]; then $(MAKE) -C utils/db_oracle proper; fi
 
-.PHONY: mantainer-clean
-mantainer-clean: distclean
+.PHONY: maintainer-clean
+maintainer-clean: distclean
 	-rm -f TAGS tags *.dbg .*.swp
 	-@for r in $(modules) "" ; do \
 		if [ -d "$$r" ]; then \
-			$(MAKE) -C $$r mantainer-clean; \
+			$(MAKE) -C $$r maintainer-clean; \
 		fi ; \
 	 done
-	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix mantainer-clean; fi
+	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix maintainer-clean; fi
+
+.PHONY: mantainer-clean
+mantainer-clean:
+	@printf "\nERROR: Please use 'maintainer-clean', not 'mantainer-clean'\n\n" >&2
+	@false
 
 
 .PHONY: install_module_custom
@@ -195,7 +200,7 @@ TAGS:
 ifeq (,$(MAKECMDGOALS))
 -include $(depends)
 endif
-ifneq (,$(filter-out clean proper distclean realclean mantainer-clean TAGS \
+ifneq (,$(filter-out clean proper distclean realclean maintainer-clean TAGS \
 		test tar modules, $(MAKECMDGOALS)))
 -include $(depends)
 endif
