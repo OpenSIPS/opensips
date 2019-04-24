@@ -561,7 +561,7 @@ static int parse_siptrace_id(str *suri)
 	str name={NULL, 0};
 	str trace_uri;
 	str param1={NULL, 0};
-	tlist_elem_p    elem;
+	tlist_elem_p elem;
 	enum types uri_type;
 
 
@@ -582,7 +582,8 @@ static int parse_siptrace_id(str *suri)
 		LM_ERR("bad format for uri {%.*s}\n", suri->len, suri->s);
 		return -1;
 	} else {
-		(suri->s++, suri->len--);                                 \
+		suri->s++;
+		suri->len--;
 	}
 
 	PARSE_NAME(suri, name); /*parse '[<name>]'*/
@@ -2369,14 +2370,17 @@ static int mi_tid_dyn_filters(tlist_dyn_elem_p tid_el, mi_item_t *dest_item)
 			case TRACE_FILTER_CALLEE:
 				msg = "callee";
 				break;
+			default:
+				/* Invalid */
+				return -1;
 		}
 		obj = add_mi_object(filters_arr, NULL, 0);
 		if (!obj) {
 			LM_ERR("could not create new MI object!\n");
 			return -1;
 		}
-        if (add_mi_string(obj, msg, strlen(msg),
-				filter->match.s, filter->match.len) < 0) {
+		if (add_mi_string(obj, msg, strlen(msg),
+					filter->match.s, filter->match.len) < 0) {
 			LM_ERR("could not create new string object!\n");
 			return -1;
 		}
