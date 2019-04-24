@@ -68,8 +68,10 @@ int udp_count_processes(unsigned int *extra)
 	struct socket_info *si;
 	unsigned int n, e, i;
 
-	if (udp_disabled)
+	if (udp_disabled) {
+		if (extra) *extra = 0;
 		return 0;
+	}
 
 	for( i=0,n=0,e=0 ; i<PROTO_LAST ; i++)
 		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
