@@ -292,7 +292,7 @@ int rmq_server_add(modparam_t type, void * val)
 	char uri_pending = 0;
 	unsigned flags = 0;
 	char *uri;
-	int retries;
+	int retries = 0;
 	int max_frames = RMQ_DEFAULT_FRAMES;
 	int heartbeat = RMQ_DEFAULT_HEARTBEAT;
 	str exchange = {0, 0};

@@ -290,7 +290,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			/* write path */
 			memcpy(buf, &p1_len, sizeof p1_len);
 			buf += sizeof p1_len;
-			memcpy(buf, p1, p1_len);
+			memcpy(buf, p1, (unsigned)p1_len);
 			if (p1_len > 0)
 				next_hop_host = buf + next_hop_offset;
 			buf += p1_len;
@@ -388,7 +388,7 @@ cdb_pack_ping_data(const str *aor, const cdb_pair_t *contact,
 	struct socket_info *sock = NULL;
 	struct proxy_l next_hop;
 	str ct_uri, received = STR_NULL, path, next_hop_uri;
-	char *next_hop_host;
+	char *next_hop_host = NULL;
 	int needed;
 	char *cp = *cpos;
 	int cols_needed = COL_CONTACT | COL_RECEIVED | COL_PATH | COL_CFLAGS;
@@ -650,7 +650,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	int needed;
 	int count;
 	int i = 0;
-	char *next_hop_host;
+	char *next_hop_host = NULL;
 	int cur_node_idx = 0, nr_nodes = 0;
 
 	cp = buf;
@@ -738,7 +738,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 					memcpy(cp, &c->path.len, sizeof(c->path.len));
 					cp = (char*)cp + sizeof(c->path.len);
 					memcpy(cp, c->path.s, c->path.len);
-					if (c->path.len)
+					if (c->path.len != 0)
 						next_hop_host = cp + (c->next_hop.name.s - c->path.s);
 					cp = (char*)cp + c->path.len;
 					memcpy(cp, &c->sock, sizeof(c->sock));
