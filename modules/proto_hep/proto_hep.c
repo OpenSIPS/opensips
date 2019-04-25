@@ -117,7 +117,10 @@ static cmd_export_t cmds[] = {
 	{"trace_bind_api", (cmd_function)hep_bind_trace_api, {{0,0,0}}, 0},
 	{"correlate", (cmd_function)correlate_w, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
