@@ -248,6 +248,15 @@ modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
 			if none defined. Keep in mind that collection name is different than group name,
 			which identifies the engine in cachedb operations.
 			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>collection</emphasis> (string, optional)
+				</para></listitem>
+				<listitem><para>
+					<emphasis>glob</emphasis> (string)
+				</para></listitem>
+			</itemizedlist>
 			<para>
 			This function can be used from all routes
 			</para>

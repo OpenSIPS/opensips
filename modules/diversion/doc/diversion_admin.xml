@@ -64,7 +64,7 @@ modparam("diversion", "suffix", ";privacy=full")
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<section id="func_add_diversion" xreflabel="add_diversion()">
-		<title><function moreinfo="none">add_diversion(reason [[,uri], counter])</function></title>
+		<title><function moreinfo="none">add_diversion(reason, [uri], [counter])</function></title>
 		<para>
 		The function adds a new diversion header field before any other 
 		existing Diversion header field in the message (the newly added 
@@ -75,18 +75,17 @@ modparam("diversion", "suffix", ";privacy=full")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>reason</emphasis> - The reason string to be added 
+			<para><emphasis>reason</emphasis> (string) - The reason string to be added 
 			as the reason parameter
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>uri</emphasis> - The URI to be added in the header. If missing
+			<para><emphasis>uri</emphasis> (string, optional) - The URI to be added in the header. If missing
 			    the unchanged RURI from the original message will be used.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>counter</emphasis> - Diversion counter to be added to the header,
-			    as defined by the standard.
+			<para><emphasis>counter</emphasis> (int, optional) - Diversion counter to be added to the header, as defined by the standard.
 			</para>
 		</listitem>
 	</itemizedlist>

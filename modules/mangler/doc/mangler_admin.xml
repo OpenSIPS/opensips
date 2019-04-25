@@ -94,7 +94,7 @@ modparam("mangler", "contact_flds_separator", "-")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>pattern</emphasis> - A pair ip/mask used to match 
+			<para><emphasis>pattern</emphasis> (string) - A pair ip/mask used to match 
 			&ip;'s located inside &sdp; package in lines c=IN IP4 ip. This 
 			lines will only be mangled if located &ip; is in the network 
 			described by this pattern. Examples of
@@ -103,7 +103,7 @@ modparam("mangler", "contact_flds_separator", "-")
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>newip</emphasis> - A string representing the new 
+			<para><emphasis>newip</emphasis> (string) - the new 
 			&ip; to be put inside &sdp; package if old &ip; address matches 
 			pattern.
 			</para>
@@ -136,8 +136,7 @@ sdp_mangle_ip("10.0.0.0/8","193.175.135.38");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>offset</emphasis> - A string representing an 
-			integer which will
+			<para><emphasis>offset</emphasis> (int) - an integer which will
 			be added/subtracted from the located port.
 			</para>
 		</listitem>
@@ -149,7 +148,7 @@ sdp_mangle_ip("10.0.0.0/8","193.175.135.38");
 		<title><function>sdp_mangle_port</function> usage</title>
 		<programlisting format="linespecific">
 ...
-sdp_mangle_port("-12000");
+sdp_mangle_port(-12000);
 ...
 </programlisting>
 		</example>
@@ -172,12 +171,12 @@ sdp_mangle_port("-12000");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>encoding_prefix</emphasis> - Something to allow us 
+			<para><emphasis>encoding_prefix</emphasis> (string) - Something to allow us 
 			to determine that a contact is encoded publicip--a routable &ip;, 
 			most probably you should
 			put your external &ip; of your &nat; box.
 			</para>
-			<para><emphasis>public_ip</emphasis> - The public IP which will be
+			<para><emphasis>public_ip</emphasis> (string) - The public IP which will be
 			used in the encoded contact, as described by the example above.
 			</para>
 		</listitem>

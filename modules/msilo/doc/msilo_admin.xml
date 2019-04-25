@@ -593,10 +593,9 @@ modparam("msilo", "max_messages", 0)
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>owner</emphasis> - is a string that must contain
-			a SIP URI in whose inbox the message will be stored. It can have
-			any pseudo variable. If "owner" is missing, the SIP address is
-			taken from R-URI.
+			<emphasis>owner</emphasis> (string, optional) - a SIP URI in whose
+			inbox the message will be stored. If "owner" is missing,
+			the SIP address is taken from R-URI.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -608,13 +607,13 @@ modparam("msilo", "max_messages", 0)
 		<programlisting format="linespecific">
 ...
 m_store();
-m_store("$tu");
+m_store($tu);
 ...
 </programlisting>
 		</example>
 	</section>
 	<section id="func_m_dump" xreflabel="m_dump()">
-		<title><function moreinfo="none">m_dump([owner, [maxmsg]])</function></title>
+		<title><function moreinfo="none">m_dump([owner], [maxmsg])</function></title>
 		<para>
 		The method sends stored messages for the &sip; user that is going to 
 		register to his actual contact address. The method should be called 
@@ -625,11 +624,14 @@ m_store("$tu");
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>owner</emphasis> - is a string that must contain
-			a SIP URI whose inbox will be dumped. It can have
-			any pseudo variable. If "owner" is missing, the SIP address is
-			taken from To URI.
-			<emphasis>maxmsg</emphasis> - is a maximum number of messages
+			<emphasis>owner</emphasis> (string, optional) - 
+			a SIP URI whose inbox will be dumped. If "owner" is missing,
+			the SIP address is taken from To URI.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>maxmsg</emphasis> (int, optional) - is a maximum number of messages
 			to be dumped.
 			</para>
 		</listitem>
@@ -643,8 +645,8 @@ m_store("$tu");
 		<programlisting format="linespecific">
 ...
 m_dump();
-m_dump("$fu");
-m_dump("$fu", 10);
+m_dump($fu);
+m_dump($fu, 10);
 ...
 </programlisting>
 		</example>

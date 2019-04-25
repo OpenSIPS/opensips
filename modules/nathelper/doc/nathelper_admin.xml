@@ -609,6 +609,12 @@ modparam("nathelper", "cluster_sharing_tag", "vip")
 		not be seen in the async resume route. So make sure you call it in all the
 		resume routes where you need the contact fixed.
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>uri_params (string, optional)</emphasis>
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE.
 		</para>
@@ -639,7 +645,7 @@ if (search("User-Agent: Cisco ATA.*") {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>flags</emphasis> - the value may be a bitwise OR of
+			<emphasis>flags (int)</emphasis> - the value may be a bitwise OR of
 			the following flags:
 			</para>
 			<itemizedlist>
@@ -672,15 +678,14 @@ if (search("User-Agent: Cisco ATA.*") {
 			</itemizedlist>
 			</listitem>
 			<listitem><para>
-			<emphasis>ip_address</emphasis> - IP to be used for rewriting SDP.
-			If not specified, the received signalling IP will be used. The
-			parameter allows pseudo-variables usage. NOTE: For the IP to be
-			used, you need to use 0x02 or 0x08 flags, otherwise it will have
-			no effect.
+			<emphasis>ip_address (string, optional)</emphasis> - IP to be used for
+			rewriting SDP. If not specified, the received signalling IP will be used.
+			NOTE: For the IP to be used, you need to use 0x02 or 0x08 flags,
+			otherwise it will have no effect.
 			</para>
 			</listitem>
 			<listitem><para>
-			<emphasis>sdp_fields</emphasis> - SDP field(s) to be appended to SDP.
+			<emphasis>sdp_fields (string, optional)</emphasis> - SDP field(s) to be appended to SDP.
 			Note: Each SDP field must be preceded by "\r\n".
 			</para>
 			</listitem>
@@ -698,7 +703,7 @@ if (search("User-Agent: Cisco ATA.*") {
 # Add extra "a=x-attr1" SDP line
 # Add extra "a=x-attr2" SDP line
 if (search("User-Agent: Cisco ATA.*")
-    {fix_nated_sdp("3",,"\r\na=x-attr1\r\na=x-attr2");};
+    {fix_nated_sdp(3,,"\r\na=x-attr1\r\na=x-attr2");};
 ...
 </programlisting>
 		</example>
@@ -719,11 +724,11 @@ if (search("User-Agent: Cisco ATA.*")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>flag</emphasis> - flags to indicate if the parameter
-			should be added to Contact URI or Contact header. If the flag is
-			non-zero, the parameter will be added to the Contact URI. If not
-			used or equal to zero, the parameter will go to the Contact
-			header.
+			<emphasis>flag (int, optional)</emphasis> - flags to indicate if
+			the parameter should be added to Contact URI or Contact header.
+			If the flag is non-zero, the parameter will be added to the Contact
+			URI. If not used or equal to zero, the parameter will go to the
+			Contact header.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -735,7 +740,7 @@ if (search("User-Agent: Cisco ATA.*")
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
-add_rcv_param("1"); # add the parameter to the Contact URI
+add_rcv_param(1); # add the parameter to the Contact URI
 ...
 </programlisting>
 		</example>
@@ -770,7 +775,8 @@ fix_nated_register();
 			Tries to guess if client's request originated behind a nat.
 			The parameter determines what heuristics is used.
 		</para>
-		<para>Meaning of the flags is as follows:</para>
+		<para>Meaning of the <emphasis>flags (int)</emphasis> parameter
+		is as follows:</para>
 		<itemizedlist>
 			<listitem><para>
 			<emphasis>1</emphasis> -  Contact header field is searched

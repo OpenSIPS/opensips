@@ -1256,15 +1256,15 @@ modparam("drouting", "enable_restart_persistency", yes)
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis role='bold'>groupID</emphasis> - number to 
-			specifie the group of the caller for routing purposes.
+			<emphasis role='bold'>groupID</emphasis> (int, optional) - number to 
+			specify the group of the caller for routing purposes.
 			If none specified the function will automatically try to query
 			the dr_group table to get this 
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role='bold'>flags</emphasis> - string defining a list
+			<emphasis role='bold'>flags</emphasis> (string, optional) - a list
 			of letter-like flags for controlling the routing behavior.
 			Possible flags are:
 			</para>
@@ -1303,8 +1303,8 @@ modparam("drouting", "enable_restart_persistency", yes)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role='bold'>gw_whitelist</emphasis> - string with a comma
-			separated white list of gateways. This will force routing over,
+			<emphasis role='bold'>gw_whitelist</emphasis> (string, optional) - a
+			comma separated white list of gateways. This will force routing over,
 			at most, this list of carriers or gateways (in other words, 
 			the whitelist will be intersected with the results of the search 
 			through the rules).
@@ -1312,28 +1312,28 @@ modparam("drouting", "enable_restart_persistency", yes)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role='bold'>rule_attrs_pvar</emphasis> - a variable to be
-			used for output purposes - a writable variable which will be 
-			populated with the attributes of the matched dynamic routing rule.
+			<emphasis role='bold'>rule_attrs_pvar</emphasis> (var, optional) - a
+			writable variable which will be  populated with the attributes of the
+			matched dynamic routing rule.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role='bold'>gw_attrs_pvar</emphasis> - a variable to be
-			used for output purposes  - a writable variable which will be 
+			<emphasis role='bold'>gw_attrs_pvar</emphasis> (var, optional) - a
+			writable variable which will be 
 			populated with the attributes of the matched gateway.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role='bold'>carrier_attrs_pvar </emphasis> - a variable 
-			to be used for output purposes - a writable variable which will be
+			<emphasis role='bold'>carrier_attrs_pvar </emphasis> (var, optional) - a
+			a writable variable which will be
 			populated with the attributes of the matched carrier.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis role='bold'>partition</emphasis> - a string with the name
+			<emphasis role='bold'>partition</emphasis> (string, optional) - the name
 			of the DR partition to be used. This parameter is to be defined
 			ONLY if the "use_partition" module parameter is turned on.
 			Besides specifing the name of one partition, you can use the "*" 
@@ -1366,7 +1366,7 @@ do_routing($var(id));
 do_routing(, "W");
 ...
 # <varname>use_partitions</varname> is 1, partition and group supplied by AVPs, do strict length matching
-do_routing( $avp(grp),"L", , , , ,"$avp(partition)")
+do_routing( $avp(grp),"L", , , , ,$avp(partition))
 ...
 # group id 2, sort on order, fallback rule and also return the gateway attributes
 do_routing(2, "F", , , $var(gw_attributes));
@@ -1398,28 +1398,28 @@ do_routing(2, "F", , , $var(gw_attributes));
 		<itemizedlist>
 				<listitem>
 					<para>
-					<emphasis role='bold'>carriers</emphasis> - a mandatory
-					string of comma separated carrier IDs (names)
+					<emphasis role='bold'>carriers</emphasis> (string) - comma separated
+					carrier IDs (names)
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>gw_attrs_pvar</emphasis> - an
-					optional output writable variable which will be populated
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (var, optional) -
+					an output writable variable which will be populated
 					with the attributes of the currently matched gateway of 
 					this carrier.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>carrier_attrs_pvar </emphasis>  - an
-					optional output writable variable which will be populated 
+					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (var, 
+					optional) - an output writable variable which will be populated 
 					with the attributes of this carrier.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>partition</emphasis> - a string with
+					<emphasis role='bold'>partition</emphasis> (string, optional) -
 					the name of the DR partition to be used. This parameter is
 					to be defined ONLY if the "use_partition" module parameter
 					is turned on. Wildcard sign is not accepted by the 
@@ -1450,7 +1450,7 @@ if ( route_to_carrier("my_top_carrier", , $var(carrier_att), "part") ) {
 }
 ...
 # use_partitions is enabled
-if ( route_to_carrier("$var(carrierId)", , , "$var(my_partition)") ) {
+if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
 	xlog("Routing to \"my_top_carrier\"\n");
 	t_on_failure("next_gw");
 	t_relay();
@@ -1463,7 +1463,7 @@ if ( route_to_carrier("$var(carrierId)", , , "$var(my_partition)") ) {
 
 	<section id="func_route_to_gw" xreflabel="route_to_gw()">
 		<title>
-		<function moreinfo="none">route_to_gw(gw_id, [gw_attrs_pvar], [partition])</function>
+		<function moreinfo="none">route_to_gw(gw_id, [gw_attrs_var], [partition])</function>
 		</title>
 		<para>
 		Function to trigger the direct routing to a given gateway (or list of
@@ -1482,20 +1482,20 @@ if ( route_to_carrier("$var(carrierId)", , , "$var(my_partition)") ) {
 		<itemizedlist>
 				<listitem>
 					<para>
-					<emphasis role='bold'>gw_id </emphasis> - mandatory string
-					with the comma separated list of gateway IDs to be used.
+					<emphasis role='bold'>gw_id </emphasis> (string) - comma
+					separated list of gateway IDs to be used.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>gw_attrs_pvar</emphasis> - an 
-					optional output writable variable which will be populated
+					<emphasis role='bold'>gw_attrs_pvar</emphasis>  (var, optional)
+					- an output writable variable which will be populated
 					with the attributes of the currently matched gateway.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>partition</emphasis> - a string with
+					<emphasis role='bold'>partition</emphasis> (string, optional) -
 					the name of the DR partition to be used. This parameter is
 					to be defined ONLY if the "use_partition" module parameter
 					is turned on. Wildcard sign is not accepted by the 
@@ -1570,29 +1570,28 @@ if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), "my_partition") ) {
 		<itemizedlist>
 				<listitem>
 					<para>
-					<emphasis role='bold'>rule_attrs_pvar </emphasis> - an
-					optional output writable variable which will be populated
-					with the attributes
-					of the matched dynamic routing rule.
+					<emphasis role='bold'>rule_attrs_pvar </emphasis> (var, optional)
+					- an output writable variable which will be populated
+					with the attributes of the matched dynamic routing rule.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>gw_attrs_pvar</emphasis> - an
-					optional output writable variable which will be populated
+					<emphasis role='bold'>gw_attrs_pvar</emphasis> (var, optional) - an
+					output writable variable which will be populated
 					with the attributes of the matched gateway.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>carrier_attrs_pvar </emphasis>  - an
-					optional output writable variable which will be populated
+					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (var, optional) 
+					- an output writable variable which will be populated
 					with the attributes of the matched carrier.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>partition</emphasis> - a string with
+					<emphasis role='bold'>partition</emphasis> (optinal, string) -
 					the name of the DR partition to be used. This parameter is
 					to be defined ONLY if the "use_partition" module parameter
 					is turned on. Wildcard sign is not accepted by the 
@@ -1661,7 +1660,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 		<itemizedlist>
 			<listitem>
 				<para>
-				<emphasis role='bold'>type</emphasis>  - optional number for
+				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
 				parameter or specifying the special value "-1", matching will 
 				be done against all types. 
@@ -1669,7 +1668,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>flags</emphasis> - optional string with
+				<emphasis role='bold'>flags</emphasis> (string, optional) - 
 				letter like flags for controlling what operations should be 
 				performed when a GW matches:
 				</para>
@@ -1708,14 +1707,14 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>gw_attrs_pvar</emphasis> - an optinal 
-				output writable variable which will be populated with
+				<emphasis role='bold'>gw_attrs_pvar</emphasis> (var, optional) -
+				an  output writable variable which will be populated with
 				the attributes of the matched gateway.
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>partition</emphasis> - a string with
+				<emphasis role='bold'>partition</emphasis> (string, optional) - 
 				the name of the DR partition to be used. This parameter is
 				to be defined ONLY if the "use_partition" module parameter
 				is turned on. Wildcard sign is accepted by this 
@@ -1729,13 +1728,13 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 ...
 # use_partitions is not set
 if (goes_to_gw( 1, , $var(gw_attrs))) {
-	sl_send_reply("403","Forbidden");
+	sl_send_reply(403,"Forbidden");
 	exit;
 }
 ...
 # use_partitions is enabledt
 if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
-	sl_send_reply("403","Forbidden");
+	sl_send_reply(403,"Forbidden");
 	exit;
 }
 ...
@@ -1769,7 +1768,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 		<itemizedlist>
 			<listitem>
 				<para>
-				<emphasis role='bold'>type</emphasis>  - optional number for
+				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
 				parameter or specifying the special value "-1", matching will 
 				be done against all types. 
@@ -1777,7 +1776,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>flags</emphasis> - optional string with
+				<emphasis role='bold'>flags</emphasis> (string, optional) - 
 				letter like flags for controlling what operations should be 
 				performed when a GW matches:
 				</para>
@@ -1816,14 +1815,14 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>gw_attrs_pvar</emphasis> - an optinal 
+				<emphasis role='bold'>gw_attrs_pvar</emphasis> (var, optional) - an 
 				output writable variable which will be populated with
 				the attributes of the matched gateway.
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>partition</emphasis> - a string with
+				<emphasis role='bold'>partition</emphasis> (string, optional) - 
 				the name of the DR partition to be used. This parameter is
 				to be defined ONLY if the "use_partition" module parameter
 				is turned on. Wildcard sign is accepted by this 
@@ -1876,14 +1875,14 @@ if (is_from_gw(3, "c", , "outbound")) {
 		<itemizedlist>
 			<listitem>
 				<para>
-				<emphasis role='bold'>sip_uri</emphasis> - mandatory string
-				containing a SIP URI.  If the URI hostname part is a FQDN,
+				<emphasis role='bold'>sip_uri</emphasis> (string) - SIP URI.
+				If the URI hostname part is a FQDN,
 				it will be resolved prior to matching.
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>type</emphasis>  - optional number for
+				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
 				parameter or specifying the special value "-1", matching will 
 				be done against all types. 
@@ -1891,7 +1890,7 @@ if (is_from_gw(3, "c", , "outbound")) {
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>flags</emphasis> - optional string with
+				<emphasis role='bold'>flags</emphasis> (string, optional) - 
 				letter like flags for controlling what operations should be 
 				performed when a GW matches:
 				</para>
@@ -1930,14 +1929,14 @@ if (is_from_gw(3, "c", , "outbound")) {
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>gw_attrs_pvar</emphasis> - an optinal 
+				<emphasis role='bold'>gw_attrs_pvar</emphasis> (var, optional) - an  
 				output writable variable which will be populated with
 				the attributes of the matched gateway.
 				</para>
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis role='bold'>partition</emphasis> - a string with
+				<emphasis role='bold'>partition</emphasis> (string, optional) - 
 				the name of the DR partition to be used. This parameter is
 				to be defined ONLY if the "use_partition" module parameter
 				is turned on. Wildcard sign is accepted by this 
@@ -1949,14 +1948,14 @@ if (is_from_gw(3, "c", , "outbound")) {
 		<title><function>dr_is_gw</function> usage</title>
 		<programlisting format="linespecific">
 # match the SIP URI host within $var(uac) against all gateways
-if (dr_is_gw( "$var(uac)", , "n")) {
+if (dr_is_gw( $var(uac), , "n")) {
 	...
 }
 
 
 # match the SIP URI host within $var(uac) against
 # all gws in "outbound" partition
-if (dr_is_gw( "$avp(uac)", , "n", , "partition")) {
+if (dr_is_gw( $avp(uac), , "n", , "partition")) {
 	...
 }
 </programlisting>
@@ -1983,12 +1982,12 @@ if (dr_is_gw( "$avp(uac)", , "n", , "partition")) {
 		gateway has been defined.
 		</para>
 		<para>
-		It may take the following optional parameters:
+		It may take the following parameters:
 		</para>
 		<itemizedlist>
 			<listitem>
 				<para>
-				<emphasis role='bold'>partition</emphasis> - a string with
+				<emphasis role='bold'>partition</emphasis> (string, optional) - 
 				the name of the DR partition to be used. This parameter is
 				to be defined ONLY if the "use_partition" module parameter
 				is turned on. Wildcard sign is accepted by this 

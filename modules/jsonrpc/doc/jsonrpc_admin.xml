@@ -120,7 +120,7 @@ modparam("jsonrpc", "read_timeout", 300)
 	<title>Exported Functions</title>
 		<section id="func_jsonrpc_request" xreflabel="jsonrpc_request()">
 			<title>
-				<function moreinfo="none">jsonrpc_request(destination, method, params, ret_pvar)</function>
+				<function moreinfo="none">jsonrpc_request(destination, method, params, ret_var)</function>
 			</title>
 			<para>
 				Does a JSON-RPC request to the JSON-RPC server
@@ -136,20 +136,20 @@ modparam("jsonrpc", "read_timeout", 300)
 			<itemizedlist>
 				<listitem>
 					<para>
-						<emphasis>destination</emphasis> - address of the
+						<emphasis>destination</emphasis> (string) - address of the
 						JSON-RPC server. The format needs to be
 						<emphasis>IP:port</emphasis>.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-						<emphasis>method</emphasis> - the method used in
+						<emphasis>method</emphasis> (string) - the method used in
 						the RPC request.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-						<emphasis>params</emphasis> - these are the parameters
+						<emphasis>params</emphasis> (string) - these are the parameters
 						sent to the RPC method. This parameter needs to be
 						a properly formated JSON array, or JSON object,
 						according the the JSON-RPC specifications.
@@ -157,7 +157,7 @@ modparam("jsonrpc", "read_timeout", 300)
 				</listitem>
 				<listitem>
 					<para>
-						<emphasis>ret_pvar</emphasis> a writeable variable
+						<emphasis>ret_var</emphasis> a writeable variable
 						used to store the result of the JSON-RPC command. If
 						the command returns an error, the variable will be
 						populated with the error JSON, otherwise, with the
@@ -203,7 +203,7 @@ modparam("jsonrpc", "read_timeout", 300)
 			<title><function>jsonrpc_request()</function> function usage</title>
 			<programlisting format="linespecific">
 	...
-	if (!jsonrpc_request("127.0.0.1", "add", "[1,2]", "$var(ret)")) {
+	if (!jsonrpc_request("127.0.0.1", "add", "[1,2]", $var(ret))) {
 		xlog("JSON-RPC command failed with $var(ret)\n");
 		exit;
 	}

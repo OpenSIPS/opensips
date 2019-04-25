@@ -1328,15 +1328,15 @@ if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
 		<title><function>ds_is_in_list</function> usage</title>
 <programlisting format="linespecific">
 ...
-if (ds_is_in_list("$si", "$sp")) {
+if (ds_is_in_list($si, $sp)) {
 	# source IP:PORT is in a dispatcher list
 }
 ...
-if (ds_is_in_list("$rd", "$rp", 2)) {
+if (ds_is_in_list($rd, $rp, 2)) {
 	# the R-URI (IP and port) is in the dispatcher set 2 of the "default" partition
 }
 ...
-if (ds_is_in_list("$rd", "$rp", 2, "part2")) {
+if (ds_is_in_list($rd, $rp, 2, "part2")) {
 	# the R-URI (IP and port) is in the dispatcher set 2 of the "part2" partition
 }
 ...

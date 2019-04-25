@@ -77,7 +77,7 @@ From: medabeda
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> (string) - Regular expression.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -105,7 +105,7 @@ if ( search("[Ss][Ii][Pp]") ) { /*....*/ };
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> (string) - Regular expression.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -133,11 +133,11 @@ if ( search_body("[Ss][Ii][Pp]") ) { /*....*/ };
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> (string) - Regular expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>txt</emphasis> - String to be appended.
+			<para><emphasis>txt</emphasis> (string) - String to be appended.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -166,11 +166,11 @@ search_append("[Oo]pen[Ss]er", " SIP Proxy");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> (string) - Regular expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>txt</emphasis> - String to be appended.
+			<para><emphasis>txt</emphasis> (string) - String to be appended.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -198,11 +198,11 @@ search_append_body("[Oo]pen[Ss]er", " SIP Proxy");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> (string) - Regular expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>txt</emphasis> - String.
+			<para><emphasis>txt</emphasis> (string)
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -231,11 +231,11 @@ replace("opensips", "Open SIP Server");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> (string) - Regular expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>txt</emphasis> - String.
+			<para><emphasis>txt</emphasis> (string)
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -263,11 +263,11 @@ replace_body("opensips", "Open SIP Server");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> - (string) Regular expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>txt</emphasis> - String.
+			<para><emphasis>txt</emphasis> (string)
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -296,11 +296,11 @@ replace_all("opensips", "Open SIP Server");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> (string) - Regular expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>txt</emphasis> - String.
+			<para><emphasis>txt</emphasis> (string)
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -329,11 +329,11 @@ replace_body_all("opensips", "Open SIP Server");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>re</emphasis> - Regular expression.
+			<para><emphasis>re</emphasis> (string) - Regular expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>txt</emphasis> - String.
+			<para><emphasis>txt</emphasis> (string)
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -363,7 +363,7 @@ if(has_body() &amp;&amp; replace_body_atonce("^.+$", ""))
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>'/re/repl/flags'</emphasis> - sed like regular 
+			<para><emphasis>'/re/repl/flags'</emphasis> (string) - sed like regular 
 				expression. flags can be a combination of i (case insensitive),
 				g (global) or s (match newline don't treat it as end of line).
 			</para>
@@ -408,7 +408,7 @@ if ( subst('/^To:(.*)sip:[^@]*@[a-zA-Z0-9.]+(.*)$/t:\1$avp(sip_address)\2/ig') )
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>'/re/repl/flags'</emphasis> - sed like regular 
+			<para><emphasis>'/re/repl/flags'</emphasis> (string) - sed like regular 
 				expression. flags can be a combination of i (case insensitive),
 				g (global) or s (match newline don't treat it as end of line).
 			</para>
@@ -455,7 +455,7 @@ if (subst_uri('/^sip:([0-9]+)@(.*)$/sip:$avp(uri_prefix)\1@\2;orig_uri=\0/i')){$
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>'/re/repl/flags'</emphasis> - sed like regular
+			<para><emphasis>'/re/repl/flags'</emphasis> (string) - sed like regular
 				expression. flags can be a combination of i (case insensitive),
 				g (global) or s (match newline don't treat it as end of line).
 			</para>
@@ -500,7 +500,7 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>'/re/repl/flags'</emphasis> - sed like regular 
+			<para><emphasis>'/re/repl/flags'</emphasis> (string) - sed like regular 
 				expression. flags can be a combination of i (case insensitive),
 				g (global) or s (match newline don't treat it as end of line).
 			</para>

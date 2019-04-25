@@ -118,7 +118,7 @@ modparam("maxfwd", "max_limit", 32)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>max_value</emphasis> - Value to be added if 
+			<para><emphasis>max_value</emphasis> (int) - Value to be added if 
 			there is no Max-Forwards header field in the message.
 			</para>
 		</listitem>
@@ -132,8 +132,8 @@ modparam("maxfwd", "max_limit", 32)
 ...
 # initial sanity checks -- messages with
 # max_forwards==0, or excessively long requests
-if (!mf_process_maxfwd_header("10") &amp;&amp; $retcode==-1) {
-	sl_send_reply("483","Too Many Hops");
+if (!mf_process_maxfwd_header(10) &amp;&amp; $retcode==-1) {
+	sl_send_reply(483,"Too Many Hops");
 	exit;
 };
 ...
@@ -179,7 +179,7 @@ if (!mf_process_maxfwd_header("10") &amp;&amp; $retcode==-1) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>max_value</emphasis> - value to check the 
+			<para><emphasis>max_value</emphasis> (int) - value to check the 
 			Max-Forward.value against (as less than).
 			</para>
 		</listitem>
@@ -190,8 +190,8 @@ if (!mf_process_maxfwd_header("10") &amp;&amp; $retcode==-1) {
 ...
 # next hope is a gateway, so make no sens to
 # forward if MF is 0 (after decrement)
-if ( is_maxfwd_lt("1") ) {
-	sl_send_reply("483","Too Many Hops");
+if ( is_maxfwd_lt(1) ) {
+	sl_send_reply(483,"Too Many Hops");
 	exit;
 };
 ...

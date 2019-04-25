@@ -352,10 +352,10 @@ modparam("cgrates", "compat_mode", 1)
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>flags</emphasis> - indicates whether &osips; should generate
-				a CDR at the end of the call. This parameter is optional, and if missing,
-				no CDR is generated - the session is only passed through CGRateS. The
-				following values can be used, separated by '|': </para>
+			<para><emphasis>flags</emphasis> (string, optional) - indicates whether &osips;
+				should generate a CDR at the end of the call. If the parameter is missing,
+				no CDR is generated - the session is only passed through CGRateS.
+				The following values can be used, separated by '|': </para>
 			<itemizedlist>
 				<listitem>
 					<para><emphasis>cdr</emphasis> - also generate a CDR;</para>
@@ -368,18 +368,17 @@ modparam("cgrates", "compat_mode", 1)
 			</itemizedlist>
 		</listitem>
 		<listitem>
-			<para><emphasis>account</emphasis> - the account that will be charged
-				in CGrateS. This parameter is optional, and if not specified,
-				the user in the From header is used.
+			<para><emphasis>account</emphasis> (string, optional) - the account that will be charged
+				in CGrateS. If not specified, the user in the From header is used.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>destination</emphasis> - the dialled number. Optional
-				parameter, if not present the request URI user is used.
+			<para><emphasis>destination</emphasis> (string, optional) - the dialled number.
+			If not present the request URI user is used.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>session</emphasis> - the tag of the session that
+			<para><emphasis>session</emphasis> (string, optional) - the tag of the session that
 				will be started if the branch/call completes with success. This parameter
 				indicates what set of data from the <emphasis>$cgr()</emphasis> variable
 				should be considered. If missing, the default set is used.
@@ -419,8 +418,8 @@ modparam("cgrates", "compat_mode", 1)
 		...
 		if (!has_totag()) {
 			...
-			if (cgrates_auth("$fU", "$rU"))
-				cgrates_acc("cdr|missed", "$fU", "$rU");
+			if (cgrates_auth($fU, $rU))
+				cgrates_acc("cdr|missed", $fU, $rU);
 			...
 		}
 		...
@@ -442,18 +441,17 @@ modparam("cgrates", "compat_mode", 1)
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>account</emphasis> - the account that will be checked
-				in CGrateS. This parameter is optional, and if not specified,
-				the user in the From header is used.
+			<para><emphasis>account</emphasis> (string, optional) - the account that will be checked
+				in CGrateS. If not specified, the user in the From header is used.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>destination</emphasis> - the dialled number. Optional
-				parameter, if not present the request URI user is used.
+			<para><emphasis>destination</emphasis> (string, optional) - the dialled number.
+			If not present the request URI user is used.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>session</emphasis> - the tag of the session that
+			<para><emphasis>session</emphasis> (string, optional) - the tag of the session that
 				will be started if the branch/call completes with success. This parameter
 				indicates what set of data from the <emphasis>$cgr()</emphasis> variable
 				should be considered. If missing, the default set is used.
@@ -506,8 +504,8 @@ modparam("cgrates", "compat_mode", 1)
 		...
 		if (!has_totag()) {
 			...
-			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
+			if (!cgrates_auth($fU, $rU)) {
+				sl_send_reply(403, "Forbidden");
 				exit;
 			}
 			...
@@ -523,8 +521,8 @@ modparam("cgrates", "compat_mode", 1)
 		if (!has_totag()) {
 			...
 			$cgr_opt(GetAttributes) = 1;
-			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
+			if (!cgrates_auth($fU, $rU)) {
+				sl_send_reply(403, "Forbidden");
 				exit;
 			}
 			# move attributes from AttributesDigest variable to plain AVPs
@@ -555,12 +553,12 @@ modparam("cgrates", "compat_mode", 1)
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>command</emphasis> - the command sent to the
-				CGRateS engine. This is a mandatory parameter.
+			<para><emphasis>command</emphasis> (string) - the command sent to the
+				CGRateS engine.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>session</emphasis> - the tag of the session that
+			<para><emphasis>session</emphasis> (string, optional) - the tag of the session that
 				will be started if the branch/call completes with success. This parameter
 				indicates what set of data from the <emphasis>$cgr()</emphasis> variable
 				should be considered. If missing, the default set is used.
@@ -601,7 +599,7 @@ modparam("cgrates", "compat_mode", 1)
 				<title>cgrates_cmd() usage</title>
 				<programlisting format="linespecific">
 		...
-		# cgrates_auth("$fU", "$rU"); simulation
+		# cgrates_auth($fU, $rU); simulation
 		$cgr_opt(Tenant) = $fd;
 		$cgr(Account) = $fU;
 		$cgr(OriginID) = $ci;

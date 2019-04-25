@@ -248,7 +248,7 @@ modparam("uac", "force_dialog", yes)
 				<programlisting format="linespecific">
 ...
 # replace both display and uri
-uac_replace_from("$avp(display)","$avp(uri)");
+uac_replace_from($avp(display),$avp(uri));
 # replace only display and do not touch uri
 uac_replace_from("batman","");
 # remove display and replace uri

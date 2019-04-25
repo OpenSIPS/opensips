@@ -443,7 +443,7 @@ route[my_hep_route] {
 
 		<section id="func_sip_capture" xreflabel="sip_capture()">
 		<title>
-			<function moreinfo="none">sip_capture([table_name][, [custom_field1][, [custom_field2][, [custom_field3]]]])</function>
+			<function moreinfo="none">sip_capture([table_name], [custom_field1], [custom_field2], [custom_field3])</function>
 		</title>
 		<para>
 			Save the message into the database.
@@ -451,17 +451,17 @@ route[my_hep_route] {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>table_name (string)</emphasis> - the name of the table to store
+			<para><emphasis>table_name (string, optional)</emphasis> - the name of the table to store
 				the packet; it can have a strftime-like formatted suffix in order to change it's name
 				based on time; if not set, modparam defined table will be used;
 			</para>
-			<para><emphasis>custom_field1 (string or pvar)</emphasis> - custom data to store inside the
+			<para><emphasis>custom_field1 (string, optional)</emphasis> - custom data to store inside the
 				"custom_field1" column
 			</para>
-			<para><emphasis>custom_field2 (string or pvar)</emphasis> - custom data to store inside the
+			<para><emphasis>custom_field2 (string, optional)</emphasis> - custom data to store inside the
 				"custom_field2" column
 			</para>
-			<para><emphasis>custom_field3 (string or pvar)</emphasis> - custom data to store inside the
+			<para><emphasis>custom_field3 (string, optional)</emphasis> - custom data to store inside the
 				"custom_field3" column
 			</para>
 		</listitem>
@@ -478,7 +478,7 @@ if (is_method("REGISTER"))
 	...
 	/* table name will change every day */
 	sip_capture("homer_%m_%d");
-	sip_capture("homer_%m_%d", , "$hdr(P-Asserted-Identity)");
+	sip_capture("homer_%m_%d", , $hdr(P-Asserted-Identity));
 ...
 	</programlisting>
 	</example>
@@ -491,7 +491,7 @@ if (is_method("REGISTER"))
 		</title>
 		<para>
 			Save the message into the database. If you want set the protocol type you have to define
-		the table name, even if you pass over it(report_capture("$var(cor_id)",,"$var(proto_type)")).
+		the table name, even if you pass over it(report_capture($var(cor_id),,$var(proto_type))).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -534,10 +534,10 @@ if (is_method("REGISTER"))
 
 	$var(proto_type) = "3"; /* 0x03 - SDP protocol */
 
-	report_capture("$var(correlation_id)", "rtcp_log");
+	report_capture($var(correlation_id), "rtcp_log");
 	/* setting the 2nd parameter, even if setting it to null, is mandatory in order to be able to set proto type */
-	report_capture("$var(correlation_id)", , "$var(proto_type)");
-	report_capture("$var(correlation_id)", "rtcp_log", "$var(proto_type)");
+	report_capture($var(correlation_id), , $var(proto_type));
+	report_capture($var(correlation_id), "rtcp_log", $var(proto_type));
 ...
 	</programlisting>
 	</example>
@@ -686,7 +686,7 @@ if (is_method("REGISTER"))
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>data(string)</emphasis> - data that the chunk shall contain;
+			<para><emphasis>chunk_data(string)</emphasis> - data that the chunk shall contain;
 			internally it shall be converted to the requested data type</para>
 		</listitem>
 		<listitem>
@@ -766,7 +766,7 @@ hep_set("32", "192.168.5.14", "inet4-addr", "3")
 			<xref linkend="func_hep_set"/>; can miss if it's a generic chunk</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>chunk_data_pv (writable pvar, optional)</emphasis> - will hold the data inside the
+			<para><emphasis>chunk_data_pv (writable var, optional)</emphasis> - will hold the data inside the
 			chunk; some of the generic chunk data come in specific format, as following:</para>
 			<itemizedlist>
 			<listitem>
@@ -787,7 +787,7 @@ hep_set("32", "192.168.5.14", "inet4-addr", "3")
 			</itemizedlist>
 		</listitem>
 		<listitem>
-			<para><emphasis>vendor_id_pv (writable pvar, optional)</emphasis> - will hold the vendor id(int value)
+			<para><emphasis>vendor_id_pv (writable var, optional)</emphasis> - will hold the vendor id(int value)
 			of the chunk</para>
 		</listitem>
 		</itemizedlist>

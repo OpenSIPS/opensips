@@ -153,6 +153,16 @@ modparam("lua", "luafilename", "/etc/opensips/opensips.lua")
       Calls a Lua function with passing it the current SIP message.
       This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
       ONREPLY_ROUTE and BRANCH_ROUTE.
+      </para>
+      <para>Parameters:</para>
+      <itemizedlist>
+        <listitem><para>
+          <emphasis>func</emphasis> (string) - Lua function name
+        </para></listitem>
+        <listitem><para>
+          <emphasis>param</emphasis> (string, optional) - Parameter to be passed to the Lua function.
+        </para></listitem>
+      </itemizedlist>
         <example>
           <title>lua_exec() usage</title>
 <programlisting format="linespecific">
@@ -163,7 +173,6 @@ if (lua_exec("mongo_alias")) {
 ...
 </programlisting>
         </example>
-      </para>
     </section>
     <section>
       <title>lua_meminfo()</title>

@@ -435,7 +435,7 @@ modparam("cpl_c","use_domain",1)
 			<para>Meaning of the parameters is as follows:</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>type</emphasis> - which part of the script 
+				<para><emphasis>type (string)</emphasis> - which part of the script 
 				should be run; set it to "incoming" for having the incoming 
 				part of script executed (when an INVITE is received) or to 
 				"outgoing" for running the outgoing part of script (when a 
@@ -443,7 +443,7 @@ modparam("cpl_c","use_domain",1)
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>mode</emphasis> - sets the interpreter mode as
+				<para><emphasis>mode (string)</emphasis> - sets the interpreter mode as
 				stateless/stateful behavior. The following modes are accepted:
 				</para>
 				<itemizedlist>

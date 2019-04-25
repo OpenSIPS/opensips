@@ -123,23 +123,38 @@ modparam("userblacklist", "use_domain", 0)
 	<title>Exported Functions</title>
 	<section id="func_check_user_blacklist" xreflabel="check_user_blacklist()">
 	    <title>
-		<function moreinfo="none">check_user_blacklist (string user, string domain, string number, string table)</function>
+		<function moreinfo="none">check_user_blacklist (user, domain, [number], [table])</function>
 	    </title>
 	    <para>
 		Finds the longest prefix that matches the request URI user (or the number
 		parameter) for the given user and domain name in the database.
 		If a match is found and it is not set to whitelist, false is returned.
-		Otherwise, true is returned. Pseudo-variables or AVPs can be used for
-		the user, domain and number parameters. The number and table variables
-		are optional, the defaults are used if they are ommited. The number
-		parameter can be used to check for example against the from URI user.
+		Otherwise, true is returned. The number parameter can be used to check
+		for example against the from URI user.
 	    </para>
+	    <para>Parameters:</para>
+	    <itemizedlist>
+	    	<listitem><para>
+	    		<emphasis>user</emphasis> (string) - description
+	    	</para></listitem>
+	    	<listitem><para>
+	    		<emphasis>domain</emphasis> (string) - description
+	    	</para></listitem>
+	    	<listitem><para>
+	    		<emphasis>number</emphasis> (string, optional) - If ommited,
+	    		the defalut is used.
+	    	</para></listitem>
+	    	<listitem><para>
+	    		<emphasis>table</emphasis> (string, optional) - If ommited,
+	    		the defalut is used.
+	    	</para></listitem>
+	    </itemizedlist>
 	<example>
 		<title><function>check_user_blacklist</function> usage</title>
 		<programlisting format="linespecific">
 ...
 if (!check_user_blacklist("user", "domain.com"))
-	sl_send_reply("403", "Forbidden");
+	sl_send_reply(403, "Forbidden");
 	exit;
 }
 ...
@@ -148,19 +163,25 @@ if (!check_user_blacklist("user", "domain.com"))
 	</section>
 	<section id="func_check_blacklist" xreflabel="check_blacklist()">
 	    <title>
-		<function moreinfo="none">check_blacklist (string table)</function>
+		<function moreinfo="none">check_blacklist (table)</function>
 	    </title>
 	    <para>
 		Finds the longest prefix that matches the request URI for the
 		given table. If a match is found and it is not set to whitelist,
 		false is returned. Otherwise, true is returned.
 	    </para>
+	    <para>Parameters:</para>
+	    <itemizedlist>
+	    	<listitem><para>
+	    		<emphasis>table</emphasis> (string)
+	    	</para></listitem>
+	    </itemizedlist>
 	<example>
 		<title><function>check_blacklist</function> usage</title>
 		<programlisting format="linespecific">
 ...
 if (!check_blacklist("global_blacklist")))
-	sl_send_reply("403", "Forbidden");
+	sl_send_reply(403, "Forbidden");
 	exit;
 }
 ...

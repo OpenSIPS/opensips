@@ -236,13 +236,13 @@ modparam("regex", "pcre_extended", 1)
 			<itemizedlist>
 				<listitem>
 					<para>
-						<emphasis>string</emphasis> - String or pseudo-variable to compare.
+						<emphasis>string</emphasis> - String to compare.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-						<emphasis>pcre_regex</emphasis> - Regular expression to be compiled
-						in a PCRE object. It can be a string or pseudo-variable.
+						<emphasis>pcre_regex</emphasis> (string) - Regular expression to be compiled
+						in a PCRE object.
 					</para>
 				</listitem>
 			</itemizedlist>
@@ -275,7 +275,7 @@ if (pcre_match("$ua", "(?i)^twinkle")) {
 				</title>
 <programlisting format="linespecific">
 ...
-if (pcre_match("$rU", "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
+if (pcre_match($rU, "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
     xlog("L_INFO", "RURI username matches\n");
 }
 ...
@@ -301,12 +301,12 @@ if (pcre_match("$rU", "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
 			<itemizedlist>
 				<listitem>
 					<para>
-						<emphasis>string</emphasis> - String or pseudo-variable to compare.
+						<emphasis>string</emphasis> - String to compare.
 					</para>
 				</listitem>
 				<listitem>
 					<para>
-						<emphasis>group</emphasis> - Number of group to use in the operation.
+						<emphasis>group</emphasis> (int) - group to use in the operation.
 						If not specified then 0 (the first group) is used.
 					</para>
 				</listitem>
@@ -323,7 +323,7 @@ if (pcre_match("$rU", "^user[1234]$$")) {  # Will be converted to "^user[1234]$"
 				</title>
 <programlisting format="linespecific">
 ...
-if (pcre_match_group("$rU", "2")) {
+if (pcre_match_group($rU, 2)) {
     xlog("L_INFO", "RURI username matches group 2\n");
 }
 ...

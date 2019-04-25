@@ -571,7 +571,7 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
 		<para>
 			This function is used to convert a SIP message received in the
 			&osips; script to a SMPP PDU and send it to the
-			<emphasis>smsc_name</emphasis> received as parameter.
+			<emphasis>smsc_name (string)</emphasis> received as parameter.
 			The SMPP parameters used to construct the PDU are provisione
 			in the database, and the command sent is either
 			<emphasis>submit_sm</emphasis> or <emphasis>deliver_sm</emphasis>,

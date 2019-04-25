@@ -224,17 +224,21 @@ modparam("aaa_radius", "fetch_all_values", 1)
 			This function can be used from the script to make custom
 			radius authentication request. The function takes two parameters.
 		</para>
-		<para>
-			The first parameter represents the name of the set that contains
-			the list of attributes and pvars that will form the authentication
-			request (see the <quote>sets</quote> module parameter).
-		</para>
-		<para>
-			The second parameter represents the name of the set that contains
-			the list of attributes and pvars that will be extracted form the
-			authentication reply (see the <quote>sets</quote> module
-			parameter).
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>input_set_name</emphasis> (string) - the name of the
+				set that contains the list of attributes and pvars that will
+				form the authentication request (see the <quote>sets</quote>
+				module parameter).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>output_set_name</emphasis> (string) - the name of the
+				set that contains the list of attributes and pvars that will be
+				extracted form the authentication reply (see the <quote>sets</quote>
+				module parameter).
+			</para></listitem>
+		</itemizedlist>
 		<para>
 			The sets must be defined using the <quote>sets</quote> exported
 			parameter.
@@ -277,7 +281,7 @@ switch ($rc) {
 		</title>
 		<para>
 			This function can be used from the script to make custom
-			radius authentication request. The function takes only one parameter
+			radius authentication request. The function takes only one string parameter
 			that represents the name of the set that contains the list of attributes
 			and pvars that will form the accounting request.
 		</para>
@@ -315,19 +319,23 @@ radius_send_acct("set1");
 		</title>
 		<para>
 			This function can be used from the script to make custom
-			radius authentication request. The function takes two parameters.
+			radius authentication request.
 		</para>
-		<para>
-			The first parameter represents the name of the set that contains
-			the list of attributes and pvars that will form the authentication
-			request (see the <quote>sets</quote> module parameter).
-		</para>
-		<para>
-			The second parameter represents the name of the set that contains
-			the list of attributes and pvars that will be extracted form the
-			authentication reply (see the <quote>sets</quote> module
-			parameter).
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>input_set_name</emphasis> (string) - the name of the
+				set that contains the list of attributes and pvars that will
+				form the authentication request (see the <quote>sets</quote>
+				module parameter).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>output_set_name</emphasis> (string) - the name of the
+				set that contains the list of attributes and pvars that will be
+				extracted form the authentication reply (see the <quote>sets</quote>
+				module parameter).
+			</para></listitem>
+		</itemizedlist>
 		<para>
 			The sets must be defined using the <quote>sets</quote> exported
 			parameter.
@@ -371,7 +379,7 @@ switch ($rc) {
 		</title>
 		<para>
 			This function can be used from the script to make custom
-			radius authentication request. The function takes only one parameter
+			radius authentication request. The function takes only one string parameter
 			that represents the name of the set that contains the list of attributes
 			and pvars that will form the accounting request.
 		</para>

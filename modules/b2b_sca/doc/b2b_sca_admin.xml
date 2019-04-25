@@ -431,7 +431,7 @@ modparam("b2b_sca", "app2_b2bl_key_column", "second_b2bl_key")
 		</para>
 		<para>Meaning of the parameters:</para>
 		<itemizedlist>
-		<listitem><para><emphasis>shared_line</emphasis> - a PV (pseudo-variable)
+		<listitem><para><emphasis>shared_line</emphasis> (int) - an integer
 		identifying the call leg as being an "appearnace" call or a "shared" call:
 			<itemizedlist>
 			<listitem><para>0: "shared" call</para></listitem>
@@ -474,8 +474,8 @@ modparam("b2b_sca",
 	}
 
 	# Initiate the call
-	if (!sca_init_request("$var(shared_line_entity)")) {
-		send_reply("403", "Internal Server Error (SLA)");
+	if (!sca_init_request($var(shared_line_entity))) {
+		send_reply(403, "Internal Server Error (SLA)");
 		exit;
 	}
 ...
@@ -492,7 +492,7 @@ modparam("b2b_sca",
 		</para>
 		<para>Meaning of the parameters:</para>
 		<itemizedlist>
-		<listitem><para><emphasis>shared_line_to_bridge</emphasis> - a PV identifying
+		<listitem><para><emphasis>shared_line_to_bridge</emphasis> (string) - a string identifying
 		the shared line/call that was previously set by sca_init_request().
 		</para>
 		</listitem>
@@ -504,8 +504,8 @@ modparam("b2b_sca",
 		# The incoming call is an 'appearance' call
 		# - see Alice's call from alice2 in the given example
 		$var(shared_line_to_bridge) = "alice";
-		if (!sca_bridge_request("$var(shared_line_to_bridge)"))
-			send_reply("403", "Internal SLA Error");
+		if (!sca_bridge_request($var(shared_line_to_bridge)))
+			send_reply(403, "Internal SLA Error");
 			exit;
 		}
 	}

@@ -194,11 +194,11 @@ modparam("h350", "search_scope", "sub");
             <title>Function Parameters:</title>
 
             <varlistentry>
-                <term>sip_uri</term>
+                <term>sip_uri (string)</term>
 
                 <listitem>
                     <para>
-                        H.350 SIPIdentitySIPURI to search for in directory. Included OpenSIPS variables do get expanded.
+                        H.350 SIPIdentitySIPURI to search for in directory.
                     </para>
                 </listitem>
             </varlistentry>
@@ -272,7 +272,7 @@ if (!h350_sipuri_lookup("sip:$rU@$rd"))
              "h350 callee lookup: no entry found in H.350 directory");
         exit;
     case -1:
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     }
 }
@@ -301,17 +301,17 @@ if (!h350_sipuri_lookup("sip:$rU@$rd"))
             <title>Function Parameters:</title>
 
             <varlistentry>
-                <term>auth_username</term>
+                <term>auth_username (string)</term>
 
                 <listitem>
                     <para>
-                        H.350 SIPIdentityUserName to search for in directory. Included OpenSIPS variables do get expanded.
+                        H.350 SIPIdentityUserName to search for in directory.
                     </para>
                 </listitem>
             </varlistentry>
             
             <varlistentry>
-                <term>username_avp_spec</term>
+                <term>username_avp_spec (var)</term>
 
                 <listitem>
                     <para>
@@ -321,7 +321,7 @@ if (!h350_sipuri_lookup("sip:$rU@$rd"))
             </varlistentry>
             
             <varlistentry>
-                <term>pwd_avp_spec</term>
+                <term>pwd_avp_spec (var)</term>
 
                 <listitem>
                     <para>
@@ -408,24 +408,24 @@ route[1]
     {
         if (is_method("REGISTER"))
         {
-            www_challenge("example.com", "0");
+            www_challenge("example.com", 0);
             exit;
         }
-        proxy_challenge("example.com", "0");
+        proxy_challenge("example.com", 0);
         exit;
     }
 
     # get digest password from H.350 using auth username ($au)
-    if (!h350_auth_lookup("$au", 
+    if (!h350_auth_lookup($au, 
                           "$avp(auth_user)/$avp(auth_pwd)"))
     {
         switch ($retcode)
         {
         case -2:
-            sl_send_reply("401", "Unauthorized");
+            sl_send_reply(401, "Unauthorized");
             exit;
         case -1:
-            sl_send_reply("500", "Internal server error");
+            sl_send_reply(500, "Internal server error");
             exit;
         }
     }
@@ -437,11 +437,11 @@ route[1]
         {
             if ($retcode == -5)
             {
-                sl_send_reply("500", "Internal server error");
+                sl_send_reply(500, "Internal server error");
                 exit;    
             }
             else {
-                www_challenge("example.com", "0");
+                www_challenge("example.com", 0);
                 exit;
             }
         }
@@ -457,11 +457,11 @@ route[1]
     {
         if ($retcode == -5)
         {
-            sl_send_reply("500", "Internal server error");
+            sl_send_reply(500, "Internal server error");
             exit;    
         }
         else {
-            proxy_challenge("example.com", "0");
+            proxy_challenge("example.com", 0);
             exit;
         }
     }
@@ -564,7 +564,7 @@ AVP value = argument / 1000
             <title>Function Parameters:</title>
 
             <varlistentry>
-                <term>avp_name_prefix</term>
+                <term>avp_name_prefix (string)</term>
 
                 <listitem>
                     <para>
@@ -641,7 +641,7 @@ AVP value = argument / 1000
 
 if (!h350_result_call_preferences("callee_pref_") &amp;&amp; ($retcode == -1))
 {
-    sl_send_reply("500", "Internal server error");
+    sl_send_reply(500, "Internal server error");
     exit;
 }
 
@@ -664,10 +664,10 @@ if (is_avp_set("$avp(callee_pref_u)"))
             avp_delete("$avp(callee_pref_u)");
     } else
     {
-            sl_send_reply("500", "Internal server error");
+            sl_send_reply(500, "Internal server error");
             exit;
     }
-    sl_send_reply("181", "Call is being forwarded");
+    sl_send_reply(181, "Call is being forwarded");
     t_relay();
     exit;
 }
@@ -714,7 +714,7 @@ $avp("sl_900") = 1
             <title>Function Parameters:</title>
 
             <varlistentry>
-                <term>avp_name_prefix</term>
+                <term>avp_name_prefix (string)</term>
 
                 <listitem>
                     <para>
@@ -791,7 +791,7 @@ $avp("sl_900") = 1
 
 if (!h350_result_service_level("caller_sl_") &amp;&amp; ($retcode == -1))
 {
-    sl_send_reply("500", "Internal server error");
+    sl_send_reply(500, "Internal server error");
     exit;
 }
 
@@ -804,7 +804,7 @@ if (is_avp_set("$avp(caller_sl_international)"))
     t_relay();
 } 
 else {
-    sl_send_reply("403", "Forbidden");    
+    sl_send_reply(403, "Forbidden");    
 }
 exit;
             </programlisting>

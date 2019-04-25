@@ -241,13 +241,13 @@ if($fd!="mysipdomain.de")
 
 if(!proxy_authorize("mysipdomain.de","subscriber"))
 {
-    proxy_challenge("mysipdomain.de","0");
+    proxy_challenge("mysipdomain.de",0);
     exit;
 }
 
 if ($au!=$fU)
 {
-    sl_send_reply("403", "Use From=ID");
+    sl_send_reply(403, "Use From=ID");
     exit;
 }
 consume_credentials();
@@ -343,22 +343,22 @@ switch($retcode)
 {
     case -438:
         xlog("L_DBG" ,"verifier: returnvalue: -438\n");
-        sl_send_reply("438", "Invalid Identity Header");
+        sl_send_reply(438, "Invalid Identity Header");
         exit;
         break;
     case -437:
         xlog("L_DBG" ,"verifier: returnvalue: -437\n");
-        sl_send_reply("437", "Unsupported Certificate");
+        sl_send_reply(437, "Unsupported Certificate");
         exit;
         break;
     case -436:
         xlog("L_DBG" ,"verifier: returnvalue: -436\n");
-        sl_send_reply("436", "Bad Identity-Info");
+        sl_send_reply(436, "Bad Identity-Info");
         exit;
         break;
     case -428:
         xlog("L_DBG" ,"verifier: returnvalue: -428\n");
-        sl_send_reply("428", "Use Identity Header");
+        sl_send_reply(428, "Use Identity Header");
         exit;
         break;
     case -3:

@@ -137,7 +137,7 @@
 
 	<section id="func_sngtc_callee_answer" xreflabel="sngtc_callee_answer()">
 		<title>
-		<function moreinfo="none">sngtc_callee_answer([listen_if_A[, listen_if_B]])
+		<function moreinfo="none">sngtc_callee_answer([listen_if_A], [listen_if_B])
 		</function>
 		</title>
 		<para>
@@ -158,11 +158,11 @@
 		for the incoming RTP (which can be port forwarded to a transcoding card).
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>listen_if_A</emphasis> - the interface where the UAC (the caller) will send RTP after the call is established (IP from the 'c=' SDP line(s))
+			<para><emphasis>listen_if_A</emphasis> (string) - the interface where the UAC (the caller) will send RTP after the call is established (IP from the 'c=' SDP line(s))
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>listen_if_B</emphasis> - the interface where the UAS (the callee) will send RTP after the call is established (IP from the 'c=' SDP line(s))
+			<para><emphasis>listen_if_B</emphasis> (string) - the interface where the UAS (the callee) will send RTP after the call is established (IP from the 'c=' SDP line(s))
 			</para>
 		</listitem>
 		</itemizedlist>

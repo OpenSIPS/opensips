@@ -142,10 +142,10 @@
 		<para>Parameters: </para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>event</emphasis> -the name of the Event to subscribe for
+			<emphasis>event</emphasis> (string) -the name of the Event to subscribe for
 			</para></listitem>
 			<listitem><para>
-			<emphasis>filter</emphasis> - a AVP variable holding (as multi
+			<emphasis>filter</emphasis> (var) - a AVP variable holding (as multi
 			value array) all the filters to be applied on the event (before
 			notification). The filter value has the format "key=value"
 			where the "key" must match an attribute name of the Event. The
@@ -153,14 +153,13 @@
 			wildcard pattern. Ex: "aor=bob@*"
 			</para></listitem>
 			<listitem><para>
-			<emphasis>route</emphasis> -the name of the script route to be
+			<emphasis>route</emphasis> (string) -the name of the script route to be
 			executed upon Event notification
 			</para></listitem>
 			<listitem><para>
-			<emphasis>timeout</emphasis> - for how long the subscription is
+			<emphasis>timeout</emphasis> (int) - for how long the subscription is
 			active before expiring (integer in seconds). Note: during its 
 			lifetime, a subscription may be notified several or zero times.
-			This can be a pseudo-variable.
 			</para></listitem>
 		</itemizedlist>
 		<example>
@@ -168,7 +167,7 @@
 		<programlisting format="linespecific">
 ...
 $avp(filter) = "aor=*@opensips.org"
-notify_on_event("E_UL_AOR_INSERT","$avp(filter)","reg_done","60");
+notify_on_event("E_UL_AOR_INSERT",$avp(filter),"reg_done",60);
 ...
 route[reg_done] {
 	xlog("a new user $avp(aor) registered with opensips.org domain\n");
@@ -203,7 +202,7 @@ route[reg_done] {
 ...
 # wait for callee to register
 $avp(filter) = "aor="+$rU+"@"+$rd
-async( wait_for_event("E_UL_AOR_INSERT","$avp(filter)", "40"),  resume_call);
+async( wait_for_event("E_UL_AOR_INSERT",$avp(filter), 40),  resume_call);
 # done
 ...
 route[resume_call] {
@@ -257,8 +256,8 @@ route[route_to_user] {
     # subscribe to new contact registration event,
     # but for our callee only
     $avp(filter) = "aor="+$rU;
-    notify_on_event("E_UL_CONTACT_INSERT","$avp(filter)",
-        "fork_call", "20");
+    notify_on_event("E_UL_CONTACT_INSERT",$avp(filter),
+        "fork_call", 20);
 
     # fetch already registered contacts and relay if any
     if (lookup("location"))
@@ -319,7 +318,7 @@ route[handle_call]
         # reject incoming call as we will generate an back call
         # from the original call (Alice to Bob)
         t_newtran();
-        send_reply("480","Gone");
+        send_reply(480,"Gone");
 
         # raise the pickup custom event
         # with pickup group 1 and picker being Charlie (caller)
@@ -337,7 +336,7 @@ route[handle_call]
 
         # apply user location
         if (!lookup("location","m")) {
-            send_reply("404", "Not Found");
+            send_reply(404, "Not Found");
             exit;
         }
 
@@ -349,8 +348,8 @@ route[handle_call]
 
         # subscribe to a call pickup event, but for our group only
         $avp(filter) = "group=1";
-        notify_on_event("E_CALL_PICKUP","$avp(filter)",
-            "handle_pickup", "20");
+        notify_on_event("E_CALL_PICKUP",$avp(filter),
+            "handle_pickup", 20);
 
         t_relay();
     }
@@ -360,7 +359,7 @@ route[handle_call]
 route[handle_pickup]
 {
     xlog("call picked by $avp(picker), fetching its contacts\n");
-    if (lookup("location","", "$avp(picker)")) {
+    if (lookup("location","", $avp(picker))) {
         # take the contacts retured by lookup() (for Charlie)
         # and inject them into the original call, but also cancel
         # any existing ongoing branch (ringing to Bob)

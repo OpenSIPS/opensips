@@ -69,12 +69,11 @@ modparam("mathops", "decimal_digits", 10)
 	<title>Exported Functions</title>
 	<section id="func_math_eval" xreflabel="math_eval()">
 		<title>
-		<function moreinfo="none">math_eval(expression, result_pvar)</function>
+		<function moreinfo="none">math_eval(expression, result_var)</function>
 		</title>
 		<para>
 		The function evaluates a given expression and writes the result in the
-		output pseudo-variable. The expression may contain any number of pseudo
-		variables. Evaluation uses tinyexpr (see https://github.com/codeplea/tinyexpr).
+		output pseudo-variable. Evaluation uses tinyexpr (see https://github.com/codeplea/tinyexpr).
 		</para>
 		<para>
 		Currently allowed syntax for specifying an expression:
@@ -93,14 +92,12 @@ modparam("mathops", "decimal_digits", 10)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>expression</emphasis> - String containing a
-			mathematical expression. It can also include pseudo variables. The
-			<emphasis>expression</emphasis> parameter can only be given as a string.
+			<para><emphasis>expression</emphasis> (string) - a mathematical expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
-			hold the result of the evaluation. Specified as a quoted string.
+			<para><emphasis>result_var</emphasis> (var) - variable which will
+			hold the result of the evaluation.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -117,7 +114,7 @@ $avp(1) = "3.141592";
 $avp(2) = "2.71828";
 $avp(3) = "123.45678";
 
-if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$avp(result)")) {
+if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", $avp(result))) {
 	xlog("Result of expression: $avp(result)\n");
 } else {
 	xlog("Math eval failed!\n");
@@ -130,12 +127,11 @@ if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$avp(resul
 
 	<section id="func_math_rpn" xreflabel="math_rpn()">
 		<title>
-		<function moreinfo="none">math_rpn(expression, result_pvar)</function>
+		<function moreinfo="none">math_rpn(expression, result_var)</function>
 		</title>
 		<para>
 		The function evaluates a given RPN expression and writes the result in the
-		output pseudo-variable. The expression may contain any number of pseudo
-		variables.
+		output variable.
 		</para>
 		<para>
     The expression is specified in Reverse Polish Notation. Values are pushed
@@ -161,14 +157,12 @@ if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$avp(resul
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>expression</emphasis> - String containing a
-			RPN expression. It can also include pseudo variables. The
-			<emphasis>expression</emphasis> parameter can only be given as a string.
+			<para><emphasis>expression</emphasis> (string) - a RPN expression.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
-			hold the result of the evaluation. Specified as a quoted string.
+			<para><emphasis>result_var</emphasis> (var) - variable which will
+			hold the result of the evaluation.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -180,7 +174,7 @@ if (math_eval("$avp(1) * ($avp(3) - ($avp(1) - $avp(2))) / $avp(3)", "$avp(resul
 		<programlisting format="linespecific">
 $avp(1) = "3";
 
-if (math_rpn("1 $avp(1) swap swap dup drop / exp ln 1 swap /", "$avp(result)")) {
+if (math_rpn("1 $avp(1) swap swap dup drop / exp ln 1 swap /", $avp(result))) {
 	xlog("Result of expression: $avp(result)\n");
 } else {
 	xlog("RPN eval failed!\n");
@@ -197,7 +191,7 @@ finally compute 1 divided by the result, giving 3 as the result. */
 
 	<section id="func_math_trunc" xreflabel="math_trunc()">
 		<title>
-		<function moreinfo="none">math_trunc(number, result_pvar)</function>
+		<function moreinfo="none">math_trunc(number, result_var)</function>
 		</title>
 		<para>
 		Truncation of a number towards zero. This means that trunc(3.7) = 3.0 and
@@ -206,24 +200,11 @@ finally compute 1 divided by the result, giving 3 as the result. */
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>number</emphasis> - Number to be truncated. The
-			<emphasis>number</emphasis> parameter can have the following types:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>string</emphasis> - statically given</para>
-				</listitem>
-
-				<listitem>
-				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
-				(as string value - it makes no sense to truncate integers)
-				</para>
-				</listitem>
-			</itemizedlist>
+			<para><emphasis>number</emphasis> (string) - Number to be truncated.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
-			hold the result of the evaluation. Specified as a quoted string.
+			<para><emphasis>result_var</emphasis> (var) - variable which will
+			hold the result of the evaluation.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -238,7 +219,7 @@ finally compute 1 divided by the result, giving 3 as the result. */
 
 $avp(1) = "3.141492";
 
-if (math_trunc("$avp(1)", "$avp(result)")) {
+if (math_trunc($avp(1), $avp(result))) {
 	xlog("Truncate result: $avp(result)\n");
 } else {
 	xlog("Truncate failed!\n");
@@ -250,7 +231,7 @@ if (math_trunc("$avp(1)", "$avp(result)")) {
 
 	<section id="func_math_floor" xreflabel="math_floor()">
 		<title>
-		<function moreinfo="none">math_floor(number, result_pvar)</function>
+		<function moreinfo="none">math_floor(number, result_var)</function>
 		</title>
 		<para>
 		Truncates a number, always towards -infinity. This means that floor(3.7) = 3.0
@@ -259,24 +240,11 @@ if (math_trunc("$avp(1)", "$avp(result)")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>number</emphasis> - Number to be truncated. The
-			<emphasis>number</emphasis> parameter can have the following types:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>string</emphasis> - statically given</para>
-				</listitem>
-
-				<listitem>
-				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
-				(as string value - it makes no sense to truncate integers)
-				</para>
-				</listitem>
-			</itemizedlist>
+			<para><emphasis>number</emphasis> (string) - Number to be truncated.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
-			hold the result of the evaluation. Specified as a quoted string.
+			<para><emphasis>result_var</emphasis> (var) - variable which will
+			hold the result of the evaluation.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -291,7 +259,7 @@ if (math_trunc("$avp(1)", "$avp(result)")) {
 
 $avp(1) = "3.141492";
 
-if (math_floor("$avp(1)", "$avp(result)")) {
+if (math_floor($avp(1), $avp(result))) {
 	xlog("Floor result: $avp(result)\n");
 } else {
 	xlog("Floor operation failed!\n");
@@ -303,7 +271,7 @@ if (math_floor("$avp(1)", "$avp(result)")) {
 
 	<section id="func_math_ceil" xreflabel="math_ceil()">
 		<title>
-		<function moreinfo="none">math_ceil(number, result_pvar)</function>
+		<function moreinfo="none">math_ceil(number, result_var)</function>
 		</title>
 		<para>
 		Truncates a number, always towards +infinity. This means that ceil(3.2) = 4.0
@@ -312,24 +280,11 @@ if (math_floor("$avp(1)", "$avp(result)")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>number</emphasis> - Number to be truncated. The
-			<emphasis>number</emphasis> parameter can have the following types:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>string</emphasis> - statically given</para>
-				</listitem>
-
-				<listitem>
-				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
-				(as string value - it makes no sense to truncate integers)
-				</para>
-				</listitem>
-			</itemizedlist>
+			<para><emphasis>number</emphasis> (string) - Number to be truncated.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
-			hold the result of the evaluation. Specified as a quoted string.
+			<para><emphasis>result_var</emphasis> (var) - variable which will
+			hold the result of the evaluation.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -344,7 +299,7 @@ if (math_floor("$avp(1)", "$avp(result)")) {
 
 $avp(1) = "3.141492";
 
-if (math_ceil("$avp(1)", "$avp(result)")) {
+if (math_ceil($avp(1), $avp(result))) {
 	xlog("Ceil result: $avp(result)\n");
 } else {
 	xlog("Ceil operation failed!\n");
@@ -356,7 +311,7 @@ if (math_ceil("$avp(1)", "$avp(result)")) {
 
 	<section id="func_math_round" xreflabel="math_round()">
 		<title>
-		<function moreinfo="none">math_round(number, result_pvar[, decimals])</function>
+		<function moreinfo="none">math_round(number, result_var[, decimals])</function>
 		</title>
 		<para>
 		The round function returns the nearest integer, and tie-breaking is done away
@@ -371,28 +326,15 @@ if (math_ceil("$avp(1)", "$avp(result)")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>number</emphasis> - Number to be rounded. The
-			<emphasis>number</emphasis> parameter can have the following types:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>string</emphasis> - statically given</para>
-				</listitem>
-
-				<listitem>
-				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
-				(as string value - it makes no sense to truncate integers)
-				</para>
-				</listitem>
-			</itemizedlist>
+			<para><emphasis>number</emphasis> (string) - Number to be rounded.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
-			hold the result of the evaluation. Specified as a quoted string.
+			<para><emphasis>result_var</emphasis> - variable which will
+			hold the result of the evaluation.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>decimals</emphasis> - (pvar / integer as a string) which
+			<para><emphasis>decimals</emphasis> (int, optional) -
 			further improves the precision of the rounding.
 			</para>
 		</listitem>
@@ -408,7 +350,7 @@ if (math_ceil("$avp(1)", "$avp(result)")) {
 
 $avp(1) = "3.141492";
 
-if (math_round("$avp(1)", "$avp(result)")) {
+if (math_round($avp(1), $avp(result))) {
 
 	# result should be: 3
 	xlog("Round result: $avp(result)\n");
@@ -418,7 +360,7 @@ if (math_round("$avp(1)", "$avp(result)")) {
 
 ...
 
-if (math_round("$avp(1)", "$avp(result)", "4")) {
+if (math_round($avp(1), $avp(result), 4)) {
 
 	# result should be: "3.1415"
 	xlog("Round result: $avp(result)\n");
@@ -432,7 +374,7 @@ if (math_round("$avp(1)", "$avp(result)", "4")) {
 
 	<section id="func_math_round_sf" xreflabel="math_round_sf()">
 		<title>
-		<function moreinfo="none">math_round_sf(number, result_pvar, figures)</function>
+		<function moreinfo="none">math_round_sf(number, result_var, figures)</function>
 		</title>
 		<para>
 		To give a simple explanation, rounding to N significant figures is done by 
@@ -457,28 +399,15 @@ if (math_round("$avp(1)", "$avp(result)", "4")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>number</emphasis> - Number to be rounded. The
-			<emphasis>number</emphasis> parameter can have the following types:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>string</emphasis> - statically given</para>
-				</listitem>
-
-				<listitem>
-				<para><emphasis>pvar</emphasis> - value of an existing pseudo-variable
-				(as string value - it makes no sense to truncate integers)
-				</para>
-				</listitem>
-			</itemizedlist>
+			<para><emphasis>number</emphasis> (string) - Number to be rounded.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>result_pvar</emphasis> - pseudo-variable which will
-			hold the result of the evaluation. Specified as a quoted string.
+			<para><emphasis>result_var</emphasis> (var) - variable which will
+			hold the result of the evaluation.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>figures</emphasis> - (pvar / integer as a string) which
+			<para><emphasis>figures</emphasis> -
 			further improves the precision of the rounding.
 			</para>
 		</listitem>
@@ -494,7 +423,7 @@ if (math_round("$avp(1)", "$avp(result)", "4")) {
 
 $avp(1) = "3.141492";
 
-if (math_round_sf("$avp(1)", "$avp(result)", "4")) {
+if (math_round_sf($avp(1), $avp(result), 4)) {
 
 	# result should be: "3.141"
 	xlog("Round result: $avp(result)\n");

@@ -216,12 +216,12 @@ modparam("speeddial", "use_domain", 1)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>table</emphasis> - The name of the table storing the
-			speed dial records. This parameter may include pseudovariables.
+			<para><emphasis>table</emphasis> (string) - The name of the table storing the
+			speed dial records.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>owner</emphasis> - The SIP URI of the owner of
+			<para><emphasis>owner</emphasis> (string) - The SIP URI of the owner of
 			short dialing codes. If not pressent, URI of From header is used.
 			</para>
 		</listitem>

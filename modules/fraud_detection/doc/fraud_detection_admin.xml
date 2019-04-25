@@ -549,19 +549,19 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 		<itemizedlist>
 		<listitem>
 			<para>
-				<emphasis>user</emphasis> - the user who is making the call. Please keep in mind that
-				the user doesn't have to be registered. This string is only used do keep different stats
+				<emphasis>user</emphasis> (string) - the user who is making the call. Please keep in mind that
+				the user doesn't have to be registered. This string is only used to keep different stats
 				for different registered users.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>number</emphasis> - the number the user is calling to.
+			<emphasis>number</emphasis> (string) - the number the user is calling to.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>profile_id</emphasis> - the fraud profile id (i.e. the subset of fraud
+				<emphasis>profile_id</emphasis> (int) - the fraud profile id (i.e. the subset of fraud
 				rules) in which to try and find a matching fraud rule.
 			</para>
 		</listitem>

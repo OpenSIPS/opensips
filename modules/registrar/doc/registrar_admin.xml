@@ -590,14 +590,14 @@ modparam("registrar", "disable_gruu", 0)
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Logical domain within registrar.
-			If database is used then this must be name of the table which
+			<emphasis>domain (static string)</emphasis> - Logical domain within
+			registrar. If database is used then this must be name of the table which
 			stores the contacts.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> (optional)- string of
+			<emphasis>flags (string, optional)</emphasis> - string of
 			the following flags:
 			</para>
 			<itemizedlist>
@@ -694,14 +694,13 @@ modparam("registrar", "disable_gruu", 0)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>aor</emphasis> (optional) - Variable containing a custom
-			AOR; if missing, the AOR will be taken from the default place -
-			the TO header URI.
+			<emphasis>aor (string, optional)</emphasis> - a custom AOR; if missing,
+			the AOR will be taken from the default place - the TO header URI.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>ownership_tag</emphasis> (optional) - a cluster-shared
+			<emphasis>ownership_tag (string, optional)</emphasis> - a cluster-shared
 			tag (see the clusterer module documentation for more details) which
 			will be attached to each contact saved from the current request.
 			This tag is only relevant in clustered user location scenarios and
@@ -732,10 +731,10 @@ save("location");
 save("location","mc5");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
-save("location","","$fu");
+save("location","",$fu);
 ...
 # save into 'location', no DB update, force registration, take AOR from AVP
-save("location","mr", "$avp(aor)");
+save("location","mr", $avp(aor));
 ...
 # save into 'location', mark the contacts with the "vip" ownership tag and
 # replicate these contacts to the backup node, which does not currently own "vip"
@@ -756,26 +755,26 @@ save("location", , , "vip");
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - (string) - Logical domain within the registrar.
+			<emphasis>domain (static string</emphasis> - Logical domain within the registrar.
 			If a database is used, then this must be name of the table which
 			stores the contacts.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR</emphasis> - address-of-record to be searched (SIP URI)
+			<emphasis>AOR (string)</emphasis> - address-of-record to be searched (SIP URI)
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>contact (optional filter)</emphasis> - SIP URI filter
+				<emphasis>contact (string, optional)</emphasis> - SIP URI filter
 				for the contact to be removed. This must be the full SIP URI
 				as used during registered.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>next_hop (optional filter)</emphasis> - the next
+				<emphasis>next_hop (string, optional)</emphasis> - the next
 				SIP IP address/hostname on the way back to this contact. See
 				the section below for details on how the next hop is
 				computed. Hostnames are resolved before matching.
@@ -783,9 +782,8 @@ save("location", , , "vip");
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>sip_instance (optional filter)</emphasis> - string
-				or pvar containing a "+sip.instance" value to be used for
-				filtering purposes.
+				<emphasis>sip_instance (string, optional)</emphasis> - a
+				"+sip.instance" value to be used for filtering purposes.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -832,7 +830,7 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 # remove all bob's phones which are behind "50.60.50.60"
 # note that "contact" parameter has to be specified with NULL value even though not used
 $var(next_hop) = "50.60.50.60"
-remove("location", "sip:bob@atlanta.com", , "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com", , $var(next_hop));
 ...
 # remove bob's phone with contact "sip:bob@46.50.64.78" that is behind "50.60.50.60"
 remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.50.60");
@@ -864,12 +862,12 @@ remove("location", "sip:bob@atlanta.com", , , "&lt;urn:uuid:e5e68d40-f08a-4600-b
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Name of table that should be used
-			for the lookup.
+			<emphasis>domain (static string)</emphasis> - Name of table that
+			should be used for the lookup.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis>(optional)</para>
+			<para><emphasis>flags (string, optional)</emphasis></para>
 			<itemizedlist>
 			<listitem>
 				<para>
@@ -995,8 +993,8 @@ remove("location", "sip:bob@atlanta.com", , , "&lt;urn:uuid:e5e68d40-f08a-4600-b
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
-			missing, the RURI is used as AOR; This must be a variable.
+			<emphasis>AOR (string, optional)</emphasis> - AOR to lookup for; if
+			missing, the RURI is used as AOR;
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -1035,14 +1033,14 @@ lookup("location","r"); #lookup with aor branch search;
    #or
 lookup("location","u/phone/i"); # lookup with user-agent filtering
    #or
-lookup("location","","$var(aor)"); # simple lookup with AOR from PV
+lookup("location","",$var(aor)); # simple lookup with AOR from var
 switch ($retcode) {
     case -1:
     case -3:
-        sl_send_reply("404", "Not Found");
+        sl_send_reply(404, "Not Found");
         exit;
     case -2:
-        sl_send_reply("405", "Not Found");
+        sl_send_reply(405, "Not Found");
         exit;
 };
 ...
@@ -1066,13 +1064,13 @@ switch ($retcode) {
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Name of table that should be
-			used for the lookup.
+			<emphasis>domain (static string)</emphasis> - Name of table that
+			should be used for the lookup.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			<emphasis>AOR (string, optional)</emphasis> - AOR to lookup for; if
 			missing, the source if the AOR is the "To" header for REGISTER
 			request, "From" header for any other sip request.
 			</para>
@@ -1095,7 +1093,7 @@ if (is_method("REGISTER")) {
 	}
 };
 /* check the From uri whether this aor is registered or not */
-if (is_registered("location","$fu")) {
+if (is_registered("location",$fu)) {
 	xlog("caller is registered\n");
 }
 ...
@@ -1116,20 +1114,20 @@ if (is_registered("location","$fu")) {
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Name of table that should be
+			<emphasis>domain (static string)</emphasis> - Name of table that should be
 			used for the lookup.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			<emphasis>AOR (stirng, optional)</emphasis> - AOR to lookup for; if
 			missing, the source if the AOR is the "To" header for REGISTER
 			request, "From" header for any other sip request.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>contact</emphasis> (optional)- callid to check if a
+			<emphasis>contact (stirng, optional)</emphasis> - callid to check if a
 			contact if registered with this callid (this may help you to
 			make distinction between newly registered contact (callid
 			not registered so far) and re-registration (callid already
@@ -1139,7 +1137,7 @@ if (is_registered("location","$fu")) {
 
 		<listitem>
 			<para>
-			<emphasis>callid</emphasis> (optional)- callid to check if a
+			<emphasis>callid (stirng, optional)</emphasis> - callid to check if a
 			contact if registered with this callid (this may help you to
 			make distinction between newly registered contact (callid
 			not registered so far) and re-registration (callid already
@@ -1158,14 +1156,14 @@ if (is_registered("location","$fu")) {
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
 	if (!is_contact_registered("location")) {
-		sl_send_reply("401", "Unauthorized");
+		sl_send_reply(401, "Unauthorized");
 	...
 	}
 }
 /* you want to check the second contact from the message whether it is
 registered or not */
 if(is_method("INVITE")) {
-	if (is_contact_registered("location","$fu","$(ct[1])",))
+	if (is_contact_registered("location",$fu,$(ct[1]),))
 		xlog("caller is registered\n");
 }
 ...
@@ -1188,20 +1186,20 @@ if(is_method("INVITE")) {
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>domain</emphasis> - Name of table that should be
+			<emphasis>domain (static string)</emphasis> - Name of table that should be
 			used for the lookup.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR</emphasis> (optional)- AOR to lookup for; if
+			<emphasis>AOR (stirng, optional)</emphasis> - AOR to lookup for; if
 			missing, the source if the AOR is the "To" header for REGISTER
 			request, "From" header for any other sip request.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-				<emphasis>IPvar</emphasis> the pvar containing the IP matched against
+				<emphasis>IPvar (var)</emphasis> - the variable containing the IP matched against
 				the contact host or the received host (see above). If the
 				<emphasis>IPvar</emphasis> is an AVP containing multiple values/IPs,
 				then all the values are checked.
@@ -1219,7 +1217,7 @@ if(is_method("INVITE")) {
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
-	if (is_ip_registered("location","$tu","$si")) {
+	if (is_ip_registered("location",$tu,$si)) {
 		xlog("already registered from this ip\n");
 		...
 	}
@@ -1247,7 +1245,7 @@ if (is_method("REGISTER")) {
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>hdr_name</emphasis> - header name to be used.
+			<emphasis>hdr_name (string)</emphasis> - header name to be used.
 			</para>
 		</listitem>
 		</itemizedlist>

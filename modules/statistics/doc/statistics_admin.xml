@@ -124,13 +124,12 @@ modparam("statistics", "stat_groups", "method, packet, response")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>variable</emphasis> - variable to be updated
-			(it can be a string or a pseudovariable);
+			<para><emphasis>variable</emphasis> (string) - variable to be updated;
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>value</emphasis> - value to update with; it may be
-			also negative; variables (holding integer values) are also allowed.
+			<para><emphasis>value</emphasis> (int) - value to update with; it may be
+			also negative.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -142,10 +141,10 @@ modparam("statistics", "stat_groups", "method, packet, response")
 		<title><function>update_stat</function> usage</title>
 		<programlisting format="linespecific">
 ...
-update_stat("register_counter", "+1");
+update_stat("register_counter", 1);
 ...
 $var(a_calls) = "active_calls";
-update_stat("$var(a_calls)", "-1");
+update_stat($var(a_calls), -1);
 ...
 </programlisting>
 		</example>
@@ -161,8 +160,7 @@ update_stat("$var(a_calls)", "-1");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>variable</emphasis> - variable to be reset-ed
-			(it can be a string or a pseudovariable).
+			<para><emphasis>variable</emphasis> (string) - variable to be reset-ed
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -177,7 +175,7 @@ update_stat("$var(a_calls)", "-1");
 reset_stat("register_counter");
 ...
 $var(reg_counter) = "register_counter";
-update_stat("$var(reg_counter)");
+update_stat($var(reg_counter));
 ...
 </programlisting>
 		</example>
@@ -193,12 +191,12 @@ update_stat("$var(reg_counter)");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>group</emphasis> - string
+			<para><emphasis>group</emphasis> (string)
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>iter</emphasis> - string (internally matched
-				to a corresponding iterator)
+			<para><emphasis>iter</emphasis> (string) - internally matched
+				to a corresponding iterator
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -227,16 +225,16 @@ stat_iter_init("packet", "iter");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>name</emphasis> - script variable
+			<para><emphasis>name</emphasis> (var)
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>val</emphasis> - script variable
+			<para><emphasis>val</emphasis> (var)
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>iter</emphasis> - string (internally matched
-				to a corresponding iterator)
+			<para><emphasis>iter</emphasis> (string) - internally matched
+				to a corresponding iterator
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -249,7 +247,7 @@ stat_iter_init("packet", "iter");
 		<programlisting format="linespecific">
 ...
 stat_iter_init("packet", "iter");
-while (stat_iter_next("$var(k)", "$var(v)", "iter")) {
+while (stat_iter_next($var(k), $var(v), "iter")) {
 	...
 }
 ...

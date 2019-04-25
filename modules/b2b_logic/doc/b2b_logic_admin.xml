@@ -432,7 +432,8 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 		<title>Exported Functions</title>
 	<section id="func_b2b_init_request" xreflabel="b2b_init_request()">
 		<title>
-		<function moreinfo="none">b2b_init_request()</function>
+		<function moreinfo="none">b2b_init_request(flags, [scenario_param1],
+			[scenario_param2], [scenario_param3], [scenario_param4])</function>
 		</title>
 		<para>
 			This is the function that must be called by the script writer
@@ -445,26 +446,41 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 			This is defined in the XML document as an attribute of the root node
 			or "top hiding" for internal topology hiding scenario.
 			It can be passed as "scenario" or "scenario_name/flags".
-		</para>
-		<para>Meaning of the flags is as follows:</para>
-		<itemizedlist>
-			<listitem><para>
-			<emphasis>t[nn]</emphasis> -  Call setup timeout for topology hiding scenario.
-			Example: t300.
-			</para></listitem>
-			<listitem><para>
-			<emphasis>a</emphasis> -  Transparent authentication. In this mode b2b passes your 401
-			or 407 authentication request to destination server.
-			</para></listitem>
-			<listitem><para>
-			<emphasis>p</emphasis> -  Preserve To: header.
-			</para></listitem>
-		</itemizedlist>
-		<para>
 			Then it can take at most 4 other parameters that represent the parameters for
 			the xml scenario. The expected number of parameters is also specified as an attribute
 			in the root node of the XML scenario.
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>flags (string)</emphasis> - meaning of the flags is as follows:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>t[nn]</emphasis> -  Call setup timeout for topology hiding scenario.
+					Example: t300.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>a</emphasis> -  Transparent authentication. In this mode b2b passes your 401
+					or 407 authentication request to destination server.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>p</emphasis> -  Preserve To: header.
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>scenario_param1 (string, optional)</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>scenario_param2 (string, optional)</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>scenario_param3 (string, optional)</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>scenario_param4 (string, optional)</emphasis>
+			</para></listitem>
+		</itemizedlist>
 	<note><para>
 		If you have a multi interface setup and want to chance the outbound interface,
 		it is mandatory to use the "force_send_socket()" core function before passing
@@ -493,12 +509,12 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>b2bl_key</emphasis> - a pseudo-variable that
+				<emphasis>b2bl_key (string)</emphasis> - a string that
 				contains the b2b_logic key. The key can also be in the form
 				of <emphasis>callid;from-tag;to-tag</emphasis>.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>entity_no</emphasis> - a pseudo-variable that
+				<emphasis>entity_no (int)</emphasis> - an integer that
 				holds the entity of the entity/participant to bridge.
 			</para></listitem>
 		</itemizedlist>
@@ -517,7 +533,7 @@ route[b2b_request]
       # the Call-ID carries the B2B key ID
       if (is_method("BYE") {
          $var(entity) = 1;
-         b2b_bridge_request("$ci","$var(entity)");
+         b2b_bridge_request($ci,$var(entity));
       }
    }
    ...

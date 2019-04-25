@@ -540,7 +540,7 @@ modparam("clusterer", "description_col", "description")
 		<title>Exported Functions</title>
 			<section id="func_cluster_send_req" xreflabel="cluster_send_req()">
 				<title>
-				<function moreinfo="none">cluster_send_req(cluster_id, dst_id, msg[, tag])</function>
+				<function moreinfo="none">cluster_send_req(cluster_id, dst_id, msg, [tag])</function>
 				</title>
 				<para>
 					This function is used to send a generic, request-like message, containing custom data, to a specific node in a cluster, directly from the script. The message is not a "request" per se but according to the logic on the receiving side, that node can send back a reply. In order to correlate a received reply with the request sent out, the function returns, through the <emphasis>tag</emphasis> parameter, a randomly generated communication tag, which is sent along in the the original message, that can be checked against the tag received in a reply.
@@ -549,16 +549,16 @@ modparam("clusterer", "description_col", "description")
 					Meaning of the parameters is as follows:
 				<itemizedlist>
 					<listitem>
-						<para><emphasis>cluster_id</emphasis> - the cluster ID of the destination node;</para>
+						<para><emphasis>cluster_id</emphasis> (int) - the cluster ID of the destination node;</para>
 					</listitem>
 					<listitem>
-						<para><emphasis>dst_id</emphasis> - the ID of the destiantion node;</para>
+						<para><emphasis>dst_id</emphasis> (int) - the ID of the destiantion node;</para>
 					</listitem>
 					<listitem>
-						<para><emphasis>msg</emphasis> - actual message payload;</para>
+						<para><emphasis>msg</emphasis> (string) - actual message payload;</para>
 					</listitem>
 					<listitem>
-						<para><emphasis>tag</emphasis> - randomly generated communication tag. This is an optional output parameter and must be a variable if provided.</para>
+						<para><emphasis>tag</emphasis> (var, optional) - randomly generated communication tag.</para>
 					</listitem>
 				</itemizedlist>
 				</para>
@@ -588,10 +588,10 @@ modparam("clusterer", "description_col", "description")
 						<programlisting format="linespecific">
 ...
 # send a request
-cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
+cluster_send_req(1, 1, "Check USER: $fU", $var(req_tag));
 # wait for reply
 $avp(filter) = "tag=" + $var(req_tag);
-async(wait_for_event("E_CLUSTERER_RPL_RECEIVED", "$avp(filter)", "5"), rpl_resume);
+async(wait_for_event("E_CLUSTERER_RPL_RECEIVED", $avp(filter), 5), rpl_resume);
 # done
 ...
 route[rpl_resume] {
@@ -612,16 +612,16 @@ route[rpl_resume] {
 					Meaning of the parameters is as follows:
 				<itemizedlist>
 					<listitem>
-						<para><emphasis>cluster_id</emphasis> - the cluster ID of the destination node;</para>
+						<para><emphasis>cluster_id</emphasis> (int) - the cluster ID of the destination node;</para>
 					</listitem>
 					<listitem>
-						<para><emphasis>dst_id</emphasis> - the ID of the destiantion node;</para>
+						<para><emphasis>dst_id</emphasis> (int) - the ID of the destiantion node;</para>
 					</listitem>
 					<listitem>
-						<para><emphasis>msg</emphasis> - actual message payload;</para>
+						<para><emphasis>msg</emphasis> (string) - actual message payload;</para>
 					</listitem>
 					<listitem>
-						<para><emphasis>tag</emphasis> - communication tag. This is an input parameter and must be a variable.</para>
+						<para><emphasis>tag</emphasis> (var) - communication tag.</para>
 					</listitem>
 				</itemizedlist>
 				</para>
@@ -650,9 +650,7 @@ route[rpl_resume] {
 						<programlisting format="linespecific">
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
-  fetch_event_params("$avp(cl_id);$avp(src_id);$avp(rcv_msg);$avp(rcv_tag)");
-  ...
-  cluster_send_rpl("$avp(cl_id)", "$avp(src_id)", "$var(my_reply)", "$avp(rcv_tag)");
+  cluster_send_rpl($param(cl_id), $param(src_id), $var(my_reply), $param(rcv_tag));
 }
 ...
 				</programlisting>
@@ -661,7 +659,7 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 
 			<section id="func_cluster_broadcast_req" xreflabel="cluster_broadcast_req()">
 				<title>
-				<function moreinfo="none">cluster_broadcast_req(cluster_id, msg[, tag])</function>
+				<function moreinfo="none">cluster_broadcast_req(cluster_id, msg, [tag])</function>
 				</title>
 				<para>
 					This function has a similar behaviour to the <function moreinfo="none">cluster_send_req()</function> function with the exception that the message is sent to all the nodes in the specified cluster.
@@ -693,7 +691,7 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 						<title>cluster_broadcast_req() usage</title>
 						<programlisting format="linespecific">
 ...
-cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
+cluster_broadcast_req($var(cl_id), $var(share_data));
 ...
 				</programlisting>
 				</example>
@@ -707,19 +705,29 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 					This function checks whether the given IP address belongs
 					to one of the nodes in the cluster.
 				</para>
-				<para>The <emphasis>addr_type</emphasis> parameter can be set
-				to in order to select the address of the node that the comparison
-				is made against, with the possible values of:</para>
+				<para>Parameters:</para>
 				<itemizedlist>
-					<listitem>
-						<para><emphasis>bin</emphasis> - node's BIN interface listener;</para>
-					</listitem>
-					<listitem>
-						<para><emphasis>sip</emphasis> - node's DB provisioned SIP address.</para>
-					</listitem>
+					<listitem><para>
+						<emphasis>cluster_id</emphasis> (int)
+					</para></listitem>
+					<listitem><para>
+						<emphasis>ip</emphasis> (string)
+					</para></listitem>
+					<listitem><para>
+						<emphasis>addr_type</emphasis> (string, optional) -
+						select the address of the node that the comparison
+						is made against, with the possible values of:
+						<itemizedlist>
+							<listitem>
+								<para><emphasis>bin</emphasis> - node's BIN interface listener;</para>
+							</listitem>
+							<listitem>
+								<para><emphasis>sip</emphasis> - node's DB provisioned SIP address.</para>
+							</listitem>
+						</itemizedlist>
+						<para>The default behaviour is to compare against the SIP address.</para>
+					</para></listitem>
 				</itemizedlist>
-				<para>The <emphasis>addr_type</emphasis> parameter is optional
-				and the default behaviour is to compare against the SIP address.</para>
 				<para>
 					This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 				</para>
@@ -727,7 +735,7 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 						<title>cluster_check_addr() usage</title>
 						<programlisting format="linespecific">
 ...
-if (cluster_check_addr("1", "$si")) {
+if (cluster_check_addr(1, $si)) {
 	...
 }
 ...

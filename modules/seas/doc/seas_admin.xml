@@ -126,14 +126,20 @@ modparam("seas", "listen_sockets","127.0.0.1:5080")
         <title>Exported Functions</title>
 
         <section id="func_as_relay_t" xreflabel="as_relay_t()">
-          <title><function moreinfo="none">as_relay_t(String
-          name)</function></title>
+          <title><function moreinfo="none">as_relay_t(name)</function></title>
 
           <para>Creates a new transaction (if it isn't already created) and
           sends the SIP Request and transaction information to the Application
           Server specified in the parameter. Every Application Server
           connected to OpenSIPS through the SEAS module, must be identified
           with a different name.</para>
+
+          <para>Parameters:</para>
+          <itemizedlist>
+            <listitem><para>
+              <emphasis>name</emphasis> (string)
+            </para></listitem>
+          </itemizedlist>
 
           <para>This function can be used within REQUEST_ROUTE.</para>
 
@@ -144,7 +150,7 @@ modparam("seas", "listen_sockets","127.0.0.1:5080")
 ...
 if (!as_relay_t("app_server_1")) { 
 log("Error sending to app server"); 
-t_reply("500","App Server not connected"); 
+t_reply(500,"App Server not connected"); 
 }
 ...
 </programlisting>
