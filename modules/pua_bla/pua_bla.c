@@ -55,14 +55,6 @@ int bla_set_flag(struct sip_msg* , char*, char*);
 str server_address= {0, 0};
 str presence_server= {0, 0};
 
-
-// static cmd_export_t cmds[]=
-// {
-// 	{"bla_set_flag", (cmd_function)bla_set_flag,           0, 0, 0, REQUEST_ROUTE},
-// 	{"bla_handle_notify", (cmd_function)bla_handle_notify, 0, 0, 0, REQUEST_ROUTE},
-// 	{0, 0, 0, 0, 0, 0}
-// };
-
 static cmd_export_t cmds[]={
 	{"bla_set_flag", (cmd_function)bla_set_flag, {{0,0,0}},
 		REQUEST_ROUTE},

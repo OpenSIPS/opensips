@@ -226,39 +226,6 @@ int skip_oldip=0;
 /*0-> disabled, 1 ->enabled*/
 unsigned int *natping_state=0;
 
-/*
-static cmd_export_t cmds[] = {
-	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f,    0,
-		0, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f,    1,
-		fixup_str_null, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f,        1,
-		fixup_fix_sdp,  0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f,        2,
-		fixup_fix_sdp, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f,        3,
-		fixup_fix_sdp, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"nat_uac_test",       (cmd_function)nat_uac_test_f,         1,
-		fixup_uint_null, 0,
-		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"fix_nated_register", (cmd_function)fix_nated_register_f,   0,
-		fixup_fix_nated_register, 0,
-		REQUEST_ROUTE },
-	{"add_rcv_param",      (cmd_function)add_rcv_param_f,        0,
-		0, 0,
-		REQUEST_ROUTE },
-	{"add_rcv_param",      (cmd_function)add_rcv_param_f,        1,
-		fixup_uint_null, 0,
-		REQUEST_ROUTE },
-	{0, 0, 0, 0, 0, 0}
-};
-*/
-
 static cmd_export_t cmds[] = {
 	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},

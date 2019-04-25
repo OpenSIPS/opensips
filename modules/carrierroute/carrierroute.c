@@ -139,16 +139,6 @@ static int hash_fixup(void ** param);
 
 
 /************* Module Exports **********************************************/
-// static cmd_export_t cmds[]={
-// 	{"cr_user_carrier",          (cmd_function)cr_load_user_carrier,  3, load_user_carrier_fixup, 0, REQUEST_ROUTE | FAILURE_ROUTE },
-// 	{"cr_route",                 (cmd_function)cr_route,              5, route_fixup,             0, REQUEST_ROUTE | FAILURE_ROUTE },
-// 	{"cr_route",                 (cmd_function)cr_route,              6, route_fixup,             0, REQUEST_ROUTE | FAILURE_ROUTE },
-// 	{"cr_prime_route",           (cmd_function)cr_route,              5, route_fixup,             0, REQUEST_ROUTE | FAILURE_ROUTE },
-// 	{"cr_prime_route",           (cmd_function)cr_route,              6, route_fixup,             0, REQUEST_ROUTE | FAILURE_ROUTE },
-// 	{"cr_next_domain",           (cmd_function)cr_load_next_domain,   6, load_next_domain_fixup,  0, REQUEST_ROUTE | FAILURE_ROUTE },
-// 	{0, 0, 0, 0, 0, 0}
-// };
-
 static cmd_export_t cmds[]={
 	{"cr_user_carrier",          (cmd_function)cr_load_user_carrier, {
 		{CMD_PARAM_STR,0,0},

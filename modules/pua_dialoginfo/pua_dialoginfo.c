@@ -104,17 +104,6 @@ static struct dlginfo_cb_params * build_cb_param(int flags,
 		struct to_body *entity_p, struct to_body *peer_p);
 
 
-// static cmd_export_t cmds[]=
-// {
-// 	{"dialoginfo_set", (cmd_function)dialoginfo_set, 0,
-// 		0, 0, REQUEST_ROUTE},
-// 	{"dialoginfo_set", (cmd_function)dialoginfo_set, 1,
-// 		fixup_dlginfo, 0, REQUEST_ROUTE},
-// 	{"dialoginfo_set_branch_callee", (cmd_function)set_branch_callee, 1,
-// 		fixup_spve_null, 0, BRANCH_ROUTE},
-// 	{0, 0, 0, 0, 0, 0}
-// };
-
 static cmd_export_t cmds[]={
 	{"dialoginfo_set", (cmd_function)dialoginfo_set, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
