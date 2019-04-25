@@ -165,27 +165,32 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 		the IP address <varname>src</varname>. The resulting data is loaded in
 		<emphasis>reverse</emphasis> order into the <varname>dst</varname> AVP.
 	  </para>
-	  <para>
-		<varname>src</varname> can be a pseudo-variable or AVP
-		and <varname>dst</varname> <emphasis>must</emphasis> be an AVP.
-		The format for <varname>fields</varname> is a list of elements delimited by
-		one of these separators: ':', '|', ',', '/' or ' '(space).
-	  </para>
-	  <para>The following tokens are supported in <varname>fields</varname>:
+	  <para>Parameters:</para>
 	  <itemizedlist>
-		<listitem> <para> <emphasis>lat</emphasis> - Latitude</para></listitem>
-		<listitem> <para> <emphasis>lon</emphasis> - Longitude</para></listitem>
-		<listitem> <para> <emphasis>cont</emphasis> - Continent</para></listitem>
-		<listitem> <para> <emphasis>cc</emphasis> - Country Code</para></listitem>
-		<listitem> <para> <emphasis>reg</emphasis> - Region</para></listitem>
-		<listitem> <para> <emphasis>city</emphasis> - City</para></listitem>
-		<listitem> <para> <emphasis>pc</emphasis> - Postal Code</para></listitem>
-		<listitem> <para> <emphasis>dma</emphasis> - DMA Code</para></listitem>
-		<listitem> <para> <emphasis>ac</emphasis> - Area Code, only available in the legacy GeoIP
-		database</para></listitem>
-		<listitem> <para> <emphasis>tz</emphasis> - Time Zone</para></listitem>
+	  	<listitem><para>
+	  		<emphasis>fields</emphasis> (string, optional) - a list of elements delimited by
+			one of these separators: ':', '|', ',', '/' or ' '(space). Accepts the following tokens:
+	  		  <itemizedlist>
+	  			<listitem> <para> <emphasis>lat</emphasis> - Latitude</para></listitem>
+	  			<listitem> <para> <emphasis>lon</emphasis> - Longitude</para></listitem>
+	  			<listitem> <para> <emphasis>cont</emphasis> - Continent</para></listitem>
+	  			<listitem> <para> <emphasis>cc</emphasis> - Country Code</para></listitem>
+	  			<listitem> <para> <emphasis>reg</emphasis> - Region</para></listitem>
+	  			<listitem> <para> <emphasis>city</emphasis> - City</para></listitem>
+	  			<listitem> <para> <emphasis>pc</emphasis> - Postal Code</para></listitem>
+	  			<listitem> <para> <emphasis>dma</emphasis> - DMA Code</para></listitem>
+	  			<listitem> <para> <emphasis>ac</emphasis> - Area Code, only available in the legacy GeoIP
+	  			database</para></listitem>
+	  			<listitem> <para> <emphasis>tz</emphasis> - Time Zone</para></listitem>
+	  		  </itemizedlist>
+	  	</para></listitem>
+	  	<listitem><para>
+	  		<emphasis>src</emphasis> (string) - IP address
+	  	</para></listitem>
+	  	<listitem><para>
+	  		<emphasis>dst</emphasis> (var) - AVP to return the information associated with the IP in.
+	  	</para></listitem>
 	  </itemizedlist>
-	  </para>
 	  <para>
 	  	When using the GeoIP2 library, each token from the list given in the <varname>fields</varname>
 	  	parameter can be provided as a path to a specific key in the data structure associated with an
@@ -209,13 +214,13 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 		<title><function moreinfo="none">mmg_lookup</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if(mmg_lookup("lon:lat","$si","$avp(lat_lon)")) {
+if(mmg_lookup("lon:lat",$si,$avp(lat_lon))) {
   xlog("L_INFO","Source IP latitude:$(avp(lat_lon)[0])\n");
   xlog("L_INFO","Source IP longitude:$(avp(lat_lon)[1])\n");
 };
 ...
 # fields format only supported for GeoIP2
-if(mmg_lookup("continent.names.en:country.iso_code,","$si","$avp(geodata)")) {
+if(mmg_lookup("continent.names.en:country.iso_code,",$si,$avp(geodata))) {
   xlog("L_INFO","Source IP country code:$(avp(geodata)[0])\n");
   xlog("L_INFO","Source IP continent:$(avp(geodata)[1])\n");
 };

@@ -991,7 +991,7 @@ if (!t_relay()) {
 ...
 t_relay( ,"tcp:192.168.1.10:5060");
 ...
-t_relay("0x1", "mydomain.com:5070");
+t_relay(0x1, "mydomain.com:5070");
 ...
 </programlisting>
 		</example>
@@ -1010,17 +1010,14 @@ t_relay("0x1", "mydomain.com:5070");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>code</emphasis> - Reply code number.
+			<para><emphasis>code (int)</emphasis> - Reply code number.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>reason_phrase</emphasis> - Reason string.
+			<para><emphasis>reason_phrase (string)</emphasis> - Reason string.
 			</para>
 		</listitem>
 		</itemizedlist>
-		<para>
-		Both parameters accept any kind of variables.
-		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 		</para>
@@ -1028,7 +1025,7 @@ t_relay("0x1", "mydomain.com:5070");
 		<title><function>t_reply</function> usage</title>
 		<programlisting format="linespecific">
 ...
-t_reply("404", "Use $rU not found");
+t_reply(404, "Use $rU not found");
 ...
 </programlisting>
 		</example>
@@ -1047,22 +1044,19 @@ t_reply("404", "Use $rU not found");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>code</emphasis> - Reply code number.
+			<para><emphasis>code (int)</emphasis> - Reply code number.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>reason_phrase</emphasis> - Reason string.
+			<para><emphasis>reason_phrase (string)</emphasis> - Reason string.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>body</emphasis> - Reply body.
+			<para><emphasis>body (string)</emphasis> - Reply body.
 			</para>
 		</listitem>
 		</itemizedlist>
 
-		<para>
-		All parameters accept any kind of variables.
-		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 		</para>
@@ -1074,7 +1068,7 @@ t_reply("404", "Use $rU not found");
 	{
 		append_to_reply("Contact: $var(contact)\r\n"
 				"Content-Type: application/sdp\r\n");
-		t_reply_with_body("200", "Ok", "$var(body)");
+		t_reply_with_body(200, "Ok", $var(body));
 		exit;
 	}
 ...
@@ -1270,7 +1264,7 @@ if (t_was_cancelled()) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>flags</emphasis> - (optional) - set of flags 
+			<para><emphasis>flags (string, optional)</emphasis> - set of flags 
 			(char based flags) to control what branches to be cancelled:
 			</para>
 			<itemizedlist>
@@ -1301,7 +1295,7 @@ if (t_was_cancelled()) {
 		<programlisting format="linespecific">
 onreply_route[3] {
 ...
-	if (t_check_status("183")) {
+	if (t_check_status(183)) {
 		# no support for early media
 		t_cancel_branch();
 	}
@@ -1322,33 +1316,33 @@ onreply_route[3] {
 		<para>Meaning of the parameters is as follows (all do accept variables):</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>method</emphasis> - the SIP method
+			<para><emphasis>method (string)</emphasis> - the SIP method
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>RURI</emphasis> - the SIP Request URI (the request 
+			<para><emphasis>RURI (string)</emphasis> - the SIP Request URI (the request 
 			will be sent out to this destination)
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>from</emphasis> - the SIP From hdr information as
+			<para><emphasis>from (string)</emphasis> - the SIP From hdr information as
 			"[display ]URI"
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>to</emphasis> - the SIP To hdr information as
+			<para><emphasis>to (string)</emphasis> - the SIP To hdr information as
 			"[display ]URI"
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>body</emphasis> - (optional) the SIP body content
+			<para><emphasis>body (string, optional)</emphasis> - the SIP body content
 			starting with the content type string: "conten_type body"
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>ctx</emphasis> - a context string that will be added to the
-			new transaction as an AVP with name "uac_ctx" (it may be visible in local
-			route)
+			<para><emphasis>ctx (string, optional)</emphasis> - a context string that will
+			be added to the new transaction as an AVP with name "uac_ctx" (it may be visible
+			in local route)
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -1394,7 +1388,7 @@ onreply_route[3] {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>failure_route</emphasis> - Reply route block to be 
+			<para><emphasis>failure_route (string)</emphasis> - Reply route block to be 
 			called.
 			</para>
 		</listitem>
@@ -1458,7 +1452,7 @@ failure_route[1] {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>reply_route</emphasis> - Reply route block to be 
+			<para><emphasis>reply_route (string)</emphasis> - Reply route block to be 
 			called.
 			</para>
 		</listitem>
@@ -1531,7 +1525,7 @@ onreply_route[global] {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>branch_route</emphasis> - Branch route block to be 
+			<para><emphasis>branch_route (string)</emphasis> - Branch route block to be 
 			called.
 			</para>
 		</listitem>
@@ -1589,7 +1583,7 @@ branch_route[1] {
 		<para>Parameters: </para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>source</emphasis> - where to take the description
+				<emphasis>source (string)</emphasis> - where to take the description
 				for the new branches to be injected. It can be
 				<itemizedlist>
 					<listitem>
@@ -1605,7 +1599,7 @@ branch_route[1] {
 				</itemizedlist>
 			</para></listitem>
 			<listitem><para>
-				<emphasis>flags</emphasis> - (optional) some additional flags 
+				<emphasis>flags (string, optional)</emphasis> - some additional flags 
 				related to the injection process:
 				<itemizedlist>
 					<listitem>
@@ -1672,6 +1666,12 @@ t_relay();
 		will be appended to all requests related to the transaction (outgoing
 		branches, local ACKS, CANCELs).
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>sip_hdrs (string)</emphasis>
+			</para></listitem>
+		</itemizedlist>
 		<example>
 		<title><function>t_add_hdrs</function> usage</title>
 		<programlisting format="linespecific">
@@ -1686,6 +1686,7 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 		<title>
 		<function moreinfo="none">t_add_cancel_reason("Reason_hdr")</function>
 		</title>
+		<para>
 		This function is used to enforce from the script level a custom
 		"Reason" header into a CANCEL request. Normally, the Reason header is
 		inherited form the received CANCEL (note that CANCEL propagates in a
@@ -1693,8 +1694,13 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
 		can overwrite it. It must be called before relaying the CANCEL request
 		and its input must be a fully formated Reason header with name, body 
 		and CRLF.
-		<para>
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>reason_hdr (string)</emphasis>
+			</para></listitem>
+		</itemizedlist>
 		<example>
 		<title><function>t_add_cancel_reason</function> usage</title>
 		<programlisting format="linespecific">
@@ -1720,12 +1726,18 @@ t_relay();
 		The destination is specified by a SIP URI. If multiple destinations are
 		to be used, the additional SIP URIs have to be set as branches.
 		</para>
-		<para>
-		The function may take as parameter an optional set of flags for 
-		controlling the internal behaviour - for description see the above 
-		<quote>t_relay([flags])</quote> function. Note that only 0x4 is 
-		applicable here.
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>uri (string)</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>flags (int, optional)</emphasis> - a set of flags for 
+				controlling the internal behaviour - for description see the above 
+				<quote>t_relay([flags])</quote> function. Note that only 0x4 is 
+				applicable here.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This functions can be used from REQUEST_ROUTE.
 		</para>
@@ -1735,7 +1747,7 @@ t_relay();
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
-t_replicate("sip:1.2.3.4","0x4");
+t_replicate("sip:1.2.3.4",0x4);
 ...
 </programlisting>
 		</example>
@@ -1751,6 +1763,15 @@ t_replicate("sip:1.2.3.4","0x4");
 		request. Which information should be written may be control via the
 		<quote>tw_append</quote> parameter.
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>info (string)</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>path (string)</emphasis>
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE and 
 		BRANCH_ROUTE.

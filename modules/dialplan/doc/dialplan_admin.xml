@@ -613,34 +613,34 @@ modparam("dialplan", "attrs_col", "column_name")
 	<itemizedlist>
 	<listitem>
 		<para>
-		<emphasis>id</emphasis> - the dialplan id to be used for matching rules
+		<emphasis>id</emphasis> (int) - the dialplan id to be used for matching rules
 		</para>
 	</listitem>
 
 	<listitem>
 		<para>
-		<emphasis>input</emphasis> - input string to be used for rule matching
+		<emphasis>input</emphasis> (string) - input string to be used for rule matching
 		and for computing the output string.
 		</para>
 	</listitem>
 
 	<listitem>
 		<para>
-		<emphasis>out_var</emphasis> - variable to be populated/written with 
+		<emphasis>out_var</emphasis> (var, optional) - variable to be populated/written with 
 		the output string (if provided by the translation rule).
 		</para>
 	</listitem>
 
 	<listitem>
 		<para>
-		<emphasis>attrs_var</emphasis> - variable to be populated/written 
+		<emphasis>attrs_var</emphasis> (var, optional) - variable to be populated/written 
 		with the atribute string, if provided by the translation rule.
 	</para>
 	</listitem>
 
 	<listitem>
 		<para>
-		<emphasis>partition</emphasis> - the name of the partition
+		<emphasis>partition</emphasis> (string, optional) - the name of the partition
 		(set of data) to be used for locating the DP ID.
 	</para>
 	</listitem>
@@ -653,7 +653,7 @@ modparam("dialplan", "attrs_col", "column_name")
 	<title><function>dp_translate</function> usage</title>
 	<programlisting format="linespecific">
 ...
-dp_translate(240, "$ru", $var(out));
+dp_translate(240, $ru, $var(out));
 xlog("translated into '$var(out)' \n");
 ...
 	</programlisting>
@@ -663,7 +663,7 @@ xlog("translated into '$var(out)' \n");
 	<programlisting format="linespecific">
 ...
 $avp(src) = $ruri.user;
-dp_translate("$var(x)", "$avp(src)", $var(y), $var(attrs));
+dp_translate($var(x), $avp(src), $var(y), $var(attrs));
 xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ...
 	</programlisting>
@@ -673,7 +673,7 @@ xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 	<programlisting format="linespecific">
 ...
 $var(id) = 10;
-dp_translate("$var(id)", "$avp(in)", , $avp(attrs), "example_partition");
+dp_translate($var(id), $avp(in), , $avp(attrs), "example_partition");
 xlog("matched with attributes '$avp(attrs) against example_partition'\n");
 ...
 	</programlisting>
@@ -682,7 +682,7 @@ xlog("matched with attributes '$avp(attrs) against example_partition'\n");
 	<title><function>dp_translate</function> usage</title>
 	<programlisting format="linespecific">
 ...
-dp_translate( 10, "$var(in)", , , $var(part));
+dp_translate( 10, $var(in), , , $var(part));
 xlog("'$var(in)' matched against partition '$var(part)'\n")
 ...
 	</programlisting>

@@ -492,21 +492,21 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>grp</emphasis> - group id for the destinations; the
-			destination may be grouped in several groups you can you for 
-			differnet scenarios; this can be a number or a variable containing
-			a numerical value.
+			<para><emphasis>grp</emphasis> (int) - group id for the destinations;
+			the destination may be grouped in several groups you can you for 
+			differnet scenarios.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>resources</emphasis> - string containing a 
+			<para><emphasis>resources</emphasis> (string) - a 
 			semi-colon separated list of resources required by the current
 			call.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis> - various flags to controll the
-			LB algorithm ( or computing the available load on the system):
+			<para><emphasis>flags</emphasis> (string, optional) - various flags
+			to controll the LB algorithm ( or computing the available load on
+			the system):
 			</para>
 			<itemizedlist>
 			<listitem>
@@ -578,7 +578,7 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 		<title><function>lb_start</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (lb_start("1","trascoding;conference")) {
+if (lb_start(1,"trascoding;conference")) {
 	# dst URI points to the new destination
 	xlog("sending call to $du\n");
 	t_relay();
@@ -702,7 +702,7 @@ if (t_check_status("(5[0-9][0-9])")) {
 	}
 } else if (t_check_status("(408)")) {
 	lb_reset();
-	if (lb_start("1","conference")) {
+	if (lb_start(1,"conference")) {
 		t_relay();
 		exit;
 	}
@@ -750,7 +750,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		xlog("-----------new dst is $du\n");
 		t_relay();
 	} else {
-		t_reply("500","Error");
+		t_reply(500,"Error");
 	}
 }
 
@@ -776,20 +776,22 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>ip</emphasis> and <emphasis>port</emphasis> - IP 
-			and PORT to be checked (any kind of variables are allowed, but
-			take care as the PORT variables should have an integer value); 
-			A value 0 for the port means "any" - will match any port.
+			<para><emphasis>ip</emphasis> (string) - IP to be checked
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>group</emphasis> - in what LB group the destination
-			should be looked for; If not specified, the search will be in
-			all groups.
+			<para><emphasis>port</emphasis> (int) - PORT to be checked. 
+			A value 0 means "any" - will match any port.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>active</emphasis> - if "1", the search will be
+			<para><emphasis>group</emphasis> (int, optional) - in what LB group
+			the destination should be looked for; If not specified, the search
+			will be in all groups.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>active</emphasis>  (int, optional)- if "1", the search will be
 			performed only over "active" (not disabled) destinations. If 
 			missing, the search will consider any kind of destinations.
 			</para>
@@ -801,7 +803,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<title><function>lb_is_destination</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (lb_is_destination("$si","$sp") ) {
+if (lb_is_destination($si,$sp) ) {
 	# request from a LB destination
 }
 ...
@@ -822,23 +824,27 @@ if (lb_is_destination("$si","$sp") ) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>ip</emphasis> and <emphasis>port</emphasis> - IP 
-			and PORT to identify the destination the call has to be counted
-			for.
+			<para><emphasis>ip</emphasis> (string) - IP to identify the destination
+			the call has to be counted for.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>grp</emphasis> - group id for the destinations; if
+			<para><emphasis>port</emphasis> (int) - PORT to identify the destination
+			the call has to be counted for.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>grp</emphasis> (int) - group id for the destinations; if
 			no knows, "-1" will mean all groups.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>resources</emphasis> - string containing a 
-			semi-colon separated list of resources required by the current call.
+			<para><emphasis>resources</emphasis> - (string) a semi-colon separated
+			list of resources required by the current call.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>undo</emphasis> - (optional) if set to a non zero
+			<para><emphasis>undo</emphasis> - (int, optional) if set to a non zero
 			value, it will force the function to un-count -
 			actually it will undo the counting of this call as load in the 
 			current LB session; this might be needed if we count call for
@@ -859,13 +865,13 @@ if (lb_is_destination("$si","$sp") ) {
 		<programlisting format="linespecific">
 ...
 # count as load also the calls orgininated by lb destinations
-if (lb_is_destination("$si","$sp") ) {
+if (lb_is_destination($si,$sp) ) {
 	# inbound call from destination
-	lb_count_call("$si","$sp","-1","conference");
+	lb_count_call($si,$sp,-1,"conference");
 } else {
 	# outbound call to destinations
-	if ( !load_balance("1","conference") ) {
-		send_reply("503","unavailable");
+	if ( !load_balance(1,"conference") ) {
+		send_reply(503,"unavailable");
 		exit();
 	}
 	# dst URI points to the new destination

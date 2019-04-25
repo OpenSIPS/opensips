@@ -253,37 +253,31 @@ modparam("rest_client", "curl_http_version", 3)
 	<title>Exported Functions</title>
 	<section id="func_rest_get" xreflabel="rest_get()">
 		<title>
-		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])</function>
+		<function moreinfo="none">rest_get(url, body_pv, [ctype_pv], [retcode_pv])</function>
 		</title>
 		<para>
 		Perform a blocking HTTP GET on the given <emphasis>url</emphasis> and
 		return a representation of the resource.
 		</para>
-		<para>
-		The <emphasis>body_pv</emphasis> pseudo-var will hold the body of the HTTP
-		response.
-		</para>
-		<para>
-		The optional <emphasis>ctype_pv</emphasis> pseudo-var will contain the value
-		of the "Content-Type:" header of the response.
-		</para>
-		<para>
-		The optional <emphasis>retcode_pv</emphasis> pseudo-var will retain the
-		status code of the HTTP response.  A <emphasis role='bold'>0</emphasis>
-		status code value means no HTTP reply arrived at all.
-		</para>
-
-		<para><emphasis role='bold'>Parameter Types</emphasis></para>
+		<para>Parameters:</para>
 		<itemizedlist>
-		<listitem>
-			<para><emphasis>url</emphasis> - string, pseudo-variable or
-				pseudo-variable format string
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>body_pv, ctype_pv, retcode_pv</emphasis> -
-			pseudo-variables</para>
-		</listitem>
+			<listitem><para>
+				<emphasis>url</emphasis> (string)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body_pv</emphasis> (var) - variable that will hold the
+				body of the HTTP response.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ctype_pv</emphasis> (var, optional) - variable thah will
+				contain the value of the "Content-Type:" header of the response.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>retcode_pv</emphasis> (var, optional) - variable that will
+				retain the status code of the HTTP response.
+				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
+				reply arrived at all.
+			</para></listitem>
 		</itemizedlist>
 
 		&rest_return_codes;
@@ -297,18 +291,18 @@ modparam("rest_client", "curl_http_version", 3)
 ...
 # Example of querying a REST service to get the credit of an account
 $var(rc) = rest_get("https://getcredit.org/?account=$fU",
-                    "$var(credit)",
-                    "$var(ct)",
-                    "$var(rcode)");
+                    $var(credit),
+                    $var(ct),
+                    $var(rcode));
 if ($var(rc) &lt; 0) {
 	xlog("rest_get() failed with $var(rc), acc=$fU\n");
-	send_reply("500", "Server Internal Error");
+	send_reply(500, "Server Internal Error");
 	exit;
 }
 
 if ($var(rcode) != 200) {
 	xlog("L_INFO", "rest_get() rcode=$var(rcode), acc=$fU\n");
-	send_reply("403", "Forbidden");
+	send_reply(403, "Forbidden");
 	exit;
 }
 ...
@@ -317,46 +311,46 @@ if ($var(rcode) != 200) {
 	</section>
 	<section id="func_rest_post" xreflabel="rest_post()">
 		<title>
-		<function moreinfo="none">rest_post(url, send_body_pv, [send_ctype_pv],
-				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
+		<function moreinfo="none">rest_post(url, send_body, [send_ctype],
+				recv_body_pv, [recv_ctype_pv], [retcode_pv])
 		</function>
 		</title>
 		<para>
-		Perform a blocking HTTP POST on the given <emphasis>url</emphasis>.  The request body will
-		be copied from the <emphasis>send_body_pv</emphasis> pseudo-variable. The MIME Content-Type
-		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (the default is
-		<emphasis>"application/x-www-form-urlencoded"</emphasis>)
+		Perform a blocking HTTP POST on the given <emphasis>url</emphasis>.
 		</para>
 		<para>
-		Note that the <emphasis>send_body_pv</emphasis> parameter can also accept a format-string
+		Note that the <emphasis>send_body</emphasis> parameter can also accept a format-string
 		but it cannot be larger than 1024 bytes. For larger messages, you must build them in a
 		pseudo-variable and pass it to the function.
 		</para>
-		<para>
-		The mandatory <emphasis>recv_body_pv</emphasis> pseudo-var will hold the body of the HTTP
-		response.
-		</para>
-		<para>
-		The optional <emphasis>recv_ctype_pv</emphasis> parameter will contain
-		the value of the "Content-Type" header of the response.
-		</para>
-		<para>
-		The optional <emphasis>retcode_pv</emphasis> pseudo-var will retain the
-		status code of the HTTP response.  A <emphasis role='bold'>0</emphasis>
-		status code value means no HTTP reply arrived at all.
-		</para>
 
-		<para><emphasis role='bold'>Parameter Types</emphasis></para>
+		<para>Parameters:</para>
 		<itemizedlist>
-		<listitem>
-			<para><emphasis>url, send_body_pv, send_type_pv</emphasis> -
-				string, pseudo-variable or pseudo-variable format string
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>body_pv, ctype_pv, retcode_pv</emphasis> -
-			pseudo-variables</para>
-		</listitem>
+			<listitem><para>
+				<emphasis>url</emphasis> (string)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>send_body</emphasis> (string) - The request body.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>send_ctype</emphasis> (string, optional) - The MIME
+				Content-Type header for the request. The default is
+				<emphasis>"application/x-www-form-urlencoded"</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>recv_body_pv</emphasis> (var) - the variable will hold
+				the body of the HTTP response.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>recv_ctype_pv</emphasis> (var, optional) - will contain
+				the value of the "Content-Type" header of the response
+			</para></listitem>
+			<listitem><para>
+				<emphasis>retcode_pv</emphasis> (var, optional) - variable that will
+				retain the status code of the HTTP response.
+				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
+				reply arrived at all.
+			</para></listitem>
 		</itemizedlist>
 
 		&rest_return_codes;
@@ -370,16 +364,16 @@ if ($var(rcode) != 200) {
 ...
 # Creating a resource using a RESTful service with an HTTP POST request
 $var(rc) = rest_post("https://myserver.org/register_user",
-                     "$fU", , "$var(body)", "$var(ct)", "$var(rcode)");
+                     $fU, , $var(body), $var(ct), $var(rcode));
 if ($var(rc) &lt; 0) {
 	xlog("rest_post() failed with $var(rc), user=$fU\n");
-	send_reply("500", "Server Internal Error 1");
+	send_reply(500, "Server Internal Error 1");
 	exit;
 }
 
 if ($var(rcode) != 200) {
 	xlog("rest_post() rcode=$var(rcode), user=$fU\n");
-	send_reply("500", "Server Internal Error 2");
+	send_reply(500, "Server Internal Error 2");
 	exit;
 }
 ...
@@ -389,46 +383,46 @@ if ($var(rcode) != 200) {
 	</section>
 	<section id="func_rest_put" xreflabel="rest_put()">
 		<title>
-		<function moreinfo="none">rest_put(url, send_body_pv, [send_ctype_pv],
+		<function moreinfo="none">rest_put(url, send_body, [send_ctype],
 				recv_body_pv[, [recv_ctype_pv][, [retcode_pv]]])
 		</function>
 		</title>
 		<para>
-		Perform a blocking HTTP PUT on the given <emphasis>url</emphasis>.  The request body will
-		be copied from the <emphasis>send_body_pv</emphasis> pseudo-variable. The MIME Content-Type
-		header for the request will be taken from <emphasis>send_ctype_pv</emphasis> (the default is
-		<emphasis>"application/x-www-form-urlencoded"</emphasis>)
+		Perform a blocking HTTP PUT on the given <emphasis>url</emphasis>.
 		</para>
 		<para>
 		Similar to <xref linkend="func_rest_post"/>, the <emphasis>send_body_pv</emphasis>
 		parameter can also accept a format-string but it cannot be larger than 1024 bytes. For
 		larger messages, you must build them in a pseudo-variable and pass it to the function.
 		</para>
-		<para>
-		The mandatory <emphasis>recv_body_pv</emphasis> pseudo-var will hold the body of the HTTP
-		response.
-		</para>
-		<para>
-		The optional <emphasis>recv_ctype_pv</emphasis> parameter will contain
-		the value of the "Content-Type" header of the response message.
-		</para>
-		<para>
-		The optional <emphasis>retcode_pv</emphasis> pseudo-var will retain the
-		status code of the HTTP response.  A <emphasis role='bold'>0</emphasis>
-		status code value means no HTTP reply arrived at all.
-		</para>
 
-		<para><emphasis role='bold'>Parameter Types</emphasis></para>
+		<para>Parameters:</para>
 		<itemizedlist>
-		<listitem>
-			<para><emphasis>url, send_body_pv, send_type_pv</emphasis> -
-				string, pseudo-variable or pseudo-variable format string
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>body_pv, ctype_pv, retcode_pv</emphasis> -
-			pseudo-variables</para>
-		</listitem>
+			<listitem><para>
+				<emphasis>url</emphasis> (string)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>send_body</emphasis> (string) - The request body.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>send_ctype</emphasis> (string, optional) - The MIME
+				Content-Type header for the request. The default is
+				<emphasis>"application/x-www-form-urlencoded"</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>recv_body_pv</emphasis> (var) - the variable will hold
+				the body of the HTTP response.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>recv_ctype_pv</emphasis> (var, optional) - will contain
+				the value of the "Content-Type" header of the response
+			</para></listitem>
+			<listitem><para>
+				<emphasis>retcode_pv</emphasis> (var, optional) - variable that will
+				retain the status code of the HTTP response.
+				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
+				reply arrived at all.
+			</para></listitem>
 		</itemizedlist>
 
 		&rest_return_codes;
@@ -442,16 +436,16 @@ if ($var(rcode) != 200) {
 ...
 # Creating/Updating a resource using a RESTful service with an HTTP PUT request
 $var(rc) = rest_put("https://myserver.org/users/$fU",
-                    "$var(userinfo)", , "$var(body)", "$var(ct)", "$var(rcode)");
+                    $var(userinfo), , $var(body), $var(ct), $var(rcode));
 if ($var(rc) &lt; 0) {
 	xlog("rest_put() failed with $var(rc), user=$fU\n");
-	send_reply("500", "Server Internal Error 3");
+	send_reply(500, "Server Internal Error 3");
 	exit;
 }
 
 if ($var(rcode) != 200) {
 	xlog("rest_put() rcode=$var(rcode), user=$fU\n");
-	send_reply("500", "Server Internal Error 4");
+	send_reply(500, "Server Internal Error 4");
 	exit;
 }
 ...
@@ -471,11 +465,10 @@ if ($var(rcode) != 200) {
 		The contents of <emphasis>txt</emphasis> should adhere to the
 		specification for HTTP headers (ex. Field: Value)
 		</para>
-		<para>Parameter types</para>
+		<para>Parameters</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>txt</emphasis> - String, pseudo-variable, or a String which includes pseudo-variables. (useful for specifying additional attribute-value fields in the URL)
-			</para>
+			<para><emphasis>txt</emphasis> (string)</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -488,7 +481,7 @@ if ($var(rcode) != 200) {
 # Example of querying a REST service requiring additional headers
 
 rest_append_hf("Authorization: Bearer mF_9.B5f-4.1JqM");
-$var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)");
+$var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 ...
 		</programlisting>
 		</example>
@@ -505,12 +498,10 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)");
 		If using this function, you must also ensure that tls_mgm is loaded
 		and properly configured.
 		</para>
-		<para>Parameter types</para>
+		<para>Parameters</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>tls_client_domain</emphasis> - string,
-			pseudo-variable, or a string which includes pseudo-variables.
-			</para>
+			<para><emphasis>tls_client_domain</emphasis> (string)</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -549,20 +540,20 @@ if (!rest_get("https://example.com"))
 route {
 	...
 	async(rest_get("http://getcredit.org/?account=$fU",
-	               "$var(credit)", , "$var(rcode)"), resume);
+	               $var(credit), , $var(rcode)), resume);
 }
 
 route [resume] {
 	$var(rc) = $rc;
 	if ($var(rc) &lt; 0) {
 		xlog("async rest_get() failed with $var(rc), acc=$fU\n");
-		send_reply("500", "Server Internal Error");
+		send_reply(500, "Server Internal Error");
 		exit;
 	}
 
 	if ($var(rcode) != 200) {
 		xlog("L_INFO", "async rest_get() rcode=$var(rcode), acc=$fU\n");
-		send_reply("403", "Forbidden");
+		send_reply(403, "Forbidden");
 		exit;
 	}
 
@@ -591,19 +582,19 @@ route [resume] {
 route {
 	...
 	async(rest_post("http://myserver.org/register_user",
-	                "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+	                $fU, , $var(body), $var(ct), $var(rcode)), resume);
 }
 
 route [resume] {
 	$var(rc) = $rc;
 	if ($var(rc) &lt; 0) {
 		xlog("async rest_post() failed with $var(rc), user=$fU\n");
-		send_reply("500", "Server Internal Error 1");
+		send_reply(500, "Server Internal Error 1");
 		exit;
 	}
 	if ($var(rcode) != 200) {
 		xlog("async rest_post() rcode=$var(rcode), user=$fU\n");
-		send_reply("500", "Server Internal Error 2");
+		send_reply(500, "Server Internal Error 2");
 		exit;
 	}
 
@@ -632,20 +623,20 @@ route [resume] {
 		<programlisting format="linespecific">
 route {
 	...
-	async(rest_put("http://myserver.org/users/$fU", "$var(userinfo)", ,
-	               "$var(body)", "$var(ct)", "$var(rcode)"), resume);
+	async(rest_put("http://myserver.org/users/$fU", $var(userinfo), ,
+	               $var(body), $var(ct), $var(rcode)), resume);
 }
 
 route [resume] {
 	$var(rc) = $rc;
 	if ($var(rc) &lt; 0) {
 		xlog("async rest_put() failed with $var(rc), user=$fU\n");
-		send_reply("500", "Server Internal Error 3");
+		send_reply(500, "Server Internal Error 3");
 		exit;
 	}
 	if ($var(rcode) != 200) {
 		xlog("async rest_put() rcode=$var(rcode), user=$fU\n");
-		send_reply("500", "Server Internal Error 4");
+		send_reply(500, "Server Internal Error 4");
 		exit;
 	}
 

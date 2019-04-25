@@ -290,8 +290,8 @@ modparam("presence_callinfo", "line_hash_size", 128)
 			<para>
 			If no parameter is provided, the name of the line is taken from the
 			SIP FROM header of the INVITE. You can override that by providing 
-			the name of the line a parameter - be careful as the value must be
-			a SIP URI ! Variables are accepted.
+			the name of the line as a string parameter - be careful as the value must be
+			a SIP URI !
 			</para>
 			<para>
 			This function can be used from REQUEST_ROUTE.
@@ -320,7 +320,7 @@ modparam("presence_callinfo", "line_hash_size", 128)
 			<para>
 			If no parameter is provided, the name of the line is taken from the
 			SIP RURI of the INVITE. You can override that by providing 
-			the name of the line a parameter - be careful as the value must be
+			the name of the line as a string parameter - be careful as the value must be
 			a SIP URI ! Variables are accepted.
 			</para>
 			<para>

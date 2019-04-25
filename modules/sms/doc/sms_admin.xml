@@ -403,7 +403,7 @@ modparam("sms", "sms_report_type", 1)
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>network_name</emphasis> - Name of network.
+			<emphasis>network_name (string)</emphasis> - Name of network.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -416,13 +416,13 @@ modparam("sms", "sms_report_type", 1)
 ...
 if (sms_send_msg_to_net("D1"))
 {
-	if (!t_reply("202", "yes sir, SMS sent over"))
+	if (!t_reply(202, "yes sir, SMS sent over"))
 	{
 		# if replying failed, retry statelessly
 		sl_reply_error();
 	};
 } else {
-	if (!t_reply("502", "Bad gateway - SMS error"))
+	if (!t_reply(502, "Bad gateway - SMS error"))
 	{
 		# if replying failed, retry statelessly
 		sl_reply_error();
@@ -450,13 +450,13 @@ if (sms_send_msg_to_net("D1"))
 ...
 if (sms_send_msg_to_net())
 {
-	if (!t_reply("202", "yes sir, SMS sent over"))
+	if (!t_reply(202, "yes sir, SMS sent over"))
 	{
 		# if replying failed, retry statelessly
 		sl_reply_error();
 	};
 } else {
-	if (!t_reply("502", "Bad gateway - SMS error"))
+	if (!t_reply(502, "Bad gateway - SMS error"))
 	{
 		# if replying failed, retry statelessly
 		sl_reply_error();

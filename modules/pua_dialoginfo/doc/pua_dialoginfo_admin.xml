@@ -507,7 +507,7 @@ modparam("pua_dialoginfo", "osips_ps", 0)
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>side</emphasis> (optional) - can be "A" or/and "B"
+			<para><emphasis>side</emphasis> (string, optional) - can be "A" or/and "B"
 			for caller or callee PUBLISH only - if missing, both sides will
 			be published.</para>
 		</listitem>
@@ -543,7 +543,7 @@ modparam("pua_dialoginfo", "osips_ps", 0)
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>callee</emphasis> - a SIP nams addr description of
+			<para><emphasis>callee</emphasis> (string) - a SIP nams addr description of
 			the callee (the name_addr format is '[display] &lt;uri&gt;' or 
 			'uri', as in the To or From headers)
 			</para>

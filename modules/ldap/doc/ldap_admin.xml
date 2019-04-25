@@ -538,17 +538,13 @@ modparam("ldap", "max_async_connections", 50)
           <title>Function Parameters:</title>
 
           <varlistentry>
-            <term><parameter>ldap_url</parameter></term>
+            <term><parameter>ldap_url (string)</parameter></term>
 
             <listitem>
               <para>An LDAP URL defining the LDAP search operation (refer to
 			  <xref linkend="ldap-urls"/> for a description of the LDAP URL
               format). The hostport part must be one of the LDAP session names
               declared in the LDAP configuration script.</para>
-
-              <para>OpenSIPS pseudo variables and AVPs included in
-              <varname>ldap_url</varname> do get substituted with their
-              value.</para>
 
               <example>
                 <title>Example Usage of ldap_url</title>
@@ -639,11 +635,11 @@ if (!ldap_search("ldap://sipaccounts/ou=sip,dc=example,dc=com??one?(cn=$rU)"))
     {
     case -1:
         # no LDAP entry found
-        sl_send_reply("404", "User Not Found");
+        sl_send_reply(404, "User Not Found");
         exit;
     case -2:
         # internal error
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     default:
         exit;
@@ -659,7 +655,7 @@ ldap_result("telephoneNumber/$avp(tel_number)");
       </section>
 
       <section id="ldap-result-fn">
-        <title>ldap_result("ldap_attr_name/avp_spec[/avp_type]" [, regex_subst])</title>
+        <title>ldap_result(ldap_attr_name, avp_spec, [avp_type], [regex_subst])</title>
 
         <para>This function converts LDAP attribute values into AVPs for later
         use in the message routing script. It accesses the LDAP result set
@@ -678,7 +674,7 @@ ldap_result("telephoneNumber/$avp(tel_number)");
           <title>Function Parameters:</title>
 
           <varlistentry>
-            <term>ldap_attr_name</term>
+            <term>ldap_attr_name (string)</term>
 
             <listitem>
               <para>The name of the LDAP attribute who's value should be
@@ -688,7 +684,7 @@ ldap_result("telephoneNumber/$avp(tel_number)");
           </varlistentry>
 
           <varlistentry>
-            <term>avp_spec</term>
+            <term>avp_spec (var)</term>
 
             <listitem>
               <para>Specification of destination AVP, e.g.
@@ -698,17 +694,17 @@ ldap_result("telephoneNumber/$avp(tel_number)");
           </varlistentry>
 
 		  <varlistentry>
-            <term>avp_type</term>
+            <term>avp_type (string, optional)</term>
 
             <listitem>
               <para>
-				Opional specification of destination AVP type, either <varname>str</varname> or <varname>int</varname>. If this parameter is not specified then the LDAP attribute values are stored as AVP of type string.
+				Specification of destination AVP type, either <varname>str</varname> or <varname>int</varname>. If this parameter is not specified then the LDAP attribute values are stored as AVP of type string.
 			  </para>
             </listitem>
           </varlistentry>
 
           <varlistentry>
-            <term>regex_subst</term>
+            <term>regex_subst (string)</term>
 
             <listitem>
               <para>Regex substitution that gets applied to LDAP attribute
@@ -764,17 +760,17 @@ ldap_result("telephoneNumber/$avp(tel_number)");
 ...
 
 # save SIPIdentityServiceLevel in $avp(service_level)
-if (!ldap_result("SIPIdentityServiceLevel/$avp(service_level)"))
+if (!ldap_result("SIPIdentityServiceLevel", $avp(service_level)))
 {
     switch ($retcode)
     {
     case -1:
         # no SIPIdentityServiceLevel found
-        sl_send_reply("403", "Forbidden");
+        sl_send_reply(403, "Forbidden");
         exit;
     case -2:
         # internal error
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     default:
         exit;
@@ -782,14 +778,14 @@ if (!ldap_result("SIPIdentityServiceLevel/$avp(service_level)"))
 }
 
 # save SIP URI domain in $avp(10)
-ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
+ldap_result("SIPIdentitySIPURI", $avp(10), "/^[^@]+@(.+)$/\1/");
 ...
 			</programlisting>
         </example>
       </section>
 
       <section id="ldap-result-check-fn">
-        <title>ldap_result_check("ldap_attr_name/string_to_match" [,
+        <title>ldap_result_check(ldap_attr_name, string_to_match, [,
         regex_subst])</title>
 
         <para>This function compares <varname>ldap_attr_name</varname>'s value
@@ -806,7 +802,7 @@ ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
           <title>Function Parameters:</title>
 
           <varlistentry>
-            <term>ldap_attr_name</term>
+            <term>ldap_attr_name (string)</term>
 
             <listitem>
               <para>The name of the LDAP attribute who's value should be
@@ -815,7 +811,7 @@ ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
           </varlistentry>
 
           <varlistentry>
-            <term>string_to_match</term>
+            <term>string_to_match (string)</term>
 
             <listitem>
               <para>String to be matched. Included AVPs and pseudo variabels
@@ -824,7 +820,7 @@ ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
           </varlistentry>
 
           <varlistentry>
-            <term>regex_subst</term>
+            <term>regex_subst (string, optional)</term>
 
             <listitem>
               <para>Regex substitution that gets applied to LDAP attribute
@@ -881,17 +877,17 @@ ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
 
 # check if 'sn' ldap attribute value equals username part of R-URI,
 # the same could be achieved with ldap_result_check("sn/$rU")
-if (!ldap_result_check("sn/$ru", "/^sip:([^@]).*$/\1/"))
+if (!ldap_result_check("sn", $ru, "/^sip:([^@]).*$/\1/"))
 {
     switch ($retcode)
     {
     case -1:
         # R-URI username doesn't match sn
-        sl_send_reply("401", "Unauthorized");
+        sl_send_reply(401, "Unauthorized");
         exit;
     case -2:
         # internal error
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     default:
         exit;
@@ -1053,10 +1049,10 @@ if (ldap_result_next())
           </varlistentry>
 
           <varlistentry>
-            <term><parameter>avp_spec</parameter></term>
+            <term><parameter>avp_spec (var)</parameter></term>
 
             <listitem>
-              <para>Specification of AVP to store resulting RFC 4515
+              <para>AVP to store resulting RFC 4515
 	      and URL encoded string, e.g. <varname>$avp(ldap_search)</varname>
 	      or <varname>$avp(10)</varname></para>
             </listitem>
@@ -1094,7 +1090,7 @@ if (ldap_result_next())
 
           <programlisting>
 ...
-if (!ldap_filter_url_encode("cn=$avp(name)", "$avp(name_esc)"))
+if (!ldap_filter_url_encode("cn=$avp(name)", $avp(name_esc)))
 {
     # RFC 4515/URL encoding failed --> silently discard request
     exit;
@@ -1130,17 +1126,13 @@ if (ldap_search(
           <title>Function Parameters:</title>
 
           <varlistentry>
-            <term><parameter>ldap_url</parameter></term>
+            <term><parameter>ldap_url (string)</parameter></term>
 
             <listitem>
               <para>An LDAP URL defining the LDAP search operation (refer to
 			  <xref linkend="ldap-urls"/> for a description of the LDAP URL
               format). The hostport part must be one of the LDAP session names
               declared in the LDAP configuration script.</para>
-
-              <para>OpenSIPS pseudo variables and AVPs included in
-              <varname>ldap_url</varname> do get substituted with their
-              value.</para>
 
               <example>
                 <title>Example Usage of ldap_url</title>
@@ -1236,11 +1228,11 @@ route[resume] {
     {
     case -1:
         # no LDAP entry found
-        sl_send_reply("404", "User Not Found");
+        sl_send_reply(404, "User Not Found");
         exit;
     case -2:
         # internal error
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     default:
         exit;
@@ -1248,7 +1240,7 @@ route[resume] {
     xlog("L_INFO", "ldap_search: found [$retcode] entries for (cn=$rU)");
 
     # save telephone number in $avp(tel_number)
-    ldap_result("telephoneNumber/$avp(tel_number)");
+    ldap_result("telephoneNumber", $avp(tel_number)");
 ...
 }
 			</programlisting>

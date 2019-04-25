@@ -596,7 +596,7 @@ modparam("permissions", "info_col", "info_col")
 
 		<itemizedlist>
 		<listitem>
-			group_id
+			group_id (int)
 		<para>
 			This argument represents the group id to be matched.
 			If the group_id argument is "0", the query can match any group
@@ -604,18 +604,16 @@ modparam("permissions", "info_col", "info_col")
 		</para>
 		</listitem>
 		<listitem>
-			ip
+			ip (string)
 		<para>
 			This argument represents the ip address to be matched.
-			It can be an given directly as string or as a string pvar.
 			This argument cannot be null/empty.
 		</para>
 		</listitem>
 		<listitem>
-			port
+			port (int)
 		<para>
 			This argument represents the port to be matched.
-			It can be an given as an integer string or as a string pvar.
 			Cached address table entry containing port value 0
 			matches any port.
 			Also, a "0" value for the argument can match any port in the
@@ -623,32 +621,29 @@ modparam("permissions", "info_col", "info_col")
 			</para>
 		</listitem>
 		<listitem>
-			proto
+			proto (string)
 		<para>
 			This argument represents the protocol used for transport;
-			it can be an given as string or as string pvar.
 			Transport protocol is either "ANY" or any
 			valid transport protocol value: "UDP, "TCP", "TLS", and "SCTP".
 		</para>
 		</listitem>
 		<listitem>
-			context_info
+			context_info (var, optional)
 		<para>
-			This argument represents the pvar in wich the context_info field
+			This argument represents the variable in wich the context_info field
 			from the cached address table will be stored in case of match.
-			This argument is optional.
 		</para>
 		</listitem>
 		<listitem>
-			pattern
+			pattern (string, optional)
 		<para>
 			This argument is a string to be matched against the wildcard
 			pattern field from the address table.
-			This argument is optional.
 		</para>
 		</listitem>
 		<listitem>
-			partition
+			partition (string, optional)
 		<para>
 			An optional parition name for the group id. If no partition
 			specified, the <quote>default</quote> one will be used.
@@ -694,7 +689,7 @@ $avp(ip) = "192.168.2.135";
 $avp(port) = 5061;
 $avp(proto) = "any";
 $avp(partition)="my_part";
-if (check_address( 4, "$avp(ip)", "$avp(port)", "$avp(proto)", $avp(ctx), , "$avp(partition)")) {
+if (check_address( 4, $avp(ip), $avp(port), $avp(proto), $avp(ctx), , $avp(partition))) {
 	t_relay();
 	xlog("$avp(ctx)\n");
 }
@@ -705,7 +700,7 @@ if (check_address( 4, "$avp(ip)", "$avp(port)", "$avp(proto)", $avp(ctx), , "$av
 // (given as pvar) is in group 4, verifies if string the "texttest" matches
 // the wildcard pattern field in the database table, without storing any
 // context information
-if (check_address( 4,"$si", 5700, "$proto", ,"texttest")) {
+if (check_address( 4,$si, 5700, $proto, ,"texttest")) {
 	t_relay();
 }
 
@@ -732,10 +727,10 @@ if (check_address( 4,"$si", 5700, "$proto", ,"texttest")) {
 ...
 // Check if source address/port/proto is in group 4 and stores
 // context information in $avp(ctx)
-if (check_source_address( 4,"$avp(ctx)", , , "$avp(my_partition)")) {
+if (check_source_address( 4,$avp(ctx), , , $avp(my_partition))) {
 	xlog("$avp(ctx)\n");
 }else {
-	sl_send_reply("403", "Forbidden");
+	sl_send_reply(403, "Forbidden");
 }
 ...
 </programlisting>
@@ -754,8 +749,16 @@ if (check_source_address( 4,"$avp(ctx)", , , "$avp(my_partition)")) {
 		subnet table matches any port. Optionally, you can also
 		specify the partition. If no partition
 		specified, the <quote>default</quote> one will be used.
-
 		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>var</emphasis> (var)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>partition</emphasis> (string, optional)
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		LOCAL_ROUTE, BRANCH_ROUTE.
@@ -813,7 +816,7 @@ if (allow_routing()) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>basename</emphasis> - Basename from which allow
+			<para><emphasis>basename</emphasis> (string) - Basename from which allow
 			and deny filenames will be created by appending contents of
 			<varname>allow_suffix</varname> and <varname>deny_suffix</varname>
 			parameters.
@@ -851,7 +854,7 @@ if (allow_routing("basename")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>basename</emphasis> - Basename from which allow
+			<para><emphasis>basename</emphasis> (string) - Basename from which allow
 			and deny filenames will be created by appending contents of
 			<varname>allow_suffix</varname> and <varname>deny_suffix</varname>
 			parameters.
@@ -875,7 +878,7 @@ if ($rm=="REGISTER") {
 		save("location");
 		exit;
 	} else {
-		sl_send_reply("403", "Forbidden");
+		sl_send_reply(403, "Forbidden");
 	};
 };
 ...
@@ -894,7 +897,7 @@ if ($rm=="REGISTER") {
 		<para>Meaning of the parameter is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>basename</emphasis> - Basename from which allow
+			<para><emphasis>basename</emphasis> (string) - Basename from which allow
 			and deny filenames will be created by appending contents of
 			<varname>allow_suffix</varname> and <varname>deny_suffix</varname>
 			parameters.
@@ -906,7 +909,7 @@ if ($rm=="REGISTER") {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>uri</emphasis> - SIP URI to be checked.
+			<para><emphasis>uri</emphasis> (string) - SIP URI to be checked.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -917,10 +920,10 @@ if ($rm=="REGISTER") {
 		<title><function>allow_uri(basename, uri)</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
+if (allow_uri("basename", $rt)) {  // Check Refer-To URI
 	t_relay();
 };
-if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(uri)
+if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
 	t_relay();
 };
 ...

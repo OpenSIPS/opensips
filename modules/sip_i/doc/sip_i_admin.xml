@@ -154,11 +154,11 @@ modparam("sip_i", "country_code", "+4")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>isup_msg_type (string)</emphasis> - name of the ISUP message to be added, exactly as it appears in ITU-T Rec. Q.763 or an abbreviation(eg. <emphasis>IAM</emphasis> for "Initial address").
+			<para><emphasis>isup_msg_type (string, optional)</emphasis> - name of the ISUP message to be added, exactly as it appears in ITU-T Rec. Q.763 or an abbreviation(eg. <emphasis>IAM</emphasis> for "Initial address").
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>extra_headers (string)</emphasis> - a chunk of fully defined SIP headers (including header terminatior) to be inserted into the ISUP part next to the <emphasis>Content-Type</emphasis> header. It overrides the global module parameter <emphasis>default_part_headers</emphasis>. If not specified, the <emphasis>default_part_headers</emphasis> value will be used.
+			<para><emphasis>extra_headers (string, string, optional)</emphasis> - a chunk of fully defined SIP headers (including header terminatior) to be inserted into the ISUP part next to the <emphasis>Content-Type</emphasis> header. It overrides the global module parameter <emphasis>default_part_headers</emphasis>. If not specified, the <emphasis>default_part_headers</emphasis> value will be used.
 			</para>
 		</listitem>
 		</itemizedlist>

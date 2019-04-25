@@ -310,7 +310,7 @@ route {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>min_allowed</emphasis> - The value
+			<para><emphasis>min_allowed</emphasis> (int, optional) - The value
 			to compare the MIN_SE header value to.</para>
 		</listitem>
 		</itemizedlist>
@@ -325,7 +325,7 @@ modparam("sst", "min_se", 2400) # Must be >= 90
 
 route {
   if ($rm=="INVITE") {
-	if (sstCheckMin("1")) {
+	if (sstCheckMin(1)) {
 		xlog("L_ERR", "422 Session Timer Too Small reply sent.\n");
 		exit;
 	}
@@ -339,7 +339,7 @@ route {
 
 route {
   if ($rm=="INVITE") {
-	if (sstCheckMin("0")) {
+	if (sstCheckMin(0)) {
 		xlog("L_ERR", "Session Timer Too Small, dropping request\n");
 		exit;
 	}

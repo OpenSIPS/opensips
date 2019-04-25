@@ -108,11 +108,11 @@ modparam("sl", "enable_stats", 0)
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>code</emphasis> - Return code.
+			<para><emphasis>code (int)</emphasis> - Return code.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>reason</emphasis> - Reason phrase.
+			<para><emphasis>reason (string)</emphasis> - Reason phrase.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -123,9 +123,9 @@ modparam("sl", "enable_stats", 0)
 		<title><function>sl_send_reply</function> usage</title>
 		<programlisting format="linespecific">
 ...
-sl_send_reply("404", "Not found");
+sl_send_reply(404, "Not found");
 ...
-sl_send_reply("$err.rcode", "$err.rreason");
+sl_send_reply($err.rcode, $err.rreason);
 ...
 </programlisting>
 		</example>

@@ -275,7 +275,7 @@ loose_route();
 		<para>
 		If any string is passed as parameter, it will be appended as URI
 		parameter to the Record-Route header. The string must follow the 
-		<quote>;name=value</quote> scheme and it may contain pseudo-variables.
+		<quote>;name=value</quote> scheme.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and 
@@ -309,8 +309,8 @@ record_route();
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>string2</emphasis> - String to be inserted into the 
-				second header field; it may contain pseudo-variables.
+			<emphasis>string2</emphasis> (optional) - String to be inserted into the 
+				second header field.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -346,9 +346,8 @@ record_route_preset("1.2.3.4:5090");
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>param</emphasis> - String containing the URI parameter to
-			be added. It must follow the <quote>;name=value</quote> scheme; it 
-			may contain pseudo-variables.
+			<emphasis>param</emphasis> (string) - the URI parameter to
+			be added. It must follow the <quote>;name=value</quote> scheme.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -379,7 +378,7 @@ add_rr_param(";nat=yes");
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>re</emphasis> - regular expression to check against the
+			<emphasis>re</emphasis> (string) - regular expression to check against the
 			Route URI parameters.
 			</para>
 		</listitem>
@@ -421,7 +420,7 @@ if (check_route_param("nat=yes")) {
 		<itemizedlist>
 		<listitem>
 			<para>
-			<emphasis>dir</emphasis> - string containing the direction to be 
+			<emphasis>dir</emphasis> (string) - the direction to be 
 				checked. It may be <quote>upstream</quote> (from UAS to UAC) or 
 				<quote>downstream</quote> (UAC to UAS).
 			</para>

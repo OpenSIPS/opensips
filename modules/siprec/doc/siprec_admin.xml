@@ -273,7 +273,8 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 		<title>Exported Functions</title>
 		<section id="func_siprec_start_recording" xreflabel="siprec_start_recording()">
 			<title>
-			<function moreinfo="none">siprec_start_recording(srs [, group [, caller [, callee [, rtpproxy_set [, media_ip] ]]]])</function>
+			<function moreinfo="none">siprec_start_recording(srs, [group], [caller],
+				[callee], [rtpproxy_set], [media_ip])</function>
 			</title>
 			<para>
 				Calling this function on an initial
@@ -293,34 +294,34 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 				Parameters:
 				<itemizedlist>
 				<listitem><para>
-					<emphasis>srs</emphasis> - a comma-separated list of SRS
+					<emphasis>srs</emphasis> (string) - a comma-separated list of SRS
 					URIs. These URIs are used in the order specified. See
 					<xref linkend="siprec_srs_failover"/> for more
 					information.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>group</emphasis> (optional) - an opaque values
+					<emphasis>group</emphasis> (string, optional) - an opaque values
 					used by the SIPREC protocol to group calls in certain
 					profiles.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>caller</emphasis> (optional) - an XML block
+					<emphasis>caller</emphasis> (string, optional) - an XML block
 					containing information about the caller. If absent, the
 					<emphasis>From</emphasis> header is used to build the value from.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>callee</emphasis> (optional) - an XML block
+					<emphasis>callee</emphasis> (string, optional) - an XML block
 					containing information about the callee. If absent, the
 					<emphasis>To</emphasis> header is used to build the value from.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>rtpproxy_set</emphasis> (optional) - the
+					<emphasis>rtpproxy_set</emphasis> (string, optional) - the
 					RTPProxy set used for this call. If absent, the default
 					set provisioned in the <emphasis>rtpproxy</emphasis>
 					module is used.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>media_ip</emphasis> (optional) - the IP that
+					<emphasis>media_ip</emphasis> (string, optional) - the IP that
 					RTPProxy will be streaming media from. If absent
 					 <emphasis>127.0.0.1</emphasis> will be used.
 				</para></listitem>
@@ -341,7 +342,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	if (!has_totag() &amp;&amp; is_method("INVITE")) {
 		$var(srs) = "sip:127.0.0.1";
 		xlog("Engage SIPREC call recording to $var(srs) for $ci\n");
-		siprec_start_recording("$var(srs)");
+		siprec_start_recording($var(srs));
 	}
 	...
 	</programlisting>
@@ -354,7 +355,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	if (!has_totag() &amp;&amp; is_method("INVITE")) {
 		$var(srs) = "sip:127.0.0.1, sip:127.0.0.1;transport=TCP";
 		xlog("Engage SIPREC call recording to servers $var(srs) for $ci in inbound group\n");
-		siprec_start_recording("$var(srs)", "inbound");
+		siprec_start_recording($var(srs), "inbound");
 	}
 	...
 	</programlisting>
@@ -367,7 +368,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	$xml(caller_xml) = "&lt;nameID&gt;&lt;/nameID&gt;";
 	$xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:5090";
 	$xml(caller_xml/nameID) = "&lt;name&gt;test&lt;/name&gt;";
-	siprec_start_recording("$var(srs)",,"$xml(caller_xml/nameID)");
+	siprec_start_recording($var(srs),,$xml(caller_xml/nameID));
 	...
 	</programlisting>
 			</example>

@@ -71,7 +71,7 @@ modparam("gflags", "initial", 15)
 		Set the bit at the position <quote>flag</quote> in global flags.
 		</para>
 		<para>
-		<quote>flag</quote> can have a value in the range of 0..31.
+		The <quote>flag</quote> (int) parameter can have a value in the range of 0..31.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -81,7 +81,7 @@ modparam("gflags", "initial", 15)
 		<title><function moreinfo="none">set_gflag()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-set_gflag("4");
+set_gflag(4);
 ...
 </programlisting>
 		</example>
@@ -93,7 +93,7 @@ set_gflag("4");
 		Reset the bit at the position <quote>flag</quote> in global flags.
 		</para>
 		<para>
-		<quote>flag</quote> can have a value in the range of 0..31.
+		The <quote>flag</quote> (int) parameter can have a value in the range of 0..31.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -103,7 +103,7 @@ set_gflag("4");
 		<title><function moreinfo="none">reset_gflag()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-reset_gflag("4");
+reset_gflag(4);
 ...
 </programlisting>
 		</example>
@@ -116,7 +116,7 @@ reset_gflag("4");
 		set.
 		</para>
 		<para>
-		<quote>flag</quote> can have a value in the range of 0..31.
+		The <quote>flag</quote> (int) parameter can have a value in the range of 0..31.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -126,7 +126,7 @@ reset_gflag("4");
 		<title><function moreinfo="none">is_gflag()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if(is_gflag("4"))
+if(is_gflag(4))
 {
 	log("global flag 4 is set\n");
 } else {

@@ -128,12 +128,12 @@ modparam("domain", "attrs_col", "attributes")
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 	<section id="func_is_from_local" xreflabel="is_from_local()">
-		<title><function moreinfo="none">is_from_local([attrs_pvar])</function></title>
+		<title><function moreinfo="none">is_from_local([attrs_var])</function></title>
 		<para>
 		Checks based on domain table if host part of From header uri is
 		one of the local domains that the proxy is responsible for.
 		The argument is optional and if present it should contain a writable
-		pseudo variable that will be populated with the attributes from the
+		variable that will be populated with the attributes from the
 		database.
 		</para>
 		<para>
@@ -147,7 +147,7 @@ if (is_from_local()) {
 	...
 };
 ...
-if (is_from_local("$var(attrs)")) {
+if (is_from_local($var(attrs))) {
 	xlog("Domain attributes are $var(attrs)\n");
 	...
 };
@@ -156,7 +156,7 @@ if (is_from_local("$var(attrs)")) {
 		</example>
 	</section>
 	<section id="func_is_uri_host_local" xreflabel="is_uri_host_local()">
-		<title><function moreinfo="none">is_uri_host_local([attrs_pvar])</function></title>
+		<title><function moreinfo="none">is_uri_host_local([attrs_var])</function></title>
 		<para>
 		If called from route or failure route block, checks
 		based on domain table if host part of Request-URI is one
@@ -166,7 +166,7 @@ if (is_from_local("$var(attrs)")) {
 		appended to the transaction before is_uri_host_local()
 		is called.
 		The argument is optional and if present it should contain a writable
-		pseudo variable that will be populated with the attributes from the
+		variable that will be populated with the attributes from the
 		database.
 		</para>
 		<para>
@@ -181,7 +181,7 @@ if (is_uri_host_local()) {
 	...
 };
 ...
-if (is_uri_host_local("$var(attrs)")) {
+if (is_uri_host_local($var(attrs))) {
 	xlog("Domain attributes are $var(attrs)\n");
 	...
 };
@@ -189,10 +189,9 @@ if (is_uri_host_local("$var(attrs)")) {
 		</example>
 	</section>
 	<section id="func_is_domain_local" xreflabel="is_domain_local()">
-		<title><function moreinfo="none">is_domain_local(pseudo_variable [, attrs_pvar])</function></title>
+		<title><function moreinfo="none">is_domain_local(domain, [attrs_var])</function></title>
 		<para>
-		This function checks if the domain contained in the
-		pseudo_variable is local.
+		This function checks if the domain contained in the first parameter is local.
 		</para>
 		<para>
 		This function is a generalized form of the is_from_local()
@@ -203,17 +202,23 @@ if (is_uri_host_local("$var(attrs)")) {
 		</para>
 		<itemizedlist>
 		<listitem><para>
-			is_domain_local("$rd") is same as is_uri_host_local()
+			is_domain_local($rd) is same as is_uri_host_local()
 		</para></listitem>
 		<listitem><para>
-			is_domain_local("$fd") is same as is_from_local()
+			is_domain_local($fd) is same as is_from_local()
 		</para></listitem>
 		</itemizedlist>
-		<para>
-		The second argument is optional and if present it should contain a writable
-		pseudo variable that will be populated with the attributes from the
-		database.
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>domain</emphasis> (string)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>attrs_var</emphasis> (var, optional) - a writable
+				variable that will be populated with the attributes from the
+				database.
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
 		BRANCH_ROUTE.
@@ -222,22 +227,22 @@ if (is_uri_host_local("$var(attrs)")) {
 		<title>is_domain_local usage</title>
 		<programlisting format="linespecific">
 ...
-if (is_domain_local("$rd")) {
+if (is_domain_local($rd)) {
 	...
 };
-if (is_domain_local("$fd")) {
+if (is_domain_local($fd)) {
 	...
 };
-if (is_domain_local("$avp(some_avp_alias)")) {
+if (is_domain_local($avp(some_avp_alias))) {
 	...
 };
-if (is_domain_local("$avp(850)")) {
+if (is_domain_local($avp(850))) {
 	...
 };
-if (is_domain_local("$avp(some_avp)")) {
+if (is_domain_local($avp(some_avp))) {
 	...
 };
-if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
+if (is_domain_local($avp(some_avp), $avp(attrs))) {
 	xlog("Domain attributes are $avp(attrs)\n");
 	...
 };

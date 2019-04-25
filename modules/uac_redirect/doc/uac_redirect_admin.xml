@@ -180,30 +180,39 @@ modparam("uac_redirect","accept_filter",".*@siphub\.net")
 			additional filter will apply only to the current message - it
 			will not have a global effect.
 			</para>
-			<para>
-			Default or previous added deny filter may be reset depending of
-			the <emphasis>flag</emphasis> parameter value:
-			</para>
+			<para>Parameters:</para>
 			<itemizedlist>
-				<listitem>
-				<para><emphasis>reset_all</emphasis> - reset both default
-				and previous added deny filters;
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>reset_default</emphasis> - reset only the
-				default deny filter;
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>reset_added</emphasis> - reset only the 
-				previous added deny filters;
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>empty</emphasis> - no reset, just add the
-				filter.
-				</para>
+				<listitem><para>
+					<emphasis>filter</emphasis> (string) - regular expression
+				</para></listitem>
+				<listitem><para>
+					<emphasis>flags</emphasis> (string)</para>
+					<para>
+					Default or previous added deny filter may be reset depending of
+					the parameter value:
+					</para>
+					<itemizedlist>
+						<listitem>
+						<para><emphasis>reset_all</emphasis> - reset both default
+						and previous added deny filters;
+						</para>
+						</listitem>
+						<listitem>
+						<para><emphasis>reset_default</emphasis> - reset only the
+						default deny filter;
+						</para>
+						</listitem>
+						<listitem>
+						<para><emphasis>reset_added</emphasis> - reset only the 
+						previous added deny filters;
+						</para>
+						</listitem>
+						<listitem>
+						<para><emphasis>empty</emphasis> - no reset, just add the
+						filter.
+						</para>
+						</listitem>
+					</itemizedlist>
 				</listitem>
 			</itemizedlist>
 			<para>
@@ -230,30 +239,39 @@ set_deny_filter(".*@domain1.net","");
 			additional filter will apply only to the current message - it
 			will not have a global effect.
 			</para>
-			<para>
-			Default or previous added deny filter may be reset depending of
-			the <emphasis>flag</emphasis> parameter value:
-			</para>
+			<para>Parameters:</para>
 			<itemizedlist>
-				<listitem>
-				<para><emphasis>reset_all</emphasis> - reset both default
-				and previous added accept filters;
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>reset_default</emphasis> - reset only the
-				default accept filter;
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>reset_added</emphasis> - reset only the 
-				previous added accept filters;
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>empty</emphasis> - no reset, just add
-				the filter.
-				</para>
+				<listitem><para>
+					<emphasis>filter</emphasis> (string) - regular expression
+				</para></listitem>
+				<listitem><para>
+					<emphasis>flags</emphasis> (string)</para>
+					<para>
+					Default or previous added deny filter may be reset depending of
+					the parameter value:
+					</para>
+					<itemizedlist>
+						<listitem>
+						<para><emphasis>reset_all</emphasis> - reset both default
+						and previous added accept filters;
+						</para>
+						</listitem>
+						<listitem>
+						<para><emphasis>reset_default</emphasis> - reset only the
+						default accept filter;
+						</para>
+						</listitem>
+						<listitem>
+						<para><emphasis>reset_added</emphasis> - reset only the 
+						previous added accept filters;
+						</para>
+						</listitem>
+						<listitem>
+						<para><emphasis>empty</emphasis> - no reset, just add
+						the filter.
+						</para>
+						</listitem>
+					</itemizedlist>
 				</listitem>
 			</itemizedlist>
 			<para>
@@ -272,7 +290,7 @@ set_accept_filter(".*@domain1.net","");
 
 		<section id="func_get_redirects" xreflabel="get_redirects()">
 			<title>
-				<function moreinfo="none">get_redirects([max_total[, max_branch]])</function>
+				<function moreinfo="none">get_redirects([max_total], [max_branch])</function>
 			</title>
 			<para>
 				The function may be called only from failure routes. It will
@@ -346,7 +364,7 @@ route{
 		};
 
 		if (!lookup("location")) {
-			sl_send_reply("404", "Not Found");
+			sl_send_reply(404, "Not Found");
 			exit;
 		};
 		# do redirect with accounting

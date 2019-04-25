@@ -646,7 +646,7 @@ modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
         <programlisting format="linespecific">
 
 ...
-if (is_avp_set("$avp(805)")) {
+if (is_avp_set($avp(805))) {
     # the diverter AVP is set, use it as billing party
     $avp(billing_party_domain) = $(avp(805){uri.domain});
 } else {
@@ -654,7 +654,7 @@ if (is_avp_set("$avp(805)")) {
 }
 
 if (is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp;
-    is_domain_local("$avp(billing_party_domain)")) {
+    is_domain_local($avp(billing_party_domain))) {
     call_control();
     switch ($retcode) {
     case 2:
@@ -664,29 +664,29 @@ if (is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp;
         break;
     case -1:
         # Not enough credit (prepaid call)
-        sl_send_reply("402", "Not enough credit");
+        sl_send_reply(402, "Not enough credit");
         exit;
         break;
     case -2:
         # Locked by another call in progress (prepaid call)
-        sl_send_reply("403", "Call locked by another call in progress");
+        sl_send_reply(403, "Call locked by another call in progress");
         exit;
         break;
     case -3:
         # Duplicated callid
-        sl_send_reply("400", "Duplicated callid");
+        sl_send_reply(400, "Duplicated callid");
         exit;
         break;
     case -4:
         # Call limit reached
-        sl_send_reply("503", "Too many concurrent calls");
+        sl_send_reply(503, "Too many concurrent calls");
         exit;
         break;
     default:
         # Internal error (message parsing, communication, ...)
         if (PREPAID_ACCOUNT) {
             xlog("Call control: internal server error\n");
-            sl_send_reply("500", "Internal server error");
+            sl_send_reply(500, "Internal server error");
             exit;
         } else {
             xlog("L_WARN", "Cannot set time limit for postpaid call\n");

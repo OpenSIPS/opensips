@@ -194,7 +194,7 @@ if(is_method("REGISTER") &amp;&amp; $tu=~"bla_aor@opensips.org")
 if(is_method("NOTIFY") &amp;&amp; $tu=~"bla_aor@opensips.org") 
 {
 		if( bla_handle_notify() ) 
-			t_reply("200", "OK");
+			t_reply(200, "OK");
 }	
 ...
 </programlisting>

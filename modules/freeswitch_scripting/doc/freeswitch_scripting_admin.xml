@@ -236,7 +236,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 	<title>Exported Functions</title>
 	<section id="func_freeswitch_esl" xreflabel="freeswitch_esl()">
 		<title>
-		<function moreinfo="none">freeswitch_esl(command, freeswitch_url[, response_pvar])</function>
+		<function moreinfo="none">freeswitch_esl(command, freeswitch_url[, response_var])</function>
 		</title>
 		<para>
 		Run an arbitrary command on an arbitrary FreeSWITCH ESL socket. The
@@ -255,20 +255,20 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>command</emphasis> - the ESL command string to
-			execute. Includes support for variables.
+			<para><emphasis>command</emphasis> (string) - the ESL command string to
+			execute.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>freeswitch_url</emphasis> - the ESL interface to
+			<emphasis>freeswitch_url</emphasis> (string) - the ESL interface to
 			connect to. The syntax is:
 			[fs://][[username]:password@]host[:port][?event1[,event2]...].
 			The "?events" part of the URL will be silently discarded.
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>response_pvar (optional)</emphasis> - a
+			<para><emphasis>response_var (var, optional)</emphasis> - a
 			variable which will hold the text result of the ESL command.
 			</para>
 		</listitem>
@@ -306,7 +306,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 	}
 ...
 	# ESL socket 10.0.0.10 is new, we must specify a password
-	$var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123456789}user/1010 9386\njob-uuid: foobar", ":ClueCon@10.0.0.10", "$var(response)");
+	$var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123456789}user/1010 9386\njob-uuid: foobar", ":ClueCon@10.0.0.10", $var(response));
 	if (!$var(rc)) {
 		xlog("failed to execute ESL command ($var(rc))\n");
 		return -1;

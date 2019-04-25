@@ -308,7 +308,7 @@ if (has_totag())
     if (has_totag()) {
         if (!topology_hiding_match() ) {
             xlog(" cannot match request to a dialog \n");
-	    send_reply("404","Not found");
+	    send_reply(404,"Not found");
         } else
 		route(RELAY);
     }

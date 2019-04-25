@@ -780,14 +780,14 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>domain</emphasis> - logical domain within the registrar.
+			<para><emphasis>domain</emphasis> (static string) - logical domain within the registrar.
 			If a database is used, then this must be name of the <emphasis>usrloc</emphasis>
 			table which stores the contacts
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> (optional) - string of
+			<emphasis>flags</emphasis> (string, optional) - string of
 			the following flags:
 			</para>
 			<itemizedlist>
@@ -830,24 +830,23 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 					</para>
 				</listitem>
 			</itemizedlist>
-			<para>This parameter is a string composed of a set of flags.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>aor (optional)</emphasis> - variable holding a custom Address-of-Record.
+			<para><emphasis>aor (string, optional)</emphasis> - a custom Address-of-Record.
 				If not given, the AOR will be taken from the <emphasis>To</emphasis> header URI
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>outgoing_expires (optional, only relevant
-			in Contact/AOR throttling modes)</emphasis> - custom value
-		for the contact expiration interval of the outgoing REGISTER
-		request, which overrides the default
+			<para><emphasis>outgoing_expires (int, optional) </emphasis> - only relevant
+			in Contact/AOR throttling modes, this is a custom value
+			for the contact expiration interval of the outgoing REGISTER
+			request, which overrides the default
 			<emphasis><xref linkend="param_outgoing_expires"/></emphasis> module parameter.
 			</para>
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>ownership_tag</emphasis> (optional) - a cluster-shared
+			<emphasis>ownership_tag</emphasis> (string, optional) - a cluster-shared
 			tag (see the clusterer module documentation for more details) which
 			will be attached to each contact saved from the current request.
 			This tag is only relevant in clustered user location scenarios and
@@ -893,7 +892,7 @@ if (is_method("REGISTER")) {
 		xlog("L_INFO", "forwarding REGISTER to main registrar...\n");
 		$ru = "sip:10.0.0.3:5070";
 		if (!t_relay()) {
-			send_reply("500", "Server Internal Error 1");
+			send_reply(500, "Server Internal Error 1");
 		}
 
 		break;
@@ -902,7 +901,7 @@ if (is_method("REGISTER")) {
 		break;
 	default:
 		xlog("L_ERR", "mid-registrar error!\n");
-		send_reply("500", "Server Internal Error 2");
+		send_reply(500, "Server Internal Error 2");
 	}
 
 	exit;
@@ -980,13 +979,13 @@ if (is_method("REGISTER")) {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>domain</emphasis> - logical domain within the registrar.
+			<para><emphasis>domain (static string)</emphasis> - logical domain within the registrar.
 			If a database is used, then this must be name of the <emphasis>usrloc</emphasis>
 			table which stores the contacts
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis>(optional)</para>
+			<para><emphasis>flags</emphasis>(string, optional)</para>
 			<itemizedlist>
 			<listitem>
 				<para>
@@ -1087,7 +1086,7 @@ if (is_method("REGISTER")) {
 			</itemizedlist>
 		</listitem>
 		<listitem>
-			<para><emphasis>aor (optional)</emphasis> - variable holding a custom Address-of-Record.
+			<para><emphasis>aor (string, optional)</emphasis> - a custom Address-of-Record.
 				If not given, the AOR will be taken from the <emphasis>Request-URI</emphasis>
 			</para>
 		</listitem>
@@ -1115,12 +1114,12 @@ if (is_method("REGISTER")) {
 	# initial invites from the main registrar - need to look them up!
 	if (is_method("INVITE") and $si == "10.0.0.3" and $sp == 5070) {
 		if (!mid_registrar_lookup("location")) {
-			t_reply("404", "Not Found");
+			t_reply(404, "Not Found");
 			exit;
 		}
 
 		if (!t_relay())
-			send_reply("500", "Server Internal Error 3");
+			send_reply(500, "Server Internal Error 3");
 
 	    exit;
 	}

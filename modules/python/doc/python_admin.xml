@@ -237,12 +237,12 @@ modparam("python", "child_init_method", "child_initializer")
 	<itemizedlist>
 	    <listitem>
 		<para>
-		    <emphasis>method_name</emphasis> - name of the method called
+		    <emphasis>method_name</emphasis> (string) - name of the method called
 		</para>
 	    </listitem>
 	    <listitem>
 		<para>
-		    <emphasis>extra_args(optional)</emphasis> - extra arguments that can
+		    <emphasis>extra_args</emphasis> (string, optional) - extra arguments that can
 			be passed from the script to the python function.
 		</para>
 	    </listitem>

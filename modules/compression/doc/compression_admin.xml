@@ -124,14 +124,14 @@ modparam("mc", "mc_level", "3")
 	<itemizedlist>
 	<listitem>
 		<para>
-			<emphasis>algo</emphasis> - The algorithm used for compression. Currently
+			<emphasis>algo</emphasis> (int, optional) - The algorithm used for compression. Currently
 			implemented are deflate ('0') and gzip ('1').
 		</para>
 	</listitem>
 
 	<listitem>
 		<para>
-			<emphasis>flags</emphasis> - Specifies on what to apply the compression and where
+			<emphasis>flags</emphasis> (string) - Specifies on what to apply the compression and where
 			to put the result of the compression.
 		</para>
 		<para>
@@ -180,7 +180,7 @@ modparam("mc", "mc_level", "3")
 
 	<listitem>
 		<para>
-			<emphasis>whitelist</emphasis> - header names list, separated by '|' which will specify
+			<emphasis>whitelist</emphasis> (string, optional) - header names list, separated by '|' which will specify
 			which headers shall not be compressed, along with the mandatory ones, which can never be
 			compressed. The mandatory headers are the following: VIA, FROM, TO, CSEQ, ROUTE, RECORD_ROUTE,
 			CALLID. Also, CONTENT_TYPE is mandatory only if CONTENT-LENGTH > 0.
@@ -213,7 +213,7 @@ if (!mc_compress(0, "bhs", "Max-Forwards|Subject|P-Asserted-Identity"))
 $avp(algo) = 1;
 $var(flags) = "bs";
 $var(list) = "Max-Forwards | Contact";
-mc_compres($avp(algo), "$var(flags", "$var(list");
+mc_compres($avp(algo), $var(flags), $var(list);
 xlog("compression registered\n");
 ...
 	</programlisting>
@@ -300,7 +300,7 @@ xlog("compression registered\n");
 	<itemizedlist>
 	<listitem>
 		<para>
-			<emphasis>whitelist</emphasis> - Whitelist of headers not to be
+			<emphasis>whitelist</emphasis> (string, optional) - Whitelist of headers not to be
 			removed, except from the mandatory ones. The whitelist header names
 			must pe separated by '|'.
 		</para>

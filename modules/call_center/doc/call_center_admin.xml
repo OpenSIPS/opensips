@@ -289,11 +289,13 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 		<para>
 		This function can be used from REQUEST_ROUTE.
 		</para>
-		<para>
-		The <emphasis role='bold'>flowID</emphasis> mandatory parameter is
-		the ID of the flow to handle this call (push the call to that flow).
-		This can be a variable or a static string.
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>flowID (string)</emphasis> - the ID of the flow to
+				handle this call (push the call to that flow).
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		The function returns TRUE back to the script if the call was 
 		successfully pushed and handled by the Call Center engine. IMPORTANT: 
@@ -328,7 +330,7 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 ...
 if (is_method("INVITE") and !has_totag()) {
 	if (!cc_handle_call("tech_support")) {
-		send_reply("403","Cannot handle call");
+		send_reply(403,"Cannot handle call");
 		exit;
 	}
 }
@@ -347,18 +349,22 @@ if (is_method("INVITE") and !has_totag()) {
 		<para>
 		This function can be used from REQUEST_ROUTE.
 		</para>
-		<para>
-		The <emphasis role='bold'>agentID</emphasis> mandatory parameter is
-		the ID of the agent and the <emphasis role='bold'>state</emphasis>
-		is an integer value giving the new state - 0 means logged off, 
-		anything else means logged in.
-		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>agentID (string)</emphasis> - the ID of the agent
+			</para></listitem>
+			<listitem><para>
+				<emphasis>state (int)</emphasis> - an integer value giving
+				the new state - 0 means logged off, anything else means logged in.
+			</para></listitem>
+		</itemizedlist>
 		<example>
 		<title><function>cc_agent_login</function> usage</title>
 		<programlisting format="linespecific">
 ...
 # log off the 'agentX' agent
-cc_agent_login("agentX","0");
+cc_agent_login("agentX",0);
 ...
 </programlisting>
 		</example>
