@@ -43,13 +43,6 @@ struct sl_binds slb;
 /*
  * Exported functions
  */
-// static cmd_export_t cmds[] = {
-//   { "lua_exec", (cmd_function)siplua_exec1, 1, NULL, 0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-//   { "lua_exec", (cmd_function)siplua_exec2, 2, NULL, 0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-//   { "lua_meminfo", (cmd_function)siplua_meminfo, 0, NULL, 0, REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE },
-//   { 0, 0, 0, 0, 0, 0 }
-// };
-
 static cmd_export_t cmds[] = {
   {"lua_exec", (cmd_function)siplua_exec, {
     {CMD_PARAM_STR,0,0},

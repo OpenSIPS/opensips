@@ -66,18 +66,6 @@ stat_var *sent_rpls;
 stat_var *sent_err_rpls;
 stat_var *rcv_acks;
 
-/*
-static cmd_export_t cmds[]={
-	{"sl_send_reply", (cmd_function)w_sl_send_reply, 2, fixup_sl_send_reply, 0,
-			REQUEST_ROUTE | ERROR_ROUTE },
-	{"sl_reply_error",(cmd_function)w_sl_reply_error,0, 0,                   0,
-			REQUEST_ROUTE},
-	{"load_sl",       (cmd_function)load_sl,         0, 0,                   0,
-			0},
-	{0,0,0,0,0,0}
-};
-*/
-
 static cmd_export_t cmds[]={
 	{"sl_send_reply",(cmd_function)w_sl_send_reply, {	
 		{CMD_PARAM_INT,fixup_sl_send_reply,0},

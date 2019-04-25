@@ -82,16 +82,6 @@ static proc_export_t sms_procs[] = {
 	{0,0,0,0,0,0}
 };
 
-/*
-static cmd_export_t cmds[]={
-	{"sms_send_msg_to_net", (cmd_function)w_sms_send_msg_to_net, 1,
-	     fixup_sms_send_msg_to_net, 0, REQUEST_ROUTE},
-	{"sms_send_msg",        (cmd_function)w_sms_send_msg,        0,
-	     0, 0,                         REQUEST_ROUTE},
-	{0,0,0,0,0,0}
-};
-*/
-
 static cmd_export_t cmds[]={
 	{"sms_send_msg_to_net", (cmd_function)w_sms_send_msg_to_net, {
 		{CMD_PARAM_STR,fixup_sms_send_msg_to_net,0}, {0,0,0}},

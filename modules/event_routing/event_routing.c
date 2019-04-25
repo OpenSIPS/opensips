@@ -65,16 +65,6 @@ static param_export_t params[] = {
 };
 
 /* exported module functions (to script) */
-// static cmd_export_t cmds[]={
-// 	{"notify_on_event", (cmd_function)notify_on_event, 3,
-// 		fixup_notify, 0,
-// 		EVENT_ROUTE|REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE },
-// 	{"notify_on_event", (cmd_function)notify_on_event, 4,
-// 		fixup_notify, 0,
-// 		EVENT_ROUTE|REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE },
-// 	{0,0,0,0,0,0}
-// };
-
 static cmd_export_t cmds[]={
 	{"notify_on_event", (cmd_function)notify_on_event, {
 		{CMD_PARAM_STR, fix_event_name, 0},
@@ -86,11 +76,6 @@ static cmd_export_t cmds[]={
 };
 
 /* exported module async functions (to script) */
-// static acmd_export_t acmds[] = {
-// 	{"wait_for_event",  (acmd_function)wait_for_event,  3, fixup_wait },
-// 	{0, 0, 0, 0}
-// };
-
 static acmd_export_t acmds[] = {
 	{"wait_for_event",  (acmd_function)wait_for_event, {
 		{CMD_PARAM_STR, fix_event_name, 0},
