@@ -55,19 +55,6 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 		str * s, str* ss, regex_t* re, int op,int description);
 
 
-
-int fixup_codec(void** param, int param_no)
-{
-	return fixup_sgp_sgp(param,param_no);
-}
-
-
-int fixup_codec_regexp(void** param, int param_no)
-{
-	return fixup_regexp_dynamic_null(param, param_no);
-}
-
-
 /*
  * Create the necessary lumps from the message
  */
@@ -669,270 +656,74 @@ end:
 }
 
 
-int codec_find (struct sip_msg* msg, char* str1 )
+int codec_find(struct sip_msg* msg, str* codec, str* clock)
 {
-	str res = {0,0};
+	LM_DBG("searching for codec <%.*s>, clock <%.*s> \n",
+		codec->len, codec->s,
+		clock ? clock->len : 0, clock ? clock->s : NULL);
 
-	if(fixup_get_svalue(msg, (gparam_p)str1, &res)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	LM_DBG("searching for codec <%.*s> \n",res.len,res.s);
-
-	return do_for_all_streams( msg, &res, NULL, NULL,
-		FIND, DESC_NAME);
+	return do_for_all_streams(msg, codec, clock, NULL, FIND, DESC_NAME);
 }
 
-int codec_find_re (struct sip_msg* msg, char* str1 )
+int codec_find_re (struct sip_msg* msg, regex_t* re)
 {
-	regex_t *re;
-	int do_free;
-	int ret;
-
-	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
-	if (!re) {
-		LM_ERR("Failed to get regular expression \n");
-		return -1;
-	}
-
-	ret = do_for_all_streams(msg, NULL, NULL, re,
-		FIND, DESC_REGEXP);
-
-	if (do_free)
-		fixup_free_regexp((void **)&re);
-	return ret;
+	return do_for_all_streams(msg, NULL, NULL, re, FIND, DESC_REGEXP);
 }
 
 
-int codec_find_clock (struct sip_msg* msg, char* str1,char * str2 )
+int codec_delete_re(struct sip_msg* msg, regex_t* re)
 {
-	str codec = {0,0},clock = {0,0};
-
-	if(fixup_get_svalue(msg, (gparam_p)str1, &codec)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	if(fixup_get_svalue(msg, (gparam_p)str2, &clock)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	LM_DBG("searching for codec <%.*s> with clock <%.*s> \n",
-		codec.len,codec.s,clock.len,clock.s);
-
-	return do_for_all_streams( msg, &codec, &clock, NULL,
-		FIND, DESC_NAME_AND_CLOCK);
+	return do_for_all_streams(msg, NULL, NULL, re, DELETE, DESC_REGEXP);
 }
 
 
-int codec_delete (struct sip_msg* msg, char* str1 )
+int codec_delete_except_re(struct sip_msg* msg, regex_t* re)
 {
-	str res = {0,0};
-
-	if(fixup_get_svalue(msg, (gparam_p)str1, &res)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	LM_DBG("deleting codec <%.*s> \n",res.len,res.s);
-
-	return do_for_all_streams( msg, &res, NULL, NULL,
-		DELETE, DESC_NAME);
-}
-
-
-int codec_delete_re (struct sip_msg* msg, char* str1 )
-{
-	regex_t *re;
-	int do_free;
-	int ret;
-
-	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
-	if (!re) {
-		LM_ERR("Failed to get regular expression \n");
-		return -1;
-	}
-
-	ret = do_for_all_streams( msg, NULL, NULL, re,
-		DELETE, DESC_REGEXP);
-
-	if (do_free)
-		fixup_free_regexp((void **)&re);
-	return ret;
-}
-
-
-int codec_delete_except_re (struct sip_msg* msg, char* str1 )
-{
-	regex_t *re;
-	int do_free;
-	int ret;
-
-	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
-	if (!re) {
-		LM_ERR("Failed to get regular expression \n");
-		return -1;
-	}
-
-	ret = do_for_all_streams( msg, NULL, NULL, re,
+	return do_for_all_streams( msg, NULL, NULL, re,
 		DELETE, DESC_REGEXP_COMPLEMENT);
-
-	if (do_free)
-		fixup_free_regexp((void **)&re);
-	return ret;
 }
 
 
-int codec_delete_clock (struct sip_msg* msg, char* str1 ,char * str2)
+int codec_delete(struct sip_msg* msg, str* codec, str* clock)
 {
-	str codec = {0,0},clock = {0,0};
-
-	if(fixup_get_svalue(msg, (gparam_p)str1, &codec)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	if(fixup_get_svalue(msg, (gparam_p)str2, &clock)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
 	LM_DBG("deleting codec <%.*s> with clock <%.*s> \n",
-		codec.len,codec.s,clock.len,clock.s);
+		codec->len, codec->s, clock ? clock->len : 0, clock ? clock->s : NULL);
 
-	return do_for_all_streams( msg, &codec, &clock, NULL,
+	return do_for_all_streams( msg, codec, clock, NULL,
 		DELETE, DESC_NAME_AND_CLOCK);
 }
 
 
-int codec_move_up (struct sip_msg* msg, char* str1)
+int codec_move_up_re(struct sip_msg* msg, regex_t* re)
 {
-	str res = {0,0};
-
-	if(fixup_get_svalue(msg, (gparam_p)str1, &res)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	LM_DBG("moving up codec <%.*s> \n",res.len,res.s);
-
-	return do_for_all_streams( msg, &res, NULL, NULL,
-		ADD_TO_FRONT, DESC_NAME);
-}
-
-
-int codec_move_up_re (struct sip_msg* msg, char* str1)
-{
-	regex_t *re;
-	int do_free;
-	int ret;
-
-	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
-	if (!re) {
-		LM_ERR("Failed to get regular expression \n");
-		return -1;
-	}
-
-	ret = do_for_all_streams( msg, NULL, NULL, re,
+	return do_for_all_streams( msg, NULL, NULL, re,
 		ADD_TO_FRONT, DESC_REGEXP);
-
-	if (do_free)
-		fixup_free_regexp((void **)&re);
-	return ret;
 }
 
 
-int codec_move_up_clock (struct sip_msg* msg, char* str1 ,char * str2)
+int codec_move_up(struct sip_msg* msg, str* codec, str* clock)
 {
-	str codec = {0,0},clock = {0,0};
-
-	if(fixup_get_svalue(msg, (gparam_p)str1, &codec)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	if(fixup_get_svalue(msg, (gparam_p)str2, &clock)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
 	LM_DBG("moving up codec <%.*s> with clock <%.*s> \n",
-		codec.len,codec.s,clock.len,clock.s);
+		codec->len, codec->s, clock ? clock->len : 0, clock ? clock->s : NULL);
 
-	return do_for_all_streams( msg, &codec, &clock, NULL,
+	return do_for_all_streams(msg, codec, clock, NULL,
 		ADD_TO_FRONT, DESC_NAME_AND_CLOCK);
 }
 
 
-int codec_move_down (struct sip_msg* msg, char* str1)
+int codec_move_down_re(struct sip_msg* msg, regex_t* re)
 {
-	str res = {0,0};
-
-	if(fixup_get_svalue(msg, (gparam_p)str1, &res)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	LM_DBG("moving down codec <%.*s> \n",res.len,res.s);
-
-	return do_for_all_streams( msg, &res, NULL, NULL,
-		ADD_TO_BACK, DESC_NAME);
-}
-
-
-int codec_move_down_re (struct sip_msg* msg, char* str1)
-{
-	regex_t *re;
-	int do_free;
-	int ret;
-
-	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
-	if (!re) {
-		LM_ERR("Failed to get regular expression \n");
-		return -1;
-	}
-
-	ret = do_for_all_streams( msg, NULL, NULL, re,
+	return do_for_all_streams( msg, NULL, NULL, re,
 		ADD_TO_BACK, DESC_REGEXP);
-
-	if (do_free)
-		fixup_free_regexp((void **)&re);
-	return ret;
 }
 
 
-int codec_move_down_clock (struct sip_msg* msg, char* str1 ,char * str2)
+int codec_move_down(struct sip_msg* msg, str* codec, str* clock)
 {
-	str codec = {0,0},clock = {0,0};
-
-	if(fixup_get_svalue(msg, (gparam_p)str1, &codec)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
-	if(fixup_get_svalue(msg, (gparam_p)str2, &clock)!=0)
-	{
-		LM_ERR("no mode value\n");
-		return -1;
-	}
-
 	LM_DBG("moving down codec <%.*s> with clock <%.*s> \n",
-		codec.len,codec.s,clock.len,clock.s);
+		codec->len, codec->s, clock ? clock->len : 0, clock ? clock->s : NULL);
 
-	return do_for_all_streams( msg, &codec, &clock, NULL,
+	return do_for_all_streams( msg, codec, clock, NULL,
 		ADD_TO_BACK, DESC_NAME_AND_CLOCK);
 }
 
@@ -1034,41 +825,15 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 }
 
 
-int stream_find (struct sip_msg* msg, char* str1 )
+int stream_find(struct sip_msg* msg, regex_t* re)
 {
-	regex_t *re;
-	int do_free,ret;
-
-	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
-	if (!re) {
-		LM_ERR("Failed to get regular expression \n");
-		return -1;
-	}
-
-	ret = handle_streams(msg, re, 0);
-	if (do_free)
-		fixup_free_regexp((void **)&re);
-
-	return ret;
+	return handle_streams(msg, re, 0);
 }
 
 
-int stream_delete (struct sip_msg* msg, char* str1 )
+int stream_delete(struct sip_msg* msg, regex_t* re)
 {
-	regex_t *re;
-	int do_free,ret;
-
-	re = fixup_get_regex(msg,(gparam_p)str1,&do_free);
-	if (!re) {
-		LM_ERR("Failed to get regular expression \n");
-		return -1;
-	}
-
-	ret = handle_streams(msg, re, 1);
-	if (do_free)
-		fixup_free_regexp((void **)&re);
-
-	return ret;
+	return handle_streams(msg, re, 1);
 }
 
 

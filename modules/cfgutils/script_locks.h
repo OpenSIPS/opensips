@@ -30,15 +30,15 @@
 #include "../../ut.h"
 #include "../../mod_fix.h"
 
-int fixup_static_lock(void **param, int param_no);
+int fixup_static_lock(void **param);
 int create_dynamic_locks(void);
 
-int get_static_lock(struct sip_msg *msg, char *lock);
-int release_static_lock(struct sip_msg *msg, char *lock);
+int get_static_lock(struct sip_msg *msg, gen_lock_t *lock);
+int release_static_lock(struct sip_msg *msg, gen_lock_t *lock);
 
-int get_dynamic_lock(struct sip_msg *msg, char *string);
-int release_dynamic_lock(struct sip_msg *msg, char *string);
-int strings_share_lock(struct sip_msg *msg, char *s1, char *s2);
+int get_dynamic_lock(struct sip_msg *msg, str *string);
+int release_dynamic_lock(struct sip_msg *msg, str *string);
+int strings_share_lock(struct sip_msg *msg, str *s1, str *s2);
 
 void destroy_script_locks(void);
 

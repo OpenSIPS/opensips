@@ -29,6 +29,7 @@
 #include "../../action.h"
 #include "../../config.h"
 #include "../../parser/parse_uri.h"
+#include "../../ut.h"
 
 #include "python_exec.h"
 #include "python_mod.h"
@@ -36,28 +37,29 @@
 #include "python_support.h"
 
 int
-python_exec1(struct sip_msg* _msg, char* method_name, char *foobar)
-{
-    return python_exec2(_msg, method_name, NULL);
-}
-
-int
-python_exec2(struct sip_msg *_msg, char *method_name, char *mystr)
+python_exec(struct sip_msg *_msg, str *_method_name_s, str *_mystr_s)
 {
     PyObject *pFunc, *pArgs, *pValue, *pResult;
     PyObject *msg;
     int rval;
+    str method_name;
+    str mystr;
+
+    if (pkg_nt_str_dup(&method_name, _method_name_s) < 0)
+        return -1;
+    if (_mystr_s && pkg_nt_str_dup(&mystr, _mystr_s) < 0)
+        return -1;
 
     PyEval_AcquireLock();
     PyThreadState_Swap(myThreadState);
 
-    pFunc = PyObject_GetAttrString(handler_obj, method_name);
+    pFunc = PyObject_GetAttrString(handler_obj, method_name.s);
     if (pFunc == NULL || !PyCallable_Check(pFunc)) {
-        LM_ERR("%s not found or is not callable\n", method_name);
+        LM_ERR("%s not found or is not callable\n", method_name.s);
         Py_XDECREF(pFunc);
         PyThreadState_Swap(NULL);
         PyEval_ReleaseLock();
-        return -1;
+        goto error;
     }
 
     msg = newmsgobject(_msg);
@@ -66,10 +68,10 @@ python_exec2(struct sip_msg *_msg, char *method_name, char *mystr)
         Py_DECREF(pFunc);
         PyThreadState_Swap(NULL);
         PyEval_ReleaseLock();
-        return -1;
+        goto error;
     }
 
-    pArgs = PyTuple_New(mystr == NULL ? 1 : 2);
+    pArgs = PyTuple_New(mystr.s == NULL ? 1 : 2);
     if (pArgs == NULL) {
         LM_ERR("PyTuple_New() has failed\n");
         msg_invalidate(msg);
@@ -77,21 +79,21 @@ python_exec2(struct sip_msg *_msg, char *method_name, char *mystr)
         Py_DECREF(pFunc);
         PyThreadState_Swap(NULL);
         PyEval_ReleaseLock();
-        return -1;
+        goto error;
     }
     PyTuple_SetItem(pArgs, 0, msg);
     /* Tuple steals msg */
 
-    if (mystr != NULL) {
-        pValue = PyString_FromString(mystr);
+    if (_mystr_s != NULL) {
+        pValue = PyString_FromString(mystr.s);
         if (pValue == NULL) {
-            LM_ERR("PyString_FromString(%s) has failed\n", mystr);
+            LM_ERR("PyString_FromString(%s) has failed\n", mystr.s);
             msg_invalidate(msg);
             Py_DECREF(pArgs);
             Py_DECREF(pFunc);
             PyThreadState_Swap(NULL);
             PyEval_ReleaseLock();
-            return -1;
+            goto error;
         }
         PyTuple_SetItem(pArgs, 1, pValue);
         /* Tuple steals pValue */
@@ -103,22 +105,32 @@ python_exec2(struct sip_msg *_msg, char *method_name, char *mystr)
     Py_DECREF(pFunc);
     if (PyErr_Occurred()) {
         Py_XDECREF(pResult);
-        python_handle_exception("python_exec2", method_name);
+        python_handle_exception("python_exec2", method_name.s);
         PyThreadState_Swap(NULL);
         PyEval_ReleaseLock();
-        return -1;
+        goto error;
     }
 
     if (pResult == NULL) {
         LM_ERR("PyObject_CallObject() returned NULL\n");
         PyThreadState_Swap(NULL);
         PyEval_ReleaseLock();
-        return -1;
+        goto error;
     }
 
     rval = PyInt_AsLong(pResult);
     Py_DECREF(pResult);
     PyThreadState_Swap(NULL);
     PyEval_ReleaseLock();
+    
+    pkg_free(method_name.s);
+
     return rval;
+
+error:
+    pkg_free(method_name.s);
+    if (_mystr_s)
+        pkg_free(mystr.s);
+
+    return -1;
 }

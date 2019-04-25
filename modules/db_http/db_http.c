@@ -46,6 +46,7 @@ int cap_id = 0;
 int cap_replace = 0;
 int cap_insert_update = 0;
 int use_ssl = 0 ;
+int disable_expect = 0;
 
 unsigned int db_http_timeout = 30000; /* Default is 30 seconds */
 
@@ -54,10 +55,9 @@ unsigned int db_http_timeout = 30000; /* Default is 30 seconds */
  * MySQL database module interface
  */
 static cmd_export_t cmds[] = {
-	{"db_bind_api",         (cmd_function)db_http_bind_api,      0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"db_bind_api",         (cmd_function)db_http_bind_api, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters
@@ -73,6 +73,7 @@ static param_export_t params[] = {
 	{"quote_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_quote_delim},
 	{"value_delimiter", STR_PARAM | USE_FUNC_PARAM ,set_value_delim},
 	{"timeout", INT_PARAM,&db_http_timeout},
+	{"disable_expect", INT_PARAM,&disable_expect},
 	{0, 0, 0}
 };
 
@@ -94,7 +95,8 @@ struct module_exports exports = {
 	http_mod_init,   /* module initialization function */
 	0,               /* response function*/
 	0,               /* destroy function */
-	0                /* per-child init function */
+	0,               /* per-child init function */
+	0                /* reload confirm function */
 };
 
 

@@ -49,8 +49,8 @@ extern int fs_api_init(void);
 int fs_api_wait_init(void);
 
 static cmd_export_t cmds[] = {
-	{ "fs_bind", (cmd_function)fs_bind, 1, NULL, NULL, 0 },
-	{ NULL, NULL, 0, NULL, NULL, 0 }
+	{"fs_bind", (cmd_function)fs_bind, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t mod_params[] = {
@@ -93,7 +93,8 @@ struct module_exports exports= {
 	mod_init,         /* module initialization function */
 	NULL,             /* reply processing function */
 	NULL,
-	NULL              /* per-child init function */
+	NULL,             /* per-child init function */
+	NULL              /* reload confirm function */
 };
 
 static int mod_init(void)

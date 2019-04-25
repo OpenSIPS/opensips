@@ -45,21 +45,9 @@ typedef struct mc_other_hdr_lst
 
 typedef struct mc_whitelist
 {
-	unsigned char* hdr_mask;
+	unsigned char hdr_mask[HDR_MASK_SIZE];
 	struct mc_other_hdr_lst* other_hdr;
 } mc_whitelist_t, *mc_whitelist_p;
-
-
-
-
-typedef struct mc_param
-{
-	int type;
-	union {
-		mc_whitelist_p lst;
-		pv_spec_t *pvs;
-	} v;
-} mc_param_t, *mc_param_p;
 
 typedef struct body_fragm
 {
@@ -72,12 +60,6 @@ struct mc_comp_args {
 	mc_whitelist_p hdr2compress_list;
 	int flags;
 	int algo;
-	mc_param_p wh_param;
-};
-
-struct mc_cmpct_args {
-	mc_whitelist_p wh_list;
-	mc_param_p wh_param;
 };
 
 #endif

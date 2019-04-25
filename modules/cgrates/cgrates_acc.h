@@ -37,7 +37,8 @@
  *  - -3: invalid message type
  *  - -4: invalid message
  */
-int w_cgr_acc(struct sip_msg* msg, char *flag_c, char* acc_c, char *dst_c, char *tag_c);
+int w_cgr_acc(struct sip_msg* msg, void *flag_c, str* acc_c, str *dst_c,
+		str *tag_c);
 
 struct cgr_acc_sess {
 	/* should we guard anything here? */

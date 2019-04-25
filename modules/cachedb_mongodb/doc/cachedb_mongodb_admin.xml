@@ -164,28 +164,36 @@ sudo yum install json-c-devel mongo-c-driver-devel
 		<title>Set <varname>cachedb_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# Connecting to a local <emphasis>mongod</emphasis> instance (single instance)
+# Connect to a single <emphasis>mongod</emphasis> instance
 modparam("cachedb_mongodb", "cachedb_url",
-         "mongodb:instance1://localhost:27017/opensipsDB.dialog")
+         "mongodb://localhost:27017/opensipsDB.dialog")
 
-# Connecting to a local <emphasis>mongos</emphasis> instance (routes to a MongoDB cluster)
+# Connect to a <emphasis>mongod</emphasis> replica set
 modparam("cachedb_mongodb", "cachedb_url",
-         "mongodb:cluster://localhost:27017/opensipsDB.dialog")
+         "mongodb://10.0.0.10,10.0.0.11:27017/opensipsDB.dialog?replSet=my-set")
 
-# Connecting to a local <emphasis>mongos</emphasis> instance with failover to an alternate box
+# Connect to a <emphasis>mongos</emphasis> instance (routes to a sharded cluster)
 modparam("cachedb_mongodb", "cachedb_url",
-         "mongodb:cluster://localhost:27017,10.0.0.10:27017/opensipsDB.dialog")
+         "mongodb://localhost/opensipsDB.dialog")
+
+# Example of multiple connections:
+#   * to a main <emphasis>mongos</emphasis>, with failover to a backup <emphasis>mongos</emphasis>
+#   * to a single <emphasis>mongod</emphasis>
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:cluster://localhost,10.0.0.10:27017/opensipsDB.dialog")
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb://localhost:27017/opensipsDB.userlocation")
 ...
 	</programlisting>
 		</example>
 
 		<example>
-		<title>Use MongoDB servers </title>
+		<title>Reference MongoDB connections</title>
 		<programlisting format="linespecific">
 ...
-cache_store("mongodb:instance1", "key", "$ru value");
-cache_fetch("mongodb:instance2", "key", $avp(10));
+cache_store("mongodb", "key", "$ru value");
 cache_remove("mongodb:cluster", "key");
+cache_fetch("mongodb:instance1", "key", $avp(10));
 ...
 	</programlisting>
 		</example>

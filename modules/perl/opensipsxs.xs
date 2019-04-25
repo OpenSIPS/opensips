@@ -213,6 +213,8 @@ int moduleFunc(struct sip_msg *m, char *func,
 	       char *param1, char *param2,
 	       int *retval) {
 
+/* TODO: adapt to new cmd_export and params interface */
+#if 0
 	cmd_export_t *exp_func_struct;
 	struct action *act;
 	char *argv[2];
@@ -247,7 +249,7 @@ int moduleFunc(struct sip_msg *m, char *func,
 		argv[1] = NULL;
 	}
 
-	exp_func_struct = find_cmd_export_t(func, argc, 0);
+	exp_func_struct = find_cmd_export_t(func, 0);
 	if (!exp_func_struct) {
 		LM_ERR("function '%s' called, but not available.", func);
 		*retval = -1;
@@ -331,6 +333,7 @@ int moduleFunc(struct sip_msg *m, char *func,
 	if (argv[1]) pkg_free(argv[1]);
 
 	pkg_free(act);
+#endif
 	
 	return 1;
 }

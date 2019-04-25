@@ -255,14 +255,14 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 137 68 2705 2619
+   1. Liviu Chircu (@liviuchircu) 141 70 2784 2696
    2. Vlad Paiu (@vladpaiu) 34 9 2964 50
    3. Ovidiu Sas (@ovidiusas) 10 8 92 16
    4. Razvan Crainea (@razvancrainea) 8 6 25 24
-   5. @jalung 4 1 97 56
-   6. Julián Moreno Patiño 3 1 1 1
-   7. Peter Lemenkov (@lemenkov) 3 1 1 1
-   8. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
+   6. @jalung 4 1 97 56
+   7. Julián Moreno Patiño 3 1 1 1
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
    9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -285,14 +285,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2018
-   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4. @jalung                             Aug 2017 - Aug 2017
-   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7. Vlad Paiu (@vladpaiu)               Jan 2013 - May 2015
-   8. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Oct 2014
+   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2018
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5. @jalung                             Aug 2017 - Aug 2017
+   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   7. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8. Vlad Paiu (@vladpaiu)               Jan 2013 - May 2015
    9. Ovidiu Sas (@ovidiusas)             Mar 2013 - Feb 2014
 
    (1) including any documentation-related commits, excluding

@@ -130,10 +130,8 @@ typedef struct action_elem_ {
 } action_elem_t, *action_elem_p;
 
 /*! \brief increase MAX_ACTION_ELEMS to support more module function parameters
-   if you change this define, you need also to change the assignment in
-   the action.c file
  */
-#define MAX_ACTION_ELEMS	7
+#define MAX_ACTION_ELEMS	9
 struct action{
 	int type;  /* forward, drop, log, send ...*/
 	action_elem_t elem[MAX_ACTION_ELEMS];
@@ -149,6 +147,7 @@ struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd);
 struct action* mk_action(int type, int n, action_elem_t *elem,
 		int line, char *file);
 struct action* append_action(struct action* a, struct action* b);
+void free_action_list( struct action *a);
 
 
 void print_action(struct action* a);
@@ -157,8 +156,4 @@ void print_actions(struct action* a);
 int is_mod_func_used(struct action *a, char *name, int param_no);
 int is_mod_async_func_used(struct action *a, char *name, int param_no);
 
-
-
-
 #endif
-

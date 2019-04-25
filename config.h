@@ -41,6 +41,7 @@
 #define CFG_FILE CFG_DIR "opensips.cfg"
 #define MEM_WARMING_DEFAULT_PATTERN_FILE CFG_DIR "mem_warming_pattern"
 #define MEM_WARMING_DEFAULT_PERCENTAGE 75
+#define RESTART_PERSISTENCY_MEM_FILE ".restart_persistency.cache"
 
 #define TLS_PKEY_FILE CFG_DIR "tls/ckey.pem"
 #define TLS_CERT_FILE CFG_DIR "tls/cert.pem"
@@ -50,7 +51,7 @@
 
 #define MAX_LISTEN 16		/*!< maximum number of addresses on which we will listen */
 
-#define CHILD_NO    8		/*!< default number of child processes started */
+#define UDP_WORKERS_NO    8		/*!< default number of UDP workers started */
 
 /*! \brief maximum allowed execution time of a high-priority, graceful
  *    shutdown job broadcast before the attendant process SIGKILLs any

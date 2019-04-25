@@ -201,7 +201,7 @@
 		</para>
 
 		<programlisting format="linespecific">
-    LD_LIBRARY_PATH=/usr/local/lib opensipsctl start
+			LD_LIBRARY_PATH=/usr/local/lib /etc/init.d/opensips start
 		</programlisting>
 
 	    </answer>

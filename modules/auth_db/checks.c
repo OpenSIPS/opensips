@@ -146,7 +146,7 @@ static inline int check_username(struct sip_msg* _m, str* _table,
 /*
  * Check username part in To header field
  */
-int check_to(struct sip_msg* _m, char* _table)
+int check_to(struct sip_msg* _m, str* _table)
 {
 	if (!_m->to && ((parse_headers(_m, HDR_TO_F, 0) == -1) || (!_m->to))) {
 		LM_ERR("Error while parsing To header field\n");
@@ -157,14 +157,14 @@ int check_to(struct sip_msg* _m, char* _table)
 		return ERR_INTERNAL;
 	}
 
-	return check_username(_m, (str*)_table, &get_to(_m)->parsed_uri);
+	return check_username(_m, _table, &get_to(_m)->parsed_uri);
 }
 
 
 /*
  * Check username part in From header field
  */
-int check_from(struct sip_msg* _m, char* _table)
+int check_from(struct sip_msg* _m, str* _table)
 {
 	if (parse_from_header(_m) < 0) {
 		LM_ERR("Error while parsing From header field\n");
@@ -175,14 +175,14 @@ int check_from(struct sip_msg* _m, char* _table)
 		return ERR_INTERNAL;
 	}
 
-	return check_username(_m, (str*)_table, &get_from(_m)->parsed_uri);
+	return check_username(_m, _table, &get_from(_m)->parsed_uri);
 }
 
 
 /*
  * Check if uri belongs to a local user
  */
-int does_uri_exist(struct sip_msg* _msg, char* _uri, char* _table)
+int does_uri_exist(struct sip_msg* _msg, str* uri, str* _table)
 {
 	static db_ps_t my_ps = NULL;
 	db_key_t keys[2];
@@ -190,25 +190,19 @@ int does_uri_exist(struct sip_msg* _msg, char* _uri, char* _table)
 	db_key_t cols[1];
 	db_res_t* res = NULL;
 	struct sip_uri p_uri;
-	str uri;
 
-	if (fixup_get_svalue(_msg, (gparam_p)_uri, &uri)!=0) {
-		LM_ERR("invalid URI parameter\n");
-		return ERR_INTERNAL;
-	}
-
-	if (uri.len==0) {
+	if (uri->len==0) {
 		LM_DBG("empty URI parameter\n");
 		return ERR_INTERNAL;
 	}
 
-	if (parse_uri( uri.s, uri.len, &p_uri)) {
+	if (parse_uri( uri->s, uri->len, &p_uri)) {
 		LM_DBG("URI parameter is not a valid SIP URI <%.*s>\n",
-			uri.len, uri.s);
+			uri->len, uri->s);
 		return ERR_INTERNAL;
 	}
 
-	auth_dbf.use_table(auth_db_handle, (str*)_table);
+	auth_dbf.use_table(auth_db_handle, _table);
 	keys[0] = &user_column;
 	keys[1] = &domain_column;
 	cols[0] = &user_column;
@@ -241,9 +235,8 @@ int does_uri_exist(struct sip_msg* _msg, char* _uri, char* _table)
  * Set result pvs
  */
 static int set_result_pv(struct sip_msg* _msg, unsigned short _avp_type,
-											int_str _avp_val, char* _res_avp)
+					int_str _avp_val, pv_spec_t* _avp)
 {
-	pv_spec_t* _avp = (pv_spec_t*) _res_avp;
 	int avp_name;
 	unsigned short avp_type;
 
@@ -288,10 +281,9 @@ static int set_result_pv(struct sip_msg* _msg, unsigned short _avp_type,
 /**
  * Retrieves authentication id and realm from uri_table for a given sip uri
  */
-int get_auth_id(struct sip_msg* _msg, char *_table, char* _uri,
-										char* _auth_user, char* _auth_realm)
+int get_auth_id(struct sip_msg* _msg, str *_table, str* uri,
+			pv_spec_t* _auth_user, pv_spec_t* _auth_realm)
 {
-	str uri;
 	struct sip_uri sip_uri;
 	int_str ret_authuser, ret_authrealm;
 	static db_ps_t my_ps = NULL;
@@ -301,24 +293,15 @@ int get_auth_id(struct sip_msg* _msg, char *_table, char* _uri,
 	db_res_t* dbres = NULL;
 	db_row_t* dbres_row;
 
-
-	/* retrieve the string value of the given uri (pseudo variables will
-	 * also be already substituted with their proper values)  */
-	if (_uri == NULL || pv_printf_s(_msg, (pv_elem_t *) _uri, &uri) != 0 ||
-	uri.len == 0 || uri.s == NULL) {
-		LM_WARN("cannot get string for value\n");
-		return -1;
-	}
-
 	/* check if we really have a valid uri as parameter */
-	if (parse_uri(uri.s, uri.len, &sip_uri) < 0
+	if (parse_uri(uri->s, uri->len, &sip_uri) < 0
 	&& (sip_uri.user.s == NULL || sip_uri.user.len <= 0)) {
-		LM_ERR("First parameter must be a URI with username (val = '%s').",
-			uri.s);
+		LM_ERR("First parameter must be a URI with username (val = '%.*s').",
+			uri->len, uri->s);
 		return -1;
 	}
 
-	auth_dbf.use_table(auth_db_handle, (str*)_table);
+	auth_dbf.use_table(auth_db_handle, _table);
 	keys[0] = &uri_uriuser_column;
 	keys[1] = &uri_domain_column;
 	cols[0] = &uri_user_column;

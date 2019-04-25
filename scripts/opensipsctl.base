@@ -400,26 +400,6 @@ EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_acl"
 
-usage_cr() {
-	echo
-	mecho " -- command 'cr' - manage carrierroute tables"
-	echo
-cat <<EOF
- cr show ....................................................... show tables
- cr reload ..................................................... reload tables
- cr dump ....................................................... show in memory tables
- cr addrt <routing_tree_id> <routing_tree> ..................... add a tree
- cr rmrt  <routing_tree> ....................................... rm a tree
- cr addcarrier <carrier> <scan_prefix> <domain> <rewrite_host> ................
-               <prob> <strip> <rewrite_prefix> <rewrite_suffix> ...............
-               <flags> <mask> <comment> .........................add a carrier
-               (prob, strip, rewrite_prefix, rewrite_suffix,...................
-                flags, mask and comment are optional arguments) ...............
- cr rmcarrier  <carrier> <scan_prefix> <domain> ................ rm a carrier
-EOF
-}
-USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_cr"
-
 usage_rpid() {
 	echo
 	mecho " -- command 'rpid' - manage Remote-Party-ID (RPID)"
@@ -434,24 +414,21 @@ USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_rpid"
 
 usage_subscriber() {
 	echo
-	mecho " -- command 'add|passwd|rm' - manage subscribers"
+	mecho " -- command 'add|passwd' - manage subscribers"
 	echo
 cat <<EOF
  add <username> <password> .......... add a new subscriber (*)
  passwd <username> <passwd> ......... change user's password (*)
- rm <username> ...................... delete a user (*)
 EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_subscriber"
 
 usage_address() {
 	echo
-	mecho " -- command 'add|dump|reload|rm|show' - manage address"
+	mecho " -- command 'add|rm|show' - manage address"
 	echo
 cat <<EOF
  address show ...................... show db content
- address dump ...................... show cache content
- address reload .................... reload db table into cache
  address add <grp> <ip> <mask> <port> <proto> [<context_info>] [<pattern>]
              ....................... add a new entry
 	     ....................... (from_pattern and tag are optional arguments)
@@ -460,93 +437,6 @@ cat <<EOF
 EOF
 }
 USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_address"
-
-usage_dr() {
-	echo
-	mecho " -- command 'dr' - manage dynamic routing"
-	echo
-cat <<EOF
-   * Examples: dr addgw '1' 10 '192.168.2.2' 0 '' 'GW001' 0 'first_gw'
-   *           dr addgw '2' 20 '192.168.2.3' 0 '' 'GW002' 0 'second_gw'
-   *           dr rmgw 2
-   *           dr addgrp 'alice' 'example.com' 10 'first group'
-   *           dr rmgrp 1
-   *           dr addcr 'cr_1' '10' 0 'CARRIER_1' 'first_carrier'
-   *           dr rmcr 1
-   *           dr addrule '10,20' '+1' '20040101T083000' 0 0 '1,2' 'NA_RULE' 'NA routing'
-   *           dr rmrule 1
- dr show ............................ show dr tables
- dr addgw <gwid> <type> <address> <strip> <pri_prefix>
-          <attrs> <probe_mode> <description>
-    ................................. add gateway
- dr rmgw <id> ....................... delete gateway
- dr addgrp <username> <domain> <groupid> <description>
-    ................................. add gateway group
- dr rmgrp <id> ...................... delete gateway group
- dr addcr <carrierid> <gwlist> <flags> <attrs> <description>
-          ........................... add carrier
- dr rmcr <id> ....................... delete carrier
- dr addrule <groupid> <prefix> <timerec> <priority> <routeid>
-            <gwlist> <attrs> <description>
-    ................................. add rule
- dr rmrule <ruleid> ................. delete rule
- dr reload .......................... reload dr tables
- dr gw_status ....................... show gateway status
- dr carrier_status .................. show carrier status
-EOF
-}
-USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_dr"
-
-usage_dispatcher() {
-	echo
-	mecho " -- command 'dispatcher' - manage dispatcher"
-	echo
-cat <<EOF
-   * Examples:  dispatcher addgw 1 sip:1.2.3.1:5050 '' 0 50 'og1' 'Outbound Gateway1'
-   *            dispatcher addgw 2 sip:1.2.3.4:5050 '' 0 50 'og2' 'Outbound Gateway2'
-   *            dispatcher rmgw 4
- dispatcher show ..................... show dispatcher gateways
- dispatcher reload ................... reload dispatcher gateways
- dispatcher dump ..................... show in memory dispatcher gateways
- dispatcher addgw <setid> <destination> <socket> <state> <weight> <attrs> [description]
-            .......................... add gateway
- dispatcher rmgw <id> ................ delete gateway
-EOF
-}
-USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_dispatcher"
-
-usage_dialplan() {
-	echo
-	mecho " -- command 'dialplan' - manage dialplans"
-	echo
-cat <<EOF
- dialplan show <dpid> .............. show dialplan tables
- dialplan reload ................... reload dialplan tables
- dialplan addrule <dpid> <prio> <match_op> <match_exp>
- 		<match_flags> <subst_exp> <repl_exp> <attrs>
-		.................... add a rule
- dialplan rm ....................... removes the entire dialplan table
- dialplan rmdpid <dpid> ............ removes all the gived dpid entries
- dialplan rmrule <dpid> <prio> ..... removes all the gived dpid/prio entries
-EOF
-}
-
-usage_registrant() {
-	echo
-	mecho " -- command 'registrant' - manage registrants"
-	echo
-cat <<EOF
-   * Examples:  registrant add sip:opensips.org '' sip:user@opensips.org '' user password sip:user@localhost '' 3600 ''
- registrant show ......................... show registrant table
- registrant dump ......................... show registrant status
- registrant add <registrar> <proxy> <aor> <third_party_registrant>
-                <username> <password> <binding_URI> <binding_params>
-                <expiry> <forced_socket> . add a registrant
- registrant rm ........................... removes the entire registrant table
- registrant rmaor <id> ................... removes the gived aor id
-EOF
-}
-USAGE_FUNCTIONS="$USAGE_FUNCTIONS usage_registrant"
 
 ##### ----------------------------------------------- #####
 #### Common functions
@@ -673,20 +563,6 @@ print_status() {
 	else
 		echo "200 OK"
 	fi
-}
-
-# process output from FIFO/Unixsock server; if everything is ok
-# skip the first "ok" line and proceed to returned 
-# parameters
-filter_fl()
-{
-#	tail +2
-	
-	$AWK 'BEGIN {line=0;IGNORECASE=1;}
-		{line++}
-		NR == 1 && /^200 OK/ { next }
-		/^$/ { next }
-		{ print }'
 }
 
 # params: user, realm, password

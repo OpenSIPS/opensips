@@ -125,13 +125,13 @@ static int xj_send_message(struct sip_msg*, char*, char*);
 static int xj_join_jconf(struct sip_msg*, char*, char*);
 static int xj_exit_jconf(struct sip_msg*, char*, char*);
 static int xj_go_online(struct sip_msg*, char*, char*);
-static int xj_go_offline(struct sip_msg*, char*, char*);
 
 void destroy(void);
 
 /*
  * Exported functions
  */
+/*
 static cmd_export_t cmds[] = {
 	{"jab_send_message",       (cmd_function)xj_send_message,
 			0, 0, 0, REQUEST_ROUTE},
@@ -145,13 +145,33 @@ static cmd_export_t cmds[] = {
 			0, 0, 0, REQUEST_ROUTE},
 	{"jab_register_watcher",   (cmd_function)xj_register_watcher,
 			XJ_NO_SCRIPT_F, 0, 0, 0            },
-	{"jab_unregister_watcher", (cmd_function)xj_unregister_watcher,
+	{"jab_unregister_watcher", (cmd_function),
 			XJ_NO_SCRIPT_F, 0, 0, 0            },
 	{"load_xjab",              (cmd_function)load_xjab,
 			XJ_NO_SCRIPT_F, 0, 0, 0            },
 	{0, 0, 0, 0, 0, 0}
 };
+*/
 
+static cmd_export_t cmds[] = {
+	{"jab_send_message",(cmd_function)xj_send_message, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"jab_join_jconf",(cmd_function)xj_join_jconf, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"jab_exit_jconf",(cmd_function)xj_exit_jconf, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"jab_go_online",(cmd_function)xj_go_online, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"jab_go_offline",(cmd_function)xj_go_online, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"jab_register_watcher",(cmd_function)xj_register_watcher, {{0,0,0}},
+		0},
+	{"jab_unregister_watcher",(cmd_function)xj_unregister_watcher, {{0,0,0}},
+		0},
+	{"load_xjab",(cmd_function)load_xjab, {{0,0,0}},
+		0},
+	{0,0,{{0,0,0}},0}
+};
 
 /*
  * Exported parameters
@@ -202,7 +222,8 @@ struct module_exports exports= {
 	mod_init,   /* module initialization function */
 	(response_function) 0,
 	(destroy_function) destroy,
-	child_init  /* per-child init function */
+	child_init, /* per-child init function */
+	0           /* reload confirm function */
 };
 
 /**
@@ -424,15 +445,6 @@ static int xj_go_online(struct sip_msg *msg, char* foo1, char * foo2)
 {
 	LM_DBG("go online in Jabber network\n");
 	return xjab_manage_sipmsg(msg, XJ_GO_ONLINE);
-}
-
-/**
- * go offline in Jabber network
- */
-static int xj_go_offline(struct sip_msg *msg, char* foo1, char * foo2)
-{
-	LM_DBG("go offline in Jabber network\n");
-	return xjab_manage_sipmsg(msg, XJ_GO_OFFLINE);
 }
 
 /**

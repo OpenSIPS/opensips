@@ -59,12 +59,14 @@
 
 %{
 	#include "cfg.tab.h"
+	#include "cfg_pp.h"
 	#include "dprint.h"
 	#include "globals.h"
 	#include "mem/mem.h"
 	#include <string.h>
 	#include <stdlib.h>
 	#include "ip_addr.h"
+	#include "ut.h"
 
 
 	/* states */
@@ -75,15 +77,10 @@
 	#define SCRIPTVAR_S		4
 
 	#define STR_BUF_ALLOC_UNIT	128
-	struct str_buf{
-		char* s;
-		char* crt;
-		int left;
-	};
-
 
 	static int comment_nest=0;
 	static int state=0;
+	static str st;
 	static struct str_buf s_buf;
 	int line=1;
 	int np=0;
@@ -96,27 +93,6 @@
 	static char* addchar(struct str_buf *, char);
 	static char* addstr(struct str_buf *, char*, int);
 	static void count();
-
-#define MAX_INCLUDE_DEPTH	10
-#define MAX_INCLUDE_FNAME	128
-
-	static struct oss_yy_state {
-		YY_BUFFER_STATE state;
-		int line;
-		int column;
-		int startcolumn;
-		int startline;
-		char *finame;
-	} include_stack[MAX_INCLUDE_DEPTH];
-	static int include_stack_ptr = 0;
-
-	static int oss_push_yy_state(char *fin, int mode);
-	static int oss_pop_yy_state(void);
-
-	static struct oss_yy_fname {
-	       char *fname;
-	       struct oss_yy_fname *next;
-	} *oss_yy_fname_list = 0;
 
 	/* hack to solve the duplicate declaration of 'isatty' function */
 #if YY_FLEX_MAJOR_VERSION <= 2 && YY_FLEX_MINOR_VERSION <= 5 && YY_FLEX_SUBMINOR_VERSION < 36
@@ -132,7 +108,7 @@
 
 /* start conditions */
 %x STRING1 STRING2 COMMENT COMMENT_LN SCRIPTVARS
-%x INCLF IMPTF
+%x PPTOK_LINE PPTOK_FILEBEG PPTOK_FILEEND
 
 /* action keywords */
 FORWARD	forward
@@ -204,7 +180,8 @@ CACHE_RAW_QUERY		"cache_raw_query"
 XDBG			"xdbg"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
-XLOG_DEFAULT_LEVEL	"xlog_default_level"
+XLOG_PRINT_LEVEL	"xlog_print_level"
+XLOG_LEVEL		"xlog_level"
 XLOG			"xlog"
 RAISE_EVENT		"raise_event"
 SUBSCRIBE_EVENT	"subscribe_event"
@@ -215,6 +192,9 @@ SYNC_TOKEN      "sync"
 ASYNC_TOKEN     "async"
 LAUNCH_TOKEN    "launch"
 IS_MYSELF		"is_myself"
+PPTOK_LINE      "__OSSPP_LINE__"
+PPTOK_FILEBEG   "__OSSPP_FILEBEGIN__"
+PPTOK_FILEEND   "__OSSPP_FILEEND__"
 
 /*ACTION LVALUES*/
 URIHOST			"uri:host"
@@ -265,6 +245,7 @@ SCRIPTVAR_START	"$"
 DEBUG_MODE	debug_mode
 FORK		fork
 CHILDREN	children
+UDP_WORKERS	udp_workers
 CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
 DISABLE_CORE		"disable_core_dump"
@@ -296,6 +277,8 @@ SHM_SECONDARY_HASH_SIZE "shm_secondary_hash_size"
 MEM_WARMING_ENABLED "mem_warming"|"mem_warming_enabled"
 MEM_WARMING_PATTERN_FILE "mem_warming_pattern_file"
 MEM_WARMING_PERCENTAGE "mem_warming_percentage"
+RPM_MEM_FILE "restart_persistency_cache_file"
+RPM_MEM_SIZE "restart_persistency_size"
 MEMLOG		"memlog"|"mem_log"
 MEMDUMP		"memdump"|"mem_dump"
 EXECMSGTHRESHOLD		"execmsgthreshold"|"exec_msg_threshold"
@@ -312,12 +295,14 @@ USER_AGENT_HEADER user_agent_header
 MHOMED		mhomed
 POLL_METHOD		"poll_method"
 TCP_CHILDREN	"tcp_children"
+TCP_WORKERS		"tcp_workers"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
+TCP_NO_NEW_CONN_RPLFLAG "tcp_no_new_conn_rplflag"
 TCP_KEEPALIVE           "tcp_keepalive"
 TCP_KEEPCOUNT           "tcp_keepcount"
 TCP_KEEPIDLE            "tcp_keepidle"
@@ -337,6 +322,9 @@ DB_VERSION_TABLE "db_version_table"
 DB_DEFAULT_URL "db_default_url"
 DB_MAX_ASYNC_CONNECTIONS "db_max_async_connections"
 DISABLE_503_TRANSLATION "disable_503_translation"
+AUTO_SCALING_PROFILE "auto_scaling_profile"
+AUTO_SCALING_CYCLE "auto_scaling_cycle"
+TIMER_WORKERS "timer_workers"
 
 MPATH	mpath
 LOADMODULE	loadmodule
@@ -364,6 +352,13 @@ TICK		\'
 SLASH		"/"
 AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
 USE_CHILDREN	{EAT_ABLE}("use_children"|"USE_CHILDREN"){EAT_ABLE}
+USE_WORKERS	{EAT_ABLE}("use_workers"|"USE_WORKERS"){EAT_ABLE}
+USE_AUTO_SCALING_PROFILE {EAT_ABLE}("use_auto_scaling_profile"|"USE_AUTO_SCALING_PROFILE"){EAT_ABLE}
+SCALE_UP_TO		{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("up"|"UP"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
+SCALE_DOWN_TO	{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("down"|"DOWN"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
+ON			{EAT_ABLE}("on"|"ON"){EAT_ABLE}
+CYCLES		{EAT_ABLE}("cycles"|"CYCLES")
+CYCLES_WITHIN	{EAT_ABLE}("cycles"|"CYCLES"){EAT_ABLE}+("within"|"WITHIN"){EAT_ABLE}
 SEMICOLON	;
 RPAREN		\)
 LPAREN		\(
@@ -386,10 +381,7 @@ COM_END		"\*/"
 
 EAT_ABLE	[\ \t\b\r]
 WHITESPACE	[ \t\r\n]
-
-/* include files */
-INCLUDEFILE     "include_file"
-IMPORTFILE      "import_file"
+SPACE		[ ]
 
 %%
 
@@ -458,8 +450,9 @@ IMPORTFILE      "import_file"
 <INITIAL>{FOR}		{ count(); yylval.strval=yytext; return FOR; }
 <INITIAL>{IN}		{ count(); yylval.strval=yytext; return IN; }
 
-<INITIAL>{INCLUDEFILE}  { count(); BEGIN(INCLF); }
-<INITIAL>{IMPORTFILE}  { count(); BEGIN(IMPTF); }
+<INITIAL>{PPTOK_LINE}  { count(); BEGIN(PPTOK_LINE); }
+<INITIAL>{PPTOK_FILEBEG}  { count(); BEGIN(PPTOK_FILEBEG); }
+<INITIAL>{PPTOK_FILEEND}  { count(); BEGIN(PPTOK_FILEEND); }
 
 <INITIAL>{SET_ADV_ADDRESS}	{ count(); yylval.strval=yytext;
 										return SET_ADV_ADDRESS; }
@@ -499,8 +492,10 @@ IMPORTFILE      "import_file"
 									return XLOG_BUF_SIZE; }
 <INITIAL>{XLOG_FORCE_COLOR}	{	count(); yylval.strval=yytext;
 									return XLOG_FORCE_COLOR;}
-<INITIAL>{XLOG_DEFAULT_LEVEL}	{	count(); yylval.strval=yytext;
-									return XLOG_DEFAULT_LEVEL;}
+<INITIAL>{XLOG_PRINT_LEVEL}	{	count(); yylval.strval=yytext;
+									return XLOG_PRINT_LEVEL;}
+<INITIAL>{XLOG_LEVEL}		{	count(); yylval.strval=yytext;
+									return XLOG_LEVEL;}
 <INITIAL>{RAISE_EVENT}		{	count(); yylval.strval=yytext;
 									return RAISE_EVENT;}
 <INITIAL>{SUBSCRIBE_EVENT}		{	count(); yylval.strval=yytext;
@@ -523,6 +518,7 @@ IMPORTFILE      "import_file"
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
+<INITIAL>{UDP_WORKERS}	{ count(); yylval.strval=yytext; return UDP_WORKERS; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
 <INITIAL>{DISABLE_CORE}		{	count(); yylval.strval=yytext;
@@ -565,6 +561,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{MEM_WARMING_ENABLED}	{ count(); yylval.strval=yytext; return MEM_WARMING_ENABLED; }
 <INITIAL>{MEM_WARMING_PATTERN_FILE}	{ count(); yylval.strval=yytext; return MEM_WARMING_PATTERN_FILE; }
 <INITIAL>{MEM_WARMING_PERCENTAGE}	{ count(); yylval.strval=yytext; return MEM_WARMING_PERCENTAGE; }
+<INITIAL>{RPM_MEM_FILE}	{ count(); yylval.strval=yytext; return RPM_MEM_FILE; }
+<INITIAL>{RPM_MEM_SIZE}	{ count(); yylval.strval=yytext; return RPM_MEM_SIZE; }
 <INITIAL>{MEMLOG}	{ count(); yylval.strval=yytext; return MEMLOG; }
 <INITIAL>{MEMDUMP}	{ count(); yylval.strval=yytext; return MEMDUMP; }
 <INITIAL>{EXECMSGTHRESHOLD}	{ count(); yylval.strval=yytext; return EXECMSGTHRESHOLD; }
@@ -577,7 +575,9 @@ IMPORTFILE      "import_file"
 <INITIAL>{SIP_WARNING}	{ count(); yylval.strval=yytext; return SIP_WARNING; }
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
+<INITIAL>{TCP_NO_NEW_CONN_RPLFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_RPLFLAG; }
 <INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
+<INITIAL>{TCP_WORKERS}	{ count(); yylval.strval=yytext; return TCP_WORKERS; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
 									return TCP_ACCEPT_ALIASES; }
 <INITIAL>{TCP_CONNECT_TIMEOUT}		{ count(); yylval.strval=yytext;
@@ -624,6 +624,12 @@ IMPORTFILE      "import_file"
 									return DB_MAX_ASYNC_CONNECTIONS; }
 <INITIAL>{DISABLE_503_TRANSLATION}	{	count(); yylval.strval=yytext;
 									return DISABLE_503_TRANSLATION; }
+<INITIAL>{AUTO_SCALING_PROFILE}	{	count(); yylval.strval=yytext;
+									return AUTO_SCALING_PROFILE; }
+<INITIAL>{AUTO_SCALING_CYCLE}	{	count(); yylval.strval=yytext;
+									return AUTO_SCALING_CYCLE; }
+<INITIAL>{TIMER_WORKERS}	{	count(); yylval.strval=yytext;
+									return TIMER_WORKERS; }
 
 <INITIAL>{MPATH}	   { count(); yylval.strval=yytext; return MPATH; }
 <INITIAL>{LOADMODULE}  { count(); yylval.strval=yytext; return LOADMODULE; }
@@ -679,6 +685,8 @@ IMPORTFILE      "import_file"
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
 <INITIAL>{USE_CHILDREN} { count(); return USE_CHILDREN; }
+<INITIAL>{USE_WORKERS}  { count(); return USE_WORKERS; }
+<INITIAL>{USE_AUTO_SCALING_PROFILE}  { count(); return USE_AUTO_SCALING_PROFILE; }
 <INITIAL>{COLON}	{ count(); return COLON; }
 <INITIAL>{RPAREN}	{ count(); return RPAREN; }
 <INITIAL>{LPAREN}	{ count(); return LPAREN; }
@@ -686,13 +694,18 @@ IMPORTFILE      "import_file"
 <INITIAL>{RBRACE}	{ count(); return RBRACE; }
 <INITIAL>{LBRACK}	{ count(); return LBRACK; }
 <INITIAL>{RBRACK}	{ count(); return RBRACK; }
-<INITIAL>{AS}       { count(); return AS; }
+<INITIAL>{AS}		{ count(); return AS; }
 <INITIAL>{DOT}		{ count(); return DOT; }
 <INITIAL>\\{CR}		{count(); } /* eat the escaped CR */
 <INITIAL>{CR}		{ count();/* return CR;*/ }
-<INITIAL>{ANY}	{ count(); return ANY; }
+<INITIAL>{ANY}		{ count(); return ANY; }
 <INITIAL>{ANYCAST}	{ count(); return ANYCAST; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
+<INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }
+<INITIAL>{SCALE_DOWN_TO}	{ count(); return SCALE_DOWN_TO; }
+<INITIAL>{ON}				{ count(); return ON; }
+<INITIAL>{CYCLES}			{ count(); return CYCLES; }
+<INITIAL>{CYCLES_WITHIN}	{ count(); return CYCLES_WITHIN; }
 
 <INITIAL>{SCRIPTVAR_START} { np=0; state=SCRIPTVAR_S;
 								svar_tlen = yyleng;
@@ -777,7 +790,9 @@ IMPORTFILE      "import_file"
 						memset(&s_buf, 0, sizeof(s_buf));
 						return STRING;
 					}
-<STRING2>.|{EAT_ABLE}|{CR}	{ yymore(); }
+<STRING2>.|{EAT_ABLE}	{ addchar(&s_buf, *yytext); }
+<STRING2>{CR}	{ count(); if (!eatback_pp_tok(&s_buf))
+								addchar(&s_buf, *yytext); }
 
 <STRING1>\\n		{ count(); addchar(&s_buf, '\n'); }
 <STRING1>\\r		{ count(); addchar(&s_buf, '\r'); }
@@ -791,8 +806,9 @@ IMPORTFILE      "import_file"
     subst_uri if allowed (although everybody should use '' in subt_uri) */
 <STRING1>\\[0-7]{2,3}	{ count(); addchar(&s_buf,
 											(char)strtol(yytext+1, 0, 8));  }
-<STRING1>\\{CR}		{ count(); } /* eat escaped CRs */
-<STRING1>{CR}	{ count();addchar(&s_buf, *yytext); }
+<STRING1>\\{CR}		{ count(); eatback_pp_tok(&s_buf); } /* eat escaped CRs */
+<STRING1>{CR}	{ count(); if (!eatback_pp_tok(&s_buf))
+								addchar(&s_buf, *yytext); }
 <STRING1>.|{EAT_ABLE}|{CR}	{ addchar(&s_buf, *yytext); }
 
 
@@ -812,31 +828,32 @@ IMPORTFILE      "import_file"
 									yylval.strval=s_buf.s;
 									memset(&s_buf, 0, sizeof(s_buf));
 									return ID; }
-
-<INCLF>[ \t]*      /* eat the whitespace */
-<INCLF>[^ \t\n]+   { /* get the include file name */
-				memset(&s_buf, 0, sizeof(s_buf));
-				addstr(&s_buf, yytext, yyleng);
-				if(oss_push_yy_state(s_buf.s, 0)<0)
-				{
-					LM_CRIT("error at %s line %d\n", (finame)?finame:"cfg", line);
-					exit(-1);
-				}
-				memset(&s_buf, 0, sizeof(s_buf));
-				BEGIN(INITIAL);
+<PPTOK_LINE>{SPACE}[^\n]+ { /* grab the line number */
+		st.s = yytext + 1;
+		st.len = yyleng - 1;
+		if (str2int(&st, (unsigned int *)&line) != 0) {
+			LM_CRIT("bad line number integer: '%.*s'\n", st.len, st.s);
+			exit(-1);
+		}
+		BEGIN(INITIAL);
 }
 
-<IMPTF>[ \t]*      /* eat the whitespace */
-<IMPTF>[^ \t\n]+   { /* get the import file name */
-				memset(&s_buf, 0, sizeof(s_buf));
-				addstr(&s_buf, yytext, yyleng);
-				if(oss_push_yy_state(s_buf.s, 1)<0)
-				{
-					LM_CRIT("error at %s line %d\n", (finame)?finame:"cfg", line);
-					exit(-1);
-				}
-				memset(&s_buf, 0, sizeof(s_buf));
-				BEGIN(INITIAL);
+<PPTOK_FILEBEG>{SPACE}{QUOTES}.*{QUOTES} { /* grab the file path */
+		st.s = yytext + 2;
+		st.len = yyleng - 3;
+		if (cfg_push(&st) != 0) {
+			LM_ERR("max nested includes reached!\n");
+			exit(-1);
+		}
+		BEGIN(INITIAL);
+}
+
+<PPTOK_FILEEND>{CR} {
+		if (cfg_pop() != 0) {
+			LM_ERR("internal error during cfg_pop()\n");
+			exit(-1);
+		}
+		BEGIN(INITIAL);
 }
 
 <<EOF>>							{
@@ -863,8 +880,8 @@ IMPORTFILE      "import_file"
 														" unclosed variable\n");
 											break;
 									}
-									if(oss_pop_yy_state()<0)
-										return 0;
+
+									return 0;
 								}
 
 %%
@@ -918,7 +935,6 @@ static void count(void)
 	startcolumn=column;
 	for (i=0; i<yyleng;i++){
 		if (yytext[i]=='\n'){
-			line++;
 			column=startcolumn=1;
 		}else if (yytext[i]=='\t'){
 			column++;
@@ -930,204 +946,3 @@ static void count(void)
 }
 
 int yywrap(void) { return 1; }
-
-
-static int oss_push_yy_state(char *fin, int mode)
-{
-	struct oss_yy_fname *fn = NULL;
-	FILE *fp = NULL;
-	char *x = NULL;
-	char *newf = NULL;
-	char fbuf[MAX_INCLUDE_FNAME];
-	int i, j, l;
-	char *tmpfiname = 0;
-
-	if ( include_stack_ptr >= MAX_INCLUDE_DEPTH )
-	{
-		LM_CRIT("too many includes\n");
-		return -1;
-	}
-	l = strlen(fin);
-	if(l>=MAX_INCLUDE_FNAME)
-	{
-		LM_CRIT("included file name too long: %s\n", fin);
-		return -1;
-	}
-	if(fin[0]!='"' || fin[l-1]!='"')
-	{
-		LM_CRIT("included file name must be between quotes: %s\n", fin);
-		return -1;
-	}
-	j = 0;
-	for(i=1; i<l-1; i++)
-	{
-		switch(fin[i]) {
-			case '\\':
-				if(i+1==l-1)
-				{
-					LM_CRIT("invalid escape at %d in included file name: %s\n", i, fin);
-					return -1;
-				}
-				i++;
-				switch(fin[i]) {
-					case 't':
-						fbuf[j++] = '\t';
-					break;
-					case 'n':
-						fbuf[j++] = '\n';
-					break;
-					case 'r':
-						fbuf[j++] = '\r';
-					break;
-					default:
-						fbuf[j++] = fin[i];
-				}
-			break;
-			default:
-				fbuf[j++] = fin[i];
-		}
-	}
-	if(j==0)
-	{
-		LM_CRIT("invalid included file name: %s\n", fin);
-		return -1;
-	}
-	fbuf[j] = '\0';
-
-	fp = fopen(fbuf, "r" );
-
-	if ( ! fp )
-	{
-		tmpfiname = (finame==0)?cfg_file:finame;
-		if(tmpfiname==0 || fbuf[0]=='/')
-		{
-			if(mode==0)
-			{
-				LM_CRIT("cannot open included file: %s\n", fin);
-				return -1;
-			} else {
-				LM_DBG("importing file ignored: %s\n", fin);
-				return 0;
-			}
-		}
-		x = strrchr(tmpfiname, '/');
-		if(x==NULL)
-		{
-			/* nothing else to try */
-			if(mode==0)
-			{
-				LM_CRIT("cannot open included file: %s\n", fin);
-				return -1;
-			} else {
-				LM_DBG("importing file ignored: %s\n", fin);
-				return 0;
-			}
-		}
-
-		newf = (char*)pkg_malloc(x-tmpfiname+strlen(fbuf)+2);
-		if(newf==0)
-		{
-			LM_CRIT("no more pkg\n");
-			return -1;
-		}
-		newf[0] = '\0';
-		strncat(newf, tmpfiname, x-tmpfiname);
-		strcat(newf, "/");
-		strcat(newf, fbuf);
-
-		fp = fopen(newf, "r" );
-		if ( fp==NULL )
-		{
-			pkg_free(newf);
-			if(mode==0)
-			{
-				LM_CRIT("cannot open included file: %s (%s)\n", fbuf, newf);
-				return -1;
-			} else {
-				LM_DBG("importing file ignored: %s (%s)\n", fbuf, newf);
-				return 0;
-			}
-		}
-		LM_DBG("including file: %s (%s)\n", fbuf, newf);
-	} else {
-		newf = fbuf;
-	}
-
-	include_stack[include_stack_ptr].state = YY_CURRENT_BUFFER;
-	include_stack[include_stack_ptr].line = line;
-	include_stack[include_stack_ptr].column = column;
-	include_stack[include_stack_ptr].startline = startline;
-	include_stack[include_stack_ptr].startcolumn = startcolumn;
-	include_stack[include_stack_ptr].finame = finame;
-	include_stack_ptr++;
-
-	line=1;
-	column=1;
-	startline=1;
-	startcolumn=1;
-
-	yyin = fp;
-
-	/* make a copy in PKG if does not exist */
-	fn = oss_yy_fname_list;
-	while(fn!=0)
-	{
-		if(strcmp(fn->fname, newf)==0)
-		{
-			if(newf!=fbuf)
-				pkg_free(newf);
-			newf = fbuf;
-			break;
-		}
-		fn = fn->next;
-	}
-	if(fn==0)
-	{
-		fn = (struct oss_yy_fname*)pkg_malloc(sizeof(struct oss_yy_fname));
-		if(fn==0)
-		{
-			if(newf!=fbuf)
-				pkg_free(newf);
-			LM_CRIT("no more pkg\n");
-			return -1;
-		}
-		if(newf==fbuf)
-		{
-			fn->fname = (char*)pkg_malloc(strlen(fbuf)+1);
-			if(fn->fname==0)
-			{
-				pkg_free(fn);
-				LM_CRIT("no more pkg!\n");
-				return -1;
-			}
-			strcpy(fn->fname, fbuf);
-		} else {
-			fn->fname = newf;
-		}
-		fn->next = oss_yy_fname_list;
-		oss_yy_fname_list = fn;
-	}
-
-	finame = fn->fname;
-
-	yy_switch_to_buffer( yy_create_buffer(yyin, YY_BUF_SIZE ) );
-
-	return 0;
-
-}
-
-static int oss_pop_yy_state(void)
-{
-	include_stack_ptr--;
-	if (include_stack_ptr<0 )
-		return -1;
-
-	yy_delete_buffer( YY_CURRENT_BUFFER );
-	yy_switch_to_buffer(include_stack[include_stack_ptr].state);
-	line=include_stack[include_stack_ptr].line;
-	column=include_stack[include_stack_ptr].column;
-	startline=include_stack[include_stack_ptr].startline;
-	startcolumn=include_stack[include_stack_ptr].startcolumn;
-	finame = include_stack[include_stack_ptr].finame;
-	return 0;
-}

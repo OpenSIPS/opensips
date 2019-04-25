@@ -471,8 +471,8 @@ route[b2b_request]
      * scenario_params - array of at least 2 scenario parameters
 
    MI FIFO Command Format:
-        opensipsctl fifo b2b_trigger_scenario marketing sip:bob@opensips
-.org sip:322@opensips.org:5070 sip:alice@opensips.org
+        opensips-cli -x mi b2b_trigger_scenario marketing sip:bob@opensi
+ps.org sip:322@opensips.org:5070 sip:alice@opensips.org
 
 1.5.2.  b2b_bridge
 
@@ -498,10 +498,10 @@ route[b2b_request]
        bridging scenario
 
    MI FIFO Command Format:
-        opensipsctl fifo b2b_bridge 1020.30 sip:alice@opensips.org
+        opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
 
-   opensipsctl Command Format:
-        opensipsctl b2b_bridge 1020.30 sip:alice@opensips.org
+   opensips-cli Command Format:
+        opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
 
 1.5.3.  b2b_list
 
@@ -513,7 +513,7 @@ route[b2b_request]
    Parameters: none
 
    MI FIFO Command Format:
-        opensipsctl fifo b2b_list
+        opensips-cli -x mi b2b_list
 
 Chapter 2. Developer Guide
 
@@ -669,11 +669,11 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
    2. Ovidiu Sas (@ovidiusas) 145 101 2915 1129
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 36 30 208 191
-   4. Razvan Crainea (@razvancrainea) 28 19 599 183
-   5. Liviu Chircu (@liviuchircu) 14 11 52 99
-   6. Nick Altmann (@nikbyte) 14 6 461 199
-   7. Vlad Patrascu (@rvlad-patrascu) 13 5 268 266
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 37 31 210 192
+   4. Razvan Crainea (@razvancrainea) 29 20 604 188
+   5. Vlad Patrascu (@rvlad-patrascu) 16 6 296 357
+   6. Liviu Chircu (@liviuchircu) 14 11 52 99
+   7. Nick Altmann (@nikbyte) 14 6 461 199
    8. Vlad Paiu (@vladpaiu) 7 5 35 21
    9. Ezequiel Lovelle 3 1 1 1
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -698,11 +698,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
    7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
    8.  Nick Altmann (@nikbyte)             Oct 2012 - Jan 2013
@@ -716,11 +716,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Nick
-   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
-   (@vladpaiu), Anca Vamanu.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Nick Altmann
+   (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
+   Anca Vamanu.
 
    Documentation Copyrights:
 

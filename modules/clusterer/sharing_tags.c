@@ -295,7 +295,6 @@ int shtag_modparam_func(modparam_t type, void *val_s)
 	return 0;
 }
 
-
 static struct sharing_tag *__shtag_get_safe(str *tag_name, int c_id)
 {
 	struct sharing_tag *tag;
@@ -318,16 +317,29 @@ static struct sharing_tag *__shtag_get_safe(str *tag_name, int c_id)
 	return tag;
 }
 
-
 int shtag_get(str *tag_name, int cluster_id)
 {
 	struct sharing_tag *tag;
 	int ret;
 
-	lock_start_sw_read(shtags_lock);
-	tag = __shtag_get_safe( tag_name, cluster_id);
-	ret = (tag==NULL)? -1 : tag->state ;
-	lock_stop_sw_read(shtags_lock);
+	lock_start_read(shtags_lock);
+
+	for (tag = *shtags_list;
+		tag && (tag->cluster_id!=cluster_id || str_strcmp(&tag->name, tag_name));
+		tag = tag->next) ;
+	if (!tag) {
+		lock_stop_read(shtags_lock);
+		lock_start_write(shtags_lock);
+
+		tag = shtag_get_unsafe(tag_name, cluster_id);
+		ret = (tag == NULL) ? -1 : tag->state;
+
+		lock_stop_write(shtags_lock);
+	} else {
+		ret = tag->state;
+
+		lock_stop_read(shtags_lock);
+	}
 
 	return ret;
 }

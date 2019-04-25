@@ -50,9 +50,8 @@
 
 str suffix = {"", 0};
 
-int add_diversion(struct sip_msg* msg, char* _s1, char* _s2, char* _s3);
+int add_diversion(struct sip_msg* msg, str* reason, str* uri, int* counter);
 
-static int fixup_diversion_params(void **param, int param_no);
 
 /*
  * Module initialization function prototype
@@ -64,15 +63,13 @@ static int mod_init(void);
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"add_diversion",    (cmd_function)add_diversion,    1, fixup_diversion_params,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-        {"add_diversion",    (cmd_function)add_diversion,    2, fixup_diversion_params,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-	{"add_diversion",    (cmd_function)add_diversion,    3, fixup_diversion_params,
-		0, REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{"add_diversion",    (cmd_function)add_diversion, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*
  * Exported parameters
@@ -103,7 +100,8 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	0,          /* destroy function */
-	0           /* child initialization function */
+	0,          /* child initialization function */
+	0           /* reload confirm function */
 };
 
 
@@ -112,21 +110,6 @@ static int mod_init(void)
 	LM_INFO("initializing...\n");
 	suffix.len = strlen(suffix.s);
 	return 0;
-}
-
-
-static int fixup_diversion_params(void** param, int param_no)
-{
-	if (param_no == 1) {
-		/* diversion reason */
-		return fixup_str(param);
-	} else if (param_no == 2) {
-		/* diversion uri */
-		return fixup_spve(param);
-	} else {
-		/* diversion counter */
-		return fixup_uint(param);
-	}
 }
 
 
@@ -172,28 +155,24 @@ static inline int add_diversion_helper(struct sip_msg* msg, str* s)
 }
 
 
-int add_diversion(struct sip_msg* msg, char* _s1, char* _s2, char* _s3)
+int add_diversion(struct sip_msg* msg, str* reason, str* uri, int* counter)
 {
 	str div_hf;
 	char *at;
-	str uri;
-	str* reason;
 	char *counter_s;
 	int counter_len;
 
-	reason = (str*)_s1;
+	if (!uri)
+		uri = &msg->first_line.u.request.uri;
 
-	if (_s2 == NULL || fixup_get_svalue(msg, (gparam_p)_s2, &uri) != 0)
-		uri = msg->first_line.u.request.uri;
-
-	if (_s3 && *(unsigned int *)_s3 > 0) {
-		counter_s = int2str(*(unsigned int *)_s3, &counter_len);
+	if (counter && *counter > 0) {
+		counter_s = int2str(*counter, &counter_len);
 	} else {
 		counter_len = -1;
 		counter_s = NULL;
 	}
 
-	div_hf.len = DIVERSION_PREFIX_LEN + uri.len + DIVERSION_SUFFIX_LEN + reason->len;
+	div_hf.len = DIVERSION_PREFIX_LEN + uri->len + DIVERSION_SUFFIX_LEN + reason->len;
 	if (counter_len != -1) {
 	    div_hf.len += DIVERSION_COUNTER_LEN + counter_len;
 	}
@@ -208,8 +187,8 @@ int add_diversion(struct sip_msg* msg, char* _s1, char* _s2, char* _s3)
 	memcpy(at, DIVERSION_PREFIX, DIVERSION_PREFIX_LEN);
 	at += DIVERSION_PREFIX_LEN;
 
-	memcpy(at, uri.s, uri.len);
-	at += uri.len;
+	memcpy(at, uri->s, uri->len);
+	at += uri->len;
 
 	memcpy(at, DIVERSION_SUFFIX, DIVERSION_SUFFIX_LEN);
 	at += DIVERSION_SUFFIX_LEN;

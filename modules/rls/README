@@ -325,7 +325,7 @@ if($rm=="NOTIFY")
        and whose subscriptions should be updated
 
    MI FIFO Command Format:
-opensipsctl fifo rls_update_subscriptions sip:alice@atlanta.com
+opensips-cli -x mi rls_update_subscriptions sip:alice@atlanta.com
 
 1.6. Installation
 
@@ -350,12 +350,12 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 99 41 5335 863
    2. Saúl Ibarra Corretgé (@saghul) 41 18 1150 710
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 21 18 68 98
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 22 19 70 99
    4. Liviu Chircu (@liviuchircu) 13 10 58 77
-   5. Daniel-Constantin Mierla (@miconda) 9 7 18 15
-   6. Razvan Crainea (@razvancrainea) 9 7 14 36
+   5. Razvan Crainea (@razvancrainea) 10 8 15 37
+   6. Daniel-Constantin Mierla (@miconda) 9 7 18 15
    7. Henning Westerholt (@henningw) 8 3 164 114
-   8. Vlad Patrascu (@rvlad-patrascu) 6 4 16 25
+   8. Vlad Patrascu (@rvlad-patrascu) 7 5 28 35
    9. Dan Pascu (@danpascu) 6 4 3 6
    10. Vlad Paiu (@vladpaiu) 5 3 11 41
 
@@ -384,12 +384,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Nov 2016
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Feb 2015
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Mar 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
    8.  Saúl Ibarra Corretgé (@saghul)      Oct 2012 - Jan 2013
    9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2012
@@ -408,10 +408,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan
-   Crainea (@razvancrainea), Walter Doekes (@wdoekes), Anca
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Saúl
+   Ibarra Corretgé (@saghul), Walter Doekes (@wdoekes), Anca
    Vamanu, Dan Pascu (@danpascu), Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert.

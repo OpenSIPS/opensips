@@ -49,8 +49,8 @@ if [ "$ret" -eq 0 ] ; then
 	MASK=10
 	mysql --show-warnings -B -u opensips --password=opensipsrw -D opensips -e "INSERT INTO address (ip_addr, mask) VALUES ('$IP', '$MASK');"
 	
-	../scripts/opensipsctl fifo address_reload
-	#../scripts/opensipsctl fifo address_dump
+	opensips-cli -x mi address_reload
+	#opensips-cli -x mi address_dump
 
 	sipp -sn uas -bg -i localhost -m 10 -f 2 -p $UAS &> /dev/null
 	sipp -sn uac -s foo 127.0.0.1:$SRV -i localhost -m 10 -f 2 -p $UAC &> /dev/null

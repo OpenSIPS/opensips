@@ -54,8 +54,8 @@ static int udp_port = SIP_PORT;
 
 
 static cmd_export_t cmds[] = {
-	{"proto_init", (cmd_function)proto_udp_init, 0, 0, 0, 0},
-	{0,0,0,0,0,0}
+	{"proto_init", (cmd_function)proto_udp_init, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 
@@ -83,6 +83,7 @@ struct module_exports proto_udp_exports = {
 	0,          /* response function */
 	0,          /* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 

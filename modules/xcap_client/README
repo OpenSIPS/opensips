@@ -143,8 +143,8 @@ modparam("xcap_client", "query_period", 50)
 
    MI FIFO Command Format:
 ...
-opensipsctl fifo refreshXcapDoc /xcap-root/resource-lists/users/eyebeam/
-buddies-resource-list.xml 8000
+opensips-cli -x mi refreshXcapDoc /xcap-root/resource-lists/users/eyebea
+m/buddies-resource-list.xml 8000
 ...
 
 Chapter 2. Developer Guide
@@ -272,11 +272,11 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 35 14 2155 193
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 17 14 54 62
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 15 56 63
    3. Liviu Chircu (@liviuchircu) 11 9 30 48
    4. Daniel-Constantin Mierla (@miconda) 9 7 22 19
-   5. Henning Westerholt (@henningw) 8 6 60 49
-   6. Razvan Crainea (@razvancrainea) 6 4 11 13
+   5. Razvan Crainea (@razvancrainea) 9 7 15 17
+   6. Henning Westerholt (@henningw) 8 6 60 49
    7. Saúl Ibarra Corretgé (@saghul) 6 3 55 89
    8. Vlad Patrascu (@rvlad-patrascu) 5 3 20 33
    9. Dan Pascu (@danpascu) 4 2 8 9
@@ -306,11 +306,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Apr 2019
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    6.  Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
    7.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
    8.  Saúl Ibarra Corretgé (@saghul)      Nov 2012 - Jan 2013
@@ -328,12 +328,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan Crainea
-   (@razvancrainea), Anca Vamanu, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert.
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Saúl
+   Ibarra Corretgé (@saghul), Anca Vamanu, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert.
 
    Documentation Copyrights:
 

@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">90</entry>
-		<entry align="center">60</entry>
-		<entry align="center">1894</entry>
-		<entry align="center">832</entry>
+		<entry align="center">91</entry>
+		<entry align="center">61</entry>
+		<entry align="center">1896</entry>
+		<entry align="center">833</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -45,10 +45,10 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">15</entry>
-		<entry align="center">12</entry>
-		<entry align="center">53</entry>
-		<entry align="center">92</entry>
+		<entry align="center">16</entry>
+		<entry align="center">13</entry>
+		<entry align="center">62</entry>
+		<entry align="center">99</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Konstantin Bokarius, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Jesus Rodrigues, Julián Moreno Patiño, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Konstantin Bokarius, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Jesus Rodrigues, Julián Moreno Patiño, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Oct 2013 - Nov 2018</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Jan 2002 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Jan 2002 - Sep 2018</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
-		<entry align="center">Jun 2018 - Jun 2018</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Oct 2013 - Feb 2019</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - May 2017</entry>
+		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
 		<entry>5. </entry>

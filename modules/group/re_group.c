@@ -25,7 +25,6 @@
 #include <sys/types.h>
 #include <regex.h>
 
-#include "../../mod_fix.h"
 #include "../../str.h"
 #include "../../mem/mem.h"
 #include "../../route_struct.h"
@@ -127,13 +126,11 @@ error:
 
 
 
-int get_user_group(struct sip_msg *req, char *user, char *avp)
+int get_user_group(struct sip_msg *req, str *user_str, pv_spec_t *avp)
 {
 	static char uri_buf[MAX_URI_SIZE];
-	str user_str;
 	str  username;
 	str  domain;
-	pv_spec_t *pvs;
 	pv_value_t val;
 	struct re_grp *rg;
 	regmatch_t pmatch;
@@ -141,12 +138,7 @@ int get_user_group(struct sip_msg *req, char *user, char *avp)
 	unsigned int aux;
 	int n;
 
-	if(user ==  NULL || fixup_get_svalue(req, (gparam_p)user, &user_str) != 0){
-		LM_ERR("Invalid parameter URI\n");
-		return -1;
-	}
-
-	if (get_username_domain( req, &user_str, &username, &domain)!=0){
+	if (get_username_domain( req, user_str, &username, &domain)!=0){
 		LM_ERR("failed to get username@domain\n");
 		goto error;
 	}
@@ -172,7 +164,6 @@ int get_user_group(struct sip_msg *req, char *user, char *avp)
 	*c = 0;
 
 	LM_DBG("getting groups for <%s>\n",uri_buf);
-	pvs = (pv_spec_t*)avp;
 	memset(&val, 0, sizeof(pv_value_t));
 	val.flags = PV_VAL_INT|PV_TYPE_INT;
 
@@ -183,7 +174,7 @@ int get_user_group(struct sip_msg *req, char *user, char *avp)
 
 			/* match -> add the gid as AVP */
 			val.ri = rg->gid.n;
-			if(pv_set_value(req, pvs, (int)EQ_T, &val)<0)
+			if(pv_set_value(req, avp, (int)EQ_T, &val)<0)
 			{
 				LM_ERR("setting PV AVP failed\n");
 				goto error;

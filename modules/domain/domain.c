@@ -96,9 +96,8 @@ int domain_db_ver(str* name, int version)
 /*
  * Check if domain is local and store attributes in a pvar
  */
-int is_domain_local_pvar(struct sip_msg *msg, str* _host, char *pvar)
+int is_domain_local_pvar(struct sip_msg *msg, str* _host, pv_spec_t *pv)
 {
-	pv_spec_t *pv = (pv_spec_t *)pvar;
 	pv_value_t val;
 	db_val_t *values;
 
@@ -137,7 +136,7 @@ int is_domain_local_pvar(struct sip_msg *msg, str* _host, char *pvar)
 		} else {
 			LM_DBG("Realm '%.*s' is local\n",
 			       _host->len, ZSW(_host->s));
-			if (pvar) {
+			if (pv) {
 				/* XXX: what shall we do if there are duplicate entries? */
 				/* we only check the first row - razvanc */
 				values = ROW_VALUES(RES_ROWS(res));
@@ -174,7 +173,7 @@ int is_domain_local(str* _host)
 /*
  * Check if host in From uri is local
  */
-int is_from_local(struct sip_msg* _msg, char* _s1, char* _s2)
+int is_from_local(struct sip_msg* _msg, pv_spec_t* _s1)
 {
 	struct sip_uri *puri;
 
@@ -190,7 +189,7 @@ int is_from_local(struct sip_msg* _msg, char* _s1, char* _s2)
 /*
  * Check if host in Request URI is local
  */
-int is_uri_host_local(struct sip_msg* _msg, char* _s1, char* _s2)
+int is_uri_host_local(struct sip_msg* _msg, pv_spec_t* _s1)
 {
 	if (parse_sip_msg_uri(_msg) < 0) {
 		LM_ERR("Error while parsing R-URI\n");
@@ -203,28 +202,9 @@ int is_uri_host_local(struct sip_msg* _msg, char* _s1, char* _s2)
 /*
  * Check if domain given as value of pseudo variable parameter is local
  */
-int w_is_domain_local(struct sip_msg* _msg, char* _sp, char* _s2)
+int w_is_domain_local(struct sip_msg* _msg, str *domain, pv_spec_t* _s2)
 {
-    pv_spec_t *sp;
-    pv_value_t pv_val;
-
-    sp = (pv_spec_t *)_sp;
-
-	if (sp && (pv_get_spec_value(_msg, sp, &pv_val) == 0)) {
-	if (pv_val.flags & PV_VAL_STR) {
-	    if (pv_val.rs.len == 0 || pv_val.rs.s == NULL) {
-		LM_DBG("Missing domain name\n");
-		return -1;
-	    }
-	    return is_domain_local_pvar(_msg, &(pv_val.rs), _s2);
-	} else {
-	   LM_DBG("Pseudo variable value is not string\n");
-	   return -1;
-	}
-    } else {
-	LM_DBG("Cannot get pseudo variable value\n");
-	return -1;
-    }
+	return is_domain_local_pvar(_msg, domain, _s2);
 }
 
 

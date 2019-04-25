@@ -61,6 +61,8 @@
 #define UAC_REG_INTERNAL_ERROR_STATE    "INTERNAL_ERROR_STATE"
 #define UAC_REG_WRONG_CREDENTIALS_STATE "WRONG_CREDENTIALS_STATE"
 #define UAC_REG_REGISTRAR_ERROR_STATE   "REGISTRAR_ERROR_STATE"
+#define UAC_REG_UNREGISTERING_STATE		"UNREGISTERING_STATE"
+#define UAC_REG_AUTHENTICATING_UNREGISTER_STATE	"AUTHENTICATING_UNREGISTER_STATE"
 
 const str uac_reg_state[]={
 	str_init(UAC_REG_NOT_REGISTERED_STATE),
@@ -71,6 +73,8 @@ const str uac_reg_state[]={
 	str_init(UAC_REG_INTERNAL_ERROR_STATE),
 	str_init(UAC_REG_WRONG_CREDENTIALS_STATE),
 	str_init(UAC_REG_REGISTRAR_ERROR_STATE),
+	str_init(UAC_REG_UNREGISTERING_STATE),
+	str_init(UAC_REG_AUTHENTICATING_UNREGISTER_STATE),
 };
 
 /** Functions declarations */
@@ -86,6 +90,7 @@ static mi_response_t *mi_reg_list(const mi_params_t *params,
 static mi_response_t *mi_reg_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
+int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
 
 
 /** Global variables */
@@ -117,13 +122,6 @@ typedef struct reg_tm_cb {
 	unsigned int hash_index;
 	reg_record_t *uac;
 }reg_tm_cb_t;
-
-/** Exported functions */
-static cmd_export_t cmds[]=
-{
-	{0,0,0,0,0,0}
-};
-
 
 /** Exported parameters */
 static param_export_t params[]= {
@@ -180,7 +178,7 @@ struct module_exports exports= {
 	MODULE_VERSION,			/* module version */
 	DEFAULT_DLFLAGS,		/* dlopen flags */
 	&deps,                  /* OpenSIPS module dependencies */
-	cmds,				/* exported functions */
+	0,				/* exported functions */
 	0,					/* exported async functions */
 	params,				/* exported parameters */
 	NULL,				/* exported statistics */
@@ -191,7 +189,8 @@ struct module_exports exports= {
 	mod_init,			/* module initialization function */
 	(response_function) NULL,	/* response handling function */
 	(destroy_function) mod_destroy,	/* destroy function */
-	child_init			/* per-child init function */
+	child_init,			/* per-child init function */
+	0					/* reload confirm function */
 };
 
 
@@ -309,6 +308,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	struct sip_msg *msg;
 	int statuscode = 0;
 	unsigned int exp = 0;
+	unsigned int bindings_counter = 0;
 	reg_record_t *rec = (reg_record_t*)e_data;
 	struct hdr_field *c_ptr, *head_contact;
 	struct uac_credential crd;
@@ -364,9 +364,56 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				c_ptr = c_ptr->next;
 			}
 		} else {
-			LM_ERR("No contact header in received 200ok\n");
-			goto done;
+			switch(rec->state) {
+			case UNREGISTERING_STATE:
+			case AUTHENTICATING_UNREGISTER_STATE:
+				if(send_register(cb_param->hash_index, rec, NULL)==1) {
+					rec->last_register_sent = now;
+					rec->state = REGISTERING_STATE;
+				} else {
+					rec->registration_timeout = now + rec->expires - timer_interval;
+					rec->state = INTERNAL_ERROR_STATE;
+				}
+				break;
+			default:
+				LM_ERR("No contact header in received 200ok in state [%d]\n",
+					rec->state);
+				goto done;
+			}
+			break; /* done with 200ok handling */
 		}
+
+		if (rec->flags&FORCE_SINGLE_REGISTRATION) {
+			head_contact = msg->contact;
+			contact = ((contact_body_t*)msg->contact->parsed)->contacts;
+			while (contact) {
+				bindings_counter++;
+				if (contact->next == NULL) {
+					contact = NULL;
+					c_ptr = head_contact->next;
+					while(c_ptr) {
+						if (c_ptr->type == HDR_CONTACT_T) {
+							head_contact = c_ptr;
+							contact = ((contact_body_t*)c_ptr->parsed)->contacts;
+							break;
+						}
+						c_ptr = c_ptr->next;
+					}
+				} else {
+					contact = contact->next;
+				}
+			}
+			if (bindings_counter>1) {
+				LM_DBG("got [%d] bindings\n", bindings_counter);
+				if(send_unregister(cb_param->hash_index, rec, NULL)==1) {
+					rec->state = UNREGISTERING_STATE;
+				} else {
+					rec->state = INTERNAL_ERROR_STATE;
+				}
+				break;
+			}
+		}
+
 		head_contact = msg->contact;
 		contact = ((contact_body_t*)msg->contact->parsed)->contacts;
 		while (contact) {
@@ -451,8 +498,10 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 
 		switch(rec->state) {
 		case REGISTERING_STATE:
+		case UNREGISTERING_STATE:
 			break;
 		case AUTHENTICATING_STATE:
+		case AUTHENTICATING_UNREGISTER_STATE:
 			/* We already sent an authenticated REGISTER and we are still challanged! */
 			LM_WARN("Wrong credentials for [%.*s]\n",
 				rec->td.rem_uri.len, rec->td.rem_uri.s);
@@ -485,10 +534,25 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			LM_ERR("failed to build authorization hdr\n");
 			goto done;
 		}
-		if(send_register(cb_param->hash_index, rec, new_hdr)==1) {
-			rec->state = AUTHENTICATING_STATE;
-		} else {
-			rec->state = INTERNAL_ERROR_STATE;
+		switch(rec->state) {
+		case REGISTERING_STATE:
+			if(send_register(cb_param->hash_index, rec, new_hdr)==1) {
+				rec->state = AUTHENTICATING_STATE;
+			} else {
+				rec->state = INTERNAL_ERROR_STATE;
+			}
+			break;
+		case UNREGISTERING_STATE:
+			if(send_unregister(cb_param->hash_index, rec, new_hdr)==1) {
+				rec->state = AUTHENTICATING_UNREGISTER_STATE;
+			} else {
+				rec->state = INTERNAL_ERROR_STATE;
+			}
+			break;
+		default:
+			LM_ERR("Unexpected [%d] notification cb in state [%d]\n",
+				statuscode, rec->state);
+			goto done;
 		}
 		pkg_free(new_hdr->s);
 		new_hdr->s = NULL; new_hdr->len = 0;
@@ -650,6 +714,53 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 	return result;
 }
 
+int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
+{
+	int result;
+	reg_tm_cb_t *cb_param;
+	char *p;
+
+	/* Allocate space for tm callback params */
+	cb_param = shm_malloc(sizeof(reg_tm_cb_t));
+	if (!cb_param) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	cb_param->hash_index = hash_index;
+	cb_param->uac = rec;
+
+	p = extra_hdrs.s;
+	memcpy(p, contact_hdr.s, contact_hdr.len);
+	p += contact_hdr.len;
+	*p = '*'; p++;
+	memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
+
+	/* adding exires header */
+	memcpy(p, expires_hdr.s, expires_hdr.len);
+	p += expires_hdr.len;
+	*p = '0'; p++;
+	memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
+
+	if (auth_hdr) {
+		memcpy(p, auth_hdr->s, auth_hdr->len);
+		p += auth_hdr->len;
+	}
+	extra_hdrs.len = (int)(p - extra_hdrs.s);
+
+	LM_DBG("extra_hdrs=[%p][%d]->[%.*s]\n",
+		extra_hdrs.s, extra_hdrs.len, extra_hdrs.len, extra_hdrs.s);
+
+	result=tmb.t_request_within(
+		&register_method,	/* method */
+		&extra_hdrs,		/* extra headers*/
+		NULL,			/* body */
+		&rec->td,		/* dialog structure*/
+		reg_tm_cback,		/* callback function */
+		(void *)cb_param,	/* callback param */
+		shm_free_param);	/* function to release the parameter */
+	LM_DBG("result=[%d]\n", result);
+	return result;
+}
 
 struct timer_check_data {
 	time_t now;
@@ -670,7 +781,9 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 
 	switch(rec->state){
 	case REGISTERING_STATE:
+	case UNREGISTERING_STATE:
 	case AUTHENTICATING_STATE:
+	case AUTHENTICATING_UNREGISTER_STATE:
 		break;
 	case WRONG_CREDENTIALS_STATE:
 	case REGISTER_TIMEOUT_STATE:
@@ -760,14 +873,17 @@ static int cluster_shtag_check(void *e_data, void *data, void *r_data)
 	reg_record_t *rec = (reg_record_t*)e_data;
 	struct shtag_check_data *shtag_data = (struct shtag_check_data*)data;
 
-	if ( rec->cluster_id!=shtag_data->c_id ||
-	rec->cluster_shtag.len!=shtag_data->tag->len ||
-	memcmp(rec->cluster_shtag.s, shtag_data->tag->s, shtag_data->tag->len) )
-		return 0;
+	LM_DBG("checking record with cluster_id [%d] and shtag [%.*s]\n",
+		rec->cluster_id, rec->cluster_shtag.len, rec->cluster_shtag.s);
+	if (rec->cluster_id==shtag_data->c_id &&
+		rec->cluster_shtag.s && rec->cluster_shtag.len &&
+		rec->cluster_shtag.len==shtag_data->tag->len &&
+		0==memcmp(rec->cluster_shtag.s, shtag_data->tag->s, shtag_data->tag->len)) {
+		/* this record matches the shtag + cluster_id, so we need to de-active it */
+		LM_DBG("Moving record to NOT_REGISTERED_STATE\n");
+		rec->state = NOT_REGISTERED_STATE;
+	}
 
-	/* this record matches the shtag + cluster_id, so we need to active it */
-	// TODO - force first an un-register all (expires 0 + contact *) and
-	// when replied, fire a new registration.
 
 	return 0;
 }
@@ -778,13 +894,16 @@ void handle_shtag_change(str *tag_name, int state, int c_id, void *param)
 	struct shtag_check_data shtag_data;
 	int ret, i;
 
-	if (state!=SHTAG_STATE_ACTIVE)
+	if (state!=SHTAG_STATE_BACKUP)
 		return;
 
-	/* a shatg in cluster became active on local node-> check if
+	shtag_data.c_id = c_id;
+	shtag_data.tag = tag_name;
+
+	/* a shatg in cluster became backup on local node-> check if
 	 * one of our uac reg depends on it */
-	LM_DBG("checking for shtag [%.*s] in cluster %d\n",
-		tag_name->len, tag_name->s, c_id);
+	LM_DBG("checking for shtag [%.*s] in cluster [%d]\n",
+		shtag_data.tag->len, shtag_data.tag->s, shtag_data.c_id);
 
 	for( i=0 ; i<reg_hsize ; i++) {
 
@@ -843,6 +962,11 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 		rec->contact_uri.s, rec->contact_uri.len) < 0)
 		goto error;
 
+	if(rec->contact_params.s && rec->contact_params.len)
+		if (add_mi_string(record_item, MI_SSTR("binding_params"),
+			rec->contact_params.s, rec->contact_params.len) < 0)
+			goto error;
+
 	if(rec->td.loc_uri.s != rec->td.rem_uri.s)
 		if (add_mi_string(record_item, MI_SSTR("third_party_registrant"),
 			rec->td.loc_uri.s, rec->td.loc_uri.len) < 0)
@@ -877,6 +1001,14 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 			rec->td.forced_to_su.s.sa_family) < 0)
 			goto error;
 	}
+
+	if (rec->cluster_shtag.s && rec->cluster_shtag.len) {
+		if (add_mi_string(record_item, MI_SSTR("shtag"),
+			rec->cluster_shtag.s, rec->cluster_shtag.len) < 0)
+			goto error;
+		if (add_mi_number(record_item, MI_SSTR("cluster_id"), rec->cluster_id) < 0)
+			goto error;
+		}
 
 	/* action successfully completed on current list element */
 	return 0; /* continue list traversal */

@@ -677,14 +677,13 @@ int called_party_num_writef(int param_idx, int subfield_idx, unsigned char *para
 		isup_put_number(param_val + 2, num, &num_len, &oddeven);
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
-	} else
+		*len = num_len + 2;
+	} else {
 		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
 										mask[subfield_idx], shift[subfield_idx], new_val);
-
-	if (subfield_idx == 4)
-		*len = num_len + 2;
-	else if (*len == 0)
-		*len = 2;
+		if (*len == 0)
+			*len = 2;
+	}
 
 	return 0;
 }
@@ -735,14 +734,13 @@ int calling_party_num_writef(int param_idx, int subfield_idx, unsigned char *par
 		isup_put_number(param_val + 2, num, &num_len, &oddeven);
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
-	} else
+		*len = num_len + 2;
+	} else {
 		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
 										mask[subfield_idx], shift[subfield_idx], new_val);
-
-	if (subfield_idx == 6)
-		*len = num_len + 2;
-	else if (*len == 0)
-		*len = 2;
+		if (*len == 0)
+			*len = 2;
+	}
 
 	return 0;
 }
@@ -870,14 +868,13 @@ int connected_num_writef(int param_idx, int subfield_idx, unsigned char *param_v
 		isup_put_number(param_val + 2, num, &num_len, &oddeven);
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
-	} else
+		*len = num_len + 2;
+	} else {
 		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
 										mask[subfield_idx], shift[subfield_idx], new_val);
-
-	if (subfield_idx == 5)
-		*len = num_len + 2;
-	else if (*len == 0)
-		*len = 2;
+		if (*len == 0)
+			*len = 2;
+	}
 
 	return 0;
 }
@@ -928,14 +925,13 @@ int original_called_num_writef(int param_idx, int subfield_idx,
 		isup_put_number(param_val + 2, num, &num_len, &oddeven);
 		/* also set oddeven, just in case it wasn't already */
 		param_val[0] = SET_BITS(param_val[0], 0x80, 7, oddeven);
-	} else
+		*len = num_len + 2;
+	} else {
 		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
 								mask[subfield_idx], shift[subfield_idx], new_val);
-
-	if (subfield_idx == 4)
-		*len = num_len + 2;
-	else if (*len == 0)
-		*len = 2;
+		if (*len == 0)
+			*len = 2;
+	}
 
 	return 0;
 }

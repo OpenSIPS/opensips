@@ -910,7 +910,7 @@ static int ip_check(cluster_info_t *cluster, union sockaddr_union *su, str *ip_s
 				return 1;
 		} else {
 			LM_ERR("No address to check\n");
-			return -1;
+			return 0;
 		}
 
 	return 0;
@@ -928,7 +928,7 @@ int clusterer_check_addr(int cluster_id, str *ip_str,
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_WARN("Unknown cluster id [%d]\n", cluster_id);
-		return -1;
+		return 0;
 	}
 
 	if (check_type == NODE_BIN_ADDR) {
@@ -936,20 +936,21 @@ int clusterer_check_addr(int cluster_id, str *ip_str,
 		ip.len = 16;
 		if (inet_pton(AF_INET, ip_str->s, ip.u.addr) <= 0) {
 			LM_ERR("Invalid IP address\n");
-			return -1;
+			return 0;
 		}
 		ip_addr2su(&su, &ip, 0);
 
 		rc = ip_check(cluster, &su, NULL);
+		
 	} else if (check_type == NODE_SIP_ADDR) {
 		rc = ip_check(cluster, NULL, ip_str);
 	} else {
 		LM_ERR("Bad address type\n");
-		rc = -1;
+		rc = 0;
 	}
 
 	lock_stop_read(cl_list_lock);
-
+	/* return 1 if addr matched, 0 for ALL other cases, unless return codes implemented */
 	return rc;
 }
 
@@ -1749,6 +1750,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 
 	lock_get(cl->current_node->lock);
 	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
+		lock_release(cl->current_node->lock);
 		LM_INFO("Current node disabled, ignoring received bin packet\n");
 		goto exit;
 	}
@@ -1853,8 +1855,8 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 
 	lock_get(cl->current_node->lock);
 	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
-		LM_INFO("Current node disabled, ignoring received clusterer bin packet\n");
 		lock_release(cl->current_node->lock);
+		LM_INFO("Current node disabled, ignoring received clusterer bin packet\n");
 		goto exit;
 	}
 	lock_release(cl->current_node->lock);
@@ -2068,6 +2070,7 @@ static int send_full_top_update(node_info_t *dest_node, int nr_nodes, int *node_
 	lock_get(dest_node->cluster->current_node->lock);
 
 	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_FULL_TOP_UPDATE, BIN_VERSION, 0) < 0) {
+		lock_release(dest_node->cluster->current_node->lock);
 		LM_ERR("Failed to init bin send buffer\n");
 		return -1;
 	}
@@ -2541,6 +2544,7 @@ static int set_link_w_neigh(clusterer_link_state new_ls, node_info_t *neigh)
 
 		lock_get(neigh->cluster->current_node->lock);
 		if (add_neighbour(neigh->cluster->current_node, neigh) < 0) {
+			lock_release(neigh->cluster->current_node->lock);
 			LM_ERR("Unable to add neighbour [%d] to topology\n", neigh->node_id);
 			return -1;
 		}

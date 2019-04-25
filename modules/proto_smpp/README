@@ -437,9 +437,11 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                   Name               DevScore Commits Lines ++ Lines --
-   1. Victor Ciurel (@victor-ciurel)     81      21      3760     1658
-   2. Razvan Crainea (@razvancrainea)    36      13      1508     610
+     Name DevScore Commits Lines ++ Lines --
+   1. Victor Ciurel (@victor-ciurel) 81 21 3760 1658
+   2. Razvan Crainea (@razvancrainea) 36 13 1508 610
+   3. Vlad Patrascu (@rvlad-patrascu) 3 1 9 12
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -460,9 +462,11 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                   Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Jan 2019 - Jan 2019
-   2. Victor Ciurel (@victor-ciurel)  Sep 2017 - Jan 2019
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
+   3. Razvan Crainea (@razvancrainea)     Jan 2019 - Jan 2019
+   4. Victor Ciurel (@victor-ciurel)      Sep 2017 - Jan 2019
 
    (1) including any documentation-related commits, excluding
    merge commits

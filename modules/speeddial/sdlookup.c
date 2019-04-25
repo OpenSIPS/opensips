@@ -44,10 +44,10 @@ static char useruri_buf[MAX_USERURI_SIZE];
 /**
  *
  */
-int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
+int sd_lookup(struct sip_msg* _msg, str* table_s, str* uri_s)
 {
 	static db_ps_t my_ps = NULL;
-	str user_s, table_s, uri_s;
+	str user_s;
 	int nr_keys;
 	struct sip_uri *puri;
 	struct sip_uri turi;
@@ -56,30 +56,19 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 	db_key_t db_cols[1];
 	db_res_t* db_res = NULL;
 
-	if(_table==NULL || fixup_get_svalue(_msg, (gparam_p)_table, &table_s)!=0)
-	{
-		LM_ERR("invalid table parameter\n");
-		return -1;
-	}
-
 	/* init */
 	nr_keys = 0;
 	db_cols[0]=&new_uri_column;
 
-	if(_owner)
+	if(uri_s)
 	{
 		memset(&turi, 0, sizeof(struct sip_uri));
-		if(fixup_get_svalue(_msg, (gparam_p)_owner, &uri_s)!=0)
-		{
-			LM_ERR("invalid owner uri parameter\n");
-			return -1;
-		}
-		if(parse_uri(uri_s.s, uri_s.len, &turi)!=0)
+		if(parse_uri(uri_s->s, uri_s->len, &turi)!=0)
 		{
 			LM_ERR("bad owner SIP address!\n");
 			goto err_server;
 		}
-		LM_DBG("using user id [%.*s]\n", uri_s.len, uri_s.s);
+		LM_DBG("using user id [%.*s]\n", uri_s->len, uri_s->s);
 		puri = &turi;
 	} else {
 		/* take username@domain from From header */
@@ -146,7 +135,7 @@ int sd_lookup(struct sip_msg* _msg, char* _table, char* _owner)
 		nr_keys++;
 	}
 
-	db_funcs.use_table(db_handle, &table_s);
+	db_funcs.use_table(db_handle, table_s);
 	CON_PS_REFERENCE(db_handle) = &my_ps;
 
 	if(db_funcs.query(db_handle, db_keys, NULL, db_vals, db_cols,

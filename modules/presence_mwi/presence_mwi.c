@@ -53,7 +53,7 @@ add_event_t pres_add_event;
 /* module exported commands */
 static cmd_export_t cmds[] =
 {
-    {0,	0, 0, 0, 0, 0}
+    {0, 0, {{0, 0, 0}}, 0}
 };
 
 /* module exported parameters */
@@ -89,7 +89,8 @@ struct module_exports exports= {
     mod_init,				/* module initialization function */
     (response_function) 0,	/* response handling function */
     destroy,				/* destroy function */
-    child_init				/* per-child init function */
+    child_init,				/* per-child init function */
+	0				/* reload confirm function */
 };
 
 /*
@@ -102,7 +103,7 @@ static int mod_init(void)
 
     bind_presence_t bind_presence;
 
-    bind_presence= (bind_presence_t)find_export("bind_presence", 1,0);
+    bind_presence= (bind_presence_t)find_export("bind_presence", 0);
     if (!bind_presence) {
 	LM_ERR("can't bind presence\n");
 	return -1;

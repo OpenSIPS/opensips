@@ -45,7 +45,7 @@ static inline int load_pua_api( pua_api_t *api)
 	bind_pua_t bind_pua;
 
 	/* import the pua auto-loading function */
-	if ( !(bind_pua= (bind_pua_t)find_export("bind_pua", 1,0))) {
+	if ( !(bind_pua= (bind_pua_t)find_export("bind_pua",0))) {
 		LM_ERR("failed to import bind_pua\n");
 		return -1;
 	}

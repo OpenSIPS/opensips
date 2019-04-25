@@ -35,7 +35,6 @@
 #include <time.h>
 #include <fnmatch.h>
 
-#include "../../mod_fix.h"
 #include "../../sr_module.h"
 #include "../../db/db.h"
 #include "../../dprint.h"
@@ -94,8 +93,8 @@ static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 int stored_pres_info(struct sip_msg* msg, char* pres_uri, char* s);
-static int fixup_presence(void** param, int param_no);
-static int fixup_subscribe(void** param, int param_no);
+static int fixup_presence(void** param);
+static int fixup_subscribe(void** param);
 static mi_response_t *mi_refreshWatchers(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_cleanup(const mi_params_t *params,
@@ -148,21 +147,17 @@ static str presence_exposed_event = str_init("E_PRESENCE_EXPOSED");
 event_id_t presence_event_id = EVI_ERROR;
 event_id_t exposed_event_id = EVI_ERROR;
 
-static cmd_export_t cmds[]=
-{
-	{"handle_publish",  (cmd_function)handle_publish,   0,
-		fixup_presence,0, REQUEST_ROUTE},
-	{"handle_publish",  (cmd_function)handle_publish,   1,
-		fixup_presence, 0, REQUEST_ROUTE},
-	{"handle_subscribe",(cmd_function)handle_subscribe, 0,
-		fixup_subscribe,0, REQUEST_ROUTE},
-	{"handle_subscribe",(cmd_function)handle_subscribe, 1,
-		fixup_subscribe,0, REQUEST_ROUTE},
-	{"handle_subscribe",(cmd_function)handle_subscribe, 2,
-		fixup_subscribe,0, REQUEST_ROUTE},
-	{"bind_presence",   (cmd_function)bind_presence,    1,
-		0, 0,  0},
-	{ 0, 0, 0, 0, 0,  0}
+static cmd_export_t cmds[]={
+	{"handle_publish",  (cmd_function)handle_publish, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_presence,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"handle_subscribe",(cmd_function)handle_subscribe, {
+		{CMD_PARAM_INT|CMD_PARAM_OPT,fixup_subscribe,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_subscribe,0},
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{"bind_presence",(cmd_function)bind_presence,{{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
@@ -250,7 +245,8 @@ struct module_exports exports= {
 	mod_init,					/* module initialization function */
 	(response_function) 0,      /* response handling function */
 	(destroy_function) destroy, /* destroy function */
-	child_init                  /* per-child init function */
+	child_init,                 /* per-child init function */
+	0                           /* reload confirm function */
 };
 
 /**
@@ -516,49 +512,27 @@ static void destroy(void)
 	destroy_evlist();
 }
 
-static int fixup_presence(void** param, int param_no)
+static int fixup_presence(void** param)
 {
- 	pv_elem_t *model;
-	str s;
-
 	if(library_mode)
 	{
 		LM_ERR("Bad config - you can not call 'handle_publish' function"
 				" (db_url not set)\n");
 		return -1;
 	}
-	if(param_no== 0)
-		return 0;
-
-	if(*param)
- 	{
-		s.s = (char*)(*param); s.len = strlen(s.s);
- 		if(pv_parse_format(&s, &model)<0)
- 		{
- 			LM_ERR( "wrong format[%s]\n",(char*)(*param));
- 			return E_UNSPEC;
- 		}
-
- 		*param = (void*)model;
- 		return 0;
- 	}
- 	LM_ERR( "null format\n");
- 	return E_UNSPEC;
+	
+	return 0;
 }
 
-static int fixup_subscribe(void** param, int param_no)
+static int fixup_subscribe(void** param)
 {
 	if(library_mode)
 	{
 		LM_ERR("Bad config - you can not call 'handle_subscribe' function"
 				" (db_url not set)\n");
 		return -1;
-	} else {
-		if (param_no==2)
-			/* second parameter is the sharing tag, which can be string
-			 * or variable  */
-			return fixup_sgp(param);
 	}
+
 	return 0;
 }
 
@@ -679,8 +653,14 @@ static mi_response_t *mi_cleanup(const mi_params_t *params,
 }
 
 
-static inline int mi_print_phtable_record(mi_item_t *item, pres_entry_t* pres)
+static inline int mi_print_phtable_record(mi_item_t *p_item,pres_entry_t* pres)
 {
+	mi_item_t *item;
+
+	item = add_mi_object(p_item, NULL, 0);
+	if (!item)
+		goto error;
+
 	if (add_mi_string(item, MI_SSTR("pres_uri"),
 		pres->pres_uri.s, pres->pres_uri.len) < 0)
 		goto error;
@@ -710,7 +690,7 @@ static mi_response_t *mi_list_phtable(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
-	mi_item_t *resp_arr, *arr_item;
+	mi_item_t *resp_arr;
 	pres_entry_t* p;
 	unsigned int i;
 
@@ -720,15 +700,11 @@ static mi_response_t *mi_list_phtable(const mi_params_t *params,
 
 	for(i= 0; i<phtable_size; i++)
 	{
-		arr_item = add_mi_object(resp_arr, NULL, 0);
-		if (!arr_item)
-			goto error;
-
 		lock_get(&pres_htable[i].lock);
 		p = pres_htable[i].entries->next;
 		while(p)
 		{
-			if(mi_print_phtable_record(arr_item, p)<0) goto error;
+			if(mi_print_phtable_record(resp_arr, p)<0) goto error;
 			p= p->next;;
 		}
 		lock_release(&pres_htable[i].lock);
@@ -742,12 +718,17 @@ error:
 }
 
 
-static inline int mi_print_shtable_record(mi_item_t *item, subs_t* s)
+static inline int mi_print_shtable_record(mi_item_t *p_item, subs_t* s)
 {
 	time_t _ts;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
 	rr_t *rr_head = NULL;
+	mi_item_t *item;
+
+	item = add_mi_object(p_item, NULL, 0);
+	if (!item)
+		return 0;
 
 	if (add_mi_string(item, MI_SSTR("pres_uri"),
 		s->pres_uri.s, s->pres_uri.len) < 0)
@@ -852,7 +833,7 @@ static inline int from_to_match_subs(subs_t *s, str *match_from, str *match_to,
 static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str *to)
 {
 	mi_response_t *resp;
-	mi_item_t *resp_arr, *arr_item;
+	mi_item_t *resp_arr;
 	subs_t *s;
 	unsigned int i,j;
 	char from_w[256], to_w[256];
@@ -873,17 +854,9 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 	if (to) {
 		memcpy(to_w, to->s, to->len);
 		from_w[to->len] = 0;
-	} else {
-		free_mi_response(resp);
-		return 0;
 	}
 
 	for (i = 0, j = 0; i < shtable_size; i++) {
-		arr_item = add_mi_object(resp_arr, NULL, 0);
-		if (!arr_item) {
-			free_mi_response(resp);
-			return 0;
-		}
 
 		lock_get(&subs_htable[i].lock);
 		for (s = subs_htable[i].entries->next; s; s = s->next) {
@@ -896,7 +869,7 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 					continue;
 			}
 
-			if (mi_print_shtable_record(arr_item, s) < 0)
+			if (mi_print_shtable_record(resp_arr, s) < 0)
 				goto error;
 			j++;
 		}

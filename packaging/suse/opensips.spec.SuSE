@@ -1,6 +1,6 @@
 %define name    opensips
-%define ver     2.1
-%define rel     rc1
+%define ver     3.1
+%define rel     dev
 
 %define EXCLUDED_MODULES	aaa_radius b2b_entities b2b_logic db_http json memcached jabber cpl_c xmpp rls mi_xmlrpc xcap_client db_mysql db_postgres db_unixodbc db_oracle db_berkeley osp perl snmpstats db_perlvdb peering carrierroute mmgeoip presence presence_xml presence_mwi presence_dialoginfo pua pua_bla pua_mi pua_usrloc pua_xmpp pua_dialoginfo xcap xcap_client ldap h350 identity regex
 %define MYSQL_MODULES		modules/db_mysql
@@ -271,7 +271,7 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.rr
 %doc %{_docdir}/opensips/README.seas
 %doc %{_docdir}/opensips/README.signaling
-%doc %{_docdir}/opensips/README.siptrace
+%doc %{_docdir}/opensips/README.tracer
 %doc %{_docdir}/opensips/README.sl
 %doc %{_docdir}/opensips/README.sms
 %doc %{_docdir}/opensips/README.speeddial
@@ -339,7 +339,7 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/rr.so
 %{_libdir}/opensips/modules/seas.so
 %{_libdir}/opensips/modules/signaling.so
-%{_libdir}/opensips/modules/siptrace.so
+%{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so
 %{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
@@ -356,18 +356,14 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/xlog.so
 
 %{_sbindir}/opensips
-%{_sbindir}/osipsconsole
 %{_sbindir}/opensipsctl
 %{_sbindir}/opensipsdbctl
 %{_libdir}/opensips/opensipsctl/dbtextdb/dbtextdb.py
 %{_libdir}/opensipsctl/opensipsctl.base
-%{_libdir}/opensipsctl/opensipsctl.ctlbase
 %{_libdir}/opensipsctl/opensipsctl.db_berkeley
 %{_libdir}/opensipsctl/opensipsctl.dbtext
 %{_libdir}/opensipsctl/opensipsctl.oracle
 %{_libdir}/opensipsctl/opensipsctl.sqlbase
-%{_libdir}/opensipsctl/opensipsctl.fifo
-%{_libdir}/opensipsctl/opensipsctl.unixsock
 %{_libdir}/opensipsctl/opensipsdbctl.base
 %{_libdir}/opensipsctl/opensipsdbctl.db_berkeley
 %{_libdir}/opensipsctl/opensipsdbctl.dbtext

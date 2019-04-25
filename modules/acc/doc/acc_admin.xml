@@ -99,8 +99,8 @@
 		module.
 	</para>
 	<para>
-	A very comprehensive description of how the accounting module works in 
-	terms accounting scope, accounting events and accounting backends can 
+	A very comprehensive description of how the accounting module works in
+	terms accounting scope, accounting events and accounting backends can
 	be found in this online <ulink url="https://www.opensips.org/Documentation/Tutorials-Advanced-Accounting/">Advanced Accounting Tutorial</ulink>.
 	</para>
 	<section>
@@ -812,7 +812,7 @@ $(acc_leg(caller)[-2])
 	<title>Exported Functions</title>
 	<section id="func_do_accounting" xreflabel="do_accounting()">
 		<title>
-			<function moreinfo="none">do_accounting(type, flags, table)</function>
+			<function moreinfo="none">do_accounting(type, [flags], [table])</function>
 		</title>
 		<para>
 			<function moreinfo="none">do_accounting()</function> replaces all the
@@ -825,7 +825,7 @@ $(acc_leg(caller)[-2])
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>type</emphasis> - the type of accounting you want to do.
+			<para><emphasis>type (string)</emphasis> - the type of accounting you want to do.
 			All types have to be separated by '|'. The following parameters can
 			be used: </para>
 			<itemizedlist>
@@ -844,7 +844,7 @@ $(acc_leg(caller)[-2])
 			</itemizedlist>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis> - flags for the accounting type you have
+			<para><emphasis>flags (string, optional)</emphasis> - flags for the accounting type you have
 			selected. All the types have to be separated by '|'. The following
 			parameters can be used: </para>
 			<itemizedlist>
@@ -871,7 +871,7 @@ $(acc_leg(caller)[-2])
 			</itemizedlist>
 		</listitem>
 		<listitem>
-			<para><emphasis>table</emphasis> - table where to do the accounting;
+			<para><emphasis>table (string, optional)</emphasis> - table where to do the accounting;
 			it replaces old table_avp parameter;</para>
 		</listitem>
 		</itemizedlist>
@@ -918,7 +918,7 @@ $(acc_leg(caller)[-2])
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>type</emphasis> - the type of accounting you want to stop.
+			<para><emphasis>type (string, optional)</emphasis> - the type of accounting you want to stop.
 			All the types have to be separated by '|'. The following parameters can
 			be used: </para>
 			<itemizedlist>
@@ -937,7 +937,7 @@ $(acc_leg(caller)[-2])
 			</itemizedlist>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis> - flags to be reset for the accouting type you have
+			<para><emphasis>flags (string, optional)</emphasis> - flags to be reset for the accouting type you have
 			selected. All the types have to be separated by '|'. The following
 			parameters can be used: </para>
 			<itemizedlist>
@@ -978,7 +978,7 @@ $(acc_leg(caller)[-2])
 			drop_accounting("log");
 			/* or stop missed calls and cdr accounting for syslog;
 			 * normal accounting will still be enabled */
-			drop_accounting("log","missed|cdr");
+			drop_accounting("log", "missed|cdr");
 			/* or stop all types of accounting  */
 			drop_accounting();
 		}
@@ -1005,9 +1005,9 @@ $(acc_leg(caller)[-2])
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>comment</emphasis> - Comment describing how the
+			<para><emphasis>comment (string)</emphasis> - Comment describing how the
 			request completed - this string has to contain a reply code
-			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
+			followed by a reply reason phrase (ex: "480 Nobody Home"). Variables
 			are accepted in this string.</para>
 		</listitem>
 		</itemizedlist>
@@ -1039,13 +1039,13 @@ acc_log_request("403 Destination not allowed");
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>comment</emphasis> - Comment describing how the
+			<para><emphasis>comment (string)</emphasis> - Comment describing how the
 			request completed - this string has to contain a reply code
-			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
+			followed by a reply reason phrase (ex: "480 Nobody Home"). Variables
 			are accepted in this string.</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>table</emphasis> - Database table to be used.</para>
+			<para><emphasis>table (string)</emphasis> - Database table to be used.</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -1057,7 +1057,7 @@ acc_log_request("403 Destination not allowed");
 		<programlisting format="linespecific">
 ...
 acc_db_request("Some comment", "Some table");
-acc_db_request("$T_reply_code $(&lt;reply&gt;rr)","acc");
+acc_db_request("$T_reply_code $(&lt;reply&gt;rr)", "acc");
 ...
 </programlisting>
 		</example>
@@ -1076,7 +1076,7 @@ acc_db_request("$T_reply_code $(&lt;reply&gt;rr)","acc");
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>comment</emphasis> - Comment describing how the
+			<para><emphasis>comment (string)</emphasis> - Comment describing how the
 			request completed - this string has to contain a reply code
 			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
 			are accepted in this string.</para>
@@ -1113,10 +1113,9 @@ acc_aaa_request("403 Destination not allowed");
 		</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>comment</emphasis> - Comment describing how the
+			<para><emphasis>comment (string)</emphasis> - Comment describing how the
 			request completed - this string has to contain a reply code
-			followed by a reply reason phrase (ex: "404 Nobody home"). Variables
-			are accepted in this string.</para>
+			followed by a reply reason phrase (ex: "404 Nobody home")</para>
 		</listitem>
 		</itemizedlist>
 		<para>

@@ -377,7 +377,7 @@ int ldap_params_search(
 
 
 int ldap_url_search_async(
-	char* _ldap_url,
+	str* _ldap_url,
 	int* _msgidp,
 	struct ld_session **ldsp,
 	struct ld_conn** conn,
@@ -385,19 +385,25 @@ int ldap_url_search_async(
 {
 	LDAPURLDesc *ludp;
 	int rc;
+	str ldap_url_nt;
 
-	if (ldap_url_parse(_ldap_url, &ludp) != 0) {
-		LM_ERR("invalid LDAP URL [%s]\n", ZSW(_ldap_url));
+	if (pkg_nt_str_dup(&ldap_url_nt, _ldap_url) < 0) {
+		LM_ERR("no more pkg memory\n");
+		return -2;
+	}
+
+	if (ldap_url_parse(ldap_url_nt.s, &ludp) != 0) {
+		LM_ERR("invalid LDAP URL [%s]\n", ldap_url_nt.s);
 		if (ludp != NULL) {
 			ldap_free_urldesc(ludp);
 		}
-		return -2;
+		goto error;
 	}
 	if (ludp->lud_host == NULL)
 	{
 		LM_ERR(	"no ldap session name found in ldap URL [%s]\n",
-			ZSW(_ldap_url));
-		return -2;
+			ldap_url_nt.s);
+		goto error;
 	}
 
 
@@ -418,6 +424,7 @@ int ldap_url_search_async(
 	if ((rc == 0 && *_msgidp >= 0) || rc == 1) {
 		if (get_connected_ldap_session(ludp->lud_host, ldsp)) {
 			LM_ERR("[%s]: couldn't get ldap session\n", ludp->lud_host);
+			pkg_free(ldap_url_nt.s);		
 			return -1;
 		}
 	}
@@ -427,13 +434,18 @@ int ldap_url_search_async(
 		*ld_result_count = ldap_count_entries((*ldsp)->conn_s.handle, last_ldap_result);
 		if (*ld_result_count < 0) {
 			LM_ERR("[%s]: ldap_count_entries for sync call failed\n", (*ldsp)->name);
+			pkg_free(ldap_url_nt.s);
 			return -1;
 		}
 	}
 
 
 	ldap_free_urldesc(ludp);
+	pkg_free(ldap_url_nt.s);
 	return rc;
+error:
+	pkg_free(ldap_url_nt.s);
+	return -2;
 }
 
 
@@ -446,7 +458,7 @@ int ldap_url_search(
 	int rc;
 
 	if (ldap_url_parse(_ldap_url, &ludp) != 0) {
-		LM_ERR("invalid LDAP URL [%s]\n", ZSW(_ldap_url));
+		LM_ERR("invalid LDAP URL [%s]\n", _ldap_url);
 		if (ludp != NULL) {
 			ldap_free_urldesc(ludp);
 		}
@@ -455,7 +467,7 @@ int ldap_url_search(
 	if (ludp->lud_host == NULL)
 	{
 		LM_ERR(	"no ldap session name found in ldap URL [%s]\n",
-			ZSW(_ldap_url));
+			_ldap_url);
 		return -2;
 	}
 

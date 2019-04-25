@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 		fprintf(stderr, "tmpfile too long: %s/tmp/OpenSIPS.%d.XXXXXX\n", chroot_dir, getpid());
 		return -3;
 	}
-	umask(0); /* set mode to 0666 for when opensips is running as non-root user and opensipsctl is running as root */
+	umask(0); /* set mode to 0666 for when opensips is running as non-root user and opensips-cli is running as root */
 
 	if (mkstemp(name) == -1) {
 		fprintf(stderr, "Error in mkstemp with name=%s: %s\n", name, strerror(errno));

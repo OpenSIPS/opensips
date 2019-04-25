@@ -53,324 +53,7 @@
 
 #define SLEEP_INTERVAL		300
 
-
-int exec_msg(struct sip_msg *msg, char *cmd )
-{
-	FILE *pipe;
-	int exit_status;
-	int ret;
-	pid_t pid;
-
-	ret=-1; /* pessimist: assume error */
-	pid = __popen3(cmd, &pipe, NULL, NULL);
-	if (pid < 0) {
-		LM_ERR("cannot open pipe: %s\n", cmd);
-		ser_error=E_EXEC;
-		return -1;
-	}
-
-	LM_DBG("Forked pid %d\n", pid);
-
-	if (fwrite(msg->buf, 1, msg->len, pipe)!=msg->len || fflush(pipe)) {
-		LM_ERR("failed to write to pipe\n");
-		ser_error=E_EXEC;
-		goto error01;
-	}
-
-	/* success */
-	ret=1;
-
-error01:
-	schedule_to_kill(pid);
-	wait(&exit_status);
-
-	if (ferror(pipe)) {
-		LM_ERR("pipe: %s\n", strerror(errno));
-		ser_error=E_EXEC;
-		ret=-1;
-	}
-
-	fclose(pipe);
-	if (WIFEXITED(exit_status)) { /* exited properly .... */
-		/* return false if script exited with non-zero status */
-		if (WEXITSTATUS(exit_status)!=0) ret=-1;
-	} else { /* exited erroneously */
-		LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
-			cmd, exit_status, errno, strerror(errno) );
-		ret=-1;
-	}
-	return ret;
-}
-
-
-int exec_str(struct sip_msg *msg, char *cmd, char *param, int param_len) {
-
-	int cmd_len;
-	FILE *pipe;
-	char *cmd_line;
-	int ret;
-	int l1;
-	static char uri_line[MAX_URI_SIZE+1];
-	int uri_cnt;
-	str uri;
-	int exit_status;
-	pid_t pid;
-
-	/* pessimist: assume error by default */
-	ret=-1;
-
-	l1=strlen(cmd);
-	if(param_len>0)
-		cmd_len=l1+param_len+4;
-	else
-		cmd_len=l1+1;
-	cmd_line=pkg_malloc(cmd_len);
-	if (cmd_line==0) {
-		ret=ser_error=E_OUT_OF_MEM;
-		LM_ERR("no pkg mem for command\n");
-		goto error00;
-	}
-
-	/* 'command parameter \0' */
-	memcpy(cmd_line, cmd, l1);
-	if(param_len>0)
-	{
-		cmd_line[l1]=' ';
-		cmd_line[l1+1]='\'';
-		memcpy(cmd_line+l1+2, param, param_len);
-		cmd_line[l1+param_len+2]='\'';
-		cmd_line[l1+param_len+3]=0;
-	} else {
-		cmd_line[l1] = 0;
-	}
-
-	pid = __popen3(cmd_line, NULL, &pipe, NULL);
-	if (pid < 0) {
-		LM_ERR("failed to run command: %s\n", cmd_line);
-		ser_error=E_EXEC;
-		goto error01;
-	}
-
-	LM_DBG("Forked pid %d\n", pid);
-	schedule_to_kill(pid);
-	wait(&exit_status);
-
-	/* read now line by line */
-	uri_cnt=0;
-	while (fgets(uri_line, MAX_URI_SIZE, pipe)) {
-		uri.s = uri_line;
-		uri.len=strlen(uri.s);
-		trim_trailing(&uri);
-
-		/* skip empty line */
-		if (uri.len==0) continue;
-		/* ZT */
-		uri.s[uri.len]=0;
-		if (uri_cnt==0) {
-			if (set_ruri(msg, &uri)==-1 ) {
-				LM_ERR("failed to set new RURI\n");
-				ser_error=E_OUT_OF_MEM;
-				goto error02;
-			}
-		} else {
-			if (append_branch(msg, &uri, 0, 0, Q_UNSPECIFIED, 0, 0)==-1) {
-				LM_ERR("append_branch failed; too many or too long URIs?\n");
-				goto error02;
-			}
-		}
-		uri_cnt++;
-	}
-	if (uri_cnt==0) {
-		LM_ERR("no uri from %s\n", cmd_line );
-		goto error02;
-	}
-	/* success */
-	ret=1;
-
-error02:
-	if (ferror(pipe)) {
-		LM_ERR("in pipe: %s\n", strerror(errno));
-		ser_error=E_EXEC;
-		ret=-1;
-	}
-
-	fclose(pipe);
-	if (WIFEXITED(exit_status)) { /* exited properly .... */
-		/* return false if script exited with non-zero status */
-		if (WEXITSTATUS(exit_status)!=0) ret=-1;
-	} else { /* exited erroneously */
-		LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
-			cmd, exit_status, errno, strerror(errno) );
-		ret=-1;
-	}
-error01:
-	pkg_free(cmd_line);
-error00:
-	return ret;
-}
-
-
-int exec_avp(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
-{
-	int_str avp_val;
-	int_str avp_name;
-	unsigned short avp_type;
-	FILE *pipe;
-	int ret;
-	char res_line[MAX_URI_SIZE+1];
-	str res;
-	int exit_status;
-	int i;
-	pvname_list_t* crt;
-	pid_t pid;
-
-	/* pessimist: assume error by default */
-	ret=-1;
-
-	pid = __popen3(cmd, NULL, &pipe, NULL);
-	if (pid < 0) {
-		LM_ERR("failed to run command: %s\n", cmd);
-		ser_error=E_EXEC;
-		return ret;
-	}
-
-	LM_DBG("Forked pid %d\n", pid);
-	schedule_to_kill(pid);
-	wait(&exit_status);
-
-	/* read now line by line */
-	i=0;
-	crt = avpl;
-	while (fgets(res_line, MAX_URI_SIZE, pipe)) {
-		res.s = res_line;
-		res.len=strlen(res.s);
-		trim_trailing(&res);
-
-		/* skip empty line */
-		if (res.len==0) continue;
-		/* ZT */
-		res.s[res.len]=0;
-
-		avp_type = 0;
-		if(crt==NULL)
-		{
-			avp_name.s.s = int2str(i + 1, &avp_name.s.len);
-			if (!avp_name.s.s) {
-				LM_ERR("cannot convert %d to string\n", i + 1);
-				goto error;
-			}
-			avp_name.n = get_avp_id(&avp_name.s);
-			if (avp_name.n < 0) {
-				LM_ERR("cannot get avp id\n");
-				goto error;
-			}
-		} else {
-			if(pv_get_avp_name(msg, &(crt->sname.pvp), &avp_name.n, &avp_type)!=0)
-			{
-				LM_ERR("can't get item name [%d]\n",i);
-				goto error;
-			}
-		}
-
-		avp_type |= AVP_VAL_STR;
-		avp_val.s = res;
-
-		if(add_avp(avp_type, avp_name.n, avp_val)!=0)
-		{
-			LM_ERR("unable to add avp\n");
-			goto error;
-		}
-
-		if(crt)
-			crt = crt->next;
-
-		i++;
-	}
-	if (i==0)
-		LM_DBG("no result from %s\n", cmd);
-	/* success */
-	ret=1;
-
-error:
-	if (ferror(pipe)) {
-		LM_ERR("pipe: %d/%s\n",	errno, strerror(errno));
-		ser_error=E_EXEC;
-		ret=-1;
-	}
-
-	fclose(pipe);
-	if (WIFEXITED(exit_status)) { /* exited properly .... */
-		/* return false if script exited with non-zero status */
-		if (WEXITSTATUS(exit_status)!=0) ret=-1;
-	} else { /* exited erroneously */
-		LM_ERR("cmd %s failed. exit_status=%d, errno=%d: %s\n",
-			cmd, exit_status, errno, strerror(errno) );
-		ret=-1;
-	}
-	return ret;
-}
-
-
-int exec_getenv(struct sip_msg *msg, char *cmd, pvname_list_p avpl)
-{
-	int_str avp_val;
-	int_str avp_name;
-	unsigned short avp_type;
-	int ret;
-	str res;
-	pvname_list_t* crt;
-
-	/* pessimist: assume error by default */
-	ret=-1;
-
-	res.s=getenv(cmd);
-	if (res.s==NULL)
-	{
-		goto error;
-	}
-	res.len=strlen(res.s);
-
-	crt = avpl;
-
-	avp_type = 0;
-	if(crt==NULL)
-	{
-		avp_name.s.s = int2str(1, &avp_name.s.len);
-		if (!avp_name.s.s) {
-			LM_ERR("cannot convert 1 to string\n");
-			goto error;
-		}
-		avp_name.n = get_avp_id(&avp_name.s);
-		if (avp_name.n < 0) {
-			LM_ERR("cannot get avp id\n");
-			goto error;
-		}
-	} else {
-		if(pv_get_avp_name(msg, &(crt->sname.pvp), &avp_name.n, &avp_type)!=0)
-		{
-			LM_ERR("can't get item name\n");
-			goto error;
-		}
-	}
-
-	avp_type |= AVP_VAL_STR;
-	avp_val.s = res;
-
-	if(add_avp(avp_type, avp_name.n, avp_val)!=0)
-	{
-		LM_ERR("unable to add avp\n");
-		goto error;
-	}
-
-	/* success */
-	ret=1;
-
-error:
-	return ret;
-}
-
-
-static int read_and_write2var(struct sip_msg* msg, FILE** strm, gparam_p outvar)
+static int read_and_write2var(struct sip_msg* msg, FILE** strm, pv_spec_t *outvar)
 {
 	#define MAX_LINE_SIZE 1024
 	#define MAX_BUF_SIZE 32 * MAX_LINE_SIZE
@@ -394,7 +77,7 @@ static int read_and_write2var(struct sip_msg* msg, FILE** strm, gparam_p outvar)
 	outval.rs.len = buflen;
 
 	if (buflen &&
-		pv_set_value(msg, outvar->v.pvs, 0, &outval) < 0) {
+		pv_set_value(msg, outvar, 0, &outval) < 0) {
 		LM_ERR("cannot set output pv value\n");
 		return -1;
 	}
@@ -405,7 +88,8 @@ static int read_and_write2var(struct sip_msg* msg, FILE** strm, gparam_p outvar)
 	#undef MAX_BUF_SIZE
 }
 
-int exec_sync(struct sip_msg* msg, str* command, str* input, gparam_p outvar, gparam_p errvar)
+int exec_sync(struct sip_msg* msg, str* command, str* input,
+		pv_spec_t *outvar, pv_spec_t *errvar)
 {
 
 	pid_t pid;
@@ -483,7 +167,7 @@ error:
 
 
 int start_async_exec(struct sip_msg* msg, str* command, str* input,
-													gparam_p outvar, int *fd)
+													pv_spec_t *outvar, int *fd)
 {
 	pid_t pid;
 	FILE *pin = NULL, *pout;
@@ -609,7 +293,7 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 				outval.rs.s = buf;
 				outval.rs.len = len;
 				LM_DBG("setting var [%.*s]\n",outval.rs.len,outval.rs.s);
-				if (pv_set_value(msg, p->outvar->v.pvs, 0, &outval) < 0) {
+				if (pv_set_value(msg, p->outvar, 0, &outval) < 0) {
 					LM_ERR("failed to set variable :(, continuing \n");
 				}
 			}
@@ -630,7 +314,7 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 			outval.rs.s = s1;
 			outval.rs.len = s2-s1;
 			LM_DBG("setting var [%.*s]\n",outval.rs.len,outval.rs.s);
-			if (pv_set_value(msg, p->outvar->v.pvs, 0, &outval) < 0) {
+			if (pv_set_value(msg, p->outvar, 0, &outval) < 0) {
 				LM_ERR("failed to set variable :(, continuing \n");
 			}
 			s1 = s2+1;

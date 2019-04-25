@@ -103,26 +103,25 @@ int init_dr_bls(struct head_db * head_db_start)
 				return -1;
 			}
 			trim(&part_name);
-			p = NULL;
 			if( (current_partition = get_partition(&part_name))==NULL ) {
 				LM_ERR("could not find partition name <%.*s> from blacklist "
 						"definition <%s>\n", part_name.len, part_name.s,
 						it_blk->def);
 				return -1;
 			}
-
+			name.s = p+1;
 		} else {
 			current_partition = head_db_start;
 			if( current_partition == 0 ) {
 				LM_CRIT("Default partition not registered\n");
 			}
+			name.s = it_blk->def;
 		}
-		p = strchr( it_blk->def, '=');
-		if (p==NULL || p== it_blk->def) {
+		p = strchr( name.s, '=');
+		if (p==NULL || p==name.s) {
 			LM_ERR("blacklist definition <%s> has no name",it_blk->def);
 			return -1;
 		}
-		name.s = it_blk->def;
 		name.len = p - name.s;
 		trim(&name);
 		if (name.len==0) {
@@ -230,9 +229,9 @@ int populate_dr_bls(map_t pgw_tree)
 
 	/* each bl list at a time */
 	for( drbl=drbl_lists ; drbl ; drbl = drbl->next ) {
-		if( drbl->part && (*drbl->part->rdata) && (*drbl->part->rdata)->pgw_tree == pgw_tree) { /* check if
-																							list applies to current
-																							partition */
+		if( drbl->part && drbl->part->rdata && drbl->part->rdata->pgw_tree == pgw_tree) { /* check if
+			list applies to current
+			partition */
 			drbl_first = drbl_last = NULL;
 			/* each type at a time */
 			for ( i=0 ; i<drbl->no_types ; i++ ) {
@@ -247,7 +246,8 @@ int populate_dr_bls(map_t pgw_tree)
 
 					if (gw->type==drbl->types[i]) {
 						for ( j=0 ; j<gw->ips_no ; j++ ) {
-							gw_net = mk_net_bitlen( &gw->ips[j], gw->ips[j].len*8);
+							gw_net = mk_net_bitlen( &gw->ips[j],
+								gw->ips[j].len*8);
 							if (gw_net==NULL) {
 								LM_ERR("failed to build net mask\n");
 								continue;
@@ -258,8 +258,11 @@ int populate_dr_bls(map_t pgw_tree)
 										NULL/*body*/,
 										gw->ports[j],
 										gw->protos[j],
-										0/*flags*/) != 0) {
-								LM_ERR("Something went wrong in add_rule_to_list\n");
+										0/*flags*/) < 0) {
+								LM_ERR("Something went wrong when adding %s/%d"
+									" to to blacklist %.*s\n",
+									ip_addr2a(&gw->ips[j]), gw->type,
+									drbl->bl->name.len, drbl->bl->name.s);
 							} else {
 							}
 							pkg_free(gw_net);

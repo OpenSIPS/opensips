@@ -74,9 +74,9 @@ int set_mem_idx(char* mod_name, int  new_mem_free_idx) {
 
 int init_new_stat(stat_var* stat) {
 #ifndef DBG_MALLOC
-	#define MALLOC_UNSAFE(_size)  MY_MALLOC_UNSAFE(shm_block, _size)
+	#define MALLOC_UNSAFE(_size)  SHM_MALLOC_UNSAFE(shm_block, _size)
 #else
-	#define MALLOC_UNSAFE(_size)  MY_MALLOC_UNSAFE(shm_block, _size, __FILE__, __FUNCTION__, __LINE__ )
+	#define MALLOC_UNSAFE(_size)  SHM_MALLOC_UNSAFE(shm_block, _size, __FILE__, __FUNCTION__, __LINE__ )
 #endif
 
 	stat->u.val = MALLOC_UNSAFE(sizeof(stat_val));
@@ -151,9 +151,9 @@ int alloc_group_stat(void) {
 	size_prealoc = groups * sizeof(struct module_info);
 
 #ifndef DBG_MALLOC
-	memory_mods_stats = MY_REALLOC_UNSAFE(shm_block, (void*)memory_mods_stats, size_prealoc);
+	memory_mods_stats = SHM_REALLOC_UNSAFE(shm_block, (void*)memory_mods_stats, size_prealoc);
 #else
-	memory_mods_stats = MY_REALLOC_UNSAFE(shm_block, (void*)memory_mods_stats, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
+	memory_mods_stats = SHM_REALLOC_UNSAFE(shm_block, (void*)memory_mods_stats, size_prealoc, __FILE__, __FUNCTION__, __LINE__ );
 #endif
 
 	if(!memory_mods_stats){
@@ -186,30 +186,27 @@ int alloc_group_stat(void) {
 		return -1;
 	}
 
-
 	if (core_index) {
 		if(mem_free_idx - 1 == core_index) {
-			#ifdef HP_MALLOC
-				update_module_stats(shm_block->used, shm_block->real_used, shm_block->total_fragments, core_index);
-			#else
-				update_module_stats(shm_block->used, shm_block->real_used, shm_block->fragments, core_index);
-			#endif
-			
+			update_module_stats(
+					SHM_GET_USED(shm_block), SHM_GET_RUSED(shm_block),
+					SHM_GET_FRAGS(shm_block), core_index);
+
 			#ifdef SHM_SHOW_DEFAULT_GROUP
 				reset_stat(&memory_mods_stats[0].fragments);
 				reset_stat(&memory_mods_stats[0].memory_used);
 				reset_stat(&memory_mods_stats[0].real_used);
 			#endif
 
-			set_indexes(core_index);
+			shm_stats_core_init(shm_block, core_index);
 
 		} else {
 			update_module_stats(sizeof(stat_val) * 4 + sizeof(struct module_info) + sizeof(gen_lock_t), sizeof(stat_val) * 4 +
-					 sizeof(struct module_info) + 5 * FRAG_OVERHEAD + sizeof(gen_lock_t), 5, core_index);
+					 sizeof(struct module_info) + 5 * shm_frag_overhead + sizeof(gen_lock_t), 5, core_index);
 		}
 	} else {
 		update_module_stats(sizeof(stat_val) * 4 + sizeof(struct module_info) + sizeof(gen_lock_t), sizeof(stat_val) * 4 +
-					 sizeof(struct module_info) + 5 * FRAG_OVERHEAD + sizeof(gen_lock_t), 5, 0);
+					 sizeof(struct module_info) + 5 * shm_frag_overhead + sizeof(gen_lock_t), 5, 0);
 	}
 
 

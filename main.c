@@ -100,6 +100,8 @@
 
 #include "help_msg.h"
 #include "config.h"
+#include "cfg_pp.h"
+#include "cfg_reload.h"
 #include "dprint.h"
 #include "daemonize.h"
 #include "route.h"
@@ -107,6 +109,7 @@
 #include "globals.h"
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
+#include "mem/rpm_mem.h"
 #include "sr_module.h"
 #include "timer.h"
 #include "ipc.h"
@@ -137,6 +140,7 @@
 #include "version.h"
 #include "mi/mi_core.h"
 #include "db/db_insertq.h"
+#include "cachedb/cachedb.h"
 #include "net/trans.h"
 
 #include "test/unit_tests.h"
@@ -186,13 +190,21 @@ void print_ct_constants(void)
 int own_pgid = 0; /* whether or not we have our own pgid (and it's ok
 					 to use kill(0, sig) */
 char* cfg_file = 0;
+char *preproc = NULL;
 unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  not want to exceed during the
 												  auto-probing procedure; may
 												  be re-configured */
-int children_no = CHILD_NO;		/* number of children processing requests */
-enum poll_types io_poll_method=0; 	/*!< by default choose the best method */
-int sig_flag = 0;              /* last signal received */
+/* number of UDP workers processing requests */
+int udp_workers_no = UDP_WORKERS_NO;
+/* if the auto-scaling engine is enabled or not - this is autodetected */
+int auto_scaling_enabled = 0;
+/* auto-scaling sampling and checking time cycle is 1 sec by default */
+int auto_scaling_cycle = 1;
+/*!< by default choose the best method */
+enum poll_types io_poll_method=0;
+/* last signal received */
+int sig_flag = 0;
 
 /* activate debug mode */
 int debug_mode = 0;
@@ -293,13 +305,6 @@ unsigned long pkg_mem_size=PKG_MEM_SIZE * 1024 * 1024;
 int my_argc;
 char **my_argv;
 
-extern FILE* yyin;
-extern int yyparse();
-#ifdef DEBUG_PARSER
-extern int yydebug;
-#endif
-
-
 int is_main = 1; /* flag = is this the  "main" process? */
 
 char* pid_file = 0; /* filename as asked by user */
@@ -313,22 +318,39 @@ char* pgid_file = 0;
 void cleanup(int show_status)
 {
 	LM_INFO("cleanup\n");
+
 	/*clean-up*/
 
-	/* hack: force-unlock the shared memory lock in case
+	/* hack: force-unlock the shared memory lock(s) in case
 	   		 some process crashed and let it locked; this will
 	   		 allow an almost gracious shutdown */
-	if (mem_lock)
+	if (0
+#if defined F_MALLOC || defined Q_MALLOC
+		|| mem_lock
+#endif
 #ifdef HP_MALLOC
-	{
+		|| mem_locks
+#endif
+	) {
+#if defined HP_MALLOC && (defined F_MALLOC || defined Q_MALLOC)
+		if (mem_allocator_shm == MM_HP_MALLOC ||
+		        mem_allocator_shm == MM_HP_MALLOC_DBG) {
+			int i;
+
+			for (i = 0; i < HP_HASH_SIZE; i++)
+				lock_release(&mem_locks[i]);
+		} else {
+			shm_unlock();
+		}
+#elif defined HP_MALLOC
 		int i;
 
 		for (i = 0; i < HP_HASH_SIZE; i++)
-			shm_unlock(i);
-	}
+			lock_release(&mem_locks[i]);
 #else
 		shm_unlock();
 #endif
+	}
 
 	handle_ql_shutdown();
 	destroy_modules();
@@ -341,6 +363,7 @@ void cleanup(int show_status)
 	tr_free_extra_list();
 	destroy_argv_list();
 	destroy_black_lists();
+	free_route_lists(sroutes); // this is just for testing purposes
 #ifdef PKG_MALLOC
 	if (show_status){
 		LM_GEN1(memdump, "Memory status (pkg):\n");
@@ -349,7 +372,14 @@ void cleanup(int show_status)
 #endif
 	cleanup_log_level();
 
-	if (mem_lock && pt)
+	if (pt && (0
+#if defined F_MALLOC || defined Q_MALLOC
+		|| mem_lock
+#endif
+#ifdef HP_MALLOC
+		|| mem_locks
+#endif
+		))
 		shm_free(pt);
 	pt=0;
 	if (show_status){
@@ -375,8 +405,8 @@ static void kill_all_children(int signum)
 	if (!pt)
 		return;
 
-	for (r = 1; r < counted_processes; r++) {
-		if (pt[r].pid == -1 || (pt[r].flags & OSS_TAKING_A_DUMP))
+	for (r = 1; r < counted_max_processes; r++) {
+		if (pt[r].pid == -1 || (pt[r].flags & OSS_PROC_DOING_DUMP))
 			continue;
 
 		/* as the PIDs are filled in by child processes, a 0 PID means
@@ -435,7 +465,7 @@ static void shutdown_opensips( int status )
 	/* terminate all processes */
 
 	/* first we try to terminate the processes via the IPC channel */
-	for( i=1,n=0 ; i<counted_processes; i++) {
+	for( i=1,n=0 ; i<counted_max_processes; i++) {
 		/* Depending on the processes status, its PID may be:
 		 *   -1 - process not forked yet
 		 *    0 - process forked but not fully configured by core
@@ -534,6 +564,12 @@ void handle_sigs(void)
 				/* is it a process we know about? */
 				if ( (i=get_process_ID_by_PID( chld )) == -1 ) {
 					LM_DBG("unknown child process %d ended. Ignoring\n",chld);
+					continue;
+				}
+				if (pt[i].flags & OSS_PROC_SELFEXIT) {
+					LM_NOTICE("process %d/%d did selfexit with "
+						"status %d\n", i, chld,  WTERMSIG(chld_status));
+					reset_process_slot(i);
 					continue;
 				}
 				do_exit = 1;
@@ -654,7 +690,7 @@ static void sig_usr(int signo)
 					/* looks like we ate some spicy SIP */
 					LM_CRIT("segfault in process pid: %d, id: %d\n",
 					        pt[process_no].pid, process_no);
-					pt[process_no].flags |= OSS_TAKING_A_DUMP;
+					pt[process_no].flags |= OSS_PROC_DOING_DUMP;
 					if (restore_segv_handler() != 0)
 						exit(-1);
 		}
@@ -728,6 +764,7 @@ static int main_loop(void)
 {
 	static int chd_rank;
 	int* startup_done = NULL;
+	utime_t last_check = 0;
 	int rc;
 
 	chd_rank=0;
@@ -737,7 +774,7 @@ static int main_loop(void)
 		goto error;
 	}
 
-	if(startup_rlist.a) {/* if a startup route was defined */
+	if(sroutes->startup.a) {/* if a startup route was defined */
 		startup_done = (int*)shm_malloc(sizeof(int));
 		if(startup_done == NULL) {
 			LM_ERR("No more shared memory\n");
@@ -790,7 +827,7 @@ static int main_loop(void)
 	/* main process left */
 	is_main=1;
 	set_proc_attrs("attendant");
-	pt[process_no].flags = OSS_FORK_NO_IPC|OSS_FORK_NO_LOAD;
+	pt[process_no].flags |= OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD;
 
 	if (testing_framework) {
 		if (init_child(1) < 0) {
@@ -811,9 +848,32 @@ static int main_loop(void)
 
 	report_conditional_status( (!no_daemon_mode), 0);
 
+	if (auto_scaling_enabled) {
+		/* re-create the status pipes to collect the status of the
+		 * dynamically forked processes */
+		if (create_status_pipe(1) < 0) {
+			LM_ERR("failed to create status pipe\n");
+			goto error;
+		}
+		/* keep both ends on the status pipe as we will keep forking 
+		 * processes, so we will need to pass write-end to the new children;
+		 * of course, we will need the read-end, here in the main proc */
+		last_check = get_uticks();
+	}
+
 	for(;;){
 			handle_sigs();
-			pause();
+			if (auto_scaling_enabled) {
+				sleep( auto_scaling_cycle );
+				if ( (get_uticks()-last_check) >= auto_scaling_cycle*1000000) {
+					do_workers_auto_scaling();
+					last_check = get_uticks();
+				} else {
+					sleep_us( last_check + auto_scaling_cycle*1000000 -
+						get_uticks() );
+				}
+			} else
+				pause();
 	}
 
 	/*return 0; */
@@ -839,7 +899,6 @@ int main(int argc, char** argv)
 {
 	/* configure by default logging to syslog */
 	int cfg_log_stderr = 1;
-	FILE* cfg_stream = NULL;
 	int c,r;
 	char *tmp;
 	int tmp_len;
@@ -858,7 +917,7 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:P:G:W:o:"
+	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
 #ifdef UNIT_TESTS
 	"T"
 #endif
@@ -887,6 +946,34 @@ int main(int argc, char** argv)
 			case 'g':
 					group=optarg;
 					break;
+			case 'a':
+					if (set_global_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-a %s)\n", optarg);
+						goto error00;
+					}
+					break;
+			case 'k':
+					if (set_pkg_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-k %s)\n", optarg);
+						goto error00;
+					}
+					break;
+			case 's':
+					if (set_shm_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-s %s)\n", optarg);
+						goto error00;
+					}
+					break;
+			case 'e':
+					if (set_rpm_mm(optarg) < 0) {
+						LM_ERR("current build does not support "
+						       "this allocator (-e %s)\n", optarg);
+						goto error00;
+					}
+					break;
 		}
 	}
 
@@ -908,7 +995,8 @@ int main(int argc, char** argv)
 	if (init_pkg_mallocs()==-1)
 		goto error00;
 
-	init_route_lists();
+	if ( (sroutes=new_sroutes_holder())==NULL )
+		goto error00;
 
 	/* we want to be sure that from now on, all the floating numbers are 
 	 * using the dot as separator. This is a real issue when printing the
@@ -932,10 +1020,12 @@ int main(int argc, char** argv)
 					cfg_log_stderr=1; /* force stderr logging */
 					break;
 			case 'm':
-					/* ignoring it, parsed previously */
-					break;
 			case 'M':
-					/* ignoring it, parsed previously */
+			case 'a':
+			case 'k':
+			case 's':
+			case 'e':
+					/* ignoring, parsed previously */
 					break;
 			case 'b':
 					maxbuffer=strtol(optarg, &tmp, 10);
@@ -958,9 +1048,9 @@ int main(int argc, char** argv)
 					}
 					break;
 			case 'n':
-					children_no=strtol(optarg, &tmp, 10);
+					udp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
-						LM_ERR("bad process number: -n %s\n", optarg);
+						LM_ERR("bad UDP workers number: -n %s\n", optarg);
 						goto error00;
 					}
 					break;
@@ -987,9 +1077,9 @@ int main(int argc, char** argv)
 					cfg_log_stderr=1;
 					break;
 			case 'N':
-					tcp_children_no=strtol(optarg, &tmp, 10);
+					tcp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
-						LM_ERR("bad process number: -N %s\n", optarg);
+						LM_ERR("bad TCP workers number: -N %s\n", optarg);
 						goto error00;
 					}
 					break;
@@ -1026,6 +1116,9 @@ int main(int argc, char** argv)
 			case 'g':
 					/* ignoring it, parsed previously */
 					break;
+			case 'p':
+					preproc=optarg;
+					break;
 			case 'P':
 					pid_file=optarg;
 					break;
@@ -1057,23 +1150,6 @@ int main(int argc, char** argv)
 	}
 
 	log_stderr = cfg_log_stderr;
-
-	if (!testing_framework) {
-		/* fill missing arguments with the default values*/
-		if (cfg_file==0) cfg_file=CFG_FILE;
-
-		if (strlen(cfg_file) == 1 && cfg_file[0] == '-') {
-			cfg_stream = stdin;
-		} else {
-			/* load config file or die */
-			cfg_stream=fopen (cfg_file, "r");
-			if (cfg_stream==0){
-				LM_ERR("loading config file(%s): %s\n", cfg_file,
-						strerror(errno));
-				goto error00;
-			}
-		}
-	}
 
 	/* seed the prng, try to use /dev/urandom if possible */
 	/* no debugging information is logged, because the standard
@@ -1107,11 +1183,6 @@ try_again:
 		goto error;
 	}
 
-	/* used for parser debugging */
-#ifdef DEBUG_PARSER
-	yydebug = 1;
-#endif
-
 	/*  init shm mallocs
 	 *  this must be here
 	 *     -to allow setting shm mem size from the command line
@@ -1129,14 +1200,9 @@ try_again:
 
 	set_osips_state( STATE_STARTING );
 
-	if (!testing_framework) {
-		/* parse the config file, prior to this only default values
-		   e.g. for debugging settings will be used */
-		yyin=cfg_stream;
-		if ((yyparse()!=0)||(cfg_errors)){
-			LM_ERR("bad config file (%d errors)\n", cfg_errors);
-			goto error00;
-		}
+	if (!testing_framework && parse_opensips_cfg(cfg_file, preproc, NULL) < 0) {
+		LM_ERR("failed to parse config file %s\n", cfg_file);
+		goto error00;
 	}
 
 	/* shm statistics, module stat groups, memory warming */
@@ -1153,7 +1219,10 @@ try_again:
 	}
 
 	/* init the resolver, before fixing the config */
-	resolv_init();
+	if (resolv_init() != 0) {
+		LM_ERR("failed to init DNS resolver\n");
+		return -1;
+	}
 
 	fix_poll_method( &io_poll_method );
 
@@ -1207,7 +1276,7 @@ try_again:
 		goto error;
 	}
 
-	if (create_status_pipe() < 0) {
+	if (create_status_pipe(0) < 0) {
 		LM_ERR("failed to create status pipe\n");
 		goto error;
 	}
@@ -1234,18 +1303,18 @@ try_again:
 			LM_NOTICE("enabling core dumping (found off)\n");
 			disable_core_dump = 0;
 		}
-		if (udp_count_processes()!=0) {
-			if (children_no!=2) {
+		if (udp_count_processes(NULL)!=0) {
+			if (udp_workers_no!=2) {
 				LM_NOTICE("setting UDP children to 2 (found %d)\n",
-					children_no);
-				children_no = 2;
+					udp_workers_no);
+				udp_workers_no = 2;
 			}
 		}
-		if (tcp_count_processes()!=0) {
-			if (tcp_children_no!=2) {
+		if (tcp_count_processes(NULL)!=0) {
+			if (tcp_workers_no!=2) {
 				LM_NOTICE("setting TCP children to 2 (found %d)\n",
-					tcp_children_no);
-				tcp_children_no = 2;
+					tcp_workers_no);
+				tcp_workers_no = 2;
 			}
 		}
 
@@ -1277,8 +1346,6 @@ try_again:
 	LM_INFO("using %ld Mb of shared memory\n", shm_mem_size/1024/1024);
 #if defined(PKG_MALLOC)
 	LM_INFO("using %ld Mb of private process memory\n", pkg_mem_size/1024/1024);
-#elif defined(USE_SHM_MEM)
-	LM_INFO("using shared memory for private process memory\n");
 #else
 	LM_INFO("using system memory for private process memory\n");
 #endif
@@ -1334,6 +1401,18 @@ try_again:
 		goto error;
 	}
 
+	/* init SQL DB support */
+	if (init_db_support() != 0) {
+		LM_ERR("failed to initialize SQL database support\n");
+		goto error;
+	}
+
+	/* init CacheDB support */
+	if (init_cdb_support() != 0) {
+		LM_ERR("failed to initialize CacheDB support\n");
+		goto error;
+	}
+
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");
@@ -1358,30 +1437,11 @@ try_again:
 		goto error;
 	}
 
-	/* init query list now in shm
-	 * so all processes that will be forked from now on
-	 * will have access to it
-	 *
-	 * if it fails, give it a try and carry on */
-	if (init_ql_support() != 0) {
-		LM_ERR("failed to initialise buffering query list\n");
-		query_buffer_size = 0;
-		*query_list = NULL;
-	}
-
 	/* init multi processes support */
 	if (init_multi_proc_support()!=0) {
 		LM_ERR("failed to init multi-proc support\n");
 		goto error;
 	}
-
-	#ifdef PKG_MALLOC
-	/* init stats support for pkg mem */
-	if (init_pkg_stats(counted_processes)!=0) {
-		LM_ERR("failed to init stats for pkg\n");
-		goto error;
-	}
-	#endif
 
 	/* init avps */
 	if (init_extra_avps() != 0) {
@@ -1402,6 +1462,11 @@ try_again:
 
 	if (trans_init_all_listeners()<0) {
 		LM_ERR("failed to init all SIP listeners, aborting\n");
+		goto error;
+	}
+
+	if (init_script_reload()<0) {
+		LM_ERR("failed to init cfg reload ctx, aborting\n");
 		goto error;
 	}
 

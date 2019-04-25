@@ -65,7 +65,7 @@ static int smpp_read_req(struct tcp_connection* conn, int* bytes_read);
 static int smpp_write_async_req(struct tcp_connection* con,int fd);
 static int smpp_conn_init(struct tcp_connection* c);
 static void smpp_conn_clean(struct tcp_connection* c);
-static int send_smpp_msg(struct sip_msg* msg, char *_name);
+static int send_smpp_msg(struct sip_msg* msg, str *name);
 
 static unsigned smpp_port = 2775;
 static int smpp_max_msg_chunks = 8;
@@ -74,10 +74,12 @@ extern int smpp_send_timeout;
 str db_url = {NULL, 0};
 
 static cmd_export_t cmds[] = {
-	{"proto_init", (cmd_function)smpp_init, 0, 0, 0, 0},
-	{"send_smpp_message", (cmd_function)send_smpp_msg, 1, fixup_spve_null, 0,
+	{"proto_init", (cmd_function)smpp_init, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"send_smpp_message", (cmd_function)send_smpp_msg, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {
@@ -119,6 +121,7 @@ struct module_exports exports = {
 	0,			/* response function */
 	0,			/* destroy function */
 	child_init,		/* per-child init function */
+	0			/* reload confirm function */
 };
 
 static int smpp_init(struct proto_info *pi)
@@ -453,19 +456,14 @@ static int smpp_write_async_req(struct tcp_connection* con,int fd)
 	return 0;
 }
 
-static int send_smpp_msg(struct sip_msg *msg, char *_name)
+static int send_smpp_msg(struct sip_msg *msg, str *name)
 {
 	 str body;
-	 str name;
 	smpp_session_t *session = NULL;
 
-	if (!_name || fixup_get_svalue(msg, (gparam_p)_name, &name) < 0) {
-		LM_ERR("cannot get the SMSc name\n");
-		return -1;
-	}
-	session = smpp_session_get(&name);
+	session = smpp_session_get(name);
 	if (!session) {
-		LM_INFO("SMSc %.*s not found!\n", name.len, name.s);
+		LM_INFO("SMSc %.*s not found!\n", name->len, name->s);
 		return -2;
 	}
 

@@ -69,7 +69,7 @@ typedef struct{
 }my_socket_address;
 
 struct async_param {
-	mi_request_t request;
+	mi_item_t *id;
 	my_socket_address addr;
 };
 
@@ -279,8 +279,10 @@ static int mi_send_dgram(int fd, char* buf, unsigned int len,
 /*************************** async functions ******************************/
 static inline void free_async_handler( struct mi_handler *hdl )
 {
-	if (hdl)
+	if (hdl) {
+		free_shm_mi_item(((struct async_param *)hdl->param)->id);
 		shm_free(hdl);
+	}
 }
 
 
@@ -304,7 +306,7 @@ static void datagram_close_async(mi_response_t *resp,struct mi_handler *hdl,
 			}
 			print_buf.len = DATAGRAM_SOCK_BUF_SIZE;
 
-			ret = print_mi_response(resp, p->request.id,
+			ret = print_mi_response(resp, p->id,
 					&print_buf, mi_datagram_pp);
 			if (ret == MI_NO_RPL) {
 				LM_DBG("No reply for jsonrpc notification\n");
@@ -330,7 +332,6 @@ static void datagram_close_async(mi_response_t *resp,struct mi_handler *hdl,
 			}
 
 			free_mi_response(resp);
-			free_mi_request_parsed(&p->request);
 			pkg_free(print_buf.s);
 		} else {
 			if (mi_send_dgram(p->addr.tx_sock, MI_INTERNAL_ERROR,
@@ -339,8 +340,6 @@ static void datagram_close_async(mi_response_t *resp,struct mi_handler *hdl,
 				mi_socket_timeout) < 0)
 				LM_ERR("failed to send reply: %s | errno=%d\n",
 						MI_INTERNAL_ERROR, errno);
-
-			free_mi_request_parsed(&p->request);
 		}
 	}
 
@@ -352,7 +351,7 @@ static void datagram_close_async(mi_response_t *resp,struct mi_handler *hdl,
 
 static inline struct mi_handler* build_async_handler(unsigned int sock_domain,
 								reply_addr_t *reply_addr, unsigned int reply_addr_len,
-								int tx_sock, mi_request_t request)
+								int tx_sock, mi_item_t *id)
 {
 	struct mi_handler *hdl;
 	void * p;
@@ -367,6 +366,7 @@ static inline struct mi_handler* build_async_handler(unsigned int sock_domain,
 
 	p = (void *)((hdl) + 1);
 	param = p;
+	param->id = shm_clone_mi_item(id);
 
 	memcpy(&param->addr.address, reply_addr, sizeof(reply_addr_t));
 
@@ -492,7 +492,7 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		/* if asyncron cmd, build the async handler */
 		if (cmd && cmd->flags & MI_ASYNC_RPL_FLAG) {
 			async_hdl = build_async_handler(mi_socket_domain,
-					&reply_addr, reply_addr_len, tx_sock, request);
+					&reply_addr, reply_addr_len, tx_sock, request.id);
 			if (async_hdl==0) {
 				LM_ERR("failed to build async handler\n");
 				if (mi_send_dgram(tx_sock, MI_INTERNAL_ERROR, MI_INTERNAL_ERROR_LEN,

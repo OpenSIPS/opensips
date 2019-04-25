@@ -61,10 +61,8 @@ int dbt_bind_api(const str* mod, db_func_t *dbb);
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"db_bind_api",    (cmd_function)dbt_bind_api,   0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"db_bind_api", (cmd_function)dbt_bind_api, {{0,0,0}}, 0},
 };
-
 
 /*
  * Exported parameters
@@ -107,7 +105,8 @@ struct module_exports exports = {
 	mod_init, /* module initialization function */
 	NULL,     /* response function*/
 	destroy,  /* destroy function */
-	NULL      /* per-child init function */
+	NULL,     /* per-child init function */
+	NULL      /* reload confirm function */
 };
 
 

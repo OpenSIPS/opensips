@@ -35,7 +35,6 @@
 #include "../../error.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
-#include "../../mod_fix.h"
 
 #include "alookup.h"
 
@@ -51,10 +50,9 @@ static int child_init(int rank);
 /* Module initialization function prototype */
 static int mod_init(void);
 
-/* Fixup function */
-static int lookup_fixup(void** param, int param_no);
-static int find_fixup(void** param, int param_no);
-
+/* Fixup functions */
+static int alias_flags_fixup(void** param);
+static int fixup_check_wr_var(void **param);
 
 /* Module parameter variables */
 static str db_url       = {NULL,0};
@@ -70,17 +68,18 @@ db_func_t adbf;  /* DB functions */
 
 /* Exported functions */
 static cmd_export_t cmds[] = {
-	{"alias_db_lookup", (cmd_function)alias_db_lookup, 1, lookup_fixup, 0,
+	{"alias_db_lookup", (cmd_function)alias_db_lookup, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, alias_flags_fixup ,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"alias_db_lookup", (cmd_function)alias_db_lookup, 2, lookup_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE},
-	{"alias_db_find", (cmd_function)alias_db_find, 3, find_fixup, 0,
+	{"alias_db_find", (cmd_function)alias_db_find, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_VAR, fixup_check_wr_var, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, alias_flags_fixup ,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
-	{"alias_db_find", (cmd_function)alias_db_find, 4, find_fixup, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{0,0,{{0,0,0}},0}
 };
-
 
 /* Exported parameters */
 static param_export_t params[] = {
@@ -122,19 +121,20 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	destroy,    /* destroy function */
-	child_init  /* child initialization function */
+	child_init, /* child initialization function */
+	0           /* reload confirm function */
 };
 
 
 static int alias_flags_fixup(void** param)
 {
-	char *c;
 	unsigned int flags;
+	int i;
+	str *s = (str*)*param;
 
-	c = (char*)*param;
 	flags = 0;
-	while (*c) {
-		switch (*c) {
+	for (i = 0; i < s->len; i++)
+		switch (s->s[i]) {
 			case 'r':
 			case 'R':
 				flags |= ALIAS_REVERT_FLAG;
@@ -144,62 +144,24 @@ static int alias_flags_fixup(void** param)
 				flags |= ALIAS_NO_DOMAIN_FLAG;
 				break;
 			default:
-				LM_ERR("unsupported flag '%c'\n",*c);
+				LM_ERR("unsupported flag '%c'\n", s->s[i]);
 				return -1;
 		}
-		c++;
-	}
-	pkg_free(*param);
+
 	*param = (void*)(unsigned long)flags;
 	return 0;
 }
 
 
-static int lookup_fixup(void** param, int param_no)
+static int fixup_check_wr_var(void **param)
 {
-	if (param_no==1) {
-		/* string or pseudo-var - table name */
-		return fixup_spve(param);
-	} else if (param_no==2) {
-		/* string - flags ? */
-		return alias_flags_fixup(param);
-	} else {
-		LM_CRIT(" invalid number of params %d \n",param_no);
-		return -1;
+	if (((pv_spec_t*)*param)->setf==NULL) {
+		LM_ERR("PV type %d cannot be written\n", ((pv_spec_t*)*param)->type);
+		return E_CFG;
 	}
+
+	return 0;
 }
-
-
-static int find_fixup(void** param, int param_no)
-{
-	pv_spec_t *sp;
-
-	if (param_no==1) {
-		/* string or pseudo-var - table name */
-		return fixup_spve(param);
-	} else if(param_no==2) {
-		/* string or pseudo-var - source URI */
-		return fixup_spve(param);
-	} else if(param_no==3) {
-		/* pvar (AVP or VAR) - destination URI */
-		if (fixup_pvar(param))
-			return E_CFG;
-		sp = (pv_spec_t*)*param;
-		if (sp->setf==NULL) {
-			LM_ERR("PV type %d (param 3) cannot be written\n", sp->type);
-			pv_spec_free(sp);
-			return E_CFG;
-		}
-		return 0;
-	} else if (param_no==4) {
-		/* string - flags  ? */
-		return alias_flags_fixup(param);
-	} else {
-		LM_CRIT(" invalid number of params %d \n",param_no);
-		return -1;
-	}
-}
-
 
 
 /**

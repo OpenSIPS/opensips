@@ -101,9 +101,6 @@ static unsigned int rl_repl_timer_interval = RL_TIMER_INTERVAL;
 static int mod_init(void);
 static int mod_child(int);
 
-/* fixup prototype */
-static int fixup_rl_check(void **param, int param_no);
-
 mi_response_t *mi_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_stats_1(const mi_params_t *params,
@@ -120,19 +117,21 @@ static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 static int pv_parse_rl_count(pv_spec_p sp, str *in);
 
 static cmd_export_t cmds[] = {
-	{"rl_check", (cmd_function)w_rl_check_2, 2,
-		fixup_rl_check, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"rl_check", (cmd_function)w_rl_check_3, 3,
-		fixup_rl_check, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"rl_dec_count", (cmd_function)w_rl_dec, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"rl_reset_count", (cmd_function)w_rl_reset, 1,
-		fixup_spve_null, 0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
-			BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{0,0,0,0,0,0}
+	{"rl_check", (cmd_function)w_rl_check, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"rl_dec_count", (cmd_function)w_rl_dec, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"rl_reset_count", (cmd_function)w_rl_reset, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
+		BRANCH_ROUTE|ERROR_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {
@@ -214,7 +213,8 @@ struct module_exports exports= {
 	mod_init,			/* module initialization function */
 	0,
 	mod_destroy,		/* module exit function */
-	mod_child			/* per-child init function */
+	mod_child,			/* per-child init function */
+	0					/* reload confirm function */
 };
 
 
@@ -493,79 +493,59 @@ static inline int hist_check(rl_pipe_t *pipe, int update)
 	#define U2MILI(__usec__) (__usec__/1000)
 	#define S2MILI(__sec__)  (__sec__ *1000)
 	int i;
-	int first_good_index;
+	int now_index;
 	int rl_win_ms = rl_window_size * 1000;
-
-
-	unsigned long long now_total, start_total;
+	unsigned long long now_time, start_time;
 
 	struct timeval tv;
 
-	/* first get values from our beloved replicated friends
-	 * current pipe counter will be calculated after this
-	 * iteration; no need for the old one */
 	pipe->counter = 0;
 	pipe->counter = rl_get_all_counters(pipe);
 
 	gettimeofday(&tv, NULL);
-	if (pipe->rwin.start_time.tv_sec == 0) {
-		/* the lucky one to come first here */
+	now_time = S2MILI(tv.tv_sec) + U2MILI(tv.tv_usec);
+	now_index = (now_time%rl_win_ms) / rl_slot_period;
+
+	start_time = S2MILI(pipe->rwin.start_time.tv_sec)
+		+ U2MILI(pipe->rwin.start_time.tv_usec);
+
+	if ( (pipe->rwin.start_time.tv_sec == 0) ||   /* first run*/
+	(now_time - start_time >= rl_win_ms) ) {      /* or more than one window */
+		//LM_DBG("case 1 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
+		//	start_time, pipe->rwin.start_index, now_time, now_index,
+		//	now_time-start_time);
+		memset(pipe->rwin.window, 0,
+			pipe->rwin.window_size * sizeof(long int));
 		pipe->rwin.start_time = tv;
-		pipe->rwin.start_index = 0;
+		pipe->rwin.start_index = now_index;
+		pipe->rwin.window[now_index] = update;
 
-		/* we know it starts from 0 because we did memset when created*/
-		pipe->rwin.window[pipe->rwin.start_index] += update;
-	} else {
-		start_total = S2MILI(pipe->rwin.start_time.tv_sec)
-							+ U2MILI(pipe->rwin.start_time.tv_usec);
-
-		now_total = S2MILI(tv.tv_sec) + U2MILI(tv.tv_usec);
-
-		/* didn't do any update to the window for "2*window_size" secs
-		 * we can't use any elements from the vector
-		 * the window is invalidated; very unlikely to happen*/
-		if (now_total - start_total >= 2*rl_win_ms) {
-			memset(pipe->rwin.window, 0,
-					pipe->rwin.window_size * sizeof(long int));
-
-			pipe->rwin.start_index = 0;
-			pipe->rwin.start_time = tv;
-			pipe->rwin.window[pipe->rwin.start_index] += update;
-		} else if (now_total - start_total >= rl_win_ms) {
-			/* current time in interval [window_size; 2*window_size)
-			 * all the elements in [start_time; (ctime-window_size+1) are
-			 * invalidated(set to 0)
-			 * */
-			/* the first window index not to be set to 0
-			 * number of slots from the start_index*/
-			first_good_index = ((((now_total - rl_win_ms) - start_total)
-							/rl_slot_period + 1) + pipe->rwin.start_index) %
-							pipe->rwin.window_size;
-
-			/* the new start time will be the start time of the first slot */
-			start_total = (now_total - rl_win_ms) -
-					(now_total - rl_win_ms)%rl_slot_period+ rl_slot_period;
-
-			pipe->rwin.start_time.tv_sec  = start_total/1000;
-			pipe->rwin.start_time.tv_usec = (start_total%1000)*1000;
-
-
-			for (i=pipe->rwin.start_index; i != first_good_index;
-										i=(i+1)%pipe->rwin.window_size)
+	} else
+	if (now_time - start_time >= rl_slot_period) {
+		/* different slot */
+		//LM_DBG("case 2 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
+		//	start_time, pipe->rwin.start_index, now_time, now_index,
+		//	now_time-start_time);
+		/* zero the gap between old/start index and current/now index */
+		for ( i=(pipe->rwin.start_index+1)%pipe->rwin.window_size;
+			i != now_index;
+			i=(i+1)%pipe->rwin.window_size)
 				pipe->rwin.window[i] = 0;
+		/* update the time/index of the last counting */
+		pipe->rwin.start_time = tv;
+		pipe->rwin.start_index = now_index;
 
-			pipe->rwin.start_index = first_good_index;
+		/* count current call; it will be the last element in the window */
+		pipe->rwin.window[now_index] = update;
 
-			/* count current call; it will be the last element in the window */
-			pipe->rwin.window[((pipe->rwin.start_index)
-					+ (pipe->rwin.window_size-1)) % pipe->rwin.window_size] += update;
-
-		} else { /* now_total - start_total < rl_win_ms  */
-			/* no need to modify the window, the value is inside it;
-			 * we just need to increment the number of calls for
-			 * the current slot*/
-			pipe->rwin.window[(now_total-start_total)/rl_slot_period] += update;
-		}
+	} else {
+		/* index the same slot */
+		/* we just need to increment the number of calls for
+		 * the current slot*/
+		//LM_DBG("case 3 - start=%lld/%d, now=%lld/%d, diff=%lld\n",
+		//	start_time, pipe->rwin.start_index, now_time, now_index,
+		//	now_time-start_time);
+		pipe->rwin.window[pipe->rwin.start_index] += update;
 	}
 
 	/* count the total number of calls in the window */
@@ -789,26 +769,6 @@ mi_response_t *mi_reset_pipe(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
-/* fixup functions */
-static int fixup_rl_check(void **param, int param_no)
-{
-	switch (param_no) {
-		/* pipe name */
-		case 1:
-			return fixup_spve(param);
-			/* limit */
-		case 2:
-			return fixup_igp(param);
-			/* algorithm */
-		case 3:
-			return fixup_sgp(param);
-			/* error */
-		default:
-			LM_ERR("[BUG] too many params (%d)\n", param_no);
-	}
-	return E_UNSPEC;
-}
-
 /* pseudo-variable functions */
 static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
@@ -861,6 +821,7 @@ static int pv_parse_rl_count(pv_spec_p sp, str *in)
 	}
 	sp->pvp.pvn.type = PV_NAME_INTSTR;
 	sp->pvp.pvn.u.isname.name.s = *in;
+	sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
 	return 0;
 
 }

@@ -26,8 +26,7 @@
  * Run a lua function with a reference to the current SIP message.
  * An optional string may be passed to lua_exec.
  */
-int siplua_exec1(struct sip_msg* _msg, char *fnc, char *str);
-int siplua_exec2(struct sip_msg* _msg, char *fnc, char *str);
+int siplua_exec(struct sip_msg* _msg, const str *fnc, const str *mystr);
 int siplua_meminfo(struct sip_msg* _msg);
 
 void siplua_log(int lev, const char *format, ...);

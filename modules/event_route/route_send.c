@@ -15,151 +15,23 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- *
- * history:
- * ---------
- *  2014-06-27  created (osas)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-#include "../../evi/evi_transport.h"
-#include "../../mem/mem.h"
-#include "../../mem/shm_mem.h"
-#include "../../ut.h"
-#include "route_send.h"
-#include "event_route.h"
 #include <fcntl.h>
 #include <sched.h>
 #include <unistd.h>
 #include <sched.h>
 
+#include "../../evi/evi_transport.h"
+#include "../../mem/mem.h"
+#include "../../mem/shm_mem.h"
+#include "../../ipc.h"
+#include "../../ut.h"
+#include "route_send.h"
+#include "event_route.h"
+
 #define IS_ERR(_err) (errno == _err)
-
-extern evi_params_t *parameters;
-extern str *event_name;
-
-/* used to communicate with the sending process */
-static int route_pipe[2];
-
-/* creates communication pipe */
-int create_pipe(void)
-{
-	int rc;
-
-	route_pipe[0] = route_pipe[1] = -1;
-	/* create pipe */
-	do {
-		rc = pipe(route_pipe);
-	} while (rc < 0 && IS_ERR(EINTR));
-
-	if (rc < 0) {
-		LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
-		return -1;
-	}
-	return 0;
-}
-
-void destroy_pipe(void)
-{
-	if (route_pipe[0] != -1)
-		close(route_pipe[0]);
-	if (route_pipe[1] != -1)
-		close(route_pipe[1]);
-}
-
-int route_send(route_send_t *route_s)
-{
-	int rc, retries = ROUTE_SEND_RETRY;
-
-	do {
-		rc = write(route_pipe[1], &route_s, sizeof(route_send_t *));
-		if (rc == sizeof(route_send_t *))
-			break;
-	} while ((rc < 0 && (IS_ERR(EINTR)||IS_ERR(EAGAIN)||IS_ERR(EWOULDBLOCK)))
-			|| retries-- > 0);
-
-	if (rc < 0) {
-		LM_ERR("unable to send route send struct to worker\n");
-		return -1;
-	} else if (rc != sizeof(route_send_t *)){
-		LM_ERR("Incomplete write [%d/%zu]\n", rc, sizeof(route_send_t *));
-		return -1;
-	}
-	/* give a change to the writer :) */
-	sched_yield();
-	return 0;
-}
-
-static union tmp_route_send_t {
-	route_send_t *ptr;
-	char buf[sizeof(route_send_t *)];
-} recv_buf;
-
-static route_send_t * route_receive(void)
-{
-	int rc;
-	int retries = ROUTE_SEND_RETRY;
-	int len = sizeof(route_send_t*);
-	int bytes_read = 0;
-
-	if (route_pipe[0] == -1)
-		return NULL;
-
-	do {
-		rc = read(route_pipe[0], recv_buf.buf + bytes_read, len);
-		if (rc > 0) {
-			bytes_read += rc;
-			len -= rc;
-		} else if (rc < 0 && IS_ERR(EINTR)) {
-			continue;
-		} else if (retries-- <= 0) {
-			break;
-		}
-	} while (len);
-
-	if (rc < 0) {
-		LM_ERR("cannot receive send param\n");
-		return NULL;
-	}
-	return recv_buf.ptr;
-}
-
-int init_writer(void)
-{
-	int flags;
-
-	if (route_pipe[0] != -1) {
-		close(route_pipe[0]);
-		route_pipe[0] = -1;
-	}
-
-	/* Turn non-blocking mode on for sending*/
-	flags = fcntl(route_pipe[1], F_GETFL);
-	if (flags == -1) {
-		LM_ERR("fcntl failed: %s\n", strerror(errno));
-		goto error;
-	}
-	if (fcntl(route_pipe[1], F_SETFL, flags | O_NONBLOCK) == -1) {
-		LM_ERR("fcntl: set non-blocking failed: %s\n", strerror(errno));
-		goto error;
-	}
-
-	return 0;
-error:
-	close(route_pipe[1]);
-	route_pipe[1] = -1;
-	return -1;
-}
-
-static void route_init_reader(void)
-{
-	if (route_pipe[1] != -1) {
-		close(route_pipe[1]);
-		route_pipe[1] = -1;
-	}
-}
-
 
 int route_build_buffer(str *event_name, evi_reply_sock *sock,
 		evi_params_t *params, route_send_t **msg)
@@ -237,41 +109,50 @@ int route_build_buffer(str *event_name, evi_reply_sock *sock,
 	return 0;
 }
 
+#if 0
+void route_params_push_level(void *params, void *extra, param_getf_t getf);
+void route_params_pop_level(void);
+int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
+#endif
 
-void event_route_handler(int rank)
+static void route_received(int sender, void *param)
 {
-	/* init blocking reader */
-	route_init_reader();
-	route_send_t *route_s;
-	struct sip_msg* dummy_req;
+	static struct sip_msg* req= NULL;
+	route_send_t *route_s = (route_send_t *)param;
 
-	dummy_req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
-	if (dummy_req == NULL) {
-		LM_ERR("oom\n");
-		return;
-	}
-	memset(dummy_req, 0, sizeof(struct sip_msg));
-	dummy_req->first_line.type = SIP_REQUEST;
-	dummy_req->first_line.u.request.method.s= "DUMMY";
-	dummy_req->first_line.u.request.method.len= 5;
-	dummy_req->first_line.u.request.uri.s= "sip:user@domain.com";
-	dummy_req->first_line.u.request.uri.len= 19;
-	dummy_req->rcv.src_ip.af = AF_INET;
-	dummy_req->rcv.dst_ip.af = AF_INET;
-
-	/* waiting for commands */
-	for (;;) {
-		route_s = route_receive();
-		if (!route_s) {
-			LM_ERR("invalid receive sock info\n");
-			goto end;
+	if(req == NULL)
+	{
+		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
+		if(req == NULL)
+		{
+			LM_ERR("No more memory\n");
+			return;
 		}
-
-		event_name = &route_s->event;
-		parameters = &route_s->params;
-		run_top_route(route_s->a, dummy_req);
-end:
-		if (route_s)
-			shm_free(route_s);
+		memset(req, 0, sizeof(struct sip_msg));
+		req->first_line.type = SIP_REQUEST;
+		req->first_line.u.request.method.s= "DUMMY";
+		req->first_line.u.request.method.len= 5;
+		req->first_line.u.request.uri.s= "sip:user@domain.com";
+		req->first_line.u.request.uri.len= 19;
+		req->rcv.src_ip.af = AF_INET;
+		req->rcv.dst_ip.af = AF_INET;
 	}
+
+	route_run(route_s->a, req, &route_s->params, &route_s->event);
+
+	/* clean whatever extra structures were added by script functions */
+	free_sip_msg(req);
+	/* remove all added AVP - here we use all the time the default AVP list */
+	reset_avps( );
+
+	shm_free(route_s);
 }
+
+
+int route_send(route_send_t *route_s)
+{
+	return ipc_dispatch_rpc( route_received, (void *)route_s);
+}
+
+
+

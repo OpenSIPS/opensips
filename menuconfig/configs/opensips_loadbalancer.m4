@@ -133,6 +133,7 @@ modparam("load_balancer", "probing_interval", 30)
 ')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
+loadmodule "httpd.so"
 loadmodule "mi_http.so"
 ',`')
 
@@ -157,8 +158,8 @@ modparam("tls_mgm","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem"
 
 route{
 
-	if (!mf_process_maxfwd_header("10")) {
-		send_reply("483","Too Many Hops");
+	if (!mf_process_maxfwd_header(10)) {
+		send_reply(483,"Too Many Hops");
 		exit;
 	}
 
@@ -175,7 +176,7 @@ route{
 		if ( !loose_route() ) {
 			# we do record-routing for all our traffic, so we should not
 			# receive any sequential requests without Route hdr.
-			send_reply("404","Not here");
+			send_reply(404,"Not here");
 			exit;
 		}
 		ifelse(USE_DISPATCHER,`no',`
@@ -206,13 +207,13 @@ route{
 			t_relay();
 		exit;
 	} else if (!is_method("INVITE")) {
-		send_reply("405","Method Not Allowed");
+		send_reply(405,"Method Not Allowed");
 		exit;
 	}
 
 	if ($rU==NULL) {
 		# request with no Username in RURI
-		send_reply("484","Address Incomplete");
+		send_reply(484,"Address Incomplete");
 		exit;
 	}
 
@@ -223,7 +224,7 @@ route{
 		xlog("L_ERR",
 			"Attempt to route with preloaded Route's [$fu/$tu/$ru/$ci]");
 		if (!is_method("ACK"))
-			send_reply("403","Preload Route denied");
+			send_reply(403,"Preload Route denied");
 		exit;
 	}
 
@@ -234,11 +235,11 @@ route{
 	', `do_accounting("log");')
 
 	ifelse(USE_DISPATCHER,`yes',`
-	if ( !ds_select_dst("1","4") ) {
+	if ( !ds_select_dst(1,4) ) {
 	',`
-	if ( !lb_start("1","channel")) {
+	if ( !lb_start(1,"channel")) {
 	')
-		send_reply("500","No Destination available");
+		send_reply(500,"No Destination available");
 		exit;
 	}
 
@@ -276,7 +277,7 @@ failure_route[GW_FAILOVER] {
 			exit;
 		}
 		
-		send_reply("500","All GW are down");
+		send_reply(500,"All GW are down");
 	}
 }
 

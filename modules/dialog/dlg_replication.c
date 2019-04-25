@@ -98,11 +98,13 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	unsigned int dir, dst_leg;
 	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
-	str sdp1, sdp2;
+	str sdp1, sdp2, sdp3, sdp4;
 	str sock, vars, profiles;
 	struct dlg_cell *dlg = NULL;
 	struct socket_info *caller_sock, *callee_sock;
 	struct dlg_entry *d_entry;
+	str tag_name;
+	int rc;
 
 	LM_DBG("Received replicated dialog!\n");
 	if (!cell) {
@@ -185,12 +187,14 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	DLG_BIN_POP(str, packet, mangled_tu, pre_linking_error);
 	DLG_BIN_POP(str, packet, sdp1, pre_linking_error);
 	DLG_BIN_POP(str, packet, sdp2, pre_linking_error);
+	DLG_BIN_POP(str, packet, sdp3, pre_linking_error);
+	DLG_BIN_POP(str, packet, sdp4, pre_linking_error);
 
 	/* add the 2 legs */
 	if (dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1,
-		&cseq1, caller_sock, 0, 0, &sdp1) != 0 ||
+		&cseq1, caller_sock, 0, 0, &sdp1, &sdp2) != 0 ||
 		dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2,
-		&cseq2, callee_sock, &mangled_fu, &mangled_tu, &sdp2) != 0) {
+		&cseq2, callee_sock, &mangled_fu, &mangled_tu, &sdp3, &sdp4) != 0) {
 		LM_ERR("dlg_set_leg_info failed\n");
 		goto pre_linking_error;
 	}
@@ -268,6 +272,12 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 		read_dialog_vars(vars.s, vars.len, dlg);
 
 	dlg_unlock(d_table, d_entry);
+
+	if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
+		if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
+			LM_ERR("No more shm memory\n");
+	} else if (rc == -1)
+		LM_ERR("Failed to get dlg value for sharing tag\n");
 
 	if (profiles.s && profiles.len != 0)
 		read_dialog_profiles(profiles.s, profiles.len, dlg, 0, 1);
@@ -512,11 +522,17 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_str(packet, &dlg->legs[callee_leg].contact);
 	bin_push_str(packet, &dlg->legs[callee_leg].from_uri);
 	bin_push_str(packet, &dlg->legs[callee_leg].to_uri);
-	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].adv_sdp);
-	bin_push_str(packet, &dlg->legs[callee_leg].adv_sdp);
+	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].in_sdp);
+	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].out_sdp);
+	bin_push_str(packet, &dlg->legs[callee_leg].in_sdp);
+	bin_push_str(packet, &dlg->legs[callee_leg].out_sdp);
 
 	/* give modules the chance to write values/profiles before replicating */
 	run_dlg_callbacks(DLGCB_WRITE_VP, dlg, NULL, DLG_DIR_NONE, NULL, 1, 1);
+
+   /* save sharing tag name as dlg val */
+	if (dlg->shtag.s && store_dlg_value_unsafe(dlg, &shtag_dlg_val, &dlg->shtag) < 0)
+		LM_ERR("Failed to store sharing tag name as dlg val\n");
 
 	vars = write_dialog_vars(dlg->vals);
 	profiles = write_dialog_profiles(dlg->profile_links);
@@ -1179,7 +1195,6 @@ static void broadcast_profiles(utime_t ticks, void *param)
 {
 #define REPL_PROF_TRYSEND() \
 	do { \
-		nr++; \
 		if (ret > repl_prof_buffer_th) { \
 			/* send the buffer */ \
 			if (nr) \
@@ -1194,7 +1209,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 	unsigned int count;
 	int i;
 	int nr = 0;
-	int ret;
+	int ret = 0;
 	void **dst;
 	str *value;
 	bin_packet_t packet;
@@ -1215,6 +1230,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 			if ((ret = repl_prof_add(&packet, &profile->name, 0, NULL, count)) < 0)
 				goto error;
 			/* check if the profile should be sent */
+			nr++;
 			REPL_PROF_TRYSEND();
 		} else {
 			for (i = 0; i < profile->size; i++) {
@@ -1239,8 +1255,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 						lock_set_release(profile->locks, i);
 						goto error;
 					}
-					/* check if the profile should be sent */
-					REPL_PROF_TRYSEND();
+					nr++;
 
 next_val:
 					if (iterator_next(&it) < 0)
@@ -1248,6 +1263,8 @@ next_val:
 				}
 next_entry:
 				lock_set_release(profile->locks, i);
+				/* check if the profile should be sent */
+				REPL_PROF_TRYSEND();
 			}
 		}
 	}
@@ -1256,7 +1273,6 @@ next_entry:
 
 error:
 	LM_ERR("cannot add any more profiles in buffer\n");
-	bin_free_packet(&packet);
 done:
 	/* check if there is anything else left to replicate */
 	if (nr)
@@ -1285,9 +1301,8 @@ int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name)
 		return -1;
 	}
 
-	if (store_dlg_value(dlg, &shtag_dlg_val, tag_name) < 0) {
-		LM_ERR("Failed to store dlg value for sharing tag: <%.*s>\n",
-			tag_name->len, tag_name->s);
+	if (shm_str_dup(&dlg->shtag, tag_name) < 0) {
+		LM_ERR("No more shm memory\n");
 		return -1;
 	}
 
@@ -1298,28 +1313,23 @@ int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name)
  *	0 - backup
  *	1 - active
  * -1 - error
- * -2 - dlg val not found
+ * -2 - tag not found
  */
 int get_shtag_state(struct dlg_cell *dlg)
 {
-	str tag_name;
 	int rc;
 
 	if (!dlg)
 		return -1;
 
-	rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0);
-	if (rc == -1) {
-		LM_ERR("Unable to fetch dlg value holding the sharing tag\n");
-		return -1;
-	} else if (rc == -2) {
-		LM_DBG("dlg value holding the sharing tag not found\n");
+	if (!dlg->shtag.s || dlg->shtag.len == 0) {
+		LM_DBG("Sharing tag not set\n");
 		return -2;
 	}
 
-	if ((rc = clusterer_api.shtag_get(&tag_name, dialog_repl_cluster)) < 0) {
+	if ((rc = clusterer_api.shtag_get(&dlg->shtag, dialog_repl_cluster)) < 0) {
 		LM_ERR("Failed to get state for sharing tag: <%.*s>\n",
-			tag_name.len, tag_name.s);
+			dlg->shtag.len, dlg->shtag.s);
 		return -1;
 	}
 

@@ -137,68 +137,9 @@ static inline int append_rpid_helper(struct sip_msg* _m, str *_s)
 
 
 /*
- * Append RPID header field to the message
- */
-int append_rpid_hf(struct sip_msg* _m, char* _s1, char* _s2)
-{
-	struct usr_avp *avp;
-	str rpid_hf, rpid;
-	char *at;
-	int_str val;
-
-	if (rpid_avp_name==-1) {
-		LM_ERR("rpid avp not defined\n");
-		return -1;
-	}
-
-	if ( (avp=search_first_avp( rpid_avp_type , rpid_avp_name, &val, 0))==0 ) {
-		LM_DBG("no rpid AVP\n");
-		return -1;
-	}
-
-	if ( !(avp->flags&AVP_VAL_STR) ||  !val.s.s || !val.s.len) {
-		LM_DBG("empty or non-string rpid, nothing to append\n");
-		return -1;
-	}
-
-	rpid = val.s;
-
-	rpid_hf.len = RPID_HF_NAME_LEN + rpid_prefix.len + rpid.len
-					+ rpid_suffix.len + CRLF_LEN;
-	rpid_hf.s = pkg_malloc(rpid_hf.len);
-	if (!rpid_hf.s) {
-		LM_ERR("no memory left\n");
-		return -1;
-	}
-
-	at = rpid_hf.s;
-	memcpy(at, RPID_HF_NAME, RPID_HF_NAME_LEN);
-	at += RPID_HF_NAME_LEN;
-
-	memcpy(at, rpid_prefix.s, rpid_prefix.len);
-	at += rpid_prefix.len;
-
-	memcpy(at, rpid.s, rpid.len);
-	at += rpid.len;
-
-	memcpy(at, rpid_suffix.s, rpid_suffix.len);
-	at += rpid_suffix.len;
-
-	memcpy(at, CRLF, CRLF_LEN);
-
-	if (append_rpid_helper(_m, &rpid_hf) < 0) {
-		pkg_free(rpid_hf.s);
-		return -1;
-	}
-
-	return 1;
-}
-
-
-/*
  * Append RPID header field to the message with parameters
  */
-int append_rpid_hf_p(struct sip_msg* _m, char* _prefix, char* _suffix)
+int append_rpid_hf(struct sip_msg* _m, str* _prefix, str* _suffix)
 {
 	struct usr_avp *avp;
 	str rpid_hf, rpid;
@@ -206,6 +147,11 @@ int append_rpid_hf_p(struct sip_msg* _m, char* _prefix, char* _suffix)
 	str* p, *s;
 	int_str val;
 
+	if ((_prefix && !_suffix) || (!_prefix && _suffix)) {
+		LM_ERR("Bad parameters\n");
+		return -1;
+	}
+
 	if (rpid_avp_name==-1) {
 		LM_ERR("rpid avp not defined\n");
 		return -1;
@@ -223,8 +169,8 @@ int append_rpid_hf_p(struct sip_msg* _m, char* _prefix, char* _suffix)
 
 	rpid = val.s;
 
-	p = (str*)_prefix;
-	s = (str*)_suffix;
+	p = _prefix ? _prefix : &rpid_prefix;
+	s = _suffix ? _suffix : &rpid_suffix;
 
 	rpid_hf.len = RPID_HF_NAME_LEN + p->len + rpid.len + s->len + CRLF_LEN;
 	rpid_hf.s = pkg_malloc(rpid_hf.len);
@@ -260,7 +206,7 @@ int append_rpid_hf_p(struct sip_msg* _m, char* _prefix, char* _suffix)
 /*
  * Check if URI in RPID AVP contains an E164 user part
  */
-int is_rpid_user_e164(struct sip_msg* _m, char* _s1, char* _s2)
+int is_rpid_user_e164(struct sip_msg* _m)
 {
 	struct usr_avp *avp;
 	name_addr_t parsed;

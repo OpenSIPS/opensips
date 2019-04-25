@@ -110,15 +110,16 @@ struct hep_data {
 	int oldest_chunk;
 };
 
-
 static cmd_export_t cmds[] = {
-	{"proto_init",            (cmd_function)proto_hep_init_udp,        0, 0, 0, 0},
-	{"proto_init",            (cmd_function)proto_hep_init_tcp,        0, 0, 0, 0},
-	{"load_hep",			  (cmd_function)bind_proto_hep,        1, 0, 0, 0},
-	{"trace_bind_api",        (cmd_function)hep_bind_trace_api,    1, 0, 0, 0},
-	{"correlate", (cmd_function)correlate_w, 5, correlate_fixup, 0,
+	{"proto_init", (cmd_function)proto_hep_init_udp, {{0,0,0}}, 0},
+	{"proto_init", (cmd_function)proto_hep_init_tcp, {{0,0,0}}, 0},
+	{"load_hep", (cmd_function)bind_proto_hep, {{0,0,0}}, 0},
+	{"trace_bind_api", (cmd_function)hep_bind_trace_api, {{0,0,0}}, 0},
+	{"correlate", (cmd_function)correlate_w, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {
@@ -183,6 +184,7 @@ struct module_exports exports = {
 	0,          /* response function */
 	destroy,	/* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 static int mod_init(void)
@@ -193,9 +195,14 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (init_hep_id() < 0) {
+		LM_ERR("could not initialize HEP id list!\n");
+		return -1;
+	}
+
 	if (payload_compression) {
 		load_compression =
-			(load_compression_f)find_export("load_compression", 1, 0);
+			(load_compression_f)find_export("load_compression", 0);
 		if (!load_compression) {
 			LM_ERR("can't bind compression module!\n");
 			return -1;
@@ -220,6 +227,7 @@ static int mod_init(void)
 static void destroy(void)
 {
 	free_hep_cbs();
+	destroy_hep_id();
 }
 
 void free_hep_context(void *ptr)

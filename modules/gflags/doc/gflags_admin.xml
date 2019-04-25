@@ -160,8 +160,8 @@ if(is_gflag("4"))
 			<title><function moreinfo="none">set_gflag</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo set_gflag 1
-$ opensipsctl fifo set_gflag 0x3
+$ opensips-cli -x mi set_gflag 1
+$ opensips-cli -x mi set_gflag 0x3
 ...
 </programlisting>
 			</example>
@@ -181,8 +181,8 @@ $ opensipsctl fifo set_gflag 0x3
 				<function moreinfo="none">reset_gflag</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo reset_gflag 1
-$ opensipsctl fifo reset_gflag 0x3
+$ opensips-cli -x mi reset_gflag 1
+$ opensips-cli -x mi reset_gflag 0x3
 ...
 </programlisting>
 			</example>
@@ -204,19 +204,19 @@ $ opensipsctl fifo reset_gflag 0x3
 			<title><function moreinfo="none">is_gflag</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo set_gflag 1024
-$ opensipsctl fifo is_gflag 1024
+$ opensips-cli -x mi set_gflag 1024
+$ opensips-cli -x mi is_gflag 1024
 TRUE
-$ opensipsctl fifo is_gflag 1025
+$ opensips-cli -x mi is_gflag 1025
 TRUE
-$ opensipsctl fifo is_gflag 1023
+$ opensips-cli -x mi is_gflag 1023
 FALSE
-$ opensipsctl fifo set_gflag 0x10
-$ opensipsctl fifo is_gflag 1023
+$ opensips-cli -x mi set_gflag 0x10
+$ opensips-cli -x mi is_gflag 1023
 TRUE
-$ opensipsctl fifo is_gflag 1007
+$ opensips-cli -x mi is_gflag 1007
 FALSE
-$ opensipsctl fifo is_gflag 16
+$ opensips-cli -x mi is_gflag 16
 TRUE
 ...
 </programlisting>
@@ -233,7 +233,7 @@ TRUE
 				<function moreinfo="none">get_gflags</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo get_gflags
+$ opensips-cli -x mi get_gflags
 0x3039
 12345
 ...

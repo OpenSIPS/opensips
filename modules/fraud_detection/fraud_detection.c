@@ -79,17 +79,19 @@ static int mod_init(void);
 static int child_init(int);
 static void destroy(void);
 
-static int check_fraud(struct sip_msg *msg, char *user, char *number, char *pid);
-static int fixup_check_fraud(void **param, int param_no);
+static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid);
 mi_response_t *mi_show_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 static cmd_export_t cmds[]={
-	{"check_fraud", (cmd_function)check_fraud, 3, fixup_check_fraud, 0,
+	{"check_fraud", (cmd_function)check_fraud, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | ONREPLY_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
@@ -157,7 +159,8 @@ struct module_exports exports= {
 	mod_init,                   /* module initialization function */
 	(response_function) 0,      /* response handling function */
 	(destroy_function)destroy,  /* destroy function */
-	child_init                  /* per-child init function */
+	child_init,                 /* per-child init function */
+	0                           /* reload confirm function */
 };
 
 
@@ -259,30 +262,11 @@ static void destroy(void)
 	frd_destroy_data();
 }
 
-static int fixup_check_fraud(void **param, int param_no)
-{
-	switch (param_no) {
-
-		case 1:
-		case 2:
-			return fixup_spve(param);
-
-		case 3:
-			return fixup_igp(param);
-
-		default:
-			LM_CRIT ("Too many parameters for check_fraud\n");
-			return -1;
-	}
-}
-
-static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_pid)
+static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 {
 
 	static const int rc_error = -3, rc_critical_thr = -2, rc_warning_thr = -1,
 				 rc_ok_thr = 1, rc_no_rule = 2;
-	str user, number;
-	unsigned int pid;
 	frd_dlg_param *param;
 	extern unsigned int frd_data_rev;
 	int rc = rc_ok_thr;
@@ -293,41 +277,26 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		return rc_ok_thr;
 	}
 
-	/* Get the actual params */
-
-	if (fixup_get_svalue(msg, (gparam_p) _user, &user) != 0) {
-		LM_ERR("Cannot get user value\n");
-		return rc_error;
-	}
-	if (fixup_get_svalue(msg, (gparam_p) _number, &number) != 0) {
-		LM_ERR("Cannot get number value\n");
-		return rc_error;
-	}
-	if (fixup_get_ivalue(msg, (gparam_p)_pid, (int*)&pid) != 0) {
-		LM_ERR("Cannot get the profile-id value\n");
-		return rc_error;
-	}
-
 	/* Find a rule */
 
 	unsigned int matched_len;
 	lock_start_read(frd_data_lock);
-	rt_info_t *rule = drb.match_number(*dr_head, pid, &number, &matched_len);
+	rt_info_t *rule = drb.match_number(*dr_head, *pid, number, &matched_len);
 
 	if (rule == NULL) {
 		/* No match */
 		LM_DBG("No rule matched for number=<%.*s>, pid=<%d>\n",
-				number.len, number.s, pid);
+				number->len, number->s, *pid);
 
 		lock_stop_read(frd_data_lock);
 		return rc_no_rule;
 	}
 
 	/* We matched a rule */
-	str prefix = number;
+	str prefix = *number;
 	prefix.len = matched_len;
 	str shm_user;
-	frd_stats_entry_t *se = get_stats(user, prefix, &shm_user);
+	frd_stats_entry_t *se = get_stats(*user, prefix, &shm_user);
 	if (!se) {
 		rc = rc_error;
 		goto out;
@@ -360,7 +329,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 
 	lock_get(frd_seq_calls_lock);
 	if (se->stats.last_called_prefix.len == matched_len &&
-			memcmp(se->stats.last_called_prefix.s, number.s, matched_len) == 0) {
+			memcmp(se->stats.last_called_prefix.s, number->s, matched_len) == 0) {
 
 		/* We have called the same number last time */
 		++se->stats.seq_calls;
@@ -370,7 +339,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 			LM_ERR("oom\n");
 			return rc_error;
 		}
-		memcpy(se->stats.last_called_prefix.s, number.s, matched_len);
+		memcpy(se->stats.last_called_prefix.s, number->s, matched_len);
 		se->stats.seq_calls = 1;
 	}
 	lock_release(frd_seq_calls_lock);
@@ -421,7 +390,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 #define CHECK_AND_RAISE(pname, type) \
 	(se->stats.pname >= thr->pname ## _thr.type) { \
 		raise_ ## type ## _event(&pname ## _name, &se->stats.pname,\
-				&thr->pname ## _thr.type, &user, &number, &rule->id);\
+				&thr->pname ## _thr.type, user, number, &rule->id);\
 		rc = rc_ ## type ## _thr;\
 	}
 
@@ -456,7 +425,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	if (!param) {
 		LM_ERR("no more shm memory\n");
 		rc = rc_error;
-	} else if (shm_str_dup(&param->number, &number) == 0) {
+	} else if (shm_str_dup(&param->number, number) == 0) {
 		param->stats = se;
 		param->thr = thr;
 		param->user = shm_user;

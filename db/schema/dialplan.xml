@@ -38,6 +38,7 @@
         <name>pr</name>
         <type>int</type>
         <size>11</size>
+        <default>0</default>
         <description>Priority of rule.</description>
     </column>
 
@@ -59,6 +60,7 @@
         <name>match_flags</name>
         <type>int</type>
         <size>11</size>
+        <default>0</default>
         <description>Matching flags (0-case sensitive, 1-case insensitive).</description>
     </column>
 
@@ -66,6 +68,7 @@
         <name>subst_exp</name>
         <type>string</type>
         <size>64</size>
+        <default><null/></default>
         <null/>
         <description>Substitution expression.</description>
     </column>
@@ -74,6 +77,7 @@
         <name>repl_exp</name>
         <type>string</type>
         <size>32</size>
+        <default><null/></default>
         <null/>
         <description>Replacement expression (sed like).</description>
     </column>
@@ -82,6 +86,7 @@
         <name>timerec</name>
         <type>string</type>
         <size>255</size>
+        <default><null/></default>
         <null/>
         <description>Time recurrence used to match this rule.</description>
     </column>
@@ -90,7 +95,7 @@
         <name>disabled</name>
         <type>int</type>
         <size>11</size>
-    <default>0</default>
+        <default>0</default>
         <description>Specifies if the command can be used, or is disabled.</description>
     </column>
 
@@ -98,6 +103,7 @@
         <name>attrs</name>
         <type>string</type>
         <size>255</size>
+        <default><null/></default>
         <null/>
         <description>General attributes string to be returned in case of rule matching.</description>
     </column>

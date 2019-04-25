@@ -363,7 +363,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 55 42 439 475
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 56 43 440 475
    2. Daniel-Constantin Mierla (@miconda) 40 28 938 201
    3. Razvan Crainea (@razvancrainea) 39 3 13 1951
    4. Andrei Dragus 32 15 1540 196
@@ -375,12 +375,12 @@ Chapter 2. Contributors
    10. Elena-Ramona Modroiu 6 3 197 6
 
    All remaining contributors: Henning Westerholt (@henningw),
-   Ovidiu Sas (@ovidiusas), Anca Vamanu, Marc Haisenko, Andreas
-   Heise, Klaus Darilion, Vlad Paiu (@vladpaiu), Andreas Granig,
-   Hugues Mitonneau, Konstantin Bokarius, Saúl Ibarra Corretgé
-   (@saghul), Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
-   Maksym Sobolyev (@sobomax), Christophe Sollet (@csollet), Vlad
-   Patrascu (@rvlad-patrascu).
+   Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Anca
+   Vamanu, Marc Haisenko, Andreas Heise, Klaus Darilion, Vlad Paiu
+   (@vladpaiu), Andreas Granig, Hugues Mitonneau, Konstantin
+   Bokarius, Saúl Ibarra Corretgé (@saghul), Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert, Maksym Sobolyev
+   (@sobomax), Christophe Sollet (@csollet).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -402,11 +402,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
    6.  Anca Vamanu                         Oct 2008 - May 2011
    7.  Ovidiu Sas (@ovidiusas)             Dec 2010 - Jan 2011
    8.  Christophe Sollet (@csollet)        Dec 2010 - Dec 2010

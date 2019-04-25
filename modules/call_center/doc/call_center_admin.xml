@@ -558,7 +558,7 @@ cc_agent_login("agentX","0");
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo cc_reload
+opensips-cli -x mi cc_reload
 </programlisting>
 	</section>
 
@@ -582,7 +582,7 @@ opensipsctl fifo cc_reload
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo cc_agent_login agentX 0
+opensips-cli -x mi cc_agent_login agentX 0
 </programlisting>
 	</section>
 
@@ -603,7 +603,7 @@ opensipsctl fifo cc_agent_login agentX 0
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo cc_list_queue
+opensips-cli -x mi cc_list_queue
 </programlisting>
 	</section>
 
@@ -624,7 +624,7 @@ opensipsctl fifo cc_list_queue
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo cc_list_flows
+opensips-cli -x mi cc_list_flows
 </programlisting>
 	</section>
 
@@ -644,7 +644,7 @@ opensipsctl fifo cc_list_flows
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo cc_list_agents
+opensips-cli -x mi cc_list_agents
 </programlisting>
 	</section>
 
@@ -665,7 +665,7 @@ opensipsctl fifo cc_list_agents
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo cc_list_agents
+opensips-cli -x mi cc_list_agents
 </programlisting>
 	</section>
 
@@ -683,7 +683,7 @@ opensipsctl fifo cc_list_agents
 		MI FIFO Command usage:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo cc_reset_stats
+opensips-cli -x mi cc_reset_stats
 </programlisting>
 	</section>
 

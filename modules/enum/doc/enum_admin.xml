@@ -58,7 +58,7 @@
 		"e2u+parameter:sip". When the second parameter starts with a '+' sign, 
 		the ENUM lookup also supports compound NAPTRs 
 		(e.g. "e2u+voice:sip+video:sip") and searching for multiple service 
-		types within one lookup. Multiple service types must be separeted 
+		types within one lookup. Multiple service types must be separated 
 		by a '+' sign.
 	</para>
 	<para>
@@ -261,49 +261,30 @@ modparam("enum", "bl_algorithm", "txt")
 	<title>Exported Functions</title>
 	<section id="func_enum_query" xreflabel="enum_query()">
 		<title>
-		<function moreinfo="none">enum_query(["suffix"[,"service"]])</function>
+		<function moreinfo="none">enum_query([suffix], [service], [number])</function>
 		</title>
 		<para>
-		The function performs an enum query and rewrites the Request-URI with 
+		The function performs an ENUM query on a given E.164 "number" (or R-URI
+		username if "number" is missing) and rewrites the Request-URI with 
 		the result of the query. See <xref linkend="overview"/> for more 
 		information.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>suffix</emphasis> - Suffix to be appended to the 
-			domain name. The <emphasis>suffix</emphasis> parameter can have the
-			following types:
-			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>string</emphasis> - the suffix is statically 
-				assigned </para>
-				</listitem>
-
-				<listitem>
-				<para><emphasis>pvar</emphasis> - the suffix is the value of an
-				existing pseudo-variable (as string value)
-				</para>
-				</listitem>
-			</itemizedlist>
+			<para><emphasis>suffix (string, optional)</emphasis> - suffix to be appended to the
+				domain name, <xref linkend="param_domain_suffix"/> if missing</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>service</emphasis> - Service string to be used in 
-			the service field.
+			<para><emphasis>service (string, optional)</emphasis> - service string to be used in 
+			the service field
 			</para>
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>string</emphasis> - the service is statically 
-				assigned </para>
-				</listitem>
-
-				<listitem>
-				<para><emphasis>pvar</emphasis> - the service is the value of an
-				existing pseudo-variable (as string value)
-				</para>
-				</listitem>
-			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para><emphasis>number (string, optional)</emphasis> - a specific
+			E.164 number packed as a string on which the ENUM query is
+			performed (if missing the R-URI username ($rU) will be used).
+			</para>
 		</listitem>
 		</itemizedlist>
 		<para>
@@ -314,106 +295,59 @@ modparam("enum", "bl_algorithm", "txt")
 		<programlisting format="linespecific">
 ...
 # search for "e2u+sip" in freenum.org 
-enum_query("freenum.org.");
+enum_query("freenum.org.", , $avp(number));
 ...
 # search for "e2u+sip" in default tree (configured as parameter)
 enum_query();
 ...
 # search for "e2u+voice:sip" in e164.arpa
-enum_query("e164.arpa.","voice");
+enum_query("e164.arpa.", "voice");
 ...
 # search for service type "sip" or "voice:sip" or "video:sip"
 # note the '+' sign in front of the second parameter
-enum_query("e164.arpa.","+sip+voice:sip+video:sip");
+enum_query("e164.arpa.", "+sip+voice:sip+video:sip", $avp(number));
 ...
-# quering for service sip and voice:sip
+# querying for service sip and voice:sip
 enum_query("e164.arpa.");
-enum_query("e164.arpa.","voice");
+enum_query("e164.arpa.", "voice");
 # or use instead
-enum_query("e164.arpa.","+sip+voice:sip");
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="func_enum_pv_query" xreflabel="enum_pv_query()">
-		<title>
-		<function moreinfo="none">enum_pv_query("pvar"[,"suffix"[,"service"]])</function>
-		</title>
-		<para>
-		The function performs an enum query on E.164 number stored
-		in its pseudo variable argument and rewrites the Request-URI with 
-		the result of the query. See <xref linkend="overview"/> for more 
-		information.
-		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>pvar</emphasis> - Pseudo
-		variable that holds an E.164 number on which enum
-		query is performed.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>suffix</emphasis> - Suffix to be appended to the 
-			domain name.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>service</emphasis> - Service string to be used in 
-			the service field.
-			</para>
-		</listitem>
-		</itemizedlist>
-		<para>
-		This function can be used from REQUEST_ROUTE.
-		</para>
-		<example>
-		<title><function moreinfo="none">enum_pv_query</function> usage</title>
-		<programlisting format="linespecific">
-...
-# search for "e2u+sip" in freenum.org 
-enum_pv_query("$avp(100)", "freenum.org.");
-...
-# search for "e2u+sip" in default tree (configured as parameter)
-enum_pv_query("$fU");
-...
-# search for "e2u+voice:sip" in e164.arpa
-enum_pv_query("$avp(100)","e164.arpa.","voice");
-...
-# search for service type "sip" or "voice:sip" or "video:sip"
-# note the '+' sign in front of the second parameter
-enum_pv_query("$fU","e164.arpa.","+sip+voice:sip+video:sip");
-...
-# quering for service sip and voice:sip
-enum_pv_query("$avp(100)","e164.arpa.");
-enum_pv_query("$avp(100)","e164.arpa.","voice");
-# or use instead
-enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
+enum_query("e164.arpa.", "+sip+voice:sip");
 ...
 </programlisting>
 		</example>
 	</section>
 
         <section id="func_i_enum_query" xreflabel="i_enum_query()">
-                <title>
-                <function moreinfo="none">i_enum_query(["suffix"[,"service"]])</function>
-                </title>
-                <para>
-                The function performs an enum query and rewrites the Request-URI with
-                the result of the query. This the Infrastructure-ENUM version of enum_query().
-                The only difference to enum_query() is in the calculation of the
-                FQDN where NAPTR records are looked for.
-                </para>
-                <para>
-                See ftp://ftp.rfc-editor.org/in-notes/internet-drafts/draft-haberler-carrier-enum-01.txt
-                for the rationale behind this function.
-                </para>
+        <title>
+        <function moreinfo="none">i_enum_query([suffix], [service])</function>
+        </title>
+        <para>
+        The function performs an enum query and rewrites the Request-URI with
+        the result of the query. This the Infrastructure-ENUM version of enum_query().
+        The only difference to enum_query() is in the calculation of the
+        FQDN where NAPTR records are looked for.
+        </para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>suffix (string, optional)</emphasis> - suffix to be appended to the
+				domain name, <xref linkend="param_i_enum_suffix"/> if missing</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>service (string, optional)</emphasis> - service string to be used in 
+			the service field
+			</para>
+		</listitem>
+		</itemizedlist>
+        <para>
+        See ftp://ftp.rfc-editor.org/in-notes/internet-drafts/draft-haberler-carrier-enum-01.txt
+        for the rationale behind this function.
+        </para>
         </section>
 
 	<section id="func_isn_query" xreflabel="isn_query()">
 		<title>
-		<function moreinfo="none">isn_query(["suffix"[,"service"]])</function>
+		<function moreinfo="none">isn_query([suffix], [service])</function>
 		</title>
 		<para>
 		The function performs a ISN query and rewrites the Request-URI with 
@@ -423,13 +357,13 @@ enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>suffix</emphasis> - Suffix to be appended to the 
-			domain name.
+			<para><emphasis>suffix (string, optional)</emphasis> - suffix to be appended to the
+			domain name, <xref linkend="param_isn_suffix"/> if missing
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>service</emphasis> - Service string to be used in 
-			the service field.
+			<para><emphasis>service (string, optional)</emphasis> - service string to be used in 
+			the service field
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -452,19 +386,31 @@ isn_query("freenum.org.");
 isn_query();
 ...
 # search for "e2u+voice:sip" in freenum.org
-isn_query("freenum.org.","voice");
+isn_query("freenum.org.", "voice");
 ...
 </programlisting>
 		</example>
 	</section>
 
 	<section id="func_is_from_user_enum" xreflabel="is_from_user_enum()">
-		<title><function moreinfo="none">is_from_user_enum()</function></title>
+		<title><function moreinfo="none">is_from_user_enum([suffix], [service])</function></title>
 		<para>
 		Checks if the user part of from <abbrev>URI</abbrev>
 		is found in an enum lookup.
 		Returns 1 if yes and -1 if not.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>suffix (string, optional)</emphasis> - suffix to be appended to the
+				domain name, <xref linkend="param_domain_suffix"/> if missing</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>service (string, optional)</emphasis> - service string to be used in 
+			the service field
+			</para>
+		</listitem>
+		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE.
 		</para>

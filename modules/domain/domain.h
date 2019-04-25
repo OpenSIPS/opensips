@@ -26,6 +26,7 @@
 
 
 #include "../../parser/msg_parser.h"
+#include "../../pvar.h"
 
 
 /*
@@ -49,7 +50,7 @@ int is_uri_host_local(struct sip_msg* _msg, char* _s1, char* _s2);
  * - avp name or alias - check the domain given by the value
  *                       pointed by the avp name/alias
  */
-int w_is_domain_local(struct sip_msg* _msg, char* _s1, char* _s2);
+int w_is_domain_local(struct sip_msg* _msg, str *domain, pv_spec_t* _s2);
 
 int is_domain_local(str* domain);
 

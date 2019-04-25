@@ -2337,12 +2337,12 @@ set_dlg_sharing_tag("vip1");
 		</para>
 		<programlisting  format="linespecific">
 		## list all ongoing dialogs
-		opensipsctl fifo dlg_list
+		opensips-cli -x mi dlg_list
 		## list the dialog by callid and From TAG
-		opensipsctl fifo dlg_list abcdrssfrs122444@192.168.1.1 AAdfeEFF33
+		opensips-cli -x mi dlg_list abcdrssfrs122444@192.168.1.1 AAdfeEFF33
 		## list 10 dialogs, starting from the position 40
 		## (in the list of all ongoing dialogs)
-		opensipsctl fifo dlg_list 40 10
+		opensips-cli -x mi dlg_list 40 10
 		</programlisting>
 		</section>
 
@@ -2366,7 +2366,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_list_ctx
+		opensips-cli -x mi dlg_list_ctx
 		</programlisting>
 		</section>
 
@@ -2405,9 +2405,9 @@ set_dlg_sharing_tag("vip1");
 		</para>
 		<programlisting  format="linespecific">
 		# terminate the dialog via the internal Dialog-ID
-		opensipsctl fifo dlg_end_dlg 1391569858236
+		opensips-cli -x mi dlg_end_dlg 1391569858236
 		# terminate the dialog via its SIP Call-ID
-		opensipsctl fifo dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
+		opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
 		</programlisting>
 		</section>
 
@@ -2439,7 +2439,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo profile_get_size inbound_calls
+		opensips-cli -x mi profile_get_size inbound_calls
 		</programlisting>
 		</section>
 
@@ -2473,7 +2473,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo profile_list_dlgs inbound_calls
+		opensips-cli -x mi profile_list_dlgs inbound_calls
 		</programlisting>
 		</section>
 
@@ -2499,7 +2499,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo profile_get_values inbound_calls
+		opensips-cli -x mi profile_get_values inbound_calls
 		</programlisting>
 		</section>
 		<section id="mi_profile_end_dlgs" xreflabel="profile_end_dlgs">
@@ -2525,7 +2525,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo profile_end_dlgs inbound_calls
+		opensips-cli -x mi profile_end_dlgs inbound_calls
 		</programlisting>
 		</section>
 		<section id="mi_dlg_db_sync" xreflabel="dlg_db_sync">
@@ -2544,7 +2544,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_db_sync
+		opensips-cli -x mi dlg_db_sync
 		</programlisting>
 		</section>
 
@@ -2569,7 +2569,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_cluster_sync
+		opensips-cli -x mi dlg_cluster_sync
 		</programlisting>
 		</section>
 
@@ -2587,7 +2587,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_restore_db
+		opensips-cli -x mi dlg_restore_db
 		</programlisting>
 		</section>
 
@@ -2606,7 +2606,7 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo list_all_profiles
+		opensips-cli -x mi list_all_profiles
 		</programlisting>
 		</section>
 
@@ -2635,12 +2635,128 @@ set_dlg_sharing_tag("vip1");
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo dlg_push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
+		opensips-cli -x mi dlg_push_var var_name var_value DID1 [ DID2 DID3 ...  DIDN ]
 		</programlisting>
 		</section>
 
-	</section>
+		<section id="mi_dlg_send_sequential" xreflabel="dlg_send_sequential">
+		<title><function moreinfo="none">dlg_send_sequential</function></title>
+		<para>
+		Sends a sequential request within an ongoing dialog.
+		</para>
+		<para>
+		Name: <emphasis>dlg_send_sequential</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> - the callid of the dialog you need to trigger
+					the sequentiam message for.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>method</emphasis> - (optional) the method used for the sequential
+					mesasge. Default value is <emphasis>INVITE</emphasis>.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>mode</emphasis> - (optional) can be used to tune the behavior of
+					the sequential message. Possible values for the <emphasis>mode</emphasis> are:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>caller</emphasis> - (default) sends the sequential message
+						to the caller. This mode can be useful in high availability scenarios
+						when you want to update the upstream's routing set, specifically the contact.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>callee</emphasis> - same as caller, but sends the sequential
+							message to the callee.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>challenge</emphasis> - sends a sequential INVITE (or UPDATE)
+						to the caller to challenge it for its advertised SDP body. When the
+						body is received, it is forwarded to the callee. This mode is useful
+						when trying to change both endpoints (upstream and downstream) routing
+						set. It can also be useful when trying to trigger a re-negotiation for
+						SDP body.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>challenge-caller</emphasis> - same as <emphasis>challenge</emphasis>
+					</para></listitem>
+					<listitem><para>
+						<emphasis>challenge-caller</emphasis> - same as
+							<emphasis>challenge-caller</emphasis>, only that it first challenges
+							the callee, instead of the caller.
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body</emphasis> - (optional) can be used to specify a body for
+					the initial sequential message. Possible values for the <emphasis>body</emphasis>
+					parameter are:
+				<itemizedlist>
+					<listitem><para>
+						<emphasis>none</emphasis> - (default) no body added to the sequential message.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>inbound</emphasis> - advertises in the body of the sequential
+							message generated the last body received from its pair. For example,
+							if the <emphasis>mode=challenge-caller</emphasis>, the message will
+							contain the body sent to &osips; by the callee. This is useful when
+							you need to alter the body previously sent to the caller, because you
+							want to re-negociate a different media proxy for the call. This can
+							be achieved by catching the generated request in
+							<emphasis>local_route</emphasis>, and re-engage the Media proxy.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>outbound</emphasis> - advertises in the body of the sequential
+							message generated the last body sent to that UAC. For example,
+							if the <emphasis>mode=challenge-caller</emphasis>, the message will
+							contain the last body sent by &osips; to the caller. This is useful
+							in a high availability scenario when trying to re-negociate the
+							contact of the server, but there is no need to alter the body sent
+							earlier.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>custom:BODY</emphasis> - this can be used to specify a specific
+							body for the sequential message generated.
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+		</itemizedlist>
+		<para>
+			This functions runs in asynchronous mode and returns the status code and reason
+			of the last reply received for either the <emphasis>challenge</emphasis> or normal mode.
+		</para>
+		<para>
+		MI Command Format:
+		</para>
+		<programlisting  format="linespecific">
+			opensips-cli -x mi dlg_send_sequential \
+				callid=5291231-testing@127.0.0.1
+		</programlisting>
 
+		<para>
+		MI Command used to trigger media re-negotiation:
+		</para>
+		<programlisting  format="linespecific">
+			opensips-cli -x mi dlg_send_sequential \
+				callid=5291231-testing@127.0.0.1 \
+				mode=challenge \
+				body=inbound
+		</programlisting>
+
+		<para>
+		MI Command used to UPDATE the callee's remote Contact after a server failover:
+		</para>
+		<programlisting  format="linespecific">
+			opensips-cli -x mi dlg_send_sequential \
+				callid=5291231-testing@127.0.0.1 \
+				mode=challenge-callee \
+				body=outbound \
+				method=UPDATE
+		</programlisting>
+
+		</section>
+	</section>
 
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>

@@ -94,7 +94,7 @@ int aaa_prot_bind(str* aaa_url, aaa_prot* prot) {
 	sprintf(module_name, "aaa_%.*s", pc.prot_name->len,pc.prot_name->s);
 
 	bind_f = (aaa_bind_api_f) find_mod_export(module_name,
-						"aaa_bind_api", 0, 0);
+						"aaa_bind_api", 0);
 
 	if (bind_f) {
 		LM_DBG("using aaa bind api for %s\n", module_name);

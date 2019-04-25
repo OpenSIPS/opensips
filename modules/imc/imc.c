@@ -96,10 +96,10 @@ struct tm_binds tmb;
 void inv_callback( struct cell *t, int type, struct tmcb_params *ps);
 
 static cmd_export_t cmds[]={
-	{"imc_manager",  (cmd_function)imc_manager, 0, 0, 0, REQUEST_ROUTE},
-	{0,0,0,0,0,0}
+	{"imc_manager",(cmd_function)imc_manager, {{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
-
 
 static param_export_t params[]={
 	{"db_url",				STR_PARAM, &db_url.s},
@@ -167,7 +167,8 @@ struct module_exports exports= {
 	mod_init,   /* mod init */
 	(response_function) 0,       /* response handler */
 	(destroy_function) destroy,  /* destroy function */
-	child_init  /* child init */
+	child_init, /* child init */
+	0           /* reload confirm function */
 };
 
 /**

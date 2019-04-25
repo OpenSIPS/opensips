@@ -68,17 +68,16 @@ unsigned int nbranches;
 static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
 static str branch_uris[MAX_BRANCHES-1];
 
-int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
+int mid_reg_lookup(struct sip_msg* req, void* _t, str* flags_s, str* uri)
 {
 	static str unescape_buf;
 	unsigned int flags;
 	urecord_t* r;
-	str aor, uri, unesc_aor;
+	str aor, unesc_aor;
 	ucontact_t* ptr,*it;
 	int res, pos, remote_cts_done = 0;
 	int ret, bak;
 	str path_dst;
-	str flags_s;
 	char* ua = NULL;
 	char* re_end = NULL;
 	int re_len = 0;
@@ -103,41 +102,37 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 	LM_DBG("mid_reg_lookup ... \n");
 
 	flags = 0;
-	if (_f && _f[0]!=0) {
-		if (fixup_get_svalue(req, (gparam_p)_f, &flags_s)!=0) {
-			LM_ERR("failed to get a string value for the 'flags' parameter\n");
-			return -1;
-		}
-		for( res=0 ; res< flags_s.len ; res++ ) {
-			switch (flags_s.s[res]) {
+	if (flags_s && flags_s->s[0]!=0) {
+		for( res=0 ; res< flags_s->len ; res++ ) {
+			switch (flags_s->s[res]) {
 				case 'm': flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
 				case 'b': flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
 				case 'g': flags |= REG_LOOKUP_GLOBAL_FLAG; break;
 				case 'r': flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
 				case 'u':
-					if (flags_s.s[res+1] != '/') {
+					if (flags_s->s[res+1] != '/') {
 						LM_ERR("no regexp after 'u' flag\n");
 						break;
 					}
 					res++;
-					if ((re_end = strrchr(flags_s.s+res+1, '/')) == NULL) {
+					if ((re_end = strrchr(flags_s->s+res+1, '/')) == NULL) {
 						LM_ERR("no regexp after 'u' flag\n");
 						break;
 					}
 					res++;
-					re_len = re_end-flags_s.s-res;
+					re_len = re_end-flags_s->s-res;
 					if (re_len == 0) {
 						LM_ERR("empty regexp\n");
 						break;
 					}
-					ua = flags_s.s+res;
+					ua = flags_s->s+res;
 					flags |= REG_LOOKUP_UAFILTER_FLAG;
 					LM_DBG("found regexp /%.*s/", re_len, ua);
 					res += re_len;
 					break;
 				case 'i': regexp_flags |= REG_ICASE; break;
 				case 'e': regexp_flags |= REG_EXTENDED; break;
-				default: LM_WARN("unsupported flag %c \n",flags_s.s[res]);
+				default: LM_WARN("unsupported flag %c \n",flags_s->s[res]);
 			}
 		}
 	}
@@ -163,14 +158,8 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 		idx=0;
 	}
 
-	if (_s) {
-		if (fixup_get_svalue(req, (gparam_p)_s, &uri) != 0) {
-			LM_ERR("failed to get a string value for the 'AoR' parameter\n");
-			return -1;
-		}
-	} else {
-		uri = *GET_RURI(req);
-	}
+	if (!uri)
+		uri = GET_RURI(req);
 
 	if (flags & REG_LOOKUP_UAFILTER_FLAG) {
 		tmp = *(ua+re_len);
@@ -190,30 +179,31 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 			return -1;
 		}
 
-		if (parse_uri(uri.s, uri.len, &puri) < 0) {
-			LM_ERR("failed to parse R-URI <%.*s>, ci: %.*s\n", uri.len,
-			       uri.s, req->callid->body.len, req->callid->body.s);
+		if (parse_uri(uri->s, uri->len, &puri) < 0) {
+			LM_ERR("failed to parse R-URI <%.*s>, ci: %.*s\n", uri->len,
+			       uri->s, req->callid->body.len, req->callid->body.s);
 			return -1;
 		}
 
 		if (ctid_insertion == MR_APPEND_PARAM) {
 			pos = get_uri_param_idx(&ctid_param, &puri);
 			if (pos < 0) {
-				LM_ERR("failed to locate our ';%.*s=' param, ci = %.*s!\n",
-				       ctid_param.len, ctid_param.s,
-				       req->callid->body.len, req->callid->body.s);
+				LM_ERR("failed to locate our ';%.*s=' param in %sURI '%.*s', "
+				       "ci = %.*s!\n", ctid_param.len, ctid_param.s,
+				       uri ? "" : "R-", uri->len, uri->s, req->callid->body.len,
+				       req->callid->body.s);
 				return -1;
 			}
 			if (str2int64(&puri.u_val[pos], &contact_id) != 0) {
-				LM_ERR("invalid contact_id in R-URI <%.*s>, ci: %.*s\n",
-				       uri.len, uri.s, req->callid->body.len,
+				LM_ERR("invalid contact_id in %sURI '%.*s', ci: %.*s\n",
+				       uri ? "" : "R-", uri->len, uri->s, req->callid->body.len,
 				       req->callid->body.s);
 				return -1;
 			}
 		} else {
 			if (str2int64(&puri.user, &contact_id) != 0) {
-				LM_ERR("invalid contact_id in R-URI <%.*s>, ci: %.*s\n",
-				       uri.len, uri.s, req->callid->body.len,
+				LM_ERR("invalid contact_id in %sURI '%.*s', ci: %.*s\n",
+				       uri ? "" : "R-", uri->len, uri->s, req->callid->body.len,
 				       req->callid->body.s);
 				return -1;
 			}
@@ -223,7 +213,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 
 		ptr = ul_api.get_ucontact_from_id((udomain_t *)_t, contact_id, &r);
 		if (!ptr) {
-			LM_ERR("no record found for %.*s, ci: %.*s\n", uri.len, uri.s,
+			LM_DBG("no record found for %.*s, ci: %.*s\n", uri->len, uri->s,
 			       req->callid->body.len, req->callid->body.s);
 			return -1;
 		}
@@ -234,7 +224,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 
 	bak = reg_use_domain;
 	reg_use_domain = 0;
-	if (extract_aor(&uri, &aor, &sip_instance, &call_id) < 0) {
+	if (extract_aor(uri, &aor, &sip_instance, &call_id) < 0) {
 		LM_ERR("failed to extract address of record\n");
 		reg_use_domain = bak;
 		return -3;
@@ -456,8 +446,8 @@ cts_to_branches:
 		ul_api.release_urecord(r, 0);
 
 		/* idx starts from -1 */
-		uri = branch_uris[idx];
-		if (extract_aor(&uri, &aor, NULL, &call_id) < 0) {
+		uri = &branch_uris[idx];
+		if (extract_aor(uri, &aor, NULL, &call_id) < 0) {
 			LM_ERR("failed to extract address of record for branch uri\n");
 			return -3;
 		}

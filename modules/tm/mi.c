@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include "../../parser/parse_from.h"
 #include "../../str_list.h"
+#include "../../ipc.h"
 
 #include "mi.h"
 #include "h_table.h"
@@ -279,7 +280,7 @@ static inline int mi_print_uris(mi_item_t *resp_obj, struct sip_msg* reply)
 			return -1;
 
 	if (dlg->hooks.next_hop->s)
-		if (add_mi_string(resp_obj, MI_SSTR("next hop"),
+		if (add_mi_string(resp_obj, MI_SSTR("Next-hop"),
 			dlg->hooks.next_hop->s, dlg->hooks.next_hop->len) < 0)
 			return -1;
 
@@ -315,13 +316,13 @@ static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 			LM_ERR("get_reply_status failed\n");
 			goto error;
 		}
-		if (add_mi_string(resp_obj, MI_SSTR("reply status"),
+		if (add_mi_string(resp_obj, MI_SSTR("Status"),
 			text.s, text.len) < 0) {
 			goto error;
 		}
 		pkg_free(text.s);
 	} else {
-		if (add_mi_string_fmt(resp_obj, MI_SSTR("reply status"), "%d %.*s",
+		if (add_mi_string_fmt(resp_obj, MI_SSTR("Status"), "%d %.*s",
 			ps->rpl->first_line.u.reply.statuscode,
 			ps->rpl->first_line.u.reply.reason.len,
 			ps->rpl->first_line.u.reply.reason.s) < 0) {
@@ -331,7 +332,7 @@ static void mi_uac_dlg_hdl( struct cell *t, int type, struct tmcb_params *ps )
 		if (mi_print_uris(resp_obj, ps->rpl) < 0)
 			goto error;
 
-		if (add_mi_string(resp_obj, MI_SSTR("headers"),
+		if (add_mi_string(resp_obj, MI_SSTR("Message"),
 			ps->rpl->headers->name.s,
 			ps->rpl->len-(ps->rpl->headers->name.s - ps->rpl->buf)) < 0)
 			goto error;
@@ -356,6 +357,58 @@ done:
 
 /**************************** MI functions ********************************/
 
+struct t_uac_rpc_param {
+	dlg_t dlg;
+	str ruri;
+	str next_hop;
+	str method;
+	str hdrs;
+	str body;
+	struct mi_handler *async_hdl;
+};
+
+static void free_t_uac_rpc_param( struct t_uac_rpc_param *p)
+{
+	if (p) {
+		if (p->method.s) shm_free(p->method.s);
+		if (p->body.s) shm_free(p->body.s);
+		if (p->hdrs.s) shm_free(p->hdrs.s);
+		if (p->ruri.s) shm_free(p->ruri.s);
+		if (p->next_hop.s) shm_free(p->next_hop.s);
+		if (p->dlg.id.call_id.s) shm_free(p->dlg.id.call_id.s);
+		if (p->dlg.id.rem_tag.s) shm_free(p->dlg.id.rem_tag.s);
+		if (p->dlg.id.loc_tag.s) shm_free(p->dlg.id.loc_tag.s);
+		if (p->dlg.rem_uri.s) shm_free(p->dlg.rem_uri.s);
+		if (p->dlg.loc_uri.s) shm_free(p->dlg.loc_uri.s);
+		if (p->dlg.rem_dname.s) shm_free(p->dlg.rem_dname.s);
+		if (p->dlg.loc_dname.s) shm_free(p->dlg.loc_dname.s);
+		shm_free(p);
+	}
+}
+
+
+static void rpc_t_uac(int sender, void *param)
+{
+	struct t_uac_rpc_param *rpc_p = (struct t_uac_rpc_param *)param;
+	int n;
+
+	if (rpc_p->async_hdl==NULL)
+		n = t_uac( &rpc_p->method, &rpc_p->hdrs, &rpc_p->body, &rpc_p->dlg,
+			0, 0, 0);
+	else
+		n = t_uac( &rpc_p->method, &rpc_p->hdrs, &rpc_p->body, &rpc_p->dlg,
+			mi_uac_dlg_hdl, rpc_p->async_hdl, 0);
+
+	/* if we failed, return via handler something */
+	if (n<=0 && rpc_p->async_hdl) {
+		rpc_p->async_hdl->handler_f(
+			init_mi_error(500, MI_SSTR("MI/UAC failed")),
+			rpc_p->async_hdl, 1 /*done*/ );
+	}
+
+	free_t_uac_rpc_param(rpc_p);
+}
+
 
 /*
   Syntax of "t_uac_dlg" :
@@ -367,20 +420,18 @@ done:
     [Body]
 */
 static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
-							str *socket, str *body, struct mi_handler *async_hdl)
+						str *socket, str *body, struct mi_handler *async_hdl)
 {
-	static char err_buf[MAX_REASON_LEN];
 	static struct sip_msg tmp_msg;
-	static dlg_t dlg;
+	struct t_uac_rpc_param *rpc_p = NULL;
 	struct sip_uri pruri;
-	struct sip_uri pnexthop;
-	struct socket_info* sock;
+	struct socket_info* sock = NULL;
 	str method;
 	str ruri;
 	str hdrs;
 	str s;
 	str callid = {0,0};
-	int sip_error;
+	str tmp;
 	int proto;
 	int port;
 	int cseq = 0;
@@ -396,16 +447,17 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	if (parse_uri( ruri.s, ruri.len, &pruri) < 0 )
 		return init_mi_error(400, MI_SSTR("Invalid ruri"));
 
-	if (parse_uri( nexthop->s, nexthop->len, &pnexthop) < 0 )
-		return init_mi_error( 400, MI_SSTR("Invalid next_hop"));
-
-	if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
-	&port,&proto)!=0)
-		return init_mi_error( 404, MI_SSTR("Invalid local socket"));
-	set_sip_defaults( port, proto);
-	sock = grep_internal_sock_info( &s, (unsigned short)port, proto);
-	if (sock==0)
-		return init_mi_error( 404, MI_SSTR("Local socket not found"));
+	if (socket && socket->len) {
+		if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
+		&port,&proto)!=0)
+			return init_mi_error( 404, MI_SSTR("Invalid local socket"));
+		set_sip_defaults( port, proto);
+		sock = grep_internal_sock_info( &s, (unsigned short)port, proto);
+		if (sock==NULL)
+			return init_mi_error( 404, MI_SSTR("Local socket not found"));
+	} else {
+		sock = NULL;
+	}
 
 	if (get_mi_string_param(params, "headers", &hdrs.s, &hdrs.len) < 0)
 		return init_mi_param_error();
@@ -432,63 +484,85 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 		return 0;
 	}
 
-	memset( &dlg, 0, sizeof(dlg_t));
+	rpc_p=(struct t_uac_rpc_param*)shm_malloc(sizeof(struct t_uac_rpc_param));
+	if (rpc_p==NULL) {
+		LM_ERR("failed to allocate RPC param in shm\n");
+		goto error;
+	}
+	memset( rpc_p, 0, sizeof(struct t_uac_rpc_param));
+
 	/* Fill in Call-ID, use given Call-ID if
 	 * present and generate it if not present */
-	if (callid.s && callid.len)
-		dlg.id.call_id = callid;
-	else
-		generate_callid(&dlg.id.call_id);
+	if (callid.s==NULL || callid.len==0)
+		generate_callid(&callid);
+
+	if ( shm_str_dup( &rpc_p->method, &method )<0 ||
+	(rpc_p->body.s && shm_str_dup( &rpc_p->body, body )<0) ||
+	shm_str_dup( &rpc_p->hdrs, &s ) <0 ||
+	shm_str_dup( &rpc_p->dlg.id.call_id, &callid)<0 )
+		goto error;
+
 
 	/* We will not fill in dlg->id.rem_tag because
 	 * if present it will be printed within To HF */
 
-	/* Generate fromtag if not present */
-	if (!(get_from(&tmp_msg)->tag_value.len&&get_from(&tmp_msg)->tag_value.s))
-		generate_fromtag(&dlg.id.loc_tag, &dlg.id.call_id);
-
 	/* Fill in CSeq */
 	if (cseq!=-1)
-		dlg.loc_seq.value = cseq;
+		rpc_p->dlg.loc_seq.value = cseq;
 	else
-		dlg.loc_seq.value = DEFAULT_CSEQ;
-	dlg.loc_seq.is_set = 1;
+		rpc_p->dlg.loc_seq.value = DEFAULT_CSEQ;
+	rpc_p->dlg.loc_seq.is_set = 1;
 
-	if (get_from(&tmp_msg)->tag_value.len!=0)
-		dlg.id.loc_tag = get_from(&tmp_msg)->tag_value;
 	if (get_to(&tmp_msg)->tag_value.len!=0)
-		dlg.id.rem_tag = get_to(&tmp_msg)->tag_value;
-	dlg.loc_uri = get_from(&tmp_msg)->uri;
-	dlg.rem_uri = get_to(&tmp_msg)->uri;
-	dlg.loc_dname = get_from(&tmp_msg)->display;
-	dlg.rem_dname = get_to(&tmp_msg)->display;
-	dlg.hooks.request_uri = &ruri;
-	dlg.hooks.next_hop = (nexthop ? nexthop : &ruri);
-	dlg.send_sock = sock;
+		if (shm_str_dup( &rpc_p->dlg.id.rem_tag,
+		&(get_to(&tmp_msg)->tag_value))<0 )
+			goto error;
 
-	if (async_hdl==NULL)
-		n = t_uac( &method, &s, body, &dlg, 0, 0, 0);
+	/* Generate fromtag if not present */
+	if (!(get_from(&tmp_msg)->tag_value.len&&get_from(&tmp_msg)->tag_value.s))
+		generate_fromtag(&tmp, &callid);
 	else
-		n = t_uac( &method, &s, body, &dlg, mi_uac_dlg_hdl,
-				(void*)async_hdl, 0);
+		tmp = get_from(&tmp_msg)->tag_value;
+
+	rpc_p->dlg.hooks.request_uri = &rpc_p->ruri;
+	rpc_p->dlg.hooks.next_hop = &rpc_p->next_hop;
+	rpc_p->dlg.send_sock = sock;
+	rpc_p->async_hdl = async_hdl;
+
+	if (
+	shm_str_dup( &rpc_p->dlg.id.loc_tag, &tmp) <0 ||
+	shm_str_dup( &rpc_p->dlg.loc_uri, &get_from(&tmp_msg)->uri) <0 ||
+	shm_str_dup( &rpc_p->dlg.rem_uri, &get_to(&tmp_msg)->uri) <0 ||
+	shm_str_dup( &rpc_p->dlg.loc_dname, &get_from(&tmp_msg)->display) <0 ||
+	shm_str_dup( &rpc_p->dlg.rem_dname, &get_to(&tmp_msg)->display) <0 ||
+	shm_str_dup( &rpc_p->ruri, &ruri) <0 ||
+	shm_str_dup( &rpc_p->next_hop, nexthop?nexthop:&ruri) <0
+	)
+		goto error;
+
+	n = ipc_dispatch_rpc( rpc_t_uac, (void*)rpc_p);
 
 	pkg_free(s.s);
 	if (tmp_msg.headers) free_hdr_field_lst(tmp_msg.headers);
 
-	if (n<=0) {
+	if (n<0) {
 		/* error */
-		n = err2reason_phrase( n, &sip_error, err_buf, sizeof(err_buf), "MI/UAC");
-		if (n > 0 )
-			return init_mi_error(sip_error, err_buf, n);
-		else
-			return init_mi_error(500, MI_SSTR("MI/UAC failed"));
+		return init_mi_error(500, MI_SSTR("MI/UAC failed"));
 	} else {
 		if (async_hdl==NULL)
 			return init_mi_result_string(MI_SSTR("Accepted"));
 		else
 			return MI_ASYNC_RPL;
 	}
+	/* done */
+
+error:
+	pkg_free(s.s);
+	if (tmp_msg.headers) free_hdr_field_lst(tmp_msg.headers);
+	free_t_uac_rpc_param(rpc_p);
+	return 0;
 }
+
 
 mi_response_t *mi_tm_uac_dlg_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)

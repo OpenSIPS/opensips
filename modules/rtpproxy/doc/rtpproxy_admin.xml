@@ -200,6 +200,13 @@
 		specify a UNIX socket or an IPv4/IPv6 UDP socket.
 		</para>
 		<para>
+			The definition also supports to specify a different IP that will
+			be advertised instead of the one returned by RTPProxy. This is
+			useful when having multiple RTPProxy servers that are located
+			behind NAT, and listen only on private intefaces, but need to
+			advertise a public one.
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>NONE</quote> (disabled).
 		</emphasis>
@@ -218,6 +225,8 @@ modparam("rtpproxy", "rtpproxy_sock",
 	"1 == udp:localhost:12221 udp:localhost:12222")
 modparam("rtpproxy", "rtpproxy_sock",
 	"2 == udp:localhost:12225")
+modparam("rtpproxy", "rtpproxy_sock",
+	"2 == udp:localhost:12225|8.8.8.8")
 ...
 </programlisting>
 		</example>
@@ -1059,9 +1068,9 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 			<programlisting format="linespecific">
 ...
 ## disable a RTPProxy by URL only
-$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
-$ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
 ...
 			</programlisting>
 			</example>
@@ -1081,7 +1090,7 @@ $ opensipsctl fifo rtpproxy_enable udp:192.168.2.133:8081 3 0
 				<function moreinfo="none">rtpproxy_show</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rtpproxy_show
+$ opensips-cli -x mi rtpproxy_show
 ...
 			</programlisting>
 			</example>
@@ -1103,7 +1112,7 @@ $ opensipsctl fifo rtpproxy_show
 				<function moreinfo="none">rtpproxy_reload</function> usage</title>
 			<programlisting format="linespecific">
 ...
-$ opensipsctl fifo rtpproxy_reload
+$ opensips-cli -x mi rtpproxy_reload
 ...
 			</programlisting>
 			</example>

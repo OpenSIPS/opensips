@@ -89,11 +89,11 @@ int cpl_proxy_to_loc_set( struct sip_msg *msg, struct location **locs,
 	/* run what proxy route is set */
 	if (cpl_env.proxy_route) {
 		/* do not alter route type - it might be REQUEST or FAILURE */
-		run_top_route( rlist[cpl_env.proxy_route].a, msg);
+		run_top_route( sroutes->request[cpl_env.proxy_route].a, msg);
 	}
 
 	/* do t_forward */
-	if ((r = cpl_fct.tmb.t_relay(msg, 0, 0, 0, 0, 0, 0)) < 0) {
+	if ((r = cpl_fct.tmb.t_relay(msg, 0, 0, 0, 0, 0, 0, 0, 0)) < 0) {
 		LM_ERR("t_relay failed! error=%d\n",r);
 		goto error;
 	}

@@ -28,9 +28,8 @@ Berkeley DB Module
         1.9. METADATA_KEYS (required)
         1.10. METADATA_READONLY (optional)
         1.11. METADATA_LOGFLAGS (optional)
-        1.12. DB Maintaince Script : opensipsdbctl
-        1.13. DB Recovery : bdb_recover
-        1.14. Known Limitations
+        1.12. DB Recovery : bdb_recover
+        1.13. Known Limitations
 
    2. Contributors
 
@@ -58,8 +57,7 @@ Berkeley DB Module
    1.6. METADATA_COLUMNS
    1.7. METADATA_KEYS
    1.8. METADATA_LOGFLAGS
-   1.9. opensipsdbctl
-   1.10. bdb_recover usage
+   1.9. bdb_recover usage
 
 Chapter 1. Admin Guide
 
@@ -151,10 +149,10 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
      * table_path - to reload a particular table provide the
        tablename as the arguement; to reload all tables provide
        the db_path to the db files. The path can be found in
-       opensipsctlrc DB_PATH variable.
+       opensipsc-cli config variable.
 
    MI FIFO Command Format:
-                opensipsctl fifo bdb_reload subscriber
+                opensips-cli -x mi bdb_reload subscriber
 
 1.6. Installation and Running
 
@@ -187,19 +185,9 @@ modparam("db_berkeley", "journal_roll_interval", 3600)
    Decide where (on the filesystem) you want to install the
    Berkeley DB files. For instance,
    '/usr/local/etc/opensips/db_berkeley' directory. Make note of
-   this directory as we need to add this path to the opensipsctlrc
-   file. Note: OpenSIPS will not startup without these DB files.
-
-   Edit opensipsctlrc - There are two parameters in this file that
-   should be configured before opensipsctldb script can work
-   properly: DBENGINE and DB_PATH. Edit file:
-   '/usr/local/etc/opensips/opensipsctlrc'
-                ## database type: MYSQL, PGSQL, DB_BERKELEY, or DBTEXT,
-by default none is loaded
-                # DBENGINE=DB_BERKELEY
-
-                ## database path used by dbtext or db_berkeley
-                # DB_PATH="/usr/local/etc/opensips/db_berkeley"
+   this directory as we need to add this path to the opensips-cli
+   config file. Note: OpenSIPS will not startup without these DB
+   files.
 
    (Optional) Pre creation step- Customize your meta-data. The DB
    files are initially seeded with necessary meta-data. This is a
@@ -397,31 +385,7 @@ r) last_name(str) email_address(str) datetime_created(datetime) timezone
    and syslog the value should be set to 1+16=17. Or if you do not
    want to journal at all, set this to 0.
 
-1.12. DB Maintaince Script : opensipsdbctl
-
-   Use the opensipsdbctl script for maintaining OpenSIPS Berkeley
-   DB tables. This script assumes you have DBENGINE and DB_PATH
-   setup correctly in opensipsctlrc. Note Unsupported commands
-   are- backup, restore, migrate, copy, serweb.
-
-   Example 1.9. opensipsdbctl
-usage: opensipsdbctl create
-       opensipsdbctl presence
-       opensipsdbctl extra
-       opensipsdbctl drop
-       opensipsdbctl reinit
-       opensipsdbctl bdb list         (lists the underlying db files in
-DB_PATH)
-       opensipsdbctl bdb cat       db (prints the contents of db file to
- STDOUT in plain-text)
-       opensipsdbctl bdb swap      db (installs db.new by db -> db.old;
-db.new -> db)
-       opensipsdbctl bdb append    db datafile (appends data to a new in
-stance of db; output DB_PATH/db.new)
-       opensipsdbctl bdb newappend db datafile (appends data to a new in
-stance of db; output DB_PATH/db.new)
-
-1.13. DB Recovery : bdb_recover
+1.12. DB Recovery : bdb_recover
 
    The db_berkeley module uses the Concurrent Data Store (CDS)
    architecture. As such, no transaction or journaling is provided
@@ -445,7 +409,7 @@ stance of db; output DB_PATH/db.new)
    The following illustrates the four operations available to the
    administrator.
 
-   Example 1.10. bdb_recover usage
+   Example 1.9. bdb_recover usage
 usage: ./bdb_recover -s schemadir [-h home] [-c tablename]
         This will create a brand new DB file with metadata.
 
@@ -474,7 +438,7 @@ possible
    Important note- A corrupted DB file must be moved out of the
    way before bdb_recover is executed.
 
-1.14. Known Limitations
+1.13. Known Limitations
 
    The Berkeley DB does not nativly support an autoincrement (or
    sequence) mechanism. Consequently, this version does not
@@ -490,12 +454,12 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. William Quan 38 1 4682 0
    2. Henning Westerholt (@henningw) 26 10 381 688
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 24 18 147 169
-   4. Anonymous 17 4 681 341
-   5. Razvan Crainea (@razvancrainea) 16 14 102 37
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 19 149 170
+   4. Razvan Crainea (@razvancrainea) 20 16 131 108
+   5. Anonymous 17 4 681 341
    6. Liviu Chircu (@liviuchircu) 11 8 19 66
    7. Daniel-Constantin Mierla (@miconda) 10 8 47 30
-   8. Vlad Patrascu (@rvlad-patrascu) 5 3 32 25
+   8. Vlad Patrascu (@rvlad-patrascu) 6 4 34 28
    9. Andrei Dragus 5 1 135 103
    10. Jan Janak (@janakj) 3 1 4 2
 
@@ -523,11 +487,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2017
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
    7.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Oct 2010
    8.  Andrei Dragus                       Oct 2009 - Oct 2009
@@ -545,11 +509,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Ovidiu Sas (@ovidiusas), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw), Anonymous, William Quan.
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
+   (@ovidiusas), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Anonymous, William Quan.
 
    Documentation Copyrights:
 

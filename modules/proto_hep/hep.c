@@ -67,6 +67,9 @@ struct hep_custom_chunk_desc {
 
 /* for safety this should stay static */
 static hid_list_p hid_list=NULL;
+/* list of dynamic hids */
+static hid_list_p *hid_dyn_list=NULL;
+static gen_lock_t *hid_dyn_lock=NULL;
 
 extern int hep_capture_id;
 extern int payload_compression;
@@ -611,184 +614,7 @@ uri_not_found:
 	return -1;
 }
 
-
-
-/*
- * parse hep id. Hep id format
- * [<name>]ip[:proto]; version=<1/2/3>; transport=<tcp/udp>;"
- * ';' can miss; version and transport are interchangeable;
- *
- */
-int parse_hep_id(unsigned int type, void *val)
-{
-	#define PARSE_NAME(__uri, __name)                                   \
-		do {                                                            \
-			while (__uri.s[0]==' ')                                    \
-				(__uri.s++, __uri.len--);                             \
-			__name.s = __uri.s;                                        \
-			while (__uri.len                                           \
-					&& (__uri.s[0] != ']' && __uri.s[0] != ' '))      \
-				(__uri.s++, __uri.len--, __name.len++);               \
-                                                                        \
-			if (*(__uri.s-1) != ']')                                   \
-				while (__uri.len && __uri.s[0] != ']')                \
-					(__uri.s++, __uri.len--);                         \
-			                                                            \
-			if (!__uri.len || __uri.s[0] != ']') {                    \
-				LM_ERR("bad name [%.*s]!\n", __uri.len, __uri.s);     \
-				return -1;                                              \
-			}                                                           \
-			(__uri.s++, __uri.len--);                                 \
-		} while(0);
-
-	#define IS_UDP(__url__) ((__url__.len == 3/*O_o*/ \
-				&& (__url__.s[0]|0x20) == 'u' && (__url__.s[1]|0x20) == 'd' \
-					&& (__url__.s[2]|0x20) == 'p'))
-
-	#define IS_TCP(__url__) ((__url__.len == 3/*O_o*/ \
-				&& (__url__.s[0]|0x20) == 't' && (__url__.s[1]|0x20) == 'c' \
-					&& (__url__.s[2]|0x20) == 'p'))
-	char* d;
-
-	str uri_s;
-	str name = {0, 0};
-
-	str uri, transport={0, 0}, version={0, 0}, port_s;
-
-	hid_list_p it, el;
-
-	uri_s.s = val;
-	uri_s.len = strlen(uri_s.s);
-
-	str_trim_spaces_lr(uri_s);
-
-	if (uri_s.len < 3 /* '[*]' */ || uri_s.s[0] != '[') {
-		LM_ERR("bad format for uri {%.*s}\n", uri_s.len, uri_s.s);
-		return -1;
-	} else {
-		uri_s.s++; uri_s.len--;
-	}
-
-	PARSE_NAME( uri_s, name);
-
-	for (it=hid_list; it; it=it->next) {
-		if (it->name.len == name.len &&
-				!memcmp(it->name.s, name.s, it->name.len)) {
-			LM_WARN("HEP ID <%.*s> redefined! Not allowed!\n",
-					name.len, name.s);
-			return -1;
-		}
-	}
-
-	/* if here the HEP id is unique */
-
-	LM_DBG("Parsing hep id <%.*s>!\n", uri_s.len, uri_s.s);
-	if (parse_hep_uri( &uri_s, &uri, &transport, &version) < 0) {
-		LM_ERR("failed to parse hep uri!\n");
-		return -1;
-	}
-
-	LM_DBG("Uri successfully parsed! Building uri structure!\n");
-
-	el=shm_malloc(sizeof(hid_list_t));
-	if (el == NULL) {
-		LM_ERR("no more shm!\n");
-		goto err_free;
-	}
-
-	memset(el, 0, sizeof(hid_list_t));
-
-	el->name = name;
-
-	/* parse ip and port */
-	el->ip.s = uri.s;
-	d = q_memchr(uri.s, ':', uri.len);
-
-	/* no port provided; use default */
-	if (d==NULL) {
-		el->ip.len = uri.len;
-		el->port_no = HEP_PORT;
-		el->port.s = HEP_PORT_STR;
-		el->port.len = sizeof(HEP_PORT_STR) - 1;
-
-	} else {
-		port_s.s = d+1;
-		port_s.len = (uri.s+uri.len) - port_s.s;
-		if (str2int(&port_s, &el->port_no)<0) {
-			LM_ERR("invalid port <%.*s>!\n", port_s.len, port_s.s);
-			goto err_free;
-		}
-		el->port = port_s;
-
-		el->ip.len = d - el->ip.s;
-	}
-
-	/* check hep version if given; default 3 */
-	if (version.s && version.len) {
-		if (str2int(&version, &el->version) < 0) {
-			LM_ERR("Bad version <%.*s\n>", version.len, version.s);
-			goto err_free;
-		}
-
-		if (el->version < HEP_FIRST || el->version > HEP_LAST) {
-			LM_ERR("invalid hep version %d!\n", el->version);
-			goto err_free;
-		}
-	} else {
-		el->version = HEP_LAST;
-	}
-
-	/* check transport if given; default TCP*/
-	if (transport.len && transport.s) {
-		if (IS_UDP(transport)) {
-			el->transport = PROTO_HEP_UDP;
-		} else if (IS_TCP(transport)) {
-			el->transport = PROTO_HEP_TCP;
-		} else {
-			LM_ERR("Bad transport <%.*s>!\n", transport.len, transport.s);
-			goto err_free;
-		}
-	} else {
-		el->transport = PROTO_HEP_TCP;
-	}
-
-	if (el->transport == PROTO_HEP_TCP && el->version < 3) {
-		LM_WARN("TCP not available for HEP version < 3! Falling back to udp!\n");
-		el->transport = PROTO_HEP_UDP;
-	}
-
-
-	LM_DBG("Parsed hep id {%.*s} with ip {%.*s} port {%d}"
-			" transport {%s} hep version {%d}!\n",
-			el->name.len, el->name.s, el->ip.len, el->ip.s,
-			el->port_no, el->transport == PROTO_HEP_TCP ? "tcp" : "udp",
-			el->version);
-
-	/* add the new element to the hep id list */
-	if (hid_list == NULL) {
-		hid_list = el;
-	} else {
-		for (it=hid_list; it->next; it=it->next);
-		it->next = el;
-	}
-
-	LM_DBG("Added hep id <%.*s> to list!\n", el->name.len, el->name.s);
-
-
-	return 0;
-
-
-err_free:
-	shm_free(el);
-	return -1;
-
-#undef IS_TCP
-#undef IS_UDP
-#undef PARSE_NAME
-}
-
-
-static hid_list_p get_hep_id_by_name(str* name)
+static hid_list_p get_hep_id_by_name(str* name, int lock, int ref)
 {
 	hid_list_p it;
 
@@ -804,10 +630,220 @@ static hid_list_p get_hep_id_by_name(str* name)
 		}
 	}
 
-	LM_ERR("hep id <%.*s> not found!\n", name->len, name->s);
+	if (hid_dyn_list) {
+		if (lock)
+			lock_get(hid_dyn_lock);
+		for (it=*hid_dyn_list; it; it=it->next) {
+			if (name->len == it->name.len &&
+					!memcmp(name->s, it->name.s, it->name.len)) {
+				if (ref)
+					hid_ref(it);
+				if (lock)
+					lock_release(hid_dyn_lock);
+				return it;
+			}
+		}
+		if (lock)
+			lock_release(hid_dyn_lock);
+	}
+
+	LM_INFO("hep id <%.*s> not found!\n", name->len, name->s);
 	return NULL;
 }
 
+
+/*
+ * New hep uri. Hep uri format
+ * ip[:proto]; version=<1/2/3>; transport=<tcp/udp>;"
+ * ';' can miss; version and transport are interchangeable;
+ *
+ */
+hid_list_p new_hep_id(str *name, str *uri_s)
+{
+	#define IS_UDP(__url__) ((__url__.len == 3/*O_o*/ \
+				&& (__url__.s[0]|0x20) == 'u' && (__url__.s[1]|0x20) == 'd' \
+					&& (__url__.s[2]|0x20) == 'p'))
+
+	#define IS_TCP(__url__) ((__url__.len == 3/*O_o*/ \
+				&& (__url__.s[0]|0x20) == 't' && (__url__.s[1]|0x20) == 'c' \
+					&& (__url__.s[2]|0x20) == 'p'))
+
+	hid_list_p el;
+	unsigned int port;
+	unsigned int ver, trans;
+	char *d;
+
+	str uri, transport={0, 0}, version={0, 0}, port_s;
+
+	/* if here the HEP id is unique */
+	LM_DBG("Parsing hep id <%.*s>!\n", uri_s->len, uri_s->s);
+	if (parse_hep_uri(uri_s, &uri, &transport, &version) < 0) {
+		LM_ERR("failed to parse hep uri!\n");
+		return NULL;
+	}
+
+	LM_DBG("Uri successfully parsed! Building uri structure!\n");
+	/* identify the port */
+	d = q_memchr(uri.s, ':', uri.len);
+	if (d == NULL) {
+		port_s.s = HEP_PORT_STR;
+		port_s.len = sizeof(HEP_PORT_STR) - 1;
+		port = HEP_PORT;
+	} else {
+		port_s.s = d+1;
+		port_s.len = (uri.s+uri.len) - port_s.s;
+		uri.len = d - uri.s;
+		if (str2int(&port_s, &port)<0) {
+			LM_ERR("invalid port <%.*s>!\n", port_s.len, port_s.s);
+			return NULL;
+		}
+	}
+
+	/* check hep version if given; default 3 */
+	if (version.s && version.len) {
+		if (str2int(&version, &ver) < 0) {
+			LM_ERR("Bad version <%.*s\n>", version.len, version.s);
+			return NULL;
+		}
+
+		if (ver < HEP_FIRST || ver > HEP_LAST) {
+			LM_ERR("invalid hep version %d!\n", ver);
+			return NULL;
+		}
+	} else {
+		ver = HEP_LAST;
+	}
+
+	/* check transport if given; default TCP*/
+	if (transport.len && transport.s) {
+		if (IS_UDP(transport)) {
+			trans = PROTO_HEP_UDP;
+		} else if (IS_TCP(transport)) {
+			trans = PROTO_HEP_TCP;
+		} else {
+			LM_ERR("Bad transport <%.*s>!\n", transport.len, transport.s);
+			return NULL;
+		}
+	} else {
+		trans = PROTO_HEP_TCP;
+	}
+
+	if (trans == PROTO_HEP_TCP && ver < 3) {
+		LM_WARN("TCP not available for HEP version < 3! Falling back to udp!\n");
+		trans = PROTO_HEP_UDP;
+	}
+
+	el=shm_malloc(sizeof(hid_list_t) + name->len + uri.len + port_s.len);
+	if (el == NULL) {
+		LM_ERR("no more shm!\n");
+		return NULL;
+	}
+
+	memset(el, 0, sizeof(hid_list_t));
+
+	/* name */
+	el->name.len = name->len;
+	el->name.s = (char *)(el + 1);
+	memcpy(el->name.s, name->s, name->len);
+
+	/* ip */
+	el->ip.len = uri.len;
+	el->ip.s = el->name.s + el->name.len;
+	memcpy(el->ip.s, uri.s, uri.len);
+
+	/* port */
+	el->port.len = port_s.len;
+	el->port.s = el->ip.s + el->ip.len;
+	memcpy(el->port.s, port_s.s, port_s.len);
+	el->port_no = port;
+
+	el->version = ver;
+	el->transport = trans;
+
+	LM_DBG("Parsed hep id {%.*s} with ip {%.*s} port {%d}"
+			" transport {%s} hep version {%d}!\n",
+			el->name.len, el->name.s, el->ip.len, el->ip.s,
+			el->port_no, el->transport == PROTO_HEP_TCP ? "tcp" : "udp",
+			el->version);
+
+	return el;
+
+#undef IS_TCP
+#undef IS_UDP
+}
+
+/*
+ * parse hep id. Hep id format
+ * [<name>]ip[:proto]; version=<1/2/3>; transport=<tcp/udp>;"
+ * ';' can miss; version and transport are interchangeable;
+ *
+ */
+int parse_hep_id(unsigned int type, void *val)
+{
+	str uri_s;
+	str name = {0, 0};
+
+	hid_list_p it,el;
+
+	uri_s.s = val;
+	uri_s.len = strlen(uri_s.s);
+
+	str_trim_spaces_lr(uri_s);
+
+	if (uri_s.len < 3 /* '[*]' */ || uri_s.s[0] != '[') {
+		LM_ERR("bad format for uri {%.*s}\n", uri_s.len, uri_s.s);
+		return -1;
+	} else {
+		/* skip the first '[' */
+		uri_s.s++; uri_s.len--;
+	}
+
+	/* parse the name */
+	while (uri_s.s[0]==' ') {
+		uri_s.s++;
+		uri_s.len--;
+	}
+	name.s = uri_s.s;
+	while (uri_s.len && (uri_s.s[0] != ']' && uri_s.s[0] != ' ')) {
+		uri_s.s++;
+		uri_s.len--;
+		name.len++;
+	}
+	if (*(uri_s.s-1) != ']')
+		while (uri_s.len && uri_s.s[0] != ']') {
+			uri_s.s++;
+			uri_s.len--;
+		}
+	if (!uri_s.len || uri_s.s[0] != ']') {
+		LM_ERR("bad name [%.*s]!\n", uri_s.len, uri_s.s);
+		return -1;
+	}
+	uri_s.s++;
+	uri_s.len--;
+
+	/* no need to lock now, since this is done at startup */
+	if (get_hep_id_by_name(&name, 0, 0)) {
+		LM_WARN("HEP ID <%.*s> redefined! Not allowed!\n",
+				name.len, name.s);
+		return -1;
+	}
+
+	el = new_hep_id(&name, &uri_s);
+	if (!el)
+		return -1;
+
+	/* add the new element to the hep id list */
+	if (hid_list == NULL) {
+		hid_list = el;
+	} else {
+		for (it=hid_list; it->next; it=it->next);
+		it->next = el;
+	}
+
+	LM_DBG("Added hep id <%.*s> to list!\n", el->name.len, el->name.s);
+
+	return 0;
+}
 
 /*
  *
@@ -1511,7 +1547,7 @@ int add_hep_chunk(trace_message message, void* data, int len, int type, int data
 	return 0;
 }
 
-int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
+int add_hep_correlation(trace_message message, str* corr_name, str* corr_value)
 {
 	cJSON* root;
 	struct hep_desc* hep_msg;
@@ -1542,9 +1578,9 @@ int add_hep_correlation(trace_message message, char* corr_name, str* corr_value)
 			hep_msg->correlation = root;
 		}
 
-		cJSON_AddStrToObject( root, corr_name, corr_value->s, corr_value->len);
+		_cJSON_AddStrToObject( root, corr_name, corr_value->s, corr_value->len);
 	} else {
-		if ( !memcmp( corr_name, "sip", sizeof("sip") ) ) {
+		if ( !memcmp( corr_name->s, "sip", sizeof("sip") ) ) {
 			/* we'll save sip correlation id as the actual correlation */
 			sip_correlation = pkg_malloc( sizeof(str) + corr_value->len );
 			if ( !sip_correlation ) {
@@ -1650,7 +1686,7 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 
 	if (message == NULL || dest == NULL) {
 		LM_ERR("invalid call! bad input params!\n");
-		return -1;
+		goto end;
 	}
 
 
@@ -1658,12 +1694,12 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 		/* hep msg will be freed after */
 		if ((buf=build_hep3_buf((struct hep_desc *)message, &len))==NULL) {
 			LM_ERR("failed to build hep buffer!\n");
-			return -1;
+			goto end;
 		}
 	} else {
 		if ((buf=build_hep12_buf((struct hep_desc *)message, &len))==NULL) {
 			LM_ERR("failed to build hep buffer!\n");
-			return -1;
+			goto end;
 		}
 	}
 
@@ -1671,14 +1707,14 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 	p=mk_proxy( &hep_dest->ip, hep_dest->port_no ? hep_dest->port_no : HEP_PORT, hep_dest->transport, 0);
 	if (p == NULL) {
 		LM_ERR("bad hep host name!\n");
-		return -1;
+		goto end;
 	}
 
 	to=(union sockaddr_union *)pkg_malloc(sizeof(union sockaddr_union));
 	if (to == 0) {
 		LM_ERR("no more pkg mem!\n");
 		pkg_free(p);
-		return -1;
+		goto end;
 	}
 
 	hostent2su(to, &p->host, p->addr_idx, p->port?p->port:HEP_PORT);
@@ -1697,6 +1733,7 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 	pkg_free(to);
 	pkg_free(buf);
 
+end:
 	return ret;
 }
 
@@ -1744,9 +1781,75 @@ void free_hep_message(trace_message message)
 
 trace_dest get_trace_dest_by_name(str *name)
 {
-	return get_hep_id_by_name(name);
+	/* don't ref, user should take care of this */
+	return get_hep_id_by_name(name, 1, 0);
 }
 
+trace_dest new_trace_dest(str *name, str *uri)
+{
+	hid_list_p it, el = NULL;
+
+	lock_get(hid_dyn_lock);
+	if (!hid_dyn_list) {
+		LM_CRIT("Dynamic hid list not initialized!\n");
+		goto end;
+	}
+	/* no need to lock now, since this is done at startup */
+	if (get_hep_id_by_name(name, 0, 0)) {
+		LM_WARN("HEP ID <%.*s> already in use!\n",
+				name->len, name->s);
+		goto end;
+	}
+
+	el = new_hep_id(name, uri);
+	if (!el)
+		goto end;
+	el->dynamic = 1;
+
+	/* add the new element to the hep id list */
+	if (*hid_dyn_list == NULL) {
+		*hid_dyn_list = el;
+	} else {
+		for (it=*hid_dyn_list; it->next; it=it->next);
+		it->next = el;
+	}
+	/* ref it for the list */
+	hid_ref(el);
+
+	LM_DBG("Added hep id <%.*s> to list!\n", el->name.len, el->name.s);
+end:
+	lock_release(hid_dyn_lock);
+	return el;
+}
+
+void release_trace_dest(trace_dest dest)
+{
+	hid_list_p it, prev;
+
+	if (!hid_dyn_list)
+		return;
+
+	lock_get(hid_dyn_lock);
+
+	for (it=*hid_dyn_list, prev = NULL; it; prev=it, it=it->next)
+		if (it == dest) {
+			if (prev)
+				prev->next = it->next;
+			else
+				*hid_dyn_list = (*hid_dyn_list)->next;
+			LM_DBG("releasing dynamic hid [%.*s]!\n",
+					it->name.len, it->name.s);
+			/* unref it from the list */
+			hid_unref(it);
+			lock_release(hid_dyn_lock);
+			return;
+		}
+	lock_release(hid_dyn_lock);
+
+	it = (hid_list_p)dest;
+	LM_WARN("could not find dynamic hid [%.*s]!!\n",
+			it->name.len, it->name.s);
+}
 
 /**
  * to add new ids see hep_ids structure defined below
@@ -1848,6 +1951,8 @@ int hep_bind_trace_api(trace_proto_t* prot)
 	prot->add_payload_part = add_hep_payload;
 	prot->send_message = send_hep_message;
 	prot->get_trace_dest_by_name = get_trace_dest_by_name;
+	prot->new_trace_dest = new_trace_dest;
+	prot->release_trace_dest = release_trace_dest;
 	prot->free_message = free_hep_message;
 	prot->get_message_id = get_hep_message_id;
 	prot->get_data_id = get_hep_chunk_id;
@@ -1859,45 +1964,12 @@ int hep_bind_trace_api(trace_proto_t* prot)
 /***************************************************************
  ********************* HEP CORRELATE script function ***********
  ***************************************************************/
-int correlate_fixup(void** param, int param_no)
+int correlate_w(struct sip_msg* msg, str* hep_id,
+		str* type1, str* corr_s1,
+		str* type2, str* corr_s2)
 {
-	gparam_p gp;
-
-	if ( param_no < 1 || param_no > 5 ) {
-		LM_ERR("bad param number %d\n", param_no);
-		return -1;
-	}
-
-	fixup_spve( param );
-	gp = *param;
-
-	if ( param_no == 2 || param_no == 4 ) {
-		if ( gp->type != GPARAM_TYPE_STR ) {
-			LM_ERR("only strings allowed for param %d\n", param_no);
-			return -1;
-		}
-
-		*param = gp->v.sval.s;
-
-		return 0;
-	}
-
-	if ( gp->type != GPARAM_TYPE_PVS && gp->type != GPARAM_TYPE_STR ) {
-		LM_ERR("only strings or single variables allowed to this function!\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-int correlate_w(struct sip_msg* msg, char* hep_id,
-		char* type1, char* correlation1,
-		char* type2, char* correlation2)
-{
-	str corr_s1, corr_s2;
+	int ret = -1;
 	hid_list_p h;
-
-	str value;
 	trace_message message;
 
 	if ( !msg ) {
@@ -1905,35 +1977,15 @@ int correlate_w(struct sip_msg* msg, char* hep_id,
 		return -1;
 	}
 
-	if ( !hep_id || !type1 || !type2 || !correlation1 || !correlation2 ) {
-		LM_ERR("all parameters are mandatory for correlate function!\n");
-		return -1;
-	}
-
-	if ( fixup_get_svalue( msg, (gparam_p)hep_id, &value) < 0 ) {
-		LM_ERR("failed to fetch hep destination name!\n");
-		return -1;
-	}
-	h = get_hep_id_by_name( &value );
+	h = get_hep_id_by_name(hep_id, 1, 1);
 	if ( h == NULL ) {
-		LM_ERR("no hep id with name <%.*s>\n", value.len, value.s );
+		LM_ERR("no hep id with name <%.*s>\n", hep_id->len, hep_id->s );
 		return -1;
 	}
 
 	if ( h->version < 3 ) {
 		LM_ERR("only version 3 or higher of HEP supports correlation!\n");
-		return -1;
-	}
-
-
-	if ( fixup_get_svalue( msg, (gparam_p)correlation1, &corr_s1 ) < 0 ) {
-		LM_ERR("failed to fetch hep destination name!\n");
-		return -1;
-	}
-
-	if ( fixup_get_svalue( msg, (gparam_p)correlation2, &corr_s2 ) < 0 ) {
-		LM_ERR("failed to fetch hep destination name!\n");
-		return -1;
+		goto end;
 	}
 
 	if ( control_id < 0 ) {
@@ -1943,27 +1995,69 @@ int correlate_w(struct sip_msg* msg, char* hep_id,
 	message = create_hep_message( 0, 0, IPPROTO_TCP, 0, control_id, h );
 	if ( !message ) {
 		LM_ERR("failed to create hep message!\n");
+		goto end;
+	}
+
+	if ( str_strcmp( type1, type2 ) ) {
+		LM_ERR("Type1 <%.*s> must be different from type2!\n",
+			type1->len, type1->s);
 		return -1;
 	}
 
-	if ( strcmp( type1, type2 ) ) {
-		LM_ERR("Type1 <%s> must be different from type2!\n", type1);
-		return -1;
-	}
-
-	add_hep_correlation( message, type1, &corr_s1 );
-	add_hep_correlation( message, type2, &corr_s2 );
+	add_hep_correlation( message, type1, corr_s1 );
+	add_hep_correlation( message, type2, corr_s2 );
 
 	if ( send_hep_message( message, h, 0) < 0 ) {
 		LM_ERR(" failed to send hep message to destination!\n");
-		return -1;
+		goto end;
 	}
 
 	free_hep_message( message );
-
-	return 1;
+	ret = 1;
+end:
+	hid_unref(h);
+	return ret;
 }
 
 /***************************************************************/
 
+int init_hep_id(void)
+{
+	hid_dyn_lock = lock_alloc();
+	if (!hid_dyn_lock) {
+		LM_ERR("could not allocate dynamic hid lock!\n");
+		return -1;
+	}
+	if (!lock_init(hid_dyn_lock)) {
+		lock_dealloc(hid_dyn_lock);
+		LM_ERR("could not allocate dynamic hid lock!\n");
+		return -1;
+	}
+	hid_dyn_list = shm_malloc(sizeof(*hid_dyn_list));
+	if (!hid_dyn_list) {
+		lock_dealloc(hid_dyn_lock);
+		LM_ERR("could not allocate dynamic hid list!\n");
+		return -1;
+	}
+	*hid_dyn_list = 0;
+	return 0;
+}
 
+void destroy_hep_id(void)
+{
+	hid_list_p it, next;
+
+	if (!hid_dyn_list)
+		return;
+
+	lock_get(hid_dyn_lock);
+	for (it=*hid_dyn_list, next=it; it; it=next) {
+		next = it->next;
+		shm_free(it);
+	}
+	lock_release(hid_dyn_lock);
+
+	/* release the lock itself */
+	lock_dealloc(hid_dyn_lock);
+	shm_free(hid_dyn_list);
+}

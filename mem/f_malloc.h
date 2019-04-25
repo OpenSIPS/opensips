@@ -2,6 +2,7 @@
  * simple, very fast, malloc library
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,25 +18,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2003-05-21  on sparc64 roundto 8 even in debugging mode (so malloc'ed
- *               long longs will be 64 bit aligned) (andrei)
- *  2004-07-19  support for 64 bit (2^64 mem. block) and more info
- *               for the future de-fragmentation support (andrei)
- *  2004-11-10  support for > 4Gb mem., switched to long (andrei)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
-#if !defined(f_malloc_h) && !defined(VQ_MALLOC) && !defined(QM_MALLOC) && \
-	!defined(HP_MALLOC)
+#ifndef f_malloc_h
 #define f_malloc_h
 
+#include <stdio.h>
 #include "meminfo.h"
+#include "common.h"
 
-/* defs*/
+#undef ROUNDTO
+#undef UN_HASH
 
 #ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
@@ -50,43 +44,35 @@
 #else /* DBG_MALLOC */
 	#define ROUNDTO 8UL
 #endif
-#define MIN_FRAG_SIZE	ROUNDTO
-
-
 
 #define F_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
-#define F_MALLOC_OPTIMIZE  (1UL<<F_MALLOC_OPTIMIZE_FACTOR)
-								/* size to optimize for,
-									(most allocs <= this size),
-									must be 2^k */
+
+/* size to optimize for, (most allocs <= this size), must be 2^k */
+#define F_MALLOC_OPTIMIZE  (1UL << F_MALLOC_OPTIMIZE_FACTOR)
 
 #define F_HASH_SIZE (F_MALLOC_OPTIMIZE/ROUNDTO + \
 		(sizeof(long)*8-F_MALLOC_OPTIMIZE_FACTOR)+1)
+
+/* get the fragment which corresponds to a pointer */
+#define FM_FRAG(p) \
+	((struct fm_frag *)((char *)(p) - sizeof(struct fm_frag)))
 
 /* hash structure:
  * 0 .... F_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with
  *                            ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 
-#define FRAG_OVERHEAD	(sizeof(struct fm_frag))
-#define frag_is_free(_f) ((_f)->prev)
-
-struct fm_frag{
+struct fm_frag {
 	unsigned long size;
-	union{
-		struct fm_frag* nxt_free;
+	union {
+		struct fm_frag *nxt_free;
 		long reserved;
-	}u;
-        struct fm_frag ** prev;
+	} u;
+	struct fm_frag **prev;
 #ifdef DBG_MALLOC
-	const char* file;
-	const char* func;
+	const char *file;
+	const char *func;
 	unsigned long line;
-	unsigned long check;
-#endif
-
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	char is_free;
 #endif
 
 #ifdef SHM_EXTRA_STATS
@@ -94,96 +80,110 @@ struct fm_frag{
 #endif
 };
 
-struct fm_frag_lnk{
-	struct fm_frag* first;
+#define FM_FRAG_OVERHEAD (sizeof(struct fm_frag))
+
+struct fm_frag_lnk {
+	struct fm_frag *first;
 	unsigned long no;
 };
 
-struct fm_block{
+struct fm_block {
 	char *name; /* purpose of this memory block */
 
 	unsigned long size; /* total size */
-        unsigned long large_space;
-        unsigned long large_limit;
-    unsigned long fragments; /* number of fragments in use */
+	unsigned long large_space;
+	unsigned long large_limit;
+	unsigned long fragments; /* number of fragments in use */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	unsigned long used; /* alloc'ed size*/
-	unsigned long real_used; /* used+malloc overhead*/
+	unsigned long used; /* alloc'ed size */
+	unsigned long real_used; /* used + malloc overhead */
 	unsigned long max_real_used;
 #endif
 
-	struct fm_frag* first_frag;
-	struct fm_frag* last_frag;
+	struct fm_frag *first_frag;
+	struct fm_frag *last_frag;
 
 	struct fm_frag_lnk free_hash[F_HASH_SIZE];
 };
 
-
-unsigned long frag_size(void* p);
-struct fm_block* fm_malloc_init(char* address, unsigned long size, char* name);
+struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name);
 
 #ifdef DBG_MALLOC
-void* fm_malloc(struct fm_block*, unsigned long size,
-					const char* file, const char* func, unsigned int line);
+void *fm_malloc(struct fm_block *fm, unsigned long size,
+                const char *file, const char *func, unsigned int line);
+void fm_free(struct fm_block *fm, void *p, const char *file,
+             const char *func, unsigned int line);
+void *fm_realloc(struct fm_block *fm, void *p, unsigned long size,
+                 const char *file, const char *func, unsigned int line);
+#ifndef INLINE_ALLOC
+void *fm_malloc_dbg(struct fm_block *fm, unsigned long size,
+                    const char *file, const char *func, unsigned int line);
+void fm_free_dbg(struct fm_block *fm, void *p, const char *file,
+                 const char *func, unsigned int line);
+void *fm_realloc_dbg(struct fm_block *fm, void *p, unsigned long size,
+                     const char *file, const char *func, unsigned int line);
+#endif
 #else
-void* fm_malloc(struct fm_block*, unsigned long size);
+void *fm_malloc(struct fm_block *fm, unsigned long size);
+void fm_free(struct fm_block *fm, void *p);
+void *fm_realloc(struct fm_block *fm, void *p, unsigned long size);
 #endif
 
-#ifdef DBG_MALLOC
-void  fm_free(struct fm_block*, void* p, const char* file, const char* func,
-				unsigned int line);
-#else
-void  fm_free(struct fm_block*, void* p);
+void fm_status(struct fm_block *);
+#if !defined INLINE_ALLOC && defined DBG_MALLOC
+void fm_status_dbg(struct fm_block *);
 #endif
-
-#ifdef DBG_MALLOC
-void*  fm_realloc(struct fm_block*, void* p, unsigned long size,
-					const char* file, const char* func, unsigned int line);
-#else
-void*  fm_realloc(struct fm_block*, void* p, unsigned long size);
-#endif
-
-void  fm_status(struct fm_block*);
-void  fm_info(struct fm_block*, struct mem_info*);
+void fm_info(struct fm_block *, struct mem_info *);
 
 #ifdef SHM_EXTRA_STATS
-void set_stat_index (void *ptr, unsigned long idx);
-unsigned long get_stat_index(void *ptr);
-void set_indexes(int core_index);
-#endif
+static inline unsigned long fm_frag_size(void *p)
+{
+	if (!p)
+		return 0;
+
+	return FM_FRAG(p)->size;
+}
+
+void fm_stats_core_init(struct fm_block *fm, int core_index);
+unsigned long fm_stats_get_index(void *ptr);
+void fm_stats_set_index(void *ptr, unsigned long idx);
 
 #ifdef DBG_MALLOC
-	#define _FRAG_FILE(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->file
-	#define _FRAG_FUNC(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->func
-	#define _FRAG_LINE(_p) ((struct fm_frag*)((char *)_p - sizeof(struct fm_frag)))->line
+static inline const char *fm_frag_file(void *p) { return FM_FRAG(p)->file; }
+static inline const char *fm_frag_func(void *p) { return FM_FRAG(p)->func; }
+static inline unsigned long fm_frag_line(void *p) { return FM_FRAG(p)->line; }
+#else
+static inline const char *fm_frag_file(void *p) { return NULL; }
+static inline const char *fm_frag_func(void *p) { return NULL; }
+static inline unsigned long fm_frag_line(void *p) { return 0; }
+#endif
 #endif
 
 #ifdef STATISTICS
-static inline unsigned long fm_get_size(struct fm_block* qm)
+static inline unsigned long fm_get_size(struct fm_block *fm)
 {
-	return qm->size;
+	return fm->size;
 }
-static inline unsigned long fm_get_used(struct fm_block* qm)
+static inline unsigned long fm_get_used(struct fm_block *fm)
 {
-	return qm->used;
+	return fm->used;
 }
-static inline unsigned long fm_get_free(struct fm_block* qm)
+static inline unsigned long fm_get_free(struct fm_block *fm)
 {
-	return qm->size-qm->real_used;
+	return fm->size - fm->real_used;
 }
-static inline unsigned long fm_get_real_used(struct fm_block* qm)
+static inline unsigned long fm_get_real_used(struct fm_block *fm)
 {
-	return qm->real_used;
+	return fm->real_used;
 }
-static inline unsigned long fm_get_max_real_used(struct fm_block* qm)
+static inline unsigned long fm_get_max_real_used(struct fm_block *fm)
 {
-	return qm->max_real_used;
+	return fm->max_real_used;
 }
-static inline unsigned long fm_get_frags(struct fm_block* qm)
+static inline unsigned long fm_get_frags(struct fm_block *fm)
 {
-	return qm->fragments;
+	return fm->fragments;
 }
 #endif /*STATISTICS*/
-
 
 #endif

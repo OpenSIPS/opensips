@@ -112,9 +112,9 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 	/* copy path vector into branch */
 	if (request->path_vec.len) {
 		t->uac[branch].path_vec.s =
-			shm_resize(t->uac[branch].path_vec.s, request->path_vec.len+1);
+			shm_realloc(t->uac[branch].path_vec.s, request->path_vec.len+1);
 		if (t->uac[branch].path_vec.s==NULL) {
-			LM_ERR("shm_resize failed\n");
+			LM_ERR("shm_realloc failed\n");
 			goto error;
 		}
 		t->uac[branch].path_vec.len = request->path_vec.len;
@@ -124,10 +124,10 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 
 	/* do the same for the advertised port & address */
 	if (request->set_global_address.len) {
-		t->uac[branch].adv_address.s = shm_resize(t->uac[branch].adv_address.s,
+		t->uac[branch].adv_address.s = shm_realloc(t->uac[branch].adv_address.s,
 			request->set_global_address.len+1);
 		if (t->uac[branch].adv_address.s==NULL) {
-			LM_ERR("shm_resize failed for storing the advertised address "
+			LM_ERR("shm_realloc failed for storing the advertised address "
 				"(len=%d)\n",request->set_global_address.len);
 			goto error;
 		}
@@ -136,10 +136,10 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 			request->set_global_address.len+1);
 	}
 	if (request->set_global_port.len) {
-		t->uac[branch].adv_port.s = shm_resize(t->uac[branch].adv_port.s,
+		t->uac[branch].adv_port.s = shm_realloc(t->uac[branch].adv_port.s,
 			request->set_global_port.len+1);
 		if (t->uac[branch].adv_port.s==NULL) {
-			LM_ERR("shm_resize failed for storing the advertised port "
+			LM_ERR("shm_realloc failed for storing the advertised port "
 				"(len=%d)\n",request->set_global_port.len);
 			goto error;
 		}
@@ -184,7 +184,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 		swap_route_type( backup_route_type, BRANCH_ROUTE);
 
 		_tm_branch_index = branch;
-		if (run_top_route(branch_rlist[t->on_branch].a, request)&ACT_FL_DROP) {
+		if(run_top_route(sroutes->branch[t->on_branch].a,request)&ACT_FL_DROP){
 			LM_DBG("dropping branch <%.*s>\n", request->new_uri.len,
 					request->new_uri.s);
 			_tm_branch_index = 0;
@@ -209,9 +209,9 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 	/* copy dst_uri into branch (after branch route possible updated it) */
 	if (request->dst_uri.len) {
 		t->uac[branch].duri.s =
-			shm_resize(t->uac[branch].duri.s, request->dst_uri.len);
+			shm_realloc(t->uac[branch].duri.s, request->dst_uri.len);
 		if (t->uac[branch].duri.s==NULL) {
-			LM_ERR("shm_resize failed\n");
+			LM_ERR("shm_realloc failed\n");
 			goto error;
 		}
 		t->uac[branch].duri.len = request->dst_uri.len;
@@ -562,16 +562,9 @@ int t_set_reason(struct sip_msg *msg, str *val)
 }
 
 
-int t_add_reason(struct sip_msg *msg, char *val)
+int t_add_reason(struct sip_msg *msg, str *reason)
 {
-	str reason;
-
-	if (fixup_get_svalue(msg, (gparam_p)val, &reason)!=0) {
-		LM_ERR("invalid reason value\n");
-		return -1;
-	}
-
-	return t_set_reason(msg, &reason);
+	return t_set_reason(msg, reason);
 }
 
 void get_cancel_reason(struct sip_msg *msg, int flags, str *reason)

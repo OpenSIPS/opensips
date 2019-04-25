@@ -103,7 +103,8 @@ struct dlg_leg {
 	str route_set;
 	str contact;    /* this leg's Contact URI (most recent version) */
 	str adv_contact;	/* topology hiding advertised contact towards this leg - full header */
-	str adv_sdp;		/* latest SDP advertised towards this leg ( full body ), after all OpenSIPS changes */
+	str in_sdp;			/* latest SDP advertised by the uac ( full body ), after all OpenSIPS changes */
+	str out_sdp;		/* latest SDP advertised towards this leg ( full body ), after all OpenSIPS changes */
 	str route_uris[64];
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
@@ -162,6 +163,7 @@ struct dlg_cell
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
 	struct dlg_val       *vals;
+	str                  shtag;
 };
 
 
@@ -306,7 +308,7 @@ void destroy_dlg(struct dlg_cell *dlg);
 	({ \
 		char *___p; \
 		int ___flags = 0; \
-		for (___p=(input).s; ___p < (input).s + (input).len; ___p++) \
+		for (___p=(input)->s; ___p < (input)->s + (input)->len; ___p++) \
 		{ \
 			switch (*___p) \
 			{ \
@@ -359,7 +361,7 @@ int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx);
 
 int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 		str *contact,str *cseq, struct socket_info *sock,
-		str *mangled_from,str *mangled_to,str *sdp);
+		str *mangled_from,str *mangled_to,str *in_sdp, str *out_sdp);
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,
 						int field_type);

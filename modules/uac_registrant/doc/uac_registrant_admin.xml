@@ -30,7 +30,7 @@
 	    </para>
 	    <para>
 	    Each registrant has it's own state.
-	    Registranr's status can be inspected via "reg_list" MI comand.
+	    Registrant's status can be inspected via "reg_list" MI comand.
 	    </para>
 	    <para>
 		UAC registrant states:
@@ -74,6 +74,16 @@
 			<para><emphasis>7</emphasis>
 				- REGISTRAR_ERROR_STATE -
 				error reply received from the registrar;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>8</emphasis>
+				- UNREGISTERING_STATE - waiting for a reply from the registrar
+				after an unREGISTER without authentication header was sent;</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>9</emphasis>
+				- AUTHENTICATING_UNREGISTER_STATE - waiting for a reply from the registrar
+				after an unREGISTER with authentication header was sent;</para>
 			</listitem>
 		</itemizedlist>
 	    </para>
@@ -368,7 +378,19 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
 		binding params in REGISTER (not mandatory field).
 		If not NULL or not empty, the string stored here will be added
 		as params to the Contact URI in REGISTER (it MUST start with <quote>;</quote>.
-		There is no validation on the string stored here.
+		</para>
+		<para>
+		If the following two params are present, then the binding will be enforced
+		to be unique (if two bindings are received in a 200ok, a complete binding
+		removal will be performed before re-registering):
+		<itemizedlist>
+		<listitem><para><emphasis>reg-id</emphasis></para></listitem>
+		<listitem><para><emphasis>+sip.instance</emphasis></para></listitem>
+		</itemizedlist>
+		Example of params that will force unique binding:
+		<programlisting format="linespecific">
+;reg-id=1;+sip.instance=&quot;&lt;urn:uuid:11111111-AABBCCDDEEFF&gt;&quot;
+		</programlisting>
 		</para>
 		<para>
 		<emphasis>
@@ -469,7 +491,7 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo reg_list
+opensips-cli -x mi reg_list
 		</programlisting>
 	</section>
 	<section id="mi_reg_reload" xreflabel="reg_reload">
@@ -479,7 +501,7 @@ opensipsctl fifo reg_list
 		<para>Parameters: <emphasis>none</emphasis></para>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo reg_reload
+opensips-cli -x mi reg_reload
 		</programlisting>
 	</section>
 	</section>

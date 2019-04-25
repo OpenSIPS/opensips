@@ -53,8 +53,8 @@ int db_mysql_bind_api(const str* mod, db_func_t *dbb);
  * MySQL database module interface
  */
 static cmd_export_t cmds[] = {
-	{"db_bind_api",         (cmd_function)db_mysql_bind_api,      0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"db_bind_api",         (cmd_function)db_mysql_bind_api,      {{0, 0, 0}}, 0},
+	{0, 0, {{0, 0, 0}}, 0}
 };
 
 struct tls_mgm_binds tls_api;
@@ -108,7 +108,8 @@ struct module_exports exports = {
 	mysql_mod_init,  /* module initialization function */
 	0,               /* response function*/
 	0,               /* destroy function */
-	0                /* per-child init function */
+	0,               /* per-child init function */
+	0                /* reload confirm function */
 };
 
 

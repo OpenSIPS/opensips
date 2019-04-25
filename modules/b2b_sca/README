@@ -454,7 +454,7 @@ modparam("b2b_sca",
    Parameters: none
 
    MI FIFO Command Format:
-        opensipsctl fifo sca_list
+        opensips-cli -x mi sca_list
 
 Chapter 2. Contributors
 
@@ -465,9 +465,9 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 31 2 3536 2
    2. Liviu Chircu (@liviuchircu) 12 9 63 66
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 10 8
-   4. Vlad Patrascu (@rvlad-patrascu) 5 3 58 35
-   5. Razvan Crainea (@razvancrainea) 5 3 9 8
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 12 9
+   4. Vlad Patrascu (@rvlad-patrascu) 7 4 76 84
+   5. Razvan Crainea (@razvancrainea) 6 4 10 9
    6. Ezequiel Lovelle 3 1 1 1
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -491,11 +491,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
-   2. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Jun 2017
-   5. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2016
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Apr 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2019
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    6. Ovidiu Sas (@ovidiusas)             Dec 2013 - Feb 2016
    7. Ezequiel Lovelle                    Oct 2014 - Oct 2014
 
@@ -506,9 +506,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
-   (@ovidiusas).
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

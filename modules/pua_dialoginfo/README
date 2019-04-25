@@ -498,19 +498,19 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 42 22 982 661
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 44 24 987 665
    2. Anca Vamanu 27 16 713 231
    3. Liviu Chircu (@liviuchircu) 12 9 44 76
    4. Klaus Darilion 10 1 1109 0
    5. Razvan Crainea (@razvancrainea) 8 6 11 15
    6. Ovidiu Sas (@ovidiusas) 7 5 104 9
-   7. Vallimamod Abdullah 5 2 97 75
-   8. Damien Sandras (@dsandras) 4 2 93 1
-   9. Vlad Paiu (@vladpaiu) 4 2 29 15
-   10. Walter Doekes (@wdoekes) 4 2 19 8
+   7. Vlad Patrascu (@rvlad-patrascu) 6 3 39 63
+   8. Vallimamod Abdullah 5 2 97 75
+   9. Damien Sandras (@dsandras) 4 2 93 1
+   10. Vlad Paiu (@vladpaiu) 4 2 29 15
 
-   All remaining contributors: Stanislaw Pitucha, Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Aron Podrigal.
+   All remaining contributors: Walter Doekes (@wdoekes), Stanislaw
+   Pitucha, Peter Lemenkov (@lemenkov), Aron Podrigal (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -532,11 +532,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jan 2019
-   2.  Aron Podrigal                       Jan 2019 - Jan 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
    7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Jan 2014
    8.  Damien Sandras (@dsandras)          Jul 2013 - Aug 2013

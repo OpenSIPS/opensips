@@ -42,7 +42,7 @@ cd ../scripts
 TMPFILE=`mktemp -t opensips-test.XXXXXXXXXX`
 
 if [ "$ret" -eq 0 ] ; then
-	./opensipsctl fifo cr_dump_routes > $TMPFILE
+	opensips-cli -x mi cr_dump_routes > $TMPFILE
 	ret=$?
 fi ;
 

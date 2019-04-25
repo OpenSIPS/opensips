@@ -71,8 +71,8 @@ static str MI_HTTP_U_METHOD_REASON = str_init("500 Unexpected method! Only GET i
 
 /* module parameters */
 static param_export_t mi_params[] = {
-	{"mi_http_root",   STR_PARAM, &http_root.s},
-	{"mi_http_method", INT_PARAM, &http_method},
+	{"root",   STR_PARAM, &http_root.s},
+	{"http_method", INT_PARAM, &http_method},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
 	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s  },
 	{0,0,0}
@@ -106,7 +106,8 @@ struct module_exports exports = {
 	mod_init,                           /* module initialization function */
 	(response_function) 0,              /* response handling function */
 	(destroy_function) destroy,         /* destroy function */
-	NULL                                /* per-child init function */
+	NULL,                               /* per-child init function */
+	NULL                                /* reload confirm function */
 };
 
 

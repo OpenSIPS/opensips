@@ -822,7 +822,8 @@ send_mxd_notify:
 	if(mix_dialog_presence && *pres_event_p &&
 	presentity->event->evp->parsed == EVENT_DIALOG)
 	{
-		str* dialog_body= NULL;
+		str* dialog_body = NULL;
+		pres_ev_t *ev_bk;
 
 		LM_DBG("Publish for event dialog - try to send Notify for presence\n");
 
@@ -830,11 +831,13 @@ send_mxd_notify:
 		if(dialog_body)
 		{
 			/* send Notify for presence */
+			ev_bk = presentity->event;
 			presentity->event = *pres_event_p;
 			if (publ_notify(presentity, pres_uri, 0, NULL, 0, dialog_body,
 			1, NULL)<0)
 			{
 				LM_ERR("while sending Notify requests to watchers\n");
+				presentity->event = ev_bk;
 				if(dialog_body && dialog_body!=FAKED_BODY)
 				{
 					xmlFree(dialog_body->s);
@@ -842,6 +845,7 @@ send_mxd_notify:
 				}
 				goto error;
 			}
+			presentity->event = ev_bk;
 			if(dialog_body && dialog_body!=FAKED_BODY)
 			{
 				xmlFree(dialog_body->s);

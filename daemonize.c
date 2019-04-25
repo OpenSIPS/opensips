@@ -61,6 +61,10 @@
 #include "dprint.h"
 #include "pt.h"
 
+/* working dir at startup, before daemonizing; may be NULL if daemonizing 
+ * was not performed. It points to a allocated buffer in system memory */
+char *startup_wdir = NULL;
+
 static int status_pipe[2];
 static int *init_timer_no;
 
@@ -70,7 +74,7 @@ static enum opensips_states *osips_state = NULL;
  * proper status code returning
  *
  * must be called before any forking */
-int create_status_pipe(void)
+int create_status_pipe( int no_timers )
 {
 	int rc;
 
@@ -83,6 +87,9 @@ retry:
 		goto retry;
 
 	LM_DBG("pipe created ? rc = %d, errno = %s\n",rc,strerror(errno));
+
+	if (no_timers)
+		return rc;
 
 	/* also create SHM var which the attendent will use
 	 * to notify us about the overall number of timers
@@ -126,15 +133,9 @@ retry:
 
 /* blockingly waits on the pipe
  * until a child sends a status code */
-int wait_status_code(char *code)
+static int wait_status_code(char *code)
 {
 	int rc;
-
-	/* close writing end */
-	if (status_pipe[1] != -1) {
-			close(status_pipe[1]);
-			status_pipe[1] = -1;
-	}
 
 	if (status_pipe[0] == -1) {
 		LM_DBG("invalid read pipe\n");
@@ -156,12 +157,24 @@ error:
 	return -1;
 }
 
+int wait_for_one_child(void)
+{
+	char rc;
+
+	if (wait_status_code(&rc)<0 || rc < 0)
+		return -1;
+
+	return 0;
+}
+
 int wait_for_all_children(void)
 {
 	int procs_no,i,ret;
 	char rc;
 
-	procs_no = count_init_children(PROC_FLAG_INITCHILD);
+	clean_write_pipeend();
+
+	procs_no = count_init_child_processes();
 	for (i=0;i<procs_no;i++) {
 		ret = wait_status_code(&rc);
 		if (ret < 0 || rc < 0)
@@ -221,6 +234,12 @@ int daemonize(char* name, int * own_pgid)
 	int pid_items;
 
 	p=-1;
+
+	if ( (startup_wdir=getcwd(NULL,0))==NULL) {
+		LM_ERR("failed to determin the working dir %d/%s\n", errno,
+			strerror(errno));
+		goto error;
+	}
 
 	/* flush std file descriptors to avoid flushes after fork
 	 *  (same message appearing multiple times)

@@ -30,7 +30,6 @@
 #include "../../error.h"
 #include "../../timer.h"
 #include "../../ut.h"
-#include "../../mod_fix.h"
 #include "../../locking.h"
 #include "../../flags.h"
 #include "../../parser/parse_from.h"
@@ -73,8 +72,8 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static int w_handle_call(struct sip_msg *req, char *id);
-static int w_agent_login(struct sip_msg *req, char *agent, char *state);
+static int w_handle_call(struct sip_msg *msg, str *flow_name);
+static int w_agent_login(struct sip_msg *req, str *agent_s, int *state);
 
 static void cc_timer_agents(unsigned int ticks, void* param);
 static void cc_timer_cleanup(unsigned int ticks, void* param);
@@ -95,16 +94,15 @@ unsigned int wrapup_time = 30;
 /* the name of the URI param to report the queue position */
 str queue_pos_param = {NULL,0};
 
-
-
 static cmd_export_t cmds[]={
-	{"cc_handle_call",           (cmd_function)w_handle_call,         1,
-		fixup_sgp_null, 0, REQUEST_ROUTE},
-	{"cc_agent_login",           (cmd_function)w_agent_login,         2,
-		fixup_sgp_sgp, 0, REQUEST_ROUTE},
-	{0,0,0,0,0,0}
-	};
-
+	{"cc_handle_call", (cmd_function)w_handle_call,
+		{{CMD_PARAM_STR, 0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"cc_agent_login", (cmd_function)w_agent_login,
+		{{CMD_PARAM_STR, 0,0}, {CMD_PARAM_INT, 0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
+};
 
 static param_export_t mod_params[]={
 	{ "db_url",               STR_PARAM, &db_url.s             },
@@ -199,7 +197,8 @@ struct module_exports exports= {
 	mod_init,        /* module initialization function */
 	0,               /* reply processing function */
 	mod_destroy,
-	child_init       /* per-child init function */
+	child_init,      /* per-child init function */
+	0                /* reload confirm function */
 };
 
 
@@ -776,24 +775,17 @@ done:
 }
 
 
-static int w_handle_call(struct sip_msg *msg, char *flow_var)
+static int w_handle_call(struct sip_msg *msg, str *flow_name)
 {
 	struct cc_flow *flow;
 	struct cc_call *call;
 	str leg = {NULL,0};
 	str *dn;
-	str val;
 	int dec;
 	int ret = -1;
 
 	call = NULL;
 	dec = 0;
-
-	/* get the flow name */
-	if (fixup_get_svalue(msg, (gparam_p)flow_var, &val)!=0) {
-		LM_ERR("failed to evaluate the flow name variable\n");
-		return -1;
-	}
 
 	/* parse FROM URI */
 	if (parse_from_uri(msg)==NULL) {
@@ -804,9 +796,9 @@ static int w_handle_call(struct sip_msg *msg, char *flow_var)
 	lock_get( data->lock );
 
 	/* get the flow ID */
-	flow = get_flow_by_name(data, &val);
+	flow = get_flow_by_name(data, flow_name);
 	if (flow==NULL) {
-		LM_ERR("flow <%.*s> does not exists\n", val.len, val.s);
+		LM_ERR("flow <%.*s> does not exists\n", flow_name->len, flow_name->s);
 		ret = -3;
 		goto error;
 	}
@@ -901,49 +893,33 @@ error1:
 }
 
 
-static int w_agent_login(struct sip_msg *req, char *agent_v, char *state_v)
+static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 {
 	struct cc_agent *agent, *prev_agent;
-	str agent_s;
-	int state;
-	unsigned int flags;
-
-
-	/* get state */
-	if (fixup_get_isvalue( req, (gparam_p)state_v, &state, &agent_s,
-	&flags)!=0 || ((flags&GPARAM_INT_VALUE_FLAG)==0) ) {
-		LM_ERR("unable to evaluate state spec \n");
-		return -1;
-	}
-	/* get agent */
-	if (fixup_get_svalue( req, (gparam_p)agent_v, &agent_s)!=0) {
-		LM_ERR("unable to evaluate agent spec \n");
-		return -2;
-	}
 
 	/* block access to data */
 	lock_get( data->lock );
 
 	/* name of the agent */
-	agent = get_agent_by_name( data, &agent_s, &prev_agent);
+	agent = get_agent_by_name( data, agent_s, &prev_agent);
 	if (agent==NULL) {
 		lock_release( data->lock );
-		LM_DBG("agent <%.*s> not found\n",agent_s.len,agent_s.s);
+		LM_DBG("agent <%.*s> not found\n",agent_s->len,agent_s->s);
 		return -3;
 	}
 
-	if (agent->loged_in != state) {
+	if (agent->loged_in != *state) {
 
-		if(state && (agent->state==CC_AGENT_WRAPUP) &&
+		if(*state && (agent->state==CC_AGENT_WRAPUP) &&
 			(get_ticks() - agent->last_call_end > wrapup_time))
 			agent->state = CC_AGENT_FREE;
 
-		if(state && data->agents[CC_AG_ONLINE] == NULL)
+		if(*state && data->agents[CC_AG_ONLINE] == NULL)
 			data->last_online_agent = agent;
 
 		agent_switch_login(data, agent, prev_agent);
 
-		if(state) {
+		if(*state) {
 			data->logedin_agents++;
 			log_agent_to_flows( data, agent, 1);
 		} else {

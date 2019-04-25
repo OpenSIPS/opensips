@@ -321,10 +321,14 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 {
 	/* read name */
 	name->s = b;
-	while( b<end && !( (*b=='|'|| *b=='#') &&
-				(*(b-1)!='\\' || *(b-2)=='\\')) )
+	while (b<end) {
+		if (*b=='|' || *b=='#')
+			break;
+		else if (*b == '\\')
+			b++;
 		b++;
-	if (b==end) return NULL;
+	}
+	if (b>=end) return NULL;
 	if (*b=='|') goto skip;
 	name->len = b - name->s;
 	if (name->len==0) goto skip;
@@ -336,10 +340,14 @@ static inline char* read_pair(char *b, char *end, str *name, str *val)
 
 	/* read value */
 	val->s = b;
-	while( b<end && !( (*b=='|'|| *b=='#') &&
-				(*(b-1)!='\\' || *(b-2)=='\\')) )
+	while (b<end) {
+		if (*b=='|' || *b=='#')
+			break;
+		else if (*b == '\\')
+			b++;
 		b++;
-	if (b==end) return NULL;
+	}
+	if (b>=end) return NULL;
 	if (*b=='#') goto skip;
 	val->len = b - val->s;
 	if (val->len==0) val->s = 0;
@@ -504,6 +512,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	struct socket_info *caller_sock,*callee_sock;
 	int found_ended_dlgs=0;
 	unsigned int hash_entry,hash_id;
+	str tag_name;
+	int rc;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -605,9 +615,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			/* add the 2 legs */
 			if ( (dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1,
-			&cseq1, caller_sock,0,0,0)!=0) ||
+			&cseq1, caller_sock,0,0,0,0)!=0) ||
 			(dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2,
-			&cseq2, callee_sock,&mangled_fu,&mangled_tu,0)!=0) ) {
+			&cseq2, callee_sock,&mangled_fu,&mangled_tu,0,0)!=0) ) {
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg(dlg,1);
@@ -704,6 +714,12 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					ref_dlg(dlg,1);
 				}
 			}
+
+			if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
+				if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
+					LM_ERR("No more shm memory\n");
+			} else if (rc == -1)
+				LM_ERR("Failed to get dlg value for sharing tag\n");
 
 			if (dlg_db_mode == DB_MODE_DELAYED) {
 				/* to be later removed by timer */
@@ -1243,7 +1259,8 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 /* duplicate the SDPs/Contacts of caller/callee(s) into dlg val storage */
 static int persist_reinvite_pinging(struct dlg_cell *dlg)
 {
-	str caller_adv_sdp = str_init("CSDP"), callee_adv_sdp = str_init("cSDP");
+	str caller_in_sdp = str_init("uCSDP"), callee_in_sdp = str_init("ucSDP");
+	str caller_out_sdp = str_init("aCSDP"), callee_out_sdp = str_init("acSDP");
 	str caller_adv_ct = str_init("Cct"), callee_adv_ct = str_init("cct");
 
 	if (dlg->legs_no[DLG_LEG_200OK] == 0) {
@@ -1251,8 +1268,16 @@ static int persist_reinvite_pinging(struct dlg_cell *dlg)
 		return 0;
 	}
 
-	if (store_dlg_value_unsafe(dlg, &caller_adv_sdp,
-	                    &dlg->legs[DLG_CALLER_LEG].adv_sdp) != 0) {
+	if (dlg->legs[DLG_CALLER_LEG].in_sdp.len &&
+			store_dlg_value_unsafe(dlg, &caller_in_sdp,
+				&dlg->legs[DLG_CALLER_LEG].in_sdp) != 0) {
+		LM_ERR("failed to persist caller UAC SDP\n");
+		return -1;
+	}
+
+	if (dlg->legs[DLG_CALLER_LEG].out_sdp.len &&
+			store_dlg_value_unsafe(dlg, &caller_out_sdp,
+				&dlg->legs[DLG_CALLER_LEG].out_sdp) != 0) {
 		LM_ERR("failed to persist caller advertised SDP\n");
 		return -1;
 	}
@@ -1263,8 +1288,16 @@ static int persist_reinvite_pinging(struct dlg_cell *dlg)
 		return -1;
 	}
 
-	if (store_dlg_value_unsafe(dlg, &callee_adv_sdp,
-	                       &dlg->legs[dlg->legs_no[DLG_LEG_200OK]].adv_sdp) != 0) {
+	if (dlg->legs[dlg->legs_no[DLG_LEG_200OK]].in_sdp.len &&
+			store_dlg_value_unsafe(dlg, &callee_in_sdp,
+				&dlg->legs[dlg->legs_no[DLG_LEG_200OK]].in_sdp) != 0) {
+		LM_ERR("failed to persist callee UAC SDP\n");
+		return -1;
+	}
+
+	if (dlg->legs[dlg->legs_no[DLG_LEG_200OK]].out_sdp.len &&
+			store_dlg_value_unsafe(dlg, &callee_out_sdp,
+				&dlg->legs[dlg->legs_no[DLG_LEG_200OK]].out_sdp) != 0) {
 		LM_ERR("failed to persist callee advertised SDP\n");
 		return -1;
 	}
@@ -1281,16 +1314,27 @@ static int persist_reinvite_pinging(struct dlg_cell *dlg)
 /* re-populate the SDPs/Contacts of caller/callee(s) from dlg val storage */
 static int restore_reinvite_pinging(struct dlg_cell *dlg)
 {
-	str caller_adv_sdp = str_init("CSDP"), callee_adv_sdp = str_init("cSDP");
+	str caller_in_sdp = str_init("uCSDP"), callee_in_sdp = str_init("ucSDP");
+	str caller_out_sdp = str_init("aCSDP"), callee_out_sdp = str_init("acSDP");
 	str caller_adv_ct = str_init("Cct"), callee_adv_ct = str_init("cct");
 	str out_buf;
 	int ret = 0;
 
-	if (fetch_dlg_value(dlg, &caller_adv_sdp, &out_buf, 0) != 0) {
-		LM_ERR("failed to fetch caller advertised SDP\n");
-		ret = -1;
+	if (fetch_dlg_value(dlg, &caller_in_sdp, &out_buf, 0) != 0) {
+		dlg->legs[DLG_CALLER_LEG].in_sdp.len = 0;
+		dlg->legs[DLG_CALLER_LEG].in_sdp.s = 0;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].adv_sdp, &out_buf) != 0) {
+		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].in_sdp, &out_buf) != 0) {
+			LM_ERR("oom\n");
+			ret = -1;
+		}
+	}
+
+	if (fetch_dlg_value(dlg, &caller_out_sdp, &out_buf, 0) != 0) {
+		dlg->legs[DLG_CALLER_LEG].out_sdp.len = 0;
+		dlg->legs[DLG_CALLER_LEG].out_sdp.s = 0;
+	} else {
+		if (shm_str_dup(&dlg->legs[DLG_CALLER_LEG].out_sdp, &out_buf) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
@@ -1307,11 +1351,22 @@ static int restore_reinvite_pinging(struct dlg_cell *dlg)
 		}
 	}
 
-	if (fetch_dlg_value(dlg, &callee_adv_sdp, &out_buf, 0) != 0) {
-		LM_ERR("failed to fetch callee advertised SDP\n");
-		ret = -1;
+	if (fetch_dlg_value(dlg, &callee_in_sdp, &out_buf, 0) != 0) {
+		dlg->legs[DLG_FIRST_CALLEE_LEG].in_sdp.len = 0;
+		dlg->legs[DLG_FIRST_CALLEE_LEG].in_sdp.s = 0;
 	} else {
-		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].adv_sdp, &out_buf) != 0) {
+		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].in_sdp, &out_buf) != 0) {
+			LM_ERR("oom\n");
+			ret = -1;
+		}
+	}
+
+
+	if (fetch_dlg_value(dlg, &callee_out_sdp, &out_buf, 0) != 0) {
+		dlg->legs[DLG_FIRST_CALLEE_LEG].out_sdp.len = 0;
+		dlg->legs[DLG_FIRST_CALLEE_LEG].out_sdp.s = 0;
+	} else {
+		if (shm_str_dup(&dlg->legs[DLG_FIRST_CALLEE_LEG].out_sdp, &out_buf) != 0) {
 			LM_ERR("oom\n");
 			ret = -1;
 		}
@@ -1347,10 +1402,13 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 		run_dlg_callbacks(DLGCB_WRITE_VP, cell, 0, DLG_DIR_NONE, NULL, 1, 1);
 	}
 
-	if (dlg_has_reinvite_pinging(cell)) {
-		if (persist_reinvite_pinging(cell) != 0)
-			LM_ERR("failed to persist some Re-INVITE pinging info\n");
-	}
+	if (persist_reinvite_pinging(cell) != 0)
+		LM_ERR("failed to persist some Re-INVITE pinging info\n");
+
+	/* save sharing tag name as dlg val */
+	if (cell->shtag.s && store_dlg_value_unsafe(cell, &shtag_dlg_val,
+		&cell->shtag) < 0)
+		LM_ERR("Failed to store sharing tag name as dlg val\n");
 
 	if (on_shutdown || (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED))) {
 		if (cell->vals==NULL) {
@@ -1630,6 +1688,8 @@ static int sync_dlg_db_mem(void)
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
 	int hash_entry,hash_id;
+	str tag_name;
+	int rc;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -1755,9 +1815,9 @@ static int sync_dlg_db_mem(void)
 
 				/* add the 2 legs */
 				if ((dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1,
-				&cseq1, caller_sock,0,0,0)!=0) ||
+				&cseq1, caller_sock,0,0,0,0)!=0) ||
 				(dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2,
-				&cseq2, callee_sock,&mangled_fu,&mangled_tu,0)!=0) ) {
+				&cseq2, callee_sock,&mangled_fu,&mangled_tu,0,0)!=0) ) {
 					LM_ERR("dlg_set_leg_info failed\n");
 					/* destroy the dialog */
 					unref_dlg(dlg,1);
@@ -1838,11 +1898,11 @@ static int sync_dlg_db_mem(void)
 					}
 				}
 
-				if (dlg_has_reinvite_pinging(dlg)) {
+				if (restore_reinvite_pinging(dlg) != 0)
+					LM_ERR("failed to fetch some Re-INVITE pinging data\n");
+				else if (dlg_has_reinvite_pinging(dlg)) {
 					/* re-populate Re-INVITE pinging fields */
-					if (restore_reinvite_pinging(dlg) != 0)
-						LM_ERR("failed to fetch some Re-INVITE pinging data\n");
-					else if (0 != insert_reinvite_ping_timer(dlg))
+					if (0 != insert_reinvite_ping_timer(dlg))
 						LM_CRIT("Unable to insert dlg %p into reinvite"
 						        "ping timer\n", dlg);
 					else {
@@ -1850,6 +1910,12 @@ static int sync_dlg_db_mem(void)
 						ref_dlg(dlg,1);
 					}
 				}
+
+				if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
+					if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
+						LM_ERR("No more shm memory\n");
+				} else if (rc == -1)
+					LM_ERR("Failed to get dlg value for sharing tag\n");
 
 				if (dlg_db_mode == DB_MODE_DELAYED) {
 					/* to be later removed by timer */

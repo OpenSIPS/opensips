@@ -73,12 +73,6 @@
  * is valid
  */
 #define ACC_DLG_CB_USED (((unsigned long long)1<<(8*6)) * (1<<4))
-/*
- * flag to signal that the callback for missed calls has been registered;
- * this way if the missed calls flag is set twice, we won't register the
- * callback twice
- */
-#define ACC_TMCB_MISSED_REGISTERED (((unsigned long long)1<<(8*6)) * (1<<5))
 
 #define ACC_MASK_REF_BYTE (((unsigned long long)(0xFF)<<(8*7))
 
@@ -174,30 +168,29 @@ typedef struct acc_ctx {
 
 int init_acc_ctx(acc_ctx_t** ctx_p);
 
-int w_acc_log_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
+int w_acc_log_request(struct sip_msg *rq, str* comment);
 
-int w_acc_aaa_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
+int w_acc_aaa_request(struct sip_msg *rq, str* comment);
 
-int w_acc_db_request(struct sip_msg *rq, pv_elem_t* comment, char *table);
+int w_acc_db_request(struct sip_msg *rq, str* comment, str *table);
 
-int acc_pvel_to_acc_param(struct sip_msg *rq, pv_elem_t* pv_el, struct acc_param* accp);
+int acc_comm_to_acc_param(struct sip_msg *rq, str* comm, struct acc_param* accp);
 
 void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params);
 
-int w_acc_evi_request(struct sip_msg *rq, pv_elem_t* comment, char *foo);
+int w_acc_evi_request(struct sip_msg *rq, str* comment);
 
 
-int do_acc_fixup(void** param, int param_no);
+int do_acc_fixup_type(void **param);
+int do_acc_fixup_flags(void **param);
+int do_acc_fixup_free_ival(void **param);
 
+int w_do_acc(struct sip_msg* msg, unsigned long long *type,
+			unsigned long long *flags, str *table_name);
 
-int w_do_acc_1(struct sip_msg* msg, char* type);
-int w_do_acc_2(struct sip_msg* msg, char* type, char* flags);
-int w_do_acc_3(struct sip_msg* msg, char* type_p, char* flags_p, char* table_p);
-
-int w_drop_acc_0(struct sip_msg* msg);
-int w_drop_acc_1(struct sip_msg* msg, char* type);
-int w_drop_acc_2(struct sip_msg* msg, char* type, char* flags);
+int w_drop_acc(struct sip_msg* msg, unsigned long long *type,
+			unsigned long long *flags);
 
 int w_new_leg(struct sip_msg* msg);
 

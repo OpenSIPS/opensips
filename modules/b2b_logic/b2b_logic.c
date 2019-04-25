@@ -40,7 +40,6 @@
 #include "../../ut.h"
 #include "../../trim.h"
 #include "../../mem/mem.h"
-#include "../../mod_fix.h"
 
 #include "records.h"
 #include "pidf.h"
@@ -56,7 +55,8 @@ static void mod_destroy(void);
 static int child_init(int rank);
 static int load_script_scenario(modparam_t type, void* val);
 static int load_extern_scenario(modparam_t type, void* val);
-static int fixup_b2b_logic(void** param, int param_no);
+static int fixup_b2b_logic(void** param);
+static int fixup_free_b2b_logic(void** param);
 static mi_response_t *mi_trigger_scenario(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_b2b_bridge_2(const mi_params_t *params,
@@ -75,7 +75,7 @@ static void b2bl_clean(unsigned int ticks, void* param);
 static void b2bl_db_timer_update(unsigned int ticks, void* param);
 int  b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 		str* arg4, str* arg5, str* arg6);
-int  b2b_bridge_request(struct sip_msg* msg, str* arg1, str* arg2);
+int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no);
 
 void b2b_mark_todel( b2bl_tuple_t* tuple);
 
@@ -130,18 +130,20 @@ str server_address = {0, 0};
 int b2bl_db_mode = WRITE_BACK;
 int unsigned b2bl_th_init_timeout = 60;
 
-/** Exported functions */
 static cmd_export_t cmds[]=
 {
-	{"b2b_init_request", (cmd_function)b2b_init_request, 5 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
-	{"b2b_init_request", (cmd_function)b2b_init_request, 4 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
-	{"b2b_init_request", (cmd_function)b2b_init_request, 3 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
-	{"b2b_init_request", (cmd_function)b2b_init_request, 2 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
-	{"b2b_init_request", (cmd_function)b2b_init_request, 1 , fixup_b2b_logic , 0 , REQUEST_ROUTE},
-	{"b2b_init_request", (cmd_function)b2b_init_request, 0 , 0               , 0 , REQUEST_ROUTE},
-	{"b2b_bridge_request",(cmd_function)b2b_bridge_request,2,fixup_pvar_pvar , 0 , REQUEST_ROUTE},
-	{"b2b_logic_bind",   (cmd_function)b2b_logic_bind,   1 , 0,  0,  0},
-	{ 0,                 0,                              0 , 0 , 0,  0}
+	{"b2b_init_request", (cmd_function)b2b_init_request, {
+		{CMD_PARAM_STR, fixup_b2b_logic, fixup_free_b2b_logic},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"b2b_bridge_request", (cmd_function)b2b_bridge_request,
+		{{CMD_PARAM_STR,0,0}, {CMD_PARAM_INT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"b2b_logic_bind", (cmd_function)b2b_logic_bind, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 /** Exported parameters */
@@ -221,7 +223,8 @@ struct module_exports exports= {
 	mod_init,                       /* module initialization function */
 	(response_function) 0,          /* response handling function */
 	(destroy_function) mod_destroy, /* destroy function */
-	child_init                      /* per-child init function */
+	child_init,                     /* per-child init function */
+	0                               /* reload confirm function */
 };
 
 /** Module init function */
@@ -890,101 +893,79 @@ b2b_scenario_t* get_scenario_id(str* sid)
 	return get_scenario_id_list(sid, extern_scenarios);
 }
 
-
-static int fixup_b2b_logic(void** param, int param_no)
+static int fixup_b2b_logic(void** param)
 {
-	pv_elem_t *model;
 	str s;
 	str flags_s;
 	int st;
 	struct b2b_scen_fl *scf;
 
-	if(param_no== 0)
-		return 0;
+	s = *(str*)*param;
 
-	if(*param)
+	scf = prepare_b2b_scen_fl_struct();
+	if (scf == NULL)
 	{
-		s.s = (char*)(*param);
-		s.len = strlen(s.s);
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	scf->params.init_timeout = b2bl_th_init_timeout;
 
-		if(pv_parse_format(&s, &model)<0)
+	if ( (flags_s.s = q_memchr(s.s,'/',s.len)) != NULL)
+	{
+		flags_s.s++;
+		flags_s.len = s.len - (flags_s.s - s.s);
+		s.len = s.len - flags_s.len - 1;
+
+		/* parse flags */
+		for( st=0 ; st< flags_s.len ; st++ ) {
+			switch (flags_s.s[st])
+			{
+				case 't':
+					scf->params.init_timeout = 0;
+					while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
+						scf->params.init_timeout =
+							scf->params.init_timeout*10 + flags_s.s[st+1] - '0';
+						st++;
+					}
+					break;
+				case 'a':
+					scf->params.flags |= B2BL_FLAG_TRANSPARENT_AUTH;
+					break;
+				case 'p':
+					scf->params.flags |= B2BL_FLAG_TRANSPARENT_TO;
+					break;
+				default:
+					LM_WARN("unknown option `%c'\n", *flags_s.s);
+			}
+		}
+	}
+
+	if(s.len == B2B_TOP_HIDING_SCENARY_LEN &&
+		strncmp(s.s,B2B_TOP_HIDING_SCENARY,B2B_TOP_HIDING_SCENARY_LEN)==0)
+	{
+		scf->scenario = NULL;
+	}
+	else
+	{
+		scf->scenario = get_scenario_id_list(&s, script_scenarios);
+		if (!scf->scenario)
 		{
-			LM_ERR( "wrong format[%s]\n",(char*)(*param));
+			LM_ERR("Wrong Scenary ID. No scenario with this ID [%.*s]\n", s.len, s.s);
 			return E_UNSPEC;
 		}
-
-		/* the first parameter must be the scenario id and possible flags, must be a string */
-		if(param_no == 1)
-		{
-			if(model->spec.type != PVT_NONE )
-			{
-				LM_ERR("The first parameter is not a string\n");
-				return -1;
-			}
-
-			scf = prepare_b2b_scen_fl_struct();
-			if (scf == NULL)
-			{
-				LM_ERR("no more pkg memory\n");
-				return -1;
-			}
-			scf->params.init_timeout = b2bl_th_init_timeout;
-
-			if ( (flags_s.s = strchr(s.s,'/')) != NULL)
-			{
-				s.len = flags_s.s - s.s;
-				flags_s.s++;
-				flags_s.len = strlen(flags_s.s);
-
-				/* parse flags */
-				for( st=0 ; st< flags_s.len ; st++ ) {
-					switch (flags_s.s[st])
-					{
-						case 't':
-							scf->params.init_timeout = 0;
-							while (st<flags_s.len-1 && isdigit(flags_s.s[st+1])) {
-								scf->params.init_timeout =
-									scf->params.init_timeout*10 + flags_s.s[st+1] - '0';
-								st++;
-							}
-							break;
-						case 'a':
-							scf->params.flags |= B2BL_FLAG_TRANSPARENT_AUTH;
-							break;
-						case 'p':
-							scf->params.flags |= B2BL_FLAG_TRANSPARENT_TO;
-							break;
-						default:
-							LM_WARN("unknown option `%c'\n", *flags_s.s);
-					}
-				}
-			}
-
-			if(s.len == B2B_TOP_HIDING_SCENARY_LEN &&
-				strncmp(s.s,B2B_TOP_HIDING_SCENARY,B2B_TOP_HIDING_SCENARY_LEN)==0)
-			{
-				scf->scenario = NULL;
-			}
-			else
-			{
-				scf->scenario = get_scenario_id_list(&s, script_scenarios);
-				if (!scf->scenario)
-				{
-					LM_ERR("Wrong Scenary ID. No scenario with this ID [%.*s]\n", s.len, s.s);
-					return E_UNSPEC;
-				}
-			}
-			*param=(void*)scf;
-			return 0;
-		}
-
-		*param = (void*)model;
-		return 0;
 	}
-	LM_ERR( "null format\n");
-	return E_UNSPEC;
+
+	*param=(void*)scf;
+	return 0;
 }
 
+static int fixup_free_b2b_logic(void** param)
+{
+	if (*param)
+		pkg_free(*param);
+
+	return 0;
+}
 
 struct to_body* get_b2bl_from(struct sip_msg* msg)
 {
@@ -1176,50 +1157,9 @@ mi_response_t *mi_trigger_scenario(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
-int  b2b_bridge_request(struct sip_msg* msg, str* p1, str* p2)
+int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no)
 {
-	pv_value_t pv_val;
-	str key = {NULL, 0};
-	int entity_no;
-
-	if (p1 && (pv_get_spec_value(msg, (pv_spec_t *)p1, &pv_val) == 0))
-	{
-		if (pv_val.flags & PV_VAL_STR)
-		{
-			LM_DBG("got key:'%.*s'\n", pv_val.rs.len, pv_val.rs.s);
-			key = pv_val.rs;
-		} else {
-			LM_ERR("Unable to get key from PV that is not a string\n");
-			return -1;
-		}
-	} else {
-		LM_ERR("Unable to get key from pv:%p\n", p1);
-		return -1;
-	}
-
-	if (p2 && (pv_get_spec_value(msg, (pv_spec_t *)p2, &pv_val) == 0))
-	{
-		if (pv_val.flags & PV_VAL_INT)
-		{
-			entity_no = pv_val.ri;
-			LM_DBG("got entity_no %d\n", entity_no);
-		}
-		else
-		if (pv_val.flags & PV_VAL_STR) {
-			if(str2int(&(pv_val.rs), (unsigned int*)&entity_no) != 0) {
-				LM_ERR("Unable to get entity_no from pv '%.*s'i\n",
-				pv_val.rs.len, pv_val.rs.s);
-				return -1;
-			}
-		} else {
-			LM_ERR("second pv not a str or int type\n");
-			return -1;
-		}
-	} else {
-		LM_ERR("Unable to get entity from pv:%p\n", p1);
-		return -1;
-	}
-	return b2bl_bridge_msg(msg, &key, entity_no);
+	return b2bl_bridge_msg(msg, key, *entity_no);
 }
 
 static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
@@ -1605,7 +1545,7 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 					if (!clients_item)
 						goto error;
 
-					if (add_mi_number(server_item, MI_SSTR("index"), index) < 0)
+					if (add_mi_number(clients_item, MI_SSTR("index"), index) < 0)
 						goto error;
 					if (internal_mi_print_b2bl_entity_id(clients_item,
 							tuple->clients[index])!=0)

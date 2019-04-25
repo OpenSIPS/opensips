@@ -360,6 +360,7 @@ static int srs_send_invite(struct src_sess *sess)
 	ci.to_uri = ci.req_uri;
 	ci.from_uri = ci.to_uri;
 	ci.extra_headers = &extra_headers;
+	ci.send_sock = sess->socket;
 
 	ci.local_contact.s = contact_builder(sess->socket, &ci.local_contact.len);
 

@@ -48,8 +48,10 @@
 #include "sipluafunc.h"
 #include "sipapi.h"
 
+#if 0
 static void siplua_moduleFunc_free(const char *func, cmd_export_t *exp_func_struct,
 				   action_elem_t *elems, int nargs);
+#endif
 
 /*
  * Warning, should pcall this to prevent exit(1) if being out-of-memory.
@@ -747,9 +749,14 @@ static int l_siplua_add_lump_rpl(lua_State *L)
  * It could be useful to keep all fixup'ed parameters into a hash table, so that it would
  * permit to call function modules missing free_fixup, as long as parameters don't change.
  */
+#if 0
 static int siplua_unsafemodfnc = 1;
+#endif
+
 static int l_siplua_moduleFunc(lua_State *L)
 {
+/* TODO: adapt to new cmd_export and params interface */
+#if 0
   struct sipapi_object *o;
   const char *func;
   int n, nargs;
@@ -768,7 +775,7 @@ static int l_siplua_moduleFunc(lua_State *L)
   if (n - 1 > MAX_ACTION_ELEMS)
     return luaL_error(L, "function '%s' called with too many arguments [%d > %d]",
 	       func, nargs, MAX_ACTION_ELEMS - 1);
-  exp_func_struct = find_cmd_export_t((char *)func, nargs, 0);
+  exp_func_struct = find_cmd_export_t((char *)func, 0);
   if (!exp_func_struct)
     {
       return luaL_error(L, "function '%s' called, but not available.");
@@ -838,8 +845,12 @@ static int l_siplua_moduleFunc(lua_State *L)
   pkg_free(act);
   lua_pushinteger(L, retval);
   return 1;
+#endif
+
+  return 1;
 }
 
+#if 0
 static void siplua_moduleFunc_free(const char *func, cmd_export_t *exp_func_struct,
 				   action_elem_t *elems, int nargs)
 {
@@ -867,6 +878,7 @@ static void siplua_moduleFunc_free(const char *func, cmd_export_t *exp_func_stru
 	}
     }
 }
+#endif
 
 static const struct luaL_reg siplua_api_mylib [] =
   {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007-2009 Dan Pascu
+ * Copyright (C) 2007-2019 Dan Pascu
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -40,7 +40,6 @@
 #include "../../timer.h"
 #include "../../resolve.h"
 #include "../../data_lump.h"
-#include "../../mod_fix.h"
 #include "../../script_cb.h"
 #include "../../sl_cb.h"
 #include "../../parser/msg_parser.h"
@@ -173,7 +172,7 @@ typedef struct Keepalive_Params {
 //
 static int NAT_Keepalive(struct sip_msg *msg);
 static int FixContact(struct sip_msg *msg);
-static int ClientNatTest(struct sip_msg *msg, unsigned int *tests);
+static int ClientNatTest(struct sip_msg *msg, int *tests);
 
 static Bool test_private_contact(struct sip_msg *msg);
 static Bool test_source_address(struct sip_msg *msg);
@@ -232,12 +231,11 @@ static NatTest NAT_Tests[] = {
     {NTNone,           NULL}
 };
 
-
 static cmd_export_t commands[] = {
-    {"nat_keepalive",   (cmd_function)NAT_Keepalive, 0, NULL, 0, REQUEST_ROUTE},
-    {"fix_contact",     (cmd_function)FixContact,    0, NULL, 0, REQUEST_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
-    {"client_nat_test", (cmd_function)ClientNatTest, 1, fixup_uint_null, 0, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
-    {0, 0, 0, 0, 0, 0}
+    {"nat_keepalive",   (cmd_function)NAT_Keepalive, {{0, 0, 0}}, REQUEST_ROUTE},
+    {"fix_contact",     (cmd_function)FixContact,    {{0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
+    {"client_nat_test", (cmd_function)ClientNatTest, {{CMD_PARAM_INT, 0, 0}, {0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
+    {0, 0, {{0, 0, 0}}, 0}
 };
 
 static param_export_t parameters[] = {
@@ -297,7 +295,8 @@ struct module_exports exports = {
     mod_init,         // module init function (before fork. kids will inherit)
     reply_filter,     // reply processing function
     mod_destroy,      // destroy function
-    child_init        // child init function
+    child_init,       // child init function
+    NULL              // reload confirm function
 };
 
 
@@ -1553,7 +1552,7 @@ FixContact(struct sip_msg *msg)
 
 
 static int
-ClientNatTest(struct sip_msg *msg, unsigned int *tests)
+ClientNatTest(struct sip_msg *msg, int *tests)
 {
     int i;
 

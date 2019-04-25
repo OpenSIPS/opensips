@@ -81,8 +81,8 @@ struct bin_data {
 };
 
 static cmd_export_t cmds[] = {
-	{"proto_init", (cmd_function)proto_bin_init, 0, 0, 0, 0},
-	{0,0,0,0,0,0}
+	{"proto_init", (cmd_function)proto_bin_init, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {
@@ -117,6 +117,7 @@ struct module_exports exports = {
 	0,          /* response function */
 	0,          /* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 static int proto_bin_init(struct proto_info *pi)

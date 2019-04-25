@@ -38,10 +38,6 @@
 extern int action_flags;
 extern int use_script_trace;
 
-extern action_elem_p route_params[MAX_REC_LEV];
-extern int route_params_number[MAX_REC_LEV];
-extern int route_rec_level;
-
 #define LONGEST_ACTION_SIZE		5
 
 typedef struct {
@@ -65,5 +61,10 @@ void run_error_route(struct sip_msg* msg, int force_reset);
 
 void __script_trace(char *class, char *action, struct sip_msg *msg,
 		char *file, int line);
+
+typedef int (*param_getf_t)(struct sip_msg*, pv_param_t*, pv_value_t*, void *, void *);
+void route_params_push_level(void *params, void *extra, param_getf_t getf);
+void route_params_pop_level(void);
+int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
 
 #endif

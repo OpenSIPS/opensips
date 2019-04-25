@@ -40,6 +40,7 @@
 #include "../../ut.h"
 #include "../../db/db_ut.h"
 #include "../../mem/shm_mem.h"
+#include "../../daemonize.h"
 #include "../../dprint.h"
 #include "../../ip_addr.h"
 #include "../../socket_info.h"
@@ -118,6 +119,8 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	struct socket_info *sock;
 	struct proxy_l next_hop;
+	char *next_hop_host;
+	int next_hop_offset;
 	db_res_t *res = NULL;
 	db_row_t *row;
 	db_val_t *val;
@@ -267,24 +270,30 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 					        p1_len, p1);
 					return -1;
 				}
+				/* next_hop_offset skips the 'sip:[...@]' */
+				next_hop_offset = puri.host.s - uri.s;
 			} else {
 				if (parse_uri(p, p_len, &puri) < 0) {
 					LM_ERR("failed to parse contact of next hop: '%.*s'\n",
 					        p_len, p);
 					return -1;
 				}
+				next_hop_offset = puri.host.s - p;
 			}
 
 			/* write received/contact */
 			memcpy(buf, &p_len, sizeof p_len);
 			buf += sizeof p_len;
 			memcpy(buf, p, p_len);
+			next_hop_host = buf + next_hop_offset;
 			buf += p_len;
 
 			/* write path */
 			memcpy(buf, &p1_len, sizeof p1_len);
 			buf += sizeof p1_len;
-			memcpy(buf, p1, p1_len);
+			memcpy(buf, p1, (unsigned)p1_len);
+			if (p1_len > 0)
+				next_hop_host = buf + next_hop_offset;
 			buf += p1_len;
 
 			/* sock */
@@ -312,7 +321,9 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			memset(&next_hop, 0, sizeof next_hop);
 			next_hop.port  = puri.port_no;
 			next_hop.proto = puri.proto;
-			next_hop.name  = puri.host;
+			/* re-point next hop inside buffer */
+			next_hop.name.len  = puri.host.len;
+			next_hop.name.s  = next_hop_host;
 
 			/* write the next hop */
 			memcpy(buf, &next_hop, sizeof next_hop);
@@ -378,6 +389,7 @@ cdb_pack_ping_data(const str *aor, const cdb_pair_t *contact,
 	struct socket_info *sock = NULL;
 	struct proxy_l next_hop;
 	str ct_uri, received = STR_NULL, path, next_hop_uri;
+	char *next_hop_host;
 	int needed;
 	char *cp = *cpos;
 	int cols_needed = COL_CONTACT | COL_RECEIVED | COL_PATH | COL_CFLAGS;
@@ -476,11 +488,15 @@ skip_coords:
 	memcpy(cp, &ct_uri.len, sizeof ct_uri.len);
 	cp += sizeof ct_uri.len;
 	memcpy(cp, ct_uri.s, ct_uri.len);
+	if (path.len == 0)
+		next_hop_host = cp + (puri.host.s - next_hop_uri.s);
 	cp += ct_uri.len;
 
 	memcpy(cp, &path.len, sizeof path.len);
 	cp += sizeof path.len;
 	memcpy(cp, path.s, path.len);
+	if (path.len != 0)
+		next_hop_host = cp + (puri.host.s - next_hop_uri.s);
 	cp += path.len;
 
 	memcpy(cp, &sock, sizeof sock);
@@ -492,7 +508,8 @@ skip_coords:
 	memset(&next_hop, 0, sizeof next_hop);
 	next_hop.port  = puri.port_no;
 	next_hop.proto = puri.proto;
-	next_hop.name  = puri.host;
+	next_hop.name.len = puri.host.len;
+	next_hop.name.s = next_hop_host;
 	memcpy(cp, &next_hop, sizeof next_hop);
 	cp += sizeof next_hop;
 
@@ -637,6 +654,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	int needed;
 	int count;
 	int i = 0;
+	char *next_hop_host = NULL;
 	int cur_node_idx = 0, nr_nodes = 0;
 
 	cp = buf;
@@ -699,76 +717,57 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 				if (pinging_mode == PMD_OWNERSHIP && !is_my_contact(c))
 					continue;
 
-				if (c->received.s) {
-					needed = (int)
-					          (sizeof(c->received.len) + c->received.len +
-					           sizeof(c->path.len) + c->path.len +
-					           sizeof(c->sock) + sizeof(c->cflags) +
-					           sizeof(c->next_hop));
-					if (pack_coords)
-						needed += sizeof(ucontact_coords);
+				needed = (int)((c->received.s?
+							(sizeof(c->received.len) + c->received.len):
+							(sizeof(c->c.len) + c->c.len)) +
+						sizeof(c->path.len) + c->path.len +
+						sizeof(c->sock) + sizeof(c->cflags) +
+						sizeof(c->next_hop));
+				if (pack_coords)
+					needed += sizeof(ucontact_coords);
 
-					if (*len >= needed) {
+				if (*len >= needed) {
+					if (c->received.s) {
 						memcpy(cp,&c->received.len,sizeof(c->received.len));
 						cp = (char*)cp + sizeof(c->received.len);
 						memcpy(cp, c->received.s, c->received.len);
+						/* next_hop_host needs to skip the 'sip:[...@]' part
+						 * of the uri */
+						if (c->path.len == 0)
+							next_hop_host = cp + (c->next_hop.name.s - c->received.s);
 						cp = (char*)cp + c->received.len;
-						memcpy(cp, &c->path.len, sizeof(c->path.len));
-						cp = (char*)cp + sizeof(c->path.len);
-						memcpy(cp, c->path.s, c->path.len);
-						cp = (char*)cp + c->path.len;
-						memcpy(cp, &c->sock, sizeof(c->sock));
-						cp = (char*)cp + sizeof(c->sock);
-						memcpy(cp, &c->cflags, sizeof(c->cflags));
-						cp = (char*)cp + sizeof(c->cflags);
-						memcpy(cp, &c->next_hop, sizeof(c->next_hop));
-						cp = (char*)cp + sizeof(c->next_hop);
-
-						*len -= needed;
-						if (!pack_coords)
-							continue;
-
-						memcpy(cp, &c->contact_id, sizeof(c->contact_id));
-						cp = (char*)cp + sizeof(c->contact_id);
-
 					} else {
-						shortage += needed;
-					}
-				} else {
-					needed = (int)
-					          (sizeof(c->c.len) + c->c.len +
-					           sizeof(c->path.len) + c->path.len +
-					           sizeof(c->sock) + sizeof(c->cflags) +
-					           sizeof(c->next_hop));
-					if (pack_coords)
-						needed += sizeof(ucontact_coords);
-
-					if (*len >= needed) {
-						memcpy(cp, &c->c.len, sizeof(c->c.len));
+						memcpy(cp,&c->c.len,sizeof(c->c.len));
 						cp = (char*)cp + sizeof(c->c.len);
 						memcpy(cp, c->c.s, c->c.len);
+						if (c->path.len == 0)
+							next_hop_host = cp + (c->next_hop.name.s - c->c.s);
 						cp = (char*)cp + c->c.len;
-						memcpy(cp, &c->path.len, sizeof(c->path.len));
-						cp = (char*)cp + sizeof(c->path.len);
-						memcpy(cp, c->path.s, c->path.len);
-						cp = (char*)cp + c->path.len;
-						memcpy(cp, &c->sock, sizeof(c->sock));
-						cp = (char*)cp + sizeof(c->sock);
-						memcpy(cp, &c->cflags, sizeof(c->cflags));
-						cp = (char*)cp + sizeof(c->cflags);
-						memcpy(cp, &c->next_hop, sizeof(c->next_hop));
-						cp = (char*)cp + sizeof(c->next_hop);
-
-						*len -= needed;
-						if (!pack_coords)
-							continue;
-
-						memcpy(cp, &c->contact_id, sizeof(c->contact_id));
-						cp = (char*)cp + sizeof(c->contact_id);
-
-					} else {
-						shortage += needed;
 					}
+					memcpy(cp, &c->path.len, sizeof(c->path.len));
+					cp = (char*)cp + sizeof(c->path.len);
+					memcpy(cp, c->path.s, c->path.len);
+					if (c->path.len != 0)
+						next_hop_host = cp + (c->next_hop.name.s - c->path.s);
+					cp = (char*)cp + c->path.len;
+					memcpy(cp, &c->sock, sizeof(c->sock));
+					cp = (char*)cp + sizeof(c->sock);
+					memcpy(cp, &c->cflags, sizeof(c->cflags));
+					cp = (char*)cp + sizeof(c->cflags);
+					memcpy(cp, &c->next_hop, sizeof(c->next_hop));
+					/* re-point the next hop inside buffer */
+					((struct proxy_l *)cp)->name.s = next_hop_host;
+					cp = (char*)cp + sizeof(c->next_hop);
+
+					*len -= needed;
+					if (!pack_coords)
+						continue;
+
+					memcpy(cp, &c->contact_id, sizeof(c->contact_id));
+					cp = (char*)cp + sizeof(c->contact_id);
+
+				} else {
+					shortage += needed;
 				}
 			}
 		}
@@ -912,6 +911,11 @@ int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
 static inline int new_dlist(str* _n, dlist_t** _d)
 {
 	dlist_t* ptr;
+
+	if (get_osips_state()>STATE_STARTING) {
+		LM_ERR("cannot register new domain during runtime\n");
+		return -1;
+	}
 
 	/* Domains are created before ser forks,
 	 * so we can create them using pkg_malloc

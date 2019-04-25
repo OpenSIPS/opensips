@@ -36,7 +36,7 @@
 /*! \brief
  * Lookup a contact in usrloc and rewrite R-URI if found
  */
-int lookup(struct sip_msg* _m, char* _table, char* _flags, char* _aor);
+int lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri);
 
 /*! \brief the is_registered() function
  * Return 1 if the AOR is registered, -1 otherwise
@@ -45,7 +45,7 @@ int lookup(struct sip_msg* _m, char* _table, char* _flags, char* _aor);
  *	- "to" header on any other SIP REQUEST
  *	- aor parameter of the function
  */
-int is_registered(struct sip_msg* _m, char *_d, char* _a);
+int is_registered(struct sip_msg* _m, void *_d, str* _a);
 
 /*! \brief the is_contact_registered() function
  * Return 1 if the contact and/or callid is registered
@@ -60,8 +60,8 @@ int is_registered(struct sip_msg* _m, char *_d, char* _a);
  *  callid params are provided
  *  - the contact parameter (third parameter)
  */
-int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
-							char* _c, char* _cid);
+int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
+							str* _c, str* _cid);
 
 /*! \brief the is_ip_registered() function
  * Return 1 if the IPs are registered for the received parameter
@@ -71,5 +71,5 @@ int is_contact_registered(struct sip_msg* _m, char *_d, char* _a,
  * IPs comes from:
  * - the IPs avp given as a third parameter
  */
-int is_ip_registered(struct sip_msg* _m, char* _d, char* _a, char *_avp);
+int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec);
 #endif /* LOOKUP_H */

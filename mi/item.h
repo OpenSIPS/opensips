@@ -159,6 +159,14 @@ mi_response_t *shm_clone_mi_response(mi_response_t *src);
  */
 void free_shm_mi_response(mi_response_t *response);
 
+/* Clones a MI item to shm memory
+ */
+mi_item_t *shm_clone_mi_item(mi_item_t *src);
+
+/* Frees a MI item from shm memory
+ */
+void free_shm_mi_item(mi_item_t *response);
+
 /* The string provided in @value will be freed along with the MI request
  * so it should be strdup'ed as necessary
  */
@@ -180,6 +188,19 @@ int get_mi_arr_param_string(const mi_item_t *array, int pos,
  * returned by get_mi_array_param()
  */
 int get_mi_arr_param_int(const mi_item_t *array, int pos, int *value);
+
+/* set of functions for trying to get a parameter, but do not fail if
+ * it cannot be found
+ */
+int try_get_mi_int_param(const mi_params_t *params, const char *name,
+		int *value);
+int try_get_mi_string_param(const mi_params_t *params, const char *name,
+		char **value, int *value_len);
+int try_get_mi_array_param(const mi_params_t *params, const char *name,
+		mi_item_t **value, int *no_items);
+int try_get_mi_arr_param_string(const mi_item_t *array, int pos,
+		char **value, int *value_len);
+int try_get_mi_arr_param_int(const mi_item_t *array, int pos, int *value);
 
 /* Initializes a standard parameter error MI Response.
  */

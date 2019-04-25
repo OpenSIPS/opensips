@@ -542,7 +542,7 @@ void handle_ebr_ipc(int sender, void *payload)
 
 		/* route the notification route */
 		set_route_type( REQUEST_ROUTE );
-		run_top_route( rlist[(int)(long)job->data].a, &req);
+		run_top_route( sroutes->request[(int)(long)job->data].a, &req);
 
 		if (ebr_tmb.t_set_remote_t)
 			ebr_tmb.t_set_remote_t( NULL );

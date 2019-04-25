@@ -60,22 +60,19 @@ static int child_init(int);
 static void destroy(void);
 
 
-int sca_set_calling_line(struct sip_msg *msg, char *line_var);
-int sca_set_called_line(struct sip_msg *msg, char *line_var);
+int sca_set_calling_line(struct sip_msg *msg, str *line);
+int sca_set_called_line(struct sip_msg *msg, str *line);
 
 
 /* module exported commands */
-static cmd_export_t cmds[] =
-{
-	{"sca_set_calling_line", (cmd_function)sca_set_calling_line, 0,
-		NULL,            NULL,                 REQUEST_ROUTE },
-	{"sca_set_calling_line", (cmd_function)sca_set_calling_line, 1,
-		fixup_pvar_null, fixup_free_pvar_null, REQUEST_ROUTE },
-	{"sca_set_called_line",  (cmd_function)sca_set_called_line,  0,
-		NULL,            NULL,                 REQUEST_ROUTE },
-	{"sca_set_called_line",  (cmd_function)sca_set_called_line,  1,
-		fixup_pvar_null, fixup_free_pvar_null, REQUEST_ROUTE },
-	{0, 0, 0, 0, 0, 0}
+static cmd_export_t cmds[] ={
+	{"sca_set_calling_line", (cmd_function)sca_set_calling_line, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"sca_set_called_line",  (cmd_function)sca_set_called_line, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 /* module exported parameters */
@@ -126,7 +123,8 @@ struct module_exports exports= {
 	mod_init,				/* module initialization function */
 	(response_function) 0,	/* response handling function */
 	destroy,				/* destroy function */
-	child_init				/* per-child init function */
+	child_init,				/* per-child init function */
+	0						/* reload confirm function */
 };
 
 
@@ -140,7 +138,7 @@ static int mod_init(void)
 	LM_INFO("initializing...\n");
 
 	/* bind to presence module */
-	bind_presence= (bind_presence_t)find_export("bind_presence", 1,0);
+	bind_presence= (bind_presence_t)find_export("bind_presence",0);
 	if (!bind_presence) {
 		LM_ERR("can't bind presence\n");
 		return -1;
@@ -192,11 +190,8 @@ static void destroy(void)
 }
 
 
-int sca_set_calling_line(struct sip_msg *msg, char *line_var)
+int sca_set_calling_line(struct sip_msg *msg, str *line)
 {
-	pv_value_t value;
-	str line;
-
 	if (no_dialog_support) {
 		LM_ERR("dialog support is disabled, cannot use this function\n");
 		return -1;
@@ -206,35 +201,21 @@ int sca_set_calling_line(struct sip_msg *msg, char *line_var)
 		return 1;
 
 	/* get the name of line first */
-	if (line_var) {
-		/* take it from param */
-		if ( pv_get_spec_value( msg, (pv_spec_p)line_var, &value) < 0 ) {
-			LM_ERR("failed to evaluate parameter\n");
-			return -1;
-		}
-		if ( (value.flags&PV_VAL_STR)==0 ) {
-			LM_ERR("line value is not a string (flags are %d)\n",value.flags);
-			return -1;
-		}
-		line = value.rs;
-	} else {
+	if (!line) {
 		/* take it from FROM msg */
 		if (parse_from_header(msg) < 0 ) {
 			LM_ERR("failed to extract FROM URI\n");
 			return -1;
 		}
-		line = get_from(msg)->uri;
+		line = &(get_from(msg)->uri);
 	}
 
-	return sca_set_line(msg, &line, 1/*calling*/);
+	return sca_set_line(msg, line, 1/*calling*/);
 }
 
 
-int sca_set_called_line(struct sip_msg *msg, char *line_var)
+int sca_set_called_line(struct sip_msg *msg, str *line)
 {
-	pv_value_t value;
-	str line;
-
 	if (no_dialog_support) {
 		LM_ERR("dialog support is disabled, cannot use this function\n");
 		return -1;
@@ -243,23 +224,11 @@ int sca_set_called_line(struct sip_msg *msg, char *line_var)
 	if (msg->REQ_METHOD != METHOD_INVITE)
 		return 1;
 
-	/* get the name of line first */
-	if (line_var) {
-		/* take it from param */
-		if ( pv_get_spec_value( msg, (pv_spec_p)line_var, &value) < 0 ) {
-			LM_ERR("failed to evaluate parameter\n");
-			return -1;
-		}
-		if ( (value.flags&PV_VAL_STR)==0 ) {
-			LM_ERR("line value is not a string (flags are %d)\n",value.flags);
-			return -1;
-		}
-		line = value.rs;
-	} else {
+	if (!line) {
 		/* take it from RURI msg */
-		line = *GET_RURI(msg);
+		line = GET_RURI(msg);
 	}
 
-	return sca_set_line(msg, &line, 0/*called*/);
+	return sca_set_line(msg, line, 0/*called*/);
 }
 

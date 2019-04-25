@@ -52,11 +52,6 @@ int parse_dlg_flags(modparam_t type, void *val);
 
 int mod_init(void);
 
-static cmd_export_t cmds[] =
-{
-	{ NULL, NULL, 0, NULL, NULL, 0 },
-};
-
 static param_export_t params[] =
 {
 	{ "sequential_route", STR_PARAM, &seq_route },
@@ -93,7 +88,7 @@ struct module_exports exports =
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
 	&deps,            /* OpenSIPS module dependencies */
-	cmds,
+	NULL,
 	NULL,
 	params,
 	NULL,
@@ -105,6 +100,7 @@ struct module_exports exports =
 	NULL,
 	NULL,
 	NULL,
+	NULL              /* reload confirm function */
 };
 
 int mod_init(void)
@@ -112,7 +108,8 @@ int mod_init(void)
 	LM_DBG("initializing module...\n");
 
 	if (seq_route) {
-		seq_route_id = get_script_route_ID_by_name(seq_route, rlist, RT_NO);
+		seq_route_id = get_script_route_ID_by_name(seq_route,
+			sroutes->request, RT_NO);
 		if (seq_route_id == -1)
 			LM_ERR("route \"%s\" does not exist! ignoring\n", seq_route);
 	}
@@ -183,9 +180,9 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 				       msg->callid->body.len, msg->callid->body.s);
 
 			if (msg->REQ_METHOD == METHOD_ACK) {
-				rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL);
+				rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 				if (rc > 0)
-					tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL);
+					tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 				return SCB_RUN_POST_CBS;
 			}
@@ -198,14 +195,14 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	if (msg->REQ_METHOD == METHOD_CANCEL) {
 		seq_request = 1;
 
-		rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL);
+		rc = tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 		if (rc > 0)
-			tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL);
+			tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 		return SCB_RUN_POST_CBS;
 	}
 
-	if (tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL) == 0)
+	if (tm_api.t_check_trans(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) == 0)
 		return SCB_RUN_POST_CBS;
 
 	/**
@@ -216,14 +213,14 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	if (seq_request) {
 		if (seq_route_id > 0) {
 			LM_DBG("running seq route '%s'\n", seq_route);
-			if (run_top_route(rlist[seq_route_id].a, msg) & ACT_FL_DROP) {
+			if (run_top_route(sroutes->request[seq_route_id].a, msg) & ACT_FL_DROP) {
 				LM_DBG("script exited in the seq route\n");
 
 				return SCB_RUN_POST_CBS;
 			}
 		}
 
-		if (tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL) < 0)
+		if (tm_api.t_relay(msg, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) < 0)
 			sl_api.reply(msg, 500, &status_500);
 
 		return SCB_RUN_POST_CBS;
@@ -246,7 +243,7 @@ int parse_dlg_flags(modparam_t type, void *val)
 	input.s = val;
 	input.len = strlen(val);
 
-	create_dialog_flags = parse_create_dlg_flags(input);
+	create_dialog_flags = parse_create_dlg_flags(&input);
 
 	return 1;
 }

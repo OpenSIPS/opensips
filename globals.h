@@ -37,6 +37,7 @@
 extern int testing_framework;
 
 extern char * cfg_file;
+extern char *preproc;
 extern int config_check;
 extern char *stat_file;
 
@@ -48,11 +49,14 @@ extern struct socket_info* bind_address; /*!< pointer to the crt. proc.  listeni
 extern int auto_aliases;
 
 extern unsigned int maxbuffer;
-extern int children_no;
+extern int udp_workers_no;
 extern enum poll_types io_poll_method;
+extern int auto_scaling_enabled;
+extern int auto_scaling_cycle;
 
 /* TCP network layer related parameters */
-extern int tcp_children_no;
+extern char* tcp_auto_scaling_profile;
+extern int tcp_workers_no;
 extern int tcp_disable;
 extern int tcp_accept_aliases;
 extern int tcp_connect_timeout;
@@ -67,6 +71,7 @@ extern int tcp_keepinterval;
 extern int tcp_max_msg_time;
 extern int tcp_no_new_conn;
 extern int tcp_no_new_conn_bflag;
+extern int tcp_no_new_conn_rplflag;
 
 extern int no_daemon_mode;
 extern int debug_mode;

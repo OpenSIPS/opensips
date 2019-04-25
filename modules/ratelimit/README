@@ -544,7 +544,7 @@ m
        Otherwise only the one specified.
 
    MI FIFO Command Format:
-                opensipsctl fifo rl_list gw_10.0.0.1
+                opensips-cli -x mi rl_list gw_10.0.0.1
 
 1.8.2.  rl_reset_pipe
 
@@ -557,7 +557,7 @@ m
        be reset.
 
    MI FIFO Command Format:
-                opensipsctl fifo rl_reset_pipe gw_10.0.0.1
+                opensips-cli -x mi rl_reset_pipe gw_10.0.0.1
 
 1.8.3.  rl_set_pid
 
@@ -571,7 +571,7 @@ m
      * kd - the derivative parameter.
 
    MI FIFO Command Format:
-                opensipsctl fifo rl_set_pid 0.5 0.5 0.5
+                opensips-cli -x mi rl_set_pid 0.5 0.5 0.5
 
 1.8.4.  rl_get_pid
 
@@ -582,7 +582,7 @@ m
    Parameters: none
 
    MI FIFO Command Format:
-                opensipsctl fifo rl_get_pid
+                opensips-cli -x mi rl_get_pid
 
 1.8.5.  rl_bin_status
 
@@ -594,7 +594,7 @@ m
    Parameters: none
 
    MI FIFO Command Format:
-                opensipsctl fifo rl_bin_status
+                opensips-cli -x mi rl_bin_status
 
 1.9. Exported Pseudo-Variables
 
@@ -611,10 +611,10 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 117 45 2982 2629
+   1. Razvan Crainea (@razvancrainea) 118 46 2987 2634
    2. Ovidiu Sas (@ovidiusas) 38 17 2481 44
-   3. Vlad Patrascu (@rvlad-patrascu) 26 14 302 448
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 22 20 63 55
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 28 24 108 118
+   4. Vlad Patrascu (@rvlad-patrascu) 28 15 340 536
    5. Liviu Chircu (@liviuchircu) 17 13 43 112
    6. Eseanu Marius Cristian (@eseanucristian) 13 6 329 195
    7. Daniel-Constantin Mierla (@miconda) 9 7 24 18
@@ -647,11 +647,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Jan 2019
-   2.  Liviu Chircu (@liviuchircu)              Mar 2014 - Nov 2018
-   3.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   4.  Razvan Crainea (@razvancrainea)          Sep 2011 - Apr 2018
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2008 - Mar 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2008 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)          Sep 2011 - Mar 2019
+   4.  Liviu Chircu (@liviuchircu)              Mar 2014 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    6.  Ionel Cerghit (@ionel-cerghit)           Jul 2015 - Dec 2016
    7.  Julián Moreno Patiño                     Feb 2016 - Feb 2016
    8.  Ionut Ionita (@ionutrazvanionita)        Dec 2015 - Dec 2015
@@ -671,9 +671,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Ionut Ionita (@ionutrazvanionita), Eseanu
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Eseanu
    Marius Cristian (@eseanucristian), Bogdan-Andrei Iancu
    (@bogdan-iancu), Walter Doekes (@wdoekes), Arnaud Boussus,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius,

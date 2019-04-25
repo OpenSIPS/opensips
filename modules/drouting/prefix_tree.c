@@ -36,6 +36,7 @@
 #include "../../time_rec.h"
 
 #include "prefix_tree.h"
+#include "dr_partitions.h"
 #include "routing.h"
 
 extern int inode;
@@ -237,7 +238,9 @@ add_prefix(
 	ptree_t *ptree,
 	str* prefix,
 	rt_info_t *r,
-	unsigned int rg
+	unsigned int rg,
+	osips_malloc_f malloc_f,
+	osips_free_f free_f
 )
 {
 	char* tmp=NULL;
@@ -261,7 +264,8 @@ add_prefix(
 			/* last digit in the prefix string */
 			LM_DBG("adding info %p, %d at: "
 				"%p (%d)\n", r, rg, &(ptree->ptnode[*tmp-'0']), *tmp-'0');
-			res = add_rt_info(&(ptree->ptnode[*tmp-'0']), r,rg);
+			res = add_rt_info(&(ptree->ptnode[*tmp-'0']),
+					r,rg, malloc_f, free_f);
 			if(res < 0 ) {
                 LM_ERR("adding rt info doesn't work\n");
 				goto err_exit;
@@ -273,7 +277,7 @@ add_prefix(
 		/* process the current digit in the prefix */
 		if(NULL == ptree->ptnode[*tmp - '0'].next) {
 			/* allocate new node */
-			INIT_PTREE_NODE(ptree, ptree->ptnode[*tmp - '0'].next);
+			INIT_PTREE_NODE(malloc_f, ptree, ptree->ptnode[*tmp - '0'].next);
 			inode+=10;
 #if 0
 			printf("new tree node: %p (bp: %p)\n",
@@ -295,7 +299,8 @@ err_exit:
 
 int
 del_tree(
-		ptree_t* t
+		ptree_t* t,
+		osips_free_f free_f
 		)
 {
 	int i,j;
@@ -308,22 +313,23 @@ del_tree(
 			for(j=0;j<t->ptnode[i].rg_pos;j++) {
 				/* if non intermediate delete the routing info */
 				if(t->ptnode[i].rg[j].rtlw !=NULL)
-					del_rt_list(t->ptnode[i].rg[j].rtlw);
+					del_rt_list(t->ptnode[i].rg[j].rtlw, free_f);
 			}
-			shm_free(t->ptnode[i].rg);
+			func_free(free_f, t->ptnode[i].rg);
 		}
 		/* if non leaf delete all the children */
 		if(t->ptnode[i].next != NULL)
-			del_tree(t->ptnode[i].next);
+			del_tree(t->ptnode[i].next, free_f);
 	}
-	shm_free(t);
+	func_free(free_f, t);
 exit:
 	return 0;
 }
 
 void
 del_rt_list(
-		rt_info_wrp_t *rwl
+		rt_info_wrp_t *rwl,
+		osips_free_f f
 		)
 {
 	rt_info_wrp_t* t=rwl;
@@ -331,23 +337,24 @@ del_rt_list(
 		t=rwl;
 		rwl=rwl->next;
 		if ( (--t->rtl->ref_cnt)==0)
-			free_rt_info(t->rtl);
-		shm_free(t);
+			free_rt_info(t->rtl, f);
+		func_free(f, t);
 	}
 }
 
 void
 free_rt_info(
-		rt_info_t *rl
+		rt_info_t *rl,
+		osips_free_f f
 		)
 {
 	if(NULL == rl)
 		return;
 	if(NULL!=rl->pgwl)
-		shm_free(rl->pgwl);
+		func_free(f, rl->pgwl);
 	if(NULL!=rl->time_rec)
 		tmrec_free(rl->time_rec);
-	shm_free(rl);
+	func_free(f, rl);
 	return;
 }
 

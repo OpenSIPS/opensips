@@ -286,7 +286,10 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		goto error1;
 	}
 
-	if (local_rlist.a) {
+	/* set transaction AVP list */
+	backup = set_avp_list( &new_cell->user_avps );
+
+	if (sroutes->local.a) {
 		LM_DBG("building sip_msg from buffer\n");
 		req = buf_to_sip_msg(buf, buf_len, dialog);
 		if (req==NULL) {
@@ -295,14 +298,12 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			/* set this transaction as active one */
 			backup_cell = get_t();
 			set_t( new_cell );
-			/* set transaction AVP list */
-			backup = set_avp_list( &new_cell->user_avps );
 			/* disable parallel forking */
 			set_dset_state( 0 /*disable*/);
 
 			/* run the route */
 			swap_route_type( backup_route_type, LOCAL_ROUTE);
-			run_top_route( local_rlist.a, req);
+			run_top_route( sroutes->local.a, req);
 			set_route_type( backup_route_type );
 
 			/* transfer current message context back to t */
@@ -311,7 +312,6 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			set_t( backup_cell );
 
 			set_dset_state( 1 /*enable*/);
-			set_avp_list( backup );
 
 			/* check for changes - if none, do not regenerate the buffer */
 			dst_changed = 1;
@@ -471,11 +471,16 @@ abort_update:
 		REF_UNSAFE(new_cell);
 	}
 
+	if (new_cell->uac[0].br_flags & tcp_no_new_conn_bflag)
+		tcp_no_new_conn = 1;
+
 	if (SEND_BUFFER(request) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n",
 			dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 	}
+
+	tcp_no_new_conn = 0;
 
 	if (method->len==ACK_LEN && memcmp(method->s, ACK, ACK_LEN)==0 ) {
 		t_release_transaction(new_cell);
@@ -483,6 +488,7 @@ abort_update:
 		start_retr(request);
 	}
 
+	set_avp_list( backup );
 	free_proxy( proxy );
 	pkg_free( proxy );
 

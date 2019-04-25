@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -15,15 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- *
- * History:
- * --------
- *  2003-04-08  init_mallocs split into init_{pkg,shm}_malloc (andrei)
- *
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,57 +28,190 @@
 
 #include "shm_mem.h"
 
-#ifdef PKG_MALLOC
-	char* mem_pool = NULL;
-	#ifdef VQ_MALLOC
-		struct vqm_block* mem_block;
-	#elif defined F_MALLOC
-		struct fm_block* mem_block;
-	#elif defined HP_MALLOC
-		struct hp_block* mem_block;
-	#elif defined QM_MALLOC
-		struct qm_block* mem_block;
-	#else
-		#error "no memory allocator selected"
-	#endif
+enum osips_mm mem_allocator_pkg = MM_NONE;
+
+#ifndef INLINE_ALLOC
+#ifdef DBG_MALLOC
+void *(*gen_pkg_malloc)(void *blk, unsigned long size,
+                        const char *file, const char *func, unsigned int line);
+void *(*gen_pkg_realloc)(void *blk, void *p, unsigned long size,
+                        const char *file, const char *func, unsigned int line);
+void (*gen_pkg_free)(void *blk, void *p,
+                      const char *file, const char *func, unsigned int line);
+#else
+void *(*gen_pkg_malloc)(void *blk, unsigned long size);
+void *(*gen_pkg_realloc)(void *blk, void *p, unsigned long size);
+void (*gen_pkg_free)(void *blk, void *p);
+#endif
+void (*gen_pkg_info)(void *blk, struct mem_info *info);
+void (*gen_pkg_status)(void *blk);
+unsigned long (*gen_pkg_get_size)(void *blk);
+unsigned long (*gen_pkg_get_used)(void *blk);
+unsigned long (*gen_pkg_get_rused)(void *blk);
+unsigned long (*gen_pkg_get_mused)(void *blk);
+unsigned long (*gen_pkg_get_free)(void *blk);
+unsigned long (*gen_pkg_get_frags)(void *blk);
 #endif
 
+#ifdef PKG_MALLOC
+	char *mem_pool;
+	void *mem_block;
+#endif
+
+int set_pkg_mm(const char *mm_name)
+{
+#ifdef PKG_MALLOC
+#ifdef INLINE_ALLOC
+	LM_NOTICE("this is an inlined allocator build (see opensips -V), "
+	          "cannot set a custom pkg allocator (%s)\n", mm_name);
+	return 0;
+#endif
+
+	if (parse_mm(mm_name, &mem_allocator_pkg) < 0)
+		return -1;
+
+	return 0;
+#else
+	LM_ERR("cannot change pkg allocator when system malloc is used!\n");
+	return -1;
+#endif
+}
 
 int init_pkg_mallocs(void)
 {
 #ifdef PKG_MALLOC
-	/*init mem*/
 	mem_pool = malloc(pkg_mem_size);
-	if (mem_pool==NULL){
-		LM_CRIT("could not initialize PKG memory: %ld\n",
-			pkg_mem_size);
+	if (!mem_pool) {
+		LM_CRIT("could not initialize PKG memory: %ld\n", pkg_mem_size);
 		return -1;
 	}
-	#ifdef VQ_MALLOC
-		mem_block=vqm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-	#elif F_MALLOC
-		mem_block=fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-	#elif HP_MALLOC
-		mem_block=hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
-	#elif QM_MALLOC
-		mem_block=qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
-	#else
-		#error "no memory allocator selected"
-	#endif
-	if (mem_block==0){
+
+#ifdef INLINE_ALLOC
+#if defined F_MALLOC
+		mem_block = fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
+#elif defined Q_MALLOC
+		mem_block = qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
+#elif defined HP_MALLOC
+		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
+#endif
+#else
+	if (mem_allocator_pkg == MM_NONE)
+		mem_allocator_pkg = mem_allocator;
+
+	switch (mem_allocator_pkg) {
+#ifdef F_MALLOC
+	case MM_F_MALLOC:
+		mem_block = fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
+		gen_pkg_malloc    = (osips_block_malloc_f)fm_malloc;
+		gen_pkg_realloc   = (osips_block_realloc_f)fm_realloc;
+		gen_pkg_free      = (osips_block_free_f)fm_free;
+		gen_pkg_info      = (osips_mem_info_f)fm_info;
+		gen_pkg_status    = (osips_mem_status_f)fm_status;
+		gen_pkg_get_size  = (osips_get_mmstat_f)fm_get_size;
+		gen_pkg_get_used  = (osips_get_mmstat_f)fm_get_used;
+		gen_pkg_get_rused = (osips_get_mmstat_f)fm_get_real_used;
+		gen_pkg_get_mused = (osips_get_mmstat_f)fm_get_max_real_used;
+		gen_pkg_get_free  = (osips_get_mmstat_f)fm_get_free;
+		gen_pkg_get_frags = (osips_get_mmstat_f)fm_get_frags;
+		break;
+#endif
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
+		mem_block = qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
+		gen_pkg_malloc    = (osips_block_malloc_f)qm_malloc;
+		gen_pkg_realloc   = (osips_block_realloc_f)qm_realloc;
+		gen_pkg_free      = (osips_block_free_f)qm_free;
+		gen_pkg_info      = (osips_mem_info_f)qm_info;
+		gen_pkg_status    = (osips_mem_status_f)qm_status;
+		gen_pkg_get_size  = (osips_get_mmstat_f)qm_get_size;
+		gen_pkg_get_used  = (osips_get_mmstat_f)qm_get_used;
+		gen_pkg_get_rused = (osips_get_mmstat_f)qm_get_real_used;
+		gen_pkg_get_mused = (osips_get_mmstat_f)qm_get_max_real_used;
+		gen_pkg_get_free  = (osips_get_mmstat_f)qm_get_free;
+		gen_pkg_get_frags = (osips_get_mmstat_f)qm_get_frags;
+		break;
+#endif
+#ifdef HP_MALLOC
+	case MM_HP_MALLOC:
+		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
+		gen_pkg_malloc     = (osips_block_malloc_f)hp_pkg_malloc;
+		gen_pkg_realloc    = (osips_block_realloc_f)hp_pkg_realloc;
+		gen_pkg_free       = (osips_block_free_f)hp_pkg_free;
+		gen_pkg_info       = (osips_mem_info_f)hp_info;
+		gen_pkg_status     = (osips_mem_status_f)hp_status;
+		gen_pkg_get_size   = (osips_get_mmstat_f)hp_pkg_get_size;
+		gen_pkg_get_used   = (osips_get_mmstat_f)hp_pkg_get_used;
+		gen_pkg_get_rused  = (osips_get_mmstat_f)hp_pkg_get_real_used;
+		gen_pkg_get_mused  = (osips_get_mmstat_f)hp_pkg_get_max_real_used;
+		gen_pkg_get_free   = (osips_get_mmstat_f)hp_pkg_get_free;
+		gen_pkg_get_frags  = (osips_get_mmstat_f)hp_pkg_get_frags;
+		break;
+#endif
+#ifdef DBG_MALLOC
+#ifdef F_MALLOC
+	case MM_F_MALLOC_DBG:
+		mem_block = fm_malloc_init(mem_pool, pkg_mem_size, "pkg");
+		gen_pkg_malloc    = (osips_block_malloc_f)fm_malloc_dbg;
+		gen_pkg_realloc   = (osips_block_realloc_f)fm_realloc_dbg;
+		gen_pkg_free      = (osips_block_free_f)fm_free_dbg;
+		gen_pkg_info      = (osips_mem_info_f)fm_info;
+		gen_pkg_status    = (osips_mem_status_f)fm_status_dbg;
+		gen_pkg_get_size  = (osips_get_mmstat_f)fm_get_size;
+		gen_pkg_get_used  = (osips_get_mmstat_f)fm_get_used;
+		gen_pkg_get_rused = (osips_get_mmstat_f)fm_get_real_used;
+		gen_pkg_get_mused = (osips_get_mmstat_f)fm_get_max_real_used;
+		gen_pkg_get_free  = (osips_get_mmstat_f)fm_get_free;
+		gen_pkg_get_frags = (osips_get_mmstat_f)fm_get_frags;
+		break;
+#endif
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC_DBG:
+		mem_block = qm_malloc_init(mem_pool, pkg_mem_size, "pkg");
+		gen_pkg_malloc    = (osips_block_malloc_f)qm_malloc_dbg;
+		gen_pkg_realloc   = (osips_block_realloc_f)qm_realloc_dbg;
+		gen_pkg_free      = (osips_block_free_f)qm_free_dbg;
+		gen_pkg_info      = (osips_mem_info_f)qm_info;
+		gen_pkg_status    = (osips_mem_status_f)qm_status_dbg;
+		gen_pkg_get_size  = (osips_get_mmstat_f)qm_get_size;
+		gen_pkg_get_used  = (osips_get_mmstat_f)qm_get_used;
+		gen_pkg_get_rused = (osips_get_mmstat_f)qm_get_real_used;
+		gen_pkg_get_mused = (osips_get_mmstat_f)qm_get_max_real_used;
+		gen_pkg_get_free  = (osips_get_mmstat_f)qm_get_free;
+		gen_pkg_get_frags = (osips_get_mmstat_f)qm_get_frags;
+		break;
+#endif
+#ifdef HP_MALLOC
+	case MM_HP_MALLOC_DBG:
+		mem_block = hp_pkg_malloc_init(mem_pool, pkg_mem_size, "pkg");
+		gen_pkg_malloc    = (osips_block_malloc_f)hp_pkg_malloc_dbg;
+		gen_pkg_realloc   = (osips_block_realloc_f)hp_pkg_realloc_dbg;
+		gen_pkg_free      = (osips_block_free_f)hp_pkg_free_dbg;
+		gen_pkg_info      = (osips_mem_info_f)hp_info;
+		gen_pkg_status    = (osips_mem_status_f)hp_status_dbg;
+		gen_pkg_get_size  = (osips_get_mmstat_f)hp_pkg_get_size;
+		gen_pkg_get_used  = (osips_get_mmstat_f)hp_pkg_get_used;
+		gen_pkg_get_rused = (osips_get_mmstat_f)hp_pkg_get_real_used;
+		gen_pkg_get_mused = (osips_get_mmstat_f)hp_pkg_get_max_real_used;
+		gen_pkg_get_free  = (osips_get_mmstat_f)hp_pkg_get_free;
+		gen_pkg_get_frags = (osips_get_mmstat_f)hp_pkg_get_frags;
+		break;
+#endif
+#endif
+	default:
+		LM_ERR("current build does not include support for "
+		       "selected allocator (%s)\n", mm_str(mem_allocator_pkg));
+		return -1;
+	}
+#endif
+
+	if (!mem_block) {
 		LM_CRIT("could not initialize memory pool\n");
 		fprintf(stderr, "Given PKG mem size is not enough: %ld\n",
 			pkg_mem_size );
 		return -1;
 	}
-#elif defined USE_SHM_MEM
-	if (shm_mem_init()<0) {
-		LM_CRIT("could not initialize shared memory pool, exiting...\n");
-		 fprintf(stderr, "Too much shared memory demanded: %ld\n",
-			shm_mem_size );
-		return -1;
-	}
 #endif
+
 	return 0;
 }
 
@@ -93,12 +220,12 @@ int init_pkg_mallocs(void)
 #if defined(PKG_MALLOC) && defined(STATISTICS)
 void set_pkg_stats(pkg_status_holder *status)
 {
-	status[0][PKG_TOTAL_SIZE_IDX] = MY_PKG_GET_SIZE();
-	status[0][PKG_USED_SIZE_IDX] = MY_PKG_GET_USED();
-	status[0][PKG_REAL_USED_SIZE_IDX] = MY_PKG_GET_RUSED();
-	status[0][PKG_MAX_USED_SIZE_IDX] = MY_PKG_GET_MUSED();
-	status[0][PKG_FREE_SIZE_IDX] = MY_PKG_GET_FREE();
-	status[0][PKG_FRAGMENTS_SIZE_IDX] = MY_PKG_GET_FRAGS();
+	status[0][PKG_TOTAL_SIZE_IDX] = PKG_GET_SIZE();
+	status[0][PKG_USED_SIZE_IDX] = PKG_GET_USED();
+	status[0][PKG_REAL_USED_SIZE_IDX] = PKG_GET_RUSED();
+	status[0][PKG_MAX_USED_SIZE_IDX] = PKG_GET_MUSED();
+	status[0][PKG_FREE_SIZE_IDX] = PKG_GET_FREE();
+	status[0][PKG_FRAGMENTS_SIZE_IDX] = PKG_GET_FRAGS();
 }
 
 /* event interface information */
@@ -180,8 +307,8 @@ void pkg_threshold_check(void)
 	}
 
 	// compute the percentage
-	used = MY_PKG_GET_RUSED();
-	size = MY_PKG_GET_SIZE();
+	used = PKG_GET_RUSED();
+	size = PKG_GET_SIZE();
 	pkg_perc = used * 100 / size;
 
 	/* check if the event has to be raised or if it was already notified */
@@ -197,21 +324,19 @@ void pkg_threshold_check(void)
 
 int init_shm_mallocs(void)
 {
-	#ifndef USE_SHM_MEM
-	if (shm_mem_init()<0) {
+	if (shm_mem_init() < 0) {
 		LM_CRIT("could not initialize shared memory pool, exiting...\n");
 		 fprintf(stderr, "Too much shared memory demanded: %ld\n",
 			shm_mem_size );
 		return -1;
 	}
-	#endif
 
 	return 0;
 }
 
 #ifdef SYSTEM_MALLOC
 void *
-sys_malloc(size_t s, const char *file, const char *function, int line)
+sys_malloc(unsigned long s, const char *file, const char *function, unsigned int line)
 {
 	void *v;
 
@@ -222,7 +347,7 @@ sys_malloc(size_t s, const char *file, const char *function, int line)
 }
 
 void *
-sys_realloc(void *p, size_t s, const char *file, const char *function, int line)
+sys_realloc(void *p, unsigned long s, const char *file, const char *function, unsigned int line)
 {
 	void *v;
 
@@ -233,7 +358,7 @@ sys_realloc(void *p, size_t s, const char *file, const char *function, int line)
 }
 
 void
-sys_free(void *p, const char *file, const char *function, int line)
+sys_free(void *p, const char *file, const char *function, unsigned int line)
 {
 
 	LM_DBG("%s:%s:%d: free %p\n", file, function, line, p);

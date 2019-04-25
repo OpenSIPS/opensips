@@ -338,6 +338,7 @@ modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
 		</programlisting>
 		</example>
 	</section>
+	</section>
 
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -403,8 +404,6 @@ modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
 ...
 		</programlisting>
 		</example>
-	</section>
-
 	</section>
 
 	</section>

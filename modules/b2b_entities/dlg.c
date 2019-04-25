@@ -603,12 +603,12 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		/* send 200 OK and exit */
 		tmb.t_reply(msg, 200, &reason);
 		tm_tran = tmb.t_gett();
-		if(tm_tran)
+		if(tm_tran && tm_tran!=T_UNDEFINED)
 			tmb.unref_cell(tm_tran);
 
 		/* No need to apply lumps */
 		if(req_routeid > 0)
-			run_top_route(rlist[req_routeid].a, msg);
+			run_top_route(sroutes->request[req_routeid].a, msg);
 
 		goto done;
 	}
@@ -805,7 +805,7 @@ logic_notify:
 	if(req_routeid > 0)
 	{
 		lock_release(&table[hash_index].lock);
-		run_top_route(rlist[req_routeid].a, msg);
+		run_top_route(sroutes->request[req_routeid].a, msg);
 		if (b2b_apply_lumps(msg))
 		{
 			if (parse_from_header(msg) < 0)
@@ -1143,7 +1143,8 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 
 	if(msg->record_route!=NULL && msg->record_route->body.s!= NULL)
 	{
-		if( print_rr_body(msg->record_route, &dlg.route_set[CALLER_LEG], (init_dlg?1:0), 0)!= 0)
+		if( print_rr_body(msg->record_route, &dlg.route_set[CALLER_LEG],
+		(init_dlg?1:0), 0, NULL)!= 0)
 		{
 			LM_ERR("failed to process record route\n");
 		}
@@ -1868,7 +1869,7 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 
 	if(msg->record_route!=NULL && msg->record_route->body.s!= NULL)
 	{
-		if( print_rr_body(msg->record_route, &route_set, 1, 0)!= 0)
+		if( print_rr_body(msg->record_route, &route_set, 1, 0, NULL)!= 0)
 		{
 			LM_ERR("failed to process record route\n");
 			goto error;
@@ -2423,7 +2424,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					/* run the b2b route */
 					if(reply_routeid > 0) {
 						msg->flags = t->uac[0].br_flags;
-						run_top_route(rlist[reply_routeid].a, msg);
+						run_top_route(sroutes->request[reply_routeid].a, msg);
 						b2b_apply_lumps(msg);
 					}
 					goto b2b_route;
@@ -2763,7 +2764,7 @@ done1:
 	/* run the b2b route */
 	if(reply_routeid > 0) {
 		msg->flags = t->uac[0].br_flags;
-		run_top_route(rlist[reply_routeid].a, msg);
+		run_top_route(sroutes->request[reply_routeid].a, msg);
 		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}
 

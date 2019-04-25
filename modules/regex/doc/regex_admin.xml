@@ -359,7 +359,7 @@ if (pcre_match_group("$rU", "2")) {
 			</para>
 
 <programlisting  format="linespecific">
-opensipsctl fifo regex_reload
+opensips-cli -x mi regex_reload
 </programlisting>
 
 		</section>

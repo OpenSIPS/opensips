@@ -868,7 +868,7 @@ modparam("tm", "cluster_auto_cancel", no)
 	<title>Exported Functions</title>
 	<section id="func_t_relay" xreflabel="t_relay()">
 		<title>
-		<function moreinfo="none">t_relay([flags])</function>
+		<function moreinfo="none">t_relay([flags],[outbound_proxy])</function>
 		</title>
 		<para>
 		Relay a message statefully to destination indicated in current URI. 
@@ -882,7 +882,10 @@ modparam("tm", "cluster_auto_cancel", no)
 		yet created, the function will automatically create it.
 		</para>
 		<para>
-		The function may take as parameter an optional set of flags for 
+		The function may take two optional parameters.
+		</para>
+		<para>
+		The first parameter is a number representing a set of flags for 
 		controlling the internal behaviour. The flags may be given in decimal 
 		or hexa format; supported flags are:
 		</para>
@@ -935,6 +938,14 @@ modparam("tm", "cluster_auto_cancel", no)
 
 		</itemizedlist>
 		<para>
+		The second parameter is a string representing an outbound proxy
+		(a fixed destination) where the message should be sent. The
+		destination is specified as <quote>[proto:]host[:port]</quote>. If a 
+		destination URI <quote>$du</quote> for this message was set before the
+		function is called then this value will be used as the destination 
+		instead of the function parameter.
+		</para>
+		<para>
 		In case of error, the function returns the following codes:
 		</para>
 		<itemizedlist>
@@ -978,36 +989,9 @@ if (!t_relay()) {
     exit;
 }
 ...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="func_t_relay_2" xreflabel="t_relay()">
-		<title>
-		<function moreinfo="none">t_relay(proto:host:port,[flags])</function>
-		</title>
-		<para>
-		Relay a message statefully to a fixed destination. The destination is
-		specified as <quote>[proto:]host[:port]</quote>. If a destination URI
-		<quote>$du</quote> for this message was set before the function
-		is called then this value will be used as the destination instead of the
-		function parameter.
-		</para>
-		<para>
-		The function may take as parameter an optional set of flags for 
-		controlling the internal behaviour - for details see the above 
-		<quote>t_relay([flags])</quote> function.
-		</para>
-		<para>
-		This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE.
-		</para>
-		<example>
-		<title><function>t_relay</function> usage</title>
-		<programlisting format="linespecific">
+t_relay( ,"tcp:192.168.1.10:5060");
 ...
-t_relay("tcp:192.168.1.10:5060");
-t_relay("mydomain.com:5070","0x1");
-t_relay("udp:mydomain.com");
+t_relay("0x1", "mydomain.com:5070");
 ...
 </programlisting>
 		</example>
@@ -1352,7 +1336,7 @@ onreply_route[3] {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>from</emphasis> - the SIP To hdr information as
+			<para><emphasis>to</emphasis> - the SIP To hdr information as
 			"[display ]URI"
 			</para>
 		</listitem>
@@ -1966,7 +1950,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo t_uac_dlg INVITE "sip:123456@127.0.0.1:5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:test@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
+		opensips-cli -x mi t_uac_dlg INVITE "sip:123456@127.0.0.1:5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:test@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
 		</programlisting>
 	</section>
 
@@ -1992,7 +1976,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo t_uac_cancel "1-23454@127.0.0.1" "1 INVITE"
+		opensips-cli -x mi t_uac_cancel "1-23454@127.0.0.1" "1 INVITE"
 		</programlisting>
 	</section>
 
@@ -2013,7 +1997,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo t_hash
+		opensips-cli -x mi t_hash
 		</programlisting>
 	</section>
 
@@ -2053,7 +2037,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo t_reply 403 Forbidden 46961:1279687637 abcde .
+		opensips-cli -x mi t_reply 403 Forbidden 46961:1279687637 abcde .
 		</programlisting>
 	</section>
 

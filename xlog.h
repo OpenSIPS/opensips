@@ -42,8 +42,8 @@ typedef struct _xl_trace
 
 extern int xlog_buf_size;
 extern int xlog_force_color;
-extern int xlog_default_level;
-extern int xlog_level;
+extern int xlog_print_level;
+extern int *xlog_level;
 
 int xlog_1(struct sip_msg*, char*, char*);
 int xlog_2(struct sip_msg*, char*, char*);
@@ -54,6 +54,10 @@ int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
 int init_xlog(void);
+
+void set_shared_xlog_level(int new_level);
+void set_local_xlog_level(int new_level);
+void reset_xlog_level(void);
 
 #endif
 

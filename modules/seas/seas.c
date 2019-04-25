@@ -50,14 +50,14 @@
 
 
 /* Exported Functions */
-static int w_as_relay_t(struct sip_msg *msg, char *as_name, char *foo);
-static int w_as_relay_sl(struct sip_msg *msg, char *as_name, char *foo);
+static int w_as_relay_t(struct sip_msg *msg, struct as_entry *as);
+static int w_as_relay_sl(struct sip_msg *msg, struct as_entry *as);
 
 /* Local functions */
 static int seas_init(void);
 static int seas_child_init(int rank);
 static int seas_exit();
-static int fixup_as_relay(void** param, int param_no);
+static int fixup_as_relay(void** param);
 
 /*utility functions*/
 static void seas_init_tags();
@@ -84,13 +84,15 @@ int read_pipe=0;
 
 struct seas_functions seas_f;
 
-static cmd_export_t cmds[]=
-{
-	{"as_relay_t",   (cmd_function)w_as_relay_t,  1,  fixup_as_relay,
-			0, REQUEST_ROUTE},
-	{"as_relay_sl",  (cmd_function)w_as_relay_sl, 1,  fixup_as_relay,
-			0, REQUEST_ROUTE},
-	{0,0,0,0,0,0}
+
+static cmd_export_t cmds[]={
+   {"as_relay_t", (cmd_function)w_as_relay_t, {
+      {CMD_PARAM_STR, fixup_as_relay, 0}, {0,0,0}},
+      REQUEST_ROUTE},
+   {"as_relay_sl", (cmd_function)w_as_relay_sl, {
+      {CMD_PARAM_STR, fixup_as_relay, 0}, {0,0,0}},
+      REQUEST_ROUTE},
+   {0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]=
@@ -131,27 +133,19 @@ struct module_exports exports=
    seas_init,   /* module initialization function */
    (response_function) 0,
    (destroy_function) seas_exit,   /* module exit function */
-   (child_init_function) seas_child_init  /* per-child init function */
+   (child_init_function) seas_child_init,  /* per-child init function */
+   0                           /* reload confirm function */
 };
 
-static int fixup_as_relay(void** param, int param_no)
+static int fixup_as_relay(void** param)
 {
-   int len;
-   char *parameter;
-   struct as_entry **entry,*tmp;
-
-   parameter=(char *)(*param);
-
-   if (param_no!=1)
-      return 0;
-   len=strlen(parameter);
+   str *parameter = (str*)*param;
+   struct as_entry **entry;
 
    for (entry=&as_list;*entry;entry=&((*entry)->next)) {
-      if (len== (*entry)->name.len &&
-	    !memcmp((*entry)->name.s,parameter,len)) {
-	 pkg_free(*param);
+      if (!str_strcmp(&(*entry)->name, parameter)) {
 	 *param=*entry;
-	 return 1;
+	 return 0;
       }
    }
    if (!(*entry)) {
@@ -160,21 +154,20 @@ static int fixup_as_relay(void** param, int param_no)
 	 goto error;
       }
       memset(*entry,0,sizeof(struct as_entry));
-      if(!((*entry)->name.s=shm_malloc(len))){
+      if(!((*entry)->name.s=shm_malloc(parameter->len))){
 	 LM_ERR("no more share mem\n");
 	 goto error;
       }
-      (*entry)->name.len=len;
-      memcpy((*entry)->name.s,parameter,len);
+      (*entry)->name.len=parameter->len;
+      memcpy((*entry)->name.s,parameter->s,parameter->len);
       (*entry)->u.as.name=(*entry)->name;
       (*entry)->u.as.event_fd=(*entry)->u.as.action_fd=-1;
       (*entry)->type=AS_TYPE;
-      pkg_free(*param);
+
       *param=*entry;
    }
-   for (tmp=as_list;tmp;tmp=tmp->next)
-      LM_DBG("%.*s\n",tmp->name.len,tmp->name.s);
-   return 1;
+
+   return 0;
 error:
    return -1;
 }
@@ -241,13 +234,12 @@ void seas_sighandler(int signo)
  * wrapper for the AS transaction-stateful relay script function.
  *
  */
-static int w_as_relay_t(struct sip_msg *msg, char *entry, char *foo)
+static int w_as_relay_t(struct sip_msg *msg, struct as_entry *as)
 {
    as_msg_p my_as_ev;
    int new_tran,ret=0,len;
    char *buffer,processor_id;
    struct cell *mycel;
-   struct as_entry *as;
    static str msg500={"Server Internal Error!",sizeof("Server Internal Error!")-1};
 
    buffer=(char*)0;
@@ -268,7 +260,7 @@ static int w_as_relay_t(struct sip_msg *msg, char *entry, char *foo)
       ret = 0;
       goto done;
    }
-   as=(struct as_entry *)entry;
+
    if(!as->connected){
       LM_ERR("app server %.*s not connected\n",as->name.len,as->name.s);
       goto error;
@@ -342,14 +334,11 @@ error:
  * wrapper for the AS stateless relay script function.
  *
  */
-static int w_as_relay_sl(struct sip_msg *msg, char *as_name, char *foo)
+static int w_as_relay_sl(struct sip_msg *msg, struct as_entry *as)
 {
    as_msg_p my_as_ev=0;
    int ret=0,len;
    char *buffer=0,processor_id;
-   struct as_entry *as;
-
-   as=(struct as_entry *)as_name;
 
    if(as->type==AS_TYPE){
       if((processor_id=get_processor_id(&msg->rcv,&(as->u.as)))<0){
@@ -629,7 +618,7 @@ static int seas_init(void)
       LM_ERR( "can't load TM API\n");
       return -1;
    }
-   if(!(seas_f.t_check_orig_trans = find_export("t_check_trans", 0, 0))){
+   if(!(seas_f.t_check_orig_trans = find_export("t_check_trans", 0))){
       LM_ERR( "Seas requires transaction module (t_check_trans not found)\n");
       return -1;
    }

@@ -92,8 +92,8 @@ static param_export_t params[]={
 
 static cmd_export_t  cmds[]=
 {
-	{"bind_xcap_client",  (cmd_function)bind_xcap_client,  1,    0, 0,        0},
-	{    0,                     0,           0,    0, 0,        0}
+	{"bind_xcap_client",  (cmd_function)bind_xcap_client,  {{0, 0, 0}},        0},
+	{ 0, 0, {{0, 0, 0}}, 0}
 };
 
 static mi_export_t mi_cmds[] = {
@@ -133,7 +133,8 @@ struct module_exports exports= {
 	mod_init,					/* module initialization function */
 	(response_function) 0,      /* response handling function */
 	(destroy_function) destroy, /* destroy function */
-	child_init                  /* per-child init function */
+	child_init,                 /* per-child init function */
+	0                           /* reload confirm function */
 };
 
 /**
@@ -145,7 +146,7 @@ static int mod_init(void)
 	xcap_api_t xcap_api;
 
         /* load XCAP API */
-        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 1, 0);
+        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 0);
         if (!bind_xcap)
         {
                 LM_ERR("Can't bind xcap\n");

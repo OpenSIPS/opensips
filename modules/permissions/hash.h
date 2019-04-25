@@ -80,7 +80,7 @@ int hash_insert(struct address_list** table, struct ip_addr *ip,
  */
 int hash_match(struct sip_msg *msg, struct address_list** table,
 		unsigned int grp, struct ip_addr *ip, unsigned int port, int proto,
-		char *pattern, char* info);
+		char *pattern, pv_spec_t* info);
 
 
 /*
@@ -129,7 +129,7 @@ struct subnet* new_subnet_table(void);
  */
 int match_subnet_table(struct sip_msg *msg, struct subnet* table,
 		unsigned int group, struct ip_addr *ip, unsigned int port, int proto,
-		char *pattern, char* info);
+		char *pattern, pv_spec_t* info);
 
 
 /*

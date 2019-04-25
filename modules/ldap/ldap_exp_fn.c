@@ -65,6 +65,7 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 	switch (rc) {
 	case -1:
 		/* error */
+		pkg_free(as_params->ldap_url.s);
 		pkg_free(as_params);
 		return -1;
 	case  0:
@@ -73,6 +74,7 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 		return 1;
 	case  1:
 		/* successfull */
+		pkg_free(as_params->ldap_url.s);
 		pkg_free(as_params);
 		async_status  = ASYNC_DONE;
 
@@ -95,9 +97,8 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 int ldap_search_impl_async(
 	struct sip_msg* _msg,
 	async_ctx *ctx,
-	pv_elem_t* _ldap_url)
+	str* ldap_url)
 {
-	str ldap_url;
 	int msgid;
 	int sockfd;
 	int rc=-1;
@@ -107,25 +108,9 @@ int ldap_search_impl_async(
 	struct ld_conn* conn;
 
 	/*
-	* do variable substitution for _ldap_url (pv_printf_s)
-	*/
-	if (_ldap_url==NULL) {
-		LM_ERR("empty ldap_url\n");
-		return -2;
-	}
-	if ( _ldap_url->spec.getf!=NULL) {
-		if (pv_printf_s( _msg, _ldap_url, &ldap_url)!=0 || ldap_url.len<=0) {
-			LM_ERR("pv_printf_s failed\n");
-			return -2;
-		}
-	} else {
-		ldap_url = _ldap_url->text;
-	}
-
-	/*
 	* perform LDAP search
 	*/
-	if ((rc=ldap_url_search_async(ldap_url.s, &msgid, &lds, &conn, &ld_result_count)) < 0)
+	if ((rc=ldap_url_search_async(ldap_url, &msgid, &lds, &conn, &ld_result_count)) < 0)
 	{
 		/* LDAP search error */
 		rc = -2;
@@ -160,9 +145,12 @@ int ldap_search_impl_async(
 	}
 
 	as_params->msgid = msgid;
-	as_params->ldap_url = ldap_url;
 	as_params->lds	 = lds;
 	as_params->conn  = conn;
+	if (pkg_nt_str_dup(&as_params->ldap_url, ldap_url) < 0) {
+		LM_ERR("no more pkg mem\n");
+		goto error;
+	}
 
 	ctx->resume_param = as_params;
 	ctx->resume_f = resume_ldap_search;/* resume function */
@@ -178,35 +166,28 @@ error:
 
 int ldap_search_impl(
 	struct sip_msg* _msg,
-	pv_elem_t* _ldap_url)
+	str* ldap_url)
 {
-	str ldap_url;
 	int ld_result_count = 0;
+	str ldap_url_nt;
 
-	/*
-	* do variable substitution for _ldap_url (pv_printf_s)
-	*/
-	if (_ldap_url==NULL) {
-		LM_ERR("empty ldap_url\n");
+	if (pkg_nt_str_dup(&ldap_url_nt, ldap_url) < 0) {
+		LM_ERR("no more pkg memory\n");
 		return -2;
-	}
-	if ( _ldap_url->spec.getf!=NULL) {
-		if (pv_printf_s( _msg, _ldap_url, &ldap_url)!=0 || ldap_url.len<=0) {
-			LM_ERR("pv_printf_s failed\n");
-			return -2;
-		}
-	} else {
-		ldap_url = _ldap_url->text;
 	}
 
 	/*
 	* perform LDAP search
 	*/
-	if (ldap_url_search(ldap_url.s, &ld_result_count) != 0)
+	if (ldap_url_search(ldap_url_nt.s, &ld_result_count) != 0)
 	{
 		/* LDAP search error */
+		pkg_free(ldap_url_nt.s);
 		return -2;
 	}
+
+	pkg_free(ldap_url_nt.s);
+
 	if (ld_result_count < 1)
 	{
 		/* no LDAP entry found */
@@ -216,10 +197,8 @@ int ldap_search_impl(
 	return ld_result_count;
 }
 
-int ldap_write_result(
-	struct sip_msg* _msg,
-	struct ldap_result_params* _lrp,
-	struct subst_expr* _se)
+int ldap_write_result( struct sip_msg* _msg, str *attr_name, pv_spec_t *dst_avp,
+				int avp_type, struct subst_expr* _se)
 {
 	int                        dst_avp_name;
 	int_str dst_avp_val;
@@ -234,7 +213,7 @@ int ldap_write_result(
 	*/
 
 	if (pv_get_avp_name(	_msg,
-				&(_lrp->dst_avp_spec.pvp),
+				&dst_avp->pvp,
 				&dst_avp_name,
 				&dst_avp_type)
 			!= 0)
@@ -246,7 +225,7 @@ int ldap_write_result(
 	/*
 	* get LDAP attr values
 	*/
-	if ((rc = ldap_get_attr_vals(&_lrp->ldap_attr_name, &attr_vals)) != 0)
+	if ((rc = ldap_get_attr_vals(attr_name, &attr_vals)) != 0)
 	{
 		if (rc > 0) {
 			return -1;
@@ -276,7 +255,7 @@ int ldap_write_result(
 			avp_val_str = *subst_result;
 		}
 
-		if (_lrp->dst_avp_val_type == 1)
+		if (avp_type == 1)
 		{
 			/* try to convert ldap value to integer */
 			if (!str2sint(&avp_val_str, &avp_val_int))
@@ -338,40 +317,19 @@ int ldap_result_next(void)
 	}
 }
 
-int ldap_result_check(
-	struct sip_msg* _msg,
-	struct ldap_result_check_params* _lrp,
-	struct subst_expr* _se)
+int ldap_result_check(struct sip_msg* _msg, str* attr_name, str *check_str,
+				struct subst_expr *_se)
 {
-	str check_str, *subst_result = NULL;
+	str *subst_result = NULL;
 	int rc, i, nmatches;
-	char *attr_val;
+	str attr_val;
 	struct berval **attr_vals;
-
-	/*
-	* do variable substitution for check_str
-	*/
-
-	if (_lrp->check_str_elem_p)
-	{
-		if (pv_printf_s(_msg, _lrp->check_str_elem_p, &check_str) != 0)
-		{
-			LM_ERR("pv_printf_s failed\n");
-			return -2;
-		}
-	} else
-	{
-		LM_ERR("empty check string\n");
-		return -2;
-	}
-
-	LM_DBG("check_str [%s]\n", check_str.s);
 
 	/*
 	* get LDAP attr values
 	*/
 
-	if ((rc = ldap_get_attr_vals(&_lrp->ldap_attr_name, &attr_vals)) != 0)
+	if ((rc = ldap_get_attr_vals(attr_name, &attr_vals)) != 0)
 	{
 		if (rc > 0) {
 			return -1;
@@ -388,7 +346,8 @@ int ldap_result_check(
 	{
 		if (_se == NULL)
 		{
-			attr_val = attr_vals[i]->bv_val;
+			attr_val.s = attr_vals[i]->bv_val;
+			attr_val.len = strlen(attr_val.s);
 		} else
 		{
 			subst_result = subst_str(attr_vals[i]->bv_val, _msg, _se,
@@ -397,11 +356,11 @@ int ldap_result_check(
 			{
 				continue;
 			}
-			attr_val = subst_result->s;
+			attr_val = *subst_result;
 		}
 
-		LM_DBG("attr_val [%s]\n", attr_val);
-		rc = strncmp(check_str.s, attr_val, check_str.len);
+		LM_DBG("attr_val [%.*s]\n", attr_val.len, attr_val.s);
+		rc = str_strcmp(check_str, &attr_val);
 		if (_se != NULL)
 		{
 			pkg_free(subst_result->s);
@@ -417,27 +376,12 @@ int ldap_result_check(
 	return -1;
 }
 
-int ldap_filter_url_encode(
-	struct sip_msg* _msg,
-	pv_elem_t* _filter_component,
-	pv_spec_t* _dst_avp_spec)
+int ldap_filter_url_encode(struct sip_msg* _msg, str *filter_component,
+					pv_spec_t* _dst_avp_spec)
 {
-	str             filter_component_str, esc_str;
+	str             esc_str;
 	int         dst_avp_name;
 	unsigned short  dst_avp_type;
-
-	/*
-	* variable substitution for _filter_component
-	*/
-	if (_filter_component) {
-		if (pv_printf_s(_msg, _filter_component, &filter_component_str) != 0) {
-			LM_ERR("pv_printf_s failed\n");
-			return -1;
-		}
-	} else {
-		LM_ERR("empty first argument\n");
-		return -1;
-	}
 
 	/*
 	* get dst AVP name (dst_avp_name)
@@ -454,7 +398,7 @@ int ldap_filter_url_encode(
 	*/
 	esc_str.s = esc_buf;
 	esc_str.len = ESC_BUF_SIZE;
-	if (ldap_rfc4515_escape(&filter_component_str, &esc_str, 1) != 0)
+	if (ldap_rfc4515_escape(filter_component, &esc_str, 1) != 0)
 	{
 		LM_ERR("ldap_rfc4515_escape() failed\n");
 		return -1;

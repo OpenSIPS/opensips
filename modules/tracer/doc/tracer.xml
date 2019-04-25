@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding='UTF-8'?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
+
+
+<!ENTITY admin SYSTEM "tracer_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+
+<!ENTITY tracercfg SYSTEM "tracer.cfg">
+<!ENTITY contrib SYSTEM "contributors.xml">
+
+<!-- Include general documentation entities -->
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
+%docentities;
+
+]>
+
+<book>
+    <bookinfo>
+	<title>Tracer Module</title>
+	<productname class="trade">&osipsname;</productname>
+    </bookinfo>
+    <toc></toc>
+
+    &admin;
+    &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2006 &voicesystem;</para>
+</book>

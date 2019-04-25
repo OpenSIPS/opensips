@@ -148,7 +148,7 @@ modparam("httpd", "post_buf_size", 4096)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo httpd_list_root_path
+opensips-cli -x mi httpd_list_root_path
 		</programlisting>
 	</section>
 	</section>

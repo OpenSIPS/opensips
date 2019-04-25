@@ -26,7 +26,6 @@
 
 #include <stdio.h>
 #include "../../pvar.h"
-#include "../../mod_fix.h"
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
 #include "../freeswitch/fs_api.h"
@@ -36,8 +35,7 @@
 #define DS_HASH_USER_ONLY	1  /* use only the uri user part for hashing */
 #define DS_FAILOVER_ON		2  /* store the other dest in avps */
 #define DS_USE_DEFAULT		4  /* use last address in destination set as last option */
-#define DS_FORCE_DST		8  /* if not set it will force overwriting the destination address
-					if already set */
+#define DS_APPEND_MODE		8  /* append destinations instead of overwriting */
 
 #define DS_INACTIVE_DST		1  /* inactive destination */
 #define DS_PROBING_DST		2  /* checking destination */
@@ -146,8 +144,7 @@ typedef struct _ds_select_ctl
 	ds_partition_t *partition;  /* partition of set_id */
 	int alg;					/* algorith to aply */
 	int mode;					/* set destination uri */
-	int max_results;			/* max destinaitons to process */
-	int reset_AVP;				/* reset AVPs flag */
+	int max_results;			/* max destinations to process */
 	int set_destination;		/* set destination flag */
 	int ds_flags;
 } ds_select_ctl_t, *ds_select_ctl_p;
@@ -210,11 +207,11 @@ int ds_set_state_repl(int group, str *address, int state, int type,
 		ds_partition_t *partition, int do_repl);
 int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_print_mi_list(mi_item_t *part_item, ds_partition_t *partition, int full);
-int ds_count(struct sip_msg *msg, int set_id, const char *cmp, pv_spec_p ret,
+int ds_count(struct sip_msg *msg, int set_id, void *_cmp, pv_spec_p ret,
 				ds_partition_t *partition);
 
-int ds_is_in_list(struct sip_msg *_m, gparam_t *addr, gparam_t *port,
-		int set, int active_only, ds_partition_t *partition);
+int ds_is_in_list(struct sip_msg *_m, str *ip, int port, int set,
+                  ds_partition_t *partition, int active_only);
 /*
  * Timer for checking inactive destinations
  */

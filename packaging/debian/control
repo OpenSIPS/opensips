@@ -52,7 +52,6 @@ Suggests: opensips-b2bua-module,
           opensips-carrierroute-module,
           opensips-cgrates-module,
           opensips-compression-module,
-          opensips-console,
           opensips-cpl-module,
           opensips-dbhttp-module,
           opensips-dialplan-module,
@@ -104,7 +103,6 @@ Description: very fast and configurable SIP server
  and support binaries including opensipsmc configuration tool.
 
 Package: opensips-dbg
-Priority: extra
 Architecture: any
 Multi-Arch: same
 Section: debug
@@ -441,23 +439,6 @@ Description: Support for XML documents handling in OpenSIPS script
  serialization and de-serialization from a XML document. The script variable
  provides ways to access (from script) objects and arrays to add, replace or
  delete values from the script.
-
-Package: opensips-console
-Architecture: any
-Multi-Arch: foreign
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${perl:Depends}
-Suggests: opensips-berkeley-module,
-          opensips-mysql-module,
-          opensips-postgres-module,
-          opensips-unixodbc-module,
-          opensips-xmlrpc-module
-Description: Generic tool for OpenSIPS provisioning
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an OpenSIPS Console written in Perl for OpenSIPS
- provisioning.
 
 Package: opensips-redis-module
 Architecture: any

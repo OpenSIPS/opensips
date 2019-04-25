@@ -36,10 +36,8 @@ static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
 
-static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
-		char *_cA, char *_cB, char *_rtp, char *_m_ip);
-static int free_fixup_siprec_rec(void **param, int param_no);
-static int free_free_fixup_siprec_rec(void **param, int param_no);
+static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
+		str *_cA, str *_cB, str *rtp, str *m_ip);
 
 /* modules dependencies */
 static dep_export_t deps = {
@@ -58,19 +56,15 @@ static dep_export_t deps = {
 
 /* exported commands */
 static cmd_export_t cmds[] = {
-	{"siprec_start_recording",(cmd_function)siprec_start_rec, 1,
-		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
-	{"siprec_start_recording",(cmd_function)siprec_start_rec, 2,
-		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
-	{"siprec_start_recording",(cmd_function)siprec_start_rec, 3,
-		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
-	{"siprec_start_recording",(cmd_function)siprec_start_rec, 4,
-		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
-	{"siprec_start_recording",(cmd_function)siprec_start_rec, 5,
-		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
-	{"siprec_start_recording",(cmd_function)siprec_start_rec, 6,
-		free_fixup_siprec_rec, free_free_fixup_siprec_rec, REQUEST_ROUTE },
-	{0, 0, 0, 0, 0, 0}
+	{"siprec_start_recording",(cmd_function)siprec_start_rec, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 /* exported parameters */
@@ -99,7 +93,8 @@ struct module_exports exports = {
 	mod_init,						/* module initialization function */
 	(response_function) 0,			/* response handling function */
 	(destroy_function)mod_destroy,	/* destroy function */
-	child_init						/* per-child init function */
+	child_init,						/* per-child init function */
+	0								/* reload confirm function */
 };
 
 /**
@@ -163,57 +158,15 @@ static void mod_destroy(void)
 }
 
 /*
- * fixup siprec function
- */
-static int free_fixup_siprec_rec(void **param, int param_no)
-{
-	if (param_no > 0 && param_no < 7)
-		return fixup_spve(param);
-	LM_ERR("Unsupported parameter %d\n", param_no);
-	return E_CFG;
-}
-
-static int free_free_fixup_siprec_rec(void **param, int param_no)
-{
-	if (param_no > 0 && param_no < 3)
-		return fixup_free_spve(param);
-	LM_ERR("Unsupported parameter %d\n", param_no);
-	return E_CFG;
-}
-
-/*
  * function that simply prints the parameters passed
  */
-static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
-		char *_cA, char *_cB, char *_rtp, char *_m_ip)
+static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
+		str *_cA, str *_cB, str *rtp, str *m_ip)
 {
 	int ret;
-	str srs, rtp, m_ip, group, tmp_str, *aor, *display, *xml_val;
+	str *aor, *display, *xml_val;
 	struct src_sess *ss;
 	struct dlg_cell *dlg;
-
-	if (!_srs) {
-		LM_ERR("No siprec SRS uri specified!\n");
-		return -1;
-	}
-	if (_rtp && fixup_get_svalue(msg, (gparam_p)_rtp, &rtp) < 0) {
-		LM_ERR("cannot fetch media rtpproxy server!\n");
-		return -1;
-	}
-
-	if (fixup_get_svalue(msg, (gparam_p)_srs, &srs) < 0) {
-		LM_ERR("cannot fetch set!\n");
-		return -1;
-	}
-	if (_grp && fixup_get_svalue(msg, (gparam_p)_grp, &group) < 0) {
-		LM_ERR("cannot fetch group for this session!\n");
-		return -1;
-	}
-
-	if (_m_ip && fixup_get_svalue(msg, (gparam_p)_m_ip, &m_ip) < 0) {
-		LM_ERR("cannot fetch media IP!\n");
-		return -1;
-	}
 
 	/* create the dialog, if does not exist yet */
 	dlg = srec_dlg.get_dlg();
@@ -229,8 +182,7 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 	 * this is the only way to provide a different socket for SRS, but
 	 * we might need to take a different approach */
 	/* check if the current dialog has a siprec session ongoing */
-	if (!(ss = src_new_session(&srs, (_rtp ? &rtp : NULL), (_m_ip ? &m_ip : NULL),
-				(_grp ? &group : NULL), msg->force_send_socket))) {
+	if (!(ss = src_new_session(srs, rtp, m_ip, group, msg->force_send_socket))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
 	}
@@ -244,11 +196,7 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 
 	/* caller info */
 	if (_cA) {
-		if (fixup_get_svalue(msg, (gparam_p)_cA, &tmp_str) < 0) {
-			LM_ERR("cannot fetch caller information!\n");
-			goto session_cleanup;
-		}
-		xml_val = &tmp_str;
+		xml_val = _cA;
 		display = aor = NULL;
 	} else {
 		if (parse_from_header(msg) < 0) {
@@ -270,11 +218,7 @@ static int siprec_start_rec(struct sip_msg *msg, char *_srs, char *_grp,
 	}
 	/* caller info */
 	if (_cB) {
-		if (fixup_get_svalue(msg, (gparam_p)_cB, &tmp_str) < 0) {
-			LM_ERR("cannot fetch callee information!\n");
-			goto session_cleanup;
-		}
-		xml_val = &tmp_str;
+		xml_val = _cB;
 	} else {
 		if ((!msg->to && parse_headers(msg, HDR_TO_F, 0) < 0) || !msg->to) {
 			LM_ERR("inexisting or invalid to header!\n");

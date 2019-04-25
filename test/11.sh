@@ -42,7 +42,7 @@ cat register.sip | nc -q 1 -u localhost 5060 > /dev/null
 cd ../scripts
 
 if [ "$ret" -eq 0 ] ; then
-	./opensipsctl ul show | grep "AOR:: 1000" > /dev/null
+	opensips-cli -x mi ul_dump | grep "AOR:: 1000" > /dev/null
 	ret=$?
 fi ;
 
@@ -55,7 +55,7 @@ fi ;
 cat ../test/unregister.sip | nc -q 1 -u localhost 5060 > /dev/null
 
 if [ "$ret" -eq 0 ] ; then
-	./opensipsctl ul show | grep "AOR:: 1000" > /dev/null
+	opensips-cli -x mi ul_dump | grep "AOR:: 1000" > /dev/null
 	ret=$?
 	if [ "$ret" -eq 0 ] ; then
 		ret=1

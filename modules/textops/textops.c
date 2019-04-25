@@ -65,69 +65,75 @@
 
 
 
-static int search_f(struct sip_msg*, char*, char*);
-static int search_body_f(struct sip_msg*, char*, char*);
-static int replace_f(struct sip_msg*, char*, char*);
-static int replace_body_f(struct sip_msg*, char*, char*);
-static int replace_all_f(struct sip_msg*, char*, char*);
-static int replace_body_all_f(struct sip_msg*, char*, char*);
-static int replace_body_atonce_f(struct sip_msg*, char*, char*);
-static int subst_f(struct sip_msg*, char*, char*);
-static int subst_uri_f(struct sip_msg*, char*, char*);
-static int subst_user_f(struct sip_msg*, char*, char*);
-static int subst_body_f(struct sip_msg*, char*, char*);
-static int search_append_f(struct sip_msg*, char*, char*);
-static int search_append_body_f(struct sip_msg*, char*, char*);
+static int search_f(struct sip_msg*, regex_t*);
+static int search_body_f(struct sip_msg* msg, regex_t* key);
+static int replace_f(struct sip_msg* msg, regex_t* key, str* str2);
+static int replace_body_f(struct sip_msg* msg, regex_t* key, str* str2);
+static int replace_all_f(struct sip_msg* msg, regex_t* key, str* str2);
+static int replace_body_all_f(struct sip_msg* msg, regex_t* key, str* str2);
+static int replace_body_atonce_f(struct sip_msg*, regex_t* key, str* str2);
+static int subst_f(struct sip_msg* msg, struct subst_expr *se);
+static int subst_uri_f(struct sip_msg*, struct subst_expr *se);
+static int subst_user_f(struct sip_msg*, struct subst_expr *se);
+static int subst_body_f(struct sip_msg*, struct subst_expr *se);
+static int search_append_f(struct sip_msg* msg, regex_t* key, str* str2);
+static int search_append_body_f(struct sip_msg* msg, regex_t* key, str* str2);
 
-static int fixup_substre(void**, int);
+static int fixup_substre(void**);
+static int fixup_free_substre(void** param);
 
 
 static int mod_init(void);
 
-
 static cmd_export_t cmds[]={
-	{"search",           (cmd_function)search_f,          1,
-		fixup_regexp_null, fixup_free_regexp_null,
+	{"search", (cmd_function)search_f, {
+		{CMD_PARAM_REGEX, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"search_body",      (cmd_function)search_body_f,     1,
-		fixup_regexp_null, fixup_free_regexp_null,
+	{"search_body", (cmd_function)search_body_f, {
+		{CMD_PARAM_REGEX, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"search_append",    (cmd_function)search_append_f,   2,
-		fixup_regexp_none,fixup_free_regexp_none,
+	{"search_append", (cmd_function)search_append_f, {
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"search_append_body", (cmd_function)search_append_body_f,   2,
-		fixup_regexp_none, fixup_free_regexp_none,
+	{"search_append_body", (cmd_function)search_append_body_f, {
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"replace",          (cmd_function)replace_f,         2,
-		fixup_regexp_none, fixup_free_regexp_none,
+	{"replace", (cmd_function)replace_f, {
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"replace_body",     (cmd_function)replace_body_f,    2,
-		fixup_regexp_none, fixup_free_regexp_none,
+	{"replace_body",     (cmd_function)replace_body_f, {
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"replace_all",      (cmd_function)replace_all_f,     2,
-		fixup_regexp_none, fixup_free_regexp_none,
+	{"replace_all",      (cmd_function)replace_all_f, {
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"replace_body_all", (cmd_function)replace_body_all_f,2,
-		fixup_regexp_none, fixup_free_regexp_none,
+	{"replace_body_all", (cmd_function)replace_body_all_f, {
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"replace_body_atonce", (cmd_function)replace_body_atonce_f,2,
-		fixup_regexpNL_none, fixup_free_regexp_none,
+	{"replace_body_atonce", (cmd_function)replace_body_atonce_f, {
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"subst",            (cmd_function)subst_f,           1,
-		fixup_substre, 0,
+	{"subst", (cmd_function)subst_f, {
+		{CMD_PARAM_STR, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"subst_uri",        (cmd_function)subst_uri_f,       1,
-		fixup_substre, 0,
+	{"subst_uri", (cmd_function)subst_uri_f, {
+		{CMD_PARAM_STR, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
-	{"subst_user",       (cmd_function)subst_user_f,      1,
-		fixup_substre, 0,
+	{"subst_user", (cmd_function)subst_user_f, {
+		{CMD_PARAM_STR, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
-	{"subst_body",       (cmd_function)subst_body_f,      1,
-		fixup_substre, 0,
+	{"subst_body", (cmd_function)subst_body_f, {
+		{CMD_PARAM_STR, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
-
 
 struct module_exports exports= {
 	"textops",  /* module name*/
@@ -147,6 +153,7 @@ struct module_exports exports= {
 	0,          /* response function */
 	0,          /* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 
@@ -163,17 +170,17 @@ static char *get_header(struct sip_msg *msg)
 
 
 
-static int search_f(struct sip_msg* msg, char* key, char* str2)
+static int search_f(struct sip_msg* msg, regex_t* key)
 {
 	/*we registered only 1 param, so we ignore str2*/
 	regmatch_t pmatch;
 
-	if (regexec((regex_t*) key, msg->buf, 1, &pmatch, 0)!=0) return -1;
+	if (regexec(key, msg->buf, 1, &pmatch, 0)!=0) return -1;
 	return 1;
 }
 
 
-static int search_body_f(struct sip_msg* msg, char* key, char* str2)
+static int search_body_f(struct sip_msg* msg, regex_t* key)
 {
 	str body;
 	/*we registered only 1 param, so we ignore str2*/
@@ -184,35 +191,33 @@ static int search_body_f(struct sip_msg* msg, char* key, char* str2)
 		return -1;
 	}
 
-	if (regexec((regex_t*) key, body.s, 1, &pmatch, 0)!=0) return -1;
+	if (regexec(key, body.s, 1, &pmatch, 0)!=0) return -1;
 	return 1;
 }
 
 
-static int search_append_f(struct sip_msg* msg, char* key, char* str2)
+static int search_append_f(struct sip_msg* msg, regex_t* key, str* str2)
 {
 	struct lump* l;
 	regmatch_t pmatch;
 	char* s;
-	int len;
 	char *begin;
 	int off;
 
 	begin=get_header(msg); /* msg->orig/buf previously .. uri problems */
 	off=begin-msg->buf;
 
-	if (regexec((regex_t*) key, begin, 1, &pmatch, 0)!=0) return -1;
+	if (regexec(key, begin, 1, &pmatch, 0)!=0) return -1;
 	if (pmatch.rm_so!=-1){
 		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
-		len=strlen(str2);
-		s=pkg_malloc(len);
+		s=pkg_malloc(str2->len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len);
-		if (insert_new_lump_after(l, s, len, 0)==0){
+		memcpy(s, str2->s, str2->len);
+		if (insert_new_lump_after(l, s, str2->len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
 			return -1;
@@ -222,12 +227,11 @@ static int search_append_f(struct sip_msg* msg, char* key, char* str2)
 	return -1;
 }
 
-static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
+static int search_append_body_f(struct sip_msg* msg, regex_t* key, str* str2)
 {
 	struct lump* l;
 	regmatch_t pmatch;
 	char* s;
-	int len;
 	int off;
 	str body;
 
@@ -238,18 +242,17 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 
 	off=body.s-msg->buf;
 
-	if (regexec((regex_t*) key, body.s, 1, &pmatch, 0)!=0) return -1;
+	if (regexec(key, body.s, 1, &pmatch, 0)!=0) return -1;
 	if (pmatch.rm_so!=-1){
 		if ((l=anchor_lump(msg, off+pmatch.rm_eo, 0))==0)
 			return -1;
-		len=strlen(str2);
-		s=pkg_malloc(len);
+		s=pkg_malloc(str2->len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len);
-		if (insert_new_lump_after(l, s, len, 0)==0){
+		memcpy(s, str2->s, str2->len);
+		if (insert_new_lump_after(l, s, str2->len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
 			return -1;
@@ -260,12 +263,11 @@ static int search_append_body_f(struct sip_msg* msg, char* key, char* str2)
 }
 
 
-static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
+static int replace_all_f(struct sip_msg* msg, regex_t* key, str* str2)
 {
 	struct lump* l;
 	regmatch_t pmatch;
 	char* s;
-	int len;
 	char* begin;
 	int off;
 	int ret;
@@ -273,11 +275,10 @@ static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
 
 	begin = get_header(msg);
 	ret=-1; /* pessimist: we will not find any */
-	len=strlen(str2);
 	eflags=0; /* match ^ at the beginning of the string*/
 
 	while (begin<msg->buf+msg->len
-				&& regexec((regex_t*) key, begin, 1, &pmatch, eflags)==0) {
+				&& regexec(key, begin, 1, &pmatch, eflags)==0) {
 		off=begin-msg->buf;
 		if (pmatch.rm_so==-1){
 			LM_ERR("offset unknown\n");
@@ -292,13 +293,13 @@ static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
 			LM_ERR("del_lump failed\n");
 			return -1;
 		}
-		s=pkg_malloc(len);
+		s=pkg_malloc(str2->len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len);
-		if (insert_new_lump_after(l, s, len, 0)==0){
+		memcpy(s, str2->s, str2->len);
+		if (insert_new_lump_after(l, s, str2->len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
 			return -1;
@@ -315,12 +316,11 @@ static int replace_all_f(struct sip_msg* msg, char* key, char* str2)
 	return ret;
 }
 
-static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nobol)
+static int do_replace_body_f(struct sip_msg* msg, regex_t *key, str* str2, int nobol)
 {
 	struct lump* l;
 	regmatch_t pmatch;
 	char* s;
-	int len;
 	char* begin;
 	int off;
 	int ret;
@@ -334,11 +334,10 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 
 	begin=body.s;
 	ret=-1; /* pessimist: we will not find any */
-	len=strlen(str2);
 	eflags=0; /* match ^ at the beginning of the string*/
 
 	while (begin<msg->buf+msg->len
-				&& regexec((regex_t*) key, begin, 1, &pmatch, eflags)==0) {
+				&& regexec(key, begin, 1, &pmatch, eflags)==0) {
 		off=begin-msg->buf;
 		if (pmatch.rm_so==-1){
 			LM_ERR("offset unknown\n");
@@ -353,13 +352,13 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 			LM_ERR("del_lump failed\n");
 			return -1;
 		}
-		s=pkg_malloc(len);
+		s=pkg_malloc(str2->len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len);
-		if (insert_new_lump_after(l, s, len, 0)==0){
+		memcpy(s, str2->s, str2->len);
+		if (insert_new_lump_after(l, s, str2->len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
 			return -1;
@@ -376,22 +375,21 @@ static int do_replace_body_f(struct sip_msg* msg, char* key, char* str2, int nob
 	return ret;
 }
 
-static int replace_body_all_f(struct sip_msg* msg, char* key, char* str2)
+static int replace_body_all_f(struct sip_msg* msg, regex_t* key, str* str2)
 {
 	return do_replace_body_f(msg, key, str2, 1);
 }
 
-static int replace_body_atonce_f(struct sip_msg* msg, char* key, char* str2)
+static int replace_body_atonce_f(struct sip_msg* msg, regex_t* key, str* str2)
 {
 	return do_replace_body_f(msg, key, str2, 0);
 }
 
-static int replace_f(struct sip_msg* msg, char* key, char* str2)
+static int replace_f(struct sip_msg* msg, regex_t* key, str* str2)
 {
 	struct lump* l;
 	regmatch_t pmatch;
 	char* s;
-	int len;
 	char* begin;
 	int off;
 
@@ -404,14 +402,13 @@ static int replace_f(struct sip_msg* msg, char* key, char* str2)
 		if ((l=del_lump(msg, pmatch.rm_so+off,
 						pmatch.rm_eo-pmatch.rm_so, 0))==0)
 			return -1;
-		len=strlen(str2);
-		s=pkg_malloc(len);
+		s=pkg_malloc(str2->len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len);
-		if (insert_new_lump_after(l, s, len, 0)==0){
+		memcpy(s, str2->s, str2->len);
+		if (insert_new_lump_after(l, s, str2->len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
 			return -1;
@@ -422,12 +419,11 @@ static int replace_f(struct sip_msg* msg, char* key, char* str2)
 	return -1;
 }
 
-static int replace_body_f(struct sip_msg* msg, char* key, char* str2)
+static int replace_body_f(struct sip_msg* msg, regex_t* key, str* str2)
 {
 	struct lump* l;
 	regmatch_t pmatch;
 	char* s;
-	int len;
 	char* begin;
 	int off;
 	str body;
@@ -439,21 +435,20 @@ static int replace_body_f(struct sip_msg* msg, char* key, char* str2)
 
 	begin=body.s; /* msg->orig previously .. uri problems */
 
-	if (regexec((regex_t*) key, begin, 1, &pmatch, 0)!=0) return -1;
+	if (regexec(key, begin, 1, &pmatch, 0)!=0) return -1;
 	off=begin-msg->buf;
 
 	if (pmatch.rm_so!=-1){
 		if ((l=del_lump(msg, pmatch.rm_so+off,
 						pmatch.rm_eo-pmatch.rm_so, 0))==0)
 			return -1;
-		len=strlen(str2);
-		s=pkg_malloc(len);
+		s=pkg_malloc(str2->len);
 		if (s==0){
 			LM_ERR("memory allocation failure\n");
 			return -1;
 		}
-		memcpy(s, str2, len);
-		if (insert_new_lump_after(l, s, len, 0)==0){
+		memcpy(s, str2->s, str2->len);
+		if (insert_new_lump_after(l, s, str2->len, 0)==0){
 			LM_ERR("could not insert new lump\n");
 			pkg_free(s);
 			return -1;
@@ -466,18 +461,16 @@ static int replace_body_f(struct sip_msg* msg, char* key, char* str2)
 
 
 /* sed-perl style re: s/regular expression/replacement/flags */
-static int subst_f(struct sip_msg* msg, char*  subst, char* ignored)
+static int subst_f(struct sip_msg* msg, struct subst_expr *se)
 {
 	struct lump* l;
 	struct replace_lst* lst;
 	struct replace_lst* rpl;
 	char* begin;
-	struct subst_expr* se;
 	int off;
 	int ret;
 	int nmatches;
 
-	se=(struct subst_expr*)subst;
 	begin=get_header(msg);  /* start after first line to avoid replacing
 							   the uri */
 	off=begin-msg->buf;
@@ -515,15 +508,13 @@ error:
 
 /* sed-perl style re: s/regular expression/replacement/flags, like
  *  subst but works on the message uri */
-static int subst_uri_f(struct sip_msg* msg, char*  subst, char* ignored)
+static int subst_uri_f(struct sip_msg* msg, struct subst_expr *se)
 {
 	char* tmp;
 	int len;
 	char c;
-	struct subst_expr* se;
 	str* result;
 
-	se=(struct subst_expr*)subst;
 	if (msg->new_uri.s){
 		len=msg->new_uri.len;
 		tmp=msg->new_uri.s;
@@ -556,11 +547,10 @@ static int subst_uri_f(struct sip_msg* msg, char*  subst, char* ignored)
 
 /* sed-perl style re: s/regular expression/replacement/flags, like
  *  subst but works on the user part of the uri */
-static int subst_user_f(struct sip_msg* msg, char*  subst, char* ignored)
+static int subst_user_f(struct sip_msg* msg, struct subst_expr *se)
 {
 	int rval;
 	str* result;
-	struct subst_expr* se;
 	struct action act;
 	str user;
 	char c;
@@ -579,7 +569,6 @@ static int subst_user_f(struct sip_msg* msg, char*  subst, char* ignored)
 		c=user.s[user.len];
 		user.s[user.len]=0;
 	}
-	se=(struct subst_expr*)subst;
 	result=subst_str(user.s, msg, se, &nmatches);/* pkg malloc'ed result */
 	if (c)	user.s[user.len]=c;
 	if (result == NULL) {
@@ -600,13 +589,12 @@ static int subst_user_f(struct sip_msg* msg, char*  subst, char* ignored)
 
 
 /* sed-perl style re: s/regular expression/replacement/flags */
-static int subst_body_f(struct sip_msg* msg, char*  subst, char* ignored)
+static int subst_body_f(struct sip_msg* msg, struct subst_expr *se)
 {
 	struct lump* l;
 	struct replace_lst* lst;
 	struct replace_lst* rpl;
 	char* begin;
-	struct subst_expr* se;
 	int off;
 	int ret;
 	int nmatches;
@@ -617,7 +605,6 @@ static int subst_body_f(struct sip_msg* msg, char*  subst, char* ignored)
 		return -1;
 	}
 
-	se=(struct subst_expr*)subst;
 	begin=body.s;
 
 	off=begin-msg->buf;
@@ -652,25 +639,23 @@ error:
 	return ret;
 }
 
-static int fixup_substre(void** param, int param_no)
+static int fixup_substre(void** param)
 {
 	struct subst_expr* se;
-	str subst;
 
-	LM_DBG("%s module -- fixing %s\n", exports.name, (char*)(*param));
-	if (param_no!=1) return 0;
-	subst.s=*param;
-	subst.len=strlen(*param);
-	se=subst_parser(&subst);
+	se=subst_parser((str*)*param);
 	if (se==0){
-		LM_ERR("%s: bad subst. re %s\n", exports.name,
-				(char*)*param);
+		LM_ERR("%s: bad subst. re %.*s\n", exports.name,
+				((str*)*param)->len, ((str*)*param)->s);
 		return E_BAD_RE;
 	}
-	/* don't free string -- needed for specifiers */
-	/* pkg_free(*param); */
-	/* replace it with the compiled subst. re */
+
 	*param=se;
 	return 0;
 }
 
+static int fixup_free_substre(void** param)
+{
+	subst_expr_free(*param);
+	return 0;
+}

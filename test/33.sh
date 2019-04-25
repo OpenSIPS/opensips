@@ -40,13 +40,13 @@ ret=$?
 sleep 1
 
 if [ $ret -eq 0 ] ; then
-	../scripts/opensipsctl fifo check_config_hash |grep "The actual config file hash is identical to the stored one." > /dev/null
+	opensips-cli -x mi check_config_hash |grep "The actual config file hash is identical to the stored one." > /dev/null
 	ret=$?
 fi;
 
 echo " " >> $CFG
 if [ $ret -eq 0 ] ; then
-	../scripts/opensipsctl fifo check_config_hash |grep "The actual config file hash is identical to the stored one." /dev/null
+	opensips-cli -x mi check_config_hash |grep "The actual config file hash is identical to the stored one." /dev/null
 	ret=$?
 fi;
 

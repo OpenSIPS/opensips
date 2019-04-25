@@ -53,9 +53,9 @@
 
 static int sms_init(void);
 static int sms_exit(void);
-static int w_sms_send_msg(struct sip_msg*, char*, char* );
-static int w_sms_send_msg_to_net(struct sip_msg*, char*, char*);
-static int fixup_sms_send_msg_to_net(void** param, int param_no);
+static int w_sms_send_msg(struct sip_msg *msg);
+static int w_sms_send_msg_to_net(struct sip_msg *msg, void *net_nr);
+static int fixup_sms_send_msg_to_net(void** param);
 static void sms_process(int);
 
 
@@ -82,13 +82,23 @@ static proc_export_t sms_procs[] = {
 	{0,0,0,0,0,0}
 };
 
-
+/*
 static cmd_export_t cmds[]={
 	{"sms_send_msg_to_net", (cmd_function)w_sms_send_msg_to_net, 1,
 	     fixup_sms_send_msg_to_net, 0, REQUEST_ROUTE},
 	{"sms_send_msg",        (cmd_function)w_sms_send_msg,        0,
 	     0, 0,                         REQUEST_ROUTE},
 	{0,0,0,0,0,0}
+};
+*/
+
+static cmd_export_t cmds[]={
+	{"sms_send_msg_to_net", (cmd_function)w_sms_send_msg_to_net, {
+		{CMD_PARAM_STR,fixup_sms_send_msg_to_net,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"sms_send_msg",(cmd_function)w_sms_send_msg, {{0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static dep_export_t deps = {
@@ -131,29 +141,34 @@ struct module_exports exports= {
 	sms_init,   /* module initialization function */
 	(response_function) 0,
 	(destroy_function) sms_exit,   /* module exit function */
-	0           /* per-child init function */
+	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 
 
 
-static int fixup_sms_send_msg_to_net(void** param, int param_no)
+static int fixup_sms_send_msg_to_net(void** param)
 {
 	long net_nr,i;
+	str nt;
 
-	if (param_no==1) {
-		for(net_nr=-1,i=0;i<nr_of_networks&&net_nr==-1;i++)
-			if (!strcasecmp(networks[i].name,*param))
-				net_nr = i;
-		if (net_nr==-1) {
-			LM_ERR("etwork \"%s\" not found in net list!\n",(char*)*param);
-			return E_UNSPEC;
-		} else {
-			pkg_free(*param);
-			*param=(void*)net_nr;
-			return 0;
-		}
+	for(net_nr=-1,i=0;i<nr_of_networks&&net_nr==-1;i++) {
+		nt.s = networks[i].name;
+		nt.len = strlen(nt.s);
+
+		if (!str_strcasecmp(&nt,(str*)*param))
+			net_nr = i;
 	}
+	if (net_nr==-1) {
+		LM_ERR("etwork \"%.*s\" not found in net list!\n",
+			((str*)*param)->len, ((str*)*param)->s);
+		return E_UNSPEC;
+	} else {
+		*param=(void*)net_nr;
+		return 0;
+	}
+
 	return 0;
 }
 
@@ -646,7 +661,7 @@ static int sms_exit(void)
 
 
 
-static int w_sms_send_msg(struct sip_msg *msg, char *foo, char *bar)
+static int w_sms_send_msg(struct sip_msg *msg)
 {
 	return push_on_network(msg, default_net);
 }
@@ -654,7 +669,7 @@ static int w_sms_send_msg(struct sip_msg *msg, char *foo, char *bar)
 
 
 
-static int w_sms_send_msg_to_net(struct sip_msg *msg, char *net_nr, char *foo)
+static int w_sms_send_msg_to_net(struct sip_msg *msg, void *net_nr)
 {
 	return push_on_network(msg,(unsigned int)(unsigned long)net_nr);
 }

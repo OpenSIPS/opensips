@@ -95,7 +95,7 @@ Chapter 1. Admin Guide
    hash_size of 2, will result in having 4 hash buckets (2^2=4)
    and buckets will be checked one by one every 2s (8/4=2).
 
-   Each registrant has it's own state. Registranr's status can be
+   Each registrant has it's own state. Registrant's status can be
    inspected via "reg_list" MI comand.
 
    UAC registrant states:
@@ -116,6 +116,12 @@ Chapter 1. Admin Guide
        registrar;
      * 7 - REGISTRAR_ERROR_STATE - error reply received from the
        registrar;
+     * 8 - UNREGISTERING_STATE - waiting for a reply from the
+       registrar after an unREGISTER without authentication header
+       was sent;
+     * 9 - AUTHENTICATING_UNREGISTER_STATE - waiting for a reply
+       from the registrar after an unREGISTER with authentication
+       header was sent;
 
 1.2. Dependencies
 
@@ -297,8 +303,17 @@ modparam("uac_registrant", "binding_URI_column", "contact_uri")
    The column's name in the database storing the binding params in
    REGISTER (not mandatory field). If not NULL or not empty, the
    string stored here will be added as params to the Contact URI
-   in REGISTER (it MUST start with “;”. There is no validation on
-   the string stored here.
+   in REGISTER (it MUST start with “;”.
+
+   If the following two params are present, then the binding will
+   be enforced to be unique (if two bindings are received in a
+   200ok, a complete binding removal will be performed before
+   re-registering):
+     * reg-id
+     * +sip.instance
+
+   Example of params that will force unique binding:
+;reg-id=1;+sip.instance="<urn:uuid:11111111-AABBCCDDEEFF>"
 
    Default value is “binding_params”.
 
@@ -362,7 +377,7 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
    Parameters: none
 
    MI FIFO Command Format:
-opensipsctl fifo reg_list
+opensips-cli -x mi reg_list
 
 1.5.2. reg_reload
 
@@ -373,7 +388,7 @@ opensipsctl fifo reg_list
    Parameters: none
 
    MI FIFO Command Format:
-opensipsctl fifo reg_reload
+opensips-cli -x mi reg_reload
 
 Chapter 2. Contributors
 
@@ -382,11 +397,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ovidiu Sas (@ovidiusas) 137 35 5472 3248
+   1. Ovidiu Sas (@ovidiusas) 144 40 5687 3266
    2. Liviu Chircu (@liviuchircu) 14 11 45 62
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 11 7 286 12
-   4. Vlad Patrascu (@rvlad-patrascu) 7 4 88 69
-   5. Razvan Crainea (@razvancrainea) 5 3 11 11
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 12 8 288 13
+   4. Vlad Patrascu (@rvlad-patrascu) 8 5 89 77
+   5. Razvan Crainea (@razvancrainea) 6 4 13 13
    6. Nick Altmann (@nikbyte) 4 2 35 4
    7. Vlad Paiu (@vladpaiu) 4 2 6 3
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -411,12 +426,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Jan 2019
-   2. Ovidiu Sas (@ovidiusas)             Feb 2011 - Jan 2019
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6. Razvan Crainea (@razvancrainea)     Sep 2011 - Feb 2016
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2012 - Apr 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3. Ovidiu Sas (@ovidiusas)             Feb 2011 - Mar 2019
+   4. Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
+   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    7. Nick Altmann (@nikbyte)             Nov 2015 - Dec 2015
    8. Vlad Paiu (@vladpaiu)               Jul 2011 - Sep 2011
 
@@ -427,9 +442,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Last edited by: Ovidiu Sas (@ovidiusas), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
    Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
-   Patrascu (@rvlad-patrascu), Ovidiu Sas (@ovidiusas).
+   Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:
 

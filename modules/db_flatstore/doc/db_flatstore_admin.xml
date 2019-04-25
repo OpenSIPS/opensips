@@ -92,7 +92,7 @@ mv acc_4.log acc_3.log.20050605
 			Send &osips; the MI command to close and reopen the
 			renamed files. For example, using FIFO:
 			<screen>
-opensipsctl fifo flat_rotate
+opensips-cli -x mi flat_rotate
 			</screen>
 			This will force &osips; to close the renamed files and open
 			new ones with original names, such as
@@ -273,7 +273,7 @@ modparam("db_flatstore", "single_file", 1)
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensipsctl fifo flat_rotate
+		opensips-cli -x mi flat_rotate
 		</programlisting>
 	</section>	
     </section>

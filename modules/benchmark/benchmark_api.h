@@ -47,7 +47,7 @@ static inline int load_bm_api( struct bm_binds *bmb )
 	load_bm_f load_bm;
 
 	/* import the benchmark auto-loading function */
-	if ( !(load_bm=(load_bm_f)find_export("load_bm", 0, 0)))
+	if ( !(load_bm=(load_bm_f)find_export("load_bm", 0)))
 	{
 		LM_ERR("can't import load_bm\n");
 		return -1;

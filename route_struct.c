@@ -47,7 +47,6 @@
 #include "mem/mem.h"
 #include "ut.h" /* ZSW() */
 
-
 struct expr* mk_exp(int op, struct expr* left, struct expr* right)
 {
 	struct expr * e;
@@ -137,6 +136,76 @@ struct action* append_action(struct action* a, struct action* b)
 	for(t=a;t->next;t=t->next);
 	t->next=b;
 	return a;
+}
+
+
+static void free_expr( struct expr *e)
+{
+	if (e==NULL)
+		return;
+
+	if (e->type==ELEM_T) {
+
+		/* left ... */
+		switch (e->left.type) {
+			case EXPR_O:
+				free_expr( e->left.v.expr ); break;
+			case ACTION_O:
+				free_action_list( (struct action*)e->left.v.data ); break;
+			case SCRIPTVAR_O:
+				pkg_free( e->left.v.data ); break;
+		}
+		/* ... and right */
+		switch (e->right.type) {
+			case EXPR_ST:
+				free_expr( e->right.v.expr ); break;
+			case ACTIONS_ST:
+				free_action_list( (struct action*)e->right.v.data ); break;
+			case SCRIPTVAR_ST:
+				pkg_free( e->right.v.data ); break;
+		}
+
+	} else if (e->type==EXP_T) {
+
+		/* left ... */
+		if (e->left.v.expr)
+			free_expr( e->left.v.expr );
+		/* ... and right */
+		if (e->right.v.expr)
+			free_expr( e->right.v.expr );
+
+	}
+
+	pkg_free( e );
+}
+
+
+static void free_action_elem( action_elem_t *e )
+{
+	if (e->type==EXPR_ST)
+		free_expr( (struct expr*)e->u.data );
+	else if (e->type==ACTIONS_ST)
+		free_action_list( (struct action*)e->u.data );
+	else if (e->type==SCRIPTVAR_ST)
+		pkg_free(e->u.data);
+}
+
+
+void free_action_list( struct action *a)
+{
+	int i;
+
+	if (a==NULL)
+		return;
+
+	for( i=0 ; i<MAX_ACTION_ELEMS ; i++)
+		if (a->elem[i].type)
+			free_action_elem( &a->elem[i] );
+
+	if (a->next)
+		free_action_list(a->next);
+
+	pkg_free(a);
 }
 
 
@@ -623,10 +692,14 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 		if (a->type==MODULE_T) {
 			/* first param is the name of the function */
 			cmd = (cmd_export_t*)a->elem[0].u.data;
-			if (strcasecmp(cmd->name, name)==0 &&
-			(param_no==cmd->param_no || param_no==-1) ) {
-				LM_DBG("function %s found to be used in script\n",name);
-				return 1;
+			if (strcasecmp(cmd->name, name)==0) {
+				if (param_no==-1 ||
+					(a->elem[param_no].type != NOSUBTYPE &&
+					a->elem[param_no].type != NULLV_ST)) {
+					LM_DBG("function %s found to be used in script\n",name);
+					return 1;
+				}
+
 			}
 		}
 
@@ -673,10 +746,15 @@ int is_mod_async_func_used(struct action *a, char *name, int param_no)
 		if (a->type==ASYNC_T || a->type==LAUNCH_T) {
 			acmd = ((struct action *)(a->elem[0].u.data))->elem[0].u.data;
 
-			LM_DBG("checking %s against %s\n", name, acmd->name);
-			if (strcasecmp(acmd->name, name) == 0
-				&& (param_no == acmd->param_no || param_no == -1))
-				return 1;
+			if (strcasecmp(acmd->name, name)==0) {
+				if (param_no==-1 ||
+					(((struct action *)(a->elem[0].u.data))->elem[param_no].type != NOSUBTYPE &&
+					((struct action *)(a->elem[0].u.data))->elem[param_no].type != NULLV_ST)) {
+					LM_DBG("function %s found to be used in script\n",name);
+					return 1;
+				}
+
+			}
 		}
 
 		/* follow all leads from actions than may have 

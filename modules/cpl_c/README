@@ -444,8 +444,8 @@ if ($rm=="REGISTER") {
      * cpl_filename: file name
 
    MI FIFO Command format:
-                 opensipsctl fifo LOAD_CPL sip:bob@domain.com cpl_script
-.xml
+                 opensips-cli -x mi LOAD_CPL sip:bob@domain.com cpl_scri
+pt.xml
 
 1.5.2.  REMOVE_CPL
 
@@ -458,7 +458,7 @@ if ($rm=="REGISTER") {
      * username : name of the user
 
    MI FIFO Command format:
-                 opensipsctl fifo REMOVE_CPL sip:bob@domain.com
+                 opensips-cli -x mi REMOVE_CPL sip:bob@domain.com
 
 1.5.3.  GET_CPL
 
@@ -470,7 +470,7 @@ if ($rm=="REGISTER") {
      * username : name of the user
 
    MI FIFO Command format:
-                 opensipsctl fifo GET_CPL sip:bob@domain.com
+                 opensips-cli -x mi GET_CPL sip:bob@domain.com
 
 1.6. Installation and Running
 
@@ -495,14 +495,14 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 407 168 15541 6540
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 409 170 15545 6543
    2. Daniel-Constantin Mierla (@miconda) 18 15 80 73
    3. Jan Janak (@janakj) 18 10 463 219
    4. Henning Westerholt (@henningw) 16 12 108 132
-   5. Razvan Crainea (@razvancrainea) 15 9 247 213
+   5. Razvan Crainea (@razvancrainea) 16 10 250 216
    6. Liviu Chircu (@liviuchircu) 12 9 59 106
-   7. Andrei Pelinescu-Onciul 10 7 107 60
-   8. Vlad Patrascu (@rvlad-patrascu) 8 5 72 79
+   7. Vlad Patrascu (@rvlad-patrascu) 10 7 115 109
+   8. Andrei Pelinescu-Onciul 10 7 107 60
    9. Jiri Kuthan (@jiriatipteldotorg) 6 2 372 25
    10. Elena-Ramona Modroiu 5 3 105 15
 
@@ -533,14 +533,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
-   5.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
-   6.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2016
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Feb 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Mar 2019
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   6.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   7.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Nick Altmann (@nikbyte)             Jan 2016 - Jan 2016
    10. Ionel Cerghit (@ionel-cerghit)      Oct 2015 - Oct 2015
 
@@ -558,10 +558,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Nick Altmann
-   (@nikbyte), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
-   (@razvancrainea), Daniel-Constantin Mierla (@miconda),
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Jesus Rodrigues, Elena-Ramona Modroiu, Jan Janak
    (@janakj).

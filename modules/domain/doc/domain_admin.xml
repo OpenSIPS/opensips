@@ -262,7 +262,7 @@ if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensipsctl fifo domain_reload
+		opensips-cli -x mi domain_reload
 		</programlisting>
 		
 	</section>
@@ -280,7 +280,7 @@ if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
 		MI FIFO Command Format:
 		</para>
         <programlisting  format="linespecific">
-		opensipsctl fifo domain_dump
+		opensips-cli -x mi domain_dump
 		</programlisting>
 	</section>
 	</section>

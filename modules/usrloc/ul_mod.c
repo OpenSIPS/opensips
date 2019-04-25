@@ -189,10 +189,9 @@ int latency_event_min_us;
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"ul_bind_usrloc",        (cmd_function)bind_usrloc,        1, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"ul_bind_usrloc", (cmd_function)bind_usrloc, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*! \brief
  * Exported parameters
@@ -353,7 +352,8 @@ struct module_exports exports = {
 	mod_init,   /*!< Module initialization function */
 	0,          /*!< Response function */
 	destroy,    /*!< Destroy function */
-	child_init  /*!< Child initialization function */
+	child_init, /*!< Child initialization function */
+	0           /*!< reload confirm function */
 };
 
 

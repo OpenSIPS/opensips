@@ -333,7 +333,7 @@ modparam("pi_http", "pi_http_method", 1)
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-opensipsctl fifo pi_reload_tbls_and_cmds
+opensips-cli -x mi pi_reload_tbls_and_cmds
 		</programlisting>
 	</section>
 	</section>

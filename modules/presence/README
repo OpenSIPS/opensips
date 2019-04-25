@@ -40,7 +40,7 @@ Presence Module
 
         1.5. Exported Functions
 
-              1.5.1. handle_publish(sender_uri)
+              1.5.1. handle_publish([sender_uri])
               1.5.2. handle_subscribe([force_active]
                       [,sharing_tag])
 
@@ -512,19 +512,21 @@ modparam("presence", "pres_htable_size", 11)
 
 1.5. Exported Functions
 
-1.5.1.  handle_publish(sender_uri)
+1.5.1.  handle_publish([sender_uri])
 
    The function handles PUBLISH requests. It stores and updates
    published information in database and calls functions to send
    NOTIFY messages when changes in the published information
-   occur. It takes one argument -> sender_uri. The parameter was
-   added for enabling BLA implementation. If present, Notification
-   of a change in published state is not sent to the respective
-   uri even though a subscription exists. It should be taken from
-   the Sender header. It was left at the decision of the
-   administrator whether or not to transmit the content of this
-   header as parameter for handle_publish, to prevent security
-   problems.
+   occur.
+
+   It may takes one optional string argument, the 'sender_uri' SIP
+   URI. The parameter was added for enabling BLA implementation.
+   If present, Notification of a change in published state is not
+   sent to the respective uri even though a subscription exists.
+   It should be taken from the Sender header. It was left at the
+   decision of the administrator whether or not to transmit the
+   content of this header as parameter for handle_publish, to
+   prevent security problems.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -615,7 +617,7 @@ if($rm=="SUBSCRIBE")
             is set): refresh type!= 0.
 
    MI FIFO Command Format:
-opensipsctl fifo refreshWatchers sip:11@192.168.2.132 presence 1
+opensips-cli -x mi refreshWatchers sip:11@192.168.2.132 presence 1
 
 1.6.2.  cleanup
 
@@ -628,7 +630,7 @@ opensipsctl fifo refreshWatchers sip:11@192.168.2.132 presence 1
    Parameters: none
 
    MI FIFO Command Format:
-opensipsctl fifo cleanup
+opensips-cli -x mi cleanup
 
 1.6.3.  pres_phtable_list
 
@@ -639,7 +641,7 @@ opensipsctl fifo cleanup
    Parameters: none
 
    MI FIFO Command Format:
-opensipsctl fifo pres_phtable_list
+opensips-cli -x mi pres_phtable_list
 
 1.6.4.  subs_phtable_list
 
@@ -653,8 +655,8 @@ opensipsctl fifo pres_phtable_list
      * to(optional) - wildcard for "To" URI
 
    MI FIFO Command Format:
-opensipsctl fifo subs_phtable_list sip:222@domain2.com sip:user_1@exampl
-e.com
+opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@exam
+ple.com
 
 1.6.5.  pres_expose
 
@@ -672,7 +674,7 @@ e.com
        all presentities for that event are exposed.
 
    MI FIFO Command Format:
-opensipsctl fifo pres_expose presence ^sip:10\.0\.5\.[0-9]*
+opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
 
 1.7. Exported Events
 
@@ -1006,12 +1008,12 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 663 247 24146 12623
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 123 71 2748 1662
-   3. Ovidiu Sas (@ovidiusas) 27 19 615 167
-   4. Razvan Crainea (@razvancrainea) 26 20 371 130
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 130 77 2790 1691
+   3. Razvan Crainea (@razvancrainea) 27 21 376 135
+   4. Ovidiu Sas (@ovidiusas) 27 19 615 167
    5. Daniel-Constantin Mierla (@miconda) 24 19 174 165
    6. Liviu Chircu (@liviuchircu) 23 14 240 365
-   7. Vlad Patrascu (@rvlad-patrascu) 16 7 328 281
+   7. Vlad Patrascu (@rvlad-patrascu) 18 8 352 346
    8. Henning Westerholt (@henningw) 15 6 340 302
    9. Dan Pascu (@danpascu) 9 7 13 32
    10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
@@ -1045,10 +1047,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Dec 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  James Criscuolo                     Mar 2016 - Mar 2016
    7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
@@ -1073,10 +1075,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
-   Patrascu (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Saúl Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Saúl
+   Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
    Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
    Darilion, Henning Westerholt (@henningw), Dan Pascu
    (@danpascu), Daniel-Constantin Mierla (@miconda), Edson Gellert

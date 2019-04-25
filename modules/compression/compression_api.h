@@ -50,7 +50,7 @@ static inline int load_compression_api(compression_api_t* api )
 	load_compression_f load_compression;
 
 	/* import the TM auto-loading function */
-	if ( !(load_compression=(load_compression_f)find_export("load_compression", 0, 0))) {
+	if ( !(load_compression=(load_compression_f)find_export("load_compression", 0))) {
 		LM_ERR("failed to import load_compression\n");
 		return -1;
 	}

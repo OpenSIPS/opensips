@@ -693,7 +693,7 @@ int is_dialog(ua_pres_t* dialog)
 
 }
 
-int update_contact(struct sip_msg* msg, char* str1, char* str2)
+int update_contact(struct sip_msg* msg)
 {
 	ua_pres_t* p, hentity;
 	str contact;

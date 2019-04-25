@@ -394,7 +394,7 @@ database_p bdblib_get_db(str *_s)
 	memcpy(_db_p->name.s, _s->s, _s->len);
 	_db_p->name.len = _s->len;
 
-	strncpy(name, _s->s, _s->len);
+	memcpy(name, _s->s, _s->len);
 	name[_s->len] = 0;
 
 	if ((rc = bdblib_create_dbenv(&(_db_p->dbenv), name)) != 0)
@@ -509,18 +509,18 @@ void bdblib_log(int op, table_p _tp, char* _msg, int len)
 		switch (op)
 		{
 		case JLOG_INSERT:
-			strncpy(c, "INSERT|", op_len);
+			memcpy(c, "INSERT|", op_len);
 			break;
 		case JLOG_UPDATE:
-			strncpy(c, "UPDATE|", op_len);
+			memcpy(c, "UPDATE|", op_len);
 			break;
 		case JLOG_DELETE:
-			strncpy(c, "DELETE|", op_len);
+			memcpy(c, "DELETE|", op_len);
 			break;
 		}
 
 		c += op_len;
-		strncpy(c, _msg, len);
+		memcpy(c, _msg, len);
 		c +=len;
 		*c = '\n';
 		c++;
@@ -548,7 +548,7 @@ void bdblib_log(int op, table_p _tp, char* _msg, int len)
  * files (db) that we require.
  *
  * There is one db file per opensips table (eg. acc), and they should exist
- * in your DB_PATH (refer to opensipsctlrc) directory.
+ * in your DB_PATH (refer to opensips-cli) directory.
  *
  * This function does _not_ create the underlying binary db tables.
  * Creating the tables MUST be manually performed before
@@ -587,7 +587,7 @@ table_p bdblib_create_table(database_p _db, str *_s)
 	}
 
 	memset(tblname, 0, MAX_TABLENAME_SIZE);
-	strncpy(tblname, _s->s, _s->len);
+	memcpy(tblname, _s->s, _s->len);
 
 #ifdef BDB_EXTRA_DEBUG
 	LM_DBG("CREATE TABLE = %s\n", tblname);
@@ -726,18 +726,18 @@ int bdblib_create_journal(table_p _tp)
 	if(! _db_parms->log_enable) return 0;
 	/* journal filename ; e.g. '/var/opensips/db/location-YYYYMMDDhhmmss.jnl' */
 	s=fn;
-	strncpy(s, _db_p->name.s, _db_p->name.len);
+	memcpy(s, _db_p->name.s, _db_p->name.len);
 	s+=_db_p->name.len;
 
 	*s = '/';
 	s++;
 
-	strncpy(s, _tp->name.s, _tp->name.len);
+	memcpy(s, _tp->name.s, _tp->name.len);
 	s+=_tp->name.len;
 
 	t = localtime( &tim );
 	bl=strftime(d,128,"-%Y%m%d%H%M%S.jnl",t);
-	strncpy(s, d, bl);
+	memcpy(s, d, bl);
 	s+= bl;
 	*s = 0;
 
@@ -1101,7 +1101,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 			}
 
 			/* write sk */
-			strncpy(p, sk, len);
+			memcpy(p, sk, len);
 			p += len;
 			*_klen = sum;
 
@@ -1112,7 +1112,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 			}
 
 			/* write delim */
-			strncpy(p, delim, DELIM_LEN);
+			memcpy(p, delim, DELIM_LEN);
 			p += DELIM_LEN;
 			*_klen = sum;;
 		}
@@ -1174,7 +1174,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 					return -5;
 				}
 
-				strncpy(p, sk, len);
+				memcpy(p, sk, len);
 				p += len;
 				*_klen = sum;
 
@@ -1185,7 +1185,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 				}
 
 				/* append delim */
-				strncpy(p, delim, DELIM_LEN);
+				memcpy(p, delim, DELIM_LEN);
 				p += DELIM_LEN;
 				*_klen = sum;
 
@@ -1217,7 +1217,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 			return -5;
 		}
 
-		strncpy(p, _tp->colp[i]->dv.s, len);
+		memcpy(p, _tp->colp[i]->dv.s, len);
 		p += len;
 		*_klen = sum;
 
@@ -1227,7 +1227,7 @@ int bdblib_valtochar(table_p _tp, int* _lres, char* _k, int* _klen, db_val_t* _v
 			return -5;
 		}
 
-		strncpy(p, delim, DELIM_LEN);
+		memcpy(p, delim, DELIM_LEN);
 		p += DELIM_LEN;
 		*_klen = sum;
 next:

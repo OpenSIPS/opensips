@@ -2,7 +2,7 @@
 
 <chapter>
 	<title>&adminguide;</title>
-	
+
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para> This module introduces a new type of variable that provides both
@@ -404,7 +404,7 @@ $json(object/array) := $json(array) ;
 		<section id="func_json_link" xreflabel="json_link()">
 			<title>
 			<function moreinfo="none">
-				json_link("$json(dest_id)", "$json(source_id)")
+				json_link($json(dest_id), $json(source_id))
 				</function>
 			</title>
 			<para>
@@ -439,7 +439,7 @@ $json(object/array) := $json(array) ;
 			</para>
 
 			<para>
-			WARNING: You should be carefull when using references.
+			WARNING: You should be careful when using references.
 			If you accidentally create a circular reference and try
 			to get the value from the object you will crash OPENSIPS.
 			</para>
@@ -451,7 +451,7 @@ $json(object/array) := $json(array) ;
 
 $json(b) := "[{},{},{}]";
 
-json_link("$json(stub)","$json(b[0])");
+json_link($json(stub), $json(b[0]));
 
 $json(stub/ana) = "are"; #add to the stub
 $json(stub/ar) := "[]";
@@ -501,7 +501,7 @@ Test link :
 $json(b) := "[1]";
 
 /* NEVER do this, it is meant only to show where problems might occur  */
-json_link("$json(b[0])","$json(b)"); # replace 1 with a reference to b
+json_link($json(b[0]), $json(b)); # replace 1 with a reference to b
 
 xlog("\nTest link :\n$json(stub)\n$json(b)\n\n");
 

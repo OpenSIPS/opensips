@@ -21,9 +21,9 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">112</entry>
-		<entry align="center">58</entry>
-		<entry align="center">3384</entry>
+		<entry align="center">113</entry>
+		<entry align="center">59</entry>
+		<entry align="center">3391</entry>
 		<entry align="center">1487</entry>
 	</row>
 	<row>
@@ -37,13 +37,29 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">10</entry>
-		<entry align="center">8</entry>
-		<entry align="center">30</entry>
-		<entry align="center">15</entry>
+		<entry align="center">11</entry>
+		<entry align="center">9</entry>
+		<entry align="center">31</entry>
+		<entry align="center">16</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">11</entry>
+		<entry align="center">4</entry>
+		<entry align="center">176</entry>
+		<entry align="center">229</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">7</entry>
+		<entry align="center">5</entry>
+		<entry align="center">114</entry>
+		<entry align="center">47</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>)</entry>
 		<entry align="center">6</entry>
 		<entry align="center">3</entry>
@@ -51,28 +67,12 @@
 		<entry align="center">32</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>7. </entry>
 		<entry>Agalya Ramachandran (<ulink url="https://github.com/AgalyaR">@AgalyaR</ulink>)</entry>
 		<entry align="center">6</entry>
 		<entry align="center">2</entry>
 		<entry align="center">354</entry>
 		<entry align="center">1</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">5</entry>
-		<entry align="center">3</entry>
-		<entry align="center">94</entry>
-		<entry align="center">46</entry>
-	</row>
-	<row>
-		<entry>7. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">5</entry>
-		<entry align="center">3</entry>
-		<entry align="center">21</entry>
-		<entry align="center">22</entry>
 	</row>
 	<row>
 		<entry>8. </entry>
@@ -128,33 +128,33 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2013 - Nov 2018</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Aug 2015 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Aug 2015 - Sep 2018</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Oct 2014 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Jul 2018</entry>
+		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2013 - Mar 2019</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">Feb 2017 - Mar 2017</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Oct 2014 - Mar 2017</entry>
 	</row>
 	<row>
 		<entry>7. </entry>

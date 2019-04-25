@@ -27,8 +27,7 @@ TOC
    B) Disclaimers
    C) Quick Start
    D) opensips with Persistent Data Storage
-   E) osipsconsole installation	
-   F) menuconfig installation
+   E) menuconfig installation
 4. Troubleshooting
 
 
@@ -151,7 +150,7 @@ Clean:
 make clean   (clean the modules too)
 make proper  (clean also the dependencies)
 make distclean (the same as proper)
-make mantainer-clean (clean everything, including auto generated files,
+make maintainer-clean (clean everything, including auto generated files,
  tags, *.dbg a.s.o)
 
 Compile:
@@ -303,21 +302,10 @@ tar.gz:
 Solaris:
     see tar.gz.
 
-4) optionally, watch server's health using the opensipsctl utility
-    - to do so, first set the environment variable SIP_DOMAIN to your domain 
-      name, e.g., in Bourne shell, call
-        export SIP_DOMAIN="myserver.foobar.com"
-    - if you are using other than 'localhost' mysql server for maintaining
-      subscriber database, change the variable 'SQL_HOST' to the proper
-      host name in the opensipsctl script
-    - run the opensipsctl utility
-        /usr/sbin/opensipsctl moni
-      or
-        /usr/local/sbin/opensipsserctl moni (if you installed from a tar.gz
-        or solaris package)
-    - you can create a resource file for opensipsctl, name it .opensipsctlrc
-      and place it in your home directory. You can set there the values for
-      opensipsctl variables (e.g., SIP_DOMAIN, SQL_HOST, SQL_USER, SQL_DB ...)
+4) optionally, watch server's health using the opensips-cli utility
+    Note that the old opensipsctl tool has been removed - for using
+    opensips-cli please refer to the project's page:
+    https://github.com/OpenSIPS/opensips-cli
 
 5) Register with the server using your favourite SIP User Agent.
    For example, users of Windows Messenger need to set
@@ -356,16 +344,10 @@ proceed, you need to make sure MySQL is installed on your box.
       (if do not want to put 'mysql' into your USE variable you can type:
       USE="mysql" emerge opensips)
 3) create SQL tables
-    You must specify your database type in the /etc/opensipsctlrc file, e.g.
-    MySQL. See section 7 for an explanation of further possible parameters.
-    - if you have a previously installed OpenSIPS on your system, use
-         /usr/sbin/opensipsdbctl migrate
-      to convert your OpenSIPS database into new structures
-      NOTE: "migrate" is available only for mysql DBs
-    - otherwise, if this is your very first installation, use
-         /usr/sbin/opensipsdbctl create
-      to create OpenSIPS database structures
-      (you will be prompted for password of MySQL "root" user)
+    Create the SQL database using the opensips-cli tool, database module:
+      opensips-cli -x database create
+    For more information please refer to:
+      https://github.com/OpenSIPS/opensips-cli/blob/master/docs/modules/database.md
 
 4) configure opensips to use SQL
     uncomment all lines in configuration file opensips.cfg which are related to 
@@ -390,113 +372,9 @@ proceed, you need to make sure MySQL is installed on your box.
       }
 6) restart the server
     /etc/init.d/opensips restart
-7) you can now start  managing the server using the opensipsctl utility; 
-   you need to first set the environment variable SIP_DOMAIN to your 
-   local SIP realm, e.g.,
-       export SIP_DOMAIN="myserver.foobar.com"
-   or you can configure via the resource file for opensipsctlrc. The default
-   file is installed in the etc/ directory of your installation (along with the
-   OpenSIPS config file). For per user configuration, create .opensipsctlrc
-   in your home directory.
-   You can set there the values for opensipsctl variables like:
-        SIP_DOMAIN - your SIP domain
-        DBENGINE - database type: MYSQL, PGSQL or DBTEXT by default none is loaded
-        DBHOST - database host
-        DBNAME - database name
-        DBRWUSER - database read/write user
-        DBROUSER - database read only user
-        DBROPW - password for database read only user
-        DBROOTUSER - database super user
-        ALIASES_TYPE - type of aliases used:
-                        DB - database aliases
-                        UL - usrloc aliases
-                        default none
-        CTLENGINE - control engine: FIFO or UNIXSOCK
-        OSIPS_FIFO - path to FIFO file
-        VERBOSE - verbose - debug purposes - default '0'
+7) you can now start  managing the server using the opensips-cli utility
 
-   a) watch the server status using 'opensipsctl moni'
-   b) try to login with your SIP client as user 'admin' with 
-      password 'opensipsrw'
-   c) try adding new users using 
-       'opensipsctl add <name> <password> <email>'
-
-8) default values (database url, users and passwords) are:
-   - db_default_url="mysql://opensips:opensipsrw@localhost/opensips"
-   - r/w user: opensips ; passwd: opensipsrw
-   - r/o user: opensipsro ; passwd: opensipsro
-     VERY IMPORTANT NOTE: for security reasons, do change the values of 
-     passwords after installation
-
-E) osipsconsole installation
-
-1) Perl requirements
-
-	For the osipsconsole tool the following perl modules are needed:  
-
-	DBI
-	DBD::mysql 
-	DBD::Pg 
-	DBD::Oracle 
-	BerkeleyDB
-	Frontier::RPC2
-
-2) Debian/Ubuntu Installation
-
-    In order for the script to work, there are listed bellow the modules 
-    needed and their debian package correspondent, a brief description of each 
-    package and whether it is mandatory to install it or not. ( To be mentioned
-    the fact that these packages have been tested in Debian and Ubuntu 
-    distros. )
-
-Perl module        | Debian Package         | Description           | Use
----------------------------------------------------------------------------
-perl               |perl                    |Practical Extraction   | mandatory
-                   |                        |and Report Language    |
-
-DBI                |libdbi-perl             |Perl database interface| mandatory
-
-DBD::mysql         |libdbd-mysql-perl       |MySQL driver for the   |*optional
-                   |                        |Perl5 DBI              |
-
-DBD::Pg            |libdbd-pg-perl          |PostgreSQL database    |*optional
-                   |                        |driver for DBI module  |
-
-**DBD::Oracle      |       ------           |Oracle database driver |*optional
-                   |                        |for the DBI module     |
-
-Frontier::RPC2     |libfrontier-rpc-perl    |encode/decode RPC2     | mandatory
-                   |                        |format XML     |
-
-Term::ReadLine::Gnu|libterm-readline-gnu-per|Perl extension for the | mandatory
-                   |                        |GNU Readline/History Lib|
-
-BerkeleyDB         |libberkeleydb-perl      |Perl extension for     | mandatory
-                   |                        |Berkeley database      |
-                   |                        |version 2, 3 or 4      |
-
-
-   Install these packages using apt-get:
-
-    apt-get install perl libdbi-perl libdbd-mysql-perl libdbd-pg-perl
-		    libfrontier-rpc-perl libterm-readline-gnu-perl 
-		    libberkeleydb-perl
-
-   NOTE: * packages are at the user's choice. At least one of them is 
-         mandatory, depending on the DB type used by OpenSIPS. The other
-         ones have no need of being installed.
-         ** For the DBD::Oracle module there is no debian package. This 
-         will be installed as follows:
-         - Download the .tar.gz archive from: 
-	   http://search.cpan.org/~pythian/DBD-Oracle-1.22/Oracle.pm
-	     - Decompress and unpack it 
-	     - cd DBD-Oracle-1.22
-	     - perl Makefile.PL
-	     - make
-	     - make test
-	     - make install
-
-F) menuconfig installation
+E) menuconfig installation
 
 The Interface allows the user to do the following :
 

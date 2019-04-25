@@ -67,10 +67,10 @@ char* flat_delimiter = "|";
  * suffix and prefix of the logging file
  * can be a formatted string
  */
-char * flat_suffix_s = FILE_SUFFIX;
-gparam_p flat_suffix;
-char * flat_prefix_s = NULL;
-gparam_p flat_prefix;
+str flat_suffix_s = str_init(FILE_SUFFIX);
+pv_elem_t *flat_suffix = NULL;
+str flat_prefix_s = {0,0};
+pv_elem_t *flat_prefix = NULL;
 
 /*
  * Timestamp of the last log rotation request from
@@ -84,8 +84,8 @@ time_t local_timestamp;
  * Flatstore database module interface
  */
 static cmd_export_t cmds[] = {
-	{"db_bind_api",    (cmd_function)db_flat_bind_api,      0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"db_bind_api",    (cmd_function)db_flat_bind_api, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 /*
@@ -94,8 +94,8 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"flush", INT_PARAM, &flat_flush},
 	{"delimiter", STR_PARAM, &flat_delimiter},
-	{"suffix", STR_PARAM, &flat_suffix_s},
-	{"prefix", STR_PARAM, &flat_prefix_s},
+	{"suffix", STR_PARAM, &flat_suffix_s.s},
+	{"prefix", STR_PARAM, &flat_prefix_s.s},
 	{"single_file", INT_PARAM, &flat_single_file},
 	{0, 0, 0}
 };
@@ -127,7 +127,8 @@ struct module_exports exports = {
 	mod_init,    /* module initialization function */
 	0,           /* response function*/
 	mod_destroy, /* destroy function */
-	child_init   /* per-child init function */
+	child_init,  /* per-child init function */
+	0            /* reload confirm function */
 };
 
 
@@ -148,23 +149,18 @@ static int mod_init(void)
 	local_timestamp = *flat_rotate;
 
 	/* parse prefix and suffix */
-	if (flat_suffix_s && strlen(flat_suffix_s)) {
-		if (fixup_spve((void **)&flat_suffix_s)) {
+	if (flat_suffix_s.s && (flat_suffix_s.len=strlen(flat_suffix_s.s))!=0) {
+		if (pv_parse_format(&flat_suffix_s, &flat_suffix) < 0) {
 			LM_ERR("cannot parse log suffix\n");
 			return -1;
 		}
-		flat_suffix = (gparam_p)flat_suffix_s;
-	} else {
-		flat_suffix = 0;
 	}
-	if (flat_prefix_s && strlen(flat_prefix_s)) {
-		if (fixup_spve((void **)&flat_prefix_s)) {
+
+	if (flat_prefix_s.s && (flat_prefix_s.len=strlen(flat_prefix_s.s))!=0) {
+		if (pv_parse_format(&flat_prefix_s, &flat_prefix) < 0) {
 			LM_ERR("cannot parse log prefix\n");
 			return -1;
 		}
-		flat_prefix = (gparam_p)flat_prefix_s;
-	} else {
-		flat_prefix = 0;
 	}
 
 	return 0;

@@ -18,106 +18,41 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/*!
- * \file
- * \brief Generic fixup functions for module function parameter.
- */
 
 #ifndef _mod_fix_h_
 #define _mod_fix_h_
 
-#include "pvar.h"
 #include <regex.h>
+#include "mem/mem.h"
+#include "pvar.h"
 
-#define GPARAM_TYPE_INT		0
-#define GPARAM_TYPE_STR		1
-#define GPARAM_TYPE_PVS		2
-#define GPARAM_TYPE_PVE		3
-#define GPARAM_TYPE_FLAGS	4
-#define GPARAM_TYPE_REGEX	5
+#define GPARAM_TYPE_VAL		0
+#define GPARAM_TYPE_PVS		1
+#define GPARAM_TYPE_PVE		2
+#define GPARAM_TYPE_FIXUP	3
 
-#define GPARAM_INT_VALUE_FLAG	(1U<<0)
-#define GPARAM_STR_VALUE_FLAG	(1U<<1)
-
-
-/*!
- * generic parameter that holds a string, an int or a pseudo-variable
- */
 typedef struct _gparam
 {
 	int type;
+	void *pval;
 	union {
 		int ival;
 		str sval;
-		pv_spec_t *pvs;
-		pv_elem_t *pve;
-		regex_t *re;
 	} v;
 } gparam_t, *gparam_p;
 
-int fixup_str_null(void** param, int param_no);
-int fixup_str_str(void** param, int param_no);
 
-int fixup_free_str_null(void** param, int param_no);
-int fixup_free_str_str(void** param, int param_no);
+struct cmd_param;
 
-int fixup_uint_null(void** param, int param_no);
-int fixup_uint_uint(void** param, int param_no);
+int fix_cmd(struct cmd_param *params, action_elem_t *elems);
+int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
+				action_elem_t *elems, void **cmdp, pv_value_t *tmp_val);
+int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp);
 
-int fixup_sint_null(void** param, int param_no);
-int fixup_sint_sint(void** param, int param_no);
-#if 0
-int fixup_sint_uint(void** param, int param_no);
-int fixup_uint_sint(void** param, int param_no);
-#endif
+static inline int fixup_free_pkg(void **param)
+{
+	pkg_free(*param);
+	return 0;
+}
 
-int fixup_regexp_null(void** param, int param_no);
-int fixup_regexp_dynamic_null(void** param, int param_no);
-int fixup_regexpNL_null(void** param, int param_no);
-int fixup_free_regexp_null(void** param, int param_no);
-int fixup_regexp_none(void** param, int param_no);
-int fixup_regexpNL_none(void** param, int param_no);
-int fixup_free_regexp_none(void** param, int param_no);
-int fixup_free_regexp(void** param);
-
-int fixup_pvar_null(void **param, int param_no);
-int fixup_free_pvar_null(void** param, int param_no);
-
-int fixup_pvar_pvar(void **param, int param_no);
-int fixup_free_pvar_pvar(void** param, int param_no);
-
-int fixup_pvar_str(void** param, int param_no);
-int fixup_free_pvar_str(void** param, int param_no);
-
-int fixup_pvar_str_str(void** param, int param_no);
-int fixup_free_pvar_str_str(void** param, int param_no);
-
-int fixup_igp_igp(void** param, int param_no);
-int fixup_igp_igp_igp(void** param, int param_no);
-int fixup_igp_null(void** param, int param_no);
-int fixup_get_ivalue(struct sip_msg* msg, gparam_p gp, int *val);
-
-int fixup_igp_pvar_pvar(void** param, int param_no);
-int fixup_free_igp_pvar_pvar(void** param, int param_no);
-
-int fixup_spve_spve(void** param, int param_no);
-int fixup_spve_null(void** param, int param_no);
-int fixup_spve_uint(void** param, int param_no);
-int fixup_get_svalue(struct sip_msg* msg, gparam_p gp, str *val);
-
-int fixup_get_isvalue(struct sip_msg* msg, gparam_p gp,
-			int *i_val, str *s_val, unsigned int *flags);
-regex_t* fixup_get_regex(struct sip_msg* msg, gparam_p gp,int *do_free);
-int fixup_spve(void** param);
-int fixup_free_spve(void **param);
-
-int fixup_pvar(void **param);
-int fixup_str(void **param);
-int fixup_uint(void** param);
-int fixup_sint(void** param);
-int fixup_igp(void** param);
-
-int fixup_sgp(void** param);
-int fixup_sgp_null(void** param, int param_no);
-int fixup_sgp_sgp(void** param, int param_no);
 #endif

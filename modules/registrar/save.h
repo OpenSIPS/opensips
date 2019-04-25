@@ -42,15 +42,9 @@
 /*! \brief
  * Process REGISTER request and save it's contacts
  */
-int save(struct sip_msg* _m, char* _d, char* _f, char* _s, char* _owtag_gp);
+int save(struct sip_msg* _m, void* _d, str* _f, str* _s, str* _owtag);
 
-int w_remove_2(struct sip_msg *msg, char *udomain, char *aor_gp);
-int w_remove_3(struct sip_msg *msg, char *udomain, char *aor_gp,
-               char *contact_gp);
-int w_remove_4(struct sip_msg *msg, char *udomain, char *aor_gp,
-               char *contact_gp, char *next_hop_gp);
-
-int _remove(struct sip_msg *msg, char *udomain, char *aor_gp, char *contact_gp,
-            char *next_hop_gp, char *sip_instance_gp);
+int _remove(struct sip_msg *msg, void *udomain, str *aor_gp, str *contact_gp,
+            str *next_hop_gp, str *sip_instance);
 
 #endif /* SAVE_H */

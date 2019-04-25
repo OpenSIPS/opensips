@@ -52,27 +52,18 @@ static str h350_service_level_name = str_init("SIPIdentityServiceLevel");
 
 static regex_t* call_pref_preg;
 
-int h350_sipuri_lookup(struct sip_msg* _msg, pv_elem_t* _sip_uri)
+int h350_sipuri_lookup(struct sip_msg* _msg, str* sip_uri)
 {
-	str sip_uri, sip_uri_escaped;
+	str sip_uri_escaped;
 	int ld_result_count;
 	static char sip_uri_escaped_buf[SIP_URI_ESCAPED_MAX_LEN];
-
-	/*
-	 * get sip_uri
-	 */
-	if (pv_printf_s(_msg, _sip_uri, &sip_uri) != 0)
-	{
-		LM_ERR("pv_printf_s failed\n");
-		return E_H350_INTERNAL;
-	}
 
 	/*
 	 * ldap filter escape sip_uri
 	 */
 	sip_uri_escaped.s = sip_uri_escaped_buf;
 	sip_uri_escaped.len = SIP_URI_ESCAPED_MAX_LEN - 1;
-	if (ldap_api.ldap_rfc4515_escape(&sip_uri, &sip_uri_escaped, 0))
+	if (ldap_api.ldap_rfc4515_escape(sip_uri, &sip_uri_escaped, 0))
 	{
 		LM_ERR("ldap_rfc4515_escape failed\n");
 		return E_H350_INTERNAL;
@@ -102,13 +93,10 @@ int h350_sipuri_lookup(struct sip_msg* _msg, pv_elem_t* _sip_uri)
 	return ld_result_count;
 }
 
-int h350_auth_lookup(
-        struct sip_msg* _msg,
-        pv_elem_t* _digest_username,
-        struct h350_auth_lookup_avp_params* _avp_specs)
+int h350_auth_lookup(struct sip_msg* _msg, str *digest_username,
+	pv_spec_t *username_avp, pv_spec_t *pwd_avp)
 {
-	str                digest_username,
-	                   digest_username_escaped,
+	str                digest_username_escaped,
 	                   digest_password;
 	static char        digest_username_buf[DIGEST_USERNAME_BUF_SIZE];
 	struct berval      **attr_vals = NULL;
@@ -118,27 +106,11 @@ int h350_auth_lookup(
 	int                rc, ld_result_count;
 
 	/*
-	 * get digest_username str
-	 */
-	if (_digest_username)
-	{
-                if (pv_printf_s(_msg, _digest_username, &digest_username) != 0)
-		{
-                        LM_ERR("pv_printf_s failed\n");
-                        return E_H350_INTERNAL;
-                }
-        } else
-	{
-		LM_ERR("empty digest username\n");
-		return E_H350_NO_SUCCESS;
-	}
-
-	/*
 	 * get AVP names for username and password
 	 */
 
 	if (pv_get_avp_name(	_msg,
-				&(_avp_specs->username_avp_spec.pvp),
+				&username_avp->pvp,
 				&username_avp_name,
 				&username_avp_type)
 		!= 0)
@@ -148,7 +120,7 @@ int h350_auth_lookup(
 	}
 
 	if (pv_get_avp_name(_msg,
-						&(_avp_specs->password_avp_spec.pvp),
+						&pwd_avp->pvp,
 						&password_avp_name,
 						&password_avp_type)
                 != 0)
@@ -165,7 +137,7 @@ int h350_auth_lookup(
 	digest_username_escaped.s = digest_username_buf;
 	digest_username_escaped.len = DIGEST_USERNAME_BUF_SIZE - 1;
 	if (ldap_api.ldap_rfc4515_escape(
-		&digest_username,
+		digest_username,
 		&digest_username_escaped,
 		0)
 	   )
@@ -224,7 +196,7 @@ int h350_auth_lookup(
 	 * write AVPs
 	 */
 
-	avp_val.s = digest_username;
+	avp_val.s = *digest_username;
 	if (add_avp(	username_avp_type | AVP_VAL_STR,
 			username_avp_name,
 			avp_val)
@@ -250,7 +222,7 @@ int h350_auth_lookup(
 	return E_H350_SUCCESS;
 }
 
-int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
+int h350_call_preferences(struct sip_msg* _msg, str* avp_name_prefix)
 {
 	int           rc, i, avp_count = 0;
 	struct berval **attr_vals;
@@ -259,19 +231,9 @@ int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 	int       avp_name;
 	int_str   avp_val;
 	str           avp_val_str, avp_name_str,
-	              avp_name_prefix_str, call_pref_timeout_str;
+	              call_pref_timeout_str;
 	int           call_pref_timeout;
 	static char   call_pref_avp_name[AVP_NAME_STR_BUF_LEN];
-
-        /*
-         * get avp_name_prefix_str
-         */
-        if (pv_printf_s(_msg, _avp_name_prefix, &avp_name_prefix_str) != 0)
-        {
-                LM_ERR("pv_printf_s failed\n");
-                return E_H350_INTERNAL;
-        }
-
 
 	/*
 	 * get LDAP attribute values
@@ -294,13 +256,13 @@ int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 	 */
 
 	/* copy avp name prefix into call_pref_avp_name */
-	if (avp_name_prefix_str.len < AVP_NAME_STR_BUF_LEN)
+	if (avp_name_prefix->len < AVP_NAME_STR_BUF_LEN)
 	{
-		memcpy(call_pref_avp_name, avp_name_prefix_str.s, avp_name_prefix_str.len);
+		memcpy(call_pref_avp_name, avp_name_prefix->s, avp_name_prefix->len);
 	} else
 	{
 		LM_ERR("AVP name prefix too long [%d] (max [%d])",
-			avp_name_prefix_str.len,
+			avp_name_prefix->len,
 			AVP_NAME_STR_BUF_LEN);
 		return E_H350_INTERNAL;
 	}
@@ -325,7 +287,7 @@ int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 		}
 
 		/* calculate call preference sip uri */
-		if (avp_name_prefix_str.len + pmatch[2].rm_eo - pmatch[2].rm_so
+		if (avp_name_prefix->len + pmatch[2].rm_eo - pmatch[2].rm_so
 			>= AVP_NAME_STR_BUF_LEN)
 		{
 			LM_ERR("AVP name too long for [%s]", attr_vals[i]->bv_val);
@@ -337,12 +299,12 @@ int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 		avp_val.s = avp_val_str;
 
 		/* calculate call preference avp name */
-		memcpy(	call_pref_avp_name + avp_name_prefix_str.len,
+		memcpy(	call_pref_avp_name + avp_name_prefix->len,
 			attr_vals[i]->bv_val + pmatch[2].rm_so,
 			pmatch[2].rm_eo - pmatch[2].rm_so);
 
 		avp_name_str.s = call_pref_avp_name;
-		avp_name_str.len = avp_name_prefix_str.len + pmatch[2].rm_eo - pmatch[2].rm_so;
+		avp_name_str.len = avp_name_prefix->len + pmatch[2].rm_eo - pmatch[2].rm_so;
 
 		avp_name = get_avp_id(&avp_name_str);
 		if (avp_name <= 0) {
@@ -406,23 +368,13 @@ int h350_call_preferences(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 	}
 }
 
-int h350_service_level(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
+int h350_service_level(struct sip_msg* _msg, str* avp_name_prefix)
 {
 	int           i, rc, avp_count = 0;
-        str           avp_name_prefix;
 	int_str avp_name;
 	int_str avp_val;
 	struct berval **attr_vals;
 	static char   service_level_avp_name[AVP_NAME_STR_BUF_LEN];
-
-        /*
-         * get service_level
-         */
-        if (pv_printf_s(_msg, _avp_name_prefix, &avp_name_prefix) != 0)
-        {
-                LM_ERR("pv_printf_s failed\n");
-                return E_H350_INTERNAL;
-        }
 
         /*
          * get LDAP attribute values
@@ -439,13 +391,13 @@ int h350_service_level(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
         }
 
         /* copy avp name prefix into service_level_avp_name */
-        if (avp_name_prefix.len < AVP_NAME_STR_BUF_LEN)
+        if (avp_name_prefix->len < AVP_NAME_STR_BUF_LEN)
         {
-                memcpy(service_level_avp_name, avp_name_prefix.s, avp_name_prefix.len);
+                memcpy(service_level_avp_name, avp_name_prefix->s, avp_name_prefix->len);
         } else
         {
                 LM_ERR("AVP name prefix too long [%d] (max [%d])\n",
-                        avp_name_prefix.len,
+                        avp_name_prefix->len,
                         AVP_NAME_STR_BUF_LEN);
 		ldap_api.ldap_value_free_len(attr_vals);
                 return E_H350_INTERNAL;
@@ -459,16 +411,16 @@ int h350_service_level(struct sip_msg* _msg, pv_elem_t* _avp_name_prefix)
 	for (i = 0; attr_vals[i] != NULL; i++)
 	{
 		/* get avp name */
-		if (avp_name_prefix.len + attr_vals[i]->bv_len >= AVP_NAME_STR_BUF_LEN)
+		if (avp_name_prefix->len + attr_vals[i]->bv_len >= AVP_NAME_STR_BUF_LEN)
 		{
 			LM_ERR("AVP name too long for [%s]\n", attr_vals[i]->bv_val);
 			continue;
 		}
-		memcpy(	service_level_avp_name + avp_name_prefix.len,
+		memcpy(	service_level_avp_name + avp_name_prefix->len,
 			attr_vals[i]->bv_val,
 			attr_vals[i]->bv_len);
 		avp_name.s.s = service_level_avp_name;
-		avp_name.s.len = avp_name_prefix.len + attr_vals[i]->bv_len;
+		avp_name.s.len = avp_name_prefix->len + attr_vals[i]->bv_len;
 
 		avp_name.n = get_avp_id(&avp_name.s);
 		if (avp_name.n <= 0) {

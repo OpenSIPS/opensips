@@ -94,6 +94,10 @@ Options:\n\
     -t dir       Chroot to \"dir\"\n\
     -u uid       Change uid \n\
     -g gid       Change gid \n\
+    -p pp_cmd    Preprocess the configuration file (along with any others\n\
+                  included) using the specified system command. The command \n\
+                  shall receive input via stdin and it must output the\n\
+                  result to stdout\n\
     -P file      Create a pid file\n\
     -G file      Create a pgid file\n"
 #ifdef UNIT_TESTS

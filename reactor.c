@@ -46,9 +46,6 @@ int init_reactor_size(void)
 #if defined(PKG_MALLOC)
 	mem_type = "pkg";
 	mem_size = pkg_mem_size;
-#elif defined(USE_SHM_MEM)
-	mem_type = "shm";
-	mem_size = shm_mem_size;
 #else
 	mem_type = "system";
 	mem_size = 2*1024*1024*1024UL;  // assume 2Gb per process to avoid reaching limits below

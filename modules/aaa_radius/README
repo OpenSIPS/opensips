@@ -393,18 +393,17 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Irina-Maria Stanescu 24 10 1432 60
    2. Ionut Ionita (@ionutrazvanionita) 22 11 1258 30
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 14 11 100 81
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 12 102 82
    4. Razvan Crainea (@razvancrainea) 12 10 48 41
    5. Liviu Chircu (@liviuchircu) 9 7 21 49
    6. Boris Ratner 4 2 38 5
-   7. Anca Vamanu 4 2 5 3
-   8. Matt Lehner 3 1 32 3
-   9. Авдиенко Михаил 3 1 7 17
-   10. Alex Massover 3 1 6 1
+   7. Vlad Patrascu (@rvlad-patrascu) 4 2 16 48
+   8. Anca Vamanu 4 2 5 3
+   9. Matt Lehner 3 1 32 3
+   10. Авдиенко Михаил 3 1 7 17
 
-   All remaining contributors: Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Vlad Patrascu
-   (@rvlad-patrascu).
+   All remaining contributors: Alex Massover, Julián Moreno
+   Patiño, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -426,12 +425,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Apr 2017
-   5.  Razvan Crainea (@razvancrainea)     Sep 2010 - Apr 2017
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Mar 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Apr 2017
+   6.  Razvan Crainea (@razvancrainea)     Sep 2010 - Apr 2017
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
    9.  Boris Ratner                        Mar 2012 - Jan 2013

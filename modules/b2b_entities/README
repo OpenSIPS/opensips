@@ -259,7 +259,7 @@ modparam("b2b_entities", "replication_mode", 1)
    Parameters: none
 
    MI FIFO Command Format:
-        opensipsctl fifo b2be_list
+        opensips-cli -x mi b2be_list
 
 Chapter 2. Developer Guide
 
@@ -446,10 +446,10 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 182 94 6839 1860
    2. Ovidiu Sas (@ovidiusas) 52 39 853 291
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 39 34 292 110
-   4. Razvan Crainea (@razvancrainea) 19 16 80 57
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 43 37 305 119
+   4. Razvan Crainea (@razvancrainea) 21 18 82 59
    5. Liviu Chircu (@liviuchircu) 14 10 72 114
-   6. Vlad Patrascu (@rvlad-patrascu) 7 2 163 144
+   6. Vlad Patrascu (@rvlad-patrascu) 9 4 167 149
    7. Vlad Paiu (@vladpaiu) 6 4 74 47
    8. Stanislaw Pitucha 4 2 6 6
    9. Nick Altmann (@nikbyte) 4 1 157 26
@@ -479,11 +479,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3.  Razvan Crainea (@razvancrainea)     Dec 2010 - Nov 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Dec 2010 - Mar 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  @DMOsipov                           Mar 2016 - Mar 2016
    7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
    8.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2015
@@ -501,10 +501,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Vlad Paiu (@vladpaiu), Ovidiu Sas
-   (@ovidiusas), Anca Vamanu.
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu), Ovidiu Sas (@ovidiusas), Anca Vamanu.
 
    Documentation Copyrights:
 

@@ -529,11 +529,11 @@ Maturity:   stable
 Depends on:
 Purpose:    Signalling wrapper (stateless and stateful)
 
-Name:       siptrace
+Name:       tracer
 Use:        experimental
 Maturity:   stable
 Depends on: tm, sl, dialog
-Purpose:    SIP traffic logging
+Purpose:    Traffic logging
 
 Name:       sl
 Use:        regular

@@ -43,21 +43,28 @@ void tcp_destroy(void);
 /* checks if the TCP layer may provide async write support */
 int tcp_has_async_write(void);
 
-/* creates the communication channel between a generic OpenSIPS process
+
+/* creates the communication channel between the OpenSIPS processes
    and the TCP MAIN process - TO BE called before forking */
-int tcp_pre_connect_proc_to_tcp_main( int proc_no );
+int tcp_create_comm_proc_socks( int proc_no);
+
+/* activates the communication channel between the OpenSIPS process
+   and the TCP MAIN process - TO BE called before forking */
+int tcp_activate_comm_proc_socks( int proc_no );
 
 /* same as above, but to be called after forking, both in child and parent */
 void tcp_connect_proc_to_tcp_main( int proc_no, int chid );
 
 /* tells how many processes the TCP layer will create */
-int tcp_count_processes(void);
+int tcp_count_processes(unsigned int *extra);
 
 /* starts all TCP worker processes */
 int tcp_start_processes(int *chd_rank, int *startup_done);
 
 /* starts the TCP listening process */
 int tcp_start_listener(void);
+
+void tcp_reset_worker_slot(void);
 
 /* MI function to list all existing TCP connections */
 mi_response_t *mi_tcp_list_conns(const mi_params_t *params,

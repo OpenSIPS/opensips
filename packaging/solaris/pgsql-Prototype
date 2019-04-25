@@ -31,7 +31,7 @@ f none /opt/opensips/postgres/permissions-create.sql 0644 root root
 f none /opt/opensips/postgres/presence-create.sql 0644 root root
 f none /opt/opensips/postgres/registrar-create.sql 0644 root root
 f none /opt/opensips/postgres/rls-create.sql 0644 root root
-f none /opt/opensips/postgres/siptrace-create.sql 0644 root root
+f none /opt/opensips/postgres/tracer-create.sql 0644 root root
 f none /opt/opensips/postgres/speeddial-create.sql 0644 root root
 f none /opt/opensips/postgres/standard-create.sql 0644 root root
 f none /opt/opensips/postgres/uri_db-create.sql 0644 root root

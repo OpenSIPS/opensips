@@ -60,9 +60,6 @@ static db_key_t  store_keys[6];
 static db_val_t  store_vals[6];
 static str      empty={"",0};
 
-extern unsigned buf_size;
-extern char *printbuf;
-
 void init_store_avps(str **db_columns)
 {
 	/* unique user id */
@@ -782,12 +779,10 @@ error:
 
 
 /* @return : non-zero */
-int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
-									struct db_url *url, pvname_list_t* dest)
+int ops_dbquery_avps(struct sip_msg* msg, str* query,
+                     struct db_url *url, pvname_list_t* dest)
 {
-	int printbuf_len;
 	int ret;
-	str qstr;
 
 	if(msg==NULL || query==NULL)
 	{
@@ -795,18 +790,8 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 		return -1;
 	}
 
-	printbuf_len = buf_size-1;
-	if(pv_printf(msg, query, printbuf, &printbuf_len)<0 || printbuf_len<=0)
-	{
-		LM_ERR("cannot print the query\n");
-		return -1;
-	}
-
-	qstr.s = printbuf;
-	qstr.len = printbuf_len;
-
-	LM_DBG("query [%.*s]\n", printbuf_len, printbuf);
-	ret = db_query_avp(url, msg, &qstr, dest);
+	LM_DBG("query [%.*s]\n", query->len, query->s);
+	ret = db_query_avp(url, msg, query, dest);
 
 	//Empty return set
 	if(ret==1)
@@ -821,12 +806,10 @@ int ops_dbquery_avps(struct sip_msg* msg, pv_elem_t* query,
 }
 
 int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
-		pv_elem_t *query, struct db_url *url, pvname_list_t *dest)
+		str *query, struct db_url *url, pvname_list_t *dest)
 {
-	int printbuf_len;
 	int rc, read_fd;
 	query_async_param *param;
-	str qstr;
 
 	void *_priv;
 
@@ -836,23 +819,13 @@ int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
 		return -1;
 	}
 
-	printbuf_len = buf_size - 1;
-	if (pv_printf(msg, query, printbuf, &printbuf_len) < 0 || printbuf_len <= 0)
-	{
-		LM_ERR("cannot print the query\n");
-		return -1;
-	}
-
-	LM_DBG("query [%s]\n", printbuf);
-
-	qstr.s = printbuf;
-	qstr.len = printbuf_len;
+	LM_DBG("query [%.*s]\n", query->len, query->s);
 
 	/* No async capabilities - just run it in blocking mode */
 	if (!DB_CAPABILITY(url->dbf, DB_CAP_ASYNC_RAW_QUERY))
 	{
-		rc = db_query_avp(url, msg, &qstr, dest);
-		LM_DBG("sync query \"%.*s\" returned: %d\n", qstr.len, qstr.s, rc);
+		rc = db_query_avp(url, msg, query, dest);
+		LM_DBG("sync query \"%.*s\" returned: %d\n", query->len, query->s, rc);
 
 		ctx->resume_param = NULL;
 		ctx->resume_f = NULL;
@@ -862,7 +835,7 @@ int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
 		return rc == 1 ? -2 : (rc != 0 ? -1 : 1);
 	}
 
-	read_fd = url->dbf.async_raw_query(url->hdl, &qstr, &_priv);
+	read_fd = url->dbf.async_raw_query(url->hdl, query, &_priv);
 	if (read_fd < 0)
 	{
 		ctx->resume_param = NULL;
@@ -1869,102 +1842,4 @@ int ops_is_avp_set(struct sip_msg* msg, struct fis_param *ap)
 	} while ((avp=search_first_avp(name_type, avp_name, &avp_value, avp))!=0);
 
 	return -1;
-}
-
-int w_insert_avp(struct sip_msg* msg, char* name, char* value,
-		char *index_char)
-{
-	int              index = *(int*)index_char;
-	int              avp_name;
-	struct usr_avp   *avp= NULL, *prev_avp= NULL;
-	struct usr_avp   *avp_new;
-	unsigned short   name_type;
-	pv_value_t       xvalue;
-	int              flags = 0;
-	int_str          avp_val;
-	pv_elem_t*       pv_dest = (pv_elem_t*)name;
-	pv_elem_t*       pv_src = (pv_elem_t*)value;
-
-	/* get avp name */
-	if(pv_get_avp_name(msg, &pv_dest->spec.pvp, &avp_name, &name_type)< 0)
-	{
-		LM_ERR("failed to get src AVP name\n");
-		return -1;
-	}
-
-	/* get value to be inserted */
-	avp = NULL;
-	flags = 0;
-	if(pv_src->spec.type == PVT_NONE)
-	{
-		avp_val.s = pv_src->text;
-		flags = AVP_VAL_STR;
-	}
-	else
-	{
-		if(pv_get_spec_value(msg, &(pv_src->spec), &xvalue)!=0)
-		{
-			LM_ERR("cannot get src value\n");
-			return -1;
-		}
-		if(xvalue.flags&PV_TYPE_INT)
-		{
-			avp_val.n = xvalue.ri;
-		} else {
-			flags = AVP_VAL_STR;
-			avp_val.s = xvalue.rs;
-		}
-	}
-	name_type |= flags;
-	/* insert it at the right place */
-	if(index == 0)
-	{
-		if(add_avp(name_type, avp_name, avp_val) < 0)
-		{
-			LM_ERR("Failed to add new avp\n");
-			return -1;
-		}
-		return 1;
-	}
-
-	/* search the previous avp */
-	index--;
-	avp = NULL;
-	while ( (avp=search_first_avp( name_type, avp_name, 0, avp))!=0 )
-	{
-		if( index == 0 )
-		{
-			break;
-		}
-		index--;
-		prev_avp = avp;
-	}
-
-	/* if the index is greater then the count */
-	if(avp == NULL)
-	{
-		if(prev_avp == NULL)
-		{
-			if(add_avp(name_type, avp_name, avp_val) < 0)
-			{
-				LM_ERR("Failed to add new avp\n");
-				return -1;
-			}
-			return 1;
-		}
-		avp = prev_avp;
-	}
-
-	/* if a previous record was found -> insert the new avp after it */
-	avp_new = new_avp(name_type, avp_name, avp_val);
-	if(avp_new == NULL)
-	{
-		LM_ERR("Failed to allocate new avp structure\n");
-		return -1;
-	}
-	LM_DBG("am alocat un avp nou\n");
-	avp_new->next = avp->next;
-	avp->next = avp_new;
-
-	return 1;
 }

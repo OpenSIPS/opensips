@@ -34,6 +34,7 @@ static str evi_core_table[] = {
 	CORE_EVENT_STR(SHM_THRESHOLD),
 #endif
 	CORE_EVENT_STR(PKG_THRESHOLD),
+	CORE_EVENT_STR(PROC_AUTO_SCALE),
 };
 
 int evi_register_core(void)

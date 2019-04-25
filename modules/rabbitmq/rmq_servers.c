@@ -162,21 +162,6 @@ struct rmq_server *rmq_get_server(str *cid)
 	return NULL;
 }
 
-struct rmq_server *rmq_resolve_server(struct sip_msg *msg, char *param)
-{
-	struct rmq_func_param *p = (struct rmq_func_param *)param;
-	str cid;
-
-	if (p->type == RMQT_SERVER)
-		return p->value;
-
-	if (fixup_get_svalue(msg, (gparam_p)param, &cid) < 0) {
-		LM_ERR("cannot get the connection id!\n");
-		return NULL;
-	}
-	return rmq_get_server(&cid);
-}
-
 static void rmq_close_server(struct rmq_server *srv)
 {
 	switch (srv->state) {
@@ -292,7 +277,7 @@ int rmq_server_add(modparam_t type, void * val)
 	char uri_pending = 0;
 	unsigned flags = 0;
 	char *uri;
-	int retries;
+	int retries = 0;
 	int max_frames = RMQ_DEFAULT_FRAMES;
 	int heartbeat = RMQ_DEFAULT_HEARTBEAT;
 	str exchange = {0, 0};
@@ -529,38 +514,13 @@ free:
  */
 int fixup_rmq_server(void **param)
 {
-	str tmp;
-	struct rmq_func_param *p;
-	tmp.s = (char *)*param;
-	tmp.len = strlen(tmp.s);
-	trim_spaces_lr(tmp);
-	if (tmp.len <= 0) {
-		LM_ERR("invalid connection id!\n");
+	*param = rmq_get_server((str*)*param);
+	if (!(*param)) {
+		LM_ERR("unknown connection id=%.*s\n",
+			((str*)*param)->len, ((str*)*param)->s);
 		return E_CFG;
 	}
-	p = pkg_malloc(sizeof(*p));
-	if (!p) {
-		LM_ERR("out of pkg memory!\n");
-		return E_OUT_OF_MEM;
-	}
 
-	if (tmp.s[0] == PV_MARKER) {
-		if (fixup_pvar(param) < 0) {
-			LM_ERR("cannot parse cid\n");
-			return E_UNSPEC;
-		}
-		p->value = *param;
-		p->type = RMQT_PVAR;
-	} else {
-		p->value = rmq_get_server(&tmp);
-		if (!p->value) {
-			LM_ERR("unknown connection id=%.*s\n",
-					tmp.len, tmp.s);
-			return E_CFG;
-		}
-		p->type = RMQT_SERVER;
-	}
-	*param = p;
 	return 0;
 }
 

@@ -135,7 +135,8 @@ struct module_exports exports= {
 	 mod_init,					/* module initialization function */
 	 (response_function) 0,		/* response handling function */
  	 destroy,					/* destroy function */
-	 child_init                 /* per-child init function */
+	 child_init,                /* per-child init function */
+	 0                          /* reload confirm function */
 };
 
 static int verify_db(void)
@@ -175,7 +176,7 @@ static int mod_init(void)
 	xcap_api_t xcap_api;
 
         /* load XCAP API */
-        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 1, 0);
+        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 0);
         if (!bind_xcap)
         {
                 LM_ERR("Can't bind xcap\n");
@@ -208,7 +209,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	bind_presence= (bind_presence_t)find_export("bind_presence", 1,0);
+	bind_presence= (bind_presence_t)find_export("bind_presence", 0);
 	if (!bind_presence)
 	{
 		LM_ERR("Can't bind presence\n");
@@ -265,8 +266,7 @@ static int mod_init(void)
 		bind_xcap_client_t bind_xcap_client;
 
 		/* bind xcap */
-		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client",
-			1, 0);
+		bind_xcap_client = (bind_xcap_client_t)find_export("bind_xcap_client", 0);
 		if (!bind_xcap_client)
 		{
 			LM_ERR("Can't bind xcap_client\n");

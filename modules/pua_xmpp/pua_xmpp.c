@@ -79,13 +79,14 @@ str presence_server= {0, 0};
 static int mod_init(void);
 static int child_init(int);
 
-static int fixup_pua_xmpp(void** param, int param_no);
-
-static cmd_export_t cmds[]=
-{
-	{"pua_xmpp_notify", (cmd_function)Notify2Xmpp,	0,		0,		  0, REQUEST_ROUTE},
-	{"pua_xmpp_req_winfo", (cmd_function)request_winfo,	2,  fixup_pua_xmpp, 0,REQUEST_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+static cmd_export_t cmds[]={
+	{"pua_xmpp_notify", (cmd_function)Notify2Xmpp, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"pua_xmpp_req_winfo", (cmd_function)request_winfo, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[]={
@@ -124,7 +125,8 @@ struct module_exports exports= {
 	mod_init,					/* module initialization function */
 	(response_function) 0,		/* response handling function */
 	(destroy_function) 0,		/* destroy function */
-	child_init					/* per-child init function */
+	child_init,					/* per-child init function */
+	0							/* reload confirm function */
 };
 
 /**
@@ -150,7 +152,7 @@ static int mod_init(void)
 		presence_server.len = strlen(presence_server.s);
 
 	/* import the TM auto-loading function */
-	if((load_tm=(load_tm_f)find_export("load_tm", 0, 0))==NULL)
+	if((load_tm=(load_tm_f)find_export("load_tm", 0))==NULL)
 	{
 		LM_ERR("can't import load_tm\n");
 		return -1;
@@ -164,7 +166,7 @@ static int mod_init(void)
 	}
 
 	/* bind libxml wrapper functions */
-	if((bind_libxml= (bind_libxml_t)find_export("bind_libxml_api", 1, 0))== NULL)
+	if((bind_libxml= (bind_libxml_t)find_export("bind_libxml_api", 0))== NULL)
 	{
 		LM_ERR("can't import bind_libxml_api\n");
 		return -1;
@@ -188,7 +190,7 @@ static int mod_init(void)
 
 
 	/* bind xmpp */
-	bind_xmpp= (bind_xmpp_t)find_export("bind_xmpp", 0,0);
+	bind_xmpp= (bind_xmpp_t)find_export("bind_xmpp",0);
 	if (!bind_xmpp)
 	{
 		LM_ERR("Can't bind xmpp\n");
@@ -237,7 +239,7 @@ static int mod_init(void)
 	}
 
 	/* bind pua */
-	bind_pua= (bind_pua_t)find_export("bind_pua", 1,0);
+	bind_pua= (bind_pua_t)find_export("bind_pua",0);
 	if (!bind_pua)
 	{
 		LM_ERR("Can't bind pua\n");
@@ -284,24 +286,3 @@ static int child_init(int rank)
 	LM_DBG("child [%d]  pid [%d]\n", rank, getpid());
 	return 0;
 }
-
-static int fixup_pua_xmpp(void** param, int param_no)
-{
-	pv_elem_t *model;
-	str s;
-	if(*param)
-	{
-		s.s = (char*)(*param); s.len = strlen(s.s);
-		if(pv_parse_format(&s, &model)<0)
-		{
-			LM_ERR("wrong format[%s]\n",(char*)(*param));
-			return E_UNSPEC;
-		}
-
-		*param = (void*)model;
-		return 0;
-	}
-	LM_ERR("null format\n");
-	return E_UNSPEC;
-}
-

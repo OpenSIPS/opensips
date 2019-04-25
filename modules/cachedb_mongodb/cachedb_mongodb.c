@@ -41,7 +41,7 @@ static int child_init(int);
 static void destroy(void);
 
 static str cache_mod_name = str_init("mongodb");
-struct cachedb_url *mongodb_script_urls = NULL;
+struct cachedb_url *mongodb_script_urls;
 
 int mongo_exec_threshold=0;
 
@@ -91,7 +91,8 @@ struct module_exports exports= {
 	mod_init,					/* module initialization function */
 	(response_function) 0,      /* response handling function */
 	(destroy_function)destroy,	/* destroy function */
-	child_init			        /* per-child init function */
+	child_init,			        /* per-child init function */
+	0							/* reload confirm function */
 };
 
 

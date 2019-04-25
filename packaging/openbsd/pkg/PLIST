@@ -3,7 +3,6 @@ etc/opensips/opensipsctlrc
 sbin/opensips
 sbin/opensipsctl
 sbin/opensipsdbctl
-sbin/osipsconsole
 lib/opensips/modules/acc.so
 lib/opensips/modules/alias_db.so
 lib/opensips/modules/auth.so
@@ -50,7 +49,7 @@ lib/opensips/modules/registrar.so
 lib/opensips/modules/rr.so
 lib/opensips/modules/seas.so
 lib/opensips/modules/signaling.so
-lib/opensips/modules/siptrace.so
+lib/opensips/modules/tracer.so
 lib/opensips/modules/sl.so
 lib/opensips/modules/sms.so
 lib/opensips/modules/speeddial.so
@@ -67,9 +66,6 @@ lib/opensips/modules/xlog.so
 lib/opensips/modules/xmpp.so
 lib/opensipsctl/opensipsctl.base
 lib/opensipsctl/opensipsctl.sqlbase
-lib/opensipsctl/opensipsctl.ctlbase
-lib/opensipsctl/opensipsctl.fifo
-lib/opensipsctl/opensipsctl.unixsock
 lib/opensipsctl/opensipsctl.mysql
 share/doc/opensips/README
 share/doc/opensips/INSTALL
@@ -122,7 +118,7 @@ share/doc/opensips/README.registrar
 share/doc/opensips/README.rr
 share/doc/opensips/README.seas
 share/doc/opensips/README.signaling
-share/doc/opensips/README.siptrace
+share/doc/opensips/README.tracer
 share/doc/opensips/README.sl
 share/doc/opensips/README.sms
 share/doc/opensips/README.speeddial

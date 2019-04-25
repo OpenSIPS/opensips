@@ -214,7 +214,7 @@ if (lua_exec("mongo_alias")) {
      * extension (optional) - required if action is provided
 
    MI FIFO Command Format:
-  opensipsctl fifo watch
+  opensips-cli -x mi watch
 
 Chapter 2. OpenSIPS Lua API
 
@@ -333,11 +333,11 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Arnaud Chong + Eric Gouyer 35 1 4335 0
-   2. Razvan Crainea (@razvancrainea) 20 15 144 136
-   3. Liviu Chircu (@liviuchircu) 12 9 14 62
-   4. Vlad Patrascu (@rvlad-patrascu) 6 3 75 58
-   5. Vlad Paiu (@vladpaiu) 5 3 7 9
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 3 1
+   2. Razvan Crainea (@razvancrainea) 21 16 145 137
+   3. Liviu Chircu (@liviuchircu) 13 10 15 63
+   4. Vlad Patrascu (@rvlad-patrascu) 8 4 132 85
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 5 2
+   6. Vlad Paiu (@vladpaiu) 5 3 7 9
    7. Julián Moreno Patiño 3 1 1 1
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -361,12 +361,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   2. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4. Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
-   5. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Nov 2014
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Apr 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3. Razvan Crainea (@razvancrainea)     Feb 2012 - Mar 2019
+   4. Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2019
+   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6. Julián Moreno Patiño                Feb 2016 - Feb 2016
    7. Vlad Paiu (@vladpaiu)               Feb 2012 - Jun 2012
    8. Arnaud Chong + Eric Gouyer          Dec 2011 - Dec 2011
 
@@ -377,9 +377,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Vlad Paiu (@vladpaiu), Arnaud Chong + Eric
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Paiu (@vladpaiu), Arnaud Chong + Eric
    Gouyer.
 
    Documentation Copyrights:

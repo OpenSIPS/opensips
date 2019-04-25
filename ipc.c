@@ -101,7 +101,7 @@ int create_ipc_pipes( int proc_no )
 	int i;
 
 	for( i=0 ; i<proc_no ; i++ ) {
-		if (pipe(pt[i].ipc_pipe)<0) {
+		if (pipe(pt[i].ipc_pipe_holder)<0) {
 			LM_ERR("failed to create IPC pipe for process %d, err %d/%s\n",
 				i, errno, strerror(errno));
 			return -1;
@@ -222,5 +222,14 @@ void ipc_handle_job(int fd)
 	}
 
 	return;
+}
+
+
+void ipc_handle_all_pending_jobs(int fd)
+{
+	char buf;
+
+	while ( recv(fd, &buf, 1, MSG_DONTWAIT|MSG_PEEK)==1 )
+		ipc_handle_job(fd);
 }
 

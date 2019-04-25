@@ -90,7 +90,7 @@ static inline int load_b2b_api( struct b2b_api *b2b_api)
 	load_b2b_f load_b2b;
 
 	/* import the b2b_entities auto-loading function */
-	if ( !(load_b2b=(load_b2b_f)find_export("load_b2b", 1, 0))) {
+	if ( !(load_b2b=(load_b2b_f)find_export("load_b2b", 0))) {
 		LM_ERR("can't import load_b2b\n");
 		return -1;
 	}

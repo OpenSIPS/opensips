@@ -39,6 +39,7 @@
 #include "../../route.h"
 #include "../../db/db.h"
 #include "../../mem/shm_mem.h"
+#include "../../mem/rpm_mem.h"
 #include "../../time_rec.h"
 #include "../../socket_info.h"
 
@@ -129,7 +130,8 @@ error:
 }
 
 
-static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule)
+static int add_rule(rt_data_t *rdata, char *grplst, str *prefix,
+		rt_info_t *rule, osips_malloc_f malloc_f, osips_free_f free_f)
 {
 	long int t;
 	char *tmp;
@@ -160,12 +162,14 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule
 		/* add rule -> has prefix? */
 		if (prefix->len) {
 			/* add the routing rule */
-			if ( add_prefix(rdata->pt, prefix, rule, (unsigned int)t)!=0 ) {
+			if ( add_prefix(rdata->pt, prefix, rule, (unsigned int)t,
+					malloc_f, free_f)!=0 ) {
 				LM_ERR("failed to add prefix route\n");
 				goto error;
 			}
 		} else {
-			if ( add_rt_info( &rdata->noprefix, rule, (unsigned int)t)!=0 ) {
+			if ( add_rt_info( &rdata->noprefix, rule, (unsigned int)t,
+					malloc_f, free_f)!=0 ) {
 				LM_ERR("failed to add prefixless route\n");
 				goto error;
 			}
@@ -187,6 +191,78 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix, rt_info_t *rule
 	return 0;
 error:
 	return -1;
+}
+
+static struct head_cache_socket *get_cache_sock_info(struct head_cache *cache,
+		struct socket_info *old_sock)
+{
+	struct head_cache_socket *hsock;
+	for (hsock = cache->sockets; hsock; hsock = hsock->next)
+		if (hsock->old_sock == old_sock)
+			return hsock;
+	return NULL;
+}
+
+
+static int add_cache_sock_info(struct head_cache *cache, struct socket_info *sock,
+		str *host, int port, int proto)
+{
+	struct head_cache_socket *hsock;
+
+	/* don't add the socket twice */
+	if (get_cache_sock_info(cache, sock))
+		return -2;
+
+	hsock = rpm_malloc(sizeof *hsock + host->len);
+	if (!hsock) {
+		LM_ERR("could not allocate peristent memory for socket!\n");
+		return -1;
+	}
+	hsock->host.s = (char *)(hsock + 1);
+	memcpy(hsock->host.s, host->s, host->len);
+	hsock->host.len = host->len;
+	hsock->port = port;
+	hsock->proto = proto;
+	hsock->old_sock = hsock->new_sock = sock;
+	hsock->next = cache->sockets;
+	cache->sockets = hsock;
+
+	LM_DBG("added persistent socket info to %.*s:%d (%d) -> %p\n",
+			host->len, host->s, port, proto, sock);
+
+	return 0;
+}
+
+int dr_cache_update_sock(void *param, str key, void *value)
+{
+	pgw_t *gw = (pgw_t *)value;
+	struct head_cache_socket *sock;
+	struct head_cache *cache = (struct head_cache *)param;
+
+	if (!gw->sock)
+		return -1;
+
+	sock = get_cache_sock_info(cache, gw->sock);
+	if (!sock) {
+		LM_WARN("could not find socket for gateway %.*s\n",
+				gw->id.len, gw->id.s);
+		return -1;
+	} else {
+		/* got the socket - update the gateway! */
+		gw->sock = sock->new_sock;
+		return 0;
+	}
+}
+
+void dr_update_head_cache(struct head_db *head)
+{
+	struct head_cache_socket *sock;
+
+	head->rdata = head->cache->rdata;
+	map_for_each(head->rdata->pgw_tree, dr_cache_update_sock, head->cache);
+
+	for (sock = head->cache->sockets; sock; sock = sock->next)
+		sock->old_sock = sock->new_sock;
 }
 
 
@@ -255,7 +331,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	rdata = 0;
 
 	/* init new data structure */
-	if ( (rdata=build_rt_data())==0 ) {
+	if ( (rdata=build_rt_data(current_partition))==0 ) {
 		LM_ERR("failed to build rdata\n");
 		goto error;
 	}
@@ -363,6 +439,11 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 								"OpenSIPS (we must listen on it) -> ignoring socket\n",
 								str_vals[STR_VALS_GWID_DRD_COL],
 								str_vals[STR_VALS_ID_DRD_COL], s_sock.len,s_sock.s);
+					} else if (current_partition->cache) {
+						/* if we have cache, we need to cache the socket
+						 * information */
+						add_cache_sock_info(current_partition->cache,
+								sock, &host, port, proto);
 					}
 				}
 			} else {
@@ -386,7 +467,9 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 						str_vals[STR_VALS_ATTRS_DRD_COL],
 						int_vals[INT_VALS_PROBE_DRD_COL],
 						sock,
-						int_vals[INT_VALS_STATE_DRD_COL] )<0 ) {
+						int_vals[INT_VALS_STATE_DRD_COL],
+						current_partition->malloc,
+						current_partition->free )<0 ) {
 				LM_ERR("failed to add destination <%s>(%s) -> skipping\n",
 						str_vals[STR_VALS_GWID_DRD_COL],
 						str_vals[STR_VALS_ID_DRD_COL]);
@@ -490,7 +573,9 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 							int_vals[INT_VALS_FLAGS_DRC_COL],
 							str_vals[STR_VALS_GWLIST_DRC_COL],
 							str_vals[STR_VALS_ATTRS_DRC_COL],
-							int_vals[INT_VALS_STATE_DRC_COL], rdata) != 0 ) {
+							int_vals[INT_VALS_STATE_DRC_COL], rdata,
+							current_partition->malloc,
+							current_partition->free) != 0 ) {
 					LM_ERR("failed to add carrier db_id <%s> -> skipping\n",
 							str_vals[STR_VALS_ID_DRC_COL]);
 					continue;
@@ -607,7 +692,8 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			str_vals[STR_VALS_ROUTEID_DRR_COL][0] ) {
 				int_vals[INT_VALS_SCRIPT_ROUTE_ID] =
 					get_script_route_ID_by_name
-					( str_vals[STR_VALS_ROUTEID_DRR_COL], rlist, RT_NO);
+						( str_vals[STR_VALS_ROUTEID_DRR_COL], sroutes->request,
+						RT_NO);
 				if (int_vals[INT_VALS_SCRIPT_ROUTE_ID]==-1) {
 					LM_WARN("route <%s> does not exist\n",
 							str_vals[STR_VALS_ROUTEID_DRR_COL]);
@@ -621,17 +707,20 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 							int_vals[INT_VALS_PRIORITY_DRR_COL], time_rec,
 							int_vals[INT_VALS_SCRIPT_ROUTE_ID],
 							str_vals[STR_VALS_DSTLIST_DRR_COL],
-							str_vals[STR_VALS_ATTRS_DRR_COL], rdata))== 0 ) {
+							str_vals[STR_VALS_ATTRS_DRR_COL], rdata,
+							current_partition->malloc,
+							current_partition->free))== 0 ) {
 				LM_ERR("failed to add routing info for rule id %d -> "
 						"skipping\n", int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				tmrec_free( time_rec );
 				continue;
 			}
 			/* add the rule */
-			if (add_rule( rdata, str_vals[STR_VALS_GROUP_DRR_COL], &tmp, ri)!=0) {
+			if (add_rule(rdata, str_vals[STR_VALS_GROUP_DRR_COL], &tmp, ri,
+					current_partition->malloc, current_partition->free)!=0) {
 				LM_ERR("failed to add rule id %d -> skipping\n",
 						int_vals[INT_VALS_RULE_ID_DRR_COL]);
-				free_rt_info( ri );
+				free_rt_info(ri, current_partition->free);
 				continue;
 			}
 			n++;
@@ -658,7 +747,7 @@ error:
 	if (res)
 		dr_dbf->free_result(db_hdl, res);
 	if (rdata)
-		free_rt_data( rdata, 1 );
+		free_rt_data(rdata, current_partition->free);
 	rdata = NULL;
 	return 0;
 }

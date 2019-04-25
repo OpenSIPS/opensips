@@ -23,9 +23,9 @@
 
 %global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
 
-Summary:  Open Source SIP Server
+Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  2.4.0
+Version:  3.1.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -55,7 +55,8 @@ BuildRequires:  libdb-devel
 %endif
 BuildRequires:  openldap-devel
 BuildRequires:  curl-devel
-BuildRequires:  GeoIP-devel
+# BuildRequires:  GeoIP-devel
+BuildRequires:  libmaxminddb-devel
 BuildRequires:  pcre-devel
 BuildRequires:  python-devel
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
@@ -81,439 +82,275 @@ Requires(preun):initscripts
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
-OpenSIPS or Open SIP Server is a very fast and flexible SIP (RFC3261)
-proxy server. Written entirely in C, opensips can handle thousands calls
-per second even on low-budget hardware. A C Shell like scripting language
-provides full control over the server's behaviour. It's modular
-architecture allows only required functionality to be loaded.
-Currently the following modules are available: digest authentication,
-CPL scripts, instant messaging, MySQL and UNIXODBC support, a presence agent,
-radius authentication, record routing, an SMS gateway, a jabber gateway, a
-transaction and dialog module, OSP module, statistics support,
-registrar and user location.
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+C Shell-like scripting language provides full control over the server's
+behaviour. Its modular architecture allows only required functionality to be
+loaded.
+.
+Among others, the following modules are available: Digest Authentication, CPL
+scripts, Instant Messaging, MySQL support, Presence Agent, Radius
+Authentication, Record Routing, SMS Gateway, Jabber/XMPP Gateway, Transaction
+Module, Registrar and User Location, Load Balaning/Dispatching/LCR,
+XMLRPC Interface.
+.
+This package contains the main OpenSIPS binary along with the principal modules
+and support binaries including opensipsmc configuration tool.
 
-%if 0%{!?_without_aaa_radius:1}
-%package  aaa_radius
-Summary:  RADIUS backend for AAA api
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires:  radiusclient-ng-devel
-
-%description  aaa_radius
-This module provides the RADIUS backend for the AAA API - group, auth
-module use the AAA API for performing RADIUS ops.
-%endif
-
-%package  acc
-Summary:  Accounts transactions information to different backends
+%package  b2bua-module
+Summary:  B2B User Agent modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  acc
-ACC module is used to account transactions information to different backends
-like syslog, SQL, AAA.
+%description  b2bua-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides modules for B2BUA support in OpenSIPS. Both the
+implementation and control (XML based scenario description) are included.
 
-%package  auth_aaa
-Summary:  Performs authentication using an AAA server
+%package  berkeley-bin
+Summary:  Berkeley Database module for OpenSIPS - helper program
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  auth_aaa
-This module contains functions that are used to perform authentication using
-an AAA server.  Basically the proxy will pass along the credentials to the
-AAA server which will in turn send a reply containing result of the
-authentication. So basically the whole authentication is done in the AAA
-server.
+%description  berkeley-bin
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the berkeley database module for OpenSIPS, a
+high-performance embedded DB kernel. You should normally install
+opensips-berkeley-module and not this package directly.
 
-%package  b2bua
-Summary:  Back-2-Back User Agent
+%package  berkeley-module
+Summary:  Berkeley Database module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  b2bua
-B2BUA is an implementation of the behavior of a B2BUA as defined in RFC 3261
-that offers the possibility to build certain services on top of it.
+%description  berkeley-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the berkeley database module for OpenSIPS, a
+high-performance embedded DB kernel. All database tables are stored
+in files, no additional server is necessary
+
+%package  carrierroute-module
+Summary:  Carrierroute module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  carrierroute-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the carrierroute module for OpenSIPS, an integrated
+solution for routing, balancing and blacklisting.
 
 %if 0%{?_with_cachedb_cassandra:1}
-%package  cachedb_cassandra
-Summary:  Cassandra connector
+%package  cassandra-module
+Summary:  Interface module to interact with a Cassandra server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 BuildRequires:  thrift-cpp-devel
 
-%description  cachedb_cassandra
+%description  cassandra-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
 Cassandra module is an implementation of a cache system designed to
 work with a cassandra server.
 %endif
 
+%package  cgrates-module
+Summary:  CGRateS connector for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  cgrates-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides a connnector to the CGRateS rating/billing engine.
+
+%package  compression-module
+Summary:  Headers and body compression module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: zlib-devel
+
+%description  compression-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the compression module, that is able to compress
+SIP headers and body, as  well as shrink the size of a SIP package.
+
 %if 0%{?_with_cachedb_couchbase:1}
-Summary:  opensips cachedb_couchbase implementation.
+%package couchbase-module
+Summary:  Interface module to interact with a Couchbase server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 BuildRequires:  libcouchbase-devel
 
-%description cachedb_couchbase
+%description couchbase-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
 This module is an implementation of a cache system designed to work with a Couchbase server.
 It uses the libcouchbase client library to connect to the server instance,
 It uses the Key-Value interface exported from the core.
 %endif
 
-%package  cachedb_memcached
-Summary:  Memcached connector
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires:  libmemcached-devel
-
-%description  cachedb_memcached
-Memcached module is an implementation of a cache system designed to
-work with a memcached server.
-
-%if 0%{?_with_cachedb_mongodb:1}
-%package  cachedb_mongodb
-Summary:  Mongodb connector
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires: mongo-c-driver-devel
-BuildRequires: cyrus-sasl-devel
-
-%description  cachedb_mongodb
-Mongodb module is an implementation of a cache system designed to
-work with a mongodb server.
-%endif
-
-%if 0%{?_with_cachedb_redis:1}
-%package  cachedb_redis
-Summary:  Redis connector
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires:  hiredis-devel
-
-%description  cachedb_redis
-This module is an implementation of a cache system designed to work
-with a Redis server.
-%endif
-
-%package  carrierroute
-Summary:  Routing extension suitable for carriers
+%package  cpl-module
+Summary:  CPL module (CPL interpreter engine) for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  carrierroute
-A module which provides routing, balancing and blacklisting capabilities.
+%description  cpl-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides a CPL (Call Processing Language) interpreter for
+OpenSIPS, turning OpenSIPS into a CPL server (storage and interpreter).
 
-%package  clusterer
-Summary:  Define and configure an OpenSIPS cluster
+%package  dbhttp-module
+Summary:  HTTP database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  clusterer
-Clusterer module stores information about the status of a server belonging to
-a cluster.
+%description  dbhttp-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the HTTP-based database driver for OpenSIPS
 
-%package  compression
-Summary:  Message compression and compaction
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires: zlib-devel
-
-%description  compression
-This module implements message compression/decompression and base64 encoding
-for sip messages using deflate and gzip algorithm/headers. Another feature of
-this module is reducing headers to compact for as specified in SIP RFC's, sdp
-body codec unnecessary description removal (for codecs 0-97), whitelist for
-headers not be removed (excepting necessary headers).
-
-%package  cpl_c
-Summary:  Call Processing Language interpreter
+%package  dialplan-module
+Summary:  Generic string translation module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  cpl_c
-This module implements a CPL (Call Processing Language) interpreter.
-Support for uploading/downloading/removing scripts via SIP REGISTER method
-is present.
+%description  dialplan-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides dialplan module that implements generic string
+translations based on matching and replacement rules. It can be used to
+manipulate R-URI or a PV and to translated to a new format/value.
 
-%package  cgrates
-Summary:  CGRateS connector
+%package  emergency-module
+Summary:  Emerrgency call module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  cgrates
-This module implements a connector to the CGRateS billing/rating engine.
-
-%package  db_berkeley
-Summary:  Berkeley DB backend support
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  db_berkeley
-This is a module which integrates the Berkeley DB into OpenSIPS. It implements
-the DB API defined in OpenSIPS.
-
-%package  db_http
-Summary:  HTTP DB backend support
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  db_http
-This module provides access to a database that is implemented as a
-HTTP server.
-
-%package  db_mysql
-Summary:  MySQL Storage Support for the OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: mysql-libs
-
-%description  db_mysql
-The %{name}-db_mysql package contains the MySQL plugin for %{name}, which allows
-a MySQL-Database to be used for persistent storage.
-
-%if 0%{?_with_db_oracle:1}
-%package  db_oracle
-Summary:  Oracle Storage Support for the OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires: oracle-instantclient-devel
-
-%description db_oracle
-The %{name}-db_oracle package contains the Oracle plugin for %{name}, which allows
-a Oracle-Database to be used for persistent storage.
-%endif
-
-%if 0%{!?_without_db_perlvdb:1}
-%package  db_perlvdb
-Summary:  Perl virtual database engine
-Group:    System Environment/Daemons
-# require perl-devel for >F7 and perl for <=F6
-BuildRequires:  perl(ExtUtils::MakeMaker)
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-perl
-Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
-
-%description  db_perlvdb
-The Perl Virtual Database (VDB) provides a virtualization framework for
-OpenSIPS's database access. It does not handle a particular database engine
-itself but lets the user relay database requests to arbitrary Perl functions.
-%endif
-
-%package  db_postgresql
-Summary:  PostgreSQL Storage Support for the OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: postgresql-libs
-
-%description  db_postgresql
-The %{name}-db_postgresql package contains the PostgreSQL plugin for %{name},
-which allows a PostgreSQL-Database to be used for persistent storage.
-
-%package  db_sqlite
-Summary:  SQLITE3-backend for database API module
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires: sqlite-devel
-
-%description  db_sqlite
-This is a module which provides SQLite support for OpenSIPS. It implements
-the DB API defined in OpenSIPS.
-
-%package  db_unixodbc
-Summary:  OpenSIPS unixODBC Storage support
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  db_unixodbc
-The %{name}-unixodbc package contains the unixODBC plugin for %{name}, which
-allows a unixODBC to be used for persistent storage
-
-%package  emergency
-Summary:  Emergency module
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  emergency
+%description  emergency-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
 The emergency module provides emergency call treatment for OpenSIPS, following
-the architecture i2 specification of the american entity NENA. (National
-Emergency Number Association). The NENA solution routes the emergency call to
-a closer gateway (ESGW) and this forward the call to a PSAP(call center
-responsible for answering emergency calls) that serves the area of the caller,
-so this must consider the handling and transport of caller location information
-in the SIP protocol.
+the architecture i2 specification of the American entity NENA. (National
+Emergency Number Association).
 
-%package  event_datagram
-Summary:  Event datagram module
+%package  geoip-module
+Summary:  IP address-to-location looku (MaxMind GeoIP API) for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  event_datagram
-This is a module which provides a UNIX/UDP SOCKET transport layer
-implementation for the Event Interface.
+%description  geoip-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module is a lightweight wrapper for the MaxMind GeoIP API.
+It adds IP address-to-location lookup capability to OpenSIPS
+scripts. Lookups are executed against the freely-available GeoLite City
+database; and the non-free GeoIP City database is drop-in
+compatible   Lookups are executed against the freely-available GeoLite City
+database; and the non-free GeoIP City database is drop-in compatible
 
-%package  event_flatstore
-Summary:  Event flatstore module
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  event_flatstore
-Flatstore module provides a logging facility for different
-events, triggered through the OpenSIPS Event Interface,
-directly from the OpenSIPS script. The module logs the events
-along with their parameters in regular text files.
-
-%package  event_jsonrpc
-Summary:  Sends events using JSON-RPC command
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  event_jsonrpc
-This module is an implementation of an JSON-RPC v2.0 client
-http://www.jsonrpc.org/specification. that can send a RPC to a
-JSON-RPC server (when used in sync_mode), or send a
-notification (when sync_mode is disabled) whenever whenever
-OpenSIPS raises a notification through the Event Interface.
-This module acts as a transport layer for the Event
-Notification Interface.
-
-%package  event_rabbitmq
-Summary:  Event RabbitMQ module
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires: librabbitmq-devel
-
-%description  event_rabbitmq
-This module provides the implementation of a RabbitMQ client for the Event Interface.
-It is used to send AMQP messages to a RabbitMQ server each time the Event Interface
-triggers an event subscribed for.
-
-%package  event_route
-Summary:  Route triggering based on events
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  event_route
-This module provides a simple way for handling different events, triggered through
-the OpenSIPS Event Interface, directly from the OpenSIPS script. For a specific event,
-a special route (event_route) has to be declared in the script, and should contain
-the code that handles the event. The route is executed by the module when the
-corresponding event is raised by the OpenSIPS Event Interface.
-
-%package  event_routing
-Summary:  Event based SIP routing
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  event_routing
-The Event (based) Routing module, or shortly the EBR module, provides a mechanism
-that allows different SIP processings (of messages in script) to communicate and
-synchronize between through OpenSIPS Events.
-
-%package  event_virtual
-Summary:  Aggregator of event backends (failover & balancing)
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  event_virtual
-Virtual module provides the possibility to have multiple external applications,
-using different transport protocols, subscribed to the OpenSIPS Event Interface
-as a single virtual subscriber, for a specific event.
-
-%package  event_xmlrpc
-Summary:  Event XMLRPC client module
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  event_xmlrpc
-This module is an implementation of an XMLRPC client used to notify XMLRPC servers
-whenever certain notifications are raised by OpenSIPS. It acts as a transport layer
-for the Event Notification Interface.
-
-%package  fraud_detection
-Summary:  Detects fraudulent calls
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  fraud_detection
-This module provides a way to prevent some basic fraud attacks. Alerts are provided
-through return codes and events.
-
-%package  freeswitch
-Summary:  FreeSWITCH ESL connection manager
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  freeswitch
-The "freeswitch" module is a C driver for the FreeSWITCH Event Socket Layer interface.
-It can interact with one or more FreeSWITCH servers either by issuing commands to them,
-or by receiving events from them.
-
-%package  freeswitch_scripting
-Summary:  FreeSWITCH events & commands at OpenSIPS script level
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  freeswitch_scripting
-freeswitch_scripting is a helper module that exposes full control over the FreeSWITCH ESL
-interface to the OpenSIPS script.
-It allows the OpenSIPS script writer to subscribe to generic FreeSWITCH ESL events as
-well as to run arbitrary FreeSWITCH ESL commands and interpret their results. It makes
-use of the freeswitch module for the management of ESL connections and event subscriptions.
-
-%package  h350
-Summary:  H350 implementation
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  h350
-The OpenSIPS H350 module enables an OpenSIPS SIP proxy server to access SIP
-account data stored in an LDAP [RFC4510] directory  containing H.350 [H.350]
-commObjects.
-
-%package  httpd
-Summary:  HTTP transport layer implementation
+%package  http-modules
+Summary:  HTTP transport layer and Management Interface for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 BuildRequires: libmicrohttpd-devel
 
-%description  httpd
-This module provides an HTTP transport layer for OpenSIPS.
+%description  http-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides an HTTP transport layer and Management Interface for
+OpenSIPS.
 
-%package  jabber
-Summary:  Gateway between OpenSIPS and a jabber server
+%package  identity-module
+Summary:  SIP Identity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  jabber
-Jabber module that integrates XODE XML parser for parsing Jabber messages.
+%description  identity-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides support for SIP Identity (see RFC 4474).
 
-%package  json
-Summary:  A JSON variables within the script
+%package  jabber-module
+Summary:  Jabber gateway module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  json
-This module introduces a new type of variable that provides both serialization and
-de-serialization from JSON format.
+%description  jabber-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the SIP to Jabber translator module for OpenSIPS.
 
-%package  jsonrpc
-Summary:  Execute JSON-RPC commands
+%package  json-module
+Summary:  Support for JSON handling in OpenSIPS script
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  jsonrpc
-This module is an implementation of an JSON-RPC v2.0 client
-http://www.jsonrpc.org/specification. that can send a call
-to a JSON-RPC server over a TCP connection.
+%description  json-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package introduces a new type of variable that provides both
+serialization and de-serialization from JSON format. The script variable
+provides ways to access (from script) objects and arrays to add,replace or
+delete values from the script.
 
-%package  ldap
-Summary:  LDAP connector
+%package  ldap-modules
+Summary:  LDAP modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  ldap
-The LDAP module implements an LDAP search interface for OpenSIPS.
+%description  ldap-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the ldap and h350 modules for OpenSIPS, enabling LDAP
+queries from the OpenSIPS config and storage of SIP account data in an LDAP
+directory.
 
-%package  lua
-Summary:  Call LUA scripts from OpenSIPS cfg
+%package  lua-module
+Summary:  Lua extensions for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 %if 0%{?fedora} > 0
@@ -522,66 +359,94 @@ BuildRequires: compat-lua-devel
 BuildRequires: lua-devel
 %endif
 
-%description  lua
-The time needed when writing a new OpenSIPS module unfortunately
-is quite high, while the options provided by the configuration file
-are limited to the features implemented in the modules.
+%description  lua-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides an interface for OpenSIPS to utilize Lua extensions.
 
-%package  mid_registrar
-Summary:  SIP registration front-end with traffic throttling
+%package  memcached-module
+Summary:  Interface module to interact with a memcached server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+BuildRequires:  libmemcached-devel
 
-%description  mid_registrar
-The mid_registrar is a mid-component of a SIP platform, designed to
-work between end users and the platform's main registration component.
-It opens up new possibilities for leveraging existing infrastructure
-in order to continue to grow (as subscribers and as registration traffic)
-while keeping an existing low-resources registrar server.
+%description  memcached-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides an implementation of a cache system designed to work
+with a memcached server. It uses libmemcached client library to connect to
+several memcached servers that store data. It registers the three functions for
+storing, fetching and removing a value to the core memcache management
+interface.
 
-%package  mi_xmlrpc
-Summary:  A xmlrpc server
+%if 0%{?_with_cachedb_mongodb:1}
+%package  mongodb-module
+Summary:  Interface module to interact with a MongoDB server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-Requires: %{name}-httpd
+BuildRequires: mongo-c-driver-devel
+BuildRequires: cyrus-sasl-devel
 
-%description  mi_xmlrpc
-This module implements a xmlrpc server that handles xmlrpc requests and generates
-xmlrpc responses. When a xmlrpc message is received a default method is executed.
+%description  mongodb-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module is an implementation of a cache system designed to work with
+MongoDB servers.
+%endif
 
-%package  mmgeoip
-Summary:  Wrapper for the MaxMind GeoIP API
+%package  mysql-module
+Summary:  MySQL database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
+Requires: mysql-libs
 
-%description  mmgeoip
-Mmgeoip is a lightweight wrapper for the MaxMind GeoIP API. It adds
-IP address-to-location lookup capability to OpenSIPS scripts.
+%description  mysql-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the MySQL database driver for OpenSIPS.
+
+%if 0%{?_with_db_oracle:1}
+%package  oracle-module
+Summary:  Oracle Storage Support for the OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: oracle-instantclient-devel
+
+%description oracle-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+The %{name}-db_oracle package contains the Oracle plugin for %{name}, which allows
+a Oracle-Database to be used for persistent storage.
+%endif
 
 %if 0%{?_with_osp:1}
-%package  osp
+%package  osp-module
 Summary:  OSP Support for the OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 BuildRequires:  OSPToolkit-devel
 
-%description  osp
+%description  osp-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
 The OSP module enables OpenSIPS to support secure, multi-lateral peering using
 the OSP standard defined by ETSI (TS 101 321 V4.1.1).
 %endif
 
-%package  peering
-Summary:  Radius peering
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  peering
-Peering module allows SIP providers (operators or organizations)
-to verify from a broker if source or destination  of a SIP request
-is a trusted peer.
-
-%package  perl
-Summary:  Helps implement your own OpenSIPS extensions in Perl
+%package  perl-modules
+Summary:  Perl extensions and database driver for OpenSIPS
 Group:    System Environment/Daemons
 # require perl-devel for >F7 and perl for <=F6
 BuildRequires:  perl(ExtUtils::MakeMaker)
@@ -597,459 +462,293 @@ BuildRequires:  perl(ExtUtils::Embed)
 Requires: %{name} = %{version}-%{release}
 Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 
-%description  perl
-The time needed when writing a new OpenSIPS module unfortunately is quite
-high, while the options provided by the configuration file are limited to
-the features implemented in the modules. With this Perl module, you can
-easily implement your own OpenSIPS extensions in Perl.  This allows for
-simple access to the full world of CPAN modules. SIP URI rewriting could be
-implemented based on regular expressions; accessing arbitrary data backends,
-e.g. LDAP or Berkeley DB files, is now extremely simple.
+%description  perl-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides an interface for OpenSIPS to write Perl extensions and
+the db_perlvdb database driver for OpenSIPS.
 
-%package  pi_http
-Summary:  Provisioning Interface module 
+%package  postgres-module
+Summary:  PostgreSQL database connectivity module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: postgresql-libs
+
+%description  postgres-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the PostgreSQL database driver for OpenSIPS.
+
+%package  presence-modules
+Summary:  SIMPLE presence modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  pi_http
-This module provides an HTTP provisioning interface for OpenSIPS. It is using the
-OpenSIPS's internal database API to provide a simple way of manipulating records
-inside OpenSIPS's tables.
+%description  presence-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides several OpenSIPS modules for implementing presence
+server and presence user agent for RICH presence, registrar-based presence,
+external triggered presence and XCAP support.
 
-%package  presence
-Summary:  Presence server
+%package  python-module
+Summary:  Python scripting support
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  presence
-This module implements a presence server. It handles PUBLISH and SUBSCRIBE
-messages and generates NOTIFY messages. It offers support for aggregation
-of published presence information for the same presentity using more devices.
-It can also filter the information provided to watchers according to privacy
-rules.
+%description  python-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module provides a Python interface to implement your scripting logic.
 
-%package  presence_callinfo
-Summary:  SIMPLE Presence extension
+%package  rabbitmq-modules
+Summary:  Interface module to interact with a RabbitMQ server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-Requires: %{name}-presence
+BuildRequires: librabbitmq-devel
 
-%description  presence_callinfo
-The module enables the handling of "call-info" and "line-seize" events inside
-the presence module. It is used with the general event handling module:
-presence and it constructs and adds "Call-Info" headers to notification events.
-To send "call-info" notification to watchers, a third-party application must
-publish "call-info" events to the presence server.
+%description  rabbitmq-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the implementation of a RabbitMQ client for the Event
+Interface. It is used to send AMQP messages to a RabbitMQ server each time
+the Event Interface triggers an event subscribed for. It also provides a
+module to publish RabbitMQ messages to a RabbitMQ server.
 
-%package  presence_dialoginfo
-Summary:  Extension to Presence server for Dialog-Info
+%package  radius-modules
+Summary:  Radius modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-Requires: %{name}-presence
+%if 0%{!?_without_aaa_radius:1}
+BuildRequires:  radiusclient-ng-devel
+%endif
 
-%description  presence_dialoginfo
-The module enables the handling of "Event: dialog" (as defined
-in RFC 4235) inside of the presence module. This can be used
-distribute the dialog-info status to the subscribed watchers.
+%description  radius-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the RADIUS driver for the AAA API from OpenSIPS.
 
-%package  presence_mwi
-Summary:  Extension to Presence server for Message Waiting Indication
+%if 0%{?_with_cachedb_redis:1}
+%package  redis-module
+Summary:  Interface module to interact with a Redis server
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-Requires: %{name}-presence
+BuildRequires:  hiredis-devel
 
-%description  presence_mwi
-The module does specific handling for notify-subscribe message-summary
-(message waiting indication) events as specified in RFC 3842. It is used
-with the general event handling module, presence. It constructs and adds
-message-summary event to it.
+%description  redis-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides an implementation of a cache system designed to
+work with a Redis server. It uses hiredis client library to connect
+to either a single Redis server instance, or to a Redis Server inside
+a Redis Cluster. It uses the Key-Value interface exported from the core.
+%endif
 
-%package  presence_xcapdiff
-Summary:  Extension to Presence server for XCAP-DIFF event
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-presence
-Requires: %{name}-pua_mi
-
-%description  presence_xcapdiff
-The presence_xcapdiff is an OpenSIPS module that adds support
-for the "xcap-diff" event to presence and pua.
-
-%package  presence_xml
-Summary:  SIMPLE Presence extension
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-presence
-Requires: %{name}-xcap_client
-
-%description  presence_xml
-The module does specific handling for notify-subscribe events using xml bodies.
-It is used with the general event handling module, presence.
-
-%package  proto_bin
-Summary:  BIN protocol module - implements binary transport for OpenSIPS
+%package  regex-module
+Summary:  PCRE regexp modules for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  proto_bin
-The proto_bin module is a transport module which implements BIN
-TCP-based communication. It does not handle TCP connections
-management, but only offers higher-level primitives to read and
-write BIN messages over TCP. It calls registered callback
-functions for every complete message received.
+%description  regex-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides a module for matching operations against regular
+expressions using the powerful PCRE library. By default, OpenSIPS support
+sed-like regular expressions; PCRE library brings perl-like regular
+expressions.
 
-%package  proto_hep
-Summary:  HEP protocol module - implements HEP transport for SIP
+%package  restclient-module
+Summary:  REST client module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  proto_hep
-The proto_hep module is a transport module which implements hepV1
-and hepV2 UDP-based communication and hepV3 TCP-based communication.
-It also offers an API with which you can register callbacks which
-are called after the HEP header is parsed and also can pack sip
-messages to HEP messages.The unpacking part is done internally.
+%description  restclient-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the REST client support for OpenSIPS.
 
-%package  proto_sctp
-Summary:  SCTP protocol module - implements SCTP transport for SIP
+%package  sctp-module
+Summary:  SCTP transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: lksctp-tools
 BuildRequires: lksctp-tools-devel
 
-%description  proto_sctp
-The proto_sctp module is an optional transport module (shared library) which exports
-the required logic in order to handle SCTP-based communication. (socket initialization
-and send/recv primitives to be used by higher-level network layers)
+%description  sctp-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the SCTP support for OpenSIPS.
 
-%package  proto_smpp
-Summary:  SMPP (Short Message Peer-to-Peer) protocol support
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  proto_smpp
-This module offers interoperability between SIP and SMPP
-(Short Message Peer-to-Peer) protocols. It provides the
-means to build a messaging gateway/bridge between the two
-protocols, being able to convert messages from both directions.
-
-%package  proto_tls
-Summary:  TLS protocol module - implements TLS transport for SIP
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: openssl
-BuildRequires: openssl-devel
-
-%description  proto_tls
-TLS, as defined in SIP RFC 3261, is a mandatory feature for proxies and can be used
-to secure the SIP signalling on a hop-by-hop basis (not end-to-end). TLS works on top
-of TCP. DTLS, or TLS over UDP is already defined by IETF and may become available in
-the future. This module also implements TLS related functions to use in the routing
-script, and exports pseudo variables with certificate and TLS parameters.
-
-%package  proto_ws
-Summary:  WebSocket protocol module - implements WS transport for SIP
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  proto_ws
-The WebSocket protocol (RFC 6455) provides an end-to-end full-duplex communication
-channel between two web-based applications. This allows WebSocket enabled browsers
-to connect to a WebSocket server and exchange any type of data. RFC 7118 provides
-the specifications for transporting SIP messages over the WebSocket protocol.
-
-%package  proto_wss
-Summary:  WebSocket protocol module - implements WSS transport for SIP
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  proto_wss
-The WebSocket protocol (RFC 6455) provides an end-to-end full-duplex communication
-channel between two web-based applications. This allows WebSocket enabled browsers
-to connect to a WebSocket server and exchange any type of data. RFC 7118 provides
-the specifications for transporting SIP messages over the WebSocket protocol.
-
-%package  pua
-Summary:  Offer the functionality of a presence user agent client
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  pua
-This module offer the functionality of a presence user agent client, sending
-Subscribe and Publish messages.
-
-%package  pua_bla
-Summary:  BLA extension for PUA
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-pua
-Requires: %{name}-presence
-
-%description  pua_bla
-The pua_bla module enables Bridged Line Appearances support according to the
-specifications in draft-anil-sipping-bla-03.txt.
-
-%package  pua_dialoginfo
-Summary:  Dialog-Info extension for PUA
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-pua
-
-%description  pua_dialoginfo
-The pua_dialoginfo retrieves dialog state information from the
-dialog module and PUBLISHes the dialog-information using the
-pua module. Thus, in combination with the presence_xml module
-this can be used to derive dialog-info from the dialog module
-and NOTIFY the subscribed watchers about dialog-info changes.
-
-%package  pua_mi
-Summary:  Connector between usrloc and MI interface
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-pua
-
-%description  pua_mi
-The pua_mi sends offer the possibility to publish presence information
-via MI transports.  Using this module you can create independent
-applications/scripts to publish not sip-related information (e.g., system
-resources like CPU-usage, memory, number of active subscribers ...)
-
-%package  pua_usrloc
-Summary:  Connector between usrloc and pua modules
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-pua
-
-%description  pua_usrloc
-This module is the connector between usrloc and pua modules. It creates the
-environment to send PUBLISH requests for user location records, on specific
-events (e.g., when new record is added in usrloc, a PUBLISH with status open
-(online) is issued; when expires, it sends closed (offline)). Using this
-module, phones which have no support for presence can be seen as
-online/offline.
-
-%package  pua_xmpp
-Summary:  SIMPLE-XMPP Presence gateway
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-pua
-Requires: %{name}-presence
-Requires: %{name}-xmpp
-
-%description  pua_xmpp
-This module is a gateway for presence between SIP and XMPP. It translates one
-format into another and uses xmpp, pua and presence modules to manage the
-transmition of presence state information.
-
-%package  python
-Summary:  Python scripting support
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  python
-Helps implement your own OpenSIPS extensions in Python
-
-%package  rabbitmq
-Summary:  RabbitMQ module
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-BuildRequires: librabbitmq-devel
-
-%description  rabbitmq
-This module provides the implementation of a RabbitMQ publisher.
-
-%package  regex
-Summary:  RegExp via PCRE library
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  regex
-This module offers matching operations against regular
-expressions using the powerful PCRE library.
-
-%package  rest_client
-Summary:  Implementation of an HTTP client
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  rest_client
-The rest_client module provides a means of interacting with an HTTP server
-by doing RESTful queries, such as GET and POST.
-
-%package  rls
-Summary:  Resource List Server
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-pua
-Requires: %{name}-presence
-Requires: %{name}-xcap
-
-%description  rls
-The modules is a Resource List Server implementation following the
-specification in RFC 4662 and RFC 4826.
-
-%package  rtpengine
-Summary:  Connector to RTPengine external RTP relay
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  rtpengine
-This is a module that enables media streams to be proxied via an RTP proxy. The only
-RTP proxy currently known to work with this module is the Sipwise rtpengine
-https://github.com/sipwise/rtpengine. The rtpengine module is a modified version of
-the original rtpproxy module using a new control protocol. The module is designed to
-be a drop-in replacement for the old module from a configuration file point of view,
-however due to the incompatible control protocol, it only works with RTP proxies which
-specifically support it.
-
-%package  seas
-Summary:  Transfers the execution logic control to a given external entity
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  seas
-SEAS module enables OpenSIPS to transfer the execution logic control of a sip
-message to a given external entity, called the Application Server. When the
-OpenSIPS script is being executed on an incoming SIP message, invocation of
-the as_relay_t() function makes this module send the message along with some
-transaction information to the specified Application Server. The Application
-Server then executes some call-control logic code, and tells OpenSIPS to take
-some actions, ie. forward the message downstream, or respond to the message
-with a SIP repy, etc
-
-%package  sip_i
-Summary:  ISUP manipulation module
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  sip_i
-This module offers the possibility of processing ISDN User Part(ISUP) messages
-encapsulated in SIP. The available operations are: reading and modifying parameters
-from an ISUP message, removing or adding new optional parameters, adding an ISUP part
-to a SIP message body. This is done explicitly via script pseudovariables and functions.
-
-%package  siprec
-Summary:  SIP Recording module
+%package  siprec-module
+Summary:  SIP Call Recording Implementation for the SIPREC Protocol
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 BuildRequires: libuuid-devel
 
-%description  siprec
-This module provides the means to do calls recording using an external/passive recorder -
-the entity that records the call is not in the media path between the caller and callee,
-but it is completely separate, thus it can not affect by any means the quality of the
-conversation. This is done in a standardized manner, using the SIPREC Protocol, thus it
-can be used by any recorder that implements this protocol.
-
-%package  sms
-Summary:  Gateway between SIP and GSM networks via sms
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  sms
-This module provides a way of communication between SIP network (via SIP
-MESSAGE) and GSM networks (via ShortMessageService). Communication is
-possible from SIP to SMS and vice versa.  The module provides facilities
-like SMS confirmation--the gateway can confirm to the SIP user if his
-message really reached its destination as a SMS--or multi-part messages--if
-a SIP messages is too long it will be split and sent as multiple SMS.
+%description  siprec-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module provides the means to Record Calls using the SIPREC protocol.
 
 %if 0%{?_with_sngtc:1}
-%package  sngtc
+%package  sngtc-module
 Summary:  Sangoma media transcoding interface for the OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  sngtc
+%description  sngtc-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
 The sngtc package implements interface to Sangoma media transcoding.
 %endif
 
 %if 0%{!?_without_snmpstats:1}
-%package  snmpstats
-Summary:  SNMP management interface for the OpenSIPS
+%package  snmpstats-module
+Summary:  SNMP AgentX subagent module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 BuildRequires:  lm_sensors-devel
 
-%description  snmpstats
-The %{name}-snmpstats package provides an SNMP management interface to
-OpenSIPS.  Specifically, it provides general SNMP queryable scalar statistics,
-table representations of more complicated data such as user and contact
-information, and alarm monitoring capabilities.
+%description  snmpstats-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the snmpstats module for OpenSIPS. This module acts
+as an AgentX subagent which connects to a master agent.
 %endif
 
-%package  tls_mgm
-Summary:  TLS management module
+%package  sqlite-module
+Summary:  SQLite database connectivity module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: sqlite-devel
+
+%description  sqlite-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the SQLite database driver for OpenSIPS.
+
+%package  tls-module
+Summary:  TLS transport module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-tlsmgm-module
+Requires: openssl
+BuildRequires: openssl-devel
+
+%description  tls-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the TLS support for OpenSIPS.
+
+%package  tlsmgm-module
+Summary:  TLS management module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  tls_mgm
-This module is a management module for TLS certificates and parameters.
-It provides an interfaces for all the modules that use the TLS protocol.
-It also implements TLS related functions to use in the routing script,
-and exports pseudo variables with certificate and TLS parameters.
+%description  tlsmgm-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides support for TLS management for OpenSIPS.
 
-%package  sql_cacher
-Summary:  SQL Caching module
+%package  unixodbc-module
+Summary:  unixODBC database connectivity module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  sql_cacher
-The sql_cacher module introduces the possibility to cache data from a SQL-based database
-(using different OpenSIPS modules which implement the DB API) into a cache system
-implemented in OpenSIPS through the CacheDB Interface. This is done by specifying the
-databases URLs, SQL table to be used, desired columns to be cached and other details in
-the OpenSIPS configuration script.
+%description  unixodbc-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the unixODBC database driver for OpenSIPS.
 
-%package  topology_hiding
-Summary:  Provides Topology Hiding capabilities
+%package  wss-module
+Summary:  WebSocket Secure (WSS) transport module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-tlsmgm-module
+
+%description  wss-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the WebSocket Secure (WSS) support for OpenSIPS.
+
+%package  xml-module
+Summary:  Support for XML documents handling in OpenSIPS script
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  topology_hiding
-This is a module which provides topology hiding capabilities. The module can
-work on top of the dialog module, or as a standalone module ( thus alowing
-topology hiding for all types of requests )
+%description  xml-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package introduces a new type of variable that provides both
+serialization and de-serialization from a XML document. The script variable
+provides ways to access (from script) objects and arrays to add, replace or
+delete values from the script.
 
-%package  xcap
-Summary:  XCAP API provider
+%package  xmlrpc-module
+Summary:  XMLRPC support for OpenSIPS's Management Interface
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-http-modules
+
+%description  xmlrpc-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the XMLRPC transport implementation for OpenSIPS's
+Management Interface.
+
+%package  xmpp-module
+Summary:  XMPP gateway module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  xcap
-The module contains several parameters and functions common to all modules using XCAP capabilities.
+%description  xmpp-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the SIP to XMPP IM translator module for OpenSIPS.
 
-%package  xcap_client
-Summary:  XCAP client
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-xcap
-
-%description  xcap_client
-The modules is an XCAP client for OpenSIPS that can be used by other modules.
-It fetches XCAP elements, either documents or part of them, by sending HTTP
-GET requests. It also offers support for conditional queries. It uses libcurl
-library as a client-side HTTP transfer library.
-
-%package  xml
-Summary:  Manipulate XML documents in OpenSIPS script
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  xml
-This module exposes a script variable that provides basic parsing and
-manipulation of XML documents or blocks of XML data.
-
-%package  xmpp
-Summary:  Gateway between OpenSIPS and a jabber server
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  xmpp
-This modules is a gateway between Openser and a jabber server. It enables
-the exchange of instant messages between SIP clients and XMPP(jabber)
-clients.
 
 %prep
 %setup -q -n %{name}-%{version}
@@ -1152,7 +851,6 @@ fi
 %{_sbindir}/opensipsdbctl
 %{_sbindir}/opensipsunix
 %{_sbindir}/osipsconfig
-%{_sbindir}/osipsconsole
 
 %attr(750,%{name},%{name}) %dir %{_sysconfdir}/opensips
 %attr(750,%{name},%{name}) %dir %{_sysconfdir}/opensips/tls
@@ -1180,7 +878,6 @@ fi
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensipsctlrc
-%attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/osipsconsolerc
 # these files are just an examples so no need to restrict access to them
 %config(noreplace) %{_sysconfdir}/opensips/tls/ca.conf
 %config(noreplace) %{_sysconfdir}/opensips/tls/request.conf
@@ -1196,11 +893,8 @@ fi
 %config(noreplace) %{_sysconfdir}/opensips/tls/user/user-privkey.pem
 
 %{_libdir}/opensips/opensipsctl/opensipsctl.base
-%{_libdir}/opensips/opensipsctl/opensipsctl.ctlbase
 %{_libdir}/opensips/opensipsctl/opensipsctl.dbtext
-%{_libdir}/opensips/opensipsctl/opensipsctl.fifo
 %{_libdir}/opensips/opensipsctl/opensipsctl.sqlbase
-%{_libdir}/opensips/opensipsctl/opensipsctl.unixsock
 
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.base
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.dbtext
@@ -1228,6 +922,7 @@ fi
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth.so
+%{_libdir}/opensips/modules/auth_aaa.so
 %{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/avpops.so
 %{_libdir}/opensips/modules/benchmark.so
@@ -1235,12 +930,12 @@ fi
 %{_libdir}/opensips/modules/cachedb_sql.so
 %{_libdir}/opensips/modules/call_control.so
 %{_libdir}/opensips/modules/cfgutils.so
+%{_libdir}/opensips/modules/clusterer.so
 %{_libdir}/opensips/modules/db_cachedb.so
 %{_libdir}/opensips/modules/db_flatstore.so
 %{_libdir}/opensips/modules/db_text.so
 %{_libdir}/opensips/modules/db_virtual.so
 %{_libdir}/opensips/modules/dialog.so
-%{_libdir}/opensips/modules/dialplan.so
 %{_libdir}/opensips/modules/dispatcher.so
 %{_libdir}/opensips/modules/diversion.so
 %{_libdir}/opensips/modules/dns_cache.so
@@ -1248,20 +943,29 @@ fi
 %{_libdir}/opensips/modules/domainpolicy.so
 %{_libdir}/opensips/modules/drouting.so
 %{_libdir}/opensips/modules/enum.so
+%{_libdir}/opensips/modules/event_datagram.so
+%{_libdir}/opensips/modules/event_flatstore.so
+%{_libdir}/opensips/modules/event_jsonrpc.so
+%{_libdir}/opensips/modules/event_route.so
+%{_libdir}/opensips/modules/event_routing.so
+%{_libdir}/opensips/modules/event_virtual.so
+%{_libdir}/opensips/modules/event_xmlrpc.so
 %{_libdir}/opensips/modules/exec.so
+%{_libdir}/opensips/modules/fraud_detection.so
+%{_libdir}/opensips/modules/freeswitch.so
+%{_libdir}/opensips/modules/freeswitch_scripting.so
 %{_libdir}/opensips/modules/gflags.so
 %{_libdir}/opensips/modules/group.so
-%{_libdir}/opensips/modules/identity.so
 %{_libdir}/opensips/modules/imc.so
+%{_libdir}/opensips/modules/jsonrpc.so
 %{_libdir}/opensips/modules/load_balancer.so
 %{_libdir}/opensips/modules/mangler.so
 %{_libdir}/opensips/modules/mathops.so
 %{_libdir}/opensips/modules/maxfwd.so
 %{_libdir}/opensips/modules/mediaproxy.so
-%{_libdir}/opensips/modules/mi_fifo.so
 %{_libdir}/opensips/modules/mi_datagram.so
-%{_libdir}/opensips/modules/mi_http.so
-%{_libdir}/opensips/modules/mi_html.so
+%{_libdir}/opensips/modules/mi_fifo.so
+%{_libdir}/opensips/modules/mid_registrar.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nat_traversal.so
 %{_libdir}/opensips/modules/nathelper.so
@@ -1269,33 +973,44 @@ fi
 %{_libdir}/opensips/modules/path.so
 %{_libdir}/opensips/modules/permissions.so
 %{_libdir}/opensips/modules/pike.so
+%{_libdir}/opensips/modules/proto_bin.so
+%{_libdir}/opensips/modules/proto_hep.so
+%{_libdir}/opensips/modules/proto_smpp.so
+%{_libdir}/opensips/modules/proto_ws.so
 %{_libdir}/opensips/modules/qos.so
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
+%{_libdir}/opensips/modules/rtpengine.so
 %{_libdir}/opensips/modules/rtpproxy.so
 %{_libdir}/opensips/modules/script_helper.so
+%{_libdir}/opensips/modules/seas.so
 %{_libdir}/opensips/modules/signaling.so
+%{_libdir}/opensips/modules/sip_i.so
 %{_libdir}/opensips/modules/sipcapture.so
 %{_libdir}/opensips/modules/sipmsgops.so
-%{_libdir}/opensips/modules/siptrace.so
+%{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so
+%{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
+%{_libdir}/opensips/modules/sql_cacher.so
 %{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
 %{_libdir}/opensips/modules/stun.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
+%{_libdir}/opensips/modules/topology_hiding.so
 %{_libdir}/opensips/modules/uac.so
+%{_libdir}/opensips/modules/uac_auth.so
 %{_libdir}/opensips/modules/uac_redirect.so
+%{_libdir}/opensips/modules/uac_registrant.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
-%{_libdir}/opensips/modules/uac_auth.so
-%{_libdir}/opensips/modules/uac_registrant.so
 
 %doc docdir/README.acc
 %doc docdir/README.alias_db
 %doc docdir/README.auth
+%doc docdir/README.auth_aaa
 %doc docdir/README.auth_db
 %doc docdir/README.avpops
 %doc docdir/README.benchmark
@@ -1303,11 +1018,11 @@ fi
 %doc docdir/README.cachedb_sql
 %doc docdir/README.call_control
 %doc docdir/README.cfgutils
+%doc docdir/README.clusterer
 %doc docdir/README.db_flatstore
 %doc docdir/README.db_text
 %doc docdir/README.db_virtual
 %doc docdir/README.dialog
-%doc docdir/README.dialplan
 %doc docdir/README.dispatcher
 %doc docdir/README.diversion
 %doc docdir/README.dns_cache
@@ -1315,19 +1030,28 @@ fi
 %doc docdir/README.domainpolicy
 %doc docdir/README.drouting
 %doc docdir/README.enum
+%doc docdir/README.event_datagram
+%doc docdir/README.event_flatstore
+%doc docdir/README.event_jsonrpc
+%doc docdir/README.event_route
+%doc docdir/README.event_routing
+%doc docdir/README.event_virtual
+%doc docdir/README.event_xmlrpc
 %doc docdir/README.exec
+%doc docdir/README.fraud_detection
+%doc docdir/README.freeswitch
+%doc docdir/README.freeswitch_scripting
 %doc docdir/README.gflags
 %doc docdir/README.group
-%doc docdir/README.identity
 %doc docdir/README.imc
+%doc docdir/README.jsonrpc
 %doc docdir/README.load_balancer
 %doc docdir/README.mangler
 %doc docdir/README.maxfwd
 %doc docdir/README.mediaproxy
 %doc docdir/README.mi_datagram
 %doc docdir/README.mi_fifo
-%doc docdir/README.mi_http
-%doc docdir/README.mi_html
+%doc docdir/README.mid_registrar
 %doc docdir/README.msilo
 %doc docdir/README.nat_traversal
 %doc docdir/README.nathelper
@@ -1335,23 +1059,33 @@ fi
 %doc docdir/README.path
 %doc docdir/README.permissions
 %doc docdir/README.pike
+%doc docdir/README.proto_bin
+%doc docdir/README.proto_hep
+%doc docdir/README.proto_smpp
+%doc docdir/README.proto_ws
 %doc docdir/README.qos
 %doc docdir/README.ratelimit
 %doc docdir/README.registrar
 %doc docdir/README.rr
+%doc docdir/README.rtpengine
 %doc docdir/README.rtpproxy
+%doc docdir/README.seas
 %doc docdir/README.signaling
+%doc docdir/README.sip_i
 %doc docdir/README.sipcapture
 %doc docdir/README.sipmsgops
-%doc docdir/README.siptrace
+%doc docdir/README.tracer
 %doc docdir/README.sl
+%doc docdir/README.sms
 %doc docdir/README.speeddial
+%doc docdir/README.sql_cacher
 %doc docdir/README.sst
 %doc docdir/README.statistics
 %doc docdir/README.stun
 %doc docdir/README.textops
 %doc docdir/README.tls
 %doc docdir/README.tm
+%doc docdir/README.topology_hiding
 %doc docdir/README.uac
 %doc docdir/README.uac_auth
 %doc docdir/README.uac_redirect
@@ -1359,21 +1093,7 @@ fi
 %doc docdir/README.userblacklist
 %doc docdir/README.usrloc
 
-%if 0%{!?_without_aaa_radius:1}
-%files aaa_radius
-%{_libdir}/opensips/modules/aaa_radius.so
-%doc docdir/README.aaa_radius
-%endif
-
-%files acc
-%{_libdir}/opensips/modules/acc.so
-%doc docdir/README.acc
-
-%files auth_aaa
-%{_libdir}/opensips/modules/auth_aaa.so
-%doc docdir/README.auth_aaa
-
-%files b2bua
+%files b2bua-module
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
 %{_libdir}/opensips/modules/b2b_sca.so
@@ -1384,55 +1104,10 @@ fi
 %doc docdir/README.b2b_sca
 %doc docdir/README.call_center
 
-%if 0%{?_with_cachedb_cassandra:1}
-%{_libdir}/opensips/modules/cachedb_cassandra.so
-%doc docdir/README.cachedb_cassandra
-%endif
-
-%if 0%{?_with_cachedb_couchbase:1}
-%files cachedb_couchbase
-%{_libdir}/opensips/modules/cachedb_couchbase.so
-%doc docdir/README.cachedb_couchbase
-%endif
-
-%files cachedb_memcached
-%{_libdir}/opensips/modules/cachedb_memcached.so
-%doc docdir/README.cachedb_memcached
-
-%if 0%{?_with_cachedb_mongodb:1}
-%files cachedb_mongodb
-%{_libdir}/opensips/modules/cachedb_mongodb.so
-%doc docdir/README.cachedb_mongodb
-%endif
-
-%if 0%{?_with_cachedb_redis:1}
-%files cachedb_redis
-%{_libdir}/opensips/modules/cachedb_redis.so
-%doc docdir/README.cachedb_redis
-%endif
-
-%files carrierroute
-%{_libdir}/opensips/modules/carrierroute.so
-%doc docdir/README.carrierroute
-
-%files clusterer
-%{_libdir}/opensips/modules/clusterer.so
-%doc docdir/README.clusterer
-
-%files compression
-%{_libdir}/opensips/modules/compression.so
-%doc docdir/README.compression
-
-%files cpl_c
-%{_libdir}/opensips/modules/cpl_c.so
-%doc docdir/README.cpl_c
-
-%files cgrates
-%{_libdir}/opensips/modules/cgrates.so
-%doc docdir/README.cgrates
-
-%files db_berkeley
+%files berkeley-bin
 %{_sbindir}/bdb_recover
+
+%files berkeley-module
 %{_libdir}/opensips/modules/db_berkeley.so
 %{_libdir}/opensips/opensipsctl/opensipsctl.db_berkeley
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.db_berkeley
@@ -1441,11 +1116,94 @@ fi
 %{_datadir}/opensips/db_berkeley/opensips/*
 %doc docdir/README.db_berkeley
 
-%files db_http
+%files carrierroute-module
+%{_libdir}/opensips/modules/carrierroute.so
+%doc docdir/README.carrierroute
+
+%if 0%{?_with_cachedb_cassandra:1}
+%files cassandra-module
+%{_libdir}/opensips/modules/cachedb_cassandra.so
+%doc docdir/README.cachedb_cassandra
+%endif
+
+%files cgrates-module
+%{_libdir}/opensips/modules/cgrates.so
+%doc docdir/README.cgrates
+
+%files compression-module
+%{_libdir}/opensips/modules/compression.so
+%doc docdir/README.compression
+
+%if 0%{?_with_cachedb_couchbase:1}
+%files couchbase-module
+%{_libdir}/opensips/modules/cachedb_couchbase.so
+%doc docdir/README.cachedb_couchbase
+%endif
+
+%files cpl-module
+%{_libdir}/opensips/modules/cpl_c.so
+%doc docdir/README.cpl_c
+
+%files dbhttp-module
 %{_libdir}/opensips/modules/db_http.so
 %doc docdir/README.db_http
 
-%files db_mysql
+%files dialplan-module
+%{_libdir}/opensips/modules/dialplan.so
+%doc docdir/README.dialplan
+
+%files emergency-module
+%{_libdir}/opensips/modules/emergency.so
+%doc docdir/README.emergency
+
+%files geoip-module
+%{_libdir}/opensips/modules/mmgeoip.so
+%doc docdir/README.mmgeoip
+
+%files http-modules
+%{_libdir}/opensips/modules/httpd.so
+%doc docdir/README.httpd
+%{_libdir}/opensips/modules/mi_html.so
+%doc docdir/README.mi_html
+%{_libdir}/opensips/modules/mi_http.so
+%doc docdir/README.mi_http
+%{_libdir}/opensips/modules/pi_http.so
+%{_datadir}/opensips/pi_http/*
+%doc docdir/README.pi_http
+
+%files identity-module
+%{_libdir}/opensips/modules/identity.so
+%doc docdir/README.identity
+
+%files jabber-module
+%{_libdir}/opensips/modules/jabber.so
+%doc docdir/README.jabber
+
+%files json-module
+%{_libdir}/opensips/modules/json.so
+%doc docdir/README.json
+
+%files ldap-modules
+%{_libdir}/opensips/modules/h350.so
+%doc docdir/README.h350
+%{_libdir}/opensips/modules/ldap.so
+%doc docdir/README.ldap
+
+%files lua-module
+%{_libdir}/opensips/modules/lua.so
+%doc docdir/README.lua
+
+%files memcached-module
+%{_libdir}/opensips/modules/cachedb_memcached.so
+%doc docdir/README.cachedb_memcached
+
+%if 0%{?_with_cachedb_mongodb:1}
+%files mongodb-module
+%{_libdir}/opensips/modules/cachedb_mongodb.so
+%doc docdir/README.cachedb_mongodb
+%endif
+
+%files mysql-module
 %{_libdir}/opensips/modules/db_mysql.so
 %{_libdir}/opensips/opensipsctl/opensipsctl.mysql
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.mysql
@@ -1454,7 +1212,7 @@ fi
 %doc docdir/README.db_mysql
 
 %if 0%{?_with_db_oracle:1}
-%files db_oracle
+%files oracle-module
 %{_sbindir}/opensips_orasel
 %{_libdir}/opensips/modules/db_oracle.so
 %{_libdir}/opensips/opensipsctl/opensipsctl.oracle
@@ -1465,8 +1223,26 @@ fi
 %doc docdir/README.db_oracle
 %endif
 
+%if 0%{?_with_osp:1}
+%files osp-module
+%{_libdir}/opensips/modules/osp.so
+%doc docdir/README.osp
+%endif
+
+%files perl-modules
+%dir %{perl_vendorlib}/OpenSIPS
+%dir %{perl_vendorlib}/OpenSIPS/LDAPUtils
+%dir %{perl_vendorlib}/OpenSIPS/Utils
+%{_libdir}/opensips/modules/perl.so
+%{perl_vendorlib}/OpenSIPS.pm
+%{perl_vendorlib}/OpenSIPS/Constants.pm
+%{perl_vendorlib}/OpenSIPS/LDAPUtils/LDAPConf.pm
+%{perl_vendorlib}/OpenSIPS/LDAPUtils/LDAPConnection.pm
+%{perl_vendorlib}/OpenSIPS/Message.pm
+%{perl_vendorlib}/OpenSIPS/Utils/PhoneNumbers.pm
+%{perl_vendorlib}/OpenSIPS/Utils/Debug.pm
+%doc docdir/README.perl
 %if 0%{!?_without_db_perlvdb:1}
-%files db_perlvdb
 %dir %{perl_vendorlib}/OpenSIPS/VDB
 %dir %{perl_vendorlib}/OpenSIPS/VDB/Adapter
 %{_libdir}/opensips/modules/db_perlvdb.so
@@ -1486,7 +1262,7 @@ fi
 %doc docdir/README.db_perlvdb
 %endif
 
-%files db_postgresql
+%files postgres-module
 %{_libdir}/opensips/modules/db_postgres.so
 %{_libdir}/opensips/opensipsctl/opensipsctl.pgsql
 %{_libdir}/opensips/opensipsctl/opensipsdbctl.pgsql
@@ -1494,258 +1270,87 @@ fi
 %{_datadir}/opensips/postgres/*.sql
 %doc docdir/README.db_postgres
 
-%files db_sqlite
-%{_libdir}/opensips/modules/db_sqlite.so
-%doc docdir/README.db_sqlite
-%{_libdir}/opensips/opensipsctl/opensipsctl.sqlite
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.sqlite
-%dir %{_datadir}/opensips/sqlite
-%{_datadir}/opensips/sqlite/*.sql
-
-%files db_unixodbc
-%{_libdir}/opensips/modules/db_unixodbc.so
-%doc docdir/README.db_unixodbc
-
-%files emergency
-%{_libdir}/opensips/modules/emergency.so
-%doc docdir/README.emergency
-
-%files event_datagram
-%{_libdir}/opensips/modules/event_datagram.so
-%doc docdir/README.event_datagram
-
-%files event_flatstore
-%{_libdir}/opensips/modules/event_flatstore.so
-%doc docdir/README.event_flatstore
-
-%files event_jsonrpc
-%{_libdir}/opensips/modules/event_jsonrpc.so
-%doc docdir/README.event_jsonrpc
-
-%files event_rabbitmq
-%{_libdir}/opensips/modules/event_rabbitmq.so
-%doc docdir/README.event_rabbitmq
-
-%files event_route
-%{_libdir}/opensips/modules/event_route.so
-%doc docdir/README.event_route
-
-%files event_routing
-%{_libdir}/opensips/modules/event_routing.so
-%doc docdir/README.event_routing
-
-%files event_virtual
-%{_libdir}/opensips/modules/event_virtual.so
-%doc docdir/README.event_virtual
-
-%files event_xmlrpc
-%{_libdir}/opensips/modules/event_xmlrpc.so
-%doc docdir/README.event_xmlrpc
-
-%files fraud_detection
-%{_libdir}/opensips/modules/fraud_detection.so
-%doc docdir/README.fraud_detection
-
-%files freeswitch
-%{_libdir}/opensips/modules/freeswitch.so
-%doc docdir/README.freeswitch
-
-%files freeswitch_scripting
-%{_libdir}/opensips/modules/freeswitch_scripting.so
-%doc docdir/README.freeswitch_scripting
-
-%files h350
-%{_libdir}/opensips/modules/h350.so
-%doc docdir/README.h350
-
-%files httpd
-%{_libdir}/opensips/modules/httpd.so
-%doc docdir/README.httpd
-
-%files jabber
-%{_libdir}/opensips/modules/jabber.so
-%doc docdir/README.jabber
-
-%files json
-%{_libdir}/opensips/modules/json.so
-%doc docdir/README.json
-
-%files jsonrpc
-%{_libdir}/opensips/modules/jsonrpc.so
-%doc docdir/README.jsonrpc
-
-%files ldap
-%{_libdir}/opensips/modules/ldap.so
-%doc docdir/README.ldap
-
-%files lua
-%{_libdir}/opensips/modules/lua.so
-%doc docdir/README.lua
-
-%files mid_registrar
-%{_libdir}/opensips/modules/mid_registrar.so
-%doc docdir/README.mid_registrar
-
-%files mi_xmlrpc
-%{_libdir}/opensips/modules/mi_xmlrpc_ng.so
-%doc docdir/README.mi_xmlrpc_ng
-
-%files mmgeoip
-%{_libdir}/opensips/modules/mmgeoip.so
-%doc docdir/README.mmgeoip
-
-%if 0%{?_with_osp:1}
-%files osp
-%{_libdir}/opensips/modules/osp.so
-%doc docdir/README.osp
-%endif
-
-%files peering
-%{_libdir}/opensips/modules/peering.so
-%doc docdir/README.peering
-
-%files perl
-%dir %{perl_vendorlib}/OpenSIPS
-%dir %{perl_vendorlib}/OpenSIPS/LDAPUtils
-%dir %{perl_vendorlib}/OpenSIPS/Utils
-%{_libdir}/opensips/modules/perl.so
-%{perl_vendorlib}/OpenSIPS.pm
-%{perl_vendorlib}/OpenSIPS/Constants.pm
-%{perl_vendorlib}/OpenSIPS/LDAPUtils/LDAPConf.pm
-%{perl_vendorlib}/OpenSIPS/LDAPUtils/LDAPConnection.pm
-%{perl_vendorlib}/OpenSIPS/Message.pm
-%{perl_vendorlib}/OpenSIPS/Utils/PhoneNumbers.pm
-%{perl_vendorlib}/OpenSIPS/Utils/Debug.pm
-%doc docdir/README.perl
-
-%files pi_http
-%{_libdir}/opensips/modules/pi_http.so
-%{_datadir}/opensips/pi_http/*
-%doc docdir/README.pi_http
-
-%files presence
+%files presence-modules
 %{_libdir}/opensips/modules/presence.so
 %doc docdir/README.presence
-
-%files presence_callinfo
 %{_libdir}/opensips/modules/presence_callinfo.so
 %doc docdir/README.presence_callinfo
-
-%files presence_dialoginfo
 %{_libdir}/opensips/modules/presence_dialoginfo.so
 %doc docdir/README.presence_dialoginfo
-
-%files presence_mwi
 %{_libdir}/opensips/modules/presence_mwi.so
 %doc docdir/README.presence_mwi
-
-%files presence_xcapdiff
 %{_libdir}/opensips/modules/presence_xcapdiff.so
 %doc docdir/README.presence_xcapdiff
-
-%files presence_xml
 %{_libdir}/opensips/modules/presence_xml.so
 %doc docdir/README.presence_xml
-
-%files proto_bin
-%{_libdir}/opensips/modules/proto_bin.so
-%doc docdir/README.proto_bin
-
-%files proto_hep
-%{_libdir}/opensips/modules/proto_hep.so
-%doc docdir/README.proto_hep
-
-%files proto_sctp
-%{_libdir}/opensips/modules/proto_sctp.so
-%doc docdir/README.proto_sctp
-
-%files proto_smpp
-%{_libdir}/opensips/modules/proto_smpp.so
-%doc docdir/README.proto_smpp
-
-%files proto_tls
-%{_libdir}/opensips/modules/proto_tls.so
-%doc docdir/README.proto_tls
-
-%files proto_ws
-%{_libdir}/opensips/modules/proto_ws.so
-%doc docdir/README.proto_ws
-
-%files proto_wss
-%{_libdir}/opensips/modules/proto_wss.so
-%doc docdir/README.proto_wss
-
-%files pua
 %{_libdir}/opensips/modules/pua.so
 %doc docdir/README.pua
-
-%files pua_bla
 %{_libdir}/opensips/modules/pua_bla.so
 %doc docdir/README.pua_bla
-
-%files pua_dialoginfo
 %{_libdir}/opensips/modules/pua_dialoginfo.so
 %doc docdir/README.pua_dialoginfo
-
-%files pua_mi
 %{_libdir}/opensips/modules/pua_mi.so
 %doc docdir/README.pua_mi
-
-%files pua_usrloc
 %{_libdir}/opensips/modules/pua_usrloc.so
 %doc docdir/README.pua_usrloc
-
-%files pua_xmpp
 %{_libdir}/opensips/modules/pua_xmpp.so
 %doc docdir/README.pua_xmpp
+%{_libdir}/opensips/modules/rls.so
+%doc docdir/README.rls
+%{_libdir}/opensips/modules/xcap.so
+%doc docdir/README.xcap
+%{_libdir}/opensips/modules/xcap_client.so
+%doc docdir/README.xcap_client
 
-%files python
+%files python-module
 %{_libdir}/opensips/modules/python.so
 
-%files rabbitmq
+%files rabbitmq-modules
+%{_libdir}/opensips/modules/event_rabbitmq.so
+%doc docdir/README.event_rabbitmq
 %{_libdir}/opensips/modules/rabbitmq.so
 %doc docdir/README.rabbitmq
+%{_libdir}/opensips/modules/rabbitmq_consumer.so
+%doc docdir/README.rabbitmq_consumer
 
-%files regex
+%files radius-modules
+%{_libdir}/opensips/modules/peering.so
+%doc docdir/README.peering
+%if 0%{!?_without_aaa_radius:1}
+%{_libdir}/opensips/modules/aaa_radius.so
+%doc docdir/README.aaa_radius
+%endif
+
+%if 0%{?_with_cachedb_redis:1}
+%files redis-module
+%{_libdir}/opensips/modules/cachedb_redis.so
+%doc docdir/README.cachedb_redis
+%endif
+
+%files regex-module
 %{_libdir}/opensips/modules/regex.so
 %doc docdir/README.regex
 
-%files rest_client
+%files restclient-module
 %{_libdir}/opensips/modules/rest_client.so
 %doc docdir/README.rest_client
 
-%files rls
-%{_libdir}/opensips/modules/rls.so
-%doc docdir/README.rls
+%files sctp-module
+%{_libdir}/opensips/modules/proto_sctp.so
+%doc docdir/README.proto_sctp
 
-%files rtpengine
-%{_libdir}/opensips/modules/rtpengine.so
-%doc docdir/README.rtpengine
-
-%files seas
-%{_libdir}/opensips/modules/seas.so
-%doc docdir/README.seas
-
-%files sip_i
-%{_libdir}/opensips/modules/sip_i.so
-%doc docdir/README.sip_i
-
-%files siprec
+%files siprec-module
 %{_libdir}/opensips/modules/siprec.so
 %doc docdir/README.siprec
 
-%files sms
-%{_libdir}/opensips/modules/sms.so
-%doc docdir/README.sms
-
 %if 0%{?_with_sngtc:1}
-%files sngtc
+%files sngtc-module
 %{_libdir}/opensips/modules/sngtc.so
 %doc docdir/README.sngtc
 %endif
 
 %if 0%{!?_without_snmpstats:1}
-%files snmpstats
+%files snmpstats-module
 %{_libdir}/opensips/modules/snmpstats.so
 %doc docdir/README.snmpstats
 %dir %{_datadir}/snmp
@@ -1757,35 +1362,51 @@ fi
 %{_datadir}/snmp/mibs/OPENSER-TC
 %endif
 
-%files sql_cacher
-%{_libdir}/opensips/modules/sql_cacher.so
-%doc docdir/README.sql_cacher
+%files sqlite-module
+%{_libdir}/opensips/modules/db_sqlite.so
+%doc docdir/README.db_sqlite
+%{_libdir}/opensips/opensipsctl/opensipsctl.sqlite
+%{_libdir}/opensips/opensipsctl/opensipsdbctl.sqlite
+%dir %{_datadir}/opensips/sqlite
+%{_datadir}/opensips/sqlite/*.sql
 
-%files tls_mgm
+%files tls-module
+%{_libdir}/opensips/modules/proto_tls.so
+%doc docdir/README.proto_tls
+
+%files tlsmgm-module
 %{_libdir}/opensips/modules/tls_mgm.so
 %doc docdir/README.tls_mgm
 
-%files topology_hiding
-%{_libdir}/opensips/modules/topology_hiding.so
-%doc docdir/README.topology_hiding
+%files unixodbc-module
+%{_libdir}/opensips/modules/db_unixodbc.so
+%doc docdir/README.db_unixodbc
 
-%files xcap
-%{_libdir}/opensips/modules/xcap.so
-%doc docdir/README.xcap
+%files wss-module
+%{_libdir}/opensips/modules/proto_wss.so
+%doc docdir/README.proto_wss
 
-%files xcap_client
-%{_libdir}/opensips/modules/xcap_client.so
-%doc docdir/README.xcap_client
-
-%files xml
+%files xml-module
 %{_libdir}/opensips/modules/xml.so
 %doc docdir/README.xml
 
-%files xmpp
+%files xmlrpc-module
+%{_libdir}/opensips/modules/mi_xmlrpc_ng.so
+%doc docdir/README.mi_xmlrpc_ng
+
+%files xmpp-module
 %{_libdir}/opensips/modules/xmpp.so
 %doc docdir/README.xmpp
 
+
 %changelog
+* Tue Apr 16 2019 Razvan Crainea <razvan@opensips.org> - 3.1.0-1
+- Remove osipsconsole
+
+* Thu Apr 11 2019 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
+- Specification updated for opensips 3.0
+- Package names and layout were changed similar to debian packaging
+
 * Wed Mar 28 2018 Nick Altmann <nick.altmann@gmail.com> - 2.4.0-1
 - Specification updated for opensips 2.4
 - New packages: event_jsonrpc, jsonrpc, siprec

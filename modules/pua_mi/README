@@ -112,14 +112,14 @@ modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
    Example 1.2. pua_publish FIFO example
 ...
 
-opensipsctl fifo pua_publish sip:system@opensips.org 3600 presence appli
-cation/pidf+xml <?xml version='1.0'?><presence xmlns='urn:ietf:params:xm
-l:ns:pidf' xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model' xmlns:rpid=
-'urn:ietf:params:xml:ns:pidf:rpid' xmlns:c='urn:ietf:params:xml:ns:pidf:
-cipid' entity='system@opensips.org'><tuple id='0x81475a0'><status><basic
->open</basic></status></tuple><dm:person id='pdd748945'><rpid:activities
-><rpid:away/>away</rpid:activities><dm:note>CPU:16 MEM:476</dm:note></dm
-:person></presence>
+opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence app
+lication/pidf+xml <?xml version='1.0'?><presence xmlns='urn:ietf:params:
+xml:ns:pidf' xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model' xmlns:rpi
+d='urn:ietf:params:xml:ns:pidf:rpid' xmlns:c='urn:ietf:params:xml:ns:pid
+f:cipid' entity='system@opensips.org'><tuple id='0x81475a0'><status><bas
+ic>open</basic></status></tuple><dm:person id='pdd748945'><rpid:activiti
+es><rpid:away/>away</rpid:activities><dm:note>CPU:16 MEM:476</dm:note></
+dm:person></presence>
 
 
 1.6.  pua_subscribe
@@ -139,12 +139,12 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 30 15 1246 267
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 40 52
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 42 53
    3. Juha Heinanen (@juha-h) 11 7 160 73
    4. Liviu Chircu (@liviuchircu) 10 8 26 41
    5. Vlad Patrascu (@rvlad-patrascu) 10 3 278 220
    6. Daniel-Constantin Mierla (@miconda) 9 7 32 29
-   7. Razvan Crainea (@razvancrainea) 6 4 11 14
+   7. Razvan Crainea (@razvancrainea) 8 6 13 16
    8. Ovidiu Sas (@ovidiusas) 3 1 13 2
    9. Konstantin Bokarius 3 1 2 5
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -172,11 +172,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2015
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Apr 2019
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    6.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
    7.  Anca Vamanu                         Nov 2006 - Aug 2010
    8.  Juha Heinanen (@juha-h)             Apr 2007 - May 2008
@@ -193,11 +193,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Anca Vamanu,
-   Juha Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert.
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Anca
+   Vamanu, Juha Heinanen (@juha-h), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
 
    Documentation Copyrights:
 

@@ -30,6 +30,6 @@
 
 int load_re(str *table);
 
-int get_user_group(struct sip_msg *req, char *user, char *avp);
+int get_user_group(struct sip_msg *req, str *user_str, pv_spec_t *avp);
 
 #endif

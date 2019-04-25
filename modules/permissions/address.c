@@ -19,12 +19,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * History:
- * --------
- *  2004-06-07  updated to the new DB api, moved reload_address_table (andrei)
- *  2009-09-10  major refactoring (irina)
  */
 
 #include <string.h>
@@ -51,7 +47,8 @@
 
 str def_part = str_init("default");
 
-static inline int proto_char2int(str *proto) {
+
+int proto_char2int(str *proto) {
 	int ret_proto;
 	if (proto->len==0 || (proto->len==3 && !strcasecmp(proto->s, "any")))
 		return PROTO_NONE;
@@ -445,319 +442,79 @@ void clean_address(struct pm_part_struct *part_struct)
 /*
  *
  */
-int check_addr_6(struct sip_msg* msg,
-		char* grp_sgp, char* ip_sp, char* port_sp, char* proto_sp,
-		char* info, char* pattern) {
-
-	unsigned int port;
-	int group, proto, hash_ret, subnet_ret, ret = 1;
+int check_addr(struct sip_msg* msg, int* grp, str* s_ip, int *port, long proto,
+				pv_spec_t *info, char *pattern, struct pm_part_struct *part)
+{
 	struct ip_addr *ip;
-	str str_ip, str_proto, str_port, pattern_s, str_part_group;
-	struct pm_part_struct *part_struct;
-	struct part_var *pvar, *pvar_new;
+	int hash_ret, subnet_ret;
 
-	memset(&str_ip, 0, sizeof(str));
-	memset(&str_proto, 0, sizeof(str));
-
-	if (grp_sgp) {
-		pvar = (struct part_var *) grp_sgp;
-
-		if (pvar->type == TYPE_PV) {
-			if (fixup_get_svalue(msg, pvar->u.gp, &str_part_group)) {
-			    LM_ERR("cannot get group value\n");
-				return -1;
-			}
-
-			pvar_new = pkg_malloc(sizeof(struct part_var));
-			if (pvar_new == NULL) {
-				LM_ERR("no more pkg mem\n");
-				return -1;
-			}
-
-			if (check_addr_param1( &str_part_group, pvar_new)) {
-				LM_ERR("failed to parse [%s]!", str_part_group.s);
-				return -1;
-			}
-			group = pvar_new->u.parsed_part.v.ival;
-
-			if (pvar_new->u.parsed_part.partition.s)
-				part_struct = get_part_struct(&pvar_new->u.parsed_part.partition);
-			else
-				part_struct = get_part_struct(&def_part);
-
-			pkg_free(pvar_new);
-		} else {
-			group = pvar->u.parsed_part.v.ival;
-			if (pvar->u.parsed_part.partition.s)
-				part_struct = get_part_struct(&pvar->u.parsed_part.partition);
-			else
-				part_struct = get_part_struct(&def_part);
-		}
-
-		if (group < 0) {
-			LM_ERR("invalid group value\n");
-			return -1;
-		}
-	} else {
-		group = 0;
-		part_struct = get_part_struct(&def_part);
-	}
-
-	if (part_struct == NULL) {
-		LM_ERR("no db_url defined or no (such) partition!\n");
+	/* ip addr */
+	if ( (ip=str2ip(s_ip))==NULL && (ip=str2ip6(s_ip))==NULL ) {
+		LM_ERR("invalid ip address <%.*s>!\n", s_ip->len, s_ip->s);
 		return -1;
 	}
 
-	if (ip_sp) {
-		if (fixup_get_svalue(msg, (gparam_p)ip_sp, &str_ip)) {
-			LM_ERR("cannot get str_ip string\n");
-			return -1;
-		}
-	} else {
-		LM_ERR("source ip not provided!\n");
-		return -1;
-	}
-	if (str_ip.len <= 0 || !str_ip.s) {
-		LM_ERR("source ip is not set!\n");
-		return -1;
-	}
+	LM_DBG("Looking for : <%.*s:%d, %.*s, %d, %d, %s>\n",
+		part->name.len, part->name.s, *grp,
+		s_ip->len, s_ip->s, (int)proto, *port, ZSW(pattern) );
 
-	if ( (ip=str2ip(&str_ip))==NULL && (ip=str2ip6(&str_ip))==NULL ) {
-		LM_ERR("invalid ip address <%.*s>!\n", str_ip.len, str_ip.s);
-		return -1;
-	}
-
-
-	if (proto_sp) {
-		if (fixup_get_svalue(msg, (gparam_p) proto_sp, &str_proto)) {
-			LM_ERR("cannot get str_proto string\n");
-			return -1;
-		}
-	}
-	if (str_proto.len <= 0 || !str_proto.s) {
-		str_proto.s = "any";
-		str_proto.len = strlen(str_proto.s);
-	}
-
-	if ((proto = proto_char2int(&str_proto)) < 0) {
-		LM_ERR("unknown protocol %.*s\n", str_proto.len, str_proto.s);
-		return -1;
-	}
-
-	if (port_sp) {
-		if (fixup_get_svalue(msg, (gparam_p)port_sp, &str_port)) {
-		    LM_ERR("cannot get port value\n");
-	    	return -1;
-		}
-
-		if (str2int(&str_port, &port) < 0) {
-			LM_ERR("invalid port value\n");
-			return -1;
-		}
-	} else
-		port = 0;
-
-	if (pattern) {
-		if (fixup_get_svalue(msg, (gparam_p)pattern, &pattern_s) < 0) {
-			LM_ERR("cannot get pattern value\n");
-			return -1;
-		}
-		pattern = pkg_malloc(pattern_s.len + 1);
-		if (!pattern) {
-			LM_ERR("no more pkg mem\n");
-			return -1;
-		}
-		memcpy(pattern, pattern_s.s, pattern_s.len);
-		pattern[pattern_s.len] = 0;
-	}
-
-	LM_DBG("Looking for : <%d, %.*s, %.*s, %d, %s>\n", group, str_ip.len,
-			str_ip.s, str_proto.len, str_proto.s, port, ZSW(pattern) );
-
-	hash_ret = hash_match(msg, *part_struct->hash_table, group, ip, port,
-				proto, pattern, info);
+	hash_ret = hash_match(msg, *part->hash_table, *grp,
+			ip, *port, (int)proto, pattern, info);
 	if (hash_ret < 0) {
-	    subnet_ret = match_subnet_table(msg, *part_struct->subnet_table, group,
-				ip, port, proto, pattern, info);
-	    ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
+		subnet_ret = match_subnet_table(msg, *part->subnet_table, *grp,
+				ip, *port, (int)proto, pattern, info);
+		hash_ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
 	}
 
-	if (pattern)
-		pkg_free(pattern);
-	return ret;
+	return hash_ret;
 }
 
-int check_addr_4(struct sip_msg *msg,
-       char *grp, char *src_ip_sp, char *port_sp, char *proto_sp) {
-	return check_addr_6(msg, grp, src_ip_sp, port_sp, proto_sp,
-			NULL, NULL);
-}
 
-int check_addr_5(struct sip_msg *msg,
-	char *grp, char *src_ip_sp, char *port_sp, char *proto_sp, char *info) {
-	return check_addr_6(msg, grp, src_ip_sp, port_sp, proto_sp,
-			info, NULL);
-}
+int check_src_addr(struct sip_msg *msg, int *grp,
+				pv_spec_t *info, char* pattern, struct pm_part_struct *part)
+{
 
-int check_src_addr_3(struct sip_msg *msg,
-		                char *grp, char *info, char* pattern) {
-
-	int group, hash_ret, subnet_ret, ret = 1;
-	str str_part_group;
+	int hash_ret, subnet_ret;
 	struct ip_addr *ip;
-	str pattern_s;
-	struct pm_part_struct *part_struct;
-	struct part_var *pvar, *pvar_new;
-
-	if (grp) {
-		pvar = (struct part_var *) grp;
-
-		if (pvar->type == TYPE_PV) {
-			if (fixup_get_svalue(msg, pvar->u.gp, &str_part_group)) {
-			    LM_ERR("cannot get group value\n");
-				return -1;
-			}
-			pvar_new = pkg_malloc(sizeof(struct part_var));
-			if (pvar_new == NULL) {
-				LM_ERR("no more pkg mem\n");
-				return -1;
-			}
-
-			if (check_addr_param1( &str_part_group, pvar_new)) {
-				LM_ERR("failed to parse [%s]!", str_part_group.s);
-				return -1;
-			}
-			group = pvar_new->u.parsed_part.v.ival;
-			if (pvar_new->u.parsed_part.partition.s)
-				part_struct = get_part_struct(&pvar_new->u.parsed_part.partition);
-			else
-				part_struct = get_part_struct(&def_part);
-
-			pkg_free(pvar_new);
-		} else {
-			group = pvar->u.parsed_part.v.ival;
-
-			if (pvar->u.parsed_part.partition.s)
-				part_struct = get_part_struct(&pvar->u.parsed_part.partition);
-			else
-				part_struct = get_part_struct(&def_part);
-		}
-
-		if (group < 0) {
-			LM_ERR("invalid group value\n");
-			return -1;
-		}
-	} else {
-		group = 0;
-		part_struct = get_part_struct(&def_part);
-	}
-
-	if (part_struct == NULL) {
-		LM_ERR("no db_url defined or no (such) partition!\n");
-		return -1;
-	}
 
 	ip = &msg->rcv.src_ip;
-	LM_DBG("Looking for : <%d, %s, %d, %d> in tables\n",
-				group, ip_addr2a(ip),
-				msg->rcv.src_port,
-				msg->rcv.proto);
-	if (pattern) {
-		if (fixup_get_svalue(msg, (gparam_p)pattern, &pattern_s) < 0) {
-			LM_ERR("cannot get pattern value\n");
-			return -1;
-		}
-		pattern = pkg_malloc(pattern_s.len + 1);
-		if (!pattern) {
-			LM_ERR("no more pkg mem\n");
-			return -1;
-		}
-		memcpy(pattern, pattern_s.s, pattern_s.len);
-		pattern[pattern_s.len] = 0;
-	}
 
-	hash_ret = hash_match(msg, *part_struct->hash_table, group,
-				ip,
-				msg->rcv.src_port,
-				msg->rcv.proto,
-				pattern,
-				info);
+	LM_DBG("Looking for : <%.*s:%d, %s, %d, %d, %s>\n",
+		part->name.len, part->name.s, *grp,
+		ip_addr2a(ip), msg->rcv.proto, msg->rcv.src_port, ZSW(pattern) );
+
+	hash_ret = hash_match(msg, *part->hash_table, *grp, ip,
+		msg->rcv.src_port, msg->rcv.proto, pattern, info);
 	if (hash_ret < 0) {
-	    subnet_ret = match_subnet_table(msg, *part_struct->subnet_table, group,
-				ip,
-				msg->rcv.src_port,
-				msg->rcv.proto,
-				pattern,
-				info);
-            ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
-        }
-
-	if (pattern)
-		pkg_free(pattern);
-	return ret;
-}
-
-
-int check_src_addr_2(struct sip_msg* msg,
-		        char* grp, char* info) {
-	return check_src_addr_3(msg, grp, info, NULL);
-}
-
-
-int check_src_addr_1(struct sip_msg* msg,
-		        char* grp) {
-	return check_src_addr_3(msg, grp, NULL, NULL);
-}
-
-
-
-int get_source_group(struct sip_msg* msg, char *arg) {
-	int group = -1;
-	struct ip_addr *ip;
-	str partition;
-	pv_value_t pvt;
-	struct part_pvar *ppv;
-	struct pm_part_struct *ps;
-
-	ppv  = (struct part_pvar *)arg;
-
-	if (ppv->part) {
-		if (fixup_get_svalue(msg, ppv->part, &partition)) {
-			    LM_ERR("cannot get partition value\n");
-				return -1;
-		}
-
-		str_trim_spaces_lr(partition);
-		ps = get_part_struct(&partition);
-
-		if (ps == NULL) {
-			LM_ERR("no such partition (%.*s)\n", partition.len, partition.s);
-			return -1;
-		}
-
-	} else {
-		ps = get_part_struct(&def_part);
-		if (ps == NULL) {
-			LM_ERR("no default partition\n");
-			return -1;
-		}
+			subnet_ret = match_subnet_table(msg, *part->subnet_table,
+				*grp, ip, msg->rcv.src_port, msg->rcv.proto, pattern,info);
+			hash_ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
 	}
+
+	return hash_ret;
+}
+
+
+int get_source_group(struct sip_msg* msg, pv_spec_t *out_var,
+												struct pm_part_struct *part)
+{
+	int group;
+	struct ip_addr *ip;
+	pv_value_t pvt;
 
 	ip = &msg->rcv.src_ip;
 	LM_DBG("Looking for <%s, %u> in address table\n",
 			ip_addr2a(ip), msg->rcv.src_port);
 
-	group = find_group_in_hash_table(*ps->hash_table,
-				ip,
-				msg->rcv.src_port);
+	group = find_group_in_hash_table(*part->hash_table,
+		ip, msg->rcv.src_port);
 	if (group == -1) {
 
 		LM_DBG("Looking for <%x, %u> in subnet table\n",
 			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
 
-		group = find_group_in_subnet_table(*ps->subnet_table,
-				ip,
-				msg->rcv.src_port);
+		group = find_group_in_subnet_table(*part->subnet_table,
+			ip, msg->rcv.src_port);
 		if (group == -1) {
 			LM_DBG("IP <%s:%u> not found in any group\n",
 					ip_addr2a(ip), msg->rcv.src_port);
@@ -771,7 +528,7 @@ int get_source_group(struct sip_msg* msg, char *arg) {
 	pvt.rs.len = 0;
 	pvt.ri = group;
 
-	if (pv_set_value(msg, ppv->sp, (int)EQ_T, &pvt) < 0) {
+	if (pv_set_value(msg, out_var, (int)EQ_T, &pvt) < 0) {
 		LM_ERR("setting of pvar failed\n");
 		return -1;
 	}

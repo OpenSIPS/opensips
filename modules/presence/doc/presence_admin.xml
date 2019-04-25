@@ -606,13 +606,16 @@ modparam("presence", "pres_htable_size", 11)
 	<title>Exported Functions</title>
 	<section id="func_handle_publish" xreflabel="handle_publish()">
 		<title>
-		<function moreinfo="none">handle_publish(sender_uri)</function>
+		<function moreinfo="none">handle_publish([sender_uri])</function>
 		</title>
 		<para>
 		The function handles PUBLISH requests. It stores and updates 
 		published information in database and calls functions to send 
 		NOTIFY messages when changes in the published information occur.
-		It takes one argument -> sender_uri. The parameter was added 
+		</para>
+		<para>
+		It may takes one optional string argument, the 'sender_uri' SIP URI.
+		The parameter was added 
 		for enabling BLA implementation. If present, Notification of
 		a change in published state is not sent to the respective uri
 		even though a subscription exists.
@@ -791,7 +794,7 @@ if($rm=="SUBSCRIBE")
 		MI FIFO Command Format:
 		</para>
 	<programlisting  format="linespecific">
-opensipsctl fifo refreshWatchers sip:11@192.168.2.132 presence 1
+opensips-cli -x mi refreshWatchers sip:11@192.168.2.132 presence 1
 	</programlisting>
 	</section>
 
@@ -812,7 +815,7 @@ opensipsctl fifo refreshWatchers sip:11@192.168.2.132 presence 1
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensipsctl fifo cleanup
+opensips-cli -x mi cleanup
 	  </programlisting>
 	</section>
 
@@ -832,7 +835,7 @@ opensipsctl fifo cleanup
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensipsctl fifo pres_phtable_list
+opensips-cli -x mi pres_phtable_list
 	  </programlisting>
 	</section>
 
@@ -859,7 +862,7 @@ opensipsctl fifo pres_phtable_list
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensipsctl fifo subs_phtable_list sip:222@domain2.com sip:user_1@example.com
+opensips-cli -x mi subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 	  </programlisting>
 	</section>
 
@@ -895,7 +898,7 @@ opensipsctl fifo subs_phtable_list sip:222@domain2.com sip:user_1@example.com
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-opensipsctl fifo pres_expose presence ^sip:10\.0\.5\.[0-9]*
+opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
 	  </programlisting>
 	</section>
 </section>

@@ -45,7 +45,7 @@
 			parameters the IP and PORT to test against the dispatcher list.
 			</para>
 			<para>
-			ds_is_from_list() == ds_is_in_list("$si","$sp")
+			ds_is_from_list() == ds_is_in_list("$si", "$sp")
 			</para>
 		</answer>
 	</qandaentry>

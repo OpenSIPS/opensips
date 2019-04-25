@@ -354,10 +354,12 @@ int shm_duplicate_rr(rr_t** _new, rr_t* _r, int first)
 /**
  * get first RR header and print comma separated bodies in oroute
  * - order = 0 normal; order = 1 reverse
+ * - no_change = 1 do not perform any change/linking over the input hdr list
+ *               (all parsing is localy done with no effect over the hdrs)
  * - nb_recs - input=skip number of rr; output=number of printed rrs
  */
 int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
-												unsigned int * nb_recs)
+									int no_change, unsigned int * nb_recs)
 {
 	rr_t *p;
 	int n = 0, nr=0;
@@ -366,6 +368,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 #define MAX_RR_HDRS	64
 	static str route[MAX_RR_HDRS];
 	char *cp, *start;
+	struct hdr_field tmp, *hdr;
 
 	if(iroute==NULL)
 		return 0;
@@ -375,13 +378,20 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 
 	while (iroute!=NULL)
 	{
-		if (parse_rr(iroute) < 0)
+		if (no_change) {
+			memcpy( &tmp, iroute, sizeof(tmp));
+			tmp.parsed = NULL;
+			hdr=&tmp;
+		}else{
+			hdr=iroute;
+		}
+		if (parse_rr(hdr) < 0)
 		{
 			LM_ERR("failed to parse RR\n");
 			goto error;
 		}
 
-		p =(rr_t*)iroute->parsed;
+		p =(rr_t*)hdr->parsed;
 		while (p)
 		{
 			route[n].s = p->nameaddr.name.s;
@@ -396,6 +406,8 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 			}
 			p = p->next;
 		}
+		if (no_change)
+			free_rr(&p);
 		iroute = iroute->sibling;
 	}
 

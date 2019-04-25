@@ -107,19 +107,6 @@
 ## - default: none
 # ALIASES_TYPE="DB"
 
-## control engine: FIFO or UNIXSOCK
-## - default FIFO
-# CTLENGINE=xmlrpc
-
-## path to FIFO file
-# OSIPS_FIFO="/tmp/opensips_fifo"
-
-## MI_CONNECTOR control engine: FIFO, UNIXSOCK, UDP, XMLRPC
-# MI_CONNECTOR=FIFO:/tmp/opensips_fifo
-# MI_CONNECTOR=UNIXSOCK:/tmp/opensips.sock
-# MI_CONNECTOR=UDP:192.168.2.133:8000
-# MI_CONNECTOR=XMLRPC:192.168.2.133:8000
-
 ## check ACL names; default on (1); off (0)
 # VERIFY_ACL=1
 

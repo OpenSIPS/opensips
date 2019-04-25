@@ -23,7 +23,11 @@ Emergency Call Module
               1.3.8. timer_interval (interger)
               1.3.9. contingency_hostname (string)
               1.3.10. emergency_call_server (string)
-              1.3.11. Exported Functions
+
+        1.4. Exported Functions
+
+              1.4.1. emergency_call()
+              1.4.2. failure()
 
    2. Contributors
 
@@ -309,9 +313,9 @@ modparam("emergency","contingency_hostname",“176.34,29.102:5060”)
 modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
 ...
 
-1.3.11. Exported Functions
+1.4. Exported Functions
 
-1.3.11.1.  emergency_call()
+1.4.1.  emergency_call()
 
    Checks whether the incoming call is an emergency call, case it
    is treats, and routes the call to the destination determined by
@@ -334,7 +338,7 @@ modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
         }
 ...
 
-1.3.11.2.  failure()
+1.4.2.  failure()
 
    This function is used when trying to route the emergency call
    to the destination specified by the VPC and doesn't work, then
@@ -365,9 +369,9 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Evandro Villaron (@evillaron) 149 9 10947 3011
    2. Robison Tesini (@rtesini) 63 1 3116 2038
-   3. Razvan Crainea (@razvancrainea) 20 11 311 320
-   4. Liviu Chircu (@liviuchircu) 12 7 114 169
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 44 24
+   3. Razvan Crainea (@razvancrainea) 21 12 314 323
+   4. Liviu Chircu (@liviuchircu) 13 8 115 171
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 50 27
    6. Peter Lemenkov (@lemenkov) 4 2 1 1
    7. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
    8. Julián Moreno Patiño 3 1 1 1
@@ -393,11 +397,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Nov 2018
-   2. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4. Razvan Crainea (@razvancrainea)     Jul 2015 - Apr 2017
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Oct 2016
+   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Apr 2019
+   3. Razvan Crainea (@razvancrainea)     Jul 2015 - Apr 2019
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
+   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6. Julián Moreno Patiño                Feb 2016 - Feb 2016
    7. Evandro Villaron (@evillaron)       Feb 2015 - Sep 2015
    8. Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Mar 2015
@@ -410,8 +414,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Julián Moreno Patiño, Evandro Villaron
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Julián Moreno Patiño, Evandro Villaron
    (@evillaron).
 
    Documentation Copyrights:

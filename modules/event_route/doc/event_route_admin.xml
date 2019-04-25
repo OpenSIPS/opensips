@@ -7,46 +7,46 @@
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
-		This module provides a simple way for handling different events,
-		triggered through the &osips; Event Interface, directly from the &osips;
-		script. For a specific event, a special route
-		(<emphasis>event_route</emphasis>) has to be declared in the script, and
-		should contain the code that handles the event. The route is executed by
-		the module when the corresponding event is raised by the &osips; Event
-		Interface.Since version 1.12, the way an event is handlend (sync/async)
-		should be specified from the configuration script with the desired keyword
-		following the name of the event (<emphasis>event_route[e, sync]</emphasis>).
+		This module provides a simple way for capturing and handling 
+		directly in the &osips; script of different events triggered through
+		the &osips; Event Interface
 	</para>
+	<para>
+		If you want to capture and handle a certian event, you need to
+		define a dedicated route (<emphasis>event_route</emphasis>) into the
+		&osips; script, route having as name the name/code of the
+		desired event. The route is triggered (and executed) by
+		the module when the corresponding event is raised by the &osips;
+	</para>
+	<para>
+		NOTE that there is the triggered <emphasis>event_route</emphasis> is
+		run asyncronus (and in a differen process) in regards to the code or 
+		process that generated the actual event.
+	</para>
+	<para>
+		NOTE that inside the <emphasis>event_route</emphasis> you should
+		NOT rely on anything more than the content provide by the event itself
+		(see below variable). DO NOT assume to have access to any other
+		variable or context, not even to a SIP message.
+	</para>
+
 	</section>
 
 	<section id="event-route-parameters">
 	<title>ROUTE events parameters</title>
 	<para>
-		In order to retrieve the parameters of an event, the 
-		<emphasis>fetch_event_params(pvar_list)</emphasis> function is used. It
-		receives a single parameter, that consists of a list of parameters names
-		(optional) and the pseudo-variable where the values will be stored. The
-		grammar is:
 		<para>
-			<emphasis>[ param_name= ] pvar [; [ param_name= ] pvar ]*</emphasis>
+		In order to retrieve the parameters of an event, the
+		<emphasis>$param(name)</emphasis> variable has to be used. It's
+			name can be the parameter's name, or, if an integer is specified, its
+			index inside the parameter's list.
 		</para>
 
 		Example:
 		<programlisting format="linespecific">
-fetch_event_params("$avp(first_param)");
-fetch_event_params("ip=$avp(pike_ip)");
-fetch_event_params("source=$avp(src);destination=$avp(dst)");
+xlog("first parameters is $param(1)\n");
+xlog("Pike Blocking IP is $param(ip)\n");
 </programlisting>
-
-		If the name of the parameter is not specified, the avp will be populated
-		according to the order of the parameters, as exported by the event. The
-		following code will populate the <emphasis>$avp(first)</emphasis> avp
-		with the first parameter of the event, <emphasis>$avp(second)</emphasis>
-		with the second one and so on.
-
-		<para>
-			fetch_event_params("$avp(first);$avp(second);$avp(third)");
-		</para>
 
 		<emphasis>NOTE:</emphasis> An event may be triggered within a different event, leading
 		to nested processing. This function will retrieve the parameters of the currently processed
@@ -69,8 +69,7 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 					<title>EVENT_ROUTE usage</title>
 					<programlisting format="linespecific">
 	event_route[E_PIKE_BLOCKED] {
-		fetch_event_params("ip=$avp(pike-ip)");
-		xlog("IP $avp(pike-ip) has been blocked\n");
+		xlog("IP $param(ip) has been blocked\n");
 	}
 					</programlisting>
 				</example>
@@ -131,33 +130,7 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
-
-	<section id="func_fetch_event_params" xreflabel="fetch_event_params()">
-		<title>
-		<function moreinfo="none">fetch_event_params(pvar_list)</function>
-		</title>
-		<para>
-			Retrieves the parameters of the event. For more information, please 
-			read <xref linkend="event-route-parameters"/>.
-		</para>
-		<para>
-			The the pseudo variables list as described in <xref linkend="event-route-parameters"/>.
-		</para>
-		<para>
-		This function can be used from REQUEST_ROUTE and EVENT_ROUTE.
-		</para>
-		<example>
-		<title><function>fetch_event_params</function> usage</title>
-		<programlisting format="linespecific">
-...
-fetch_event_params("$avp(first_param)"); # fetch the first parameter of an event
-fetch_event_params("ip=$avp(pike_ip)");  # fetch the ip parameter
-fetch_event_params("source=$avp(src);destination=$avp(dst)"); # fetch the source and destination parameters
-...
-</programlisting>
-		</example>
-	</section>
-
+	<para>The function does not export any function.</para>
 	</section>
 
 </chapter>

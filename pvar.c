@@ -3394,7 +3394,7 @@ int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	}
 
 	res->ri = *log_level;
-	res->rs.s = int2str( (unsigned long)res->ri, &l);
+	res->rs.s = sint2str( (long)res->ri, &l);
 	res->rs.len = l;
 
 	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
@@ -3402,40 +3402,47 @@ int pv_get_log_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
+int pv_set_xlog_level(struct sip_msg* msg, pv_param_t *param, int op,
+															pv_value_t *val)
+{
+	if(param==NULL)
+	{
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if(val==NULL || (val->flags&(PV_VAL_NULL|PV_VAL_NONE))!=0) {
+		/* reset the value to default */
+		reset_xlog_level();
+	} else {
+		if ((val->flags&PV_TYPE_INT)==0) {
+			LM_ERR("input for $xlog_level found not to be an integer\n");
+			return -1;
+		}
+		set_local_xlog_level( val->ri );
+	}
+
+	return 0;
+}
+
 int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
-#define _set_static_string(_s,_ss) {_s.s=_ss;_s.len=sizeof(_ss)-1;}
+	int l;
+
+	if (param==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
 	if(res == NULL) {
 		return -1;
 	}
 
-	switch(xlog_level) {
-	case L_ALERT:
-		_set_static_string( res->rs, DP_ALERT_TEXT);
-		break;
-	case L_CRIT:
-		_set_static_string( res->rs, DP_CRIT_TEXT);
-		break;
-	case L_ERR:
-		_set_static_string( res->rs, DP_ERR_TEXT);
-		break;
-	case L_WARN:
-		_set_static_string( res->rs, DP_WARN_TEXT);
-		break;
-	case L_NOTICE:
-		_set_static_string( res->rs, DP_NOTICE_TEXT);
-		break;
-	case L_INFO:
-		_set_static_string( res->rs, DP_INFO_TEXT);
-		break;
-	case L_DBG:
-		_set_static_string( res->rs, DP_DBG_TEXT);
-		break;
-	default:
-		return pv_get_null(msg, param, res);
-	}
+	res->ri = *xlog_level;
+	res->rs.s = sint2str( (long)res->ri, &l);
+	res->rs.len = l;
 
-	res->flags = PV_VAL_STR;
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 
 	return 0;
 }
@@ -3779,8 +3786,8 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0 },
 	{{"cfg_file", sizeof("cfg_file")-1}, PVT_CFG_FILE_NAME, pv_get_cfg_file_name, 0,
 	0, 0, 0, 0 },
-	{{"xlog_level", sizeof("xlog_level")-1}, PVT_XLOG_LEVEL, pv_get_xlog_level, 0,
-	0, 0, 0, 0 },
+	{{"xlog_level", sizeof("xlog_level")-1}, PVT_XLOG_LEVEL, pv_get_xlog_level,
+		pv_set_xlog_level, 0, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
@@ -5110,10 +5117,12 @@ static int pv_parse_param_name(pv_spec_p sp, str *in)
 	/* always an int type from now */
 	sp->pvp.pvn.u.isname.type = 0;
 	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	/* do our best to convert it to an index */
 	if (str2int(in, (unsigned int *)&sp->pvp.pvn.u.isname.name.n) < 0)
 	{
-		LM_ERR("bad param index [%.*s]\n", in->len, in->s);
-		return -1;
+		/* remember it was a string, so we can retrieve it later */
+		sp->pvp.pvn.u.isname.name.s = *in;
+		sp->pvp.pvn.u.isname.type = AVP_NAME_STR;
 	}
 	return 0;
 
@@ -5121,94 +5130,12 @@ static int pv_parse_param_name(pv_spec_p sp, str *in)
 
 static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 {
-	int index;
-	pv_value_t tv;
-
 	if (!ip)
 	{
 		LM_ERR("null parameter received\n");
 		return -1;
 	}
-
-	if (route_rec_level == -1 || !route_params[route_rec_level] || route_params_number[route_rec_level] == 0)
-	{
-		LM_DBG("no parameter specified for this route\n");
-		return pv_get_null(msg, ip, res);
-	}
-
-	if(ip->pvn.type==PV_NAME_INTSTR)
-	{
-		index = ip->pvn.u.isname.name.n;
-	} else
-	{
-		/* pvar -> it might be another $param variable! */
-		route_rec_level--;
-		if(pv_get_spec_value(msg, (pv_spec_p)(ip->pvn.u.dname), &tv)!=0)
-		{
-			LM_ERR("cannot get spec value\n");
-			route_rec_level++;
-			return -1;
-		}
-		route_rec_level++;
-
-		if(tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY)
-		{
-			LM_ERR("null or empty name\n");
-			return -1;
-		}
-		if (!(tv.flags&PV_VAL_INT) || str2int(&tv.rs,(unsigned int*)&index) < 0)
-		{
-			LM_ERR("invalid index <%.*s>\n", tv.rs.len, tv.rs.s);
-			return -1;
-		}
-	}
-
-	if (index < 1 || index > route_params_number[route_rec_level])
-	{
-		LM_DBG("no such parameter index %d\n", index);
-		return pv_get_null(msg, ip, res);
-	}
-
-	/* the parameters start at 0, whereas the index starts from 1 */
-	index--;
-	switch (route_params[route_rec_level][index].type)
-	{
-	case NULLV_ST:
-		res->rs.s = NULL;
-		res->rs.len = res->ri = 0;
-		res->flags = PV_VAL_NULL;
-		break;
-
-	case STRING_ST:
-		res->rs.s = route_params[route_rec_level][index].u.string;
-		res->rs.len = strlen(res->rs.s);
-		res->flags = PV_VAL_STR;
-		break;
-
-	case NUMBER_ST:
-		res->rs.s = int2str(route_params[route_rec_level][index].u.number, &res->rs.len);
-		res->ri = route_params[route_rec_level][index].u.number;
-		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-		break;
-
-	case SCRIPTVAR_ST:
-		route_rec_level--;
-		if(pv_get_spec_value(msg, (pv_spec_p)route_params[route_rec_level + 1][index].u.data, res)!=0)
-		{
-			LM_ERR("cannot get spec value\n");
-			route_rec_level++;
-			return -1;
-		}
-		route_rec_level++;
-		break;
-
-	default:
-		LM_ALERT("BUG: invalid parameter type %d\n",
-				 route_params[route_rec_level][index].type);
-		return -1;
-	}
-
-	return 0;
+	return route_params_run(msg, ip, res);
 }
 
 void destroy_argv_list(void)

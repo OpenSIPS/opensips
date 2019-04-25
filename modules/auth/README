@@ -509,7 +509,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 277 107 7717 6060
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 47 30 686 600
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 49 32 693 604
    3. Daniel-Constantin Mierla (@miconda) 39 21 1136 476
    4. Jiri Kuthan (@jiriatipteldotorg) 26 19 660 51
    5. Liviu Chircu (@liviuchircu) 19 12 133 251
@@ -519,11 +519,12 @@ Chapter 2. Contributors
    9. Edson Gellert Schubert 9 1 0 412
    10. Andrei Pelinescu-Onciul 7 5 23 11
 
-   All remaining contributors: Juha Heinanen (@juha-h), Dan Pascu
-   (@danpascu), Sergio Gutierrez, Maksym Sobolyev (@sobomax),
-   Anatoly Pidruchny, Konstantin Bokarius, Vlad Paiu (@vladpaiu),
-   Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Nils
-   Ohlmeier, Dusan Klinec, Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   Juha Heinanen (@juha-h), Dan Pascu (@danpascu), Sergio
+   Gutierrez, Maksym Sobolyev (@sobomax), Anatoly Pidruchny,
+   Konstantin Bokarius, Vlad Paiu (@vladpaiu), Peter Lemenkov
+   (@lemenkov), Walter Doekes (@wdoekes), Nils Ohlmeier, Dusan
+   Klinec.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -545,12 +546,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Dusan Klinec                        Dec 2015 - Dec 2015
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Dusan Klinec                        Dec 2015 - Dec 2015
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
    7.  Walter Doekes (@wdoekes)            Feb 2014 - Feb 2014
    8.  Vlad Paiu (@vladpaiu)               Mar 2012 - Mar 2012
    9.  Sergio Gutierrez                    Feb 2009 - Mar 2009

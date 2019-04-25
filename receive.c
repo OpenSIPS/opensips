@@ -148,7 +148,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			tmp, rcv_info->src_port);
 		/* if a REQUEST msg was detected (first line was successfully parsed)
 		   we should trigger the error route */
-		if ( msg->first_line.type==SIP_REQUEST && error_rlist.a!=NULL )
+		if ( msg->first_line.type==SIP_REQUEST && sroutes->error.a!=NULL )
 			run_error_route(msg, 1);
 		goto parse_error;
 	}
@@ -206,7 +206,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		if (rc & SCB_RUN_TOP_ROUTE)
 			/* run the main request route and skip post_script callbacks
 			 * if the TOBE_CONTINUE flag is returned */
-			if ( run_top_route(rlist[DEFAULT_RT].a, msg) & ACT_FL_TBCONT )
+			if ( run_top_route(sroutes->request[DEFAULT_RT].a, msg) &
+			ACT_FL_TBCONT )
 				goto end;
 
 		/* execute post request-script callbacks */
@@ -246,8 +247,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		}
 
 		/* exec the onreply routing script */
-		if (rc & SCB_RUN_TOP_ROUTE &&  onreply_rlist[DEFAULT_RT].a &&
-		    (run_top_route(onreply_rlist[DEFAULT_RT].a,msg) & ACT_FL_DROP)
+		if (rc & SCB_RUN_TOP_ROUTE && sroutes->onreply[DEFAULT_RT].a &&
+		    (run_top_route(sroutes->onreply[DEFAULT_RT].a,msg) & ACT_FL_DROP)
 		    && msg->REPLY_STATUS < 200) {
 
 			LM_DBG("dropping provisional reply %d\n", msg->REPLY_STATUS);
@@ -274,8 +275,8 @@ end:
 		context_destroy(CONTEXT_GLOBAL, ctx);
 
 	current_processing_ctx = NULL;
-	stop_expire_timer( start, execmsgthreshold, "msg processing",
-		msg->buf, msg->len, 0);
+	__stop_expire_timer( start, execmsgthreshold, "msg processing",
+		msg->buf, msg->len, 0, slow_msgs);
 	reset_longest_action_list(execmsgthreshold);
 
 	/* free possible loaded avps -bogdan */

@@ -77,16 +77,13 @@
 static int  mod_init(void);
 static int  child_init(int);
 static void mod_destroy(void);
-/*! \brief Fixup functions */
-static int registrar_fixup(void** param, int param_no);
-static int fixup_remove(void** param, int param_no);
-/*! \brief Functions */
-static int add_sock_hdr(struct sip_msg* msg, char *str, char *foo);
+static int cfg_validate(void);
 
-static int fixup_is_registered(void **param, int param_no);
-static int fixup_is_aor_registered(void **param, int param_no);
-static int fixup_is_contact_registered(void **param, int param_no);
-static int fixup_is_ip_registered(void **param, int param_no);
+/*! \brief Fixup functions */
+static int domain_fixup(void** param);
+
+/*! \brief Functions */
+static int add_sock_hdr(struct sip_msg* msg, str *str);
 
 int default_expires = 3600; 			/*!< Default expires value in seconds */
 qvalue_t default_q  = Q_UNSPECIFIED;	/*!< Default q value multiplied by 1000 */
@@ -140,58 +137,45 @@ struct sig_binds sigb;
 struct tm_binds tmb;
 
 
-/*! \brief
- * Exported functions
- */
 static cmd_export_t cmds[] = {
-	{"save",         (cmd_function)save,         1,  registrar_fixup,  0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"save",         (cmd_function)save,         2,  registrar_fixup,  0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"save",         (cmd_function)save,         3,  registrar_fixup,  0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"save",         (cmd_function)save,         4,  registrar_fixup,  0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)w_remove_2,   2,  fixup_remove,     0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)w_remove_3,   3,  fixup_remove,     0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)w_remove_4,   4,  fixup_remove,     0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"remove",       (cmd_function)_remove,      5,  fixup_remove,     0,
-		REQUEST_ROUTE|ONREPLY_ROUTE },
-	{"lookup",       (cmd_function)lookup,       1,  registrar_fixup,  0,
-		REQUEST_ROUTE | FAILURE_ROUTE },
-	{"lookup",       (cmd_function)lookup,       2,  registrar_fixup,  0,
-		REQUEST_ROUTE | FAILURE_ROUTE },
-	{"lookup",       (cmd_function)lookup,       3,  registrar_fixup,  0,
-		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE },
-	{"add_sock_hdr", (cmd_function)add_sock_hdr, 1,  fixup_str_null,   0,
-		REQUEST_ROUTE },
-	{"is_registered",      (cmd_function)is_registered, 1,
-		fixup_is_aor_registered, 0,
+	{"save", (cmd_function)save, {
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"remove", (cmd_function)_remove, {
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"lookup", (cmd_function)lookup, {
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE},
+	{"add_sock_hdr", (cmd_function)add_sock_hdr, {
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"is_registered",      (cmd_function)is_registered, 2,
-		fixup_is_aor_registered, 0,
+	{"is_registered", (cmd_function)is_registered, {
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"is_contact_registered",      (cmd_function)is_contact_registered, 1,
-		fixup_is_contact_registered, 0,
+	{"is_contact_registered", (cmd_function)is_contact_registered, {
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"is_contact_registered",      (cmd_function)is_contact_registered, 2,
-		fixup_is_contact_registered, 0,
+	{"is_ip_registered", (cmd_function)is_ip_registered, {
+		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"is_contact_registered",      (cmd_function)is_contact_registered, 3,
-		fixup_is_contact_registered, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"is_contact_registered",      (cmd_function)is_contact_registered, 4,
-		fixup_is_contact_registered, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"is_ip_registered",      (cmd_function)is_ip_registered, 3,
-		fixup_is_ip_registered, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{0,0,{{0,0,0}},0}
 };
-
 
 /*! \brief
  * Exported parameters
@@ -261,6 +245,7 @@ struct module_exports exports = {
 	0,
 	mod_destroy, /* destroy function */
 	child_init,  /* Per-child init function */
+	cfg_validate /* reload confirm function */
 };
 
 
@@ -392,6 +377,17 @@ static int mod_init(void)
 }
 
 
+static int cfg_validate(void)
+{
+	if (is_script_func_used("save", 4) && !ul.tags_in_use()) {
+		LM_ERR("save() with sharing tag was found, but the module's "
+			"configuration has no tag support, better restart\n");
+		return 0;
+	}
+	return 1;
+}
+
+
 static int child_init(int rank)
 {
 	if (rank==1) {
@@ -411,58 +407,22 @@ static int child_init(int rank)
 static int domain_fixup(void** param)
 {
 	udomain_t* d;
+	str d_nt;
 
-	if (ul.register_udomain((char*)*param, &d) < 0) {
+	if (pkg_nt_str_dup(&d_nt, (str*)*param) < 0)
+		return E_OUT_OF_MEM;
+
+	if (ul.register_udomain(d_nt.s, &d) < 0) {
 		LM_ERR("failed to register domain\n");
 		return E_UNSPEC;
 	}
+
+	pkg_free(d_nt.s);
 
 	*param = (void*)d;
 	return 0;
 }
 
-/*! \brief
- * @params: domain, AOR, contact, next_hop, sip_instance
- */
-static int fixup_remove(void** param, int param_no)
-{
-	switch (param_no) {
-	case 1:
-		return domain_fixup(param);
-	case 2:
-		return fixup_spve(param);
-	case 3:
-		return fixup_spve(param);
-	case 4:
-		return fixup_spve(param);
-	case 5:
-		return fixup_spve(param);
-
-	default:
-		LM_ERR("maximum 5 params! given at least %d\n", param_no);
-		return E_INVALID_PARAMS;
-	}
-}
-
-/*! \brief
- * Fixup for "save"+"lookup" functions - domain, flags, AOR params
- */
-static int registrar_fixup(void** param, int param_no)
-{
-	if (param_no == 1) {
-		/* name of the table */
-		return domain_fixup(param);
-	} else if (param_no == 2) {
-		/* flags */
-		return fixup_spve(param);
-	} else if (param_no == 3) {
-		/* AOR - from PVAR */
-		return fixup_sgp(param);
-	} else {
-		/* ownership tag */
-		return fixup_sgp(param);
-	}
-}
 
 static void mod_destroy(void)
 {
@@ -474,16 +434,14 @@ static void mod_destroy(void)
 #include "../../ip_addr.h"
 #include "../../ut.h"
 
-static int add_sock_hdr(struct sip_msg* msg, char *name, char *foo)
+static int add_sock_hdr(struct sip_msg* msg, str *hdr_name)
 {
 	struct socket_info* si;
 	struct lump* anchor;
-	str *hdr_name;
 	str hdr;
 	char *p;
 	str use_sock_str;
 
-	hdr_name = (str*)name;
 	si = msg->rcv.bind_address;
 
 	if(si->adv_sock_str.len) {
@@ -536,56 +494,4 @@ error1:
 	pkg_free(hdr.s);
 error:
 	return -1;
-}
-
-
-
-/*
- * fixup for domain and aor
- */
-static int fixup_is_registered(void **param, int param_no)
-{
-	udomain_t *d;
-
-	if (param_no == 1) {
-		if (ul.register_udomain((char*)*param, &d) < 0) {
-	        LM_ERR("failed to register domain\n");
-			return E_UNSPEC;
-		}
-		*param = (void*)d;
-	    return 0;
-	}
-
-	return fixup_pvar(param);
-}
-
-static int fixup_is_aor_registered(void **param, int param_no)
-{
-	if (param_no > 2) {
-		LM_ERR("invalid param number\n");
-		return E_UNSPEC;
-	}
-
-	return fixup_is_registered(param, param_no);
-}
-
-static int fixup_is_contact_registered(void **param, int param_no)
-{
-	if (param_no > 4) {
-		LM_ERR("invalid param number\n");
-		return E_UNSPEC;
-	}
-
-	return fixup_is_registered(param, param_no);
-}
-
-
-static int fixup_is_ip_registered(void **param, int param_no)
-{
-	if (param_no > 3) {
-		LM_ERR("invalid param number\n");
-		return E_UNSPEC;
-	}
-
-	return fixup_is_registered(param, param_no);
 }

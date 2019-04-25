@@ -1,0 +1,214 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		<emphasis>RabbitMQ Consumer</emphasis>
+		(<ulink url='http://www.rabbitmq.com/'>http://www.rabbitmq.com/</ulink>) 
+		is an open source messaging server. It's purpose is to
+		manage received messages in queues, taking advantage of
+		the flexible AMQP protocol.
+	</para>
+	<para>
+		Using this module you can subscribe consumers to a RabbitMQ broker in order
+		to receive AMQP messages for specified queues. The messages will be delivered
+		by triggering events through the &osips; Event Interface.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+			None.
+		</para>
+	</section>
+	
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>librabbitmq-dev</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		<para>
+			NOte that the module is not compatible with versions 0.4 or below of
+			the librabbitmq-dev library.
+		</para>
+	</section>
+	
+	</section>
+	
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+
+		<section id="param_connection_id" xreflabel="connection_id">
+		<title><varname>connection_id</varname> (string)</title>
+		<para>
+			Specify the configuration for a RabbitMQ connection. It contains a set
+			of parameters used to customize the connection to the server as well as
+			the consumer subscription. The format of the parameter is
+			<emphasis>param1=value1; param2=value2;</emphasis>.
+			The <emphasis>uri</emphasis>, <emphasis>queue</emphasis> and
+			<emphasis>event</emphasis> parameters are mandatory.
+		</para>
+		<para>
+			This parameter can be set multiple times, for each RabbitMQ
+			connection.
+		</para>
+		<para>
+			The following parameters can be used:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>uri</emphasis> - Mandatory parameter - a full
+				<emphasis>amqp</emphasis> URI as described
+				<ulink url='https://www.rabbitmq.com/uri-spec.html'>here</ulink>.
+				Missing fields in the URI will receive default values,
+				such as: <emphasis>user: guest</emphasis>,
+				<emphasis>password: guest</emphasis>,
+				<emphasis>host: localhost</emphasis>,
+				<emphasis>vhost: /</emphasis>,
+				<emphasis>port: 5672</emphasis>. SSL connections are
+				currently not available: <emphasis>amqps</emphasis>
+				URIs will be declined.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>queue</emphasis> - Mandatory parameter - the name of the
+				RabbitMQ queue to subscribe a consumer to. This parameter is mandatory.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>event</emphasis> - Mandatory parameter - the name of the &osips;
+				event that will be triggered for each AMQP message received.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>ack</emphasis> - flag that indicates to the broker
+				that messages will be acknowledged upon receival. If you do not
+				set this flag, the server will not expect ACKs and &osips; will not
+				send them.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>exclusive</emphasis> - flag that indicates to the broker
+				that exclusive consumer access is requested, meaning only this consumer
+				can access the queue.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>frame_max</emphasis> - the maximum size of an AMQP
+				frame. Default size is 131072.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>heartbeat</emphasis> - interval in seconds used
+				to send heartbeat messages. Default is disabled.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<example>
+		<title>Set <varname>connection_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# connection to a RabbitMQ server on localhost, default port
+# with a 5 seconds interval for heartbeat messages
+modparam("rabbitmq_consumer", "connection_id",
+    "uri = amqp://127.0.0.1; queue = myqueue1; event = E_Q1_MSG; heartbeat = 5;")
+...
+# consumer that acknowledges messages
+modparam("rabbitmq_consumer", "connection_id",
+    "uri = amqp://127.0.0.1; queue = myqueue2; event = E_Q2_MSG; ack;")
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="param_connect_timeout" xreflabel="connect_timeout">
+		<title><varname>connect_timeout</varname> (integer)</title>
+		<para>
+		The maximally allowed duration (in milliseconds) for the establishment
+		of a TCP connection with a RabbitMQ server.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>500</quote> (milliseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rabbitmq_consumer", "connect_timeout", 1000)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_retry_timeout" xreflabel="retry_timeout">
+		<title><varname>retry_timeout</varname> (integer)</title>
+		<para>
+		The interval (in milliseconds) after which &osips; will try to
+		re-establish a failed AMQP connection to a RabbitMQ server.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>5000</quote> (milliseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>retry_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rabbitmq_consumer", "retry_timeout", 10000)
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+	
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+		<para>The module does not export any script functions.</para>
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event-rabbitmq" xreflabel="rabbitmq">
+		<para>
+		An event with a custom name, as set in the <emphasis>event</emphasis>
+		field of the <xref linkend="param_connection_id"/> parameter,
+		will be raised for each AMQP message received.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>body</emphasis> - the AMQP message body.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	</section>
+
+</chapter>

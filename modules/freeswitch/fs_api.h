@@ -241,7 +241,7 @@ static inline int load_fs_api(struct fs_binds *fapi)
 {
 	bind_fs_t bind_fs;
 
-	bind_fs = (bind_fs_t)find_export("fs_bind", 1, 0);
+	bind_fs = (bind_fs_t)find_export("fs_bind", 0);
 	if (!bind_fs) {
 		LM_ERR("can't bind fs!\n");
 		return -1;

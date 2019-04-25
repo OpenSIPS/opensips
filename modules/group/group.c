@@ -116,7 +116,7 @@ int get_username_domain(struct sip_msg *msg, str *hf_s,
 /*
  * Check if username in specified header field is in a table
  */
-int db_is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
+int db_is_user_in(struct sip_msg* _msg, str* hf_s, str* grp_s)
 {
 	static db_ps_t my_ps = NULL;
 	db_key_t keys[3];
@@ -129,20 +129,7 @@ int db_is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 	keys[2] = &domain_column;
 	col[0]  = &group_column;
 
-	str hf_s = { NULL, 0 };
-	str grp_s = { NULL, 0 };
-
-	if(_hf ==  NULL || fixup_get_svalue(_msg, (gparam_p)_hf, &hf_s) != 0) {
-		LM_ERR("Invalid parameter URI\n");
-		return -1;
-	}
-
-	if(_grp == NULL || fixup_get_svalue(_msg, (gparam_p)_grp, &grp_s) != 0) {
-		LM_ERR("Invalid parameter grp\n");
-		return -1;
-	}
-
-	if ( get_username_domain( _msg, &hf_s, &(VAL_STR(vals)),
+	if ( get_username_domain( _msg, hf_s, &(VAL_STR(vals)),
 	&(VAL_STR(vals+2)))!=0) {
 		LM_ERR("failed to get username@domain\n");
 		return -1;
@@ -156,7 +143,7 @@ int db_is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 	VAL_TYPE(vals) = VAL_TYPE(vals + 1) = VAL_TYPE(vals + 2) = DB_STR;
 	VAL_NULL(vals) = VAL_NULL(vals + 1) = VAL_NULL(vals + 2) = 0;
 
-	VAL_STR(vals + 1) = *(&grp_s);
+	VAL_STR(vals + 1) = *grp_s;
 
 	group_dbf.use_table(group_dbh, &table);
 	CON_PS_REFERENCE(group_dbh) = &my_ps;
@@ -169,12 +156,12 @@ int db_is_user_in(struct sip_msg* _msg, char* _hf, char* _grp)
 
 	if (RES_ROW_N(res) == 0) {
 		LM_DBG("user is not in group '%.*s'\n",
-		    (grp_s.len), ZSW((grp_s.s)));
+		    (grp_s->len), ZSW((grp_s->s)));
 		group_dbf.free_result(group_dbh, res);
 		return -6;
 	} else {
 		LM_DBG("user is in group '%.*s'\n",
-			(grp_s.len), ZSW((grp_s.s)));
+			(grp_s->len), ZSW((grp_s->s)));
 		group_dbf.free_result(group_dbh, res);
 		return 1;
 	}
@@ -248,9 +235,9 @@ static unsigned int hf_type( str *str1)
  * is Group-Check.  SIP-Group is SER specific attribute and Group-Check is
  * SER specific service type value.
  */
-int aaa_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
+int aaa_is_user_in(struct sip_msg* _m, void* _hf, str* grp)
 {
-	str *grp, user_name, user, domain;
+	str user_name, user, domain;
 	dig_cred_t* cred = 0;
 	int hf_type;
 	uint32_t service;
@@ -259,8 +246,6 @@ int aaa_is_user_in(struct sip_msg* _m, char* _hf, char* _group)
 
 	struct hdr_field* h;
 	struct sip_uri *turi;
-
-	grp = (str*)_group; /* via fixup */
 
 	hf_type = (int)(long)_hf;
 

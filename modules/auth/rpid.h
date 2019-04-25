@@ -46,21 +46,15 @@ void get_rpid_avp( int *rpid_avp_p, int *rpid_avp_type_p );
 
 
 /*
- * Append RPID header field to the message
- */
-int append_rpid_hf(struct sip_msg* _m, char* _s1, char* _s2);
-
-
-/*
  * Append RPID header field to the message with parameters
  */
-int append_rpid_hf_p(struct sip_msg* _m, char* _prefix, char* _suffix);
+int append_rpid_hf(struct sip_msg* _m, str* _prefix, str* _suffix);
 
 
 /*
  * Check if SIP URI in rpid contains an e164 user part
  */
-int is_rpid_user_e164(struct sip_msg* _m, char* _s1, char* _s2);
+int is_rpid_user_e164(struct sip_msg* _m);
 
 
 #endif /* RPID_H */

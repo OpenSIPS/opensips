@@ -46,7 +46,6 @@
 #include "group_mod.h"
 #include "group.h"
 #include "re_group.h"
-#include "../../mod_fix.h"
 #include "../../aaa/aaa.h"
 
 
@@ -71,12 +70,12 @@ static int child_init(int rank);
  */
 static int mod_init(void);
 
-static int aaa_is_user_fixup(void** param, int param_no);
-static int db_is_user_fixup(void** param, int param_no);
-static int db_get_gid_fixup(void** param, int param_no);
-
-static int obsolete_fixup_0(void** param, int param_no);
-static int obsolete_fixup_1(void** param, int param_no);
+static int aaa_is_user_fixup(void** param);
+static int db_get_gid_fixup(void** param);
+static int check_dburl_fixup(void** param);
+static int check_aaaurl_fixup(void** param);
+static int obsolete_fixup_0(void** param);
+static int obsolete_fixup_1(void** param);
 
 #define TABLE "grp"
 #define TABLE_LEN (sizeof(TABLE) - 1)
@@ -132,19 +131,27 @@ aaa_map vals[V_MAX];
  * Exported functions
  */
 static cmd_export_t cmds[] = {
-	{"is_user_in",      (cmd_function)NULL, 2,  obsolete_fixup_0, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"get_user_group",  (cmd_function)NULL, 2,  obsolete_fixup_1, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"aaa_is_user_in", (cmd_function)aaa_is_user_in, 2, aaa_is_user_fixup,     0,
-			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"db_is_user_in",      (cmd_function)db_is_user_in, 2, db_is_user_fixup, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{"db_get_user_group",  (cmd_function)get_user_group, 2, db_get_gid_fixup, 0,
-			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-	{0, 0, 0, 0, 0, 0}
+	{"is_user_in", (cmd_function)NULL, {
+		{CMD_PARAM_STR,obsolete_fixup_0,0},
+		{CMD_PARAM_STR,obsolete_fixup_0,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"get_user_group", (cmd_function)NULL, {
+		{CMD_PARAM_STR,obsolete_fixup_1,0},
+		{CMD_PARAM_STR,obsolete_fixup_1,0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"aaa_is_user_in", (cmd_function)aaa_is_user_in, {
+		{CMD_PARAM_STR, aaa_is_user_fixup, 0},
+		{CMD_PARAM_STR, check_aaaurl_fixup, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"db_is_user_in", (cmd_function)db_is_user_in, {
+		{CMD_PARAM_STR, check_dburl_fixup, 0},
+		{CMD_PARAM_STR, check_dburl_fixup, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"db_get_user_group", (cmd_function)get_user_group, {
+		{CMD_PARAM_STR, check_dburl_fixup, 0},
+		{CMD_PARAM_VAR, db_get_gid_fixup, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 };
-
 
 /*
  * Exported parameters
@@ -195,7 +202,8 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	destroy,    /* destroy function */
-	child_init  /* child initialization function */
+	child_init, /* child initialization function */
+	0           /* reload confirm function */
 };
 
 
@@ -299,7 +307,7 @@ static void destroy(void)
 }
 
 
-static int obsolete_fixup_0(void** param, int param_no) {
+static int obsolete_fixup_0(void** param) {
 
 	LM_ERR("You are using is_user_in function that is now obsolete. \
 If you want to use it with DB support, use db_is_user_in. \
@@ -308,7 +316,7 @@ If you want to use it with AAA support, use aaa_is_user_in.\n");
 	return E_CFG;
 }
 
-static int obsolete_fixup_1(void** param, int param_no) {
+static int obsolete_fixup_1(void** param) {
 
 	LM_ERR("You are get_user_group function that has been renamed\
 into db_get_user_group\n");
@@ -316,91 +324,65 @@ into db_get_user_group\n");
 	return E_CFG;
 }
 
-static int db_get_gid_fixup(void** param, int param_no)
+static int db_get_gid_fixup(void** param)
 {
-	pv_spec_t *sp;
-	str  name;
-
 	if (!db_url.s) {
 		LM_ERR("no database url\n");
 		return E_CFG;
 	}
 
-	if (param_no == 1) {
-		return fixup_spve_spve(param, param_no);
-	} else if (param_no == 2) {
-		name.s = (char*)*param;
-		name.len = strlen(name.s);
-		sp = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
-		if (sp == NULL) {
-			LM_ERR("no more pkg memory\n");
-			return E_UNSPEC;
-		}
-		if(pv_parse_spec(&name, sp)==NULL || sp->type!=PVT_AVP)
-		{
-			LM_ERR("bad AVP spec <%s>\n", name.s);
-			pv_spec_free(sp);
-			return E_UNSPEC;
-		}
-
-		*param = sp;
+	if (((pv_spec_t *)*param)->type!=PVT_AVP) {
+		LM_ERR("return parameter must be an AVP\n");
+		return E_SCRIPT;
 	}
 
 	return 0;
 }
 
-
-static int aaa_is_user_fixup(void** param, int param_no)
+static int check_dburl_fixup(void** param)
 {
-	void* ptr;
-	str* s;
+	if (!db_url.s) {
+		LM_ERR("no database url\n");
+		return E_CFG;
+	}
+
+	return 0;
+}
+
+static int aaa_is_user_fixup(void** param)
+{
+	static str ru_s = str_init("Request-URI");
+	static str to_s = str_init("To");
+	static str fr_s = str_init("From");
+	static str cred_s = str_init("Credentials");
 
 	if (!aaa_proto_url.s) {
 		LM_ERR("no aaa protocol url\n");
 		return E_CFG;
 	}
 
-	if (param_no == 1) {
-		ptr = *param;
-
-		if (!strcasecmp((char*)*param, "Request-URI")) {
-			*param = (void*)1;
-		} else if (!strcasecmp((char*)*param, "To")) {
-			*param = (void*)2;
-		} else if (!strcasecmp((char*)*param, "From")) {
-			*param = (void*)3;
-		} else if (!strcasecmp((char*)*param, "Credentials")) {
-			*param = (void*)4;
-		} else {
-			LM_ERR("unsupported Header Field identifier\n");
-			return E_UNSPEC;
-		}
-
-		pkg_free(ptr);
-	} else if (param_no == 2) {
-
-		s = (str*)pkg_malloc(sizeof(str));
-		if (!s) {
-			LM_ERR("no pkg memory left\n");
-			return E_UNSPEC;
-		}
-
-		s->s = (char*)*param;
-		s->len = strlen(s->s);
-		*param = (void*)s;
+	if (!str_strcasecmp((str*)*param, &ru_s)) {
+		*param = (void*)1;
+	} else if (!str_strcasecmp((str*)*param, &to_s)) {
+		*param = (void*)2;
+	} else if (!str_strcasecmp((str*)*param, &fr_s)) {
+		*param = (void*)3;
+	} else if (!str_strcasecmp((str*)*param, &cred_s)) {
+		*param = (void*)4;
+	} else {
+		LM_ERR("unsupported Header Field identifier\n");
+		return E_UNSPEC;
 	}
 
 	return 0;
 }
 
-
-static int db_is_user_fixup(void** param, int param_no) {
-
-	if (db_url.s) {
-		fixup_spve_spve(param, param_no);
-		return 0;
+static int check_aaaurl_fixup(void** param)
+{
+	if (!aaa_proto_url.s) {
+		LM_ERR("no aaa protocol url\n");
+		return E_CFG;
 	}
 
-	LM_ERR("no database url\n");
-	return E_CFG;
+	return 0;
 }

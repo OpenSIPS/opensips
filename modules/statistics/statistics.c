@@ -40,37 +40,13 @@
 #include "stats_funcs.h"
 
 
-
-static int reg_param_stat( modparam_t type, void* val);
-static int reg_stat_group( modparam_t type, void* val);
-static int mod_init(void);
-static void mod_destroy(void);
-static int w_update_stat(struct sip_msg* msg, char* stat, char* n);
-static int w_reset_stat(struct sip_msg* msg, char* stat, char* foo);
-static int fixup_stat(void** param, int param_no);
-static int fixup_iter_init(void** param, int param_no);
-static int fixup_iter_next(void** param, int param_no);
-static int _fixup_iter_param(void **param);
-
-int pv_parse_name(pv_spec_p sp, str *in);
-int pv_set_stat(struct sip_msg* msg, pv_param_t *param, int op,
-													pv_value_t *val);
-int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
-static int w_stat_iter_init(struct sip_msg *msg, char *module, char *pv_iter);
-static int w_stat_iter_next(struct sip_msg *msg, char *key, char *val, char *pv_iter);
-
-
 #define STAT_PARAM_TYPE_STAT  1
 #define STAT_PARAM_TYPE_NAME  2
-#define STAT_PARAM_TYPE_PVAR  3
-#define STAT_PARAM_TYPE_FMT   4
 struct stat_param {
 	unsigned int type;
 	union {
 		stat_var   *stat;
-		pv_spec_t  *pvar;
 		str        *name;
-		pv_elem_t  *format;
 	} u;
 };
 
@@ -80,22 +56,50 @@ struct stat_iter {
 	struct list_head list;
 };
 
+static int reg_param_stat( modparam_t type, void* val);
+static int reg_stat_group( modparam_t type, void* val);
+static int mod_init(void);
+static void mod_destroy(void);
+static int w_update_stat(struct sip_msg *msg, struct stat_param *sp, int *n);
+static int w_reset_stat(struct sip_msg* msg, struct stat_param *sp);
+static int fixup_stat(void** param);
+static int fixup_free_stat(void** param);
+static int fixup_iter_param(void **param);
+static int fixup_check_stat_group(void **param);
+
+int pv_parse_name(pv_spec_p sp, str *in);
+int pv_set_stat(struct sip_msg* msg, pv_param_t *param, int op,
+													pv_value_t *val);
+int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
+static int w_stat_iter_init(struct sip_msg *msg, str *group, struct stat_iter *iter);
+static int w_stat_iter_next(struct sip_msg *msg, pv_spec_t *key, pv_spec_t *val,
+						struct stat_iter *iter);
+
 struct list_head script_iters;
 
+
 static cmd_export_t cmds[]={
-	{"update_stat",  (cmd_function)w_update_stat,  2, fixup_stat, 0,
+	{"update_stat", (cmd_function)w_update_stat, {
+		{CMD_PARAM_STR, fixup_stat, fixup_free_stat},
+		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"reset_stat",   (cmd_function)w_reset_stat,    1, fixup_stat, 0,
+	{"reset_stat", (cmd_function)w_reset_stat, {
+		{CMD_PARAM_STR, fixup_stat, fixup_free_stat}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"stat_iter_init",  (cmd_function)w_stat_iter_init,  2, fixup_iter_init, 0,
+	{"stat_iter_init", (cmd_function)w_stat_iter_init, {
+		{CMD_PARAM_STR, fixup_check_stat_group, 0},
+		{CMD_PARAM_STR, fixup_iter_param, 0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"stat_iter_next",  (cmd_function)w_stat_iter_next,  3, fixup_iter_next, 0,
+	{"stat_iter_next",  (cmd_function)w_stat_iter_next, {
+		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_STR, fixup_iter_param, 0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|
 		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{0,0,0,0,0,0}
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t mod_params[]={
@@ -130,7 +134,8 @@ struct module_exports exports= {
 	mod_init,			/* module initialization function */
 	0,					/* reply processing function */
 	mod_destroy,		/* module destroy function */
-	0					/* per-child init function */
+	0,					/* per-child init function */
+	0					/* reload confirm function */
 };
 
 
@@ -224,78 +229,52 @@ static int resolve_stat(str *in, str *out_group, str *out_name, int *out_grp_idx
 	return 0;
 }
 
-static int fixup_stat(void** param, int param_no)
+static int fixup_stat(void** param)
 {
 	struct stat_param *sp;
-	pv_elem_t *format;
-	str s, sname, group;
+	str sname, group;
 	int grp_idx __attribute__((unused));
 
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
-	if (param_no==1) {
-		/* reference to the statistic name */
-		sp = (struct stat_param *)pkg_malloc(sizeof(struct stat_param));
-		if (sp==NULL) {
-			LM_ERR("no more pkg mem (%d)\n", (int)sizeof(struct stat_param));
-			return E_OUT_OF_MEM;
-		}
-		memset( sp, 0 , sizeof(struct stat_param) );
-		/* parse it */
-		if (pv_parse_format( &s, &sp->u.format)!=0) {
-			LM_ERR("failed to parse statistic name format <%s> \n",s.s);
-			return E_CFG;
-		}
-		format = sp->u.format;
-		/* is it only one token ? */
-		if (format->next==NULL && (format->text.len==0 || format->spec.type==PVT_NONE)) {
-			if (format->text.s && format->text.len) {
-				if (resolve_stat(&format->text, &group, &sname, &grp_idx) != 0) {
-					return E_CFG;
-				}
-				/* text token */
-				sp->u.stat = __get_stat(&sname, grp_idx);
-				if (sp->u.stat) {
-					/* statistic found */
-					sp->type = STAT_PARAM_TYPE_STAT;
-				} else {
-					/* stat not found, keep the name for later */
-					sp->type = STAT_PARAM_TYPE_NAME;
-					sp->u.name = &format->text;
-				}
-			} else {
-				/* pvar token */
-				sp->type = STAT_PARAM_TYPE_PVAR;
-				sp->u.pvar = &format->spec;
-			}
-			/* we do not free "format" as we keep links inside of it! */
-		} else {
-			/* if more tokens, keep the entire format */
-			sp->type = STAT_PARAM_TYPE_FMT;
-		}
-		/* do not free the original string, the "format" points inside ! */
-		*param=(void*)sp;
-		return 0;
-	} else if (param_no==2) {
-		/* update value - integer or variable */
-		return fixup_igp(param);
+	sp = (struct stat_param *)pkg_malloc(sizeof(struct stat_param));
+	if (sp==NULL) {
+		LM_ERR("no more pkg mem (%d)\n", (int)sizeof(struct stat_param));
+		return E_OUT_OF_MEM;
 	}
+	memset( sp, 0 , sizeof(struct stat_param) );
+
+	if (resolve_stat((str*)*param, &group, &sname, &grp_idx) != 0) {
+		return E_CFG;
+	}
+	/* text token */
+	sp->u.stat = __get_stat(&sname, grp_idx);
+	if (sp->u.stat) {
+		/* statistic found */
+		sp->type = STAT_PARAM_TYPE_STAT;
+	} else {
+		/* stat not found, keep the name for later */
+		sp->type = STAT_PARAM_TYPE_NAME;
+		sp->u.name = *param;
+	}
+
 	return 0;
 }
 
-static int _fixup_iter_param(void **param)
+static int fixup_free_stat(void** param)
 {
-	str name;
+	pkg_free(*param);
+	return 0;
+}
+
+static int fixup_iter_param(void **param)
+{
 	struct list_head *ele;
 	struct stat_iter *iter;
 
 	list_for_each(ele, &script_iters) {
 		iter = list_entry(ele, struct stat_iter, list);
 
-		name.s = *param;
-		name.len = strlen(name.s);
-		if (str_strcmp(&name, &iter->name) == 0) {
-			*param = &iter->cur;
+		if (str_strcmp((str*)*param, &iter->name) == 0) {
+			*param = iter;
 			return 0;
 		}
 	}
@@ -307,109 +286,54 @@ static int _fixup_iter_param(void **param)
 	}
 	memset(iter, 0, sizeof *iter);
 
-	iter->name.s = *param;
-	iter->name.len = strlen(*param);
+	if (pkg_str_dup(&iter->name, (str*)*param) < 0) {
+		LM_ERR("oom!\n");
+		return E_OUT_OF_MEM;
+	}
+
 	list_add(&iter->list, &script_iters);
 
-	*param = &iter->cur;
+	*param = iter;
 	return 0;
 }
 
-static int fixup_iter_init(void** param, int param_no)
+static int fixup_check_stat_group(void **param)
 {
-	str *group;
-
-	if (param_no == 1) {
-		group = pkg_malloc(sizeof *group);
-		if (!group) {
-			LM_ERR("oom\n");
-			return E_OUT_OF_MEM;
-		}
-		group->s = *param;
-		group->len = strlen(*param);
-		if (!get_stat_module(group)) {
-			pkg_free(group);
-			LM_ERR("stat group '%.*s' must be explicitly defined using the "
-			       "'stat_groups' module parameter!\n", group->len, group->s);
-			return E_UNSPEC;
-		}
-		*param = group;
-	} else if (param_no == 2) {
-		return _fixup_iter_param(param);
-	} else {
-		LM_ERR("invalid parameter number %d\n", param_no);
+	if (!get_stat_module((str*)*param)) {
+		LM_ERR("stat group '%.*s' must be explicitly defined using the "
+		    "'stat_groups' module parameter!\n",
+		    ((str*)*param)->len, ((str*)*param)->s);
 		return E_UNSPEC;
 	}
-
 	return 0;
 }
 
-static int fixup_iter_next(void** param, int param_no)
+static int w_update_stat(struct sip_msg *msg, struct stat_param *sp, int *n)
 {
-	if (param_no == 1 || param_no == 2) {
-	    return fixup_pvar(param);
-	}
-
-	if (param_no == 3) {
-	    return _fixup_iter_param(param);
-	}
-
-	LM_ERR("invalid parameter number %d\n", param_no);
-	return E_UNSPEC;
-}
-
-static int w_update_stat(struct sip_msg *msg, char *stat_p, char *val)
-{
-	struct stat_param *sp = (struct stat_param *)stat_p;
-	pv_value_t pv_val;
 	stat_var *stat;
-	int n;
 	str name, group;
 	int grp_idx __attribute__((unused));
 
-	/* evaluate the value first */
-	if (fixup_get_ivalue( msg, (gparam_p)val, &n)<0) {
-		LM_ERR("failed to extran a numerical value\n");
-		return -1;
-	}
 	/* update with 0 value makes no sense */
-	if (n==0)
+	if (*n==0)
 		return 1;
 
 	if (sp->type==STAT_PARAM_TYPE_STAT) {
 		/* we have the statistic */
-		update_stat( sp->u.stat, (long)n);
+		update_stat( sp->u.stat, (long)*n);
 		return 1;
 	}
 
-	if (sp->type==STAT_PARAM_TYPE_PVAR) {
-		/* take name from PVAR */
-		if (pv_get_spec_value(msg, sp->u.pvar, &pv_val)!=0 ||
-		(pv_val.flags & PV_VAL_STR)==0 ) {
-			LM_ERR("failed to get pv string value\n");
-			return -1;
-		}
-	} else if (sp->type==STAT_PARAM_TYPE_FMT) {
-		/* take name from FMT */
-		if (pv_printf_s( msg, sp->u.format, &(pv_val.rs) )!=0 ) {
-			LM_ERR("failed to get format string value\n");
-			return -1;
-		}
-	} else if (sp->type==STAT_PARAM_TYPE_NAME) {
-		/* take name from STRING */
-		pv_val.rs = *sp->u.name;
-	}
+	LM_DBG("needed statistic is <%.*s>\n", sp->u.name->len, sp->u.name->s);
 
-	LM_DBG("needed statistic is <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
-
-	if (resolve_stat(&pv_val.rs, &group, &name, &grp_idx) != 0) {
+	if (resolve_stat(sp->u.name, &group, &name, &grp_idx) != 0) {
 		return E_CFG;
 	}
 
 	stat = __get_stat(&name, grp_idx);
 	if ( stat==NULL ) {
 		/* stats not found -> create it */
-		LM_DBG("creating statistic <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
+		LM_DBG("creating statistic <%.*s>\n", sp->u.name->len, sp->u.name->s);
 
 		if (grp_idx > 0) {
 			if (__register_dynamic_stat(&group, &name, &stat) != 0) {
@@ -424,22 +348,16 @@ static int w_update_stat(struct sip_msg *msg, char *stat_p, char *val)
 				return -1;
 			}
 		}
-		if (sp->type==STAT_PARAM_TYPE_NAME) {
-			sp->u.stat = stat;
-			sp->type=STAT_PARAM_TYPE_STAT;
-		}
 	}
 
 	/* statistic exists ! */
-	update_stat( stat, (long)n);
+	update_stat( stat, (long)*n);
 	return 1;
 }
 
 
-static int w_reset_stat(struct sip_msg *msg, char* stat_p, char *foo)
+static int w_reset_stat(struct sip_msg *msg, struct stat_param* sp)
 {
-	struct stat_param *sp = (struct stat_param *)stat_p;
-	pv_value_t pv_val;
 	stat_var *stat;
 	str group, name;
 	int grp_idx __attribute__((unused));
@@ -450,34 +368,16 @@ static int w_reset_stat(struct sip_msg *msg, char* stat_p, char *foo)
 		return 1;
 	}
 
-	if (sp->type==STAT_PARAM_TYPE_PVAR) {
-		/* take name from PVAR */
-		if (pv_get_spec_value(msg, sp->u.pvar, &pv_val)!=0 ||
-		(pv_val.flags & PV_VAL_STR)==0 ) {
-			LM_ERR("failed to get pv string value\n");
-			return -1;
-		}
-	} else if (sp->type==STAT_PARAM_TYPE_FMT) {
-		/* take name from FMT */
-		if (pv_printf_s( msg, sp->u.format, &(pv_val.rs) )!=0 ) {
-			LM_ERR("failed to get format string value\n");
-			return -1;
-		}
-	} else if (sp->type==STAT_PARAM_TYPE_NAME) {
-		/* take name from STRING */
-		pv_val.rs = *sp->u.name;
-	}
+	LM_DBG("needed statistic is <%.*s>\n", sp->u.name->len, sp->u.name->s);
 
-	LM_DBG("needed statistic is <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
-
-	if (resolve_stat(&pv_val.rs, &group, &name, &grp_idx) != 0) {
+	if (resolve_stat(sp->u.name, &group, &name, &grp_idx) != 0) {
 		return E_CFG;
 	}
 
 	stat = __get_stat(&name, grp_idx);
 	if ( stat==NULL ) {
 		/* stats not found -> create it */
-		LM_DBG("creating statistic <%.*s>\n", pv_val.rs.len, pv_val.rs.s);
+		LM_DBG("creating statistic <%.*s>\n", sp->u.name->len, sp->u.name->s);
 
 		if (grp_idx > 0) {
 			if (__register_dynamic_stat(&group, &name, &stat) != 0) {
@@ -491,10 +391,6 @@ static int w_reset_stat(struct sip_msg *msg, char* stat_p, char *foo)
 				       name.len, name.s);
 				return -1;
 			}
-		}
-		if (sp->type==STAT_PARAM_TYPE_NAME) {
-			sp->u.stat = stat;
-			sp->type=STAT_PARAM_TYPE_STAT;
 		}
 	}
 
@@ -629,26 +525,25 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 	return 0;
 }
 
-static int w_stat_iter_init(struct sip_msg *msg, char *group, char *ppstat)
+static int w_stat_iter_init(struct sip_msg *msg, str *group, struct stat_iter *iter)
 {
 	module_stats *ms;
-	str *grp = (str *)group;
-	stat_var **stat = (stat_var **)ppstat;
 
-	ms = get_stat_module((str *)group);
+	ms = get_stat_module(group);
 	if (!ms) {
-		LM_ERR("unknown group %.*s\n", grp->len, grp->s);
+		LM_ERR("unknown group %.*s\n", group->len, group->s);
 		return -1;
 	}
-	*stat = ms->head;
+	iter->cur = ms->head;
 
 	return 1;
 }
 
-static int w_stat_iter_next(struct sip_msg *msg, char *key, char *val, char *pps)
+static int w_stat_iter_next(struct sip_msg *msg, pv_spec_t *key, pv_spec_t *val,
+						struct stat_iter *iter)
 {
 	pv_value_t pval;
-	stat_var **ppstat = (stat_var **)pps, *stat = *ppstat;
+	stat_var *stat = iter->cur;
 
 	if (!stat) {
 		LM_DBG("no more stats to iterate\n");
@@ -657,7 +552,7 @@ static int w_stat_iter_next(struct sip_msg *msg, char *key, char *val, char *pps
 
 	pval.flags = PV_VAL_STR;
 	pval.rs = stat->name;
-	if (pv_set_value(msg, (pv_spec_p)key, 0, &pval) != 0) {
+	if (pv_set_value(msg, key, 0, &pval) != 0) {
 		LM_ERR("failed to set pv value for stat key '%.*s'\n",
 		       stat->name.len, stat->name.s);
 		return -1;
@@ -665,13 +560,14 @@ static int w_stat_iter_next(struct sip_msg *msg, char *key, char *val, char *pps
 
 	pval.flags = PV_VAL_INT|PV_TYPE_INT;
 	pval.ri = get_stat_val(stat);
-	if (pv_set_value(msg, (pv_spec_p)val, 0, &pval) != 0) {
+	if (pv_set_value(msg, val, 0, &pval) != 0) {
 		LM_ERR("failed to set pv value for stat val '%d'\n",
 		       pval.ri);
 		return -1;
 	}
 
-	*ppstat = stat->lnext;
+	iter->cur = stat->lnext;
+
 	return 1;
 }
 

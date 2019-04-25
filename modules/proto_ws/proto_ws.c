@@ -107,10 +107,8 @@ static int ws_port = WS_DEFAULT_PORT;
 
 
 static cmd_export_t cmds[] = {
-	{"proto_init", (cmd_function)proto_ws_init, 0, 0, 0, 0},
-	{0, 0, 0, 0, 0, 0}
+	{"proto_init", (cmd_function)proto_ws_init, {{0,0,0}},0},
 };
-
 
 static param_export_t params[] = {
 	/* XXX: should we drop the ws prefix? */
@@ -163,6 +161,7 @@ struct module_exports exports = {
 	0,          /* response function */
 	0,          /* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 
@@ -221,7 +220,8 @@ static int mod_init(void)
 	*trace_is_on = trace_is_on_tmp;
 	if ( trace_filter_route ) {
 		trace_filter_route_id =
-			get_script_route_ID_by_name( trace_filter_route, rlist, RT_NO);
+			get_script_route_ID_by_name( trace_filter_route, 
+				sroutes->request, RT_NO);
 	}
 
 	return 0;

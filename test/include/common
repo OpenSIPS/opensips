@@ -1,1 +1,1 @@
-DB_ALL_MOD="acc|alias_db|auth_db|dialog|dialplan|dispatcher|domain|domainpolicy|group|imc|msilo|siptrace|speeddial|uri_db|usrloc|permissions|userblacklist"
+DB_ALL_MOD="acc|alias_db|auth_db|dialog|dialplan|dispatcher|domain|domainpolicy|group|imc|msilo|tracer|speeddial|uri_db|usrloc|permissions|userblacklist"

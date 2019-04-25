@@ -42,10 +42,11 @@
 	(((d)>='0') && ((d)<= '9'))
 
 extern int tree_size;
+struct head_db;
 
-#define INIT_PTREE_NODE(p, n) \
+#define INIT_PTREE_NODE(f, p, n) \
 do {\
-	(n) = (ptree_t*)shm_malloc(sizeof(ptree_t));\
+	(n) = (ptree_t*)func_malloc(f, sizeof(ptree_t));\
 	if(NULL == (n))\
 		goto err_exit;\
 	tree_size+=sizeof(ptree_t);\
@@ -171,7 +172,8 @@ print_interim(
 
 int
 del_tree(
-	ptree_t *
+	ptree_t *,
+	osips_free_f
 	);
 
 int
@@ -180,7 +182,9 @@ add_prefix(
 	/* prefix */
 	str*,
 	rt_info_t *,
-	unsigned int
+	unsigned int,
+	osips_malloc_f,
+	osips_free_f
 	);
 
 rt_info_t*
@@ -196,7 +200,9 @@ int
 add_rt_info(
 	ptree_node_t*,
 	rt_info_t*,
-	unsigned int
+	unsigned int,
+	osips_malloc_f,
+	osips_free_f
 	);
 
 pgw_t*
@@ -222,12 +228,14 @@ get_carrier_by_id(
 
 void
 del_rt_list(
-	rt_info_wrp_t *rl
+	rt_info_wrp_t *rl,
+	osips_free_f
 	);
 
 void
 free_rt_info(
-	rt_info_t*
+	rt_info_t*,
+	osips_free_f
 	);
 
 rt_info_t*

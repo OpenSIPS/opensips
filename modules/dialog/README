@@ -125,6 +125,7 @@ dialog Module
               1.9.10. dlg_restore_db
               1.9.11. list_all_profiles
               1.9.12. dlg_push_var
+              1.9.13. dlg_send_sequential
 
         1.10. Exported Pseudo-Variables
 
@@ -1713,13 +1714,13 @@ set_dlg_sharing_tag("vip1");
 
    MI FIFO Command Format:
                 ## list all ongoing dialogs
-                opensipsctl fifo dlg_list
+                opensips-cli -x mi dlg_list
                 ## list the dialog by callid and From TAG
-                opensipsctl fifo dlg_list abcdrssfrs122444@192.168.1.1 A
-AdfeEFF33
+                opensips-cli -x mi dlg_list abcdrssfrs122444@192.168.1.1
+ AAdfeEFF33
                 ## list 10 dialogs, starting from the position 40
                 ## (in the list of all ongoing dialogs)
-                opensipsctl fifo dlg_list 40 10
+                opensips-cli -x mi dlg_list 40 10
 
 1.9.2. dlg_list_ctx
 
@@ -1734,7 +1735,7 @@ AdfeEFF33
    Parameters: see “dlg_list”
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_list_ctx
+                opensips-cli -x mi dlg_list_ctx
 
 1.9.3. dlg_end_dlg
 
@@ -1758,10 +1759,10 @@ AdfeEFF33
 
    MI FIFO Command Format:
                 # terminate the dialog via the internal Dialog-ID
-                opensipsctl fifo dlg_end_dlg 1391569858236
+                opensips-cli -x mi dlg_end_dlg 1391569858236
                 # terminate the dialog via its SIP Call-ID
-                opensipsctl fifo dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGI
-wZjAzNGM1ZDY
+                opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZ
+GIwZjAzNGM1ZDY
 
 1.9.4. profile_get_size
 
@@ -1780,7 +1781,7 @@ wZjAzNGM1ZDY
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensipsctl fifo profile_get_size inbound_calls
+                opensips-cli -x mi profile_get_size inbound_calls
 
 1.9.5. profile_list_dlgs
 
@@ -1801,7 +1802,7 @@ wZjAzNGM1ZDY
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensipsctl fifo profile_list_dlgs inbound_calls
+                opensips-cli -x mi profile_list_dlgs inbound_calls
 
 1.9.6. profile_get_values
 
@@ -1816,7 +1817,7 @@ wZjAzNGM1ZDY
      * profile - name of the profile to list the dialog for.
 
    MI FIFO Command Format:
-                opensipsctl fifo profile_get_values inbound_calls
+                opensips-cli -x mi profile_get_values inbound_calls
 
 1.9.7. profile_end_dlgs
 
@@ -1833,7 +1834,7 @@ wZjAzNGM1ZDY
        only the dialogs with the specified value
 
    MI FIFO Command Format:
-                opensipsctl fifo profile_end_dlgs inbound_calls
+                opensips-cli -x mi profile_end_dlgs inbound_calls
 
 1.9.8. dlg_db_sync
 
@@ -1848,7 +1849,7 @@ wZjAzNGM1ZDY
    It takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_db_sync
+                opensips-cli -x mi dlg_db_sync
 
 1.9.9. dlg_cluster_sync
 
@@ -1867,7 +1868,7 @@ wZjAzNGM1ZDY
    It takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_cluster_sync
+                opensips-cli -x mi dlg_cluster_sync
 
 1.9.10. dlg_restore_db
 
@@ -1880,7 +1881,7 @@ wZjAzNGM1ZDY
    It takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_restore_db
+                opensips-cli -x mi dlg_restore_db
 
 1.9.11. list_all_profiles
 
@@ -1892,7 +1893,7 @@ wZjAzNGM1ZDY
    Parameters: It takes no parameters
 
    MI FIFO Command Format:
-                opensipsctl fifo list_all_profiles
+                opensips-cli -x mi list_all_profiles
 
 1.9.12. dlg_push_var
 
@@ -1909,8 +1910,83 @@ wZjAzNGM1ZDY
        actual Call-ID.
 
    MI FIFO Command Format:
-                opensipsctl fifo dlg_push_var var_name var_value DID1 [
-DID2 DID3 ...  DIDN ]
+                opensips-cli -x mi dlg_push_var var_name var_value DID1
+[ DID2 DID3 ...  DIDN ]
+
+1.9.13. dlg_send_sequential
+
+   Sends a sequential request within an ongoing dialog.
+
+   Name: dlg_send_sequential
+
+   Parameters:
+     * callid - the callid of the dialog you need to trigger the
+       sequentiam message for.
+     * method - (optional) the method used for the sequential
+       mesasge. Default value is INVITE.
+     * mode - (optional) can be used to tune the behavior of the
+       sequential message. Possible values for the mode are:
+          + caller - (default) sends the sequential message to the
+            caller. This mode can be useful in high availability
+            scenarios when you want to update the upstream's
+            routing set, specifically the contact.
+          + callee - same as caller, but sends the sequential
+            message to the callee.
+          + challenge - sends a sequential INVITE (or UPDATE) to
+            the caller to challenge it for its advertised SDP
+            body. When the body is received, it is forwarded to
+            the callee. This mode is useful when trying to change
+            both endpoints (upstream and downstream) routing set.
+            It can also be useful when trying to trigger a
+            re-negotiation for SDP body.
+          + challenge-caller - same as challenge
+          + challenge-caller - same as challenge-caller, only that
+            it first challenges the callee, instead of the caller.
+     * body - (optional) can be used to specify a body for the
+       initial sequential message. Possible values for the body
+       parameter are:
+          + none - (default) no body added to the sequential
+            message.
+          + inbound - advertises in the body of the sequential
+            message generated the last body received from its
+            pair. For example, if the mode=challenge-caller, the
+            message will contain the body sent to OpenSIPS by the
+            callee. This is useful when you need to alter the body
+            previously sent to the caller, because you want to
+            re-negociate a different media proxy for the call.
+            This can be achieved by catching the generated request
+            in local_route, and re-engage the Media proxy.
+          + outbound - advertises in the body of the sequential
+            message generated the last body sent to that UAC. For
+            example, if the mode=challenge-caller, the message
+            will contain the last body sent by OpenSIPS to the
+            caller. This is useful in a high availability scenario
+            when trying to re-negociate the contact of the server,
+            but there is no need to alter the body sent earlier.
+          + custom:BODY - this can be used to specify a specific
+            body for the sequential message generated.
+
+   This functions runs in asynchronous mode and returns the status
+   code and reason of the last reply received for either the
+   challenge or normal mode.
+
+   MI Command Format:
+                        opensips-cli -x mi dlg_send_sequential \
+                                callid=5291231-testing@127.0.0.1
+
+   MI Command used to trigger media re-negotiation:
+                        opensips-cli -x mi dlg_send_sequential \
+                                callid=5291231-testing@127.0.0.1 \
+                                mode=challenge \
+                                body=inbound
+
+   MI Command used to UPDATE the callee's remote Contact after a
+   server failover:
+                        opensips-cli -x mi dlg_send_sequential \
+                                callid=5291231-testing@127.0.0.1 \
+                                mode=challenge-callee \
+                                body=outbound \
+                                method=UPDATE
 
 1.10. Exported Pseudo-Variables
 
@@ -2171,11 +2247,11 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 394 248 11836 2951
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 400 253 11888 2959
    2. Vlad Paiu (@vladpaiu) 250 140 7051 3004
-   3. Razvan Crainea (@razvancrainea) 137 103 2735 623
-   4. Vlad Patrascu (@rvlad-patrascu) 119 55 2798 2347
-   5. Liviu Chircu (@liviuchircu) 100 69 2239 717
+   3. Razvan Crainea (@razvancrainea) 157 114 3423 879
+   4. Vlad Patrascu (@rvlad-patrascu) 137 60 3051 2935
+   5. Liviu Chircu (@liviuchircu) 102 71 2246 723
    6. Ovidiu Sas (@ovidiusas) 27 21 482 107
    7. Dan Pascu (@danpascu) 26 22 160 106
    8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
@@ -2215,10 +2291,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jan 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jan 2019
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Dec 2018
-   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Dec 2018
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
    5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2018
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
@@ -2246,8 +2322,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Paiu (@vladpaiu), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Julián Moreno Patiño, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter

@@ -288,7 +288,7 @@ if (!pike_check_req()) { exit; };
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo pike_list
+		opensips-cli -x mi pike_list
 		</programlisting>
 	</section>
 	<section id="mi_pike_rm" xreflabel="pike_rm">
@@ -311,7 +311,7 @@ if (!pike_check_req()) { exit; };
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensipsctl fifo pike_rm 10.0.0.106
+		opensips-cli -x mi pike_rm 10.0.0.106
 		</programlisting>
 	</section>
 	</section>

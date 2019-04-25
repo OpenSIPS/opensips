@@ -82,7 +82,7 @@ if [ "$ret" -eq 1 ] ; then
 fi;
 
 $MYSQL "insert into globalblacklist (prefix, whitelist, description) values ('123456786','1','_test_');"
-../scripts/opensipsctl fifo reload_blacklist
+opensips-cli -x mi reload_blacklist
 
 if [ "$ret" -eq 1 ] ; then
 	sipp -sn uac -s 49721123456786 127.0.0.1:5059 -i 127.0.0.1 -m 1 -f 2 -p 5061 &> /dev/null
@@ -102,7 +102,7 @@ if [ "$ret" -eq 1 ] ; then
 fi;
 
 $MYSQL "insert into globalblacklist (prefix, whitelist, description) values ('2','1','_test_');"
-../scripts/opensipsctl fifo reload_blacklist
+opensips-cli -x mi reload_blacklist
 
 if [ "$ret" -eq 1 ] ; then
 	sipp -sn uac -s 49721123456785 127.0.0.1:5059 -i 127.0.0.1 -m 1 -f 2 -p 5061 &> /dev/null

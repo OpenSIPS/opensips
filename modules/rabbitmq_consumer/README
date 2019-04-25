@@ -1,0 +1,204 @@
+RabbitMQ Consumer Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. connection_id (string)
+              1.3.2. connect_timeout (integer)
+              1.3.3. retry_timeout (integer)
+
+        1.4. Exported Functions
+        1.5. Exported Events
+
+              1.5.1.
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set connection_id parameter
+   1.2. Setting the connect_timeout parameter
+   1.3. Setting the retry_timeout parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   RabbitMQ Consumer (http://www.rabbitmq.com/) is an open source
+   messaging server. It's purpose is to manage received messages
+   in queues, taking advantage of the flexible AMQP protocol.
+
+   Using this module you can subscribe consumers to a RabbitMQ
+   broker in order to receive AMQP messages for specified queues.
+   The messages will be delivered by triggering events through the
+   OpenSIPS Event Interface.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   None.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * librabbitmq-dev
+
+   NOte that the module is not compatible with versions 0.4 or
+   below of the librabbitmq-dev library.
+
+1.3. Exported Parameters
+
+1.3.1. connection_id (string)
+
+   Specify the configuration for a RabbitMQ connection. It
+   contains a set of parameters used to customize the connection
+   to the server as well as the consumer subscription. The format
+   of the parameter is param1=value1; param2=value2;. The uri,
+   queue and event parameters are mandatory.
+
+   This parameter can be set multiple times, for each RabbitMQ
+   connection.
+
+   The following parameters can be used:
+     * uri - Mandatory parameter - a full amqp URI as described
+       here. Missing fields in the URI will receive default
+       values, such as: user: guest, password: guest, host:
+       localhost, vhost: /, port: 5672. SSL connections are
+       currently not available: amqps URIs will be declined.
+     * queue - Mandatory parameter - the name of the RabbitMQ
+       queue to subscribe a consumer to. This parameter is
+       mandatory.
+     * event - Mandatory parameter - the name of the OpenSIPS
+       event that will be triggered for each AMQP message
+       received.
+     * ack - flag that indicates to the broker that messages will
+       be acknowledged upon receival. If you do not set this flag,
+       the server will not expect ACKs and OpenSIPS will not send
+       them.
+     * exclusive - flag that indicates to the broker that
+       exclusive consumer access is requested, meaning only this
+       consumer can access the queue.
+     * frame_max - the maximum size of an AMQP frame. Default size
+       is 131072.
+     * heartbeat - interval in seconds used to send heartbeat
+       messages. Default is disabled.
+
+   Example 1.1. Set connection_id parameter
+...
+# connection to a RabbitMQ server on localhost, default port
+# with a 5 seconds interval for heartbeat messages
+modparam("rabbitmq_consumer", "connection_id",
+    "uri = amqp://127.0.0.1; queue = myqueue1; event = E_Q1_MSG; heartbe
+at = 5;")
+...
+# consumer that acknowledges messages
+modparam("rabbitmq_consumer", "connection_id",
+    "uri = amqp://127.0.0.1; queue = myqueue2; event = E_Q2_MSG; ack;")
+...
+
+1.3.2. connect_timeout (integer)
+
+   The maximally allowed duration (in milliseconds) for the
+   establishment of a TCP connection with a RabbitMQ server.
+
+   Default value is “500” (milliseconds).
+
+   Example 1.2. Setting the connect_timeout parameter
+...
+modparam("rabbitmq_consumer", "connect_timeout", 1000)
+...
+
+1.3.3. retry_timeout (integer)
+
+   The interval (in milliseconds) after which OpenSIPS will try to
+   re-establish a failed AMQP connection to a RabbitMQ server.
+
+   Default value is “5000” (milliseconds).
+
+   Example 1.3. Setting the retry_timeout parameter
+...
+modparam("rabbitmq_consumer", "retry_timeout", 10000)
+...
+
+1.4. Exported Functions
+
+   The module does not export any script functions.
+
+1.5. Exported Events
+
+   An event with a custom name, as set in the event field of the
+   connection_id parameter, will be raised for each AMQP message
+   received.
+
+   Parameters:
+     * body - the AMQP message body.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu)    13       2      1161      1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu) Apr 2019 - Apr 2019
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+
+   Documentation Copyrights:
+
+   Copyright © 2019 www.opensips-solutions.com

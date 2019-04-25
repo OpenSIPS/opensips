@@ -33,10 +33,10 @@
  *  - -2: cgrates error
  *  - -3: no suitable cgrates server found
  */
-int w_cgr_cmd(struct sip_msg* msg, char* cmd_c, char *tag_c);
+int w_cgr_cmd(struct sip_msg* msg, str* cmd, str *tag_c);
 
 /* async version of w_cgr_auth */
-int w_acgr_cmd(struct sip_msg* msg, async_ctx *ctx, char* cmd_c, char *tag_c);
+int w_acgr_cmd(struct sip_msg* msg, async_ctx *actx, str* cmd, str *tag_c);
 
 #endif /* _CGRATES_CMD_H_ */
 

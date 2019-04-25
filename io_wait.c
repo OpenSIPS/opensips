@@ -756,3 +756,32 @@ void fix_poll_method( enum poll_types *poll_method )
 }
 
 
+int io_set_app_flag( io_wait_h *h , int type, int app_flag)
+{
+	int i;
+	int res=0;
+
+	for( i=0 ; i<h->fd_no ; i++) {
+			if (h->fd_hash[i].fd<=0 && h->fd_hash[i].type==type) {
+				h->fd_hash[i].app_flags |= app_flag;
+				res = 1;
+			}
+	}
+	return res;
+}
+
+
+int io_check_app_flag( io_wait_h *h , int app_flag)
+{
+	int i;
+
+	for( i=0 ; i<h->fd_no ; i++) {
+			if ( h->fd_hash[i].fd<=0 &&
+			(h->fd_hash[i].app_flags & app_flag) )
+				return 1;
+	}
+	/* nothing found, return false*/
+	return 0;
+
+}
+

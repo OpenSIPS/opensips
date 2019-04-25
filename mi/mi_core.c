@@ -43,9 +43,12 @@
 #include "../pt.h"
 #include "../net/net_tcp.h"
 #include "../mem/mem.h"
+#include "../mem/rpm_mem.h"
 #include "../cachedb/cachedb.h"
 #include "../evi/event_interface.h"
 #include "../ipc.h"
+#include "../xlog.h"
+#include "../cfg_reload.h"
 #include "mi.h"
 #include "mi_trace.h"
 
@@ -209,9 +212,47 @@ static mi_response_t *mi_arg(const mi_params_t *params,
 	return resp;
 }
 
+static mi_response_t *mi_which_cmd(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	mi_item_t *resp_arr, *cmd_arr;
+	mi_response_t *resp;
+	struct mi_cmd *cmd;
+	str cmd_str;
+	int i, j;
 
-static mi_response_t *mi_which(const mi_params_t *params,
-							struct mi_handler *async_hdl)
+	resp = init_mi_result_array(&resp_arr);
+	if (!resp)
+		return 0;
+
+	if (get_mi_string_param(params, "command", &cmd_str.s, &cmd_str.len) < 0)
+		return init_mi_param_error();
+
+	cmd = lookup_mi_cmd(cmd_str.s, cmd_str.len);
+	if (!cmd)
+		return init_mi_error(404, MI_SSTR("unknown MI command"));
+	for (i = 0; i < MAX_MI_RECIPES && cmd->recipes[i].cmd; i++) {
+		cmd_arr = add_mi_array(resp_arr, NULL, 0);
+		if (! cmd_arr) {
+			LM_ERR("failed to add mi array\n");
+			free_mi_response(resp);
+			return 0;
+		}
+		for (j = 0; j < MAX_MI_PARAMS && cmd->recipes[i].params[j]; j++) {
+			if (add_mi_string(cmd_arr, 0, 0,
+					cmd->recipes[i].params[j],
+					strlen(cmd->recipes[i].params[j])) < 0) {
+				LM_ERR("failed to add mi item\n");
+				free_mi_response(resp);
+				return 0;
+			}
+		}
+	}
+
+	return resp;
+}
+
+static mi_response_t *mi_which(const mi_params_t *params, struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_arr;
@@ -255,7 +296,9 @@ static mi_response_t *mi_ps(const mi_params_t *params,
 		return 0;
 	}
 
-	for ( i=0 ; i<counted_processes ; i++ ) {
+	for ( i=0 ; i<counted_max_processes ; i++ ) {
+		if (!is_process_running(i))
+			continue;
 		proc_item = add_mi_object(procs_arr, 0, 0);
 		if (!proc_item)
 			goto error;
@@ -350,7 +393,9 @@ static mi_response_t *w_log_level(const mi_params_t *params,
 		return 0;
 	}
 
-	for (i = 0; i < counted_processes; i++) {
+	for (i = 0; i < counted_max_processes; i++) {
+		if (!is_process_running(i))
+			continue;
 		proc_item = add_mi_object(procs_arr, NULL, 0);
 		if (!proc_item)
 			goto error;
@@ -389,6 +434,51 @@ static mi_response_t *w_log_level_2(const mi_params_t *params,
 
 	return mi_log_level(params, pid);
 }
+
+static mi_response_t *w_xlog_level(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_number(resp_obj, MI_SSTR("xLog Level"), *xlog_level) < 0) {
+		LM_ERR("failed to add mi item\n");
+		free_mi_response(resp);
+		return 0;
+	}
+
+	return resp;
+}
+
+
+static mi_response_t *w_xlog_level_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	int new_level;
+
+	if (get_mi_int_param(params, "level", &new_level) < 0)
+		return init_mi_param_error();
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_number(resp_obj, MI_SSTR("New xLog level"), new_level) < 0) {
+		free_mi_response(resp);
+		return 0;
+	}
+
+	set_shared_xlog_level(new_level);
+
+	return resp;
+}
+
 
 
 static mi_response_t *mi_cachestore(const 	mi_params_t *params, unsigned int expire)
@@ -635,6 +725,46 @@ static mi_response_t *w_mem_shm_dump_1(const mi_params_t *params,
 	return mi_mem_shm_dump(llevel);
 }
 
+static mi_response_t *mi_mem_rpm_dump(int llevel)
+{
+	int bk;
+
+	bk = memdump;
+	if (llevel!=0)
+		memdump = llevel;
+	LM_GEN1(memdump, "Memory status (rpm):\n");
+	rpm_status();
+	memdump = bk;
+
+	return init_mi_result_ok();
+}
+
+static mi_response_t *w_mem_rpm_dump(const mi_params_t *params,
+									struct mi_handler *async_hdl)
+{
+	return mi_mem_rpm_dump(0);
+}
+
+static mi_response_t *w_mem_rpm_dump_1(const mi_params_t *params,
+									struct mi_handler *async_hdl)
+{
+	int llevel;
+
+	if (get_mi_int_param(params, "log_level", &llevel) < 0)
+		return init_mi_param_error();
+
+	return mi_mem_rpm_dump(llevel);
+}
+
+static mi_response_t *w_reload_routes(const mi_params_t *params,
+							struct mi_handler *async_hdl)
+{
+	if (reload_routing_script()==0)
+		return init_mi_result_ok();
+	return init_mi_error( 500, MI_SSTR("reload failed"));
+}
+
+
 
 static mi_export_t mi_core_cmds[] = {
 	{ "uptime", "prints various time information about OpenSIPS - "
@@ -661,6 +791,7 @@ static mi_export_t mi_core_cmds[] = {
 	},
 	{ "which", "lists all available MI commands", 0, 0, {
 		{mi_which, {0}},
+		{mi_which_cmd, {"command", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
@@ -682,7 +813,15 @@ static mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
-#if defined(QM_MALLOC) && defined(DBG_MALLOC)
+	{ "xlog_level", "gets/sets the per process or global xlog level in OpenSIPS",
+		0, 0, {
+		{w_xlog_level, 	{0}},
+		{w_xlog_level_1, {"level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+
+#if defined(Q_MALLOC) && defined(DBG_MALLOC)
 	{ "shm_check", "complete scan of the shared memory pool "
 		"(if any error is found, OpenSIPS will abort!)", 0, 0, {
 		{mi_shm_check, {0}},
@@ -740,6 +879,17 @@ static mi_export_t mi_core_cmds[] = {
 	{ "mem_shm_dump", "forces a status dump of the shm memory", 0, 0, {
 		{w_mem_shm_dump, {0}},
 		{w_mem_shm_dump_1, {"log_level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "mem_rpm_dump", "forces a status dump of the restart persistent memory", 0, 0, {
+		{w_mem_rpm_dump, {0}},
+		{w_mem_rpm_dump_1, {"log_level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "reload_routes", "triggers the script (routes only) reload", 0, 0, {
+		{w_reload_routes, {0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},

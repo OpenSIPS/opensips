@@ -34,6 +34,7 @@
 #include "../../str.h"
 #include "../../usr_avp.h"
 #include "../../time_rec.h"
+#include "../../mem/mem.h"
 #include "prefix_tree.h"
 #include "../../map.h"
 
@@ -66,9 +67,26 @@ typedef struct rt_data_ {
 }rt_data_t;
 
 
+struct head_cache_socket {
+	str host;
+	int port;
+	int proto;
+	struct socket_info *old_sock;
+	struct socket_info *new_sock;
+	struct head_cache_socket *next;
+};
+
+struct head_cache {
+	str partition;
+	rt_data_t *rdata;
+	struct head_cache_socket *sockets;
+	struct head_cache *next;
+};
+
+
 /* init new rt_data structure */
 rt_data_t*
-build_rt_data( void );
+build_rt_data( struct head_db * );
 
 
 int
@@ -78,7 +96,9 @@ add_carrier(
 	char *gwlist,
 	char *attrs,
 	int state,
-	rt_data_t *rd
+	rt_data_t *rd,
+	osips_malloc_f mf,
+	osips_free_f ff
 	);
 
 /* add a PSTN gw in the list */
@@ -102,7 +122,9 @@ add_dst(
 	/* socket */
 	struct socket_info*,
 	/* state */
-	int
+	int,
+	osips_malloc_f mf,
+	osips_free_f ff
 	);
 
 /* build a routing info list element */
@@ -116,7 +138,9 @@ build_rt_info(
 	/* list of destinations indexes */
 	char* dstlst,
 	char* attr,
-	rt_data_t* rd
+	rt_data_t* rd,
+	osips_malloc_f mf,
+	osips_free_f ff
 	);
 
 int
@@ -125,7 +149,8 @@ parse_destination_list(
 	char *dstlist,
 	pgw_list_t** pgwl_ret,
 	unsigned short *len,
-	int no_resize
+	int no_resize,
+	osips_malloc_f mf
 	);
 
 void
@@ -136,8 +161,5 @@ del_pgw_list(
 
 
 void
-free_rt_data(
-	rt_data_t*,
-	int
-	);
+free_rt_data(rt_data_t*, osips_free_f);
 #endif

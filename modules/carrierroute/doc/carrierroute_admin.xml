@@ -889,34 +889,34 @@ modparam("carrierroute", "failure_comment_column", "description")
 
   <programlisting format="linespecific">
 cr_rewrite_uri(domain, hash_source)
--> cr_route("default", domain, "$rU", "$rU", hash_source)
+-> cr_route("default", domain, $rU, $rU, hash_source)
 
 cr_prime_balance_uri(domain, hash_source)
--> cr_prime_route("default", domain, "$rU", "$rU", hash_source)
+-> cr_prime_route("default", domain, $rU, $rU, hash_source)
 
 cr_rewrite_by_to(domain, hash_source)
--> cr_route("default", domain, "$tU", "$rU", hash_source)
+-> cr_route("default", domain, $tU, $rU, hash_source)
 
 cr_prime_balance_by_to(domain, hash_source)
--> cr_prime_route("default", domain, "$tU", "$rU", hash_source)
+-> cr_prime_route("default", domain, $tU, $rU, hash_source)
 
 cr_rewrite_by_from(domain, hash_source)
--> cr_route("default", domain, "$fU", "$rU", hash_source)
+-> cr_route("default", domain, $fU, $rU, hash_source)
 
 cr_prime_balance_by_from(domain, hash_source)
--> cr_prime_route("default", domain, "$fU", "$rU", hash_source)
+-> cr_prime_route("default", domain, $fU, $rU, hash_source)
 
 cr_user_rewrite_uri(uri, domain)
--> cr_user_carrier(user, domain, "$avp(tree_avp)")
--> cr_route("$avp(tree_avp)", domain, "$rU", "$rU", "call_id")
+-> cr_user_carrier(user, domain, $avp(tree_avp))
+-> cr_route($avp(tree_avp), domain, $rU, $rU, "call_id")
 
 cr_tree_rewrite_uri(tree, domain)
--> cr_route(tree, domain, "$rU", "$rU", "call_id")
+-> cr_route(tree, domain, $rU, $rU, "call_id")
   </programlisting>
 		
 	<section id="func_cr_user_carrier" xreflabel="cr_user_carrier()">
 	    <title>
-		<function moreinfo="none">cr_user_carrier(user, domain, dstavp)</function>
+		<function moreinfo="none">cr_user_carrier(user, domain, dst_avp)</function>
 	    </title>
 	    <para>
       This function loads the carrier and stores it in an AVP.
@@ -927,29 +927,28 @@ cr_tree_rewrite_uri(tree, domain)
 	  This data is not cached in memory, that means for every execution of this
 	  function a database query will be done.
 	    </para>
-	    <para>Meaning of the parameters is as follows:</para>
+	    <para>Parameters:</para>
 	    <itemizedlist>
         <listitem>
-          <para><emphasis>user</emphasis> - Name of the user for the carrier tree lookup.
-            Additional to a string any pseudo-variable could
-            be used as input.
+			<para><emphasis>user (string)</emphasis> - Name of the user for the
+			carrier tree lookup
 		      </para>
         </listitem>
         <listitem>
-          <para><emphasis>domain</emphasis> - Name of the routing domain to be used.
-            Additional to a string any pseudo-variable could
-            be used as input.
+			<para><emphasis>domain (string)</emphasis> - Name of the routing
+				domain to be used
 		      </para>
         </listitem>
 	      <listitem>
-          <para><emphasis>dstavp</emphasis> - Name of the AVP where to store the carrier id.
+			  <para><emphasis>dst_avp (var)</emphasis> - Name of an AVP where to
+				  store the carrier id
 		      </para>
         </listitem>
 	    </itemizedlist>
 	</section>
 	<section id="func_cr_route" xreflabel="cr_route()">
 	    <title>
-		<function moreinfo="none">cr_route(carrier, domain, prefix_matching, rewrite_user, hash_source, dstavp)</function>
+		<function moreinfo="none">cr_route(carrier, domain, prefix_matching, rewrite_user, hash_source, [dst_avp])</function>
 	    </title>
 	    <para>
         This function searches for the longest match for the user given
@@ -963,51 +962,47 @@ cr_tree_rewrite_uri(tree, domain)
         containing a valid numerical only string. It uses the standard crc32 algorithm
 		to calculate the hash values.
 	    </para>
-	    <para>Meaning of the parameters is as follows:</para>
+	    <para>Parameters:</para>
 	    <itemizedlist>
         <listitem>
-		      <para><emphasis>carrier</emphasis> - The routing tree to be used. Additional to a string
-            any pseudo-variable could be used as input.
+			<para><emphasis>carrier (string)</emphasis> - The routing tree to
+				be used
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>domain</emphasis> - Name of the routing domain to be used.
-            Additional to a string any pseudo-variable could
-            be used as input.
+			<para><emphasis>domain (string)</emphasis> - Name of the routing
+				domain to be used
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>prefix_matching</emphasis> - User name to be used for prefix matching
-            in the routing tree.
-            Additional to a string any pseudo-variable could
-            be used as input.
+			<para><emphasis>prefix_matching (string)</emphasis> - User name
+				to be used for prefix matching in the routing tree
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>rewrite_user</emphasis> - The user name to be used for applying the
-            rewriting rule. Usually this is the user part of the request
-            URI. Additional to a string any pseudo-variable could
-            be used as input.
+			<para><emphasis>rewrite_user (string)</emphasis> - The user name
+				to be used for applying the rewriting rule.  Usually, this is
+				the user part of the request URI
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>hash_source</emphasis> - The hash values of the destination set must
-            be a contiguous range starting at 1, limited by the
-            configuration parameter max_targets. Possible values for
-            hash_source are: call_id, from_uri, from_user, to_uri
-            and to_user.
+			<para><emphasis>hash_source (string)</emphasis> - The hash values
+				of the destination set must be a contiguous range starting at 1,
+				limited by the configuration parameter max_targets. Possible
+				values for hash_source are: call_id, from_uri, from_user, to_uri
+				and to_user.
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>dstavp</emphasis> - Name of the AVP where to store the rewritten host.
-			This parameter is optional.
+			<para><emphasis>dst_avp (var, optional)</emphasis> - Optional AVP
+				where to store the rewritten host
   		    </para>
         </listitem>
 	    </itemizedlist>
 	</section>
 		<section id="func_cr_prime_route" xreflabel="cr_prime_route()">
 	    <title>
-		<function moreinfo="none">cr_prime_route(carrier, domain, prefix_matching, rewrite_user, hash_source, dstavp)</function>
+		<function moreinfo="none">cr_prime_route(carrier, domain, prefix_matching, rewrite_user, hash_source, [dst_avp])</function>
 	    </title>
 	    <para>
         This function searches for the longest match for the user given
@@ -1024,32 +1019,29 @@ cr_tree_rewrite_uri(tree, domain)
 	    <para>Meaning of the parameters is as follows:</para>
 	    <itemizedlist>
         <listitem>
-		      <para><emphasis>carrier</emphasis> - The routing tree to be used. Additional to a string
-            any pseudo-variable could be used as input.
+			<para><emphasis>carrier (string)</emphasis> - The routing tree to
+				be used
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>domain</emphasis> - Name of the routing domain to be used.
-            Additional to a string any pseudo-variable could
-            be used as input.
+			<para><emphasis>domain (string)</emphasis> - Name of the routing
+				domain to be used
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>prefix_matching</emphasis> - User name to be used for prefix matching
-            in the routing tree.
-            Additional to a string any pseudo-variable could
-            be used as input.
+			<para><emphasis>prefix_matching (string)</emphasis> - User name
+				to be used for prefix matching in the routing tree
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>rewrite_user</emphasis> - The user name to be used for applying the
-            rewriting rule. Usually this is the user part of the request
-            URI. Additional to a string any pseudo-variable could
-            be used as input.
+			<para><emphasis>rewrite_user (string)</emphasis> - The user name
+				to be used for applying the rewriting rule.  Usually, this is
+				the user part of the request URI
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>hash_source</emphasis> - The hash values of the destination set must
+			<para><emphasis>hash_source (string)</emphasis> - The hash values
+				of the destination set must
             be a contiguous range starting at 1, limited by the
             configuration parameter max_targets. Possible values for
             hash_source are: call_id, from_uri, from_user, to_uri
@@ -1057,8 +1049,8 @@ cr_tree_rewrite_uri(tree, domain)
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>dstavp</emphasis> - Name of the AVP where to store the rewritten host.
-			This parameter is optional.
+			<para><emphasis>dst_avp (var, optional)</emphasis> - Optional AVP
+				where to store the rewritten host
   		    </para>
         </listitem>
 	    </itemizedlist>
@@ -1066,7 +1058,7 @@ cr_tree_rewrite_uri(tree, domain)
 
 	<section id="func_cr_next_domain" xreflabel="cr_next_domain()">
 	    <title>
-		<function moreinfo="none">cr_next_domain(carrier, domain, prefix_matching, host, reply_code, dstavp)</function>
+		<function moreinfo="none">cr_next_domain(carrier, domain, prefix_matching, host, reply_code, dst_avp)</function>
 	    </title>
 	    <para>
         This function searches for the longest match for the user given
@@ -1084,38 +1076,32 @@ cr_tree_rewrite_uri(tree, domain)
 	    <para>Meaning of the parameters is as follows:</para>
 	    <itemizedlist>
         <listitem>
-		      <para><emphasis>carrier</emphasis> - The routing tree to be used. Additional to a string
+		      <para><emphasis>carrier (string)</emphasis> - The routing tree to be used
             any pseudo-variable could be used as input.
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>domain</emphasis> - Name of the routing domain to be used.
-            Additional to a string any pseudo-variable could
-            be used as input.
+		      <para><emphasis>domain (string)</emphasis> - Name of the routing domain to be used
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>prefix_matching</emphasis> - User name to be used for prefix matching
-            in the routing tree.
-            Additional to a string any pseudo-variable could
-            be used as input.
+		      <para><emphasis>prefix_matching (string)</emphasis> - User name to be used for prefix matching
+            in the routing tree
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>host</emphasis> - The host name to be used for failure route rule
-            matching. Usually this is the last tried routing destination
-            stored in an avp by cr_route. Additional to a string any
-            pseudo-variable could be used as input.
+		      <para><emphasis>host (string)</emphasis> - The host name to be used for failure route rule
+            matching. Usually, this is the last tried routing destination
+            stored in an avp by cr_route
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>reply_code</emphasis> - The reply code to be used for failure route rule
-            matching. Additional to a string any pseudo-variable
-            could be used as input.
+		      <para><emphasis>reply_code (string)</emphasis> - The reply code to be used for failure route rule
+            matching
   		    </para>
         </listitem>
         <listitem>
-		      <para><emphasis>dstavp</emphasis> - Name of the AVP where to store the next routing domain.
+		      <para><emphasis>dst_avp (var)</emphasis> - AVP where to store the next routing domain.
   		    </para>
         </listitem>
 	    </itemizedlist>
@@ -1172,7 +1158,7 @@ cr_tree_rewrite_uri(tree, domain)
 		<title><function>cr_replace_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
+opensips-cli -x mi cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 ...
 		</programlisting>
 	    </example>
@@ -1205,7 +1191,7 @@ opensipsctl fifo cr_replace_host "-d proxy -p 49 -h proxy1 -t proxy2"
 		<title><function>cr_deactivate_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_deactivate_host "-d proxy -p 49 -h proxy1"
+opensips-cli -x mi cr_deactivate_host "-d proxy -p 49 -h proxy1"
 ...
 		</programlisting>
 	    </example>
@@ -1232,7 +1218,7 @@ opensipsctl fifo cr_deactivate_host "-d proxy -p 49 -h proxy1"
 		<title><function>cr_activate_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_activate_host "-d proxy -p 49 -h proxy1"
+opensips-cli -x mi cr_activate_host "-d proxy -p 49 -h proxy1"
 ...
 		</programlisting>
 	    </example>
@@ -1275,7 +1261,7 @@ opensipsctl fifo cr_activate_host "-d proxy -p 49 -h proxy1"
 		<title><function>cr_add_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensips-cli -x mi cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
 		</programlisting>
 	    </example>
@@ -1319,7 +1305,7 @@ opensipsctl fifo cr_add_host "-d proxy -p 49 -h proxy1 -w 0.25"
 		<title><function>cr_delete_host</function> usage</title>
 		<programlisting format="linespecific">
 ...
-opensipsctl fifo cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
+opensips-cli -x mi cr_delete_host "-d proxy -p 49 -h proxy1 -w 0.25"
 ...
 		</programlisting>
 	    </example>

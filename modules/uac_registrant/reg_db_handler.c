@@ -95,6 +95,12 @@ int load_reg_info_from_db(unsigned int plist)
 	int len = 0;
 	str now = {NULL, 0};
 	struct sip_uri uri;
+	param_hooks_t hooks;
+	param_t *params = NULL;
+	param_t *_param = NULL;
+	str _param_str = {NULL, 0};
+	int reg_id_found = 0;
+	int sip_instance_found = 0;
 	str forced_socket, host, s;
 	int port, proto;
 	uac_reg_map_t uac_param;
@@ -285,8 +291,32 @@ int load_reg_info_from_db(unsigned int plist)
 			if (uac_param.contact_params.s)
 				uac_param.contact_params.len =
 					strlen(uac_param.contact_params.s);
-			if (uac_param.contact_params.len == 0)
+			if (uac_param.contact_params.len != 0) {
+				memset(&hooks, 0, sizeof(param_hooks_t));
+				_param_str = uac_param.contact_params;
+				if (parse_params(&_param_str, CLASS_CONTACT, &hooks, &params) <0) {
+					LM_ERR("Bogus params [%.*s]\n", _param_str.len, _param_str.s);
+					free_params(params);
+					continue;
+				}
+				_param = params;
+				while (_param) {
+					LM_DBG("[%.*s][%.*s]\n", _param->name.len, _param->name.s, _param->body.len, _param->body.s);
+					if (reg_id_found == 0 && strncmp(_param->name.s, "reg-id", 6) == 0)
+						reg_id_found = 1;
+					if (sip_instance_found == 0 && strncmp(_param->name.s, "+sip.instance", 13) == 0)
+						sip_instance_found = 1;
+					_param = _param->next;
+				}
+				free_params(params);
+				if (reg_id_found && sip_instance_found) {
+					LM_DBG("special record\n");
+					uac_param.flags |= FORCE_SINGLE_REGISTRATION;
+				}
+			}
+			else {
 				uac_param.contact_params.s = NULL;
+			}
 
 			/* Get the expiration param */
 			uac_param.expires = values[expiry_col].val.int_val;
@@ -357,7 +387,6 @@ int load_reg_info_from_db(unsigned int plist)
 					}
 				}
 			}
-
 
 			LM_DBG("registrar=[%.*s] AOR=[%.*s] auth_user=[%.*s] "
 				"password=[%.*s] expire=[%d] proxy=[%.*s] "

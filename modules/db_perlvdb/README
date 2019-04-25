@@ -272,19 +272,19 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 24 18 255 201
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 26 19 257 202
    2. Bastian Friedrich 18 2 1820 18
    3. Liviu Chircu (@liviuchircu) 12 10 24 54
    4. Daniel-Constantin Mierla (@miconda) 9 7 27 25
    5. Razvan Crainea (@razvancrainea) 7 5 23 12
    6. Henning Westerholt (@henningw) 4 2 14 13
-   7. Ancuta Onofrei 3 1 13 20
-   8. Konstantin Bokarius 3 1 3 5
-   9. Julián Moreno Patiño 3 1 1 1
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. Vlad Patrascu (@rvlad-patrascu) 4 2 10 10
+   8. Ancuta Onofrei 3 1 13 20
+   9. Konstantin Bokarius 3 1 3 5
+   10. Julián Moreno Patiño 3 1 1 1
 
-   All remaining contributors: Edson Gellert Schubert, Vlad
-   Patrascu (@rvlad-patrascu).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -306,12 +306,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2014
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2018
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Daniel-Constantin Mierla (@miconda) Oct 2007 - Mar 2008
    8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
    9.  Edson Gellert Schubert              Feb 2008 - Feb 2008

@@ -45,23 +45,24 @@ static gen_lock_t *global_lock;
 static gen_lock_t *rrobin_lock;
 
 struct module_exports exports = {
-	"event_virtual",			/* module name */
-	MOD_TYPE_DEFAULT,/* class of this module */
+	"event_virtual",	/* module name */
+	MOD_TYPE_DEFAULT,	/* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,			/* dlopen flags */
+	DEFAULT_DLFLAGS,	/* dlopen flags */
 	NULL,            /* OpenSIPS module dependencies */
-	0,							/* exported functions */
-	0,							/* exported async functions */
-	0,							/* exported parameters */
-	0,							/* exported statistics */
-	0,							/* exported MI functions */
-	0,							/* exported pseudo-variables */
-	0,			 				/* exported transformations */
-	0,						/* extra processes */
-	mod_init,					/* module initialization function */
-	0,							/* response handling function */
-	destroy,					/* destroy function */
-	0					/* per-child init function */
+	0,					/* exported functions */
+	0,					/* exported async functions */
+	0,					/* exported parameters */
+	0,					/* exported statistics */
+	0,					/* exported MI functions */
+	0,					/* exported pseudo-variables */
+	0,			 		/* exported transformations */
+	0,					/* extra processes */
+	mod_init,			/* module initialization function */
+	0,					/* response handling function */
+	destroy,			/* destroy function */
+	0,					/* per-child init function */
+	0					/* reload confirm function */
 };
 
 static evi_export_t trans_export_virtual = {

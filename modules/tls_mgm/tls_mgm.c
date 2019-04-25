@@ -165,10 +165,11 @@ static param_export_t params[] = {
 };
 
 static cmd_export_t cmds[] = {
-	{"is_peer_verified", (cmd_function)is_peer_verified,   0, 0, 0,
+	{"is_peer_verified", (cmd_function)is_peer_verified, {{0,0,0}},
 		REQUEST_ROUTE},
-	{"load_tls_mgm", (cmd_function)load_tls_mgm,   0, 0, 0, 0},
-	{0,0,0,0,0,0}
+	{"load_tls_mgm", (cmd_function)load_tls_mgm,
+		{{0,0,0}}, ALL_ROUTES},
+	{0,0,{{0,0,0}},0}
 };
 
 /*
@@ -374,6 +375,7 @@ struct module_exports exports = {
 	0,          /* response function */
 	mod_destroy,/* destroy function */
 	0,          /* per-child init function */
+	0           /* reload confirm function */
 };
 
 

@@ -594,7 +594,7 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 opensipsctl fifo LOAD_CPL sip:bob@domain.com cpl_script.xml
+                 opensips-cli -x mi LOAD_CPL sip:bob@domain.com cpl_script.xml
 </programlisting>
 		</section>
 
@@ -618,7 +618,7 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 opensipsctl fifo REMOVE_CPL sip:bob@domain.com
+                 opensips-cli -x mi REMOVE_CPL sip:bob@domain.com
 </programlisting>
 		</section>
 
@@ -640,7 +640,7 @@ if ($rm=="REGISTER") {
 			MI FIFO Command format:
 			</para>
 			<programlisting format="linespecific">
-                 opensipsctl fifo GET_CPL sip:bob@domain.com
+                 opensips-cli -x mi GET_CPL sip:bob@domain.com
 </programlisting>
 		</section>
 	</section>

@@ -35,9 +35,9 @@
 #define ALIAS_REVERT_FLAG      (1<<0)
 #define ALIAS_NO_DOMAIN_FLAG   (1<<1)
 
-int alias_db_lookup(struct sip_msg* _msg, char* _table, char* use_domain);
+int alias_db_lookup(struct sip_msg* _msg, str* _table, void *flags);
 
-int alias_db_find(struct sip_msg* _msg, char* _table, char* _in, char* _out,
-		char* use_domain);
+int alias_db_find(struct sip_msg* _msg, str* _table, str* _in_s, pv_spec_t* _out,
+															void* flags);
 
 #endif /* _ALOOKUP_H_ */

@@ -440,8 +440,9 @@ int couchbase_set(cachedb_con *connection,str *attr,
 		LM_ERR("Set request failed - %s\n", lcb_strerror(instance, oprc));
 		//Attempt reconnect
 		if(couchbase_conditional_reconnect(connection, oprc) != 1) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase set",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase set",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 
@@ -451,15 +452,17 @@ int couchbase_set(cachedb_con *connection,str *attr,
 
 		if (oprc != LCB_SUCCESS) {
 			LM_ERR("Set command retry failed - %s\n", lcb_strerror(instance, oprc));
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase set",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase set",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 		LM_ERR("Set command successfully retried\n");
 	}
 	LM_DBG("Successfully stored\n");
-	stop_expire_timer(start,couch_exec_threshold,
-	"cachedb_couchbase set",attr->s,attr->len,0);
+	_stop_expire_timer(start,couch_exec_threshold,
+		"cachedb_couchbase set",attr->s,attr->len,0,
+		cdb_slow_queries, cdb_total_queries);
 	return 1;
 }
 
@@ -481,15 +484,17 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 
 	if (oprc != LCB_SUCCESS) {
 		if (oprc == LCB_KEY_ENOENT) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase remove",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase remove",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -1;
 		}
 
 		LM_ERR("Failed to send the remove query - %s\n", lcb_strerror(instance, oprc));
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase remove",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase remove",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		};
 
@@ -499,21 +504,24 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Remove command successfully retried\n");
-				stop_expire_timer(start,couch_exec_threshold,
-				"cachedb_couchbase remove",attr->s,attr->len,0);
+				_stop_expire_timer(start,couch_exec_threshold,
+					"cachedb_couchbase remove",attr->s,attr->len,0,
+					cdb_slow_queries, cdb_total_queries);
 				return -1;
 			}
 			LM_ERR("Remove command retry failed - %s\n", lcb_strerror(instance, oprc));
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase remove",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase remove",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 		LM_ERR("Remove command successfully retried\n");
 	}
 
 	LM_DBG("Successfully removed\n");
-	stop_expire_timer(start,couch_exec_threshold,
-	"cachedb_couchbase remove",attr->s,attr->len,0);
+	_stop_expire_timer(start,couch_exec_threshold,
+		"cachedb_couchbase remove",attr->s,attr->len,0,
+		cdb_slow_queries, cdb_total_queries);
 	return 1;
 }
 
@@ -537,15 +545,17 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
 		if (oprc == LCB_KEY_ENOENT) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase get",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -1;
 		}
 
 		//Attempt reconnect
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase get",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 
@@ -555,13 +565,15 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Get command successfully retried\n");
-				stop_expire_timer(start,couch_exec_threshold,
-				"cachedb_couchbase get",attr->s,attr->len,0);
+				_stop_expire_timer(start,couch_exec_threshold,
+					"cachedb_couchbase get",attr->s,attr->len,0,
+					cdb_slow_queries, cdb_total_queries);
 				return -1;
 			}
 			LM_ERR("Get command retry failed - %s\n", lcb_strerror(instance, oprc));
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase get",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 		LM_ERR("Get command successfully retried\n");
@@ -569,13 +581,15 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 
 	//Incase of malloc failure
 	if (!get_res.s) {
-		stop_expire_timer(start,couch_exec_threshold,
-		"cachedb_couchbase get",attr->s,attr->len,0);
+		_stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase get",attr->s,attr->len,0,
+			cdb_slow_queries, cdb_total_queries);
 		return -2;
 	}
 
-	stop_expire_timer(start,couch_exec_threshold,
-	"cachedb_couchbase get",attr->s,attr->len,0);
+	_stop_expire_timer(start,couch_exec_threshold,
+		"cachedb_couchbase get",attr->s,attr->len,0,
+		cdb_slow_queries, cdb_total_queries);
 	*val = get_res;
 	return 1;
 }
@@ -604,15 +618,17 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	if (oprc != LCB_SUCCESS) {
 		if (oprc == LCB_KEY_ENOENT) {
 			return -1;
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase add",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase add",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 		}
 
 		LM_ERR("Failed to send the arithmetic query - %s\n", lcb_strerror(instance, oprc));
 		//Attempt reconnect
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase add",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase add",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 
@@ -623,13 +639,15 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Arithmetic command successfully retried\n");
-				stop_expire_timer(start,couch_exec_threshold,
-				"cachedb_couchbase add",attr->s,attr->len,0);
+				_stop_expire_timer(start,couch_exec_threshold,
+					"cachedb_couchbase add",attr->s,attr->len,0,
+					cdb_slow_queries, cdb_total_queries);
 				return -1;
 			}
 			LM_ERR("Arithmetic command retry failed - %s\n", lcb_strerror(instance, oprc));
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase add",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase add",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 		LM_ERR("Arithmetic command successfully retried\n");
@@ -638,8 +656,9 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	if (new_val)
 		*new_val = arithmetic_res;
 
-	stop_expire_timer(start,couch_exec_threshold,
-	"cachedb_couchbase add",attr->s,attr->len,0);
+	_stop_expire_timer(start,couch_exec_threshold,
+		"cachedb_couchbase add",attr->s,attr->len,0,
+		cdb_slow_queries, cdb_total_queries);
 	return 1;
 }
 
@@ -668,15 +687,17 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
 		if (oprc == LCB_KEY_ENOENT) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get counter",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase get counter",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -1;
 		}
 
 		//Attempt reconnect
 		if (couchbase_conditional_reconnect(connection, oprc) != 1) {
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get counter ",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase get counter ",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 
@@ -686,13 +707,15 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 		if (oprc != LCB_SUCCESS) {
 			if (oprc == LCB_KEY_ENOENT) {
 				LM_ERR("Get counter command successfully retried\n");
-				stop_expire_timer(start,couch_exec_threshold,
-				"cachedb_couchbase get counter",attr->s,attr->len,0);
+				_stop_expire_timer(start,couch_exec_threshold,
+					"cachedb_couchbase get counter",attr->s,attr->len,0,
+					cdb_slow_queries, cdb_total_queries);
 				return -1;
 			}
 			LM_ERR("Get counter command retry failed - %s\n", lcb_strerror(instance, oprc));
-			stop_expire_timer(start,couch_exec_threshold,
-			"cachedb_couchbase get counter",attr->s,attr->len,0);
+			_stop_expire_timer(start,couch_exec_threshold,
+				"cachedb_couchbase get counter",attr->s,attr->len,0,
+				cdb_slow_queries, cdb_total_queries);
 			return -2;
 		}
 		LM_ERR("Get command successfully retried\n");
@@ -700,13 +723,15 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 
 	//Incase of malloc failure
 	if (!get_res.s) {
-		stop_expire_timer(start,couch_exec_threshold,
-		"cachedb_couchbase get counter",attr->s,attr->len,0);
+		_stop_expire_timer(start,couch_exec_threshold,
+			"cachedb_couchbase get counter",attr->s,attr->len,0,
+			cdb_slow_queries, cdb_total_queries);
 		return -2;
 	}
 
-	stop_expire_timer(start,couch_exec_threshold,
-	"cachedb_couchbase get counter",attr->s,attr->len,0);
+	_stop_expire_timer(start,couch_exec_threshold,
+		"cachedb_couchbase get counter",attr->s,attr->len,0,
+		cdb_slow_queries, cdb_total_queries);
 
 	if (str2sint((str *)&get_res,val)) {
 		LM_ERR("Failued to convert counter [%.*s] to int\n",get_res.len,get_res.s);

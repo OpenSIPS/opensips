@@ -45,18 +45,19 @@ struct sl_binds slb;
 int sl_loaded = 0;
 int tm_loaded = 0;
 
-int sig_send_reply(struct sip_msg* msg, char* str1, char* str2);
+int sig_send_reply(struct sip_msg* msg, int* code_i, str* code_s);
 int sig_send_reply_mod(struct sip_msg* msg, int code, str* reason, str* to_tag);
-static int fixup_sig_send_reply(void** param, int param_no);
+static int fixup_sig_send_reply(void** param);
 static int mod_init(void);
 
 /** exported commands */
-static cmd_export_t cmds[]=
-{
-	{"send_reply",(cmd_function)sig_send_reply,	2,	fixup_sig_send_reply,
-		0, REQUEST_ROUTE | ERROR_ROUTE | FAILURE_ROUTE},
-	{"load_sig",	(cmd_function)load_sig,				1,	0,	0,			0},
-	{0,						0,	0,						0,	0,				0}
+static cmd_export_t cmds[]={
+	{"send_reply",(cmd_function)sig_send_reply, {	
+		{CMD_PARAM_INT,fixup_sig_send_reply,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		REQUEST_ROUTE | ERROR_ROUTE | FAILURE_ROUTE},
+	{"load_sig", (cmd_function)load_sig, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 static dep_export_t deps = {
@@ -88,7 +89,8 @@ struct module_exports exports= {
 	mod_init,					/* module initialization function */
 	(response_function) 0,      /* response handling function */
 	(destroy_function)  0,      /* destroy function */
-	0                           /* per-child init function */
+	0,                          /* per-child init function */
+	0                           /* reload confirm function */
 };
 
 /**
@@ -101,7 +103,7 @@ static int mod_init(void)
 	LM_NOTICE("initializing module ...\n");
 
 	/* load TM API*/
-	if ( (load_tm=(load_tm_f)find_export("load_tm", 0, 0)))
+	if ( (load_tm=(load_tm_f)find_export("load_tm", 0)))
 	{
 		if (load_tm( &tmb )==-1)
 		{
@@ -112,7 +114,7 @@ static int mod_init(void)
 	}
 
 	/* load SL API */
-	if ((load_sl=(load_sl_f)find_export("load_sl", 0, 0)))
+	if ((load_sl=(load_sl_f)find_export("load_sl", 0)))
 	{
 		if (load_sl( &slb )==-1)
 		{
@@ -136,30 +138,9 @@ static int mod_init(void)
  * sig_send_reply - function to be called from script to send appropiate
  * replies (statefull or stateless)
  * */
-int sig_send_reply(struct sip_msg* msg, char* str1, char* str2)
+int sig_send_reply(struct sip_msg* msg, int* code_i, str* code_s)
 {
-	str code_s;
-	unsigned int code_i;
-
-	if(((pv_elem_p)str1)->spec.getf!=NULL)
-	{
-		if(pv_printf_s(msg, (pv_elem_p)str1, &code_s)!=0)
-			return -1;
-		if(str2int(&code_s, &code_i)!=0 || code_i<100 || code_i>699)
-			return -1;
-	} else {
-		code_i = ((pv_elem_p)str1)->spec.pvp.pvn.u.isname.name.n;
-	}
-
-	if(((pv_elem_p)str2)->spec.getf!=NULL)
-	{
-		if(pv_printf_s(msg, (pv_elem_p)str2, &code_s)!=0 || code_s.len <=0)
-			return -1;
-	} else {
-		code_s = ((pv_elem_p)str2)->text;
-	}
-
-	return sig_send_reply_mod(msg, code_i, &code_s, 0);
+	return sig_send_reply_mod(msg, *code_i, code_s, 0);
 }
 
 /*
@@ -222,46 +203,12 @@ sl_reply:
 /* *
  * fixup_sig_send_reply
  */
-static int fixup_sig_send_reply(void** param, int param_no)
+static int fixup_sig_send_reply(void** param)
 {
-	pv_elem_t *model=NULL;
-	str s;
-
-	/* convert to str */
-	s.s = (char*)*param;
-	s.len = strlen(s.s);
-
-	model=NULL;
-	if (param_no==1 || param_no==2)
-	{
-		if(s.len==0)
-		{
-			LM_ERR("no param %d!\n", param_no);
-			return E_UNSPEC;
-		}
-
-		if(pv_parse_format(&s ,&model) || model==NULL)
-		{
-			LM_ERR("wrong format [%s] for param no %d!\n", s.s, param_no);
-			return E_UNSPEC;
-		}
-		if(model->spec.getf==NULL)
-		{
-			if(param_no==1)
-			{
-				if(str2int(&s,
-					(unsigned int*)&model->spec.pvp.pvn.u.isname.name.n)!=0
-					   || model->spec.pvp.pvn.u.isname.name.n<100
-					   || model->spec.pvp.pvn.u.isname.name.n>699)
-				{
-					LM_ERR("wrong value [%s] for param no %d!\n",
-						s.s, param_no);
-					LM_ERR("allowed values: 1xx - 6xx only!\n");
-					return E_UNSPEC;
-				}
-			}
-		}
-		*param = (void*)model;
+	if (*(int*)*param < 100 || *(int*)*param > 699) {
+		LM_ERR("wrong code: %d, allowed values: 1xx - 6xx only!\n",
+			*(int*)*param);
+		return E_UNSPEC;
 	}
 
 	return 0;

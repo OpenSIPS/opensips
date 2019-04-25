@@ -50,8 +50,7 @@ aaa_prot proto;
 auth_api_t auth_api;
 
 static int mod_init(void);         /* Module initialization function */
-static int auth_fixup(void** param, int param_no); /* char* -> str* */
-
+static int cfg_validate(void);
 
 /*
  * Module parameter variables
@@ -66,34 +65,24 @@ char *use_ruri_flag_str = 0;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
-	{"aaa_www_authorize", (cmd_function)aaa_www_authorize, 1,
-			auth_fixup, 0,
-			REQUEST_ROUTE},
-	{"aaa_www_authorize", (cmd_function)aaa_www_authorize, 2,
-			auth_fixup, 0,
-			REQUEST_ROUTE},
-	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_1, 1,
-			auth_fixup, 0,
-			REQUEST_ROUTE},
-	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize_2, 2,
-			auth_fixup, 0,
-			REQUEST_ROUTE},
-	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist_0, 0,
-			0, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist_1, 1,
-			fixup_pvar_null, fixup_free_pvar_null,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"aaa_does_uri_user_exist", (cmd_function)aaa_does_uri_user_exist_0, 0,
-			0, 0,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{"aaa_does_uri_user_exist", (cmd_function)aaa_does_uri_user_exist_1, 1,
-			fixup_pvar_null, fixup_free_pvar_null,
-			REQUEST_ROUTE|LOCAL_ROUTE},
-	{0, 0, 0, 0, 0, 0}
-};
 
+static cmd_export_t cmds[] = {
+	{"aaa_www_authorize", (cmd_function)aaa_www_authorize, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"aaa_proxy_authorize", (cmd_function)aaa_proxy_authorize, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"aaa_does_uri_exist", (cmd_function)aaa_does_uri_exist, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|LOCAL_ROUTE},
+	{"aaa_does_uri_user_exist", (cmd_function)w_aaa_does_uri_user_exist, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|LOCAL_ROUTE},
+	{0,0,{{0,0,0}},0}
+};
 
 /*
  * Exported parameters
@@ -150,7 +139,8 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	0,          /* destroy function */
-	0           /* child initialization function */
+	0,          /* child initialization function */
+	cfg_validate/* reload confirm function */
 };
 
 
@@ -216,15 +206,20 @@ static int mod_init(void)
 		attrs[A_CISCO_AVPAIR].name = NULL;
 	}
 
-	bind_auth = (bind_auth_t)find_export("bind_auth", 0, 0);
-	if (!bind_auth) {
-		LM_ERR("unable to find bind_auth function. Check if you load the auth module.\n");
-		return -1;
-	}
+	if (is_script_func_used("aaa_www_authorize", -1) ||
+	is_script_func_used("aaa_proxy_authorize", -1) ) {
 
-	if (bind_auth(&auth_api) < 0) {
-		LM_ERR("cannot bind to auth module\n");
-		return -4;
+		bind_auth = (bind_auth_t)find_export("bind_auth", 0);
+		if (!bind_auth) {
+			LM_ERR("unable to find bind_auth function. Check if you "
+				"loaded the auth module.\n");
+			return -1;
+		}
+
+		if (bind_auth(&auth_api) < 0) {
+			LM_ERR("cannot bind to auth module\n");
+			return -4;
+		}
 	}
 
 	INIT_AV(proto, conn, attrs, A_MAX, vals, V_MAX, "auth_aaa", -5, -6);
@@ -234,53 +229,21 @@ static int mod_init(void)
 	if (check_service_type != -1)
 		vals[V_CALL_CHECK].value = check_service_type;
 
-
 	return 0;
 }
 
 
-/*
- * Convert char* parameter to pv_elem_t* parameter
- */
-static int auth_fixup(void** param, int param_no)
+static int cfg_validate(void)
 {
-	pv_elem_t *model;
-	str s;
-	pv_spec_t *sp;
+	/* if auth API already loaded, it is fine */
+	if (auth_api.pre_auth)
+		return 1;
 
-	if (param_no == 1) { /* realm (string that may contain pvars) */
-		s.s = (char*)*param;
-		if (s.s==0 || s.s[0]==0) {
-			model = 0;
-		} else {
-			s.len = strlen(s.s);
-			if (pv_parse_format(&s,&model)<0) {
-				LM_ERR("pv_parse_format failed\n");
-				return E_OUT_OF_MEM;
-			}
-		}
-		*param = (void*)model;
-	}
-
-	if (param_no == 2) { /* URI user (a pvar) */
-		sp = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
-		if (sp == 0) {
-			LM_ERR("no pkg memory left\n");
-			return -1;
-		}
-		s.s = (char*)*param;
-		s.len = strlen(s.s);
-		if (pv_parse_spec(&s, sp) == 0) {
-			LM_ERR("parsing of pseudo variable %s failed!\n", (char*)*param);
-			pkg_free(sp);
-			return -1;
-		}
-		if (sp->type == PVT_NULL) {
-			LM_ERR("bad pseudo variable\n");
-			pkg_free(sp);
-			return -1;
-		}
-		*param = (void*)sp;
+	if (is_script_func_used("aaa_www_authorize", -1) ||
+	is_script_func_used("aaa_proxy_authorize", -1) ) {
+		LM_ERR("aaa_xxx_authorize() was found, but module started without "
+			"auth support/binding, better restart\n");
+		return 0;
 	}
 
 	return 0;

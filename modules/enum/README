@@ -18,11 +18,10 @@ Enum Module
 
         1.4. Exported Functions
 
-              1.4.1. enum_query(["suffix"[,"service"]])
-              1.4.2. enum_pv_query("pvar"[,"suffix"[,"service"]])
-              1.4.3. i_enum_query(["suffix"[,"service"]])
-              1.4.4. isn_query(["suffix"[,"service"]])
-              1.4.5. is_from_user_enum()
+              1.4.1. enum_query([number], [suffix], [service])
+              1.4.2. i_enum_query([suffix], [service])
+              1.4.3. isn_query([suffix], [service])
+              1.4.4. is_from_user_enum([suffix], [service])
 
    2. Contributors
 
@@ -51,9 +50,8 @@ Enum Module
    1.7. Zone file example
    1.8. Setting the bl_algorithm module parameter
    1.9. enum_query usage
-   1.10. enum_pv_query usage
-   1.11. isn_query usage
-   1.12. is_from_user_enum usage
+   1.10. isn_query usage
+   1.11. is_from_user_enum usage
 
 Chapter 1. Admin Guide
 
@@ -103,7 +101,7 @@ Chapter 1. Admin Guide
    starts with a '+' sign, the ENUM lookup also supports compound
    NAPTRs (e.g. "e2u+voice:sip+video:sip") and searching for
    multiple service types within one lookup. Multiple service
-   types must be separeted by a '+' sign.
+   types must be separated by a '+' sign.
 
    Most of the time you want to route based on the RURI. On rare
    occasions you may wish to route based on something else. The
@@ -246,84 +244,46 @@ modparam("enum", "bl_algorithm", "txt")
 
 1.4. Exported Functions
 
-1.4.1.  enum_query(["suffix"[,"service"]])
+1.4.1.  enum_query([number], [suffix], [service])
 
-   The function performs an enum query and rewrites the
+   The function performs an ENUM query on a given E.164 "number"
+   (or R-URI username if "number" is missing) and rewrites the
    Request-URI with the result of the query. See Overview for more
    information.
 
    Meaning of the parameters is as follows:
-     * suffix - Suffix to be appended to the domain name. The
-       suffix parameter can have the following types:
-          + string - the suffix is statically assigned
-          + pvar - the suffix is the value of an existing
-            pseudo-variable (as string value)
-     * service - Service string to be used in the service field.
-          + string - the service is statically assigned
-          + pvar - the service is the value of an existing
-            pseudo-variable (as string value)
+     * number (string, optional) - an E.164 number packed as a
+       string on which the ENUM query is performed
+     * suffix (string, optional) - suffix to be appended to the
+       domain name, domain_suffix if missing
+     * service (string, optional) - service string to be used in
+       the service field
 
    This function can be used from REQUEST_ROUTE.
 
    Example 1.9. enum_query usage
 ...
 # search for "e2u+sip" in freenum.org
-enum_query("freenum.org.");
+enum_query($avp(number), "freenum.org.");
 ...
 # search for "e2u+sip" in default tree (configured as parameter)
 enum_query();
 ...
 # search for "e2u+voice:sip" in e164.arpa
-enum_query("e164.arpa.","voice");
+enum_query(, "e164.arpa.", "voice");
 ...
 # search for service type "sip" or "voice:sip" or "video:sip"
 # note the '+' sign in front of the second parameter
-enum_query("e164.arpa.","+sip+voice:sip+video:sip");
+enum_query($avp(number), "e164.arpa.", "+sip+voice:sip+video:sip");
 ...
-# quering for service sip and voice:sip
-enum_query("e164.arpa.");
-enum_query("e164.arpa.","voice");
+# querying for service sip and voice:sip
+enum_query(, "e164.arpa.");
+enum_query(, "e164.arpa.", "voice");
 # or use instead
-enum_query("e164.arpa.","+sip+voice:sip");
+enum_query(, "e164.arpa.", "+sip+voice:sip");
 ...
 
-1.4.2.  enum_pv_query("pvar"[,"suffix"[,"service"]])
-
-   The function performs an enum query on E.164 number stored in
-   its pseudo variable argument and rewrites the Request-URI with
-   the result of the query. See Overview for more information.
-
-   Meaning of the parameters is as follows:
-     * pvar - Pseudo variable that holds an E.164 number on which
-       enum query is performed.
-     * suffix - Suffix to be appended to the domain name.
-     * service - Service string to be used in the service field.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.10. enum_pv_query usage
-...
-# search for "e2u+sip" in freenum.org
-enum_pv_query("$avp(100)", "freenum.org.");
-...
-# search for "e2u+sip" in default tree (configured as parameter)
-enum_pv_query("$fU");
-...
-# search for "e2u+voice:sip" in e164.arpa
-enum_pv_query("$avp(100)","e164.arpa.","voice");
-...
-# search for service type "sip" or "voice:sip" or "video:sip"
-# note the '+' sign in front of the second parameter
-enum_pv_query("$fU","e164.arpa.","+sip+voice:sip+video:sip");
-...
-# quering for service sip and voice:sip
-enum_pv_query("$avp(100)","e164.arpa.");
-enum_pv_query("$avp(100)","e164.arpa.","voice");
-# or use instead
-enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
-...
-
-1.4.3.  i_enum_query(["suffix"[,"service"]])
+1.4.2.  i_enum_query([suffix], [service])
 
    The function performs an enum query and rewrites the
    Request-URI with the result of the query. This the
@@ -331,19 +291,27 @@ enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
    difference to enum_query() is in the calculation of the FQDN
    where NAPTR records are looked for.
 
+   Meaning of the parameters is as follows:
+     * suffix (string, optional) - suffix to be appended to the
+       domain name, i_enum_suffix if missing
+     * service (string, optional) - service string to be used in
+       the service field
+
    See
    ftp://ftp.rfc-editor.org/in-notes/internet-drafts/draft-haberle
    r-carrier-enum-01.txt for the rationale behind this function.
 
-1.4.4.  isn_query(["suffix"[,"service"]])
+1.4.3.  isn_query([suffix], [service])
 
    The function performs a ISN query and rewrites the Request-URI
    with the result of the query. See Overview for more
    information.
 
    Meaning of the parameters is as follows:
-     * suffix - Suffix to be appended to the domain name.
-     * service - Service string to be used in the service field.
+     * suffix (string, optional) - suffix to be appended to the
+       domain name, isn_suffix if missing
+     * service (string, optional) - service string to be used in
+       the service field
 
    This function can be used from REQUEST_ROUTE.
 
@@ -351,7 +319,7 @@ enum_pv_query("$avp(100)","e164.arpa.","+sip+voice:sip");
    ftp://www.ietf.org/rfc/rfc2871.txt for information regarding
    the ITAD part of the ISN string.
 
-   Example 1.11. isn_query usage
+   Example 1.10. isn_query usage
 ...
 # search for "e2u+sip" in freenum.org
 isn_query("freenum.org.");
@@ -360,17 +328,23 @@ isn_query("freenum.org.");
 isn_query();
 ...
 # search for "e2u+voice:sip" in freenum.org
-isn_query("freenum.org.","voice");
+isn_query("freenum.org.", "voice");
 ...
 
-1.4.5. is_from_user_enum()
+1.4.4. is_from_user_enum([suffix], [service])
 
    Checks if the user part of from URI is found in an enum lookup.
    Returns 1 if yes and -1 if not.
 
+   Meaning of the parameters is as follows:
+     * suffix (string, optional) - suffix to be appended to the
+       domain name, domain_suffix if missing
+     * service (string, optional) - service string to be used in
+       the service field
+
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.12. is_from_user_enum usage
+   Example 1.11. is_from_user_enum usage
 ...
 if (is_from_user_enum()) {
         ....
@@ -385,20 +359,20 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Juha Heinanen (@juha-h) 36 14 1681 396
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 27 22 300 95
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 23 302 96
    3. Jan Janak (@janakj) 19 14 345 75
-   4. Daniel-Constantin Mierla (@miconda) 14 12 46 55
-   5. Liviu Chircu (@liviuchircu) 11 8 114 59
+   4. Liviu Chircu (@liviuchircu) 18 9 223 359
+   5. Daniel-Constantin Mierla (@miconda) 14 12 46 55
    6. Henning Westerholt (@henningw) 8 3 14 190
-   7. Greg Fausak 6 1 493 30
-   8. Razvan Crainea (@razvancrainea) 5 3 16 16
-   9. Andrei Pelinescu-Onciul 5 3 11 7
-   10. Jiri Kuthan (@jiriatipteldotorg) 4 2 4 29
+   7. Vlad Patrascu (@rvlad-patrascu) 8 2 47 233
+   8. Greg Fausak 6 1 493 30
+   9. Razvan Crainea (@razvancrainea) 5 3 16 16
+   10. Andrei Pelinescu-Onciul 5 3 11 7
 
-   All remaining contributors: Klaus Darilion, Konstantin
-   Bokarius, Klaus Darilion, Andreas Granig, Peter Lemenkov
-   (@lemenkov), Edson Gellert Schubert, Dusan Klinec, Vlad
-   Patrascu (@rvlad-patrascu).
+   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
+   Dan Pascu (@danpascu), Klaus Darilion, Konstantin Bokarius,
+   Klaus Darilion, Andreas Granig, Peter Lemenkov (@lemenkov),
+   Edson Gellert Schubert, Dusan Klinec.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -420,21 +394,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
-   5.  Dusan Klinec                        Dec 2015 - Dec 2015
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Dec 2014
-   7.  Juha Heinanen (@juha-h)             Jan 2003 - Apr 2008
-   8.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
-   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
+   1.  Dan Pascu (@danpascu)               Apr 2019 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
+   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Juha Heinanen (@juha-h)             Jan 2003 - Apr 2008
+   9.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Klaus Darilion, Greg Fausak, Andreas Granig, Klaus Darilion,
-   Andrei Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg), Jan
-   Janak (@janakj).
+   All remaining contributors: Edson Gellert Schubert, Henning
+   Westerholt (@henningw), Klaus Darilion, Greg Fausak, Andreas
+   Granig, Klaus Darilion, Andrei Pelinescu-Onciul, Jiri Kuthan
+   (@jiriatipteldotorg), Jan Janak (@janakj).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -443,12 +417,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Juha Heinanen (@juha-h),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Greg Fausak, Klaus Darilion, Jan Janak
-   (@janakj).
+   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Juha Heinanen
+   (@juha-h), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Greg Fausak, Klaus Darilion,
+   Jan Janak (@janakj).
 
    Documentation Copyrights:
 

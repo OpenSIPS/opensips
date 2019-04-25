@@ -199,10 +199,10 @@ static AVP_Param media_relay_avp = {str_init(MEDIA_RELAY_AVP_SPEC), -1, 0};
 static AVP_Param ice_candidate_avp = {str_init(ICE_CANDIDATE_AVP_SPEC), -1, 0};
 
 static cmd_export_t commands[] = {
-    {"engage_media_proxy", (cmd_function)EngageMediaProxy, 0, 0, 0, REQUEST_ROUTE},
-    {"use_media_proxy",    (cmd_function)UseMediaProxy,    0, 0, 0, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
-    {"end_media_session",  (cmd_function)EndMediaSession,  0, 0, 0, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
-    {0, 0, 0, 0, 0, 0}
+    {"engage_media_proxy", (cmd_function)EngageMediaProxy, {{0, 0, 0}}, REQUEST_ROUTE},
+    {"use_media_proxy",    (cmd_function)UseMediaProxy,    {{0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
+    {"end_media_session",  (cmd_function)EndMediaSession,  {{0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
+    {0, 0, {{0, 0, 0}}, 0}
 };
 
 static param_export_t parameters[] = {
@@ -244,7 +244,8 @@ struct module_exports exports = {
     mod_init,        // module init function (before fork. kids will inherit)
     NULL,            // reply processing function
     NULL,            // destroy function
-    child_init       // child init function
+    child_init,      // child init function
+    NULL             /* reload confirm function */
 };
 
 

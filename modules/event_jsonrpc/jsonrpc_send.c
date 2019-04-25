@@ -48,7 +48,6 @@
 int jsonrpc_timeout = JSONRPC_DEFAULT_TIMEOUT;
 char *jsonrpc_event_param;
 unsigned jsonrpc_sync_mode = 0;
-static unsigned nr_procs = 0;
 static int jrpc_id_index = 0;
 
 /* used to communicate with the sending process */
@@ -110,9 +109,7 @@ int jsonrpc_init_process(void)
 int jsonrpc_create_status_pipes(void) {
 	int rc, i;
 
-	nr_procs = count_init_children(0) + 2;	/* + 2 timer processes */
-
-	jsonrpc_status_pipes = shm_malloc(nr_procs * sizeof(jsonrpc_pipe));
+	jsonrpc_status_pipes = shm_malloc(counted_max_processes * sizeof(jsonrpc_pipe));
 
 	if (!jsonrpc_status_pipes) {
 		LM_ERR("cannot allocate jsonrpc_status_pipes\n");
@@ -120,7 +117,7 @@ int jsonrpc_create_status_pipes(void) {
 	}
 
 	/* create pipes */
-	for (i = 0; i < nr_procs; i++) {
+	for (i = 0; i < counted_max_processes; i++) {
 		do {
 			rc = pipe(jsonrpc_status_pipes[i]);
 		} while (rc < 0 && IS_ERR(EINTR));
@@ -148,7 +145,7 @@ void jsonrpc_destroy_status_pipes(void)
 {
 	int i;
 
-	for(i = 0; i < nr_procs; i++) {
+	for(i = 0; i < counted_max_processes; i++) {
 		close(jsonrpc_status_pipes[i][0]);
 		close(jsonrpc_status_pipes[i][1]);
 	}
@@ -256,7 +253,7 @@ static void jsonrpc_init_reader(void)
 	}
 
 	if (jsonrpc_sync_mode)
-		for(i = 0; i < nr_procs; i++) {
+		for(i = 0; i < counted_max_processes; i++) {
 			close(jsonrpc_status_pipes[i][0]);
 
 			/* Turn non-blocking mode on for sending*/
@@ -494,7 +491,7 @@ static void jsonrpc_cmd_reply(struct jsonrpc_cmd *cmd, int send_status)
 	if (!jsonrpc_sync_mode)
 		return;
 
-	if (cmd->job->process_idx < 0 || cmd->job->process_idx >= nr_procs)
+	if (cmd->job->process_idx < 0 || cmd->job->process_idx >= counted_max_processes)
 		return;
 
 	jsonrpc_cmd_write(cmd->job->process_idx, send_status);

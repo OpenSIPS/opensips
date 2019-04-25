@@ -138,7 +138,7 @@ void set_global_log_level(int level)
 {
 	int i;
 
-	for (i = 0; i < counted_processes; i++) {
+	for (i = 0; i < counted_max_processes; i++) {
 		__set_proc_default_log_level(i, level);
 		__set_proc_log_level(i, level);
 	}

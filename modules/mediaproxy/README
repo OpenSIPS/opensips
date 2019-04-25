@@ -227,7 +227,7 @@ modparam("mediaproxy", "media_relay_avp", "$avp(media_relay)")
    Indicates the type of ICE candidate that will be added to the
    SDP. It can take 3 values: 'none', 'low-priority' or
    'high-priority'. If 'none' is selected no candidate will be
-   adeed to the SDP. If 'low-priority' is selected then a low
+   added to the SDP. If 'low-priority' is selected then a low
    priority candidate will be added and if 'high-priority' is
    selected a high priority one.
 
@@ -352,22 +352,22 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Dan Pascu (@danpascu) 126 49 4218 2380
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 38 30 686 87
+   1. Dan Pascu (@danpascu) 128 51 4223 2388
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 31 688 88
    3. Saúl Ibarra Corretgé (@saghul) 20 14 504 71
    4. Daniel-Constantin Mierla (@miconda) 13 11 37 33
    5. Liviu Chircu (@liviuchircu) 12 10 40 46
    6. Razvan Crainea (@razvancrainea) 6 4 19 40
-   7. Vlad Paiu (@vladpaiu) 4 2 7 12
-   8. Henning Westerholt (@henningw) 4 2 6 31
-   9. Andrei Pelinescu-Onciul 4 2 4 4
-   10. Eric Tamme (@etamme) 3 1 6 2
+   7. Vlad Patrascu (@rvlad-patrascu) 4 2 8 4
+   8. Vlad Paiu (@vladpaiu) 4 2 7 12
+   9. Henning Westerholt (@henningw) 4 2 6 31
+   10. Andrei Pelinescu-Onciul 4 2 4 4
 
-   All remaining contributors: Marcus Hunger, Sergio Gutierrez,
-   Jan Janak (@janakj), Konstantin Bokarius, Julián Moreno Patiño,
-   Klaus Darilion, Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Adrian Georgescu, Elena-Ramona Modroiu, Sergio
-   Gutierrez, Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Eric Tamme (@etamme), Marcus
+   Hunger, Sergio Gutierrez, Jan Janak (@janakj), Konstantin
+   Bokarius, Julián Moreno Patiño, Klaus Darilion, Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert, Adrian Georgescu,
+   Elena-Ramona Modroiu, Sergio Gutierrez.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -389,16 +389,16 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Oct 2014
-   7.  Eric Tamme (@etamme)                Jul 2014 - Jul 2014
-   8.  Saúl Ibarra Corretgé (@saghul)      Mar 2010 - Dec 2013
-   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011
-   10. Dan Pascu (@danpascu)               Mar 2004 - Apr 2009
+   1.  Dan Pascu (@danpascu)               Mar 2004 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2018
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Eric Tamme (@etamme)                Jul 2014 - Jul 2014
+   9.  Saúl Ibarra Corretgé (@saghul)      Mar 2010 - Dec 2013
+   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011
 
    All remaining contributors: Sergio Gutierrez, Sergio Gutierrez,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
@@ -413,10 +413,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Saúl Ibarra Corretgé (@saghul), Dan
-   Pascu (@danpascu), Daniel-Constantin Mierla (@miconda),
+   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Saúl Ibarra
+   Corretgé (@saghul), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
    Modroiu.
 

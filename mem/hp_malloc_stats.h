@@ -1,7 +1,8 @@
 /**
- * the truly parallel memory allocator
+ * high-performance allocator with fine-grained SHM locking
+ *   (note: may perform worse than F_MALLOC at low CPS values!)
  *
- * Copyright (C) 2014 OpenSIPS Solutions
+ * Copyright (C) 2014-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,11 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2014-01-19 initial version (liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef HP_MALLOC_STATS_H
@@ -29,12 +26,11 @@
 
 #include "../lock_ops.h"
 
-/* specified in microseconds */
-#define SHM_STATS_SAMPLING_PERIOD 200000L
-
-extern gen_lock_t *hp_stats_lock;
-
 #ifdef STATISTICS
+#ifdef HP_MALLOC_FAST_STATS
+extern gen_lock_t *hp_stats_lock;
+#endif
+
 int stats_are_expired(struct hp_block *hpb);
 void update_shm_stats(struct hp_block *hpb);
 void hp_init_shm_statistics(struct hp_block *hpb);
@@ -52,6 +48,13 @@ unsigned long hp_pkg_get_free(struct hp_block *hpb);
 unsigned long hp_pkg_get_real_used(struct hp_block *hpb);
 unsigned long hp_pkg_get_max_real_used(struct hp_block *hpb);
 unsigned long hp_pkg_get_frags(struct hp_block *hpb);
+
+unsigned long hp_rpm_get_size(struct hp_block *hpb);
+unsigned long hp_rpm_get_used(struct hp_block *hpb);
+unsigned long hp_rpm_get_free(struct hp_block *hpb);
+unsigned long hp_rpm_get_real_used(struct hp_block *hpb);
+unsigned long hp_rpm_get_max_real_used(struct hp_block *hpb);
+unsigned long hp_rpm_get_frags(struct hp_block *hpb);
 
 #define update_stats_pkg_frag_attach(blk, frag) \
 	do { \
@@ -78,10 +81,13 @@ unsigned long hp_pkg_get_frags(struct hp_block *hpb);
 		(blk)->total_fragments--; \
 	} while (0)
 
-#ifdef HP_MALLOC_FAST_STATS
+#if defined HP_MALLOC_FAST_STATS
 	#define update_stats_shm_frag_attach(frag)
 	#define update_stats_shm_frag_detach(frag)
 	#define update_stats_shm_frag_split()
+	#define update_stats_rpm_frag_attach(frag)
+	#define update_stats_rpm_frag_detach(frag)
+	#define update_stats_rpm_frag_split()
 
 #else /* HP_MALLOC_FAST_STATS */
 	#define update_stats_shm_frag_attach(frag) \
@@ -102,6 +108,26 @@ unsigned long hp_pkg_get_frags(struct hp_block *hpb);
 			update_stat(shm_rused, FRAG_OVERHEAD); \
 			update_stat(shm_frags, 1); \
 		} while (0)
+
+	#define update_stats_rpm_frag_attach(frag) \
+		do { \
+			update_stat(rpm_used, -(frag)->size); \
+			update_stat(rpm_rused, -((frag)->size + FRAG_OVERHEAD)); \
+		} while (0)
+
+	#define update_stats_rpm_frag_detach(frag) \
+		do { \
+			update_stat(rpm_used, (frag)->size); \
+			update_stat(rpm_rused, (frag)->size + FRAG_OVERHEAD); \
+		} while (0)
+
+	#define update_stats_rpm_frag_split(...) \
+		do { \
+			update_stat(rpm_used, -FRAG_OVERHEAD); \
+			update_stat(rpm_rused, FRAG_OVERHEAD); \
+			update_stat(rpm_frags, 1); \
+		} while (0)
+
 #endif /* HP_MALLOC_FAST_STATS */
 
 #else /* STATISTICS */
@@ -116,6 +142,9 @@ unsigned long hp_pkg_get_frags(struct hp_block *hpb);
 	#define update_stats_shm_frag_attach(frag)
 	#define update_stats_shm_frag_detach(frag)
 	#define update_stats_shm_frag_split(...)
+	#define update_stats_rpm_frag_attach(frag)
+	#define update_stats_rpm_frag_detach(frag)
+	#define update_stats_rpm_frag_split(...)
 #endif
 
 #endif /* HP_MALLOC_STATS_H */

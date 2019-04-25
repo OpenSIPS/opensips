@@ -110,13 +110,12 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 #define STORE_BRANCH_CTID \
 	(sipping_flag && (rm_on_to_flag || sipping_latency_flag))
 
-static int nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2);
-static int fix_nated_contact_f(struct sip_msg *, char *, char *);
-static int fix_nated_sdp_f(struct sip_msg *, char *, char *, char *);
+static int nat_uac_test_f(struct sip_msg* msg, int *tests);
+static int fix_nated_contact_f(struct sip_msg* msg, str *params);
+static int fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip,
+						str *new_sdp_lines);
 static int fix_nated_register_f(struct sip_msg *, char *, char *);
-static int fixup_fix_nated_register(void** param, int param_no);
-static int fixup_fix_sdp(void** param, int param_no);
-static int add_rcv_param_f(struct sip_msg *, char *, char *);
+static int add_rcv_param_f(struct sip_msg* msg, int *flag);
 static int get_oldip_fields_value(modparam_t type, void* val);
 
 static void nh_timer(unsigned int, void *);
@@ -227,7 +226,7 @@ int skip_oldip=0;
 /*0-> disabled, 1 ->enabled*/
 unsigned int *natping_state=0;
 
-
+/*
 static cmd_export_t cmds[] = {
 	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f,    0,
 		0, 0,
@@ -257,6 +256,27 @@ static cmd_export_t cmds[] = {
 		fixup_uint_null, 0,
 		REQUEST_ROUTE },
 	{0, 0, 0, 0, 0, 0}
+};
+*/
+
+static cmd_export_t cmds[] = {
+	{"fix_nated_contact",  (cmd_function)fix_nated_contact_f, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f, {
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"nat_uac_test",       (cmd_function)nat_uac_test_f, {
+		{CMD_PARAM_INT,0,0}, {0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"fix_nated_register", (cmd_function)fix_nated_register_f,
+		{{0,0,0}}, REQUEST_ROUTE},
+	{"add_rcv_param",  (cmd_function)add_rcv_param_f, {
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {
@@ -330,7 +350,8 @@ struct module_exports exports = {
 	mod_init,
 	0,           /* sipping_rpl_filter() - optional reply processing */
 	mod_destroy, /* destroy function */
-	0
+	0,
+	0            /* reload confirm function */
 };
 
 
@@ -358,43 +379,6 @@ get_oldip_fields_value(modparam_t type, void* val)
 
 	return 0;
 }
-
-static int
-fixup_fix_sdp(void** param, int param_no)
-{
-	pv_elem_t *model;
-	str s;
-
-	if (param_no==1) {
-		/* flags */
-		return fixup_uint_null( param, param_no);
-	}
-	/* new IP */
-	model=NULL;
-	s.s = (char*)(*param); s.len = strlen(s.s);
-	if(pv_parse_format(&s,&model)<0) {
-		LM_ERR("wrong format[%s]!\n", (char*)(*param));
-		return E_UNSPEC;
-	}
-	if (model==NULL) {
-		LM_ERR("empty parameter!\n");
-		return E_UNSPEC;
-	}
-	*param = (void*)model;
-	return 0;
-}
-
-static int fixup_fix_nated_register(void** param, int param_no)
-{
-	if (rcv_avp_name < 0) {
-		LM_ERR("you must set 'received_avp' parameter. Must be same value as"
-				" parameter 'received_avp' of registrar module\n");
-		return -1;
-	}
-	return 0;
-}
-
-
 
 static mi_response_t *mi_enable_natping(const mi_params_t *params,
 								struct mi_handler *async_hdl)
@@ -532,7 +516,7 @@ mod_init(void)
 
 	/* enable all the pinging stuff only if pinging interval is set */
 	if (natping_interval > 0) {
-		bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 1, 0);
+		bind_usrloc = (bind_usrloc_t)find_export("ul_bind_usrloc", 0);
 		if (!bind_usrloc) {
 			LM_ERR("can't find usrloc module\n");
 			return -1;
@@ -695,7 +679,7 @@ isnulladdr(str *sx, int pf)
  * of the packet.
  */
 static int
-fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
+fix_nated_contact_f(struct sip_msg* msg, str *params)
 {
 	int len, len1;
 	char *cp, *buf, temp, *p;
@@ -705,7 +689,6 @@ fix_nated_contact_f(struct sip_msg* msg, char* str1, char* str2)
 	struct sip_uri uri;
 	str hostport, left, left2;
 	int is_enclosed;
-	str *params = (str*)str1;
 
 	if (params && params->len==0)
 		params = 0;
@@ -952,16 +935,12 @@ contact_rport(struct sip_msg* msg)
 
 
 static int
-nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
+nat_uac_test_f(struct sip_msg* msg, int *tests)
 {
-	int tests;
-
-	tests = (int)*(unsigned int *)str1;
-
 	/* return true if any of the NAT-UAC tests holds */
 
 	/* test if the source port is different from the port in Via */
-	if ((tests & NAT_UAC_TEST_RPORT) &&
+	if ((*tests & NAT_UAC_TEST_RPORT) &&
 		 (msg->rcv.src_port!=(msg->via1->port?msg->via1->port:SIP_PORT)) ){
 		return 1;
 	}
@@ -969,35 +948,35 @@ nat_uac_test_f(struct sip_msg* msg, char* str1, char* str2)
 	 * test if source address of signaling is different from
 	 * address advertised in Via
 	 */
-	if ((tests & NAT_UAC_TEST_V_RCVD) && received_test(msg))
+	if ((*tests & NAT_UAC_TEST_V_RCVD) && received_test(msg))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses in Contact
 	 * header field
 	 */
-	if ((tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg)>0))
+	if ((*tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg)>0))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses in SDP body
 	 */
-	if ((tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg))
+	if ((*tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses top Via
 	 */
-	if ((tests & NAT_UAC_TEST_V_1918) && via_1918(msg))
+	if ((*tests & NAT_UAC_TEST_V_1918) && via_1918(msg))
 		return 1;
 	/*
 	 * test if source address of signaling is different from
 	 * address advertised in Contact
 	 */
-	if ((tests & NAT_UAC_TEST_C_RCVD) && contact_rcv(msg))
+	if ((*tests & NAT_UAC_TEST_C_RCVD) && contact_rcv(msg))
 		return 1;
 	/*
 	 * test if source port of signaling is different from
 	 * port advertised in Contact
 	 */
-	if ((tests & NAT_UAC_TEST_C_RPORT) && contact_rport(msg))
+	if ((*tests & NAT_UAC_TEST_C_RPORT) && contact_rport(msg))
 		return 1;
 
 	/* no test succeeded */
@@ -1207,22 +1186,13 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip, int forc
 
 
 static int
-fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2, char* str3)
+fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
 {
 	str body;
-	str ip;
-	str new_sdp_lines;
-	int level;
 	int forcenulladdr = 0;
 	char *buf;
 	struct lump* anchor;
 	struct body_part * p;
-
-	level = (int)*(unsigned int *)str1;
-	if (str2 && pv_printf_s( msg, (pv_elem_p)str2, &ip)!=0)
-		return -1;
-	if (str3 && pv_printf_s( msg, (pv_elem_p)str3, &new_sdp_lines)!=0)
-		return -1;
 
 	if ( parse_sip_body(msg)<0 || msg->body==NULL )
 	{
@@ -1242,14 +1212,14 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2, char* str3)
 							 || body.len == 0)
 			continue;
 
-		if (level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
+		if (*level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
 			msg->msg_flags |= FL_FORCE_ACTIVE;
 			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0);
 			if (anchor == NULL) {
 				LM_ERR("anchor_lump failed\n");
 				return -1;
 			}
-			if (level & ADD_ADIRECTION) {
+			if (*level & ADD_ADIRECTION) {
 				buf = pkg_malloc((ADIRECTION_LEN + CRLF_LEN) * sizeof(char));
 				if (buf == NULL) {
 					LM_ERR("out of pkg memory\n");
@@ -1263,7 +1233,7 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2, char* str3)
 					return -1;
 				}
 			}
-			if ((level & ADD_ANORTPPROXY) && nortpproxy_str.len) {
+			if ((*level & ADD_ANORTPPROXY) && nortpproxy_str.len) {
 				buf = pkg_malloc((nortpproxy_str.len + CRLF_LEN) * sizeof(char));
 				if (buf == NULL) {
 					LM_ERR("out of pkg memory\n");
@@ -1277,14 +1247,14 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2, char* str3)
 					return -1;
 				}
 			}
-			if (str3) {
-				buf = pkg_malloc((new_sdp_lines.len) * sizeof(char));
+			if (new_sdp_lines) {
+				buf = pkg_malloc((new_sdp_lines->len) * sizeof(char));
 				if (buf == NULL) {
 					LM_ERR("out of pkg memory\n");
 					return -1;
 				}
-				memcpy(buf, new_sdp_lines.s, new_sdp_lines.len);
-				if (insert_new_lump_after(anchor, buf, new_sdp_lines.len, 0) == NULL) {
+				memcpy(buf, new_sdp_lines->s, new_sdp_lines->len);
+				if (insert_new_lump_after(anchor, buf, new_sdp_lines->len, 0) == NULL) {
 					LM_ERR("insert_new_lump_after failed 3\n");
 					pkg_free(buf);
 					return -1;
@@ -1292,16 +1262,16 @@ fix_nated_sdp_f(struct sip_msg* msg, char* str1, char* str2, char* str3)
 			}
 		}
 
-		if (level & FORCE_NULL_ADDR) { forcenulladdr = 1; }
+		if (*level & FORCE_NULL_ADDR) { forcenulladdr = 1; }
 
-		if (level & FIX_ORGIP) {
+		if (*level & FIX_ORGIP) {
 			/* Iterate all o= and replace ips in them. */
-			if (replace_sdp_ip(msg, &body, "o=", str2?&ip:0, forcenulladdr)==-1)
+			if (replace_sdp_ip(msg, &body, "o=", ip?ip:0, forcenulladdr)==-1)
 				return -1;
 		}
-		if (level & FIX_MEDIP) {
+		if (*level & FIX_MEDIP) {
 			/* Iterate all c= and replace ips in them. */
-			if (replace_sdp_ip(msg, &body, "c=", str2?&ip:0, forcenulladdr)==-1)
+			if (replace_sdp_ip(msg, &body, "c=", ip?ip:0, forcenulladdr)==-1)
 				return -1;
 		}
 	}
@@ -1602,7 +1572,7 @@ create_rcv_uri(str* uri, struct sip_msg* m)
  * forwarding of the REGISTER requuest
  */
 static int
-add_rcv_param_f(struct sip_msg* msg, char* str1, char* str2)
+add_rcv_param_f(struct sip_msg* msg, int *flag)
 {
 	contact_t* c;
 	struct lump* anchor;
@@ -1610,7 +1580,7 @@ add_rcv_param_f(struct sip_msg* msg, char* str1, char* str2)
 	str uri;
 	int hdr_param;
 
-	hdr_param = (str1 && *(unsigned int *)str1 > 0) ? 0 : 1;
+	hdr_param = (flag && *flag > 0) ? 0 : 1;
 
 	if (create_rcv_uri(&uri, msg) < 0) {
 		return -1;

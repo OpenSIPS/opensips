@@ -166,7 +166,7 @@ static inline void get_routing_info(struct sip_msg *msg, int is_req,
 		rr_set->len = 0;
 	} else {
 		if(msg->record_route){
-			if( print_rr_body(msg->record_route, rr_set, !is_req,
+			if( print_rr_body(msg->record_route, rr_set, !is_req, 0,
 								skip_rrs) != 0 ){
 				LM_ERR("failed to print route records \n");
 				rr_set->s = 0;
@@ -198,6 +198,7 @@ static int update_leg_info(int leg, struct dlg_cell *dlg, struct sip_msg *msg,
 	str contact = STR_NULL;
 	str rr_set;
 	int is_req;
+	str sdp;
 
 	is_req = (msg->first_line.type==SIP_REQUEST)?1:0;
 
@@ -237,8 +238,13 @@ static int update_leg_info(int leg, struct dlg_cell *dlg, struct sip_msg *msg,
 		msg->rcv.bind_address->sock_str.len,
 		msg->rcv.bind_address->sock_str.s);
 
+	if (get_body(msg,&sdp) < 0) {
+		sdp.s = NULL;
+		sdp.len = 0;
+	}
+
 	if (dlg_update_leg_info(leg, dlg, tag, &rr_set, &contact, &cseq,
-	msg->rcv.bind_address,mangled_from,mangled_to,0)!=0) {
+	msg->rcv.bind_address,mangled_from,mangled_to, &sdp, NULL)!=0) {
 		LM_ERR("dlg_update_leg_info failed\n");
 		if (rr_set.s) pkg_free(rr_set.s);
 		goto error0;
@@ -691,9 +697,13 @@ static inline int update_msg_cseq(struct sip_msg *msg,str *new_cseq,
 	return 0;
 }
 
-static void dlg_update_sdp(struct dlg_leg *leg,struct sip_msg *msg)
+
+static void dlg_update_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, struct sip_msg *msg)
 {
 	str sdp;
+	char *tmp;
+	str *in_sdp = &dlg->legs[in_leg].in_sdp;
+	str *out_sdp = &dlg->legs[out_leg].out_sdp;
 
 	if (get_body(msg,&sdp) < 0) {
 		LM_ERR("Failed to extract SDP \n");
@@ -701,16 +711,32 @@ static void dlg_update_sdp(struct dlg_leg *leg,struct sip_msg *msg)
 		sdp.len = 0;
 	}
 
-	if (leg->adv_sdp.len < sdp.len) {
-		leg->adv_sdp.s = shm_realloc(leg->adv_sdp.s,sdp.len);
-		if (!leg->adv_sdp.s) {
+	if (in_sdp->len == sdp.len &&
+			memcmp(in_sdp->s, sdp.s, sdp.len) == 0) {
+		/* we have the same sdp in outbound as the one in inbound */
+		if (out_sdp->s)
+			shm_free(out_sdp->s);
+		memset(out_sdp, 0, sizeof(*out_sdp));
+		return;
+	}
+
+	if (!out_sdp->s) {
+		out_sdp->s = shm_malloc(sdp.len);
+		if (!out_sdp->s) {
+			LM_ERR("Failed to allocate sdp\n");
+			return;
+		}
+	} else if (out_sdp->len < sdp.len) {
+		tmp = shm_realloc(out_sdp->s, sdp.len);
+		if (tmp) {
 			LM_ERR("Failed to reallocate sdp \n");
 			return;
 		}
+		out_sdp->s = tmp;
 	}
 
-	leg->adv_sdp.len = sdp.len;
-	memcpy(leg->adv_sdp.s,sdp.s,sdp.len);
+	out_sdp->len = sdp.len;
+	memcpy(out_sdp->s,sdp.s,sdp.len);
 }
 
 static void dlg_update_callee_sdp(struct cell* t, int type,
@@ -759,7 +785,7 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 			return;
 		}
 
-		dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
+		dlg_update_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
@@ -813,7 +839,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 			return;
 		}
 
-		dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
+		dlg_update_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
@@ -883,6 +909,11 @@ static void dlg_seq_down_onreply_mod_cseq(struct cell* t, int type,
 	return;
 }
 
+static void free_final_cseq(void *cseq)
+{
+	shm_free(cseq);
+}
+
 static void fix_final_cseq(struct cell *t,int type,
 									struct tmcb_params *param)
 {
@@ -893,8 +924,6 @@ static void fix_final_cseq(struct cell *t,int type,
 
 	if (update_msg_cseq((struct sip_msg *)param->rpl,&cseq,0) != 0)
 		LM_ERR("failed to update CSEQ in msg\n");
-
-	shm_free(cseq.s);
 
 	return ;
 }
@@ -964,7 +993,7 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 {
 	struct sip_msg *msg,*rpl;
 	struct dlg_cell *dlg;
-	str buffer,contact,sdp;
+	str buffer,contact;
 
 	dlg = (struct dlg_cell *)(*ps->param);
 
@@ -993,19 +1022,7 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 			return;
 		}
 
-		/* extract SDP */
-		if (get_body(msg,&sdp) < 0) {
-			LM_ERR("Failed to extract SDP from outgoing invite \n");
-			sdp.s = NULL;
-			sdp.len = 0;
-		}
-
-		if (shm_str_sync(&dlg->legs[DLG_CALLER_LEG].adv_sdp, &sdp) != 0) {
-			LM_ERR("No more shm \n");
-			free_sip_msg(msg);
-			pkg_free(msg);
-			return;
-		}
+		dlg_update_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 
 		/* extract the contact address */
 		if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
@@ -1054,7 +1071,7 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_sdp(&dlg->legs[callee_idx(dlg)],msg);
+	dlg_update_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1085,7 +1102,7 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_sdp(&dlg->legs[DLG_CALLER_LEG],msg);
+	dlg_update_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1137,7 +1154,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	struct sip_msg *msg;
 	struct dlg_cell *dlg;
 	struct dlg_leg *leg;
-	str buffer, contact, sdp;
+	str buffer, contact;
 
 	buffer.s = ((str*)ps->extra1)->s;
 	buffer.len = ((str*)ps->extra1)->len;
@@ -1171,18 +1188,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	/* store the caller SDP into each callee leg, useful for Re-INVITE pings */
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
 
-	if (get_body(msg,&sdp) < 0) {
-		LM_ERR("Failed to extract SDP from outgoing invite \n");
-		sdp.s = NULL;
-		sdp.len = 0;
-	}
-
-	/* TODO: fix for late negotiation ... */
-
-	if (shm_str_dup(&leg->adv_sdp, &sdp) != 0) {
-		LM_ERR("No more shm\n");
-		goto out_free;
-	}
+	dlg_update_sdp(dlg, DLG_CALLER_LEG, dlg->legs_no[DLG_LEGS_USED], msg);
 
         /* extract the contact address */
 	if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
@@ -1265,8 +1271,7 @@ static void dlg_update_contact_req(struct cell* t, int type, struct tmcb_params 
 static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
 		struct dlg_cell *dlg)
 {
-	if (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REQ) &&
-	    dlg_has_reinvite_pinging(dlg)) {
+	if (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REQ)) {
 		/* register out callback in order to save SDP */
 		if (d_tmb.register_tmcb(req, 0, TMCB_REQUEST_BUILT,
 				dlg_onreq_out, (void *)dlg, 0) <= 0)
@@ -1275,8 +1280,7 @@ static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
 			dlg->flags |= DLG_FLAG_REINVITE_PING_ENGAGED_REQ;
 	}
 
-	if (t && (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REPL) &&
-	          dlg_has_reinvite_pinging(dlg))) {
+	if (t && (!(dlg->flags & DLG_FLAG_REINVITE_PING_ENGAGED_REPL))) {
 		if (d_tmb.register_tmcb(0, t, TMCB_RESPONSE_OUT,
 				dlg_onreply_out, (void *)dlg, 0) <= 0)
 			LM_ERR("can't register trace_onreply_out\n");
@@ -1663,38 +1667,34 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 		LM_DBG("BYE successfully processed - dst_leg = %d\n",dst_leg);
 
-		if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE ||
-		    dlg_has_reinvite_pinging(dlg) || dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
-			dlg_lock (d_table,d_entry);
+		dlg_lock (d_table,d_entry);
+		if (dlg->legs[dst_leg].last_gen_cseq) {
 
-			if (dlg->legs[dst_leg].last_gen_cseq) {
+			update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+			dlg_unlock (d_table,d_entry);
 
-				update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
-				dlg_unlock (d_table,d_entry);
+			if (update_msg_cseq(req,0,update_val) != 0)
+				LM_ERR("failed to update BYE msg cseq\n");
 
-				if (update_msg_cseq(req,0,update_val) != 0)
-					LM_ERR("failed to update BYE msg cseq\n");
+			msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
 
-				msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
-
-				final_cseq = shm_malloc(msg_cseq->len + 1);
-				if (final_cseq == 0) {
-					LM_ERR("no more shm mem\n");
-					goto after_unlock5;
-				}
-
-				memcpy(final_cseq,msg_cseq->s,msg_cseq->len);
-				final_cseq[msg_cseq->len] = 0;
-
-				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-				fix_final_cseq,
-				(void*)final_cseq, 0)<0 ) {
-					LM_ERR("failed to register TMCB (2)\n");
-				}
+			final_cseq = shm_malloc(msg_cseq->len + 1);
+			if (final_cseq == 0) {
+				LM_ERR("no more shm mem\n");
+				goto after_unlock5;
 			}
-			else
-				dlg_unlock (d_table,d_entry);
+
+			memcpy(final_cseq,msg_cseq->s,msg_cseq->len);
+			final_cseq[msg_cseq->len] = 0;
+
+			if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+			fix_final_cseq,
+			(void*)final_cseq, free_final_cseq)<0 ) {
+				LM_ERR("failed to register TMCB (2)\n");
+			}
 		}
+		else
+			dlg_unlock (d_table,d_entry);
 
 after_unlock5:
 
@@ -1786,60 +1786,52 @@ after_unlock5:
 					LM_ERR("failed to update inv cseq on leg %d\n",src_leg);
 				}
 
-				if (dlg_has_reinvite_pinging(dlg)) {
-					/* we need to update the SDP for this leg
-					and involve TM to update the SDP for the other side as well */
-					if(d_tmb.register_tmcb( req, 0, TMCB_REQUEST_BUILT,
-					(dir==DLG_DIR_UPSTREAM)?dlg_callee_reinv_onreq_out:dlg_caller_reinv_onreq_out,
-					(void *)dlg, 0) <=0) {
-						LM_ERR("can't register trace_onreq_out\n");
-						ok = 0;
-					}
+				/* we need to update the SDP for this leg
+				and involve TM to update the SDP for the other side as well */
+				if(d_tmb.register_tmcb( req, 0, TMCB_REQUEST_BUILT,
+				(dir==DLG_DIR_UPSTREAM)?dlg_callee_reinv_onreq_out:dlg_caller_reinv_onreq_out,
+				(void *)dlg, 0) <=0) {
+					LM_ERR("can't register trace_onreq_out\n");
+					ok = 0;
+				}
 
-					if (ok) {
-						ref_dlg( dlg , 1);
-						if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_OUT,
-						(dir==DLG_DIR_UPSTREAM)?dlg_update_caller_sdp:dlg_update_callee_sdp,
-						(void*)dlg, unreference_dialog)<0 ) {
-							LM_ERR("failed to register TMCB (2)\n");
-								unref_dlg( dlg , 1);
-						}
+				if (ok) {
+					ref_dlg( dlg , 1);
+					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_OUT,
+					(dir==DLG_DIR_UPSTREAM)?dlg_update_caller_sdp:dlg_update_callee_sdp,
+					(void*)dlg, unreference_dialog)<0 ) {
+						LM_ERR("failed to register TMCB (2)\n");
+							unref_dlg( dlg , 1);
 					}
 				}
 			}
 
-			if (dlg->flags & DLG_FLAG_PING_CALLER ||
-			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg_has_reinvite_pinging(dlg) ||
-			dlg->flags & DLG_FLAG_CSEQ_ENFORCE ) {
+			dlg_lock (d_table, d_entry);
 
-				dlg_lock (d_table, d_entry);
+			if (dlg->legs[dst_leg].last_gen_cseq) {
 
-				if (dlg->legs[dst_leg].last_gen_cseq) {
-
-					update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
-					if (req->first_line.u.request.method_value == METHOD_INVITE) {
-						/* save INVITE cseq, in case any requests follow after this
-						( pings or other in-dialog requests until the ACK comes in */
-						dlg->legs[dst_leg].last_inv_gen_cseq = dlg->legs[dst_leg].last_gen_cseq;
-					}
-
-					dlg_unlock( d_table, d_entry );
-
-					if (update_msg_cseq(req,0,update_val) != 0) {
-						LM_ERR("failed to update sequential request msg cseq\n");
-						ok = 0;
-					}
-				} else {
-					if (req->first_line.u.request.method_value == METHOD_INVITE) {
-						/* we did not generate any pings yet - still we need to store the INV cseq,
-						in case there's a race between the ACK for the INVITE and sending of new pings */
-						str2int(&((struct cseq_body *)req->cseq->parsed)->number,
-						&dlg->legs[dst_leg].last_inv_gen_cseq);
-					}
-
-					dlg_unlock( d_table, d_entry );
+				update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+				if (req->first_line.u.request.method_value == METHOD_INVITE) {
+					/* save INVITE cseq, in case any requests follow after this
+					( pings or other in-dialog requests until the ACK comes in */
+					dlg->legs[dst_leg].last_inv_gen_cseq = dlg->legs[dst_leg].last_gen_cseq;
 				}
+
+				dlg_unlock( d_table, d_entry );
+
+				if (update_msg_cseq(req,0,update_val) != 0) {
+					LM_ERR("failed to update sequential request msg cseq\n");
+					ok = 0;
+				}
+			} else {
+				if (req->first_line.u.request.method_value == METHOD_INVITE) {
+					/* we did not generate any pings yet - still we need to store the INV cseq,
+					in case there's a race between the ACK for the INVITE and sending of new pings */
+					str2int(&((struct cseq_body *)req->cseq->parsed)->number,
+					&dlg->legs[dst_leg].last_inv_gen_cseq);
+				}
+
+				dlg_unlock( d_table, d_entry );
 			}
 
 			if (ok) {
@@ -1854,89 +1846,76 @@ after_unlock5:
 					replicate_dialog_updated(dlg);
 			}
 		} else {
-			if (dlg->flags & DLG_FLAG_PING_CALLER ||
-			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg_has_reinvite_pinging(dlg) ||
-			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 
-				dlg_lock (d_table, d_entry);
+			dlg_lock (d_table, d_entry);
 
-				if (dlg->legs[dst_leg].last_gen_cseq ||
-				dlg->legs[dst_leg].last_inv_gen_cseq ) {
-					if (dlg->legs[dst_leg].last_inv_gen_cseq)
-						update_val = dlg->legs[dst_leg].last_inv_gen_cseq;
-					else
-						update_val = dlg->legs[dst_leg].last_gen_cseq;
-					dlg_unlock( d_table, d_entry );
+			if (dlg->legs[dst_leg].last_gen_cseq ||
+			dlg->legs[dst_leg].last_inv_gen_cseq ) {
+				if (dlg->legs[dst_leg].last_inv_gen_cseq)
+					update_val = dlg->legs[dst_leg].last_inv_gen_cseq;
+				else
+					update_val = dlg->legs[dst_leg].last_gen_cseq;
+				dlg_unlock( d_table, d_entry );
 
-					if (update_msg_cseq(req,0,update_val) != 0) {
-						LM_ERR("failed to update ACK msg cseq\n");
-					}
-				} else
-					dlg_unlock( d_table, d_entry );
-			}
+				if (update_msg_cseq(req,0,update_val) != 0) {
+					LM_ERR("failed to update ACK msg cseq\n");
+				}
+			} else
+				dlg_unlock( d_table, d_entry );
 		}
 
 		if ( event!=DLG_EVENT_REQACK) {
 			/* register callback for the replies of this request */
 
-			if (dlg->flags & DLG_FLAG_PING_CALLER ||
-			dlg->flags & DLG_FLAG_PING_CALLEE ||
-			dlg_has_reinvite_pinging(dlg) ||
-			dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
-				dlg_lock( d_table, d_entry);
-				if (dlg->legs[dst_leg].last_gen_cseq) {
-					/* ref the dialog as registered into the transaction callback.
-					 * unref will be done when the callback will be destroyed */
-					ref_dlg_unsafe( dlg, 1);
-					dlg_unlock( d_table,d_entry);
+			dlg_lock( d_table, d_entry);
+			if (dlg->legs[dst_leg].last_gen_cseq) {
+				/* ref the dialog as registered into the transaction callback.
+				 * unref will be done when the callback will be destroyed */
+				ref_dlg_unsafe( dlg, 1);
+				dlg_unlock( d_table,d_entry);
 
-					if(parse_headers(req, HDR_CSEQ_F, 0) <0 ) {
-						LM_ERR("failed to parse cseq header \n");
-						unref_dlg(dlg,1);
-						goto early_check;
-					}
+				if(parse_headers(req, HDR_CSEQ_F, 0) <0 ) {
+					LM_ERR("failed to parse cseq header \n");
+					unref_dlg(dlg,1);
+					goto early_check;
+				}
 
-					msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
-					dlg_cseq_wrapper *wrap = shm_malloc(sizeof(dlg_cseq_wrapper) +
-							msg_cseq->len);
+				msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
+				dlg_cseq_wrapper *wrap = shm_malloc(sizeof(dlg_cseq_wrapper) +
+						msg_cseq->len);
 
-					if (wrap == 0){
-						LM_ERR("No more shm mem\n");
-						unref_dlg(dlg, 1);
-						goto early_check;
-					}
+				if (wrap == 0){
+					LM_ERR("No more shm mem\n");
+					unref_dlg(dlg, 1);
+					goto early_check;
+				}
 
-					wrap->dlg = dlg;
-					wrap->cseq.s = (char *)(wrap + 1);
-					wrap->cseq.len = msg_cseq->len;
-					memcpy(wrap->cseq.s,msg_cseq->s,msg_cseq->len);
+				wrap->dlg = dlg;
+				wrap->cseq.s = (char *)(wrap + 1);
+				wrap->cseq.len = msg_cseq->len;
+				memcpy(wrap->cseq.s,msg_cseq->s,msg_cseq->len);
 
-					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-					(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply_mod_cseq:dlg_seq_up_onreply_mod_cseq,
-					(void*)wrap, unreference_dialog_cseq)<0 ) {
-						LM_ERR("failed to register TMCB (2)\n");
+				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+				(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply_mod_cseq:dlg_seq_up_onreply_mod_cseq,
+				(void*)wrap, unreference_dialog_cseq)<0 ) {
+					LM_ERR("failed to register TMCB (2)\n");
+					unref_dlg( dlg , 1);
+					shm_free(wrap);
+				}
+			}
+			else {
+				/* dialog is in ping timer list
+				 * but no pings have been generated yet */
+				dlg_unlock ( d_table, d_entry );
+			}
+			if (dlg->cbs.types & DLGCB_RESPONSE_WITHIN)
+			{
+				ref_dlg( dlg , 1);
+				if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+				(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply:dlg_seq_up_onreply,
+				(void*)dlg, unreference_dialog)<0 ) {
+					LM_ERR("failed to register TMCB (2)\n");
 						unref_dlg( dlg , 1);
-						shm_free(wrap);
-					}
-				}
-				else {
-					/* dialog is in ping timer list
-					 * but no pings have been generated yet */
-					dlg_unlock ( d_table, d_entry );
-					goto regular_indlg_req;
-				}
-			} else {
-regular_indlg_req:
-				if (dlg->cbs.types & DLGCB_RESPONSE_WITHIN)
-				{
-					ref_dlg( dlg , 1);
-					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
-					(dir==DLG_DIR_UPSTREAM)?dlg_seq_down_onreply:dlg_seq_up_onreply,
-					(void*)dlg, unreference_dialog)<0 ) {
-						LM_ERR("failed to register TMCB (2)\n");
-							unref_dlg( dlg , 1);
-					}
 				}
 			}
 		}

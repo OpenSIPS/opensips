@@ -41,7 +41,10 @@
  * Module initialization function prototype
  */
 static int mod_init(void);
-
+static int fixup_enum_suffix(void **param);
+static int fixup_enum_i_suffix(void **param);
+static int fixup_enum_isn_suffix(void **param);
+static int fixup_enum_service(void **param);
 
 /*
  * Module parameter variables
@@ -73,37 +76,35 @@ str isnsuffix;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
-	{"enum_query", (cmd_function)enum_query_0, 0, 0, 0, REQUEST_ROUTE},
-	{"enum_query", (cmd_function)enum_query_1, 1, fixup_sgp_null,
-	 fixup_free_str_null, REQUEST_ROUTE},
-	{"enum_query", (cmd_function)enum_query_2, 2, fixup_sgp_sgp,
-	 fixup_free_str_str, REQUEST_ROUTE},
-	{"enum_pv_query", (cmd_function)enum_pv_query_1, 1, fixup_pvar_null,
-	 fixup_free_pvar_null, REQUEST_ROUTE},
-	{"enum_pv_query", (cmd_function)enum_pv_query_2, 2, fixup_pvar_str,
-	 fixup_free_pvar_str, REQUEST_ROUTE},
-	{"enum_pv_query", (cmd_function)enum_pv_query_3, 3,
-	 fixup_pvar_str_str, fixup_free_pvar_str_str, REQUEST_ROUTE},
-	{"is_from_user_enum", (cmd_function)is_from_user_enum_0, 0, 0, 0,
-	 REQUEST_ROUTE},
-	{"is_from_user_enum", (cmd_function)is_from_user_enum_1, 1,
-	 fixup_str_null, fixup_free_str_null, REQUEST_ROUTE},
-	{"is_from_user_enum", (cmd_function)is_from_user_enum_2, 2,
-	 fixup_str_str, fixup_free_str_str, REQUEST_ROUTE},
-	{"i_enum_query", (cmd_function)i_enum_query_0, 0, 0, 0, REQUEST_ROUTE},
-	{"i_enum_query", (cmd_function)i_enum_query_1, 1, fixup_str_null, 0,
-	 REQUEST_ROUTE},
-	{"i_enum_query", (cmd_function)i_enum_query_2, 2, fixup_str_str, 0,
-	 REQUEST_ROUTE},
-	{"isn_query", (cmd_function)isn_query_0, 0, 0, 0, REQUEST_ROUTE},
-	{"isn_query", (cmd_function)isn_query_1, 1, fixup_str_null,
-	 fixup_free_str_null, REQUEST_ROUTE},
-	{"isn_query", (cmd_function)isn_query_2, 2, fixup_str_str,
-	 fixup_free_str_str, REQUEST_ROUTE},
-	{0, 0, 0, 0, 0, 0}
-};
 
+static cmd_export_t cmds[] = {
+	{"enum_query", (cmd_function)enum_query, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_suffix, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_service, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
+		REQUEST_ROUTE},
+	{"i_enum_query", (cmd_function)i_enum_query, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_i_suffix, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_service, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"isn_query", (cmd_function)isn_query, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_isn_suffix, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_service, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"is_from_user_enum", (cmd_function)is_from_user_enum, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_suffix, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT | CMD_PARAM_FIX_NULL,
+			fixup_enum_suffix, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
+};
 
 /*
  * Exported parameters
@@ -139,7 +140,8 @@ struct module_exports exports = {
 	mod_init, /* module initialization function */
 	0,        /* response function*/
 	0,        /* destroy function */
-	0         /* per-child init function */
+	0,        /* per-child init function */
+	0         /* reload confirm function */
 };
 
 
@@ -170,3 +172,34 @@ static int mod_init(void)
 	return 0;
 }
 
+static int fixup_enum_suffix(void **param)
+{
+	if (!*param)
+		*param = (void *)&suffix;
+
+	return 0;
+}
+
+static int fixup_enum_i_suffix(void **param)
+{
+	if (!*param)
+		*param = (void *)&i_suffix;
+
+	return 0;
+}
+
+static int fixup_enum_isn_suffix(void **param)
+{
+	if (!*param)
+		*param = (void *)&isnsuffix;
+
+	return 0;
+}
+
+static int fixup_enum_service(void **param)
+{
+	if (!*param)
+		*param = (void *)&service;
+
+	return 0;
+}

@@ -21,13 +21,13 @@
 #define _SIPMSGOPS_LIST_HDR_H
 
 #include "../../dprint.h"
-#include "../../mod_fix.h"
+#include "../../ut.h"
 
 
-int list_hdr_has_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val);
+int list_hdr_has_val(struct sip_msg *msg, int_str_t *match_hdr, str *val);
 
-int list_hdr_add_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val);
+int list_hdr_add_val(struct sip_msg *msg, int_str_t *match_hdr, str *val);
 
-int list_hdr_remove_val(struct sip_msg *msg, gparam_t *gp_hdr, str *val);
+int list_hdr_remove_val(struct sip_msg *msg, int_str_t *match_hdr, str *val);
 
 #endif

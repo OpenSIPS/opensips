@@ -102,9 +102,13 @@ extern err_info_t _oser_err_info;
 action_time longest_action[LONGEST_ACTION_SIZE];
 int min_action_time=0;
 
-action_elem_p route_params[MAX_REC_LEV];
-int route_params_number[MAX_REC_LEV];
-int route_rec_level = -1;
+struct route_params_level {
+	void *params;
+	void *extra; /* extra params used */
+	param_getf_t get_param;
+};
+static struct route_params_level route_params[MAX_REC_LEV];
+static int route_rec_level = -1;
 
 int curr_action_line;
 char *curr_action_file;
@@ -156,7 +160,7 @@ void run_error_route(struct sip_msg* msg, int force_reset)
 	int old_route;
 	LM_DBG("triggering\n");
 	swap_route_type(old_route, ERROR_ROUTE);
-	run_actions(error_rlist.a, msg);
+	run_actions(sroutes->error.a, msg);
 	/* reset error info */
 	init_err_info();
 	set_route_type(old_route);
@@ -175,7 +179,7 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 			action_flags |= ACT_FL_EXIT;
 
 		/* check for errors */
-		if (_oser_err_info.eclass!=0 && error_rlist.a!=NULL &&
+		if (_oser_err_info.eclass!=0 && sroutes->error.a!=NULL &&
 		(route_type&(ERROR_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE))==0 )
 			run_error_route(msg,0);
 
@@ -385,6 +389,102 @@ out:
 	return ret;
 }
 
+
+/* function used to get parameter from a route scope */
+static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
+		pv_value_t *res, void *params, void *extra)
+{
+	int index;
+	pv_value_t tv;
+	action_elem_p actions = (action_elem_p)params;
+	int params_no = (int)(unsigned long)extra;
+
+	if (!params || params_no == 0)
+	{
+		LM_DBG("no parameter specified for this route\n");
+		return pv_get_null(msg, ip, res);
+	}
+
+	if(ip->pvn.type==PV_NAME_INTSTR)
+	{
+		if (ip->pvn.u.isname.type != 0)
+		{
+			LM_ERR("route params name be numbers - names are not accepted!\n");
+			return -1;
+		}
+		index = ip->pvn.u.isname.name.n;
+	} else
+	{
+		/* pvar -> it might be another $param variable! */
+		route_rec_level--;
+		if(pv_get_spec_value(msg, (pv_spec_p)(ip->pvn.u.dname), &tv)!=0)
+		{
+			LM_ERR("cannot get spec value\n");
+			route_rec_level++;
+			return -1;
+		}
+		route_rec_level++;
+
+		if(tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY)
+		{
+			LM_ERR("null or empty name\n");
+			return -1;
+		}
+		if (!(tv.flags&PV_VAL_INT) || str2int(&tv.rs,(unsigned int*)&index) < 0)
+		{
+			LM_ERR("invalid index <%.*s>\n", tv.rs.len, tv.rs.s);
+			return -1;
+		}
+	}
+
+	if (index < 1 || index > params_no)
+	{
+		LM_DBG("no such parameter index %d\n", index);
+		return pv_get_null(msg, ip, res);
+	}
+
+	/* the parameters start at 0, whereas the index starts from 1 */
+	index--;
+	switch (actions[index].type)
+	{
+	case NULLV_ST:
+		res->rs.s = NULL;
+		res->rs.len = res->ri = 0;
+		res->flags = PV_VAL_NULL;
+		break;
+
+	case STRING_ST:
+		res->rs.s = actions[index].u.string;
+		res->rs.len = strlen(res->rs.s);
+		res->flags = PV_VAL_STR;
+		break;
+
+	case NUMBER_ST:
+		res->rs.s = int2str(actions[index].u.number, &res->rs.len);
+		res->ri = actions[index].u.number;
+		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		break;
+
+	case SCRIPTVAR_ST:
+		route_rec_level--;
+		if(pv_get_spec_value(msg, (pv_spec_p)actions[index].u.data, res)!=0)
+		{
+			LM_ERR("cannot get spec value\n");
+			route_rec_level++;
+			return -1;
+		}
+		route_rec_level++;
+		break;
+
+	default:
+		LM_ALERT("BUG: invalid parameter type %d\n",
+				actions[index].type);
+		return -1;
+	}
+
+	return 0;
+}
+
 #define should_skip_updating(action_type) \
 	(action_type == IF_T || action_type == ROUTE_T || \
 	 action_type == WHILE_T || action_type == FOR_EACH_T)
@@ -438,6 +538,10 @@ int do_action(struct action* a, struct sip_msg* msg)
 	struct timeval start;
 	int end_time;
 	int aux_counter;
+	cmd_export_t *cmd = NULL;
+	acmd_export_t *acmd;
+	void* cmdp[MAX_CMD_PARAMS];
+	pv_value_t tmp_vals[MAX_CMD_PARAMS];
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -727,7 +831,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case ROUTE_T:
-			script_trace("route", rlist[a->elem[0].u.number].name, msg, a->file, a->line) ;
+			script_trace("route", sroutes->request[a->elem[0].u.number].name,
+				msg, a->file, a->line) ;
 			if (a->elem[0].type!=NUMBER_ST){
 				LM_ALERT("BUG in route() type %d\n",
 						a->elem[0].type);
@@ -748,18 +853,14 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_BUG;
 					break;
 				}
-				route_rec_level++;
-				route_params[route_rec_level] = (action_elem_t *)a->elem[2].u.data;
-				route_params_number[route_rec_level] = a->elem[1].u.number;
-				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
-
-				route_rec_level--;
+				route_params_push_level(a->elem[2].u.data,
+						(void*)(unsigned long)a->elem[1].u.number, route_param_get);
+				return_code=run_actions(sroutes->request[a->elem[0].u.number].a, msg);
+				route_params_pop_level();
 			} else {
-				route_rec_level++;
-				route_params[route_rec_level] = NULL;
-				route_params_number[route_rec_level] = 0;
-				return_code=run_actions(rlist[a->elem[0].u.number].a, msg);
-				route_rec_level--;
+				route_params_push_level(NULL, 0, route_param_get);
+				return_code=run_actions(sroutes->request[a->elem[0].u.number].a, msg);
+				route_params_pop_level();
 			}
 			ret=return_code;
 			break;
@@ -1860,31 +1961,61 @@ next_avp:
 			ret=return_code;
 			break;
 		case MODULE_T:
-			script_trace("module", ((cmd_export_t*)(a->elem[0].u.data))->name,
-				msg, a->file, a->line) ;
-			if ( (a->elem[0].type==CMD_ST) && a->elem[0].u.data ) {
-				ret=((cmd_export_t*)(a->elem[0].u.data))->function(msg,
-						 (char*)a->elem[1].u.data, (char*)a->elem[2].u.data,
-						 (char*)a->elem[3].u.data, (char*)a->elem[4].u.data,
-						 (char*)a->elem[5].u.data, (char*)a->elem[6].u.data);
-			}else{
+			if (a->elem[0].type != CMD_ST ||
+				((cmd = (cmd_export_t*)a->elem[0].u.data) == NULL)) {
 				LM_ALERT("BUG in module call\n");
+				break;
 			}
+
+			script_trace("module", cmd->name, msg, a->file, a->line);
+
+			if ((ret = get_cmd_fixups(msg, cmd->params, a->elem, cmdp,
+				tmp_vals)) < 0) {
+				LM_ERR("Failed to get fixups for command <%s>\n",
+					cmd->name);
+				break;
+			}
+
+			ret = cmd->function(msg,
+				cmdp[0],cmdp[1],cmdp[2],
+				cmdp[3],cmdp[4],cmdp[5],
+				cmdp[6],cmdp[7]);
+
+			if (free_cmd_fixups(cmd->params, a->elem, cmdp) < 0) {
+				LM_ERR("Failed to free fixups for command <%s>\n",
+					cmd->name);
+				break;
+			}
+
 			break;
 		case ASYNC_T:
 			/* first param - an ACTIONS_ST containing an ACMD_ST
 			 * second param - a NUMBER_ST pointing to resume route */
 			aitem = (struct action *)(a->elem[0].u.data);
+			acmd = (acmd_export_t *)aitem->elem[0].u.data;
+
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
 			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
 				LM_ALERT("BUG in async expression\n");
 			} else {
-				script_trace("async",
-					((acmd_export_t*)(aitem->elem[0].u.data))->name,
-					msg, a->file, a->line) ;
-				ret = async_script_start_f( msg, aitem, a->elem[1].u.number);
+				script_trace("async", acmd->name, msg, a->file, a->line);
+
+				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem, cmdp,
+					tmp_vals)) < 0) {
+					LM_ERR("Failed to get fixups for async command <%s>\n",
+						acmd->name);
+					break;
+				}
+
+				ret = async_script_start_f(msg, aitem, a->elem[1].u.number, cmdp);
 				if (ret>=0)
 					action_flags |= ACT_FL_TBCONT;
+
+				if (free_cmd_fixups(acmd->params, aitem->elem, cmdp) < 0) {
+					LM_ERR("Failed to free fixups for command <%s>\n",
+						cmd->name);
+					break;
+				}
 			}
 			ret = 0;
 			break;
@@ -1892,16 +2023,30 @@ next_avp:
 			/* first param - an ACTIONS_ST containing an ACMD_ST
 			 * second param - an optional NUMBER_ST pointing to an end route */
 			aitem = (struct action *)(a->elem[0].u.data);
+			acmd = (acmd_export_t *)aitem->elem[0].u.data;
+
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
 			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
 				LM_ALERT("BUG in launch expression\n");
 			} else {
-				script_trace("launch",
-					((acmd_export_t*)(aitem->elem[0].u.data))->name,
-					msg, a->file, a->line) ;
+				script_trace("launch", acmd->name, msg, a->file, a->line);
 				/* NOTE that the routeID (a->elem[1].u.number) is set to 
 				 * -1 if no reporting route is set */
-				ret = async_script_launch( msg, aitem, a->elem[1].u.number);
+
+				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem,
+					cmdp, tmp_vals)) < 0) {
+					LM_ERR("Failed to get fixups for async command <%s>\n",
+						acmd->name);
+					break;
+				}
+
+				ret = async_script_launch( msg, aitem, a->elem[1].u.number, cmdp);
+
+				if ((ret = free_cmd_fixups(acmd->params, aitem->elem, cmdp)) < 0) {
+					LM_ERR("Failed to free fixups for command <%s>\n",
+						cmd->name);
+					break;
+				}
 			}
 			break;
 		case FORCE_RPORT_T:
@@ -2197,16 +2342,10 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 void __script_trace(char *class, char *action, struct sip_msg *msg,
 														char *file, int line)
 {
-	gparam_t param;
 	str val;
 
-	param.type = GPARAM_TYPE_PVE;
-	param.v.pve = &script_trace_elem;
-
-	val.s = NULL;
-	val.len = 0;
-	if (fixup_get_svalue(msg, &param, &val) != 0) {
-		LM_ERR("Failed to get pv elem value!\n");
+	if (pv_printf_s(msg, &script_trace_elem, &val) != 0) {
+		LM_ERR("Failed to evaluate variables\n");
 		return;
 	}
 
@@ -2220,4 +2359,34 @@ void __script_trace(char *class, char *action, struct sip_msg *msg,
 			" -> (%.*s)\n", file, line,
 			class?class:"", action, val.len, val.s);
 	}
+}
+
+/**
+ * functions used to populate $params() vars in the route_param structure
+ */
+
+void route_params_push_level(void *params, void *extra, param_getf_t getf)
+{
+	route_rec_level++;
+	route_params[route_rec_level].params = params;
+	route_params[route_rec_level].extra = extra;
+	route_params[route_rec_level].get_param = getf;
+}
+
+void route_params_pop_level(void)
+{
+	route_rec_level--;
+}
+
+int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
+{
+	if (route_rec_level == -1)
+	{
+		LM_DBG("no parameter specified for this route\n");
+		return pv_get_null(msg, ip, res);
+	}
+
+	return route_params[route_rec_level].get_param(msg, ip, res,
+			route_params[route_rec_level].params,
+			route_params[route_rec_level].extra);
 }

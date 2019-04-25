@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">230</entry>
-		<entry align="center">74</entry>
-		<entry align="center">9277</entry>
-		<entry align="center">4610</entry>
+		<entry align="center">237</entry>
+		<entry align="center">77</entry>
+		<entry align="center">9347</entry>
+		<entry align="center">4763</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -37,26 +37,26 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">36</entry>
-		<entry align="center">25</entry>
-		<entry align="center">487</entry>
-		<entry align="center">378</entry>
+		<entry align="center">38</entry>
+		<entry align="center">27</entry>
+		<entry align="center">491</entry>
+		<entry align="center">379</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">19</entry>
-		<entry align="center">8</entry>
-		<entry align="center">1114</entry>
-		<entry align="center">101</entry>
+		<entry align="center">20</entry>
+		<entry align="center">9</entry>
+		<entry align="center">1116</entry>
+		<entry align="center">102</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">18</entry>
-		<entry align="center">12</entry>
-		<entry align="center">306</entry>
-		<entry align="center">132</entry>
+		<entry align="center">19</entry>
+		<entry align="center">13</entry>
+		<entry align="center">315</entry>
+		<entry align="center">141</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -68,6 +68,14 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Gohar Ahmed (<ulink url="https://github.com/goharahmed">@goharahmed</ulink>)</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">6</entry>
+		<entry align="center">5</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry>Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">1</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -112,41 +120,46 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Jul 2016 - Jan 2019</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Apr 2016 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2016 - Jan 2019</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Jul 2016 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Nov 2015 - Jan 2019</entry>
+		<entry>Gohar Ahmed (<ulink url="https://github.com/goharahmed">@goharahmed</ulink>)</entry>
+		<entry align="center">Mar 2019 - Mar 2019</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Apr 2016 - Jan 2019</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2016 - Mar 2019</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Nov 2015 - Mar 2019</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>)</entry>
 		<entry align="center">Nov 2018 - Nov 2018</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>)</entry>
 		<entry align="center">Dec 2016 - Dec 2016</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>)</entry>
 		<entry align="center">Jul 2015 - Sep 2015</entry>
 	</row>
@@ -164,7 +177,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>).</para>
 </section>
 
 </chapter>

@@ -321,6 +321,28 @@ void free_shm_mi_response(mi_response_t *shm_response)
 	_init_mi_pkg_mem_hooks();
 }
 
+mi_item_t *shm_clone_mi_item(mi_item_t *src)
+{
+	mi_item_t *copy;
+
+	_init_mi_shm_mem_hooks();
+
+	copy = cJSON_Duplicate(src, 1);
+
+	_init_mi_pkg_mem_hooks();
+
+	return copy;
+}
+
+void free_shm_mi_item(mi_item_t *item)
+{
+	_init_mi_shm_mem_hooks();
+
+	cJSON_Delete(item);
+
+	_init_mi_pkg_mem_hooks();
+}
+
 static mi_item_t * _get_mi_param(const mi_params_t *params, const char *name)
 {
 	int i;
@@ -338,56 +360,63 @@ static mi_item_t * _get_mi_param(const mi_params_t *params, const char *name)
 		return cJSON_GetObjectItem(params->item, name);
 }
 
-int get_mi_int_param(const mi_params_t *params, const char *name, int *value)
+int try_get_mi_int_param(const mi_params_t *params, const char *name, int *value)
 {
 	mi_item_t *p;
 	str st;
 
 	p = _get_mi_param(params, name);
-	if (!p) {
-		LM_ERR("Parameter: %s not found\n", name);
-		param_err_type = -1;
+	if (!p)
 		return -1;
-	}
 
-	if (!(p->type & (cJSON_Number|cJSON_String))) {
-		LM_ERR("Bad data type for parameter: %s\n", name);
-		param_err_type = -2;
-		return -1;
-	}
+	if (!(p->type & (cJSON_Number|cJSON_String)))
+		return -2;
 
 	if (p->type & cJSON_Number) {
 		*value = p->valueint;
 	} else {
 		st.s = p->valuestring;
 		st.len = strlen(st.s);
-		if (str2sint(&st, value) < 0) {
-			LM_ERR("Parameter: %s is not an integer\n", name);
-			param_err_type = -2;
-			return -1;
-		}
+		if (str2sint(&st, value) < 0)
+			return -3;
 	}
 
 	return 0;
 }
 
-int get_mi_string_param(const mi_params_t *params, const char *name,
+int get_mi_int_param(const mi_params_t *params, const char *name, int *value)
+{
+	switch (try_get_mi_int_param(params, name, value))
+	{
+		case -1:
+			LM_ERR("Parameter: %s not found\n", name);
+			param_err_type = -1;
+			break;
+		case -2:
+			LM_ERR("Bad data type for parameter: %s\n", name);
+			param_err_type = -2;
+			break;
+		case -3:
+			LM_ERR("Parameter: %s is not an valid integer\n", name);
+			param_err_type = -2;
+			break;
+		case 0:
+			return 0;
+	}
+	return -1;
+}
+
+int try_get_mi_string_param(const mi_params_t *params, const char *name,
 					char **value, int *value_len)
 {
 	mi_item_t *p;
 
 	p = _get_mi_param(params, name);
-	if (!p) {
-		LM_ERR("Parameter: %s not found\n", name);
-		param_err_type = -1;
+	if (!p)
 		return -1;
-	}
 
-	if (!(p->type & (cJSON_Number|cJSON_String))) {
-		LM_ERR("Bad data type for parameter: %s\n", name);
-		param_err_type = -2;
-		return -1;
-	}
+	if (!(p->type & (cJSON_Number|cJSON_String)))
+		return -2;
 
 	if (p->type & cJSON_String) {
 		*value = p->valuestring;
@@ -399,36 +428,69 @@ int get_mi_string_param(const mi_params_t *params, const char *name,
 	return 0;
 }
 
-int get_mi_array_param(const mi_params_t *params, const char *name,
+int get_mi_string_param(const mi_params_t *params, const char *name,
+					char **value, int *value_len)
+{
+	switch (try_get_mi_string_param(params, name, value, value_len))
+	{
+		case -1:
+			LM_ERR("Parameter: %s not found\n", name);
+			param_err_type = -1;
+			break;
+		case -2:
+			LM_ERR("Bad data type for parameter: %s\n", name);
+			param_err_type = -2;
+			break;
+		case 0:
+			return 0;
+	}
+	return -1;
+}
+
+int try_get_mi_array_param(const mi_params_t *params, const char *name,
 					mi_item_t **value, int *no_items)
 {
 	mi_item_t *p;
 
 	p = _get_mi_param(params, name);;
-	if (!p) {
-		LM_ERR("Parameter: %s not found\n", name);
-		param_err_type = -1;
+	if (!p)
 		return -1;
-	}
 
-	if (!(p->type & cJSON_Array)) {
-		LM_ERR("Parameter: %s is not an array\n", name);
-		param_err_type = -2;
-		return -1;
-	}
+	if (!(p->type & cJSON_Array))
+		return -2;
 
 	*value = p;
 	*no_items = cJSON_GetArraySize(p);
-	if (*no_items == 0) {
-		LM_ERR("Empty array for parameter: %s\n", name);
-		param_err_type = -2;
-		return -1;
-	}
+	if (*no_items == 0)
+		return -3;
 
 	return 0;
 }
 
-int get_mi_arr_param_string(const mi_item_t *array, int pos,
+int get_mi_array_param(const mi_params_t *params, const char *name,
+					mi_item_t **value, int *no_items)
+{
+	switch (try_get_mi_array_param(params, name, value, no_items))
+	{
+		case -1:
+			LM_ERR("Parameter: %s not found\n", name);
+			param_err_type = -1;
+			break;
+		case -2:
+			LM_ERR("Parameter: %s is not an array\n", name);
+			param_err_type = -2;
+			break;
+		case -3:
+			LM_ERR("Empty array for parameter: %s\n", name);
+			param_err_type = -2;
+			break;
+		case 0:
+			return 0;
+	}
+	return -1;
+}
+
+int try_get_mi_arr_param_string(const mi_item_t *array, int pos,
 						char **value, int *value_len)
 {
 	mi_item_t *s;
@@ -437,17 +499,11 @@ int get_mi_arr_param_string(const mi_item_t *array, int pos,
 		return -1;
 
 	s = cJSON_GetArrayItem(array, pos);
-	if (!s) {
-		LM_ERR("Array index out of bounds\n");
-		param_err_type = -1;
+	if (!s)
 		return -1;
-	}
 
-	if (!(s->type & (cJSON_Number|cJSON_String))) {
-		LM_ERR("Bad data type for array item\n");
-		param_err_type = -2;
-		return -1;
-	}
+	if (!(s->type & (cJSON_Number|cJSON_String)))
+		return -2;
 
 	if (s->type & cJSON_String) {
 		*value = s->valuestring;
@@ -459,7 +515,26 @@ int get_mi_arr_param_string(const mi_item_t *array, int pos,
 	return 0;
 }
 
-int get_mi_arr_param_int(const mi_item_t *array, int pos, int *value)
+int get_mi_arr_param_string(const mi_item_t *array, int pos,
+						char **value, int *value_len)
+{
+	switch (try_get_mi_arr_param_string(array, pos, value, value_len))
+	{
+		case -1:
+			LM_ERR("Array index out of bounds\n");
+			param_err_type = -1;
+			break;
+		case -2:
+			LM_ERR("Bad data type for array item\n");
+			param_err_type = -2;
+			break;
+		case 0:
+			return 0;
+	}
+	return -1;
+}
+
+int try_get_mi_arr_param_int(const mi_item_t *array, int pos, int *value)
 {
 	mi_item_t *i;
 	str st;
@@ -468,31 +543,44 @@ int get_mi_arr_param_int(const mi_item_t *array, int pos, int *value)
 		return -1;
 
 	i = cJSON_GetArrayItem(array, pos);
-	if (!i) {
-		LM_ERR("Array index out of bounds\n");
-		param_err_type = -1;
+	if (!i)
 		return -1;
-	}
 
-	if (!(i->type & (cJSON_Number|cJSON_String))) {
-		LM_ERR("Bad data type for array item\n");
-		param_err_type = -2;
-		return -1;
-	}
+	if (!(i->type & (cJSON_Number|cJSON_String)))
+		return -2;
 
 	if (i->type & cJSON_Number) {
 		*value = i->valueint;
 	} else {
 		st.s = i->valuestring;
 		st.len = strlen(st.s);
-		if (str2sint(&st, value) < 0) {
-			LM_ERR("Array item is not an integer\n");
-			param_err_type = -2;
-			return -1;
-		}
+		if (str2sint(&st, value) < 0)
+			return -3;
 	}
 
 	return 0;
+}
+
+int get_mi_arr_param_int(const mi_item_t *array, int pos, int *value)
+{
+	switch (try_get_mi_arr_param_int(array, pos, value))
+	{
+		case -1:
+			LM_ERR("Array index out of bounds\n");
+			param_err_type = -1;
+			break;
+		case -2:
+			LM_ERR("Bad data type for array item\n");
+			param_err_type = -2;
+			break;
+		case -3:
+			LM_ERR("Array item is not an integer\n");
+			param_err_type = -2;
+			break;
+		case 0:
+			return 0;
+	}
+	return -1;
 }
 
 mi_response_t *init_mi_param_error(void)

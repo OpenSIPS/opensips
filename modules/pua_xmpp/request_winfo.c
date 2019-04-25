@@ -33,33 +33,19 @@
 
 #define PRINTBUF_SIZE 256
 
-int request_winfo(struct sip_msg* msg, char* uri, char* expires)
+int request_winfo(struct sip_msg* msg, str* uri, int* expires)
 {
 	subs_info_t subs;
 	struct sip_uri puri;
-	int printbuf_len;
-	char buffer[PRINTBUF_SIZE];
-	str uri_str;
 
-	if(!uri) {
-		LM_ERR("no uri specified!\n");
-		return -1;
-	}
 	memset(&puri, 0, sizeof(struct sip_uri));
-	printbuf_len = PRINTBUF_SIZE-1;
-	if(pv_printf(msg, (pv_elem_t*)uri, buffer, &printbuf_len)<0)
-	{
-		LM_ERR("cannot print the format\n");
-		return -1;
-	}
-	if(parse_uri(buffer, printbuf_len, &puri)!=0)
+	if(parse_uri(uri->s, uri->len, &puri)!=0)
 	{
 		LM_ERR("bad owner SIP address!\n");
 		goto error;
 	} else
 	{
-		LM_DBG("using user id [%.*s]\n", printbuf_len,
-				buffer);
+		LM_DBG("using user id [%.*s]\n", uri->len, uri->s);
 	}
 	if(puri.user.len<=0 || puri.user.s==NULL
 			|| puri.host.len<=0 || puri.host.s==NULL)
@@ -67,30 +53,22 @@ int request_winfo(struct sip_msg* msg, char* uri, char* expires)
 		LM_ERR("bad owner URI!\n");
 		goto error;
 	}
-	uri_str.s= buffer;
-	uri_str.len=  printbuf_len;
-	LM_DBG("uri= %.*s:\n", uri_str.len, uri_str.s);
 
 	memset(&subs, 0, sizeof(subs_info_t));
 
-	subs.pres_uri= &uri_str;
+	subs.pres_uri= uri;
 
-	subs.watcher_uri= &uri_str;
+	subs.watcher_uri= uri;
 
 	subs.contact= &server_address;
 
 	if(presence_server.s && presence_server.len)
 		subs.outbound_proxy = &presence_server;
 
-	if(strncmp(expires, "0", 1 )== 0)
-	{
+	if (*expires == 0)
 		subs.expires= 0;
-	}
 	else
-	{
-		subs.expires= -1;
-
-	}
+		subs.expires= -1;	
 	/* -1 - for a subscription with no time limit */
 	/*  0  -for unsubscribe */
 

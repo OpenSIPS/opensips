@@ -367,7 +367,7 @@ route[tls_filter] {
           + off
 
    MI FIFO Command Format:
-                        opensipsctl fifo tls_trace on
+                        opensips-cli -x mi tls_trace on
 
 Chapter 2. Frequently Asked Questions
 
@@ -453,9 +453,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 49 22 1486 801
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 51 24 1489 802
    2. Eseanu Marius Cristian (@eseanucristian) 45 5 55 2133
-   3. Razvan Crainea (@razvancrainea) 36 19 564 634
+   3. Razvan Crainea (@razvancrainea) 38 21 567 637
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
    5. Liviu Chircu (@liviuchircu) 9 6 27 102
    6. Vlad Patrascu (@rvlad-patrascu) 8 5 53 63
@@ -486,11 +486,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2018
-   2.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)              Mar 2015 - Jun 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2015 - Oct 2017
-   5.  Razvan Crainea (@razvancrainea)          Feb 2015 - Sep 2017
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2015 - Apr 2019
+   2.  Razvan Crainea (@razvancrainea)          Feb 2015 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2018
+   4.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)              Mar 2015 - Jun 2018
    6.  Maksym Sobolyev (@sobomax)               Jul 2017 - Jul 2017
    7.  Ionut Ionita (@ionutrazvanionita)        Mar 2015 - Apr 2017
    8.  Julián Moreno Patiño                     Feb 2016 - Feb 2016
@@ -506,10 +506,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita),
-   Razvan Crainea (@razvancrainea), Eseanu Marius Cristian
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
+   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
    (@eseanucristian), Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:

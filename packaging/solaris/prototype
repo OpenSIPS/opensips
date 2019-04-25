@@ -43,7 +43,7 @@ f none lib/opensips/modules/pike.so 0755 bin bin
 f none lib/opensips/modules/registrar.so 0755 bin bin
 f none lib/opensips/modules/rr.so 0755 bin bin
 f none lib/opensips/modules/seas.so 0755 bin bin
-f none lib/opensips/modules/siptrace.so 0755 bin bin
+f none lib/opensips/modules/tracer.so 0755 bin bin
 f none lib/opensips/modules/sl.so 0755 bin bin
 f none lib/opensips/modules/sms.so 0755 bin bin
 f none lib/opensips/modules/speeddial.so 0755 bin bin
@@ -60,10 +60,7 @@ f none lib/opensips/modules/xlog.so 0755 bin bin
 f none lib/opensips/modules/xmpp.so 0755 bin bin
 d none lib/opensipsctl 0644 bin bin
 f none lib/opensipsctl/opensipsctl.base 0644 bin bin
-f none lib/opensipsctl/opensipsctl.ctlbase 0644 bin bin
 f none lib/opensipsctl/opensipsctl.sqlbase 0644 bin bin
-f none lib/opensipsctl/opensipsctl.fifo 0644 bin bin
-f none lib/opensipsctl/opensipsctl.unixsock 0644 bin bin
 f none lib/opensipsctl/opensipsctl.mysql 0644 bin bin
 d none doc 0755 bin bin
 d none doc/opensips 0755 bin bin
@@ -103,7 +100,7 @@ f none doc/opensips/README.permissions 0644 bin bin
 f none doc/opensips/README.pike 0644 bin bin
 f none doc/opensips/README.registrar 0644 bin bin
 f none doc/opensips/README.rr 0644 bin bin
-f none doc/opensips/README.siptrace 0644 bin bin
+f none doc/opensips/README.tracer 0644 bin bin
 f none doc/opensips/README.seas 0644 bin bin
 f none doc/opensips/README.sl 0644 bin bin
 f none doc/opensips/README.sms 0644 bin bin

@@ -14,42 +14,43 @@ sipmsgops Module
         1.3. Exported Functions
 
               1.3.1. append_to_reply(txt)
-              1.3.2. append_hf(txt)
-              1.3.3. append_hf(txt, hdr)
-              1.3.4. insert_hf(txt)
-              1.3.5. insert_hf(txt, hdr)
-              1.3.6. append_urihf(prefix, suffix)
-              1.3.7. is_present_hf(hf_name)
-              1.3.8. append_time()
-              1.3.9. is_method(name)
-              1.3.10. remove_hf(hname [,flags])
-              1.3.11. has_totag()
-              1.3.12. ruri_has_param(param[,value])
-              1.3.13. ruri_add_param(param)
-              1.3.14. ruri_del_param(param)
-              1.3.15. ruri_tel2sip()
-              1.3.16. is_uri_user_e164(pseudo-variable)
-              1.3.17. has_body_part([mime]),
-              1.3.18. is_audio_on_hold()
-              1.3.19. is_privacy(privacy_type)
-              1.3.20. remove_body_part([mime[,revert]]),
-              1.3.21. add_body_part(body,mime[,headers])
-              1.3.22. sipmsg_validate([flags[,result_pvar]])
-              1.3.23. codec_exists (name [,clock] )
-              1.3.24. codec_delete (name [,clock] )
-              1.3.25. codec_move_up (name [,clock] )
-              1.3.26. codec_move_down (name [,clock] )
-              1.3.27. codec_exists_re ( regexp )
-              1.3.28. codec_delete_re ( regexp )
-              1.3.29. codec_delete_except_re ( regexp )
-              1.3.30. codec_move_up_re ( regexp )
-              1.3.31. codec_move_down_re ( regexp )
-              1.3.32. change_reply_status(code, reason)
-              1.3.33. stream_exists(regexp)
-              1.3.34. stream_delete(regexp)
-              1.3.35. list_hdr_has_option(hdr_name,option)
-              1.3.36. list_hdr_add_option(hdr_name,option)
-              1.3.37. list_hdr_remove_option(hdr_name,option)
+              1.3.2. append_hf(txt[, hdr_anchor])
+              1.3.3. insert_hf(txt)
+              1.3.4. insert_hf(txt, hdr)
+              1.3.5. append_urihf(prefix, suffix)
+              1.3.6. is_present_hf(hf_name)
+              1.3.7. append_time()
+              1.3.8. is_method(name)
+              1.3.9. remove_hf(hname)
+              1.3.10. remove_hf_re(hname_expr)
+              1.3.11. remove_hf_glob(hname_pattern)
+              1.3.12. has_totag()
+              1.3.13. ruri_has_param(param[,value])
+              1.3.14. ruri_add_param(param)
+              1.3.15. ruri_del_param(param)
+              1.3.16. ruri_tel2sip()
+              1.3.17. is_uri_user_e164(uri)
+              1.3.18. has_body_part([mime])
+              1.3.19. is_audio_on_hold()
+              1.3.20. is_privacy(privacy_type)
+              1.3.21. remove_body_part([mime[, revert]])
+              1.3.22. add_body_part(body, mime[, headers])
+              1.3.23. sipmsg_validate([flags[, result_pvar]])
+              1.3.24. codec_exists (name[, clock])
+              1.3.25. codec_delete(name[, clock])
+              1.3.26. codec_move_up(name[, clock])
+              1.3.27. codec_move_down(name[, clock])
+              1.3.28. codec_exists_re ( regexp )
+              1.3.29. codec_delete_re ( regexp )
+              1.3.30. codec_delete_except_re ( regexp )
+              1.3.31. codec_move_up_re ( regexp )
+              1.3.32. codec_move_down_re ( regexp )
+              1.3.33. change_reply_status(code, reason)
+              1.3.34. stream_exists(regexp)
+              1.3.35. stream_delete(regexp)
+              1.3.36. list_hdr_has_option(hdr_name, option)
+              1.3.37. list_hdr_add_option(hdr_name, option)
+              1.3.38. list_hdr_remove_option(hdr_name, option)
 
         1.4. Known Limitations
 
@@ -73,43 +74,44 @@ sipmsgops Module
 
    1.1. append_to_reply usage
    1.2. append_hf usage
-   1.3. append_hf usage
+   1.3. insert_hf usage
    1.4. insert_hf usage
-   1.5. insert_hf usage
-   1.6. append_urihf usage
-   1.7. is_present_hf usage
-   1.8. append_time usage
-   1.9. is_method usage
-   1.10. remove_hf usage
-   1.11. has_totag usage
-   1.12. ruri_has_param usage
-   1.13. ruri_add_param usage
-   1.14. ruri_del_param usage
-   1.15. ruri_tel2sip usage
-   1.16. is_uri_user_e164 usage
-   1.17. has_body_part usage
-   1.18. is_audio_on_hold usage
-   1.19. is_privacy usage
-   1.20. remove_body_part() usage
-   1.21. add_body_part usage
-   1.22. sipmsg_validate usage
-   1.23. codec_exists usage
-   1.24. codec_delete usage
-   1.25. codec_move_up usage
-   1.26. codec_move_down usage
+   1.5. append_urihf usage
+   1.6. is_present_hf usage
+   1.7. append_time usage
+   1.8. is_method usage
+   1.9. remove_hf usage
+   1.10. remove_hf_re usage
+   1.11. remove_hf_glob usage
+   1.12. has_totag usage
+   1.13. ruri_has_param usage
+   1.14. ruri_add_param usage
+   1.15. ruri_del_param usage
+   1.16. ruri_tel2sip usage
+   1.17. is_uri_user_e164 usage
+   1.18. has_body_part usage
+   1.19. is_audio_on_hold usage
+   1.20. is_privacy usage
+   1.21. remove_body_part() usage
+   1.22. add_body_part usage
+   1.23. sipmsg_validate usage
+   1.24. codec_exists usage
+   1.25. codec_delete usage
+   1.26. codec_move_up usage
    1.27. codec_move_down usage
-   1.28. codec_exists_re usage
-   1.29. codec_delete_re usage
-   1.30. codec_delete_except_re usage
-   1.31. codec_move_up_re usage
-   1.32. codec_move_down_re usage
-   1.33. codec_move_down usage
-   1.34. change_reply_status usage
-   1.35. stream_exists usage
-   1.36. stream_delete usage
-   1.37. list_hdr_has_option usage
-   1.38. list_hdr_add_option usage
-   1.39. list_hdr_remove_option usage
+   1.28. codec_move_down usage
+   1.29. codec_exists_re usage
+   1.30. codec_delete_re usage
+   1.31. codec_delete_except_re usage
+   1.32. codec_move_up_re usage
+   1.33. codec_move_down_re usage
+   1.34. codec_move_down usage
+   1.35. change_reply_status usage
+   1.36. stream_exists usage
+   1.37. stream_delete usage
+   1.38. list_hdr_has_option usage
+   1.39. list_hdr_add_option usage
+   1.40. list_hdr_remove_option usage
 
 Chapter 1. Admin Guide
 
@@ -138,11 +140,11 @@ Chapter 1. Admin Guide
 
 1.3.1.  append_to_reply(txt)
 
-   Append txt as header to all replies that will be generated by
+   Append 'txt' as header to all replies that will be generated by
    OpenSIPS for this request.
 
    Meaning of the parameters is as follows:
-     * txt - String which may contains pseudo-variables.
+     * txt (string) - SIP header field, value and CRLF marker.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ERROR_ROUTE.
@@ -153,13 +155,16 @@ append_to_reply("Foo: bar\r\n");
 append_to_reply("Foo: $rm at $Ts\r\n");
 ...
 
-1.3.2.  append_hf(txt)
+1.3.2.  append_hf(txt[, hdr_anchor])
 
-   Appends 'txt' as header after the last header field.
+   Appends 'txt' as header after the last header field. If
+   'hdr_anchor' is given, 'txt' will be appended after the first
+   occurrence of 'hdr_anchor' instead.
 
    Meaning of the parameters is as follows:
-     * txt - Header field to be appended. The value can contain
-       pseudo-variables which will be replaced at run time.
+     * txt (string) - Header field to be appended.
+     * hdr_anchor (string, optional) - Header name after which the
+       'txt' is appended.
 
    Note: Headers which are added in main route cannot be removed
    in further routes (e.g. failure routes). So, the idea is not to
@@ -174,62 +179,44 @@ append_to_reply("Foo: $rm at $Ts\r\n");
 ...
 append_hf("P-hint: VOICEMAIL\r\n");
 append_hf("From-username: $fU\r\n");
-...
-
-1.3.3.  append_hf(txt, hdr)
-
-   Appends 'txt' as header after first 'hdr' header field.
-
-   Meaning of the parameters is as follows:
-     * txt - Header field to be appended. The value can contain
-       pseudo-variables which will be replaced at run time.
-     * hdr - Header name after which the 'txt' is appended.
-
-   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-   FAILURE_ROUTE, BRANCH_ROUTE.
-
-   Example 1.3. append_hf usage
-...
-append_hf("P-hint: VOICEMAIL\r\n", "Call-ID");
 append_hf("From-username: $fU\r\n", "Call-ID");
 ...
 
-1.3.4.  insert_hf(txt)
+1.3.3.  insert_hf(txt)
 
    Inserts 'txt' as header before the first header field.
 
    Meaning of the parameters is as follows:
-     * txt - Header field to be inserted. The value can contain
-       pseudo-variables which will be replaced at run time.
+     * txt (string) - Header field to be inserted.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE.
+
+   Example 1.3. insert_hf usage
+...
+insert_hf("P-hint: VOICEMAIL\r\n");
+insert_hf("To-username: $tU\r\n");
+...
+
+1.3.4.  insert_hf(txt, hdr)
+
+   Inserts 'txt' as header before first 'hdr' header field.
+
+   Meaning of the parameters is as follows:
+     * txt (string) - Header field to be inserted.
+     * hdr (string, optional) - Header name before which the 'txt'
+       is inserted.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.4. insert_hf usage
 ...
-insert_hf("P-hint: VOICEMAIL\r\n");
-insert_hf("To-username: $tU\r\n");
-...
-
-1.3.5.  insert_hf(txt, hdr)
-
-   Inserts 'txt' as header before first 'hdr' header field.
-
-   Meaning of the parameters is as follows:
-     * txt - Header field to be inserted. The value can contain
-       pseudo-variables which will be replaced at run time.
-     * hdr - Header name before which the 'txt' is inserted.
-
-   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-   FAILURE_ROUTE, BRANCH_ROUTE.
-
-   Example 1.5. insert_hf usage
-...
 insert_hf("P-hint: VOICEMAIL\r\n", "Call-ID");
 insert_hf("To-username: $tU\r\n", "Call-ID");
 ...
 
-1.3.6.  append_urihf(prefix, suffix)
+1.3.5.  append_urihf(prefix, suffix)
 
    Append header field name with original Request-URI in middle.
 
@@ -240,12 +227,12 @@ insert_hf("To-username: $tU\r\n", "Call-ID");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.6. append_urihf usage
+   Example 1.5. append_urihf usage
 ...
 append_urihf("CC-Diversion: ", "\r\n");
 ...
 
-1.3.7.  is_present_hf(hf_name)
+1.3.6.  is_present_hf(hf_name)
 
    Return true if a header field is present in message.
 
@@ -255,21 +242,18 @@ Note
    exmaple “From” will match with “f”
 
    Meaning of the parameters is as follows:
-     * hf_name - Header field name.(long or compact form). The
-       hf_name parameter can have the following types:
-          + string - Static header field name
-          + pvar - Header field name is given as a pseudo-variable
-            (as string value)
+     * hf_name (string) - Header field name (long or compact
+       form).
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.7. is_present_hf usage
+   Example 1.6. is_present_hf usage
 ...
 if (is_present_hf("From")) log(1, "From HF Present");
 ...
 
-1.3.8.  append_time()
+1.3.7.  append_time()
 
    Adds a time header to the reply of the request. You must use it
    before functions that are likely to send a reply, e.g., save()
@@ -288,12 +272,12 @@ if (is_present_hf("From")) log(1, "From HF Present");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.8. append_time usage
+   Example 1.7. append_time usage
 ...
 append_time();
 ...
 
-1.3.9.  is_method(name)
+1.3.8.  is_method(name)
 
    Check if the method of the message matches the name. If name is
    a known method (invite, cancel, ack, bye, options, info,
@@ -313,12 +297,12 @@ append_time();
    field from CSeq header.
 
    Meaning of the parameters is as follows:
-     * name - SIP method name
+     * name (string) - SIP method name
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, and BRANCH_ROUTE.
 
-   Example 1.9. is_method usage
+   Example 1.8. is_method usage
 ...
 if(is_method("INVITE"))
 {
@@ -330,58 +314,78 @@ if(is_method("OPTION|UPDATE"))
 }
 ...
 
-1.3.10.  remove_hf(hname [,flags])
+1.3.9.  remove_hf(hname)
 
    Remove from message all headers with name “hname”
 
    Returns true if at least one header is found and removed.
 
    Meaning of the parameters is as follows:
-     * hname - header name to be removed. The hname parameter can
-       have the following types:
-          + string - Header name to be removed
-          + pvar - Header name to be removed is the value of an
-            existing pseudo-variable (as string value)
-          + pattern - pattern to match the names of the headers to
-            be removed; can be a simple wildcard or a regexp (see
-            the second param too)
-     * flags - how to interpret the pattern from the first
-       parameted.
-          + r - pattern is a regexp
-          + g - pattern is glob (shell wildcard pattern)
+     * hname (string) - header name to be removed.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.10. remove_hf usage
+   Example 1.9. remove_hf usage
 ...
 if(remove_hf("User-Agent"))
 {
     # User Agent header removed
 }
 ...
-# removes X-Billing-Account, X-Billing-Price, X-Billing-rateplan, etc
-remove_hf("X-Billing*", "g");
+
+1.3.10.  remove_hf_re(hname_expr)
+
+   Remove from message all headers matching the “hname_expr” POSIX
+   regular expression.
+
+   Returns true if at least one header is found and removed.
+
+   Meaning of the parameters is as follows:
+     * hname_expr (string) - regular expression.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE and BRANCH_ROUTE.
+
+   Example 1.10. remove_hf_re usage
 ...
-#removes headers by regex
-remove_hf("^X-g.+[0-9]", "r");
+remove_hf_re("^X-g.+[0-9]");
 ...
 
-1.3.11.  has_totag()
+1.3.11.  remove_hf_glob(hname_pattern)
+
+   Remove from message all headers matching the “hname_pattern”
+   glob pattern.
+
+   Returns true if at least one header is found and removed.
+
+   Meaning of the parameters is as follows:
+     * hname_pattern (string) - glob pattern
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE and BRANCH_ROUTE.
+
+   Example 1.11. remove_hf_glob usage
+...
+# removes X-Billing-Account, X-Billing-Price, X-Billing-rateplan, etc
+remove_hf_glob("X-Billing*");
+...
+
+1.3.12.  has_totag()
 
    Check if To header field uri contains tag parameter.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.11. has_totag usage
+   Example 1.12. has_totag usage
 ...
 if (has_totag()) {
         ...
 };
 ...
 
-1.3.12.  ruri_has_param(param[,value])
+1.3.13.  ruri_has_param(param[,value])
 
    Find if Request URI has a given parameter. If no value is
    given, the function will look for the paramter with no value,
@@ -389,51 +393,52 @@ if (has_totag()) {
    value.
 
    Meaning of the parameters is as follows:
-     * param - parameter name to look for.
-       param - paramete value to match.
+     * param (string) - parameter name to look for.
+     * value (string, optional) - parameter value to match.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.12. ruri_has_param usage
+   Example 1.13. ruri_has_param usage
 ...
 if (ruri_has_param("user","phone")) {
         ...
 };
 ...
 
-1.3.13.  ruri_add_param(param)
+1.3.14.  ruri_add_param(param)
 
    Add to RURI an URI parameter formated as "name=value".
 
    Meaning of the parameters is as follows:
-     * param - parameter to be appended in “name=value” format.
+     * param (string) - parameter to be appended in “name=value”
+       format.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.13. ruri_add_param usage
+   Example 1.14. ruri_add_param usage
 ...
 ruri_add_param("nat=yes");
 ...
 
-1.3.14.  ruri_del_param(param)
+1.3.15.  ruri_del_param(param)
 
    Delete a parameter from the RURI being given the
    key(key=value);
 
    Meaning of the parameters is as follows:
-     * param - key of the parameter to be removed/
+     * param (string) - key of the parameter to be removed/
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.14. ruri_del_param usage
+   Example 1.15. ruri_del_param usage
 ...
 ruri_del_param("user");
 ...
 
-1.3.15.  ruri_tel2sip()
+1.3.16.  ruri_tel2sip()
 
    Converts RURI, if it is tel URI, to SIP URI. Returns true, only
    if conversion succeeded or if no conversion was needed (like
@@ -442,19 +447,21 @@ ruri_del_param("user");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.15. ruri_tel2sip usage
+   Example 1.16. ruri_tel2sip usage
 ...
 ruri_tel2sip();
 ...
 
-1.3.16.  is_uri_user_e164(pseudo-variable)
+1.3.17.  is_uri_user_e164(uri)
 
-   Checks if userpart of URI stored in pseudo variable is E164
-   number.
+   Checks if the username part of the given URI is an E164 number.
+
+   Meaning of the parameters is as follows:
+     * uri (string) - a SIP URI
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-   Example 1.16. is_uri_user_e164 usage
+   Example 1.17. is_uri_user_e164 usage
 ...
 if (is_uri_user_e164("$fu")) {  # Check From header URI user part
    ...
@@ -465,7 +472,7 @@ if (is_uri_user_e164("$avp(uri)") {
 };
 ...
 
-1.3.17.  has_body_part([mime]),
+1.3.18.  has_body_part([mime])
 
    The function returns true if the SIP message has any body part
    with the given MIME. If there is no MIME given, it will return
@@ -474,7 +481,7 @@ if (is_uri_user_e164("$avp(uri)") {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.17. has_body_part usage
+   Example 1.18. has_body_part usage
 ...
 if(has_body_part("application/sdp"))
 {
@@ -482,7 +489,7 @@ if(has_body_part("application/sdp"))
 }
 ...
 
-1.3.18.  is_audio_on_hold()
+1.3.19.  is_audio_on_hold()
 
    The function returns true if the SIP message has an SDP body
    attached and at least one audio stream in on hold. The return
@@ -494,7 +501,7 @@ if(has_body_part("application/sdp"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.18. is_audio_on_hold usage
+   Example 1.19. is_audio_on_hold usage
 ...
 if(is_audio_on_hold())
 {
@@ -510,7 +517,7 @@ if(is_audio_on_hold())
 }
 ...
 
-1.3.19.  is_privacy(privacy_type)
+1.3.20.  is_privacy(privacy_type)
 
    The function returns true if the SIP message has a Privacy
    header field that includes the given privacy_type among its
@@ -521,7 +528,7 @@ if(is_audio_on_hold())
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.19. is_privacy usage
+   Example 1.20. is_privacy usage
 ...
 if(is_privacy("id"))
 {
@@ -529,7 +536,7 @@ if(is_privacy("id"))
 }
 ...
 
-1.3.20.  remove_body_part([mime[,revert]]),
+1.3.21.  remove_body_part([mime[, revert]])
 
    Removes from the message body all the body parts with the given
    mime. The necessary corrections over the Content-Type and
@@ -540,18 +547,19 @@ if(is_privacy("id"))
    will be removed.
 
    Meaning of the parameters is as follows:
-     * mime - mime to be checked against the body parts; If not
-       present, all parts are to remvoed;
-     * revert - usefull only if a MIME was specified. If "revert"
-       string is given here, the function will delete all body
-       parts but the ones with the given MIME.
+     * mime (string, optional) - MIME type to be checked against
+       the body parts; If not given, all parts are to remvoed;
+     * revert (string, optional) - useful only if a MIME was
+       specified. If "revert" string is given here, the function
+       will delete all body parts but the ones with the given
+       MIME.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.20. remove_body_part() usage
+   Example 1.21. remove_body_part() usage
 ...
-#delete entire body message (all parts)
+# delete entire body message (all parts)
 remove_body_part();
 # delete all body parts with mime "application/isup"
 remove_body_part("application/isup");
@@ -559,29 +567,29 @@ remove_body_part("application/isup");
 remove_body_part("application/sdp","revert")
 ...
 
-1.3.21.  add_body_part(body,mime[,headers])
+1.3.22.  add_body_part(body, mime[, headers])
 
    This function can be used to add a new body part to the message
    body. If another part already exist, body of the message will
    be converted to a multi-part body automatically.
 
    Meaning of the parameters is as follows:
-     * body - the content of the body part to be added - it may
-       contain variables;
-     * mime - the mime string for the body part to be added.
-     * headers - optional list of SIP headers (fully defined,
-       including the header separator) to be pushed into this part
-       next to the Content-Type header.
+     * body (string) - the content of the body part to be added
+     * mime (string) - the mime string for the body part to be
+       added
+     * headers (string, optional) - optional list of SIP headers
+       (fully defined, including the header separator) to be
+       pushed into this part next to the Content-Type header.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.21. add_body_part usage
+   Example 1.22. add_body_part usage
 ...
 add_body_part("Hello World!", "text/plain");
 ...
 
-1.3.22.  sipmsg_validate([flags[,result_pvar]])
+1.3.23.  sipmsg_validate([flags[, result_pvar]])
 
    The function returns true if the SIP message is properly built
    according to SIP RFC3261. It verifies if the mandatory headers
@@ -641,7 +649,7 @@ add_body_part("Hello World!", "text/plain");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.22. sipmsg_validate usage
+   Example 1.23. sipmsg_validate usage
 ...
 if(!sipmsg_validate())
 {
@@ -652,14 +660,14 @@ if(!sipmsg_validate())
 
 ...
 # checks also the SDP and headers body
-if(!sipmsg_validate("sh"))
+if(!sipmsg_validate("sh", $var(err_reason)))
 {
         send_reply("400", "Bad Request/Body");
         exit;
 }
 ...
 
-1.3.23.  codec_exists (name [,clock] )
+1.3.24.  codec_exists (name[, clock])
 
    This function can be used to verify if a codec exists inside an
    sdp payload. It will search for the codec inside all streams
@@ -671,14 +679,14 @@ if(!sipmsg_validate("sh"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.23. codec_exists usage
+   Example 1.24. codec_exists usage
 ...
 codec_exists("speex");
 or
-codec_exists("GSM","8000");
+codec_exists("GSM", "8000");
 ...
 
-1.3.24.  codec_delete (name [,clock] )
+1.3.25.  codec_delete(name[, clock])
 
    This function can be used to delete a codec from inside an sdp
    payload. It will search for the codec inside all streams from
@@ -692,14 +700,14 @@ codec_exists("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.24. codec_delete usage
+   Example 1.25. codec_delete usage
 ...
 codec_delete("speex");
 or
-codec_delete("GSM","8000");
+codec_delete("GSM", "8000");
 ...
 
-1.3.25.  codec_move_up (name [,clock] )
+1.3.26.  codec_move_up(name[, clock])
 
    This function can be used to move a codec up in the list of
    indexes ("m=..."). It will search for the codec inside all
@@ -714,14 +722,14 @@ codec_delete("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.25. codec_move_up usage
+   Example 1.26. codec_move_up usage
 ...
 codec_move_up("speex");
 or
-codec_move_up("GSM","8000");
+codec_move_up("GSM", "8000");
 ...
 
-1.3.26.  codec_move_down (name [,clock] )
+1.3.27.  codec_move_down(name[, clock])
 
    This function can be used to move a codec down in the list of
    indexes ("m=..."). It will search for the codec inside all
@@ -735,14 +743,14 @@ codec_move_up("GSM","8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.26. codec_move_down usage
+   Example 1.27. codec_move_down usage
 ...
 codec_move_down("speex");
 or
-codec_move_down("GSM","8000");
+codec_move_down("GSM", "8000");
 ...
 
-   Example 1.27. codec_move_down usage
+   Example 1.28. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -750,12 +758,12 @@ codec_move_down("GSM","8000");
   speex codecs to the front of the list. Speex/8000 will be behind any
   other speex.
 */
-codec_move_down("speex","8000");
-codec_delete("GSM","8000");
+codec_move_down("speex", "8000");
+codec_delete("GSM", "8000");
 codec_move_up("speex");
 ...
 
-1.3.27.  codec_exists_re ( regexp )
+1.3.28.  codec_exists_re ( regexp )
 
    This function has the same effect as codec_exists ( without the
    clock parameter ) the only difference is that it takes a POSIX
@@ -764,12 +772,12 @@ codec_move_up("speex");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.28. codec_exists_re usage
+   Example 1.29. codec_exists_re usage
 ...
 codec_exists_re("sp[a-z]*");
 ...
 
-1.3.28.  codec_delete_re ( regexp )
+1.3.29.  codec_delete_re ( regexp )
 
    This function has the same effect as codec_delete ( without the
    clock parameter ) the only difference is that it takes a POSIX
@@ -778,13 +786,13 @@ codec_exists_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.29. codec_delete_re usage
+   Example 1.30. codec_delete_re usage
 ...
 codec_delete_re("PCMA|PCMU");
 ...
 
 
-1.3.29.  codec_delete_except_re ( regexp )
+1.3.30.  codec_delete_except_re ( regexp )
 
    This function deletes all the codecs except those specified by
    the regular expression.
@@ -792,14 +800,14 @@ codec_delete_re("PCMA|PCMU");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.30. codec_delete_except_re usage
+   Example 1.31. codec_delete_except_re usage
 ...
 codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA
 and PCMU
 ...
 
 
-1.3.30.  codec_move_up_re ( regexp )
+1.3.31.  codec_move_up_re ( regexp )
 
    This function has the same effect as codec_move_up ( without
    the clock parameter ) the only difference is that it takes a
@@ -808,12 +816,12 @@ and PCMU
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.31. codec_move_up_re usage
+   Example 1.32. codec_move_up_re usage
 ...
 codec_move_up_re("sp[a-z]*");
 ...
 
-1.3.31.  codec_move_down_re ( regexp )
+1.3.32.  codec_move_down_re ( regexp )
 
    This function has the same effect as codec_move_down ( without
    the clock parameter ) the only difference is that it takes a
@@ -822,12 +830,12 @@ codec_move_up_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.32. codec_move_down_re usage
+   Example 1.33. codec_move_down_re usage
 ...
 codec_move_down_re("sp[a-z]*");
 ...
 
-   Example 1.33. codec_move_down usage
+   Example 1.34. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -840,28 +848,28 @@ codec_delete("GSM","8000");
 codec_move_up("speex");
 ...
 
-1.3.32.  change_reply_status(code, reason)
+1.3.33.  change_reply_status(code, reason)
 
    Intercept a SIP reply (in any onreply_route) and change its
    status code and reason phrase prior to propogating it.
 
    Meaning of the parameters is as follows:
-     * code - Status code.
-     * reason - Reason phrase.
+     * code (int) - Status code.
+     * reason (string) - Reason phrase.
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.34. change_reply_status usage
+   Example 1.35. change_reply_status usage
 ...
 onreply_route {
     if ($rs == "603") {
-        change_reply_status("404", "Not Found");
+        change_reply_status(404, "Not Found");
         exit;
     }
 }
 ...
 
-1.3.33.  stream_exists(regexp)
+1.3.34.  stream_exists(regexp)
 
    This function can be used to verify if a stream exists inside
    an sdp payload. It will search for the stream inside all sdp
@@ -875,13 +883,13 @@ onreply_route {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.35. stream_exists usage
+   Example 1.36. stream_exists usage
 ...
 # check for FAX
 stream_exists("image");
 ...
 
-1.3.34.  stream_delete(regexp)
+1.3.35.  stream_delete(regexp)
 
    This function can be used to delete a whole stream from inside
    an sdp payload. It will search for the stream inside all sdp
@@ -896,13 +904,13 @@ stream_exists("image");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.36. stream_delete usage
+   Example 1.37. stream_delete usage
 ...
 # prevent usage of video
 stream_delete("video");
 ...
 
-1.3.35.  list_hdr_has_option(hdr_name,option)
+1.3.36.  list_hdr_has_option(hdr_name, option)
 
    Checks and returns true if the given option/token is listed in
    the body of the given header. The header must have its body
@@ -910,12 +918,12 @@ stream_delete("video");
    Require, Content-Dispsition headers) body format
 
    Meaning of the parameters is as follows:
-     * hdr_name - the name of the header to be checked. Note that
-       all instances of that header will be checked (if the header
-       has multiple instances in the SIP message). Any kind of
-       header name is supported - RFC3261 standard, RFC extensions
-       or custom names.
-     * opt - the option/tolen to be searched for.
+     * hdr_name (string) - the name of the header to be checked.
+       Note that all instances of that header will be checked (if
+       the header has multiple instances in the SIP message). Any
+       kind of header name is supported - RFC3261 standard, RFC
+       extensions or custom names.
+     * opt (string) - the option/tolen to be searched for.
 
    The function returns true if the options was found listed in
    one of the header instances. If no header was found, if the
@@ -925,14 +933,14 @@ stream_delete("video");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.37. list_hdr_has_option usage
+   Example 1.38. list_hdr_has_option usage
 ...
 # check if 100rel is advertised
-if (list_hdr_has_option("Supported","100rel"))
-        xlog("100rel option founded\n");
+if (list_hdr_has_option("Supported", "100rel"))
+        xlog("100rel option found\n");
 ...
 
-1.3.36.  list_hdr_add_option(hdr_name,option)
+1.3.37.  list_hdr_add_option(hdr_name, option)
 
    Add a new option/token at the end of the list in the body of
    the given header. The header must have its body formated as a
@@ -943,14 +951,14 @@ if (list_hdr_has_option("Supported","100rel"))
    header.
 
    Meaning of the parameters is as follows:
-     * hdr_name - the name of the header where the option has to
-       be added. If multiple instances of that header are present
-       in the SIP message, the add will be performed on the first
-       instance. Any kind of header name is supported - RFC3261
-       standard, RFC extensions or custom names.
-     * opt - the option/token to be added to the CSV list. Note
-       there is not verification for duplicated (if the newly
-       added option is not already present in the header).
+     * hdr_name (string) - the name of the header where the option
+       has to be added. If multiple instances of that header are
+       present in the SIP message, the add will be performed on
+       the first instance. Any kind of header name is supported -
+       RFC3261 standard, RFC extensions or custom names.
+     * opt (string) - the option/token to be added to the CSV
+       list. Note there is not verification for duplicated (if the
+       newly added option is not already present in the header).
 
    The function returns true if the options was successfully added
    to the listed of the given header. If no header was found or if
@@ -959,13 +967,13 @@ if (list_hdr_has_option("Supported","100rel"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.38. list_hdr_add_option usage
+   Example 1.39. list_hdr_add_option usage
 ...
 # add 100rel for advertising
-if (!list_hdr_has_option("Supported","100rel"))
-    list_hdr_add_option("Supported","100rel");
+if (!list_hdr_has_option("Supported", "100rel"))
+    list_hdr_add_option("Supported", "100rel");
 
-1.3.37.  list_hdr_remove_option(hdr_name,option)
+1.3.38.  list_hdr_remove_option(hdr_name, option)
 
    Removes an option/token from the list inside the body of the
    given header. The header must have its body formated as a CSV
@@ -976,16 +984,16 @@ if (!list_hdr_has_option("Supported","100rel"))
    header.
 
    Meaning of the parameters is as follows:
-     * hdr_name - the name of the header where the option has to
-       be removed from. If the option is duplicated in the same
-       header, only the last one will be removed. If multiple
+     * hdr_name (string) - the name of the header where the option
+       has to be removed from. If the option is duplicated in the
+       same header, only the last one will be removed. If multiple
        instances of that header are present in the SIP message,
        the remove will be performed on all instance instance. Any
        kind of header name is supported - RFC3261 standard, RFC
        extensions or custom names.
-     * opt - the option/token to be removed from the CSV list.
-       Note that if this the only option in the header, the whole
-       header will be removed.
+     * opt (string) - the option/token to be removed from the CSV
+       list. Note that if this the only option in the header, the
+       whole header will be removed.
 
    The function returns true if the options was successfully
    removed from at least one heaer instance. If no header was
@@ -995,12 +1003,12 @@ if (!list_hdr_has_option("Supported","100rel"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.39. list_hdr_remove_option usage
+   Example 1.40. list_hdr_remove_option usage
 ...
 # add 100rel for advertising
-if (list_hdr_has_option("Supported","100rel"))
-    list_hdr_remove_option("Supported","100rel");
-list_hdr_add_option("Supported","optionX");
+if (list_hdr_has_option("Supported", "100rel"))
+    list_hdr_remove_option("Supported", "100rel");
+list_hdr_add_option("Supported", "optionX");
 
 1.4. Known Limitations
 
@@ -1017,9 +1025,9 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 53 27 1711 658
-   2. Razvan Crainea (@razvancrainea) 37 13 2887 35
-   3. Liviu Chircu (@liviuchircu) 22 16 237 220
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 54 28 1712 658
+   2. Liviu Chircu (@liviuchircu) 48 18 756 1312
+   3. Razvan Crainea (@razvancrainea) 37 13 2887 35
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
    6. Ovidiu Sas (@ovidiusas) 4 2 22 1
@@ -1028,10 +1036,10 @@ Chapter 2. Contributors
    9. Julián Moreno Patiño 3 1 8 8
    10. Fabian Gast (@fgast) 3 1 4 4
 
-   All remaining contributors: Jarrod Baumann (@jarrodb), Ezequiel
-   Lovelle, Walter Doekes (@wdoekes), Nick Altmann (@nikbyte),
-   Ionut Ionita (@ionutrazvanionita), Vlad Patrascu
-   (@rvlad-patrascu).
+   All remaining contributors: Alexey Vasilyev (@vasilevalex),
+   Jarrod Baumann (@jarrodb), Ezequiel Lovelle, Walter Doekes
+   (@wdoekes), Nick Altmann (@nikbyte), Ionut Ionita
+   (@ionutrazvanionita), Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1053,20 +1061,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2018
-   2.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Sep 2018
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
-   5.  Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
-   6.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   8.  Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Ionut Ionita (@ionutrazvanionita)   Dec 2015 - Dec 2015
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Apr 2019
+   3.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
+   4.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
+   6.  Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
+   7.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   9.  Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Ezequiel Lovelle, Vlad Paiu
-   (@vladpaiu), Mihai Tiganus (@tallicamike), Boris Ratner, Nick
-   Altmann (@nikbyte), Walter Doekes (@wdoekes).
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Ezequiel Lovelle, Vlad Paiu (@vladpaiu), Mihai Tiganus
+   (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte), Walter
+   Doekes (@wdoekes).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1075,9 +1084,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Fabian Gast (@fgast), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Ovidiu Sas (@ovidiusas), Julián Moreno Patiño,
+   Last edited by: Liviu Chircu (@liviuchircu), Fabian Gast
+   (@fgast), Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
+   (@lemenkov), Ovidiu Sas (@ovidiusas), Julián Moreno Patiño,
    Razvan Crainea (@razvancrainea), Mihai Tiganus (@tallicamike),
    Vlad Paiu (@vladpaiu), Boris Ratner, Nick Altmann (@nikbyte).
 
