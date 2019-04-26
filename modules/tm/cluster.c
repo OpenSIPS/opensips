@@ -441,15 +441,15 @@ static int tm_existing_trans(struct sip_msg *msg)
 	if (t == T_UNDEFINED) {
 		if (t_lookup_request(msg, 0) != -1) {
 			LM_DBG("e2e ACK or known CANCEL, do not replicate\n");
-			return 0;
+			return 1;
 		}
 		t = get_t(); /* fetch again the transaction */
 	}
 	if (t) {
 		LM_DBG("transaction already present here, no need to replicate\n");
-		return 0;
+		return 1;
 	}
-	return -1;
+	return 0;
 }
 
 /**
