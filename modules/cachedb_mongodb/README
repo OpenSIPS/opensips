@@ -44,7 +44,7 @@ cachedb_mongodb Module
    1.1. Runtime requirements for "cachedb_mongodb"
    1.2. Compilation requirements for "cachedb_mongodb"
    1.3. Set cachedb_url parameter
-   1.4. Use MongoDB servers
+   1.4. Reference MongoDB connections
    1.5. Set exec_threshold parameter
    1.6. Setting the compat_mode_2.4 parameter
    1.7. Setting the compat_mode_3.0 parameter
@@ -128,26 +128,34 @@ sudo yum install json-c-devel mongo-c-driver-devel
 
    Example 1.3. Set cachedb_url parameter
 ...
-# Connecting to a local mongod instance (single instance)
+# Connect to a single mongod instance
 modparam("cachedb_mongodb", "cachedb_url",
-         "mongodb:instance1://localhost:27017/opensipsDB.dialog")
+         "mongodb://localhost:27017/opensipsDB.dialog")
 
-# Connecting to a local mongos instance (routes to a MongoDB cluster)
+# Connect to a mongod replica set
 modparam("cachedb_mongodb", "cachedb_url",
-         "mongodb:cluster://localhost:27017/opensipsDB.dialog")
+         "mongodb://10.0.0.10,10.0.0.11:27017/opensipsDB.dialog?replSet=
+my-set")
 
-# Connecting to a local mongos instance with failover to an alternate bo
-x
+# Connect to a mongos instance (routes to a sharded cluster)
 modparam("cachedb_mongodb", "cachedb_url",
-         "mongodb:cluster://localhost:27017,10.0.0.10:27017/opensipsDB.d
-ialog")
+         "mongodb://localhost/opensipsDB.dialog")
+
+# Example of multiple connections:
+#   * to a main mongos, with failover to a backup mongos
+#   * to a single mongod
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb:cluster://localhost,10.0.0.10:27017/opensipsDB.dialog"
+)
+modparam("cachedb_mongodb", "cachedb_url",
+         "mongodb://localhost:27017/opensipsDB.userlocation")
 ...
 
-   Example 1.4. Use MongoDB servers
+   Example 1.4. Reference MongoDB connections
 ...
-cache_store("mongodb:instance1", "key", "$ru value");
-cache_fetch("mongodb:instance2", "key", $avp(10));
+cache_store("mongodb", "key", "$ru value");
 cache_remove("mongodb:cluster", "key");
+cache_fetch("mongodb:instance1", "key", $avp(10));
 ...
 
 1.5.2. exec_threshold (int)
@@ -255,7 +263,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 139 69 2725 2636
+   1. Liviu Chircu (@liviuchircu) 141 71 2747 2645
    2. Vlad Paiu (@vladpaiu) 34 9 2964 50
    3. Ovidiu Sas (@ovidiusas) 10 8 92 16
    4. Razvan Crainea (@razvancrainea) 8 6 25 24
@@ -300,8 +308,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Julián Moreno Patiño, Vlad Paiu
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Julián Moreno Patiño, Vlad Paiu
    (@vladpaiu).
 
    doc copyrights:

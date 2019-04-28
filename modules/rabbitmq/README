@@ -170,7 +170,8 @@ Chapter 2. Contributors
    1. Razvan Crainea (@razvancrainea)    40      26      1477     110
    2. Liviu Chircu (@liviuchircu)        7        5       17       35
    3. Maksym Sobolyev (@sobomax)         3        1       1        1
-   4. Vlad Patrascu (@rvlad-patrascu)    2        1       1        0
+   4. Walter Doekes (@wdoekes)           3        1       1        1
+   5. Vlad Patrascu (@rvlad-patrascu)    2        1       1        0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -192,10 +193,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Liviu Chircu (@liviuchircu)     Apr 2018 - Aug 2018
-   2. Maksym Sobolyev (@sobomax)      Jul 2017 - Jul 2017
-   3. Razvan Crainea (@razvancrainea) Jan 2017 - May 2017
-   4. Vlad Patrascu (@rvlad-patrascu) May 2017 - May 2017
+   1. Walter Doekes (@wdoekes)        Apr 2019 - Apr 2019
+   2. Liviu Chircu (@liviuchircu)     Apr 2018 - Aug 2018
+   3. Maksym Sobolyev (@sobomax)      Jul 2017 - Jul 2017
+   4. Razvan Crainea (@razvancrainea) Jan 2017 - May 2017
+   5. Vlad Patrascu (@rvlad-patrascu) May 2017 - May 2017
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -358,9 +358,9 @@ Chapter 2. Contributors
    10. Vlad Patrascu (@rvlad-patrascu) 4 2 31 30
 
    All remaining contributors: Dusan Klinec, Andreas Heise, Sergio
-   Gutierrez, Dan Pascu (@danpascu), Konstantin Bokarius, Iouri
-   Kharon, Edson Gellert Schubert, Elena-Ramona Modroiu, Eric
-   Tamme (@etamme).
+   Gutierrez, Dan Pascu (@danpascu), Konstantin Bokarius, Walter
+   Doekes (@wdoekes), Iouri Kharon, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Eric Tamme (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -382,21 +382,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Oct 2018
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2018
-   4.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
-   6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2017
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
-   8.  Andrei Datcu (@andrei-datcu)        Jun 2014 - Jul 2014
-   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Nov 2013
-   10. Alexandr Dubovikov (@adubovikov)    Nov 2011 - Nov 2011
+   1.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2018
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Oct 2018
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2018
+   5.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
+   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2017
+   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Andrei Datcu (@andrei-datcu)        Jun 2014 - Jul 2014
+   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Nov 2013
 
-   All remaining contributors: Sergio Gutierrez, Dan Pascu
-   (@danpascu), Daniel-Constantin Mierla (@miconda), Iouri Kharon,
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
+   All remaining contributors: Alexandr Dubovikov (@adubovikov),
+   Sergio Gutierrez, Dan Pascu (@danpascu), Daniel-Constantin
+   Mierla (@miconda), Iouri Kharon, Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Andreas
+   Heise, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
