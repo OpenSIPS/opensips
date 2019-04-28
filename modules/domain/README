@@ -17,10 +17,9 @@ domain Module
 
         1.4. Exported Functions
 
-              1.4.1. is_from_local([attrs_pvar])
-              1.4.2. is_uri_host_local([attrs_pvar])
-              1.4.3. is_domain_local(pseudo_variable [,
-                      attrs_pvar])
+              1.4.1. is_from_local([attrs_var])
+              1.4.2. is_uri_host_local([attrs_var])
+              1.4.3. is_domain_local(domain, [attrs_var])
 
         1.5. Exported MI Functions
 
@@ -142,13 +141,13 @@ modparam("domain", "attrs_col", "attributes")
 
 1.4. Exported Functions
 
-1.4.1. is_from_local([attrs_pvar])
+1.4.1. is_from_local([attrs_var])
 
    Checks based on domain table if host part of From header uri is
    one of the local domains that the proxy is responsible for. The
    argument is optional and if present it should contain a
-   writable pseudo variable that will be populated with the
-   attributes from the database.
+   writable variable that will be populated with the attributes
+   from the database.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -158,13 +157,13 @@ if (is_from_local()) {
         ...
 };
 ...
-if (is_from_local("$var(attrs)")) {
+if (is_from_local($var(attrs))) {
         xlog("Domain attributes are $var(attrs)\n");
         ...
 };
 ...
 
-1.4.2. is_uri_host_local([attrs_pvar])
+1.4.2. is_uri_host_local([attrs_var])
 
    If called from route or failure route block, checks based on
    domain table if host part of Request-URI is one of the local
@@ -172,8 +171,8 @@ if (is_from_local("$var(attrs)")) {
    branch route, the test is made on host part of URI of first
    branch, which thus must have been appended to the transaction
    before is_uri_host_local() is called. The argument is optional
-   and if present it should contain a writable pseudo variable
-   that will be populated with the attributes from the database.
+   and if present it should contain a writable variable that will
+   be populated with the attributes from the database.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
@@ -184,49 +183,50 @@ if (is_uri_host_local()) {
         ...
 };
 ...
-if (is_uri_host_local("$var(attrs)")) {
+if (is_uri_host_local($var(attrs))) {
         xlog("Domain attributes are $var(attrs)\n");
         ...
 };
 
-1.4.3. is_domain_local(pseudo_variable [, attrs_pvar])
+1.4.3. is_domain_local(domain, [attrs_var])
 
-   This function checks if the domain contained in the
-   pseudo_variable is local.
+   This function checks if the domain contained in the first
+   parameter is local.
 
    This function is a generalized form of the is_from_local() and
    is_uri_host_local() functions, being able to completely replace
    them and also extends them by allowing the domain to be taken
    from any of the above mentioned sources. The following
    equivalences exist:
-     * is_domain_local("$rd") is same as is_uri_host_local()
-     * is_domain_local("$fd") is same as is_from_local()
+     * is_domain_local($rd) is same as is_uri_host_local()
+     * is_domain_local($fd) is same as is_from_local()
 
-   The second argument is optional and if present it should
-   contain a writable pseudo variable that will be populated with
-   the attributes from the database.
+   Parameters:
+     * domain (string)
+     * attrs_var (var, optional) - a writable variable that will
+       be populated with the attributes from the database.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
    Example 1.8. is_domain_local usage
 ...
-if (is_domain_local("$rd")) {
+if (is_domain_local($rd)) {
         ...
 };
-if (is_domain_local("$fd")) {
+if (is_domain_local($fd)) {
         ...
 };
-if (is_domain_local("$avp(some_avp_alias)")) {
+if (is_domain_local($avp(some_avp_alias))) {
         ...
 };
-if (is_domain_local("$avp(850)")) {
+if (is_domain_local($avp(850))) {
         ...
 };
-if (is_domain_local("$avp(some_avp)")) {
+if (is_domain_local($avp(some_avp))) {
         ...
 };
-if (is_domain_local("$avp(some_avp)", "$avp(attrs)")) {
+if (is_domain_local($avp(some_avp), $avp(attrs))) {
         xlog("Domain attributes are $avp(attrs)\n");
         ...
 };
@@ -292,10 +292,10 @@ Chapter 3. Contributors
    4. Daniel-Constantin Mierla (@miconda) 19 16 92 79
    5. Razvan Crainea (@razvancrainea) 17 10 281 219
    6. Liviu Chircu (@liviuchircu) 11 8 45 109
-   7. Andrei Pelinescu-Onciul 9 4 186 121
-   8. Dan Pascu (@danpascu) 8 4 232 101
-   9. Henning Westerholt (@henningw) 7 5 44 48
-   10. Vlad Patrascu (@rvlad-patrascu) 7 4 70 102
+   7. Vlad Patrascu (@rvlad-patrascu) 9 5 96 123
+   8. Andrei Pelinescu-Onciul 9 4 186 121
+   9. Dan Pascu (@danpascu) 8 4 232 101
+   10. Henning Westerholt (@henningw) 7 5 44 48
 
    All remaining contributors: Edson Gellert Schubert,
    Elena-Ramona Modroiu, Jiri Kuthan (@jiriatipteldotorg), @coxx,
@@ -323,8 +323,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
    3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -347,9 +347,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Juha Heinanen (@juha-h), Elena-Ramona
    Modroiu, Dan Pascu (@danpascu), Klaus Darilion, Jan Janak

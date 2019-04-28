@@ -29,13 +29,11 @@ LDAP Module
         1.5. Exported Functions
 
               1.5.1. ldap_search(ldap_url)
-              1.5.2.
-                      ldap_result("ldap_attr_name/avp_spec[/avp_type
-                      ]" [, regex_subst])
+              1.5.2. ldap_result(ldap_attr_name, avp_spec,
+                      [avp_type], [regex_subst])
 
-              1.5.3.
-                      ldap_result_check("ldap_attr_name/string_to_ma
-                      tch" [, regex_subst])
+              1.5.3. ldap_result_check(ldap_attr_name,
+                      string_to_match, [, regex_subst])
 
               1.5.4. ldap_result_next()
               1.5.5. ldap_filter_url_encode(string, avp_spec)
@@ -172,11 +170,10 @@ Chapter 1. Admin Guide
 
    The result of an LDAP search is stored internally and can be
    accessed with one of the ldap_result* functions. ldap_result
-   (Section 1.5.2,
-   “ldap_result("ldap_attr_name/avp_spec[/avp_type]" [,
-   regex_subst])”) stores resulting LDAP attribute value as AVPs.
-   ldap_result_check (Section 1.5.3,
-   “ldap_result_check("ldap_attr_name/string_to_match" [,
+   (Section 1.5.2, “ldap_result(ldap_attr_name, avp_spec,
+   [avp_type], [regex_subst])”) stores resulting LDAP attribute
+   value as AVPs. ldap_result_check (Section 1.5.3,
+   “ldap_result_check(ldap_attr_name, string_to_match, [,
    regex_subst])”) is a convenience function to compare a string
    with LDAP attribute values using regular expression matching.
    Finally, ldap_result_next (Section 1.5.4, “ldap_result_next()”)
@@ -492,14 +489,11 @@ modparam("ldap", "max_async_connections", 50)
 
    Function Parameters:
 
-   ldap_url
+   ldap_url (string)
           An LDAP URL defining the LDAP search operation (refer to
           Section 1.1.2, “LDAP URLs” for a description of the LDAP
           URL format). The hostport part must be one of the LDAP
           session names declared in the LDAP configuration script.
-
-          OpenSIPS pseudo variables and AVPs included in ldap_url
-          do get substituted with their value.
 
           Example 1.14. Example Usage of ldap_url
 
@@ -545,11 +539,11 @@ rU)"))
     {
     case -1:
         # no LDAP entry found
-        sl_send_reply("404", "User Not Found");
+        sl_send_reply(404, "User Not Found");
         exit;
     case -2:
         # internal error
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     default:
         exit;
@@ -561,8 +555,8 @@ xlog("L_INFO", "ldap_search: found [$retcode] entries for (cn=$rU)");
 ldap_result("telephoneNumber/$avp(tel_number)");
 ...
 
-1.5.2. ldap_result("ldap_attr_name/avp_spec[/avp_type]" [,
-regex_subst])
+1.5.2. ldap_result(ldap_attr_name, avp_spec, [avp_type],
+[regex_subst])
 
    This function converts LDAP attribute values into AVPs for
    later use in the message routing script. It accesses the LDAP
@@ -584,20 +578,20 @@ regex_subst])
 
    Function Parameters:
 
-   ldap_attr_name
+   ldap_attr_name (string)
           The name of the LDAP attribute who's value should be
           stored, e.g. SIPIdentityServiceLevel or telephonenumber
 
-   avp_spec
+   avp_spec (var)
           Specification of destination AVP, e.g.
           $avp(service_level) or $avp(12)
 
-   avp_type
-          Opional specification of destination AVP type, either
-          str or int. If this parameter is not specified then the
-          LDAP attribute values are stored as AVP of type string.
+   avp_type (string, optional)
+          Specification of destination AVP type, either str or
+          int. If this parameter is not specified then the LDAP
+          attribute values are stored as AVP of type string.
 
-   regex_subst
+   regex_subst (string)
           Regex substitution that gets applied to LDAP attribute
           value before storing it as AVP, e.g. "/^sip:(.+)$/\1/"
           to strip off "sip:" from the beginning of an LDAP
@@ -626,17 +620,17 @@ regex_subst])
 ...
 
 # save SIPIdentityServiceLevel in $avp(service_level)
-if (!ldap_result("SIPIdentityServiceLevel/$avp(service_level)"))
+if (!ldap_result("SIPIdentityServiceLevel", $avp(service_level)))
 {
     switch ($retcode)
     {
     case -1:
         # no SIPIdentityServiceLevel found
-        sl_send_reply("403", "Forbidden");
+        sl_send_reply(403, "Forbidden");
         exit;
     case -2:
         # internal error
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     default:
         exit;
@@ -644,10 +638,10 @@ if (!ldap_result("SIPIdentityServiceLevel/$avp(service_level)"))
 }
 
 # save SIP URI domain in $avp(10)
-ldap_result("SIPIdentitySIPURI/$avp(10)", "/^[^@]+@(.+)$/\1/");
+ldap_result("SIPIdentitySIPURI", $avp(10), "/^[^@]+@(.+)$/\1/");
 ...
 
-1.5.3. ldap_result_check("ldap_attr_name/string_to_match" [,
+1.5.3. ldap_result_check(ldap_attr_name, string_to_match, [,
 regex_subst])
 
    This function compares ldap_attr_name's value with
@@ -661,15 +655,15 @@ regex_subst])
 
    Function Parameters:
 
-   ldap_attr_name
+   ldap_attr_name (string)
           The name of the LDAP attribute who's value should be
           matched, e.g. SIPIdentitySIPURI
 
-   string_to_match
+   string_to_match (string)
           String to be matched. Included AVPs and pseudo variabels
           do get expanded.
 
-   regex_subst
+   regex_subst (string, optional)
           Regex substitution that gets applied to LDAP attribute
           value before comparing it with string_to_match, e.g.
           "/^[^@]@+(.+)$/\1/" to extract the domain part of a SIP
@@ -699,17 +693,17 @@ regex_subst])
 
 # check if 'sn' ldap attribute value equals username part of R-URI,
 # the same could be achieved with ldap_result_check("sn/$rU")
-if (!ldap_result_check("sn/$ru", "/^sip:([^@]).*$/\1/"))
+if (!ldap_result_check("sn", $ru, "/^sip:([^@]).*$/\1/"))
 {
     switch ($retcode)
     {
     case -1:
         # R-URI username doesn't match sn
-        sl_send_reply("401", "Unauthorized");
+        sl_send_reply(401, "Unauthorized");
         exit;
     case -2:
         # internal error
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     default:
         exit;
@@ -785,9 +779,9 @@ if (ldap_result_next())
           and pseudo variables do get expanded. Example:
           "cn=$avp(name)"
 
-   avp_spec
-          Specification of AVP to store resulting RFC 4515 and URL
-          encoded string, e.g. $avp(ldap_search) or $avp(10)
+   avp_spec (var)
+          AVP to store resulting RFC 4515 and URL encoded string,
+          e.g. $avp(ldap_search) or $avp(10)
 
    Return Values:
 
@@ -803,7 +797,7 @@ if (ldap_result_next())
 
    Example 1.19. Example Usage
 ...
-if (!ldap_filter_url_encode("cn=$avp(name)", "$avp(name_esc)"))
+if (!ldap_filter_url_encode("cn=$avp(name)", $avp(name_esc)))
 {
     # RFC 4515/URL encoding failed --> silently discard request
     exit;
@@ -831,14 +825,11 @@ if (ldap_search(
 
    Function Parameters:
 
-   ldap_url
+   ldap_url (string)
           An LDAP URL defining the LDAP search operation (refer to
           Section 1.1.2, “LDAP URLs” for a description of the LDAP
           URL format). The hostport part must be one of the LDAP
           session names declared in the LDAP configuration script.
-
-          OpenSIPS pseudo variables and AVPs included in ldap_url
-          do get substituted with their value.
 
           Example 1.20. Example Usage of ldap_url
 
@@ -889,11 +880,11 @@ route[resume] {
     {
     case -1:
         # no LDAP entry found
-        sl_send_reply("404", "User Not Found");
+        sl_send_reply(404, "User Not Found");
         exit;
     case -2:
         # internal error
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     default:
         exit;
@@ -902,7 +893,7 @@ route[resume] {
 ;
 
     # save telephone number in $avp(tel_number)
-    ldap_result("telephoneNumber/$avp(tel_number)");
+    ldap_result("telephoneNumber", $avp(tel_number)");
 ...
 }
 
@@ -1357,9 +1348,9 @@ Chapter 3. Contributors
    1. Christian Schlatter 57 6 5764 237
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 23 18 140 136
    3. Ionut Ionita (@ionutrazvanionita) 21 5 1359 252
-   4. Daniel-Constantin Mierla (@miconda) 12 9 84 83
-   5. Razvan Crainea (@razvancrainea) 12 9 52 73
-   6. Vlad Patrascu (@rvlad-patrascu) 11 2 128 385
+   4. Vlad Patrascu (@rvlad-patrascu) 13 3 155 420
+   5. Daniel-Constantin Mierla (@miconda) 12 9 84 83
+   6. Razvan Crainea (@razvancrainea) 12 9 52 73
    7. Liviu Chircu (@liviuchircu) 10 7 15 56
    8. Razvan Pistolea 4 1 39 66
    9. Anca Vamanu 3 1 14 14
@@ -1389,9 +1380,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Jan 2017
@@ -1411,11 +1402,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Christian Schlatter.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Christian Schlatter.
 
    Documentation Copyrights:
 

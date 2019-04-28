@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">141</entry>
-		<entry align="center">70</entry>
-		<entry align="center">2784</entry>
-		<entry align="center">2696</entry>
+		<entry align="center">143</entry>
+		<entry align="center">72</entry>
+		<entry align="center">2806</entry>
+		<entry align="center">2705</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -177,7 +177,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Julián Moreno Patiño, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Julián Moreno Patiño, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
 </section>
 
 </chapter>

@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">9</entry>
-		<entry align="center">12</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">10</entry>
+		<entry align="center">13</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -80,12 +80,12 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">Apr 2019 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Apr 2019 - Apr 2019</entry>
 	</row>
 	<row>
@@ -112,7 +112,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
 </section>
 
 </chapter>

@@ -403,13 +403,14 @@ hresh")
    event will also be raised (see further details below).
 
    Meaning of the parameters is as follows:
-     * user - the user who is making the call. Please keep in mind
-       that the user doesn't have to be registered. This string is
-       only used do keep different stats for different registered
-       users.
-     * number - the number the user is calling to.
-     * profile_id - the fraud profile id (i.e. the subset of fraud
-       rules) in which to try and find a matching fraud rule.
+     * user (string) - the user who is making the call. Please
+       keep in mind that the user doesn't have to be registered.
+       This string is only used to keep different stats for
+       different registered users.
+     * number (string) - the number the user is calling to.
+     * profile_id (int) - the fraud profile id (i.e. the subset of
+       fraud rules) in which to try and find a matching fraud
+       rule.
 
    The meaning of the return code is as follows:
      * 2 - no matching fraud rule was found
@@ -484,8 +485,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Andrei Datcu (@andrei-datcu) 37 11 2665 235
    2. Liviu Chircu (@liviuchircu) 27 22 168 132
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 20 31
-   4. Vlad Patrascu (@rvlad-patrascu) 7 4 69 110
+   3. Vlad Patrascu (@rvlad-patrascu) 9 5 73 114
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 20 31
    5. Razvan Crainea (@razvancrainea) 4 2 10 9
    6. Ionut Ionita (@ionutrazvanionita) 3 1 21 6
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -510,8 +511,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    3. Liviu Chircu (@liviuchircu)         Mar 2015 - Jan 2019
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5. Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
@@ -525,9 +526,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Andrei
-   Datcu (@andrei-datcu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Andrei Datcu (@andrei-datcu).
 
    Documentation Copyrights:
 

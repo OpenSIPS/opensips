@@ -19,8 +19,7 @@ Presence User Agent for XMPP (Presence gateway between SIP and XMPP)
         1.4. Exported Functions
 
               1.4.1. pua_xmpp_notify()
-              1.4.2. pua_xmpp_req_winfo(char* request_uri, char*
-                      expires)
+              1.4.2. pua_xmpp_req_winfo(request_uri, expires)
 
         1.5. Filtering
 
@@ -112,12 +111,12 @@ modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
         if( is_method("NOTIFY") && $ru=~"sip:.+@sip-xmpp.siphub.ro")
         {
                 if(Notify2Xmpp())
-                        t_reply("200", "OK");
+                        t_reply(200, "OK");
                 exit;
         }
 ...
 
-1.4.2.  pua_xmpp_req_winfo(char* request_uri, char* expires)
+1.4.2.  pua_xmpp_req_winfo(request_uri, expires)
 
    Function called when a Subscribe addressed to a user from a
    xmpp domain is received. It calls sending a Subscribe for winfo
@@ -126,8 +125,10 @@ modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
    filtering in configuration file, after method, domain and
    event(only for presence).
 
-   It takes 2 parameters: request_uri and the value of Expires
-   header field in received Subscribe.
+   Parameters:
+     * request_uri (string)
+     * expires (int) - value of Expires header field in received
+       Subscribe.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -139,7 +140,7 @@ modparam("pua_xmpp", "presence_server", "sip:pa@opensips.org:5075")
                 if($ru=~"sip:.+@sip-xmpp.siphub.ro" && $hdr(Event)== "pr
 esence")
                 {
-                        pua_xmpp_req_winfo("$ruri", "$hdr(Expires)");
+                        pua_xmpp_req_winfo($ruri, $hdr(Expires));
                 }
                 t_release();
         }
@@ -169,7 +170,7 @@ Chapter 3. Contributors
    3. Liviu Chircu (@liviuchircu) 12 9 39 60
    4. Daniel-Constantin Mierla (@miconda) 10 8 27 21
    5. Razvan Crainea (@razvancrainea) 9 7 19 32
-   6. Vlad Patrascu (@rvlad-patrascu) 6 3 22 63
+   6. Vlad Patrascu (@rvlad-patrascu) 7 4 34 69
    7. Ovidiu Sas (@ovidiusas) 3 1 14 2
    8. Sergio Gutierrez 3 1 5 5
    9. Vlad Paiu (@vladpaiu) 3 1 4 14
@@ -199,8 +200,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Nov 2016
@@ -221,11 +222,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Anca
-   Vamanu, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Anca Vamanu,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert.
 
    Documentation Copyrights:
 

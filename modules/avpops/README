@@ -27,22 +27,23 @@ AVPops Module
 
         1.5. Exported Functions
 
-              1.5.1. avp_db_load(source, name[, db_id[, prefix]])
-              1.5.2. avp_db_store(source,name[,db_id])
-              1.5.3. avp_db_delete(source,name[,db_id])
-              1.5.4. avp_db_query(query[[,dest],db_id])
+              1.5.1. avp_db_load(source, name, [db_id], [prefix]])
+
+              1.5.2. avp_db_store(source, name, [db_id])
+              1.5.3. avp_db_delete(source, name, [db_id])
+              1.5.4. avp_db_query(query, [res_col_avps], [db_id])
               1.5.5. avp_delete(name)
-              1.5.6. avp_pushto(destination,name)
-              1.5.7. avp_check(name,op_value)
-              1.5.8. avp_copy(old_name,new_name)
+              1.5.6. avp_pushto(destination, name)
+              1.5.7. avp_check(name, op_value)
+              1.5.8. avp_copy(from_avp, to_avp)
               1.5.9. avp_subst(avps, subst)
-              1.5.10. avp_op(name,op_value)
+              1.5.10. avp_op(name, op_value)
               1.5.11. is_avp_set(name)
               1.5.12. avp_print()
 
         1.6. Exported Asynchronous Functions
 
-              1.6.1. avp_db_query(query[[,dest],db_id])
+              1.6.1. avp_db_query(query, [dest], [db_id])
 
    2. Contributors
 
@@ -269,7 +270,7 @@ modparam("avpops","db_scheme",
 
 1.5. Exported Functions
 
-1.5.1.  avp_db_load(source, name[, db_id[, prefix]])
+1.5.1.  avp_db_load(source, name, [db_id], [prefix]])
 
    Loads from DB into memory the AVPs corresponding to the given
    source. If given, it sets the script flags for loaded AVPs. It
@@ -280,16 +281,16 @@ modparam("avpops","db_scheme",
    some conflicts.
 
    Meaning of the parameters is as follows:
-     * source - what info is used for identifying the AVPs.
-       Parameter syntax:
+     * source (string, no expand) - what info is used for
+       identifying the AVPs. Parameter syntax:
           + source = (pvar|str_value)
             ['/'('username'|'domain'|'uri'|'uuid')])
           + pvar = any pseudo variable defined in OpenSIPS. If the
             pvar is $ru (request uri), $fu (from uri), $tu (to
             uri) or $ou (original uri), then the implicit flag is
             'uri'. Otherwise, the implicit flag is 'uuid'.
-     * name - which AVPs will be loaded from DB into memory.
-       Parameter syntax is:
+     * name (string, no expand) - which AVPs will be loaded from
+       DB into memory. Parameter syntax is:
           + name = avp_spec['/'(table_name|'$'db_scheme)]
           + avp_spec =
             matching_flags|$avp(avp_name)|$avp(avp_alias)
@@ -298,10 +299,10 @@ modparam("avpops","db_scheme",
             'a' or 'A' means matching any of AVP name types ('i'
             and 's'), the rest have the meaning descriped in 'AVP
             naming format' chapter.
-     * db_id - reference to a defined DB URL (a numerical id) -
-       see the “db_url” module parameter.
-     * prefix - static string which will precede the names of the
-       AVPs populated by this function.
+     * db_id (int, optional) - reference to a defined DB URL (a
+       numerical id) - see the “db_url” module parameter.
+     * prefix (string, optional) - static string which will
+       precede the names of the AVPs populated by this function.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
@@ -322,12 +323,12 @@ xlog("Loaded: $avp(caller_100)\n");
 
 ...
 
-1.5.2.  avp_db_store(source,name[,db_id])
+1.5.2.  avp_db_store(source, name, [db_id])
 
    Stores to DB the AVPs corresponding to the given source.
 
    The meaning and usage of the parameters are identical as for
-   avp_db_load(source,name) function. Please refer to its
+   avp_db_load(source, name) function. Please refer to its
    description.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -335,18 +336,18 @@ xlog("Loaded: $avp(caller_100)\n");
 
    Example 1.13. avp_db_store usage
 ...
-avp_db_store("$tu","$avp(678)");
-avp_db_store("$ru/username","$avp(email)");
+avp_db_store("$tu", "$avp(678)");
+avp_db_store("$ru/username", "$avp(email)");
 # use DB URL id 3
-avp_db_store("$ru","$avp(1)",3);
+avp_db_store("$ru", "$avp(1)", 3);
 ...
 
-1.5.3.  avp_db_delete(source,name[,db_id])
+1.5.3.  avp_db_delete(source, name, [db_id])
 
    Deletes from DB the AVPs corresponding to the given source.
 
    The meaning and usage of the parameters are identical as for
-   avp_db_load(source,name) function. Please refer to its
+   avp_db_load(source, name) function. Please refer to its
    description.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -354,20 +355,20 @@ avp_db_store("$ru","$avp(1)",3);
 
    Example 1.14. avp_db_delete usage
 ...
-avp_db_delete("$tu","$avp(678)");
-avp_db_delete("$ru/username","$avp(email)");
-avp_db_delete("$avp(uuid)","$avp(404fwd)/fwd_table");
+avp_db_delete("$tu", "$avp(678)");
+avp_db_delete("$ru/username", "$avp(email)");
+avp_db_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
 # use DB URL id 3
-avp_db_delete("$ru","$avp(1)",3);
+avp_db_delete("$ru", "$avp(1)", 3);
 ...
 
-1.5.4.  avp_db_query(query[[,dest],db_id])
+1.5.4.  avp_db_query(query, [res_col_avps], [db_id])
 
    Make a database query and store the result in AVPs.
 
    The meaning and usage of the parameters:
-     * query - must be a valid SQL query. The parameter can
-       contain pseudo-variables.
+     * query (string) - must be a valid SQL query. The parameter
+       can contain pseudo-variables.
        You must escape any pseudo-variables manually to prevent
        SQL injection attacks. You can use the existing
        transformations escape.common and unescape.common to escape
@@ -378,31 +379,31 @@ avp_db_delete("$ru","$avp(1)",3);
        returns true if the query was successful, -2 in case the
        query returned an empty result set, and -1 for all other
        types of errors
-     * dest - a list with AVP names where to store the result. The
-       format is “$avp(name1);$avp(name2);...”. If this parameter
-       is ommited, the result is stored in “$avp(1);$avp(2);...”.
-       If the result gives many rows, then multiple AVPs with
-       corresponding name will be added. The value type of the AVP
-       (string or integer) will be derived from the type of the
-       columns.
-     * db_id - reference to a defined DB URL (a numerical id) -
-       see the “db_url” module parameter. It can be either a
-       constant, or a string/int variable.
+     * res_col_avps (string, optional, no expand) - a list with
+       AVP names where to store the result. The format is
+       “$avp(name1);$avp(name2);...”. If this parameter is
+       omitted, the result is stored in “$avp(1);$avp(2);...”. If
+       the result consists of multiple rows, then multiple AVPs
+       with corresponding names will be added. The value type of
+       the AVP (string or integer) will be derived from the type
+       of the columns.
+     * db_id (int, optional) - reference to a defined DB URL (a
+       numerical id) - see the “db_url” module parameter. It can
+       be either a constant, or a string/int variable.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
    Example 1.15. avp_db_query usage
 ...
-avp_db_query("select password, ha1 from subscriber where username='$tu'"
+avp_db_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'"
 ,
-        "$avp(678);$avp(679)");
-avp_db_query("delete from subscriber");
-avp_db_query("delete from subscriber",,2);
+        "$avp(pass);$avp(hash)");
+avp_db_query("DELETE FROM subscriber");
+avp_db_query("DELETE FROM subscriber", , 2);
 
-$avp(id)=2;
-avp_db_query("delete from subscriber",,$avp(id));
-
+$avp(id) = 2;
+avp_db_query("DELETE FROM subscriber", , $avp(id));
 ...
 
 1.5.5.  avp_delete(name)
@@ -410,8 +411,8 @@ avp_db_query("delete from subscriber",,$avp(id));
    Deletes from memory the AVPs with name or, if *, all AVPs.
 
    Meaning of the parameters is as follows:
-     * name - which AVPs will be deleted from memory. Parameter
-       syntax is:
+     * name (string, no expand) - which AVPs will be deleted from
+       memory. Parameter syntax is:
           + name = (matching_flags|avp_name|avp_alias)['/'flag]
           + matching_flags = please refer to avp_db_load()
             function
@@ -428,13 +429,13 @@ avp_delete("i");
 avp_delete("a3");
 ...
 
-1.5.6.  avp_pushto(destination,name)
+1.5.6.  avp_pushto(destination, name)
 
    Pushes the value of AVP(s) into the SIP message.
 
    Meaning of the parameters is as follows:
-     * destination - as what will be the AVP value pushed into SIP
-       message. Parameter syntax:
+     * destination (string, no expand) - as what will be the AVP
+       value pushed into SIP message. Parameter syntax:
           + destination = '$ru' ['/'('username'|'domain')] | '$du'
             | '$br'
           + $ru '['/'('username'|'domain')] - write the AVP in the
@@ -442,8 +443,8 @@ avp_delete("a3");
           + $du - write the AVP in 'dst_uri' field
           + $br - write the AVP directly as a new branch (does not
             affect RURI)
-     * name - which AVP(s)/pseudo-variable should be pushed into
-       the SIP message. Parameter syntax is:
+     * name (string, no expand) - which AVP(s)/pseudo-variable
+       should be pushed into the SIP message. Parameter syntax is:
           + name = ( avp_name | avp_alias | pvar_name )['/'flags]
           + flags = 'g' - effective only with AVPs
 
@@ -452,22 +453,23 @@ avp_delete("a3");
 
    Example 1.17. avp_pushto usage
 ...
-avp_pushto("$ru/domain","$fd");
-avp_pushto("$ru","$avp(678)");
-avp_pushto("$ru/domain","$avp(backup_domains)/g");
-avp_pushto("$du","$avp(679)");
-avp_pushto("$br","$avp(680)");
+avp_pushto("$ru/domain", "$fd");
+avp_pushto("$ru", "$avp(678)");
+avp_pushto("$ru/domain", "$avp(backup_domains)/g");
+avp_pushto("$du", "$avp(679)");
+avp_pushto("$br", "$avp(680)");
 ...
 
-1.5.7.  avp_check(name,op_value)
+1.5.7.  avp_check(name, op_value)
 
    Checks the value of the AVP(s) against an operator and value.
 
    Meaning of the parameters is as follows:
-     * name - which AVP(s) should be checked. Parameter syntax is:
+     * name (string, no expand) - which AVP(s) should be checked.
+       Parameter syntax is:
           + name = ( pseudo-variable )
-     * op_value - define the operator, the value and flags for
-       checking. Parameter syntax is:
+     * op_value (string, no expand) - define the operator, the
+       value and flags for checking. Parameter syntax is:
           + op_value = operator '/' value ['/'flags]
           + operator = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge' |
             're' | 'fm' | 'and' | 'or' | 'xor'
@@ -495,23 +497,23 @@ avp_pushto("$br","$avp(680)");
    Example 1.18. avp_check usage
 ...
 avp_check("$avp(678)", "lt/345/g");
-avp_check("$fd","eq/$td/I");
-avp_check("$avp(foo)","gt/$avp($bar)/g");
-avp_check("$avp(foo)","re/sip:.*@bar.net/g");
-avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
+avp_check("$fd", "eq/$td/I");
+avp_check("$avp(foo)", "gt/$avp($bar)/g");
+avp_check("$avp(foo)", "re/sip:.*@bar.net/g");
+avp_check("$avp(foo)", "fm/$avp(fm_avp)/g");
 ...
 
-1.5.8.  avp_copy(old_name,new_name)
+1.5.8.  avp_copy(from_avp, to_avp)
 
    Copy / move an avp under a new name.
 
    Meaning of the parameters is as follows:
-     * name1 - which AVP(s) should be copied/moved. Parameter
-       syntax is:
-          + name = ( avp_name | avp_alias )
-     * name2 - the new name of the copied/moved AVP(s). Parameter
-       syntax is:
-          + name = ( avp_name | avp_alias ) ['/'flags]
+     * from_avp (string, no expand) - which AVP(s) should be
+       copied/moved. Parameter syntax is:
+          + from_avp = ( avp_name | avp_alias )
+     * to_avp (string, no expand) - the new name of the
+       copied/moved AVP(s). Parameter syntax is:
+          + to_avp = ( avp_name | avp_alias ) ['/'flags]
           + flags = 'g' | 'G' | 'd' | 'D' | 'n' | 'N' | 's' | 'S'
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -519,8 +521,8 @@ avp_check("$avp(foo)","fm/$avp(fm_avp)/g");
 
    Example 1.19. avp_copy usage
 ...
-avp_copy("$avp(678)", "$avp(345)/g");
-avp_copy("$avp(old)","$avp(new)/gd");
+avp_copy("$avp(foo)", "$avp(bar)/g");
+avp_copy("$avp(old)", "$avp(new)/gd"); # also deletes $avp(old)
 ...
 
 1.5.9.  avp_subst(avps, subst)
@@ -528,16 +530,16 @@ avp_copy("$avp(old)","$avp(new)/gd");
    Perl/sed-like subst applied to AVPs having string value.
 
    Meaning of the parameters is as follows:
-     * avps - source AVP, destination AVP and flags. Parameter
-       syntax is:
+     * avps (string, no expand) - source AVP, destination AVP and
+       flags. Parameter syntax is:
           + avps = src_avp [ '/' dst_avp [ '/' flags ] ]
           + src_avp = ( avp_name | avp_alias )
           + dst_avp = ( avp_name | avp_alias ) - if dst_avp is
             missing then the value of src_avp will be replaced
           + flags = ( d | D | g | G ) -- (d, D - delete source
             avp; g, G - apply to all avps matching src_avp name)
-     * subst - perl/sed-like reqular expression. Parameter syntax
-       is:
+     * subst (string) - perl/sed-like reqular expression.
+       Parameter syntax is:
           + subst = "/regexp/replacement/flags"
           + regexp - regular expression
           + replacement - replacement string, can include
@@ -567,21 +569,21 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
    applied to all of them, after the first src_avp is processed,
    it will be added in avp list and next processing will use it.
 
-1.5.10.  avp_op(name,op_value)
+1.5.10.  avp_op(name, op_value)
 
    Different integer operations with avps.
 
    Meaning of the parameters is as follows:
-     * name - 'source_avp/destination_avp' - which AVP(s) should
-       be processed and where to store the result. If
-       'destination_avp' is missing, same name as 'source_avp' is
-       used to store the result.
+     * name (string, no expand) - 'source_avp/destination_avp' -
+       which AVP(s) should be processed and where to store the
+       result. If 'destination_avp' is missing, same name as
+       'source_avp' is used to store the result.
        Parameter syntax is:
           + name = ( source_avp[/destination_avp] )
             source_avp = ( avp_name | avp_alias )
             destination_avp = ( avp_name | avp_alias )
-     * op_value - define the operation, the value and flags.
-       Parameter syntax is:
+     * op_value (string, no expand) - define the operation, the
+       value and flags. Parameter syntax is:
           + op_value = operator '/' value ['/'flags]
           + operator = 'add' | 'sub' | 'mul' | 'div' | 'mod' |
             'and' | 'or' | 'xor' | 'not'
@@ -597,7 +599,7 @@ avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
    Example 1.21. avp_op usage
 ...
 avp_op("$avp(678)", "add/345/g");
-avp_op("$avp(number)","sub/$avp(number2)/d");
+avp_op("$avp(number)", "sub/$avp(number2)/d");
 ...
 
 1.5.11.  is_avp_set(name)
@@ -605,7 +607,8 @@ avp_op("$avp(number)","sub/$avp(number2)/d");
    Check if any AVP with name is set.
 
    Meaning of the parameters is as follows:
-     * name - name of AVP to look for. Parameter syntax is:
+     * name (string, no expand) - name of AVP to look for.
+       Parameter syntax is:
           + name = avp_name|avp_alias [ '/' flags ])
             flags = ('e'|'s'|'n') - e = empty value; s = value
             string; n = value number (int)
@@ -615,8 +618,8 @@ avp_op("$avp(number)","sub/$avp(number2)/d");
 
    Example 1.22. is_avp_set usage
 ...
-if(is_avp_set("$avp(678)"))
-    log("AVP with integer id 678 exists\n");
+if(is_avp_set("$avp(foo)"))
+    xlog("AVP with name 'foo' is set!\n");
 ...
 
 1.5.12.  avp_print()
@@ -634,32 +637,13 @@ avp_print();
 
 1.6. Exported Asynchronous Functions
 
-1.6.1.  avp_db_query(query[[,dest],db_id])
+1.6.1.  avp_db_query(query, [dest], [db_id])
 
-   Make a database query and store the result in AVPs.
-
-   The meaning and usage of the parameters:
-     * query - must be a valid SQL query. The parameter can
-       contain pseudo-variables.
-       You must escape any pseudo-variables manually to prevent
-       SQL injection attacks. You can use the existing
-       transformations escape.common and unescape.common to escape
-       and unescape the content of any pseudo-variable. Failing to
-       escape the variables used in the query makes you vulnerable
-       to SQL injection, e.g. make it possible for an outside
-       attacker to alter your database content. The function
-       returns true if the query was successful, -2 in case the
-       query returned an empty result set, and -1 for all other
-       types of errors
-     * dest - a list with AVP names where to store the result. The
-       format is “$avp(name1);$avp(name2);...”. If this parameter
-       is ommited, the result is stored in “$avp(1);$avp(2);...”.
-       If the result gives many rows, then multiple AVPs with
-       corresponding name will be added. The value type of the AVP
-       (string or integer) will be derived from the type of the
-       columns.
-     * db_id - reference to a defined DB URL (a numerical id) -
-       see the “db_url” module parameter.
+   This function takes the same parameters and behaves identically
+   to avp_db_query(), but asynchronously (after launching the
+   query, the current SIP worker pauses the execution of the
+   current SIP message until the result is available and attempts
+   to process more SIP traffic).
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
@@ -697,8 +681,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 106 44 2927 2158
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 64 45 686 711
-   3. Elena-Ramona Modroiu 50 11 4040 390
-   4. Liviu Chircu (@liviuchircu) 49 24 1037 840
+   3. Liviu Chircu (@liviuchircu) 51 25 1104 942
+   4. Elena-Ramona Modroiu 50 11 4040 390
    5. Elena-Ramona Modroiu 18 5 1051 192
    6. Razvan Crainea (@razvancrainea) 17 10 143 244
    7. Henning Westerholt (@henningw) 12 8 112 133
@@ -734,8 +718,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016

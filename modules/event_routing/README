@@ -149,24 +149,24 @@ Chapter 1. Admin Guide
    This function can be used from REQUEST_ROUTE.
 
    Parameters:
-     * event -the name of the Event to subscribe for
-     * filter - a AVP variable holding (as multi value array) all
-       the filters to be applied on the event (before
+     * event (string) -the name of the Event to subscribe for
+     * filter (var) - a AVP variable holding (as multi value
+       array) all the filters to be applied on the event (before
        notification). The filter value has the format "key=value"
        where the "key" must match an attribute name of the Event.
        The "value" is the desired value for the attribute; it may
        be a shell wildcard pattern. Ex: "aor=bob@*"
-     * route -the name of the script route to be executed upon
-       Event notification
-     * timeout - for how long the subscription is active before
-       expiring (integer in seconds). Note: during its lifetime, a
-       subscription may be notified several or zero times. This
-       can be a pseudo-variable.
+     * route (string) -the name of the script route to be executed
+       upon Event notification
+     * timeout (int) - for how long the subscription is active
+       before expiring (integer in seconds). Note: during its
+       lifetime, a subscription may be notified several or zero
+       times.
 
    Example 1.1. notify_on_event() usage
 ...
 $avp(filter) = "aor=*@opensips.org"
-notify_on_event("E_UL_AOR_INSERT","$avp(filter)","reg_done","60");
+notify_on_event("E_UL_AOR_INSERT",$avp(filter),"reg_done",60);
 ...
 route[reg_done] {
         xlog("a new user $avp(aor) registered with opensips.org domain\n
@@ -189,8 +189,8 @@ route[reg_done] {
 ...
 # wait for callee to register
 $avp(filter) = "aor="+$rU+"@"+$rd
-async( wait_for_event("E_UL_AOR_INSERT","$avp(filter)", "40"),  resume_c
-all);
+async( wait_for_event("E_UL_AOR_INSERT",$avp(filter), 40),  resume_call)
+;
 # done
 ...
 route[resume_call] {
@@ -232,8 +232,8 @@ route[route_to_user] {
     # subscribe to new contact registration event,
     # but for our callee only
     $avp(filter) = "aor="+$rU;
-    notify_on_event("E_UL_CONTACT_INSERT","$avp(filter)",
-        "fork_call", "20");
+    notify_on_event("E_UL_CONTACT_INSERT",$avp(filter),
+        "fork_call", 20);
 
     # fetch already registered contacts and relay if any
     if (lookup("location"))
@@ -283,7 +283,7 @@ route[handle_call]
         # reject incoming call as we will generate an back call
         # from the original call (Alice to Bob)
         t_newtran();
-        send_reply("480","Gone");
+        send_reply(480,"Gone");
 
         # raise the pickup custom event
         # with pickup group 1 and picker being Charlie (caller)
@@ -301,7 +301,7 @@ route[handle_call]
 
         # apply user location
         if (!lookup("location","m")) {
-            send_reply("404", "Not Found");
+            send_reply(404, "Not Found");
             exit;
         }
 
@@ -313,8 +313,8 @@ route[handle_call]
 
         # subscribe to a call pickup event, but for our group only
         $avp(filter) = "group=1";
-        notify_on_event("E_CALL_PICKUP","$avp(filter)",
-            "handle_pickup", "20");
+        notify_on_event("E_CALL_PICKUP",$avp(filter),
+            "handle_pickup", 20);
 
         t_relay();
     }
@@ -324,7 +324,7 @@ route[handle_call]
 route[handle_pickup]
 {
     xlog("call picked by $avp(picker), fetching its contacts\n");
-    if (lookup("location","", "$avp(picker)")) {
+    if (lookup("location","", $avp(picker))) {
         # take the contacts retured by lookup() (for Charlie)
         # and inject them into the original call, but also cancel
         # any existing ongoing branch (ringing to Bob)
@@ -378,7 +378,7 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 20 6 1619 14
    2. Liviu Chircu (@liviuchircu) 10 8 23 36
-   3. Vlad Patrascu (@rvlad-patrascu) 6 2 58 115
+   3. Vlad Patrascu (@rvlad-patrascu) 8 4 71 144
    4. Fabian Gast (@fgast) 4 2 27 7
    5. Razvan Crainea (@razvancrainea) 3 1 3 3
    6. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -403,8 +403,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Apr 2019
    3. Fabian Gast (@fgast)                Nov 2018 - Dec 2018
    4. Liviu Chircu (@liviuchircu)         Sep 2017 - Oct 2018
    5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -417,9 +417,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Fabian Gast (@fgast), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Fabian Gast
+   (@fgast), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

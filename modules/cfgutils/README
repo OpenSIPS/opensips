@@ -26,17 +26,17 @@ cfgutils Module
               1.4.7. abort()
               1.4.8. pkg_status()
               1.4.9. shm_status()
-              1.4.10. set_count(pvar name, result pvar name)
-              1.4.11. set_select_weight(pseudovarible_name)
+              1.4.10. set_count(var_to_count, ret_var)
+              1.4.11. set_select_weight(int_list_var)
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
                       t2_usec, delta)
 
               1.4.13. check_time_rec(time_string)
-              1.4.14. get_static_lock(string)
-              1.4.15. release_static_lock(string)
-              1.4.16. get_dynamic_lock(string)
-              1.4.17. release_dynamic_lock(string)
-              1.4.18. strings_share_lock(string1, string2)
+              1.4.14. get_static_lock(key)
+              1.4.15. release_static_lock(key)
+              1.4.16. get_dynamic_lock(key)
+              1.4.17. release_dynamic_lock(key)
+              1.4.18. strings_share_lock(key1, key2)
 
         1.5. Exported Asyncronous Functions
 
@@ -248,17 +248,21 @@ modparam("cfgutils", "lock_pool_size", 64)
 
 1.4.1. rand_event([probability])
 
-   Return true or false, depending on a random value and a
-   probability value. If probability parameter is given, it will
-   override the global parameter set by rand_set_prob() function.
+   Generates a random floating point value between 0 - 100 and
+   returns true if the value is less or equal to the currently set
+   probability. If "probability" parameter is given, it will
+   override the global parameter set by rand_set_prob().
+
+   Parameters:
+     * probability (int, optional) - probability override
 
    Example 1.6. rand_event() usage
 ...
 if (rand_event()) {
   append_to_reply("Retry-After: 120\n");
-  sl_send_reply("503", "Try later");
+  sl_send_reply(503, "Try later");
   exit;
-};
+}
 # normal message processing follows
 ...
 
@@ -266,16 +270,17 @@ if (rand_event()) {
 
    Set the “probability” of the decision.
 
-   “probability” can have a value from the range 0..99.
+   Parameters:
+     * probability (int) - number ranging from 0 - 99, inclusively
 
    Example 1.7. rand_set_prob() usage
 ...
-rand_set_prob("4");
+rand_set_prob(4);
 ...
 
 1.4.3. rand_reset_prob()
 
-   Reset the probability back to the inital value.
+   Reset the probability back to the initial_probability value.
 
    Example 1.8. rand_reset_prob() usage
 ...
@@ -297,19 +302,17 @@ rand_get_prob();
    Waits "time" seconds.
 
    Meaning of the parameters is as follows:
-     * time - Time to wait in seconds. String may be a
-       pseudovariable. In case that variable does not contain a
-       numerical value, it is evaluated to zero seconds.
+     * time (int) - time to wait in seconds
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.10. sleep usage
 ...
-sleep("1");
+sleep(1);
 ...
-$avp(secs)="10";
-sleep("$avp(secs)");
+$var(secs) = 10;
+sleep($var(secs));
 ...
 
 1.4.6.  usleep(time)
@@ -317,16 +320,14 @@ sleep("$avp(secs)");
    Waits "time" micro-seconds.
 
    Meaning of the parameters is as follows:
-     * time - Time to wait in micro-seconds. The string may
-       contain a pseudovariable. In case that pseudovar does not
-       contain a numerical value, it is evaluated to zero seconds.
+     * time (int) - time to wait in micro-seconds
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.11. usleep usage
 ...
-usleep("500000"); # sleep half of sec
+usleep(500000); # sleep half a sec
 ...
 
 1.4.7.  abort()
@@ -374,11 +375,11 @@ pkg_status();
 shm_status();
 ...
 
-1.4.10.  set_count(pvar name, result pvar name)
+1.4.10.  set_count(var_to_count, ret_var)
 
-   Function that counts the values of a pseudovariable. It makes
-   sense to call this function only for pseudovariables that can
-   take more values (avp, headers).
+   Counts the number of values of a given variable. It makes sense
+   to call this function only for variables that can take more
+   values (AVPs, headers).
 
    The result is returned in the second parameter.
 
@@ -387,24 +388,24 @@ shm_status();
 
    Example 1.15. set_count usage
 ...
-set_count("$avp(10)", "$avp(result)");
+set_count($avp(dids), $var(num_dids));
 ...
 
-1.4.11.  set_select_weight(pseudovarible_name)
+1.4.11.  set_select_weight(int_list_var)
 
    This function selects an element from a set formed by the
-   values of the pseudovariable name given as parameter. It
-   applies the genetic algorithm - roulette-wheel selection to
-   choose an element from a set. The probability of selecting a
-   certain element is proportionate with its weight. It will
-   return the index of that selected element.
+   integer values of the given "int_list_var" variable. It applies
+   the genetic algorithm - roulette-wheel selection to choose an
+   element from a set. The probability of selecting a certain
+   element is proportionate with its weight. It will return the
+   index of that selected element.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.16. set_select_weight usage
 ...
-$avp(21) = set_select_weight("$avp(10)");
+$var(next_gw_idx) = set_select_weight($avp(gw_success_rates));
 ...
 
 1.4.12.  ts_usec_delta(t1_sec, t1_usec, t2_sec, t2_usec, delta)
@@ -418,7 +419,7 @@ $avp(21) = set_select_weight("$avp(10)");
 
    Example 1.17. ts_usec_delta usage
 ...
-ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
+ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 ...
 
 1.4.13.  check_time_rec(time_string)
@@ -435,18 +436,14 @@ ts_usec_delta("$avp(10)", "$avp(20)", "10", "300", "$avp(result)");
    TIMER_ROUTE, EVENT_ROUTE.
 
    Meaning of the parameters is as follows:
-     * time_string - Time recurrence string which will be matched
-       against the current time. Its fields are separated by "|"
-       and the order in which they are given is: "dtstart | dtend
-       | duration | freq | until | interval | byday | bymday |
-       byyday | byweekno | bymonth". None of the fields following
-       "freq" is used unless "freq" is defined. If the string ends
-       in multiple null fields, they can all be ommited.
-       The time_string parameter can have the following types:
-          + string - the time recurrence string is statically
-            assigned
-          + pvar - the string is the value of an existing
-            pseudo-variable (as string value)
+     * time_string (string) - Time recurrence string which will be
+       matched against the current time. Its fields are separated
+       by "|" and the order in which they are given is: "dtstart |
+       dtend | duration | freq | until | interval | byday | bymday
+       | byyday | byweekno | bymonth". None of the fields
+       following "freq" is used unless "freq" is defined. If the
+       string ends in multiple null fields, they can all be
+       ommited.
 
    Example 1.18. check_time_rec usage
 ...
@@ -461,14 +458,13 @@ if (check_time_rec("20121101T000000||p30d")) {
 }
 ...
 
-1.4.14.  get_static_lock(string)
+1.4.14.  get_static_lock(key)
 
-   The function obtains the index of a specific lock
-   (predetermined in the fixup phase of the OpenSIPS script) and
-   attempts to acquire it. In case the lock is taken by another
-   process, script execution will halt until the lock is released.
-   Attempting to acquire the lock a second time by the same
-   process, without releasing it first, will result in a deadlock.
+   Acquire the static lock which corresponds to "key". In case the
+   lock is taken by another process, script execution will halt
+   until the lock is released. Attempting to acquire the lock a
+   second time by the same process, without releasing it first,
+   will result in a deadlock.
 
    The static lock functions guarantee that two different strings
    will never point to the same lock, thus avoiding introducing
@@ -478,10 +474,8 @@ if (check_time_rec("20121101T000000||p30d")) {
    scenarios.
 
    Meaning of the parameters is as follows:
-     * string - String to be used in order to obtain the index of
-       a static lock. The string parameter can have the following
-       types:
-          + string - the string is statically assigned
+     * key (static string) - key to be hashed in order to obtain
+       the index of a static lock
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
@@ -495,17 +489,14 @@ get_static_lock("Zone_1");
 release_static_lock("Zone_1");
 ...
 
-1.4.15.  release_static_lock(string)
+1.4.15.  release_static_lock(key)
 
-   The function obtains the index of a specific lock
-   (predetermined in the fixup phase of the OpenSIPS script) and
-   releases it. Nothing will happen if the lock is not acquired.
+   Release the static lock corresponding to "key". Nothing will
+   happen if the lock is not acquired.
 
    Meaning of the parameters is as follows:
-     * string - String to be used in order to obtain the index of
-       a static lock. The string parameter can have the following
-       types:
-          + string - the string is statically assigned
+     * key (static string) - key to be hashed in order to obtain
+       the index of a static lock.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
@@ -519,32 +510,28 @@ get_static_lock("Zone_1");
 release_static_lock("Zone_1");
 ...
 
-1.4.16.  get_dynamic_lock(string)
+1.4.16.  get_dynamic_lock(key)
 
-   The function obtains the index of a lock from the pool by
-   performing a hash function on the given variable string and
-   attempts to acquire it. In case the lock is taken by another
-   process, script execution will halt until the lock is released.
-   Attempting to acquire the lock a second time by the same
-   process, without releasing it first, will result in a deadlock.
+   Acquire the dynamic lock corresponding to "key". In case the
+   lock is taken by another process, script execution will halt
+   until the lock is released. Attempting to acquire the lock a
+   second time by the same process, without releasing it first,
+   will result in a deadlock.
 
    The dynamic lock functions have the advantage of allowing
-   string pseudo-variables to be given as parameters, but the
-   drawback to this is that two strings may have the same hashed
-   value, thus pointing to the same lock. As a consequence, either
-   two totally separate regions of the script will be synchronized
-   (they will not execute in parallel), or a process could end up
-   in a deadlock by acquiring two locks in a row on two different
-   (but equally hashed) strings. To address the latter issue, use
-   the strings_share_lock() function to test if two strings
-   generate equal hash values.
+   string variables to be given as parameters, but the drawback to
+   this is that two strings may have the same hashed value, thus
+   pointing to the same lock. As a consequence, either two totally
+   separate regions of the script will be synchronized (they will
+   not execute in parallel), or a process could end up in a
+   deadlock by acquiring two locks in a row on two different (but
+   equally hashed) strings. To address the latter issue, use the
+   strings_share_lock() function to test if two strings hash into
+   the same dynamic lock.
 
    Meaning of the parameters is as follows:
-     * string - String to be hashed in order to obtain the index
-       of a lock from the pool. The string parameter can have the
-       following types:
-          + pvar - the string is the value of an existing
-            pseudo-variable (as string value)
+     * key (var) - key to be hashed in order to obtain the index
+       of a dynamic lock from the pool
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
@@ -552,29 +539,24 @@ release_static_lock("Zone_1");
 
    Example 1.21. get_dynamic_lock usage
 ...
-# acquire and release a dynamic lock on the "Call-ID" Header of a SIP me
-ssage
-if (!get_dynamic_lock("$ci")) {
+# acquire and release a dynamic lock on the "Call-ID" header field value
+if (!get_dynamic_lock($ci)) {
         xlog("Error while getting dynamic lock!\n");
 }
 ...
-if (!release_dynamic_lock("$ci") {
+if (!release_dynamic_lock($ci) {
         xlog("Error while releasing dynamic lock!\n");
 }
 ...
 
-1.4.17.  release_dynamic_lock(string)
+1.4.17.  release_dynamic_lock(key)
 
-   The function obtains the index of a lock from the pool by
-   performing a hash function on the given variable string and
-   releases it. Nothing will happen if the lock is not acquired.
+   Release the dynamic lock corresponding to "key". Nothing will
+   happen if the lock is not acquired.
 
    Meaning of the parameters is as follows:
-     * string - String to be hashed in order to obtain the index
-       of a lock from the pool. The string parameter can have the
-       following types:
-          + pvar - the string is the value of an existing
-            pseudo-variable (as string value)
+     * key (var) - key to be hashed in order to obtain the index
+       of a dynamic lock from the pool
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
@@ -582,18 +564,17 @@ if (!release_dynamic_lock("$ci") {
 
    Example 1.22. release_dynamic_lock usage
 ...
-# acquire and release a dynamic lock on the "Call-ID" Header of a SIP me
-ssage
-if (!get_dynamic_lock("$ci")) {
+# acquire and release a dynamic lock on the "Call-ID" header field value
+if (!get_dynamic_lock($ci)) {
         xlog("Error while getting dynamic lock!\n");
 }
 ...
-if (!release_dynamic_lock("$ci") {
+if (!release_dynamic_lock($ci) {
         xlog("Error while releasing dynamic lock!\n");
 }
 ...
 
-1.4.18.  strings_share_lock(string1, string2)
+1.4.18.  strings_share_lock(key1, key2)
 
    A function used to test if two strings will generate the same
    hash value. Its purpose is to prevent deadlocks resulted when a
@@ -601,19 +582,15 @@ if (!release_dynamic_lock("$ci") {
    which happen to point to the same lock.
 
    Theoretically, the chance of two strings generating the same
-   hash value decreases proportionally to the increase of the
-   lock_pool_size parameter. In other words, the more dynamic
-   locks you configure the module with, the higher the chance that
-   all individual protected regions of your script will run in
-   parallel, without waiting for each other.
+   hash value decreases proportionally to the increase of the ???
+   parameter. In other words, the more dynamic locks you configure
+   the module with, the higher the chance that all individual
+   protected regions of your script will run in parallel, without
+   waiting for each other.
 
    Meaning of the parameters is as follows:
-     * string1, string2 - Strings which will have their hash
-       values compared. The string parameters can have the
-       following types:
-          + string - statically assigned
-          + pvar - values of existing pseudo-variables (as string
-            values)
+     * key1, key2 (string) - strings which will have their hash
+       values compared
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
@@ -622,23 +599,23 @@ if (!release_dynamic_lock("$ci") {
    Example 1.23. strings_share_lock usage
 ...
 # Proper way of acquiring two dynamic locks successively
-if (!get_dynamic_lock("$avp(1)")) {
+if (!get_dynamic_lock($avp(foo))) {
         xlog("Error while getting dynamic lock!\n");
 }
 
-if (!strings_share_lock("$avp(1)", "$avp(2)") {
-        if (!get_dynamic_lock("$avp(2)")) {
+if (!strings_share_lock($avp(foo), $avp(bar)) {
+        if (!get_dynamic_lock($avp(bar))) {
                 xlog("Error while getting dynamic lock!\n");
         }
 }
 ...
-if (!strings_share_lock("$avp(1)", "$avp(2)") {
-        if (!release_dynamic_lock("$avp(2)") {
+if (!strings_share_lock($avp(foo), $avp(bar)) {
+        if (!release_dynamic_lock($avp(bar)) {
                 xlog("Error while releasing dynamic lock!\n");
         }
 }
 
-if (!release_dynamic_lock("$avp(1)") {
+if (!release_dynamic_lock($avp(foo)) {
         xlog("Error while releasing dynamic lock!\n");
 }
 ...
@@ -806,7 +783,7 @@ if ($avp(10) < 10) {
    $avp(10) = 10;
 }
 append_to_reply("Retry-After: $avp(10)\n");
-sl_send_reply("503", "Try later");
+sl_send_reply(503, "Try later");
 exit;
 # normal message processing follows
 
@@ -860,7 +837,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Henning Westerholt (@henningw) 29 18 1088 86
-   2. Liviu Chircu (@liviuchircu) 26 16 783 124
+   2. Liviu Chircu (@liviuchircu) 29 17 868 260
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 20 356 103
    4. Vlad Patrascu (@rvlad-patrascu) 19 6 355 547
    5. Razvan Crainea (@razvancrainea) 16 11 279 74
@@ -894,10 +871,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Oct 2010 - Mar 2019
-   4.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Razvan Crainea (@razvancrainea)     Oct 2010 - Mar 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
    7.  Maksym Sobolyev (@sobomax)          Dec 2015 - Dec 2015
@@ -917,8 +894,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
    (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Anca
    Vamanu, Sergio Gutierrez, Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Elena-Ramona Modroiu,

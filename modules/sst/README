@@ -265,8 +265,8 @@ route {
    MIN-SE: header with the sst min_se parameter value set.
 
    Meaning of the parameters is as follows:
-     * min_allowed - The value to compare the MIN_SE header value
-       to.
+     * min_allowed (int, optional) - The value to compare the
+       MIN_SE header value to.
 
    Example 1.7. sstCheckMin usage
 
@@ -277,7 +277,7 @@ modparam("sst", "min_se", 2400) # Must be >= 90
 
 route {
   if ($rm=="INVITE") {
-        if (sstCheckMin("1")) {
+        if (sstCheckMin(1)) {
                 xlog("L_ERR", "422 Session Timer Too Small reply sent.\n
 ");
                 exit;
@@ -292,7 +292,7 @@ route {
 
 route {
   if ($rm=="INVITE") {
-        if (sstCheckMin("0")) {
+        if (sstCheckMin(0)) {
                 xlog("L_ERR", "Session Timer Too Small, dropping request
 \n");
                 exit;
@@ -323,7 +323,7 @@ Chapter 2. Contributors
    4. Daniel-Constantin Mierla (@miconda) 15 12 104 104
    5. Razvan Crainea (@razvancrainea) 11 7 103 139
    6. Andrei Datcu (@andrei-datcu) 8 6 122 28
-   7. Vlad Patrascu (@rvlad-patrascu) 6 4 20 34
+   7. Vlad Patrascu (@rvlad-patrascu) 7 5 23 37
    8. Vlad Paiu (@vladpaiu) 6 4 7 15
    9. Ovidiu Sas (@ovidiusas) 6 3 171 44
    10. Henning Westerholt (@henningw) 5 3 15 18
@@ -354,8 +354,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2017
@@ -378,8 +378,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
    (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Paiu (@vladpaiu), Christophe Sollet (@csollet), Henning
    Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),

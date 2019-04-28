@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Andrei Pelinescu-Onciul</entry>
-		<entry align="center">7</entry>
-		<entry align="center">5</entry>
-		<entry align="center">23</entry>
-		<entry align="center">11</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">8</entry>
+		<entry align="center">4</entry>
+		<entry align="center">73</entry>
+		<entry align="center">157</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Sergio Gutierrez, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Anatoly Pidruchny, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nils Ohlmeier, Dusan Klinec.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Sergio Gutierrez, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Anatoly Pidruchny, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nils Ohlmeier, Dusan Klinec.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Dec 2002 - Apr 2019</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Apr 2019</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Dec 2002 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Sergio Gutierrez, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Anca Vamanu, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Sergio Gutierrez, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Anca Vamanu, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>).</para>
 </section>
 
 </chapter>

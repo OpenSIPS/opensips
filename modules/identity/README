@@ -208,13 +208,13 @@ if($fd!="mysipdomain.de")
 
 if(!proxy_authorize("mysipdomain.de","subscriber"))
 {
-    proxy_challenge("mysipdomain.de","0");
+    proxy_challenge("mysipdomain.de",0);
     exit;
 }
 
 if ($au!=$fU)
 {
-    sl_send_reply("403", "Use From=ID");
+    sl_send_reply(403, "Use From=ID");
     exit;
 }
 consume_credentials();
@@ -285,22 +285,22 @@ switch($retcode)
 {
     case -438:
         xlog("L_DBG" ,"verifier: returnvalue: -438\n");
-        sl_send_reply("438", "Invalid Identity Header");
+        sl_send_reply(438, "Invalid Identity Header");
         exit;
         break;
     case -437:
         xlog("L_DBG" ,"verifier: returnvalue: -437\n");
-        sl_send_reply("437", "Unsupported Certificate");
+        sl_send_reply(437, "Unsupported Certificate");
         exit;
         break;
     case -436:
         xlog("L_DBG" ,"verifier: returnvalue: -436\n");
-        sl_send_reply("436", "Bad Identity-Info");
+        sl_send_reply(436, "Bad Identity-Info");
         exit;
         break;
     case -428:
         xlog("L_DBG" ,"verifier: returnvalue: -428\n");
-        sl_send_reply("428", "Use Identity Header");
+        sl_send_reply(428, "Use Identity Header");
         exit;
         break;
     case -3:
@@ -350,7 +350,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 28 19
    3. Liviu Chircu (@liviuchircu) 9 7 21 46
    4. Razvan Crainea (@razvancrainea) 7 5 77 22
-   5. Vlad Patrascu (@rvlad-patrascu) 5 3 9 10
+   5. Vlad Patrascu (@rvlad-patrascu) 6 4 15 16
    6. Sergio Gutierrez 4 2 7 2
    7. Ovidiu Sas (@ovidiusas) 3 1 18 2
    8. Julián Moreno Patiño 3 1 2 2
@@ -377,8 +377,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Apr 2019
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2016
@@ -395,9 +395,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
-   Patrascu (@rvlad-patrascu), Alexander Christ.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Alexander Christ.
 
    Documentation Copyrights:
 

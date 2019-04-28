@@ -32,7 +32,10 @@ B2B_LOGIC
 
         1.4. Exported Functions
 
-              1.4.1. b2b_init_request()
+              1.4.1. b2b_init_request(flags, [scenario_param1],
+                      [scenario_param2], [scenario_param3],
+                      [scenario_param4])
+
               1.4.2. b2b_bridge_request(b2bl_key,entity_no)
 
         1.5. Exported MI Functions
@@ -383,7 +386,8 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 
 1.4. Exported Functions
 
-1.4.1.  b2b_init_request()
+1.4.1.  b2b_init_request(flags, [scenario_param1], [scenario_param2],
+[scenario_param3], [scenario_param4])
 
    This is the function that must be called by the script writer
    on an initial INVITE for which a B2B scenario must be
@@ -395,20 +399,23 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
    possible flags. This is defined in the XML document as an
    attribute of the root node or "top hiding" for internal
    topology hiding scenario. It can be passed as "scenario" or
-   "scenario_name/flags".
+   "scenario_name/flags". Then it can take at most 4 other
+   parameters that represent the parameters for the xml scenario.
+   The expected number of parameters is also specified as an
+   attribute in the root node of the XML scenario.
 
-   Meaning of the flags is as follows:
-     * t[nn] - Call setup timeout for topology hiding scenario.
-       Example: t300.
-     * a - Transparent authentication. In this mode b2b passes
-       your 401 or 407 authentication request to destination
-       server.
-     * p - Preserve To: header.
-
-   Then it can take at most 4 other parameters that represent the
-   parameters for the xml scenario. The expected number of
-   parameters is also specified as an attribute in the root node
-   of the XML scenario.
+   Parameters:
+     * flags (string) - meaning of the flags is as follows:
+          + t[nn] - Call setup timeout for topology hiding
+            scenario. Example: t300.
+          + a - Transparent authentication. In this mode b2b
+            passes your 401 or 407 authentication request to
+            destination server.
+          + p - Preserve To: header.
+     * scenario_param1 (string, optional)
+     * scenario_param2 (string, optional)
+     * scenario_param3 (string, optional)
+     * scenario_param4 (string, optional)
 
 Note
 
@@ -432,10 +439,10 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
    particapnts from an existing b2b dialog.
 
    Parameters:
-     * b2bl_key - a pseudo-variable that contains the b2b_logic
+     * b2bl_key (string) - a string that contains the b2b_logic
        key. The key can also be in the form of
        callid;from-tag;to-tag.
-     * entity_no - a pseudo-variable that holds the entity of the
+     * entity_no (int) - an integer that holds the entity of the
        entity/participant to bridge.
 
    Example 1.18. b2b_bridge_request usage
@@ -451,7 +458,7 @@ route[b2b_request]
       # the Call-ID carries the B2B key ID
       if (is_method("BYE") {
          $var(entity) = 1;
-         b2b_bridge_request("$ci","$var(entity)");
+         b2b_bridge_request($ci,$var(entity));
       }
    }
    ...
@@ -671,12 +678,14 @@ Chapter 3. Contributors
    2. Ovidiu Sas (@ovidiusas) 145 101 2915 1129
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 37 31 210 192
    4. Razvan Crainea (@razvancrainea) 29 20 604 188
-   5. Vlad Patrascu (@rvlad-patrascu) 16 6 296 357
+   5. Vlad Patrascu (@rvlad-patrascu) 18 8 326 372
    6. Liviu Chircu (@liviuchircu) 14 11 52 99
    7. Nick Altmann (@nikbyte) 14 6 461 199
    8. Vlad Paiu (@vladpaiu) 7 5 35 21
    9. Ezequiel Lovelle 3 1 1 1
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
+
+   All remaining contributors: Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -698,16 +707,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
-   7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   8.  Nick Altmann (@nikbyte)             Oct 2012 - Jan 2013
-   9.  Anca Vamanu                         Aug 2009 - May 2012
-   10. Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2012
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2019
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
+   8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   9.  Nick Altmann (@nikbyte)             Oct 2012 - Jan 2013
+   10. Anca Vamanu                         Aug 2009 - May 2012
+
+   All remaining contributors: Vlad Paiu (@vladpaiu).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -716,8 +727,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Nick Altmann
    (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
    Anca Vamanu.

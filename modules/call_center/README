@@ -270,9 +270,9 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 
    This function can be used from REQUEST_ROUTE.
 
-   The flowID mandatory parameter is the ID of the flow to handle
-   this call (push the call to that flow). This can be a variable
-   or a static string.
+   Parameters:
+     * flowID (string) - the ID of the flow to handle this call
+       (push the call to that flow).
 
    The function returns TRUE back to the script if the call was
    successfully pushed and handled by the Call Center engine.
@@ -291,7 +291,7 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 ...
 if (is_method("INVITE") and !has_totag()) {
         if (!cc_handle_call("tech_support")) {
-                send_reply("403","Cannot handle call");
+                send_reply(403,"Cannot handle call");
                 exit;
         }
 }
@@ -303,14 +303,15 @@ if (is_method("INVITE") and !has_totag()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   The agentID mandatory parameter is the ID of the agent and the
-   state is an integer value giving the new state - 0 means logged
-   off, anything else means logged in.
+   Parameters:
+     * agentID (string) - the ID of the agent
+     * state (int) - an integer value giving the new state - 0
+       means logged off, anything else means logged in.
 
    Example 1.7. cc_agent_login usage
 ...
 # log off the 'agentX' agent
-cc_agent_login("agentX","0");
+cc_agent_login("agentX",0);
 ...
 
 1.6. Exported Statistics
@@ -545,8 +546,8 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 52 13 4746 34
    2. Razvan Crainea (@razvancrainea) 18 15 92 94
-   3. Liviu Chircu (@liviuchircu) 12 9 71 76
-   4. Vlad Patrascu (@rvlad-patrascu) 12 5 245 227
+   3. Vlad Patrascu (@rvlad-patrascu) 14 6 264 240
+   4. Liviu Chircu (@liviuchircu) 12 9 71 76
    5. Peter Lemenkov (@lemenkov) 4 2 1 1
    6. Vlad Paiu (@vladpaiu) 3 1 13 4
    7. Dusan Klinec 3 1 1 1
@@ -571,8 +572,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - Apr 2019
    3. Razvan Crainea (@razvancrainea)     Mar 2014 - Mar 2019
    4. Liviu Chircu (@liviuchircu)         Jun 2014 - Sep 2018
    5. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
@@ -586,9 +587,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

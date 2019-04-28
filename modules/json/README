@@ -20,8 +20,7 @@ JSON Module
 
         1.5. Exported Functions
 
-              1.5.1. json_link("$json(dest_id)",
-                      "$json(source_id)")
+              1.5.1. json_link($json(dest_id), $json(source_id))
 
    2. Contributors
 
@@ -299,7 +298,7 @@ $json(object/array) := $json(array) ;
 
 1.5. Exported Functions
 
-1.5.1.  json_link("$json(dest_id)", "$json(source_id)")
+1.5.1.  json_link($json(dest_id), $json(source_id))
 
    This function can be used to link json objects together. This
    will work simillar to setting a value to an object, the only
@@ -320,7 +319,7 @@ $json(object/array) := $json(array) ;
    modifying the variable itsef will not cause any changes to
    other objects.
 
-   WARNING: You should be carefull when using references. If you
+   WARNING: You should be careful when using references. If you
    accidentally create a circular reference and try to get the
    value from the object you will crash OPENSIPS.
 
@@ -329,7 +328,7 @@ $json(object/array) := $json(array) ;
 
 $json(b) := "[{},{},{}]";
 
-json_link("$json(stub)","$json(b[0])");
+json_link($json(stub), $json(b[0]));
 
 $json(stub/ana) = "are"; #add to the stub
 $json(stub/ar) := "[]";
@@ -376,7 +375,7 @@ $json(b) := "[1]";
 
 /* NEVER do this, it is meant only to show where problems might occur  *
 /
-json_link("$json(b[0])","$json(b)"); # replace 1 with a reference to b
+json_link($json(b[0]), $json(b)); # replace 1 with a reference to b
 
 xlog("\nTest link :\n$json(stub)\n$json(b)\n\n");
 
@@ -394,7 +393,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Andrei Dragus 18 4 1556 12
-   2. Liviu Chircu (@liviuchircu) 16 13 43 82
+   2. Liviu Chircu (@liviuchircu) 17 14 47 86
    3. Razvan Crainea (@razvancrainea) 11 8 42 74
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 27 30
    5. Vlad Patrascu (@rvlad-patrascu) 8 4 195 75
@@ -427,9 +426,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Liviu Chircu (@liviuchircu)         Oct 2013 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
    6.  Björn Esser                         Dec 2017 - Dec 2017
@@ -447,8 +446,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Nick Altmann
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Nick Altmann
    (@nikbyte), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
    (@razvancrainea), Andrei Dragus.
 

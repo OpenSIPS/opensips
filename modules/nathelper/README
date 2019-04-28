@@ -462,6 +462,9 @@ modparam("nathelper", "cluster_sharing_tag", "vip")
    in the async resume route. So make sure you call it in all the
    resume routes where you need the contact fixed.
 
+   Parameters:
+     * uri_params (string, optional)
+
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    BRANCH_ROUTE.
 
@@ -482,8 +485,8 @@ if (search("User-Agent: Cisco ATA.*") {
    "a=oldoip" for old origin ip and "a=oldcip" for old meda ip.
 
    Meaning of the parameters is as follows:
-     * flags - the value may be a bitwise OR of the following
-       flags:
+     * flags (int) - the value may be a bitwise OR of the
+       following flags:
           + 0x01 - adds “a=direction:active” SDP line;
           + 0x02 - rewrite media IP address (c=) with source
             address of the message or the provided IP address (the
@@ -497,13 +500,12 @@ if (search("User-Agent: Cisco ATA.*") {
           + 0x10 - force rewrite of null media IP and/or origin IP
             address. Without this flag, null IPs are left
             untouched.
-     * ip_address - IP to be used for rewriting SDP. If not
-       specified, the received signalling IP will be used. The
-       parameter allows pseudo-variables usage. NOTE: For the IP
-       to be used, you need to use 0x02 or 0x08 flags, otherwise
-       it will have no effect.
-     * sdp_fields - SDP field(s) to be appended to SDP. Note: Each
-       SDP field must be preceded by "\r\n".
+     * ip_address (string, optional) - IP to be used for rewriting
+       SDP. If not specified, the received signalling IP will be
+       used. NOTE: For the IP to be used, you need to use 0x02 or
+       0x08 flags, otherwise it will have no effect.
+     * sdp_fields (string, optional) - SDP field(s) to be appended
+       to SDP. Note: Each SDP field must be preceded by "\r\n".
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -515,7 +517,7 @@ if (search("User-Agent: Cisco ATA.*") {
 # Add extra "a=x-attr1" SDP line
 # Add extra "a=x-attr2" SDP line
 if (search("User-Agent: Cisco ATA.*")
-    {fix_nated_sdp("3",,"\r\na=x-attr1\r\na=x-attr2");};
+    {fix_nated_sdp(3,,"\r\na=x-attr1\r\na=x-attr2");};
 ...
 
 1.5.3.  add_rcv_param([flag]),
@@ -528,11 +530,11 @@ if (search("User-Agent: Cisco ATA.*")
    using t_replicate function to another registrar.
 
    Meaning of the parameters is as follows:
-     * flag - flags to indicate if the parameter should be added
-       to Contact URI or Contact header. If the flag is non-zero,
-       the parameter will be added to the Contact URI. If not used
-       or equal to zero, the parameter will go to the Contact
-       header.
+     * flag (int, optional) - flags to indicate if the parameter
+       should be added to Contact URI or Contact header. If the
+       flag is non-zero, the parameter will be added to the
+       Contact URI. If not used or equal to zero, the parameter
+       will go to the Contact header.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -540,7 +542,7 @@ if (search("User-Agent: Cisco ATA.*")
 ...
 add_rcv_param(); # add the parameter to the Contact header
 ....
-add_rcv_param("1"); # add the parameter to the Contact URI
+add_rcv_param(1); # add the parameter to the Contact URI
 ...
 
 1.5.4.  fix_nated_register()
@@ -562,7 +564,7 @@ fix_nated_register();
    Tries to guess if client's request originated behind a nat. The
    parameter determines what heuristics is used.
 
-   Meaning of the flags is as follows:
+   Meaning of the flags (int) parameter is as follows:
      * 1 - Contact header field is searched for occurrence of
        RFC1918 / RFC6598 addresses.
      * 2 - the "received" test is used: address in Via is compared
@@ -689,8 +691,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2019
    3.  Razvan Crainea (@razvancrainea)     Dec 2010 - Mar 2019
    4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -717,11 +719,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Peter
-   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Ovidiu
-   Sas (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter
-   Doekes (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
+   (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu
    (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu, Andrei
    Dragus, Sergio Gutierrez, Klaus Darilion, Daniel-Constantin
    Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,

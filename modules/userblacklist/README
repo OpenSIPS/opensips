@@ -19,10 +19,10 @@ userblacklist Module
 
         1.4. Exported Functions
 
-              1.4.1. check_user_blacklist (string user, string
-                      domain, string number, string table)
+              1.4.1. check_user_blacklist (user, domain, [number],
+                      [table])
 
-              1.4.2. check_blacklist (string table)
+              1.4.2. check_blacklist (table)
 
         1.5. Exported MI Functions
 
@@ -138,36 +138,43 @@ modparam("userblacklist", "use_domain", 0)
 
 1.4. Exported Functions
 
-1.4.1.  check_user_blacklist (string user, string domain, string
-number, string table)
+1.4.1.  check_user_blacklist (user, domain, [number], [table])
 
    Finds the longest prefix that matches the request URI user (or
    the number parameter) for the given user and domain name in the
    database. If a match is found and it is not set to whitelist,
-   false is returned. Otherwise, true is returned.
-   Pseudo-variables or AVPs can be used for the user, domain and
-   number parameters. The number and table variables are optional,
-   the defaults are used if they are ommited. The number parameter
-   can be used to check for example against the from URI user.
+   false is returned. Otherwise, true is returned. The number
+   parameter can be used to check for example against the from URI
+   user.
+
+   Parameters:
+     * user (string) - description
+     * domain (string) - description
+     * number (string, optional) - If ommited, the defalut is
+       used.
+     * table (string, optional) - If ommited, the defalut is used.
 
    Example 1.4. check_user_blacklist usage
 ...
 if (!check_user_blacklist("user", "domain.com"))
-        sl_send_reply("403", "Forbidden");
+        sl_send_reply(403, "Forbidden");
         exit;
 }
 ...
 
-1.4.2.  check_blacklist (string table)
+1.4.2.  check_blacklist (table)
 
    Finds the longest prefix that matches the request URI for the
    given table. If a match is found and it is not set to
    whitelist, false is returned. Otherwise, true is returned.
 
+   Parameters:
+     * table (string)
+
    Example 1.5. check_blacklist usage
 ...
 if (!check_blacklist("global_blacklist")))
-        sl_send_reply("403", "Forbidden");
+        sl_send_reply(403, "Forbidden");
         exit;
 }
 ...
@@ -251,8 +258,8 @@ Chapter 2. Contributors
    3. Hardy Kahl 11 1 1191 0
    4. Henning Westerholt (@henningw) 9 5 204 72
    5. Daniel-Constantin Mierla (@miconda) 8 6 17 12
-   6. Razvan Crainea (@razvancrainea) 7 5 14 11
-   7. Vlad Patrascu (@rvlad-patrascu) 7 3 53 143
+   6. Vlad Patrascu (@rvlad-patrascu) 8 4 82 151
+   7. Razvan Crainea (@razvancrainea) 7 5 14 11
    8. Ruslan Bukin 3 1 21 10
    9. Julián Moreno Patiño 3 1 1 1
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -280,8 +287,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Apr 2019
    3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -301,11 +308,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
-   Hardy Kahl.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Edson Gellert Schubert, Hardy Kahl.
 
    Documentation Copyrights:
 

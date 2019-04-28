@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">11</entry>
-		<entry align="center">7</entry>
-		<entry align="center">89</entry>
-		<entry align="center">144</entry>
+		<entry align="center">13</entry>
+		<entry align="center">8</entry>
+		<entry align="center">113</entry>
+		<entry align="center">170</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -112,13 +112,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Mar 2017 - Apr 2019</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Apr 2019</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Mar 2017 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -164,7 +164,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
 </section>
 
 </chapter>

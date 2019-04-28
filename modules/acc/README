@@ -64,7 +64,7 @@ Acc Module
 
         1.8. Exported Functions
 
-              1.8.1. do_accounting(type, flags, table)
+              1.8.1. do_accounting(type, [flags], [table])
               1.8.2. drop_accounting([type], [flags])
               1.8.3. acc_log_request(comment)
               1.8.4. acc_db_request(comment, table)
@@ -658,7 +658,7 @@ $(acc_leg(caller)[-2])
 
 1.8. Exported Functions
 
-1.8.1.  do_accounting(type, flags, table)
+1.8.1.  do_accounting(type, [flags], [table])
 
    do_accounting() replaces all the *_flag and, *_missed_flag,
    cdr_flag, failed transaction_flag and the db_table_avp
@@ -667,16 +667,16 @@ $(acc_leg(caller)[-2])
    the work for you.
 
    Meaning of the parameters is as follows:
-     * type - the type of accounting you want to do. All types
-       have to be separated by '|'. The following parameters can
-       be used:
+     * type (string) - the type of accounting you want to do. All
+       types have to be separated by '|'. The following parameters
+       can be used:
           + log - syslog accounting;
           + db - database accounting;
           + aaa - aaa specific accounting;
           + evi - Event Interface accounting;
-     * flags - flags for the accounting type you have selected.
-       All the types have to be separated by '|'. The following
-       parameters can be used:
+     * flags (string, optional) - flags for the accounting type
+       you have selected. All the types have to be separated by
+       '|'. The following parameters can be used:
           + cdr - enables dialog-level accounting. OpenSIPS will
             internally detect dialog termination
             (generation/receipt of a BYE request), and store the
@@ -692,8 +692,8 @@ $(acc_leg(caller)[-2])
           + failed - flag which indicates if the transaction
             should also be accounted in case of failure
             (status>=300);
-     * table - table where to do the accounting; it replaces old
-       table_avp parameter;
+     * table (string, optional) - table where to do the
+       accounting; it replaces old table_avp parameter;
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
@@ -726,16 +726,16 @@ y_acc");
    arguments normal accounting will still be enabled.
 
    Meaning of the parameters is as follows:
-     * type - the type of accounting you want to stop. All the
-       types have to be separated by '|'. The following parameters
-       can be used:
+     * type (string, optional) - the type of accounting you want
+       to stop. All the types have to be separated by '|'. The
+       following parameters can be used:
           + log - stop syslog accounting;
           + db - stop database accounting;
           + aaa - stop aaa specific accounting;
           + evi - stop Event Interface accounting;
-     * flags - flags to be reset for the accouting type you have
-       selected. All the types have to be separated by '|'. The
-       following parameters can be used:
+     * flags (string, optional) - flags to be reset for the
+       accouting type you have selected. All the types have to be
+       separated by '|'. The following parameters can be used:
           + cdr - stop CDR accounting;
           + missed - stop logging missed calls;
           + failed - stop failed transaction accounting;
@@ -764,7 +764,7 @@ y_acc");
                         /* or stop missed calls and cdr accounting for s
 yslog;
                          * normal accounting will still be enabled */
-                        drop_accounting("log","missed|cdr");
+                        drop_accounting("log", "missed|cdr");
                         /* or stop all types of accounting  */
                         drop_accounting();
                 }
@@ -779,10 +779,10 @@ yslog;
    processing.
 
    Meaning of the parameters is as follows:
-     * comment - Comment describing how the request completed -
-       this string has to contain a reply code followed by a reply
-       reason phrase (ex: "404 Nobody home"). Variables are
-       accepted in this string.
+     * comment (string) - Comment describing how the request
+       completed - this string has to contain a reply code
+       followed by a reply reason phrase (ex: "480 Nobody Home").
+       Variables are accepted in this string.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
@@ -799,11 +799,11 @@ acc_log_request("403 Destination not allowed");
    to in the second action parameter.
 
    Meaning of the parameters is as follows:
-     * comment - Comment describing how the request completed -
-       this string has to contain a reply code followed by a reply
-       reason phrase (ex: "404 Nobody home"). Variables are
-       accepted in this string.
-     * table - Database table to be used.
+     * comment (string) - Comment describing how the request
+       completed - this string has to contain a reply code
+       followed by a reply reason phrase (ex: "480 Nobody Home").
+       Variables are accepted in this string.
+     * table (string) - Database table to be used.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
@@ -811,7 +811,7 @@ acc_log_request("403 Destination not allowed");
    Example 1.24. acc_db_request usage
 ...
 acc_db_request("Some comment", "Some table");
-acc_db_request("$T_reply_code $(<reply>rr)","acc");
+acc_db_request("$T_reply_code $(<reply>rr)", "acc");
 ...
 
 1.8.5.  acc_aaa_request(comment)
@@ -820,10 +820,10 @@ acc_db_request("$T_reply_code $(<reply>rr)","acc");
    reports to aaa server as configured in “aaa_url”.
 
    Meaning of the parameters is as follows:
-     * comment - Comment describing how the request completed -
-       this string has to contain a reply code followed by a reply
-       reason phrase (ex: "404 Nobody home"). Variables are
-       accepted in this string.
+     * comment (string) - Comment describing how the request
+       completed - this string has to contain a reply code
+       followed by a reply reason phrase (ex: "404 Nobody home").
+       Variables are accepted in this string.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
@@ -842,10 +842,9 @@ acc_aaa_request("403 Destination not allowed");
    codes. More information on this in Exported Events.
 
    Meaning of the parameters is as follows:
-     * comment - Comment describing how the request completed -
-       this string has to contain a reply code followed by a reply
-       reason phrase (ex: "404 Nobody home"). Variables are
-       accepted in this string.
+     * comment (string) - Comment describing how the request
+       completed - this string has to contain a reply code
+       followed by a reply reason phrase (ex: "404 Nobody home")
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
@@ -1021,7 +1020,7 @@ Chapter 3. Contributors
    3. Ionut Ionita (@ionutrazvanionita) 144 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 79 50 2473 448
    5. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
-   6. Liviu Chircu (@liviuchircu) 53 38 518 504
+   6. Liviu Chircu (@liviuchircu) 54 39 534 521
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
    8. Elena-Ramona Modroiu 23 4 2267 5
    9. Henning Westerholt (@henningw) 20 15 184 131
@@ -1056,9 +1055,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2018
    5.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018

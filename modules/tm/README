@@ -805,7 +805,7 @@ if (!t_relay()) {
 ...
 t_relay( ,"tcp:192.168.1.10:5060");
 ...
-t_relay("0x1", "mydomain.com:5070");
+t_relay(0x1, "mydomain.com:5070");
 ...
 
 1.4.2.  t_reply(code, reason_phrase)
@@ -816,16 +816,14 @@ t_relay("0x1", "mydomain.com:5070");
    function.
 
    Meaning of the parameters is as follows:
-     * code - Reply code number.
-     * reason_phrase - Reason string.
-
-   Both parameters accept any kind of variables.
+     * code (int) - Reply code number.
+     * reason_phrase (string) - Reason string.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
    Example 1.24. t_reply usage
 ...
-t_reply("404", "Use $rU not found");
+t_reply(404, "Use $rU not found");
 ...
 
 1.4.3.  t_reply_with_body(code, reason_phrase, body)
@@ -836,11 +834,9 @@ t_reply("404", "Use $rU not found");
    the t_newtran function.
 
    Meaning of the parameters is as follows:
-     * code - Reply code number.
-     * reason_phrase - Reason string.
-     * body - Reply body.
-
-   All parameters accept any kind of variables.
+     * code (int) - Reply code number.
+     * reason_phrase (string) - Reason string.
+     * body (string) - Reply body.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -850,7 +846,7 @@ t_reply("404", "Use $rU not found");
         {
                 append_to_reply("Contact: $var(contact)\r\n"
                                 "Content-Type: application/sdp\r\n");
-                t_reply_with_body("200", "Ok", "$var(body)");
+                t_reply_with_body(200, "Ok", $var(body));
                 exit;
         }
 ...
@@ -967,8 +963,8 @@ if (t_was_cancelled()) {
    cancelling a set of branches (see flags) of the current call.
 
    Meaning of the parameters is as follows:
-     * flags - (optional) - set of flags (char based flags) to
-       control what branches to be cancelled:
+     * flags (string, optional) - set of flags (char based flags)
+       to control what branches to be cancelled:
           + a - all - cancel all pending branches
           + o - others - cancel all the other pending branches
             except the current one
@@ -979,7 +975,7 @@ if (t_was_cancelled()) {
    Example 1.31. t_cancel_branch usage
 onreply_route[3] {
 ...
-        if (t_check_status("183")) {
+        if (t_check_status(183)) {
                 # no support for early media
                 t_cancel_branch();
         }
@@ -994,16 +990,17 @@ onreply_route[3] {
 
    Meaning of the parameters is as follows (all do accept
    variables):
-     * method - the SIP method
-     * RURI - the SIP Request URI (the request will be sent out to
-       this destination)
-     * from - the SIP From hdr information as "[display ]URI"
-     * to - the SIP To hdr information as "[display ]URI"
-     * body - (optional) the SIP body content starting with the
-       content type string: "conten_type body"
-     * ctx - a context string that will be added to the new
-       transaction as an AVP with name "uac_ctx" (it may be
-       visible in local route)
+     * method (string) - the SIP method
+     * RURI (string) - the SIP Request URI (the request will be
+       sent out to this destination)
+     * from (string) - the SIP From hdr information as "[display
+       ]URI"
+     * to (string) - the SIP To hdr information as "[display ]URI"
+     * body (string, optional) - the SIP body content starting
+       with the content type string: "conten_type body"
+     * ctx (string, optional) - a context string that will be
+       added to the new transaction as an AVP with name "uac_ctx"
+       (it may be visible in local route)
 
    Example 1.32. t_new_request usage
 ...
@@ -1035,7 +1032,7 @@ ydomain.net","ALICE sip:userA@mydomain.net","text/plain Hello Alice!"))
    value of the winning branch.
 
    Meaning of the parameters is as follows:
-     * failure_route - Reply route block to be called.
+     * failure_route (string) - Reply route block to be called.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
@@ -1084,7 +1081,7 @@ failure_route[1] {
    further.
 
    Meaning of the parameters is as follows:
-     * reply_route - Reply route block to be called.
+     * reply_route (string) - Reply route block to be called.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
@@ -1141,7 +1138,7 @@ onreply_route[global] {
    be forwarded further.
 
    Meaning of the parameters is as follows:
-     * branch_route - Branch route block to be called.
+     * branch_route (string) - Branch route block to be called.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    ONREPLY_ROUTE and FAILURE_ROUTE.
@@ -1185,16 +1182,16 @@ branch_route[1] {
    affected by this injection - see the event_routing module.
 
    Parameters:
-     * source - where to take the description for the new branches
-       to be injected. It can be
+     * source (string) - where to take the description for the new
+       branches to be injected. It can be
           + event - the branch will be taken from the event
             attributes exposed in an event notification route (see
             event_routing module).
           + msg - the branches will be taken from the RURI of the
             SIP message and from the additional branches (created
             by append_branch() function or similar).
-     * flags - (optional) some additional flags related to the
-       injection process:
+     * flags (string, optional) - some additional flags related to
+       the injection process:
           + cancel - cancel all the ongoing existing branches from
             the transaction before injecting the new branches.
 
@@ -1236,6 +1233,9 @@ t_relay();
    headers will be appended to all requests related to the
    transaction (outgoing branches, local ACKS, CANCELs).
 
+   Parameters:
+     * sip_hdrs (string)
+
    Example 1.38. t_add_hdrs usage
 ...
 t_add_hdrs("X-origin: 1.1.1.1\r\n");
@@ -1250,6 +1250,9 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
    hop), but this function can overwrite it. It must be called
    before relaying the CANCEL request and its input must be a
    fully formated Reason header with name, body and CRLF.
+
+   Parameters:
+     * reason_hdr (string)
 
    Example 1.39. t_add_cancel_reason usage
 ...
@@ -1268,10 +1271,12 @@ t_relay();
    destinations are to be used, the additional SIP URIs have to be
    set as branches.
 
-   The function may take as parameter an optional set of flags for
-   controlling the internal behaviour - for description see the
-   above “t_relay([flags])” function. Note that only 0x4 is
-   applicable here.
+   Parameters:
+     * uri (string)
+     * flags (int, optional) - a set of flags for controlling the
+       internal behaviour - for description see the above
+       “t_relay([flags])” function. Note that only 0x4 is
+       applicable here.
 
    This functions can be used from REQUEST_ROUTE.
 
@@ -1279,7 +1284,7 @@ t_relay();
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
-t_replicate("sip:1.2.3.4","0x4");
+t_replicate("sip:1.2.3.4",0x4);
 ...
 
 1.4.19.  t_write_req(info,fifo) t_write_unix(info,sock)
@@ -1287,6 +1292,10 @@ t_replicate("sip:1.2.3.4","0x4");
    Write via FIFO file or UNIX socket a lot of information
    regarding the request. Which information should be written may
    be control via the “tw_append” parameter.
+
+   Parameters:
+     * info (string)
+     * path (string)
 
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
@@ -1545,11 +1554,11 @@ Chapter 4. Contributors
    2. Jiri Kuthan (@jiriatipteldotorg) 545 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 147 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 88 68 1536 375
+   5. Razvan Crainea (@razvancrainea) 90 70 1558 379
    6. Liviu Chircu (@liviuchircu) 80 58 1058 706
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 38 19 778 651
-   9. Vlad Patrascu (@rvlad-patrascu) 28 8 755 745
+   9. Vlad Patrascu (@rvlad-patrascu) 30 9 810 779
    10. Vlad Paiu (@vladpaiu) 25 22 169 55
 
    All remaining contributors: Henning Westerholt (@henningw), Dan
@@ -1586,12 +1595,12 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Apr 2019
-   2.  Bogdan Iancu                        Apr 2019 - Apr 2019
-   3.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2019
-   6.  Razvan Crainea (@razvancrainea)     Jul 2010 - Mar 2019
+   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Apr 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Apr 2019
+   4.  Bogdan Iancu                        Apr 2019 - Apr 2019
+   5.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
+   6.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2019
    7.  Aron Podrigal (@ar45)               Nov 2018 - Nov 2018
    8.  Alexey Vasilyev (@vasilevalex)      Sep 2018 - Sep 2018
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -1618,9 +1627,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
-   Gast (@fgast), Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Alexey Vasilyev (@vasilevalex), Liviu Chircu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Fabian Gast (@fgast), Razvan Crainea
+   (@razvancrainea), Alexey Vasilyev (@vasilevalex), Liviu Chircu
    (@liviuchircu), Peter Lemenkov (@lemenkov), Nick Altmann
    (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
    Anca Vamanu, Henning Westerholt (@henningw), Klaus Darilion,

@@ -541,7 +541,7 @@ modparam("presence", "pres_htable_size", 11)
         if(is_method("PUBLISH"))
         {
                 if($hdr(Sender)!= NULL)
-                        handle_publish("$hdr(Sender)");
+                        handle_publish($hdr(Sender));
                 else
                         handle_publish();
         }
@@ -557,10 +557,10 @@ modparam("presence", "pres_htable_size", 11)
    the wathcer/subscriber.
 
    The function may take the following parameters:
-     * force_active - options parameter that controlls what is the
-       default policy (of the presentity) on accepting new
-       subscriptions (accept or reject) - of course, this
-       parameter makes sense only when using a presence
+     * force_active (int, optional) - options parameter that
+       controlls what is the default policy (of the presentity) on
+       accepting new subscriptions (accept or reject) - of course,
+       this parameter makes sense only when using a presence
        configuration with privacy rules enabled (force_active
        parameter in presence_xml module is not set).
        There are scenarios where the presentity (the party you
@@ -569,17 +569,17 @@ modparam("presence", "pres_htable_size", 11)
        subscribe to it). In such case, from script level, you can
        force the presence server to consider the current
        subscription allowed (with Subscription-Status:active) by
-       calling the handle_subscribe() function with the string
+       calling the handle_subscribe() function with the integer
        parameter "1".
-     * sharing_tag - options parameter telling the owner tag (for
-       the subscription) in clusetering scenarios where the
-       subscription data is shared between multiple servers - see
-       the Section 1.2, “Presence clustering” chapter for more
-       details.
+     * sharing_tag (string, optional) - options parameter telling
+       the owner tag (for the subscription) in clusetering
+       scenarios where the subscription data is shared between
+       multiple servers - see the Section 1.2, “Presence
+       clustering” chapter for more details.
 
    Ex:
         if($ru =~ "kphone@opensips.org")
-                handle_subscribe("1");
+                handle_subscribe(1);
 
    This function can be used from REQUEST_ROUTE.
 
@@ -1013,7 +1013,7 @@ Chapter 3. Contributors
    4. Ovidiu Sas (@ovidiusas) 27 19 615 167
    5. Daniel-Constantin Mierla (@miconda) 24 19 174 165
    6. Liviu Chircu (@liviuchircu) 23 14 240 365
-   7. Vlad Patrascu (@rvlad-patrascu) 18 8 352 346
+   7. Vlad Patrascu (@rvlad-patrascu) 19 9 360 354
    8. Henning Westerholt (@henningw) 15 6 340 302
    9. Dan Pascu (@danpascu) 9 7 13 32
    10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
@@ -1047,8 +1047,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
    3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -1075,11 +1075,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Saúl
-   Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
-   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Saúl Ibarra
+   Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca Vamanu,
+   Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
    Darilion, Henning Westerholt (@henningw), Dan Pascu
    (@danpascu), Daniel-Constantin Mierla (@miconda), Edson Gellert
    Schubert, Juha Heinanen (@juha-h), Elena-Ramona Modroiu.

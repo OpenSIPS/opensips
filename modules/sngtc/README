@@ -15,8 +15,8 @@ sngtc Module
         1.4. Exported Functions
 
               1.4.1. sngtc_offer()
-              1.4.2. sngtc_callee_answer([listen_if_A[,
-                      listen_if_B]])
+              1.4.2. sngtc_callee_answer([listen_if_A],
+                      [listen_if_B])
 
               1.4.3. sngtc_caller_answer()
 
@@ -115,7 +115,7 @@ Chapter 1. Admin Guide
         }
 ...
 
-1.4.2.  sngtc_callee_answer([listen_if_A[, listen_if_B]])
+1.4.2.  sngtc_callee_answer([listen_if_A], [listen_if_B])
 
    Handles the SDP offer from 200 OK responses, intersects both
    offers with the capabilities of the transcoding card and
@@ -134,12 +134,12 @@ Chapter 1. Admin Guide
    UA. This way, the script writer can enforce a global IP for the
    incoming RTP (which can be port forwarded to a transcoding
    card).
-     * listen_if_A - the interface where the UAC (the caller) will
-       send RTP after the call is established (IP from the 'c='
-       SDP line(s))
-     * listen_if_B - the interface where the UAS (the callee) will
-       send RTP after the call is established (IP from the 'c='
-       SDP line(s))
+     * listen_if_A (string) - the interface where the UAC (the
+       caller) will send RTP after the call is established (IP
+       from the 'c=' SDP line(s))
+     * listen_if_B (string) - the interface where the UAS (the
+       callee) will send RTP after the call is established (IP
+       from the 'c=' SDP line(s))
 
    The following error codes may be returned:
      * -1 - SDP parsing error
@@ -187,7 +187,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 33 14 2076 59
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 8 5 28 63
-   3. Vlad Patrascu (@rvlad-patrascu) 5 3 25 25
+   3. Vlad Patrascu (@rvlad-patrascu) 6 4 28 28
    4. Razvan Crainea (@razvancrainea) 4 2 5 5
    5. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -211,8 +211,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    3. Liviu Chircu (@liviuchircu)         Aug 2013 - Jun 2018
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5. Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2016
@@ -224,8 +224,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov).
 
    Documentation Copyrights:
 

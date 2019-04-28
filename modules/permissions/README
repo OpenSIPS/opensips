@@ -461,34 +461,30 @@ modparam("permissions", "info_col", "info_col")
    allowed without authentication.
 
    Meaning of the parameter is as follows:
-     * group_id
+     * group_id (int)
        This argument represents the group id to be matched. If the
        group_id argument is "0", the query can match any group in
        the cached address table.
-     * ip
-       This argument represents the ip address to be matched. It
-       can be an given directly as string or as a string pvar.
-       This argument cannot be null/empty.
-     * port
-       This argument represents the port to be matched. It can be
-       an given as an integer string or as a string pvar. Cached
+     * ip (string)
+       This argument represents the ip address to be matched. This
+       argument cannot be null/empty.
+     * port (int)
+       This argument represents the port to be matched. Cached
        address table entry containing port value 0 matches any
        port. Also, a "0" value for the argument can match any port
        in the address table.
-     * proto
+     * proto (string)
        This argument represents the protocol used for transport;
-       it can be an given as string or as string pvar. Transport
-       protocol is either "ANY" or any valid transport protocol
-       value: "UDP, "TCP", "TLS", and "SCTP".
-     * context_info
-       This argument represents the pvar in wich the context_info
-       field from the cached address table will be stored in case
-       of match. This argument is optional.
-     * pattern
+       Transport protocol is either "ANY" or any valid transport
+       protocol value: "UDP, "TCP", "TLS", and "SCTP".
+     * context_info (var, optional)
+       This argument represents the variable in wich the
+       context_info field from the cached address table will be
+       stored in case of match.
+     * pattern (string, optional)
        This argument is a string to be matched against the
-       wildcard pattern field from the address table. This
-       argument is optional.
-     * partition
+       wildcard pattern field from the address table.
+     * partition (string, optional)
        An optional parition name for the group id. If no partition
        specified, the “default” one will be used.
 
@@ -533,8 +529,8 @@ $avp(ip) = "192.168.2.135";
 $avp(port) = 5061;
 $avp(proto) = "any";
 $avp(partition)="my_part";
-if (check_address( 4, "$avp(ip)", "$avp(port)", "$avp(proto)", $avp(ctx)
-, , "$avp(partition)")) {
+if (check_address( 4, $avp(ip), $avp(port), $avp(proto), $avp(ctx), , $a
+vp(partition))) {
         t_relay();
         xlog("$avp(ctx)\n");
 }
@@ -547,7 +543,7 @@ tocol
 hes
 // the wildcard pattern field in the database table, without storing any
 // context information
-if (check_address( 4,"$si", 5700, "$proto", ,"texttest")) {
+if (check_address( 4,$si, 5700, $proto, ,"texttest")) {
         t_relay();
 }
 
@@ -568,10 +564,10 @@ if (check_address( 4,"$si", 5700, "$proto", ,"texttest")) {
 ...
 // Check if source address/port/proto is in group 4 and stores
 // context information in $avp(ctx)
-if (check_source_address( 4,"$avp(ctx)", , , "$avp(my_partition)")) {
+if (check_source_address( 4,$avp(ctx), , , $avp(my_partition))) {
         xlog("$avp(ctx)\n");
 }else {
-        sl_send_reply("403", "Forbidden");
+        sl_send_reply(403, "Forbidden");
 }
 ...
 
@@ -583,6 +579,10 @@ if (check_source_address( 4,"$avp(ctx)", , , "$avp(my_partition)")) {
    value 0 in cached address and subnet table matches any port.
    Optionally, you can also specify the partition. If no partition
    specified, the “default” one will be used.
+
+   Parameters:
+     * var (var)
+     * partition (string, optional)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    LOCAL_ROUTE, BRANCH_ROUTE.
@@ -622,9 +622,9 @@ if (allow_routing()) {
    according to the configuration files given as parameters.
 
    Meaning of the parameters is as follows:
-     * basename - Basename from which allow and deny filenames
-       will be created by appending contents of allow_suffix and
-       deny_suffix parameters.
+     * basename (string) - Basename from which allow and deny
+       filenames will be created by appending contents of
+       allow_suffix and deny_suffix parameters.
        If the parameter doesn't contain full pathname then the
        function expects the file to be located in the same
        directory as the main configuration file of the server.
@@ -646,9 +646,9 @@ if (allow_routing("basename")) {
    parameters.
 
    Meaning of the parameters is as follows:
-     * basename - Basename from which allow and deny filenames
-       will be created by appending contents of allow_suffix and
-       deny_suffix parameters.
+     * basename (string) - Basename from which allow and deny
+       filenames will be created by appending contents of
+       allow_suffix and deny_suffix parameters.
        If the parameter doesn't contain full pathname then the
        function expects the file to be located in the same
        directory as the main configuration file of the server.
@@ -662,7 +662,7 @@ if ($rm=="REGISTER") {
                 save("location");
                 exit;
         } else {
-                sl_send_reply("403", "Forbidden");
+                sl_send_reply(403, "Forbidden");
         };
 };
 ...
@@ -675,23 +675,22 @@ if ($rm=="REGISTER") {
    parameter.
 
    Meaning of the parameter is as follows:
-     * basename - Basename from which allow and deny filenames
-       will be created by appending contents of allow_suffix and
-       deny_suffix parameters.
+     * basename (string) - Basename from which allow and deny
+       filenames will be created by appending contents of
+       allow_suffix and deny_suffix parameters.
        If the parameter doesn't contain full pathname then the
        function expects the file to be located in the same
        directory as the main configuration file of the server.
-     * uri - SIP URI to be checked.
+     * uri (string) - SIP URI to be checked.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
    Example 1.22. allow_uri(basename, uri) usage
 ...
-if (allow_uri("basename", "$rt")) {  // Check Refer-To URI
+if (allow_uri("basename", $rt)) {  // Check Refer-To URI
         t_relay();
 };
-if (allow_uri("basename", "$avp(uri)") {  // Check URI stored in $avp(ur
-i)
+if (allow_uri("basename", $avp(uri)) {  // Check URI stored in $avp(uri)
         t_relay();
 };
 ...
@@ -756,11 +755,11 @@ Chapter 2. Contributors
    7. Daniel-Constantin Mierla (@miconda) 16 11 126 221
    8. Ionut Ionita (@ionutrazvanionita) 16 4 970 175
    9. Henning Westerholt (@henningw) 15 10 136 148
-   10. Andrei Pelinescu-Onciul 11 7 136 107
+   10. Vlad Patrascu (@rvlad-patrascu) 12 4 296 273
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
-   Miklos Tirpak, Dan Pascu (@danpascu), Ancuta Onofrei, Saúl
-   Ibarra Corretgé (@saghul), Jiri Kuthan (@jiriatipteldotorg),
+   All remaining contributors: Andrei Pelinescu-Onciul, Miklos
+   Tirpak, Dan Pascu (@danpascu), Ancuta Onofrei, Saúl Ibarra
+   Corretgé (@saghul), Jiri Kuthan (@jiriatipteldotorg),
    Elena-Ramona Modroiu, Dusan Klinec, Anca Vamanu, wuhanck,
    Konstantin Bokarius, Norman Brandinger (@NormB), UnixDev,
    Andreas Granig, Baptiste Cholley, Julián Moreno Patiño, Peter
@@ -786,9 +785,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2019
-   2.  Razvan Crainea (@razvancrainea)     Jan 2011 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2019
+   3.  Razvan Crainea (@razvancrainea)     Jan 2011 - Apr 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  wuhanck                             Apr 2018 - Apr 2018
@@ -813,10 +812,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad
-   Patrascu (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
-   Razvan Crainea (@razvancrainea), Irina-Maria Stanescu, Henning
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Razvan
+   Crainea (@razvancrainea), Irina-Maria Stanescu, Henning
    Westerholt (@henningw), Juha Heinanen (@juha-h),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj).

@@ -32,8 +32,8 @@ Auth_db Module
               1.4.2. proxy_authorize(realm, table)
               1.4.3. db_is_to_authorized(table)
               1.4.4. db_is_from_authorized(table)
-              1.4.5. db_does_uri_exist(uri,table)
-              1.4.6. db_get_auth_id(table,uri,auth,realm)
+              1.4.5. db_does_uri_exist(uri, table)
+              1.4.6. db_get_auth_id(table, uri, auth, realm)
 
    2. Contributors
 
@@ -308,18 +308,18 @@ modparam("auth_db", "uri_uriuser_column", "uri_user")
      * -1 (invalid user) - authentication user does not exist.
 
    Meaning of the parameters is as follows:
-     * realm - Realm is an opaque string that the user agent
-       should present to the user so it can decide what username
-       and password to use. Usually this is domain of the host the
-       server is running on.
+     * realm (string) - Realm is an opaque string that the user
+       agent should present to the user so it can decide what
+       username and password to use. Usually this is domain of the
+       host the server is running on.
        If an empty string “” is used then the server will generate
        it from the request. In case of REGISTER requests To header
        field domain will be used (because this header field
        represents a user being registered), for all other messages
        From header field domain will be used.
        The string may contain pseudo variables.
-     * table - Table to be used to lookup usernames and passwords
-       (usually subscribers table).
+     * table (string) - Table to be used to lookup usernames and
+       passwords (usually subscribers table).
 
    This function can be used from REQUEST_ROUTE.
 
@@ -352,16 +352,16 @@ if (!www_authorize("siphub.net", "subscriber")) {
      * -1 (invalid user) - authentication user does not exist.
 
    Meaning of the parameters is as follows:
-     * realm - Realm is an opaque string that the user agent
-       should present to the user so it can decide what username
-       and password to use. Usually this is domain of the host the
-       server is running on.
+     * realm (string) - Realm is an opaque string that the user
+       agent should present to the user so it can decide what
+       username and password to use. Usually this is domain of the
+       host the server is running on.
        If an empty string “” is used then the server will generate
        it from the request. From header field domain will be used
        as realm.
        The string may contain pseudo variables.
-     * table - Table to be used to lookup usernames and passwords
-       (usually subscribers table).
+     * table (string) - Table to be used to lookup usernames and
+       passwords (usually subscribers table).
 
    This function can be used from REQUEST_ROUTE.
 
@@ -385,8 +385,8 @@ if (!proxy_authorize("", "subscriber)) {
    they use. The mapping is stored into an URI-like table.
 
    Meaning of the parameters is as follows:
-     * table - Table to be used to lookup for the URI/AUTH
-       mappings (usually the URI table).
+     * table (string) - Table to be used to lookup for the
+       URI/AUTH mappings (usually the URI table).
 
    This function can be used from REQUEST_ROUTE.
 
@@ -403,27 +403,27 @@ tial\n");
    Similar to db_is_to_authorized() but instead of checking the TO
    header URI, the FROM header URI is checked.
 
-1.4.5.  db_does_uri_exist(uri,table)
+1.4.5.  db_does_uri_exist(uri, table)
 
    Checks if the username@domain from the given URI is an existing
    user in a 'SUBSCRIBER' like table.
 
    Meaning of the parameters is as follows:
-     * URI - The SIP URI to be tested. It must hold a username
-       part for a valid check. Variables are allowed.
-       table - Table to be used to search for the URI (usually the
-       SUBSCRIBER table).
+     * uri (string) - The SIP URI to be tested. It must hold a
+       username part for a valid check. Variables are allowed.
+     * table (string) - Table to be used to search for the URI
+       (usually the SUBSCRIBER table).
 
    This function can be used from REQUEST_ROUTE.
 
    Example 1.16. db_does_uri_exist usage
 ...
-if (db_does_uri_exist("$ru","subscriber")) {
+if (db_does_uri_exist($ru, "subscriber")) {
         ...
 };
 ...
 
-1.4.6.  db_get_auth_id(table,uri,auth,realm)
+1.4.6.  db_get_auth_id(table, uri, auth, realm)
 
    Checks given uri-string username against an 'URI' like table.
    Returns true if the user exists in the database, and sets the
@@ -431,13 +431,13 @@ if (db_does_uri_exist("$ru","subscriber")) {
    corresponding to the given uri.
 
    Meaning of the parameters is as follows:
-     * table - Table to be used to search for the URI (usually the
-       URI table).
-       uri - The input SIP URI to be tested. It must hold a
-       username part for a valid check. Variables are allowed.
-       auth - an output variable to store the found authentication
-       id matching the given SIP URI.
-       realm - an output variable to store the found
+     * table (string) - Table to be used to search for the URI
+       (usually the URI table).
+     * uri (string) - The input SIP URI to be tested. It must hold
+       a username part for a valid check. Variables are allowed.
+     * auth (var) - an output variable to store the found
+       authentication id matching the given SIP URI.
+     * realm (var) - an output variable to store the found
        authentication realm matching the given SIP URI.
 
    This function can be used from REQUEST_ROUTE ,FAILURE_ROUTE and
@@ -445,9 +445,9 @@ if (db_does_uri_exist("$ru","subscriber")) {
 
    Example 1.17. db_get_auth_id usage
 ...
-if (db_get_auth_id("uri", "$ru", "$avp(auth_id)", "$avp(auth_realm)")) {
+if (db_get_auth_id("uri", $ru, $avp(auth_id), $avp(auth_realm))) {
         ...
-};
+}
 ...
 
 Chapter 2. Contributors
@@ -460,7 +460,7 @@ Chapter 2. Contributors
    1. Jan Janak (@janakj) 50 29 1610 424
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 49 35 778 371
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
-   4. Liviu Chircu (@liviuchircu) 13 10 45 76
+   4. Liviu Chircu (@liviuchircu) 14 11 69 92
    5. Henning Westerholt (@henningw) 11 9 83 49
    6. Sergio Gutierrez 7 5 13 13
    7. Vlad Patrascu (@rvlad-patrascu) 7 3 61 162
@@ -494,9 +494,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
@@ -519,8 +519,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Razvan
    Crainea (@razvancrainea), Kennard White, Sergio Gutierrez,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Anatoly

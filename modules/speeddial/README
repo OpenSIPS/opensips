@@ -192,10 +192,10 @@ modparam("speeddial", "use_domain", 1)
    'table' and replaces the R-URI with associated address.
 
    Meaning of the parameters is as follows:
-     * table - The name of the table storing the speed dial
-       records. This parameter may include pseudovariables.
-     * owner - The SIP URI of the owner of short dialing codes. If
-       not pressent, URI of From header is used.
+     * table (string) - The name of the table storing the speed
+       dial records.
+     * owner (string) - The SIP URI of the owner of short dialing
+       codes. If not pressent, URI of From header is used.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -338,7 +338,7 @@ Chapter 2. Contributors
    2. Daniel-Constantin Mierla (@miconda) 20 16 127 137
    3. Elena-Ramona Modroiu 12 2 1063 1
    4. Liviu Chircu (@liviuchircu) 11 9 34 53
-   5. Vlad Patrascu (@rvlad-patrascu) 5 3 28 32
+   5. Vlad Patrascu (@rvlad-patrascu) 6 4 31 35
    6. Henning Westerholt (@henningw) 4 2 50 41
    7. Razvan Crainea (@razvancrainea) 4 2 7 7
    8. Elena-Ramona Modroiu 4 2 4 1
@@ -369,8 +369,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2016
@@ -391,10 +391,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Sergio Gutierrez, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Sergio Gutierrez, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Elena-Ramona Modroiu, Elena-Ramona Modroiu.
 
    Documentation Copyrights:

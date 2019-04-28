@@ -463,10 +463,10 @@ ruri_tel2sip();
 
    Example 1.17. is_uri_user_e164 usage
 ...
-if (is_uri_user_e164("$fu")) {  # Check From header URI user part
+if (is_uri_user_e164($fu)) {  # Check From header URI user part
    ...
 }
-if (is_uri_user_e164("$avp(uri)") {
+if (is_uri_user_e164($avp(uri)) {
    # Check user part of URI stored in avp uri
    ...
 };
@@ -653,7 +653,7 @@ add_body_part("Hello World!", "text/plain");
 ...
 if(!sipmsg_validate())
 {
-        send_reply("400", "Bad Request");
+        send_reply(400, "Bad Request");
         exit;
 }
 ...
@@ -662,7 +662,7 @@ if(!sipmsg_validate())
 # checks also the SDP and headers body
 if(!sipmsg_validate("sh", $var(err_reason)))
 {
-        send_reply("400", "Bad Request/Body");
+        send_reply(400, "Bad Request/Body");
         exit;
 }
 ...
@@ -672,9 +672,12 @@ if(!sipmsg_validate("sh", $var(err_reason)))
    This function can be used to verify if a codec exists inside an
    sdp payload. It will search for the codec inside all streams
    from all sdp sessions. If it is found anywhere it will return
-   TRUE otherwise it will return FALSE. The second parameter is
-   optional, if it is not supplied any clockrate will match.
-   Parameters are CASE INSENSITIVE.
+   TRUE otherwise it will return FALSE.
+
+   Parameters:
+     * name (string) - Parameter is CASE INSENSITIVE.
+     * clock (string, optional) - if not supplied any clockrate
+       will match. Parameter is CASE INSENSITIVE.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
@@ -693,9 +696,11 @@ codec_exists("GSM", "8000");
    all sdp sessions. If it is found anywhere it will be deleted
    from the mapping ("a=...") and from the list of indexes
    ("m=..."). Returns TRUE if any deletion occurred otherwise it
-   will return FALSE. The second parameter is optional, if it is
-   not supplied any clockrate will match and all will be deleted.
-   Parameters are CASE INSENSITIVE.
+   will return FALSE.
+     * name (string) - Parameter is CASE INSENSITIVE.
+     * clock (string, optional) - if not supplied any clockrate
+       will match and all will be deleted. Parameter is CASE
+       INSENSITIVE.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
@@ -713,11 +718,12 @@ codec_delete("GSM", "8000");
    indexes ("m=..."). It will search for the codec inside all
    streams from all sdp sessions. If it is found anywhere it will
    be moved to the top of the index list. Returns TRUE if any
-   moves occurred otherwise it will return FALSE. The second
-   parameter is optional, if it is not supplied any clockrate will
-   match and all codecs will be moved to the front while
-   preserving their original ordering. Parameters are CASE
-   INSENSITIVE.
+   moves occurred otherwise it will return FALSE.
+     * name (string) - parameter is CASE INSENSITIVE.
+     * clock (string, optional) - if not supplied any clockrate
+       will match and all codecs will be moved to the front while
+       preserving their original ordering. Parameter is CASE
+       INSENSITIVE.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
@@ -739,6 +745,11 @@ codec_move_up("GSM", "8000");
    parameter is optional, if it is not supplied any clockrate will
    match and all codecs will be moved to the back while preserving
    their original ordering. Parameters are CASE INSENSITIVE.
+     * name (string) - parameter is CASE INSENSITIVE.
+     * clock (string, optional) - if not supplied any clockrate
+       will match and all codecs will be moved to the back while
+       preserving their original ordering. Parameter is CASE
+       INSENSITIVE.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
@@ -1030,16 +1041,16 @@ Chapter 2. Contributors
    3. Razvan Crainea (@razvancrainea) 37 13 2887 35
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
-   6. Ovidiu Sas (@ovidiusas) 4 2 22 1
-   7. Peter Lemenkov (@lemenkov) 4 2 2 2
-   8. Boris Ratner 4 1 129 46
-   9. Julián Moreno Patiño 3 1 8 8
-   10. Fabian Gast (@fgast) 3 1 4 4
+   6. Vlad Patrascu (@rvlad-patrascu) 4 2 49 13
+   7. Ovidiu Sas (@ovidiusas) 4 2 22 1
+   8. Peter Lemenkov (@lemenkov) 4 2 2 2
+   9. Boris Ratner 4 1 129 46
+   10. Julián Moreno Patiño 3 1 8 8
 
-   All remaining contributors: Alexey Vasilyev (@vasilevalex),
-   Jarrod Baumann (@jarrodb), Ezequiel Lovelle, Walter Doekes
-   (@wdoekes), Nick Altmann (@nikbyte), Ionut Ionita
-   (@ionutrazvanionita), Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Fabian Gast (@fgast), Alexey
+   Vasilyev (@vasilevalex), Jarrod Baumann (@jarrodb), Ezequiel
+   Lovelle, Walter Doekes (@wdoekes), Nick Altmann (@nikbyte),
+   Ionut Ionita (@ionutrazvanionita).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1061,14 +1072,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Apr 2019
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Apr 2019
-   3.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
-   4.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
-   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
-   6.  Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
-   7.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Apr 2019
+   4.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
+   5.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
+   6.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
+   7.  Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
+   8.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
    9.  Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
    10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
@@ -1084,11 +1095,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Fabian Gast
-   (@fgast), Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
-   (@lemenkov), Ovidiu Sas (@ovidiusas), Julián Moreno Patiño,
-   Razvan Crainea (@razvancrainea), Mihai Tiganus (@tallicamike),
-   Vlad Paiu (@vladpaiu), Boris Ratner, Nick Altmann (@nikbyte).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Fabian Gast (@fgast), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Peter Lemenkov (@lemenkov), Ovidiu Sas
+   (@ovidiusas), Julián Moreno Patiño, Razvan Crainea
+   (@razvancrainea), Mihai Tiganus (@tallicamike), Vlad Paiu
+   (@vladpaiu), Boris Ratner, Nick Altmann (@nikbyte).
 
    Documentation Copyrights:
 

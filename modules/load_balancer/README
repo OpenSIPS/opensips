@@ -402,14 +402,13 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
    belong to a requested group.
 
    Meaning of the parameters is as follows:
-     * grp - group id for the destinations; the destination may be
-       grouped in several groups you can you for differnet
-       scenarios; this can be a number or a variable containing a
-       numerical value.
-     * resources - string containing a semi-colon separated list
-       of resources required by the current call.
-     * flags - various flags to controll the LB algorithm ( or
-       computing the available load on the system):
+     * grp (int) - group id for the destinations; the destination
+       may be grouped in several groups you can you for differnet
+       scenarios.
+     * resources (string) - a semi-colon separated list of
+       resources required by the current call.
+     * flags (string, optional) - various flags to controll the LB
+       algorithm ( or computing the available load on the system):
           + n - Negative availability - use destinations with
             negative availability (exceeded capacity); do not
             ignore resources with negative availability, and thus
@@ -449,7 +448,7 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 
    Example 1.13. lb_start usage
 ...
-if (lb_start("1","trascoding;conference")) {
+if (lb_start(1,"trascoding;conference")) {
         # dst URI points to the new destination
         xlog("sending call to $du\n");
         t_relay();
@@ -526,7 +525,7 @@ if (t_check_status("(5[0-9][0-9])")) {
         }
 } else if (t_check_status("(408)")) {
         lb_reset();
-        if (lb_start("1","conference")) {
+        if (lb_start(1,"conference")) {
                 t_relay();
                 exit;
         }
@@ -559,7 +558,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
                 xlog("-----------new dst is $du\n");
                 t_relay();
         } else {
-                t_reply("500","Error");
+                t_reply(500,"Error");
         }
 }
 
@@ -575,19 +574,20 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
    ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
    Meaning of the parameters is as follows:
-     * ip and port - IP and PORT to be checked (any kind of
-       variables are allowed, but take care as the PORT variables
-       should have an integer value); A value 0 for the port means
-       "any" - will match any port.
-     * group - in what LB group the destination should be looked
-       for; If not specified, the search will be in all groups.
-     * active - if "1", the search will be performed only over
-       "active" (not disabled) destinations. If missing, the
-       search will consider any kind of destinations.
+     * ip (string) - IP to be checked
+     * port (int) - PORT to be checked. A value 0 means "any" -
+       will match any port.
+     * group (int, optional) - in what LB group the destination
+       should be looked for; If not specified, the search will be
+       in all groups.
+     * active (int, optional)- if "1", the search will be
+       performed only over "active" (not disabled) destinations.
+       If missing, the search will consider any kind of
+       destinations.
 
    Example 1.17. lb_is_destination usage
 ...
-if (lb_is_destination("$si","$sp") ) {
+if (lb_is_destination($si,$sp) ) {
         # request from a LB destination
 }
 ...
@@ -601,14 +601,16 @@ if (lb_is_destination("$si","$sp") ) {
    LB as ongoing call for a destination;
 
    Meaning of the parameters is as follows:
-     * ip and port - IP and PORT to identify the destination the
-       call has to be counted for.
-     * grp - group id for the destinations; if no knows, "-1" will
-       mean all groups.
-     * resources - string containing a semi-colon separated list
-       of resources required by the current call.
-     * undo - (optional) if set to a non zero value, it will force
-       the function to un-count - actually it will undo the
+     * ip (string) - IP to identify the destination the call has
+       to be counted for.
+     * port (int) - PORT to identify the destination the call has
+       to be counted for.
+     * grp (int) - group id for the destinations; if no knows,
+       "-1" will mean all groups.
+     * resources - (string) a semi-colon separated list of
+       resources required by the current call.
+     * undo - (int, optional) if set to a non zero value, it will
+       force the function to un-count - actually it will undo the
        counting of this call as load in the current LB session;
        this might be needed if we count call for particular
        resources and then need to un-count it.
@@ -622,13 +624,13 @@ if (lb_is_destination("$si","$sp") ) {
    Example 1.18. lb_count_call usage
 ...
 # count as load also the calls orgininated by lb destinations
-if (lb_is_destination("$si","$sp") ) {
+if (lb_is_destination($si,$sp) ) {
         # inbound call from destination
-        lb_count_call("$si","$sp","-1","conference");
+        lb_count_call($si,$sp,-1,"conference");
 } else {
         # outbound call to destinations
-        if ( !load_balance("1","conference") ) {
-                send_reply("503","unavailable");
+        if ( !load_balance(1,"conference") ) {
+                send_reply(503,"unavailable");
                 exit();
         }
         # dst URI points to the new destination
@@ -754,7 +756,7 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 114 66 4261 729
    2. Liviu Chircu (@liviuchircu) 40 30 681 168
-   3. Vlad Patrascu (@rvlad-patrascu) 29 14 342 658
+   3. Vlad Patrascu (@rvlad-patrascu) 31 15 378 688
    4. Razvan Crainea (@razvancrainea) 22 16 257 141
    5. Sergey Khripchenko 19 6 649 366
    6. shripchenko 11 4 409 150
@@ -807,9 +809,9 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Sergey
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Sergey
    Khripchenko, Ezequiel Lovelle, Walter Doekes (@wdoekes), Vlad
    Paiu (@vladpaiu).
 

@@ -45,10 +45,10 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">18</entry>
-		<entry align="center">9</entry>
-		<entry align="center">223</entry>
-		<entry align="center">359</entry>
+		<entry align="center">19</entry>
+		<entry align="center">10</entry>
+		<entry align="center">240</entry>
+		<entry align="center">375</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Klaus Darilion, Konstantin Bokarius, Klaus Darilion, Andreas Granig, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Dusan Klinec.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Klaus Darilion, Konstantin Bokarius, Klaus Darilion, Andreas Granig, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Dusan Klinec.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">Apr 2019 - Apr 2019</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Sep 2012 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Sep 2012 - Apr 2019</entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
+		<entry align="center">Apr 2019 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Greg Fausak, Klaus Darilion, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Greg Fausak, Klaus Darilion, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>).</para>
 </section>
 
 </chapter>
