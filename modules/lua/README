@@ -192,6 +192,11 @@ modparam("lua", "luafilename", "/etc/opensips/opensips.lua")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE and BRANCH_ROUTE.
 
+   Parameters:
+     * func (string) - Lua function name
+     * param (string, optional) - Parameter to be passed to the
+       Lua function.
+
    Example 1.2. lua_exec() usage
 ...
 if (lua_exec("mongo_alias")) {
@@ -335,7 +340,7 @@ Chapter 3. Contributors
    1. Arnaud Chong + Eric Gouyer 35 1 4335 0
    2. Razvan Crainea (@razvancrainea) 21 16 145 137
    3. Liviu Chircu (@liviuchircu) 13 10 15 63
-   4. Vlad Patrascu (@rvlad-patrascu) 8 4 132 85
+   4. Vlad Patrascu (@rvlad-patrascu) 10 6 142 93
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 5 2
    6. Vlad Paiu (@vladpaiu) 5 3 7 9
    7. Julián Moreno Patiño 3 1 1 1
@@ -361,8 +366,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Apr 2019
    3. Razvan Crainea (@razvancrainea)     Feb 2012 - Mar 2019
    4. Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2019
    5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -377,8 +382,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Vlad Paiu (@vladpaiu), Arnaud Chong + Eric
    Gouyer.
 

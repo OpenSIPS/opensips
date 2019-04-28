@@ -38,13 +38,13 @@ CLUSTERER Module
 
         1.5. Exported Functions
 
-              1.5.1. cluster_send_req(cluster_id, dst_id, msg[,
-                      tag])
+              1.5.1. cluster_send_req(cluster_id, dst_id, msg,
+                      [tag])
 
               1.5.2. cluster_send_rpl(cluster_id, dst_id, msg,
                       tag)
 
-              1.5.3. cluster_broadcast_req(cluster_id, msg[, tag])
+              1.5.3. cluster_broadcast_req(cluster_id, msg, [tag])
 
               1.5.4. cluster_check_addr(cluster_id, ip, addr_type)
 
@@ -518,7 +518,7 @@ modparam("clusterer", "description_col", "description")
 
 1.5. Exported Functions
 
-1.5.1.  cluster_send_req(cluster_id, dst_id, msg[, tag])
+1.5.1.  cluster_send_req(cluster_id, dst_id, msg, [tag])
 
    This function is used to send a generic, request-like message,
    containing custom data, to a specific node in a cluster,
@@ -531,12 +531,10 @@ modparam("clusterer", "description_col", "description")
    against the tag received in a reply.
 
    Meaning of the parameters is as follows:
-     * cluster_id - the cluster ID of the destination node;
-     * dst_id - the ID of the destiantion node;
-     * msg - actual message payload;
-     * tag - randomly generated communication tag. This is an
-       optional output parameter and must be a variable if
-       provided.
+     * cluster_id (int) - the cluster ID of the destination node;
+     * dst_id (int) - the ID of the destiantion node;
+     * msg (string) - actual message payload;
+     * tag (var, optional) - randomly generated communication tag.
 
    The function can return the following values:
      * 1 - successfuly sent message to destination node or a valid
@@ -553,11 +551,11 @@ modparam("clusterer", "description_col", "description")
    Example 1.22. cluster_send_req() usage
 ...
 # send a request
-cluster_send_req("1", "1", "Check USER: $fU", "$var(req_tag)");
+cluster_send_req(1, 1, "Check USER: $fU", $var(req_tag));
 # wait for reply
 $avp(filter) = "tag=" + $var(req_tag);
-async(wait_for_event("E_CLUSTERER_RPL_RECEIVED", "$avp(filter)", "5"), r
-pl_resume);
+async(wait_for_event("E_CLUSTERER_RPL_RECEIVED", $avp(filter), 5), rpl_r
+esume);
 # done
 ...
 route[rpl_resume] {
@@ -577,11 +575,10 @@ route[rpl_resume] {
    request, should be passed to the function.
 
    Meaning of the parameters is as follows:
-     * cluster_id - the cluster ID of the destination node;
-     * dst_id - the ID of the destiantion node;
-     * msg - actual message payload;
-     * tag - communication tag. This is an input parameter and
-       must be a variable.
+     * cluster_id (int) - the cluster ID of the destination node;
+     * dst_id (int) - the ID of the destiantion node;
+     * msg (string) - actual message payload;
+     * tag (var) - communication tag.
 
    The function can return the following values:
      * 1 - successfuly sent message to destination node or a valid
@@ -598,15 +595,12 @@ route[rpl_resume] {
    Example 1.23. cluster_send_rpl() usage
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
-  fetch_event_params("$avp(cl_id);$avp(src_id);$avp(rcv_msg);$avp(rcv_ta
-g)");
-  ...
-  cluster_send_rpl("$avp(cl_id)", "$avp(src_id)", "$var(my_reply)", "$av
-p(rcv_tag)");
+  cluster_send_rpl($param(cl_id), $param(src_id), $var(my_reply), $param
+(rcv_tag));
 }
 ...
 
-1.5.3.  cluster_broadcast_req(cluster_id, msg[, tag])
+1.5.3.  cluster_broadcast_req(cluster_id, msg, [tag])
 
    This function has a similar behaviour to the cluster_send_req()
    function with the exception that the message is sent to all the
@@ -628,7 +622,7 @@ p(rcv_tag)");
 
    Example 1.24. cluster_broadcast_req() usage
 ...
-cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
+cluster_broadcast_req($var(cl_id), $var(share_data));
 ...
 
 1.5.4.  cluster_check_addr(cluster_id, ip, addr_type)
@@ -636,21 +630,23 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
    This function checks whether the given IP address belongs to
    one of the nodes in the cluster.
 
-   The addr_type parameter can be set to in order to select the
-   address of the node that the comparison is made against, with
-   the possible values of:
-     * bin - node's BIN interface listener;
-     * sip - node's DB provisioned SIP address.
-
-   The addr_type parameter is optional and the default behaviour
-   is to compare against the SIP address.
+   Parameters:
+     * cluster_id (int)
+     * ip (string)
+     * addr_type (string, optional) - select the address of the
+       node that the comparison is made against, with the possible
+       values of:
+          + bin - node's BIN interface listener;
+          + sip - node's DB provisioned SIP address.
+       The default behaviour is to compare against the SIP
+       address.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
    Example 1.25. cluster_check_addr() usage
 ...
-if (cluster_check_addr("1", "$si")) {
+if (cluster_check_addr(1, $si)) {
         ...
 }
 ...
@@ -1130,7 +1126,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 237 77 9347 4763
+   1. Vlad Patrascu (@rvlad-patrascu) 238 78 9377 4785
    2. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    3. Liviu Chircu (@liviuchircu) 38 27 491 379
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 20 9 1116 102
@@ -1160,8 +1156,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2019
    3. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
    4. Liviu Chircu (@liviuchircu)              Mar 2016 - Mar 2019
    5. Razvan Crainea (@razvancrainea)          Nov 2015 - Mar 2019
@@ -1177,8 +1173,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
    Gast (@fgast), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
 

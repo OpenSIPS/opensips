@@ -294,7 +294,7 @@ modparam("sms", "sms_report_type", 1)
    internal failures.
 
    Meaning of the parameters is as follows:
-     * network_name - Name of network.
+     * network_name (string) - Name of network.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -302,13 +302,13 @@ modparam("sms", "sms_report_type", 1)
 ...
 if (sms_send_msg_to_net("D1"))
 {
-        if (!t_reply("202", "yes sir, SMS sent over"))
+        if (!t_reply(202, "yes sir, SMS sent over"))
         {
                 # if replying failed, retry statelessly
                 sl_reply_error();
         };
 } else {
-        if (!t_reply("502", "Bad gateway - SMS error"))
+        if (!t_reply(502, "Bad gateway - SMS error"))
         {
                 # if replying failed, retry statelessly
                 sl_reply_error();
@@ -328,13 +328,13 @@ if (sms_send_msg_to_net("D1"))
 ...
 if (sms_send_msg_to_net())
 {
-        if (!t_reply("202", "yes sir, SMS sent over"))
+        if (!t_reply(202, "yes sir, SMS sent over"))
         {
                 # if replying failed, retry statelessly
                 sl_reply_error();
         };
 } else {
-        if (!t_reply("502", "Bad gateway - SMS error"))
+        if (!t_reply(502, "Bad gateway - SMS error"))
         {
                 # if replying failed, retry statelessly
                 sl_reply_error();
@@ -365,7 +365,7 @@ Chapter 3. Contributors
    7. Henning Westerholt (@henningw) 9 6 12 60
    8. Jiri Kuthan (@jiriatipteldotorg) 7 4 204 7
    9. Anca Vamanu 7 1 146 181
-   10. Vlad Patrascu (@rvlad-patrascu) 4 2 28 13
+   10. Vlad Patrascu (@rvlad-patrascu) 6 4 33 28
 
    All remaining contributors: Elena-Ramona Modroiu, Julián Moreno
    Patiño, Konstantin Bokarius, John Riordan, Dan Pascu
@@ -392,8 +392,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2002 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2002 - Apr 2019
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Oct 2011 - Oct 2017
@@ -415,12 +415,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues,
-   Henning Westerholt (@henningw), Elena-Ramona Modroiu, Jan Janak
-   (@janakj).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jesus Rodrigues, Henning Westerholt
+   (@henningw), Elena-Ramona Modroiu, Jan Janak (@janakj).
 
    Documentation Copyrights:
 

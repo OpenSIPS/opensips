@@ -263,8 +263,8 @@ modparam("presence_callinfo", "line_hash_size", 128)
 
    If no parameter is provided, the name of the line is taken from
    the SIP FROM header of the INVITE. You can override that by
-   providing the name of the line a parameter - be careful as the
-   value must be a SIP URI ! Variables are accepted.
+   providing the name of the line as a string parameter - be
+   careful as the value must be a SIP URI !
 
    This function can be used from REQUEST_ROUTE.
 
@@ -283,8 +283,8 @@ modparam("presence_callinfo", "line_hash_size", 128)
 
    If no parameter is provided, the name of the line is taken from
    the SIP RURI of the INVITE. You can override that by providing
-   the name of the line a parameter - be careful as the value must
-   be a SIP URI ! Variables are accepted.
+   the name of the line as a string parameter - be careful as the
+   value must be a SIP URI ! Variables are accepted.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -306,7 +306,7 @@ Chapter 2. Contributors
    2. Ovidiu Sas (@ovidiusas) 12 6 577 7
    3. Liviu Chircu (@liviuchircu) 9 7 42 52
    4. Razvan Crainea (@razvancrainea) 7 5 19 13
-   5. Vlad Patrascu (@rvlad-patrascu) 4 2 20 51
+   5. Vlad Patrascu (@rvlad-patrascu) 5 3 23 54
    6. Walter Doekes (@wdoekes) 3 1 2 2
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -330,8 +330,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Apr 2019
    3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5. Razvan Crainea (@razvancrainea)     Oct 2011 - Apr 2017
@@ -345,9 +345,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
-   (@ovidiusas).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

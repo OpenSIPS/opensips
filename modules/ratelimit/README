@@ -134,8 +134,8 @@ Chapter 1. Admin Guide
 
    A sample configuration snippet might look like this:
 ...
-        if (!rl_check("$rU", "50", "TAILDROP")) {
-                sl_send_reply("503", "Server Unavailable");
+        if (!rl_check($rU, 50, "TAILDROP")) {
+                sl_send_reply(503, "Server Unavailable");
                 exit;
         };
 ...
@@ -446,17 +446,15 @@ modparam("ratelimit", "slot_period", 100)
    matched pipe is reached.
 
    Meaning of the parameters is as follows:
-     * name - this is the name that identifies the pipe which
-       should be checked. This parameter accepts both strings and
-       pseudovariables.
-     * limit - this specifies the threshold limit of the pipe. It
-       is strongly related to the algorithm used. This parameter
-       accepts an integer or a pseudovariable. Note that the limit
-       should be specified as per-second, not per-timer_interval.
-     * algorithm - this is parameter is optional and reffers to
+     * name (string) - this is the name that identifies the pipe
+       which should be checked.
+     * limit (int) - this specifies the threshold limit of the
+       pipe. It is strongly related to the algorithm used. Note
+       that the limit should be specified as per-second, not
+       per-timer_interval.
+     * algorithm (string, optional) - this parameter reffers to
        the algorithm used to check the pipe. If it is not set, the
-       default value is used. It accepts a string or a
-       pseudovariable.
+       default value is used.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE,
@@ -467,23 +465,23 @@ modparam("ratelimit", "slot_period", 100)
         # perform a pipe match for all INVITE methods using RED algorith
 m
         if (is_method("INVITE")) {
-                if (!rl_check("pipe_INVITE", "100", "RED")) {
-                        sl_send_reply("503", "Server Unavailable");
+                if (!rl_check("pipe_INVITE", 100, "RED")) {
+                        sl_send_reply(503, "Server Unavailable");
                         exit;
                 };
         };
 ...
         # use default algorithm for each different gateway
         $var(limit) = 10;
-        if (!rl_check("gw_$ru", "$var(limit)")) {
-                sl_send_reply("503", "Server Unavailable");
+        if (!rl_check("gw_$ru", $var(limit))) {
+                sl_send_reply(503, "Server Unavailable");
                 exit;
         };
 ...
         # count only successful calls
-        if (!rl_check("gw_$ru", "100")) {
+        if (!rl_check("gw_$ru", 100)) {
                 rl_dec_count("gw_$ru");
-                sl_send_reply("503", "Server Unavailable");
+                sl_send_reply(503, "Server Unavailable");
                 exit;
         };
 ...
@@ -494,7 +492,7 @@ m
    previously increased by rl_check function.
 
    Meaning of the parameters is as follows:
-     * name - identifies the name of the pipe.
+     * name (string) - identifies the name of the pipe.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, ERROR_ROUTE, LOCAL_ROUTE,
@@ -502,7 +500,7 @@ m
 
    Example 1.15. rl_dec_count usage
 ...
-        if (!rl_check("gw_$ru", "100", "TAILDROP")) {
+        if (!rl_check("gw_$ru", 100, "TAILDROP")) {
                 exit;
         } else {
                 rl_dec_count("gw_$ru");
@@ -523,7 +521,7 @@ m
 
    Example 1.16. rl_reset_count usage
 ...
-        if (!rl_check("gw_$ru", "100", "TAILDROP")) {
+        if (!rl_check("gw_$ru", 100, "TAILDROP")) {
                 exit;
         } else {
                 rl_reset_count("gw_$ru");
@@ -613,8 +611,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 118 46 2987 2634
    2. Ovidiu Sas (@ovidiusas) 38 17 2481 44
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 28 24 108 118
-   4. Vlad Patrascu (@rvlad-patrascu) 28 15 340 536
+   3. Vlad Patrascu (@rvlad-patrascu) 30 17 359 558
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 28 24 108 118
    5. Liviu Chircu (@liviuchircu) 17 13 43 112
    6. Eseanu Marius Cristian (@eseanucristian) 13 6 329 195
    7. Daniel-Constantin Mierla (@miconda) 9 7 24 18
@@ -647,8 +645,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2008 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2008 - Apr 2019
    3.  Razvan Crainea (@razvancrainea)          Sep 2011 - Mar 2019
    4.  Liviu Chircu (@liviuchircu)              Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
@@ -671,10 +669,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
-   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Eseanu
-   Marius Cristian (@eseanucristian), Bogdan-Andrei Iancu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Eseanu Marius
+   Cristian (@eseanucristian), Bogdan-Andrei Iancu
    (@bogdan-iancu), Walter Doekes (@wdoekes), Arnaud Boussus,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius,
    Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas), Edson

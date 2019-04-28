@@ -214,14 +214,14 @@ modparam("aaa_radius", "fetch_all_values", 1)
    This function can be used from the script to make custom radius
    authentication request. The function takes two parameters.
 
-   The first parameter represents the name of the set that
-   contains the list of attributes and pvars that will form the
-   authentication request (see the “sets” module parameter).
-
-   The second parameter represents the name of the set that
-   contains the list of attributes and pvars that will be
-   extracted form the authentication reply (see the “sets” module
-   parameter).
+   Parameters:
+     * input_set_name (string) - the name of the set that contains
+       the list of attributes and pvars that will form the
+       authentication request (see the “sets” module parameter).
+     * output_set_name (string) - the name of the set that
+       contains the list of attributes and pvars that will be
+       extracted form the authentication reply (see the “sets”
+       module parameter).
 
    The sets must be defined using the “sets” exported parameter.
 
@@ -254,9 +254,10 @@ switch ($rc) {
 1.4.2.  radius_send_acct(input_set_name)
 
    This function can be used from the script to make custom radius
-   authentication request. The function takes only one parameter
-   that represents the name of the set that contains the list of
-   attributes and pvars that will form the accounting request.
+   authentication request. The function takes only one string
+   parameter that represents the name of the set that contains the
+   list of attributes and pvars that will form the accounting
+   request.
 
    Only one set is needed as a parameter because no AVPs can be
    extracted from the accounting replies.
@@ -278,16 +279,16 @@ radius_send_acct("set1");
 1.5.1.  radius_send_auth(input_set_name, output_set_name)
 
    This function can be used from the script to make custom radius
-   authentication request. The function takes two parameters.
+   authentication request.
 
-   The first parameter represents the name of the set that
-   contains the list of attributes and pvars that will form the
-   authentication request (see the “sets” module parameter).
-
-   The second parameter represents the name of the set that
-   contains the list of attributes and pvars that will be
-   extracted form the authentication reply (see the “sets” module
-   parameter).
+   Parameters:
+     * input_set_name (string) - the name of the set that contains
+       the list of attributes and pvars that will form the
+       authentication request (see the “sets” module parameter).
+     * output_set_name (string) - the name of the set that
+       contains the list of attributes and pvars that will be
+       extracted form the authentication reply (see the “sets”
+       module parameter).
 
    The sets must be defined using the “sets” exported parameter.
 
@@ -321,9 +322,10 @@ switch ($rc) {
 1.5.2.  radius_send_acct(input_set_name)
 
    This function can be used from the script to make custom radius
-   authentication request. The function takes only one parameter
-   that represents the name of the set that contains the list of
-   attributes and pvars that will form the accounting request.
+   authentication request. The function takes only one string
+   parameter that represents the name of the set that contains the
+   list of attributes and pvars that will form the accounting
+   request.
 
    Only one set is needed as a parameter because no AVPs can be
    extracted from the accounting replies.
@@ -396,8 +398,8 @@ Chapter 3. Contributors
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 12 102 82
    4. Razvan Crainea (@razvancrainea) 12 10 48 41
    5. Liviu Chircu (@liviuchircu) 9 7 21 49
-   6. Boris Ratner 4 2 38 5
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 16 48
+   6. Vlad Patrascu (@rvlad-patrascu) 6 3 49 73
+   7. Boris Ratner 4 2 38 5
    8. Anca Vamanu 4 2 5 3
    9. Matt Lehner 3 1 32 3
    10. Авдиенко Михаил 3 1 7 17
@@ -425,8 +427,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Apr 2017
@@ -446,10 +448,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut Ionita
-   (@ionutrazvanionita), Walter Doekes (@wdoekes), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Boris Ratner, Irina-Maria Stanescu.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Ionut Ionita (@ionutrazvanionita), Walter
+   Doekes (@wdoekes), Bogdan-Andrei Iancu (@bogdan-iancu), Boris
+   Ratner, Irina-Maria Stanescu.
 
    Documentation Copyrights:
 

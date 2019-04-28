@@ -21,7 +21,7 @@ UAC_REDIRECT Module
 
               1.4.1. set_deny_filter(filter,flags)
               1.4.2. set_accept_filter(filter,flags)
-              1.4.3. get_redirects([max_total[, max_branch]])
+              1.4.3. get_redirects([max_total], [max_branch])
 
         1.5. Script Example
 
@@ -151,13 +151,17 @@ modparam("uac_redirect","accept_filter",".*@siphub\.net")
    additional filter will apply only to the current message - it
    will not have a global effect.
 
-   Default or previous added deny filter may be reset depending of
-   the flag parameter value:
-     * reset_all - reset both default and previous added deny
-       filters;
-     * reset_default - reset only the default deny filter;
-     * reset_added - reset only the previous added deny filters;
-     * empty - no reset, just add the filter.
+   Parameters:
+     * filter (string) - regular expression
+     * flags (string)
+       Default or previous added deny filter may be reset
+       depending of the parameter value:
+          + reset_all - reset both default and previous added deny
+            filters;
+          + reset_default - reset only the default deny filter;
+          + reset_added - reset only the previous added deny
+            filters;
+          + empty - no reset, just add the filter.
 
    This function can be used from FAILURE_ROUTE.
 
@@ -173,13 +177,17 @@ set_deny_filter(".*@domain1.net","");
    additional filter will apply only to the current message - it
    will not have a global effect.
 
-   Default or previous added deny filter may be reset depending of
-   the flag parameter value:
-     * reset_all - reset both default and previous added accept
-       filters;
-     * reset_default - reset only the default accept filter;
-     * reset_added - reset only the previous added accept filters;
-     * empty - no reset, just add the filter.
+   Parameters:
+     * filter (string) - regular expression
+     * flags (string)
+       Default or previous added deny filter may be reset
+       depending of the parameter value:
+          + reset_all - reset both default and previous added
+            accept filters;
+          + reset_default - reset only the default accept filter;
+          + reset_added - reset only the previous added accept
+            filters;
+          + empty - no reset, just add the filter.
 
    This function can be used from FAILURE_ROUTE.
 
@@ -189,7 +197,7 @@ set_accept_filter(".*@domain2.net","reset_added");
 set_accept_filter(".*@domain1.net","");
 ...
 
-1.4.3.  get_redirects([max_total[, max_branch]])
+1.4.3.  get_redirects([max_total], [max_branch])
 
    The function may be called only from failure routes. It will
    extract the contacts from all 3xx branches and append them as
@@ -243,7 +251,7 @@ route{
                 };
 
                 if (!lookup("location")) {
-                        sl_send_reply("404", "Not Found");
+                        sl_send_reply(404, "Not Found");
                         exit;
                 };
                 # do redirect with accounting
@@ -280,8 +288,8 @@ Chapter 2. Contributors
    3. Daniel-Constantin Mierla (@miconda) 12 10 24 20
    4. Rob Gagnon (@rgagnon24) 8 6 50 48
    5. Henning Westerholt (@henningw) 7 5 12 11
-   6. Razvan Crainea (@razvancrainea) 5 3 8 9
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
+   6. Vlad Patrascu (@rvlad-patrascu) 5 3 25 6
+   7. Razvan Crainea (@razvancrainea) 5 3 8 9
    8. Anca Vamanu 3 1 30 55
    9. Konstantin Bokarius 3 1 2 5
    10. Andreas Granig 3 1 1 1
@@ -310,10 +318,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Dec 2016
    6.  Rob Gagnon (@rgagnon24)             Mar 2015 - Mar 2015
    7.  Walter Doekes (@wdoekes)            May 2014 - May 2014
@@ -331,8 +339,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Rob Gagnon
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Rob Gagnon
    (@rgagnon24), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
    Crainea (@razvancrainea), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt

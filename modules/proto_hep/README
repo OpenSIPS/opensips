@@ -281,31 +281,30 @@ modparam("proto_hep", "tcp_async_local_write_timeout", 100)
 
    Send a hep message with an extra correlation id containing the
    two correlation given as arguments. The two types must differ.
-   All parameters are mandatory. This will help on the capturing
-   side to correlate two calls for example, being given their
-   callid as correlation ids.
+   This will help on the capturing side to correlate two calls for
+   example, being given their callid as correlation ids.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE.
 
    Meaning of the parameters is as follows:
-     * hep_id (string, pvar) the name of the hep_id defined in
-       modparam section, specifying where to do the tracing.
+     * hep_id (string) the name of the hep_id defined in modparam
+       section, specifying where to do the tracing.
      * type1 (string) the key name identify the first correlation
        id.
-     * correlation1 (string, pvar) the first extra correlation id
-       that will be put in the extra correlation chunk.
+     * correlation1 (string) the first extra correlation id that
+       will be put in the extra correlation chunk.
      * type2 (string) the key name identify the second correlation
        id.
-     * correlation2 (string, pvar) the second extra correlation id
-       that will be put in the extra correlation chunk.
+     * correlation2 (string) the second extra correlation id that
+       will be put in the extra correlation chunk.
 
    Example 1.12. correlate usage
 ...
 /* see declaration of hep_dst in trace_id section */
 /* we suppose we have two correlations in two varibles: cor1 and cor2 */
-        correlate("hep_dst", "correlation-no-1","$var(cor1)","correlatio
-n-no-2", "$var(cor2)");
+        correlate("hep_dst", "correlation-no-1",$var(cor1),"correlation-
+no-2", $var(cor2));
 ...
 
 Chapter 2. Developer Guide
@@ -355,7 +354,7 @@ Chapter 3. Contributors
    2. Razvan Crainea (@razvancrainea) 19 17 51 31
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 17 11 350 149
    4. Liviu Chircu (@liviuchircu) 10 8 39 49
-   5. Vlad Patrascu (@rvlad-patrascu) 5 2 27 78
+   5. Vlad Patrascu (@rvlad-patrascu) 7 4 36 84
    6. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -378,9 +377,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2019
-   2. Razvan Crainea (@razvancrainea)     Nov 2015 - Apr 2019
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2019
+   3. Razvan Crainea (@razvancrainea)     Nov 2015 - Apr 2019
    4. Liviu Chircu (@liviuchircu)         Mar 2016 - Nov 2018
    5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6. Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
@@ -392,9 +391,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
-   Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

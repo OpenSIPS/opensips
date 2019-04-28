@@ -22,10 +22,8 @@ path Module
 
         1.4. Exported Functions
 
-              1.4.1. add_path()
-              1.4.2. add_path(user)
-              1.4.3. add_path_received()
-              1.4.4. add_path_received(user)
+              1.4.1. add_path([user])
+              1.4.2. add_path_received([user])
 
    2. Contributors
 
@@ -47,10 +45,8 @@ path Module
 
    1.1. Set use_received parameter
    1.2. Set enable_double_path parameter
-   1.3. add_path usage
-   1.4. add_path(user) usage
-   1.5. add_path_received() usage
-   1.6. add_path_received(user) usage
+   1.3. add_path(user) usage
+   1.4. add_path_received(user) usage
 
 Chapter 1. Admin Guide
 
@@ -143,58 +139,26 @@ modparam("path", "enable_double_path", 0)
 
 1.4. Exported Functions
 
-1.4.1.  add_path()
-
-   This function is used to insert a Path header in the form
-   “Path: <sip:1.2.3.4;lr>”, where “1.2.3.4” is the address of the
-   outgoing interface.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.3. add_path usage
-...
-if (!add_path()) {
-        sl_send_reply("503", "Internal Path Error");
-        ...
-};
-...
-
-1.4.2.  add_path(user)
+1.4.1.  add_path([user])
 
    This function adds a Path header in the form “Path:
    <sip:user@1.2.3.4;lr>”.
 
    Meaning of the parameters is as follows:
-     * user - The username to be inserted as user part.
+     * user (string, optional) - The username to be inserted as
+       user part.
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.4. add_path(user) usage
+   Example 1.3. add_path(user) usage
 ...
 if (!add_path("loadbalancer")) {
-        sl_send_reply("503", "Internal Path Error");
+        sl_send_reply(503, "Internal Path Error");
         ...
 };
 ...
 
-1.4.3.  add_path_received()
-
-   This function adds a Path header in the form “Path:
-   <sip:1.2.3.4;received=sip:2.3.4.5:1234;lr>”, setting it's own
-   outgoing address as domain-part, and the address the request
-   has been received from as received-parameter.
-
-   This function can be used from REQUEST_ROUTE.
-
-   Example 1.5. add_path_received() usage
-...
-if (!add_path_received()) {
-        sl_send_reply("503", "Internal Path Error");
-        ...
-};
-...
-
-1.4.4.  add_path_received(user)
+1.4.2.  add_path_received([user])
 
    This function adds a Path header in the form “Path:
    <sip:user@1.2.3.4;received=sip:2.3.4.5:1234;lr>”, setting
@@ -202,12 +166,16 @@ if (!add_path_received()) {
    as domain-part, and the address the request has been received
    from as received-parameter.
 
+   Meaning of the parameters is as follows:
+     * user (string, optional) - The username to be inserted as
+       user part.
+
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.6. add_path_received(user) usage
+   Example 1.4. add_path_received(user) usage
 ...
 if (!add_path_received("inbound")) {
-        sl_send_reply("503", "Internal Path Error");
+        sl_send_reply(503, "Internal Path Error");
         ...
 };
 ...
@@ -224,7 +192,7 @@ Chapter 2. Contributors
    3. Daniel-Constantin Mierla (@miconda) 12 10 25 21
    4. Andreas Granig 12 4 863 22
    5. Razvan Crainea (@razvancrainea) 6 4 7 7
-   6. Vlad Patrascu (@rvlad-patrascu) 4 2 20 48
+   6. Vlad Patrascu (@rvlad-patrascu) 6 3 35 104
    7. Henning Westerholt (@henningw) 4 2 5 32
    8. Ancuta Onofrei 3 1 12 12
    9. Konstantin Bokarius 3 1 2 5
@@ -253,8 +221,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2016
@@ -274,10 +242,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Andreas Granig.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
+   Modroiu, Andreas Granig.
 
    Documentation Copyrights:
 

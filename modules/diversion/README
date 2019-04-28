@@ -17,7 +17,7 @@ Diversion Module
 
         1.4. Exported Functions
 
-              1.4.1. add_diversion(reason [[,uri], counter])
+              1.4.1. add_diversion(reason, [uri], [counter])
 
         1.5. Diversion Example
 
@@ -86,7 +86,7 @@ modparam("diversion", "suffix", ";privacy=full")
 
 1.4. Exported Functions
 
-1.4.1. add_diversion(reason [[,uri], counter])
+1.4.1. add_diversion(reason, [uri], [counter])
 
    The function adds a new diversion header field before any other
    existing Diversion header field in the message (the newly added
@@ -95,12 +95,13 @@ modparam("diversion", "suffix", ";privacy=full")
    proxy server) Request-URI will be used as the Diversion URI.
 
    Meaning of the parameters is as follows:
-     * reason - The reason string to be added as the reason
-       parameter
-     * uri - The URI to be added in the header. If missing the
-       unchanged RURI from the original message will be used.
-     * counter - Diversion counter to be added to the header, as
-       defined by the standard.
+     * reason (string) - The reason string to be added as the
+       reason parameter
+     * uri (string, optional) - The URI to be added in the header.
+       If missing the unchanged RURI from the original message
+       will be used.
+     * counter (int, optional) - Diversion counter to be added to
+       the header, as defined by the standard.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
@@ -188,9 +189,9 @@ Chapter 3. Contributors
    2. Daniel-Constantin Mierla (@miconda) 15 13 28 20
    3. Liviu Chircu (@liviuchircu) 10 8 16 45
    4. Jan Janak (@janakj) 10 4 528 13
-   5. Henning Westerholt (@henningw) 5 3 3 27
-   6. Saúl Ibarra Corretgé (@saghul) 4 2 74 11
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 16 37
+   5. Vlad Patrascu (@rvlad-patrascu) 5 3 20 42
+   6. Henning Westerholt (@henningw) 5 3 3 27
+   7. Saúl Ibarra Corretgé (@saghul) 4 2 74 11
    8. Konstantin Bokarius 3 1 3 5
    9. Peter Lemenkov (@lemenkov) 3 1 1 1
    10. Razvan Crainea (@razvancrainea) 3 1 1 1
@@ -218,8 +219,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2015
@@ -239,11 +240,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Saúl
-   Ibarra Corretgé (@saghul), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Jan Janak
-   (@janakj).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jan Janak (@janakj).
 
    Documentation Copyrights:
 

@@ -374,8 +374,8 @@ modparam("b2b_sca", "app2_b2bl_key_column", "second_b2bl_key")
    (see the call from alice1 in the above diagram).
 
    Meaning of the parameters:
-     * shared_line - a PV (pseudo-variable) identifying the call
-       leg as being an "appearnace" call or a "shared" call:
+     * shared_line (int) - an integer identifying the call leg as
+       being an "appearnace" call or a "shared" call:
           + 0: "shared" call
           + 1: "appearance" call
 
@@ -412,8 +412,8 @@ modparam("b2b_sca",
         }
 
         # Initiate the call
-        if (!sca_init_request("$var(shared_line_entity)")) {
-                send_reply("403", "Internal Server Error (SLA)");
+        if (!sca_init_request($var(shared_line_entity))) {
+                send_reply(403, "Internal Server Error (SLA)");
                 exit;
         }
 ...
@@ -427,8 +427,9 @@ modparam("b2b_sca",
    disconnected (see the call from alice2 in the above diagram).
 
    Meaning of the parameters:
-     * shared_line_to_bridge - a PV identifying the shared
-       line/call that was previously set by sca_init_request().
+     * shared_line_to_bridge (string) - a string identifying the
+       shared line/call that was previously set by
+       sca_init_request().
 
 ...
         if ($rU==NULL && is_method("INVITE") &&
@@ -436,8 +437,8 @@ modparam("b2b_sca",
                 # The incoming call is an 'appearance' call
                 # - see Alice's call from alice2 in the given example
                 $var(shared_line_to_bridge) = "alice";
-                if (!sca_bridge_request("$var(shared_line_to_bridge)"))
-                        send_reply("403", "Internal SLA Error");
+                if (!sca_bridge_request($var(shared_line_to_bridge)))
+                        send_reply(403, "Internal SLA Error");
                         exit;
                 }
         }
@@ -466,7 +467,7 @@ Chapter 2. Contributors
    1. Ovidiu Sas (@ovidiusas) 31 2 3536 2
    2. Liviu Chircu (@liviuchircu) 12 9 63 66
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 12 9
-   4. Vlad Patrascu (@rvlad-patrascu) 7 4 76 84
+   4. Vlad Patrascu (@rvlad-patrascu) 8 5 82 90
    5. Razvan Crainea (@razvancrainea) 6 4 10 9
    6. Ezequiel Lovelle 3 1 1 1
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -491,8 +492,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) May 2014 - Apr 2019
    3. Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2019
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
@@ -506,9 +507,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

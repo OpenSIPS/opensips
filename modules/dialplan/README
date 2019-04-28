@@ -420,15 +420,17 @@ modparam("dialplan", "attrs_col", "column_name")
    to the translation rules with dialplan ID equal to id.
 
    Meaning of the parameters is as follows:
-     * id - the dialplan id to be used for matching rules
-     * input - input string to be used for rule matching and for
-       computing the output string.
-     * out_var - variable to be populated/written with the output
-       string (if provided by the translation rule).
-     * attrs_var - variable to be populated/written with the
-       atribute string, if provided by the translation rule.
-     * partition - the name of the partition (set of data) to be
-       used for locating the DP ID.
+     * id (int) - the dialplan id to be used for matching rules
+     * input (string) - input string to be used for rule matching
+       and for computing the output string.
+     * out_var (var, optional) - variable to be populated/written
+       with the output string (if provided by the translation
+       rule).
+     * attrs_var (var, optional) - variable to be
+       populated/written with the atribute string, if provided by
+       the translation rule.
+     * partition (string, optional) - the name of the partition
+       (set of data) to be used for locating the DP ID.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    LOCAL_ROUTE, BRANCH_ROUTE, STARTUP_ROUTE, TIMER_ROUTE and
@@ -436,29 +438,28 @@ modparam("dialplan", "attrs_col", "column_name")
 
    Example 1.15. dp_translate usage
 ...
-dp_translate(240, "$ru", $var(out));
+dp_translate(240, $ru, $var(out));
 xlog("translated into '$var(out)' \n");
 ...
 
    Example 1.16. dp_translate usage
 ...
 $avp(src) = $ruri.user;
-dp_translate("$var(x)", "$avp(src)", $var(y), $var(attrs));
+dp_translate($var(x), $avp(src), $var(y), $var(attrs));
 xlog("translated to var $var(y) with attributes: '$var(attrs)'\n");
 ...
 
    Example 1.17. dp_translate usage
 ...
 $var(id) = 10;
-dp_translate("$var(id)", "$avp(in)", , $avp(attrs), "example_partition")
-;
+dp_translate($var(id), $avp(in), , $avp(attrs), "example_partition");
 xlog("matched with attributes '$avp(attrs) against example_partition'\n"
 );
 ...
 
    Example 1.18. dp_translate usage
 ...
-dp_translate( 10, "$var(in)", , , $var(part));
+dp_translate( 10, $var(in), , , $var(part));
 xlog("'$var(in)' matched against partition '$var(part)'\n")
 ...
 
@@ -540,7 +541,7 @@ Chapter 3. Contributors
    5. Andrei Dragus 25 3 382 1029
    6. Razvan Crainea (@razvancrainea) 18 14 89 131
    7. Ovidiu Sas (@ovidiusas) 16 13 144 37
-   8. Vlad Patrascu (@rvlad-patrascu) 8 4 144 105
+   8. Vlad Patrascu (@rvlad-patrascu) 10 5 153 114
    9. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
    10. Henning Westerholt (@henningw) 5 3 5 14
 
@@ -569,10 +570,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Apr 2019
-   2.  Liviu Chircu (@liviuchircu)              Jul 2012 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)          Dec 2010 - Mar 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Dec 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)              Jul 2012 - Apr 2019
+   4.  Razvan Crainea (@razvancrainea)          Dec 2010 - Mar 2019
    5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    6.  Ovidiu Sas (@ovidiusas)                  Sep 2008 - Nov 2015
    7.  Ionut Ionita (@ionutrazvanionita)        Jul 2014 - Nov 2015
@@ -592,11 +593,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
-   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu
-   Sas (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei
-   Dragus, Anca Vamanu.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei Dragus,
+   Anca Vamanu.
 
    Documentation Copyrights:
 

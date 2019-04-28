@@ -182,14 +182,15 @@ modparam("sip_i", "country_code", "+4")
    should not base your SIP-ISUP interworking only on this.
 
    Meaning of the parameters is as follows:
-     * isup_msg_type (string) - name of the ISUP message to be
-       added, exactly as it appears in ITU-T Rec. Q.763 or an
-       abbreviation(eg. IAM for "Initial address").
-     * extra_headers (string) - a chunk of fully defined SIP
-       headers (including header terminatior) to be inserted into
-       the ISUP part next to the Content-Type header. It overrides
-       the global module parameter default_part_headers. If not
-       specified, the default_part_headers value will be used.
+     * isup_msg_type (string, optional) - name of the ISUP message
+       to be added, exactly as it appears in ITU-T Rec. Q.763 or
+       an abbreviation(eg. IAM for "Initial address").
+     * extra_headers (string, string, optional) - a chunk of fully
+       defined SIP headers (including header terminatior) to be
+       inserted into the ISUP part next to the Content-Type
+       header. It overrides the global module parameter
+       default_part_headers. If not specified, the
+       default_part_headers value will be used.
 
    If isup_msg_type is not explicitly provided, it is
    automatically deduced from the SIP message as follows:
@@ -757,11 +758,12 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 123 40 6676 1635
+   1. Vlad Patrascu (@rvlad-patrascu) 124 41 6678 1637
    2. Liviu Chircu (@liviuchircu) 8 6 24 31
    3. Razvan Crainea (@razvancrainea) 6 4 8 8
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 82 10
-   5. Peter Lemenkov (@lemenkov) 3 1 1 1
+   5. Walter Doekes (@wdoekes) 3 1 16 20
+   6. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -783,11 +785,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2018 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     Oct 2016 - Apr 2019
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4. Liviu Chircu (@liviuchircu)         Apr 2018 - Jun 2018
-   5. Razvan Crainea (@razvancrainea)     Feb 2017 - Nov 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     Oct 2016 - Apr 2019
+   2. Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2018 - Apr 2019
+   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5. Liviu Chircu (@liviuchircu)         Apr 2018 - Jun 2018
+   6. Razvan Crainea (@razvancrainea)     Feb 2017 - Nov 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -796,9 +799,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea).
 
    Documentation Copyrights:
 

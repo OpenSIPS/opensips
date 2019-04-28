@@ -134,21 +134,24 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
    address src. The resulting data is loaded in reverse order into
    the dst AVP.
 
-   src can be a pseudo-variable or AVP and dst must be an AVP. The
-   format for fields is a list of elements delimited by one of
-   these separators: ':', '|', ',', '/' or ' '(space).
-
-   The following tokens are supported in fields:
-     * lat - Latitude
-     * lon - Longitude
-     * cont - Continent
-     * cc - Country Code
-     * reg - Region
-     * city - City
-     * pc - Postal Code
-     * dma - DMA Code
-     * ac - Area Code, only available in the legacy GeoIP database
-     * tz - Time Zone
+   Parameters:
+     * fields (string, optional) - a list of elements delimited by
+       one of these separators: ':', '|', ',', '/' or ' '(space).
+       Accepts the following tokens:
+          + lat - Latitude
+          + lon - Longitude
+          + cont - Continent
+          + cc - Country Code
+          + reg - Region
+          + city - City
+          + pc - Postal Code
+          + dma - DMA Code
+          + ac - Area Code, only available in the legacy GeoIP
+            database
+          + tz - Time Zone
+     * src (string) - IP address
+     * dst (var) - AVP to return the information associated with
+       the IP in.
 
    When using the GeoIP2 library, each token from the list given
    in the fields parameter can be provided as a path to a specific
@@ -167,14 +170,14 @@ modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 
    Example 1.3. mmg_lookup usage
 ...
-if(mmg_lookup("lon:lat","$si","$avp(lat_lon)")) {
+if(mmg_lookup("lon:lat",$si,$avp(lat_lon))) {
   xlog("L_INFO","Source IP latitude:$(avp(lat_lon)[0])\n");
   xlog("L_INFO","Source IP longitude:$(avp(lat_lon)[1])\n");
 };
 ...
 # fields format only supported for GeoIP2
-if(mmg_lookup("continent.names.en:country.iso_code,","$si","$avp(geodata
-)")) {
+if(mmg_lookup("continent.names.en:country.iso_code,",$si,$avp(geodata)))
+ {
   xlog("L_INFO","Source IP country code:$(avp(geodata)[0])\n");
   xlog("L_INFO","Source IP continent:$(avp(geodata)[1])\n");
 };
@@ -192,7 +195,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 14 4 638 228
+   1. Vlad Patrascu (@rvlad-patrascu) 16 5 653 238
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 32 24
    3. Liviu Chircu (@liviuchircu) 8 6 14 35
    4. Kobi Eshun (@ekobi) 8 3 480 4
@@ -222,8 +225,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Apr 2019
    3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5. Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2017

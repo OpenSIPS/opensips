@@ -24,14 +24,13 @@ rest_client Module
 
         1.4. Exported Functions
 
-              1.4.1. rest_get(url, body_pv[, [ctype_pv][,
-                      [retcode_pv]]])
+              1.4.1. rest_get(url, body_pv, [ctype_pv],
+                      [retcode_pv])
 
-              1.4.2. rest_post(url, send_body_pv, [send_ctype_pv],
-                      recv_body_pv[, [recv_ctype_pv][,
-                      [retcode_pv]]])
+              1.4.2. rest_post(url, send_body, [send_ctype],
+                      recv_body_pv, [recv_ctype_pv], [retcode_pv])
 
-              1.4.3. rest_put(url, send_body_pv, [send_ctype_pv],
+              1.4.3. rest_put(url, send_body, [send_ctype],
                       recv_body_pv[, [recv_ctype_pv][,
                       [retcode_pv]]])
 
@@ -231,24 +230,20 @@ modparam("rest_client", "curl_http_version", 3)
 
 1.4. Exported Functions
 
-1.4.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
+1.4.1.  rest_get(url, body_pv, [ctype_pv], [retcode_pv])
 
    Perform a blocking HTTP GET on the given url and return a
    representation of the resource.
 
-   The body_pv pseudo-var will hold the body of the HTTP response.
-
-   The optional ctype_pv pseudo-var will contain the value of the
-   "Content-Type:" header of the response.
-
-   The optional retcode_pv pseudo-var will retain the status code
-   of the HTTP response. A 0 status code value means no HTTP reply
-   arrived at all.
-
-   Parameter Types
-     * url - string, pseudo-variable or pseudo-variable format
-       string
-     * body_pv, ctype_pv, retcode_pv - pseudo-variables
+   Parameters:
+     * url (string)
+     * body_pv (var) - variable that will hold the body of the
+       HTTP response.
+     * ctype_pv (var, optional) - variable thah will contain the
+       value of the "Content-Type:" header of the response.
+     * retcode_pv (var, optional) - variable that will retain the
+       status code of the HTTP response. A 0 status code value
+       means no HTTP reply arrived at all.
 
    Return Codes
      * 1 - Success
@@ -270,50 +265,45 @@ modparam("rest_client", "curl_http_version", 3)
 ...
 # Example of querying a REST service to get the credit of an account
 $var(rc) = rest_get("https://getcredit.org/?account=$fU",
-                    "$var(credit)",
-                    "$var(ct)",
-                    "$var(rcode)");
+                    $var(credit),
+                    $var(ct),
+                    $var(rcode));
 if ($var(rc) < 0) {
         xlog("rest_get() failed with $var(rc), acc=$fU\n");
-        send_reply("500", "Server Internal Error");
+        send_reply(500, "Server Internal Error");
         exit;
 }
 
 if ($var(rcode) != 200) {
         xlog("L_INFO", "rest_get() rcode=$var(rcode), acc=$fU\n");
-        send_reply("403", "Forbidden");
+        send_reply(403, "Forbidden");
         exit;
 }
 ...
 
-1.4.2.  rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
-[recv_ctype_pv][, [retcode_pv]]])
+1.4.2.  rest_post(url, send_body, [send_ctype], recv_body_pv,
+[recv_ctype_pv], [retcode_pv])
 
-   Perform a blocking HTTP POST on the given url. The request body
-   will be copied from the send_body_pv pseudo-variable. The MIME
-   Content-Type header for the request will be taken from
-   send_ctype_pv (the default is
-   "application/x-www-form-urlencoded")
+   Perform a blocking HTTP POST on the given url.
 
-   Note that the send_body_pv parameter can also accept a
+   Note that the send_body parameter can also accept a
    format-string but it cannot be larger than 1024 bytes. For
    larger messages, you must build them in a pseudo-variable and
    pass it to the function.
 
-   The mandatory recv_body_pv pseudo-var will hold the body of the
-   HTTP response.
-
-   The optional recv_ctype_pv parameter will contain the value of
-   the "Content-Type" header of the response.
-
-   The optional retcode_pv pseudo-var will retain the status code
-   of the HTTP response. A 0 status code value means no HTTP reply
-   arrived at all.
-
-   Parameter Types
-     * url, send_body_pv, send_type_pv - string, pseudo-variable
-       or pseudo-variable format string
-     * body_pv, ctype_pv, retcode_pv - pseudo-variables
+   Parameters:
+     * url (string)
+     * send_body (string) - The request body.
+     * send_ctype (string, optional) - The MIME Content-Type
+       header for the request. The default is
+       "application/x-www-form-urlencoded"
+     * recv_body_pv (var) - the variable will hold the body of the
+       HTTP response.
+     * recv_ctype_pv (var, optional) - will contain the value of
+       the "Content-Type" header of the response
+     * retcode_pv (var, optional) - variable that will retain the
+       status code of the HTTP response. A 0 status code value
+       means no HTTP reply arrived at all.
 
    Return Codes
      * 1 - Success
@@ -335,49 +325,44 @@ if ($var(rcode) != 200) {
 ...
 # Creating a resource using a RESTful service with an HTTP POST request
 $var(rc) = rest_post("https://myserver.org/register_user",
-                     "$fU", , "$var(body)", "$var(ct)", "$var(rcode)");
+                     $fU, , $var(body), $var(ct), $var(rcode));
 if ($var(rc) < 0) {
         xlog("rest_post() failed with $var(rc), user=$fU\n");
-        send_reply("500", "Server Internal Error 1");
+        send_reply(500, "Server Internal Error 1");
         exit;
 }
 
 if ($var(rcode) != 200) {
         xlog("rest_post() rcode=$var(rcode), user=$fU\n");
-        send_reply("500", "Server Internal Error 2");
+        send_reply(500, "Server Internal Error 2");
         exit;
 }
 ...
 
 
-1.4.3.  rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
+1.4.3.  rest_put(url, send_body, [send_ctype], recv_body_pv[,
 [recv_ctype_pv][, [retcode_pv]]])
 
-   Perform a blocking HTTP PUT on the given url. The request body
-   will be copied from the send_body_pv pseudo-variable. The MIME
-   Content-Type header for the request will be taken from
-   send_ctype_pv (the default is
-   "application/x-www-form-urlencoded")
+   Perform a blocking HTTP PUT on the given url.
 
    Similar to rest_post(), the send_body_pv parameter can also
    accept a format-string but it cannot be larger than 1024 bytes.
    For larger messages, you must build them in a pseudo-variable
    and pass it to the function.
 
-   The mandatory recv_body_pv pseudo-var will hold the body of the
-   HTTP response.
-
-   The optional recv_ctype_pv parameter will contain the value of
-   the "Content-Type" header of the response message.
-
-   The optional retcode_pv pseudo-var will retain the status code
-   of the HTTP response. A 0 status code value means no HTTP reply
-   arrived at all.
-
-   Parameter Types
-     * url, send_body_pv, send_type_pv - string, pseudo-variable
-       or pseudo-variable format string
-     * body_pv, ctype_pv, retcode_pv - pseudo-variables
+   Parameters:
+     * url (string)
+     * send_body (string) - The request body.
+     * send_ctype (string, optional) - The MIME Content-Type
+       header for the request. The default is
+       "application/x-www-form-urlencoded"
+     * recv_body_pv (var) - the variable will hold the body of the
+       HTTP response.
+     * recv_ctype_pv (var, optional) - will contain the value of
+       the "Content-Type" header of the response
+     * retcode_pv (var, optional) - variable that will retain the
+       status code of the HTTP response. A 0 status code value
+       means no HTTP reply arrived at all.
 
    Return Codes
      * 1 - Success
@@ -400,17 +385,17 @@ if ($var(rcode) != 200) {
 # Creating/Updating a resource using a RESTful service with an HTTP PUT
 request
 $var(rc) = rest_put("https://myserver.org/users/$fU",
-                    "$var(userinfo)", , "$var(body)", "$var(ct)", "$var(
-rcode)");
+                    $var(userinfo), , $var(body), $var(ct), $var(rcode))
+;
 if ($var(rc) < 0) {
         xlog("rest_put() failed with $var(rc), user=$fU\n");
-        send_reply("500", "Server Internal Error 3");
+        send_reply(500, "Server Internal Error 3");
         exit;
 }
 
 if ($var(rcode) != 200) {
         xlog("rest_put() rcode=$var(rcode), user=$fU\n");
-        send_reply("500", "Server Internal Error 4");
+        send_reply(500, "Server Internal Error 4");
         exit;
 }
 ...
@@ -424,10 +409,8 @@ if ($var(rcode) != 200) {
    The contents of txt should adhere to the specification for HTTP
    headers (ex. Field: Value)
 
-   Parameter types
-     * txt - String, pseudo-variable, or a String which includes
-       pseudo-variables. (useful for specifying additional
-       attribute-value fields in the URL)
+   Parameters
+     * txt (string)
 
    This function can be used from any route.
 
@@ -436,8 +419,7 @@ if ($var(rcode) != 200) {
 # Example of querying a REST service requiring additional headers
 
 rest_append_hf("Authorization: Bearer mF_9.B5f-4.1JqM");
-$var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)")
-;
+$var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 ...
 
 1.4.5.  rest_init_client_tls(tls_client_domain)
@@ -449,9 +431,8 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)")
    If using this function, you must also ensure that tls_mgm is
    loaded and properly configured.
 
-   Parameter types
-     * tls_client_domain - string, pseudo-variable, or a string
-       which includes pseudo-variables.
+   Parameters
+     * tls_client_domain (string)
 
    This function can be used from any route.
 
@@ -476,7 +457,7 @@ if (!rest_get("https://example.com"))
 route {
         ...
         async(rest_get("http://getcredit.org/?account=$fU",
-                       "$var(credit)", , "$var(rcode)"), resume);
+                       $var(credit), , $var(rcode)), resume);
 }
 
 route [resume] {
@@ -484,14 +465,14 @@ route [resume] {
         if ($var(rc) < 0) {
                 xlog("async rest_get() failed with $var(rc), acc=$fU\n")
 ;
-                send_reply("500", "Server Internal Error");
+                send_reply(500, "Server Internal Error");
                 exit;
         }
 
         if ($var(rcode) != 200) {
                 xlog("L_INFO", "async rest_get() rcode=$var(rcode), acc=
 $fU\n");
-                send_reply("403", "Forbidden");
+                send_reply(403, "Forbidden");
                 exit;
         }
 
@@ -511,8 +492,8 @@ $fU\n");
 route {
         ...
         async(rest_post("http://myserver.org/register_user",
-                        "$fU", , "$var(body)", "$var(ct)", "$var(rcode)"
-), resume);
+                        $fU, , $var(body), $var(ct), $var(rcode)), resum
+e);
 }
 
 route [resume] {
@@ -520,12 +501,12 @@ route [resume] {
         if ($var(rc) < 0) {
                 xlog("async rest_post() failed with $var(rc), user=$fU\n
 ");
-                send_reply("500", "Server Internal Error 1");
+                send_reply(500, "Server Internal Error 1");
                 exit;
         }
         if ($var(rcode) != 200) {
                 xlog("async rest_post() rcode=$var(rcode), user=$fU\n");
-                send_reply("500", "Server Internal Error 2");
+                send_reply(500, "Server Internal Error 2");
                 exit;
         }
 
@@ -545,10 +526,9 @@ route [resume] {
    Example 1.16. async rest_put usage
 route {
         ...
-        async(rest_put("http://myserver.org/users/$fU", "$var(userinfo)"
-, ,
-                       "$var(body)", "$var(ct)", "$var(rcode)"), resume)
-;
+        async(rest_put("http://myserver.org/users/$fU", $var(userinfo),
+,
+                       $var(body), $var(ct), $var(rcode)), resume);
 }
 
 route [resume] {
@@ -556,12 +536,12 @@ route [resume] {
         if ($var(rc) < 0) {
                 xlog("async rest_put() failed with $var(rc), user=$fU\n"
 );
-                send_reply("500", "Server Internal Error 3");
+                send_reply(500, "Server Internal Error 3");
                 exit;
         }
         if ($var(rcode) != 200) {
                 xlog("async rest_put() rcode=$var(rcode), user=$fU\n");
-                send_reply("500", "Server Internal Error 4");
+                send_reply(500, "Server Internal Error 4");
                 exit;
         }
 
@@ -577,8 +557,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 113 59 3391 1487
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
-   3. Razvan Crainea (@razvancrainea) 11 9 31 16
-   4. Vlad Patrascu (@rvlad-patrascu) 11 4 176 229
+   3. Vlad Patrascu (@rvlad-patrascu) 15 5 279 341
+   4. Razvan Crainea (@razvancrainea) 11 9 31 16
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 114 47
    6. Jarrod Baumann (@jarrodb) 6 3 131 32
    7. Agalya Ramachandran (@AgalyaR) 6 2 354 1
@@ -606,9 +586,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
@@ -624,8 +604,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan Crainea
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Razvan Crainea
    (@razvancrainea), Agalya Ramachandran (@AgalyaR), Jarrod
    Baumann (@jarrodb), Bogdan-Andrei Iancu (@bogdan-iancu).
 

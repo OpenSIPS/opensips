@@ -25,7 +25,7 @@ freeswitch_scripting Module
         1.4. Exported Functions
 
               1.4.1. freeswitch_esl(command, freeswitch_url[,
-                      response_pvar])
+                      response_var])
 
         1.5. Exported MI Commands
 
@@ -199,7 +199,7 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:802
 
 1.4. Exported Functions
 
-1.4.1.  freeswitch_esl(command, freeswitch_url[, response_pvar])
+1.4.1.  freeswitch_esl(command, freeswitch_url[, response_var])
 
    Run an arbitrary command on an arbitrary FreeSWITCH ESL socket.
    The socket need not necessarily be defined in the database or
@@ -212,15 +212,14 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:802
    connection manager module.
 
    Meaning of the parameters is as follows:
-     * command - the ESL command string to execute. Includes
-       support for variables.
-     * freeswitch_url - the ESL interface to connect to. The
-       syntax is:
+     * command (string) - the ESL command string to execute.
+     * freeswitch_url (string) - the ESL interface to connect to.
+       The syntax is:
        [fs://][[username]:password@]host[:port][?event1[,event2]..
        .]. The "?events" part of the URL will be silently
        discarded.
-     * response_pvar (optional) - a variable which will hold the
-       text result of the ESL command.
+     * response_var (var, optional) - a variable which will hold
+       the text result of the ESL command.
 
    Return value
      * 1 (success) - the ESL command executed successfully and any
@@ -246,8 +245,8 @@ eCon")
 ...
         # ESL socket 10.0.0.10 is new, we must specify a password
         $var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123
-456789}user/1010 9386\njob-uuid: foobar", ":ClueCon@10.0.0.10", "$var(re
-sponse)");
+456789}user/1010 9386\njob-uuid: foobar", ":ClueCon@10.0.0.10", $var(res
+ponse));
         if (!$var(rc)) {
                 xlog("failed to execute ESL command ($var(rc))\n");
                 return -1;
@@ -324,7 +323,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 41 21 1907 258
-   2. Vlad Patrascu (@rvlad-patrascu) 7 2 131 118
+   2. Vlad Patrascu (@rvlad-patrascu) 8 3 137 124
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
    4. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -348,8 +347,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     Jan 2019 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     Jan 2019 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
    3. Liviu Chircu (@liviuchircu)         Dec 2017 - Feb 2019
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
@@ -360,8 +359,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
 

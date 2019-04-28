@@ -20,7 +20,7 @@ JSON-RPC Module
         1.4. Exported Functions
 
               1.4.1. jsonrpc_request(destination, method, params,
-                      ret_pvar)
+                      ret_var)
 
               1.4.2. jsonrpc_notification(destination, method,
                       params)
@@ -115,7 +115,7 @@ modparam("jsonrpc", "read_timeout", 300)
 
 1.4. Exported Functions
 
-1.4.1.  jsonrpc_request(destination, method, params, ret_pvar)
+1.4.1.  jsonrpc_request(destination, method, params, ret_var)
 
    Does a JSON-RPC request to the JSON-RPC server indicated in the
    destination parameter, and waits for a reply from it.
@@ -123,13 +123,14 @@ modparam("jsonrpc", "read_timeout", 300)
    This function can be used from any route.
 
    The function has the following parameters:
-     * destination - address of the JSON-RPC server. The format
-       needs to be IP:port.
-     * method - the method used in the RPC request.
-     * params - these are the parameters sent to the RPC method.
-       This parameter needs to be a properly formated JSON array,
-       or JSON object, according the the JSON-RPC specifications.
-     * ret_pvar a writeable variable used to store the result of
+     * destination (string) - address of the JSON-RPC server. The
+       format needs to be IP:port.
+     * method (string) - the method used in the RPC request.
+     * params (string) - these are the parameters sent to the RPC
+       method. This parameter needs to be a properly formated JSON
+       array, or JSON object, according the the JSON-RPC
+       specifications.
+     * ret_var a writeable variable used to store the result of
        the JSON-RPC command. If the command returns an error, the
        variable will be populated with the error JSON, otherwise,
        with the body of the JSON-RPC result.
@@ -147,8 +148,7 @@ modparam("jsonrpc", "read_timeout", 300)
 
    Example 1.4. jsonrpc_request() function usage
         ...
-        if (!jsonrpc_request("127.0.0.1", "add", "[1,2]", "$var(ret)"))
-{
+        if (!jsonrpc_request("127.0.0.1", "add", "[1,2]", $var(ret))) {
                 xlog("JSON-RPC command failed with $var(ret)\n");
                 exit;
         }
@@ -185,7 +185,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 12 3 927 10
    2. Liviu Chircu (@liviuchircu) 6 4 16 32
-   3. Vlad Patrascu (@rvlad-patrascu) 5 1 27 122
+   3. Vlad Patrascu (@rvlad-patrascu) 6 2 33 128
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
    5. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -209,8 +209,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2018 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2018 - Apr 2019
    3. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2018
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5. Razvan Crainea (@razvancrainea)     Mar 2018 - Mar 2018
@@ -222,8 +222,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea).
 
    Documentation Copyrights:
 

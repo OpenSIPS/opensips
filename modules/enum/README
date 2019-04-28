@@ -18,7 +18,7 @@ Enum Module
 
         1.4. Exported Functions
 
-              1.4.1. enum_query([number], [suffix], [service])
+              1.4.1. enum_query([suffix], [service], [number])
               1.4.2. i_enum_query([suffix], [service])
               1.4.3. isn_query([suffix], [service])
               1.4.4. is_from_user_enum([suffix], [service])
@@ -244,7 +244,7 @@ modparam("enum", "bl_algorithm", "txt")
 
 1.4. Exported Functions
 
-1.4.1.  enum_query([number], [suffix], [service])
+1.4.1.  enum_query([suffix], [service], [number])
 
    The function performs an ENUM query on a given E.164 "number"
    (or R-URI username if "number" is missing) and rewrites the
@@ -252,35 +252,36 @@ modparam("enum", "bl_algorithm", "txt")
    information.
 
    Meaning of the parameters is as follows:
-     * number (string, optional) - an E.164 number packed as a
-       string on which the ENUM query is performed
      * suffix (string, optional) - suffix to be appended to the
        domain name, domain_suffix if missing
      * service (string, optional) - service string to be used in
        the service field
+     * number (string, optional) - a specific E.164 number packed
+       as a string on which the ENUM query is performed (if
+       missing the R-URI username ($rU) will be used).
 
    This function can be used from REQUEST_ROUTE.
 
    Example 1.9. enum_query usage
 ...
 # search for "e2u+sip" in freenum.org
-enum_query($avp(number), "freenum.org.");
+enum_query("freenum.org.", , $avp(number));
 ...
 # search for "e2u+sip" in default tree (configured as parameter)
 enum_query();
 ...
 # search for "e2u+voice:sip" in e164.arpa
-enum_query(, "e164.arpa.", "voice");
+enum_query("e164.arpa.", "voice");
 ...
 # search for service type "sip" or "voice:sip" or "video:sip"
 # note the '+' sign in front of the second parameter
-enum_query($avp(number), "e164.arpa.", "+sip+voice:sip+video:sip");
+enum_query("e164.arpa.", "+sip+voice:sip+video:sip", $avp(number));
 ...
 # querying for service sip and voice:sip
-enum_query(, "e164.arpa.");
-enum_query(, "e164.arpa.", "voice");
+enum_query("e164.arpa.");
+enum_query("e164.arpa.", "voice");
 # or use instead
-enum_query(, "e164.arpa.", "+sip+voice:sip");
+enum_query("e164.arpa.", "+sip+voice:sip");
 ...
 
 1.4.2.  i_enum_query([suffix], [service])
@@ -361,7 +362,7 @@ Chapter 2. Contributors
    1. Juha Heinanen (@juha-h) 36 14 1681 396
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 23 302 96
    3. Jan Janak (@janakj) 19 14 345 75
-   4. Liviu Chircu (@liviuchircu) 18 9 223 359
+   4. Liviu Chircu (@liviuchircu) 19 10 240 375
    5. Daniel-Constantin Mierla (@miconda) 14 12 46 55
    6. Henning Westerholt (@henningw) 8 3 14 190
    7. Vlad Patrascu (@rvlad-patrascu) 8 2 47 233
@@ -369,8 +370,8 @@ Chapter 2. Contributors
    9. Razvan Crainea (@razvancrainea) 5 3 16 16
    10. Andrei Pelinescu-Onciul 5 3 11 7
 
-   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
-   Dan Pascu (@danpascu), Klaus Darilion, Konstantin Bokarius,
+   All remaining contributors: Dan Pascu (@danpascu), Jiri Kuthan
+   (@jiriatipteldotorg), Klaus Darilion, Konstantin Bokarius,
    Klaus Darilion, Andreas Granig, Peter Lemenkov (@lemenkov),
    Edson Gellert Schubert, Dusan Klinec.
 
@@ -394,8 +395,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Dan Pascu (@danpascu)               Apr 2019 - Apr 2019
-   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
+   2.  Dan Pascu (@danpascu)               Apr 2019 - Apr 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Apr 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -417,8 +418,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   Last edited by: Liviu Chircu (@liviuchircu), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
    (@bogdan-iancu), Razvan Crainea (@razvancrainea), Juha Heinanen
    (@juha-h), Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Greg Fausak, Klaus Darilion,

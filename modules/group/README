@@ -31,9 +31,9 @@ group Module
 
         1.4. Exported Functions
 
-              1.4.1. db_is_user_in(URI, group)
-              1.4.2. db_get_user_group(URI, AVP)
-              1.4.3. aaa_is_user_in(URI, group)
+              1.4.1. db_is_user_in(uri, group)
+              1.4.2. db_get_user_group(uri, output_avp)
+              1.4.3. aaa_is_user_in(uri, group)
 
    2. Contributors
 
@@ -261,24 +261,22 @@ onf")
 
 1.4. Exported Functions
 
-1.4.1.  db_is_user_in(URI, group)
+1.4.1.  db_is_user_in(uri, group)
 
    This function is to be used for script group membership. The
    function returns true if username in the given URI is member of
    the given group and false if not.
 
    Meaning of the parameters is as follows:
-     * URI - URI whose username and optionally domain to be used,
-       this can be one of:
-          + Request-URI - Use Request-URI username and
+     * uri (string) - a SIP URI whose username and optionally
+       domain to be used. Possible values:
+          + "Request-URI" - Use Request-URI username and
             (optionally) domain.
-          + To - Use To username and (optionally) domain.
-          + From - Use From username and (optionally) domain.
-          + Credentials - Use digest credentials username.
-          + $avp(name) - Use the URI from the AVP specified by
-            this pseudo-variable.
-     * group - Name of the group to check. The string may contain
-       a pseudovariable.
+          + "To" - Use To username and (optionally) domain.
+          + "From" - Use From username and (optionally) domain.
+          + "Credentials" - Use digest credentials username.
+          + (default) - parse the given input as a SIP URI
+     * group (string) - the group to check
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
@@ -287,62 +285,65 @@ onf")
 ...
 if (db_is_user_in("Request-URI", "ld")) {
         ...
-};
+}
 ...
 $avp(grouptocheck)="offline";
 
-if (db_is_user_in("Credentials", "$avp(grouptocheck)")) {
+if (db_is_user_in("Credentials", $avp(grouptocheck))) {
         ...
-};
+}
 ...
 
 
-1.4.2.  db_get_user_group(URI, AVP)
+1.4.2.  db_get_user_group(uri, output_avp)
 
    This function is to be used for regular expression based group
-   membership, using DB support. The function returns true if
-   username in the given URI belongs to at least one group; the
-   group ID(s) are returned as AVPs.
+   membership, using DB support. The function returns true if the
+   username in the given "uri" belongs to at least one group.
+
+   All matching group IDs shall be returned in "output_avp" if
+   multiple_gid is enabled, otherwise only the first one to match
+   (the records are attempted in reversed order of the results
+   returned by the RDBMS).
 
    Meaning of the parameters is as follows:
-     * URI - URI to be matched against the regular expressions:
-          + Request-URI - Use Request-URI
-          + To - Use To URI.
-          + From - Use From URI
-          + Credentials - Use digest credentials username and
+     * uri (string) - a SIP URI to be matched against the regular
+       expressions:
+          + "Request-URI" - Use Request-URI
+          + "To" - Use To URI.
+          + "From" - Use From URI
+          + "Credentials" - Use digest credentials username and
             realm.
-          + $avp(name) - Use the URI from the AVP specified by
-            this pseudo-variable.
-     * AVP - $avp(name) - the matched group IDs are returned in
-       this AVP.
+          + (default) - parse the given input as a SIP URI
+     * output_avp (var) - a list of matched group IDs
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
    Example 1.13. db_get_user_group usage
 
 ...
-if (db_get_user_group("Request-URI", "$avp(10)")) {
-    xdbg("User $ru belongs to $(avp(10)[*]) group(s)\n");
+if (db_get_user_group("Request-URI", $avp(10))) {
+    xdbg("User $ru belongs to the following groups: $(avp(10)[*])\n");
     ....
 };
 ...
 
 
-1.4.3.  aaa_is_user_in(URI, group)
+1.4.3.  aaa_is_user_in(uri, group)
 
    This function checks group membership, using AAA support. The
-   function returns true if username in the given URI is member of
-   the given group and false if not.
+   function returns true if username in the given "uri" is member
+   of the given group and false if not.
 
    Meaning of the parameters is as follows:
-     * URI - URI whose username and optionally domain to be used,
-       this can be one of:
-          + Request-URI - Use Request-URI username and
+     * uri (string) - a SIP URI whose username and optionally
+       domain to be used, this can be one of:
+          + "Request-URI" - Use Request-URI username and
             (optionally) domain.
-          + To - Use To username and (optionally) domain.
-          + From - Use From username and (optionally) domain.
-          + Credentials - Use digest credentials username.
-     * group - Name of the group to check.
+          + "To" - Use To username and (optionally) domain.
+          + "From" - Use From username and (optionally) domain.
+          + "Credentials" - Use digest credentials username.
+     * group (string) - Name of the group to check.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -365,7 +366,7 @@ Chapter 2. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 45 30 848 395
    2. Jan Janak (@janakj) 34 20 1370 148
    3. Daniel-Constantin Mierla (@miconda) 25 18 176 226
-   4. Liviu Chircu (@liviuchircu) 12 9 40 80
+   4. Liviu Chircu (@liviuchircu) 14 10 80 132
    5. Irina-Maria Stanescu 10 4 466 59
    6. Andrei Pelinescu-Onciul 7 5 101 40
    7. Henning Westerholt (@henningw) 7 5 27 46
@@ -398,9 +399,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
    6.  Irina-Maria Stanescu                Aug 2009 - Dec 2009
@@ -422,8 +423,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
    Crainea (@razvancrainea), Irina-Maria Stanescu, Sergio
    Gutierrez, Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Jan

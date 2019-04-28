@@ -31,8 +31,8 @@ SipCapture Module
 
         1.4. Exported Functions
 
-              1.4.1. sip_capture([table_name][, [custom_field1][,
-                      [custom_field2][, [custom_field3]]]])
+              1.4.1. sip_capture([table_name], [custom_field1],
+                      [custom_field2], [custom_field3])
 
               1.4.2. report_capture(correlation_id, [table_name],
                       [proto_type])
@@ -369,21 +369,21 @@ route[my_hep_route] {
 
 1.4. Exported Functions
 
-1.4.1.  sip_capture([table_name][, [custom_field1][,
-[custom_field2][, [custom_field3]]]])
+1.4.1.  sip_capture([table_name], [custom_field1], [custom_field2],
+[custom_field3])
 
    Save the message into the database.
 
    Meaning of the parameters is as follows:
-     * table_name (string) - the name of the table to store the
-       packet; it can have a strftime-like formatted suffix in
-       order to change it's name based on time; if not set,
-       modparam defined table will be used;
-       custom_field1 (string or pvar) - custom data to store
+     * table_name (string, optional) - the name of the table to
+       store the packet; it can have a strftime-like formatted
+       suffix in order to change it's name based on time; if not
+       set, modparam defined table will be used;
+       custom_field1 (string, optional) - custom data to store
        inside the "custom_field1" column
-       custom_field2 (string or pvar) - custom data to store
+       custom_field2 (string, optional) - custom data to store
        inside the "custom_field2" column
-       custom_field3 (string or pvar) - custom data to store
+       custom_field3 (string, optional) - custom data to store
        inside the "custom_field3" column
 
    This function can be used from
@@ -397,15 +397,14 @@ if (is_method("REGISTER"))
         ...
         /* table name will change every day */
         sip_capture("homer_%m_%d");
-        sip_capture("homer_%m_%d", , "$hdr(P-Asserted-Identity)");
+        sip_capture("homer_%m_%d", , $hdr(P-Asserted-Identity));
 ...
 
 1.4.2.  report_capture(correlation_id, [table_name], [proto_type])
 
    Save the message into the database. If you want set the
    protocol type you have to define the table name, even if you
-   pass over
-   it(report_capture("$var(cor_id)",,"$var(proto_type)")).
+   pass over it(report_capture($var(cor_id),,$var(proto_type))).
 
    Meaning of the parameters is as follows:
      * correlation_id (string)
@@ -434,12 +433,12 @@ if (is_method("REGISTER"))
 
         $var(proto_type) = "3"; /* 0x03 - SDP protocol */
 
-        report_capture("$var(correlation_id)", "rtcp_log");
+        report_capture($var(correlation_id), "rtcp_log");
         /* setting the 2nd parameter, even if setting it to null, is man
 datory in order to be able to set proto type */
-        report_capture("$var(correlation_id)", , "$var(proto_type)");
-        report_capture("$var(correlation_id)", "rtcp_log", "$var(proto_t
-ype)");
+        report_capture($var(correlation_id), , $var(proto_type));
+        report_capture($var(correlation_id), "rtcp_log", $var(proto_type
+));
 ...
 
 1.4.3.  hep_set(chunk_id, chunk_data, [data_type], [vendor_id])
@@ -502,7 +501,7 @@ ype)");
           + 0x000C - captagent_id
           + 0x000f - payload
           + 0x0010 - payload
-     * data(string) - data that the chunk shall contain;
+     * chunk_data(string) - data that the chunk shall contain;
        internally it shall be converted to the requested data type
      * data_type (string, optional, default: "utf8-string") - data
        type of the data in the chunk. It can have the following
@@ -542,9 +541,9 @@ hep_set("32", "192.168.5.14", "inet4-addr", "3")
      * chunk_id (string) - same meaning as in hep_set()
      * data_type (string) - same meaning as in hep_set(); can miss
        if it's a generic chunk
-     * chunk_data_pv (writable pvar, optional) - will hold the
-       data inside the chunk; some of the generic chunk data come
-       in specific format, as following:
+     * chunk_data_pv (writable var, optional) - will hold the data
+       inside the chunk; some of the generic chunk data come in
+       specific format, as following:
           + 0x0001 - proto_family(string) - AF_INET/AF_INET6
           + 0x0002 proto_id(string) - see hep_set() for possible
             values
@@ -554,7 +553,7 @@ hep_set("32", "192.168.5.14", "inet4-addr", "3")
             readable format
           + 0x000B proto_type(string) - see hep_set() for possible
             values
-     * vendor_id_pv (writable pvar, optional) - will hold the
+     * vendor_id_pv (writable var, optional) - will hold the
        vendor id(int value) of the chunk
 
    Example 1.19. hep_set usage
@@ -756,7 +755,7 @@ Chapter 2. Contributors
    3. Alexandr Dubovikov (@adubovikov) 21 2 2360 0
    4. Razvan Crainea (@razvancrainea) 15 13 29 16
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 15 12 99 90
-   6. Vlad Patrascu (@rvlad-patrascu) 7 5 57 39
+   6. Vlad Patrascu (@rvlad-patrascu) 8 6 70 52
    7. Vlad Paiu (@vladpaiu) 3 1 3 3
    8. Dusan Klinec 3 1 1 1
    9. Ezequiel Lovelle 3 1 1 1
@@ -785,10 +784,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Apr 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Mar 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -806,9 +805,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
-   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
    (@vladpaiu), Alexandr Dubovikov (@adubovikov).
 
    Documentation Copyrights:

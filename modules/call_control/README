@@ -452,7 +452,7 @@ modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
    Example 1.13. Using the call_control function
 
 ...
-if (is_avp_set("$avp(805)")) {
+if (is_avp_set($avp(805))) {
     # the diverter AVP is set, use it as billing party
     $avp(billing_party_domain) = $(avp(805){uri.domain});
 } else {
@@ -460,7 +460,7 @@ if (is_avp_set("$avp(805)")) {
 }
 
 if (is_method("INVITE") && !has_totag() &&
-    is_domain_local("$avp(billing_party_domain)")) {
+    is_domain_local($avp(billing_party_domain))) {
     call_control();
     switch ($retcode) {
     case 2:
@@ -470,29 +470,29 @@ if (is_method("INVITE") && !has_totag() &&
         break;
     case -1:
         # Not enough credit (prepaid call)
-        sl_send_reply("402", "Not enough credit");
+        sl_send_reply(402, "Not enough credit");
         exit;
         break;
     case -2:
         # Locked by another call in progress (prepaid call)
-        sl_send_reply("403", "Call locked by another call in progress");
+        sl_send_reply(403, "Call locked by another call in progress");
         exit;
         break;
     case -3:
         # Duplicated callid
-        sl_send_reply("400", "Duplicated callid");
+        sl_send_reply(400, "Duplicated callid");
         exit;
         break;
     case -4:
         # Call limit reached
-        sl_send_reply("503", "Too many concurrent calls");
+        sl_send_reply(503, "Too many concurrent calls");
         exit;
         break;
     default:
         # Internal error (message parsing, communication, ...)
         if (PREPAID_ACCOUNT) {
             xlog("Call control: internal server error\n");
-            sl_send_reply("500", "Internal server error");
+            sl_send_reply(500, "Internal server error");
             exit;
         } else {
             xlog("L_WARN", "Cannot set time limit for postpaid call\n");
@@ -515,8 +515,8 @@ Chapter 2. Contributors
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 16 47
    5. Razvan Crainea (@razvancrainea) 8 6 54 32
    6. Irina-Maria Stanescu 6 2 356 17
-   7. Vlad Paiu (@vladpaiu) 4 2 5 12
-   8. Vlad Patrascu (@rvlad-patrascu) 4 2 4 2
+   7. Vlad Patrascu (@rvlad-patrascu) 5 3 11 9
+   8. Vlad Paiu (@vladpaiu) 4 2 5 12
    9. Julián Moreno Patiño 3 1 2 2
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -542,9 +542,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Dan Pascu (@danpascu)               Dec 2008 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Dan Pascu (@danpascu)               Dec 2008 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - Apr 2019
    4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Dec 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Razvan Crainea (@razvancrainea)     Jul 2010 - Mar 2017
@@ -562,10 +562,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan Crainea
-   (@razvancrainea), Irina-Maria Stanescu.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Dan Pascu
+   (@danpascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Saúl Ibarra
+   Corretgé (@saghul), Razvan Crainea (@razvancrainea),
+   Irina-Maria Stanescu.
 
    Documentation Copyrights:
 

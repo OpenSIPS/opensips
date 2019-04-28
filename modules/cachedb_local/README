@@ -226,6 +226,10 @@ modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
    is different than group name, which identifies the engine in
    cachedb operations.
 
+   Parameters:
+     * collection (string, optional)
+     * glob (string)
+
    This function can be used from all routes
 
    Example 1.6. cache_remove_chunk usage
@@ -280,7 +284,7 @@ Chapter 3. Contributors
    5. Andrei Dragus 10 4 182 181
    6. Fabian Gast (@fgast) 9 3 517 48
    7. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
-   8. Vlad Patrascu (@rvlad-patrascu) 7 4 42 58
+   8. Vlad Patrascu (@rvlad-patrascu) 8 5 51 58
    9. Razvan Crainea (@razvancrainea) 4 2 5 5
    10. Dusan Klinec 3 1 4 4
 
@@ -307,9 +311,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
    4.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
@@ -328,10 +332,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
-   Gast (@fgast), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
-   (@vladpaiu), Andrei Dragus, Anca Vamanu.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Andrei Dragus,
+   Anca Vamanu.
 
    Documentation Copyrights:
 

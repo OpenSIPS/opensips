@@ -70,7 +70,7 @@ dialog Module
 
         1.7. Exported Functions
 
-              1.7.1. create_dialog()
+              1.7.1. create_dialog([flags])
               1.7.2. match_dialog([dlg_match_mode])
               1.7.3. validate_dialog()
               1.7.4. fix_route_dialog()
@@ -94,7 +94,7 @@ dialog Module
               1.7.15. reset_dlg_flag(idx)
               1.7.16. is_dlg_flag_set(idx)
               1.7.17. store_dlg_value(name,val)
-              1.7.18. fetch_dlg_value(name,pvar)
+              1.7.18. fetch_dlg_value(name,val)
               1.7.19. set_dlg_sharing_tag(tag_name)
 
         1.8. Exported Statistics
@@ -1075,7 +1075,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
 
 1.7. Exported Functions
 
-1.7.1.  create_dialog()
+1.7.1.  create_dialog([flags])
 
    The function creats the dialog for the currently processed
    request. The request must be an initial request. Optionally,the
@@ -1093,6 +1093,9 @@ modparam("dialog", "replicate_profiles_expire", 10)
    pings, OpenSIPS will terminate the dialog from the middle The
    string parameter can also contain "B" to activate the bye on
    timeout behavior.
+
+   Parameters:
+     * flags (string, optional)
 
    The function returns true if the dialog was successfully
    created or if the dialog was previously created.
@@ -1130,6 +1133,9 @@ create_dialog("B");
    dialog matching is done and (B) to cope with bogus sequential
    requests that do not have Route headers, so they are not
    handled by loose_route().
+
+   Parameters:
+     * dlg_match_mode (string, optional)
 
    The function returns true if a dialog exists for the request.
 
@@ -1218,25 +1224,25 @@ create_dialog("B");
    for other dialogs.
 
    Meaning of the parameters is as follows:
-     * attr - the name of the dialog variable (from the found
-       dialog) to be returned;
-     * avp - an avp where to store the values of the "attr" dialog
-       variable. Since the function checks through all dialogs,
-       this needs to be an actual AVP in order to support pushing
-       values from all matched dialogs.
-     * key - name of a dialog variable to be used a search key
-       (when looking after the target dialog)
-     * key_val - the value of the dialog variable that is used as
-       key in searching the target dialog.
-     * no_dlgs - the total number of dialogs containing the key
-       variable
+     * attr (string) - the name of the dialog variable (from the
+       found dialog) to be returned;
+     * avp (var) - an avp where to store the values of the "attr"
+       dialog variable. Since the function checks through all
+       dialogs, this needs to be an actual AVP in order to support
+       pushing values from all matched dialogs.
+     * key (string) - name of a dialog variable to be used a
+       search key (when looking after the target dialog)
+     * key_val (string) - the value of the dialog variable that is
+       used as key in searching the target dialog.
+     * no_dlgs (var) - the total number of dialogs containing the
+       key variable
 
    This function can be used from ALL ROUTES.
 
    Example 1.56. get_dialog_info usage
 ...
-if ( get_dialog_info("callee","$avp(callee_array)","caller","$fu","$var(
-dlg_no)) ) {
+if ( get_dialog_info("callee",$avp(callee_array),"caller",$fu,$var(dlg_n
+o)) ) {
         xlog("caller $fu has $var(dlg_no) other ongoing calls, talking w
 ith :");
         $var(it) = 0;
@@ -1270,18 +1276,18 @@ $dlg_val(callee) = $ru;
    for other dialogs.
 
    Meaning of the parameters is as follows:
-     * names - the name of an AVP variable to hold all the names
-       of the variables from the found dialog.
-     * vals - the name of an AVP variable to hold all the values
-       of the variables from the found dialog.
-     * callid - the callid of a dialog to be searched (and have
-       the variables fetched).
+     * names (var) - an AVP variable to hold all the names of the
+       variables from the found dialog.
+     * vals (var) - an AVP variable to hold all the values of the
+       variables from the found dialog.
+     * callid (string) - the callid of a dialog to be searched
+       (and have the variables fetched).
 
    This function can be used from any type of route.
 
    Example 1.57. get_dialog_vals usage
 ...
-if ( get_dialog_vals("$avp(d_names)","$avp(d_vals)","$var(callid)") ) {
+if ( get_dialog_vals($avp(d_names),$avp(d_vals),$var(callid)) ) {
         xlog("the call $var(callid) has the variables:\n);
         $var(i) = 0;
         while ( $(avp(d_names)[$var(i)])!=NULL ) {
@@ -1305,19 +1311,19 @@ als)[$var(i)])'\n");
    for other dialogs.
 
    Meaning of the parameters is as follows:
-     * name - the name of the dialog variable used for the lookup
-     * value - the value of the above dialog val
-     * out_avp - the AVP which will be populated will the dialog
-       JSONs for all the matched calls
-     * dlg_no - the out var which will contain the total number of
-       matched dialogs
+     * name (string) - the name of the dialog variable used for
+       the lookup
+     * value (string) - the value of the above dialog val
+     * out_avp (var) - the AVP which will be populated will the
+       dialog JSONs for all the matched calls
+     * dlg_no (var) - the out var which will contain the total
+       number of matched dialogs
 
    This function can be used from any type of route.
 
    Example 1.58. get_dialog_vals usage
 ...
-if ( get_dialogs_by_val("caller","$fU","$avp(dlg_jsons)","$avp(dlg_no)")
- ) {
+if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
         xlog("Caller $fU has $avp(dlg_no) other calls \n);
         $var(i) = 0;
         while ( $(avp(dlg_jsons)[$var(i)])!=NULL ) {
@@ -1343,19 +1349,21 @@ if ( get_dialogs_by_val("caller","$fU","$avp(dlg_jsons)","$avp(dlg_no)")
    for other dialogs.
 
    Meaning of the parameters is as follows:
-     * name - the name of the dialog profile used for the lookup
-     * value - the value of the above dialog profile ( optional )
-     * out_avp - the AVP which will be populated will the dialog
-       JSONs for all the matched calls
-     * dlg_no - the out var which will contain the total number of
-       matched dialogs
+     * name (string) - the name of the dialog profile used for the
+       lookup
+     * value (string) - the value of the above dialog profile (
+       optional )
+     * out_avp (var) - the AVP which will be populated will the
+       dialog JSONs for all the matched calls
+     * dlg_no (var) - the out var which will contain the total
+       number of matched dialogs
 
    This function can be used from any type of route.
 
    Example 1.59. get_dialog_vals usage
 ...
-if ( get_dialogs_by_profile("caller","$fU","$avp(dlg_jsons)","$avp(dlg_n
-o)") ) {
+if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
+ {
         xlog("Caller $fU has $avp(dlg_no) other calls \n);
         $var(i) = 0;
         while ( $(avp(dlg_jsons)[$var(i)])!=NULL ) {
@@ -1377,11 +1385,10 @@ o)") ) {
    (use create_dialog() function before).
 
    Meaning of the parameters is as follows:
-     * profile - name of the profile to be added to;
-       pseudo-variables are supported.
-     * value (optional) - string value to define the belonging of
-       the dialog to the profile - note that the profile must
-       support values. Pseudo-variables are supported.
+     * profile (string) - name of the profile to be added to.
+     * value (string, optional) - string value to define the
+       belonging of the dialog to the profile - note that the
+       profile must support values.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
@@ -1389,7 +1396,7 @@ o)") ) {
    Example 1.60. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
-set_dlg_profile("caller","$fu");
+set_dlg_profile("caller",$fu);
 ...
 
 1.7.10.  unset_dlg_profile(profile,[value])
@@ -1400,11 +1407,10 @@ set_dlg_profile("caller","$fu");
    (use create_dialog() function before).
 
    Meaning of the parameters is as follows:
-     * profile - name of the profile to be removed from;
-       pseudo-variables are supported.
-     * value (optional) - string value to define the belonging of
-       the dialog to the profile - note that the profile must
-       support values. Pseudo-variables are supported.
+     * profile (string) - name of the profile to be removed from.
+     * value (string, optional) - string value to define the
+       belonging of the dialog to the profile - note that the
+       profile must support values.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
@@ -1412,7 +1418,7 @@ set_dlg_profile("caller","$fu");
    Example 1.61. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
-unset_dlg_profile("caller","$fu");
+unset_dlg_profile("caller",$fu);
 ...
 
 1.7.11.  is_in_profile(profile,[value])
@@ -1429,10 +1435,10 @@ unset_dlg_profile("caller","$fu");
    (use create_dialog() function before).
 
    Meaning of the parameters is as follows:
-     * profile - name of the profile to be checked against;
-       pseudo-variables are supported.
-     * value (optional) - string value to toughen the check.
-       Pseudo-variables are supported.
+     * profile (string) - name of the profile to be checked
+       against.
+     * value (string. optional) - string value to toughen the
+       check.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
@@ -1459,12 +1465,11 @@ if (is_in_profile("caller","XX")) {
    silently discarded.
 
    Meaning of the parameters is as follows:
-     * profile - name of the profile to get the size for;
-       pseudo-variables are supported.
-     * value (optional) - string value to toughen the check;
-       pseudo-variables are supported.
-     * size - an AVP or script variable to return the profile size
-       in.
+     * profile (string) - name of the profile to get the size for.
+     * value (string, optional) - string value to toughen the
+       check.
+     * size (var) - an AVP or script variable to return the
+       profile size in.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
@@ -1473,10 +1478,10 @@ if (is_in_profile("caller","XX")) {
 modparam("dialog", "profiles_no_value", "inboundCalls")
 modparam("dialog", "profiles_with_value", "caller")
 ...
-get_profile_size("inboundCalls",,"$var(size)");
+get_profile_size("inboundCalls",,$var(size));
 xlog("inboundCalls: $var(size)\n");
 ...
-get_profile_size("caller", "$fu", "$var(size)");
+get_profile_size("caller", $fu, $var(size));
 xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 ...
 
@@ -1486,7 +1491,8 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
    dialog persistent and they can be accessed (set and test) for
    all requests belonging to the dialog.
 
-   The flag index can be between 0 and 31.
+   Parameters:
+     * idx (int) - The flag index can be between 0 and 31.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1496,7 +1502,7 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 
    Example 1.64. set_dlg_flag usage
 ...
-set_dlg_flag("3");
+set_dlg_flag(3);
 ...
 
 1.7.14.  test_and_set_dlg_flag(idx, value)
@@ -1504,10 +1510,8 @@ set_dlg_flag("3");
    Atomically checks if the dialog flag index idx is equal to
    value. If true, changes the value with the opposite one. This
    operation is done under the dialog lock.
-
-   The flag index can be between 0 and 31.
-
-   The value should be 0 (false) or 1 (true).
+     * idx (int) - The flag index can be between 0 and 31.
+     * value (int) - The value should be 0 (false) or 1 (true).
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1517,7 +1521,7 @@ set_dlg_flag("3");
 
    Example 1.65. test_and_set_dlg_flag usage
 ...
-test_and_set_dlg_flag("3", "0");
+test_and_set_dlg_flag(3, 0);
 ...
 
 1.7.15.  reset_dlg_flag(idx)
@@ -1526,7 +1530,8 @@ test_and_set_dlg_flag("3", "0");
    dialog persistent and they can be accessed (set and test) for
    all requests belonging to the dialog.
 
-   The flag index can be between 0 and 31.
+   Parameters:
+     * idx (int) - The flag index can be between 0 and 31.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1536,7 +1541,7 @@ test_and_set_dlg_flag("3", "0");
 
    Example 1.66. reset_dlg_flag usage
 ...
-reset_dlg_flag("16");
+reset_dlg_flag(16);
 ...
 
 1.7.16.  is_dlg_flag_set(idx)
@@ -1545,7 +1550,8 @@ reset_dlg_flag("16");
    flags are dialog persistent and they can be accessed (set and
    test) for all requests belonging to the dialog.
 
-   The flag index can be between 0 and 31.
+   Parameters:
+     * idx (int) - The flag index can be between 0 and 31.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1555,7 +1561,7 @@ reset_dlg_flag("16");
 
    Example 1.67. is_dlg_flag_set usage
 ...
-if (is_dlg_flag_set("16")) {
+if (is_dlg_flag_set(16)) {
         xlog("dialog flag 16 is set\n");
 }
 ...
@@ -1567,7 +1573,9 @@ if (is_dlg_flag_set("16")) {
    be accessed (read and write) for all requests belonging to the
    dialog.
 
-   Parameter val may contain pseudo-variables.
+   Parameters:
+     * name (string)
+     * val (string)
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1580,20 +1588,22 @@ if (is_dlg_flag_set("16")) {
 
    Example 1.68. store_dlg_value usage
 ...
-store_dlg_value("inv_src_ip","$si");
+store_dlg_value("inv_src_ip",$si);
 store_dlg_value("account type","prepaid");
 # or
 $dlg_val(account_type) = "prepaid";
 ...
 
-1.7.18.  fetch_dlg_value(name,pvar)
+1.7.18.  fetch_dlg_value(name,val)
 
    Fetches from the dialog the value of attribute named name. The
    values attached to dialogs are dialog persistent and they can
    be accessed (read and write) for all requests belonging to the
    dialog.
 
-   Parameter pvar may be a script var ($var) or and avp ($avp).
+   Parameters:
+     * name (string)
+     * val (var)
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1606,8 +1616,8 @@ $dlg_val(account_type) = "prepaid";
 
    Example 1.69. fetch_dlg_value usage
 ...
-fetch_dlg_value("inv_src_ip","$avp(2)");
-fetch_dlg_value("account type","$var(account)");
+fetch_dlg_value("inv_src_ip",$avp(2));
+fetch_dlg_value("account type",$var(account));
 # or
 $var(account) = $dlg_val(account_type);
 ...
@@ -1620,6 +1630,9 @@ $var(account) = $dlg_val(account_type);
    normal operation in "active" state).
 
    For more details see the Dialog clustering chapter.
+
+   Parameters:
+     * tag_name (string)
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -2250,7 +2263,7 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 400 253 11888 2959
    2. Vlad Paiu (@vladpaiu) 250 140 7051 3004
    3. Razvan Crainea (@razvancrainea) 157 114 3423 879
-   4. Vlad Patrascu (@rvlad-patrascu) 137 60 3051 2935
+   4. Vlad Patrascu (@rvlad-patrascu) 140 61 3165 3009
    5. Liviu Chircu (@liviuchircu) 102 71 2246 723
    6. Ovidiu Sas (@ovidiusas) 27 21 482 107
    7. Dan Pascu (@danpascu) 26 22 160 106
@@ -2291,10 +2304,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2019
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2019
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2019
    5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2018
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
@@ -2322,8 +2335,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Paiu (@vladpaiu), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Julián Moreno Patiño, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter

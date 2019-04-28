@@ -957,16 +957,16 @@ if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
 
    Example 1.37. ds_is_in_list usage
 ...
-if (ds_is_in_list("$si", "$sp")) {
+if (ds_is_in_list($si, $sp)) {
         # source IP:PORT is in a dispatcher list
 }
 ...
-if (ds_is_in_list("$rd", "$rp", 2)) {
+if (ds_is_in_list($rd, $rp, 2)) {
         # the R-URI (IP and port) is in the dispatcher set 2 of the "def
 ault" partition
 }
 ...
-if (ds_is_in_list("$rd", "$rp", 2, "part2")) {
+if (ds_is_in_list($rd, $rp, 2, "part2")) {
         # the R-URI (IP and port) is in the dispatcher set 2 of the "par
 t2" partition
 }
@@ -1196,11 +1196,11 @@ Chapter 3. Contributors
    7. Razvan Crainea (@razvancrainea) 28 22 407 81
    8. Henning Westerholt (@henningw) 11 7 93 125
    9. Carsten Bock 11 4 713 18
-   10. Vlad Paiu (@vladpaiu) 9 7 17 29
+   10. Vlad Patrascu (@rvlad-patrascu) 10 5 166 133
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
-   Ionel Cerghit (@ionel-cerghit), Elena-Ramona Modroiu, Klaus
-   Darilion, Anca Vamanu, Jarrod Baumann (@jarrodb), Walter Doekes
+   All remaining contributors: Vlad Paiu (@vladpaiu), Ionel
+   Cerghit (@ionel-cerghit), Elena-Ramona Modroiu, Klaus Darilion,
+   Anca Vamanu, Jarrod Baumann (@jarrodb), Walter Doekes
    (@wdoekes), Nick Altmann (@nikbyte), Jan Janak (@janakj),
    Andrei Pelinescu-Onciul, Stanislaw Pitucha, Federico Cabiddu,
    Konstantin Bokarius, Andreas Granig, John Riordan, Aron
@@ -1228,10 +1228,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     May 2011 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
+   4.  Razvan Crainea (@razvancrainea)     May 2011 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
    7.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016
@@ -1256,11 +1256,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Nick
-   Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
-   Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Nick Altmann
+   (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod Baumann
+   (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Vlad Paiu
    (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw Pitucha, Anca
    Vamanu, Klaus Darilion, Daniel-Constantin Mierla (@miconda),

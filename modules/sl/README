@@ -125,16 +125,16 @@ modparam("sl", "enable_stats", 0)
    can contain pseudo-variables that are replaced at runtime.
 
    Meaning of the parameters is as follows:
-     * code - Return code.
-     * reason - Reason phrase.
+     * code (int) - Return code.
+     * reason (string) - Reason phrase.
 
    This function can be used from REQUEST_ROUTE, ERROR_ROUTE.
 
    Example 1.2. sl_send_reply usage
 ...
-sl_send_reply("404", "Not found");
+sl_send_reply(404, "Not found");
 ...
-sl_send_reply("$err.rcode", "$err.rreason");
+sl_send_reply($err.rcode, $err.rreason);
 ...
 
 1.4.2.  sl_reply_error()
@@ -202,7 +202,7 @@ Chapter 2. Contributors
    5. Liviu Chircu (@liviuchircu) 12 9 28 60
    6. Jan Janak (@janakj) 12 8 355 21
    7. Henning Westerholt (@henningw) 7 5 12 12
-   8. Vlad Patrascu (@rvlad-patrascu) 5 2 26 67
+   8. Vlad Patrascu (@rvlad-patrascu) 7 4 30 83
    9. Razvan Crainea (@razvancrainea) 4 2 9 10
    10. Elena-Ramona Modroiu 3 2 65 0
 
@@ -231,8 +231,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Apr 2019
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
@@ -254,11 +254,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
+   Modroiu, Jan Janak (@janakj).
 
    Documentation Copyrights:
 

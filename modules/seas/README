@@ -183,7 +183,7 @@ modparam("seas", "listen_sockets","127.0.0.1:5080")
 
 1.1.5. Exported Functions
 
-1.1.5.1. as_relay_t(String name)
+1.1.5.1. as_relay_t(name)
 
    Creates a new transaction (if it isn't already created) and
    sends the SIP Request and transaction information to the
@@ -191,13 +191,16 @@ modparam("seas", "listen_sockets","127.0.0.1:5080")
    Application Server connected to OpenSIPS through the SEAS
    module, must be identified with a different name.
 
+   Parameters:
+     * name (string)
+
    This function can be used within REQUEST_ROUTE.
 
    Example 1.2. as_relay_t usage
 ...
 if (!as_relay_t("app_server_1")) {
 log("Error sending to app server");
-t_reply("500","App Server not connected");
+t_reply(500,"App Server not connected");
 }
 ...
 
@@ -1389,14 +1392,14 @@ Chapter 3. Contributors
    5. Liviu Chircu (@liviuchircu) 18 14 85 138
    6. Anca Vamanu 11 2 332 302
    7. Henning Westerholt (@henningw) 10 6 25 115
-   8. Vlad Patrascu (@rvlad-patrascu) 5 3 33 44
+   8. Vlad Patrascu (@rvlad-patrascu) 6 4 42 47
    9. Andrei Pisau 4 2 45 4
    10. Vlad Paiu (@vladpaiu) 3 1 6 3
 
    All remaining contributors: Konstantin Bokarius, Dan Pascu
    (@danpascu), Ionut Ionita (@ionutrazvanionita), John Riordan,
-   Peter Lemenkov (@lemenkov), Sergio Gutierrez, Edson Gellert
-   Schubert, Stanislaw Pitucha.
+   Peter Lemenkov (@lemenkov), Sergio Gutierrez, Walter Doekes
+   (@wdoekes), Edson Gellert Schubert, Stanislaw Pitucha.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1418,21 +1421,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2017
-   6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2014
-   7.  Vlad Paiu (@vladpaiu)               Sep 2011 - Sep 2011
-   8.  Stanislaw Pitucha                   Jul 2010 - Jul 2010
-   9.  Anca Vamanu                         Oct 2007 - Sep 2009
-   10. John Riordan                        May 2009 - May 2009
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Apr 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Razvan Crainea (@razvancrainea)     Oct 2011 - Nov 2017
+   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2014
+   8.  Vlad Paiu (@vladpaiu)               Sep 2011 - Sep 2011
+   9.  Stanislaw Pitucha                   Jul 2010 - Jul 2010
+   10. Anca Vamanu                         Oct 2007 - Sep 2009
 
-   All remaining contributors: Sergio Gutierrez, Dan Pascu
-   (@danpascu), Andrei Pisau, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elias Baixas.
+   All remaining contributors: John Riordan, Sergio Gutierrez, Dan
+   Pascu (@danpascu), Andrei Pisau, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elias Baixas.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1441,9 +1444,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Elias Baixas.
 
    Documentation Copyrights:

@@ -131,16 +131,17 @@ heartbeat = 5")
    This function can be used from any route.
 
    The function has the following parameters:
-     * server_id - the id of the RabbitMQ server. Must be one of
-       the parameters defined in the server_id modparam.
-     * routing_key - routing key used to deliver the AMQP message.
-     * message - the body of the message.
-     * content_type (optional) - content type of the message sent.
-       By default it is none.
-     * headers (optional) - an AVP containing the names of the
-       headers within the AMQP message. If set, headers_vals
+     * server_id (string) - the id of the RabbitMQ server. Must be
+       one of the parameters defined in the server_id modparam.
+     * routing_key (string) - routing key used to deliver the AMQP
+       message.
+     * message (string) - the body of the message.
+     * content_type (string, optional) - content type of the
+       message sent. By default it is none.
+     * headers (string, optional) - an AVP containing the names of
+       the headers within the AMQP message. If set, headers_vals
        parameter must also be specified.
-     * headers_vals (optional) - an AVP containing the
+     * headers_vals (string, optional) - an AVP containing the
        corresponding values of the AMQP headers. If set, headers
        parameter must also be specified.
 
@@ -156,8 +157,8 @@ n/json");
         $avp(hdr_value) = $fU;
         $avp(hdr_name) = "callee";
         $avp(hdr_value) = $rU;
-        rabbitmq_publish("ID2", "call", "$rb", , "$avp(hdr_name)", "$avp
-(hdr_value)");
+        rabbitmq_publish("ID2", "call", $rb, , $avp(hdr_name), $avp(hdr_
+value));
         ...
 
 Chapter 2. Contributors
@@ -169,9 +170,10 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 40 26 1477 110
    2. Liviu Chircu (@liviuchircu) 7 5 17 35
-   3. Vlad Patrascu (@rvlad-patrascu) 6 2 26 114
+   3. Vlad Patrascu (@rvlad-patrascu) 7 3 33 121
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
    5. Maksym Sobolyev (@sobomax) 3 1 1 1
+   6. Walter Doekes (@wdoekes) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -193,11 +195,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2018
-   4. Maksym Sobolyev (@sobomax)          Jul 2017 - Jul 2017
-   5. Razvan Crainea (@razvancrainea)     Jan 2017 - May 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
+   4. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2018
+   5. Maksym Sobolyev (@sobomax)          Jul 2017 - Jul 2017
+   6. Razvan Crainea (@razvancrainea)     Jan 2017 - May 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -206,8 +209,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea).
 
    Documentation Copyrights:
 

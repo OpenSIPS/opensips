@@ -213,9 +213,8 @@ modparam("h350", "search_scope", "sub");
 
    Function Parameters:
 
-   sip_uri
+   sip_uri (string)
           H.350 SIPIdentitySIPURI to search for in directory.
-          Included OpenSIPS variables do get expanded.
 
    Return Values:
 
@@ -248,7 +247,7 @@ if (!h350_sipuri_lookup("sip:$rU@$rd"))
              "h350 callee lookup: no entry found in H.350 directory");
         exit;
     case -1:
-        sl_send_reply("500", "Internal server error");
+        sl_send_reply(500, "Internal server error");
         exit;
     }
 }
@@ -276,15 +275,14 @@ if (!h350_sipuri_lookup("sip:$rU@$rd"))
 
    Function Parameters:
 
-   auth_username
+   auth_username (string)
           H.350 SIPIdentityUserName to search for in directory.
-          Included OpenSIPS variables do get expanded.
 
-   username_avp_spec
+   username_avp_spec (var)
           Specification for authentication username AVP, e.g.
           $avp(username).
 
-   pwd_avp_spec
+   pwd_avp_spec (var)
           Specification for authentication password AVP, e.g.
           $avp(pwd).
 
@@ -331,24 +329,24 @@ route[1]
     {
         if (is_method("REGISTER"))
         {
-            www_challenge("example.com", "0");
+            www_challenge("example.com", 0);
             exit;
         }
-        proxy_challenge("example.com", "0");
+        proxy_challenge("example.com", 0);
         exit;
     }
 
     # get digest password from H.350 using auth username ($au)
-    if (!h350_auth_lookup("$au",
+    if (!h350_auth_lookup($au,
                           "$avp(auth_user)/$avp(auth_pwd)"))
     {
         switch ($retcode)
         {
         case -2:
-            sl_send_reply("401", "Unauthorized");
+            sl_send_reply(401, "Unauthorized");
             exit;
         case -1:
-            sl_send_reply("500", "Internal server error");
+            sl_send_reply(500, "Internal server error");
             exit;
         }
     }
@@ -360,11 +358,11 @@ route[1]
         {
             if ($retcode == -5)
             {
-                sl_send_reply("500", "Internal server error");
+                sl_send_reply(500, "Internal server error");
                 exit;
             }
             else {
-                www_challenge("example.com", "0");
+                www_challenge("example.com", 0);
                 exit;
             }
         }
@@ -380,11 +378,11 @@ route[1]
     {
         if ($retcode == -5)
         {
-            sl_send_reply("500", "Internal server error");
+            sl_send_reply(500, "Internal server error");
             exit;
         }
         else {
-            proxy_challenge("example.com", "0");
+            proxy_challenge("example.com", 0);
             exit;
         }
     }
@@ -476,7 +474,7 @@ AVP value = argument / 1000
 
    Function Parameters:
 
-   avp_name_prefix
+   avp_name_prefix (string)
           Name prefix for call forwarding rule AVPs, as described
           above.
 
@@ -511,7 +509,7 @@ AVP value = argument / 1000
 
 if (!h350_result_call_preferences("callee_pref_") && ($retcode == -1))
 {
-    sl_send_reply("500", "Internal server error");
+    sl_send_reply(500, "Internal server error");
     exit;
 }
 
@@ -534,10 +532,10 @@ if (is_avp_set("$avp(callee_pref_u)"))
             avp_delete("$avp(callee_pref_u)");
     } else
     {
-            sl_send_reply("500", "Internal server error");
+            sl_send_reply(500, "Internal server error");
             exit;
     }
-    sl_send_reply("181", "Call is being forwarded");
+    sl_send_reply(181, "Call is being forwarded");
     t_relay();
     exit;
 }
@@ -579,7 +577,7 @@ $avp("sl_900") = 1
 
    Function Parameters:
 
-   avp_name_prefix
+   avp_name_prefix (string)
           Name prefix for service level AVPs, as described above.
 
    Return Values:
@@ -612,7 +610,7 @@ $avp("sl_900") = 1
 
 if (!h350_result_service_level("caller_sl_") && ($retcode == -1))
 {
-    sl_send_reply("500", "Internal server error");
+    sl_send_reply(500, "Internal server error");
     exit;
 }
 
@@ -625,7 +623,7 @@ if (is_avp_set("$avp(caller_sl_international)"))
     t_relay();
 }
 else {
-    sl_send_reply("403", "Forbidden");
+    sl_send_reply(403, "Forbidden");
 }
 exit;
 
@@ -657,7 +655,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 52 44
    3. Daniel-Constantin Mierla (@miconda) 12 9 79 83
    4. Liviu Chircu (@liviuchircu) 10 8 25 37
-   5. Vlad Patrascu (@rvlad-patrascu) 8 2 57 224
+   5. Vlad Patrascu (@rvlad-patrascu) 9 3 80 247
    6. Razvan Crainea (@razvancrainea) 5 2 47 58
    7. Konstantin Bokarius 3 1 1 4
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -683,8 +681,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Apr 2019
    3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    4. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    5. Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
@@ -700,11 +698,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Christian
-   Schlatter.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Christian Schlatter.
 
    Documentation Copyrights:
 

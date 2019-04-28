@@ -454,8 +454,8 @@ modparam("pua_dialoginfo", "osips_ps", 0)
    published.
 
    Meaning of the parameters:
-     * side (optional) - can be "A" or/and "B" for caller or
-       callee PUBLISH only - if missing, both sides will be
+     * side (string, optional) - can be "A" or/and "B" for caller
+       or callee PUBLISH only - if missing, both sides will be
        published.
 
    Example 1.12. dialoginfo_set usage
@@ -477,9 +477,9 @@ modparam("pua_dialoginfo", "osips_ps", 0)
    multiple different callees.
 
    Meaning of the parameters:
-     * callee - a SIP nams addr description of the callee (the
-       name_addr format is '[display] <uri>' or 'uri', as in the
-       To or From headers)
+     * callee (string) - a SIP nams addr description of the callee
+       (the name_addr format is '[display] <uri>' or 'uri', as in
+       the To or From headers)
 
    Example 1.13. dialoginfo_set_branch_callee usage
 ...
@@ -503,8 +503,8 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 12 9 44 76
    4. Klaus Darilion 10 1 1109 0
    5. Razvan Crainea (@razvancrainea) 8 6 11 15
-   6. Ovidiu Sas (@ovidiusas) 7 5 104 9
-   7. Vlad Patrascu (@rvlad-patrascu) 6 3 39 63
+   6. Vlad Patrascu (@rvlad-patrascu) 8 5 41 76
+   7. Ovidiu Sas (@ovidiusas) 7 5 104 9
    8. Vallimamod Abdullah 5 2 97 75
    9. Damien Sandras (@dsandras) 4 2 93 1
    10. Vlad Paiu (@vladpaiu) 4 2 29 15
@@ -532,8 +532,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
    3.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -553,12 +553,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
-   Patrascu (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Ovidiu Sas (@ovidiusas), Damien Sandras (@dsandras), Vallimamod
-   Abdullah, Anca Vamanu, Walter Doekes (@wdoekes), Klaus
-   Darilion.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Ovidiu Sas
+   (@ovidiusas), Damien Sandras (@dsandras), Vallimamod Abdullah,
+   Anca Vamanu, Walter Doekes (@wdoekes), Klaus Darilion.
 
    Documentation Copyrights:
 

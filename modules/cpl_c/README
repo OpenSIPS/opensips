@@ -341,13 +341,14 @@ modparam("cpl_c","use_domain",1)
    script).
 
    Meaning of the parameters is as follows:
-     * type - which part of the script should be run; set it to
-       "incoming" for having the incoming part of script executed
-       (when an INVITE is received) or to "outgoing" for running
-       the outgoing part of script (when a user is generating an
-       INVITE - call).
-     * mode - sets the interpreter mode as stateless/stateful
-       behavior. The following modes are accepted:
+     * type (string) - which part of the script should be run; set
+       it to "incoming" for having the incoming part of script
+       executed (when an INVITE is received) or to "outgoing" for
+       running the outgoing part of script (when a user is
+       generating an INVITE - call).
+     * mode (string) - sets the interpreter mode as
+       stateless/stateful behavior. The following modes are
+       accepted:
           + IS_STATELESS - the current INVITE has no transaction
             created yet. All replies (redirection or deny) will be
             done is a stateless way. The execution will switch to
@@ -501,7 +502,7 @@ Chapter 2. Contributors
    4. Henning Westerholt (@henningw) 16 12 108 132
    5. Razvan Crainea (@razvancrainea) 16 10 250 216
    6. Liviu Chircu (@liviuchircu) 12 9 59 106
-   7. Vlad Patrascu (@rvlad-patrascu) 10 7 115 109
+   7. Vlad Patrascu (@rvlad-patrascu) 11 8 117 111
    8. Andrei Pelinescu-Onciul 10 7 107 60
    9. Jiri Kuthan (@jiriatipteldotorg) 6 2 372 25
    10. Elena-Ramona Modroiu 5 3 105 15
@@ -533,8 +534,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019
    3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Mar 2019
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
@@ -558,9 +559,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Nick Altmann (@nikbyte), Bogdan-Andrei Iancu
    (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Jesus Rodrigues, Elena-Ramona Modroiu, Jan Janak

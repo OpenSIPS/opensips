@@ -478,10 +478,10 @@ modparam("registrar", "disable_gruu", 0)
    phrase.
 
    Meaning of the parameters is as follows:
-     * domain - Logical domain within registrar. If database is
-       used then this must be name of the table which stores the
-       contacts.
-     * flags (optional)- string of the following flags:
+     * domain (static string) - Logical domain within registrar.
+       If database is used then this must be name of the table
+       which stores the contacts.
+     * flags (string, optional) - string of the following flags:
           + 'm' (Memory only) - save the contacts only in memory
             cache without no DB operation;
           + 'r' (no Reply) - do not generate a SIP reply to the
@@ -533,19 +533,18 @@ modparam("registrar", "disable_gruu", 0)
             behind a SIP loadbalancer, which passes the nat'ed UAC
             address as “received” parameter in it's Path uri.
        This parameter is a string composed of a set of flags.
-     * aor (optional) - Variable containing a custom AOR; if
-       missing, the AOR will be taken from the default place - the
-       TO header URI.
-     * ownership_tag (optional) - a cluster-shared tag (see the
-       clusterer module documentation for more details) which will
-       be attached to each contact saved from the current request.
-       This tag is only relevant in clustered user location
-       scenarios and helps determine the current logical owner
-       node of a contact. This, in turn, is useful in order to
-       restrict nodes which are not currently responsible for this
-       contact from performing certain actions (for example:
-       incorrectly originating pings from a non-owned virtual IP
-       address in highly-available setups).
+     * aor (string, optional) - a custom AOR; if missing, the AOR
+       will be taken from the default place - the TO header URI.
+     * ownership_tag (string, optional) - a cluster-shared tag
+       (see the clusterer module documentation for more details)
+       which will be attached to each contact saved from the
+       current request. This tag is only relevant in clustered
+       user location scenarios and helps determine the current
+       logical owner node of a contact. This, in turn, is useful
+       in order to restrict nodes which are not currently
+       responsible for this contact from performing certain
+       actions (for example: incorrectly originating pings from a
+       non-owned virtual IP address in highly-available setups).
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
@@ -562,11 +561,11 @@ save("location");
 save("location","mc5");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
-save("location","","$fu");
+save("location","",$fu);
 ...
 # save into 'location', no DB update, force registration, take AOR from
 AVP
-save("location","mr", "$avp(aor)");
+save("location","mr", $avp(aor));
 ...
 # save into 'location', mark the contacts with the "vip" ownership tag a
 nd
@@ -581,19 +580,19 @@ save("location", , , "vip");
    Explicitly remove contacts behind a given address-of-record.
 
    Meaning of the parameters is as follows:
-     * domain - (string) - Logical domain within the registrar. If
-       a database is used, then this must be name of the table
-       which stores the contacts.
-     * AOR - address-of-record to be searched (SIP URI)
-     * contact (optional filter) - SIP URI filter for the contact
+     * domain (static string - Logical domain within the
+       registrar. If a database is used, then this must be name of
+       the table which stores the contacts.
+     * AOR (string) - address-of-record to be searched (SIP URI)
+     * contact (string, optional) - SIP URI filter for the contact
        to be removed. This must be the full SIP URI as used during
        registered.
-     * next_hop (optional filter) - the next SIP IP
+     * next_hop (string, optional) - the next SIP IP
        address/hostname on the way back to this contact. See the
        section below for details on how the next hop is computed.
        Hostnames are resolved before matching.
-     * sip_instance (optional filter) - string or pvar containing
-       a "+sip.instance" value to be used for filtering purposes.
+     * sip_instance (string, optional) - a "+sip.instance" value
+       to be used for filtering purposes.
 
    IMPORTANT: the IP address of each contact (for matching
    purposes) is computed as follows:
@@ -621,7 +620,7 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78");
 # note that "contact" parameter has to be specified with NULL value even
  though not used
 $var(next_hop) = "50.60.50.60"
-remove("location", "sip:bob@atlanta.com", , "$var(next_hop)");
+remove("location", "sip:bob@atlanta.com", , $var(next_hop));
 ...
 # remove bob's phone with contact "sip:bob@46.50.64.78" that is behind "
 50.60.50.60"
@@ -646,8 +645,9 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
    processed request.
 
    Meaning of the parameters is as follows:
-     * domain - Name of table that should be used for the lookup.
-     * flags(optional)
+     * domain (static string) - Name of table that should be used
+       for the lookup.
+     * flags (string, optional)
           + 'b' (no Branches) - this flag controls how lookup
             function processes multiple contacts. If there are
             multiple contacts for the given username in usrloc and
@@ -714,8 +714,8 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
             picked in ascending order of their last successful
             pinging latency (fastest ping -> slowest ping). This
             flag may work together with the "y" flag.
-     * AOR (optional)- AOR to lookup for; if missing, the RURI is
-       used as AOR; This must be a variable.
+     * AOR (string, optional) - AOR to lookup for; if missing, the
+       RURI is used as AOR;
 
    Return codes:
      * 1 - contacts found and returned.
@@ -738,14 +738,14 @@ lookup("location","r"); #lookup with aor branch search;
    #or
 lookup("location","u/phone/i"); # lookup with user-agent filtering
    #or
-lookup("location","","$var(aor)"); # simple lookup with AOR from PV
+lookup("location","",$var(aor)); # simple lookup with AOR from var
 switch ($retcode) {
     case -1:
     case -3:
-        sl_send_reply("404", "Not Found");
+        sl_send_reply(404, "Not Found");
         exit;
     case -2:
-        sl_send_reply("405", "Not Found");
+        sl_send_reply(405, "Not Found");
         exit;
 };
 ...
@@ -760,10 +760,11 @@ switch ($retcode) {
    an AOR (as parameter), otherwise the function will fail.
 
    Meaning of the parameters is as follows:
-     * domain - Name of table that should be used for the lookup.
-     * AOR (optional)- AOR to lookup for; if missing, the source
-       if the AOR is the "To" header for REGISTER request, "From"
-       header for any other sip request.
+     * domain (static string) - Name of table that should be used
+       for the lookup.
+     * AOR (string, optional) - AOR to lookup for; if missing, the
+       source if the AOR is the "To" header for REGISTER request,
+       "From" header for any other sip request.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
@@ -779,7 +780,7 @@ if (is_method("REGISTER")) {
         }
 };
 /* check the From uri whether this aor is registered or not */
-if (is_registered("location","$fu")) {
+if (is_registered("location",$fu)) {
         xlog("caller is registered\n");
 }
 ...
@@ -791,16 +792,17 @@ if (is_registered("location","$fu")) {
    not modify the message being process.
 
    Meaning of the parameters is as follows:
-     * domain - Name of table that should be used for the lookup.
-     * AOR (optional)- AOR to lookup for; if missing, the source
-       if the AOR is the "To" header for REGISTER request, "From"
-       header for any other sip request.
-     * contact (optional)- callid to check if a contact if
-       registered with this callid (this may help you to make
+     * domain (static string) - Name of table that should be used
+       for the lookup.
+     * AOR (stirng, optional) - AOR to lookup for; if missing, the
+       source if the AOR is the "To" header for REGISTER request,
+       "From" header for any other sip request.
+     * contact (stirng, optional) - callid to check if a contact
+       if registered with this callid (this may help you to make
        distinction between newly registered contact (callid not
        registered so far) and re-registration (callid already
        registered).
-     * callid (optional)- callid to check if a contact if
+     * callid (stirng, optional) - callid to check if a contact if
        registered with this callid (this may help you to make
        distinction between newly registered contact (callid not
        registered so far) and re-registration (callid already
@@ -814,14 +816,14 @@ if (is_registered("location","$fu")) {
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
         if (!is_contact_registered("location")) {
-                sl_send_reply("401", "Unauthorized");
+                sl_send_reply(401, "Unauthorized");
         ...
         }
 }
 /* you want to check the second contact from the message whether it is
 registered or not */
 if(is_method("INVITE")) {
-        if (is_contact_registered("location","$fu","$(ct[1])",))
+        if (is_contact_registered("location",$fu,$(ct[1]),))
                 xlog("caller is registered\n");
 }
 ...
@@ -836,14 +838,15 @@ if(is_method("INVITE")) {
    "is_other_contact" function.
 
    Meaning of the parameters is as follows:
-     * domain - Name of table that should be used for the lookup.
-     * AOR (optional)- AOR to lookup for; if missing, the source
-       if the AOR is the "To" header for REGISTER request, "From"
-       header for any other sip request.
-     * IPvar the pvar containing the IP matched against the
-       contact host or the received host (see above). If the IPvar
-       is an AVP containing multiple values/IPs, then all the
-       values are checked.
+     * domain (static string) - Name of table that should be used
+       for the lookup.
+     * AOR (stirng, optional) - AOR to lookup for; if missing, the
+       source if the AOR is the "To" header for REGISTER request,
+       "From" header for any other sip request.
+     * IPvar (var) - the variable containing the IP matched
+       against the contact host or the received host (see above).
+       If the IPvar is an AVP containing multiple values/IPs, then
+       all the values are checked.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
@@ -852,7 +855,7 @@ if(is_method("INVITE")) {
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
-        if (is_ip_registered("location","$tu","$si")) {
+        if (is_ip_registered("location",$tu,$si)) {
                 xlog("already registered from this ip\n");
                 ...
         }
@@ -868,7 +871,7 @@ if (is_method("REGISTER")) {
    This makes sense only in multiple replicated servers scenarios.
 
    Meaning of the parameters is as follows:
-     * hdr_name - header name to be used.
+     * hdr_name (string) - header name to be used.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -1021,9 +1024,9 @@ Chapter 3. Contributors
    7. Jiri Kuthan (@jiriatipteldotorg) 15 9 538 45
    8. Ionut Ionita (@ionutrazvanionita) 15 4 763 248
    9. Andreas Granig 13 7 527 36
-   10. Henning Westerholt (@henningw) 12 7 212 147
+   10. Vlad Patrascu (@rvlad-patrascu) 13 4 163 373
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
+   All remaining contributors: Henning Westerholt (@henningw),
    Andrei Pelinescu-Onciul, Ovidiu Sas (@ovidiusas), Juha Heinanen
    (@juha-h), Nick Altmann (@nikbyte), Ancuta Onofrei,
    Elena-Ramona Modroiu, Maksym Sobolyev (@sobomax), Dan Pascu
@@ -1054,8 +1057,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Apr 2019
    3.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2019
    4.  Razvan Crainea (@razvancrainea)     Apr 2011 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -1084,16 +1087,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Razvan
-   Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
-   Julián Moreno Patiño, Nick Altmann (@nikbyte), Vlad Paiu
-   (@vladpaiu), Ovidiu Sas (@ovidiusas), Irina-Maria Stanescu,
-   Kobi Eshun (@ekobi), Sergio Gutierrez, Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
-   (@juha-h), Elena-Ramona Modroiu, Carsten Bock, Andreas Granig,
-   Jan Janak (@janakj).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Ionut
+   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
+   (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),
+   Irina-Maria Stanescu, Kobi Eshun (@ekobi), Sergio Gutierrez,
+   Klaus Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Marcus
+   Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Carsten
+   Bock, Andreas Granig, Jan Janak (@janakj).
 
    Documentation Copyrights:
 
