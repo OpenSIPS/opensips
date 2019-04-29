@@ -711,32 +711,35 @@ static void dlg_update_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, struct
 		sdp.len = 0;
 	}
 
+	dlg_lock_dlg(dlg);
 	if (in_sdp->len == sdp.len &&
 			memcmp(in_sdp->s, sdp.s, sdp.len) == 0) {
 		/* we have the same sdp in outbound as the one in inbound */
 		if (out_sdp->s)
 			shm_free(out_sdp->s);
 		memset(out_sdp, 0, sizeof(*out_sdp));
-		return;
+		goto end;
 	}
 
 	if (!out_sdp->s) {
 		out_sdp->s = shm_malloc(sdp.len);
 		if (!out_sdp->s) {
 			LM_ERR("Failed to allocate sdp\n");
-			return;
+			goto end;
 		}
 	} else if (out_sdp->len < sdp.len) {
 		tmp = shm_realloc(out_sdp->s, sdp.len);
 		if (tmp) {
 			LM_ERR("Failed to reallocate sdp \n");
-			return;
+			goto end;
 		}
 		out_sdp->s = tmp;
 	}
 
 	out_sdp->len = sdp.len;
 	memcpy(out_sdp->s,sdp.s,sdp.len);
+end:
+	dlg_unlock_dlg(dlg);
 }
 
 static void dlg_update_callee_sdp(struct cell* t, int type,
