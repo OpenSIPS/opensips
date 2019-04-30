@@ -197,6 +197,8 @@ unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
 												  be re-configured */
 /* number of UDP workers processing requests */
 int udp_workers_no = UDP_WORKERS_NO;
+/* the global UDP auto scaling profile */
+char *udp_auto_scaling_profile = NULL;
 /* if the auto-scaling engine is enabled or not - this is autodetected */
 int auto_scaling_enabled = 0;
 /* auto-scaling sampling and checking time cycle is 1 sec by default */

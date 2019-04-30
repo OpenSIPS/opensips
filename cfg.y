@@ -829,6 +829,10 @@ assign_stm: DEBUG EQUAL snumber
 			udp_workers_no=$3; }
 		| CHILDREN EQUAL error { yyerror("number expected"); }
 		| UDP_WORKERS EQUAL NUMBER { IFOR(); udp_workers_no=$3; }
+		| UDP_WORKERS EQUAL NUMBER USE_AUTO_SCALING_PROFILE ID { IFOR();
+				udp_workers_no=$3;
+				udp_auto_scaling_profile=$5;
+		}
 		| UDP_WORKERS EQUAL error { yyerror("number expected"); }
 		| TIMER_WORKERS EQUAL NUMBER { IFOR();
 				timer_workers_no=$3;
