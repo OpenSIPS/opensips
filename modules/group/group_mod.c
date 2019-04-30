@@ -151,6 +151,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, check_dburl_fixup, 0},
 		{CMD_PARAM_VAR, db_get_gid_fixup, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 /*
