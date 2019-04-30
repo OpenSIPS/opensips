@@ -1721,8 +1721,8 @@ int tcp_init(void)
 	if (tcp_auto_scaling_profile) {
 		s_profile = get_scaling_profile(tcp_auto_scaling_profile);
 		if (s_profile==NULL) {
-			LM_WARN("TCP scalig profile <%s> not defined "
-				"-> ignoring it..\n", tcp_auto_scaling_profile);
+			LM_WARN("TCP scaling profile <%s> not defined "
+				"-> ignoring it...\n", tcp_auto_scaling_profile);
 		} else {
 			auto_scaling_enabled = 1;
 		}

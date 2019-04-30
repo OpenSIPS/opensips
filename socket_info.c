@@ -172,8 +172,8 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 		if (sid->auto_scaling_profile) {
 			si->s_profile = get_scaling_profile(sid->auto_scaling_profile);
 			if (si->s_profile==NULL) {
-				LM_WARN("scalig profile <%s> in listener <%.*s> not defined "
-					"-> ignoring it..\n", sid->auto_scaling_profile,
+				LM_WARN("scaling profile <%s> in listener <%.*s> not defined "
+					"-> ignoring it...\n", sid->auto_scaling_profile,
 					si->name.len, si->name.s);
 			} else {
 				auto_scaling_enabled = 1;
