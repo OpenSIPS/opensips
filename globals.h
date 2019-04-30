@@ -50,6 +50,7 @@ extern int auto_aliases;
 
 extern unsigned int maxbuffer;
 extern int udp_workers_no;
+extern char *udp_auto_scaling_profile;
 extern enum poll_types io_poll_method;
 extern int auto_scaling_enabled;
 extern int auto_scaling_cycle;

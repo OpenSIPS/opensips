@@ -178,6 +178,14 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 			} else {
 				auto_scaling_enabled = 1;
 			}
+		} else if (udp_auto_scaling_profile) {
+			si->s_profile = get_scaling_profile(udp_auto_scaling_profile);
+			if (si->s_profile==NULL) {
+				LM_WARN("scaling profile <%s> in udp_workers not defined "
+					"-> ignoring it...\n", udp_auto_scaling_profile);
+			} else {
+				auto_scaling_enabled = 1;
+			}
 		}
 	}
 	return si;
