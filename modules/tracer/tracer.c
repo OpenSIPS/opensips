@@ -836,22 +836,15 @@ static int mod_init(void)
 
 	*trace_on_flag = trace_on;
 
+	if (trace_prot_bind(TRACE_PROTO, &tprot)) {
+		LM_ERR("Failed to bind tracing protocol!\n");
+		return -1;
+	}
+
 	/* initialize hep api */
 	for (it=trace_list;it;it=it->next) {
 		if (it->type!=TYPE_HEP)
 			continue;
-
-		if (tprot.get_trace_dest_by_name == NULL) {
-			LM_DBG("Loading tracing protocol!\n");
-			/*
-			 * if more tracing protocols shall implement the api then
-			 * this should be a modparam
-			 */
-			if (trace_prot_bind(TRACE_PROTO, &tprot)) {
-				LM_ERR("Failed to bind tracing protocol!\n");
-				return -1;
-			}
-		}
 
 		it->el.hep.hep_id = tprot.get_trace_dest_by_name(&it->el.hep.name);
 		if (it->el.hep.hep_id == NULL) {
