@@ -112,6 +112,7 @@ static acmd_export_t acmds[] = {
 };
 
 static cmd_export_t cmds[]= {
+	{"aaa_bind_api", (cmd_function) aaa_radius_bind_api, {{0, 0, 0}}, 0},
 	{"radius_send_auth", (cmd_function) send_auth_func, {
 		{CMD_PARAM_STR, radius_hdl_fixup, 0},
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
