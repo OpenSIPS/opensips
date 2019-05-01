@@ -14,7 +14,6 @@ EnvironmentFile=-/etc/default/opensips
 PermissionsStartOnly=yes
 PIDFile=%t/opensips/opensips.pid
 ExecStart=/usr/sbin/opensips -P %t/opensips/opensips.pid -f /etc/opensips/opensips.cfg -m $S_MEMORY -M $P_MEMORY $OPTIONS
-ExecStartPre=/usr/sbin/opensips-m4cfg
 ExecStop=/usr/bin/pkill --pidfile %t/opensips/opensips.pid
 Restart=always
 TimeoutStopSec=30s
