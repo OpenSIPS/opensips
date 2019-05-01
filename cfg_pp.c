@@ -20,9 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#undef _GNU_SOURCE
 
 #include "config.h"
 #include "globals.h"
@@ -498,9 +502,9 @@ void cfg_dump_backtrace(void)
 static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 {
 	FILE *final_cfg;
-	int parent_w[2], parent_r[2];
-	char chunk[1024];
-	ssize_t left, written;
+	int parent_w[2], parent_r[2], filesz = 0, filebufsz = 0;
+	char chunk[1024], *filebuf = NULL;
+	ssize_t left, written, total = 0;
 	size_t bytes;
 	char *p, *tok, *cmd, **argv = NULL, *pp_binary = NULL;
 	int argv_len = 0, ch;
@@ -567,16 +571,48 @@ static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 		if (bytes == 0)
 			continue;
 
-		left = bytes;
-		p = chunk;
-		do {
-			written = write(parent_w[1], p, left);
-			left -= written;
-			p += written;
-		} while (left > 0);
+		if (filesz + bytes > filebufsz) {
+			if (filebufsz == 0)
+				filebufsz = 4096;
+			else
+				filebufsz *= 2;
 
+			filebuf = realloc(filebuf, filebufsz);
+			if (!filebuf) {
+				LM_ERR("oom, failed to build config buffer\n");
+				goto out_err;
+			}
+		}
+
+		memcpy(filebuf + filesz, chunk, bytes);
+		filesz += bytes;
 	} while (!feof(flat_cfg));
 
+	bytes = fcntl(parent_w[1], F_GETPIPE_SZ);
+	if (bytes < 0) {
+		LM_ERR("F_GETPIPE_SZ failed: %d, %s\n", errno, strerror(errno));
+		goto out_err;
+	}
+
+	if (bytes < filesz) {
+		if (fcntl(parent_w[1], F_SETPIPE_SZ, filesz) < 0) {
+			LM_ERR("failed to run preprocessor (/proc/sys/fs/pipe-max-size "
+					"max pipe buffer too small, need: %d), %d, %s\n", filesz,
+					errno, strerror(errno));
+			goto out_err;
+		}
+	}
+
+	left = filesz;
+	p = filebuf;
+	do {
+		written = write(parent_w[1], p, left);
+		total += written;
+		left -= written;
+		p += written;
+	} while (left > 0);
+
+	free(filebuf);
 	fclose(flat_cfg);
 	close(parent_w[1]);
 
