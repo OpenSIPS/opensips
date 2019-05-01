@@ -196,7 +196,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	}
 
 	/* print "start of file" adnotation */
-	sprintf(*flattened + *sz - *bytes_left, "%.*s \"%.*s\"\n",
+	snprintf(*flattened + *sz - *bytes_left, *bytes_left, "%.*s \"%.*s\"\n",
 	        cfgtok_filebegin.len, cfgtok_filebegin.s, cfg_path_len, cfg_path);
 	*bytes_left -= cfgtok_filebegin.len + 1 +1+cfg_path_len+1 + 1;
 
@@ -247,8 +247,8 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 			}
 		}
 
-		printed = sprintf(*flattened + *sz - *bytes_left, "%.*s %d\n",
-	                      cfgtok_line.len, cfgtok_line.s, line_counter);
+		printed = snprintf(*flattened + *sz - *bytes_left, *bytes_left,
+		            "%.*s %d\n", cfgtok_line.len, cfgtok_line.s, line_counter);
 		line_counter++;
 		*bytes_left -= printed;
 
@@ -277,8 +277,8 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 				}
 			}
 
-			printed = sprintf(*flattened + *sz - *bytes_left, "%.*s",
-	                          (int)line_len, line);
+			printed = snprintf(*flattened + *sz - *bytes_left, *bytes_left,
+							"%.*s", (int)line_len, line);
 			*bytes_left -= printed;
 		}
 	}
@@ -293,7 +293,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	}
 
 	/* print "end of file" adnotation */
-	sprintf(*flattened + *sz - *bytes_left, "%.*s\n",
+	snprintf(*flattened + *sz - *bytes_left, *bytes_left, "%.*s\n",
 	        cfgtok_fileend.len, cfgtok_fileend.s);
 	*bytes_left -= cfgtok_fileend.len + 1;
 
