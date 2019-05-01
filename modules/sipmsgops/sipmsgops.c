@@ -448,8 +448,6 @@ static int is_present_hf(struct sip_msg* msg, void* _match_hf)
 	} else {
 		pval.flags = PV_VAL_STR;
 		pval.rs = match_hf->s;
-		LM_ERR("failed to get header value\n");
-		return -1;
 	}
 
 	/* we need to be sure we have seen all HFs */
