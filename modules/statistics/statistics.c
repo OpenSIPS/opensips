@@ -256,6 +256,8 @@ static int fixup_stat(void** param)
 		sp->u.name = *param;
 	}
 
+	*param = sp;
+
 	return 0;
 }
 
