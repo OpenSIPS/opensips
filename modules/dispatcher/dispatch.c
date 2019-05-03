@@ -1966,17 +1966,19 @@ int ds_set_state_repl(int group, str *address, int state, int type,
 						return 0;
 					}
 
-					idx->dlist[i].failure_count++;
-					/* Fire only, if the Threshold is reached. */
-					if (idx->dlist[i].failure_count
-							< probing_threshhold) {
-						lock_stop_read( partition->lock );
-						return 0;
+					if (do_repl) {
+						idx->dlist[i].failure_count++;
+						/* Fire only, if the Threshold is reached. */
+						if (idx->dlist[i].failure_count
+								< probing_threshhold) {
+							lock_stop_read( partition->lock );
+							return 0;
+						}
+						if (idx->dlist[i].failure_count
+								> probing_threshhold)
+							idx->dlist[i].failure_count
+								= probing_threshhold;
 					}
-					if (idx->dlist[i].failure_count
-							> probing_threshhold)
-						idx->dlist[i].failure_count
-							= probing_threshhold;
 				}
 			}
 			/* Reset the Failure-Counter */
