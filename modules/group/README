@@ -375,8 +375,8 @@ Chapter 2. Contributors
    10. Edson Gellert Schubert 5 1 0 206
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
-   Sergio Gutierrez, Konstantin Bokarius, Norman Brandinger
-   (@NormB), UnixDev, Anca Vamanu, Dan Pascu (@danpascu), Peter
+   Dan Pascu (@danpascu), Sergio Gutierrez, Konstantin Bokarius,
+   Norman Brandinger (@NormB), UnixDev, Anca Vamanu, Peter
    Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -399,20 +399,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
-   6.  Irina-Maria Stanescu                Aug 2009 - Dec 2009
-   7.  Anca Vamanu                         Sep 2009 - Sep 2009
-   8.  UnixDev                             Feb 2009 - Feb 2009
-   9.  Sergio Gutierrez                    Dec 2008 - Dec 2008
-   10. Henning Westerholt (@henningw)      Aug 2007 - May 2008
+   1.  Dan Pascu (@danpascu)               Oct 2007 - Apr 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
+   7.  Irina-Maria Stanescu                Aug 2009 - Dec 2009
+   8.  Anca Vamanu                         Sep 2009 - Sep 2009
+   9.  UnixDev                             Feb 2009 - Feb 2009
+   10. Sergio Gutierrez                    Dec 2008 - Dec 2008
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Dan
-   Pascu (@danpascu), Norman Brandinger (@NormB), Jan Janak
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Norman Brandinger (@NormB), Jan Janak
    (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
    (@jiriatipteldotorg).
 
