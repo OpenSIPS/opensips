@@ -1050,7 +1050,7 @@ Chapter 2. Contributors
    All remaining contributors: Fabian Gast (@fgast), Alexey
    Vasilyev (@vasilevalex), Jarrod Baumann (@jarrodb), Ezequiel
    Lovelle, Walter Doekes (@wdoekes), Nick Altmann (@nikbyte),
-   Ionut Ionita (@ionutrazvanionita).
+   Ionut Ionita (@ionutrazvanionita), Dan Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1072,21 +1072,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Apr 2019
-   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Apr 2019
-   4.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
-   5.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
-   6.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
-   7.  Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
-   8.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
-   9.  Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Apr 2019
+   4.  Liviu Chircu (@liviuchircu)         Nov 2012 - Apr 2019
+   5.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
+   6.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
+   7.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
+   8.  Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
+   9.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
+   10. Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Ezequiel Lovelle, Vlad Paiu (@vladpaiu), Mihai Tiganus
-   (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte), Walter
-   Doekes (@wdoekes).
+   All remaining contributors: Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Ezequiel Lovelle, Vlad Paiu (@vladpaiu),
+   Mihai Tiganus (@tallicamike), Boris Ratner, Nick Altmann
+   (@nikbyte), Walter Doekes (@wdoekes).
 
    (1) including any documentation-related commits, excluding
    merge commits

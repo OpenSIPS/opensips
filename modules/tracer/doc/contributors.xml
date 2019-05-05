@@ -45,10 +45,10 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">44</entry>
-		<entry align="center">28</entry>
-		<entry align="center">1202</entry>
-		<entry align="center">325</entry>
+		<entry align="center">46</entry>
+		<entry align="center">29</entry>
+		<entry align="center">1207</entry>
+		<entry align="center">337</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dusan Klinec, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Andreas Heise, Sergio Gutierrez, Bogdan Iancu, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Konstantin Bokarius, Iouri Kharon, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Dusan Klinec, Andreas Heise, Sergio Gutierrez, Bogdan Iancu, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Konstantin Bokarius, Iouri Kharon, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Apr 2019</entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
+		<entry align="center">Nov 2008 - May 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2011 - Apr 2019</entry>
+		<entry align="center">Jun 2011 - May 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
-		<entry align="center">Apr 2019 - Apr 2019</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">Nov 2008 - Apr 2019</entry>
+		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
+		<entry align="center">Apr 2019 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
