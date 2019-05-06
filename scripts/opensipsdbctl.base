@@ -156,7 +156,7 @@ EXTRA_MODULES=${EXTRA_MODULES:-
 	freeswitch_scripting
 	imc
 	registrant
-	siptrace
+	tracer
 	userblacklist
 }
 
