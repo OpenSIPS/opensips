@@ -507,7 +507,7 @@ static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 	ssize_t left, written;
 	size_t bytes;
 	char *p, *tok, *cmd, **argv = NULL, *pp_binary = NULL;
-	int argv_len = 0, ch, result;
+	int argv_len = 0, ch;
 
 	if (strlen(preproc_cmdline) == 0) {
 		LM_ERR("preprocessor command (-p) is an empty string!\n");
@@ -588,7 +588,8 @@ static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 		filesz += bytes;
 	} while (!feof(flat_cfg));
 
-	result = fcntl(parent_w[1], F_GETPIPE_SZ);
+#if __GLIBC_PREREQ(2, 14)
+	int result = fcntl(parent_w[1], F_GETPIPE_SZ);
 	if (result < 0) {
 		LM_ERR("F_GETPIPE_SZ failed: %d, %s\n", errno, strerror(errno));
 		goto out_err;
@@ -604,6 +605,7 @@ static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 			goto out_err;
 		}
 	}
+#endif
 
 	left = filesz;
 	p = filebuf;
