@@ -99,7 +99,7 @@
 #                   dispatcher dialplan drouting nathelper load_balancer"
 
 # opensips extra modules
-# EXTRA_MODULES="imc cpl siptrace domainpolicy carrierroute userblacklist 
+# EXTRA_MODULES="imc cpl tracer domainpolicy carrierroute userblacklist
 #                 b2b registrant call_center fraud_detection cachedb_sql"
 
 
