@@ -20,13 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 #include <fcntl.h>
-#include <unistd.h>
-#undef _GNU_SOURCE
+#include <errno.h>
 
 #include "config.h"
 #include "globals.h"
@@ -50,8 +47,9 @@ str cfgtok_line = str_init("__OSSPP_LINE__");
 str cfgtok_filebegin = str_init("__OSSPP_FILEBEGIN__");
 str cfgtok_fileend = str_init("__OSSPP_FILEEND__");
 
-static FILE *flatten_opensips_cfg(FILE *cfg, const char *cfg_path);
-static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline);
+static int flatten_opensips_cfg(FILE *cfg, const char *cfg_path, str *out);
+static int exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline,
+                             str *out);
 
 static struct cfg_context *cfg_context_new_file(const char *path);
 static void cfg_context_append_line(struct cfg_context *con,
@@ -61,6 +59,7 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 															FILE **ret_stream)
 {
 	FILE *cfg_stream;
+	str cfg_buf, pp_buf;
 
 	/* fill missing arguments with the default values*/
 	if (!cfg_file)
@@ -78,18 +77,30 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 		}
 	}
 
-	cfg_stream = flatten_opensips_cfg(cfg_stream,
-						cfg_stream == stdin ? "stdin" : cfg_file);
-	if (!cfg_stream) {
+	if (flatten_opensips_cfg(cfg_stream,
+				cfg_stream == stdin ? "stdin" : cfg_file, &cfg_buf) < 0) {
 		LM_ERR("failed to expand file imports for %s, oom?\n", cfg_file);
 		return -1;
 	}
 
+	cfg_stream = fmemopen(cfg_buf.s, cfg_buf.len, "r");
+	if (!cfg_stream) {
+		LM_ERR("failed to open file for flattened cfg buffer\n");
+		goto out_free;
+	}
+
 	if (preproc_cmdline) {
-		cfg_stream = exec_preprocessor(cfg_stream, preproc_cmdline);
-		if (!cfg_stream) {
+		if (exec_preprocessor(cfg_stream, preproc_cmdline, &pp_buf) < 0) {
 			LM_ERR("failed to exec preprocessor cmd: '%s'\n", preproc_cmdline);
-			return -1;
+			goto out_free;
+		}
+		free(cfg_buf.s);
+		cfg_buf = pp_buf;
+
+		cfg_stream = fmemopen(cfg_buf.s, cfg_buf.len, "r");
+		if (!cfg_stream) {
+			LM_ERR("failed to open file for processed cfg buffer\n");
+			goto out_free;
 		}
 	}
 
@@ -104,7 +115,7 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 	if (yyparse() != 0 || cfg_errors) {
 		LM_ERR("bad config file (%d errors)\n", cfg_errors);
 		fclose(cfg_stream);
-		return -1;
+		goto out_free;
 	}
 
 	/* do we have to return the cfg stream? */
@@ -113,7 +124,12 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 	else
 		fclose(cfg_stream);
 
+	free(cfg_buf.s);
 	return 0;
+
+out_free:
+	free(cfg_buf.s);
+	return -1;
 }
 
 static int extend_cfg_buf(char **buf, int *sz, int *bytes_left)
@@ -224,8 +240,8 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 			}
 
 			line_len = strlen(line);
-
 			break;
+
 		} else if (line_len == 0) {
 			continue;
 		}
@@ -312,27 +328,23 @@ out_err:
 /*
  * - flatten any recursive includes into one big resulting file
  * - adnotate each line of the final file
- * - close given FILE * and return a new one, corresponding to the new file
+ * - close given FILE * and return a buffer corresponding to the new file
  */
-static FILE *flatten_opensips_cfg(FILE *cfg, const char *cfg_path)
+static int flatten_opensips_cfg(FILE *cfg, const char *cfg_path, str *out)
 {
 	int sz = 0, bytes_left = 0;
 	char *flattened = NULL;
 
 	if (__flatten_opensips_cfg(cfg, cfg_path, &flattened, &sz, &bytes_left)) {
 		LM_ERR("failed to flatten cfg file (internal err), out of memory?\n");
-		return NULL;
+		return -1;
 	}
 
-#ifdef EXTRA_DEBUG
-	LM_NOTICE("flattened config file:\n%.*s\n", sz - bytes_left, flattened);
-#endif
+	//LM_INFO("flattened config file:\n%.*s\n", sz - bytes_left, flattened);
 
-	cfg = fmemopen(flattened, sz - bytes_left, "r");
-	if (!cfg)
-		LM_ERR("failed to obtain file for flattened cfg buffer\n");
-
-	return cfg;
+	out->s = flattened;
+	out->len = sz - bytes_left;
+	return 0;
 }
 
 static char *cfg_include_stack[CFG_MAX_INCLUDE_DEPTH];
@@ -437,7 +449,7 @@ void cfg_dump_context(const char *file, int line, int colstart, int colend)
 		if (!strcmp(con->path, file))
 			break;
 
-	if (!con || called_before)
+	if (!con || !con->lines[0] || called_before)
 		return;
 
 	called_before = 1;
@@ -499,15 +511,15 @@ void cfg_dump_backtrace(void)
 		LM_GEN1(L_CRIT, "%2d. %s\n", frame++, *it);
 }
 
-static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
+static int exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline,
+                             str *out)
 {
-	FILE *final_cfg;
-	int parent_w[2], parent_r[2], filesz = 0, filebufsz = 0;
-	char chunk[1024], *filebuf = NULL;
-	ssize_t left, written;
-	size_t bytes;
+	int parent_w[2], parent_r[2], cfgsz = 0, cfgbufsz = 0;
+	char chunk[1024], *cfgbuf = NULL;
+	ssize_t written, bytes;
+	size_t bytes2write;
 	char *p, *tok, *cmd, **argv = NULL, *pp_binary = NULL;
-	int argv_len = 0, ch;
+	int argv_len = 0, flags, have_input = 0, done_writing = 0;
 
 	if (strlen(preproc_cmdline) == 0) {
 		LM_ERR("preprocessor command (-p) is an empty string!\n");
@@ -559,91 +571,124 @@ static FILE *exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline)
 	close(parent_w[0]);
 	close(parent_r[1]);
 
-	/* push the cfg file into the new process' stdin */
-	do {
-		bytes = fread(chunk, 1, 1024, flat_cfg);
+	flags = fcntl(parent_w[1], F_GETFL);
+	if (flags == -1) {
+		LM_ERR("fcntl GET 1 failed: %d - %s\n", errno, strerror(errno));
+		goto out_err_pipes;
+	}
+
+	if (fcntl(parent_w[1], F_SETFL, flags | O_NONBLOCK) == -1) {
+		LM_ERR("fcntl SET 1 failed: %d - %s\n", errno, strerror(errno));
+		goto out_err_pipes;
+	}
+
+	flags = fcntl(parent_r[0], F_GETFL);
+	if (flags == -1) {
+		LM_ERR("fcntl GET 2 failed: %d - %s\n", errno, strerror(errno));
+		goto out_err_pipes;
+	}
+
+	if (fcntl(parent_r[0], F_SETFL, flags | O_NONBLOCK) == -1) {
+		LM_ERR("fcntl SET 2 failed: %d - %s\n", errno, strerror(errno));
+		goto out_err_pipes;
+	}
+
+	/* communicate with the preprocessor using alternating,
+	 * non-blocking writes and reads */
+	while (!done_writing) {
+		/* fetch bytes to write */
+		bytes2write = fread(chunk, 1, 1024, flat_cfg);
 		if (ferror(flat_cfg)) {
 			LM_ERR("failed to read from flat cfg: %d (%s)\n",
 			       errno, strerror(errno));
 			goto out_err_pipes;
 		}
 
-		if (bytes == 0)
-			continue;
-
-		if (filesz + bytes > filebufsz) {
-			if (filebufsz == 0)
-				filebufsz = 4096;
-			else
-				filebufsz *= 2;
-
-			filebuf = realloc(filebuf, filebufsz);
-			if (!filebuf) {
-				LM_ERR("oom, failed to build config buffer\n");
-				goto out_err;
-			}
-		}
-
-		memcpy(filebuf + filesz, chunk, bytes);
-		filesz += bytes;
-	} while (!feof(flat_cfg));
-
-#if __GLIBC_PREREQ(2, 14)
-	int result = fcntl(parent_w[1], F_GETPIPE_SZ);
-	if (result < 0) {
-		LM_ERR("F_GETPIPE_SZ failed: %d, %s\n", errno, strerror(errno));
-		goto out_err;
-	} else {
-		bytes = result;
-	}
-
-	if (bytes < filesz) {
-		if (fcntl(parent_w[1], F_SETPIPE_SZ, filesz) < 0) {
-			LM_ERR("failed to run preprocessor (/proc/sys/fs/pipe-max-size "
-					"max pipe buffer too small, need: %d), %d, %s\n", filesz,
-					errno, strerror(errno));
-			goto out_err;
-		}
-	}
-#endif
-
-	left = filesz;
-	p = filebuf;
-	do {
-		written = write(parent_w[1], p, left);
-		left -= written;
-		p += written;
-	} while (left > 0);
-
-	free(filebuf);
-	fclose(flat_cfg);
-	close(parent_w[1]);
-
-	/* and we're done, let's see what the process barfed up! */
-	final_cfg = fdopen(parent_r[0], "r");
-	if (!final_cfg) {
-		LM_ERR("failed to open final cfg file: %d (%s)\n",
-		       errno, strerror(errno));
-	} else {
-		ch = fgetc(final_cfg);
-		if (ch == EOF) {
-			LM_ERR("no output from the preprocessor!  "
-					"Make sure it prints to standard output!\n");
-			fclose(final_cfg);
-			final_cfg = NULL;
+		if (bytes2write == 0) {
+			done_writing = 1;
+			close(parent_w[1]); /* signal EOF to the outside process! */
 		} else {
-			ungetc(ch, final_cfg);
+			have_input = 1;
 		}
+
+		p = chunk;
+
+send_bytes:
+		/* write phase */
+		while (bytes2write > 0) {
+			written = write(parent_w[1], p, bytes2write);
+			if (written < 0) {
+				if (errno == EAGAIN || errno == EWOULDBLOCK)
+					break;
+				else if (errno == EINTR)
+					continue;
+				else
+					goto out_err_pipes;
+			}
+
+			bytes2write -= written;
+			p += written;
+		}
+
+		/* read phase */
+		for (;;) {
+			if (cfgsz + 1024 > cfgbufsz) {
+				if (cfgbufsz == 0)
+					cfgbufsz = 4096;
+				else
+					cfgbufsz *= 2;
+
+				cfgbuf = realloc(cfgbuf, cfgbufsz);
+				if (!cfgbuf) {
+					LM_ERR("oom, failed to build config buffer\n");
+					goto out_err;
+				}
+			}
+
+			bytes = read(parent_r[0], cfgbuf + cfgsz, 1024);
+			if (bytes < 0) {
+				if (errno == EAGAIN || errno == EWOULDBLOCK) {
+					if (done_writing) {
+						usleep(10);
+						continue;
+					} else {
+						break;
+					}
+				} else if (errno == EINTR) {
+					continue;
+				} else {
+					goto out_err_pipes;
+				}
+			} else if (bytes == 0) {
+				bytes2write = 0;
+				done_writing = 1;
+				break;
+			}
+
+			cfgsz += bytes;
+		}
+
+		if (bytes2write > 0)
+			goto send_bytes;
 	}
 
-	return final_cfg;
+	if (have_input && cfgsz == 0)
+		LM_WARN("no output from the preprocessor! "
+				"Does it print to standard output?\n");
+
+	fclose(flat_cfg);
+	close(parent_r[0]);
+
+	out->s = cfgbuf;
+	out->len = cfgsz;
+	return 0;
 
 out_err_pipes:
 	close(parent_w[1]);
 	close(parent_r[0]);
 out_err:
 	fclose(flat_cfg);
-	return NULL;
+	return -1;
 }
 
 int eatback_pp_tok(struct str_buf *buf)
