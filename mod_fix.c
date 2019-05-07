@@ -85,7 +85,7 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 	struct cmd_param *param;
 	gparam_p gp = NULL;
 	int ret;
-	pv_elem_t *pve;
+	pv_elem_t *pve = NULL;
 	regex_t *re = NULL;
 	void *h;
 
@@ -152,7 +152,8 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 		} else if (param->flags & CMD_PARAM_STR) {
 
 			if (elems[i].type == STR_ST) {
-				if (pv_parse_format(&elems[i].u.s, &pve) < 0) {
+				if (!(param->flags & CMD_PARAM_NO_EXPAND) &&
+					pv_parse_format(&elems[i].u.s, &pve) < 0) {
 					LM_ERR("Failed to parse formatted string in param "
 						"[%d]\n",i);
 					ret = E_UNSPEC;
@@ -162,7 +163,8 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 				if ((param->flags & CMD_PARAM_NO_EXPAND) ||
 				    (!pve->next && pve->spec.type == PVT_NONE)) {
 					/* ignoring/no variables in the provided string */
-					pv_elem_free_all(pve);
+					if (pve)
+						pv_elem_free_all(pve);
 
 					gp->v.sval = elems[i].u.s;
 					gp->pval = &gp->v.sval;
