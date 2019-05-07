@@ -223,31 +223,17 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 		} else if (param->flags & CMD_PARAM_REGEX) {
 
 			if (elems[i].type == STR_ST) {
-				if (pv_parse_format(&elems[i].u.s, &pve) < 0) {
-					LM_ERR("Failed to parse formatted string in param "
-						"[%d]\n",i);
+				ret = fixup_regcomp(&re, &elems[i].u.s, 0);
+				if (ret < 0)
+					return ret;
+
+				gp->pval = re;
+				gp->type = GPARAM_TYPE_VAL;
+
+				if (param->fixup && param->fixup(&gp->pval) < 0) {
+					LM_ERR("Fixup failed for param [%d]\n", i);
 					ret = E_UNSPEC;
 					goto error;
-				}
-				if (!pve->next && pve->spec.type == PVT_NONE) {
-					/* no variables in the provided string */
-					pv_elem_free_all(pve);
-
-					ret = fixup_regcomp(&re, &elems[i].u.s, 0);
-					if (ret < 0)
-						return ret;
-
-					gp->pval = re;
-					gp->type = GPARAM_TYPE_VAL;
-
-					if (param->fixup && param->fixup(&gp->pval) < 0) {
-						LM_ERR("Fixup failed for param [%d]\n", i);
-						ret = E_UNSPEC;
-						goto error;
-					}
-				} else {
-					gp->pval = pve;
-					gp->type = GPARAM_TYPE_PVE;
 				}
 			} else if (elems[i].type == SCRIPTVAR_ST) {
 				gp->pval = elems[i].u.data;
@@ -389,32 +375,6 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 			switch (gp->type) {
 			case GPARAM_TYPE_VAL:
 				cmdp[i-1] = gp->pval;
-				break;
-			case GPARAM_TYPE_PVE:
-				if (pv_printf_s(msg, (pv_elem_t *)gp->pval,
-					&tmp_vals[i].rs) != 0) {
-					LM_ERR("Failed to print formatted string in param [%d]\n", i);
-					return E_UNSPEC;
-				}
-
-				ret = fixup_regcomp(&re, &tmp_vals[i].rs, 1);
-				if (ret < 0)
-					return ret;
-				cmdp[i-1] = re;
-
-				if (param->fixup) {
-					if (param->fixup(&cmdp[i-1]) < 0) {
-						LM_ERR("Fixup failed for param [%d]\n", i);
-						ret = E_UNSPEC;
-					}
-
-					regfree(re);
-					pkg_free(re);
-
-					if (ret < 0)
-						return ret;
-				}
-
 				break;
 			case GPARAM_TYPE_PVS:
 				if (pv_get_spec_value(msg, (pv_spec_t *)gp->pval,
