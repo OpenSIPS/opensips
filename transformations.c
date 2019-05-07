@@ -3463,7 +3463,7 @@ int tr_parse_re(str *in,trans_t *t)
 			goto error;
 		}
 		p++;
-		LM_INFO("preparing to parse param\n");
+		LM_DBG("preparing to parse param\n");
 		if (tr_parse_sparam(p, in, &tp, 0) == NULL)
 			goto error;
 		t->params = tp;
