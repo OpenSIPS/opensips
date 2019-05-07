@@ -121,16 +121,16 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"subst", (cmd_function)subst_f, {
-		{CMD_PARAM_STR, fixup_substre, fixup_free_substre}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"subst_uri", (cmd_function)subst_uri_f, {
-		{CMD_PARAM_STR, fixup_substre, fixup_free_substre}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{"subst_user", (cmd_function)subst_user_f, {
-		{CMD_PARAM_STR, fixup_substre, fixup_free_substre}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{"subst_body", (cmd_function)subst_body_f, {
-		{CMD_PARAM_STR, fixup_substre, fixup_free_substre}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
