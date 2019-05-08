@@ -666,7 +666,7 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 			if( dest )
 			{
 				prof_val_local_dec(dest, dlg,
-					l->profile->repl_type==REPL_CACHEDB);
+					l->profile->repl_type==REPL_PROTOBIN);
 
 				if( *dest == 0 )
 				{
