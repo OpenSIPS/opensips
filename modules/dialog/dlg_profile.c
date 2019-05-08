@@ -665,7 +665,8 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 			dest = map_find( entry, l->value );
 			if( dest )
 			{
-				prof_val_local_dec(dest, dlg);
+				prof_val_local_dec(dest, dlg,
+					l->profile->repl_type==REPL_CACHEDB);
 
 				if( *dest == 0 )
 				{
@@ -799,7 +800,8 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 			}
 			/* if we accept replicated stuff, we have to allocate the
 			 * structure for it and treat the counter differently */
-			prof_val_local_inc(dest, dlg);
+			prof_val_local_inc(dest, dlg,
+				linker->profile->repl_type==REPL_PROTOBIN);
 		}
 		else {
 			cnt = get_local_counter(&linker->profile->noval_local_counters[hash], dlg);
@@ -1045,7 +1047,8 @@ unsigned int get_profile_size(struct dlg_profile_table *profile, str *value)
 							goto next_val;
 						}
 
-						n += prof_val_get_count(dest, 0);
+						n += prof_val_get_count(dest, 0,
+								profile->repl_type == REPL_PROTOBIN);
 next_val:
 						if (iterator_next(&it) < 0)
 							break;
@@ -1080,7 +1083,8 @@ next_val:
 
 				dest = map_find(entry,*value);
 				if( dest )
-					n = prof_val_get_count(dest, 0);
+					n = prof_val_get_count(dest, 0,
+							profile->repl_type == REPL_PROTOBIN);
 
 				lock_set_release( profile->locks, i);
 
@@ -1218,7 +1222,23 @@ static inline int add_val_to_rpl(void * param, str key, void * val)
 
 	if (add_mi_string(val_item, MI_SSTR("value"), key.s , key.len) < 0)
 		return -1;
-	if (add_mi_number(val_item, MI_SSTR("count"), prof_val_get_count(&val, 0)) < 0)
+	if (add_mi_number(val_item, MI_SSTR("count"), prof_val_get_count(&val, 0, 0)) < 0)
+		return -1;
+
+	return 0;
+}
+
+static inline int add_val_to_rpl_r(void * param, str key, void * val)
+{
+	mi_item_t *val_item;
+
+	val_item = add_mi_object((mi_item_t *)param, NULL, 0);
+	if (!val_item)
+		return -1;
+
+	if (add_mi_string(val_item, MI_SSTR("value"), key.s , key.len) < 0)
+		return -1;
+	if (add_mi_number(val_item, MI_SSTR("count"), prof_val_get_count(&val, 0, 1)) < 0)
 		return -1;
 
 	return 0;
@@ -1271,7 +1291,10 @@ mi_response_t *mi_get_profile_values(const mi_params_t *params,
 		for( i=0; i<profile->size; i++ )
 		{
 			lock_set_get( profile->locks, i);
-			ret |= map_for_each(profile->entries[i], add_val_to_rpl, resp_arr);
+			if (profile->repl_type == REPL_PROTOBIN)
+				ret |= map_for_each(profile->entries[i], add_val_to_rpl_r, resp_arr);
+			else
+				ret |= map_for_each(profile->entries[i], add_val_to_rpl, resp_arr);
 			lock_set_release( profile->locks, i);
 		}
 	}
