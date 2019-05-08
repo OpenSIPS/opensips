@@ -1314,7 +1314,7 @@ static void clean_profiles(unsigned int ticks, void *param)
 					LM_ERR("[BUG] bogus map[%d] state\n", i);
 					goto next_val;
 				}
-				count = prof_val_get_count(dst, 1);
+				count = prof_val_get_count(dst, 1, 1);
 				if (!count) {
 					del = it;
 					if (iterator_next(&it) < 0)
