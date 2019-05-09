@@ -5,6 +5,17 @@ cfgdir="/etc/$prog"
 configfile="$cfgdir/$prog.cfg"
 m4configfile="$cfgdir/$prog.m4"
 m4archivedir="$cfgdir/archive"
+defaultsfile=/etc/default/opensips
+
+# Load startup options if available
+if [ -f $defaultsfile ]; then
+   . $defaultsfile || true
+fi
+
+S_MEMORY=$((`echo $S_MEMORY | sed -e 's/[^0-9]//g'`))
+P_MEMORY=$((`echo $P_MEMORY | sed -e 's/[^0-9]//g'`))
+[ $S_MEMORY -le 0 ] && S_MEMORY=32
+[ $P_MEMORY -le 0 ] && P_MEMORY=32
 
 # Generate config from M4
 if [ -f $m4configfile ]; then
@@ -29,4 +40,4 @@ if [ -f $m4configfile ]; then
 	chmod 640 ${configfile}
 fi
 
-exec $prog -c -f $configfile
+exec $prog -m $S_MEMORY -M $P_MEMORY -c -f $configfile
