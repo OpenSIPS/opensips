@@ -1113,7 +1113,8 @@ int noval_get_local_count(struct dlg_profile_table *profile)
 		}
 
 		for (cnt = profile->noval_local_counters[i]; cnt; cnt = cnt->next) {
-			if (profile_repl_cluster && dialog_repl_cluster) {
+			if (profile->repl_type == REPL_PROTOBIN &&
+				profile_repl_cluster && dialog_repl_cluster) {
 				/* don't count dialogs for which we have a backup role */
 				if (cnt->dlg && get_shtag_state(cnt->dlg) != SHTAG_STATE_BACKUP)
 					n += cnt->n;
