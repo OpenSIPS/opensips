@@ -772,10 +772,15 @@ static int do_t_cleanup( struct sip_msg *foo, void *bar)
 
 	reset_e2eack_t();
 
-	if ( (t=get_t())!=NULL && t!=T_UNDEFINED &&   /* we have a transaction */
-	/* with an UAS request not yet updated from script msg */
-	t->uas.request && (t->uas.request->msg_flags & FL_SHM_UPDATED)==0 )
-		update_cloned_msg_from_msg( t->uas.request, foo);
+	if ( (t=get_t())!=NULL && t!=T_UNDEFINED && t->uas.request) {
+		/* check the UAS request not yet updated from script msg */
+		LOCK_REPLIES(t);
+		if (t->uas.request->msg_flags & FL_SHM_UPDATED)
+			LM_DBG("transaction %p already updated! Skipping update!\n", t);
+		else
+			update_cloned_msg_from_msg( t->uas.request, foo);
+		UNLOCK_REPLIES(t);
+	}
 
 	return t_unref(foo) == 0 ? SCB_DROP_MSG : SCB_RUN_ALL;
 }
