@@ -515,8 +515,10 @@ static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
 	int ret, fd;
 	struct tcp_connection *conn;
 	/* first try to acquire the connection */
+
+	/* TBD - handle conn not found here = reconnect ? */
 	ret = tcp_conn_get(smsc->conn_id, &smsc->ip, smsc->port, PROTO_SMPP, &conn, &fd);
-	if (ret < 0) {
+	if (ret <= 0) {
 		LM_ERR("cannot fetch connection for %.*s (%d)\n",
 				smsc->name.len, smsc->name.s, ret);
 		return ret;
