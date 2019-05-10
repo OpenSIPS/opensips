@@ -168,6 +168,11 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 					if(c==EOF)
 						goto clean;
 					buf[bp++] = c;
+					if (bp==4096) {
+						LM_ERR("Buffer overflow for file [%s] row=[%d] col=[%d] c=[%c]."
+							" Required buffer size greater then 4096!\n",
+							path, crow+1, ccol+1, c);
+					}
 					c = fgetc(fin);
 				}
 				colp = dbt_column_new(buf, bp);
@@ -459,6 +464,11 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 									}
 								}
 								buf[bp++] = c;
+								if (bp==4096) {
+									LM_ERR("Buffer overflow for file [%s] row=[%d] col=[%d] c=[%c]."
+										" Required buffer size greater then 4096!\n",
+										path, crow+1, ccol+1, c);
+								}
 								c = fgetc(fin);
 							}
 							dtval.val.str_val.s = buf;
