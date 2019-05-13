@@ -497,11 +497,10 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 		generate_callid(&callid);
 
 	if ( shm_str_dup( &rpc_p->method, &method )<0 ||
-	(rpc_p->body.s && shm_str_dup( &rpc_p->body, body )<0) ||
+	(body->s && shm_str_dup( &rpc_p->body, body )<0) ||
 	shm_str_dup( &rpc_p->hdrs, &s ) <0 ||
 	shm_str_dup( &rpc_p->dlg.id.call_id, &callid)<0 )
 		goto error;
-
 
 	/* We will not fill in dlg->id.rem_tag because
 	 * if present it will be printed within To HF */
