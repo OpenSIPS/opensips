@@ -611,7 +611,8 @@ void destroy_linkers(struct dlg_profile_link *linker, char is_replicated)
 					{
 						/* warn everybody we are deleting */
 						/* XXX: we should queue these */
-						repl_prof_remove(&l->profile->name, &l->value);
+						if (l->profile->repl_type==REPL_PROTOBIN)
+							repl_prof_remove(&l->profile->name, &l->value);
 						map_remove(entry,l->value );
 					}
 				}
