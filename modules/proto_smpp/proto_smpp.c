@@ -471,8 +471,7 @@ static int send_smpp_msg(struct sip_msg *msg, str *name)
 	    parse_sip_msg_uri(msg);
 
 	get_body(msg, &body);
-	send_submit_or_deliver_request(&body, &parse_from_uri(msg)->user,
+	return send_submit_or_deliver_request(&body, &parse_from_uri(msg)->user,
 			&msg->parsed_uri.user, session);
-	return 0;
 }
 
