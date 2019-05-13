@@ -85,6 +85,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id);
 struct mi_root *mi_sync_cl_dlg(struct mi_root *cmd, void *param);
 struct mi_root *mi_set_shtag_active(struct mi_root *cmd, void *param);
 
+int get_shtag(str *tag_name);
 int get_shtag_state(struct dlg_cell *dlg);
 int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name);
 void free_active_msgs_info(struct dlg_sharing_tag *tag);

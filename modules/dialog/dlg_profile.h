@@ -54,7 +54,7 @@ struct prof_rcv_count;
 
 struct prof_local_count {
 	int n;
-	struct dlg_cell *dlg;
+	str shtag;
 	struct prof_local_count *next;
 };
 

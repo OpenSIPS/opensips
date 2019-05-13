@@ -1369,7 +1369,7 @@ static void broadcast_profiles(utime_t ticks, void *param)
 	}
 
 	for (profile = profiles; profile; profile = profile->next) {
-		if (!(profile->repl_type&REPL_PROTOBIN))
+		if (profile->repl_type != REPL_PROTOBIN)
 			continue;
 
 		count = 0;

@@ -655,8 +655,15 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 
 	map_t entry;
 	void ** dest;
+	str shtag = {0,0};
 
 	if (!(l->profile->repl_type==REPL_CACHEDB)) {
+		if (l->profile->repl_type==REPL_PROTOBIN &&
+			(fetch_dlg_value(dlg, &shtag_dlg_val, &shtag, 0) == -1)) {
+			LM_ERR("Unable to fetch dlg value for sharing tag\n");
+			return;
+		}
+
 		lock_set_get( l->profile->locks, l->hash_idx);
 
 		if( l->profile->has_value)
@@ -665,7 +672,7 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 			dest = map_find( entry, l->value );
 			if( dest )
 			{
-				prof_val_local_dec(dest, dlg,
+				prof_val_local_dec(dest, &shtag,
 					l->profile->repl_type==REPL_PROTOBIN);
 
 				if( *dest == 0 )
@@ -680,7 +687,12 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 			}
 		}
 		else {
-			remove_local_counter(&l->profile->noval_local_counters[l->hash_idx], dlg);
+			if (l->profile->repl_type==REPL_PROTOBIN && profile_repl_cluster)
+				remove_local_counter(&l->profile->noval_local_counters[l->hash_idx],
+					&shtag);
+			else
+				l->profile->noval_local_counters[l->hash_idx] =
+					(void *)((long)l->profile->noval_local_counters[l->hash_idx] - 1);
 		}
 
 		lock_set_release( l->profile->locks, l->hash_idx  );
@@ -764,6 +776,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 	struct dlg_entry *d_entry;
 	void ** dest;
 	struct prof_local_count *cnt;
+	str shtag = {0,0};
 
 	/* add the linker to the dialog */
 	/* FIXME zero h_id is not 100% for testing if the dialog is inserted
@@ -788,6 +801,12 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 		hash = calc_hash_profile(&linker->value, dlg, linker->profile);
 		linker->hash_idx = hash;
 
+		if (linker->profile->repl_type==REPL_PROTOBIN &&
+			(fetch_dlg_value(dlg, &shtag_dlg_val, &shtag, 0) == -1)) {
+			LM_ERR("Unable to fetch dlg value for sharing tag\n");
+			return;
+		}
+
 		lock_set_get( linker->profile->locks, hash );
 
 		LM_DBG("Entered here with hash = %d \n",hash);
@@ -800,20 +819,24 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 				lock_set_release( linker->profile->locks,hash );
 				return;
 			}
-			/* if we accept replicated stuff, we have to allocate the
-			 * structure for it and treat the counter differently */
-			prof_val_local_inc(dest, dlg,
+
+			prof_val_local_inc(dest, &shtag,
 				linker->profile->repl_type==REPL_PROTOBIN);
 		}
 		else {
-			cnt = get_local_counter(&linker->profile->noval_local_counters[hash], dlg);
-			if (!cnt) {
-				lock_set_release(linker->profile->locks, hash);
-				return;
-			}
+			if (linker->profile->repl_type==REPL_PROTOBIN && profile_repl_cluster) {
+				cnt = get_local_counter(&linker->profile->noval_local_counters[hash],
+					&shtag);
+				if (!cnt) {
+					lock_set_release(linker->profile->locks, hash);
+					return;
+				}
 
-			cnt->dlg = dlg;
-			cnt->n++;
+				cnt->n++;
+			} else {
+				linker->profile->noval_local_counters[hash] =
+					(void*)((long)linker->profile->noval_local_counters[hash] + 1);
+			}
 		}
 
 		lock_set_release( linker->profile->locks,hash );
@@ -1105,6 +1128,7 @@ int noval_get_local_count(struct dlg_profile_table *profile)
 	int i;
 	int n = 0;
 	struct prof_local_count *cnt;
+	int rc;
 
 	for (i = 0; i < profile->size; i++) {
 		lock_set_get(profile->locks, i);
@@ -1114,15 +1138,20 @@ int noval_get_local_count(struct dlg_profile_table *profile)
 			continue;
 		}
 
-		for (cnt = profile->noval_local_counters[i]; cnt; cnt = cnt->next) {
-			if (profile->repl_type == REPL_PROTOBIN &&
-				profile_repl_cluster && dialog_repl_cluster) {
-				/* don't count dialogs for which we have a backup role */
-				if (cnt->dlg && get_shtag_state(cnt->dlg) != SHTAG_STATE_BACKUP)
+		if (profile->repl_type==REPL_PROTOBIN && profile_repl_cluster) {
+			for (cnt = profile->noval_local_counters[i]; cnt; cnt = cnt->next)
+				if (dialog_repl_cluster && cnt->shtag.s) {
+					/* don't count dialogs for which we have a backup role */
+					if ((rc = get_shtag(&cnt->shtag)) < 0)
+						LM_ERR("Failed to get state for sharing tag: <%.*s>\n",
+							cnt->shtag.len, cnt->shtag.s);
+
+					if (rc != SHTAG_STATE_BACKUP)
+						n += cnt->n;
+				} else
 					n += cnt->n;
-			} else
-				n += cnt->n;
-		}
+		} else
+			n += (long)profile->noval_local_counters[i];
 
 		lock_set_release(profile->locks, i);
 	}
