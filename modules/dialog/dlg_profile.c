@@ -670,9 +670,11 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 
 				if( *dest == 0 )
 				{
-					/* warn everybody we are deleting */
-					/* XXX: we should queue these */
-					repl_prof_remove(&l->profile->name, &l->value);
+					if (l->profile->repl_type==REPL_PROTOBIN)
+						/* warn everybody we are deleting */
+						/* XXX: we should queue these */
+						repl_prof_remove(&l->profile->name, &l->value);
+
 					map_remove(entry,l->value );
 				}
 			}
