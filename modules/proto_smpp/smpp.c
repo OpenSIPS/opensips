@@ -521,7 +521,7 @@ static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
 	if (ret <= 0) {
 		LM_ERR("cannot fetch connection for %.*s (%d)\n",
 				smsc->name.len, smsc->name.s, ret);
-		return ret;
+		return -1;
 	}
 	/* update connection in case it has changed */
 	smsc->conn_id = conn->id;
@@ -1029,10 +1029,12 @@ void handle_smpp_msg(char *buffer, smpp_session_t *session, struct receive_info 
 }
 
 
-void send_submit_or_deliver_request(str *msg, str *src, str *dst,
+int send_submit_or_deliver_request(str *msg, str *src, str *dst,
 		smpp_session_t *session)
 {
 	smpp_submit_sm_req_t *req;
+	int ret;
+
 	LM_DBG("sending submit_sm\n");
 	LM_DBG("FROM: %.*s\n", src->len, src->s);
 	LM_DBG("TO: %.*s\n", dst->len, dst->s);
@@ -1040,10 +1042,16 @@ void send_submit_or_deliver_request(str *msg, str *src, str *dst,
 
 	if (build_submit_or_deliver_request(&req, src, dst, msg, session)) {
 		LM_ERR("error creating submit_sm request\n");
-		return;
+		return -1;
 	}
-	smpp_send_msg(session, &req->payload);
+	
+	ret = smpp_send_msg(session, &req->payload);
 	pkg_free(req);
+
+	if (ret <=0)
+		return -1;
+
+	return 1;
 }
 
 static void send_enquire_link_request(smpp_session_t *session)
