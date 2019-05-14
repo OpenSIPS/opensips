@@ -1027,19 +1027,23 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 
 		dlg_update_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 
-		/* extract the contact address */
-		if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
-			LM_ERR("There is no contact header in the outgoing 200OK \n");
-		} else {
-			contact.s = msg->contact->name.s;
-			contact.len = msg->contact->len;
+		/* save the outgoing contact only if TH */
+		if (dlg->flags & TOPOH_ONGOING) {
+			/* extract the adv contact address */
+			if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0 ||
+			!msg->contact)){
+				LM_ERR("There is no contact header in the outgoing 200OK \n");
+			} else {
+				contact.s = msg->contact->name.s;
+				contact.len = msg->contact->len;
 
-			if (shm_str_sync(&dlg->legs[DLG_CALLER_LEG].adv_contact,
-			                  &contact) != 0) {
-				LM_ERR("No more shm mem for outgoing contact hdr\n");
-				free_sip_msg(msg);
-				pkg_free(msg);
-				return;
+				if (shm_str_sync(&dlg->legs[DLG_CALLER_LEG].adv_contact,
+				                  &contact) != 0) {
+					LM_ERR("No more shm mem for outgoing contact hdr\n");
+					free_sip_msg(msg);
+					pkg_free(msg);
+					return;
+				}
 			}
 		}
 
@@ -1193,16 +1197,20 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 
 	dlg_update_sdp(dlg, DLG_CALLER_LEG, dlg->legs_no[DLG_LEGS_USED], msg);
 
-        /* extract the contact address */
-	if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0||!msg->contact)){
-		LM_ERR("No outgoing contact in the initial INVITE \n");
-	} else {
-		contact.s = msg->contact->name.s;
-		contact.len = msg->contact->len;
+	/* save the outgoing contact only if TH */
+	if (dlg->flags & TOPOH_ONGOING) {
+		/* extract the contact address */
+		if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0 ||
+		!msg->contact)){
+			LM_ERR("No outgoing contact in the initial INVITE \n");
+		} else {
+			contact.s = msg->contact->name.s;
+			contact.len = msg->contact->len;
 
-		if (shm_str_dup(&leg->adv_contact, &contact) != 0) {
-			LM_ERR("No more shm for INVITE outgoing contact \n");
-			goto out_free;
+			if (shm_str_dup(&leg->adv_contact, &contact) != 0) {
+				LM_ERR("No more shm for INVITE outgoing contact \n");
+				goto out_free;
+			}
 		}
 	}
 
