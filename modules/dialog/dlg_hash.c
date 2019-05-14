@@ -353,7 +353,7 @@ int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */
 int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
-		str *contact,str *cseq, struct socket_info *sock,
+		str *contact, str *adv_ct, str *cseq, struct socket_info *sock,
 		str *mangled_from,str *mangled_to,str *in_sdp, str *out_sdp)
 {
 	struct dlg_leg *leg;
@@ -422,51 +422,39 @@ int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 		}
 	}
 
-	/* save mangled from URI, if any */
-	if (mangled_from && mangled_from->s && mangled_from->len) {
-		leg->from_uri.s = shm_malloc(mangled_from->len);
-		if (!leg->from_uri.s) {
-			LM_ERR("no more shm\n");
-			goto error_all;
-		}
-
-		leg->from_uri.len = mangled_from->len;
-		memcpy(leg->from_uri.s,mangled_from->s,mangled_from->len);
+	/* save mangled FROM/TO URIs, if any */
+	if (mangled_from && mangled_from->s && mangled_from->len &&
+	shm_str_dup( &leg->from_uri, mangled_from)==-1 ) {
+		LM_ERR("failed to shm duplicate mangled FROM hdr\n");
+		goto error_all;
 	}
 
-	if (mangled_to && mangled_to->s && mangled_to->len) {
-		leg->to_uri.s = shm_malloc(mangled_to->len);
-		if (!leg->to_uri.s) {
-			LM_ERR("no more shm\n");
-			goto error_all;
-		}
-
-		leg->to_uri.len = mangled_to->len;
-		memcpy(leg->to_uri.s,mangled_to->s,mangled_to->len);
+	if (mangled_to && mangled_to->s && mangled_to->len &&
+	shm_str_dup( &leg->to_uri, mangled_to)==-1 ) {
+		LM_ERR("failed to shm duplicate mangled TO hdr\n");
+		goto error_all;
 	}
 
-	/* this is the inbound sdp received by the client */
-	if (in_sdp && in_sdp->s && in_sdp->len) {
-		leg->in_sdp.s = shm_malloc(in_sdp->len);
-		if (!leg->in_sdp.s) {
-			LM_ERR("no more shm\n");
-			goto error_all;
-		}
-
-		leg->in_sdp.len = in_sdp->len;
-		memcpy(leg->in_sdp.s, in_sdp->s, in_sdp->len);
+	/* these are the inbound/outbound SDPs for this leg */
+	if (in_sdp && in_sdp->s && in_sdp->len &&
+	shm_str_dup( &leg->in_sdp, in_sdp)==-1 ) {
+		LM_ERR("failed to shm duplicate inbound SDP\n");
+		goto error_all;
 	}
 
-	if (out_sdp && out_sdp->s && out_sdp->len) {
-		leg->out_sdp.s = shm_malloc(out_sdp->len);
-		if (!leg->out_sdp.s) {
-			LM_ERR("no more shm\n");
-			goto error_all;
-		}
-
-		leg->out_sdp.len = out_sdp->len;
-		memcpy(leg->out_sdp.s, out_sdp->s, out_sdp->len);
+	if (out_sdp && out_sdp->s && out_sdp->len &&
+	shm_str_dup( &leg->out_sdp, out_sdp)==-1 ) {
+		LM_ERR("failed to shm duplicate outbound SDP\n");
+		goto error_all;
 	}
+
+	/* this is the advertised contact for this leg */
+	if (adv_ct && adv_ct->s && adv_ct->len &&
+	shm_str_dup( &leg->adv_contact, adv_ct)==-1 ) {
+		LM_ERR("failed to shm duplicate advertised contact\n");
+		goto error_all;
+	}
+
 
 	/* tag */
 	leg->tag.len = tag->len;
