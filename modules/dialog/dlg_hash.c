@@ -52,6 +52,7 @@
 #include "../../route.h"
 #include "../../md5utils.h"
 #include "../../parser/parse_to.h"
+#include "../../parser/contact/parse_contact.h"
 #include "../tm/tm_load.h"
 #include "../../script_cb.h"
 #include "dlg_hash.h"
@@ -349,6 +350,97 @@ int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
 	return dlg->legs_no[DLG_LEGS_USED]++;
 }
 
+
+static inline int translate_contact_ipport( str *ct, struct socket_info *sock,
+																	str *dst)
+{
+	struct hdr_field ct_hdr;
+	struct contact_body *cb;
+	contact_t *c;
+	struct sip_uri puri;
+	str hostport;
+	str *send_address_str, *send_port_str;
+	char *p;
+
+	/* rely on the fact that the replicated hdr is well formated, so 
+	 * skip the hdr name */
+	if ((p=q_memchr(ct->s, ':', ct->len))==NULL) {
+		LM_ERR("failed find hdr body in "
+			"advertised contact <%.*s>\n", ct->len, ct->s);
+	}
+
+	memset( &ct_hdr, 0, sizeof(ct_hdr));
+	ct_hdr.body.s = p+1;
+	ct_hdr.body.len = (ct->s+ct->len)-ct_hdr.body.s;
+
+	if (parse_contact( &ct_hdr )<0 ||
+	(cb=(contact_body_t*)ct_hdr.parsed)==NULL ||
+	(c=cb->contacts)==NULL || c->next!=NULL ) {
+		LM_ERR("failed to parsed or wrong nr of contacts in "
+			"advertised contact <%.*s>\n", ct->len, ct->s);
+		return -1;
+	}
+
+	if (parse_uri( c->uri.s, c->uri.len, &puri)<0) {
+		LM_ERR("failed to parsed URI in contact <%.*s>\n",
+			c->uri.len, c->uri.s);
+		goto error;
+	}
+	hostport.s = puri.host.s;
+	hostport.len = puri.port.len ?
+		(puri.port.s+puri.port.len-puri.host.s) :  puri.host.len ;
+
+	LM_DBG("replacing <%.*s> from ct <%.*s>\n",
+		hostport.len, hostport.s, ct->len, ct->s);
+
+	/* init send_address_str & send_port_str */
+	if(sock->adv_name_str.len)
+		send_address_str=&(sock->adv_name_str);
+	else if (default_global_address.s)
+		send_address_str=&default_global_address;
+	else
+		send_address_str=&(sock->address_str);
+	if(sock->adv_port_str.len)
+		send_port_str=&(sock->adv_port_str);
+	else if (default_global_port.s)
+		send_port_str=&default_global_port;
+	else
+		send_port_str=&(sock->port_no_str);
+
+	dst->len = (hostport.s - ct->s) +  /* staring preserved part */
+		(send_address_str->len + 1 + send_port_str->len) + /*new ip:port part*/
+		(ct->s + ct->len - hostport.s - hostport.len);
+	dst->s = (char*)shm_malloc( dst->len );
+	if (dst->s==NULL) {
+		LM_ERR("failed to allocated new host:port, len %d\n",dst->len);
+		goto error;
+	}
+
+	/* start building the new ct hdr */
+	p = dst->s;
+	memcpy( p, ct->s, hostport.s - ct->s);
+	p += hostport.s - ct->s;
+
+	memcpy( p, send_address_str->s, send_address_str->len);
+	p += send_address_str->len;
+	*(p++) = ':';
+	memcpy( p, send_port_str->s, send_port_str->len);
+	p += send_port_str->len;
+
+	memcpy( p, hostport.s+hostport.len, ct->s+ct->len-hostport.s-hostport.len);
+	p += ct->s+ct->len-hostport.s-hostport.len;
+
+	LM_DBG("resulting ct is <%.*s> / %d\n",
+		dst->len, dst->s, dst->len);
+
+	free_contact( &cb );
+	return 0;
+error:
+	free_contact( &cb );
+	return -1;
+}
+
+
 /* first time it will called for a CALLER leg - at that time there will
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */
@@ -449,12 +541,20 @@ int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 	}
 
 	/* this is the advertised contact for this leg */
-	if (adv_ct && adv_ct->s && adv_ct->len &&
-	shm_str_dup( &leg->adv_contact, adv_ct)==-1 ) {
-		LM_ERR("failed to shm duplicate advertised contact\n");
-		goto error_all;
+	if (adv_ct && adv_ct->s && adv_ct->len) {
+		/* if the advertised tag is correlated with an interface indetified 
+		 * by a TAG, it means that the actual IP of the interface may be
+		 * different, so we better re-compute the IP:port part of the contact*/
+		if (sock->tag.s) {
+			if (translate_contact_ipport(adv_ct,sock, &leg->adv_contact)<0){
+				LM_ERR("failed to shm translate advertised contact\n");
+				goto error_all;
+			}
+		} else if (shm_str_dup( &leg->adv_contact, adv_ct)==-1 ) {
+			LM_ERR("failed to shm duplicate advertised contact\n");
+			goto error_all;
+		}
 	}
-
 
 	/* tag */
 	leg->tag.len = tag->len;
