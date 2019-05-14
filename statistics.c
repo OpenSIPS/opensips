@@ -715,7 +715,7 @@ inline static int mi_list_stat(mi_item_t *resp_obj, str *mod, stat_var *stat)
 	else
 		buf = "incremental";
 
-	if (!add_mi_string_fmt(resp_obj, tmp_buf.s, tmp_buf.len, "%s", buf)) {
+	if (add_mi_string_fmt(resp_obj, tmp_buf.s, tmp_buf.len, "%s", buf)<0) {
 		LM_ERR("cannot add stat\n");
 		return -1;
 	}
