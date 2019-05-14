@@ -243,7 +243,7 @@ static int update_leg_info(int leg, struct dlg_cell *dlg, struct sip_msg *msg,
 		sdp.len = 0;
 	}
 
-	if (dlg_update_leg_info(leg, dlg, tag, &rr_set, &contact, &cseq,
+	if (dlg_update_leg_info(leg, dlg, tag, &rr_set, &contact, NULL, &cseq,
 	msg->rcv.bind_address,mangled_from,mangled_to, &sdp, NULL)!=0) {
 		LM_ERR("dlg_update_leg_info failed\n");
 		if (rr_set.s) pkg_free(rr_set.s);

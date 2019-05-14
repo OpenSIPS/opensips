@@ -91,13 +91,14 @@ static struct socket_info * fetch_socket_info(str *addr)
  * replicates a confirmed dialog from another OpenSIPS instance
  * by reading the relevant information using the Binary Packet Interface
  */
-int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag,
-							str *ttag, int safe)
+int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
+												str *ftag, str *ttag, int safe)
 {
 	int h_entry;
 	unsigned int dir, dst_leg;
 	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
-	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
+	str cseq1, cseq2, contact1, contact2, adv_ct1, adv_ct2;
+	str rroute1, rroute2, mangled_fu, mangled_tu;
 	str sdp1, sdp2, sdp3, sdp4;
 	str sock, vars, profiles;
 	struct dlg_cell *dlg = NULL;
@@ -189,11 +190,13 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	DLG_BIN_POP(str, packet, sdp2, pre_linking_error);
 	DLG_BIN_POP(str, packet, sdp3, pre_linking_error);
 	DLG_BIN_POP(str, packet, sdp4, pre_linking_error);
+	DLG_BIN_POP(str, packet, adv_ct1, pre_linking_error);
+	DLG_BIN_POP(str, packet, adv_ct2, pre_linking_error);
 
 	/* add the 2 legs */
-	if (dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1,
+	if (dlg_update_leg_info(0, dlg, &from_tag, &rroute1, &contact1, &adv_ct1,
 		&cseq1, caller_sock, 0, 0, &sdp1, &sdp2) != 0 ||
-		dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2,
+		dlg_update_leg_info(1, dlg, &to_tag, &rroute2, &contact2, &adv_ct2,
 		&cseq2, callee_sock, &mangled_fu, &mangled_tu, &sdp3, &sdp4) != 0) {
 		LM_ERR("dlg_set_leg_info failed\n");
 		goto pre_linking_error;
@@ -526,6 +529,8 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].out_sdp);
 	bin_push_str(packet, &dlg->legs[callee_leg].in_sdp);
 	bin_push_str(packet, &dlg->legs[callee_leg].out_sdp);
+	bin_push_str(packet, &dlg->legs[DLG_CALLER_LEG].adv_contact);
+	bin_push_str(packet, &dlg->legs[callee_leg].adv_contact);
 
 	/* give modules the chance to write values/profiles before replicating */
 	run_dlg_callbacks(DLGCB_WRITE_VP, dlg, NULL, DLG_DIR_NONE, NULL, 1, 1);
