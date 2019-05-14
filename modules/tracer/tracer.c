@@ -1433,7 +1433,8 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 {
 	int extra_len=0;
 	trace_info_p info=NULL;
-	trace_instance_t stack_info;
+	trace_info_t stack_info;
+	trace_instance_t stack_instance;
 	trace_instance_p instance=NULL;
 
 	if (trace_attrs != NULL)
@@ -1442,7 +1443,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	if (trace_flags == TRACE_MESSAGE) {
 		/* we don't need to allocate this structure since it will only be
 		 * used in this function's context */
-		instance = &stack_info;
+		instance = &stack_instance;
 
 		memset(instance, 0, sizeof(trace_instance_t));
 		if (extra_len) {
@@ -1515,6 +1516,10 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		/* this flag here will help catching
 		 * stateless replies(sl_send_reply(...))*/
 		msg->msg_flags |= FL_USE_SIPTRACE;
+	} else {
+		info = &stack_info;
+		memset(&stack_info, 0, sizeof(stack_info));
+		info->instances = instance;
 	}
 
 	if (trace_flags==TRACE_DIALOG) {
