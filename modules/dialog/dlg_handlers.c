@@ -1028,7 +1028,7 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		dlg_update_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 
 		/* save the outgoing contact only if TH */
-		if (dlg->flags & TOPOH_ONGOING) {
+		if (dlg->mod_flags & TOPOH_ONGOING) {
 			/* extract the adv contact address */
 			if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0 ||
 			!msg->contact)){
@@ -1198,7 +1198,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	dlg_update_sdp(dlg, DLG_CALLER_LEG, dlg->legs_no[DLG_LEGS_USED], msg);
 
 	/* save the outgoing contact only if TH */
-	if (dlg->flags & TOPOH_ONGOING) {
+	if (dlg->mod_flags & TOPOH_ONGOING) {
 		/* extract the contact address */
 		if (!msg->contact&&(parse_headers(msg,HDR_CONTACT_F,0)<0 ||
 		!msg->contact)){
