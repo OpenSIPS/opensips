@@ -94,11 +94,11 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 	if (c->state==S_CONN_BAD) {
 		c->lifetime=0;
 		/* CONN_ERROR will auto-dec refcnt => we must not call tcpconn_put !!*/
-		tcpconn_release(c, CONN_ERROR,1);
+		tcpconn_release(c, CONN_ERROR2,1);
 		return;
 	}
 	if (pending_data) {
-		tcpconn_release(c, ASYNC_WRITE,1);
+		tcpconn_release(c, ASYNC_WRITE2,1);
 		return;
 	}
 	tcpconn_put(c);
