@@ -723,11 +723,13 @@ static void dlg_async_response(struct dlg_sequential_param *p,
 
 static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* ps)
 {
+	static str ct_hdr = str_init("application/sdp");
 	int statuscode;
 	struct sip_msg *rpl;
 	struct dlg_cell *dlg;
 	struct dlg_sequential_param *p;
 	str body;
+	str extra_headers;
 
 	if (!ps || !ps->rpl) {
 			LM_ERR("Wrong tmcb params\n");
@@ -780,12 +782,19 @@ static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* p
 				statuscode, dlg->callid.len, dlg->callid.s);
 		return dlg_async_response(p, rpl, 400);
 	}
+
+	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, p->leg), p->leg, &ct_hdr, &extra_headers)) {
+		LM_ERR("No more pkg for extra headers \n");
+		goto error;
+	}
+
 	/* if we have to negotiate, let's do it! */
 	p->ref++;
 	p->state = DLG_CHL_PENDING;
 
 	ref_dlg(dlg, 1);
-	if (send_leg_msg(dlg, &p->method, other_leg(dlg, p->leg), p->leg, NULL, &body,
+	if (send_leg_msg(dlg, &p->method, other_leg(dlg, p->leg), p->leg,
+			&extra_headers, &body,
 			dlg_sequential_reply, p, dlg_sequential_free,
 			&dlg->legs[p->leg].reply_received) < 0) {
 		LM_ERR("cannot send sequential message!\n");
