@@ -765,6 +765,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 							dsts_size_cur = 0;
 						} else if( it_l < load ) {
 							/* lower availability -> new iteration */
+							if( ++j == (8 * sizeof(unsigned int)) ) { i++; j=0; }
 							continue;
 						}
 
