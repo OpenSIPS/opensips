@@ -113,6 +113,56 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 	return 0;
 }
 
+#define CONTACT_STR_START "Contact: <"
+#define CONTACT_STR_START_LEN (sizeof(CONTACT_STR_START)-1)
+
+#define CONTACT_STR_END ">\r\n"
+#define CONTACT_STR_END_LEN (sizeof(CONTACT_STR_END)-1)
+
+static inline int dlg_get_leg_hdrs(struct dlg_cell *dlg,
+		int sleg, int dleg, str *extra_hdrs, str *out)
+{
+	char *p;
+	if (dlg->legs[dleg].adv_contact.len)
+		out->len =  dlg->legs[dleg].adv_contact.len;
+	else
+		out->len = CONTACT_STR_START_LEN +
+			dlg->legs[sleg].contact.len +
+			CONTACT_STR_END_LEN;
+	if (extra_hdrs)
+		out->len += extra_hdrs->len;
+	out->s = pkg_malloc(out->len);
+	if (!out->s) {
+		LM_ERR("No more pkg for extra headers \n");
+		return 0;
+	}
+
+	p = out->s;
+	if (dlg->legs[dleg].adv_contact.len) {
+		memcpy(p,dlg->legs[dleg].adv_contact.s,
+				dlg->legs[dleg].adv_contact.len);
+
+		p+= dlg->legs[dleg].adv_contact.len;
+	} else {
+		memcpy(p,CONTACT_STR_START,CONTACT_STR_START_LEN);
+		p += CONTACT_STR_START_LEN;
+		memcpy(p,dlg->legs[sleg].contact.s,
+				dlg->legs[sleg].contact.len);
+
+		p += dlg->legs[sleg].contact.len;
+		memcpy(p,CONTACT_STR_END,CONTACT_STR_END_LEN);
+		p += CONTACT_STR_END_LEN;
+	}
+	if (extra_hdrs)
+		memcpy(p,extra_hdrs->s, extra_hdrs->len);
+
+	return 1;
+}
+#undef CONTACT_STR_START
+#undef CONTACT_STR_START_LEN
+#undef CONTACT_STR_END
+#undef CONTACT_STR_END_LEN
+
 
 int dlg_end_dlg(struct dlg_cell *dlg, str *extra_hdrs, int send_byes);
 
