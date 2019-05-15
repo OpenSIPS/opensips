@@ -1152,6 +1152,11 @@ void receive_prof_repl(bin_packet_t *packet)
 		}
 		profile = old_profile;
 
+		if (profile->repl_type != REPL_PROTOBIN) {
+			LM_WARN("Received a replication packet for a local profile\n");
+			return;
+		}
+
 		if (bin_pop_int(packet, &has_value) < 0) {
 			LM_ERR("cannot pop profile's has_value int\n");
 			return;
