@@ -1490,7 +1490,7 @@ static inline void update_contact_and_sdp(struct dlg_cell *dlg, struct sip_msg *
 	else
 		ret = 0;
 	if (ret >= 0)
-		ret =+ dlg_update_sdp(dlg, req, leg);
+		ret += dlg_update_sdp(dlg, req, leg);
 	dlg_unlock_dlg(dlg);
 
 	/* if anything has changed in the meantime, also update replicate */
