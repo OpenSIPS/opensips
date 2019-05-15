@@ -897,6 +897,11 @@ static void dlg_replicated_profiles(struct receive_info *ri, int server_id)
 		}
 		profile = old_profile;
 
+		if (profile->repl_type != REPL_PROTOBIN) {
+			LM_WARN("Received a replication packet for a local profile\n");
+			return;
+		}
+
 		if (bin_pop_int(&has_value) < 0) {
 			LM_ERR("cannot pop profile's has_value int\n");
 			return;
