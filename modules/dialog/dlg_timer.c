@@ -927,7 +927,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 
 void dlg_reinvite_routine(unsigned int ticks , void * attr)
 {
-	static str content_type = str_init("Content-Type: application/sdp\r\n");
+	static str content_type = str_init("application/sdp");
 	struct dlg_ping_list *expired,*to_be_deleted,*it,*curr,*next;
 	struct dlg_cell *dlg;
 	str extra_headers;
