@@ -760,7 +760,7 @@ static mi_response_t *clusterer_list_topology(const mi_params_t *params,
 			goto error;
 
 		for (neigh = cl->current_node->neighbour_list; neigh; neigh = neigh->next)
-			if (add_mi_number(node_item, 0,0, neigh->node->node_id) < 0)
+			if (add_mi_number(neigh_arr, 0,0, neigh->node->node_id) < 0)
 				goto error;
 
 		for (n_info = cl->node_list; n_info; n_info = n_info->next) {
@@ -777,14 +777,14 @@ static mi_response_t *clusterer_list_topology(const mi_params_t *params,
 
 			lock_get(n_info->lock);
 
-			for (neigh = cl->current_node->neighbour_list; neigh; neigh = neigh->next)
-				if (add_mi_number(node_item, 0,0, neigh->node->node_id) < 0) {
+			for (neigh = n_info->neighbour_list; neigh; neigh = neigh->next)
+				if (add_mi_number(neigh_arr, 0,0, neigh->node->node_id) < 0) {
 					lock_release(n_info->lock);
 					goto error;
 				}
 
 			if (n_info->link_state == LS_UP)
-				if (add_mi_number(node_item, 0,0, current_id) < 0) {
+				if (add_mi_number(neigh_arr, 0,0, current_id) < 0) {
 					lock_release(n_info->lock);
 					goto error;
 				}
