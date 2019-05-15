@@ -678,6 +678,9 @@ struct dlg_sequential_param {
 	str method;
 	struct dlg_cell *dlg;
 	struct mi_handler *async;
+	/* these might not be needed */
+	str body;
+	str extra_headers;
 };
 
 #define other_leg(dlg, l) (l == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG)
@@ -794,18 +797,46 @@ error:
 	p->async->handler_f(NULL, p->async, 1);
 }
 
+
+static void dlg_send_seq(int sender, void *param)
+{
+	struct dlg_sequential_param *sp = (struct dlg_sequential_param *)param;
+	int dleg = other_leg(sp->dlg, sp->leg);
+	int ret = send_leg_msg(sp->dlg, &sp->method, sp->leg, dleg,
+			&sp->extra_headers, &sp->body,
+			dlg_sequential_reply, param, dlg_sequential_free,
+			&sp->dlg->legs[dleg].reply_received);
+
+	/* we no longer need body and headers */
+	if (sp->body.s) {
+		shm_free(sp->body.s);
+		sp->body.s = 0;
+	}
+	if (sp->extra_headers.s) {
+		shm_free(sp->extra_headers.s);
+		sp->extra_headers.s = 0;
+	}
+
+	if (ret < 0) {
+		dlg_sequential_free(param);
+		LM_ERR("cannot send sequential message!\n");
+		sp->async->handler_f(NULL, sp->async, 1);
+	}
+}
+
 static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
 		str *method, str *body, int challenge, struct mi_handler *async_hdl)
 {
-	struct dlg_sequential_param *param;
+	struct dlg_sequential_param *param = NULL;
 	int dleg = other_leg(dlg, sleg);
 	str extra_headers;
 
 	param = shm_malloc(sizeof(*param) + method->len);
 	if (!param) {
 		LM_ERR("no more shm info!\n");
-		return init_mi_error(500, MI_SSTR("Internal Error"));
+		goto error;
 	}
+	memset(param, 0, sizeof(*param));
 	param->state = DLG_CHL_START;
 	param->challenge = challenge;
 	param->async = async_hdl;
@@ -818,24 +849,36 @@ static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
 
 	if (!dlg_get_leg_hdrs(dlg, sleg, dleg, NULL, &extra_headers)) {
 		LM_ERR("No more pkg for extra headers \n");
-		shm_free(param);
-		return init_mi_error(500, MI_SSTR("Internal Error"));
+		goto error;
 	}
-
-	if (send_leg_msg(dlg, method, sleg, dleg, &extra_headers, body,
-			dlg_sequential_reply, param, dlg_sequential_free,
-			&dlg->legs[dleg].reply_received) < 0) {
+	if (extra_headers.len && shm_str_dup(&param->extra_headers, &extra_headers) < 0) {
+		LM_ERR("cannot duplicate extra_headers!\n");
 		pkg_free(extra_headers.s);
-		dlg_sequential_free(param);
-		LM_ERR("cannot send sequential message!\n");
-		return init_mi_error(500, MI_SSTR("Internal Error"));
+		goto error;
 	}
 	pkg_free(extra_headers.s);
+	if (body && shm_str_dup(&param->body, body) < 0) {
+		LM_ERR("cannot duplicate body!\n");
+		shm_free(param->extra_headers.s);
+		goto error;
+	}
+
+	if (ipc_dispatch_rpc(dlg_send_seq, (void *)param) < 0) {
+		LM_ERR("cannot dispatch IPC job!\n");
+		if (body)
+			shm_free(param->body.s);
+		if (extra_headers.len)
+			shm_free(param->extra_headers.s);
+	}
 
 	if (async_hdl==NULL)
 		return init_mi_result_string(MI_SSTR("Accepted"));
 	else
 		return MI_ASYNC_RPL;
+error:
+	if (param)
+		shm_free(param);
+	return init_mi_error(500, MI_SSTR("Internal Error"));
 }
 
 /* possible mode values:
