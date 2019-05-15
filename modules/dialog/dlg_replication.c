@@ -374,7 +374,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 		goto error;
 	}
 
-	bin_skip_str(packet, 8);
+	bin_skip_str(packet, 12);
 	bin_pop_str(packet, &vars);
 	bin_pop_str(packet, &profiles);
 	bin_pop_int(packet, &dlg->user_flags);
