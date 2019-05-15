@@ -825,7 +825,7 @@ static void dlg_send_seq(int sender, void *param)
 }
 
 static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
-		str *method, str *body, int challenge, struct mi_handler *async_hdl)
+		str *method, str *body, str *hdrs, int challenge, struct mi_handler *async_hdl)
 {
 	struct dlg_sequential_param *param = NULL;
 	int dleg = other_leg(dlg, sleg);
@@ -847,7 +847,7 @@ static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
 	param->method.s = (char *)(param + 1);
 	memcpy(param->method.s, method->s, method->len);
 
-	if (!dlg_get_leg_hdrs(dlg, sleg, dleg, NULL, &extra_headers)) {
+	if (!dlg_get_leg_hdrs(dlg, sleg, dleg, hdrs, &extra_headers)) {
 		LM_ERR("No more pkg for extra headers \n");
 		goto error;
 	}
@@ -936,7 +936,7 @@ static int mi_parse_mode(const mi_params_t *params, int *src_leg, int *challenge
  * - outbound (return 2)
  * - custom (return 3 + body)
  */
-static int mi_parse_body_mode(const mi_params_t *params, str *body)
+static int mi_parse_body_mode(const mi_params_t *params, str *ct, str *body)
 {
 	str body_s;
 
@@ -960,11 +960,22 @@ static int mi_parse_body_mode(const mi_params_t *params, str *body)
 				goto error;
 			return 2; /* outbound */
 		default:
-			if (body_s.len < 8 || strncasecmp(body_s.s, "custom", 6) != 0)
+			if (body_s.len < 10 || strncasecmp(body_s.s, "custom", 6) != 0)
 				goto error;
-			/* we skip 'custom' + the separator after it */
-			body->s = body_s.s + 7;
-			body->len = body_s.len - 7;
+			/* we skip 'custom' + the separator after it and get the content
+			 * type */
+			ct->s = body_s.s + 7;
+
+			body->s = q_memchr(ct->s, ':', body_s.len - 7);
+			if (!body->s) {
+				LM_WARN("Missing content type in custom body! No body assumed!\n");
+				return 0;
+			}
+			ct->len = body->s - ct->s;
+			/* we have the body, but we need to skip the separator */
+			body->s++;
+			body->len = body_s.len - (body->s - body_s.s);
+
 			return 3; /* custom */
 	}
 
@@ -976,10 +987,13 @@ error:
 mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
+	static str ct_hdr = str_init("application/sdp");
 	struct dlg_cell *dlg;
+	str *extra_headers = &ct_hdr;
 	str method;
 	str callid;
 	str body;
+	str ct;
 	int leg, challenge, body_mode;
 
 	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
@@ -993,7 +1007,7 @@ mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
 		method.len = 6;
 	}
 
-	if ((body_mode = mi_parse_body_mode(params, &body)) < 0)
+	if ((body_mode = mi_parse_body_mode(params, &ct, &body)) < 0)
 		return init_mi_error(400, MI_SSTR("Invalid body mode"));
 
 	if (challenge != 0) {
@@ -1019,7 +1033,11 @@ mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
 		body = dlg->legs[leg].in_sdp;
 	else if (body_mode == 2)
 		body = dlg->legs[other_leg(dlg, leg)].out_sdp;
+	else if (body_mode == 3)
+		extra_headers = &ct;
+	else /* if mode = 0 */
+		extra_headers = NULL;
 
 	return mi_send_sequential(dlg, leg, &method,
-			(body_mode == 0?NULL:&body), challenge, async_hdl);
+			(body_mode == 0?NULL:&body), extra_headers, challenge, async_hdl);
 }
