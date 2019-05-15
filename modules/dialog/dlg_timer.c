@@ -925,21 +925,12 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 	tcp_no_new_conn = 0;
 }
 
-#define CONTACT_STR_START "Contact: <"
-#define CONTACT_STR_START_LEN (sizeof(CONTACT_STR_START)-1)
-
-#define HEADERS_STR_END_NOCRLF "Content-Type: application/sdp\r\n"
-#define HEADERS_STR_END_NOCRLF_LEN (sizeof(HEADERS_STR_END_NOCRLF)-1)
-
-#define HEADERS_STR_END ">\r\nContent-Type: application/sdp\r\n"
-#define HEADERS_STR_END_LEN (sizeof(HEADERS_STR_END)-1)
-
 void dlg_reinvite_routine(unsigned int ticks , void * attr)
 {
+	static str content_type = str_init("Content-Type: application/sdp\r\n");
 	struct dlg_ping_list *expired,*to_be_deleted,*it,*curr,*next;
 	struct dlg_cell *dlg;
 	str extra_headers;
-	char *p;
 	str *sdp;
 	int current_ticks;
 
@@ -1000,39 +991,12 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 		if (dlg->state != DLG_STATE_DELETED && it->timeout <= current_ticks) {
 			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER) {
 
-				if (dlg->legs[DLG_CALLER_LEG].adv_contact.len)
-					extra_headers.len = 
-					dlg->legs[DLG_CALLER_LEG].adv_contact.len +
-					HEADERS_STR_END_NOCRLF_LEN;
-				else
-					extra_headers.len = CONTACT_STR_START_LEN +
-						dlg->legs[callee_idx(dlg)].contact.len +
-						HEADERS_STR_END_LEN;
-				extra_headers.s = pkg_malloc(extra_headers.len);
-				if (!extra_headers.s) {
+				if (!dlg_get_leg_hdrs(dlg, callee_idx(dlg),
+						DLG_CALLER_LEG, &content_type, &extra_headers)) {
 					LM_ERR("No more pkg for extra headers \n");
 					it = it->next;
-					return;
+					continue;
 				}
-
-				if (dlg->legs[DLG_CALLER_LEG].adv_contact.len) {
-					p = extra_headers.s;
-					memcpy(p,dlg->legs[DLG_CALLER_LEG].adv_contact.s,
-					dlg->legs[DLG_CALLER_LEG].adv_contact.len);
-
-					p+= dlg->legs[DLG_CALLER_LEG].adv_contact.len;
-					memcpy(p,HEADERS_STR_END_NOCRLF,HEADERS_STR_END_NOCRLF_LEN);
-				} else {
-					p = extra_headers.s;
-					memcpy(p,CONTACT_STR_START,CONTACT_STR_START_LEN);
-					p += CONTACT_STR_START_LEN;
-					memcpy(p,dlg->legs[callee_idx(dlg)].contact.s,
-					dlg->legs[callee_idx(dlg)].contact.len);
-
-					p += dlg->legs[callee_idx(dlg)].contact.len;
-					memcpy(p,HEADERS_STR_END,HEADERS_STR_END_LEN);
-				}
-
 				sdp = (dlg->legs[DLG_CALLER_LEG].out_sdp.s?
 						&dlg->legs[DLG_CALLER_LEG].out_sdp:
 						&dlg->legs[callee_idx(dlg)].in_sdp);
@@ -1049,42 +1013,14 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 				pkg_free(extra_headers.s);
 			}
 
-
 			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
-				if (dlg->legs[callee_idx(dlg)].adv_contact.len)
-					extra_headers.len = 
-					dlg->legs[callee_idx(dlg)].adv_contact.len +
-					HEADERS_STR_END_NOCRLF_LEN;
-				else
-					extra_headers.len = CONTACT_STR_START_LEN +
-							dlg->legs[DLG_CALLER_LEG].contact.len +
-							HEADERS_STR_END_LEN;
-				extra_headers.s = pkg_malloc(extra_headers.len);
-				if (!extra_headers.s) {
+
+				if (!dlg_get_leg_hdrs(dlg, DLG_CALLER_LEG,
+						callee_idx(dlg), &content_type, &extra_headers)) {
 					LM_ERR("No more pkg for extra headers \n");
 					it = it->next;
-					return ;
+					continue;
 				}
-						
-				if (dlg->legs[callee_idx(dlg)].adv_contact.len) {
-					p = extra_headers.s;
-					memcpy(extra_headers.s,
-					dlg->legs[callee_idx(dlg)].adv_contact.s,
-					dlg->legs[callee_idx(dlg)].adv_contact.len);
-
-					p+= dlg->legs[callee_idx(dlg)].adv_contact.len;
-					memcpy(p,HEADERS_STR_END_NOCRLF,HEADERS_STR_END_NOCRLF_LEN);
-				} else {
-					p = extra_headers.s;
-					memcpy(p,CONTACT_STR_START,CONTACT_STR_START_LEN);
-					p += CONTACT_STR_START_LEN;
-					memcpy(p,dlg->legs[DLG_CALLER_LEG].contact.s,
-					dlg->legs[DLG_CALLER_LEG].contact.len);
-
-					p += dlg->legs[DLG_CALLER_LEG].contact.len;
-					memcpy(p,HEADERS_STR_END,HEADERS_STR_END_LEN);
-				}
-
 				sdp = (dlg->legs[callee_idx(dlg)].out_sdp.s?
 						&dlg->legs[callee_idx(dlg)].out_sdp:
 						&dlg->legs[DLG_CALLER_LEG].in_sdp);

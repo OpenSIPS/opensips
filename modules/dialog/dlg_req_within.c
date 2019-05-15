@@ -799,6 +799,7 @@ static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
 {
 	struct dlg_sequential_param *param;
 	int dleg = other_leg(dlg, sleg);
+	str extra_headers;
 
 	param = shm_malloc(sizeof(*param) + method->len);
 	if (!param) {
@@ -815,13 +816,21 @@ static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
 	param->method.s = (char *)(param + 1);
 	memcpy(param->method.s, method->s, method->len);
 
-	if (send_leg_msg(dlg, method, sleg, dleg, NULL, body,
+	if (!dlg_get_leg_hdrs(dlg, sleg, dleg, NULL, &extra_headers)) {
+		LM_ERR("No more pkg for extra headers \n");
+		shm_free(param);
+		return init_mi_error(500, MI_SSTR("Internal Error"));
+	}
+
+	if (send_leg_msg(dlg, method, sleg, dleg, &extra_headers, body,
 			dlg_sequential_reply, param, dlg_sequential_free,
 			&dlg->legs[dleg].reply_received) < 0) {
+		pkg_free(extra_headers.s);
 		dlg_sequential_free(param);
 		LM_ERR("cannot send sequential message!\n");
 		return init_mi_error(500, MI_SSTR("Internal Error"));
 	}
+	pkg_free(extra_headers.s);
 
 	if (async_hdl==NULL)
 		return init_mi_result_string(MI_SSTR("Accepted"));
