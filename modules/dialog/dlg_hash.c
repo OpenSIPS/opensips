@@ -59,6 +59,7 @@
 #include "dlg_replication.h"
 #include "../../evi/evi_params.h"
 #include "../../evi/evi_modules.h"
+#include "../../pt.h"
 
 #define MAX_LDG_LOCKS  2048
 #define MIN_LDG_LOCKS  2
@@ -844,7 +845,11 @@ void unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 	d_entry = &(d_table->entries[dlg->h_entry]);
 
 	dlg_lock( d_table, d_entry);
+	dlg->locked_by = process_no;
+
 	unref_dlg_unsafe( dlg, cnt, d_entry);
+
+	dlg->locked_by = 0;
 	dlg_unlock( d_table, d_entry);
 }
 
