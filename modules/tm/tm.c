@@ -756,7 +756,7 @@ int load_tm( struct tm_binds *tmb)
 }
 
 
-static int do_t_cleanup( struct sip_msg *foo, void *bar)
+static int do_t_cleanup( struct sip_msg *req, void *bar)
 {
 	struct cell *t;
 
@@ -772,17 +772,18 @@ static int do_t_cleanup( struct sip_msg *foo, void *bar)
 
 	reset_e2eack_t();
 
-	if ( (t=get_t())!=NULL && t!=T_UNDEFINED && t->uas.request) {
+	if ( (t=get_t())!=NULL && t!=T_UNDEFINED && /* we have a transaction */
+	t->uas.request && req->REQ_METHOD==t->uas.request->REQ_METHOD) {
 		/* check the UAS request not yet updated from script msg */
 		LOCK_REPLIES(t);
 		if (t->uas.request->msg_flags & FL_SHM_UPDATED)
 			LM_DBG("transaction %p already updated! Skipping update!\n", t);
 		else
-			update_cloned_msg_from_msg( t->uas.request, foo);
+			update_cloned_msg_from_msg( t->uas.request, req);
 		UNLOCK_REPLIES(t);
 	}
 
-	return t_unref(foo) == 0 ? SCB_DROP_MSG : SCB_RUN_ALL;
+	return t_unref(req) == 0 ? SCB_DROP_MSG : SCB_RUN_ALL;
 }
 
 
