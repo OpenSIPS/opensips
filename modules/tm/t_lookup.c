@@ -158,7 +158,7 @@ static struct cell *e2eack_T;
 struct tm_id* remote_T = NULL;
 
 
-static str relay_reason_100 = str_init("Giving a try");
+static str relay_reason_100 = str_init("Giving it a try");
 
 
 struct cell *get_t(void) { return T; }
