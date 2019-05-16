@@ -741,6 +741,7 @@ static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, st
 
 	out_sdp->len = sdp.len;
 	memcpy(out_sdp->s,sdp.s,sdp.len);
+	LM_DBG("update outbound sdp for leg %d\n", out_leg);
 end:
 	dlg_unlock_dlg(dlg);
 }
@@ -1300,8 +1301,8 @@ static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 	}
 	memcpy(dlg->legs[leg].in_sdp.s, sdp.s, sdp.len);
 	dlg->legs[leg].in_sdp.len = sdp.len;
+	LM_DBG("update inbound sdp for leg %d\n", leg);
 
-	dlg->flags |= DLG_FLAG_CHANGED;
 	return 1;
 }
 
