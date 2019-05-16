@@ -85,11 +85,12 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 	struct cmd_param *param;
 	gparam_p gp = NULL;
 	int ret;
-	pv_elem_t *pve = NULL;
+	pv_elem_t *pve;
 	regex_t *re = NULL;
 	void *h;
 
 	for (param=params, i=1; param->flags; param++, i++) {
+		pve = NULL;
 		if ((elems[i].type == NOSUBTYPE) ||
 			(elems[i].type == NULLV_ST)) {
 			gp = NULL;
