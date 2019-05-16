@@ -780,12 +780,24 @@ if (cluster_check_addr(1, $si)) {
 		<title><function>clusterer_list</function> usage</title>
 		<programlisting format="linespecific">
 $ opensips-cli -x mi clusterer_list
-Cluster:: 1
-	Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up      Next_hop=4 Description=none
-	Node:: 3 DB_ID=3 URL=bin:127.0.0.3:7773 Enabled=1 Link_state=Down    Next_hop=4 Description=none
-	Node:: 2 DB_ID=2 URL=bin:127.0.0.2:7772 Enabled=1 Link_state=Probe   Next_hop=4 Description=none
-Cluster:: 2
-	Node:: 5 DB_ID=5 URL=bin:127.0.0.4:7775 Enabled=1 Link_state=Up      Next_hop=5 Description=none
+{
+    "Clusters": [
+        {
+            "cluster_id": 1,
+            "Nodes": [
+                {
+                    "node_id": 1,
+                    "db_id": 1,
+                    "url": "bin:127.0.0.1",
+                    "Enabled": true,
+                    "link_state": "Up     ",
+                    "next_hop": "1",
+                    "description": "none"
+                }
+            ]
+        }
+    ]
+}
 </programlisting>
 		</example>
 	</section>
@@ -808,14 +820,27 @@ Cluster:: 2
 		<title><function>clusterer_list_topology</function> usage</title>
 		<programlisting format="linespecific">
 $ opensips-cli -x mi clusterer_list_topology
-Cluster:: 1
-	Node:: 1 Neighbours=4
-	Node:: 4 Neighbours=1 2 3
-	Node:: 3 Neighbours=2 4
-	Node:: 2 Neighbours=3 4
-Cluster:: 2
-	Node:: 1 Neighbours=5
-	Node:: 5 Neighbours=1
+{
+    "Clusters": [
+        {
+            "cluster_id": 1,
+            "Nodes": [
+                {
+                    "node_id": 2,
+                    "Neighbours": [
+                        1
+                    ]
+                },
+                {
+                    "node_id": 1,
+                    "Neighbours": [
+                        2
+                    ]
+                }
+            ]
+        }
+    ]
+}
 </programlisting>
 		</example>
 	</section>
@@ -925,9 +950,23 @@ Cluster:: 2
 		<title><function>clusterer_list_cap</function> usage</title>
 		<programlisting format="linespecific">
 $ opensips-cli -x mi clusterer_list
-Cluster:: 1
-	Capability:: dialog-dlg-repl State=Ok
-	Capability:: usrloc-contact-repl State=not synced
+{
+    "Clusters": [
+        {
+            "cluster_id": 1,
+            "Capabilities": [
+                {
+                    "name": "dialog-dlg-repl",
+                    "state": "Ok"
+                },
+                {
+                    "name": "dialog-prof-repl",
+                    "state": "Ok"
+                }
+            ]
+        }
+    ]
+}
 </programlisting>
 		</example>
 		</section>
