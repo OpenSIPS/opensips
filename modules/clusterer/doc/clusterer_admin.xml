@@ -789,8 +789,7 @@ $ opensips-cli -x mi clusterer_list
                     "node_id": 1,
                     "db_id": 1,
                     "url": "bin:127.0.0.1",
-                    "Enabled": true,
-                    "link_state": "Up     ",
+                    "link_state": "Up",
                     "next_hop": "1",
                     "description": "none"
                 }

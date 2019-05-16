@@ -546,9 +546,9 @@ static mi_response_t *clusterer_list(const mi_params_t *params,
 	mi_response_t *resp = NULL;
 	mi_item_t *resp_obj;
 	mi_item_t *clusters_arr, *cluster_item, *nodes_arr, *node_item;
-	static str str_up   = 	str_init("Up     ");
-	static str str_prob = 	str_init("Probe  ");
-	static str str_down = 	str_init("Down   ");
+	static str str_up   = 	str_init("Up");
+	static str str_prob = 	str_init("Probe");
+	static str str_down = 	str_init("Down");
 	static str str_none = 	str_init("none");
 	int n_hop;
 
@@ -594,12 +594,6 @@ static mi_response_t *clusterer_list(const mi_params_t *params,
 				goto error;
 
 			lock_get(n_info->lock);
-
-			if (add_mi_bool(node_item, MI_SSTR("Enabled"),
-				n_info->flags & NODE_STATE_ENABLED ? 1 : 0) < 0) {
-				lock_release(n_info->lock);
-				goto error;
-			}
 
 			if (n_info->link_state == LS_UP)
 				val = str_up;
