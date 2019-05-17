@@ -248,9 +248,11 @@ stat_iter_init("packet", "iter");
 		<title><function>stat_iter_next</function> usage</title>
 		<programlisting format="linespecific">
 ...
-stat_iter_init("packet", "iter");
-while (stat_iter_next("$var(k)", "$var(v)", "iter")) {
-	...
+# periodically clear packet-related data
+timer_route [clear_packet_stats, 7200] {
+	stat_iter_init("packet", "iter");
+	while (stat_iter_next("$var(stat)", "$var(val)", "iter"))
+		reset_stat("packet:$var(stat)");
 }
 ...
 </programlisting>
