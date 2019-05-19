@@ -677,16 +677,24 @@ if (cluster_check_addr(1, $si)) {
 
    Example 1.26. clusterer_list usage
 $ opensips-cli -x mi clusterer_list
-Cluster:: 1
-        Node:: 4 DB_ID=4 URL=bin:127.0.0.4:7774 Enabled=1 Link_state=Up
-     Next_hop=4 Description=none
-        Node:: 3 DB_ID=3 URL=bin:127.0.0.3:7773 Enabled=1 Link_state=Dow
-n    Next_hop=4 Description=none
-        Node:: 2 DB_ID=2 URL=bin:127.0.0.2:7772 Enabled=1 Link_state=Pro
-be   Next_hop=4 Description=none
-Cluster:: 2
-        Node:: 5 DB_ID=5 URL=bin:127.0.0.4:7775 Enabled=1 Link_state=Up
-     Next_hop=5 Description=none
+{
+    "Clusters": [
+        {
+            "cluster_id": 1,
+            "Nodes": [
+                {
+                    "node_id": 1,
+                    "db_id": 1,
+                    "url": "bin:127.0.0.1",
+                    "Enabled": true,
+                    "link_state": "Up     ",
+                    "next_hop": "1",
+                    "description": "none"
+                }
+            ]
+        }
+    ]
+}
 
 1.6.3.  clusterer_list_topology
 
@@ -704,14 +712,27 @@ Cluster:: 2
 
    Example 1.27. clusterer_list_topology usage
 $ opensips-cli -x mi clusterer_list_topology
-Cluster:: 1
-        Node:: 1 Neighbours=4
-        Node:: 4 Neighbours=1 2 3
-        Node:: 3 Neighbours=2 4
-        Node:: 2 Neighbours=3 4
-Cluster:: 2
-        Node:: 1 Neighbours=5
-        Node:: 5 Neighbours=1
+{
+    "Clusters": [
+        {
+            "cluster_id": 1,
+            "Nodes": [
+                {
+                    "node_id": 2,
+                    "Neighbours": [
+                        1
+                    ]
+                },
+                {
+                    "node_id": 1,
+                    "Neighbours": [
+                        2
+                    ]
+                }
+            ]
+        }
+    ]
+}
 
 1.6.4.  clusterer_set_status
 
@@ -774,9 +795,23 @@ n_5
 
    Example 1.28. clusterer_list_cap usage
 $ opensips-cli -x mi clusterer_list
-Cluster:: 1
-        Capability:: dialog-dlg-repl State=Ok
-        Capability:: usrloc-contact-repl State=not synced
+{
+    "Clusters": [
+        {
+            "cluster_id": 1,
+            "Capabilities": [
+                {
+                    "name": "dialog-dlg-repl",
+                    "state": "Ok"
+                },
+                {
+                    "name": "dialog-prof-repl",
+                    "state": "Ok"
+                }
+            ]
+        }
+    ]
+}
 
 1.6.8. clusterer_shtag_set_active
 
@@ -1126,7 +1161,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 238 78 9377 4785
+   1. Vlad Patrascu (@rvlad-patrascu) 240 80 9437 4806
    2. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    3. Liviu Chircu (@liviuchircu) 38 27 491 379
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 20 9 1116 102
@@ -1156,7 +1191,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - May 2019
    2. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2019
    3. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
    4. Liviu Chircu (@liviuchircu)              Mar 2016 - Mar 2019
