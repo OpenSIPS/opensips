@@ -192,9 +192,11 @@ stat_iter_init("packet", "iter");
 
    Example 1.6. stat_iter_next usage
 ...
-stat_iter_init("packet", "iter");
-while (stat_iter_next("$var(k)", "$var(v)", "iter")) {
-        ...
+# periodically clear packet-related data
+timer_route [clear_packet_stats, 7200] {
+        stat_iter_init("packet", "iter");
+        while (stat_iter_next("$var(stat)", "$var(val)", "iter"))
+                reset_stat("packet:$var(stat)");
 }
 ...
 
@@ -229,7 +231,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 34 20 1036 227
-   2. Liviu Chircu (@liviuchircu) 22 15 508 154
+   2. Liviu Chircu (@liviuchircu) 24 16 513 157
    3. Daniel-Constantin Mierla (@miconda) 11 9 22 18
    4. Razvan Crainea (@razvancrainea) 8 6 14 10
    5. Vlad Paiu (@vladpaiu) 5 2 144 1
@@ -262,8 +264,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2006 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2006 - Jun 2018
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    4.  Ionut Ionita (@ionutrazvanionita)   Apr 2017 - Apr 2017
    5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Mar 2017
@@ -283,8 +285,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Vlad
    Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas), Daniel-Constantin
    Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
 
