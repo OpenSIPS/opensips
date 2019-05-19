@@ -1550,7 +1550,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1030 581 20691 15954
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1032 583 20697 15959
    2. Jiri Kuthan (@jiriatipteldotorg) 545 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 147 105 2447 1210
@@ -1559,7 +1559,7 @@ Chapter 4. Contributors
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 38 19 778 651
    9. Vlad Patrascu (@rvlad-patrascu) 30 9 810 779
-   10. Vlad Paiu (@vladpaiu) 25 22 169 55
+   10. Vlad Paiu (@vladpaiu) 27 23 170 57
 
    All remaining contributors: Henning Westerholt (@henningw), Dan
    Pascu (@danpascu), Ovidiu Sas (@ovidiusas), Juha Heinanen
@@ -1595,16 +1595,16 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Apr 2019
-   4.  Bogdan Iancu                        Apr 2019 - Apr 2019
-   5.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
-   6.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2019
-   7.  Aron Podrigal (@ar45)               Nov 2018 - Nov 2018
-   8.  Alexey Vasilyev (@vasilevalex)      Sep 2018 - Sep 2018
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Vlad Paiu (@vladpaiu)               Jun 2011 - May 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - May 2019
+   2.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2019
+   3.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Bogdan Iancu                        Apr 2019 - Apr 2019
+   6.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
+   7.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2019
+   8.  Aron Podrigal (@ar45)               Nov 2018 - Nov 2018
+   9.  Alexey Vasilyev (@vasilevalex)      Sep 2018 - Sep 2018
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
    Julián Moreno Patiño, Nick Altmann (@nikbyte), Ovidiu Sas
