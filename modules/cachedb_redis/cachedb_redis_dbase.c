@@ -555,11 +555,10 @@ int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
 						if (reply->element[i]->type == REDIS_REPLY_INTEGER) {
 							(*ret)[current_size][0].val.n = reply->element[i]->integer;
 							(*ret)[current_size][0].type = CDB_INT32;
-                                                } else if (reply->element[i]->type == REDIS_REPLY_NIL) {
+						} else if (reply->element[i]->type == REDIS_REPLY_NIL) {
 							(*ret)[current_size][0].val.s.s = NULL;
 							(*ret)[current_size][0].val.s.len = 0;
 							(*ret)[current_size][0].type = CDB_NULL;
-							
 						} else {
 							(*ret)[current_size][0].val.s.s = pkg_malloc(reply->element[i]->len);
 							if (! (*ret)[current_size][0].val.s.s ) {
