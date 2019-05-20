@@ -25,10 +25,10 @@
 #include <cassandra.h>
 #include "../../cachedb/cachedb.h"
 
-#define CQL_BUF_LEN 512
-
-#define CASS_OSS_KEY_COL "opensipskey"
-#define CASS_OSS_VAL_COL "opensipsval"
+#define CASS_OSS_KEY_COL_S    "opensipskey"
+#define CASS_OSS_KEY_COL_LEN  11
+#define CASS_OSS_VAL_COL_S    "opensipsval"
+#define CASS_OSS_VAL_COL_LEN  11
 
 typedef struct {
 	struct cachedb_id *id;
