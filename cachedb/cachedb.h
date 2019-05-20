@@ -70,7 +70,7 @@ typedef struct cachedb_funcs_t {
 	        int expires, int *new_val);
 	/* bi-dimensional array will be returned */
 	int (*raw_query) (cachedb_con *con, str *query, cdb_raw_entry ***reply,
-	                  int expected_key_no,int *reply_no);
+	                  int num_cols, int *num_rows);
 	int (*truncate) (cachedb_con *con);
 
 	int (*db_query_trans) (cachedb_con *con, const str *table,
@@ -160,5 +160,5 @@ int cachedb_bind_mod(str *url,cachedb_funcs *funcs);
 int cachedb_put_connection(str *cachedb_name,cachedb_con *con);
 
 void cachedb_end_connections(str *cachedb_name);
-void free_raw_fetch(cdb_raw_entry **reply, int no_val, int no_key);
+void free_raw_fetch(cdb_raw_entry **reply, int num_cols, int num_rows);
 #endif

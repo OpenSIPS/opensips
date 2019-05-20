@@ -1541,8 +1541,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 
 			cdb_raw_entry **cdb_reply = NULL;
-			int val_number=0,i,j;
-			int key_number=0;
+			int num_cols=0,i,j;
+			int num_rows=0;
 			pvname_list_t *cdb_res,*it;
 			int_str avp_val;
 			int_str avp_name;
@@ -1551,15 +1551,15 @@ int do_action(struct action* a, struct sip_msg* msg)
 			if (a->elem[2].u.data) {
 				cdb_res = (pvname_list_t*)a->elem[2].u.data;
 				for (it=cdb_res;it;it=it->next)
-					val_number++;
+					num_cols++;
 
-				LM_DBG("The query expects %d results back\n",val_number);
+				LM_DBG("The query expects %d fields per result\n", num_cols);
 
-				ret = cachedb_raw_query( &a->elem[0].u.s, &name_s, &cdb_reply,val_number,&key_number);
-				if (ret >= 0 && val_number > 0) {
-					for (i=key_number-1; i>=0;i--) {
+				ret = cachedb_raw_query( &a->elem[0].u.s, &name_s, &cdb_reply,num_cols,&num_rows);
+				if (ret >= 0 && num_cols > 0) {
+					for (i=num_rows-1; i>=0;i--) {
 						it=cdb_res;
-						for (j=0;j < val_number;j++) {
+						for (j=0;j < num_cols;j++) {
 							avp_type = 0;
 							if (pv_get_avp_name(msg,&it->sname.pvp,&avp_name.n,
 								&avp_type) != 0) {
@@ -1585,7 +1585,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 							}
 							if (add_avp(avp_type,avp_name.n,avp_val) != 0) {
 								LM_ERR("Unable to add AVP\n");
-								free_raw_fetch(cdb_reply,val_number,key_number);
+								free_raw_fetch(cdb_reply,num_cols,num_rows);
 								return -1;
 							}
 next_avp:
@@ -1596,7 +1596,7 @@ next_avp:
 							}
 						}
 					}
-					free_raw_fetch(cdb_reply,val_number,key_number);
+					free_raw_fetch(cdb_reply,num_cols,num_rows);
 				}
 			}
 			else
