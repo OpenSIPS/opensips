@@ -120,7 +120,7 @@ static cmd_export_t cmds[] = {
 	{"cluster_check_addr", (cmd_function)cmd_check_addr, {
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE | BRANCH_ROUTE | EVENT_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
