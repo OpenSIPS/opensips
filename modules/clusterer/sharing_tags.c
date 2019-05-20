@@ -563,7 +563,7 @@ mi_response_t *shtag_mi_list(const mi_params_t *params,
 	mi_item_t *resp_arr, *tag_item;
 	struct sharing_tag *tag;
 
-	resp = init_mi_result_object(&resp_arr);
+	resp = init_mi_result_array(&resp_arr);
 	if (!resp)
 		return 0;
 
