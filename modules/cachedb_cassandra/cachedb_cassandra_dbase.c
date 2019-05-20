@@ -30,7 +30,7 @@
 CassConsistency rd_consistency = CASS_CONSISTENCY_UNKNOWN;
 CassConsistency wr_consistency = CASS_CONSISTENCY_UNKNOWN;
 
-static char cql_buf[CQL_BUF_LEN];
+static str cql_query_buf = {0,0};
 
 #define CASS_PRINT_FUTURE_ERR(_future)  \
 	do {  \
@@ -335,7 +335,7 @@ do {  \
 		if (reopen_conn && cassandra_reopen(cass_con) < 0)  \
 			goto error;  \
 		reopen_conn = 0;  \
-		LM_DBG("executing query: %.*s\n", cql_buf_len, cql_buf);  \
+		LM_DBG("executing query: %.*s\n", cql_buf_len, cql_query_buf.s);  \
 		result = execute_query(cass_con->session, statement, (_op_name),  \
 			&reopen_conn);  \
 		if (result)  \
@@ -349,7 +349,7 @@ int cassandra_set(cachedb_con *con, str *attr, str *val, int expires)
 	cassandra_con *cass_con;
 	CassStatement *statement;
 	const CassResult *result;
-	int cql_buf_len;
+	int cql_buf_len = 0;
 
 	if (!attr || !val || !con) {
 		LM_ERR("null parameter\n");
@@ -358,18 +358,27 @@ int cassandra_set(cachedb_con *con, str *attr, str *val, int expires)
 
 	cass_con = (cassandra_con *)con->data;
 
+	/* estimate the length of the query string */
+	cql_buf_len = 13 + cass_con->keyspace.len + 3 + cass_con->table.len + 4 +
+		CASS_OSS_KEY_COL_LEN + 4 + CASS_OSS_VAL_COL_LEN + 27 + 11;
+
+	if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	/* build insert query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "INSERT INTO \"%.*s\".\"%.*s\""
-		" (\"%s\", \"%s\") VALUES (?, ?) USING TTL %d", cass_con->keyspace.len,
-		cass_con->keyspace.s, cass_con->table.len, cass_con->table.s,
-		CASS_OSS_KEY_COL, CASS_OSS_VAL_COL, expires);
+	cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+		"INSERT INTO \"%.*s\".\"%.*s\" (\"%s\", \"%s\") VALUES (?, ?) USING "
+		"TTL %d", cass_con->keyspace.len, cass_con->keyspace.s, cass_con->table.len,
+		cass_con->table.s, CASS_OSS_KEY_COL_S, CASS_OSS_VAL_COL_S, expires);
 
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'set'\n");
 		return -1;
 	}
 
-	statement = cass_statement_new_n(cql_buf, cql_buf_len, 2);
+	statement = cass_statement_new_n(cql_query_buf.s, cql_buf_len, 2);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		return -1;
@@ -409,7 +418,7 @@ int cassandra_get(cachedb_con *con, str *attr, str *val)
 	const CassResult *result;
 	const CassRow *row;
 	const CassValue *cass_val;
-	int cql_buf_len;
+	int cql_buf_len = 0;
 	int rc;
 	char *col_val;
 	size_t len;
@@ -421,17 +430,27 @@ int cassandra_get(cachedb_con *con, str *attr, str *val)
 
 	cass_con = (cassandra_con *)con->data;
 
+	/* estimate the length of the query string */
+	cql_buf_len = 8 + CASS_OSS_VAL_COL_LEN + 8 + cass_con->keyspace.len + 3 +
+		cass_con->table.len + 9 + CASS_OSS_KEY_COL_LEN + 5;
+
+	if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	/* build select query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT \"%s\" FROM "
-		"\"%.*s\".\"%.*s\" WHERE \"%s\" = ?", CASS_OSS_VAL_COL, cass_con->keyspace.len,
-		cass_con->keyspace.s, cass_con->table.len, cass_con->table.s, CASS_OSS_KEY_COL);
+	cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+		"SELECT \"%s\" FROM \"%.*s\".\"%.*s\" WHERE \"%s\" = ?", CASS_OSS_VAL_COL_S,
+		cass_con->keyspace.len, cass_con->keyspace.s, cass_con->table.len,
+		cass_con->table.s, CASS_OSS_KEY_COL_S);
 
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'get'\n");
 		return -1;
 	}
 
-	statement = cass_statement_new_n(cql_buf, cql_buf_len, 1);
+	statement = cass_statement_new_n(cql_query_buf.s, cql_buf_len, 1);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		return -1;
@@ -505,7 +524,7 @@ int cassandra_remove(cachedb_con *con, str *attr)
 	cassandra_con *cass_con;
 	CassStatement *statement;
 	const CassResult *result;
-	int cql_buf_len;
+	int cql_buf_len = 0;
 
 	if (!attr || !con) {
 		LM_ERR("null parameter\n");
@@ -514,17 +533,27 @@ int cassandra_remove(cachedb_con *con, str *attr)
 
 	cass_con = (cassandra_con *)con->data;
 
+	/* estimate the length of the query string */
+	cql_buf_len = 13 + cass_con->keyspace.len + 3 + cass_con->table.len + 9 +
+		CASS_OSS_KEY_COL_LEN + 5;
+
+	if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	/* build delete query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "DELETE FROM \"%.*s\".\"%.*s\" "
-		"WHERE \"%s\" = ?", cass_con->keyspace.len, cass_con->keyspace.s,
-		cass_con->table.len, cass_con->table.s, CASS_OSS_KEY_COL);
+	cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+		"DELETE FROM \"%.*s\".\"%.*s\" WHERE \"%s\" = ?",
+		cass_con->keyspace.len, cass_con->keyspace.s,
+		cass_con->table.len, cass_con->table.s, CASS_OSS_KEY_COL_S);
 
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'remove'\n");
 		return -1;
 	}
 
-	statement = cass_statement_new_n(cql_buf, cql_buf_len, 1);
+	statement = cass_statement_new_n(cql_query_buf.s, cql_buf_len, 1);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		return -1;
@@ -576,17 +605,27 @@ static int basic_get_counter(cachedb_con *con, str *attr, int *val)
 		return -1;
 	}
 
+	/* estimate the length of the query string */
+	cql_buf_len = 8 + CASS_OSS_VAL_COL_LEN + 8 + cass_con->keyspace.len + 3 +
+		cass_con->cnt_table.len + 9 + CASS_OSS_KEY_COL_LEN + 5;
+
+	if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	/* build select query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT \"%s\" FROM \"%.*s\".\"%.*s\""
-		" WHERE \"%s\" = ?", CASS_OSS_VAL_COL, cass_con->keyspace.len, cass_con->keyspace.s,
-		cass_con->cnt_table.len, cass_con->cnt_table.s, CASS_OSS_KEY_COL);
+	cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+		"SELECT \"%s\" FROM \"%.*s\".\"%.*s\" WHERE \"%s\" = ?",
+		CASS_OSS_VAL_COL_S, cass_con->keyspace.len, cass_con->keyspace.s,
+		cass_con->cnt_table.len, cass_con->cnt_table.s, CASS_OSS_KEY_COL_S);
 
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'get_counter'\n");
 		return -1;
 	}
 
-	statement = cass_statement_new_n(cql_buf, cql_buf_len, 1);
+	statement = cass_statement_new_n(cql_query_buf.s, cql_buf_len, 1);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		return -1;
@@ -664,18 +703,29 @@ static int basic_update_counter(cachedb_con *con, str *attr, int val, char op,
 		return -1;
 	}
 
+	/* estimate the length of the query string */
+	cql_buf_len = 8 + cass_con->keyspace.len + 3 + cass_con->cnt_table.len + 7 +
+		CASS_OSS_VAL_COL_LEN + 5 + CASS_OSS_VAL_COL_LEN + 14 +
+		CASS_OSS_KEY_COL_LEN + 5;
+
+	if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	/* build update query */
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "UPDATE \"%.*s\".\"%.*s\" SET "
-		"\"%s\" = \"%s\" %c ? WHERE \"%s\" = ?", cass_con->keyspace.len, cass_con->keyspace.s,
-		cass_con->cnt_table.len, cass_con->cnt_table.s, CASS_OSS_VAL_COL, CASS_OSS_VAL_COL,
-		op, CASS_OSS_KEY_COL);
+	cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+		"UPDATE \"%.*s\".\"%.*s\" SET \"%s\" = \"%s\" %c ? WHERE \"%s\" = ?",
+		cass_con->keyspace.len, cass_con->keyspace.s,
+		cass_con->cnt_table.len, cass_con->cnt_table.s,
+		CASS_OSS_VAL_COL_S, CASS_OSS_VAL_COL_S, op, CASS_OSS_KEY_COL_S);
 
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for %s\n", op_name);
 		return -1;
 	}
 
-	statement = cass_statement_new_n(cql_buf, cql_buf_len, 2);
+	statement = cass_statement_new_n(cql_query_buf.s, cql_buf_len, 2);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		return -1;
@@ -724,10 +774,12 @@ int cassandra_sub(cachedb_con *con, str *attr, int val, int expires, int *new_va
 		return basic_get_counter(con, attr, new_val);
 }
 
-static int where_clause_from_filter(const cdb_filter_t *row_filter, char *buf,
+static int where_clause_from_filter(const cdb_filter_t *row_filter, str *buf,
 									int *no_bind_params)
 {
-	char *p = buf;
+	char *p = buf->s;
+	int cur;
+	int clause_len = 0;
 	str op;
 	const cdb_filter_t *filter;
 	int len;
@@ -759,7 +811,17 @@ static int where_clause_from_filter(const cdb_filter_t *row_filter, char *buf,
 			return -1;
 		}
 
-		len = sprintf(p, "\"%.*s\" %.*s ? AND ", filter->key.name.len,
+		len = 1 + filter->key.name.len + 2 + op.len + 7;
+		clause_len += len;
+
+		cur = p - buf->s;
+		if (pkg_str_extend(buf, clause_len+1) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+		p = buf->s + cur;
+
+		len = snprintf(p, len+1, "\"%.*s\" %.*s ? AND ", filter->key.name.len,
 				filter->key.name.s, op.len, op.s);
 		if (len < 0)
 			return -1;
@@ -769,7 +831,7 @@ static int where_clause_from_filter(const cdb_filter_t *row_filter, char *buf,
 
 	*(p-5) = 0;
 
-	return 0;
+	return clause_len;
 }
 
 static int bind_where_clause_params(CassStatement *statement,
@@ -1038,10 +1100,11 @@ int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	const CassResult *result;
 	cdb_pair_t *pair;
 	struct list_head *_;
-	static char buf1[CQL_BUF_LEN/2], buf2[CQL_BUF_LEN/2];
+	static str buf1 = {0,0}, buf2 = {0,0};
 	char *p;
+	int cur;
 	int len;
-	int cql_buf_len;
+	int cql_buf_len = 0, buf1_len = 0, buf2_len = 0;
 	int bind_idx = 0, no_bind_params = 0;
 	int max_ttl = 0;
 
@@ -1057,7 +1120,7 @@ int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	cass_con = (cassandra_con *)con->data;
 
 	/* build update query's SET clause */
-	p = buf1;
+	p = buf1.s;
 
 	list_for_each (_, pairs) {
 		pair = list_entry(_, cdb_pair_t, list);
@@ -1069,11 +1132,33 @@ int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
 		if (pair->ttl > max_ttl)
 			max_ttl = pair->ttl;
 
-		if (pair->subkey.s)
-			len = sprintf(p, "\"%.*s\"['%.*s'] = ?, ", pair->key.name.len,
+		if (pair->subkey.s) {
+			len = 1 + pair->key.name.len + 3 + pair->subkey.len + 8;
+			buf1_len += len;
+
+			cur = p - buf1.s;
+			if (pkg_str_extend(&buf1, buf1_len+1) < 0) {
+				LM_ERR("oom\n");
+				return -1;
+			}
+			p = buf1.s + cur;
+
+			len = snprintf(p, len+1, "\"%.*s\"['%.*s'] = ?, ", pair->key.name.len,
 					pair->key.name.s, pair->subkey.len, pair->subkey.s);
-		else
-			len = sprintf(p, "\"%.*s\" = ?, ", pair->key.name.len, pair->key.name.s);
+		} else {
+			len = 1 + pair->key.name.len + 7;
+			buf1_len += len;
+
+			cur = p - buf1.s;
+			if (pkg_str_extend(&buf1, buf1_len+1) < 0) {
+				LM_ERR("oom\n");
+				return -1;
+			}
+			p = buf1.s + cur;
+
+			len = snprintf(p, len+1, "\"%.*s\" = ?, ",
+				pair->key.name.len, pair->key.name.s);
+		}
 
 		if (len < 0) {
 			LM_ERR("Failed to build SET clause for query\n");
@@ -1089,20 +1174,31 @@ int cassandra_col_update(cachedb_con *con, const cdb_filter_t *row_filter,
 	*(p-2) = 0;
 
 	/* build update query's WHERE clause */
-	if (where_clause_from_filter(row_filter, buf2, &no_bind_params) < 0) {
+	if ((buf2_len = where_clause_from_filter(row_filter, &buf2,
+		&no_bind_params)) < 0) {
 		LM_ERR("Failed to build WHERE caluse for query\n");
 		goto error;
 	}
 
-	cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "UPDATE \"%.*s\".\"%.*s\" USING TTL %d "
-				"SET %s WHERE %s", cass_con->keyspace.len, cass_con->keyspace.s,
-				cass_con->table.len, cass_con->table.s, max_ttl, buf1, buf2);
+	/* estimate the length of the query string */
+	cql_buf_len = 8 + cass_con->keyspace.len + 3 + cass_con->table.len + 12 +
+		11 + 5 + buf1_len + 7 + buf2_len;
+
+	if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+		"UPDATE \"%.*s\".\"%.*s\" USING TTL %d SET %s WHERE %s",
+		cass_con->keyspace.len, cass_con->keyspace.s,
+		cass_con->table.len, cass_con->table.s, max_ttl, buf1.s, buf2.s);
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'update'\n");
 		goto error;
 	}
 
-	statement = cass_statement_new_n(cql_buf, cql_buf_len, no_bind_params);
+	statement = cass_statement_new_n(cql_query_buf.s, cql_buf_len, no_bind_params);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		goto error;
@@ -1377,8 +1473,9 @@ int cassandra_col_query(cachedb_con *con, const cdb_filter_t *filter,
 	cassandra_con *cass_con;
 	CassStatement *statement;
 	const CassResult *result;
-	static char buf[CQL_BUF_LEN/2];
+	static str buf = {0,0};
 	int cql_buf_len;
+	int buf_len = 0;
 	int no_bind_params = 0;
 
 	if (!con) {
@@ -1390,25 +1487,45 @@ int cassandra_col_query(cachedb_con *con, const cdb_filter_t *filter,
 	/* build select query */
 	if (filter) {
 		/* build query's WHERE clause */
-		if (where_clause_from_filter(filter, buf, &no_bind_params) < 0) {
+		if ((buf_len = where_clause_from_filter(filter, &buf,
+			&no_bind_params)) < 0) {
 			LM_ERR("Failed to build WHERE caluse for query\n");
 			return -1;
 		}
 
-		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM \"%.*s\".\"%.*s\""
-			" WHERE %s ALLOW FILTERING", cass_con->keyspace.len,
-			cass_con->keyspace.s, cass_con->table.len, cass_con->table.s, buf);
+		/* estimate the length of the query string */
+		cql_buf_len = 15 + cass_con->keyspace.len + 3 + cass_con->table.len + 8 +
+			buf_len + 16;
+
+		if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+			"SELECT * FROM \"%.*s\".\"%.*s\" WHERE %s ALLOW FILTERING",
+			cass_con->keyspace.len, cass_con->keyspace.s,
+			cass_con->table.len, cass_con->table.s, buf.s);
 	} else {
-		cql_buf_len = snprintf(cql_buf, CQL_BUF_LEN, "SELECT * FROM \"%.*s\".\"%.*s\"",
-							cass_con->keyspace.len, cass_con->keyspace.s,
-							cass_con->table.len, cass_con->table.s);
+		/* estimate the length of the query string */
+		cql_buf_len = 15 + cass_con->keyspace.len + 3 + cass_con->table.len + 1;
+
+		if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+			"SELECT * FROM \"%.*s\".\"%.*s\"",
+			cass_con->keyspace.len, cass_con->keyspace.s,
+			cass_con->table.len, cass_con->table.s);
 	}
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'query'\n");
 		return -1;
 	}
 
-	statement = cass_statement_new_n(cql_buf, cql_buf_len, no_bind_params);
+	statement = cass_statement_new_n(cql_query_buf.s, cql_buf_len, no_bind_params);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		return -1;
@@ -1457,7 +1574,16 @@ int cassandra_truncate(cachedb_con *con)
 
 	cass_con = (cassandra_con *)con->data;
 
-	cql_buf_len = sprintf(cql_buf, "TRUNCATE \"%.*s\".\"%.*s\"",
+	/* estimate the length of the query string */
+	cql_buf_len = 10 + cass_con->keyspace.len + 3 + cass_con->table.len + 1;
+
+	if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
+		"TRUNCATE \"%.*s\".\"%.*s\"",
 		cass_con->keyspace.len, cass_con->keyspace.s,
 		cass_con->table.len, cass_con->table.s);
 
@@ -1466,7 +1592,7 @@ int cassandra_truncate(cachedb_con *con)
 		return -1;
 	}
 
-	statement = cass_statement_new_n(cql_buf, cql_buf_len, 0);
+	statement = cass_statement_new_n(cql_query_buf.s, cql_buf_len, 0);
 	if (!statement) {
 		LM_ERR("Failed to create Cassandra Statement object\n");
 		return -1;
