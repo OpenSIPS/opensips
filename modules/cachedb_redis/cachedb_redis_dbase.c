@@ -562,6 +562,7 @@ int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
 						} else {
 							(*ret)[current_size][0].val.s.s = pkg_malloc(reply->element[i]->len);
 							if (! (*ret)[current_size][0].val.s.s ) {
+								pkg_free((*ret)[current_size]);
 								LM_ERR("No more pkg \n");
 								goto error;
 							}
@@ -578,20 +579,29 @@ int redis_raw_query_handle_reply(redisReply *reply,cdb_raw_entry ***ret,
 				}
 			}
 			break;
+		default:
+			LM_ERR("unhandled Redis datatype %d\n", reply->type);
+			goto error;
 	}
+
+	if (current_size == 0)
+		pkg_free((*ret)[0]);
 
 	*reply_no = current_size;
 	freeReplyObject(reply);
 	return 1;
 
 error:
+	if (current_size == 0 && *ret)
+		pkg_free((*ret)[0]);
+
 	if (*ret) {
-		pkg_free(*ret);
 		for (len = 0;len<current_size;len++) {
 			if ( (*ret)[len][0].type == CDB_STR)
 				pkg_free((*ret)[len][0].val.s.s);
 			pkg_free((*ret)[len]);
 		}
+		pkg_free(*ret);
 	}
 
 	*ret = NULL;
