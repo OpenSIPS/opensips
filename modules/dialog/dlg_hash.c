@@ -332,10 +332,11 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 
 int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
 {
-	struct dlg_leg *leg, *src_leg = &dlg->legs[cloned_leg_idx];
+	struct dlg_leg *leg, *src_leg;
 
 	if (ensure_leg_array(dlg->legs_no[DLG_LEGS_USED] + 1, dlg) != 0)
 		return -1;
+	src_leg = &dlg->legs[cloned_leg_idx];
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
 
 	if (dlg_has_reinvite_pinging(dlg)) {
