@@ -801,6 +801,14 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			if (t->uac[i].br_flags & tcp_no_new_conn_bflag)
 				tcp_no_new_conn = 1;
 
+			/* successfully sent out -> run callbacks */
+			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT) ) {
+				set_extra_tmcb_params( &t->uac[i].request.buffer,
+					&t->uac[i].request.dst);
+				run_trans_callbacks( TMCB_REQUEST_BUILT, t,
+					p_msg, 0, 0);
+			}
+
 			do {
 				if (check_blacklists( t->uac[i].request.dst.proto,
 				&t->uac[i].request.dst.to,
@@ -847,10 +855,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			set_kr(REQ_FWDED);
 
 			/* successfully sent out -> run callbacks */
-			if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT) ) {
+			if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
 				set_extra_tmcb_params( &t->uac[i].request.buffer,
 					&t->uac[i].request.dst);
-				run_trans_callbacks( TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT, t,
+				run_trans_callbacks( TMCB_MSG_SENT_OUT, t,
 					p_msg, 0, 0);
 			}
 

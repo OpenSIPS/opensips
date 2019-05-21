@@ -166,6 +166,9 @@ struct cell;
  *  It may be a request (out request, out CANCEL, out ACK) or a
  *  reply (relaied reply, locally generated reply).
  *
+ * TMCB_REQUEST_BUILT -- triggered just before a message has been built and
+ *  is about to be sent out.
+ *
  * IMPORTANT NOTES:
  *
  * 1) that callbacks MUST be installed before forking
