@@ -109,13 +109,19 @@ void cancel_branch( struct cell *t, int branch )
 	 * to deal with it */
 	crb->activ_type=TYPE_LOCAL_CANCEL;
 
+	if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT) ) {
+		set_extra_tmcb_params( &crb->buffer, &crb->dst);
+		run_trans_callbacks( TMCB_REQUEST_BUILT,
+			t, t->uas.request, 0, 0);
+	}
+
 	LM_DBG("sending cancel...\n");
 	if (t->uac[branch].br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 	if (SEND_BUFFER( crb )==0) {
-		if ( has_tran_tmcbs( t, TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT) ) {
+		if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
 			set_extra_tmcb_params( &crb->buffer, &crb->dst);
-			run_trans_callbacks( TMCB_REQUEST_BUILT|TMCB_MSG_SENT_OUT,
+			run_trans_callbacks( TMCB_MSG_SENT_OUT,
 				t, t->uas.request, 0, 0);
 		}
 	}
