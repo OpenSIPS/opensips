@@ -336,14 +336,21 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 
 int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
 {
-	struct dlg_leg *leg, *src_leg = &dlg->legs[cloned_leg_idx];
+	struct dlg_leg *leg, *src_leg;
 
 	if (ensure_leg_array(dlg->legs_no[DLG_LEGS_USED] + 1, dlg) != 0)
 		return -1;
+	src_leg = &dlg->legs[cloned_leg_idx];
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
 
 	if (shm_str_dup(&leg->adv_contact, &src_leg->adv_contact) != 0) {
 		LM_ERR("oom contact\n");
+		return -1;
+	}
+
+	if (src_leg->out_sdp.s && shm_str_dup(&leg->out_sdp, &src_leg->out_sdp) != 0) {
+		shm_free(leg->adv_contact.s);
+		LM_ERR("oom sdp\n");
 		return -1;
 	}
 
