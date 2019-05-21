@@ -1508,7 +1508,6 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 					if(handle_expired_func(del_s)< 0)
 					{
 						LM_ERR("in function handle_expired_record\n");
-						return;
 					}
 				}
 				free_subs(del_s);
@@ -1547,9 +1546,6 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 								update_vals, n_query_update, n_update_cols)< 0)
 					{
 						LM_ERR("updating in database\n");
-						if(!no_lock)
-							lock_release(&hash_table[i].lock);
-						return ;
 					}
 					break;
 				}
@@ -1588,9 +1584,6 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 					if(dbf->insert(db,query_cols,query_vals,n_query_cols )<0)
 					{
 						LM_ERR("unsuccessful sql insert\n");
-						if(!no_lock)
-							lock_release(&hash_table[i].lock);
-						return ;
 					}
 					break;
 				}
