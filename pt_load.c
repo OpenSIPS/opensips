@@ -138,7 +138,7 @@ void pt_become_idle(void)
 #define SUM_UP_LOAD(_now, _pno, _TYPE, _ratio) \
 	do { \
 		/* check if the entire time window has the same status */ \
-		if ((_now-PT_LOAD(_pno).last_time) >= (_TYPE##_WINDOW_TIME)*(_ratio)) { \
+		if ((_now-PT_LOAD(_pno).last_time) >= (_TYPE##_WINDOW_TIME)*(_ratio)){\
 			/* nothing recorded in the last time window */ \
 			used += PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0; \
 		} else { \
@@ -154,7 +154,8 @@ void pt_become_idle(void)
 					_TYPE##_WINDOW_SIZE; \
 				/* the start is between [new,old], so no used recorded yet */ \
 				if (idx_start>=idx_old && idx_start<=idx_new) {\
-					return PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0;\
+					used+= PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0;\
+					break; \
 				}\
 			} else { \
 				idx_start = idx_new; \
