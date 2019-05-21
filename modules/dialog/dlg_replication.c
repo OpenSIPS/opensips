@@ -526,6 +526,7 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 	}
 	DLG_BIN_POP(int, packet, cseq, malformed);
 	dlg->legs[dst_leg].last_gen_cseq = cseq;
+	unref_dlg(dlg, 1);
 
 	return 0;
 malformed:
