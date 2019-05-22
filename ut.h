@@ -888,14 +888,15 @@ static inline int str_strcmp(const str *stra, const str *strb)
 	if(stra==NULL || strb==NULL || stra->s ==NULL || strb->s==NULL
 	|| stra->len<0 || strb->len<0)
 	{
-		LM_ERR("bad parameters\n");
+#ifdef EXTRA_DEBUG
+		LM_DBG("bad parameters\n");
+#endif
 		return -2;
 	}
 
 	alen = stra->len;
 	blen = strb->len;
 	minlen = (alen < blen ? alen : blen);
-
 
 	for (i = 0; i < minlen; i++) {
 		const char a = stra->s[i];
@@ -905,6 +906,7 @@ static inline int str_strcmp(const str *stra, const str *strb)
 		if (a > b)
 			return 1;
 	}
+
 	if (alen < blen)
 		return -1;
 	else if (alen > blen)
