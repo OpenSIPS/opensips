@@ -732,7 +732,7 @@ static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, st
 		}
 	} else if (out_sdp->len < sdp.len) {
 		tmp = shm_realloc(out_sdp->s, sdp.len);
-		if (tmp) {
+		if (!tmp) {
 			LM_ERR("Failed to reallocate sdp \n");
 			goto end;
 		}
@@ -1272,7 +1272,6 @@ static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int leg)
 {
 	str sdp;
-	char *tmp;
 
 	if (get_body(msg, &sdp) < 0)
 		return -1;
@@ -1280,27 +1279,17 @@ static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 	if (sdp.len == 0)
 		return 0; /* nothing to do, no body */
 
-	if (dlg->legs[leg].in_sdp.s) {
-		/* check if we need to update it */
-		if (dlg->legs[leg].in_sdp.len == sdp.len &&
-				memcmp(dlg->legs[leg].in_sdp.s, sdp.s, sdp.len) == 0) {
-			LM_DBG("SDP not changed, using the same one!\n");
-			return 0;
-		}
-		tmp = shm_realloc(dlg->legs[leg].in_sdp.s, sdp.len);
-		if (!tmp) {
-			LM_ERR("cannot update inbound SDP!\n");
-			return -1;
-		}
-	} else {
-		dlg->legs[leg].in_sdp.s = shm_malloc(sdp.len);
-		if (!dlg->legs[leg].in_sdp.s) {
-			LM_ERR("cannot allocate inbound SDP!\n");
-			return -1;
-		}
+	/* check if we need to update it */
+	if (!str_strcmp(&dlg->legs[leg].in_sdp, &sdp)) {
+		LM_DBG("SDP not changed, using the same one!\n");
+		return 0;
 	}
-	memcpy(dlg->legs[leg].in_sdp.s, sdp.s, sdp.len);
-	dlg->legs[leg].in_sdp.len = sdp.len;
+
+	if (shm_str_sync(&dlg->legs[leg].in_sdp, &sdp) != 0) {
+		LM_ERR("cannot update inbound SDP!\n");
+		return -1;
+	}
+
 	LM_DBG("update inbound sdp for leg %d\n", leg);
 
 	return 1;
