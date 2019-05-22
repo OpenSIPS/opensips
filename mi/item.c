@@ -314,6 +314,12 @@ mi_response_t *shm_clone_mi_response(mi_response_t *src)
 
 void free_shm_mi_response(mi_response_t *shm_response)
 {
+	/* if there is an id, this is probably in pkg mem, because that's how
+	 * add_id_to_response adds it; if we don't release it now, removing it
+	 * from shm will result in a memory corruption */
+	_init_mi_sys_mem_hooks();
+	cJSON_DeleteItemFromObject(shm_response, "id");
+
 	_init_mi_shm_mem_hooks();
 
 	cJSON_Delete(shm_response);
