@@ -656,7 +656,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 
 	/* update the cseq, so we can be ready to generate other sequential
 	 * messages on other nodes too */
-	replicate_dialog_cseq_updated(dlg, dst_leg);
+	if (dialog_repl_cluster)
+		replicate_dialog_cseq_updated(dlg, dst_leg);
 
 	if(result < 0)
 	{
