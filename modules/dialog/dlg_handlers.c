@@ -1280,7 +1280,7 @@ static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 		return 0; /* nothing to do, no body */
 
 	/* check if we need to update it */
-	if (!str_strcmp(&dlg->legs[leg].in_sdp, &sdp)) {
+	if (dlg->legs[leg].in_sdp.s && !str_strcmp(&dlg->legs[leg].in_sdp, &sdp)) {
 		LM_DBG("SDP not changed, using the same one!\n");
 		return 0;
 	}
