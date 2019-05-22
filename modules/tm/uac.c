@@ -381,16 +381,24 @@ static void rpc_run_local_route(int sender, void *v_param)
 	struct usr_avp **backup;
 	int ret;
 
-	/* nothing to run here */
-	if (sroutes->local.a==NULL)
-		return;
+	if (sroutes->local.a==NULL) {
 
-	/* set transaction AVP list */
-	backup = set_avp_list( &new_cell->user_avps);
+		/* nothing to run here */
+		ret = -2;
 
-	ret=run_local_route( new_cell, &param->buf, &param->buf_len, &param->dlg);
+	} else {
 
-	set_avp_list( backup );
+		/* run the local route */
+
+		/* set transaction AVP list */
+		backup = set_avp_list( &new_cell->user_avps);
+
+		ret = run_local_route( new_cell, &param->buf, &param->buf_len,
+			&param->dlg);
+
+		set_avp_list( backup );
+
+	}
 
 	/* setting the len of the resulting buffer is the marker for the calling
 	 * process that we are done
