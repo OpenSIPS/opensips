@@ -381,8 +381,8 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	str s;
 	str callid = {0,0};
 	int sip_error;
-	int proto;
-	int port;
+	int proto = PROTO_NONE;
+	int port = 0;
 	int cseq = 0;
 	int n;
 	mi_response_t *resp;
@@ -396,10 +396,10 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	if (parse_uri( ruri.s, ruri.len, &pruri) < 0 )
 		return init_mi_error(400, MI_SSTR("Invalid ruri"));
 
-	if (parse_uri( nexthop->s, nexthop->len, &pnexthop) < 0 )
+	if (nexthop && parse_uri( nexthop->s, nexthop->len, &pnexthop) < 0 )
 		return init_mi_error( 400, MI_SSTR("Invalid next_hop"));
 
-	if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
+	if (socket && parse_phostport( socket->s, socket->len, &s.s, &s.len,
 	&port,&proto)!=0)
 		return init_mi_error( 404, MI_SSTR("Invalid local socket"));
 	set_sip_defaults( port, proto);
