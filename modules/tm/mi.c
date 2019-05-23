@@ -410,6 +410,8 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	if (get_mi_string_param(params, "headers", &hdrs.s, &hdrs.len) < 0)
 		return init_mi_param_error();
 
+	unescape_crlf(&hdrs);
+
 	/* use SIP parser to look at what is in the FIFO request */
 	memset( &tmp_msg, 0, sizeof(struct sip_msg));
 	tmp_msg.len = hdrs.len;

@@ -552,6 +552,28 @@ error:
 	return -1;
 }
 
+static inline void unescape_crlf(str *in_out)
+{
+	char *p, *lim = in_out->s + in_out->len;
+
+	if (ZSTR(*in_out))
+		return;
+
+	for (p = in_out->s; p < lim; p++) {
+		if (*p == '\\' && p + 1 < lim) {
+			if (*(p + 1) == 'r') {
+				*p = '\r';
+				memmove(p + 1, p + 2, lim - (p + 2));
+				in_out->len--;
+			} else if (*(p + 1) == 'n') {
+				*p = '\n';
+				memmove(p + 1, p + 2, lim - (p + 2));
+				in_out->len--;
+			}
+		}
+	}
+}
+
 
 /*
  * Convert a string to lower case
