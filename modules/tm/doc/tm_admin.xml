@@ -1971,7 +1971,7 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi t_uac_dlg INVITE "sip:123456@127.0.0.1:5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:test@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
+		opensips-cli -x mi t_uac_dlg method=INVITE ruri="sip:alice@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip:alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
 		</programlisting>
 	</section>
 
