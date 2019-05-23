@@ -793,7 +793,8 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			LM_ERR("Unknown destination - cannot open new tcp connection\n");
 			return -1;
 		}
-		LM_DBG("no open tcp connection found, opening new one, async = %d\n",tcp_async);
+		LM_DBG("no open tcp connection found, opening new one, async = %d\n",
+			tcp_async);
 		/* create tcp connection */
 		if (tcp_async) {
 			n = tcpconn_async_connect(send_sock, to, buf, len, &c, &fd);
@@ -807,8 +808,6 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
-
-
 			if (n==0) {
 				/* trace the message */
 				if ( TRACE_ON( c->flags ) &&
@@ -816,7 +815,8 @@ static int proto_tcp_send(struct socket_info* send_sock,
 					if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
 						LM_ERR("can't create su structures for tracing!\n");
 					} else {
-						trace_message_atonce( PROTO_TCP, c->cid, &src_su, &dst_su,
+						trace_message_atonce( PROTO_TCP, c->cid,
+							&src_su, &dst_su,
 							TRANS_TRACE_CONNECT_START, TRANS_TRACE_SUCCESS,
 							&AS_CONNECT_INIT, t_dst );
 					}
@@ -824,6 +824,8 @@ static int proto_tcp_send(struct socket_info* send_sock,
 
 				/* mark the ID of the used connection (tracing purposes) */
 				last_outgoing_tcp_id = c->id;
+				send_sock->last_local_real_port = c->rcv.dst_port;
+				send_sock->last_remote_real_port = c->rcv.src_port;
 
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when
@@ -912,6 +914,8 @@ static int proto_tcp_send(struct socket_info* send_sock,
 
 			/* mark the ID of the used connection (tracing purposes) */
 			last_outgoing_tcp_id = c->id;
+			send_sock->last_local_real_port = c->rcv.dst_port;
+			send_sock->last_remote_real_port = c->rcv.src_port;
 
 			/* we successfully added our write chunk - success */
 			sh_log(c->hist, TCP_SEND2MAIN, "send 3, (%d)", c->refcnt);
@@ -958,6 +962,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
+	send_sock->last_local_real_port = c->rcv.dst_port;
+	send_sock->last_remote_real_port = c->rcv.src_port;
 
 	sh_log(c->hist, TCP_SEND2MAIN, "send 6, (%d, async: %d)", c->refcnt, n < len);
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );

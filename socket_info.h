@@ -54,6 +54,16 @@ struct socket_info {
 	struct ip_addr adv_address; /* Advertised address in ip_addr form (for find_si) */
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	unsigned short children;
+	/* these are IP-level local/remote ports used during the last write op via
+	 * this sock (or a connection belonging to this sock). These values are 
+	 * optional (populated only by the TCP-based protocol, for ephemeral ports.
+	 * Note: they are populate ONLY by a write op and they are not ever reset,
+	 * they are simply overwritten by the next write op on this socket/conn.
+	 * IMPORTANT: when reading them, be sure you are just after a write ops,
+	 * otherwise you may read old data here */
+	unsigned short last_local_real_port;
+	unsigned short last_remote_real_port;
+
 	struct socket_info* next;
 	struct socket_info* prev;
 };
