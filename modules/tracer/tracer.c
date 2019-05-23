@@ -836,21 +836,17 @@ static int mod_init(void)
 
 	*trace_on_flag = trace_on;
 
+	/* best effort - try to load any tracing protocol, if possible */
+	trace_prot_bind(TRACE_PROTO, &tprot);
+
 	/* initialize hep api */
 	for (it=trace_list;it;it=it->next) {
 		if (it->type!=TYPE_HEP)
 			continue;
 
 		if (tprot.get_trace_dest_by_name == NULL) {
-			LM_DBG("Loading tracing protocol!\n");
-			/*
-			 * if more tracing protocols shall implement the api then
-			 * this should be a modparam
-			 */
-			if (trace_prot_bind(TRACE_PROTO, &tprot)) {
-				LM_ERR("Failed to bind tracing protocol!\n");
-				return -1;
-			}
+			LM_ERR("NO tracing protocol specified!\n");
+			return -1;
 		}
 
 		it->el.hep.hep_id = tprot.get_trace_dest_by_name(&it->el.hep.name);
@@ -2704,6 +2700,11 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 	}
 
 	if (uri_type == TYPE_HEP) {
+		if (tprot.get_trace_dest_by_name == NULL) {
+			lock_release(dyn_trace_lock);
+			return init_mi_error_extra(500, MI_SSTR("No transport protocol"),
+						MI_SSTR("HEP module was not loaded"));
+		}
 		/* check if we can alocate a hep_id */
 		hep_id = tprot.new_trace_dest(&name, &uri);
 		if (!hep_id) {
