@@ -2166,13 +2166,13 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 				if (add_mi_number(conn_item, MI_SSTR("State"), conn->state) < 0)
 					goto error;
 
-				/* add Source */
-				if (add_mi_string_fmt(conn_item, MI_SSTR("Source"), "%s:%d",
+				/* add Remote IP:Port */
+				if (add_mi_string_fmt(conn_item, MI_SSTR("Remote"), "%s:%d",
 					ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port) < 0)
 					goto error;
 
-				/* add Destination */
-				if (add_mi_string_fmt(conn_item, MI_SSTR("Destination"), "%s:%d",
+				/* add Local IP:Port */
+				if (add_mi_string_fmt(conn_item, MI_SSTR("Local"), "%s:%d",
 					ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port) < 0)
 					goto error;
 
