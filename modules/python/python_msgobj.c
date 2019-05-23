@@ -25,7 +25,9 @@
 #include "../../action.h"
 #include "../../mem/mem.h"
 #include "../../sr_module.h"
+#include "../../mod_fix.h"
 #include "../../parser/msg_parser.h"
+#include "../../ut.h"
 
 #ifndef Py_TYPE
 #define Py_TYPE(ob)               (((PyObject*)(ob))->ob_type)
@@ -193,13 +195,16 @@ msg_getHeader(msgobject *self, PyObject *args)
 static PyObject *
 msg_call_function(msgobject *self, PyObject *args)
 {
-/* TODO: adapt to new cmd_export and params interface */
-#if 0
     int i, rval;
-    char *fname, *arg1, *arg2;
+    char *fname;
+    char *pargs[MAX_CMD_PARAMS];
     cmd_export_t *fexport;
     struct action *act;
     action_elem_t elems[MAX_ACTION_ELEMS];
+    struct cmd_param *param;
+    int n = 0;
+    str s;
+    pv_spec_t *spec = NULL;
 
     if (self->msg == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "self->msg is NULL");
@@ -208,15 +213,24 @@ msg_call_function(msgobject *self, PyObject *args)
     }
 
     i = PySequence_Size(args);
-    if (i < 1 || i > 3) {
-        PyErr_SetString(PyExc_RuntimeError, "call_function() should " \
-          "have from 1 to 3 arguments");
+    if (i < 1 || i > MAX_CMD_PARAMS+1) {
+        PyErr_SetString(PyExc_RuntimeError, "call_function() should "
+          "have from 1 to 9 arguments");
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    if(!PyArg_ParseTuple(args, "s|ss:call_function", &fname, &arg1, &arg2))
-        return NULL;
+    for (i=0; i < MAX_CMD_PARAMS; i++)
+        pargs[i] = (char*)-1; /* mark params as not given */
+
+    if(!PyArg_ParseTuple(args, "s|zzzzzzzz:call_function", &fname,
+        &pargs[0], &pargs[1], &pargs[2], &pargs[3],
+        &pargs[4], &pargs[5], &pargs[6], &pargs[7])) {
+        PyErr_SetString(PyExc_RuntimeError,
+            "failed to parse arguments from python");
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
 
     fexport = find_cmd_export_t(fname, 0);
     if (fexport == NULL) {
@@ -225,13 +239,67 @@ msg_call_function(msgobject *self, PyObject *args)
         return Py_None;
     }
 
+    for (i=0; i < MAX_CMD_PARAMS; i++)
+        if (pargs[i] != (char*)-1) {
+            n++;
+            if (pargs[i] == NULL)  /* given as 'None' in Python */
+                elems[i+1].type = NULLV_ST;
+            else
+                elems[i+1].type = NOSUBTYPE;
+        }
+
+    rval = check_cmd_call_params(fexport, elems, n);
+    if (rval == -1 || rval == -2) {
+        PyErr_SetString(PyExc_RuntimeError, "to few or too many parameters");
+        Py_INCREF(Py_None);
+        return Py_None;
+    } else if (rval == -3) {
+        PyErr_SetString(PyExc_RuntimeError, "mandatory parameter ommited");
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
     elems[0].type = CMD_ST;
     elems[0].u.data = fexport;
-    elems[1].type = STRING_ST;
-    elems[1].u.data = arg1;
-    elems[2].type = STRING_ST;
-    elems[2].u.data = arg2;
-    act = mk_action(MODULE_T, 3, elems, 0, "python");
+
+    for (param=fexport->params, i=1; param->flags; param++, i++) {
+        if (!pargs[i-1])
+            continue;
+
+        if (param->flags & CMD_PARAM_INT) {
+            elems[i].type = NUMBER_ST;
+            s.s = pargs[i-1];
+            s.len =  strlen(s.s);
+            if (str2sint(&s, (int*)&elems[i].u.number) < 0) {
+                PyErr_SetString(PyExc_RuntimeError,
+                    "parameter should be an integer");
+                Py_INCREF(Py_None);
+                return Py_None;
+            }
+        } else if (param->flags & CMD_PARAM_STR) {
+            elems[i].type = STR_ST;
+            elems[i].u.data = pargs[i-1];
+        } else if (param->flags & CMD_PARAM_VAR) {
+            elems[i].type = SCRIPTVAR_ST;
+            spec = pkg_malloc(sizeof *spec);
+            if (!spec) {
+                LM_ERR("oom\n");
+                PyErr_SetString(PyExc_RuntimeError, "no more pkg memory");
+                Py_INCREF(Py_None);
+                return Py_None;
+            }
+            s.s = pargs[i-1];
+            s.len = strlen(s.s);
+            if (pv_parse_spec(&s, spec) == NULL) {
+                PyErr_SetString(PyExc_RuntimeError, "unknown script variable");
+                Py_INCREF(Py_None);
+                return Py_None;
+            }
+            elems[i].u.data = spec;
+        }
+    }
+
+    act = mk_action(MODULE_T, n+1, elems, 0, "python");
 
     if (act == NULL) {
         PyErr_SetString(PyExc_RuntimeError,
@@ -240,52 +308,25 @@ msg_call_function(msgobject *self, PyObject *args)
         return Py_None;
     }
 
-    if (fexport->fixup != NULL) {
-        if (i >= 3) {
-            rval = fexport->fixup(&(act->elem[2].u.data), 2);
-            if (rval < 0) {
-                PyErr_SetString(PyExc_RuntimeError, "Error in fixup (2)");
-                Py_INCREF(Py_None);
-                return Py_None;
-            }
-            act->elem[2].type = MODFIXUP_ST;
-        }
-        if (i >= 2) {
-            rval = fexport->fixup(&(act->elem[1].u.data), 1);
-            if (rval < 0) {
-                PyErr_SetString(PyExc_RuntimeError, "Error in fixup (1)");
-                Py_INCREF(Py_None);
-                return Py_None;
-            }
-            act->elem[1].type = MODFIXUP_ST;
-        }
-        if (i == 1) {
-            rval = fexport->fixup(0, 0);
-            if (rval < 0) {
-                PyErr_SetString(PyExc_RuntimeError, "Error in fixup (0)");
-                Py_INCREF(Py_None);
-                return Py_None;
-            }
-        }
+    if (fix_cmd(fexport->params, act->elem) < 0) {
+        PyErr_SetString(PyExc_RuntimeError,
+          "failed to fix command");
+        Py_INCREF(Py_None);
+        return Py_None;
     }
 
     rval = do_action(act, self->msg);
 
-    if ((act->elem[2].type == MODFIXUP_ST) && (act->elem[2].u.data) &&
-      (act->elem[2].u.data != arg2)) {
-       pkg_free(act->elem[2].u.data);
-    }
+    pv_spec_free(spec);
 
-    if ((act->elem[1].type == MODFIXUP_ST) && (act->elem[1].u.data)) {
-        pkg_free(act->elem[1].u.data);
-    }
+    /* free the gparam_t structs allocated by fix_cmd() */
+    for (i=1; i < MAX_ACTION_ELEMS; i++)
+        if (act->elem[i].u.data)
+            pkg_free(act->elem[i].u.data);
 
     pkg_free(act);
 
     return PyInt_FromLong(rval);
-#endif
-
-    return NULL;
 }
 
 PyDoc_STRVAR(copy_doc,
