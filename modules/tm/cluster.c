@@ -254,7 +254,7 @@ static bin_packet_t *tm_replicate_packet(struct sip_msg *msg, int type)
 
 	TM_BIN_PUSH(int, msg->rcv.proto, "proto");
 	TM_BIN_PUSH(str, &msg->rcv.bind_address->name, "dst host");
-	TM_BIN_PUSH(int, msg->rcv.dst_port, "dst port");
+	TM_BIN_PUSH(int, msg->rcv.bind_address->port_no, "dst port");
 	tmp.s = (char *)&msg->rcv.src_ip;
 	tmp.len = sizeof(struct ip_addr);
 	TM_BIN_PUSH(str, &tmp, "src host");
