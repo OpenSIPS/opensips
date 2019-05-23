@@ -557,6 +557,9 @@ static int proto_bin_send(struct socket_info* send_sock,
 			if (n==0) {
 				/* mark the ID of the used connection (tracing purposes) */
 				last_outgoing_tcp_id = c->id;
+				send_sock->last_local_real_port = c->rcv.dst_port;
+				send_sock->last_remote_real_port = c->rcv.src_port;
+
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when 
 				 * connect will be completed */
@@ -595,6 +598,8 @@ static int proto_bin_send(struct socket_info* send_sock,
 
 			/* mark the ID of the used connection (tracing purposes) */
 			last_outgoing_tcp_id = c->id;
+			send_sock->last_local_real_port = c->rcv.dst_port;
+			send_sock->last_remote_real_port = c->rcv.src_port;
 
 			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
@@ -632,6 +637,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
+	send_sock->last_local_real_port = c->rcv.dst_port;
+	send_sock->last_remote_real_port = c->rcv.src_port;
 
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;
