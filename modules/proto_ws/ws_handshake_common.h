@@ -1205,8 +1205,8 @@ static int ws_start_handshake(struct tcp_connection *c)
 	reset_tcp_vars(tcpthreshold);
 	start_expire_timer(get, tcpthreshold);
 
-	ip = ip_addr2a(&c->rcv.dst_ip);
-	port = int2str(c->rcv.dst_port, &port_len);
+	ip = ip_addr2a(&c->rcv.src_ip);
+	port = int2str(c->rcv.src_port, &port_len);
 	n = strlen(ip);
 	memcpy(host_orig_buf, ip, n);
 	host_orig_buf[n] = ':';
