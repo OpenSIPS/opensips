@@ -513,49 +513,29 @@ int check_event_header(struct sip_msg *msg) {
 int get_ip_socket(struct sip_msg *msg, char** saddr){
 
 	char *socket;
-	struct socket_info** list;
 	struct socket_info* si;
 
-	list = get_sock_info_list(msg->rcv.proto);
-	if (list == NULL) {
-		LM_ERR("ERROR in SOCKET\n");
+	si = msg->rcv.bind_address;
+
+	socket = pkg_malloc(si->address_str.len + si->port_no_str.len + 3);
+	if (socket == NULL) {
+		LM_ERR("no more pkg memory\n");
 		return -1;
 	}
 
-	si = *list;
-	*saddr = NULL;
+	*saddr = socket;
+	*socket = '@';
+	socket++;
+	memcpy(socket, si->address_str.s, si->address_str.len);
+	socket = socket + si->address_str.len;
+	*socket = ':';
+	socket++;
+	memcpy(socket, si->port_no_str.s, si->port_no_str.len);
+	socket = socket + si->port_no_str.len;
+	*socket = 0;
 
-	while (si) {
-		if (si->port_no == msg->rcv.dst_port) {
-			socket = pkg_malloc(si->address_str.len + si->port_no_str.len + 3);
-			if (socket == NULL) {
-				LM_ERR("no more pkg memory\n");
-				return -1;
-			}
-
-			*saddr = socket;
-			*socket = '@';
-			socket++;
-			memcpy(socket, si->address_str.s, si->address_str.len);
-			socket = socket + si->address_str.len;
-			*socket = ':';
-			socket++;
-			memcpy(socket, si->port_no_str.s, si->port_no_str.len);
-			socket = socket + si->port_no_str.len;
-			*socket = 0;
-
-			LM_DBG(" --- SERVER = %s \n \n", *saddr);
-			break;
-		}
-		si = si->next;
-	}
-	if (*saddr == NULL) {
-		LM_ERR("failed in found ip listen\n");
-		return -1;
-	}
-
+	LM_DBG(" --- SERVER = %s \n \n", *saddr);
 	return 1;
-
 }
 
 
