@@ -6,7 +6,7 @@ IMPORTANT: it is not a trustable certificate - the CA is also an example.
 
 All TLS configuration files may be found in the "user" directory. If you want
 to generate your own certificate, a CA you may sign your request with can
-be found in the "rootCA" directory. Use the "opensipsctl tls userCERT" command
+be found in the "rootCA" directory. Use the "opensips-cli tls userCERT" command
 to create a new certificate; the rootCA passphrase is "opensips".
 
 What is the purpose of the default CA and certificate? Firstly, to make an 

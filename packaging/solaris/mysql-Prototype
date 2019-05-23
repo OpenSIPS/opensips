@@ -8,9 +8,6 @@ d none /opt/opensips/lib64 0755 root root
 d none /opt/opensips/lib64/opensips 0755 root root
 d none /opt/opensips/lib64/opensips/modules 0755 root root
 f none /opt/opensips/lib64/opensips/modules/db_mysql.so 0755 root root
-d none /opt/opensips/lib64/opensips/opensipsctl 0755 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.mysql 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.mysql 0644 root root
 d none /opt/opensips/mysql 0755 root root
 f none /opt/opensips/mysql/acc-create.sql 0644 root root
 f none /opt/opensips/mysql/alias_db-create.sql 0644 root root

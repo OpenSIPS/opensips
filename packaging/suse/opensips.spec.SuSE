@@ -356,18 +356,6 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/xlog.so
 
 %{_sbindir}/opensips
-%{_sbindir}/opensipsctl
-%{_sbindir}/opensipsdbctl
-%{_libdir}/opensips/opensipsctl/dbtextdb/dbtextdb.py
-%{_libdir}/opensipsctl/opensipsctl.base
-%{_libdir}/opensipsctl/opensipsctl.db_berkeley
-%{_libdir}/opensipsctl/opensipsctl.dbtext
-%{_libdir}/opensipsctl/opensipsctl.oracle
-%{_libdir}/opensipsctl/opensipsctl.sqlbase
-%{_libdir}/opensipsctl/opensipsdbctl.base
-%{_libdir}/opensipsctl/opensipsdbctl.db_berkeley
-%{_libdir}/opensipsctl/opensipsdbctl.dbtext
-%{_libdir}/opensipsctl/opensipsdbctl.oracle
 
 %{_mandir}/man5/*
 %{_mandir}/man8/*
@@ -378,16 +366,12 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.mysql
 
 %{_libdir}/opensips/modules/db_mysql.so
-%{_libdir}/opensipsctl/opensipsctl.mysql
-%{_libdir}/opensipsctl/opensipsdbctl.mysql
 
 %files postgres
 %defattr(-,root,root)
 %doc %{_docdir}/opensips/README.postgres
 
 %{_libdir}/opensips/modules/db_postgres.so
-%{_libdir}/opensipsctl/opensipsdbctl.pgsql
-%{_libdir}/opensipsctl/opensipsctl.pgsql
 
 %files unixodbc
 %defattr(-,root,root)

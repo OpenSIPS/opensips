@@ -66,7 +66,6 @@ f none /opt/opensips/etc/opensips/tls/ca.conf 0644 root root
 f none /opt/opensips/etc/opensips/tls/README 0644 root root
 f none /opt/opensips/etc/opensips/tls/request.conf 0644 root root
 f none /opt/opensips/etc/opensips/tls/user.conf 0644 root root
-f none /opt/opensips/etc/opensips/opensipsctlrc 0644 root root
 f none /opt/opensips/INSTALL 0644 root root
 d none /opt/opensips/lib64 0755 root root
 d none /opt/opensips/lib64/opensips 0755 root root
@@ -146,19 +145,10 @@ f none /opt/opensips/lib64/opensips/modules/usrloc.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/xcap_client.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/xlog.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/tlsops.so 0755 root root
-d none /opt/opensips/lib64/opensips/opensipsctl 0755 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.base 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.sqlbase 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.base 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.dbtext 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.dbtext 0644 root root
-d none /opt/opensips/lib64/opensips/opensipsctl/dbtextdb 0755 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/dbtextdb/dbtextdb.py 0755 root root
 d none /opt/opensips/man5 0755 root root
 f none /opt/opensips/man5/opensips.cfg.5 0644 root root
 d none /opt/opensips/man8 0755 root root
 f none /opt/opensips/man8/opensips.8 0644 root root
-f none /opt/opensips/man8/opensipsctl.8 0644 root root
 f none /opt/opensips/man8/opensipsunix.8 0644 root root
 f none /opt/opensips/NEWS 0644 root root
 f none /opt/opensips/README-MODULES 0644 root root
@@ -239,6 +229,4 @@ f none /opt/opensips/README.xcap_client 0644 root root
 f none /opt/opensips/README.xlog 0644 root root
 d none /opt/opensips/sbin 0755 root root
 f none /opt/opensips/sbin/opensips 0755 root root
-f none /opt/opensips/sbin/opensipsctl 0755 root root
-f none /opt/opensips/sbin/opensipsdbctl 0755 root root
 f none /opt/opensips/sbin/opensipsunix 0755 root root
