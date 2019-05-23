@@ -273,7 +273,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 		<title>Exported Functions</title>
 		<section id="func_siprec_start_recording" xreflabel="siprec_start_recording()">
 			<title>
-			<function moreinfo="none">siprec_start_recording(srs [, group [, caller [, callee [, rtpproxy_set [, media_ip] ]]]])</function>
+			<function moreinfo="none">siprec_start_recording(srs [, group [, caller [, callee [, rtpproxy_sock [, media_ip] ]]]])</function>
 			</title>
 			<para>
 				Calling this function on an initial
@@ -314,10 +314,11 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 					<emphasis>To</emphasis> header is used to build the value from.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>rtpproxy_set</emphasis> (optional) - the
-					RTPProxy set used for this call. If absent, the default
-					set provisioned in the <emphasis>rtpproxy</emphasis>
-					module is used.
+					<emphasis>rtpproxy_sock</emphasis> (string, optional) - the
+					RTPProxy soscket used for this call. If absent, the rtpproxy
+					module will try to detect the proxy used for the initial call,
+					based on the default set provisioned in the
+					<emphasis>rtpproxy</emphasis> module.
 				</para></listitem>
 				<listitem><para>
 					<emphasis>media_ip</emphasis> (optional) - the IP that
