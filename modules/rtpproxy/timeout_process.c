@@ -350,7 +350,7 @@ void timeout_listener_process(int rank)
 				if(str2int(&id, &h_entry)< 0) {
 					LM_ERR("Wrong formatted message received from rtpproxy - invalid"
 							" dialog entry [%.*s]\n", id.len, id.s);
-					break;
+					goto error;
 				}
 
 				sp = memchr(p, '\n', left);
@@ -369,7 +369,7 @@ void timeout_listener_process(int rank)
 				if(str2int(&id, &h_id)< 0) {
 					LM_ERR("Wrong formatted message received from rtpproxy - invalid"
 							" dialog id [%.*s]\n", id.len, id.s);
-					break;
+					goto error;
 				}
 				LM_DBG("hentry = %u, h_id = %u\n", h_entry, h_id);
 
@@ -382,6 +382,10 @@ void timeout_listener_process(int rank)
 
 			offset = end - start;
 			memmove(buffer, start, end - start);
+			continue;
+error:
+			/* invalidate entire buffer on error */
+			offset = 0;
 		}
 	}
 }
