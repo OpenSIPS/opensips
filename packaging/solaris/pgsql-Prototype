@@ -7,8 +7,6 @@ d none /opt/opensips/lib64 0755 root root
 d none /opt/opensips/lib64/opensips 0755 root root
 d none /opt/opensips/lib64/opensips/modules 0755 root root
 f none /opt/opensips/lib64/opensips/modules/db_postgres.so 0755 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.pgsql 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.pgsql 0644 root root
 d none /opt/opensips/postgres 0755 root root
 f none /opt/opensips/postgres/acc-create.sql 0644 root root
 f none /opt/opensips/postgres/alias_db-create.sql 0644 root root

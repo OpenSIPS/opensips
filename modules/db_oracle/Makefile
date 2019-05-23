@@ -85,22 +85,6 @@ $(UTILS_DIR)/db_oracle/opensips_orasel:
 	make -C $(UTILS_DIR)/db_oracle
 
 install_module_custom: $(bin_prefix)/$(bin_dir) $(UTILS_DIR)/db_oracle/opensips_orasel
-	mkdir -p $(modules_prefix)/$(lib_dir)/opensipsctl ; \
-	sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-		< $(SCRIPTS_DIR)/opensipsctl.oracle > /tmp/opensipsctl.oracle ; \
-	$(INSTALL_CFG) /tmp/opensipsctl.oracle \
-		$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.oracle ; \
-	rm -fr /tmp/opensipsctl.oracle ; \
-	sed -e "s#/usr/local/share/opensips#$(data_target)#g" \
-	< $(SCRIPTS_DIR)/opensipsdbctl.oracle > /tmp/opensipsdbctl.oracle ; \
-	$(INSTALL_TOUCH) $(modules_prefix)/$(lib_dir)/opensipsctl/opensipsdbctl.oracle ; \
-	$(INSTALL_CFG) /tmp/opensipsdbctl.oracle $(modules_prefix)/$(lib_dir)/opensipsctl/ ; \
-	rm -fr /tmp/opensipsdbctl.oracle ; \
-	sed -e "s#/usr/local/share/opensips#$(data_target)#g" \
-	< $(SCRIPTS_DIR)/opensipsdbfunc.oracle > /tmp/opensipsdbfunc.oracle ; \
-	$(INSTALL_TOUCH) $(modules_prefix)/$(lib_dir)/opensipsctl/opensipsdbfunc.oracle ; \
-	$(INSTALL_CFG) /tmp/opensipsdbfunc.oracle $(modules_prefix)/$(lib_dir)/opensipsctl/ ; \
-	rm -fr /tmp/opensipsdbfunc.oracle ; \
 	mkdir -p $(data_prefix)/$(data_dir)/oracle ; \
 	for FILE in $(wildcard $(SCRIPTS_DIR)/oracle/*) ; do \
 		if [ -f $$FILE ] ; then \

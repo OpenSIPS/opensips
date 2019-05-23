@@ -804,8 +804,6 @@ mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
 %else
 install -p -D -m 755 packaging/redhat_fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
 %endif
-echo -e "\nETCDIR=\"%{_sysconfdir}/opensips\"\n" \
-  >> $RPM_BUILD_ROOT%{_sysconfdir}/%{name}/opensipsctlrc
 
 #install sysconfig file
 install -D -p -m 644 packaging/redhat_fedora/%{name}.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
@@ -846,8 +844,6 @@ fi
 
 %files
 %{_sbindir}/opensips
-%{_sbindir}/opensipsctl
-%{_sbindir}/opensipsdbctl
 %{_sbindir}/opensipsunix
 %{_sbindir}/osipsconfig
 
@@ -859,8 +855,6 @@ fi
 %attr(750,%{name},%{name}) %dir %{_sysconfdir}/opensips/tls/user
 %dir %{_libdir}/opensips/
 %dir %{_libdir}/opensips/modules/
-%dir %{_libdir}/opensips/opensipsctl/
-%dir %{_libdir}/opensips/opensipsctl/dbtextdb/
 
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 %{_unitdir}/%{name}.service
@@ -875,7 +869,6 @@ fi
 %endif
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
-%attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensipsctlrc
 # these files are just an examples so no need to restrict access to them
 %config(noreplace) %{_sysconfdir}/opensips/tls/ca.conf
 %config(noreplace) %{_sysconfdir}/opensips/tls/request.conf
@@ -890,14 +883,6 @@ fi
 %config(noreplace) %{_sysconfdir}/opensips/tls/user/user-cert_req.pem
 %config(noreplace) %{_sysconfdir}/opensips/tls/user/user-privkey.pem
 
-%{_libdir}/opensips/opensipsctl/opensipsctl.base
-%{_libdir}/opensips/opensipsctl/opensipsctl.dbtext
-%{_libdir}/opensips/opensipsctl/opensipsctl.sqlbase
-
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.base
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.dbtext
-%{_libdir}/opensips/opensipsctl/dbtextdb/dbtextdb.py*
-
 %dir %{_datadir}/opensips/
 %dir %{_datadir}/opensips/dbtext/
 %dir %{_datadir}/opensips/dbtext/opensips/
@@ -908,7 +893,6 @@ fi
 
 %{_mandir}/man5/opensips.cfg.5*
 %{_mandir}/man8/opensips.8*
-%{_mandir}/man8/opensipsctl.8*
 %{_mandir}/man8/opensipsunix.8*
 
 %doc docdir/AUTHORS
@@ -1107,8 +1091,6 @@ fi
 
 %files berkeley-module
 %{_libdir}/opensips/modules/db_berkeley.so
-%{_libdir}/opensips/opensipsctl/opensipsctl.db_berkeley
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.db_berkeley
 %dir %{_datadir}/opensips/db_berkeley
 %dir %{_datadir}/opensips/db_berkeley/opensips
 %{_datadir}/opensips/db_berkeley/opensips/*
@@ -1203,8 +1185,6 @@ fi
 
 %files mysql-module
 %{_libdir}/opensips/modules/db_mysql.so
-%{_libdir}/opensips/opensipsctl/opensipsctl.mysql
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.mysql
 %dir %{_datadir}/opensips/mysql
 %{_datadir}/opensips/mysql/*.sql
 %doc docdir/README.db_mysql
@@ -1213,9 +1193,6 @@ fi
 %files oracle-module
 %{_sbindir}/opensips_orasel
 %{_libdir}/opensips/modules/db_oracle.so
-%{_libdir}/opensips/opensipsctl/opensipsctl.oracle
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.oracle
-%{_libdir}/opensips/opensipsctl/opensipsdbfunc.oracle
 %dir %{_datadir}/opensips/oracle
 %{_datadir}/opensips/oracle/*
 %doc docdir/README.db_oracle
@@ -1262,8 +1239,6 @@ fi
 
 %files postgres-module
 %{_libdir}/opensips/modules/db_postgres.so
-%{_libdir}/opensips/opensipsctl/opensipsctl.pgsql
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.pgsql
 %dir %{_datadir}/opensips/postgres
 %{_datadir}/opensips/postgres/*.sql
 %doc docdir/README.db_postgres
@@ -1363,8 +1338,6 @@ fi
 %files sqlite-module
 %{_libdir}/opensips/modules/db_sqlite.so
 %doc docdir/README.db_sqlite
-%{_libdir}/opensips/opensipsctl/opensipsctl.sqlite
-%{_libdir}/opensips/opensipsctl/opensipsdbctl.sqlite
 %dir %{_datadir}/opensips/sqlite
 %{_datadir}/opensips/sqlite/*.sql
 

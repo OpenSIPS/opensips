@@ -513,14 +513,6 @@ install-cfg: $(cfg_prefix)/$(cfg_dir)
 			mv -f $(cfg_prefix)/$(cfg_dir)$(NAME).cfg.sample \
 				$(cfg_prefix)/$(cfg_dir)$(NAME).cfg; \
 		fi
-		# opensipsctl config
-		$(INSTALL_TOUCH)   $(cfg_prefix)/$(cfg_dir)/opensipsctlrc.sample
-		$(INSTALL_CFG) scripts/opensipsctlrc \
-			$(cfg_prefix)/$(cfg_dir)/opensipsctlrc.sample
-		if [ ! -f $(cfg_prefix)/$(cfg_dir)/opensipsctlrc ]; then \
-			mv -f $(cfg_prefix)/$(cfg_dir)/opensipsctlrc.sample \
-				$(cfg_prefix)/$(cfg_dir)/opensipsctlrc; \
-		fi
 
 install-bin: $(bin_prefix)/$(bin_dir) opensipsmc utils
 		# install opensips binary
@@ -529,42 +521,6 @@ install-bin: $(bin_prefix)/$(bin_dir) opensipsmc utils
 		# install opensips menuconfig
 		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/osipsconfig
 		$(INSTALL_BIN) menuconfig/configure $(bin_prefix)/$(bin_dir)/osipsconfig
-		# install opensipsctl (and family) tool
-		cat scripts/opensipsctl | \
-		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
-		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
-		sed -e "s#/usr/local/etc/opensips#$(cfg_target)#g"  >/tmp/opensipsctl
-		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/opensipsctl
-		$(INSTALL_BIN) /tmp/opensipsctl $(bin_prefix)/$(bin_dir)
-		rm -fr /tmp/opensipsctl
-		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-			< scripts/opensipsctl.base > /tmp/opensipsctl.base
-		mkdir -p $(modules_prefix)/$(lib_dir)/opensipsctl
-		$(INSTALL_TOUCH) \
-			$(modules_prefix)/$(lib_dir)/opensipsctl
-		$(INSTALL_CFG) /tmp/opensipsctl.base \
-			$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.base
-		rm -fr /tmp/opensipsctl.base
-		sed -e "s#/usr/local#$(bin-target)#g" \
-			< scripts/opensipsctl.sqlbase > /tmp/opensipsctl.sqlbase
-		$(INSTALL_CFG) /tmp/opensipsctl.sqlbase \
-			$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsctl.sqlbase
-		rm -fr /tmp/opensipsctl.sqlbase
-		# install db setup base script
-		sed -e "s#/usr/local/sbin#$(bin-target)#g" \
-			-e "s#/usr/local/etc/opensips#$(cfg_target)#g" \
-			-e "s#/usr/local/share/opensips#$(data_target)#g" \
-			< scripts/opensipsdbctl.base > /tmp/opensipsdbctl.base
-		$(INSTALL_CFG) /tmp/opensipsdbctl.base \
-			$(modules_prefix)/$(lib_dir)/opensipsctl/opensipsdbctl.base
-		rm -fr /tmp/opensipsdbctl.base
-		cat scripts/opensipsdbctl | \
-		sed -e "s#/usr/local/sbin#$(bin-target)#g" | \
-		sed -e "s#/usr/local/lib/opensips#$(lib-target)#g" | \
-		sed -e "s#/usr/local/etc/opensips#$(cfg_target)#g"  >/tmp/opensipsdbctl
-		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/opensipsdbctl
-		$(INSTALL_BIN) /tmp/opensipsdbctl $(bin_prefix)/$(bin_dir)
-		rm -fr /tmp/opensipsdbctl
 		$(INSTALL_TOUCH)   $(bin_prefix)/$(bin_dir)/$(NAME)unix
 		$(INSTALL_BIN) utils/$(NAME)unix/$(NAME)unix $(bin_prefix)/$(bin_dir)
 
@@ -630,12 +586,6 @@ install-man: $(man_prefix)/$(man_dir)/man8 $(man_prefix)/$(man_dir)/man5
 			-e "s#/usr/share/doc/$(NAME)/#$(doc-target)#g" \
 			< $(NAME).cfg.5 >  $(man_prefix)/$(man_dir)/man5/$(NAME).cfg.5
 		chmod 644  $(man_prefix)/$(man_dir)/man5/$(NAME).cfg.5
-		sed -e "s#/etc/$(NAME)/$(NAME)\.cfg#$(cfg_target)$(NAME).cfg#g" \
-			-e "s#/usr/sbin/#$(bin-target)#g" \
-			-e "s#/usr/lib/$(NAME)/modules/#$(modules_target)#g" \
-			-e "s#/usr/share/doc/$(NAME)/#$(doc-target)#g" \
-			< scripts/opensipsctl.8 > $(man_prefix)/$(man_dir)/man8/opensipsctl.8
-		chmod 644  $(man_prefix)/$(man_dir)/man8/opensipsctl.8
 		sed -e "s#/etc/$(NAME)/$(NAME)\.cfg#$(cfg_target)$(NAME).cfg#g" \
 			-e "s#/usr/sbin/#$(bin-target)#g" \
 			-e "s#/usr/lib/$(NAME)/modules/#$(modules_target)#g" \

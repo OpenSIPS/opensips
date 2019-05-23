@@ -50,11 +50,5 @@ d none /opt/opensips/lib64 0755 root root
 d none /opt/opensips/lib64/opensips 0755 root root
 d none /opt/opensips/lib64/opensips/modules 0755 root root
 f none /opt/opensips/lib64/opensips/modules/db_berkeley.so 0755 root root
-d none /opt/opensips/lib64/opensips/opensipsctl 0755 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.base 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.db_berkeley 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.db_berkeley 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsctl.dbtext 0644 root root
-f none /opt/opensips/lib64/opensips/opensipsctl/opensipsdbctl.dbtext 0644 root root
 f none /opt/opensips/README.db_berkeley 0644 root root
 f none /opt/opensips/sbin/bdb_recover 0755 root root
