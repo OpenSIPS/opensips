@@ -1996,14 +1996,14 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 				if (attr==0)
 					goto error;
 
-				/* add Source */
-				attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Source"),
+				/* add Remote IP:Port */
+				attr = addf_mi_attr( node, MI_DUP_VALUE, MI_SSTR("Remote"),
 					"%s:%d",ip_addr2a(&conn->rcv.src_ip), conn->rcv.src_port);
 				if (attr==0)
 					goto error;
 
-				/* add Destination */
-				attr = addf_mi_attr( node, MI_DUP_VALUE,MI_SSTR("Destination"),
+				/* add Local IP:Port */
+				attr = addf_mi_attr( node, MI_DUP_VALUE,MI_SSTR("Local"),
 					"%s:%d",ip_addr2a(&conn->rcv.dst_ip), conn->rcv.dst_port);
 				if (attr==0)
 					goto error;
