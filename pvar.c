@@ -132,7 +132,39 @@ pv_context_t* pv_get_context(str* name);
 pv_context_t* add_pv_context(str* name, pv_contextf_t get_context);
 static int pvc_before_check = 1;
 
+int pv_print_buf_size = 20000;
+#define PV_PRINT_BUF_NO   7
+str *pv_print_buf;
 
+#define is_pv_print_buf(p) (p >= (char *)pv_print_buf && \
+			p <= (char *)pv_print_buf + \
+				PV_PRINT_BUF_NO * (sizeof(*pv_print_buf) + pv_print_buf_size))
+
+int init_pvar_support(void)
+{
+	int i;
+
+	/* check pv context list */
+	if (pv_contextlist_check() != 0) {
+		LM_ERR("used pv context that was not defined\n");
+		return -1;
+	}
+
+	pv_print_buf = pkg_malloc(PV_PRINT_BUF_NO * (sizeof(str)
+	                               + pv_print_buf_size));
+	if (!pv_print_buf) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	for (i = 0; i < PV_PRINT_BUF_NO; i++) {
+		pv_print_buf[i].s = (char *)(pv_print_buf + PV_PRINT_BUF_NO)
+		                              + i * pv_print_buf_size;
+		pv_print_buf[i].len = pv_print_buf_size;
+	}
+
+	return 0;
+}
 
 /* route param variable */
 static int pv_get_param(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
@@ -4501,7 +4533,12 @@ int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len)
 	goto done;
 
 overflow:
-	LM_ERR("buffer overflow -- increase the buffer size from [%d]...\n",*len);
+	if (is_pv_print_buf(buf))
+		LM_ERR("buffer too small -- increase 'pv_print_buf_size' from [%d]\n",
+				*len);
+	else
+		LM_ERR("buffer too small -- increase the buffer size "
+				"from [%d]...\n", *len);
 	return -1;
 
 done:
@@ -4619,25 +4656,21 @@ void pv_value_destroy(pv_value_t *val)
 	memset(val, 0, sizeof(pv_value_t));
 }
 
-#define PV_PRINT_BUF_SIZE  1024
-#define PV_PRINT_BUF_NO    7
-/*IMPORTANT NOTE - even if the function prints and returns a static buffer, it
- * has built-in support for 3 levels of nesting (or concurrent usage).
- * If you think it's not enough for you, either use pv_printf() directly,
- * either increase PV_PRINT_BUF_NO   --bogdan */
+/* IMPORTANT NOTE - even if the function prints and returns a static buffer, it
+ * has built-in support for PV_PRINTF_BUF_NO levels of nesting
+ * (or concurrent usage).  If you think it's not enough for you, either use
+ * pv_printf() directly, either increase PV_PRINT_BUF_NO   --bogdan */
 int pv_printf_s(struct sip_msg* msg, pv_elem_p list, str *s)
 {
 	static int buf_itr = 0;
-	static char buf[PV_PRINT_BUF_NO][PV_PRINT_BUF_SIZE];
 
 	if (list->next==0 && list->spec.getf==0) {
 		*s = list->text;
 		return 0;
 	} else {
-		s->s = buf[buf_itr];
-		s->len = PV_PRINT_BUF_SIZE;
-		buf_itr = (buf_itr+1)%PV_PRINT_BUF_NO;
-		return pv_printf( msg, list, s->s, &s->len);
+		*s = pv_print_buf[buf_itr];
+		buf_itr = (buf_itr + 1) % PV_PRINT_BUF_NO;
+		return pv_printf(msg, list, s->s, &s->len);
 	}
 }
 

@@ -178,6 +178,7 @@ CACHE_ADD		"cache_add"
 CACHE_SUB		"cache_sub"
 CACHE_RAW_QUERY		"cache_raw_query"
 XDBG			"xdbg"
+PV_PRINT_BUF_SIZE	"pv_print_buf_size"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
 XLOG_PRINT_LEVEL	"xlog_print_level"
@@ -486,6 +487,8 @@ SPACE		[ ]
 
 <INITIAL>{XDBG}				{	count(); yylval.strval=yytext;
 									return XDBG; }
+<INITIAL>{PV_PRINT_BUF_SIZE}	{	count(); yylval.strval=yytext;
+									return PV_PRINT_BUF_SIZE; }
 <INITIAL>{XLOG}				{	count(); yylval.strval=yytext;
 									return XLOG; }
 <INITIAL>{XLOG_BUF_SIZE}	{	count(); yylval.strval=yytext;

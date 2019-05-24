@@ -1433,9 +1433,9 @@ try_again:
 		goto error;
 	}
 
-	/* check pv context list */
-	if(pv_contextlist_check() != 0) {
-		LM_ERR("used pv context that was not defined\n");
+	/* init pseudo-variable support */
+	if (init_pvar_support() != 0) {
+		LM_ERR("failed to init pvar support\n");
 		goto error;
 	}
 
