@@ -25,3 +25,6 @@ P_MEMORY=4
 # a directory for the core files to get a dump. Look into the opensips
 # init file for an example configuration.
 DUMP_CORE=no
+
+# Any additional OpenSIPS options
+OPTIONS=""
