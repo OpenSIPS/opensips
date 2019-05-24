@@ -313,6 +313,7 @@ extern int cfg_parse_only_routes;
 %token XLOG_FORCE_COLOR
 %token XLOG_PRINT_LEVEL
 %token XLOG_LEVEL
+%token PV_PRINT_BUF_SIZE
 %token RAISE_EVENT
 %token SUBSCRIBE_EVENT
 %token CONSTRUCT_URI
@@ -1106,6 +1107,9 @@ assign_stm: DEBUG EQUAL snumber
 									user_agent_header.len=strlen($3);
 									}
 		| USER_AGENT_HEADER EQUAL error { yyerror("string value expected"); }
+		| PV_PRINT_BUF_SIZE EQUAL NUMBER { IFOR();
+							pv_print_buf_size = $3; }
+		| PV_PRINT_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_BUF_SIZE EQUAL NUMBER { IFOR();
 							xlog_buf_size = $3; }
 		| XLOG_FORCE_COLOR EQUAL NUMBER { IFOR();
