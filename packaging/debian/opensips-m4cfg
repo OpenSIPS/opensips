@@ -40,4 +40,4 @@ if [ -f $m4configfile ]; then
 	chmod 640 ${configfile}
 fi
 
-exec $prog -m $S_MEMORY -M $P_MEMORY -c -f $configfile
+exec $prog -m $S_MEMORY -M $P_MEMORY -c -f $configfile $OPTIONS
