@@ -25,6 +25,7 @@
 #include <regex.h>
 #include "mem/mem.h"
 #include "pvar.h"
+#include "route_struct.h"
 
 #define GPARAM_TYPE_VAL		0
 #define GPARAM_TYPE_PVS		1
