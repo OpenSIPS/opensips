@@ -176,7 +176,7 @@ static cmd_export_t cmds[]={
         {CMD_PARAM_STR,0,0}, {0,0,0}},
         REQUEST_ROUTE},
     {0,0,{{0,0,0}},0}
-}
+};
 
 static param_export_t params[]={
     { "enable_crypto_hardware_support",   INT_PARAM, &_osp_crypto_hw },
