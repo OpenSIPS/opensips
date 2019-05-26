@@ -1,0 +1,20 @@
+post_install() {
+	echo "OpenSIPS suite is build as a modular system."
+	echo "This packages "opensips" just includes the core functionality and the parser."
+	echo "All sophisticated SIP packet handling is provided through dedicated modules and usage will vary,"
+	echo "Please install "opensips-modules" and adapt the configuration to your individual needs."
+	echo "The documentation is provided via the "opensips-documentation" package in different formats."
+	echo "Beside html-, and text files you will find example configurations explaining the integration of available modules." 
+	echo ""
+	echo "You are encouraged to make use of a database module."
+	echo "Thus you needed to install the relevant database package in combination with the corresponding"
+	echo "opensips module package:
+	echo "1) 'pacman -S opensips-modules'"
+	echo "2) To create the opensips specific tables make use of 'opensipsdbctl create'"
+	echo "   eg for MySQL:      'pacman -S mariadb mariadb-clients' -> 'opensipsdbctl create'"
+	echo "   eg for PostgreSQL: 'pacman -S postgresql postgresql-client' -> 'opensipsdbctl create'"
+
+	useradd --system --group \
+		--shell /bin/false --comment "OpenSIPS" \
+		--home-dir $HOMEDIR --no-create-home opensips || true
+}
