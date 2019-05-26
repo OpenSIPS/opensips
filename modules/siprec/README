@@ -24,7 +24,7 @@ SIPREC Module
         1.8. Exported Functions
 
               1.8.1. siprec_start_recording(srs, [group],
-                      [caller], [callee], [rtpproxy_set],
+                      [caller], [callee], [rtpproxy_sock],
                       [media_ip])
 
    2. Contributors
@@ -217,7 +217,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 1.8. Exported Functions
 
 1.8.1.  siprec_start_recording(srs, [group], [caller], [callee],
-[rtpproxy_set], [media_ip])
+[rtpproxy_sock], [media_ip])
 
    Calling this function on an initial INVITE engages call
    recording to SRSs for that call. Note that it does not
@@ -242,9 +242,10 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
      * callee (string, optional) - an XML block containing
        information about the callee. If absent, the To header is
        used to build the value from.
-     * rtpproxy_set (string, optional) - the RTPProxy set used for
-       this call. If absent, the default set provisioned in the
-       rtpproxy module is used.
+     * rtpproxy_sock (string, optional) - the RTPProxy soscket
+       used for this call. If absent, the rtpproxy module will try
+       to detect the proxy used for the initial call, based on the
+       default set provisioned in the rtpproxy module.
      * media_ip (string, optional) - the IP that RTPProxy will be
        streaming media from. If absent 127.0.0.1 will be used.
 
@@ -294,7 +295,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 69 31 3399 614
+   1. Razvan Crainea (@razvancrainea) 71 32 3405 619
    2. Vlad Patrascu (@rvlad-patrascu) 10 5 152 134
    3. Liviu Chircu (@liviuchircu) 6 4 21 44
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
@@ -319,9 +320,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Apr 2019
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
-   3. Razvan Crainea (@razvancrainea)     Jun 2017 - Feb 2019
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - May 2019
+   2. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Apr 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
    4. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2018
 
    (1) including any documentation-related commits, excluding
@@ -331,8 +332,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
 

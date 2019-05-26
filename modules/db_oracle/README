@@ -121,9 +121,9 @@ modparam("db_oracle", "reconnect", 0.5)
 
 1.6. Utility opensips_orasel
 
-   For working with opensipsctl script, should be able to print
-   the 'query' results to the terminal in a user-readable form.
-   The standard command-line Oracle client (sqlplus) is not quite
+   For working with opensips-cli tool, should be able to print the
+   'query' results to the terminal in a user-readable form. The
+   standard command-line Oracle client (sqlplus) is not quite
    suitable for this, as it cannot align row width to real
    (received) data's (it always prints a cell width as described
    in the db scheme). This problem has been solved by inclusion
@@ -142,7 +142,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Iouri Kharon 20 1 2363 0
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 11 64 68
-   3. Liviu Chircu (@liviuchircu) 10 7 22 64
+   3. Liviu Chircu (@liviuchircu) 11 8 23 81
    4. Peter Lemenkov (@lemenkov) 7 5 41 5
    5. Razvan Crainea (@razvancrainea) 6 4 100 31
    6. Henning Westerholt (@henningw) 5 3 19 7
@@ -174,10 +174,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Peter Lemenkov (@lemenkov)          Aug 2012 - Jun 2018
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Peter Lemenkov (@lemenkov)          Aug 2012 - Jun 2018
    5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2016
    7.  fabriziopicconi                     Jun 2013 - Jun 2013
@@ -195,8 +195,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Henning
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Henning
    Westerholt (@henningw), Iouri Kharon.
 
    Documentation Copyrights:
