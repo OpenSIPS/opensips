@@ -1,0 +1,234 @@
+# vim:set ts=8 sw=8 et:
+# Maintainer: Ralf Zerres <ralf.zerres@networkx.de>
+
+pkgbase=opensips-git
+_pkgname=opensips
+_branch=master
+pkgname=('opensips-git' 'opensips-git-modules' 'opensips-git-documentation')
+pkgver=0.r13459.g2e6e3f9a6
+pkgrel=1
+pkgdesc="An Open Source SIP Server able to act as a SIP proxy, registrar, location server, redirect server ..."
+url="https://www.opensips.org"
+depends=('openssl' 'db' 'attr' 'libxml2')
+makedepends=(
+	'confuse' 'cassandra-cpp-driver'
+	'doxygen' 'docbook-sgml' 'docbook-utils'
+	'expat'
+	'hiredis'
+	'geoip'
+	'json-c'
+	'freeradius'
+	'libldap>=2.4.18' 'libmariadbclient' 'libmemcached' 'libmicrohttpd'
+	'librabbitmq-c' 'libtap-git' 'libuv' 'libxslt'
+	'lksctp-tools'
+	'lua51'
+	'lynx'
+	'mongo-c-driver'
+	'net-snmp'
+	'openssl' 
+	'osptoolkit'
+	'postgresql-libs>=8.4.1'
+	'radcli'
+	'thrift' 'unixodbc' 'xmlrpc-c' 'zlib')
+backup=("etc/opensips/opensips.cfg"
+	"etc/opensips/regex_groups.cfg"
+	"etc/opensips/osipsconsolerc"
+	"etc/opensips/opensipsctlrc")
+arch=('x86_64' 'armv7')
+license=('GPL')
+options=('!emptydirs' 'zipman' '!makeflags' 'docs')
+source=("${pkgname}::git+https://github.com/OpenSIPS/$_pkgname.git#branch=$_branch"
+	Makefile.conf.template)
+sha256sums=('SKIP'
+            '2eefae7d8d40259d9a0a4a6554574cf94418ea033d3a69936e928a52bcfcca63')
+
+prepare() {
+	cd "$srcdir"/${pkgbase}
+
+	if [ -h "$srcdir"/Makefile.conf.devel.template ]; then
+		msg2 "preset Makefile.conf template"
+		test ! -f Makefile.conf.devel.template.orig  &&
+		mv Makefile.conf.template Makefile.conf.template.orig
+		cp "$srcdir"/Makefile.conf.devel.template Makefile.conf.template
+	fi
+
+	# patching
+	if [ ! -f .makepkg-patched ]; then
+		echo "  -> patching: "
+		git am --signoff ../../patches-git/0000-packaging-support-arch-linux.patch
+		git am --signoff ../../patches-git/0001-osp-Fix-module-compilation.patch
+		git am --signoff ../../patches-git/0002-opensips_json_c_helper.h-fix-preprocessor-definition.patch
+		git am --signoff ../../patches-git/0003-Makefile.defs-adapt-default-settings-for-XSL-parser.patch
+		git am --signoff ../../patches-git/0004-doxygen-update-element-list.patch
+		echo "  -> patching [done]"
+		touch .makepkg-patched
+		#echo "  -> no patches for branch '${_branch}' needed"
+	fi
+
+	msg2 "ensure python2 usage"
+	for file in $(find . -name '*.py' -print); do
+		sed -i 's_^#!.*/usr/bin/python_#!/usr/bin/python2_' $file
+		sed -i 's_^#!.*/usr/bin/env.*python_#!/usr/bin/env python2_' $file
+	done
+
+	msg2 "ensure binaries live in /bin and /usr/bin"
+	sed -i 's|sbin|bin|g' Makefile
+	sed -i 's|bin-dir = sbin/|bin-dir = bin/|' Makefile.defs
+}
+
+pkgver() {
+	cd "${srcdir}/${pkgname}"
+	echo "0.r$(git rev-list --count $_branch).g$(git log -1 --format="%h")"
+}
+
+build() {
+	cd "$srcdir"/${pkgbase}
+
+	# create binary targets
+	#FASTER=1
+	#make -j$(nproc) \
+	make \
+		LIBDIR=lib PREFIX=/usr
+
+	# create documentation targets
+	make \
+		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib \
+		doxygen \
+		modules-docbook-html \
+		modules-readme
+		# dbschema-docbook-html
+		# dbschema-docbook-pdf \
+		# modules-docbook-pdf \
+}
+
+package_opensips-git() {
+	pkgdesc="OpenSIPS an open source SIP Server (git version)"
+
+	depends=(
+		'confuse' 'geoip' 'json-c'
+		'libtap-git' 'libuv' 'libxslt'
+		'lksctp-tools')
+	optdepends=(
+		'cassandra-cpp-driver: cassandra C++ support'
+		'curl: curl support'
+		'confuse: confuse support'
+		'lksctp-tools: sctp support'
+		'lynx: text browser support'
+		'hiredis: HiRedis support'
+		'libldap: LDAP support'
+		'libmariadbclient: Maria DB support'
+		'libmaxminddb: MaxMin DB support'
+		'libmemcached: Memory caching support'
+		'libmicrohttpd: Inline HTTPD support'
+		'librabbitmq-c: Rabbitmq C support'
+		'libsasl: SASL authentication support'
+		'libutf8proc: UTF8 processing support'
+		'lua: LUA scripting support'
+		'mariadb-libs: Maria-DB support'
+		'mongo-c-driver: C-Interface for Mongo-DB support'
+		'net-snmp: SNMP support'
+		'osptoolkit: OSP Toolkit support'
+		'pcre: Perl Regular-Expression support'
+		'perl: Perl support'
+		'postgresql-libs: PostgreSQL-DB support'
+		'python2: Python v2 support'
+		'radcli: RAD commandline support'
+		'rabbitmq: Rabbit CacheMemory support'
+		'thrift: Thrift support'
+		'unixodbc: UNIX ODBC support')
+	checkdepends=('expat' 'libtap-git')
+	install=opensips.install
+
+	provides=("opensips=${pkgver}")
+	conflicts=('opensips')
+
+	_components=('opensips')
+
+	cd "$srcdir"/${pkgbase}
+
+	# install app only, excluding console, modules and modules docs
+	for _cmp in ${_components[@]}; do
+		make \
+		      BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib install-app
+
+		# Conforms to the arch packaging standards (https://wiki.archlinux.org/index.php/Arch_Packaging_Standards)
+		mkdir -p "$pkgdir"/etc/
+		mv "$pkgdir"/usr/etc/opensips/ "$pkgdir"/etc/
+		sed -i 's#mpath=".*lib/opensips/modules/"#mpath="/usr/lib/opensips/modules/"#' "$pkgdir"/etc/opensips/opensips.cfg
+
+		# fix bad paths
+		cd "$pkgdir"/usr/share
+		find -type f -exec sed -i "s#"$pkgdir"##" {} \;
+
+		mv "$pkgdir"/usr/sbin "$pkgdir"/usr/bin
+
+		cd "$pkgdir"/etc
+		find -type f -exec sed -i "s#"$pkgdir"##" {} \;
+
+		# python2 is being used
+		cd "$pkgdir"
+		grep -lR '#!.*python' * | while read file; do sed -s 's/\(#!.*python\)/\12/g' -i "$file"; done
+
+		# Systemd files
+		install -Dm0644 "${srcdir}/${pkgbase}/packaging/arch/${_pkgname}.service" "$pkgdir"/usr/lib/systemd/system/${_pkgname}.service
+		install -Dm0644 "${srcdir}/${pkgbase}/packaging/arch/${_pkgname}.tmpfiles.conf" "$pkgdir"/usr/lib/tmpfiles.d/${_pkgname}.conf
+
+	done
+}
+
+package_opensips-git-modules() {
+	pkgdesc="OpenSIPS modules (git version)"
+	depends=('opensips-git')
+	provides=("opensips-modules=${pkgver}")
+	conflicts=('opensips-modules')
+
+	cd "$srcdir"/${pkgbase}
+
+	make \
+		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib install-modules
+
+	msg2 "ensure binaries live in /bin and /usr/bin"
+	mv "$pkgdir"/usr/sbin "$pkgdir"/usr/bin
+
+}
+
+package_opensips-git-documentation() {
+	pkgdesc="OpenSIPS modules (git version)"
+	suggests=('opensips-git')
+	provides=("opensips-documentation=${pkgver}")
+	conflicts=('opensips-documentation')
+
+  	cd "$srcdir"/${pkgbase}
+
+	msg2 "install documentation targets"
+	make \
+		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib install-doc install-modules-docbook
+
+	DOC_DIR="$pkgdir/usr/share/doc/${_pkgname}"
+
+	msg2 "install README documentation"
+	if [ ! -d "$DOC_DIR/txt" ]; then
+		mkdir -p "$DOC_DIR/txt"
+		chmod 0755 "$DOC_DIR/txt"
+	fi
+	mv $DOC_DIR/README.* "$DOC_DIR/txt"
+	chmod --recursive 0644 "$DOC_DIR/txt"
+
+	msg2 "install doxygen documentation"
+	if [ ! -d "$DOC_DIR/doxygen" ]; then
+		mkdir -p "$DOC_DIR/doxygen"
+		chmod 0755 "$DOC_DIR/doxygen"
+	fi
+	find $pkgdir/usr/share/doc/${_pkgname}/html  -print0 | xargs -0 -I '{}' cp -r '{}' "$DOC_DIR/doxygen/"
+	chmod --recursive 0644 "$DOC_DIR/doxygen"
+
+	msg2 "install example configurations"
+	if [ ! -d $DOC_DIR/examples ]; then
+		mkdir -p "$DOC_DIR/examples"
+		chmod 0755 "$DOC_DIR/examples"
+	fi
+	if [ -d ./examples ]; then
+		mv ./examples "$DOC_DIR"
+		chmod --recursive 0644 "$DOC_DIR/examples"
+	fi
+}
