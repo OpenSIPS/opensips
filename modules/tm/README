@@ -1418,9 +1418,9 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
        “Content-Type” and “Content-length” headers)
 
    MI FIFO Command Format:
-                opensips-cli -x mi t_uac_dlg INVITE "sip:123456@127.0.0.
-1:5060 SIP/2.0" . . "\"From: sipp:6024151234@127.0.0.1:5090>\r\nTo: sip:
-test@127.0.0.1:5060\r\nContact: sip:sipp@127.0.0.1:5090\r\n"\"
+                opensips-cli -x mi t_uac_dlg method=INVITE ruri="sip:ali
+ce@127.0.0.1:7050" headers="From: sip:bobster@127.0.0.1:1337\r\nTo: sip:
+alice@127.0.0.1:7050\r\nContact: sip:bobster@127.0.0.1:1337\r\n"
 
 1.6.2.  t_uac_cancel
 
@@ -1550,12 +1550,12 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1032 583 20697 15959
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1045 588 21075 16250
    2. Jiri Kuthan (@jiriatipteldotorg) 545 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 147 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 91 71 1566 382
-   6. Liviu Chircu (@liviuchircu) 80 58 1058 706
+   5. Razvan Crainea (@razvancrainea) 93 73 1589 386
+   6. Liviu Chircu (@liviuchircu) 83 61 1063 709
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 38 19 778 651
    9. Vlad Patrascu (@rvlad-patrascu) 30 9 810 779
@@ -1596,12 +1596,12 @@ Chapter 4. Contributors
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - May 2019
-   2.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2019
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
    3.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Bogdan Iancu                        Apr 2019 - Apr 2019
-   6.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
-   7.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2019
+   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Bogdan Iancu                        Apr 2019 - Apr 2019
+   7.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
    8.  Aron Podrigal (@ar45)               Nov 2018 - Nov 2018
    9.  Alexey Vasilyev (@vasilevalex)      Sep 2018 - Sep 2018
    10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -1627,10 +1627,10 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Fabian Gast (@fgast), Razvan Crainea
-   (@razvancrainea), Alexey Vasilyev (@vasilevalex), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Nick Altmann
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
+   Gast (@fgast), Razvan Crainea (@razvancrainea), Alexey Vasilyev
+   (@vasilevalex), Peter Lemenkov (@lemenkov), Nick Altmann
    (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
    Anca Vamanu, Henning Westerholt (@henningw), Klaus Darilion,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
