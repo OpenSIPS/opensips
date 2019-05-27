@@ -30,7 +30,6 @@
 
 char *luafilename = "";
 int lua_user_debug = 1;
-int warn_missing_free_fixup = 1;
 char *lua_allocator = "opensips";
 int lua_auto_reload = 0;
 
@@ -59,7 +58,6 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
   { "luafilename", STR_PARAM, &luafilename},
   { "lua_user_debug", INT_PARAM, &lua_user_debug},
-  { "warn_missing_free_fixup", INT_PARAM, &warn_missing_free_fixup},
   { "lua_allocator", STR_PARAM, &lua_allocator},
   { "lua_auto_reload", INT_PARAM, &lua_auto_reload},
   { 0, 0, 0 }
