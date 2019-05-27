@@ -1003,24 +1003,24 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 		new_msg->msg_flags |= FL_SHM_UPDATABLE|FL_SHM_UPDATED;
 		/* msg is updatable -> the fields that can be updated are allocated in 
 		 * separate memory chunks */
-		tm_shm_lock();
+		shm_lock();
 		if (org_msg->new_uri.len)
-			new_msg->new_uri.s = (char*)tm_shm_malloc_unsafe( org_msg->new_uri.len );
+			new_msg->new_uri.s = (char*)shm_malloc_bulk( org_msg->new_uri.len );
 		if (org_msg->dst_uri.len)
-			new_msg->dst_uri.s = (char*)tm_shm_malloc_unsafe( org_msg->dst_uri.len );
+			new_msg->dst_uri.s = (char*)shm_malloc_bulk( org_msg->dst_uri.len );
 		if (org_msg->path_vec.len)
-			new_msg->path_vec.s = (char*)tm_shm_malloc_unsafe( org_msg->path_vec.len );
+			new_msg->path_vec.s = (char*)shm_malloc_bulk( org_msg->path_vec.len );
 		if (org_msg->set_global_address.len)
-			new_msg->set_global_address.s = (char*)tm_shm_malloc_unsafe( org_msg->set_global_address.len );
+			new_msg->set_global_address.s = (char*)shm_malloc_bulk( org_msg->set_global_address.len );
 		if (org_msg->set_global_port.len)
-			new_msg->set_global_port.s = (char*)tm_shm_malloc_unsafe( org_msg->set_global_port.len );
+			new_msg->set_global_port.s = (char*)shm_malloc_bulk( org_msg->set_global_port.len );
 		if (l1_len)
-			new_msg->add_rm = (struct lump*)tm_shm_malloc_unsafe(l1_len);
+			new_msg->add_rm = (struct lump*)shm_malloc_bulk(l1_len);
 		if (l2_len)
-			new_msg->body_lumps = (struct lump*)tm_shm_malloc_unsafe(l2_len);
+			new_msg->body_lumps = (struct lump*)shm_malloc_bulk(l2_len);
 		if (l3_len)
-			new_msg->reply_lump = (struct lump_rpl*)tm_shm_malloc_unsafe(l3_len);
-		tm_shm_unlock();
+			new_msg->reply_lump = (struct lump_rpl*)shm_malloc_bulk(l3_len);
+		shm_unlock();
 		/*check the malloc result*/
 		if ( (org_msg->new_uri.len && new_msg->new_uri.s==NULL)
 		  || (org_msg->dst_uri.len && new_msg->dst_uri.s==NULL)
@@ -1103,13 +1103,13 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	do { \
 		if ( _new->_field.len==0) { \
 			if (_old->_field.len!=0) \
-				tm_shm_free_unsafe( _old->_field.s ); \
+				shm_free_bulk( _old->_field.s ); \
 		} else { \
 			if ( _old->_field.len==0 ) { \
-				_old->_field.s = (char*)tm_shm_malloc_unsafe(_new->_field.len);\
+				_old->_field.s = (char*)shm_malloc_bulk(_new->_field.len);\
 			} else if (_old->_field.len<_new->_field.len) { \
-				tm_shm_free_unsafe( _old->_field.s );\
-				_old->_field.s = (char*)tm_shm_malloc_unsafe(_new->_field.len);\
+				shm_free_bulk( _old->_field.s );\
+				_old->_field.s = (char*)shm_malloc_bulk(_new->_field.len);\
 			} \
 			copy_mask |= (1<<_bit);\
 			LM_DBG(#_field" must be copied old=%d, new=%d\n",_old->_field.len,_new->_field.len);\
@@ -1164,7 +1164,7 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	LUMP_LIST_LEN(l2_len, msg->body_lumps);
 	RPL_LUMP_LIST_LEN(l3_len, msg->reply_lump);
 
-	tm_shm_lock();
+	shm_lock();
 	/* SIP related strings */
 	REALLOC_CLONED_FIELD_unsafe( new_uri, c_msg, msg, 0);
 	REALLOC_CLONED_FIELD_unsafe( dst_uri, c_msg, msg, 1);
@@ -1184,23 +1184,23 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 	 *
 	 * That is why mem is not leaked after the following allocations:
 	 */
-	
+
 	if (l1_len) { 
 		add_rm_aux = c_msg->add_rm;
-		c_msg->add_rm = tm_shm_malloc_unsafe(l1_len); 
+		c_msg->add_rm = shm_malloc_bulk(l1_len); 
 	}
 	if (l2_len) {
 		body_lumps_aux = c_msg->body_lumps;
-		c_msg->body_lumps = tm_shm_malloc_unsafe(l2_len);
+		c_msg->body_lumps = shm_malloc_bulk(l2_len);
 	}
 
 	if (l3_len) {
 		reply_lump_aux = c_msg->reply_lump;
-		c_msg->reply_lump = tm_shm_malloc_unsafe(l3_len);
+		c_msg->reply_lump = shm_malloc_bulk(l3_len);
 	}
 
 	/* done with mem ops */
-	tm_shm_unlock();
+	shm_unlock();
 
 	/* copy data now */
 	COPY_CLONED_FIELD( new_uri, c_msg, msg, 0);
@@ -1264,11 +1264,11 @@ int update_cloned_msg_from_msg(struct sip_msg *c_msg, struct sip_msg *msg)
 		 * old info now - we might still need it ( eg. to build a reply 
 		 * from the faked req ) - let the freeing happen when destryong
 		 * the fake req */
-		tm_shm_lock();
-		if (add_rm_aux) tm_shm_free_unsafe(add_rm_aux);
-		if (body_lumps_aux) tm_shm_free_unsafe(body_lumps_aux);
-		if (reply_lump_aux) tm_shm_free_unsafe(reply_lump_aux);
-		tm_shm_unlock();
+		shm_lock();
+		if (add_rm_aux) shm_free_bulk(add_rm_aux);
+		if (body_lumps_aux) shm_free_bulk(body_lumps_aux);
+		if (reply_lump_aux) shm_free_bulk(reply_lump_aux);
+		shm_unlock();
 	}
 
 	c_msg->msg_flags |= FL_SHM_UPDATED;

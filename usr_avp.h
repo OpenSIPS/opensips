@@ -104,6 +104,7 @@ void destroy_index_avp( unsigned short flags, int name, int index);
 int  destroy_avps( unsigned short flags, int name, int all);
 void destroy_avp_list( struct usr_avp **list );
 void destroy_avp_list_unsafe( struct usr_avp **list );
+void destroy_avp_list_bulk( struct usr_avp **list );
 
 /* get func */
 void get_avp_val(struct usr_avp *avp, int_str *val );
