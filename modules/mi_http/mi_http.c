@@ -95,20 +95,21 @@ struct module_exports exports = {
 	"mi_http",                          /* module name */
 	MOD_TYPE_DEFAULT,                   /* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,                    /* dlopen flags */
-	&deps,                              /* OpenSIPS module dependencies */
-	0,                                  /* exported functions */
-	0,                                  /* exported async functions */
-	mi_params,                          /* exported parameters */
-	0,                                  /* exported statistics */
-	0,                                  /* exported MI functions */
-	0,                                  /* exported PV */
-	0,									/* exported transformations */
-	0,                                  /* extra processes */
-	mod_init,                           /* module initialization function */
-	(response_function) 0,              /* response handling function */
-	(destroy_function) destroy,         /* destroy function */
-	NULL                                /* per-child init function */
+	DEFAULT_DLFLAGS,			/* dlopen flags */
+	0,							/* load function */
+	&deps,						/* OpenSIPS module dependencies */
+	NULL,						/* exported functions */
+	NULL,						/* exported async functions */
+	mi_params,					/* exported parameters */
+	NULL,						/* exported statistics */
+	NULL,						/* exported MI functions */
+	NULL,						/* exported PV */
+	NULL,						/* exported transformations */
+	0,							/* extra processes */
+	mod_init,					/* module initialization function */
+	(response_function) 0,		/* response handling function */
+	(destroy_function) destroy,	/* destroy function */
+	NULL,						/* per-child init function */
 };
 
 

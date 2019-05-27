@@ -57,6 +57,7 @@
 #include "sr_module_deps.h"
 
 typedef  struct module_exports* (*module_register)();
+typedef int (*load_function)(void);
 typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*,
 			char*, char*);
 typedef  int (*acmd_function)(struct sip_msg*, async_ctx *ctx,
@@ -174,6 +175,9 @@ struct module_exports{
 	char *version;                  /*!< module version */
 	char *compile_flags;            /*!< compile flags used on the module */
 	unsigned int dlflags;           /*!< flags for dlopen */
+
+	load_function load_f;           /*!< function called immediately after a
+	                                   module was loaded by dlopen */
 
 	dep_export_t *deps;             /*!< module and modparam dependencies */
 

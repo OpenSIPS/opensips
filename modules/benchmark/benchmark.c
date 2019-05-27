@@ -157,7 +157,8 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
-	NULL,            /* OpenSIPS module dependencies */
+	0,          /* load function */
+	NULL,       /* OpenSIPS module dependencies */
 	cmds,       /* Exported functions */
 	0,          /* Exported async functions */
 	params,     /* Exported parameters */
