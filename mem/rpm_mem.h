@@ -224,13 +224,9 @@ inline static void* _rpm_realloc(void *ptr, unsigned int size,
 inline static void _rpm_free(void *ptr,
 		const char* file, const char* function, unsigned int line)
 {
-#ifdef HP_MALLOC
-	RPM_FREE(rpm_block, ptr, file, function, line);
-#else /* HP_MALLOC */
 	rpm_lock();
 	RPM_FREE(rpm_block, ptr, file, function, line);
-	shm_unlock();
-#endif /* HP_MALLOC */
+	rpm_unlock();
 }
 
 #define rpm_malloc_func _rpm_malloc
