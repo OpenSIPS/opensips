@@ -21,7 +21,6 @@
 # define SIPLUA_H_
 
 extern int lua_user_debug;
-extern int warn_missing_free_fixup;
 extern int lua_auto_reload;
 
 extern struct sl_binds slb;

@@ -205,15 +205,6 @@ static int l_sipstate_setUserDebug(lua_State *L)
   return 0;
 }
 
-static int l_sipstate_WarnMissingFreeFixup(lua_State *L)
-{
-  int n;
-
-  n = luaL_checkinteger(L, 1);
-  warn_missing_free_fixup = n;
-  return 0;
-}
-
 static int l_sipstate_getpid(lua_State *L)
 {
   int pid;
@@ -323,7 +314,6 @@ static const struct luaL_reg siplua_state_mylib [] =
     {"print", l_sipstate_print},
     {"notice", l_sipstate_notice},
     {"setUserDebug", l_sipstate_setUserDebug},
-    {"WarnMissingFreeFixup", l_sipstate_WarnMissingFreeFixup},
     {"getpid", l_sipstate_getpid},
     {"getmem", l_sipstate_getmem},
     {"getmeminfo", l_sipstate_getpkginfo},
