@@ -186,7 +186,7 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 
 	if (dlg->profile_links) {
 		destroy_linkers_unsafe(dlg, 0);
-		remove_dlg_prof_table(dlg, 0);
+		remove_dlg_prof_table(dlg, 0, 1);
 	}
 
 	if (dlg->legs) {
@@ -846,11 +846,9 @@ void unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 	d_entry = &(d_table->entries[dlg->h_entry]);
 
 	dlg_lock( d_table, d_entry);
-	dlg->locked_by = process_no;
 
 	unref_dlg_unsafe( dlg, cnt, d_entry);
 
-	dlg->locked_by = 0;
 	dlg_unlock( d_table, d_entry);
 }
 

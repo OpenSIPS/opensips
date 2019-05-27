@@ -556,7 +556,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 		/*destroy profile linkers */
 		destroy_linkers(dlg, 0);
-		remove_dlg_prof_table(dlg, 0);
+		remove_dlg_prof_table(dlg, 0, 0);
 
 		/* dialog setup not completed (3456XX) */
 		run_dlg_callbacks(DLGCB_FAILED, dlg, rpl, DLG_DIR_UPSTREAM, NULL, 0, 1);
@@ -1618,7 +1618,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 
 		/*destroy profile linkers */
 		destroy_linkers(dlg, 0);
-		remove_dlg_prof_table(dlg,0);
+		remove_dlg_prof_table(dlg,0,0);
 
 		if (!dlg->terminate_reason.s) {
 			if (dst_leg == 0)
@@ -2029,7 +2029,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 
 		/*destroy profile linkers */
 		destroy_linkers(dlg, 0);
-		remove_dlg_prof_table(dlg,0);
+		remove_dlg_prof_table(dlg,0,0);
 
 		/* dialog timeout */
 		if (push_new_processing_context(dlg, &old_ctx, &new_ctx, &fake_msg)==0) {

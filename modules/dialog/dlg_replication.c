@@ -280,9 +280,9 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	return 0;
 
 pre_linking_error:
-	dlg_unlock(d_table, d_entry);
 	if (dlg)
 		destroy_dlg(dlg);
+	dlg_unlock(d_table, d_entry);
 	return -1;
 
 error:
@@ -434,7 +434,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 	}
 
 	destroy_linkers(dlg, 1);
-	remove_dlg_prof_table(dlg, 1);
+	remove_dlg_prof_table(dlg, 1, 0);
 
 	/* simulate BYE received from caller */
 	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
@@ -935,7 +935,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				ref_dlg_unsafe(dlg, unref);
 				dlg_unlock(d_table, &d_table->entries[i]);
 
-				remove_dlg_prof_table(dlg, 0);
+				remove_dlg_prof_table(dlg, 0, 0);
 
 				dlg_lock(d_table, &d_table->entries[i]);
 				unref++;

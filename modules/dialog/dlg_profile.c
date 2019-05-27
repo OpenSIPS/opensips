@@ -650,19 +650,26 @@ void destroy_linkers(struct dlg_cell *dlg, char is_replicated)
 }
 
 static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
-		char is_replicated)
+		char is_replicated, int safe)
 {
 
 	map_t entry;
 	void ** dest;
 	str shtag = {0,0};
+	int prev_locked_by;
 
 	if (!(l->profile->repl_type==REPL_CACHEDB)) {
+		if (safe) {
+			prev_locked_by = dlg->locked_by;
+			dlg->locked_by = process_no;
+		}
 		if (l->profile->repl_type==REPL_PROTOBIN &&
 			(fetch_dlg_value(dlg, &shtag_dlg_val, &shtag, 0) == -1)) {
 			LM_ERR("Unable to fetch dlg value for sharing tag\n");
 			return;
 		}
+		if (safe)
+			dlg->locked_by = dlg->locked_by;
 
 		lock_set_get( l->profile->locks, l->hash_idx);
 
@@ -734,9 +741,9 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 	}
 }
 
-/* this function should be called after destroy_linkers() and
- * with the dialog unlocked(can cause a deadlock otherwise) */
-void remove_dlg_prof_table(struct dlg_cell *dlg, char is_replicated)
+/* this function should be called after destroy_linkers()
+ * or destroy_linkers_unsafe() */
+void remove_dlg_prof_table(struct dlg_cell *dlg, char is_replicated, int safe)
 {
 	struct dlg_profile_link *l;
 	struct dlg_profile_link *linker = tmp_linkers;
@@ -746,7 +753,7 @@ void remove_dlg_prof_table(struct dlg_cell *dlg, char is_replicated)
 		linker = linker->next;
 		/* unlink from profile table */
 
-		destroy_linker(l, dlg, is_replicated);
+		destroy_linker(l, dlg, is_replicated, safe);
 	}
 	/* removed what we had to - we can release the tmp linkers */
 	if (tmp_linkers) {
@@ -970,7 +977,7 @@ found:
 	if (dlg->locked_by!=process_no)
 		dlg_unlock( d_table, d_entry);
 
-	destroy_linker(linker, dlg, 0);
+	destroy_linker(linker, dlg, 0, 0);
 
 	return 1;
 }
