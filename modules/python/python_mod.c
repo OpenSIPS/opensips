@@ -68,6 +68,7 @@ struct module_exports exports = {
     MOD_TYPE_DEFAULT,/* class of this module */
     MODULE_VERSION,
     RTLD_NOW | RTLD_GLOBAL,         /* dlopen flags */
+    0,                              /* load function */
     NULL,                           /* OpenSIPS module dependencies */
     cmds,                           /* exported functions */
     0,                              /* exported async functions */

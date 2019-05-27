@@ -160,6 +160,7 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,
+	0,
 	&deps,           /* OpenSIPS module dependencies */
 	cmds,
 	0,
