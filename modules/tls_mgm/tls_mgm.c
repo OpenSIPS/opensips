@@ -105,6 +105,7 @@ static char *tls_domain_avp = NULL;
 static char *sip_domain_avp = NULL;
 
 static int  mod_init(void);
+static int  mod_load(void);
 static void mod_destroy(void);
 static int tls_get_handshake_timeout(void);
 static int tls_get_send_timeout(void);
@@ -362,7 +363,7 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,    /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,				 /* load function */
+	mod_load,   /* load function */
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
@@ -1671,6 +1672,25 @@ static void openssl_on_exit(int status, void *param)
 }
 #endif
 
+static int mod_load(void)
+{
+	/*
+	 * this has to be called before any function calling CRYPTO_malloc,
+	 * CRYPTO_malloc will set allow_customize in openssl to 0
+	 */
+
+	LM_INFO("openssl version: %s\n", SSLeay_version(SSLEAY_VERSION));
+	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
+		LM_ERR("unable to set the memory allocation functions\n");
+		LM_ERR("NOTE: please make sure you are loading tls_mgm module at the"
+			"very beginning of your script, before any other module!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static int mod_init(void) {
 	str s;
 	str tls_db_param = str_init(DB_TLS_DOMAIN_PARAM_EQ);
@@ -1786,20 +1806,6 @@ static int mod_init(void) {
 			LM_ERR("cannot parse client_sip_domain_avp\n");
 			return -1;
 		}
-	}
-
-	/*
-	 * this has to be called before any function calling CRYPTO_malloc,
-	 * CRYPTO_malloc will set allow_customize in openssl to 0
-	 */
-
-	LM_INFO("openssl version: %s\n", SSLeay_version(SSLEAY_VERSION));
-	if (!CRYPTO_set_mem_functions(os_malloc, os_realloc, os_free)) {
-		LM_ERR("unable to set the memory allocation functions\n");
-		LM_ERR("NOTE: check if you are using openssl 1.0.1e-fips, (or other "
-			"FIPS version of openssl, as this is known to be broken; if so, "
-			"you need to upgrade or downgrade to a different openssl version!\n");
-		return -1;
 	}
 
 #if !defined(OPENSSL_NO_COMP)
