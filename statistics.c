@@ -683,7 +683,7 @@ int mi_print_stat(mi_item_t *resp_obj, str *mod, str *stat, unsigned long val)
 		return -1;
 	}
 
-	if (add_mi_string_fmt(resp_obj, tmp_buf.s, tmp_buf.len, "%lu", val) < 0) {
+	if (add_mi_number(resp_obj, tmp_buf.s, tmp_buf.len, val) < 0) {
 		LM_ERR("cannot add stat\n");
 		return -1;
 	}
