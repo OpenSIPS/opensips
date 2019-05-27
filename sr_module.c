@@ -279,6 +279,11 @@ int sr_load_module(char* path)
 		exit(0);
 	}
 
+	if (exp->load_f && exp->load_f() < 0) {
+		LM_ERR("could not initialize module %s\n", path);
+		goto error1;
+	}
+
 	/* launch register */
 	if (register_module(exp, path, handle)<0) goto error1;
 	return 0;

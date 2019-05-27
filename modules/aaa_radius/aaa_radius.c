@@ -140,6 +140,7 @@ struct module_exports exports= {
 	MOD_TYPE_AAA,				/* class of this module */
 	MODULE_VERSION,				/* module version */
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	0,							/* load function */
 	NULL,						/* OpenSIPS module dependencies */
 	cmds,						/* exported functions */
 	acmds,						/* exported async functions */

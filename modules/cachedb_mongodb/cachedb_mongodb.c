@@ -79,6 +79,7 @@ struct module_exports exports= {
 	MOD_TYPE_CACHEDB,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
+	0,							/* load function */
 	&deps,            /* OpenSIPS module dependencies */
 	0,						/* exported functions */
 	0,						/* exported async functions */

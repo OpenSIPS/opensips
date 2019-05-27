@@ -232,6 +232,7 @@ struct module_exports exports = {
     MOD_TYPE_DEFAULT,// class of this module
     MODULE_VERSION,  // module name
     DEFAULT_DLFLAGS, // dlopen flags
+    0,				 // load function
     &deps,           // OpenSIPS module dependencies
     commands,        // exported functions
     NULL,            // exported async functions
