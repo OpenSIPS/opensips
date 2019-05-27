@@ -424,6 +424,19 @@ void destroy_index_avp( unsigned short flags, int name, int index)
 	destroy_avp( avp );
 }
 
+void destroy_avp_list_bulk( struct usr_avp **list )
+{
+	struct usr_avp *avp, *foo;
+
+	avp = *list;
+	while( avp ) {
+		foo = avp;
+		avp = avp->next;
+		shm_free_bulk( foo );
+	}
+	*list = 0;
+}
+
 
 void destroy_avp_list_unsafe( struct usr_avp **list )
 {
