@@ -435,7 +435,7 @@ int sipstate_call(struct sip_msg *msg, const str *_fnc_s, const str *_mystr_s)
   int n;
   char *fnc, *mystr = NULL;
 
-  fnc = pkg_malloc(_fnc_s->len);
+  fnc = pkg_malloc(_fnc_s->len+1);
   if (!fnc) {
     LM_ERR("No more pkg mem!\n");
     return -1;
@@ -444,7 +444,7 @@ int sipstate_call(struct sip_msg *msg, const str *_fnc_s, const str *_mystr_s)
   fnc[_fnc_s->len] = 0;
 
   if (_mystr_s) {
-    mystr = pkg_malloc(_mystr_s->len);
+    mystr = pkg_malloc(_mystr_s->len+1);
     if (!mystr) {
       LM_ERR("No more pkg mem!\n");
       return -1;
