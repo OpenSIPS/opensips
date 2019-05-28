@@ -435,13 +435,13 @@ inline static void _shm_free(void *ptr,
 	shm_lock();
 
 	#ifdef SHM_EXTRA_STATS
-		if (shm_stats_get_index(_p) !=  VAR_STAT(MOD_NAME)) {
-				update_module_stats(-shm_frag_size(_p), -(shm_frag_size(_p) + shm_frag_overhead), -1, shm_stats_get_index(_p));
+		if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
+				update_module_stats(-shm_frag_size(ptr), -(shm_frag_size(ptr) + shm_frag_overhead), -1, shm_stats_get_index(ptr));
 				LM_GEN1(memlog, "memory freed from different module than it was allocated, allocated in"
-					"module with index %ld, freed in module index %ld, at %s: %s %d \n", shm_stats_get_index(_p), VAR_STAT(MOD_NAME),
+					"module with index %ld, freed in module index %ld, at %s: %s %d \n", shm_stats_get_index(ptr), VAR_STAT(MOD_NAME),
 					__FILE__, __FUNCTION__, __LINE__);
 		} else {
-			update_module_stats(-shm_frag_size(_p), -(shm_frag_size(_p) + shm_frag_overhead), -1, VAR_STAT(MOD_NAME));
+			update_module_stats(-shm_frag_size(ptr), -(shm_frag_size(ptr) + shm_frag_overhead), -1, VAR_STAT(MOD_NAME));
 		}
 	#endif
 
@@ -474,13 +474,13 @@ inline static void _shm_free_bulk(void *ptr,
 		const char* file, const char* function, unsigned int line)
 {
 	#ifdef SHM_EXTRA_STATS
-		if (shm_stats_get_index(_p) !=  VAR_STAT(MOD_NAME)) {
-				update_module_stats(-shm_frag_size(_p), -(shm_frag_size(_p) + shm_frag_overhead), -1, shm_stats_get_index(_p));
+		if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
+				update_module_stats(-shm_frag_size(ptr), -(shm_frag_size(ptr) + shm_frag_overhead), -1, shm_stats_get_index(ptr));
 				LM_GEN1(memlog, "memory freed from different module than it was allocated, allocated in"
-					"module with index %ld, freed in module index %ld, at %s: %s %d \n", shm_stats_get_index(_p), VAR_STAT(MOD_NAME),
+					"module with index %ld, freed in module index %ld, at %s: %s %d \n", shm_stats_get_index(ptr), VAR_STAT(MOD_NAME),
 					__FILE__, __FUNCTION__, __LINE__);
 		} else {
-			update_module_stats(-shm_frag_size(_p), -(shm_frag_size(_p) + shm_frag_overhead), -1, VAR_STAT(MOD_NAME));
+			update_module_stats(-shm_frag_size(ptr), -(shm_frag_size(ptr) + shm_frag_overhead), -1, VAR_STAT(MOD_NAME));
 		}
 	#endif
 
