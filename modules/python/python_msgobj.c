@@ -276,7 +276,7 @@ msg_call_function(msgobject *self, PyObject *args)
                 Py_INCREF(Py_None);
                 return Py_None;
             }
-        } else if (param->flags & CMD_PARAM_STR) {
+        } else if (param->flags & (CMD_PARAM_STR | CMD_PARAM_REGEX)) {
             elems[i].type = STR_ST;
             elems[i].u.data = pargs[i-1];
         } else if (param->flags & CMD_PARAM_VAR) {

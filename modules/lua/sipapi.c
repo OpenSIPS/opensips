@@ -809,7 +809,7 @@ static int l_siplua_moduleFunc(lua_State *L)
       s.len =  strlen(s.s);
       if (str2sint(&s, (int*)&elems[i].u.number) < 0)
         return luaL_error(L, "parameter [%d] should be an integer", i);
-    } else if (param->flags & CMD_PARAM_STR) {
+    } else if (param->flags & (CMD_PARAM_STR | CMD_PARAM_REGEX)) {
         elems[i].type = STR_ST;
         elems[i].u.data = largs[i-1];
     } else if (param->flags & CMD_PARAM_VAR) {
