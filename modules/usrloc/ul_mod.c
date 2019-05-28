@@ -679,66 +679,43 @@ int check_runtime_config(void)
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
-			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset,
 		           "single-instance-sql-write-through")) {
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_LOAD_FROM_SQL;
 			sql_wmode = SQL_WRITE_THROUGH;
-			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset,
 		           "single-instance-sql-write-back")) {
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_LOAD_FROM_SQL;
 			sql_wmode = SQL_WRITE_BACK;
-			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset, "federation-cluster")) {
 			cluster_mode = CM_FEDERATION;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
-			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset, "federation-cachedb-cluster")) {
 			cluster_mode = CM_FEDERATION_CACHEDB;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
-			pinging_mode = PMD_OWNERSHIP;
 		} else if (!strcasecmp(runtime_preset, "full-sharing-cluster")) {
 			cluster_mode = CM_FULL_SHARING;
 			rr_persist = RRP_SYNC_FROM_CLUSTER;
 			sql_wmode = SQL_NO_WRITE;
-			if (pinging_mode_str) {
-				if (!strcasecmp(pinging_mode_str, "ownership"))
-					pinging_mode = PMD_OWNERSHIP;
-				else if (!strcasecmp(pinging_mode_str, "cooperation"))
-					pinging_mode = PMD_COOPERATION;
-				else {
-					LM_ERR("unrecognized 'pinging_mode': %s, defaulting to "
-					       "'cooperation'\n", pinging_mode_str);
-					pinging_mode = PMD_COOPERATION;
-				}
-			} else if (bad_pinging_mode(pinging_mode)) {
-				LM_ERR("unrecognized 'pinging_mode': %d, defaulting to "
-				       "'cooperation'\n", pinging_mode);
-				pinging_mode = PMD_COOPERATION;
-			}
 
 		} else if (!strcasecmp(runtime_preset, "full-sharing-cachedb-cluster")) {
 			cluster_mode = CM_FULL_SHARING_CACHEDB;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
-			pinging_mode = PMD_COOPERATION;
 		} else if (!strcasecmp(runtime_preset, "sql-only")) {
 			cluster_mode = CM_SQL_ONLY;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
-			pinging_mode = PMD_COOPERATION;
 		} else {
 			LM_ERR("unrecognized preset: %s, defaulting to "
 			       "'single-instance-no-db'\n", runtime_preset);
 			cluster_mode = CM_NONE;
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
-			pinging_mode = PMD_OWNERSHIP;
 		}
 	} else {
 		if (cluster_mode_str) {
@@ -825,10 +802,13 @@ int check_runtime_config(void)
 
 			location_cluster = 0;
 		}
+
+		pinging_mode = PMD_OWNERSHIP;
 		break;
 
 	case CM_FEDERATION:
 		LM_ERR("usrloc 'federation' clustering not implemented yet! :(\n");
+		pinging_mode = PMD_OWNERSHIP;
 		return -1;
 
 	case CM_FEDERATION_CACHEDB:
@@ -847,12 +827,27 @@ int check_runtime_config(void)
 			LM_ERR("no cache database URL defined! ('cachedb_url')\n");
 			return -1;
 		}
+		pinging_mode = PMD_OWNERSHIP;
 		break;
 
 	case CM_FULL_SHARING:
 		if (!location_cluster) {
 			LM_ERR("'location_cluster' is not set!\n");
 			return -1;
+		}
+
+		if (pinging_mode_str) {
+			if (!strcasecmp(pinging_mode_str, "ownership"))
+				pinging_mode = PMD_OWNERSHIP;
+			else if (!strcasecmp(pinging_mode_str, "cooperation"))
+				pinging_mode = PMD_COOPERATION;
+			else {
+				LM_ERR("unrecognized 'pinging_mode': %s, defaulting to "
+				       "'cooperation'\n", pinging_mode_str);
+				pinging_mode = PMD_COOPERATION;
+			}
+		} else {
+			pinging_mode = PMD_COOPERATION;
 		}
 		break;
 
@@ -878,6 +873,8 @@ int check_runtime_config(void)
 			LM_ERR("no cache database URL defined! ('cachedb_url')\n");
 			return -1;
 		}
+
+		pinging_mode = PMD_COOPERATION;
 		break;
 
 	case CM_SQL_ONLY:
@@ -899,6 +896,7 @@ int check_runtime_config(void)
 
 			location_cluster = 0;
 		}
+		pinging_mode = PMD_COOPERATION;
 		break;
 	}
 
