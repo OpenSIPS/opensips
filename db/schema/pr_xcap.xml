@@ -47,6 +47,7 @@
         <type>binary</type>
         <description>doc</description>
         <type db="mysql">LONGBLOB</type>
+        <pi_type db="mysql">DB_BLOB</pi_type>
     </column>
 
     <column id="doc_type">
