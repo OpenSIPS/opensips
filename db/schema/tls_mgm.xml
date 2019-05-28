@@ -118,6 +118,8 @@
         <type>binary</type>
         <default><null/></default>
         <null/>
+        <type db="mysql">MEDIUMBLOB</type>
+        <pi_type db="mysql">DB_BLOB</pi_type>
         <description>CA list</description>
     </column>
     

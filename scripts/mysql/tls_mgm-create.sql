@@ -11,7 +11,7 @@ CREATE TABLE tls_mgm (
     private_key BLOB,
     crl_check_all INT(1) DEFAULT 0,
     crl_dir CHAR(255) DEFAULT NULL,
-    ca_list BLOB DEFAULT NULL,
+    ca_list MEDIUMBLOB DEFAULT NULL,
     ca_dir CHAR(255) DEFAULT NULL,
     cipher_list CHAR(255) DEFAULT NULL,
     dh_params BLOB DEFAULT NULL,
