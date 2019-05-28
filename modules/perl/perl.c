@@ -54,10 +54,6 @@ char *filename = NULL;
  * installed */
 char *modpath = NULL;
 
-/* Allow unsafe module functions - functions with fixups. This will create
- * memory leaks, the variable thus is not documented! */
-int unsafemodfnc = 0;
-
 /* Reference to the running Perl interpreter instance */
 PerlInterpreter *my_perl = NULL;
 
@@ -91,22 +87,6 @@ mi_response_t *perl_mi_reload(const mi_params_t *params,
 /*
  * Exported functions
  */
-// static cmd_export_t cmds[] = {
-// 	{ "perl_exec_simple", (cmd_function)perl_exec_simple1, 1,  perl_fixup, 0,
-// 							     REQUEST_ROUTE | FAILURE_ROUTE
-// 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-// 	{ "perl_exec_simple", (cmd_function)perl_exec_simple2, 2,  perl_fixup, 0,
-// 							     REQUEST_ROUTE | FAILURE_ROUTE
-// 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-// 	{ "perl_exec", (cmd_function)perl_exec1, 1,  perl_fixup, 0,
-// 							     REQUEST_ROUTE | FAILURE_ROUTE
-// 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-// 	{ "perl_exec", (cmd_function)perl_exec2, 2, perl_fixup, 0,
-// 							     REQUEST_ROUTE | FAILURE_ROUTE
-// 							   | ONREPLY_ROUTE | BRANCH_ROUTE },
-// 	{ 0, 0, 0, 0, 0, 0 }
-// };
-
 static cmd_export_t cmds[] = {
 	{"perl_exec_simple", (cmd_function)perl_exec_simple, {
 		{CMD_PARAM_STR,0,0},
@@ -125,7 +105,6 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"filename", STR_PARAM, &filename},
 	{"modpath", STR_PARAM, &modpath},
-	{"unsafemodfnc", INT_PARAM, &unsafemodfnc},
 	{ 0, 0, 0 }
 };
 
