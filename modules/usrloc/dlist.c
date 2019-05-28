@@ -118,8 +118,6 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	struct socket_info *sock;
 	struct proxy_l next_hop;
-	char *next_hop_host;
-	int next_hop_offset;
 	db_res_t *res = NULL;
 	db_row_t *row;
 	db_val_t *val;
@@ -269,30 +267,24 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 					        p1_len, p1);
 					return -1;
 				}
-				/* next_hop_offset skips the 'sip:[...@]' */
-				next_hop_offset = puri.host.s - uri.s;
 			} else {
 				if (parse_uri(p, p_len, &puri) < 0) {
 					LM_ERR("failed to parse contact of next hop: '%.*s'\n",
 					        p_len, p);
 					return -1;
 				}
-				next_hop_offset = puri.host.s - p;
 			}
 
 			/* write received/contact */
 			memcpy(buf, &p_len, sizeof p_len);
 			buf += sizeof p_len;
 			memcpy(buf, p, p_len);
-			next_hop_host = buf + next_hop_offset;
 			buf += p_len;
 
 			/* write path */
 			memcpy(buf, &p1_len, sizeof p1_len);
 			buf += sizeof p1_len;
 			memcpy(buf, p1, (unsigned)p1_len);
-			if (p1_len > 0)
-				next_hop_host = buf + next_hop_offset;
 			buf += p1_len;
 
 			/* sock */
@@ -322,7 +314,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			next_hop.proto = puri.proto;
 			/* re-point next hop inside buffer */
 			next_hop.name.len  = puri.host.len;
-			next_hop.name.s  = next_hop_host;
+			next_hop.name.s  = puri.host.s;
 
 			/* write the next hop */
 			memcpy(buf, &next_hop, sizeof next_hop);
