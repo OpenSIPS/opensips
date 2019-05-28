@@ -169,7 +169,7 @@ static int reindex_new_sroutes(struct script_route *new_sr,
 
 	my_sr = (struct script_route*)pkg_malloc(size*sizeof(struct script_route));
 	if (my_sr==NULL) {
-		LM_ERR("failed to allocate pkg mem (needing %lu)\n",
+		LM_ERR("failed to allocate pkg mem (needing %zu)\n",
 			size*sizeof(struct script_route));
 		return -1;
 	}

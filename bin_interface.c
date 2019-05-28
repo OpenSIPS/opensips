@@ -58,7 +58,7 @@ int bin_init(bin_packet_t *packet, str *capability, int packet_type,
              short version, int length)
 {
 	if (length != 0 && length < MIN_BIN_PACKET_SIZE + capability->len) {
-		LM_ERR("Length parameter has to be greater than: %lu\n",
+		LM_ERR("Length parameter has to be greater than: %u\n",
 		       MIN_BIN_PACKET_SIZE + capability->len);
 		return -1;
 	}

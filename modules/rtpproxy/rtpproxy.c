@@ -3891,7 +3891,7 @@ static int rtpp_init_extra_stats(void)
 			len += 1 /* ' ' */ + strlen(rtpp_stats[stat]);
 		rtpp_stats_chunks[chunk].iov_base = pkg_malloc(len);
 		if (!rtpp_stats_chunks) {
-			LM_WARN("cannot allocate %d chunk. Only %d stats out of %ld "
+			LM_WARN("cannot allocate %d chunk. Only %d stats out of %zu "
 					"can be used!\n", chunk, chunk * RTPP_QUERY_ONCE_STATS_NO,
 					RTPP_QUERY_STATS_SIZE);
 			goto error;
@@ -3904,8 +3904,8 @@ static int rtpp_init_extra_stats(void)
 			p += len;
 		}
 		rtpp_stats_chunks[chunk].iov_len = p - (char *)rtpp_stats_chunks[chunk].iov_base;
-		LM_INFO("%d %ld [%.*s]\n", chunk, rtpp_stats_chunks[chunk].iov_len,
-				(int)rtpp_stats_chunks[chunk].iov_len, (char *)rtpp_stats_chunks[chunk].iov_base);
+		LM_INFO("%d %zu [%.*s]\n", chunk, rtpp_stats_chunks[chunk].iov_len,
+				(unsigned)rtpp_stats_chunks[chunk].iov_len, (char *)rtpp_stats_chunks[chunk].iov_base);
 	}
 	return 0;
 

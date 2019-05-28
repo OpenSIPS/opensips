@@ -389,7 +389,7 @@ cdb_pack_ping_data(const str *aor, const cdb_pair_t *contact,
 	struct socket_info *sock = NULL;
 	struct proxy_l next_hop;
 	str ct_uri, received = STR_NULL, path, next_hop_uri;
-	char *next_hop_host;
+	char *next_hop_host = NULL;
 	int needed;
 	char *cp = *cpos;
 	int cols_needed = COL_CONTACT | COL_RECEIVED | COL_PATH | COL_CFLAGS;
