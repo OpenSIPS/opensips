@@ -544,7 +544,7 @@ int tcp_get_correlation_id( int id, unsigned long long *cid)
 
 /*! \brief _tcpconn_find with locks and acquire fd */
 int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
-									struct tcp_connection** conn, int* conn_fd)
+			void *proto_extra_id, struct tcp_connection** conn, int* conn_fd)
 {
 	struct tcp_connection* c;
 	struct tcp_connection* tmp;
@@ -583,7 +583,10 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
 				if (c->state != S_CONN_BAD &&
 				    port == a->port &&
 				    proto == c->type &&
-				    ip_addr_cmp(ip, &c->rcv.src_ip))
+				    ip_addr_cmp(ip, &c->rcv.src_ip) &&
+				    (proto_extra_id==NULL ||
+				    protos[proto].net.conn_match==NULL ||
+				    protos[proto].net.conn_match( c, proto_extra_id)) )
 					goto found;
 			}
 			TCPCONN_UNLOCK(part);
