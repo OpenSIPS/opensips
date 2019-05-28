@@ -58,8 +58,8 @@
 
 
 /* fd communication commands - internal usage ONLY */
-enum conn_cmds { CONN_DESTROY=-3, CONN_ERROR=-2, CONN_EOF=-1, CONN_RELEASE,
-		CONN_GET_FD, CONN_NEW, ASYNC_CONNECT, ASYNC_WRITE, CONN_RELEASE_WRITE };
+enum conn_cmds { CONN_DESTROY=-4, CONN_ERROR=-3,CONN_ERROR2=-2, CONN_EOF=-1, CONN_RELEASE,
+		CONN_GET_FD, CONN_NEW, ASYNC_CONNECT, ASYNC_WRITE, ASYNC_WRITE2, CONN_RELEASE_WRITE };
 /* CONN_RELEASE, EOF, ERROR, DESTROY can be used by "reader" processes
  * CONN_GET_FD, NEW, ERROR only by writers */
 
