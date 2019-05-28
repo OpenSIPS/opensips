@@ -1750,7 +1750,7 @@ check_wait_timer:
 		lock_hash(cell->hash_id);
 
 		LM_DBG("wait expiring ping cell %llu state=%d\n",
-			cell->ct_coords, cell->state);
+			(unsigned long long)cell->ct_coords, cell->state);
 
 		/* if not found in the mean while (via hash), delete it */
 		if (cell->state==PING_CELL_STATE_WAITING) {
