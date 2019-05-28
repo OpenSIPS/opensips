@@ -399,13 +399,17 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	if (nexthop && parse_uri( nexthop->s, nexthop->len, &pnexthop) < 0 )
 		return init_mi_error( 400, MI_SSTR("Invalid next_hop"));
 
-	if (socket && parse_phostport( socket->s, socket->len, &s.s, &s.len,
-	&port,&proto)!=0)
-		return init_mi_error( 404, MI_SSTR("Invalid local socket"));
-	set_sip_defaults( port, proto);
-	sock = grep_internal_sock_info( &s, (unsigned short)port, proto);
-	if (sock==0)
-		return init_mi_error( 404, MI_SSTR("Local socket not found"));
+	if (socket && socket->len) {
+		if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
+		&port,&proto)!=0)
+			return init_mi_error( 404, MI_SSTR("Invalid local socket"));
+		set_sip_defaults( port, proto);
+		sock = grep_internal_sock_info( &s, (unsigned short)port, proto);
+		if (sock==0)
+			return init_mi_error( 404, MI_SSTR("Local socket not found"));
+	} else {
+		sock = NULL;
+	}
 
 	if (get_mi_string_param(params, "headers", &hdrs.s, &hdrs.len) < 0)
 		return init_mi_param_error();
