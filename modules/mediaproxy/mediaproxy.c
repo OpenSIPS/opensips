@@ -217,36 +217,38 @@ static param_export_t parameters[] = {
 };
 
 static dep_export_t deps = {
-	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tm",     DEP_SILENT },
-		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
-		{ MOD_TYPE_NULL, NULL, 0 },
-	},
-	{ /* modparam dependencies */
-		{ NULL, NULL },
-	},
+    // OpenSIPS module dependencies
+    {
+        {MOD_TYPE_DEFAULT, "tm",     DEP_SILENT},
+        {MOD_TYPE_DEFAULT, "dialog", DEP_SILENT},
+        {MOD_TYPE_NULL, NULL, 0}
+    },
+    // modparam dependencies
+    {
+        {NULL, NULL}
+    }
 };
 
 struct module_exports exports = {
-    "mediaproxy",    // module name
-    MOD_TYPE_DEFAULT,// class of this module
-    MODULE_VERSION,  // module name
-    DEFAULT_DLFLAGS, // dlopen flags
-    0,				 // load function
-    &deps,           // OpenSIPS module dependencies
-    commands,        // exported functions
-    NULL,            // exported async functions
-    parameters,      // exported parameters
-    NULL,            // exported statistics
-    NULL,            // exported MI functions
-    NULL,            // exported pseudo-variables
-    NULL,            // exported transformations
-    NULL,            // extra processes
-    mod_init,        // module init function (before fork. kids will inherit)
-    NULL,            // reply processing function
-    NULL,            // destroy function
-    child_init,      // child init function
-    NULL             /* reload confirm function */
+    "mediaproxy",     // module name
+    MOD_TYPE_DEFAULT, // class of this module
+    MODULE_VERSION,   // module name
+    DEFAULT_DLFLAGS,  // dlopen flags
+    NULL,             // load function
+    &deps,            // OpenSIPS module dependencies
+    commands,         // exported functions
+    NULL,             // exported async functions
+    parameters,       // exported parameters
+    NULL,             // exported statistics
+    NULL,             // exported MI functions
+    NULL,             // exported pseudo-variables
+    NULL,             // exported transformations
+    NULL,             // extra processes
+    mod_init,         // module init function (before fork. kids will inherit)
+    NULL,             // reply processing function
+    NULL,             // destroy function
+    child_init,       // child init function
+    NULL              // reload confirm function
 };
 
 

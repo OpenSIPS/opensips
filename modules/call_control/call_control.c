@@ -110,7 +110,7 @@ typedef struct CallControlSocket {
 } CallControlSocket;
 
 
-/* Function prototypes */
+// Function prototypes
 static int CallControl(struct sip_msg *msg, char *str1, char *str2);
 
 static int mod_init(void);
@@ -121,7 +121,7 @@ int parse_param_init(unsigned int type, void *val);
 int parse_param_start(unsigned int type, void *val);
 int parse_param_stop(unsigned int type, void *val);
 
-/* Local global variables */
+// Local global variables
 static CallControlSocket callcontrol_socket = {
     "/var/run/callcontrol/socket", // name
     -1,                            // sock
@@ -133,19 +133,19 @@ static CallControlSocket callcontrol_socket = {
 static int disable = False;
 
 
-/* The AVP where the diverter URI is stored (if defined) */
+// The AVP where the diverter URI is stored (if defined)
 static AVP_Param diverter_avp = {str_init(DIVERTER_AVP_SPEC), -1, 0};
 
-/* The AVP where the canonical URI is stored (if defined) */
+// The AVP where the canonical URI is stored (if defined)
 static AVP_Param canonical_uri_avp = {str_init(CANONICAL_URI_AVP_SPEC), -1, 0};
 
-/* The AVP where the caller signaling IP is stored (if defined) */
+// The AVP where the caller signaling IP is stored (if defined)
 static AVP_Param signaling_ip_avp = {str_init(SIGNALING_IP_AVP_SPEC), -1, 0};
 
-/* The AVP where the call limit is stored (if defined) */
+// The AVP where the call limit is stored (if defined)
 static AVP_Param call_limit_avp = {str_init(CALL_LIMIT_AVP_SPEC), -1, 0};
 
-/* The AVP where the call token is stored (if defined) */
+// The AVP where the call token is stored (if defined)
 static AVP_Param call_token_avp = {str_init(CALL_TOKEN_AVP_SPEC), -1, 0};
 
 
@@ -180,35 +180,37 @@ static param_export_t parameters[] = {
 };
 
 static dep_export_t deps = {
-	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
-		{ MOD_TYPE_NULL, NULL, 0 },
-	},
-	{ /* modparam dependencies */
-		{ NULL, NULL },
-	},
+    // OpenSIPS module dependencies
+    {
+        {MOD_TYPE_DEFAULT, "dialog", DEP_ABORT},
+        {MOD_TYPE_NULL, NULL, 0}
+    },
+    // modparam dependencies
+    {
+        {NULL, NULL}
+    }
 };
 
 struct module_exports exports = {
-    "call_control",  // module name
-    MOD_TYPE_DEFAULT,// class of this module
-    MODULE_VERSION,  // module version
-    DEFAULT_DLFLAGS, // dlopen flags
-    0,				 // load function
-    &deps,           // OpenSIPS module dependencies
-    commands,        // exported functions
-    0,               // exported async functions
-    parameters,      // exported parameters
-    NULL,            // exported statistics
-    NULL,            // exported MI functions
-    NULL,            // exported pseudo-variables
-    NULL,            // exported transformations
-    NULL,            // extra processes
-    mod_init,        // module init function (before fork. kids will inherit)
-    NULL,            // reply processing function
-    destroy,         // destroy function
-    child_init,      // child init function
-    0                /* reload confirm function */
+    "call_control",   // module name
+    MOD_TYPE_DEFAULT, // class of this module
+    MODULE_VERSION,   // module version
+    DEFAULT_DLFLAGS,  // dlopen flags
+    NULL,             // load function
+    &deps,            // OpenSIPS module dependencies
+    commands,         // exported functions
+    NULL,             // exported async functions
+    parameters,       // exported parameters
+    NULL,             // exported statistics
+    NULL,             // exported MI functions
+    NULL,             // exported pseudo-variables
+    NULL,             // exported transformations
+    NULL,             // extra processes
+    mod_init,         // module init function (before fork. kids will inherit)
+    NULL,             // reply processing function
+    destroy,          // destroy function
+    child_init,       // child init function
+    NULL              // reload confirm function
 };
 
 
@@ -267,8 +269,8 @@ destroy_list(AVP_List *list) {
     cur = list;
     while (cur) {
         next = cur->next;
-	pkg_free(cur);
-	cur = next;
+        pkg_free(cur);
+        cur = next;
     }
 }
 
@@ -616,9 +618,9 @@ make_custom_request(struct sip_msg *msg, CallInfo *call)
 
     for (; al; al = al->next) {
         if (pv_get_spec_value(msg, al->pv, &pt) < 0) {
-			LM_ERR("cannot get the spec's value!\n");
-			return NULL;
-		}
+            LM_ERR("cannot get the spec's value!\n");
+            return NULL;
+        }
         if (pt.flags & PV_VAL_INT) {
             len += snprintf(request + len, sizeof(request) - len - 1,
                     "%.*s = %d ", al->name.len, al->name.s,
@@ -1202,9 +1204,9 @@ mod_init(void)
         LM_CRIT("cannot register callback for dialogs loaded from the database\n");
     }
 
-	fix_flag_name(prepaid_account_str, prepaid_account_flag);
+    fix_flag_name(prepaid_account_str, prepaid_account_flag);
 
-	prepaid_account_flag = get_flag_id_by_name(FLAG_TYPE_MSG, prepaid_account_str);
+    prepaid_account_flag = get_flag_id_by_name(FLAG_TYPE_MSG, prepaid_account_str);
 
     return 0;
 }
