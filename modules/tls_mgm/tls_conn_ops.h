@@ -287,5 +287,14 @@ static int tls_read(struct tcp_connection * c,struct tcp_req *r)
 }
 
 
+static int tls_conn_extra_match(struct tcp_connection *c, void *id)
+{
+	if ( (c->flags&F_CONN_ACCEPTED) ||
+	(SSL_get_SSL_CTX((SSL*)c->extra_data) == id) )
+		return 1; /*true*/
+
+	return 0; /*false*/
+}
+
 #endif /* TLS_CONN_OPS_H */
 

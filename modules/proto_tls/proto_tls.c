@@ -101,6 +101,9 @@ static int tls_crlf_pingpong = 1;
 /* 0: do not drop single CRLF messages */
 static int tls_crlf_drop = 0;
 
+/* check the SSL certificate when comes to TCP conn reusage */
+static int cert_check_on_conn_reusage = 0;
+
 static int  mod_init(void);
 static void mod_destroy(void);
 static int proto_tls_init(struct proto_info *pi);
@@ -166,8 +169,9 @@ static param_export_t params[] = {
 	{ "tls_crlf_drop",         INT_PARAM,         &tls_crlf_drop             },
 	{ "tls_max_msg_chunks",    INT_PARAM,         &tls_max_msg_chunks        },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
-	{ "trace_on",						 INT_PARAM, &trace_is_on_tmp        },
-	{ "trace_filter_route",				 STR_PARAM, &trace_filter_route     },
+	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
+	{ "trace_filter_route",			STR_PARAM, &trace_filter_route        },
+	{ "cert_check_on_conn_reusage",	INT_PARAM, &cert_check_on_conn_reusage},
 	{0, 0, 0}
 };
 
@@ -289,6 +293,10 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->net.read			= (proto_net_read_f)tls_read_req;
 	pi->net.conn_init		= proto_tls_conn_init;
 	pi->net.conn_clean		= proto_tls_conn_clean;
+	if (cert_check_on_conn_reusage)
+		pi->net.conn_match		= tls_conn_extra_match;
+	else
+		pi->net.conn_match		= NULL;
 	pi->net.report			= tls_report;
 
 	return 0;
@@ -431,6 +439,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 				char* buf, unsigned int len, union sockaddr_union* to, int id)
 {
 	struct tcp_connection *c;
+	struct tls_domain *dom;
 	struct ip_addr ip;
 	int port;
 	int fd, n;
@@ -438,9 +447,13 @@ static int proto_tls_send(struct socket_info* send_sock,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		n = tcp_conn_get(id, &ip, port, PROTO_TLS, &c, &fd);
+		dom = (cert_check_on_conn_reusage==0)?
+			NULL : tls_mgm_api.find_client_domain( &ip, port);
+		n = tcp_conn_get(id, &ip, port, PROTO_TLS, dom?dom->ctx:NULL, &c, &fd);
+		if (dom)
+			tls_mgm_api.release_domain(dom);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, &c, &fd);
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
 		return -1;

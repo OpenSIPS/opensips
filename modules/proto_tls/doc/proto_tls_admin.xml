@@ -325,6 +325,38 @@ modparam("proto_tls", "tls_max_msg_chunks", 8)
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_tls_cert_check_on_conn_reusage" xreflabel="cert_check_on_conn_reusage">
+		<title><varname>cert_check_on_conn_reusage</varname> (integer)</title>
+		<para>
+		This parameter turns on or off the extra checking/matching of the
+		TLS domain (SSL certificate) when comes to reusing an existing TLS
+		connection. Without this extra check, only IP and port of the
+		connections will be check (in order to re-use an existing connection).
+		With this extra check, the connection to be reused must have the same
+		SSL certificate as the one set for the current signaling operation.
+		</para>
+		<para>
+		This checking is done only when comes to send SIP traffic via TLS and
+		it is applied only against connections that were created / initiated 
+		by OpenSIPS (as TLS client). Any accepte connection (as TLS server) will
+		automatically match (the extra test will be skipped).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cert_check_on_conn_reusage</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_tls", "cert_check_on_conn_reusage", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="trace-destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>

@@ -61,6 +61,9 @@ static struct ws_req wss_current_req;
 
 int wss_hs_read_tout = 100;
 
+/* check the SSL certificate when comes to TCP conn reusage */
+static int cert_check_on_conn_reusage = 0;
+
 /* XXX: this information should be dynamically provided */
 static str wss_resource = str_init("/");
 
@@ -108,6 +111,7 @@ static int wss_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
 static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
+
 static mi_response_t *wss_trace_mi(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *wss_trace_mi_1(const mi_params_t *params,
@@ -127,8 +131,9 @@ static param_export_t params[] = {
 	{ "wss_resource",       STR_PARAM, &wss_resource       },
 	{ "wss_handshake_timeout", INT_PARAM, &wss_hs_read_tout},
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
-	{ "trace_on",						 INT_PARAM, &trace_is_on_tmp        },
-	{ "trace_filter_route",				 STR_PARAM, &trace_filter_route     },
+	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
+	{ "trace_filter_route",			STR_PARAM, &trace_filter_route        },
+	{ "cert_check_on_conn_reusage",	INT_PARAM, &cert_check_on_conn_reusage},
 	{0, 0, 0}
 };
 
@@ -191,6 +196,10 @@ static int proto_wss_init(struct proto_info *pi)
 
 	pi->net.conn_init		= wss_conn_init;
 	pi->net.conn_clean		= ws_conn_clean;
+	if (cert_check_on_conn_reusage)
+		pi->net.conn_match		= tls_conn_extra_match;
+	else
+		pi->net.conn_match		= NULL;
 	pi->net.report			= wss_report;
 
 	return 0;
@@ -425,13 +434,13 @@ error:
 /**************  WRITE related functions ***************/
 
 
-
 /*! \brief Finds a tcpconn & sends on it */
 static int proto_wss_send(struct socket_info* send_sock,
 											char* buf, unsigned int len,
 											union sockaddr_union* to, int id)
 {
 	struct tcp_connection *c;
+	struct tls_domain *dom;
 	struct timeval get;
 	struct ip_addr ip;
 	int port = 0;
@@ -444,9 +453,13 @@ static int proto_wss_send(struct socket_info* send_sock,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		n = tcp_conn_get(id, &ip, port, PROTO_WSS, &c, &fd);
+		dom = (cert_check_on_conn_reusage==0)?
+			NULL : tls_mgm_api.find_client_domain( &ip, port);
+		n = tcp_conn_get(id, &ip, port, PROTO_WSS, dom?dom->ctx:NULL, &c, &fd);
+		if (dom)
+			tls_mgm_api.release_domain(dom);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, &c, &fd);
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd);
 	}else{
 		LM_CRIT("prot_tls_send called with null id & to\n");
 		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
