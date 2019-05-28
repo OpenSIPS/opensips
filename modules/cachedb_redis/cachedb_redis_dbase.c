@@ -83,12 +83,12 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 		rpl = redisCommand(node->context,"AUTH %s",con->id->password);
 		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 			LM_ERR("failed to auth to redis - %.*s\n",
-				rpl?rpl->len:7,rpl?rpl->str:"FAILURE");
+				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
 			redisFree(node->context);
 			return -1;
 		}
-		LM_DBG("AUTH [password] -  %.*s\n",rpl->len,rpl->str);
+		LM_DBG("AUTH [password] -  %.*s\n",(unsigned)rpl->len,rpl->str);
 		freeReplyObject(rpl);
 	}
 
@@ -96,13 +96,13 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 		rpl = redisCommand(node->context,"SELECT %s",con->id->database);
 		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 			LM_ERR("failed to select database %s - %.*s\n",con->id->database,
-				rpl?rpl->len:7,rpl?rpl->str:"FAILURE");
+				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
 			redisFree(node->context);
 			return -1;
 		}
 
-		LM_DBG("SELECT [%s] - %.*s\n",con->id->database,rpl->len,rpl->str);
+		LM_DBG("SELECT [%s] - %.*s\n",con->id->database,(unsigned)rpl->len,rpl->str);
 		freeReplyObject(rpl);
 	}
 
@@ -138,13 +138,13 @@ int redis_connect(redis_con *con)
 		rpl = redisCommand(ctx,"AUTH %s",con->id->password);
 		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 			LM_ERR("failed to auth to redis - %.*s\n",
-				rpl?rpl->len:7,rpl?rpl->str:"FAILURE");
+				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			if (rpl!=NULL)
 				freeReplyObject(rpl);
 			redisFree(ctx);
 			return -1;
 		}
-		LM_DBG("AUTH [password] -  %.*s\n",rpl->len,rpl->str);
+		LM_DBG("AUTH [password] -  %.*s\n",(unsigned)rpl->len,rpl->str);
 		freeReplyObject(rpl);
 	}
 
@@ -321,7 +321,7 @@ int redis_get(cachedb_con *connection,str *attr,str *val)
 		return -2;
 	}
 
-	LM_DBG("GET %.*s  - %.*s\n",attr->len,attr->s,reply->len,reply->str);
+	LM_DBG("GET %.*s  - %.*s\n",attr->len,attr->s,(unsigned)reply->len,reply->str);
 
 	val->s = pkg_malloc(reply->len);
 	if (val->s == NULL) {
@@ -351,7 +351,7 @@ int redis_set(cachedb_con *connection,str *attr,str *val,int expires)
 	redis_run_command(con,attr,"SET %b %b",attr->s,attr->len,val->s,val->len);
 
 	LM_DBG("set %.*s to %.*s - status = %d - %.*s\n",attr->len,attr->s,val->len,
-			val->s,reply->type,reply->len,reply->str);
+			val->s,reply->type,(unsigned)reply->len,reply->str);
 
 	freeReplyObject(reply);
 
@@ -359,7 +359,7 @@ int redis_set(cachedb_con *connection,str *attr,str *val,int expires)
 		redis_run_command(con,attr,"EXPIRE %b %d",attr->s,attr->len,expires);
 
 		LM_DBG("set %.*s to expire in %d s - %.*s\n",attr->len,attr->s,expires,
-				reply->len,reply->str);
+				(unsigned)reply->len,reply->str);
 
 		freeReplyObject(reply);
 	}
@@ -417,7 +417,7 @@ int redis_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val
 		redis_run_command(con,attr,"EXPIRE %b %d",attr->s,attr->len,expires);
 
 		LM_DBG("set %.*s to expire in %d s - %.*s\n",attr->len,attr->s,expires,
-				reply->len,reply->str);
+				(unsigned)reply->len,reply->str);
 
 		freeReplyObject(reply);
 	}
@@ -447,7 +447,7 @@ int redis_sub(cachedb_con *connection,str *attr,int val,int expires,int *new_val
 		redis_run_command(con,attr,"EXPIRE %b %d",attr->s,attr->len,expires);
 
 		LM_DBG("set %.*s to expire in %d s - %.*s\n",attr->len,attr->s,expires,
-				reply->len,reply->str);
+				(unsigned)reply->len,reply->str);
 
 		freeReplyObject(reply);
 	}
@@ -476,7 +476,7 @@ int redis_get_counter(cachedb_con *connection,str *attr,int *val)
 		return -2;
 	}
 
-	LM_DBG("GET %.*s  - %.*s\n",attr->len,attr->s,reply->len,reply->str);
+	LM_DBG("GET %.*s  - %.*s\n",attr->len,attr->s,(unsigned)reply->len,reply->str);
 
 	response.s=reply->str;
 	response.len=reply->len;
@@ -733,7 +733,7 @@ int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int e
 			freeReplyObject(reply);
 			return -2;
 		case REDIS_REPLY_STATUS:
-			LM_DBG("Received a status of %.*s from Redis \n",reply->len,reply->str);
+			LM_DBG("Received a status of %.*s from Redis \n",(unsigned)reply->len,reply->str);
 			if (reply_no)
 				*reply_no = 0;
 			freeReplyObject(reply);

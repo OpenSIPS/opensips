@@ -220,7 +220,7 @@ int mid_reg_lookup(struct sip_msg* req, char* _t, char* _f, char* _s)
 			}
 		}
 
-		LM_DBG("getting ucontact from contact_id %lu\n", contact_id);
+		LM_DBG("getting ucontact from contact_id %llu\n", contact_id);
 
 		ptr = ul_api.get_ucontact_from_id((udomain_t *)_t, contact_id, &r);
 		if (!ptr) {
