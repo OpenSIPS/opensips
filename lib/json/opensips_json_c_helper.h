@@ -44,8 +44,11 @@
 #endif
 
 /* json.h automatically includes json_c_version.h, if available. */
+#ifdef __amd64__
+#include <json-c/json.h>
+#else
 #include <json.h>
-
+#endif
 /*
  * We prefer JSON_C_VERSION_NUM defined in json_c_version.h.  If it is
  * not defined, we construct it the same way from our JSON_PKG_* defines.
