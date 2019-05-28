@@ -252,7 +252,7 @@ int hash_mi_print(struct address_list **table, mi_item_t *part_item,
 	mi_item_t *dests_arr, *dest_item;
 
 	dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
-	if (dests_arr)
+	if (!dests_arr)
 		return -1;
 
 	for (i = 0; i < PERM_HASH_SIZE; i++) {
@@ -518,7 +518,7 @@ int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
 	count = table[PERM_MAX_SUBNETS].grp;
 
 	dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
-	if (dests_arr)
+	if (!dests_arr)
 		return -1;
 
 	for (i = 0; i < count; i++) {
