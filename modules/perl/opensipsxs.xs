@@ -45,8 +45,8 @@
 #include "../../serialize.h"
 #include "../../qvalue.h"
 #include "../../dprint.h"
-
-extern int unsafemodfnc;
+#include "../../mod_fix.h"
+#include "../../ut.h"
 
 enum xs_uri_members {
 	XS_URI_USER = 0,
@@ -199,7 +199,6 @@ SV *getStringFromURI(SV *self, enum xs_uri_members what) {
 }
 
 
-
 /*
  * Calls an exported function. Parameters are copied and fixup'd.
  *
@@ -209,131 +208,112 @@ SV *getStringFromURI(SV *self, enum xs_uri_members what) {
  *        parameter.
  */
 
-int moduleFunc(struct sip_msg *m, char *func,
-	       char *param1, char *param2,
-	       int *retval) {
-
-/* TODO: adapt to new cmd_export and params interface */
-#if 0
+int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
+{
 	cmd_export_t *exp_func_struct;
 	struct action *act;
-	char *argv[2];
-	int argc = 0;
 	action_elem_t elems[MAX_ACTION_ELEMS];
+	int i, n = 0;
+	struct cmd_param *param;
+	str s;
+	pv_spec_t *spec = NULL;
+	int rval;
 
 	if (!func) {
 		LM_ERR("moduleFunc called with null function name. Error.\n");
 		return -1;
 	}
 
-	if ((!param1) && param2) {
-		LM_ERR("moduleFunc called with parameter 1 UNSET and"
-			   " parameter 2 SET. Error.");
-		return -1;
-	}
-
-
-	if (param1) {
-		argv[0] = (char *)pkg_malloc(strlen(param1)+1);
-		strcpy(argv[0], param1);
-		argc++;
-	} else {
-		argv[0] = NULL;
-	}
-
-	if (param2) {
-		argv[1] = (char *)pkg_malloc(strlen(param2)+1);
-		strcpy(argv[1], param2);
-		argc++;
-	} else {
-		argv[1] = NULL;
-	}
-
 	exp_func_struct = find_cmd_export_t(func, 0);
 	if (!exp_func_struct) {
-		LM_ERR("function '%s' called, but not available.", func);
+		LM_ERR("function '%s' called, but not available\n", func);
 		*retval = -1;
-		if (argv[0]) pkg_free(argv[0]);
-		if (argv[1]) pkg_free(argv[1]);
 		return -1;
 	}
 
-	/* initialize all the act fields */
-	memset(&act, 0, sizeof(act));
+	for (i=0; i < MAX_CMD_PARAMS; i++)
+		if (pargs[i]) {
+			n++;
+			if (strlen(pargs[i]) == 0)  /* 'undef' argument */ {
+				elems[i+1].type = NULLV_ST;
+				pargs[i] = NULL;
+			} else
+				elems[i+1].type = NOSUBTYPE;
+		}
+
+	rval = check_cmd_call_params(exp_func_struct, elems, n);
+	if (rval == -1 || rval == -2) {
+		LM_ERR("to few or too many parameters\n");
+		*retval = -1;
+		return -1;
+	} else if (rval == -3) {
+		LM_ERR("mandatory parameter ommited\n");
+		*retval = -1;
+		return -1;
+	}
+
 	elems[0].type = CMD_ST;
 	elems[0].u.data = exp_func_struct;
-	elems[1].type = STRING_ST;
-	elems[1].u.data = argv[0];
-	elems[2].type = STRING_ST;
-	elems[2].u.data = argv[1];
-	act = mk_action(	MODULE_T,
-				3,
-				elems,
-				0,
-				"perl");
 
+	for (param=exp_func_struct->params, i=1; param->flags; param++, i++) {
+		if (!pargs[i-1])
+			continue;
+
+		if (param->flags & CMD_PARAM_INT) {
+			elems[i].type = NUMBER_ST;
+			s.s = pargs[i-1];
+		    s.len =  strlen(s.s);
+			if (str2sint(&s, (int*)&elems[i].u.number) < 0) {
+				LM_ERR("parameter [%d] should be an integer\n", i);
+				*retval = -1;
+				return -1;
+			}
+		} else if (param->flags & CMD_PARAM_STR) {
+			elems[i].type = STR_ST;
+			elems[i].u.data = pargs[i-1];
+		} else if (param->flags & CMD_PARAM_VAR) {
+			elems[i].type = SCRIPTVAR_ST;
+			spec = pkg_malloc(sizeof *spec);
+			if (!spec) {
+				LM_ERR("oom\n");
+				*retval = -1;
+				return -1;
+			}
+			s.s = pargs[i-1];
+			s.len = strlen(s.s);
+			if (pv_parse_spec(&s, spec) == NULL) {
+				LM_ERR("unknown script variable: %.*s\n", s.len, s.s);
+				*retval = -1;
+				return -1;
+			}
+			elems[i].u.data = spec;
+		}
+	}
+
+	act = mk_action(MODULE_T, n+1, elems, 0, "perl");
 
 	if (!act) {
 		LM_ERR("action structure could not be created. Error.\n");
-		if (argv[0]) pkg_free(argv[0]);
-		if (argv[1]) pkg_free(argv[1]);
+		*retval = -1;
 		return -1;
 	}
 
-
-	if (exp_func_struct->fixup) {
-		if (!unsafemodfnc) {
-			LM_ERR("Module function '%s' is unsafe. Call is refused.\n", func);
-			if (argv[0]) pkg_free(argv[0]);
-			if (argv[1]) pkg_free(argv[1]);
-			*retval = -1;
-			return -1;
-		}
-
-		if (argc>=2) {
-			*retval = exp_func_struct->fixup(&(act->elem[2].u.data), 2);
-			if (*retval < 0) {
-				LM_ERR("Error in fixup (2)\n");
-				return -1;
-			}
-			act->elem[2].type = MODFIXUP_ST;
-		}
-		if (argc>=1) {
-			*retval = exp_func_struct->fixup(&(act->elem[1].u.data), 1);
-			if (*retval < 0) {
-				LM_ERR("Error in fixup (1)\n");
-				return -1;
-			}
-			act->elem[1].type = MODFIXUP_ST;
-		}
-		if (argc==0) {
-			*retval = exp_func_struct->fixup(0, 0);
-			if (*retval < 0) {
-				LM_ERR("Error in fixup (0)\n");
-				return -1;
-			}
-		}
+	if (fix_cmd(exp_func_struct->params, act->elem) < 0) {
+		LM_ERR("failed to fix command '%s'\n", func);
+		*retval = -1;
+		return -1;
 	}
 
 	*retval = do_action(act, m);
 
-	if ((act->elem[2].type == MODFIXUP_ST) && (act->elem[2].u.data)) {
-		/* pkg_free(act->elem[2].u.data); */
-		LM_WARN("moduleFunction: A fixup function was called. "
-				"This currently creates a memory leak.\n");
-	}
+	pv_spec_free(spec);
 
-	if ((act->elem[1].type == MODFIXUP_ST) && (act->elem[1].u.data)) {
-		/* pkg_free(act->elem[1].u.data); */
-		LM_WARN("moduleFunction: A fixup function was called. "
-				"This currently creates a memory leak.\n");
-	}
-
-	if (argv[0]) pkg_free(argv[0]);
-	if (argv[1]) pkg_free(argv[1]);
+	/* free the gparam_t structs allocated by fix_cmd() */
+	for (i=1; i < MAX_ACTION_ELEMS; i++)
+		if (act->elem[i].u.data)
+			pkg_free(act->elem[i].u.data);
 
 	pkg_free(act);
-#endif
 	
 	return 1;
 }
@@ -853,12 +833,10 @@ getHeaderNames(self)
 	}
 
 
-=head2 moduleFunction(func,string1,string2)
+=head2 moduleFunction(func,string1,string2,string3,string4,string5,string6,string7,string8)
 
 Search for an arbitrary function in module exports and call it with the
-parameters self, string1, string2.
-
-C<string1> and/or C<string2> may be omitted.
+parameters self, string1, string2, ..., string8
 
 As this function provides access to the functions that are exported to the
 OpenSIPS configuration file, it is autoloaded for unknown functions. Instead of
@@ -872,126 +850,44 @@ you may as well write
  $m->sl_send_reply("500", "Internal Error");
  $m->xlog("L_INFO", "foo");
 
-WARNING
-
-In OpenSIPS 1.2, only a limited subset of module functions is available. This
-restriction will be removed in a later version.
-
-Here is a list of functions that are expected to be working (not claiming
-completeness):
-
- * alias_db_lookup
- * consume_credentials
- * is_rpid_user_e164
- * append_rpid_hf
- * bind_auth
- * avp_print
- * cpl_process_register
- * cpl_process_register_norpl
- * load_dlg
- * ds_next_dst
- * ds_next_domain
- * ds_mark_dst
- * ds_mark_dst
- * is_from_local
- * is_uri_host_local
- * dp_can_connect
- * dp_apply_policy
- * enum_query (without parameters)
- * enum_fquery (without parameters)
- * is_from_user_enum (without parameters)
- * i_enum_query (without parameters)
- * imc_manager
- * jab_* (all functions from the jabber module)
- * sdp_mangle_ip
- * sdp_mangle_port
- * encode_contact
- * decode_contact
- * decode_contact_header
- * fix_contact
- * use_media_proxy
- * end_media_session
- * m_store
- * m_dump
- * fix_nated_contact
- * unforce_rtp_proxy
- * force_rtp_proxy
- * fix_nated_register
- * add_rcv_param
- * options_reply
- * checkospheader
- * validateospheader
- * requestosprouting
- * checkosproute
- * prepareosproute
- * prepareallosproutes
- * checkcallingtranslation
- * reportospusage
- * mangle_pidf
- * mangle_message_cpim
- * add_path (without parameters)
- * add_path_received (without parameters)
- * prefix2domain
- * allow_routing (without parameters)
- * allow_trusted
- * pike_check_req
- * handle_publish
- * handle_subscribe
- * stored_pres_info
- * bind_pua
- * send_publish
- * send_subscribe
- * pua_set_publish
- * loose_route
- * record_route
- * load_rr
- * sip_trace
- * sl_reply_error
- * sms_send_msg
- * sd_lookup
- * sstCheckMin
- * append_time
- * has_body (without parameters)
- * is_peer_verified
- * t_newtran
- * t_release
- * t_relay (without parameters)
- * t_flush_flags
- * t_check_trans
- * t_was_cancelled
- * uac_restore_from
- * uac_auth
- * has_totag
- * tel2sip
- * check_to
- * check_from
- * radius_does_uri_exist
- * ul_* (All functions exported by the usrloc module for user access)
- * xmpp_send_message
-
 =cut
 
 
 int
-moduleFunction (self, func, string1 = NULL, string2 = NULL)
+moduleFunction (self, func, string1 = NULL, string2 = NULL, string3 = NULL, string4 = NULL, string5 = NULL, string6 = NULL, string7 = NULL, string8 = NULL)
     SV *self;
     char *func;
     char *string1;
     char *string2;
+    char *string3;
+    char *string4;
+    char *string5;
+    char *string6;
+    char *string7;
+    char *string8;
   PREINIT:
     struct sip_msg *msg = sv2msg(self);
     int retval; /* Return value of called function */
     int ret;    /* Return value of moduleFunc - < 0 for "non existing function" and other errors */
+    char *pargs[MAX_CMD_PARAMS];
   INIT:
   CODE:
-	LM_DBG("Calling exported func '%s', Param1 is '%s',"
-		" Param2 is '%s'\n", func, string1, string2);
+	LM_DBG("Calling exported func: '%s'\n", func);
+
+	pargs[0] = string1;
+	pargs[1] = string2;
+	pargs[2] = string3;
+	pargs[3] = string4;
+	pargs[4] = string5;
+	pargs[5] = string6;
+	pargs[6] = string7;
+	pargs[7] = string8;
 
 	if (!msg) {
 		LM_ERR("invalid message received!\n");
 		retval = -1;
 	} else {
-		ret = moduleFunc(msg, func, string1, string2, &retval);
+		ret = moduleFunc(msg, func, pargs, &retval);
 		if (ret < 0) {
 			LM_ERR("calling module function '%s' failed."
 				" Missing loadmodule?\n", func);
