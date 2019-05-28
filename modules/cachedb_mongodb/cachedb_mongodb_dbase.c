@@ -1974,7 +1974,7 @@ int mongo_cdb_dict_to_bson(const cdb_dict_t *dict, bson_t *out_doc)
 			if (!bson_append_int64(out_doc, key.s, key.len,
 			                       pair->val.val.i64)) {
 				LM_ERR("failed to append %.*s: %lld\n", key.len,
-				       key.s, pair->val.val.i64);
+				       key.s, (long long)pair->val.val.i64);
 				goto out_err;
 			}
 			break;
@@ -2073,7 +2073,7 @@ int mongo_con_update(cachedb_con *con, const cdb_filter_t *row_filter,
 		case CDB_INT64:
 			if (!bson_append_int64(&set_keys, key.s, key.len,
 			                       pair->val.val.i64)) {
-				LM_ERR("failed to append i64 val: %lld\n", pair->val.val.i64);
+				LM_ERR("failed to append i64 val: %lld\n", (long long)pair->val.val.i64);
 				ret = -1;
 				goto out;
 			}

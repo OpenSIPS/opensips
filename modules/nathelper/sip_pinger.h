@@ -136,7 +136,7 @@ static int parse_branch(str branch)
 		unlock_hash(hash_id);
 		return 0;
 	}
-	LM_DBG("ping received for %llu\n", ct_coords);
+	LM_DBG("ping received for %llu\n", (unsigned long long)ct_coords);
 
 	sipping_latency =
 	    (timeval_st.tv_sec - p_cell->last_send_time.tv_sec) * 1000000 +
@@ -287,7 +287,7 @@ build_branch(char *branch, int *size,
 		lock_release(&htable->timer_list.mutex);
 
 		LM_DBG("ping cell acquired (new=%d, old_state=%d) for %llu\n",
-			(old_state==PING_CELL_STATE_NONE)?1:0, old_state, ct_coords);
+			(old_state==PING_CELL_STATE_NONE)?1:0, old_state, (unsigned long long)ct_coords);
 	} else {
 		label = sipping_callid_cnt;
 	}

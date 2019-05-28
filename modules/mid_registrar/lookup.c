@@ -209,7 +209,7 @@ int mid_reg_lookup(struct sip_msg* req, void* _t, str* flags_s, str* uri)
 			}
 		}
 
-		LM_DBG("getting ucontact from contact_id %llu\n", contact_id);
+		LM_DBG("getting ucontact from contact_id %llu\n", (unsigned long long)contact_id);
 
 		ptr = ul_api.get_ucontact_from_id((udomain_t *)_t, contact_id, &r);
 		if (!ptr) {

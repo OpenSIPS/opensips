@@ -383,7 +383,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 					"<sip:%.*s@%.*s:%.*s;%.*s=%llu%.*s>;expires=%d",
 			         new_username.len, new_username.s,
 			         adv_host->len, adv_host->s, adv_port->len, adv_port->s,
-			         ctid_param.len, ctid_param.s, ctid,
+			         ctid_param.len, ctid_param.s, (unsigned long long)ctid,
 			         extra_ct_params.len, extra_ct_params.s, expires);
 		} else {
 			LM_DBG("username insertion\n");
