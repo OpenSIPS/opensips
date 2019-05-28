@@ -268,7 +268,7 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 				*retval = -1;
 				return -1;
 			}
-		} else if (param->flags & CMD_PARAM_STR) {
+		} else if (param->flags & (CMD_PARAM_STR | CMD_PARAM_REGEX)) {
 			elems[i].type = STR_ST;
 			elems[i].u.data = pargs[i-1];
 		} else if (param->flags & CMD_PARAM_VAR) {
