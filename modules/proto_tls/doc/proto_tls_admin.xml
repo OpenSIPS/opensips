@@ -357,7 +357,7 @@ modparam("proto_tls", "cert_check_on_conn_reusage", 1)
 		</example>
 	</section>
 
-	<section id="trace-destination">
+	<section id="param_tls_trace-destination" xreflabel="trace-destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>
 			Trace destination as defined in the tracing module. Currently
