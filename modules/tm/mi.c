@@ -378,8 +378,8 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	str method;
 	str ruri;
 	str hdrs;
-	str s = STR_NULL;
-	str callid = STR_NULL;
+	str s;
+	str callid = {0,0};
 	int sip_error;
 	int proto = PROTO_NONE;
 	int port = 0;
