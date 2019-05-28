@@ -267,15 +267,17 @@ static stat_export_t statistics[] = {
 #endif
 
 static dep_export_t deps = {
-    { // OpenSIPS module dependencies
+    // OpenSIPS module dependencies
+    {
         {MOD_TYPE_DEFAULT, "sl",     DEP_ABORT},
         {MOD_TYPE_DEFAULT, "tm",     DEP_ABORT},
         {MOD_TYPE_DEFAULT, "dialog", DEP_SILENT},
         {MOD_TYPE_NULL, NULL, 0},
     },
-    { // modparam dependencies
-        {NULL, NULL},
-    },
+    // modparam dependencies
+    {
+        {NULL, NULL}
+    }
 };
 
 struct module_exports exports = {
@@ -283,7 +285,7 @@ struct module_exports exports = {
     MOD_TYPE_DEFAULT, // class of this module
     MODULE_VERSION,   // module version
     DEFAULT_DLFLAGS,  // dlopen flags
-    0,				  // load function
+    NULL,             // load function
     &deps,            // OpenSIPS module dependencies
     commands,         // exported functions
     NULL,             // exported async functions
