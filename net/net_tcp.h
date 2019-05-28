@@ -83,7 +83,7 @@ int tcp_connect_blocking_timeout(int s, const struct sockaddr *servaddr,
 
 /* returns the connection identified by either the id or the destination to */
 int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
-		struct tcp_connection** conn, int* conn_fd);
+		void *proto_extra_id, struct tcp_connection** conn, int* conn_fd);
 
 /* creates a new tcp conn around a newly connected socket
  * and sends it to the master */

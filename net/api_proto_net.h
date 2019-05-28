@@ -37,6 +37,7 @@ typedef int (*proto_net_write_f)(void *src, int fd);
 typedef int (*proto_net_read_f)(void *src, int *len);
 typedef int (*proto_net_conn_init_f)(struct tcp_connection *c);
 typedef void (*proto_net_conn_clean_f)(struct tcp_connection *c);
+typedef int (*proto_net_extra_match_f)(struct tcp_connection *c, void *id);
 typedef void (*proto_net_report_f)( int type, unsigned long long conn_id,
 		int conn_flags, void *extra);
 
@@ -46,6 +47,7 @@ struct api_proto_net {
 	proto_net_read_f		read;
 	proto_net_conn_init_f	conn_init;
 	proto_net_conn_clean_f	conn_clean;
+	proto_net_extra_match_f	conn_match;
 	proto_net_report_f		report;
 };
 

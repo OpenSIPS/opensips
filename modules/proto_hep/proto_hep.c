@@ -693,9 +693,9 @@ static int hep_tcp_send (struct socket_info* send_sock,
 	if (to) {
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		n = tcp_conn_get(id,&ip, port, PROTO_HEP_TCP, &c, &fd);
+		n = tcp_conn_get(id,&ip, port, PROTO_HEP_TCP, NULL, &c, &fd);
 	} else if (id) {
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, &c, &fd);
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd);
 	} else {
 		LM_CRIT("tcp_send called with null id & to\n");
 		return -1;
