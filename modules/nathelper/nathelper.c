@@ -1666,7 +1666,7 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 		lock_hash(cell->hash_id);
 
 		LM_DBG("ping expiring ping cell %llu state=%d\n",
-			cell->ct_coords, cell->state);
+			(unsigned long long)cell->ct_coords, cell->state);
 
 		if (cell->state == PING_CELL_STATE_ANSWERED) {
 			unlock_hash(cell->hash_id);
@@ -1722,7 +1722,7 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 			cell->state = PING_CELL_STATE_WAITING;
 
 			LM_DBG("moving ping cell %llu into WAIT timer with state=%d\n",
-				cell->ct_coords, cell->state);
+				(unsigned long long)cell->ct_coords, cell->state);
 
 			/* insert into waiting time */
 			list_add_tail( &cell->t_linker, &table->timer_list.wt_timer);
