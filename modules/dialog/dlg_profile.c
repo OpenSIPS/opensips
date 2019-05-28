@@ -669,7 +669,7 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 			return;
 		}
 		if (safe)
-			dlg->locked_by = dlg->locked_by;
+			dlg->locked_by = prev_locked_by;
 
 		lock_set_get( l->profile->locks, l->hash_idx);
 
