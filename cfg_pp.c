@@ -221,7 +221,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	*bytes_left -= cfgtok_filebegin.len + 1 +1+cfg_path_len+1 + 1;
 
 	for (;;) {
-		line_len = getline(&line, &line_buf_sz, cfg);
+		line_len = getline(&line, (size_t*)&line_buf_sz, cfg);
 		if (line_len == -1) {
 			if (ferror(cfg)) {
 				if (errno == EINTR) {

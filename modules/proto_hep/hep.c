@@ -1104,7 +1104,7 @@ static int add_generic_chunk(struct hep_desc* hep_msg, void* data, int len, int 
 {
 	#define CHECK_LEN(__len, __cmp, __field)              \
 		if (__len != __cmp) {                             \
-			LM_ERR(__field" size should be %ld!\n", __cmp); \
+			LM_ERR(__field" size should be %zd!\n", __cmp); \
 			return -1;                                    \
 		}
 

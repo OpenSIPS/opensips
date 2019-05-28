@@ -90,7 +90,7 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 
 	req = (struct sip_msg*)pkg_malloc( sizeof(struct sip_msg));
 	if (req==NULL) {
-		LM_ERR("no more pkg mem, needed %lu\n",sizeof(struct sip_msg));
+		LM_ERR("no more pkg mem, needed %zu\n",sizeof(struct sip_msg));
 		return NULL;
 	}
 	memset( req, 0, sizeof(struct sip_msg) );

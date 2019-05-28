@@ -1665,7 +1665,7 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 		 * cell from the list or not */
 		lock_hash(cell->hash_id);
 
-		LM_DBG("ping expiring ping cell %lu state=%d\n",
+		LM_DBG("ping expiring ping cell %llu state=%d\n",
 			cell->ct_coords, cell->state);
 
 		if (cell->state == PING_CELL_STATE_ANSWERED) {
@@ -1721,7 +1721,7 @@ ping_checker_timer(unsigned int ticks, void *timer_idx)
 
 			cell->state = PING_CELL_STATE_WAITING;
 
-			LM_DBG("moving ping cell %lu into WAIT timer with state=%d\n",
+			LM_DBG("moving ping cell %llu into WAIT timer with state=%d\n",
 				cell->ct_coords, cell->state);
 
 			/* insert into waiting time */
@@ -1749,7 +1749,7 @@ check_wait_timer:
 
 		lock_hash(cell->hash_id);
 
-		LM_DBG("wait expiring ping cell %lu state=%d\n",
+		LM_DBG("wait expiring ping cell %llu state=%d\n",
 			cell->ct_coords, cell->state);
 
 		/* if not found in the mean while (via hash), delete it */

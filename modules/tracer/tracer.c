@@ -3128,7 +3128,7 @@ int register_traced_type(char* name)
 	}
 
 	if (traced_protos_no + 1 == MAX_TRACED_PROTOS) {
-		LM_BUG("more than %ld types of tracing!"
+		LM_BUG("more than %zu types of tracing!"
 				"Increase MAX_TRACE_NAMES value!\n", MAX_TRACED_PROTOS);
 		return -1;
 	}

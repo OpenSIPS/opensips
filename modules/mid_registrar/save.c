@@ -380,7 +380,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 		if (ctid_insertion == MR_APPEND_PARAM) {
 			LM_DBG("param insertion\n");
 			len1 = snprintf(lump_buf, len,
-					"<sip:%.*s@%.*s:%.*s;%.*s=%lu%.*s>;expires=%d",
+					"<sip:%.*s@%.*s:%.*s;%.*s=%llu%.*s>;expires=%d",
 			         new_username.len, new_username.s,
 			         adv_host->len, adv_host->s, adv_port->len, adv_port->s,
 			         ctid_param.len, ctid_param.s, ctid,
