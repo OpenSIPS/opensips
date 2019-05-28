@@ -373,7 +373,7 @@ static int get_rows(ora_con_t* con, db_res_t* _r, OCIStmt* _c, dmap_t* _d)
 	// timelimited operation
 	status = begin_timelimit(con, 0);
 	if (status != OCI_SUCCESS) goto ora_err;
-	do status = OCIStmtFetch2(_c, con->errhp, 1, OCI_FETCH_NEXT, 0,
+	do status = OCIStmtFetch2(_c, con->errhp, 1, OCI_FETCH_LAST, 0,
 		OCI_DEFAULT);
 	while (wait_timelimit(con, status));
 	if (done_timelimit(con, status)) goto stop_load;
@@ -392,6 +392,13 @@ static int get_rows(ora_con_t* con, db_res_t* _r, OCIStmt* _c, dmap_t* _d)
 	if (!rcnt) {
 		LM_ERR("lastpos==0\n");
 		goto stop_load;
+	}
+
+	if (rcnt > 5) {
+		ub4 prefetch = rcnt/5;
+		status = OCIAttrSet(_c, OCI_HTYPE_STMT, &prefetch, 0,
+			OCI_ATTR_PREFETCH_ROWS, con->errhp);
+		if (status != OCI_SUCCESS) goto ora_err;
 	}
 
 	RES_ROW_N(_r) = rcnt;
