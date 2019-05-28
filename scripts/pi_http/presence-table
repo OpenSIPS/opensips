@@ -60,7 +60,7 @@
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>username</field><type>DB_STR</type></column>
 		<column><field>domain</field><type>DB_STR</type></column>
-		<column><field>doc</field><type>LONGBLOB</type></column>
+		<column><field>doc</field><type>DB_BLOB</type></column>
 		<column><field>doc_type</field><type>DB_INT</type></column>
 		<column><field>etag</field><type>DB_STR</type></column>
 		<column><field>source</field><type>DB_INT</type></column>

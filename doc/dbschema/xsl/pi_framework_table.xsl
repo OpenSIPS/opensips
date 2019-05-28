@@ -68,6 +68,9 @@
 			<xsl:call-template name="get-type"/>
 		</xsl:variable>
 		<xsl:choose>
+			<xsl:when test="pi_type[@db='mysql']">
+			<xsl:value-of select="normalize-space(pi_type[@db='mysql'])"/>
+			</xsl:when>
 			<xsl:when test="type[@db='mysql']">
 			<xsl:value-of select="normalize-space(type[@db='mysql'])"/>
 			</xsl:when>
