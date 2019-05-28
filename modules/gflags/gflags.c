@@ -150,7 +150,7 @@ static int fixup_gflags( void** param, int param_no)
 	}
 	if ( myint >= 8*sizeof(*gflags) ) {
 		LM_ERR("flag <%d> out of "
-			"range [0..%lu]\n", myint, ((unsigned long)8*sizeof(*gflags))-1 );
+			"range [0..%zu]\n", myint, 8*sizeof(*gflags)-1);
 		return E_CFG;
 	}
 	/* convert from flag index to flag bitmap */

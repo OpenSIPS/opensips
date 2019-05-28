@@ -60,7 +60,7 @@ struct pg_con* db_postgres_new_connection(struct db_id* id)
 				"\n", (unsigned long)sizeof(struct pg_con));
 		return 0;
 	}
-	LM_DBG("%p=pkg_malloc(%lu)\n", ptr, (unsigned long)sizeof(struct pg_con));
+	LM_DBG("%p=pkg_malloc(%zu)\n", ptr, sizeof(struct pg_con));
 
 	memset(ptr, 0, sizeof(struct pg_con));
 	ptr->ref = 1;

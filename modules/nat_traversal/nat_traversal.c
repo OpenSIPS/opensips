@@ -1617,7 +1617,7 @@ send_keepalive(NAT_Contact *contact)
                    keepalive_params.extra_headers);
 
     if (len >= sizeof(buffer)) {
-        LM_ERR("keepalive message is longer than %lu bytes\n", (unsigned long)sizeof(buffer));
+        LM_ERR("keepalive message is longer than %zu bytes\n", sizeof(buffer));
         return;
     }
 

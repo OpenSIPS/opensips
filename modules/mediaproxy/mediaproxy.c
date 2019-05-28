@@ -1537,7 +1537,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
             if (stream.transport != TSupported)
                 continue; // skip streams with unsupported transports
             if (stream.type.len + stream.ip.len + stream.port.len + stream.direction.len + 4 > str_buf.len) {
-                LM_ERR("media stream description is longer than %lu bytes\n", (unsigned long)sizeof(media_str));
+                LM_ERR("media stream description is longer than %zu bytes\n", sizeof(media_str));
                 return -1;
             }
             len = sprintf(str_buf.s, "%.*s:%.*s:%.*s:%.*s:%s,",
@@ -1586,7 +1586,7 @@ use_media_proxy(struct sip_msg *msg, char *dialog_id, ice_candidate_data *ice_da
                    media_relay.len, media_relay.s, media_str);
 
     if (len >= sizeof(request)) {
-        LM_ERR("mediaproxy request is longer than %lu bytes\n", (unsigned long)sizeof(request));
+        LM_ERR("mediaproxy request is longer than %zu bytes\n", sizeof(request));
         return -1;
     }
 
@@ -1773,7 +1773,7 @@ end_media_session(str callid, str from_tag, str to_tag)
                    to_tag.len, to_tag.s);
 
     if (len >= sizeof(request)) {
-        LM_ERR("mediaproxy request is longer than %lu bytes\n", (unsigned long)sizeof(request));
+        LM_ERR("mediaproxy request is longer than %zu bytes\n", sizeof(request));
         return -1;
     }
 
