@@ -1191,7 +1191,7 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 		}
 		return 0;
 	} else if (cluster_mode == CM_FULL_SHARING_CACHEDB) {
-		if (cdb_delete_ucontact_coords((ucontact_sip_coords *)ct_coords)) {
+		if (cdb_delete_ucontact_coords((ucontact_sip_coords *)(unsigned long)ct_coords)) {
 			LM_ERR("failed to remove contact from cache\n");
 			return -1;
 		}

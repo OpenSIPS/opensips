@@ -991,8 +991,8 @@ int ucontact_coords_cmp(ucontact_coords _a, ucontact_coords _b)
 	if (cluster_mode != CM_FULL_SHARING_CACHEDB)
 		return _a == _b ? 0 : -1;
 
-	a = (ucontact_sip_coords *)_a;
-	b = (ucontact_sip_coords *)_b;
+	a = (ucontact_sip_coords *)(unsigned long)_a;
+	b = (ucontact_sip_coords *)(unsigned long)_b;
 
 	if (a->aor.len != b->aor.len || a->ct_key.len != b->ct_key.len ||
 		  str_strcmp(&a->aor, &b->aor) || str_strcmp(&a->ct_key, &b->ct_key))
@@ -1004,7 +1004,7 @@ int ucontact_coords_cmp(ucontact_coords _a, ucontact_coords _b)
 void free_ucontact_coords(ucontact_coords coords)
 {
 	if (cluster_mode == CM_FULL_SHARING_CACHEDB)
-		shm_free((ucontact_sip_coords *)coords);
+		shm_free((ucontact_sip_coords *)(unsigned long)coords);
 }
 
 int_str_t *get_ucontact_key(ucontact_t* _ct, const str* _key)
