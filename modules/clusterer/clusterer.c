@@ -840,10 +840,11 @@ enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_t
 }
 
 enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
-										str *cmd_params, int no_params)
+								mi_item_t *cmd_params_arr, int no_params)
 {
 	bin_packet_t packet;
 	int i, rc;
+	str val;
 
 	if (bin_init(&packet, &cl_extra_cap, CLUSTERER_MI_CMD, BIN_VERSION, 0) < 0) {
 		LM_ERR("Failed to init bin send buffer\n");
@@ -854,9 +855,13 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 		return CLUSTERER_SEND_ERR;
 	if (bin_push_int(&packet, no_params) < 0)
 		return CLUSTERER_SEND_ERR;
-	for (i = 0; i < no_params; i++)
-		if (bin_push_str(&packet, &cmd_params[i]) < 0)
+	for (i = 0; i < no_params; i++) {
+		if (get_mi_arr_param_string(cmd_params_arr, i, &val.s, &val.len) < 0)
 			return CLUSTERER_SEND_ERR;
+
+		if (bin_push_str(&packet, &val) < 0)
+			return CLUSTERER_SEND_ERR;
+	}
 
 	if (msg_add_trailer(&packet, cluster_id, dst_id ? dst_id : -1) < 0) {
 		LM_ERR("Failed to add trailer to module's message\n");
@@ -1692,11 +1697,10 @@ static void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_i
 
 static void handle_cl_mi_msg(bin_packet_t *packet)
 {
-	/*
 	str cmd_params[MI_CMD_MAX_NR_PARAMS];
 	str cmd_name;
 	int i, no_params;
-	struct mi_root *cmd_rpl;
+	int rc;
 
 	bin_pop_str(packet, &cmd_name);
 	LM_DBG("Received MI command <%.*s>\n", cmd_name.len, cmd_name.s);
@@ -1705,15 +1709,14 @@ static void handle_cl_mi_msg(bin_packet_t *packet)
 	for (i = 0; i < no_params; i++)
 		bin_pop_str(packet, &cmd_params[i]);
 
-	cmd_rpl = run_rcv_mi_cmd(&cmd_name, cmd_params, no_params);
-	if (!cmd_rpl) {
+	rc = run_rcv_mi_cmd(&cmd_name, cmd_params, no_params);
+	if (rc == -1) {
 		LM_ERR("MI command <%.*s> failed\n", cmd_name.len, cmd_name.s);
 		return;
 	}
 
-	LM_INFO("MI command <%.*s> returned with: code <%d>, reason <%.*s>\n",
-		cmd_name.len, cmd_name.s, cmd_rpl->code, cmd_rpl->reason.len, cmd_rpl->reason.s);
-	*/
+	LM_INFO("MI command <%.*s> returned with %s\n",
+		cmd_name.len, cmd_name.s, (rc == 1) ? "error" : "success");
 }
 
 void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
