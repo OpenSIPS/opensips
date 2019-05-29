@@ -777,7 +777,7 @@ int new_dlg_uas(struct sip_msg* _req, int _code, /*str* _tag,*/ dlg_t** _d)
 
 	tag.s = tm_tags;
 	tag.len = TOTAG_VALUE_LEN;
-	calc_crc_suffix(_req, tm_tag_suffix);
+	calc_tag_suffix(_req, tm_tag_suffix);
 	if (shm_str_dup(&res->id.loc_tag, &tag) < 0) {
 		free_dlg(res);
 		return -5;

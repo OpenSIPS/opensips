@@ -705,7 +705,7 @@ int ac_reply(as_p the_as,char *action,int len)
 	 goto error;
       }
       totag.s=ttag;
-      calc_crc_suffix(c->uas.request,seas_tag_suffix);
+      calc_tag_suffix(c->uas.request,seas_tag_suffix);
       LM_DBG("seas_tags = %.*s\n",TOTAG_VALUE_LEN,seas_tags);
       memcpy(totag.s,seas_tags,TOTAG_VALUE_LEN);
       totag.len=TOTAG_VALUE_LEN;*/

@@ -498,7 +498,7 @@ static int _reply( struct cell *trans, struct sip_msg* p_msg,
 	if (code>=180 && p_msg->to
 				&& (get_to(p_msg)->tag_value.s==0
 			    || get_to(p_msg)->tag_value.len==0)) {
-		calc_crc_suffix( p_msg, tm_tag_suffix );
+		calc_tag_suffix( p_msg, tm_tag_suffix );
 		buf = build_res_buf_from_sip_req(code,text, &tm_tag, p_msg, &len, &bm);
 		return _reply_light( trans, buf, len, code,
 			tm_tag.s, TOTAG_VALUE_LEN, lock, &bm);
@@ -1235,7 +1235,7 @@ enum rps relay_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 			if (relayed_code>=180 && t->uas.request->to
 					&& (get_to(t->uas.request)->tag_value.s==0
 					|| get_to(t->uas.request)->tag_value.len==0)) {
-				calc_crc_suffix( t->uas.request, tm_tag_suffix );
+				calc_tag_suffix( t->uas.request, tm_tag_suffix );
 				buf = build_res_buf_from_sip_req(
 						relayed_code,
 						&text,
@@ -1753,7 +1753,7 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 	else
 	if (code>=180 && p_msg->to && (get_to(p_msg)->tag_value.s==0
 			|| get_to(p_msg)->tag_value.len==0)) {
-		calc_crc_suffix( p_msg, tm_tag_suffix );
+		calc_tag_suffix( p_msg, tm_tag_suffix );
 		rpl.s = build_res_buf_from_sip_req(code,text, &tm_tag, p_msg,
 				(unsigned int*)&rpl.len, &bm);
 		to_tag_rpl.s = tm_tag.s;
