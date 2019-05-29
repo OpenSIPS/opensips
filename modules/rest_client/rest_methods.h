@@ -77,10 +77,10 @@ typedef struct _rest_trace_param {
 	int  rpl_len;
 
 	long local_port;
-	char local_ip[INET6_ADDRSTRLEN];
+	char local_ip[INET6_ADDRSTRLEN + 1];
 
 	long remote_port;
-	char remote_ip[INET6_ADDRSTRLEN];
+	char remote_ip[INET6_ADDRSTRLEN + 1];
 
 	str correlation;
 } rest_trace_param_t;
