@@ -283,7 +283,7 @@ static int splitascii(struct modem *mdm, char *source, struct incame_sms *sms)
 	if (!*start)
 		return 1;
 	start++;
-	strncpy(sms->ascii,start,sizeof(sms->ascii));
+	strncpy(sms->ascii,start,sizeof(sms->ascii)-1);
 	/* force \0 at end */
 	sms->ascii[sizeof(sms->ascii) - 1] = 0;
 	/* get the senders MSISDN */
@@ -299,7 +299,7 @@ static int splitascii(struct modem *mdm, char *source, struct incame_sms *sms)
 		return 1;
 	}
 	*end=0;
-	strncpy(sms->sender,start,sizeof(sms->sender));
+	strncpy(sms->sender,start,sizeof(sms->sender)-1);
 	sms->sender[sizeof(sms->sender) - 1] = 0;
 	/* Siemens M20 inserts the senders name between MSISDN and date */
 	start=end+3;
@@ -313,7 +313,7 @@ static int splitascii(struct modem *mdm, char *source, struct incame_sms *sms)
 			return 1;
 		}
 		*end=0;
-		strncpy(sms->name,start,sizeof(sms->name));
+		strncpy(sms->name,start,sizeof(sms->name)-1);
 		sms->name[sizeof(sms->name) - 1] = 0;
 	}
 	/* Get the date */
