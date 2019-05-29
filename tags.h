@@ -48,13 +48,13 @@
 #include "str.h"
 #include "socket_info.h"
 
-#define TOTAG_VALUE_LEN (MD5_LEN+CRC16_LEN+1)
+#define TOTAG_VALUE_LEN (CRC16_LEN+1+MD5_LEN)
 
 /*! \brief
  * Generate variable part of to-tag for a request;
- * it will have length of CRC16_LEN, sufficiently
+ * it will have length of MD5_LEN, sufficiently
  * long buffer must be passed to the function */
-static inline void calc_crc_suffix( struct sip_msg *msg, char *tag_suffix)
+static inline void calc_tag_suffix( struct sip_msg *msg, char *tag_suffix)
 {
 	int ss_nr;
 	str suffix_source[3];
@@ -65,7 +65,7 @@ static inline void calc_crc_suffix( struct sip_msg *msg, char *tag_suffix)
 	suffix_source[1]=msg->via1->port_str;
 	if (msg->via1->branch)
 		suffix_source[ss_nr++]=msg->via1->branch->value;
-        crcitt_string_array( tag_suffix, suffix_source, ss_nr );
+	MD5StringArray( tag_suffix, suffix_source, ss_nr );
 }
 
 inline static void init_tags( char *tag, char **suffix,
@@ -82,10 +82,10 @@ inline static void init_tags( char *tag, char **suffix,
 	src[2].s=si?si->port_no_str.s:"";
 	src[2].len=si?si->port_no_str.len:0;
 
-	MD5StringArray( tag, src, 3 );
+	crcitt_string_array( tag, src, 3);
 
-	tag[MD5_LEN]=separator;
-	*suffix=tag+MD5_LEN+1;
+	tag[CRC16_LEN]=separator;
+	*suffix=tag+CRC16_LEN+1;
 }
 
 
