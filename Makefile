@@ -521,12 +521,9 @@ install-bin: $(bin_prefix)/$(bin_dir) opensipsmc utils
 		# install opensips menuconfig
 		$(INSTALL_TOUCH) $(bin_prefix)/$(bin_dir)/osipsconfig
 		$(INSTALL_BIN) menuconfig/configure $(bin_prefix)/$(bin_dir)/osipsconfig
-		$(INSTALL_TOUCH)   $(bin_prefix)/$(bin_dir)/$(NAME)unix
-		$(INSTALL_BIN) utils/$(NAME)unix/$(NAME)unix $(bin_prefix)/$(bin_dir)
 
 .PHONY: utils
 utils:
-		cd utils/$(NAME)unix; $(MAKE) all
 		if [ "$(BERKELEYDBON)" = "yes" ]; then \
 			cd utils/db_berkeley; $(MAKE) all ; \
 		fi ;
