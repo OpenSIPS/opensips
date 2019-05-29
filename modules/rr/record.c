@@ -242,12 +242,11 @@ lump_err:
 int record_route(struct sip_msg* _m, str *params)
 {
 	struct lump* l, *l2, *lp, *lp2, *ap;
-	str user;
+	str user = STR_NULL;
 	struct to_body* from;
 	str* tag;
 
 	from = 0; /* Makes gcc happy */
-	user.len = 0;
 	lp = lp2 = NULL;
 
 	if (add_username) {
