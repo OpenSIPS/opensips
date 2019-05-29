@@ -365,7 +365,7 @@ int fixup_flags(str* param)
 				break;
 
 			default:
-				LM_ERR("Invalid definition\n");
+				LM_ERR("Invalid flag: '%c'\n", param->s[index]);
 				return -1;
 		}
 	}

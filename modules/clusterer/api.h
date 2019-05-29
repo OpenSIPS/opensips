@@ -204,7 +204,7 @@ typedef int (*sync_chunk_iter_f)(bin_packet_t *packet);
 typedef int (*shtag_get_f)(str *tag, int cluster_id);
 
 /*
- * Activates an sharing tag by name and cluster ID
+ * Activates a sharing tag by name and cluster ID
  *
  * Returns -1 if error or the new status of the tag (>=0)
  */

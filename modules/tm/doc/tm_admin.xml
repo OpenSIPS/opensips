@@ -621,7 +621,7 @@ modparam("tm", "syn_branch", 0)
 		</para>
 		<para>
 		In mode 1, you can see the AVPs you set in request route, branch route
-		or failure route. The side efect is performance as more locking is 
+		or failure route. The side effect is performance as more locking is 
 		required in order to keep the AVP's list integrity.
 		</para>
 		<para>
