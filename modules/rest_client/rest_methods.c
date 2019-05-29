@@ -139,7 +139,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 			tparam->local_port = 0;
 #endif
 			/* coverity[BUFFER_SIZE_WARNING] */
-			strncpy( tparam->local_ip, ip, INET6_ADDRSTRLEN);
+			memcpy( tparam->local_ip, ip, INET6_ADDRSTRLEN);
 
 #if ( LIBCURL_VERSION_NUM >= 0x072100 )
 			curl_easy_getinfo( handle, CURLINFO_PRIMARY_IP, &ip);
@@ -149,7 +149,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 			ip = "127.0.0.1";
 #endif
 			/* coverity[BUFFER_SIZE_WARNING] */
-			strncpy( tparam->remote_ip, ip, INET6_ADDRSTRLEN);
+			memcpy( tparam->remote_ip, ip, INET6_ADDRSTRLEN);
 
 #if ( LIBCURL_VERSION_NUM >= 0x071900 )
 			curl_easy_getinfo( handle, CURLINFO_PRIMARY_PORT, &tparam->remote_port);
