@@ -527,7 +527,7 @@ static int add_match_filt_to_dom(str *filter_s, struct str_list **filter_list)
 		LM_ERR("No more shm mem\n");
 		return -1;
 	}
-	if (shm_str_dup(&match_filt->s, filter_s) < 0) {
+	if (shm_nt_str_dup(&match_filt->s, filter_s) < 0) {
 		shm_free(match_filt);
 		return -1;
 	}
