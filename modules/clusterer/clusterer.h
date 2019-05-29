@@ -27,6 +27,7 @@
 #ifndef CLUSTERER_H
 #define CLUSTERER_H
 
+#include "../../mi/item.h"
 #include "api.h"
 
 #define BIN_VERSION 1
@@ -140,7 +141,7 @@ enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);
 enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag);
 enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
-										str *cmd_params, int no_params);
+									mi_item_t *cmd_params_arr, int no_params);
 
 int gen_rcv_evs_init(void);
 int node_state_ev_init(void);
@@ -161,6 +162,6 @@ struct local_cap *dup_caps(struct local_cap *caps);
 
 int preserve_reg_caps(struct cluster_info *new_info);
 
-struct mi_root *run_rcv_mi_cmd(str *cmd_name, str *cmd_params, int nr_params);
+int run_rcv_mi_cmd(str *cmd_name, str *cmd_params_arr, int no_params);
 
 #endif  /* CLUSTERER_H */

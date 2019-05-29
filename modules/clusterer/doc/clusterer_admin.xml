@@ -893,14 +893,19 @@ $ opensips-cli -x mi clusterer_list_topology
 			<emphasis>cmd_name</emphasis> - name of the MI command to be run
 			</para></listitem>
 			<listitem><para>
-			<emphasis>cmd_name</emphasis> - the parameters of the MI command to be run, optional or required, depending on the command
+			<emphasis>cmd_params</emphasis> (optional) - array of parameters for
+			the MI command to be run
 			</para></listitem>
 		</itemizedlist>
+		<para>
+			Note that MI commands that require named parameters or arrays as
+			parameter values are not currently supported.
+		</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi cluster_mi 1 3 lb_reload
+opensips-cli -x mi cluster_send_mi 1 3 lb_reload
 		</programlisting>
 		</section>
 
@@ -923,14 +928,19 @@ $ opensips-cli -x mi clusterer_list_topology
 			<emphasis>cmd_name</emphasis> - name of the MI command to be run
 			</para></listitem>
 			<listitem><para>
-			<emphasis>cmd_name</emphasis> - the parameters of the MI command to be run, optional or required, depending on the command
+			<emphasis>cmd_params</emphasis> (optional) - array of parameters for
+			the MI command to be run
 			</para></listitem>
 		</itemizedlist>
+		<para>
+			Note that MI commands that require named parameters or arrays as
+			parameter values are not currently supported.
+		</para>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x micluster_mi 1 dr_reload_status partition_5
+opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 		</programlisting>
 		</section>
 
