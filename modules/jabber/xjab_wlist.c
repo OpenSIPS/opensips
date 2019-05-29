@@ -457,7 +457,7 @@ int  xj_wlist_set_aliases(xj_wlist jwl, char *als, char *jd, char *pa)
 		if(i < 4 || pa[0]!='s' || pa[1]!='i' || pa[2]!='p' || pa[3]!=':')
 			jwl->aliases->proxy->len += 4;
 		if((jwl->aliases->proxy->s=
-					(char*)_M_SHM_MALLOC(jwl->aliases->proxy->len))
+					(char*)_M_SHM_MALLOC(jwl->aliases->proxy->len+1))
 				== NULL)
 		{
 			LM_DBG("not enough SHMemory!!!\n");
