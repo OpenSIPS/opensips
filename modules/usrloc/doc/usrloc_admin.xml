@@ -257,17 +257,15 @@
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	<section id="param_nat_bflag" xreflabel="nat_bflag">
-		<title><varname>nat_bflag</varname> (string/integer)</title>
+		<title><varname>nat_bflag</varname> (string)</title>
 		<para>
 		The name of the branch flag to be used as NAT marker (if the contact
 		is or not natted). This is a branch flag and it will be imported and
-		used by all other modules depending of usrloc module.
+		used by all other modules depending on the usrloc module.
 		</para>
 		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
 		<emphasis>
-			Default value is <quote>NULL</quote> (not set).
+			Default value is NULL (not set).
 		</emphasis>
 		</para>
 		<example>

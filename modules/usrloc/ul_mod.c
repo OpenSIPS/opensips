@@ -237,7 +237,6 @@ static param_export_t params[] = {
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
-	{"nat_bflag",          INT_PARAM, &nat_bflag         },
     /* data replication through clusterer using TCP binary packets */
 	{ "location_cluster",	INT_PARAM, &location_cluster   },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops   },

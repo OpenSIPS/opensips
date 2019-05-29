@@ -371,7 +371,7 @@ route {
     </section>
 
     <section id="param_prepaid_account_flag" xreflabel="prepaid_account_flag">
-    <title><varname>prepaid_account_flag</varname> (string/integer)</title>
+    <title><varname>prepaid_account_flag</varname> (string)</title>
       <para>
         The flag that is used to specify whether the account making the call is
         prepaid or postpaid. Setting this to a non-null value will determine
@@ -384,13 +384,8 @@ route {
       </para>
 
       <para>
-      <emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-      </para>
-
-      <para>
         <emphasis>
-          Default value is <quote>NULL</quote> (undefined).
+          Default value is NULL (undefined).
         </emphasis>
       </para>
 
