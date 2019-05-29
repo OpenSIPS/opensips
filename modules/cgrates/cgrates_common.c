@@ -253,7 +253,7 @@ int cgrates_set_reply_with_values(json_object *jobj)
 			break;
 		}
 	}
-	return 0;
+	return 1;
 }
 
 /* message builder */
@@ -768,6 +768,7 @@ reprocess:
 	 * wrongfully waiting for a reply
 	 */
 	if (ret == 0 && f) {
+		LM_DBG("processed a request - continue waiting for a reply!\n");
 		async_status = ASYNC_CONTINUE;
 		return 1;
 	}
