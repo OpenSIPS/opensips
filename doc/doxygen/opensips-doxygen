@@ -664,7 +664,6 @@ INPUT                  = ./ \
 			 utils/coverity \
 			 utils/db_berkeley \
 			 utils/db_oracle \
-			 utils/fifo_relay \
 			 utils/opensipsunix \
 			 utils/vim
 

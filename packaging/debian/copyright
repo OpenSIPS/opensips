@@ -1456,10 +1456,6 @@ Files: utils/db_berkeley/*
 Copyright: 2007, Cisco Systems
 License: GPL-2+
 
-Files: utils/fifo_relay/*
-Copyright: 2001-2008, Juha Heinanen
-License: GPL-2+
-
 Files: scripts/dbtextdb/*
 Copyright: 2008 Google Inc
 License: GPL-2+
