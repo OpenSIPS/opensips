@@ -100,7 +100,6 @@ static param_export_t mod_params[]={
 	{ "min_se", INT_PARAM, &sst_minSE						},
 	{ "reject_to_small",		INT_PARAM, &sst_reject 		},
 	{ "sst_flag",				STR_PARAM, &sst_flag_str	},
-	{ "sst_flag",				INT_PARAM, &sst_flag		},
 	{ "sst_interval",		INT_PARAM, &sst_interval		},
 	{ 0,0,0 }
 };
@@ -172,7 +171,6 @@ static int mod_init(void)
 	}
 
 	fix_flag_name(sst_flag_str, sst_flag);
-
 	sst_flag = get_flag_id_by_name(FLAG_TYPE_MSG, sst_flag_str);
 
 	if (sst_flag == -1) {

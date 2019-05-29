@@ -175,7 +175,6 @@ static param_export_t parameters[] = {
     {"call_limit_avp",          STR_PARAM, &(call_limit_avp.spec.s)},
     {"call_token_avp",          STR_PARAM, &(call_token_avp.spec.s)},
     {"prepaid_account_flag",    STR_PARAM, &prepaid_account_str},
-    {"prepaid_account_flag",    INT_PARAM, &prepaid_account_flag},
     {0, 0, 0}
 };
 

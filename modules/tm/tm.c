@@ -88,10 +88,6 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
-/* TODO: remove in future versions (deprecated parameters) */
-int __set_fr_timer(modparam_t type, void* val);
-int __set_fr_inv_timer(modparam_t type, void* val);
-
 /* fixup functions */
 static int fixup_local_replied(void** param);
 static int fixup_cancel_branch(void** param);
@@ -277,10 +273,6 @@ static param_export_t params[]={
 		&(timer_id2timeout[FR_TIMER_LIST])},
 	{"fr_inv_timeout",              INT_PARAM,
 		&(timer_id2timeout[FR_INV_TIMER_LIST])},
-	{"fr_timer",                  INT_PARAM|USE_FUNC_PARAM,
-		__set_fr_timer},
-	{"fr_inv_timer",              INT_PARAM|USE_FUNC_PARAM,
-		__set_fr_inv_timer},
 	{"wt_timer",                  INT_PARAM,
 		&(timer_id2timeout[WT_TIMER_LIST])},
 	{"delete_timer",              INT_PARAM,
@@ -2004,7 +1996,7 @@ int pv_set_tm_fr_timeout(struct sip_msg *msg, pv_param_t *param, int op,
 	if (!msg)
 		return -1;
 
-	/* "$T_fr_timer = NULL" will set the default timeout */
+	/* "$T_fr_timeout = NULL" will set the default timeout */
 	if (!val) {
 		timeout = timer_id2timeout[FR_TIMER_LIST];
 		goto set_timeout;
@@ -2074,25 +2066,6 @@ set_timeout:
 
 	return 0;
 }
-
-int __set_fr_timer(modparam_t type, void* val)
-{
-	LM_WARN("\"fr_timer\" is now deprecated! Use \"fr_timeout\" instead!\n");
-
-	timer_id2timeout[FR_TIMER_LIST] = (int)(long)val;
-
-	return 1;
-}
-
-int __set_fr_inv_timer(modparam_t type, void* val)
-{
-	LM_WARN("\"fr_inv_timer\" is now deprecated! Use \"fr_inv_timeout\" instead!\n");
-
-	timer_id2timeout[FR_INV_TIMER_LIST] = (int)(long)val;
-
-	return 1;
-}
-
 
 static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 															pv_value_t *res)

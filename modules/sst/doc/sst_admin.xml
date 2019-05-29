@@ -242,7 +242,7 @@ modparam("sst", "reject_to_small", 0)
 		</example>
 	</section>
 <section id="param_sst_flag" xreflabel="sst_flag">
-		<title><varname>sst_flag</varname> (string/integer)</title>
+		<title><varname>sst_flag</varname> (string)</title>
 		
 		<para>Keeping with OpenSIPS, the module will not do
 		anything to any message unless instructed to do so via
@@ -259,9 +259,6 @@ modparam("sst", "reject_to_small", 0)
 
 		<para>This parameter must be set of the module will
 		not load.</para>
-
-		<para><emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!</para>
 
 		<para>
 		<emphasis>

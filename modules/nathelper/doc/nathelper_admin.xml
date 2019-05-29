@@ -268,19 +268,15 @@ modparam("nathelper", "force_socket", "localhost:33333")
 	</section>
 
 	<section id="param_sipping_bflag" xreflabel="sipping_bflag">
-		<title><varname>sipping_bflag</varname> (string/integer)</title>
+		<title><varname>sipping_bflag</varname> (string)</title>
 		<para>
 		What branch flag should be used by the module to identify NATed
 		contacts for which it should perform NAT ping via a SIP request
 		instead if dummy UDP package.
 		</para>
 		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
 		<emphasis>
-			Default value is "NULL" (disabled).
+			Default value is NULL (disabled).
 		</emphasis>
 		</para>
 		<example>
@@ -294,18 +290,14 @@ modparam("nathelper", "sipping_bflag", "SIPPING_ENABLE")
 	</section>
 
 	<section id="param_remove_on_timeout_bflag" xreflabel="remove_on_timeout_bflag">
-		<title><varname>remove_on_timeout_bflag</varname> (string/integer)</title>
+		<title><varname>remove_on_timeout_bflag</varname> (string)</title>
 		<para>
 		What branch flag to be used in order to activate usrloc contact removal when
 		the <xref linkend="param_ping_threshold"/> is exceeded.
 		</para>
 		<para>
-		<emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!
-		</para>
-		<para>
 		<emphasis>
-			Default value is "NULL" (disabled).
+			Default value is NULL (disabled).
 		</emphasis>
 		</para>
 		<example>
@@ -319,7 +311,7 @@ modparam("nathelper", "remove_on_timeout_bflag", "SIPPING_RTO")
 	</section>
 
 	<section id="param_sipping_latency_flag" xreflabel="sipping_latency_flag">
-		<title><varname>sipping_latency_flag</varname> (string/integer)</title>
+		<title><varname>sipping_latency_flag</varname> (string)</title>
 		<para>
 		The branch flag which will be used in order to enable contact pinging
 		latency computation and reporting via the usrloc E_UL_LATENCY_UPDATE
@@ -327,7 +319,7 @@ modparam("nathelper", "remove_on_timeout_bflag", "SIPPING_RTO")
 		</para>
 		<para>
 		<emphasis>
-			Default value is "NULL" (disabled).
+			Default value is NULL (disabled).
 		</emphasis>
 		</para>
 		<example>
