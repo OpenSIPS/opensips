@@ -707,8 +707,8 @@ modparam("presence", "pres_htable_size", 11)
 		<itemizedlist>
 			<listitem>
 				<para>
-				<emphasis>force_active</emphasis> - options parameter that 
-				controlls what is the default policy (of the presentity) on 
+				<emphasis>force_active</emphasis> - optional parameter that 
+				controls what is the default policy (of the presentity) on 
 				accepting new subscriptions (accept or reject) - of course, 
 				this parameter makes sense only when using a presence 
 				configuration with privacy rules enabled (force_active 
@@ -716,9 +716,9 @@ modparam("presence", "pres_htable_size", 11)
 				</para>
 				<para>
 				There are scenarios where the presentity (the party you 
-				subscribe to) can not upload an XCAP document with it's 
-				privacy rules (to controll which watchers are allowed to 
-				subscribe to it). In such case, from script level, you can
+				subscribe to) can not upload an XCAP document with its
+				privacy rules (to control which watchers are allowed to 
+				subscribe to it). In such cases, from script level, you can
 				force the presence server to consider the current subscription
 				allowed (with Subscription-Status:active) by calling the 
 				handle_subscribe() function with the string parameter "1".
@@ -726,7 +726,7 @@ modparam("presence", "pres_htable_size", 11)
 			</listitem>
 			<listitem>
 				<para>
-				<emphasis>sharing_tag</emphasis> - options parameter telling
+				<emphasis>sharing_tag</emphasis> - optional parameter telling
 				the owner tag (for the subscription) in clusetering scenarios 
 				where the subscription data is shared between multiple 
 				servers - see the <xref linkend="presence_clustering"/>

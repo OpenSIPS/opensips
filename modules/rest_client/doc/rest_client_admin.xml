@@ -93,7 +93,7 @@ modparam("rest_client", "connection_timeout", 4)
 		<title><varname>connect_poll_interval</varname> (integer)</title>
 		<para>
 		Only relevant with async requests.  Allows complete control over how
-		quickly we want to detect libcurl's completed blocking TCP handshakes,
+		quickly we want to detect libcurl's completed blocking TCP/TLS handshakes,
 		so the async transfers can be put in the background.  A lower
 		<xref linkend="param_connect_poll_interval"/> may speed up all async
 		HTTP transfers, but will also increase CPU usage.

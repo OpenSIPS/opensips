@@ -1378,7 +1378,7 @@ modparam("dialog", "dlg_sharing_tag", "vip1=active")
 		Also, the end-points can be pinged via in-dialog Re-INVITE SIP messages. This
 		behaviour is controlled via the "R" flags for pinging the caller side, and
 		the "r" flag for re-invite pinging the callee side. If one end-points fails
-		to re-negociate the session via the Re-INVITE pings, OpenSIPS will terminate
+		to re-negotiate the session via the Re-INVITE pings, OpenSIPS will terminate
 		the dialog from the middle
 
 		The string parameter can also contain "B" to activate the bye on

@@ -170,7 +170,7 @@ modparam("cachedb_mongodb", "cachedb_url",
 
 # Connect to a <emphasis>mongod</emphasis> replica set
 modparam("cachedb_mongodb", "cachedb_url",
-         "mongodb://10.0.0.10,10.0.0.11:27017/opensipsDB.dialog?replSet=my-set")
+         "mongodb://10.0.0.10,10.0.0.11:27017/opensipsDB.dialog?replicaSet=my-set")
 
 # Connect to a <emphasis>mongos</emphasis> instance (routes to a sharded cluster)
 modparam("cachedb_mongodb", "cachedb_url",

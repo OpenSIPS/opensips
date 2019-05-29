@@ -291,6 +291,7 @@ fix_authors=(
 
   # db_postgres
   ["9e6730ec4d2e876f6b2372f1b5fb5703112079fc"]="Ruslan Bukin"
+  ["2d80fcf1cfed82680a016fe723da03a303f73aff"]="Norman Brandinger"
 
   # db_text
   ["e8c8262d23b26bdb45b8074c6e518825ea0ca6de"]="Henning Westerholt"

@@ -449,7 +449,7 @@ if (is_method("INVITE")) {
       <title>Using the <function>end_media_session</function> function</title>
         <programlisting format="linespecific">
 ...
-if (is_method("BYE") {
+if (is_method("BYE")) {
     end_media_session();
 }
 ...
