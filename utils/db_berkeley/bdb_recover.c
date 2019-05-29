@@ -483,9 +483,7 @@ int extract_key(table_p tp, char* k, char* d)
 	p = k;
 
 	/*copy data so we can tokenize w.o trampling */
-	len = strlen(d);
-	strncpy(buf, d, len);
-	buf[len] = 0;
+	strcpy(buf, d);
 
 	s = strtok(buf, "|");
 	while(s!=NULL && n<MAX_NUM_COLS)
@@ -495,7 +493,7 @@ int extract_key(table_p tp, char* k, char* d)
 		{
 			if( tp->colp[n]->kflag )
 			{
-				strncpy(p, s, len);
+				memcpy(p, s, len);
 				p+=len;
 
 				*p = '|';
