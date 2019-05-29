@@ -113,6 +113,5 @@ f none doc/opensips/README.xmpp 0644 bin bin
 d none man 0755 bin bin
 d none man/man8 0755 bin bin
 f none man/man8/opensips.8 0644 bin bin
-f none man/man8/opensipsunix.8 0644 bin bin
 d none man/man5 0755 bin bin
 f none man/man5/opensips.cfg.5 0644 bin bin

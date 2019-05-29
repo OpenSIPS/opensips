@@ -24,7 +24,7 @@ MAKE_ENV=	CC="${CC}" \
 		PTHREAD_CFLAGS="${PTHREAD_CFLAGS}" \
 		PTHREAD_LIBS="${PTHREAD_LIBS}"
 
-PLIST_FILES=	sbin/opensips sbin/opensipsunix
+PLIST_FILES=	sbin/opensips
 
 PLIST_DIRS=	lib/opensips/modules lib/opensips
 
@@ -45,8 +45,7 @@ RC_DIRS=	acc
 ONLY_FOR_ARCHS=	i386
 
 MAN5=		opensips.cfg.5
-MAN8=		opensips.8 \
-		opensipsunix.8
+MAN8=		opensips.8
 
 PORTDOCS=	*
 

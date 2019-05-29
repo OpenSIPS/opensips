@@ -170,7 +170,6 @@ proper realclean distclean: clean
 		fi ; \
 	done
 	-@if [ -d menuconfig ]; then $(MAKE) -C menuconfig proper; fi
-	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix proper; fi
 	-@if [ -d utils/db_berkeley ]; then $(MAKE) -C utils/db_berkeley proper; fi
 	-@if [ -d utils/db_oracle ]; then $(MAKE) -C utils/db_oracle proper; fi
 
@@ -182,7 +181,6 @@ maintainer-clean: distclean
 			$(MAKE) -C $$r maintainer-clean; \
 		fi ; \
 	 done
-	-@if [ -d utils/opensipsunix ]; then $(MAKE) -C utils/opensipsunix maintainer-clean; fi
 
 .PHONY: mantainer-clean
 mantainer-clean:
