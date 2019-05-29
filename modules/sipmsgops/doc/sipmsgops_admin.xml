@@ -765,7 +765,7 @@ add_body("Hello World!", "text/plain");
 				</para></listitem>
 				<listitem><para><emphasis>-12</emphasis> - Bad hostname in R-URI.
 				</para></listitem>
-				<listitem><para><emphasis>-13</emphasis> - No Max-Forward header.
+				<listitem><para><emphasis>-13</emphasis> - No Max-Forwards header.
 				</para></listitem>
 				<listitem><para><emphasis>-14</emphasis> - No Contact header.
 				</para></listitem>

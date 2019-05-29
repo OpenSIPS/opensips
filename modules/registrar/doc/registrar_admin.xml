@@ -258,7 +258,7 @@ modparam("registrar", "default_q", 1000)
 		<title>Set <varname>tcp_persistent_flag</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "tcp_persistent_flag", 7)
+modparam("registrar", "tcp_persistent_flag", "TCP_PERSIST_DURATION")
 ...
 </programlisting>
 		</example>

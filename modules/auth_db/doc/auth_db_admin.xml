@@ -164,7 +164,7 @@ modparam("auth_db", "password_column_2", "ha1_2")
 		<itemizedlist>
 			<listitem><para><emphasis>1 (calculate HA1)</emphasis> - the loaded
 			password is a plaintext password, so OpenSIPS will internally
-			calculate the HA1. As the passwors will be loaded from the column 
+			calculate the HA1. As the passwords will be loaded from the column
 			specified in the <quote>password_column</quote> parameter, be sure
 			this parameter points to a column holding a plaintext password
 			(by default, this parameter points to <quote>ha1</quote> column);

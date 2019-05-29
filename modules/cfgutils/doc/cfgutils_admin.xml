@@ -167,7 +167,7 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
 </programlisting>
 	    </example>
 	</section>
-	<section>
+	<section id="param_lock_pool_size" xreflabel="lock_pool_size">
 		<title><varname>lock_pool_size</varname> (integer)</title>
 		<para>
 		The number of dynamic script locks to be allocated at &osips; startup. This

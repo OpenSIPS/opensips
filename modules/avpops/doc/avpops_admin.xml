@@ -583,8 +583,8 @@ avp_db_query("delete from subscriber","","$avp(id)");
 				<title><function>avp_delete</function> usage</title>
 				<programlisting format="linespecific">
 ...
-avp_delete("$avp(678)/g");
-avp_delete("$avp(email)");
+avp_delete("$avp(email)"); # delete topmost (lastly set) value from $avp(email)
+avp_delete("$avp(678)/g"); # fully purge $avp(678)
 avp_delete("i");
 avp_delete("a3");
 ...

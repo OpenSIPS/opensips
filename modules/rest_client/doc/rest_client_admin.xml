@@ -93,7 +93,7 @@ modparam("rest_client", "connection_timeout", 4)
 		<title><varname>connect_poll_interval</varname> (integer)</title>
 		<para>
 		Allows complete control over how quickly we want to detect libcurl's completed
-		TCP handshakes, so the transfers can be started. A lower "connect_poll_interval"
+		TCP/TLS handshakes, so the transfers can be started. A lower "connect_poll_interval"
 		will speed up all HTTP transfers, but will also increase CPU usage.
 		</para>
 		<para>
