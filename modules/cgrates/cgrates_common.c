@@ -597,7 +597,8 @@ static int cgrates_async_resume_repl(int fd,
 
 	ret = cgrc_async_read(c, cp->reply_f, cp->reply_p);
 
-	if (async_status == ASYNC_DONE) {
+	switch (async_status) {
+	case ASYNC_DONE:
 		/* processing done - remove the FD and replace the handler */
 		async_status = ASYNC_DONE_NO_IO;
 		reactor_del_reader(c->fd, -1, 0);
@@ -606,6 +607,9 @@ static int cgrates_async_resume_repl(int fd,
 			ret = -1;
 			goto end;
 		}
+		break;
+	case ASYNC_CONTINUE:
+		return 1;
 	}
 end:
 	/* done with this connection */
@@ -759,6 +763,14 @@ reprocess:
 	}
 	/* all done */
 	json_tokener_reset(c->jtok);
+	/* if a request was processed and we were waiting for a reply, indicate
+	 * that we shold continue reading from this socket, otherwise we will
+	 * wrongfully waiting for a reply
+	 */
+	if (ret == 0 && f) {
+		async_status = ASYNC_CONTINUE;
+		return 1;
+	}
 done:
 	async_status = ASYNC_DONE;
 	return final_ret;
