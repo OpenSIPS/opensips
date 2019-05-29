@@ -240,7 +240,7 @@ int tcpthreshold = 0;
 int sip_warning = 0;
 /* should localy-generated messages include server's signature? */
 int server_signature=1;
-/* Server header to be used when proxy generates request as UAS.
+/* Server header to be used when proxy generates a reply as UAS.
    Default is to use SERVER_HDR CRLF (assigned later).
 */
 str server_header = {SERVER_HDR,sizeof(SERVER_HDR)-1};

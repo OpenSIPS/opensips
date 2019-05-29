@@ -1380,7 +1380,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
 		Also, the end-points can be pinged via in-dialog Re-INVITE SIP messages. This
 		behaviour is controlled via the "R" flags for pinging the caller side, and
 		the "r" flag for re-invite pinging the callee side. If one end-points fails
-		to re-negociate the session via the Re-INVITE pings, OpenSIPS will terminate
+		to re-negotiate the session via the Re-INVITE pings, OpenSIPS will terminate
 		the dialog from the middle
 
 		The string parameter can also contain "B" to activate the bye on
@@ -2691,11 +2691,11 @@ set_dlg_sharing_tag("vip1");
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>callid</emphasis> - the callid of the dialog you need to trigger
-					the sequentiam message for.
+					the sequential message for.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>method</emphasis> - (optional) the method used for the sequential
-					mesasge. Default value is <emphasis>INVITE</emphasis>.
+					message. Default value is <emphasis>INVITE</emphasis>.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>mode</emphasis> - (optional) can be used to tune the behavior of
@@ -2742,7 +2742,7 @@ set_dlg_sharing_tag("vip1");
 							if the <emphasis>mode=challenge-caller</emphasis>, the message will
 							contain the body sent to &osips; by the callee. This is useful when
 							you need to alter the body previously sent to the caller, because you
-							want to re-negociate a different media proxy for the call. This can
+							want to re-negotiate a different media proxy for the call. This can
 							be achieved by catching the generated request in
 							<emphasis>local_route</emphasis>, and re-engage the Media proxy.
 					</para></listitem>
@@ -2751,7 +2751,7 @@ set_dlg_sharing_tag("vip1");
 							message generated the last body sent to that UAC. For example,
 							if the <emphasis>mode=challenge-caller</emphasis>, the message will
 							contain the last body sent by &osips; to the caller. This is useful
-							in a high availability scenario when trying to re-negociate the
+							in a high availability scenario when trying to re-negotiate the
 							contact of the server, but there is no need to alter the body sent
 							earlier.
 					</para></listitem>
@@ -2764,7 +2764,7 @@ set_dlg_sharing_tag("vip1");
 			</para></listitem>
 		</itemizedlist>
 		<para>
-			This functions runs in asynchronous mode and returns the status code and reason
+			This functions runs asynchronously and returns the status code and reason
 			of the last reply received for either the <emphasis>challenge</emphasis> or normal mode.
 		</para>
 		<para>

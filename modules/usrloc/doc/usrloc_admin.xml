@@ -833,9 +833,10 @@ modparam("usrloc", "db_mode", 2)
 			expired contacts and flushes all modified or new contacts to
 			database.  Use this scheme if you encounter high-load peaks
 			and want them to process as fast as possible. The mode will
-			not help at all if the load is high all the time.  Also, latency
-			of this mode is much lower than latency of mode 1, but slightly
-			higher than latency of mode 0.
+			not help at all if the load is high all the time.  The
+			added latency on the SIP signaling when using this asynchronous
+			preset is much lower than the one added by the safe but
+			blocking, "single-instance-sql-write-through" preset.
 			</para>
 		</listitem>
 		<listitem>
@@ -1350,7 +1351,7 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 		<title><varname>pinging_mode</varname> (string)</title>
 		<para>
 		Depending on the <xref linkend="param_cluster_mode"/>, the module
-		will perform contact pinging using one of at most two possible
+		can perform contact pinging using one of at most two possible
 		heuristics:
 		<itemizedlist>
 		<listitem>

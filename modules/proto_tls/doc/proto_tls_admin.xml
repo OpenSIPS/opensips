@@ -357,7 +357,7 @@ modparam("proto_tls", "cert_check_on_conn_reusage", 1)
 		</example>
 	</section>
 
-	<section id="param_tls_trace-destination" xreflabel="trace-destination">
+	<section id="param_tls_trace_destination" xreflabel="trace_destination">
 		<title><varname>trace_destination</varname> (string)</title>
 		<para>
 			Trace destination as defined in the tracing module. Currently
@@ -394,7 +394,7 @@ modparam("proto_tls", "trace_destination", "hep_dest")
 		<title><varname>trace_on</varname> (int)</title>
 		<para>
 			This controls whether tracing for tls is on or not. You still need to define
-			<xref linkend="trace-destination"/>in order to work, but this value will be
+			<xref linkend="param_tls_trace_destination"/>in order to work, but this value will be
 			controlled using mi function <xref linkend="mi_tls_trace"/>.
 		</para>
 		<emphasis>
@@ -419,7 +419,7 @@ modparam("proto_tls", "trace_on", 1)
 			connection. To disable tracing for a specific connection the last call in
 			this route must be <emphasis role="bold">drop</emphasis>, any other exit
 			mode resulting in tracing the current connection ( of course you still
-			have to define a <xref linkend="trace-destination"/> and trace must be
+			have to define a <xref linkend="param_tls_trace_destination"/> and trace must be
 			on at the time this connection is opened.
 		</para>
 		<para>

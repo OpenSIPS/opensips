@@ -669,7 +669,7 @@ int init_ds_db(ds_partition_t *partition)
 		return -1;
 	} else if (!supported_ds_version(_ds_table_version)) {
 		LM_ERR("invalid table version (found %d , required %d)\n"
-			"(use opensipsdbctl reinit)\n",
+			"(use opensips-cli to migrate to latest schema)\n",
 			_ds_table_version, DS_TABLE_VERSION );
 		return -1;
 	}

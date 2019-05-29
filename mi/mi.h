@@ -54,7 +54,7 @@
 #define JSONRPC_SERVER_ERR_CODE	   -32000
 #define JSONRPC_SERVER_ERR_MSG     "Server error"
 
-#define ERR_DET_POS_PARAMS_S "Commands only supports named parameters"
+#define ERR_DET_POS_PARAMS_S "Command only supports named parameters"
 #define ERR_DET_AMBIG_CALL_S "Ambiguous call"
 
 

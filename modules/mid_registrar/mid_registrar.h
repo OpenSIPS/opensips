@@ -100,7 +100,7 @@ struct mid_reg_info {
 
 	udomain_t *dom; /* used during 200 OK ul_api operations */
 	str aor;        /* used during both "reg out" and "resp in" */
-	str ownership_tag; /* used during both "reg out" and "resp in" */
+	str ownership_tag; /* a sharing tag which helps decide ownership */
 
 	/* ucontact_info dup'ed fields */
 	str user_agent;

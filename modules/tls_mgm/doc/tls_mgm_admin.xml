@@ -539,7 +539,7 @@ modparam("tls_mgm", "client_tls_domain_avp", "tls_match_dom")
 			<title><varname>client_sip_domain_avp</varname> (string)</title>
 			<para>
 			Name of the AVP that sets the SIP domain used in the TLS client
-			domain mathcing process.
+			domain matching process.
 			</para>
 			<para>
 			Note: If there is already an existing TLS connection to the remote target,
