@@ -299,7 +299,6 @@ override_dh_auto_clean:
 	dh_auto_clean -- $(VARS) include_modules="$(ALL_MODULES)" proper
 	rm -f cfg.tab.h
 	rm -f Makefile.conf
-	rm -f utils/opensipsunix/opensipsunix.o utils/opensipsunix/opensipsunix
 	rm -f utils/db_berkeley/bdb_recover.o utils/db_berkeley/bdb_recover
 
 show-env:

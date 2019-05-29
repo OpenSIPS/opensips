@@ -24,9 +24,6 @@ cscope*
 /mem/mem_stats.c
 /mem/mem_stats.h
 
-# /utils/opensipsunix/
-/utils/opensipsunix/opensipsunix
-
 # miscellaneous files
 core
 core.*

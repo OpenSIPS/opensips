@@ -844,7 +844,6 @@ fi
 
 %files
 %{_sbindir}/opensips
-%{_sbindir}/opensipsunix
 %{_sbindir}/osipsconfig
 
 %attr(750,%{name},%{name}) %dir %{_sysconfdir}/opensips
@@ -893,7 +892,6 @@ fi
 
 %{_mandir}/man5/opensips.cfg.5*
 %{_mandir}/man8/opensips.8*
-%{_mandir}/man8/opensipsunix.8*
 
 %doc docdir/AUTHORS
 %doc docdir/NEWS

@@ -664,7 +664,6 @@ INPUT                  = ./ \
 			 utils/coverity \
 			 utils/db_berkeley \
 			 utils/db_oracle \
-			 utils/opensipsunix \
 			 utils/vim
 
 # This tag can be used to specify the character encoding of the source files that 
