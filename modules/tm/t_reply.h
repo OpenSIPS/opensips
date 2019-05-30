@@ -54,7 +54,7 @@ extern char *tm_tag_suffix;
 
 extern int disable_6xx_block;
 
-/* flag for marching minor branches */
+/* flag for marking minor branches */
 extern int minor_branch_flag;
 extern char *minor_branch_flag_str;
 

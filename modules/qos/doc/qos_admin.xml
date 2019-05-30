@@ -100,7 +100,7 @@
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	<section id="param_qos_flag" xreflabel="qos_flag">
-		<title><varname>qos_flag</varname> (string/integer)</title>
+		<title><varname>qos_flag</varname> (string)</title>
 		
 		<para>Keeping with &osips;, the module will not do
 		anything to any message unless instructed to do so via
@@ -117,9 +117,6 @@
 
 		<para>This parameter must be set of the module will
 		not load.</para>
-
-		<para><emphasis>WARNING: </emphasis>Setting INT flags is deprecated!
-		Use quoted strings instead!</para>
 
 		<para>
 		<emphasis>

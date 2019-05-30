@@ -1037,15 +1037,6 @@ assign_stm: DEBUG EQUAL snumber
 				tcp_max_connections=$3;
 		}
 		| TCP_MAX_CONNECTIONS EQUAL error { yyerror("number expected"); }
-		| TCP_NO_NEW_CONN_BFLAG EQUAL NUMBER { IFOR();
-				tmp = NULL;
-				fix_flag_name(tmp, $3);
-				tcp_no_new_conn_bflag =
-					get_flag_id_by_name(FLAG_TYPE_BRANCH, tmp);
-				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
-					yyerror("invalid TCP no_new_conn Branch Flag");
-				flag_idx2mask( &tcp_no_new_conn_bflag );
-		}
 		| TCP_NO_NEW_CONN_BFLAG EQUAL ID { IFOR();
 				tcp_no_new_conn_bflag =
 					get_flag_id_by_name(FLAG_TYPE_BRANCH, $3);

@@ -522,15 +522,12 @@ mod_init(void)
 			return -1;
 		}
 
-		fix_flag_name(sipping_flag_str, sipping_flag);
 		sipping_flag=get_flag_id_by_name(FLAG_TYPE_BRANCH, sipping_flag_str);
 		sipping_flag = (sipping_flag==-1)?0:(1<<sipping_flag);
 
-		fix_flag_name(rm_on_to_flag_str, rm_on_to_flag);
 		rm_on_to_flag=get_flag_id_by_name(FLAG_TYPE_BRANCH, rm_on_to_flag_str);
 		rm_on_to_flag = (rm_on_to_flag==-1)?0:(1<<rm_on_to_flag);
 
-		fix_flag_name(sipping_latency_flag_str, sipping_latency_flag);
 		sipping_latency_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH,
 		                                           sipping_latency_flag_str);
 		sipping_latency_flag = (sipping_latency_flag==-1)?

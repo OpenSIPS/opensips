@@ -154,7 +154,6 @@ static param_export_t mod_params[] = {
 	{ "min_expires",          INT_PARAM, &min_expires },
 	{ "max_expires",          INT_PARAM, &max_expires },
 	{ "default_q",            INT_PARAM, &default_q },
-	{ "tcp_persistent_flag",  INT_PARAM, &tcp_persistent_flag },
 	{ "tcp_persistent_flag",  STR_PARAM, &tcp_persistent_flag_s },
 	{ "realm_prefix",         STR_PARAM, &realm_pref },
 	{ "case_sensitive",       INT_PARAM, &case_sensitive },
@@ -322,8 +321,6 @@ static int mod_init(void)
 	if (gruu_secret.s)
 		gruu_secret.len = strlen(gruu_secret.s);
 
-	/* fix the flags */
-	fix_flag_name(tcp_persistent_flag_s, tcp_persistent_flag);
 	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
 	tcp_persistent_flag = (tcp_persistent_flag != -1) ? (1 << tcp_persistent_flag) : 0;
 

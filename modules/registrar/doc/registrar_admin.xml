@@ -240,7 +240,7 @@ modparam("registrar", "default_q", 1000)
 	</section>
 
 	<section id="param_tcp_persistent_flag" xreflabel="tcp_persistent_flag">
-		<title><varname>tcp_persistent_flag</varname> (integer)</title>
+		<title><varname>tcp_persistent_flag</varname> (string)</title>
 		<para>
 		The parameter specifies the message flag to be used to control the
 		module behaviour regarding TCP connections. If the flag is set for a

@@ -153,7 +153,7 @@ modparam("auth_aaa", "check_service_type", 11)
 	</section>
 
 	<section id="param_use_ruri_flag" xreflabel="use_ruri_flag">
-		<title><varname>use_ruri_flag</varname> (string/integer)</title>
+		<title><varname>use_ruri_flag</varname> (string)</title>
 		<para>
 		When this parameter is set to the value other than "NULL" and the
 		request being authenticated has flag with matching number set

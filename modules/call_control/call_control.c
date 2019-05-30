@@ -1203,8 +1203,6 @@ mod_init(void)
         LM_CRIT("cannot register callback for dialogs loaded from the database\n");
     }
 
-    fix_flag_name(prepaid_account_str, prepaid_account_flag);
-
     prepaid_account_flag = get_flag_id_by_name(FLAG_TYPE_MSG, prepaid_account_str);
 
     return 0;

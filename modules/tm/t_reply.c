@@ -100,7 +100,7 @@ int onreply_avp_mode = 0;
 /* disable the 6xx fork-blocking - default no (as per RFC3261) */
 int disable_6xx_block = 0;
 
-/* flag for marching minor branches */
+/* flag for marking minor branches */
 int minor_branch_flag = -1;
 char *minor_branch_flag_str = 0;
 

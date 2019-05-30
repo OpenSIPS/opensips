@@ -62,7 +62,6 @@ static cmd_export_t cmds[] = {
  */
 static param_export_t mod_params[]={
 	{ "qos_flag",		STR_PARAM, &qos_flag_str},
-	{ "qos_flag",		INT_PARAM, &qos_flag},
 	{ 0,0,0 }
 };
 
@@ -114,8 +113,6 @@ int load_qos( struct qos_binds *qosb)
  */
 static int mod_init(void)
 {
-	fix_flag_name(qos_flag_str, qos_flag);
-
 	qos_flag = get_flag_id_by_name(FLAG_TYPE_MSG, qos_flag_str);
 
 	if (qos_flag == -1) {

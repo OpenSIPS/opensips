@@ -92,7 +92,6 @@ static param_export_t params[] = {
 	{"auth_service_type",  INT_PARAM, &auth_service_type   },
 	{"check_service_type", INT_PARAM, &check_service_type  },
 	{"use_ruri_flag",      STR_PARAM, &use_ruri_flag_str   },
-	{"use_ruri_flag",      INT_PARAM, &use_ruri_flag       },
 	{0, 0, 0}
 };
 
@@ -180,7 +179,6 @@ static int mod_init(void)
 	vals[V_SIP_SESSION].name			= "Sip-Session";
 	vals[V_CALL_CHECK].name				= "Call-Check";
 
-	fix_flag_name(use_ruri_flag_str, use_ruri_flag);
 	use_ruri_flag = get_flag_id_by_name(FLAG_TYPE_MSG, use_ruri_flag_str);
 
 	if (!aaa_proto_url) {

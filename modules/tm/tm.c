@@ -299,8 +299,6 @@ static param_export_t params[]={
 		&disable_6xx_block },
 	{ "minor_branch_flag",        STR_PARAM,
 		&minor_branch_flag_str },
-	{ "minor_branch_flag",        INT_PARAM,
-		&minor_branch_flag },
 	{ "timer_partitions",         INT_PARAM,
 		&timer_partitions },
 	{ "auto_100trying",           INT_PARAM,
@@ -761,8 +759,6 @@ static int mod_init(void)
 			MAX_BRANCHES );
 		return -1;
 	}
-
-	fix_flag_name(minor_branch_flag_str, minor_branch_flag);
 
 	minor_branch_flag =
 		get_flag_id_by_name(FLAG_TYPE_BRANCH, minor_branch_flag_str);
