@@ -95,7 +95,7 @@ static void destroy(void);
 int stored_pres_info(struct sip_msg* msg, char* pres_uri, char* s);
 static int fixup_presence(void** param);
 static int fixup_subscribe(void** param);
-static mi_response_t *mi_refreshWatchers(const mi_params_t *params,
+static mi_response_t *mi_refresh_watchers(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_cleanup(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -188,8 +188,13 @@ static param_export_t params[]={
 };
 
 static mi_export_t mi_cmds[] = {
+	// refreshWatchers is a deprecated alias for refresh_watchers. To be removed later.
 	{ "refreshWatchers", 0,0,0, {
-		{mi_refreshWatchers, {"presentity_uri", "event", "refresh_type", 0}},
+		{mi_refresh_watchers, {"presentity_uri", "event", "refresh_type", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "refresh_watchers", 0,0,0, {
+		{mi_refresh_watchers, {"presentity_uri", "event", "refresh_type", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "cleanup", 0,0,0, {
@@ -538,14 +543,14 @@ static int fixup_subscribe(void** param)
 }
 
 /*
- *  mi cmd: refreshWatchers
+ *  mi cmd: refresh_watchers
  *			<presentity_uri>
  *			<event>
  *          <refresh_type> // can be:  = 0 -> watchers autentification type or
  *									  != 0 -> publish type //
  *		* */
 
-static mi_response_t *mi_refreshWatchers(const mi_params_t *params,
+static mi_response_t *mi_refresh_watchers(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str pres_uri, event;
