@@ -136,17 +136,12 @@ void pt_become_idle(void)
 
 
 #define SUM_UP_LOAD(_now, _pno, _TYPE, _ratio) \
-	do {\
-	int _dbg_flags = 0;\
-	unsigned long long _dbg_regs[3] = {0,0};\
-	unsigned long long _sum = 0;\
 	do { \
 		/* check if the entire time window has the same status */ \
 		if (((long long)_now-(long long)PT_LOAD(_pno).last_time) >= \
 				(_TYPE##_WINDOW_TIME)*(_ratio)){\
 			/* nothing recorded in the last time window */ \
-			_sum += PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0; \
-			_dbg_flags |= (1<<0); \
+			used += PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0; \
 		} else { \
 			/* get the index inside window for the last time update */ \
 			idx_old = (PT_LOAD(_pno).last_time / _TYPE##_WINDOW_UNIT) % \
@@ -156,12 +151,11 @@ void pt_become_idle(void)
 			/* ajust the index where we start counting the past used-time \
 			 * based on the "ratio" option, if present */  \
 			if (_ratio!=1) { \
-				_dbg_flags |= (1<<1); \
 				idx_start = (idx_new+(int)(_TYPE##_WINDOW_SIZE*(1-_ratio))) % \
 					_TYPE##_WINDOW_SIZE; \
 				/* the start is between [new,old], so no used recorded yet */ \
 				if (idx_start>=idx_old && idx_start<=idx_new) {\
-					_sum+= PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0;\
+					used+= PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0;\
 					break; \
 				}\
 			} else { \
@@ -169,45 +163,29 @@ void pt_become_idle(void)
 			}\
 			/* sum up the already accounted used time */ \
 			FOR_ALL_INDEXES( i, idx_start, idx_old, _TYPE) { \
-				_sum += PT_LOAD(_pno)._TYPE##_window[i]; \
+				used += PT_LOAD(_pno)._TYPE##_window[i]; \
 			} \
-			_dbg_regs[0] = _sum;\
 			/* add what is not accounted since last update */ \
 			if (PT_LOAD(_pno).is_busy) { \
-				_dbg_flags |= (1<<2); \
 				if (idx_old!=idx_new) { \
-					_dbg_flags |= (1<<3); \
 					/* count the last used index (existing + new) */ \
-					_sum += PT_LOAD(_pno)._TYPE##_window[idx_old] + \
+					used += PT_LOAD(_pno)._TYPE##_window[idx_old] + \
 						(_TYPE##_WINDOW_UNIT - \
 						(PT_LOAD(_pno).last_time % _TYPE##_WINDOW_UNIT)); \
-					_dbg_regs[1] = _sum;\
 					/* update the fully used */ \
 					FOR_ALL_INDEXES( i, idx_old, idx_new, _TYPE) { \
-						_sum += _TYPE##_WINDOW_UNIT; \
+						used += _TYPE##_WINDOW_UNIT; \
 					} \
-					_dbg_regs[2] = _sum;\
 					/* do partial update on current index */ \
-					_sum += _now % _TYPE##_WINDOW_UNIT; \
+					used += _now % _TYPE##_WINDOW_UNIT; \
 				} else { \
-					_sum += \
+					used += \
 						(_now % _TYPE##_WINDOW_UNIT) \
 						 - \
 						(PT_LOAD(_pno).last_time % _TYPE##_WINDOW_UNIT); \
-					_dbg_regs[1] = _sum;\
 				} \
 			} \
 		} \
-	} while(0);\
-	used += _sum; \
-	if (_sum>_TYPE##_WINDOW_TIME*_ratio) { \
-		LM_BUG("proc %d, last_time=%llu, now=%llu, "\
-			"idx_old=%d, idx_new=%d, idx_start=%d, "\
-			"sum=%llu, flags=%X, reg=%llu,%llu,%llu\n", \
-			_pno, PT_LOAD(_pno).last_time, _now, \
-			idx_old, idx_new, idx_start, \
-			_sum, _dbg_flags, _dbg_regs[0], _dbg_regs[1], _dbg_regs[2] );\
-	}\
 	} while(0)
 
 unsigned int pt_get_rt_proc_load( int pno )
