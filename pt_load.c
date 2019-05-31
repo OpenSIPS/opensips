@@ -142,7 +142,8 @@ void pt_become_idle(void)
 	unsigned long long _sum = 0;\
 	do { \
 		/* check if the entire time window has the same status */ \
-		if ((_now-PT_LOAD(_pno).last_time) >= (_TYPE##_WINDOW_TIME)*(_ratio)){\
+		if (((long long)_now-(long long)PT_LOAD(_pno).last_time) >= \
+				(_TYPE##_WINDOW_TIME)*(_ratio)){\
 			/* nothing recorded in the last time window */ \
 			_sum += PT_LOAD(_pno).is_busy?_TYPE##_WINDOW_TIME*_ratio:0; \
 			_dbg_flags |= (1<<0); \
