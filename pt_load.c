@@ -274,7 +274,7 @@ unsigned int pt_get_1m_load(int _)
 			summed_procs++;
 		}
 
-	return (used*100/(LT_WINDOW_TIME*summed_procs*LT_1m_RATIO));
+	return (used*100/((long long)LT_WINDOW_TIME*summed_procs*LT_1m_RATIO));
 }
 
 
@@ -295,7 +295,7 @@ unsigned int pt_get_10m_load(int _)
 			summed_procs++;
 		}
 
-	return (used*100/(LT_WINDOW_TIME*summed_procs));
+	return (used*100/((long long)LT_WINDOW_TIME*summed_procs));
 }
 
 
@@ -316,7 +316,7 @@ unsigned int pt_get_rt_loadall(int _)
 			summed_procs++;
 		}
 
-	return (used*100/(ST_WINDOW_TIME*summed_procs));
+	return (used*100/((long long)ST_WINDOW_TIME*summed_procs));
 }
 
 
@@ -337,7 +337,7 @@ unsigned int pt_get_1m_loadall(int _)
 			summed_procs++;
 		}
 
-	return (used*100/(LT_WINDOW_TIME*summed_procs*LT_1m_RATIO));
+	return (used*100/((long long)LT_WINDOW_TIME*summed_procs*LT_1m_RATIO));
 }
 
 
@@ -358,7 +358,7 @@ unsigned int pt_get_10m_loadall(int _)
 			summed_procs++;
 		}
 
-	return (used*100/(LT_WINDOW_TIME*summed_procs));
+	return (used*100/((long long)LT_WINDOW_TIME*summed_procs));
 }
 
 
