@@ -514,7 +514,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			}
 		}
 
-		if ( ctx_dialog_get()==NULL) {
+		if (current_processing_ctx && ctx_dialog_get()==NULL) {
 			/* reference and attached to script */
 			ref_dlg(dlg,1);
 			ctx_dialog_set(t->dialog_ctx);
