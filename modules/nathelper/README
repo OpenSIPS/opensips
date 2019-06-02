@@ -20,9 +20,9 @@ nathelper Module
               1.4.4. natping_socket (string)
               1.4.5. received_avp (str)
               1.4.6. force_socket (string)
-              1.4.7. sipping_bflag (string/integer)
-              1.4.8. remove_on_timeout_bflag (string/integer)
-              1.4.9. sipping_latency_flag (string/integer)
+              1.4.7. sipping_bflag (string)
+              1.4.8. remove_on_timeout_bflag (string)
+              1.4.9. sipping_latency_flag (string)
               1.4.10. sipping_ignore_rpl_codes (CSV string)
               1.4.11. sipping_from (string)
               1.4.12. sipping_method (string)
@@ -249,44 +249,38 @@ modparam("nathelper", "received_avp", "$avp(received)")
 modparam("nathelper", "force_socket", "localhost:33333")
 ...
 
-1.4.7. sipping_bflag (string/integer)
+1.4.7. sipping_bflag (string)
 
    What branch flag should be used by the module to identify NATed
    contacts for which it should perform NAT ping via a SIP request
    instead if dummy UDP package.
 
-   WARNING: Setting INT flags is deprecated! Use quoted strings
-   instead!
-
-   Default value is "NULL" (disabled).
+   Default value is NULL (disabled).
 
    Example 1.7. Set sipping_bflag parameter
 ...
 modparam("nathelper", "sipping_bflag", "SIPPING_ENABLE")
 ...
 
-1.4.8. remove_on_timeout_bflag (string/integer)
+1.4.8. remove_on_timeout_bflag (string)
 
    What branch flag to be used in order to activate usrloc contact
    removal when the ping_threshold is exceeded.
 
-   WARNING: Setting INT flags is deprecated! Use quoted strings
-   instead!
-
-   Default value is "NULL" (disabled).
+   Default value is NULL (disabled).
 
    Example 1.8. Set remove_on_timeout_bflag parameter
 ...
 modparam("nathelper", "remove_on_timeout_bflag", "SIPPING_RTO")
 ...
 
-1.4.9. sipping_latency_flag (string/integer)
+1.4.9. sipping_latency_flag (string)
 
    The branch flag which will be used in order to enable contact
    pinging latency computation and reporting via the usrloc
    E_UL_LATENCY_UPDATE event.
 
-   Default value is "NULL" (disabled).
+   Default value is NULL (disabled).
 
    Example 1.9. Set sipping_latency_flag parameter
 ...
@@ -490,12 +484,12 @@ if (search("User-Agent: Cisco ATA.*") {
           + 0x01 - adds “a=direction:active” SDP line;
           + 0x02 - rewrite media IP address (c=) with source
             address of the message or the provided IP address (the
-            provide IP address take precedence over the source
+            provided IP address takes precedence over the source
             address).
           + 0x04 - adds “a=nortpproxy:yes” SDP line;
           + 0x08 - rewrite IP from origin description (o=) with
             source address of the message or the provided IP
-            address (the provide IP address take precedence over
+            address (the provided IP address takes precedence over
             the source address).
           + 0x10 - force rewrite of null media IP and/or origin IP
             address. Without this flag, null IPs are left
@@ -652,9 +646,9 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Maksym Sobolyev (@sobomax) 153 39 3533 4766
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 146 115 2015 795
-   3. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
-   4. Liviu Chircu (@liviuchircu) 37 28 387 250
-   5. Razvan Crainea (@razvancrainea) 30 23 146 239
+   3. Liviu Chircu (@liviuchircu) 40 31 395 272
+   4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
+   5. Razvan Crainea (@razvancrainea) 31 24 147 239
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
    7. Jan Janak (@janakj) 21 11 780 129
    8. Anca Vamanu 21 4 1602 185
@@ -663,13 +657,13 @@ Chapter 3. Contributors
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
    Ancuta Onofrei, Vlad Patrascu (@rvlad-patrascu), Andrei Dragus,
-   Vlad Paiu (@vladpaiu), Henning Westerholt (@henningw),
-   Christophe Sollet (@csollet), Marcus Hunger, Klaus Darilion,
-   Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock,
-   Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer,
-   Konstantin Bokarius, John Riordan, Peter Lemenkov (@lemenkov),
-   Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Edson Gellert
-   Schubert.
+   Vlad Paiu (@vladpaiu), Henning Westerholt (@henningw), Dan
+   Pascu (@danpascu), Christophe Sollet (@csollet), Marcus Hunger,
+   Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu,
+   Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq,
+   Laurent Schweizer, Konstantin Bokarius, John Riordan, Peter
+   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Elena-Ramona
+   Modroiu, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -691,26 +685,26 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Dec 2010 - Mar 2019
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Shlomi Gutman                       Mar 2018 - Mar 2018
-   7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
-   8.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
-   9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   10. Christophe Sollet (@csollet)        Dec 2009 - Oct 2013
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
+   2.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   3.  Razvan Crainea (@razvancrainea)     Dec 2010 - May 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   8.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
+   9.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
+   10. Walter Doekes (@wdoekes)            May 2014 - May 2014
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Maksym
-   Sobolyev (@sobomax), Anca Vamanu, John Riordan, Emmanuel Buu,
-   Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Ancuta
-   Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent
-   Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu, Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj),
-   Nils Ohlmeier.
+   All remaining contributors: Christophe Sollet (@csollet), Vlad
+   Paiu (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu, John
+   Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
+   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
+   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -719,17 +713,17 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Ovidiu Sas
-   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
-   (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu
-   (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu, Andrei
-   Dragus, Sergio Gutierrez, Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Carsten Bock, Ancuta Onofrei, Marcus Hunger, Jeremie Le Hen,
-   Bayan Towfiq, Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
-   Kuthan (@jiriatipteldotorg).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
+   (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Walter Doekes (@wdoekes), Christophe
+   Sollet (@csollet), Vlad Paiu (@vladpaiu), Maksym Sobolyev
+   (@sobomax), Anca Vamanu, Andrei Dragus, Sergio Gutierrez, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Carsten Bock, Ancuta Onofrei,
+   Marcus Hunger, Jeremie Le Hen, Bayan Towfiq, Elena-Ramona
+   Modroiu, Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 

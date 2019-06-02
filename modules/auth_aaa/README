@@ -17,7 +17,7 @@ Auth_aaa Module
               1.4.1. aaa_url (string)
               1.4.2. auth_service_type (integer)
               1.4.3. check_service_type (integer)
-              1.4.4. use_ruri_flag (string/integer)
+              1.4.4. use_ruri_flag (string)
 
         1.5. Exported Functions
 
@@ -152,7 +152,7 @@ modparam("auth_aaa", "auth_service_type", 15)
 modparam("auth_aaa", "check_service_type", 11)
 ...
 
-1.4.4. use_ruri_flag (string/integer)
+1.4.4. use_ruri_flag (string)
 
    When this parameter is set to the value other than "NULL" and
    the request being authenticated has flag with matching number
@@ -317,14 +317,14 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 90 24 3294 2182
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 42 30 891 254
-   3. Liviu Chircu (@liviuchircu) 16 12 71 116
+   3. Liviu Chircu (@liviuchircu) 17 13 72 119
    4. Irina-Maria Stanescu 16 8 185 299
    5. Daniel-Constantin Mierla (@miconda) 15 13 67 55
    6. Maksym Sobolyev (@sobomax) 12 6 167 171
    7. Juha Heinanen (@juha-h) 8 5 142 53
-   8. Andrei Pelinescu-Onciul 7 5 8 2
-   9. Vlad Patrascu (@rvlad-patrascu) 7 2 55 213
-   10. Razvan Crainea (@razvancrainea) 6 4 9 13
+   8. Razvan Crainea (@razvancrainea) 7 5 10 13
+   9. Andrei Pelinescu-Onciul 7 5 8 2
+   10. Vlad Patrascu (@rvlad-patrascu) 7 2 55 213
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
    Henning Westerholt (@henningw), Ancuta Onofrei, Anatoly
@@ -351,11 +351,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Apr 2017
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Irina-Maria Stanescu                Aug 2009 - Apr 2010
    7.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
    8.  Konstantin Bokarius                 Mar 2008 - Mar 2008

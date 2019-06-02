@@ -14,7 +14,7 @@ QOS Module
 
         1.4. Exported Parameters
 
-              1.4.1. qos_flag (string/integer)
+              1.4.1. qos_flag (string)
 
         1.5. Exported Functions
         1.6. Exported Statistics
@@ -98,7 +98,7 @@ Chapter 1. Admin Guide
 
 1.4. Exported Parameters
 
-1.4.1. qos_flag (string/integer)
+1.4.1. qos_flag (string)
 
    Keeping with OpenSIPS, the module will not do anything to any
    message unless instructed to do so via the config script. You
@@ -113,9 +113,6 @@ Chapter 1. Admin Guide
    not have any effect.
 
    This parameter must be set of the module will not load.
-
-   WARNING: Setting INT flags is deprecated! Use quoted strings
-   instead!
 
    Default value is “Not set!”.
 
@@ -193,10 +190,10 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 21 3 2152 13
-   2. Liviu Chircu (@liviuchircu) 14 11 40 62
+   2. Liviu Chircu (@liviuchircu) 15 12 41 69
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 24 15
    4. Vlad Patrascu (@rvlad-patrascu) 8 5 99 96
-   5. Razvan Crainea (@razvancrainea) 5 3 15 16
+   5. Razvan Crainea (@razvancrainea) 6 4 16 16
    6. Vlad Paiu (@vladpaiu) 3 1 5 6
    7. Ezequiel Lovelle 3 1 1 1
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -221,11 +218,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Apr 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4. Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   5. Razvan Crainea (@razvancrainea)     Oct 2011 - Oct 2016
+   1. Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
+   2. Razvan Crainea (@razvancrainea)     Oct 2011 - May 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - Apr 2019
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6. Ezequiel Lovelle                    Oct 2014 - Oct 2014
    7. Ovidiu Sas (@ovidiusas)             Dec 2008 - May 2012
    8. Vlad Paiu (@vladpaiu)               Jun 2011 - Jun 2011
@@ -237,8 +234,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
    Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Ovidiu Sas
    (@ovidiusas).
 

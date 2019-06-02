@@ -332,11 +332,12 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 74 29 3404 996
    2. Liviu Chircu (@liviuchircu) 21 17 160 108
-   3. Razvan Crainea (@razvancrainea) 10 8 17 11
+   3. Razvan Crainea (@razvancrainea) 11 9 18 11
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 5 4
    5. Ionel Cerghit (@ionel-cerghit) 4 1 50 92
-   6. Ovidiu Sas (@ovidiusas) 3 1 1 1
-   7. Peter Lemenkov (@lemenkov) 3 1 1 1
+   6. Dan Pascu (@danpascu) 3 1 1 1
+   7. Ovidiu Sas (@ovidiusas) 3 1 1 1
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -358,13 +359,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - Apr 2019
-   2. Razvan Crainea (@razvancrainea)     Feb 2016 - Mar 2019
-   3. Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Nov 2018
-   4. Liviu Chircu (@liviuchircu)         Mar 2016 - Nov 2018
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6. Ovidiu Sas (@ovidiusas)             Mar 2017 - Mar 2017
-   7. Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
+   1. Dan Pascu (@danpascu)               May 2019 - May 2019
+   2. Razvan Crainea (@razvancrainea)     Feb 2016 - May 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - Apr 2019
+   4. Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Nov 2018
+   5. Liviu Chircu (@liviuchircu)         Mar 2016 - Nov 2018
+   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7. Ovidiu Sas (@ovidiusas)             Mar 2017 - Mar 2017
+   8. Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
 
    (1) including any documentation-related commits, excluding
    merge commits

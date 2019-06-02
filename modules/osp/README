@@ -978,14 +978,14 @@ Chapter 3. Contributors
    6. Liviu Chircu (@liviuchircu) 15 12 83 92
    7. Vlad Patrascu (@rvlad-patrascu) 9 6 68 65
    8. Ancuta Onofrei 9 1 206 318
-   9. Razvan Crainea (@razvancrainea) 7 5 70 52
+   9. Razvan Crainea (@razvancrainea) 8 6 71 52
    10. Henning Westerholt (@henningw) 4 2 3 3
 
    All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad Paiu
    (@vladpaiu), Konstantin Bokarius, Dan Pascu (@danpascu),
    fabriziopicconi, Andreas Granig, Ezequiel Lovelle, Julián
-   Moreno Patiño, Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert.
+   Moreno Patiño, Peter Lemenkov (@lemenkov), Ralf Zerres, Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1007,22 +1007,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2019
-   4.  Di-Shi Sun                          Oct 2018 - Feb 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   10. fabriziopicconi                     Aug 2013 - Aug 2013
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   2.  Ralf Zerres                         May 2019 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Apr 2019
+   5.  Di-Shi Sun                          Oct 2018 - Feb 2019
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Ezequiel Lovelle                    Oct 2014 - Oct 2014
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad Paiu
-   (@vladpaiu), Dan Pascu (@danpascu), Henning Westerholt
-   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Ancuta Onofrei, Dmitry
-   Isakbayev, Andreas Granig.
+   All remaining contributors: fabriziopicconi, Ovidiu Sas
+   (@ovidiusas), Vlad Paiu (@vladpaiu), Dan Pascu (@danpascu),
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Ancuta
+   Onofrei, Dmitry Isakbayev, Andreas Granig.
 
    (1) including any documentation-related commits, excluding
    merge commits

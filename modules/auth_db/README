@@ -126,7 +126,7 @@ e")
    Possible meanings of this parameter are:
      * 1 (calculate HA1) - the loaded password is a plaintext
        password, so OpenSIPS will internally calculate the HA1. As
-       the passwors will be loaded from the column specified in
+       the passwords will be loaded from the column specified in
        the “password_column” parameter, be sure this parameter
        points to a column holding a plaintext password (by
        default, this parameter points to “ha1” column);
@@ -460,12 +460,12 @@ Chapter 2. Contributors
    1. Jan Janak (@janakj) 50 29 1610 424
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 49 35 778 371
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
-   4. Liviu Chircu (@liviuchircu) 14 11 69 92
+   4. Liviu Chircu (@liviuchircu) 15 12 70 93
    5. Henning Westerholt (@henningw) 11 9 83 49
-   6. Sergio Gutierrez 7 5 13 13
-   7. Vlad Patrascu (@rvlad-patrascu) 7 3 61 162
-   8. Andrei Pelinescu-Onciul 6 4 81 33
-   9. Razvan Crainea (@razvancrainea) 6 4 26 46
+   6. Razvan Crainea (@razvancrainea) 7 5 27 46
+   7. Sergio Gutierrez 7 5 13 13
+   8. Vlad Patrascu (@rvlad-patrascu) 7 3 61 162
+   9. Andrei Pelinescu-Onciul 6 4 81 33
    10. Dan Pascu (@danpascu) 5 3 31 6
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
@@ -494,12 +494,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Jan 2015
    8.  Richard Revels                      Sep 2011 - Sep 2011
    9.  Kennard White                       Jun 2011 - Jun 2011

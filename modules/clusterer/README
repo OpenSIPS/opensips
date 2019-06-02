@@ -761,11 +761,14 @@ $ opensips-cli -x mi clusterer_list_topology
      * cluster_id - id of the cluster.
      * destination - id of the destination node
      * cmd_name - name of the MI command to be run
-     * cmd_name - the parameters of the MI command to be run,
-       optional or required, depending on the command
+     * cmd_params (optional) - array of parameters for the MI
+       command to be run
+
+   Note that MI commands that require named parameters or arrays
+   as parameter values are not currently supported.
 
    MI FIFO Command Format:
-                opensips-cli -x mi cluster_mi 1 3 lb_reload
+opensips-cli -x mi cluster_send_mi 1 3 lb_reload
 
 1.6.6.  cluster_broadcast_mi
 
@@ -777,12 +780,14 @@ $ opensips-cli -x mi clusterer_list_topology
    Parameters:
      * cluster_id - id of the cluster.
      * cmd_name - name of the MI command to be run
-     * cmd_name - the parameters of the MI command to be run,
-       optional or required, depending on the command
+     * cmd_params (optional) - array of parameters for the MI
+       command to be run
+
+   Note that MI commands that require named parameters or arrays
+   as parameter values are not currently supported.
 
    MI FIFO Command Format:
-                opensips-cli -x micluster_mi 1 dr_reload_status partitio
-n_5
+opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 
 1.6.7.  clusterer_list_cap
 
@@ -1160,10 +1165,10 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 243 82 9442 4818
+   1. Vlad Patrascu (@rvlad-patrascu) 248 83 9598 4962
    2. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
-   3. Liviu Chircu (@liviuchircu) 38 27 491 379
-   4. Razvan Crainea (@razvancrainea) 20 14 316 142
+   3. Liviu Chircu (@liviuchircu) 39 28 492 380
+   4. Razvan Crainea (@razvancrainea) 21 15 317 142
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 20 9 1116 102
    6. Ionel Cerghit (@ionel-cerghit) 8 2 250 212
    7. Gohar Ahmed (@goharahmed) 3 1 6 5
@@ -1190,11 +1195,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Razvan Crainea (@razvancrainea)          Nov 2015 - May 2019
+   1. Liviu Chircu (@liviuchircu)              Mar 2016 - May 2019
    2. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - May 2019
-   3. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2019
-   4. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
-   5. Liviu Chircu (@liviuchircu)              Mar 2016 - Mar 2019
+   3. Razvan Crainea (@razvancrainea)          Nov 2015 - May 2019
+   4. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2019
+   5. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
    6. Fabian Gast (@fgast)                     Nov 2018 - Nov 2018
    7. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    8. Ionel Cerghit (@ionel-cerghit)           Dec 2016 - Dec 2016

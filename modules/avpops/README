@@ -423,8 +423,9 @@ avp_db_query("DELETE FROM subscriber", , $avp(id));
 
    Example 1.16. avp_delete usage
 ...
-avp_delete("$avp(678)/g");
-avp_delete("$avp(email)");
+avp_delete("$avp(email)"); # delete topmost (lastly set) value from $avp
+(email)
+avp_delete("$avp(678)/g"); # fully purge $avp(678)
 avp_delete("i");
 avp_delete("a3");
 ...
@@ -681,10 +682,10 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 106 44 2927 2158
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 64 45 686 711
-   3. Liviu Chircu (@liviuchircu) 51 25 1104 942
+   3. Liviu Chircu (@liviuchircu) 52 26 1106 944
    4. Elena-Ramona Modroiu 50 11 4040 390
-   5. Elena-Ramona Modroiu 18 5 1051 192
-   6. Razvan Crainea (@razvancrainea) 17 10 143 244
+   5. Razvan Crainea (@razvancrainea) 18 11 144 244
+   6. Elena-Ramona Modroiu 18 5 1051 192
    7. Henning Westerholt (@henningw) 12 8 112 133
    8. Vlad Paiu (@vladpaiu) 8 6 25 2
    9. Ionut Ionita (@ionutrazvanionita) 8 5 180 12
@@ -718,11 +719,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2016
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2019
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6.  Andrey Vorobiev                     Apr 2016 - Apr 2016
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Ionut Ionita (@ionutrazvanionita)   Nov 2015 - Feb 2016

@@ -436,7 +436,7 @@ modparam("ratelimit", "slot_period", 100)
    NOTE: A pipe's algorithm cannot be dynamically changed. Only
    the one specified when the pipe was created will be considered.
 
-   NOTE: This function increments the pipe's couter every time it
+   NOTE: This function increments the pipe's counter every time it
    is called, even if the call should be declined. Therefore If
    you are using ratelimit to limit only successful traffic, you
    need to explicitely decrease the counter for the declined calls
@@ -551,7 +551,7 @@ m
    Name: rl_reset_pipe
 
    Parameters:
-     * pipe - indicates the name of the pipe whose couter should
+     * pipe - indicates the name of the pipe whose counter should
        be reset.
 
    MI FIFO Command Format:
@@ -609,11 +609,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 118 46 2987 2634
+   1. Razvan Crainea (@razvancrainea) 119 47 2988 2634
    2. Ovidiu Sas (@ovidiusas) 38 17 2481 44
    3. Vlad Patrascu (@rvlad-patrascu) 30 17 359 558
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 28 24 108 118
-   5. Liviu Chircu (@liviuchircu) 17 13 43 112
+   5. Liviu Chircu (@liviuchircu) 18 14 45 114
    6. Eseanu Marius Cristian (@eseanucristian) 13 6 329 195
    7. Daniel-Constantin Mierla (@miconda) 9 7 24 18
    8. Ionel Cerghit (@ionel-cerghit) 4 2 34 24
@@ -645,10 +645,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2008 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)          Sep 2011 - Mar 2019
-   4.  Liviu Chircu (@liviuchircu)              Mar 2014 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)              Mar 2014 - May 2019
+   2.  Razvan Crainea (@razvancrainea)          Sep 2011 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2008 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    6.  Ionel Cerghit (@ionel-cerghit)           Jul 2015 - Dec 2016
    7.  Julián Moreno Patiño                     Feb 2016 - Feb 2016
@@ -669,10 +669,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Eseanu Marius
-   Cristian (@eseanucristian), Bogdan-Andrei Iancu
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Eseanu
+   Marius Cristian (@eseanucristian), Bogdan-Andrei Iancu
    (@bogdan-iancu), Walter Doekes (@wdoekes), Arnaud Boussus,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius,
    Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas), Edson

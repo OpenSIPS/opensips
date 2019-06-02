@@ -557,21 +557,21 @@ modparam("presence", "pres_htable_size", 11)
    the wathcer/subscriber.
 
    The function may take the following parameters:
-     * force_active (int, optional) - options parameter that
-       controlls what is the default policy (of the presentity) on
+     * force_active (int, optional) - optional parameter that
+       controls what is the default policy (of the presentity) on
        accepting new subscriptions (accept or reject) - of course,
        this parameter makes sense only when using a presence
        configuration with privacy rules enabled (force_active
        parameter in presence_xml module is not set).
        There are scenarios where the presentity (the party you
-       subscribe to) can not upload an XCAP document with it's
-       privacy rules (to controll which watchers are allowed to
-       subscribe to it). In such case, from script level, you can
+       subscribe to) can not upload an XCAP document with its
+       privacy rules (to control which watchers are allowed to
+       subscribe to it). In such cases, from script level, you can
        force the presence server to consider the current
        subscription allowed (with Subscription-Status:active) by
        calling the handle_subscribe() function with the integer
        parameter "1".
-     * sharing_tag (string, optional) - options parameter telling
+     * sharing_tag (string, optional) - optional parameter telling
        the owner tag (for the subscription) in clusetering
        scenarios where the subscription data is shared between
        multiple servers - see the Section 1.2, “Presence
@@ -1009,13 +1009,13 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 663 247 24146 12623
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 131 78 2790 1698
-   3. Razvan Crainea (@razvancrainea) 27 21 376 135
+   3. Razvan Crainea (@razvancrainea) 28 22 382 135
    4. Ovidiu Sas (@ovidiusas) 27 19 615 167
    5. Daniel-Constantin Mierla (@miconda) 24 19 174 165
-   6. Liviu Chircu (@liviuchircu) 23 14 240 365
+   6. Liviu Chircu (@liviuchircu) 24 15 246 371
    7. Vlad Patrascu (@rvlad-patrascu) 19 9 360 354
    8. Henning Westerholt (@henningw) 15 6 340 302
-   9. Dan Pascu (@danpascu) 9 7 13 32
+   9. Dan Pascu (@danpascu) 10 8 22 36
    10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
 
    All remaining contributors: Walter Doekes (@wdoekes), Edson
@@ -1047,24 +1047,24 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  James Criscuolo                     Mar 2016 - Mar 2016
-   7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec                        Dec 2015 - Dec 2015
-   10. Carlos Oliva                        Mar 2015 - Mar 2015
+   1.  Dan Pascu (@danpascu)               Nov 2007 - May 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  James Criscuolo                     Mar 2016 - Mar 2016
+   8.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Dusan Klinec                        Dec 2015 - Dec 2015
 
-   All remaining contributors: Damien Sandras (@dsandras), Vlad
-   Paiu (@vladpaiu), Saúl Ibarra Corretgé (@saghul), Anca Vamanu,
-   Walter Doekes (@wdoekes), Vallimamod Abdullah, Kennard White,
-   Stanislaw Pitucha, Angel Marin, John Riordan, Vasil Kolev,
-   UnixDev, Sergio Gutierrez, Kobi Eshun (@ekobi), Klaus Darilion,
-   Denis Bilenko, Henning Westerholt (@henningw), Juha Heinanen
-   (@juha-h), Dan Pascu (@danpascu), Daniel-Constantin Mierla
+   All remaining contributors: Carlos Oliva, Damien Sandras
+   (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra Corretgé
+   (@saghul), Anca Vamanu, Walter Doekes (@wdoekes), Vallimamod
+   Abdullah, Kennard White, Stanislaw Pitucha, Angel Marin, John
+   Riordan, Vasil Kolev, UnixDev, Sergio Gutierrez, Kobi Eshun
+   (@ekobi), Klaus Darilion, Denis Bilenko, Henning Westerholt
+   (@henningw), Juha Heinanen (@juha-h), Daniel-Constantin Mierla
    (@miconda), Edson Gellert Schubert, Julien Blache, Benny
    Prijono, Elena-Ramona Modroiu.
 
@@ -1075,11 +1075,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Saúl Ibarra
-   Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca Vamanu,
-   Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl
+   Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
+   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
    Darilion, Henning Westerholt (@henningw), Dan Pascu
    (@danpascu), Daniel-Constantin Mierla (@miconda), Edson Gellert
    Schubert, Juha Heinanen (@juha-h), Elena-Ramona Modroiu.

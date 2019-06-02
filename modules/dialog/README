@@ -1089,7 +1089,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
    be pinged via in-dialog Re-INVITE SIP messages. This behaviour
    is controlled via the "R" flags for pinging the caller side,
    and the "r" flag for re-invite pinging the callee side. If one
-   end-points fails to re-negociate the session via the Re-INVITE
+   end-points fails to re-negotiate the session via the Re-INVITE
    pings, OpenSIPS will terminate the dialog from the middle The
    string parameter can also contain "B" to activate the bye on
    timeout behavior.
@@ -1934,9 +1934,9 @@ GIwZjAzNGM1ZDY
 
    Parameters:
      * callid - the callid of the dialog you need to trigger the
-       sequentiam message for.
+       sequential message for.
      * method - (optional) the method used for the sequential
-       mesasge. Default value is INVITE.
+       message. Default value is INVITE.
      * mode - (optional) can be used to tune the behavior of the
        sequential message. Possible values for the mode are:
           + caller - (default) sends the sequential message to the
@@ -1966,7 +1966,7 @@ GIwZjAzNGM1ZDY
             message will contain the body sent to OpenSIPS by the
             callee. This is useful when you need to alter the body
             previously sent to the caller, because you want to
-            re-negociate a different media proxy for the call.
+            re-negotiate a different media proxy for the call.
             This can be achieved by catching the generated request
             in local_route, and re-engage the Media proxy.
           + outbound - advertises in the body of the sequential
@@ -1974,15 +1974,15 @@ GIwZjAzNGM1ZDY
             example, if the mode=challenge-caller, the message
             will contain the last body sent by OpenSIPS to the
             caller. This is useful in a high availability scenario
-            when trying to re-negociate the contact of the server,
+            when trying to re-negotiate the contact of the server,
             but there is no need to alter the body sent earlier.
           + custom:CONTENT_TYPE:BODY - this can be used to specify
             a specific Content-Type ehader and body for the
             sequential message generated.
 
-   This functions runs in asynchronous mode and returns the status
-   code and reason of the last reply received for either the
-   challenge or normal mode.
+   This functions runs asynchronously and returns the status code
+   and reason of the last reply received for either the challenge
+   or normal mode.
 
    MI Command Format:
                         opensips-cli -x mi dlg_send_sequential \
@@ -2263,9 +2263,9 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 412 261 12066 3113
    2. Vlad Paiu (@vladpaiu) 250 140 7051 3004
-   3. Razvan Crainea (@razvancrainea) 174 126 3775 1005
+   3. Razvan Crainea (@razvancrainea) 176 128 3777 1006
    4. Vlad Patrascu (@rvlad-patrascu) 149 68 3286 3061
-   5. Liviu Chircu (@liviuchircu) 106 74 2253 740
+   5. Liviu Chircu (@liviuchircu) 107 75 2259 746
    6. Ovidiu Sas (@ovidiusas) 27 21 482 107
    7. Dan Pascu (@danpascu) 26 22 160 106
    8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
@@ -2305,9 +2305,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2019
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2019
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2019
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2019
    5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2018
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -2336,10 +2336,10 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Paiu (@vladpaiu), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Ionut Ionita
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
+   Peter Lemenkov (@lemenkov), Julián Moreno Patiño, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
    Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
    Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues

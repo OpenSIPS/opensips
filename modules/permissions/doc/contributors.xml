@@ -53,9 +53,9 @@
 	<row>
 		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">22</entry>
-		<entry align="center">17</entry>
-		<entry align="center">169</entry>
+		<entry align="center">23</entry>
+		<entry align="center">18</entry>
+		<entry align="center">170</entry>
 		<entry align="center">113</entry>
 	</row>
 	<row>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Miklos Tirpak, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ancuta Onofrei, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Elena-Ramona Modroiu, Dusan Klinec, Anca Vamanu, wuhanck, Konstantin Bokarius, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), UnixDev, Andreas Granig, Baptiste Cholley, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Miklos Tirpak, Ancuta Onofrei, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Elena-Ramona Modroiu, Dusan Klinec, Anca Vamanu, wuhanck, Konstantin Bokarius, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), UnixDev, Andreas Granig, Baptiste Cholley, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,38 +128,38 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
+		<entry align="center">Nov 2006 - May 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jan 2011 - May 2019</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Jan 2005 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jan 2011 - Apr 2019</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Aug 2018</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>wuhanck</entry>
 		<entry align="center">Apr 2018 - Apr 2018</entry>
-	</row>
-	<row>
-		<entry>7. </entry>
-		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">Nov 2006 - Feb 2018</entry>
 	</row>
 	<row>
 		<entry>8. </entry>

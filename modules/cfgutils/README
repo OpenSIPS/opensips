@@ -582,11 +582,11 @@ if (!release_dynamic_lock($ci) {
    which happen to point to the same lock.
 
    Theoretically, the chance of two strings generating the same
-   hash value decreases proportionally to the increase of the ???
-   parameter. In other words, the more dynamic locks you configure
-   the module with, the higher the chance that all individual
-   protected regions of your script will run in parallel, without
-   waiting for each other.
+   hash value decreases proportionally to the increase of the
+   lock_pool_size parameter. In other words, the more dynamic
+   locks you configure the module with, the higher the chance that
+   all individual protected regions of your script will run in
+   parallel, without waiting for each other.
 
    Meaning of the parameters is as follows:
      * key1, key2 (string) - strings which will have their hash
@@ -836,11 +836,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Henning Westerholt (@henningw) 29 18 1088 86
-   2. Liviu Chircu (@liviuchircu) 29 17 868 260
+   1. Liviu Chircu (@liviuchircu) 30 18 869 261
+   2. Henning Westerholt (@henningw) 29 18 1088 86
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 20 356 103
    4. Vlad Patrascu (@rvlad-patrascu) 19 6 355 547
-   5. Razvan Crainea (@razvancrainea) 16 11 279 74
+   5. Razvan Crainea (@razvancrainea) 17 12 280 74
    6. Elena-Ramona Modroiu 14 3 1183 7
    7. Daniel-Constantin Mierla (@miconda) 12 10 84 32
    8. Anca Vamanu 6 3 220 14
@@ -871,10 +871,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Razvan Crainea (@razvancrainea)     Oct 2010 - Mar 2019
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Oct 2010 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
    7.  Maksym Sobolyev (@sobomax)          Dec 2015 - Dec 2015

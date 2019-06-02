@@ -21,7 +21,7 @@ Call Control Module
               1.5.4. signaling_ip_avp (string)
               1.5.5. canonical_uri_avp (string)
               1.5.6. diverter_avp (string)
-              1.5.7. prepaid_account_flag (string/integer)
+              1.5.7. prepaid_account_flag (string)
               1.5.8. call_limit_avp (string)
               1.5.9. call_token_avp (string)
               1.5.10. init (string)
@@ -294,7 +294,7 @@ route {
 }
 ...
 
-1.5.7. prepaid_account_flag (string/integer)
+1.5.7. prepaid_account_flag (string)
 
    The flag that is used to specify whether the account making the
    call is prepaid or postpaid. Setting this to a non-null value
@@ -306,10 +306,7 @@ route {
    OpenSIPS configuration for a prepaid account and reset for a
    postpaid one.
 
-   WARNING: Setting INT flags is deprecated! Use quoted strings
-   instead!
-
-   Default value is “NULL” (undefined).
+   Default value is NULL (undefined).
 
    Example 1.7. Setting the prepaid_account_flag parameter
 ...
@@ -509,11 +506,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Dan Pascu (@danpascu) 17 4 1450 5
-   2. Saúl Ibarra Corretgé (@saghul) 15 9 320 124
-   3. Liviu Chircu (@liviuchircu) 12 10 54 55
+   1. Dan Pascu (@danpascu) 18 5 1469 22
+   2. Liviu Chircu (@liviuchircu) 15 12 56 65
+   3. Saúl Ibarra Corretgé (@saghul) 15 9 320 124
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 16 47
-   5. Razvan Crainea (@razvancrainea) 8 6 54 32
+   5. Razvan Crainea (@razvancrainea) 9 7 55 32
    6. Irina-Maria Stanescu 6 2 356 17
    7. Vlad Patrascu (@rvlad-patrascu) 5 3 11 9
    8. Vlad Paiu (@vladpaiu) 4 2 5 12
@@ -542,12 +539,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Dan Pascu (@danpascu)               Dec 2008 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Dec 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Razvan Crainea (@razvancrainea)     Jul 2010 - Mar 2017
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
+   2.  Dan Pascu (@danpascu)               Dec 2008 - May 2019
+   3.  Razvan Crainea (@razvancrainea)     Jul 2010 - May 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Saúl Ibarra Corretgé (@saghul)      Aug 2010 - Jan 2012
    9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011
@@ -562,8 +559,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Dan Pascu
-   (@danpascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Dan Pascu (@danpascu), Peter Lemenkov
    (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Saúl Ibarra
    Corretgé (@saghul), Razvan Crainea (@razvancrainea),
    Irina-Maria Stanescu.

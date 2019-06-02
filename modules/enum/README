@@ -366,8 +366,8 @@ Chapter 2. Contributors
    5. Daniel-Constantin Mierla (@miconda) 14 12 46 55
    6. Henning Westerholt (@henningw) 8 3 14 190
    7. Vlad Patrascu (@rvlad-patrascu) 8 2 47 233
-   8. Greg Fausak 6 1 493 30
-   9. Razvan Crainea (@razvancrainea) 5 3 16 16
+   8. Razvan Crainea (@razvancrainea) 6 4 17 16
+   9. Greg Fausak 6 1 493 30
    10. Andrei Pelinescu-Onciul 5 3 11 7
 
    All remaining contributors: Dan Pascu (@danpascu), Jiri Kuthan
@@ -395,12 +395,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
-   2.  Dan Pascu (@danpascu)               Apr 2019 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2016
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Apr 2019
+   3.  Dan Pascu (@danpascu)               Apr 2019 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
    8.  Juha Heinanen (@juha-h)             Jan 2003 - Apr 2008
    9.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008

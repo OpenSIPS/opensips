@@ -143,16 +143,16 @@ Chapter 2. Contributors
    1. Iouri Kharon 20 1 2363 0
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 11 64 68
    3. Liviu Chircu (@liviuchircu) 11 8 23 81
-   4. Peter Lemenkov (@lemenkov) 7 5 41 5
-   5. Razvan Crainea (@razvancrainea) 6 4 100 31
-   6. Henning Westerholt (@henningw) 5 3 19 7
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
-   8. fabriziopicconi 3 1 18 2
-   9. Ovidiu Sas (@ovidiusas) 3 1 12 12
-   10. Sergio Gutierrez 3 1 4 1
+   4. dronord 8 6 29 18
+   5. Razvan Crainea (@razvancrainea) 7 5 101 31
+   6. Peter Lemenkov (@lemenkov) 7 5 41 5
+   7. Henning Westerholt (@henningw) 5 3 19 7
+   8. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
+   9. fabriziopicconi 3 1 18 2
+   10. Ovidiu Sas (@ovidiusas) 3 1 12 12
 
-   All remaining contributors: Julián Moreno Patiño, Razvan
-   Pistolea.
+   All remaining contributors: Sergio Gutierrez, Julián Moreno
+   Patiño, Razvan Pistolea.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -174,19 +174,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Aug 2012 - Jun 2018
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Razvan Crainea (@razvancrainea)     Oct 2011 - Feb 2016
-   7.  fabriziopicconi                     Jun 2013 - Jun 2013
-   8.  Ovidiu Sas (@ovidiusas)             Jun 2012 - Jun 2012
-   9.  Razvan Pistolea                     Jul 2009 - Jul 2009
-   10. Sergio Gutierrez                    Feb 2009 - Feb 2009
+   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - May 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Aug 2012 - Jun 2018
+   6.  dronord                             Nov 2017 - Dec 2017
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  fabriziopicconi                     Jun 2013 - Jun 2013
+   9.  Ovidiu Sas (@ovidiusas)             Jun 2012 - Jun 2012
+   10. Razvan Pistolea                     Jul 2009 - Jul 2009
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Iouri Kharon.
+   All remaining contributors: Sergio Gutierrez, Henning
+   Westerholt (@henningw), Iouri Kharon.
 
    (1) including any documentation-related commits, excluding
    merge commits

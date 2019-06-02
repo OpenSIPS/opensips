@@ -20,7 +20,7 @@ usrloc Module
 
         1.5. Exported Parameters
 
-              1.5.1. nat_bflag (string/integer)
+              1.5.1. nat_bflag (string)
               1.5.2. contact_id_column (string)
               1.5.3. user_column (string)
               1.5.4. domain_column (string)
@@ -369,15 +369,14 @@ Chapter 1. Admin Guide
 
 1.5. Exported Parameters
 
-1.5.1. nat_bflag (string/integer)
+1.5.1. nat_bflag (string)
 
    The name of the branch flag to be used as NAT marker (if the
    contact is or not natted). This is a branch flag and it will be
-   imported and used by all other modules depending of usrloc
+   imported and used by all other modules depending on the usrloc
    module.
 
-   WARNING: Setting INT flags is deprecated! Use quoted strings
-   instead! Default value is “NULL” (not set).
+   Default value is NULL (not set).
 
    Example 1.1. Set nat_bflag parameter
 ...
@@ -698,9 +697,10 @@ modparam("usrloc", "db_mode", 2)
        all modified or new contacts to database. Use this scheme
        if you encounter high-load peaks and want them to process
        as fast as possible. The mode will not help at all if the
-       load is high all the time. Also, latency of this mode is
-       much lower than latency of mode 1, but slightly higher than
-       latency of mode 0.
+       load is high all the time. The added latency on the SIP
+       signaling when using this asynchronous preset is much lower
+       than the one added by the safe but blocking,
+       "single-instance-sql-write-through" preset.
      * "sql-only" - DB-Only scheme. No memory cache is kept, all
        operations being directly performed with the database. The
        timer deletes all expired contacts from database - cleans
@@ -1000,7 +1000,7 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 
 1.5.39. pinging_mode (string)
 
-   Depending on the cluster_mode, the module will perform contact
+   Depending on the cluster_mode, the module can perform contact
    pinging using one of at most two possible heuristics:
      * "ownership" - this instance will only attempt to ping a
        contact if it decides it is the logical owner of the
@@ -1497,12 +1497,12 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 233 138 3971 3498
-   3. Liviu Chircu (@liviuchircu) 220 137 6083 1949
+   3. Liviu Chircu (@liviuchircu) 225 141 6112 1984
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Vlad Patrascu (@rvlad-patrascu) 39 20 768 631
    7. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
-   8. Razvan Crainea (@razvancrainea) 22 17 372 107
+   8. Razvan Crainea (@razvancrainea) 26 20 378 120
    9. Henning Westerholt (@henningw) 22 11 462 356
    10. Andrei Pelinescu-Onciul 17 13 151 91
 
@@ -1514,9 +1514,9 @@ Chapter 3. Contributors
    Hunger, Jamey Hicks, Andreas Granig, Shlomi Gutman, @jalung,
    Jeffrey Magder, Phil D'Amore, Norman Brandinger (@NormB), David
    Sanders, Konstantin Bokarius, Walter Doekes (@wdoekes), Klaus
-   Darilion, Iouri Kharon, Matthew M. Boedicker, Peter Lemenkov
-   (@lemenkov), UnixDev, Edson Gellert Schubert, Elena-Ramona
-   Modroiu, Stephane Alnet.
+   Darilion, Iouri Kharon, Dan Pascu (@danpascu), Matthew M.
+   Boedicker, Peter Lemenkov (@lemenkov), UnixDev, Edson Gellert
+   Schubert, Elena-Ramona Modroiu, Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1538,29 +1538,29 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
-   2.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Apr 2019
-   5.  Razvan Crainea (@razvancrainea)     Jul 2011 - Mar 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Shlomi Gutman                       Mar 2018 - Mar 2018
-   8.  @jalung                             Aug 2017 - Aug 2017
-   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2017
-   10. Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Apr 2017
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Jul 2011 - May 2019
+   3.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   4.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   9.  @jalung                             Aug 2017 - Aug 2017
+   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2017
 
-   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
-   Ovidiu Sas (@ovidiusas), Dusan Klinec, Eseanu Marius Cristian
-   (@eseanucristian), David Sanders, Andrei Datcu (@andrei-datcu),
-   Stephane Alnet, Andrei Dragus, Phil D'Amore, UnixDev,
-   Daniel-Constantin Mierla (@miconda), Henning Westerholt
-   (@henningw), Iouri Kharon, Konstantin Bokarius, Edson Gellert
-   Schubert, Anca Vamanu, Matthew M. Boedicker, Marcus Hunger,
-   Elena-Ramona Modroiu, Jeffrey Magder, Norman Brandinger
-   (@NormB), Andreas Granig, Juha Heinanen (@juha-h), Klaus
-   Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri
-   Kuthan (@jiriatipteldotorg), Maksym Sobolyev (@sobomax), Jamey
-   Hicks, Nils Ohlmeier.
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Ionel Cerghit (@ionel-cerghit), Ovidiu Sas (@ovidiusas), Dusan
+   Klinec, Eseanu Marius Cristian (@eseanucristian), David
+   Sanders, Andrei Datcu (@andrei-datcu), Stephane Alnet, Andrei
+   Dragus, Phil D'Amore, UnixDev, Daniel-Constantin Mierla
+   (@miconda), Henning Westerholt (@henningw), Iouri Kharon,
+   Konstantin Bokarius, Edson Gellert Schubert, Anca Vamanu,
+   Matthew M. Boedicker, Marcus Hunger, Elena-Ramona Modroiu,
+   Jeffrey Magder, Norman Brandinger (@NormB), Andreas Granig,
+   Juha Heinanen (@juha-h), Klaus Darilion, Jan Janak (@janakj),
+   Andrei Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg),
+   Maksym Sobolyev (@sobomax), Jamey Hicks, Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1569,15 +1569,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut Ionita
-   (@ionutrazvanionita), Eseanu Marius Cristian (@eseanucristian),
-   Ovidiu Sas (@ovidiusas), Andrei Datcu (@andrei-datcu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Marcus
-   Hunger, Elena-Ramona Modroiu, Juha Heinanen (@juha-h), Jan
-   Janak (@janakj), Maksym Sobolyev (@sobomax), Nils Ohlmeier.
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
+   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
+   (@eseanucristian), Ovidiu Sas (@ovidiusas), Andrei Datcu
+   (@andrei-datcu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen
+   (@juha-h), Jan Janak (@janakj), Maksym Sobolyev (@sobomax),
+   Nils Ohlmeier.
 
    Documentation Copyrights:
 

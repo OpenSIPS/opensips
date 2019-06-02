@@ -415,20 +415,20 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Ionut Ionita (@ionutrazvanionita) 107 52 2676 1887
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 92 72 844 719
-   3. Razvan Crainea (@razvancrainea) 48 31 1223 347
+   3. Razvan Crainea (@razvancrainea) 49 32 1224 347
    4. Daniel-Constantin Mierla (@miconda) 48 26 2215 191
    5. Liviu Chircu (@liviuchircu) 21 18 75 73
    6. Vlad Paiu (@vladpaiu) 21 8 335 528
    7. Vlad Patrascu (@rvlad-patrascu) 16 7 284 333
    8. Henning Westerholt (@henningw) 11 6 146 155
    9. Andrei Datcu (@andrei-datcu) 11 5 284 135
-   10. Alexandr Dubovikov (@adubovikov) 6 1 500 4
+   10. Dan Pascu (@danpascu) 6 4 18 11
 
-   All remaining contributors: Dan Pascu (@danpascu), Dusan
-   Klinec, Andreas Heise, Sergio Gutierrez, Bogdan Iancu, Walter
-   Doekes (@wdoekes), Konstantin Bokarius, Iouri Kharon, Peter
-   Lemenkov (@lemenkov), Edson Gellert Schubert, Elena-Ramona
-   Modroiu, Eric Tamme (@etamme).
+   All remaining contributors: Alexandr Dubovikov (@adubovikov),
+   Dusan Klinec, Andreas Heise, Sergio Gutierrez, Bogdan Iancu,
+   Walter Doekes (@wdoekes), Konstantin Bokarius, Iouri Kharon,
+   Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Eric Tamme (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -450,9 +450,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - May 2019
+   1.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
    2.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
-   3.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - May 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
    6.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
