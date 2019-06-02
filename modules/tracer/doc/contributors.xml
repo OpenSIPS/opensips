@@ -29,17 +29,17 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">91</entry>
-		<entry align="center">71</entry>
-		<entry align="center">832</entry>
-		<entry align="center">715</entry>
+		<entry align="center">92</entry>
+		<entry align="center">72</entry>
+		<entry align="center">844</entry>
+		<entry align="center">719</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">48</entry>
-		<entry align="center">31</entry>
-		<entry align="center">1223</entry>
+		<entry align="center">49</entry>
+		<entry align="center">32</entry>
+		<entry align="center">1224</entry>
 		<entry align="center">347</entry>
 	</row>
 	<row>
@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Alexandr Dubovikov (<ulink url="https://github.com/adubovikov">@adubovikov</ulink>)</entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">6</entry>
-		<entry align="center">1</entry>
-		<entry align="center">500</entry>
 		<entry align="center">4</entry>
+		<entry align="center">18</entry>
+		<entry align="center">11</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Dusan Klinec, Andreas Heise, Sergio Gutierrez, Bogdan Iancu, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Konstantin Bokarius, Iouri Kharon, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Alexandr Dubovikov (<ulink url="https://github.com/adubovikov">@adubovikov</ulink>), Dusan Klinec, Andreas Heise, Sergio Gutierrez, Bogdan Iancu, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Konstantin Bokarius, Iouri Kharon, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,33 +128,33 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2011 - May 2019</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
 		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">Nov 2008 - May 2019</entry>
 	</row>
 	<row>
+		<entry>2. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jun 2011 - May 2019</entry>
+	</row>
+	<row>
 		<entry>3. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Jul 2006 - May 2019</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
 		<entry align="center">Apr 2019 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Jan 2013 - Apr 2019</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Jul 2006 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>7. </entry>

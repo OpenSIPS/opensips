@@ -226,16 +226,16 @@ Chapter 2. Contributors
    2. Daniel-Constantin Mierla (@miconda) 14 12 42 22
    3. Liviu Chircu (@liviuchircu) 9 7 21 43
    4. Henning Westerholt (@henningw) 8 6 42 31
-   5. Jiri Kuthan (@jiriatipteldotorg) 8 4 278 4
-   6. Razvan Crainea (@razvancrainea) 7 5 23 23
+   5. Razvan Crainea (@razvancrainea) 8 6 24 23
+   6. Jiri Kuthan (@jiriatipteldotorg) 8 4 278 4
    7. Vlad Patrascu (@rvlad-patrascu) 7 4 88 94
    8. Richard Revels 3 1 24 11
    9. Anca Vamanu 3 1 6 3
    10. Konstantin Bokarius 3 1 2 5
 
-   All remaining contributors: Andrei Pelinescu-Onciul, Peter
-   Lemenkov (@lemenkov), Edson Gellert Schubert, Klaus Darilion,
-   Ancuta Onofrei.
+   All remaining contributors: Andrei Pelinescu-Onciul, Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert, Klaus Darilion, Ancuta Onofrei.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -257,20 +257,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Anca Vamanu                         Sep 2009 - Sep 2009
-   7.  Richard Revels                      Aug 2008 - Aug 2008
-   8.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Jun 2008
-   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
+   1.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   7.  Anca Vamanu                         Sep 2009 - Sep 2009
+   8.  Richard Revels                      Aug 2008 - Aug 2008
+   9.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Jun 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Ancuta Onofrei, Klaus Darilion, Andrei Pelinescu-Onciul, Jiri
-   Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Edson Gellert Schubert, Henning
+   Westerholt (@henningw), Ancuta Onofrei, Klaus Darilion, Andrei
+   Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits

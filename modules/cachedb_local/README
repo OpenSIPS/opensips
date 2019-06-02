@@ -165,8 +165,8 @@ tom size
 ## 2^5 (32); we also changed the size of the default collection, which w
 ould have been
 ## created anyway from 2^9 - 512 (default value) to 2^4 - 16
-modparam("cachedb_local", "cache_collections", "collection1; collection2
-=5; default=4")
+modparam("cachedb_local", "cache_collections", "collection1;collection2=
+5;default=4")
 ...
 
 1.4.3. cache_clean_period (int)
@@ -279,13 +279,13 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 33 10 1155 693
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 46 50
-   3. Liviu Chircu (@liviuchircu) 12 9 80 99
+   3. Liviu Chircu (@liviuchircu) 13 10 81 100
    4. Anca Vamanu 12 5 739 54
    5. Andrei Dragus 10 4 182 181
    6. Fabian Gast (@fgast) 9 3 517 48
    7. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
    8. Vlad Patrascu (@rvlad-patrascu) 8 5 51 58
-   9. Razvan Crainea (@razvancrainea) 4 2 5 5
+   9. Razvan Crainea (@razvancrainea) 5 3 6 5
    10. Dusan Klinec 3 1 4 4
 
    All remaining contributors: Ryan Bullock (@rrb3942), Julián
@@ -311,12 +311,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   4.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2017
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
+   5.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Dusan Klinec                        Dec 2015 - Dec 2015
@@ -332,9 +332,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
+   Gast (@fgast), Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Andrei Dragus,
    Anca Vamanu.
 

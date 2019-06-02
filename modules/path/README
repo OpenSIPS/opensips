@@ -191,7 +191,7 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 17 11 96 265
    3. Daniel-Constantin Mierla (@miconda) 12 10 25 21
    4. Andreas Granig 12 4 863 22
-   5. Razvan Crainea (@razvancrainea) 6 4 7 7
+   5. Razvan Crainea (@razvancrainea) 7 5 8 7
    6. Vlad Patrascu (@rvlad-patrascu) 6 3 35 104
    7. Henning Westerholt (@henningw) 4 2 5 32
    8. Ancuta Onofrei 3 1 12 12
@@ -221,11 +221,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2016
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    6.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
    7.  Konstantin Bokarius                 Mar 2008 - Mar 2008
    8.  Edson Gellert Schubert              Feb 2008 - Feb 2008

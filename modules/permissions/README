@@ -750,15 +750,15 @@ Chapter 2. Contributors
    2. Juha Heinanen (@juha-h) 62 21 3406 729
    3. Jan Janak (@janakj) 56 21 2871 621
    4. Irina-Maria Stanescu 54 9 1218 1908
-   5. Razvan Crainea (@razvancrainea) 22 17 169 113
+   5. Razvan Crainea (@razvancrainea) 23 18 170 113
    6. Liviu Chircu (@liviuchircu) 18 13 217 146
    7. Daniel-Constantin Mierla (@miconda) 16 11 126 221
    8. Ionut Ionita (@ionutrazvanionita) 16 4 970 175
    9. Henning Westerholt (@henningw) 15 10 136 148
    10. Vlad Patrascu (@rvlad-patrascu) 12 4 296 273
 
-   All remaining contributors: Andrei Pelinescu-Onciul, Miklos
-   Tirpak, Dan Pascu (@danpascu), Ancuta Onofrei, Saúl Ibarra
+   All remaining contributors: Andrei Pelinescu-Onciul, Dan Pascu
+   (@danpascu), Miklos Tirpak, Ancuta Onofrei, Saúl Ibarra
    Corretgé (@saghul), Jiri Kuthan (@jiriatipteldotorg),
    Elena-Ramona Modroiu, Dusan Klinec, Anca Vamanu, wuhanck,
    Konstantin Bokarius, Norman Brandinger (@NormB), UnixDev,
@@ -785,13 +785,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Jan 2011 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  wuhanck                             Apr 2018 - Apr 2018
-   7.  Dan Pascu (@danpascu)               Nov 2006 - Feb 2018
+   1.  Dan Pascu (@danpascu)               Nov 2006 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Jan 2011 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2019
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  wuhanck                             Apr 2018 - Apr 2018
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Dusan Klinec                        Dec 2015 - Dec 2015
    10. Ionut Ionita (@ionutrazvanionita)   May 2015 - Nov 2015

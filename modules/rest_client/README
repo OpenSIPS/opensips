@@ -137,8 +137,8 @@ modparam("rest_client", "connection_timeout", 4)
 1.3.3. connect_poll_interval (integer)
 
    Only relevant with async requests. Allows complete control over
-   how quickly we want to detect libcurl's completed blocking TCP
-   handshakes, so the async transfers can be put in the
+   how quickly we want to detect libcurl's completed blocking
+   TCP/TLS handshakes, so the async transfers can be put in the
    background. A lower connect_poll_interval may speed up all
    async HTTP transfers, but will also increase CPU usage.
 
@@ -555,10 +555,10 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 113 59 3391 1487
+   1. Liviu Chircu (@liviuchircu) 115 61 3394 1492
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Vlad Patrascu (@rvlad-patrascu) 15 5 279 341
-   4. Razvan Crainea (@razvancrainea) 11 9 31 16
+   4. Razvan Crainea (@razvancrainea) 12 10 32 16
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 114 47
    6. Jarrod Baumann (@jarrodb) 6 3 131 32
    7. Agalya Ramachandran (@AgalyaR) 6 2 354 1
@@ -586,10 +586,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
    7.  Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
@@ -604,8 +604,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Razvan Crainea
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan Crainea
    (@razvancrainea), Agalya Ramachandran (@AgalyaR), Jarrod
    Baumann (@jarrodb), Bogdan-Andrei Iancu (@bogdan-iancu).
 

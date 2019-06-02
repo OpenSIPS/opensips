@@ -18,7 +18,7 @@ SST Module (SIP Session Timer)
               1.4.2. min_se (integer)
               1.4.3. sst_interval (integer)
               1.4.4. reject_to_small (integer)
-              1.4.5. sst_flag (string/integer)
+              1.4.5. sst_flag (string)
 
         1.5. Exported Functions
 
@@ -216,7 +216,7 @@ modparam("sst", "sst_interval", 2400)
 modparam("sst", "reject_to_small", 0)
 ...
 
-1.4.5. sst_flag (string/integer)
+1.4.5. sst_flag (string)
 
    Keeping with OpenSIPS, the module will not do anything to any
    message unless instructed to do so via the opensips.cfg script.
@@ -231,9 +231,6 @@ modparam("sst", "reject_to_small", 0)
    not have any effect.
 
    This parameter must be set of the module will not load.
-
-   WARNING: Setting INT flags is deprecated! Use quoted strings
-   instead!
 
    Default value is “Not set!”.
 
@@ -319,9 +316,9 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 28 24 124 128
    2. Ron Winacott 27 5 2083 265
-   3. Liviu Chircu (@liviuchircu) 16 13 53 58
+   3. Liviu Chircu (@liviuchircu) 17 14 54 64
    4. Daniel-Constantin Mierla (@miconda) 15 12 104 104
-   5. Razvan Crainea (@razvancrainea) 11 7 103 139
+   5. Razvan Crainea (@razvancrainea) 12 8 104 139
    6. Andrei Datcu (@andrei-datcu) 8 6 122 28
    7. Vlad Patrascu (@rvlad-patrascu) 7 5 23 37
    8. Vlad Paiu (@vladpaiu) 6 4 7 15
@@ -354,11 +351,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2017
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2016 - Oct 2016
    7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2015
    8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
@@ -378,8 +375,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan Crainea
    (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Paiu (@vladpaiu), Christophe Sollet (@csollet), Henning
    Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),

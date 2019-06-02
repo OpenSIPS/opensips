@@ -340,7 +340,7 @@ if (is_method("INVITE")) {
 
    Example 1.10. Using the end_media_session function
 ...
-if (is_method("BYE") {
+if (is_method("BYE")) {
     end_media_session();
 }
 ...
@@ -352,12 +352,12 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Dan Pascu (@danpascu) 128 51 4223 2388
+   1. Dan Pascu (@danpascu) 130 53 4238 2401
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 31 688 88
    3. Saúl Ibarra Corretgé (@saghul) 20 14 504 71
-   4. Daniel-Constantin Mierla (@miconda) 13 11 37 33
-   5. Liviu Chircu (@liviuchircu) 12 10 40 46
-   6. Razvan Crainea (@razvancrainea) 6 4 19 40
+   4. Liviu Chircu (@liviuchircu) 13 11 41 47
+   5. Daniel-Constantin Mierla (@miconda) 13 11 37 33
+   6. Razvan Crainea (@razvancrainea) 7 5 20 40
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 8 4
    8. Vlad Paiu (@vladpaiu) 4 2 7 12
    9. Henning Westerholt (@henningw) 4 2 6 31
@@ -389,12 +389,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Dan Pascu (@danpascu)               Mar 2004 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2.  Dan Pascu (@danpascu)               Mar 2004 - May 2019
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Eric Tamme (@etamme)                Jul 2014 - Jul 2014
    9.  Saúl Ibarra Corretgé (@saghul)      Mar 2010 - Dec 2013
@@ -413,8 +413,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
-   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   Last edited by: Liviu Chircu (@liviuchircu), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
    (@bogdan-iancu), Razvan Crainea (@razvancrainea), Saúl Ibarra
    Corretgé (@saghul), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona

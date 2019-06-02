@@ -370,8 +370,8 @@ Chapter 3. Contributors
    1. Daniel-Constantin Mierla (@miconda) 22 10 1391 50
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 21 19 88 53
    3. Liviu Chircu (@liviuchircu) 12 9 27 58
-   4. Vlad Patrascu (@rvlad-patrascu) 9 4 185 143
-   5. Razvan Crainea (@razvancrainea) 8 6 20 20
+   4. Razvan Crainea (@razvancrainea) 9 7 21 20
+   5. Vlad Patrascu (@rvlad-patrascu) 9 4 185 143
    6. Stanislaw Pitucha 7 3 170 65
    7. Henning Westerholt (@henningw) 6 4 11 10
    8. David Sanders 4 2 8 1
@@ -401,9 +401,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2019
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  David Sanders                       Aug 2012 - Jan 2013

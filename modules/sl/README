@@ -195,7 +195,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 72 52 852 695
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 73 53 854 697
    2. Jiri Kuthan (@jiriatipteldotorg) 43 32 665 232
    3. Daniel-Constantin Mierla (@miconda) 23 16 295 172
    4. Andrei Pelinescu-Onciul 16 14 50 50
@@ -203,7 +203,7 @@ Chapter 2. Contributors
    6. Jan Janak (@janakj) 12 8 355 21
    7. Henning Westerholt (@henningw) 7 5 12 12
    8. Vlad Patrascu (@rvlad-patrascu) 7 4 30 83
-   9. Razvan Crainea (@razvancrainea) 4 2 9 10
+   9. Razvan Crainea (@razvancrainea) 5 3 10 10
    10. Elena-Ramona Modroiu 3 2 65 0
 
    All remaining contributors: Jeffrey Magder, Andreas Heise,
@@ -231,11 +231,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Apr 2019
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2015
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2014
    7.  Anca Vamanu                         Nov 2010 - Nov 2010
    8.  Henning Westerholt (@henningw)      Aug 2007 - Jun 2008

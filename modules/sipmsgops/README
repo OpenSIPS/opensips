@@ -630,7 +630,7 @@ add_body_part("Hello World!", "text/plain");
      * -10 - No Via header.
      * -11 - Request URI parse error.
      * -12 - Bad hostname in R-URI.
-     * -13 - No Max-Forward header.
+     * -13 - No Max-Forwards header.
      * -14 - No Contact header.
      * -15 - Path user for non-Register request.
      * -16 - No allow header in 405 reply.
@@ -1037,8 +1037,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 54 28 1712 658
-   2. Liviu Chircu (@liviuchircu) 48 18 756 1312
-   3. Razvan Crainea (@razvancrainea) 37 13 2887 35
+   2. Liviu Chircu (@liviuchircu) 49 19 757 1313
+   3. Razvan Crainea (@razvancrainea) 38 14 2888 35
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
    6. Vlad Patrascu (@rvlad-patrascu) 4 2 49 13
@@ -1072,13 +1072,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)         Nov 2012 - Apr 2019
-   5.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
-   6.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
-   7.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2018
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
+   3.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Apr 2019
+   6.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
+   7.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
    8.  Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
    9.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
    10. Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
@@ -1095,8 +1095,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Fabian Gast (@fgast), Bogdan-Andrei Iancu
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Fabian Gast (@fgast), Bogdan-Andrei Iancu
    (@bogdan-iancu), Peter Lemenkov (@lemenkov), Ovidiu Sas
    (@ovidiusas), Julián Moreno Patiño, Razvan Crainea
    (@razvancrainea), Mihai Tiganus (@tallicamike), Vlad Paiu
