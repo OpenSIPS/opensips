@@ -402,12 +402,12 @@ if (search("User-Agent: Cisco ATA.*") {
           + 0x01 - adds “a=direction:active” SDP line;
           + 0x02 - rewrite media IP address (c=) with source
             address of the message or the provided IP address (the
-            provide IP address take precedence over the source
+            provided IP address takes precedence over the source
             address).
           + 0x04 - adds “a=nortpproxy:yes” SDP line;
           + 0x08 - rewrite IP from origin description (o=) with
             source address of the message or the provided IP
-            address (the provide IP address take precedence over
+            address (the provided IP address takes precedence over
             the source address).
      * ip_address - IP to be used for rewriting SDP. If not
        specified, the received signalling IP will be used. The
@@ -560,7 +560,7 @@ Chapter 3. Contributors
    6. Jan Janak (@janakj) 21 11 780 129
    7. Anca Vamanu 21 4 1602 185
    8. Andrei Pelinescu-Onciul 20 17 121 110
-   9. Liviu Chircu (@liviuchircu) 18 13 145 116
+   9. Liviu Chircu (@liviuchircu) 19 14 147 118
    10. Jiri Kuthan (@jiriatipteldotorg) 17 10 764 47
 
    All remaining contributors: Ancuta Onofrei, Ovidiu Sas
@@ -592,7 +592,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
    3.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
    4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Mar 2017
@@ -618,8 +618,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita),
    Razvan Crainea (@razvancrainea), Ovidiu Sas (@ovidiusas),
    Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Vlad
    Paiu (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu,

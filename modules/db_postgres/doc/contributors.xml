@@ -20,14 +20,6 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">105</entry>
-		<entry align="center">45</entry>
-		<entry align="center">1897</entry>
-		<entry align="center">2516</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
 		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
 		<entry align="center">70</entry>
 		<entry align="center">29</entry>
@@ -35,7 +27,23 @@
 		<entry align="center">1963</entry>
 	</row>
 	<row>
+		<entry>2. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">58</entry>
+		<entry align="center">44</entry>
+		<entry align="center">813</entry>
+		<entry align="center">358</entry>
+	</row>
+	<row>
 		<entry>3. </entry>
+		<entry>Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>)</entry>
+		<entry align="center">50</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1085</entry>
+		<entry align="center">2159</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Greg Fausak</entry>
 		<entry align="center">40</entry>
 		<entry align="center">3</entry>
@@ -43,7 +51,7 @@
 		<entry align="center">2</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>)</entry>
 		<entry align="center">27</entry>
 		<entry align="center">20</entry>
@@ -51,7 +59,7 @@
 		<entry align="center">203</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>)</entry>
 		<entry align="center">12</entry>
 		<entry align="center">8</entry>
@@ -59,7 +67,7 @@
 		<entry align="center">23</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Klaus Darilion</entry>
 		<entry align="center">10</entry>
 		<entry align="center">6</entry>
@@ -67,7 +75,7 @@
 		<entry align="center">67</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">8</entry>
 		<entry align="center">6</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">34</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">8</entry>
 		<entry align="center">6</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">52</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">8</entry>
 		<entry align="center">5</entry>
 		<entry align="center">165</entry>
 		<entry align="center">21</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Ancuta Onofrei</entry>
-		<entry align="center">7</entry>
-		<entry align="center">1</entry>
-		<entry align="center">186</entry>
-		<entry align="center">191</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Norman Brandinger, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Pelinescu-Onciul, Dusan Klinec, Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Ruslan Bukin, Konstantin Bokarius, Razvan Pistolea, Aron Podrigal, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Edson Gellert Schubert, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ancuta Onofrei, Norman Brandinger, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Pelinescu-Onciul, Dusan Klinec, Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Ruslan Bukin, Konstantin Bokarius, Razvan Pistolea, Aron Podrigal, Edson Gellert Schubert, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>

@@ -162,7 +162,7 @@ modparam("auth_db", "password_column_2", "ha1_2")
    Possible meanings of this parameter are:
      * 1 (calculate HA1) - the loaded password is a plaintext
        password, so OpenSIPS will internally calculate the HA1. As
-       the passwors will be loaded from the column specified in
+       the passwords will be loaded from the column specified in
        the “password_column” parameter, be sure this parameter
        points to a column holding a plaintext password (by
        default, this parameter points to “ha1” column);
@@ -334,7 +334,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 31 332 232
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
    4. Henning Westerholt (@henningw) 11 9 83 49
-   5. Liviu Chircu (@liviuchircu) 8 6 21 52
+   5. Liviu Chircu (@liviuchircu) 9 7 22 53
    6. Sergio Gutierrez 7 5 13 13
    7. Andrei Pelinescu-Onciul 6 4 81 33
    8. Razvan Crainea (@razvancrainea) 6 4 26 46
@@ -366,8 +366,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2018
    3.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Aug 2015
    5.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Jan 2015
@@ -390,8 +390,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Kennard
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Kennard
    White, Sergio Gutierrez, Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Anatoly Pidruchny, Jan Janak (@janakj).
