@@ -699,9 +699,10 @@ modparam("usrloc", "db_mode", 2)
        all modified or new contacts to database. Use this scheme
        if you encounter high-load peaks and want them to process
        as fast as possible. The mode will not help at all if the
-       load is high all the time. Also, latency of this mode is
-       much lower than latency of mode 1, but slightly higher than
-       latency of mode 0.
+       load is high all the time. The added latency on the SIP
+       signaling when using this asynchronous preset is much lower
+       than the one added by the safe but blocking,
+       "single-instance-sql-write-through" preset.
      * "sql-only" - DB-Only scheme. No memory cache is kept, all
        operations being directly performed with the database. The
        timer deletes all expired contacts from database - cleans
@@ -1474,12 +1475,12 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 231 136 3960 3494
-   3. Liviu Chircu (@liviuchircu) 204 124 5765 1847
+   3. Liviu Chircu (@liviuchircu) 205 125 5769 1850
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
-   7. Vlad Patrascu (@rvlad-patrascu) 23 14 404 269
-   8. Razvan Crainea (@razvancrainea) 22 17 372 107
+   7. Razvan Crainea (@razvancrainea) 26 20 378 120
+   8. Vlad Patrascu (@rvlad-patrascu) 23 14 404 269
    9. Henning Westerholt (@henningw) 22 11 462 356
    10. Andrei Pelinescu-Onciul 17 13 151 91
 
@@ -1514,9 +1515,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
-   2.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Mar 2019
+   1.  Razvan Crainea (@razvancrainea)     Jul 2011 - May 2019
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
+   3.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Aug 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Aug 2018
    6.  Shlomi Gutman                       Mar 2018 - Mar 2018

@@ -512,7 +512,7 @@ add_body_part("Hello World!", "text/plain");
      * -10 - No Via header.
      * -11 - Request URI parse error.
      * -12 - Bad hostname in R-URI.
-     * -13 - No Max-Forward header.
+     * -13 - No Max-Forwards header.
      * -14 - No Contact header.
      * -15 - Path user for non-Register request.
      * -16 - No allow header in 405 reply.
@@ -908,8 +908,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 48 25 1509 598
-   2. Razvan Crainea (@razvancrainea) 38 14 2890 38
-   3. Liviu Chircu (@liviuchircu) 22 16 237 220
+   2. Razvan Crainea (@razvancrainea) 39 15 2891 38
+   3. Liviu Chircu (@liviuchircu) 23 17 238 221
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
    6. Ovidiu Sas (@ovidiusas) 4 2 22 1
@@ -943,8 +943,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Mar 2019
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
    3.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Jun 2018
    5.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
@@ -965,8 +965,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Fabian Gast (@fgast), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Ovidiu Sas
+   Last edited by: Liviu Chircu (@liviuchircu), Fabian Gast
+   (@fgast), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
    (@ovidiusas), Julián Moreno Patiño, Razvan Crainea
    (@razvancrainea), Mihai Tiganus (@tallicamike), Vlad Paiu
    (@vladpaiu), Boris Ratner, Nick Altmann (@nikbyte).

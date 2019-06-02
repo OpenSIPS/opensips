@@ -577,21 +577,21 @@ modparam("presence", "pres_htable_size", 11)
    the wathcer/subscriber.
 
    The function may take the following parameters:
-     * force_active - options parameter that controlls what is the
+     * force_active - optional parameter that controls what is the
        default policy (of the presentity) on accepting new
        subscriptions (accept or reject) - of course, this
        parameter makes sense only when using a presence
        configuration with privacy rules enabled (force_active
        parameter in presence_xml module is not set).
        There are scenarios where the presentity (the party you
-       subscribe to) can not upload an XCAP document with it's
-       privacy rules (to controll which watchers are allowed to
-       subscribe to it). In such case, from script level, you can
+       subscribe to) can not upload an XCAP document with its
+       privacy rules (to control which watchers are allowed to
+       subscribe to it). In such cases, from script level, you can
        force the presence server to consider the current
        subscription allowed (with Subscription-Status:active) by
        calling the handle_subscribe() function with the string
        parameter "1".
-     * sharing_tag - options parameter telling the owner tag (for
+     * sharing_tag - optional parameter telling the owner tag (for
        the subscription) in clusetering scenarios where the
        subscription data is shared between multiple servers - see
        the Section 1.2, “Presence clustering” chapter for more
@@ -1039,9 +1039,9 @@ Chapter 3. Contributors
    1. Anca Vamanu 663 247 24146 12623
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 117 74 2752 1172
    3. Ovidiu Sas (@ovidiusas) 27 19 615 167
-   4. Razvan Crainea (@razvancrainea) 25 19 366 129
+   4. Razvan Crainea (@razvancrainea) 26 20 372 129
    5. Daniel-Constantin Mierla (@miconda) 24 19 174 165
-   6. Liviu Chircu (@liviuchircu) 23 14 240 365
+   6. Liviu Chircu (@liviuchircu) 24 15 246 371
    7. Henning Westerholt (@henningw) 15 6 340 302
    8. Dan Pascu (@danpascu) 9 7 13 32
    9. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
@@ -1076,11 +1076,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2019
-   2.  Walter Doekes (@wdoekes)            Apr 2010 - Feb 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2018
-   5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Mar 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2019
+   4.  Walter Doekes (@wdoekes)            Apr 2010 - Feb 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2018
    6.  James Criscuolo                     Mar 2016 - Mar 2016
    7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -1103,8 +1103,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Razvan
    Crainea (@razvancrainea), Saúl Ibarra Corretgé (@saghul),
    Ovidiu Sas (@ovidiusas), Anca Vamanu, Kennard White, Angel
    Marin, Kobi Eshun (@ekobi), Klaus Darilion, Henning Westerholt

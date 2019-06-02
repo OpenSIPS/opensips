@@ -136,8 +136,8 @@ modparam("rest_client", "connection_timeout", 4)
 1.3.3. connect_poll_interval (integer)
 
    Only relevant with async requests. Allows complete control over
-   how quickly we want to detect libcurl's completed blocking TCP
-   handshakes, so the async transfers can be put in the
+   how quickly we want to detect libcurl's completed blocking
+   TCP/TLS handshakes, so the async transfers can be put in the
    background. A lower connect_poll_interval may speed up all
    async HTTP transfers, but will also increase CPU usage.
 
@@ -551,9 +551,9 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 108 57 3196 1369
+   1. Liviu Chircu (@liviuchircu) 110 59 3199 1374
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
-   3. Razvan Crainea (@razvancrainea) 10 8 30 15
+   3. Razvan Crainea (@razvancrainea) 11 9 31 15
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 95 47
    5. Jarrod Baumann (@jarrodb) 6 3 131 32
    6. Agalya Ramachandran (@AgalyaR) 6 2 354 1
@@ -581,8 +581,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2019
-   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2018
+   1. Liviu Chircu (@liviuchircu)         Mar 2013 - May 2019
+   2. Razvan Crainea (@razvancrainea)     Aug 2015 - May 2019
    3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2018
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    5. Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017

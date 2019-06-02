@@ -729,7 +729,7 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 102 61 3967 497
    2. Liviu Chircu (@liviuchircu) 38 29 678 166
-   3. Razvan Crainea (@razvancrainea) 20 15 251 135
+   3. Razvan Crainea (@razvancrainea) 21 16 252 135
    4. Sergey Khripchenko 19 6 649 366
    5. Vlad Patrascu (@rvlad-patrascu) 12 8 98 133
    6. shripchenko 11 4 409 150
@@ -761,11 +761,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  TaoZhiying                          May 2019 - May 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Sep 2018
-   3.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Mar 2018
-   5.  Razvan Crainea (@razvancrainea)     Oct 2010 - Dec 2017
+   1.  Razvan Crainea (@razvancrainea)     Oct 2010 - May 2019
+   2.  TaoZhiying                          May 2019 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Sep 2018
+   4.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Mar 2018
    6.  Jeremy Martinez                     Feb 2017 - Feb 2017
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
    8.  Sergey Khripchenko                  Nov 2014 - Oct 2015

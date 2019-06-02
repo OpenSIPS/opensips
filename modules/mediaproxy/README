@@ -340,7 +340,7 @@ if (is_method("INVITE")) {
 
    Example 1.10. Using the end_media_session function
 ...
-if (is_method("BYE") {
+if (is_method("BYE")) {
     end_media_session();
 }
 ...
@@ -355,9 +355,9 @@ Chapter 2. Contributors
    1. Dan Pascu (@danpascu) 126 49 4218 2380
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 31 687 88
    3. Saúl Ibarra Corretgé (@saghul) 20 14 504 71
-   4. Daniel-Constantin Mierla (@miconda) 13 11 37 33
-   5. Liviu Chircu (@liviuchircu) 12 10 40 46
-   6. Razvan Crainea (@razvancrainea) 5 3 17 17
+   4. Liviu Chircu (@liviuchircu) 13 11 41 47
+   5. Daniel-Constantin Mierla (@miconda) 13 11 37 33
+   6. Razvan Crainea (@razvancrainea) 6 4 18 17
    7. Vlad Paiu (@vladpaiu) 4 2 7 12
    8. Henning Westerholt (@henningw) 4 2 6 31
    9. Andrei Pelinescu-Onciul 4 2 4 4
@@ -389,11 +389,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   4.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2016
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    6.  Eric Tamme (@etamme)                Jul 2014 - Jul 2014
    7.  Saúl Ibarra Corretgé (@saghul)      Mar 2010 - Dec 2013
    8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011

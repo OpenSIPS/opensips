@@ -210,8 +210,8 @@ Chapter 2. Contributors
    1. Gabriel Vasile 51 13 3118 674
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 25 19 193 197
    3. Daniel-Constantin Mierla (@miconda) 13 11 25 49
-   4. Andrei Pelinescu-Onciul 12 9 71 72
-   5. Razvan Crainea (@razvancrainea) 11 9 35 25
+   4. Razvan Crainea (@razvancrainea) 12 10 36 25
+   5. Andrei Pelinescu-Onciul 12 9 71 72
    6. Liviu Chircu (@liviuchircu) 9 6 16 59
    7. Jan Janak (@janakj) 9 4 428 48
    8. Henning Westerholt (@henningw) 8 5 13 104
@@ -242,10 +242,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2018
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2017
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2018
    5.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
    6.  Henning Westerholt (@henningw)      May 2007 - Jun 2008
    7.  Daniel-Constantin Mierla (@miconda) Sep 2003 - Mar 2008

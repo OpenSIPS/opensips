@@ -134,8 +134,8 @@ modparam("cachedb_mongodb", "cachedb_url",
 
 # Connect to a mongod replica set
 modparam("cachedb_mongodb", "cachedb_url",
-         "mongodb://10.0.0.10,10.0.0.11:27017/opensipsDB.dialog?replSet=
-my-set")
+         "mongodb://10.0.0.10,10.0.0.11:27017/opensipsDB.dialog?replicaS
+et=my-set")
 
 # Connect to a mongos instance (routes to a sharded cluster)
 modparam("cachedb_mongodb", "cachedb_url",
@@ -263,10 +263,10 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 141 71 2747 2645
+   1. Liviu Chircu (@liviuchircu) 142 72 2748 2646
    2. Vlad Paiu (@vladpaiu) 34 9 2964 50
    3. Ovidiu Sas (@ovidiusas) 10 8 92 16
-   4. Razvan Crainea (@razvancrainea) 8 6 25 24
+   4. Razvan Crainea (@razvancrainea) 9 7 26 24
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 2 1
    6. @jalung 4 1 97 56
    7. Julián Moreno Patiño 3 1 1 1
@@ -292,8 +292,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2018
+   1. Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   2. Razvan Crainea (@razvancrainea)     Aug 2015 - May 2019
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    4. @jalung                             Aug 2017 - Aug 2017
    5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017

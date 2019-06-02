@@ -76,6 +76,14 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">7</entry>
+		<entry align="center">5</entry>
+		<entry align="center">15</entry>
+		<entry align="center">14</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">7</entry>
 		<entry align="center">4</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">80</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>)</entry>
 		<entry align="center">7</entry>
 		<entry align="center">3</entry>
 		<entry align="center">234</entry>
 		<entry align="center">82</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Ancuta Onofrei</entry>
-		<entry align="center">7</entry>
-		<entry align="center">1</entry>
-		<entry align="center">134</entry>
-		<entry align="center">169</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Andrea Giordana, Elena-Ramona Modroiu, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Aron Rosenberg, John Riordan, Konstantin Bokarius, Julián Moreno Patiño, Sergio Gutierrez, UnixDev, Edson Gellert Schubert, Stanislaw Pitucha.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ancuta Onofrei, Andrea Giordana, Elena-Ramona Modroiu, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Aron Rosenberg, John Riordan, Konstantin Bokarius, Julián Moreno Patiño, Sergio Gutierrez, UnixDev, Edson Gellert Schubert, Stanislaw Pitucha.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jun 2011 - May 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Nov 2018</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Sep 2002 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Jul 2017</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2011 - Nov 2016</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
