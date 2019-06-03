@@ -127,7 +127,7 @@ int slinkedl_traverse(slinkedl_list_t *list,
 
 void *slinkedl_peek(slinkedl_list_t *list)
 {
-	if (!list)
+	if (!list || !list->head)
 		return NULL;
 
 	return list->head->data;
