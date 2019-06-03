@@ -465,7 +465,7 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 		LM_ERR("oom\n");
 		return -1;
 	}
-	s = cpy;
+	s.s = cpy.s;
 
 	if (param_no==1)
 	{
