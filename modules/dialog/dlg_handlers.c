@@ -1124,7 +1124,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 	struct dlg_cell *dlg;
 
 	/* is the dialog already created? */
-	if ( (dlg=ctx_dialog_get())!=NULL ) {
+	if (current_processing_ctx && (dlg=ctx_dialog_get())!=NULL ) {
 		/* new, un-initialized dialog ? */
 		if ( dlg->flags & DLG_FLAG_ISINIT ) {
 			/* fully init dialog -> check if attached to the transaction */
