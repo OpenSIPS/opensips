@@ -56,7 +56,7 @@ static void cfg_context_append_line(struct cfg_context *con,
                                     char *line, int len);
 
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
-															FILE **ret_stream)
+															str *ret_buffer)
 {
 	FILE *cfg_stream;
 	str cfg_buf, pp_buf;
@@ -118,13 +118,14 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 		goto out_free;
 	}
 
-	/* do we have to return the cfg stream? */
-	if (ret_stream)
-		*ret_stream = cfg_stream;
-	else
-		fclose(cfg_stream);
+	fclose(cfg_stream);
 
-	free(cfg_buf.s);
+	/* do we have to return the cfg buffer? */
+	if (ret_buffer)
+		*ret_buffer = cfg_buf;
+	else
+		free(cfg_buf.s);
+
 	return 0;
 
 out_free:

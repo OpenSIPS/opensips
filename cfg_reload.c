@@ -265,39 +265,6 @@ static int reindex_all_new_sroutes(struct os_script_routes *new_srs,
 }
 
 
-
-static inline int stream_2_sh_buffer(FILE *cfg_stream, str *buf)
-{
-	int n;
-
-	/* this shouldn't be needed as the parser should have read the full 
-	 * file, but let's do it to be 100% sure */
-	fseek( cfg_stream, 0L, SEEK_END);
-	buf->len = ftell(cfg_stream);
-
-	buf->s = (char*)shm_malloc( buf->len+1 );
-	if (buf->s==NULL) {
-		LM_ERR("failed to sh allocate cfg buffer (size %d)\n",buf->len);
-		return -1;
-	}
-
-	rewind( cfg_stream );
-
-	n = fread( buf->s, sizeof(char), buf->len, cfg_stream);
-	if ( n!=buf->len || ferror(cfg_stream)!=0 ) {
-		LM_ERR("failed copying the cfg stream to buffer");
-		shm_free( buf->s );
-		buf->s = NULL;
-		buf->len = 0;
-		return -1;
-	}
-
-	buf->s[buf->len] = 0; /* just in case */
-
-	return 0;
-}
-
-
 static inline void send_cmd_to_all_procs(ipc_rpc_f *rpc)
 {
 	int i;
@@ -477,7 +444,7 @@ int reload_routing_script(void)
 {
 	struct os_script_routes *sr, *sr_bk;
 	char * curr_wdir=NULL;
-	FILE *cfg_stream=NULL;
+	str cfg_buf={NULL,0};
 	int cnt_sleep, ret;
 
 	/* one reload at a time */
@@ -518,7 +485,7 @@ int reload_routing_script(void)
 		}
 	}
 
-	ret = parse_opensips_cfg( cfg_file, preproc, &cfg_stream);
+	ret = parse_opensips_cfg( cfg_file, preproc, &cfg_buf);
 
 	cfg_parse_only_routes = 0;
 
@@ -559,14 +526,16 @@ int reload_routing_script(void)
 
 	LM_DBG("new routes are valid and approved, push it to all procs\n");
 
-	if (stream_2_sh_buffer( cfg_stream, &srr_ctx->cfg_buf)<0) {
-		LM_ERR("failed to buffer'ize the cfg stream, abording\n");
+
+	if (shm_nt_str_dup( &srr_ctx->cfg_buf, &cfg_buf)<0) {
+		LM_ERR("failed to shmem'ize the cfg buffer, abording\n");
 		goto error;
 	}
 
-	/* we do not need the stream anymore */
-	fclose( cfg_stream );
-	cfg_stream = NULL;
+	/* we do not need the local cfg buffer anymore */
+	free( cfg_buf.s );
+	cfg_buf.s = NULL;
+	cfg_buf.len = 0;
 
 	/* send the script for parse and validation to all procs */
 	send_cmd_to_all_procs( routes_reload_per_proc );
@@ -620,8 +589,8 @@ error:
 		pkg_free(sr);
 		sroutes = sr_bk;
 	}
-	if (cfg_stream)
-		fclose(cfg_stream);
+	if (cfg_buf.s)
+		free(cfg_buf.s);
 	return -1;
 }
 

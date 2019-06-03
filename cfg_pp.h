@@ -36,7 +36,7 @@ struct str_buf{
 };
 
 int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
-		FILE **ret_stream);
+		str *ret_buffer);
 int cfg_push(const str *cfg_file);
 int cfg_pop(void);
 void cfg_dump_context(const char *file, int line, int colstart, int colend);
