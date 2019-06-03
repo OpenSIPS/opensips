@@ -477,13 +477,14 @@ static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 	 * v=0
 	 * o=- <timestamp> <version> IN IP4 <mediaip>
 	 * s=-
-	 * t=0 0
 	 * c=IN IP4 <mediaip>
+	 * t=0 0
 	 * <streams*>
 	 */
 	str header1 = str_init("v=0" CRLF "o=- ");
 	str header2 = str_init(" IN IP4 0.0.0.0" CRLF "s=-" CRLF);
-	str header3 = str_init("t=0 0" CRLF "c=IN IP4 ");
+	str header3 = str_init("c=IN IP4 ");
+	str header4 = str_init("t=0 0" CRLF);
 	str localh = str_init("127.0.0.1");
 	str crlf_str = str_init(CRLF);
 
@@ -498,6 +499,7 @@ static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 	else
 		SIPREC_COPY_STR(localh, buf);
 	SIPREC_COPY_STR(crlf_str, buf);
+	SIPREC_COPY_STR(header4, buf);
 	for (p = 0; p < sess->participants_no; p++) {
 		list_for_each(it, &sess->participants[p].streams) {
 			stream = list_entry(it, struct srs_sdp_stream, list);
