@@ -417,7 +417,7 @@ int db_table_version(const db_func_t* dbf, db_con_t* connection, const str* tabl
 	}
 
 	ver = ROW_VALUES(RES_ROWS(res));
-	if ( VAL_TYPE(ver)!=DB_INT || VAL_NULL(ver) ) {
+	if ((VAL_TYPE(ver)!=DB_INT && VAL_TYPE(ver)!=DB_BIGINT) || VAL_NULL(ver)) {
 		LM_ERR("invalid type (%d) or nul (%d) version "
 			"columns for %.*s\n", VAL_TYPE(ver), VAL_NULL(ver),
 			table->len, ZSW(table->s));
@@ -425,7 +425,11 @@ int db_table_version(const db_func_t* dbf, db_con_t* connection, const str* tabl
 		return -1;
 	}
 
-	ret = VAL_INT(ver);
+	if (VAL_TYPE(ver)==DB_INT)
+		ret = VAL_INT(ver);
+	else
+		ret = (int)VAL_BIGINT(ver);
+
 	dbf->free_result(connection, res);
 	return ret;
 }
