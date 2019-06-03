@@ -414,7 +414,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	str_str_t *kv;
 	char *p;
 	int ret_code = MHD_HTTP_OK;
-	str saved_body;
+	str saved_body = STR_NULL;
 
 #if ( MHD_VERSION >= 0x000092800 )
 	int sv_sockfd;
@@ -485,7 +485,9 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 					if (cb) {
 						normalised_url = &url[cb->http_root->len+1];
 						LM_DBG("normalised_url=[%s]\n", normalised_url);
-						saved_body = ((str_str_t *)slinkedl_peek(pr->p_list))->val;
+						kv = slinkedl_peek(pr->p_list);
+						if (kv)
+							saved_body = ((str_str_t *)kv)->val;
 						ret_code = cb->callback(cls, (void*)connection,
 								normalised_url,
 								method, version,
