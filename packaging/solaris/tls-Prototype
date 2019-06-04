@@ -39,7 +39,6 @@ f none /opt/opensips/dbtext/opensips/sip_trace 0644 root root
 f none /opt/opensips/dbtext/opensips/speed_dial 0644 root root
 f none /opt/opensips/dbtext/opensips/subscriber 0644 root root
 f none /opt/opensips/dbtext/opensips/trusted 0644 root root
-f none /opt/opensips/dbtext/opensips/uri 0644 root root
 f none /opt/opensips/dbtext/opensips/userblacklist 0644 root root
 f none /opt/opensips/dbtext/opensips/usr_preferences 0644 root root
 f none /opt/opensips/dbtext/opensips/version 0644 root root
@@ -136,7 +135,6 @@ f none /opt/opensips/lib64/opensips/modules/textops.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/tm.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/uac.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/uac_redirect.so 0755 root root
-f none /opt/opensips/lib64/opensips/modules/uri.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/uri_db.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/userblacklist.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/usrloc.so 0755 root root
@@ -216,7 +214,6 @@ f none /opt/opensips/README.tlsops 0644 root root
 f none /opt/opensips/README.tm 0644 root root
 f none /opt/opensips/README.uac 0644 root root
 f none /opt/opensips/README.uac_redirect 0644 root root
-f none /opt/opensips/README.uri 0644 root root
 f none /opt/opensips/README.uri_db 0644 root root
 f none /opt/opensips/README.userblacklist 0644 root root
 f none /opt/opensips/README.usrloc 0644 root root

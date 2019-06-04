@@ -34,7 +34,7 @@ MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
 		mangler maxfwd mediaproxy mi_datagram mi_fifo msilo nathelper \
 		options path permissions pike registrar rr \
 		siptrace sl speeddial sst statistics textops tm uac \
-		uac_redirect uri uri_db usrloc xlog
+		uac_redirect uri_db usrloc xlog
 
 RC_FILES=	acc/radiusclient.conf \
 		acc/servers \

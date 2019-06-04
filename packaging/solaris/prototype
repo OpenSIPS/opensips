@@ -49,7 +49,6 @@ f none lib/opensips/modules/textops.so 0755 bin bin
 f none lib/opensips/modules/tm.so 0755 bin bin
 f none lib/opensips/modules/uac.so 0755 bin bin
 f none lib/opensips/modules/uac_redirect.so 0755 bin bin
-f none lib/opensips/modules/uri.so 0755 bin bin
 f none lib/opensips/modules/uri_db.so 0755 bin bin
 f none lib/opensips/modules/usrloc.so 0755 bin bin
 f none lib/opensips/modules/xlog.so 0755 bin bin
@@ -101,7 +100,6 @@ f none doc/opensips/README.textops 0644 bin bin
 f none doc/opensips/README.tm 0644 bin bin
 f none doc/opensips/README.uac 0644 bin bin
 f none doc/opensips/README.uac_redirect 0644 bin bin
-f none doc/opensips/README.uri 0644 bin bin
 f none doc/opensips/README.uri_db 0644 bin bin
 f none doc/opensips/README.usrloc 0644 bin bin
 f none doc/opensips/README.xlog 0644 bin bin
