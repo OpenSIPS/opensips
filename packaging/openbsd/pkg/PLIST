@@ -47,7 +47,6 @@ lib/opensips/modules/rr.so
 lib/opensips/modules/signaling.so
 lib/opensips/modules/tracer.so
 lib/opensips/modules/sl.so
-lib/opensips/modules/sms.so
 lib/opensips/modules/speeddial.so
 lib/opensips/modules/sst.so
 lib/opensips/modules/statistics.so
@@ -112,7 +111,6 @@ share/doc/opensips/README.rr
 share/doc/opensips/README.signaling
 share/doc/opensips/README.tracer
 share/doc/opensips/README.sl
-share/doc/opensips/README.sms
 share/doc/opensips/README.speeddial
 share/doc/opensips/README.sst
 share/doc/opensips/README.statistics

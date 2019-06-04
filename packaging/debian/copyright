@@ -1034,19 +1034,6 @@ Files: sl_cb.c sl_cb.h
 Copyright: 2016, OpenSIPS Solutions
 License: GPL-2+
 
-Files: modules/sms/*
-Copyright: 2000-2002 Stefan Frings
-License: GPL-2+
-
-Files: modules/sms/libsms_sms.h
-  modules/sms/sms.c
-  modules/sms/sms_funcs.c
-  modules/sms/sms_funcs.h
-  modules/sms/sms_report.c
-  modules/sms/sms_report.h
-Copyright: 2001-2007, FhG Fokus
-License: GPL-2+
-
 Files: modules/sngtc/*
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+

@@ -970,7 +970,6 @@ fi
 %{_libdir}/opensips/modules/sipmsgops.so
 %{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so
-%{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
 %{_libdir}/opensips/modules/sql_cacher.so
 %{_libdir}/opensips/modules/sst.so
@@ -1054,7 +1053,6 @@ fi
 %doc docdir/README.sipmsgops
 %doc docdir/README.tracer
 %doc docdir/README.sl
-%doc docdir/README.sms
 %doc docdir/README.speeddial
 %doc docdir/README.sql_cacher
 %doc docdir/README.sst

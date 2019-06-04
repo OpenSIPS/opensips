@@ -272,7 +272,6 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.signaling
 %doc %{_docdir}/opensips/README.tracer
 %doc %{_docdir}/opensips/README.sl
-%doc %{_docdir}/opensips/README.sms
 %doc %{_docdir}/opensips/README.speeddial
 %doc %{_docdir}/opensips/README.sst
 %doc %{_docdir}/opensips/README.statistics
@@ -339,7 +338,6 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so
-%{_libdir}/opensips/modules/sms.so
 %{_libdir}/opensips/modules/speeddial.so
 %{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so

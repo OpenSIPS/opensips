@@ -236,7 +236,6 @@ $m->xlog("L_INFO", "foo");]]></screen>
 * load_rr
 * sip_trace
 * sl_reply_error
-* sms_send_msg
 * sd_lookup
 * sstCheckMin
 * append_time
