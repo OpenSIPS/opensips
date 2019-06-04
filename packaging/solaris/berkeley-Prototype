@@ -40,7 +40,6 @@ f none /opt/opensips/db_berkeley/opensips/sip_trace 0644 root root
 f none /opt/opensips/db_berkeley/opensips/speed_dial 0644 root root
 f none /opt/opensips/db_berkeley/opensips/subscriber 0644 root root
 f none /opt/opensips/db_berkeley/opensips/trusted 0644 root root
-f none /opt/opensips/db_berkeley/opensips/uri 0644 root root
 f none /opt/opensips/db_berkeley/opensips/userblacklist 0644 root root
 f none /opt/opensips/db_berkeley/opensips/usr_preferences 0644 root root
 f none /opt/opensips/db_berkeley/opensips/version 0644 root root

@@ -230,6 +230,12 @@ Files: modules/auth_db/aaa_avps.h
 Copyright: 2004-2009, Voice Sistem SRL
 License: GPL-2+
 
+Files: modules/auth_db/checks.h
+Copyright: 2009, Voice System
+  2009, Irina Stanescu
+  2001-2004, FhG FOKUS
+License: GPL-2+
+
 Files: modules/avpops/*
 Copyright: 2004-2009, Voice Sistem SRL
 License: GPL-2+
@@ -1022,6 +1028,10 @@ Files: modules/sipmsgops/sipmsgops.c
 Copyright: 2001-2007, FhG Fokus
 License: GPL-2+
 
+Files: modules/sipmsgops/uri.c
+Copyright: 2001-2003, FhG Fokus
+License: GPL-2+
+
 Files: modules/tracer/tracer.c
 Copyright: 2006-2009, Voice Sistem S.R.L
 License: GPL-2+
@@ -1165,33 +1175,6 @@ License: GPL-2+
 Files: modules/uac_registrant/reg_db_handler.c
   modules/uac_registrant/reg_db_handler.h
 Copyright: 2010-2014, VoIP Embedded, Inc
-License: GPL-2+
-
-Files: modules/uri/*
-Copyright: 2009, Voice Systems
-  2009, Irina Stanescu
-  2001-2003, FhG Fokus
-License: GPL-2+
-
-Files: modules/uri/aaa_checks.h
-Copyright: 2009, Voice Systems
-  2009, Irina Stanescu
-  2002, 2003, Juha Heinanen
-License: GPL-2+
-
-Files: modules/uri/checks.c
-  modules/uri/checks.h
-Copyright: 2001-2007, FhG Fokus
-License: GPL-2+
-
-Files: modules/uri/db_checks.c
-Copyright: 2001-2004, FhG FOKUS
-License: GPL-2+
-
-Files: modules/uri/db_checks.h
-Copyright: 2009, Voice System
-  2009, Irina Stanescu
-  2001-2004, FhG FOKUS
 License: GPL-2+
 
 Files: modules/userblacklist/*

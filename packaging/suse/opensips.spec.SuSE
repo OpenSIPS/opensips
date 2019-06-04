@@ -282,7 +282,6 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.tm
 %doc %{_docdir}/opensips/README.uac
 %doc %{_docdir}/opensips/README.uac_redirect
-%doc %{_docdir}/opensips/README.uri
 %doc %{_docdir}/opensips/README.userblacklist
 %doc %{_docdir}/opensips/README.usrloc
 %doc %{_docdir}/opensips/README.xlog
@@ -350,7 +349,6 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/uac.so
 %{_libdir}/opensips/modules/uac_redirect.so
-%{_libdir}/opensips/modules/uri.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
 %{_libdir}/opensips/modules/xlog.so
