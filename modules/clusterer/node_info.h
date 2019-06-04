@@ -75,7 +75,6 @@ struct node_info {
 
 	/* fields accessed only by timer */
 	int curr_no_retries;
-	struct timeval last_ping;       	/* last ping sent to this node */
 
 	/* fields protected by cluster lock */
 	int sp_top_version;                 /* last topology version for which shortest path was computed */
@@ -85,6 +84,8 @@ struct node_info {
 
 	/* fields protected by node lock */
 	clusterer_link_state link_state;	/* state of the "link" with this node */
+	int last_ping_state;				/* state(success/error) of the last ping sent to this node */
+	struct timeval last_ping;       	/* last ping sent to this node */
 	struct timeval last_pong;       	/* last pong received from this node */
 	struct neighbour *neighbour_list;   /* list of directly reachable neighbours */
 	int ls_seq_no;                      /* sequence number of the last link state update */
