@@ -44,7 +44,6 @@ lib/opensips/modules/pike.so
 lib/opensips/modules/ratelimit.so
 lib/opensips/modules/registrar.so
 lib/opensips/modules/rr.so
-lib/opensips/modules/seas.so
 lib/opensips/modules/signaling.so
 lib/opensips/modules/tracer.so
 lib/opensips/modules/sl.so
@@ -110,7 +109,6 @@ share/doc/opensips/README.pike
 share/doc/opensips/README.ratelimit
 share/doc/opensips/README.registrar
 share/doc/opensips/README.rr
-share/doc/opensips/README.seas
 share/doc/opensips/README.signaling
 share/doc/opensips/README.tracer
 share/doc/opensips/README.sl

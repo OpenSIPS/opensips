@@ -1001,10 +1001,6 @@ Files: modules/script_helper/script_helper.c
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
-Files: modules/seas/*
-Copyright: 2006 VozTelecom Sistemas
-License: GPL-2+
-
 Files: modules/signaling/*
 Copyright: 2006-2009, Voice Sistem S.R.L
 License: GPL-2+

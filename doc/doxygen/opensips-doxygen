@@ -624,7 +624,6 @@ INPUT                  = ./ \
                          modules/rtpengine \
                          modules/rtpproxy \
                          modules/script_helper \
-                         modules/seas \
                          modules/signaling \
                          modules/sipcapture \
                          modules/sip_i \

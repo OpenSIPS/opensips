@@ -32,7 +32,7 @@ MODULES=	acc alias_db auth auth_db auth_diameter avpops benchmark \
 		cfgutils dbtext dialog dispatcher diversion domain \
 		domainpolicy enum exec flatstore gflags group imc \
 		mangler maxfwd mediaproxy mi_datagram mi_fifo msilo nathelper \
-		options path permissions pike registrar rr seas \
+		options path permissions pike registrar rr \
 		siptrace sl sms speeddial sst statistics textops tm uac \
 		uac_redirect uri uri_db usrloc xlog
 
@@ -148,7 +148,6 @@ post-patch:
 		${WRKSRC}/modules/ldap/README \
 		${WRKSRC}/modules/osp/README \
 		${WRKSRC}/modules/perl/README \
-		${WRKSRC}/modules/seas/README \
 		${WRKSRC}/modules/snmpstats/README \
 		${WRKSRC}/modules/speeddial/README \
 		${WRKSRC}/modules/unixodbc/README

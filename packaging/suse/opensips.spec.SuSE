@@ -269,7 +269,6 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.ratelimit
 %doc %{_docdir}/opensips/README.registrar
 %doc %{_docdir}/opensips/README.rr
-%doc %{_docdir}/opensips/README.seas
 %doc %{_docdir}/opensips/README.signaling
 %doc %{_docdir}/opensips/README.tracer
 %doc %{_docdir}/opensips/README.sl
@@ -337,7 +336,6 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
-%{_libdir}/opensips/modules/seas.so
 %{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so

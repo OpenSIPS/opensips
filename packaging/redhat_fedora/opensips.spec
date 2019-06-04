@@ -964,7 +964,6 @@ fi
 %{_libdir}/opensips/modules/rtpengine.so
 %{_libdir}/opensips/modules/rtpproxy.so
 %{_libdir}/opensips/modules/script_helper.so
-%{_libdir}/opensips/modules/seas.so
 %{_libdir}/opensips/modules/signaling.so
 %{_libdir}/opensips/modules/sip_i.so
 %{_libdir}/opensips/modules/sipcapture.so
@@ -1049,7 +1048,6 @@ fi
 %doc docdir/README.rr
 %doc docdir/README.rtpengine
 %doc docdir/README.rtpproxy
-%doc docdir/README.seas
 %doc docdir/README.signaling
 %doc docdir/README.sip_i
 %doc docdir/README.sipcapture

@@ -108,7 +108,6 @@ f none /opt/opensips/lib64/opensips/modules/ratelimit.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/registrar.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/rls.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/rr.so 0755 root root
-f none /opt/opensips/lib64/opensips/modules/seas.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/signaling.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/tracer.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/sl.so 0755 root root
@@ -189,7 +188,6 @@ f none /opt/opensips/README.ratelimit 0644 root root
 f none /opt/opensips/README.registrar 0644 root root
 f none /opt/opensips/README.rls 0644 root root
 f none /opt/opensips/README.rr 0644 root root
-f none /opt/opensips/README.seas 0644 root root
 f none /opt/opensips/README.signaling 0644 root root
 f none /opt/opensips/README.tracer 0644 root root
 f none /opt/opensips/README.sl 0644 root root
