@@ -72,6 +72,7 @@ typedef enum {
 	LS_RESTART_PINGING,
 	LS_RESTARTED,
 	LS_RETRYING,
+	LS_TEMP
 } clusterer_link_state;
 
 struct capability_reg {
