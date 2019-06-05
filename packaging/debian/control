@@ -82,6 +82,7 @@ Suggests: opensips-b2bua-module,
           opensips-wss-module,
           opensips-tlsmgm-module,
           opensips-unixodbc-module,
+          opensips-uuid-module,
           opensips-xmlrpc-module,
           opensips-xmpp-module
 Description: very fast and configurable SIP server
@@ -210,6 +211,17 @@ Description: SIMPLE presence modules for OpenSIPS
  This package provides several OpenSIPS modules for implementing presence
  server and presence user agent for RICH presence, registrar-based presence,
  external triggered presence and XCAP support.
+
+Package: opensips-uuid-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: UUID (Universally Unique Identifier) generator
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the a UUID generated for OpenSIPS script.
 
 Package: opensips-xmlrpc-module
 Architecture: any

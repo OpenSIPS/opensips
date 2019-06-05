@@ -1174,6 +1174,10 @@ Files: modules/usrloc/ureplication.c
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
+Files: modules/uuid/uuid.c
+Copyright: 2019, OpenSIPS Solutions
+License: GPL-2+
+
 Files: modules/xcap/*
 Copyright: 2008, 2012, AG Projects
 License: GPL-2+
