@@ -695,18 +695,24 @@ per second even on low-budget hardware.
 .
 This package provides the unixODBC database driver for OpenSIPS.
 
+%package  uuid-module
+Summary:  UUID (Universally Unique Identifier) generator
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  uuid-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the a UUID generated for OpenSIPS script.
+
 %package  wss-module
 Summary:  WebSocket Secure (WSS) transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-tlsmgm-module
 
-%description  wss-module
-OpenSIPS is a very fast and flexible SIP (RFC3261)
-server. Written entirely in C, OpenSIPS can handle thousands calls
-per second even on low-budget hardware.
-.
-This package provides the WebSocket Secure (WSS) support for OpenSIPS.
 
 %package  xml-module
 Summary:  Support for XML documents handling in OpenSIPS script
@@ -1346,6 +1352,10 @@ fi
 %files unixodbc-module
 %{_libdir}/opensips/modules/db_unixodbc.so
 %doc docdir/README.db_unixodbc
+
+%files uuid-module
+%{_libdir}/opensips/modules/uuid.so
+%doc docdir/README.uuid
 
 %files wss-module
 %{_libdir}/opensips/modules/proto_wss.so
