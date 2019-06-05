@@ -1,0 +1,131 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+		<title>Overview</title>
+
+		<para> This module provides a way to generate universally unique identifiers
+		(UUID) as specified in RFC 4122. The UUID is provided as a string
+		representation by reading the <xref linkend="pv_uuid"/>
+		pseudo-variable or calling the <xref linkend="func_uuid"/>
+		script function.
+		</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+		<title>Dependencies</title>
+
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			This module does not depend on other modules.
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<itemizedlist>
+				<listitem>
+					<para> <emphasis>libuuid</emphasis> - part of the util-linux
+					package, can be downloaded from:
+					ftp://ftp.kernel.org/pub/linux/utils/util-linux/</para>
+				</listitem>
+			</itemizedlist>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+		<para>
+		The module does not export any parameters.
+		</para>
+	</section>
+
+	<section id="exported_pseudo_variables" xreflabel="Exported Pseudo-Variables">
+		<title>Exported Pseudo-Variables</title>
+
+	<section id="pv_uuid" xreflabel="$uuid">
+		<title><varname>$uuid</varname></title>
+		<para>
+			The <emphasis>$uuid</emphasis> variable returns a newly generated
+			version 4 UUID based on high-quality randomness from /dev/urandom,
+			if available. Otherwise, a version 1 UUID (based on
+			current time and the local ethernet MAC address) will be generated.
+		</para>
+
+			<example>
+				<title>$uuid usage</title>
+				<programlisting format="linespecific">
+xlog("generated uuid: $uuid\n");
+				</programlisting>
+			</example>
+
+		</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+
+		<section id="func_uuid" xreflabel="uuid()">
+			<title>
+			<function moreinfo="none">
+				uuid(out_var, [version])
+				</function>
+			</title>
+			<para>
+				Generates a new UUID.
+			</para>
+			<itemizedlist>
+				<listitem>
+					<para>
+						<emphasis>out_var</emphasis> - an output variable
+						to return the generated UUID.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>version</emphasis> (optional) - UUID version
+						number. The supported values are:
+						<itemizedlist>
+							<listitem>
+							<para><emphasis>0</emphasis> - a RFC version 4 or
+							version 1 UUID will be generated, depending on the
+							availability of high-quality randomness from
+							/dev/urandom. This is the default behavior, if the
+							<emphasis>version</emphasis> parameter is missing.</para>
+							</listitem>
+							<listitem>
+							<para><emphasis>1</emphasis> - version 1 UUID
+							based on current time and the local ethernet MAC
+							address</para>
+							</listitem>
+							<listitem>
+							<para><emphasis>4</emphasis> - version 4 UUID
+							based on a high-quality random number generator. If
+							not available, a pseudo-random generator will be
+							substituted.</para>
+							</listitem>
+						</itemizedlist>
+					</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+				If UUID version 1 is used, the function will return the value
+				<emphasis>2</emphasis> if the UUID was generated in an unsafe
+				manner. This refers to the posibility of two concurrently
+				running processes generating the same UUID, in cases where
+				synchronization mechanisms are not available (more details
+				can be found in the <emphasis>uuid_generate</emphasis> man pages
+				of <emphasis>libuuid</emphasis>).
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+
+		</section>
+
+	</section>
+
+</chapter>
+
