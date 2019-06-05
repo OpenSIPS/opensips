@@ -73,10 +73,11 @@ struct module_exports exports= {
 	mod_items,       /* exported pseudo-variables */
 	0,				 /* exported transformations */
 	0,               /* extra processes */
-	0,        /* module initialization function */
+	0,        		 /* module initialization function */
 	0,               /* reply processing function */
 	0,
-	0       /* per-child init function */
+	0,       		 /* per-child init function */
+	0
 };
 
 static int gen_uuid(enum uuid_gen_vers vers, pv_value_t *res)
