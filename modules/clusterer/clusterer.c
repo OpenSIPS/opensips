@@ -1477,7 +1477,6 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 	int rst_ping_now = 0;
 	int req_list;
 	int node_list[MAX_NO_NODES], i, nr_nodes;
-	int race_cond = 0;
 	bin_packet_t packet;
 
 	switch (packet_type) {
@@ -1499,11 +1498,12 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 			src_node->link_state == LS_DOWN) &&
 			src_node->last_ping_state == 0 &&
 			LAST_PING_INTERVAL(src_node, rcv_time) < (utime_t)ping_timeout*1000)
-			race_cond = 1;
+			src_node->link_state = LS_TEMP;
 
 		/* if the node was retried and a reply was expected, it should be UP again */
 		if ((src_node->link_state == LS_RESTARTED ||
-			src_node->link_state == LS_RETRYING || race_cond) &&
+			src_node->link_state == LS_RETRYING ||
+			src_node->link_state == LS_TEMP) &&
 			PING_REPLY_INTERVAL(src_node) > 0 &&
 			PING_REPLY_INTERVAL(src_node) < (utime_t)ping_timeout*1000) {
 			lock_release(src_node->lock);
