@@ -23,6 +23,10 @@
 #ifndef mem_common_h
 #define mem_common_h
 
+extern void *mem_block;
+extern void *shm_block;
+extern void *rpm_block;
+
 #include "meminfo.h"
 
 #if !defined(F_MALLOC) && !defined(Q_MALLOC) && !defined(HP_MALLOC)
@@ -75,10 +79,6 @@ int parse_mm(const char *mm_name, enum osips_mm *mm);
 	 (mm) == MM_F_MALLOC_DBG ? "F_MALLOC_DBG" : \
 	 (mm) == MM_Q_MALLOC_DBG ? "Q_MALLOC_DBG" : \
 	 (mm) == MM_HP_MALLOC_DBG ? "HP_MALLOC_DBG" : "unknown")
-
-extern void *mem_block;
-extern void *shm_block;
-extern void *rpm_block;
 
 #ifdef DBG_MALLOC
 typedef void *(*osips_block_malloc_f) (void *block, unsigned long size,
