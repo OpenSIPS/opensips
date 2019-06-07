@@ -866,11 +866,35 @@ rtpengine_start_recording();
 					the <emphasis>$rtpquery</emphasis> variable.
 			</para></listitem>
 			<listitem><para>
+					<emphasis>jitter-average</emphasis> - similar behavior with
+					<emphasis>MOS-average</emphasis>, but returnes the average jitter.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>roundtrip-average</emphasis> - similar behavior with
+					<emphasis>MOS-average</emphasis>, but returnes the average roundtrip.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>packetloss-average</emphasis> - similar behavior with
+					<emphasis>MOS-average</emphasis>, but returnes the average packet loss.
+			</para></listitem>
+			<listitem><para>
 					<emphasis>MOS-min</emphasis> - without an index, it returns the minimum
 					MOS value (integer value between 0 and 50) of all RTP streams involved in the
 					call, both caller and callee.
 					If the index is specified, it has the same effect as for
 					<emphasis>MOS-average</emphasis>.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>jitter-min</emphasis> - similar behavior with
+					<emphasis>MOS-min</emphasis>, but returnes the minimum jitter of a leg/call.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>roundtrip-min</emphasis> - similar behavior with
+					<emphasis>MOS-min</emphasis>, but returnes the minimum roundtrip of a leg/call.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>packetloss-min</emphasis> - similar behavior with
+					<emphasis>MOS-min</emphasis>, but returnes the minimum packet loss of a leg/call.
 			</para></listitem>
 			<listitem><para>
 					<emphasis>MOS-max</emphasis> - without an index, it returns the maximum
@@ -880,16 +904,58 @@ rtpengine_start_recording();
 					<emphasis>MOS-average</emphasis>.
 			</para></listitem>
 			<listitem><para>
+					<emphasis>jitter-max</emphasis> - similar behavior with
+					<emphasis>MOS-max</emphasis>, but returnes the maximum jitter of a leg/call.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>roundtrip-max</emphasis> - similar behavior with
+					<emphasis>MOS-max</emphasis>, but returnes the maximum roundtrip of a leg/call.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>packetloss-max</emphasis> - similar behavior with
+					<emphasis>MOS-max</emphasis>, but returnes the maximum packet loss of a leg/call.
+			</para></listitem>
+			<listitem><para>
 					<emphasis>MOS-min-at</emphasis> - without an index, it returns the time in
 					seconds elapsed from the start of the call when the MOS value is minimum.
 					If the index is specified, it has the same effect as for
 					<emphasis>MOS-average</emphasis>.
 			</para></listitem>
 			<listitem><para>
+					<emphasis>jitter-min-at</emphasis> - similar behavior with
+					<emphasis>MOS-min-at</emphasis>, but returnes the time when the minimum
+					jitter was detected.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>roundtrip-min-at</emphasis> - similar behavior with
+					<emphasis>MOS-min-at</emphasis>, but returnes the time when the minimum
+					roundtrip was detected.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>packetloss-min-at</emphasis> - similar behavior with
+					<emphasis>MOS-min-at</emphasis>, but returnes the time when the minimum
+					packet loss of a leg/call was detected.
+			</para></listitem>
+			<listitem><para>
 					<emphasis>MOS-max-at</emphasis> - without an index, it returns the time in
 					seconds elapsed from the start of the call when the MOS value is maximum.
 					If the index is specified, it has the same effect as for
 					<emphasis>MOS-average</emphasis>.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>jitter-max-at</emphasis> - similar behavior with
+					<emphasis>MOS-max-at</emphasis>, but returnes the time when the maximum
+					value of jitter was detected.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>roundtrip-max-at</emphasis> - similar behavior with
+					<emphasis>MOS-max-at</emphasis>, but returnes the time when the maximum
+					value of roundtrip was detected.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>packetloss-min-at</emphasis> - similar behavior with
+					<emphasis>MOS-max-at</emphasis>, but returnes the time when the maximum
+					packet loss of a leg/call was detected.
 			</para></listitem>
 			</itemizedlist>
 
