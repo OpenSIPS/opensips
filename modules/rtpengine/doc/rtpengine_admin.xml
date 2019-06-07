@@ -896,7 +896,7 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
 	<section id="func_rtpengine_stop_media" xreflabel="rtpengine_stop_media()">
 		<title>
-		<function moreinfo="none">rtpengine_stop_media(flags[, sockvar])</function>
+		<function moreinfo="none">rtpengine_stop_media([flags[, sockvar]])</function>
 		</title>
 		<para>
 			This function will stop playing a media file previously started
@@ -915,6 +915,94 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 ...
 if (is_method("INVITE") &amp;&amp; $rs == 200)
 	rtpengine_stop_media();
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_rtpengine_block_media" xreflabel="rtpengine_block_media()">
+		<title>
+		<function moreinfo="none">rtpengine_stop_media([flags[, sockvar]])</function>
+		</title>
+		<para>
+			This function will block the media sent from one of the endpoints.
+			The direction to be blocked is controled by the <emphasis>flags</emphasis>
+			parameter, the <emphasis>from-tag</emphasis> value.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Example of <function>rtpengine_block_media</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_block_media();
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_rtpengine_unblock_media" xreflabel="rtpengine_unblock_media()">
+		<title>
+		<function moreinfo="none">rtpengine_unstop_media([flags[, sockvar]])</function>
+		</title>
+		<para>
+			This function will resume/unblock the media sent from one of the endpoints.
+			The direction to be blocked is controled by the <emphasis>flags</emphasis>
+			parameter, the <emphasis>from-tag</emphasis> value.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Example of <function>rtpengine_unblock_media</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_unblock_media();
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_rtpengine_block_dtmf" xreflabel="rtpengine_block_dtmf()">
+		<title>
+		<function moreinfo="none">rtpengine_stop_dtmf([flags[, sockvar]])</function>
+		</title>
+		<para>
+			This function will block the DTMF media sent from one of the endpoints.
+			The direction to be blocked is controled by the <emphasis>flags</emphasis>
+			parameter, the <emphasis>from-tag</emphasis> value.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Example of <function>rtpengine_block_dtmf</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_block_dtmf();
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_rtpengine_unblock_dtmf" xreflabel="rtpengine_unblock_dtmf()">
+		<title>
+		<function moreinfo="none">rtpengine_unstop_dtmf([flags[, sockvar]])</function>
+		</title>
+		<para>
+			This function will resume/unblock the DTMF media sent from one of the endpoints.
+			The direction to be blocked is controled by the <emphasis>flags</emphasis>
+			parameter, the <emphasis>from-tag</emphasis> value.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Example of <function>rtpengine_unblock_dtmf</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_unblock_dtmf();
 ...
 		</programlisting>
 		</example>

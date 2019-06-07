@@ -141,6 +141,10 @@ enum rtpe_operation {
 	OP_QUERY,
 	OP_START_MEDIA,
 	OP_STOP_MEDIA,
+	OP_BLOCK_MEDIA,
+	OP_UNBLOCK_MEDIA,
+	OP_BLOCK_DTMF,
+	OP_UNBLOCK_DTMF,
 };
 
 enum rtpe_stat {
@@ -205,6 +209,10 @@ static const char *command_strings[] = {
 	[OP_QUERY]		= "query",
 	[OP_START_MEDIA]= "play media",
 	[OP_STOP_MEDIA] = "stop media",
+	[OP_BLOCK_MEDIA]= "block media",
+	[OP_UNBLOCK_MEDIA] = "unblock media",
+	[OP_BLOCK_DTMF]= "block DTMF",
+	[OP_UNBLOCK_DTMF] = "unblock DTMF",
 };
 
 static const str stat_maps[] = {
@@ -244,6 +252,10 @@ static void free_rtpe_nodes(struct rtpe_set *list);
 static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 		pv_spec_t *duration, pv_spec_t *spvar);
 static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int rtpengine_blockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int rtpengine_unblockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int rtpengine_blockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int rtpengine_unblockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -359,6 +371,26 @@ static cmd_export_t cmds[] = {
 		{0,0,0}},
 		ANY_ROUTE},
 	{"rtpengine_stop_media", (cmd_function)rtpengine_stopmedia_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		ANY_ROUTE},
+	{"rtpengine_block_media", (cmd_function)rtpengine_blockmedia_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		ANY_ROUTE},
+	{"rtpengine_unblock_media", (cmd_function)rtpengine_unblockmedia_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		ANY_ROUTE},
+	{"rtpengine_block_dtmf", (cmd_function)rtpengine_blockdtmf_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		ANY_ROUTE},
+	{"rtpengine_unblock_dtmf", (cmd_function)rtpengine_unblockdtmf_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
@@ -1970,12 +2002,44 @@ error:
 	return NULL;
 }
 
+static int
+set_rtpengine_set_from_avp(struct sip_msg *msg)
+{
+	struct usr_avp *avp;
+	int_str setid_val;
+	struct rtpe_set *set;
+
+	if ((setid_avp_param == NULL) ||
+			(avp = search_first_avp(setid_avp_type, setid_avp.n, &setid_val, 0))
+			== NULL)
+		return 1;
+
+	if (avp->flags&AVP_VAL_STR) {
+		LM_ERR("setid_avp must hold an integer value\n");
+		return -1;
+	}
+
+	if ((set=select_rtpe_set(setid_val.n)) == NULL) {
+		LM_ERR("could not locate rtpengine set %d\n", setid_val.n);
+		return -1;
+	}
+
+	rtpe_ctx_set_fill( set );
+	LM_DBG("using rtpengine set %d\n", setid_val.n);
+
+	return 1;
+}
+
+
 static int rtpe_function_call_simple(struct sip_msg *msg, enum rtpe_operation op,
 		str *flags_str, pv_spec_t *spvar)
 {
 	bencode_buffer_t bencbuf;
 	struct rtpe_ctx *ctx;
 	bencode_item_t *ret;
+
+	if (set_rtpengine_set_from_avp(msg) == -1)
+		return -1;
 
 	ret = rtpe_function_call(&bencbuf, msg, op, flags_str, NULL, spvar);
 	if (!ret)
@@ -2356,34 +2420,6 @@ get_extra_id(struct sip_msg* msg, str *id_str) {
 
 }
 
-static int
-set_rtpengine_set_from_avp(struct sip_msg *msg)
-{
-	struct usr_avp *avp;
-	int_str setid_val;
-	struct rtpe_set *set;
-
-	if ((setid_avp_param == NULL) ||
-			(avp = search_first_avp(setid_avp_type, setid_avp.n, &setid_val, 0))
-			== NULL)
-		return 1;
-
-	if (avp->flags&AVP_VAL_STR) {
-		LM_ERR("setid_avp must hold an integer value\n");
-		return -1;
-	}
-
-	if ((set=select_rtpe_set(setid_val.n)) == NULL) {
-		LM_ERR("could not locate rtpengine set %d\n", setid_val.n);
-		return -1;
-	}
-
-	rtpe_ctx_set_fill( set );
-	LM_DBG("using rtpengine set %d\n", setid_val.n);
-
-	return 1;
-}
-
 static int rtpengine_delete(struct sip_msg *msg, str *flags, pv_spec_t *spvar)
 {
 	return rtpe_function_call_simple(msg, OP_DELETE, flags, spvar);
@@ -2392,9 +2428,6 @@ static int rtpengine_delete(struct sip_msg *msg, str *flags, pv_spec_t *spvar)
 static int
 rtpengine_delete_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
-	if (set_rtpengine_set_from_avp(msg) == -1)
-		return -1;
-
 	return rtpengine_delete(msg, flags, spvar);
 }
 
@@ -3188,4 +3221,24 @@ static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spv
 	}
 	bencode_buffer_free(&bencbuf);
 	return 1;
+}
+
+static int rtpengine_blockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+{
+	return rtpe_function_call_simple(msg, OP_BLOCK_MEDIA, flags, spvar);
+}
+
+static int rtpengine_unblockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+{
+	return rtpe_function_call_simple(msg, OP_UNBLOCK_MEDIA, flags, spvar);
+}
+
+static int rtpengine_blockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+{
+	return rtpe_function_call_simple(msg, OP_BLOCK_DTMF, flags, spvar);
+}
+
+static int rtpengine_unblockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+{
+	return rtpe_function_call_simple(msg, OP_UNBLOCK_DTMF, flags, spvar);
 }
