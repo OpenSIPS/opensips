@@ -242,8 +242,8 @@ static const str stat_maps[] = {
 
 static char *gencookie();
 static int rtpe_test(struct rtpe_node*, int, int);
-static int start_recording_f(struct sip_msg* msg, pv_spec_t *spvar);
-static int stop_recording_f(struct sip_msg* msg, pv_spec_t *spvar);
+static int start_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int stop_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_offer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 		pv_spec_t *bpvar, str *body);
 static int rtpengine_answer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
@@ -343,10 +343,12 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_INT, fixup_set_id, fixup_free_set_id}, {0,0,0}},
 		ANY_ROUTE},
 	{"rtpengine_start_recording", (cmd_function)start_recording_f, {
-		{CMD_PARAM_VAR | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ANY_ROUTE},
 	{"rtpengine_stop_recording", (cmd_function)stop_recording_f, {
-		{CMD_PARAM_VAR | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ANY_ROUTE},
 	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
@@ -2611,15 +2613,15 @@ error:
 
 
 static int
-start_recording_f(struct sip_msg* msg, pv_spec_t *spvar)
+start_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
-	return rtpe_function_call_simple(msg, OP_START_RECORDING, NULL, spvar);
+	return rtpe_function_call_simple(msg, OP_START_RECORDING, flags, spvar);
 }
 
 static int
-stop_recording_f(struct sip_msg* msg, pv_spec_t *spvar)
+stop_recording_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
-	return rtpe_function_call_simple(msg, OP_STOP_RECORDING, NULL, spvar);
+	return rtpe_function_call_simple(msg, OP_STOP_RECORDING, flags, spvar);
 }
 
 /**

@@ -801,7 +801,7 @@ rtpengine_manage();
 
 	<section id="func_rtpengine_start_recording" xreflabel="rtpengine_start_recording()">
 		<title>
-		<function moreinfo="none">rtpengine_start_recording([sock_var])</function>
+		<function moreinfo="none">rtpengine_start_recording([flags [, sock_var]])</function>
 		</title>
 		<para>
 		This function will send a signal to the &rtp; proxy to record
@@ -809,6 +809,11 @@ rtpengine_manage();
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
+		<listitem><para>
+		<emphasis>flags(string, optional)</emphasis> - flags used to change the behavior
+		of the recorder. An importat value to set is the <emphasis>call-id</emphasis>
+		value, which can be used to start recording a different call than the requested one.
+		</para></listitem>
 		<listitem><para>
 		<emphasis>sock_var(var, optional)</emphasis> - variable used to store the rtpengine
 		socket chosen for this call.
@@ -829,7 +834,7 @@ rtpengine_start_recording();
 
 	<section id="func_rtpengine_stop_recording" xreflabel="rtpengine_stop_recording()">
 		<title>
-		<function moreinfo="none">rtpengine_stop_recording([sock_var])</function>
+		<function moreinfo="none">rtpengine_stop_recording([flags [, sock_var]])</function>
 		</title>
 		<para>
 		This function will send a signal to the &rtp; proxy to stop
@@ -837,6 +842,11 @@ rtpengine_start_recording();
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
+		<listitem><para>
+		<emphasis>flags(string, optional)</emphasis> - flags used to change the behavior
+		of the recorder. An importat value to set is the <emphasis>call-id</emphasis>
+		value, which can be used to start recording a different call than the requested one.
+		</para></listitem>
 		<listitem><para>
 		<emphasis>sock_var(var, optional)</emphasis> - variable used to store the rtpengine
 		socket chosen for this call.
