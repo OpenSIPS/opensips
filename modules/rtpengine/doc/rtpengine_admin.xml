@@ -815,13 +815,41 @@ rtpengine_manage();
 		</para></listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+		This function can be used from any route.
 		</para>
 		<example>
 		<title><function>rtpengine_start_recording</function> usage</title>
 		<programlisting format="linespecific">
 ...
 rtpengine_start_recording();
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_rtpengine_stop_recording" xreflabel="rtpengine_stop_recording()">
+		<title>
+		<function moreinfo="none">rtpengine_stop_recording([sock_var])</function>
+		</title>
+		<para>
+		This function will send a signal to the &rtp; proxy to stop
+		recording the RTP stream on the &rtp; proxy.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>sock_var(var, optional)</emphasis> - variable used to store the rtpengine
+		socket chosen for this call.
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>rtpengine_stop_recording</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_stop_recording();
 ...
 		</programlisting>
 		</example>
