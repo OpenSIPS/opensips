@@ -806,7 +806,6 @@ rtpengine_manage();
 		<para>
 		This function will send a signal to the &rtp; proxy to record
 		the RTP stream on the &rtp; proxy.
-		<emphasis>This function is not supported by Sipwise rtpengine at the moment!</emphasis>
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -828,6 +827,98 @@ rtpengine_start_recording();
 		</example>
 	</section>
 
+	<section id="func_rtpengine_play_media" xreflabel="rtpengine_play_media()">
+		<title>
+		<function moreinfo="none">rtpengine_play_media(flags, [duration_spec[, sock_var[, sockvar]]])</function>
+		</title>
+		<para>
+		This function will start playing a media file to one of the endpoints.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>flags(string)</emphasis> - a list of flags simialar to
+			the other functions. One of the <emphasis>file</emphasis>,
+			<emphasis>blob</emphasis> or <emphasis>db-id</emphasis> parameters
+			is mandatory to indicate the content of the media file to be played.
+			<emphasis>file</emphasis> is a common choice for specifying rtpengine
+			to get media from a file path, <emphasis>blob</emphasis> to take
+			the content from an inline string and <emphasis>db-id</emphasis> to
+			get the content from the database.
+			<para>
+			The direction of the media stream is controlled by the
+			<emphasis>from-tag</emphasis> parameter, <emphasis>address</emphasis>
+			(media address from the SDP), or <emphasis>label</emphasis>, if the
+			media stream contains a label. If all of them are missing, the media
+			file is played to the initiator of the SIP request, and will work similar
+			to a ringback tone.
+			</para>
+		</para></listitem>
+		<listitem><para>
+		<emphasis>duration_spec(var, optional)</emphasis> - a pseudo variable that
+			will contain the duration of the played file. It will be set to
+			<emphasis>-1</emphasis> if the duration could not be determined.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>sock_var(var, optional)</emphasis> - variable used to store the rtpengine
+		socket chosen for this call.
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Ringback tone using <function>rtpengine_play_media</function></title>
+		<programlisting format="linespecific">
+...
+if (is_method("INVITE") &amp;&amp; !has_totag())
+	rtpengine_play_media("file=/path/to/ringback_tone_file.wav");
+...
+		</programlisting>
+		</example>
+		<example>
+		<title>Manage music on hold using <function>rtpengine_play_media</function></title>
+		<programlisting format="linespecific">
+...
+if (is_method("INVITE") &amp;&amp; has_totag()) {
+	if (is_audio_on_hold()) {
+		$dlg_val(on_hold) = "1";
+		rtpengine_play_media("from-tag=$tt file=/path/to/moh_file.wav");
+	} else if ($dlg_val(on_hold) == "1") {
+		$dlg_val(on_hold) = "0";
+		rtpengine_stop_media("from-tag=$tt");
+	}
+}
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_rtpengine_stop_media" xreflabel="rtpengine_stop_media()">
+		<title>
+		<function moreinfo="none">rtpengine_stop_media(flags[, sockvar])</function>
+		</title>
+		<para>
+			This function will stop playing a media file previously started
+			by a <function>rtpengine_play_media()</function> call. The meaning
+			of its parameters is similar to the previous functions. Note that this
+			function should be called with similar parameters as its matching
+			<function>rtpengine_play_media()</function> call, otherwise
+			RTPEngine will not be able to stop media playing.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Ringback tone stop using <function>rtpengine_stop_media</function></title>
+		<programlisting format="linespecific">
+...
+if (is_method("INVITE") &amp;&amp; $rs == 200)
+	rtpengine_stop_media();
+...
+		</programlisting>
+		</example>
+	</section>
 
 	</section>
 

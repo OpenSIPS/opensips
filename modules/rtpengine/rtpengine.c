@@ -139,6 +139,8 @@ enum rtpe_operation {
 	OP_DELETE,
 	OP_START_RECORDING,
 	OP_QUERY,
+	OP_START_MEDIA,
+	OP_STOP_MEDIA,
 };
 
 enum rtpe_stat {
@@ -201,6 +203,8 @@ static const char *command_strings[] = {
 	[OP_DELETE]		= "delete",
 	[OP_START_RECORDING]	= "start recording",
 	[OP_QUERY]		= "query",
+	[OP_START_MEDIA]= "play media",
+	[OP_STOP_MEDIA] = "stop media",
 };
 
 static const str stat_maps[] = {
@@ -237,6 +241,9 @@ static int rtpengine_manage_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 		pv_spec_t *bpvar, str *body);
 static int rtpengine_delete_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static void free_rtpe_nodes(struct rtpe_set *list);
+static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
+		pv_spec_t *duration, pv_spec_t *spvar);
+static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -344,6 +351,17 @@ static cmd_export_t cmds[] = {
 	{"rtpengine_delete", (cmd_function)rtpengine_delete_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		ANY_ROUTE},
+	{"rtpengine_play_media", (cmd_function)rtpengine_playmedia_f, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		ANY_ROUTE},
+	{"rtpengine_stop_media", (cmd_function)rtpengine_stopmedia_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
 		ANY_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
@@ -1871,11 +1889,15 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	if ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_DELETE)
-		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER))
+		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER)
+		|| (msg->first_line.type == SIP_REPLY && op == OP_STOP_MEDIA))
 	{
 		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
-		if (ng_flags.to && ng_flags.to_tag.s && ng_flags.to_tag.len)
-			bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.to_tag);
+		if (op != OP_START_MEDIA && op != OP_STOP_MEDIA) {
+			/* no need of to-tag if we are just playing media */
+			if (ng_flags.to && ng_flags.to_tag.s && ng_flags.to_tag.len)
+				bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.to_tag);
+		}
 	}
 	else {
 		if (!ng_flags.to_tag.s || !ng_flags.to_tag.len) {
@@ -3122,4 +3144,48 @@ error:
 	if(result)
 		db_functions.free_result(db_connection, result);
 	return -1;
+}
+
+static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
+		pv_spec_t *dspec, pv_spec_t *spvar)
+{
+	bencode_buffer_t bencbuf;
+	bencode_item_t *dict;
+	pv_value_t val;
+
+	if (set_rtpengine_set_from_avp(msg) == -1)
+		return -1;
+
+	dict = rtpe_function_call_ok(&bencbuf, msg, OP_START_MEDIA, flags, NULL, spvar);
+	if (!dict) {
+		LM_ERR("could not start media!\n");
+		return -1;
+	}
+
+	if (dspec) {
+		memset(&val, 0, sizeof(pv_value_t));
+		val.flags = PV_TYPE_INT|PV_VAL_INT;
+		val.ri = bencode_dictionary_get_integer(dict, "duration", -1);
+		if (pv_set_value(msg, dspec, 0, &val) != 0)
+			LM_ERR("failed to set media file duration!\n");
+	}
+	bencode_buffer_free(&bencbuf);
+	return 1;
+}
+
+static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+{
+	bencode_buffer_t bencbuf;
+	bencode_item_t *dict;
+
+	if (set_rtpengine_set_from_avp(msg) == -1)
+		return -1;
+
+	dict = rtpe_function_call_ok(&bencbuf, msg, OP_STOP_MEDIA, flags, NULL, spvar);
+	if (!dict) {
+		LM_ERR("could not stop media!\n");
+		return -1;
+	}
+	bencode_buffer_free(&bencbuf);
+	return 1;
 }
