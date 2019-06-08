@@ -713,6 +713,12 @@ Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-tlsmgm-module
 
+%description  wss-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the WebSocket Secure (WSS) support for OpenSIPS.
 
 %package  xml-module
 Summary:  Support for XML documents handling in OpenSIPS script
