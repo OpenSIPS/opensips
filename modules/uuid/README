@@ -1,0 +1,148 @@
+UUID Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+        1.4. Exported Pseudo-Variables
+
+              1.4.1. $uuid
+
+        1.5. Exported Functions
+
+              1.5.1. uuid(out_var, [version])
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. $uuid usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides a way to generate universally unique
+   identifiers (UUID) as specified in RFC 4122. The UUID is
+   provided as a string representation by reading the $uuid
+   pseudo-variable or calling the uuid() script function.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   This module does not depend on other modules.
+
+1.2.2. External Libraries or Applications
+
+     * libuuid - part of the util-linux package, can be downloaded
+       from: ftp://ftp.kernel.org/pub/linux/utils/util-linux/
+
+1.3. Exported Parameters
+
+   The module does not export any parameters.
+
+1.4. Exported Pseudo-Variables
+
+1.4.1. $uuid
+
+   The $uuid variable returns a newly generated version 4 UUID
+   based on high-quality randomness from /dev/urandom, if
+   available. Otherwise, a version 1 UUID (based on current time
+   and the local ethernet MAC address) will be generated.
+
+   Example 1.1. $uuid usage
+xlog("generated uuid: $uuid\n");
+
+1.5. Exported Functions
+
+1.5.1.  uuid(out_var, [version])
+
+   Generates a new UUID.
+     * out_var - an output variable to return the generated UUID.
+     * version (optional) - UUID version number. The supported
+       values are:
+          + 0 - a RFC version 4 or version 1 UUID will be
+            generated, depending on the availability of
+            high-quality randomness from /dev/urandom. This is the
+            default behavior, if the version parameter is missing.
+          + 1 - version 1 UUID based on current time and the local
+            ethernet MAC address
+          + 4 - version 4 UUID based on a high-quality random
+            number generator. If not available, a pseudo-random
+            generator will be substituted.
+
+   If UUID version 1 is used, the function will return the value 2
+   if the UUID was generated in an unsafe manner. This refers to
+   the posibility of two concurrently running processes generating
+   the same UUID, in cases where synchronization mechanisms are
+   not available (more details can be found in the uuid_generate
+   man pages of libuuid).
+
+   This function can be used from any route.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu)    6        2      342       1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu) Jun 2019 - Jun 2019
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+
+   Documentation Copyrights:
+
+   Copyright © 2019 www.opensips-solutions.com

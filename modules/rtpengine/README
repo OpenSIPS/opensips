@@ -38,7 +38,20 @@ rtpengine Module
               1.5.5. rtpengine_manage([flags[, sock_var[,
                       sdp_var[, body]]]])
 
-              1.5.6. rtpengine_start_recording([sock_var])
+              1.5.6. rtpengine_start_recording([flags [,
+                      sock_var]])
+
+              1.5.7. rtpengine_stop_recording([flags [,
+                      sock_var]])
+
+              1.5.8. rtpengine_play_media(flags, [duration_spec[,
+                      sock_var[, sockvar]]])
+
+              1.5.9. rtpengine_stop_media([flags[, sockvar]])
+              1.5.10. rtpengine_stop_media([flags[, sockvar]])
+              1.5.11. rtpengine_unstop_media([flags[, sockvar]])
+              1.5.12. rtpengine_stop_dtmf([flags[, sockvar]])
+              1.5.13. rtpengine_unstop_dtmf([flags[, sockvar]])
 
         1.6. Exported Pseudo-Variables
 
@@ -91,13 +104,21 @@ rtpengine Module
    1.17. rtpengine_delete usage
    1.18. rtpengine_manage usage
    1.19. rtpengine_start_recording usage
-   1.20. $rtpstat Usage
-   1.21. $rtpstat(STAT)
-   1.22. $rtpquery Usage
-   1.23. rtpengine_enable usage
-   1.24. rtpengine_show usage
-   1.25. rtpengine_reload usage
-   1.26. teardown usage
+   1.20. rtpengine_stop_recording usage
+   1.21. Ringback tone using rtpengine_play_media
+   1.22. Manage music on hold using rtpengine_play_media
+   1.23. Ringback tone stop using rtpengine_stop_media
+   1.24. Example of rtpengine_block_media usage
+   1.25. Example of rtpengine_unblock_media usage
+   1.26. Example of rtpengine_block_dtmf usage
+   1.27. Example of rtpengine_unblock_dtmf usage
+   1.28. $rtpstat Usage
+   1.29. $rtpstat(STAT)
+   1.30. $rtpquery Usage
+   1.31. rtpengine_enable usage
+   1.32. rtpengine_show usage
+   1.33. rtpengine_reload usage
+   1.34. teardown usage
 
 Chapter 1. Admin Guide
 
@@ -660,21 +681,161 @@ rtpengine_delete();
 rtpengine_manage();
 ...
 
-1.5.6.  rtpengine_start_recording([sock_var])
+1.5.6.  rtpengine_start_recording([flags [, sock_var]])
 
    This function will send a signal to the RTP proxy to record the
-   RTP stream on the RTP proxy. This function is not supported by
-   Sipwise rtpengine at the moment!
+   RTP stream on the RTP proxy.
 
    Meaning of the parameters is as follows:
+     * flags(string, optional) - flags used to change the behavior
+       of the recorder. An importat value to set is the call-id
+       value, which can be used to start recording a different
+       call than the requested one.
      * sock_var(var, optional) - variable used to store the
        rtpengine socket chosen for this call.
 
-   This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
+   This function can be used from any route.
 
    Example 1.19. rtpengine_start_recording usage
 ...
 rtpengine_start_recording();
+...
+
+1.5.7.  rtpengine_stop_recording([flags [, sock_var]])
+
+   This function will send a signal to the RTP proxy to stop
+   recording the RTP stream on the RTP proxy.
+
+   Meaning of the parameters is as follows:
+     * flags(string, optional) - flags used to change the behavior
+       of the recorder. An importat value to set is the call-id
+       value, which can be used to start recording a different
+       call than the requested one.
+     * sock_var(var, optional) - variable used to store the
+       rtpengine socket chosen for this call.
+
+   This function can be used from any route.
+
+   Example 1.20. rtpengine_stop_recording usage
+...
+rtpengine_stop_recording();
+...
+
+1.5.8.  rtpengine_play_media(flags, [duration_spec[, sock_var[,
+sockvar]]])
+
+   This function will start playing a media file to one of the
+   endpoints.
+
+   Meaning of the parameters is as follows:
+     * flags(string) - a list of flags simialar to the other
+       functions. One of the file, blob or db-id parameters is
+       mandatory to indicate the content of the media file to be
+       played. file is a common choice for specifying rtpengine to
+       get media from a file path, blob to take the content from
+       an inline string and db-id to get the content from the
+       database.
+       The direction of the media stream is controlled by the
+       from-tag parameter, address (media address from the SDP),
+       or label, if the media stream contains a label. If all of
+       them are missing, the media file is played to the initiator
+       of the SIP request, and will work similar to a ringback
+       tone.
+     * duration_spec(var, optional) - a pseudo variable that will
+       contain the duration of the played file. It will be set to
+       -1 if the duration could not be determined.
+     * sock_var(var, optional) - variable used to store the
+       rtpengine socket chosen for this call.
+
+   This function can be used from any route.
+
+   Example 1.21. Ringback tone using rtpengine_play_media
+...
+if (is_method("INVITE") && !has_totag())
+        rtpengine_play_media("file=/path/to/ringback_tone_file.wav");
+...
+
+   Example 1.22. Manage music on hold using rtpengine_play_media
+...
+if (is_method("INVITE") && has_totag()) {
+        if (is_audio_on_hold()) {
+                $dlg_val(on_hold) = "1";
+                rtpengine_play_media("from-tag=$tt file=/path/to/moh_fil
+e.wav");
+        } else if ($dlg_val(on_hold) == "1") {
+                $dlg_val(on_hold) = "0";
+                rtpengine_stop_media("from-tag=$tt");
+        }
+}
+...
+
+1.5.9.  rtpengine_stop_media([flags[, sockvar]])
+
+   This function will stop playing a media file previously started
+   by a rtpengine_play_media() call. The meaning of its parameters
+   is similar to the previous functions. Note that this function
+   should be called with similar parameters as its matching
+   rtpengine_play_media() call, otherwise RTPEngine will not be
+   able to stop media playing.
+
+   This function can be used from any route.
+
+   Example 1.23. Ringback tone stop using rtpengine_stop_media
+...
+if (is_method("INVITE") && $rs == 200)
+        rtpengine_stop_media();
+...
+
+1.5.10.  rtpengine_stop_media([flags[, sockvar]])
+
+   This function will block the media sent from one of the
+   endpoints. The direction to be blocked is controled by the
+   flags parameter, the from-tag value.
+
+   This function can be used from any route.
+
+   Example 1.24. Example of rtpengine_block_media usage
+...
+rtpengine_block_media();
+...
+
+1.5.11.  rtpengine_unstop_media([flags[, sockvar]])
+
+   This function will resume/unblock the media sent from one of
+   the endpoints. The direction to be blocked is controled by the
+   flags parameter, the from-tag value.
+
+   This function can be used from any route.
+
+   Example 1.25. Example of rtpengine_unblock_media usage
+...
+rtpengine_unblock_media();
+...
+
+1.5.12.  rtpengine_stop_dtmf([flags[, sockvar]])
+
+   This function will block the DTMF media sent from one of the
+   endpoints. The direction to be blocked is controled by the
+   flags parameter, the from-tag value.
+
+   This function can be used from any route.
+
+   Example 1.26. Example of rtpengine_block_dtmf usage
+...
+rtpengine_block_dtmf();
+...
+
+1.5.13.  rtpengine_unstop_dtmf([flags[, sockvar]])
+
+   This function will resume/unblock the DTMF media sent from one
+   of the endpoints. The direction to be blocked is controled by
+   the flags parameter, the from-tag value.
+
+   This function can be used from any route.
+
+   Example 1.27. Example of rtpengine_unblock_dtmf usage
+...
+rtpengine_unblock_dtmf();
 ...
 
 1.6. Exported Pseudo-Variables
@@ -685,7 +846,7 @@ rtpengine_start_recording();
    statistics from the RTP proxy are provided as a string and it
    does contain several packet counters.
 
-   Example 1.20. $rtpstat Usage
+   Example 1.28. $rtpstat Usage
 ...
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
@@ -701,22 +862,56 @@ rtpengine_start_recording();
        will return the average MOS of all the streams generated by
        that endpoint with the associated tag value. If you need
        more granular statistics, check the $rtpquery variable.
+     * jitter-average - similar behavior with MOS-average, but
+       returnes the average jitter.
+     * roundtrip-average - similar behavior with MOS-average, but
+       returnes the average roundtrip.
+     * packetloss-average - similar behavior with MOS-average, but
+       returnes the average packet loss.
      * MOS-min - without an index, it returns the minimum MOS
        value (integer value between 0 and 50) of all RTP streams
        involved in the call, both caller and callee. If the index
        is specified, it has the same effect as for MOS-average.
+     * jitter-min - similar behavior with MOS-min, but returnes
+       the minimum jitter of a leg/call.
+     * roundtrip-min - similar behavior with MOS-min, but returnes
+       the minimum roundtrip of a leg/call.
+     * packetloss-min - similar behavior with MOS-min, but
+       returnes the minimum packet loss of a leg/call.
      * MOS-max - without an index, it returns the maximum MOS
        value (integer value between 0 and 50) of all RTP streams
        involved in the call, both caller and callee. If the index
        is specified, it has the same effect as for MOS-average.
+     * jitter-max - similar behavior with MOS-max, but returnes
+       the maximum jitter of a leg/call.
+     * roundtrip-max - similar behavior with MOS-max, but returnes
+       the maximum roundtrip of a leg/call.
+     * packetloss-max - similar behavior with MOS-max, but
+       returnes the maximum packet loss of a leg/call.
      * MOS-min-at - without an index, it returns the time in
        seconds elapsed from the start of the call when the MOS
        value is minimum. If the index is specified, it has the
        same effect as for MOS-average.
+     * jitter-min-at - similar behavior with MOS-min-at, but
+       returnes the time when the minimum jitter was detected.
+     * roundtrip-min-at - similar behavior with MOS-min-at, but
+       returnes the time when the minimum roundtrip was detected.
+     * packetloss-min-at - similar behavior with MOS-min-at, but
+       returnes the time when the minimum packet loss of a
+       leg/call was detected.
      * MOS-max-at - without an index, it returns the time in
        seconds elapsed from the start of the call when the MOS
        value is maximum. If the index is specified, it has the
        same effect as for MOS-average.
+     * jitter-max-at - similar behavior with MOS-max-at, but
+       returnes the time when the maximum value of jitter was
+       detected.
+     * roundtrip-max-at - similar behavior with MOS-max-at, but
+       returnes the time when the maximum value of roundtrip was
+       detected.
+     * packetloss-min-at - similar behavior with MOS-max-at, but
+       returnes the time when the maximum packet loss of a
+       leg/call was detected.
 
    NOTE: all these statistics are computed based on the statistics
    generated by RTPEngine. Some of them might not be available for
@@ -724,7 +919,7 @@ rtpengine_start_recording();
    short, or if the phones do not properly report RTP statistics
    over RTCP). In these cases the variable returns the NULL value.
 
-   Example 1.21. $rtpstat(STAT)
+   Example 1.29. $rtpstat(STAT)
 ...
     xlog("Average MOS of the entire call is $rtpstat(MOS-average)\r\n");
     xlog("Average MOS of caller is $(rtpstat(MOS-average)[$ft])\r\n");
@@ -744,7 +939,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    any information from the query, such as RTP statistics, or MOS
    values.
 
-   Example 1.22. $rtpquery Usage
+   Example 1.30. $rtpquery Usage
 ...
         $json(reply) := $rtpquery;
         xlog("Total RTP Stats: $json(reply/totals)\n");
@@ -764,7 +959,7 @@ pstat(MOS-min-at)[$ft])\r\n");
    NOTE: if a RTP proxy is defined multiple times (in the same or
    different set), all of its instances will be enables/disabled.
 
-   Example 1.23.  rtpengine_enable usage
+   Example 1.31.  rtpengine_enable usage
 ...
 $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
 ...
@@ -776,7 +971,7 @@ $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
 
    No parameter.
 
-   Example 1.24.  rtpengine_show usage
+   Example 1.32.  rtpengine_show usage
 ...
 $ opensips-cli -x mi rtpengine_show
 ...
@@ -788,7 +983,7 @@ $ opensips-cli -x mi rtpengine_show
 
    No parameter.
 
-   Example 1.25.  rtpengine_reload usage
+   Example 1.33.  rtpengine_reload usage
 ...
 $ opensips-cli -x mi rtpengine_reload
 ...
@@ -806,7 +1001,7 @@ $ opensips-cli -x mi rtpengine_reload
    done just to make rtpengine happy when trying to terminate SIP
    calls based on RTP timeouts.
 
-   Example 1.26.  teardown usage
+   Example 1.34.  teardown usage
 ...
 $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZD
 Q
@@ -882,16 +1077,18 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 122 44 3993 2561
+   1. Razvan Crainea (@razvancrainea) 131 49 4454 2606
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 29 14 420 592
    3. Richard Fuchs 21 2 640 723
    4. Liviu Chircu (@liviuchircu) 15 11 66 131
    5. Vlad Patrascu (@rvlad-patrascu) 14 6 194 327
    6. Eric Tamme (@etamme) 7 5 42 19
-   7. Rob Gagnon (@rgagnon24) 3 1 22 22
-   8. Dan Pascu (@danpascu) 3 1 3 13
-   9. Oliver Severin Mulelid-Tynes (@olivermt) 3 1 1 1
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. John Burke 4 1 172 31
+   8. Rob Gagnon (@rgagnon24) 3 1 22 22
+   9. Dan Pascu (@danpascu) 3 1 3 13
+   10. Oliver Severin Mulelid-Tynes (@olivermt) 3 1 1 1
+
+   All remaining contributors: Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -913,16 +1110,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - May 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
-   5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   6.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
-   7.  Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
-   8.  Rob Gagnon (@rgagnon24)                  Mar 2015 - Mar 2015
-   9.  Eric Tamme (@etamme)                     Dec 2014 - Mar 2015
-   10. Richard Fuchs                            Mar 2014 - Mar 2014
+   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Jun 2019
+   2.  John Burke                               Jun 2019 - Jun 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Apr 2019
+   5.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
+   6.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   7.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
+   8.  Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
+   9.  Rob Gagnon (@rgagnon24)                  Mar 2015 - Mar 2015
+   10. Eric Tamme (@etamme)                     Dec 2014 - Mar 2015
+
+   All remaining contributors: Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -931,8 +1130,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
    Fuchs.
 

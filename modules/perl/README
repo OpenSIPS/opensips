@@ -555,7 +555,6 @@ $m->xlog("L_INFO", "foo");
 * load_rr
 * sip_trace
 * sl_reply_error
-* sms_send_msg
 * sd_lookup
 * sstCheckMin
 * append_time
@@ -1370,7 +1369,7 @@ Chapter 5. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bastian Friedrich 112 38 8597 284
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 47 28 702 681
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 48 29 702 682
    3. Razvan Crainea (@razvancrainea) 21 18 96 59
    4. Daniel-Constantin Mierla (@miconda) 19 14 164 125
    5. Liviu Chircu (@liviuchircu) 16 13 54 67
@@ -1404,9 +1403,9 @@ Chapter 5. Contributors
 
    Table 5.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Apr 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Jun 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -1426,9 +1425,9 @@ Chapter 6. Documentation
 
 6.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ovidiu
    Sas (@ovidiusas), Klaus Darilion, Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Bastian Friedrich.
