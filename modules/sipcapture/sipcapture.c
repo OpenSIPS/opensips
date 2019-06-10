@@ -768,7 +768,7 @@ static int mod_init(void) {
 	struct ip_addr *ip = NULL;
 
 	if (hep_capture_on) {
-		load_hep = (load_hep_f)find_export("load_hep", 1);
+		load_hep = (load_hep_f)find_export("load_hep", 0);
 		if (!load_hep) {
 			LM_ERR("Can't bind proto hep!\n");
 			return -1;
