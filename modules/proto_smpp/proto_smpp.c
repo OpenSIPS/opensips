@@ -152,6 +152,13 @@ static int mod_init(void)
 	db_url.len = strlen(db_url.s);
 	smpp_outbound_uri.len = strlen(smpp_outbound_uri.s);
 
+	/* if we don't have a listener, we won't be able to connect, or send
+	 * enquiries, therefore it's mandatory to have at least one */
+	if (!proto_has_listeners(PROTO_SMPP)) {
+		LM_ERR("at least one listener is mandatory for using the SMPP module!\n");
+		return -1;
+	}
+
 	if (smpp_db_init(&db_url) < 0)
 		return -1;
 
