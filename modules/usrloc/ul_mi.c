@@ -206,6 +206,7 @@ static inline int mi_add_aor_node(mi_item_t *aor_item, urecord_t* r,
 		if (c->sipping_latency > 0)
 			if (add_mi_number(ct_item, MI_SSTR("Ping-Latency"),
 				c->sipping_latency) < 0)
+				return -1;
 
 		if (mi_dump_kv_store) {
 			kv_buf = store_serialize(c->kv_storage);
