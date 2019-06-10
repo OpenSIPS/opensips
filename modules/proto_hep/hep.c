@@ -1580,7 +1580,7 @@ int add_hep_correlation(trace_message message, str* corr_name, str* corr_value)
 
 		_cJSON_AddStrToObject( root, corr_name, corr_value->s, corr_value->len);
 	} else {
-		if ( !memcmp( corr_name->s, "sip", sizeof("sip") ) ) {
+		if ( !memcmp( corr_name->s, "sip", sizeof("sip") - 1 ) ) {
 			/* we'll save sip correlation id as the actual correlation */
 			sip_correlation = pkg_malloc( sizeof(str) + corr_value->len );
 			if ( !sip_correlation ) {
