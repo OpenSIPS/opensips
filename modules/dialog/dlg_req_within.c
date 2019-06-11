@@ -493,8 +493,8 @@ mi_response_t *mi_terminate_dlg(const mi_params_t *params, str *extra_hdrs)
 	/* make value null terminated (in an ugly way) */
 	bkp = dialog_id.s[dialog_id.len];
 	dialog_id.s[dialog_id.len] = 0;
-	/* conver to long long */
-	d_id = strtoll( dialog_id.s, &end, 10);
+	/* convert to unsigned long long */
+	d_id = strtoull(dialog_id.s, &end, 10);
 	dialog_id.s[dialog_id.len] = bkp;
 	if (end-dialog_id.s==dialog_id.len) {
 		/* the ID is numeric, so let's consider it DID */
