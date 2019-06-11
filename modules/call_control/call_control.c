@@ -631,7 +631,7 @@ make_custom_request(struct sip_msg *msg, CallInfo *call)
         }
 
         if (len >= sizeof(request)) {
-            LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
+            LM_ERR("callcontrol request is longer than %zu bytes\n", sizeof(request));
             return NULL;
         }
     }
@@ -671,7 +671,7 @@ make_default_request(CallInfo *call)
                        call->call_token.len, call->call_token.s);
 
         if (len >= sizeof(request)) {
-            LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
+            LM_ERR("callcontrol request is longer than %zu bytes\n", sizeof(request));
             return NULL;
         }
 
@@ -687,7 +687,7 @@ make_default_request(CallInfo *call)
                        call->dialog_id.h_entry, call->dialog_id.h_id);
 
         if (len >= sizeof(request)) {
-            LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
+            LM_ERR("callcontrol request is longer than %zu bytes\n", sizeof(request));
             return NULL;
         }
 
@@ -701,7 +701,7 @@ make_default_request(CallInfo *call)
                        call->callid.len, call->callid.s);
 
         if (len >= sizeof(request)) {
-            LM_ERR("callcontrol request is longer than %ld bytes\n", (unsigned long)sizeof(request));
+            LM_ERR("callcontrol request is longer than %zu bytes\n", sizeof(request));
             return NULL;
         }
 
