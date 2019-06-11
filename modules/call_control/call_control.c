@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2008 Dan Pascu
+ * Copyright (C) 2005-2019 Dan Pascu
  *
  * This file is part of OpenSIPS, a free SIP server.
  *
@@ -80,7 +80,6 @@
 #endif
 
 
-
 typedef int Bool;
 #define True  1
 #define False 0
@@ -92,14 +91,17 @@ typedef struct AVP_Param {
     unsigned short type;
 } AVP_Param;
 
+
 typedef struct AVP_List {
-    pv_spec_p pv;
     str name;
+    pv_spec_p spec;
     struct AVP_List *next;
 } AVP_List;
 
+
 #define RETRY_INTERVAL 10
 #define BUFFER_SIZE    8192
+
 
 typedef struct CallControlSocket {
     char *name;             // name
@@ -117,9 +119,10 @@ static int mod_init(void);
 static int child_init(int rank);
 static void destroy(void);
 
-int parse_param_init(unsigned int type, void *val);
-int parse_param_start(unsigned int type, void *val);
-int parse_param_stop(unsigned int type, void *val);
+int parse_init(unsigned int type, void *val);
+int parse_start(unsigned int type, void *val);
+int parse_stop(unsigned int type, void *val);
+
 
 // Local global variables
 static CallControlSocket callcontrol_socket = {
@@ -131,7 +134,6 @@ static CallControlSocket callcontrol_socket = {
 };
 
 static int disable = False;
-
 
 // The AVP where the diverter URI is stored (if defined)
 static AVP_Param diverter_avp = {str_init(DIVERTER_AVP_SPEC), -1, 0};
@@ -157,15 +159,17 @@ AVP_List *init_avps = NULL, *start_avps = NULL, *stop_avps = NULL;
 
 pv_elem_t *model;
 
+
 static cmd_export_t commands[] = {
     {"call_control", (cmd_function)CallControl, {{0, 0, 0}}, REQUEST_ROUTE},
     {0, 0, {{0, 0, 0}}, 0}
 };
 
+
 static param_export_t parameters[] = {
-    {"init",                    STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_init},
-    {"start",                   STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_start},
-    {"stop",                    STR_PARAM|USE_FUNC_PARAM, (void*)parse_param_stop},
+    {"init",                    STR_PARAM|USE_FUNC_PARAM, (void*)parse_init},
+    {"start",                   STR_PARAM|USE_FUNC_PARAM, (void*)parse_start},
+    {"stop",                    STR_PARAM|USE_FUNC_PARAM, (void*)parse_stop},
     {"disable",                 INT_PARAM, &disable},
     {"socket_name",             STR_PARAM, &(callcontrol_socket.name)},
     {"socket_timeout",          INT_PARAM, &(callcontrol_socket.timeout)},
@@ -178,6 +182,7 @@ static param_export_t parameters[] = {
     {0, 0, 0}
 };
 
+
 static dep_export_t deps = {
     // OpenSIPS module dependencies
     {
@@ -189,6 +194,7 @@ static dep_export_t deps = {
         {NULL, NULL}
     }
 };
+
 
 struct module_exports exports = {
     "call_control",   // module name
@@ -237,88 +243,87 @@ typedef struct CallInfo {
 
 
 
-#define CHECK_COND(cond) \
-    if ((cond) == 0) { \
-        LM_ERR("malformed modparam\n"); \
-        return -1;                            \
-    }
-
-#define CHECK_ALLOC(p) \
-    if (!(p)) {    \
-        LM_ERR("no memory left\n"); \
-        return -1;    \
-    }
-
-
 void
-destroy_list(AVP_List *list) {
-    AVP_List *cur, *next;
+destroy_list(AVP_List *avp_list)
+{
+    AVP_List *avp, *next;
 
-    cur = list;
-    while (cur) {
-        next = cur->next;
-        pkg_free(cur);
-        cur = next;
+    avp = avp_list;
+    while (avp) {
+        next = avp->next;
+        pkg_free(avp);
+        avp = next;
     }
 }
 
 
 int
-parse_param(void *val, AVP_List** avps) {
+parse_param(char *value, AVP_List **avp_list)
+{
+    char *ptr;
+    str buffer;
+    AVP_List *avp = NULL;
 
-    char *p;
-    str *s, content;
-    AVP_List *mp = NULL;
+    ptr = value;
 
-    //LM_DBG("%.*s\n", content.len, content.s);
+    while (*ptr) {
+        avp = pkg_malloc(sizeof(AVP_List));
+        if (!avp) {
+            LM_ERR("out of private memory\n");
+            return -1;
+        }
+        avp->next = *avp_list;
+        avp->spec = pkg_malloc(sizeof(pv_spec_t));
+        if (!avp->spec) {
+            LM_ERR("out of private memory\n");
+            pkg_free(avp);
+            return -1;
+        }
 
-    content.s = (char*) val;
-    content.len = strlen(content.s);
+        while (isspace(*ptr)) ptr++;
+        if (*ptr == '\0') {
+            LM_ERR("malformed modparam\n");
+            pkg_free(avp->spec);
+            pkg_free(avp);
+            return -1;
+        }
 
+        avp->name.s = ptr;
 
-    p = (char*) pkg_malloc (content.len + 1);
-    CHECK_ALLOC(p);
+        while (isgraph(*ptr) && *ptr != '=') ptr++;
+        if (*ptr == '\0') {
+            LM_ERR("malformed modparam\n");
+            pkg_free(avp->spec);
+            pkg_free(avp);
+            return -1;
+        }
 
-    p[content.len] = '\0';
-    memcpy(p, content.s, content.len);
+        avp->name.len = ptr - avp->name.s;
 
-    s = (str*) pkg_malloc(sizeof(str));
-    CHECK_ALLOC(s);
+        while (isspace(*ptr)) ptr++;
+        if (*ptr != '=') {
+            LM_ERR("malformed modparam\n");
+            pkg_free(avp->spec);
+            pkg_free(avp);
+            return -1;
+        }
+        ptr++;
 
-    for (;*p != '\0';) {
+        while (isspace(*ptr)) ptr++;
 
-        mp = (AVP_List*) pkg_malloc (sizeof(AVP_List));
-        CHECK_ALLOC(mp);
-        mp->next = *avps;
-        mp->pv = (pv_spec_p) pkg_malloc (sizeof(pv_spec_t));
-        CHECK_ALLOC(mp->pv);
+        buffer.s = ptr;
+        buffer.len = strlen(ptr);
 
-        for (; isspace(*p); p++);
-        CHECK_COND(*p != '\0');
+        ptr = pv_parse_spec(&buffer, avp->spec);
 
-        mp->name.s = p;
+        if (ptr == NULL) {
+            LM_ERR("malformed modparam\n");
+            pkg_free(avp->spec);
+            pkg_free(avp);
+            return -1;
+        }
 
-        for(; isgraph(*p) && *p != '='; p++)
-            CHECK_COND(*p != '\0');
-
-        mp->name.len = p - mp->name.s;
-
-        for (; isspace(*p); p++);
-        CHECK_COND(*p != '\0' && *p == '=');
-        p++;
-
-        //LM_DBG("%.*s\n", mp->name.len, mp->name.s);
-
-        for (; isspace(*p); p++);
-        CHECK_COND(*p != '\0' && *p == '$');
-
-        s->s = p;
-        s->len = strlen(p);
-
-        p = pv_parse_spec(s, mp->pv);
-
-        for (; isspace(*p); p++);
-        *avps = mp;
+        *avp_list = avp;
     }
 
     return 0;
@@ -326,22 +331,27 @@ parse_param(void *val, AVP_List** avps) {
 
 
 int
-parse_param_init(unsigned int type, void *val) {
-    if (parse_param(val, &init_avps) == -1)
+parse_init(unsigned int type, void *value)
+{
+    if (parse_param(value, &init_avps) == -1)
         return E_CFG;
     return 0;
 }
 
+
 int
-parse_param_start(unsigned int type, void *val) {
-    if (parse_param(val, &start_avps) == -1)
+parse_start(unsigned int type, void *value)
+{
+    if (parse_param(value, &start_avps) == -1)
         return E_CFG;
     return 0;
 }
 
+
 int
-parse_param_stop(unsigned int type, void *val) {
-    if (parse_param(val, &stop_avps) == -1)
+parse_stop(unsigned int type, void *value)
+{
+    if (parse_param(value, &stop_avps) == -1)
         return E_CFG;
     return 0;
 }
@@ -580,57 +590,9 @@ get_call_info(struct sip_msg *msg, CallControlAction action)
     return &call_info;
 }
 
-static char*
-make_custom_request(struct sip_msg *msg, CallInfo *call)
-{
-    static char request[8192];
-    int len = 0;
-    AVP_List *al;
-    pv_value_t pt;
-
-    switch (call->action) {
-    case CAInitialize:
-        al = init_avps;
-        break;
-    case CAStart:
-        al = start_avps;
-        break;
-    case CAStop:
-        al = stop_avps;
-        break;
-    default:
-        // should never get here, but keep gcc from complaining
-        assert(False);
-        return NULL;
-    }
-
-    for (; al; al = al->next) {
-        if (pv_get_spec_value(msg, al->pv, &pt) < 0) {
-            LM_ERR("cannot get the spec's value!\n");
-            return NULL;
-        }
-        if (pt.flags & PV_VAL_INT) {
-            len += snprintf(request + len, sizeof(request) - len - 1,
-                    "%.*s = %d ", al->name.len, al->name.s,
-                    pt.ri);
-        } else if (pt.flags & PV_VAL_STR) {
-            len += snprintf(request + len, sizeof(request) - len - 1,
-                    "%.*s = %.*s ", al->name.len, al->name.s,
-                    pt.rs.len, pt.rs.s);
-        }
-
-        if (len >= sizeof(request)) {
-            LM_ERR("callcontrol request is longer than %zu bytes\n", sizeof(request));
-            return NULL;
-        }
-    }
-
-    return request;
-}
-
 
 static char*
-make_default_request(CallInfo *call)
+make_request(CallInfo *call)
 {
     static char request[8192];
     int len;
@@ -699,6 +661,53 @@ make_default_request(CallInfo *call)
         // should never get here, but keep gcc from complaining
         assert(False);
         return NULL;
+    }
+
+    return request;
+}
+
+
+static char*
+make_custom_request(struct sip_msg *msg, CallInfo *call)
+{
+    static char request[8192];
+    AVP_List *avp_list, *avp;
+    pv_value_t avp_value;
+    int len = 0;
+
+    switch (call->action) {
+    case CAInitialize:
+        avp_list = init_avps;
+        break;
+    case CAStart:
+        avp_list = start_avps;
+        break;
+    case CAStop:
+        avp_list = stop_avps;
+        break;
+    default:
+        // should never get here, but keep gcc from complaining
+        assert(False);
+        return NULL;
+    }
+
+    for (avp=avp_list; avp; avp=avp->next) {
+        if (pv_get_spec_value(msg, avp->spec, &avp_value) < 0) {
+            LM_ERR("cannot get the spec's value!\n");
+            return NULL;
+        }
+        if (avp_value.flags & PV_VAL_INT) {
+            len += snprintf(request + len, sizeof(request) - len - 1,
+                            "%.*s = %d ", avp->name.len, avp->name.s, avp_value.ri);
+        } else if (avp_value.flags & PV_VAL_STR) {
+            len += snprintf(request + len, sizeof(request) - len - 1,
+                            "%.*s = %.*s ", avp->name.len, avp->name.s, avp_value.rs.len, avp_value.rs.s);
+        }
+
+        if (len >= sizeof(request)) {
+            LM_ERR("callcontrol request is longer than %zu bytes\n", sizeof(request));
+            return NULL;
+        }
     }
 
     return request;
@@ -877,7 +886,7 @@ call_control_initialize(struct sip_msg *msg)
 
 
     if (!init_avps)
-        message = make_default_request(call);
+        message = make_request(call);
     else
         message = make_custom_request(msg, call);
 
@@ -927,7 +936,7 @@ call_control_start(struct sip_msg *msg, struct dlg_cell *dlg)
     call->dialog_id = (unsigned long long) dlg->h_entry << 32 | dlg->h_id;
 
     if (!start_avps)
-        message = make_default_request(call);
+        message = make_request(call);
     else
         message = make_custom_request(msg, call);
 
@@ -964,7 +973,7 @@ call_control_stop(struct sip_msg *msg, str callid)
     call.callid = callid;
 
     if (!stop_avps)
-        message = make_default_request(&call);
+        message = make_request(&call);
     else
         message = make_custom_request(msg, &call);
 
@@ -1210,7 +1219,8 @@ child_init(int rank)
 
 
 static void
-destroy(void) {
+destroy(void)
+{
     if (init_avps)
         destroy_list(init_avps);
 
