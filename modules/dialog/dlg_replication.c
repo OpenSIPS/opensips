@@ -477,6 +477,40 @@ int dlg_replicated_delete(bin_packet_t *packet)
 malformed:
 	return -1;
 }
+
+
+/**
+ * replicates the remote update of a cseq of a dialog locally
+ * by reading the relevant information using the Binary Packet Interface
+ */
+int dlg_replicated_cseq_updated(bin_packet_t *packet)
+{
+	str call_id, from_tag, to_tag;
+	unsigned int dir, dst_leg;
+	unsigned int cseq;
+	struct dlg_cell *dlg;
+
+	DLG_BIN_POP(str, packet, call_id, malformed);
+	DLG_BIN_POP(str, packet, from_tag, malformed);
+	DLG_BIN_POP(str, packet, to_tag, malformed);
+
+	LM_DBG("Updating cseq for dialog with callid: %.*s\n", call_id.len, call_id.s);
+
+	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
+	if (!dlg) {
+		/* may be already deleted due to timeout */
+		LM_DBG("dialog not found (callid: |%.*s| ftag: |%.*s|\n",
+			call_id.len, call_id.s, from_tag.len, from_tag.s);
+		return 0;
+	}
+	DLG_BIN_POP(int, packet, cseq, malformed);
+	dlg->legs[dst_leg].last_gen_cseq = cseq;
+
+	return 0;
+malformed:
+	LM_ERR("malformed cseq update packet for %.*s\n", call_id.len, call_id.s);
+	return -1;
+}
 #undef DLG_BIN_POP
 
 void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
@@ -802,6 +836,46 @@ static int receive_shtag_active_msg(bin_packet_t *packet)
 	return 0;
 }
 
+/**
+ * replicates a local dialog cseq increased for a specific leg
+ */
+void replicate_dialog_cseq_updated(struct dlg_cell *dlg, int leg)
+{
+	int rc;
+	bin_packet_t packet;
+
+	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_CSEQ,
+			BIN_VERSION, 512) != 0)
+		goto error;
+
+	bin_push_str(&packet, &dlg->callid);
+	bin_push_str(&packet,
+			&dlg->legs[leg == DLG_CALLER_LEG?callee_idx(dlg):DLG_CALLER_LEG].tag);
+	bin_push_str(&packet, &dlg->legs[leg].tag);
+	bin_push_int(&packet, dlg->legs[leg].last_gen_cseq);
+
+	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
+	switch (rc) {
+	case CLUSTERER_CURR_DISABLED:
+		LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster);
+		goto error_free;
+	case CLUSTERER_DEST_DOWN:
+		LM_ERR("All destinations in cluster: %d are down or probing\n",
+			dialog_repl_cluster);
+		goto error_free;
+	case CLUSTERER_SEND_ERR:
+		LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster);
+		goto error_free;
+	}
+
+	bin_free_packet(&packet);
+	return;
+error_free:
+	bin_free_packet(&packet);
+error:
+	LM_ERR("Failed to replicate dialog cseq update\n");
+}
+
 void receive_dlg_repl(bin_packet_t *packet)
 {
 	int rc = 0;
@@ -823,6 +897,9 @@ void receive_dlg_repl(bin_packet_t *packet)
 			break;
 		case DLG_SHARING_TAG_ACTIVE:
 			rc = receive_shtag_active_msg(pkt);
+			break;
+		case REPLICATION_DLG_CSEQ:
+			rc = dlg_replicated_cseq_updated(pkt);
 			break;
 		case SYNC_PACKET_TYPE:
 			while (clusterer_api.sync_chunk_iter(pkt))

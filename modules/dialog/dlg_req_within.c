@@ -159,16 +159,16 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char 
 	}
 	memset(td, 0, sizeof(dlg_t));
 
-	/*local sequence number*/
-	cseq = cell->legs[dst_leg].r_cseq;
-	if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
-		LM_ERR("invalid cseq\n");
-		goto error;
-	}
+	if (cell->legs[dst_leg].last_gen_cseq == 0) {
+		/*local sequence number*/
+		cseq = cell->legs[dst_leg].r_cseq;
+		if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
+			LM_ERR("invalid cseq\n");
+			goto error;
+		}
 
-	if (cell->legs[dst_leg].last_gen_cseq == 0)
 		cell->legs[dst_leg].last_gen_cseq = loc_seq+1;
-	else
+	} else
 		cell->legs[dst_leg].last_gen_cseq++;
 
 	*reply_marker = DLG_PING_PENDING;
@@ -634,6 +634,10 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	else
 		context_destroy(CONTEXT_GLOBAL, *new_ctx);
 	current_processing_ctx = old_ctx;
+
+	/* update the cseq, so we can be ready to generate other sequential
+	 * messages on other nodes too */
+	replicate_dialog_cseq_updated(dlg, dst_leg);
 
 	if(result < 0)
 	{

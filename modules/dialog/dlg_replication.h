@@ -38,6 +38,7 @@
 #define REPLICATION_DLG_UPDATED		2
 #define REPLICATION_DLG_DELETED		3
 #define DLG_SHARING_TAG_ACTIVE		4
+#define REPLICATION_DLG_CSEQ		5
 
 #define BIN_VERSION 1
 
@@ -73,6 +74,7 @@ extern str shtag_dlg_val;
 void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);
 void replicate_dialog_deleted(struct dlg_cell *dlg);
+void replicate_dialog_cseq_updated(struct dlg_cell *dlg, int leg);
 
 int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag,
 							str *ttag, int safe);
