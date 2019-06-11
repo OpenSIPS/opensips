@@ -1778,7 +1778,7 @@ get_dialog_id(struct dlg_cell *dlg)
 {
     static char buffer[64];
 
-    snprintf(buffer, sizeof(buffer), "%d:%d", dlg->h_entry, dlg->h_id);
+    snprintf(buffer, sizeof(buffer), "%llu", (unsigned long long) dlg->h_entry << 32 | dlg->h_id);
 
     return buffer;
 }
