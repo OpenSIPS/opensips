@@ -203,15 +203,17 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 
 	{"ds_next_dst",      (cmd_function)w_ds_next_dst, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_ds_part, 0}, {0, 0, 0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
+			{0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE},
 
 	{"ds_next_domain",      (cmd_function)w_ds_next_domain, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_ds_part, 0}, {0, 0, 0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
+			{0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE},
 
 	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_ds_part, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE},
 
@@ -219,7 +221,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_ds_part, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
@@ -227,7 +229,8 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_STR, fixup_ds_count_filter, 0},
 		{CMD_PARAM_VAR, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_ds_part, 0}, {0, 0, 0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
+			{0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
 	{0,0,{{0,0,0}},0}
