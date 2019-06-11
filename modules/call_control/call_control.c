@@ -221,14 +221,9 @@ typedef enum CallControlAction {
 } CallControlAction;
 
 
-typedef struct DialogID {
-    unsigned int h_entry;
-    unsigned int h_id;
-} DialogID;
-
 typedef struct CallInfo {
     CallControlAction action;
-    DialogID dialog_id;
+    unsigned long long dialog_id;
     str ruri;
     str diverter;
     str source_ip;
@@ -675,10 +670,9 @@ make_default_request(CallInfo *call)
         len = snprintf(request, sizeof(request),
                        "start\r\n"
                        "callid: %.*s\r\n"
-                       "dialogid: %d:%d\r\n"
+                       "dialogid: %llu\r\n"
                        "\r\n",
-                       call->callid.len, call->callid.s,
-                       call->dialog_id.h_entry, call->dialog_id.h_id);
+                       call->callid.len, call->callid.s, call->dialog_id);
 
         if (len >= sizeof(request)) {
             LM_ERR("callcontrol request is longer than %zu bytes\n", sizeof(request));
@@ -930,8 +924,7 @@ call_control_start(struct sip_msg *msg, struct dlg_cell *dlg)
         return -5;
     }
 
-    call->dialog_id.h_entry = dlg->h_entry;
-    call->dialog_id.h_id = dlg->h_id;
+    call->dialog_id = (unsigned long long) dlg->h_entry << 32 | dlg->h_id;
 
     if (!start_avps)
         message = make_default_request(call);
