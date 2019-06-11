@@ -221,12 +221,6 @@ typedef enum CallControlAction {
 } CallControlAction;
 
 
-typedef struct Contact {
-    str username;
-    str ip;
-    str port;
-} Contact;
-
 typedef struct DialogID {
     unsigned int h_entry;
     unsigned int h_id;
