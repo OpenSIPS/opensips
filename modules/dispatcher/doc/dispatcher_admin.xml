@@ -322,8 +322,8 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 		</example>
 	</section>
 
-	<section id="param_ds_probing_threshhold" xreflabel="ds_probing_threshhold">
-		<title><varname>ds_probing_threshhold</varname> (int)</title>
+	<section id="param_ds_probing_threshold" xreflabel="ds_probing_threshold">
+		<title><varname>ds_probing_threshold</varname> (int)</title>
 		<para>
 		If you want to set a gateway into probing mode, you will need a
 		specific number of requests until it will change from "active" to
@@ -335,10 +335,10 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set the <quote>ds_probing_threshhold</quote> parameter</title>
+		<title>Set the <quote>ds_probing_threshold</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("dispatcher", "ds_probing_threshhold", 10)
+modparam("dispatcher", "ds_probing_threshold", 10)
 ...
 </programlisting>
 		</example>

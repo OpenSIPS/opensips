@@ -1970,14 +1970,14 @@ int ds_set_state_repl(int group, str *address, int state, int type,
 						idx->dlist[i].failure_count++;
 						/* Fire only, if the Threshold is reached. */
 						if (idx->dlist[i].failure_count
-								< probing_threshhold) {
+								< probing_threshold) {
 							lock_stop_read( partition->lock );
 							return 0;
 						}
 						if (idx->dlist[i].failure_count
-								> probing_threshhold)
+								> probing_threshold)
 							idx->dlist[i].failure_count
-								= probing_threshhold;
+								= probing_threshold;
 					}
 				}
 			}

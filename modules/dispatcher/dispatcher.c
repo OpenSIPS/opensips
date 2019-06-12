@@ -64,7 +64,7 @@ str hash_pvar_param = {NULL, 0};
 pv_elem_t * hash_param_model = NULL;
 
 
-int probing_threshhold = 3; /* number of failed requests, before a destination
+int probing_threshold = 3; /* number of failed requests, before a destination
 							   is taken into probing */
 str ds_ping_method = {"OPTIONS",7};
 str ds_ping_from   = {"sip:dispatcher@localhost", 24};
@@ -257,7 +257,8 @@ static param_export_t params[]={
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
 	{"pvar_algo_pattern",     STR_PARAM, &pvar_algo_param.s},
-	{"ds_probing_threshhold", INT_PARAM, &probing_threshhold},
+	{"ds_probing_threshhold", INT_PARAM, &probing_threshold},
+	{"ds_probing_threshold",  INT_PARAM, &probing_threshold},
 	{"ds_ping_method",        STR_PARAM, &ds_ping_method.s},
 	{"ds_ping_from",          STR_PARAM, &ds_ping_from.s},
 	{"ds_ping_interval",      INT_PARAM, &ds_ping_interval},
