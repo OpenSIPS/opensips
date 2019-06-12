@@ -160,7 +160,7 @@ static int w_ds_select_domain(struct sip_msg *msg, int *set, int *alg,
                            void *flags, void *part, int *max_res);
 static int w_ds_next_dst(struct sip_msg *msg, void *part);
 static int w_ds_next_domain(struct sip_msg *msg, void *part);
-static int w_ds_mark_dst(struct sip_msg *msg, void *part, str *flags);
+static int w_ds_mark_dst(struct sip_msg *msg, str *flags, void *part);
 static int w_ds_count(struct sip_msg* msg, int *set, void *filter,
 						pv_spec_t *res_pv, void *part);
 static int w_ds_is_in_list(struct sip_msg *msg, str *ip, int *port,
@@ -213,8 +213,9 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE},
 
 	{"ds_mark_dst",      (cmd_function)w_ds_mark_dst, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
+		{0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE},
 
 	{"ds_is_in_list",    (cmd_function)w_ds_is_in_list, {
@@ -1092,7 +1093,7 @@ static int w_ds_next_domain(struct sip_msg *msg, void *part)
 	return ds_next_dst(msg, 1, (ds_partition_t *)part);
 }
 
-static int w_ds_mark_dst(struct sip_msg *msg, void *part, str *flags)
+static int w_ds_mark_dst(struct sip_msg *msg, str *flags, void *part)
 {
 	str arg = STR_NULL;
 	ds_partition_t *partition = default_partition;

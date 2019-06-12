@@ -1183,7 +1183,7 @@ ds_select_dst($var(setid), $var(alg), $var(flags), $var(part), $var(max_res));
 	</section>
 	<section id="func_ds_mark_dst" xreflabel="ds_mark_dst()">
 		<title>
-		<function moreinfo="none">ds_mark_dst([partition], [state])</function>
+		<function moreinfo="none">ds_mark_dst([state], [partition])</function>
 		</title>
 		<para>
 		Mark the last used address from partition's destination set as
@@ -1197,9 +1197,6 @@ ds_select_dst($var(setid), $var(alg), $var(flags), $var(part), $var(max_res));
 		</para>
 		<para>Possible parameters:</para>
 		<itemizedlist>
-		<listitem>
-			<para>partition (string, optional) - name of a DB partition</para>
-		</listitem>
 		<listitem>
 			<para>state (string, optional) - new state for the last attempted
 				destination.  Possible values:</para>
@@ -1220,6 +1217,10 @@ ds_select_dst($var(setid), $var(alg), $var(flags), $var(part), $var(max_res));
 					actually set to probing.</para>
 			</listitem>
 			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>partition (string, optional) - name of a DB partition,
+			otherwise the default one will be used</para>
 		</listitem>
 		</itemizedlist>
 
