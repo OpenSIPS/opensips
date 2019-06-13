@@ -3662,7 +3662,7 @@ static int fix_vendor_id(void **param)
 	if (vendor_id < 0)
 		return -1;
 
-	param = (void*)(long)vendor_id;
+	*param = (void*)(long)vendor_id;
 	return 0;
 }
 
