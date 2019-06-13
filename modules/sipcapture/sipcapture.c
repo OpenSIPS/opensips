@@ -3662,7 +3662,7 @@ static int fix_vendor_id(void **param)
 	if (vendor_id < 0)
 		return -1;
 
-	*(int *)param = vendor_id;
+	param = (void*)(long)vendor_id;
 	return 0;
 }
 
@@ -3697,10 +3697,10 @@ static int w_set_hep(struct sip_msg* msg, void *id, str *data_s,
 	}
 
 	if (type)
-		data_type = *(int *)type;
+		data_type = (int)(long)type;
 
 	if (vid)
-		vendor_id = *(int *)vid;
+		vendor_id = (int)(long)vid;
 
 	if (CHUNK_IS_IN_HEPSTRUCT(chunk_id))
 		return set_generic_hep_chunk(&h->u.hepv3, chunk_id, data_s);
