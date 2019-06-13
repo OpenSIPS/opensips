@@ -3569,17 +3569,17 @@ static int fix_hep_value_type(void **param)
 			!strncasecmp(s->s, type_uint_s.s, type_uint_s.len)) {
 		if (diff == 1) { /* should be int8 */
 			if (s->s[s->len-1] == '8') {
-				*(int *)param = TYPE_UINT8;
+				*param = (void*)(long)TYPE_UINT8;
 				return 0;
 			} else {
 				goto error;
 			}
 		} else {
 			if (s->s[s->len-2] == '1' && s->s[s->len-1] =='6') {
-				*(int *)param = TYPE_UINT16;
+				*param = (void*)(long)TYPE_UINT16;
 				return 0;
 			} else if (s->s[s->len-2] == '3' && s->s[s->len-1] =='2') {
-				*(int *)param = TYPE_UINT32;
+				*param = (void*)(long)TYPE_UINT32;
 				return 0;
 			} else {
 				goto error;
@@ -3587,19 +3587,19 @@ static int fix_hep_value_type(void **param)
 		}
 	} else if (s->len==type_utf_string_s.len &&
 			!strncasecmp(s->s, type_utf_string_s.s, type_utf_string_s.len)) {
-		*(int *)param = TYPE_UTF8;
+		*param = (void*)(long)TYPE_UTF8;
 		return 0;
 	} else if (s->len == type_octet_string_s.len &&
 			!strncasecmp(s->s, type_octet_string_s.s, type_octet_string_s.len)) {
-		*(int *)param = TYPE_BLOB;
+		*param = (void*)(long)TYPE_BLOB;
 		return 0;
 	} else if (s->len == type_inet_addr_s.len &&
 			!strncasecmp(s->s, type_inet_addr_s.s, type_inet_addr_s.len)) {
-		*(int *)param = TYPE_INET_ADDR;
+		*param = (void*)(long)TYPE_INET_ADDR;
 		return 0;
 	} else if (s->len == type_inet6_addr_s.len &&
 			!strncasecmp(s->s, type_inet6_addr_s.s, type_inet6_addr_s.len)) {
-		*(int *)param = TYPE_INET6_ADDR;
+		*param = (void*)(long)TYPE_INET6_ADDR;
 		return 0;
 	}
 
@@ -3618,7 +3618,7 @@ static int fix_hep_name(void **param)
 		return -1;
 	}
 
-	*(unsigned int *)param = chunk_id;
+	*param = (void*)(unsigned long)chunk_id;
 	return 0;
 }
 
@@ -3798,10 +3798,10 @@ shm_err:
 static int w_get_hep(struct sip_msg* msg, void *_id, void *_type,
                      pv_spec_p data_pv, pv_spec_p vendor_pv)
 {
-	int data_type = *(int *)_type;
+	int data_type = (int)(long)_type;
 
 	unsigned int net_data;
-	unsigned int chunk_id = *(unsigned int *)_id;
+	unsigned int chunk_id = (unsigned int)(unsigned long)_id;
 
 	struct hep_desc *h;
 	struct hep_context *ctx;
