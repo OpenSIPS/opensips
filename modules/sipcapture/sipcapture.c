@@ -3673,7 +3673,7 @@ static int w_set_hep(struct sip_msg* msg, void *id, str *data_s,
 	int data_len;
 	int data_type = TYPE_UTF8;
 	int vendor_id = HEP_OPENSIPS_VENDOR_ID;
-	unsigned int chunk_id = *(unsigned int *)id;
+	unsigned int chunk_id = (unsigned int)(unsigned long)id;
 
 	unsigned int idata;
 
@@ -3940,7 +3940,7 @@ set_pv_null:
 
 static int w_del_hep(struct sip_msg* msg, void *id)
 {
-	unsigned int chunk_id = *(unsigned int *)id;
+	unsigned int chunk_id = (unsigned int)(unsigned long)id;
 
 	struct hep_desc *h;
 	struct hep_context *ctx;
