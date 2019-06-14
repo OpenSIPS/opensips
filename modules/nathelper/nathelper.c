@@ -141,17 +141,7 @@ int ping_checker_interval = 1;
 int ping_threshold = 3;
 int max_pings_lost=3;
 
-static struct {
-	const char *cnetaddr;
-	uint32_t netaddr;
-	uint32_t mask;
-} nets_1918[] = {
-	{"10.0.0.0",    0, 0xffffffffu << 24},	/* RFC 1918 */
-	{"172.16.0.0",  0, 0xffffffffu << 20},  /* RFC 1918 */
-	{"192.168.0.0", 0, 0xffffffffu << 16},  /* RFC 1918 */
-	{"100.64.0.0",  0, 0xffffffffu << 22},	/* RFC 6598 */
-	{NULL, 0, 0}
-};
+
 /*
  * Extract URI from the Contact header field - iterates through all contacts
  */
@@ -445,7 +435,6 @@ mod_init(void)
 	int i;
 	bind_usrloc_t bind_usrloc;
 	str socket_str;
-	struct in_addr addr;
 	pv_spec_t avp_spec;
 	str s;
 
@@ -592,13 +581,6 @@ mod_init(void)
 	if (fix_ignore_rpl_codes() != 0) {
 		LM_ERR("failed to parse ignored reply codes!\n");
 		return -1;
-	}
-
-	/* Prepare 1918/6598 networks list */
-	for (i = 0; nets_1918[i].cnetaddr != NULL; i++) {
-		if (inet_aton(nets_1918[i].cnetaddr, &addr) != 1)
-			abort();
-		nets_1918[i].netaddr = ntohl(addr.s_addr) & nets_1918[i].mask;
 	}
 
 	if (nh_cluster_id>0 && nh_init_cluster()<0) {
@@ -756,36 +738,6 @@ fix_nated_contact_f(struct sip_msg* msg, str *params)
 
 
 /*
- * Test if IP address pointed to by saddr belongs to RFC1918 / RFC6598 networks
- */
-static inline int
-is1918addr(str *saddr)
-{
-	struct in_addr addr;
-	uint32_t netaddr;
-	int i, rval;
-	char backup;
-
-	rval = -1;
-	backup = saddr->s[saddr->len];
-	saddr->s[saddr->len] = '\0';
-	if (inet_aton(saddr->s, &addr) != 1)
-		goto theend;
-	netaddr = ntohl(addr.s_addr);
-	for (i = 0; nets_1918[i].cnetaddr != NULL; i++) {
-		if ((netaddr & nets_1918[i].mask) == nets_1918[i].netaddr) {
-			rval = 1;
-			goto theend;
-		}
-	}
-	rval = 0;
-
-theend:
-	saddr->s[saddr->len] = backup;
-	return rval;
-}
-
-/*
  * test for occurrence of RFC1918 / RFC6598 IP address in Contact HF
  */
 static int
@@ -796,7 +748,7 @@ contact_1918(struct sip_msg* msg)
 	contact_t* c;
 
 	for( hdr=NULL,c=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; )
-		if ( is1918addr(&(uri.host)) == 1) return 1;
+		if ( ip_addr_is_1918(&(uri.host)) == 1) return 1;
 
 	return 0;
 }
@@ -839,7 +791,7 @@ sdp_1918(struct sip_msg* msg)
 		if (pf != AF_INET || isnulladdr(&ip, pf))
 			return 0;
 
-		ret |= (is1918addr(&ip) == 1) ? 1 : 0;
+		ret |= (ip_addr_is_1918(&ip) == 1) ? 1 : 0;
 	}
 
 	return ret;
@@ -852,7 +804,7 @@ static int
 via_1918(struct sip_msg* msg)
 {
 
-	return (is1918addr(&(msg->via1->host)) == 1) ? 1 : 0;
+	return (ip_addr_is_1918(&(msg->via1->host)) == 1) ? 1 : 0;
 }
 
 /*
