@@ -332,11 +332,15 @@ error:
 	return -1;
 }
 
-
+/* Internally updates the subscription data and generates the
+ * necessary NOTIFY's. It also takes care of sending back a reply
+ * to the SUBSCRIBE request
+ */
 int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 {
 	unsigned int hash_code;
-	int reply_code= 200;
+	int reply_code = 200;
+	str reply_str;
 
 	if(subs->event->type & PUBL_TYPE)
 		reply_code=(subs->status==PENDING_STATUS)?202:200;
@@ -355,7 +359,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			if(delete_db_subs(subs->pres_uri,subs->event->name,subs->to_tag)<0)
 			{
 				LM_ERR("deleting subscription record from database\n");
-				goto error;
+				goto error_500_reply;
 			}
 			/* delete record from hash table also */
 			subs->local_cseq= delete_shtable(subs_htable,hash_code,
@@ -365,7 +369,7 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 						&subs->local_contact) <0)
 			{
 				LM_ERR("sending %d OK\n", reply_code);
-				goto error;
+				goto error_500_reply;
 			}
 			goto send_notify;
 		}
@@ -374,14 +378,14 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 		{
 			LM_DBG("updating subscription record in hash table failed\n");
 			if(!fallback2db)
-				goto error;
+				goto error_500_reply;
 		}
 		if(fallback2db)
 		{
 			if(update_subs_db(subs, REMOTE_TYPE)< 0)
 			{
 				LM_ERR("updating subscription in database table\n");
-				goto error;
+				goto error_500_reply;
 			}
 		}
 
@@ -389,25 +393,26 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 			&subs->local_contact)<0)
 		{
 			LM_ERR("sending 2XX reply\n");
-			goto error;
+			goto error_500_reply;
 		}
 	}
 	else
 	{
-		if(msg && send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
-			&subs->local_contact)<0)
-		{
-			LM_ERR("sending 2XX reply\n");
-			goto error;
-		}
-
 		if(subs->expires!= 0)
 		{
+			/* be sure the SIP subscription does not exist in hash */
+			if(update_shtable(subs_htable, hash_code, subs, JUST_CHECK)==0) {
+				/* another subscription with same SIP coordinates already
+				 * exists => decline */
+				LM_ERR("subscription overlapping detected, rejecting\n");
+				goto error_500_reply;
+			}
+
 			subs->expires += expires_offset;
 			if(insert_shtable(subs_htable,hash_code,subs)< 0)
 			{
 				LM_ERR("inserting new record in subs_htable\n");
-				goto error;
+				goto error_500_reply;
 			}
 
 			if(fallback2db)
@@ -415,13 +420,23 @@ int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req)
 				if(insert_subs_db(subs) < 0)
 				{
 					LM_ERR("failed to insert subscription in database\n");
-					goto error;
+					goto error_500_reply;
 				}
 			}
 		}
 		/*otherwise there is a subscription outside a dialog with expires= 0
 		 * no update in database, but should try to send Notify */
+
+		if(msg && send_2XX_reply(msg, reply_code, subs->expires, &subs->to_tag,
+			&subs->local_contact)<0)
+		{
+			LM_ERR("sending 2XX reply\n");
+			goto error_500_reply;
+		}
+
 	}
+
+	/* the SUBSCRIBE request is replied at this point */
 
 	/* send Notifies */
 send_notify:
@@ -434,7 +449,8 @@ send_notify:
 			goto error;
 		}
 	}
-	LM_INFO("notify\n");
+
+	LM_DBG("send NOTIFY's out\n");
 	if(notify(subs, NULL, NULL, 0 , NULL, 0)< 0)
 	{
 		LM_ERR("Failed to send notify request\n");
@@ -442,6 +458,14 @@ send_notify:
 	}
 
 	return 0;
+
+error_500_reply:
+	reply_code = 500;
+	reply_str.s = "Server Internal Error";
+	reply_str.len = sizeof("Server Internal Error")-1;
+
+	if (send_error_reply(msg, reply_code, reply_str)<0)
+		LM_ERR("failed to send reply on error case\n");
 
 error:
 	return -1;
