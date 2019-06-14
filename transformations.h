@@ -70,7 +70,7 @@ enum _tr_csv_subtype {TR_CSV_NONE=0, TR_CSV_COUNT,TR_CSV_VALUEAT};
 enum _tr_sdp_subtype {TR_SDP_NONE=0, TR_SDP_LINEAT, TR_SDP_STREAM_DEL,
 	TR_SDP_STREAM};
 enum _tr_ip_subtype  {TR_IP_NONE=0,TR_IP_FAMILY,TR_IP_NTOP,TR_IP_RESOLVE,
-	TR_IP_ISIP,TR_IP_PTON, TR_IP_MATCHES};
+	TR_IP_ISIP,TR_IP_PTON, TR_IP_MATCHES, TR_IP_ISPRIVATE};
 enum _tr_re_subtype  {TR_RE_NONE=0,TR_RE_SUBST};
 
 typedef struct tr_param_ {

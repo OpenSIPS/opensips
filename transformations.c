@@ -1976,6 +1976,15 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
 			val->rs.s = int2str(val->ri, &val->rs.len);
 			break;
+		case TR_IP_ISPRIVATE:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+
+			val->ri = (ip_addr_is_1918(&(val->rs))==1) ? 1 : 0;
+
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
 
 		default:
 			LM_ERR("unknown subtype %d\n",subtype);
@@ -3600,17 +3609,13 @@ int tr_parse_ip(str *in, trans_t *t)
 	name.len = p - name.s;
 	trim(&name);
 
-	if (name.len==6 && strncasecmp(name.s,"family",6)==0)
-	{
+	if (name.len==6 && strncasecmp(name.s,"family",6)==0) {
 		t->subtype = TR_IP_FAMILY;
 		return 0;
-	}
-	else if (name.len==4 && strncasecmp(name.s,"ntop",4)==0)
-	{
+	} else if (name.len==4 && strncasecmp(name.s,"ntop",4)==0) {
 		t->subtype = TR_IP_NTOP;
 		return 0;
-	}
-	else if (name.len == 4 && strncasecmp(name.s,"isip",4) == 0) {
+	} else if (name.len == 4 && strncasecmp(name.s,"isip",4) == 0) {
 		t->subtype = TR_IP_ISIP;
 		return 0;
 	} else if (name.len == 4 && strncasecmp(name.s,"pton",4) == 0) {
@@ -3631,6 +3636,9 @@ int tr_parse_ip(str *in, trans_t *t)
 		LM_DBG("preparing to parse param\n");
 		if (tr_parse_sparam(p, in, &t->params, 0) == NULL)
 			goto error;
+		return 0;
+	} else if (name.len == 9 && strncasecmp(name.s,"isprivate",9) == 0) {
+		t->subtype = TR_IP_ISPRIVATE;
 		return 0;
 	}
 
