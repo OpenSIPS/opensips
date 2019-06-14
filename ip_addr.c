@@ -168,6 +168,37 @@ void print_net(struct net* net)
 }
 
 
+int ip_addr_is_1918(str *s_ip)
+{
+	static struct {
+		uint32_t netaddr;
+		uint32_t mask;
+	} nets_1918[] = {
+		{ 0x0a000000, 0xffffffffu << 24},  /* "10.0.0.0"    RFC 1918 */
+		{ 0xac100000, 0xffffffffu << 20},  /* "172.16.0.0"  RFC 1918 */
+		{ 0xc0a80000, 0xffffffffu << 16},  /* "192.168.0.0" RFC 1918 */
+		{ 0x64400000, 0xffffffffu << 22},  /* "100.64.0.0"  RFC 6598 */
+		{ 0, 0}
+	};
+	struct ip_addr *ip;
+	uint32_t netaddr;
+	int i;
+
+	/* is it an IPv4 address? */
+	if ( (ip=str2ip(s_ip))==NULL )
+		return -1;
+
+	netaddr = ntohl(ip->u.addr32[0]);
+
+	for (i = 0; nets_1918[i].netaddr != 0; i++) {
+		if ((netaddr & nets_1918[i].mask) == nets_1918[i].netaddr)
+			return 1;
+	}
+
+	return -1;
+}
+
+
 #ifdef USE_MCAST
 
 /* Returns 1 if the given address is a multicast address */
