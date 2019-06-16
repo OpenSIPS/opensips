@@ -1970,11 +1970,11 @@ Chapter 4. Contributors
    10. Anca Vamanu 16 7 749 116
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Andrei Dragus, Walter Doekes (@wdoekes), Ionel Cerghit
-   (@ionel-cerghit), John Riordan, Hugues Mitonneau, Carsten Bock,
-   Jerome Martin, Vlad Patrascu (@rvlad-patrascu), Klaus Darilion,
-   Jarrod Baumann (@jarrodb), Michel Bensoussan, Richard Revels,
-   Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu
+   Andrei Dragus, Walter Doekes (@wdoekes), Vlad Patrascu
+   (@rvlad-patrascu), Ionel Cerghit (@ionel-cerghit), John
+   Riordan, Hugues Mitonneau, Carsten Bock, Jerome Martin, Klaus
+   Darilion, Jarrod Baumann (@jarrodb), Michel Bensoussan, Richard
+   Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu
    (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy Pyles,
    Julián Moreno Patiño, Konstantin Bokarius, Alex Massover,
    Damien Sandras (@dsandras), Alex Hermann, Dusan Klinec, Norman
@@ -2003,9 +2003,9 @@ Chapter 4. Contributors
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2019
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     Oct 2017 - Oct 2017
+   2.  Vlad Patrascu (@rvlad-patrascu)     Oct 2017 - May 2019
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2019
    5.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
    6.  Stephane Alnet                      Nov 2016 - Nov 2016
    7.  Vlad Paiu (@vladpaiu)               Oct 2010 - May 2016
