@@ -22,7 +22,7 @@ dispatcher Module
               1.3.7. ds_ping_interval (int)
               1.3.8. ds_ping_maxfwd (int)
               1.3.9. ds_probing_sock (str)
-              1.3.10. ds_probing_threshhold (int)
+              1.3.10. ds_probing_threshold (int)
               1.3.11. ds_probing_mode (int)
               1.3.12. ds_probing_list (str)
               1.3.13. ds_define_blacklist (str)
@@ -57,7 +57,7 @@ dispatcher Module
 
               1.4.3. ds_next_dst([partition])
               1.4.4. ds_next_domain([partition])
-              1.4.5. ds_mark_dst([partition], [state])
+              1.4.5. ds_mark_dst([state], [partition])
               1.4.6. ds_count(set, state_filter, res_var,
                       [partition])
 
@@ -107,7 +107,7 @@ dispatcher Module
    1.8. Set the “ds_ping_interval” parameter
    1.9. Set the “ds_ping_maxfwd” parameter
    1.10. Set the “ds_probing_sock” parameter
-   1.11. Set the “ds_probing_threshhold” parameter
+   1.11. Set the “ds_probing_threshold” parameter
    1.12. Set the “ds_probing_mode” parameter
    1.13. Set the “ds_probing_list” parameter
    1.14. Set the 'default' partition's “ds_define_blacklist”
@@ -342,7 +342,7 @@ modparam("dispatcher", "ds_ping_maxfwd", 2)
 modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 ...
 
-1.3.10. ds_probing_threshhold (int)
+1.3.10. ds_probing_threshold (int)
 
    If you want to set a gateway into probing mode, you will need a
    specific number of requests until it will change from "active"
@@ -351,9 +351,9 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 
    Default value is “3”.
 
-   Example 1.11. Set the “ds_probing_threshhold” parameter
+   Example 1.11. Set the “ds_probing_threshold” parameter
 ...
-modparam("dispatcher", "ds_probing_threshhold", 10)
+modparam("dispatcher", "ds_probing_threshold", 10)
 ...
 
 1.3.11. ds_probing_mode (int)
@@ -876,7 +876,7 @@ res));
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
-1.4.5.  ds_mark_dst([partition], [state])
+1.4.5.  ds_mark_dst([state], [partition])
 
    Mark the last used address from partition's destination set as
    inactive ("i"/"I"/"0"), active ("a"/"A"/"1") or probing
@@ -888,7 +888,6 @@ res));
    ds_select_dst() or ds_select_domain().
 
    Possible parameters:
-     * partition (string, optional) - name of a DB partition
      * state (string, optional) - new state for the last attempted
        destination. Possible values:
           + "i", "I" or "0" (default) - the last destination
@@ -900,6 +899,8 @@ res));
             probing. Note: You will need to call this function
             "threshold"-times, before it will be actually set to
             probing.
+     * partition (string, optional) - name of a DB partition,
+       otherwise the default one will be used
 
    This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
 
@@ -1187,8 +1188,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 147 91 2767 1895
-   2. Liviu Chircu (@liviuchircu) 85 49 1518 1320
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 148 92 2775 1900
+   2. Liviu Chircu (@liviuchircu) 88 51 1538 1337
    3. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
    5. Ionut Ionita (@ionutrazvanionita) 44 17 1145 969
@@ -1228,10 +1229,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2019
-   2.  Razvan Crainea (@razvancrainea)     May 2011 - May 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jun 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jun 2019
+   3.  Razvan Crainea (@razvancrainea)     May 2011 - May 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
    7.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016
@@ -1256,16 +1257,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Nick Altmann
-   (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod Baumann
-   (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
-   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Vlad Paiu
-   (@vladpaiu), Walter Doekes (@wdoekes), Stanislaw Pitucha, Anca
-   Vamanu, Klaus Darilion, Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Carsten Bock, Edson Gellert Schubert,
-   Elena-Ramona Modroiu.
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
+   (@lemenkov), Nick Altmann (@nikbyte), Ionel Cerghit
+   (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
+   (@andrei-datcu), Vlad Paiu (@vladpaiu), Walter Doekes
+   (@wdoekes), Stanislaw Pitucha, Anca Vamanu, Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius,
+   Carsten Bock, Edson Gellert Schubert, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 
