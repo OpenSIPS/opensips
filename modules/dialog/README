@@ -2266,8 +2266,8 @@ Chapter 4. Contributors
    3. Razvan Crainea (@razvancrainea) 176 128 3777 1006
    4. Vlad Patrascu (@rvlad-patrascu) 149 68 3286 3061
    5. Liviu Chircu (@liviuchircu) 106 74 2258 745
-   6. Ovidiu Sas (@ovidiusas) 27 21 482 107
-   7. Dan Pascu (@danpascu) 26 22 160 106
+   6. Dan Pascu (@danpascu) 27 23 164 110
+   7. Ovidiu Sas (@ovidiusas) 27 21 482 107
    8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
    9. Daniel-Constantin Mierla (@miconda) 16 13 76 66
    10. Henning Westerholt (@henningw) 16 10 172 187
@@ -2305,25 +2305,25 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2019
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2019
-   5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
-   8.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Dec 2016
-   9.  Jarrod Baumann (@jarrodb)           Apr 2015 - Apr 2016
-   10. Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2016
+   1.  Dan Pascu (@danpascu)               Dec 2007 - Jun 2019
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2019
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2019
+   6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2018
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
+   9.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Dec 2016
+   10. Jarrod Baumann (@jarrodb)           Apr 2015 - Apr 2016
 
-   All remaining contributors: Julián Moreno Patiño, Dusan Klinec,
-   Walter Doekes (@wdoekes), Eseanu Marius Cristian
-   (@eseanucristian), Andrei Datcu (@andrei-datcu), Nick Altmann
-   (@nikbyte), Norman Brandinger (@NormB), Damien Sandras
-   (@dsandras), Ryan Bullock (@rrb3942), Anca Vamanu, Alex
-   Massover, Andrei Dragus, John Riordan, Hugues Mitonneau,
-   Richard Revels, UnixDev, Dan Pascu (@danpascu), Alex Hermann,
-   Henning Westerholt (@henningw), Carsten Bock, Klaus Darilion,
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Dusan Klinec, Walter Doekes (@wdoekes),
+   Eseanu Marius Cristian (@eseanucristian), Andrei Datcu
+   (@andrei-datcu), Nick Altmann (@nikbyte), Norman Brandinger
+   (@NormB), Damien Sandras (@dsandras), Ryan Bullock (@rrb3942),
+   Anca Vamanu, Alex Massover, Andrei Dragus, John Riordan, Hugues
+   Mitonneau, Richard Revels, UnixDev, Alex Hermann, Henning
+   Westerholt (@henningw), Carsten Bock, Klaus Darilion,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Jerome Martin, Tavis Paquette, Michel
    Bensoussan, Eliot Gable, Andy Pyles, Elena-Ramona Modroiu,

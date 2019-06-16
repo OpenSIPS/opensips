@@ -60,19 +60,19 @@
 	</row>
 	<row>
 		<entry>6. </entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
+		<entry align="center">27</entry>
+		<entry align="center">23</entry>
+		<entry align="center">164</entry>
+		<entry align="center">110</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
 		<entry align="center">27</entry>
 		<entry align="center">21</entry>
 		<entry align="center">482</entry>
 		<entry align="center">107</entry>
-	</row>
-	<row>
-		<entry>7. </entry>
-		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">26</entry>
-		<entry align="center">22</entry>
-		<entry align="center">160</entry>
-		<entry align="center">106</entry>
 	</row>
 	<row>
 		<entry>8. </entry>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
+		<entry align="center">Dec 2007 - Jun 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Aug 2010 - Jun 2019</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Aug 2012 - May 2019</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Apr 2006 - May 2019</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">Jul 2016 - May 2019</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Oct 2010 - Sep 2018</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
 		<entry align="center">Feb 2008 - Mar 2017</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>)</entry>
 		<entry align="center">Jul 2015 - Dec 2016</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>)</entry>
 		<entry align="center">Apr 2015 - Apr 2016</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
-		<entry align="center">Oct 2014 - Feb 2016</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Julián Moreno Patiño, Dusan Klinec, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Anca Vamanu, Alex Massover, Andrei Dragus, John Riordan, Hugues Mitonneau, Richard Revels, UnixDev, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Alex Hermann, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Carsten Bock, Klaus Darilion, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Jerome Martin, Tavis Paquette, Michel Bensoussan, Eliot Gable, Andy Pyles, Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Julián Moreno Patiño, Dusan Klinec, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Anca Vamanu, Alex Massover, Andrei Dragus, John Riordan, Hugues Mitonneau, Richard Revels, UnixDev, Alex Hermann, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Carsten Bock, Klaus Darilion, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Jerome Martin, Tavis Paquette, Michel Bensoussan, Eliot Gable, Andy Pyles, Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
