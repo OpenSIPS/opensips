@@ -1,0 +1,23 @@
+---
+# Number of days of inactivity before an issue becomes stale
+daysUntilStale: 15
+# Number of days of inactivity before a stale issue is closed
+daysUntilClose: 30
+# Issues with these labels will never be considered stale
+exemptLabels:
+  - fixed
+  - improvement
+  - low-priority
+  - high-priority
+  - feature request
+# Label to use when marking an issue as stale
+staleLabel: stale
+# Comment to post when marking an issue as stale. Set to `false` to disable
+markComment: >
+  Any updates here? No progress has been made in the last 15 days, marking as
+  stale. Will close this issue if no further updates are made in the next 30
+  days.
+# Comment to post when closing a stale issue. Set to `false` to disable
+closeComment: >
+  Marking as closed due to lack of progress for more than 30 days.
+  If this issue is still relevant, please re-open it with additional details.
