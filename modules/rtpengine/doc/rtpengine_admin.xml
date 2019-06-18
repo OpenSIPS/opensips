@@ -960,7 +960,7 @@ if (is_method("INVITE") &amp;&amp; $rs == 200)
 
 	<section id="func_rtpengine_block_media" xreflabel="rtpengine_block_media()">
 		<title>
-		<function moreinfo="none">rtpengine_stop_media([flags[, sockvar]])</function>
+		<function moreinfo="none">rtpengine_block_media([flags[, sockvar]])</function>
 		</title>
 		<para>
 			This function will block the media sent from one of the endpoints.
@@ -982,7 +982,7 @@ rtpengine_block_media();
 
 	<section id="func_rtpengine_unblock_media" xreflabel="rtpengine_unblock_media()">
 		<title>
-		<function moreinfo="none">rtpengine_unstop_media([flags[, sockvar]])</function>
+		<function moreinfo="none">rtpengine_unblock_media([flags[, sockvar]])</function>
 		</title>
 		<para>
 			This function will resume/unblock the media sent from one of the endpoints.
@@ -1004,7 +1004,7 @@ rtpengine_unblock_media();
 
 	<section id="func_rtpengine_block_dtmf" xreflabel="rtpengine_block_dtmf()">
 		<title>
-		<function moreinfo="none">rtpengine_stop_dtmf([flags[, sockvar]])</function>
+		<function moreinfo="none">rtpengine_block_dtmf([flags[, sockvar]])</function>
 		</title>
 		<para>
 			This function will block the DTMF media sent from one of the endpoints.
@@ -1026,7 +1026,7 @@ rtpengine_block_dtmf();
 
 	<section id="func_rtpengine_unblock_dtmf" xreflabel="rtpengine_unblock_dtmf()">
 		<title>
-		<function moreinfo="none">rtpengine_unstop_dtmf([flags[, sockvar]])</function>
+		<function moreinfo="none">rtpengine_unblock_dtmf([flags[, sockvar]])</function>
 		</title>
 		<para>
 			This function will resume/unblock the DTMF media sent from one of the endpoints.
