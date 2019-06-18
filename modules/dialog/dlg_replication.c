@@ -86,6 +86,14 @@ static struct socket_info * fetch_socket_info(str *addr)
 		} \
 	} while (0)
 
+
+static inline void bin_skip_dlg(bin_packet_t *packet)
+{
+	bin_skip_int(packet, 3);
+	bin_skip_str(packet, 14);
+	bin_skip_int(packet, 6);
+}
+
 /*  Binary Packet receiving functions   */
 
 /**
@@ -129,6 +137,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 			 * dropped later when syncing from cluster is done) */
 			dlg->flags &= ~DLG_FLAG_FROM_DB;
 			dlg_unlock(d_table, d_entry);
+			bin_skip_dlg(packet);
 			return 0;
 		}
 
