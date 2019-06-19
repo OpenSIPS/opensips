@@ -3,6 +3,7 @@ CREATE TABLE registrant (
     id NUMBER(10) PRIMARY KEY,
     registrar VARCHAR2(255) DEFAULT '',
     proxy VARCHAR2(255) DEFAULT NULL,
+    registrar_mode VARCHAR2(64) DEFAULT '',
     aor VARCHAR2(255) DEFAULT '',
     third_party_registrant VARCHAR2(255) DEFAULT NULL,
     username VARCHAR2(64) DEFAULT NULL,

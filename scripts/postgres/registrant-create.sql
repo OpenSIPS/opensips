@@ -3,6 +3,7 @@ CREATE TABLE registrant (
     id SERIAL PRIMARY KEY NOT NULL,
     registrar VARCHAR(255) DEFAULT '' NOT NULL,
     proxy VARCHAR(255) DEFAULT NULL,
+    registrar_mode VARCHAR(64) DEFAULT '' NOT NULL,
     aor VARCHAR(255) DEFAULT '' NOT NULL,
     third_party_registrant VARCHAR(255) DEFAULT NULL,
     username VARCHAR(64) DEFAULT NULL,

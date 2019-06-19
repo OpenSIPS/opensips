@@ -44,6 +44,14 @@
 		<description>URI pointing to the outbond proxy.</description>
 	</column>
 
+	<column id="registrar_mode">
+		<name>registrar_mode</name>
+		<type>string</type>
+		<size>64</size>
+		<default/>
+		<description>Mode used to register the address of record.</description>
+	</column>
+
 	<column id="aor">
 		<name>aor</name>
 		<type>string</type>

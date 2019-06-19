@@ -3,6 +3,7 @@ CREATE TABLE registrant (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     registrar CHAR(255) DEFAULT '' NOT NULL,
     proxy CHAR(255) DEFAULT NULL,
+    registrar_mode CHAR(64) DEFAULT '' NOT NULL,
     aor CHAR(255) DEFAULT '' NOT NULL,
     third_party_registrant CHAR(255) DEFAULT NULL,
     username CHAR(64) DEFAULT NULL,
