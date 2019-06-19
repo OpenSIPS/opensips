@@ -45,6 +45,7 @@ typedef void * context_p;
 enum osips_context {
 	CONTEXT_GLOBAL,
 	CONTEXT_TRAN,
+	CONTEXT_DIALOG,
 
 	CONTEXT_COUNT,
 };

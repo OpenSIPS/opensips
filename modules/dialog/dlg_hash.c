@@ -182,6 +182,7 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 
 	if (dlg->cbs.first)
 		destroy_dlg_callbacks_list(dlg->cbs.first);
+	context_destroy(CONTEXT_DIALOG, context_of(dlg));
 
 	if (dlg->profile_links) {
 		destroy_linkers_unsafe(dlg, 0);
@@ -298,7 +299,7 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 	char *p;
 
 	len = sizeof(struct dlg_cell) + callid->len + from_uri->len +
-		to_uri->len;
+		to_uri->len + context_size(CONTEXT_DIALOG);
 	dlg = (struct dlg_cell*)shm_malloc( len );
 	if (dlg==0) {
 		LM_ERR("no more shm mem (%d)\n",len);
@@ -315,6 +316,8 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 		to_uri->len,to_uri->s, from_tag->len, from_tag->s, dlg->h_entry);
 
 	p = (char*)(dlg+1);
+	/* dialog context has to be first, otherwise context_of will break */
+	p += context_size(CONTEXT_DIALOG);
 
 	dlg->callid.s = p;
 	dlg->callid.len = callid->len;
