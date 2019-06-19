@@ -28,6 +28,7 @@
 #define _DIALOG_DLG_LOAD_H_
 
 #include "dlg_cb.h"
+#include "dlg_ctx.h"
 #include "dlg_handlers.h"
 #include "dlg_profile.h"
 #include "dlg_vals.h"
