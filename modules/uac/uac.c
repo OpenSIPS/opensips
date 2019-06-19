@@ -82,9 +82,16 @@ static int w_restore_from(struct sip_msg* msg);
 static int w_replace_to(struct sip_msg* msg, str* p1, str* p2);
 static int w_restore_to(struct sip_msg* msg);
 
+<<<<<<< HEAD
+static int w_uac_auth(struct sip_msg* msg, char* p1, char* p2);
+static int fixup_uac_auth(void** param, int param_no);
+static int fixup_replace_uri(void** param, int param_no);
+static int fixup_replace_disp_uri(void** param, int param_no);
+=======
 static int w_uac_auth(struct sip_msg* msg);
 static int fixup_replace_disp_uri(void** param);
 static int fixup_free_s(void** param);
+>>>>>>> b7af3d764118218e88e59aa56d4da8c1de7a4d21
 static int mod_init(void);
 static void mod_destroy(void);
 static int cfg_validate(void);
@@ -93,6 +100,33 @@ static int uac_does_replace = 0;
 
 /* Exported functions */
 static cmd_export_t cmds[]={
+<<<<<<< HEAD
+	{"uac_replace_from",  (cmd_function)w_replace_from,  2,
+			fixup_replace_disp_uri, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_replace_from",  (cmd_function)w_replace_from,  1,
+			fixup_replace_uri, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_restore_from",  (cmd_function)w_restore_from,   0,
+			0, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_replace_to",  (cmd_function)w_replace_to,  2,
+			fixup_replace_disp_uri, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_replace_to",  (cmd_function)w_replace_to,  1,
+			fixup_replace_uri, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_restore_to",  (cmd_function)w_restore_to,   0,
+			0, 0,
+			REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE },
+	{"uac_auth",        (cmd_function)w_uac_auth,     0,
+			0, 0,
+			FAILURE_ROUTE },
+	{"uac_auth",        (cmd_function)w_uac_auth,     1,
+			fixup_uac_auth, 0,
+			FAILURE_ROUTE },
+	{0,0,0,0,0,0}
+=======
 	{"uac_replace_from",  (cmd_function)w_replace_from, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_replace_disp_uri, fixup_free_s},
 		{CMD_PARAM_STR, 0, 0},
@@ -110,6 +144,7 @@ static cmd_export_t cmds[]={
 	{"uac_auth",        (cmd_function)w_uac_auth, {{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{0,0,{{0,0,0}},0}
+>>>>>>> b7af3d764118218e88e59aa56d4da8c1de7a4d21
 };
 
 
@@ -389,9 +424,32 @@ static int fixup_replace_disp_uri(void** param)
 	return 0;
 }
 
+<<<<<<< HEAD
+static int fixup_uac_auth(void** param, int param_no)
+{
+	if (param_no == 1) {
+		pv_elem_t *model;
+		str s;
+
+		model=NULL;
+		s.s = (char*)(*param); s.len = strlen(s.s);
+		if(pv_parse_format(&s, &model)<0)
+		{
+			LM_ERR("wrong format[%s]!\n",(char*)(*param));
+			return E_UNSPEC;
+		}
+		if (model==NULL)
+		{
+			LM_ERR("empty parameter!\n");
+			return E_UNSPEC;
+		}
+		*param = (void*)model;
+	}
+=======
 static int fixup_free_s(void** param)
 {
 	pkg_free( ((str*)(*param))->s );
+>>>>>>> b7af3d764118218e88e59aa56d4da8c1de7a4d21
 	return 0;
 }
 
@@ -450,9 +508,18 @@ static int w_replace_to(struct sip_msg* msg, str *dsp, str *uri)
 
 
 
-static int w_uac_auth(struct sip_msg* msg)
+static int w_uac_auth(struct sip_msg* msg, char* p1, char* p2)
 {
-	return (uac_auth(msg)==0)?1:-1;
+	str cseq_skip_s;
+	str *cseq_skip = NULL;
+
+	if ( p1!=NULL ) {
+		if (pv_printf_s( msg, (pv_elem_p)p1, &cseq_skip_s)!=0)
+			return -1;
+		cseq_skip = &cseq_skip_s;
+	}
+
+	return (uac_auth(msg,cseq_skip)==0)?1:-1;
 }
 
 

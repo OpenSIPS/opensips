@@ -58,7 +58,7 @@ struct authenticate_nc_cnonce {
 };
 
 
-int uac_auth( struct sip_msg *msg);
+int uac_auth( struct sip_msg *msg, str *cseq_skip);
 void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
 		HASHHEX response);
