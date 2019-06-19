@@ -58,6 +58,7 @@
 #include "../clusterer/api.h"
 #include "../../lib/container.h"
 
+#include "dlg_ctx.h"
 #include "dlg_hash.h"
 #include "dlg_timer.h"
 #include "dlg_handlers.h"
@@ -593,6 +594,19 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->unref_dlg = unref_dlg_destroy_safe;
 
 	dlgb->get_rr_param = get_rr_param;
+
+	/* dlg context functions */
+	dlgb->dlg_ctx_register_int = dlg_ctx_register_int;
+	dlgb->dlg_ctx_register_str = dlg_ctx_register_str;
+	dlgb->dlg_ctx_register_ptr = dlg_ctx_register_ptr;
+
+	dlgb->dlg_ctx_put_int = dlg_ctx_put_int;
+	dlgb->dlg_ctx_put_str = dlg_ctx_put_str;
+	dlgb->dlg_ctx_put_ptr = dlg_ctx_put_ptr;
+
+	dlgb->dlg_ctx_get_int = dlg_ctx_get_int;
+	dlgb->dlg_ctx_get_str = dlg_ctx_get_str;
+	dlgb->dlg_ctx_get_ptr = dlg_ctx_get_ptr;
 
 	return 1;
 }

@@ -60,6 +60,18 @@ struct dlg_binds {
 	unref_dlg_f          unref_dlg;
 
 	get_rr_param_f       get_rr_param;
+
+	dlg_ctx_register_int_f dlg_ctx_register_int;
+	dlg_ctx_register_str_f dlg_ctx_register_str;
+	dlg_ctx_register_ptr_f dlg_ctx_register_ptr;
+
+	dlg_ctx_put_int_f dlg_ctx_put_int;
+	dlg_ctx_put_str_f dlg_ctx_put_str;
+	dlg_ctx_put_ptr_f dlg_ctx_put_ptr;
+
+	dlg_ctx_get_int_f dlg_ctx_get_int;
+	dlg_ctx_get_str_f dlg_ctx_get_str;
+	dlg_ctx_get_ptr_f dlg_ctx_get_ptr;
 };
 
 
