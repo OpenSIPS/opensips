@@ -427,10 +427,7 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 		&& ap->before->u.cond==COND_FALSE) {
 			/* found our phony anchor lump */
 			/* jump over the anchor and conditional lumps */
-			lp = ap->before->before;
-			/* unlink it */
-			ap->before->before = NULL;
-			ap->type = 0;
+			lp = dup_lump_list(ap->before->before);
 			/* link the pending buffered params and go at the end of the list*/
 			for ( l2->before = lp ; l2 && l2->before ; l2=l2->before);
 			break;
