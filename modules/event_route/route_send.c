@@ -52,7 +52,8 @@ int route_build_buffer(str *event_name, evi_reply_sock *sock,
 				param_no++;
 				params_len += param->name.len + param->val.s.len;
 			} else {
-				LM_ERR("FIXME: handle param=[%p]\n", param);
+				LM_DBG("FIXME: handle param=[%p] name=[%.*s] flags=%X\n",
+						param, param->name.len, param->name.s, param->flags);
 			}
 		}
 	}
@@ -97,7 +98,8 @@ int route_build_buffer(str *event_name, evi_reply_sock *sock,
 				buf_param->next = buf_param + 1;
 				buf_param++;
 			} else {
-				LM_ERR("FIXME: handle param=[%p]\n", param);
+				LM_DBG("FIXME: handle param=[%p] name=[%.*s] flags=%X\n",
+						param, param->name.len, param->name.s, param->flags);
 			}
 		}
 		buf_param--;
