@@ -1702,6 +1702,22 @@ static int restore_legs(struct dlg_cell* dlg,
 	return 0;
 }
 
+int restore_dlg_extra_ctx(struct dlg_cell* dlg, acc_ctx_t *ctx)
+{
+	if (extra_tags &&
+			restore_extra(dlg, &extra_str, ctx)) {
+		LM_ERR("failed to restore extra!\n");
+		return -1;
+	}
+
+	if (leg_tags &&
+			restore_legs(dlg, &leg_str, ctx)) {
+		LM_ERR("failed to restore legs!\n");
+		return -1;
+	}
+	return 0;
+}
+
 
 /*
  * restore extras that are held in dlg vals
@@ -1724,17 +1740,8 @@ int restore_dlg_extra(struct dlg_cell* dlg, acc_ctx_t** ctx_p)
 
 	memset(ctx, 0, sizeof(acc_ctx_t));
 
-	if (extra_tags &&
-			restore_extra(dlg, &extra_str, ctx)) {
-		LM_ERR("failed to restore extra!\n");
+	if (restore_dlg_extra_ctx(dlg, ctx) < 0)
 		return -1;
-	}
-
-	if (leg_tags &&
-			restore_legs(dlg, &leg_str, ctx)) {
-		LM_ERR("failed to restore legs!\n");
-		return -1;
-	}
 
 	*ctx_p = ctx;
 

@@ -605,6 +605,38 @@ static void acc_merge_contexts(struct dlg_cell *dlg, int type,
 
 
 /* restore callbacks */
+void acc_update_ctx_callback(struct dlg_cell *dlg, int type,
+			struct dlg_cb_params *_params)
+{
+	str flags_s;
+	acc_ctx_t* ctx = (acc_ctx_t *)(*_params->param);
+	unsigned long long flags;
+
+	if (!dlg) {
+		LM_ERR("null dialog - cannot fetch message flags\n");
+		return;
+	}
+
+	/* check if the ctx exists in the dialog */
+	if (!ctx) {
+		LM_DBG("there's no dialog ctx created before - can't do anything\n");
+		return;
+	}
+
+	flags_s.s = (char *)&flags;
+	flags_s.len = sizeof(flags);
+	if (dlg_api.fetch_dlg_value(dlg, &flags_str, &flags_s, 1) < 0) {
+		LM_DBG("flags were not saved in dialog\n");
+		return;
+	}
+	ctx->flags = flags;
+
+	if (restore_dlg_extra_ctx(dlg, ctx)) {
+		LM_ERR("failed to rebuild acc context!\n");
+		return;
+	}
+}
+
 void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params) {
 		str flags_s, table_s, created_s;
@@ -678,6 +710,14 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 		/* register dlg callbacks for ctx management */
 		if (dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
 				acc_merge_contexts, ctx, unref_acc_ctx) != 0) {
+			acc_unref(ctx); /* only one, the other one was successful */
+			LM_ERR("cannot register callback ctx management\n");
+			return;
+		}
+
+		/* register dlg callbacks for updating extra vars */
+		if (dlg_api.register_dlgcb(dlg, DLGCB_PROCESS_VARS,
+				acc_update_ctx_callback, ctx, NULL) != 0) {
 			acc_unref(ctx); /* only one, the other one was successful */
 			LM_ERR("cannot register callback ctx management\n");
 			return;
