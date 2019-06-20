@@ -70,7 +70,6 @@ str leg_str = str_init("accX_leg");
 str flags_str = str_init("accX_flags");
 str table_str = str_init("accX_table");
 str extra_str = str_init("accX_extra");
-str acc_ctx_str = str_init("accX_ctx");
 
 extern struct acc_extra *log_extra_tags;
 extern struct acc_extra *db_extra_tags;
