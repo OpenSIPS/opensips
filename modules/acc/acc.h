@@ -108,5 +108,6 @@ extern event_id_t acc_missed_event;
 
 
 int restore_dlg_extra(struct dlg_cell* dlg, acc_ctx_t** ctx);
+int restore_dlg_extra_ctx(struct dlg_cell* dlg, acc_ctx_t *ctx);
 
 #endif
