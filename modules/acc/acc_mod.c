@@ -145,6 +145,7 @@ int acc_created_avp_id = -1;
 /* acc context position */
 int acc_flags_ctx_idx;
 int acc_tm_flags_ctx_idx;
+int acc_dlg_ctx_idx;
 
 /* ------------- fixup function --------------- */
 static int acc_fixup(void** param, int param_no);

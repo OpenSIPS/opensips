@@ -51,7 +51,6 @@ extern struct tm_binds tmb;
 extern struct rr_binds rrb;
 extern str flags_str;
 extern str table_str;
-extern str acc_ctx_str;
 extern str extra_str;
 extern str leg_str;
 extern str created_str;
@@ -61,6 +60,7 @@ extern int acc_created_avp_id;
 
 extern int acc_flags_ctx_idx;
 extern int acc_tm_flags_ctx_idx;
+extern int acc_dlg_ctx_idx;
 
 extern tag_t* extra_tags;
 extern int extra_tgs_len;
@@ -186,7 +186,6 @@ static inline void free_extra_array(extra_value_t* array, int array_len)
 static inline void free_acc_ctx(acc_ctx_t* ctx)
 {
 	int i;
-	str ctxstr;
 	struct dlg_cell *dlg;
 
 	if (ctx->extra_values)
@@ -203,12 +202,9 @@ static inline void free_acc_ctx(acc_ctx_t* ctx)
 	shm_free(ctx);
 
 	/* also cleanup dialog */
-	ctx = 0;
-	ctxstr.len = sizeof(ctx);
-	ctxstr.s = (char *)&ctx;
 	dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;
-	if (dlg && dlg_api.store_dlg_value(dlg, &acc_ctx_str, &ctxstr) < 0)
-		LM_ERR("cannot reset context in dialog %p!\n", dlg);
+	if (dlg)
+		dlg_api.dlg_ctx_put_ptr(dlg, acc_dlg_ctx_idx, NULL);
 }
 
 static inline struct hdr_field* get_rpl_to( struct cell *t,
@@ -223,7 +219,6 @@ static inline struct hdr_field* get_rpl_to( struct cell *t,
 acc_ctx_t* try_fetch_ctx(void)
 {
 	acc_ctx_t* ret=NULL;
-	str ctx_s;
 
 	struct cell* t;
 	struct dlg_cell* dlg;
@@ -237,49 +232,34 @@ acc_ctx_t* try_fetch_ctx(void)
 		t = (t==T_UNDEFINED) ? NULL : t;
 		dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;
 
-		/* search the flags in transaction context */
+		/* search for the context in transaction context */
 		if (t && (ret=ACC_GET_TM_CTX(t))==NULL) {
-			/* try fetching the context from dialog  only if dialog exists */
-			if (!dlg ||
-					dlg_api.fetch_dlg_value(dlg, &acc_ctx_str, &ctx_s, 0) < 0) {
-				/* can't find the flags anywhere */
+			/* try fetching the context from dialog only if dialog exists */
+			if (!dlg)
 				return NULL;
-			} else { /* found them in dialog; set in the processing context
-					  * and in the transaction */
-				/* set the flags in transaction and processing context */
-				memcpy(&ret, ctx_s.s, sizeof(acc_ctx_t *));
-				if (!ret)
-					return NULL;
+			ret = dlg_api.dlg_ctx_get_ptr(dlg, acc_dlg_ctx_idx);
+			if (!ret)
+				/* can't find the context anywhere */
+				return NULL;
 
-				acc_ref_ex(ret, 2);
-				ACC_PUT_TM_CTX(t, ret);
-				ACC_PUT_CTX(ret);
-			}
-		} else if (ret) { /* we have the flags in transaction */
+			acc_ref_ex(ret, 2);
+			ACC_PUT_TM_CTX(t, ret);
+			ACC_PUT_CTX(ret);
+		} else if (ret) { /* we have the context in transaction */
 			/* in transaction; put them in dialog(if possible) and in processing context */
 			acc_ref(ret);
 			ACC_PUT_CTX(ret);
-			if (dlg) {
-				ctx_s.s = (char *)&ret;
-				ctx_s.len = sizeof(acc_ctx_t *);
-			}
-		} else if (dlg) { /* no (flags in) transaction; search only in dialog*/
-			if (dlg_api.fetch_dlg_value(dlg, &acc_ctx_str, &ctx_s, 0) < 0) {
-				/* can't find the flags anywhere */
+		} else if (dlg) { /* no (context in) transaction; search only in dialog*/
+			ret = dlg_api.dlg_ctx_get_ptr(dlg, acc_dlg_ctx_idx);
+			if (!ret)
+				/* can't find the context anywhere */
 				return NULL;
-			} else {
-				/* found them in dialog; set in processing context */
-				memcpy(&ret, ctx_s.s, sizeof(acc_ctx_t *));
-				if (!ret)
-					return NULL;
-
-				if (t) {
-					acc_ref_ex(ret, 2); /* ref twice - for local and tm ctx */
-					ACC_PUT_TM_CTX(t, ret);
-				} else
-					acc_ref(ret); /* ref only once, for local ctx */
-				ACC_PUT_CTX(ret);
-			}
+			if (t) {
+				acc_ref_ex(ret, 2); /* ref twice - for local and tm ctx */
+				ACC_PUT_TM_CTX(t, ret);
+			} else
+				acc_ref(ret); /* ref only once, for local ctx */
+			ACC_PUT_CTX(ret);
 		}
 	}
 
@@ -627,7 +607,7 @@ static void acc_merge_contexts(struct dlg_cell *dlg, int type,
 /* restore callbacks */
 void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params) {
-		str flags_s, ctx_s, table_s, created_s;
+		str flags_s, table_s, created_s;
 		acc_ctx_t* ctx;
 		time_t created;
 		unsigned long long flags;
@@ -684,12 +664,7 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 
 
 		/* replace the context value with a good pointer */
-		ctx_s.s = (char *)&ctx;
-		ctx_s.len = sizeof(acc_ctx_t *);
-		if (dlg_api.store_dlg_value(dlg, &acc_ctx_str, &ctx_s) < 0) {
-			LM_ERR("failed to set new context value!\n");
-			return;
-		}
+		dlg_api.dlg_ctx_put_ptr(dlg, acc_dlg_ctx_idx, ctx);
 
 		/* register database callbacks */
 		acc_ref_ex(ctx, 2);
@@ -717,7 +692,6 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	str new_uri_bk;
 	str dst_uri_bk;
 	struct dlg_cell *dlg = NULL;
-	str ctx_s;
 	str table;
 
 	unsigned long long* flags = &ctx->flags;
@@ -763,14 +737,8 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 			goto restore;
 		}
 
-		ctx_s.s = (char*)&ctx;
-		ctx_s.len = sizeof(acc_ctx_t *);
-
 		/* store context pointer into dialog */
-		if (dlg_api.store_dlg_value(dlg, &acc_ctx_str, &ctx_s) < 0) {
-			LM_ERR("cannot store context pointer into dlg val!\n");
-			goto restore;
-		}
+		dlg_api.dlg_ctx_put_ptr(dlg, acc_dlg_ctx_idx, ctx);
 
 		/* register callback for program shutdown or dialog replication
 		 * won't register free function since TERMINATED|EXPIRED callback
@@ -1098,6 +1066,8 @@ unsigned long long do_acc_flags_parser(str* token)
 						DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
 					LM_ERR("cannot register callback for dialog loaded - accounting "
 							"for ongoing calls will be lost after restart\n");
+
+			acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(NULL);
 
 			is_cdr_enabled=1;
 		}
