@@ -225,6 +225,19 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
  */
 #define DLGCB_WRITE_VP     (1<<13)
 
+/*
+ * Called just after the dialog values were received through the clusterer
+ * replication packets. Subscribers have the chance to refresh their dialog-held
+ * information and avoid data loss or inconsistencies between OpenSIPS cluster
+ * nodes.
+ *
+ * Triggered by:  replication packets received on the network
+ * Registration:  per-dialog, "dlg" must be given
+ * Trigger count: 0 - N times per dialog (e.g. for every update and create
+ *                replicated packet received on the network)
+ */
+#define DLGCB_PROCESS_VARS (1<<14)
+
 struct dlg_callback {
 	int types;
 	dialog_cb* callback;

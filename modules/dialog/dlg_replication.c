@@ -274,8 +274,11 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 		ref_dlg_unsafe(dlg, 1);
 	}
 
-	if (vars.s && vars.len != 0)
+	if (vars.s && vars.len != 0) {
 		read_dialog_vars(vars.s, vars.len, dlg);
+		run_dlg_callbacks(DLGCB_PROCESS_VARS, dlg,
+				NULL, DLG_DIR_NONE, NULL, 1, 0);
+	}
 
 	dlg_unlock(d_table, d_entry);
 
@@ -400,8 +403,11 @@ int dlg_replicated_update(bin_packet_t *packet)
 
 	unref_dlg_unsafe(dlg, 1, d_entry);
 
-	if (vars.s && vars.len != 0)
+	if (vars.s && vars.len != 0) {
 		read_dialog_vars(vars.s, vars.len, dlg);
+		run_dlg_callbacks(DLGCB_PROCESS_VARS, dlg,
+				NULL, DLG_DIR_NONE, NULL, 1, 0);
+	}
 
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
 
