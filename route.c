@@ -993,7 +993,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 	switch(op) {
 		case EQUAL_OP:
 			if ( s2->s==NULL || s1->len != s2->len) return 0;
-			ret=(strncasecmp(s1->s, s2->s, s2->len)==0);
+			ret=(str_strcasecmp(s1, s2)==0);
 		break;
 		case DIFF_OP:
 			if ( s2->s==NULL ) return 0;
