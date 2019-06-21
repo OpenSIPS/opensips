@@ -89,6 +89,9 @@ extern stat_var *failed_dlgs;
 int  ctx_lastdstleg_idx = -1;
 int  ctx_timeout_idx = -1;
 
+static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
+											unsigned int leg);
+
 void init_dlg_handlers(int default_timeout_p)
 {
 	default_timeout = default_timeout_p;
@@ -792,6 +795,7 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 			return;
 		}
 
+		dlg_update_contact(dlg, msg, callee_idx(dlg));
 		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 
 		free_sip_msg(msg);
@@ -846,6 +850,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 			return;
 		}
 
+		dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
 		dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg);
 
 		free_sip_msg(msg);
@@ -1082,6 +1087,8 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
+	/* we use the initial request, which already has the contact parsed/fixed */
+	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
 	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
@@ -1113,6 +1120,7 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
+	dlg_update_contact(dlg, ps->req, callee_idx(dlg));
 	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
@@ -1823,7 +1831,8 @@ after_unlock5:
 				LM_ERR("cseqs update failed on leg=%d\n",dst_leg);
 			}
 
-			if (req->first_line.u.request.method_value == METHOD_INVITE) {
+			if (req->first_line.u.request.method_value == METHOD_INVITE ||
+					req->first_line.u.request.method_value == METHOD_UPDATE) {
 				if (dst_leg == DLG_CALLER_LEG)
 					src_leg = callee_idx(dlg);
 				else
