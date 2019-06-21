@@ -932,10 +932,10 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 		goto out_unlock;
 	}
 
-	if (match_ct && match_ct->s)
+	if (match_ct)
 		LM_DBG("Delete by contact: [%.*s]\n", match_ct->len, match_ct->s);
 
-	if (match_sin && match_sin->s)
+	if (match_sin)
 			LM_DBG("Delete by sip_instance: [%.*s]\n",
 				match_sin->len, match_sin->s);
 
@@ -985,13 +985,13 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 				continue;
 		}
 
-		if (match_ct->s) {
+		if (match_ct) {
 			if (match_ct->len != contact->c.len ||
 			memcmp(match_ct->s, contact->c.s, match_ct->len))
 				continue;
 		}
 
-		if (match_sin->s) {
+		if (match_sin) {
 			if (str_strcmp(match_sin, &contact->instance))
 				continue;
 		}
