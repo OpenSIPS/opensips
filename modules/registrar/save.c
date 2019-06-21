@@ -939,7 +939,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 			LM_DBG("Delete by sip_instance: [%.*s]\n",
 				match_sin->len, match_sin->s);
 
-	if (match_next_hop->s) {
+	if (match_next_hop) {
 		he = sip_resolvehost(match_next_hop, &delete_port, NULL, 0, NULL);
 		if (!he) {
 			LM_ERR("cannot resolve given host: '%.*s'\n",
@@ -979,7 +979,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 			contact->next_hop.name.len, contact->next_hop.name.s,
 			inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])));
 
-		if (match_next_hop->s) {
+		if (match_next_hop) {
 			if (memcmp(delete_nh_he.h_addr_list[0],
 			he->h_addr_list[0], he->h_length))
 				continue;
@@ -1003,7 +1003,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 
 out_unlock:
 	ul.unlock_udomain((udomain_t *)udomain, &aor_user);
-	if (match_next_hop->s)
+	if (match_next_hop)
 		free_hostent(&delete_nh_he);
 
 	return ret;
