@@ -88,7 +88,7 @@ static int parse_db_url(struct db_id* id, const str* url)
 	enum state st;
 	unsigned int len, i, ipv6_flag = 0;
 	const char* begin;
-	char* prev_token;
+	char* prev_token = NULL;
 
 	if (!id || !url || !url->s) {
 		return -1;
@@ -103,7 +103,6 @@ static int parse_db_url(struct db_id* id, const str* url)
 	memset(id, 0, sizeof(struct db_id));
 	st = ST_SCHEME;
 	begin = url->s;
-	prev_token = 0;
 
 	for(i = 0; i < len; i++) {
 		switch(st) {
@@ -169,13 +168,13 @@ static int parse_db_url(struct db_id* id, const str* url)
 			switch(url->s[i]) {
 			case '@':
 				st = ST_HOST;
-				id->username = prev_token;
+				id->username = prev_token; prev_token = NULL;
 				if (dupl_string(&id->password, begin, url->s + i) < 0) goto err;
 				begin = url->s + i + 1;
 				break;
 
 			case '/':
-				id->host = prev_token;
+				id->host = prev_token; prev_token = NULL;
 				id->port = str2s(begin, url->s + i - begin, 0);
 				st = ST_DB;
 				begin = url->s + i + 1;
@@ -276,7 +275,6 @@ struct db_id* new_db_id(const str* url)
 		goto err;
 	}
 	memset(ptr, 0, sizeof(struct db_id));
-
 
 	if (parse_db_url(ptr, url) < 0) {
 		LM_ERR("error while parsing database URL: '%.*s' \n", url->len, url->s);
