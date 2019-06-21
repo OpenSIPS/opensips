@@ -1946,19 +1946,19 @@ module_func_param: STRING {
 										elems[$1+1].u.data = NULL;
 										$$=$1+1;
 										}
-		| NUMBER {
+		| snumber {
 										elems[1].type = NUMBER_ST;
 										elems[1].u.number = $1;
 										$$=1;
 										}
-		| COMMA NUMBER {
+		| COMMA snumber {
 										elems[1].type = NULLV_ST;
 										elems[1].u.data = NULL;
 										elems[2].type = NUMBER_ST;
 										elems[2].u.number = $2;
 										$$=2;
 										}
-		| module_func_param COMMA NUMBER {
+		| module_func_param COMMA snumber {
 										if ($1+1>=MAX_ACTION_ELEMS) {
 											yyerror("too many arguments "
 												"in function\n");
