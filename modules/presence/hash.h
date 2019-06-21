@@ -35,7 +35,6 @@
 struct presentity;
 #define REMOTE_TYPE   1<<1
 #define LOCAL_TYPE    1<<2
-#define JUST_CHECK    1<<3
 
 #define PKG_MEM_STR       "pkg"
 #define SHARE_MEM         "share"
