@@ -48,10 +48,10 @@ rtpengine Module
                       sock_var[, sockvar]]])
 
               1.5.9. rtpengine_stop_media([flags[, sockvar]])
-              1.5.10. rtpengine_stop_media([flags[, sockvar]])
-              1.5.11. rtpengine_unstop_media([flags[, sockvar]])
-              1.5.12. rtpengine_stop_dtmf([flags[, sockvar]])
-              1.5.13. rtpengine_unstop_dtmf([flags[, sockvar]])
+              1.5.10. rtpengine_block_media([flags[, sockvar]])
+              1.5.11. rtpengine_unblock_media([flags[, sockvar]])
+              1.5.12. rtpengine_block_dtmf([flags[, sockvar]])
+              1.5.13. rtpengine_unblock_dtmf([flags[, sockvar]])
 
         1.6. Exported Pseudo-Variables
 
@@ -786,7 +786,7 @@ if (is_method("INVITE") && $rs == 200)
         rtpengine_stop_media();
 ...
 
-1.5.10.  rtpengine_stop_media([flags[, sockvar]])
+1.5.10.  rtpengine_block_media([flags[, sockvar]])
 
    This function will block the media sent from one of the
    endpoints. The direction to be blocked is controled by the
@@ -799,7 +799,7 @@ if (is_method("INVITE") && $rs == 200)
 rtpengine_block_media();
 ...
 
-1.5.11.  rtpengine_unstop_media([flags[, sockvar]])
+1.5.11.  rtpengine_unblock_media([flags[, sockvar]])
 
    This function will resume/unblock the media sent from one of
    the endpoints. The direction to be blocked is controled by the
@@ -812,7 +812,7 @@ rtpengine_block_media();
 rtpengine_unblock_media();
 ...
 
-1.5.12.  rtpengine_stop_dtmf([flags[, sockvar]])
+1.5.12.  rtpengine_block_dtmf([flags[, sockvar]])
 
    This function will block the DTMF media sent from one of the
    endpoints. The direction to be blocked is controled by the
@@ -825,7 +825,7 @@ rtpengine_unblock_media();
 rtpengine_block_dtmf();
 ...
 
-1.5.13.  rtpengine_unstop_dtmf([flags[, sockvar]])
+1.5.13.  rtpengine_unblock_dtmf([flags[, sockvar]])
 
    This function will resume/unblock the DTMF media sent from one
    of the endpoints. The direction to be blocked is controled by
@@ -1077,7 +1077,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 131 49 4454 2606
+   1. Razvan Crainea (@razvancrainea) 132 50 4458 2610
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 29 14 420 592
    3. Richard Fuchs 21 2 640 723
    4. Liviu Chircu (@liviuchircu) 15 11 66 131
