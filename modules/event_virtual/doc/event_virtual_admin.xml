@@ -11,13 +11,20 @@
 		module provides the possibility to have multiple external applications, using different transport protocols, subscribed to the &osips; Event Interface as a single virtual subscriber, for a specific event. When an event is triggered, the event_virtual module notifies the specified transport modules using one of the following policies:
 		<itemizedlist>
 			<listitem><para>
-					<emphasis>PARALLEL</emphasis> - all subscribers (applications) are notified at once
+				<emphasis>PARALLEL</emphasis> - all subscribers (applications) are notified at once
 			</para>	</listitem>
 			<listitem><para>
-					<emphasis>FAILOVER</emphasis> - for every event raised, try to notify the subscribers, in the order in which they are given, until the first successful notification
+				<emphasis>FAILOVER</emphasis> - for every event raised, try to
+				notify the subscribers, in the order in which they are given,
+				until the first successful notification. For some transport modules
+				(<emphasis>event_jsonrpc</emphasis>, <emphasis>event_xmlrpc</emphasis>,
+				<emphasis>event_rabbitmq</emphasis>), in order to properly
+				detect a failure when raising an event, you have to configure
+				synchronous operation through the <emphasis>sync_mode</emphasis>
+				module parameter of the respective module.
 			</para>	</listitem>
 			<listitem><para>
-					<emphasis>ROUND-ROBIN</emphasis> - for every event raised, notify the subscribers alternatively, in the order in which they are given (for each raised event notify a different subscriber)
+				<emphasis>ROUND-ROBIN</emphasis> - for every event raised, notify the subscribers alternatively, in the order in which they are given (for each raised event notify a different subscriber)
 			</para>	</listitem>
 		</itemizedlist>
 		Only one expire value can be used (for the whole virtual subscription), and not one for each individual subscriber.
