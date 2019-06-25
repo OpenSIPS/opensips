@@ -1868,6 +1868,30 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
 			val->rs.s = int2str(val->ri, &val->rs.len);
 			break;
+		case TR_IP_ISIP4:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+
+			if (str2ip(&(val->rs)))
+				val->ri = 1;
+			else
+				val->ri = 0;
+
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
+		case TR_IP_ISIP6:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+
+			if (str2ip6(&(val->rs)))
+				val->ri = 1;
+			else
+				val->ri = 0;
+
+			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
+			val->rs.s = int2str(val->ri, &val->rs.len);
+			break;
 		case TR_IP_PTON:
 			p_ip = str2ip(&(val->rs));
 			if (!p_ip)
@@ -3618,6 +3642,12 @@ int tr_parse_ip(str *in, trans_t *t)
 	} else if (name.len == 4 && strncasecmp(name.s,"isip",4) == 0) {
 		t->subtype = TR_IP_ISIP;
 		return 0;
+        } else if (name.len == 5 && strncasecmp(name.s,"isip4",5) == 0) {
+                t->subtype = TR_IP_ISIP4;
+                return 0;
+        } else if (name.len == 5 && strncasecmp(name.s,"isip6",5) == 0) {
+                t->subtype = TR_IP_ISIP6;
+                return 0;
 	} else if (name.len == 4 && strncasecmp(name.s,"pton",4) == 0) {
 		t->subtype = TR_IP_PTON;
 		return 0;
