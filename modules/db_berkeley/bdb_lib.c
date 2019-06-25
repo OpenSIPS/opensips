@@ -717,7 +717,7 @@ int bdblib_create_journal(table_p _tp)
 	char fn[1024];
 	char d[128];
 	FILE *fp = NULL;
-	struct tm *t;
+	struct tm t;
 	int bl;
 	database_p _db_p = *_cachedb;
 	time_t tim = time(NULL);
@@ -735,8 +735,8 @@ int bdblib_create_journal(table_p _tp)
 	memcpy(s, _tp->name.s, _tp->name.len);
 	s+=_tp->name.len;
 
-	t = localtime( &tim );
-	bl=strftime(d,128,"-%Y%m%d%H%M%S.jnl",t);
+	localtime_r( &tim, &t );
+	bl=strftime(d,128,"-%Y%m%d%H%M%S.jnl",&t);
 	memcpy(s, d, bl);
 	s+= bl;
 	*s = 0;

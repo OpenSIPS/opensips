@@ -254,16 +254,16 @@ int m_build_body(str *body, time_t date, str msg, time_t sdate)
 			memcpy(p, "[Reminder message - ", 20);
 			p += 20;
 
-			memcpy(p, ctime(&sdate), 24);
-			p += 24;
+			ctime_r(&sdate, p);
+			p += strlen(p) - 1;
 
 			*p++ = ']';
 		} else {
 			memcpy(p, "[Offline message - ", 19);
 			p += 19;
 
-			memcpy(p, ctime(&date), 24);
-			p += 24;
+			ctime_r(&sdate, p);
+			p += strlen(p - 1);
 
 			*p++ = ']';
 		}

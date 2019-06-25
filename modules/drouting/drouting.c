@@ -4546,11 +4546,11 @@ mi_response_t *mi_dr_number_routing_4(const mi_params_t *params,
 static int mi_dr_print_rld_status(mi_item_t *part_item, struct head_db * partition,
 							int with_name)
 {
-	char *ch_time;
+	char ch_time[26];
 
 	lock_start_read(partition->ref_lock);
 
-	ch_time = ctime(&partition->time_last_update);
+	ctime_r(&partition->time_last_update, ch_time);
 	LM_DBG("partition  %.*s was last updated:%s\n",
 			partition->partition.len, partition->partition.s,
 			ch_time);

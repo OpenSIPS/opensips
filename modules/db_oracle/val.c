@@ -138,13 +138,14 @@ int db_oracle_val2bind(bmap_t* _m, const db_val_t* _v, OCIDate* _o)
 
 	case DB_DATETIME:
 		{
-			struct tm* tm = localtime(&VAL_TIME(_v));
-			if (tm->tm_sec == 60)
-				--tm->tm_sec;
-			OCIDateSetDate(_o, (ub2)(tm->tm_year + 1900),
-				(ub1)(tm->tm_mon + 1), (ub1)tm->tm_mday);
-			OCIDateSetTime(_o, (ub1)tm->tm_hour, (ub1)tm->tm_min,
-				(ub1)tm->tm_sec);
+			struct tm tm;
+			localtime_r(&VAL_TIME(_v), &tm);
+			if (tm.tm_sec == 60)
+				--tm.tm_sec;
+			OCIDateSetDate(_o, (ub2)(tm.tm_year + 1900),
+				(ub1)(tm.tm_mon + 1), (ub1)tm.tm_mday);
+			OCIDateSetTime(_o, (ub1)tm.tm_hour, (ub1)tm.tm_min,
+				(ub1)tm.tm_sec);
 			_m->addr = _o;
 			_m->size = sizeof(*_o);
 			_m->type = SQLT_ODT;

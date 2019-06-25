@@ -341,14 +341,15 @@ static int pv_get_formated_time(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	static char buf[128];
+	struct tm ltime;
 	time_t t;
 
 	if(msg==NULL)
 		return -1;
 
 	time( &t );
-	res->rs.len = strftime( buf, 127, param->pvn.u.isname.name.s.s,
-			localtime( &t ) );
+	localtime_r(&t, &ltime);
+	res->rs.len = strftime( buf, 127, param->pvn.u.isname.name.s.s, &ltime);
 
 	if (res->rs.len<=0)
 		return pv_get_null(msg, param, res);
@@ -358,9 +359,15 @@ static int pv_get_formated_time(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
+#define CTIME_BUFFER_NO 5
+#define CTIME_BUFFER_SIZE 26
+
 static int pv_get_timef(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
+	static char ctime_bufs[CTIME_BUFFER_NO][CTIME_BUFFER_SIZE];
+	static char *buf;
+	static int ctime_buf_no = 0;
 	time_t t;
 	str s;
 
@@ -368,7 +375,9 @@ static int pv_get_timef(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 
 	t = time(NULL);
-	s.s = ctime(&t);
+	buf = ctime_bufs[ctime_buf_no];
+	ctime_buf_no = (ctime_buf_no + 1) % CTIME_BUFFER_NO;
+	s.s = ctime_r(&t, buf);
 	s.len = strlen(s.s)-1;
 	return pv_get_strintval(msg, param, res, &s, (int)t);
 }

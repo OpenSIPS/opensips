@@ -62,7 +62,7 @@ static inline void write_log( struct cpl_cmd *cmd)
 {
 	struct iovec  wr_vec[5];
 	time_t now;
-	char *time_ptr;
+	char time_ptr[26];
 	int fd;
 	int ret;
 
@@ -75,7 +75,7 @@ static inline void write_log( struct cpl_cmd *cmd)
 
 	/* get current date+time -> wr_vec[0] */
 	time( &now );
-	time_ptr = ctime( &now );
+	ctime_r( &now, time_ptr );
 	wr_vec[0].iov_base = time_ptr;
 	wr_vec[0].iov_len = strlen( time_ptr );
 	/* ctime_r adds a \n at the end -> overwrite it with space */

@@ -2139,6 +2139,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 	int date_buf_len;
 	unsigned int i,part;
 	char proto[PROTO_NAME_MAX_SIZE];
+	struct tm ltime;
 	char *p;
 
 	if (tcp_disabled)
@@ -2189,8 +2190,9 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 
 				/* add lifetime */
 				_ts = (time_t)conn->lifetime + startup_time;
+				localtime_r(&_ts, &ltime);
 				date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
-										"%Y-%m-%d %H:%M:%S", localtime(&_ts));
+										"%Y-%m-%d %H:%M:%S", &ltime);
 				if (date_buf_len != 0) {
 					if (add_mi_string(conn_item, MI_SSTR("Lifetime"),
 						date_buf, date_buf_len) < 0)

@@ -924,6 +924,7 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 	reg_record_t *rec = (reg_record_t*)e_data;
 	int len;
 	char* p;
+	char cbuf[26];
 	struct ip_addr addr;
 	mi_item_t *records_arr = (mi_item_t *)data;
 	mi_item_t *record_item;
@@ -943,16 +944,14 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 		uac_reg_state[rec->state].s, uac_reg_state[rec->state].len) < 0)
 		goto error;
 
-	p = ctime(&rec->last_register_sent);
-	len = strlen(p)-1;
+	ctime_r(&rec->last_register_sent, cbuf);
 	if (add_mi_string(record_item, MI_SSTR("last_register_sent"),
-		p, len) < 0)
+		cbuf, strlen(cbuf) - 1) < 0)
 		goto error;
 
-	p = ctime(&rec->registration_timeout);
-	len = strlen(p)-1;
+	ctime_r(&rec->registration_timeout, cbuf);
 	if (add_mi_string(record_item, MI_SSTR("registration_t_out"),
-		p, len) < 0)
+		cbuf, strlen(cbuf) - 1) < 0)
 		goto error;
 
 	if (add_mi_string(record_item, MI_SSTR("registrar"),

@@ -1265,7 +1265,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 	char* p;
 	int i, j;
 	time_t _ts;
-	struct tm* t;
+	struct tm t;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
 	mi_item_t *callees_arr, *values_arr, *profiles_arr;
@@ -1283,9 +1283,9 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 	if (add_mi_number(dialog_obj, MI_SSTR("timestart"), _ts) < 0)
 		goto error;
 	if (_ts) {
-		t = localtime(&_ts);
+		localtime_r(&_ts, &t);
 		date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
-						"%Y-%m-%d %H:%M:%S", t);
+						"%Y-%m-%d %H:%M:%S", &t);
 		if (date_buf_len != 0)
 			if (add_mi_string(dialog_obj, MI_SSTR("datestart"),
 				date_buf, date_buf_len) < 0)
@@ -1297,9 +1297,9 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 	if (add_mi_number(dialog_obj, MI_SSTR("timeout"), _ts) < 0)
 		goto error;
 	if (_ts) {
-		t = localtime(&_ts);
+		localtime_r(&_ts, &t);
 		date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
-						"%Y-%m-%d %H:%M:%S", t);
+						"%Y-%m-%d %H:%M:%S", &t);
 		if (date_buf_len != 0)
 			if (add_mi_string(dialog_obj, MI_SSTR("dateout"),
 				date_buf, date_buf_len) < 0)

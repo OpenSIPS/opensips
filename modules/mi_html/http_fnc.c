@@ -568,17 +568,14 @@ error:
 
 int init_upSinceCTime(void)
 {
-	char* p;
-
 	/* Build a cache value of initial startup time */
-	p = ctime(&startup_time);
-	upSinceCTime.len = strlen(p)-1;
-	upSinceCTime.s = (char*)pkg_malloc(upSinceCTime.len);
+	upSinceCTime.s = (char*)pkg_malloc(26);
 	if (upSinceCTime.s==NULL) {
 		LM_ERR("oom\n");
 		return -1;
 	}
-	memcpy(upSinceCTime.s, p, upSinceCTime.len);
+	ctime_r(&startup_time, upSinceCTime.s);
+	upSinceCTime.len = strlen(upSinceCTime.s)-1;
 	return 0;
 }
 

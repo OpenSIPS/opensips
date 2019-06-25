@@ -1110,6 +1110,7 @@ void m_send_ontimer(unsigned int ticks, void *param)
 	static char hdr_buf[1024];
 	static char uri_buf[1024];
 	static char body_buf[1024];
+	char cbuf[26];
 	str puri;
 	time_t ttime;
 
@@ -1160,12 +1161,13 @@ void m_send_ontimer(unsigned int ticks, void *param)
 	if((msilo_dbf.query(db_con,db_keys,db_ops,db_vals,db_cols,db_no_keys,
 				db_no_cols, NULL,&db_res)!=0) || (RES_ROW_N(db_res) <= 0))
 	{
-		LM_DBG("no message for <%.*s>!\n", 24, ctime((const time_t*)&ttime));
+		ctime_r((const time_t*)&ttime, cbuf);
+		LM_DBG("no message for <%.*s>!\n", 24, cbuf);
 		goto done;
 	}
 
-	LM_DBG("dumping [%d] messages for <%.*s>!!!\n", RES_ROW_N(db_res), 24,
-			ctime((const time_t*)&ttime));
+	ctime_r((const time_t*)&ttime, cbuf);
+	LM_DBG("dumping [%d] messages for <%.*s>!!!\n", RES_ROW_N(db_res), 24, cbuf);
 
 	for(i = 0; i < RES_ROW_N(db_res); i++)
 	{

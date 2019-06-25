@@ -731,6 +731,7 @@ static inline int mi_print_shtable_record(mi_item_t *p_item, subs_t* s)
 	int date_buf_len;
 	rr_t *rr_head = NULL;
 	mi_item_t *item;
+	struct tm t;
 
 	item = add_mi_object(p_item, NULL, 0);
 	if (!item)
@@ -749,8 +750,9 @@ static inline int mi_print_shtable_record(mi_item_t *p_item, subs_t* s)
 	if (attr==NULL) goto error;
 	*/
 	_ts = (time_t)s->expires;
+	localtime_r(&_ts, &t);
 	date_buf_len = strftime(date_buf, MI_DATE_BUF_LEN - 1,
-						"%Y-%m-%d %H:%M:%S", localtime(&_ts));
+						"%Y-%m-%d %H:%M:%S", &t);
 	if (date_buf_len != 0) {
 		if (add_mi_string(item, MI_SSTR("expires"),
 			date_buf, date_buf_len) < 0)

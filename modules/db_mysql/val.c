@@ -265,7 +265,7 @@ int db_mysql_val2str(const db_con_t* _c, const db_val_t* _v, char* _s, int* _len
 
 int db_mysql_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i)
 {
-	struct tm *t;
+	struct tm t;
 	MYSQL_TIME *mt;
 
 	if (VAL_NULL(v)) {
@@ -338,14 +338,14 @@ int db_mysql_val2bind(const db_val_t* v, MYSQL_BIND *binds, unsigned int i)
 
 		case DB_DATETIME:
 			binds[i].buffer_type= MYSQL_TYPE_DATETIME;
-			t = localtime( &VAL_TIME(v) );
+			localtime_r( &VAL_TIME(v), &t );
 			mt = (MYSQL_TIME*)binds[i].buffer;
-			mt->year = 1900 + t->tm_year;
-			mt->month = (t->tm_mon)+1;
-			mt->day = t->tm_mday;
-			mt->hour = t->tm_hour;
-			mt->minute = t->tm_min;
-			mt->second = t->tm_sec;
+			mt->year = 1900 + t.tm_year;
+			mt->month = (t.tm_mon)+1;
+			mt->day = t.tm_mday;
+			mt->hour = t.tm_hour;
+			mt->minute = t.tm_min;
+			mt->second = t.tm_sec;
 			*binds[i].length= sizeof(MYSQL_TIME);
 			break;
 

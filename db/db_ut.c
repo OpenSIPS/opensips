@@ -208,7 +208,7 @@ inline int db_str2time(const char* _s, time_t* _v)
 
 inline int db_time2str_nq(time_t _v, char* _s, int* _l)
 {
-	struct tm* t;
+	struct tm t;
 	int l;
 
 	if ((!_s) || (!_l) || (*_l < 2)) {
@@ -217,8 +217,8 @@ inline int db_time2str_nq(time_t _v, char* _s, int* _l)
 	}
 
 	/* Convert time_t structure to format accepted by the database */
-	t = localtime(&_v);
-	l = strftime(_s, *_l -1, "%Y-%m-%d %H:%M:%S", t);
+	localtime_r(&_v, &t);
+	l = strftime(_s, *_l -1, "%Y-%m-%d %H:%M:%S", &t);
 
 	if (l == 0) {
 		LM_ERR("Error during time conversion\n");

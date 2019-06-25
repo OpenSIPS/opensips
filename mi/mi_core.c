@@ -57,16 +57,13 @@ static str    up_since_ctime;
 
 static int init_mi_uptime(void)
 {
-	char *p;
-
-	p = ctime(&startup_time);
-	up_since_ctime.len = strlen(p)-1;
-	up_since_ctime.s = (char*)pkg_malloc(up_since_ctime.len);
+	up_since_ctime.s = (char*)pkg_malloc(26);
 	if (up_since_ctime.s==0) {
 		LM_ERR("no more pkg mem\n");
 		return -1;
 	}
-	memcpy(up_since_ctime.s, p , up_since_ctime.len);
+	ctime_r(&startup_time, up_since_ctime.s);
+	up_since_ctime.len = strlen(up_since_ctime.s)-1;
 	return 0;
 }
 
@@ -76,15 +73,15 @@ static mi_response_t *mi_uptime(const mi_params_t *params,
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
 	time_t now;
-	char *p;
+	char buf[26];
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
 		return 0;
 
 	time(&now);
-	p = ctime(&now);
-	if (add_mi_string(resp_obj, MI_SSTR("Now"), p, strlen(p)-1) < 0)
+	ctime_r(&now, buf);
+	if (add_mi_string(resp_obj, MI_SSTR("Now"), buf, strlen(buf)-1) < 0)
 		goto error;
 
 	if (add_mi_string(resp_obj, MI_SSTR("Up since"),

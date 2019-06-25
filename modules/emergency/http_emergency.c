@@ -43,7 +43,7 @@ int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
 	NODE* info_call;
 	char* xml = NULL;
 	time_t rawtime;
-	struct tm * timeinfo;
+	struct tm timeinfo;
 	char* response;
 	int resp;
 	char* callidHeader;
@@ -96,9 +96,9 @@ int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
 		LM_DBG(" --- SEND ESQK =%s\n \n",info_call->esct->esqk);
 
 		time(&rawtime);
-		timeinfo = localtime(&rawtime);
+		localtime_r(&rawtime, &timeinfo);
 
-		strftime(info_call->esct->datetimestamp, MAX_TIME_SIZE, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);
+		strftime(info_call->esct->datetimestamp, MAX_TIME_SIZE, "%Y-%m-%dT%H:%M:%S%Z", &timeinfo);
 		LM_DBG(" --- TREAT BYE - XML ESCT %s \n \n", xml);
 
 		xml = buildXmlFromModel(info_call->esct);

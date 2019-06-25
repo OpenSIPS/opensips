@@ -420,7 +420,7 @@ void routing_timer(unsigned int ticks, void *attr) {
 static void libera_esqk(void) {
 
 	time_t rawtime;
-	struct tm * timeinfo;
+	struct tm timeinfo;
 	int resp = 1;
 	char* response;
 	char* esct_callid;
@@ -456,8 +456,8 @@ static void libera_esqk(void) {
 
 						//send esctRequest to the VPC
 						time(&rawtime);
-						timeinfo = localtime(&rawtime);
-						strftime(free_cell->esct->datetimestamp, MAX_TIME_SIZE, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);
+						localtime_r(&rawtime, &timeinfo);
+						strftime(free_cell->esct->datetimestamp, MAX_TIME_SIZE, "%Y-%m-%dT%H:%M:%S%Z", &timeinfo);
 
 						xml = buildXmlFromModel(free_cell->esct);
 						resp = post(url_vpc, xml, &response);
@@ -1702,7 +1702,7 @@ int bye(struct sip_msg *msg, int dir) {
 	char* response;
 	char* esct_callid;
 	time_t rawtime;
-	struct tm * timeinfo;
+	struct tm timeinfo;
 	NODE* info_call;
 	char* xml;
 	struct sm_subscriber*  cell_notif;
@@ -1714,7 +1714,7 @@ int bye(struct sip_msg *msg, int dir) {
 	LM_DBG(" --- BYE \n \n");
 
 	time(&rawtime);
-	timeinfo = localtime(&rawtime);
+	localtime_r(&rawtime, &timeinfo);
 	time_now = (int)rawtime;
 
 	if (proxy_role == 2) {
@@ -1867,7 +1867,7 @@ int bye(struct sip_msg *msg, int dir) {
 
 			LM_DBG(" --- SEND ESQK =%s\n \n",info_call->esct->esqk);
 
-			strftime(info_call->esct->datetimestamp, MAX_TIME_SIZE, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);
+			strftime(info_call->esct->datetimestamp, MAX_TIME_SIZE, "%Y-%m-%dT%H:%M:%S%Z", &timeinfo);
 
 			xml = buildXmlFromModel(info_call->esct);
 			LM_DBG(" --- TREAT BYE - XML ESCT %s \n \n", xml);
@@ -2009,7 +2009,7 @@ char* formatted_xml(struct sip_msg *msg, char* lie, char* callidHeader, char* cb
 	char* xml;
 	char formated_time[80];
 	time_t rawtime;
-	struct tm * timeinfo;
+	struct tm timeinfo;
 	struct service_provider* source_provider;
 	struct service_provider* vpc_provider;
 	struct service_provider* vsp_provider;
@@ -2031,8 +2031,8 @@ char* formatted_xml(struct sip_msg *msg, char* lie, char* callidHeader, char* cb
 	vsp_cert_uri = empty;
 
 	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", timeinfo);
+	localtime_r(&rawtime, &timeinfo);
+	strftime(formated_time, 80, "%Y-%m-%dT%H:%M:%S%Z", &timeinfo);
 	LM_DBG(" --- INIT  send_request_vpc\n \n");
 	LM_DBG(" --- FORMAT XML \n \n");
 

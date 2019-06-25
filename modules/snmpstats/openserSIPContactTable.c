@@ -352,7 +352,7 @@ int openserSIPContactTable_get_value(
 	float preferenceAsFloat     = -1;
 
 	char       *retrievedExpiry;
-	struct tm  *timeValue;
+	struct tm  timeValue;
 
 	/* First things first, we need to consume the interprocess buffer, in
 	 * case something has changed. We want to return the freshest data. */
@@ -388,10 +388,9 @@ int openserSIPContactTable_get_value(
 
 			if (context->contactInfo != NULL)
 			{
-				timeValue =
-					localtime(&(context->contactInfo->last_modified));
+				localtime_r(&(context->contactInfo->last_modified), &timeValue);
 				retrievedExpiry  =
-					convertTMToSNMPDateAndTime(timeValue);
+					convertTMToSNMPDateAndTime(&timeValue);
 			} else {
 				retrievedExpiry = defaultExpiry;
 			}
@@ -406,11 +405,10 @@ int openserSIPContactTable_get_value(
 
 			if (context->contactInfo != NULL)
 			{
-				timeValue =
-					localtime(&(context->contactInfo->expires));
+				localtime_r(&(context->contactInfo->expires), &timeValue);
 
 				retrievedExpiry  =
-					convertTMToSNMPDateAndTime(timeValue);
+					convertTMToSNMPDateAndTime(&timeValue);
 			} else {
 				retrievedExpiry = defaultExpiry;
 			}

@@ -207,7 +207,7 @@ int generate_cfg(select_menu *menu,void *arg)
 	cfg_gen_t *m4_cfg;
 	int n,ret,fd,status;
 	time_t now;
-	struct tm *now_tm;
+	struct tm now_tm;
 	select_menu *items_menu = menu->prev_sibling->prev_sibling;
 
 	/* Kind of bogus. Maybe menu should have backpointer to cfg entry */
@@ -233,11 +233,11 @@ int generate_cfg(select_menu *menu,void *arg)
 
 	/* generate config name */
 	now=time(NULL);
-	now_tm = localtime(&now);
+	localtime_r(&now, &now_tm);
 	n = snprintf(generated_name,128,"%sopensips_%s_%d-%d-%d_%d:%d:%d.cfg",
 			run_locally?"etc/":MENUCONFIG_GEN_PATH,
-			m4_cfg->output_name,now_tm->tm_year+1900,now_tm->tm_mon+1,
-			now_tm->tm_mday,now_tm->tm_hour,now_tm->tm_min,now_tm->tm_sec);
+			m4_cfg->output_name,now_tm.tm_year+1900,now_tm.tm_mon+1,
+			now_tm.tm_mday,now_tm.tm_hour,now_tm.tm_min,now_tm.tm_sec);
 	if (n<0 || n>128) {
 		fprintf(output,"Failed to create command to generate cfg\n");
 		return -1;

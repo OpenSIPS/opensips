@@ -59,6 +59,7 @@ static struct module_exports dbex_exports= {
 static int print_res(db_res_t* _r)
 {
 	int i, j;
+	char buf[26];
 
 	for(i = 0; i < RES_COL_N(_r); i++) {
 		printf("%s ", RES_NAMES(_r)[i]);
@@ -79,7 +80,8 @@ static int print_res(db_res_t* _r)
 				printf("%f ", RES_ROWS(_r)[i].values[j].val.double_val);
 				break;
 			case DB_DATETIME:
-				printf("%s ", ctime(&(RES_ROWS(_r)[i].values[j].val.time_val)));
+				ctime_r(&(RES_ROWS(_r)[i].values[j].val.time_val), buf);
+				printf("%s ", buf);
 				break;
 			case DB_STRING:
 				printf("%s ", RES_ROWS(_r)[i].values[j].val.string_val);
