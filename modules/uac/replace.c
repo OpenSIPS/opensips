@@ -244,7 +244,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	int i;
 	struct dlg_cell *dlg = NULL;
 	pv_value_t val;
-	int ret;
+	int ret, start_offset, display_len;
 
 	/* consistency check! in AUTO mode, do NOT allow URI changing
 	 * in sequential request */
@@ -270,8 +270,19 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		if ( body->display.len) {
 			LM_DBG("removing display [%.*s]\n",
 				body->display.len,body->display.s);
+
+			start_offset = body->display.s-msg->buf;
+
+			//If replacing leave trailing spaces
+			if (display->len) {
+				display_len = body->display.len;
+			} else {
+			//Removing, strip all characters up to the URI
+				display_len = ((body->uri.s-msg->buf) - start_offset) - 1;
+			}
+
 			/* build del lump */
-			l = del_lump( msg, body->display.s-msg->buf, body->display.len, 0);
+			l = del_lump( msg, start_offset, display_len, 0);
 			if (l==0) {
 				LM_ERR("display del lump failed\n");
 				goto error;
