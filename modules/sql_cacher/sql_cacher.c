@@ -43,6 +43,7 @@ int pv_parse_name(pv_spec_p sp, str *in);
 int pv_init_param(pv_spec_p sp, int param);
 int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 static int parse_cache_entry(unsigned int type, void *val);
+static void free_c_entry(cache_entry_t *c);
 
 static mi_response_t *mi_reload_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -648,8 +649,6 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 	new_db_hdls->db_con = 0;
 	new_db_hdls->query_ps = NULL;
 	new_db_hdls->cdbcon = 0;
-	new_db_hdls->next = db_hdls_list;
-	db_hdls_list = new_db_hdls;
 
 	/* cachedb init and test connection */
 	if (cachedb_bind_mod(&c_entry->cachedb_url, &new_db_hdls->cdbf) < 0) {
@@ -1147,7 +1146,7 @@ static void cache_init_load(int sender, void *param)
 
 static int mod_init(void)
 {
-	cache_entry_t *c_entry;
+	cache_entry_t *c_entry, *c_prev = NULL, *c_tmp;
 	db_handlers_t *db_hdls;
 	char use_timer = 0;
 
@@ -1186,9 +1185,19 @@ static int mod_init(void)
 		return -1;
 	}
 
-	for (c_entry = *entry_list; c_entry; c_entry = c_entry->next) {
-		if ((db_hdls = db_init_test_conn(c_entry)) == NULL)
+	c_entry = *entry_list;
+	while (c_entry) {
+		if ((db_hdls = db_init_test_conn(c_entry)) == NULL) {
+			LM_ERR("Failed to validate db conns for cache entry\n");
+			if (c_prev)
+				c_prev->next = c_entry->next;
+			else
+				*entry_list = c_entry->next;
+			c_tmp = c_entry;
+			c_entry = c_entry->next;
+			free_c_entry(c_tmp);
 			continue;
+		}
 
 		if (!c_entry->on_demand) {
 			use_timer = 1;
@@ -1204,6 +1213,11 @@ static int mod_init(void)
 		db_hdls->db_con = 0;
 		db_hdls->cdbf.destroy(db_hdls->cdbcon);
 		db_hdls->cdbcon = 0;
+		db_hdls->next = db_hdls_list;
+		db_hdls_list = db_hdls;
+
+		c_prev = c_entry;
+		c_entry = c_entry->next;
 	}
 
 	if (use_timer && register_timer("sql_cacher_reload-timer", reload_timer, NULL,
@@ -1838,12 +1852,29 @@ out_free_null:
 	return pv_get_null(msg, param, res);
 }
 
+static void free_c_entry(cache_entry_t *c)
+{
+	int i;
+
+	shm_free(c->id.s);
+	shm_free(c->db_url.s);
+	shm_free(c->cachedb_url.s);
+	shm_free(c->table.s);
+	shm_free(c->key.s);
+	for (i = 0; i < c->nr_columns; i++) {
+		shm_free((*c->columns[i]).s);
+		shm_free(c->columns[i]);
+	}
+	shm_free(c->columns);
+	lock_destroy_rw(c->ref_lock);
+	shm_free(c);
+}
+
 static void destroy(void)
 {
 	db_handlers_t *db_hdls;
 	struct queried_key *q_it, *q_tmp;
 	cache_entry_t *c_it, *c_tmp;
-	int i;
 
 	for(db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next) {
 		if (db_hdls->cdbcon)
@@ -1867,18 +1898,7 @@ static void destroy(void)
 	while (c_it) {
 		c_tmp = c_it;
 		c_it = c_it->next;
-		shm_free(c_tmp->id.s);
-		shm_free(c_tmp->db_url.s);
-		shm_free(c_tmp->cachedb_url.s);
-		shm_free(c_tmp->table.s);
-		shm_free(c_tmp->key.s);
-		for (i = 0; i < c_tmp->nr_columns; i++) {
-			shm_free((*c_tmp->columns[i]).s);
-			shm_free(c_tmp->columns[i]);
-		}
-		shm_free(c_tmp->columns);
-		lock_destroy_rw(c_tmp->ref_lock);
-		shm_free(c_tmp);
+		free_c_entry(c_tmp);
 	}
 	shm_free(entry_list);
 
