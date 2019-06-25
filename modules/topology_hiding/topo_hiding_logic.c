@@ -1427,8 +1427,10 @@ int topo_callid_post_raw(str *data, struct sip_msg* foo)
 	memset(&msg,0,sizeof(struct sip_msg));
 	msg.buf=data->s;
 	msg.len=data->len;
-	if (dlg_th_callid_pre_parse(&msg,1) < 0)
+	if (dlg_th_callid_pre_parse(&msg,1) < 0) {
+		LM_ERR("could not parse resulted sip message!\n");
 		goto done;
+	}
 
 	if (msg.first_line.type==SIP_REQUEST) {
 		if (get_to(&msg)->tag_value.len>0) {
