@@ -340,7 +340,7 @@ class DBText(object):
     # test that the value is string, if not return it as is
     try:
       value.find('a')
-    except:
+    except Exception as e:
       return value
 
     escaped = value
@@ -361,7 +361,7 @@ class DBText(object):
     # test that the value is string, if not return it as is
     try:
       value.find('a')
-    except:
+    except Exception as e:
       return value
 
     escaped = value

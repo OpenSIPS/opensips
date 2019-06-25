@@ -314,7 +314,7 @@ utime_t get_uticks(void)
 
 
 
-static inline void timer_ticker(struct os_timer *timer_list)
+static inline void timer_ticker(struct os_timer *tlist)
 {
 	struct os_timer* t;
 	unsigned int j;
@@ -326,7 +326,7 @@ static inline void timer_ticker(struct os_timer *timer_list)
 	   taken to run handlers) -bogdan */
 	j = *jiffies;
 
-	for (t=timer_list;t; t=t->next){
+	for (t=tlist;t; t=t->next){
 		if (j < t->expires)
 			continue;
 
@@ -368,7 +368,7 @@ again:
 
 
 
-static inline void utimer_ticker(struct os_timer *utimer_list)
+static inline void utimer_ticker(struct os_timer *utlist)
 {
 	struct os_timer* t;
 	utime_t uj;
@@ -377,7 +377,7 @@ static inline void utimer_ticker(struct os_timer *utimer_list)
 	/* see comment on timer_ticket */
 	uj = *ujiffies;
 
-	for ( t=utimer_list ; t ; t=t->next){
+	for ( t=utlist ; t ; t=t->next){
 		if (uj < t->expires)
 			continue;
 

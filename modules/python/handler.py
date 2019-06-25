@@ -1,4 +1,3 @@
-import sys
 from OpenSIPS import LM_ERR
 
 class test:

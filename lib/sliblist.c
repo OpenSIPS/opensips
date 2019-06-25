@@ -75,8 +75,7 @@ void *slinkedl_prepend(slinkedl_list_t *list, size_t e_size)
 	element->next = list->head;
 	element->data = (void*)(element + 1);
 	list->head = element;
-	if (element->next) {
-	} else {
+	if (!element->next) {
 		/* This is an empty list */
 		list->tail = element;
 	}
