@@ -1151,7 +1151,7 @@ char* parse_first_line(char* buffer, unsigned int len, struct msg_start * fl)
 	tmp=buffer;
   	/* is it perhaps a reply, ie does it start with "SIP...." ? */
 	if ( 	(*tmp=='S' || *tmp=='s') &&
-		strncasecmp( tmp+1, SIP_VERSION+1, SIP_VERSION_LEN-1)==0 &&
+		strncasecmp( tmp+1, (char *)SIP_VERSION+1, SIP_VERSION_LEN-1)==0 &&
 		(*(tmp+SIP_VERSION_LEN)==' ')) {
 			fl->type=SIP_REPLY;
 			fl->u.reply.version.len=SIP_VERSION_LEN;

@@ -110,7 +110,7 @@ static mi_response_t *mi_version(const mi_params_t *params,
 	if (!resp)
 		return 0;
 
-	if (add_mi_string(resp_obj, MI_SSTR("Server"), SERVER_HDR+8,
+	if (add_mi_string(resp_obj, MI_SSTR("Server"), (char *)SERVER_HDR+8,
 		SERVER_HDR_LEN-8) < 0) {
 		LM_ERR("failed to add mi item\n");
 		free_mi_response(resp);
@@ -130,7 +130,7 @@ static mi_response_t *mi_version_1(const mi_params_t *params,
 	if (!resp)
 		return 0;
 
-	if (add_mi_string(resp_obj, MI_SSTR("Server"), SERVER_HDR+8,
+	if (add_mi_string(resp_obj, MI_SSTR("Server"), (char *)SERVER_HDR+8,
 		SERVER_HDR_LEN-8) < 0) {
 		LM_ERR("failed to add mi item\n");
 		free_mi_response(resp);
