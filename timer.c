@@ -682,7 +682,7 @@ int start_timer_extra_processes(int *chd_rank)
 				goto error;
 			}
 
-			report_conditional_status( 1, 0);
+			report_conditional_status( (!no_daemon_mode), 0);
 
 			/* launch the reactor */
 			reactor_main_loop( 1/*timeout in sec*/, error , );
