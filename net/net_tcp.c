@@ -2071,7 +2071,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 				*startup_done = 1;
 			}
 
-			report_conditional_status( 1, 0);
+			report_conditional_status( (!no_daemon_mode), 0);
 
 			tcp_worker_proc_loop();
 		}
