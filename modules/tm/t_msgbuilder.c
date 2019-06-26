@@ -115,6 +115,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	str from;
 	str to;
 	str cseq_n;
+	str *cid = NULL;
 
 	req = Trans->uas.request;
 	cseq_n = Trans->cseq_n;
@@ -156,6 +157,9 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	*len=SIP_VERSION_LEN + method->len + 2 /* spaces */ + CRLF_LEN;
 	*len+=Trans->uac[branch].uri.len;
 
+	if (is_anycast(Trans->uac[branch].request.dst.send_sock))
+		cid = tm_via_cid();
+
 	/*via*/
 	branch_str.s=branch_buf;
 	if (!t_calc_branch(Trans,  branch, branch_str.s, &branch_str.len ))
@@ -166,7 +170,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 	if (Trans->uac[branch].adv_port.len)
 		hp.port = &Trans->uac[branch].adv_port;
 	via=via_builder(&via_len, Trans->uac[branch].request.dst.send_sock,
-		&branch_str, 0, Trans->uac[branch].request.dst.proto, &hp );
+		&branch_str, cid, Trans->uac[branch].request.dst.proto, &hp );
 	if (!via){
 		LM_ERR("no via header got from builder\n");
 		goto error;
