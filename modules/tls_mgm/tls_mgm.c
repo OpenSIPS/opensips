@@ -118,7 +118,7 @@ static mi_response_t *tls_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *tls_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-static int list_domain(mi_item_t *resp_obj, struct tls_domain *d);
+static int list_domain(mi_item_t *domains_arr, struct tls_domain *d);
 
 /* DB handler */
 static db_con_t *db_hdl = 0;
@@ -2132,16 +2132,10 @@ static int tls_get_send_timeout(void)
 }
 
 /* lists client or server domains*/
-static int list_domain(mi_item_t *resp_obj, struct tls_domain *d)
+static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
 {
+	mi_item_t *domain_item, *addrf_arr, *domf_arr;
 	struct str_list *filt;
-
-	mi_item_t *domains_arr, *domain_item;
-	mi_item_t *addrf_arr, *domf_arr;
-
-	domains_arr = add_mi_array(resp_obj, MI_SSTR("Domains"));
-	if (!domains_arr)
-		goto error;
 
 	while (d) {
 		domain_item = add_mi_object(domains_arr, NULL, 0);
@@ -2256,7 +2250,7 @@ static mi_response_t *tls_list(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
-	mi_item_t *resp_obj;
+	mi_item_t *resp_obj, *domains_arr;
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
@@ -2265,10 +2259,14 @@ static mi_response_t *tls_list(const mi_params_t *params,
 	if (dom_lock)
 		lock_start_read(dom_lock);
 
-	if (list_domain(resp_obj, *tls_client_domains) < 0)
+	domains_arr = add_mi_array(resp_obj, MI_SSTR("Domains"));
+	if (!domains_arr)
 		goto error;
 
-	if (list_domain(resp_obj, *tls_server_domains) < 0)
+	if (list_domain(domains_arr, *tls_client_domains) < 0)
+		goto error;
+
+	if (list_domain(domains_arr, *tls_server_domains) < 0)
 		goto error;
 
 	if (dom_lock)
