@@ -404,10 +404,10 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 	}
 	stat = unsafe ?
 			(stat_var*)shm_malloc_unsafe(sizeof(stat_var) +
-			(((flags&STAT_SHM_NAME)==0)?0:name_len))
+			(((flags&STAT_SHM_NAME)==0)?name_len:0))
 			:
 			(stat_var*)shm_malloc(sizeof(stat_var) +
-			(((flags&STAT_SHM_NAME)==0)?0:name_len));
+			(((flags&STAT_SHM_NAME)==0)?name_len:0));
 
 	if (stat==0) {
 		LM_ERR("no more shm memory\n");
