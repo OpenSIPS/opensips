@@ -2174,7 +2174,7 @@ static int list_domain(mi_item_t *resp_obj, struct tls_domain *d)
 			goto error;
 
 		for (filt = d->match_domains; filt; filt = filt->next)
-			if (add_mi_string(addrf_arr, 0, 0, filt->s.s, filt->s.len) < 0)
+			if (add_mi_string(domf_arr, 0, 0, filt->s.s, filt->s.len) < 0)
 				goto error;
 
 		switch (d->method) {
