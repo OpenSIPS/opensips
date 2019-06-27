@@ -12,6 +12,17 @@
 	</para>
 	</section>
 
+	<section id="tcp-connection-reusage" xreflabel="TCP Connection Reusage">
+	<title>TCP Connection Reusage</title>
+	<para>
+	Unless specified otherwise by the server through a "Connection: close"
+	indication, the module will keep and reuse the TCP connections it creates
+	as much as possible, regardless if the script writer performs blocking or
+	asynchronous HTTP requests.  These connections are not shared among OpenSIPS
+	workers — each worker maintains its own set of connections.
+	</para>
+	</section>
+
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
