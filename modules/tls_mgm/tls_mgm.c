@@ -654,10 +654,6 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
 
 	depth = X509_STORE_CTX_get_error_depth(ctx);
 	LM_NOTICE("depth = %d\n",depth);
-	if ( depth > VERIFY_DEPTH_S ) {
-		LM_NOTICE("cert chain too long ( depth > VERIFY_DEPTH_S)\n");
-		pre_verify_ok=0;
-	}
 
 	if( pre_verify_ok ) {
 		LM_NOTICE("preverify is good: verify return: %d\n", pre_verify_ok);
