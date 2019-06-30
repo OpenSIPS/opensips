@@ -6,47 +6,48 @@ rest_client Module
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. TCP Connection Reusage
+        1.3. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
 
-        1.3. Exported Parameters
+        1.4. Exported Parameters
 
-              1.3.1. curl_timeout (integer)
-              1.3.2. connection_timeout (integer)
-              1.3.3. connect_poll_interval (integer)
-              1.3.4. max_async_transfers (integer)
-              1.3.5. ssl_verifypeer (integer)
-              1.3.6. ssl_verifyhost (integer)
-              1.3.7. ssl_capath (integer)
-              1.3.8. curl_http_version (integer)
+              1.4.1. curl_timeout (integer)
+              1.4.2. connection_timeout (integer)
+              1.4.3. connect_poll_interval (integer)
+              1.4.4. max_async_transfers (integer)
+              1.4.5. ssl_verifypeer (integer)
+              1.4.6. ssl_verifyhost (integer)
+              1.4.7. ssl_capath (integer)
+              1.4.8. curl_http_version (integer)
 
-        1.4. Exported Functions
+        1.5. Exported Functions
 
-              1.4.1. rest_get(url, body_pv, [ctype_pv],
+              1.5.1. rest_get(url, body_pv, [ctype_pv],
                       [retcode_pv])
 
-              1.4.2. rest_post(url, send_body, [send_ctype],
+              1.5.2. rest_post(url, send_body, [send_ctype],
                       recv_body_pv, [recv_ctype_pv], [retcode_pv])
 
-              1.4.3. rest_put(url, send_body, [send_ctype],
+              1.5.3. rest_put(url, send_body, [send_ctype],
                       recv_body_pv[, [recv_ctype_pv][,
                       [retcode_pv]]])
 
-              1.4.4. rest_append_hf(txt)
-              1.4.5. rest_init_client_tls(tls_client_domain)
+              1.5.4. rest_append_hf(txt)
+              1.5.5. rest_init_client_tls(tls_client_domain)
 
-        1.5. Exported Asynchronous Functions
+        1.6. Exported Asynchronous Functions
 
-              1.5.1. rest_get(url, body_pv[, [ctype_pv][,
+              1.6.1. rest_get(url, body_pv[, [ctype_pv][,
                       [retcode_pv]]])
 
-              1.5.2. rest_post(url, send_body_pv, [send_ctype_pv],
+              1.6.2. rest_post(url, send_body_pv, [send_ctype_pv],
                       recv_body_pv[, [recv_ctype_pv][,
                       [retcode_pv]]])
 
-              1.5.3. rest_put(url, send_body_pv, [send_ctype_pv],
+              1.6.3. rest_put(url, send_body_pv, [send_ctype_pv],
                       recv_body_pv[, [recv_ctype_pv][,
                       [retcode_pv]]])
 
@@ -93,22 +94,31 @@ Chapter 1. Admin Guide
    HTTP server by doing RESTful queries, such as GET, POST and
    PUT.
 
-1.2. Dependencies
+1.2. TCP Connection Reusage
 
-1.2.1. OpenSIPS Modules
+   Unless specified otherwise by the server through a "Connection:
+   close" indication, the module will keep and reuse the TCP
+   connections it creates as much as possible, regardless if the
+   script writer performs blocking or asynchronous HTTP requests.
+   These connections are not shared among OpenSIPS workers — each
+   worker maintains its own set of connections.
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * No dependencies on other OpenSIPS modules..
 
-1.2.2. External Libraries or Applications
+1.3.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libcurl.
 
-1.3. Exported Parameters
+1.4. Exported Parameters
 
-1.3.1. curl_timeout (integer)
+1.4.1. curl_timeout (integer)
 
    The maximum allowed time for any HTTP(S) transfer to complete.
    This interval is inclusive of the initial connect time window,
@@ -122,7 +132,7 @@ Chapter 1. Admin Guide
 modparam("rest_client", "curl_timeout", 10)
 ...
 
-1.3.2. connection_timeout (integer)
+1.4.2. connection_timeout (integer)
 
    The maximum allowed time to establish a connection with the
    server.
@@ -134,7 +144,7 @@ modparam("rest_client", "curl_timeout", 10)
 modparam("rest_client", "connection_timeout", 4)
 ...
 
-1.3.3. connect_poll_interval (integer)
+1.4.3. connect_poll_interval (integer)
 
    Only relevant with async requests. Allows complete control over
    how quickly we want to detect libcurl's completed blocking
@@ -149,7 +159,7 @@ modparam("rest_client", "connection_timeout", 4)
 modparam("rest_client", "connect_poll_interval", 2)
 ...
 
-1.3.4. max_async_transfers (integer)
+1.4.4. max_async_transfers (integer)
 
    Maximum number of asynchronous HTTP transfers a single OpenSIPS
    worker is allowed to run simultaneously. As long as this
@@ -164,7 +174,7 @@ modparam("rest_client", "connect_poll_interval", 2)
 modparam("rest_client", "max_async_transfers", 300)
 ...
 
-1.3.5. ssl_verifypeer (integer)
+1.4.5. ssl_verifypeer (integer)
 
    Set this to 0 in order to disable the verification of the
    remote peer's certificate. Verification is done using a default
@@ -177,7 +187,7 @@ modparam("rest_client", "max_async_transfers", 300)
 modparam("rest_client", "ssl_verifypeer", 0)
 ...
 
-1.3.6. ssl_verifyhost (integer)
+1.4.6. ssl_verifyhost (integer)
 
    Set this to 0 in order to disable the verification that the
    remote peer actually corresponds to the server listed in the
@@ -190,7 +200,7 @@ modparam("rest_client", "ssl_verifypeer", 0)
 modparam("rest_client", "ssl_verifyhost", 0)
 ...
 
-1.3.7. ssl_capath (integer)
+1.4.7. ssl_capath (integer)
 
    An optional path for CA certificates to be used for host
    verifications.
@@ -200,7 +210,7 @@ modparam("rest_client", "ssl_verifyhost", 0)
 modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 ...
 
-1.3.8. curl_http_version (integer)
+1.4.8. curl_http_version (integer)
 
    Use a specific HTTP version for all requests. Possible values:
 
@@ -228,9 +238,9 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 modparam("rest_client", "curl_http_version", 3)
 ...
 
-1.4. Exported Functions
+1.5. Exported Functions
 
-1.4.1.  rest_get(url, body_pv, [ctype_pv], [retcode_pv])
+1.5.1.  rest_get(url, body_pv, [ctype_pv], [retcode_pv])
 
    Perform a blocking HTTP GET on the given url and return a
    representation of the resource.
@@ -281,7 +291,7 @@ if ($var(rcode) != 200) {
 }
 ...
 
-1.4.2.  rest_post(url, send_body, [send_ctype], recv_body_pv,
+1.5.2.  rest_post(url, send_body, [send_ctype], recv_body_pv,
 [recv_ctype_pv], [retcode_pv])
 
    Perform a blocking HTTP POST on the given url.
@@ -340,7 +350,7 @@ if ($var(rcode) != 200) {
 ...
 
 
-1.4.3.  rest_put(url, send_body, [send_ctype], recv_body_pv[,
+1.5.3.  rest_put(url, send_body, [send_ctype], recv_body_pv[,
 [recv_ctype_pv][, [retcode_pv]]])
 
    Perform a blocking HTTP PUT on the given url.
@@ -400,7 +410,7 @@ if ($var(rcode) != 200) {
 }
 ...
 
-1.4.4.  rest_append_hf(txt)
+1.5.4.  rest_append_hf(txt)
 
    Append txt to the HTTP headers of the subsequent request.
    Multiple headers can be appended by making multiple calls
@@ -422,7 +432,7 @@ rest_append_hf("Authorization: Bearer mF_9.B5f-4.1JqM");
 $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 ...
 
-1.4.5.  rest_init_client_tls(tls_client_domain)
+1.5.5.  rest_init_client_tls(tls_client_domain)
 
    Force a specific TLS domain to be eventually used during the
    next request. Refer to the tls_mgm module for additional info
@@ -443,9 +453,9 @@ if (!rest_get("https://example.com"))
     xlog("query failed\n");
 ...
 
-1.5. Exported Asynchronous Functions
+1.6. Exported Asynchronous Functions
 
-1.5.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
+1.6.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
 
    Perform an asynchronous HTTP GET. This function behaves exactly
    the same as rest_get() (in terms of input, output and
@@ -479,7 +489,7 @@ $fU\n");
         ...
 }
 
-1.5.2.  rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
+1.6.2.  rest_post(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
 [recv_ctype_pv][, [retcode_pv]]])
 
    Perform an asynchronous HTTP POST. This function behaves
@@ -514,7 +524,7 @@ route [resume] {
 }
 
 
-1.5.3.  rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
+1.6.3.  rest_put(url, send_body_pv, [send_ctype_pv], recv_body_pv[,
 [recv_ctype_pv][, [retcode_pv]]])
 
    Perform an asynchronous HTTP PUT. This function behaves exactly
@@ -555,7 +565,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 116 62 3398 1496
+   1. Liviu Chircu (@liviuchircu) 117 63 3409 1496
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Vlad Patrascu (@rvlad-patrascu) 15 5 279 341
    4. Razvan Crainea (@razvancrainea) 12 10 32 16
@@ -586,7 +596,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2019
    2.  Razvan Crainea (@razvancrainea)     Aug 2015 - May 2019
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
