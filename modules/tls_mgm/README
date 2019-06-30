@@ -1424,7 +1424,8 @@ Chapter 3. Contributors
    9. Alexey Vasilyev (@vasilevalex) 3 1 32 18
    10. Ovidiu Sas (@ovidiusas) 3 1 1 1
 
-   All remaining contributors: Maksym Sobolyev (@sobomax).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Dan
+   Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1446,19 +1447,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2015 - May 2019
-   2.  Alexey Vasilyev (@vasilevalex)      May 2019 - May 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Nov 2018
-   4.  Liviu Chircu (@liviuchircu)         Oct 2015 - Nov 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Sep 2018
-   6.  Callum Guy                          Jun 2018 - Jun 2018
-   7.  Ovidiu Sas (@ovidiusas)             Jun 2017 - Jun 2017
-   8.  Ionut Ionita (@ionutrazvanionita)   Apr 2016 - Apr 2017
-   9.  Ionel Cerghit (@ionel-cerghit)      Aug 2016 - Aug 2016
-   10. Maksym Sobolyev (@sobomax)          Mar 2016 - Mar 2016
+   1.  Dan Pascu (@danpascu)               Jun 2019 - Jun 2019
+   2.  Razvan Crainea (@razvancrainea)     Sep 2015 - May 2019
+   3.  Alexey Vasilyev (@vasilevalex)      May 2019 - May 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Nov 2018
+   5.  Liviu Chircu (@liviuchircu)         Oct 2015 - Nov 2018
+   6.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Sep 2018
+   7.  Callum Guy                          Jun 2018 - Jun 2018
+   8.  Ovidiu Sas (@ovidiusas)             Jun 2017 - Jun 2017
+   9.  Ionut Ionita (@ionutrazvanionita)   Apr 2016 - Apr 2017
+   10. Ionel Cerghit (@ionel-cerghit)      Aug 2016 - Aug 2016
 
-   All remaining contributors: Eseanu Marius Cristian
-   (@eseanucristian).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Eseanu
+   Marius Cristian (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits

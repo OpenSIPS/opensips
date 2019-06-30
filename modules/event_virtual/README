@@ -50,7 +50,11 @@ Chapter 1. Admin Guide
        once
      * FAILOVER - for every event raised, try to notify the
        subscribers, in the order in which they are given, until
-       the first successful notification
+       the first successful notification. For some transport
+       modules (event_jsonrpc, event_xmlrpc, event_rabbitmq), in
+       order to properly detect a failure when raising an event,
+       you have to configure synchronous operation through the
+       sync_mode module parameter of the respective module.
      * ROUND-ROBIN - for every event raised, notify the
        subscribers alternatively, in the order in which they are
        given (for each raised event notify a different subscriber)
@@ -115,7 +119,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 16 7 804 59
+   1. Vlad Patrascu (@rvlad-patrascu) 17 8 812 60
    2. Liviu Chircu (@liviuchircu) 6 4 32 34
    3. Razvan Crainea (@razvancrainea) 4 2 3 2
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 1 1
@@ -140,10 +144,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Aug 2015 - May 2019
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2018 - Jun 2018
-   3. Liviu Chircu (@liviuchircu)         May 2016 - Jun 2018
-   4. Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - May 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jun 2019
+   2. Razvan Crainea (@razvancrainea)     Aug 2015 - May 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2018 - Jun 2018
+   4. Liviu Chircu (@liviuchircu)         May 2016 - Jun 2018
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -152,8 +156,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu).
 
    doc copyrights:
 
