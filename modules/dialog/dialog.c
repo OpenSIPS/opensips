@@ -1015,6 +1015,10 @@ static int mod_init(void)
 
 
 
+static void rpc_load_dlg_db(int sender, void *param)
+{
+	load_dlg_db(dlg_hash_size);
+}
 
 static int child_init(int rank)
 {
@@ -1030,6 +1034,10 @@ static int child_init(int rank)
 	){
 		if ( dlg_connect_db(&db_url) ) {
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
+			return -1;
+		}
+		if (rank == 1 && ipc_dispatch_rpc(rpc_load_dlg_db, NULL) < 0) {
+			LM_CRIT("failed to RPC the dialogs loading\n");
 			return -1;
 		}
 	}
