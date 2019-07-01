@@ -203,5 +203,6 @@ acc_ctx_t* try_fetch_ctx(void);
 void unref_acc_ctx(void *);
 void free_global_acc_ctx(acc_ctx_t* ctx);
 void free_processing_acc_ctx(void* param);
+void free_extra_array(extra_value_t* array, int array_len);
 
 #endif

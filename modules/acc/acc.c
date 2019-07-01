@@ -1595,18 +1595,12 @@ static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, struct timeval *
  *
  *
  */
-static extra_value_t* restore_extra_from_str(int tags_len,
+static int restore_extra_from_str(extra_value_t *values,
 											 str* extra_s, int extra_len)
 {
 	int i;
 
 	pv_value_t value;
-	extra_value_t* values;
-
-	if (build_acc_extra_array(tags_len, &values) < 0) {
-		LM_ERR("failed to build extra pvar list!\n");
-		return NULL;
-	}
 
 	value.flags = PV_VAL_STR;
 	for (i=0; i<extra_len; i++) {
@@ -1616,14 +1610,14 @@ static extra_value_t* restore_extra_from_str(int tags_len,
 
 		if (set_value_shm(&value, &values[i])< 0) {
 			LM_ERR("failed to set shm value!\n");
-			return NULL;
+			return -1;
 		}
 
 		extra_s->s += 2 + value.rs.len;
 		extra_s->len -= 2 + value.rs.len;
 	}
 
-	return values;
+	return 0;
 }
 
 static int restore_extra(struct dlg_cell* dlg,
@@ -1648,9 +1642,21 @@ static int restore_extra(struct dlg_cell* dlg,
 	buffer.s += 2;
 	buffer.len -= 2;
 
-	if ((ctx->extra_values =
-		restore_extra_from_str(extra_tgs_len, &buffer, extra_len)) == NULL) {
+	if (extra_len != extra_tgs_len) {
+		LM_WARN("extra tags were added/removed since last run!"
+				"won't restore values!\n");
+		return 0;
+	}
+
+	if (!ctx->extra_values &&
+			build_acc_extra_array(extra_len, &ctx->extra_values) < 0) {
+		LM_ERR("failed to build extra pvar list!\n");
+		return -1;
+	}
+
+	if (restore_extra_from_str(ctx->extra_values, &buffer, extra_len) < 0) {
 		LM_ERR("failed to restore extra values!\n");
+		free_extra_array(ctx->extra_values, extra_len);
 		return -1;
 	}
 
@@ -1682,24 +1688,36 @@ static int restore_legs(struct dlg_cell* dlg,
 		return 0;
 	}
 
-	ctx->leg_values = shm_malloc(ctx->legs_no * sizeof(leg_value_p));
-	if (ctx->leg_values == NULL) {
-		LM_ERR("no more shm!\n");
-		return -1;
+	if (!ctx->leg_values) {
+		ctx->leg_values = shm_malloc(ctx->legs_no * sizeof(leg_value_p));
+		if (ctx->leg_values == NULL) {
+			LM_ERR("no more shm!\n");
+			return -1;
+		}
+		for (i=0; i<ctx->legs_no; i++) {
+			if (build_acc_extra_array(extra_len, &ctx->leg_values[i]) < 0) {
+				LM_ERR("could not build extra leg %d\n", i);
+				goto error;
+			}
+		}
 	}
 
 	buffer.s += 4;
 	buffer.len -=4;
 
 	for (i=0; i<ctx->legs_no; i++) {
-		if ((ctx->leg_values[i] =
-			restore_extra_from_str(leg_tgs_len, &buffer, extra_len)) == NULL) {
+		if (restore_extra_from_str(ctx->leg_values[i], &buffer, extra_len) < 0) {
 			LM_ERR("failed to restore leg values!\n");
-			return -1;
+			goto error;
 		}
 	}
 
 	return 0;
+error:
+	for (i--; i >= 0; i--)
+		free_extra_array(ctx->leg_values[i], extra_len);
+	shm_free(ctx->leg_values);
+	return -1;
 }
 
 int restore_dlg_extra_ctx(struct dlg_cell* dlg, acc_ctx_t *ctx)
@@ -1713,6 +1731,8 @@ int restore_dlg_extra_ctx(struct dlg_cell* dlg, acc_ctx_t *ctx)
 	if (leg_tags &&
 			restore_legs(dlg, &leg_str, ctx)) {
 		LM_ERR("failed to restore legs!\n");
+		if (extra_tgs_len && ctx->extra_values)
+			free_extra_array(ctx->extra_values, extra_tgs_len);
 		return -1;
 	}
 	return 0;
@@ -1740,8 +1760,10 @@ int restore_dlg_extra(struct dlg_cell* dlg, acc_ctx_t** ctx_p)
 
 	memset(ctx, 0, sizeof(acc_ctx_t));
 
-	if (restore_dlg_extra_ctx(dlg, ctx) < 0)
+	if (restore_dlg_extra_ctx(dlg, ctx) < 0) {
+		shm_free(ctx);
 		return -1;
+	}
 
 	*ctx_p = ctx;
 
