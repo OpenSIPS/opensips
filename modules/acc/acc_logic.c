@@ -172,7 +172,7 @@ static void acc_dlg_onwrite(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params);
 static void acc_cdr_cb( struct cell* t, int type, struct tmcb_params *ps );
 
-static inline void free_extra_array(extra_value_t* array, int array_len)
+void free_extra_array(extra_value_t* array, int array_len)
 {
 	int i;
 
@@ -1226,8 +1226,6 @@ int init_acc_ctx(acc_ctx_t** ctx_p)
 		LM_ERR("failed to build extra values array!\n");
 		return -1;
 	}
-
-
 	if (leg_tags != NULL && push_leg(ctx) < 0) {
 		LM_ERR("failed to build extra values array!\n");
 		return -1;
