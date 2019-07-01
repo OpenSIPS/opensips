@@ -104,6 +104,7 @@ extern int db_flush_vp;
 
 #define should_remove_dlg_db() (dlg_db_mode==DB_MODE_REALTIME)
 
+void load_dlg_db(int dlg_hash_size);
 int init_dlg_db(const str *db_url, int dlg_hash_size, int db_update_period);
 int dlg_connect_db(const str *db_url);
 void destroy_dlg_db();
