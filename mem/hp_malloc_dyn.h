@@ -671,10 +671,8 @@ void *hp_rpm_malloc_unsafe(struct hp_block *hpb, unsigned long size,
 	return NULL;
 
 found:
-	LM_INFO("XXX: f: used=%ld rused=%ld\n", get_stat_val(rpm_rused), get_stat_val(rpm_rused));
 	hp_frag_detach(hpb, frag);
 	update_stats_rpm_frag_detach(frag);
-	LM_INFO("XXX: a: used=%ld rused=%ld\n", get_stat_val(rpm_rused), get_stat_val(rpm_rused));
 
 #ifndef STATISTICS
 	hpb->used += frag->size;
@@ -856,11 +854,9 @@ void *hp_rpm_malloc(struct hp_block *hpb, unsigned long size,
 	return NULL;
 
 found:
-	LM_INFO("XXX: f: used=%ld rused=%ld\n", get_stat_val(rpm_rused), get_stat_val(rpm_rused));
 	hp_frag_detach(hpb, frag);
 
 	update_stats_rpm_frag_detach(frag);
-	LM_INFO("XXX: a: used=%ld rused=%ld\n", get_stat_val(rpm_rused), get_stat_val(rpm_rused));
 
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	hpb->used += (frag)->size;
