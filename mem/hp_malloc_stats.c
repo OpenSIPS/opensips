@@ -225,9 +225,9 @@ void hp_init_rpm_statistics(struct hp_block *hpb)
 	rpm_rused->flags |= STAT_NO_RESET;
 	rpm_frags->flags |= STAT_NO_RESET;
 #endif
-	update_stat(rpm_used, hpb->used);
-	update_stat(rpm_rused, hpb->real_used);
-	update_stat(rpm_frags, hpb->total_fragments);
+	update_stat(rpm_used, (int)hpb->used);
+	update_stat(rpm_rused, (int)hpb->real_used);
+	update_stat(rpm_frags, (int)hpb->total_fragments);
 
 	LM_DBG("initializing atomic rpm statistics: "
 	       "[ us: %ld | rus: %ld | frags: %ld ]\n", hpb->used, hpb->real_used, hpb->total_fragments);
