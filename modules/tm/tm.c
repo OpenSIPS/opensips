@@ -1539,6 +1539,7 @@ static int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_fl
 	if (!is_local) {
 		UNLOCK_REPLIES(t);
 		UNREF(t);
+		set_t(NULL);
 	}
 
 	return rc;
