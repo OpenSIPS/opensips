@@ -476,7 +476,7 @@ int load_rpm_file(void)
 	rpm_map_block = rpm_mempool;
 	if (rpm_mem_init_allocs() < 0) {
 		rpm_mem_destroy();
-		goto recreate;
+		return 1;
 	}
 
 	return 0;
