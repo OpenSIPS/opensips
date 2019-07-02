@@ -1673,6 +1673,7 @@ static int w_t_inject_branches(struct sip_msg* msg, char *s_flags)
 	if (!is_local) {
 		UNLOCK_REPLIES(t);
 		UNREF(t);
+		set_t(NULL);
 	}
 
 	return rc;
