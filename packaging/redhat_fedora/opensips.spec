@@ -1056,6 +1056,7 @@ rm -rf $RPM_BUILD_ROOT
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
   cfg_prefix=%{buildroot} \
+  cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}/%{_prefix} \
   modules_dir=%{_lib}/%{name}/modules \
   DBTEXTON=yes # fixed dbtext documentation installation
