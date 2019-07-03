@@ -57,6 +57,7 @@
 #include "../../bin_interface.h"
 #include "../clusterer/api.h"
 #include "../../lib/container.h"
+#include "../../ipc.h"
 
 #include "dlg_ctx.h"
 #include "dlg_hash.h"
