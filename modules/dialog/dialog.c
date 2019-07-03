@@ -57,6 +57,7 @@
 #include "../../bin_interface.h"
 #include "../clusterer/api.h"
 #include "../../lib/container.h"
+#include "../../ipc.h"
 
 #include "dlg_ctx.h"
 #include "dlg_hash.h"
@@ -1036,7 +1037,7 @@ static int child_init(int rank)
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
 			return -1;
 		}
-		if (rank == 1 && ipc_dispatch_rpc(rpc_load_dlg_db, NULL) < 0) {
+		if (rank == 1 && ipc_send_rpc( process_no, rpc_load_dlg_db, NULL) < 0) {
 			LM_CRIT("failed to RPC the dialogs loading\n");
 			return -1;
 		}
