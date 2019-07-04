@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 OpenSIPS Solutions
+ * Copyright (C) 2017-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include <string.h>
@@ -26,22 +26,15 @@
 
 #include "csv.h"
 
+static osips_malloc_t malloc_f;
+static osips_free_t free_f;
+
 static struct str_list *push_csv_field(const str *field,
                       struct str_list **record, enum csv_flags parse_flags)
 {
 	struct str_list *rec;
-	osips_malloc_t malloc_f;
-	osips_free_t free_f;
 	enum csv_flags *flags_holder;
 	int len;
-
-	if (parse_flags & CSV_SHM) {
-		malloc_f = osips_shm_malloc;
-		free_f = osips_shm_free;
-	} else {
-		malloc_f = osips_pkg_malloc;
-		free_f = osips_pkg_free;
-	}
 
 	len = sizeof *rec;
 	if (!*record)
@@ -85,22 +78,27 @@ csv_record *__parse_csv_record(const str *_in, enum csv_flags parse_flags,
 {
 	struct str_list *record = NULL, **last = &record;
 	str in = *_in, field;
-	char *ch;
+	char *ch, *p, *c, finished, *lim, *field_start;
 
-	/* TODO: implement this and re-use in transformations.c.
-	 *        (possibly merge & fix code from there)
-	 * Issue #1220 should get fixed during this process as well */
-	if ((parse_flags & CSV_SIMPLE) != CSV_SIMPLE) {
-		LM_BUG("RFC 4180 not fully implemented yet");
-		abort();
+	if (parse_flags & CSV_SHM) {
+		malloc_f = osips_shm_malloc;
+		free_f = osips_shm_free;
+	} else {
+		malloc_f = osips_pkg_malloc;
+		free_f = osips_pkg_free;
 	}
+
+	if (parse_flags & CSV_RFC_4180)
+		goto rfc_4180_parsing;
 
 	trim(&in);
 
-	for (;;) {
+	for (finished = 0; !finished; ) {
 		ch = memchr(in.s, sep, in.len);
-		if (!ch)
+		if (!ch) {
 			ch = in.s + in.len;
+			finished = 1;
+		}
 
 		field.s = in.s;
 		field.len = ch - in.s;
@@ -108,19 +106,112 @@ csv_record *__parse_csv_record(const str *_in, enum csv_flags parse_flags,
 		in.len -= field.len + 1;
 		trim(&field);
 
-		if (!push_csv_field(&field, last, parse_flags)) {
-			LM_ERR("oom\n");
-			free_csv_record(record);
-			return NULL;
-		}
-
-		if (in.len <= 0)
-			break;
+		if (!push_csv_field(&field, last, parse_flags))
+			goto oom;
 
 		last = &(*last)->next;
 	}
 
 	return record;
+
+rfc_4180_parsing:
+	if (in.len >= 2 && in.s[in.len - 2] == '\r' && in.s[in.len - 1] == '\n')
+		in.len -= 2;
+
+	field_start = NULL;
+	for (ch = in.s, lim = in.s + in.len; ch < lim; ch++) {
+		if (*ch < 0x20 || *ch > 0x7E)
+			goto bad_csv_str;
+
+		switch (*ch) {
+		case ',':
+			if (field_start)
+				field.s = field_start;
+			else
+				field.s = in.s;
+
+			field.len = ch - field.s;
+			field_start = ch + 1;
+
+			if (!push_csv_field(&field, last, parse_flags))
+				goto oom;
+
+			last = &(*last)->next;
+			break;
+
+		case '"':
+			if ((field_start && ch != field_start) ||
+				(!field_start && ch != in.s))
+				goto bad_csv_str;
+
+			for (p = ch + 1; p < lim; p++) {
+				if (*p == '"') {
+					if (p == lim - 1 || *(p + 1) != '"')
+						goto matched_quote;
+
+					p++;
+					continue;
+				}
+			}
+
+			goto bad_csv_str;
+
+matched_quote:
+			field.s = malloc_f(p - ch);
+			if (!field.s)
+				goto oom;
+
+			for (c = field.s; ++ch < p; c++) {
+				if (*ch == '"')
+					ch++;
+				*c = *ch;
+			}
+
+			if (ch < lim - 1) {
+				if (*(ch + 1) != ',') {
+					free_f(field.s);
+					goto bad_csv_str;
+				}
+				ch++;
+				field_start = ch + 1;
+			}
+
+			*c = '\0';
+			field.len = c - field.s;
+
+			if (!push_csv_field(&field, last, parse_flags & (~CSV_DUP_FIELDS)))
+				goto oom;
+
+			last = &(*last)->next;
+
+			if (ch == lim - 1)
+				return record;
+
+			break;
+		}
+	}
+
+	if (field_start) {
+		field.s = field_start;
+		field.len = lim - field.s;
+	} else {
+		field = in;
+	}
+
+	if (!push_csv_field(&field, last, parse_flags))
+		goto oom;
+
+	return record;
+
+bad_csv_str:
+	LM_DBG("invalid CSV string: '%.*s'\n", in.len, in.s);
+	free_csv_record(record);
+	return NULL;
+
+oom:
+	LM_ERR("oom while parsing '%.*s'\n", in.len, in.s);
+	free_csv_record(record);
+	return NULL;
 }
 
 void free_csv_record(csv_record *record)

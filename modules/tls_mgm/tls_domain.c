@@ -544,7 +544,7 @@ int parse_match_domains(struct tls_domain *tls_dom, str *domains_s)
 	str match_any_s = str_init("*");
 
 	if (domains_s->s) {
-		list = _parse_csv_record(domains_s, CSV_SIMPLE);
+		list = parse_csv_record(domains_s);
 		if (!list) {
 			LM_ERR("Failed to parse CSV record\n");
 			return -1;
@@ -615,7 +615,7 @@ int parse_match_addresses(struct tls_domain *tls_dom, str *addresses_s)
 			return 0;
 		}
 
-		list = _parse_csv_record(addresses_s, CSV_SIMPLE);
+		list = parse_csv_record(addresses_s);
 		if (!list) {
 			LM_ERR("Failed to parse CSV record\n");
 			return -1;

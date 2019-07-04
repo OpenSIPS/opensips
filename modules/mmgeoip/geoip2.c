@@ -121,8 +121,7 @@ int geoip2_get_field(lookup_res_t ip_data, char *field, char *buf)
 		field_str.s = field;
 	field_str.len = strlen(field_str.s);
 
-	path_list = __parse_csv_record(&field_str, CSV_SIMPLE|CSV_DUP_FIELDS,
-					FIELD_PATH_SEP);
+	path_list = __parse_csv_record(&field_str, CSV_DUP_FIELDS, FIELD_PATH_SEP);
 	if (!path_list) {
 		LM_ERR("bad field:'%s'\n", field);
 		return -1;

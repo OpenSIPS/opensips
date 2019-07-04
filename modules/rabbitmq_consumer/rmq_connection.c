@@ -57,7 +57,7 @@ int rmq_conn_add(modparam_t mtype, void *val)
 	s.s = (char *)val;
 	s.len = strlen(s.s);
 
-	p_list = __parse_csv_record(&s, CSV_SIMPLE, CONN_PARAMS_SEP);
+	p_list = __parse_csv_record(&s, 0, CONN_PARAMS_SEP);
 	if (!p_list) {
 		LM_ERR("Failed to parse connection parameters\n");
 		return -1;
