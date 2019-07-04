@@ -450,8 +450,7 @@ static inline char *proto2a(int proto)
       1 - advertised name
       2 - tagged name
 */
-static inline char* socket2str(struct socket_info *sock, char *s, int* len,
-															int type)
+static inline char* socket2str(struct socket_info *sock, char *s, int *len, int type)
 {
 	static char buf[MAX_SOCKET_STR];
 	char *p,*p1;
