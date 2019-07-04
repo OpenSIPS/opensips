@@ -390,7 +390,7 @@ modparam("pua_dialoginfo", "publish_on_trying", 1)
 		</section>
 
 		<section id="param_nopublish_flag" xreflabel="nopublish_flag">
-		<title><varname>nopublish_flag</varname> (int)</title>
+		<title><varname>nopublish_flag</varname> (str)</title>
 		<para>
 			By default, reINVITEs will trigger a PUBLISH. They are actually
 			the only in-dialog request for which it makes sense.
@@ -404,7 +404,7 @@ modparam("pua_dialoginfo", "publish_on_trying", 1)
 			<title>Set <varname>nopublish_flag</varname> parameter</title>
 			<programlisting format="linespecific">
 ...
-modparam("pua_dialoginfo", "nopublish_flag", 5)
+modparam("pua_dialoginfo", "nopublish_flag", "no_publish")
 ...
 </programlisting>
 		</example>
