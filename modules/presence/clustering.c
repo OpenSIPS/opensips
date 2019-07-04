@@ -80,7 +80,7 @@ int init_pres_clustering(void)
 	if (clustering_events.s) {
 		/* parse the event list  */
 		clustering_events.len = strlen(clustering_events.s);
-		list = _parse_csv_record(&clustering_events, CSV_SIMPLE);
+		list = parse_csv_record(&clustering_events);
 		if (list==NULL) {
 			LM_ERR("failed to parse the event CSV list <%.*s>, "
 				"ignoring...\n", clustering_events.len,

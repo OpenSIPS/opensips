@@ -1834,7 +1834,7 @@ int fix_ignore_rpl_codes(void)
 		return 0;
 
 	ignore_rpl_codes_str.len = strlen(ignore_rpl_codes_str.s);
-	chopped_codes = _parse_csv_record(&ignore_rpl_codes_str, CSV_SIMPLE);
+	chopped_codes = parse_csv_record(&ignore_rpl_codes_str);
 	if (!chopped_codes) {
 		LM_ERR("oom\n");
 		return -1;

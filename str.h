@@ -51,12 +51,12 @@
   * Most libraries often provide functions that can work with an explicit given
   * length, thus avoiding the need for this copy operation.
   */
-struct _str{
+struct __str {
 	char* s; /**< string as char array */
 	int len; /**< string length, not including null-termination */
 };
 
-typedef struct _str str;
+typedef struct __str str;
 
 /* str initialization */
 #define STR_NULL {NULL, 0}
@@ -79,5 +79,14 @@ static inline str *str_cpy(str *dest, const str *src)
 }
 
 #define STR_L(s) s, strlen(s)
+
+/* handy function for writing unit tests which compare str's */
+static inline str *_str(const char *s)
+{
+	static str st;
+
+	init_str(&st, s);
+	return &st;
+}
 
 #endif

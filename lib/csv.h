@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 OpenSIPS Solutions
+ * Copyright (C) 2017-2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef __LIB_CSV__
@@ -24,49 +24,22 @@
 #include "../str_list.h"
 
 enum csv_flags {
-	/*
-	 * disable the RFC 4180 quoting mechanism
+	/**
+	 * 1. "dquote-enclosing" and "2x dquote escape sequence" mechanisms:
+	 *    Input: '"""a"" \nb",c'
+	 *    Output: '"a" \nb', 'c'
 	 *
-	 * Example:
-	 *	input: 123,"""foo"" bar",abc
-	 *
-	 * with CSV_NO_DQUOTE:
-	 *		123
-	 *		"""foo"" bar"
-	 *		abc
-	 *
-	 * default:
-	 *		123
-	 *		"foo" bar
-	 *		abc
+	 * 2. Whitespace does not get trimmed:
+	 *    Input: 'a , b'
+	 *    Output: 'a ', ' b'
 	 */
-	CSV_NO_DQUOTE     = (1<<0),
+	CSV_RFC_4180    = (1<<0),
 
-	/*
-	 * trim all leading and trailing whitespace (' ', '\t', '\r', '\n')
-	 *
-	 * Example:
-	 *	input: "123\n",  \tfoo ,  abc
-	 *
-	 * with CSV_NO_OUTSIDE_WS:
-	 *		123\n
-	 *		foo
-	 *		abc
-	 *
-	 * default:
-	 *		123\n
-	 *		  \tfoo
-	 *		  abc
-	 */
-	CSV_NO_OUTSIDE_WS = (1<<1),
+	CSV_PKG         = (1<<1), /* the default */
+	CSV_SHM         = (1<<2), /* overrides CSV_PKG */
 
-	CSV_PKG           = (1<<2), /* the default */
-	CSV_SHM           = (1<<3), /* overrides CSV_PKG */
-
-	CSV_DUP_FIELDS    = (1<<4),
+	CSV_DUP_FIELDS  = (1<<3),
 };
-
-#define CSV_SIMPLE            (CSV_NO_DQUOTE|CSV_NO_OUTSIDE_WS)
 
 typedef struct str_list csv_record;
 
@@ -80,10 +53,7 @@ csv_record *__parse_csv_record(const str *in, enum csv_flags parse_flags,
 #define _parse_csv_record(in, flags) __parse_csv_record(in, flags, ',')
 #define parse_csv_record(in) _parse_csv_record(in, 0)
 
-/*
- * Use this to easily free your CSV records, regardless of any
- * CSV_DUP_FIELDS, CSV_PKG or CSV_SHM flags you may have set during parsing
- */
+/* Easily free your CSV records, regardless of any flags set during parsing */
 void free_csv_record(csv_record *record);
 
 #endif /* __LIB_CSV__ */
