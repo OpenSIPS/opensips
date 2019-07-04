@@ -94,8 +94,6 @@ int race_condition_timeout = 5; /* seconds until call termination is triggered,
 
 /* statistic variables */
 int dlg_enable_stats = 1;
-int active_dlgs_cnt = 0;
-int early_dlgs_cnt = 0;
 int db_flush_vp = 0;
 stat_var *active_dlgs = 0;
 stat_var *processed_dlgs = 0;
@@ -918,11 +916,6 @@ static void rpc_load_dlg_db(int sender, void *param)
 
 static int child_init(int rank)
 {
-	if (rank==1) {
-		if_update_stat(dlg_enable_stats, active_dlgs, active_dlgs_cnt);
-		if_update_stat(dlg_enable_stats, early_dlgs, early_dlgs_cnt);
-	}
-
 	if (
 	(dlg_db_mode==DB_MODE_REALTIME && (rank>=PROC_MAIN||rank==PROC_MODULE)) ||
 	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==PROC_MAIN||rank==PROC_MODULE)) ||
