@@ -427,7 +427,7 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 	if (kv) {
 		/* replace the old value */
 		cgr_free_kv_val(kv);
-		if ((!val || val->flags & PV_VAL_NULL) && op == COLONEQ_T) {
+		if (!val || val->flags & PV_VAL_NULL) {
 			/* destroy the value */
 			cgr_free_kv(kv);
 			return 0;
