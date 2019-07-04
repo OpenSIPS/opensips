@@ -1132,14 +1132,14 @@ static int fix_actions(struct action* a)
 						LM_ALERT("BUG in route() type %d/%d\n",
 								 t->elem[1].type, t->elem[2].type);
 						ret=E_BUG;
-						break;
+						goto error;
 					}
 					if (t->elem[1].u.number >= MAX_ACTION_ELEMS ||
 							t->elem[1].u.number <= 0) {
 						LM_ALERT("BUG in number of route parameters %d\n",
 								 (int)t->elem[1].u.number);
 						ret=E_BUG;
-						break;
+						goto error;
 					}
 				}
 				break;
