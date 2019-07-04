@@ -2,7 +2,7 @@
 
 ensure_test_defs:
 	@! grep -q '^DEFS+= -DUNIT_TESTS' Makefile.conf && \
-		echo -e '\nDEFS+= -DUNIT_TESTS' >> Makefile.conf && \
+		echo '\nDEFS+= -DUNIT_TESTS' >> Makefile.conf && \
 		echo "-DUNIT_TESTS was not enabled in Makefile.conf," \
 			"run 'make test' again." && exit 1 || true
 
