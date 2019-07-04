@@ -84,25 +84,21 @@ void timer_db_update(unsigned int ticks,void *param);
 
 int update_subs_db(subs_t* subs, int type);
 
-int refresh_watcher(str* pres_uri, str* watcher_uri, str* event,
-	int status, str* reason);
+int refresh_watcher(str* pres_uri, str* watcher_uri, str* event, int status, str* reason);
 
-typedef int (*refresh_watcher_t)(str*, str* , str* ,int , str* );
+typedef int (*refresh_watcher_t)(str*, str*, str*, int, str*);
 
 int restore_db_subs(void);
 
 typedef int (*handle_expired_func_t)(subs_t* );
 
-void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
-	int htable_size, int no_lock, handle_expired_func_t handle_expired_func);
+void update_db_subs(db_con_t *db, db_func_t *dbf, shtable_t hash_table, int htable_size, int no_lock, handle_expired_func_t handle_expired_func);
 
-typedef void (*update_db_subs_t)(db_con_t * ,db_func_t *,shtable_t ,int ,int ,
-		handle_expired_func_t);
+typedef void (*update_db_subs_t)(db_con_t *, db_func_t *, shtable_t, int, int, handle_expired_func_t);
 
-int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int max_expire,
-		int* to_tag_gen, str local_address);
-typedef int (*extract_sdialog_info_t)(subs_t* subs, struct sip_msg* msg,
-		int max_expire, int* to_tag_gen, str local_address);
+int extract_sdialog_info(subs_t* subs,struct sip_msg* msg, int max_expire, int* to_tag_gen, str local_address);
+
+typedef int (*extract_sdialog_info_t)(subs_t* subs, struct sip_msg* msg, int max_expire, int* to_tag_gen, str local_address);
 
 int update_subscription(struct sip_msg* msg, subs_t* subs, int init_req);
 
