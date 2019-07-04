@@ -87,6 +87,7 @@ static pv_spec_t callee_spec;
 static int osips_ps = 1;
 static int publish_on_trying = 0;
 static int nopublish_flag = -1;
+static char *nopublish_flag_str = 0;
 
 
 /** module functions */
@@ -113,7 +114,7 @@ static param_export_t params[]={
 	{"caller_spec_param",   STR_PARAM, &caller_spec_param.s },
 	{"callee_spec_param",   STR_PARAM, &callee_spec_param.s },
 	{"osips_ps",            INT_PARAM, &osips_ps },
-	{"nopublish_flag",      INT_PARAM, &nopublish_flag },
+	{"nopublish_flag",      STR_PARAM, &nopublish_flag_str },
 	{0, 0, 0 }
 };
 
@@ -515,10 +516,7 @@ static int mod_init(void)
 	}
 	pua_send_publish= pua.send_publish;
 
-	if (nopublish_flag!= -1 && nopublish_flag > MAX_FLAG) {
-		LM_ERR("invalid nopublish flag %d!!\n", nopublish_flag);
-		return -1;
-	}
+	nopublish_flag = get_flag_id_by_name(FLAG_TYPE_MSG, nopublish_flag_str);
 	nopublish_flag = (nopublish_flag!=-1)?(1<<nopublish_flag):0;
 
 	if(!osips_ps)
