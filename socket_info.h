@@ -351,7 +351,7 @@ error_port:
 
 
 /* function will write the proto as string, starting from the p pointer. The
-   new resulting proto will be returned (where writing ended) */
+   new resulting pointer will be returned (where writing ended) */
 static inline char* proto2str(int proto, char *p)
 {
 	switch (proto) {
