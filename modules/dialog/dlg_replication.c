@@ -34,9 +34,6 @@
 #include "../../resolve.h"
 #include "../../forward.h"
 
-extern int active_dlgs_cnt;
-extern int early_dlgs_cnt;
-
 extern int dlg_enable_stats;
 
 extern stat_var *active_dlgs;
@@ -248,10 +245,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 			ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 		goto error;
 	}
-
-	if (dlg->state == DLG_STATE_CONFIRMED_NA ||
-		dlg->state == DLG_STATE_CONFIRMED)
-		active_dlgs_cnt++;
 
 	/* reference the dialog as kept in the timer list */
 	ref_dlg_unsafe(dlg, 1);
