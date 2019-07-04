@@ -439,10 +439,10 @@ static inline char *proto2a(int proto)
 
 
 #define MAX_SOCKET_STR ( 4 + 1 + IP_ADDR_MAX_STR_SIZE+1+INT2STR_MAX_LEN+1)
-#define sock_str_len(_sock,_type) ( 3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
-		((_type==1)?(_sock)->address_str.len:\
-			((_type==2)?(_sock)->adv_name_str.len:(_sock)->tag.len)) + \
-		1 + (_sock)->port_no_str.len)
+#define sock_str_len(_sock,_type) (3 + 1*((_sock)->proto==PROTO_SCTP) + 1 + \
+		(((_type)==0) ? (_sock)->address_str.len + (_sock)->port_no_str.len + 1 : \
+				(((_type)==1) ? (_sock)->adv_name_str.len + (_sock)->adv_port_str.len + 1 : \
+						(_sock)->tag.len)))
 
 /* builds the full name of the socket ( proto:name[:port] ), using different
    naming for it, depending on the "type" parameter :
