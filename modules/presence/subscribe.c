@@ -715,6 +715,8 @@ error_free:
 }
 
 
+// Return value: 0 = Success, -1 = Bad message, -2 = Internal error
+//
 int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_req, str local_address)
 {
 	str rec_route = {0, 0};
@@ -723,7 +725,6 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 	struct to_body *pto, *pfrom = NULL;
 	int lexpire;
 	struct sip_uri uri;
-	int err_ret = -1;
 
 	/* examine the expire header field */
 	if (msg->expires && msg->expires->body.len > 0)
@@ -731,7 +732,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 		if (!msg->expires->parsed && (parse_expires(msg->expires) < 0))
 		{
 			LM_ERR("cannot parse Expires header\n");
-			goto error;
+			return -1;
 		}
 		lexpire = ((exp_body_t*)msg->expires->parsed)->val;
 		LM_DBG("'Expires' header found, value= %d\n", lexpire);
@@ -749,13 +750,13 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 
 	if ((!msg->to && parse_headers(msg, HDR_TO_F, 0)<0) || !msg->to) {
 		LM_ERR("bad request or missing TO hdr\n");
-		goto error;
+		return -1;
 	}
 
 	pto = get_to(msg);
 	if (pto == NULL || pto->error != PARSE_OK) {
 		LM_ERR("failed to parse TO header\n");
-		goto error;
+		return -1;
 	}
 
 	if (pto->parsed_uri.user.s && pto->parsed_uri.host.s &&
@@ -769,7 +770,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 		if (parse_uri(pto->uri.s, pto->uri.len, &uri) < 0)
 		{
 			LM_ERR("while parsing uri\n");
-			goto error;
+			return -1;
 		}
 		subs->to_user = uri.user;
 		subs->to_domain = uri.host;
@@ -779,7 +780,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 	if (!msg->from || !msg->from->body.s)
 	{
 		LM_ERR("cannot find 'from' header!\n");
-		goto error;
+		return -1;
 	}
 	if (msg->from->parsed == NULL)
 	{
@@ -788,7 +789,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 		if (parse_from_header( msg ) < 0)
 		{
 			LM_ERR("cannot parse From header\n");
-			goto error;
+			return -1;
 		}
 	}
 	pfrom = (struct to_body*)msg->from->parsed;
@@ -804,7 +805,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 		if (parse_uri(pfrom->uri.s, pfrom->uri.len, &uri) < 0)
 		{
 			LM_ERR("while parsing uri\n");
-			goto error;
+			return -1;
 		}
 		subs->from_user = uri.user;
 		subs->from_domain = uri.host;
@@ -824,37 +825,37 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 	if (msg->callid==NULL || msg->callid->body.s==NULL)
 	{
 		LM_ERR("cannot parse callid header\n");
-		goto error;
+		return -1;
 	}
 	subs->callid = msg->callid->body;
 
 	if (msg->cseq==NULL || msg->cseq->body.s==NULL)
 	{
 		LM_ERR("cannot parse cseq header\n");
-		goto error;
+		return -1;
 	}
 	if (str2int(&(get_cseq(msg)->number), &subs->remote_cseq) != 0)
 	{
 		LM_ERR("cannot parse cseq number\n");
-		goto error;
+		return -1;
 	}
 	if (msg->contact==NULL || msg->contact->body.s==NULL)
 	{
 		LM_ERR("cannot parse contact header\n");
-		goto error;
+		return -1;
 	}
 	if (parse_contact(msg->contact) < 0)
 	{
 		LM_ERR(" cannot parse contact"
 				" header\n");
-		goto error;
+		return -1;
 	}
 
 	b = (contact_body_t*)msg->contact->parsed;
 	if (b == NULL)
 	{
 		LM_ERR("cannot parse contact header\n");
-		goto error;
+		return -1;
 	}
 	subs->contact = b->contacts->uri;
 
@@ -870,22 +871,22 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 			if (pv_get_spec_value(msg, &bla_presentity_spec, &tok) < 0)  /* if value set */
 			{
 				LM_ERR("Failed to get bla_presentity value\n");
-				goto error;
+				return -1;
 			}
 			if (!(tok.flags&PV_VAL_STR))
 			{
 				LM_ERR("Wrong value in bla_presentity pvar\n");
-				goto error;
+				return -1;
 			}
 			if (parse_uri(tok.rs.s, tok.rs.len, &uri) < 0)
 			{
 				LM_ERR("Not a valid value, must be a uri [%.*s]\n", tok.rs.len, tok.rs.s);
-				goto error;
+				return -1;
 			}
 			if (uandd_to_uri(uri.user, uri.host, &subs->pres_uri) < 0)
 			{
 				LM_ERR("failed to construct uri\n");
-				goto error;
+				return -1;
 			}
 		}
 		else
@@ -894,12 +895,12 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 			if (parse_uri(subs->contact.s, subs->contact.len, &uri) < 0)
 			{
 				LM_ERR("failed to parse contact uri\n");
-				goto error;
+				return -1;
 			}
 			if (uandd_to_uri(uri.user, subs->from_domain, &subs->pres_uri) < 0)
 			{
 				LM_ERR("failed to construct uri\n");
-				goto error;
+				return -1;
 			}
 		}
 	}
@@ -912,7 +913,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 		{
 			LM_ERR("processing the record route [%d]\n", rt);
 			rec_route = (str) {NULL, 0};
-			// goto error;
+			// return -1;
 		}
 	}
 	subs->record_route = rec_route;
@@ -922,7 +923,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 	if (pfrom->tag_value.s == NULL || pfrom->tag_value.len == 0)
 	{
 		LM_ERR("no from tag value present\n");
-		goto error;
+		return -1;
 	}
 	subs->from_tag = pfrom->tag_value;
 
@@ -933,20 +934,13 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 		if(get_local_contact(msg->rcv.bind_address, &subs->local_contact) < 0)
 		{
 			LM_ERR("in function get_local_contact\n");
-			err_ret = -2;
-			goto error;
+			return -2;
 		}
 	}
 	else
 		subs->local_contact= local_address;
 
 	return 0;
-error:
-	return err_ret;
-	/*
-	 *  -1 - bad message
-	 *  -2 - internal error
-	 * */
 }
 
 
