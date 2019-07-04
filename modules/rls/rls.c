@@ -261,30 +261,30 @@ static int mod_init(void)
 		LM_ERR("server_address parameter not set in configuration file\n");
 		return -1;
 	}
-	server_address.len= strlen(server_address.s);
+	server_address.len = strlen(server_address.s);
 
 	if(presence_server.s)
-		presence_server.len= strlen(presence_server.s);
+		presence_server.len = strlen(presence_server.s);
 
-        /* load XCAP API */
-        bind_xcap = (bind_xcap_t)find_export("bind_xcap", 0);
-        if (!bind_xcap)
-        {
-                LM_ERR("Can't bind xcap\n");
-                return -1;
-        }
+	/* load XCAP API */
+	bind_xcap = (bind_xcap_t)find_export("bind_xcap", 0);
+	if (!bind_xcap)
+	{
+		LM_ERR("Can't bind xcap\n");
+		return -1;
+	}
 
-        if (bind_xcap(&xcap_api) < 0)
-        {
-                LM_ERR("Can't bind xcap\n");
-                return -1;
-        }
-        rls_integrated_xcap_server = xcap_api.integrated_server;
-        db_url = xcap_api.db_url;
-        rls_xcap_table = xcap_api.xcap_table;
-        normalizeSipUri = xcap_api.normalize_sip_uri;
-        xcapParseUri = xcap_api.parse_xcap_uri;
-        xcapDbGetDoc = xcap_api.get_xcap_doc;
+	if (bind_xcap(&xcap_api) < 0)
+	{
+		LM_ERR("Can't bind xcap\n");
+		return -1;
+	}
+	rls_integrated_xcap_server = xcap_api.integrated_server;
+	db_url = xcap_api.db_url;
+	rls_xcap_table = xcap_api.xcap_table;
+	normalizeSipUri = xcap_api.normalize_sip_uri;
+	xcapParseUri = xcap_api.parse_xcap_uri;
+	xcapDbGetDoc = xcap_api.get_xcap_doc;
 
 	if(!rls_integrated_xcap_server)
 	{
