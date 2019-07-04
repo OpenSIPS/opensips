@@ -69,60 +69,56 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 	return 0;
 }
 
-/* Build an contact URI with port and transport parameter
- */
-static inline int get_local_contact(struct socket_info *sock, str* contact)
+
+/* Like memcpy, but return pointer to the end of copied buffer */
+#define memcopy(dest, source, size) (memcpy(dest, source, size) + (size))
+
+
+/* Build a contact URI using the provided username and the socket's ip:port:protocol */
+static inline int get_local_contact(struct socket_info *sock, str *username, str *contact)
 {
 	static char buf[MAX_URI_SIZE];
-	char *p;
+	char *ptr = buf;
+	str no_username = {0, 0}, ip, port;
+	int length, port_no;
 
-	p = buf;
+	if (!username)
+		username = &no_username;
 
-	/* write "sip:ip" */
-	memcpy( p, "sip:", 4);
-	p += 4;
+	ip      = (sock->adv_name_str.len > 0) ? sock->adv_name_str : sock->address_str;  // use advertised address if set
+	port    = (sock->adv_port_str.len > 0) ? sock->adv_port_str : sock->port_no_str;  // use advertised port if set
+	port_no = (sock->adv_port_str.len > 0) ? sock->adv_port     : sock->port_no;      // use advertised port if set
 
-	/* if advertised address is set for this interface, use this one */
-	if (sock->adv_name_str.s) {
-		memcpy( p, sock->adv_name_str.s, sock->adv_name_str.len);
-		p += sock->adv_name_str.len;
-	}
-	else {
-		memcpy( p, sock->address_str.s, sock->address_str.len);
-		p += sock->address_str.len;
-	}
-	if ( (p-buf) < 6/*:nnnnn*/)
-		goto overflow;
+	length = username->len + ip.len + port.len + 21;  // +21 = +4 for 'sip:', +15 for ';transport=xxxx' and +2 for separators ('@', ':')
 
-	/* write ":port" if port defined */
-	if (sock->adv_name_str.s) {
-		if(sock->adv_port_str.s) {
-			*(p++) = ':';
-			memcpy( p, sock->adv_port_str.s, sock->adv_port_str.len);
-			p += sock->adv_port_str.len;
-		}
-	} else
-	if (sock->port_no_str.len) {
-		*(p++) = ':';
-		memcpy( p, sock->port_no_str.s, sock->port_no_str.len);
-		p += sock->port_no_str.len;
+	if (length > MAX_URI_SIZE) {
+		LM_ERR("local contact too long, exceeding %d bytes\n", MAX_URI_SIZE);
+		return -1;
 	}
 
-	if (sock->proto!=PROTO_UDP) {
-		if ( (p-buf) < 15/*;transport=xxxx*/)
-			goto overflow;
-		memcpy( p, ";transport=", 11);
-		p += 11;
-		p = proto2str(sock->proto, p);
+	ptr = memcopy(ptr, "sip:", 4);
+
+	if (username->len > 0) {
+		ptr = memcopy(ptr, username->s, username->len);
+		*ptr++ = '@';
 	}
 
-	/* success */
+	ptr = memcopy(ptr, ip.s, ip.len);
+
+	if (port.len > 0 && port_no != protos[sock->proto].default_port) {
+		*ptr++ = ':';
+		ptr = memcopy(ptr, port.s, port.len);
+	}
+
+	if (sock->proto != PROTO_UDP) {
+		ptr = memcopy(ptr, ";transport=", 11);
+		ptr = proto2str(sock->proto, ptr);
+	}
+
 	contact->s = buf;
-	contact->len = (int)(p-buf);
+	contact->len = (int)(ptr - buf);
+
 	return 0;
-overflow:
-	LM_ERR("local contact gets too long, exceeding %d\n",MAX_URI_SIZE);
-	return -1;
 }
 
 int a_to_i (char *s,int len);

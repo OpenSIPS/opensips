@@ -329,7 +329,7 @@ int ospProcessSubscribe(
             expire = ((exp_body_t*)msg->expires->parsed)->val;
         }
 
-        if (get_local_contact(msg->rcv.bind_address, &contact) < 0) {
+        if (get_local_contact(msg->rcv.bind_address, NULL, &contact) < 0) {
             LM_WARN("failed to get contact\n");
         }
 
