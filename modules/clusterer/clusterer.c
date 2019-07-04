@@ -33,6 +33,7 @@
 #include "../../bin_interface.h"
 #include "../../timer.h"
 #include "../../forward.h"
+#include "../../ipc.h"
 
 #include "api.h"
 #include "node_info.h"
@@ -1852,6 +1853,52 @@ exit:
 	lock_stop_sw_read(cl_list_lock);
 }
 
+void run_mod_packet_cb(int sender, void *param)
+{
+	struct packet_rpc_params *p = (struct packet_rpc_params *)param;
+	bin_packet_t packet;
+	str cap_name;
+
+	bin_init_buffer(&packet, p->pkt_buf.s, p->pkt_buf.len);
+	packet.src_id = p->pkt_src_id;
+	packet.type = p->pkt_type;
+
+	if (packet.type == SYNC_PACKET_TYPE) {
+		/* if we have a sync packet, we have to skip once again the capability */
+		bin_pop_str(&packet, &cap_name);
+	}
+
+	p->cap->packet_cb(&packet);
+
+	shm_free(param);
+}
+
+int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap)
+{
+	struct packet_rpc_params *params;
+
+	params = shm_malloc(sizeof *params + packet->buffer.len);
+	if (!params) {
+		LM_ERR("oom!\n");
+		return -1;
+	}
+	memset(params, 0, sizeof *params);
+	params->pkt_buf.s = (char *)(params + 1);
+
+	memcpy(params->pkt_buf.s, packet->buffer.s, packet->buffer.len);
+	params->pkt_buf.len = packet->buffer.len;
+	params->cap = cap;
+	params->pkt_type = packet->type;
+	params->pkt_src_id = packet->src_id;
+
+	if (ipc_dispatch_rpc(run_mod_packet_cb, params) < 0) {
+		LM_ERR("Failed to dispatch rpc\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *ptr)
 {
@@ -1968,7 +2015,10 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 			lock_release(cl->lock);
 			lock_stop_read(cl_list_lock);
 			packet->src_id = source_id;
-			cap->packet_cb(packet);
+
+			if (ipc_dispatch_mod_packet(packet, cap) < 0)
+				LM_ERR("Failed to dispatch handling of module packet\n");
+
 			return;
 		}
 	}
@@ -2398,7 +2448,9 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 						n_cap->flags &= ~CAP_SYNC_PENDING;
 						lock_release(node->lock);
 						/* reply now that the node is up */
-						send_sync_repl(cl, node->node_id, &n_cap->name);
+						if (ipc_dispatch_sync_reply(cl, node->node_id,
+							&n_cap->name) < 0)
+							LM_ERR("Failed to dispatch sync reply job\n");
 						lock_get(node->lock);
 					}
 				}

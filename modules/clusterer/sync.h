@@ -27,6 +27,12 @@
 
 extern int sync_packet_size;
 
+struct reply_rpc_params {
+	cluster_info_t *cluster;
+	str cap_name;
+	int node_id;
+};
+
 int cl_request_sync(str *capability, int cluster_id, int ignore_seed);
 bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id);
 int cl_sync_chunk_iter(bin_packet_t *packet);
@@ -38,7 +44,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 
 int buffer_bin_pkt(bin_packet_t *packet, struct local_cap *cap, int src_id);
 int send_sync_req(str *capability, int cluster_id, int source_id);
-int send_sync_repl(cluster_info_t *cluster, int node_id, str *cap_name);
+int ipc_dispatch_sync_reply(cluster_info_t *cluster, int node_id, str *cap_name);
 
 #endif  /* CLUSTERER_SYNC_H */
 
