@@ -67,19 +67,20 @@
 #define ACTWATCH_TABLE_VERSION 12
 
 char *log_buf = NULL;
-static int clean_period=100;
-static int watchers_clean_period=3600;
-static int db_update_period=100;
+static int clean_period = 100;
+static int watchers_clean_period = 3600;
+static int db_update_period = 100;
 
 /* database connection */
 db_con_t *pa_db = NULL;
 db_func_t pa_dbf;
-str presentity_table= str_init("presentity");
+str presentity_table = str_init("presentity");
 str active_watchers_table = str_init("active_watchers");
-str watchers_table= str_init("watchers");
+str watchers_table = str_init("watchers");
 
-int library_mode= 0;
-str server_address= {0, 0};
+int library_mode = 0;
+str server_address = {0, 0};
+
 evlist_t* EvList= NULL;
 
 /* TM bind */
