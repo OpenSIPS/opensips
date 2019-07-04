@@ -1536,13 +1536,13 @@ static int build_leg_dlg_values(acc_ctx_t* ctx)
 }
 
 /* create accounting dialog */
-int create_acc_dlg(struct sip_msg* req)
+struct dlg_cell *create_acc_dlg(struct sip_msg* req)
 {
 	struct dlg_cell *dlg;
 
 	if (!dlg_api.get_dlg) {
 		LM_ERR("dialog not loaded!\n");
-		return -1;
+		return NULL;
 	}
 
 	dlg = dlg_api.get_dlg();
@@ -1550,16 +1550,16 @@ int create_acc_dlg(struct sip_msg* req)
 		/* if the dialog doesn't exist we try to create it */
 		if ( dlg_api.create_dlg(req,0) < 0) {
 			LM_ERR("error creating new dialog\n");
-			return -1;
+			return NULL;
 		}
 		dlg = dlg_api.get_dlg();
 		if (!dlg) {
 			LM_ERR("error getting new dialog\n");
-			return -1;
+			return NULL;
 		}
 	}
 
-	return 1;
+	return dlg;
 }
 
 
