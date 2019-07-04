@@ -123,7 +123,7 @@ void bin_init_buffer(bin_packet_t *packet, char *buffer, int length)
 
 	packet->type = *(int *)(capability.s + capability.len);
 	packet->front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
-	LM_INFO("init buffer length %d\n", length);
+	LM_DBG("init buffer length %d\n", length);
 }
 
 /*
