@@ -208,7 +208,7 @@ int init_dlg_db(const str *db_url, int dlg_hash_size , int db_update_period)
 
 void load_dlg_db(int dlg_hash_size)
 {
-	if( (load_dialog_info_from_db(dlg_hash_size) ) !=0 ){
+	if( (load_dialog_info_from_db(dlg_hash_size) ) ==0 ){
 		if (dlg_db_mode==DB_MODE_SHUTDOWN && remove_all_dialogs_from_db()!=0)
 			LM_WARN("failed to properly remove all the dialogs form DB\n");
 	} else
