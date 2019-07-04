@@ -199,12 +199,12 @@ static inline void free_acc_ctx(acc_ctx_t* ctx)
 	}
 	if (ctx->acc_table.s)
 		shm_free(ctx->acc_table.s);
-	shm_free(ctx);
 
 	/* also cleanup dialog */
 	dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;
-	if (dlg)
+	if (dlg && ctx == dlg_api.dlg_ctx_get_ptr(dlg, acc_dlg_ctx_idx))
 		dlg_api.dlg_ctx_put_ptr(dlg, acc_dlg_ctx_idx, NULL);
+	shm_free(ctx);
 }
 
 static inline struct hdr_field* get_rpl_to( struct cell *t,
@@ -687,14 +687,14 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 
 
 		/* replace the context value with a good pointer */
+		acc_ref_ex(ctx, 3);
 		dlg_api.dlg_ctx_put_ptr(dlg, acc_dlg_ctx_idx, ctx);
 
 		/* register database callbacks */
-		acc_ref_ex(ctx, 2);
 		if (dlg_api.register_dlgcb(dlg, DLGCB_TERMINATED |
 				DLGCB_EXPIRED, acc_dlg_ended, ctx, unref_acc_ctx)){
 			LM_ERR("cannot register callback for database accounting\n");
-			acc_unref_ex(ctx, 2);
+			acc_unref_ex(ctx, 2); /* storing the pointer was successful */
 			return;
 		}
 
@@ -767,9 +767,6 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 			LM_ERR("cannot store core and leg values\n");
 			goto restore;
 		}
-
-		/* store context pointer into dialog */
-		dlg_api.dlg_ctx_put_ptr(dlg, acc_dlg_ctx_idx, ctx);
 
 		/* register callback for program shutdown or dialog replication
 		 * won't register free function since TERMINATED|EXPIRED callback
@@ -1098,7 +1095,7 @@ unsigned long long do_acc_flags_parser(str* token)
 					LM_ERR("cannot register callback for dialog loaded - accounting "
 							"for ongoing calls will be lost after restart\n");
 
-			acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(NULL);
+			acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(unref_acc_ctx);
 
 			is_cdr_enabled=1;
 		}
@@ -1247,6 +1244,7 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 			unsigned long long *flags, str *table_name)
 {
 	unsigned long long flag_mask;
+	struct dlg_cell *dlg;
 
 	acc_ctx_t* acc_ctx;
 
@@ -1301,9 +1299,13 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 			if (!has_totag(msg)) {
 				acc_ctx->created = time(NULL);
 
-				if (msg->REQ_METHOD == METHOD_INVITE && create_acc_dlg(msg) < 0) {
-					LM_ERR("cannot use dialog accounting module\n");
-					return -1;
+				if (msg->REQ_METHOD == METHOD_INVITE) {
+					if ((dlg = create_acc_dlg(msg)) == 0) {
+						LM_ERR("cannot use dialog accounting module\n");
+						return -1;
+					}
+					acc_ref(acc_ctx);
+					dlg_api.dlg_ctx_put_ptr(dlg, acc_dlg_ctx_idx, acc_ctx);
 				}
 			}
 		}
@@ -1356,9 +1358,13 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 		if (is_cdr_acc_on(acc_ctx->flags) && !has_totag(msg)) {
 			acc_ctx->created = time(NULL);
 
-			if (is_invite && create_acc_dlg(msg) < 0) {
-				LM_ERR("cannot use dialog accounting module\n");
-				return -1;
+			if (is_invite) {
+				if ((dlg = create_acc_dlg(msg)) == 0) {
+					LM_ERR("cannot use dialog accounting module\n");
+					return -1;
+				}
+				acc_ref(acc_ctx);
+				dlg_api.dlg_ctx_put_ptr(dlg, acc_dlg_ctx_idx, acc_ctx);
 			}
 		}
 
