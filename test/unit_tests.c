@@ -23,16 +23,19 @@
 #include <tap.h>
 
 #include "../cachedb/test/test_backends.h"
+#include "../lib/test/test_csv.h"
+
 #include "../lib/list.h"
 #include "../dprint.h"
 #include "../sr_module.h"
 
 void init_unit_tests(void) {
 	set_mpath("modules/");
-	init_cachedb_tests();
+	//init_cachedb_tests();
 }
 
 int run_unit_tests(void) {
-	test_cachedb_backends();
+	//test_cachedb_backends();
+	test_lib_csv();
 	done_testing();
 }
