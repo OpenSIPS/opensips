@@ -48,6 +48,7 @@
 str smpp_outbound_uri;
 int smpp_send_timeout = DEFAULT_SMPP_SEND_TIMEOUT;
 
+int bind_session(smpp_session_t *session);
 static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 		smpp_session_t *session, struct receive_info *rcv);
 static void send_enquire_link_request(smpp_session_t *session);
@@ -483,9 +484,10 @@ static uint32_t increment_sequence_number(smpp_session_t *session)
 	return seq_no;
 }
 
-void send_outbind(smpp_session_t *session)
+int send_outbind(smpp_session_t *session)
 {
 	LM_INFO("sending outbind to esme \"%s\"\n", session->bind.outbind.system_id);
+	return -1;
 }
 
 static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
@@ -519,13 +521,12 @@ static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
 	/* TBD - handle conn not found here = reconnect ? */
 	ret = tcp_conn_get(smsc->conn_id, &smsc->ip, smsc->port, PROTO_SMPP,
 		NULL, &conn, &fd);
-	if (ret <= 0) {
+	if (ret <= 0 || bind_session(smsc) < 0) {
 		LM_ERR("cannot fetch connection for %.*s (%d)\n",
 				smsc->name.len, smsc->name.s, ret);
 		return -1;
 	}
 	/* update connection in case it has changed */
-	smsc->conn_id = conn->id;
 	ret = tsend_stream(fd, buffer->s, buffer->len, smpp_send_timeout);
 	tcp_conn_set_lifetime(conn, tcp_con_lifetime);
 	if (ret < 0) {
@@ -539,20 +540,22 @@ static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
 }
 
 
-static void send_bind(smpp_session_t *session)
+static int send_bind(smpp_session_t *session)
 {
 	int fd, n = -1;
 	struct tcp_connection *conn;
 	smpp_bind_transceiver_req_t *req = NULL;
 
-	if (!session)
+	if (!session) {
 		LM_ERR("NULL param\n");
+		return -1;
+	}
 
 	LM_INFO("binding session with system_id \"%s\"\n", session->bind.transceiver.system_id);
 
 	if (build_bind_transceiver_request(&req, session)) {
 		LM_ERR("error creating request\n");
-		return;
+		return -1;
 	}
 	conn = smpp_connect(session, &fd);
 	if (!conn) {
@@ -566,6 +569,22 @@ static void send_bind(smpp_session_t *session)
 	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
 free_req:
 	pkg_free(req);
+	return n;
+}
+
+int bind_session(smpp_session_t *session)
+{
+	int ret = (session->session_type == SMPP_OUTBIND)?
+		send_outbind(session):
+		send_bind(session);
+	if (ret < 0) {
+		LM_ERR("failed to bind session %.*s\n",
+				session->name.len, session->name.s);
+		return ret;
+	}
+	LM_DBG("succsessfully bound %.*s\n",
+			session->name.len, session->name.s);
+	return 0;
 }
 
 void smpp_bind_sessions(struct list_head *list)
@@ -575,10 +594,7 @@ void smpp_bind_sessions(struct list_head *list)
 
 	list_for_each(l, list) {
 		session = list_entry(l, smpp_session_t, list);
-		if (session->session_type == SMPP_OUTBIND)
-			send_outbind(session);
-		else
-			send_bind(session);
+		bind_session(session);
 	}
 }
 
@@ -725,7 +741,7 @@ void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, smpp_session_t *sess
 	pkg_free(resp);
 }
 
-uint32_t bind_session(smpp_bind_transceiver_t *body, smpp_session_t *session)
+uint32_t check_bind_session(smpp_bind_transceiver_t *body, smpp_session_t *session)
 {
 	if (memcmp(session->bind.transceiver.system_id, body->system_id, MAX_SYSTEM_ID_LEN) != 0) {
 		LM_WARN("wrong system id when trying to bind \"%.*s\"\n", MAX_SYSTEM_ID_LEN, body->system_id);
@@ -781,7 +797,7 @@ void handle_bind_receiver_cmd(smpp_header_t *header, char *buffer, smpp_session_
 	smpp_bind_receiver_t body;
 	memset(&body, 0, sizeof(body));
 	parse_bind_receiver_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, session);
+	uint32_t command_status = check_bind_session(&body, session);
 	send_bind_resp(header, &body, command_status, session);
 }
 
@@ -805,7 +821,7 @@ void handle_bind_transmitter_cmd(smpp_header_t *header, char *buffer, smpp_sessi
 	smpp_bind_transmitter_t body;
 	memset(&body, 0, sizeof(body));
 	parse_bind_transmitter_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, session);
+	uint32_t command_status = check_bind_session(&body, session);
 	send_bind_resp(header, &body, command_status, session);
 }
 
@@ -927,7 +943,7 @@ static void handle_bind_transceiver_cmd(smpp_header_t *header, char *buffer,
 	smpp_bind_transceiver_t body;
 	memset(&body, 0, sizeof(body));
 	parse_bind_transceiver_body(&body, header, buffer);
-	uint32_t command_status = bind_session(&body, session);
+	uint32_t command_status = check_bind_session(&body, session);
 	send_bind_resp(header, &body, command_status, session);
 }
 
