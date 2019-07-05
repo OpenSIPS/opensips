@@ -417,7 +417,7 @@ static int mod_init(void)
 	XMLNodeGetAttrContentByName= libxml_api.xmlNodeGetAttrContentByName;
 	XMLDocGetNodeByName= libxml_api.xmlDocGetNodeByName;
 	XMLNodeGetNodeByName= libxml_api.xmlNodeGetNodeByName;
-    XMLNodeGetNodeContentByName= libxml_api.xmlNodeGetNodeContentByName;
+	XMLNodeGetNodeContentByName= libxml_api.xmlNodeGetNodeContentByName;
 
 	if(XMLNodeGetAttrContentByName== NULL || XMLDocGetNodeByName== NULL ||
 			XMLNodeGetNodeByName== NULL || XMLNodeGetNodeContentByName== NULL)
@@ -829,41 +829,41 @@ int add_rls_event(modparam_t type, void* val)
 
 static void update_subs(subs_t *subs)
 {
-        xmlDocPtr doc = NULL;
-        xmlNodePtr service_node = NULL;
+	xmlDocPtr doc = NULL;
+	xmlNodePtr service_node = NULL;
 
-        if ((subs->expires -= (int)time(NULL)) <= 0)
-        {
-                LM_WARN("found expired subscription for: %.*s\n",
-                        subs->pres_uri.len, subs->pres_uri.s);
-                goto done;
-        }
+	if ((subs->expires -= (int)time(NULL)) <= 0)
+	{
+		LM_WARN("found expired subscription for: %.*s\n",
+				subs->pres_uri.len, subs->pres_uri.s);
+		goto done;
+	}
 
-        if(get_resource_list(&subs->pres_uri, subs->from_user,
-                                subs->from_domain, &service_node, &doc) < 0)
-        {
-                LM_ERR("failed getting resource list for: %.*s\n",
-                        subs->pres_uri.len, subs->pres_uri.s);
-                goto done;
-        }
-        if(doc==NULL)
-        {
-                LM_WARN("no document returned for: %.*s\n",
-                        subs->pres_uri.len, subs->pres_uri.s);
-                goto done;
-        }
+	if(get_resource_list(&subs->pres_uri, subs->from_user,
+						 subs->from_domain, &service_node, &doc) < 0)
+	{
+		LM_ERR("failed getting resource list for: %.*s\n",
+			   subs->pres_uri.len, subs->pres_uri.s);
+		goto done;
+	}
+	if(doc==NULL)
+	{
+		LM_WARN("no document returned for: %.*s\n",
+				subs->pres_uri.len, subs->pres_uri.s);
+		goto done;
+	}
 
-        subs->internal_update_flag = 1;
+	subs->internal_update_flag = 1;
 
-        if(resource_subscriptions(subs, service_node) < 0)
-        {
-                LM_ERR("failed sending subscribe requests to resources in list\n");
-                goto done;
-        }
+	if(resource_subscriptions(subs, service_node) < 0)
+	{
+		LM_ERR("failed sending subscribe requests to resources in list\n");
+		goto done;
+	}
 
 done:
-        if (doc != NULL)
-                xmlFreeDoc(doc);
+	if (doc != NULL)
+		xmlFreeDoc(doc);
 }
 
 mi_response_t *mi_update_subscriptions(const mi_params_t *params,
@@ -872,7 +872,7 @@ mi_response_t *mi_update_subscriptions(const mi_params_t *params,
 	struct sip_uri parsed_uri;
 	str uri;
 	int i;
-    subs_t *subs, *subs_copy;
+	subs_t *subs, *subs_copy;
 
 	if (get_mi_string_param(params, "presentity_uri", &uri.s, &uri.len) < 0)
 		return init_mi_param_error();
@@ -909,9 +909,9 @@ mi_response_t *mi_update_subscriptions(const mi_params_t *params,
 		while (subs != NULL)
 		{
 			if (subs->from_user.len == parsed_uri.user.len &&
-			    strncmp(subs->from_user.s, parsed_uri.user.s, parsed_uri.user.len) == 0 &&
-			    subs->from_domain.len == parsed_uri.host.len &&
-			    strncmp(subs->from_domain.s, parsed_uri.host.s, parsed_uri.host.len) == 0)
+				strncmp(subs->from_user.s, parsed_uri.user.s, parsed_uri.user.len) == 0 &&
+				subs->from_domain.len == parsed_uri.host.len &&
+				strncmp(subs->from_domain.s, parsed_uri.host.s, parsed_uri.host.len) == 0)
 			{
 				subs_copy = NULL;
 

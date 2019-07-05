@@ -590,11 +590,11 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 	p+= subs->event->name.len;
 	if(subs->event_id.len && subs->event_id.s)
 	{
- 		memcpy(p, ";id=", 4);
- 		p += 4;
- 		memcpy(p, subs->event_id.s, subs->event_id.len);
- 		p += subs->event_id.len;
- 	}
+		memcpy(p, ";id=", 4);
+		p += 4;
+		memcpy(p, subs->event_id.s, subs->event_id.len);
+		p += subs->event_id.len;
+	}
 	memcpy(p, CRLF, CRLF_LEN);
 	p += CRLF_LEN;
 
@@ -1046,12 +1046,12 @@ char* get_auth_string(int flag)
 int rls_get_resource_list(str *filename, str *selector, str *username, str *domain,
 		          xmlNodePtr *rl_node, xmlDocPtr *xmldoc)
 {
-        static char path_buf[MAX_PATH_LEN+1];
+	static char path_buf[MAX_PATH_LEN+1];
 
-        int checked = 0;
-        str path;
-        str *doc = NULL;
-        str *etag = NULL;
+	int checked = 0;
+	str path;
+	str *doc = NULL;
+	str *etag = NULL;
 	xmlXPathContextPtr xpathCtx = NULL;
 	xmlXPathObjectPtr xpathObj = NULL;
 
@@ -1061,39 +1061,39 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 		return -1;
 	}
 
-        if (xcapDbGetDoc(username, domain, RESOURCE_LISTS, filename, NULL, &doc, &etag) < 0)
-        {
+	if (xcapDbGetDoc(username, domain, RESOURCE_LISTS, filename, NULL, &doc, &etag) < 0)
+	{
 		LM_ERR("while getting resource-lists document from DB\n");
-                return -1;
-        }
+		return -1;
+	}
 
-        if (doc == NULL)
-        {
+	if (doc == NULL)
+	{
 		LM_DBG("No rl document found\n");
-                return -1;
-        }
+		return -1;
+	}
 
 	LM_DBG("rl document:\n%.*s\n", doc->len, doc->s);
 
 	path.s = path_buf;
 	path.len = 0;
 	if (selector->s) {
-            while (checked < selector->len && path.len + 8 <= MAX_PATH_LEN)
-            {
-                    if (selector->s[checked] == '/')
-                    {
-                            memcpy(path.s+path.len, "/xmlns:", 7);
-                            path.len += 7;
-                    }
-                    else
-                    {
-                            path.s[path.len++] = selector->s[checked];
-                    }
-                    checked++;
-            }
-            path.s[path.len] = '\0';
-            LM_DBG("path: %.*s", path.len, path.s);
-        }
+		while (checked < selector->len && path.len + 8 <= MAX_PATH_LEN)
+		{
+			if (selector->s[checked] == '/')
+			{
+				memcpy(path.s+path.len, "/xmlns:", 7);
+				path.len += 7;
+			}
+			else
+			{
+				path.s[path.len++] = selector->s[checked];
+			}
+			checked++;
+		}
+		path.s[path.len] = '\0';
+		LM_DBG("path: %.*s", path.len, path.s);
+	}
 
 	*xmldoc = xmlParseMemory(doc->s, doc->len);
 	if (*xmldoc == NULL)
@@ -1114,7 +1114,7 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 	}
 	else
 	{
-	        /* TODO: move this to xcap module? */
+		/* TODO: move this to xcap module? */
 		xpathCtx = xmlXPathNewContext(*xmldoc);
 		if (xpathCtx == NULL)
 		{
@@ -1154,26 +1154,26 @@ int rls_get_resource_list(str *filename, str *selector, str *username, str *doma
 		xmlXPathFreeContext(xpathCtx);
 	}
 
-        pkg_free(doc->s);
-        pkg_free(doc);
-        pkg_free(etag->s);
-        pkg_free(etag);
+	pkg_free(doc->s);
+	pkg_free(doc);
+	pkg_free(etag->s);
+	pkg_free(etag);
 
-        return 0;
+	return 0;
 
 error:
-        if (doc != NULL)
-        {
-                if (doc->s != NULL)
-                        pkg_free(doc->s);
-                pkg_free(doc);
-        }
-        if (etag != NULL)
-        {
-                if (etag->s != NULL)
-                        pkg_free(etag->s);
-                pkg_free(etag);
-        }
+	if (doc != NULL)
+	{
+		if (doc->s != NULL)
+			pkg_free(doc->s);
+		pkg_free(doc);
+	}
+	if (etag != NULL)
+	{
+		if (etag->s != NULL)
+			pkg_free(etag->s);
+		pkg_free(etag);
+	}
 	if (xpathObj)
 		xmlXPathFreeObject(xpathObj);
 	if (xpathCtx)

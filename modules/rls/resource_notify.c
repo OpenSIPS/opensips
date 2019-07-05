@@ -42,11 +42,11 @@
  * pua and write a function to return that id
  * winner: sol3
  * */
-static str su_200_rpl     = str_init("OK");
+static str su_200_rpl = str_init("OK");
 
 int parse_subs_state(str auth_state, str* reason, int* expires)
 {
-        static str unknown = str_init("unknown");
+	static str unknown = str_init("unknown");
 	str str_exp;
 	char* smc= NULL, *ptr;
 	int len, flag= -1, unknown_reason = 0;
@@ -74,67 +74,67 @@ int parse_subs_state(str auth_state, str* reason, int* expires)
 			unknown_reason = 1;
 			goto set_reason;
 		}
-                len = auth_state.len- 10- 1- 7;
-                if (len == 0)
-                        unknown_reason = 1;
+		len = auth_state.len- 10- 1- 7;
+		if (len == 0)
+			unknown_reason = 1;
 		/* reason attribute is optional as per RFC 3265, but is required
 		 * when building the RLMI doc, so set it to 'unknown'
 		 */
-set_reason:
+	set_reason:
 		if(unknown_reason)
-                {
-                        len = unknown.len;
-                        reason->s= (char*)pkg_malloc(len* sizeof(char));
-                        if(reason->s== NULL)
-                        {
-                                ERR_MEM(PKG_MEM_STR);
-                        }
-                        memcpy(reason->s, unknown.s, len);
-                        reason->len= len;
-                }
-                else
-                {
-                        len=  auth_state.len- 10- 1- 7;
-                        reason->s= (char*)pkg_malloc(len* sizeof(char));
-                        if(reason->s== NULL)
-                        {
-                                ERR_MEM(PKG_MEM_STR);
-                        }
-                        memcpy(reason->s, smc+ 8, len);
-                        reason->len= len;
-                }
+		{
+			len = unknown.len;
+			reason->s= (char*)pkg_malloc(len* sizeof(char));
+			if(reason->s== NULL)
+			{
+				ERR_MEM(PKG_MEM_STR);
+			}
+			memcpy(reason->s, unknown.s, len);
+			reason->len= len;
+		}
+		else
+		{
+			len=  auth_state.len- 10- 1- 7;
+			reason->s= (char*)pkg_malloc(len* sizeof(char));
+			if(reason->s== NULL)
+			{
+				ERR_MEM(PKG_MEM_STR);
+			}
+			memcpy(reason->s, smc+ 8, len);
+			reason->len= len;
+		}
 		return TERMINATED_STATE;
 	}
 
 	if(flag > 0)
 	{
-	        *expires = -1;
-	        ptr = auth_state.s;
+		*expires = -1;
+		ptr = auth_state.s;
 		while ((smc = memchr(ptr, ';', auth_state.len-(ptr-auth_state.s))) && smc+1-auth_state.s < auth_state.len)
-                {
-                        smc += 1;
-                        if(strncasecmp(smc, "expires=", 8) == 0)
-                        {
-                                str_exp.s = smc + 8;
-                                str_exp.len = auth_state.s + auth_state.len - smc - 8;
+		{
+			smc += 1;
+			if(strncasecmp(smc, "expires=", 8) == 0)
+			{
+				str_exp.s = smc + 8;
+				str_exp.len = auth_state.s + auth_state.len - smc - 8;
 
-                                if(str2int(&str_exp, (unsigned int*)expires) < 0)
-                                {
-                                        LM_ERR("while extracting expires value\n");
-                                        return -1;
-                                }
-                                break;
-                        }
-                        ptr = smc;
-                }
+				if(str2int(&str_exp, (unsigned int*)expires) < 0)
+				{
+					LM_ERR("while extracting expires value\n");
+					return -1;
+				}
+				break;
+			}
+			ptr = smc;
+		}
 		return flag;
 
 	}
 	return -1;
 
 error:
-        if(reason->s)
-                pkg_free(reason->s);
+	if(reason->s)
+		pkg_free(reason->s);
 	return -1;
 }
 
@@ -316,12 +316,12 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	query_vals[n_query_cols].val.int_val= auth_flag;
 	n_query_cols++;
 
-        query_cols[n_query_cols]= &str_reason_col;
-        query_vals[n_query_cols].type = DB_STR;
-        query_vals[n_query_cols].nul = 0;
-        query_vals[n_query_cols].val.str_val.s = reason.s;
-        query_vals[n_query_cols].val.str_val.len = reason.len;
-        n_query_cols++;
+	query_cols[n_query_cols]= &str_reason_col;
+	query_vals[n_query_cols].type = DB_STR;
+	query_vals[n_query_cols].nul = 0;
+	query_vals[n_query_cols].val.str_val.s = reason.s;
+	query_vals[n_query_cols].val.str_val.len = reason.len;
+	n_query_cols++;
 
 	query_cols[n_query_cols]= &str_content_type_col;
 	query_vals[n_query_cols].type = DB_STR;
@@ -335,14 +335,14 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	query_vals[n_query_cols].val.str_val= body;
 	n_query_cols++;
 
-        if (expires > -1)
-        {
-                query_cols[n_query_cols]= &str_expires_col;
-                query_vals[n_query_cols].type = DB_INT;
-                query_vals[n_query_cols].nul = 0;
-                query_vals[n_query_cols].val.int_val = expires + (int)time(NULL);
-                n_query_cols++;
-        }
+	if (expires > -1)
+	{
+		query_cols[n_query_cols]= &str_expires_col;
+		query_vals[n_query_cols].type = DB_INT;
+		query_vals[n_query_cols].nul = 0;
+		query_vals[n_query_cols].val.int_val = expires + (int)time(NULL);
+		n_query_cols++;
+	}
 
 	if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
 	{
@@ -353,7 +353,7 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	result_cols[0]= &str_updated_col;
 
 	if(rls_dbf.query(rls_db, query_cols, 0, query_vals, result_cols,
-					2, 1, 0, &result)< 0)
+					 2, 1, 0, &result)< 0)
 	{
 		LM_ERR("in sql query\n");
 		if(result)
@@ -375,12 +375,12 @@ int rls_handle_notify(struct sip_msg* msg, char* c1, char* c2)
 	}
 	else
 	{
-                if(rls_dbf.update(rls_db, query_cols, 0, query_vals, query_cols+2,
-                                  query_vals+2, 2, n_query_cols-2) < 0)
-                {
-                        LM_ERR("in sql update\n");
-                        goto error;
-                }
+		if(rls_dbf.update(rls_db, query_cols, 0, query_vals, query_cols+2,
+						  query_vals+2, 2, n_query_cols-2) < 0)
+		{
+			LM_ERR("in sql update\n");
+			goto error;
+		}
 	}
 
 done:
@@ -390,18 +390,18 @@ done:
 		goto error;
 	}
 	if(reason.s)
-	        pkg_free(reason.s);
+		pkg_free(reason.s);
 	if (res_id)
-        {
-	        pkg_free(res_id->s);
-	        pkg_free(res_id);
-        }
+	{
+		pkg_free(res_id->s);
+		pkg_free(res_id);
+	}
 
 	return 1;
 
 error:
 	if(reason.s)
-	        pkg_free(reason.s);
+		pkg_free(reason.s);
 	if(res_id)
 	{
 		pkg_free(res_id->s);
@@ -410,6 +410,7 @@ error:
 
 	return err_ret;
 }
+
 /* callid, from_tag, to_tag parameters must be allocated */
 
 int parse_rlsubs_did(char* str_did, str* callid, str* from_tag, str* to_tag)
@@ -444,65 +445,65 @@ int parse_rlsubs_did(char* str_did, str* callid, str* from_tag, str* to_tag)
 
 void get_dialog_from_did(char* did, subs_t **dialog, unsigned int *hash_code)
 {
-        str callid, to_tag, from_tag;
-        subs_t* s;
+	str callid, to_tag, from_tag;
+	subs_t* s;
 
-        *dialog = NULL;
+	*dialog = NULL;
 
-        /* search the subscription in rlsubs_table */
-        if( parse_rlsubs_did(did, &callid, &from_tag, &to_tag) < 0)
-        {
-                LM_ERR("bad format for resource list Subscribe dialog "
-                        "indentifier(rlsubs did)\n");
-                return;
-        }
+	/* search the subscription in rlsubs_table */
+	if( parse_rlsubs_did(did, &callid, &from_tag, &to_tag) < 0)
+	{
+		LM_ERR("bad format for resource list Subscribe dialog "
+			   "indentifier(rlsubs did)\n");
+		return;
+	}
 
-        *hash_code= core_hash(&callid, &to_tag, hash_size);
+	*hash_code= core_hash(&callid, &to_tag, hash_size);
 
-        lock_get(&rls_table[*hash_code].lock);
-        s = pres_search_shtable(rls_table, callid, to_tag, from_tag, *hash_code);
+	lock_get(&rls_table[*hash_code].lock);
+	s = pres_search_shtable(rls_table, callid, to_tag, from_tag, *hash_code);
 
-        if(s == NULL)
-        {
-                LM_DBG("record not found in hash_table [rlsubs_did]= %s\n", did);
-                LM_DBG("callid= %.*s\tfrom_tag= %.*s\tto_tag= %.*s\n",
-                                callid.len, callid.s,from_tag.len,from_tag.s,
-                                to_tag.len,to_tag.s);
-                lock_release(&rls_table[*hash_code].lock);
-                return;
-        }
+	if(s == NULL)
+	{
+		LM_DBG("record not found in hash_table [rlsubs_did]= %s\n", did);
+		LM_DBG("callid= %.*s\tfrom_tag= %.*s\tto_tag= %.*s\n",
+			   callid.len, callid.s,from_tag.len,from_tag.s,
+			   to_tag.len,to_tag.s);
+		lock_release(&rls_table[*hash_code].lock);
+		return;
+	}
 
-        /* save dialog info */
-        *dialog = pres_copy_subs(s, PKG_MEM_TYPE);
+	/* save dialog info */
+	*dialog = pres_copy_subs(s, PKG_MEM_TYPE);
 
-        if(*dialog == NULL)
-        {
-                LM_ERR("while copying subs_t structure\n");
-                lock_release(&rls_table[*hash_code].lock);
-                return;
-        }
+	if(*dialog == NULL)
+	{
+		LM_ERR("while copying subs_t structure\n");
+		lock_release(&rls_table[*hash_code].lock);
+		return;
+	}
 
-        (*dialog)->expires -= (int)time(NULL);
-        lock_release(&rls_table[*hash_code].lock);
+	(*dialog)->expires -= (int)time(NULL);
+	lock_release(&rls_table[*hash_code].lock);
 }
 
 
 int send_notify(xmlDocPtr * rlmi_doc, char * buf, int buf_len,
-                const str bstr, subs_t * dialog, unsigned int hash_code)
+				const str bstr, subs_t * dialog, unsigned int hash_code)
 {
-    int result = 0;
-    str rlmi_cont = {0, 0}, multi_cont;
+	int result = 0;
+	str rlmi_cont = {0, 0}, multi_cont;
 
-    xmlDocDumpFormatMemory(*rlmi_doc,(xmlChar**)(void*)&rlmi_cont.s, &rlmi_cont.len, 0);
-    multi_cont.s= buf;
-    multi_cont.len= buf_len;
+	xmlDocDumpFormatMemory(*rlmi_doc,(xmlChar**)(void*)&rlmi_cont.s, &rlmi_cont.len, 0);
+	multi_cont.s= buf;
+	multi_cont.len= buf_len;
 
-    result = agg_body_sendn_update(&(dialog->pres_uri), bstr, &rlmi_cont,
-                                   (buf_len==0)?NULL:&multi_cont, dialog, hash_code);
-    xmlFree(rlmi_cont.s);
-    xmlFreeDoc(*rlmi_doc);
-    *rlmi_doc = NULL;
-    return result;
+	result = agg_body_sendn_update(&(dialog->pres_uri), bstr, &rlmi_cont,
+								   (buf_len==0)?NULL:&multi_cont, dialog, hash_code);
+	xmlFree(rlmi_cont.s);
+	xmlFreeDoc(*rlmi_doc);
+	*rlmi_doc = NULL;
+	return result;
 }
 
 void timer_send_notify(unsigned int ticks,void *param)
@@ -616,26 +617,26 @@ void timer_send_notify(unsigned int ticks,void *param)
 		/* 'buf' must contain the body */
 		if(prev_did != NULL && strcmp(prev_did, curr_did) != 0)
 		{
-                        if (send_notify(&rlmi_doc, buf, buf_len, bstr, dialog, hash_code))
-                        {
-                                LM_ERR("in send_notify\n");
-                                goto error;
-                        }
-                        pkg_free(dialog);
-                        dialog = NULL;
+			if (send_notify(&rlmi_doc, buf, buf_len, bstr, dialog, hash_code))
+			{
+				LM_ERR("in send_notify\n");
+				goto error;
+			}
+			pkg_free(dialog);
+			dialog = NULL;
 		}
 
 		/* for the new dialog -> search the dialog info and
 		 * fill the dialog structure and start a new rlmi document */
 		if(prev_did== NULL || strcmp(prev_did, curr_did) != 0)
 		{
-                        /* Get a subscription from the did */
-                        get_dialog_from_did(curr_did, &dialog, &hash_code);
-                        if(dialog == NULL)
-                        {
-                                prev_did = NULL;
-                                continue;
-                        }
+			/* Get a subscription from the did */
+			get_dialog_from_did(curr_did, &dialog, &hash_code);
+			if(dialog == NULL)
+			{
+				prev_did = NULL;
+				continue;
+			}
 
 			/* make new rlmi and multipart documents */
 			rlmi_doc= xmlNewDoc(BAD_CAST "1.0");
@@ -761,13 +762,13 @@ void timer_send_notify(unsigned int ticks,void *param)
 
 	if(rlmi_doc)
 	{
-                if (send_notify(&rlmi_doc, buf, buf_len, bstr, dialog, hash_code))
-                {
-                        LM_ERR("in send_notify\n");
-                        goto error;
-                }
-                pkg_free(dialog);
-                dialog = NULL;
+		if (send_notify(&rlmi_doc, buf, buf_len, bstr, dialog, hash_code))
+		{
+			LM_ERR("in send_notify\n");
+			goto error;
+		}
+		pkg_free(dialog);
+		dialog = NULL;
 	}
 
 error:
@@ -777,7 +778,7 @@ error:
 		pkg_free(bstr.s);
 	if(buf)
 		pkg_free(buf);
-        if(dialog)
+	if(dialog)
 		pkg_free(dialog);
 }
 
