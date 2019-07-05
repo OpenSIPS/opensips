@@ -910,6 +910,12 @@ static void handle_unbind_resp_cmd(smpp_header_t *header, char *buffer,
 	LM_DBG("Received unbind_resp command\n");
 }
 
+static void handle_unbind_cmd(smpp_header_t *header, char *buffer,
+		smpp_session_t *session)
+{
+	LM_DBG("Received unbind command\n");
+}
+
 static void handle_bind_transceiver_cmd(smpp_header_t *header, char *buffer,
 		smpp_session_t *session)
 {
@@ -1002,6 +1008,9 @@ void handle_smpp_msg(char *buffer, smpp_session_t *session, struct receive_info 
 			break;
 		case DELIVER_SM_RESP_CID:
 			handle_deliver_sm_resp_cmd(&header, buffer, session, rcv);
+			break;
+		case UNBIND_CID:
+			handle_unbind_cmd(&header, buffer, session);
 			break;
 		case UNBIND_RESP_CID:
 			handle_unbind_resp_cmd(&header, buffer, session);
