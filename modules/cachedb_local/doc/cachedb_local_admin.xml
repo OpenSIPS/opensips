@@ -149,7 +149,7 @@ cache_store("local:group2", ...)
 ## creating collection1 with default size (512) and collection2 with custom size
 ## 2^5 (32); we also changed the size of the default collection, which would have been
 ## created anyway from 2^9 - 512 (default value) to 2^4 - 16
-modparam("cachedb_local", "cache_collections", "collection1;collection2=5;default=4")
+modparam("cachedb_local", "cache_collections", "collection1; collection2 = 5; default = 4")
 ...
 	</programlisting>
 		</example>
