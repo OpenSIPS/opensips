@@ -47,18 +47,12 @@
 #include "parser/sdp/sdp_helpr_funcs.h"
 #include "parser/sdp/sdp.h"
 
+#include "lib/csv.h"
 #include "strcommon.h"
 #include "transformations.h"
 #include "re.h"
 
 #define TR_BUFFER_SIZE 65536
-
-/* structure for CSV transformation */
-
-typedef struct csv {
-	str body;
-	struct csv* next;
-} csv_t;
 
 static char _tr_buffer[TR_BUFFER_SIZE];
 
@@ -1330,140 +1324,12 @@ error:
 }
 
 static str _tr_csv_str = {0,0};
-static csv_t* _tr_csv_list = NULL;
-
-static int init_csv(csv_t **t,char *s,int len)
-{
-	*t = (csv_t *)pkg_malloc(sizeof(csv_t));
-	if (*t == NULL)
-	{
-		return -1;
-	}
-
-	memset(*t,0,sizeof(csv_t));
-	(*t)->body.s = s;
-	(*t)->body.len = len;
-
-	return 0;
-}
-
-void free_csv_list(csv_t *list)
-{
-	csv_t *cit;
-	for (cit=list;cit;cit=cit->next)
-		pkg_free(cit);
-}
-
-static int parse_csv(str *s,csv_t **list)
-{
-	csv_t *t = NULL;
-	csv_t *last = NULL;
-	char *string,*limit,*aux;
-	int len;
-
-	if (!s || !list)
-	{
-		LM_ERR("Invalid parameter values\n");
-		return -1;
-	}
-
-	last = NULL;
-	*list = 0;
-
-	if (!s->s)
-	{
-		LM_DBG("empty csv params, skipping\n");
-		return 0;
-	}
-
-	LM_DBG("Parsing csv for : [%.*s]\n",s->len,s->s);
-
-	string = s->s;
-	limit = string+s->len;
-
-	while (*string)
-	{
-		t = NULL;
-		/* quoted token */
-		if (*string == '\"')
-		{
-			aux = string+1;
-search:
-			/* find coresponding quote */
-			while (*aux != '\"') aux++;
-			if ( *(aux+1) != '\"')
-			{
-				/* end of current token, also skip the following comma */
-				len = aux-string+1;
-				if (init_csv(&t,string,len) < 0)
-				{
-					LM_ERR("no more memory");
-					goto error;
-				}
-				string +=len+1;
-				if (string > limit)
-				{
-					/* again, end of string */
-					if (last) { last->next = t;} else {*list = t;}
-					return 0;
-				}
-			}
-			else
-			{
-				/* quoted string inside token */
-				aux +=2;
-				/* keep searching for final double quote*/
-				goto search;
-			}
-		}
-		else
-		{
-			/* non quoted csv , find comma */
-			aux = strchr(string,',');
-			if (aux == NULL)
-			{
-				len = strlen(string);
-				if (init_csv(&t,string,len) < 0)
-				{
-					LM_ERR("no more memory");
-					goto error;
-				}
-
-				/* should be end of string ! */
-				if (last) { last->next = t;} else {*list = t;}
-				return 0;
-			}
-			else
-			{
-				len = aux - string;
-				if (init_csv(&t,string,len) < 0)
-				{
-					LM_ERR("no more memory");
-					goto error;
-				}
-				string +=len+1;
-			}
-		}
-
-		if (last) { last->next = t;} else {*list = t;}
-		last = t;
-	}
-
-	return 0;
-
-error:
-	if (t) pkg_free(t);
-	free_csv_list(*list);
-	*list = NULL;
-	return -1;
-}
-
+static csv_record* _tr_csv_list = NULL;
 
 int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		pv_value_t *val)
 {
-	str sv;
-	csv_t *cit=NULL;
+	csv_record *cit=NULL;
 	int n,i,list_size=0;
 	pv_value_t v;
 
@@ -1489,8 +1355,8 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				memset(&_tr_csv_str, 0, sizeof(str));
 				if(_tr_csv_list != NULL)
 				{
-					free_csv_list(_tr_csv_list);
-					_tr_csv_list = 0;
+					free_csv_record(_tr_csv_list);
+					_tr_csv_list = NULL;
 				}
 				goto error;
 			}
@@ -1502,13 +1368,13 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		/* reset old values */
 		if(_tr_csv_list != NULL)
 		{
-			free_csv_list(_tr_csv_list);
-			_tr_csv_list = 0;
+			free_csv_record(_tr_csv_list);
+			_tr_csv_list = NULL;
 		}
 
 		/* parse csv */
-		sv = _tr_csv_str;
-		if (parse_csv(&sv,&_tr_csv_list)<0)
+		_tr_csv_list = _parse_csv_record(&_tr_csv_str, CSV_RFC_4180);
+		if (!_tr_csv_list)
 			goto error;
 	}
 
@@ -1567,7 +1433,7 @@ int tr_eval_csv(struct sip_msg *msg, tr_param_t *tp,int subtype,
 				}
 			}
 
-			val->rs = cit->body;
+			val->rs = cit->s;
 			val->flags =  PV_VAL_STR;
 			break;
 
