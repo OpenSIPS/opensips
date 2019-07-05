@@ -59,11 +59,9 @@ static str pu_404_rpl     = str_init("Not Found");
 #define SUBS_EXTRA_HDRS  "Supported: eventlist\r\nAccept: application/pidf+xml, application/rlmi+xml, application/watcherinfo+xml, multipart/related, application/xcap-diff+xml\r\n"
 #define SUBS_EXTRA_HDRS_LEN  sizeof(SUBS_EXTRA_HDRS) -1
 
-subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto,
-		pres_ev_t* event);
+subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto, pres_ev_t* event);
 
-int update_rlsubs( subs_t* subs,unsigned int hash_code,
-		int* reply_code, str* reply_str);
+int update_rlsubs( subs_t* subs,unsigned int hash_code, int* reply_code, str* reply_str);
 
 
 xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
@@ -125,37 +123,37 @@ xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
 
 static int http_get_resource_list(str* owner_user, str* owner_domain, str** doc)
 {
-        str body = {0, 0};
-        str *doc_tmp;
+	str body = {0, 0};
+	str *doc_tmp;
 	xcap_get_req_t req;
 	xcap_doc_sel_t doc_sel;
 
-        memset(&doc_sel, 0, sizeof(xcap_doc_sel_t));
-        doc_sel.auid.s = "rls-services";
-        doc_sel.auid.len = strlen(doc_sel.auid.s);
-        doc_sel.doc_type = RLS_SERVICES;
-        doc_sel.type = USERS_TYPE;
-        if(uandd_to_uri(*owner_user, *owner_domain, &doc_sel.xid) < 0)
-        {
-                LM_ERR("failed to create uri from user and domain\n");
-                goto error;
-        }
+	memset(&doc_sel, 0, sizeof(xcap_doc_sel_t));
+	doc_sel.auid.s = "rls-services";
+	doc_sel.auid.len = strlen(doc_sel.auid.s);
+	doc_sel.doc_type = RLS_SERVICES;
+	doc_sel.type = USERS_TYPE;
+	if(uandd_to_uri(*owner_user, *owner_domain, &doc_sel.xid) < 0)
+	{
+		LM_ERR("failed to create uri from user and domain\n");
+		goto error;
+	}
 
-        memset(&req, 0, sizeof(xcap_get_req_t));
-        req.xcap_root = xcap_root;
-        req.port = xcap_port;
-        req.doc_sel = doc_sel;
+	memset(&req, 0, sizeof(xcap_get_req_t));
+	req.xcap_root = xcap_root;
+	req.port = xcap_port;
+	req.doc_sel = doc_sel;
 
-        if(xcap_GetNewDoc(req, *owner_user, *owner_domain, &body) < 0)
-        {
-                LM_ERR("while fetching data from xcap server\n");
-                pkg_free(doc_sel.xid.s);
-                goto error;
-        }
-        pkg_free(doc_sel.xid.s);
+	if(xcap_GetNewDoc(req, *owner_user, *owner_domain, &body) < 0)
+	{
+		LM_ERR("while fetching data from xcap server\n");
+		pkg_free(doc_sel.xid.s);
+		goto error;
+	}
+	pkg_free(doc_sel.xid.s);
 
-        if (body.s == NULL)
-                goto error;
+	if (body.s == NULL)
+		goto error;
 
 	doc_tmp = pkg_malloc(sizeof(*doc_tmp));
 	if(doc_tmp == NULL)
@@ -172,15 +170,15 @@ static int http_get_resource_list(str* owner_user, str* owner_domain, str** doc)
 	}
 	memcpy(doc_tmp->s, body.s, body.len);
 	doc_tmp->len = body.len;
-        pkg_free(body.s);
+	pkg_free(body.s);
 
-        *doc = doc_tmp;
+	*doc = doc_tmp;
 	return 0;
 
 error:
-        if (body.s)
-                pkg_free(body.s);
-        return -1;
+	if (body.s)
+		pkg_free(body.s);
+	return -1;
 }
 
 /*
@@ -196,31 +194,31 @@ error:
 int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 		      xmlNodePtr* service_node, xmlDocPtr* rl_doc)
 {
-        str *doc = NULL;
-        str *etag = NULL;
+	str *doc = NULL;
+	str *etag = NULL;
 	xmlDocPtr xml_doc = NULL;
 	xmlNodePtr snode = NULL;
 
 	*rl_doc = NULL;
 	*service_node = NULL;
 
-        if (xcapDbGetDoc(&owner_user, &owner_domain, RLS_SERVICES, NULL, NULL, &doc, &etag) < 0)
-        {
+	if (xcapDbGetDoc(&owner_user, &owner_domain, RLS_SERVICES, NULL, NULL, &doc, &etag) < 0)
+	{
 		LM_ERR("while getting RLS document from DB\n");
 		goto error;
 	}
 
 	if (doc == NULL)
-        {
+	{
 		LM_DBG("No rl document found in database\n");
 		if (rls_integrated_xcap_server)
 			goto done;
-                /* Use xcap_client to try to fetch the document */
-                if (http_get_resource_list(&owner_user, &owner_domain, &doc) < 0)
-                        goto done;
-        }
+		/* Use xcap_client to try to fetch the document */
+		if (http_get_resource_list(&owner_user, &owner_domain, &doc) < 0)
+			goto done;
+	}
 
-        /* Document is loaded in doc either via DB or HTTP */
+	/* Document is loaded in doc either via DB or HTTP */
 	LM_DBG("rls_services document:\n%.*s\n", doc->len, doc->s);
 	xml_doc = xmlParseMemory(doc->s, doc->len);
 	if(xml_doc == NULL)
@@ -233,8 +231,8 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 	if (snode == NULL)
 	{
 		LM_DBG("service uri %.*s not found in rl document for user"
-		       " sip:%.*s@%.*s\n", service_uri->len, service_uri->s,
-		       owner_user.len, owner_user.s, owner_domain.len, owner_domain.s);
+			   " sip:%.*s@%.*s\n", service_uri->len, service_uri->s,
+			   owner_user.len, owner_user.s, owner_domain.len, owner_domain.s);
 		xmlFreeDoc(xml_doc);
 		goto done;
 	}
@@ -243,33 +241,33 @@ int get_resource_list(str* service_uri, str owner_user, str owner_domain,
 	*service_node = snode;
 
 done:
-        if (doc != NULL)
-        {
-                if (doc->s != NULL)
-                        pkg_free(doc->s);
-                pkg_free(doc);
-        }
-        if (etag != NULL)
-        {
-                if (etag->s != NULL)
-                        pkg_free(etag->s);
-                pkg_free(etag);
-        }
-        return 0;
+	if (doc != NULL)
+	{
+		if (doc->s != NULL)
+			pkg_free(doc->s);
+		pkg_free(doc);
+	}
+	if (etag != NULL)
+	{
+		if (etag->s != NULL)
+			pkg_free(etag->s);
+		pkg_free(etag);
+	}
+	return 0;
 error:
-        if (doc != NULL)
-        {
-                if (doc->s != NULL)
-                        pkg_free(doc->s);
-                pkg_free(doc);
-        }
-        if (etag != NULL)
-        {
-                if (etag->s != NULL)
-                        pkg_free(etag->s);
-                pkg_free(etag);
-        }
-        return -1;
+	if (doc != NULL)
+	{
+		if (doc->s != NULL)
+			pkg_free(doc->s);
+		pkg_free(doc);
+	}
+	if (etag != NULL)
+	{
+		if (etag->s != NULL)
+			pkg_free(etag->s);
+		pkg_free(etag);
+	}
+	return -1;
 }
 
 
@@ -795,7 +793,7 @@ error:
 
 int send_resource_subs(char* uri, void* param)
 {
-        int duplicate = 0;
+	int duplicate = 0;
 	str pres_uri;
 	str *tmp_str;
 	subs_info_t *s = (subs_info_t *) ((void**)param)[0];
@@ -806,31 +804,31 @@ int send_resource_subs(char* uri, void* param)
 
 	s->pres_uri= &pres_uri;
 
-        /* Build a list of uris checking each uri exists only once */
-        if ((tmp_str = (str *)pkg_malloc(sizeof(str))) == NULL)
-        {
-                LM_ERR("out of private memory\n");
-                return -1;
-        }
+	/* Build a list of uris checking each uri exists only once */
+	if ((tmp_str = (str *)pkg_malloc(sizeof(str))) == NULL)
+	{
+		LM_ERR("out of private memory\n");
+		return -1;
+	}
 
-        if ((tmp_str->s = (char *)pkg_malloc(sizeof(char) * pres_uri.len + 1)) == NULL)
-        {
-                pkg_free(tmp_str);
-                LM_ERR("out of private memory\n");
-                return -1;
-        }
+	if ((tmp_str->s = (char *)pkg_malloc(sizeof(char) * pres_uri.len + 1)) == NULL)
+	{
+		pkg_free(tmp_str);
+		LM_ERR("out of private memory\n");
+		return -1;
+	}
 
-        memcpy(tmp_str->s, pres_uri.s, pres_uri.len);
-        tmp_str->len = pres_uri.len;
+	memcpy(tmp_str->s, pres_uri.s, pres_uri.len);
+	tmp_str->len = pres_uri.len;
 	tmp_str->s[tmp_str->len] = '\0';
-        *rls_contact_list = list_insert(tmp_str, *rls_contact_list, &duplicate);
-        if (duplicate != 0)
-        {
-                LM_WARN("%.*s has %.*s multiple times in the same resource list\n",
-                        s->watcher_uri->len, s->watcher_uri->s,
-                        s->pres_uri->len, s->pres_uri->s);
-                return 1;
-        }
+	*rls_contact_list = list_insert(tmp_str, *rls_contact_list, &duplicate);
+	if (duplicate != 0)
+	{
+		LM_WARN("%.*s has %.*s multiple times in the same resource list\n",
+				s->watcher_uri->len, s->watcher_uri->s,
+				s->pres_uri->len, s->pres_uri->s);
+		return 1;
+	}
 
 	return pua_send_subscribe(s);
 }
@@ -915,9 +913,9 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	}
 
 	if (rls_contact_list != NULL)
-        {
-                list_free(&rls_contact_list);
-        }
+	{
+		list_free(&rls_contact_list);
+	}
 
 	pkg_free(wuri.s);
 	pkg_free(did_str.s);
