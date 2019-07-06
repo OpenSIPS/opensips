@@ -683,7 +683,7 @@ bad_event:
 
 error:
 	if (rls_sigb.reply(msg, reply_code, &reply_str, 0) == -1)
-		LM_ERR("failed to send 400 reply\n");
+		LM_ERR("failed to send %d reply\n", reply_code);
 
 error_free:
 	if(subs.pres_uri.s)
