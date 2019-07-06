@@ -681,16 +681,11 @@ bad_event:
 
 error:
 	if (rls_sigb.reply(msg, reply_code, &reply_str, 0) == -1)
-	{
 		LM_ERR("failed to send 400 reply\n");
-		return -1;
-	}
-
 
 error_free:
 	if(subs.pres_uri.s)
 		pkg_free(subs.pres_uri.s);
-
 	if(subs.record_route.s)
 			pkg_free(subs.record_route.s);
 	if(doc)
