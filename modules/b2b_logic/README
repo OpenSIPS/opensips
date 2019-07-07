@@ -682,10 +682,11 @@ Chapter 3. Contributors
    6. Liviu Chircu (@liviuchircu) 14 11 52 99
    7. Nick Altmann (@nikbyte) 14 6 461 199
    8. Vlad Paiu (@vladpaiu) 7 5 35 21
-   9. Ezequiel Lovelle 3 1 1 1
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Dan Pascu (@danpascu) 3 1 6 6
+   10. Ezequiel Lovelle 3 1 1 1
 
-   All remaining contributors: Walter Doekes (@wdoekes).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Walter
+   Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -707,18 +708,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
-   8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   9.  Nick Altmann (@nikbyte)             Oct 2012 - Jan 2013
-   10. Anca Vamanu                         Aug 2009 - May 2012
+   1.  Dan Pascu (@danpascu)               Jul 2019 - Jul 2019
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
+   9.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   10. Nick Altmann (@nikbyte)             Oct 2012 - Jan 2013
 
-   All remaining contributors: Vlad Paiu (@vladpaiu).
+   All remaining contributors: Anca Vamanu, Vlad Paiu (@vladpaiu).
 
    (1) including any documentation-related commits, excluding
    merge commits
