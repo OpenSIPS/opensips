@@ -129,8 +129,8 @@ tom size
 ## 2^5 (32); we also changed the size of the default collection, which w
 ould have been
 ## created anyway from 2^9 - 512 (default value) to 2^4 - 16
-modparam("cachedb_local", "cache_collections", "collection1;collection2=
-5;default=4")
+modparam("cachedb_local", "cache_collections", "collection1; collection2
+ = 5; default = 4")
 ...
 
 1.3.3. cache_clean_period (int)
@@ -204,7 +204,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 33 10 1155 693
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 41 47
-   3. Liviu Chircu (@liviuchircu) 12 9 24 62
+   3. Liviu Chircu (@liviuchircu) 14 10 64 148
    4. Anca Vamanu 12 5 739 54
    5. Andrei Dragus 10 4 182 181
    6. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
@@ -235,7 +235,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
    2.  Razvan Crainea (@razvancrainea)     Aug 2015 - May 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Aug 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - May 2017

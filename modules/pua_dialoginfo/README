@@ -18,7 +18,7 @@ pua dialoginfo
               1.3.3. include_localremote (int)
               1.3.4. caller_confirmed (int)
               1.3.5. publish_on_trying (int)
-              1.3.6. nopublish_flag (int)
+              1.3.6. nopublish_flag (str)
               1.3.7. presence_server (string)
               1.3.8. caller_spec_param (string)
               1.3.9. callee_spec_param (string)
@@ -374,7 +374,7 @@ modparam("pua_dialoginfo", "publish_on_trying", 1)
 #  |--ACK---->|          |            |
 ...
 
-1.3.6. nopublish_flag (int)
+1.3.6. nopublish_flag (str)
 
    By default, reINVITEs will trigger a PUBLISH. They are actually
    the only in-dialog request for which it makes sense. In some
@@ -385,7 +385,7 @@ modparam("pua_dialoginfo", "publish_on_trying", 1)
 
    Example 1.7. Set nopublish_flag parameter
 ...
-modparam("pua_dialoginfo", "nopublish_flag", 5)
+modparam("pua_dialoginfo", "nopublish_flag", "no_publish")
 ...
 
 1.3.7. presence_server (string)
@@ -470,7 +470,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 27 16 713 231
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 17 14 93 83
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 19 16 98 90
    3. Liviu Chircu (@liviuchircu) 13 10 45 77
    4. Klaus Darilion 10 1 1109 0
    5. Razvan Crainea (@razvancrainea) 9 7 12 15
@@ -503,9 +503,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jun 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jul 2019
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
    5.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Jan 2014
    6.  Damien Sandras (@dsandras)          Jul 2013 - Aug 2013
