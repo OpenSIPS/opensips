@@ -64,8 +64,8 @@ db_con_t *rls_db = NULL;
 db_func_t rls_dbf;
 
 /** modules variables */
-str server_address= {0, 0};
-str presence_server= {0, 0};
+str contact_user = str_init("rls");
+str presence_server = {NULL, 0};
 int waitn_time = 50;
 str rlsubs_table= str_init("rls_watchers");
 str rlpres_table= str_init("rls_presentity");
@@ -178,7 +178,7 @@ static cmd_export_t cmds[]={
 };
 
 static param_export_t params[]={
-	{ "server_address",         STR_PARAM, &server_address.s           },
+	{ "contact_user",           STR_PARAM, &contact_user.s             },
 	{ "presence_server",        STR_PARAM, &presence_server.s          },
 	{ "rlsubs_table",           STR_PARAM, &rlsubs_table.s             },
 	{ "rlpres_table",           STR_PARAM, &rlpres_table.s             },
@@ -256,14 +256,9 @@ static int mod_init(void)
 
 	LM_DBG("start\n");
 
-	if(!server_address.s)
-	{
-		LM_ERR("server_address parameter not set in configuration file\n");
-		return -1;
-	}
-	server_address.len = strlen(server_address.s);
+	contact_user.len = strlen(contact_user.s);
 
-	if(presence_server.s)
+	if (presence_server.s)
 		presence_server.len = strlen(presence_server.s);
 
 	/* load XCAP API */

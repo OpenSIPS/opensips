@@ -566,14 +566,11 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 
 	lexpire_s = int2str(subs->expires, &lexpire_len);
 
-	len = 7 /*Event: */ + subs->event->name.len +4 /*;id=*/+ subs->event_id.len+
-		CRLF_LEN + 10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ +
-		((subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)?
-		 15/*";transport=xxxx"*/:0) + CRLF_LEN +/*Subscription-State:*/ 20 +
-		((subs->expires>0)?(15+lexpire_len):25) + CRLF_LEN + /*Require: */ 18
-		+ CRLF_LEN + ((start_cid && bstr)?(/*Content-Type*/59 +
-		/*start*/12 + start_cid->len + /*boundary*/12 +
-		bstr->len + CRLF_LEN):0);
+	len =  7 /* Event: */ + subs->event->name.len + 4 /* ;id= */ + subs->event_id.len + CRLF_LEN
+		+ 10 /* Contact: < */ + subs->local_contact.len + 1 /* > */ + CRLF_LEN
+		+ 20 /* Subscription-State: */ + ((subs->expires > 0) ? 15+lexpire_len : 25) + CRLF_LEN
+		+ 18 /* Require: */ + CRLF_LEN
+		+ ((start_cid && bstr) ? 59 /* Content-Type */ + 12 /* start */ + start_cid->len + 12 /* boundary */ + bstr->len + CRLF_LEN : 0);
 
 	hdr->s = (char*)pkg_malloc(len);
 	if(hdr->s== NULL)
@@ -602,19 +599,6 @@ int rls_notify_extra_hdr(subs_t* subs, str* start_cid, str* bstr,
 	p += 10;
 	memcpy(p, subs->local_contact.s, subs->local_contact.len);
 	p +=  subs->local_contact.len;
-
-	if (subs->sockinfo && subs->sockinfo->proto!=PROTO_UDP)
-	{
-		memcpy(p,";transport=",11);
-		p += 11;
-		p = proto2str(subs->sockinfo->proto, p);
-		if (p == NULL)
-		{
-			LM_ERR("invalid proto\n");
-			pkg_free(hdr->s);
-			return -1;
-		}
-	}
 	*(p++) = '>';
 
 	memcpy(p, CRLF, CRLF_LEN);

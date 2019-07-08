@@ -79,7 +79,7 @@ str active_watchers_table = str_init("active_watchers");
 str watchers_table = str_init("watchers");
 
 int library_mode = 0;
-str server_address = {0, 0};
+str contact_user = str_init("presence");
 
 evlist_t* EvList= NULL;
 
@@ -171,7 +171,7 @@ static param_export_t params[]={
 	{ "expires_offset",         INT_PARAM, &expires_offset },
 	{ "max_expires_subscribe",  INT_PARAM, &max_expires_subscribe },
 	{ "max_expires_publish",    INT_PARAM, &max_expires_publish },
-	{ "server_address",         STR_PARAM, &server_address.s},
+	{ "contact_user",           STR_PARAM, &contact_user.s},
 	{ "subs_htable_size",       INT_PARAM, &shtable_size},
 	{ "pres_htable_size",       INT_PARAM, &phtable_size},
 	{ "fallback2db",            INT_PARAM, &fallback2db},
@@ -309,13 +309,7 @@ static int mod_init(void)
 	if(max_expires_publish<= 0)
 		max_expires_publish = 3600;
 
-	if(server_address.s== NULL)
-		LM_DBG("server_address parameter not set in configuration file\n");
-
-	if(server_address.s)
-		server_address.len= strlen(server_address.s);
-	else
-		server_address.len= 0;
+	contact_user.len = strlen(contact_user.s);
 
 	/* load SIGNALING API */
 	if(load_sig_api(&sigb)< 0)

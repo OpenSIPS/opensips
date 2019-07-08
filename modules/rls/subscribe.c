@@ -313,10 +313,9 @@ int reply_200(struct sip_msg* msg, str* local_contact, int expires, str* rtag)
 
 	lexpire_s = int2str((unsigned long)expires, &lexpire_len);
 
-	len = 9 /*"Expires: "*/ + lexpire_len + CRLF_LEN
-		+ 10 /*"Contact: <"*/ + local_contact->len + 1 /*">"*/
-		+ ((msg->rcv.proto!=PROTO_UDP)?15/*";transport=xxxx"*/:0)
-		+ CRLF_LEN + 18 /*Require: eventlist*/ + CRLF_LEN;
+	len =  9 /* Expires: */ + lexpire_len + CRLF_LEN
+		+ 10 /* Contact: < */ + local_contact->len + 1 /* > */ + CRLF_LEN
+		+ 18 /* Require: eventlist */ + CRLF_LEN;
 
 	hdr_append = (char *)pkg_malloc( len );
 	if(hdr_append == NULL)
@@ -337,15 +336,6 @@ int reply_200(struct sip_msg* msg, str* local_contact, int expires, str* rtag)
 	p += 10;
 	memcpy(p,local_contact->s,local_contact->len);
 	p += local_contact->len;
-	if (msg->rcv.proto!=PROTO_UDP) {
-		memcpy(p,";transport=",11);
-		p += 11;
-		p = proto2str(msg->rcv.proto, p);
-		if (p==NULL) {
-			LM_ERR("invalid proto\n");
-			goto error;
-		}
-	}
 	*(p++) = '>';
 	memcpy(p, CRLF, CRLF_LEN);
 	p += CRLF_LEN;
@@ -425,6 +415,7 @@ int reply_489(struct sip_msg * msg)
 
 int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 {
+	static char contact[MAX_URI_SIZE];
 	struct to_body *pto, *pfrom = NULL;
 	subs_t subs;
 	pres_ev_t* event = NULL;
@@ -590,11 +581,16 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	}
 
 	/* extract dialog information from message headers */
-	if (pres_extract_sdialog_info(&subs, msg, rls_max_expires, &init_req, server_address) < 0)
+	if (pres_extract_sdialog_info(&subs, msg, rls_max_expires, &init_req, contact_user) < 0)
 	{
 		LM_ERR("bad Subscribe request\n");
 		goto error;
 	}
+
+	// save subs.local_contact as it uses a static buffer that is overwritten with every
+	// call to get_local_contact(), which we will do for every SUBSCRIBE that we'll send
+	memcpy(contact, subs.local_contact.s, subs.local_contact.len);
+	subs.local_contact.s = contact;
 
 	reply_code = 500;
 	reply_str = pu_500_rpl;
@@ -781,14 +777,37 @@ int send_resource_subs(char* uri, void* param)
 {
 	int duplicate = 0;
 	str pres_uri;
-	str *tmp_str;
+	str *dest_uri, *tmp_str;
 	subs_info_t *s = (subs_info_t *) ((void**)param)[0];
 	list_entry_t **rls_contact_list = (list_entry_t **) ((void**)param)[1];
+	struct socket_info *send_sock;
+	union sockaddr_union dummy_su;
+	static str contact;
 
 	pres_uri.s= uri;
 	pres_uri.len= strlen(uri);
 
 	s->pres_uri= &pres_uri;
+
+	dest_uri = s->outbound_proxy ? s->outbound_proxy : &pres_uri;
+
+	// if we fail to get the local contact below, do not return -1 else the whole processing will stop.
+	// instead report the error and return 1. this way we indicate failure but we allow sending to the
+	// other URIs that are reachable to continue and only skip the URIs that are unreachable.
+
+	send_sock = uri2sock(NULL, dest_uri, &dummy_su, PROTO_NONE);
+	if (send_sock == NULL) {
+		// if defined, s->outbound_proxy->s is null terminated because it is the presence_server modparam
+		LM_ERR("Failed to get sending socket for %s (outbound proxy = %s)\n", uri, s->outbound_proxy ? s->outbound_proxy->s : "none");
+		return 1;
+	}
+
+	if (get_local_contact(send_sock, &contact_user, &contact) < 0) {
+		LM_ERR("Failed to get local contact for %s\n", uri);
+		return 1;
+	}
+
+	s->contact = &contact;
 
 	/* Build a list of uris checking each uri exists only once */
 	if ((tmp_str = (str *)pkg_malloc(sizeof(str))) == NULL)
@@ -850,7 +869,7 @@ int resource_subscriptions(subs_t* subs, xmlNodePtr rl_node)
 	s.id= did_str;
 	s.watcher_uri= &wuri;
 	s.to_uri.s=0;
-	s.contact= &server_address;
+	// s.contact will be set per destination in send_resource_subs
 	s.event= get_event_flag(&subs->event->name);
 	if(presence_server.s)
 		s.outbound_proxy= &presence_server;

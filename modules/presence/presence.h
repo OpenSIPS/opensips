@@ -54,7 +54,7 @@ extern int counter;
 extern int pid;
 extern char *to_tag_pref;
 extern int expires_offset;
-extern str server_address;
+extern str contact_user;
 extern int max_expires_publish;
 extern int max_expires_subscribe;
 extern int fallback2db;

@@ -555,8 +555,7 @@ int handle_subscribe(struct sip_msg* msg, int* force_active_param, str* tag)
 		ev_param= ev_param->next;
 	}
 
-	ret = extract_sdialog_info(&subs, msg, max_expires_subscribe, &init_req,
-			server_address);
+	ret = extract_sdialog_info(&subs, msg, max_expires_subscribe, &init_req, contact_user);
 	if(ret< 0)
 	{
 		LM_ERR("failed to extract dialog information\n");
@@ -717,7 +716,7 @@ error_free:
 
 // Return value: 0 = Success, -1 = Bad message, -2 = Internal error
 //
-int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_req, str local_address)
+int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_req, str contact_user)
 {
 	str rec_route = {0, 0};
 	int rt = 0;
@@ -929,16 +928,11 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 
 	subs->version = 0;
 
-	if(!local_address.s || !local_address.len)
+	if (get_local_contact(msg->rcv.bind_address, &contact_user, &subs->local_contact) < 0)
 	{
-		if (get_local_contact(msg->rcv.bind_address, NULL, &subs->local_contact) < 0)
-		{
-			LM_ERR("in function get_local_contact\n");
-			return -2;
-		}
+		LM_ERR("Failed to get local contact\n");
+		return -2;
 	}
-	else
-		subs->local_contact= local_address;
 
 	return 0;
 }
