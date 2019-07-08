@@ -749,16 +749,16 @@ if($rm=="SUBSCRIBE")
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
-	<section id="mi_refreshWatchers" xreflabel="refreshWatchers">
+	<section id="mi_refresh_watchers" xreflabel="refresh_watchers">
 		<title>
-		<function moreinfo="none">refreshWatchers</function>
+		<function moreinfo="none">refresh_watchers</function>
 		</title>
 		<para>
 		Triggers sending Notify messages to watchers if a change in watchers
 		authorization or in published state occurred.
 		</para>
 		<para>
-		Name: <emphasis>refreshWatchers</emphasis>
+		Name: <emphasis>refresh_watchers</emphasis>
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -794,7 +794,7 @@ if($rm=="SUBSCRIBE")
 		MI FIFO Command Format:
 		</para>
 	<programlisting  format="linespecific">
-opensips-cli -x mi refreshWatchers sip:11@192.168.2.132 presence 1
+opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
 	</programlisting>
 	</section>
 
