@@ -559,6 +559,8 @@ error:
 }
 
 
+#define STR_IMATCH(str, buf) ((str).len==strlen(buf) && strncasecmp(buf, (str).s, (str).len)==0)
+
 /* fixes a socket list => resolve addresses,
  * interface names, fills missing members, remove duplicates */
 int fix_socket_list(struct socket_info **list)
@@ -580,6 +582,13 @@ int fix_socket_list(struct socket_info **list)
 			/* success => remove current entry (shift the entire array)*/
 			sock_listrm(list, si);
 			free_sock_info(si);
+		}
+		// fix the SI_IS_LO flag for sockets specified by IP/hostname as expand_interface
+		// above will only do it for sockets specified using the network interface name
+		if (STR_IMATCH(si->name, "localhost") ||
+			STR_IMATCH(si->name, "127.0.0.1") ||
+			STR_IMATCH(si->name, "0:0:0:0:0:0:0:1") || STR_IMATCH(si->name, "::1")) {
+			si->flags |= SI_IS_LO;
 		}
 		si=next;
 	}
