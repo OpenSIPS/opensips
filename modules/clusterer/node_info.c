@@ -300,7 +300,7 @@ static void check_seed_flag(cluster_info_t **cl_list)
 				break;
 		if (!n && !(cl->current_node->flags & NODE_IS_SEED)) {
 			LM_NOTICE("No seed node defined in cluster: %d! Some clustering "
-			"capabilities may not work or have broken behaviour\n", cl->cluster_id);
+			"capabilities might not be able to sync data\n", cl->cluster_id);
 		}
 	}
 }

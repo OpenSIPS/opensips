@@ -45,6 +45,7 @@
 int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
 int ping_timeout = DEFAULT_PING_TIMEOUT;
+int seed_fb_interval = DEFAULT_SEED_FB_INTERVAL;
 int current_id = -1;
 int db_mode = 1;
 
@@ -127,6 +128,7 @@ static param_export_t params[] = {
 	{"ping_interval",		INT_PARAM,	&ping_interval		},
 	{"node_timeout",		INT_PARAM,	&node_timeout		},
 	{"ping_timeout",		INT_PARAM,	&ping_timeout		},
+	{"seed_fallback_interval", INT_PARAM, &seed_fb_interval	},
 	{"id_col",				STR_PARAM,	&id_col.s			},
 	{"cluster_id_col",		STR_PARAM,	&cluster_id_col.s	},
 	{"node_id_col",			STR_PARAM,	&node_id_col.s		},
@@ -311,6 +313,10 @@ static int mod_init(void)
 		LM_WARN("Invalid ping_timeout parameter, using default value\n");
 		ping_timeout = DEFAULT_PING_TIMEOUT;
 	}
+	if (seed_fb_interval < 0) {
+		LM_WARN("Invalid seed_fallback_interval parameter, using default value\n");
+		seed_fb_interval = DEFAULT_SEED_FB_INTERVAL;
+	}
 
 	/* create & init lock */
 	if ((cl_list_lock = lock_init_rw()) == NULL) {
@@ -377,6 +383,12 @@ static int mod_init(void)
 			LM_CRIT("Unable to register clusterer heartbeats timer\n");
 			goto error;
 		}
+	}
+
+	if (seed_fb_interval && register_utimer("cl-seed-fb-check", seed_fb_check_timer,
+		NULL, SEED_FB_CHECK_INTERVAL*1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+		LM_CRIT("Unable to register clusterer seed check timer\n");
+		goto error;
 	}
 
 	if (bin_register_cb(&cl_internal_cap, bin_rcv_cl_packets, NULL, 0) < 0) {

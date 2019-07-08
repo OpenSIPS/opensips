@@ -27,12 +27,15 @@
 #ifndef CLUSTERER_H
 #define CLUSTERER_H
 
+#include "../../timer.h"
 #include "api.h"
 
 #define BIN_VERSION 1
 #define DEFAULT_PING_INTERVAL 4
 #define DEFAULT_NODE_TIMEOUT 60
 #define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */
+#define DEFAULT_SEED_FB_INTERVAL 0
+#define SEED_FB_CHECK_INTERVAL 500 /* ms */
 #define UPDATE_MAX_PATH_LEN 25
 #define SMALL_MSG 300
 
@@ -91,6 +94,7 @@ struct local_cap {
 	struct buf_bin_pkt *pkt_q_front;
 	struct buf_bin_pkt *pkt_q_back;
 	struct buf_bin_pkt *pkt_q_cutpos;
+	struct timeval sync_req_time;
 	unsigned int flags;
 	struct local_cap *next;
 };
@@ -122,7 +126,10 @@ extern enum sip_protos clusterer_proto;
 extern str cl_internal_cap;
 extern str cl_extra_cap;
 
+extern int seed_fb_interval;
+
 void heartbeats_timer(void);
+void seed_fb_check_timer(utime_t ticks, void *param);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att);

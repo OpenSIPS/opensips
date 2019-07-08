@@ -27,7 +27,18 @@
 		The clusterer module also keeps track of the state of the nodes in terms of data synchronization for the functionalities (or "capabilities") implemented on top by other modules. Some capabilities require a full data sync(at &osips; startup or at runtime via MI) from a valid "donor" node in the cluster that has the full data set. Furthermore, a capability can query the clusterer module in order to partition some distributed logic only over the synchronized nodes in the cluster.
 	</para>
 	<para>
-		When the nodes in the cluster start for the first time(or all nodes are restarted), all of them are empty and try to find a suitable node to pull data from. In order to help "bootstrapping" the cluster a "seed" node (considered to be already synchronized from startup) should be defined. This is done by setting the value <emphasis>seed</emphasis> for the <emphasis role="bold">flags</emphasis> column in the clusterer table(or the property with the same name in the <emphasis>current_info</emphasis> parameter). Note that this mechanism is required only for capabilities that synchronize data at startup so check the corresponding modules documentation.
+		Each node in the cluster starts with an empty dataset and tries to find
+		a suitable node to pull data from. In order to help "bootstrap" the
+		cluster, a "seed" node should be defined. This is done by setting the value
+		<emphasis>seed</emphasis> for the <emphasis role="bold">flags</emphasis>
+		column in the clusterer table(or the property with the same name in the
+		<emphasis>my_node_info</emphasis> parameter). The seed node will simply
+		fall back to a "synced" state after a configurable interval(
+		<xref linkend="param_seed_fallback_interval"/> parameter). This interval
+		can also be set to <emphasis>0</emphasis>, in which case the seed node
+		will be considered already synced from startup. Note that configuring a
+		a seed node is required only for capabilities that synchronize data
+		at startup, so check the corresponding modules documentation.
 	</para>
 	<para>
 		The clusterer module transparently exposes the <emphasis>sip_addr</emphasis> column from the clusterer table(or the property with the same name in the <emphasis>current_info</emphasis> parameter) to the modules on top so check the corresponding modules documentation for the use of this node related information.
@@ -280,6 +291,29 @@ modparam("clusterer", "ping_timeout", 500)
 		<programlisting format="linespecific">
 ...
 modparam("clusterer", "node_timeout", 10)
+...
+		</programlisting>
+		</example>
+        </section>
+
+        <section id="param_seed_fallback_interval" xreflabel="seed_fallback_interval">
+            <title><varname>seed_fallback_interval</varname></title>
+            <para>
+                The time in seconds to wait for a suitable donor node before
+                falling back to a "synced" state in case of a "seed" node. If
+                set to <emphasis>0</emphasis> the node is considered as already
+                synced from startup.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>0</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>seed_fallback_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "seed_fallback_interval", 10)
 ...
 		</programlisting>
 		</example>
