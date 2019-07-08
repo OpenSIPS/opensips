@@ -51,6 +51,7 @@ str cl_extra_cap = str_init("clusterer-extra");
 extern int ping_interval;
 extern int node_timeout;
 extern int ping_timeout;
+extern int seed_fb_interval;
 
 static event_id_t ei_req_rcv_id = EVI_ERROR;
 static event_id_t ei_rpl_rcv_id = EVI_ERROR;
@@ -87,9 +88,9 @@ static int send_cap_update(node_info_t *dest_node, int require_reply);
 	((_node)->last_pong.tv_sec*1000000 + (_node)->last_pong.tv_usec \
 	- (_node)->last_ping.tv_sec*1000000 - (_node)->last_ping.tv_usec)
 
-#define LAST_PING_INTERVAL(_node, _now) \
+#define TIME_DIFF(_start, _now) \
 	((_now).tv_sec*1000000 + (_now).tv_usec \
-	- (_node)->last_ping.tv_sec*1000000 - (_node)->last_ping.tv_usec)
+	- (_start).tv_sec*1000000 - (_start).tv_usec)
 
 static int send_ping(node_info_t *node, int req_node_list)
 {
@@ -263,7 +264,7 @@ void heartbeats_timer(void)
 
 			gettimeofday(&now, NULL);
 			ping_reply_int = PING_REPLY_INTERVAL(node);
-			last_ping_int = LAST_PING_INTERVAL(node, now);
+			last_ping_int = TIME_DIFF(node->last_ping, now);
 
 			prev_ls = -1;
 			new_ls = -1;
@@ -323,6 +324,42 @@ void heartbeats_timer(void)
 	}
 
 	do_actions_node_ev(*cluster_list, ev_actions_required, no_clusters);
+
+	lock_stop_read(cl_list_lock);
+}
+
+void seed_fb_check_timer(utime_t ticks, void *param)
+{
+	cluster_info_t *cl;
+	struct local_cap *cap;
+	struct timeval now;
+
+	gettimeofday(&now, NULL);
+
+	lock_start_read(cl_list_lock);
+
+	for (cl = *cluster_list; cl; cl = cl->next) {
+		lock_get(cl->current_node->lock);
+		if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
+			lock_release(cl->current_node->lock);
+			continue;
+		}
+		lock_release(cl->current_node->lock);
+
+		for (cap = cl->capabilities; cap; cap = cap->next) {
+			lock_get(cl->lock);
+			if (!(cap->flags & CAP_STATE_OK) &&
+				(cl->current_node->flags & NODE_IS_SEED) &&
+				(TIME_DIFF(cap->sync_req_time, now) >= seed_fb_interval*1000000)) {
+				cap->flags = CAP_STATE_OK;
+				LM_INFO("No donor found, falling back to synced state\n");
+				/* send update about the state of this capability */
+				send_single_cap_update(cl, cap, 1);
+			}
+
+			lock_release(cl->lock);
+		}
+	}
 
 	lock_stop_read(cl_list_lock);
 }
@@ -1516,7 +1553,7 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 			src_node->link_state == LS_RETRY_SEND_FAIL ||
 			src_node->link_state == LS_DOWN) &&
 			src_node->last_ping_state == 0 &&
-			LAST_PING_INTERVAL(src_node, rcv_time) < (utime_t)ping_timeout*1000)
+			TIME_DIFF(src_node->last_ping, rcv_time) < (utime_t)ping_timeout*1000)
 			src_node->link_state = LS_TEMP;
 
 		/* if the node was retried and a reply was expected, it should be UP again */
@@ -2738,7 +2775,7 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	new_cl_cap->reg.packet_cb = packet_cb;
 	new_cl_cap->reg.event_cb = event_cb;
 
-	if (cluster->current_node->flags & NODE_IS_SEED || !require_sync)
+	if (!require_sync)
 		new_cl_cap->flags |= CAP_STATE_OK;
 
 	new_cl_cap->next = cluster->capabilities;
@@ -2775,19 +2812,15 @@ struct local_cap *dup_caps(struct local_cap *caps)
 int preserve_reg_caps(cluster_info_t *new_info)
 {
 	cluster_info_t *cl, *new_cl;
-	struct local_cap *cap;
 
 	for (cl = *cluster_list; cl; cl = cl->next)
 		for (new_cl = new_info; new_cl; new_cl = new_cl->next)
 			if (new_cl->cluster_id == cl->cluster_id && cl->capabilities) {
 				new_cl->capabilities = dup_caps(cl->capabilities);
-				if (!new_cl->capabilities)
+				if (!new_cl->capabilities) {
+					LM_ERR("Failed to duplicate capabilities info\n");
 					return -1;
-
-				for (cap = new_cl->capabilities; cap; cap = cap->next)
-					if (!(cap->flags & CAP_STATE_OK) &&
-						(new_cl->current_node->flags & NODE_IS_SEED))
-						cap->flags |= CAP_STATE_OK;
+				}
 			}
 
 	return 0;

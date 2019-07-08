@@ -1393,7 +1393,7 @@ mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
 	if (!dialog_repl_cluster)
 		return init_mi_error(400, MI_SSTR("Dialog replication disabled"));
 
-	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 1) < 0)
+	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
 		return init_mi_error(400, MI_SSTR("Failed to send sync request"));
 	else
 		return init_mi_result_ok();

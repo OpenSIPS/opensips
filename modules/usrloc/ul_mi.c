@@ -751,7 +751,7 @@ mi_response_t *mi_usrloc_cl_sync(const mi_params_t *params,
 	if (!location_cluster)
 		return init_mi_error(400, MI_SSTR("Clustering not enabled"));
 
-	if (clusterer_api.request_sync(&contact_repl_cap, location_cluster, 1) < 0)
+	if (clusterer_api.request_sync(&contact_repl_cap, location_cluster) < 0)
 		return init_mi_error(400, MI_SSTR("Failed to send sync request"));
 	else
 		return init_mi_result_ok();

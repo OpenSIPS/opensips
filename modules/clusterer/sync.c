@@ -85,7 +85,7 @@ static int get_sync_source(cluster_info_t *cluster, str *capability,
 	return 0;
 }
 
-int cl_request_sync(str *capability, int cluster_id, int ignore_seed)
+int cl_request_sync(str *capability, int cluster_id)
 {
 	cluster_info_t *cluster;
 	struct local_cap *lcap;
@@ -110,12 +110,6 @@ int cl_request_sync(str *capability, int cluster_id, int ignore_seed)
 		return -1;
 	}
 
-	/* the seed node is already considered synchronized */
-	if (!ignore_seed && (cluster->current_node->flags & NODE_IS_SEED)) {
-		LM_DBG("we are a seed node - sync is not required\n");
-		return 0;
-	}
-
 	lock_get(cluster->lock);
 	if (lcap->flags & CAP_SYNC_PENDING) {
 		lock_release(cluster->lock);
@@ -133,13 +127,17 @@ int cl_request_sync(str *capability, int cluster_id, int ignore_seed)
 
 	source_id = get_sync_source(cluster, capability, lcap->reg.sync_cond);
 	if (source_id == 0) {	/* we didn't find any node ready to sync from */
-		LM_DBG("failed to find sync source\n");
+		LM_DBG("donor node not found\n");
 		/* send requst later */
 		lock_get(cluster->lock);
 		lcap->flags |= CAP_SYNC_PENDING;
+
+		if (cluster->current_node->flags & NODE_IS_SEED)
+			gettimeofday(&lcap->sync_req_time, NULL);
+
 		lock_release(cluster->lock);
 	} else {
-		LM_DBG("found sync source: %d\n", source_id);
+		LM_DBG("found donor node: %d\n", source_id);
 		rc = send_sync_req(capability, cluster_id, source_id);
 		if (rc == CLUSTERER_DEST_DOWN || rc == CLUSTERER_CURR_DISABLED) {
 			/* node was up and ready but in the meantime got disabled or down */
