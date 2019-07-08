@@ -435,7 +435,7 @@ int expand_interface(struct socket_info *si, struct socket_info** list)
 			sid.flags = si->flags;
 			if (it->ifa_flags & IFF_LOOPBACK)
 				sid.flags |= SI_IS_LO;
-			if (new_sock2list( &sid, list)!=0){
+			if (new_sock2list(&sid, list) != 0) {
 				LM_ERR("clone_sock2list failed\n");
 				goto end;
 			}
@@ -533,7 +533,7 @@ end:
 			if (ifrcopy.ifr_flags & IFF_LOOPBACK)
 				sid.flags|=SI_IS_LO;
 			/* add it to one of the lists */
-			if (new_sock2list( &si, list)!=0){
+			if (new_sock2list(&sid, list) != 0) {
 				LM_ERR("clone_sock2list failed\n");
 				goto error;
 			}
