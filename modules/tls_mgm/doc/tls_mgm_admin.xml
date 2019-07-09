@@ -467,37 +467,42 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 		</section>
 
 		<section id="param_verify_cert" xreflabel="verify_cert">
-			<title><varname>verify_cert</varname> ([domain](string) and
-				<varname>require_cert</varname> ([domain](string)</title>
+			<title><varname>verify_cert</varname> ([domain](string)</title>
 			<para>
-			Technically, verify_cert activates SSL_VERIFY_PEER in the
-			ssl_context. 'require_cert' does the same with
-			SSL_VERIFY_FAIL_IF_NO_PEER_CERT, which is only possible if
-			SSL_VERIFY_PEER is also turned on. Since version 2.1, these 
-			parameters act have been reduced to only one. They act both on 
-			client side and server side if no domain specified, elseway 
-			they act on a specific domain, depending on the first parameter.
+			Activates SSL_VERIFY_PEER in the ssl_context. For a detailed
+			explanation, check the <emphasis>openssl</emphasis> documentation.
 			</para>
+			<para>The domain part represents the name of the TLS domain.</para>
 			<para>
-			These two parameters are used for incoming TLS connections, where
-			&osips; acts as server.
+				Default value is <emphasis>1</emphasis>.
 			</para>
-			<para>
-			It's usable only if TLS support was compiled.
-			</para>
-			<para><emphasis>
-				Default value for both is 1.
-			</emphasis></para>
 			<example>
-				<title>Set <varname>verify_cert &amp; require_cert
-					</varname> variable</title>
+				<title>Set <varname>verify_cert</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-# turn on the strictest and strongest authentication possible
-modparam("tls_mgm", "require_cert", "1")
-modparam("tls_mgm", "require_cert", "[dom]1")
-modparam("tls_mgm", "verify_cert", "0")
-modparam("tls_mgm", "verify_cert", "[dom]1")
+modparam("tls_mgm", "verify_cert", "[dom]0")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_require_cert" xreflabel="require_cert">
+			<title><varname>require_cert</varname> ([domain](string)</title>
+			<para>
+			Activates SSL_VERIFY_FAIL_IF_NO_PEER_CERT in the ssl_context. For a
+			detailed explanation, check the <emphasis>openssl</emphasis>
+			documentation. This parameter only makes sense for server domains
+			and if the <xref linkend="param_verify_cert"/> parameter is also set.
+			</para>
+			<para>The domain part represents the name of the TLS domain.</para>
+			<para>
+				Default value is <emphasis>1</emphasis>.
+			</para>
+			<example>
+				<title>Set <varname>require_cert</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "require_cert", "[dom]0")
 ...
 				</programlisting>
 			</example>
