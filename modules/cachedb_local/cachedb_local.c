@@ -105,6 +105,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{"cluster_id", get_deps_clusterer},
+		{ NULL, NULL },
 	},
 };
 
