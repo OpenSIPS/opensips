@@ -684,7 +684,7 @@ route[rpl_resume] {
 						<programlisting format="linespecific">
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
-  cluster_send_rpl($param(cl_id), $param(src_id), $var(my_reply), $param(rcv_tag));
+  cluster_send_rpl($param(cluster_id), $param(src_id), $var(my_reply), $param(tag));
 }
 ...
 				</programlisting>
