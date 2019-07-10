@@ -504,6 +504,7 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 
 	LM_DBG("Updating cseq for dialog with callid: %.*s\n", call_id.len, call_id.s);
 
+	dst_leg = -1;
 	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
 	if (!dlg) {
 		/* may be already deleted due to timeout */
