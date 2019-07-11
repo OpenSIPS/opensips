@@ -407,7 +407,7 @@ int print_rr_body(struct hdr_field *iroute, str *oroute, int order,
 			p = p->next;
 		}
 		if (no_change)
-			free_rr(&p);
+			free_rr( (rr_t**)&tmp.parsed );
 		iroute = iroute->sibling;
 	}
 
