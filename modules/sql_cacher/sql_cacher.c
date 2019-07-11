@@ -1009,6 +1009,11 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 
 			if ((rld_vers = get_rld_vers_from_cache(db_hdls->c_entry, db_hdls)) < 0) {
 				LM_ERR("Unable to fetch reload version counter\n");
+				if (it)
+					lock_release(it->wait_sql_query);
+				else
+					lock_release(queries_lock);
+
 				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
 													" database\n"));
 			}
@@ -1061,6 +1066,7 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 		if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &rld_vers) < 0) {
 			LM_DBG("Failed to increment reload version integer from cachedb\n");
 			pkg_free(rld_vers_key.s);
+			lock_stop_write(db_hdls->c_entry->ref_lock);
 			return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database"));
 		}
 
@@ -1068,6 +1074,7 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 
 		if (load_entire_table(db_hdls->c_entry, db_hdls, rld_vers) < 0) {
 			LM_DBG("Failed to reload table\n");
+			lock_stop_write(db_hdls->c_entry->ref_lock);
 			return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database"));
 		}
 
@@ -1757,6 +1764,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
 				LM_ERR("Cache fetch result should not be empty\n");
+				lock_stop_read(pv_name->c_entry->ref_lock);
 				return pv_get_null(msg, param, res);
 			}
 
