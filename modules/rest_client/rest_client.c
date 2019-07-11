@@ -215,79 +215,6 @@ struct module_exports exports = {
 	cfg_validate/* reload confirm function */
 };
 
-/*
- * Since libcurl's "easy" interface spawns a separate thread to perform each
- * transfer, we supply it with a set of allocation functions which make
- * everyone happy:
- *  - thread-safe
- *  - faster than libc's malloc()
- *  - integrated with OpenSIPS's memory usage reporting
- */
-static gen_lock_t thread_lock;
-
-static void *osips_malloc(size_t size)
-{
-	void *p;
-
-	lock_get(&thread_lock);
-	p = pkg_malloc(size);
-	lock_release(&thread_lock);
-
-	return p;
-}
-
-static void *osips_calloc(size_t nmemb, size_t size)
-{
-	void *p;
-
-	lock_get(&thread_lock);
-	p = pkg_malloc(nmemb * size);
-	lock_release(&thread_lock);
-	if (p) {
-		memset(p, '\0', nmemb * size);
-	}
-
-	return p;
-}
-
-static void *osips_realloc(void *ptr, size_t size)
-{
-	void *p;
-
-	lock_get(&thread_lock);
-	p = pkg_realloc(ptr, size);
-	lock_release(&thread_lock);
-
-	return p;
-}
-
-static char *osips_strdup(const char *cp)
-{
-	char *rval;
-	int len;
-
-	len = strlen(cp) + 1;
-
-	lock_get(&thread_lock);
-	rval = pkg_malloc(len);
-	lock_release(&thread_lock);
-	if (!rval) {
-		return NULL;
-	}
-
-	memcpy(rval, cp, len);
-	return rval;
-}
-
-static void osips_free(void *ptr)
-{
-	lock_get(&thread_lock);
-	if (ptr) {
-		pkg_free(ptr);
-	}
-	lock_release(&thread_lock);
-}
-
 static int mod_init(void)
 {
 	LM_DBG("Initializing...\n");
@@ -305,15 +232,6 @@ static int mod_init(void)
 		        "to 'curl_timeout'! setting it to %ld...\n", curl_timeout);
 		connection_timeout = curl_timeout;
 	}
-
-	lock_init(&thread_lock);
-
-	curl_global_init_mem(CURL_GLOBAL_ALL,
-						 osips_malloc,
-						 osips_free,
-						 osips_realloc,
-						 osips_strdup,
-						 osips_calloc);
 
 	INIT_LIST_HEAD(&multi_pool);
 
