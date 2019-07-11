@@ -664,7 +664,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		break;
 
 	case REST_CLIENT_PUT:
-		set_post_opts(handle, req_ctype, req_body);
+		set_put_opts(handle, req_ctype, req_body);
 		break;
 
 	default:
