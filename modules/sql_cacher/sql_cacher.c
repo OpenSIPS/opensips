@@ -758,6 +758,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		LM_ERR("Invalid table name: %.*s\n", c_entry->table.len, c_entry->table.s);
 		db_hdls->db_funcs.close(db_hdls->db_con);
 		db_hdls->db_con = 0;
+		pkg_free(query_cols);
 		return -1;
 	}
 	if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
@@ -765,12 +766,14 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 						query_cols, 0, c_entry->nr_columns + 1, 0, 0) != 0) {
 			LM_ERR("Failure to issue query to SQL DB: %.*s\n",
 			c_entry->db_url.len, c_entry->db_url.s);
+			pkg_free(query_cols);
 			goto error;
 		}
 
 		if (db_hdls->db_funcs.fetch_result(db_hdls->db_con,&sql_res,fetch_nr_rows)<0) {
 			LM_ERR("Error fetching rows from SQL DB: %.*s\n",
 			c_entry->db_url.len, c_entry->db_url.s);
+			pkg_free(query_cols);
 			goto error;
 		}
 	} else {
@@ -778,6 +781,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 						query_cols, 0, c_entry->nr_columns + 1, 0, &sql_res) != 0) {
 			LM_ERR("Failure to issue query to SQL DB: %.*s\n",
 			c_entry->db_url.len, c_entry->db_url.s);
+			pkg_free(query_cols);
 			goto error;
 		}
 	}
