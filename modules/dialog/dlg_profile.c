@@ -1450,7 +1450,7 @@ mi_response_t *mi_list_all_profiles(const mi_params_t *params,
 	if (!resp)
 		return NULL;
 	profiles_arr = add_mi_array(resp_obj, MI_SSTR("Profiles"));
-	if (profiles_arr)
+	if (!profiles_arr)
 		goto error;
 
 	profile = profiles;
