@@ -948,17 +948,31 @@ void reload_timer(unsigned int ticks, void *param)
 {
 	db_handlers_t *db_hdls;
 	int rld_vers;
+	str rld_vers_key;
 
 	for (db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next) {
 		if (db_hdls->c_entry->on_demand)
 			continue;
 
+		rld_vers_key.len = db_hdls->c_entry->id.len + 23;
+		rld_vers_key.s = pkg_malloc(rld_vers_key.len);
+		if (!rld_vers_key.s) {
+			LM_ERR("No more pkg memory\n");
+			return;
+		}
+		memcpy(rld_vers_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
+		memcpy(rld_vers_key.s + db_hdls->c_entry->id.len, "_sql_cacher_reload_vers", 23);
+
 		lock_start_write(db_hdls->c_entry->ref_lock);
 
-		if ((rld_vers = get_rld_vers_from_cache(db_hdls->c_entry, db_hdls)) < 0) {
+		if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, &rld_vers) < 0) {
+			LM_ERR("Failed to increment reload version integer from cachedb\n");
+			pkg_free(rld_vers_key.s);
 			lock_stop_write(db_hdls->c_entry->ref_lock);
 			continue;
 		}
+
+		pkg_free(rld_vers_key.s);
 
 		if (load_entire_table(db_hdls->c_entry, db_hdls, rld_vers) < 0)
 			LM_ERR("Failed to reload table %.*s\n", db_hdls->c_entry->table.len,
