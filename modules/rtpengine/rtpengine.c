@@ -1080,7 +1080,7 @@ static mi_response_t *mi_show_rtpengines(const mi_params_t *params,
 						crt_rtpe = crt_rtpe->rn_next){
 
 			node_item = add_mi_object(nodes_arr, NULL, 0);
-			if (node_item)
+			if (!node_item)
 				goto error;
 
 			if (add_mi_string(node_item, MI_SSTR("url"),
