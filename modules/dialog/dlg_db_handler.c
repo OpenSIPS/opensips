@@ -724,6 +724,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				ref_dlg(dlg,1);
 			}
 
+			run_load_callback_per_dlg(dlg);
+
 			next_dialog:
 			;
 		}
