@@ -955,7 +955,7 @@ static mi_response_t *mi_show_rtpproxies(const mi_params_t *params,
 						crt_rtpp = crt_rtpp->rn_next){
 
 			node_item = add_mi_object(nodes_arr, NULL, 0);
-			if (node_item)
+			if (!node_item)
 				goto error;
 
 			if (add_mi_string(node_item, MI_SSTR("url"),
