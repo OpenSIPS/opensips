@@ -988,7 +988,7 @@ mi_response_t *mi_lb_list(const mi_params_t *params,
 				goto error;
 		}
 
-		res_arr = add_mi_array(resp_obj, MI_SSTR("Resources"));
+		res_arr = add_mi_array(dest_item, MI_SSTR("Resources"));
 		if (!res_arr)
 			goto error;
 
