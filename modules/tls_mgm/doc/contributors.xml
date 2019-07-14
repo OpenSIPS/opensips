@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">89</entry>
-		<entry align="center">26</entry>
-		<entry align="center">2992</entry>
-		<entry align="center">2147</entry>
+		<entry align="center">90</entry>
+		<entry align="center">27</entry>
+		<entry align="center">3019</entry>
+		<entry align="center">2166</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Apr 2017 - Jul 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Oct 2015 - Jul 2019</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">Jun 2019 - Jun 2019</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Apr 2017 - May 2019</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Callum Guy, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Callum Guy, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>).</para>
 </section>
 
 </chapter>

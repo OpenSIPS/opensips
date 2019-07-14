@@ -46,7 +46,7 @@ Presence Module
 
         1.6. Exported MI Functions
 
-              1.6.1. refreshWatchers
+              1.6.1. refresh_watchers
               1.6.2. cleanup
               1.6.3. pres_phtable_list
               1.6.4. subs_phtable_list
@@ -597,12 +597,12 @@ if($rm=="SUBSCRIBE")
 
 1.6. Exported MI Functions
 
-1.6.1.  refreshWatchers
+1.6.1.  refresh_watchers
 
    Triggers sending Notify messages to watchers if a change in
    watchers authorization or in published state occurred.
 
-   Name: refreshWatchers
+   Name: refresh_watchers
 
    Parameters:
      * presentity_uri : the uri of the user who made the change
@@ -617,7 +617,7 @@ if($rm=="SUBSCRIBE")
             is set): refresh type!= 0.
 
    MI FIFO Command Format:
-opensips-cli -x mi refreshWatchers sip:11@192.168.2.132 presence 1
+opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
 
 1.6.2.  cleanup
 
@@ -1014,8 +1014,8 @@ Chapter 3. Contributors
    5. Liviu Chircu (@liviuchircu) 25 16 247 372
    6. Daniel-Constantin Mierla (@miconda) 24 19 174 165
    7. Vlad Patrascu (@rvlad-patrascu) 19 9 360 354
-   8. Henning Westerholt (@henningw) 15 6 340 302
-   9. Dan Pascu (@danpascu) 14 10 97 120
+   8. Dan Pascu (@danpascu) 15 11 101 124
+   9. Henning Westerholt (@henningw) 15 6 340 302
    10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
 
    All remaining contributors: Walter Doekes (@wdoekes), Edson
@@ -1047,8 +1047,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
-   2.  Dan Pascu (@danpascu)               Nov 2007 - Jul 2019
+   1.  Dan Pascu (@danpascu)               Nov 2007 - Jul 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
    3.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2019
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -1075,14 +1075,14 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl
-   Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
-   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
-   Darilion, Henning Westerholt (@henningw), Dan Pascu
-   (@danpascu), Daniel-Constantin Mierla (@miconda), Edson Gellert
-   Schubert, Juha Heinanen (@juha-h), Elena-Ramona Modroiu.
+   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Saúl Ibarra Corretgé (@saghul), Ovidiu
+   Sas (@ovidiusas), Anca Vamanu, Kennard White, Angel Marin, Kobi
+   Eshun (@ekobi), Klaus Darilion, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
+   Juha Heinanen (@juha-h), Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 
