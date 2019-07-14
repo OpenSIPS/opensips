@@ -355,9 +355,9 @@ Chapter 3. Contributors
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 22 19 69 99
    4. Liviu Chircu (@liviuchircu) 13 10 58 77
    5. Razvan Crainea (@razvancrainea) 10 8 15 36
-   6. Daniel-Constantin Mierla (@miconda) 9 7 18 15
-   7. Henning Westerholt (@henningw) 8 3 164 114
-   8. Dan Pascu (@danpascu) 6 4 3 6
+   6. Dan Pascu (@danpascu) 10 7 57 76
+   7. Daniel-Constantin Mierla (@miconda) 9 7 18 15
+   8. Henning Westerholt (@henningw) 8 3 164 114
    9. Vlad Paiu (@vladpaiu) 5 3 11 41
    10. Walter Doekes (@wdoekes) 4 2 9 9
 
@@ -386,21 +386,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   7.  Saúl Ibarra Corretgé (@saghul)      Oct 2012 - Jan 2013
-   8.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2012
-   9.  Anca Vamanu                         Sep 2007 - Jan 2012
-   10. Stanislaw Pitucha                   Jul 2010 - Jul 2010
+   1.  Dan Pascu (@danpascu)               Aug 2008 - Jul 2019
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   8.  Saúl Ibarra Corretgé (@saghul)      Oct 2012 - Jan 2013
+   9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2012
+   10. Anca Vamanu                         Sep 2007 - Jan 2012
 
-   All remaining contributors: Walter Doekes (@wdoekes), John
-   Riordan, UnixDev, Dan Pascu (@danpascu), Sergio Gutierrez,
-   Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
+   All remaining contributors: Stanislaw Pitucha, Walter Doekes
+   (@wdoekes), John Riordan, UnixDev, Sergio Gutierrez, Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert.
 
    (1) including any documentation-related commits, excluding
    merge commits
