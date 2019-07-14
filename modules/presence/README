@@ -22,7 +22,7 @@ Presence Module
               1.4.6. expires_offset (int)
               1.4.7. max_expires_subscribe (int)
               1.4.8. max_expires_publish (int)
-              1.4.9. server_address (str)
+              1.4.9. contact_user (str)
               1.4.10. enable_sphere_check (int)
               1.4.11. waiting_subs_daysno (int)
               1.4.12. mix_dialog_presence (int)
@@ -46,7 +46,7 @@ Presence Module
 
         1.6. Exported MI Functions
 
-              1.6.1. refreshWatchers
+              1.6.1. refresh_watchers
               1.6.2. cleanup
               1.6.3. pres_phtable_list
               1.6.4. subs_phtable_list
@@ -104,7 +104,7 @@ Presence Module
    1.6. Set expires_offset parameter
    1.7. Set max_expires_subscribe parameter
    1.8. Set max_expires_publish parameter
-   1.9. Set server_address parameter
+   1.9. Set contact_user parameter
    1.10. Set enable_sphere_check parameter
    1.11. Set waiting_subs_daysno parameter
    1.12. Set mix_dialog_presence parameter
@@ -294,21 +294,23 @@ modparam("presence", "max_expires_subscribe", 3600)
 modparam("presence", "max_expires_publish", 3600)
 ...
 
-1.4.9. server_address (str)
+1.4.9. contact_user (str)
 
-   The optional presence server URI address which will become the
-   value of Contact header filed for 200OK replies to Subscribe
-   and Publish and in Notify messages.
+   This is the username that will be used in the Contact header
+   for the 200 OK replies to SUBSCRIBE and in the following
+   in-dialog NOTIFY requests. The IP address, port and transport
+   for the Contact will be automatically determined based on the
+   interface where the SUBSCRIBE was received.
 
-   NOTE: this must be a fully formated SIP URI, with port and
-   transport parameter if the case.
+   If set to an empty string, no username will be added to the
+   contact and the contact will be built just out of the IP, port
+   and transport.
 
-   If not set (as it is by default), OpenSIPS will generate the
-   Contact URI based on the interface it received the SIP traffic.
+   Default value is “presence”.
 
-   Example 1.9. Set server_address parameter
+   Example 1.9. Set contact_user parameter
 ...
-modparam("presence", "server_address", "sip:10.10.10.10:5060")
+modparam("presence", "contact_user", "presence")
 ...
 
 1.4.10. enable_sphere_check (int)
@@ -597,12 +599,12 @@ if($rm=="SUBSCRIBE")
 
 1.6. Exported MI Functions
 
-1.6.1.  refreshWatchers
+1.6.1.  refresh_watchers
 
    Triggers sending Notify messages to watchers if a change in
    watchers authorization or in published state occurred.
 
-   Name: refreshWatchers
+   Name: refresh_watchers
 
    Parameters:
      * presentity_uri : the uri of the user who made the change
@@ -617,7 +619,7 @@ if($rm=="SUBSCRIBE")
             is set): refresh type!= 0.
 
    MI FIFO Command Format:
-opensips-cli -x mi refreshWatchers sip:11@192.168.2.132 presence 1
+opensips-cli -x mi refresh_watchers sip:11@192.168.2.132 presence 1
 
 1.6.2.  cleanup
 
@@ -1013,8 +1015,8 @@ Chapter 3. Contributors
    4. Ovidiu Sas (@ovidiusas) 27 19 615 167
    5. Liviu Chircu (@liviuchircu) 25 16 247 372
    6. Daniel-Constantin Mierla (@miconda) 24 19 174 165
-   7. Vlad Patrascu (@rvlad-patrascu) 19 9 360 354
-   8. Dan Pascu (@danpascu) 16 11 135 162
+   7. Dan Pascu (@danpascu) 19 13 161 200
+   8. Vlad Patrascu (@rvlad-patrascu) 19 9 360 354
    9. Henning Westerholt (@henningw) 15 6 340 302
    10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
 
@@ -1047,8 +1049,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
-   2.  Dan Pascu (@danpascu)               Nov 2007 - Jul 2019
+   1.  Dan Pascu (@danpascu)               Nov 2007 - Jul 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
    3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2019
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jun 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -1075,14 +1077,14 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl
-   Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
-   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
-   Darilion, Henning Westerholt (@henningw), Dan Pascu
-   (@danpascu), Daniel-Constantin Mierla (@miconda), Edson Gellert
-   Schubert, Juha Heinanen (@juha-h), Elena-Ramona Modroiu.
+   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Saúl Ibarra Corretgé (@saghul), Ovidiu
+   Sas (@ovidiusas), Anca Vamanu, Kennard White, Angel Marin, Kobi
+   Eshun (@ekobi), Klaus Darilion, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
+   Juha Heinanen (@juha-h), Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 
