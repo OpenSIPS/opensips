@@ -516,15 +516,26 @@ static int smpp_send_msg(smpp_session_t *smsc, str *buffer)
 {
 	int ret, fd;
 	struct tcp_connection *conn;
+	int retry = 1;
 	/* first try to acquire the connection */
 
 	/* TBD - handle conn not found here = reconnect ? */
+retry:
 	ret = tcp_conn_get(smsc->conn_id, &smsc->ip, smsc->port, PROTO_SMPP,
 		NULL, &conn, &fd);
-	if (ret <= 0 && bind_session(smsc) < 0) {
-		LM_ERR("cannot fetch connection for %.*s (%d)\n",
-				smsc->name.len, smsc->name.s, ret);
-		return -1;
+	if (ret <= 0) {
+		if (retry == 0) {
+			LM_ERR("cannot fetch connection for %.*s (%d)\n",
+					smsc->name.len, smsc->name.s, ret);
+			return -1;
+		}
+		if (bind_session(smsc) < 0) {
+			LM_ERR("could not re-bind connectionfor %.*s\n",
+					smsc->name.len, smsc->name.s);
+			return -1;
+		}
+		retry = 0;
+		goto retry;
 	}
 	/* update connection in case it has changed */
 	ret = tsend_stream(fd, buffer->s, buffer->len, smpp_send_timeout);
