@@ -492,6 +492,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		/* only if we did force match the Cancel to the
 		 * dialog before ( from the script ) */
 		dlg->flags |= DLG_FLAG_WAS_CANCELLED;
+		init_dlg_term_reason(dlg,"Cancelled",sizeof("Cancelled")-1);
 
 		if (dlg->flags & DLG_FLAG_END_ON_RACE_CONDITION &&
 		dlg->state>= DLG_STATE_CONFIRMED_NA) {
