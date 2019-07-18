@@ -628,8 +628,12 @@ void cancel_invite(struct sip_msg *cancel_msg,
 
 	get_cancel_reason(cancel_msg, t_cancel->flags, &reason);
 
+	LOCK_REPLIES(t_invite);
+	/* we need to check which branches should be canceled under lock to avoid
+	 * concurrency with replies that are coming in the same time */
 	/* generate local cancels for all branches */
 	which_cancel(t_invite, &cancel_bitmap );
+	UNLOCK_REPLIES(t_invite);
 
 	set_cancel_extra_hdrs( reason.s, reason.len);
 	cancel_uacs(t_invite, cancel_bitmap );
