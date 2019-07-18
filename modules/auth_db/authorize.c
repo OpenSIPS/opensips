@@ -215,6 +215,7 @@ static inline int authorize(struct sip_msg* _m, str *domain,
 	int res;
 	struct hdr_field* h;
 	auth_body_t* cred;
+	str msg_body;
 	auth_result_t ret;
 	db_res_t* result = NULL;
 
@@ -239,9 +240,15 @@ static inline int authorize(struct sip_msg* _m, str *domain,
 		return USER_UNKNOWN;
 	}
 
+	if (cred->digest.qop.qop_parsed == QOP_AUTHINT_D &&
+		get_body(_m, &msg_body) < 0) {
+		LM_ERR("Failed to get body of SIP message\n");
+		return ERROR;
+	}
+
 	/* Recalculate response, it must be same to authorize successfully */
 	if (!auth_api.check_response(&(cred->digest),
-				&_m->first_line.u.request.method, ha1)) {
+				&_m->first_line.u.request.method, &msg_body, ha1)) {
 		ret = auth_api.post_auth(_m, h);
 		if (ret == AUTHORIZED)
 			generate_avps(result);

@@ -264,9 +264,9 @@ auth_result_t post_auth(struct sip_msg* _m, struct hdr_field* _h)
 
 }
 
-int check_response(dig_cred_t* _cred, str* _method, char* _ha1)
+int check_response(dig_cred_t* _cred, str* _method, str *_msg_body, char* _ha1)
 {
-	HASHHEX resp, hent;
+	HASHHEX resp;
 
 	/*
 	 * First, we have to verify that the response received has
@@ -284,7 +284,7 @@ int check_response(dig_cred_t* _cred, str* _method, char* _ha1)
 	calc_response(_ha1, &(_cred->nonce),
 		&(_cred->nc), &(_cred->cnonce),
 		&(_cred->qop.qop_str), _cred->qop.qop_parsed == QOP_AUTHINT_D,
-		_method, &(_cred->uri), hent, resp);
+		_method, _msg_body, &(_cred->uri), resp);
 
 	LM_DBG("our result = \'%s\'\n", resp);
 

@@ -70,8 +70,10 @@ auth_result_t post_auth(struct sip_msg* _m, struct hdr_field* _h);
  * Calculate the response and compare with the given response string
  * Authorization is successful if this two strings are same
  */
-typedef int (*check_response_t)(dig_cred_t* _cred, str* _method, char* _ha1);
-int check_response(dig_cred_t* _cred, str* _method, char* _ha1);
+typedef int (*check_response_t)(dig_cred_t* _cred, str* _method,
+							str* _msg_body, char* _ha1);
+int check_response(dig_cred_t* _cred, str* _method,
+				str* _msg_body, char* _ha1);
 
 typedef void (*calc_HA1_t)(ha_alg_t _alg, str* _username, str* _realm,
 		str* _password, str* _nonce, str* _cnonce, HASHHEX _sess_key);

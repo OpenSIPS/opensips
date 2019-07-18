@@ -97,14 +97,24 @@ void calc_response(HASHHEX _ha1,      /* H(A1) */
 		   str* _qop,         /* qop-value: "", "auth", "auth-int" */
 		   int _auth_int,     /* 1 if auth-int is used */
 		   str* _method,      /* method from the request */
+           str* _msg_body,    /* body of the SIP message */
 		   str* _uri,         /* requested URL */
-		   HASHHEX _hentity,  /* H(entity body) if qop="auth-int" */
 		   HASHHEX _response) /* request-digest or response-digest */
 {
 	MD5_CTX Md5Ctx;
 	HASH HA2;
+	HASH HENTITY;
 	HASH RespHash;
 	HASHHEX HA2Hex;
+	HASHHEX HENTITYHex;
+
+         /* calculate H(entity-body) */
+	if (_auth_int) {
+		MD5Init(&Md5Ctx);
+		MD5Update(&Md5Ctx, _msg_body->s, _msg_body->len);
+		MD5Final(HENTITY, &Md5Ctx);
+		cvt_hex(HENTITY, HENTITYHex);
+	}
 
 	     /* calculate H(A2) */
 	MD5Init(&Md5Ctx);
@@ -114,7 +124,7 @@ void calc_response(HASHHEX _ha1,      /* H(A1) */
 
 	if (_auth_int) {
 		MD5Update(&Md5Ctx, ":", 1);
-		MD5Update(&Md5Ctx, _hentity, HASHHEXLEN);
+		MD5Update(&Md5Ctx, HENTITYHex, HASHHEXLEN);
 	};
 
 	MD5Final(HA2, &Md5Ctx);

@@ -70,8 +70,8 @@ void calc_response(HASHHEX _ha1,       /* H(A1) */
 		   str* _qop,          /* qop-value: "", "auth", "auth-int" */
 		   int _auth_int,      /* 1 if auth-int is used */
 		   str* _method,       /* method from the request */
+		   str* _msg_body,     /* body of the SIP message */
 		   str* _uri,          /* requested URL */
-		   HASHHEX _hentity,   /* H(entity body) if qop="auth-int" */
 		   HASHHEX _response); /* request-digest or response-digest */
 
 
