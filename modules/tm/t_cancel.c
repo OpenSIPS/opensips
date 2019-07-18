@@ -95,6 +95,7 @@ void cancel_branch( struct cell *t, int branch )
 	}
 #	endif
 
+
 	cancel=build_cancel(t, branch, &len);
 	if (!cancel) {
 		LM_ERR("attempt to build a CANCEL failed\n");
