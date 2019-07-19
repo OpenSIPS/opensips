@@ -696,7 +696,7 @@ per second even on low-budget hardware.
 This package provides the unixODBC database driver for OpenSIPS.
 
 %package  uuid-module
-Summary:  UUID (Universally Unique Identifier) generator
+Summary:  UUID (Universally Unique Identifier) generator for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
@@ -705,7 +705,7 @@ OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
-This package provides the a UUID generated for OpenSIPS script.
+This package provides a UUID generator for the OpenSIPS script.
 
 %package  wss-module
 Summary:  WebSocket Secure (WSS) transport module for OpenSIPS
