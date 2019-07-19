@@ -216,7 +216,7 @@ Package: opensips-uuid-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: UUID (Universally Unique Identifier) generator
+Description: UUID (Universally Unique Identifier) generator for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
