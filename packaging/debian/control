@@ -221,7 +221,7 @@ Description: UUID (Universally Unique Identifier) generator
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the a UUID generated for OpenSIPS script.
+ This package provides a UUID generator for the OpenSIPS script.
 
 Package: opensips-xmlrpc-module
 Architecture: any
