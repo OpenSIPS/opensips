@@ -169,9 +169,12 @@ void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
 {
 	const char *curr_key;
 	char *s, oid[25];
+	const unsigned char *bin;
 	int len;
 	struct json_object *obj2 = NULL;
+	unsigned int ts, ulen, _;
 	bson_iter_t it2;
+	bson_subtype_t subtype;
 
 	while (bson_iter_next(it)) {
 		curr_key = bson_iter_key(it);
@@ -262,7 +265,17 @@ void bson_to_json_generic(struct json_object *obj, bson_iter_t *it,
 							bson_iter_type(it),curr_key);
 					break;
 				case BSON_TYPE_NULL:
-						json_object_object_add(obj,curr_key,NULL);
+					json_object_object_add(obj,curr_key,NULL);
+					break;
+				case BSON_TYPE_TIMESTAMP:
+					bson_iter_timestamp(it, &ts, &_);
+					json_object_object_add(obj, curr_key,
+					                       json_object_new_int(ts));
+					break;
+				case BSON_TYPE_BINARY:
+					bson_iter_binary(it, &subtype, &ulen, &bin);
+					json_object_object_add(obj, curr_key,
+					                       json_object_new_string((const char *)bin));
 					break;
 				default:
 					LM_WARN("Unsupported type %d for key %s - skipping\n",
