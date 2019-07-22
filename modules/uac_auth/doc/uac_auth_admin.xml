@@ -16,15 +16,10 @@
 		be used by other modules.
 		</para>
 		<para>
-		Known limitations in this version:
+		Note that authentication provided by this module supports both
+		qop "auth" and qop "auth-int" but if both values are presented
+		by the server, "auth" will be prefered.
 		</para>
-		<itemizedlist>
-			<listitem>
-			<para>
-				authentication does not support qop auth-int, just qop auth;
-			</para>
-			</listitem>
-		</itemizedlist>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">

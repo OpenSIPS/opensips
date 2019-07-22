@@ -304,23 +304,30 @@ void uac_calc_HA1( struct uac_credential *crd,
 /*
  * calculate H(A2)
  */
-void uac_calc_HA2( str *method, str *uri,
-		struct authenticate_body *auth,
-		HASHHEX hentity,
-		HASHHEX HA2Hex )
+void uac_calc_HA2(str *msg_body, str *method, str *uri,
+		int auth_int, HASHHEX HA2Hex)
 {
 	MD5_CTX Md5Ctx;
 	HASH HA2;
+	HASH HENTITY;
+	HASHHEX HENTITYHex;
+
+	if (auth_int) {
+		MD5Init(&Md5Ctx);
+		MD5Update(&Md5Ctx, msg_body->s, msg_body->len);
+		MD5Final(HENTITY, &Md5Ctx);
+		cvt_hex(HENTITY, HENTITYHex);
+	}
 
 	MD5Init(&Md5Ctx);
 	MD5Update(&Md5Ctx, method->s, method->len);
 	MD5Update(&Md5Ctx, ":", 1);
 	MD5Update(&Md5Ctx, uri->s, uri->len);
 
-	if ( auth->flags&QOP_AUTH_INT)
+	if (auth_int)
 	{
 		MD5Update(&Md5Ctx, ":", 1);
-		MD5Update(&Md5Ctx, hentity, HASHHEXLEN);
+		MD5Update(&Md5Ctx, HENTITYHex, HASHHEXLEN);
 	};
 
 	MD5Final(HA2, &Md5Ctx);
@@ -346,16 +353,16 @@ void uac_calc_response( HASHHEX ha1, HASHHEX ha2,
 	MD5Update(&Md5Ctx, auth->nonce.s, auth->nonce.len);
 	MD5Update(&Md5Ctx, ":", 1);
 
-	if ( auth->qop.len)
+	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
 	{
 		MD5Update(&Md5Ctx, nc->s, nc->len);
 		MD5Update(&Md5Ctx, ":", 1);
 		MD5Update(&Md5Ctx, cnonce->s, cnonce->len);
 		MD5Update(&Md5Ctx, ":", 1);
-		/* FIXME: We should parse auth->qop and
-			  make sure that auth token is present.
-		 */
-		MD5Update(&Md5Ctx, "auth", 4);
+		if (!(auth->flags&QOP_AUTH))
+			MD5Update(&Md5Ctx, "auth-int", 8);
+		else
+			MD5Update(&Md5Ctx, "auth", 4);
 		MD5Update(&Md5Ctx, ":", 1);
 	};
 	MD5Update(&Md5Ctx, ha2, HASHHEXLEN);
@@ -364,7 +371,7 @@ void uac_calc_response( HASHHEX ha1, HASHHEX ha2,
 }
 
 
-void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
+void do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd,
 		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
 		HASHHEX response)
 {
@@ -400,7 +407,7 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 		/* do authentication */
 		if (!has_ha1)
 			uac_calc_HA1( crd, auth, &cnonce, ha1);
-		uac_calc_HA2( method, uri, auth, 0/*hentity*/, ha2 );
+		uac_calc_HA2(msg_body, method, uri, !(auth->flags&QOP_AUTH), ha2);
 
 		uac_calc_response( ha1, ha2, auth, &nc, &cnonce, response);
 		auth_nc_cnonce->nc = &nc;
@@ -409,7 +416,7 @@ void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
 		/* do authentication */
 		if (!has_ha1)
 			uac_calc_HA1( crd, auth, 0/*cnonce*/, ha1);
-		uac_calc_HA2( method, uri, auth, 0/*hentity*/, ha2 );
+		uac_calc_HA2(msg_body, method, uri, 0, ha2);
 
 		uac_calc_response( ha1, ha2, auth, 0/*nc*/, 0/*cnonce*/, response);
 	}
@@ -464,8 +471,20 @@ str* build_authorization_hdr(int code, str *uri,
 	char *p;
 	int len;
 	int response_len;
+	char *qop_val;
+	int qop_val_len = 0;
 
 	response_len = strlen(response);
+
+	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT)) {
+		if (!(auth->flags&QOP_AUTH)) {
+			qop_val = "auth-int";
+			qop_val_len = 8;
+		} else {
+			qop_val = "auth";
+			qop_val_len = 4;
+		}
+	}
 
 	/* compile then len */
 	len = (code==401?
@@ -479,7 +498,7 @@ str* build_authorization_hdr(int code, str *uri,
 		RESPONSE_FIELD_LEN + response_len + FIELD_SEPARATOR_LEN +
 		ALGORITHM_FIELD_LEN + CRLF_LEN;
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
-		len += QOP_FIELD_LEN + 4 /*auth*/ + FIELD_SEPARATOR_UQ_LEN +
+		len += QOP_FIELD_LEN + qop_val_len + FIELD_SEPARATOR_UQ_LEN +
 				NC_FIELD_LEN + auth_nc_cnonce->nc->len + FIELD_SEPARATOR_UQ_LEN +
 				CNONCE_FIELD_LEN + auth_nc_cnonce->cnonce->len + FIELD_SEPARATOR_LEN;
 
@@ -528,7 +547,7 @@ str* build_authorization_hdr(int code, str *uri,
 	{
 		add_string( p, FIELD_SEPARATOR_S QOP_FIELD_S,
 			FIELD_SEPARATOR_LEN+QOP_FIELD_LEN);
-		add_string( p, "auth", 4);
+		add_string( p, qop_val, qop_val_len);
 		add_string( p, FIELD_SEPARATOR_UQ_S NC_FIELD_S,
 			FIELD_SEPARATOR_UQ_LEN+NC_FIELD_LEN);
 		add_string( p, auth_nc_cnonce->nc->s, auth_nc_cnonce->nc->len);

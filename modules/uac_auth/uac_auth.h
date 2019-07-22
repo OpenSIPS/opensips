@@ -59,7 +59,7 @@ struct authenticate_nc_cnonce {
 
 
 int uac_auth( struct sip_msg *msg);
-void do_uac_auth(str *method, str *uri, struct uac_credential *crd,
+void do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd,
 		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
 		HASHHEX response);
 str* build_authorization_hdr(int code, str *uri,
@@ -68,7 +68,7 @@ str* build_authorization_hdr(int code, str *uri,
 struct uac_credential* lookup_realm(str *realm);
 
 
-typedef void (*do_uac_auth_t)(str *method, str *uri, struct uac_credential *crd,
+typedef void (*do_uac_auth_t)(str *msg_body, str *method, str *uri, struct uac_credential *crd,
 	struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
 	HASHHEX response);
 typedef str* (*build_authorization_hdr_t)(int code, str *uri,

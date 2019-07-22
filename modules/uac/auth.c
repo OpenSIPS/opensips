@@ -36,6 +36,7 @@
 #include "../../md5global.h"
 #include "../../md5.h"
 #include "../../parser/parse_authenticate.h"
+#include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
 #include "../uac_auth/uac_auth.h"
 #include "../dialog/dlg_load.h"
@@ -181,6 +182,7 @@ void apply_cseq_decrement(struct cell* t, int type, struct tmcb_params *p)
 int uac_auth( struct sip_msg *msg)
 {
 	struct authenticate_body *auth = NULL;
+	str msg_body;
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	struct uac_credential *crd;
 	int code, branch;
@@ -247,8 +249,13 @@ int uac_auth( struct sip_msg *msg)
 		goto error;
 	}
 
+	if ((auth->flags & QOP_AUTH_INT) && get_body(msg, &msg_body) < 0) {
+		LM_ERR("Failed to get message body\n");
+		goto error;
+	}
+
 	/* do authentication */
-	uac_auth_api._do_uac_auth( &msg->first_line.u.request.method,
+	uac_auth_api._do_uac_auth(&msg_body, &msg->first_line.u.request.method,
 			&t->uac[branch].uri, crd, auth, &auth_nc_cnonce, response);
 
 	/* build the authorization header */

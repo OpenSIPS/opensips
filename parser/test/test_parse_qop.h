@@ -1,7 +1,5 @@
 /*
- * Starting point for writing and including OpenSIPS unit tests
- *
- * Copyright (C) 2018 OpenSIPS Solutions
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,24 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-#include <tap.h>
+#ifndef __TEST_PARSE_QOP_H__
+#define __TEST_PARSE_QOP_H__
 
-#include "../cachedb/test/test_backends.h"
-#include "../lib/test/test_csv.h"
-#include "../parser/test/test_parse_qop.h"
+void test_parse_qop_val(void);
 
-#include "../lib/list.h"
-#include "../dprint.h"
-#include "../sr_module.h"
-
-void init_unit_tests(void) {
-	set_mpath("modules/");
-	//init_cachedb_tests();
-}
-
-int run_unit_tests(void) {
-	//test_cachedb_backends();
-	test_lib_csv();
-	test_parse_qop_val();
-	done_testing();
-}
+#endif /* __TEST_PARSE_QOP_H__ */

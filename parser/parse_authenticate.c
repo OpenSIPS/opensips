@@ -83,6 +83,60 @@
 #define ALGORITHM_STATE  7
 
 
+int parse_qop_value(str *val, struct authenticate_body *auth)
+{
+	char *q = val->s;
+
+	/* parse first token */
+	if (val->len<4 || LOWER4B(GET4B(q))!=0x61757468) /* "auth" */
+		return -1;
+	q += 4;
+	if (q==val->s+val->len) {
+		auth->flags |= QOP_AUTH;
+		return 0;
+	}
+	switch (*q) {
+		case ' ':
+		case '\t':
+			auth->flags |= QOP_AUTH;
+			break;
+		case '-':
+			q++;
+			if (LOWER4B(GET3B(q))==0x696e74ff) {
+				auth->flags |= QOP_AUTH_INT;
+				q+=3;
+			} else
+				return -1;
+			break;
+		case ',':
+			auth->flags |= QOP_AUTH;
+			break;
+		default:
+			return -1;
+	}
+
+	if (q==val->s+val->len) return 0;
+	while (q<val->s+val->len && isspace((int)*q)) q++;
+	if (q==val->s+val->len) return 0;
+	if (*q!=',')
+		return -1;
+	q++;
+	while (q<val->s+val->len && isspace((int)*q)) q++;
+
+	/* parse second token */
+	if (val->len-(q-val->s)<4 || LOWER4B(GET4B(q))!=0x61757468)  /* "auth" */
+		return -1;
+	q += 4;
+	if (q==val->s+val->len) {
+		auth->flags |= QOP_AUTH;
+		return 0;
+	}
+	if (*q == '-' && LOWER4B(GET3B(q+1))==0x696e74ff) {
+		auth->flags |= QOP_AUTH_INT;
+		return 0;
+	} else
+		return -1;
+}
 
 int parse_authenticate_body( str *body, struct authenticate_body *auth)
 {
@@ -211,8 +265,9 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 		{
 			case QOP_STATE:
 				auth->qop = val;
-				if(val.len>=4 && !strncasecmp(val.s, "auth", 4))
-					auth->flags |= QOP_AUTH;
+				if (parse_qop_value(&val, auth) < 0)
+					LM_DBG("Unknown token in qop value '%.*s'\n",
+						val.len, val.s);
 				break;
 			case REALM_STATE:
 				auth->realm = val;
