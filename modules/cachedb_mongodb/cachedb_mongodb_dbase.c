@@ -1201,6 +1201,8 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	bson_iter_t iter;
 	struct timeval start;
 	int ri, c, old_rows, rows = 0;
+	unsigned int ts, ulen, _;
+	const unsigned char *bin;
 	mongoc_collection_t *col = NULL;
 	char *strf, *stro;
 
@@ -1390,6 +1392,19 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						VAL_NULL(cur_val) = 1;
 						LM_DBG("Found null [%.*s]=[%d]\n",
 						       _c[c]->len, _c[c]->s, VAL_NULL(cur_val));
+						break;
+					case BSON_TYPE_TIMESTAMP:
+						bson_iter_timestamp(&iter, &ts, &_);
+						VAL_TYPE(cur_val) = DB_INT;
+						VAL_INT(cur_val) = (int)ts;
+						LM_DBG("Found timestamp [%u]\n", ts);
+						break;
+					case BSON_TYPE_BINARY:
+						bson_iter_binary(&iter, NULL, &ulen, &bin);
+						VAL_TYPE(cur_val) = DB_STR;
+						VAL_STR(cur_val).s = (char *)bin;
+						VAL_STR(cur_val).len = (int)ulen;
+						LM_DBG("Found binary data: '%.*s'\n", ulen, bin);
 						break;
 					default:
 						LM_WARN("Unsupported type [%d] for [%.*s] - treating as NULL\n",
@@ -1709,6 +1724,15 @@ int mongo_doc_to_dict(const bson_t *doc, cdb_dict_t *out_dict)
 				break;
 			case BSON_TYPE_NULL:
 				pair->val.type = CDB_NULL;
+				break;
+			case BSON_TYPE_TIMESTAMP:
+				pair->val.type = CDB_INT32;
+				val->i32 = v->value.v_timestamp.timestamp;
+				break;
+			case BSON_TYPE_BINARY:
+				pair->val.type = CDB_STR;
+				val->st.s = (char *)v->value.v_binary.data;
+				val->st.len = v->value.v_binary.data_len;
 				break;
 			default:
 				LM_ERR("unsupported MongoDB type %d!\n", v->value_type);
