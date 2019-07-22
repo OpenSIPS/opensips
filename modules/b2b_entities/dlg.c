@@ -2090,6 +2090,7 @@ error:
 void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 {
 	struct sip_msg * msg;
+	str msg_body;
 	str* b2b_key;
 	unsigned int hash_index, local_index;
 	b2b_notify_t b2b_cback;
@@ -2387,10 +2388,14 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				crd = uac_auth_api._lookup_realm( &auth->realm );
 				if(crd)
 				{
+					if ((auth->flags & QOP_AUTH_INT) && get_body(msg, &msg_body) < 0) {
+						LM_ERR("Failed to get message body\n");
+						goto done;
+					}
 					memset(&auth_nc_cnonce, 0,
 							sizeof(struct authenticate_nc_cnonce));
-					uac_auth_api._do_uac_auth(&t->method, &t->uac[0].uri, crd,
-							auth, &auth_nc_cnonce, response);
+					uac_auth_api._do_uac_auth(&msg_body, &t->method,
+							&t->uac[0].uri, crd, auth, &auth_nc_cnonce, response);
 					new_hdr = uac_auth_api._build_authorization_hdr(statuscode,
 							&t->uac[0].uri, crd, auth,
 							&auth_nc_cnonce, response);
