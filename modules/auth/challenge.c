@@ -257,7 +257,7 @@ int fixup_qop(void** param)
  */
 int www_challenge(struct sip_msg* _msg, str* _realm, void* _qop)
 {
-	return challenge(_msg, _realm, (int)_qop, 401,
+	return challenge(_msg, _realm, (int)(long)_qop, 401,
 			MESSAGE_401, WWW_AUTH_CHALLENGE);
 }
 
@@ -267,7 +267,7 @@ int www_challenge(struct sip_msg* _msg, str* _realm, void* _qop)
  */
 int proxy_challenge(struct sip_msg* _msg, str* _realm, void* _qop)
 {
-	return challenge(_msg, _realm, (int)_qop, 407,
+	return challenge(_msg, _realm, (int)(long)_qop, 407,
 			MESSAGE_407, PROXY_AUTH_CHALLENGE);
 }
 
