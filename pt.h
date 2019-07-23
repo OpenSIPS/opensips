@@ -92,6 +92,7 @@ extern int _termination_in_progress;
 int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
 int   count_init_child_processes(void);
+int   count_child_processes(void);
 
 #define OSS_PROC_NO_IPC        (1<<0)
 #define OSS_PROC_NO_LOAD       (1<<1)
