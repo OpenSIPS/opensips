@@ -36,9 +36,7 @@ typedef struct _jsonrpc_send {
 
 void jsonrpc_process(int rank);
 int jsonrpc_init_process(void);
-int jsonrpc_create_status_pipes(void);
 void jsonrpc_destroy_pipe(void);
-void jsonrpc_destroy_status_pipes(void);
 int jsonrpc_init_writer(void);
 int jsonrpc_init_buffers(void);
 int jsonrpc_send(jsonrpc_send_t * jsonrpcs);

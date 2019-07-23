@@ -52,8 +52,6 @@ static int jrpc_id_index = 0;
 
 /* used to communicate with the sending process */
 static int jsonrpc_pipe[2];
-/* used to communicate the status of the send (success or fail) from the sending process back to the requesting ones */
-static int (*jsonrpc_status_pipes)[2];
 
 struct jsonrpc_con {
 	union sockaddr_union addr;
@@ -87,11 +85,6 @@ static int jsonrpc_create_pipe(void)
 
 	if (rc < 0) {
 		LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
-		return -1;
-	}
-
-	if (jsonrpc_sync_mode && jsonrpc_create_status_pipes() < 0) {
-		LM_ERR("cannot create communication status pipes\n");
 		return -1;
 	}
 
@@ -137,21 +130,6 @@ void jsonrpc_destroy_pipe(void)
 		close(jsonrpc_pipe[0]);
 	if (jsonrpc_pipe[1] != -1)
 		close(jsonrpc_pipe[1]);
-
-	if (jsonrpc_sync_mode)
-		jsonrpc_destroy_status_pipes();
-}
-
-void jsonrpc_destroy_status_pipes(void)
-{
-	int i;
-
-	for(i = 0; i < counted_max_processes; i++) {
-		close(jsonrpc_status_pipes[i][0]);
-		close(jsonrpc_status_pipes[i][1]);
-	}
-
-	shm_free(jsonrpc_status_pipes);
 }
 
 int jsonrpc_send(jsonrpc_send_t* jsonrpcs)
@@ -174,13 +152,7 @@ int jsonrpc_send(jsonrpc_send_t* jsonrpcs)
 	sched_yield();
 
 	if (jsonrpc_sync_mode) {
-		retries = JSONRPC_SEND_RETRY;
-
-		do {
-			rc = read(jsonrpc_status_pipes[process_no][0], &send_status, sizeof(int));
-		} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
-
-		if (rc < 0) {
+		if (ipc_recv_sync_reply((void **)(long *)&send_status) < 0) {
 			LM_ERR("cannot receive send status\n");
 			send_status = JSONRPC_SEND_FAIL;
 		}
@@ -220,7 +192,6 @@ int jsonrpc_init_writer(void)
 	}
 
 	if (jsonrpc_sync_mode) {
-		close(jsonrpc_status_pipes[process_no][1]);
 		/* initilize indexes */
 		jrpc_id_index = my_pid() & USHRT_MAX;
 		jrpc_id_index |= rand() << sizeof(unsigned short);
@@ -246,30 +217,10 @@ error:
 
 static void jsonrpc_init_reader(void)
 {
-	int i, flags;
-
 	if (jsonrpc_pipe[1] != -1) {
 		close(jsonrpc_pipe[1]);
 		jsonrpc_pipe[1] = -1;
 	}
-
-	if (jsonrpc_sync_mode)
-		for(i = 0; i < counted_max_processes; i++) {
-			close(jsonrpc_status_pipes[i][0]);
-
-			/* Turn non-blocking mode on for sending*/
-			flags = fcntl(jsonrpc_status_pipes[i][1], F_GETFL);
-			if (flags == -1) {
-				LM_ERR("fcntl failed: %s\n", strerror(errno));
-				close(jsonrpc_status_pipes[i][1]);
-				return;
-			}
-			if (fcntl(jsonrpc_status_pipes[i][1], F_SETFL, flags | O_NONBLOCK) == -1) {
-				LM_ERR("fcntl: set non-blocking failed: %s\n", strerror(errno));
-				close(jsonrpc_status_pipes[i][1]);
-				return;
-			}
-		}
 }
 
 
@@ -478,11 +429,7 @@ static void jsonrpc_cmd_free(struct jsonrpc_cmd *cmd)
 
 static void jsonrpc_cmd_write(int process_idx, int send_status)
 {
-	int retries = JSONRPC_SEND_RETRY, rc;
-	do {
-		rc = write(jsonrpc_status_pipes[process_idx][1], &send_status, sizeof(int));
-	} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
-	if (rc < 0)
+	if (ipc_send_sync_reply(process_idx, (void *)(long)send_status) < 0)
 		LM_ERR("cannot send status back to requesting process\n");
 }
 
@@ -490,9 +437,6 @@ static void jsonrpc_cmd_reply(struct jsonrpc_cmd *cmd, int send_status)
 {
 
 	if (!jsonrpc_sync_mode)
-		return;
-
-	if (cmd->job->process_idx < 0 || cmd->job->process_idx >= counted_max_processes)
 		return;
 
 	jsonrpc_cmd_write(cmd->job->process_idx, send_status);

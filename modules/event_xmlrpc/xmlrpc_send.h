@@ -42,9 +42,7 @@ typedef struct _xmlrpc_send {
 
 void xmlrpc_process(int rank);
 int xmlrpc_create_pipe(void);
-int xmlrpc_create_status_pipes(void);
 void xmlrpc_destroy_pipe(void);
-void xmlrpc_destroy_status_pipes(void);
 int xmlrpc_init_writer(void);
 int xmlrpc_init_buffers(void);
 int xmlrpc_send(xmlrpc_send_t * xmlrpcs);
