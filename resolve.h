@@ -46,6 +46,10 @@
 #include "ip_addr.h"
 #include "proxy.h"
 
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 64
+#endif
+
 
 #define MAX_QUERY_SIZE 8192
 #define ANS_SIZE       8192
