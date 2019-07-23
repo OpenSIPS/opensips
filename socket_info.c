@@ -61,9 +61,11 @@
 
 #ifdef __OS_linux
 #include <features.h>     /* for GLIBC version testing */
-#if defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 4)
+#if defined(__GLIBC_PREREQ)
+#if __GLIBC_PREREQ(2, 4)
 #include <ifaddrs.h>
 #define HAVE_IFADDRS
+#endif
 #endif
 #endif
 
