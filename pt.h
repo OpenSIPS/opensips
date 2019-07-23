@@ -56,6 +56,14 @@ struct process_table {
 	 * does not exist */
 	int ipc_pipe_holder[2];
 
+	/* pipe used by the process to receive a synchronoys job
+	 * this pipe should only be used by a process to synchronously receive a
+	 * message after he knows that some other process will send it for sure,
+	 * and there's no other job that can overlap in the meantime */
+	int ipc_sync_pipe[2];
+	/* same as above, but holder for non-existing processes */
+	int ipc_sync_pipe_holder[2];
+
 	/* holder for the unixsocks used by TCP layer for inter-proc communication;
 	 * used when the corresponding process does not exist */
 	int tcp_socks_holder[2];

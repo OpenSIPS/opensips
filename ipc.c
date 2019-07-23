@@ -106,6 +106,12 @@ int create_ipc_pipes( int proc_no )
 				i, errno, strerror(errno));
 			return -1;
 		}
+
+		if (pipe(pt[i].ipc_sync_pipe_holder)<0) {
+			LM_ERR("failed to create IPC sync pipe for process %d, err %d/%s\n",
+				i, errno, strerror(errno));
+			return -1;
+		}
 	}
 	return 0;
 }
@@ -193,6 +199,39 @@ int ipc_dispatch_rpc( ipc_rpc_f *rpc, void *param)
 	return __ipc_send_job(ipc_shared_pipe[1], ipc_rpc_type, rpc, param);
 }
 
+int ipc_send_sync_reply(int dst_proc, void *param)
+{
+	int n;
+
+again:
+	n = write(IPC_FD_SYNC_WRITE(dst_proc), &param, sizeof(param));
+	if (n<0) {
+		if (errno==EINTR)
+			goto again;
+		LM_ERR("sending sync rpc %d[%s]\n", errno, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+int ipc_recv_sync_reply(void **param)
+{
+	void *ret;
+	int n;
+
+again:
+	n = read(IPC_FD_SYNC_READ_SELF, &ret, sizeof(ret));
+	if (n < sizeof(*ret)) {
+		if (errno == EINTR)
+			goto again;
+		/* if we got here, it's definitely an error, because the socket is
+		 * blocking, so we can't read partial messages */
+		LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
+		return -1;
+	}
+	*param = ret;
+	return 0;
+}
 
 void ipc_handle_job(int fd)
 {
