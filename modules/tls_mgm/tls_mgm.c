@@ -78,8 +78,10 @@
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L && defined __OS_linux)
 #include <features.h>
-#if defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 2)
+#if defined(__GLIBC_PREREQ)
+#if __GLIBC_PREREQ(2, 2)
 #define __OPENSSL_ON_EXIT
+#endif
 #endif
 #endif
 
