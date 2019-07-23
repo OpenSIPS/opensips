@@ -76,8 +76,9 @@ int rmq_create_pipe(void)
 /* creates status pipes */
 int rmq_create_status_pipes(void) {
 	int rc, i;
+	int max_processes = count_child_processes();
 
-	rmq_status_pipes = shm_malloc(counted_max_processes * sizeof(rmq_pipe));
+	rmq_status_pipes = shm_malloc(max_processes * sizeof(rmq_pipe));
 
 	if (!rmq_status_pipes) {
 		LM_ERR("cannot allocate rmq_status_pipes\n");
@@ -85,7 +86,7 @@ int rmq_create_status_pipes(void) {
 	}
 
 	/* create pipes */
-	for (i = 0; i < counted_max_processes; i++) {
+	for (i = 0; i < max_processes; i++) {
 		do {
 			rc = pipe(rmq_status_pipes[i]);
 		} while (rc < 0 && IS_ERR(EINTR));

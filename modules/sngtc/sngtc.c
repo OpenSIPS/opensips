@@ -294,6 +294,7 @@ void sngtc_dlg_terminated(struct dlg_cell *dlg, int type,
 static int mod_init(void)
 {
 	int i;
+	int max_processes = count_child_processes();
 
 	LM_INFO("initializing module\n");
 
@@ -309,9 +310,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	LM_DBG("Children: %d\n", counted_max_processes);
+	LM_DBG("Children: %d\n", max_processes);
 
-    sip_workers_pipes = pkg_malloc(2 * counted_max_processes *
+    sip_workers_pipes = pkg_malloc(2 * max_processes *
 	                                sizeof(*sip_workers_pipes));
     if (!sip_workers_pipes) {
         LM_ERR("Not enough pkg mem\n");
@@ -325,7 +326,7 @@ static int mod_init(void)
 
 	LM_DBG("Sangoma pipe: [%d %d]\n", sangoma_pipe[0], sangoma_pipe[1]);
 
-	for (i = 0; i < counted_max_processes; i++) {
+	for (i = 0; i < max_processes; i++) {
 		if (pipe(sip_workers_pipes + 2 * i) != 0) {
 			LM_ERR("Failed to create pipe for UDP receiver %d\n", i);
 			return -1;

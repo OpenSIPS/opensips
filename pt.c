@@ -61,33 +61,10 @@ static unsigned long count_running_processes(void *x)
 
 int init_multi_proc_support(void)
 {
-	unsigned int proc_no;
-	unsigned int proc_extra_no;
-	unsigned int extra;
-	unsigned int i;
-
-	proc_no = 0;
-	proc_extra_no = 0;
-
-	/* UDP based listeners */
-	proc_no += udp_count_processes( &extra );
-	proc_extra_no += extra;
-
-	/* TCP based listeners */
-	proc_no += tcp_count_processes( &extra );
-	proc_extra_no += extra;
-
-	/* Timer related processes */
-	proc_no += timer_count_processes( &extra );
-	proc_extra_no += extra;
-
-	/* attendent */
-	proc_no++;
-
-	/* count the processes requested by modules */
-	proc_no += count_module_procs(0);
-
-	counted_max_processes = proc_no + proc_extra_no;
+	int i;
+	/* at this point we know exactly the possible number of processes, since
+	 * all the other modules already adjusted their extra numbers */
+	counted_max_processes = count_child_processes();
 
 	/* allocate the PID table to accomodate the maximum possible number of
 	 * process we may have during runtime (covering extra procs created 
@@ -368,6 +345,41 @@ int count_init_child_processes(void)
 
 	LM_DBG("%d children are going to be inited\n",ret);
 	return ret;
+}
+
+/* counts the number of processes known by OpenSIPS at startup.
+ * Note that the number of processes might change during init, if one of the
+ * module decides that it will no longer use a process (ex; rtpproxy timeout
+ * process)
+ */
+int count_child_processes(void)
+{
+	unsigned int proc_no;
+	unsigned int proc_extra_no;
+	unsigned int extra;
+
+	proc_no = 0;
+	proc_extra_no = 0;
+
+	/* UDP based listeners */
+	proc_no += udp_count_processes( &extra );
+	proc_extra_no += extra;
+
+	/* TCP based listeners */
+	proc_no += tcp_count_processes( &extra );
+	proc_extra_no += extra;
+
+	/* Timer related processes */
+	proc_no += timer_count_processes( &extra );
+	proc_extra_no += extra;
+
+	/* attendent */
+	proc_no++;
+
+	/* count the processes requested by modules */
+	proc_no += count_module_procs(0);
+
+	return proc_no + proc_extra_no;
 }
 
 

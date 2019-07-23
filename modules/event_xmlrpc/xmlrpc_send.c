@@ -93,8 +93,9 @@ int xmlrpc_create_pipe(void)
 /* creates status pipes */
 int xmlrpc_create_status_pipes(void) {
 	int rc, i;
+	int max_processes = count_child_processes();
 
-	xmlrpc_status_pipes = shm_malloc(counted_max_processes * sizeof(xmlrpc_pipe));
+	xmlrpc_status_pipes = shm_malloc(max_processes * sizeof(xmlrpc_pipe));
 
 	if (!xmlrpc_status_pipes) {
 		LM_ERR("cannot allocate xmlrpc_status_pipes\n");
@@ -102,7 +103,7 @@ int xmlrpc_create_status_pipes(void) {
 	}
 
 	/* create pipes */
-	for (i = 0; i < counted_max_processes; i++) {
+	for (i = 0; i < max_processes; i++) {
 		do {
 			rc = pipe(xmlrpc_status_pipes[i]);
 		} while (rc < 0 && IS_ERR(EINTR));
