@@ -30,6 +30,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifdef _ADDED_XOPEN
 #undef _ADDED_XOPEN
@@ -39,7 +40,6 @@
 
 #include <errno.h>
 #include <ctype.h>
-#include <math.h>
 
 #include "../../pvar.h"
 #include "../../dprint.h"
