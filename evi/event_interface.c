@@ -585,7 +585,7 @@ static int evi_print_event(mi_item_t *ev_obj, evi_event_t *ev, evi_subs_p subs)
 
 		for (subs = ev->subscribers; subs; subs = subs->next) {
 			subs_item = add_mi_object(subs_arr, NULL, 0);
-			if (subs_item)
+			if (!subs_item)
 				goto error;
 
 			if (evi_print_subscriber(subs_item, subs) < 0) {
@@ -686,6 +686,9 @@ mi_response_t *w_mi_subscribers_list(const mi_params_t *params,
 		goto error;
 
 	for (i = 0; i < events_no; i++) {
+		if (!events[i].subscribers)
+			continue;
+
 		event_item = add_mi_object(events_arr, NULL, 0);
 		if (!event_item)
 			goto error;
