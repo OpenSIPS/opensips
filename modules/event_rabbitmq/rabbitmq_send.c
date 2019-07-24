@@ -62,38 +62,6 @@ int rmq_create_pipe(void)
 		LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
 		return -1;
 	}
-
-	if (rmq_sync_mode && rmq_create_status_pipes() < 0) {
-		LM_ERR("cannot create communication status pipes\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-/* creates status pipes */
-int rmq_create_status_pipes(void) {
-	int rc, i;
-	int max_processes = count_child_processes();
-
-	rmq_status_pipes = shm_malloc(max_processes * sizeof(rmq_pipe));
-
-	if (!rmq_status_pipes) {
-		LM_ERR("cannot allocate rmq_status_pipes\n");
-		return -1;
-	}
-
-	/* create pipes */
-	for (i = 0; i < max_processes; i++) {
-		do {
-			rc = pipe(rmq_status_pipes[i]);
-		} while (rc < 0 && IS_ERR(EINTR));
-
-		if (rc < 0) {
-			LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
-			return -1;
-		}
-	}
 	return 0;
 }
 

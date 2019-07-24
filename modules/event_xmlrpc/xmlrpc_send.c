@@ -80,37 +80,6 @@ int xmlrpc_create_pipe(void)
 		return -1;
 	}
 
-	if (xmlrpc_sync_mode && xmlrpc_create_status_pipes() < 0) {
-		LM_ERR("cannot create communication status pipes\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-/* creates status pipes */
-int xmlrpc_create_status_pipes(void) {
-	int rc, i;
-	int max_processes = count_child_processes();
-
-	xmlrpc_status_pipes = shm_malloc(max_processes * sizeof(xmlrpc_pipe));
-
-	if (!xmlrpc_status_pipes) {
-		LM_ERR("cannot allocate xmlrpc_status_pipes\n");
-		return -1;
-	}
-
-	/* create pipes */
-	for (i = 0; i < max_processes; i++) {
-		do {
-			rc = pipe(xmlrpc_status_pipes[i]);
-		} while (rc < 0 && IS_ERR(EINTR));
-
-		if (rc < 0) {
-			LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
-			return -1;
-		}
-	}
 	return 0;
 }
 

@@ -98,32 +98,6 @@ int jsonrpc_init_process(void)
 	return jsonrpc_create_pipe();
 }
 
-/* creates status pipes */
-int jsonrpc_create_status_pipes(void) {
-	int rc, i;
-	int max_processes = count_child_processes();
-
-	jsonrpc_status_pipes = shm_malloc(max_processes * sizeof(jsonrpc_pipe));
-
-	if (!jsonrpc_status_pipes) {
-		LM_ERR("cannot allocate jsonrpc_status_pipes\n");
-		return -1;
-	}
-
-	/* create pipes */
-	for (i = 0; i < max_processes; i++) {
-		do {
-			rc = pipe(jsonrpc_status_pipes[i]);
-		} while (rc < 0 && IS_ERR(EINTR));
-
-		if (rc < 0) {
-			LM_ERR("cannot create status pipe [%d:%s]\n", errno, strerror(errno));
-			return -1;
-		}
-	}
-	return 0;
-}
-
 void jsonrpc_destroy_pipe(void)
 {
 	if (jsonrpc_pipe[0] != -1)
