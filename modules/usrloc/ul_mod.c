@@ -603,10 +603,6 @@ static int mi_child_init(void)
  */
 static void destroy(void)
 {
-	if (cdbc)
-		cdbf.destroy(cdbc);
-	cdbc = NULL;
-
 	/* we need to sync DB in order to flush the cache */
 	if (ul_dbh) {
 		ul_unlock_locks();
@@ -622,6 +618,10 @@ static void destroy(void)
 		}
 		ul_dbf.close(ul_dbh);
 	}
+
+	if (cdbc)
+		cdbf.destroy(cdbc);
+	cdbc = NULL;
 
 	free_all_udomains();
 	ul_destroy_locks();
