@@ -274,7 +274,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 		<section id="func_siprec_start_recording" xreflabel="siprec_start_recording()">
 			<title>
 			<function moreinfo="none">siprec_start_recording(srs, [group], [caller],
-				[callee], [rtpproxy_sock], [media_ip])</function>
+				[callee], [rtpproxy_sock], [media_ip], [headers])</function>
 			</title>
 			<para>
 				Calling this function on an initial
@@ -326,6 +326,12 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 					RTPProxy will be streaming media from. If absent
 					 <emphasis>127.0.0.1</emphasis> will be used.
 				</para></listitem>
+				<listitem><para>
+					<emphasis>headers</emphasis> (string, optional) - extra headers
+					that are to be added in the initial request towards the SRS.
+					<emphasis>NOTE:</emphasis> headers must be separated by
+					<emphasis>\r\n</emphasis> and must end with <emphasis>\r\n</emphasis>.
+				</para></listitem>
 				</itemizedlist>
 			</para>
 			<para>
@@ -374,6 +380,14 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	</programlisting>
 			</example>
 
+			<example>
+			<title>Use <function>siprec_start_recording()</function> function with custom headers</title>
+			<programlisting format="linespecific">
+	...
+	siprec_start_recording($var(srs),,,,,,"X-MY-CUSTOM_HDR: 1\r\n");
+	...
+	</programlisting>
+			</example>
 		</section>
 	</section>
 

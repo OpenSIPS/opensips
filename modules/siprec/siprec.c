@@ -37,7 +37,7 @@ static int child_init(int);
 static void mod_destroy(void);
 
 static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
-		str *_cA, str *_cB, str *rtp, str *m_ip);
+		str *_cA, str *_cB, str *rtp, str *m_ip, str *_hdrs);
 
 /* modules dependencies */
 static dep_export_t deps = {
@@ -58,6 +58,7 @@ static dep_export_t deps = {
 static cmd_export_t cmds[] = {
 	{"siprec_start_recording",(cmd_function)siprec_start_rec, {
 		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
@@ -162,7 +163,7 @@ static void mod_destroy(void)
  * function that simply prints the parameters passed
  */
 static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
-		str *_cA, str *_cB, str *rtp, str *m_ip)
+		str *_cA, str *_cB, str *rtp, str *m_ip, str *_hdrs)
 {
 	int ret;
 	str *aor, *display, *xml_val;
@@ -183,7 +184,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 	 * this is the only way to provide a different socket for SRS, but
 	 * we might need to take a different approach */
 	/* check if the current dialog has a siprec session ongoing */
-	if (!(ss = src_new_session(srs, rtp, m_ip, group, msg->force_send_socket))) {
+	if (!(ss = src_new_session(srs, rtp, m_ip, group, _hdrs, msg->force_send_socket))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
 	}

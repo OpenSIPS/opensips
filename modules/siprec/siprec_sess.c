@@ -33,10 +33,10 @@ struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
 static struct src_sess *src_create_session(str *rtp, str *m_ip, str *grp,
-		struct socket_info *si, int version, time_t ts, siprec_uuid *uuid)
+		struct socket_info *si, int version, time_t ts, str *hdrs, siprec_uuid *uuid)
 {
 	struct src_sess *ss = shm_malloc(sizeof *ss + (rtp ? rtp->len : 0) +
-			(m_ip ? m_ip->len : 0) + (grp ? grp->len : 0));
+			(m_ip ? m_ip->len : 0) + (grp ? grp->len : 0) + (hdrs ? hdrs->len : 0));
 	if (!ss) {
 		LM_ERR("not enough memory for creating siprec session!\n");
 		return NULL;
@@ -63,6 +63,13 @@ static struct src_sess *src_create_session(str *rtp, str *m_ip, str *grp,
 		memcpy(ss->group.s, grp->s, grp->len);
 		ss->group.len = grp->len;
 	}
+
+	if (hdrs && hdrs->len) {
+		ss->headers.s = (char *)(ss + 1) + ss->rtpproxy.len + ss->media_ip.len +
+			ss->group.len;
+		memcpy(ss->headers.s, hdrs->s, hdrs->len);
+		ss->headers.len = hdrs->len;
+	}
 	memcpy(ss->uuid, uuid, sizeof(*uuid));
 	ss->participants_no = 0;
 	ss->ts = ts;
@@ -76,7 +83,7 @@ static struct src_sess *src_create_session(str *rtp, str *m_ip, str *grp,
 }
 
 struct src_sess *src_new_session(str *srs, str *rtp, str *m_ip, str *grp,
-		struct socket_info *si)
+		str *hdrs, struct socket_info *si)
 {
 	struct src_sess *sess;
 	struct srs_node *node;
@@ -86,7 +93,7 @@ struct src_sess *src_new_session(str *srs, str *rtp, str *m_ip, str *grp,
 	siprec_uuid uuid;
 	siprec_build_uuid(uuid);
 
-	sess = src_create_session(rtp, m_ip, grp, si, 0, time(NULL), &uuid);
+	sess = src_create_session(rtp, m_ip, grp, si, 0, time(NULL), hdrs, &uuid);
 	if (!sess)
 		return NULL;
 
@@ -297,7 +304,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 
 	sess = src_create_session((rtpproxy.len ? &rtpproxy : NULL),
 			(media_ip.len ? &media_ip : NULL), (group.len ? &group : NULL),
-			si, version, ts, &uuid);
+			si, version, ts, NULL /* we do not replicate headers */, &uuid);
 	if (!sess) {
 		LM_ERR("cannot create a new siprec session!\n");
 		return;
