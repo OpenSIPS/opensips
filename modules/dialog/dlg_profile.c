@@ -971,13 +971,15 @@ found:
 	} else {
 		linker_prev->next = linker->next;
 	}
-	linker->next = NULL;
+
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
 
 	if (dlg->locked_by!=process_no)
 		dlg_unlock( d_table, d_entry);
 
 	destroy_linker(linker, dlg, 0, 0);
+
+	shm_free(linker);
 
 	return 1;
 }
