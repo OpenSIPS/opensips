@@ -305,7 +305,8 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	}
 
 	con = cfg_context_new_file(cfg_path);
-	if (*bytes_left < cfgtok_filebegin.len + 1 + 1+cfg_path_len+1 + 1) {
+	line_len = cfgtok_filebegin.len + 1 + 1+cfg_path_len+1 + 1;
+	if (*bytes_left < line_len + 1) {
 		if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
 			LM_ERR("oom\n");
 			goto out_err;
@@ -315,7 +316,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	/* print "start of file" adnotation */
 	snprintf(*flattened + *sz - *bytes_left, *bytes_left, "%.*s \"%.*s\"\n",
 	        cfgtok_filebegin.len, cfgtok_filebegin.s, cfg_path_len, cfg_path);
-	*bytes_left -= cfgtok_filebegin.len + 1 +1+cfg_path_len+1 + 1;
+	*bytes_left -= line_len;
 
 	for (;;) {
 		line_len = getline(&line, (size_t*)&line_buf_sz, cfg);
@@ -357,7 +358,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 		}
 
 		/* finally... we have a line! print "line number" adnotation */
-		if (*bytes_left < cfgtok_line.len + 1 + 10) {
+		if (*bytes_left < cfgtok_line.len + 1 + 10 + 1 + 1) {
 			if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
 				LM_ERR("oom\n");
 				goto out_err;
@@ -390,7 +391,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 			}
 			free(included_cfg_path);
 		} else {
-			if (*bytes_left < line_len) {
+			if (*bytes_left < line_len + 1) {
 				if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
 					LM_ERR("oom\n");
 					goto out_err;
@@ -405,7 +406,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 
 	free(line);
 
-	if (*bytes_left < cfgtok_fileend.len + 1) {
+	if (*bytes_left < cfgtok_fileend.len + 1 + 1) {
 		if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
 			LM_ERR("oom\n");
 			goto out_err;
@@ -440,10 +441,17 @@ static int flatten_opensips_cfg(FILE *cfg, const char *cfg_path, str *out)
 		return -1;
 	}
 
-	//LM_INFO("flattened config file:\n%.*s\n", sz - bytes_left, flattened);
-
 	out->s = flattened;
 	out->len = sz - bytes_left;
+
+	if (strlen(out->s) != out->len) {
+		LM_BUG("preprocessed buffer check failed (%lu vs. %d)",
+		       strlen(out->s), out->len);
+		LM_ERR("either this is a bug or your script contains '\\0' chars, "
+		        "which are obviously NOT allowed!\n");
+		return -1;
+	}
+
 	return 0;
 }
 
