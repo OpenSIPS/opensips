@@ -562,8 +562,8 @@ void print_action(struct action* t)
 		case DEFAULT_T:
 				LM_GEN1(L_DBG, "default(");
 				break;
-		case SBREAK_T:
-				LM_GEN1(L_DBG, "sbreak(");
+		case BREAK_T:
+				LM_GEN1(L_DBG, "break(");
 				break;
 		case EQ_T:
 				LM_GEN1(L_DBG, "assign(");

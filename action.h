@@ -32,8 +32,9 @@
 
 #define ACT_FL_EXIT     (1<<0)
 #define ACT_FL_RETURN   (1<<1)
-#define ACT_FL_DROP     (2<<2)
-#define ACT_FL_TBCONT   (2<<3)
+#define ACT_FL_DROP     (1<<2)
+#define ACT_FL_TBCONT   (1<<3)
+#define ACT_FL_BREAK    (1<<4)
 
 extern int action_flags;
 extern int use_script_trace;

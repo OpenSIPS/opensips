@@ -184,7 +184,7 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 			run_error_route(msg,0);
 
 		/* continue or not ? */
-		if( action_flags&(ACT_FL_RETURN|ACT_FL_EXIT) )
+		if (action_flags & (ACT_FL_RETURN | ACT_FL_EXIT | ACT_FL_BREAK))
 			break;
 	}
 	return ret;
@@ -1237,55 +1237,60 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case WHILE_T:
 			script_trace("core", "while", msg, a->file, a->line) ;
-				/* if null expr => ignore if? */
-				if ((a->elem[0].type==EXPR_ST)&&a->elem[0].u.data){
-					len = 0;
-					while(1)
+			/* if null expr => ignore if? */
+			if ((a->elem[0].type==EXPR_ST)&&a->elem[0].u.data){
+				len = 0;
+				while(1)
+				{
+					if(len++ >= max_while_loops)
 					{
-						if(len++ >= max_while_loops)
-						{
-							LM_INFO("max while loops are encountered\n");
+						LM_INFO("max while loops are encountered\n");
+						break;
+					}
+					v=eval_expr((struct expr*)a->elem[0].u.data, msg, 0);
+					/* set return code to expr value */
+					if (v<0 || (action_flags&ACT_FL_RETURN)
+							|| (action_flags&ACT_FL_EXIT) ){
+						if (v==EXPR_DROP || (action_flags&ACT_FL_RETURN)
+								|| (action_flags&ACT_FL_EXIT) ){
+							ret=0;
+							return_code = 0;
 							break;
+						}else{
+							LM_WARN("error in expression at %s:%d\n",
+									a->file, a->line);
 						}
-						v=eval_expr((struct expr*)a->elem[0].u.data, msg, 0);
-						/* set return code to expr value */
-						if (v<0 || (action_flags&ACT_FL_RETURN)
-								|| (action_flags&ACT_FL_EXIT) ){
-							if (v==EXPR_DROP || (action_flags&ACT_FL_RETURN)
-									|| (action_flags&ACT_FL_EXIT) ){
-								ret=0;
-								return_code = 0;
-								break;
-							}else{
-								LM_WARN("error in expression at %s:%d\n",
-										a->file, a->line);
-							}
-						}
+					}
 
-						ret=1;  /*default is continue */
-						if (v>0) {
-							if ((a->elem[1].type==ACTIONS_ST)
-									&&a->elem[1].u.data){
-								ret=run_action_list(
-									(struct action*)a->elem[1].u.data,msg );
-								/* check if return was done */
-								if ((action_flags&ACT_FL_RETURN)
-								|| (action_flags&ACT_FL_EXIT) ){
-									break;
-								}
-								return_code = ret;
-							} else {
-								/* we should not get here */
-								return_code = v;
+					ret=1;  /*default is continue */
+					if (v>0) {
+						if ((a->elem[1].type==ACTIONS_ST)
+								&&a->elem[1].u.data){
+							ret=run_action_list(
+								(struct action*)a->elem[1].u.data,msg );
+							/* check if return was done */
+							if (action_flags &
+									(ACT_FL_RETURN|ACT_FL_EXIT|ACT_FL_BREAK)) {
+								action_flags &= ~ACT_FL_BREAK;
 								break;
 							}
+							return_code = ret;
 						} else {
-							/* condition was false */
+							/* we should not get here */
 							return_code = v;
 							break;
 						}
+					} else {
+						/* condition was false */
+						return_code = v;
+						break;
 					}
 				}
+			}
+			break;
+		case BREAK_T:
+			script_trace("core", "break", msg, a->file, a->line) ;
+			action_flags |= ACT_FL_BREAK;
 			break;
 		case FOR_EACH_T:
 			script_trace("core", "for-each", msg, a->file, a->line) ;
@@ -1891,12 +1896,14 @@ next_avp:
 			break;
 		case SWITCH_T:
 			script_trace("core", "switch", msg, a->file, a->line) ;
-			if (a->elem[0].type!=SCRIPTVAR_ST){
+#ifdef EXTRA_DEBUG
+			if (a->elem[0].type!=SCRIPTVAR_ST || a->elem[1].type!=ACTIONS_ST) {
 				LM_ALERT("BUG in switch() type %d\n",
 						a->elem[0].type);
 				ret=E_BUG;
 				break;
 			}
+#endif
 			spec = (pv_spec_t*)a->elem[0].u.data;
 			if(pv_get_spec_value(msg, spec, &val)!=0)
 			{
@@ -1905,12 +1912,6 @@ next_avp:
 				break;
 			}
 
-			/* get the value of pvar */
-			if(a->elem[1].type!=ACTIONS_ST) {
-				LM_ALERT("BUG in switch() actions\n");
-				ret=E_BUG;
-				break;
-			}
 			return_code=1;
 			adefault = NULL;
 			aitem = (struct action*)a->elem[1].u.data;
@@ -1940,13 +1941,14 @@ next_avp:
 					{
 						return_code=run_action_list(
 							(struct action*)aitem->elem[1].u.data, msg);
-						if ((action_flags&ACT_FL_RETURN) ||
-						(action_flags&ACT_FL_EXIT))
+						if (action_flags &
+								(ACT_FL_RETURN | ACT_FL_EXIT | ACT_FL_BREAK)) {
+							action_flags &= ~ACT_FL_BREAK;
 							break;
+						}
 					}
-					if(aitem->elem[2].u.number==1)
-						break;
-					else if (!aitem->next)
+
+					if (!aitem->next)
 						cmatch = 0;
 				}
 				aitem = aitem->next;
@@ -1957,6 +1959,8 @@ next_avp:
 				if(adefault->elem[0].u.data)
 					return_code=run_action_list(
 						(struct action*)adefault->elem[0].u.data, msg);
+				if (action_flags & ACT_FL_BREAK)
+					action_flags &= ~ACT_FL_BREAK;
 			}
 			ret=return_code;
 			break;
@@ -2321,8 +2325,10 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 			              (struct action *)a->elem[2].u.data, msg);
 
 			/* check for "return" statements or "0" retcodes */
-			if (action_flags & (ACT_FL_RETURN | ACT_FL_EXIT))
+			if (action_flags & (ACT_FL_RETURN | ACT_FL_EXIT | ACT_FL_BREAK)) {
+				action_flags &= ~ACT_FL_BREAK;
 				return ret;
+			}
 
 			pvp.pvi.u.ival++;
 		}

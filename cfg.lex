@@ -159,7 +159,7 @@ ELSE			"else"
 SWITCH			"switch"
 CASE			"case"
 DEFAULT			"default"
-SBREAK			"break"|"esac"
+BREAK			"break"
 WHILE			"while"
 FOR             "for"
 IN              "in"
@@ -446,7 +446,7 @@ SPACE		[ ]
 <INITIAL>{SWITCH}	{ count(); yylval.strval=yytext; return SWITCH; }
 <INITIAL>{CASE}		{ count(); yylval.strval=yytext; return CASE; }
 <INITIAL>{DEFAULT}	{ count(); yylval.strval=yytext; return DEFAULT; }
-<INITIAL>{SBREAK}	{ count(); yylval.strval=yytext; return SBREAK; }
+<INITIAL>{BREAK}	{ count(); yylval.strval=yytext; return BREAK; }
 <INITIAL>{WHILE}	{ count(); yylval.strval=yytext; return WHILE; }
 <INITIAL>{FOR}		{ count(); yylval.strval=yytext; return FOR; }
 <INITIAL>{IN}		{ count(); yylval.strval=yytext; return IN; }

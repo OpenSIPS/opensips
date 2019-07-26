@@ -182,7 +182,7 @@ static struct multi_str *tmp_mod;
 	do { \
 		_res = mk_action(_type, _no, _elems, line, get_cfg_file_name); \
 	} while(0)
-#define mk_action0(_res, _type, _p1_type, _p2_type, _p1, _p2) \
+#define mk_action0(_res, _type) \
 	do { \
 		_res = mk_action(_type, 0, 0, line, get_cfg_file_name); \
 	} while(0)
@@ -277,7 +277,7 @@ extern int cfg_parse_only_routes;
 %token SWITCH
 %token CASE
 %token DEFAULT
-%token SBREAK
+%token BREAK
 %token WHILE
 %token FOR
 %token IN
@@ -482,8 +482,8 @@ extern int cfg_parse_only_routes;
 
 /*non-terminals */
 %type <expr> exp exp_elem exp_cond assignexp /*, condition*/
-%type <action> action actions cmd if_cmd stm exp_stm assign_cmd while_cmd
-			   foreach_cmd async_func
+%type <action> action actions brk_action brk_actions cmd if_cmd stm brk_stm
+%type <action> exp_stm assign_cmd while_cmd foreach_cmd async_func brk_if_cmd
 %type <action> switch_cmd switch_stm case_stms case_stm default_stm
 %type <intval> module_func_param
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
@@ -510,7 +510,7 @@ extern int cfg_parse_only_routes;
  * since "if_cmd" is inherently ambiguous,
  * skip 1 harmless shift/reduce conflict when compiling our grammar
  */
-%expect 1
+%expect 2
 
 
 %%
@@ -1733,6 +1733,11 @@ exp_stm:	cmd						{ $$=$1; }
 		|	LBRACE RBRACE			{ $$=0; }
 	;
 
+brk_stm:	brk_action					{ $$=$1; }
+		|	LBRACE brk_actions RBRACE	{ $$=$2; }
+		|	LBRACE RBRACE			{ $$=0; }
+	;
+
 stm:		action					{ $$=$1; }
 		|	LBRACE actions RBRACE	{ $$=$2; }
 		|	LBRACE RBRACE			{ $$=0; }
@@ -1743,14 +1748,49 @@ actions:	actions action	{$$=append_action($1, $2); }
 		| actions error { $$=0; yyerror("bad command!)"); }
 	;
 
+/* breakable actions, within a switch / while / for-each */
+brk_actions:	brk_actions brk_action	{$$=append_action($1, $2); }
+		| brk_action			{$$=$1;}
+		| brk_actions error { $$=0; yyerror("bad command!)"); }
+	;
+
 action:		cmd SEMICOLON {$$=$1;}
 		| if_cmd {$$=$1;}
-		| while_cmd { $$=$1;}
-		| foreach_cmd { $$=$1;}
+		| while_cmd {$$=$1;}
+		| foreach_cmd {$$=$1;}
 		| switch_cmd {$$=$1;}
 		| assign_cmd SEMICOLON {$$=$1;}
 		| SEMICOLON /* null action */ {$$=0;}
 		| cmd error { $$=0; yyerror("bad command: missing ';'?"); }
+	;
+
+brk_action: BREAK SEMICOLON { mk_action0($$, BREAK_T);}
+		| cmd SEMICOLON {$$=$1;}
+		| brk_if_cmd {$$=$1;}
+		| while_cmd {$$=$1;}
+		| foreach_cmd {$$=$1;}
+		| switch_cmd {$$=$1;}
+		| assign_cmd SEMICOLON {$$=$1;}
+		| SEMICOLON /* null action */ {$$=0;}
+		| cmd error { $$=0; yyerror("bad command: missing ';'?"); }
+	;
+
+brk_if_cmd:		IF exp brk_stm				{ mk_action3( $$, IF_T,
+													 EXPR_ST,
+													 ACTIONS_ST,
+													 NOSUBTYPE,
+													 $2,
+													 $3,
+													 0);
+									}
+		| IF exp brk_stm ELSE brk_stm		{ mk_action3( $$, IF_T,
+													 EXPR_ST,
+													 ACTIONS_ST,
+													 ACTIONS_ST,
+													 $2,
+													 $3,
+													 $5);
+									}
 	;
 
 if_cmd:		IF exp stm				{ mk_action3( $$, IF_T,
@@ -1769,9 +1809,9 @@ if_cmd:		IF exp stm				{ mk_action3( $$, IF_T,
 													 $3,
 													 $5);
 									}
-
 	;
-while_cmd:		WHILE exp stm				{ mk_action2( $$, WHILE_T,
+
+while_cmd:		WHILE exp brk_stm			{ mk_action2( $$, WHILE_T,
 													 EXPR_ST,
 													 ACTIONS_ST,
 													 $2,
@@ -1779,7 +1819,7 @@ while_cmd:		WHILE exp stm				{ mk_action2( $$, WHILE_T,
 									}
 	;
 
-foreach_cmd:	FOR LPAREN script_var IN script_var RPAREN stm {
+foreach_cmd:	FOR LPAREN script_var IN script_var RPAREN brk_stm {
 					if ($3->type != PVT_SCRIPTVAR &&
 					    $3->type != PVT_AVP &&
 						pv_type($3->type) != PVT_JSON) {
@@ -1797,7 +1837,7 @@ foreach_cmd:	FOR LPAREN script_var IN script_var RPAREN stm {
 					}
 	;
 
-switch_cmd:		SWITCH LPAREN script_var RPAREN LBRACE switch_stm	RBRACE	{
+switch_cmd:		SWITCH LPAREN script_var RPAREN LBRACE switch_stm RBRACE	{
 											mk_action2( $$, SWITCH_T,
 														SCRIPTVAR_ST,
 														ACTIONS_ST,
@@ -1813,89 +1853,36 @@ case_stms:	case_stms case_stm	{$$=append_action($1, $2); }
 		| case_stm			{$$=$1;}
 	;
 
-case_stm: CASE snumber COLON actions SBREAK SEMICOLON
-										{ mk_action3( $$, CASE_T,
+case_stm: CASE snumber COLON brk_actions { mk_action2( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
-													NUMBER_ST,
 													(void*)$2,
-													$4,
-													(void*)1);
+													$4);
 											}
-		| CASE snumber COLON SBREAK SEMICOLON
-										{ mk_action3( $$, CASE_T,
+		| CASE snumber COLON { mk_action2( $$, CASE_T,
 													NUMBER_ST,
 													ACTIONS_ST,
-													NUMBER_ST,
 													(void*)$2,
-													0,
-													(void*)1);
-											}
-		| CASE snumber COLON actions { mk_action3( $$, CASE_T,
-													NUMBER_ST,
-													ACTIONS_ST,
-													NUMBER_ST,
-													(void*)$2,
-													$4,
-													(void*)0);
-									}
-		| CASE snumber COLON { mk_action3( $$, CASE_T,
-													NUMBER_ST,
-													ACTIONS_ST,
-													NUMBER_ST,
-													(void*)$2,
-													0,
-													(void*)0);
+													NULL);
 							}
-		| CASE STRING COLON actions SBREAK SEMICOLON
-										{ mk_action3( $$, CASE_T,
+		| CASE STRING COLON brk_actions { mk_action2( $$, CASE_T,
 													STR_ST,
 													ACTIONS_ST,
-													NUMBER_ST,
 													(void*)$2,
-													$4,
-													(void*)1);
+													$4);
 											}
-		| CASE STRING COLON SBREAK SEMICOLON
-										{ mk_action3( $$, CASE_T,
+		| CASE STRING COLON { mk_action2( $$, CASE_T,
 													STR_ST,
 													ACTIONS_ST,
-													NUMBER_ST,
 													(void*)$2,
-													0,
-													(void*)1);
-											}
-		| CASE STRING COLON actions { mk_action3( $$, CASE_T,
-													STR_ST,
-													ACTIONS_ST,
-													NUMBER_ST,
-													(void*)$2,
-													$4,
-													(void*)0);
-									}
-		| CASE STRING COLON { mk_action3( $$, CASE_T,
-													STR_ST,
-													ACTIONS_ST,
-													NUMBER_ST,
-													(void*)$2,
-													0,
-													(void*)0);
+													NULL);
 							}
-
 	;
 
-default_stm: DEFAULT COLON actions { mk_action2( $$, DEFAULT_T,
-													ACTIONS_ST,
-													0,
-													$3,
-													0);
+default_stm: DEFAULT COLON brk_actions { mk_action1( $$, DEFAULT_T,
+													ACTIONS_ST, $3);
 									}
-		| DEFAULT COLON { mk_action2( $$, DEFAULT_T,
-													ACTIONS_ST,
-													0,
-													0,
-													0);
-									}
+		| DEFAULT COLON { mk_action1( $$, DEFAULT_T, ACTIONS_ST, NULL); }
 	;
 
 module_func_param: STRING {
