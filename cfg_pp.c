@@ -135,16 +135,19 @@ out_free:
 	return -1;
 }
 
-static int extend_cfg_buf(char **buf, int *sz, int *bytes_left)
+static int extend_cfg_buf(char **buf, int *sz, int *bytes_left, int needed)
 {
-	*buf = realloc(*buf, *sz + 4096);
+	if (needed < 4096)
+		needed = 4096;
+
+	*buf = realloc(*buf, *sz + needed);
 	if (!*buf) {
-		LM_ERR("oom\n");
+		LM_ERR("failed to extend cfg buf to %d\n", *sz + needed);
 		return -1;
 	}
 
-	*sz += 4096;
-	*bytes_left += 4096;
+	*sz += needed;
+	*bytes_left += needed;
 	return 0;
 }
 
@@ -290,7 +293,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	char *line = NULL, *included_cfg_path;
 	unsigned long line_buf_sz = 0;
 	int cfg_path_len = strlen(cfg_path);
-	int line_counter = 1, printed;
+	int line_counter = 1, needed, printed;
 	struct cfg_context *con = NULL;
 
 	if (reclev > 50) {
@@ -305,18 +308,18 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	}
 
 	con = cfg_context_new_file(cfg_path);
-	line_len = cfgtok_filebegin.len + 1 + 1+cfg_path_len+1 + 1;
-	if (*bytes_left < line_len + 1) {
-		if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
+	needed = cfgtok_filebegin.len + 1 + 1+cfg_path_len+1 + 1 + 1;
+	if (*bytes_left < needed) {
+		if (extend_cfg_buf(flattened, sz, bytes_left, needed) < 0) {
 			LM_ERR("oom\n");
 			goto out_err;
 		}
 	}
 
 	/* print "start of file" adnotation */
-	snprintf(*flattened + *sz - *bytes_left, *bytes_left, "%.*s \"%.*s\"\n",
+	printed = snprintf(*flattened + *sz - *bytes_left, *bytes_left, "%.*s \"%.*s\"\n",
 	        cfgtok_filebegin.len, cfgtok_filebegin.s, cfg_path_len, cfg_path);
-	*bytes_left -= line_len;
+	*bytes_left -= printed;
 
 	for (;;) {
 		line_len = getline(&line, (size_t*)&line_buf_sz, cfg);
@@ -358,8 +361,9 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 		}
 
 		/* finally... we have a line! print "line number" adnotation */
-		if (*bytes_left < cfgtok_line.len + 1 + 10 + 1 + 1) {
-			if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
+		needed = cfgtok_line.len + 1 + 10 + 1 + 1;
+		if (*bytes_left < needed) {
+			if (extend_cfg_buf(flattened, sz, bytes_left, needed) < 0) {
 				LM_ERR("oom\n");
 				goto out_err;
 			}
@@ -391,8 +395,9 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 			}
 			free(included_cfg_path);
 		} else {
-			if (*bytes_left < line_len + 1) {
-				if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
+			needed = line_len + 1;
+			if (*bytes_left < needed) {
+				if (extend_cfg_buf(flattened, sz, bytes_left, needed) < 0) {
 					LM_ERR("oom\n");
 					goto out_err;
 				}
@@ -406,17 +411,18 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 
 	free(line);
 
-	if (*bytes_left < cfgtok_fileend.len + 1 + 1) {
-		if (extend_cfg_buf(flattened, sz, bytes_left) < 0) {
+	needed = cfgtok_fileend.len + 1 + 1;
+	if (*bytes_left < needed) {
+		if (extend_cfg_buf(flattened, sz, bytes_left, needed) < 0) {
 			LM_ERR("oom\n");
 			goto out_err;
 		}
 	}
 
 	/* print "end of file" adnotation */
-	snprintf(*flattened + *sz - *bytes_left, *bytes_left, "%.*s\n",
+	printed = snprintf(*flattened + *sz - *bytes_left, *bytes_left, "%.*s\n",
 	        cfgtok_fileend.len, cfgtok_fileend.s);
-	*bytes_left -= cfgtok_fileend.len + 1;
+	*bytes_left -= printed;
 
 	fclose(cfg);
 	return 0;
