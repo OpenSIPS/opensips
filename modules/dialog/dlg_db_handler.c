@@ -594,12 +594,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->start_ts	= VAL_INT(values+6);
 
 			dlg->state 		= VAL_INT(values+7);
-			if (dlg->state==DLG_STATE_CONFIRMED_NA ||
-			dlg->state==DLG_STATE_CONFIRMED) {
-				if_update_stat(dlg_enable_stats, active_dlgs, 1);
-			} else if (dlg->state==DLG_STATE_EARLY) {
-				if_update_stat(dlg_enable_stats, early_dlgs, 1);
-			}
 
 			GET_STR_VALUE(cseq1, values, 9 , 1, 1);
 			GET_STR_VALUE(cseq2, values, 10 , 1, 1);
@@ -725,6 +719,13 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			}
 
 			run_load_callback_per_dlg(dlg);
+
+			if (dlg->state==DLG_STATE_CONFIRMED_NA ||
+			dlg->state==DLG_STATE_CONFIRMED) {
+				if_update_stat(dlg_enable_stats, active_dlgs, 1);
+			} else if (dlg->state==DLG_STATE_EARLY) {
+				if_update_stat(dlg_enable_stats, early_dlgs, 1);
+			}
 
 			next_dialog:
 			;
@@ -1796,12 +1797,6 @@ static int sync_dlg_db_mem(void)
 				dlg->start_ts	= VAL_INT(values+6);
 
 				dlg->state 		= VAL_INT(values+7);
-				if (dlg->state==DLG_STATE_CONFIRMED_NA ||
-				dlg->state==DLG_STATE_CONFIRMED) {
-					if_update_stat(dlg_enable_stats, active_dlgs, 1);
-				} else if (dlg->state==DLG_STATE_EARLY) {
-					if_update_stat(dlg_enable_stats, early_dlgs, 1);
-				}
 
 				GET_STR_VALUE(cseq1, values, 9 , 1, 1);
 				GET_STR_VALUE(cseq2, values, 10 , 1, 1);
@@ -1923,6 +1918,13 @@ static int sync_dlg_db_mem(void)
 				}
 
 				run_load_callback_per_dlg(dlg);
+
+				if (dlg->state==DLG_STATE_CONFIRMED_NA ||
+				dlg->state==DLG_STATE_CONFIRMED) {
+					if_update_stat(dlg_enable_stats, active_dlgs, 1);
+				} else if (dlg->state==DLG_STATE_EARLY) {
+					if_update_stat(dlg_enable_stats, early_dlgs, 1);
+				}
 			} else {
 				/* we already saw this dialog before
 				 * check which is the newer version */
