@@ -517,8 +517,14 @@ extern int cfg_parse_only_routes;
 %type <strval> folded_string
 %type <multistr> multi_string
 
-/* all shift/reduce conflicts are currently disambiguated */
-%expect 0
+/*
+ * known shift/reduce conflicts (the default action, shift, is correct):
+ *   - RETURN PLUS NUMBER
+ *   - RETURN MINUS NUMBER
+ *      (reason: MINUS has left associativity, but for both "return -1;" and
+ *         "return;" to work, it would need right assoc;  same idea for PLUS)
+ */
+%expect 2
 
 
 %%
@@ -2130,34 +2136,21 @@ async_func: ID LPAREN RPAREN {
 cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5);
 			}
-		| DROP LPAREN RPAREN	{mk_action2( $$, DROP_T,0, 0, 0, 0); }
-		| DROP					{mk_action2( $$, DROP_T,0, 0, 0, 0); }
-		| EXIT LPAREN RPAREN	{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
-		| EXIT					{mk_action2( $$, EXIT_T,0, 0, 0, 0); }
-		| RETURN LPAREN snumber RPAREN	{mk_action2( $$, RETURN_T,
-																NUMBER_ST,
-																0,
-																(void*)$3,
-																0);
-												}
-		| RETURN LPAREN script_var RPAREN	{mk_action2( $$, RETURN_T,
-																SCRIPTVAR_ST,
-																0,
-																(void*)$3,
-																0);
-												}
-		| RETURN LPAREN RPAREN	{mk_action2( $$, RETURN_T,
-																NUMBER_ST,
-																0,
-																(void*)1,
-																0);
-												}
-		| RETURN				{mk_action2( $$, RETURN_T,
-																NUMBER_ST,
-																0,
-																(void*)1,
-																0);
-												}
+		| DROP				 {mk_action0( $$, DROP_T); }
+		| DROP LPAREN RPAREN {mk_action0( $$, DROP_T); }
+		| EXIT				 {mk_action0( $$, EXIT_T); }
+		| EXIT LPAREN RPAREN {mk_action0( $$, EXIT_T); }
+		| RETURN script_var
+							 {mk_action1( $$, RETURN_T, SCRIPTVAR_ST, (void*)$2); }
+		| RETURN LPAREN script_var RPAREN
+							 {mk_action1( $$, RETURN_T, SCRIPTVAR_ST, (void*)$3); }
+		| RETURN snumber
+							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)$2); }
+		| RETURN LPAREN snumber	RPAREN
+							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)$3); }
+		| RETURN LPAREN RPAREN
+							 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)1); }
+		| RETURN			 {mk_action1( $$, RETURN_T, NUMBER_ST, (void*)1); }
 		| LOG_TOK LPAREN STRING RPAREN	{mk_action2( $$, LOG_T, NUMBER_ST,
 													STRING_ST,(void*)4,$3);
 									}
