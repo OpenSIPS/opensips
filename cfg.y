@@ -448,6 +448,7 @@ extern int cfg_parse_only_routes;
 %left BOR BAND BXOR BLSHIFT BRSHIFT
 %left PLUS MINUS SLASH MULT MODULO
 %right NOT BNOT
+%right RPAREN ELSE /* solves the classic if-if-else ambiguity */
 
 /* values */
 %token <intval> NUMBER
@@ -516,11 +517,8 @@ extern int cfg_parse_only_routes;
 %type <strval> folded_string
 %type <multistr> multi_string
 
-/*
- * since "if_cmd" is inherently ambiguous,
- * skip 1 harmless shift/reduce conflict when compiling our grammar
- */
-%expect 2
+/* all shift/reduce conflicts are currently disambiguated */
+%expect 0
 
 
 %%
@@ -1813,47 +1811,47 @@ brk_action: BREAK SEMICOLON { mk_action0($$, BREAK_T);}
 		| cmd error { $$=0; yyerror("bad command: missing ';'?"); }
 	;
 
-brk_if_cmd:		IF exp brk_stm				{ mk_action3( $$, IF_T,
+brk_if_cmd:		IF LPAREN exp RPAREN brk_stm		{ mk_action3( $$, IF_T,
 													 EXPR_ST,
 													 ACTIONS_ST,
 													 NOSUBTYPE,
-													 $2,
 													 $3,
+													 $5,
 													 0);
 									}
-		| IF exp brk_stm ELSE brk_stm		{ mk_action3( $$, IF_T,
+		| IF LPAREN exp RPAREN brk_stm ELSE brk_stm		{ mk_action3( $$, IF_T,
 													 EXPR_ST,
 													 ACTIONS_ST,
 													 ACTIONS_ST,
-													 $2,
 													 $3,
-													 $5);
+													 $5,
+													 $7);
 									}
 	;
 
-if_cmd:		IF exp stm				{ mk_action3( $$, IF_T,
+if_cmd:		IF LPAREN exp RPAREN stm				{ mk_action3( $$, IF_T,
 													 EXPR_ST,
 													 ACTIONS_ST,
 													 NOSUBTYPE,
-													 $2,
 													 $3,
+													 $5,
 													 0);
 									}
-		| IF exp stm ELSE stm		{ mk_action3( $$, IF_T,
+		| IF LPAREN exp RPAREN stm ELSE stm		{ mk_action3( $$, IF_T,
 													 EXPR_ST,
 													 ACTIONS_ST,
 													 ACTIONS_ST,
-													 $2,
 													 $3,
-													 $5);
+													 $5,
+													 $7);
 									}
 	;
 
-while_cmd:		WHILE exp brk_stm			{ mk_action2( $$, WHILE_T,
+while_cmd:		WHILE LPAREN exp RPAREN brk_stm	{ mk_action2( $$, WHILE_T,
 													 EXPR_ST,
 													 ACTIONS_ST,
-													 $2,
-													 $3);
+													 $3,
+													 $5);
 									}
 	;
 
