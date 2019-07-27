@@ -217,11 +217,11 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 /* execute assignment operation */
 int do_assign(struct sip_msg* msg, struct action* a)
 {
+	str st;
 	int ret;
-	pv_value_t val;
+	pv_value_t lval, val;
 	pv_spec_p dspec;
 
-	ret = -1;
 	dspec = (pv_spec_p)a->elem[0].u.data;
 	if(!pv_is_w(dspec))
 	{
@@ -241,52 +241,142 @@ int do_assign(struct sip_msg* msg, struct action* a)
 		}
 	}
 
-	switch ((unsigned char)a->type){
-		case EQ_T:
-		case COLONEQ_T:
-		case PLUSEQ_T:
-		case MINUSEQ_T:
-		case DIVEQ_T:
-		case MULTEQ_T:
-		case MODULOEQ_T:
-		case BANDEQ_T:
-		case BOREQ_T:
-		case BXOREQ_T:
-			script_trace("assign",
-				(unsigned char)a->type == EQ_T      ? "equal" :
-				(unsigned char)a->type == COLONEQ_T ? "colon-eq" :
-				(unsigned char)a->type == PLUSEQ_T  ? "plus-eq" :
-				(unsigned char)a->type == MINUSEQ_T ? "minus-eq" :
-				(unsigned char)a->type == DIVEQ_T   ? "div-eq" :
-				(unsigned char)a->type == MULTEQ_T  ? "mult-eq" :
-				(unsigned char)a->type == MODULOEQ_T? "modulo-eq" :
-				(unsigned char)a->type == BANDEQ_T  ? "b-and-eq" :
-				(unsigned char)a->type == BOREQ_T   ? "b-or-eq":"b-xor-eq",
-				msg, a->file, a->line);
+	switch (a->type) {
+	case EQ_T:
+	case COLONEQ_T:
+		break;
+	case PLUSEQ_T:
+	case MINUSEQ_T:
+	case DIVEQ_T:
+	case MULTEQ_T:
+	case MODULOEQ_T:
+	case BANDEQ_T:
+	case BOREQ_T:
+	case BXOREQ_T:
+		if (pv_get_spec_value(msg, dspec, &lval) != 0) {
+			LM_ERR("failed to get left-hand side value\n");
+			goto error;
+		}
 
-			if(a->elem[1].type == NULLV_ST || (val.flags & PV_VAL_NULL))
-			{
-				if(pv_set_value(msg, dspec, (int)a->type, 0)<0)
-				{
-					LM_ERR("setting PV failed\n");
+		if (lval.flags & PV_VAL_NULL || val.flags & PV_VAL_NULL) {
+			LM_ERR("NULL value(s) in complex assignment expressions "
+			         "(+=, -=, etc.)\n");
+			goto error;
+		}
+
+		/* both include STR versions and neither is primarily an INT */
+		if ((lval.flags & PV_VAL_STR) && (val.flags & PV_VAL_STR) &&
+			!(lval.flags & PV_TYPE_INT) && !(val.flags & PV_TYPE_INT)) {
+			val.ri = 0;
+
+			if (a->type != PLUSEQ_T)
+				goto bad_operands;
+
+			if (!(val.flags & PV_VAL_PKG)) {
+				st = val.rs;
+				val.rs.s = pkg_malloc(val.rs.len + lval.rs.len + 1);
+				if (!val.rs.s) {
+					val.rs.s = st.s;
+					LM_ERR("oom 1\n");
 					goto error;
+				}
+
+				memcpy(val.rs.s, lval.rs.s, lval.rs.len);
+				memcpy(val.rs.s + lval.rs.len, st.s, st.len);
+				val.rs.len += lval.rs.len;
+				val.rs.s[val.rs.len] = '\0';
+				val.flags |= PV_VAL_PKG;
+
+				if (val.flags & PV_VAL_SHM) {
+					val.flags &= ~PV_VAL_SHM;
+					shm_free(st.s);
 				}
 			} else {
-				if(pv_set_value(msg, dspec, (int)a->type, &val)<0)
-				{
-					LM_ERR("setting PV failed\n");
+				st.len = val.rs.len;
+				if (pkg_str_extend(&val.rs, val.rs.len + lval.rs.len + 1) != 0) {
+					LM_ERR("oom 2\n");
 					goto error;
 				}
+				val.rs.len--;
+				memmove(val.rs.s + lval.rs.len, val.rs.s, st.len);
+				memcpy(val.rs.s, lval.rs.s, lval.rs.len);
+				val.rs.s[val.rs.len] = '\0';
 			}
-			ret = 1;
+		} else if ((lval.flags & PV_VAL_INT) && (val.flags & PV_VAL_INT)) {
+			if (val.flags & PV_VAL_STR)
+				val.flags &= ~PV_VAL_STR;
+			switch (a->type) {
+			case PLUSEQ_T:
+				val.ri = lval.ri + val.ri;
+				break;
+			case MINUSEQ_T:
+				val.ri = lval.ri - val.ri;
+				break;
+			case DIVEQ_T:
+				val.ri = lval.ri / val.ri;
+				break;
+			case MULTEQ_T:
+				val.ri = lval.ri * val.ri;
+				break;
+			case MODULOEQ_T:
+				val.ri = lval.ri % val.ri;
+				break;
+			case BANDEQ_T:
+				val.ri = lval.ri & val.ri;
+				break;
+			case BOREQ_T:
+				val.ri = lval.ri | val.ri;
+				break;
+			case BXOREQ_T:
+				val.ri = lval.ri ^ val.ri;
+				break;
+			}
+		} else {
+			goto bad_operands;
+		}
 		break;
-		default:
-			LM_ALERT("BUG -> unknown op type %d\n", a->type);
+	default:
+		LM_ALERT("BUG -> unknown op type %d\n", a->type);
+		goto error;
+	}
+
+	script_trace("assign",
+		(unsigned char)a->type == EQ_T      ? "equal" :
+		(unsigned char)a->type == COLONEQ_T ? "colon-eq" :
+		(unsigned char)a->type == PLUSEQ_T  ? "plus-eq" :
+		(unsigned char)a->type == MINUSEQ_T ? "minus-eq" :
+		(unsigned char)a->type == DIVEQ_T   ? "div-eq" :
+		(unsigned char)a->type == MULTEQ_T  ? "mult-eq" :
+		(unsigned char)a->type == MODULOEQ_T? "modulo-eq" :
+		(unsigned char)a->type == BANDEQ_T  ? "b-and-eq" :
+		(unsigned char)a->type == BOREQ_T   ? "b-or-eq":"b-xor-eq",
+		msg, a->file, a->line);
+
+	if(a->elem[1].type == NULLV_ST || (val.flags & PV_VAL_NULL))
+	{
+		if(pv_set_value(msg, dspec, (int)a->type, 0)<0)
+		{
+			LM_ERR("setting PV failed\n");
 			goto error;
+		}
+	} else {
+		if(pv_set_value(msg, dspec, (int)a->type, &val)<0)
+		{
+			LM_ERR("setting PV failed\n");
+			goto error;
+		}
 	}
 
 	pv_value_destroy(&val);
-	return ret;
+	return 1;
+
+bad_operands:
+	LM_ERR("unsupported operand type(s) for %s: %s and %s\n",
+	       assignop_str(a->type),
+	       lval.flags & PV_VAL_STR ? "string" : "int",
+	       val.flags & PV_VAL_STR ? "string" : "int");
+	pv_value_destroy(&val);
+	return -1;
 
 error:
 	LM_ERR("error at %s:%d\n", a->file, a->line);

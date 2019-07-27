@@ -118,7 +118,17 @@ struct action{
 	struct action* next;
 };
 
-
+#define assignop_str(op) ( \
+	(op) == EQ_T ?       "=" : \
+	(op) == COLONEQ_T ?  ":=" : \
+	(op) == PLUSEQ_T ?   "+=" : \
+	(op) == MINUSEQ_T ?  "-=" : \
+	(op) == DIVEQ_T ?    "/=" : \
+	(op) == MULTEQ_T ?   "*=" : \
+	(op) == MODULOEQ_T ? "%=" : \
+	(op) == BANDEQ_T ?   "&=" : \
+	(op) == BOREQ_T ?    "|=" : \
+	(op) == BXOREQ_T ?   "^=" : "unknown")
 
 struct expr* mk_exp(int op, struct expr* left, struct expr* right);
 struct expr* mk_elem(int op, int leftt, void *leftd, int rightt, void *rightd);
