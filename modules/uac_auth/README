@@ -51,9 +51,9 @@ Chapter 1. Admin Guide
    It also provides a common set of authentication credetials to
    be used by other modules.
 
-   Known limitations in this version:
-     * authentication does not support qop auth-int, just qop
-       auth;
+   Note that authentication provided by this module supports both
+   qop "auth" and qop "auth-int" but if both values are presented
+   by the server, "auth" will be prefered.
 
 1.2. Dependencies
 
@@ -141,8 +141,8 @@ Chapter 2. Contributors
    1. Ovidiu Sas (@ovidiusas) 15 7 869 15
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 10 7 229 9
    3. Liviu Chircu (@liviuchircu) 9 6 27 61
-   4. Razvan Crainea (@razvancrainea) 5 3 5 9
-   5. Vlad Patrascu (@rvlad-patrascu) 5 3 5 5
+   4. Vlad Patrascu (@rvlad-patrascu) 6 4 44 30
+   5. Razvan Crainea (@razvancrainea) 5 3 5 9
    6. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -165,9 +165,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Sep 2011 - May 2019
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2012 - Apr 2019
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   2. Razvan Crainea (@razvancrainea)     Sep 2011 - May 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2012 - Apr 2019
    4. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6. Ovidiu Sas (@ovidiusas)             Jun 2011 - Oct 2013
@@ -179,9 +179,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
-   (@ovidiusas).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 
