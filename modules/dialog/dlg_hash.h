@@ -182,9 +182,11 @@ struct dlg_table
 	gen_lock_set_t     *locks;
 };
 
-
+extern stat_var *active_dlgs;
+extern stat_var *early_dlgs;
 extern struct dlg_table *d_table;
 extern int ctx_dlg_idx;
+extern int dlg_enable_stats;
 
 #define callee_idx(_dlg) \
 	(((_dlg)->legs_no[DLG_LEG_200OK]==0)? \
