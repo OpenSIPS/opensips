@@ -94,7 +94,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 							str *ttag, int safe)
 {
 	int h_entry;
-	unsigned int dir, dst_leg;
 	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
 	str sdp1, sdp2;
@@ -111,18 +110,15 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 		DLG_BIN_POP(str, packet, from_uri, malformed);
 		DLG_BIN_POP(str, packet, to_uri, malformed);
 
-		dlg = get_dlg(&callid, &from_tag, &to_tag, &dir, &dst_leg);
-
 		h_entry = dlg_hash(&callid);
 		d_entry = &d_table->entries[h_entry];
 
 		if (safe)
 			dlg_lock(d_table, d_entry);
 
-		if (dlg) {
+		if (get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag, &dlg) == 0) {
 			LM_DBG("Dialog with ci '%.*s' is already created\n",
-				callid.len, callid.s);
-			unref_dlg_unsafe(dlg, 1, d_entry);
+			       callid.len, callid.s);
 			/* unmark dlg as loaded from DB (otherwise it would have been
 			 * dropped later when syncing from cluster is done) */
 			dlg->flags &= ~DLG_FLAG_FROM_DB;
@@ -197,15 +193,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 	dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
 
 	/* link the dialog into the hash */
-	if (!d_entry->first)
-		d_entry->first = d_entry->last = dlg;
-	else {
-		d_entry->last->next = dlg;
-		dlg->prev = d_entry->last;
-		d_entry->last = dlg;
-	}
-	dlg->ref++;
-	d_entry->cnt++;
+	_link_dlg_unsafe(d_entry, dlg);
 
 	DLG_BIN_POP(str, packet, vars, pre_linking_error);
 	DLG_BIN_POP(str, packet, profiles, pre_linking_error);
@@ -299,7 +287,6 @@ int dlg_replicated_update(bin_packet_t *packet)
 {
 	struct dlg_cell *dlg;
 	str call_id, from_tag, to_tag, from_uri, to_uri, vars, profiles;
-	unsigned int dir, dst_leg;
 	int timeout, h_entry;
 	str st;
 	struct dlg_entry *d_entry;
@@ -315,14 +302,12 @@ int dlg_replicated_update(bin_packet_t *packet)
 		call_id.len, call_id.s, from_tag.len, from_tag.s, to_tag.len, to_tag.s,
 		from_uri.len, from_uri.s, to_uri.len, to_uri.s);
 
-	dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
-
 	h_entry = dlg_hash(&call_id);
 	d_entry = &d_table->entries[h_entry];
 
 	dlg_lock(d_table, d_entry);
 
-	if (!dlg) {
+	if (get_dlg_unsafe(d_entry, &call_id, &from_tag, &to_tag, &dlg) != 0) {
 		LM_DBG("dialog not found, building new\n");
 
 		dlg = build_new_dlg(&call_id, &from_uri, &to_uri, &from_tag);
@@ -385,8 +370,6 @@ int dlg_replicated_update(bin_packet_t *packet)
 			ref_dlg(dlg,1);
 		}
 	}
-
-	unref_dlg_unsafe(dlg, 1, d_entry);
 
 	if (vars.s && vars.len != 0) {
 		read_dialog_vars(vars.s, vars.len, dlg);

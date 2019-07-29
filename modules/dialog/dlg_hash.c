@@ -788,25 +788,15 @@ void link_dlg(struct dlg_cell *dlg, int n)
 
 	d_entry = &(d_table->entries[dlg->h_entry]);
 
-	dlg_lock( d_table, d_entry);
+	dlg_lock(d_table, d_entry);
 
-	dlg->h_id = d_entry->next_id++;
-	if (d_entry->first==0) {
-		d_entry->first = d_entry->last = dlg;
-	} else {
-		d_entry->last->next = dlg;
-		dlg->prev = d_entry->last;
-		d_entry->last = dlg;
-	}
+	link_dlg_unsafe(d_entry, dlg);
+	dlg->ref += n;
 
-	dlg->ref += 1 + n;
-	d_entry->cnt++;
-
-	LM_DBG("ref dlg %p with %d -> %d in h_entry %p - %d \n", dlg, n+1, dlg->ref,
-								d_entry,dlg->h_entry);
+	LM_DBG("ref dlg %p with %d -> %d in h_entry %p - %d \n",
+	       dlg, n + 1, dlg->ref, d_entry, dlg->h_entry);
 
 	dlg_unlock( d_table, d_entry);
-	return;
 }
 
 
