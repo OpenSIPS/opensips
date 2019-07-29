@@ -77,9 +77,6 @@ int dlg_db_mode				=	DB_MODE_NONE;
 static db_con_t* dialog_db_handle    = 0; /* database connection handle */
 static db_func_t dialog_dbf;
 
-extern int dlg_enable_stats;
-extern stat_var *active_dlgs;
-extern stat_var *early_dlgs;
 extern int dlg_bulk_del_no;
 
 static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
@@ -608,12 +605,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->start_ts	= VAL_INT(values+6);
 
 			dlg->state 		= VAL_INT(values+7);
-			if (dlg->state==DLG_STATE_CONFIRMED_NA ||
-			dlg->state==DLG_STATE_CONFIRMED) {
-				if_update_stat(dlg_enable_stats, active_dlgs, 1);
-			} else if (dlg->state==DLG_STATE_EARLY) {
-				if_update_stat(dlg_enable_stats, early_dlgs, 1);
-			}
 
 			GET_STR_VALUE(cseq1, values, 9 , 1, 1);
 			GET_STR_VALUE(cseq2, values, 10 , 1, 1);
@@ -1799,12 +1790,6 @@ static int sync_dlg_db_mem(void)
 				dlg->start_ts	= VAL_INT(values+6);
 
 				dlg->state 		= VAL_INT(values+7);
-				if (dlg->state==DLG_STATE_CONFIRMED_NA ||
-				dlg->state==DLG_STATE_CONFIRMED) {
-					if_update_stat(dlg_enable_stats, active_dlgs, 1);
-				} else if (dlg->state==DLG_STATE_EARLY) {
-					if_update_stat(dlg_enable_stats, early_dlgs, 1);
-				}
 
 				GET_STR_VALUE(cseq1, values, 9 , 1, 1);
 				GET_STR_VALUE(cseq2, values, 10 , 1, 1);
@@ -1924,6 +1909,8 @@ static int sync_dlg_db_mem(void)
 					/* to be later removed by timer */
 					ref_dlg(dlg,1);
 				}
+
+				update_dlg_stats(dlg, +1);
 
 				run_load_callback_per_dlg(dlg);
 			} else {
