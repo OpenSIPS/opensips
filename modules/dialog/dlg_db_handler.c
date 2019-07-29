@@ -504,6 +504,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	db_row_t * rows;
 	int i, nr_rows;
 	struct dlg_cell *dlg;
+	struct dlg_entry *d_entry;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
 	int no_rows = 10;
@@ -560,13 +561,26 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			/*restore the dialog info*/
 			GET_STR_VALUE(callid, values, 1, 1, 0);
-			GET_STR_VALUE(from_uri, values, 2, 1, 0);
 			GET_STR_VALUE(from_tag, values, 3, 1, 0);
+			GET_STR_VALUE(to_tag, values, 5, 1, 0);
+
+			d_entry = &d_table->entries[hash_entry];
+			dlg_lock(d_table, d_entry);
+
+			if (get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag,
+			                   &dlg) == 0) {
+				dlg_unlock(d_table, d_entry);
+				LM_DBG("dialog already exists, skipping (ci: %.*s)\n",
+				       callid.len, callid.s);
+				continue;
+			}
+
+			GET_STR_VALUE(from_uri, values, 2, 1, 0);
 			GET_STR_VALUE(to_uri, values, 4, 1, 0);
 
 			if((dlg=build_new_dlg(&callid, &from_uri, &to_uri, &from_tag))==0){
 				LM_ERR("failed to build new dialog\n");
-				goto error;
+				goto error_unlock;
 			}
 
 			if(dlg->h_entry != hash_entry){
@@ -577,11 +591,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					dialog_table_name.len, dialog_table_name.s,
 					dlg->h_entry,hash_entry);
 				shm_free(dlg);
-				goto error;
+				goto error_unlock;
 			}
 
-			/*link the dialog*/
-			link_dlg(dlg, 0);
+			/* link the dialog */
+			link_dlg_unsafe(d_entry, dlg);
 
 			dlg->h_id = hash_id;
 
@@ -618,7 +632,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			NULL, &cseq2, callee_sock,&mangled_fu,&mangled_tu,0,0)!=0) ) {
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
-				unref_dlg(dlg,1);
+				unref_dlg_unsafe(dlg, 1, d_entry);
 				continue;
 			}
 			dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
@@ -676,12 +690,12 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					dlg->legs[callee_idx(dlg)].tag.len,
 					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 				/* destroy the dialog */
-				unref_dlg(dlg,1);
+				unref_dlg_unsafe(dlg, 1, d_entry);
 				continue;
 			}
 
 			/* reference the dialog as kept in the timer list */
-			ref_dlg(dlg,1);
+			ref_dlg_unsafe(dlg, 1);
 			LM_DBG("current dialog timeout is %u\n", dlg->tl.timeout);
 
 			dlg->lifetime = 0;
@@ -696,7 +710,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 				else {
 					/* reference dialog as kept in ping timer list */
-					ref_dlg(dlg,1);
+					ref_dlg_unsafe(dlg, 1);
 				}
 			}
 
@@ -709,7 +723,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					        "ping timer\n", dlg);
 				else {
 					/* reference dialog as kept in reinvite ping timer list */
-					ref_dlg(dlg,1);
+					ref_dlg_unsafe(dlg, 1);
 				}
 			}
 
@@ -721,13 +735,15 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			if (dlg_db_mode == DB_MODE_DELAYED) {
 				/* to be later removed by timer */
-				ref_dlg(dlg,1);
+				ref_dlg_unsafe(dlg, 1);
 			}
 
+			update_dlg_stats(dlg, +1);
+
+			dlg_unlock(d_table, d_entry);
 			run_load_callback_per_dlg(dlg);
 
-			next_dialog:
-			;
+			next_dialog:;
 		}
 
 		/* any more data to be fetched ?*/
@@ -748,6 +764,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 		remove_ended_dlgs_from_db();
 	return 0;
 
+error_unlock:
+	dlg_unlock(d_table, d_entry);
 error:
 	dialog_dbf.free_result(dialog_db_handle, res);
 	if (found_ended_dlgs)
@@ -1679,7 +1697,7 @@ static int sync_dlg_db_mem(void)
 	db_val_t * values;
 	db_row_t * rows;
 	struct dlg_entry *d_entry;
-	struct dlg_cell *it,*known_dlg,*dlg=NULL;
+	struct dlg_cell *known_dlg, *dlg = NULL;
 	int i, nr_rows,callee_leg_idx,db_timeout;
 	int no_rows = 10;
 	unsigned int db_caller_cseq = 0, db_callee_cseq = 0;
@@ -1707,7 +1725,7 @@ static int sync_dlg_db_mem(void)
 
 			values = ROW_VALUES(rows + i);
 
-			if (VAL_NULL(values)) {
+			if (VAL_NULL(values) || VAL_TYPE(values) != DB_BIGINT) {
 				LM_ERR("column %.*s cannot be null -> skipping\n",
 					dlg_id_column.len, dlg_id_column.s);
 				continue;
@@ -1740,22 +1758,7 @@ static int sync_dlg_db_mem(void)
 			/* lock the whole entry */
 			dlg_lock( d_table, d_entry);
 
-			for (it=d_entry->first;it;it=it->next)
-				if (it->callid.len == callid.len &&
-					it->legs[DLG_CALLER_LEG].tag.len == from_tag.len &&
-					memcmp(it->callid.s,callid.s,callid.len)==0 &&
-					memcmp(it->legs[DLG_CALLER_LEG].tag.s,from_tag.s,from_tag.len)==0) {
-					/* callid & ftag match */
-					callee_leg_idx = callee_idx(it);
-					if (it->legs[callee_leg_idx].tag.len == to_tag.len &&
-						memcmp(it->legs[callee_leg_idx].tag.s,to_tag.s,to_tag.len)==0) {
-						/* full dlg match */
-						known_dlg = it;
-						break;
-					}
-				}
-
-			if (known_dlg == 0) {
+			if (get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag, &known_dlg) != 0) {
 				/* we can safely unlock here */
 				dlg_unlock( d_table, d_entry);
 				LM_DBG("First seen dialog - load all stuff - callid = [%.*s]\n",callid.len,callid.s);
