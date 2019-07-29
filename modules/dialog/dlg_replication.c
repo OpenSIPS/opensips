@@ -937,6 +937,10 @@ static int receive_sync_request(int node_id)
 	for (i = 0; i < d_table->size; i++) {
 		dlg_lock(d_table, &(d_table->entries[i]));
 		for (dlg = d_table->entries[i].first; dlg; dlg = dlg->next) {
+			if (dlg->state != DLG_STATE_CONFIRMED_NA &&
+			        dlg->state != DLG_STATE_CONFIRMED)
+				continue;
+
 			sync_packet = clusterer_api.sync_chunk_start(&dlg_repl_cap,
 			                   dialog_repl_cluster, node_id, BIN_VERSION);
 			if (!sync_packet)
