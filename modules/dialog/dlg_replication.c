@@ -912,6 +912,12 @@ void receive_dlg_repl(bin_packet_t *packet)
 			rc = dlg_replicated_cseq_updated(pkt);
 			break;
 		case SYNC_PACKET_TYPE:
+			if (get_bin_pkg_version(pkt) != BIN_VERSION) {
+				LM_INFO("discarding sync packet version %d, need %d\n",
+				        get_bin_pkg_version(pkt), BIN_VERSION);
+				return;
+			}
+
 			while (clusterer_api.sync_chunk_iter(pkt))
 				if (dlg_replicated_create(pkt, NULL, NULL, NULL, 1) < 0) {
 					LM_ERR("Failed to process sync packet\n");
@@ -940,7 +946,7 @@ static int receive_sync_request(int node_id)
 		dlg_lock(d_table, &(d_table->entries[i]));
 		for (dlg = d_table->entries[i].first; dlg; dlg = dlg->next) {
 			sync_packet = clusterer_api.sync_chunk_start(&dlg_repl_cap,
-												dialog_repl_cluster, node_id);
+			                   dialog_repl_cluster, node_id, BIN_VERSION);
 			if (!sync_packet)
 				goto error;
 
