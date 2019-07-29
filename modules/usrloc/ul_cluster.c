@@ -803,7 +803,7 @@ static int receive_sync_request(int node_id)
 				r = (urecord_t *)*p;
 
 				sync_packet = clusterer_api.sync_chunk_start(&contact_repl_cap,
-											location_cluster, node_id);
+									location_cluster, node_id, BIN_VERSION);
 				if (!sync_packet)
 					goto error_unlock;
 
@@ -815,7 +815,7 @@ static int receive_sync_request(int node_id)
 
 				for (c = r->contacts; c; c = c->next) {
 					sync_packet = clusterer_api.sync_chunk_start(&contact_repl_cap,
-												location_cluster, node_id);
+										location_cluster, node_id, BIN_VERSION);
 					if (!sync_packet)
 						goto error_unlock;
 
