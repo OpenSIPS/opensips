@@ -34,9 +34,6 @@
 #include "../../resolve.h"
 #include "../../forward.h"
 
-extern int dlg_enable_stats;
-
-extern stat_var *active_dlgs;
 extern stat_var *processed_dlgs;
 
 extern stat_var *create_sent;
@@ -927,6 +924,8 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 
 				if (dlg_db_mode == DB_MODE_DELAYED)
 					unref++;
+
+				update_dlg_stats(dlg, -1);
 
 				next_dlg = dlg->next;
 				unref_dlg_unsafe(dlg, unref, &d_table->entries[i]);

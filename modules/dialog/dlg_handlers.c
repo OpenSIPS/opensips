@@ -81,7 +81,6 @@ extern struct rr_binds d_rrb;
 extern int race_condition_timeout;
 
 /* statistic variables */
-extern stat_var *early_dlgs;
 extern stat_var *processed_dlgs;
 extern stat_var *expired_dlgs;
 extern stat_var *failed_dlgs;
