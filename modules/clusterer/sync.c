@@ -36,7 +36,7 @@ int send_sync_req(str *capability, int cluster_id, int source_id)
 	bin_packet_t packet;
 	int rc;
 
-	if (bin_init(&packet, &cl_extra_cap, CLUSTERER_SYNC_REQ, BIN_VERSION, 0) < 0) {
+	if (bin_init(&packet, &cl_extra_cap, CLUSTERER_SYNC_REQ, BIN_SYNC_VERSION, 0) < 0) {
 		LM_ERR("Failed to init bin send buffer\n");
 		return -1;
 	}
@@ -156,7 +156,8 @@ int cl_request_sync(str *capability, int cluster_id, int is_runtime)
 	return 0;
 }
 
-bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id)
+bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
+                                  short data_version)
 {
 	str bin_buffer;
 	int prev_chunk_size = 0;
@@ -195,13 +196,14 @@ bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id)
 			return NULL;
 		}
 
-		if (bin_init(new_packet,&cl_extra_cap,CLUSTERER_SYNC,BIN_VERSION,0)<0) {
+		if (bin_init(new_packet,&cl_extra_cap,CLUSTERER_SYNC,BIN_SYNC_VERSION,0)<0) {
 			LM_ERR("Failed to init bin packet\n");
 			pkg_free(new_packet);
 			return NULL;
 		}
 
 		bin_push_str(new_packet, capability);
+		bin_push_int(new_packet, data_version);
 		sync_packet_snd = new_packet;
 	}
 
@@ -307,7 +309,7 @@ int send_sync_repl(cluster_info_t *cluster, int node_id, str *cap_name)
 	}
 
 	/* send indication that all sync packets were sent */
-	if (bin_init(&sync_end_pkt,&cl_extra_cap,CLUSTERER_SYNC_END,BIN_VERSION,0)<0) {
+	if (bin_init(&sync_end_pkt,&cl_extra_cap,CLUSTERER_SYNC_END,BIN_SYNC_VERSION,0)<0) {
 		LM_ERR("Failed to init bin packet\n");
 		return -1;
 	}
@@ -369,6 +371,13 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 	struct local_cap *cap;
 	struct buf_bin_pkt *buf_pkt, *buf_tmp, *cutpos_next;
 	bin_packet_t *bin_pkt_list = NULL, *bin_pkt, *bin_tmp;
+	int data_version;
+
+	if (get_bin_pkg_version(packet) != BIN_SYNC_VERSION) {
+		LM_INFO("discarding sync packet version %d, need version %d\n",
+		        get_bin_pkg_version(packet), BIN_SYNC_VERSION);
+		return;
+	}
 
 	bin_pop_str(packet, &cap_name);
 	for (cap = cluster->capabilities; cap; cap = cap->next)
@@ -381,6 +390,8 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 	}
 
 	if (packet_type == CLUSTERER_SYNC) {
+		bin_pop_int(packet, &data_version);
+
 		lock_get(cluster->lock);
 		/* buffer other types of packets during sync */
 		cap->flags |= CAP_PKT_BUFFERING;
@@ -389,6 +400,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		/* overwrite packet type with one identifiable by modules */
 		packet->type = SYNC_PACKET_TYPE;
 		packet->src_id = source_id;
+		set_bin_pkg_version(packet, (short)data_version);
 
 		next_data_chunk = NULL;
 		cap->reg.packet_cb(packet);

@@ -186,9 +186,13 @@ typedef int (*request_sync_f)(str * capability, int cluster_id, int is_runtime);
  * The same packet will be returned multiple times if there is enough space left
  * otherwise, a new packet will be built and the previous one will be sent out.
  *
+ * @data_version: a way for modules to avoid data corruption when receiving
+ *                sync packets from an OpenSIPS running a different version
+ *
  * This function should only be called from the callback for the SYNC_REQ_RCV event.
  */
-typedef bin_packet_t* (*sync_chunk_start_f)(str *capability, int cluster_id, int dst_id);
+typedef bin_packet_t* (*sync_chunk_start_f)(str *capability, int cluster_id,
+                                            int dst_id, short data_version);
 /*
  * Iterate over chunks of data from a received sync packet.
  *

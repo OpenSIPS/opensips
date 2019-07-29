@@ -32,12 +32,6 @@ static int bin_extend(bin_packet_t *packet, int size);
 
 static struct packet_cb_list *reg_cbs;
 
-
-short get_bin_pkg_version(bin_packet_t *packet)
-{
-	return  *(short *)(packet->buffer.s + BIN_PACKET_MARKER_SIZE + PKG_LEN_FIELD_SIZE);
-}
-
 void set_len(bin_packet_t *packet) {
 	*(unsigned int *)(packet->buffer.s + BIN_PACKET_MARKER_SIZE) = packet->buffer.len;
 }

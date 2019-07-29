@@ -65,11 +65,19 @@ struct packet_cb_list {
 	struct packet_cb_list *next;
 };
 
+/* returns the version of the bin protocol from the given message */
+static inline short get_bin_pkg_version(bin_packet_t *packet)
+{
+	return *(short *)(packet->buffer.s + BIN_PACKET_MARKER_SIZE
+	                  + PKG_LEN_FIELD_SIZE);
+}
 
-/**
-	returns the version of the bin protocol from the received message
-*/
-short get_bin_pkg_version(bin_packet_t *packet);
+/* overrides the version of the bin protocol from the given message */
+static inline void set_bin_pkg_version(bin_packet_t *packet, short new_version)
+{
+	*(short *)(packet->buffer.s + BIN_PACKET_MARKER_SIZE
+	           + PKG_LEN_FIELD_SIZE) = new_version;
+}
 
 /*
  * returns the capability from the message

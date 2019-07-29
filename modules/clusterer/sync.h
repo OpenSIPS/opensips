@@ -28,7 +28,8 @@
 extern int sync_packet_size;
 
 int cl_request_sync(str *capability, int cluster_id, int is_runtime);
-bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id);
+bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
+                                  short data_version);
 int cl_sync_chunk_iter(bin_packet_t *packet);
 
 void handle_sync_request(bin_packet_t *packet, cluster_info_t *cluster,
