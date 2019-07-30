@@ -80,8 +80,6 @@ static db_func_t dialog_dbf;
 extern int dlg_bulk_del_no;
 
 static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
-static int persist_reinvite_pinging(struct dlg_cell *dlg);
-static int restore_reinvite_pinging(struct dlg_cell *dlg);
 
 #define SET_BIGINT_VALUE(_val, _bigint)\
 	do{\
@@ -696,6 +694,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->legs[callee_idx(dlg)].last_gen_cseq =
 				(unsigned int)(VAL_INT(values+21));
 
+			dlg_unlock(d_table, d_entry);
+
 			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 				if (0 != insert_ping_timer(dlg))
 					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
@@ -704,6 +704,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					ref_dlg_unsafe(dlg, 1);
 				}
 			}
+
 
 			if (dlg_has_reinvite_pinging(dlg)) {
 				/* re-populate Re-INVITE pinging fields */
@@ -731,7 +732,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			update_dlg_stats(dlg, +1);
 
-			dlg_unlock(d_table, d_entry);
 			run_load_callback_per_dlg(dlg);
 
 			next_dialog:;
@@ -1266,7 +1266,7 @@ str* write_dialog_profiles( struct dlg_profile_link *links)
 }
 
 /* duplicate the SDPs/Contacts of caller/callee(s) into dlg val storage */
-static int persist_reinvite_pinging(struct dlg_cell *dlg)
+int persist_reinvite_pinging(struct dlg_cell *dlg)
 {
 	str caller_in_sdp = str_init("uCSDP"), callee_in_sdp = str_init("ucSDP");
 	str caller_out_sdp = str_init("aCSDP"), callee_out_sdp = str_init("acSDP");
@@ -1321,7 +1321,7 @@ static int persist_reinvite_pinging(struct dlg_cell *dlg)
 }
 
 /* re-populate the SDPs/Contacts of caller/callee(s) from dlg val storage */
-static int restore_reinvite_pinging(struct dlg_cell *dlg)
+int restore_reinvite_pinging(struct dlg_cell *dlg)
 {
 	str caller_in_sdp = str_init("uCSDP"), callee_in_sdp = str_init("ucSDP");
 	str caller_out_sdp = str_init("aCSDP"), callee_out_sdp = str_init("acSDP");
