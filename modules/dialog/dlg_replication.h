@@ -39,7 +39,15 @@
 #define REPLICATION_DLG_DELETED		3
 #define REPLICATION_DLG_CSEQ		4
 
-#define BIN_VERSION 1
+#define BIN_VERSION 2
+#define ensure_bin_version(pkt, needed) \
+	do { \
+		if (get_bin_pkg_version(pkt) != (needed)) { \
+			LM_INFO("discarding packet type %d, ver %d: need ver %d\n", \
+			        pkt->type, get_bin_pkg_version(pkt), (needed)); \
+			return; \
+		} \
+	} while (0)
 
 extern int dialog_repl_cluster;
 extern int profile_repl_cluster;
