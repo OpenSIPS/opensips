@@ -231,6 +231,14 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 
 	dlg->lifetime = 0;
 
+	if (vars.s && vars.len != 0) {
+		read_dialog_vars(vars.s, vars.len, dlg);
+		run_dlg_callbacks(DLGCB_PROCESS_VARS, dlg,
+				NULL, DLG_DIR_NONE, NULL, 1, 0);
+	}
+
+	dlg_unlock(d_table, d_entry);
+
 	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 		if (insert_ping_timer(dlg) != 0)
 			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
@@ -239,18 +247,23 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 		}
 	}
 
+	if (dlg_has_reinvite_pinging(dlg)) {
+		/* re-populate Re-INVITE pinging fields */
+		if (restore_reinvite_pinging(dlg) != 0)
+			LM_ERR("failed to fetch some Re-INVITE pinging data\n");
+		else if (0 != insert_reinvite_ping_timer(dlg))
+			LM_CRIT("Unable to insert dlg %p into reinvite"
+			        "ping timer\n", dlg);
+		else {
+			/* reference dialog as kept in reinvite ping timer list */
+			ref_dlg_unsafe(dlg, 1);
+		}
+	}
+
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		/* to be later removed by timer */
 		ref_dlg_unsafe(dlg, 1);
 	}
-
-	if (vars.s && vars.len != 0) {
-		read_dialog_vars(vars.s, vars.len, dlg);
-		run_dlg_callbacks(DLGCB_PROCESS_VARS, dlg,
-				NULL, DLG_DIR_NONE, NULL, 1, 0);
-	}
-
-	dlg_unlock(d_table, d_entry);
 
 	if (profiles.s && profiles.len != 0)
 		read_dialog_profiles(profiles.s, profiles.len, dlg, 0, 1);
@@ -578,6 +591,9 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_CREATED, BIN_VERSION, 0) != 0)
 		goto init_error;
 
+	if (dlg_has_reinvite_pinging(dlg) && persist_reinvite_pinging(dlg))
+		LM_ERR("failed to persist Re-INVITE pinging info\n");
+
 	bin_push_dlg(&packet, dlg);
 
 	dlg->replicated = 1;
@@ -638,6 +654,9 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 
 	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_UPDATED, BIN_VERSION, 0) != 0)
 		goto init_error;
+
+	if (dlg_has_reinvite_pinging(dlg) && persist_reinvite_pinging(dlg))
+		LM_ERR("failed to persist Re-INVITE pinging info\n");
 
 	bin_push_dlg(&packet, dlg);
 
