@@ -1031,8 +1031,6 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 
 				destroy_linkers_unsafe(dlg, 0);
 
-				/* make sure dialog is not freed while we don't hold the lock */
-				ref_dlg_unsafe(dlg, unref);
 				dlg_unlock(d_table, &d_table->entries[i]);
 
 				remove_dlg_prof_table(dlg, 0, 0);
@@ -1061,7 +1059,8 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				if (dlg_db_mode == DB_MODE_DELAYED)
 					unref++;
 
-				update_dlg_stats(dlg, -1);
+				if (old_state != DLG_STATE_DELETED)
+					if_update_stat(dlg_enable_stats, active_dlgs, -1);
 
 				next_dlg = dlg->next;
 				unref_dlg_unsafe(dlg, unref, &d_table->entries[i]);
