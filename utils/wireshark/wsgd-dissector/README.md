@@ -11,12 +11,12 @@ WSGD is a C++ Wireshark plugin which offers a bespoke language, perfect for
 easily putting together (and maintaining) Wireshark dissectors intuitively, with
 a minimal amount of required code.  To install it:
 
-* go to http://wsgd.free.fr/download.html and download the `generic.so` file
+* go to http://wsgd.free.fr/download.html and download the `generic.so` archive
   corresponding to your installed Wireshark version.  You can view the version
   in the Help -> About Wireshark menu.
 
-* extract the archive using `tar xvf generic.so...`, then place it in the
-  Wireshark plugins directory of your system.  In my case, it was
+* extract the archive using `tar xvf generic.so...`, then place the `generic.so`
+  file in the Wireshark plugins directory of your system.  In my case, it was
   `/usr/lib/x86_64-linux-gnu/wireshark/plugins/2.6/epan/`.  YMMV.  Some extra
   tips are available here: http://wsgd.free.fr/installation.html
 
