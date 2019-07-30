@@ -31,6 +31,7 @@
 #include "api.h"
 
 #define BIN_VERSION 1
+#define BIN_SYNC_VERSION 2
 #define DEFAULT_PING_INTERVAL 4
 #define DEFAULT_NODE_TIMEOUT 60
 #define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */

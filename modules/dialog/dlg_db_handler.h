@@ -125,5 +125,7 @@ struct mi_root* mi_restore_dlg_db(struct mi_root *cmd, void *param);
 
 void dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
 		struct dlg_cell *dlg);
+int persist_reinvite_pinging(struct dlg_cell *dlg);
+int restore_reinvite_pinging(struct dlg_cell *dlg);
 
 #endif

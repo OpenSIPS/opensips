@@ -51,8 +51,6 @@
 #define DLG_PING_FAIL		(1<<2)
 
 extern struct tm_binds d_tmb;
-extern int dlg_enable_stats;
-extern stat_var * active_dlgs;
 
 typedef void (dlg_request_callback)(struct cell *t,int type,
 					struct tmcb_params* ps);

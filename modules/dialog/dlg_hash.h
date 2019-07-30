@@ -182,9 +182,11 @@ struct dlg_table
 	gen_lock_set_t     *locks;
 };
 
-
+extern stat_var *active_dlgs;
+extern stat_var *early_dlgs;
 extern struct dlg_table *d_table;
 extern int ctx_dlg_idx;
+extern int dlg_enable_stats;
 
 #define callee_idx(_dlg) \
 	(((_dlg)->legs_no[DLG_LEG_200OK]==0)? \
@@ -371,6 +373,25 @@ struct dlg_cell* get_dlg_by_callid( str *callid);
 
 void link_dlg(struct dlg_cell *dlg, int n);
 
+#define _link_dlg_unsafe(d_entry, dlg) \
+	do { \
+		if (!d_entry->first) { \
+			d_entry->first = d_entry->last = dlg; \
+		} else { \
+			d_entry->last->next = dlg; \
+			dlg->prev = d_entry->last; \
+			d_entry->last = dlg; \
+		} \
+		dlg->ref++; \
+		d_entry->cnt++; \
+	} while (0)
+
+#define link_dlg_unsafe(d_entry, dlg) \
+	do { \
+		dlg->h_id = d_entry->next_id++; \
+		_link_dlg_unsafe(d_entry, dlg); \
+	} while (0)
+
 void unref_dlg(struct dlg_cell *dlg, unsigned int cnt);
 
 void ref_dlg(struct dlg_cell *dlg, unsigned int cnt);
@@ -506,6 +527,43 @@ static inline int match_dialog(struct dlg_cell *dlg, str *callid,
 		}
 	}
 */
+}
+
+/* @return: 0 if found, -1 otherwise */
+static inline int get_dlg_unsafe(struct dlg_entry *d_entry,
+          str *callid, str *from_tag, str *to_tag, struct dlg_cell **out_dlg)
+{
+	struct dlg_cell *it;
+	int callee_leg_idx;
+
+	for (it = d_entry->first; it; it = it->next) {
+		if (it->callid.len == callid->len &&
+			it->legs[DLG_CALLER_LEG].tag.len == from_tag->len &&
+			!memcmp(it->callid.s, callid->s, callid->len) &&
+			!memcmp(it->legs[DLG_CALLER_LEG].tag.s, from_tag->s, from_tag->len)) {
+			/* callid & ftag match */
+			callee_leg_idx = callee_idx(it);
+			if (it->legs[callee_leg_idx].tag.len == to_tag->len &&
+				!memcmp(it->legs[callee_leg_idx].tag.s, to_tag->s, to_tag->len)) {
+				/* full dlg match */
+				*out_dlg = it;
+				return 0;
+			}
+		}
+	}
+
+	*out_dlg = NULL;
+	return -1;
+}
+
+static inline void update_dlg_stats(struct dlg_cell *dlg, int amount)
+{
+	if (dlg->state == DLG_STATE_CONFIRMED_NA ||
+	        dlg->state==DLG_STATE_CONFIRMED) {
+		if_update_stat(dlg_enable_stats, active_dlgs, amount);
+	} else if (dlg->state == DLG_STATE_EARLY) {
+		if_update_stat(dlg_enable_stats, early_dlgs, amount);
+	}
 }
 
 int mi_print_dlg(struct mi_node *rpl, struct dlg_cell *dlg, int with_context);
