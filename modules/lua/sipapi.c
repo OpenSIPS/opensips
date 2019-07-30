@@ -827,7 +827,7 @@ static int l_siplua_moduleFunc(lua_State *L)
     }
   }
 
-  act = mk_action(MODULE_T, nargs + 1, elems, 0, "lua");
+  act = mk_action(CMD_T, nargs + 1, elems, 0, "lua");
   if (!act)
     return luaL_error(L, "action structure could not be created. Error.");
 

@@ -448,12 +448,6 @@ void print_expr(struct expr* exp)
 void print_action(struct action* t)
 {
 	switch(t->type){
-		case FORWARD_T:
-				LM_GEN1(L_DBG, "forward(");
-				break;
-		case SEND_T:
-				LM_GEN1(L_DBG, "send(");
-				break;
 		case ASSERT_T:
 				LM_GEN1(L_DBG, "assert(");
 				break;
@@ -472,56 +466,8 @@ void print_action(struct action* t)
 		case EXEC_T:
 				LM_GEN1(L_DBG, "exec(");
 				break;
-		case REVERT_URI_T:
-				LM_GEN1(L_DBG, "revert_uri(");
-				break;
-		case STRIP_T:
-				LM_GEN1(L_DBG, "strip(");
-				break;
-		case APPEND_BRANCH_T:
-				LM_GEN1(L_DBG, "append_branch(");
-				break;
-		case PREFIX_T:
-				LM_GEN1(L_DBG, "prefix(");
-				break;
 		case LEN_GT_T:
 				LM_GEN1(L_DBG, "len_gt(");
-				break;
-		case SETFLAG_T:
-				LM_GEN1(L_DBG, "setflag(");
-				break;
-		case RESETFLAG_T:
-				LM_GEN1(L_DBG, "resetflag(");
-				break;
-		case ISFLAGSET_T:
-				LM_GEN1(L_DBG, "isflagset(");
-				break;
-		case SETBFLAG_T:
-				LM_GEN1(L_DBG, "setbflag(");
-				break;
-		case RESETBFLAG_T:
-				LM_GEN1(L_DBG, "resetbflag(");
-				break;
-		case ISBFLAGSET_T:
-				LM_GEN1(L_DBG, "isbflagset(");
-				break;
-		case SET_HOST_T:
-				LM_GEN1(L_DBG, "sethost(");
-				break;
-		case SET_HOSTPORT_T:
-				LM_GEN1(L_DBG, "sethostport(");
-				break;
-		case SET_USER_T:
-				LM_GEN1(L_DBG, "setuser(");
-				break;
-		case SET_USERPASS_T:
-				LM_GEN1(L_DBG, "setuserpass(");
-				break;
-		case SET_PORT_T:
-				LM_GEN1(L_DBG, "setport(");
-				break;
-		case SET_URI_T:
-				LM_GEN1(L_DBG, "seturi(");
 				break;
 		case IF_T:
 				LM_GEN1(L_DBG, "if (");
@@ -529,23 +475,8 @@ void print_action(struct action* t)
 		case WHILE_T:
 				LM_GEN1(L_DBG, "while (");
 				break;
-		case MODULE_T:
-				LM_GEN1(L_DBG, " external_module_call(");
-				break;
-		case FORCE_RPORT_T:
-				LM_GEN1(L_DBG, "force_rport(");
-				break;
-		case SET_ADV_ADDR_T:
-				LM_GEN1(L_DBG, "set_advertised_address(");
-				break;
-		case SET_ADV_PORT_T:
-				LM_GEN1(L_DBG, "set_advertised_port(");
-				break;
-		case FORCE_TCP_ALIAS_T:
-				LM_GEN1(L_DBG, "force_tcp_alias(");
-				break;
-		case FORCE_SEND_SOCKET_T:
-				LM_GEN1(L_DBG, "force_send_socket");
+		case CMD_T:
+				LM_GEN1(L_DBG, " function_call(");
 				break;
 		case RETURN_T:
 				LM_GEN1(L_DBG, "return(");
@@ -689,7 +620,7 @@ int is_mod_func_used(struct action *a, char *name, int param_no)
 {
 	cmd_export_t *cmd;
 	while(a) {
-		if (a->type==MODULE_T) {
+		if (a->type==CMD_T) {
 			/* first param is the name of the function */
 			cmd = (cmd_export_t*)a->elem[0].u.data;
 			if (strcasecmp(cmd->name, name)==0) {

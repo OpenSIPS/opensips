@@ -1357,32 +1357,27 @@ static inline int ds_get_index(int group, ds_set_p *index,
 int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock,
 																	int mode)
 {
-	struct action act;
 	uri_type utype;
 	int typelen;
+	str s;
 
-	/* initialize all the act fields */
-	memset(&act, 0, sizeof(act));
 	switch(mode)
 	{
 		case 1:
-			act.type = SET_HOSTPORT_T;
-			act.elem[0].type = STR_ST;
-
 			utype = str2uri_type(uri->s);
 			if (utype == ERROR_URI_T) {
 				LM_ERR("Unknown uri type\n");
 				return -1;
 			}
 			typelen = uri_typestrlen(utype);
-			act.elem[0].u.s.s = uri->s + typelen + 1;
-			act.elem[0].u.s.len = uri->len - typelen - 1;
-			act.next = 0;
+			s.s = uri->s + typelen + 1;
+			s.len = uri->len - typelen - 1;
 
-			if (do_action(&act, msg) < 0) {
+			if (rewrite_ruri(msg, &s, 0, RW_RURI_HOSTPORT) < 0) {
 				LM_ERR("error while setting host\n");
 				return -1;
 			}
+
 			break;
 		default:
 			if (set_dst_uri(msg, uri) < 0) {

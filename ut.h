@@ -1151,7 +1151,7 @@ static inline void log_expiry(int time_diff,int expire,
 		if (memcmp(func_info,"msg",3) == 0) {
 			for (i=0;i<LONGEST_ACTION_SIZE;i++) {
 				if (longest_action[i].a) {
-					if ((unsigned char)longest_action[i].a->type == MODULE_T)
+					if ((unsigned char)longest_action[i].a->type == CMD_T)
 					LM_WARN("#%i is a module action : %s - %dus - line %d\n",i+1,
 							((cmd_export_t*)(longest_action[i].a->elem[0].u.data))->name,
 							longest_action[i].a_time,longest_action[i].a->line);

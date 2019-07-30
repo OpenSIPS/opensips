@@ -476,6 +476,27 @@ int set_ruri(struct sip_msg* msg, str* uri);
 int set_dst_uri(struct sip_msg* msg, str* uri);
 
 
+void reset_dst_uri(struct sip_msg *msg);
+
+
+int set_dst_host_port(struct sip_msg *msg, str *host, str *port);
+
+
+enum rw_ruri_part {
+	RW_RURI_HOST = 1,
+	RW_RURI_HOSTPORT,
+	RW_RURI_USER,
+	RW_RURI_USERPASS,
+	RW_RURI_PORT,
+	RW_RURI_PREFIX,
+	RW_RURI_STRIP,
+	RW_RURI_STRIP_TAIL
+};
+
+int rewrite_ruri(struct sip_msg *msg, str *sval, int ival,
+				enum rw_ruri_part part);
+
+
 /*
  * Set the q value of the Request-URI
  */

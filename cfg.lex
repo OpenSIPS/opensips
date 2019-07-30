@@ -111,12 +111,10 @@
 %x PPTOK_LINE PPTOK_FILEBEG PPTOK_FILEEND
 
 /* action keywords */
-FORWARD	forward
 ASSERT	"assert"
 DROP	"drop"
 EXIT	"exit"
 RETURN	"return"
-SEND	send
 SEND_TCP	send_tcp
 LOG		log
 ERROR	error
@@ -129,31 +127,6 @@ ROUTE_LOCAL local_route
 ROUTE_STARTUP startup_route
 ROUTE_TIMER timer_route
 ROUTE_EVENT event_route
-FORCE_RPORT		"force_rport"|"add_rport"
-FORCE_LOCAL_RPORT		"force_local_rport"|"add_local_rport"
-FORCE_TCP_ALIAS		"force_tcp_alias"|"add_tcp_alias"
-SETFLAG		setflag
-RESETFLAG	resetflag
-ISFLAGSET	isflagset
-SETBFLAG		"setbflag"|"setbranchflag"
-RESETBFLAG		"resetbflag"|"resetbranchflag"
-ISBFLAGSET		"isbflagset"|"isbranchflagset"
-SET_HOST		"rewritehost"|"sethost"|"seth"
-SET_HOSTPORT	"rewritehostport"|"sethostport"|"sethp"
-SET_USER		"rewriteuser"|"setuser"|"setu"
-SET_USERPASS	"rewriteuserpass"|"setuserpass"|"setup"
-SET_PORT		"rewriteport"|"setport"|"setp"
-SET_URI			"rewriteuri"|"seturi"
-REVERT_URI		"revert_uri"
-SET_DSTURI		"setdsturi"|"setduri"
-RESET_DSTURI	"resetdsturi"|"resetduri"
-ISDSTURISET		"isdsturiset"|"isduriset"
-PREFIX			"prefix"
-STRIP			"strip"
-STRIP_TAIL		"strip_tail"
-APPEND_BRANCH	"append_branch"
-REMOVE_BRANCH	"remove_branch"
-PV_PRINTF		"pv_printf"|"avp_printf"
 IF				"if"
 ELSE			"else"
 SWITCH			"switch"
@@ -163,20 +136,6 @@ BREAK			"break"
 WHILE			"while"
 FOR             "for"
 IN              "in"
-SET_ADV_ADDRESS	"set_advertised_address"
-SET_ADV_PORT	"set_advertised_port"
-FORCE_SEND_SOCKET	"force_send_socket"
-SERIALIZE_BRANCHES	"serialize_branches"
-NEXT_BRANCHES	"next_branches"
-USE_BLACKLIST	"use_blacklist"
-UNUSE_BLACKLIST	"unuse_blacklist"
-CACHE_STORE		"cache_store"
-CACHE_FETCH		"cache_fetch"
-CACHE_COUNTER_FETCH	"cache_counter_fetch"
-CACHE_REMOVE	"cache_remove"
-CACHE_ADD		"cache_add"
-CACHE_SUB		"cache_sub"
-CACHE_RAW_QUERY		"cache_raw_query"
 XDBG			"xdbg"
 PV_PRINT_BUF_SIZE	"pv_print_buf_size"
 XLOG_BUF_SIZE	"xlog_buf_size"
@@ -184,15 +143,9 @@ XLOG_FORCE_COLOR	"xlog_force_color"
 XLOG_PRINT_LEVEL	"xlog_print_level"
 XLOG_LEVEL		"xlog_level"
 XLOG			"xlog"
-RAISE_EVENT		"raise_event"
-SUBSCRIBE_EVENT	"subscribe_event"
-CONSTRUCT_URI	"construct_uri"
-GET_TIMESTAMP	"get_timestamp"
-SCRIPT_TRACE    "script_trace"
 SYNC_TOKEN      "sync"
 ASYNC_TOKEN     "async"
 LAUNCH_TOKEN    "launch"
-IS_MYSELF		"is_myself"
 PPTOK_LINE      "__OSSPP_LINE__"
 PPTOK_FILEBEG   "__OSSPP_FILEBEGIN__"
 PPTOK_FILEEND   "__OSSPP_FILEEND__"
@@ -389,20 +342,12 @@ SPACE		[ ]
 
 <INITIAL>{EAT_ABLE}	{ count(); }
 
-<INITIAL>{FORWARD}	{count(); yylval.strval=yytext; return FORWARD; }
 <INITIAL>{ASSERT}	{count(); yylval.strval=yytext; return ASSERT; }
 <INITIAL>{DROP}	{ count(); yylval.strval=yytext; return DROP; }
 <INITIAL>{EXIT}	{ count(); yylval.strval=yytext; return EXIT; }
 <INITIAL>{RETURN}	{ count(); yylval.strval=yytext; return RETURN; }
-<INITIAL>{SEND}	{ count(); yylval.strval=yytext; return SEND; }
 <INITIAL>{LOG}	{ count(); yylval.strval=yytext; return LOG_TOK; }
 <INITIAL>{ERROR}	{ count(); yylval.strval=yytext; return ERROR; }
-<INITIAL>{SETFLAG}	{ count(); yylval.strval=yytext; return SETFLAG; }
-<INITIAL>{RESETFLAG}	{ count(); yylval.strval=yytext; return RESETFLAG; }
-<INITIAL>{ISFLAGSET}	{ count(); yylval.strval=yytext; return ISFLAGSET; }
-<INITIAL>{SETBFLAG}	{ count(); yylval.strval=yytext; return SETBFLAG; }
-<INITIAL>{RESETBFLAG}	{ count(); yylval.strval=yytext; return RESETBFLAG; }
-<INITIAL>{ISBFLAGSET}	{ count(); yylval.strval=yytext; return ISBFLAGSET; }
 <INITIAL>{ROUTE}	{ count(); yylval.strval=yytext; return ROUTE; }
 <INITIAL>{ROUTE_ONREPLY}	{ count(); yylval.strval=yytext;
 								return ROUTE_ONREPLY; }
@@ -417,29 +362,6 @@ SPACE		[ ]
 								return ROUTE_TIMER; }
 <INITIAL>{ROUTE_EVENT}	{ count(); yylval.strval=yytext;
 								return ROUTE_EVENT; }
-<INITIAL>{SET_HOST}	{ count(); yylval.strval=yytext; return SET_HOST; }
-<INITIAL>{SET_HOSTPORT}	{ count(); yylval.strval=yytext; return SET_HOSTPORT; }
-<INITIAL>{SET_USER}	{ count(); yylval.strval=yytext; return SET_USER; }
-<INITIAL>{SET_USERPASS}	{ count(); yylval.strval=yytext; return SET_USERPASS; }
-<INITIAL>{SET_PORT}	{ count(); yylval.strval=yytext; return SET_PORT; }
-<INITIAL>{SET_URI}	{ count(); yylval.strval=yytext; return SET_URI; }
-<INITIAL>{REVERT_URI}	{ count(); yylval.strval=yytext; return REVERT_URI; }
-<INITIAL>{SET_DSTURI}	{ count(); yylval.strval=yytext; return SET_DSTURI; }
-<INITIAL>{RESET_DSTURI}	{ count(); yylval.strval=yytext; return RESET_DSTURI; }
-<INITIAL>{ISDSTURISET}	{ count(); yylval.strval=yytext; return ISDSTURISET; }
-<INITIAL>{PREFIX}	{ count(); yylval.strval=yytext; return PREFIX; }
-<INITIAL>{STRIP}	{ count(); yylval.strval=yytext; return STRIP; }
-<INITIAL>{STRIP_TAIL}	{ count(); yylval.strval=yytext; return STRIP_TAIL; }
-<INITIAL>{APPEND_BRANCH}	{ count(); yylval.strval=yytext;
-								return APPEND_BRANCH; }
-<INITIAL>{REMOVE_BRANCH}	{ count(); yylval.strval=yytext;
-								return REMOVE_BRANCH; }
-<INITIAL>{PV_PRINTF}	{ count(); yylval.strval=yytext;
-								return PV_PRINTF; }
-<INITIAL>{FORCE_RPORT}	{ count(); yylval.strval=yytext; return FORCE_RPORT; }
-<INITIAL>{FORCE_LOCAL_RPORT}	{ count(); yylval.strval=yytext; return FORCE_LOCAL_RPORT; }
-<INITIAL>{FORCE_TCP_ALIAS}	{ count(); yylval.strval=yytext;
-								return FORCE_TCP_ALIAS; }
 <INITIAL>{IF}	{ count(); yylval.strval=yytext; return IF; }
 <INITIAL>{ELSE}	{ count(); yylval.strval=yytext; return ELSE; }
 
@@ -455,36 +377,6 @@ SPACE		[ ]
 <INITIAL>{PPTOK_FILEBEG}  { count(); BEGIN(PPTOK_FILEBEG); }
 <INITIAL>{PPTOK_FILEEND}  { count(); BEGIN(PPTOK_FILEEND); }
 
-<INITIAL>{SET_ADV_ADDRESS}	{ count(); yylval.strval=yytext;
-										return SET_ADV_ADDRESS; }
-<INITIAL>{SET_ADV_PORT}	{ count(); yylval.strval=yytext;
-										return SET_ADV_PORT; }
-<INITIAL>{FORCE_SEND_SOCKET}	{	count(); yylval.strval=yytext;
-									return FORCE_SEND_SOCKET; }
-<INITIAL>{SERIALIZE_BRANCHES}	{	count(); yylval.strval=yytext;
-									return SERIALIZE_BRANCHES; }
-<INITIAL>{NEXT_BRANCHES}	{	count(); yylval.strval=yytext;
-									return NEXT_BRANCHES; }
-<INITIAL>{USE_BLACKLIST}	{	count(); yylval.strval=yytext;
-									return USE_BLACKLIST; }
-<INITIAL>{UNUSE_BLACKLIST}	{	count(); yylval.strval=yytext;
-									return UNUSE_BLACKLIST; }
-
-<INITIAL>{CACHE_STORE}		{	count(); yylval.strval=yytext;
-									return CACHE_STORE; }
-<INITIAL>{CACHE_FETCH}		{	count(); yylval.strval=yytext;
-									return CACHE_FETCH; }
-<INITIAL>{CACHE_COUNTER_FETCH}	{	count(); yylval.strval=yytext;
-									return CACHE_COUNTER_FETCH; }
-<INITIAL>{CACHE_REMOVE}		{	count(); yylval.strval=yytext;
-									return CACHE_REMOVE; }
-<INITIAL>{CACHE_ADD}		{	count(); yylval.strval=yytext;
-									return CACHE_ADD; }
-<INITIAL>{CACHE_SUB}		{	count(); yylval.strval=yytext;
-									return CACHE_SUB; }
-<INITIAL>{CACHE_RAW_QUERY}		{	count(); yylval.strval=yytext;
-									return CACHE_RAW_QUERY; }
-
 <INITIAL>{XDBG}				{	count(); yylval.strval=yytext;
 									return XDBG; }
 <INITIAL>{PV_PRINT_BUF_SIZE}	{	count(); yylval.strval=yytext;
@@ -499,24 +391,12 @@ SPACE		[ ]
 									return XLOG_PRINT_LEVEL;}
 <INITIAL>{XLOG_LEVEL}		{	count(); yylval.strval=yytext;
 									return XLOG_LEVEL;}
-<INITIAL>{RAISE_EVENT}		{	count(); yylval.strval=yytext;
-									return RAISE_EVENT;}
-<INITIAL>{SUBSCRIBE_EVENT}		{	count(); yylval.strval=yytext;
-									return SUBSCRIBE_EVENT;}
-<INITIAL>{CONSTRUCT_URI}	{	count(); yylval.strval=yytext;
-									return CONSTRUCT_URI;}
-<INITIAL>{GET_TIMESTAMP}	{	count(); yylval.strval=yytext;
-									return GET_TIMESTAMP;}
-<INITIAL>{SCRIPT_TRACE}	{	count(); yylval.strval=yytext;
-									return SCRIPT_TRACE;}
 <INITIAL>{SYNC_TOKEN}		{ count(); yylval.strval=yytext;
 									return SYNC_TOKEN;}
 <INITIAL>{ASYNC_TOKEN}		{ count(); yylval.strval=yytext;
 									return ASYNC_TOKEN;}
 <INITIAL>{LAUNCH_TOKEN}		{ count(); yylval.strval=yytext;
 									return LAUNCH_TOKEN;}
-<INITIAL>{IS_MYSELF}		{ count(); yylval.strval=yytext;
-									return IS_MYSELF;}
 
 <INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }

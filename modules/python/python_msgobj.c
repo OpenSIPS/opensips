@@ -88,8 +88,7 @@ msg_copy(msgobject *self)
 static PyObject *
 msg_rewrite_ruri(msgobject *self, PyObject *args)
 {
-    char *ruri;
-    struct action act;
+    str ruri;
 
     if (self->msg == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "self->msg is NULL");
@@ -104,19 +103,13 @@ msg_rewrite_ruri(msgobject *self, PyObject *args)
         return Py_None;
     }
 
-    if(!PyArg_ParseTuple(args, "s:rewrite_ruri", &ruri))
+    if(!PyArg_ParseTuple(args, "s:rewrite_ruri", &ruri.s))
         return NULL;
+    ruri.len = strlen(ruri.s);
 
-    memset(&act, '\0', sizeof(act));
-
-    act.type = SET_URI_T;
-    act.elem[0].type = STR_ST;
-    act.elem[0].u.s.s = ruri;
-    act.elem[0].u.s.len = strlen(ruri);
-
-    if (do_action(&act, self->msg) < 0) {
-        LM_ERR("Error in do_action\n");
-        PyErr_SetString(PyExc_RuntimeError, "Error in do_action\n");
+    if (set_ruri(self->msg, &ruri) < 0) {
+        LM_ERR("Error setting RURI\n");
+        PyErr_SetString(PyExc_RuntimeError, "Error setting RURI\n");
     }
 
     Py_INCREF(Py_None);
@@ -299,7 +292,7 @@ msg_call_function(msgobject *self, PyObject *args)
         }
     }
 
-    act = mk_action(MODULE_T, n+1, elems, 0, "python");
+    act = mk_action(CMD_T, n+1, elems, 0, "python");
 
     if (act == NULL) {
         PyErr_SetString(PyExc_RuntimeError,

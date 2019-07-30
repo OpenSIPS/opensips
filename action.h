@@ -38,6 +38,9 @@
 
 extern int action_flags;
 extern int use_script_trace;
+extern int script_trace_log_level;
+extern char *script_trace_info;
+extern pv_elem_t script_trace_elem;
 
 #define LONGEST_ACTION_SIZE		5
 

@@ -508,7 +508,6 @@ int cr_do_route(struct sip_msg * _msg, void *_carrier,
 	struct rewrite_data * rd;
 	struct carrier_tree * ct;
 	struct route_tree * rt;
-	struct action act;
 	str dest;
 	int ret;
 
@@ -566,17 +565,12 @@ int cr_do_route(struct sip_msg * _msg, void *_carrier,
 	LM_INFO("uri %.*s was rewritten to %.*s\n",
 		rewrite_user->len, rewrite_user->s, dest.len, dest.s);
 
-	/* initialize all the act fields */
-	memset(&act, 0, sizeof(act));
-	act.type = SET_URI_T;
-	act.elem[0].type= STR_ST;
-	act.elem[0].u.s = dest;
-	act.next = NULL;
-
-	ret = do_action(&act, _msg);
-	if (ret < 0) {
-		LM_ERR("Error in do_action()\n");
+	if (set_ruri(_msg, &dest) < 0) {
+		LM_ERR("Error setting RURI\n");
+		ret = -1;
 	}
+	ret = 1;
+
 	pkg_free(dest.s);
 
 unlock_and_out:

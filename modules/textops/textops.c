@@ -550,9 +550,7 @@ static int subst_uri_f(struct sip_msg* msg, struct subst_expr *se)
  *  subst but works on the user part of the uri */
 static int subst_user_f(struct sip_msg* msg, struct subst_expr *se)
 {
-	int rval;
 	str* result;
-	struct action act;
 	str user;
 	char c;
 	int nmatches;
@@ -578,14 +576,13 @@ static int subst_user_f(struct sip_msg* msg, struct subst_expr *se)
 		return -1;
 	}
 	/* result->s[result->len] = '\0';  --subst_str returns 0-term strings */
-	memset(&act, 0, sizeof(act)); /* be on the safe side */
-	act.type = SET_USER_T;
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = *result;
-	rval = do_action(&act, msg);
+	if (rewrite_ruri(msg, result, 0, RW_RURI_USER) < 0) {
+		LM_ERR("Failed to set R-URI user\n");
+		return -1;
+	}
 	pkg_free(result->s);
 	pkg_free(result);
-	return rval;
+	return 1;
 }
 
 

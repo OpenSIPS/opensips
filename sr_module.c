@@ -426,7 +426,7 @@ cmd_function find_export(char* name, int flags)
 {
 	cmd_export_t* cmd;
 
-	cmd = find_cmd_export_t(name, flags);
+	cmd = find_mod_cmd_export_t(name, flags);
 	if (cmd==0)
 		return 0;
 
@@ -437,7 +437,7 @@ cmd_function find_export(char* name, int flags)
 
 /* Searches the module list for the "name" cmd_export_t structure.
  */
-cmd_export_t* find_cmd_export_t(char* name, int flags)
+cmd_export_t* find_mod_cmd_export_t(char* name, int flags)
 {
 	struct sr_module* t;
 	cmd_export_t* cmd;
@@ -456,9 +456,11 @@ cmd_export_t* find_cmd_export_t(char* name, int flags)
 	return 0;
 }
 
+
+
 /* Searches the module list for the "name" acmd_export_t structure.
  */
-acmd_export_t* find_acmd_export_t(char* name)
+acmd_export_t* find_mod_acmd_export_t(char* name)
 {
 	struct sr_module* t;
 	acmd_export_t* cmd;
@@ -473,59 +475,6 @@ acmd_export_t* find_acmd_export_t(char* name)
 		}
 	}
 	LM_DBG("async <%s> not found \n", name);
-	return 0;
-}
-
-/* Checks if the module function is called with the right number of parameters
- * and all mandatory parameters are given
- * Return:
- *  0 - correct call
- * -1 - too few parameters
- * -2 - too many parameters
- * -3 - mandatory parameter omitted
- */
-int check_cmd_call_params(cmd_export_t *cmd, action_elem_t *elems, int no_params)
-{
-	struct cmd_param *param;
-	int n=0, m=0, i;
-
-	for (param=cmd->params; param->flags; param++, n++)
-		if (!(param->flags & CMD_PARAM_OPT))
-			m = n+1;
-
-	if (no_params < m)  /* check the minimum number of arguments for the call,
-						 * including optional params that must be explicitly omitted */
-		return -1;
-	else if (no_params > n)
-		return -2;
-
-	for (i=1, param=cmd->params; i<=no_params; i++, param++)
-		if (!(param->flags & CMD_PARAM_OPT) && elems[i].type == NULLV_ST)
-			return -3;
-
-	return 0;
-}
-
-/* simillar function to check_cmd_call_params but for async cmds */
-int check_acmd_call_params(acmd_export_t *acmd, action_elem_t *elems, int no_params)
-{
-	struct cmd_param *param;
-	int n=0, m=0, i;
-
-	for (param=acmd->params; param->flags; param++, n++)
-		if (!(param->flags & CMD_PARAM_OPT))
-			m = n+1;
-
-	if (no_params < m)  /* check the minimum number of arguments for the call,
-						 * including optional params that must be explicitly omitted */
-		return -1;
-	else if (no_params > n)
-		return -2;
-
-	for (i=1, param=acmd->params; i<=no_params; i++, param++)
-		if (!(param->flags & CMD_PARAM_OPT) && elems[i].type == NULLV_ST)
-			return -3;
-
 	return 0;
 }
 

@@ -1085,20 +1085,9 @@ static int fix_actions(struct action* a)
 	int ret;
 	cmd_export_t* cmd;
 	acmd_export_t* acmd;
-	struct hostent* he;
-	struct ip_addr ip;
-	struct socket_info* si;
-	str host;
-	int proto=PROTO_NONE, port;
-	struct proxy_l *p;
-	struct bl_head *blh;
-	int i = 0;
 	str s;
 	pv_elem_t *model=NULL;
-	pv_elem_t *models[5];
-	pv_spec_p sp = NULL;
 	xl_level_p xlp;
-	event_id_t ev_id;
 
 	if (a==0){
 		LM_CRIT("null pointer\n");
@@ -1141,63 +1130,6 @@ static int fix_actions(struct action* a)
 						ret=E_BUG;
 						goto error;
 					}
-				}
-				break;
-			case FORWARD_T:
-				if (sl_fwd_disabled>0) {
-					LM_ERR("stateless forwarding disabled, but forward() "
-						"is used!!\n");
-					ret = E_CFG;
-					goto error;
-				}
-				sl_fwd_disabled = 0;
-				if (t->elem[0].type==NOSUBTYPE)
-					break;
-			case SEND_T:
-				if (t->elem[0].type!=STRING_ST) {
-					LM_CRIT("invalid type %d (should be string)\n", t->type);
-					ret = E_BUG;
-					goto error;
-				}
-				ret = parse_phostport( t->elem[0].u.string,
-						strlen(t->elem[0].u.string),
-						&host.s, &host.len, &port, &proto);
-				if (ret!=0) {
-					LM_ERR("ERROR:fix_actions: FORWARD/SEND bad "
-						"argument\n");
-					ret = E_CFG;
-					goto error;
-				}
-				p = mk_proxy( &host,(unsigned short)port, proto, 0);
-				if (p==0) {
-					LM_ERR("forward/send failed to add proxy");
-					ret = E_CFG;
-					goto error;
-				}
-				t->elem[0].type = PROXY_ST;
-				t->elem[0].u.data = (void*)p;
-
-				s.s = (char*)t->elem[1].u.data;
-				if (s.s && t->elem[1].type == STRING_ST)
-				{
-					/* commands have only one parameter */
-					s.s = (char *)t->elem[1].u.data;
-					s.len = strlen(s.s);
-					if(s.len==0)
-					{
-						LM_ERR("param is empty string!\n");
-						return E_CFG;
-					}
-
-					if(pv_parse_format(&s ,&model) || model==NULL)
-					{
-						LM_ERR("wrong format [%s] for value param!\n", s.s);
-						ret=E_BUG;
-						goto error;
-					}
-
-					t->elem[1].u.data = (void*)model;
-					t->elem[1].type = SCRIPTVAR_ELEM_ST;
 				}
 				break;
 			case IF_T:
@@ -1285,7 +1217,7 @@ static int fix_actions(struct action* a)
 						return ret;
 				}
 				break;
-			case MODULE_T:
+			case CMD_T:
 				cmd = (cmd_export_t*)t->elem[0].u.data;
 				LM_DBG("fixing %s, %s:%d\n", cmd->name, t->file, t->line);
 
@@ -1310,91 +1242,6 @@ static int fix_actions(struct action* a)
 					goto error;
 				}
 				break;
-			case FORCE_SEND_SOCKET_T:
-				if (t->elem[0].type!=SOCKID_ST){
-					LM_CRIT("invalid subtype %d for force_send_socket\n",
-								t->elem[0].type);
-					ret = E_BUG;
-					goto error;
-				}
-				he=resolvehost(((struct socket_id*)t->elem[0].u.data)->name,0);
-				if (he==0){
-					LM_ERR(" could not resolve %s\n",
-								((struct socket_id*)t->elem[0].u.data)->name);
-					ret = E_BAD_ADDRESS;
-					goto error;
-				}
-				hostent2ip_addr(&ip, he, 0);
-				si=find_si(&ip, ((struct socket_id*)t->elem[0].u.data)->port,
-								((struct socket_id*)t->elem[0].u.data)->proto);
-				if (si==0){
-					LM_ERR("bad force_send_socket"
-						" argument: %s:%d (opensips doesn't listen on it)\n",
-						((struct socket_id*)t->elem[0].u.data)->name,
-						((struct socket_id*)t->elem[0].u.data)->port);
-					ret = E_BAD_ADDRESS;
-					goto error;
-				}
-				t->elem[0].u.data=si;
-				t->elem[0].type=SOCKETINFO_ST;
-				break;
-			case SETFLAG_T:
-			case RESETFLAG_T:
-			case ISFLAGSET_T:
-				if (t->elem[0].type == NUMBER_ST) {
-					s.s = int2str((unsigned long)t->elem[0].u.number, &s.len);
-				    t->elem[0].u.number = fixup_flag(FLAG_TYPE_MSG, &s);
-
-				} else if (t->elem[0].type == STR_ST) {
-					t->elem[0].u.number = fixup_flag(FLAG_TYPE_MSG, &t->elem[0].u.s);
-
-				} else {
-					LM_CRIT("bad xxxflag() type %d\n", t->elem[0].type);
-					ret = E_BUG;
-					goto error;
-				}
-
-				if (t->elem[0].u.number == NAMED_FLAG_ERROR) {
-					LM_CRIT("Fixup flag failed!\n");
-					ret=E_CFG;
-					goto error;
-				}
-				break;
-			case SETBFLAG_T:
-			case RESETBFLAG_T:
-			case ISBFLAGSET_T:
-				if (t->elem[0].type!=NUMBER_ST) {
-					LM_CRIT("bad xxxbflag() type "
-						"%d,%d\n", t->elem[0].type, t->elem[0].type);
-					ret=E_BUG;
-					goto error;
-				}
-
-				if (t->elem[1].type == NUMBER_ST) {
-					s.s = int2str((unsigned long)t->elem[1].u.number, &s.len);
-				    t->elem[1].u.number = fixup_flag(FLAG_TYPE_BRANCH, &s);
-
-				} else if (t->elem[1].type == STR_ST) {
-					t->elem[1].u.number = fixup_flag(FLAG_TYPE_BRANCH,
-					                                 &t->elem[1].u.s);
-				} else {
-					LM_CRIT("bad xxxbflag() type "
-						"%d,%d\n", t->elem[1].type, t->elem[1].type);
-					ret=E_BUG;
-					goto error;
-				}
-
-				if (t->elem[1].u.number == NAMED_FLAG_ERROR) {
-					LM_CRIT("Fixup flag failed!\n");
-					ret=E_CFG;
-					goto error;
-				}
-
-				if (t->elem[1].u.data==0) {
-					ret=E_CFG;
-					goto error;
-				}
-				break;
 			case EQ_T:
 			case COLONEQ_T:
 			case PLUSEQ_T:
@@ -1408,129 +1255,6 @@ static int fix_actions(struct action* a)
 				if (t->elem[1].u.data){
 					if ((ret=fix_expr((struct expr*)t->elem[1].u.data))<0)
 						return ret;
-				}
-				break;
-			case USE_BLACKLIST_T:
-			case UNUSE_BLACKLIST_T:
-				if (t->elem[0].type!=STRING_ST) {
-					LM_CRIT("bad [UN]USE_BLACKLIST type %d\n",t->elem[0].type);
-					ret=E_BUG;
-					goto error;
-				}
-				host.s = t->elem[0].u.string;
-				host.len = strlen(host.s);
-				if (!strcasecmp(host.s, "all")) {
-					blh = NULL;
-				} else {
-					blh = get_bl_head_by_name(&host);
-					if (!blh) {
-						LM_ERR("[UN]USE_BLACKLIST - list "
-							"%s not configured\n", t->elem[0].u.string);
-						ret=E_CFG;
-						goto error;
-					}
-				}
-				t->elem[0].type = BLACKLIST_ST;
-				t->elem[0].u.data = blh;
-				break;
-			case CACHE_STORE_T:
-			case CACHE_FETCH_T:
-			case CACHE_COUNTER_FETCH_T:
-			case CACHE_REMOVE_T:
-			case CACHE_ADD_T:
-			case CACHE_SUB_T:
-			case CACHE_RAW_QUERY_T:
-				/* attr name */
-				s.s = (char*)t->elem[1].u.data;
-				s.len = strlen(s.s);
-				if(s.len==0) {
-					LM_ERR("param 2 is empty string!\n");
-					return E_CFG;
-				}
-
-				if(pv_parse_format(&s ,&model) || model==NULL) {
-						LM_ERR("wrong format [%s] for value param!\n", s.s);
-						ret=E_BUG;
-						goto error;
-				}
-				t->elem[1].u.data = (void*)model;
-
-				if (t->type==CACHE_REMOVE_T)
-					break;
-
-				/* value */
-				if (t->type==CACHE_FETCH_T ||
-					t->type==CACHE_COUNTER_FETCH_T) {
-					if(((pv_spec_p)t->elem[2].u.data)->setf == NULL)
-					{
-						LM_ERR("Third argument cannot be a read-only pvar\n");
-						ret=E_CFG;
-						goto error;
-					}
-				} else if (t->type==CACHE_STORE_T) {
-					s.s = (char*)t->elem[2].u.data;
-					s.len = strlen(s.s);
-					if(s.len==0) {
-						LM_ERR("param 2 is empty string!\n");
-						return E_CFG;
-					}
-
-					if(pv_parse_format(&s ,&model) || model==NULL) {
-						LM_ERR("wrong format [%s] for value param!\n",s.s);
-						ret=E_BUG;
-						goto error;
-					}
-					t->elem[2].u.data = (void*)model;
-				} else if (t->type==CACHE_RAW_QUERY_T) {
-					if(t->elem[2].u.data != NULL) {
-						s.s = (char*)t->elem[2].u.data;
-						s.len = strlen(s.s);
-
-						t->elem[2].u.data = (void*)parse_pvname_list(&s, PVT_AVP);
-						if (t->elem[2].u.data == NULL) {
-							ret=E_BUG;
-							goto error;
-						}
-					}
-				} else if (t->type==CACHE_ADD_T || t->type==CACHE_SUB_T) {
-					if(t->elem[4].u.data != NULL && ((pv_spec_p)t->elem[4].u.data)->setf == NULL)
-					{
-						LM_ERR("Fourth argument cannot be a read-only pvar\n");
-						ret=E_CFG;
-						goto error;
-					}
-
-				}
-				break;
-			case SET_ADV_ADDR_T:
-				s.s = (char *)t->elem[0].u.data;
-				if (s.s == NULL) {
-					LM_ERR("null param in set_advertised_address\n");
-					ret=E_BUG;
-					goto error;
-				}
-				s.len = strlen(s.s);
-				if(pv_parse_format(&s ,&model) || model==NULL) {
-						LM_ERR("wrong format for [%.*s] advertised param!\n",
-								t->elem[1].u.s.len,t->elem[1].u.s.s);
-						ret=E_BUG;
-						goto error;
-				}
-				t->elem[0].u.data = (void*)model;
-				break;
-			case SET_ADV_PORT_T:
-				if (t->elem[0].type == STR_ST) {
-					s.s = (char *)t->elem[0].u.data;
-					s.len = strlen(s.s);
-
-					if (pv_parse_format(&s ,&model) != 0 || !model) {
-							LM_ERR("wrong format for [%.*s] advertised port!\n",
-									t->elem[1].u.s.len, t->elem[1].u.s.s);
-							ret = E_BUG;
-							goto error;
-					}
-
-					t->elem[0].u.data = model;
 				}
 				break;
 			case XDBG_T:
@@ -1616,123 +1340,6 @@ static int fix_actions(struct action* a)
 					t->elem[1].type = SCRIPTVAR_ELEM_ST;
 				}
 				break;
-			case RAISE_EVENT_T:
-				s.s = t->elem[0].u.data;
-				s.len = strlen(s.s);
-				ev_id = evi_get_id(&s);
-				if (ev_id == EVI_ERROR) {
-					ev_id = evi_publish_event(s);
-					if (ev_id == EVI_ERROR) {
-						LM_ERR("cannot subscribe event\n");
-						ret=E_UNSPEC;
-						goto error;
-					}
-				}
-				t->elem[0].u.number = ev_id;
-				t->elem[0].type = NUMBER_ST;
-				if (t->elem[1].u.data &&
-						((pv_spec_p)t->elem[1].u.data)->type != PVT_AVP) {
-					LM_ERR("second parameter should be an avp\n");
-					ret=E_UNSPEC;
-					goto error;
-				}
-				/* if was called with 3 parameters */
-				if (t->elem[2].u.data &&
-						((pv_spec_p)t->elem[2].u.data)->type != PVT_AVP) {
-					LM_ERR("third parameter should be also an avp\n");
-					ret=E_UNSPEC;
-					goto error;
-				}
-				break;
-			case CONSTRUCT_URI_T:
-				for (i=0;i<5;i++)
-				{
-					s.s = (char*)t->elem[i].u.data;
-					s.len = strlen(s.s);
-					if(s.len==0)
-						continue;
-
-					if(pv_parse_format(&s ,&(models[i])) || models[i]==NULL)
-					{
-						LM_ERR("wrong format [%s] for value param!\n",s.s);
-						ret=E_BUG;
-						goto error;
-					}
-
-					t->elem[i].u.data = (void*)models[i];
-				}
-
-				if (((pv_spec_p)t->elem[5].u.data)->type != PVT_AVP)
-				{
-					LM_ERR("Wrong type for the third argument - "
-						"must be an AVP\n");
-					ret=E_BUG;
-					goto error;
-				}
-
-				break;
-			case GET_TIMESTAMP_T:
-				if (((pv_spec_p)t->elem[0].u.data)->type != PVT_AVP)
-				{
-					LM_ERR("Wrong type for the first argument - "
-						"must be an AVP\n");
-					ret=E_BUG;
-					goto error;
-				}
-
-				if (((pv_spec_p)t->elem[1].u.data)->type != PVT_AVP)
-				{
-					LM_ERR("Wrong type for the second argument - "
-						"must be an AVP\n");
-					ret=E_BUG;
-					goto error;
-				}
-				break;
-			case IS_MYSELF_T:
-				s.s = (char*)t->elem[0].u.data;
-				s.len = strlen(s.s);
-				if(s.len == 0) {
-					LM_ERR("param 1 is empty string!\n");
-					return E_CFG;
-				}
-
-				if(pv_parse_format(&s ,&model) || model == NULL) {
-						LM_ERR("wrong format [%s] for value param!\n", s.s);
-						ret=E_BUG;
-						goto error;
-				}
-				t->elem[0].u.data = (void*)model;
-				t->elem[0].type = SCRIPTVAR_ELEM_ST;
-
-				s.s = (char *)t->elem[1].u.data;
-				if (s.s == NULL)
-					break;
-
-				s.len = strlen(s.s);
-				if(s.len == 0) {
-					LM_ERR("param 2 is empty string!\n");
-					return E_CFG;
-				}
-				if (s.s[0] == PV_MARKER) {
-					sp = pkg_malloc(sizeof *sp);
-					if (!sp) {
-						LM_ERR("No more pkg memory\n");
-						return E_BUG;
-					}
-					if (pv_parse_spec(&s, sp) == NULL) {
-						LM_ERR("Unable to parse port parameter var\n");
-						return E_BUG;
-					}
-					t->elem[1].u.data = (void*)sp;
-					t->elem[1].type = SCRIPTVAR_ST;
-				} else {
-					if (str2int(&s, (unsigned int *)&port) < 0) {
-						LM_ERR("port parameter should be a number\n");
-						return E_CFG;
-					}
-					t->elem[1].u.number = port;
-					t->elem[1].type = NUMBER_ST;
-				}
 		}
 	}
 	return 0;
@@ -1881,7 +1488,7 @@ static int check_actions(struct action *a, int r_type)
 					if (n!=0) goto error;
 				}
 				break;
-			case MODULE_T:
+			case CMD_T:
 				/* do check :D */
 				fct = (cmd_export_t*)(a->elem[0].u.data);
 				if ( (fct->flags&r_type)!=r_type ) {

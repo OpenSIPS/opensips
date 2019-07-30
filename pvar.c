@@ -2693,8 +2693,6 @@ error:
 int pv_set_dsturi(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	struct action  act;
-
 	if(msg==NULL || param==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2703,13 +2701,8 @@ int pv_set_dsturi(struct sip_msg* msg, pv_param_t *param,
 
 	if(val == NULL)
 	{
-		memset(&act, 0, sizeof(act));
-		act.type = RESET_DSTURI_T;
-		if (do_action(&act, msg)<0)
-		{
-			LM_ERR("error - do action failed)\n");
-			goto error;
-		}
+		reset_dst_uri(msg);
+
 		return 1;
 	}
 	if(!(val->flags&PV_VAL_STR))
@@ -2778,8 +2771,6 @@ int pv_set_ru_q(struct sip_msg* msg, pv_param_t *param,
 int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	struct action  act;
-
 	if(msg==NULL || param==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2788,44 +2779,26 @@ int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
 
 	if(val == NULL)
 	{
-		memset(&act, 0, sizeof(act));
-		act.type = SET_USER_T;
-		act.elem[0].type = STR_ST;
-		act.elem[0].u.s = str_empty;
-		if (do_action(&act, msg)<0)
-		{
-			LM_ERR("do action failed)\n");
-			goto error;
-		}
-		return 0;
+		val->rs = str_empty;
 	}
 
 	if(!(val->flags&PV_VAL_STR))
 	{
 		LM_ERR("str value required to set R-URI user\n");
-		goto error;
+		return -1;
 	}
 
-	memset(&act, 0, sizeof(act));
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = val->rs;
-	act.type = SET_USER_T;
-	if (do_action(&act, msg)<0)
-	{
-		LM_ERR("do action failed\n");
-		goto error;
+	if (rewrite_ruri(msg, &val->rs, 0, RW_RURI_USER) < 0) {
+		LM_ERR("Failed to set R-URI user\n");
+		return -1;
 	}
 
 	return 0;
-error:
-	return -1;
 }
 
 int pv_set_ruri_host(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	struct action  act;
-
 	if(msg==NULL || param==NULL || val==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2835,29 +2808,20 @@ int pv_set_ruri_host(struct sip_msg* msg, pv_param_t *param,
 	if(!(val->flags&PV_VAL_STR))
 	{
 		LM_ERR("str value required to set R-URI hostname\n");
-		goto error;
+		return -1;
 	}
 
-	memset(&act, 0, sizeof(act));
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = val->rs;
-	act.type = SET_HOST_T;
-	if (do_action(&act, msg)<0)
-	{
-		LM_ERR("do action failed\n");
-		goto error;
+	if (rewrite_ruri(msg, &val->rs, 0, RW_RURI_HOST) < 0) {
+		LM_ERR("Failed to set R-URI hostname\n");
+		return -1;
 	}
 
 	return 0;
-error:
-	return -1;
 }
 
 int pv_set_dsturi_host(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	struct action act;
-
 	if(msg==NULL || param==NULL || val==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2867,30 +2831,20 @@ int pv_set_dsturi_host(struct sip_msg* msg, pv_param_t *param,
 	if(!(val->flags&PV_VAL_STR))
 	{
 		LM_ERR("str value required to set DST-URI hostname\n");
-		goto error;
+		return -1;
 	}
 
-	memset(&act, 0, sizeof(act));
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = val->rs;
-	act.type = SET_DSTHOST_T;
-
-	if (do_action(&act, msg)<0)
-	{
-		LM_ERR("do action failed\n");
-		goto error;
+	if (set_dst_host_port(msg, &val->rs, NULL) < 0) {
+		LM_ERR("Failed to set DST-URI host\n");
+		return -1;
 	}
 
 	return 0;
-error:
-	return -1;
 }
 
 int pv_set_dsturi_port(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	struct action  act;
-
 	if(msg==NULL || param==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2899,38 +2853,18 @@ int pv_set_dsturi_port(struct sip_msg* msg, pv_param_t *param,
 
 	if(val == NULL)
 	{
-		memset(&act, 0, sizeof(act));
-		act.type = SET_DSTPORT_T;
-		act.elem[0].type = STR_ST;
-		act.elem[0].u.s.s = "";
-		act.elem[0].u.s.len = 0;
-		if (do_action(&act, msg)<0)
-		{
-			LM_ERR("do action failed)\n");
-			goto error;
-		}
-		return 0;
-	}
-
-	if(!(val->flags&PV_VAL_STR))
+		val->rs = str_empty;
+	} else if(!(val->flags&PV_VAL_STR))
 	{
 		val->rs.s = int2str(val->ri, &val->rs.len);
-		val->flags |= PV_VAL_STR;
 	}
 
-	memset(&act, 0, sizeof(act));
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = val->rs;
-	act.type = SET_DSTPORT_T;
-	if (do_action(&act, msg)<0)
-	{
-		LM_ERR("do action failed\n");
-		goto error;
+	if (set_dst_host_port(msg, NULL, &val->rs) < 0) {
+		LM_ERR("Failed to set DST-URI port\n");
+		return -1;
 	}
 
 	return 0;
-error:
-	return -1;
 }
 
 
@@ -2939,8 +2873,6 @@ error:
 int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	struct action  act;
-
 	if(msg==NULL || param==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2949,38 +2881,18 @@ int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 
 	if(val == NULL)
 	{
-		memset(&act, 0, sizeof(act));
-		act.type = SET_PORT_T;
-		act.elem[0].type = STR_ST;
-		act.elem[0].u.s.s = "";
-		act.elem[0].u.s.len = 0;
-		if (do_action(&act, msg)<0)
-		{
-			LM_ERR("do action failed)\n");
-			goto error;
-		}
-		return 0;
+		val->rs = str_empty;
 	}
 
 	if(!(val->flags&PV_VAL_STR))
-	{
 		val->rs.s = int2str(val->ri, &val->rs.len);
-		val->flags |= PV_VAL_STR;
-	}
 
-	memset(&act, 0, sizeof(act));
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = val->rs;
-	act.type = SET_PORT_T;
-	if (do_action(&act, msg)<0)
-	{
-		LM_ERR("do action failed\n");
-		goto error;
+	if (rewrite_ruri(msg, &val->rs, 0, RW_RURI_PORT) < 0) {
+		LM_ERR("Failed to set R-URI hostname\n");
+		return -1;
 	}
 
 	return 0;
-error:
-	return -1;
 }
 
 

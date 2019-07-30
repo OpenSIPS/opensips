@@ -1055,7 +1055,6 @@ inline static int append_0(str *in, str *out)
 int ops_pushto_avp (struct sip_msg* msg, struct fis_param* dst,
 													struct fis_param* src)
 {
-	struct action  act;
 	struct usr_avp *avp;
 	unsigned short name_type;
 	int_str        avp_val;
@@ -1107,16 +1106,16 @@ int ops_pushto_avp (struct sip_msg* msg, struct fis_param* dst,
 			val.s = int2str((unsigned long)avp_val.n, &val.len);
 		}
 
-		act_type = 0;
+		act_type = -1;
 		/* push the value into right position */
 		if (dst->opd&AVPOPS_USE_RURI)
 		{
 			if (dst->opd&AVPOPS_FLAG_USER0)
-				act_type = SET_USER_T;
+				act_type = RW_RURI_USER;
 			else if (dst->opd&AVPOPS_FLAG_DOMAIN0)
-				act_type = SET_HOST_T;
+				act_type = RW_RURI_HOST;
 			else
-				act_type = SET_URI_T;
+				act_type = 0; /* entire RURI */
 			if ( flags&AVP_VAL_STR && append_0( &val, &val)!=0 ) {
 				LM_ERR("failed to make 0 term.\n");
 				goto error;
@@ -1134,7 +1133,7 @@ int ops_pushto_avp (struct sip_msg* msg, struct fis_param* dst,
 			goto error;
 		}
 
-		if ( act_type )
+		if ( act_type != -1 )
 		{
 			/* rewrite part of ruri */
 			if (n)
@@ -1147,14 +1146,16 @@ int ops_pushto_avp (struct sip_msg* msg, struct fis_param* dst,
 					goto error;
 				}
 			}
-			memset(&act, 0, sizeof(act));
-			act.elem[0].type = STR_ST;
-			act.elem[0].u.s = val;
-			act.type = act_type;
-			if (do_action(&act, msg)<0)
-			{
-				LM_ERR("SET_XXXX_T action failed\n");
-				goto error;
+			if (act_type == 0) {
+				if (set_ruri(msg, &val) < 0) {
+					LM_ERR("Failed to set RURI\n");
+					goto error;
+				}
+			} else {
+				if (rewrite_ruri(msg, &val, 0, act_type) < 0) {
+					LM_ERR("Failed to set user or host\n");
+					goto error;
+				}
 			}
 		} else if (dst->opd&AVPOPS_USE_DURI) {
 			if(set_dst_uri(msg, &val)!=0)

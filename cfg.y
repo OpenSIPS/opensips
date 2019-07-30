@@ -136,7 +136,6 @@ static str s_tmp;
 static str tstr;
 static struct net* net_tmp;
 static pv_spec_t *spec;
-static pv_elem_t *pvmodel;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
 
@@ -485,7 +484,7 @@ extern int cfg_parse_only_routes;
 %type <action> action actions brk_action brk_actions cmd if_cmd stm brk_stm
 %type <action> exp_stm assign_cmd while_cmd foreach_cmd async_func brk_if_cmd
 %type <action> switch_cmd switch_stm case_stms case_stm default_stm
-%type <intval> module_func_param
+%type <intval> func_param
 %type <ipaddr> ipv4 ipv6 ipv6addr ip
 %type <ipnet> ipnet
 %type <specval> script_var
@@ -1885,12 +1884,12 @@ default_stm: DEFAULT COLON brk_actions { mk_action1( $$, DEFAULT_T,
 		| DEFAULT COLON { mk_action1( $$, DEFAULT_T, ACTIONS_ST, NULL); }
 	;
 
-module_func_param: STRING {
+func_param: STRING {
 										elems[1].type = STR_ST;
 										elems[1].u.data = $1;
 										$$=1;
 										}
-		| module_func_param COMMA STRING {
+		| func_param COMMA STRING {
 										if ($1+1>=MAX_ACTION_ELEMS) {
 											yyerror("too many arguments "
 												"in function\n");
@@ -1914,7 +1913,7 @@ module_func_param: STRING {
 										elems[2].u.data = $2;
 										$$=2;
 										}
-		| module_func_param COMMA {
+		| func_param COMMA {
 										if ($1+1>=MAX_ACTION_ELEMS) {
 											yyerror("too many arguments "
 												"in function\n");
@@ -1936,7 +1935,7 @@ module_func_param: STRING {
 										elems[2].u.number = $2;
 										$$=2;
 										}
-		| module_func_param COMMA snumber {
+		| func_param COMMA snumber {
 										if ($1+1>=MAX_ACTION_ELEMS) {
 											yyerror("too many arguments "
 												"in function\n");
@@ -1958,7 +1957,7 @@ module_func_param: STRING {
 										elems[2].u.data = $2;
 										$$=2;
 										}
-		| module_func_param COMMA script_var {
+		| func_param COMMA script_var {
 										if ($1+1>=MAX_ACTION_ELEMS) {
 											yyerror("too many arguments "
 												"in function\n");
@@ -2033,7 +2032,7 @@ route_param: STRING {
 	;
 
 async_func: ID LPAREN RPAREN {
-				cmd_tmp=(void*)find_acmd_export_t($1);
+				cmd_tmp=(void*)find_mod_acmd_export_t($1);
 				if (cmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
 						"missing loadmodule?", $1);
@@ -2050,8 +2049,8 @@ async_func: ID LPAREN RPAREN {
 					}
 				}
 			}
-			| ID LPAREN module_func_param RPAREN {
-				cmd_tmp=(void*)find_acmd_export_t($1);
+			| ID LPAREN func_param RPAREN {
+				cmd_tmp=(void*)find_mod_acmd_export_t($1);
 				if (cmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
 						"missing loadmodule?", $1);
@@ -2091,39 +2090,7 @@ async_func: ID LPAREN RPAREN {
 			}
 	;
 
-cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
-											STRING_ST,
-											0,
-											$3,
-											0);
-										}
-		| FORWARD LPAREN RPAREN {
-										mk_action2( $$, FORWARD_T,
-											0,
-											0,
-											0,
-											0);
-										}
-		| FORWARD error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| FORWARD LPAREN error RPAREN { $$=0; yyerror("bad forward "
-										"argument"); }
-
-		| SEND LPAREN STRING RPAREN { mk_action2( $$, SEND_T,
-											STRING_ST,
-											0,
-											$3,
-											0);
-										}
-		| SEND LPAREN STRING COMMA STRING RPAREN { mk_action2( $$, SEND_T,
-											STRING_ST,
-											STRING_ST,
-											$3,
-											$5);
-										}
-		| SEND error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SEND LPAREN error RPAREN { $$=0; yyerror("bad send"
-													"argument"); }
-		| ASSERT LPAREN exp COMMA STRING RPAREN	 {
+cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 			mk_action2( $$, ASSERT_T, EXPR_ST, STRING_ST, $3, $5);
 			}
 		| DROP LPAREN RPAREN	{mk_action2( $$, DROP_T,0, 0, 0, 0); }
@@ -2166,71 +2133,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| LOG_TOK error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| LOG_TOK LPAREN error RPAREN { $$=0; yyerror("bad log"
 									"argument"); }
-		| SETFLAG LPAREN NUMBER RPAREN {
-			mk_action2($$, SETFLAG_T, NUMBER_ST, 0, (void *)$3, 0 );
-			}
-		| SETFLAG LPAREN ID RPAREN {mk_action2($$, SETFLAG_T, STR_ST, 0,
-													(void *)$3, 0 ); }
-		| SETFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| RESETFLAG LPAREN NUMBER RPAREN {mk_action2( $$, RESETFLAG_T,
-										NUMBER_ST, 0, (void *)$3, 0 ); }
-		| RESETFLAG LPAREN ID RPAREN {mk_action2( $$, RESETFLAG_T,
-										STR_ST, 0, (void *)$3, 0 ); }
-		| RESETFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| ISFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$, ISFLAGSET_T,
-										NUMBER_ST, 0, (void *)$3, 0 ); }
-		| ISFLAGSET LPAREN ID RPAREN {mk_action2( $$, ISFLAGSET_T,
-										STR_ST, 0, (void *)$3, 0 ); }
-		| ISFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
-		| SETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$,
-													SETBFLAG_T,
-													NUMBER_ST, NUMBER_ST,
-													(void *)$3, (void *)$5 ); }
-		| SETBFLAG LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$,
-													SETBFLAG_T,
-													NUMBER_ST, STR_ST,
-													(void *)$3, (void *)$5 ); }
-		| SETBFLAG LPAREN NUMBER RPAREN {mk_action2( $$, SETBFLAG_T,
-													NUMBER_ST, NUMBER_ST,
-													0, (void *)$3 ); }
-		| SETBFLAG LPAREN ID RPAREN {mk_action2( $$, SETBFLAG_T,
-													NUMBER_ST, STR_ST,
-													0, (void *)$3 ); }
-		| SETBFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| RESETBFLAG LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$,
-													RESETBFLAG_T,
-													NUMBER_ST, NUMBER_ST,
-													(void *)$3, (void *)$5 ); }
-		| RESETBFLAG LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$,
-													RESETBFLAG_T,
-													NUMBER_ST, STR_ST,
-													(void *)$3, (void *)$5 ); }
-		| RESETBFLAG LPAREN NUMBER RPAREN {mk_action2( $$,
-													RESETBFLAG_T,
-													NUMBER_ST, NUMBER_ST,
-													0, (void *)$3 ); }
-		| RESETBFLAG LPAREN ID RPAREN {mk_action2( $$,
-													RESETBFLAG_T,
-													NUMBER_ST, STR_ST,
-													0, (void *)$3 ); }
-		| RESETBFLAG error { $$=0; yyerror("missing '(' or ')'?"); }
-		| ISBFLAGSET LPAREN NUMBER COMMA NUMBER RPAREN {mk_action2( $$,
-													ISBFLAGSET_T,
-													NUMBER_ST, NUMBER_ST,
-													(void *)$3, (void *)$5 ); }
-		| ISBFLAGSET LPAREN NUMBER COMMA ID RPAREN {mk_action2( $$,
-													ISBFLAGSET_T,
-													NUMBER_ST, STR_ST,
-													(void *)$3, (void *)$5 ); }
-		| ISBFLAGSET LPAREN NUMBER RPAREN {mk_action2( $$,
-													ISBFLAGSET_T,
-													NUMBER_ST, NUMBER_ST,
-													0, (void *)$3 ); }
-		| ISBFLAGSET LPAREN ID RPAREN {mk_action2( $$,
-													ISBFLAGSET_T,
-													NUMBER_ST, STR_ST,
-													0, (void *)$3 ); }
-		| ISBFLAGSET error { $$=0; yyerror("missing '(' or ')'?"); }
 		| ERROR LPAREN STRING COMMA STRING RPAREN {mk_action2( $$, ERROR_T,
 																STRING_ST,
 																STRING_ST,
@@ -2273,389 +2175,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| ROUTE error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
 						"argument"); }
-		| SET_HOST LPAREN STRING RPAREN { mk_action2( $$, SET_HOST_T, STR_ST,
-														0, $3, 0); }
-		| SET_HOST error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SET_HOST LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"string expected"); }
-
-		| PREFIX LPAREN STRING RPAREN { mk_action2( $$, PREFIX_T, STR_ST,
-														0, $3, 0); }
-		| PREFIX error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| PREFIX LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"string expected"); }
-		| STRIP_TAIL LPAREN NUMBER RPAREN { mk_action2( $$, STRIP_TAIL_T,
-									NUMBER_ST, 0, (void *) $3, 0); }
-		| STRIP_TAIL error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| STRIP_TAIL LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"number expected"); }
-
-		| STRIP LPAREN NUMBER RPAREN { mk_action2( $$, STRIP_T, NUMBER_ST,
-														0, (void *) $3, 0); }
-		| STRIP error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| STRIP LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"number expected"); }
-		| APPEND_BRANCH LPAREN STRING COMMA STRING RPAREN {
-			{
-				qvalue_t q;
-
-				rc = str2q(&q, $5, strlen($5));
-				if (rc < 0)
-					yyerrorf("bad qvalue (%.*s): %s",
-							 strlen($5), $5, qverr2str(rc));
-
-				mk_action2( $$, APPEND_BRANCH_T, STR_ST, NUMBER_ST, $3,
-						(void *)(long)q);
-			}
-		}
-		| APPEND_BRANCH LPAREN STRING RPAREN { mk_action2( $$, APPEND_BRANCH_T,
-						STR_ST, NUMBER_ST, $3, (void *)Q_UNSPECIFIED) ; }
-		| APPEND_BRANCH LPAREN RPAREN { mk_action2( $$, APPEND_BRANCH_T,
-						STR_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED) ; }
-		| APPEND_BRANCH { mk_action2( $$, APPEND_BRANCH_T,
-						STR_ST, NUMBER_ST, 0, (void *)Q_UNSPECIFIED ) ; }
-		| REMOVE_BRANCH LPAREN NUMBER RPAREN {
-						mk_action1($$, REMOVE_BRANCH_T, NUMBER_ST, (void*)$3);}
-		| REMOVE_BRANCH LPAREN script_var RPAREN {
-						mk_action1( $$, REMOVE_BRANCH_T, SCRIPTVAR_ST, $3);}
-		| PV_PRINTF LPAREN STRING COMMA STRING RPAREN {
-				spec = (pv_spec_t*)pkg_malloc(sizeof(pv_spec_t));
-				memset(spec, 0, sizeof(pv_spec_t));
-				tstr.s = $3;
-				tstr.len = strlen(tstr.s);
-				if(pv_parse_spec(&tstr, spec)==NULL)
-				{
-					yyerror("unknown script variable in first parameter");
-				}
-				if(!pv_is_w(spec))
-					yyerror("read-only script variable in first parameter");
-
-				pvmodel = 0;
-				tstr.s = $5;
-				tstr.len = strlen(tstr.s);
-				if(pv_parse_format(&tstr, &pvmodel)<0)
-				{
-					yyerror("error in second parameter");
-				}
-
-				mk_action2( $$, PV_PRINTF_T,
-						SCRIPTVAR_ST, SCRIPTVAR_ELEM_ST, spec, pvmodel) ;
-			}
-		| PV_PRINTF LPAREN script_var COMMA STRING RPAREN {
-				if(!pv_is_w($3))
-					yyerror("read-only script variable in first parameter");
-				pvmodel = 0;
-				tstr.s = $5;
-				tstr.len = strlen(tstr.s);
-				if(pv_parse_format(&tstr, &pvmodel)<0)
-				{
-					yyerror("error in second parameter");
-				}
-
-				mk_action2( $$, PV_PRINTF_T,
-						SCRIPTVAR_ST, SCRIPTVAR_ELEM_ST, $3, pvmodel) ;
-			}
-
-		| SET_HOSTPORT LPAREN STRING RPAREN { mk_action2( $$, SET_HOSTPORT_T,
-														STR_ST, 0, $3, 0); }
-		| SET_HOSTPORT error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SET_HOSTPORT LPAREN error RPAREN { $$=0; yyerror("bad argument,"
-												" string expected"); }
-		| SET_PORT LPAREN STRING RPAREN { mk_action2( $$, SET_PORT_T, STR_ST,
-														0, $3, 0); }
-		| SET_PORT error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SET_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"string expected"); }
-		| SET_USER LPAREN STRING RPAREN { mk_action2( $$, SET_USER_T,
-														STR_ST, 0, $3, 0); }
-		| SET_USER error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SET_USER LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"string expected"); }
-		| SET_USERPASS LPAREN STRING RPAREN { mk_action2( $$, SET_USERPASS_T,
-														STR_ST, 0, $3, 0); }
-		| SET_USERPASS error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SET_USERPASS LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"string expected"); }
-		| SET_URI LPAREN STRING RPAREN { mk_action2( $$, SET_URI_T, STR_ST,
-														0, $3, 0); }
-		| SET_URI error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SET_URI LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-										"string expected"); }
-		| REVERT_URI LPAREN RPAREN { mk_action2( $$, REVERT_URI_T, 0,0,0,0); }
-		| REVERT_URI { mk_action2( $$, REVERT_URI_T, 0,0,0,0); }
-		| SET_DSTURI LPAREN STRING RPAREN { mk_action2( $$, SET_DSTURI_T,
-													STR_ST, 0, $3, 0); }
-		| SET_DSTURI error { $$=0; yyerror("missing '(' or ')' ?"); }
-		| SET_DSTURI LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-										"string expected"); }
-		| RESET_DSTURI LPAREN RPAREN { mk_action2( $$, RESET_DSTURI_T,
-															0,0,0,0); }
-		| RESET_DSTURI { mk_action2( $$, RESET_DSTURI_T, 0,0,0,0); }
-		| ISDSTURISET LPAREN RPAREN { mk_action2( $$, ISDSTURISET_T, 0,0,0,0);}
-		| ISDSTURISET { mk_action2( $$, ISDSTURISET_T, 0,0,0,0); }
-		| FORCE_RPORT LPAREN RPAREN	{ mk_action2( $$, FORCE_RPORT_T,
-															0, 0, 0, 0); }
-		| FORCE_RPORT		{ mk_action2( $$, FORCE_RPORT_T,0, 0, 0, 0); }
-		| FORCE_LOCAL_RPORT LPAREN RPAREN	{
-					mk_action2( $$, FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
-		| FORCE_LOCAL_RPORT				{
-					mk_action2( $$, FORCE_LOCAL_RPORT_T,0, 0, 0, 0); }
-		| FORCE_TCP_ALIAS LPAREN NUMBER RPAREN	{
-				mk_action2( $$, FORCE_TCP_ALIAS_T,NUMBER_ST, 0,
-					(void*)$3, 0);
-		}
-		| FORCE_TCP_ALIAS LPAREN RPAREN	{
-				mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
-		}
-		| FORCE_TCP_ALIAS				{
-				mk_action2( $$, FORCE_TCP_ALIAS_T,0, 0, 0, 0);
-		}
-		| FORCE_TCP_ALIAS LPAREN error RPAREN	{$$=0;
-					yyerror("bad argument, number expected");
-					}
-		| SET_ADV_ADDRESS LPAREN listen_id RPAREN {
-								mk_action2( $$, SET_ADV_ADDR_T, STR_ST,
-											0, $3, 0);
-								}
-		| SET_ADV_ADDRESS LPAREN error RPAREN { $$=0; yyerror("bad argument, "
-														"string expected"); }
-		| SET_ADV_ADDRESS error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| SET_ADV_PORT LPAREN NUMBER RPAREN {
-								tstr.s = int2str($3, &tstr.len);
-								if (!(tmp = pkg_malloc(tstr.len + 1))) {
-										LM_CRIT("out of pkg memory\n");
-										$$ = 0;
-										YYABORT;
-								} else {
-									memcpy(tmp, tstr.s, tstr.len);
-									tmp[tstr.len] = '\0';
-									mk_action2($$, SET_ADV_PORT_T, STR_ST,
-											   0, tmp, 0);
-								}
-								            }
-		| SET_ADV_PORT LPAREN STRING RPAREN {
-								mk_action2($$, SET_ADV_PORT_T,
-										   STR_ST, NOSUBTYPE,
-										   $3, NULL);
-								}
-		| SET_ADV_PORT LPAREN error RPAREN { $$=0; yyerror("bad argument "
-						"(string or integer expected)"); }
-		| SET_ADV_PORT  error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| FORCE_SEND_SOCKET LPAREN phostport RPAREN {
-								mk_action2( $$, FORCE_SEND_SOCKET_T,
-									SOCKID_ST, 0, $3, 0);
-								}
-		| FORCE_SEND_SOCKET LPAREN error RPAREN { $$=0; yyerror("bad argument,"
-								" proto:host[:port] expected");
-								}
-		| FORCE_SEND_SOCKET error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| SERIALIZE_BRANCHES LPAREN NUMBER RPAREN {
-								mk_action1( $$, SERIALIZE_BRANCHES_T,
-									NUMBER_ST, (void*)(long)$3);
-								}
-		| SERIALIZE_BRANCHES LPAREN NUMBER COMMA NUMBER RPAREN {
-								mk_action2( $$, SERIALIZE_BRANCHES_T,
-									NUMBER_ST, NUMBER_ST,
-									(void*)(long)$3, (void*)(long)$5);
-								}
-		| SERIALIZE_BRANCHES LPAREN error RPAREN {$$=0; yyerror("bad argument,"
-								" number expected");
-								}
-		| SERIALIZE_BRANCHES error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| NEXT_BRANCHES LPAREN RPAREN {
-								mk_action2( $$, NEXT_BRANCHES_T, 0, 0, 0, 0);
-								}
-		| NEXT_BRANCHES LPAREN error RPAREN {$$=0; yyerror("no argument is"
-								" expected");
-								}
-		| NEXT_BRANCHES error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| USE_BLACKLIST LPAREN STRING RPAREN {
-								mk_action2( $$, USE_BLACKLIST_T,
-									STRING_ST, 0, $3, 0);
-								}
-		| USE_BLACKLIST LPAREN error RPAREN {$$=0; yyerror("bad argument,"
-								" string expected");
-								}
-		| USE_BLACKLIST error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| UNUSE_BLACKLIST LPAREN STRING RPAREN {
-								mk_action2( $$, UNUSE_BLACKLIST_T,
-									STRING_ST, 0, $3, 0);
-								}
-		| UNUSE_BLACKLIST LPAREN error RPAREN {$$=0; yyerror("bad argument,"
-								" string expected");
-								}
-		| UNUSE_BLACKLIST error {$$=0; yyerror("missing '(' or ')' ?"); }
-		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING RPAREN {
-									mk_action3( $$, CACHE_STORE_T,
-													STR_ST,
-													STR_ST,
-													STR_ST,
-													$3,
-													$5,
-													$7);
-							}
-		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA NUMBER
-								RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = STR_ST;
-								elems[2].u.data = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								mk_action_($$, CACHE_STORE_T, 4, elems);
-							}
-		| CACHE_STORE LPAREN STRING COMMA STRING COMMA STRING COMMA script_var
-								RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = STR_ST;
-								elems[2].u.data = $7;
-								elems[3].type = SCRIPTVAR_ST;
-								elems[3].u.data = $9;
-								mk_action_($$, CACHE_STORE_T, 4, elems);
-							}
-
-		| CACHE_REMOVE LPAREN STRING COMMA STRING RPAREN {
-									mk_action2( $$, CACHE_REMOVE_T,
-													STR_ST,
-													STR_ST,
-													$3,
-													$5);
-							}
-		| CACHE_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN {
-									mk_action3( $$, CACHE_FETCH_T,
-													STR_ST,
-													STR_ST,
-													SCRIPTVAR_ST,
-													$3,
-													$5,
-													$7);
-							}
-		| CACHE_COUNTER_FETCH LPAREN STRING COMMA STRING COMMA script_var RPAREN {
-									mk_action3( $$, CACHE_COUNTER_FETCH_T,
-													STR_ST,
-													STR_ST,
-													SCRIPTVAR_ST,
-													$3,
-													$5,
-													$7);
-							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = NUMBER_ST;
-								elems[2].u.number = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								mk_action_($$, CACHE_ADD_T, 4, elems);
-							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = SCRIPTVAR_ST;
-								elems[2].u.data = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								mk_action_($$, CACHE_ADD_T, 4, elems);
-							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = NUMBER_ST;
-								elems[2].u.number = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								elems[4].type = SCRIPTVAR_ST;
-								elems[4].u.data = $11;
-								mk_action_($$, CACHE_ADD_T, 5, elems);
-							}
-		| CACHE_ADD LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = SCRIPTVAR_ST;
-								elems[2].u.data = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								elems[4].type = SCRIPTVAR_ST;
-								elems[4].u.data = $11;
-								mk_action_($$, CACHE_ADD_T, 5, elems);
-							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = NUMBER_ST;
-								elems[2].u.number = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								mk_action_($$, CACHE_SUB_T, 4, elems);
-							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = SCRIPTVAR_ST;
-								elems[2].u.data = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								mk_action_($$, CACHE_SUB_T, 4, elems);
-							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA NUMBER COMMA NUMBER COMMA script_var RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = NUMBER_ST;
-								elems[2].u.number = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								elems[4].type = SCRIPTVAR_ST;
-								elems[4].u.data = $11;
-								mk_action_($$, CACHE_SUB_T, 5, elems);
-							}
-		| CACHE_SUB LPAREN STRING COMMA STRING COMMA script_var COMMA NUMBER COMMA script_var RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = SCRIPTVAR_ST;
-								elems[2].u.data = $7;
-								elems[3].type = NUMBER_ST;
-								elems[3].u.number = $9;
-								elems[4].type = SCRIPTVAR_ST;
-								elems[4].u.data = $11;
-								mk_action_($$, CACHE_SUB_T, 5, elems);
-							}
-		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING COMMA STRING RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								elems[2].type = STR_ST;
-								elems[2].u.data = $7;
-								mk_action_($$, CACHE_RAW_QUERY_T, 3, elems);
-							}
-		| CACHE_RAW_QUERY LPAREN STRING COMMA STRING RPAREN {
-								elems[0].type = STR_ST;
-								elems[0].u.data = $3;
-								elems[1].type = STR_ST;
-								elems[1].u.data = $5;
-								mk_action_($$, CACHE_RAW_QUERY_T, 2, elems);
-							}
 		| ID LPAREN RPAREN	{
 								cmd_tmp=(void*)find_cmd_export_t($1, rt);
 								if (cmd_tmp==0){
@@ -2675,11 +2194,11 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									} else {
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
-										mk_action_($$, MODULE_T, 1, elems);
+										mk_action_($$, CMD_T, 1, elems);
 									}
 								}
 							}
-		| ID LPAREN module_func_param RPAREN	{
+		| ID LPAREN func_param RPAREN	{
 								cmd_tmp=(void*)find_cmd_export_t($1, rt);
 								if (cmd_tmp==0){
 									if (find_cmd_export_t($1, 0)) {
@@ -2711,7 +2230,7 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 									default:
 										elems[0].type = CMD_ST;
 										elems[0].u.data = cmd_tmp;
-										mk_action_($$, MODULE_T, $3+1, elems);
+										mk_action_($$, CMD_T, $3+1, elems);
 									}
 								}
 							}
@@ -2732,56 +2251,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
 		| XLOG LPAREN STRING COMMA folded_string RPAREN {
 				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
-		| RAISE_EVENT LPAREN STRING RPAREN {
-				mk_action1($$, RAISE_EVENT_T, STR_ST, $3); }
-		| RAISE_EVENT LPAREN STRING COMMA script_var RPAREN {
-				mk_action2($$, RAISE_EVENT_T, STR_ST, SCRIPTVAR_ST, $3, $5); }
-		| RAISE_EVENT LPAREN STRING COMMA script_var COMMA script_var RPAREN {
-				mk_action3($$, RAISE_EVENT_T, STR_ST, SCRIPTVAR_ST,
-					SCRIPTVAR_ST, $3, $5, $7); }
-		| SUBSCRIBE_EVENT LPAREN STRING COMMA STRING RPAREN {
-				mk_action2($$, SUBSCRIBE_EVENT_T, STR_ST, STR_ST, $3, $5); }
-		| SUBSCRIBE_EVENT LPAREN STRING COMMA STRING COMMA NUMBER RPAREN {
-				mk_action3($$, SUBSCRIBE_EVENT_T, STR_ST, STR_ST,
-					NUMBER_ST, $3, $5, (void*)(long)$7); }
-		| CONSTRUCT_URI LPAREN STRING COMMA STRING COMMA STRING COMMA STRING COMMA STRING COMMA script_var RPAREN {
-				elems[0].type = STR_ST;
-				elems[0].u.data = $3;
-				elems[1].type = STR_ST;
-				elems[1].u.data = $5;
-				elems[2].type = STR_ST;
-				elems[2].u.data = $7;
-				elems[3].type = STR_ST;
-				elems[3].u.data = $9;
-				elems[4].type = STR_ST;
-				elems[4].u.data = $11;
-				elems[5].type = SCRIPTVAR_ST;
-				elems[5].u.data = $13;
-				mk_action_($$, CONSTRUCT_URI_T,6,elems); }
-		| GET_TIMESTAMP LPAREN script_var COMMA script_var RPAREN {
-				elems[0].type = SCRIPTVAR_ST;
-				elems[0].u.data = $3;
-				elems[1].type = SCRIPTVAR_ST;
-				elems[1].u.data = $5;
-				mk_action_($$, GET_TIMESTAMP_T,2,elems); }
-		| SCRIPT_TRACE LPAREN RPAREN {
-				mk_action2($$, SCRIPT_TRACE_T, 0, 0, 0, 0); }
-		| SCRIPT_TRACE LPAREN NUMBER COMMA STRING RPAREN {
-				pvmodel = 0;
-				tstr.s = $5;
-				tstr.len = strlen(tstr.s);
-				if(pv_parse_format(&tstr, &pvmodel)<0)
-					yyerror("error in second parameter");
-				mk_action2($$, SCRIPT_TRACE_T, NUMBER_ST,
-						   SCRIPTVAR_ELEM_ST, (void *)$3, pvmodel); }
-		| SCRIPT_TRACE LPAREN NUMBER COMMA STRING COMMA STRING RPAREN {
-				pvmodel = 0;
-				tstr.s = $5;
-				tstr.len = strlen(tstr.s);
-				if(pv_parse_format(&tstr, &pvmodel)<0)
-					yyerror("error in second parameter");
-				mk_action3($$, SCRIPT_TRACE_T, NUMBER_ST,
-						SCRIPTVAR_ELEM_ST, STR_ST, (void *)$3, pvmodel, $7); }
 		| ASYNC_TOKEN LPAREN async_func COMMA route_name RPAREN {
 				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
 				if (i_tmp==-1) yyerror("too many script routes");
@@ -2797,12 +2266,6 @@ cmd:	 FORWARD LPAREN STRING RPAREN	{ mk_action2( $$, FORWARD_T,
 		| LAUNCH_TOKEN LPAREN async_func RPAREN {
 				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
 						$3, (void*)(long)-1);
-				}
-		| IS_MYSELF LPAREN STRING RPAREN {
-				mk_action2($$, IS_MYSELF_T, STR_ST, 0, $3, 0);
-				}
-		| IS_MYSELF LPAREN STRING COMMA STRING RPAREN {
-				mk_action2($$, IS_MYSELF_T, STR_ST, STR_ST, $3, $5);
 				}
 	;
 

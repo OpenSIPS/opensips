@@ -47,6 +47,7 @@
 #include "../../dprint.h"
 #include "../../mod_fix.h"
 #include "../../ut.h"
+#include "../../dset.h"
 
 enum xs_uri_members {
 	XS_URI_USER = 0,
@@ -290,7 +291,7 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 		}
 	}
 
-	act = mk_action(MODULE_T, n+1, elems, 0, "perl");
+	act = mk_action(CMD_T, n+1, elems, 0, "perl");
 
 	if (!act) {
 		LM_ERR("action structure could not be created. Error.\n");
@@ -322,22 +323,18 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 /**
  * Rewrite Request-URI
  */
-static inline int rewrite_ruri(struct sip_msg* _m, char* _s)
+static inline int rw_ruri(struct sip_msg* _m, char* _s)
 {
-	struct action act;
+	str s;
 
-	memset(&act, 0, sizeof(act));
-	act.type = SET_URI_T;
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s.s = _s;
-	act.elem[0].u.s.len = strlen(_s);
-	act.next = 0;
-	
-	if (do_action(&act, _m) < 0)
-	{
-		LM_ERR("rewrite_ruri: Error in do_action\n");
+	s.s = _s;
+	s.len = strlen(_s);
+
+	if (set_ruri(_m, &s) < 0) {
+		LM_ERR("Error setting RURI\n");
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -966,7 +963,7 @@ rewrite_ruri(self, newruri)
 			RETVAL = -1;
 		} else {
 			LM_DBG("New R-URI is [%s]\n", newruri);
-			RETVAL = rewrite_ruri(msg, newruri);
+			RETVAL = rw_ruri(msg, newruri);
 		}
 	}
   OUTPUT:
@@ -1095,6 +1092,7 @@ append_branch(self, branch = NULL, qval = NULL)
 	qvalue_t q;
 	int err = 0;
 	struct action *act = NULL;
+	str branch_s;
   INIT:
   CODE:
   	if (!msg) {
@@ -1104,46 +1102,26 @@ append_branch(self, branch = NULL, qval = NULL)
 		if (qval) {
 			if (str2q(&q, qval, strlen(qval)) < 0) {
 				LM_ERR("append_branch: Bad q value.\n");
+				RETVAL = -1;
 			} else { /* branch and qval set */
-				elems[0].type = STR_ST;
-				elems[0].u.data = branch;
-				elems[1].type = NUMBER_ST;
-				elems[1].u.data = (void *)(long)q;
-				act = mk_action(APPEND_BRANCH_T,
-						2,
-						elems,
-						0,
-						"perl");
+				branch_s.s = branch;
+				branch_s.len = strlen(branch);
 			}
 		} else {
 			if (branch) { /* branch set, qval unset */
-				elems[0].type = STR_ST;
-				elems[0].u.data = branch;
-				elems[1].type = NUMBER_ST;
-				elems[1].u.data = (void *)Q_UNSPECIFIED;
-				act = mk_action(APPEND_BRANCH_T,
-						2,
-						elems,
-						0,
-						"perl");
+				branch_s.s = branch;
+				branch_s.len = strlen(branch);
+				q = Q_UNSPECIFIED;
 			} else { /* neither branch nor qval set */
-				elems[0].type = STR_ST;
-				elems[0].u.data = NULL;
-				elems[1].type = NUMBER_ST;
-				elems[1].u.data = (void *)Q_UNSPECIFIED;
-				act = mk_action(APPEND_BRANCH_T,
-						2,
-						elems,
-						0,
-						"perl");
+				q = Q_UNSPECIFIED;
+				branch_s.s = NULL;
 			}
 		}
 
-		if (act) {
-			RETVAL = do_action(act, msg);
-		} else {
-			RETVAL = -1;
-		}
+		if (RETVAL != -1)
+			RETVAL = append_branch(msg, branch_s.s ? &branch_s : NULL,
+						&msg->dst_uri, &msg->path_vec, q, getb0flags(msg),
+						msg->force_send_socket);
 	}
   OUTPUT:
 	RETVAL

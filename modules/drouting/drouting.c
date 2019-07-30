@@ -3482,38 +3482,22 @@ static int fix_gw_flags(void** param)
 
 static int strip_username(struct sip_msg* msg, int strip)
 {
-	struct action act;
-
-	/* initialize all the act fields */
-	memset(&act, 0, sizeof(act));
-	act.type = STRIP_T;
-	act.elem[0].type = NUMBER_ST;
-	act.elem[0].u.number = strip;
-	act.next = 0;
-
-	if (do_action(&act, msg) < 0) {
-		LM_ERR( "Error in do_action\n");
+	if (rewrite_ruri(msg, NULL, strip, RW_RURI_STRIP) < 0) {
+		LM_ERR("error while stripping host\n");
 		return -1;
 	}
+
 	return 0;
 }
 
 
 static int prefix_username(struct sip_msg* msg, str *pri)
 {
-	struct action act;
-
-	/* initialize all the act fields */
-	memset(&act, 0, sizeof(act));
-	act.type = PREFIX_T;
-	act.elem[0].type = STR_ST;
-	act.elem[0].u.s = *pri;
-	act.next = 0;
-
-	if (do_action(&act, msg) < 0) {
-		LM_ERR( "Error in do_action\n");
+	if (rewrite_ruri(msg, pri, 0, RW_RURI_PREFIX) < 0) {
+		LM_ERR("error while setting prefix\n");
 		return -1;
 	}
+
 	return 0;
 }
 

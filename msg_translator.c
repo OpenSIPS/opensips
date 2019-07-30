@@ -2839,7 +2839,7 @@ char *construct_uri(str *protocol,str *username,str *domain,str *port,
 {
 	int pos = 0;
 
-	if (!protocol || !username || !domain || !port || !params || !len)
+	if (!len)
 	{
 		LM_ERR("null pointer provided for construct_uri \n");
 		return 0;
@@ -2861,7 +2861,7 @@ char *construct_uri(str *protocol,str *username,str *domain,str *port,
 	pos += protocol->len;
 	uri_buff[pos++] = ':';
 
-	if (username->s && username->len != 0)
+	if (username && username->s && username->len != 0)
 	{
 		memcpy(uri_buff+pos,username->s,username->len);
 		pos += username->len;
@@ -2871,14 +2871,14 @@ char *construct_uri(str *protocol,str *username,str *domain,str *port,
 	memcpy(uri_buff+pos,domain->s,domain->len);
 	pos += domain->len;
 
-	if (port->s && port->len !=0)
+	if (port && port->s && port->len !=0)
 	{
 		uri_buff[pos++] = ':';
 		memcpy(uri_buff+pos,port->s,port->len);
 		pos += port->len;
 	}
 
-	if (params->s && params->len !=0 )
+	if (params && params->s && params->len !=0 )
 	{
 		uri_buff[pos++] = ';';
 		memcpy(uri_buff+pos,params->s,params->len);

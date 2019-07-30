@@ -778,6 +778,284 @@ int set_dst_uri(struct sip_msg *msg, str *uri)
 	return 0;
 }
 
+void reset_dst_uri(struct sip_msg *msg)
+{
+	if(msg->dst_uri.s!=0)
+		pkg_free(msg->dst_uri.s);
+	msg->dst_uri.s = 0;
+	msg->dst_uri.len = 0;
+}
+
+int set_dst_host_port(struct sip_msg *msg, str *host, str *port)
+{
+	char *tmp, *end, *crt, *new_uri;
+	int len;
+	struct sip_uri uri;
+	int user = 0;
+
+	tmp = msg->dst_uri.s;
+	len = msg->dst_uri.len;
+
+	if (tmp == NULL || len == 0) {
+		LM_ERR("failure - null uri\n");
+		return -1;
+	}
+	if (host && (host->s == NULL || host->len == 0)) {
+		LM_ERR("cannot set a null uri domain\n");
+		return -1;
+	}
+	if (parse_uri(tmp, len, &uri)<0) {
+		LM_ERR("bad uri <%.*s>, dropping packet\n", len, tmp);
+		return -1;
+	}
+	new_uri=pkg_malloc(MAX_URI_SIZE);
+	if (new_uri == NULL) {
+		LM_ERR("memory allocation failure\n");
+		return -1;
+	}
+	end=new_uri+MAX_URI_SIZE;
+	crt=new_uri;
+	len = (uri.user.len?uri.user.s:uri.host.s) - tmp;
+	if (crt+len>end) goto error_uri;
+	memcpy(crt,tmp,len);
+	crt += len;
+	/* user */
+	tmp = uri.user.s;
+	len = uri.user.len;
+	if (tmp) {
+		if (crt+len>end) goto error_uri;
+		memcpy(crt,tmp,len);
+		crt += len;
+		user = 1;
+	}
+	/* passwd */
+	tmp = uri.passwd.s;
+	len = uri.passwd.len;
+	if (tmp) {
+		if (crt+len+1>end) goto error_uri;
+		*crt++=':';
+		memcpy(crt, tmp, len);
+		crt += len;
+	}
+	/* host */
+	if (host) {
+		tmp = host->s;
+		len = host->len;
+	} else {
+		tmp = uri.host.s;
+		len = uri.host.len;
+	}
+	if (tmp) {
+		if (user) {
+			if (crt+1>end) goto error_uri;
+			*crt++='@';
+		}
+		if (crt+len+1>end) goto error_uri;
+		memcpy(crt, tmp, len);
+		crt += len;
+	}
+	/* port */
+	if (port) {
+		tmp = port->s;
+		len = port->len;
+	} else {
+		tmp = uri.port.s;
+		len = uri.port.len;
+	}
+	if (tmp) {
+		if (crt+len+1>end) goto error_uri;
+		*crt++=':';
+		memcpy(crt, tmp, len);
+		crt += len;
+	}
+	/* params */
+	tmp=uri.params.s;
+	if (tmp){
+		len=uri.params.len; if(crt+len+1>end) goto error_uri;
+		*crt++=';';
+		memcpy(crt,tmp,len);
+		crt += len;
+	}
+	/* headers */
+	tmp=uri.headers.s;
+	if (tmp){
+		len=uri.headers.len; if(crt+len+1>end) goto error_uri;
+		*crt++='?';
+		memcpy(crt,tmp,len);
+		crt += len;
+	}
+	*crt=0; /* null terminate the thing */
+	/* copy it to the msg */
+	pkg_free(msg->dst_uri.s);
+	msg->dst_uri.s=new_uri;
+	msg->dst_uri.len=crt-new_uri;
+	
+	return 0;
+
+error_uri:
+	pkg_free(new_uri);
+	return -1;
+}
+
+int rewrite_ruri(struct sip_msg *msg, str *sval, int ival,
+				enum rw_ruri_part part)
+{
+	int user = 0;
+	char *tmp, *new_uri, *end, *crt;
+	int len;
+	struct sip_uri uri;
+
+	if (msg->new_uri.s) {
+		tmp=msg->new_uri.s;
+		len=msg->new_uri.len;
+	}else{
+		tmp=msg->first_line.u.request.uri.s;
+		len=msg->first_line.u.request.uri.len;
+	}
+	if (parse_uri(tmp, len, &uri)<0){
+		LM_ERR("bad uri <%.*s>, dropping packet\n", len, tmp);
+		return -1;
+	}
+
+	new_uri=pkg_malloc(MAX_URI_SIZE);
+	if (new_uri==0){
+		LM_ERR("memory allocation failure\n");
+		return -1;
+	}
+	end=new_uri+MAX_URI_SIZE;
+	crt=new_uri;
+	/* begin copying */
+	len = (uri.user.len?uri.user.s:uri.host.s) - tmp;
+	if (crt+len>end) goto error;
+	memcpy(crt,tmp,len);crt+=len;
+
+	if (part==RW_RURI_PREFIX) {
+		if (crt+sval->len>end) goto error;
+		memcpy( crt, sval->s, sval->len);
+		crt+=sval->len;
+		/* whatever we had before, with prefix we have username
+		   now */
+		user=1;
+	}
+
+	if ((part==RW_RURI_USER)||(part==RW_RURI_USERPASS)) {
+		tmp=sval->s;
+		len=sval->len;
+	} else if (part==RW_RURI_STRIP) {
+		if (ival>uri.user.len) {
+			LM_WARN("too long strip asked; "
+					" deleting username: %d of <%.*s>\n",
+					ival, uri.user.len, uri.user.s);
+			len=0;
+		} else if (ival==uri.user.len) {
+			len=0;
+		} else {
+			tmp=uri.user.s + ival;
+			len=uri.user.len - ival;
+		}
+	} else if (part==RW_RURI_STRIP_TAIL) {
+		if (ival>uri.user.len) {
+			LM_WARN("too long strip_tail asked;"
+					" deleting username: %d of <%.*s>\n",
+					ival, uri.user.len, uri.user.s);
+			len=0;
+		} else if (ival==uri.user.len) {
+			len=0;
+		} else {
+			tmp=uri.user.s;
+			len=uri.user.len - ival;
+		}
+	} else {
+		tmp=uri.user.s;
+		len=uri.user.len;
+	}
+
+	if (len){
+		if(crt+len>end) goto error;
+		memcpy(crt,tmp,len);crt+=len;
+		user=1; /* we have an user field so mark it */
+	}
+
+	if (part==RW_RURI_USERPASS) tmp=0;
+	else tmp=uri.passwd.s;
+	/* passwd */
+	if (tmp){
+		len=uri.passwd.len; if(crt+len+1>end) goto error;
+		*crt=':'; crt++;
+		memcpy(crt,tmp,len);crt+=len;
+	}
+	/* host */
+	if (user || tmp){ /* add @ */
+		if(crt+1>end) goto error;
+		*crt='@'; crt++;
+	}
+	if ((part==RW_RURI_HOST) ||(part==RW_RURI_HOSTPORT)) {
+		tmp=sval->s;
+		len=sval->len;
+	} else {
+		tmp=uri.host.s;
+		len = uri.host.len;
+	}
+	if (tmp){
+		if(crt+len>end) goto error;
+		memcpy(crt,tmp,len);crt+=len;
+	}
+	/* port */
+	if (part==RW_RURI_HOSTPORT) tmp=0;
+	else if (part==RW_RURI_PORT) {
+		tmp=sval->s;
+		len=sval->len;
+	} else {
+		tmp=uri.port.s;
+		len = uri.port.len;
+	}
+	if (tmp && len>0){
+		if(crt+len+1>end) goto error;
+		*crt=':'; crt++;
+		memcpy(crt,tmp,len);crt+=len;
+	}
+	/* params */
+	tmp=uri.params.s;
+	if (tmp){
+		/* include in param string the starting ';' */
+		len=uri.params.len+1;
+		tmp--;
+		if(crt+len+1>end) goto error;
+		/* if a maddr param is present, strip it out */
+		if (uri.maddr.len &&
+		(part==RW_RURI_HOSTPORT || part==RW_RURI_HOST)) {
+			memcpy(crt,tmp,uri.maddr.s-tmp-1);
+			crt+=uri.maddr.s-tmp-1;
+			memcpy(crt,uri.maddr_val.s+uri.maddr_val.len,
+				tmp+len-uri.maddr_val.s-uri.maddr_val.len);
+			crt+=tmp+len-uri.maddr_val.s-uri.maddr_val.len;
+		} else {
+			memcpy(crt,tmp,len);crt+=len;
+		}
+	}
+	/* headers */
+	tmp=uri.headers.s;
+	if (tmp){
+		len=uri.headers.len; if(crt+len+1>end) goto error;
+		*crt='?'; crt++;
+		memcpy(crt,tmp,len);crt+=len;
+	}
+	*crt=0; /* null terminate the thing */
+	/* copy it to the msg */
+	if (msg->new_uri.s) pkg_free(msg->new_uri.s);
+	msg->new_uri.s=new_uri;
+	msg->new_uri.len=crt-new_uri;
+	msg->parsed_uri_ok=0;
+
+	return 0;
+
+error:
+	LM_ERR("uri too long\n");
+	if (new_uri)
+		pkg_free(new_uri);
+	return -1;
+}
+
 /*
  * Make a private copy of the string and assign it to path_vec
  */
