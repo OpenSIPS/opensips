@@ -1892,6 +1892,7 @@ exit:
 
 void run_mod_packet_cb(int sender, void *param)
 {
+	extern char *next_data_chunk;
 	struct packet_rpc_params *p = (struct packet_rpc_params *)param;
 	bin_packet_t packet;
 	str cap_name;
@@ -1903,6 +1904,7 @@ void run_mod_packet_cb(int sender, void *param)
 	if (packet.type == SYNC_PACKET_TYPE) {
 		/* if we have a sync packet, we have to skip once again the capability */
 		bin_pop_str(&packet, &cap_name);
+		next_data_chunk = NULL;
 	}
 
 	p->cap->packet_cb(&packet);
