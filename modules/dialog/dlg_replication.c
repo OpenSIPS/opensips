@@ -973,9 +973,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 	struct n_send_info *ni;
 	int lock_old_flag;
 	struct dlg_cell *dlg, *next_dlg;
-	int i;
-	int ret;
-	int unref;
+	int i, ret, unref, old_state, new_state;
 
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to reply to sync request from node: %d\n", node_id);
@@ -992,11 +990,25 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 					dlg = dlg->next;
 					continue;
 				}
+
+				/* make sure dialog is not freed while we don't hold the lock */
+				ref_dlg_unsafe(dlg, 1);
+				dlg_unlock(d_table, &d_table->entries[i]);
+
 				LM_DBG("Drop DB loaded dialog ID=%lld\n",
 					((long long)dlg->h_entry << 32) | (dlg->h_id));
 
-				unref = 1;  /* unref from hash */
-				dlg->state = DLG_STATE_DELETED;
+				/* simulate BYE received from caller */
+				next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_UPSTREAM, &old_state,
+				        &new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 0);
+
+				if (new_state != DLG_STATE_DELETED) {
+					unref_dlg(dlg, 1 + unref);
+					dlg = dlg->next;
+					continue;
+				}
+				unref++; /* the extra added ref */
+				dlg_lock(d_table, &d_table->entries[i]);
 
 				destroy_linkers_unsafe(dlg, 0);
 
@@ -1007,9 +1019,8 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				remove_dlg_prof_table(dlg, 0, 0);
 
 				dlg_lock(d_table, &d_table->entries[i]);
-				unref++;
 
-				/* remove from timer */
+				/* remove from timer, even though it may be done already */
 				ret = remove_dlg_timer(&dlg->tl);
 				if (ret < 0) {
 					LM_ERR("unable to unlink the timer on dlg %p [%u:%u] "
