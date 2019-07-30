@@ -821,14 +821,20 @@ void receive_dlg_repl(bin_packet_t *packet)
 	for (pkt = packet; pkt; pkt = pkt->next) {
 		switch (pkt->type) {
 		case REPLICATION_DLG_CREATED:
+			ensure_bin_version(pkt, BIN_VERSION);
+
 			rc = dlg_replicated_create(pkt, NULL, NULL, NULL, 1);
 			if_update_stat(dlg_enable_stats, create_recv, 1);
 			break;
 		case REPLICATION_DLG_UPDATED:
+			ensure_bin_version(pkt, BIN_VERSION);
+
 			rc = dlg_replicated_update(pkt);
 			if_update_stat(dlg_enable_stats, update_recv, 1);
 			break;
 		case REPLICATION_DLG_DELETED:
+			ensure_bin_version(pkt, BIN_VERSION);
+
 			rc = dlg_replicated_delete(pkt);
 			if_update_stat(dlg_enable_stats, delete_recv, 1);
 			break;
@@ -836,11 +842,7 @@ void receive_dlg_repl(bin_packet_t *packet)
 			rc = dlg_replicated_cseq_updated(pkt);
 			break;
 		case SYNC_PACKET_TYPE:
-			if (get_bin_pkg_version(pkt) != BIN_VERSION) {
-				LM_INFO("discarding sync packet version %d, need %d\n",
-				        get_bin_pkg_version(pkt), BIN_VERSION);
-				return;
-			}
+			ensure_bin_version(pkt, BIN_VERSION);
 
 			while (clusterer_api.sync_chunk_iter(pkt))
 				if (dlg_replicated_create(pkt, NULL, NULL, NULL, 1) < 0) {
