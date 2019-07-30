@@ -1,0 +1,768 @@
+#
+# Authors:
+#   Liviu Chircu <liviu@opensips.org>
+#
+# Maintainers:
+#   Liviu Chircu <liviu@opensips.org>
+#
+
+###############################################################################
+#                      OpenSIPS Replication Packet Types                      #
+###############################################################################
+
+enum32 T_opensips
+{
+  dialog_create         1
+  dialog_update         2
+  dialog_delete         3
+  dialog_cseq_update    4
+
+  dialog_profiles       5
+
+  ratelimit_pipes       6
+
+  usrloc_aor_create     7
+  usrloc_aor_delete     8
+  usrloc_ct_create      9
+  usrloc_ct_update     10
+  usrloc_ct_delete     11
+
+  icluster_ping        12
+  icluster_pong        13
+  icluster_link_update 14
+  icluster_topo_update 15
+  icluster_unknown_id  16
+  icluster_node_desc   17
+  icluster_cap_update  18
+
+  cluster_generic_msg  19
+  cluster_mi_cmd       20
+  cluster_sync_req     21
+  cluster_sync_data    22
+  cluster_sync_end     23
+  cluster_shtag_on     24
+}
+
+###############################################################################
+#                      OpenSIPS Replication Capabilities                      #
+###############################################################################
+const string konst::repl_dlg      = "dialog-dlg-repl";
+const string konst::repl_dlg_prof = "dialog-prof-repl";
+const string konst::repl_rl       = "ratelimit-pipe-repl";
+const string konst::repl_ul       = "usrloc-contact-repl";
+const string konst::cl_internal   = "clusterer-internal";
+const string konst::cl_extra      = "clusterer-extra";
+
+const uint32 konst::opensips_bin_marker      = 1262695504; # P4CK
+const uint32 konst::sync_chunk_start_marker  = 10101010;
+
+switch_expr T_type_dlg_switch
+{
+  case (packet_type == 1) : var T_opensips Type = T_opensips::dialog_create;
+  case (packet_type == 2) : var T_opensips Type = T_opensips::dialog_update;
+  case (packet_type == 3) : var T_opensips Type = T_opensips::dialog_delete;
+  case (packet_type == 4) : var T_opensips Type = T_opensips::dialog_cseq_update;
+  default : print ("default case");
+}
+
+switch_expr T_type_ul_switch
+{
+  case (packet_type == 1) : var T_opensips Type = T_opensips::usrloc_aor_create;
+  case (packet_type == 2) : var T_opensips Type = T_opensips::usrloc_aor_delete;
+  case (packet_type == 3) : var T_opensips Type = T_opensips::usrloc_ct_create;
+  case (packet_type == 4) : var T_opensips Type = T_opensips::usrloc_ct_update;
+  case (packet_type == 5) : var T_opensips Type = T_opensips::usrloc_ct_delete;
+  default : print ("default case");
+}
+
+switch_expr T_type_cl_internal_switch
+{
+  case (packet_type == 0) : var T_opensips Type = T_opensips::icluster_ping;
+  case (packet_type == 1) : var T_opensips Type = T_opensips::icluster_pong;
+  case (packet_type == 2) : var T_opensips Type = T_opensips::icluster_link_update;
+  case (packet_type == 3) : var T_opensips Type = T_opensips::icluster_topo_update;
+  case (packet_type == 4) : var T_opensips Type = T_opensips::icluster_unknown_id;
+  case (packet_type == 5) : var T_opensips Type = T_opensips::icluster_node_desc;
+  case (packet_type == 8) : var T_opensips Type = T_opensips::icluster_cap_update;
+  default : print ("default case");
+}
+
+switch_expr T_type_cl_extra_switch
+{
+  case (packet_type == 6) : var T_opensips Type = T_opensips::cluster_generic_msg;
+  case (packet_type == 7) : var T_opensips Type = T_opensips::cluster_mi_cmd;
+  case (packet_type == 9) : var T_opensips Type = T_opensips::cluster_sync_req;
+  case (packet_type == 10) : var T_opensips Type = T_opensips::cluster_sync_data;
+  case (packet_type == 11) : var T_opensips Type = T_opensips::cluster_sync_end;
+  case (packet_type == 12) : var T_opensips Type = T_opensips::cluster_shtag_on;
+  default : print ("default case");
+}
+
+switch_expr T_switch_opensips
+{
+  case (capability == konst::repl_dlg)      : T_type_dlg_switch "";
+  case (capability == konst::repl_dlg_prof) : var T_opensips Type = T_opensips::dialog_profiles;
+  case (capability == konst::repl_rl)       : var T_opensips Type = T_opensips::ratelimit_pipes;
+  case (capability == konst::repl_ul)       : T_type_ul_switch "";
+  case (capability == konst::cl_internal)   : T_type_cl_internal_switch "";
+  case (capability == konst::cl_extra)      : T_type_cl_extra_switch "";
+  default : print ("default case");
+}
+
+###############################################################################
+#                             Header and Trailer                              #
+###############################################################################
+
+struct T_msg_header_type
+{
+  byte_order        little_endian;
+
+  uint32            bin_marker;
+  uint32            total_len;
+  uint16            bin_version;
+  uint16            cap_len;
+  string(cap_len)   capability;
+  uint32            packet_type;
+
+  T_switch_opensips  "";
+}
+
+function uint32 header_size ()
+{
+  hide var uint32 _total = 4 + 4 + 2 + 2 + header.cap_len + 4;
+  return _total;
+}
+
+struct T_bin_cl_trailer
+{
+  uint32   cluster;
+  uint32   src_node;
+  uint32   dst_node;
+}
+
+###############################################################################
+#                             dialog replication                              #
+###############################################################################
+
+struct T_bin_dlg_sip_match
+{
+  uint16              callid_len;
+  string(callid_len)  callid;
+
+  uint16              ftag_len;
+  string(ftag_len)    ftag;
+
+  uint16              ttag_len;
+  string(ttag_len)    ttag;
+}
+
+struct T_bin_full_dlg_v1
+{
+  T_bin_dlg_sip_match "";
+
+  uint16                      caller_from_uri_len;
+  string(caller_from_uri_len) caller_from_uri;
+
+  uint16                    caller_to_uri_len;
+  string(caller_to_uri_len) caller_to_uri;
+
+  uint32               h_id;
+  uint32               start_ts;
+  uint32               state;
+
+  uint16                  caller_sock_len;
+  string(caller_sock_len) caller_sock;
+
+  uint16                  callee_sock_len;
+  string(callee_sock_len) callee_sock;
+
+  uint16                    caller_r_cseq_len;
+  string(caller_r_cseq_len) caller_r_cseq;
+
+  uint16                    callee_r_cseq_len;
+  string(callee_r_cseq_len) callee_r_cseq;
+
+  uint16                       caller_route_set_len;
+  string(caller_route_set_len) caller_route_set;
+
+  uint16                       callee_route_set_len;
+  string(callee_route_set_len) callee_route_set;
+
+  uint16                      caller_contact_len;
+  string(caller_contact_len)  caller_contact;
+
+  uint16                      callee_contact_len;
+  string(callee_contact_len)  callee_contact;
+
+  uint16                      callee_from_uri_len;
+  string(callee_from_uri_len) callee_from_uri;
+
+  uint16                    callee_to_uri_len;
+  string(callee_to_uri_len) callee_to_uri;
+
+  uint16                     caller_adv_sdp_len;
+  string(caller_adv_sdp_len) caller_adv_sdp;
+
+  uint16                     callee_adv_sdp_len;
+  string(callee_adv_sdp_len) callee_adv_sdp;
+
+  uint16           vars_len;
+  string(vars_len) vars;
+
+  uint16               profiles_len;
+  string(profiles_len) profiles;
+
+  uint32               user_flags;
+  uint32               mod_flags;
+  uint32               dlg_flags;
+  uint32               timeout_ts;
+  uint32               caller_last_gen_cseq;
+  uint32               callee_last_gen_cseq;
+}
+
+struct T_bin_full_dlg_v2
+{
+  T_bin_dlg_sip_match "";
+
+  uint16                      caller_from_uri_len;
+  string(caller_from_uri_len) caller_from_uri;
+
+  uint16                    caller_to_uri_len;
+  string(caller_to_uri_len) caller_to_uri;
+
+  uint32               h_id;
+  uint32               start_ts;
+  uint32               state;
+
+  uint16                  caller_sock_len;
+  string(caller_sock_len) caller_sock;
+
+  uint16                  callee_sock_len;
+  string(callee_sock_len) callee_sock;
+
+  uint16                    caller_r_cseq_len;
+  string(caller_r_cseq_len) caller_r_cseq;
+
+  uint16                    callee_r_cseq_len;
+  string(callee_r_cseq_len) callee_r_cseq;
+
+  uint16                       caller_route_set_len;
+  string(caller_route_set_len) caller_route_set;
+
+  uint16                       callee_route_set_len;
+  string(callee_route_set_len) callee_route_set;
+
+  uint16                      caller_contact_len;
+  string(caller_contact_len)  caller_contact;
+
+  uint16                      callee_contact_len;
+  string(callee_contact_len)  callee_contact;
+
+  uint16                      callee_from_uri_len;
+  string(callee_from_uri_len) callee_from_uri;
+
+  uint16                    callee_to_uri_len;
+  string(callee_to_uri_len) callee_to_uri;
+
+  uint16                     caller_in_sdp_len;
+  string(caller_in_sdp_len)  caller_in_sdp;
+
+  uint16                      caller_out_sdp_len;
+  string(caller_out_sdp_len)  caller_out_sdp;
+
+  uint16                     callee_in_sdp_len;
+  string(callee_in_sdp_len)  callee_in_sdp;
+
+  uint16                      callee_out_sdp_len;
+  string(callee_out_sdp_len)  callee_out_sdp;
+
+  uint16                         caller_adv_contact_len;
+  string(caller_adv_contact_len) caller_adv_contact;
+
+  uint16                         callee_adv_contact_len;
+  string(callee_adv_contact_len) callee_adv_contact;
+
+  uint16           vars_len;
+  string(vars_len) vars;
+
+  uint16               profiles_len;
+  string(profiles_len) profiles;
+
+  uint32               user_flags;
+  uint32               mod_flags;
+  uint32               dlg_flags;
+  uint32               timeout_ts;
+  uint32               caller_last_gen_cseq;
+  uint32               callee_last_gen_cseq;
+}
+
+function uint32 dialog_size_v1 ()
+{
+  return
+    2 + dialog.callid_len +
+    2 + dialog.ftag_len +
+    2 + dialog.ttag_len +
+    2 + dialog.caller_from_uri_len +
+    2 + dialog.caller_to_uri_len +
+    4 + 4 + 4 +
+    2 + dialog.caller_sock_len +
+    2 + dialog.callee_sock_len +
+    2 + dialog.caller_r_cseq_len +
+    2 + dialog.callee_r_cseq_len +
+    2 + dialog.caller_route_set_len +
+    2 + dialog.callee_route_set_len +
+    2 + dialog.caller_contact_len +
+    2 + dialog.callee_contact_len +
+    2 + dialog.callee_from_uri_len +
+    2 + dialog.callee_to_uri_len +
+    2 + dialog.caller_adv_sdp_len +
+    2 + dialog.callee_adv_sdp_len +
+    2 + dialog.vars_len +
+    2 + dialog.profiles_len +
+    4 + 4 + 4 + 4 + 4 + 4;
+}
+
+function uint32 dialog_size_v2 ()
+{
+  return
+    2 + dialog.callid_len +
+    2 + dialog.ftag_len +
+    2 + dialog.ttag_len +
+    2 + dialog.caller_from_uri_len +
+    2 + dialog.caller_to_uri_len +
+    4 + 4 + 4 +
+    2 + dialog.caller_sock_len +
+    2 + dialog.callee_sock_len +
+    2 + dialog.caller_r_cseq_len +
+    2 + dialog.callee_r_cseq_len +
+    2 + dialog.caller_route_set_len +
+    2 + dialog.callee_route_set_len +
+    2 + dialog.caller_contact_len +
+    2 + dialog.callee_contact_len +
+    2 + dialog.callee_from_uri_len +
+    2 + dialog.callee_to_uri_len +
+    2 + dialog.caller_in_sdp_len +
+    2 + dialog.caller_out_sdp_len +
+    2 + dialog.callee_in_sdp_len +
+    2 + dialog.callee_out_sdp_len +
+    2 + dialog.caller_adv_contact_len +
+    2 + dialog.callee_adv_contact_len +
+    2 + dialog.vars_len +
+    2 + dialog.profiles_len +
+    4 + 4 + 4 + 4 + 4 + 4;
+}
+
+switch_expr T_bin_full_dlg_switch
+{
+  case (bin_version == 1) : T_bin_full_dlg_v1 "";
+  case (bin_version == 2) : T_bin_full_dlg_v2 "";
+  default : print ("default case");
+}
+
+struct T_bin_dlg_create
+{
+  T_msg_header_type     header;
+  T_bin_full_dlg_switch dialog_create;
+  T_bin_cl_trailer      clusterer;
+}
+
+struct T_bin_dlg_update
+{
+  T_msg_header_type     header;
+  T_bin_full_dlg_switch dialog_update;
+  T_bin_cl_trailer      clusterer;
+}
+
+struct T_bin_dlg_delete
+{
+  T_msg_header_type   header;
+  T_bin_dlg_sip_match dialog_delete;
+  T_bin_cl_trailer    clusterer;
+}
+
+struct T_bin_dlg_cseq
+{
+  T_msg_header_type   header;
+}
+
+###############################################################################
+#                        dialog profiles replication                          #
+###############################################################################
+
+function uint32 dlg_profile_size ()
+{
+  hide var uint32 _total = 2 + dlg_profile.name_len + 4 + 4;
+
+  if (dlg_profile.has_value != 0)
+  {
+    set _total = _total + 2 + dlg_profile.value_len;
+  }
+
+  return _total;
+}
+
+struct T_dlg_profile
+{
+  uint16           name_len;
+  string(name_len) name;
+
+  uint32           has_value;
+
+  if (has_value != 0)
+  {
+    uint16            value_len;
+    string(value_len) value;
+  }
+
+  uint32           count;
+}
+
+struct T_dlg_profiles
+{
+  hide var uint32 read_bytes = header_size();
+
+  while (read_bytes < (total_len - (4 * 3)))
+  {
+    T_dlg_profile    dlg_profile;
+    set read_bytes = read_bytes + dlg_profile_size();
+  }
+}
+
+struct T_bin_dlg_profiles
+{
+  T_msg_header_type   header;
+  T_dlg_profiles      dialog_profiles;
+  T_bin_cl_trailer    clusterer;
+}
+
+###############################################################################
+#                        ratelimit pipes replication                          #
+###############################################################################
+
+function uint32 rl_pipe_size ()
+{
+  return 2 + rl_pipe.pipe_len + 4 + 4 + 4;
+}
+
+struct T_rl_pipe
+{
+  uint16            pipe_len;
+  string(pipe_len)  pipe;
+
+  uint32           algorithm;
+  uint32           limit;
+  uint32           counter;
+}
+
+struct T_rl_pipes
+{
+  hide var uint32 read_bytes = header_size();
+
+  while (read_bytes < (total_len - (4 * 3)))
+  {
+    T_rl_pipe    rl_pipe;
+    set read_bytes = read_bytes + rl_pipe_size();
+  }
+}
+
+struct T_bin_rl
+{
+  T_msg_header_type  header;
+  T_rl_pipes         ratelimit_pipes;
+  T_bin_cl_trailer   clusterer;
+}
+
+###############################################################################
+#                              usrloc replication                             #
+###############################################################################
+
+struct T_bin_ul_aor_create
+{
+  T_msg_header_type   header;
+}
+
+struct T_bin_ul_aor_delete
+{
+  T_msg_header_type   header;
+}
+
+struct T_bin_ul_ct_create
+{
+  T_msg_header_type   header;
+}
+
+struct T_ul_ct_update
+{
+  uint16              domain_len;
+  string(domain_len)  domain;
+
+  uint16              aor_len;
+  string(aor_len)     aor;
+
+  uint16              contact_len;
+  string(contact_len) contact;
+
+  uint16              callid_len;
+  string(callid_len)  callid;
+
+  uint16                 user_agent_len;
+  string(user_agent_len) user_agent;
+
+  uint16              path_len;
+  string(path_len)      path;
+
+  uint16              attr_len;
+  string(attr_len)    attr;
+
+  uint16              received_len;
+  string(received_len)    received;
+
+  uint16              instance_len;
+  string(instance_len)    instance;
+
+  uint16              expires_len;
+  int64              expires;
+
+  uint16              q_len;
+  int32               q;
+
+  uint16              sock_len;
+  string(sock_len)    sock;
+
+  uint32              cseq;
+  uint32              flags;
+  uint32              cflags;
+  uint32              methods;
+
+  uint16             last_modified_len;
+  int64              last_modified;
+
+  uint16               kv_store_len;
+  string(kv_store_len) kv_store;
+
+  uint16             ctid_len;
+  int64              ctid;
+}
+
+struct T_bin_ul_ct_update
+{
+  T_msg_header_type  header;
+  T_ul_ct_update     usrloc_contact_update;
+  T_bin_cl_trailer   clusterer;
+}
+
+struct T_bin_ul_ct_delete
+{
+  T_msg_header_type   header;
+}
+
+###############################################################################
+#                     clusterer internal replication                          #
+###############################################################################
+
+struct T_bin_cl_ping
+{
+  T_msg_header_type   header;
+}
+
+struct T_bin_cl_pong
+{
+  T_msg_header_type   header;
+  uint32              cluster_id;
+  uint32              src_node;
+
+  uint32              known_node_count;
+  uint32[known_node_count] known_nodes;
+}
+
+struct T_bin_cl_ls_update
+{
+  T_msg_header_type   header;
+}
+
+struct T_bin_cl_ft_update
+{
+  T_msg_header_type   header;
+}
+
+struct T_bin_cl_unknown_id
+{
+  T_msg_header_type   header;
+}
+
+struct T_bin_cl_node_desc
+{
+  T_msg_header_type   header;
+}
+
+struct T_bin_cl_cap_update
+{
+  T_msg_header_type   header;
+}
+
+###############################################################################
+#                       clusterer extra replication                           #
+###############################################################################
+
+struct T_bin_cl_gen_msg
+{
+  T_msg_header_type   header;
+}
+
+struct T_bin_cl_mi_cmd
+{
+  T_msg_header_type   header;
+}
+
+struct T_cl_sync_scope
+{
+  uint16                mod_cap_len;
+  string(mod_cap_len)   mod_cap;
+
+  if (packet_type == 10 && bin_version == 2)
+  {
+    uint32              data_version;
+  }
+}
+
+struct T_bin_cl_sync_req
+{
+  T_msg_header_type  header;
+  T_cl_sync_scope    sync_scope;
+  T_bin_cl_trailer   clusterer;
+}
+
+#### SYNC v1
+
+struct T_bin_dlg_syncv1_data
+{
+  hide var uint32 read_bytes = header_size() + 2 + mod_cap_len;
+
+  while (read_bytes < (total_len - (4 * 3)))
+  {
+    uint32             sync_chunk_start_marker;
+    T_bin_full_dlg_v1  dialog;
+
+    set read_bytes = read_bytes + 4 + dialog_size_v1();
+  }
+}
+
+switch_expr T_bin_switch_syncv1_type
+{
+  case (mod_cap == konst::repl_dlg) : T_bin_dlg_syncv1_data "";
+  default : print ("default case");
+}
+
+#### SYNC v2 (can be used together with both dialog v1 and v2 packets!)
+
+struct T_bin_dlg_syncv2_data
+{
+  hide var uint32 read_bytes = header_size() + 2 + mod_cap_len;
+
+  if (bin_version == 2)
+  {
+    set read_bytes = read_bytes + 4;
+  }
+
+  while (read_bytes < (total_len - (4 * 3)))
+  {
+    uint32            chunk_size;
+    uint32            sync_chunk_start_marker;
+
+	if (data_version == 1)
+	{
+      T_bin_full_dlg_v1  dialog;
+      set read_bytes = read_bytes + 4 + 4 + dialog_size_v1();
+	}
+	else
+	{
+      T_bin_full_dlg_v2 dialog;
+      set read_bytes = read_bytes + 4 + 4 + dialog_size_v2();
+	}
+  }
+}
+
+switch_expr T_bin_switch_syncv2_type
+{
+  case (mod_cap == konst::repl_dlg) : T_bin_dlg_syncv2_data "";
+  default : print ("default case");
+}
+
+struct T_bin_cl_sync
+{
+  T_msg_header_type   header;
+  T_cl_sync_scope     sync_scope;
+  switch_expr
+  {
+    case (bin_version == 1) : T_bin_switch_syncv1_type sync_data;
+    case (bin_version == 2) : T_bin_switch_syncv2_type sync_data;
+    default : print ("default case");
+  }
+
+  T_bin_cl_trailer       clusterer;
+}
+
+struct T_bin_cl_sync_end
+{
+  T_msg_header_type   header;
+  T_cl_sync_scope     sync_scope;
+  T_bin_cl_trailer    clusterer;
+}
+
+struct T_bin_cl_shtag_active
+{
+  T_msg_header_type   header;
+}
+
+struct T_msg_unknow
+{
+  raw(*)   end_of_msg;
+}
+
+###############################################################################
+#                                 MAIN SWITCH                                 #
+###############################################################################
+
+switch T_msg_switch # T_opensips
+{
+  case T_opensips::dialog_create      : T_bin_dlg_create "";
+  case T_opensips::dialog_update      : T_bin_dlg_update "";
+  case T_opensips::dialog_delete      : T_bin_dlg_delete "";
+  case T_opensips::dialog_cseq_update : T_bin_dlg_cseq "";
+
+  case T_opensips::dialog_profiles    : T_bin_dlg_profiles "";
+
+  case T_opensips::ratelimit_pipes    : T_bin_rl "";
+
+  case T_opensips::usrloc_aor_create  : T_bin_ul_aor_create "";
+  case T_opensips::usrloc_aor_delete  : T_bin_ul_aor_delete "";
+  case T_opensips::usrloc_ct_create   : T_bin_ul_ct_create "";
+  case T_opensips::usrloc_ct_update   : T_bin_ul_ct_update "";
+  case T_opensips::usrloc_ct_delete   : T_bin_ul_ct_delete "";
+
+  case T_opensips::icluster_ping        : T_bin_cl_ping "";
+  case T_opensips::icluster_pong        : T_bin_cl_pong "";
+  case T_opensips::icluster_link_update : T_bin_cl_ls_update "";
+  case T_opensips::icluster_topo_update : T_bin_cl_ft_update "";
+  case T_opensips::icluster_unknown_id  : T_bin_cl_unknown_id "";
+  case T_opensips::icluster_node_desc   : T_bin_cl_node_desc "";
+  case T_opensips::icluster_cap_update  : T_bin_cl_cap_update "";
+
+  case T_opensips::cluster_generic_msg  : T_bin_cl_gen_msg "";
+  case T_opensips::cluster_mi_cmd       : T_bin_cl_mi_cmd "";
+  case T_opensips::cluster_sync_req     : T_bin_cl_sync_req "";
+  case T_opensips::cluster_sync_data    : T_bin_cl_sync "";
+  case T_opensips::cluster_sync_end     : T_bin_cl_sync_end "";
+  case T_opensips::cluster_shtag_on     : T_bin_cl_shtag_active "";
+  default  :
+    T_msg_unknow "";
+}
+
+###############################################################################
+#                                  MAIN TYPE                                  #
+###############################################################################
+
+struct T_msg_main_type
+{
+  T_msg_switch(Type)   "";
+}
