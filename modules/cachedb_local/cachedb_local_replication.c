@@ -196,7 +196,7 @@ int receive_sync_request(int node_id)
                         while(data) {
                                 if (data->expires == 0 || data->expires > get_ticks()) {
                                         sync_packet = clusterer_api.sync_chunk_start(&cache_repl_cap,
-                                                                                      cluster_id, node_id);
+                                                                        cluster_id, node_id, BIN_VERSION);
                                         if (!sync_packet) {
                                                 LM_ERR("Can not create sync packet!\n");
                                                 return -1;
