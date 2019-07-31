@@ -636,12 +636,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				}
 			}
 
-			/* profiles */
-			if (!VAL_NULL(values+18))
-				read_dialog_profiles( VAL_STR(values+18).s,
-					strlen(VAL_STR(values+18).s), dlg, 0, 0);
-
-
 			/* script flags */
 			if (!VAL_NULL(values+19)) {
 				dlg->user_flags = VAL_INT(values+19);
@@ -695,6 +689,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				(unsigned int)(VAL_INT(values+21));
 
 			dlg_unlock(d_table, d_entry);
+
+			/* profiles */
+			if (!VAL_NULL(values+18))
+				read_dialog_profiles( VAL_STR(values+18).s,
+					strlen(VAL_STR(values+18).s), dlg, 0, 0);
 
 			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 				if (0 != insert_ping_timer(dlg))
