@@ -229,7 +229,7 @@ xlog("compression registered\n");
 		and are not in the whitelist will be removed, headers of same type will be merged
 		together, separated by ',', header names which have a short form
 		will be reduced to that short form and SDP rtpmap attribute headers which contain
-		a value lower than 98 will be removed, because they are not mandatory. Lumps are not
+		a value lower than 96 will be removed, because they are not mandatory. Lumps are not
 		affected by this function, because it is applied after all messages changes are
 		processed.
 		done.
