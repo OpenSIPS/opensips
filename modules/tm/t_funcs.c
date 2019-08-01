@@ -53,6 +53,7 @@
 #include "t_msgbuilder.h"
 #include "t_lookup.h"
 #include "config.h"
+#include "t_stats.h"
 #include "../../context.h"
 
 
@@ -144,7 +145,8 @@ void put_on_wait(  struct cell  *Trans  )
 		4.									WAIT timer executed,
 											transaction deleted
 	*/
-	set_1timer( &Trans->wait_tl, WT_TIMER_LIST, 0 );
+	if (set_1timer( &Trans->wait_tl, WT_TIMER_LIST, 0 )==0)
+		stats_trans_code(Trans->uas.status);
 }
 
 

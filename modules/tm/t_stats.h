@@ -48,10 +48,12 @@ extern stat_var *tm_trans_inuse;
 
 
 #ifdef STATISTICS
-inline static void stats_trans_rpl( int code, int local ) {
-
-	stat_var *numerical_stat;
-
+/* update the statistics regading the final codes of the transactions
+ * A single transaction will generate a single update on one of
+ * these statistics
+ */
+inline static void stats_trans_code( int code)
+{
 	if (tm_enable_stats) {
 		if (code>=700) {
 			return;
@@ -66,6 +68,19 @@ inline static void stats_trans_rpl( int code, int local ) {
 		} else if (code>=200) {
 			update_stat( tm_trans_2xx, 1);
 		}
+	}
+}
+
+/* update the statistics regading the final replies sent to UAC side
+ * A single transaction may generate multiple updates on different
+ * statistics if (1) there is a retransmission of the final reply or
+ * (2) there are multiple final replies (like multi 200 OK)
+ */
+inline static void stats_trans_rpl( int code, int local )
+{
+	stat_var *numerical_stat;
+
+	if (tm_enable_stats) {
 		if (local)
 			update_stat( tm_loc_rpls, 1);
 		else
@@ -91,6 +106,7 @@ inline static void stats_trans_new( int local ) {
 	}
 }
 #else
+	#define stats_trans_code( _code )
 	#define stats_trans_rpl( _code , _local )
 	#define stats_trans_new( _local )
 #endif
