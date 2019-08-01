@@ -47,8 +47,9 @@ int send_sync_req(str *capability, int cluster_id, int source_id)
 
 	rc = clusterer_send_msg(&packet, cluster_id, source_id);
 	if (rc == CLUSTERER_SEND_SUCCES)
-		LM_DBG("Sync request sent for capability: %.*s to node: %d\n",
-			capability->len, capability->s, source_id);
+		LM_INFO("Sent sync request for capability: '%.*s' to node %d, "
+		        "cluster %d\n", capability->len, capability->s, source_id,
+		        cluster_id);
 
 	bin_free_packet(&packet);
 
@@ -275,7 +276,7 @@ void send_sync_repl(int sender, void *param)
 	bin_packet_t sync_end_pkt;
 	str bin_buffer;
 	struct local_cap *cap;
-	int rc;
+	int rc, cluster_id;
 	struct reply_rpc_params *p = (struct reply_rpc_params *)param;
 
 	lock_start_read(cl_list_lock);
@@ -324,12 +325,13 @@ void send_sync_repl(int sender, void *param)
 		return;
 	}
 
+	cluster_id = p->cluster->cluster_id;
 	lock_stop_read(cl_list_lock);
 
 	bin_free_packet(&sync_end_pkt);
 
-	LM_DBG("Sent all sync packets for capability: %.*s to node: %d\n",
-		p->cap_name.len, p->cap_name.s, p->node_id);
+	LM_INFO("Sent all sync packets for capability '%.*s' to node %d, cluster "
+	        "%d\n", p->cap_name.len, p->cap_name.s, p->node_id, cluster_id);
 
 	shm_free(param);
 }
@@ -368,8 +370,9 @@ void handle_sync_request(bin_packet_t *packet, cluster_info_t *cluster,
 
 	bin_pop_str(packet, &cap_name);
 
-	LM_DBG("Received sync request for capability: %.*s from: %d\n", cap_name.len,
-		cap_name.s, source->node_id);
+	LM_INFO("Received sync request for capability '%.*s' from node %d, "
+	        "cluster %d\n", cap_name.len, cap_name.s, source->node_id,
+	        cluster->cluster_id);
 
 	nhop = get_next_hop(source);
 	if (nhop > 0) {
@@ -435,8 +438,8 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		if (ipc_dispatch_mod_packet(packet, &cap->reg) < 0)
 			LM_ERR("Failed to dispatch handling of module packet\n");
 	} else { /* CLUSTERER_SYNC_END */
-		LM_DBG("Received all sync packets for capability: %.*s\n", cap_name.len,
-			cap_name.s);
+		LM_INFO("Received all sync packets for capability '%.*s' in "
+		        "cluster %d\n", cap_name.len, cap_name.s, cluster->cluster_id);
 
 		lock_get(cluster->lock);
 
