@@ -123,6 +123,8 @@
  with no built in alloca, like icc*/
 #undef _ALLOCA_H
 
+#undef MIN
+#undef MAX
 
 extern int yylex();
 static void yyerror(char* s);
