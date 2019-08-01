@@ -813,17 +813,18 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 
 	pkg_free(query_cols);
 
-	if (RES_ROW_N(sql_res) == 0) {
-		LM_WARN("Table: %.*s is empty!\n", c_entry->table.len, c_entry->table.s);
-		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
-		return 0;
-	}
-
 	lock_start_write(db_hdls->c_entry->ref_lock);
 
 	if (inc_rld_vers && inc_cache_rld_vers(db_hdls, &reload_vers) < 0) {
 		lock_stop_write(db_hdls->c_entry->ref_lock);
 		goto error;
+	}
+
+	/* anything loaded ? if not, we can do a quick exit here */
+	if (RES_ROW_N(sql_res) == 0) {
+		lock_stop_write(db_hdls->c_entry->ref_lock);
+		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
+		return 0;
 	}
 
 	row = RES_ROWS(sql_res);
