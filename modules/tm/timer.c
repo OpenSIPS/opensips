@@ -938,12 +938,18 @@ end:
 
 
 /* similar to set_timer, except it allows only one-time
-   timer setting and all later attempts are ignored */
-void set_1timer( struct timer_link *new_tl, enum lists list_id,
+ * timer setting and all later attempts are ignored
+ * Returned values:
+ *    0 if the linker was actually added to the list
+ *   -1 if the linker was not added as it was already found in the list;
+ *      do not consider this an error, but a NOP.
+ */
+int set_1timer( struct timer_link *new_tl, enum lists list_id,
 												utime_t* ext_timeout )
 {
 	utime_t timeout;
 	struct timer* list;
+	int ret = -1;
 
 
 	if (list_id>=NR_OF_TIMER_LISTS) {
@@ -951,7 +957,7 @@ void set_1timer( struct timer_link *new_tl, enum lists list_id,
 #ifdef EXTRA_DEBUG
 		abort();
 #endif
-		return;
+		return ret;
 	}
 
 	if (!ext_timeout) {
@@ -966,8 +972,11 @@ void set_1timer( struct timer_link *new_tl, enum lists list_id,
 	if (!new_tl->time_out) {
 		insert_timer_unsafe( list, new_tl, timeout +
 			((timer_id2type[list_id]==UTIME_TYPE)?get_uticks():get_ticks()));
+		ret = 0;
 	}
 	unlock(list->mutex);
+
+	return ret;
 }
 
 
