@@ -758,8 +758,8 @@ static int fixup_method(void** param)
 	{
 		if(method==METHOD_UNDEF || method&METHOD_OTHER)
 		{
-			LM_ERR("unknown method in list [%.*s/%d] - must be only defined methods\n",
-					s->len, s->s, method);
+			LM_ERR("unknown method in list [%.*s/%d] - must be "
+				"only defined methods\n", s->len, s->s, method);
 			return E_UNSPEC;
 		}
 		LM_DBG("using id for methods [%.*s/%d]\n",
@@ -1367,6 +1367,159 @@ failed:
 	return -1;
 }
 
+
+static char _is_username_char[128] = {
+	0 /* 0 NUL */,
+	0 /* 1 SOH */,
+	0 /* 2 STX */,
+	0 /* 3 ETX */,
+	0 /* 4 EOT */,
+	0 /* 5 ENQ */,
+	0 /* 6 ACK */,
+	0 /* 7 BEL */,
+	0 /* 8 BS */,
+	0 /* 9 HT */,
+	0 /* 10 LF */,
+	0 /* 11 VT */,
+	0 /* 12 FF */,
+	0 /* 13 CR */,
+	0 /* 14 SO */,
+	0 /* 15 SI */,
+	0 /* 16 DLE */,
+	0 /* 17 DC1 */,
+	0 /* 18 DC2 */,
+	0 /* 19 DC3 */,
+	0 /* 20 DC4 */,
+	0 /* 21 NAK */,
+	0 /* 22 SYN */,
+	0 /* 23 ETB */,
+	0 /* 24 CAN */,
+	0 /* 25 EM */,
+	0 /* 26 SUB */,
+	0 /* 27 ESC */,
+	0 /* 28 FS */,
+	0 /* 29 GS */,
+	0 /* 30 RS */,
+	0 /* 31 US */,
+	0 /* 32   */,
+	1 /* 33 ! */,
+	0 /* 34 " */,
+	0 /* 35 # */,
+	1 /* 36 $ */,
+	0 /* 37 % */,
+	1 /* 38 & */,
+	1 /* 39 ' */,
+	0 /* 40 ( */,
+	0 /* 41 ) */,
+	1 /* 42 * */,
+	1 /* 43 + */,
+	1 /* 44 , */,
+	1 /* 45 - */,
+	1 /* 46 . */,
+	1 /* 47 / */,
+	1 /* 48 0 */,
+	1 /* 49 1 */,
+	1 /* 50 2 */,
+	1 /* 51 3 */,
+	1 /* 52 4 */,
+	1 /* 53 5 */,
+	1 /* 54 6 */,
+	1 /* 55 7 */,
+	1 /* 56 8 */,
+	1 /* 57 9 */,
+	0 /* 58 : */,
+	1 /* 59 ; */,
+	0 /* 60 < */,
+	1 /* 61 = */,
+	0 /* 62 > */,
+	1 /* 63 ? */,
+	0 /* 64 @ */,
+	1 /* 65 A */,
+	1 /* 66 B */,
+	1 /* 67 C */,
+	1 /* 68 D */,
+	1 /* 69 E */,
+	1 /* 70 F */,
+	1 /* 71 G */,
+	1 /* 72 H */,
+	1 /* 73 I */,
+	1 /* 74 J */,
+	1 /* 75 K */,
+	1 /* 76 L */,
+	1 /* 77 M */,
+	1 /* 78 N */,
+	1 /* 79 O */,
+	1 /* 80 P */,
+	1 /* 81 Q */,
+	1 /* 82 R */,
+	1 /* 83 S */,
+	1 /* 84 T */,
+	1 /* 85 U */,
+	1 /* 86 V */,
+	1 /* 87 W */,
+	1 /* 88 X */,
+	1 /* 89 Y */,
+	1 /* 90 Z */,
+	0 /* 91 [ */,
+	0 /* 92 \ */,
+	0 /* 93 ] */,
+	0 /* 94 ^ */,
+	1 /* 95 _ */,
+	0 /* 96 ` */,
+	1 /* 97 a */,
+	1 /* 98 b */,
+	1 /* 99 c */,
+	1 /* 100 d */,
+	1 /* 101 e */,
+	1 /* 102 f */,
+	1 /* 103 g */,
+	1 /* 104 h */,
+	1 /* 105 i */,
+	1 /* 106 j */,
+	1 /* 107 k */,
+	1 /* 108 l */,
+	1 /* 109 m */,
+	1 /* 110 n */,
+	1 /* 111 o */,
+	1 /* 112 p */,
+	1 /* 113 q */,
+	1 /* 114 r */,
+	1 /* 115 s */,
+	1 /* 116 t */,
+	1 /* 117 u */,
+	1 /* 118 v */,
+	1 /* 119 w */,
+	1 /* 120 x */,
+	1 /* 121 y */,
+	1 /* 122 z */,
+	0 /* 123 { */,
+	0 /* 124 | */,
+	0 /* 125 } */,
+	1 /* 126 ~ */,
+	0 /* 127 DEL */
+};
+
+static int check_username(str *username)
+{
+	int i;
+
+	if (!username)
+		return 0;
+
+	for( i=0 ; i<username->len ; i++ ) {
+		if (username->s[i]<0 || username->s[i]>127 ||
+		_is_username_char[ (int)username->s[i] ]==0) {
+			LM_DBG("invalid character %c[%d] in username <%.*s> on index %i\n",
+				username->s[i], username->s[i],
+				username->len, username->s, i);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+
 #define IS_ALPHANUM(_c) ( \
 		((_c) >= 'a' && (_c) <= 'z') || \
 		((_c) >= 'A' && (_c) <= 'Z') || \
@@ -1383,7 +1536,8 @@ static int check_hostname(str *domain)
 
 	/* always starts with a ALPHANUM */
 	if (!IS_ALPHANUM(domain->s[0]) && (domain->s[0] != '[')) {
-		LM_DBG("invalid starting character in domain: %c[%d]\n", domain->s[0], domain->s[0]);
+		LM_DBG("invalid starting character in domain: %c[%d]\n",
+			domain->s[0], domain->s[0]);
 		return -1;
 	}
 
@@ -1404,7 +1558,8 @@ static int check_hostname(str *domain)
 
 	/* check if the last character is a '-' */
 	if (!IS_ALPHANUM(*end) && (*end != '.') && (*end != ']')) {
-		LM_DBG("invalid character at the end of the domain: %c[%d]\n", *end, *end);
+		LM_DBG("invalid character at the end of the domain: %c[%d]\n",
+			*end, *end);
 		return -1;
 	}
 	return 0;
@@ -1450,6 +1605,9 @@ enum sip_validation_failures {
 	SV_FROM_PARSE_ERROR=-24,
 	SV_FROM_DOMAIN_ERROR=-25,
 	SV_CONTACT_PARSE_ERROR=-26,
+	SV_BAD_USERNAME=-27,
+	SV_FROM_USERNAME_ERROR=-28,
+	SV_TO_USERNAME_ERROR=-29,
 	SV_GENERIC_FAILURE=-255
 };
 
@@ -1490,8 +1648,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 
 	/* content length should be present if protocol is not UDP */
 	if (msg->rcv.proto != PROTO_UDP && !msg->content_length) {
-		snprintf(reason, MAX_REASON-1, "message doesn't have Content Length header for proto %d",
-				msg->rcv.proto);
+		snprintf(reason, MAX_REASON-1,
+			"message doesn't have Content Length header for proto %d",
+			msg->rcv.proto);
 		ret = SV_NO_CONTENT_LENGTH;
 		goto failed;
 	}
@@ -1509,8 +1668,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 		}
 
 		if (get_content_length(msg) != body.len) {
-			snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different than actual body %d",
-					get_content_length(msg), body.len);
+			snprintf(reason, MAX_REASON-1, "invalid body - content "
+				"length %ld different than actual body %d",
+				get_content_length(msg), body.len);
 			ret = SV_INVALID_CONTENT_LENGTH;
 			goto failed;
 		}
@@ -1570,6 +1730,11 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 			ret = SV_TO_DOMAIN_ERROR;
 			goto failed;
 		}
+		if(check_username(&to->parsed_uri.user) < 0) {
+			strcpy(reason, "invalid username for 'To' header");
+			ret = SV_TO_USERNAME_ERROR;
+			goto failed;
+		}
 	}
 
 	/* test from header uri */
@@ -1596,6 +1761,11 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 			ret = SV_FROM_DOMAIN_ERROR;
 			goto failed;
 		}
+		if (check_username(&from->parsed_uri.user) < 0) {
+			strcpy(reason, "invalid username for 'From' header");
+			ret = SV_FROM_USERNAME_ERROR;
+			goto failed;
+		}
 	}
 
 	/* request or reply */
@@ -1612,6 +1782,11 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 				if (check_hostname(&msg->parsed_uri.host) < 0) {
 					strcpy(reason, "invalid domain for R-URI");
 					ret = SV_BAD_HOSTNAME;
+					goto failed;
+				}
+				if (check_username(&msg->parsed_uri.user) < 0) {
+					strcpy(reason, "invalid username for R-URI");
+					ret = SV_BAD_USERNAME;
 					goto failed;
 				}
 			}
@@ -1737,8 +1912,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 		body.len = msg->buf + msg->len - body.s;
 
 		if (get_content_length(msg) != body.len) {
-			snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different than "
-					"actual body %d\n", get_content_length(msg), body.len);
+			snprintf(reason, MAX_REASON-1, "invalid body - content "
+				"length %ld different than "
+				"actual body %d\n", get_content_length(msg), body.len);
 			ret = SV_INVALID_CONTENT_LENGTH;
 			goto failed;
 		}
