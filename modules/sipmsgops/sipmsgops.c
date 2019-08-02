@@ -758,8 +758,8 @@ static int fixup_method(void** param)
 	{
 		if(method==METHOD_UNDEF || method&METHOD_OTHER)
 		{
-			LM_ERR("unknown method in list [%.*s/%d] - must be only defined methods\n",
-					s->len, s->s, method);
+			LM_ERR("unknown method in list [%.*s/%d] - must be "
+				"only defined methods\n", s->len, s->s, method);
 			return E_UNSPEC;
 		}
 		LM_DBG("using id for methods [%.*s/%d]\n",
@@ -1383,7 +1383,8 @@ static int check_hostname(str *domain)
 
 	/* always starts with a ALPHANUM */
 	if (!IS_ALPHANUM(domain->s[0]) && (domain->s[0] != '[')) {
-		LM_DBG("invalid starting character in domain: %c[%d]\n", domain->s[0], domain->s[0]);
+		LM_DBG("invalid starting character in domain: %c[%d]\n",
+			domain->s[0], domain->s[0]);
 		return -1;
 	}
 
@@ -1404,7 +1405,8 @@ static int check_hostname(str *domain)
 
 	/* check if the last character is a '-' */
 	if (!IS_ALPHANUM(*end) && (*end != '.') && (*end != ']')) {
-		LM_DBG("invalid character at the end of the domain: %c[%d]\n", *end, *end);
+		LM_DBG("invalid character at the end of the domain: %c[%d]\n",
+			*end, *end);
 		return -1;
 	}
 	return 0;
@@ -1490,8 +1492,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 
 	/* content length should be present if protocol is not UDP */
 	if (msg->rcv.proto != PROTO_UDP && !msg->content_length) {
-		snprintf(reason, MAX_REASON-1, "message doesn't have Content Length header for proto %d",
-				msg->rcv.proto);
+		snprintf(reason, MAX_REASON-1,
+			"message doesn't have Content Length header for proto %d",
+			msg->rcv.proto);
 		ret = SV_NO_CONTENT_LENGTH;
 		goto failed;
 	}
@@ -1509,8 +1512,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 		}
 
 		if (get_content_length(msg) != body.len) {
-			snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different than actual body %d",
-					get_content_length(msg), body.len);
+			snprintf(reason, MAX_REASON-1, "invalid body - content "
+				"length %ld different than actual body %d",
+				get_content_length(msg), body.len);
 			ret = SV_INVALID_CONTENT_LENGTH;
 			goto failed;
 		}
@@ -1737,8 +1741,9 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 		body.len = msg->buf + msg->len - body.s;
 
 		if (get_content_length(msg) != body.len) {
-			snprintf(reason, MAX_REASON-1, "invalid body - content length %ld different than "
-					"actual body %d\n", get_content_length(msg), body.len);
+			snprintf(reason, MAX_REASON-1, "invalid body - content "
+				"length %ld different than "
+				"actual body %d\n", get_content_length(msg), body.len);
 			ret = SV_INVALID_CONTENT_LENGTH;
 			goto failed;
 		}
