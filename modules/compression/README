@@ -204,7 +204,7 @@ xlog("compression registered\n");
    headers of same type will be put together, separated by ',',
    header names which have a short form will be reduced to that
    short form and sdp rtpmap attribute headers which contain a
-   value lower than 98 will be removed, because it is no longer
+   value lower than 96 will be removed, because it is no longer
    needed. No lumps affected by this function, because it is
    applied after almost all the processing is done. The mc_compact
    supported short forms are:
@@ -300,7 +300,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Ionut Ionita (@ionutrazvanionita) 48 12 3976 192
    2. Razvan Crainea (@razvancrainea) 17 15 63 38
-   3. Liviu Chircu (@liviuchircu) 5 3 12 28
+   3. Liviu Chircu (@liviuchircu) 6 4 15 31
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 3 1
    5. Julián Moreno Patiño 3 1 2 2
    6. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
@@ -325,9 +325,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Dec 2014 - May 2019
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Mar 2019
-   3. Liviu Chircu (@liviuchircu)         Apr 2018 - Jun 2018
+   1. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2019
+   2. Razvan Crainea (@razvancrainea)     Dec 2014 - May 2019
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Mar 2019
    4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
    6. Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -339,8 +339,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
    Ionita (@ionutrazvanionita).
 
    doc copyrights:
