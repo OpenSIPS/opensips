@@ -692,12 +692,12 @@ Chapter 2. Contributors
    10. Kobi Eshun (@ekobi) 7 1 300 146
 
    All remaining contributors: Andrei Pelinescu-Onciul, Anca
-   Vamanu, Norman Brandinger (@NormB), Klaus Darilion, Andrey
-   Vorobiev, Olle E. Johansson, Kennard White, Julián Moreno
-   Patiño, Konstantin Bokarius, Walter Doekes (@wdoekes), Andreas
-   Granig, Peter Lemenkov (@lemenkov), Sergio Gutierrez, Edson
-   Gellert Schubert, Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu).
+   Vamanu, Norman Brandinger (@NormB), Vlad Patrascu
+   (@rvlad-patrascu), Klaus Darilion, Andrey Vorobiev, Olle E.
+   Johansson, Kennard White, Julián Moreno Patiño, Konstantin
+   Bokarius, Walter Doekes (@wdoekes), Andreas Granig, Peter
+   Lemenkov (@lemenkov), Sergio Gutierrez, Edson Gellert Schubert,
+   Ovidiu Sas (@ovidiusas).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -719,11 +719,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2019
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2019
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Andrey Vorobiev                     Apr 2016 - Apr 2016
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Ionut Ionita (@ionutrazvanionita)   Nov 2015 - Feb 2016

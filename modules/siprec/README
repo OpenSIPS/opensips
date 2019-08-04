@@ -25,7 +25,7 @@ SIPREC Module
 
               1.8.1. siprec_start_recording(srs, [group],
                       [caller], [callee], [rtpproxy_sock],
-                      [media_ip])
+                      [media_ip], [headers])
 
    2. Contributors
 
@@ -54,6 +54,8 @@ SIPREC Module
 
    1.6. Use siprec_start_recording() function with custom XML
           values for participants
+
+   1.7. Use siprec_start_recording() function with custom headers
 
 Chapter 1. Admin Guide
 
@@ -217,7 +219,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 1.8. Exported Functions
 
 1.8.1.  siprec_start_recording(srs, [group], [caller], [callee],
-[rtpproxy_sock], [media_ip])
+[rtpproxy_sock], [media_ip], [headers])
 
    Calling this function on an initial INVITE engages call
    recording to SRSs for that call. Note that it does not
@@ -248,6 +250,9 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
        default set provisioned in the rtpproxy module.
      * media_ip (string, optional) - the IP that RTPProxy will be
        streaming media from. If absent 127.0.0.1 will be used.
+     * headers (string, optional) - extra headers that are to be
+       added in the initial request towards the SRS. NOTE: headers
+       must be separated by \r\n and must end with \r\n.
 
    The function returns false when an internal error is triggered
    and the call recording setup fails. Otherwise, if all the
@@ -288,6 +293,12 @@ for $ci in inbound group\n");
         siprec_start_recording($var(srs),,$xml(caller_xml/nameID));
         ...
 
+   Example 1.7. Use siprec_start_recording() function with custom
+   headers
+        ...
+        siprec_start_recording($var(srs),,,,,,"X-MY-CUSTOM_HDR: 1\r\n");
+        ...
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -295,7 +306,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 73 34 3410 621
+   1. Razvan Crainea (@razvancrainea) 75 35 3461 631
    2. Vlad Patrascu (@rvlad-patrascu) 10 5 152 134
    3. Liviu Chircu (@liviuchircu) 6 4 21 44
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
@@ -320,7 +331,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jun 2019
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jul 2019
    2. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Apr 2019
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
    4. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2018
