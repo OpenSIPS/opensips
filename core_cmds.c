@@ -306,6 +306,7 @@ static cmd_export_t core_cmds[]={
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_avp, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"get_timestamp", (cmd_function)w_get_timestamp, {
