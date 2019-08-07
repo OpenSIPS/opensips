@@ -277,14 +277,14 @@ static cmd_export_t core_cmds[]={
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
-		{CMD_PARAM_VAR, fixup_check_wrvar, 0}, {0,0,0}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_wrvar, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"cache_sub", (cmd_function)w_cache_sub, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
-		{CMD_PARAM_VAR, fixup_check_wrvar, 0}, {0,0,0}},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_wrvar, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"cache_raw_query", (cmd_function)w_cache_raw_query, {
 		{CMD_PARAM_STR, 0, 0},
