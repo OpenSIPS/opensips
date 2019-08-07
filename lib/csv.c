@@ -142,7 +142,7 @@ rfc_4180_parsing:
 		case '"':
 			if ((field_start && ch != field_start) ||
 				(!field_start && ch != in.s))
-				goto bad_csv_str;
+				continue;
 
 			for (p = ch + 1; p < lim; p++) {
 				if (*p == '"') {

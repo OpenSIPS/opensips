@@ -134,13 +134,22 @@ void test_csv_rfc_4180(void)
 	ok(!_parse_csv_record(_str("\""), CSV_RFC_4180));
 	ok(!_parse_csv_record(_str("\"foo"), CSV_RFC_4180));
 	ok(!_parse_csv_record(_str("\"a\" ,b"), CSV_RFC_4180));
-	ok(!_parse_csv_record(_str(" \"a\",b"), CSV_RFC_4180));
 	ok(!_parse_csv_record(_str("\"a\"a,b"), CSV_RFC_4180));
-	ok(!_parse_csv_record(_str("a\"a\",b"), CSV_RFC_4180));
 
 	ret = _parse_csv_record(_str("\"a\""), CSV_RFC_4180);
 	ok(!str_strcmp(&ret->s, _str("a")));
 	ok(!ret->next);
+	free_csv_record(ret);
+
+	ret = _parse_csv_record(_str("realm=\"etc.example.com\","
+				"nonce=\"B5CFDSFDGD14992F\",opaque=\"opaq\","
+				"qop=\"auth\",algorithm=MD5"), CSV_RFC_4180);
+	ok(!str_strcmp(&ret->s, _str("realm=\"etc.example.com\"")));
+	ok(!str_strcmp(&ret->next->s, _str("nonce=\"B5CFDSFDGD14992F\"")));
+	ok(!str_strcmp(&ret->next->next->s, _str("opaque=\"opaq\"")));
+	ok(!str_strcmp(&ret->next->next->next->s, _str("qop=\"auth\"")));
+	ok(!str_strcmp(&ret->next->next->next->next->s, _str("algorithm=MD5")));
+	ok(!ret->next->next->next->next->next);
 	free_csv_record(ret);
 
 	ret = _parse_csv_record(_str("a,\"\tb\""), CSV_RFC_4180);
@@ -158,7 +167,6 @@ void test_csv_rfc_4180(void)
 	/* mismatched dquotes */
 	ok(!_parse_csv_record(_str("\"\"a\""), CSV_RFC_4180));
 	ok(!_parse_csv_record(_str("\"a\"\""), CSV_RFC_4180));
-	ok(!_parse_csv_record(_str("\"a\",b\""), CSV_RFC_4180));
 	ok(!_parse_csv_record(_str("\"\"\"a\"\"\" b\",c"), CSV_RFC_4180));
 
 	ret = _parse_csv_record(_str("\"\"\"a\"\" \r\"\"\t\nb\"\" \",\"c\"\r\n"),
