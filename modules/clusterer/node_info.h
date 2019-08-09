@@ -128,7 +128,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_inf
 void free_info(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
-					char **str_vals);
+					str *str_vals);
 
 int provision_neighbor(modparam_t type, void* val);
 int provision_current(modparam_t type, void *val);

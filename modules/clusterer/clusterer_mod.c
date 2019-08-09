@@ -279,10 +279,11 @@ do { \
 				col_name.s);	\
 			return -1;	\
 		}	\
-		pe = q_memchr(p + 1, ',', descr->s + descr->len - p - 1);	\
-		aux.s = p + 1;	\
-		aux.len = pe ? pe - p - 1 : descr->s + descr->len - p - 1;	\
-		if (aux.s >= descr->s + descr->len || !aux.len) {	\
+		p++;	\
+		pe = q_memchr(p, ',', descr->s + descr->len - p);	\
+		aux.s = p;	\
+		aux.len = pe ? pe - p : descr->s + descr->len - p;	\
+		if (aux.len == 0) {	\
 			LM_ERR("<%.*s> value expected\n", col_name.len,	\
 				col_name.s);	\
 			return -1;	\
@@ -294,17 +295,17 @@ do { \
 					col_name.s);	\
 				return -1;	\
 			}	\
-		} else \
-			str_vals[(_col_idx)] = aux.len ? aux.s : NULL;	\
+		} else	\
+			str_vals[(_col_idx)] = aux;	\
 	} else {	\
 		if ((_type) == 0)	\
 			int_vals[(_col_idx)] = -1;	\
 		else	\
-			str_vals[(_col_idx)] = NULL;	\
+			str_vals[(_col_idx)].s = NULL;	\
 	}	\
 } while(0)
 
-int parse_param_node_info(str *descr, int *int_vals, char **str_vals)
+int parse_param_node_info(str *descr, int *int_vals, str *str_vals)
 {
 	char *p, *pe;
 	str aux;
