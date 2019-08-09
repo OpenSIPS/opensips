@@ -1043,23 +1043,11 @@ static inline int validate_update(int seq_no, int msg_seq_no, int timestamp,
 static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 								int src_node_id, str *str_vals, int *int_vals)
 {
-	char *char_str_vals[NO_DB_STR_VALS];
 	node_info_t *new_node = NULL;
 	int lock_old_flag;
 
-	char_str_vals[STR_VALS_URL_COL] = shm_malloc(str_vals[STR_VALS_URL_COL].len+1);
-	memcpy(char_str_vals[STR_VALS_URL_COL],
-		str_vals[STR_VALS_URL_COL].s, str_vals[STR_VALS_URL_COL].len);
-	char_str_vals[STR_VALS_URL_COL][str_vals[STR_VALS_URL_COL].len] = 0;
-
-	char_str_vals[STR_VALS_SIP_ADDR_COL] = shm_malloc(str_vals[STR_VALS_SIP_ADDR_COL].len+1);
-	memcpy(char_str_vals[STR_VALS_SIP_ADDR_COL],
-		str_vals[STR_VALS_SIP_ADDR_COL].s, str_vals[STR_VALS_SIP_ADDR_COL].len);
-	char_str_vals[STR_VALS_SIP_ADDR_COL][str_vals[STR_VALS_SIP_ADDR_COL].len] = 0;
-
-	char_str_vals[STR_VALS_FLAGS_COL] = 0;
-	char_str_vals[STR_VALS_DESCRIPTION_COL] = 0;
-
+	str_vals[STR_VALS_FLAGS_COL].s = 0;
+	str_vals[STR_VALS_DESCRIPTION_COL].s = 0;
 	int_vals[INT_VALS_ID_COL] = -1;	/* no DB id */
 	int_vals[INT_VALS_CLUSTER_ID_COL] = cl->cluster_id;
 	int_vals[INT_VALS_NODE_ID_COL] = src_node_id;
@@ -1067,7 +1055,7 @@ static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 
 	lock_switch_write(cl_list_lock, lock_old_flag);
 
-	if (add_node_info(&new_node, &cl, int_vals, char_str_vals) != 0) {
+	if (add_node_info(&new_node, &cl, int_vals, str_vals) != 0) {
 		LM_ERR("Unable to add node info to backing list\n");
 		lock_switch_read(cl_list_lock, lock_old_flag);
 		return NULL;
@@ -1077,8 +1065,6 @@ static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 		lock_switch_read(cl_list_lock, lock_old_flag);
 		return NULL;
 	}
-	shm_free(char_str_vals[STR_VALS_URL_COL]);
-	shm_free(char_str_vals[STR_VALS_SIP_ADDR_COL]);
 
 	lock_switch_read(cl_list_lock, lock_old_flag);
 
