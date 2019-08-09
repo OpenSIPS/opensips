@@ -910,7 +910,7 @@ int ul_deprec_shp(modparam_t _, void *modparam)
 	LM_NOTICE("the 'shared_pinging' module parameter has been deprecated "
 				"in favour of 'pinging_mode'\n");
 
-	if (*(int *)modparam == 0)
+	if ((int *)modparam == 0)
 		pinging_mode = PMD_OWNERSHIP;
 	else
 		pinging_mode = PMD_COOPERATION;
