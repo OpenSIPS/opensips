@@ -229,8 +229,8 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 		goto error;
 	}
 
-	/* reference the dialog as kept in the timer list */
-	ref_dlg_unsafe(dlg, 1);
+	/* timer list + this ref */
+	ref_dlg_unsafe(dlg, 2);
 
 	LM_DBG("Received initial timeout of %d for dialog %.*s, safe = %d\n",
 		dlg->tl.timeout, callid.len, callid.s, safe);
@@ -243,8 +243,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 				NULL, DLG_DIR_NONE, NULL, 1, 0);
 	}
 
-	dlg_unlock(d_table, d_entry);
-
 	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
 		if (insert_ping_timer(dlg) != 0)
 			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
@@ -253,17 +251,19 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 		}
 	}
 
+	if (dlg_db_mode == DB_MODE_DELAYED) {
+		/* to be later removed by timer */
+		ref_dlg_unsafe(dlg, 1);
+	}
+
+	dlg_unlock(d_table, d_entry);
+
 	if (dlg_has_reinvite_pinging(dlg)) {
 		if (insert_reinvite_ping_timer(dlg) != 0) {
 			LM_CRIT("Unable to insert dlg %p into reinvite ping timer\n",dlg);
 		} else {
-			ref_dlg_unsafe(dlg, 1);
+			ref_dlg(dlg, 1);
 		}
-	}
-
-	if (dlg_db_mode == DB_MODE_DELAYED) {
-		/* to be later removed by timer */
-		ref_dlg_unsafe(dlg, 1);
 	}
 
 	if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
@@ -279,6 +279,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 
 	run_load_callback_per_dlg(dlg);
 
+	unref_dlg(dlg, 1);
 	return 0;
 
 pre_linking_error:
@@ -396,11 +397,13 @@ int dlg_replicated_update(bin_packet_t *packet)
 
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
 
+	ref_dlg_unsafe(dlg, 1);
 	dlg_unlock(d_table, d_entry);
 
 	if (profiles.s && profiles.len != 0)
 		read_dialog_profiles(profiles.s, profiles.len, dlg, 1, 1);
 
+	unref_dlg(dlg, 1);
 	return 0;
 
 error:
