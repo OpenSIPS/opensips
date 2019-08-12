@@ -1561,13 +1561,19 @@ void hp_status(struct hp_block *hpb)
 #ifdef DBG_MALLOC
 	dbg_ht_init(allocd);
 
-	for (f=hpb->first_frag; (char*)f<(char*)hpb->last_frag; f=FRAG_NEXT(f))
+	for (f = hpb->first_frag; f >= hpb->first_frag && f < hpb->last_frag;
+	        f = FRAG_NEXT(f)) {
 		if (!frag_is_free(f) && f->file)
 			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
 				LM_ERR("Unable to update alloc'ed. memory summary\n");
 				dbg_ht_free(allocd);
 				return;
 			}
+	}
+
+	if (f != hpb->last_frag)
+		LM_GEN1(memdump, "failed to walk through all fragments (%p %p %p)\n",
+		        f, hpb->first_frag, hpb->last_frag);
 
 	LM_GEN1(memdump, "dumping summary of all alloc'ed. fragments:\n");
 	LM_GEN1(memdump, "------------+---------------------------------------\n");

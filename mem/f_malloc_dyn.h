@@ -450,13 +450,19 @@ void fm_status(struct fm_block *fm)
 #if defined(DBG_MALLOC)
 	dbg_ht_init(allocd);
 
-	for (f=fm->first_frag; (char*)f<(char*)fm->last_frag; f=FRAG_NEXT(f))
-		if (!frag_is_free(f))
+	for (f = fm->first_frag; f >= fm->first_frag && f < fm->last_frag;
+	        f = FRAG_NEXT(f)) {
+		if (!frag_is_free(f) && f->file)
 			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
 				LM_ERR("Unable to update alloc'ed. memory summary\n");
 				dbg_ht_free(allocd);
 				return;
 			}
+	}
+
+	if (f != fm->last_frag)
+		LM_GEN1(memdump, "failed to walk through all fragments (%p %p %p)\n",
+		        f, fm->first_frag, fm->last_frag);
 
 	LM_GEN1(memdump, " dumping summary of all alloc'ed. fragments:\n");
 	LM_GEN1(memdump, "------------+---------------------------------------\n");

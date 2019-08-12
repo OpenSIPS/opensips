@@ -695,6 +695,7 @@ static void sig_usr(int signo)
 					pt[process_no].flags |= OSS_PROC_DOING_DUMP;
 					if (restore_segv_handler() != 0)
 						exit(-1);
+					pkg_status();
 		}
 	}
 }
