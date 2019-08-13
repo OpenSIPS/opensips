@@ -510,7 +510,7 @@ static int fixup_avp_list(void** param)
 
 static int fixup_check_avp(void** param)
 {
-	if (((pv_spec_t *)*param)->type == PVT_AVP) {
+	if (((pv_spec_t *)*param)->type != PVT_AVP) {
 		LM_ERR("Parameter must be an AVP\n");
 		return E_CFG;
 	}
