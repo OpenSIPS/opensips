@@ -503,40 +503,40 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 	cdb_key_init(&contacts_key, "contacts");
 	
 	switch (matching_mode) {
-                case CONTACT_ONLY:
-                        len = ct->c.len  ;
-                        base64len = calc_base64_encode_len(len);
-                        if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
-                                LM_ERR("oom\n");
-                                return -1;
-                        }
+	case CONTACT_ONLY:
+		len = ct->c.len  ;
+		base64len = calc_base64_encode_len(len);
+		if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
 
-                        if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
-                                LM_ERR("oom\n");
-                                return -1;
-                        }
-                        memcpy(ctkey_pkg_buf.s, ct->c.s, ct->c.len);
-                        break;
-                case CONTACT_CALLID:
-                        len = ct->c.len + 1 + ct->callid.len;
-                        base64len = calc_base64_encode_len(len);
-                        if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
-                                LM_ERR("oom\n");
-                                return -1;
-                        }
+		if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+		memcpy(ctkey_pkg_buf.s, ct->c.s, ct->c.len);
+		break;
+	case CONTACT_CALLID:
+		len = ct->c.len + 1 + ct->callid.len;
+		base64len = calc_base64_encode_len(len);
+		if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
 
-                        if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
-                                LM_ERR("oom\n");
-                                return -1;
-                        }
-                        memcpy(ctkey_pkg_buf.s, ct->c.s, ct->c.len);
-                        ctkey_pkg_buf.s[ct->c.len] = ':';
-                        memcpy(ctkey_pkg_buf.s + ct->c.len + 1, ct->callid.s,
-                               ct->callid.len);
-                        break;
-                default:
-                        LM_CRIT("unknown matching_mode %d\n", matching_mode);
-                        return -1;
+		if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+		memcpy(ctkey_pkg_buf.s, ct->c.s, ct->c.len);
+		ctkey_pkg_buf.s[ct->c.len] = ':';
+		memcpy(ctkey_pkg_buf.s + ct->c.len + 1, ct->callid.s,
+			ct->callid.len);
+		break;
+	default:
+		LM_CRIT("unknown matching_mode %d\n", matching_mode);
+		return -1;
         }
 	
 	base64encode((unsigned char *)ctkeyb64_pkg_buf.s,
