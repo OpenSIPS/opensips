@@ -452,15 +452,18 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 
 		check_val(sip_addr_col, ROW_VALUES(row) + 7, DB_STRING, 0, 0);
 		str_vals[STR_VALS_SIP_ADDR_COL].s = (char*) VAL_STRING(ROW_VALUES(row) + 7);
-		str_vals[STR_VALS_SIP_ADDR_COL].len = strlen(str_vals[STR_VALS_SIP_ADDR_COL].s);
+		str_vals[STR_VALS_SIP_ADDR_COL].len = str_vals[STR_VALS_SIP_ADDR_COL].s ?
+			strlen(str_vals[STR_VALS_SIP_ADDR_COL].s) : 0;
 
 		check_val(flags_col, ROW_VALUES(row) + 8, DB_STRING, 0, 0);
 		str_vals[STR_VALS_FLAGS_COL].s = (char*) VAL_STRING(ROW_VALUES(row) + 8);
-		str_vals[STR_VALS_FLAGS_COL].len = strlen(str_vals[STR_VALS_FLAGS_COL].s);
+		str_vals[STR_VALS_FLAGS_COL].len = str_vals[STR_VALS_FLAGS_COL].s ?
+			strlen(str_vals[STR_VALS_FLAGS_COL].s) : 0;
 
 		check_val(description_col, ROW_VALUES(row) + 9, DB_STRING, 0, 0);
 		str_vals[STR_VALS_DESCRIPTION_COL].s = (char*) VAL_STRING(ROW_VALUES(row) + 9);
-		str_vals[STR_VALS_DESCRIPTION_COL].len = strlen(str_vals[STR_VALS_DESCRIPTION_COL].s);
+		str_vals[STR_VALS_DESCRIPTION_COL].len = str_vals[STR_VALS_DESCRIPTION_COL].s ?
+			strlen(str_vals[STR_VALS_DESCRIPTION_COL].s) : 0;
 
 		/* add info to backing list */
 		if ((rc = add_node_info(&new_info, cl_list, int_vals, str_vals)) != 0) {
