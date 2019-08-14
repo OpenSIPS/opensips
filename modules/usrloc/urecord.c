@@ -537,7 +537,7 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 	default:
 		LM_CRIT("unknown matching_mode %d\n", matching_mode);
 		return -1;
-        }
+	}
 	
 	base64encode((unsigned char *)ctkeyb64_pkg_buf.s,
 	             (unsigned char *)ctkey_pkg_buf.s, len);
