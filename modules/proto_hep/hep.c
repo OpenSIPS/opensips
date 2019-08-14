@@ -1670,6 +1670,7 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 	/* */
 	p=mk_proxy( &hep_dest->ip, hep_dest->port_no ? hep_dest->port_no : HEP_PORT, hep_dest->transport, 0);
 	if (p == NULL) {
+		pkg_free(buf);
 		LM_ERR("bad hep host name!\n");
 		return -1;
 	}
@@ -1677,6 +1678,8 @@ int send_hep_message(trace_message message, trace_dest dest, struct socket_info*
 	to=(union sockaddr_union *)pkg_malloc(sizeof(union sockaddr_union));
 	if (to == 0) {
 		LM_ERR("no more pkg mem!\n");
+		pkg_free(buf);
+		free_proxy(p);
 		pkg_free(p);
 		return -1;
 	}
