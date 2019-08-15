@@ -60,6 +60,7 @@ enum lump_subst{ SUBST_NOP=0,                     /*!< do nothing */
  */
 enum lump_conditions {	COND_FALSE,         /*!< always false */
 						COND_TRUE,          /*!< always true */
+						COND_IF_SAME_REALMS,/*!< true if RCV realm == SND realm */
 						COND_IF_DIFF_REALMS,/*!< true if RCV realm != SND realm */
 						COND_IF_DIFF_AF,    /*!< true if RCV af != SND af */
 						COND_IF_DIFF_PROTO, /*!< true if RCV proto != SND proto */
