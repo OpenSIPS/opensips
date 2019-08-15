@@ -394,6 +394,16 @@ static inline int lump_check_opt(	struct lump *l,
 			}
 			l->flags |= LUMPFLAG_COND_TRUE;
 			return 1;
+		case COND_IF_SAME_REALMS:
+			get_ip_port_proto;
+			/* faster tests first */
+			if ((port!=snd_s->port_no)||(proto!=snd_s->proto)||
+				(!ip_addr_cmp(ip, &snd_s->address))) {
+				l->flags &= ~LUMPFLAG_COND_TRUE;
+				return 0;
+			}
+			l->flags |= LUMPFLAG_COND_TRUE;
+			return 1;
 		case COND_IF_DIFF_AF:
 			get_ip_port_proto;
 			if (ip->af==snd_s->address.af) {
