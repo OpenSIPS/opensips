@@ -2410,25 +2410,6 @@ set_dlg_sharing_tag("vip1");
 		</programlisting>
 		</section>
 
-		<section id="mi_dlg_list_active_ids" xreflabel="dlg_list_active_ids">
-		<title>
-		<function moreinfo="none">dlg_list_active_ids</function>
-		</title>
-		<para>
-		Returns a list with the IDs of the active dialogs (i.e. not terminated).
-		</para>
-		<para>
-		Name: <emphasis>dlg_list_active_ids</emphasis>
-		</para>
-		<para>
-		MI FIFO Command Format:
-		</para>
-		<programlisting  format="linespecific">
-		## list IDs of active dialogs
-		opensips-cli -x mi dlg_list_active_ids
-		</programlisting>
-		</section>
-
 		<section id='mi_dlg_end_dlg' xreflabel="dlg_end_dlg">
 			<title><function moreinfo="none">dlg_end_dlg</function></title>
 			<para>

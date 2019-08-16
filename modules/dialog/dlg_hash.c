@@ -1663,50 +1663,6 @@ mi_response_t *mi_print_dlgs_cnt_ctx(const mi_params_t *params,
 	return internal_mi_print_dlgs(1, index, counter);
 }
 
-mi_response_t *mi_print_active_ids(const mi_params_t *params,
-								struct mi_handler *async_hdl)
-{
-	struct dlg_cell *dlg;
-	unsigned long long dialog_id;
-	unsigned int i;
-	mi_response_t *resp;
-	mi_item_t *resp_obj;
-	mi_item_t *id_list;
-
-	resp = init_mi_result_object(&resp_obj);
-	if (!resp)
-		return NULL;
-
-	LM_DBG("printing active dialog IDs\n");
-
-	id_list = add_mi_array(resp_obj, MI_SSTR("active_dialog_ids"));
-	if (!id_list)
-		goto error;
-
-	for (i=0; i<d_table->size; i++) {
-		dlg_lock( d_table, &(d_table->entries[i]) );
-
-		for (dlg=d_table->entries[i].first; dlg; dlg=dlg->next) {
-			if (dlg->state == DLG_STATE_DELETED)
-				continue;
-			dialog_id = (((long long unsigned)dlg->h_entry) << (8*sizeof(int))) + dlg->h_id;
-			if (add_mi_string_fmt(id_list, MI_SSTR("ID"), "%llu", dialog_id) < 0) {
-				dlg_unlock(d_table, &(d_table->entries[i]));
-				goto error;
-			}
-		}
-
-		dlg_unlock(d_table, &(d_table->entries[i]));
-	}
-
-	return resp;
-
-error:
-	LM_ERR("failed to print active dialog ids\n");
-	free_mi_response(resp);
-	return NULL;
-}
-
 mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {

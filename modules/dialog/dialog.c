@@ -351,10 +351,6 @@ static mi_export_t mi_cmds[] = {
 		{mi_print_dlgs_cnt_ctx, {"index", "counter", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "dlg_list_active_ids", 0, 0, 0, {
-		{mi_print_active_ids, {0}},
-		{EMPTY_MI_RECIPE}}
-	},
 	{ "dlg_end_dlg", 0, 0, 0, {
 		{mi_terminate_dlg_1, {"dialog_id", 0}},
 		{mi_terminate_dlg_2, {"dialog_id", "extra_hdrs", 0}},

@@ -423,8 +423,6 @@ mi_response_t *mi_print_dlgs_2_ctx(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_print_dlgs_cnt_ctx(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-mi_response_t *mi_print_active_ids(const mi_params_t *params,
-								struct mi_handler *async_hdl);
 
 mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 								struct mi_handler *async_hdl);
