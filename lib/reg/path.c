@@ -40,10 +40,13 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received,
 	static str unescape_buf;
 
 	char *p;
+	str uri_params;
 	struct hdr_field *hdr;
 	struct sip_uri puri;
 
 	rr_t *route = 0;
+	param_hooks_t hooks;
+	param_t *params;
 
 	path->len = 0;
 	path->s = 0;
@@ -83,10 +86,8 @@ int build_path_vector(struct sip_msg *_m, str *path, str *received,
 			goto error;
 		}
 		if ( flags&REG_SAVE_PATH_RECEIVED_FLAG ) {
-			param_hooks_t hooks;
-			param_t *params;
-
-			if (parse_params(&(puri.params),CLASS_URI,&hooks,&params)!=0){
+			uri_params = puri.params;
+			if (parse_params(&uri_params,CLASS_URI,&hooks,&params)!=0){
 				LM_ERR("failed to parse parameters of first hop\n");
 				goto error;
 			}
