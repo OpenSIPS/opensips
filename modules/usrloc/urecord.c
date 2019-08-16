@@ -864,7 +864,7 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
 static inline struct ucontact* contact_match( ucontact_t* ptr, str* _c)
 {
 	while(ptr) {
-		if ((_c->len == ptr->c.len) && !memcmp(_c->s, ptr->c.s, _c->len)) {
+		if ((_c->len == ptr->c.len) && !memcmp(_c->s, ptr->c.s, _c->len) && ptr->expires != UL_EXPIRED_TIME ) {
 			return ptr;
 		}
 
@@ -881,6 +881,7 @@ static inline struct ucontact* contact_callid_match( ucontact_t* ptr,
 		if ( (_c->len==ptr->c.len) && (_callid->len==ptr->callid.len)
 		&& !memcmp(_c->s, ptr->c.s, _c->len)
 		&& !memcmp(_callid->s, ptr->callid.s, _callid->len)
+		&& ptr->expires != UL_EXPIRED_TIME
 		) {
 			return ptr;
 		}
