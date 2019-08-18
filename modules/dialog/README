@@ -2263,10 +2263,10 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 413 262 12067 3114
    2. Vlad Paiu (@vladpaiu) 250 140 7051 3004
-   3. Razvan Crainea (@razvancrainea) 190 139 3985 1028
+   3. Razvan Crainea (@razvancrainea) 191 140 3986 1029
    4. Vlad Patrascu (@rvlad-patrascu) 152 71 3300 3064
-   5. Liviu Chircu (@liviuchircu) 124 87 2456 906
-   6. Dan Pascu (@danpascu) 27 23 164 110
+   5. Liviu Chircu (@liviuchircu) 125 88 2469 916
+   6. Dan Pascu (@danpascu) 31 25 233 179
    7. Ovidiu Sas (@ovidiusas) 27 21 482 107
    8. Eseanu Marius Cristian (@eseanucristian) 19 6 722 341
    9. Daniel-Constantin Mierla (@miconda) 16 13 76 66
@@ -2305,11 +2305,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jul 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2019
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jul 2019
-   5.  Dan Pascu (@danpascu)               Dec 2007 - Jun 2019
+   1.  Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Aug 2019
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jul 2019
    6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Sep 2018
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
@@ -2336,17 +2336,17 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
-   Peter Lemenkov (@lemenkov), Julián Moreno Patiño, Ionut Ionita
-   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
-   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
-   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
-   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
-   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Dan Pascu
-   (@danpascu), Michel Bensoussan, Andy Pyles, Elena-Ramona
+   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Paiu (@vladpaiu), Peter Lemenkov (@lemenkov), Julián Moreno
+   Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
+   Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
+   Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
+   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Michel Bensoussan, Andy Pyles, Elena-Ramona
    Modroiu.
 
    Documentation Copyrights:
