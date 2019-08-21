@@ -133,8 +133,9 @@ struct module_exports exports =
 	MOD_TYPE_DEFAULT,        /* class of this module */
 	MODULE_VERSION,          /* module's version */
 	DEFAULT_DLFLAGS,         /* dlopen flags */
-	0,				         /* load function */
+	0,	 			         /* load function */
 	&deps,                   /* OpenSIPS module dependencies */
+	0,                       /* OpenSIPS dependencies function */
 	0,                       /* exported functions */
 	0,                       /* exported async functions */
 	mod_params,              /* param exports */

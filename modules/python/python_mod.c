@@ -70,6 +70,7 @@ struct module_exports exports = {
     RTLD_NOW | RTLD_GLOBAL,         /* dlopen flags */
     0,                              /* load function */
     NULL,                           /* OpenSIPS module dependencies */
+    0,                              /* OpenSIPS dependencies function */
     cmds,                           /* exported functions */
     0,                              /* exported async functions */
     params,                         /* exported parameters */
