@@ -162,6 +162,7 @@ struct module_exports exports= {
 	DEFAULT_DLFLAGS,
 	0,
 	&deps,           /* OpenSIPS module dependencies */
+	0,               /* OpenSIPS dependencies function */
 	cmds,
 	0,
 	params,

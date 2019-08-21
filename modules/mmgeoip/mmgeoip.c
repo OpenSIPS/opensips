@@ -180,7 +180,8 @@ struct module_exports exports= {
 	MODULE_VERSION,   /* module's name */
 	DEFAULT_DLFLAGS,  /* dlopen flags */
 	0,				  /* load function */
-	NULL,            /* OpenSIPS module dependencies */
+	NULL,             /* OpenSIPS module dependencies */
+	0,                /* OpenSIPS dependencies function */
 	cmds,             /* exported functions */
 	0,                /* exported async functions */
 	mod_params,       /* param exports */
