@@ -434,20 +434,16 @@ static void prio_enqueue(struct node_search_info **queue_front, struct neighbour
 	q_it->next = neigh->node->sp_info;
 }
 
-/* compute the next hop in the path to the given destination node, according to the
- * local 'routing table', looking for paths of at least 2 links
- * @return:
- *  	> 0: next hop id
- * 		0  : no other path(node is down)
- *		< 0: error
+/* Compute the next hop in the path to the given destination node, according to the
+ * local 'routing table', looking for paths of at least 2 links.
+ * Returns NULL if no other path(node is down) or error.
  */
-static int get_next_hop_2(node_info_t *dest)
+static node_info_t *get_next_hop_2(node_info_t *dest)
 {
-	node_info_t *n;
+	node_info_t *n, *next_hop;
 	struct node_search_info *queue_front;
     struct node_search_info *root, *curr;
     struct neighbour *neigh;
-    int nhop_id;
 
     lock_get(dest->cluster->lock);
 
@@ -479,24 +475,24 @@ static int get_next_hop_2(node_info_t *dest)
 			if (curr->node->node_id == dest->node_id) {
 				if (!curr->parent || !curr->parent->parent) {
 					lock_release(dest->cluster->lock);
-					return -1;
+					return NULL;
 				}
 
 				while (curr->parent->parent)
 					curr = curr->parent;
 				if (curr->parent != root) {
 					lock_release(dest->cluster->lock);
-					return -1;
+					return NULL;
 				}
 
 				lock_get(dest->lock);
 				dest->next_hop = curr->node;
-				nhop_id = dest->next_hop->node_id;
+				next_hop = dest->next_hop;
 				lock_release(dest->lock);
 
 				lock_release(dest->cluster->lock);
 
-				return nhop_id;
+				return next_hop;
 			}
 
 			lock_get(curr->node->lock);
@@ -515,24 +511,22 @@ static int get_next_hop_2(node_info_t *dest)
 	}
 
 	lock_get(dest->lock);
-	if (dest->next_hop)
-		nhop_id = dest->next_hop->node_id;
-	else
-		nhop_id = 0;
+	next_hop = dest->next_hop;
 	lock_release(dest->lock);
 
 	lock_release(dest->cluster->lock);
 
-	return nhop_id;
+	return next_hop;
 }
 
 /* @return:
  *  	> 0: next hop id
- * 		0  : no other path(node is down)
- *		< 0: error
+ * 		0  : error or no other path(node is down)
  */
 int get_next_hop(node_info_t *dest)
 {
+	node_info_t *nhop;
+
 	lock_get(dest->lock);
 
 	if (dest->link_state == LS_UP) {
@@ -544,7 +538,8 @@ int get_next_hop(node_info_t *dest)
 	} else {
 		lock_release(dest->lock);
 
-		return get_next_hop_2(dest);
+		nhop = get_next_hop_2(dest);
+		return nhop ? nhop->node_id : 0;
 	}
 }
 
@@ -553,8 +548,8 @@ int get_next_hop(node_info_t *dest)
  * -1 : error, unable to send
  * -2 : dest down or probing
  */
-static int msg_send_retry(bin_packet_t *packet, node_info_t *dest, int change_dest,
-							int *ev_actions_required)
+static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
+							int change_dest, int *ev_actions_required)
 {
 	int retr_send = 0;
 	node_info_t *chosen_dest = dest;
@@ -566,15 +561,12 @@ static int msg_send_retry(bin_packet_t *packet, node_info_t *dest, int change_de
 		if (chosen_dest->link_state != LS_UP) {
 			lock_release(chosen_dest->lock);
 
-			if (get_next_hop_2(dest) <= 0) {
+			chosen_dest = get_next_hop_2(dest);
+			if (!chosen_dest) {
 				if (retr_send)
 					return -1;
 				else
 					return -2;
-			} else {
-				lock_get(dest->lock);
-				chosen_dest = dest->next_hop;
-				lock_release(dest->lock);
 			}
 		} else
 			lock_release(chosen_dest->lock);
@@ -2433,9 +2425,9 @@ static void check_node_events(node_info_t *node_s, enum clusterer_event ev)
 
 		lock_get(n->lock);
 		if (n->link_state != LS_UP) {
-			if(ev == CLUSTER_NODE_DOWN && had_nhop && nhop <= 0)
+			if(ev == CLUSTER_NODE_DOWN && had_nhop && !nhop)
 				n->flags |= NODE_EVENT_DOWN;
-			if(ev == CLUSTER_NODE_UP && !had_nhop && nhop > 0)
+			if(ev == CLUSTER_NODE_UP && !had_nhop && nhop)
 				n->flags |= NODE_EVENT_UP;
 		}
 		lock_release(n->lock);
@@ -2444,7 +2436,7 @@ static void check_node_events(node_info_t *node_s, enum clusterer_event ev)
 
 static int set_link_w_neigh(clusterer_link_state new_ls, node_info_t *neigh)
 {
-	int nhop;
+	node_info_t *nhop;
 
 	LM_DBG("setting link with neighbour [%d] to state <%d>\n",
 		neigh->node_id, new_ls);
@@ -2465,12 +2457,12 @@ static int set_link_w_neigh(clusterer_link_state new_ls, node_info_t *neigh)
 		/* if there is no other path to this neighbour, we check if any other nodes
 		 * were reachable only through this link and should be now down */
 		nhop = get_next_hop_2(neigh);
-		if (nhop <= 0)
+		if (!nhop)
 			check_node_events(neigh, CLUSTER_NODE_DOWN);
 
 		lock_get(neigh->lock);
 
-		if (nhop <= 0)
+		if (!nhop)
 			neigh->flags |= NODE_EVENT_DOWN;
 
 	} else if (new_ls == LS_UP && neigh->link_state != LS_UP) {
@@ -2565,7 +2557,7 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 			if (node_a->next_hop) {
 				lock_release(node_a->lock);
 
-				if (get_next_hop(node_b) <= 0) {
+				if (get_next_hop(node_b) == 0) {
 					lock_get(node_b->lock);
 					node_b->flags |= NODE_EVENT_DOWN;
 					lock_release(node_b->lock);

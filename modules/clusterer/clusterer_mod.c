@@ -570,7 +570,7 @@ static struct mi_root * clusterer_list(struct mi_root *cmd_tree, void *param)
 			lock_release(n_info->lock);
 
 			n_hop = get_next_hop(n_info); 
-			if (n_hop <= 0)
+			if (!n_hop)
 				val = str_none;
 			else
 				val.s = int2str(n_hop, &val.len);

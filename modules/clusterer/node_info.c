@@ -799,7 +799,6 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	clusterer_node_t *ret = NULL;
 	node_info_t *dest_node;
 	cluster_info_t *cluster;
-	int rc;
 
 	lock_start_read(cl_list_lock);
 
@@ -814,10 +813,7 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 		return NULL;
 	}
 
-	rc = get_next_hop(dest_node);
-	if (rc < 0)
-		return NULL;
-	else if (rc == 0) {
+	if (get_next_hop(dest_node) == 0) {
 		LM_DBG("No other path to node: %d\n", node_id);
 		return NULL;
 	}
