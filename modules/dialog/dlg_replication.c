@@ -34,6 +34,9 @@
 #include "../../resolve.h"
 #include "../../forward.h"
 
+extern int active_dlgs_cnt;
+extern int early_dlgs_cnt;
+
 extern stat_var *processed_dlgs;
 
 extern stat_var *create_sent;
