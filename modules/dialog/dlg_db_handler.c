@@ -605,12 +605,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->start_ts	= VAL_INT(values+6);
 
 			dlg->state 		= VAL_INT(values+7);
-			if (dlg->state==DLG_STATE_CONFIRMED_NA ||
-			dlg->state==DLG_STATE_CONFIRMED) {
-				active_dlgs_cnt++;
-			} else if (dlg->state==DLG_STATE_EARLY) {
-				early_dlgs_cnt++;
-			}
 
 			GET_STR_VALUE(cseq1, values, 9 , 1, 1);
 			GET_STR_VALUE(cseq2, values, 10 , 1, 1);
@@ -737,8 +731,12 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				ref_dlg_unsafe(dlg, 1);
 			}
 
-			update_dlg_stats(dlg, +1);
-
+			if (dlg->state==DLG_STATE_CONFIRMED_NA ||
+			dlg->state==DLG_STATE_CONFIRMED) {
+				active_dlgs_cnt++;
+			} else if (dlg->state==DLG_STATE_EARLY) {
+				early_dlgs_cnt++;
+			}
 			run_load_callback_per_dlg(dlg);
 
 			next_dialog:;
