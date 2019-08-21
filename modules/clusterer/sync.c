@@ -63,7 +63,7 @@ static int get_sync_source(cluster_info_t *cluster, str *capability,
 	struct remote_cap *cap;
 
 	for (node = cluster->node_list; node; node = node->next) {
-		if (get_next_hop(node) <= 0)
+		if (get_next_hop(node) == 0)
 			continue;
 
 		if (!match_node(cluster->current_node, node, match_cond))
@@ -366,7 +366,6 @@ void handle_sync_request(bin_packet_t *packet, cluster_info_t *cluster,
 {
 	str cap_name;
 	struct remote_cap *cap;
-	int nhop;
 
 	bin_pop_str(packet, &cap_name);
 
@@ -374,8 +373,7 @@ void handle_sync_request(bin_packet_t *packet, cluster_info_t *cluster,
 	        "cluster %d\n", cap_name.len, cap_name.s, source->node_id,
 	        cluster->cluster_id);
 
-	nhop = get_next_hop(source);
-	if (nhop > 0) {
+	if (get_next_hop(source)) {
 		if (ipc_dispatch_sync_reply(cluster, source->node_id, &cap_name) < 0)
 			LM_ERR("Failed to dispatch sync reply job\n");
 	} else {

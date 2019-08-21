@@ -627,7 +627,7 @@ static mi_response_t *clusterer_list(const mi_params_t *params,
 			lock_release(n_info->lock);
 
 			n_hop = get_next_hop(n_info); 
-			if (n_hop <= 0)
+			if (!n_hop)
 				val = str_none;
 			else
 				val.s = int2str(n_hop, &val.len);
