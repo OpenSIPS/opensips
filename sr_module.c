@@ -712,6 +712,29 @@ int init_modules(void)
 	return ret;
 }
 
+/*
+ * Initialize all loaded modules dependencies.
+ * the initialization is done *BEFORE* the initializing phase
+ */
+int init_modules_deps(void)
+{
+	struct sr_module *currentMod;
+	int ret;
+
+	for (currentMod=modules; currentMod; currentMod=currentMod->next) {
+		if (currentMod->exports->deps_f == NULL)
+			continue;
+		ret = currentMod->exports->deps_f();
+		if (ret < 0) {
+			LM_ERR("could not initialize module %s dependencies!\n",
+					currentMod->exports->name);
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
 /* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
 int module_loaded(char *name)
 {

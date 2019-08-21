@@ -1,28 +1,28 @@
 /*
- * memory cache system module
- *
- * Copyright (C) 2009 Anca Vamanu
- *
- * This file is part of opensips, a free SIP server.
- *
- * opensips is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version
- *
- * opensips is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2009-01-29  initial version (Anca Vamanu)
- */
+* memory cache system module
+*
+* Copyright (C) 2009 Anca Vamanu
+*
+* This file is part of opensips, a free SIP server.
+*
+* opensips is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation; either version 2 of the License, or
+* (at your option) any later version
+*
+* opensips is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+*
+* History:
+* --------
+*  2009-01-29  initial version (Anca Vamanu)
+*/
 
 #include <stdio.h>
 #include <string.h>
@@ -96,6 +96,7 @@ struct module_exports exports= {
 	DEFAULT_DLFLAGS,            /* dlopen flags */
 	0,                          /* load functionpen flags */
 	NULL,                       /* OpenSIPS module dependencies */
+	NULL,                       /* OpenSIPS dependencies function */
 	cmds,                       /* exported functions */
 	0,                          /* exported async functions */
 	params,                     /* exported parameters */

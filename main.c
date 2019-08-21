@@ -1360,6 +1360,13 @@ try_again:
 		goto error;
 	}
 
+
+	/* init modules dependencies */
+	if (init_modules_deps() != 0) {
+		LM_ERR("error while initializing modules dependencies\n");
+		goto error;
+	}
+
 	/* init modules */
 	if (init_modules() != 0) {
 		LM_ERR("error while initializing modules\n");

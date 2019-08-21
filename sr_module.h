@@ -58,6 +58,7 @@
 
 typedef  struct module_exports* (*module_register)();
 typedef int (*load_function)(void);
+typedef int (*deps_function)(void);
 typedef  int (*cmd_function)(struct sip_msg*, char*, char*, char*, char*,
 			char*, char*);
 typedef  int (*acmd_function)(struct sip_msg*, async_ctx *ctx,
@@ -181,6 +182,12 @@ struct module_exports{
 
 	dep_export_t *deps;             /*!< module and modparam dependencies */
 
+	deps_function deps_f;           /*!< function called just before calling
+                                       the module's initialization function
+                                       it is called once for all modules and
+                                       it is usually used to declare and
+                                       register dependencies to other moduels */
+
 	cmd_export_t* cmds;             /*!< null terminated array of the exported
 	                                   commands */
 	acmd_export_t* acmds;           /*!< null terminated array of the exported
@@ -226,6 +233,7 @@ cmd_function find_mod_export(char* mod, char* name, int param_no, int flags);
 void destroy_modules();
 int init_child(int rank);
 int init_modules(void);
+int init_modules_deps(void);
 
 /*! \brief
  * Find a parameter with given type and return it's
