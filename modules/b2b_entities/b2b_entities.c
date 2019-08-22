@@ -340,7 +340,10 @@ void check_htable(b2b_table table, int hsize)
 			dlg_next = dlg->next;
 			if(dlg->b2b_cback == 0)
 			{
-				LM_ERR("Found entity not linked to any logic\n");
+				LM_ERR("Found entity callid=%.*s ftag=%.*s ttag=%.*s "
+						"not linked to any logic\n",
+						dlg->callid.len, dlg->callid.s, dlg->tag[0].len,
+						dlg->tag[0].s, dlg->tag[1].len, dlg->tag[1].s);
 				b2b_delete_record(dlg, table, i);
 			}
 			dlg = dlg_next;
