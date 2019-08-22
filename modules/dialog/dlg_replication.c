@@ -340,6 +340,12 @@ int dlg_replicated_update(bin_packet_t *packet)
 		return dlg_replicated_create(packet ,dlg, &from_tag, &to_tag, 0);
 	}
 
+	/* discard an update for a deleted dialog */
+	if (dlg->state == DLG_STATE_DELETED) {
+		dlg_unlock(d_table, d_entry);
+		return 0;
+	}
+
 	bin_skip_int(packet, 2);
 	bin_pop_int(packet, &dlg->state);
 
