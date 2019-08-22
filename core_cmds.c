@@ -766,17 +766,17 @@ static int w_seturi(struct sip_msg *msg, str *uri)
 
 static int w_prefix(struct sip_msg *msg, str *prefix)
 {
-	return rewrite_ruri(msg, prefix, 0, RW_RURI_PREFIX);
+	return rewrite_ruri(msg, prefix, 0, RW_RURI_PREFIX) ? -1 : 1;
 }
 
 static int w_strip(struct sip_msg *msg, int *nchars)
 {
-	return rewrite_ruri(msg, 0, *nchars, RW_RURI_STRIP);
+	return rewrite_ruri(msg, 0, *nchars, RW_RURI_STRIP) ? -1 : 1;
 }
 
 static int w_strip_tail(struct sip_msg *msg, int *nchars)
 {
-	return rewrite_ruri(msg, 0, *nchars, RW_RURI_STRIP_TAIL);
+	return rewrite_ruri(msg, 0, *nchars, RW_RURI_STRIP_TAIL) ? -1 : 1;
 }
 
 static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
