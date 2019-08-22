@@ -1127,14 +1127,12 @@ if (is_registered("location",$fu)) {
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>contact (stirng, optional)</emphasis> - callid to check if a
-			contact if registered with this callid (this may help you to
-			make distinction between newly registered contact (callid
-			not registered so far) and re-registration (callid already
-			registered).
+			<emphasis>contact (contact, optional)</emphasis> (optional)- SIP
+			URI to check if there is a registration with this URI as cotact
+			(this may help you to make distinction between multiple 
+			registrations for the same user/AOR).
 			</para>
 		</listitem>
-
 		<listitem>
 			<para>
 			<emphasis>callid (stirng, optional)</emphasis> - callid to check if a
