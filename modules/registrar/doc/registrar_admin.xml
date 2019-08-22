@@ -1120,7 +1120,7 @@ if (is_registered("location",$fu)) {
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR (stirng, optional)</emphasis> - AOR to lookup for; if
+			<emphasis>AOR (string, optional)</emphasis> - AOR to lookup for; if
 			missing, the source if the AOR is the "To" header for REGISTER
 			request, "From" header for any other sip request.
 			</para>
@@ -1135,7 +1135,7 @@ if (is_registered("location",$fu)) {
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>callid (stirng, optional)</emphasis> - callid to check if a
+			<emphasis>callid (string, optional)</emphasis> - callid to check if a
 			contact if registered with this callid (this may help you to
 			make distinction between newly registered contact (callid
 			not registered so far) and re-registration (callid already
@@ -1190,7 +1190,7 @@ if(is_method("INVITE")) {
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>AOR (stirng, optional)</emphasis> - AOR to lookup for; if
+			<emphasis>AOR (string, optional)</emphasis> - AOR to lookup for; if
 			missing, the source if the AOR is the "To" header for REGISTER
 			request, "From" header for any other sip request.
 			</para>
