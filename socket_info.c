@@ -578,17 +578,17 @@ int fix_socket_list(struct socket_info **list)
 
 	for (si=*list;si;){
 		next=si->next;
-		if (expand_interface(si, list)!=-1){
-			/* success => remove current entry (shift the entire array)*/
-			sock_listrm(list, si);
-			free_sock_info(si);
-		}
 		// fix the SI_IS_LO flag for sockets specified by IP/hostname as expand_interface
-		// above will only do it for sockets specified using the network interface name
+		// below will only do it for sockets specified using the network interface name
 		if (STR_IMATCH(si->name, "localhost") ||
 			STR_IMATCH(si->name, "127.0.0.1") ||
 			STR_IMATCH(si->name, "0:0:0:0:0:0:0:1") || STR_IMATCH(si->name, "::1")) {
 			si->flags |= SI_IS_LO;
+		}
+		if (expand_interface(si, list)!=-1){
+			/* success => remove current entry (shift the entire array)*/
+			sock_listrm(list, si);
+			free_sock_info(si);
 		}
 		si=next;
 	}
