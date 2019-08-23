@@ -278,8 +278,8 @@ struct module_exports exports = {
     MODULE_VERSION,   // module version
     DEFAULT_DLFLAGS,  // dlopen flags
     NULL,             // load function
-    &deps,            // OpenSIPS module dependencies
-    0,                // OpenSIPS dependencies function
+    &deps,            // module dependencies
+    NULL,             // dependencies function
     commands,         // exported functions
     NULL,             // exported async functions
     parameters,       // exported parameters
