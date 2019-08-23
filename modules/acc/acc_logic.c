@@ -1098,8 +1098,6 @@ unsigned long long do_acc_flags_parser(str* token)
 					LM_ERR("cannot register callback for dialog loaded - accounting "
 							"for ongoing calls will be lost after restart\n");
 
-			acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(NULL);
-
 			is_cdr_enabled=1;
 		}
 
