@@ -255,6 +255,12 @@ static dep_export_t deps = {
 	},
 };
 
+static int acc_deps(void)
+{
+	acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(unref_acc_ctx);
+	return 0;
+}
+
 struct module_exports exports= {
 	"acc",
 	MOD_TYPE_DEFAULT,/* class of this module */
@@ -262,7 +268,7 @@ struct module_exports exports= {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	0,				 /* load function */
 	&deps,           /* OpenSIPS module dependencies */
-	0,               /* OpenSIPS dependencies function */
+	acc_deps,        /* OpenSIPS dependencies function */
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
 	params,     /* exported params */
