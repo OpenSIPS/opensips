@@ -794,15 +794,14 @@ if (is_registered("location",$fu)) {
    Meaning of the parameters is as follows:
      * domain (static string) - Name of table that should be used
        for the lookup.
-     * AOR (stirng, optional) - AOR to lookup for; if missing, the
+     * AOR (string, optional) - AOR to lookup for; if missing, the
        source if the AOR is the "To" header for REGISTER request,
        "From" header for any other sip request.
-     * contact (stirng, optional) - callid to check if a contact
-       if registered with this callid (this may help you to make
-       distinction between newly registered contact (callid not
-       registered so far) and re-registration (callid already
-       registered).
-     * callid (stirng, optional) - callid to check if a contact if
+     * contact (contact, optional) (optional)- SIP URI to check if
+       there is a registration with this URI as cotact (this may
+       help you to make distinction between multiple registrations
+       for the same user/AOR).
+     * callid (string, optional) - callid to check if a contact if
        registered with this callid (this may help you to make
        distinction between newly registered contact (callid not
        registered so far) and re-registration (callid already
@@ -840,7 +839,7 @@ if(is_method("INVITE")) {
    Meaning of the parameters is as follows:
      * domain (static string) - Name of table that should be used
        for the lookup.
-     * AOR (stirng, optional) - AOR to lookup for; if missing, the
+     * AOR (string, optional) - AOR to lookup for; if missing, the
        source if the AOR is the "To" header for REGISTER request,
        "From" header for any other sip request.
      * IPvar (var) - the variable containing the IP matched
@@ -1015,7 +1014,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 163 108 2335 1959
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 165 110 2342 1968
    2. Jan Janak (@janakj) 121 73 3465 1102
    3. Liviu Chircu (@liviuchircu) 94 54 1500 1525
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
@@ -1057,7 +1056,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jun 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Aug 2019
    2.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2019
    3.  Razvan Crainea (@razvancrainea)     Apr 2011 - May 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -1087,8 +1086,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
    Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Ionut
    Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
    (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),
