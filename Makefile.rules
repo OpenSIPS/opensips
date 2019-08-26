@@ -37,14 +37,14 @@ $(NAME): $(objs) $(extra_objs) $(ALLDEP)
 ifeq (,$(FASTER))
 	@echo "Linking $(NAME)"
 endif
-	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) -o $(NAME)
+	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) $(TWEAK_LIBS) -o $(NAME)
 
 
 main.o: main.c $(ALLDEP) $(NEWREVISION)
 ifeq (,$(FASTER))
 	@echo "Compiling $<"
 endif
-	$(Q)$(CC) $(CFLAGS) $(DEFS) -c $< -o $@
+	$(Q)$(CC) $(CFLAGS) $(DEFS) $(TWEAK_DEFS) -c $< -o $@
 
 .PHONY: all
 all: $(NAME) modules

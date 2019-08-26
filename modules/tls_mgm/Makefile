@@ -20,12 +20,6 @@ SSL_BUILDER=$(shell \
 endif
 
 ifneq ($(SSL_BUILDER),)
-	VER = $(shell $(SSL_BUILDER) --modversion | \
-	      awk -F. '{print $$1 * 100 + $$2}')
-# test if we have a version higher or equal than 1.1
-ifeq ($(shell test $(VER) -ge 101; echo $$?),0)
-	LIBS += -dl -Bsymbolic
-endif
 	DEFS += $(shell $(SSL_BUILDER) --cflags)
 	LIBS += $(shell $(SSL_BUILDER) --libs)
 else
