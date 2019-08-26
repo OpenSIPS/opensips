@@ -34,9 +34,6 @@
  *
  */
 
-#define _GNU_SOURCE
-#include <dlfcn.h>
-
 #include <openssl/ui.h>
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
