@@ -282,7 +282,13 @@ static dep_export_t deps = {
 
 static int acc_deps(void)
 {
-	acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(unref_acc_ctx);
+	if (load_dlg_api(&dlg_api) != 0)
+		LM_DBG("failed to load dialog API - is the dialog module loaded?\n");
+	else
+		acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(unref_acc_ctx);
+
+	/* the API will get loaded, if required, during the fixup phase */
+	memset(&dlg_api, 0, sizeof dlg_api);
 	return 0;
 }
 
