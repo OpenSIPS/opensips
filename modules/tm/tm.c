@@ -1455,8 +1455,6 @@ static int w_t_new_request(struct sip_msg* msg, str *method,
 			headers.len, headers.s,
 			body->len, body->s );
 	} else {
-		body->s = NULL;
-		body->len = 0;
 		headers.s = NULL;
 		headers.len = 0;
 	}
