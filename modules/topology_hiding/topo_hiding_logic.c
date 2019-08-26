@@ -1000,7 +1000,7 @@ void th_loaded_callback(struct dlg_cell *dlg, int type,
 
 static void topo_unref_dialog(void *dialog)
 {
-	dlg_api.unref_dlg((struct dlg_cell*)dialog, 1);
+	dlg_api.dlg_unref((struct dlg_cell*)dialog, 1);
 }
 
 static void topo_dlg_initial_reply (struct dlg_cell* dlg, int type,
@@ -1072,12 +1072,12 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 	}
 
 	/* register tm callback for response in  */
-	dlg_api.ref_dlg(dlg,1);
+	dlg_api.dlg_ref(dlg,1);
 	if (tm_api.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
 	(dir==DLG_DIR_UPSTREAM)?th_down_onreply:th_up_onreply,
 	(void*)dlg, topo_unref_dialog)<0 ) {
 		LM_ERR("failed to register TMCB\n");
-		dlg_api.unref_dlg(dlg,1);
+		dlg_api.dlg_unref(dlg,1);
 		return;
 	}
 

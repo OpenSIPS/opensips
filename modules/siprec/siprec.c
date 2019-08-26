@@ -190,7 +190,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 
 	/* we ref the dialog to make sure it does not dissapear until we receive
 	 * the reply from the SRS */
-	srec_dlg.ref_dlg(dlg, 1);
+	srec_dlg.dlg_ref(dlg, 1);
 	ss->dlg = dlg;
 
 	ret = -2;

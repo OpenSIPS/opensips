@@ -262,7 +262,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		}
 
 		/* no need to keep ref on the dialog, since we rely on it from now on */
-		srec_dlg.unref_dlg(ss->dlg, 1);
+		srec_dlg.dlg_unref(ss->dlg, 1);
 		/* also, the b2b ref moves on the dialog - so we avoid a ref-unref */
 	}
 
@@ -282,7 +282,7 @@ no_recording:
 	srec_logic_destroy(ss);
 
 	/* we finishd everything with the dialog, let it be! */
-	srec_dlg.unref_dlg(ss->dlg, 1);
+	srec_dlg.dlg_unref(ss->dlg, 1);
 	ss->dlg = NULL;
 	SIPREC_UNREF(ss);
 	return ret;
