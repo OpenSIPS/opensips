@@ -724,7 +724,7 @@ static void _tcpconn_rm(struct tcp_connection* c)
 		protos[c->type].net.conn_clean(c);
 
 	sh_log(c->hist, TCP_DESTROY, "type=%d", c->type);
-	sh_unref(c->hist, con_hist);
+	sh_unref(c->hist);
 	c->hist = NULL;
 
 	shm_free(c);
@@ -1700,7 +1700,7 @@ int tcp_init(void)
 		return 0;
 
 #ifdef DBG_TCPCON
-	con_hist = shl_init("TCP con", 10000);
+	con_hist = shl_init("TCP con", 10000, 1);
 	if (!con_hist) {
 		LM_ERR("oom con hist\n");
 		goto error;
