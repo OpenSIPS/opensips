@@ -42,6 +42,8 @@
 #include "../../locking.h"
 #include "../../context.h"
 #include "../../mi/mi.h"
+#include "../../lib/dbg/struct_hist.h"
+
 #include "dlg_timer.h"
 #include "dlg_cb.h"
 #include "dlg_vals.h"
@@ -160,6 +162,10 @@ struct dlg_cell
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
 	struct dlg_val       *vals;
+
+#ifdef DBG_DIALOG
+	struct struct_hist   *hist;
+#endif
 };
 
 
@@ -184,6 +190,7 @@ struct dlg_table
 
 extern stat_var *active_dlgs;
 extern stat_var *early_dlgs;
+extern struct struct_hist_list *dlg_hist;
 extern struct dlg_table *d_table;
 extern int ctx_dlg_idx;
 extern int dlg_enable_stats;
@@ -270,19 +277,32 @@ static inline str* dlg_leg_to_uri(struct dlg_cell *dlg,int leg_no)
 void unlink_unsafe_dlg(struct dlg_entry *d_entry, struct dlg_cell *dlg);
 void destroy_dlg(struct dlg_cell *dlg);
 
+#ifdef DBG_DIALOG
+#define DBG_REF(dlg, cnt) \
+	sh_log((dlg)->hist, DLG_REF, "h=%d, ref %d with +%d", \
+	       (dlg)->h_entry, (dlg)->ref, (cnt));
+#define DBG_UNREF(dlg, cnt) \
+	sh_log((dlg)->hist, DLG_UNREF, "h=%d, unref %d with -%d", \
+	       (dlg)->h_entry, (dlg)->ref, (cnt));
+#define DBG_FLUSH(dlg) sh_flush((dlg)->hist)
+#else
+#define DBG_REF(dlg, cnt)
+#define DBG_UNREF(dlg, cnt)
+#define DBG_FLUSH(dlg)
+#endif
+
 #define ref_dlg_unsafe(_dlg,_cnt)     \
 	do { \
+		DBG_REF(_dlg, _cnt); \
 		(_dlg)->ref += (_cnt); \
-		LM_DBG("ref dlg %p with %d -> %d\n", \
-			(_dlg),(_cnt),(_dlg)->ref); \
 	}while(0)
 
 #define unref_dlg_unsafe(_dlg,_cnt,_d_entry)   \
 	do { \
+		DBG_UNREF(_dlg, _cnt); \
 		(_dlg)->ref -= (_cnt); \
-		LM_DBG("unref dlg %p with %d -> %d in entry %p\n",\
-			(_dlg),(_cnt),(_dlg)->ref,(_d_entry));\
 		if ((_dlg)->ref<0) {\
+			DBG_FLUSH(_dlg); \
 			LM_CRIT("bogus ref %d with cnt %d for dlg %p [%u:%u] "\
 				"with clid '%.*s' and tags '%.*s' '%.*s'\n",\
 				(_dlg)->ref, _cnt, _dlg,\
@@ -290,10 +310,10 @@ void destroy_dlg(struct dlg_cell *dlg);
 				(_dlg)->callid.len, (_dlg)->callid.s,\
 				dlg_leg_print_info(_dlg, DLG_CALLER_LEG, tag), \
 				dlg_leg_print_info(_dlg, callee_idx(_dlg), tag)); \
+			abort(); \
 		}\
 		if ((_dlg)->ref<=0) { \
 			unlink_unsafe_dlg( _d_entry, _dlg);\
-			LM_DBG("ref <=0 for dialog %p, destroying it\n",_dlg);\
 			destroy_dlg(_dlg);\
 		}\
 	}while(0)
@@ -382,6 +402,7 @@ void link_dlg(struct dlg_cell *dlg, int n);
 			dlg->prev = d_entry->last; \
 			d_entry->last = dlg; \
 		} \
+		DBG_REF(dlg, 1); \
 		dlg->ref++; \
 		d_entry->cnt++; \
 	} while (0)
@@ -392,9 +413,19 @@ void link_dlg(struct dlg_cell *dlg, int n);
 		_link_dlg_unsafe(d_entry, dlg); \
 	} while (0)
 
-void unref_dlg(struct dlg_cell *dlg, unsigned int cnt);
+void _unref_dlg(struct dlg_cell *dlg, unsigned int cnt);
+#define unref_dlg(dlg, cnt) \
+	do { \
+		DBG_UNREF(dlg, cnt); \
+		_unref_dlg(dlg, cnt); \
+	} while (0)
 
-void ref_dlg(struct dlg_cell *dlg, unsigned int cnt);
+void _ref_dlg(struct dlg_cell *dlg, unsigned int cnt);
+#define ref_dlg(dlg, cnt) \
+	do { \
+		DBG_REF(dlg, cnt); \
+		_ref_dlg(dlg, cnt); \
+	} while (0)
 
 void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 		int *new_state, int *unref, int last_dst_leg, char replicate_events);

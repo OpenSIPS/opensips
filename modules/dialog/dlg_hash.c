@@ -67,6 +67,8 @@
 
 extern struct tm_binds d_tmb;
 
+/* useful for dialog ref debugging, once -DDBG_DIALOG is enabled */
+struct struct_hist_list *dlg_hist;
 
 struct dlg_table *d_table = NULL;
 int ctx_dlg_idx = 0;
@@ -119,7 +121,7 @@ struct dlg_cell *get_current_dialog(void)
 		/* if we have context, but no dlg info, and we 
 		   found dlg info into transaction, populate
 		   the dialog too */
-		ref_dlg( trans->dialog_ctx, 1);
+		ref_dlg((struct dlg_cell*)trans->dialog_ctx, 1);
 		ctx_dialog_set(trans->dialog_ctx);
 	}
 	return (struct dlg_cell*)trans->dialog_ctx;
@@ -138,6 +140,14 @@ int init_dlg_table(unsigned int size)
 		LM_ERR("no more shm mem (1)\n");
 		goto error0;
 	}
+
+#if defined(DBG_STRUCT_HIST) && defined(DBG_DIALOG)
+	dlg_hist = shl_init("dialog hist", 10000, 0);
+	if (!dlg_hist) {
+		LM_ERR("oom\n");
+		goto error1;
+	}
+#endif
 
 	memset( d_table, 0, sizeof(struct dlg_table) );
 	d_table->size = size;
@@ -222,6 +232,13 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 
 	if (dlg->terminate_reason.s)
 		shm_free(dlg->terminate_reason.s);
+
+#ifdef DBG_DIALOG
+	sh_log(dlg->hist, DLG_DESTROY, "ref %d", dlg->ref);
+	sh_unref(dlg->hist);
+	dlg->hist = NULL;
+#endif
+
 	shm_free(dlg);
 }
 
@@ -302,7 +319,17 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 		return 0;
 	}
 
-	memset( dlg, 0, len);
+	memset(dlg, 0, len);
+
+#if defined(DBG_STRUCT_HIST) && defined(DBG_DIALOG)
+	dlg->hist = sh_push(dlg, dlg_hist);
+	if (!dlg->hist) {
+		LM_ERR("oom\n");
+		shm_free(dlg);
+		return NULL;
+	}
+#endif
+
 	dlg->state = DLG_STATE_UNCONFIRMED;
 
 	dlg->h_entry = dlg_hash( callid);
@@ -648,8 +675,8 @@ struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id)
 				dlg_unlock( d_table, d_entry);
 				goto not_found;
 			}
+			DBG_REF(dlg, 1);
 			dlg->ref++;
-			LM_DBG("ref dlg %p with 1 -> %d\n", dlg, dlg->ref);
 			dlg_unlock( d_table, d_entry);
 			LM_DBG("dialog id=%u found on entry %u\n", h_id, h_entry);
 			return dlg;
@@ -706,8 +733,8 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 				   with the same callid and fromtag - like in auth/challenge
 				   case -bogdan */
 				continue;
+			DBG_REF(dlg, 1);
 			dlg->ref++;
-			LM_DBG("ref dlg %p with 1 -> %d\n", dlg, dlg->ref);
 			dlg_unlock( d_table, d_entry);
 			LM_DBG("dialog callid='%.*s' found\n on entry %u, dir=%d\n",
 				callid->len, callid->s,h_entry,*dir);
@@ -791,6 +818,8 @@ void link_dlg(struct dlg_cell *dlg, int n)
 	dlg_lock(d_table, d_entry);
 
 	link_dlg_unsafe(d_entry, dlg);
+
+	DBG_REF(dlg, n);
 	dlg->ref += n;
 
 	LM_DBG("ref dlg %p with %d -> %d in h_entry %p - %d \n",
@@ -820,7 +849,7 @@ void unlink_unsafe_dlg(struct dlg_entry *d_entry,
 }
 
 
-void ref_dlg(struct dlg_cell *dlg, unsigned int cnt)
+void _ref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 {
 	struct dlg_entry *d_entry;
 
@@ -831,8 +860,7 @@ void ref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 	dlg_unlock( d_table, d_entry);
 }
 
-
-void unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
+void _unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 {
 	struct dlg_entry *d_entry;
 
