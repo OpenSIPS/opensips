@@ -1652,6 +1652,27 @@ $(warning	No locking method found so far, trying SYS V sems)
 		found_lock_method=yes
 endif
 
+# override pthread functions for libssl >= 1.1
+TWEAK_DEFS=
+TWEAK_LIBS=
+ifeq ($(CROSS_COMPILE),)
+SSL_BUILDER=$(shell \
+	if pkg-config --exists libssl; then \
+		echo 'pkg-config libssl'; \
+	fi)
+endif
+
+ifneq ($(SSL_BUILDER),)
+	VER = $(shell $(SSL_BUILDER) --modversion | \
+	      awk -F. '{print $$1 * 100 + $$2}')
+# test if we have a version higher or equal than 1.1
+ifeq ($(shell test $(VER) -ge 101; echo $$?),0)
+	TWEAK_DEFS = -pthread
+	TWEAK_LIBS = -pthread -rdynamic -ldl -Wl,-Bsymbolic-functions
+endif
+endif
+
+
 ## Unit Testing - required extensions
 ifeq (1,$(shell grep -c '^\DEFS+= -DUNIT_TESTS' Makefile.conf))
 DEFS := $(DEFS) -DUNIT_TESTS
