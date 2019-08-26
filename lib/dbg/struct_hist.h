@@ -45,9 +45,7 @@
  *    remain available inside the global history list for a while
  */
 
-#define ENABLE_SH_LOGGING
-
-#define MAX_SHLOG_SIZE 50 /* longer log lines will get truncated */
+#define MAX_SHLOG_SIZE 100 /* longer log lines will get truncated */
 
 /**
  * To be freely extended by any piece of OpenSIPS code which makes use of
@@ -79,6 +77,7 @@ struct struct_hist {
 	void *obj;
 	char *obj_name;
 	utime_t created;
+	struct struct_hist_list *shlist;
 
 	int ref;
 
@@ -88,6 +87,7 @@ struct struct_hist {
 	int flush_offset;
 
 	gen_lock_t wlock;
+	int auto_logging;
 
 	struct list_head list;
 };
@@ -102,6 +102,7 @@ struct struct_hist_list {
 	int len;
 	int win_sz;
 	long long total_obj;
+	int auto_logging;
 
 	gen_lock_t wlock;
 };
@@ -111,7 +112,9 @@ struct struct_hist_list {
 #define shl_destroy(...)
 #define sh_push(...) NULL
 #define sh_unref(...)
-#define sh_log(...) ({0;})
+#define _sh_log(...) ({0;})
+#define sh_log _sh_log
+#define sh_flush(...)
 #else
 
 /**
@@ -120,11 +123,13 @@ struct struct_hist_list {
  *
  * @obj_name: A name for the structs which will be troubleshooted
  * @window_size: (gliding window) - the max number of retained histories
+ * @auto_logging: if true, each struct_hist object will log info as it grows
  *
  * WARNING: a "window_size" of 0 (infinite) is essentially a memory leak,
  * use with caution!
  */
-struct struct_hist_list *shl_init(char *obj_name, int window_size);
+struct struct_hist_list *shl_init(char *obj_name, int window_size,
+			int auto_logging);
 
 /**
  * Frees up the global history holder, along with all of its content
@@ -145,9 +150,8 @@ struct struct_hist *sh_push(void *obj, struct struct_hist_list *list);
  * gliding window or not, it may also get freed immediately.
  *
  * @sh: a struct history tracker
- * @list: the global holder of histories
  */
-void sh_unref(struct struct_hist *sh, struct struct_hist_list *list);
+void sh_unref(struct struct_hist *sh);
 
 /**
  * Record a log line to the history of a struct. The max length of a line is
@@ -157,7 +161,22 @@ void sh_unref(struct struct_hist *sh, struct struct_hist_list *list);
  * @verb: the type of the log line recorded (taken from SH_ALL_VERBS)
  * @fmt: C format string
  */
-int sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...);
+int _sh_log(struct struct_hist *sh, enum struct_hist_verb verb, char *fmt, ...);
+#define sh_log(sh, verb, fmt, args...) \
+	do { \
+		_sh_log(sh, verb, "%s:%s:%d: "fmt, \
+		        __FILE__, __FUNCTION__, __LINE__, ##args); \
+	} while (0)
+
+/**
+ * Force the contents of a struct hist to be flushed to the log.  Useful in
+ * high-volume traffic conditions, where only certain (dubious) objects
+ * must be logged.
+ *
+ * @sh: a struct history tracker
+ */
+void sh_flush(struct struct_hist *sh);
+
 #endif
 
 #endif /* __STRUCT_HIST_H__ */
