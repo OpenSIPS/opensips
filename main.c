@@ -141,6 +141,8 @@
 
 #include "test/unit_tests.h"
 
+#include "ssl_tweaks.h"
+
 /*
  * when enabled ("-T" cmdline param), OpenSIPS startup will unfold as follows:
  *   - enable debug mode
