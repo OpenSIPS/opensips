@@ -652,11 +652,11 @@ void destroy_linkers(struct dlg_cell *dlg, char is_replicated)
 static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 		char is_replicated, int safe)
 {
-
 	map_t entry;
 	void ** dest;
 	str shtag = {0,0};
 	int prev_locked_by;
+	int repl_remove = 0;
 
 	if (!(l->profile->repl_type==REPL_CACHEDB)) {
 		if (safe) {
@@ -685,9 +685,7 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 				if( *dest == 0 )
 				{
 					if (l->profile->repl_type==REPL_PROTOBIN)
-						/* warn everybody we are deleting */
-						/* XXX: we should queue these */
-						repl_prof_remove(&l->profile->name, &l->value);
+						repl_remove = 1;
 
 					map_remove(entry,l->value );
 				}
@@ -703,6 +701,11 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 		}
 
 		lock_set_release( l->profile->locks, l->hash_idx  );
+
+		if (repl_remove)
+			/* warn everybody we are deleting */
+			/* XXX: we should queue these */
+			repl_prof_remove(&l->profile->name, &l->value);
 	} else if (!is_replicated) {
 		if (!cdbc) {
 			LM_WARN("CacheDB not initialized - some information might"
