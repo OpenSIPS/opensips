@@ -500,7 +500,7 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>'/re/repl/flags'</emphasis> (string) - sed like regular 
+			<para><emphasis>'/re/repl/flags'</emphasis> (string) - sed like regular
 				expression. flags can be a combination of i (case insensitive),
 				g (global) or s (match newline don't treat it as end of line).
 			</para>
@@ -523,7 +523,8 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
 		<title><function>subst_body</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if ( subst_body('/^o=(.*) /o=$fU ') ) {};
+if (subst_body("/^o=([^ ]*) /o=$fU /"))
+	xlog("successfully prepared an "o" line update!\n");
 
 ...
 </programlisting>
