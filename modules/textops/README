@@ -352,7 +352,8 @@ if (subst_user('/(.*)3642$/$avp(user_prefix)\13642/')){$
 
    Example 1.13. subst_body usage
 ...
-if ( subst_body('/^o=(.*) /o=$fU ') ) {};
+if (subst_body("/^o=([^ ]*) /o=$fU /"))
+        xlog("successfully prepared an "o" line update!\n");
 
 ...
 
@@ -369,7 +370,7 @@ Chapter 2. Contributors
    4. Andrei Dragus 32 15 1540 196
    5. Andrei Pelinescu-Onciul 28 21 446 134
    6. Jiri Kuthan (@jiriatipteldotorg) 18 14 293 45
-   7. Liviu Chircu (@liviuchircu) 11 8 30 57
+   7. Liviu Chircu (@liviuchircu) 12 9 32 58
    8. Jan Janak (@janakj) 11 6 496 27
    9. Juha Heinanen (@juha-h) 8 5 210 8
    10. Elena-Ramona Modroiu 6 3 197 6
@@ -401,9 +402,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Sep 2019
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5.  Anca Vamanu                         Oct 2008 - May 2011
    6.  Ovidiu Sas (@ovidiusas)             Dec 2010 - Jan 2011
@@ -427,8 +428,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Ovidiu
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ovidiu
    Sas (@ovidiusas), Andrei Dragus, Anca Vamanu, Andreas Granig,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Juha Heinanen (@juha-h), Klaus Darilion, Marc
