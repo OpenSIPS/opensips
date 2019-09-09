@@ -555,7 +555,7 @@ static acmd_export_t acmds[] = {
 };
 
 static proc_export_t procs[] = {
-        {"RAW receiver",  0,  0, raw_socket_process, 1, 0},
+        {"RAW receiver",  0,  0, raw_socket_process, 1, PROC_FLAG_INITCHILD},
         {0,0,0,0,0,0}
 };
 
