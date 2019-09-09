@@ -204,8 +204,14 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			/* must print the value of the argument */
 			if(msg && b2bl_caller != CALLER_MODULE)
 			{
+				pv_elem_t *model;
+				if(pv_parse_format(args[i], &model) < 0)
+				{
+					LM_ERR("pv_parse_format err\n");
+					goto error;
+				}
 				buf_len= 255;
-				if(pv_printf(msg, (pv_elem_t*)args[i], buf, &buf_len)<0)
+				if(pv_printf(msg, model, buf, &buf_len)<0)
 				{
 					LM_ERR("cannot print the format\n");
 					goto error;
@@ -220,6 +226,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 				memcpy(tuple->scenario_params[i].s, buf, buf_len);
 				tuple->scenario_params[i].len = buf_len;
 				LM_DBG("Printed parameter [%.*s]\n", buf_len, buf);
+				pv_elem_free_all(model);
 			}
 			else
 			{
