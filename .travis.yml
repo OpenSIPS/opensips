@@ -10,7 +10,7 @@ addons:
             - bison
             - libsqlite3-dev
             - libsctp-dev
-            - libradiusclient-ng-dev
+            - libradcli-dev
             - libhiredis-dev
             - unixodbc-dev
             - libconfuse-dev
