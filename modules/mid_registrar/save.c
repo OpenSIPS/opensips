@@ -286,20 +286,18 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	ul_api.lock_udomain(mri->dom, &mri->aor);
 	ul_api.get_urecord(mri->dom, &mri->aor, &r);
 	if (!r && ul_api.insert_urecord(mri->dom, &mri->aor, &r, 0) < 0) {
-		ul_api.unlock_udomain(mri->dom, &mri->aor);
 		rerrno = R_UL_NEW_R;
 		LM_ERR("failed to insert new record structure\n");
-		return -1;
+		goto out_err;
 	}
 
 	r->no_clear_ref++;
-	ul_api.unlock_udomain(mri->dom, &mri->aor);
 
 	if (str2int(&get_cseq(req)->number, (unsigned int*)&cseq) < 0) {
 		rerrno = R_INV_CSEQ;
 		LM_ERR("failed to convert cseq number, ci: %.*s\n",
 		       req->callid->body.len, req->callid->body.s);
-		return -1;
+		goto out_err;
 	}
 
 	/* get the source socket on the way to the next hop */
@@ -307,7 +305,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	if (!send_sock) {
 		LM_ERR("failed to obtain next hop socket, ci=%.*s\n",
 		       req->callid->body.len, req->callid->body.s);
-		return -1;
+		goto out_err;
 	}
 
 	adv_host = _get_adv_host(send_sock, req);
@@ -321,7 +319,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 		   the URI was already changed, and we cannot do it again */
 		if (c->uri.s < req->buf || c->uri.s > req->buf + req->len) {
 			LM_ERR("SCRIPT BUG - second attempt to change URI Contact\n");
-			return -1;
+			goto out_err;
 		}
 
 		ul_api.get_ucontact(r, &c->uri, &req->callid->body, cseq + 1, &uc);
@@ -336,7 +334,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 			if (parse_uri(c->uri.s, c->uri.len, &puri) < 0) {
 				LM_ERR("failed to parse reply contact uri <%.*s>\n",
 				       c->uri.len, c->uri.s);
-				return -1;
+				goto out_err;
 			}
 
 			new_username = puri.user;
@@ -354,7 +352,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 		anchor = del_lump(req, (c->name.s ? c->name.s : c->uri.s) - req->buf,
 		                  c->len, HDR_CONTACT_T);
 		if (!anchor)
-			return -1;
+			goto out_err;
 
 		extra_ct_params = get_extra_ct_params(req);
 
@@ -367,7 +365,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 		lump_buf = pkg_malloc(len);
 		if (!lump_buf) {
 			LM_ERR("oom\n");
-			return -1;
+			goto out_err;
 		}
 
 		LM_DBG("building new Contact URI:\nuser: '%.*s'\n"
@@ -401,13 +399,18 @@ static int overwrite_req_contacts(struct sip_msg *req,
 
 		if (insert_new_lump_after(anchor, lump_buf, len, HDR_CONTACT_T) == 0) {
 			pkg_free(lump_buf);
-			return -1;
+			goto out_err;
 		}
 
 		c = get_next_contact(c);
 	}
 
+	ul_api.unlock_udomain(mri->dom, &mri->aor);
 	return 0;
+
+out_err:
+	ul_api.unlock_udomain(mri->dom, &mri->aor);
+	return -1;
 }
 
 static int replace_expires_hf(struct sip_msg *msg, int new_expiry)
