@@ -1101,6 +1101,7 @@ append_branch(self, branch = NULL, qval = NULL)
 		LM_ERR("Invalid message reference\n");
 		RETVAL = -1;
 	} else {
+		RETVAL = 1;
 		if (qval) {
 			if (str2q(&q, qval, strlen(qval)) < 0) {
 				LM_ERR("append_branch: Bad q value.\n");
