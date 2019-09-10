@@ -342,8 +342,11 @@ err:
 	return -1;
 }
 
-static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, str *src, str *dst, str *message, smpp_session_t *session)
+static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, str *src, str *dst, str *message, int message_type, smpp_session_t *session,int *delivery_confirmation)
 {
+	int i,hex_4grp,hex_val;
+	char *p;
+
 	if (!preq || !src || !dst || !message) {
 		LM_ERR("NULL params");
 		goto err;
@@ -385,8 +388,29 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, str *src
 	body->dest_addr_ton = session->dest_addr_ton;
 	body->dest_addr_npi = session->dest_addr_npi;
 	strncpy(body->destination_addr, dst->s, dst->len);
-	body->sm_length = message->len;
-	strncpy(body->short_message, message->s, message->len);
+	if (message_type == 0) {
+		body->sm_length = message->len;
+		strncpy(body->short_message, message->s, message->len);
+	} else {
+		/* UTF-16 */
+		body->data_coding = SMPP_CODING_UCS2;
+		body->sm_length = message->len / 2; 
+
+		hex_val = 0;
+		p = body->short_message;
+		for (i=0;i<message->len;i++) {
+			hex_4grp = hex2int(message->s[i]);
+			if (i % 2 == 0) {
+				hex_val = hex_4grp << 4;
+			} else {
+				hex_val |= hex_4grp; 
+				*p++ = hex_val;	
+			} 
+		}
+	}
+
+	if (delivery_confirmation && *delivery_confirmation > 0)
+		body->registered_delivery = 1;
 
 	uint32_t body_len = get_payload_from_submit_sm_body(req->payload.s + HEADER_SZ, body);
 
@@ -1066,8 +1090,8 @@ void handle_smpp_msg(char *buffer, smpp_session_t *session, struct receive_info 
 }
 
 
-int send_submit_or_deliver_request(str *msg, str *src, str *dst,
-		smpp_session_t *session)
+int send_submit_or_deliver_request(str *msg, int msg_type, str *src, str *dst,
+		smpp_session_t *session, int *delivery_confirmation)
 {
 	smpp_submit_sm_req_t *req;
 	int ret;
@@ -1075,9 +1099,10 @@ int send_submit_or_deliver_request(str *msg, str *src, str *dst,
 	LM_DBG("sending submit_sm\n");
 	LM_DBG("FROM: %.*s\n", src->len, src->s);
 	LM_DBG("TO: %.*s\n", dst->len, dst->s);
-	LM_DBG("MESSAGE: %.*s\n", msg->len, msg->s);
+	LM_DBG("MESSAGE: %.*s type = %d\n", msg->len, msg->s,msg_type);
 
-	if (build_submit_or_deliver_request(&req, src, dst, msg, session)) {
+	if (build_submit_or_deliver_request(&req, src, dst, msg, msg_type, 
+	session,delivery_confirmation)) {
 		LM_ERR("error creating submit_sm request\n");
 		return -1;
 	}
@@ -1111,6 +1136,7 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 		smpp_session_t *session, struct receive_info *rcv)
 {
 	static str msg_type = str_init("MESSAGE");
+	static char sms_body[280];
 
 	char hdrs[1024];
 	char *p = hdrs;
@@ -1118,7 +1144,11 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 	sprintf(src, "sip:%s@%s:%d", body->source_addr, ip_addr2a(&rcv->src_ip), rcv->src_port);
 	char dst[128];
 	sprintf(dst, "sip:%s@%s:%d", body->destination_addr, ip_addr2a(&rcv->dst_ip), rcv->dst_port);
-	p += sprintf(p, "Content-Type:text/plain\r\n");
+
+	if (body->data_coding == SMPP_CODING_UCS2)
+		p += sprintf(p, "Content-Type:text/plain; charset=UTF-16\r\n");
+	else
+		p += sprintf(p, "Content-Type:text/plain\r\n");
 
 	str hdr_str;
 	hdr_str.s = hdrs;
@@ -1133,8 +1163,16 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 	dst_str.len = strlen(dst);
 
 	str body_str;
-	body_str.s = body->short_message;
-	body_str.len = body->sm_length;
+	if (body->data_coding == SMPP_CODING_UCS2) {
+		memset(sms_body,0,280);
+		body_str.len = string2hex((unsigned char *)body->short_message,
+		body->sm_length,sms_body);	
+
+		body_str.s = sms_body;
+	} else {
+		body_str.s = body->short_message;
+		body_str.len = body->sm_length;
+	}
 
 	tmb.t_request(&msg_type, /* Type of the message */
 		      &dst_str,            /* Request-URI */

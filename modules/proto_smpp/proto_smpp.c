@@ -65,7 +65,7 @@ static int smpp_read_req(struct tcp_connection* conn, int* bytes_read);
 static int smpp_write_async_req(struct tcp_connection* con,int fd);
 static int smpp_conn_init(struct tcp_connection* c);
 static void smpp_conn_clean(struct tcp_connection* c);
-static int send_smpp_msg(struct sip_msg* msg, str *name);
+static int send_smpp_msg(struct sip_msg* msg, str *name,int *delivery_confirmation);
 
 static unsigned smpp_port = 2775;
 static int smpp_max_msg_chunks = 8;
@@ -77,7 +77,8 @@ static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)smpp_init, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"send_smpp_message", (cmd_function)send_smpp_msg, {
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT | CMD_PARAM_OPT, 0, 0},{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
@@ -465,9 +466,12 @@ static int smpp_write_async_req(struct tcp_connection* con,int fd)
 	return 0;
 }
 
-static int send_smpp_msg(struct sip_msg *msg, str *name)
+static int send_smpp_msg(struct sip_msg *msg, str *name,int *delivery_confirmation)
 {
-	 str body;
+	str body;
+	content_t *msg_content_type;
+	int body_type;
+	param_t *p;
 	smpp_session_t *session = NULL;
 
 	session = smpp_session_get(name);
@@ -476,11 +480,40 @@ static int send_smpp_msg(struct sip_msg *msg, str *name)
 		return -2;
 	}
 
-	if(msg->parsed_uri_ok==0)
-	    parse_sip_msg_uri(msg);
+	if(msg->parsed_uri_ok==0 && (parse_sip_msg_uri(msg)) < 0) {
+		LM_ERR("Failed to parse URI \n");
+		return -1;
+	}
 
-	get_body(msg, &body);
-	return send_submit_or_deliver_request(&body, &parse_from_uri(msg)->user,
-			&msg->parsed_uri.user, session);
+	if (get_body(msg, &body) < 0) {
+		LM_ERR("Failed to fetch SIP body \n");
+		return -1;
+	}
+
+	body_type = parse_content_type_hdr(msg);
+	if (body_type < 0) {
+		LM_ERR("Failed to parse content type header \n");
+		return -1;
+	} else if (body_type > 0) {
+		/* Expecting Content-Type:text/plain; charset=UTF-16 */
+		
+		/* check the charset */
+		msg_content_type = msg->content_type->parsed;
+		
+		for (p = msg_content_type->params; p; p=p->next) {
+			if (p->name.len == 7 && memcmp(p->name.s,"charset",7) == 0) {
+				if (p->body.len == 6 && 
+				memcmp(p->body.s,"UTF-16",6) == 0) {
+					body_type = SMPP_CODING_UCS2;
+					break;
+				}
+			} 
+		}
+	}
+
+	return send_submit_or_deliver_request(&body, body_type, 
+	&parse_from_uri(msg)->user,&msg->parsed_uri.user, session, 
+	delivery_confirmation);
+
 }
 

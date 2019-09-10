@@ -207,4 +207,8 @@ TYPEDEF_SMPP_REQUEST(smpp_submit_sm_resp);
 TYPEDEF_SIMPLE_SMPP_REQUEST(smpp_enquire_link);
 TYPEDEF_SIMPLE_SMPP_REQUEST(smpp_enquire_link_resp);
 
+#define SMPP_CODING_DEFAULT	0
+#define SMPP_CODING_LATIN1	3
+#define SMPP_CODING_UCS2	8
+
 #endif

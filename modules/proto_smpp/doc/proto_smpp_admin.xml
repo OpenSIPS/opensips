@@ -566,7 +566,7 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
 
 	<section id="func_send_smpp_message" xreflabel="send_smpp_message()">
 		<title>
-		<function moreinfo="none">send_smpp_message(smsc_name)</function>
+		<function moreinfo="none">send_smpp_message(smsc_name,[delivery_receipt])</function>
 		</title>
 		<para>
 			This function is used to convert a SIP message received in the
@@ -583,6 +583,20 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
 			<emphasis>-1</emphasis> if there was an internal error,
 			or positive value in case of success.
 		</para>
+                <para>Meaning of the parameters is as follows:</para>
+                <itemizedlist>
+                <listitem>
+                        <para><emphasis>sms_name (string)</emphasis> - name of the SMS
+                        to be used for sending the SMPP traffic.
+                        </para>
+                </listitem>
+                <listitem>
+			<para><emphasis>delivery_receipt (int, optional)</emphasis> - Whether
+			the SMSC should confirm delivery for this SMS or not
+                        </para>
+                </listitem>
+                </itemizedlist>
+
 		<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
 			or BRANCH_ROUTE.

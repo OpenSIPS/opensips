@@ -36,7 +36,9 @@ proto_smpp module
 
         1.7. Exported Functions
 
-              1.7.1. send_smpp_message(smsc_name)
+              1.7.1.
+                      send_smpp_message(smsc_name,[delivery_receipt]
+                      )
 
    2. Contributors
 
@@ -409,7 +411,7 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
 
 1.7. Exported Functions
 
-1.7.1.  send_smpp_message(smsc_name)
+1.7.1.  send_smpp_message(smsc_name,[delivery_receipt])
 
    This function is used to convert a SIP message received in the
    OpenSIPS script to a SMPP PDU and send it to the smsc_name
@@ -421,6 +423,12 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
    The function returns -2 if the SMSc the message should be sent
    does not exist in the database, -1 if there was an internal
    error, or positive value in case of success.
+
+   Meaning of the parameters is as follows:
+     * sms_name (string) - name of the SMS to be used for sending
+       the SMPP traffic.
+     * delivery_receipt (int, optional) - Whether the SMSC should
+       confirm delivery for this SMS or not
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE or
    BRANCH_ROUTE.
