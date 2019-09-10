@@ -106,15 +106,10 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
 /* with the optionally added outgoing timeout extension
  *
  * @_e: output param (UNIX timestamp) - expiration time on the main registrar
- * @behavior:
- *		if 0: the "outgoing_expires" modparam works as a minimal value
- *		       (useful when forcing egress expirations)
- *
- *		if !0: the "outgoing_expires" modparam works as a maximal value
- *		       (useful when interpreting expirations of successful
- *		        main registrar replies)
+ * @egress: if true, the "outgoing_expires" modparam will be applied as a
+ *			minimal value (useful when forcing egress expirations)
  */
-void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, int behavior)
+void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, int egress)
 {
 	if (!_ep || !_ep->body.len) {
 		*_e = get_expires_hf(_m);
@@ -124,16 +119,10 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, int beha
 		}
 	}
 
-	/* extend outgoing timeout, thus "throttling" heavy incoming traffic */
-	if (reg_mode != MID_REG_MIRROR && *_e > 0) {
-		if (behavior == 0) {
-			if (*_e < outgoing_expires)
-				*_e = outgoing_expires;
-		} else {
-			if (*_e > outgoing_expires)
-				*_e = outgoing_expires;
-		}
-	}
+	/* extend outgoing timeout, thus throttling heavy incoming traffic */
+	if (reg_mode != MID_REG_MIRROR && egress &&
+			*_e > 0 && *_e < outgoing_expires)
+		*_e = outgoing_expires;
 
 	/* Convert to absolute value */
 	if (*_e > 0) *_e += get_act_time();
@@ -342,7 +331,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 			new_username = ctid_str;
 		}
 
-		calc_ob_contact_expires(req, c->expires, &expiry_tick, 0);
+		calc_ob_contact_expires(req, c->expires, &expiry_tick, 1);
 		expires = expiry_tick == 0 ? 0 : expiry_tick - get_act_time();
 		ctmap->ctid = ctid;
 
@@ -533,7 +522,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
 		calc_contact_expires(req, c->expires, &e, 1);
-		calc_ob_contact_expires(req, c->expires, &expiry_tick, 0);
+		calc_ob_contact_expires(req, c->expires, &expiry_tick, 1);
 		if (expiry_tick == 0)
 			new_expires = 0;
 		else
@@ -1179,7 +1168,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg*
 		if (!_c)
 			goto update_usrloc;
 
-		calc_ob_contact_expires(rpl, _c->expires, &e_out, 1);
+		calc_ob_contact_expires(rpl, _c->expires, &e_out, 0);
 		e_out -= get_act_time();
 
 		/* the main registrar might enforce shorter lifetimes */
@@ -1982,7 +1971,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 	for (ct = get_first_contact(msg); ct; ct = get_next_contact(ct)) {
 		calc_contact_expires(msg, ct->expires, &e, 1);
 		if (e == 0) {
-			LM_DBG("FWD 1\n");
+			LM_DBG("forwarding REGISTER (ct with expires == 0)\n");
 			return 1;
 		}
 
@@ -2011,7 +2000,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 			expires_out = valuep->i;
 
 			if (get_act_time() - last_reg_ts >= expires_out - e) {
-				LM_DBG("FWD 2\n");
+				LM_DBG("forwarding REGISTER (%ld - %d >= %d - %d)\n",
+				       get_act_time(), last_reg_ts, expires_out, e);
 				/* FIXME: should update "last_reg_out_ts" for all cts? */
 				return 1;
 			} else {
@@ -2039,6 +2029,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 				continue;
 			}
 		}
+
+		LM_DBG("forwarding REGISTER (ct not found)\n");
 
 		/* not found */
 		return 1;
