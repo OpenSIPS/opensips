@@ -538,6 +538,147 @@ error:
 	return -1;
 }
 
+/* clones the headers list from the `from` sip_msg
+ * into the `to` sip_msg structure */
+int clone_headers(struct sip_msg *from_msg, struct sip_msg *to_msg)
+{
+	int hdrs_no, i;
+	struct hdr_field *hdrs;
+	struct hdr_field *hdr;
+	struct hdr_field *itr;
+
+#define link_sibling_hdr_case(_hook, _hdr_type) \
+	case _hdr_type: \
+		if (to_msg->_hook==0) to_msg->_hook=&hdrs[i];\
+		else {\
+			for(itr=to_msg->_hook;itr->sibling;itr=itr->sibling);\
+			itr->sibling = &hdrs[i];\
+		}\
+		break
+#define link_hdr_case(_hook, _hdr_type) \
+	case _hdr_type: \
+		to_msg->_hook=&hdrs[i];\
+		break
+
+	 /*
+	 * we need to duplicate the headers because the hdr->parsed field resides
+	 * in shm memory, so there might be a different process that access the
+	 * parsed field and find the structure parsed by the current process in
+	 * pkg
+	 */
+	for (hdrs_no = 0, hdr = from_msg->headers; hdr; hdr = hdr->next)
+		hdrs_no++;
+
+	hdrs = pkg_malloc(hdrs_no * sizeof(struct hdr_field));
+	if (!hdrs) {
+		LM_ERR("could not allocate %d contact headers!\n", hdrs_no);
+		return -1;
+	}
+
+	/* reset all header fields before populating new ones */
+	to_msg->callid = NULL;
+	to_msg->to = NULL;
+	to_msg->cseq = NULL;
+	to_msg->from = NULL;
+	to_msg->maxforwards = NULL;
+	to_msg->content_type = NULL;
+	to_msg->content_length = NULL;
+	to_msg->expires = NULL;
+	to_msg->organization = NULL;
+	to_msg->priority = NULL;
+	to_msg->subject = NULL;
+	to_msg->user_agent = NULL;
+	to_msg->content_disposition = NULL;
+	to_msg->rpid = NULL;
+	to_msg->refer_to = NULL;
+	to_msg->session_expires = NULL;
+	to_msg->min_se = NULL;
+	to_msg->min_expires = NULL;
+	to_msg->privacy = NULL;
+	to_msg->contact = NULL;
+	to_msg->route = NULL;
+	to_msg->record_route = NULL;
+	to_msg->path = NULL;
+	to_msg->authorization = NULL;
+	to_msg->proxy_auth = NULL;
+	to_msg->proxy_require = NULL;
+	to_msg->supported = NULL;
+	to_msg->unsupported = NULL;
+	to_msg->allow = NULL;
+	to_msg->event = NULL;
+	to_msg->accept = NULL;
+	to_msg->accept_language = NULL;
+	to_msg->accept_disposition = NULL;
+	to_msg->diversion = NULL;
+	to_msg->call_info = NULL;
+	to_msg->www_authenticate = NULL;
+	to_msg->proxy_authenticate = NULL;
+	to_msg->ppi = NULL;
+	to_msg->pai = NULL;
+	to_msg->h_via1 = NULL;
+
+	for (i = 0, hdr = from_msg->headers; hdr; i++, hdr = hdr->next) {
+		memcpy(&hdrs[i], hdr, sizeof(struct hdr_field));
+		/* fix next and sibling */
+		hdrs[i].next = &hdrs[i + 1];
+		hdrs[i].sibling = NULL;
+		switch(hdr->type) {
+			link_hdr_case(callid, HDR_CALLID_T);
+			link_hdr_case(to, HDR_TO_T);
+			link_hdr_case(cseq, HDR_CSEQ_T);
+			link_hdr_case(from, HDR_FROM_T);
+			link_hdr_case(maxforwards, HDR_MAXFORWARDS_T);
+			link_hdr_case(content_type, HDR_CONTENTTYPE_T);
+			link_hdr_case(content_length, HDR_CONTENTLENGTH_T);
+			link_hdr_case(expires, HDR_EXPIRES_T);
+			link_hdr_case(organization, HDR_ORGANIZATION_T);
+			link_hdr_case(priority, HDR_PRIORITY_T);
+			link_hdr_case(subject, HDR_SUBJECT_T);
+			link_hdr_case(user_agent, HDR_USERAGENT_T);
+			link_hdr_case(content_disposition, HDR_CONTENTDISPOSITION_T);
+			link_hdr_case(rpid, HDR_RPID_T);
+			link_hdr_case(refer_to, HDR_REFER_TO_T);
+			link_hdr_case(session_expires, HDR_SESSION_EXPIRES_T);
+			link_hdr_case(min_se, HDR_MIN_SE_T);
+			link_hdr_case(min_expires, HDR_MIN_EXPIRES_T);
+			link_hdr_case(privacy, HDR_PRIVACY_T);
+			link_sibling_hdr_case(contact, HDR_CONTACT_T);
+			link_sibling_hdr_case(route, HDR_ROUTE_T);
+			link_sibling_hdr_case(record_route, HDR_RECORDROUTE_T);
+			link_sibling_hdr_case(path, HDR_PATH_T);
+			link_sibling_hdr_case(authorization, HDR_AUTHORIZATION_T);
+			link_sibling_hdr_case(proxy_auth, HDR_PROXYAUTH_T);
+			link_sibling_hdr_case(proxy_require, HDR_PROXYREQUIRE_T);
+			link_sibling_hdr_case(supported, HDR_SUPPORTED_T);
+			link_sibling_hdr_case(unsupported, HDR_UNSUPPORTED_T);
+			link_sibling_hdr_case(allow, HDR_ALLOW_T);
+			link_sibling_hdr_case(event, HDR_EVENT_T);
+			link_sibling_hdr_case(accept, HDR_ACCEPT_T);
+			link_sibling_hdr_case(accept_language, HDR_ACCEPTLANGUAGE_T);
+			link_sibling_hdr_case(accept_disposition, HDR_ACCEPTDISPOSITION_T);
+			link_sibling_hdr_case(diversion, HDR_DIVERSION_T);
+			link_sibling_hdr_case(call_info, HDR_CALL_INFO_T);
+			link_sibling_hdr_case(www_authenticate, HDR_WWW_AUTHENTICATE_T);
+			link_sibling_hdr_case(proxy_authenticate, HDR_PROXY_AUTHENTICATE_T);
+			link_sibling_hdr_case(ppi, HDR_PPI_T);
+			link_sibling_hdr_case(pai, HDR_PAI_T);
+			link_sibling_hdr_case(h_via1, HDR_VIA_T);
+
+			case HDR_OTHER_T:
+			case HDR_ERROR_T:
+				break;
+			default:
+				LM_ERR("unknown header type %d\n", hdr->type);
+				break;
+		}
+	}
+	hdrs[i - 1].next = 0;
+	to_msg->headers = hdrs;
+#undef link_hdr_case
+#undef link_sibling_hdr_case
+	return 0;
+}
+
 
 /* returns 0 if ok, -1 for errors */
 int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
