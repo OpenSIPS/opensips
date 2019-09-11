@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 OpenSIPS Solutions
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -33,48 +33,5 @@
  *
  */
 
-#ifndef TLS_HELPER_H
-#define TLS_HELPER_H
-
-#define F_TLS_DO_ACCEPT   (1<<0)
-#define F_TLS_DO_CONNECT  (1<<1)
-#define F_TLS_TRACE_READY (1<<2)
-
-#define DOM_FLAG_SRV			(1<<0)
-#define DOM_FLAG_CLI			(1<<1)
-#define DOM_FLAG_DB				(1<<2)
-
-#include "tls_config_helper.h"
-#include "../../locking.h"
-
-struct tls_domain {
-	str name;
-	int flags;
-	struct str_list *match_domains;
-	struct str_list *match_addresses;
-	int ssl_ex_index;
-	void *ctx;  /* libssl's SSL_CTX  */
-	int verify_cert;
-	int require_client_cert;
-	int crl_check_all;
-	str cert;
-	str pkey;
-	char *crl_directory;
-	str ca;
-	str dh_param;
-	char *tls_ec_curve;
-	char *ca_directory;
-	char *ciphers_list;
-	int refs;
-	gen_lock_t *lock;
-	enum tls_method method;
-	struct tls_domain *next;
-};
-
-struct cert_holder {
-	X509 *cert;
-	STACK_OF(X509) *certchain;
-	EVP_PKEY *pkey;
-};
-
-#endif /* TLS_HELPER_H */
+struct cert_holder *new_cert_holder(str *cert_buf, str *pkey_buf);
+void free_cert_holder(struct cert_holder *holder);

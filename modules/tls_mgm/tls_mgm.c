@@ -68,6 +68,7 @@
 #include "tls_conn_server.h"
 #include "tls_config.h"
 #include "tls_domain.h"
+#include "cert_holder.h"
 #include "tls_params.h"
 #include "tls_select.h"
 #include "tls.h"
@@ -2171,6 +2172,8 @@ static int load_tls_mgm(struct tls_mgm_binds *binds)
 	binds->get_handshake_timeout = tls_get_handshake_timeout;
 	binds->get_send_timeout = tls_get_send_timeout;
 	binds->release_domain = tls_release_domain;
+	binds->new_cert_holder = new_cert_holder;
+	binds->free_cert_holder = free_cert_holder;
 	/* everything ok*/
 	return 1;
 }
