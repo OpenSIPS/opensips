@@ -1142,12 +1142,12 @@ int send_submit_or_deliver_request(str *msg, int msg_type, str *src, str *dst,
 	LM_DBG("MESSAGE: %.*s type = %d\n", msg->len, msg->s,msg_type);
 
 	if ( (msg_type == SMPP_CODING_DEFAULT && msg->len > MAX_SMS_CHARACTERS) || 
-	(msg_type == SMPP_CODING_UCS2 && msg->len > MAX_SMS_CHARACTERS) ) {
+	(msg_type == SMPP_CODING_UCS2 && msg->len > MAX_SMS_CHARACTERS * 2) ) {
 		/* need to split into multiple chunks */
 
 		/* for DEFAULT, we have 140 limit,
 		for UCS2, we have a 70 limit, but with HEX encoding
-		we also get to 140 characters */
+		we get to 70 * 4 characters */
 
 		/* for both, since again UCS2 is HEX encoded */
 		if (msg_type == SMPP_CODING_DEFAULT)
