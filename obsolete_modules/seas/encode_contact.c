@@ -289,20 +289,18 @@ int dump_contact_test(char *hdr,int hdrlen,unsigned char* payload,int paylen,int
          n=write(fd,&hdr[payload[i]],payload[i+1]);
          n=write(fd,"\n",1);
          i+=2;
-      }else{
+      }else
          n=write(fd,"(null)\n",7);
-         n=write(fd,prefix,strlen(prefix));
-         n=write(fd,"getQValue=(F)",13);
-      }
+      n=write(fd,prefix,strlen(prefix));
+      n=write(fd,"getQValue=(F)",13);
       if(flags & HAS_Q_F){
          n=write(fd,&hdr[payload[i]],payload[i+1]);
          n=write(fd,"\n",1);
          i+=2;
-      }else{
+      }else
          n=write(fd,"(null)\n",7);
-         n=write(fd,prefix,strlen(prefix));
-         n=write(fd,"getExpires=(I)",14);
-      }
+      n=write(fd,prefix,strlen(prefix));
+      n=write(fd,"getExpires=(I)",14);
       if(flags & HAS_EXPIRES_F){
          n=write(fd,&hdr[payload[i]],payload[i+1]);
          n=write(fd,"\n",1);
