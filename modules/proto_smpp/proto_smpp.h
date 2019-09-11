@@ -39,6 +39,8 @@ typedef struct smpp_session {
 	gen_lock_t sequence_number_lock;
 	uint32_t sequence_number;
 
+	uint8_t chunk_identifier;
+
 	struct ip_addr ip;
 	int port;
 

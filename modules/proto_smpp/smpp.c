@@ -342,10 +342,13 @@ err:
 	return -1;
 }
 
-static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, str *src, str *dst, str *message, int message_type, smpp_session_t *session,int *delivery_confirmation)
+static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, 
+	str *src, str *dst, str *message, int message_type, 
+	smpp_session_t *session,int *delivery_confirmation,
+	int chunk_id, int total_chunks,uint8_t chunk_group_id)
 {
 	int i,hex_4grp,hex_val;
-	char *p;
+	char *start,*p;
 
 	if (!preq || !src || !dst || !message) {
 		LM_ERR("NULL params");
@@ -388,16 +391,40 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, str *src
 	body->dest_addr_ton = session->dest_addr_ton;
 	body->dest_addr_npi = session->dest_addr_npi;
 	strncpy(body->destination_addr, dst->s, dst->len);
-	if (message_type == 0) {
-		body->sm_length = message->len;
-		strncpy(body->short_message, message->s, message->len);
+
+	if (total_chunks > 1) {
+		body->esm_class = 0x40;
+		p = body->short_message;
+
+		/* length of UDH = 5 bytes */
+		*p++ = 5;
+		/* concatenated chunks indicator */
+		*p++ = 0;
+		/* data length */
+		*p++ = 3;
+		/* chunk group identifier */
+		*p++ = chunk_group_id;
+		/* number of total chunks */
+		*p++ = total_chunks; 
+		/* current chunk */
+		*p++ = chunk_id; 
+		
+		body->sm_length = 6;
+		start = body->short_message + 6;
+	} else {
+		start = body->short_message;
+	}
+
+	if (message_type == SMPP_CODING_DEFAULT) {
+		body->sm_length += message->len;
+		strncpy(start, message->s, message->len);
 	} else {
 		/* UTF-16 */
 		body->data_coding = SMPP_CODING_UCS2;
-		body->sm_length = message->len / 2; 
+		body->sm_length += message->len / 2; 
 
 		hex_val = 0;
-		p = body->short_message;
+		p = start;
 		for (i=0;i<message->len;i++) {
 			hex_4grp = hex2int(message->s[i]);
 			if (i % 2 == 0) {
@@ -505,6 +532,17 @@ static uint32_t increment_sequence_number(smpp_session_t *session)
 	lock_get(&session->sequence_number_lock);
 	seq_no = session->sequence_number++;
 	lock_release(&session->sequence_number_lock);
+	return seq_no;
+}
+
+static uint8_t increment_chunk_identifier(smpp_session_t *session)
+{
+	uint8_t seq_no;
+
+	lock_get(&session->sequence_number_lock);
+	seq_no = session->chunk_identifier++;
+	lock_release(&session->sequence_number_lock);
+
 	return seq_no;
 }
 
@@ -1094,21 +1132,78 @@ int send_submit_or_deliver_request(str *msg, int msg_type, str *src, str *dst,
 		smpp_session_t *session, int *delivery_confirmation)
 {
 	smpp_submit_sm_req_t *req;
-	int ret;
+	int ret,chunks_no = 0,i,max_chunk_bytes;
+	uint8_t chunk_group_id;
+	str chunked_msg;
 
 	LM_DBG("sending submit_sm\n");
 	LM_DBG("FROM: %.*s\n", src->len, src->s);
 	LM_DBG("TO: %.*s\n", dst->len, dst->s);
 	LM_DBG("MESSAGE: %.*s type = %d\n", msg->len, msg->s,msg_type);
 
-	if (build_submit_or_deliver_request(&req, src, dst, msg, msg_type, 
-	session,delivery_confirmation)) {
-		LM_ERR("error creating submit_sm request\n");
-		return -1;
+	if ( (msg_type == SMPP_CODING_DEFAULT && msg->len > MAX_SMS_CHARACTERS) || 
+	(msg_type == SMPP_CODING_UCS2 && msg->len > MAX_SMS_CHARACTERS) ) {
+		/* need to split into multiple chunks */
+
+		/* for DEFAULT, we have 140 limit,
+		for UCS2, we have a 70 limit, but with HEX encoding
+		we also get to 140 characters */
+
+		/* for both, since again UCS2 is HEX encoded */
+		if (msg_type == SMPP_CODING_DEFAULT)
+			max_chunk_bytes = 134;
+		else
+			/* 67 UTF-16 characters times 4 for the HEX encoding */
+			max_chunk_bytes = 67 * 4;
+
+		if (msg->len % max_chunk_bytes > 0)
+			chunks_no = msg->len / max_chunk_bytes + 1; 
+		else
+			chunks_no = msg->len / max_chunk_bytes;
+
+		LM_DBG("We need %d chunks to send %d characters of type %d\n",chunks_no,msg->len,msg_type);
+
+		chunk_group_id = increment_chunk_identifier(session);
+		for (i=0; i<chunks_no;i++) {
+			chunked_msg.s = msg->s + i * max_chunk_bytes;
+
+			if (msg->len % max_chunk_bytes == 0)
+				chunked_msg.len = max_chunk_bytes;
+			else {
+				if (i == chunks_no - 1)
+					chunked_msg.len = msg->len % max_chunk_bytes;
+				else
+					chunked_msg.len = max_chunk_bytes;
+			}
+
+			LM_DBG("sending type %d [%.*s] with len %d \n",
+			msg_type,chunked_msg.len,chunked_msg.s,chunked_msg.len);
+
+			if (build_submit_or_deliver_request(&req, src, dst, 
+			&chunked_msg, msg_type, session,delivery_confirmation,
+			i+1,chunks_no,chunk_group_id)) {
+				LM_ERR("error creating submit_sm request\n");
+				return -1;
+			}
+
+			ret = smpp_send_msg(session, &req->payload);
+			pkg_free(req);
+
+			if (ret <= 0) {
+				LM_ERR("Failed to send chunk %d \n",i+1);
+				return -1;
+			}
+		}
+	} else { 
+		if (build_submit_or_deliver_request(&req, src, dst, msg, msg_type, 
+		session,delivery_confirmation,1,1,0)) {
+			LM_ERR("error creating submit_sm request\n");
+			return -1;
+		}
+		
+		ret = smpp_send_msg(session, &req->payload);
+		pkg_free(req);
 	}
-	
-	ret = smpp_send_msg(session, &req->payload);
-	pkg_free(req);
 
 	if (ret <=0)
 		return -1;
@@ -1136,7 +1231,7 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 		smpp_session_t *session, struct receive_info *rcv)
 {
 	static str msg_type = str_init("MESSAGE");
-	static char sms_body[280];
+	static char sms_body[2*MAX_SMS_CHARACTERS];
 
 	char hdrs[1024];
 	char *p = hdrs;
@@ -1164,7 +1259,7 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 
 	str body_str;
 	if (body->data_coding == SMPP_CODING_UCS2) {
-		memset(sms_body,0,280);
+		memset(sms_body,0,2*MAX_SMS_CHARACTERS);
 		body_str.len = string2hex((unsigned char *)body->short_message,
 		body->sm_length,sms_body);	
 
