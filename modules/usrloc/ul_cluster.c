@@ -67,18 +67,26 @@ int ul_init_cluster(void)
 
 /* packet sending */
 
+static inline void bin_push_urecord(bin_packet_t *packet, urecord_t *r)
+{
+	bin_push_str(packet, r->domain);
+	bin_push_str(packet, &r->aor);
+	bin_push_int(packet, r->label);
+	bin_push_int(packet, r->next_clabel);
+}
+
 void replicate_urecord_insert(urecord_t *r)
 {
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &contact_repl_cap, REPL_URECORD_INSERT, BIN_VERSION, 1024) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_URECORD_INSERT,
+	             UL_BIN_VERSION, 1024) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
 
-	bin_push_str(&packet, r->domain);
-	bin_push_str(&packet, &r->aor);
+	bin_push_urecord(&packet, r);
 
 	if (cluster_mode == CM_FEDERATION_CACHEDB)
 		rc = clusterer_api.send_all_having(&packet, location_cluster,
@@ -111,7 +119,8 @@ void replicate_urecord_delete(urecord_t *r)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &contact_repl_cap, REPL_URECORD_DELETE, BIN_VERSION, 1024) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_URECORD_DELETE,
+	             UL_BIN_VERSION, 1024) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -192,7 +201,8 @@ void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_t *c)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_INSERT, BIN_VERSION, 0) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_INSERT,
+	             UL_BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -231,7 +241,8 @@ void replicate_ucontact_update(urecord_t *r, ucontact_t *ct)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_UPDATE, BIN_VERSION, 0) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_UPDATE,
+	             UL_BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -303,7 +314,8 @@ void replicate_ucontact_delete(urecord_t *r, ucontact_t *c)
 	int rc;
 	bin_packet_t packet;
 
-	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_DELETE, BIN_VERSION, 0) != 0) {
+	if (bin_init(&packet, &contact_repl_cap, REPL_UCONTACT_DELETE,
+	             UL_BIN_VERSION, 0) != 0) {
 		LM_ERR("failed to replicate this event\n");
 		return;
 	}
@@ -350,6 +362,7 @@ static int receive_urecord_insert(bin_packet_t *packet)
 	str d, aor;
 	urecord_t *r;
 	udomain_t *domain;
+	int sl;
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
@@ -368,6 +381,13 @@ static int receive_urecord_insert(bin_packet_t *packet)
 		unlock_udomain(domain, &aor);
 		goto out_err;
 	}
+
+	bin_pop_int(packet, &r->label);
+	bin_pop_int(packet, &r->next_clabel);
+
+	sl = r->aorhash & (domain->size - 1);
+	if (domain->table[sl].next_label <= r->label)
+		domain->table[sl].next_label = r->label + 1;
 
 out:
 	unlock_udomain(domain, &aor);
@@ -418,7 +438,9 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
-	int rc, port, proto;
+	int rc, port, proto, sl;
+	unsigned short _, clabel;
+	unsigned int rlabel;
 
 	memset(&ci, 0, sizeof ci);
 
@@ -487,6 +509,8 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	if (skip_replicated_db_ops)
 		ci.flags |= FL_MEM;
 
+	unpack_indexes(ci.contact_id, &_, &rlabel, &clabel);
+
 	lock_udomain(domain, &aor);
 
 	if (get_urecord(domain, &aor, &record) != 0) {
@@ -498,7 +522,19 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 			unlock_udomain(domain, &aor);
 			goto error;
 		}
+
+		record->label = rlabel;
+		sl = record->aorhash & (domain->size - 1);
+		if (domain->table[sl].next_label <= record->label)
+			domain->table[sl].next_label = record->label + 1;
 	}
+
+	if (record->label != rlabel)
+		LM_BUG("replicated ct insert: differring rlabels! (ci: '%.*s')",
+		       callid.len, callid.s);
+
+	if (record->next_clabel <= clabel)
+		record->next_clabel = clabel + 1;
 
 	rc = get_ucontact(record, &contact_str, &callid, ci.cseq, &contact);
 	switch (rc) {
@@ -541,8 +577,9 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
-	int port, proto;
-	int rc;
+	int port, proto, rc, sl;
+	unsigned short _, clabel;
+	unsigned int rlabel;
 
 	memset(&ci, 0, sizeof ci);
 
@@ -611,6 +648,8 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	bin_pop_str(packet, &st);
 	memcpy(&ci.contact_id, st.s, sizeof ci.contact_id);
 
+	unpack_indexes(ci.contact_id, &_, &rlabel, &clabel);
+
 	lock_udomain(domain, &aor);
 
 	/* failure in retrieving a urecord may be ok, because packet order in UDP
@@ -624,6 +663,11 @@ static int receive_ucontact_update(bin_packet_t *packet)
 			unlock_udomain(domain, &aor);
 			goto error;
 		}
+
+		record->label = rlabel;
+		sl = record->aorhash & (domain->size - 1);
+		if (domain->table[sl].next_label <= record->label)
+			domain->table[sl].next_label = record->label + 1;
 
 		if (insert_ucontact(record, &contact_str, &ci, &contact, 1) != 0) {
 			LM_ERR("failed (ci: '%.*s')\n", callid.len, callid.s);
@@ -652,6 +696,9 @@ static int receive_ucontact_update(bin_packet_t *packet)
 		} /* XXX: for -2 and -1, the master should have already handled
 			 these errors - so we can skip them - razvanc */
 	}
+
+	if (record->next_clabel <= clabel)
+		record->next_clabel = clabel + 1;
 
 	unlock_udomain(domain, &aor);
 
@@ -751,23 +798,35 @@ void receive_binary_packets(bin_packet_t *packet)
 
 		switch (pkt->type) {
 		case REPL_URECORD_INSERT:
+			ensure_bin_version(pkt, UL_BIN_VERSION);
 			rc = receive_urecord_insert(pkt);
 			break;
+
 		case REPL_URECORD_DELETE:
+			ensure_bin_version(pkt, UL_BIN_VERSION);
 			rc = receive_urecord_delete(pkt);
 			break;
+
 		case REPL_UCONTACT_INSERT:
+			ensure_bin_version(pkt, UL_BIN_VERSION);
 			rc = receive_ucontact_insert(pkt);
 			break;
+
 		case REPL_UCONTACT_UPDATE:
+			ensure_bin_version(pkt, UL_BIN_VERSION);
 			rc = receive_ucontact_update(pkt);
 			break;
+
 		case REPL_UCONTACT_DELETE:
+			ensure_bin_version(pkt, UL_BIN_VERSION);
 			rc = receive_ucontact_delete(pkt);
 			break;
+
 		case SYNC_PACKET_TYPE:
+			_ensure_bin_version(pkt, UL_BIN_VERSION, "usrloc sync packet");
 			rc = receive_sync_packet(pkt);
 			break;
+
 		default:
 			rc = -1;
 			LM_ERR("invalid usrloc binary packet type: %d\n", pkt->type);
@@ -803,25 +862,22 @@ static int receive_sync_request(int node_id)
 				r = (urecord_t *)*p;
 
 				sync_packet = clusterer_api.sync_chunk_start(&contact_repl_cap,
-									location_cluster, node_id, BIN_VERSION);
+									location_cluster, node_id, UL_BIN_VERSION);
 				if (!sync_packet)
 					goto error_unlock;
 
 				/* urecord in this chunk */
 				bin_push_int(sync_packet, 0);
-
-				bin_push_str(sync_packet, r->domain);
-				bin_push_str(sync_packet, &r->aor);
+				bin_push_urecord(sync_packet, r);
 
 				for (c = r->contacts; c; c = c->next) {
 					sync_packet = clusterer_api.sync_chunk_start(&contact_repl_cap,
-										location_cluster, node_id, BIN_VERSION);
+										location_cluster, node_id, UL_BIN_VERSION);
 					if (!sync_packet)
 						goto error_unlock;
 
 					/* ucontact in this chunk */
 					bin_push_int(sync_packet, 1);
-
 					bin_push_contact(sync_packet, r, c);
 				}
 			}

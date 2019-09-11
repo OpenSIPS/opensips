@@ -38,7 +38,7 @@
 #define REPL_UCONTACT_UPDATE 4
 #define REPL_UCONTACT_DELETE 5
 
-#define BIN_VERSION 1
+#define UL_BIN_VERSION 2
 
 extern int location_cluster;
 extern struct clusterer_binds clusterer_api;

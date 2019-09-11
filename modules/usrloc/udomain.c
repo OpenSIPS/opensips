@@ -935,7 +935,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 				/* update indexes accordingly */
 				sl = r->aorhash&(_d->size-1);
 
-				if (_d->table[sl].next_label < rlabel || _d->table[sl].next_label == 0)
+				if (_d->table[sl].next_label <= rlabel)
 					_d->table[sl].next_label = rlabel + 1;
 
 				if (r->next_clabel <= clabel || r->next_clabel == 0)
@@ -1677,29 +1677,23 @@ out_err:
 int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
                    char is_replicated)
 {
-	int sl;
-
 	if (have_mem_storage()) {
 		if (mem_insert_urecord(_d, _aor, _r) < 0) {
 			LM_ERR("inserting record failed\n");
 			return -1;
 		}
-		/* make sure it does not overflows 14 bits */
-		(*_r)->next_clabel = (rand()&CLABEL_MASK);
-		sl = (*_r)->aorhash&(_d->size-1);
 
-		(*_r)->label = CID_NEXT_RLABEL(_d, sl);
+		if (!is_replicated) {
+			init_urecord_labels(*_r, _d);
 
-		if (!is_replicated && cluster_mode == CM_FEDERATION_CACHEDB
-		    && cdb_update_urecord_metadata(_aor, 0) != 0) {
-			LM_ERR("failed to publish cachedb location for AoR %.*s\n",
-			       _aor->len, _aor->s);
-		}
+			if (cluster_mode == CM_FEDERATION_CACHEDB
+			        && cdb_update_urecord_metadata(_aor, 0) != 0) {
+				LM_ERR("failed to publish cachedb location for AoR %.*s\n",
+				       _aor->len, _aor->s);
+			}
 
-		/* TODO: in federation, only replicate to "EQ sip_addr" nodes! */
-		if (!is_replicated && location_cluster)
 			replicate_urecord_insert(*_r);
-
+		}
 	} else {
 		get_static_urecord( _d, _aor, _r);
 	}
