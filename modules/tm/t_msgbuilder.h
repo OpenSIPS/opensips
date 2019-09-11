@@ -133,14 +133,65 @@ error:
 	return NULL;
 }
 
-
-static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
-		struct ua_server *uas, struct ua_client *uac, int with_dst)
+static inline int fix_fake_req_headers(struct sip_msg *req)
 {
 	struct hdr_field *hdr;
 	struct lump *ld, *la;
 	contact_t *c;
 
+	if (clone_headers(req, req) < 0) {
+		LM_ERR("could not clone headers list!\n");
+		return -1;
+	}
+	/*
+	 * the fix_nated_contact() function in the nathelper module changes the
+	 * contact to point to a buffer stored in a lump; the following code
+	 * restores the pointer so that functions that use the contact header body
+	 * to see the "fixed" contact, rather than the original header
+	 */
+	for (hdr = req->contact; hdr; hdr = hdr->sibling) {
+
+		/* not something critical right now, so we can pass the error */
+		if (parse_contact(hdr) < 0 || !hdr->parsed)
+			continue;
+
+		for (c = ((contact_body_t *)hdr->parsed)->contacts; c; c = c->next) {
+			/* search for the lump */
+			for (ld = req->add_rm; ld; ld = ld->next) {
+				if (ld->op != LUMP_DEL)
+					continue;
+				for (la = ld->after; la; la = la->after) {
+					/* LM_DBG("matching contact lump op=%d type=%d offset=%d"
+							"len = %d c.offset=%d c.len=%d\n", la->op,
+							la->type, ld->u.offset, ld->len,
+							(int)(c->uri.s-req->buf), c->uri.len); */
+					if (la->op == LUMP_ADD && la->type == HDR_CONTACT_T &&
+							ld->u.offset == c->uri.s-req->buf &&
+							ld->len == c->uri.len) {
+						/* if enclosed, skip enclosing */
+						if (la->u.value[0] == '<') {
+							c->uri.s = la->u.value + 1;
+							c->uri.len = la->len - 2;
+						} else {
+							c->uri.s = la->u.value;
+							c->uri.len = la->len;
+						}
+						LM_DBG("buffer found <%.*s>\n", c->uri.len, c->uri.s);
+						goto next_contact;
+					}
+				}
+			}
+next_contact:
+			;
+		}
+	}
+	return 0;
+}
+
+
+static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
+		struct ua_server *uas, struct ua_client *uac, int with_dst)
+{
 	/* on_negative_reply faked msg now copied from shmem msg (as opposed
 	 * to zero-ing) -- more "read-only" actions (exec in particular) will
 	 * work from reply_route as they will see msg->from, etc.; caution,
@@ -221,51 +272,14 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			   shm_msg->path_vec.len);
 	}
 
-	/*
-	 * the fix_nated_contact() function in the nathelper module changes the
-	 * contact to point to a buffer stored in a lump; the following code
-	 * restores the pointer so that functions that use the contact header body
-	 * to see the "fixed" contact, rather than the original header
-	 */
-	for (hdr = shm_msg->contact; hdr; hdr = hdr->sibling) {
-		/* not something critical right now, so we can pass the error */
-		if (parse_contact(hdr) < 0 || !hdr->parsed)
-			continue;
-
-		for (c = ((contact_body_t *)hdr->parsed)->contacts; c; c = c->next) {
-			/* search for the lump */
-			for (ld = shm_msg->add_rm; ld; ld = ld->next) {
-				if (ld->op != LUMP_DEL)
-					continue;
-				for (la = ld->after; la; la = la->after) {
-					/* LM_DBG("matching contact lump op=%d type=%d offset=%d"
-							"len = %d c.offset=%d c.len=%d\n", la->op,
-							la->type, ld->u.offset, ld->len,
-							(int)(c->uri.s-shm_msg->buf), c->uri.len); */
-					if (la->op == LUMP_ADD && la->type == HDR_CONTACT_T &&
-							ld->u.offset == c->uri.s-shm_msg->buf &&
-							ld->len == c->uri.len) {
-						/* if enclosed, skip enclosing */
-						if (la->u.value[0] == '<') {
-							c->uri.s = la->u.value + 1;
-							c->uri.len = la->len - 2;
-						} else {
-							c->uri.s = la->u.value;
-							c->uri.len = la->len;
-						}
-						LM_DBG("buffer found <%.*s>\n", c->uri.len, c->uri.s);
-						goto next_contact;
-					}
-				}
-			}
-next_contact:
-			;
-		}
+	if (fix_fake_req_headers(faked_req) < 0) {
+		LM_ERR("could not fix haed request headers!\n");
+		goto out3;
 	}
 
 	if (clone_sip_msg_body( shm_msg, faked_req, &faked_req->body, 0)!=0) {
 		LM_ERR("out of pkg mem - cannot clone body\n");
-		goto out3;
+		goto out4;
 	}
 
 	/* set as flags the global flags and the branch flags from the
@@ -275,6 +289,8 @@ next_contact:
 		setb0flags( faked_req, uac->br_flags);
 
 	return 1;
+out4:
+	pkg_free(faked_req->headers);
 out3:
 	pkg_free(faked_req->path_vec.s);
 out2:
@@ -336,6 +352,12 @@ inline static void free_faked_req(struct sip_msg *faked_req, struct cell *t)
 		shm_free(faked_req->reply_lump);
 
 	clean_msg_clone( faked_req, t->uas.request, t->uas.end_request);
+
+	/* remove the headers' list */
+	if (faked_req->headers) {
+		pkg_free(faked_req->headers);
+		faked_req->headers = 0;
+	}
 }
 
 

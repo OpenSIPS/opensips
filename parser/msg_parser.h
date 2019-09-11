@@ -336,6 +336,8 @@ char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr);
 
 void free_sip_msg(struct sip_msg* msg);
 
+int clone_headers(struct sip_msg *from_msg, struct sip_msg *to_msg);
+
 /* make sure all HFs needed for transaction identification have been
    parsed; return 0 if those HFs can't be found
  */
