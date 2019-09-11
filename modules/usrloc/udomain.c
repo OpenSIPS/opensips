@@ -1692,7 +1692,8 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 				       _aor->len, _aor->s);
 			}
 
-			replicate_urecord_insert(*_r);
+			if (location_cluster)
+				replicate_urecord_insert(*_r);
 		}
 	} else {
 		get_static_urecord( _d, _aor, _r);
