@@ -121,6 +121,12 @@ udomain_t* get_next_udomain(udomain_t *_d);
 #define CID_GET_CLABEL(_cid) (_cid&CLABEL_MASK)
 #define CID_NEXT_RLABEL(_dom, _sl) (_dom->table[_sl].next_label++)
 
+static inline void init_urecord_labels(urecord_t *r, udomain_t *d)
+{
+	r->label = CID_NEXT_RLABEL(d, r->aorhash & (d->size - 1));
+	r->next_clabel = rand() & CLABEL_MASK;
+}
+
 static inline uint64_t
 pack_indexes(unsigned short aorhash, unsigned int rlabel, unsigned short clabel)
 {
