@@ -118,6 +118,7 @@ static int mod_init(void)
 	cde.cdb_func.get_counter = mongo_con_get_counter;
 	cde.cdb_func.set = mongo_con_set;
 	cde.cdb_func.remove = mongo_con_remove;
+	cde.cdb_func._remove = _mongo_con_remove;
 	cde.cdb_func.add = mongo_con_add;
 	cde.cdb_func.sub = mongo_con_sub;
 	cde.cdb_func.query = mongo_con_query;

@@ -130,6 +130,7 @@ static int mod_init(void)
 	cde.cdb_func.get_counter = cassandra_get_counter;
 	cde.cdb_func.set = cassandra_set;
 	cde.cdb_func.remove = cassandra_remove;
+	cde.cdb_func._remove = _cassandra_remove;
 	cde.cdb_func.add = cassandra_add;
 	cde.cdb_func.sub = cassandra_sub;
 	cde.cdb_func.query = cassandra_col_query;

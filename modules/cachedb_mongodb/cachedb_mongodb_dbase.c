@@ -348,6 +348,12 @@ int mongo_con_remove(cachedb_con *con, str *attr)
 	return ret;
 }
 
+/* In MongoDB, we always use "_id" as the primary cache key */
+int _mongo_con_remove(cachedb_con *con, str *attr, const str *key)
+{
+	return mongo_con_remove(con, attr);
+}
+
 int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
                    cdb_raw_entry ***reply, int expected_kv_no, int *reply_no)
 {
