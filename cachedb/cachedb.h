@@ -64,6 +64,12 @@ typedef struct cachedb_funcs_t {
 	int (*get_counter) (cachedb_con *con, str *attr, int *val);
 	int (*set) (cachedb_con *con, str *attr, str *val, int expires);
 	int (*remove) (cachedb_con *con, str *attr);
+	/*
+	 * _remove() - Remove a key/value record matching @key == @attr
+	 * Note: on some backends (e.g. MongoDB), the @key may be ignored,
+	 *       since the primary key name is hardcoded (e.g. "_id")
+	 */
+	int (*_remove) (cachedb_con *con, str *attr, const str *key);
 	int (*add) (cachedb_con *con, str *attr, int val,
 	        int expires, int *new_val);
 	int (*sub) (cachedb_con *con, str *attr, int val,

@@ -72,6 +72,7 @@ void mongo_con_destroy(cachedb_con *con);
 int mongo_con_get(cachedb_con *con,str *attr,str *val);
 int mongo_con_set(cachedb_con *con,str *attr,str *val,int expires);
 int mongo_con_remove(cachedb_con *connection,str *attr);
+int _mongo_con_remove(cachedb_con *con, str *attr, const str *key);
 int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
                         int expected_kv_no, int *reply_no);
 int mongo_con_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val);

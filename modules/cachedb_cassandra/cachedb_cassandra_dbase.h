@@ -51,6 +51,7 @@ int cassandra_set(cachedb_con *con, str *attr, str *val, int expires);
 int cassandra_get(cachedb_con *con, str *attr, str *val);
 int cassandra_get_counter(cachedb_con *con, str *attr, int *val);
 int cassandra_remove(cachedb_con *con, str *attr);
+int _cassandra_remove(cachedb_con *con, str *attr, const str *key);
 int cassandra_add(cachedb_con *con, str *attr, int val, int expires, int *new_val);
 int cassandra_sub(cachedb_con *con, str *attr, int val, int expires, int *new_val);
 

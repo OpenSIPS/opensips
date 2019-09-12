@@ -491,7 +491,7 @@ error:
 	return -1;
 }
 
-int cassandra_remove(cachedb_con *con, str *attr)
+int _cassandra_remove(cachedb_con *con, str *attr, const str *key)
 {
 	cassandra_con *cass_con;
 	CassStatement *statement;
@@ -507,7 +507,7 @@ int cassandra_remove(cachedb_con *con, str *attr)
 
 	/* estimate the length of the query string */
 	cql_buf_len = 13 + cass_con->keyspace.len + 3 + cass_con->table.len + 9 +
-		CASS_OSS_KEY_COL_LEN + 5;
+		key->len + 5;
 
 	if (pkg_str_extend(&cql_query_buf, cql_buf_len+1) < 0) {
 		LM_ERR("oom\n");
@@ -518,7 +518,7 @@ int cassandra_remove(cachedb_con *con, str *attr)
 	cql_buf_len = snprintf(cql_query_buf.s, cql_buf_len+1,
 		"DELETE FROM \"%.*s\".\"%.*s\" WHERE \"%s\" = ?",
 		cass_con->keyspace.len, cass_con->keyspace.s,
-		cass_con->table.len, cass_con->table.s, CASS_OSS_KEY_COL_S);
+		cass_con->table.len, cass_con->table.s, key->s);
 
 	if (cql_buf_len < 0) {
 		LM_ERR("Failed to build query string for Cassandra 'remove'\n");
@@ -552,6 +552,11 @@ error:
 	LM_ERR("Cassandra 'remove' failed\n");
 	cass_statement_free(statement);
 	return -1;
+}
+
+int cassandra_remove(cachedb_con *con, str *attr)
+{
+	return _cassandra_remove(con, attr, _str(CASS_OSS_KEY_COL_S));
 }
 
 static int basic_get_counter(cachedb_con *con, str *attr, int *val)
