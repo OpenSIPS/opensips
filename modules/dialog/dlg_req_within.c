@@ -705,7 +705,8 @@ static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* p
 	p = (struct dlg_sequential_param *)(*ps->param);
 	dlg = p->dlg;
 
-	if (dlg_handle_seq_reply(dlg, rpl, statuscode, p->leg) < 0) {
+	if (dlg_handle_seq_reply(dlg, rpl, statuscode, p->leg,
+	                         dlg_has_reinvite_pinging(dlg)) < 0) {
 		LM_ERR("Bad reply %d for callid %.*s\n",
 				statuscode, dlg->callid.len,dlg->callid.s);
 		dlg_async_response(p, rpl, statuscode);
