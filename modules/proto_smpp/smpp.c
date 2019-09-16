@@ -748,7 +748,7 @@ void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, smpp_session_t *sess
 		return;
 	}
 
-	smpp_send_msg(session, &req->payload);
+	smpp_send_msg(session, &resp->payload);
 	pkg_free(resp);
 }
 
