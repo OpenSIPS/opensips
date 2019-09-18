@@ -1311,6 +1311,9 @@ int parse_reply_codes( str *options_reply_codes_str,
 void base64encode(unsigned char *out, unsigned char *in, int inlen);
 int base64decode(unsigned char *out,unsigned char *in,int len);
 
+void base64urlencode(unsigned char *out, unsigned char *in, int inlen);
+int base64urldecode(unsigned char *out,unsigned char *in,int len);
+
 /*
  * "word64" is a combination between:
  *   - RFC 3261-compatible "word" token characters
