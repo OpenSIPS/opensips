@@ -37,8 +37,6 @@
 #ifndef TLS_API_H
 #define TLS_API_H
 
-#include "../../resolve.h"
-
 #include "tls_helper.h"
 
 typedef struct tls_domain * (*tls_find_server_domain_f) (struct ip_addr *, unsigned short);
