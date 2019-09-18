@@ -710,52 +710,53 @@ int check_runtime_config(void)
 			rr_persist = RRP_NONE;
 			sql_wmode = SQL_NO_WRITE;
 		} else {
-			LM_ERR("unrecognized preset: %s, defaulting to "
-			       "'single-instance-no-db'\n", runtime_preset);
-			cluster_mode = CM_NONE;
-			rr_persist = RRP_NONE;
-			sql_wmode = SQL_NO_WRITE;
+			LM_ERR("invalid working_mode_preset: '%s'\n", runtime_preset);
+			return -1;
 		}
 	} else {
 		if (cluster_mode_str) {
-			if (!strcasecmp(cluster_mode_str, "none"))
+			if (!strcasecmp(cluster_mode_str, "none")) {
 				cluster_mode = CM_NONE;
-			else if (!strcasecmp(cluster_mode_str, "federation"))
+			} else if (!strcasecmp(cluster_mode_str, "federation")) {
 				cluster_mode = CM_FEDERATION;
-			else if (!strcasecmp(cluster_mode_str, "federation-cachedb"))
+			} else if (!strcasecmp(cluster_mode_str, "federation-cachedb")) {
 				cluster_mode = CM_FEDERATION_CACHEDB;
-			else if (!strcasecmp(cluster_mode_str, "full-sharing"))
+			} else if (!strcasecmp(cluster_mode_str, "full-sharing")) {
 				cluster_mode = CM_FULL_SHARING;
-			else if (!strcasecmp(cluster_mode_str, "full-sharing-cachedb"))
+			} else if (!strcasecmp(cluster_mode_str, "full-sharing-cachedb")) {
 				cluster_mode = CM_FULL_SHARING_CACHEDB;
-			else if (!strcasecmp(cluster_mode_str, "sql-only"))
+			} else if (!strcasecmp(cluster_mode_str, "sql-only")) {
 				cluster_mode = CM_SQL_ONLY;
-			else
-				LM_ERR("unknown 'cluster_mode' value: %s, using 'none'\n",
-				       cluster_mode_str);
+			} else {
+				LM_ERR("invalid cluster_mode: '%s'\n", cluster_mode_str);
+				return -1;
+			}
 		}
 
 		if (rr_persist_str) {
-			if (!strcasecmp(rr_persist_str, "none"))
+			if (!strcasecmp(rr_persist_str, "none")) {
 				rr_persist = RRP_NONE;
-			else if (!strcasecmp(rr_persist_str, "load-from-sql"))
+			} else if (!strcasecmp(rr_persist_str, "load-from-sql")) {
 				rr_persist = RRP_LOAD_FROM_SQL;
-			else if (!strcasecmp(rr_persist_str, "sync-from-cluster"))
+			} else if (!strcasecmp(rr_persist_str, "sync-from-cluster")) {
 				rr_persist = RRP_SYNC_FROM_CLUSTER;
-			else
-				LM_ERR("unknown 'restart_persistency' value: %s, "
-				       "using 'none'\n", rr_persist_str);
+			} else {
+				LM_ERR("invalid restart_persistency: '%s'\n", rr_persist_str);
+				return -1;
+			}
 		}
 
 		if (sql_wmode_str) {
-			if (!strcasecmp(sql_wmode_str, "none"))
+			if (!strcasecmp(sql_wmode_str, "none")) {
 				sql_wmode = SQL_NO_WRITE;
-			else if (!strcasecmp(sql_wmode_str, "write-through"))
+			} else if (!strcasecmp(sql_wmode_str, "write-through")) {
 				sql_wmode = SQL_WRITE_THROUGH;
-			else if (!strcasecmp(sql_wmode_str, "write-back"))
+			} else if (!strcasecmp(sql_wmode_str, "write-back")) {
 				sql_wmode = SQL_WRITE_BACK;
-			else
-				LM_ERR("unknown 'sql_write_mode' value: %s\n", sql_wmode_str);
+			} else {
+				LM_ERR("invalid sql_write_mode: '%s'\n", sql_wmode_str);
+				return -1;
+			}
 		}
 	}
 
@@ -796,10 +797,9 @@ int check_runtime_config(void)
 		}
 
 		if (location_cluster) {
-			LM_WARN("a 'location_cluster' has been defined with "
-			        "a single-instance clustering mode! ignoring...\n");
-
-			location_cluster = 0;
+			LM_ERR("a 'location_cluster' has been defined with "
+			       "a single-instance clustering mode!\n");
+			return -1;
 		}
 
 		pinging_mode = PMD_OWNERSHIP;
@@ -836,14 +836,13 @@ int check_runtime_config(void)
 		}
 
 		if (pinging_mode_str) {
-			if (!strcasecmp(pinging_mode_str, "ownership"))
+			if (!strcasecmp(pinging_mode_str, "ownership")) {
 				pinging_mode = PMD_OWNERSHIP;
-			else if (!strcasecmp(pinging_mode_str, "cooperation"))
+			} else if (!strcasecmp(pinging_mode_str, "cooperation")) {
 				pinging_mode = PMD_COOPERATION;
-			else {
-				LM_ERR("unrecognized 'pinging_mode': %s, defaulting to "
-				       "'cooperation'\n", pinging_mode_str);
-				pinging_mode = PMD_COOPERATION;
+			} else {
+				LM_ERR("invalid pinging_mode: '%s'\n", pinging_mode_str);
+				return -1;
 			}
 		} else {
 			pinging_mode = PMD_COOPERATION;
