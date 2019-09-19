@@ -1226,6 +1226,27 @@ modparam("drouting", "enable_restart_persistency", yes)
 		</example>
 	</section>
 
+	<section id="param_extra_prefix_chars" xreflabel="extra_prefix_chars">
+		<title><varname>extra_prefix_chars</varname> (srt)</title>
+		<para>
+			List of ASCII (0-127) characters to be additionally accepted in
+			the prefixes. By default only '0' - '9' chars (digits) are
+			accepted.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>extra_prefix_chars</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "extra_prefix_chars", "#-%")
+...
+</programlisting>
+		</example>
+	</section>
+
 
 
 </section>

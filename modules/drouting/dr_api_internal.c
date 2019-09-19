@@ -119,7 +119,7 @@ static void del_tree_api(ptree_t* t)
 	if(NULL == t)
 		return;
 	/* delete all the children */
-	for(i=0; i< PTREE_CHILDREN; i++) {
+	for(i=0; i< ptree_children; i++) {
 		/* shm_free the rg array of rt_info */
 		if(NULL!=t->ptnode[i].rg) {
 			for(j=0;j<t->ptnode[i].rg_pos;j++) {

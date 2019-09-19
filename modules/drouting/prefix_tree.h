@@ -37,21 +37,23 @@
 #include "../../time_rec.h"
 #include "../../map.h"
 
-#define PTREE_CHILDREN 10
 #define IS_DECIMAL_DIGIT(d) \
 	(((d)>='0') && ((d)<= '9'))
 
+extern int ptree_children;
 extern int tree_size;
 struct head_db;
 
 #define INIT_PTREE_NODE(f, p, n) \
 do {\
-	(n) = (ptree_t*)func_malloc(f, sizeof(ptree_t));\
+	(n) = (ptree_t*)func_malloc(f, sizeof(ptree_t) +\
+		ptree_children*sizeof(ptree_node_t));\
 	if(NULL == (n))\
 		goto err_exit;\
 	tree_size+=sizeof(ptree_t);\
-	memset((n), 0, sizeof(ptree_t));\
+	memset((n), 0, sizeof(ptree_t)+ptree_children*sizeof(ptree_node_t));\
 	(n)->bp=(p);\
+	(n)->ptnode=(ptree_node_t*)((n)+1);\
 }while(0);
 
 
@@ -160,8 +162,15 @@ typedef struct ptree_node_ {
 typedef struct ptree_ {
 	/* backpointer */
 	struct ptree_ *bp;
-	ptree_node_t ptnode[PTREE_CHILDREN];
+	ptree_node_t *ptnode;
 } ptree_t;
+
+
+
+int
+init_prefix_tree(
+	char *extra_prefix_chars
+	);
 
 void
 print_interim(

@@ -42,6 +42,50 @@
 extern int inode;
 extern int unode;
 
+#define DR_PREFIX_ARRAY_SIZE 128
+static unsigned char *dr_char2idx = NULL;
+
+/* number of children under a prefix node */
+int ptree_children = 0;
+
+#define IDX_OF_CHAR(_c) \
+	dr_char2idx[ (unsigned char)(_c) ]
+
+#define IS_VALID_PREFIX_CHAR(_c) \
+	(((_c)<DR_PREFIX_ARRAY_SIZE) && IDX_OF_CHAR(_c)!=-1 )
+
+int init_prefix_tree( char *extra_prefix_chars )
+{
+	int i;
+
+	dr_char2idx = (unsigned char *)pkg_malloc
+		( DR_PREFIX_ARRAY_SIZE * sizeof(unsigned char) );
+	if (dr_char2idx==NULL) {
+		LM_ERR("not enought pkg mem for the prefix array\n");
+		return -1;
+	}
+	memset( dr_char2idx, -1, DR_PREFIX_ARRAY_SIZE * sizeof(char));
+
+	/* init the arrary with the '0'..'9' range */
+	for( i='0' ; i<='9' ; i++)
+		dr_char2idx[i] = ptree_children++;
+
+	/* and now the extras */
+	if (extra_prefix_chars) {
+		for( i=0 ; extra_prefix_chars[i] ; i++) {
+			if (extra_prefix_chars[i]>=DR_PREFIX_ARRAY_SIZE) {
+				LM_ERR("extra prefix char <%c/%d> out of range (max=%d),"
+					" ignoring\n",extra_prefix_chars[i],extra_prefix_chars[i],
+					DR_PREFIX_ARRAY_SIZE);
+				continue;
+			}
+			IDX_OF_CHAR( extra_prefix_chars[i] ) = ptree_children++;
+		}
+	}
+	LM_INFO("counted %d possible chars under a node\n", ptree_children);
+
+	return 0;
+}
 
 
 static inline int
@@ -145,7 +189,7 @@ get_prefix(
 		if(NULL == tmp)
 			goto err_exit;
 		local=*tmp;
-		if( !IS_DECIMAL_DIGIT(local) ) {
+		if( !IS_VALID_PREFIX_CHAR(local) ) {
 			/* unknown character in the prefix string */
 			goto err_exit;
 		}
@@ -153,7 +197,7 @@ get_prefix(
 			/* last digit in the prefix string */
 			break;
 		}
-		idx = local -'0';
+		idx = IDX_OF_CHAR(local);
 		if( NULL == ptree->ptnode[idx].next) {
 			/* this is a leaf */
 			break;
@@ -167,7 +211,7 @@ get_prefix(
 		if(NULL == tmp)
 			goto err_exit;
 		/* is it a real node or an intermediate one */
-		idx = *tmp-'0';
+		idx = IDX_OF_CHAR(*tmp);
 		if(NULL != ptree->ptnode[idx].rg) {
 			/* real node; check the constraints on the routing info*/
 			if( NULL != (rt = internal_check_rt( &(ptree->ptnode[idx]), rgid, rgidx)))
@@ -246,25 +290,26 @@ add_prefix(
 	char* tmp=NULL;
 	int res = 0;
 	if(NULL==ptree) {
-        LM_ERR("ptree is null\n");
+		LM_ERR("ptree is null\n");
 		goto err_exit;
-    }
+	}
 	tmp = prefix->s;
 	while(tmp < (prefix->s+prefix->len)) {
 		if(NULL == tmp) {
-            LM_ERR("prefix became null\n");
+			LM_ERR("prefix became null\n");
 			goto err_exit;
-        }
-		if( !IS_DECIMAL_DIGIT(*tmp) ) {
+		}
+		if( !IS_VALID_PREFIX_CHAR(*tmp) ) {
 			/* unknown character in the prefix string */
-            LM_ERR("is not decimal digit\n");
+			LM_ERR("%c is not valid char in the prefix\n", *tmp);
 			goto err_exit;
 		}
 		if( tmp == (prefix->s+prefix->len-1) ) {
 			/* last digit in the prefix string */
 			LM_DBG("adding info %p, %d at: "
-				"%p (%d)\n", r, rg, &(ptree->ptnode[*tmp-'0']), *tmp-'0');
-			res = add_rt_info(&(ptree->ptnode[*tmp-'0']),
+				"%p (%d)\n", r, rg, &(ptree->ptnode[IDX_OF_CHAR(*tmp)]),
+				IDX_OF_CHAR(*tmp));
+			res = add_rt_info(&(ptree->ptnode[IDX_OF_CHAR(*tmp)]),
 					r,rg, malloc_f, free_f);
 			if(res < 0 ) {
                 LM_ERR("adding rt info doesn't work\n");
@@ -275,18 +320,13 @@ add_prefix(
 			goto ok_exit;
 		}
 		/* process the current digit in the prefix */
-		if(NULL == ptree->ptnode[*tmp - '0'].next) {
+		if(NULL == ptree->ptnode[IDX_OF_CHAR(*tmp)].next) {
 			/* allocate new node */
-			INIT_PTREE_NODE(malloc_f, ptree, ptree->ptnode[*tmp - '0'].next);
+			INIT_PTREE_NODE(malloc_f, ptree,
+				ptree->ptnode[IDX_OF_CHAR(*tmp)].next);
 			inode+=10;
-#if 0
-			printf("new tree node: %p (bp: %p)\n",
-					ptree->ptnode[*tmp - '0'].next,
-					ptree->ptnode[*tmp - '0'].next->bp
-					);
-#endif
 		}
-		ptree = ptree->ptnode[*tmp-'0'].next;
+		ptree = ptree->ptnode[IDX_OF_CHAR(*tmp)].next;
 		tmp++;
 	}
 
@@ -307,7 +347,7 @@ del_tree(
 	if(NULL == t)
 		goto exit;
 	/* delete all the children */
-	for(i=0; i< PTREE_CHILDREN; i++) {
+	for(i=0; i< ptree_children; i++) {
 		/* shm_free the rg array of rt_info */
 		if(NULL!=t->ptnode[i].rg) {
 			for(j=0;j<t->ptnode[i].rg_pos;j++) {

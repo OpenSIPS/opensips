@@ -201,6 +201,7 @@ void clean_head_cache(struct head_cache *c);
 void init_head_db(struct head_db *new);
 static int db_load_head(struct head_db*); /* used for populating head_db with
 											 db connections and db funcs */
+static char *extra_prefix_chars;
 
 
 /* reader-writers lock for reloading the data */
@@ -428,10 +429,11 @@ static param_export_t params[] = {
 	{"probing_reply_codes",STR_PARAM, &dr_probe_replies.s     },
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
 	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload  },
-	{"partition_id_pvar", STR_PARAM, &partition_pvar.s},
-	{"cluster_id",        INT_PARAM, &dr_cluster_id },
-	{"cluster_sharing_tag",STR_PARAM, &dr_cluster_shtag },
-	{"enable_restart_persistency",INT_PARAM, &dr_rpm_enable },
+	{"partition_id_pvar", STR_PARAM, &partition_pvar.s        },
+	{"cluster_id",        INT_PARAM, &dr_cluster_id           },
+	{"cluster_sharing_tag",STR_PARAM, &dr_cluster_shtag       },
+	{"enable_restart_persistency",INT_PARAM, &dr_rpm_enable   },
+	{"extra_prefix_chars", STR_PARAM, &extra_prefix_chars     },
 	{0, 0, 0}
 };
 
@@ -1473,6 +1475,11 @@ static int dr_init(void)
 
 	update_cache_info();
 
+	if (init_prefix_tree( extra_prefix_chars )!=0) {
+		LM_ERR("failed to initiate the prefix array\n");
+		goto error;
+	}
+
 	drg_user_col.len = strlen(drg_user_col.s);
 	drg_domain_col.len = strlen(drg_domain_col.s);
 	drg_grpid_col.len = strlen(drg_grpid_col.s);
@@ -1710,7 +1717,7 @@ static int dr_init(void)
 	}
 	/* all good now - release the config */
 	cleanup_head_config_table();
-	
+
 	/* free last head if left uninitialized */
 	if (db_part) {
 		cleanup_head_db(db_part);
