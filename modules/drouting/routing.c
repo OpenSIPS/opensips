@@ -308,8 +308,8 @@ build_rt_info(
 	int id,
 	int priority,
 	tmrec_t *trec,
-	/* script routing table index */
-	int route_idx,
+	/* script route name */
+	char* route_idx,
 	/* list of destinations indexes */
 	char* dstlst,
 	char* attrs,
@@ -318,9 +318,10 @@ build_rt_info(
 	osips_free_f ff
 	)
 {
-	rt_info_t* rt = NULL;;
+	rt_info_t* rt = NULL;
 
-	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t)+(attrs?strlen(attrs):0));
+	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t) +
+		(attrs?strlen(attrs):0) + (route_idx?strlen(route_idx)+1:0) );
 	if (rt==NULL) {
 		LM_ERR("no more mem(1)\n");
 		goto err_exit;
@@ -330,11 +331,14 @@ build_rt_info(
 	rt->id = id;
 	rt->priority = priority;
 	rt->time_rec = trec;
-	rt->route_idx = route_idx;
 	if (attrs && strlen(attrs)) {
 		rt->attrs.s = (char*)(rt+1);
 		rt->attrs.len = strlen(attrs);
 		memcpy(rt->attrs.s,attrs,rt->attrs.len);
+	}
+	if (route_idx && strlen(route_idx)) {
+		rt->route_idx = ((char*)(rt+1)) + rt->attrs.len;
+		strcpy(rt->route_idx, route_idx);
 	}
 
 	if ( dstlst && dstlst[0]!=0 ) {

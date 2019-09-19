@@ -289,7 +289,6 @@ void dr_update_head_cache(struct head_db *head)
 #define INT_VALS_RULE_ID_DRR_COL  0
 #define INT_VALS_BLANK_1          1
 #define INT_VALS_PRIORITY_DRR_COL 2
-#define INT_VALS_SCRIPT_ROUTE_ID  3
 #define STR_VALS_GROUP_DRR_COL    0
 #define STR_VALS_PREFIX_DRR_COL   1
 #define STR_VALS_TIME_DRR_COL     2
@@ -685,27 +684,17 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 					int_vals[INT_VALS_RULE_ID_DRR_COL]);
 				continue;
 			}
-			/* lookup for the script route ID */
-			if ( !VAL_NULL(ROW_VALUES(row)+5) &&
+			/* set the script route ID */
+			if ( VAL_NULL(ROW_VALUES(row)+5) ||
 			((str_vals[STR_VALS_ROUTEID_DRR_COL]=
-				(char*)VAL_STRING(ROW_VALUES(row)+5))!=NULL ) &&
-			str_vals[STR_VALS_ROUTEID_DRR_COL][0] ) {
-				int_vals[INT_VALS_SCRIPT_ROUTE_ID] =
-					get_script_route_ID_by_name
-						( str_vals[STR_VALS_ROUTEID_DRR_COL], sroutes->request,
-						RT_NO);
-				if (int_vals[INT_VALS_SCRIPT_ROUTE_ID]==-1) {
-					LM_WARN("route <%s> does not exist\n",
-							str_vals[STR_VALS_ROUTEID_DRR_COL]);
-					int_vals[INT_VALS_SCRIPT_ROUTE_ID] = 0;
-				}
-			} else {
-				int_vals[INT_VALS_SCRIPT_ROUTE_ID] = 0;
+				(char*)VAL_STRING(ROW_VALUES(row)+5))==NULL ) ||
+			str_vals[STR_VALS_ROUTEID_DRR_COL][0]==0 ) {
+				str_vals[STR_VALS_ROUTEID_DRR_COL] = NULL;
 			}
 			/* build the routing rule */
 			if ((ri = build_rt_info( int_vals[INT_VALS_RULE_ID_DRR_COL],
 							int_vals[INT_VALS_PRIORITY_DRR_COL], time_rec,
-							int_vals[INT_VALS_SCRIPT_ROUTE_ID],
+							str_vals[STR_VALS_ROUTEID_DRR_COL],
 							str_vals[STR_VALS_DSTLIST_DRR_COL],
 							str_vals[STR_VALS_ATTRS_DRR_COL], rdata,
 							current_partition->malloc,

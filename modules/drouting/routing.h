@@ -133,8 +133,8 @@ build_rt_info(
 	int id,
 	int priority,
 	tmrec_t* time,
-	/* ser routing table id */
-	int route_id,
+	/* name of the script route */
+	char* route_idx,
 	/* list of destinations indexes */
 	char* dstlst,
 	char* attr,
