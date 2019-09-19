@@ -2583,7 +2583,7 @@ static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 	struct head_db *current_partition=NULL;
 	unsigned short wl_len;
 	str username;
-	int i, j, n;
+	int i, j, n, rt_idx;
 	int_str val;
 	str ruri;
 	str next_carrier_attrs = {NULL, 0};
@@ -2773,12 +2773,13 @@ search_again:
 		rule_idx = 0;
 	}
 
-	if (rt_info->route_idx>0 && rt_info->route_idx<RT_NO) {
-		fret = run_top_route( sroutes->request[rt_info->route_idx].a, msg );
+	if (rt_info->route_idx && (rt_idx=get_script_route_ID_by_name
+	(rt_info->route_idx, sroutes->request, RT_NO))!=-1) {
+		fret = run_top_route( sroutes->request[rt_idx].a, msg );
 		if (fret&ACT_FL_DROP) {
 			/* drop the action */
 			LM_DBG("script route %s drops routing "
-				"by %d\n", sroutes->request[rt_info->route_idx].name, fret);
+				"by %d\n", sroutes->request[rt_idx].name, fret);
 			goto error2;
 		}
 	}
