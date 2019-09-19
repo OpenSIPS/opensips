@@ -286,7 +286,6 @@ static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_valu
 {
 	struct dlg_cell *dlg;
 	int req_len = 0,i;
-	char *p;
 
 	if(res==NULL)
 		return -1;
@@ -297,7 +296,7 @@ static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_valu
 	}
 
 
-	req_len = calc_base64_encode_len(dlg->callid.len) + topo_hiding_prefix.len;
+	req_len = calc_word64_encode_len(dlg->callid.len) + topo_hiding_prefix.len;
 
 	if (req_len*2 > callid_buf_len) {
 		callid_buf = pkg_realloc(callid_buf,req_len*2);
@@ -313,14 +312,8 @@ static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_valu
 	for (i=0;i<dlg->callid.len;i++)
 		callid_buf[i] = dlg->callid.s[i] ^ topo_hiding_seed.s[i%topo_hiding_seed.len];
 
-	base64encode((unsigned char *)(callid_buf+topo_hiding_prefix.len+req_len),
+	word64encode((unsigned char *)(callid_buf+topo_hiding_prefix.len+req_len),
 		     (unsigned char *)(callid_buf),dlg->callid.len);
-
-	p = callid_buf+ 2*req_len - 1;
-	while (*p == '=') {
-		*p = '-';
-		p--;
-	}
 
 	res->rs.s = callid_buf+req_len;
 	res->rs.len = req_len;
