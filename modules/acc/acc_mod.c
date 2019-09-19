@@ -257,13 +257,23 @@ static dep_export_t deps = {
 
 static int acc_deps(void)
 {
-	if (load_dlg_api(&dlg_api) != 0)
+	if (load_dlg_api(&dlg_api) != 0) {
 		LM_DBG("failed to load dialog API - is the dialog module loaded?\n");
-	else
-		acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(unref_acc_ctx);
+		return 0;
+	}
 
-	/* the API will get loaded, if required, during the fixup phase */
-	memset(&dlg_api, 0, sizeof dlg_api);
+	if (!dlg_api.get_dlg) {
+		LM_ERR("error loading dialog module - cdrs cannot be generated\n");
+		return 0;
+	}
+	acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(unref_acc_ctx);
+
+	if (dlg_api.register_dlgcb(NULL,
+				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
+			LM_ERR("cannot register callback for dialog loaded - accounting "
+					"for ongoing calls will be lost after restart\n");
+	is_cdr_enabled = 1;
+
 	return 0;
 }
 

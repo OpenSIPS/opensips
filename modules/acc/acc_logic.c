@@ -73,7 +73,7 @@ struct acc_enviroment acc_env;
 static query_list_t *acc_ins_list = NULL;
 static query_list_t *mc_ins_list = NULL;
 
-static int is_cdr_enabled=0;
+int is_cdr_enabled=0;
 
 #define is_acc_flag_set(_mask, _type, _flag) ( _mask & ((_type * _flag)))
 
@@ -1082,20 +1082,8 @@ unsigned long long do_acc_flags_parser(str* token)
 			!strncasecmp(token->s, do_acc_cdr_s.s, token->len)) {
 
 		if (!is_cdr_enabled) {
-			if (load_dlg_api(&dlg_api)!=0)
-						LM_DBG("failed to find dialog API - is dialog module loaded?\n");
-
-			if (!dlg_api.get_dlg) {
-				LM_WARN("error loading dialog module - cdrs cannot be generated\n");
-				return DO_ACC_NONE;
-			}
-
-			if (dlg_api.get_dlg && dlg_api.register_dlgcb(NULL,
-						DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
-					LM_ERR("cannot register callback for dialog loaded - accounting "
-							"for ongoing calls will be lost after restart\n");
-
-			is_cdr_enabled=1;
+			LM_ERR("dialog module not loaded - cdrs cannot be generated\n");
+			return DO_ACC_NONE;
 		}
 
 		return DO_ACC_CDR;
