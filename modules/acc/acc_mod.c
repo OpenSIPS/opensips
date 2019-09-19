@@ -268,10 +268,6 @@ static int acc_deps(void)
 	}
 	acc_dlg_ctx_idx = dlg_api.dlg_ctx_register_ptr(unref_acc_ctx);
 
-	if (dlg_api.register_dlgcb(NULL,
-				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
-			LM_ERR("cannot register callback for dialog loaded - accounting "
-					"for ongoing calls will be lost after restart\n");
 	is_cdr_enabled = 1;
 
 	return 0;
@@ -403,6 +399,11 @@ static int mod_init( void )
 
 	acc_flags_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, unref_acc_ctx);
 	acc_tm_flags_ctx_idx = tmb.t_ctx_register_ptr(unref_acc_ctx);
+
+	if (is_cdr_enabled && dlg_api.register_dlgcb(NULL,
+				DLGCB_LOADED,acc_loaded_callback, NULL, NULL) < 0)
+			LM_ERR("cannot register callback for dialog loaded - accounting "
+					"for ongoing calls will be lost after restart\n");
 
 	return 0;
 }
