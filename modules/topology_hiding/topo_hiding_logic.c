@@ -1246,12 +1246,7 @@ static int dlg_th_encode_callid(struct sip_msg *msg)
 	new_callid.len = word64_enc_len + topo_hiding_prefix.len;
 	new_callid.s = pkg_malloc(new_callid.len);
 	if (new_callid.s==NULL) {
-		LM_ERR("Failed to allocate callid len\n");
-		return -1;
-	}
-
-	if (new_callid.s == NULL) {
-		LM_ERR("Failed to encode callid\n");
+		LM_ERR("Failed to allocate new callid\n");
 		return -1;
 	}
 
