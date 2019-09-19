@@ -737,6 +737,7 @@ static int init_mod( struct sr_module* m, int skip_others)
  */
 int init_modules(void)
 {
+	struct sr_module *currentMod;
 	int ret;
 
 	if (testing_framework) {
@@ -744,34 +745,23 @@ int init_modules(void)
 		solve_module_dependencies(modules);
 	}
 
-	ret = init_mod(modules, 0);
-
-	free_module_dependencies(modules);
-
-	return ret;
-}
-
-/*
- * Initialize all loaded modules dependencies.
- * the initialization is done *BEFORE* the initializing phase
- */
-int init_modules_deps(void)
-{
-	struct sr_module *currentMod;
-	int ret;
-
+	/* pre-initialize all modules */
 	for (currentMod=modules; currentMod; currentMod=currentMod->next) {
-		if (currentMod->exports->deps_f == NULL)
+		if (currentMod->exports->preinit_f == NULL)
 			continue;
-		ret = currentMod->exports->deps_f();
+		ret = currentMod->exports->preinit_f();
 		if (ret < 0) {
-			LM_ERR("could not initialize module %s dependencies!\n",
+			LM_ERR("could not pre-initialize module %s!\n",
 					currentMod->exports->name);
 			return ret;
 		}
 	}
 
-	return 0;
+	ret = init_mod(modules, 0);
+
+	free_module_dependencies(modules);
+
+	return ret;
 }
 
 /* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */

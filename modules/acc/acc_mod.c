@@ -255,7 +255,7 @@ static dep_export_t deps = {
 	},
 };
 
-static int acc_deps(void)
+static int mod_preinit(void)
 {
 	if (load_dlg_api(&dlg_api) != 0) {
 		LM_DBG("failed to load dialog API - is the dialog module loaded?\n");
@@ -280,7 +280,6 @@ struct module_exports exports= {
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	0,				 /* load function */
 	&deps,           /* OpenSIPS module dependencies */
-	acc_deps,        /* OpenSIPS dependencies function */
 	cmds,       /* exported functions */
 	0,          /* exported async functions */
 	params,     /* exported params */
@@ -289,6 +288,7 @@ struct module_exports exports= {
 	mod_items,  /* exported pseudo-variables */
 	0,			/* exported transformations */
 	0,          /* extra processes */
+	mod_preinit,/* pre-initialization module */
 	mod_init,   /* initialization module */
 	0,          /* response function */
 	0,          /* destroy function */
