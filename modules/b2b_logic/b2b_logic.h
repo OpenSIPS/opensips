@@ -55,13 +55,6 @@
 
 extern b2b_api_t b2b_api;
 
-enum b2bl_caller_type {
-	CALLER_MODULE,
-	CALLER_SCRIPT,
-	CALLER_MI
-};
-extern enum b2bl_caller_type b2bl_caller;
-
 typedef struct b2b_rule
 {
 	unsigned int id;

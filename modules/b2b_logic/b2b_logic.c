@@ -105,7 +105,6 @@ static str default_headers[HDR_DEFAULT_LEN]=
    {"RSeq", 4},
 };
 int use_init_sdp = 0;
-enum b2bl_caller_type b2bl_caller;
 unsigned int max_duration = 12*3600;
 
 int b2bl_key_avp_name;
@@ -1136,8 +1135,6 @@ mi_response_t *mi_trigger_scenario(const mi_params_t *params,
 
 	if (get_mi_array_param(params, "scenario_params", &params_arr, &no_args) < 0)
 		return init_mi_param_error();
-
-	b2bl_caller = CALLER_MI;
 
 	memset(args, 0, MAX_SCENARIO_PARAMS * sizeof(str));
 	memset(argsp, 0, MAX_SCENARIO_PARAMS * sizeof(str*));

@@ -3604,7 +3604,6 @@ str* internal_init_scenario(struct sip_msg* msg, str* name,
 			return NULL;
 		}
 	}
-	b2bl_caller = CALLER_MODULE;
 	return init_request(msg, scf, args, cbf, cb_param, cb_mask, custom_hdrs);
 }
 
@@ -3622,7 +3621,6 @@ int b2b_init_request(struct sip_msg* msg, struct b2b_scen_fl *scf,
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
 	/* find the scenario with the corresponding id */
-	b2bl_caller = CALLER_SCRIPT;
 
 	/* process the arguments */
 	args[0] = arg2;
