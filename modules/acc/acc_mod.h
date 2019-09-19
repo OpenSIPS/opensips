@@ -79,4 +79,6 @@ extern unsigned short db_table_name_type;
 extern int evi_flag;
 extern int evi_missed_flag;
 
+extern int is_cdr_enabled;
+
 #endif
