@@ -85,7 +85,6 @@ struct module_exports exports = {
 	DEFAULT_DLFLAGS,    /* dlopen flags */
 	0,				    /* load function */
 	NULL,            /* OpenSIPS module dependencies */
-	0,               /* OpenSIPS dependencies function */
 	0,                  /* exported functions */
 	0,                  /* exported async functions */
 	params,             /* module parameters */
@@ -94,6 +93,7 @@ struct module_exports exports = {
 	0,                  /* exported pseudo-variables */
 	0,					/* exported transformations */
 	mod_procs,          /* extra processes */
+	0,                  /* module pre-initialization function */
 	stun_mod_init,      /* module initialization function */
 	0,                  /* response function*/
 	0,                  /* destroy function */
