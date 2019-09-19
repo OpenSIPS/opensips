@@ -100,8 +100,6 @@ struct module_exports exports= {
 	0,
 	/* OpenSIPS module dependencies */
 	NULL,
-	/* OpenSIPS dependencies function */
-	NULL,
 	/* exported functions */
 	cmds,
 	/* exported async functions */
@@ -117,6 +115,8 @@ struct module_exports exports= {
 	/* exported transformations */
 	NULL,
 	/* extra processes */
+	NULL,
+	/* module pre-initialization function */
 	NULL,
 	/* module initialization function */
 	mod_init,
