@@ -97,8 +97,6 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	b2bl_tuple_t* tuple = NULL;
 	str* b2bl_key;
 	int i;
-	static char buf[256];
-	int buf_len= 255;
 	int size;
 	str extra_headers={0, 0};
 	str local_contact= server_address;
@@ -195,50 +193,21 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	{
 		for(i = 0; i< scenario->param_no; i++)
 		{
-			if(args[i]==NULL)
+			if (args[i]==NULL || args[i]->s==NULL || args[i]->len==0)
 			{
 				LM_DBG("Fewer parameters, expected [%d] received [%d]\n",
 						scenario->param_no, i);
 				break;
 			}
-			/* must print the value of the argument */
-			if(msg && b2bl_caller != CALLER_MODULE)
-			{
-				buf_len= 255;
-				if(pv_printf(msg, (pv_elem_t*)args[i], buf, &buf_len)<0)
-				{
-					LM_ERR("cannot print the format\n");
-					goto error;
-				}
 
-				tuple->scenario_params[i].s = (char*)shm_malloc(buf_len);
-				if(tuple->scenario_params[i].s == NULL)
-				{
-					LM_ERR("No more shared memory\n");
-					goto error;
-				}
-				memcpy(tuple->scenario_params[i].s, buf, buf_len);
-				tuple->scenario_params[i].len = buf_len;
-				LM_DBG("Printed parameter [%.*s]\n", buf_len, buf);
-			}
-			else
+			tuple->scenario_params[i].s = (char*)shm_malloc(args[i]->len);
+			if(tuple->scenario_params[i].s == NULL)
 			{
-				if(args[i]->s==NULL || args[i]->len==0)
-				{
-					LM_DBG("Fewer parameters, expected [%d] received [%d]\n",
-							scenario->param_no, i);
-					break;
-				}
-
-				tuple->scenario_params[i].s = (char*)shm_malloc(args[i]->len);
-				if(tuple->scenario_params[i].s == NULL)
-				{
-					LM_ERR("No more shared memory\n");
-					goto error;
-				}
-				memcpy(tuple->scenario_params[i].s, args[i]->s, args[i]->len);
-				tuple->scenario_params[i].len = args[i]->len;
+				LM_ERR("No more shared memory\n");
+				goto error;
 			}
+			memcpy(tuple->scenario_params[i].s, args[i]->s, args[i]->len);
+			tuple->scenario_params[i].len = args[i]->len;
 		}
 	}
 	tuple->scenario_state = B2B_NOTDEF_STATE;
