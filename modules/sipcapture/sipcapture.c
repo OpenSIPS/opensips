@@ -46,6 +46,7 @@
 #include "../../msg_translator.h"
 #include "../../action.h"
 #include "../../socket_info.h"
+#include "../../ipc.h"
 
 /* BPF structure */
 #ifdef __OS_linux
@@ -4916,6 +4917,22 @@ error:
 
 }
 
+
+struct ipc_msg_pack {
+	struct receive_info ri;
+	str buf;
+};
+
+void rpc_msg_received(int sender, void *param)
+{
+	struct ipc_msg_pack *ipc_pack = (struct ipc_msg_pack *)param;
+
+	receive_msg( ipc_pack->buf.s, ipc_pack->buf.len,
+		&ipc_pack->ri, NULL, 0);
+
+	shm_free( ipc_pack );
+}
+
 /* Local raw receive loop */
 int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip) {
 
@@ -4923,17 +4940,17 @@ int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip) {
 	static char buf [BUF_SIZE+1];
 	union sockaddr_union from;
 	union sockaddr_union to;
-        struct receive_info ri;
 	int len;
 	struct ip *iph;
-        struct udphdr *udph;
-        char* udph_start;
-        unsigned short udp_len;
+	struct udphdr *udph;
+	char* udph_start;
+	unsigned short udp_len;
 	int offset = 0;
 	char* end;
 	unsigned short dst_port;
 	unsigned short src_port;
 	struct ip_addr dst_ip, src_ip;
+	struct ipc_msg_pack *ipc_pack;
 
 
 	for(;;) {
@@ -4941,17 +4958,17 @@ int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip) {
 		len = recvfrom(rsock, buf, BUF_SIZE, 0, 0, 0);
 
 		if (len<0){
-                        if (len==-1){
-                                LM_ERR("recvfrom: %s [%d]\n",
-                                                strerror(errno), errno);
-                                if ((errno==EINTR)||(errno==EWOULDBLOCK))
-                                        continue;
+			if (len==-1){
+				LM_ERR("recvfrom: %s [%d]\n",
+						strerror(errno), errno);
+				if ((errno==EINTR)||(errno==EWOULDBLOCK))
+					continue;
 				else goto error;
-                        }else{
-                                LM_DBG("recvfrom error: %d\n", len);
-                                continue;
-                        }
-                }
+			}else{
+				LM_DBG("recvfrom error: %d\n", len);
+				continue;
+			}
+		}
 
 		end=buf+len;
 
@@ -4959,8 +4976,8 @@ int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip) {
 
 		if (len < (sizeof(struct ip)+sizeof(struct udphdr) + offset)) {
 			LM_DBG("received small packet: %d. Ignore it\n",len);
-                	continue;
-        	}
+			continue;
+		}
 
 		iph = (struct ip*) (buf + offset);
 
@@ -4971,59 +4988,71 @@ int raw_capture_rcv_loop(int rsock, int port1, int port2, int ipip) {
 		udph = (struct udphdr*) udph_start;
 		offset +=sizeof(struct udphdr);
 
-        	if ((buf+offset)>end){
-                	continue;
-        	}
-
-		udp_len=ntohs(udph->uh_ulen);
-	        if ((udph_start+udp_len)!=end){
-        	        if ((udph_start+udp_len)>end){
-				continue;
-        	        }else{
-                	        LM_DBG("udp length too small: %d/%d\n", (int)udp_len, (int)(end-udph_start));
-	                        continue;
-        	        }
-	        }
-			/* cleaup previous values in dst and ri */
-			memset(&dst_ip, 0, sizeof(dst_ip));
-			memset(&ri, 0, sizeof(ri));
-
-			/*FIL IPs*/
-			dst_ip.af=AF_INET;
-			dst_ip.len=4;
-			dst_ip.u.addr32[0]=iph->ip_dst.s_addr;
-			/* fill dst_port */
-			dst_port=ntohs(udph->uh_dport);
-			ip_addr2su(&to, &dst_ip, dst_port);
-			/* fill src_port */
-			src_port=ntohs(udph->uh_sport);
-			src_ip.af=AF_INET;
-			src_ip.len=4;
-			src_ip.u.addr32[0]=iph->ip_src.s_addr;
-			ip_addr2su(&from, &src_ip, src_port);
-			su_setport(&from, src_port);
-
-			ri.src_su=from;
-			su2ip_addr(&ri.src_ip, &from);
-			ri.src_port=src_port;
-			su2ip_addr(&ri.dst_ip, &to);
-			ri.dst_port=dst_port;
-			ri.proto=PROTO_UDP;
+		if ((buf+offset)>end){
+			continue;
+		}
 
 		/* cut off the offset */
-	        len -= offset;
+		len -= offset;
 
 		if (len<MIN_UDP_PACKET){
-                        LM_DBG("probing packet received from\n");
-                        continue;
-                }
+			LM_DBG("probing packet received from\n");
+			continue;
+		}
 
-                LM_DBG("PORT: [%d] and [%d]\n", port1, port2);
+		udp_len=ntohs(udph->uh_ulen);
+		if ((udph_start+udp_len)!=end){
+			if ((udph_start+udp_len)>end){
+				continue;
+			}else{
+				LM_DBG("udp length too small: %d/%d\n", (int)udp_len, (int)(end-udph_start));
+				continue;
+			}
+		}
+
+		ipc_pack = (struct ipc_msg_pack*)shm_malloc( sizeof(struct ipc_msg_pack) + len );
+		if (ipc_pack==NULL) {
+			LM_ERR("failed to allocate new ipc_msg_pack, discarding...\n");
+			continue;
+		}
+		memset( ipc_pack, 0, sizeof(struct ipc_msg_pack) + len);
+
+		/* cleaup previous values in dst */
+		memset(&dst_ip, 0, sizeof(dst_ip));
+
+		/*FIL IPs*/
+		dst_ip.af=AF_INET;
+		dst_ip.len=4;
+		dst_ip.u.addr32[0]=iph->ip_dst.s_addr;
+		/* fill dst_port */
+		dst_port=ntohs(udph->uh_dport);
+		ip_addr2su(&to, &dst_ip, dst_port);
+		/* fill src_port */
+		src_port=ntohs(udph->uh_sport);
+		src_ip.af=AF_INET;
+		src_ip.len=4;
+		src_ip.u.addr32[0]=iph->ip_src.s_addr;
+		ip_addr2su(&from, &src_ip, src_port);
+		su_setport(&from, src_port);
+
+		ipc_pack->ri.src_su=from;
+		su2ip_addr(&(ipc_pack->ri.src_ip), &from);
+		ipc_pack->ri.src_port=src_port;
+			su2ip_addr(&(ipc_pack->ri.dst_ip), &to);
+		ipc_pack->ri.dst_port=dst_port;
+		ipc_pack->ri.proto=PROTO_UDP;
+
+		LM_DBG("PORT: [%d] and [%d]\n", port1, port2);
+
+		ipc_pack->buf.s = (char*)(ipc_pack+1);
+		ipc_pack->buf.len = len;
+		memcpy( ipc_pack->buf.s, buf+offset, len);
 
 		if((!port1 && !port2)
-		        || (src_port >= port1 && src_port <= port2) || (dst_port >= port1 && dst_port <= port2)
-		        || (!port2 && (src_port == port1 || dst_port == port1)))
-		                          receive_msg(buf+offset, len, &ri, NULL, 0);
+		|| (src_port >= port1 && src_port <= port2)
+		|| (dst_port >= port1 && dst_port <= port2)
+		|| (!port2 && (src_port == port1 || dst_port == port1)))
+			ipc_dispatch_rpc( rpc_msg_received, ipc_pack);
 	}
 
 	return 0;
