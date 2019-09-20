@@ -2138,7 +2138,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 	time_t _ts;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
-	unsigned int i,part;
+	unsigned int i,j,part;
 	char proto[PROTO_NAME_MAX_SIZE];
 	char *p;
 
@@ -2200,6 +2200,12 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 					if (add_mi_number(conn_item, MI_SSTR("Lifetime"), _ts) < 0)
 						goto error;
 				}
+
+				/* add the port-aliases */
+				for( j=0 ; j<conn->aliases ; j++ )
+					/* add one node for each conn */
+					add_mi_number( conn_item, MI_SSTR("Alias port"),
+						conn->con_aliases[j].port );
 			}
 		}
 
