@@ -1964,7 +1964,7 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 	time_t _ts;
 	char date_buf[MI_DATE_BUF_LEN];
 	int date_buf_len;
-	unsigned int i,n,part;
+	unsigned int i,j,n,part;
 	char proto[PROTO_NAME_MAX_SIZE];
 	char *p;
 	int len;
@@ -2032,6 +2032,10 @@ struct mi_root *mi_tcp_list_conns(struct mi_root *cmd, void *param)
 				if (attr==0)
 					goto error;
 
+				for( j=0 ; j<conn->aliases ; j++ )
+					/* add one node for each conn */
+					addf_mi_node_child( node, 0,
+						MI_SSTR("Alias port"), "%d",conn->con_aliases[j].port );
 				n++;
 				/* at each 50 conns, flush the tree */
 				if ( (n % 50) == 0 )
