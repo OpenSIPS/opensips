@@ -1011,7 +1011,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 	entry_id = node->value;
 
 	for (db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next)
-		if (!memcmp(entry_id.s, db_hdls->c_entry->id.s, entry_id.len))
+		if (!str_strcmp(&db_hdls->c_entry->id, &entry_id))
 			break;
 	if (!db_hdls) {
 		LM_ERR("Entry %.*s not found\n", entry_id.len, entry_id.s);
@@ -1038,7 +1038,7 @@ static struct mi_root* mi_reload(struct mi_root *root, void *param)
 			lock_get(queries_lock);
 
 			for (it = *queries_in_progress; it; it = it->next)
-				if (!memcmp(it->key.s, src_key.s, src_key.len))
+				if (!str_strcmp(&it->key, &src_key))
 					break;
 			pkg_free(src_key.s);
 			if (it) {	/* key is in list */
@@ -1357,7 +1357,7 @@ static void optimize_cdb_decode(pv_name_fix_t *pv_name)
 	char col_type1, col_type2;
 
 	for (i = 0; i < pv_name->c_entry->nr_columns; i++) {
-		if (!memcmp((*pv_name->c_entry->columns[i]).s, pv_name->col.s, pv_name->col.len)) {
+		if (!str_strcmp(pv_name->c_entry->columns[i], &pv_name->col)) {
 			pv_name->col_nr = i;
 
 			prev_cols = 0;
@@ -1419,8 +1419,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *str_res, int *int_res,
 	int rld_vers_retry;
 
 	for (i = 0; i < pv_name->c_entry->nr_columns; i++)
-		if (!memcmp((*pv_name->c_entry->columns[i]).s, pv_name->col.s,
-			pv_name->col.len)) {
+		if (!str_strcmp(pv_name->c_entry->columns[i], &pv_name->col)) {
 			pv_name->col_nr = i;
 			break;
 		}
@@ -1441,7 +1440,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *str_res, int *int_res,
 	lock_get(queries_lock);
 
 	for (it = *queries_in_progress; it; it = it->next) {
-		if (memcmp(it->key.s, src_key.s, src_key.len))
+		if (str_strcmp(&it->key, &src_key))
 			continue;
 
 		it->nr_waiting_procs++;  /* key is in list! */
@@ -1720,7 +1719,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 
 	if (!pv_name->c_entry) {
 		for (it_db = db_hdls_list; it_db; it_db = it_db->next)
-			if (!memcmp(it_db->c_entry->id.s, pv_name->id.s, pv_name->id.len)) {
+			if (!str_strcmp(&it_db->c_entry->id, &pv_name->id)) {
 				pv_name->c_entry = it_db->c_entry;
 				pv_name->db_hdls = it_db;
 				break;
