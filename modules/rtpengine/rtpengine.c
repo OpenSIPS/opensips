@@ -336,73 +336,71 @@ static struct tm_binds tmb;
 
 static pv_elem_t *extra_id_pv = NULL;
 
-#define ANY_ROUTE     (REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE)
-
 static cmd_export_t cmds[] = {
 	{"rtpengine_use_set", (cmd_function)set_rtpengine_set_f, {
 		{CMD_PARAM_INT, fixup_set_id, fixup_free_set_id}, {0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_start_recording", (cmd_function)start_recording_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_stop_recording", (cmd_function)stop_recording_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_offer",	(cmd_function)rtpengine_offer_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_answer", (cmd_function)rtpengine_answer_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_manage", (cmd_function)rtpengine_manage_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_delete", (cmd_function)rtpengine_delete_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_play_media", (cmd_function)rtpengine_playmedia_f, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_stop_media", (cmd_function)rtpengine_stopmedia_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_block_media", (cmd_function)rtpengine_blockmedia_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_unblock_media", (cmd_function)rtpengine_unblockmedia_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_block_dtmf", (cmd_function)rtpengine_blockdtmf_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{"rtpengine_unblock_dtmf", (cmd_function)rtpengine_unblockdtmf_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
-		ANY_ROUTE},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 

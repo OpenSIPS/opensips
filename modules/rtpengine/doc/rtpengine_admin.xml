@@ -599,7 +599,7 @@ rtpengine_offer();
 		</para></listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from ANY_ROUTE.
+		This function can be used from ALL_ROUTES.
 		</para>
 		<example>
 		<title><function>rtpengine_offer</function> usage</title>
@@ -720,7 +720,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...");
 		parameters. Note that not all flags make sense for a <quote>delete</quote>.
 		</para>
 		<para>
-		This function can be used from ANY_ROUTE.
+		This function can be used from ALL_ROUTES.
 		</para>
 		<example>
 		<title><function>rtpengine_delete</function> usage</title>
@@ -787,7 +787,7 @@ rtpengine_delete();
 	</itemizedlist>
 
 		<para>
-		This function can be used from ANY_ROUTE.
+		This function can be used from ALL_ROUTES.
 		</para>
 		<example>
 		 <title><function>rtpengine_manage</function> usage</title>
