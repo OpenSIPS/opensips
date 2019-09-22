@@ -368,9 +368,9 @@ Chapter 2. Contributors
    3. Daniel-Constantin Mierla (@miconda) 25 18 176 226
    4. Liviu Chircu (@liviuchircu) 14 10 80 132
    5. Irina-Maria Stanescu 10 4 466 59
-   6. Andrei Pelinescu-Onciul 7 5 101 40
-   7. Henning Westerholt (@henningw) 7 5 27 46
-   8. Razvan Crainea (@razvancrainea) 6 4 14 11
+   6. Razvan Crainea (@razvancrainea) 8 6 16 12
+   7. Andrei Pelinescu-Onciul 7 5 101 40
+   8. Henning Westerholt (@henningw) 7 5 27 46
    9. Vlad Patrascu (@rvlad-patrascu) 5 2 78 106
    10. Edson Gellert Schubert 5 1 0 206
 
@@ -399,7 +399,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2019
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    2.  Dan Pascu (@danpascu)               Oct 2007 - Apr 2019
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
