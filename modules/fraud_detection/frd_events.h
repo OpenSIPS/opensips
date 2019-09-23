@@ -41,11 +41,12 @@ void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
 
 typedef struct {
 	frd_stats_entry_t *stats;
-	frd_thresholds_t *thr;
 	str user;
 	str number;
 	unsigned int ruleid;
-	unsigned int data_rev;
+
+	unsigned int calldur_warn;
+	unsigned int calldur_crit;
 } frd_dlg_param;
 
  void dialog_terminate_CB(struct dlg_cell *dlgc, int type,

@@ -280,7 +280,6 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	str user, number;
 	unsigned int pid;
 	frd_dlg_param *param;
-	extern unsigned int frd_data_rev;
 	int rc = rc_ok_thr;
 
 	if (*dr_head == NULL) {
@@ -453,11 +452,12 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		LM_ERR("no more shm memory\n");
 		rc = rc_error;
 	} else if (shm_str_dup(&param->number, &number) == 0) {
-		param->stats = se;
-		param->thr = thr;
-		param->user = shm_user;
+		param->stats = se;        /* safe to ref, only freed @ shutdown */
+		param->user = shm_user;   /* safe to ref, only freed @ shutdown */
 		param->ruleid = rule->id;
-		param->data_rev = frd_data_rev;
+
+		param->calldur_warn = thr->call_duration_thr.warning;
+		param->calldur_crit = thr->call_duration_thr.critical;
 
 		if (dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED|DLGCB_FAILED|DLGCB_EXPIRED,
 					dialog_terminate_CB, param, free_dialog_CB_param) != 0) {
