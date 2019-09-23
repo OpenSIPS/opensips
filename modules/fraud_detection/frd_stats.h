@@ -40,7 +40,7 @@ typedef struct {
 	unsigned int total_calls;
 	unsigned int concurrent_calls;
 
-	str last_called_prefix;
+	str last_dial;
 	unsigned int seq_calls;
 
 	unsigned int last_matched_rule;

@@ -164,8 +164,11 @@ int stats_exist(str user, str prefix)
 
 static void destroy_stats_entry(void *e)
 {
-	lock_destroy( &((frd_stats_entry_t*)e)->lock );
-	shm_free(e);
+	frd_stats_entry_t *se = (frd_stats_entry_t *)e;
+
+	lock_destroy(&se->lock);
+	shm_free(se->stats.last_dial.s);
+	shm_free(se);
 }
 
 static void destroy_users(void *u)
