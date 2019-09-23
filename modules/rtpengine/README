@@ -547,7 +547,7 @@ rtpengine_offer();
        the rtpengine_* function. If this parameter is missing the
        body of the current message is used.
 
-   This function can be used from ANY_ROUTE.
+   This function can be used from ALL_ROUTES.
 
    Example 1.12. rtpengine_offer usage
 route {
@@ -643,7 +643,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
    meaning of the parameters. Note that not all flags make sense
    for a “delete”.
 
-   This function can be used from ANY_ROUTE.
+   This function can be used from ALL_ROUTES.
 
    Example 1.17. rtpengine_delete usage
 ...
@@ -674,7 +674,7 @@ rtpengine_delete();
        do rtpengine_answer() if the request had SDP or tm is not
        loaded, otherwise do rtpengine_offer()
 
-   This function can be used from ANY_ROUTE.
+   This function can be used from ALL_ROUTES.
 
    Example 1.18. rtpengine_manage usage
 ...
