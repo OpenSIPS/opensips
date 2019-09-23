@@ -58,15 +58,10 @@ extern str concalls_thresh_crit_col;
 extern str seqcalls_thresh_warn_col;
 extern str seqcalls_thresh_crit_col;
 
-#define DEF_PARAM_STR_NAME(pname, strname)\
-	static str pname ## _name = str_init(strname)
-
-DEF_PARAM_STR_NAME(cpm, "calls per minute");
-DEF_PARAM_STR_NAME(total_calls, "total calls");
-DEF_PARAM_STR_NAME(concurrent_calls, "concurrent calls");
-DEF_PARAM_STR_NAME(seq_calls, "sequential calls");
-#undef DEF_PARAM_STR_NAME
-
+static str cpm_name = str_init("calls per minute");
+static str total_calls_name = str_init("total calls");
+static str concurrent_calls_name = str_init("concurrent calls");
+static str seq_calls_name = str_init("sequential calls");
 
 dr_head_p *dr_head;
 struct dr_binds drb;
@@ -223,8 +218,10 @@ static int mod_init(void)
 	*dr_head = NULL;
 
 	set_lengths();
-	if (init_stats_table() != 0)
+	if (init_stats_table() != 0) {
+		LM_ERR("failed to init fraud stats table\n");
 		return -1;
+	}
 
 	/* Check if table version is ok */
 	frd_init_db();
@@ -505,9 +502,8 @@ static struct mi_root* mi_show_stats(struct mi_root *cmd_tree, void *param)
 	if (!stats_exist(user, prefix)) {
 		LM_WARN("There is no data for user<%.*s> and prefix=<%.*s>\n",
 				user.len, user.s, prefix.len, prefix.s);
-		return init_mi_tree(400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
+		return init_mi_tree(404, MI_SSTR("No data for this user+number yet!"));
 	}
-
 
 	struct mi_root* rpl_tree = init_mi_tree(200, MI_OK_S, MI_OK_LEN);
 	if (rpl_tree == NULL)
