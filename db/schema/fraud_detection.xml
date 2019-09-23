@@ -48,6 +48,7 @@
 		<name>start_hour</name>
 		<type>string</type>
 		<size>5</size>
+		<default>00:00</default>
 		<description>Start of the interval in which the rule should be matched.
 		</description>
 	</column>
@@ -56,6 +57,7 @@
 		<name>end_hour</name>
 		<type>string</type>
 		<size>5</size>
+		<default>23:59</default>
 		<description>End of the interval in which the rule should be matched.
 		</description>
 	</column>
@@ -64,6 +66,7 @@
 		<name>daysoftheweek</name>
 		<type>string</type>
 		<size>64</size>
+		<default>Mon-Sun</default>
 		<description>List/interval of days in which the rule is available.
 		</description>
 	</column>
