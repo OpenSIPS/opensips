@@ -58,53 +58,70 @@ int init_stats_table(void)
 
 frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 {
+	unsigned int hash = core_hash(&user, NULL, FRD_USER_HASH_SIZE);
+
+	lock_get(stats_table.buckets[hash].lock);
+
 	/* First go one level below using the user key */
 	frd_users_map_item_t **hm =
-		(frd_users_map_item_t **)get_item(&stats_table, user);
+		(frd_users_map_item_t **)get_item(&stats_table, user, hash);
 
 	if (*hm == NULL) {
 		/* First time the user is seen, we must create a hashmap */
 		*hm = shm_malloc(sizeof(frd_users_map_item_t));
 		if (*hm == NULL) {
+			lock_release(stats_table.buckets[hash].lock);
 			LM_ERR("no more shm memory\n");
 			return NULL;
 		}
 
 		(*hm)->numbers_hm.size = FRD_PREFIX_HASH_SIZE;
 		if (init_hash_map(&(*hm)->numbers_hm) != 0) {
+			shm_free(*hm); *hm = NULL;
+			lock_release(stats_table.buckets[hash].lock);
 			LM_ERR("cannot init hashmap\n");
-			shm_free(*hm);
 			return NULL;
 		}
 
 		if (shm_str_dup(&(*hm)->user, &user) != 0) {
 			free_hash_map(&(*hm)->numbers_hm, destroy_stats_entry);
-			shm_free(*hm);
+			shm_free(*hm); *hm = NULL;
+			lock_release(stats_table.buckets[hash].lock);
+			LM_ERR("oom\n");
 			return NULL;
 		}
 	}
 
+	lock_release(stats_table.buckets[hash].lock);
+
 	if (shm_user)
 		*shm_user = (*hm)->user;
 
+	hash = core_hash(&prefix, NULL, FRD_PREFIX_HASH_SIZE);
+	lock_get((*hm)->numbers_hm.buckets[hash].lock);
+
 	frd_stats_entry_t **stats_entry =
-		(frd_stats_entry_t**)get_item(&(*hm)->numbers_hm, prefix);
+		(frd_stats_entry_t**)get_item(&(*hm)->numbers_hm, prefix, hash);
 	if (*stats_entry == NULL) {
 		/* First time the prefix is seen for this user */
 		*stats_entry = shm_malloc(sizeof(frd_stats_entry_t));
 		if (*stats_entry == NULL) {
+			lock_release((*hm)->numbers_hm.buckets[hash].lock);
 			LM_ERR("no more shm memory\n");
 			return NULL;
 		}
 
 		/* Now init the auxiliary info for a stats structure */
 		if (!lock_init(&(*stats_entry)->lock)) {
+			shm_free(*stats_entry); *stats_entry = NULL;
+			lock_release((*hm)->numbers_hm.buckets[hash].lock);
 			LM_ERR ("cannot init lock\n");
-			shm_free(*stats_entry);
 			return NULL;
 		}
-		memset(&((*stats_entry)->stats), 0, sizeof(frd_stats_t));
+		memset(&(*stats_entry)->stats, 0, sizeof(frd_stats_t));
 	}
+
+	lock_release((*hm)->numbers_hm.buckets[hash].lock);
 
 	return *stats_entry;
 }
@@ -112,18 +129,32 @@ frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 
 int stats_exist(str user, str prefix)
 {
+	unsigned int hash = core_hash(&user, NULL, FRD_USER_HASH_SIZE);
+
+	lock_get(stats_table.buckets[hash].lock);
+
 	/* First go one level below using the user key */
 	frd_users_map_item_t **hm =
-		(frd_users_map_item_t **)get_item(&stats_table, user);
+		(frd_users_map_item_t **)get_item(&stats_table, user, hash);
 
-	if (*hm == NULL)
+	if (*hm == NULL) {
+		lock_release(stats_table.buckets[hash].lock);
 		return 0;
+	}
+
+	lock_release(stats_table.buckets[hash].lock);
+
+	hash = core_hash(&prefix, NULL, FRD_PREFIX_HASH_SIZE);
+	lock_get((*hm)->numbers_hm.buckets[hash].lock);
 
 	frd_stats_entry_t **stats_entry =
-		(frd_stats_entry_t**)get_item(&(*hm)->numbers_hm, prefix);
-	if (*stats_entry == NULL)
+		(frd_stats_entry_t**)get_item(&(*hm)->numbers_hm, prefix, hash);
+	if (*stats_entry == NULL) {
+		lock_release((*hm)->numbers_hm.buckets[hash].lock);
 		return 0;
+	}
 
+	lock_release((*hm)->numbers_hm.buckets[hash].lock);
 	return 1;
 }
 
