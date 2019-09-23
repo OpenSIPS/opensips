@@ -69,7 +69,7 @@ void free_hash_map(hash_map_t* hm, void (*value_destroy_func)(void *))
 {
 	unsigned int i;
 
-	/* no need for locking -- if there were, the readers would insta-die */
+	/* no need for locking; if there were, any readers would die afterwards */
 	for (i = 0; i < hm->size; ++i) {
 		map_destroy(hm->buckets[i].items, value_destroy_func);
 		lock_dealloc(hm->buckets[i].lock);

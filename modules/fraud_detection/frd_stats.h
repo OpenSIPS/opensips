@@ -31,8 +31,8 @@
 #include "../../locking.h"
 #include "../../rw_locking.h"
 
-#define FRD_USER_HASH_SIZE 1000
-#define FRD_PREFIX_HASH_SIZE 10
+#define FRD_USER_HASH_SIZE 1024
+#define FRD_PREFIX_HASH_SIZE 8
 #define FRD_SECS_PER_WINDOW 60
 
 typedef struct {
