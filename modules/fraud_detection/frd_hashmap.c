@@ -53,13 +53,22 @@ int init_hash_map(hash_map_t *hm)
 	return 0;
 }
 
-void** get_item (hash_map_t *hm, str key, rw_lock_t **unlock)
+void** get_item (hash_map_t *hm, str key)
 {
 	unsigned int hash = core_hash(&key, NULL, hm->size);
 
-	*unlock = hm->buckets[hash].lock;
-	lock_start_write(hm->buckets[hash].lock);
-	return map_get(hm->buckets[hash].items, key);
+	lock_start_read(hm->buckets[hash].lock);
+	void **find_res = map_find(hm->buckets[hash].items, key);
+	lock_stop_read(hm->buckets[hash].lock);
+	if (find_res) {
+		return find_res;
+	}
+	else {
+		lock_start_write(hm->buckets[hash].lock);
+		find_res = map_get(hm->buckets[hash].items, key);
+		lock_stop_write(hm->buckets[hash].lock);
+		return find_res;
+	}
 }
 
 void free_hash_map(hash_map_t* hm, void (*value_destroy_func)(void *))
