@@ -354,18 +354,17 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	/* Update the stats */
 
 	lock_get(frd_seq_calls_lock);
-	if (se->stats.last_called_prefix.len == matched_len &&
-			memcmp(se->stats.last_called_prefix.s, number.s, matched_len) == 0) {
-
+	if (!str_strcmp(&se->stats.last_dial, &number)) {
 		/* We have called the same number last time */
 		++se->stats.seq_calls;
-	}
-	else {
-		if (shm_str_extend(&se->stats.last_called_prefix, matched_len) != 0) {
+	} else {
+		if (shm_str_sync(&se->stats.last_dial, &number) != 0) {
+			lock_release(frd_seq_calls_lock);
 			LM_ERR("oom\n");
-			return rc_error;
+			rc = rc_error;
+			goto out;
 		}
-		memcpy(se->stats.last_called_prefix.s, number.s, matched_len);
+
 		se->stats.seq_calls = 1;
 	}
 	lock_release(frd_seq_calls_lock);
