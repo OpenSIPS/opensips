@@ -145,23 +145,22 @@ void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
  * For confirmed dialogs, it checks the duration against the
  * thresholds (sent through the params) and raises the appropriate event
  */
-void dialog_terminate_CB(struct dlg_cell *dlgc, int type,
+void dialog_terminate_CB(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params)
 {
 	static str call_dur_name = str_init ("call_duration");
 	frd_dlg_param *frdparam = (frd_dlg_param*) *(params->param);
-	extern unsigned int frd_data_rev;
 
-	if (type == DLGCB_TERMINATED && frd_data_rev == frdparam->data_rev) {
-		unsigned int duration = time(NULL) - dlgc->start_ts;
-		if ( duration >= frdparam->thr->call_duration_thr.critical)
+	if (type & (DLGCB_TERMINATED|DLGCB_EXPIRED)) {
+		unsigned int duration = time(NULL) - dlg->start_ts;
+		if (duration >= frdparam->calldur_crit)
 			raise_critical_event(&call_dur_name, &duration,
-					&frdparam->thr->call_duration_thr.critical,
+					&frdparam->calldur_crit,
 					&frdparam->user, &frdparam->number, &frdparam->ruleid);
 
-		else if ( duration >= frdparam->thr->call_duration_thr.warning)
+		else if (duration >= frdparam->calldur_warn)
 			raise_warning_event(&call_dur_name, &duration,
-					&frdparam->thr->call_duration_thr.warning,
+					&frdparam->calldur_warn,
 					&frdparam->user, &frdparam->number, &frdparam->ruleid);
 	}
 
