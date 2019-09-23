@@ -41,6 +41,8 @@
 
 #define ch_h_inc h+=v^(v>>3)
 #define ch_icase(_c) (((_c)>='A'&&(_c)<='Z')?((_c)|0x20):(_c))
+
+/* NOTE: @size must be 2^N, otherwise there will be gaps in the output range */
 static inline unsigned int core_hash(const str *s1, const str *s2, const unsigned int size)
 {
 	char *p, *end;
