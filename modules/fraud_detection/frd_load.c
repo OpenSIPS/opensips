@@ -73,8 +73,6 @@ str seqcalls_thresh_warn_col = str_init(FRD_SEQCALLS_THRESH_WARN_COL);
 str seqcalls_thresh_crit_col = str_init(FRD_SEQCALLS_THRESH_CRIT_COL);
 
 
-unsigned int frd_data_rev;
-
 static db_con_t *db_handle;
 static db_func_t dbf;
 
@@ -463,7 +461,6 @@ int frd_reload_data(void)
 
 	old_head = *dr_head;
 	old_list = free_list;
-	++frd_data_rev;
 	lock_start_write(frd_data_lock);
 	*dr_head = new_head;
 	free_list = new_list;
