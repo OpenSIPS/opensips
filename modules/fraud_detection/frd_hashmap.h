@@ -32,7 +32,7 @@
 
 typedef struct {
 	map_t items;
-	rw_lock_t   *lock;
+	gen_lock_t   *lock;
 } hash_bucket_t;
 
 typedef struct {
@@ -43,7 +43,11 @@ typedef struct {
 
 
 int init_hash_map(hash_map_t* hm);
-void** get_item (hash_map_t *hm, str key);
+static inline void **get_item(hash_map_t *hm, str key, unsigned int hash)
+{
+	return map_get(hm->buckets[hash].items, key);
+}
+
 void free_hash_map(hash_map_t* hm, void (*value_destroy_func)(void *));
 
 #endif

@@ -32,43 +32,37 @@
 
 int init_hash_map(hash_map_t *hm)
 {
+	unsigned int i;
+
 	hm->buckets = shm_malloc(hm->size * sizeof(hash_bucket_t));
 	if (hm->buckets == NULL) {
 		LM_ERR("No more shm memory\n");
 		return -1;
 	}
 
-	unsigned int i;
-
 	for (i = 0; i < hm->size; ++i) {
 		hm->buckets[i].items = map_create(AVLMAP_SHARED);
-		hm->buckets[i].lock = lock_init_rw();
-		if (hm->buckets[i].lock == NULL) {
+		if (!hm->buckets[i].items) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		hm->buckets[i].lock = lock_alloc();
+		if (!hm->buckets[i].lock) {
 			LM_ERR("cannot init lock\n");
 			shm_free(hm->buckets);
+			return -1;
+		}
+
+		if (!lock_init(hm->buckets[i].lock)) {
+			lock_dealloc(hm->buckets[i].lock);
+			shm_free(hm->buckets);
+			LM_ERR("faled to init lock\n");
 			return -1;
 		}
 	}
 
 	return 0;
-}
-
-void** get_item (hash_map_t *hm, str key)
-{
-	unsigned int hash = core_hash(&key, NULL, hm->size);
-
-	lock_start_read(hm->buckets[hash].lock);
-	void **find_res = map_find(hm->buckets[hash].items, key);
-	lock_stop_read(hm->buckets[hash].lock);
-	if (find_res) {
-		return find_res;
-	}
-	else {
-		lock_start_write(hm->buckets[hash].lock);
-		find_res = map_get(hm->buckets[hash].items, key);
-		lock_stop_write(hm->buckets[hash].lock);
-		return find_res;
-	}
 }
 
 void free_hash_map(hash_map_t* hm, void (*value_destroy_func)(void *))
@@ -78,10 +72,8 @@ void free_hash_map(hash_map_t* hm, void (*value_destroy_func)(void *))
 	/* no need for locking -- if there were, the readers would insta-die */
 	for (i = 0; i < hm->size; ++i) {
 		map_destroy(hm->buckets[i].items, value_destroy_func);
-		lock_destroy_rw(hm->buckets[i].lock);
+		lock_dealloc(hm->buckets[i].lock);
 	}
 
 	shm_free(hm->buckets);
 }
-
-
