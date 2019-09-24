@@ -1787,7 +1787,11 @@ static int mod_init(void) {
 	SSL_library_init();
 	SSL_load_error_strings();
 #else
-	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL);
+	OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT
+#if (OPENSSL_VERSION_NUMBER >= 0x10101000L)
+			|OPENSSL_INIT_NO_ATEXIT
+#endif
+			, NULL);
 #endif
 	init_ssl_methods();
 
