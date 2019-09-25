@@ -52,7 +52,7 @@ int ptree_children = 0;
 	dr_char2idx[ (unsigned char)(_c) ]
 
 #define IS_VALID_PREFIX_CHAR(_c) \
-	(((_c)<DR_PREFIX_ARRAY_SIZE) && IDX_OF_CHAR(_c)!=-1 )
+	((((unsigned char)(_c))<DR_PREFIX_ARRAY_SIZE) && (char)IDX_OF_CHAR(_c)!=-1 )
 
 int init_prefix_tree( char *extra_prefix_chars )
 {
@@ -73,7 +73,7 @@ int init_prefix_tree( char *extra_prefix_chars )
 	/* and now the extras */
 	if (extra_prefix_chars) {
 		for( i=0 ; extra_prefix_chars[i] ; i++) {
-			if (extra_prefix_chars[i]>=DR_PREFIX_ARRAY_SIZE) {
+			if ((unsigned char)extra_prefix_chars[i]>=DR_PREFIX_ARRAY_SIZE) {
 				LM_ERR("extra prefix char <%c/%d> out of range (max=%d),"
 					" ignoring\n",extra_prefix_chars[i],extra_prefix_chars[i],
 					DR_PREFIX_ARRAY_SIZE);
