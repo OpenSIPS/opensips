@@ -280,7 +280,7 @@ static module_dependency_t *get_deps_db_mode(param_export_t *param)
 
 static module_dependency_t *get_deps_wmode_preset(param_export_t *param)
 {
-	char *haystack = (char *)param->param_pointer;
+	char *haystack = *(char **)param->param_pointer;
 
 	if (l_memmem(haystack, "sql-", strlen(haystack), strlen("sql-")))
 		return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
@@ -293,7 +293,7 @@ static module_dependency_t *get_deps_wmode_preset(param_export_t *param)
 
 static module_dependency_t *get_deps_rr_persist(param_export_t *param)
 {
-	if (!strcasecmp((char *)param->param_pointer, "load-from-sql"))
+	if (!strcasecmp(*(char **)param->param_pointer, "load-from-sql"))
 		return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
 
 	return NULL;
