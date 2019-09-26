@@ -764,30 +764,14 @@ inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 }
 
 
-static void link_dlg_profile(struct dlg_profile_link *linker,
-									struct dlg_cell *dlg, char is_replicated)
+static int link_dlg_profile(struct dlg_profile_link *linker,
+                            struct dlg_cell *dlg, char is_replicated)
 {
 	unsigned int hash;
 	map_t p_entry;
 	struct dlg_entry *d_entry;
 	void ** dest;
 	struct prof_local_count *cnt;
-
-	/* add the linker to the dialog */
-	/* FIXME zero h_id is not 100% for testing if the dialog is inserted
-	 * into the hash table -> we need circular lists  -bogdan */
-	if (dlg->h_id) {
-		d_entry = &d_table->entries[dlg->h_entry];
-		if (dlg->locked_by!=process_no)
-			dlg_lock( d_table, d_entry);
-		linker->next = dlg->profile_links;
-		dlg->profile_links =linker;
-		if (dlg->locked_by!=process_no)
-			dlg_unlock( d_table, d_entry);
-	} else {
-		linker->next = dlg->profile_links;
-		dlg->profile_links =linker;
-	}
 
 	/* insert into profile hash table */
 	/* but only if cachedb is not used */
@@ -806,7 +790,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 			if (!dest) {
 				LM_ERR("No more shm memory\n");
 				lock_set_release( linker->profile->locks,hash );
-				return;
+				return -1;
 			}
 
 			prof_val_local_inc(dest, &dlg->shtag,
@@ -818,7 +802,7 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 					&dlg->shtag);
 				if (!cnt) {
 					lock_set_release(linker->profile->locks, hash);
-					return;
+					return -1;
 				}
 
 				cnt->n++;
@@ -834,39 +818,57 @@ static void link_dlg_profile(struct dlg_profile_link *linker,
 			LM_WARN("Cachedb not initialized yet - cannot update profile\n");
 			LM_WARN("Make sure that the dialog profile information is persistent\n");
 			LM_WARN(" in your cachedb storage, because otherwise you might loose profile data\n");
-			return;
+			return -1;
 		}
 		/* prepare buffers */
 		if( linker->profile->has_value) {
 
 			if (dlg_fill_value(&linker->profile->name, &linker->value) < 0)
-				return;
+				return -1;
 			if (dlg_fill_size(&linker->profile->name) < 0)
-				return;
+				return -1;
 
 			/* not really interested in the new val */
 			if (cdbf.add(cdbc, &dlg_prof_val_buf, 1,
 						profile_timeout, NULL) < 0) {
 				LM_ERR("cannot insert profile into CacheDB\n");
-				return;
+				return -1;
 			}
 			/* fill size into name */
 			if (cdbf.add(cdbc, &dlg_prof_size_buf, 1,
 						profile_timeout, NULL) < 0) {
 				LM_ERR("cannot insert size profile into CacheDB\n");
-				return;
+				return -1;
 			}
 		} else {
 			if (dlg_fill_name(&linker->profile->name) < 0)
-				return;
+				return -1;
 
 			if (cdbf.add(cdbc, &dlg_prof_noval_buf, 1,
 						profile_timeout, NULL) < 0) {
 				LM_ERR("cannot insert profile into CacheDB\n");
-				return;
+				return -1;
 			}
 		}
 	}
+
+	/* link the profile into the dialog */
+	/* FIXME zero h_id is not 100% for testing if the dialog is inserted
+	 * into the hash table -> we need circular lists  -bogdan */
+	if (dlg->h_id) {
+		d_entry = &d_table->entries[dlg->h_entry];
+		if (dlg->locked_by!=process_no)
+			dlg_lock( d_table, d_entry);
+		linker->next = dlg->profile_links;
+		dlg->profile_links =linker;
+		if (dlg->locked_by!=process_no)
+			dlg_unlock( d_table, d_entry);
+	} else {
+		linker->next = dlg->profile_links;
+		dlg->profile_links =linker;
+	}
+
+	return 0;
 }
 
 
@@ -901,9 +903,14 @@ int set_dlg_profile(struct dlg_cell *dlg, str *value,
 	}
 
 	/* add linker to the dialog and profile */
-	link_dlg_profile( linker, dlg, is_replicated);
-	dlg->flags |= DLG_FLAG_VP_CHANGED;
+	if (link_dlg_profile(linker, dlg, is_replicated) != 0) {
+		LM_ERR("failed to link dialog profile '%s', ci: %.*s\n",
+		       linker->profile->name.s, dlg->callid.len, dlg->callid.s);
+		shm_free(linker);
+		return -1;
+	}
 
+	dlg->flags |= DLG_FLAG_VP_CHANGED;
 	return 0;
 }
 
