@@ -131,6 +131,8 @@ struct acc_enviroment {
 	str text;
 	struct timeval ts;
   event_id_t event;
+  evi_params_p ev_params_list;
+  evi_param_p *ev_params;
 };
 
 /* param trasnporter*/

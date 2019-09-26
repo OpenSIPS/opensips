@@ -306,9 +306,12 @@ static inline void env_set_comment(struct acc_param *accp)
 	acc_env.reason = accp->reason;
 }
 
-static inline void env_set_event(event_id_t ev)
+static inline void env_set_event(event_id_t ev, evi_params_p params_list,
+	evi_param_p *params)
 {
 	acc_env.event = ev;
+	acc_env.ev_params_list = params_list;
+	acc_env.ev_params = params;
 }
 
 
@@ -416,12 +419,13 @@ int w_acc_evi_request(struct sip_msg *rq, str* comment)
 	}
 #endif
 	if (acc_env.code < 300) {
-		env_set_event(acc_event);
+		env_set_event(acc_event, acc_event_params, evi_params);
+		return acc_evi_request( rq, NULL, 0, 0);
 	} else {
-		env_set_event(acc_missed_event);
+		env_set_event(acc_missed_event, acc_missed_event_params,
+			evi_missed_params);
+		return acc_evi_request( rq, NULL, 0, 1);
 	}
-
-	return acc_evi_request( rq, NULL, 0);
 }
 
 int acc_comm_to_acc_param(struct sip_msg* rq, str* comm, struct acc_param* accp)
@@ -535,8 +539,9 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 	 */
 
 	if (is_evi_mc_on(*flags)) {
-		env_set_event(acc_missed_event);
-		acc_evi_request( req, reply, is_evi_cdr_on(*flags) );
+		env_set_event(acc_missed_event, acc_missed_event_params,
+			evi_missed_params);
+		acc_evi_request( req, reply, is_evi_cdr_on(*flags) ? 1 : 0, 1 );
 		flags_to_reset |= DO_ACC_EVI * DO_ACC_MISSED;
 	}
 
@@ -797,8 +802,8 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 	} else {
 		/* do old accounting */
 		if ( is_evi_acc_on(*flags) ) {
-			env_set_event(acc_event);
-			acc_evi_request( req, reply, 0 );
+			env_set_event(acc_event, acc_event_params, evi_params);
+			acc_evi_request( req, reply, 0, 0 );
 		}
 
 		if ( is_log_acc_on(*flags) ) {
@@ -892,7 +897,7 @@ static void acc_dlg_ended(struct dlg_cell *dlg, int type,
 		}
 
 		if (is_evi_acc_on(ctx->flags)) {
-			env_set_event(acc_cdr_event);
+			env_set_event(acc_cdr_event, acc_cdr_event_params, evi_cdr_params);
 			if (acc_evi_cdrs(dlg, _params->msg, ctx) < 0) {
 				LM_ERR("cannot send accounting events\n");
 				return;
@@ -989,7 +994,7 @@ static void acc_cdr_cb( struct cell* t, int type, struct tmcb_params *ps )
 	}
 
 	if (is_evi_acc_on(ctx->flags)) {
-		env_set_event(acc_cdr_event);
+		env_set_event(acc_cdr_event, acc_cdr_event_params, evi_cdr_params);
 		if (acc_evi_cdrs(dlg, ps->req, ctx) < 0) {
 			LM_ERR("cannot send accounting events\n");
 			return;
