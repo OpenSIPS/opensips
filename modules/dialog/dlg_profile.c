@@ -853,20 +853,16 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 	}
 
 	/* link the profile into the dialog */
-	/* FIXME zero h_id is not 100% for testing if the dialog is inserted
-	 * into the hash table -> we need circular lists  -bogdan */
-	if (dlg->h_id) {
-		d_entry = &d_table->entries[dlg->h_entry];
-		if (dlg->locked_by!=process_no)
-			dlg_lock( d_table, d_entry);
-		linker->next = dlg->profile_links;
-		dlg->profile_links =linker;
-		if (dlg->locked_by!=process_no)
-			dlg_unlock( d_table, d_entry);
-	} else {
-		linker->next = dlg->profile_links;
-		dlg->profile_links =linker;
-	}
+	d_entry = &d_table->entries[dlg->h_entry];
+
+	if (dlg->locked_by != process_no)
+		dlg_lock(d_table, d_entry);
+
+	linker->next = dlg->profile_links;
+	dlg->profile_links =linker;
+
+	if (dlg->locked_by != process_no)
+		dlg_unlock(d_table, d_entry);
 
 	return 0;
 }
