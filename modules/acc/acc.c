@@ -117,7 +117,7 @@ static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, struct timeval *
 
 /* array used to collect the values before being
  * pushed to the storage backend (whatever used) */
-static str val_arr[ACC_CORE_LEN+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+static str val_arr[ACC_CORE_LEN+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 
 
 /********************************************
@@ -191,7 +191,7 @@ static inline int core2strar( struct sip_msg *req, str *c_vals)
 /********************************************
  *        LOG  ACCOUNTING
  ********************************************/
-static str log_attrs[ACC_CORE_LEN + ACC_DLG_LEN + MAX_ACC_EXTRA + MAX_ACC_LEG];
+static str log_attrs[ACC_CORE_LEN + ACC_CDR_LEN + MAX_ACC_EXTRA + MAX_ACC_LEG];
 void acc_log_init(void)
 {
 	struct acc_extra *extra;
@@ -403,10 +403,10 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
  ********************************************/
 
 /* caution: keys need to be aligned to core format */
-static db_key_t db_keys_cdrs[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
-static db_key_t db_keys[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
-static db_val_t db_vals_cdrs[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
-static db_val_t db_vals[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+static db_key_t db_keys_cdrs[ACC_CORE_LEN+1+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+static db_key_t db_keys[ACC_CORE_LEN+1+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+static db_val_t db_vals_cdrs[ACC_CORE_LEN+1+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+static db_val_t db_vals[ACC_CORE_LEN+1+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 
 
 static void acc_db_init_keys(void)
@@ -747,7 +747,7 @@ enum { RA_ACCT_STATUS_TYPE=0, RA_SERVICE_TYPE, RA_SIP_RESPONSE_CODE,
 enum {RV_STATUS_START=0, RV_STATUS_STOP, RV_STATUS_ALIVE, RV_STATUS_FAILED,
 	RV_SIP_SESSION, RV_STATIC_MAX};
 static aaa_map
-	rd_attrs[RA_STATIC_MAX+ACC_CORE_LEN+ACC_DLG_LEN-2+MAX_ACC_EXTRA+MAX_ACC_LEG];
+	rd_attrs[RA_STATIC_MAX+ACC_CORE_LEN+ACC_CDR_LEN-2+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static aaa_map rd_vals[RV_STATIC_MAX];
 
 int init_acc_aaa(char* aaa_proto_url, int srv_type)
@@ -1055,13 +1055,34 @@ static str evi_acc_event_name = str_init("E_ACC_EVENT");
 static str evi_acc_missed_name = str_init("E_ACC_MISSED_EVENT");
 
 /* static event's list */
-static evi_params_p acc_event_params;
-static evi_param_p evi_params[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
+evi_params_p acc_event_params;
+evi_param_p evi_params[ACC_CORE_LEN+1+MAX_ACC_EXTRA+MAX_ACC_LEG];
 
-#define EVI_CREATE_PARAM(_name) \
+evi_params_p acc_cdr_event_params;
+evi_param_p evi_cdr_params[ACC_CORE_LEN+1+ACC_CDR_LEN+
+	MAX_ACC_EXTRA+MAX_ACC_LEG];
+
+evi_params_p acc_missed_event_params;
+evi_param_p evi_missed_params[ACC_CORE_LEN+1+ACC_DLG_LEN+
+	MAX_ACC_EXTRA+MAX_ACC_LEG];
+
+#define EVI_CREATE_PARAM(_name, _list, _arr, _n) \
+	do { \
+		if (!(_arr[_n++] = \
+				evi_param_create(_list, &(_name)))) \
+			goto error; \
+	} while (0)
+
+#define EVI_CREATE_PARAMS(_name) \
 	do { \
 		if (!(evi_params[n++] = \
 				evi_param_create(acc_event_params, &(_name)))) \
+			goto error; \
+		if (!(evi_cdr_params[nc++] = \
+				evi_param_create(acc_cdr_event_params, &(_name)))) \
+			goto error; \
+		if (!(evi_missed_params[nm++] = \
+				evi_param_create(acc_missed_event_params, &(_name)))) \
 			goto error; \
 	} while (0)
 
@@ -1069,7 +1090,7 @@ static evi_param_p evi_params[ACC_CORE_LEN+1+ACC_DLG_LEN+MAX_ACC_EXTRA+MAX_ACC_L
 int  init_acc_evi(void)
 {
 	struct acc_extra *extra;
-	int n;
+	int n = 0, nm = 0, nc = 0;
 
 	acc_event = evi_publish_event(evi_acc_event_name);
 	if (acc_event == EVI_ERROR) {
@@ -1097,27 +1118,47 @@ int  init_acc_evi(void)
 	}
 	memset(acc_event_params, 0, sizeof(evi_params_t));
 
-	n = 0;
-	EVI_CREATE_PARAM(acc_method_evi);
-	EVI_CREATE_PARAM(acc_fromtag_evi);
-	EVI_CREATE_PARAM(acc_totag_evi);
-	EVI_CREATE_PARAM(acc_callid_evi);
-	EVI_CREATE_PARAM(acc_sipcode_evi);
-	EVI_CREATE_PARAM(acc_sipreason_evi);
-	EVI_CREATE_PARAM(acc_time_evi);
+	acc_cdr_event_params = pkg_malloc(sizeof(evi_params_t));
+	if (!acc_cdr_event_params) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(acc_cdr_event_params, 0, sizeof(evi_params_t));
+
+	acc_missed_event_params = pkg_malloc(sizeof(evi_params_t));
+	if (!acc_missed_event_params) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(acc_missed_event_params, 0, sizeof(evi_params_t));
+
+	EVI_CREATE_PARAMS(acc_method_evi);
+	EVI_CREATE_PARAMS(acc_fromtag_evi);
+	EVI_CREATE_PARAMS(acc_totag_evi);
+	EVI_CREATE_PARAMS(acc_callid_evi);
+	EVI_CREATE_PARAMS(acc_sipcode_evi);
+	EVI_CREATE_PARAMS(acc_sipreason_evi);
+	EVI_CREATE_PARAMS(acc_time_evi);
 
 	/* init the extra db keys */
 	for(extra=evi_extra_tags; extra ; extra=extra->next)
-		EVI_CREATE_PARAM(extra->name);
+		EVI_CREATE_PARAMS(extra->name);
 
 	/* multi leg call columns */
 	for( extra=evi_leg_tags; extra ; extra=extra->next)
-		EVI_CREATE_PARAM(extra->name);
+		EVI_CREATE_PARAMS(extra->name);
 
-	EVI_CREATE_PARAM(acc_duration_evi);
-	EVI_CREATE_PARAM(acc_ms_duration_evi);
-	EVI_CREATE_PARAM(acc_setuptime_evi);
-	EVI_CREATE_PARAM(acc_created_evi);
+	EVI_CREATE_PARAM(acc_duration_evi, acc_cdr_event_params, evi_cdr_params, nc);
+	EVI_CREATE_PARAM(acc_ms_duration_evi, acc_cdr_event_params,
+		evi_cdr_params, nc);
+
+	EVI_CREATE_PARAM(acc_setuptime_evi, acc_cdr_event_params, evi_cdr_params, nc);
+	EVI_CREATE_PARAM(acc_setuptime_evi, acc_missed_event_params,
+		evi_missed_params, nm);
+
+	EVI_CREATE_PARAM(acc_created_evi, acc_cdr_event_params, evi_cdr_params, nc);
+	EVI_CREATE_PARAM(acc_created_evi, acc_missed_event_params,
+		evi_missed_params, nm);
 
 	return 0;
 
@@ -1128,7 +1169,8 @@ error:
 #undef EVI_CREATE_PARAM
 
 
-int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
+int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag,
+	int missed_flag)
 {
 	int m;
 	int n;
@@ -1163,12 +1205,12 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 	m = core2strar( rq, val_arr );
 
 	for(i = 0; i < m; i++)
-		if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
+		if(evi_param_set_str(acc_env.ev_params[i], &val_arr[i]) < 0) {
 			LM_ERR("cannot set acc parameter\n");
 			return -1;
 		}
 	/* time value */
-	if (evi_param_set_int(evi_params[m++], &acc_env.ts) < 0) {
+	if (evi_param_set_int(acc_env.ev_params[m++], &acc_env.ts) < 0) {
 		LM_ERR("cannot set timestamp parameter\n");
 		return -1;
 	}
@@ -1177,12 +1219,14 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 
 	for (extra=evi_leg_tags, nr_leg_vals=0; extra; extra=extra->next, nr_leg_vals++);
 
-	if ((ctx&&cdr_flag) && evi_param_set_int(evi_params[m+nr_leg_vals], &_setup_time) < 0) {
+	if (missed_flag && evi_param_set_int(acc_env.ev_params[m+nr_leg_vals],
+		&_setup_time) < 0) {
 		LM_ERR("cannot set setuptime parameter\n");
 		goto end;
 	}
 
-	if ((ctx&&cdr_flag) && evi_param_set_int(evi_params[m+nr_leg_vals+1], &_created) < 0) {
+	if (missed_flag && evi_param_set_int(acc_env.ev_params[m+nr_leg_vals+1],
+		&_created) < 0) {
 		LM_ERR("cannot set created parameter\n");
 		goto end;
 	}
@@ -1197,7 +1241,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 		/* i will now indicate at the first position after the core values, where
 		 * we have to put the extras*/
 		for( extra=evi_extra_tags, i++; extra; extra=extra->next, i++)
-			if(evi_param_set_str(evi_params[i],
+			if(evi_param_set_str(acc_env.ev_params[i],
 						&ctx->extra_values[extra->tag_idx].value) < 0) {
 				LM_ERR("cannot set acc extra parameter\n");
 				accX_unlock(&ctx->lock);
@@ -1206,14 +1250,14 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 
 		if ( !ctx->leg_values) {
 			accX_unlock(&ctx->lock);
-			if (evi_raise_event(acc_env.event, acc_event_params) < 0) {
+			if (evi_raise_event(acc_env.event, acc_env.ev_params_list) < 0) {
 				LM_ERR("cannot raise ACC event\n");
 				goto end;
 			}
 		} else {
 			for (i=0; i<ctx->legs_no; i++) {
 				for (extra=evi_leg_tags, n=m; extra; extra=extra->next,n++) {
-					if (evi_param_set_str(evi_params[n],
+					if (evi_param_set_str(acc_env.ev_params[n],
 								&LEG_VALUE(i, extra, ctx)) < 0) {
 						LM_ERR("cannot set acc extra parameter\n");
 						accX_unlock(&ctx->lock);
@@ -1221,7 +1265,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 					}
 				}
 
-				if (evi_raise_event(acc_env.event, acc_event_params) < 0) {
+				if (evi_raise_event(acc_env.event, acc_env.ev_params_list) < 0) {
 					LM_ERR("cannot raise ACC event\n");
 					accX_unlock(&ctx->lock);
 					goto end;
@@ -1230,7 +1274,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 			accX_unlock(&ctx->lock);
 		}
 	} else {
-		if (evi_raise_event(acc_env.event, acc_event_params) < 0) {
+		if (evi_raise_event(acc_env.event, acc_env.ev_params_list) < 0) {
 			LM_ERR("cannot raise ACC event\n");
 			goto end;
 		}
@@ -1277,33 +1321,33 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	for (extra=evi_leg_tags, nr_leg_vals=0; extra; extra=extra->next, nr_leg_vals++);
 
 	for (i=0;i<ACC_CORE_LEN;i++)
-		if(evi_param_set_str(evi_params[i], &val_arr[i]) < 0) {
+		if(evi_param_set_str(evi_cdr_params[i], &val_arr[i]) < 0) {
 			LM_ERR("cannot set acc parameter\n");
 			goto end;
 		}
 
-	if (evi_param_set_int(evi_params[ACC_CORE_LEN], &start_time.tv_sec) < 0) {
+	if (evi_param_set_int(evi_cdr_params[ACC_CORE_LEN], &start_time.tv_sec) < 0) {
 		LM_ERR("cannot set start_time parameter\n");
 		goto end;
 	}
 
 	aux_time = ctx->bye_time.tv_sec - start_time.tv_sec;
-	if (evi_param_set_int(evi_params[ret+nr_leg_vals+1], &aux_time) < 0) {
+	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+1], &aux_time) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;
 	}
 
 	aux_time = TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
-	if (evi_param_set_int(evi_params[ret+nr_leg_vals+2], &aux_time) < 0) {
+	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+2], &aux_time) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;
 	}
 	aux_time = start_time.tv_sec - ctx->created;
-	if (evi_param_set_int(evi_params[ret+nr_leg_vals+3], &aux_time) < 0) {
+	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+3], &aux_time) < 0) {
 		LM_ERR("cannot set setuptime parameter\n");
 		goto end;
 	}
-	if (evi_param_set_int(evi_params[ret+nr_leg_vals+4], &ctx->created) < 0) {
+	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+4], &ctx->created) < 0) {
 		LM_ERR("cannot set created parameter\n");
 		goto end;
 	}
@@ -1312,7 +1356,7 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	accX_lock(&ctx->lock);
 
 	for (extra=evi_extra_tags, i=ACC_CORE_LEN+1; extra; extra=extra->next, i++)
-		if(evi_param_set_str(evi_params[i], &ctx->extra_values[extra->tag_idx].value) < 0) {
+		if(evi_param_set_str(evi_cdr_params[i], &ctx->extra_values[extra->tag_idx].value) < 0) {
 			LM_ERR("cannot set acc parameter\n");
 			accX_unlock(&ctx->lock);
 			goto end;
@@ -1322,7 +1366,7 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	if (!ctx->leg_values) {
 		accX_unlock(&ctx->lock);
 		/* make sure the parameters list is built */
-		if (evi_raise_event(acc_cdr_event, acc_event_params) < 0) {
+		if (evi_raise_event(acc_cdr_event, acc_cdr_event_params) < 0) {
 			LM_ERR("cannot raise acc CDR event\n");
 			goto end;
 		}
@@ -1330,14 +1374,14 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		leg_s.len = 4;
 		for (i=0;i<ctx->legs_no;i++) {
 			for (extra=evi_leg_tags, j=0; extra; extra=extra->next, j++) {
-				if(evi_param_set_str(evi_params[ret+j+1], &LEG_VALUE(i, extra, ctx)) < 0) {
+				if(evi_param_set_str(evi_cdr_params[ret+j+1], &LEG_VALUE(i, extra, ctx)) < 0) {
 					LM_ERR("cannot set acc parameter\n");
 					accX_unlock(&ctx->lock);
 					goto end;
 				}
 			}
 
-			if (evi_raise_event(acc_cdr_event, acc_event_params) < 0) {
+			if (evi_raise_event(acc_cdr_event, acc_cdr_event_params) < 0) {
 				LM_ERR("cannot raise acc CDR event\n");
 				accX_unlock(&ctx->lock);
 				goto end;
