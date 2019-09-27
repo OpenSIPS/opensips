@@ -445,7 +445,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 		return 0;
 	}
 
-	destroy_linkers(dlg, 1);
+	destroy_linkers(dlg);
 	remove_dlg_prof_table(dlg, 1);
 
 	/* simulate BYE received from caller */
@@ -922,7 +922,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				unref++; /* the extra added ref */
 				dlg_lock(d_table, &d_table->entries[i]);
 
-				destroy_linkers_unsafe(dlg, 0);
+				destroy_linkers_unsafe(dlg);
 
 				dlg_unlock(d_table, &d_table->entries[i]);
 
