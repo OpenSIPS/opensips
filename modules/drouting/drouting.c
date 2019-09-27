@@ -1864,7 +1864,7 @@ static int dr_child_init(int rank)
 	 *   - timer - may trigger routes with dr group
 	 *   - workers - execute routes with dr group
 	 *   - module's proc - ??? */
-	if (rank==PROC_TCP_MAIN || rank==PROC_BIN)
+	if (rank==PROC_TCP_MAIN)
 		return 0;
 
 	LM_DBG("Child initialization on rank %d \n",rank);

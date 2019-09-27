@@ -552,8 +552,8 @@ static int child_init(int _rank)
 	if (!have_db_conns())
 		return 0;
 
-	/* we need connection from SIP workers, BIN and MAIN procs */
-	if (_rank < PROC_MAIN && _rank != PROC_BIN )
+	/* we need connection from SIP workers and MAIN procs */
+	if (_rank < PROC_MAIN )
 		return 0;
 
 	ul_dbh = ul_dbf.init(&db_url); /* Get a new database connection */
