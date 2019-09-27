@@ -1860,7 +1860,7 @@ static int dr_child_init(int rank)
 	struct head_db *head_db_it = head_db_start;
 
 	/* We need DB connection from:
-	 *   - attendant - for shutdown, flushingmstate
+	 *   - attendant - for shutdown, flushing state
 	 *   - timer - may trigger routes with dr group
 	 *   - workers - execute routes with dr group
 	 *   - module's proc - ??? */
