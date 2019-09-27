@@ -439,7 +439,6 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 		unsigned int has_value, unsigned repl_type)
 {
 	struct dlg_profile_table *profile;
-	struct dlg_profile_table *ptmp;
 	unsigned int len;
 	unsigned int i;
 
@@ -524,17 +523,10 @@ static struct dlg_profile_table* new_dlg_profile( str *name, unsigned int size,
 								size*sizeof(struct prof_local_count*);
 	}
 
-	/* copy the name of the profile */
-	memcpy( profile->name.s, name->s, name->len );
-	profile->name.len = name->len;
-	profile->name.s[profile->name.len] = 0;
+	str_cpy(&profile->name, name);
+	profile->name.s[profile->name.len] = '\0';
 
-	/* link profile */
-	for( ptmp=profiles ; ptmp && ptmp->next; ptmp=ptmp->next );
-	if (ptmp==NULL)
-		profiles = profile;
-	else
-		ptmp->next = profile;
+	add_last(profile, profiles);
 
 	return profile;
 }
@@ -619,7 +611,7 @@ static int init_tmp_linkers(struct dlg_cell *dlg)
 	return 0;
 }
 
-void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
+void destroy_linkers_unsafe(struct dlg_cell *dlg)
 {
 	struct dlg_profile_link *l, *linker = dlg->profile_links;
 
@@ -640,11 +632,11 @@ void destroy_linkers_unsafe(struct dlg_cell *dlg, char is_replicated)
 	dlg->profile_links = NULL;
 }
 
-void destroy_linkers(struct dlg_cell *dlg, char is_replicated)
+void destroy_linkers(struct dlg_cell *dlg)
 {
 	dlg_lock_dlg(dlg);
 
-	destroy_linkers_unsafe(dlg, is_replicated);
+	destroy_linkers_unsafe(dlg);
 
 	dlg_unlock_dlg(dlg);
 }
@@ -759,7 +751,7 @@ inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 		return core_hash( value, NULL, profile->size);
 	} else {
 		/* do hash over dialog pointer */
-		return ((unsigned long)dlg) % profile->size ;
+		return ((unsigned long)dlg) & (profile->size - 1);
 	}
 }
 
@@ -985,7 +977,7 @@ int is_dlg_in_profile(struct dlg_cell *dlg, struct dlg_profile_table *profile,
 	dlg_lock( d_table, d_entry);
 	for( linker=dlg->profile_links ; linker ; linker=linker->next) {
 		if (linker->profile==profile) {
-			if (profile->has_value==0 || (profile->has_value==1 && !value)) {
+			if (!profile->has_value || !value) {
 				dlg_unlock( d_table, d_entry);
 				return 1;
 			} else if (value->len==linker->value.len &&
@@ -1519,8 +1511,9 @@ static mi_response_t *mi_profile_terminate(const mi_params_t *params, str *value
 					)) {
 					delete_entry = pkg_malloc(sizeof(struct dialog_list));
 					if (!delete_entry) {
-						LM_CRIT("no more pkg memory\n");
 						lock_set_release(d_table->locks,d_entry->lock_idx);
+						pkg_free_all(deleted);
+						LM_CRIT("no more pkg memory\n");
 						return init_mi_error(400, MI_SSTR("Internal error"));
 					}
 
