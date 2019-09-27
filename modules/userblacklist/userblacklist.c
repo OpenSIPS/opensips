@@ -573,7 +573,7 @@ static void rpc_reload_sources(int sender_id, void *unused)
 
 static int child_init(int rank)
 {
-	if (rank==PROC_TCP_MAIN || rank==PROC_BIN)
+	if (rank==PROC_TCP_MAIN)
 		return 0;
 
 	if (db_init(&db_url, &db_table) != 0) return -1;
