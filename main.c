@@ -672,9 +672,9 @@ static void sig_usr(int signo)
 					/* ignored*/
 					break;
 			case SIGCHLD:
-					pid = waitpid(-1, &status, WNOHANG);
-					LM_DBG("SIGCHLD received from %ld (status=%d), ignoring\n",
-						(long)pid,status);
+					while ( (pid = waitpid(-1, &status, WNOHANG))>0 )
+						LM_DBG("SIGCHLD received from %ld (status=%d),"
+							" ignoring\n", (long)pid,status);
 					break;
 			case SIGSEGV:
 					/* looks like we ate some spicy SIP */
