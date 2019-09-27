@@ -879,7 +879,7 @@ static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param)
 
 	node = cmd->node.kids;
 
-	if (node == NULL || node->next == NULL || node->next->next == NULL)
+	if (node == NULL || node->next == NULL)
 		return init_mi_tree(400, MI_SSTR(MI_MISSING_PARM));
 
 	rc = str2int(&node->value, &cluster_id);
