@@ -764,47 +764,46 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 	struct dlg_entry *d_entry;
 	void ** dest;
 	struct prof_local_count *cnt;
+	struct dlg_profile_table *profile = linker->profile;
 
 	/* insert into profile hash table */
-	/* but only if cachedb is not used */
-	if (!(linker->profile->repl_type==REPL_CACHEDB)) {
+	if (profile->repl_type != REPL_CACHEDB) {
 		/* calculate the hash position */
-		hash = calc_hash_profile(&linker->value, dlg, linker->profile);
+		hash = calc_hash_profile(&linker->value, dlg, profile);
 		linker->hash_idx = hash;
 
-		lock_set_get( linker->profile->locks, hash );
+		lock_set_get(profile->locks, hash);
 
 		LM_DBG("Entered here with hash = %d \n",hash);
-		if( linker->profile->has_value)
-		{
-			p_entry = linker->profile->entries[hash];
-			dest = map_get( p_entry, linker->value );
+		if (profile->has_value) {
+			p_entry = profile->entries[hash];
+			dest = map_get(p_entry, linker->value);
 			if (!dest) {
 				LM_ERR("No more shm memory\n");
-				lock_set_release( linker->profile->locks,hash );
+				lock_set_release( profile->locks,hash );
 				return -1;
 			}
 
 			prof_val_local_inc(dest, &dlg->shtag,
-				linker->profile->repl_type==REPL_PROTOBIN);
+				profile->repl_type == REPL_PROTOBIN);
 		}
 		else {
-			if (linker->profile->repl_type==REPL_PROTOBIN && profile_repl_cluster) {
-				cnt = get_local_counter(&linker->profile->noval_local_counters[hash],
+			if (profile->repl_type == REPL_PROTOBIN && profile_repl_cluster) {
+				cnt = get_local_counter(&profile->noval_local_counters[hash],
 					&dlg->shtag);
 				if (!cnt) {
-					lock_set_release(linker->profile->locks, hash);
+					lock_set_release(profile->locks, hash);
 					return -1;
 				}
 
 				cnt->n++;
 			} else {
-				linker->profile->noval_local_counters[hash] =
-					(void*)((long)linker->profile->noval_local_counters[hash] + 1);
+				profile->noval_local_counters[hash] =
+					(void *)((long)profile->noval_local_counters[hash] + 1);
 			}
 		}
 
-		lock_set_release( linker->profile->locks,hash );
+		lock_set_release(profile->locks, hash);
 	} else if (!is_replicated) {
 		if (!cdbc) {
 			LM_WARN("Cachedb not initialized yet - cannot update profile\n");
@@ -813,11 +812,11 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 			return -1;
 		}
 		/* prepare buffers */
-		if( linker->profile->has_value) {
+		if (profile->has_value) {
 
-			if (dlg_fill_value(&linker->profile->name, &linker->value) < 0)
+			if (dlg_fill_value(&profile->name, &linker->value) < 0)
 				return -1;
-			if (dlg_fill_size(&linker->profile->name) < 0)
+			if (dlg_fill_size(&profile->name) < 0)
 				return -1;
 
 			/* not really interested in the new val */
@@ -833,7 +832,7 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 				return -1;
 			}
 		} else {
-			if (dlg_fill_name(&linker->profile->name) < 0)
+			if (dlg_fill_name(&profile->name) < 0)
 				return -1;
 
 			if (cdbf.add(cdbc, &dlg_prof_noval_buf, 1,
