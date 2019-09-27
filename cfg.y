@@ -541,7 +541,7 @@ statement: assign_stm
 		| CR	/* null statement*/
 	;
 
-listen_id:	ip			{ IFOR();
+listen_id:	ip			{
 							tmp=ip_addr2a($1);
 							if(tmp==0){
 								LM_CRIT("cfg. parser: bad ip address.\n");
@@ -556,7 +556,7 @@ listen_id:	ip			{ IFOR();
 								}
 							}
 						}
-		|	STRING		{ IFOR();
+		|	STRING		{
 							$$=pkg_malloc(strlen($1)+1);
 							if ($$==0){
 									LM_CRIT("cfg. parser: out of memory.\n");
@@ -565,7 +565,7 @@ listen_id:	ip			{ IFOR();
 									memcpy($$, $1, strlen($1)+1);
 							}
 						}
-		|	host		{ IFOR();
+		|	host		{
 							if ($1==0) {
 								$$ = 0;
 							} else {
@@ -604,7 +604,7 @@ host:	ID				{ $$=$1; }
 						"has config keywords)"); }
 	;
 
-proto:	ID { IFOR();
+proto:	ID {
 		if (parse_proto((unsigned char *)$1, strlen($1), &i_tmp) < 0) {
 			yyerrorf("cannot handle protocol <%s>\n", $1);
 			YYABORT;
@@ -624,9 +624,9 @@ snumber:	NUMBER	{ $$=$1; }
 ;
 
 
-phostport: proto COLON listen_id	{ IFOR();
+phostport: proto COLON listen_id	{
 				$$=mk_listen_id($3, $1, 0); }
-			| proto COLON listen_id COLON port	{ IFOR();
+			| proto COLON listen_id COLON port	{
 				$$=mk_listen_id($3, $1, $5);}
 			| proto COLON listen_id COLON error {
 				$$=0;
@@ -645,26 +645,26 @@ panyhostport: proto COLON MULT				{ IFOR();
 				$$=mk_listen_id(0, $1, $5); }
 			;
 
-alias_def:	listen_id						{ IFOR();
+alias_def:	listen_id						{ IFOR(pkg_free($1));
 				$$=mk_listen_id($1, PROTO_NONE, 0); }
-		 |	ANY COLON listen_id				{ IFOR();
+		 |	ANY COLON listen_id				{ IFOR(pkg_free($3));
 		 		$$=mk_listen_id($3, PROTO_NONE, 0); }
-		 |	ANY COLON listen_id COLON port	{ IFOR();
+		 |	ANY COLON listen_id COLON port	{ IFOR(pkg_free($3));
 		 		$$=mk_listen_id($3, PROTO_NONE, $5); }
 		 |	ANY COLON listen_id COLON error {
 				$$=0;
 				yyerror(" port number expected");
 				}
-		 | phostport
+		 | phostport {IFOR(pkg_free($1->name);pkg_free($1))}
 		 ;
 
 id_lst:		alias_def		{ IFOR();  $$=$1 ; }
 		| alias_def id_lst	{ IFOR(); $$=$1; $$->next=$2; }
 		;
 
-listen_id_def:	listen_id					{ IFOR();
+listen_id_def:	listen_id					{ IFOR(pkg_free($1));
 					$$=mk_listen_id($1, PROTO_NONE, 0); }
-			 |	listen_id COLON port		{ IFOR();
+			 |	listen_id COLON port		{ IFOR(pkg_free($1));
 			 		$$=mk_listen_id($1, PROTO_NONE, $3); }
 			 |	listen_id COLON error {
 					$$=0;
@@ -699,13 +699,14 @@ listen_def_params:	listen_def_param
 				 ;
 
 listen_def:	panyhostport			{ $$=$1; }
-			| phostport				{ $$=$1; }
+			| phostport				{IFOR(pkg_free($1->name);pkg_free($1));
+				$$=$1; }
 			| panyhostport { IFOR();
 					memset(&p_tmp, 0, sizeof(p_tmp));
 				} listen_def_params	{ IFOR();
 					$$=$1; fill_socket_id(&p_tmp, $$);
 				}
-			| phostport { IFOR();
+			| phostport { IFOR(pkg_free($1->name);pkg_free($1));
 					memset(&p_tmp, 0, sizeof(p_tmp));
 				} listen_def_params	{ IFOR();
 					$$=$1; fill_socket_id(&p_tmp, $$);
@@ -1189,7 +1190,7 @@ assign_stm: DEBUG EQUAL snumber
 		| AUTO_ALIASES EQUAL NUMBER { IFOR();
 								auto_aliases=$3; }
 		| AUTO_ALIASES EQUAL error  { yyerror("number  expected"); }
-		| ADVERTISED_ADDRESS EQUAL listen_id { IFOR();
+		| ADVERTISED_ADDRESS EQUAL listen_id { IFOR(pkg_free($3));
 								if ($3) {
 									default_global_address.s=$3;
 									default_global_address.len=strlen($3);
