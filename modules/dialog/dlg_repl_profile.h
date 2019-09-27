@@ -98,9 +98,7 @@ static inline prof_rcv_count_t *repl_prof_allocate(void)
 
 	rp = shm_malloc(sizeof(prof_rcv_count_t));
 	if (!rp) {
-		/* if there is no more shm memory, there's not much that you can do
-		 * anyway */
-		LM_WARN("no more shm mem\n");
+		LM_ERR("no more shm mem\n");
 		return NULL;
 	}
 
@@ -195,7 +193,7 @@ static inline void prof_val_local_inc(void **pv_info, str *shtag, int is_repl)
 
 		cnt->n++;
 	} else {
-		(*pv_info) = (void*)((long)(*pv_info) + 1);
+		*pv_info = (void*)((long)(*pv_info) + 1);
 	}
 }
 

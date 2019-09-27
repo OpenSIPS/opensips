@@ -196,7 +196,7 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 	context_destroy(CONTEXT_DIALOG, context_of(dlg));
 
 	if (dlg->profile_links) {
-		destroy_linkers_unsafe(dlg, 0);
+		destroy_linkers_unsafe(dlg);
 		remove_dlg_prof_table(dlg, 0, 1);
 	}
 
@@ -809,7 +809,7 @@ struct dlg_cell* get_dlg_by_callid( str *callid)
 }
 
 
-void link_dlg(struct dlg_cell *dlg, int n)
+void link_dlg(struct dlg_cell *dlg, int extra_refs)
 {
 	struct dlg_entry *d_entry;
 
@@ -819,11 +819,11 @@ void link_dlg(struct dlg_cell *dlg, int n)
 
 	link_dlg_unsafe(d_entry, dlg);
 
-	DBG_REF(dlg, n);
-	dlg->ref += n;
+	DBG_REF(dlg, extra_refs);
+	dlg->ref += extra_refs;
 
 	LM_DBG("ref dlg %p with %d -> %d in h_entry %p - %d \n",
-	       dlg, n + 1, dlg->ref, d_entry, dlg->h_entry);
+	       dlg, extra_refs + 1, dlg->ref, d_entry, dlg->h_entry);
 
 	dlg_unlock( d_table, d_entry);
 }
