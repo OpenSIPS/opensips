@@ -178,23 +178,23 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	}
 	memcpy((*new_info)->url.s, str_vals[STR_VALS_URL_COL].s, (*new_info)->url.len);
 
+	if (parse_phostport((*new_info)->url.s, (*new_info)->url.len, &host, &hlen,
+		&port, &proto) < 0) {
+		LM_ERR("Bad URL!\n");
+		return 1;
+	}
+	st.s = host;
+	st.len = hlen;
+
+	if (proto == PROTO_NONE)
+		proto = clusterer_proto;
+	if (proto != clusterer_proto) {
+		LM_ERR("Clusterer currently supports only BIN protocol, but node: %d "
+			"has proto=%d\n", int_vals[INT_VALS_NODE_ID_COL], proto);
+		return 1;
+	}
+
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
-		if (parse_phostport((*new_info)->url.s, (*new_info)->url.len, &host, &hlen,
-			&port, &proto) < 0) {
-			LM_ERR("Bad URL!\n");
-			return 1;
-		}
-
-		if (proto == PROTO_NONE)
-			proto = clusterer_proto;
-		if (proto != clusterer_proto) {
-			LM_ERR("Clusterer currently supports only BIN protocol, but node: %d "
-				"has proto=%d\n", int_vals[INT_VALS_NODE_ID_COL], proto);
-			return 1;
-		}
-
-		st.s = host;
-		st.len = hlen;
 		he = sip_resolvehost(&st, (unsigned short *) &port,
 			(unsigned short *)&proto, 0, 0);
 		if (!he) {
@@ -208,6 +208,12 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		t.tv_usec = 0;
 		(*new_info)->last_ping = t;
 		(*new_info)->last_pong = t;
+	} else {
+		cluster->send_sock = grep_sock_info(&st, port, proto);
+		if (!cluster->send_sock) {
+			LM_ERR("non-local socket <%.*s> for this node\n", st.len, st.s);
+			goto error;
+		}
 	}
 
 	(*new_info)->priority = int_vals[INT_VALS_PRIORITY_COL];
