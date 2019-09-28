@@ -205,7 +205,7 @@ static int child_init(int rank)
 	int i;
 
 	LM_DBG("Child initialization\n");
-	if (rank==PROC_TCP_MAIN || rank==PROC_BIN)
+	if (rank==PROC_TCP_MAIN)
 		return 0;
 
 
