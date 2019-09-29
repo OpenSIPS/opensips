@@ -2585,7 +2585,7 @@ rtpengine_offer_answer(struct sip_msg *msg, str *flags,
 			LM_ERR("setting PV failed\n");
 		pkg_free(newbody.s);
 	} else if (!body || (extract_body(msg, &oldbody) > 0)) {
-		/* otherise directly set the body of the message */
+		/* otherwise directly set the body of the message */
 		anchor = del_lump(msg, oldbody.s - msg->buf, oldbody.len, 0);
 		if (!anchor) {
 			LM_ERR("del_lump failed\n");
