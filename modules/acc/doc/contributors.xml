@@ -21,9 +21,9 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">221</entry>
-		<entry align="center">106</entry>
-		<entry align="center">4152</entry>
+		<entry align="center">222</entry>
+		<entry align="center">107</entry>
+		<entry align="center">4153</entry>
 		<entry align="center">4571</entry>
 	</row>
 	<row>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Irina-Maria Stanescu, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Karel Kozlik, Andrei Pelinescu-Onciul, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Elena-Ramona Modroiu, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues, Julien Blache, Julián Moreno Patiño, Dusan Klinec, Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Irina-Maria Stanescu, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Karel Kozlik, Andrei Pelinescu-Onciul, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Elena-Ramona Modroiu, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues, Julien Blache, Julián Moreno Patiño, Dusan Klinec, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Sep 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Dec 2003 - Sep 2019</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Aug 2010 - Sep 2019</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>4. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Jan 2013 - Aug 2019</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Dec 2003 - Mar 2019</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Nov 2018</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
