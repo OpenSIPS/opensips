@@ -176,6 +176,30 @@ modparam("event_rabbitmq", "sync_mode", 1)
 </programlisting>
 		</example>
 	</section>
+		<section id="param_connect_timeout" xreflabel="connect_timeout">
+			<title><varname>connect_timeout</varname> (integer)</title>
+			<para>
+			The maximally allowed duration (in milliseconds) for the establishment
+			of a TCP connection with a RabbitMQ server.
+			</para>
+			<para>
+			<emphasis>
+				Default value is <quote>10000</quote> (10 seconds).
+			</emphasis>
+			</para>
+			<para>
+			<emphasis role='bold'>NOTE:</emphasis> This parameter is only
+			available since OpenSIPS 2.4.7
+			</para>
+			<example>
+			<title>Setting the <varname>connect_timeout</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("event_rabbitmq", "connect_timeout", 500)
+...
+	</programlisting>
+			</example>
+		</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
