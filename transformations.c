@@ -54,7 +54,16 @@
 
 #define TR_BUFFER_SIZE 65536
 
-static char _tr_buffer[TR_BUFFER_SIZE];
+/* two buffers are enough to allow infinite chaining (R/W <-> W/R) */
+#define TR_CHAIN_BUFS  2
+
+/* a separate set of chaining buffers for each script function argument */
+static char __tr_buffers[MAX_ACTION_ELEMS - 1][TR_CHAIN_BUFS][TR_BUFFER_SIZE];
+static int __crt_tr_bufs, __crt_tr_link;
+
+#define get_tr_buffer() \
+	__tr_buffers[__crt_tr_bufs] \
+		[__crt_tr_link = (__crt_tr_link + 1) % TR_CHAIN_BUFS]
 
 trans_extra_t *tr_extra_list;
 
@@ -145,21 +154,27 @@ int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val)
 
 	if (tr==NULL || val==NULL) {
 		LM_DBG("null pointer\n");
-		return -1;
+		ret = -1;
+		goto out;
 	}
 
 	it = tr;
 	while (it) {
 		ret = (*it->trf)(msg, it->params, it->subtype, val);
 		if(ret!=0)
-			return ret;
+			goto out;
 		it = it->next;
 	}
 
-	return 0;
+out:
+	/* advancing the current set of buffers avoids buffer overruns when passing
+	 * multiple transformation-enabled vars as cfg function parameters */
+	__crt_tr_bufs = (__crt_tr_bufs + 1) % (MAX_ACTION_ELEMS - 1);
+
+	return ret;
 }
 
-static void trans_fill_left(pv_value_t *val, str pad, int len)
+static void trans_fill_left(pv_value_t *val, str pad, int len, char *_tr_buffer)
 {
 	char *p;
 	int r;
@@ -202,7 +217,7 @@ static void trans_fill_left(pv_value_t *val, str pad, int len)
 	}
 }
 
-static void trans_fill_right(pv_value_t *val, str pad, int len)
+static void trans_fill_right(pv_value_t *val, str pad, int len, char *_tr_buffer)
 {
 	char *p;
 	int r;
@@ -238,7 +253,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val)
 {
 	int i, j;
-	char *p, *s;
+	char *p, *s, *_tr_buffer = get_tr_buffer();
 	str st;
 	pv_value_t v;
 
@@ -769,9 +784,9 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				return 0;
 
 			if (subtype == TR_S_FILL_LEFT)
-				trans_fill_left(val, st, i);
+				trans_fill_left(val, st, i, _tr_buffer);
 			else
-				trans_fill_right(val, st, i);
+				trans_fill_right(val, st, i, _tr_buffer);
 
 			break;
 		case TR_S_WIDTH:
@@ -1660,7 +1675,7 @@ error:
 int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		pv_value_t *val)
 {
-	char *buffer;
+	char *buffer, *_tr_buffer = get_tr_buffer();
 	struct ip_addr *p_ip;
 	str inet = str_init("INET");
 	str inet6 = str_init("INET6");
@@ -1718,8 +1733,11 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			memcpy(ip.u.addr,val->rs.s,val->rs.len);
 			ip.len = val->rs.len;
 			buffer = ip_addr2a(&ip);
-			val->rs.s = buffer;
+
 			val->rs.len = strlen(buffer);
+			memcpy(_tr_buffer, buffer, val->rs.len);
+			val->rs.s = _tr_buffer;
+
 			val->flags = PV_VAL_STR;
 			break;
 		case TR_IP_ISIP:
@@ -1745,21 +1763,24 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 					goto error;
 				}
 			}
-			val->rs.s = (char *)p_ip->u.addr;
+
+			memcpy(_tr_buffer, (char *)p_ip->u.addr, p_ip->len);
+			val->rs.s = _tr_buffer;
 			val->rs.len = p_ip->len;
+
 			val->flags = PV_VAL_STR;
 			break;
 		case TR_IP_RESOLVE:
 			val->flags = PV_VAL_STR;
-			buffer = pkg_malloc(val->rs.len + 1);
-			if (!buffer) {
-				LM_ERR("out of pkg memory!\n");
+			if (val->rs.len + 1 > TR_BUFFER_SIZE) {
+				LM_ERR("failed to resolve host, length too large (%d)\n",
+				       val->rs.len);
 				goto error;
 			}
-			memcpy(buffer, val->rs.s, val->rs.len);
-			buffer[val->rs.len] = '\0';
-			server = resolvehost(buffer, 0);
-			pkg_free(buffer);
+			memcpy(_tr_buffer, val->rs.s, val->rs.len);
+			_tr_buffer[val->rs.len] = '\0';
+
+			server = resolvehost(_tr_buffer, 0);
 			if (!server || !server->h_addr)
 			{
 				val->flags = PV_VAL_NULL;
@@ -1785,8 +1806,11 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			}
 
 			buffer = ip_addr2a(&ip);
-			val->rs.s = buffer;
+
 			val->rs.len = strlen(buffer);
+			memcpy(_tr_buffer, buffer, val->rs.len);
+			val->rs.s = _tr_buffer;
+
 			break;
 		case TR_IP_MATCHES:
 			/* get the input which must be an IP addr as string */
