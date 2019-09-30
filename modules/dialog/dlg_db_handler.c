@@ -428,15 +428,23 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 				repl_type = REPL_PROTOBIN;
 			}
 
+			if (dlg->locked_by != process_no)
+				dlg_lock_dlg(dlg);
+
 			for (it=dlg->profile_links;it;it=it->next) {
 				if (it->profile->repl_type == repl_type &&
 					it->profile->name.len == double_check_name.len &&
 					memcmp(it->profile->name.s,double_check_name.s,
 						   double_check_name.len) == 0) {
+					if (dlg->locked_by != process_no)
+						dlg_unlock_dlg(dlg);
 					LM_DBG("Profile is already linked into the dlg\n");
 					goto next;
 				}
 			}
+
+			if (dlg->locked_by != process_no)
+				dlg_unlock_dlg(dlg);
 		}
 
 		/* add to the profile */
@@ -679,8 +687,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				continue;
 			}
 
-			/* reference the dialog as kept in the timer list */
-			ref_dlg_unsafe(dlg, 1);
+			/* reference the dialog as kept in the timer list + this ref */
+			ref_dlg_unsafe(dlg, 2);
 			LM_DBG("current dialog timeout is %u\n", dlg->tl.timeout);
 
 			dlg->lifetime = 0;
@@ -738,6 +746,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				early_dlgs_cnt++;
 			}
 			run_load_callback_per_dlg(dlg);
+			unref_dlg(dlg, 1);
 
 			next_dialog:;
 		}
@@ -2035,12 +2044,15 @@ static int sync_dlg_db_mem(void)
 
 					/* skip flags - keep what we have - anyway can't tell which is new */
 
+					dlg->locked_by = process_no;
+
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
 					if (!VAL_NULL(values+18))
 						read_dialog_profiles( VAL_STR(values+18).s,
 							strlen(VAL_STR(values+18).s), known_dlg, 1, 0);
 
+					dlg->locked_by = 0;
 					dlg_unlock( d_table, d_entry);
 				} else {
 					/* DB has newer state, just update fields from DB */
@@ -2117,12 +2129,15 @@ static int sync_dlg_db_mem(void)
 						}
 					}
 
+					dlg->locked_by = process_no;
+
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
 					if (!VAL_NULL(values+18))
 						read_dialog_profiles( VAL_STR(values+18).s,
 							strlen(VAL_STR(values+18).s), known_dlg, 1, 0);
 
+					dlg->locked_by = 0;
 					dlg_unlock( d_table, d_entry);
 				}
 			}
