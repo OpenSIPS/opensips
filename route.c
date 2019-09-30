@@ -203,7 +203,6 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 	} while(0)
 	static str cp1 = {NULL,0};
 	static str cp2 = {NULL,0};
-	int n;
 	int rt;
 	int ret;
 	regex_t* re;
@@ -223,12 +222,11 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 		case DIFF_OP:
 			if ( s2->s==NULL ) return 0;
 			if(s1->len != s2->len) return 1;
-			ret=(strncasecmp(s1->s, s2->s, s2->len)!=0);
+			ret=(str_strcasecmp(s1, s2)!=0);
 			break;
 		case GT_OP:
 			if ( s2->s==NULL ) return 0;
-			n = (s1->len>=s2->len)?s1->len:s2->len;
-			rt = strncasecmp(s1->s,s2->s, n);
+			rt = str_strcasecmp(s1, s2);
 			if (rt>0)
 				ret = 1;
 			else if(rt==0 && s1->len>s2->len)
@@ -237,8 +235,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			break;
 		case GTE_OP:
 			if ( s2->s==NULL ) return 0;
-			n = (s1->len>=s2->len)?s1->len:s2->len;
-			rt = strncasecmp(s1->s,s2->s, n);
+			rt = str_strcasecmp(s1, s2);
 			if (rt>0)
 				ret = 1;
 			else if(rt==0 && s1->len>=s2->len)
@@ -247,8 +244,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			break;
 		case LT_OP:
 			if ( s2->s==NULL ) return 0;
-			n = (s1->len>=s2->len)?s1->len:s2->len;
-			rt = strncasecmp(s1->s,s2->s, n);
+			rt = str_strcasecmp(s1, s2);
 			if (rt<0)
 				ret = 1;
 			else if(rt==0 && s1->len<s2->len)
@@ -257,8 +253,7 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 			break;
 		case LTE_OP:
 			if ( s2->s==NULL ) return 0;
-			n = (s1->len>=s2->len)?s1->len:s2->len;
-			rt = strncasecmp(s1->s,s2->s, n);
+			rt = str_strcasecmp(s1, s2);
 			if (rt<0)
 				ret = 1;
 			else if(rt==0 && s1->len<=s2->len)
