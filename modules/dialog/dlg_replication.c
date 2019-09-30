@@ -33,6 +33,7 @@
 
 #include "../../resolve.h"
 #include "../../forward.h"
+#include "../../pt.h"
 
 extern stat_var *processed_dlgs;
 
@@ -90,7 +91,7 @@ static struct socket_info * fetch_socket_info(str *addr)
 int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag,
 							str *ttag, int safe)
 {
-	int h_entry;
+	int h_entry, rc;
 	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, rroute1, rroute2, mangled_fu, mangled_tu;
 	str sdp1, sdp2;
@@ -237,30 +238,40 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell, str *ftag
 				NULL, DLG_DIR_NONE, NULL, 1, 0);
 	}
 
-	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
-		if (insert_ping_timer(dlg) != 0)
-			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
-		else {
-			ref_dlg_unsafe(dlg, 1);
-		}
-	}
-
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		/* to be later removed by timer */
 		ref_dlg_unsafe(dlg, 1);
 	}
 
-	dlg_unlock(d_table, d_entry);
-
 	if (dlg_has_reinvite_pinging(dlg)) {
+		dlg->locked_by = process_no;
+
 		/* re-populate Re-INVITE pinging fields */
-		if (restore_reinvite_pinging(dlg) != 0)
+		rc = restore_reinvite_pinging(dlg);
+
+		/* avoid AB/BA deadlock with pinging routines */
+		dlg->locked_by = 0;
+		dlg_unlock(d_table, d_entry);
+
+		if (rc != 0) {
 			LM_ERR("failed to fetch some Re-INVITE pinging data\n");
-		else if (0 != insert_reinvite_ping_timer(dlg))
-			LM_CRIT("Unable to insert dlg %p into reinvite"
-			        "ping timer\n", dlg);
+		} else {
+			if (insert_reinvite_ping_timer(dlg) != 0) {
+				LM_CRIT("Unable to insert dlg %p into reinvite"
+				        "ping timer\n", dlg);
+			} else {
+				/* reference dialog as kept in reinvite ping timer list */
+				ref_dlg(dlg, 1);
+			}
+		}
+	} else {
+		dlg_unlock(d_table, d_entry);
+	}
+
+	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+		if (insert_ping_timer(dlg) != 0)
+			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 		else {
-			/* reference dialog as kept in reinvite ping timer list */
 			ref_dlg(dlg, 1);
 		}
 	}
