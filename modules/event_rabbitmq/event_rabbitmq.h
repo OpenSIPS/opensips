@@ -45,6 +45,8 @@
 /* default buffer size */
 #define RMQ_BUFFER_SIZE	16384
 
+#define RMQ_DEFAULT_CONNECT_TIMEOUT 10000 /* ms */
+
 /* separation char */
 #define COLON_C				':'
 #define PARAM_SEP			'\n'

@@ -49,4 +49,6 @@ int rmq_send(rmq_send_t * rmqs);
 void rmq_free_param(rmq_params_t *rmqp);
 void rmq_destroy(evi_reply_sock *sock);
 
+extern struct timeval conn_timeout_tv;
+
 #endif
