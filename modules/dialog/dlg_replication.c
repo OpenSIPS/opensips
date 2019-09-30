@@ -33,6 +33,7 @@
 
 #include "../../resolve.h"
 #include "../../forward.h"
+#include "../../pt.h"
 
 extern int active_dlgs_cnt;
 extern int early_dlgs_cnt;
@@ -92,7 +93,7 @@ static struct socket_info * fetch_socket_info(str *addr)
 int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 												str *ftag, str *ttag, int safe)
 {
-	int h_entry;
+	int h_entry, rc;
 	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
 	str cseq1, cseq2, contact1, contact2, adv_ct1, adv_ct2;
 	str rroute1, rroute2, mangled_fu, mangled_tu;
@@ -102,7 +103,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	struct socket_info *caller_sock, *callee_sock;
 	struct dlg_entry *d_entry;
 	str tag_name;
-	int rc;
 
 	LM_DBG("Received replicated dialog!\n");
 	if (!cell) {
@@ -246,20 +246,21 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 				NULL, DLG_DIR_NONE, NULL, 1, 0);
 	}
 
-	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
-		if (insert_ping_timer(dlg) != 0)
-			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
-		else {
-			ref_dlg_unsafe(dlg, 1);
-		}
-	}
-
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		/* to be later removed by timer */
 		ref_dlg_unsafe(dlg, 1);
 	}
 
+	/* avoid AB/BA deadlock with pinging routines */
 	dlg_unlock(d_table, d_entry);
+
+	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+		if (insert_ping_timer(dlg) != 0)
+			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
+		else {
+			ref_dlg(dlg, 1);
+		}
+	}
 
 	if (dlg_has_reinvite_pinging(dlg)) {
 		if (insert_reinvite_ping_timer(dlg) != 0) {
