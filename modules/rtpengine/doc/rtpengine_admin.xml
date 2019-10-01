@@ -455,7 +455,9 @@ rtpengine_offer();
 				</para></listitem>
 				<listitem><para>
 				<emphasis>symmetric</emphasis> - flags that for the UA from which
-				message is received, support symmetric RTP must be forced.
+				message is received, support symmetric RTP must be forced. You do not
+				need to explicitly specify this value, as it is the default, and the
+				behavior is only changed when the  <emphasis>asymmetric</emphasis> is used.
 				</para></listitem>
 				<listitem><para>
 				<emphasis>repacketize=NN</emphasis> - requests the &rtp; proxy to perform
