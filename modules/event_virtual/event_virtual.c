@@ -29,6 +29,7 @@
 #include "../../sr_module.h"
 #include "../../mem/shm_mem.h"
 #include "../../ut.h"
+#include "../../timer.h"
 
 static int mod_init(void);
 static void destroy(void);
@@ -41,8 +42,16 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name,
 
 static struct virtual_socket **list_sockets;
 
+static int failover_timeout = DEFAULT_FAILOVER_TIMEOUT;
+
 static gen_lock_t *global_lock;
 static gen_lock_t *rrobin_lock;
+
+/* module parameters */
+static param_export_t mod_params[] = {
+	{"failover_timeout", INT_PARAM, &failover_timeout},
+	{0,0,0}
+};
 
 struct module_exports exports = {
 	"event_virtual",			/* module name */
@@ -53,7 +62,7 @@ struct module_exports exports = {
 	NULL,				/* OpenSIPS module dependencies */
 	0,					/* exported functions */
 	0,					/* exported async functions */
-	0,					/* exported parameters */
+	mod_params,			/* exported parameters */
 	0,					/* exported statistics */
 	0,					/* exported MI functions */
 	0,					/* exported pseudo-variables */
@@ -215,12 +224,20 @@ static struct sub_socket *insert_sub_socket(struct virtual_socket *vsock) {
 
 	new_entry = shm_malloc(sizeof(struct sub_socket));
 	if (!new_entry) {
+		LM_ERR("oom\n");
 		return NULL;
 	}
+	memset(new_entry, 0, sizeof *new_entry);
 
-	new_entry->trans_mod = NULL;
-	new_entry->sock = NULL;
-	new_entry->next = NULL;
+	new_entry->lock = lock_alloc();
+	if (!new_entry->lock) {
+		LM_ERR("Failed to allocate lock\n");
+		goto error;
+	}
+	if (!lock_init(new_entry->lock)) {
+		LM_ERR("Failed to init lock\n");
+		goto error;
+	}
 
 	if (!vsock->list_sockets) {
 		vsock->list_sockets = new_entry;
@@ -239,6 +256,10 @@ static struct sub_socket *insert_sub_socket(struct virtual_socket *vsock) {
 	}
 	head->next->next = new_entry;
 	return new_entry;
+
+error:
+	shm_free(new_entry);
+	return NULL;
 }
 
 static evi_reply_sock* virtual_parse(str socket) {
@@ -430,7 +451,22 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 		/* try to raise all sockets until first successful raise*/
 		case FAILOVER_TYPE : {
 			while (h_list) {
+				lock_get(h_list->lock);
+
+				if (h_list->last_failed &&
+					(get_ticks() - h_list->last_failed <= failover_timeout)) {
+					lock_release(h_list->lock);
+
+					LM_DBG("skipping already failed socket %.*s\n",
+						h_list->sock_str.len, h_list->sock_str.s);
+					h_list = h_list->next;
+					continue;
+				}
+
 				if (!h_list->trans_mod && !parse_socket(h_list)) {
+					h_list->last_failed = get_ticks();
+					lock_release(h_list->lock);
+
 					LM_DBG("unable to parse socket %.*s trying next socket\n",
 							h_list->sock_str.len, h_list->sock_str.s);
 					h_list = h_list->next;
@@ -438,11 +474,18 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 				}
 
 				if (h_list->trans_mod->raise(msg, ev_name, h_list->sock, params)) {
+					h_list->last_failed = get_ticks();
+					lock_release(h_list->lock);
+
 					LM_DBG("unable to raise socket %.*s trying next socket\n",
 							h_list->sock_str.len, h_list->sock_str.s);
 					h_list = h_list->next;
 					continue;
 				}
+
+				h_list->last_failed = 0;
+
+				lock_release(h_list->lock);
 
 				break;
 			}

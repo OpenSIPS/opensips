@@ -26,6 +26,7 @@
 #ifndef _EV_VIRTUAL_H_
 #define _EV_VIRTUAL_H_
 
+#include "../../locking.h"
 #include "../../str.h"
 #include "../../evi/evi_transport.h"
 
@@ -46,6 +47,8 @@
 #define SEP_SPACE	' '
 #define SEP_TAB		'\t'
 
+#define DEFAULT_FAILOVER_TIMEOUT 30
+
 struct virtual_socket {
 	unsigned int type;
 	unsigned int nr_sockets;
@@ -59,6 +62,10 @@ struct sub_socket {
 	str sock_str;
 	evi_export_t *trans_mod;
 	evi_reply_sock *sock;
+
+	gen_lock_t *lock;
+	unsigned int last_failed;
+
 	struct sub_socket *next;
 };
 
