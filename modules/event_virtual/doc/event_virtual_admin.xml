@@ -16,7 +16,9 @@
 			<listitem><para>
 				<emphasis>FAILOVER</emphasis> - for every event raised, try to
 				notify the subscribers, in the order in which they are given,
-				until the first successful notification. For some transport modules
+				until the first successful notification. A failed subscriber is
+				skipped for further notifications until the
+				<xref linkend="param_failover_timeout"/> passes. For some transport modules
 				(<emphasis>event_jsonrpc</emphasis>, <emphasis>event_xmlrpc</emphasis>,
 				<emphasis>event_rabbitmq</emphasis>), in order to properly
 				detect a failure when raising an event, you have to configure
@@ -90,9 +92,27 @@
 	</section>
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
-		<para>
-		No exported parameters to be used in the configuration file.
-		</para>
+	<section id="param_failover_timeout" xreflabel="failover_timeout">
+			<title><varname>failover_timeout</varname> (integer)</title>
+			<para>
+			The minimum duration in seconds that a failed subscriber is
+			skipped for further notifications. This parameter only affects
+			the <emphasis>FAILOVER</emphasis> policy.
+			</para>
+			<para>
+			<emphasis>
+				Default value is <quote>30</quote>.
+			</emphasis>
+			</para>
+			<example>
+			<title>Setting the <varname>failover_timeout</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("event_virtual", "failover_timeout", 5)
+...
+	</programlisting>
+			</example>
+		</section>
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
