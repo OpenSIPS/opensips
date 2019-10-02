@@ -7,8 +7,10 @@
 ifeq ($(JSONPATH),)
 ifneq ("$(wildcard /usr/include/json-c/json.h)","")
 DEFS += -I/usr/include/json-c
+JSONLIB = json-c
 else
 DEFS += -I/usr/include/json
+JSONLIB = json
 endif
 else
 DEFS += -I$(JSONPATH)
@@ -16,9 +18,9 @@ endif
 
 ifeq ($(CROSS_COMPILE),)
 JSON_BUILDER = $(shell \
-	if pkg-config --exists json; then \
+	if pkg-config --exists json 2> /dev/null; then \
 		echo 'pkg-config json'; \
-	elif pkg-config --exists json-c; then\
+	elif pkg-config --exists json-c 2> /dev/null; then\
 		echo 'pkg-config json-c'; \
 	fi)
 
@@ -26,7 +28,7 @@ endif
 
 ifeq ($(JSON_BUILDER),)
 	DEFS += -I$(LOCALBASE)/include -I$(SYSBASE)/include
-	LIBS += -L$(LOCALBASE)/lib -ljson
+	LIBS += -L$(LOCALBASE)/lib -l$(JSONLIB)
 else
 	JSON_PKG_VER = $(shell $(JSON_BUILDER) --modversion)
 	JSON_PKG_MAJOR = $(shell \
