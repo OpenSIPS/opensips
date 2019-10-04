@@ -66,6 +66,8 @@ mi_response_t *w_mi_subscribers_list_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *w_mi_subscribers_list_2(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+mi_response_t *w_mi_raise_event(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 /* returns the transport export */
 evi_export_t* get_trans_mod(str* tran);

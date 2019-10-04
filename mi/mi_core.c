@@ -862,6 +862,13 @@ static mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
+	{ "raise_event", "raises an event through the Event Interface; "
+		"Params: event [ params ]", 0, 0, {
+		{w_mi_raise_event, {"event", 0}},
+		{w_mi_raise_event, {"event", "params", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
 	{ "list_tcp_conns", "list all ongoing TCP based connections", 0, 0, {
 		{mi_tcp_list_conns, {0}},
 		{EMPTY_MI_RECIPE}

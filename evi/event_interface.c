@@ -30,6 +30,7 @@
 #include "../pvar.h"
 #include "../timer.h"
 #include "../ut.h"
+#include "../ipc.h"
 
 
 int events_no = 0;
@@ -746,4 +747,187 @@ mi_response_t *w_mi_subscribers_list_2(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Subscriber does not exist"));
 
 	return mi_subscribers_list(event, subs);
+}
+
+evi_params_p mi_raise_event_json_params(str *params)
+{
+	int err;
+	cJSON *param;
+	cJSON *jparams;
+	str name, jstring;
+	evi_params_p eparams = NULL;
+	char *tmp = pkg_malloc(params->len + 1);
+	if (!tmp) {
+		LM_ERR("could not create temporary buffer!\n");
+		return NULL;
+	}
+	memcpy(tmp, params->s, params->len);
+	tmp[params->len] = 0;
+	jparams = cJSON_Parse(tmp);
+	pkg_free(tmp);
+	if (!jparams) {
+		LM_DBG("could not parse json '%.*s'\n", params->len, params->s);
+		return NULL;
+	} else
+		LM_DBG("treating params as json '%.*s'\n", params->len, params->s);
+
+	if (!(jparams->type &cJSON_Object)) {
+		LM_ERR("params json is not an object\n");
+		return NULL;
+	}
+	/* parse params as json */
+	if (!(eparams = evi_get_params())) {
+		LM_ERR("cannot create parameters list\n");
+		goto error;
+	}
+	for (param = jparams->child; param; param = param->next) {
+		name.s = param->string;
+		name.len = strlen(name.s);
+		switch (param->type) {
+			case cJSON_Number:
+				err = evi_param_add_int(eparams, &name, &param->valueint);
+				break;
+			case cJSON_String:
+				jstring.s = param->valuestring;
+				jstring.len = strlen(jstring.s);
+				err = evi_param_add_str(eparams, &name, &jstring);
+				break;
+			default:
+				jstring.s = cJSON_PrintUnformatted(param);
+				jstring.len = strlen(jstring.s);
+				err = evi_param_add_str(eparams, &name, &jstring);
+				cJSON_PurgeString(jstring.s);
+				break;
+		}
+		if (err) {
+			LM_ERR("could not add parameter %s\n", name.s);
+			goto error_free;
+		}
+	}
+	cJSON_Delete(jparams);
+	return eparams;
+error_free:
+	evi_free_params(eparams);
+error:
+	cJSON_Delete(jparams);
+	return NULL;
+}
+
+evi_params_p mi_raise_event_array_params(mi_item_t *array, int no)
+{
+	int i;
+	str param;
+	evi_params_p eparams = NULL;
+
+	LM_DBG("treating params as array\n");
+
+	/* parse params as json */
+	if (!(eparams = evi_get_params())) {
+		LM_ERR("cannot create parameters list\n");
+		return NULL;
+	}
+
+	for (i = 0; i < no; i++) {
+		if (get_mi_arr_param_string(array, i, &param.s, &param.len) < 0) {
+			LM_ERR("cannot fetch array element %d\n", i);
+			goto error;
+		}
+		if (evi_param_add_str(eparams, NULL, &param)) {
+			LM_ERR("cannot add new params %d\n", i);
+			goto error;
+		}
+	}
+
+	return eparams;
+error:
+	evi_free_params(eparams);
+	return NULL;
+}
+
+struct mi_raise_event_dispatch {
+	event_id_t id;
+	evi_params_p params;
+};
+
+void mi_raise_event_rpc(int sender, void *param)
+{
+	struct mi_raise_event_dispatch *p = (struct mi_raise_event_dispatch *)param;
+	evi_raise_event(p->id, p->params);
+	evi_free_shm_params(p->params);
+	shm_free(p);
+}
+
+mi_response_t *w_mi_raise_event(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int no;
+	str event_s;
+	str tparams;
+	event_id_t id;
+	mi_item_t *values;
+	evi_params_p eparams = NULL, sparams;
+	struct mi_raise_event_dispatch *djob;
+
+	if (get_mi_string_param(params, "event", &event_s.s, &event_s.len) < 0)
+		return init_mi_param_error();
+
+	id = evi_get_id(&event_s);
+	if (id == EVI_ERROR)
+		return init_mi_error(404, MI_SSTR("Event not registered"));
+
+	/* check if there are any subscribers */
+	if (!evi_probe_event(id))
+		return init_mi_error(480, MI_SSTR("Temporarily Unavailable"));
+
+	/* check to see if we have an array params, or key-value one */
+	switch (try_get_mi_array_param(params, "params", &values, &no)) {
+		case -1:
+		case -3:
+			/* no params used */
+			break;
+		case -2:
+			/* not an array - most likely it's a string */
+			if (get_mi_string_param(params, "params", &tparams.s, &tparams.len) < 0)
+				return init_mi_error(400, MI_SSTR("No Params"));
+			eparams = mi_raise_event_json_params(&tparams);
+			if (!eparams)
+				return init_mi_error(400, MI_SSTR("Bad Params"));
+			break;
+		case 0:
+			/* this is an array - push it like this */
+			eparams = mi_raise_event_array_params(values, no);
+			if (!eparams)
+				return init_mi_error(400, MI_SSTR("Bad Params"));
+			break;
+	}
+
+	if (eparams) {
+		sparams = evi_dup_shm_params(eparams);
+		evi_free_params(eparams);
+		eparams = NULL;
+		if (!sparams) {
+			LM_ERR("could not duplicate evi params!\n");
+			goto error;
+		}
+		eparams = sparams;
+	}
+
+	djob = shm_malloc(sizeof (*djob));
+	if (!djob) {
+		LM_ERR("could not allocate new job!\n");
+		goto error;
+	}
+	djob->id = id;
+	djob->params = eparams;
+
+	if (ipc_dispatch_rpc(mi_raise_event_rpc, djob) < 0) {
+		LM_ERR("could not dispatch raise event job!\n");
+		goto error;
+	}
+
+	return init_mi_result_ok();
+error:
+	if (eparams)
+		evi_free_shm_params(eparams);
+	return init_mi_error(500, MI_SSTR("Cannot Raise Event"));
 }
