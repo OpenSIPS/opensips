@@ -149,7 +149,7 @@ int add_modparam_dependencies(struct sr_module *mod, param_export_t *param)
 		return 0;
 
 	/* clear previous entries in case this parameter is set multiple times */
-	for (it = &unsolved_deps; it->next; it = it->next) {
+	for (it = &unsolved_deps; it && it->next; it = it->next) {
 		if (strcmp(it->next->mod->exports->name, mod->exports->name) == 0 &&
 			(it->next->script_param &&
 			 strcmp(it->next->script_param, param->name) == 0)) {
