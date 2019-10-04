@@ -474,11 +474,15 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 	</section>
 	<section id="func_check_time_rec" xreflabel="check_time_rec()">
 		<title>
-			<function moreinfo="none">check_time_rec(time_string)</function>
+			<function moreinfo="none">check_time_rec(time_string[,timestamp])</function>
 		</title>
 		<para>
 		The function returns a positive value if the specified time recurrence string
 		matches the current time, or a negative value otherwise.
+		</para>
+		<para>
+		For checking something else than the current time, the second parameter will
+		contain the UNIX timestamp of the time to check.
 		</para>
 		<para>
 		The syntax of each field is identical to the corresponding field from

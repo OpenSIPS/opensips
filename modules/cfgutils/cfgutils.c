@@ -106,7 +106,7 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 		int *t1u, int *t2s, int *t2u, pv_spec_t *_res);
-int check_time_rec(struct sip_msg *msg, str *time_str);
+int check_time_rec(struct sip_msg *msg, str *time_str, unsigned int *ptime);
 
 #ifdef HAVE_TIMER_FD
 static int async_sleep(struct sip_msg* msg,
@@ -182,7 +182,8 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"check_time_rec", (cmd_function)check_time_rec, {
-		{CMD_PARAM_STR, fixup_str, fixup_free_str}, {0,0,0}},
+		{CMD_PARAM_STR, fixup_str, fixup_free_str},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"release_static_lock",(cmd_function)release_static_lock, {
@@ -791,7 +792,7 @@ static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 			1 - match
 			-1 - otherwise
  */
-int check_time_rec(struct sip_msg *msg, str *time_str)
+int check_time_rec(struct sip_msg *msg, str *time_str, unsigned int *ptime)
 {
 	tmrec_p time_rec = 0;
 	char *p, *s;
@@ -831,7 +832,7 @@ done:
 	memset( &att, 0, sizeof(att));
 
 	/* set current time */
-	if ( ac_tm_set_time( &att, time(0) ) )
+	if ( ac_tm_set_time( &att, ptime?(time_t)*ptime:time(0) ) )
 		return -1;
 
 	/* does the recv_time match the specified interval?  */
