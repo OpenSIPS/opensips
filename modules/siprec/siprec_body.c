@@ -705,7 +705,7 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 				}
 			}
 			if (label < 0 || !stream) {
-				LM_ERR("SDP stream not processed for [%.*s]\n",
+				LM_INFO("SDP stream not processed for [%.*s]\n",
 						msg_stream->body.len, msg_stream->body.s);
 				continue;
 			}
