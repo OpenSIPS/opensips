@@ -424,7 +424,7 @@ int base64urldecode(unsigned char *out, unsigned char *in, int len)
 	{
 		do
 		{
-			c1 = base64val[in[i++]];
+			c1 = base64urlval[in[i++]];
 		} while (i<len && c1 == BAD);
 
 		if (c1 == BAD)
@@ -432,7 +432,7 @@ int base64urldecode(unsigned char *out, unsigned char *in, int len)
 
 		do
 		{
-			c2 = base64val[in[i++]];
+			c2 = base64urlval[in[i++]];
 		} while (i<len && c2 == BAD);
 
 		if (c2 == BAD)
@@ -446,7 +446,7 @@ int base64urldecode(unsigned char *out, unsigned char *in, int len)
 			if (c3 == 61)
 				return out_len;
 
-			c3 = base64val[c3];
+			c3 = base64urlval[c3];
 		} while (i<len && c3 == BAD);
 
 		if (c3 == BAD)
@@ -459,7 +459,7 @@ int base64urldecode(unsigned char *out, unsigned char *in, int len)
 			c4 = in[i++];
 			if (c4 == 61)
 				return out_len;
-			c4 = base64val[c4];
+			c4 = base64urlval[c4];
 		} while (i<len && c4 == BAD);
 
 		if (c4 == BAD)
