@@ -83,6 +83,8 @@ int evi_param_set(evi_param_p element, void *param, int flags);
 #define evi_param_set_str(p_el, p_str) \
 		evi_param_set(p_el, p_str, EVI_STR_VAL)
 
+evi_params_p evi_dup_shm_params(evi_params_p);
+void evi_free_shm_params(evi_params_p);
 
 
 #endif

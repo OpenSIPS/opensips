@@ -25,6 +25,7 @@
 
 #include "evi_params.h"
 #include "../mem/mem.h"
+#include "../mem/shm_mem.h"
 #include <string.h>
 
 
@@ -140,4 +141,61 @@ void evi_free_params(evi_params_p list)
 
 	/* list should be freed */
 	pkg_free(list);
+}
+
+evi_params_p evi_dup_shm_params(evi_params_p pkg_params)
+{
+	int shm_size;
+	evi_params_p shm_params;
+	evi_param_p param, prev, sp;
+	char *p;
+
+	if(!pkg_params)
+		return NULL;
+
+	shm_size = sizeof(evi_params_t);
+	for (param = pkg_params->first; param; param = param->next) {
+		shm_size += sizeof(evi_param_t) + param->name.len;
+		if (param->flags & EVI_STR_VAL)
+			shm_size += param->val.s.len;
+	}
+
+	shm_params = shm_malloc(shm_size);
+	if (!shm_params) {
+		return NULL;
+	}
+	shm_params->flags = 0;
+
+	p = (char *)(shm_params + 1);
+	for (param = pkg_params->first, prev = NULL; param;
+			prev = sp, param = param->next) {
+		sp = (evi_param_p)p;
+		p += sizeof(evi_param_t);
+		sp->flags = param->flags;
+		sp->next = NULL;
+		sp->name.len = param->name.len;
+		if (sp->name.len) {
+			sp->name.s = p;
+			p += param->name.len;
+			memcpy(sp->name.s, param->name.s, param->name.len);
+		}
+		if (param->flags & EVI_STR_VAL) {
+			sp->val.s.len = param->val.s.len;
+			sp->val.s.s = p;
+			p += param->val.s.len;
+			memcpy(sp->val.s.s, param->val.s.s, param->val.s.len);
+		} else
+			sp->val.n = param->val.n;
+		if (prev) {
+			prev->next = sp;
+			shm_params->last = sp;
+		} else
+			shm_params->first = sp;
+	}
+	return shm_params;
+}
+
+void evi_free_shm_params(evi_params_p shm_params)
+{
+	shm_free(shm_params);
 }
