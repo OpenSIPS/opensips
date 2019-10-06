@@ -417,7 +417,10 @@ rtpengine_offer();
             session-level SDP connection (c=) IP if media
             description also includes connection information.
           + symmetric - flags that for the UA from which message
-            is received, support symmetric RTP must be forced.
+            is received, support symmetric RTP must be forced. You
+            do not need to explicitly specify this value, as it is
+            the default, and the behavior is only changed when the
+            asymmetric is used.
           + repacketize=NN - requests the RTP proxy to perform
             re-packetization of RTP traffic coming from the UA
             which has sent the current message to increase or
@@ -882,7 +885,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 125 47 3996 2563
+   1. Razvan Crainea (@razvancrainea) 126 48 3999 2564
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 15 421 593
    3. Richard Fuchs 21 2 640 723
    4. Liviu Chircu (@liviuchircu) 15 11 66 131
@@ -913,7 +916,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Oct 2019
    2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jul 2019
    3.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Apr 2019
    4.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
@@ -931,8 +934,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
    Fuchs.
 
