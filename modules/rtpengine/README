@@ -418,7 +418,10 @@ rtpengine_offer();
             session-level SDP connection (c=) IP if media
             description also includes connection information.
           + symmetric - flags that for the UA from which message
-            is received, support symmetric RTP must be forced.
+            is received, support symmetric RTP must be forced. You
+            do not need to explicitly specify this value, as it is
+            the default, and the behavior is only changed when the
+            asymmetric is used.
           + repacketize=NN - requests the RTP proxy to perform
             re-packetization of RTP traffic coming from the UA
             which has sent the current message to increase or
@@ -869,7 +872,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 118 42 3869 2477
+   1. Razvan Crainea (@razvancrainea) 119 43 3872 2478
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 29 14 419 592
    3. Richard Fuchs 21 2 640 723
    4. Liviu Chircu (@liviuchircu) 14 10 66 130
@@ -899,7 +902,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Razvan Crainea (@razvancrainea)          Jun 2014 - Sep 2019
+   1. Razvan Crainea (@razvancrainea)          Jun 2014 - Oct 2019
    2. Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
    3. Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jun 2018
    4. Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
@@ -916,8 +919,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Richard
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
    Fuchs.
 
    doc copyrights:

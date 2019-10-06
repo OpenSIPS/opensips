@@ -17,6 +17,7 @@ event_rabbitmq Module
 
               1.5.1. heartbeat (integer)
               1.5.2. sync_mode (integer)
+              1.5.3. connect_timeout (integer)
 
         1.6. Exported Functions
         1.7. Example
@@ -45,9 +46,10 @@ event_rabbitmq Module
 
    1.1. Set heartbeat parameter
    1.2. Set sync_mode parameter
-   1.3. E_PIKE_BLOCKED event
-   1.4. RabbitMQ socket
-   1.5. OpenSIPS config script - sample event_rabbitmq usage
+   1.3. Setting the connect_timeout parameter
+   1.4. E_PIKE_BLOCKED event
+   1.5. RabbitMQ socket
+   1.6. OpenSIPS config script - sample event_rabbitmq usage
    2.1. Event subscription
    2.2. Event subscription
 
@@ -153,6 +155,20 @@ modparam("event_rabbitmq", "heartbeat", 3)
 modparam("event_rabbitmq", "sync_mode", 1)
 ...
 
+1.5.3. connect_timeout (integer)
+
+   The maximally allowed duration (in milliseconds) for the
+   establishment of a TCP connection with a RabbitMQ server.
+
+   Default value is “10000” (10 seconds).
+
+   NOTE: This parameter is only available since OpenSIPS 2.4.7
+
+   Example 1.3. Setting the connect_timeout parameter
+...
+modparam("event_rabbitmq", "connect_timeout", 500)
+...
+
 1.6. Exported Functions
 
    No function exported to be used from configuration file.
@@ -162,13 +178,13 @@ modparam("event_rabbitmq", "sync_mode", 1)
    This is an example of an event raised by the pike module when
    it decides an ip should be blocked:
 
-   Example 1.3. E_PIKE_BLOCKED event
+   Example 1.4. E_PIKE_BLOCKED event
 
         E_PIKE_BLOCKED
         ip::192.168.2.11
 
 
-   Example 1.4. RabbitMQ socket
+   Example 1.5. RabbitMQ socket
 
         rabbitmq:guest:guest@127.0.0.1:5672/pike
 
@@ -186,7 +202,7 @@ modparam("event_rabbitmq", "sync_mode", 1)
    The parameters passed to the server are the R-URI username and
    the message body.
 
-   Example 1.5. OpenSIPS config script - sample event_rabbitmq
+   Example 1.6. OpenSIPS config script - sample event_rabbitmq
    usage
 ...
 loadmodule "signaling.so"
@@ -431,7 +447,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 49 30 1876 200
    2. Liviu Chircu (@liviuchircu) 8 6 14 31
-   3. Vlad Patrascu (@rvlad-patrascu) 7 4 148 8
+   3. Vlad Patrascu (@rvlad-patrascu) 8 5 187 10
    4. Ovidiu Sas (@ovidiusas) 5 3 35 7
    5. Ionut Ionita (@ionutrazvanionita) 4 2 52 25
    6. franklyfox 4 2 44 5
@@ -462,10 +478,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2017
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Sep 2019
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    5.  Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
    6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Ovidiu Sas (@ovidiusas)             Jun 2015 - Jun 2015
@@ -482,8 +498,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Ionut
    Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea).
 
    doc copyrights:

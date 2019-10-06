@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">45</entry>
-		<entry align="center">34</entry>
-		<entry align="center">654</entry>
-		<entry align="center">265</entry>
+		<entry align="center">47</entry>
+		<entry align="center">36</entry>
+		<entry align="center">660</entry>
+		<entry align="center">267</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -76,6 +76,14 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">3</entry>
+		<entry align="center">0</entry>
+		<entry align="center">77</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Callum Guy</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">8</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">32</entry>
 		<entry align="center">18</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,17 +129,17 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Sep 2015 - Sep 2019</entry>
+		<entry align="center">Sep 2015 - Oct 2019</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Apr 2017 - Jul 2019</entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
+		<entry align="center">Jun 2019 - Aug 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">Jun 2019 - Jun 2019</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Apr 2017 - Jul 2019</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
