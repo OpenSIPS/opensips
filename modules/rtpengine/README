@@ -438,7 +438,10 @@ rtpengine_offer();
             session-level SDP connection (c=) IP if media
             description also includes connection information.
           + symmetric - flags that for the UA from which message
-            is received, support symmetric RTP must be forced.
+            is received, support symmetric RTP must be forced. You
+            do not need to explicitly specify this value, as it is
+            the default, and the behavior is only changed when the
+            asymmetric is used.
           + repacketize=NN - requests the RTP proxy to perform
             re-packetization of RTP traffic coming from the UA
             which has sent the current message to increase or
@@ -1077,7 +1080,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 134 52 4460 2611
+   1. Razvan Crainea (@razvancrainea) 135 53 4463 2612
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 15 421 593
    3. Richard Fuchs 21 2 640 723
    4. Liviu Chircu (@liviuchircu) 15 11 66 131
@@ -1111,8 +1114,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Peter Lemenkov (@lemenkov)               Jun 2018 - Sep 2019
-   2.  Razvan Crainea (@razvancrainea)          Jun 2014 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Oct 2019
+   2.  Peter Lemenkov (@lemenkov)               Jun 2018 - Sep 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jul 2019
    4.  John Burke                               Jun 2019 - Jun 2019
    5.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Apr 2019
@@ -1131,8 +1134,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
    (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
    Fuchs.
 

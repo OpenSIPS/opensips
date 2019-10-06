@@ -31,7 +31,7 @@ cfgutils Module
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
                       t2_usec, delta)
 
-              1.4.13. check_time_rec(time_string)
+              1.4.13. check_time_rec(time_string[,timestamp])
               1.4.14. get_static_lock(key)
               1.4.15. release_static_lock(key)
               1.4.16. get_dynamic_lock(key)
@@ -422,11 +422,14 @@ $var(next_gw_idx) = set_select_weight($avp(gw_success_rates));
 ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 ...
 
-1.4.13.  check_time_rec(time_string)
+1.4.13.  check_time_rec(time_string[,timestamp])
 
    The function returns a positive value if the specified time
    recurrence string matches the current time, or a negative value
    otherwise.
+
+   For checking something else than the current time, the second
+   parameter will contain the UNIX timestamp of the time to check.
 
    The syntax of each field is identical to the corresponding
    field from RFC 2445.
@@ -838,7 +841,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu) 30 18 869 261
    2. Henning Westerholt (@henningw) 29 18 1088 86
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 25 20 356 103
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 26 21 366 108
    4. Razvan Crainea (@razvancrainea) 19 14 282 75
    5. Vlad Patrascu (@rvlad-patrascu) 19 6 355 547
    6. Elena-Ramona Modroiu 14 3 1183 7
@@ -871,9 +874,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2019
+   2.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
@@ -894,9 +897,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Anca
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Anca
    Vamanu, Sergio Gutierrez, Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Elena-Ramona Modroiu,
    Konstantin Bokarius, Edson Gellert Schubert.
