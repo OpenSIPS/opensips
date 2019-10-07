@@ -843,7 +843,7 @@ static int mi_parse_mode(const mi_params_t *params, int *src_leg, int *challenge
 		}
 		/* 10 because we skip the separator, whatever that is */
 		mode_s.s += 10;
-		mode_s.len += 10;
+		mode_s.len -= 10;
 	}
 	if (mode_s.len != 6) {
 		LM_WARN("Invalid leg specified '%.*s'\n", mode_s.len, mode_s.s);
