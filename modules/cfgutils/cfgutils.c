@@ -920,7 +920,7 @@ int check_time_rec(struct sip_msg *msg, char *time_str)
 
 	p = ret.s;
 
-	LM_INFO("Parsing : %.*s\n", ret.len, ret.s);
+	LM_DBG("Parsing : %.*s\n", ret.len, ret.s);
 
 	time_rec = tmrec_new(SHM_ALLOC);
 	if (time_rec==0) {
