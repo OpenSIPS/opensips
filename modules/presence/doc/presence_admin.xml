@@ -230,8 +230,8 @@ modparam("presence", "cluster_pres_events" ,"presence, dialog;sla, message-summa
 		<title>Set <varname>cluster_sharing_tags</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("presence", "cluster_pres_events" ,"vip1=active")
-modparam("presence", "cluster_pres_events" ,"vip2=backup")
+modparam("presence", "cluster_sharing_tags" ,"vip1=active")
+modparam("presence", "cluster_sharing_tags" ,"vip2=backup")
 ...
 </programlisting>
 		</example>
