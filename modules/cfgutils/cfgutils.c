@@ -800,7 +800,7 @@ int check_time_rec(struct sip_msg *msg, str *time_str, unsigned int *ptime)
 
 	p = time_str->s;
 
-	LM_INFO("Parsing : %.*s\n", time_str->len, time_str->s);
+	LM_DBG("Parsing : %.*s\n", time_str->len, time_str->s);
 
 	time_rec = tmrec_new(SHM_ALLOC);
 	if (time_rec==0) {
