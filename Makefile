@@ -46,9 +46,6 @@ skip_modules?=
 # whether or not to overwrite TLS certificates
 tls_overwrite_certs?=
 
-# default debian version when running 'make deb'
-DEBIAN_VERSION ?= jessie #TODO: can we determine this?
-
 makefile_defs=0
 DEFS:= $(DEFS_EXTRA_OPTS)
 DEBUG_PARSER?=
