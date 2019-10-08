@@ -236,7 +236,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	int version;
 	time_t ts;
 	str tmp, rtpproxy, media_ip, srs_uri, group, host;
-	str aor, name, *xml_val;
+	str aor, name, xml_val, *xml;
 	siprec_uuid uuid;
 	struct socket_info *si;
 	int p, port, proto, c, label, medianum;
@@ -349,12 +349,13 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_POP(int, &p);
 	for (; p > 0; p--) {
 		SIPREC_BIN_POP(int, &p_type); /* actual xml val or nameaddr ? */
-		if (p_type == 0)
-			SIPREC_BIN_POP(str, xml_val);
-		else {
+		if (p_type == 0) {
+			SIPREC_BIN_POP(str, &xml_val);
+			xml = &xml_val;
+		} else {
 			SIPREC_BIN_POP(str, &aor);
 			SIPREC_BIN_POP(str, &name);
-			xml_val = NULL;
+			xml = NULL;
 		}
 		SIPREC_BIN_POP(str, &tmp);
 		if (tmp.len != sizeof(siprec_uuid)) {
@@ -363,7 +364,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 			goto error;
 		}
 		memcpy(&uuid, tmp.s, tmp.len);
-		if (src_add_participant(sess, &aor, &name, xml_val, &uuid) < 0) {
+		if (src_add_participant(sess, &aor, &name, xml, &uuid) < 0) {
 			LM_ERR("cannot add new participant!\n");
 			goto error;
 		}
@@ -467,7 +468,6 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(str, &ss->b2b_key);
 	SIPREC_BIN_PUSH(str, &ss->b2b_fromtag);
 	SIPREC_BIN_PUSH(str, &ss->b2b_totag);
-	SIPREC_BIN_PUSH(str, &ss->b2b_callid);
 	SIPREC_BIN_PUSH(str, &ss->b2b_callid);
 	SIPREC_BIN_PUSH(int, ss->participants_no);
 
