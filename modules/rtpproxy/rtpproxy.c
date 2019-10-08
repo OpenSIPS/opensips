@@ -4363,6 +4363,45 @@ error:
 	return -1;
 }
 
+static int w_rtpproxy_stop_recording(struct sip_msg *msg, str *callid,
+		str *from_tag, str *to_tag, struct rtpp_node *node,
+		pv_spec_p var, int medianum)
+{
+	struct iovec v[] = {
+		{NULL, 0},	/* [0] reserved (cookie) */
+		{"N ", 2},	/* [1] command R or C */
+		{NULL, 0},	/* [2] callid */
+		{" ", 1},	/* [3] separator */
+		{NULL, 0},	/* [4] from_tag */
+		{";", 1},	/* [5] medianum separator */
+		{NULL, 0},	/* [6] medianum */
+		{" ", 1},	/* [7] separator */
+		{NULL, 0},	/* [8] to_tag */
+		{";", 1},	/* [9] medianum separator */
+		{NULL, 0},	/* [10] medianum */
+	};
+
+	/* check if we support recording */
+	if (!HAS_CAP(node, RECORD)) {
+		LM_ERR("RTPProxy does not support recording!\n");
+		goto error;
+	}
+
+	STR2IOVEC(*callid, v[2]);
+	STR2IOVEC(*from_tag, v[4]);
+	if (to_tag)
+		STR2IOVEC(*to_tag, v[8]);
+
+	v[6].iov_base = int2str(medianum, (int *)&v[6].iov_len);
+	v[10] = v[6];
+	send_rtpp_command(node, v, 11);
+
+	return 1;
+
+error:
+	return -1;
+}
+
 static int rtpproxy_api_recording(str *callid, str *from_tag,
 		str *to_tag, str *node, str *flags, str *destination, int medianum)
 {
@@ -4456,10 +4495,41 @@ static int rtpproxy_recording(struct sip_msg* msg, nh_set_param_t *setid,
 	return ret;
 }
 
+static int rtpproxy_api_stop_recording(str *callid, str *from_tag,
+		str *to_tag, str *node, int medianum)
+{
+	struct rtpp_node *rnode;
+	int ret = -1;
+
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
+
+	if (node)
+		rnode = get_rtpp_node(node);
+	else
+		/* regular selection from the default rtpp set */
+		rnode = select_rtpp_node(NULL, *callid, *default_rtpp_set, NULL, 1);
+
+	if (!rnode) {
+		LM_ERR("no available proxies\n");
+		goto exit;
+	}
+
+	ret = w_rtpproxy_stop_recording(NULL, callid, from_tag,
+			to_tag, rnode, NULL, medianum);
+
+exit:
+	if (nh_lock) {
+		lock_stop_read( nh_lock );
+	}
+	return ret;
+}
 
 int load_rtpproxy(struct rtpproxy_binds *rtpb)
 {
 	rtpb->start_recording = rtpproxy_api_recording;
+	rtpb->stop_recording = rtpproxy_api_stop_recording;
 	return 1;
 }
 

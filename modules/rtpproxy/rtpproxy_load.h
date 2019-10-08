@@ -29,9 +29,12 @@
 
 typedef int (*start_recording_f)(str *callid, str *from_tag,
 		str *to_tag, str *node, str *flags, str *destination, int medianum);
+typedef int (*stop_recording_f)(str *callid, str *from_tag,
+		str *to_tag, str *node, int medianum);
 
 struct rtpproxy_binds {
 	start_recording_f start_recording;
+	stop_recording_f stop_recording;
 };
 
 typedef int (*load_rtpproxy_f)(struct rtpproxy_binds *rtpb);
