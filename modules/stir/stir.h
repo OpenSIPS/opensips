@@ -48,7 +48,7 @@
 
 #define PPORT_HDR_ALG 	  "alg"
 #define PPORT_HDR_ALG_VAL "ES256"
-#define PPORT_HDR_PPT     "typ"
+#define PPORT_HDR_PPT     "ppt"
 #define PPORT_HDR_PPT_VAL "shaken"
 #define PPORT_HDR_TYP     "typ"
 #define PPORT_HDR_TYP_VAL "passport"
@@ -60,6 +60,8 @@
 #define PPORT_PAYLOAD_ORIG "orig"
 #define PPORT_PAYLOAD_ORIGID "origid"
 #define PPORT_SEPARATOR '.'
+
+#define HDR_PARAM_SEPARATOR ';'
 
 #define BASE64_PAD_CHAR '='
 
@@ -73,4 +75,22 @@
 #define USE_IDENTITY_CODE 428
 #define USE_IDENTITY_REASON "Use Identity Header"
 #define STALE_DATE_CODE 403
-#define STATE_DATE_REASON "Stale Date"
+#define STALE_DATE_REASON "Stale Date"
+#define INVALID_IDENTITY_CODE 438
+#define INVALID_IDENTITY_REASON "Invalid Identity Header"
+#define UNSUPPORTED_CRED_CODE 437
+#define UNSUPPORTED_CRED_REASON "Unsupported credential"
+
+#define TN_AUTH_LIST_OID "1.3.6.1.5.5.7.1.26"
+#define TN_AUTH_LIST_LN "TNAuthorizationList"
+#define TN_AUTH_LIST_SN "TNAuthList"
+
+struct parsed_identity {
+	cJSON *header;
+	cJSON *payload;
+	str dec_header;
+	str dec_payload;
+	str dec_signature;
+	str ppt_hdr_param;
+	str alg_hdr_param;
+};
