@@ -84,29 +84,21 @@ static int w_round_sf_op(struct sip_msg *msg, char *number, char *result,
  */
 static cmd_export_t cmds[] = {
 	{"math_eval",(cmd_function)w_evaluate_exp, 2, fixup_evaluate_exp, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
-	{"math_rpn",(cmd_function)w_evaluate_rpn, 2, fixup_evaluate_exp, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		ALL_ROUTES},
+    {"math_rpn",(cmd_function)w_evaluate_rpn, 2, fixup_evaluate_exp, 0,
+		ALL_ROUTES},
 	{"math_floor",(cmd_function)w_floor_op, 2, fixup_binary_op, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		ALL_ROUTES},
 	{"math_ceil",(cmd_function)w_ceil_op, 2, fixup_binary_op, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		ALL_ROUTES},
 	{"math_trunc",(cmd_function)w_trunc_op, 2, fixup_binary_op, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		ALL_ROUTES},
 	{"math_round",(cmd_function)w_round_dp_op, 2, fixup_binary_op, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		ALL_ROUTES},
 	{"math_round",(cmd_function)w_round_dp_op, 3, fixup_round_op, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		ALL_ROUTES},
 	{"math_round_sf",(cmd_function)w_round_sf_op, 3, fixup_round_op, 0,
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE},
+		ALL_ROUTES},
 	{0, 0, 0, 0, 0, 0}
 };
 
