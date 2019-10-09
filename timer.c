@@ -233,6 +233,7 @@ void route_timer_f(unsigned int ticks, void* param)
 {
 	struct action* a = (struct action*)param;
 	static struct sip_msg* req= NULL;
+	int old_route_type;
 
 	if(req == NULL)
 	{
@@ -257,7 +258,9 @@ void route_timer_f(unsigned int ticks, void* param)
 		return;
 	}
 
+	swap_route_type(old_route_type, TIMER_ROUTE);
 	run_top_route(a, req);
+	set_route_type(old_route_type);
 
 	/* clean whatever extra structures were added by script functions */
 	free_sip_msg(req);

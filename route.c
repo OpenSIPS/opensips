@@ -950,6 +950,7 @@ skip:
 int run_startup_route(void)
 {
 	struct sip_msg req;
+	int ret, old_route_type;
 
 	memset(&req, 0, sizeof(struct sip_msg));
 	req.first_line.type = SIP_REQUEST;
@@ -961,8 +962,12 @@ int run_startup_route(void)
 	req.rcv.src_ip.af = AF_INET;
 	req.rcv.dst_ip.af = AF_INET;
 
+	swap_route_type(old_route_type, STARTUP_ROUTE);
 	/* run the route */
-	return run_top_route( sroutes->startup.a, &req);
+	ret = run_top_route( sroutes->startup.a, &req);
+	set_route_type(old_route_type);
+
+	return ret;
 }
 
 

@@ -102,7 +102,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 	static context_p ctx = NULL;
 	struct sip_msg* msg;
 	struct timeval start;
-	int rc;
+	int rc, old_route_type;
 	char *tmp;
 	str in_buff;
 
@@ -246,15 +246,18 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			goto end; /* drop the reply */
 		}
 
+		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* exec the onreply routing script */
 		if (rc & SCB_RUN_TOP_ROUTE && sroutes->onreply[DEFAULT_RT].a &&
 		    (run_top_route(sroutes->onreply[DEFAULT_RT].a,msg) & ACT_FL_DROP)
 		    && msg->REPLY_STATUS < 200) {
+			set_route_type(old_route_type);
 
 			LM_DBG("dropping provisional reply %d\n", msg->REPLY_STATUS);
 			update_stat( drp_rpls, 1);
 			goto end; /* drop the message */
 		} else {
+			set_route_type(old_route_type);
 			/* send the msg */
 			forward_reply(msg);
 			/* TODO - TX reply stat */

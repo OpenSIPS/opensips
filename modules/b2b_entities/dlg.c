@@ -2118,6 +2118,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	HASHHEX response;
 	str *new_hdr;
 	char status_buf[INT2STR_MAX_LEN];
+	int old_route_type;
 
 	to_hdr_parsed.param_lst = from_hdr_parsed.param_lst = NULL;
 
@@ -2429,7 +2430,9 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					/* run the b2b route */
 					if(reply_routeid > 0) {
 						msg->flags = t->uac[0].br_flags;
+						swap_route_type(old_route_type, ONREPLY_ROUTE);
 						run_top_route(sroutes->request[reply_routeid].a, msg);
+						set_route_type(old_route_type);
 						b2b_apply_lumps(msg);
 					}
 					goto b2b_route;
@@ -2769,7 +2772,9 @@ done1:
 	/* run the b2b route */
 	if(reply_routeid > 0) {
 		msg->flags = t->uac[0].br_flags;
+		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		run_top_route(sroutes->request[reply_routeid].a, msg);
+		set_route_type(old_route_type);
 		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}
 

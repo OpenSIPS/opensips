@@ -337,8 +337,11 @@ int event_route_param_get(struct sip_msg *msg, pv_param_t *ip,
 void route_run(struct action* a, struct sip_msg* msg,
 		evi_params_t *params, str *event)
 {
+	int old_route_type;
 	route_params_push_level(params, event, event_route_param_get);
+	swap_route_type(old_route_type, EVENT_ROUTE);
 	run_top_route(a, msg);
+	set_route_type(old_route_type);
 	route_params_pop_level();
 }
 

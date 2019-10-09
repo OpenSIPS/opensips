@@ -562,6 +562,7 @@ static inline int run_failure_handlers(struct cell *t)
 	struct sip_msg *shmem_msg;
 	struct ua_client *uac;
 	int on_failure;
+	int old_route_type;
 
 	shmem_msg = t->uas.request;
 	uac = &t->uac[picked_branch];
@@ -601,7 +602,9 @@ static inline int run_failure_handlers(struct cell *t)
 		on_failure = t->on_negative;
 		t->on_negative=0;
 		/* run a reply_route action if some was marked */
+		swap_route_type(old_route_type, FAILURE_ROUTE);
 		run_top_route(sroutes->failure[on_failure].a, &faked_req);
+		set_route_type(old_route_type);
 	}
 
 	/* restore original environment and free the fake msg */
@@ -1491,6 +1494,7 @@ int reply_received( struct sip_msg  *p_msg )
 	struct cell *t;
 	struct usr_avp **backup_list;
 	unsigned int has_reply_route;
+	int old_route_type;
 
 	set_t(T_UNDEFINED);
 
@@ -1569,10 +1573,13 @@ int reply_received( struct sip_msg  *p_msg )
 		/* transfer transaction flag to branch context */
 		p_msg->flags = t->uas.request ? t->uas.request->flags : 0;
 		setb0flags( p_msg, t->uac[branch].br_flags);
+
+		swap_route_type(old_route_type, BRANCH_ROUTE);
 		/* run block - first per branch and then global one */
 		if ( t->uac[branch].on_reply &&
 		(run_top_route(sroutes->onreply[t->uac[branch].on_reply].a,p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
+			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
 				UNLOCK_REPLIES( t );
 				set_avp_list( backup_list );
@@ -1580,8 +1587,10 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
+		set_route_type(ONREPLY_ROUTE);
 		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply].a,p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
+			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
 				UNLOCK_REPLIES( t );
 				set_avp_list( backup_list );
@@ -1589,6 +1598,7 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
+		set_route_type(old_route_type);
 		/* transfer current message context back to t */
 		t->uac[branch].br_flags = getb0flags(p_msg);
 		if (t->uas.request)
