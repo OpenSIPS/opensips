@@ -611,6 +611,8 @@ int rl_stats(mi_item_t *resp_obj, str * value)
 		if (!pipe_arr)
 			return -1;
 		for (i = 0; i < rl_htable.size; i++) {
+			if (map_size(rl_htable.maps[i]) == 0)
+				continue;
 			pipe_item = add_mi_object(pipe_arr, NULL, 0);
 			if (!pipe_item)
 				return -1;
