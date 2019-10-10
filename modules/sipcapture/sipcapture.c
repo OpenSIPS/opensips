@@ -240,16 +240,16 @@ static void raw_socket_process(int rank);
 static void destroy(void);
 static int cfg_validate(void);
 
-static int sip_capture(struct sip_msg *msg, char *table,
+static int sip_capture(struct sip_msg *msg, void *table,
                        str *cf1, str *cf2, str *cf3);
-static int async_sip_capture(struct sip_msg *msg, async_ctx *actx, char *table,
+static int async_sip_capture(struct sip_msg *msg, async_ctx *actx, void *table,
                              str *cf1, str *cf2, str *cf3);
 static int sip_capture_fix_table(void** param);
 static int sip_capture_async_fix_table(void** param);
 static int fix_hep_value_type(void **param);
 static int fix_hep_name(void **param);
 static int fix_vendor_id(void **param);
-static int w_sip_capture(struct sip_msg *msg, char *table_name,
+static int w_sip_capture(struct sip_msg *msg, void *table_name,
 		async_ctx *actx, str *cf1, str *cf2, str *cf3);
 
 
@@ -2485,7 +2485,7 @@ static int fixup_tz_table(void** param,  struct tz_table_list** list)
 		return -1;
 	}
 
-	table_s.s = (char *) *param;
+	table_s = *((str *) *param);
 	table_s.len = strlen(table_s.s);
 
 	parse_table_str(&table_s, tz_fxup_param);
@@ -2499,12 +2499,13 @@ static int fixup_tz_table(void** param,  struct tz_table_list** list)
 				!memcmp(it->table->prefix.s, tz_fxup_param->prefix.s,
 					tz_fxup_param->prefix.len) &&
 				!memcmp(it->table->suffix.s, tz_fxup_param->suffix.s,
-					tz_fxup_param->suffix.len))
+					tz_fxup_param->suffix.len)) {
 
 			/* table already there */
 			pkg_free(tz_fxup_param);
 			*param = it->table;
 			return 1;
+		}
 	}
 
 	list_el = pkg_malloc(sizeof(struct tz_table_list));
@@ -3026,7 +3027,7 @@ static inline void build_table_name(tz_table_t* table_format, str* table_s)
 	struct tm* gmtm;
 
 	table_s->s = table_buf;
-	memcpy(current_table.s, table_format->prefix.s, table_format->prefix.len);
+	memcpy(table_s->s, table_format->prefix.s, table_format->prefix.len);
 	table_s->len = table_format->prefix.len;
 
 	if (table_format->suffix.len && table_format->suffix.s) {
@@ -3052,20 +3053,20 @@ static inline struct tz_table_list* search_table(tz_table_t* el, struct tz_table
 
 
 
-static int sip_capture(struct sip_msg *msg, char *table,
+static int sip_capture(struct sip_msg *msg, void *table,
                        str *cf1, str *cf2, str *cf3)
 {
 	return w_sip_capture(msg, table, NULL, cf1, cf2, cf3);
 }
 
-static int async_sip_capture(struct sip_msg *msg, async_ctx *actx, char *table,
+static int async_sip_capture(struct sip_msg *msg, async_ctx *actx, void *table,
                              str *cf1, str *cf2, str *cf3)
 {
 	return w_sip_capture(msg, table, actx, cf1, cf2, cf3);
 }
 
 
-static int w_sip_capture(struct sip_msg *msg, char *table_name,
+static int w_sip_capture(struct sip_msg *msg, void *table_name,
                          async_ctx *actx, str *cf1, str *cf2, str *cf3)
 {
 	struct _sipcapture_object sco;
@@ -3447,20 +3448,17 @@ static int w_sip_capture(struct sip_msg *msg, char *table_name,
 		/* IP source and destination */
 
 		/*source ip*/
-		memcpy(src_buf_ip, ip_addr2a(&msg->rcv.src_ip),
-				sizeof(&msg->rcv.src_ip));
-		ip_addr2a((struct ip_addr*)src_buf_ip);
+		tmp = ip_addr2a(&msg->rcv.src_ip);
+		sco.source_ip.len = strlen(tmp);
+		memcpy(src_buf_ip, tmp, sco.source_ip.len);
 		sco.source_ip.s = src_buf_ip;
-		sco.source_ip.len = strlen(src_buf_ip);
 		sco.source_port = msg->rcv.src_port;
 
-
 		/*destination ip*/
-		memcpy(dst_buf_ip, ip_addr2a(&msg->rcv.dst_ip),
-				sizeof(&msg->rcv.dst_ip));
-		ip_addr2a((struct ip_addr*)dst_buf_ip);
+		tmp = ip_addr2a(&msg->rcv.dst_ip);
+		sco.destination_ip.len = strlen(tmp);
+		memcpy(dst_buf_ip, tmp, sco.destination_ip.len);
 		sco.destination_ip.s = dst_buf_ip;
-		sco.destination_ip.len = strlen(sco.destination_ip.s);
 		sco.destination_port = msg->rcv.dst_port;
 	}
 
