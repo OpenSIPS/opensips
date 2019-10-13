@@ -278,8 +278,8 @@ ge-summary")
 
    Example 1.6. Set cluster_sharing_tags parameter
 ...
-modparam("presence", "cluster_pres_events" ,"vip1=active")
-modparam("presence", "cluster_pres_events" ,"vip2=backup")
+modparam("presence", "cluster_sharing_tags" ,"vip1=active")
+modparam("presence", "cluster_sharing_tags" ,"vip2=backup")
 ...
 
 1.4.7. expires_offset (int)
@@ -1037,7 +1037,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 663 247 24146 12623
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 117 74 2752 1172
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 118 75 2754 1174
    3. Razvan Crainea (@razvancrainea) 29 22 384 135
    4. Ovidiu Sas (@ovidiusas) 27 19 615 167
    5. Liviu Chircu (@liviuchircu) 25 16 247 372
@@ -1076,9 +1076,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Oct 2019
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
    4.  Walter Doekes (@wdoekes)            Apr 2010 - Feb 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2018
    6.  James Criscuolo                     Mar 2016 - Mar 2016
@@ -1103,8 +1103,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
    Crainea (@razvancrainea), Saúl Ibarra Corretgé (@saghul),
    Ovidiu Sas (@ovidiusas), Anca Vamanu, Kennard White, Angel
    Marin, Kobi Eshun (@ekobi), Klaus Darilion, Henning Westerholt
