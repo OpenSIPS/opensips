@@ -46,6 +46,7 @@ struct lock_set_list
 struct dlg_profile_link {
 	str value;
 	int hash_idx;
+	int it_marker;
 	struct dlg_profile_link  *next;
 	struct dlg_profile_table *profile;
 };

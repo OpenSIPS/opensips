@@ -1755,6 +1755,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 {
 	static char dlg_info[DLG_CTX_JSON_BUFF_SIZE];
+	struct dlg_profile_link *dl,*dl2;
 	struct dlg_val* dv;
 	char *p;
 	int i,j,k,len;
@@ -1869,6 +1870,77 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 			DEC_AND_CHECK_LEN(len,1);
 next_val:
 			;
+		}
+
+		*p++='}';
+		DEC_AND_CHECK_LEN(len,1);
+	}
+
+	if (ctx && dlg->profile_links) {
+		memcpy(p,",\"profiles\":{",13);
+		p+=13;
+		DEC_AND_CHECK_LEN(len,13);
+		for (dl=dlg->profile_links ; dl ; dl=dl->next)
+			dl->it_marker= 0;
+
+		for( dl=dlg->profile_links ; dl ; dl=dl->next) {
+			if (dl->it_marker != 0)
+				continue;
+
+			dl->it_marker=1;
+
+			if (dl!=dlg->profile_links) {
+				*p++ = ','; 
+				DEC_AND_CHECK_LEN(len,1);
+			}
+
+			*p++='\"';
+			DEC_AND_CHECK_LEN(len,1);
+			memcpy(p,dl->profile->name.s,dl->profile->name.len);
+			p+=dl->profile->name.len;
+			DEC_AND_CHECK_LEN(len,dl->profile->name.len);
+
+			*p++='\"';
+			DEC_AND_CHECK_LEN(len,1);
+			*p++=':';	
+			DEC_AND_CHECK_LEN(len,1);
+
+			*p++='[';
+			DEC_AND_CHECK_LEN(len,1);
+
+			*p++='\"';
+			DEC_AND_CHECK_LEN(len,1);
+			memcpy(p,ZSW(dl->value.s),dl->value.len);
+			p+=dl->value.len;
+			DEC_AND_CHECK_LEN(len,dl->value.len);
+			*p++='\"';
+			DEC_AND_CHECK_LEN(len,1);
+
+			for (dl2=dlg->profile_links; dl2; dl2=dl2->next) {
+				if (dl2->it_marker != 0)
+					continue;
+
+				if (dl->profile->name.len == dl2->profile->name.len &&
+				memcmp(dl->profile->name.s,dl2->profile->name.s,dl->profile->name.len) == 0) {
+					/* found another member of the same profile */
+
+					*p++=',';
+					DEC_AND_CHECK_LEN(len,1);
+					*p++='\"';
+					DEC_AND_CHECK_LEN(len,1);
+					
+					memcpy(p,ZSW(dl2->value.s),dl2->value.len);
+					p+=dl2->value.len;
+					DEC_AND_CHECK_LEN(len,dl2->value.len);
+					*p++='\"';
+					DEC_AND_CHECK_LEN(len,1);
+
+					dl2->it_marker=1;
+				}
+			}
+
+			*p++=']';
+			DEC_AND_CHECK_LEN(len,1);
 		}
 
 		*p++='}';
