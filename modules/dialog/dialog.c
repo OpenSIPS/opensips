@@ -1894,11 +1894,16 @@ int pv_get_dlg_json(struct sip_msg *msg, pv_param_t *param,
 
 	if ( (dlg=get_current_dialog())==NULL )
 		return pv_get_null( msg, param, res);
+	
+	dlg_lock_dlg(dlg);
 
 	if ((out = dlg_get_json_out(dlg,0,&len)) == NULL) {
 		LM_ERR("Failed to build pvar content \n");
+		dlg_unlock_dlg(dlg);
 		return pv_get_null( msg, param, res);
 	}
+
+	dlg_unlock_dlg(dlg);
 
 	res->rs.s=out;
 	res->rs.len=len;
@@ -1920,10 +1925,15 @@ int pv_get_dlg_ctx_json(struct sip_msg *msg, pv_param_t *param,
 	if ( (dlg=get_current_dialog())==NULL )
 		return pv_get_null( msg, param, res);
 
+	dlg_lock_dlg(dlg);
+
 	if ((out = dlg_get_json_out(dlg,1,&len)) == NULL) {
 		LM_ERR("Failed to build pvar content \n");
+		dlg_unlock_dlg(dlg);
 		return pv_get_null( msg, param, res);
 	}
+
+	dlg_unlock_dlg(dlg);
 
 	res->rs.s=out;
 	res->rs.len=len;
