@@ -1024,14 +1024,13 @@ static int w_ds_select(struct sip_msg *msg, int set, int alg, int flags,
 		return -1;
 
 	ds_select_ctl.mode = mode;
-	ds_select_ctl.max_results = 1000;
 	ds_select_ctl.set_destination = 0;
 	ds_select_ctl.ds_flags = 0;
 	ds_select_ctl.partition = part;
 	ds_select_ctl.set = set;
 	ds_select_ctl.alg = alg;
 	ds_select_ctl.ds_flags = flags;
-	ds_select_ctl.max_results = max_res ? *max_res : 0;
+	ds_select_ctl.max_results = max_res ? *max_res : 1000;
 
 	memset(&selected_dst, 0, sizeof(ds_selected_dst));
 
