@@ -691,15 +691,16 @@ modparam("usrloc", "desc_time_order", 1)
 	<section id="param_timer_interval" xreflabel="timer_interval">
 		<title><varname>timer_interval</varname> (integer)</title>
 		<para>
-		Number of seconds between two timer runs. The module uses timer to
-		delete expired contacts, synchronize with database and other tasks,
-		that need to be run periodically.
+		Number of seconds between two timer runs.  During each run, the module
+		will update/delete dirty/expired contacts from memory and/or mirror
+		these operations to the database, if configured to do so.
 		</para>
 		<warning>
 		<para>
-			In case of crash or restart contacts that are in memory only and
-			haven't been flushed yet will get lost. If you want minimize the
-			risk, use a shorter timer interval.
+		In case of an OpenSIPS shutdown or even a crash, contacts which are in
+		memory only and have not been flushed yet to disk will NOT get lost!
+		OpenSIPS will try its best to do a last-minute sync to DB right before
+		shutting down.
 		</para>
 		</warning>
 		<para>
