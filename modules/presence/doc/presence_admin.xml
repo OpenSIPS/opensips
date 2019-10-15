@@ -35,7 +35,7 @@
 	</para>
 	</section>
 
-	<section id="presence_clustering">
+	<section id="presence_clustering" xreflabel="Presence Clustering">
 	<title>Presence clustering</title>
 	<para>
 	To read and understand the presence clustering, its abilities and how to
@@ -938,6 +938,56 @@ _empty_line_
 _empty_line_
 	  </programlisting>
 	</section>
+
+	<section id="mi_pres_set_sharing_tag_active" xreflabel="pres_set_sharing_tag_active">
+	  <title>
+		<function moreinfo="none">pres_set_sharing_tag_active</function>
+	  </title>
+	  <para>
+			Set the given sharing tag to the <emphasis>active</emphasis> state.
+			The information about this change is also broadcasted in the
+			cluster in order to force any other node that may be active on this
+			tag to step down to backup.
+	  </para>
+		<para>
+		For more details, see the <xref linkend="presence_clustering"/> chapter.
+		</para>
+	  <para>
+		Name: <emphasis>pres_set_sharing_tag_active</emphasis>
+	  </para>
+	  <para>Parameters: <emphasis>tag</emphasis> - name of the tag to be set active
+	  </para>
+	  <para>
+		MI FIFO Command Format:
+	  </para>
+	  <programlisting  format="linespecific">
+		opensipsctl fifo pres_set_sharing_tag_active vip1
+	  </programlisting>
+	</section>
+
+	<section id="mi_pres_list_sharing_tags" xreflabel="pres_list_sharing_tags">
+	  <title>
+		<function moreinfo="none">pres_list_sharing_tags</function>
+	  </title>
+	  <para>
+		Lists all known sharing tags and their states.
+	  </para>
+		<para>
+		For more details, see the <xref linkend="presence_clustering"/> chapter.
+		</para>
+	  <para>
+		Name: <emphasis>dlg_list_sharing_tags</emphasis>
+	  </para>
+		<para>Parameters: <emphasis>Command takes no parameters</emphasis>
+		</para>
+	  <para>
+		MI FIFO Command Format:
+	  </para>
+	  <programlisting  format="linespecific">
+		opensipsctl fifo dlg_list_sharing_tags
+	  </programlisting>
+	</section>
+
 </section>
 
 
