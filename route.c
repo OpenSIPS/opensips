@@ -1132,6 +1132,17 @@ static int fix_actions(struct action* a)
 					}
 				}
 				break;
+			case ASSERT_T:
+				if (t->elem[0].type!=EXPR_ST){
+					LM_CRIT("invalid subtype %d for assert (should be expr)\n",
+								t->elem[0].type);
+					ret = E_BUG;
+					goto error;
+				}
+				if (t->elem[0].u.data)
+					if ((ret=fix_expr((struct expr*)t->elem[0].u.data))<0)
+						return ret;
+				break;
 			case IF_T:
 				if (t->elem[0].type!=EXPR_ST){
 					LM_CRIT("invalid subtype %d for if (should be expr)\n",
