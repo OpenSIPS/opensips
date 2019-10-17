@@ -723,9 +723,11 @@ static void _tcpconn_rm(struct tcp_connection* c)
 	if (protos[c->type].net.conn_clean)
 		protos[c->type].net.conn_clean(c);
 
+#ifdef DBG_TCPCON
 	sh_log(c->hist, TCP_DESTROY, "type=%d", c->type);
 	sh_unref(c->hist);
 	c->hist = NULL;
+#endif
 
 	shm_free(c);
 }
@@ -876,7 +878,9 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	/* start with the default conn lifetime */
 	c->lifetime = get_ticks()+tcp_con_lifetime;
 	c->flags|=F_CONN_REMOVED|flags;
+#ifdef DBG_TCPCON
 	c->hist = sh_push(c, con_hist);
+#endif
 
 	if (protos[si->proto].net.conn_init &&
 	protos[si->proto].net.conn_init(c)<0) {
