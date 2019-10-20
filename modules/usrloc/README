@@ -614,15 +614,17 @@ modparam("usrloc", "desc_time_order", 1)
 
 1.5.22. timer_interval (integer)
 
-   Number of seconds between two timer runs. The module uses timer
-   to delete expired contacts, synchronize with database and other
-   tasks, that need to be run periodically.
+   Number of seconds between two timer runs. During each run, the
+   module will update/delete dirty/expired contacts from memory
+   and/or mirror these operations to the database, if configured
+   to do so.
 
 Warning
 
-   In case of crash or restart contacts that are in memory only
-   and haven't been flushed yet will get lost. If you want
-   minimize the risk, use a shorter timer interval.
+   In case of an OpenSIPS shutdown or even a crash, contacts which
+   are in memory only and have not been flushed yet to disk will
+   NOT get lost! OpenSIPS will try its best to do a last-minute
+   sync to DB right before shutting down.
 
    Default value is 60.
 
@@ -1475,7 +1477,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 232 137 3962 3496
-   3. Liviu Chircu (@liviuchircu) 214 132 5892 1916
+   3. Liviu Chircu (@liviuchircu) 215 133 5899 1922
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
@@ -1516,8 +1518,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Sep 2019
    3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
    4.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
    5.  Alessio Garzi                       Aug 2019 - Aug 2019
