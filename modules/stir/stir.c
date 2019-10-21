@@ -64,9 +64,17 @@
 #include "../../data_lump.h"
 #include "../../modules/tls_mgm/api.h"
 #include "../../lib/cJSON.h"
+#include "../../context.h"
 
 #include "stir.h"
 
+#define parsed_ctx_get() \
+	(current_processing_ctx == NULL ? NULL : \
+	((struct parsed_identity *)context_get_ptr(CONTEXT_GLOBAL, \
+	current_processing_ctx, parsed_ctx_idx)))
+
+#define parsed_ctx_set(_ptr) \
+	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, parsed_ctx_idx, _ptr)
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -87,6 +95,8 @@ static char *crl_list;
 struct tls_mgm_binds tls_mgm_api;
 
 static int tn_authlist_nid;
+
+static int parsed_ctx_idx =-1;
 
 static X509_STORE *store;
 static X509_STORE_CTX *verify_ctx;
@@ -201,6 +211,21 @@ static int init_cert_validation(void)
 	return 0;
 }
 
+static void parsed_ctx_free(void *param)
+{
+	struct parsed_identity *parsed = (struct parsed_identity *)param;
+
+	if (parsed) {
+		cJSON_Delete(parsed->header);
+		cJSON_Delete(parsed->payload);
+		pkg_free(parsed->dec_header.s);
+		pkg_free(parsed->dec_payload.s);
+		pkg_free(parsed->dec_signature.s);
+	}
+
+	pkg_free(parsed);
+}
+
 static int mod_init(void)
 {
 	if (load_tls_mgm_api(&tls_mgm_api) != 0) {
@@ -217,6 +242,8 @@ static int mod_init(void)
 
 	if (init_cert_validation() < 0)
 		return -1;
+
+	parsed_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, parsed_ctx_free);
 
 	return 0;
 }
@@ -838,10 +865,6 @@ error:
 	return rc;
 }
 
-static int w_stir_check(struct sip_msg *msg) {
-	return 1;
-}
-
 /* decode base64url without padding
  * the actual buffer _in points to is assumed to
  * have a size of at least _in->len+2 */
@@ -1015,15 +1038,6 @@ error:
 	if (parsed->payload)
 		cJSON_Delete(parsed->payload);
 	return rc;
-}
-
-static void free_parsed_identity(struct parsed_identity *parsed)
-{
-	cJSON_Delete(parsed->header);
-	cJSON_Delete(parsed->payload);
-	pkg_free(parsed->dec_header.s);
-	pkg_free(parsed->dec_payload.s);
-	pkg_free(parsed->dec_signature.s);
 }
 
 static char *get_pport_orig_tn(cJSON *payload)
@@ -1281,6 +1295,35 @@ error:
 	return rc;
 }
 
+static int get_parsed_identity(struct hdr_field *identity_hdr,
+	struct parsed_identity **parsed)
+{
+	int rc = 0;
+
+	*parsed = parsed_ctx_get();
+	if (*parsed == NULL) {
+		if (!current_processing_ctx) {
+			LM_ERR("no processing ctx found!\n");
+			return -1;
+		}
+
+		*parsed = pkg_malloc(sizeof **parsed);
+		if (*parsed == NULL) {
+			LM_ERR("oom!\n");
+			return -1;
+		}
+		memset(*parsed, 0, sizeof **parsed);
+
+		rc = parse_identity_hf(&identity_hdr->body, *parsed);
+		if (rc == 0)
+			parsed_ctx_set(*parsed);
+		else
+			pkg_free(*parsed);
+	}
+
+	return rc;
+}
+
 static int set_err_resp_vars(struct sip_msg *msg, pv_spec_t *err_code_var,
 	pv_spec_t *err_reason_var, int code, char *reason)
 {
@@ -1318,7 +1361,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	time_t now, date_ts, iat_ts;
 	struct hdr_field *date_hf = NULL;
 	struct cert_holder *cert = NULL;
-	struct parsed_identity parsed;
+	struct parsed_identity *parsed;
 	int rc;
 
 	/* looking for 'Identity' and 'Date' */
@@ -1354,8 +1397,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		dest_tn_p = &dest_tn;
 	}
 
-	memset(&parsed, 0, sizeof parsed);
-	if ((rc = parse_identity_hf(&identity_hdr->body, &parsed)) < 0) {
+	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
 		} else {  /* rc == -4 */
@@ -1366,19 +1408,19 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		return rc;
 	}
 
-	if (str_strcmp(&parsed.ppt_hdr_param, _str(PPORT_HDR_PPT_VAL))) {
+	if (str_strcmp(&parsed->ppt_hdr_param, _str(PPORT_HDR_PPT_VAL))) {
 		LM_INFO("Unsupported 'ppt' extension\n");
 		rc = -5;
 		goto error;
 	}
-	if (parsed.alg_hdr_param.s &&
-		str_strcmp(&parsed.alg_hdr_param, _str(PPORT_HDR_ALG_VAL))) {
+	if (parsed->alg_hdr_param.s &&
+		str_strcmp(&parsed->alg_hdr_param, _str(PPORT_HDR_ALG_VAL))) {
 		LM_INFO("Unsupported 'alg'\n");
 		rc = -5;
 		goto error;
 	}
 
-	if (check_passport_claims(parsed.header, parsed.payload,
+	if (check_passport_claims(parsed->header, parsed->payload,
 		&pport_orig_tn.s, &pport_dest_tn.s, &iat_ts) < 0) {
 		LM_INFO("Required PASSporT claims are missing or have bad datatypes\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
@@ -1452,8 +1494,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if (iat_ts != date_ts && (now - iat_ts > verify_date_freshness))
 		iat_ts = date_ts;
 
-	if ((rc = verify_signature(cert, parsed.header, parsed.payload,
-		&parsed.dec_signature, iat_ts, orig_tn_p, dest_tn_p)) < 0) {
+	if ((rc = verify_signature(cert, parsed->header, parsed->payload,
+		&parsed->dec_signature, iat_ts, orig_tn_p, dest_tn_p)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Error verifying signature\n");
 			goto error;
@@ -1464,13 +1506,58 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		}
 	}
 
-	free_parsed_identity(&parsed);
 	tls_mgm_api.free_cert_holder(cert);
 
 	return 1;
 error:
-	free_parsed_identity(&parsed);
 	if (cert)
 		tls_mgm_api.free_cert_holder(cert);
 	return rc;
+}
+
+static int w_stir_check(struct sip_msg *msg)
+{
+	struct hdr_field *identity_hdr;
+	struct parsed_identity *parsed;
+	time_t iat_ts;
+	str orig_tn, dest_tn;
+	int rc;
+
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("Failed to parse headers\n");
+		return -1;
+	}
+
+	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
+		LM_INFO("No Identity header found\n");
+		return -2;
+	}
+
+	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
+		if (rc == -1) {
+			LM_ERR("Failed to parse identity header\n");
+			return -1;
+		} else {
+			LM_INFO("Invalid identity header\n");
+			return -3;
+		}
+	}
+
+	if (str_strcmp(&parsed->ppt_hdr_param, _str(PPORT_HDR_PPT_VAL))) {
+		LM_INFO("Unsupported 'ppt' extension\n");
+		return -4;
+	}
+	if (parsed->alg_hdr_param.s &&
+		str_strcmp(&parsed->alg_hdr_param, _str(PPORT_HDR_ALG_VAL))) {
+		LM_INFO("Unsupported 'alg'\n");
+		return -4;
+	}
+
+	if (check_passport_claims(parsed->header, parsed->payload,
+		&orig_tn.s, &dest_tn.s, &iat_ts) < 0) {
+		LM_INFO("Required PASSporT claims are missing or have bad datatypes\n");
+		return -3;
+	}
+
+	return 1;
 }
