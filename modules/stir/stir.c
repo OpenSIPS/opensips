@@ -87,6 +87,9 @@ static int w_stir_check(struct sip_msg *msg);
 static int fixup_attest(void **param);
 static int fixup_check_wrvar(void **param);
 
+int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_parse_identity_name(pv_spec_p sp, str *in);
+
 static int auth_date_freshness = DEFAULT_AUTH_FRESHNESS;
 static int verify_date_freshness = DEFAULT_VERIFY_FRESHNESS;
 static char *ca_list;
@@ -110,6 +113,8 @@ static param_export_t params[] = {
 };
 
 static pv_export_t mod_items[] = {
+	{{"identity", sizeof("identity") - 1}, 1000, pv_get_identity,
+		0, pv_parse_identity_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -905,6 +910,54 @@ static inline int dec_base64url_nopad(str *in, str *out)
 	return 0;
 }
 
+static cJSON *get_pport_orig_tn(cJSON *payload)
+{
+	cJSON *item, *obj_item;
+
+	if (!(obj_item = cJSON_GetObjectItem(payload, PPORT_PAYLOAD_ORIG))) {
+		LM_INFO("Missing 'orig' claim\n");
+		return NULL;
+	}
+	if (obj_item->type != cJSON_Object) {
+		LM_INFO("'orig' value should be an object\n");
+		return NULL;
+	}
+	if (!(item = cJSON_GetObjectItem(obj_item, PPORT_PAYLOAD_TN))) {
+		LM_INFO("Missing 'tn' from 'orig' claim\n");
+		return NULL;
+	}
+
+	return item;
+}
+
+static cJSON *get_pport_dest_tn(cJSON *payload)
+{
+	cJSON *item, *obj_item, *arr_item;
+
+	if (!(obj_item = cJSON_GetObjectItem(payload, PPORT_PAYLOAD_DEST))) {
+		LM_INFO("Missing 'dest' claim\n");
+		return NULL;
+	}
+	if (obj_item->type != cJSON_Object) {
+		LM_INFO("'dest' value should be an object\n");
+		return NULL;
+	}
+	if (!(arr_item = cJSON_GetObjectItem(obj_item, PPORT_PAYLOAD_TN))) {
+		LM_INFO("Missing 'tn' from 'dest' claim\n");
+		return NULL;
+	}
+	if (arr_item->type != cJSON_Array) {
+		LM_INFO("'tn' from 'dest' should be an array\n");
+		return NULL;
+	}
+	if (!(item = cJSON_GetArrayItem(arr_item, 0))) {
+		LM_INFO("Missing number in 'tn' from 'dest'\n");
+		return NULL;
+	}
+
+	return item;
+}
+
 static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 {
 	str header_str, payload_str, sig_str, params_str;
@@ -989,6 +1042,8 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 		goto invalid_hdr;
 	}
 
+	parsed->x5u = cJSON_GetObjectItem(parsed->header, PPORT_HDR_X5U);
+
 	parsed->dec_payload.len = calc_max_base64_decode_len(payload_str.len);
 	parsed->dec_payload.s = pkg_malloc(parsed->dec_payload.len + 1);
 	if (!parsed->dec_payload.s) {
@@ -1006,6 +1061,12 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 		LM_INFO("Failed to parse PASSporT Payload JSON\n");
 		goto invalid_hdr;
 	}
+
+	parsed->attest = cJSON_GetObjectItem(parsed->payload, PPORT_PAYLOAD_ATTEST);
+	parsed->dest_tn = get_pport_dest_tn(parsed->payload);
+	parsed->iat = cJSON_GetObjectItem(parsed->payload, PPORT_PAYLOAD_IAT);
+	parsed->orig_tn = get_pport_orig_tn(parsed->payload);
+	parsed->origid = cJSON_GetObjectItem(parsed->payload, PPORT_PAYLOAD_ORIGID);
 
 	parsed->dec_signature.len = calc_max_base64_decode_len(sig_str.len);
 	parsed->dec_signature.s = pkg_malloc(parsed->dec_signature.len + 1);
@@ -1040,84 +1101,11 @@ error:
 	return rc;
 }
 
-static char *get_pport_orig_tn(cJSON *payload)
-{
-	cJSON *item, *obj_item;
-
-	if (!(obj_item = cJSON_GetObjectItem(payload, PPORT_PAYLOAD_ORIG))) {
-		LM_INFO("Missing 'orig' claim\n");
-		return NULL;
-	}
-	if (obj_item->type != cJSON_Object) {
-		LM_INFO("'orig' value should be an object\n");
-		return NULL;
-	}
-	if (!(item = cJSON_GetObjectItem(obj_item, PPORT_PAYLOAD_TN))) {
-		LM_INFO("Missing 'tn' from 'orig' claim\n");
-		return NULL;
-	}
-	if (item->type != cJSON_String) {
-		LM_INFO("'tn' from 'orig' should be a string\n");
-		return NULL;
-	}
-
-	return item->valuestring;
-}
-
-static char *get_pport_dest_tn(cJSON *payload)
-{
-	cJSON *item, *obj_item, *arr_item;
-
-	if (!(obj_item = cJSON_GetObjectItem(payload, PPORT_PAYLOAD_DEST))) {
-		LM_INFO("Missing 'dest' claim\n");
-		return NULL;
-	}
-	if (obj_item->type != cJSON_Object) {
-		LM_INFO("'dest' value should be an object\n");
-		return NULL;
-	}
-	if (!(arr_item = cJSON_GetObjectItem(obj_item, PPORT_PAYLOAD_TN))) {
-		LM_INFO("Missing 'tn' from 'dest' claim\n");
-		return NULL;
-	}
-	if (arr_item->type != cJSON_Array) {
-		LM_INFO("'tn' from 'dest' should be an array\n");
-		return NULL;
-	}
-	if (!(item = cJSON_GetArrayItem(arr_item, 0))) {
-		LM_INFO("Missing number in 'tn' from 'dest'\n");
-		return NULL;
-	}
-	if (item->type != cJSON_String) {
-		LM_INFO("Number in 'tn' from 'dest' should be a string\n");
-		return NULL;
-	}
-
-	return item->valuestring;
-}
-
-static inline time_t get_pport_iat_ts(cJSON *header)
+static int check_passport_claims(struct parsed_identity *parsed)
 {
 	cJSON *item;
 
-	if (!(item = cJSON_GetObjectItem(header, PPORT_PAYLOAD_IAT))) {
-		LM_INFO("Missing 'iat' claim\n");
-		return -1;
-	}
-	if (item->type != cJSON_Number) {
-		LM_INFO("'iat' value should be a number\n");
-		return -1;
-	}
-
-	return (time_t)item->valuedouble;
-}
-
-static int check_passport_claims(cJSON *header, cJSON *payload,
-	char **orig_tn, char **dest_tn, time_t *iat_ts)
-{
-	cJSON *item;
-
-	if (!(item = cJSON_GetObjectItem(header, PPORT_HDR_ALG))) {
+	if (!(item = cJSON_GetObjectItem(parsed->header, PPORT_HDR_ALG))) {
 		LM_INFO("Missing 'alg' claim\n");
 		return -1;
 	}
@@ -1126,7 +1114,7 @@ static int check_passport_claims(cJSON *header, cJSON *payload,
 		return -1;
 	}
 
-	if (!(item = cJSON_GetObjectItem(header, PPORT_HDR_PPT))) {
+	if (!(item = cJSON_GetObjectItem(parsed->header, PPORT_HDR_PPT))) {
 		LM_INFO("Missing 'ppt' claim\n");
 		return -1;
 	}
@@ -1135,7 +1123,7 @@ static int check_passport_claims(cJSON *header, cJSON *payload,
 		return -1;
 	}
 
-	if (!(item = cJSON_GetObjectItem(header, PPORT_HDR_TYP))) {
+	if (!(item = cJSON_GetObjectItem(parsed->header, PPORT_HDR_TYP))) {
 		LM_INFO("Missing 'typ' claim\n");
 		return -1;
 	}
@@ -1144,38 +1132,52 @@ static int check_passport_claims(cJSON *header, cJSON *payload,
 		return -1;
 	}
 
-	if (!(item = cJSON_GetObjectItem(header, PPORT_HDR_X5U))) {
+	if (!parsed->x5u) {
 		LM_INFO("Missing 'x5u' claim\n");
 		return -1;
 	}
-	if (item->type != cJSON_String) {
+	if (parsed->x5u->type != cJSON_String) {
 		LM_INFO("'x5u' value should be a string\n");
 		return -1;
 	}
 
-	if (!(item = cJSON_GetObjectItem(payload, PPORT_PAYLOAD_ATTEST))) {
+	if (!parsed->attest) {
 		LM_INFO("Missing 'attest' claim\n");
 		return -1;
 	}
-	if (item->type != cJSON_String) {
+	if (parsed->attest->type != cJSON_String) {
 		LM_INFO("'attest' value should be a string\n");
 		return -1;
 	}
 
-	if (!(*dest_tn = get_pport_dest_tn(payload)))
+	if (!parsed->dest_tn)
 		return -1;
-
-	if ((*iat_ts = get_pport_iat_ts(payload)) == -1)
+	if (parsed->dest_tn->type != cJSON_String) {
+		LM_INFO("Number in 'tn' from 'dest' should be a string\n");
 		return -1;
+	}
 
-	if (!(*orig_tn = get_pport_orig_tn(payload)))
+	if (!parsed->iat) {
+		LM_INFO("Missing 'iat' claim\n");
 		return -1;
+	}
+	if (parsed->iat->type != cJSON_Number) {
+		LM_INFO("'iat' value should be a number\n");
+		return -1;
+	}
 
-	if (!(item = cJSON_GetObjectItem(payload, PPORT_PAYLOAD_ORIGID))) {
+	if (!parsed->orig_tn)
+		return -1;
+	if (parsed->orig_tn->type != cJSON_String) {
+		LM_INFO("'tn' from 'orig' should be a string\n");
+		return -1;
+	}
+
+	if (!parsed->origid) {
 		LM_INFO("Missing 'origid' claim\n");
 		return -1;
 	}
-	if (item->type != cJSON_String) {
+	if (parsed->origid->type != cJSON_String) {
 		LM_INFO("'origid' value should be a string\n");
 		return -1;
 	}
@@ -1209,13 +1211,12 @@ static int validate_certificate(struct cert_holder *cert)
 		return 0;
 }
 
-static int verify_signature(struct cert_holder *cert, cJSON *header,
-	cJSON *payload, str *signature, time_t iat_ts, str *orig_tn, str *dest_tn)
+static int verify_signature(struct cert_holder *cert,
+	struct parsed_identity *parsed, time_t iat_ts, str *orig_tn, str *dest_tn)
 {
 	str unsigned_buf = {0,0};
 	EVP_MD_CTX *mdctx = NULL;
 	EVP_PKEY *pubkey = NULL;
-	cJSON *attest, *x5u, *origid;
 	str attest_s, x5u_s, origid_s;
 	int rc = -1;
 
@@ -1235,28 +1236,13 @@ static int verify_signature(struct cert_holder *cert, cJSON *header,
 		goto error;
 	}
 
-	attest = cJSON_GetObjectItem(payload, PPORT_PAYLOAD_ATTEST);
-	if (!attest) {
-		LM_ERR("MIssing 'attest' claim\n");
-		goto error;
-	}
-	attest_s.s = attest->valuestring;
+	attest_s.s = parsed->attest->valuestring;
 	attest_s.len = strlen(attest_s.s);
 
-	x5u = cJSON_GetObjectItem(header, PPORT_HDR_X5U);
-	if (!x5u) {
-		LM_ERR("MIssing 'x5u' claim\n");
-		goto error;
-	}
-	x5u_s.s = x5u->valuestring;
+	x5u_s.s = parsed->x5u->valuestring;
 	x5u_s.len = strlen(x5u_s.s);
 
-	origid = cJSON_GetObjectItem(payload, PPORT_PAYLOAD_ORIGID);
-	if (!origid) {
-		LM_ERR("MIssing 'origid' claim\n");
-		goto error;
-	}
-	origid_s.s = origid->valuestring;
+	origid_s.s = parsed->origid->valuestring;
 	origid_s.len = strlen(origid_s.s);
 
 	if (build_unsigned_pport(&unsigned_buf, iat_ts, &attest_s, &x5u_s,
@@ -1270,8 +1256,8 @@ static int verify_signature(struct cert_holder *cert, cJSON *header,
 		goto error;
 	}
 
-	rc = EVP_DigestVerifyFinal(mdctx, (unsigned char*)signature->s,
-		signature->len);
+	rc = EVP_DigestVerifyFinal(mdctx, (unsigned char*)parsed->dec_signature.s,
+		parsed->dec_signature.len);
 	if (rc == 0)
 		goto verify_fail;
 	else if (rc != 1)
@@ -1420,8 +1406,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		goto error;
 	}
 
-	if (check_passport_claims(parsed->header, parsed->payload,
-		&pport_orig_tn.s, &pport_dest_tn.s, &iat_ts) < 0) {
+	if (check_passport_claims(parsed) < 0) {
 		LM_INFO("Required PASSporT claims are missing or have bad datatypes\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -4;
@@ -1456,7 +1441,9 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 	/* if the identities in the PASSporT and SIP message are different
 	 * the signature verification would fail anyway */
+	pport_orig_tn.s = parsed->orig_tn->valuestring;
 	pport_orig_tn.len = strlen(pport_orig_tn.s);
+	pport_dest_tn.s = parsed->dest_tn->valuestring;
 	pport_dest_tn.len = strlen(pport_dest_tn.s);
 	if (str_strcmp(&pport_orig_tn, orig_tn_p) ||
 		str_strcmp(&pport_dest_tn, dest_tn_p)) {
@@ -1491,11 +1478,11 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		}
 	}
 
+	iat_ts = (time_t)parsed->iat->valuedouble;
 	if (iat_ts != date_ts && (now - iat_ts > verify_date_freshness))
 		iat_ts = date_ts;
 
-	if ((rc = verify_signature(cert, parsed->header, parsed->payload,
-		&parsed->dec_signature, iat_ts, orig_tn_p, dest_tn_p)) < 0) {
+	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Error verifying signature\n");
 			goto error;
@@ -1519,8 +1506,6 @@ static int w_stir_check(struct sip_msg *msg)
 {
 	struct hdr_field *identity_hdr;
 	struct parsed_identity *parsed;
-	time_t iat_ts;
-	str orig_tn, dest_tn;
 	int rc;
 
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
@@ -1553,11 +1538,108 @@ static int w_stir_check(struct sip_msg *msg)
 		return -4;
 	}
 
-	if (check_passport_claims(parsed->header, parsed->payload,
-		&orig_tn.s, &dest_tn.s, &iat_ts) < 0) {
+	if (check_passport_claims(parsed) < 0) {
 		LM_INFO("Required PASSporT claims are missing or have bad datatypes\n");
 		return -3;
 	}
 
 	return 1;
+}
+
+int pv_parse_identity_name(pv_spec_p sp, str *in)
+{
+	if (!in || !in->s || !in->len) {
+		LM_ERR("Bad subname for $identity\n");
+		return -1;
+	}
+
+	if (!str_strcmp(in, _str("header")))
+		sp->pvp.pvn.u.isname.name.n = PV_HEADER;
+	else if (!str_strcmp(in, _str(PPORT_HDR_X5U)))
+		sp->pvp.pvn.u.isname.name.n = PV_HEADER_X5U;
+	else if (!str_strcmp(in, _str("payload")))
+		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD;
+	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ATTEST)))
+		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ATTEST;
+	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_DEST)))
+		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_DEST;
+	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_IAT)))
+		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_IAT;
+	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ORIG)))
+		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ORIG;
+	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ORIGID)))
+		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ORIGID;
+	else {
+		LM_ERR("Bad subname for $identity\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	struct hdr_field *identity_hdr;
+	struct parsed_identity *parsed;
+	int rc;
+
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("Failed to parse headers\n");
+		return pv_get_null(msg, param, res);
+	}
+
+	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
+		LM_INFO("No Identity header found\n");
+		return pv_get_null(msg, param, res);
+	}
+
+	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
+		if (rc == -1)
+			LM_ERR("Failed to parse identity header\n");
+		else
+			LM_INFO("Invalid identity header\n");
+
+		return pv_get_null(msg, param, res);
+	}
+
+	res->flags = PV_VAL_STR;
+
+	switch (param->pvn.u.isname.name.n) {
+		case PV_HEADER:
+			res->rs = parsed->dec_header;
+			break;
+		case PV_HEADER_X5U:
+			res->rs.s = parsed->x5u->valuestring;
+			res->rs.len = strlen(res->rs.s);
+			break;
+		case PV_PAYLOAD:
+			res->rs = parsed->dec_payload;
+			break;
+		case PV_PAYLOAD_ATTEST:
+			res->rs.s = parsed->attest->valuestring;
+			res->rs.len = strlen(res->rs.s);
+			break;
+		case PV_PAYLOAD_DEST:
+			res->rs.s = parsed->dest_tn->valuestring;
+			res->rs.len = strlen(res->rs.s);
+			break;
+		case PV_PAYLOAD_IAT:
+			res->rs.s = int2str((uint64_t)parsed->iat->valuedouble, &res->rs.len);
+			res->ri = (int)parsed->iat->valuedouble;
+			res->flags |= PV_VAL_INT|PV_TYPE_INT;
+			break;
+		case PV_PAYLOAD_ORIG:
+			res->rs.s = parsed->orig_tn->valuestring;
+			res->rs.len = strlen(res->rs.s);
+			break;
+		case PV_PAYLOAD_ORIGID:
+			res->rs.s = parsed->origid->valuestring;
+			res->rs.len = strlen(res->rs.s);
+			break;
+		default:
+			LM_ERR("Bad subname\n");
+			return pv_get_null(msg, param, res);
+	}
+
+	return 0;
 }

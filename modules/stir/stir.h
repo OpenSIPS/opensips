@@ -87,10 +87,30 @@
 
 struct parsed_identity {
 	cJSON *header;
+	cJSON *x5u;
+
 	cJSON *payload;
+	cJSON *attest;
+	cJSON *dest_tn;
+	cJSON *iat;
+	cJSON *orig_tn;
+	cJSON *origid;
+
 	str dec_header;
 	str dec_payload;
 	str dec_signature;
+
 	str ppt_hdr_param;
 	str alg_hdr_param;
+};
+
+enum pv_identity_field {
+	PV_HEADER,
+	PV_HEADER_X5U,
+	PV_PAYLOAD,
+	PV_PAYLOAD_ATTEST,
+	PV_PAYLOAD_DEST,
+	PV_PAYLOAD_IAT,
+	PV_PAYLOAD_ORIG,
+	PV_PAYLOAD_ORIGID
 };
