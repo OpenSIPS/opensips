@@ -377,8 +377,8 @@ static int check_cert_validity(time_t *timestamp, struct cert_holder *cert)
 		return 0;
 	}
 
-	if (X509_cmp_time(notBeforeSt, timestamp) == -1 &&
-		X509_cmp_time(notAfterSt, timestamp) == 1)
+	if (X509_cmp_time(notBeforeSt, timestamp) < 0 &&
+		X509_cmp_time(notAfterSt, timestamp) > 0)
 		return 1;
 
 	return 0;
