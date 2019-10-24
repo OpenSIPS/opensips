@@ -1113,6 +1113,10 @@ static int check_passport_claims(struct parsed_identity *parsed)
 		LM_INFO("'alg' value should be a string\n");
 		return -1;
 	}
+	if (strlen(item->valuestring) == 0) {
+		LM_INFO("'alg' value should not be empty\n");
+		return -1;
+	}
 
 	if (!(item = cJSON_GetObjectItem(parsed->header, PPORT_HDR_PPT))) {
 		LM_INFO("Missing 'ppt' claim\n");
@@ -1120,6 +1124,10 @@ static int check_passport_claims(struct parsed_identity *parsed)
 	}
 	if (item->type != cJSON_String) {
 		LM_INFO("'ppt' value should be a string\n");
+		return -1;
+	}
+	if (strlen(item->valuestring) == 0) {
+		LM_INFO("'ppt' value should not be empty\n");
 		return -1;
 	}
 
@@ -1131,6 +1139,10 @@ static int check_passport_claims(struct parsed_identity *parsed)
 		LM_INFO("'typ' value should be a string\n");
 		return -1;
 	}
+	if (strlen(item->valuestring) == 0) {
+		LM_INFO("'typ' value should not be empty\n");
+		return -1;
+	}
 
 	if (!parsed->x5u) {
 		LM_INFO("Missing 'x5u' claim\n");
@@ -1138,6 +1150,10 @@ static int check_passport_claims(struct parsed_identity *parsed)
 	}
 	if (parsed->x5u->type != cJSON_String) {
 		LM_INFO("'x5u' value should be a string\n");
+		return -1;
+	}
+	if (strlen(parsed->x5u->valuestring) == 0) {
+		LM_INFO("'x5u' value should not be empty\n");
 		return -1;
 	}
 
@@ -1149,11 +1165,19 @@ static int check_passport_claims(struct parsed_identity *parsed)
 		LM_INFO("'attest' value should be a string\n");
 		return -1;
 	}
+	if (strlen(parsed->attest->valuestring) == 0) {
+		LM_INFO("'attest' value should not be empty\n");
+		return -1;
+	}
 
 	if (!parsed->dest_tn)
 		return -1;
 	if (parsed->dest_tn->type != cJSON_String) {
 		LM_INFO("Number in 'tn' from 'dest' should be a string\n");
+		return -1;
+	}
+	if (strlen(parsed->dest_tn->valuestring) == 0) {
+		LM_INFO("'dest' value should not be empty\n");
 		return -1;
 	}
 
@@ -1172,6 +1196,10 @@ static int check_passport_claims(struct parsed_identity *parsed)
 		LM_INFO("'tn' from 'orig' should be a string\n");
 		return -1;
 	}
+	if (strlen(parsed->orig_tn->valuestring) == 0) {
+		LM_INFO("'orig' value should not be empty\n");
+		return -1;
+	}
 
 	if (!parsed->origid) {
 		LM_INFO("Missing 'origid' claim\n");
@@ -1179,6 +1207,10 @@ static int check_passport_claims(struct parsed_identity *parsed)
 	}
 	if (parsed->origid->type != cJSON_String) {
 		LM_INFO("'origid' value should be a string\n");
+		return -1;
+	}
+	if (strlen(parsed->origid->valuestring) == 0) {
+		LM_INFO("'origid' value should not be empty\n");
 		return -1;
 	}
 
