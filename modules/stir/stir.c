@@ -1113,8 +1113,8 @@ static int check_passport_claims(struct parsed_identity *parsed)
 		LM_INFO("'alg' value should be a string\n");
 		return -1;
 	}
-	if (strlen(item->valuestring) == 0) {
-		LM_INFO("'alg' value should not be empty\n");
+	if (strcmp(item->valuestring, PPORT_HDR_ALG_VAL)) {
+		LM_INFO("'alg' value should be 'ES256'\n");
 		return -1;
 	}
 
@@ -1126,8 +1126,8 @@ static int check_passport_claims(struct parsed_identity *parsed)
 		LM_INFO("'ppt' value should be a string\n");
 		return -1;
 	}
-	if (strlen(item->valuestring) == 0) {
-		LM_INFO("'ppt' value should not be empty\n");
+	if (strcmp(item->valuestring, PPORT_HDR_PPT_VAL)) {
+		LM_INFO("'ppt' value should be 'shaken'\n");
 		return -1;
 	}
 
@@ -1139,8 +1139,8 @@ static int check_passport_claims(struct parsed_identity *parsed)
 		LM_INFO("'typ' value should be a string\n");
 		return -1;
 	}
-	if (strlen(item->valuestring) == 0) {
-		LM_INFO("'typ' value should not be empty\n");
+	if (strcmp(item->valuestring, PPORT_HDR_TYP_VAL)) {
+		LM_INFO("'typ' value should be 'passport'\n");
 		return -1;
 	}
 
