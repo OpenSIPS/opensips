@@ -39,6 +39,7 @@
 #include "../../ut.h"
 #include "../../hash_func.h"
 #include "../../db/db_insertq.h"
+#include "../../parser/contact/parse_contact.h"
 #include "ul_mod.h"
 #include "utime.h"
 #include "ul_callback.h"
@@ -499,45 +500,63 @@ int cdb_add_ct_update(cdb_dict_t *updates, const ucontact_t *ct, char remove)
 	cdb_key_t contacts_key;
 	str printed_flags;
 	int len, base64len;
+	contact_t* _c = NULL;
+	str fullct;
+	
+	fullct.s=(char*)pkg_malloc(ct->c.len);
+	str_cpy(&fullct,&(ct->c));
+	
+	if (parse_contacts(&fullct, &_c) < 0) {
+                if (fullct.s) pkg_free(fullct.s);
+                LM_ERR("failed to parse contacts\n");
+                return -1;
+        }
+        if (fullct.s) pkg_free(fullct.s);
 
 	cdb_key_init(&contacts_key, "contacts");
 	
 	switch (matching_mode) {
-	case CONTACT_ONLY:
-		len = ct->c.len  ;
-		base64len = calc_base64_encode_len(len);
-		if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
+                case CONTACT_ONLY:
+                        len=_c->uri.len ;
+                        base64len = calc_base64_encode_len(len);
+                        if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
+                                LM_ERR("oom\n");
+                                if (_c) free_contacts(&_c);
+                                return -1;
+                        }
 
-		if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-		memcpy(ctkey_pkg_buf.s, ct->c.s, ct->c.len);
-		break;
-	case CONTACT_CALLID:
-		len = ct->c.len + 1 + ct->callid.len;
-		base64len = calc_base64_encode_len(len);
-		if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
+                        if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
+                                LM_ERR("oom\n");
+                                if (_c) free_contacts(&_c);
+                                return -1;
+                        }
+                        memcpy(ctkey_pkg_buf.s, _c->uri.s, _c->uri.len);
+                        break;
+                case CONTACT_CALLID:
+                        len = _c->uri.len + 1 + + ct->callid.len;
+                        base64len = calc_base64_encode_len(len);
+                        if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
+                                LM_ERR("oom\n");
+                                if (_c) free_contacts(&_c);
+                                return -1;
+                        }
 
-		if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-		memcpy(ctkey_pkg_buf.s, ct->c.s, ct->c.len);
-		ctkey_pkg_buf.s[ct->c.len] = ':';
-		memcpy(ctkey_pkg_buf.s + ct->c.len + 1, ct->callid.s,
-			ct->callid.len);
-		break;
-	default:
-		LM_CRIT("unknown matching_mode %d\n", matching_mode);
-		return -1;
-	}
+                        if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
+                                LM_ERR("oom\n");
+                                if (_c) free_contacts(&_c);
+                                return -1;
+                        }
+                        memcpy(ctkey_pkg_buf.s, _c->uri.s, _c->uri.len);
+                        ctkey_pkg_buf.s[_c->uri.len] = ':';
+                        memcpy(ctkey_pkg_buf.s + _c->uri.len + 1, ct->callid.s,
+                        	ct->callid.len);
+                        break;
+                default:
+                        LM_CRIT("unknown matching_mode %d\n", matching_mode);
+                        if (_c) free_contacts(&_c);
+                        return -1;
+        }
+	if (_c) free_contacts(&_c);
 	
 	base64encode((unsigned char *)ctkeyb64_pkg_buf.s,
 	             (unsigned char *)ctkey_pkg_buf.s, len);
