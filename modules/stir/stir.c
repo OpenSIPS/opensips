@@ -51,6 +51,7 @@
 #include <stdlib.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include <openssl/pem.h>
 
 #include "../../dprint.h"
 #include "../../sr_module.h"
@@ -94,8 +95,6 @@ static int auth_date_freshness = DEFAULT_AUTH_FRESHNESS;
 static int verify_date_freshness = DEFAULT_VERIFY_FRESHNESS;
 static char *ca_list;
 static char *crl_list;
-
-struct tls_mgm_binds tls_mgm_api;
 
 static int tn_authlist_nid;
 
@@ -233,11 +232,6 @@ static void parsed_ctx_free(void *param)
 
 static int mod_init(void)
 {
-	if (load_tls_mgm_api(&tls_mgm_api) != 0) {
-		LM_ERR("failed to load tls_mgm API!\n");
-		return -1;
-	}
-
 	tn_authlist_nid = OBJ_create(TN_AUTH_LIST_OID,
 		TN_AUTH_LIST_SN, TN_AUTH_LIST_LN);
 	if (tn_authlist_nid == NID_undef) {
@@ -370,13 +364,13 @@ static int add_date_hf(struct sip_msg *msg, time_t *date_ts)
 	return 0;
 }
 
-static int check_cert_validity(time_t *timestamp, struct cert_holder *cert)
+static int check_cert_validity(time_t *timestamp, X509 *cert)
 {
 	ASN1_STRING *notBeforeSt;
 	ASN1_STRING *notAfterSt;
 
-	notBeforeSt = X509_get_notBefore(cert->cert);
-	notAfterSt = X509_get_notAfter(cert->cert);
+	notBeforeSt = X509_get_notBefore(cert);
+	notAfterSt = X509_get_notAfter(cert);
 	if (!notBeforeSt || !notAfterSt) {
 		LM_ERR("failed to parse certificate validity\n");
 		return 0;
@@ -664,7 +658,7 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 	return 0;
 }
 
-static int add_identity_hf(struct sip_msg *msg, struct cert_holder *cert,
+static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	time_t date_ts, str *attest, str *cr_url, str *orig_tn,
 	str *dest_tn, str *origid)
 {
@@ -685,7 +679,7 @@ static int add_identity_hf(struct sip_msg *msg, struct cert_holder *cert,
 		LM_ERR("Failed to create signing context\n");
 		goto error;
 	}
-	if (EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, cert->pkey) <= 0) {
+	if (EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, pkey) <= 0) {
 		LM_ERR("Failed to init signing operation\n");
 		goto error;
 	}
@@ -772,12 +766,92 @@ error:
 	return -1;
 }
 
+static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
+{
+	BIO *cbio;
+	STACK_OF(X509) *stack;
+	STACK_OF(X509_INFO) *sk;
+	X509_INFO *xi;
+
+	cbio = BIO_new_mem_buf((void*)cert_buf->s,cert_buf->len);
+	if (!cbio) {
+		LM_ERR("Unable to create BIO buf\n");
+		return -1;
+	}
+
+	/* parse end-entity certificate */
+	*cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
+	if (*cert == NULL) {
+		LM_ERR("Unable to load certificate from buffer\n");
+		BIO_free(cbio);
+		return -1;
+	}
+
+	if (certchain) {
+		/* parse untrusted certificate chain */
+		stack = sk_X509_new_null();
+		if (!stack) {
+			LM_ERR("Failed to allocate cert stack\n");
+			X509_free(*cert);
+			BIO_free(cbio);
+		}
+
+		sk = PEM_X509_INFO_read_bio(cbio, NULL, NULL, NULL);
+		if (!sk) {
+			LM_ERR("error reading certificate stack\n");
+			X509_free(*cert);
+			BIO_free(cbio);
+			sk_X509_free(stack);
+		}
+
+		while (sk_X509_INFO_num(sk)) {
+			xi = sk_X509_INFO_shift(sk);
+			if (xi->x509 != NULL) {
+				sk_X509_push(stack, xi->x509);
+				xi->x509 = NULL;
+			}
+			X509_INFO_free(xi);
+		}
+
+		if (!sk_X509_num(stack))
+			sk_X509_free(stack);
+		else
+			*certchain = stack;
+
+		BIO_free(cbio);
+		sk_X509_INFO_free(sk);
+	}
+
+	return 0;
+}
+
+static int load_pkey(EVP_PKEY **pkey, str *pkey_buf)
+{
+	BIO *kbio;
+
+	kbio = BIO_new_mem_buf((void*)pkey_buf->s, pkey_buf->len);
+	if (!kbio) {
+		LM_ERR("Unable to create BIO buf\n");
+		return -1;
+	}
+
+	*pkey = PEM_read_bio_PrivateKey(kbio, NULL, NULL, NULL);
+	if (*pkey == NULL) {
+		LM_ERR("Failed to load private key from buffer\n");
+		BIO_free(kbio);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p)
 {
 	time_t now, date_ts;
 	struct hdr_field *date_hf = NULL;
-	struct cert_holder *cert;
+	X509 *cert;
+	EVP_PKEY *pkey = NULL;
 	str orig_tn, dest_tn;
 	int rc;
 
@@ -839,10 +913,14 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 		}
 	}
 
-	cert = tls_mgm_api.new_cert_holder(cert_buf, pkey_buf);
-	if (!cert) {
-		LM_ERR("Error loading certificate\n");
+	if (load_cert(&cert, NULL, cert_buf) < 0) {
+		LM_ERR("Failed to load certificate\n");
 		return -1;
+	}
+	if (load_pkey(&pkey, pkey_buf) < 0) {
+		LM_ERR("Failed to load private key\n");
+		rc = -1;
+		goto error;
 	}
 
 	if (!check_cert_validity(&now, cert)) {
@@ -856,17 +934,20 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 		goto error;
 	}
 
-	if (add_identity_hf(msg, cert, date_ts, attest, cr_url,
+	if (add_identity_hf(msg, pkey, date_ts, attest, cr_url,
 		orig_tn_p, dest_tn_p, origid) < 0) {
 		LM_ERR("Failed to add Identity header\n");
 		goto error;
 	}
 
-	tls_mgm_api.free_cert_holder(cert);
+	X509_free(cert);
+	EVP_PKEY_free(pkey);
 
 	return 1;
 error:
-	tls_mgm_api.free_cert_holder(cert);
+	X509_free(cert);
+	if (pkey)
+		EVP_PKEY_free(pkey);
 	return rc;
 }
 
@@ -1217,18 +1298,18 @@ static int check_passport_claims(struct parsed_identity *parsed)
 	return 0;
 }
 
-static int validate_certificate(struct cert_holder *cert)
+static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 {
 	int rc;
 
 	/* check the TN Authorization list extension */
-	if (X509_get_ext_by_NID(cert->cert, tn_authlist_nid, -1) == -1) {
+	if (X509_get_ext_by_NID(cert, tn_authlist_nid, -1) == -1) {
 		LM_INFO("The certificate is missing the TnAuthList extension\n");
 		return -8;
 	}
 
 	if (X509_STORE_CTX_init(verify_ctx, store,
-		cert->cert, cert->certchain) != 1) {
+		cert, certchain) != 1) {
 		X509_STORE_CTX_cleanup(verify_ctx);
 		LM_ERR("Error initializing verification context\n");
 		return -1;
@@ -1243,7 +1324,7 @@ static int validate_certificate(struct cert_holder *cert)
 		return 0;
 }
 
-static int verify_signature(struct cert_holder *cert,
+static int verify_signature(X509 *cert,
 	struct parsed_identity *parsed, time_t iat_ts, str *orig_tn, str *dest_tn)
 {
 	str unsigned_buf = {0,0};
@@ -1252,7 +1333,7 @@ static int verify_signature(struct cert_holder *cert,
 	str attest_s, x5u_s, origid_s;
 	int rc = -1;
 
-	if (!(pubkey = X509_get_pubkey(cert->cert))) {
+	if (!(pubkey = X509_get_pubkey(cert))) {
 		LM_ERR("Failed to get public key from certificate\n");
 		goto error;
 	}
@@ -1378,7 +1459,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	str orig_tn, dest_tn, pport_orig_tn, pport_dest_tn;
 	time_t now, date_ts, iat_ts;
 	struct hdr_field *date_hf = NULL;
-	struct cert_holder *cert = NULL;
+	X509 *cert = NULL;
+	STACK_OF(X509) *certchain = NULL;
 	struct parsed_identity *parsed;
 	int rc;
 
@@ -1485,9 +1567,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		goto error;
 	}
 
-	cert = tls_mgm_api.new_cert_holder(cert_buf, NULL);
-	if (!cert) {
-		LM_ERR("Error loading certificate\n");
+	if (load_cert(&cert, &certchain, cert_buf) < 0) {
+		LM_ERR("Failed to load certificate\n");
 		rc = -1;
 		goto error;
 	}
@@ -1499,7 +1580,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		goto error;
 	}
 
-	if ((rc = validate_certificate(cert)) < 0) {
+	if ((rc = validate_certificate(cert, certchain)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Error validating certificate\n");
 			goto error;
@@ -1525,12 +1606,16 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		}
 	}
 
-	tls_mgm_api.free_cert_holder(cert);
+	X509_free(cert);
+	if (certchain)
+		sk_X509_pop_free(certchain, X509_free);
 
 	return 1;
 error:
 	if (cert)
-		tls_mgm_api.free_cert_holder(cert);
+		X509_free(cert);
+	if (certchain)
+		sk_X509_pop_free(certchain, X509_free);
 	return rc;
 }
 

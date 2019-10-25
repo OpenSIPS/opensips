@@ -71,10 +71,4 @@ struct tls_domain {
 	struct tls_domain *next;
 };
 
-struct cert_holder {
-	X509 *cert;
-	STACK_OF(X509) *certchain;
-	EVP_PKEY *pkey;
-};
-
 #endif /* TLS_HELPER_H */

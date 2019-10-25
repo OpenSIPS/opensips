@@ -45,8 +45,6 @@ typedef struct tls_domain * (*tls_find_client_domain_name_f) (str *);
 typedef int (*get_send_timeout_f) (void);
 typedef int (*get_handshake_timeout_f) (void);
 typedef void (*tls_release_domain_f) (struct tls_domain *);
-typedef struct cert_holder * (*new_cert_holder_f) (str *cert_buf, str *pkey_buf);
-typedef void (*free_cert_holder_f) (struct cert_holder *holder);
 
 struct tls_mgm_binds {
     get_send_timeout_f get_send_timeout;
@@ -55,8 +53,6 @@ struct tls_mgm_binds {
     tls_find_client_domain_f find_client_domain;
     tls_find_client_domain_name_f find_client_domain_name;
     tls_release_domain_f release_domain;
-    new_cert_holder_f new_cert_holder;
-    free_cert_holder_f free_cert_holder;
 };
 
 
