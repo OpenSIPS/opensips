@@ -94,7 +94,9 @@ int pv_parse_identity_name(pv_spec_p sp, str *in);
 static int auth_date_freshness = DEFAULT_AUTH_FRESHNESS;
 static int verify_date_freshness = DEFAULT_VERIFY_FRESHNESS;
 static char *ca_list;
+static char *ca_dir;
 static char *crl_list;
+static char *crl_dir;
 
 static int tn_authlist_nid;
 
@@ -107,7 +109,9 @@ static param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
 	{"verify_date_freshness", INT_PARAM, &verify_date_freshness},
 	{"ca_list", STR_PARAM, &ca_list},
+	{"ca_dir", STR_PARAM, &ca_dir},
 	{"crl_list", STR_PARAM, &crl_list},
+	{"crl_dir", STR_PARAM, &crl_dir},
 	{0, 0, 0}
 };
 
@@ -178,8 +182,6 @@ static int verify_callback(int ok, X509_STORE_CTX *ctx)
 
 static int init_cert_validation(void)
 {
-	X509_LOOKUP *lookup;
-
 	store = X509_STORE_new();
 	if (!store) {
 		LM_ERR("Failed to create X509_STORE_CTX object\n");
@@ -187,7 +189,7 @@ static int init_cert_validation(void)
 	}
 	X509_STORE_set_verify_cb_func(store, verify_callback);
 
-	if (ca_list && X509_STORE_load_locations(store, ca_list, NULL) != 1) {
+	if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
 		LM_ERR("Failed to load trustefd CAs\n");
 		return -1;
 	}
@@ -196,13 +198,9 @@ static int init_cert_validation(void)
 		return -1;
 	}
 
-	if (crl_list) {
-		if (!(lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file()))) {
-			LM_ERR("Failed to create X509_LOOKUP object\n");
-			return -1;
-		}
-		if (X509_load_crl_file(lookup, crl_list, X509_FILETYPE_PEM) < 1) {
-			LM_ERR("Failed to read the CRLs file\n");
+	if (crl_list || crl_dir) {
+		if (X509_STORE_load_locations(store, crl_list, crl_dir) != 1) {
+			LM_ERR("Failed to load CRLs\n");
 			return -1;
 		}
 		X509_STORE_set_flags(store,
