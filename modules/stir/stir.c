@@ -205,6 +205,8 @@ static int init_cert_validation(void)
 			LM_ERR("Failed to read the CRLs file\n");
 			return -1;
 		}
+		X509_STORE_set_flags(store,
+			X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
 	}
 
 	if (!(verify_ctx = X509_STORE_CTX_new())) {
