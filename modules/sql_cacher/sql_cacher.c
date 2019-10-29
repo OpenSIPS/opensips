@@ -1696,7 +1696,7 @@ int pv_parse_name(pv_spec_p sp, str *in)
 	return 0;
 }
 
-static str valbuff;
+static str valbuff[PV_VAL_BUF_NO];
 int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
 	pv_name_fix_t *pv_name;
@@ -1705,6 +1705,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	int rc, rc2, int_res = 0, l = 0;
 	char *ch = NULL;
 	str str_res = {NULL, 0}, cdb_res = {NULL, 0};
+	static int buf_itr = 0;
 	int entry_rld_vers, free_str_res = 0;
 
 	if (!param || param->pvn.type != PV_NAME_PVAR ||
@@ -1825,21 +1826,23 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 	}
 
 	if (is_str_column(pv_name)) {
-		if (pkg_str_extend(&valbuff, str_res.len) != 0) {
+		if (pkg_str_extend(&valbuff[buf_itr], str_res.len) != 0) {
 			LM_ERR("failed to alloc buffer\n");
 			if (free_str_res)
 				pkg_free(str_res.s);
 			goto out_free_null;
 		}
 
-		memcpy(valbuff.s, str_res.s, str_res.len);
+		memcpy(valbuff[buf_itr].s, str_res.s, str_res.len);
 
 		if (free_str_res)
 			pkg_free(str_res.s);
 
 		res->flags = PV_VAL_STR;
-		res->rs.s = valbuff.s;
+		res->rs.s = valbuff[buf_itr].s;
 		res->rs.len = str_res.len;
+
+		buf_itr = (buf_itr + 1) % PV_VAL_BUF_NO;
 	} else {
 		res->ri = int_res;
 		ch = int2str(int_res, &l);
