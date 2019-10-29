@@ -189,13 +189,15 @@ static int init_cert_validation(void)
 	}
 	X509_STORE_set_verify_cb_func(store, verify_callback);
 
-	if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
-		LM_ERR("Failed to load trustefd CAs\n");
-		return -1;
-	}
-	if (X509_STORE_set_default_paths(store) != 1) {
-		LM_ERR("Failed to loade the system-wide CA certificates\n");
-		return -1;
+	if (ca_list || ca_dir) {
+		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
+			LM_ERR("Failed to load trustefd CAs\n");
+			return -1;
+		}
+		if (X509_STORE_set_default_paths(store) != 1) {
+			LM_ERR("Failed to loade the system-wide CA certificates\n");
+			return -1;
+		}
 	}
 
 	if (crl_list || crl_dir) {
