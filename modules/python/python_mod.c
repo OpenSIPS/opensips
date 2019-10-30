@@ -20,6 +20,7 @@
 */
 
 #include <Python.h>
+#include "python_compat.h"
 
 #include "../../str.h"
 #include "../../sr_module.h"
@@ -119,15 +120,18 @@ mod_init(void)
     if (strlen(dname) == 0)
         dname = ".";
 
+    if (PyImport_AppendInittab("OpenSIPS", &PyInit_OpenSIPS) < 0) {
+        LM_ERR("could not append init tab for OpenSIPS!\n");
+        return -1;
+    }
+
     Py_Initialize();
     PyEval_InitThreads();
     mainThreadState = PyThreadState_Get();
 
-    Py_InitModule("OpenSIPS", OpenSIPSMethods);
-
     if (python_msgobj_init() != 0) {
         LM_ERR("python_msgobj_init() has failed\n");
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
@@ -136,15 +140,15 @@ mod_init(void)
     if (sys_path == NULL) {
         PyErr_Print();
         LM_ERR("cannot import sys.path\n");
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
-    pDir = PyString_FromString(dname);
+    pDir = PyUnicode_FromString(dname);
     if (pDir == NULL) {
         PyErr_Print();
-        LM_ERR("PyString_FromString() has filed\n");
-        PyEval_ReleaseLock();
+        LM_ERR("PyUnicode_FromString() has filed\n");
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
     PyList_Insert(sys_path, 0, pDir);
@@ -154,7 +158,7 @@ mod_init(void)
     if (pModule == NULL) {
         PyErr_Print();
         LM_ERR("cannot import %s\n", bname);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
@@ -166,7 +170,7 @@ mod_init(void)
         LM_ERR("cannot locate %s function in %s module\n",
           mod_init_fname.s, script_name.s);
         Py_XDECREF(pFunc);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
@@ -175,7 +179,7 @@ mod_init(void)
         PyErr_Print();
         LM_ERR("cannot import traceback module\n");
         Py_DECREF(pFunc);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
@@ -187,7 +191,7 @@ mod_init(void)
           " traceback module\n");
         Py_XDECREF(format_exc_obj);
         Py_DECREF(pFunc);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
@@ -197,7 +201,7 @@ mod_init(void)
         LM_ERR("PyTuple_New() has failed\n");
         Py_DECREF(pFunc);
         Py_DECREF(format_exc_obj);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
@@ -210,7 +214,7 @@ mod_init(void)
         python_handle_exception("mod_init", NULL);
         Py_XDECREF(handler_obj);
         Py_DECREF(format_exc_obj);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
@@ -219,12 +223,12 @@ mod_init(void)
         LM_ERR("%s function has not returned object\n",
           mod_init_fname.s);
         Py_DECREF(format_exc_obj);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(mainThreadState);
         return -1;
     }
 
     myThreadState = PyThreadState_New(mainThreadState->interp);
-    PyEval_ReleaseLock();
+    PyEval_ReleaseThread(mainThreadState);
 
     return 0;
 }
@@ -235,8 +239,7 @@ child_init(int rank)
     PyObject *pFunc, *pArgs, *pValue, *pResult;
     int rval;
 
-    PyEval_AcquireLock();
-    PyThreadState_Swap(myThreadState);
+    PyEval_AcquireThread(myThreadState);
 
     pFunc = PyObject_GetAttrString(handler_obj, child_init_mname.s);
     if (pFunc == NULL || !PyCallable_Check(pFunc)) {
@@ -245,8 +248,7 @@ child_init(int rank)
         if (pFunc != NULL) {
             Py_DECREF(pFunc);
         }
-        PyThreadState_Swap(NULL);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(myThreadState);
         return -1;
     }
 
@@ -255,19 +257,17 @@ child_init(int rank)
         PyErr_Print();
         LM_ERR("PyTuple_New() has failed\n");
         Py_DECREF(pFunc);
-        PyThreadState_Swap(NULL);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(myThreadState);
         return -1;
     }
 
-    pValue = PyInt_FromLong(rank);
+    pValue = PyLong_FromLong(rank);
     if (pValue == NULL) {
         PyErr_Print();
-        LM_ERR("PyInt_FromLong() has failed\n");
+        LM_ERR("PyLong_FromLong() has failed\n");
         Py_DECREF(pArgs);
         Py_DECREF(pFunc);
-        PyThreadState_Swap(NULL);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(myThreadState);
         return -1;
     }
     PyTuple_SetItem(pArgs, 0, pValue);
@@ -282,23 +282,20 @@ child_init(int rank)
         snprintf(srank, sizeof(srank), "%d", rank);
         python_handle_exception("child_init", srank);
         Py_XDECREF(pResult);
-        PyThreadState_Swap(NULL);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(myThreadState);
         return -1;
     }
 
     if (pResult == NULL) {
         PyErr_Print();
         LM_ERR("PyObject_CallObject() returned NULL but no exception!\n");
-        PyThreadState_Swap(NULL);
-        PyEval_ReleaseLock();
+        PyEval_ReleaseThread(myThreadState);
         return -1;
     }
 
-    rval = PyInt_AsLong(pResult);
+    rval = PyLong_AsLong(pResult);
     Py_DECREF(pResult);
-    PyThreadState_Swap(NULL);
-    PyEval_ReleaseLock();
+    PyEval_ReleaseThread(myThreadState);
     return rval;
 }
 
@@ -308,3 +305,32 @@ mod_destroy(void)
 
     return;
 }
+
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit_OpenSIPS(void)
+{
+    PyObject *m;
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "OpenSIPS",          /* m_name */
+        NULL,                /* m_doc */
+        -1,                  /* m_size */
+        OpenSIPSMethods,     /* m_methods */
+        NULL,                /* m_reload */
+        NULL,                /* m_traverse */
+        NULL,                /* m_clear */
+        NULL,                /* m_free */
+    };
+    m = PyModule_Create(&moduledef);
+    if (!m) {
+        LM_ERR("could not create OpenSIPS module!\n");
+        return NULL;
+    }
+    return m;
+}
+#else
+void initOpenSIPS(void)
+{
+    Py_InitModule("OpenSIPS", OpenSIPSMethods);
+}
+#endif

@@ -20,6 +20,7 @@
 */
 
 #include <Python.h>
+#include "python_compat.h"
 #include "structmember.h"
 
 #include "../../action.h"
@@ -182,7 +183,7 @@ msg_getHeader(msgobject *self, PyObject *args)
         return Py_None;
     }
 
-    return PyString_FromStringAndSize(hbody->s, hbody->len);
+    return PyUnicode_FromStringAndSize(hbody->s, hbody->len);
 }
 
 static PyObject *
@@ -319,7 +320,7 @@ msg_call_function(msgobject *self, PyObject *args)
 
     pkg_free(act);
 
-    return PyInt_FromLong(rval);
+    return PyLong_FromLong(rval);
 }
 
 PyDoc_STRVAR(copy_doc,
@@ -364,7 +365,7 @@ msg_getType(msgobject *self, PyObject *unused)
        /* Shouldn't happen */
        abort();
     }
-    return PyString_FromString(rval);
+    return PyUnicode_FromString(rval);
 }
 
 static PyObject *
@@ -385,7 +386,7 @@ msg_getMethod(msgobject *self, PyObject *unused)
         return Py_None;
     }
     rval = &((self->msg->first_line).u.request.method);
-    return PyString_FromStringAndSize(rval->s, rval->len);
+    return PyUnicode_FromStringAndSize(rval->s, rval->len);
 }
 
 static PyObject *
@@ -407,7 +408,7 @@ msg_getStatus(msgobject *self, PyObject *unused)
     }
 
     rval = &((self->msg->first_line).u.reply.status);
-    return PyString_FromStringAndSize(rval->s, rval->len);
+    return PyUnicode_FromStringAndSize(rval->s, rval->len);
 }
 
 static PyObject *
@@ -429,7 +430,7 @@ msg_getRURI(msgobject *self, PyObject *unused)
     }
 
     rval = &((self->msg->first_line).u.request.uri);
-    return PyString_FromStringAndSize(rval->s, rval->len);
+    return PyUnicode_FromStringAndSize(rval->s, rval->len);
 }
 
 static PyObject *
@@ -443,13 +444,13 @@ msg_get_src_address(msgobject *self, PyObject *unused)
         return Py_None;
     }
 
-    src_ip = PyString_FromString(ip_addr2a(&self->msg->rcv.src_ip));
+    src_ip = PyUnicode_FromString(ip_addr2a(&self->msg->rcv.src_ip));
     if (src_ip == NULL) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    src_port = PyInt_FromLong(self->msg->rcv.src_port);
+    src_port = PyLong_FromLong(self->msg->rcv.src_port);
     if (src_port == NULL) {
         Py_DECREF(src_ip);
         Py_INCREF(Py_None);
@@ -478,13 +479,13 @@ msg_get_dst_address(msgobject *self, PyObject *unused)
         return Py_None;
     }
 
-    dst_ip = PyString_FromString(ip_addr2a(&self->msg->rcv.dst_ip));
+    dst_ip = PyUnicode_FromString(ip_addr2a(&self->msg->rcv.dst_ip));
     if (dst_ip == NULL) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    dst_port = PyInt_FromLong(self->msg->rcv.dst_port);
+    dst_port = PyLong_FromLong(self->msg->rcv.dst_port);
     if (dst_port == NULL) {
         Py_DECREF(dst_ip);
         Py_INCREF(Py_None);
@@ -530,6 +531,10 @@ python_msgobj_init(void)
 	/* HEAD initialization */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION >= 6
 	PyVarObject obj = { PyVarObject_HEAD_INIT(NULL, 0) };
+
+	memcpy(((PyVarObject *)&MSGtype), &obj, sizeof obj);
+#elif PY_MAJOR_VERSION >= 3
+	PyVarObject obj = { PyObject_HEAD_INIT(NULL) 0 };
 
 	memcpy(((PyVarObject *)&MSGtype), &obj, sizeof obj);
 #else

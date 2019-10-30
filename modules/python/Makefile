@@ -9,26 +9,17 @@ include ../../Makefile.defs
 auto_gen=
 NAME=python.so
 
-# If you have multiple Python versions installed make sure to modify the
-# the following to point to the correct instance. Module has been tested
-# to work with 2.6 and 2.5. Python 2.4 has been only confirmed to compile,
-# but no testing has been done with that.
-ifeq (,$(PYTHON))
-ifeq (,$(CROSS_COMPILE))
-# try an autodetection for python2
-PYTHON=$(shell [ $$(python -V 2>&1 | sed 's/.* \([0-9]\)\..*/\1/') -ne 2 ] && which python2)
-endif
-endif
 ifeq (,$(PYTHON))
 PYTHON=python
 endif
 
-PYTHON_VERSION=${shell ${PYTHON} -c "import distutils.sysconfig;print distutils.sysconfig.get_config_var('VERSION')"}
-PYTHON_LIBDIR=${shell ${PYTHON} -c "import distutils.sysconfig;print distutils.sysconfig.get_config_var('LIBDIR')"}
-PYTHON_LDFLAGS=${shell ${PYTHON} -c "import distutils.sysconfig;print distutils.sysconfig.get_config_var('LINKFORSHARED')"}
-PYTHON_INCDIR=${shell ${PYTHON} -c "import distutils.sysconfig;print distutils.sysconfig.get_python_inc()"}
+PYTHON_VERSION=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('VERSION'))"}
+PYTHON_LIBDIR=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('LIBDIR'))"}
+PYTHON_LDFLAGS=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('LINKFORSHARED'))"}
+PYTHON_LDLIB=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('LDLIBRARY'))" | sed 's/^lib\(python.*\)\.so/\1/'}
+PYTHON_INCDIR=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_python_inc())"}
 
-LIBS=-L${PYTHON_LIBDIR} ${PYTHON_LDFLAGS} -lpython${PYTHON_VERSION}
+LIBS=-L${PYTHON_LIBDIR} ${PYTHON_LDFLAGS} -l${PYTHON_LDLIB}
 
 ifeq ($(OS), freebsd)
 LIBS+=-pthread

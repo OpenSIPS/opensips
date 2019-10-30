@@ -43,6 +43,6 @@ opensips_LM_ERR(PyObject *self, PyObject *args)
 
 PyMethodDef OpenSIPSMethods[] = {
     {"LM_ERR", opensips_LM_ERR, METH_VARARGS,
-     "Pring error message."},
+     "Printing error message."},
     {NULL, NULL, 0, NULL}
 };

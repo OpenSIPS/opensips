@@ -20,6 +20,7 @@
 */
 
 #include <Python.h>
+#include "python_compat.h"
 
 #include "../../dprint.h"
 #include "python_mod.h"
@@ -73,9 +74,9 @@ python_handle_exception(const char *fname, const char *farg)
             Py_DECREF(pResult);
             return;
         }
-        msg = PyString_AsString(line);
+        msg = PyUnicode_AsUTF8(line);
         if (msg == NULL) {
-            LM_ERR("can't get traceback, PyString_AsString() has failed\n");
+            LM_ERR("can't get traceback, PyUnicode_AsUTF8() has failed\n");
             Py_DECREF(line);
             Py_DECREF(pResult);
             return;
