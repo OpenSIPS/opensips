@@ -85,6 +85,7 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pv_spec_t *err_code, pv_spec_t *err_reason, str *orig_tn_p, str *dest_tn_p);
 static int w_stir_check(struct sip_msg *msg);
+static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf);
 static int fixup_attest(void **param);
 static int fixup_check_wrvar(void **param);
 
@@ -140,6 +141,9 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE},
 	{"stir_check", (cmd_function)w_stir_check,
 		{{0,0,0}}, REQUEST_ROUTE},
+	{"stir_check_certificate", (cmd_function)w_stir_check_cert, {
+		{CMD_PARAM_STR, 0, 0},
+		{0,0,0}}, REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -1661,6 +1665,33 @@ static int w_stir_check(struct sip_msg *msg)
 		LM_INFO("Required PASSporT claims are missing or have bad datatypes\n");
 		return -3;
 	}
+
+	return 1;
+}
+
+static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf)
+{
+	X509 *cert = NULL;
+	time_t now;
+
+	if (load_cert(&cert, NULL, cert_buf) < 0) {
+		LM_ERR("Failed to load certificate\n");
+		return -1;
+	}
+
+	if ((now = time(0)) == -1) {
+		LM_ERR("Failed to get current time\n");
+		X509_free(cert);
+		return -1;
+	}
+
+	if (!check_cert_validity(&now, cert)) {
+		LM_INFO("The current time does not fall within the certificate validity\n");
+		X509_free(cert);
+		return -2;
+	}
+
+	X509_free(cert);
 
 	return 1;
 }
