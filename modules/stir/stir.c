@@ -63,7 +63,6 @@
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_param.h"
 #include "../../data_lump.h"
-#include "../../modules/tls_mgm/api.h"
 #include "../../lib/cJSON.h"
 #include "../../context.h"
 
