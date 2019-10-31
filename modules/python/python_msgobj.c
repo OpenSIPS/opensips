@@ -21,7 +21,7 @@
 
 #include <Python.h>
 #include "python_compat.h"
-#include "structmember.h"
+#include <structmember.h>
 
 #include "../../action.h"
 #include "../../mem/mem.h"
