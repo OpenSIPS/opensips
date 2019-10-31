@@ -1,0 +1,491 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
+	Authentication and Verification services in &osips;.</para>
+    </section>
+    <section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+	    <title>&osips; Modules</title>
+	    <para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>openssl (libssl)</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+    </section>
+    <section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+
+	<section id="param_auth_date_freshness" xreflabel="auth_date_freshness">
+	    <title><varname>auth_date_freshness</varname> (integer)</title>
+	    <para>
+		The number of seconds representing the local policy for freshness of
+		the Authentication service for the <emphasis>Date</emphasis> header
+		field.
+	    </para>
+	    <para>The default value is <emphasis>60</emphasis>.</para>
+	    <example>
+		<title>Set <varname>auth_date_freshness</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir", "auth_date_freshness", 300)
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_verify_date_freshness" xreflabel="verify_date_freshness">
+	    <title><varname>verify_date_freshness</varname> (integer)</title>
+	    <para>
+		The number of seconds representing the local policy for freshness of
+		the Verification service.
+	    </para>
+	    <para>The default value is <emphasis>60</emphasis>.</para>
+	    <example>
+		<title>Set <varname>verify_date_freshness</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir", "verify_date_freshness", 300)
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_ca_list" xreflabel="ca_list">
+	    <title><varname>ca_list</varname> (string)</title>
+	    <para>
+		Path to a file containing trusted CA certificates for the verifier.
+		The certificates must be in PEM format, one after another.
+	    </para>
+	    <example>
+		<title>Set <varname>ca_list</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir", "ca_list", "/stir_certs/ca_list.pem")
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_ca_dir" xreflabel="ca_dir">
+	    <title><varname>ca_dir</varname> (string)</title>
+	    <para>
+		Path to a directory containing trusted CA certificates for the verifier.
+		The certificates in the directory must be in hashed form, as described
+		in the <ulink url="https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html">
+		<citetitle>openssl documentation</citetitle></ulink> for the
+		<emphasis>Hashed Directory Method</emphasis>.
+	    </para>
+	    <example>
+		<title>Set <varname>ca_dir</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir", "ca_dir", "/stir_certs/cas")
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_crl_list" xreflabel="crl_list">
+	    <title><varname>crl_list</varname> (string)</title>
+	    <para>
+		Path to a file containing certificate revocation lists (CRLs) for the verifier.
+	    </para>
+	    <example>
+		<title>Set <varname>crl_list</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_crl_dir" xreflabel="crl_dir">
+	    <title><varname>crl_dir</varname> (string)</title>
+	    <para>
+		Path to a directory containing certificate revocation lists (CRLs) for
+		the verifier. The CRLs in the directory must be in hashed form, as described
+		in the <ulink url="https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html">
+		<citetitle>openssl documentation</citetitle></ulink> for the
+		<emphasis>Hashed Directory Method</emphasis>.
+	    </para>
+	    <example>
+		<title>Set <varname>crl_dir</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir", "crl_dir", "/stir_certs/crls")
+...
+</programlisting>
+	    </example>
+	</section>
+
+    </section>
+    <section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+
+	<section id="func_stir_auth" xreflabel="stir_auth()">
+	    <title>
+		<function moreinfo="none">stir_auth(attest, origid, cert, pkey, x5u, [orig], [dest])</function>
+	    </title>
+		<para>
+		This function performs the steps of an authentication service. Before you
+		call this function though, you have to ensure that:
+		</para>
+		<itemizedlist>
+		<listitem>
+		    <para>the authentication service is authoritative for the identity
+		    of the originator of the request;</para>
+		</listitem>
+		<listitem>
+		    <para>the originator of the request is authorized to claim the identity
+		    given in the identity field.</para>
+		</listitem>
+	    </itemizedlist>
+
+	    <para>Meaning of the parameters is as follows:</para>
+	    <itemizedlist>
+	    <listitem>
+			<para><emphasis>attest (string)</emphasis> - value of the 'attest' claim
+			to be included in the PASSporT. The following values can be used:
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>A</emphasis> or <emphasis>full</emphasis></para>
+				</listitem>
+				<listitem>
+				<para><emphasis>B</emphasis> or <emphasis>partial</emphasis></para>
+				</listitem>
+				<listitem>
+				<para><emphasis>C</emphasis> or <emphasis>gateway</emphasis></para>
+				</listitem>
+			</itemizedlist>
+			</para>
+	    </listitem>
+	    <listitem>
+			<para><emphasis>origid (string)</emphasis> - value of the 'origid' claim
+			to be included in the PASSporT. Treated by the module as an opaque string.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>cert (string)</emphasis> - the X.509 certificate used to
+			compute the signature, in PEM format.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>pkey (string)</emphasis> - the private key used to
+			compute the signature, in PEM format.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>x5u (string)</emphasis> - value of the 'x5u' claim to be
+			included in the PASSporT. Treated by the module as an opaque string.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>orig (string, optional)</emphasis> - telephone number to
+			be used as the originating identity in the PASSporT. If missing, this value
+			will be derived from the SIP message.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>dest (string, optional)</emphasis> - telephone number to
+			be used as the destination identity in the PASSporT. If missing, this value
+			will be derived from the SIP message.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+	    <para>The function returns the following values:</para>
+	    <itemizedlist>
+	    <listitem>
+		    <para>1: Success</para>
+		</listitem>
+		<listitem>
+		    <para>-1: Internal error</para>
+		</listitem>
+		<listitem>
+		    <para>-2: Identity header already exists</para>
+		</listitem>
+		<listitem>
+		    <para>-3: Failed to derive identity from SIP message because the
+		    URI is not a telephone number</para>
+		</listitem>
+		<listitem>
+		    <para>-4: Date header value is older than local policy for freshness</para>
+		</listitem>
+		<listitem>
+		    <para>-5: The current time or Date header value does not fall within
+		    the certificate validity</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>This function can be used from REQUEST_ROUTE.</para>
+	    <example>
+		<title><function>stir_auth()</function> usage</title>
+		<programlisting format="linespecific">
+...
+stir_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
+	$var(cert), $var(privKey), "https://certs.example.org/cert.pem");
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="func_stir_verify" xreflabel="stir_verify()">
+	    <title>
+		<function moreinfo="none">stir_verify(cert, err_code, err_reason, [orig], [dest])</function>
+	    </title>
+	    <para>
+		This function performs the steps of an verification service.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+	    <itemizedlist>
+	    <listitem>
+			<para><emphasis>cert (string)</emphasis> - the X.509 certificate used to
+			verify the signature, in PEM format.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>err_code (var)</emphasis> - output variable that will
+			store the SIP response code associated with an eventual error of the
+			verification process.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>err_reason (var)</emphasis> - output variable that will
+			store the SIP response reason phrase associated with an eventual error of the
+			verification process.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>orig (string, optional)</emphasis> - telephone number to
+			be used as the originating identity in the verification prcess. If missing,
+			this value will be derived from the SIP message.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>dest (string, optional)</emphasis> - telephone number to
+			be used as the destination identity in the verification process. If missing,
+			this value will be derived from the SIP message.
+			</para>
+		</listitem>
+	    </itemizedlist>
+		<para>The function returns the following values:</para>
+		<itemizedlist>
+		<listitem>
+		    <para>1: Success</para>
+		</listitem>
+		<listitem>
+		    <para>-1: Internal error</para>
+		</listitem>
+		<listitem>
+		    <para>-2: No Identity or Date header found</para>
+		</listitem>
+		<listitem>
+		    <para>-3: Failed to derive identity from SIP message because the
+		    URI is not a telephone number</para>
+		</listitem>
+		<listitem>
+		    <para>-4: Invalid identity header</para>
+		</listitem>
+		<listitem>
+		    <para>-5: Unsupported 'ppt' or 'alg' Identity header parameter</para>
+		</listitem>
+		<listitem>
+		    <para>-6: Date header value is older than local policy for freshness</para>
+		</listitem>
+		<listitem>
+		    <para>-7: The Date header value does not fall within the certificate validity</para>
+		</listitem>
+		<listitem>
+		    <para>-8: Invalid certificate</para>
+		</listitem>
+		<listitem>
+		    <para>-9: Signature does not verify successfully</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>This function can be used from REQUEST_ROUTE.</para>
+	    <example>
+		<title><function>stir_verify()</function> usage</title>
+		<programlisting format="linespecific">
+...
+$var(rc) = stir_verify($var(cert), $var(err_code), $var(err_reason));
+if ($var(rc) &lt; -1) {
+	send_reply($var(err_sip_code), $var(err_sip_reason));
+	exit;
+}
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="func_stir_check" xreflabel="stir_check()">
+	    <title>
+		<function moreinfo="none">stir_check()</function>
+	    </title>
+	    <para>
+		This function checks the Identity header in order to validate the
+		STIR/SHAKEN information in terms of format. It detects issues such as:
+		missing or badly formated PASSporT claims, unsupported extensions etc.
+		</para>
+		<para>The function returns the following values:</para>
+		<itemizedlist>
+		<listitem>
+		    <para>1: Success</para>
+		</listitem>
+		<listitem>
+		    <para>-1: Internal error</para>
+		</listitem>
+		<listitem>
+		    <para>-2: No Identity header found</para>
+		</listitem>
+		<listitem>
+		    <para>-3: Invalid identity header</para>
+		</listitem>
+		<listitem>
+		    <para>-4: Unsupported 'ppt' or 'alg' Identity header parameter</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>This function can be used from REQUEST_ROUTE.</para>
+	    <example>
+		<title><function>stir_check()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (stir_check()) {
+	xlog("forwarding call to stir/shaken verification service\n");
+	...
+}
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="func_stir_check_certificate" xreflabel="stir_check_certificate()">
+	    <title>
+		<function moreinfo="none">stir_check_certificate()</function>
+	    </title>
+	    <para>
+		This function checks if the current time falls within the given
+		certificate's validity period.
+		</para>
+		<para>The function returns the following values:</para>
+		<itemizedlist>
+		<listitem>
+		    <para>1: Success</para>
+		</listitem>
+		<listitem>
+		    <para>-1: Internal error</para>
+		</listitem>
+		<listitem>
+		    <para>-2: Certificate is not valid</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>This function can be used from REQUEST_ROUTE.</para>
+	    <example>
+		<title><function>stir_check_certificate()</function> usage</title>
+		<programlisting format="linespecific">
+...
+# update expired cached certificates
+cache_fetch("local", $identity(x5u), $var(cert));
+if (!stir_check_certificate($var(cert))) {
+	rest_get($identity(x5u), $var(cert));
+	cache_store("local", $identity(x5u), $var(cert));
+}
+...
+</programlisting>
+	    </example>
+	</section>
+
+    </section>
+
+    <section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+	<section id="pv_identity" xreflabel="$identity">
+	<title>
+		<varname>$identity(field)</varname>
+	</title>
+	<para>This is a read-only pseudo-variable that provides access to the
+	parsed information from the Identity header, through the following
+	subnames:</para>
+	<itemizedlist>
+	<listitem>
+		<para><emphasis>header</emphasis> - the entire PASSporT header;
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>x5u</emphasis> - the value of the 'x5u' PASSporT claim;
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>payload</emphasis> - the entire PASSporT payload;
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>attest</emphasis> - the value of the 'attest' PASSporT claim;
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>dest</emphasis> - the value of the 'tn' member of the 'dest'
+		PASSporT claim;
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>iat</emphasis> - the value of the 'iat' PASSporT claim;
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>orig</emphasis> - the value of the 'tn' member of the 'orig'
+		PASSporT claim;
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>origid</emphasis> - the value of the 'origid' PASSporT claim;
+		</para>
+	</listitem>
+	</itemizedlist>
+	<example>
+	<title><varname>identity</varname> usage</title>
+	<programlisting format="linespecific">
+...
+	# aquire the certificate to use for the verification process
+	$var(rc) = rest_get($identity(x5u), $var(cert));
+	if ($var(rc) &lt; 0) {
+		send_reply(436, "Bad Identity Info");
+		exit;
+	}
+	...
+	xlog("Verified caller:$identity(orig), attestation level: $identity(attest)\n");
+...
+	</programlisting>
+	</example>
+	</section>
+
+	</section>
+
+</chapter>
+
