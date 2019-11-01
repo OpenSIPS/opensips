@@ -45,10 +45,13 @@
 	<section id="param_auth_date_freshness" xreflabel="auth_date_freshness">
 	    <title><varname>auth_date_freshness</varname> (integer)</title>
 	    <para>
-		The number of seconds representing the local policy for freshness of
-		the Authentication service for the <emphasis>Date</emphasis> header
-		field.
-	    </para>
+		The maximum number of seconds that the value in the Date header field
+		can be older than the current time.
+		</para>
+		<para>
+		This parameter is only relevant
+		for the <xref linkend="func_stir_auth"/> function.
+		</para>
 	    <para>The default value is <emphasis>60</emphasis>.</para>
 	    <example>
 		<title>Set <varname>auth_date_freshness</varname> parameter</title>
@@ -63,9 +66,16 @@ modparam("stir", "auth_date_freshness", 300)
 	<section id="param_verify_date_freshness" xreflabel="verify_date_freshness">
 	    <title><varname>verify_date_freshness</varname> (integer)</title>
 	    <para>
-		The number of seconds representing the local policy for freshness of
-		the Verification service.
-	    </para>
+		The maximum number of seconds that the value in the Date header field
+		can be older than the current time. Also, if the <emphasis>iat</emphasis>
+		value in the PASSporT is different than the  Date value, but remains within
+		this interval, it will be used in the verification process (for the
+		reconstructed PASSporT) instead of the Date value.
+		</para>
+		<para>
+		This parameter is only relevant for the
+		<xref linkend="func_stir_verify"/> function.
+		</para>
 	    <para>The default value is <emphasis>60</emphasis>.</para>
 	    <example>
 		<title>Set <varname>verify_date_freshness</varname> parameter</title>
@@ -155,17 +165,15 @@ modparam("stir", "crl_dir", "/stir_certs/crls")
 		<function moreinfo="none">stir_auth(attest, origid, cert, pkey, x5u, [orig], [dest])</function>
 	    </title>
 		<para>
-		This function performs the steps of an authentication service. Before you
-		call this function though, you have to ensure that:
+		This function performs the steps of an authentication service. Before
+		calling this function though, you must ensure:
 		</para>
 		<itemizedlist>
 		<listitem>
-		    <para>the authentication service is authoritative for the identity
-		    of the originator of the request;</para>
+		    <para>authority - the server is authoritative for the identity in question;</para>
 		</listitem>
 		<listitem>
-		    <para>the originator of the request is authorized to claim the identity
-		    given in the identity field.</para>
+		    <para>authentication - the originator is authorized to claim the given identity.</para>
 		</listitem>
 	    </itemizedlist>
 
