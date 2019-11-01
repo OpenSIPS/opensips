@@ -99,6 +99,7 @@ extern int rl_timer_interval;
 extern int rl_limit_per_interval;
 extern int rl_expire_time;
 extern unsigned int rl_hash_size;
+extern int *rl_feedback_limit;
 extern int *rl_network_count;
 extern int *rl_network_load;
 extern str rl_default_algo_s;
