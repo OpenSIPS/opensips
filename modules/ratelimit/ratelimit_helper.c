@@ -56,7 +56,7 @@ static rl_algo_t get_rl_algo(str);
 rl_big_htable rl_htable;
 
 /* feedback algorithm */
-static int *rl_feedback_limit;
+int *rl_feedback_limit;
 
 static cachedb_funcs cdbf;
 static cachedb_con *cdbc = 0;

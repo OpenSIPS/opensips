@@ -55,7 +55,7 @@ gen_lock_t * rl_lock;
 static double * rl_load_value;     /* actual load, used by PIPE_ALGO_FEEDBACK */
 static double * pid_kp, * pid_ki, * pid_kd, * pid_setpoint; /* PID tuning params */
 static int * drop_rate;         /* updated by PIPE_ALGO_FEEDBACK */
-static int *rl_feedback_limit;
+int *rl_feedback_limit;
 
 int * rl_network_load;	/* network load */
 int * rl_network_count;	/* flag for counting network algo users */
