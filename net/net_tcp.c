@@ -1407,6 +1407,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 	}
 	switch(cmd){
 		case CONN_ERROR:
+		case CONN_ERROR2:
 			/* remove from reactor only if the fd exists, and it wasn't
 			 * removed before */
 			if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
