@@ -810,12 +810,19 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'f' (force registration)</emphasis> - this
+					<para><emphasis>'f' (Force registration)</emphasis> - this
 					flag can be used to force the registration of NEW contacts
 					even if the maximum number of contacts is reached.  In such
 					cases, older contacts will be removed to make space for the
 					new ones, without exceeding the maximum allowed number.
 					This flag only makes sense if "cNN" is used.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'o' (Only request contacts)</emphasis> -
+					Only include the REGISTER request's Contacts in the 200 OK
+					reply, in case the registration is successful.  While this
+					is against RFC 3261, it may be useful in certain scenarios.
 					</para>
 				</listitem>
 				<!--

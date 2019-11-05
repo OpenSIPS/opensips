@@ -68,6 +68,8 @@ struct ct_mapping {
 	str received;
 	str instance;
 
+	ucontact_t *uc;
+
 	struct list_head list;
 };
 

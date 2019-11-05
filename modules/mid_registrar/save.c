@@ -1033,6 +1033,88 @@ int trim_contacts(urecord_t *r, int trims)
 	return 0;
 }
 
+static ucontact_t **contacts_bak;
+static int contacts_bak_no;
+static int contacts_bak_sz;
+
+/* temporarily filter the contacts of a record using various conditions */
+int filter_contacts(urecord_t *r, struct list_head *by_ctmaps,
+                        struct sip_msg *by_msg)
+{
+	contact_t *c;
+	ucontact_t *uc, *_uc;
+	struct ct_mapping *ctmap;
+	struct list_head *_;
+	int i;
+
+	/* back up the original list using a static array */
+	for (i = 0, uc = r->contacts; uc; uc = uc->next, i++) {
+		if (i >= contacts_bak_sz) {
+			contacts_bak = pkg_realloc(contacts_bak,
+			                        (i ? 2 * contacts_bak_sz : 10) * sizeof r);
+			if (!contacts_bak) {
+				LM_ERR("oom\n");
+				return -1;
+			}
+
+			contacts_bak_sz = (i ? 2 * contacts_bak_sz : 10);
+		}
+
+		contacts_bak[i] = uc;
+	}
+	contacts_bak_no = i;
+
+	uc = NULL;
+	if (by_ctmaps) {
+		list_for_each (_, by_ctmaps) {
+			ctmap = list_entry(_, struct ct_mapping, list);
+			if (!ctmap->uc)
+				continue;
+
+			if (!uc) {
+				uc = ctmap->uc;
+			} else {
+				uc->next = ctmap->uc;
+				uc = ctmap->uc;
+			}
+		}
+	} else {
+		for (c = get_first_contact(by_msg); c; c = get_next_contact(c)) {
+			for (_uc = r->contacts; _uc; _uc = _uc->next) {
+				if (str_strcmp(&c->uri, &_uc->c))
+					continue;
+
+				if (!uc) {
+					uc = _uc;
+				} else {
+					uc->next = _uc;
+					uc = _uc;
+				}
+
+				break;
+			}
+		}
+	}
+
+	if (uc)
+		uc->next = NULL;
+
+	/* expose the filtered list */
+	r->contacts = uc;
+	return 0;
+}
+
+void restore_contacts(urecord_t *r)
+{
+	int i;
+
+	for (i = 0; i < contacts_bak_no - 1; i++)
+		contacts_bak[i]->next = contacts_bak[i + 1];
+
+	contacts_bak[contacts_bak_no - 1]->next = NULL;
+	r->contacts = contacts_bak[0];
+}
+
 /* NB: always ensure update_act_time() has been recently called beforehand */
 struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
                         struct mid_reg_info *mri, struct ct_mapping *ctmap)
@@ -1312,6 +1394,8 @@ update_usrloc:
 			}
 		}
 
+		ctmap->uc = c;
+
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri(ctmap->req_ct_uri.s, ctmap->req_ct_uri.len, &uri)<0) {
@@ -1328,8 +1412,17 @@ update_usrloc:
 		}
 	}
 
-	if (r->contacts)
+	if (r->contacts) {
+		/* only include the request's contacts in the 200 OK reply
+		 * (technically speaking, this is against RFC 3261) */
+		if (mri->reg_flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+			filter_contacts(r, &mri->ct_mappings, NULL);
+
 		append_contacts(r->contacts, rpl);
+
+		if (mri->reg_flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+			restore_contacts(r);
+	}
 
 	r->no_clear_ref--;
 	ul_api.release_urecord(r, 0);
@@ -1544,6 +1637,8 @@ update_usrloc:
 			}
 		}
 
+		ctmap->uc = c;
+
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri(ctmap->req_ct_uri.s, ctmap->req_ct_uri.len, &uri)<0) {
@@ -1561,8 +1656,15 @@ update_usrloc:
 	}
 
 	if (r) {
-		if (r->contacts)
+		if (r->contacts) {
+			if (mri->reg_flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+				filter_contacts(r, &mri->ct_mappings, NULL);
+
 			append_contacts(r->contacts, rpl);
+
+			if (mri->reg_flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+				restore_contacts(r);
+		}
 
 		ul_api.release_urecord(r, 0);
 	}
@@ -2384,6 +2486,7 @@ static void parse_save_flags(str *flags_s, struct save_ctx *out_sctx)
 			case 's': out_sctx->flags |= REG_SAVE_SOCKET_FLAG; break;
 			case 'v': out_sctx->flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
 			case 'f': out_sctx->flags |= REG_SAVE_FORCE_REG_FLAG; break;
+			case 'o': out_sctx->flags |= REG_SAVE_REQ_CT_ONLY_FLAG; break;
 			case 'c':
 				out_sctx->max_contacts = 0;
 				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
@@ -2510,8 +2613,15 @@ quick_reply:
 	/* forwarding not needed! This REGISTER will be absorbed */
 
 	/* prepare the Contact header field for a quick 200 OK response */
-	if (rec != NULL && rec->contacts != NULL)
+	if (rec != NULL && rec->contacts != NULL) {
+		if (sctx.flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+			filter_contacts(rec, NULL, msg);
+
 		build_contact(rec->contacts, msg);
+
+		if (sctx.flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+			restore_contacts(rec);
+	}
 
 	/* no contacts need updating on the far end registrar */
 	ul_api.unlock_udomain(ud, &sctx.aor);
