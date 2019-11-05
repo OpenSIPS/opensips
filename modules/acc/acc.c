@@ -399,9 +399,7 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
  ********************************************/
 
 /* caution: keys need to be aligned to core format */
-static db_key_t db_keys_cdrs[ACC_CORE_LEN+1+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static db_key_t db_keys[ACC_CORE_LEN+1+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
-static db_val_t db_vals_cdrs[ACC_CORE_LEN+1+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 static db_val_t db_vals[ACC_CORE_LEN+1+ACC_CDR_LEN+MAX_ACC_EXTRA+MAX_ACC_LEG];
 
 
@@ -411,52 +409,43 @@ static void acc_db_init_keys(void)
 	int time_idx;
 	int i;
 	int n;
-	int m;
 
 	/* init the static db keys */
 	n = 0;
-	m = 0;
 	/* caution: keys need to be aligned to core format */
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_method_col;
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_fromtag_col;
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_totag_col;
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_callid_col;
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_sipcode_col;
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_sipreason_col;
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_time_col;
+	db_keys[n++] = &acc_method_col;
+	db_keys[n++] = &acc_fromtag_col;
+	db_keys[n++] = &acc_totag_col;
+	db_keys[n++] = &acc_callid_col;
+	db_keys[n++] = &acc_sipcode_col;
+	db_keys[n++] = &acc_sipreason_col;
+	db_keys[n++] = &acc_time_col;
 	time_idx = n-1;
 
 	/* init the extra db keys */
 	for(extra=db_extra_tags; extra ; extra=extra->next)
-		db_keys_cdrs[n++] = db_keys[m++] = &extra->name;
+		db_keys[n++] = &extra->name;
 
 	/* multi leg call columns */
 	for( extra=db_leg_tags; extra ; extra=extra->next)
-		db_keys_cdrs[n++] = db_keys[m++] = &extra->name;
+		db_keys[n++] = &extra->name;
 
 	/* init the values */
 	for(i = 0; i < n; i++) {
-		VAL_TYPE(db_vals_cdrs + i)=DB_STR;
-		VAL_NULL(db_vals_cdrs + i)=0;
-	}
-	for(i = 0; i < m; i++) {
 		VAL_TYPE(db_vals + i)=DB_STR;
 		VAL_NULL(db_vals + i)=0;
 	}
-	VAL_TYPE(db_vals_cdrs+time_idx)=VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
 
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_setuptime_col;
-	db_keys_cdrs[n++] = db_keys[m++] = &acc_created_col;
-	db_keys_cdrs[n++] = &acc_duration_col;
-	db_keys_cdrs[n++] = &acc_ms_duration_col;
-	VAL_TYPE(db_vals_cdrs + n-1) = DB_INT;
-	VAL_TYPE(db_vals_cdrs + n-2) = DB_INT;
-	VAL_TYPE(db_vals_cdrs + n-3) = DB_DATETIME;
-	VAL_TYPE(db_vals_cdrs + n-4) = DB_INT;
+	VAL_TYPE(db_vals+time_idx)=DB_DATETIME;
 
-	VAL_TYPE(db_vals+m-1) = DB_DATETIME;
-	VAL_TYPE(db_vals+m-2) = DB_INT;
-
+	db_keys[n++] = &acc_setuptime_col;
+	db_keys[n++] = &acc_created_col;
+	db_keys[n++] = &acc_duration_col;
+	db_keys[n++] = &acc_ms_duration_col;
+	VAL_TYPE(db_vals + n-1) = DB_INT;
+	VAL_TYPE(db_vals + n-2) = DB_INT;
+	VAL_TYPE(db_vals + n-3) = DB_DATETIME;
+	VAL_TYPE(db_vals + n-4) = DB_INT;
 }
 
 
@@ -520,7 +509,7 @@ void acc_db_close(void)
 
 
 int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
-		query_list_t **ins_list, int cdr_flag)
+		query_list_t **ins_list, int cdr_flag, int missed)
 {
 	static db_ps_t my_ps_ins = NULL;
 	static db_ps_t my_ps_ins2 = NULL;
@@ -532,10 +521,8 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	int m;
 	int n = 0;
 	int i, j;
-	unsigned int _created=0;
 	unsigned int  _setup_time=0;
 	unsigned int extra_start;
-
 
 	struct acc_extra* extra;
 	acc_ctx_t* ctx = try_fetch_ctx();
@@ -547,8 +534,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 
 	if (ctx && cdr_flag) {
 		/* get created value from context */
-		_created = ctx->created;
-		_setup_time = time(NULL) - _created;
+		_setup_time = time(NULL) - ctx->created;
 	}
 
 	/* formatted database columns */
@@ -564,11 +550,24 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	if (ctx) {
 		extra_start=m;
 		for (extra=db_extra_tags; extra; extra=extra->next, ++m);
-		for( extra=db_leg_tags, n=0; extra; extra=extra->next, n++);
+		for( extra=db_leg_tags, n=m; extra; extra=extra->next, n++);
+
+		VAL_INT(db_vals+n) = _setup_time;
 
 		if (cdr_flag) {
-			VAL_INT(db_vals+(m+n)) = _setup_time;
-			VAL_TIME(db_vals+(m+n+1)) = _created;
+			VAL_NULL(db_vals+n+1) = 0;
+			VAL_TIME(db_vals+n+1) = ctx->created;
+		}
+		else
+			VAL_NULL(db_vals+n+1) = 1;
+
+		n+=2;
+
+		if (!missed) {
+			/* duration and ms_duration */
+			VAL_INT(db_vals+n) = 0;
+			VAL_INT(db_vals+n+1) = 0;
+			n+=2;
 		}
 	}
 
@@ -608,9 +607,9 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 
 		if ( !ctx->leg_values ) {
 			accX_unlock(&ctx->lock);
-			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+((ctx&&cdr_flag)?2:0)) < 0 )
+			if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,n) < 0 )
 				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle, db_keys, db_vals, m+((ctx&&cdr_flag)?2:0)) < 0) {
+			if (acc_dbf.insert(db_handle, db_keys, db_vals, n) < 0) {
 				LM_ERR("failed to insert into %.*s table\n", acc_env.text.len, acc_env.text.s);
 				return -1;
 			}
@@ -619,9 +618,9 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 				for (extra=db_leg_tags, i=m; extra; extra=extra->next, i++) {
 					VAL_STR(db_vals+i)=LEG_VALUE( j, extra, ctx);
 				}
-				if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,m+n+((ctx&&cdr_flag)?2:0)) < 0 )
+				if (con_set_inslist(&acc_dbf,db_handle,ins_list,db_keys,n) < 0 )
 					CON_RESET_INSLIST(db_handle);
-				if (acc_dbf.insert(db_handle, db_keys, db_vals, m+n+((ctx&&cdr_flag)?2:0)) < 0) {
+				if (acc_dbf.insert(db_handle, db_keys, db_vals, n) < 0) {
 					LM_ERR("failed to insert into %.*s table\n", acc_env.text.len, acc_env.text.s);
 					accX_unlock(&ctx->lock);
 					return -1;
@@ -673,15 +672,16 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	table = ctx->acc_table;
 
 	for (i=0;i<ACC_CORE_LEN;i++)
-		VAL_STR(db_vals_cdrs+i) = val_arr[i];
+		VAL_STR(db_vals+i) = val_arr[i];
 
-	VAL_TIME(db_vals_cdrs+ACC_CORE_LEN) = start_time.tv_sec;
-	VAL_INT(db_vals_cdrs+ret+nr_leg_vals+1) =
+	VAL_TIME(db_vals+ACC_CORE_LEN) = start_time.tv_sec;
+	VAL_INT(db_vals+ret+nr_leg_vals+1) =
 		start_time.tv_sec - ctx->created;
-	VAL_TIME(db_vals_cdrs+ret+nr_leg_vals+2) = ctx->created;
-	VAL_INT(db_vals_cdrs+ret+nr_leg_vals+3) =
+	VAL_NULL(db_vals+ret+nr_leg_vals+2) = 0;
+	VAL_TIME(db_vals+ret+nr_leg_vals+2) = ctx->created;
+	VAL_INT(db_vals+ret+nr_leg_vals+3) =
 		ctx->bye_time.tv_sec - start_time.tv_sec;
-	VAL_INT(db_vals_cdrs+ret+nr_leg_vals+4) =
+	VAL_INT(db_vals+ret+nr_leg_vals+4) =
 		TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
 
 	total = ret + 5;
@@ -693,12 +693,12 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	accX_lock(&ctx->lock);
 
 	for (extra=db_extra_tags,i=ACC_CORE_LEN+1; extra; extra=extra->next, ++i)
-		VAL_STR(db_vals_cdrs+i) = ctx->extra_values[extra->tag_idx].value;
+		VAL_STR(db_vals+i) = ctx->extra_values[extra->tag_idx].value;
 
 	if (!ctx->leg_values) {
-		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys_cdrs,total) < 0 )
+		if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total) < 0 )
 			CON_RESET_INSLIST(db_handle);
-		if (acc_dbf.insert(db_handle, db_keys_cdrs, db_vals_cdrs, total) < 0) {
+		if (acc_dbf.insert(db_handle, db_keys, db_vals, total) < 0) {
 			LM_ERR("failed to insert into database\n");
 			accX_unlock(&ctx->lock);
 			goto end;
@@ -709,12 +709,12 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		leg_s.len = 4;
 		for (i=0; i < ctx->legs_no; i++) {
 			for (extra=db_leg_tags, j=0; extra; extra=extra->next, j++) {
-				VAL_STR(db_vals_cdrs+ret+j+1) = LEG_VALUE( i, extra, ctx);
+				VAL_STR(db_vals+ret+j+1) = LEG_VALUE( i, extra, ctx);
 			}
 
-			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys_cdrs,total) < 0 )
+			if (con_set_inslist(&acc_dbf,db_handle,&ins_list,db_keys,total) < 0 )
 				CON_RESET_INSLIST(db_handle);
-			if (acc_dbf.insert(db_handle,db_keys_cdrs,db_vals_cdrs,total) < 0) {
+			if (acc_dbf.insert(db_handle,db_keys,db_vals,total) < 0) {
 				LM_ERR("failed inserting into database\n");
 				accX_unlock(&ctx->lock);
 				goto end;

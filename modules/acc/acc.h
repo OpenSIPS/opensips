@@ -88,7 +88,7 @@ int  acc_db_init(const str* db_url);
 int  acc_db_init_child(const str* db_url);
 void acc_db_close();
 int  acc_db_request( struct sip_msg *req, struct sip_msg *rpl,
-		query_list_t **ins_list, int cdr_flag);
+		query_list_t **ins_list, int cdr_flag, int missed);
 int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx);
 
 

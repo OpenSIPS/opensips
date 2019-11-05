@@ -384,14 +384,14 @@ int w_acc_db_request(struct sip_msg *rq, str* comment, str *table)
 	env_set_text(table->s, table->len);
 
 	if (str_strcmp(table, &db_table_mc) == 0) {
-		return acc_db_request(rq, NULL, &mc_ins_list, 0);
+		return acc_db_request(rq, NULL, &mc_ins_list, 0, 1);
 	}
 
 	if (str_strcmp(table, &db_table_acc) == 0) {
-		return acc_db_request(rq, NULL, &acc_ins_list, 0);
+		return acc_db_request(rq, NULL, &acc_ins_list, 0, 0);
 	}
 
-	return acc_db_request( rq, NULL,NULL, 0);
+	return acc_db_request( rq, NULL,NULL, 0, 0);
 }
 
 int w_acc_evi_request(struct sip_msg *rq, str* comment)
@@ -558,7 +558,7 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 
 	if (is_db_mc_on(*flags)) {
 		env_set_text(db_table_mc.s, db_table_mc.len);
-		acc_db_request( req, reply,&mc_ins_list, is_db_cdr_on(*flags));
+		acc_db_request( req, reply,&mc_ins_list, is_db_cdr_on(*flags), 1);
 		flags_to_reset |= DO_ACC_DB * DO_ACC_MISSED;
 	}
 
@@ -816,7 +816,7 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 
 		if (is_db_acc_on(*flags)) {
 			env_set_text( table.s, table.len);
-			acc_db_request( req, reply, &acc_ins_list, 0);
+			acc_db_request( req, reply, &acc_ins_list, 0, 0);
 		}
 	}
 
