@@ -91,7 +91,7 @@ static mi_response_t *mi_uptime(const mi_params_t *params,
 		up_since_ctime.s, up_since_ctime.len) < 0)
 		goto error;
 
-	if (add_mi_string_fmt(resp, MI_SSTR("Up time"), "%lu [sec]",
+	if (add_mi_string_fmt(resp_obj, MI_SSTR("Up time"), "%lu [sec]",
 		(unsigned long)difftime(now, startup_time)) < 0)
 		goto error;
 
