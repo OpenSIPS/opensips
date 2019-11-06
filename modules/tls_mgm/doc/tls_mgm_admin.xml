@@ -374,10 +374,12 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 		<section id="param_ca_dir" xreflabel="ca_dir">
 			<title><varname>ca_dir</varname> ([domain](string)</title>
 			<para>
-			Directory storing trusted CAs. The path contains the
-			certificates accepted, each as hash which is linked to
-			certificate file. The domain, if set, represents
-			the name of the TLS domain.
+			Directory storing trusted CAs. The certificates in the directory
+			must be in hashed form, as described in the
+			<ulink url="https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html">
+			<citetitle>openssl documentation</citetitle></ulink> for the
+			<emphasis>Hashed Directory Method</emphasis>. The domain part
+			represents the name of the TLS domain.
 			</para>
 			<para><emphasis>
 				Default value is "/etc/pki/CA/".
@@ -388,6 +390,45 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 ...
 modparam("tls_mgm", "ca_dir", "/mycerts/certs")
 modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_crl_dir" xreflabel="crl_dir">
+			<title><varname>crl_dir</varname> ([domain](string)</title>
+			<para>
+			Directory storing certificate revocation lists (CRLs). The domain
+			part represents the name of the TLS domain.
+			</para>
+			<para><emphasis>
+				If this parameter is not set, no CRLs will be used.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>crl_dir</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "crl_dir", "[dom]/mycerts/crls")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_crl_check_all" xreflabel="crl_check_all">
+			<title><varname>crl_check_all</varname> ([domain](string)</title>
+			<para>
+			Setting this parameter with a non-zero integer value enables CRL
+			checking for the entire certificate chain.
+			</para>
+			<para><emphasis>
+				By default, only the leaf certificate in the certificate chain
+				is checked.
+			</emphasis></para>
+			<example>
+				<title>Set <varname>crl_check_all</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "crl_check_all", "[dom]1")
 ...
 				</programlisting>
 			</example>
