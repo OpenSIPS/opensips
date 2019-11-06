@@ -1210,6 +1210,9 @@ acc_evi_request("403 Destination not allowed");
 				<emphasis>duration</emphasis> - The call duration in seconds
 			</para></listitem>
 			<listitem><para>
+				<emphasis>ms_duration</emphasis> - The call duration in miliseconds
+			</para></listitem>
+			<listitem><para>
 				<emphasis>setuptime</emphasis> - The call setup time in seconds
 			</para></listitem>
 			<listitem><para>
