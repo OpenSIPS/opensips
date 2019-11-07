@@ -342,6 +342,7 @@ struct module_exports exports = {
  */
 static int mod_init(void)
 {
+	unsigned int db_caps;
 	int idx;
 
 	LM_DBG("initializing\n");
@@ -451,7 +452,10 @@ static int mod_init(void)
 			LM_ERR("failed to bind database module\n");
 			return -1;
 		}
-		if (!DB_CAPABILITY(ul_dbf, DB_CAP_ALL)) {
+		db_caps = DB_CAP_ALL;
+		if (cluster_mode == CM_SQL_ONLY)
+			db_caps |= DB_CAP_RAW_QUERY;
+		if (!DB_CAPABILITY(ul_dbf, db_caps)) {
 			LM_ERR("database module does not implement all functions"
 					" needed by the module\n");
 			return -1;
