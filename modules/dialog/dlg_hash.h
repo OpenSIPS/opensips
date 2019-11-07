@@ -642,4 +642,13 @@ static inline void init_dlg_term_reason(struct dlg_cell *dlg,char *reason,int re
 int state_changed_event_init(void);
 void state_changed_event_destroy(void);
 
+#define dlg_get_did(_dlg) \
+	(((unsigned long long)(_dlg)->h_entry << 32) | ((_dlg)->h_id))
+
+#define dlg_parse_did(_did, _h_entry, _h_id) \
+	do { \
+		(_h_entry) = (unsigned int)((_did) >> 32); \
+		(_h_id) = (unsigned int)((_did) & 0x00000000ffffffff); \
+	} while(0)
+
 #endif

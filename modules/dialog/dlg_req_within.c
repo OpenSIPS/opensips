@@ -498,9 +498,7 @@ mi_response_t *mi_terminate_dlg(const mi_params_t *params, str *extra_hdrs)
 	dialog_id.s[dialog_id.len] = bkp;
 	if (end-dialog_id.s==dialog_id.len) {
 		/* the ID is numeric, so let's consider it DID */
-		h_entry = (unsigned int)(d_id>>(8*sizeof(int)));
-		h_id = (unsigned int)(d_id &
-			(((unsigned long long)1<<(8*sizeof(int)))-1) );
+		dlg_parse_did(d_id, h_entry, h_id);
 		LM_DBG("ID: %llu (h_entry %u h_id %u)\n", d_id, h_entry, h_id);
 		dlg = lookup_dlg(h_entry, h_id);
 	} else {
