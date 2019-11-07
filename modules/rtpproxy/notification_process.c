@@ -57,7 +57,54 @@ struct pollfd* pfds;
 
 #define IS_DIGIT(_c) ((_c) >= '0' && (_c) <= '9')
 
-void timeout_listener_process(int rank)
+static int parse_dlg_did(str *did, unsigned int *h_entry, unsigned int *h_id)
+{
+	unsigned long long ldid;
+	char *end, bk;
+
+	bk = did->s[did->len];
+	did->s[did->len] = 0;
+
+	ldid = strtoull(did->s, &end, 10);
+	did->s[did->len] = bk;
+	if (end - did->s != did->len) {
+		LM_ERR("could not parse did %.*s!\n", did->len, did->s);
+		return -1;
+	}
+	dlg_parse_did(ldid, *h_entry, *h_id);
+	return 0;
+}
+
+static int notification_handler(str *command)
+{
+	char cmd;
+	str param;
+	unsigned int h_entry, h_id;
+	str terminate_reason = str_init("RTPProxy Timeout");
+
+	if (command->len < 1) {
+		LM_ERR("no command received from RTPProxy!\n");
+		return -1;
+	}
+	cmd = command->s[0];
+	param.s = command->s + 1;
+	param.len = command->len - 1;
+	LM_DBG("Handling RTPProxy command %c %*s\n", cmd, param.len, param.s);
+	switch (cmd) {
+		case 'T':
+			LM_INFO("Timeout notification for %.*s\n", param.len, param.s);
+			if (parse_dlg_did(&param, &h_entry, &h_id) < 0)
+				return -1;
+			if(dlg_api.terminate_dlg(h_entry, h_id, &terminate_reason)< 0)
+				LM_ERR("Failed to terminate dialog h_entry=[%u], h_id=[%u]\n", h_entry, h_id);
+			return 0;
+		default:
+			LM_ERR("Unhandled command %c param=%.*s\n", cmd, param.len, param.s);
+			return 0;
+	}
+}
+
+void notification_listener_process(int rank)
 {
 	struct sockaddr_un saddr_un;
 	struct sockaddr_un *s_un;
@@ -67,7 +114,6 @@ void timeout_listener_process(int rank)
 	int connect_fd;
 	char buffer[BUF_LEN];
 	char *p, *sp, *end, *start;
-	unsigned int h_entry, h_id;
 	str id;
 	unsigned short port;
 	struct sockaddr* saddr;
@@ -75,7 +121,7 @@ void timeout_listener_process(int rank)
 	int optval = 1;
 	struct sockaddr_storage rtpp_info;
 	struct rtpp_notify_node *rtpp_lst;
-	str terminate_reason = str_init("RTPProxy Timeout");
+	str command;
 	int offset = 0;
 
 	if (init_child(PROC_MODULE) != 0) {
@@ -325,7 +371,7 @@ void timeout_listener_process(int rank)
 				lock_release(rtpp_notify_h->lock);
 				continue;
 			}
-			LM_INFO("Timeout detected on the following calls [%.*s]\n", len, buffer);
+			LM_INFO("Notification(s) received: [%.*s]\n", len, buffer);
 			p = buffer;
 			left = len + offset;
 			offset = 0;
@@ -333,48 +379,18 @@ void timeout_listener_process(int rank)
 
 			do {
 				start = p;
-				/* the message is: h_entry.h_id\n */
-				sp = memchr(p, '.', left);
-				if (sp == NULL)
-					break;
-
-				id.s = p;
-				id.len = sp - p;
-
-				if (sp >= end)
-					break;
-
-				p = sp + 1;
-				left -= id.len + 1;
-
-				if(str2int(&id, &h_entry)< 0) {
-					LM_ERR("Wrong formatted message received from rtpproxy - invalid"
-							" dialog entry [%.*s]\n", id.len, id.s);
-					goto error;
-				}
 
 				sp = memchr(p, '\n', left);
-				if (sp == NULL)
+				if (sp == NULL || sp >= end)
 					break;
-
-				id.s = p;
-				id.len = sp - p;
-
-				if (sp >= end)
-					break;
-
+				command.s = p;
+				command.len = sp - p;
+				/* skip the command */
 				p = sp + 1;
-				left -= id.len + 1;
+				left -= (sp - p) + 1;
 
-				if(str2int(&id, &h_id)< 0) {
-					LM_ERR("Wrong formatted message received from rtpproxy - invalid"
-							" dialog id [%.*s]\n", id.len, id.s);
+				if (notification_handler(&command) < 0)
 					goto error;
-				}
-				LM_DBG("hentry = %u, h_id = %u\n", h_entry, h_id);
-
-				if(dlg_api.terminate_dlg(h_entry, h_id,&terminate_reason)< 0)
-					LM_ERR("Failed to terminate dialog h_entry=[%u], h_id=[%u]\n", h_entry, h_id);
 
 				LM_DBG("Left to process: %d\n[%.*s]\n", left, left, p);
 

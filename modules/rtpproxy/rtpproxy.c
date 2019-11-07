@@ -473,7 +473,7 @@ static mi_export_t mi_cmds[] = {
 };
 
 static proc_export_t procs[] = {
-	{"RTPP timeout receiver",  0,  0, timeout_listener_process, 1, 0},
+	{"RTPP notification receiver",  0,  0, notification_listener_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
@@ -3424,7 +3424,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			goto error;
 		}
 		/* construct the notify tag from dialog ids */
-		notify_tag.len= sprintf(buf, "%d.%d", dlg->h_entry, dlg->h_id);
+		notify_tag.len= sprintf(buf, "T%llu", dlg_get_did(dlg));
 		notify_tag.s = buf;
 		LM_DBG("notify_tag= %s\n", notify_tag.s);
 

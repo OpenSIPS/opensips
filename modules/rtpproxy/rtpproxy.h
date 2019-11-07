@@ -142,7 +142,7 @@ extern int detect_rtp_idle;
 extern struct rtpp_set_head ** rtpp_set_list;
 extern struct rtpp_notify_head * rtpp_notify_h;
 int init_rtpp_notify_list();
-void timeout_listener_process(int rank);
+void notification_listener_process(int rank);
 
 /* Functions from nathelper */
 struct rtpp_set *get_rtpp_set(nh_set_param_t *);
