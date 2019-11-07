@@ -167,6 +167,7 @@ static param_export_t mod_params[] = {
 	{ "contact_id_insertion", STR_PARAM, &mp_ctid_insertion },
 	{ "contact_id_param",     STR_PARAM, &ctid_param.s },
 	{ "extra_contact_params_avp", STR_PARAM, &extra_ct_params_str.s },
+	{ "attr_avp",             STR_PARAM, &attr_avp_param },
 	{ 0,0,0 }
 };
 
@@ -538,6 +539,24 @@ int solve_avp_defs(void)
 				return -1;
 			}
 		}
+	}
+
+	if (attr_avp_param && *attr_avp_param) {
+		init_str(&s, attr_avp_param);
+
+		if (!pv_parse_spec(&s, &avp_spec) || avp_spec.type != PVT_AVP) {
+			LM_ERR("malformed or non AVP %s AVP definition\n", attr_avp_param);
+			return -1;
+		}
+
+		if(pv_get_avp_name(0, &avp_spec.pvp, &attr_avp_name, &attr_avp_type)!=0)
+		{
+			LM_ERR("[%s]- invalid AVP definition\n", attr_avp_param);
+			return -1;
+		}
+	} else {
+		attr_avp_name = -1;
+		attr_avp_type = 0;
 	}
 
 	return 0;

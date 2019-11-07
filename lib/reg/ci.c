@@ -50,7 +50,8 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 	static unsigned int allowed, allow_parsed;
 	static struct sip_msg *m = 0;
 	static int_str attr_avp_value;
-	static struct usr_avp *avp_attr;
+
+	struct usr_avp *avp_attr;
 	int_str val;
 
 	ci.contact_id = 0;

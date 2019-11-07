@@ -469,6 +469,52 @@ modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_params)")
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_attr_avp" xreflabel="attr_avp">
+		<title><varname>attr_avp</varname> (string)</title>
+		<para>
+		AVP to store specific additional information for each registration.
+		This information is read from the AVP and stored (in memory, DB or both)
+		at <xref linkend="func_mid_registrar_save"/>.  When the
+		<xref linkend="func_mid_registrar_lookup"/> or 'is_registered()' (registrar)
+		functions are called, the <emphasis>attr_avp</emphasis> will be
+		populated with the value saved at [re]registration.
+		</para>
+		<para>
+		When doing call forking, the AVP will hold multiple values. The position of
+		the corresponding attribute information in <emphasis>attr_avp</emphasis> is
+		equal to the branch index.  An example scenario is given below.
+		</para>
+		<para>
+		<emphasis>
+			Default value is NULL.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>attr_avp</varname> parameter</title>
+		<programlisting format="linespecific">
+# reading attributes from the attr_pvar when doing parallel forking
+...
+modparam("mid_registrar", "attr_avp", "$avp(attr)")
+
+...
+if (is_method("REGISTER")) {
+	$avp(attr) = "contact_info";
+	mid_registrar_save("location");
+	exit;
+}
+...
+mid_registrar_lookup("location");
+t_on_branch("parallel_fork");
+...
+branch_route [parallel_fork] {
+	xlog("Attributes for branch $T_branch_idx: $(avp(attr)[$T_branch_idx])\n");
+}
+
+		</programlisting>
+		</example>
+	</section>
+
 	<section id="param_min_expires" xreflabel="min_expires">
 		<title><varname>min_expires</varname> (integer)</title>
 		<para>

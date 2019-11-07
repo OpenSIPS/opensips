@@ -1120,9 +1120,10 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
                         struct mid_reg_info *mri, struct ct_mapping *ctmap)
 {
 	static ucontact_info_t ci;
-	struct usr_avp *avp_attr;
-	int_str attr_avp_value;
+	static int_str attr_avp_value;
 	static str callid;
+
+	struct usr_avp *avp_attr;
 	int_str src_if;
 	str received = {NULL, 0};
 
