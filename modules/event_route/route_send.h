@@ -27,7 +27,7 @@
 #define ROUTE_SEND_RETRY 3
 
 typedef struct _route_send {
-	struct action *a;
+	int ev_route_id;
 	str event;
 	evi_params_t params;
 } route_send_t;

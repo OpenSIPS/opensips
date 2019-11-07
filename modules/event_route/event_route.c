@@ -362,7 +362,7 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 		LM_ERR("failed to serialize event route triggering\n");
 		return -1;
 	}
-	buf->a = sroutes->event[SR_SOCK_ROUTE(sock)].a;
+	buf->ev_route_id = SR_SOCK_ROUTE(sock);
 
 	if (route_send(buf) < 0)
 		return -1;
