@@ -447,11 +447,8 @@ void free_udomain(udomain_t* _d)
 	int i;
 
 	if (_d->table) {
-		for(i = 0; i < _d->size; i++) {
-			lock_ulslot(_d, i);
+		for(i = 0; i < _d->size; i++)
 			deinit_slot(_d->table + i);
-			unlock_ulslot(_d, i);
-		}
 		shm_free(_d->table);
 	}
 	shm_free(_d);
