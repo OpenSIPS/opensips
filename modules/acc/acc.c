@@ -833,6 +833,7 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 	aaa_message *send;
 	int offset, i, av_type;
 	aaa_map *r_stat;
+	int locked = 0;
 
 	unsigned int _created=0;
 	unsigned int _setup_time=0;
@@ -890,6 +891,7 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 	if (ctx) {
 		/* prevent acces for setting variable */
 		accX_lock(&ctx->lock);
+		locked = 1;
 
 		for (extra = aaa_extra_tags, i=attr_cnt; extra; i++, extra=extra->next) {
 			ADD_AAA_AVPAIR(offset+i, ctx->extra_values[extra->tag_idx].value.s,
@@ -906,6 +908,7 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 			}
 		}
 		accX_unlock(&ctx->lock);
+		locked = 0;
 	}
 
 	if (proto.send_aaa_request(conn, send, NULL)) {
@@ -919,6 +922,8 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 	return 1;
 
 error:
+	if (locked)
+		accX_unlock(&ctx->lock);
 	proto.destroy_aaa_message(conn, send);
 	return -1;
 }
@@ -932,6 +937,7 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	aaa_message *send = NULL;
 	int offset, av_type;
 	aaa_map *r_stat;
+	int locked = 0;
 
 	struct acc_extra* extra;
 
@@ -985,6 +991,7 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 
 	/* prevent acces for setting variable */
 	accX_lock(&ctx->lock);
+	locked = 1;
 
 	/* call-legs attributes also get inserted */
 	/**
@@ -1009,6 +1016,7 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		}
 	}
 	accX_unlock(&ctx->lock);
+	locked =  0;
 
 	if (proto.send_aaa_request(conn, send, NULL)) {
 		LM_ERR("Radius accounting request failed for status: '%s' "
@@ -1020,6 +1028,8 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 
 	res = 1;
 error:
+	if (locked)
+		accX_unlock(&ctx->lock);
 	if (core_s.s)
 		pkg_free(core_s.s);
 	if (extra_s.s)
