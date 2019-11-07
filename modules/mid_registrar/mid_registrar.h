@@ -96,6 +96,7 @@ struct mid_reg_info {
 	                                   marks the last successful reg */
 
 	int skip_dereg;
+	int max_contacts;
 	struct list_head ct_mappings;
 
 	udomain_t *dom; /* used during 200 OK ul_api operations */

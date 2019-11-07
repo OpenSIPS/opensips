@@ -615,10 +615,9 @@ modparam("mid_registrar", "case_sensitive", 0)
 		<emphasis role='bold'>0</emphasis> disables the check.
 		</para>
 		<para>
-		This is a global value and will only be used if no other value
-		(for max_contacts) is passed as parameter to
-		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>
-		(i.e. a "max_contacts" function flag will override this parameter)
+		This is a global value and will only be used if no overriding
+		value is passed as the "c" flag to
+		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>.
 		</para>
 		<para>
 			Default value is <emphasis role='bold'>0</emphasis> (disabled)
@@ -801,15 +800,25 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 					generate a SIP reply to the current REGISTER request.
 					</para>
 				</listitem>
-				<!--
 				<listitem>
-					<para><emphasis>'cnn' (max Contacts)</emphasis> -  this
+					<para><emphasis>'cNN' (max Contacts)</emphasis> -  this
 					flag can be used to limit the number of contacts for this
 					AOR (Address of Record) in the user location database.
-					Value 0 disables the check. This parameter overrides the
-					global "max_contacts" module parameter.
+					A value of <emphasis role='bold'>0</emphasis> disables the
+					check.  Specifying this parameter will override the global
+					<xref linkend="param_max_contacts"/> module parameter.
 					</para>
 				</listitem>
+				<listitem>
+					<para><emphasis>'f' (force registration)</emphasis> - this
+					flag can be used to force the registration of NEW contacts
+					even if the maximum number of contacts is reached.  In such
+					cases, older contacts will be removed to make space for the
+					new ones, without exceeding the maximum allowed number.
+					This flag only makes sense if "cNN" is used.
+					</para>
+				</listitem>
+				<!--
 				<listitem>
 					<para><emphasis>'e(int)' (minimum expires)</emphasis> -  this
 					flag can be used to set minimum register expiration time.

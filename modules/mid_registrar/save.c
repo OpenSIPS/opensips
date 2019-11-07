@@ -1005,6 +1005,34 @@ int append_contacts(ucontact_t *contacts, struct sip_msg *msg)
 	return 0;
 }
 
+int trim_contacts(urecord_t *r, int trims)
+{
+	ucontact_t *uc;
+
+	for (uc = r->contacts; uc && trims > 0; uc = uc->next) {
+		if (!VALID_CONTACT(uc, get_act_time()))
+			continue;
+
+		LM_DBG("overflow on inserting new contact -> removing <%.*s>\n",
+		       uc->c.len, uc->c.s);
+
+		if (ul_api.delete_ucontact(r, uc, 0) != 0) {
+			LM_ERR("failed to remove contact, aor: %.*s\n",
+			       r->aor.len, r->aor.s);
+			return -1;
+		}
+
+		/* our usrloc callbacks will take care of De-REG'ing from main reg */
+
+		trims--;
+	}
+
+	if (trims != 0)
+		LM_BUG("non-zero trims, aor: %.*s", r->aor.len, r->aor.s);
+
+	return 0;
+}
+
 /* NB: always ensure update_act_time() has been recently called beforehand */
 struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
                         struct mid_reg_info *mri, struct ct_mapping *ctmap)
@@ -1112,7 +1140,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg*
 	urecord_t *r;
 	contact_t *_c = NULL;
 	int_str_t value;
-	int e_out;
+	int e_out, vct, was_valid;
 	int e_max = 0;
 	int tcp_check = 0;
 	struct sip_uri uri;
@@ -1158,6 +1186,13 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg*
 		}
 	}
 
+	if (mri->max_contacts) {
+		for (c = r->contacts, vct = 0; c; c = c->next) {
+			if (VALID_CONTACT(c, get_act_time()))
+				vct++;
+		}
+	}
+
 	/* both lists (req contacts and ct_mappings) have equal lengths
 	 * and their contacts match at each index since the latter was
 	 * generated out of the former */
@@ -1197,6 +1232,18 @@ update_usrloc:
 			if (!_c)
 				continue;
 
+			if (mri->max_contacts && vct >= mri->max_contacts) {
+				if (!(mri->reg_flags & REG_SAVE_FORCE_REG_FLAG)) {
+					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
+					        r->aor.len, r->aor.s, mri->max_contacts);
+					rerrno = R_TOO_MANY;
+					goto error;
+				}
+
+				if (trim_contacts(r, vct - mri->max_contacts + 1) != 0)
+					goto error;
+			}
+
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
 			if (ul_api.insert_ucontact( r, &ctmap->req_ct_uri, ci, &c, 0) < 0) {
@@ -1204,6 +1251,8 @@ update_usrloc:
 				LM_ERR("failed to insert contact\n");
 				goto error;
 			}
+
+			vct++;
 
 			if (reg_mode == MID_REG_THROTTLE_CT &&
 			    store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
@@ -1221,16 +1270,33 @@ update_usrloc:
 						LM_ERR("oom\n");
 				}
 
+				was_valid = VALID_CONTACT(c, get_act_time());
 				if (ul_api.delete_ucontact(r, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
-					LM_ERR("failed to update contact\n");
+					LM_ERR("failed to delete contact\n");
 					goto error;
-				}
+				} else if (was_valid)
+					vct--;
 
 				continue;
 			}
 
 			LM_DBG("UPDATING .....\n");
+
+			if (!VALID_CONTACT(c, get_act_time()))
+				vct++;
+
+			if (mri->max_contacts && vct > mri->max_contacts) {
+				if (!(mri->reg_flags & REG_SAVE_FORCE_REG_FLAG)) {
+					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
+					        r->aor.len, r->aor.s, mri->max_contacts);
+					rerrno = R_TOO_MANY;
+					goto error;
+				}
+
+				if (trim_contacts(r, vct - mri->max_contacts) != 0)
+					goto error;
+			}
 
 			if (reg_mode == MID_REG_THROTTLE_CT &&
 				store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
@@ -1297,7 +1363,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 	urecord_t *r = NULL;
 	contact_t *_c;
 	unsigned int cseq;
-	int e_out = -1;
+	int e_out = -1, vct, was_valid;
 	int e_max = 0;
 	int tcp_check = 0;
 	struct sip_uri uri;
@@ -1370,6 +1436,13 @@ static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg*
 	log_contacts(get_first_contact(req));
 #endif
 
+	if (mri->max_contacts) {
+		for (c = r->contacts, vct = 0; c; c = c->next) {
+			if (VALID_CONTACT(c, get_act_time()))
+				vct++;
+		}
+	}
+
 	list_for_each(_, &mri->ct_mappings) {
 		ctmap = list_entry(_, struct ct_mapping, list);
 
@@ -1401,6 +1474,18 @@ update_usrloc:
 			if (!_c)
 				continue;
 
+			if (mri->max_contacts && vct >= mri->max_contacts) {
+				if (!(mri->reg_flags & REG_SAVE_FORCE_REG_FLAG)) {
+					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
+					        r->aor.len, r->aor.s, mri->max_contacts);
+					rerrno = R_TOO_MANY;
+					goto out_clear_err;
+				}
+
+				if (trim_contacts(r, vct - mri->max_contacts + 1) != 0)
+					goto out_clear_err;
+			}
+
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
 			if (ul_api.insert_ucontact( r, &ctmap->req_ct_uri, ci, &c, 0) < 0) {
@@ -1408,6 +1493,8 @@ update_usrloc:
 				LM_ERR("failed to insert contact\n");
 				goto out_clear_err;
 			}
+
+			vct++;
 
 			if (reg_mode == MID_REG_THROTTLE_AOR &&
 			    store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
@@ -1418,12 +1505,30 @@ update_usrloc:
 		} else if (c != NULL) {
 			/* delete expired or stale contact (not present on main reg) */
 			if (ctmap->expires == 0 || !_c) {
+				was_valid = VALID_CONTACT(c, get_act_time());
 				if (ul_api.delete_ucontact(r, c, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
 					goto out_clear_err;
-				}
+				} else if (was_valid)
+					vct--;
+
 				continue;
+			}
+
+			if (!VALID_CONTACT(c, get_act_time()))
+				vct++;
+
+			if (mri->max_contacts && vct > mri->max_contacts) {
+				if (!(mri->reg_flags & REG_SAVE_FORCE_REG_FLAG)) {
+					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
+					        r->aor.len, r->aor.s, mri->max_contacts);
+					rerrno = R_TOO_MANY;
+					goto out_clear_err;
+				}
+
+				if (trim_contacts(r, vct - mri->max_contacts) != 0)
+					goto out_clear_err;
 			}
 
 			if (reg_mode == MID_REG_THROTTLE_AOR &&
@@ -1603,6 +1708,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	mri->expires = 0;
 	mri->expires_out = sctx->expires_out;
+	mri->max_contacts = sctx->max_contacts;
 	mri->dom = ud;
 	mri->reg_flags = sctx->flags;
 	mri->star = sctx->star;
@@ -2099,13 +2205,13 @@ static int calc_max_ct_diff(urecord_t *urec)
  * return: fwd / nfwd / error
  */
 static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
-                                   unsigned int flags, str *ownership_tag)
+                    unsigned int flags, str *ownership_tag, int max_contacts)
 {
 	int e, ret, ctno = 0, cflags, max_diff = -1;
 	ucontact_info_t *ci;
 	ucontact_t *c;
 	contact_t *ct;
-	int e_out;
+	int e_out, vct;
 	unsigned int last_reg_ts;
 	int_str_t *value;
 
@@ -2140,6 +2246,13 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	for (c = urec->contacts; c; c = c->next)
 		ctno++;
 
+	if (max_contacts) {
+		for (c = urec->contacts, vct = 0; c; c = c->next) {
+			if (VALID_CONTACT(c, get_act_time()))
+				vct++;
+		}
+	}
+
 	/* if there are any new contacts, we must return a "forward" code */
 	for (ct = get_first_contact(req); ct; ct = get_next_contact(ct)) {
 		calc_contact_expires(req, ct->expires, &e, 1);
@@ -2171,6 +2284,21 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			LM_DBG("found >> [ %ld, %ld ], e=%d, e_out=%d\n",
 			       c->expires_in, c->expires_out, e, e_out);
 
+			if (!VALID_CONTACT(c, get_act_time()))
+				vct++;
+
+			if (max_contacts && vct > max_contacts) {
+				if (!(flags & REG_SAVE_FORCE_REG_FLAG)) {
+					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
+					        urec->aor.len, urec->aor.s, max_contacts);
+					rerrno = R_TOO_MANY;
+					return -1;
+				}
+
+				if (trim_contacts(urec, vct - max_contacts) != 0)
+					return -1;
+			}
+
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), 0,
 			             ul_api.nat_flag, cflags, ownership_tag);
@@ -2193,6 +2321,20 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			}
 		} else if (ret == 1) {
 			/* not found */
+			if (e == 0)
+				continue;
+
+			if (max_contacts && vct >= max_contacts) {
+				if (!(flags & REG_SAVE_FORCE_REG_FLAG)) {
+					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
+					        urec->aor.len, urec->aor.s, max_contacts);
+					rerrno = R_TOO_MANY;
+					return -1;
+				}
+
+				if (trim_contacts(urec, vct - max_contacts + 1) != 0)
+					return -1;
+			}
 
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), 0,
@@ -2209,6 +2351,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 				LM_ERR("failed to insert contact\n");
 				return -1;
 			}
+
+			vct++;
 
 			if (update_ucontact_data(c, e, e_out, ci->cseq) != 0) {
 				LM_ERR("failed to update ucontact data - oom?\n");
@@ -2247,7 +2391,10 @@ static void parse_save_flags(str *flags_s, struct save_ctx *out_sctx)
 						flags_s->s[st+1] - '0';
 					st++;
 				}
+				if (out_sctx->max_contacts < 0)
+					out_sctx->max_contacts = 0;
 				break;
+
 			case 'e':
 				out_sctx->min_expires = 0;
 				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
@@ -2274,9 +2421,13 @@ static void parse_save_flags(str *flags_s, struct save_ctx *out_sctx)
 					if (flags_s->s[st]=='0') {
 						out_sctx->flags |= REG_SAVE_PATH_OFF_FLAG; break; }
 				}
+				break;
 			default: LM_WARN("unsupported flag %c \n",flags_s->s[st]);
 		}
 	}
+
+	if (out_sctx->max_contacts == 0)
+		out_sctx->max_contacts = max_contacts;
 }
 
 int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
@@ -2347,7 +2498,8 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 	if (reg_mode == MID_REG_THROTTLE_CT)
 		rc = process_contacts_by_ct(msg, rec, sctx.flags, &sctx.ownership_tag);
 	else if (reg_mode == MID_REG_THROTTLE_AOR)
-		rc = process_contacts_by_aor(msg,rec, sctx.flags, &sctx.ownership_tag);
+		rc = process_contacts_by_aor(msg,rec, sctx.flags, &sctx.ownership_tag,
+		                             sctx.max_contacts);
 
 	if (rc == -1)
 		goto out_error;
