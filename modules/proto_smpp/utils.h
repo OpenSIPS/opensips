@@ -25,7 +25,7 @@
 #include <stdint.h>
 
 int copy_fixed_str(char *to, char *from, int n);
-int copy_var_str(char *to, char *from);
+int copy_var_str(char *to, char *from, int maxlen);
 int copy_u8(char *to, uint8_t from);
 int copy_u32(char *to, uint32_t from);
 

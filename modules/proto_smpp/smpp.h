@@ -126,6 +126,11 @@ typedef struct smpp_optional{
 #define MAX_PASSWORD_LEN 9
 #define MAX_SYSTEM_TYPE_LEN 13
 #define MAX_ADDRESS_RANGE_LEN 41
+#define MAX_SERVICE_TYPE_LEN 6
+#define MAX_ADDRESS_LEN 21
+#define MAX_SCHEDULE_DELIVERY_LEN 1
+#define MAX_VALIDITY_PERIOD 1
+#define MAX_MESSAGE_ID 65
 
 typedef struct {
 	char system_id[MAX_SYSTEM_ID_LEN];
@@ -152,18 +157,18 @@ typedef struct {
 } smpp_outbind_t;
 
 typedef struct {
-	char service_type[6];
+	char service_type[MAX_SERVICE_TYPE_LEN];
 	uint8_t source_addr_ton;
 	uint8_t source_addr_npi;
-	char source_addr[21];
+	char source_addr[MAX_ADDRESS_LEN];
 	uint8_t dest_addr_ton;
 	uint8_t dest_addr_npi;
-	char destination_addr[21];
+	char destination_addr[MAX_ADDRESS_LEN];
 	uint8_t esm_class;
 	uint8_t protocol_id;
 	uint8_t protocol_flag;
-	char schedule_delivery_time[1];
-	char validity_period[1];
+	char schedule_delivery_time[MAX_SCHEDULE_DELIVERY_LEN];
+	char validity_period[MAX_VALIDITY_PERIOD];
 	uint8_t registered_delivery;
 	uint8_t replace_if_present_flag;
 	uint8_t data_coding;
@@ -173,7 +178,7 @@ typedef struct {
 } smpp_submit_sm_t;
 
 typedef struct {
-	char message_id[65];
+	char message_id[MAX_MESSAGE_ID];
 } smpp_submit_sm_resp_t;
 
 typedef smpp_submit_sm_t smpp_deliver_sm_t;

@@ -34,11 +34,11 @@ int copy_fixed_str(char *to, char *from, int n)
 	return iret;
 }
 
-int copy_var_str(char *to, char *from)
+int copy_var_str(char *to, char *from, int maxlen)
 {
 	int iret = 1;
 
-	while (*from) {
+	while (*from && maxlen--) {
 		*to++ = *from++;
 		iret++;
 	}
