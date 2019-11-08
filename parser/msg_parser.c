@@ -1231,6 +1231,13 @@ int set_path_vector(struct sip_msg *msg, str *path)
 	return 0;
 }
 
+void clear_path_vector(struct sip_msg *msg)
+{
+	if (msg->path_vec.s) {
+		pkg_free(msg->path_vec.s);
+		memset(&msg->path_vec, 0, sizeof msg->path_vec);
+	}
+}
 
 /* convenience macros */
 #define LC(_cp) ((*(_cp))|0x20)

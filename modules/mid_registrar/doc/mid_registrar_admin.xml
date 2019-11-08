@@ -882,6 +882,32 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 				</listitem>
 				!-->
 				<listitem>
+					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
+					The Path header is saved into usrloc, but is never
+					included in the reply.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'p1' (Path support - 'loose' mode)</emphasis>
+					The Path header is always saved into usrloc, and is only included
+					in the reply if Path support is indicated in the
+					registration request by the <quote>path</quote> option
+					of the <quote>Supported</quote> header.
+					</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>'p2' (Path support - 'strict' mode)</emphasis>
+					The path header is only saved into usrloc if Path support
+					is indicated in the registration request by the
+					<quote>path</quote> option of the <quote>Supported</quote>
+					header. If no Path support is indicated, the request is
+					rejected with <quote>420 - Bad Extension</quote> and the
+					header <quote>Unsupported: path</quote> is included in
+					the reply along with the received <quote>Path</quote>
+					header. This mode is the one recommended by RFC 3327.
+					</para>
+				</listitem>
+				<listitem>
 					<para><emphasis>'v' (path receiVed)</emphasis> if set,
 					the <quote>received</quote> parameter of the first Path
 					URI of a registration is set as received-uri and the NAT

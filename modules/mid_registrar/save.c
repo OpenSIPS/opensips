@@ -54,6 +54,7 @@
 #include "../../lib/reg/sip_msg.h"
 #include "../../lib/reg/rerrno.h"
 #include "../../lib/reg/regtime.h"
+#include "../../lib/reg/path.h"
 
 #include "../../trim.h"
 #include "../../strcommon.h"
@@ -77,6 +78,8 @@ static struct {
 
 #define RETRY_AFTER "Retry-After: "
 #define RETRY_AFTER_LEN (sizeof(RETRY_AFTER) - 1)
+
+int prepare_rpl_path(struct sip_msg *req, str *path, int flags, struct sip_msg *rpl);
 
 /*
  * @_e: output param (integer) - value of the ";expires" Contact hf param or "Expires" hf
@@ -1122,6 +1125,7 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 	static ucontact_info_t ci;
 	static int_str attr_avp_value;
 	static str callid;
+	static str path, path_received;
 
 	struct usr_avp *avp_attr;
 	int_str src_if;
@@ -1179,6 +1183,22 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 			}
 
 			ci.received = received;
+		}
+	}
+
+	/* extract Path headers */
+	if (mri->reg_flags & REG_SAVE_PATH_FLAG) {
+		if (build_path_vector(req, &path, &path_received, mri->reg_flags) < 0) {
+			rerrno = R_PARSE_PATH;
+			return NULL;
+		}
+
+		if (path.len && path.s)
+			ci.path = &path;
+
+		if (path_received.len && path_received.s) {
+			ci.cflags |= ul_api.nat_flag;
+			ci.received = path_received;
 		}
 	}
 
@@ -1412,6 +1432,10 @@ update_usrloc:
 			}
 		}
 	}
+
+	if (prepare_rpl_path(req, ci->path, mri->reg_flags, rpl) != 0)
+		LM_ERR("failed to prepare reply Path header, ci: %.*s\n",
+		       mri->callid.len, mri->callid.s);
 
 	if (r->contacts) {
 		/* only include the request's contacts in the 200 OK reply
@@ -1656,6 +1680,10 @@ update_usrloc:
 		}
 	}
 
+	if (prepare_rpl_path(req, ci->path, mri->reg_flags, rpl) != 0)
+		LM_ERR("failed to prepare reply Path header, ci: %.*s\n",
+		       mri->callid.len, mri->callid.s);
+
 	if (r) {
 		if (r->contacts) {
 			if (mri->reg_flags & REG_SAVE_REQ_CT_ONLY_FLAG)
@@ -1898,46 +1926,106 @@ static int add_retry_after(struct sip_msg* _m)
 
 #define PATH "Path: "
 #define PATH_LEN (sizeof(PATH) - 1)
-static int add_path(struct sip_msg* _m, str* _p)
+static int add_path(struct sip_msg* _m, str* _p, int is_reply)
 {
 	char* buf;
+	struct lump *anchor;
 
- 	buf = (char*)pkg_malloc(PATH_LEN + _p->len + CRLF_LEN);
- 	if (!buf) {
- 		LM_ERR("no pkg memory left\n");
- 		return -1;
- 	}
- 	memcpy(buf, PATH, PATH_LEN);
- 	memcpy(buf + PATH_LEN, _p->s, _p->len);
- 	memcpy(buf + PATH_LEN + _p->len, CRLF, CRLF_LEN);
- 	add_lump_rpl(_m, buf, PATH_LEN + _p->len + CRLF_LEN,
- 		     LUMP_RPL_HDR | LUMP_RPL_NODUP);
- 	return 0;
+	buf = (char*)pkg_malloc(PATH_LEN + _p->len + CRLF_LEN);
+	if (!buf) {
+		LM_ERR("no pkg memory left\n");
+		return -1;
+	}
+	memcpy(buf, PATH, PATH_LEN);
+	memcpy(buf + PATH_LEN, _p->s, _p->len);
+	memcpy(buf + PATH_LEN + _p->len, CRLF, CRLF_LEN);
+
+	if (is_reply) {
+		anchor = anchor_lump(_m, _m->unparsed - _m->buf, 0);
+		if (!anchor) {
+			LM_ERR("Failed to get anchor lump\n");
+			return -1;
+		}
+
+		if (!insert_new_lump_before(anchor, buf, PATH_LEN + _p->len + CRLF_LEN, 0)) {
+			LM_ERR("Failed to insert lump\n");
+			return -1;
+		}
+	} else {
+		add_lump_rpl(_m, buf, PATH_LEN + _p->len + CRLF_LEN,
+			     LUMP_RPL_HDR | LUMP_RPL_NODUP);
+	}
+
+	return 0;
 }
 
 #define UNSUPPORTED "Unsupported: "
 #define UNSUPPORTED_LEN (sizeof(UNSUPPORTED) - 1)
-static int add_unsupported(struct sip_msg* _m, str* _p)
+static int add_unsupported(struct sip_msg* _m, str* _p, int is_reply)
 {
 	char* buf;
+	struct lump *anchor;
 
- 	buf = (char*)pkg_malloc(UNSUPPORTED_LEN + _p->len + CRLF_LEN);
- 	if (!buf) {
- 		LM_ERR("no pkg memory left\n");
- 		return -1;
- 	}
- 	memcpy(buf, UNSUPPORTED, UNSUPPORTED_LEN);
- 	memcpy(buf + UNSUPPORTED_LEN, _p->s, _p->len);
- 	memcpy(buf + UNSUPPORTED_LEN + _p->len, CRLF, CRLF_LEN);
- 	add_lump_rpl(_m, buf, UNSUPPORTED_LEN + _p->len + CRLF_LEN,
- 		     LUMP_RPL_HDR | LUMP_RPL_NODUP);
- 	return 0;
+	buf = (char*)pkg_malloc(UNSUPPORTED_LEN + _p->len + CRLF_LEN);
+	if (!buf) {
+		LM_ERR("no pkg memory left\n");
+		return -1;
+	}
+	memcpy(buf, UNSUPPORTED, UNSUPPORTED_LEN);
+	memcpy(buf + UNSUPPORTED_LEN, _p->s, _p->len);
+	memcpy(buf + UNSUPPORTED_LEN + _p->len, CRLF, CRLF_LEN);
+
+	if (is_reply) {
+		anchor = anchor_lump(_m, _m->unparsed - _m->buf, 0);
+		if (!anchor) {
+			LM_ERR("Failed to get anchor lump\n");
+			return -1;
+		}
+
+		if (!insert_new_lump_before(anchor, buf, UNSUPPORTED_LEN + _p->len + CRLF_LEN, 0)) {
+			LM_ERR("Failed to insert lump\n");
+			return -1;
+		}
+	} else {
+		add_lump_rpl(_m, buf, UNSUPPORTED_LEN + _p->len + CRLF_LEN,
+			     LUMP_RPL_HDR | LUMP_RPL_NODUP);
+	}
+
+	return 0;
 }
 
+int prepare_rpl_path(struct sip_msg *req, str *path, int flags, struct sip_msg *rpl)
+{
+	str unsup = str_init(SUPPORTED_PATH_STR);
+
+	if (rerrno != R_FINE || !(flags & REG_SAVE_PATH_FLAG) ||
+	        ZSTRP(path) || (flags & REG_SAVE_PATH_OFF_FLAG))
+		return 0;
+
+	if (parse_supported(req) < 0 && (flags & REG_SAVE_PATH_STRICT_FLAG)) {
+		rerrno = R_PATH_UNSUP;
+		if (add_unsupported(rpl ? rpl : req, &unsup, !!rpl) < 0)
+			return -1;
+		if (add_path(rpl ? rpl : req, path, !!rpl) < 0)
+			return -1;
+
+	} else if (get_supported(req) & F_SUPPORTED_PATH) {
+		if (add_path(rpl ? rpl : req, path, !!rpl) < 0)
+			return -1;
+
+	} else if (flags & REG_SAVE_PATH_STRICT_FLAG) {
+		rerrno = R_PATH_UNSUP;
+		if (add_unsupported(rpl ? rpl : req, &unsup, !!rpl) < 0)
+			return -1;
+		if (add_path(rpl ? rpl : req, path, !!rpl) < 0)
+			return -1;
+	}
+
+	return 0;
+}
 
 int send_reply(struct sip_msg* _m, unsigned int _flags)
 {
-	str unsup = str_init(SUPPORTED_PATH_STR);
 	long code;
 	str msg = str_init(MSG_200); /* makes gcc shut up */
 	char* buf;
@@ -1949,27 +2037,8 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 		contact.data_len = 0;
 	}
 
-	if (rerrno == R_FINE && (_flags&REG_SAVE_PATH_FLAG) && _m->path_vec.s) {
-		if ( (_flags&REG_SAVE_PATH_OFF_FLAG)==0 ) {
-			if (parse_supported(_m)<0 && (_flags&REG_SAVE_PATH_STRICT_FLAG)) {
-				rerrno = R_PATH_UNSUP;
-				if (add_unsupported(_m, &unsup) < 0)
-					return -1;
-				if (add_path(_m, &_m->path_vec) < 0)
-					return -1;
-			}
-			else if (get_supported(_m) & F_SUPPORTED_PATH) {
-				if (add_path(_m, &_m->path_vec) < 0)
-					return -1;
-			} else if ((_flags&REG_SAVE_PATH_STRICT_FLAG)) {
-				rerrno = R_PATH_UNSUP;
-				if (add_unsupported(_m, &unsup) < 0)
-					return -1;
-				if (add_path(_m, &_m->path_vec) < 0)
-					return -1;
-			}
-		}
-	}
+	if (prepare_rpl_path(_m, &_m->path_vec, _flags, NULL) != 0)
+		return -1;
 
 	code = rerr_codes[rerrno];
 	switch(code) {
@@ -2175,7 +2244,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(msg, 0, 0, 0, ul_api.nat_flag, cflags,
+	if ( (ci=pack_ci(msg, 0, 0, cflags, ul_api.nat_flag, flags,
 						ownership_tag))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
@@ -2220,8 +2289,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 				return 1;
 			} else {
 				/* pack the contact specific info */
-				ci = pack_ci(msg, ct, e + get_act_time(), 0,
-				             ul_api.nat_flag, cflags, ownership_tag);
+				ci = pack_ci(msg, ct, e + get_act_time(), cflags,
+				             ul_api.nat_flag, flags, ownership_tag);
 				if (!ci) {
 					LM_ERR("failed to pack contact specific info\n");
 					rerrno = R_UL_UPD_C;
@@ -2340,7 +2409,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(req, 0, 0, 0, ul_api.nat_flag, cflags,
+	if ( (ci=pack_ci(req, 0, 0, cflags, ul_api.nat_flag, flags,
 						ownership_tag))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
@@ -2403,8 +2472,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			}
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e + get_act_time(), 0,
-			             ul_api.nat_flag, cflags, ownership_tag);
+			ci = pack_ci(req, ct, e + get_act_time(), cflags,
+			             ul_api.nat_flag, flags, ownership_tag);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2440,8 +2509,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			}
 
 			/* pack the contact specific info */
-			ci = pack_ci(req, ct, e + get_act_time(), 0,
-			             ul_api.nat_flag, cflags, ownership_tag);
+			ci = pack_ci(req, ct, e + get_act_time(), cflags,
+			             ul_api.nat_flag, flags, ownership_tag);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2646,6 +2715,8 @@ quick_reply:
 	return 2;
 
 out_forward:
+	clear_path_vector(msg);
+
 	ul_api.unlock_udomain(ud, &sctx.aor);
 	return prepare_forward(msg, ud, &sctx);
 

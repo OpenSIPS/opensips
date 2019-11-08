@@ -531,6 +531,7 @@ int rewrite_ruri(struct sip_msg *msg, str *sval, int ival,
  * Make a private copy of the string and assign it to path_vec
  */
 int set_path_vector(struct sip_msg* msg, str* path);
+void clear_path_vector(struct sip_msg* msg);
 
 
 /*
