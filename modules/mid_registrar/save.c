@@ -2280,6 +2280,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	urecord_t *rec = NULL;
 	str flags_str = { NULL, 0 }, to_uri = { NULL, 0 };
 	struct save_ctx sctx;
+	struct hdr_field *path;
 	int rc = -1, st;
 
 	if (msg->REQ_METHOD != METHOD_REGISTER) {
@@ -2335,6 +2336,17 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 			return prepare_forward(msg, ud, &sctx);
 		}
 		goto quick_reply;
+	}
+
+	/* mid-registrar always rewrites the Contact, so any Path hf must go! */
+	if (parse_headers(msg, HDR_PATH_F, 0) == 0 && msg->path) {
+		for (path = msg->path; path; path = path->sibling) {
+			if (!del_lump(msg, path->name.s - msg->buf,
+			              path->len, HDR_PATH_T)) {
+				LM_ERR("failed to remove Path HF\n");
+				return -1;
+			}
+		}
 	}
 
 	/* in mirror mode, all REGISTER requests simply pass through */
