@@ -436,6 +436,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				LM_ERR("failed to insert contact\n");
 				goto error;
 			}
+
+			num++;
 		} else {
 			/* Contact found */
 			if (e == 0) {
