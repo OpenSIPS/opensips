@@ -84,7 +84,7 @@
 			You can define domains both in the DB and script at the same time.
 		</para>
 		<para>
-			For any TLS domain (defined through script or DB, default or virtual) if not specified otherwise, the default settings are:
+			For any TLS domain (defined through script or DB) if not specified otherwise, the default settings are:
 			<itemizedlist>
 				<listitem><para>method - <emphasis>SSLv23</emphasis></para></listitem>
 				<listitem><para>verify_cert - <emphasis>1</emphasis></para></listitem>
@@ -180,7 +180,9 @@ if (is_peer_verified()) {
 		<function moreinfo="none">tls_reload</function>
                 </title>
                 <para>
-                Reloads the TLS domains information from the database. The previous DB defined domains are discarded but the script defined domains are preserved. If no new default client or server domains is loaded and previously the default was DB defined, the standard default domain is reinstated.
+                Reloads the TLS domains information from the database.
+                The previous DB defined domains are discarded but the
+                script defined domains are preserved.
                 </para>
             </section>
         </section>
