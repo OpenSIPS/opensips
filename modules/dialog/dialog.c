@@ -243,7 +243,7 @@ static cmd_export_t cmds[]={
 		ALL_ROUTES},
 	{"get_dialogs_by_profile",(cmd_function)w_get_dlg_jsons_by_profile, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,fixup_check_avp,0},
 		{CMD_PARAM_VAR,fixup_check_var,0}, {0,0,0}},
 		ALL_ROUTES},
@@ -2042,7 +2042,7 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, str *attr, str *attr_
 
 			while(cur_link) {
 				if (cur_link->profile == profile &&
-				( attr_val->s == NULL ||
+				( !attr_val || !profile->has_value ||
 				( attr_val->len == cur_link->value.len && 
 				!strncmp(attr_val->s,cur_link->value.s, attr_val->len)))) {
 					found = 1;
