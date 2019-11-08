@@ -74,6 +74,9 @@
 #include "save.h"
 #include "lookup.h"
 
+int filter_contacts(urecord_t *r, struct sip_msg *by_msg);
+void restore_contacts(urecord_t *r);
+
 /*! \brief
  * Process request that contained a star, in that case,
  * we will remove all bindings with the given username
@@ -126,24 +129,31 @@ static inline int star(udomain_t* _d, struct save_ctx *_sctx,
  * containing a list of all existing bindings for the
  * given username (in To HF)
  */
-static inline int no_contacts(udomain_t* _d, str* _a,struct sip_msg *_m)
+static inline int no_contacts(udomain_t* _d, struct save_ctx *_sctx,
+                              struct sip_msg *_m)
 {
 	urecord_t* r;
 	int res;
 
-	ul.lock_udomain(_d, _a);
-	res = ul.get_urecord(_d, _a, &r);
+	ul.lock_udomain(_d, &_sctx->aor);
+	res = ul.get_urecord(_d, &_sctx->aor, &r);
 	if (res < 0) {
 		rerrno = R_UL_GET_R;
 		LM_ERR("failed to retrieve record from usrloc\n");
-		ul.unlock_udomain(_d, _a);
+		ul.unlock_udomain(_d, &_sctx->aor);
 		return -1;
 	}
 
 	if (res == 0) {  /* Contacts found */
+		if (_sctx->flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+			filter_contacts(r, _m);
+
 		build_contact(r->contacts,_m);
+
+		if (_sctx->flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+			restore_contacts(r);
 	}
-	ul.unlock_udomain(_d, _a);
+	ul.unlock_udomain(_d, &_sctx->aor);
 	return 0;
 }
 
@@ -303,7 +313,13 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 
 	if (r) {
 		if (r->contacts) {
+			if (_sctx->flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+				filter_contacts(r, _m);
+
 			build_contact(r->contacts,_m);
+
+			if (_sctx->flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+				restore_contacts(r);
 		}
 		ul.release_urecord(r, 0);
 	}
@@ -549,12 +565,26 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
 
 	if (res == 0) { /* Contacts found */
 		if (update_contacts(_m, r, _c, _sctx) < 0) {
+			if (_sctx->flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+				filter_contacts(r, _m);
+
 			build_contact(r->contacts,_m);
+
+			if (_sctx->flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+				restore_contacts(r);
 			ul.release_urecord(r, 0);
 			ul.unlock_udomain(_d, &_sctx->aor);
 			return -3;
 		}
+
+		if (_sctx->flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+			filter_contacts(r, _m);
+
 		build_contact(r->contacts,_m);
+
+		if (_sctx->flags & REG_SAVE_REQ_CT_ONLY_FLAG)
+			restore_contacts(r);
+
 		ul.release_urecord(r, 0);
 	} else {
 		if (insert_contacts(_m, _c, _d, &_sctx->aor, _sctx) < 0) {
@@ -590,6 +620,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		for( st=0 ; st< flags_s->len ; st++ ) {
 			switch (flags_s->s[st]) {
 				case 'm': sctx.flags |= REG_SAVE_MEMORY_FLAG; break;
+				case 'o': sctx.flags |= REG_SAVE_REQ_CT_ONLY_FLAG; break;
 				case 'r': sctx.flags |= REG_SAVE_NOREPLY_FLAG; break;
 				case 's': sctx.flags |= REG_SAVE_SOCKET_FLAG; break;
 				case 'v': sctx.flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
@@ -677,7 +708,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		if (st) {
 			if (star((udomain_t*)_d, &sctx,_m) < 0) goto error;
 		} else {
-			if (no_contacts((udomain_t*)_d, &sctx.aor,_m) < 0) goto error;
+			if (no_contacts((udomain_t*)_d, &sctx, _m) < 0) goto error;
 		}
 	} else {
 		if (add_contacts(_m, c, (udomain_t*)_d, &sctx) < 0) goto error;
@@ -1011,3 +1042,66 @@ out_unlock:
 	return ret;
 }
 
+static ucontact_t **contacts_bak;
+static int contacts_bak_no;
+static int contacts_bak_sz;
+
+/* temporarily filter the contacts of a record */
+int filter_contacts(urecord_t *r, struct sip_msg *by_msg)
+{
+	contact_t *c;
+	ucontact_t *uc, *_uc;
+	int i;
+
+	/* back up the original list using a static array */
+	for (i = 0, uc = r->contacts; uc; uc = uc->next, i++) {
+		if (i >= contacts_bak_sz) {
+			contacts_bak = pkg_realloc(contacts_bak,
+			                        (i ? 2 * contacts_bak_sz : 10) * sizeof r);
+			if (!contacts_bak) {
+				LM_ERR("oom\n");
+				return -1;
+			}
+
+			contacts_bak_sz = (i ? 2 * contacts_bak_sz : 10);
+		}
+
+		contacts_bak[i] = uc;
+	}
+	contacts_bak_no = i;
+
+	uc = NULL;
+	for (c = get_first_contact(by_msg); c; c = get_next_contact(c)) {
+		for (_uc = r->contacts; _uc; _uc = _uc->next) {
+			if (str_strcmp(&c->uri, &_uc->c))
+				continue;
+
+			if (!uc) {
+				uc = _uc;
+			} else {
+				uc->next = _uc;
+				uc = _uc;
+			}
+
+			break;
+		}
+	}
+
+	if (uc)
+		uc->next = NULL;
+
+	/* expose the filtered list */
+	r->contacts = uc;
+	return 0;
+}
+
+void restore_contacts(urecord_t *r)
+{
+	int i;
+
+	for (i = 0; i < contacts_bak_no - 1; i++)
+		contacts_bak[i]->next = contacts_bak[i + 1];
+
+	contacts_bak[contacts_bak_no - 1]->next = NULL;
+	r->contacts = contacts_bak[0];
+}

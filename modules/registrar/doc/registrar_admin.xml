@@ -654,6 +654,13 @@ modparam("registrar", "disable_gruu", 0)
 					</para>
 				</listitem>
 				<listitem>
+					<para><emphasis>'o' (Only request contacts)</emphasis> -
+					Only include the REGISTER request's Contacts in the 200 OK
+					reply, in case the registration is successful.  While this
+					is against RFC 3261, it may be useful in certain scenarios.
+					</para>
+				</listitem>
+				<listitem>
 					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
 					The Path header is saved into usrloc, but is never
 					included in the reply.
