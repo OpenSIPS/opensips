@@ -241,8 +241,7 @@ listen = tls:1.2.3.4:5061
 		<section id="param_tls_method" xreflabel="tls_method">
 			<title><varname>tls_method</varname> ([domain]string)</title>
 			<para>
-				Sets the TLS protocol. The domain, if set, represents
-				the name of the TLS domain. TLS method which can be:
+				Sets the TLS protocol. TLS method which can be used:
 			</para>
 			<itemizedlist>
 				<listitem>
@@ -277,6 +276,10 @@ listen = tls:1.2.3.4:5061
 				</para>
 				</listitem>
 			</itemizedlist>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
+			</para>
 			<para><emphasis>
 				Default value is SSLv23.
 			</emphasis></para>
@@ -309,8 +312,11 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 			<para>
 			Public certificate file for &osips;. It will be used as
 			server-side certificate for incoming TLS connections, and as
-			a client-side certificate for outgoing TLS connections. The domain,
-			if set, represents the name of the TLS domain.
+			a client-side certificate for outgoing TLS connections.
+			</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
 			</para>
 			<para><emphasis>
 				Default value is "CFG_DIR/tls/cert.pem".
@@ -331,8 +337,11 @@ modparam("tls_mgm", "certificate", "[dom]/mycerts/certs/opensips_server_cert.pem
 			<title><varname>private_key</varname> ([domain](string)</title>
 			<para>
 			Private key of the above certificate. I must be kept in a
-			safe place with tight permissions! The domain, if set,
-			represents the name of the TLS omain.
+			safe place with tight permissions!
+			</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
 			</para>
 			<para><emphasis>
 				Default value is "CFG_DIR/tls/ckey.pem".
@@ -354,8 +363,11 @@ modparam("tls_mgm", "private_key", "[dom]/mycerts/private/prik.pem")
 			<para>
 			List of trusted CAs. The file contains the certificates
 			accepted, one after the other. It MUST be a file, not
-			a folder. The domain, if set, represents the name
-			of the TLS domain.
+			a folder.
+			</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
 			</para>
 			<para><emphasis>
 				Default value is "".
@@ -378,8 +390,11 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 			must be in hashed form, as described in the
 			<ulink url="https://www.openssl.org/docs/manmaster/man3/X509_LOOKUP_hash_dir.html">
 			<citetitle>openssl documentation</citetitle></ulink> for the
-			<emphasis>Hashed Directory Method</emphasis>. The domain part
-			represents the name of the TLS domain.
+			<emphasis>Hashed Directory Method</emphasis>.
+			</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
 			</para>
 			<para><emphasis>
 				Default value is "/etc/pki/CA/".
@@ -398,8 +413,11 @@ modparam("tls_mgm", "ca_dir", "[dom]/mycerts/certs")
 		<section id="param_crl_dir" xreflabel="crl_dir">
 			<title><varname>crl_dir</varname> ([domain](string)</title>
 			<para>
-			Directory storing certificate revocation lists (CRLs). The domain
-			part represents the name of the TLS domain.
+			Directory storing certificate revocation lists (CRLs).
+			</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
 			</para>
 			<para><emphasis>
 				If this parameter is not set, no CRLs will be used.
@@ -420,6 +438,10 @@ modparam("tls_mgm", "crl_dir", "[dom]/mycerts/crls")
 			Setting this parameter with a non-zero integer value enables CRL
 			checking for the entire certificate chain.
 			</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
+			</para>
 			<para><emphasis>
 				By default, only the leaf certificate in the certificate chain
 				is checked.
@@ -438,8 +460,7 @@ modparam("tls_mgm", "crl_check_all", "[dom]1")
 			<title><varname>ciphers_list</varname> ([domain](string)</title>
 			<para>
 			You can specify the list of algorithms for authentication
-			and encryption that you allow. The domain, if set,
-			represents the name of the TLS domain. To obtain a list of ciphers
+			and encryption that you allow. To obtain a list of ciphers
 			and then choose, use the openssl application:
 			</para>
 			<itemizedlist>
@@ -447,6 +468,10 @@ modparam("tls_mgm", "crl_check_all", "[dom]1")
 				<para>openssl ciphers 'ALL:eNULL:!LOW:!EXPORT'</para>
 				</listitem>
 			</itemizedlist>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
+			</para>
 			<warning><para>
 			Do not use the NULL algorithms (no encryption) ... only for testing!!!
 			</para></warning>
@@ -470,8 +495,11 @@ modparam("tls_mgm", "ciphers_list", "[dom]NULL")
 			<para>
 			You can specify a file which contains Diffie-Hellman
 			parameters as a PEM-file. This is needed if you would like
-			to specify ciphers including Diffie-Hellman mode. The 
-			domain, if set, represents the name of the TLS domain.
+			to specify ciphers including Diffie-Hellman mode.
+			</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
 			</para>
 			<para><emphasis>
 				It defaults to not set a dh param file.
@@ -492,8 +520,11 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 			<title><varname>ec_curve</varname> ([domain](string)</title>
 			<para>
 			You can specify an elliptic curve which should be used for
-			ciphers which demand an elliptic curve. The domain,
-			if set, represents the name of the TLS domain.
+			ciphers which demand an elliptic curve.
+			</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
 			</para>
 			<para>
 			It's usable only if TLS v1.1/1.2 support was compiled.
@@ -513,7 +544,10 @@ modparam("tls_mgm", "dh_params", "[dom]/etc/pki/CA/dh1024.pem")
 			Activates SSL_VERIFY_PEER in the ssl_context. For a detailed
 			explanation, check the <emphasis>openssl</emphasis> documentation.
 			</para>
-			<para>The domain part represents the name of the TLS domain.</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
+			</para>
 			<para>
 				Default value is <emphasis>1</emphasis>.
 			</para>
@@ -535,7 +569,10 @@ modparam("tls_mgm", "verify_cert", "[dom]0")
 			documentation. This parameter only makes sense for server domains
 			and if the <xref linkend="param_verify_cert"/> parameter is also set.
 			</para>
-			<para>The domain part represents the name of the TLS domain.</para>
+			<para>
+			The domain part of the parameter represents the name of the TLS domain.
+			If not set, the parameter will affect the default domain.
+			</para>
 			<para>
 				Default value is <emphasis>1</emphasis>.
 			</para>
