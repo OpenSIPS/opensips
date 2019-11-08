@@ -783,6 +783,9 @@ static inline int mi_print_shtable_record(struct mi_node *rpl, subs_t* s)
 	p= int2str((unsigned long)s->version, &len);
 	attr = add_mi_attr(node, MI_DUP_VALUE, "version", 7, p, len);
 	if (attr==NULL) goto error;
+	attr = add_mi_attr(node, MI_DUP_VALUE, "sharing_tag", 11,
+		s->sh_tag.s, s->sh_tag.len);
+	if (attr==NULL) goto error;
 
 	node1 = add_mi_node_child(node, 0, "to_user", 7, s->to_user.s, s->to_user.len);
 	if (node1==NULL) goto error;
