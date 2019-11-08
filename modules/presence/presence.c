@@ -768,6 +768,10 @@ static inline int mi_print_shtable_record(mi_item_t *p_item, subs_t* s)
 	if (add_mi_number(item, MI_SSTR("version"), s->version) < 0)
 		goto error;
 
+	if (s->sh_tag.len && add_mi_string(item, MI_SSTR("sharing_tag"),
+	s->sh_tag.s, s->sh_tag.len) < 0)
+		goto error;
+
 	if (add_mi_string(item, MI_SSTR("to_user"),
 		s->to_user.s, s->to_user.len) < 0)
 		goto error;
