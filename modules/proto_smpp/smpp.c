@@ -87,13 +87,13 @@ static uint32_t get_payload_from_bind_transceiver_body(char *body, smpp_bind_tra
 	}
 
 	char *p = body;
-	p += copy_var_str(p, transceiver->system_id);
-	p += copy_var_str(p, transceiver->password);
-	p += copy_var_str(p, transceiver->system_type);
+	p += copy_var_str(p, transceiver->system_id, MAX_SYSTEM_ID_LEN);
+	p += copy_var_str(p, transceiver->password, MAX_PASSWORD_LEN);
+	p += copy_var_str(p, transceiver->system_type, MAX_SYSTEM_TYPE_LEN);
 	p += copy_u8(p, transceiver->interface_version);
 	p += copy_u8(p, transceiver->addr_ton);
 	p += copy_u8(p, transceiver->addr_npi);
-	p += copy_var_str(p, transceiver->address_range);
+	p += copy_var_str(p, transceiver->address_range, MAX_ADDRESS_RANGE_LEN);
 
 	return p - body;
 }
@@ -106,7 +106,7 @@ static uint32_t get_payload_from_bind_transceiver_resp_body(char *body, smpp_bin
 	}
 
 	char *p = body;
-	p += copy_var_str(p, transceiver_resp->system_id);
+	p += copy_var_str(p, transceiver_resp->system_id, MAX_SYSTEM_ID_LEN);
 
 	return p - body;
 }
@@ -119,18 +119,18 @@ uint32_t get_payload_from_submit_sm_body(char *body, smpp_submit_sm_t *submit_sm
 	}
 
 	char *p = body;
-	p += copy_var_str(p, submit_sm->service_type);
+	p += copy_var_str(p, submit_sm->service_type, MAX_SERVICE_TYPE_LEN);
 	p += copy_u8(p, submit_sm->source_addr_ton);
 	p += copy_u8(p, submit_sm->source_addr_npi);
-	p += copy_var_str(p, submit_sm->source_addr);
+	p += copy_var_str(p, submit_sm->source_addr, MAX_ADDRESS_LEN);
 	p += copy_u8(p, submit_sm->dest_addr_ton);
 	p += copy_u8(p, submit_sm->dest_addr_npi);
-	p += copy_var_str(p, submit_sm->destination_addr);
+	p += copy_var_str(p, submit_sm->destination_addr, MAX_ADDRESS_LEN);
 	p += copy_u8(p, submit_sm->esm_class);
 	p += copy_u8(p, submit_sm->protocol_id);
 	p += copy_u8(p, submit_sm->protocol_flag);
-	p += copy_var_str(p, submit_sm->schedule_delivery_time);
-	p += copy_var_str(p, submit_sm->validity_period);
+	p += copy_var_str(p, submit_sm->schedule_delivery_time, MAX_SCHEDULE_DELIVERY_LEN);
+	p += copy_var_str(p, submit_sm->validity_period, MAX_VALIDITY_PERIOD);
 	p += copy_u8(p, submit_sm->registered_delivery);
 	p += copy_u8(p, submit_sm->replace_if_present_flag);
 	p += copy_u8(p, submit_sm->data_coding);
@@ -201,13 +201,13 @@ static int build_bind_transceiver_request(smpp_bind_transceiver_req_t **preq, sm
 
 	/* copy body fields */
 	smpp_bind_transceiver_t *transceiver = &session->bind.transceiver;
-	copy_var_str(body->system_id, transceiver->system_id);
-	copy_var_str(body->password, transceiver->password);
-	copy_var_str(body->system_type, transceiver->system_type);
+	copy_var_str(body->system_id, transceiver->system_id, MAX_SYSTEM_ID_LEN);
+	copy_var_str(body->password, transceiver->password, MAX_PASSWORD_LEN);
+	copy_var_str(body->system_type, transceiver->system_type, MAX_SYSTEM_TYPE_LEN);
 	body->interface_version = transceiver->interface_version;
 	body->addr_ton = transceiver->addr_ton;
 	body->addr_npi = transceiver->addr_npi;
-	copy_var_str(body->address_range, transceiver->address_range);
+	copy_var_str(body->address_range, transceiver->address_range, MAX_ADDRESS_RANGE_LEN);
 
 	uint32_t body_len = get_payload_from_bind_transceiver_body(req->payload.s + HEADER_SZ, transceiver);
 	header->command_length = HEADER_SZ + body_len;
@@ -270,7 +270,7 @@ static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint
 
 	/* copy body fields */
 	smpp_bind_transceiver_resp_t transceiver_resp;
-	copy_var_str(body->system_id, transceiver_resp.system_id);
+	copy_var_str(body->system_id, transceiver_resp.system_id, MAX_SYSTEM_ID_LEN);
 
 	uint32_t body_len = get_payload_from_bind_transceiver_resp_body(req->payload.s + HEADER_SZ, &transceiver_resp);
 	header->command_length = HEADER_SZ + body_len;
@@ -717,18 +717,18 @@ static void parse_submit_or_deliver_body(smpp_submit_sm_t *body, smpp_header_t *
 	}
 
 	char *p = buffer;
-	p += copy_var_str(body->service_type, p);
+	p += copy_var_str(body->service_type, p, MAX_SERVICE_TYPE_LEN);
 	body->source_addr_ton = *p++;
 	body->source_addr_npi = *p++;
-	p += copy_var_str(body->source_addr, p);
+	p += copy_var_str(body->source_addr, p, MAX_ADDRESS_LEN);
 	body->dest_addr_ton = *p++;
 	body->dest_addr_npi = *p++;
-	p += copy_var_str(body->destination_addr, p);
+	p += copy_var_str(body->destination_addr, p, MAX_ADDRESS_LEN);
 	body->esm_class = *p++;
 	body->protocol_id = *p++;
 	body->protocol_flag = *p++;
-	body->schedule_delivery_time[0] = *p++;
-	body->validity_period[0] = *p++;
+	p += copy_var_str(body->schedule_delivery_time, p, MAX_SCHEDULE_DELIVERY_LEN);
+	p += copy_var_str(body->validity_period, p, MAX_VALIDITY_PERIOD);
 	body->registered_delivery = *p++;
 	body->replace_if_present_flag = *p++;
 	body->data_coding = *p++;
@@ -745,13 +745,13 @@ void parse_bind_receiver_body(smpp_bind_receiver_t *body, smpp_header_t *header,
 	}
 
 	char *p = buffer;
-	p += copy_var_str(body->system_id, p);
-	p += copy_var_str(body->password, p);
-	p += copy_var_str(body->system_type, p);
+	p += copy_var_str(body->system_id, p, MAX_SYSTEM_ID_LEN);
+	p += copy_var_str(body->password, p, MAX_PASSWORD_LEN);
+	p += copy_var_str(body->system_type, p, MAX_SYSTEM_TYPE_LEN);
 	body->interface_version = *p++;
 	body->addr_ton = *p++;
 	body->addr_npi = *p++;
-	p += copy_var_str(body->address_range, p);
+	p += copy_var_str(body->address_range, p, MAX_ADDRESS_RANGE_LEN);
 }
 
 void parse_bind_receiver_resp_body(smpp_bind_receiver_resp_t *body, smpp_header_t *header, char *buffer)
@@ -761,7 +761,7 @@ void parse_bind_receiver_resp_body(smpp_bind_receiver_resp_t *body, smpp_header_
 		return;
 	}
 
-	copy_var_str(body->system_id, buffer);
+	copy_var_str(body->system_id, buffer, MAX_SYSTEM_ID_LEN);
 }
 
 void parse_bind_transmitter_body(smpp_bind_transmitter_t *body, smpp_header_t *header, char *buffer)
@@ -791,7 +791,7 @@ void parse_submit_or_deliver_resp_body(smpp_submit_sm_resp_t *body, smpp_header_
 		return;
 	}
 
-	copy_var_str(body->message_id, buffer);
+	copy_var_str(body->message_id, buffer, MAX_MESSAGE_ID);
 }
 
 void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, smpp_session_t *session)
