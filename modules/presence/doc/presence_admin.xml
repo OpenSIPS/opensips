@@ -976,7 +976,7 @@ _empty_line_
 		For more details, see the <xref linkend="presence_clustering"/> chapter.
 		</para>
 	  <para>
-		Name: <emphasis>dlg_list_sharing_tags</emphasis>
+		Name: <emphasis>pres_list_sharing_tags</emphasis>
 	  </para>
 		<para>Parameters: <emphasis>Command takes no parameters</emphasis>
 		</para>
@@ -984,7 +984,7 @@ _empty_line_
 		MI FIFO Command Format:
 	  </para>
 	  <programlisting  format="linespecific">
-		opensipsctl fifo dlg_list_sharing_tags
+		opensipsctl fifo pres_list_sharing_tags
 	  </programlisting>
 	</section>
 
