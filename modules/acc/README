@@ -893,6 +893,7 @@ acc_evi_request("403 Destination not allowed");
      * multi_leg_bye_info* - Extra parameters added by the
        multi_leg_bye_info parameter
      * duration - The call duration in seconds
+     * ms_duration - The call duration in miliseconds
      * setuptime - The call setup time in seconds
      * created - The timestamp when the call was created (the
        initial Invite was received)
@@ -1016,7 +1017,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 222 107 4153 4571
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 223 108 4163 4571
    2. Jan Janak (@janakj) 151 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 144 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 92 60 2642 565
@@ -1056,8 +1057,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Sep 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Nov 2019
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
    3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
    4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2019
    5.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
@@ -1084,8 +1085,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Ionut
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
    Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
    Ryan Bullock (@rrb3942), Irina-Maria Stanescu, Sergio
    Gutierrez, Henning Westerholt (@henningw), Daniel-Constantin
