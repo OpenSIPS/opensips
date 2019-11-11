@@ -200,8 +200,51 @@ SV *getStringFromURI(SV *self, enum xs_uri_members what) {
 }
 
 
+static int perl_do_action(struct sip_msg* msg, struct action *act,
+    cmd_export_t *cmd, int *retval)
+{
+    void* cmdp[MAX_CMD_PARAMS];
+    pv_value_t tmp_vals[MAX_CMD_PARAMS];
+    int i;
+    struct cmd_param *param;
+    gparam_p gp;
+
+    if (fix_cmd(cmd->params, act->elem) < 0) {
+		LM_ERR("failed to fix command '%s'\n", cmd->name);
+		return -1;
+	}
+
+	if (get_cmd_fixups(msg, cmd->params, act->elem, cmdp, tmp_vals) < 0) {
+		LM_ERR("failed to get fixups for command '%s'\n", cmd->name);
+		return -1;
+	}
+
+	*retval = cmd->function(msg,
+		cmdp[0],cmdp[1],cmdp[2],
+		cmdp[3],cmdp[4],cmdp[5],
+		cmdp[6],cmdp[7]);
+
+	for (param=cmd->params, i=1; param->flags; param++, i++) {
+		gp = (gparam_p)act->elem[i].u.data;
+		if (!gp)
+			continue;
+
+		if (param->free_fixup && param->free_fixup(&cmdp[i-1]) < 0) {
+			LM_ERR("failed to free fixups for command '%s'\n", cmd->name);
+			return -1;
+		}
+
+		if (param->flags & CMD_PARAM_REGEX && gp->type != GPARAM_TYPE_PVS) {
+			regfree((regex_t*)cmdp[i-1]);
+			pkg_free(cmdp[i-1]);
+		}
+	}
+
+    return 0;
+}
+
 /*
- * Calls an exported function. Parameters are copied and fixup'd.
+ * Calls an exported function.
  *
  * Return codes:
  *   -1 - Function not available (or other error).
@@ -217,7 +260,7 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 	int i, n = 0;
 	struct cmd_param *param;
 	str s;
-	pv_spec_t *spec = NULL;
+	pv_spec_t *specs[MAX_CMD_PARAMS];
 	int rval;
 
 	if (!func) {
@@ -232,7 +275,7 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 		return -1;
 	}
 
-	for (i=0; i < MAX_CMD_PARAMS; i++)
+	for (i=0; i < MAX_CMD_PARAMS; i++) {
 		if (pargs[i]) {
 			n++;
 			if (strlen(pargs[i]) == 0)  /* 'undef' argument */ {
@@ -241,6 +284,8 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 			} else
 				elems[i+1].type = NOSUBTYPE;
 		}
+		specs[i] = NULL;
+	}
 
 	rval = check_cmd_call_params(exp_func_struct, elems, n);
 	if (rval == -1 || rval == -2) {
@@ -274,20 +319,20 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 			elems[i].u.data = pargs[i-1];
 		} else if (param->flags & CMD_PARAM_VAR) {
 			elems[i].type = SCRIPTVAR_ST;
-			spec = pkg_malloc(sizeof *spec);
-			if (!spec) {
+			specs[i] = pkg_malloc(sizeof *specs[i]);
+			if (!specs[i]) {
 				LM_ERR("oom\n");
 				*retval = -1;
 				return -1;
 			}
 			s.s = pargs[i-1];
 			s.len = strlen(s.s);
-			if (pv_parse_spec(&s, spec) == NULL) {
+			if (pv_parse_spec(&s, specs[i]) == NULL) {
 				LM_ERR("unknown script variable: %.*s\n", s.len, s.s);
 				*retval = -1;
 				return -1;
 			}
-			elems[i].u.data = spec;
+			elems[i].u.data = specs[i];
 		}
 	}
 
@@ -299,15 +344,13 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 		return -1;
 	}
 
-	if (fix_cmd(exp_func_struct->params, act->elem) < 0) {
-		LM_ERR("failed to fix command '%s'\n", func);
+	if (perl_do_action(m, act, exp_func_struct, retval) < 0) {
 		*retval = -1;
 		return -1;
 	}
 
-	*retval = do_action(act, m);
-
-	pv_spec_free(spec);
+	for (i=0; i < MAX_CMD_PARAMS; i++)
+		pv_spec_free(specs[i]);
 
 	/* free the gparam_t structs allocated by fix_cmd() */
 	for (i=1; i < MAX_ACTION_ELEMS; i++)
