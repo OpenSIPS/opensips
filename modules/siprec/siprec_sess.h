@@ -125,10 +125,11 @@ extern struct dlg_binds srec_dlg;
 		SIPREC_UNLOCK(_s); \
 	} while(0)
 
-#define SIPREC_UNREF_COUNT_UNSAFE(_s, _c) \
+#define SIPREC_UNREF(_s) \
 	do { \
+		SIPREC_LOCK(_s); \
 		SIPREC_DEBUG(_s, "unref"); \
-		(_s)->ref -= (_c); \
+		(_s)->ref--; \
 		if ((_s)->ref == 0) { \
 			LM_DBG("destroying session=%p\n", _s); \
 			SIPREC_UNLOCK(_s); \
@@ -137,18 +138,23 @@ extern struct dlg_binds srec_dlg;
 			if ((_s)->ref < 0) \
 				LM_BUG("invalid ref for session=%p ref=%d (%s:%d)\n", \
 						(_s), (_s)->ref, __func__, __LINE__); \
+			SIPREC_UNLOCK(_s); \
 		} \
 	} while(0)
 
-#define SIPREC_UNREF_COUNT(_s, _c) \
+#define SIPREC_UNREF_UNSAFE(_s) \
 	do { \
-		SIPREC_LOCK(_s); \
-		SIPREC_UNREF_COUNT_UNSAFE(_s, _c); \
-		SIPREC_UNLOCK(_s); \
+		SIPREC_DEBUG(_s, "unref"); \
+		(_s)->ref--; \
+		if ((_s)->ref == 0) { \
+			LM_DBG("destroying session=%p\n", _s); \
+			src_free_session(_s); \
+		} else { \
+			if ((_s)->ref < 0) \
+				LM_BUG("invalid ref for session=%p ref=%d (%s:%d)\n", \
+						(_s), (_s)->ref, __func__, __LINE__); \
+		} \
 	} while(0)
-
-#define SIPREC_UNREF_UNSAFE(_s) SIPREC_UNREF_COUNT_UNSAFE(_s, 1)
-#define SIPREC_UNREF(_s) SIPREC_UNREF_COUNT(_s, 1)
 
 void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params);
