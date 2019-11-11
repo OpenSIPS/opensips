@@ -252,6 +252,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 					int report_route, void **params)
 {
 	struct sip_msg req;
+	struct usr_avp *report_avps = NULL, **bak_avps = NULL;
 	async_launch_ctx *ctx;
 	int fd;
 
@@ -333,12 +334,16 @@ report:
 	shm_free(ctx);
 	if (report_route==-1)
 		return 1;
+
 	/* run the report route inline */
 	init_dummy_request( req );
 	set_route_type( REQUEST_ROUTE );
+	bak_avps = set_avp_list(&report_avps);
+
 	run_top_route( sroutes->request[report_route].a, &req);
-	/* remove all added AVP */
-	reset_avps( );
+
+	destroy_avp_list(&report_avps);
+	set_avp_list(bak_avps);
 	return 1;
 }
 
