@@ -186,6 +186,49 @@ msg_getHeader(msgobject *self, PyObject *args)
     return PyUnicode_FromStringAndSize(hbody->s, hbody->len);
 }
 
+static int py_do_action(struct sip_msg* msg, struct action *act,
+    cmd_export_t *cmd, int *retval)
+{
+    void* cmdp[MAX_CMD_PARAMS];
+    pv_value_t tmp_vals[MAX_CMD_PARAMS];
+    int i;
+    struct cmd_param *param;
+    gparam_p gp;
+
+    if (fix_cmd(cmd->params, act->elem) < 0) {
+        PyErr_SetString(PyExc_RuntimeError, "failed to fix command");
+        return -1;
+    }
+
+    if (get_cmd_fixups(msg, cmd->params, act->elem, cmdp, tmp_vals) < 0) {
+        PyErr_SetString(PyExc_RuntimeError, "failed to get fixups for command");
+        return -1;
+    }
+
+    *retval = cmd->function(msg,
+      cmdp[0],cmdp[1],cmdp[2],
+      cmdp[3],cmdp[4],cmdp[5],
+      cmdp[6],cmdp[7]);
+
+    for (param=cmd->params, i=1; param->flags; param++, i++) {
+        gp = (gparam_p)act->elem[i].u.data;
+        if (!gp)
+            continue;
+
+        if (param->free_fixup && param->free_fixup(&cmdp[i-1]) < 0) {
+            PyErr_SetString(PyExc_RuntimeError, "failed to free fixups");
+            return -1;
+        }
+
+        if (param->flags & CMD_PARAM_REGEX && gp->type != GPARAM_TYPE_PVS) {
+            regfree((regex_t*)cmdp[i-1]);
+            pkg_free(cmdp[i-1]);
+        }
+    }
+
+    return 0;
+}
+
 static PyObject *
 msg_call_function(msgobject *self, PyObject *args)
 {
@@ -198,7 +241,7 @@ msg_call_function(msgobject *self, PyObject *args)
     struct cmd_param *param;
     int n = 0;
     str s;
-    pv_spec_t *spec = NULL;
+    pv_spec_t *specs[MAX_CMD_PARAMS];
 
     if (self->msg == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "self->msg is NULL");
@@ -233,7 +276,7 @@ msg_call_function(msgobject *self, PyObject *args)
         return Py_None;
     }
 
-    for (i=0; i < MAX_CMD_PARAMS; i++)
+    for (i=0; i < MAX_CMD_PARAMS; i++) {
         if (pargs[i] != (char*)-1) {
             n++;
             if (pargs[i] == NULL)  /* given as 'None' in Python */
@@ -241,6 +284,8 @@ msg_call_function(msgobject *self, PyObject *args)
             else
                 elems[i+1].type = NOSUBTYPE;
         }
+        specs[i] = NULL;
+    }
 
     rval = check_cmd_call_params(fexport, elems, n);
     if (rval == -1 || rval == -2) {
@@ -275,8 +320,8 @@ msg_call_function(msgobject *self, PyObject *args)
             elems[i].u.data = pargs[i-1];
         } else if (param->flags & CMD_PARAM_VAR) {
             elems[i].type = SCRIPTVAR_ST;
-            spec = pkg_malloc(sizeof *spec);
-            if (!spec) {
+            specs[i] = pkg_malloc(sizeof *specs[i]);
+            if (!specs[i]) {
                 LM_ERR("oom\n");
                 PyErr_SetString(PyExc_RuntimeError, "no more pkg memory");
                 Py_INCREF(Py_None);
@@ -284,12 +329,12 @@ msg_call_function(msgobject *self, PyObject *args)
             }
             s.s = pargs[i-1];
             s.len = strlen(s.s);
-            if (pv_parse_spec(&s, spec) == NULL) {
+            if (pv_parse_spec(&s, specs[i]) == NULL) {
                 PyErr_SetString(PyExc_RuntimeError, "unknown script variable");
                 Py_INCREF(Py_None);
                 return Py_None;
             }
-            elems[i].u.data = spec;
+            elems[i].u.data = specs[i];
         }
     }
 
@@ -302,16 +347,13 @@ msg_call_function(msgobject *self, PyObject *args)
         return Py_None;
     }
 
-    if (fix_cmd(fexport->params, act->elem) < 0) {
-        PyErr_SetString(PyExc_RuntimeError,
-          "failed to fix command");
+    if (py_do_action(self->msg, act, fexport, &rval) < 0) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    rval = do_action(act, self->msg);
-
-    pv_spec_free(spec);
+    for (i=0; i < MAX_CMD_PARAMS; i++)
+        pv_spec_free(specs[i]);
 
     /* free the gparam_t structs allocated by fix_cmd() */
     for (i=1; i < MAX_ACTION_ELEMS; i++)
