@@ -228,10 +228,23 @@ modparam("presence", "cluster_id", 2)
 1.4.4. cluster_federation_mode (int)
 
    When enabling the federation mode, the node inside the presence
-   cluster will start partitioning the data (each node will keep
-   its own data set) and exchange the minimimum of needed
-   information via the clustering support. A non-zero value means
-   enabled.
+   cluster will start broadcasting the data to other nodes in the
+   cluster via the clustering support. Each node will keep its own
+   data set. A non-zero value means enabled.
+
+   Possible values for mode:
+     * 0 (default) - no federation/partitioning.
+     * 1 - the minimum needed information is broadcast/kept.
+     * 2 - published state is kept on all presence nodes on all
+       presence nodes, even when there aren't any subscribers.
+
+   If you don't want to use a shared database using fallback2db,
+   but still want a complete data set everywhere, you may choose
+   mode 2.
+
+   This mode allows you to switch PUBLISH endpoints, even for
+   already published Event States, thus allowing you to add and
+   remove presence servers without losing state.
 
    For more on presence clustering see the Section 1.2, “Presence
    clustering” chapter.
