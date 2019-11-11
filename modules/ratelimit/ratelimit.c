@@ -582,9 +582,9 @@ int rl_pipe_check(rl_pipe_t *pipe)
 		case PIPE_ALGO_RED:
 			if (!pipe->load)
 				return 1;
-			return counter % pipe->load ? -1 : 1;
+			return (counter % pipe->load ? -1 : 1);
 		case PIPE_ALGO_NETWORK:
-			return pipe->load;
+			return (pipe->load ? pipe->load : 1);
 		case PIPE_ALGO_FEEDBACK:
 			return (hash[counter % 100] < *drop_rate) ? -1 : 1;
 		case PIPE_ALGO_HISTORY:
