@@ -69,7 +69,7 @@ python_exec(struct sip_msg *_msg, str *_method_name_s, str *_mystr_s)
         goto error;
     }
 
-    pArgs = PyTuple_New(mystr.s == NULL ? 1 : 2);
+    pArgs = PyTuple_New(!_mystr_s ? 1 : 2);
     if (pArgs == NULL) {
         LM_ERR("PyTuple_New() has failed\n");
         msg_invalidate(msg);
