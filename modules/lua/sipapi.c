@@ -747,6 +747,49 @@ static int l_siplua_add_lump_rpl(lua_State *L)
   return 1;
 }
 
+static int lua_do_action(lua_State *L, struct sip_msg* msg,
+  struct action *act, cmd_export_t *cmd, int *retval)
+{
+  void* cmdp[MAX_CMD_PARAMS];
+  pv_value_t tmp_vals[MAX_CMD_PARAMS];
+  int i;
+  struct cmd_param *param;
+  gparam_p gp;
+
+  if (fix_cmd(cmd->params, act->elem) < 0) {
+    LM_ERR("Failed to fix command <%s>\n", cmd->name);
+    return luaL_error(L, "failed to fix command");
+  }
+
+  if (get_cmd_fixups(msg, cmd->params, act->elem, cmdp, tmp_vals) < 0) {
+    LM_ERR("Failed to get fixups for command <%s>\n", cmd->name);
+    return luaL_error(L, "failed to get fixups for command");
+  }
+
+  *retval = cmd->function(msg,
+    cmdp[0],cmdp[1],cmdp[2],
+    cmdp[3],cmdp[4],cmdp[5],
+    cmdp[6],cmdp[7]);
+
+  for (param=cmd->params, i=1; param->flags; param++, i++) {
+    gp = (gparam_p)act->elem[i].u.data;
+    if (!gp)
+      continue;
+
+    if (param->free_fixup && param->free_fixup(&cmdp[i-1]) < 0) {
+      LM_ERR("Failed to free fixup for param [%d]\n", i);
+      return luaL_error(L, "failed to free fixups");
+    }
+
+    if (param->flags & CMD_PARAM_REGEX && gp->type != GPARAM_TYPE_PVS) {
+      regfree((regex_t*)cmdp[i-1]);
+      pkg_free(cmdp[i-1]);
+    }
+  }
+
+  return 1;
+}
+
 static int l_siplua_moduleFunc(lua_State *L)
 {
   struct sipapi_object *o;
@@ -757,8 +800,8 @@ static int l_siplua_moduleFunc(lua_State *L)
   const char *msg;
   int i;
   struct action *act;
-  int retval;
-  pv_spec_t *spec = NULL;
+  int retval, rc;
+  pv_spec_t *specs[MAX_CMD_PARAMS];
   struct cmd_param *param;
   char *largs[MAX_CMD_PARAMS];
   str s;
@@ -791,6 +834,7 @@ static int l_siplua_moduleFunc(lua_State *L)
 	    }
       elems[i+1].type = NOSUBTYPE;
     }
+    specs[i] = NULL;
   }
 
   retval = check_cmd_call_params(exp_func_struct, elems, nargs);
@@ -814,16 +858,16 @@ static int l_siplua_moduleFunc(lua_State *L)
         elems[i].u.data = largs[i-1];
     } else if (param->flags & CMD_PARAM_VAR) {
         elems[i].type = SCRIPTVAR_ST;
-        spec = pkg_malloc(sizeof *spec);
-        if (!spec) {
+        specs[i-1] = pkg_malloc(sizeof *specs[i]);
+        if (!specs[i-1]) {
           LM_ERR("oom\n");
           return luaL_error(L, "out of pkg memory");
         }
         s.s = largs[i-1];
         s.len = strlen(s.s);
-        if (pv_parse_spec(&s, spec) == NULL)
+        if (pv_parse_spec(&s, specs[i-1]) == NULL)
           return luaL_error(L, "unknown script variable '%s'", largs[i-1]);
-        elems[i].u.data = spec;
+        elems[i].u.data = specs[i-1];
     }
   }
 
@@ -831,12 +875,11 @@ static int l_siplua_moduleFunc(lua_State *L)
   if (!act)
     return luaL_error(L, "action structure could not be created. Error.");
 
-  if (fix_cmd(exp_func_struct->params, act->elem) < 0)
-    return luaL_error(L, "failed to fix command");
+  if ((rc = lua_do_action(L, o->msg, act, exp_func_struct, &retval)) != 1)
+    return rc;
 
-  retval = do_action(act, o->msg);
-
-  pv_spec_free(spec);
+  for (i = 0; i < nargs; ++i)
+    pv_spec_free(specs[i]);
 
   /* free the gparam_t structs allocated by fix_cmd() */
   for (i=1; i < MAX_ACTION_ELEMS; i++)
