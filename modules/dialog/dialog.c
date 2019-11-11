@@ -1822,7 +1822,8 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		dlg->legs[j].contact.len,dlg->legs[j].contact.s,
 		dlg->legs[j].r_cseq.len,dlg->legs[j].r_cseq.s,
 		dlg->legs[j].route_set.len,dlg->legs[j].route_set.s,
-		dlg->legs[j].bind_addr->sock_str.len,dlg->legs[j].bind_addr->sock_str.s,
+		dlg->legs[j].bind_addr?dlg->legs[j].bind_addr->sock_str.len:0,
+		dlg->legs[j].bind_addr?dlg->legs[j].bind_addr->sock_str.s:NULL,
 		dlg->legs[j].out_sdp.len,dlg->legs[j].out_sdp.s);
 
 		if (i<0) {
