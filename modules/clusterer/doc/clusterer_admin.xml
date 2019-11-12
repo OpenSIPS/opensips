@@ -328,10 +328,11 @@ modparam("clusterer", "node_timeout", 10)
         <section id="param_seed_fallback_interval" xreflabel="seed_fallback_interval">
             <title><varname>seed_fallback_interval</varname></title>
             <para>
-                The time in seconds to wait for a suitable donor node before
-                falling back to a "synced" state in case of a "seed" node. If
-                set to <emphasis>0</emphasis> the node is considered as already
-                synced from startup.
+                Only relevant for "seed" nodes.  The time, in seconds, to wait
+                for a suitable donor node before falling back to a "synced"
+                state, following a node restart or an MI cluster sync command.
+                If set to <emphasis>0</emphasis>, the node is considered as
+                already synced from startup.
             </para>
             <para>
 		<emphasis>
