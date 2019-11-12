@@ -990,13 +990,13 @@ int send_shtag_active_info(str *tag_name, int node_id)
 
 	if (node_id) {
 		if (clusterer_api.send_to(&packet, dialog_repl_cluster, node_id) !=
-			CLUSTERER_SEND_SUCCES) {
+			CLUSTERER_SEND_SUCCESS) {
 			bin_free_packet(&packet);
 			return -1;
 		}
 	} else
 		if (clusterer_api.send_all(&packet, dialog_repl_cluster) !=
-			CLUSTERER_SEND_SUCCES) {
+			CLUSTERER_SEND_SUCCESS) {
 			bin_free_packet(&packet);
 			return -1;
 		}

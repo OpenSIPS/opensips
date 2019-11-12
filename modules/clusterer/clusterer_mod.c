@@ -847,7 +847,7 @@ static struct mi_root* cluster_send_mi(struct mi_root *cmd, void *param)
 	/* send MI cmd in cluster */
 	rc = send_mi_cmd(cluster_id, node_id, cl_cmd_name, cl_cmd_params, no_params);
 	switch (rc) {
-		case CLUSTERER_SEND_SUCCES:
+		case CLUSTERER_SEND_SUCCESS:
 			LM_DBG("MI command <%.*s> sent\n", cl_cmd_name.len, cl_cmd_name.s);
 			break;
 		case CLUSTERER_CURR_DISABLED:
@@ -899,7 +899,7 @@ static struct mi_root* cluster_bcast_mi(struct mi_root *cmd, void *param)
 	/* send MI cmd in cluster */
 	rc = send_mi_cmd(cluster_id, 0, cl_cmd_name, cl_cmd_params, no_params);
 	switch (rc) {
-		case CLUSTERER_SEND_SUCCES:
+		case CLUSTERER_SEND_SUCCESS:
 			LM_DBG("MI command <%.*s> sent\n", cl_cmd_name.len, cl_cmd_name.s);
 			break;
 		case CLUSTERER_CURR_DISABLED:

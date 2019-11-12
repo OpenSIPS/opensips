@@ -561,7 +561,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	if(
 		/* we should reuse previous resources list */
 		reuse ||
-		/* we have 'last_dst', i.e. previous iteration was successfull and
+		/* we have 'last_dst', i.e. previous iteration was successful and
 		 * we need to clean it up */
 		(last_dst != NULL)
 	) {

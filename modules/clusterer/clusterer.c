@@ -643,7 +643,7 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 
 	switch (rc) {
 	case  0:
-		return CLUSTERER_SEND_SUCCES;
+		return CLUSTERER_SEND_SUCCESS;
 	case -1:
 		return CLUSTERER_SEND_ERR;
 	case -2:
@@ -692,7 +692,7 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 		rc = msg_send_retry(packet, node, 1, &ev_actions_required);
 		if (rc != -2)	/* at least one node is up */
 			down = 0;
-		if (rc == 0)	/* at least one message is sent successfuly*/
+		if (rc == 0)	/* at least one message is sent successfully */
 			sent = 1;
 	}
 
@@ -704,12 +704,12 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 	lock_stop_read(cl_list_lock);
 
 	if (!matched_once)
-		return CLUSTERER_SEND_SUCCES;
+		return CLUSTERER_SEND_SUCCESS;
 
 	if (down)
 		return CLUSTERER_DEST_DOWN;
 	if (sent)
-		return CLUSTERER_SEND_SUCCES;
+		return CLUSTERER_SEND_SUCCESS;
 	else
 		return CLUSTERER_SEND_ERR;
 }
@@ -1315,7 +1315,7 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 
 						rc = send_sync_req(&cap, source->cluster->cluster_id,
 											node_id);
-						if (rc == CLUSTERER_SEND_SUCCES) {
+						if (rc == CLUSTERER_SEND_SUCCESS) {
 							lock_get(source->cluster->lock);
 							lcap->flags &= ~CAP_SYNC_PENDING;
 							lock_release(source->cluster->lock);
@@ -2384,7 +2384,7 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 									lock_release(node->lock);
 									rc = send_sync_req(&n_cap->name,
 										cl->cluster_id, node->node_id);
-									if (rc == CLUSTERER_SEND_SUCCES) {
+									if (rc == CLUSTERER_SEND_SUCCESS) {
 										lock_get(cl->lock);
 										cap_it->flags &= ~CAP_SYNC_PENDING;
 										lock_release(cl->lock);

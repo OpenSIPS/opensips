@@ -96,7 +96,7 @@ typedef struct evi_trans_ {
  *  + export functions
  *
  * Returns:
- *  - 0 if successfull or negative on error
+ *  - 0 if successful or negative on error
  */
 int register_event_mod(evi_export_t *ev);
 

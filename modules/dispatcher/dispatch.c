@@ -1743,7 +1743,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 
 	if(rc == 0){
 		selected->chosen_count++;
-		LM_DBG("aici_intrat [%hu]\n", selected->chosen_count);
+		LM_DBG("chosen count: %hu\n", selected->chosen_count);
 	}
 
 

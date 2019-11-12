@@ -587,7 +587,7 @@ int ldap_str2scope(char* scope_str)
 
 /*
  * sets last_ldap_result and last_ldap_handle only if async receive succeeds;
- * if successfull
+ * if successful
  * 3 return possibilities:
  * a) message received - @return 0; @_msgidp -1
  * b) failed to receive; reactor needed - @return 0; @_msgidp >=0
@@ -633,7 +633,7 @@ int lds_resume(
 				return 1;
 			}
 
-			/* receive successfull */
+			/* receive successful */
 			LM_DBG("Successfully received response from ldap server!\n");
 			/* FIXME we release the connection now; calling another async
 			 * operation before calling ldap_result will break this mechanism,

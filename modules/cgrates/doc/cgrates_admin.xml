@@ -338,7 +338,7 @@ modparam("cgrates", "compat_mode", 1)
 			<emphasis>FAILURE_ROUTE</emphasis>, accounting for this session is done
 			for all the branches created. When called in <emphasis>BRANCH_ROUTE</emphasis>
 			or <emphasis>ONREPLY_ROUTE</emphasis>, acccounting is done only if that
-			branch is successfull (terminates with a 2xx reply code).
+			branch is successful (terminates with a 2xx reply code).
 		</para>
 
 		<para>
@@ -393,7 +393,7 @@ modparam("cgrates", "compat_mode", 1)
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>1</emphasis> - successful call - the CGRateS accouting
-				was successfuly setup for the call.
+				was successfully setup for the call.
 			</para>
 		</listitem>
 		<listitem>
@@ -685,7 +685,7 @@ modparam("cgrates", "compat_mode", 1)
 				return;
 			}
 
-			# if everything is successfull, start accounting on both
+			# if everything is successful start accounting on both
 			cgrates_acc("cdr", "$fU", "rU");
 			cgrates_acc("cdr", "$tU", "$fU", "carrier");
 		}

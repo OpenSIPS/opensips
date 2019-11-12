@@ -49,7 +49,7 @@ typedef struct clusterer_node {
 } clusterer_node_t;
 
 enum clusterer_send_ret {
-	CLUSTERER_SEND_SUCCES = 0,
+	CLUSTERER_SEND_SUCCESS = 0,
 	CLUSTERER_CURR_DISABLED = 1,  /* current node disabled */
 	CLUSTERER_DEST_DOWN = -1,     /* destination node(s) already down or probing */
 	CLUSTERER_SEND_ERR = -2       /* error */

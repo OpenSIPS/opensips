@@ -39,7 +39,7 @@ struct sip_msg;
  *  + Event name
  *
  * Returns:
- *  - event id if successfull or EVI_ERROR on error
+ *  - event id if successful or EVI_ERROR on error
  */
 event_id_t evi_publish_event(str event_name);
 

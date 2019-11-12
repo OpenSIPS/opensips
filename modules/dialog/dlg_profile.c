@@ -199,7 +199,7 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 							name.len, name.s);
 				}
 			} else if (isalnum(*p)) {
-				LM_ERR("Invalid letter in profile definitition </%c>!\n", *p);
+				LM_ERR("Invalid letter in profile definition </%c>!\n", *p);
 				return -1;
 			}
 		}
@@ -787,7 +787,7 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 		hash = calc_hash_profile(&linker->value, dlg, profile);
 		linker->hash_idx = hash;
 
-		if (linker->profile->repl_type==REPL_PROTOBIN &&
+		if (profile->repl_type==REPL_PROTOBIN &&
 			(fetch_dlg_value(dlg, &shtag_dlg_val, &shtag, 0) == -1)) {
 			LM_ERR("Unable to fetch dlg value for sharing tag\n");
 			return -1;

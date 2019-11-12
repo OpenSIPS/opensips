@@ -1136,7 +1136,7 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 		/* we received a write event */
 		if (tcpconn->state==S_CONN_CONNECTING) {
 			/* we're coming from an async connect & write
-			 * let's see if we connected successfully*/
+			 * let's see if we connected successfully */
 			err_len=sizeof(err);
 			if (getsockopt(tcpconn->s, SOL_SOCKET, SO_ERROR, &err, &err_len) < 0 || \
 					err != 0) {
@@ -1340,7 +1340,7 @@ error:
  *          - -1 on error reading from the fd,
  *          -  0 on EAGAIN  or when no  more io events are queued
  *             (receive buffer empty),
- *          -  >0 on successfull reads from the fd (the receive buffer might
+ *          -  >0 on successful reads from the fd (the receive buffer might
  *             be non-empty).
  */
 inline static int handle_worker(struct process_table* p, int fd_i)
@@ -1491,7 +1491,7 @@ error:
  *            io events are queued on the fd (the receive buffer is empty).
  *            Usefull to detect when there are no more io events queued for
  *            sigio_rt, epoll_et, kqueue.
- *         >0 on successfull read from the fd (when there might be more io
+ *         >0 on successful read from the fd (when there might be more io
  *            queued -- the receive buffer might still be non-empty)
  */
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)

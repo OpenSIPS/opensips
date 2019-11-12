@@ -116,7 +116,7 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
  *            io events are queued on the fd (the receive buffer is empty).
  *            Usefull to detect when there are no more io events queued for
  *            sigio_rt, epoll_et, kqueue.
- *         >0 on successfull read from the fd (when there might be more io
+ *         >0 on successful read from the fd (when there might be more io
  *            queued -- the receive buffer might still be non-empty)
  */
 inline static int handle_io(struct fd_map* fm, int idx,int event_type)
