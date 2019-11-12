@@ -2611,7 +2611,7 @@ static int set_link(clusterer_link_state new_ls, node_info_t *node_a,
 }
 
 int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
-             int cluster_id, int require_sync, enum cl_node_match_op sync_cond)
+             int cluster_id, int startup_sync, enum cl_node_match_op sync_cond)
 {
 	struct local_cap *new_cl_cap = NULL;
 	cluster_info_t *cluster;
@@ -2636,7 +2636,7 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 	new_cl_cap->reg.packet_cb = packet_cb;
 	new_cl_cap->reg.event_cb = event_cb;
 
-	if (!require_sync ||
+	if (!startup_sync ||
 		(!seed_fb_interval && (cluster->current_node->flags & NODE_IS_SEED)))
 		new_cl_cap->flags |= CAP_STATE_OK;
 
