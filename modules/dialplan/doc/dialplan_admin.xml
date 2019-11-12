@@ -603,7 +603,7 @@ modparam("dialplan", "attrs_col", "column_name")
 
 	<section id="func_dp_translate" xreflabel="dp_translate()">
 	<title>
-		<function moreinfo="none">dp_translate( id, input, [out_var], [attrs_var], [partition])</function>
+		<function moreinfo="none">dp_translate(id, input, [out_var], [attrs_var], [partition])</function>
 	</title>
 	<para>
 	Will try to translate the src string into dest string according to
@@ -682,7 +682,7 @@ xlog("matched with attributes '$avp(attrs) against example_partition'\n");
 	<title><function>dp_translate</function> usage</title>
 	<programlisting format="linespecific">
 ...
-dp_translate( 10, $var(in), , , $var(part));
+dp_translate(10, $var(in), , , $var(part));
 xlog("'$var(in)' matched against partition '$var(part)'\n")
 ...
 	</programlisting>

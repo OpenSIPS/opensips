@@ -45,7 +45,7 @@ int send_sync_req(str *capability, int cluster_id, int source_id)
 	msg_add_trailer(&packet, cluster_id, source_id);
 
 	rc = clusterer_send_msg(&packet, cluster_id, source_id);
-	if (rc == CLUSTERER_SEND_SUCCES)
+	if (rc == CLUSTERER_SEND_SUCCESS)
 		LM_INFO("Sent sync request for capability '%.*s' to node %d, "
 		        "cluster %d\n", capability->len, capability->s, source_id,
 		        cluster_id);

@@ -73,7 +73,7 @@ int resume_ldap_search(int fd, struct sip_msg *msg, void *param)
 		async_status = ASYNC_CONTINUE;
 		return 1;
 	case  1:
-		/* successfull */
+		/* successful */
 		pkg_free(as_params->ldap_url.s);
 		pkg_free(as_params);
 		async_status  = ASYNC_DONE;

@@ -24,10 +24,12 @@
 #include "../../timer.h"
 
 /**
- * Generic struct debugging support. Especially useful for troubleshooting
- * bugs related to reference counted structures, including:
- *   - mem corruption due to free() operations on lingering references
- *   - too many / too little ref operations
+ * Generic struct debugging support.  Some major use cases:
+ *   - troubleshooting bugs related to reference counted structures, including:
+ *     * mem corruption due to free() operations on lingering references
+ *     * too many / too little ref operations
+ *   - logging and keeping the last N events in memory and only dumping them
+ *     on a certain condition (e.g. occurrence of a bug)
  *
  * How To use:
  *  - before the forking phase, use shl_init() to initialize a global history

@@ -945,7 +945,7 @@ static mi_response_t *cluster_send_mi(const mi_params_t *params,
 
 	rc = send_mi_cmd(cluster_id, node_id, cmd_name, cmd_params_arr, no_params);
 	switch (rc) {
-		case CLUSTERER_SEND_SUCCES:
+		case CLUSTERER_SEND_SUCCESS:
 			LM_DBG("MI command <%.*s> sent\n", cmd_name.len, cmd_name.s);
 			return init_mi_result_ok();
 		case CLUSTERER_CURR_DISABLED:
@@ -992,7 +992,7 @@ static mi_response_t *cluster_bcast_mi(const mi_params_t *params,
 
 	rc = send_mi_cmd(cluster_id, 0, cmd_name, cmd_params_arr, no_params);
 	switch (rc) {
-		case CLUSTERER_SEND_SUCCES:
+		case CLUSTERER_SEND_SUCCESS:
 			LM_DBG("MI command <%.*s> sent\n", cmd_name.len, cmd_name.s);
 			break;
 		case CLUSTERER_CURR_DISABLED:

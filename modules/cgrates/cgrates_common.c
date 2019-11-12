@@ -786,7 +786,7 @@ disable:
 int cgrates_async_resume_req(int fd, void *param)
 {
 	cgrc_async_read((struct cgr_conn *)param, NULL, NULL);
-	/* if successfull, just continue listening */
+	/* if successful, just continue listening */
 	if (async_status == ASYNC_DONE)
 		async_status = ASYNC_CONTINUE;
 
