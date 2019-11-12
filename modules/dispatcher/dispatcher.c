@@ -1024,7 +1024,7 @@ static int w_ds_select(struct sip_msg *msg, int set, int alg, int flags,
 		return -1;
 
 	ds_select_ctl.mode = mode;
-	ds_select_ctl.set_destination = 0;
+	ds_select_ctl.set_destination = 1;
 	ds_select_ctl.ds_flags = 0;
 	ds_select_ctl.partition = part;
 	ds_select_ctl.set = set;
@@ -1034,12 +1034,7 @@ static int w_ds_select(struct sip_msg *msg, int set, int alg, int flags,
 
 	memset(&selected_dst, 0, sizeof(ds_selected_dst));
 
-	_ret = ds_select_dst(msg, &ds_select_ctl, &selected_dst,
-		ds_select_ctl.ds_flags);
-	if (_ret>=0) ret = _ret;
-
 	/* last ds_select_dst run: setting destination. */
-	ds_select_ctl.set_destination = 1;
 	LM_DBG("ds_select: %d %d %d %d\n",
 		ds_select_ctl.set, ds_select_ctl.alg, ds_select_ctl.max_results,
 		ds_select_ctl.set_destination);
