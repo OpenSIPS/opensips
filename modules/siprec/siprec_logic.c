@@ -217,7 +217,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 	LM_DBG("received b2b reply with code %d\n", msg->REPLY_STATUS);
 
 	ret = 0;
-	/* check if the reply was successfully */
+	/* check if the reply was successful */
 	if (msg->REPLY_STATUS < 200) {
 		/* wait for a final reply */
 		return 0;
@@ -496,7 +496,7 @@ static void tm_update_recording(struct cell *t, int type, struct tmcb_params *ps
 		return;
 
 	tmp = (struct _tm_src_param *)*ps->param;
-	/* engage only on successfull calls */
+	/* engage only on successful calls */
 	SIPREC_LOCK(tmp->ss);
 	src_update_recording(ps->rpl, tmp->ss, tmp->part_no);
 	SIPREC_UNLOCK(tmp->ss);
@@ -510,7 +510,7 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 		return;
 
 	ss = (struct src_sess *)*ps->param;
-	/* engage only on successfull calls */
+	/* engage only on successful calls */
 	SIPREC_LOCK(ss);
 	/* if session has been started, do not start it again */
 	if (ss->flags & SIPREC_STARTED)

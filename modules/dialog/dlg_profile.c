@@ -199,7 +199,7 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 							name.len, name.s);
 				}
 			} else if (isalnum(*p)) {
-				LM_ERR("Invalid letter in profile definitition </%c>!\n", *p);
+				LM_ERR("Invalid letter in profile definition </%c>!\n", *p);
 				return -1;
 			}
 		}

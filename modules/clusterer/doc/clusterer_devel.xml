@@ -128,7 +128,7 @@ typedef struct clusterer_node {
         <para>The function returns one of the following:</para>
         <itemizedlist>
             <listitem>
-                <para><emphasis>CLUSTERER_SEND_SUCCES</emphasis> - successfuly sent packet to destination node or a valid next hop</para>
+                <para><emphasis>CLUSTERER_SEND_SUCCESS</emphasis> - successfully sent packet to destination node or a valid next hop</para>
             </listitem>
             <listitem>
                 <para><emphasis>CLUSTERER_CURR_DISABLED</emphasis> - current node is disabled so sending is impossbile</para>
@@ -163,7 +163,7 @@ typedef struct clusterer_node {
         <para>The function returns one of the following:</para>
         <itemizedlist>
             <listitem>
-                <para><emphasis>CLUSTERER_SEND_SUCCES</emphasis> - successfuly sent packet to at least one node</para>
+                <para><emphasis>CLUSTERER_SEND_SUCCESS</emphasis> - successfully sent packet to at least one node</para>
             </listitem>
             <listitem>
                 <para><emphasis>CLUSTERER_CURR_DISABLED</emphasis> - current node is disabled so sending is impossbile</para>

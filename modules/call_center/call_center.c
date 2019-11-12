@@ -113,18 +113,6 @@ static param_export_t mod_params[]={
 	{ 0,0,0 }
 };
 
-
-// static mi_export_t mi_cmds[] = {
-// 	{ "cc_reload",      "", mi_cc_reload,    MI_NO_INPUT_FLAG,0,mi_child_init},
-// 	{ "cc_agent_login", "", mi_agent_login,                  0, 0, 0},
-// 	{ "cc_list_queue",  "", mi_cc_list_queue, MI_NO_INPUT_FLAG, 0, 0},
-// 	{ "cc_list_flows",  "", mi_cc_list_flows, MI_NO_INPUT_FLAG, 0, 0},
-// 	{ "cc_list_agents", "", mi_cc_list_agents,MI_NO_INPUT_FLAG, 0, 0},
-// 	{ "cc_list_calls",  "", mi_cc_list_calls, MI_NO_INPUT_FLAG, 0, 0},
-// 	{ "cc_reset_stats", "", mi_reset_stats,   MI_NO_INPUT_FLAG, 0, 0},
-// 	{ 0, 0, 0, 0, 0, 0}
-// };
-
 static mi_export_t mi_cmds[] = {
 	{"cc_reload", 0, 0, mi_child_init, {
 		{mi_cc_reload, {0}},

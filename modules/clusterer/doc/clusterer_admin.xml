@@ -596,7 +596,7 @@ modparam("clusterer", "description_col", "description")
 					The function can return the following values:
 					<itemizedlist>
 						<listitem>
-							<para><emphasis>1</emphasis> - successfuly sent message to destination node or a valid next hop</para>
+							<para><emphasis>1</emphasis> - successfully sent message to destination node or a valid next hop</para>
 						</listitem>
 						<listitem>
 							<para><emphasis>-1</emphasis> - local node is disabled so sending is impossbile</para>
@@ -659,7 +659,7 @@ route[rpl_resume] {
 					The function can return the following values:
 					<itemizedlist>
 						<listitem>
-							<para><emphasis>1</emphasis> - successfuly sent message to destination node or a valid next hop</para>
+							<para><emphasis>1</emphasis> - successfully sent message to destination node or a valid next hop</para>
 						</listitem>
 						<listitem>
 							<para><emphasis>-1</emphasis> - local node is disabled so sending is impossbile</para>
@@ -698,7 +698,7 @@ event_route[E_CLUSTERER_REQ_RECEIVED] {
 					The function can return the following values:
 					<itemizedlist>
 						<listitem>
-							<para><emphasis>1</emphasis> - successfuly sent message to at least one node;</para>
+							<para><emphasis>1</emphasis> - successfully sent message to at least one node;</para>
 						</listitem>
 						<listitem>
 							<para><emphasis>-1</emphasis> - local node is disabled so sending is impossbile;</para>
