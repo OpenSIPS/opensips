@@ -4324,7 +4324,8 @@ static int goes_to_gw_1(struct sip_msg* msg, char * part, char* _type, char* fla
  */
 static int goes_to_gw_0(struct sip_msg* msg)
 {
-	return goes_to_gw_1(msg, NULL, (char *)-1, NULL, NULL);
+	int type = -1;
+	return goes_to_gw_1(msg, NULL, (char *)&type, NULL, NULL);
 }
 
 
