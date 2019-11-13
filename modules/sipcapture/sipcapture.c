@@ -801,11 +801,6 @@ static int mod_init(void) {
 				LM_ERR("bad hep route name %s\n", hep_route_name);
 				return -1;
 			}
-
-			if (hep_route_id > HEP_SIP_ROUTE) {
-				/* builds a dummy message for being able to use the hep route */
-				build_dummy_msg();
-			}
 		}
 
 		set_rtcp_keys();
@@ -2428,6 +2423,10 @@ int hep_msg_received(void)
 		/* don't go through the main route */
 		return HEP_SCRIPT_SKIP;
 	} else if (hep_route_id > HEP_SIP_ROUTE) {
+
+		/* builds a dummy message */
+		build_dummy_msg();
+
 		/* set request route type */
 		set_route_type( REQUEST_ROUTE );
 
@@ -2437,6 +2436,7 @@ int hep_msg_received(void)
 		/* free possible loaded avps */
 		reset_avps();
 
+		free_sip_msg( &dummy_req );
 
 		/* requested to go through the main sip route */
 		if (ctx->resume_with_sip) {
