@@ -965,6 +965,7 @@ int run_startup_route(void)
 	swap_route_type(old_route_type, STARTUP_ROUTE);
 	/* run the route */
 	ret = run_top_route( sroutes->startup.a, &req);
+	free_sip_msg( &req );
 	set_route_type(old_route_type);
 
 	return ret;
@@ -1734,6 +1735,3 @@ int is_script_async_func_used( char *name, int param_no)
 
 	return 0;
 }
-
-
-
