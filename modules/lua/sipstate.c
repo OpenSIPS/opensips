@@ -436,8 +436,10 @@ int sipstate_call(struct sip_msg *msg, const char *fnc, const char *mystr)
   const char *errmsg;
   int n;
 
-  if (lua_auto_reload || *sipstate_global_rld_vers != sipstate_rld_vers)
+  if (lua_auto_reload || *sipstate_global_rld_vers != sipstate_rld_vers) {
     sipstate_load(NULL);
+    sipstate_rld_vers = *sipstate_global_rld_vers;
+  }
   if (!fnc)
     return -1;
   lua_getglobal(L, fnc);
