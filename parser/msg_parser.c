@@ -807,26 +807,32 @@ void free_reply_lump( struct lump_rpl *lump)
 }
 
 
-/*only the content*/
+/* Free only the content, not the msg structure itself
+ * NOTE: the function doesn't do any cleanup/reset of the subfields */
 void free_sip_msg(struct sip_msg* msg)
 {
-	if (msg->msg_cb) { msg_callback_process(msg, MSG_DESTROY, NULL); }
-	if (msg->new_uri.s) { pkg_free(msg->new_uri.s); msg->new_uri.len=0; }
-	if (msg->set_global_address.s) {
+	if (msg->msg_cb)
+		msg_callback_process(msg, MSG_DESTROY, NULL);
+	if (msg->new_uri.s)
+		pkg_free(msg->new_uri.s);
+	if (msg->set_global_address.s)
 		pkg_free(msg->set_global_address.s);
-		msg->set_global_address.s = NULL;
-	}
-	if (msg->set_global_port.s) {
+	if (msg->set_global_port.s)
 		pkg_free(msg->set_global_port.s);
-		msg->set_global_port.s = NULL;
-	}
-	if (msg->dst_uri.s) { pkg_free(msg->dst_uri.s); msg->dst_uri.len=0; }
-	if (msg->path_vec.s) { pkg_free(msg->path_vec.s); msg->path_vec.len=0; }
-	if (msg->headers)     free_hdr_field_lst(msg->headers);
-	if (msg->add_rm)      free_lump_list(msg->add_rm);
-	if (msg->body_lumps)  free_lump_list(msg->body_lumps);
-	if (msg->reply_lump)   free_reply_lump(msg->reply_lump);
-	if (msg->body )    { free_sip_body(msg->body);msg->body = 0;}
+	if (msg->dst_uri.s)
+		pkg_free(msg->dst_uri.s);
+	if (msg->path_vec.s)
+		pkg_free(msg->path_vec.s);
+	if (msg->headers)
+		free_hdr_field_lst(msg->headers);
+	if (msg->add_rm)
+		free_lump_list(msg->add_rm);
+	if (msg->body_lumps)
+		free_lump_list(msg->body_lumps);
+	if (msg->reply_lump)
+		free_reply_lump(msg->reply_lump);
+	if (msg->body )
+		free_sip_body(msg->body);
 	/* don't free anymore -- now a pointer to a static buffer */
 }
 
