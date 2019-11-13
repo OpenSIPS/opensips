@@ -217,7 +217,7 @@ int list_hdr_add_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 	struct list_hdr *lh;
 	struct lump *l;
 	str body, old_hdr, new_hdr;
-	char *p;
+	char *p, *pos;
 
 	hdr = _get_first_header( msg, match_hdr);
 	if (hdr==NULL) {
@@ -294,13 +294,16 @@ int list_hdr_add_val(struct sip_msg *msg, int_str_t *match_hdr, str *val)
 		/* the lh list has the last option as first in the list, so we can
 		 * simply add the new option (as index) right after the first option
 		 * in list */
-		memcpy( new_hdr.s, old_hdr.s, (lh->token.s+lh->token.len)-old_hdr.s );
-		p = new_hdr.s + ((lh->token.s+lh->token.len)-old_hdr.s);
-		*(p++) = ',';
+		if (lh)
+			pos = lh->token.s + lh->token.len;
+		else
+			pos = body.s + body.len;
+		memcpy( new_hdr.s, old_hdr.s, pos-old_hdr.s );
+		p = new_hdr.s + (pos-old_hdr.s);
+		*(p++) = lh?',':' ';
 		memcpy( p, val->s, val->len);
 		p += val->len;
-		memcpy( p, lh->token.s+lh->token.len,
-			(old_hdr.s+old_hdr.len)-(lh->token.s+lh->token.len) );
+		memcpy( p, pos, (old_hdr.s+old_hdr.len)-pos );
 		free_list_hdr(lh);
 
 		LM_DBG("resulting new buffer is  <%.*s>\n", new_hdr.len, new_hdr.s );
