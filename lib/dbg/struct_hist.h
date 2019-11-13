@@ -107,6 +107,15 @@ struct struct_hist_list *_shl_init(char *obj_name, int window_size,
 #define shl_init(nm, wsz, autolog) _shl_init(nm, wsz, autolog, 5)
 
 /**
+ * Flush all contents of a struct hist list to the log.  Useful when collecting
+ * data over time in a rotating log list under high traffic volume conditions
+ * and only flushing the logs once a certain condition hits (e.g. bug occurs).
+ *
+ * @shl: a struct history list
+ */
+void sh_list_flush(struct struct_hist_list *shl);
+
+/**
  * Frees up the global history holder, along with all of its content
  */
 void shl_destroy(struct struct_hist_list *shl);

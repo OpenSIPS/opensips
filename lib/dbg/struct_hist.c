@@ -101,6 +101,18 @@ struct struct_hist_list *_shl_init(char *obj_name, int window_size,
 	return shl;
 }
 
+void sh_list_flush(struct struct_hist_list *shl)
+{
+	struct list_head *_;
+
+	lock_get(&shl->wlock);
+
+	list_for_each_prev (_, &shl->objects)
+		sh_flush(list_entry(_, struct struct_hist, list));
+
+	lock_release(&shl->wlock);
+}
+
 void shl_destroy(struct struct_hist_list *shl)
 {
 	struct list_head *el, *next;
