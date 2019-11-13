@@ -172,5 +172,22 @@ if (lua_exec("mongo_alias")) {
       </para>
     </section>
   </section>
+
+  <section id="exported_mi_functions" xreflabel="Exported MI Functions">
+  <title>Exported MI Functions</title>
+  <section id="mi_lua_reload" xreflabel="lua_reload">
+    <title>
+    <function moreinfo="none">lua_reload</function>
+    </title>
+    <para>Reload the lua script.</para>
+    <para>Parameters: <emphasis>none</emphasis></para>
+    <para>MI FIFO Command Format:</para>
+  <programlisting  format="linespecific">
+  opensipsctl fifo lua_reload
+  </programlisting>
+  </section>
+
+</section>
+
 </chapter>
 

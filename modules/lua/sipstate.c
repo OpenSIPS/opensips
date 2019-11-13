@@ -55,6 +55,8 @@ static const char *sipstate_filename;
 static int sipstate_time;
 static lua_State *siplua_L;
 static struct sipapi_object *siplua_msg;
+static int sipstate_rld_vers;
+int *sipstate_global_rld_vers;
 
 static size_t total_size;
 static int total_frags;
@@ -434,7 +436,7 @@ int sipstate_call(struct sip_msg *msg, const char *fnc, const char *mystr)
   const char *errmsg;
   int n;
 
-  if (lua_auto_reload)
+  if (lua_auto_reload || *sipstate_global_rld_vers != sipstate_rld_vers)
     sipstate_load(NULL);
   if (!fnc)
     return -1;

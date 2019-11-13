@@ -136,6 +136,14 @@ static int mod_init(void)
       siplua_log(L_CRIT, "failed to initialized siplua's watch object");
       return -1;
     }
+
+  sipstate_global_rld_vers = shm_malloc(sizeof *sipstate_global_rld_vers);
+  if (!sipstate_global_rld_vers) {
+    LM_ERR("oom!\n");
+    return -1;
+  }
+  *sipstate_global_rld_vers = 0;
+
   return ret;
 }
 

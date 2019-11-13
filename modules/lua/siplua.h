@@ -26,4 +26,6 @@ extern int lua_auto_reload;
 
 extern struct sl_binds slb;
 
+extern int *sipstate_global_rld_vers;
+
 #endif /* !SIPLUA_H_ */

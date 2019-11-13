@@ -28,16 +28,15 @@
 
 #include "sipwatch.h"
 #include "sipluami.h"
+#include "sipstate.h"
+#include "siplua.h"
 
 #define SIPLUAMI_USAGE	"usage: watch [add | delete | show] [extension]"
 
 struct mi_root *siplua_mi_reload(struct mi_root *cmd_tree, void *param)
 {
-  struct mi_root *answer;
-
-  answer = init_mi_tree(200, "xOK", 3);
-  addf_mi_node_child(&answer->node, 0, "pid", 3, "%d", (int)getpid());
-  return answer;
+  (*sipstate_global_rld_vers)++;
+  return init_mi_tree(200, MI_SSTR("OK"));
 }
 
 struct mi_root *siplua_mi_bla(struct mi_root *cmd_tree, void *param)
