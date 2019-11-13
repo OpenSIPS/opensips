@@ -2125,6 +2125,7 @@ int is_script_async_func_used( char *name, int param_no)
 int run_startup_route(void)
 {
 	struct sip_msg req;
+	int ret;
 
 	memset(&req, 0, sizeof(struct sip_msg));
 	req.first_line.type = SIP_REQUEST;
@@ -2137,5 +2138,8 @@ int run_startup_route(void)
 	req.rcv.dst_ip.af = AF_INET;
 
 	/* run the route */
-	return run_top_route( startup_rlist.a, &req);
+	ret = run_top_route( startup_rlist.a, &req);
+	free_sip_msg( &req );
+
+	return ret;
 }
