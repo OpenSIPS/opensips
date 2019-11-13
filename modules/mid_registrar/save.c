@@ -46,6 +46,7 @@
 #include "../../dset.h"
 
 #include "../../parser/parse_from.h"
+#include "../../daemonize.h"
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
@@ -1565,7 +1566,8 @@ void mid_reg_tmcb_deleted(struct cell *t, int type, struct tmcb_params *params)
 	urecord_t *r;
 
 	/* no response from downstream - clear up any lingering refs! */
-	if (mri->pending_replies && (reg_mode != MID_REG_THROTTLE_AOR)) {
+	if (mri->pending_replies && (reg_mode != MID_REG_THROTTLE_AOR) &&
+	        get_osips_state() < STATE_TERMINATING) {
 		ul_api.lock_udomain(mri->dom, &mri->aor);
 		ul_api.get_urecord(mri->dom, &mri->aor, &r);
 		if (!r) {
