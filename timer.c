@@ -234,6 +234,11 @@ void route_timer_f(unsigned int ticks, void* param)
 	struct action* a = (struct action*)param;
 	static struct sip_msg* req= NULL;
 
+	if(a == NULL) {
+		LM_ERR("NULL action\n");
+		return;
+	}
+
 	if(req == NULL)
 	{
 		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
@@ -242,20 +247,16 @@ void route_timer_f(unsigned int ticks, void* param)
 			LM_ERR("No more memory\n");
 			return;
 		}
-		memset(req, 0, sizeof(struct sip_msg));
-		req->first_line.type = SIP_REQUEST;
-		req->first_line.u.request.method.s= "DUMMY";
-		req->first_line.u.request.method.len= 5;
-		req->first_line.u.request.uri.s= "sip:user@domain.com";
-		req->first_line.u.request.uri.len= 19;
-		req->rcv.src_ip.af = AF_INET;
-		req->rcv.dst_ip.af = AF_INET;
 	}
 
-	if(a == NULL) {
-		LM_ERR("NULL action\n");
-		return;
-	}
+	memset(req, 0, sizeof(struct sip_msg));
+	req->first_line.type = SIP_REQUEST;
+	req->first_line.u.request.method.s= "DUMMY";
+	req->first_line.u.request.method.len= 5;
+	req->first_line.u.request.uri.s= "sip:user@domain.com";
+	req->first_line.u.request.uri.len= 19;
+	req->rcv.src_ip.af = AF_INET;
+	req->rcv.dst_ip.af = AF_INET;
 
 	run_top_route(a, req);
 
