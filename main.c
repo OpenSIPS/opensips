@@ -281,7 +281,7 @@ struct socket_info* bind_address=0; /* pointer to the crt. proc.
 
 /* if aliases should be automatically discovered and added
  * during fixing listening sockets */
-int auto_aliases=1;
+int auto_aliases=0;
 
 /* if the stateless forwarding support in core should be
  * disabled or not */
