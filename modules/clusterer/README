@@ -392,9 +392,11 @@ modparam("clusterer", "node_timeout", 10)
 
 1.4.11. seed_fallback_interval
 
-   The time in seconds to wait for a suitable donor node before
-   falling back to a "synced" state in case of a "seed" node. If
-   set to 0 the node is considered as already synced from startup.
+   Only relevant for "seed" nodes. The time, in seconds, to wait
+   for a suitable donor node before falling back to a "synced"
+   state, following a node restart or an MI cluster sync command.
+   If set to 0, the node is considered as already synced from
+   startup.
 
    Default value is “0”.
 
@@ -554,8 +556,8 @@ modparam("clusterer", "description_col", "description")
      * tag (var, optional) - randomly generated communication tag.
 
    The function can return the following values:
-     * 1 - successfuly sent message to destination node or a valid
-       next hop
+     * 1 - successfully sent message to destination node or a
+       valid next hop
      * -1 - local node is disabled so sending is impossbile
      * -2 - destination node is not reachable through any path
        according to the discovered topology
@@ -598,8 +600,8 @@ route[rpl_resume] {
      * tag (var) - communication tag.
 
    The function can return the following values:
-     * 1 - successfuly sent message to destination node or a valid
-       next hop
+     * 1 - successfully sent message to destination node or a
+       valid next hop
      * -1 - local node is disabled so sending is impossbile
      * -2 - destination node is not reachable through any path
        according to the discovered topology
@@ -624,7 +626,7 @@ param(tag));
    nodes in the specified cluster.
 
    The function can return the following values:
-     * 1 - successfuly sent message to at least one node;
+     * 1 - successfully sent message to at least one node;
      * -1 - local node is disabled so sending is impossbile;
      * -2 - all nodes in the cluster are unreachable according to
        the discovered topology;
@@ -1090,7 +1092,7 @@ typedef struct clusterer_node {
      * int node_id - the id of the destination node
 
    The function returns one of the following:
-     * CLUSTERER_SEND_SUCCES - successfuly sent packet to
+     * CLUSTERER_SEND_SUCCESS - successfully sent packet to
        destination node or a valid next hop
      * CLUSTERER_CURR_DISABLED - current node is disabled so
        sending is impossbile
@@ -1109,8 +1111,8 @@ typedef struct clusterer_node {
      * int cluster_id - the cluster id
 
    The function returns one of the following:
-     * CLUSTERER_SEND_SUCCES - successfuly sent packet to at least
-       one node
+     * CLUSTERER_SEND_SUCCESS - successfully sent packet to at
+       least one node
      * CLUSTERER_CURR_DISABLED - current node is disabled so
        sending is impossbile
      * CLUSTERER_DEST_DOWN - all nodes in the cluster are
@@ -1184,8 +1186,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 261 90 9910 5201
-   2. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
-   3. Liviu Chircu (@liviuchircu) 44 31 580 409
+   2. Liviu Chircu (@liviuchircu) 47 34 606 434
+   3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Razvan Crainea (@razvancrainea) 23 17 319 143
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 20 9 1116 102
    6. Ionel Cerghit (@ionel-cerghit) 8 2 250 212
@@ -1213,9 +1215,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Sep 2019
-   2. Razvan Crainea (@razvancrainea)          Nov 2015 - Sep 2019
-   3. Liviu Chircu (@liviuchircu)              Mar 2016 - Aug 2019
+   1. Liviu Chircu (@liviuchircu)              Mar 2016 - Nov 2019
+   2. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Sep 2019
+   3. Razvan Crainea (@razvancrainea)          Nov 2015 - Sep 2019
    4. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2019
    5. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
    6. Fabian Gast (@fgast)                     Nov 2018 - Nov 2018
@@ -1230,10 +1232,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
-   Gast (@fgast), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Fabian Gast (@fgast),
+   Peter Lemenkov (@lemenkov), Eseanu Marius Cristian
+   (@eseanucristian).
 
    Documentation Copyrights:
 

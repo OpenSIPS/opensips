@@ -1511,15 +1511,15 @@ Chapter 3. Contributors
    All remaining contributors: Vlad Paiu (@vladpaiu), Nils
    Ohlmeier, Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
    (@ovidiusas), Ionel Cerghit (@ionel-cerghit), Maksym Sobolyev
-   (@sobomax), Andrei Dragus, Dusan Klinec, Andrei Datcu
-   (@andrei-datcu), Juha Heinanen (@juha-h), Anca Vamanu, Marcus
-   Hunger, Jamey Hicks, Andreas Granig, Shlomi Gutman, @jalung,
-   Jeffrey Magder, Phil D'Amore, Alessio Garzi, Norman Brandinger
-   (@NormB), David Sanders, Konstantin Bokarius, Walter Doekes
-   (@wdoekes), Klaus Darilion, Iouri Kharon, Aron Podrigal
+   (@sobomax), Andrei Dragus, Alessio Garzi (@Ozzyboshi), Dusan
+   Klinec, Andrei Datcu (@andrei-datcu), Juha Heinanen (@juha-h),
+   Anca Vamanu, Marcus Hunger, Jamey Hicks, Andreas Granig, Shlomi
+   Gutman, @jalung, Jeffrey Magder, Phil D'Amore, Norman
+   Brandinger (@NormB), David Sanders, Konstantin Bokarius, Walter
+   Doekes (@wdoekes), Klaus Darilion, Iouri Kharon, Aron Podrigal
    (@ar45), Dan Pascu (@danpascu), Matthew M. Boedicker, Peter
-   Lemenkov (@lemenkov), UnixDev, Edson Gellert Schubert, Alessio
-   Garzi, Elena-Ramona Modroiu, Stephane Alnet.
+   Lemenkov (@lemenkov), UnixDev, Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1545,15 +1545,15 @@ Chapter 3. Contributors
    2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2019
    3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
    4.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
-   5.  Alessio Garzi                       Aug 2019 - Aug 2019
-   6.  Alessio Garzi                       Aug 2019 - Aug 2019
-   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   8.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   9.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   5.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
+   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   7.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2019
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Shlomi Gutman                       Mar 2018 - Mar 2018
 
-   All remaining contributors: Shlomi Gutman, @jalung, Vlad Paiu
-   (@vladpaiu), Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   All remaining contributors: @jalung, Vlad Paiu (@vladpaiu),
+   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Ovidiu Sas (@ovidiusas), Dusan Klinec, Eseanu
    Marius Cristian (@eseanucristian), David Sanders, Andrei Datcu
    (@andrei-datcu), Stephane Alnet, Andrei Dragus, Phil D'Amore,
