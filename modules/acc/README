@@ -512,8 +512,7 @@ modparam("acc", "service_type", 15)
 
 1.6.10. db_table_acc (string)
 
-   Table name of accounting successfull calls -- database
-   specific.
+   Table name of accounting successful calls -- database specific.
 
    Default value is “acc”
 
@@ -893,7 +892,7 @@ acc_evi_request("403 Destination not allowed");
      * multi_leg_bye_info* - Extra parameters added by the
        multi_leg_bye_info parameter
      * duration - The call duration in seconds
-     * ms_duration - The call duration in miliseconds
+     * ms_duration - The call duration in milliseconds
      * setuptime - The call setup time in seconds
      * created - The timestamp when the call was created (the
        initial Invite was received)
@@ -1022,7 +1021,7 @@ Chapter 3. Contributors
    3. Ionut Ionita (@ionutrazvanionita) 144 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 92 60 2642 565
    5. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
-   6. Liviu Chircu (@liviuchircu) 51 37 521 497
+   6. Liviu Chircu (@liviuchircu) 52 38 523 499
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
    8. Elena-Ramona Modroiu 23 4 2267 5
    9. Henning Westerholt (@henningw) 20 15 184 131
@@ -1057,10 +1056,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Nov 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Nov 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
    5.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -1085,8 +1084,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ionut
    Ionita (@ionutrazvanionita), Razvan Crainea (@razvancrainea),
    Ryan Bullock (@rrb3942), Irina-Maria Stanescu, Sergio
    Gutierrez, Henning Westerholt (@henningw), Daniel-Constantin
