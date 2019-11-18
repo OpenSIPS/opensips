@@ -50,14 +50,14 @@
 		</para>
 		<para>
 		This parameter is only relevant
-		for the <xref linkend="func_stir_auth"/> function.
+		for the <xref linkend="func_stir_shaken_auth"/> function.
 		</para>
 	    <para>The default value is <emphasis>60</emphasis>.</para>
 	    <example>
 		<title>Set <varname>auth_date_freshness</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("stir", "auth_date_freshness", 300)
+modparam("stir_shaken", "auth_date_freshness", 300)
 ...
 </programlisting>
 	    </example>
@@ -74,14 +74,14 @@ modparam("stir", "auth_date_freshness", 300)
 		</para>
 		<para>
 		This parameter is only relevant for the
-		<xref linkend="func_stir_verify"/> function.
+		<xref linkend="func_stir_shaken_verify"/> function.
 		</para>
 	    <para>The default value is <emphasis>60</emphasis>.</para>
 	    <example>
 		<title>Set <varname>verify_date_freshness</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("stir", "verify_date_freshness", 300)
+modparam("stir_shaken", "verify_date_freshness", 300)
 ...
 </programlisting>
 	    </example>
@@ -97,7 +97,7 @@ modparam("stir", "verify_date_freshness", 300)
 		<title>Set <varname>ca_list</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("stir", "ca_list", "/stir_certs/ca_list.pem")
+modparam("stir_shaken", "ca_list", "/stir_certs/ca_list.pem")
 ...
 </programlisting>
 	    </example>
@@ -116,7 +116,7 @@ modparam("stir", "ca_list", "/stir_certs/ca_list.pem")
 		<title>Set <varname>ca_dir</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("stir", "ca_dir", "/stir_certs/cas")
+modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
 ...
 </programlisting>
 	    </example>
@@ -150,7 +150,7 @@ modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
 		<title>Set <varname>crl_dir</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("stir", "crl_dir", "/stir_certs/crls")
+modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 ...
 </programlisting>
 	    </example>
@@ -160,9 +160,9 @@ modparam("stir", "crl_dir", "/stir_certs/crls")
     <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
 
-	<section id="func_stir_auth" xreflabel="stir_auth()">
+	<section id="func_stir_shaken_auth" xreflabel="stir_shaken_auth()">
 	    <title>
-		<function moreinfo="none">stir_auth(attest, origid, cert, pkey, x5u, [orig], [dest])</function>
+		<function moreinfo="none">stir_shaken_auth(attest, origid, cert, pkey, x5u, [orig], [dest])</function>
 	    </title>
 		<para>
 		This function performs the steps of an authentication service. Before
@@ -254,19 +254,19 @@ modparam("stir", "crl_dir", "/stir_certs/crls")
 	    </itemizedlist>
 	    <para>This function can be used from REQUEST_ROUTE.</para>
 	    <example>
-		<title><function>stir_auth()</function> usage</title>
+		<title><function>stir_shaken_auth()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-stir_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
+stir_shaken_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
 	$var(cert), $var(privKey), "https://certs.example.org/cert.pem");
 ...
 </programlisting>
 	    </example>
 	</section>
 
-	<section id="func_stir_verify" xreflabel="stir_verify()">
+	<section id="func_stir_shaken_verify" xreflabel="stir_shaken_verify()">
 	    <title>
-		<function moreinfo="none">stir_verify(cert, err_code, err_reason, [orig], [dest])</function>
+		<function moreinfo="none">stir_shaken_verify(cert, err_code, err_reason, [orig], [dest])</function>
 	    </title>
 	    <para>
 		This function performs the steps of an verification service.
@@ -339,10 +339,10 @@ stir_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
 	    </itemizedlist>
 	    <para>This function can be used from REQUEST_ROUTE.</para>
 	    <example>
-		<title><function>stir_verify()</function> usage</title>
+		<title><function>stir_shaken_verify()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-$var(rc) = stir_verify($var(cert), $var(err_code), $var(err_reason));
+$var(rc) = stir_shaken_verify($var(cert), $var(err_code), $var(err_reason));
 if ($var(rc) &lt; -1) {
 	send_reply($var(err_sip_code), $var(err_sip_reason));
 	exit;
@@ -352,9 +352,9 @@ if ($var(rc) &lt; -1) {
 	    </example>
 	</section>
 
-	<section id="func_stir_check" xreflabel="stir_check()">
+	<section id="func_stir_shaken_check" xreflabel="stir_shaken_check()">
 	    <title>
-		<function moreinfo="none">stir_check()</function>
+		<function moreinfo="none">stir_shaken_check()</function>
 	    </title>
 	    <para>
 		This function checks the Identity header in order to validate the
@@ -381,10 +381,10 @@ if ($var(rc) &lt; -1) {
 	    </itemizedlist>
 	    <para>This function can be used from REQUEST_ROUTE.</para>
 	    <example>
-		<title><function>stir_check()</function> usage</title>
+		<title><function>stir_shaken_check()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (stir_check()) {
+if (stir_shaken_check()) {
 	xlog("forwarding call to stir/shaken verification service\n");
 	...
 }
@@ -393,9 +393,9 @@ if (stir_check()) {
 	    </example>
 	</section>
 
-	<section id="func_stir_check_certificate" xreflabel="stir_check_certificate()">
+	<section id="func_stir_shaken_check_cert" xreflabel="stir_shaken_check_cert()">
 	    <title>
-		<function moreinfo="none">stir_check_certificate()</function>
+		<function moreinfo="none">stir_shaken_check_cert()</function>
 	    </title>
 	    <para>
 		This function checks if the current time falls within the given
@@ -415,12 +415,12 @@ if (stir_check()) {
 	    </itemizedlist>
 	    <para>This function can be used from REQUEST_ROUTE.</para>
 	    <example>
-		<title><function>stir_check_certificate()</function> usage</title>
+		<title><function>stir_shaken_check_cert()</function> usage</title>
 		<programlisting format="linespecific">
 ...
 # update expired cached certificates
 cache_fetch("local", $identity(x5u), $var(cert));
-if (!stir_check_certificate($var(cert))) {
+if (!stir_shaken_check_cert($var(cert))) {
 	rest_get($identity(x5u), $var(cert));
 	cache_store("local", $identity(x5u), $var(cert));
 }

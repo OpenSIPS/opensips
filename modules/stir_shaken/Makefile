@@ -3,7 +3,7 @@
 
 include ../../Makefile.defs
 auto_gen=
-NAME=stir.so
+NAME=stir_shaken.so
 
 ifeq ($(CROSS_COMPILE),)
 SSL_BUILDER=$(shell \

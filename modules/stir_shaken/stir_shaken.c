@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 OpenSIPS Project
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -66,7 +66,7 @@
 #include "../../lib/cJSON.h"
 #include "../../context.h"
 
-#include "stir.h"
+#include "stir_shaken.h"
 
 #define parsed_ctx_get() \
 	(current_processing_ctx == NULL ? NULL : \
@@ -122,7 +122,7 @@ static pv_export_t mod_items[] = {
 };
 
 static cmd_export_t cmds[] = {
-	{"stir_auth", (cmd_function)w_stir_auth, {
+	{"stir_shaken_auth", (cmd_function)w_stir_auth, {
 		{CMD_PARAM_STR, fixup_attest, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
@@ -131,23 +131,23 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
-	{"stir_verify", (cmd_function)w_stir_verify, {
+	{"stir_shaken_verify", (cmd_function)w_stir_verify, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_wrvar, 0},
 		{CMD_PARAM_VAR, fixup_check_wrvar, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
-	{"stir_check", (cmd_function)w_stir_check,
+	{"stir_shaken_check", (cmd_function)w_stir_check,
 		{{0,0,0}}, REQUEST_ROUTE},
-	{"stir_check_certificate", (cmd_function)w_stir_check_cert, {
+	{"stir_shaken_check_cert", (cmd_function)w_stir_check_cert, {
 		{CMD_PARAM_STR, 0, 0},
 		{0,0,0}}, REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
 struct module_exports exports = {
-	"stir",  		  /* module name*/
+	"stir_shaken",    /* module name*/
 	MOD_TYPE_DEFAULT, /* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,  /* dlopen flags */

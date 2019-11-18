@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
 
-<!ENTITY admin SYSTEM "stir_admin.xml">
+<!ENTITY admin SYSTEM "stir_shaken_admin.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
@@ -13,7 +13,7 @@
 ]>
 <book>
 	<bookinfo>
-	<title>STIR Module</title>
+	<title>STIR/SHAKEN Module</title>
 	<productname class="trade">&osipsname;</productname>
 	</bookinfo>
 	<toc></toc>
