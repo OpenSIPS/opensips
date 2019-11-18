@@ -1997,12 +1997,12 @@ module_func_param: STRING {
 
 route_param: STRING {
 						route_elems[0].type = STRING_ST;
-						route_elems[0].u.data = $1;
+						route_elems[0].u.string = $1;
 						$$=1;
 			}
-		| NUMBER {
+		| snumber {
 						route_elems[0].type = NUMBER_ST;
-						route_elems[0].u.data = (void*)(long)$1;
+						route_elems[0].u.number = (long)$1;
 						$$=1;
 			}
 		| NULLV {
@@ -2025,7 +2025,7 @@ route_param: STRING {
 							$$=$1+1;
 						}
 			}
-		| route_param COMMA NUMBER {
+		| route_param COMMA snumber {
 						if ($1>=MAX_ACTION_ELEMS) {
 							yyerror("too many arguments in function\n");
 							$$=-1;
