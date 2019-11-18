@@ -366,7 +366,7 @@ static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
 		break;
 
 	case NUMBER_ST:
-		res->rs.s = int2str(actions[index].u.number, &res->rs.len);
+		res->rs.s = sint2str(actions[index].u.number, &res->rs.len);
 		res->ri = actions[index].u.number;
 		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 		break;
