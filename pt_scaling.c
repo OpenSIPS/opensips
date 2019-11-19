@@ -68,12 +68,12 @@ int create_auto_scaling_profile( char *name,
 		down_cycles_tocheck = 0;
 		down_cycles_delay = 0;
 	}
-	if (max_procs <= min_procs || max_procs==0 || max_procs>=1000) {
+	if (max_procs==0 || max_procs <= min_procs || max_procs>=1000) {
 		LM_ERR("invalid relation or range for MIN/MAX processes [%d,%d]\n",
 			min_procs, max_procs);
 		return -1;
 	}
-	if (up_threshold <= down_threshold || up_threshold==0 ||
+	if (up_threshold==0 || up_threshold <= down_threshold ||
 	up_threshold>100 || down_threshold>100) {
 		LM_ERR("invalid relation or range DOWN/UP thresholds percentages "
 			"[%d,%d]\n", down_threshold, up_threshold);
@@ -361,6 +361,7 @@ void do_workers_auto_scaling(void)
 				do {
 					load += pg->history_map[k];
 					k = k ? (k-1) : (pg->history_size-1) ;
+					i++;
 				} while( k != idx && i <= pg->prof->down_cycles_tocheck );
 				load = (load*procs_no) /
 					(pg->prof->down_cycles_tocheck * (procs_no-1));

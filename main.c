@@ -261,8 +261,8 @@ char* working_dir = 0;
 char* chroot_dir = 0;
 char* user=0;
 char* group=0;
-int uid = 0;
-int gid = 0;
+int user_id = 0;
+int group_id = 0;
 
 /* more config stuff */
 int disable_core_dump=0; /* by default enabled */
@@ -273,7 +273,7 @@ int mcast_loopback = 0;
 int mcast_ttl = -1; /* if -1, don't touch it, use the default (usually 1) */
 #endif /* USE_MCAST */
 
-int tos = IPTOS_LOWDELAY;
+int tos = IPTOS_LOWDELAY; // lgtm [cpp/short-global-name]
 
 struct socket_info* bind_address=0; /* pointer to the crt. proc.
 									 listening address*/
@@ -984,13 +984,13 @@ int main(int argc, char** argv)
 
 	/* get uid/gid */
 	if (user){
-		if (user2uid(&uid, &gid, user)<0){
+		if (user2uid(&user_id, &group_id, user)<0){
 			LM_ERR("bad user name/uid number: -u %s\n", user);
 			goto error00;
 		}
 	}
 	if (group){
-		if (group2gid(&gid, group)<0){
+		if (group2gid(&group_id, group)<0){
 			LM_ERR("bad group name/gid number: -u %s\n", group);
 			goto error00;
 		}
@@ -1477,7 +1477,7 @@ try_again:
 
 	/* all processes should have access to all the sockets (for sending)
 	 * so we open all first*/
-	if (do_suid(uid, gid)==-1)
+	if (do_suid(user_id, group_id)==-1)
 		goto error;
 
 	ret = main_loop();

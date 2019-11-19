@@ -184,7 +184,7 @@ static unsigned long get_pkg_fragments( void*proc_id)
 
 int init_pkg_stats(int procs_no)
 {
-	unsigned short n;
+	int n;
 	str n_str;
 	char *name;
 	str sname;

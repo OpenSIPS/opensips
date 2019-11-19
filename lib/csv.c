@@ -216,7 +216,6 @@ oom:
 
 void free_csv_record(csv_record *record)
 {
-	osips_free_t free_f;
 	enum csv_flags flags_holder;
 	struct str_list *prev;
 

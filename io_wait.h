@@ -336,7 +336,7 @@ again:
  * functions (it avoids functions calls, the overhead being only an extra
  *  switch())
 */
-inline static int io_watch_add(	io_wait_h* h, /* lgtm [cpp/use-of-goto] */
+inline static int io_watch_add(	io_wait_h* h, // lgtm [cpp/use-of-goto]
 								int fd,
 								fd_type type,
 								void* data,

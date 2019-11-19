@@ -19,6 +19,9 @@
  *
  */
 
+#ifndef _CORE_CMDS_H_
+#define _CORE_CMDS_H_
+
 #include "parser/msg_parser.h"
 #include "route_struct.h"
 #include "async.h"
@@ -78,3 +81,5 @@ int check_acmd_call_params(acmd_export_t *acmd, action_elem_t *elems, int no_par
 cmd_export_t* find_core_cmd_export_t(char* name, int flags);
 cmd_export_t* find_mod_cmd_export_t(char* name, int flags);
 acmd_export_t* find_mod_acmd_export_t(char* name);
+
+#endif /* _CORE_CMDS_H_ */
