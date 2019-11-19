@@ -119,8 +119,13 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg);
 typedef int (*fix_route_dialog_f) (struct sip_msg *req,struct dlg_cell *dlg);
 int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg);
 
-int terminate_dlg(unsigned int h_entry, unsigned int h_id,str *reason);
-typedef int (*terminate_dlg_f)(unsigned int h_entry, unsigned int h_id,str *reason);
+int terminate_dlg(str *callid, unsigned int h_entry, unsigned int h_id,
+	str *reason);
+
+/* the dialog is identified by callid if provided,
+ * otherwise by h_entry and h_id */
+typedef int (*terminate_dlg_f)(str *callid, unsigned int h_entry, unsigned int h_id,
+	str *reason);
 
 void unreference_dialog(void *dialog);
 

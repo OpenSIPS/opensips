@@ -373,7 +373,7 @@ void timeout_listener_process(int rank)
 				}
 				LM_DBG("hentry = %u, h_id = %u\n", h_entry, h_id);
 
-				if(dlg_api.terminate_dlg(h_entry, h_id,&terminate_reason)< 0)
+				if(dlg_api.terminate_dlg(NULL, h_entry, h_id,&terminate_reason)< 0)
 					LM_ERR("Failed to terminate dialog h_entry=[%u], h_id=[%u]\n", h_entry, h_id);
 
 				LM_DBG("Left to process: %d\n[%.*s]\n", left, left, p);
