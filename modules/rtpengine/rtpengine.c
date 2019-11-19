@@ -76,6 +76,7 @@
 #include "../../dset.h"
 #include "../../route.h"
 #include "../../modules/tm/tm_load.h"
+#include "../../modules/dialog/dlg_load.h"
 #include "../../lib/cJSON.h"
 #include "rtpengine.h"
 #include "rtpengine_funcs.h"
@@ -282,6 +283,8 @@ static int_str setid_avp;
 /* tm */
 static struct tm_binds tmb;
 
+static struct dlg_binds dlgb;
+
 static pv_elem_t *extra_id_pv = NULL;
 
 #define ANY_ROUTE     (REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE)
@@ -434,7 +437,7 @@ static mi_export_t mi_cmds[] = {
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "teardown", 0, 0, 0, {
-		{mi_teardown_call, {"url", 0}},
+		{mi_teardown_call, {"callid", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -443,6 +446,7 @@ static mi_export_t mi_cmds[] = {
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -978,8 +982,18 @@ error:
 static mi_response_t *mi_teardown_call(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	/* TODO: use 'terminate_dlg' from dialog api or
-	 * find a way to call 'dlg_end_dlg' MI command */
+	str callid;
+
+	if (dlgb.terminate_dlg == NULL)
+		return init_mi_error(500, MI_SSTR("Dialog module not loaded"));
+
+	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+	if(callid.s == NULL || callid.len ==0)
+		return init_mi_error(400, MI_SSTR("Empty callid"));
+
+	if (dlgb.terminate_dlg(&callid, 0, 0, _str("MI Termination")) < 0)
+		return init_mi_error(500, MI_SSTR("Failed to terminate dialog"));
 
 	return init_mi_result_ok();
 }
@@ -1121,6 +1135,13 @@ mod_init(void)
 		LM_DBG("could not load the TM-functions - answer-offer model"
 				" auto-detection is disabled\n");
 		memset(&tmb, 0, sizeof(struct tm_binds));
+	}
+
+	if (load_dlg_api( &dlgb ) < 0)
+	{
+		LM_DBG("could not load the Dialog functions - 'teardown' MI"
+				" command will not work\n");
+		memset(&dlgb, 0, sizeof(struct dlg_binds));
 	}
 
 	return 0;
