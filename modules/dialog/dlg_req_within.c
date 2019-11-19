@@ -438,6 +438,8 @@ static void dlg_end_rpc(int sender, void *param)
 {
 	struct dlg_end_params *params = (struct dlg_end_params *)param;
 	dlg_send_dual_bye(params->dlg, &params->hdrs);
+	unref_dlg(params->dlg, 1);
+	shm_free(params);
 }
 
 /* sends BYE in both directions
