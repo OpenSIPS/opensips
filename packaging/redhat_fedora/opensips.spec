@@ -656,6 +656,21 @@ per second even on low-budget hardware.
 .
 This package provides the SQLite database driver for OpenSIPS.
 
+%package  stir-shaken-module
+Summary:  STIR/SHAKEN support for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: openssl
+BuildRequires: openssl-devel
+
+%description  stir-shaken-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
+Authentication and Verification services in OpenSIPS.
+
 %package  tls-module
 Summary:  TLS transport module for OpenSIPS
 Group:    System Environment/Daemons
@@ -1348,6 +1363,10 @@ fi
 %dir %{_datadir}/opensips/sqlite
 %{_datadir}/opensips/sqlite/*.sql
 
+%files stir-shaken-module
+%{_libdir}/opensips/modules/stir_shaken.so
+%doc docdir/README.stir_shaken
+
 %files tls-module
 %{_libdir}/opensips/modules/proto_tls.so
 %doc docdir/README.proto_tls
@@ -1382,7 +1401,11 @@ fi
 
 
 %changelog
-* Tue Apr 16 2019 Razvan Crainea <razvan@opensips.org> - 3.1.0-1
+* Tue Nov 19 2019 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-3
+- Specification updated for opensips 3.1
+- New package: stir-shaken-module
+
+* Tue Apr 16 2019 Razvan Crainea <razvan@opensips.org> - 3.1.0-2
 - Remove osipsconsole
 
 * Thu Apr 11 2019 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
