@@ -1,0 +1,391 @@
+STIR/SHAKEN Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. auth_date_freshness (integer)
+              1.3.2. verify_date_freshness (integer)
+              1.3.3. ca_list (string)
+              1.3.4. ca_dir (string)
+              1.3.5. crl_list (string)
+              1.3.6. crl_dir (string)
+
+        1.4. Exported Functions
+
+              1.4.1. stir_shaken_auth(attest, origid, cert, pkey,
+                      x5u, [orig], [dest])
+
+              1.4.2. stir_shaken_verify(cert, err_code,
+                      err_reason, [orig], [dest])
+
+              1.4.3. stir_shaken_check()
+              1.4.4. stir_shaken_check_cert()
+
+        1.5. Exported Pseudo-Variables
+
+              1.5.1. $identity(field)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set auth_date_freshness parameter
+   1.2. Set verify_date_freshness parameter
+   1.3. Set ca_list parameter
+   1.4. Set ca_dir parameter
+   1.5. Set crl_list parameter
+   1.6. Set crl_dir parameter
+   1.7. stir_shaken_auth() usage
+   1.8. stir_shaken_verify() usage
+   1.9. stir_shaken_check() usage
+   1.10. stir_shaken_check_cert() usage
+   1.11. identity usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module adds support for implementing STIR/SHAKEN (RFC
+   8224, RFC 8588) Authentication and Verification services in
+   OpenSIPS.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * No dependencies on other OpenSIPS modules.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * openssl (libssl).
+
+1.3. Exported Parameters
+
+1.3.1. auth_date_freshness (integer)
+
+   The maximum number of seconds that the value in the Date header
+   field can be older than the current time.
+
+   This parameter is only relevant for the stir_shaken_auth()
+   function.
+
+   The default value is 60.
+
+   Example 1.1. Set auth_date_freshness parameter
+...
+modparam("stir_shaken", "auth_date_freshness", 300)
+...
+
+1.3.2. verify_date_freshness (integer)
+
+   The maximum number of seconds that the value in the Date header
+   field can be older than the current time. Also, if the iat
+   value in the PASSporT is different than the Date value, but
+   remains within this interval, it will be used in the
+   verification process (for the reconstructed PASSporT) instead
+   of the Date value.
+
+   This parameter is only relevant for the stir_shaken_verify()
+   function.
+
+   The default value is 60.
+
+   Example 1.2. Set verify_date_freshness parameter
+...
+modparam("stir_shaken", "verify_date_freshness", 300)
+...
+
+1.3.3. ca_list (string)
+
+   Path to a file containing trusted CA certificates for the
+   verifier. The certificates must be in PEM format, one after
+   another.
+
+   Example 1.3. Set ca_list parameter
+...
+modparam("stir_shaken", "ca_list", "/stir_certs/ca_list.pem")
+...
+
+1.3.4. ca_dir (string)
+
+   Path to a directory containing trusted CA certificates for the
+   verifier. The certificates in the directory must be in hashed
+   form, as described in the openssl documentation for the Hashed
+   Directory Method.
+
+   Example 1.4. Set ca_dir parameter
+...
+modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
+...
+
+1.3.5. crl_list (string)
+
+   Path to a file containing certificate revocation lists (CRLs)
+   for the verifier.
+
+   Example 1.5. Set crl_list parameter
+...
+modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
+...
+
+1.3.6. crl_dir (string)
+
+   Path to a directory containing certificate revocation lists
+   (CRLs) for the verifier. The CRLs in the directory must be in
+   hashed form, as described in the openssl documentation for the
+   Hashed Directory Method.
+
+   Example 1.6. Set crl_dir parameter
+...
+modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
+...
+
+1.4. Exported Functions
+
+1.4.1.  stir_shaken_auth(attest, origid, cert, pkey, x5u, [orig],
+[dest])
+
+   This function performs the steps of an authentication service.
+   Before calling this function though, you must ensure:
+     * authority - the server is authoritative for the identity in
+       question;
+     * authentication - the originator is authorized to claim the
+       given identity.
+
+   Meaning of the parameters is as follows:
+     * attest (string) - value of the 'attest' claim to be
+       included in the PASSporT. The following values can be used:
+          + A or full
+          + B or partial
+          + C or gateway
+     * origid (string) - value of the 'origid' claim to be
+       included in the PASSporT. Treated by the module as an
+       opaque string.
+     * cert (string) - the X.509 certificate used to compute the
+       signature, in PEM format.
+     * pkey (string) - the private key used to compute the
+       signature, in PEM format.
+     * x5u (string) - value of the 'x5u' claim to be included in
+       the PASSporT. Treated by the module as an opaque string.
+     * orig (string, optional) - telephone number to be used as
+       the originating identity in the PASSporT. If missing, this
+       value will be derived from the SIP message.
+     * dest (string, optional) - telephone number to be used as
+       the destination identity in the PASSporT. If missing, this
+       value will be derived from the SIP message.
+
+   The function returns the following values:
+     * 1: Success
+     * -1: Internal error
+     * -2: Identity header already exists
+     * -3: Failed to derive identity from SIP message because the
+       URI is not a telephone number
+     * -4: Date header value is older than local policy for
+       freshness
+     * -5: The current time or Date header value does not fall
+       within the certificate validity
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.7. stir_shaken_auth() usage
+...
+stir_shaken_auth("A", "4437c7eb-8f7a-4f0e-a863-f53a0e60251a",
+        $var(cert), $var(privKey), "https://certs.example.org/cert.pem")
+;
+...
+
+1.4.2.  stir_shaken_verify(cert, err_code, err_reason, [orig],
+[dest])
+
+   This function performs the steps of an verification service.
+
+   Meaning of the parameters is as follows:
+     * cert (string) - the X.509 certificate used to verify the
+       signature, in PEM format.
+     * err_code (var) - output variable that will store the SIP
+       response code associated with an eventual error of the
+       verification process.
+     * err_reason (var) - output variable that will store the SIP
+       response reason phrase associated with an eventual error of
+       the verification process.
+     * orig (string, optional) - telephone number to be used as
+       the originating identity in the verification prcess. If
+       missing, this value will be derived from the SIP message.
+     * dest (string, optional) - telephone number to be used as
+       the destination identity in the verification process. If
+       missing, this value will be derived from the SIP message.
+
+   The function returns the following values:
+     * 1: Success
+     * -1: Internal error
+     * -2: No Identity or Date header found
+     * -3: Failed to derive identity from SIP message because the
+       URI is not a telephone number
+     * -4: Invalid identity header
+     * -5: Unsupported 'ppt' or 'alg' Identity header parameter
+     * -6: Date header value is older than local policy for
+       freshness
+     * -7: The Date header value does not fall within the
+       certificate validity
+     * -8: Invalid certificate
+     * -9: Signature does not verify successfully
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.8. stir_shaken_verify() usage
+...
+$var(rc) = stir_shaken_verify($var(cert), $var(err_code), $var(err_reaso
+n));
+if ($var(rc) < -1) {
+        send_reply($var(err_sip_code), $var(err_sip_reason));
+        exit;
+}
+...
+
+1.4.3.  stir_shaken_check()
+
+   This function checks the Identity header in order to validate
+   the STIR/SHAKEN information in terms of format. It detects
+   issues such as: missing or badly formated PASSporT claims,
+   unsupported extensions etc.
+
+   The function returns the following values:
+     * 1: Success
+     * -1: Internal error
+     * -2: No Identity header found
+     * -3: Invalid identity header
+     * -4: Unsupported 'ppt' or 'alg' Identity header parameter
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.9. stir_shaken_check() usage
+...
+if (stir_shaken_check()) {
+        xlog("forwarding call to stir/shaken verification service\n");
+        ...
+}
+...
+
+1.4.4.  stir_shaken_check_cert()
+
+   This function checks if the current time falls within the given
+   certificate's validity period.
+
+   The function returns the following values:
+     * 1: Success
+     * -1: Internal error
+     * -2: Certificate is not valid
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.10. stir_shaken_check_cert() usage
+...
+# update expired cached certificates
+cache_fetch("local", $identity(x5u), $var(cert));
+if (!stir_shaken_check_cert($var(cert))) {
+        rest_get($identity(x5u), $var(cert));
+        cache_store("local", $identity(x5u), $var(cert));
+}
+...
+
+1.5. Exported Pseudo-Variables
+
+1.5.1.  $identity(field)
+
+   This is a read-only pseudo-variable that provides access to the
+   parsed information from the Identity header, through the
+   following subnames:
+     * header - the entire PASSporT header;
+     * x5u - the value of the 'x5u' PASSporT claim;
+     * payload - the entire PASSporT payload;
+     * attest - the value of the 'attest' PASSporT claim;
+     * dest - the value of the 'tn' member of the 'dest' PASSporT
+       claim;
+     * iat - the value of the 'iat' PASSporT claim;
+     * orig - the value of the 'tn' member of the 'orig' PASSporT
+       claim;
+     * origid - the value of the 'origid' PASSporT claim;
+
+   Example 1.11. identity usage
+...
+        # aquire the certificate to use for the verification process
+        $var(rc) = rest_get($identity(x5u), $var(cert));
+        if ($var(rc) < 0) {
+                send_reply(436, "Bad Identity Info");
+                exit;
+        }
+        ...
+        xlog("Verified caller:$identity(orig), attestation level: $ident
+ity(attest)\n");
+...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu)    44      18      2682     219
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Nov 2019
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+
+   Documentation Copyrights:
+
+   Copyright © 2019 www.opensips-solutions.com
