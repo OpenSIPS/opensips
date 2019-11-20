@@ -248,7 +248,7 @@ void shlist_flush_state(struct clusterer_binds *c_api, int c_id, str *cap,
 			ni = shm_malloc(sizeof *ni);
 			if (!ni) {
 				LM_ERR("No more shm memory!\n");
-				return;
+				continue;
 			}
 			ni->node_id = node_id;
 			ni->next = tag->active_msgs_sent;
