@@ -1105,7 +1105,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				ni = shm_malloc(sizeof *ni);
 				if (!ni) {
 					LM_ERR("No more shm memory!\n");
-					return;
+					continue;
 				}
 				ni->node_id = node_id;
 				ni->next = tag->active_msgs_sent;
