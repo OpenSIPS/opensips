@@ -573,7 +573,7 @@ static mi_response_t *mi_cachefetch(const mi_params_t *params,
 	}
 
 	if(ret == -2 || value.s == 0 || value.len == 0)
-		return init_mi_result_string(MI_SSTR("Value not found"));
+		return init_mi_error(400, MI_SSTR("Value not found"));
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp) {
