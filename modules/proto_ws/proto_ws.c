@@ -36,6 +36,7 @@
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp_report.h"
+#include "../../net/tcp_common.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../receive.h"

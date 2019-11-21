@@ -65,8 +65,6 @@ extern struct tm_binds tmb;
 
 /* exposed by proto_smpp.c */
 int smpp_sessions_init(void);
-struct tcp_connection* smpp_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server, int *fd);
 
 void enquire_link(unsigned int ticks, void *param);
 void rpc_bind_sessions(int sender_id, void *param);

@@ -33,6 +33,7 @@
 #include "../../pt.h"
 #include "../../sr_module.h"
 #include "../../net/net_tcp.h"
+#include "../../net/tcp_common.h"
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../socket_info.h"
@@ -356,6 +357,7 @@ static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 
 
 
+>>>>>> tcp: merge similar code in a common tcp file
 /**************  WRITE related functions ***************/
 
 

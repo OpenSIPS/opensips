@@ -36,6 +36,7 @@
 #include "../../net/net_tcp.h"
 #include "../../net/net_tcp_report.h"
 #include "../../net/trans_trace.h"
+#include "../../net/tcp_common.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../trace_api.h"
@@ -447,219 +448,7 @@ static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
 }
 
 
-/* Attempts do a connect to the given destination. It returns:
- *   1 - connect was done local (completed)
- *   0 - connect launched as async (in progress)
- *  -1 - error
- */
-static int tcpconn_async_connect(struct socket_info* send_sock,
-					union sockaddr_union* server, char *buf, unsigned len,
-					struct tcp_connection** c, int *ret_fd)
-{
-	int fd, n;
-	union sockaddr_union my_name;
-	socklen_t my_name_len;
-	struct tcp_connection* con;
-#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
-	fd_set sel_set;
-	fd_set orig_set;
-	struct timeval timeout;
-#else
-	struct pollfd pf;
-#endif
-	unsigned int elapsed,to;
-	int err;
-	unsigned int err_len;
-	int poll_err;
-	char *ip;
-	unsigned short port;
-	struct timeval begin;
-
-	/* create the socket */
-	fd=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
-	if (fd==-1){
-		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
-		return -1;
-	}
-	if (tcp_init_sock_opt(fd)<0){
-		LM_ERR("tcp_init_sock_opt failed\n");
-		goto error;
-	}
-	my_name_len = sockaddru_len(send_sock->su);
-	memcpy( &my_name, &send_sock->su, my_name_len);
-	su_setport( &my_name, 0);
-	if (bind(fd, &my_name.s, my_name_len )!=0) {
-		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
-		goto error;
-	}
-
-	/* attempt to do connect and see if we do block or not */
-	poll_err=0;
-	elapsed = 0;
-	to = tcp_async_local_connect_timeout*1000;
-
-	if (gettimeofday(&(begin), NULL)) {
-		LM_ERR("Failed to get TCP connect start time\n");
-		goto error;
-	}
-
-again:
-	n=connect(fd, &server->s, sockaddru_len(*server));
-	if (n==-1) {
-		if (errno==EINTR){
-			elapsed=get_time_diff(&begin);
-			if (elapsed<to) goto again;
-			else {
-				LM_DBG("Local connect attempt failed \n");
-				goto async_connect;
-			}
-		}
-		if (errno!=EINPROGRESS && errno!=EALREADY){
-			get_su_info(&server->s, ip, port);
-			LM_ERR("[server=%s:%d] (%d) %s\n",ip, port, errno,strerror(errno));
-			goto error;
-		}
-	} else goto local_connect;
-
-	/* let's poll for a little */
-#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
-	FD_ZERO(&orig_set);
-	FD_SET(fd, &orig_set);
-#else
-	pf.fd=fd;
-	pf.events=POLLOUT;
-#endif
-
-	while(1){
-		elapsed=get_time_diff(&begin);
-		if (elapsed<to)
-			to-=elapsed;
-		else {
-			LM_DBG("Polling is overdue \n");
-			goto async_connect;
-		}
-#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
-		sel_set=orig_set;
-		timeout.tv_sec=to/1000000;
-		timeout.tv_usec=to%1000000;
-		n=select(fd+1, 0, &sel_set, 0, &timeout);
-#else
-		n=poll(&pf, 1, to/1000);
-#endif
-		if (n<0){
-			if (errno==EINTR) continue;
-			get_su_info(&server->s, ip, port);
-			LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
-				ip, port, errno, strerror(errno));
-			goto error;
-		}else if (n==0) /* timeout */ continue;
-#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
-		if (FD_ISSET(fd, &sel_set))
-#else
-		if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){
-			LM_ERR("poll error: flags %x\n", pf.revents);
-			poll_err=1;
-		}
-#endif
-		{
-			err_len=sizeof(err);
-			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
-			if ((err==0) && (poll_err==0)) goto local_connect;
-			if (err!=EINPROGRESS && err!=EALREADY){
-				get_su_info(&server->s, ip, port);
-				LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
-					ip, port, err, strerror(err));
-				goto error;
-			}
-		}
-	}
-
-async_connect:
-	LM_DBG("Create connection for async connect\n");
-	/* create a new dummy connection */
-	con=tcp_conn_create(fd, server, send_sock, S_CONN_CONNECTING);
-	if (con==NULL) {
-		LM_ERR("tcp_conn_create failed\n");
-		goto error;
-	}
-	/* attach the write buffer to it */
-	lock_get(&con->write_lock);
-	if (add_write_chunk(con,buf,len,0) < 0) {
-		LM_ERR("Failed to add the initial write chunk\n");
-		/* FIXME - seems no more SHM now ...
-		 * continue the async connect process ? */
-	}
-	lock_release(&con->write_lock);
-	/* report an async, in progress connect */
-	*c = con;
-	return 0;
-
-local_connect:
-	con=tcp_conn_create(fd, server, send_sock, S_CONN_OK);
-	if (con==NULL) {
-		LM_ERR("tcp_conn_create failed, closing the socket\n");
-		goto error;
-	}
-	*c = con;
-	*ret_fd = fd;
-	/* report a local connect */
-	return 1;
-
-error:
-	close(fd);
-	*c = NULL;
-	return -1;
-}
-
-
-static struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server, int *fd)
-{
-	int s;
-	union sockaddr_union my_name;
-	socklen_t my_name_len;
-	struct tcp_connection* con;
-
-	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
-	if (s==-1){
-		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
-		goto error;
-	}
-	if (tcp_init_sock_opt(s)<0){
-		LM_ERR("tcp_init_sock_opt failed\n");
-		goto error;
-	}
-	my_name_len = sockaddru_len(send_sock->su);
-	memcpy( &my_name, &send_sock->su, my_name_len);
-	su_setport( &my_name, 0);
-	if (bind(s, &my_name.s, my_name_len )!=0) {
-		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
-		goto error;
-	}
-
-	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
-		LM_ERR("tcp_blocking_connect failed\n");
-		goto error;
-	}
-	con=tcp_conn_create(s, server, send_sock, S_CONN_OK);
-	if (con==NULL){
-		LM_ERR("tcp_conn_create failed, closing the socket\n");
-		goto error;
-	}
-	*fd = s;
-	return con;
-	/*FIXME: set sock idx! */
-error:
-	/* close the opened socket */
-	if (s!=-1) close(s);
-	return 0;
-}
-
-
-
-
 /**************  WRITE related functions ***************/
-
 /**
  * called under the TCP connection write lock, timeout is in milliseconds
  *
@@ -812,7 +601,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			tcp_async);
 		/* create tcp connection */
 		if (tcp_async) {
-			n = tcpconn_async_connect(send_sock, to, buf, len, &c, &fd);
+			n = tcp_async_connect(send_sock, to, tcp_async_local_connect_timeout, &c, &fd);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
 				get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
@@ -824,6 +613,12 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
 			if (n==0) {
+				/* attach the write buffer to it */
+				if (add_write_chunk(c, buf, len, 1) < 0) {
+					LM_ERR("Failed to add the initial write chunk\n");
+					len = -1; /* report an error - let the caller decide what to do */
+				}
+
 				/* trace the message */
 				if ( TRACE_ON( c->flags ) &&
 						check_trace_route( trace_filter_route_id, c) ) {

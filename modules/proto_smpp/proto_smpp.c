@@ -195,49 +195,6 @@ static int mod_init(void)
 }
 
 
-struct tcp_connection* smpp_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server, int *fd)
-{
-	int s;
-	union sockaddr_union my_name;
-	socklen_t my_name_len;
-	struct tcp_connection* con;
-
-	s=socket(AF2PF(server->s.sa_family), SOCK_STREAM, 0);
-	if (s==-1){
-		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
-		goto error;
-	}
-	if (tcp_init_sock_opt(s)<0){
-		LM_ERR("tcp_init_sock_opt failed\n");
-		goto error;
-	}
-	my_name_len = sockaddru_len(send_sock->su);
-	memcpy( &my_name, &send_sock->su, my_name_len);
-	su_setport( &my_name, 0);
-	if (bind(s, &my_name.s, my_name_len )!=0) {
-		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
-		goto error;
-	}
-
-	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
-		LM_ERR("tcp_blocking_connect failed\n");
-		goto error;
-	}
-	con = tcp_conn_create(s, server, send_sock, S_CONN_OK);
-	if (con==NULL){
-		LM_ERR("tcp_conn_create failed, closing the socket\n");
-		goto error;
-	}
-	*fd = s;
-	return con;
-	/*FIXME: set sock idx! */
-error:
-	/* close the opened socket */
-	if (s!=-1) close(s);
-	return 0;
-}
-
 static int child_init(int rank)
 {
 	LM_INFO("initializing child #%d\n", rank);

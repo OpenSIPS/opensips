@@ -32,6 +32,7 @@
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
+#include "../../net/tcp_common.h"
 #include "../../pt.h"
 #include "../../ut.h"
 #include "../../resolve.h"
@@ -806,7 +807,7 @@ static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
 		LM_ERR("error getting send socket\n");
 		return NULL;
 	}
-	return smpp_sync_connect(send_socket, &server, fd);
+	return tcp_sync_connect(send_socket, &server, fd);
 }
 
 static int smpp_send_msg(smpp_session_t *smsc, str *buffer)

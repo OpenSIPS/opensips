@@ -19,6 +19,7 @@
 
 #include "../../mem/shm_mem.h"
 #include "../../net/net_tcp.h"
+#include "../../net/tcp_common.h"
 #include "../../sr_module.h"
 #include "../../lib/cJSON.h"
 #include "../../lib/list.h"
