@@ -227,7 +227,7 @@ mi_response_t *mi_subnet_dump(const mi_params_t *params,
 		return 0;
 
 	parts_arr = add_mi_array(resp_obj, MI_SSTR("Partitions"));
-	if (parts_arr)
+	if (!parts_arr)
 		goto error;
 
 	for (it=get_part_structs(); it; it = it->next) {
