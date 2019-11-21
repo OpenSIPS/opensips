@@ -261,6 +261,13 @@ static int mod_init(void)
 	if (!validate_curl_http_version(&curl_http_version))
 		return -1;
 
+	/* we need to initialize the curl library now, otherwise, if we do it in
+	 * child_init(), in curl_easy_init(), the init handler will be run multiple times in parallel */
+	if (curl_global_init(CURL_GLOBAL_ALL) != CURLE_OK) {
+		LM_ERR("could not initialize curl!\n");
+		return -1;
+	}
+
 	LM_INFO("Module initialized!\n");
 
 	return 0;
