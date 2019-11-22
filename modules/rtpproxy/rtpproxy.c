@@ -2433,7 +2433,7 @@ rtpproxy_offer5_f(struct sip_msg *msg, str *param1, str *param2,
 		}
 
 		/* if an initial request - create a new dialog */
-		if(get_to(msg)->tag_value.s == NULL)
+		if(get_to(msg)->tag_value.s == NULL && dlg_api.create_dlg)
 			dlg_api.create_dlg(msg,0);
 	}
 
@@ -3277,8 +3277,8 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		case 'd':
 		case 'D':
 			enable_dtmf_catch = 1;
-			/* If there are any digits following D copy them */
-			if (cp[1] == '\0')
+			/* If there are any digits following D, copy them */
+			if (cp[1] == '\0' || !isdigit(cp[1]))
 				break;
 			if (append_opts(&mod_opts, ' ') == -1) {
 				LM_ERR("out of pkg memory\n");
@@ -3519,10 +3519,13 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	}
 
 	if (enable_dtmf_catch) {
-		if (dlg_api.get_dlg && (dlg = dlg_api.get_dlg()))
-			dtmf_tag.len = snprintf(dbuf, 256, "d%llu", dlg_get_did(dlg));
-		else
-			dtmf_tag.len = snprintf(dbuf, 256, "c%.*s", args->callid.len, args->callid.s);
+		if (dlg_api.get_dlg && (dlg = dlg_api.get_dlg())) {
+			LM_DBG("using DTMF dialog %p identifier\n", dlg);
+			dtmf_tag.len = snprintf(dbuf, 128, "d%llu", dlg_get_did(dlg));
+		} else {
+			LM_DBG("using DTMF callid %.*s identifier\n", args->callid.len, args->callid.s);
+			dtmf_tag.len = snprintf(dbuf, 128, "c%.*s", args->callid.len, args->callid.s);
+		}
 		dtmf_tag.s = dbuf;
 	}
 
