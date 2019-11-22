@@ -33,6 +33,10 @@ struct save_ctx {
 	unsigned int min_expires;
 	unsigned int max_expires;
 
+	/* info on how the contact matching should be performed.
+	 * Note that the "param" (if used) is just a reference, the
+	 * string itself is not part of the structure (points into
+	 * the input save flags) */
 	struct ct_match cmatch;
 
 	/* fields specific to mid-registrar */
