@@ -941,10 +941,9 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 			</listitem>
 			<listitem>
 				<para><emphasis>"full-sharing"</emphasis> -
-				Full contact data broadcasting (mirroring) to all other
-				OpenSIPS cluster participants. 
-				inside a NoSQL database, so other cluster nodes are able to
-				route SIP traffic through the current node. Consequently, the
+				Broadcast contact updates (full-mesh mirroring) to all other
+				OpenSIPS cluster participants.  Each node will hold the entire
+				user location dataset.  Consequently, the
 				<xref linkend="param_location_cluster"/> parameter is mandatory.
 				</para>
 			</listitem>
@@ -955,7 +954,8 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 				The cluster layer is still required in order to
 				be able to partition and spread the pinging workload evenly
 				among participating OpenSIPS nodes. Consequently, the
-				<xref linkend="param_location_cluster"/> parameter is mandatory.
+				<xref linkend="param_location_cluster"/> and
+				<xref linkend="param_cachedb_url"/> parameters are mandatory.
 				</para>
 			</listitem>
 			<listitem>
@@ -968,7 +968,7 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster")
 		</itemizedlist>
 		<para>
 		<emphasis>
-			Default value is <emphasis>none (single instance mode)</emphasis>.
+			Default value is <emphasis>"none" (single instance mode)</emphasis>.
 		</emphasis>
 		</para>
 		<example>
