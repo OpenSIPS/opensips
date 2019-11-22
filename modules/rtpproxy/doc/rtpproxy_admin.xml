@@ -1184,6 +1184,11 @@ $ opensips-cli -x mi rtpproxy_reload
 				if the <emphasis>id</emphasis> parameter represents the
 				Dialog ID, or <emphasis>1</emphasis> if it is a callid.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>stream</emphasis> - indicates the stream index
+				of the RTPProxy session. It is normally 0 if the caller
+				sent the DTMF, or 1 if the callee sent it.
+			</para></listitem>
 		</itemizedlist>
 	</section>
 </section>

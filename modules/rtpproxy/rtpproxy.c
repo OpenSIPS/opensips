@@ -253,6 +253,7 @@ struct rtpproxy_event_params rtpproxy_event_params[] = {
 	{ /*  2 */str_init("volume"), NULL },
 	{ /*  3 */str_init("id"), NULL },
 	{ /*  4 */str_init("is_callid"), NULL },
+	{ /*  5 */str_init("stream"), NULL },
 };
 evi_params_p rtpproxy_dtmf_params;
 
@@ -4481,6 +4482,7 @@ void rtpproxy_raise_dtmf_event(int sender, void *p)
 		RTPPROXY_SET_EVENT_PARAM(int, rtpproxy_dtmf_params, &dtmf->volume, 2);
 		RTPPROXY_SET_EVENT_PARAM(str, rtpproxy_dtmf_params, &dtmf->id, 3);
 		RTPPROXY_SET_EVENT_PARAM(int, rtpproxy_dtmf_params, &dtmf->is_callid, 4);
+		RTPPROXY_SET_EVENT_PARAM(int, rtpproxy_dtmf_params, &dtmf->stream, 5);
 
 		if (evi_raise_event(rtpproxy_dtmf_event, rtpproxy_dtmf_params) < 0)
 			LM_ERR("cannot raise RTPProxy event\n");

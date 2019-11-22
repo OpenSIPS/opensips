@@ -148,12 +148,24 @@ static int notification_handler(str *command)
 
 					param.s = p + 1;
 					param.len -= token.len + 1;
-					if (param.len >= 0)
+					if (param.len >= 0) {
+						p = q_memchr(param.s, ' ', param.len);
+						if (p) {
+							/* we got both duration and stream */
+							token.s = p + 1;
+							token.len = param.len - (token.s - param.s);
+
+							param.len -= token.len + 1;
+							if (param.len >= 0)
+								str2int(&token, &dtmf->stream);
+						}
 						str2int(&param, &dtmf->duration);
+					}
 				}
 			}
-			LM_INFO("got event %c volume=%u duration=%u for %.*s\n",
-					dtmf->digit, dtmf->volume, dtmf->duration, dtmf->id.len, dtmf->id.s);
+			LM_INFO("got event %c volume=%u duration=%u stream=%u for %.*s\n",
+					dtmf->digit, dtmf->volume, dtmf->duration, dtmf->stream,
+					dtmf->id.len, dtmf->id.s);
 			if (ipc_dispatch_rpc(rtpproxy_raise_dtmf_event, dtmf) < 0) {
 				LM_ERR("could not dispatch notification job!\n");
 				shm_free(dtmf);

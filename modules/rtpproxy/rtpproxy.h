@@ -140,7 +140,8 @@ struct rtpp_dtmf_event {
 	char digit;
 	unsigned int volume;
 	unsigned int duration;
-	int is_callid;
+	unsigned int is_callid;
+	unsigned int stream;
 	str id;
 };
 void rtpproxy_raise_dtmf_event(int sender, void *p);
