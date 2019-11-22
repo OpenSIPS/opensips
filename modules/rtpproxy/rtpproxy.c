@@ -3497,18 +3497,24 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		enable_dtmf_catch = 0;
 	}
 
-	if(enable_notification && opts.s.s[0] == 'U' && dlg_api.get_dlg)
-	{
-		dlg = dlg_api.get_dlg();
-		if(dlg == NULL)
-		{
-			LM_ERR("Failed to get dialog\n");
-			goto error;
+	if(enable_notification) {
+		if (opts.s.s[0] == 'U' && dlg_api.get_dlg) {
+			dlg = dlg_api.get_dlg();
+			if(dlg == NULL)
+			{
+				LM_ERR("Failed to get dialog\n");
+				goto error;
+			}
+			/* construct the notify tag from dialog ids */
+			timeout_tag.len= snprintf(buf, 32, "T%llu", dlg_get_did(dlg));
+			timeout_tag.s = buf;
+			LM_DBG("timeout_tag= %s\n", timeout_tag.s);
 		}
-		/* construct the notify tag from dialog ids */
-		timeout_tag.len= snprintf(buf, 32, "T%llu", dlg_get_did(dlg));
-		timeout_tag.s = buf;
-		LM_DBG("timeout_tag= %s\n", timeout_tag.s);
+	} else if (enable_dtmf_catch) {
+		/* we have dtmf_catch enabled, but we are not interested in
+		 * notifications - add an ignore tag */
+		timeout_tag.s = "I";
+		timeout_tag.len = 1;
 	}
 
 	if (enable_dtmf_catch) {
@@ -3687,23 +3693,25 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				} else {
 					v[4].iov_len = 0;
 				}
+				if (to_tag.len == 0) {
+					vcnt = 15;
+					v[17].iov_base = " "; /* replace ';' with ' ' */
+				} else
+					vcnt = 19;
 				node_has_dtmf_catch = enable_dtmf_catch && HAS_CAP(args->node, SUBCOMMAND);
 				node_has_notification = enable_notification && opts.s.s[0] == 'U' &&
 					HAS_CAP(args->node, NOTIFY);
 				if (node_has_dtmf_catch || node_has_notification) {
-					STR2IOVEC(rtpp_notify_socket, v[20]);
+					STR2IOVEC(rtpp_notify_socket, v[vcnt + 1]);
 					if (!HAS_CAP(args->node, NOTIFY_WILD)) {
 						if (!rtpp_notify_socket_un) {
-							v[20].iov_base += 4;
-							v[20].iov_len -= 4;
+							v[vcnt + 1].iov_base += 4;
+							v[vcnt + 1].iov_len -= 4;
 						}
 					}
-					if (node_has_notification) {
-						STR2IOVEC(timeout_tag, v[22]);
-						vcnt = 23;
-					} else {
-						vcnt = 21;
-					}
+					vcnt += 2;
+					STR2IOVEC(timeout_tag, v[vcnt + 1]);
+					vcnt += 2;
 
 					if (node_has_dtmf_catch) {
 						if (!HAS_CAP(args->node, SUBCOMMAND)) {
@@ -3724,8 +3732,6 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 							}
 						}
 					}
-				} else {
-					vcnt = (to_tag.len > 0) ? 19 : 15;
 				}
 
 				v[1].iov_base = m_opts.s.s;

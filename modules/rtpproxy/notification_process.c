@@ -92,6 +92,9 @@ static int notification_handler(str *command)
 	param.len = command->len - 1;
 	LM_DBG("Handling RTPProxy command %c %*s\n", cmd, param.len, param.s);
 	switch (cmd) {
+		case 'I':
+			/* we are not listening for timeout notifications */
+			return 0;
 		case 'T':
 			LM_INFO("Timeout notification for %.*s\n", param.len, param.s);
 			if (parse_dlg_did(&param, &h_entry, &h_id) < 0)
