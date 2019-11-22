@@ -871,6 +871,29 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 					is against RFC 3261, it may be useful in certain scenarios.
 					</para>
 				</listitem>
+				<listitem>
+					<para><emphasis>'Mxx' (contact Matching mode)</emphasis> -
+					How the matching should be performed between the uploaded
+					contacts (by the currently handled REGISTER) and the
+					already know contacts (in memory or DB). This options will
+					be used only for the current operation and can be:
+					<itemizedlist>
+					<listitem>
+						<para><emphasis>'M0'</emphasis> - contact URI matching
+						only</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>'M1'</emphasis> - contact URI and
+						SIP Call-ID matching</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>'M&lt;param_name&gt;'</emphasis> - only
+						the value of the given URI param will be used for
+						matching (for example M&lt;rinstance&gt;)</para>
+					</listitem>
+					</itemizedlist>
+					</para>
+				</listitem>
 				<!--
 				<listitem>
 					<para><emphasis>'e(int)' (minimum expires)</emphasis> -  this
