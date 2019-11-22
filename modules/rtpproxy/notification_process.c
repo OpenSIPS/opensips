@@ -77,9 +77,10 @@ static int parse_dlg_did(str *did, unsigned int *h_entry, unsigned int *h_id)
 
 static int notification_handler(str *command)
 {
-	char cmd;
-	str param;
-	unsigned int h_entry, h_id;
+	char cmd, *p;
+	str param, token;
+	unsigned int h_entry, h_id, is_callid;
+	struct rtpp_dtmf_event *dtmf;
 	str terminate_reason = str_init("RTPProxy Timeout");
 
 	if (command->len < 1) {
@@ -97,6 +98,64 @@ static int notification_handler(str *command)
 				return -1;
 			if(dlg_api.terminate_dlg(NULL, h_entry, h_id, &terminate_reason)< 0)
 				LM_ERR("Failed to terminate dialog h_entry=[%u], h_id=[%u]\n", h_entry, h_id);
+			return 0;
+		case 'D':
+			p = q_memchr(param.s, ' ' ,param.len);
+			if (!p) {
+				LM_ERR("could not determine the notification id in %.*s!\n",
+						param.len, param.s);
+				return -1;
+			}
+			token.s = param.s + 1;
+			token.len = p - token.s;
+			if (*param.s == 'c')
+				is_callid = 1;
+
+			param.s = p + 1;
+			param.len -= token.len + 2;
+
+			if (param.len < 0) {
+				LM_ERR("could not get digit in param %.*s!\n", param.len, param.s);
+				return -1;
+			}
+
+			dtmf = shm_malloc(sizeof *dtmf + token.len);
+			if (!dtmf) {
+				LM_ERR("could not alloc memory for DTMF event %.*s!\n",
+						param.len, param.s);
+				return -2;
+			}
+			memset(dtmf, 0, sizeof *dtmf);
+			dtmf->is_callid = is_callid;
+			dtmf->id.s = (char *)(dtmf + 1);
+			memcpy(dtmf->id.s, token.s, token.len);
+			dtmf->id.len = token.len;
+
+			dtmf->digit = *param.s;
+
+			param.s += 2;
+			param.len -= 2;
+
+			if (param.len > 0) {
+				p = q_memchr(param.s, ' ', param.len);
+				if (p) {
+					token.s = param.s;
+					token.len = p - param.s;
+					str2int(&token, &dtmf->volume);
+
+					param.s = p + 1;
+					param.len -= token.len + 1;
+					if (param.len >= 0)
+						str2int(&param, &dtmf->duration);
+				}
+			}
+			LM_INFO("got event %c volume=%u duration=%u for %.*s\n",
+					dtmf->digit, dtmf->volume, dtmf->duration, dtmf->id.len, dtmf->id.s);
+			if (ipc_dispatch_rpc(rtpproxy_raise_dtmf_event, dtmf) < 0) {
+				LM_ERR("could not dispatch notification job!\n");
+				shm_free(dtmf);
+			}
+
 			return 0;
 		default:
 			LM_WARN("Unhandled command %c param=%.*s\n", cmd, param.len, param.s);

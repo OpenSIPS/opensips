@@ -585,6 +585,12 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 				<emphasis>rtpp_notify_socket</emphasis> is used.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>d[NNN]</emphasis> - enables DTMF notifications for this
+				call. One can optionally specify the payload type that DTMF will
+				be used for this call - it it is not specified, RTPProxy uses the
+				<emphasis>101</emphasis> pt.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>tNN</emphasis> - can be used to specify a RTP
 				ttl for the caller. The NN represents the timeout in seconds
 				for that stream. This can be useful in music on hold scenarios
@@ -1144,6 +1150,39 @@ $ opensips-cli -x mi rtpproxy_reload
 				<emphasis>status</emphasis> - <emphasis>active</emphasis> if
 				the RTPProxy instance responds to probing or
 				<emphasis>inactive</emphasis> if the instance was deactivated.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	<section id="event_E_RTPPROXY_DTMF" xreflabel="E_RTPPROXY_DTMF">
+		<title>
+		<function moreinfo="none">E_RTPPROXY_DTMF</function>
+		</title>
+		<para>
+			This event is raised when a RTPProxy server sends a DTMF
+			notification to OpenSIPS. In order to catch RFC 2833/4733
+			DTMF events, you need to provide the <emphasis>d</emphasis>
+			flag to <emphasis>rtpproxy_offer()</emphasis>/
+			<emphasis>rtpproxy_answer()</emphasis>.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>digit</emphasis> - the digit pressed.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>duration</emphasis> - the duration of the event.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>volume</emphasis> - the volume of the event.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>id</emphasis> - represents the identifier of
+				the call for which that event was received.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>is_callid</emphasis> - is <emphasis>0</emphasis>
+				if the <emphasis>id</emphasis> parameter represents the
+				Dialog ID, or <emphasis>1</emphasis> if it is a callid.
 			</para></listitem>
 		</itemizedlist>
 	</section>

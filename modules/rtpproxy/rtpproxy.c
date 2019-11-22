@@ -241,6 +241,21 @@ static str status_name = str_init("status");
 static str status_connected = str_init("active");
 static str status_disconnected = str_init("inactive");
 
+static str rtpproxy_dtmf_event_name = str_init("E_RTPPROXY_DTMF");
+struct rtpproxy_event_params {
+	str name;
+	evi_param_p param;
+};
+
+struct rtpproxy_event_params rtpproxy_event_params[] = {
+	{ /*  0 */ str_init("digit"), NULL },
+	{ /*  1 */ str_init("duration"), NULL },
+	{ /*  2 */str_init("volume"), NULL },
+	{ /*  3 */str_init("id"), NULL },
+	{ /*  4 */str_init("is_callid"), NULL },
+};
+evi_params_p rtpproxy_dtmf_params;
+
 static int extract_mediainfo(str *, str *, str *);
 static int alter_mediaip(struct sip_msg *, str *, str *, int, str *, int, int);
 static char *gencookie();
@@ -364,6 +379,7 @@ static db_con_t *db_connection = NULL;
 static db_func_t db_functions;
 
 static event_id_t ei_id = EVI_ERROR;
+static event_id_t rtpproxy_dtmf_event = EVI_ERROR;
 
 rw_lock_t *nh_lock=NULL;
 
@@ -1202,6 +1218,31 @@ mod_init(void)
 
 	rtpp_init_extra_stats();
 
+	rtpproxy_dtmf_event = evi_publish_event(rtpproxy_dtmf_event_name);
+	if (rtpproxy_dtmf_event == EVI_ERROR) {
+		LM_ERR("cannot register RTPProxy DTMF socket\n");
+		return -1;
+	}
+
+	rtpproxy_dtmf_params = pkg_malloc(sizeof(evi_params_t));
+	if (rtpproxy_dtmf_params == NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(rtpproxy_dtmf_params, 0, sizeof(evi_params_t));
+
+	for (i = 0; i < sizeof(rtpproxy_event_params)/
+			sizeof(rtpproxy_event_params[0]); i++) {
+		rtpproxy_event_params[i].param =
+			evi_param_create(rtpproxy_dtmf_params, &rtpproxy_event_params[i].name);
+		if (!rtpproxy_event_params[i].param) {
+			LM_ERR("could not initiate %.*s param!\n",
+					rtpproxy_event_params[i].name.len,
+					rtpproxy_event_params[i].name.s);
+			return -1;
+		}
+	}
+
 	return 0;
 }
 
@@ -1953,6 +1994,8 @@ rtpp_test(struct rtpp_node *node, int isdisabled, int force)
 		SET_CAP(node, TTL_CHANGE);
 	if (rtpp_checkcap(node, RTP_CAP(RECORD)) > 0)
 		SET_CAP(node, RECORD);
+	if (rtpp_checkcap(node, RTP_CAP(SUBCOMMAND)) > 0)
+		SET_CAP(node, SUBCOMMAND);
 	raise_rtpproxy_event(node, 1);
 	return 0;
 error:
@@ -2962,7 +3005,7 @@ append_opts_str(struct options *op, str *s)
 }
 
 static void
-free_opts(struct options *op1, struct options *op2, struct options *op3)
+free_opts(struct options *op1, struct options *op2, struct options *op3, struct options *op4)
 {
 
 	if (op1->s.len > 0 && op1->s.s != NULL) {
@@ -2977,11 +3020,15 @@ free_opts(struct options *op1, struct options *op2, struct options *op3)
 		pkg_free(op3->s.s);
 		op3->s.len = 0;
 	}
+	if (op4->s.len > 0 && op4->s.s != NULL) {
+		pkg_free(op4->s.s);
+		op4->s.len = 0;
+	}
 }
 
 #define FORCE_RTP_PROXY_RET(e) \
     do { \
-	free_opts(&opts, &rep_opts, &pt_opts); \
+	free_opts(&opts, &rep_opts, &pt_opts, &mod_opts); \
 	return (e); \
     } while (0);
 
@@ -3156,7 +3203,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip, enable_notification, keep_body;
 	int pf, pf1, force, err, locked = 0;
-	struct options opts, rep_opts, pt_opts, m_opts, t_opts;
+	struct options opts, rep_opts, pt_opts, m_opts, t_opts, mod_opts;
 	char *cp, *cp1;
 	char  *cpend, *next;
 	char **ap, *argv[10];
@@ -3184,21 +3231,28 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		{" ", 1},	/* separator */
 		{NULL, 0},	/* notify socket name */
 		{" ", 1},	/* separator */
-		{NULL, 0}	/* notify tag */
+		{NULL, 0},	/* notify tag */
+		{NULL, 0},	/* (optional) module separator */
+		{NULL, 0},	/* (optional) DTMF tag */
+		{NULL, 0}	/* (optional) module opts */
 	};
 	char *v1p, *v2p, *c1p, *c2p, *m1p, *m2p, *bodylimit, *o1p, *r2p;
 	char medianum_buf[20];
-	char buf[32];
+	char buf[32], dbuf[128];
 	int medianum, media_multi;
 	str medianum_str, tmpstr1;
 	int c1p_altered;
+	int enable_dtmf_catch = 0;
+	int node_has_notification, node_has_dtmf_catch = 0;
 	int vcnt;
 	pv_value_t val;
 	char *adv_address = NULL;
-	str notification_socket = rtpp_notify_socket;
+	struct dlg_cell * dlg;
+	str dtmf_tag = {0, 0}, timeout_tag = {0, 0};
 
 	memset(&opts, '\0', sizeof(opts));
 	memset(&rep_opts, '\0', sizeof(rep_opts));
+	memset(&mod_opts, '\0', sizeof(mod_opts));
 	memset(&pt_opts, '\0', sizeof(pt_opts));
 	memset(&t_opts, '\0', sizeof(t_opts));
 	/* Leave space for U/L prefix TBD later */
@@ -3217,6 +3271,24 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			}
 			asymmetric = 1;
 			real = 1;
+			break;
+
+		case 'd':
+		case 'D':
+			enable_dtmf_catch = 1;
+			/* If there are any digits following D copy them */
+			if (cp[1] == '\0')
+				break;
+			if (append_opts(&mod_opts, ' ') == -1) {
+				LM_ERR("out of pkg memory\n");
+				FORCE_RTP_PROXY_RET (-1);
+			}
+			for (; cp[1] != '\0' && isdigit(cp[1]); cp++) {
+				if (append_opts(&mod_opts, cp[1]) == -1) {
+					LM_ERR("out of pkg memory\n");
+					FORCE_RTP_PROXY_RET (-1);
+				}
+			}
 			break;
 
 		case 'i':
@@ -3418,13 +3490,15 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		LM_WARN("cannot receive notifications because"
 				"notification socket is not specified\n");
 		enable_notification = 0;
+
+		if (enable_dtmf_catch)
+			LM_WARN("cannot receive DMTF notifications because"
+					"rtpp_notify_socket parameter is not specified\n");
+		enable_dtmf_catch = 0;
 	}
 
-	if(enable_notification && opts.s.s[0] == 'U')
+	if(enable_notification && opts.s.s[0] == 'U' && dlg_api.get_dlg)
 	{
-		struct dlg_cell * dlg;
-		str notify_tag;
-
 		dlg = dlg_api.get_dlg();
 		if(dlg == NULL)
 		{
@@ -3432,12 +3506,17 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			goto error;
 		}
 		/* construct the notify tag from dialog ids */
-		notify_tag.len= sprintf(buf, "T%llu", dlg_get_did(dlg));
-		notify_tag.s = buf;
-		LM_DBG("notify_tag= %s\n", notify_tag.s);
+		timeout_tag.len= snprintf(buf, 32, "T%llu", dlg_get_did(dlg));
+		timeout_tag.s = buf;
+		LM_DBG("timeout_tag= %s\n", timeout_tag.s);
+	}
 
-		STR2IOVEC(notification_socket, v[20]);
-		STR2IOVEC(notify_tag, v[22]);
+	if (enable_dtmf_catch) {
+		if (dlg_api.get_dlg && (dlg = dlg_api.get_dlg()))
+			dtmf_tag.len = snprintf(dbuf, 256, "d%llu", dlg_get_did(dlg));
+		else
+			dtmf_tag.len = snprintf(dbuf, 256, "c%.*s", args->callid.len, args->callid.s);
+		dtmf_tag.s = dbuf;
 	}
 
 	m_opts = opts;
@@ -3608,14 +3687,42 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				} else {
 					v[4].iov_len = 0;
 				}
-				if(enable_notification && opts.s.s[0] == 'U' &&
-						HAS_CAP(args->node, NOTIFY)) {
-					vcnt = 23;
-					STR2IOVEC(notification_socket, v[20]);
-					if (!HAS_CAP(args->node, NOTIFY_WILD) && !rtpp_notify_socket_un &&
-							notification_socket.s == rtpp_notify_socket.s) {
-						v[20].iov_base += 4;
-						v[20].iov_len -= 4;
+				node_has_dtmf_catch = enable_dtmf_catch && HAS_CAP(args->node, SUBCOMMAND);
+				node_has_notification = enable_notification && opts.s.s[0] == 'U' &&
+					HAS_CAP(args->node, NOTIFY);
+				if (node_has_dtmf_catch || node_has_notification) {
+					STR2IOVEC(rtpp_notify_socket, v[20]);
+					if (!HAS_CAP(args->node, NOTIFY_WILD)) {
+						if (!rtpp_notify_socket_un) {
+							v[20].iov_base += 4;
+							v[20].iov_len -= 4;
+						}
+					}
+					if (node_has_notification) {
+						STR2IOVEC(timeout_tag, v[22]);
+						vcnt = 23;
+					} else {
+						vcnt = 21;
+					}
+
+					if (node_has_dtmf_catch) {
+						if (!HAS_CAP(args->node, SUBCOMMAND)) {
+							LM_WARN("node does not have subcommand capability!\n");
+						} else {
+							/* separator */
+							v[vcnt].iov_base = " && M3:1 D";
+							v[vcnt].iov_len = 10;
+							vcnt++;
+							/* DTMF tag */
+							STR2IOVEC(dtmf_tag, v[vcnt]);
+							vcnt++;
+
+							if (mod_opts.oidx > 0) {
+								v[vcnt].iov_base = mod_opts.s.s;
+								v[vcnt].iov_len = mod_opts.oidx;
+								vcnt++;
+							}
+						}
 					}
 				} else {
 					vcnt = (to_tag.len > 0) ? 19 : 15;
@@ -3784,7 +3891,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			}
 		} /* Iterate medias in session */
 	} /* Iterate sessions */
-	free_opts(&opts, &rep_opts, &pt_opts);
+	free_opts(&opts, &rep_opts, &pt_opts, &mod_opts);
 
 	if (proxied == 0 && nortpproxy_str.len && keep_body == 0) {
 		cp = pkg_malloc((1 + nortpproxy_str.len + CRLF_LEN) * sizeof(char));
@@ -4343,4 +4450,36 @@ int load_rtpproxy(struct rtpproxy_binds *rtpb)
 {
 	rtpb->start_recording = rtpproxy_api_recording;
 	return 1;
+}
+
+#define RTPPROXY_SET_EVENT_PARAM(_type, _param, _value, _idx) \
+	do { \
+		if (evi_param_set_##_type(rtpproxy_event_params[_idx].param, _value) < 0) { \
+			LM_ERR("could not set param %.*s\n", \
+					rtpproxy_event_params[_idx].name.len, \
+					rtpproxy_event_params[_idx].name.s); \
+			goto end; \
+		} \
+	} while (0)
+
+void rtpproxy_raise_dtmf_event(int sender, void *p)
+{
+	struct rtpp_dtmf_event *dtmf = (struct rtpp_dtmf_event *)p;
+	str digit;
+
+	if (evi_probe_event(rtpproxy_dtmf_event)) {
+		digit.s = &dtmf->digit;
+		digit.len = 1;
+		RTPPROXY_SET_EVENT_PARAM(str, rtpproxy_dtmf_params, &digit, 0);
+		RTPPROXY_SET_EVENT_PARAM(int, rtpproxy_dtmf_params, &dtmf->duration, 1);
+		RTPPROXY_SET_EVENT_PARAM(int, rtpproxy_dtmf_params, &dtmf->volume, 2);
+		RTPPROXY_SET_EVENT_PARAM(str, rtpproxy_dtmf_params, &dtmf->id, 3);
+		RTPPROXY_SET_EVENT_PARAM(int, rtpproxy_dtmf_params, &dtmf->is_callid, 4);
+
+		if (evi_raise_event(rtpproxy_dtmf_event, rtpproxy_dtmf_params) < 0)
+			LM_ERR("cannot raise RTPProxy event\n");
+	} else
+		LM_DBG("nothing to do - nobody is listening!\n");
+end:
+	shm_free(dtmf);
 }

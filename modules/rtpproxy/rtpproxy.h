@@ -71,6 +71,8 @@ struct rtpp_node {
 #define	TTL_CHANGE_CPROTOVER	"20170313"
 #define	RECORD_CAP				(1<<8)
 #define	RECORD_CPROTOVER		"20071218"
+#define	SUBCOMMAND_CAP			(1<<9)
+#define	SUBCOMMAND_CPROTOVER	"20191015"
 
 #define RTP_CAP(_c) _c ## _CPROTOVER, sizeof(_c ## _CPROTOVER) - 1
 #define SET_CAP(_n, _c) (_n)->capabilities |= (_c ## _CAP)
@@ -133,6 +135,15 @@ typedef struct rtpp_set_param{
                 int int_set;
         } v;
 } nh_set_param_t;
+
+struct rtpp_dtmf_event {
+	char digit;
+	unsigned int volume;
+	unsigned int duration;
+	int is_callid;
+	str id;
+};
+void rtpproxy_raise_dtmf_event(int sender, void *p);
 
 extern rw_lock_t *nh_lock;
 extern str rtpp_notify_socket;
