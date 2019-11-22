@@ -44,8 +44,13 @@ int pul_status_idx = -1;
 #define ctx_pul_set(_val) \
 	context_put_int( CONTEXT_GLOBAL, current_processing_ctx, pul_status_idx, _val)
 
-#define ctx_pul_get() \
-	context_get_int( CONTEXT_GLOBAL, current_processing_ctx, pul_status_idx)
+static inline int ctx_pul_get(void)
+{
+	if (!current_processing_ctx)
+		return 0;
+
+	return context_get_int(CONTEXT_GLOBAL, current_processing_ctx, pul_status_idx);
+}
 
 
 int pua_set_publish(struct sip_msg* msg , char* s1, char* s2)
