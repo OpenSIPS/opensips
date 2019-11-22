@@ -441,6 +441,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	int rc, port, proto, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
+	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, {NULL,0}};
 
 	memset(&ci, 0, sizeof ci);
 
@@ -536,7 +537,8 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	if (record->next_clabel <= clabel)
 		record->next_clabel = clabel + 1;
 
-	rc = get_ucontact(record, &contact_str, &callid, ci.cseq, &contact);
+	rc = get_ucontact(record, &contact_str, &callid, ci.cseq, &cmatch,
+		&contact);
 	switch (rc) {
 	case -2:
 		/* received data is consistent with what we have */
@@ -580,6 +582,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	int port, proto, rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
+	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, {NULL,0}};
 
 	memset(&ci, 0, sizeof ci);
 
@@ -675,7 +678,8 @@ static int receive_ucontact_update(bin_packet_t *packet)
 			goto error;
 		}
 	} else {
-		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &contact);
+		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &cmatch,
+			&contact);
 		if (rc == 1) {
 			LM_INFO("contact '%.*s' not found, inserting new (ci: '%.*s')\n",
 				contact_str.len, contact_str.s, callid.len, callid.s);
@@ -717,6 +721,7 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	ucontact_t *contact;
 	str d, aor, contact_str, callid;
 	int cseq, rc;
+	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, {NULL,0}};
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet,&aor);
@@ -742,7 +747,8 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	}
 
 	/* simply specify a higher cseq and completely avoid any complications */
-	rc = get_ucontact(record, &contact_str, &callid, cseq + 1, &contact);
+	rc = get_ucontact(record, &contact_str, &callid, cseq + 1, &cmatch,
+		&contact);
 	if (rc != 0 && rc != 2) {
 		LM_ERR("contact '%.*s' not found: (ci: '%.*s')\n", contact_str.len,
 			contact_str.s, callid.len, callid.s);

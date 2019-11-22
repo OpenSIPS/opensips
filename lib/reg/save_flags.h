@@ -1,7 +1,5 @@
 /*
- * Contact info packing functions
- *
- * Copyright (C) 2016-2017 OpenSIPS Solutions
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,23 +18,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __LIB_REG_CI__
-#define __LIB_REG_CI__
+#ifndef __LIB_REG_SAVE_FLAGS__
+#define __LIB_REG_SAVE_FLAGS__
 
-#include "../../parser/contact/parse_contact.h"
-#include "../../modules/usrloc/ucontact.h"
+#include "../../str.h"
 
-extern int rcv_avp_name;
-extern unsigned short rcv_avp_type;
-extern int attr_avp_name;
-extern unsigned short attr_avp_type;
-extern int mct_avp_name;
-extern unsigned short mct_avp_type;
+struct save_ctx {
+	unsigned int flags;
+	str aor;
+	str ownership_tag;
 
-ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
-		unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags,
-		 str *ownership_tag, struct ct_match *cmatch);
+	unsigned int max_contacts;
 
-void print_ci(ucontact_info_t *ci);
+	unsigned int min_expires;
+	unsigned int max_expires;
 
-#endif /* __LIB_REG_CI__ */
+	struct ct_match cmatch;
+
+	/* fields specific to mid-registrar */
+	unsigned int expires;
+	int expires_out;
+	int star;
+};
+
+
+void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx);
+
+#endif

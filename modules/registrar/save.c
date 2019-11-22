@@ -273,7 +273,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 
 		/* pack the contact_info */
 		if ( (ci=pack_ci( (ci==0)?_m:0, _c, e, cflags, ul.nat_flag,
-						_sctx->flags, &_sctx->ownership_tag))==0 ) {
+		_sctx->flags, &_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
 			LM_ERR("failed to extract contact info\n");
 			goto error;
 		}
@@ -281,7 +281,8 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		set_sock_hdr(_m, ci, _sctx->flags);
 
 		if ( r->contacts==0 ||
-		ul.get_ucontact(r, &_c->uri, ci->callid, ci->cseq+1, &c)!=0 ) {
+		ul.get_ucontact(r, &_c->uri, ci->callid, ci->cseq+1, &_sctx->cmatch,
+		&c)!=0 ){
 			if (ul.insert_ucontact( r, &_c->uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
@@ -368,7 +369,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 	/* pack the contact_info */
 	if ( (ci=pack_ci( _m, 0, 0, cflags, ul.nat_flag, _sctx->flags,
-					&_sctx->ownership_tag))==0 ) {
+					&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		goto error;
 	}
@@ -397,7 +398,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 		calc_contact_expires(_m, _c->expires, &e, _sctx);
 
 		/* search for the contact*/
-		ret = ul.get_ucontact( _r, &_c->uri, ci->callid, ci->cseq, &c);
+		ret = ul.get_ucontact( _r, &_c->uri, ci->callid, ci->cseq,
+			&_sctx->cmatch, &c);
 		if (ret==-1) {
 			LM_ERR("invalid cseq for aor <%.*s>\n",_r->aor.len,_r->aor.s);
 			rerrno = R_INV_CSEQ;
@@ -442,7 +444,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 			/* pack the contact_info */
 			if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
-							&_sctx->ownership_tag))==0 ) {
+							&_sctx->ownership_tag, NULL))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
@@ -506,7 +508,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 				/* pack the contact specific info */
 				if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
-								&_sctx->ownership_tag))==0 ) {
+								&_sctx->ownership_tag, NULL))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}
@@ -616,53 +618,9 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 	sctx.flags = 0;
 	sctx.min_expires = min_expires;
 	sctx.max_expires = max_expires;
-	if ( flags_s ) {
-		for( st=0 ; st< flags_s->len ; st++ ) {
-			switch (flags_s->s[st]) {
-				case 'm': sctx.flags |= REG_SAVE_MEMORY_FLAG; break;
-				case 'o': sctx.flags |= REG_SAVE_REQ_CT_ONLY_FLAG; break;
-				case 'r': sctx.flags |= REG_SAVE_NOREPLY_FLAG; break;
-				case 's': sctx.flags |= REG_SAVE_SOCKET_FLAG; break;
-				case 'v': sctx.flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
-				case 'f': sctx.flags |= REG_SAVE_FORCE_REG_FLAG; break;
-				case 'c':
-					sctx.max_contacts = 0;
-					while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-						sctx.max_contacts = sctx.max_contacts*10 +
-							flags_s->s[st+1] - '0';
-						st++;
-					}
-					break;
-				case 'e':
-					sctx.min_expires = 0;
-					while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-						sctx.min_expires = sctx.min_expires*10 +
-							flags_s->s[st+1] - '0';
-						st++;
-					}
-					break;
-				case 'E':
-					sctx.max_expires = 0;
-					while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-						sctx.max_expires = sctx.max_expires*10 +
-							flags_s->s[st+1] - '0';
-						st++;
-					}
-					break;
-				case 'p':
-					if (st<flags_s->len-1) {
-						st++;
-						if (flags_s->s[st]=='2') {
-							sctx.flags |= REG_SAVE_PATH_STRICT_FLAG; break; }
-						if (flags_s->s[st]=='1') {
-							sctx.flags |= REG_SAVE_PATH_LAZY_FLAG; break; }
-						if (flags_s->s[st]=='0') {
-							sctx.flags |= REG_SAVE_PATH_OFF_FLAG; break; }
-					}
-				default: LM_WARN("unsupported flag %c \n",flags_s->s[st]);
-			}
-		}
-	}
+	if ( flags_s )
+		reg_parse_save_flags( flags_s, &sctx);
+
 	if(route_type == ONREPLY_ROUTE)
 		sctx.flags |= REG_SAVE_NOREPLY_FLAG;
 

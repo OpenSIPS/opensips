@@ -32,15 +32,8 @@
 #include "../../qvalue.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/contact/parse_contact.h"
+#include "../../lib/reg/save_flags.h"
 
-struct save_ctx {
-	unsigned int flags;
-	str aor;
-	str ownership_tag;
-	unsigned int max_contacts;
-	unsigned int min_expires;
-	unsigned int max_expires;
-};
 
 /*! \brief
  * Calculate absolute expires value per contact as follows:
@@ -51,7 +44,8 @@ struct save_ctx {
  * 3) If the message contained no expires header field, use
  *    the default value
  */
-void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, struct save_ctx *_sctx);
+void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
+		struct save_ctx *_sctx);
 
 
 #endif /* SIP_MSG_H */

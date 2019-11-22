@@ -38,7 +38,7 @@
  */
 ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
              unsigned int _f, unsigned int _nat_flag, unsigned int _reg_flags,
-			 str *ownership_tag)
+			 str *ownership_tag, struct ct_match *cmatch)
 {
 	static ucontact_info_t ci;
 	static str no_ua = str_init("n/a");
@@ -116,6 +116,8 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 
 		if (ownership_tag)
 			ci.shtag = *ownership_tag;
+
+		ci.cmatch = cmatch;
 
 		allow_parsed = 0; /* not parsed yet */
 		received_searched = 0; /* not searched yet */

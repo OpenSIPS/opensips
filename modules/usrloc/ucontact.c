@@ -150,6 +150,10 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		if (shm_str_dup( &c->attr, _ci->attr) < 0) goto mem_error;
 	}
 
+	if (_ci->cdb_key.s && _ci->cdb_key.len) {
+		if (shm_str_dup( &c->cdb_key, &_ci->cdb_key) < 0) goto mem_error;
+	}
+
 	if (_ci->shtag.s) {
 		if (shm_str_dup(&c->shtag, &_ci->shtag) < 0)
 			goto mem_error;
@@ -200,6 +204,7 @@ out_free:
 	if (c->c.s) shm_free(c->c.s);
 	if (c->instance.s) shm_free(c->instance.s);
 	if (c->attr.s) shm_free(c->attr.s);
+	if (c->cdb_key.s) shm_free(c->cdb_key.s);
 	if (c->shtag.s) shm_free(c->shtag.s);
 	if (c->kv_storage) store_destroy(c->kv_storage);
 	shm_free(c);
@@ -225,6 +230,7 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->callid.s) shm_free(_c->callid.s);
 	if (_c->c.s) shm_free(_c->c.s);
 	if (_c->attr.s) shm_free(_c->attr.s);
+	if (_c->cdb_key.s) shm_free(_c->cdb_key.s);
 	if (_c->shtag.s) shm_free(_c->shtag.s);
 	if (_c->kv_storage) store_destroy(_c->kv_storage);
 

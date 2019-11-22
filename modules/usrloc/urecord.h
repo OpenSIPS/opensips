@@ -68,6 +68,15 @@ typedef struct urecord {
 } urecord_t;
 
 
+struct ct_match {
+	enum {
+		CT_MATCH_CONTACT_ONLY=0,
+		CT_MATCH_CONTACT_CALLID,
+		CT_MATCH_PARAM
+	} mode;
+	str param;
+};
+
 /* Create a new record */
 int new_urecord(str* _dom, str* _aor, urecord_t** _r);
 
@@ -142,9 +151,9 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated);
  * Get pointer to ucontact with given contact
  */
 typedef int (*get_ucontact_t)(urecord_t* _r, str* _c, str* _callid, int _cseq,
-		struct ucontact** _co);
+		struct ct_match *match, struct ucontact** _co);
 int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
-		struct ucontact** _co);
+		struct ct_match *match, struct ucontact** _co);
 int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co);
 
 

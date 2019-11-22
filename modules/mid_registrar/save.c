@@ -56,6 +56,7 @@
 #include "../../lib/reg/rerrno.h"
 #include "../../lib/reg/regtime.h"
 #include "../../lib/reg/path.h"
+#include "../../lib/reg/save_flags.h"
 
 #include "../../trim.h"
 #include "../../strcommon.h"
@@ -315,7 +316,8 @@ static int overwrite_req_contacts(struct sip_msg *req,
 			goto out_err;
 		}
 
-		ul_api.get_ucontact(r, &c->uri, &req->callid->body, cseq + 1, &uc);
+		ul_api.get_ucontact(r, &c->uri, &req->callid->body, cseq + 1, 
+			&mri->cmatch, &uc);
 		if (!uc)
 			ctid = ul_api.next_contact_id(r);
 		else
@@ -1236,8 +1238,8 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
  * in order to determine each new ";expires" value, since responses MUST
  * contain all bindings, not just the ones from the request!
  */
-static inline int save_restore_rpl_contacts(struct sip_msg *req, struct sip_msg* rpl,
-			struct mid_reg_info *mri, str* _a)
+static inline int save_restore_rpl_contacts(struct sip_msg *req,
+						struct sip_msg* rpl, struct mid_reg_info *mri, str* _a)
 {
 	ucontact_info_t* ci = NULL;
 	ucontact_t* c;
@@ -1330,7 +1332,7 @@ update_usrloc:
 		ci->contact_id = ctmap->ctid;
 
 		if ((!r->contacts || ul_api.get_ucontact(r, &ctmap->req_ct_uri,
-		     ci->callid, ci->cseq+1, &c) != 0) &&
+		     ci->callid, ci->cseq+1, &mri->cmatch, &c) != 0) &&
 			ctmap->expires > 0) {
 			/* contact not found and not present on main reg either */
 			if (!_c)
@@ -1474,8 +1476,8 @@ error:
 
 
 /* only relevant in MID_REG_THROTTLE_AOR mode */
-static inline int save_restore_req_contacts(struct sip_msg *req, struct sip_msg* rpl,
-                         struct mid_reg_info *mri, str* _a)
+static inline int save_restore_req_contacts(struct sip_msg *req,
+						struct sip_msg* rpl, struct mid_reg_info *mri, str* _a)
 {
 	ucontact_info_t* ci = NULL;
 	ucontact_t* c;
@@ -1587,8 +1589,8 @@ update_usrloc:
 		ci->expires_out = e_out;
 
 		if ((r->contacts == NULL ||
-		    ul_api.get_ucontact(r, &ctmap->req_ct_uri, ci->callid, ci->cseq+1,
-			                    &c) != 0) && ctmap->expires > 0) {
+			ul_api.get_ucontact(r, &ctmap->req_ct_uri, ci->callid, ci->cseq+1,
+			&mri->cmatch, &c) != 0) && ctmap->expires > 0) {
 			/* contact not found and not present on main reg either */
 			if (!_c)
 				continue;
@@ -1853,6 +1855,13 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	if (sctx->ownership_tag.s
 		&& shm_str_dup(&mri->ownership_tag, &sctx->ownership_tag) != 0) {
+		LM_ERR("oom\n");
+		goto out_free;
+	}
+
+	mri->cmatch.mode = sctx->cmatch.mode;
+	if (sctx->cmatch.param.s &&
+	shm_str_dup(&mri->cmatch.param, &sctx->cmatch.param) != 0) {
 		LM_ERR("oom\n");
 		goto out_free;
 	}
@@ -2233,7 +2242,7 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
  * return: fwd / nfwd / error
  */
 static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
-                                  unsigned int flags, str *ownership_tag)
+													struct save_ctx *_sctx)
 {
 	int e, expires_out, ret, cflags;
 	unsigned int last_reg_ts;
@@ -2243,11 +2252,11 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 	int_str_t value, *valuep;
 
 	LM_DBG("processing contacts...\n");
-	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (_sctx->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(msg, 0, 0, cflags, ul_api.nat_flag, flags,
-						ownership_tag))==0 ) {
+	if ( (ci=pack_ci(msg, 0, 0, cflags, ul_api.nat_flag, _sctx->flags,
+						&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -2260,7 +2269,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 			return 1;
 		}
 
-		ret = ul_api.get_ucontact(urec, &ct->uri, ci->callid, ci->cseq, &c);
+		ret = ul_api.get_ucontact(urec, &ct->uri, ci->callid, ci->cseq,
+			&_sctx->cmatch, &c);
 		if (ret == -1) {
 			LM_ERR("invalid cseq for aor <%.*s>\n",urec->aor.len,urec->aor.s);
 			rerrno = R_INV_CSEQ;
@@ -2268,7 +2278,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 		} else if (ret == -2) { /* duplicate or lower cseq */
 			continue;
 		} else if (ret == 0) { /* found */
-			LM_DBG("found >> %d --- [ %ld, %ld ]\n", e, c->expires_in, c->expires_out);
+			LM_DBG("found >> %d --- [ %ld, %ld ]\n", e,
+				c->expires_in, c->expires_out);
 
 			valuep = ul_api.get_ucontact_key(c, &ul_key_last_reg_ts);
 			if (!valuep) {
@@ -2292,7 +2303,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 			} else {
 				/* pack the contact specific info */
 				ci = pack_ci(msg, ct, e + get_act_time(), cflags,
-				             ul_api.nat_flag, flags, ownership_tag);
+					ul_api.nat_flag, _sctx->flags, &_sctx->ownership_tag,
+					&_sctx->cmatch);
 				if (!ci) {
 					LM_ERR("failed to pack contact specific info\n");
 					rerrno = R_UL_UPD_C;
@@ -2379,7 +2391,7 @@ static int calc_max_ct_diff(urecord_t *urec)
  * return: fwd / nfwd / error
  */
 static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
-                    unsigned int flags, str *ownership_tag, int max_contacts)
+														struct save_ctx *_sctx)
 {
 	int e, ret, ctno = 0, cflags, max_diff = -1;
 	ucontact_info_t *ci;
@@ -2408,11 +2420,11 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 	LM_DBG("AoR info: e_out=%d, lrts=%d...\n", e_out, last_reg_ts);
 
-	cflags = (flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
+	cflags = (_sctx->flags&REG_SAVE_MEMORY_FLAG)?FL_MEM:FL_NONE;
 
 	/* pack the contact_info */
-	if ( (ci=pack_ci(req, 0, 0, cflags, ul_api.nat_flag, flags,
-						ownership_tag))==0 ) {
+	if ( (ci=pack_ci(req, 0, 0, cflags, ul_api.nat_flag, _sctx->flags,
+						&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
 		LM_ERR("failed to initial pack contact info\n");
 		return -1;
 	}
@@ -2420,7 +2432,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	for (c = urec->contacts; c; c = c->next)
 		ctno++;
 
-	if (max_contacts) {
+	if (_sctx->max_contacts) {
 		for (c = urec->contacts, vct = 0; c; c = c->next) {
 			if (VALID_CONTACT(c, get_act_time()))
 				vct++;
@@ -2436,7 +2448,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			e = e_out;
 		}
 
-		ret = ul_api.get_ucontact(urec, &ct->uri, ci->callid, ci->cseq, &c);
+		ret = ul_api.get_ucontact(urec, &ct->uri, ci->callid, ci->cseq,
+			&_sctx->cmatch, &c);
 		if (ret == -1) {
 			LM_ERR("invalid cseq for aor <%.*s>\n",urec->aor.len,urec->aor.s);
 			rerrno = R_INV_CSEQ;
@@ -2461,21 +2474,22 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			if (!VALID_CONTACT(c, get_act_time()))
 				vct++;
 
-			if (max_contacts && vct > max_contacts) {
-				if (!(flags & REG_SAVE_FORCE_REG_FLAG)) {
+			if (_sctx->max_contacts && vct > _sctx->max_contacts) {
+				if (!(_sctx->flags & REG_SAVE_FORCE_REG_FLAG)) {
 					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
-					        urec->aor.len, urec->aor.s, max_contacts);
+						urec->aor.len, urec->aor.s, _sctx->max_contacts);
 					rerrno = R_TOO_MANY;
 					return -1;
 				}
 
-				if (trim_contacts(urec, vct - max_contacts) != 0)
+				if (trim_contacts(urec, vct - _sctx->max_contacts) != 0)
 					return -1;
 			}
 
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), cflags,
-			             ul_api.nat_flag, flags, ownership_tag);
+				ul_api.nat_flag, _sctx->flags, &_sctx->ownership_tag,
+				&_sctx->cmatch);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2498,21 +2512,22 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			if (e == 0)
 				continue;
 
-			if (max_contacts && vct >= max_contacts) {
-				if (!(flags & REG_SAVE_FORCE_REG_FLAG)) {
+			if (_sctx->max_contacts && vct >= _sctx->max_contacts) {
+				if (!(_sctx->flags & REG_SAVE_FORCE_REG_FLAG)) {
 					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
-					        urec->aor.len, urec->aor.s, max_contacts);
+						urec->aor.len, urec->aor.s, _sctx->max_contacts);
 					rerrno = R_TOO_MANY;
 					return -1;
 				}
 
-				if (trim_contacts(urec, vct - max_contacts + 1) != 0)
+				if (trim_contacts(urec, vct - _sctx->max_contacts + 1) != 0)
 					return -1;
 			}
 
 			/* pack the contact specific info */
 			ci = pack_ci(req, ct, e + get_act_time(), cflags,
-			             ul_api.nat_flag, flags, ownership_tag);
+				ul_api.nat_flag, _sctx->flags, &_sctx->ownership_tag,
+				&_sctx->cmatch);
 			if (!ci) {
 				LM_ERR("failed to pack contact specific info\n");
 				rerrno = R_UL_UPD_C;
@@ -2547,63 +2562,6 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	return 2;
 }
 
-static void parse_save_flags(str *flags_s, struct save_ctx *out_sctx)
-{
-	int st;
-
-	for( st=0 ; st< flags_s->len ; st++ ) {
-		switch (flags_s->s[st]) {
-			case 'm': out_sctx->flags |= REG_SAVE_MEMORY_FLAG; break;
-			case 'r': out_sctx->flags |= REG_SAVE_NOREPLY_FLAG; break;
-			case 's': out_sctx->flags |= REG_SAVE_SOCKET_FLAG; break;
-			case 'v': out_sctx->flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
-			case 'f': out_sctx->flags |= REG_SAVE_FORCE_REG_FLAG; break;
-			case 'o': out_sctx->flags |= REG_SAVE_REQ_CT_ONLY_FLAG; break;
-			case 'c':
-				out_sctx->max_contacts = 0;
-				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-					out_sctx->max_contacts = out_sctx->max_contacts*10 +
-						flags_s->s[st+1] - '0';
-					st++;
-				}
-				if (out_sctx->max_contacts < 0)
-					out_sctx->max_contacts = 0;
-				break;
-
-			case 'e':
-				out_sctx->min_expires = 0;
-				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-					out_sctx->min_expires = out_sctx->min_expires*10 +
-						flags_s->s[st+1] - '0';
-					st++;
-				}
-				break;
-			case 'E':
-				out_sctx->max_expires = 0;
-				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-					out_sctx->max_expires = out_sctx->max_expires*10 +
-						flags_s->s[st+1] - '0';
-					st++;
-				}
-				break;
-			case 'p':
-				if (st<flags_s->len-1) {
-					st++;
-					if (flags_s->s[st]=='2') {
-						out_sctx->flags |= REG_SAVE_PATH_STRICT_FLAG; break; }
-					if (flags_s->s[st]=='1') {
-						out_sctx->flags |= REG_SAVE_PATH_LAZY_FLAG; break; }
-					if (flags_s->s[st]=='0') {
-						out_sctx->flags |= REG_SAVE_PATH_OFF_FLAG; break; }
-				}
-				break;
-			default: LM_WARN("unsupported flag %c \n",flags_s->s[st]);
-		}
-	}
-
-	if (out_sctx->max_contacts == 0)
-		out_sctx->max_contacts = max_contacts;
-}
 
 int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
                           str *to_uri, int *expires, str *owtag)
@@ -2621,10 +2579,12 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
 
+	sctx.max_contacts = max_contacts;
+
 	LM_DBG("saving to %.*s...\n", ud->name->len, ud->name->s);
 
 	if (flags_str)
-		parse_save_flags(flags_str, &sctx);
+		reg_parse_save_flags(flags_str, &sctx);
 
 	if (parse_reg_headers(msg) != 0) {
 		LM_ERR("failed to parse req headers\n");
@@ -2683,10 +2643,9 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 	}
 
 	if (reg_mode == MID_REG_THROTTLE_CT)
-		rc = process_contacts_by_ct(msg, rec, sctx.flags, &sctx.ownership_tag);
+		rc = process_contacts_by_ct(msg, rec, &sctx);
 	else if (reg_mode == MID_REG_THROTTLE_AOR)
-		rc = process_contacts_by_aor(msg,rec, sctx.flags, &sctx.ownership_tag,
-		                             sctx.max_contacts);
+		rc = process_contacts_by_aor(msg, rec, &sctx);
 
 	if (rc == -1)
 		goto out_error;

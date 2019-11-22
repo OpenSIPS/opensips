@@ -113,6 +113,8 @@ typedef struct ucontact {
 	unsigned int label;     /*!< label to find the contact in contact list>*/
 	int sipping_latency;    /*!< useconds; not restart-persistent >*/
 	str shtag;              /*!< helps determine the logical owner node */
+	str cdb_key;            /*!< the key of the contact in cache_db; makes
+	                              sense only in full_sharing_cachedb mode */
 
 	map_t kv_storage;       /*!< data attached by API subscribers >*/
 
@@ -145,6 +147,8 @@ typedef struct ucontact_info {
 	str *packed_kv_storage;
 	str *attr;
 	str shtag;
+	str cdb_key;
+	struct ct_match *cmatch;
 } ucontact_info_t;
 
 /*! \brief

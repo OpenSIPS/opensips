@@ -1322,6 +1322,9 @@ have_contacts:
 			       _aor->len, _aor->s, _d->name->s);
 			continue;
 		}
+		/* save also the name of the key, to be used later, during
+		 * the update operation */
+		ci->cdb_key = pair->key.name;
 
 		if (!r)
 			get_static_urecord(_d, _aor, &r);
