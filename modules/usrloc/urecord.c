@@ -54,7 +54,7 @@ extern db_key_t *cid_keys;
 extern db_val_t *cid_vals;
 extern int cid_len;
 
-int matching_mode = CONTACT_ONLY;
+int matching_mode = CT_MATCH_CONTACT_ONLY;
 
 int cseq_delay = 20;
 
@@ -729,6 +729,9 @@ static int cdb_build_ucontact_key(str* _ct, ucontact_info_t* _ci)
 	int len, base64len;
 	str ct_val;
 
+	if (_ci->cmatch->mode==CT_MATCH_NONE)
+		_ci->cmatch->mode = matching_mode;
+
 	switch (_ci->cmatch->mode) {
 
 		case CT_MATCH_CONTACT_ONLY:
@@ -1012,6 +1015,9 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 	ptr = 0;
 	no_callid = 0;
 	*_co = 0;
+
+	if (match->mode==CT_MATCH_NONE)
+		match->mode = matching_mode;
 
 	LM_DBG("using ct mathing mode %d\n", match->mode);
 	switch (match->mode) {

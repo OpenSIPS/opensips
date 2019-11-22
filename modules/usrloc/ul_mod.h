@@ -139,12 +139,6 @@ extern db_func_t ul_dbf;
 extern cachedb_funcs cdbf;
 extern cachedb_con *cdbc;
 
-/*
- * Matching algorithms
- */
-#define CONTACT_ONLY            (0)
-#define CONTACT_CALLID          (1)
-
 extern int matching_mode;
 
 

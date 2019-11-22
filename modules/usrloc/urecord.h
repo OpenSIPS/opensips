@@ -70,7 +70,8 @@ typedef struct urecord {
 
 struct ct_match {
 	enum {
-		CT_MATCH_CONTACT_ONLY=0,
+		CT_MATCH_NONE=-1,
+		CT_MATCH_CONTACT_ONLY,
 		CT_MATCH_CONTACT_CALLID,
 		CT_MATCH_PARAM
 	} mode;

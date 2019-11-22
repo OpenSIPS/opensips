@@ -25,9 +25,12 @@
 #include "config.h"
 #include "save_flags.h"
 
+
 void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx)
 {
 	int st;
+
+	sctx->cmatch.mode = CT_MATCH_NONE;
 
 	for( st=0 ; st< flags_s->len ; st++ ) {
 		switch (flags_s->s[st]) {

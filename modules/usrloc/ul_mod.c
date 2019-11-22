@@ -440,8 +440,8 @@ static int mod_init(void)
 
 	/* check matching mode */
 	switch (matching_mode) {
-		case CONTACT_ONLY:
-		case CONTACT_CALLID:
+		case CT_MATCH_CONTACT_ONLY:
+		case CT_MATCH_CONTACT_CALLID:
 			break;
 		default:
 			LM_ERR("invalid matching mode %d\n", matching_mode);
