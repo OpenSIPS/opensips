@@ -1105,13 +1105,12 @@ error:
 }
 
 
-
-
 int t_reply( struct cell *t, struct sip_msg* p_msg, unsigned int code,
 	str * text )
 {
 	return _reply( t, p_msg, code, text, 1 /* lock replies */ );
 }
+
 
 int t_reply_unsafe( struct cell *t, struct sip_msg* p_msg, unsigned int code,
 	str * text )
@@ -1120,7 +1119,13 @@ int t_reply_unsafe( struct cell *t, struct sip_msg* p_msg, unsigned int code,
 }
 
 
+int t_gen_totag(struct sip_msg *msg, str *totag)
+{
+	calc_tag_suffix( msg, tm_tag_suffix );
+	*totag = tm_tag;
 
+	return 1;
+}
 
 
 void set_final_timer( /* struct s_table *h_table, */ struct cell *t )

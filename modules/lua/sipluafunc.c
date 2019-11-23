@@ -110,7 +110,7 @@ int siplua_exec(struct sip_msg* _msg, const str *fnc, const str *mystr)
 
       reason.s = "Bad Request-URI";
       reason.len = sizeof("Bad Request-URI")-1;
-      if (slb.reply(_msg, 400, &reason) == -1) {
+      if (slb.reply(_msg, 400, &reason, NULL) == -1) {
 	LM_ERR("failed to send reply\n");
       }
       return -1;
