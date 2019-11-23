@@ -59,9 +59,11 @@ static str pu_404_rpl     = str_init("Not Found");
 #define SUBS_EXTRA_HDRS  "Supported: eventlist\r\nAccept: application/pidf+xml, application/rlmi+xml, application/watcherinfo+xml, multipart/related, application/xcap-diff+xml\r\n"
 #define SUBS_EXTRA_HDRS_LEN  sizeof(SUBS_EXTRA_HDRS) -1
 
-subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto, pres_ev_t* event);
+subs_t* constr_new_subs(struct sip_msg* msg, struct to_body *pto,
+		pres_ev_t* event);
 
-int update_rlsubs( subs_t* subs,unsigned int hash_code, int* reply_code, str* reply_str);
+int update_rlsubs( subs_t* subs,unsigned int hash_code,
+		int* reply_code, str* reply_str, int just_check);
 
 
 xmlNodePtr search_service_uri(xmlDocPtr doc, str* service_uri)
@@ -451,9 +453,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	if (parse_supported(msg) < 0)
 	{
 		LM_ERR("failed to parse supported headers\n");
-		reply_code = 500;
-		reply_str = pu_500_rpl;
-		goto error;
+		goto error_5xx;
 	}
 
 	if (!(get_supported(msg) & F_SUPPORTED_EVENTLIST))
@@ -468,9 +468,7 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		if (!msg->event->parsed && (parse_event(msg->event) < 0))
 		{
 			LM_ERR("cannot parse Event header\n");
-			reply_code = 500;
-			reply_str = pu_500_rpl;
-			goto error;
+			goto error_5xx;
 		}
 		if (!(((event_t*)msg->event->parsed)->parsed & rls_events))
 		{
@@ -538,17 +536,13 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 		if (uandd_to_uri(msg->parsed_uri.user, msg->parsed_uri.host, &subs.pres_uri) < 0)
 		{
 			LM_ERR("while constructing uri from user and domain\n");
-			reply_code = 500;
-			reply_str = pu_500_rpl;
-			goto error;
+			goto error_5xx;
 		}
 
 		if (get_resource_list(&subs.pres_uri, fu.user, fu.host, &service_node, &doc) < 0)
 		{
 			LM_ERR("failed to get resource list document\n");
-			reply_code = 500;
-			reply_str = pu_500_rpl;
-			goto error;
+			goto error_5xx;
 		}
 
 		if (doc == NULL || service_node == NULL)
@@ -592,14 +586,22 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 	memcpy(contact, subs.local_contact.s, subs.local_contact.len);
 	subs.local_contact.s = contact;
 
-	reply_code = 500;
-	reply_str = pu_500_rpl;
 
 	if (init_req) /* if an initial subscribe */
 	{
-		/** reply with 200 OK*/
-		if (reply_200(msg, &subs.local_contact, subs.expires, &subs.to_tag) < 0)
-			goto error_free;
+
+		/* first, generate the To-tag, so we can double check the 
+		 * to-be-created subscription */
+		rls_sigb.gen_totag( msg, &subs.to_tag);
+
+		/* be sure the SIP subscription does not exist in hash */
+		if (update_rlsubs(&subs, hash_code, NULL, NULL, 1)==0) {
+			/* another subscription with same SIP coordinates already
+			 * exists => decline */
+			LM_ERR("subscription overlapping detected, rejecting\n");
+			goto error_5xx;
+		}
+
 		hash_code = core_hash(&subs.callid, &subs.to_tag, hash_size);
 
 		subs.local_cseq = 0;
@@ -610,22 +612,26 @@ int rls_handle_subscribe(struct sip_msg* msg, char* s1, char* s2)
 			if (pres_insert_shtable(rls_table, hash_code, &subs) < 0)
 			{
 				LM_ERR("while adding new subscription\n");
-				goto error_free;
+				goto error_5xx;
 			}
 		}
+
+		/** reply with 200 OK*/
+		if (reply_200(msg, &subs.local_contact, subs.expires, NULL) < 0)
+			goto error_free;
 	}
 	else
 	{
-		if (update_rlsubs(&subs, hash_code, &reply_code, &reply_str) < 0)
+		if (update_rlsubs(&subs, hash_code, &reply_code, &reply_str, 0) < 0)
 		{
 			LM_ERR("while updating resource list subscription\n");
-			goto error;
+			goto error_5xx;
 		}
 
 		if (get_resource_list(&subs.pres_uri, subs.from_user, subs.from_domain, &service_node, &doc) < 0)
 		{
 			LM_ERR("when getting resource list\n");
-			goto error;
+			goto error_5xx;
 		}
 		if (doc == NULL || service_node == NULL)
 		{
@@ -666,6 +672,10 @@ bad_event:
 		LM_ERR("failed to send 489 reply\n");
 	goto error_free;
 
+error_5xx:
+	reply_code = 500;
+	reply_str = pu_500_rpl;
+
 error:
 	if (rls_sigb.reply(msg, reply_code, &reply_str, 0) == -1)
 		LM_ERR("failed to send %d reply\n", reply_code);
@@ -686,7 +696,7 @@ error_free:
  *	if different that server error
  * */
 int update_rlsubs( subs_t* subs, unsigned int hash_code,
-		int* reply_code, str* reply_str)
+							int* reply_code, str* reply_str, int just_check)
 {
 	subs_t* s, *ps;
 
@@ -700,6 +710,11 @@ int update_rlsubs( subs_t* subs, unsigned int hash_code,
 		LM_DBG("record not found in hash table\n");
 		lock_release(&rls_table[hash_code].lock);
 		return -1;
+	}
+
+	if(just_check) {
+		lock_release(&rls_table[hash_code].lock);
+		return 0;
 	}
 
 	s->expires= subs->expires+ (int)time(NULL);
