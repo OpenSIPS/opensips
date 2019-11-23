@@ -97,10 +97,12 @@ int sl_shutdown(void)
 }
 
 
-int sl_get_totag(struct sip_msg *msg, str *totag)
+int sl_gen_totag(struct sip_msg *msg, str *totag)
 {
+	calc_tag_suffix( msg, tag_suffix );
 	*totag = sl_tag;
-	return 0;
+
+	return 1;
 }
 
 
@@ -207,9 +209,17 @@ error:
 	return -1;
 }
 
-int sl_send_reply(struct sip_msg *msg ,int code, str *text)
+int sl_send_reply(struct sip_msg *msg ,int code, str *text, str *totag)
 {
-	return sl_send_reply_helper(msg, code, text);
+	int ret;
+
+	if ( (ret=sl_send_reply_helper(msg, code, text))<0)
+		return ret;
+
+	if (totag)
+		*totag = sl_tag;
+
+	return ret;
 }
 
 

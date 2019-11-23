@@ -32,9 +32,11 @@
 
 typedef int (*sig_send_reply_f)(struct sip_msg *msg, int code, str *reason,
 		str *tag);
+typedef int (*sig_gen_totag_f)(struct sip_msg *msg, str *tag);
 
 struct sig_binds {
 	sig_send_reply_f reply;
+	sig_gen_totag_f  gen_totag;
 	};
 
 int load_sig( struct sig_binds *sigb);

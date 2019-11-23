@@ -52,6 +52,7 @@ struct tm_binds {
 	tnewtran_f       t_newtran;
 	treply_f         t_reply;
 	treply_wb_f      t_reply_with_body;
+	tgen_totag_f     t_gen_totag;
 	tislocal_f       t_is_local;
 	tget_ti_f        t_get_trans_ident;
 	tlookup_ident_f  t_lookup_ident;
