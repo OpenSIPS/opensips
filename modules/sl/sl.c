@@ -240,7 +240,7 @@ static int w_sl_send_reply(struct sip_msg* msg, char* str1, char* str2)
 		code_s = ((pv_elem_p)str2)->text;
 	}
 
-	return sl_send_reply(msg, code_i, &code_s);
+	return sl_send_reply(msg, code_i, &code_s, NULL);
 }
 
 
@@ -250,7 +250,7 @@ int load_sl( struct sl_binds *slb)
 		return -1;
 
 	slb->reply      = sl_send_reply;
-	slb->get_totag  = sl_get_totag;
+	slb->gen_totag  = sl_gen_totag;
 
 	return 1;
 }

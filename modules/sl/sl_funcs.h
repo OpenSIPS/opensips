@@ -31,10 +31,10 @@
 
 int sl_startup();
 int sl_shutdown();
-int sl_send_reply( struct sip_msg *msg, int code, str *reason);
-int sl_filter_ACK( struct sip_msg *msg, void *foo );
+int sl_send_reply( struct sip_msg *msg, int code, str *reason, str *totag);
+int sl_filter_ACK( struct sip_msg *msg, void *foo);
 int sl_reply_error( struct sip_msg *msg );
-int sl_get_totag( struct sip_msg *msg, str *totag );
+int sl_gen_totag( struct sip_msg *msg, str *totag);
 
 
 #endif

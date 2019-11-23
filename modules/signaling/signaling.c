@@ -204,22 +204,53 @@ int sig_send_reply_mod(struct sip_msg* msg, int code, str* reason, str* to_tag)
 
 sl_reply:
 
-	if(slb.reply(msg, code, reason)< 0)
+	if(slb.reply(msg, code, reason, to_tag)< 0)
 	{
 		LM_ERR("failed to send reply with sl module\n");
 		return -1;
 	}
-	if(to_tag)
-	{
-		if(slb.get_totag(msg, to_tag)< 0)
-		{
-			LM_ERR("failed to get to_tag from sl\n");
-			return -1;
+
+	return 1;
+}
+
+
+/*
+ * sig_gen_totag_mod function - generates the To-tag for the given request,
+ * according to the underlaying signaling module( tm or sl).
+ * */
+static int sig_gen_totag_mod(struct sip_msg* msg, str* to_tag)
+{
+	struct cell * t;
+
+	/* search transaction */
+	if (tm_loaded) {
+		t = tmb.t_gett();
+		if (t==NULL || t==T_UNDEFINED) {
+			if (!sl_loaded) {
+				LM_ERR("sl module not loaded and no transaction found for the"
+						" message. Can not generate totag!\n");
+				return -1;
+			}
+			/* fallback to stateless */
+		} else {
+			/* do it statefull */
+			if (tmb.t_gen_totag(msg, to_tag)< 0) {
+				LM_ERR("failed to generate totag with tm module\n");
+				return -1;
+			}
+			return 1;
 		}
+	}
+
+	/* do it stateless */
+	if (slb.gen_totag(msg, to_tag)< 0) {
+		LM_ERR("failed to generate totag with sl module\n");
+		return -1;
 	}
 
 	return 1;
 }
+
 
 /* *
  * fixup_sig_send_reply
@@ -275,6 +306,7 @@ int load_sig( struct sig_binds *sigb)
 		return -1;
 
 	sigb->reply = sig_send_reply_mod;
+	sigb->gen_totag = sig_gen_totag_mod;
 
 	return 1;
 }

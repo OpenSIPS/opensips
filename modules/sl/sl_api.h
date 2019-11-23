@@ -26,15 +26,13 @@
 #include "../../dprint.h"
 #include "../../str.h"
 
-typedef int (*sl_send_reply_f)(struct sip_msg *msg, int code, str *reason);
-typedef int (*sl_send_reply_dlg_f)(struct sip_msg *msg, int code, str *reason,
+typedef int (*sl_send_reply_f)(struct sip_msg *msg, int code, str *reason,
 		str *tag);
-typedef int (*sl_get_totag_f)(struct sip_msg *msg, str *totag);
+typedef int (*sl_gen_totag_f)(struct sip_msg *msg, str *totag);
 
 struct sl_binds {
-	sl_send_reply_f     reply;
-	sl_send_reply_dlg_f reply_dlg;
-	sl_get_totag_f      get_totag;
+	sl_send_reply_f      reply;
+	sl_gen_totag_f       gen_totag;
 };
 
 typedef int(*load_sl_f)(struct sl_binds *slb);
