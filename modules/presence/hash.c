@@ -340,6 +340,12 @@ int update_shtable(shtable_t htable,unsigned int hash_code,
 		return -1;
 	}
 
+	if(type & JUST_CHECK)
+	{
+		lock_release(&htable[hash_code].lock);
+		return 0;
+	}
+
 	if(type & REMOTE_TYPE)
 	{
 		s->expires= subs->expires+ (int)time(NULL);
