@@ -516,6 +516,16 @@ modparam("registrar", "disable_gruu", 0)
             case the registration is successful. While this is
             against RFC 3261, it may be useful in certain
             scenarios.
+          + 'Mxx' (contact Matching mode) - How the matching
+            should be performed between the uploaded contacts (by
+            the currently handled REGISTER) and the already know
+            contacts (in memory or DB). This options will be used
+            only for the current operation and can be:
+               o 'M0' - contact URI matching only
+               o 'M1' - contact URI and SIP Call-ID matching
+               o 'M<param_name>' - only the value of the given URI
+                 param will be used for matching (for example
+                 M<rinstance>)
           + 'p0' (Path support - 'off' mode) The Path header is
             saved into usrloc, but is never included in the reply.
           + 'p1' (Path support - lazy mode) The Path header is
@@ -1019,7 +1029,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 165 110 2342 1968
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 168 112 2380 2031
    2. Jan Janak (@janakj) 121 73 3465 1102
    3. Liviu Chircu (@liviuchircu) 98 57 1610 1534
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
@@ -1061,9 +1071,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Aug 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Nov 2019
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  @jalung                             Aug 2017 - Aug 2017
@@ -1091,8 +1101,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
    Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Ionut
    Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
    (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),

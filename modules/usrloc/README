@@ -754,21 +754,21 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
        cluster nodes can fork SIP traffic over to the current
        node. Consequently, the location_cluster and cachedb_url
        parameters are mandatory.
-     * "full-sharing" - Full contact data broadcasting (mirroring)
-       to all other OpenSIPS cluster participants. inside a NoSQL
-       database, so other cluster nodes are able to route SIP
-       traffic through the current node. Consequently, the
-       location_cluster parameter is mandatory.
+     * "full-sharing" - Broadcast contact updates (full-mesh
+       mirroring) to all other OpenSIPS cluster participants. Each
+       node will hold the entire user location dataset.
+       Consequently, the location_cluster parameter is mandatory.
      * "full-sharing-cachedb" - Full contact data management
        through the use of a NoSQL database (somewhat resembling
        the "sql-only" preset). The cluster layer is still required
        in order to be able to partition and spread the pinging
        workload evenly among participating OpenSIPS nodes.
-       Consequently, the location_cluster parameter is mandatory.
+       Consequently, the location_cluster and cachedb_url
+       parameters are mandatory.
      * "sql-only" - Multiple OpenSIPS boxes using a common db_url
        without necessarily being aware of each other.
 
-   Default value is none (single instance mode).
+   Default value is "none" (single instance mode).
 
    Example 1.27. Set cluster_mode parameter
 ...
@@ -1498,8 +1498,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 237 151 6249 2066
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 236 141 3979 3502
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 243 145 4198 3609
+   3. Liviu Chircu (@liviuchircu) 240 152 6255 2072
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Vlad Patrascu (@rvlad-patrascu) 40 21 770 633
