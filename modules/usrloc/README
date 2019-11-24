@@ -756,21 +756,21 @@ modparam("usrloc", "working_mode_preset", "full-sharing-cachedb-cluster"
        cluster nodes can fork SIP traffic over to the current
        node. Consequently, the location_cluster and cachedb_url
        parameters are mandatory.
-     * "full-sharing" - Full contact data broadcasting (mirroring)
-       to all other OpenSIPS cluster participants. inside a NoSQL
-       database, so other cluster nodes are able to route SIP
-       traffic through the current node. Consequently, the
-       location_cluster parameter is mandatory.
+     * "full-sharing" - Broadcast contact updates (full-mesh
+       mirroring) to all other OpenSIPS cluster participants. Each
+       node will hold the entire user location dataset.
+       Consequently, the location_cluster parameter is mandatory.
      * "full-sharing-cachedb" - Full contact data management
        through the use of a NoSQL database (somewhat resembling
        the "sql-only" preset). The cluster layer is still required
        in order to be able to partition and spread the pinging
        workload evenly among participating OpenSIPS nodes.
-       Consequently, the location_cluster parameter is mandatory.
+       Consequently, the location_cluster and cachedb_url
+       parameters are mandatory.
      * "sql-only" - Multiple OpenSIPS boxes using a common db_url
        without necessarily being aware of each other.
 
-   Default value is none (single instance mode).
+   Default value is "none" (single instance mode).
 
    Example 1.27. Set cluster_mode parameter
 ...
@@ -1476,8 +1476,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 233 138 3967 3497
-   3. Liviu Chircu (@liviuchircu) 216 134 5900 1926
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 235 139 3977 3533
+   3. Liviu Chircu (@liviuchircu) 217 135 5906 1932
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
@@ -1518,8 +1518,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2019
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2019
    3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
    4.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
    5.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
