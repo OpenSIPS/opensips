@@ -445,7 +445,7 @@ void notification_listener_process(int rank)
 				lock_release(rtpp_notify_h->lock);
 				continue;
 			}
-			LM_INFO("Notification(s) received: [%.*s]\n", len, buffer);
+			LM_DBG("Notification(s) received: [%.*s]\n", len, buffer);
 			p = buffer;
 			left = len + offset;
 			offset = 0;
