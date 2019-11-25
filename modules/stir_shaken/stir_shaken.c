@@ -33,6 +33,7 @@
  *
  */
 
+#define _GNU_SOURCE
 #define _XOPEN_SOURCE 600          /* glibc2 on linux, bsd */
 #define _XOPEN_SOURCE_EXTENDED 1   /* solaris */
 
@@ -45,6 +46,7 @@
 
 #include <time.h>
 
+#undef _GNU_SOURCE
 #undef _XOPEN_SOURCE
 #undef _XOPEN_SOURCE_EXTENDED
 
