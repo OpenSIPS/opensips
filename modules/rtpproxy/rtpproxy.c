@@ -3250,6 +3250,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	char *adv_address = NULL;
 	struct dlg_cell * dlg;
 	str dtmf_tag = {0, 0}, timeout_tag = {0, 0};
+	str notification_socket = rtpp_notify_socket;
 
 	memset(&opts, '\0', sizeof(opts));
 	memset(&rep_opts, '\0', sizeof(rep_opts));
@@ -3486,20 +3487,20 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	STR2IOVEC(from_tag, v[12]);
 	STR2IOVEC(to_tag, v[16]);
 
-	if (enable_notification &&
-			(notification_socket.s == 0 || notification_socket.len == 0)) {
-		LM_WARN("cannot receive notifications because"
-				"notification socket is not specified\n");
+	if (notification_socket.s == 0 || notification_socket.len == 0) {
+		if (enable_notification)
+			LM_WARN("cannot receive notifications because"
+					"notification socket is not specified\n");
 		enable_notification = 0;
 
 		if (enable_dtmf_catch)
 			LM_WARN("cannot receive DMTF notifications because"
-					"rtpp_notify_socket parameter is not specified\n");
+					"notification socket is not specified\n");
 		enable_dtmf_catch = 0;
 	}
 
-	if(enable_notification) {
-		if (opts.s.s[0] == 'U' && dlg_api.get_dlg) {
+	if (opts.s.s[0] == 'U') {
+		if(enable_notification && dlg_api.get_dlg) {
 			dlg = dlg_api.get_dlg();
 			if(dlg == NULL)
 			{
@@ -3510,13 +3511,14 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			timeout_tag.len= snprintf(buf, 32, "T%llu", dlg_get_did(dlg));
 			timeout_tag.s = buf;
 			LM_DBG("timeout_tag= %s\n", timeout_tag.s);
+		} else if (enable_dtmf_catch) {
+			/* we have dtmf_catch enabled, but we are not interested in
+			 * notifications - add an ignore tag */
+			timeout_tag.s = "I";
+			timeout_tag.len = 1;
 		}
-	} else if (enable_dtmf_catch) {
-		/* we have dtmf_catch enabled, but we are not interested in
-		 * notifications - add an ignore tag */
-		timeout_tag.s = "I";
-		timeout_tag.len = 1;
-	}
+	} else
+		enable_notification = 0;
 
 	if (enable_dtmf_catch) {
 		if (dlg_api.get_dlg && (dlg = dlg_api.get_dlg())) {
@@ -3703,24 +3705,22 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				} else
 					vcnt = 19;
 				node_has_dtmf_catch = enable_dtmf_catch && HAS_CAP(args->node, SUBCOMMAND);
-				node_has_notification = enable_notification && opts.s.s[0] == 'U' &&
-					HAS_CAP(args->node, NOTIFY);
+				node_has_notification = enable_notification && HAS_CAP(args->node, NOTIFY);
 				if (node_has_dtmf_catch || node_has_notification) {
-					STR2IOVEC(rtpp_notify_socket, v[vcnt + 1]);
-					if (!HAS_CAP(args->node, NOTIFY_WILD)) {
-						if (!rtpp_notify_socket_un) {
+					if (opts.s.s[0] == 'U') {
+						STR2IOVEC(notification_socket, v[vcnt + 1]);
+						if (!HAS_CAP(args->node, NOTIFY_WILD) && !rtpp_notify_socket_un &&
+								notification_socket.s == rtpp_notify_socket.s) {
 							v[vcnt + 1].iov_base += 4;
 							v[vcnt + 1].iov_len -= 4;
 						}
+						vcnt += 2;
+						STR2IOVEC(timeout_tag, v[vcnt + 1]);
+						vcnt += 2;
 					}
-					vcnt += 2;
-					STR2IOVEC(timeout_tag, v[vcnt + 1]);
-					vcnt += 2;
 
 					if (node_has_dtmf_catch) {
-						if (!HAS_CAP(args->node, SUBCOMMAND)) {
-							LM_WARN("node does not have subcommand capability!\n");
-						} else {
+						if (HAS_CAP(args->node, SUBCOMMAND)) {
 							/* separator */
 							v[vcnt].iov_base = " && M3:1 D";
 							v[vcnt].iov_len = 10;
@@ -3734,7 +3734,8 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 								v[vcnt].iov_len = mod_opts.oidx;
 								vcnt++;
 							}
-						}
+						} else
+							LM_WARN("node does not have subcommand capability!\n");
 					}
 				}
 
