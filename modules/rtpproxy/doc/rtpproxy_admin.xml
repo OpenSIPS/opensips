@@ -578,8 +578,11 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 				message is received, support symmetric RTP must be forced.
 				</para></listitem>
 				<listitem><para>
-				<emphasis>n</emphasis> - flags that enables the notification
-				timeout for the session.
+				<emphasis>n[&lt;SOCKET&gt;]</emphasis> - flags that enables
+				the notification timeout for the session. One can specify an
+				optiona "advertised" socket between the &lt; and &gt; tags.
+				If the socket is not specified, the value of
+				<emphasis>rtpp_notify_socket</emphasis> is used.
 				</para></listitem>
 				<listitem><para>
 				<emphasis>tNN</emphasis> - can be used to specify a RTP

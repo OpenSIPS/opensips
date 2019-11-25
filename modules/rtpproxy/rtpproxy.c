@@ -3195,6 +3195,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	int vcnt;
 	pv_value_t val;
 	char *adv_address = NULL;
+	str notification_socket = rtpp_notify_socket;
 
 	memset(&opts, '\0', sizeof(opts));
 	memset(&rep_opts, '\0', sizeof(rep_opts));
@@ -3267,6 +3268,13 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		case 'n':
 		case 'N':
 			enable_notification = 1;
+			/* check to see if we have a notification socket */
+			if (cp[1] != '\0' && cp[1] == '<') {
+				notification_socket.s = &cp[2];
+				for (; cp[1] != '\0' && cp[1] != '>'; cp++);
+				notification_socket.len = &cp[1] - notification_socket.s;
+				cp++;
+			}
 			break;
 
 		case 'w':
@@ -3406,9 +3414,9 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	STR2IOVEC(to_tag, v[16]);
 
 	if (enable_notification &&
-			(rtpp_notify_socket.s == 0 || rtpp_notify_socket.len == 0)) {
-		LM_DBG("cannot receive timeout notifications because"
-				"rtpp_notify_socket parameter is not specified\n");
+			(notification_socket.s == 0 || notification_socket.len == 0)) {
+		LM_WARN("cannot receive notifications because"
+				"notification socket is not specified\n");
 		enable_notification = 0;
 	}
 
@@ -3428,7 +3436,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		notify_tag.s = buf;
 		LM_DBG("notify_tag= %s\n", notify_tag.s);
 
-		STR2IOVEC(rtpp_notify_socket, v[20]);
+		STR2IOVEC(notification_socket, v[20]);
 		STR2IOVEC(notify_tag, v[22]);
 	}
 
@@ -3603,12 +3611,11 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				if(enable_notification && opts.s.s[0] == 'U' &&
 						HAS_CAP(args->node, NOTIFY)) {
 					vcnt = 23;
-					STR2IOVEC(rtpp_notify_socket, v[20]);
-					if (!HAS_CAP(args->node, NOTIFY_WILD)) {
-						if (!rtpp_notify_socket_un) {
-							v[20].iov_base += 4;
-							v[20].iov_len -= 4;
-						}
+					STR2IOVEC(notification_socket, v[20]);
+					if (!HAS_CAP(args->node, NOTIFY_WILD) && !rtpp_notify_socket_un &&
+							notification_socket.s == rtpp_notify_socket.s) {
+						v[20].iov_base += 4;
+						v[20].iov_len -= 4;
 					}
 				} else {
 					vcnt = (to_tag.len > 0) ? 19 : 15;
