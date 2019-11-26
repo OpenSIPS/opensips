@@ -46,14 +46,16 @@
 
 #include <time.h>
 
-#undef _GNU_SOURCE
 #undef _XOPEN_SOURCE
 #undef _XOPEN_SOURCE_EXTENDED
 
-#include <stdlib.h>
 #include <openssl/x509.h>
+
+#undef _GNU_SOURCE
+
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
+#include <stdlib.h>
 
 #include "../../dprint.h"
 #include "../../sr_module.h"
