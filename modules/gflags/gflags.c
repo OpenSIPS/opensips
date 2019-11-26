@@ -164,7 +164,6 @@ static int fixup_gflags(void** param)
 	/* convert from flag index to flag bitmap */
 	myint = 1 << myint;
 	/* success -- change to int */
-	pkg_free(*param);
 	*param=(void *)(long)myint;
 	return 0;
 }
