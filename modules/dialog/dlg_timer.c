@@ -746,6 +746,7 @@ void reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 
 void reinvite_reply_from_caller(struct cell* t, int type, struct tmcb_params* ps)
 {
+	str ack = str_init("ACK");
 	struct sip_msg *rpl;
 	int statuscode;
 	struct dlg_cell *dlg;
@@ -783,12 +784,14 @@ void reinvite_reply_from_caller(struct cell* t, int type, struct tmcb_params* ps
 		 * terminate the dialog */
 		LM_INFO("terminating dialog ( due to 481 ) "
 				"with callid = [%.*s] \n",dlg->callid.len,dlg->callid.s);
-
 		dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_FAIL;
 		return;
 	}
 
 	dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_SUCCESS;
+	if (statuscode < 300 && send_leg_msg(dlg, &ack, callee_idx(dlg),
+			DLG_CALLER_LEG, NULL, NULL, NULL, NULL, NULL, NULL, 0) < 0)
+		LM_ERR("cannot send ACK message!\n");
 }
 
 /* Duplicate code for the sake of quickly knowing where the reply came from,
@@ -843,6 +846,7 @@ void reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
  * without any further checks */
 void reinvite_reply_from_callee(struct cell* t, int type, struct tmcb_params* ps)
 {
+	str ack = str_init("ACK");
 	struct sip_msg *rpl;
 	int statuscode;
 	struct dlg_cell *dlg;
@@ -885,6 +889,9 @@ void reinvite_reply_from_callee(struct cell* t, int type, struct tmcb_params* ps
 	}
 
 	dlg->legs[callee_idx(dlg)].reinvite_confirmed = DLG_PING_SUCCESS;
+	if (statuscode < 300 && send_leg_msg(dlg, &ack, DLG_CALLER_LEG,
+			callee_idx(dlg), NULL, NULL, NULL, NULL, NULL, NULL, 0) < 0)
+		LM_ERR("cannot send ACK message!\n");
 }
 
 void unref_dlg_cb(void *dlg)
@@ -957,7 +964,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&options_str,callee_idx(dlg),
 				DLG_CALLER_LEG,0,0,reply_from_caller,dlg,unref_dlg_cb,
-				&dlg->legs[DLG_CALLER_LEG].reply_received) < 0) {
+				&dlg->legs[DLG_CALLER_LEG].reply_received, 0) < 0) {
 					LM_ERR("failed to ping caller\n");
 					unref_dlg(dlg,1);
 				}
@@ -967,7 +974,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&options_str,DLG_CALLER_LEG,
 				callee_idx(dlg),0,0,reply_from_callee,dlg,unref_dlg_cb,
-				&dlg->legs[callee_idx(dlg)].reply_received) < 0) {
+				&dlg->legs[callee_idx(dlg)].reply_received, 0) < 0) {
 					LM_ERR("failed to ping callee\n");
 					unref_dlg(dlg,1);
 				}
@@ -1095,7 +1102,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 				if (send_leg_msg(dlg,&invite_str,callee_idx(dlg),
 				DLG_CALLER_LEG,&extra_headers,&dlg->legs[DLG_CALLER_LEG].adv_sdp,
 				reinvite_reply_from_caller,dlg,unref_dlg_cb,
-				&dlg->legs[DLG_CALLER_LEG].reinvite_confirmed) < 0) {
+				&dlg->legs[DLG_CALLER_LEG].reinvite_confirmed, 1) < 0) {
 					LM_ERR("failed to ping caller\n");
 					unref_dlg(dlg,1);
 				}
@@ -1142,7 +1149,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&invite_str,DLG_CALLER_LEG,
 				callee_idx(dlg),&extra_headers,&dlg->legs[callee_idx(dlg)].adv_sdp,reinvite_reply_from_callee,
-				dlg,unref_dlg_cb,&dlg->legs[callee_idx(dlg)].reinvite_confirmed) < 0) {
+				dlg,unref_dlg_cb,&dlg->legs[callee_idx(dlg)].reinvite_confirmed, 1) < 0) {
 					LM_ERR("failed to ping callee\n");
 					unref_dlg(dlg,1);
 				}

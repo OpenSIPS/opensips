@@ -171,7 +171,8 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char 
 	} else
 		cell->legs[dst_leg].last_gen_cseq++;
 
-	*reply_marker = DLG_PING_PENDING;
+	if (reply_marker)
+		*reply_marker = DLG_PING_PENDING;
 
 	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
 
@@ -583,7 +584,7 @@ error:
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	str *hdrs,str *body,dlg_request_callback func,
-	void *param,dlg_release_func release,char *reply_marker)
+	void *param,dlg_release_func release,char *reply_marker, int no_ack)
 {
 	context_p old_ctx;
 	context_p *new_ctx;
@@ -617,7 +618,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	if (push_new_processing_context( dlg, &old_ctx, &new_ctx, NULL)!=0)
 		return -1;
 
-	//dialog_info->T_flags=T_NO_AUTOACK_FLAG;
+	if (no_ack)
+		dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
 	result = d_tmb.t_request_within
 		(method,         /* method*/
