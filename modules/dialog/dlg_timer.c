@@ -700,6 +700,7 @@ void get_timeout_dlgs(struct dlg_ping_list **expired,
 int dlg_handle_seq_reply(struct dlg_cell *dlg, struct sip_msg* rpl,
 		int statuscode, int leg, int is_reinvite_rpl)
 {
+	str ack = str_init("ACK");
 	char *ping_status = is_reinvite_rpl ? &dlg->legs[leg].reinvite_confirmed :
 	                                      &dlg->legs[leg].reply_received;
 
@@ -729,6 +730,9 @@ int dlg_handle_seq_reply(struct dlg_cell *dlg, struct sip_msg* rpl,
 	}
 
 	*ping_status = DLG_PING_SUCCESS;
+	if (is_reinvite_rpl && statuscode < 300 && send_leg_msg(dlg, &ack,
+			other_leg(dlg, leg), leg, NULL, NULL, NULL, NULL, NULL, NULL, 0) < 0)
+		LM_ERR("cannot send ACK message!\n");
 	return 0;
 }
 
@@ -903,7 +907,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&options_str,callee_idx(dlg),
 				DLG_CALLER_LEG,0,0,reply_from_caller,dlg,unref_dlg_cb,
-				&dlg->legs[DLG_CALLER_LEG].reply_received) < 0) {
+				&dlg->legs[DLG_CALLER_LEG].reply_received, 0) < 0) {
 					LM_ERR("failed to ping caller\n");
 					unref_dlg(dlg,1);
 				}
@@ -913,7 +917,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&options_str,DLG_CALLER_LEG,
 				callee_idx(dlg),0,0,reply_from_callee,dlg,unref_dlg_cb,
-				&dlg->legs[callee_idx(dlg)].reply_received) < 0) {
+				&dlg->legs[callee_idx(dlg)].reply_received, 0) < 0) {
 					LM_ERR("failed to ping callee\n");
 					unref_dlg(dlg,1);
 				}
@@ -1010,7 +1014,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 				if (send_leg_msg(dlg,&invite_str,callee_idx(dlg),
 				DLG_CALLER_LEG,&extra_headers,sdp,
 				reinvite_reply_from_caller,dlg,unref_dlg_cb,
-				&dlg->legs[DLG_CALLER_LEG].reinvite_confirmed) < 0) {
+				&dlg->legs[DLG_CALLER_LEG].reinvite_confirmed, 1) < 0) {
 					LM_ERR("failed to ping caller\n");
 					unref_dlg(dlg,1);
 				}
@@ -1033,7 +1037,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&invite_str,DLG_CALLER_LEG,
 				callee_idx(dlg),&extra_headers,sdp,reinvite_reply_from_callee,
-				dlg,unref_dlg_cb,&dlg->legs[callee_idx(dlg)].reinvite_confirmed) < 0) {
+				dlg,unref_dlg_cb,&dlg->legs[callee_idx(dlg)].reinvite_confirmed, 1) < 0) {
 					LM_ERR("failed to ping callee\n");
 					unref_dlg(dlg,1);
 				}

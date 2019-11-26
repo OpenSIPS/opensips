@@ -203,6 +203,10 @@ extern int dlg_enable_stats;
 	(((_dlg)->legs_no[DLG_LEG_200OK]==0)? \
 		DLG_FIRST_CALLEE_LEG : (_dlg)->legs_no[DLG_LEG_200OK])
 
+#define other_leg(dlg, l) \
+	(l == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG)
+
+
 #define ctx_dialog_get() \
 	((struct dlg_cell*)context_get_ptr(CONTEXT_GLOBAL,current_processing_ctx,ctx_dlg_idx) )
 
