@@ -159,7 +159,8 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char 
 	} else
 		cell->legs[dst_leg].last_gen_cseq++;
 
-	*reply_marker = DLG_PING_PENDING;
+	if (reply_marker)
+		*reply_marker = DLG_PING_PENDING;
 
 	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
 
@@ -600,7 +601,7 @@ mi_response_t *mi_terminate_dlg_2(const mi_params_t *params,
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	str *hdrs,str *body,dlg_request_callback func,
-	void *param,dlg_release_func release,char *reply_marker)
+	void *param,dlg_release_func release,char *reply_marker, int no_ack)
 {
 	context_p old_ctx;
 	context_p *new_ctx;
@@ -637,7 +638,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	if (push_new_processing_context( dlg, &old_ctx, &new_ctx, NULL)!=0)
 		return -1;
 
-	//dialog_info->T_flags=T_NO_AUTOACK_FLAG;
+	if (no_ack)
+		dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
 	result = d_tmb.t_request_within
 		(method,         /* method*/
@@ -685,8 +687,6 @@ struct dlg_sequential_param {
 	struct dlg_cell *dlg;
 	struct mi_handler *async;
 };
-
-#define other_leg(dlg, l) (l == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG)
 
 void dlg_sequential_free(void *params)
 {
@@ -800,7 +800,7 @@ static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* p
 	if (send_leg_msg(dlg, &p->method, other_leg(dlg, p->leg), p->leg,
 			&extra_headers, &body,
 			dlg_sequential_reply, p, dlg_sequential_free,
-			&dlg->legs[p->leg].reply_received) < 0) {
+			&dlg->legs[p->leg].reply_received, 0) < 0) {
 		LM_ERR("cannot send sequential message!\n");
 		goto error;
 	}
@@ -840,7 +840,7 @@ static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
 
 	if (send_leg_msg(dlg, method, sleg, dleg, &extra_headers, body,
 			dlg_sequential_reply, param, dlg_sequential_free,
-			&dlg->legs[dleg].reply_received) < 0) {
+			&dlg->legs[dleg].reply_received, 0) < 0) {
 		pkg_free(extra_headers.s);
 		dlg_sequential_free(param);
 		LM_ERR("cannot send sequential message!\n");
