@@ -1156,12 +1156,6 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	else
 		dlg.contact[CALLEE_LEG]=*local_contact;
 
-	if (!msg->content_length)
-	{
-		LM_ERR("no Content-Length header found!\n");
-		return 0;
-	}
-
 	if(!init_dlg) /* called from server_new on initial Invite */
 	{
 		if(msg->via1->branch)
