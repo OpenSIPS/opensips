@@ -1008,6 +1008,7 @@ int mongo_con_add(cachedb_con *con, str *attr, int val, int expires, int *new_va
 	}
 
 out:
+	bson_destroy(&reply);
 	bson_destroy(cmd);
 	return ret;
 }
