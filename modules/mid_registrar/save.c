@@ -1054,6 +1054,7 @@ int filter_contacts(urecord_t *r, struct list_head *by_ctmaps,
 	int i;
 
 	/* back up the original list using a static array */
+	contacts_bak_no = 0;
 	for (i = 0, uc = r->contacts; uc; uc = uc->next, i++) {
 		if (i >= contacts_bak_sz) {
 			contacts_bak = pkg_realloc(contacts_bak,
@@ -1114,6 +1115,10 @@ void restore_contacts(urecord_t *r)
 {
 	int i;
 
+	if (contacts_bak_no == 0)
+		return;
+
+	/* restore in-between links */
 	for (i = 0; i < contacts_bak_no - 1; i++)
 		contacts_bak[i]->next = contacts_bak[i + 1];
 
@@ -2569,7 +2574,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 	urecord_t *rec = NULL;
 	struct save_ctx sctx;
 	struct hdr_field *path;
-	int rc = -1, st;
+	int rc = -1, st, unlock_udomain = 0;
 
 	if (msg->REQ_METHOD != METHOD_REGISTER) {
 		LM_ERR("ignoring non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
@@ -2635,6 +2640,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 		return prepare_forward(msg, ud, &sctx);
 
 	update_act_time();
+	unlock_udomain = 1;
 	ul_api.lock_udomain(ud, &sctx.aor);
 
 	if (ul_api.get_urecord(ud, &sctx.aor, &rec) != 0) {
@@ -2666,8 +2672,8 @@ quick_reply:
 			restore_contacts(rec);
 	}
 
-	/* no contacts need updating on the far end registrar */
-	ul_api.unlock_udomain(ud, &sctx.aor);
+	if (unlock_udomain)
+		ul_api.unlock_udomain(ud, &sctx.aor);
 
 	/* quick SIP reply */
 	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
@@ -2682,7 +2688,8 @@ out_forward:
 	return prepare_forward(msg, ud, &sctx);
 
 out_error:
-	ul_api.unlock_udomain(ud, &sctx.aor);
+	if (unlock_udomain)
+		ul_api.unlock_udomain(ud, &sctx.aor);
 	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
 		send_reply(msg, sctx.flags);
 	return -1;
