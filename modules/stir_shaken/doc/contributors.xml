@@ -21,10 +21,18 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">44</entry>
-		<entry align="center">18</entry>
-		<entry align="center">2682</entry>
-		<entry align="center">219</entry>
+		<entry align="center">45</entry>
+		<entry align="center">19</entry>
+		<entry align="center">2686</entry>
+		<entry align="center">221</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+		<entry align="center">2</entry>
+		<entry align="center">0</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -58,6 +66,11 @@
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">Oct 2019 - Nov 2019</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Nov 2019 - Nov 2019</entry>
 	</row>
 	</tbody>
 	</tgroup>

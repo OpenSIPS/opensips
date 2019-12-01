@@ -353,7 +353,8 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    44      18      2682     219
+   1. Vlad Patrascu (@rvlad-patrascu)    45      19      2686     221
+   2. Liviu Chircu (@liviuchircu)        2        1       2        0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -376,6 +377,7 @@ Chapter 2. Contributors
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
    1. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Nov 2019
+   2. Liviu Chircu (@liviuchircu)     Nov 2019 - Nov 2019
 
    (1) including any documentation-related commits, excluding
    merge commits
