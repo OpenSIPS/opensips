@@ -69,6 +69,21 @@ typedef int (get_rules_doc_t)(str* user, str* domain, str** rules_doc);
  *	>0   if change in status
  *	*/
 
+/* This function provides a substitute for the presentity information. Upon a
+ * subscribe, instead of pushing a notify with a body built from the published
+ * presentities, you can dynamically build with this function whatever 
+ * body you want to be returned with the body
+ * Input data: presentity SIP URI and the SUBSCRIBE's body
+ * Output data: * the body (may be empty string if nothing to return); it must
+ *                be a pkg allocated str and separate pkg allocated body
+ *              * the content-type string - must be a single pkg mem chunk 
+ *                holding the str and the CT body also
+ * Returns : body str upon success, NULL upon error
+ */
+typedef str* (build_notify_body_t)(str *pres_uri, str *subs_body,
+		str *ct_type);
+
+
 /* event specific body free function */
 typedef void(free_body_t)(char* body);
 
@@ -134,6 +149,9 @@ struct pres_ev
 	 */
 	aux_body_processing_t* aux_body_processing;
 	free_body_t* aux_free_body;
+
+	build_notify_body_t *build_notify_body;
+
 	struct pres_ev* wipeer;
 	struct pres_ev* next;
 };

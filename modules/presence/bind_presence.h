@@ -35,6 +35,16 @@ typedef int (*update_watchers_t)(str pres_uri, pres_ev_t* ev, str* rules_doc);
 typedef int (*update_presentity_t)(presentity_t* presentity);
 typedef int (*terminate_watchers_t)(str *pres_uri, pres_ev_t* ev);
 
+/* This function may be used to trigger notification (NTOTIFY'es) to all 
+ * subscribers/wachers registered for a given presentity. This is basically a
+ * virtual PUBLISH (without any SIP request, but with the same behavior).
+ * Input data: the presentity SIP URI, the event and the body
+ * Returns: 0 upon success, -1 on error
+ */
+typedef int (*notify_all_on_publish_t)(str *pres_uri, pres_ev_t *ev,
+		str *body);
+
+
 typedef struct presence_api {
 	add_event_t add_event;
 	contains_event_t contains_event;
@@ -55,6 +65,7 @@ typedef struct presence_api {
 	extract_sdialog_info_t extract_sdialog_info;
 	pres_get_sphere_t get_sphere;
 	pres_contains_presence_t contains_presence;
+	notify_all_on_publish_t notify_all_on_publish;
 } presence_api_t;
 
 int bind_presence(presence_api_t* api);

@@ -48,6 +48,9 @@ struct subscription
 	str to_domain;
 	str from_user;
 	str from_domain;
+	/* back link to the body of the received SUBSCRIBE, only transitional, when
+	 * handling the subscribe, not stored in memory/db */
+	str subs_body;
 	struct pres_ev* event;
 	str event_id;
 	str to_tag;

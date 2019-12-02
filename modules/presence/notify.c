@@ -118,7 +118,8 @@ inline void printf_subs(subs_t* subs)
 		subs->contact.s,subs->record_route.len,subs->record_route.s);
 }
 
-int build_str_hdr(subs_t* subs, int is_body, str* hdr, str* extra_hdrs)
+int build_str_hdr(subs_t* subs, int is_body, str* hdr, str *ct_body,
+															str* extra_hdrs)
 {
 	int len = 0;
 	int extra_len = 0;
@@ -153,8 +154,9 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr, str* extra_hdrs)
 		10 /*Contact: <*/ + subs->local_contact.len + 1/*>*/ + CRLF_LEN +
 		20 /*Subscription-State: */ +
 		status.len + ((subs->status== TERMINATED_STATUS)?(10/*;reason=*/+
-		subs->reason.len):9/*expires=*/ + lexpire_len) + CRLF_LEN + (is_body?
-		(14 /*Content-Type: */+subs->event->content_type.len + CRLF_LEN):0);
+		subs->reason.len):9/*expires=*/ + lexpire_len) + CRLF_LEN +
+		(is_body ? (14 /*Content-Type: */+
+			(ct_body?ct_body->len:subs->event->content_type.len)+CRLF_LEN):0);
 
 	if(extra_hdrs && extra_hdrs->s && extra_hdrs->len)
 		extra_len = extra_hdrs->len;
@@ -1902,6 +1904,23 @@ done:
 	return ret_code;
 }
 
+
+int virtual_notify(str *pres_uri, pres_ev_t *ev, str *body)
+{
+	presentity_t pres;
+	str l_pres_uri;
+
+	memset( &pres, 0, sizeof(presentity_t) );
+	pres.event = ev;
+
+	l_pres_uri = *pres_uri;
+
+	return publ_notify( &pres, l_pres_uri, body, NULL /*offline_etag*/,
+		NULL/*rules_doc*/, NULL/*dialog_body*/,
+		1 /*from_publish*/, NULL/*sh_tag*/);
+}
+
+
 int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 {
 	subs_t* subs_array = NULL, *s= NULL;
@@ -1976,6 +1995,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	str* final_body= NULL;
 	str* aux_body = 0;
 	free_body_t* free_fct = 0;
+	str *ct_body = NULL;
 
 	LM_DBG("enter: have_body=%d force_null=%d dialog info:\n",
 	  (n_body!=0&&n_body->s!=0)?1:0, force_null_body);
@@ -2027,13 +2047,17 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 			}
 			else
 			{
-				if (from_publish && n_body!= 0 && n_body->s!= 0)
+				if (from_publish && n_body!= 0 && n_body->s!= 0) {
 					notify_body = n_body;
-				else
+				} else if (subs->event->build_notify_body) {
+					notify_body = subs->event->build_notify_body(
+						&subs->pres_uri, &subs->subs_body, ct_body);
+				} else {
 					notify_body = get_p_notify_body(subs->pres_uri,
 							subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
 							NULL, extra_hdrs?extra_hdrs:&notify_extra_hdrs,
 							&free_fct, from_publish, 1);
+				}
 				if(notify_body == NULL || notify_body->s== NULL)
 				{
 					LM_DBG("Could not get the notify_body\n");
@@ -2074,7 +2098,7 @@ jump_over_body:
 
 	/* build extra headers */
 	if( build_str_hdr( subs, notify_body?1:0, &str_hdr,
-				extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
+				ct_body, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
 	{
 		LM_ERR("while building headers\n");
 		goto error;
@@ -2164,6 +2188,8 @@ error:
 		pkg_free(str_hdr.s);
 	if (notify_extra_hdrs.s)
 		pkg_free(notify_extra_hdrs.s);
+	if (ct_body)
+		pkg_free(ct_body);
 
 	if((int)(long)n_body!= (int)(long)notify_body)
 	{

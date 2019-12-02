@@ -30,6 +30,7 @@
 #include "../../sr_module.h"
 #include "presentity.h"
 #include "presence.h"
+#include "notify.h"
 #include "bind_presence.h"
 
 int bind_presence(presence_api_t* api)
@@ -57,6 +58,7 @@ int bind_presence(presence_api_t* api)
 	api->extract_sdialog_info= extract_sdialog_info;
 	api->get_sphere= get_sphere;
 	api->contains_presence = contains_presence;
+	api->notify_all_on_publish= virtual_notify;
 	return 0;
 }
 
