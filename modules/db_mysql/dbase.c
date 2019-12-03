@@ -868,15 +868,17 @@ static int db_mysql_store_result(const db_con_t* _h, db_res_t** _r)
 	if (!CON_HAS_PS(_h))
 		CON_RESULT(_h) = mysql_store_result(CON_CONNECTION(_h));
 	if (!CON_RESULT(_h)) {
-		if (mysql_field_count(CON_CONNECTION(_h)) == 0) {
-			(*_r)->col.n = 0;
-			(*_r)->n = 0;
-			goto done;
-		} else {
+		if (mysql_errno(CON_CONNECTION(_h)) > 0) {
 			LM_ERR("driver error: %s\n", mysql_error(CON_CONNECTION(_h)));
 			db_free_result(*_r);
 			*_r = 0;
 			return -3;
+		}
+
+		if (mysql_field_count(CON_CONNECTION(_h)) == 0) {
+			(*_r)->col.n = 0;
+			(*_r)->n = 0;
+			goto done;
 		}
 	}
 
@@ -1014,17 +1016,20 @@ int db_mysql_fetch_result(const db_con_t* _h, db_res_t** _r, const int nrows)
 		if (!CON_HAS_PS(_h))
 			CON_RESULT(_h) = mysql_store_result(CON_CONNECTION(_h));
 		if (!CON_RESULT(_h)) {
-			if (mysql_field_count(CON_CONNECTION(_h)) == 0) {
-				(*_r)->col.n = 0;
-				(*_r)->n = 0;
-				return 0;
-			} else {
+			if (mysql_errno(CON_CONNECTION(_h)) > 0) {
 				LM_ERR("driver error: %s\n", mysql_error(CON_CONNECTION(_h)));
 				db_free_result(*_r);
 				*_r = 0;
 				return -3;
 			}
+
+			if (mysql_field_count(CON_CONNECTION(_h)) == 0) {
+				(*_r)->col.n = 0;
+				(*_r)->n = 0;
+				return 0;
+			}
 		}
+
 		if (db_mysql_get_columns(_h, *_r) < 0) {
 			LM_ERR("error while getting column names\n");
 			return -4;
