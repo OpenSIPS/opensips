@@ -76,8 +76,9 @@ typedef int (get_rules_doc_t)(str* user, str* domain, str** rules_doc);
  * Input data: presentity SIP URI and the SUBSCRIBE's body
  * Output data: * the body (may be empty string if nothing to return); it must
  *                be a pkg allocated str and separate pkg allocated body
- *              * the content-type string - must be a single pkg mem chunk 
- *                holding the str and the CT body also
+ *              * the content-type string - must be a pkg mem chunk 
+ *                holding the CT body; note that the str itself is managed by
+ *                the upper/calling layer, so just use/write into it.
  * Returns : body str upon success, NULL upon error
  */
 typedef str* (build_notify_body_t)(str *pres_uri, str *subs_body,

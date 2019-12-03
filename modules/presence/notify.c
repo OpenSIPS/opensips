@@ -1995,7 +1995,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	str* final_body= NULL;
 	str* aux_body = 0;
 	free_body_t* free_fct = 0;
-	str *ct_body = NULL;
+	str ct_body = {NULL,0};
 
 	LM_DBG("enter: have_body=%d force_null=%d dialog info:\n",
 	  (n_body!=0&&n_body->s!=0)?1:0, force_null_body);
@@ -2051,7 +2051,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 					notify_body = n_body;
 				} else if (subs->event->build_notify_body) {
 					notify_body = subs->event->build_notify_body(
-						&subs->pres_uri, &subs->subs_body, ct_body);
+						&subs->pres_uri, &subs->subs_body, &ct_body);
 				} else {
 					notify_body = get_p_notify_body(subs->pres_uri,
 							subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
@@ -2098,7 +2098,7 @@ jump_over_body:
 
 	/* build extra headers */
 	if( build_str_hdr( subs, notify_body?1:0, &str_hdr,
-				ct_body, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
+				&ct_body, extra_hdrs?extra_hdrs:&notify_extra_hdrs)< 0 )
 	{
 		LM_ERR("while building headers\n");
 		goto error;
@@ -2188,8 +2188,8 @@ error:
 		pkg_free(str_hdr.s);
 	if (notify_extra_hdrs.s)
 		pkg_free(notify_extra_hdrs.s);
-	if (ct_body)
-		pkg_free(ct_body);
+	if (ct_body.s)
+		pkg_free(ct_body.s);
 
 	if((int)(long)n_body!= (int)(long)notify_body)
 	{
