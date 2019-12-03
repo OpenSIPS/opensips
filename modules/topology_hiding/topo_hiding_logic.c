@@ -935,7 +935,13 @@ static int topo_hiding_no_dlg(struct sip_msg *req,struct cell* t,int extra_flags
 
 static int topo_hiding_with_dlg(struct sip_msg *req,struct cell* t,struct dlg_cell* dlg,int extra_flags)
 {
+	int already_engaged = dlg_api.is_mod_flag_set(dlg,TOPOH_ONGOING);
+
 	dlg_api.set_mod_flag(dlg, TOPOH_ONGOING | extra_flags );
+	if (already_engaged) {
+		LM_DBG("topology hiding already engaged!\n");
+		return 1;
+	}
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(req, HDR_EOH_F, 0)< 0) {
