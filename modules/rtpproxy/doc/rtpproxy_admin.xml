@@ -588,7 +588,9 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 				<emphasis>d[NNN]</emphasis> - enables DTMF notifications for this
 				call. One can optionally specify the payload type that DTMF will
 				be used for this call - it it is not specified, RTPProxy uses the
-				<emphasis>101</emphasis> pt.
+				<emphasis>101</emphasis> pt. <emphasis>NOTE:</emphasis> this feature
+				is currently only available in the RTPProxy
+				<emphasis>rtpp_2_1_dtmf</emphasis> branch.
 				</para></listitem>
 				<listitem><para>
 				<emphasis>tNN</emphasis> - can be used to specify a RTP
