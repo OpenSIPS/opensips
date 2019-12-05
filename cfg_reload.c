@@ -200,7 +200,7 @@ static int reindex_new_sroutes(struct script_route *new_sr,
 			} else {
 				/* copy new route definition over the original index*/
 				my_sr[i] = new_sr[n];
-				new_sr[n].name = NULL;
+				new_sr[n].name = deleted_route_name;
 				new_sr[n].a = NULL;
 			}
 		}
@@ -210,7 +210,7 @@ static int reindex_new_sroutes(struct script_route *new_sr,
 	/* now see what is left in new set and not re-mapped to the old set 
 	 * (basically the newly defined routes */
 	for ( i=1 ; i<size ; i++) {
-		if (new_sr[i].name==NULL)
+		if (new_sr[i].name==deleted_route_name || new_sr[i].name==NULL)
 			continue;
 		if (adding_idx==size) {
 			LM_ERR("too many routes, cannot re-index newly defined routes "
