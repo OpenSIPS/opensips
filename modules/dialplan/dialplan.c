@@ -1055,7 +1055,8 @@ static struct mi_root * mi_reload_rules(struct mi_root *cmd_tree, void *param)
 			if (!el)
 					return init_mi_tree( 400, MI_BAD_PARM_S, MI_BAD_PARM_LEN);
 			/* Reload rules from specified  partition */
-			LM_DBG("Reloading rules from table %.*s\n", node->value.len, node->value.s);
+			LM_DBG("Reloading rules from partition %.*s\n",
+			       node->value.len, node->value.s);
 			if(dp_load_db(el) != 0){
 					LM_ERR("failed to reload database data\n");
 					return 0;

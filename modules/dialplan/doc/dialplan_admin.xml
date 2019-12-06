@@ -739,9 +739,8 @@ xlog("translate to var $var(y) partition $var(partition)")
 		<para>Parameters: <emphasis>1</emphasis></para>
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>table_name</emphasis> - Partition to be reloaded.
-				If no table is specified, the table specified in the "partition"
-				parameter (default "default") will be reloaded.</para>
+				<para><emphasis>partition (optional)</emphasis> - Partition to be reloaded.
+					If not specified, all partitions will be reloaded.</para>
 				</listitem>
 			</itemizedlist>
  		<para>
