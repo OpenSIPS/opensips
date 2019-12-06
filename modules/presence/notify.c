@@ -156,7 +156,7 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr, str *ct_body,
 		status.len + ((subs->status== TERMINATED_STATUS)?(10/*;reason=*/+
 		subs->reason.len):9/*expires=*/ + lexpire_len) + CRLF_LEN +
 		(is_body ? (14 /*Content-Type: */+
-			(ct_body?ct_body->len:subs->event->content_type.len)+CRLF_LEN):0);
+			(ct_body->len?ct_body->len:subs->event->content_type.len)+CRLF_LEN):0);
 
 	if(extra_hdrs && extra_hdrs->s && extra_hdrs->len)
 		extra_len = extra_hdrs->len;
