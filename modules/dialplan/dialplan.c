@@ -106,7 +106,7 @@ static param_export_t mod_params[]={
 static mi_export_t mi_cmds[] = {
 	{ "dp_reload", 0, 0, mi_child_init, {
 		{mi_reload_rules, {0}},
-		{mi_reload_rules_1, {"table_name", 0}},
+		{mi_reload_rules_1, {"partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dp_translate", 0, 0, 0, {
@@ -823,14 +823,14 @@ static mi_response_t *mi_reload_rules_1(const mi_params_t *params,
 	dp_connection_list_t *el;
 	str table;
 
-	if (get_mi_string_param(params, "table_name", &table.s, &table.len) < 0)
+	if (get_mi_string_param(params, "partition", &table.s, &table.len) < 0)
 		return init_mi_param_error();
 
 	el = dp_get_connection(&table);
 	if (!el)
-			return init_mi_error( 400, MI_SSTR("Bad parameter value"));
+			return init_mi_error( 400, MI_SSTR("Partition not found"));
 	/* Reload rules from specified  partition */
-	LM_DBG("Reloading rules from table %.*s\n", table.len, table.s);
+	LM_DBG("Reloading rules from partition %.*s\n", table.len, table.s);
 	if(dp_load_db(el) != 0){
 			LM_ERR("failed to reload database data\n");
 			return 0;
