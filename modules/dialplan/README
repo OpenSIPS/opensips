@@ -473,9 +473,8 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
    Name: dp_reload
 
    Parameters: 1
-     * table_name (optional) - Partition to be reloaded. If no
-       table is specified, the table specified in the "partition"
-       parameter (default "default") will be reloaded.
+     * partition (optional) - Partition to be reloaded. If not
+       specified, all partitions will be reloaded.
 
    MI DATAGRAM Command Format:
                 opensips-cli -x mi dp_reload
@@ -535,7 +534,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 63 41 657 852
-   2. Liviu Chircu (@liviuchircu) 46 30 727 544
+   2. Liviu Chircu (@liviuchircu) 47 31 734 552
    3. Ionut Ionita (@ionutrazvanionita) 41 20 1149 579
    4. Anca Vamanu 32 5 3263 19
    5. Andrei Dragus 25 3 382 1029
@@ -570,7 +569,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Jul 2012 - Nov 2019
+   1.  Liviu Chircu (@liviuchircu)              Jul 2012 - Dec 2019
    2.  Razvan Crainea (@razvancrainea)          Dec 2010 - Sep 2019
    3.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Apr 2019
    4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Apr 2019
