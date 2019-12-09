@@ -73,13 +73,14 @@ typedef int (get_rules_doc_t)(str* user, str* domain, str** rules_doc);
  * subscribe, instead of pushing a notify with a body built from the published
  * presentities, you can dynamically build with this function whatever 
  * body you want to be returned with the body
+ * A free_body_t function must also be provided if this function is used.
  * Input data: presentity SIP URI and the SUBSCRIBE's body
- * Output data: * the body (may be empty string if nothing to return); it must
+ * Output data: * the body (may be NULL if nothing to return); it must
  *                be a pkg allocated str and separate pkg allocated body
  *              * the content-type string - must be a pkg mem chunk 
  *                holding the CT body; note that the str itself is managed by
  *                the upper/calling layer, so just use/write into it.
- * Returns : body str upon success, NULL upon error
+ * Returns : body str or NULL (on error or no body to be returned)
  */
 typedef str* (build_notify_body_t)(str *pres_uri, str *subs_body,
 		str *ct_type);
