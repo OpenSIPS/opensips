@@ -151,6 +151,7 @@ static str ei_c_uri_name = str_init("uri");
 static str ei_c_recv_name = str_init("received");
 static str ei_c_path_name = str_init("path");
 static str ei_c_qval_name = str_init("qval");
+static str ei_c_user_agent_name = str_init("user_agent");
 static str ei_c_socket_name = str_init("socket");
 static str ei_c_bflags_name = str_init("bflags");
 static str ei_c_expires_name = str_init("expires");
@@ -169,6 +170,7 @@ static evi_param_p ul_c_uri_param;
 static evi_param_p ul_c_recv_param;
 static evi_param_p ul_c_path_param;
 static evi_param_p ul_c_qval_param;
+static evi_param_p ul_c_user_agent_param;
 static evi_param_p ul_c_socket_param;
 static evi_param_p ul_c_bflags_param;
 static evi_param_p ul_c_expires_param;
@@ -269,6 +271,13 @@ int ul_event_init(void)
 		&ei_c_qval_name);
 	if (!ul_c_qval_param) {
 		LM_ERR("cannot create Qval parameter\n");
+		return -1;
+	}
+
+	ul_c_user_agent_param = evi_param_create(ul_contact_event_params, 
+		&ei_c_user_agent_name);
+	if (!ul_c_user_agent_param) {
+		LM_ERR("cannot create user_agent parameter\n");
 		return -1;
 	}
 
@@ -380,6 +389,12 @@ void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 	/* the Q value */
 	if (evi_param_set_int(ul_c_qval_param, &_c->q) < 0) {
 		LM_ERR("cannot set Qval parameter\n");
+		return;
+	}
+
+	/* the User Agent */
+	if (evi_param_set_str(ul_c_user_agent_param, &_c->user_agent) < 0) {
+		LM_ERR("cannot set user_agent parameter\n");
 		return;
 	}
 
