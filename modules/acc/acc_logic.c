@@ -1005,7 +1005,7 @@ static void acc_cdr_cb( struct cell* t, int type, struct tmcb_params *ps )
 
 static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps )
 {
-	acc_ctx_t* ctx = *ps->param;
+	acc_ctx_t *tmp_ctx, *ctx = *ps->param;
 
 	if (ACC_GET_TM_CTX(t) == NULL) {
 		acc_ref(ctx);
@@ -1017,6 +1017,15 @@ static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps )
 	} else if (type&TMCB_ON_FAILURE) {
 		on_missed( t, ps->req, ps->rpl, ps->code, ctx);
 	} else if (type&TMCB_RESPONSE_IN) {
+		/* merge any context created within global "onreply_route" */
+		if ((tmp_ctx = ACC_GET_CTX()) && tmp_ctx != ctx) {
+			push_ctx_to_ctx(tmp_ctx, ctx);
+			acc_unref(tmp_ctx);
+
+			acc_ref(ctx);
+			ACC_PUT_CTX(ctx);
+		}
+
 		acc_onreply_in( t, ps->req, ps->rpl, ps->code, ctx);
 	}
 }
