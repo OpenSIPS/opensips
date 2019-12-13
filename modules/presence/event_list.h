@@ -83,7 +83,7 @@ typedef int (get_rules_doc_t)(str* user, str* domain, str** rules_doc);
  * Returns : body str or NULL (on error or no body to be returned)
  */
 typedef str* (build_notify_body_t)(str *pres_uri, str *subs_body,
-		str *ct_type);
+		str *ct_type, int *suppress_notify);
 
 
 /* event specific body free function */

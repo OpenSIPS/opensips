@@ -2000,6 +2000,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	str* aux_body = 0;
 	free_body_t* free_fct = 0;
 	str ct_body = {NULL,0};
+	int suppress_notify = 0;
 
 	LM_DBG("enter: have_body=%d force_null=%d dialog info:\n",
 	  (n_body!=0&&n_body->s!=0)?1:0, force_null_body);
@@ -2054,8 +2055,10 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 				if (from_publish && n_body!= 0 && n_body->s!= 0) {
 					notify_body = n_body;
 				} else if (subs->event->build_notify_body) {
-					notify_body = subs->event->build_notify_body(
-						&subs->pres_uri, &subs->subs_body, &ct_body);
+					notify_body = subs->event->build_notify_body(&subs->pres_uri,
+						&subs->subs_body, &ct_body, &suppress_notify);
+					if (suppress_notify)
+						return 0;
 					free_fct = subs->event->free_body;
 				} else {
 					notify_body = get_p_notify_body(subs->pres_uri,
