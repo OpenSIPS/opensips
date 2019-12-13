@@ -1280,6 +1280,8 @@ fi
 %doc docdir/README.presence_callinfo
 %{_libdir}/opensips/modules/presence_dialoginfo.so
 %doc docdir/README.presence_dialoginfo
+%{_libdir}/opensips/modules/presence_dfks.so
+%doc docdir/README.presence_dfks
 %{_libdir}/opensips/modules/presence_mwi.so
 %doc docdir/README.presence_mwi
 %{_libdir}/opensips/modules/presence_xcapdiff.so

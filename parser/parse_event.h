@@ -42,6 +42,7 @@
 #define EVENT_DIALOG_SLA     7
 #define EVENT_CALL_INFO      8
 #define EVENT_LINE_SEIZE     9
+#define EVENT_AS_FEATURE     10
 
 typedef struct event {
 	str text;       /* Original string representation */
