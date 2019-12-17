@@ -469,7 +469,7 @@ PS\r\nX-MyHeader: some_value\r\n")
    which case it will store it in the OpenSIPS working directory,
    or an absolute path.
 
-   Default value is undefined “keepalive_state”.
+   Default value is NULL, no keep-alive file will be kept.
 
    Example 1.5. Setting the keepalive_state_file parameter
 ...

@@ -201,7 +201,7 @@ static Bool keepalive_disabled = False;
 
 static unsigned int keepalive_interval = 60;
 
-static char *keepalive_state_file = "keepalive_state";
+static char *keepalive_state_file = NULL;
 
 static Keepalive_Params keepalive_params = {"NOTIFY", NULL, "", "", 0, 0, ""};
 
