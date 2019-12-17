@@ -517,7 +517,7 @@ static str *build_full_notify(str *pres_uri, str *content_type)
 	if (no_xmls > 1)
 		notify_body->len += no_xmls * (MULTIPART_BOUNDARY_LEN + CRLF_LEN +
 			CT_TYPE_DFKS_HDR_LEN + CRLF_LEN + CRLF_LEN + CRLF_LEN) +
-			MULTIPART_BOUNDARY_LEN + CRLF_LEN;
+			MULTIPART_BOUNDARY_END_LEN + CRLF_LEN;
 	else
 		notify_body->len += CRLF_LEN;
 	for (i = 0; i < features_no; i++)
@@ -561,8 +561,9 @@ static str *build_full_notify(str *pres_uri, str *content_type)
 	}
 
 	if (no_xmls > 1) {
-		memcpy(notify_body->s+len, MULTIPART_BOUNDARY, MULTIPART_BOUNDARY_LEN);
-		len += MULTIPART_BOUNDARY_LEN;
+		memcpy(notify_body->s+len, MULTIPART_BOUNDARY_END,
+			MULTIPART_BOUNDARY_END_LEN);
+		len += MULTIPART_BOUNDARY_END_LEN;
 		memcpy(notify_body->s+len, CRLF, CRLF_LEN);
 		len += CRLF_LEN;
 	}

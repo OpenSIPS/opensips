@@ -72,6 +72,8 @@
 #define CT_TYPE_DFKS_HDR_LEN (sizeof(CT_TYPE_DFKS_HDR)-1)
 #define MULTIPART_BOUNDARY "--" OSS_BOUNDARY
 #define MULTIPART_BOUNDARY_LEN (sizeof(MULTIPART_BOUNDARY)-1)
+#define MULTIPART_BOUNDARY_END "--" OSS_BOUNDARY "--"
+#define MULTIPART_BOUNDARY_END_LEN (sizeof(MULTIPART_BOUNDARY_END)-1)
 
 #define XML_VERSION_STR "1.0"
 #define DFKS_NS_STR "http://www.ecmainternational.org/standards/ecma-323/csta/ed3"
