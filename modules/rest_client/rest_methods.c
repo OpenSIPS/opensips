@@ -180,7 +180,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 			}
 
 			/* generate a new correlation each time we send a message */
-			/* FIXME what if 2 messages are sent before recieving reply?
+			/* FIXME what if 2 messages are sent before receiving reply?
 			 * Ex: destination has 2 ip's */
 			if ( type == CURLINFO_HEADER_OUT ) {
 				tparam->correlation.s = (char *)tprot.generate_guid(REST_CORRELATION_COOKIE);
@@ -1017,6 +1017,59 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
 	header_list = curl_slist_append(header_list, buf);
 
 	return 1;
+}
+
+/**
+ * rest_escape_string - URL encode a string value
+ * @msg:		        sip message struct
+ * @input_str:		    String value to encode
+ * @reply_pv:           Output as encoded by libcurl
+ * @return:
+ *  1 - success
+ * -1 - error
+ */
+int rest_escape_string_method(struct sip_msg *msg, str *input_str,
+                              pv_spec_t *reply_pv)
+{
+    pv_value_t reply_val;
+    int ret = 1;
+
+#if ( LIBCURL_VERSION_NUM >= 0x071504 )
+	CURL *curl = curl_easy_init();
+    if (curl) {
+        char *encoded = curl_easy_escape(curl, input_str->s, input_str->len);
+        if (!encoded) {
+            LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
+                   input_str->len, input_str->s);
+            return -1;
+        }
+
+        LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str->len,
+               input_str->s, encoded);
+
+        curl_free(encoded);
+    }
+#else
+    char *encoded = curl_escape(input_str->s, input_str->len);
+    if (!encoded) {
+        LM_ERR("failed to execute curl_escape on '%.*s'\n",
+               input_str->len, input_str->s);
+        return -1;
+    }
+
+    LM_DBG("curl_escape '%.*s' returns '%s'\n", input_str->len,
+           input_str->s, encoded);
+#endif
+
+    reply_val.flags = PV_VAL_STR;
+    reply_val.rs = encoded;
+
+    if (pv_set_value(msg, reply_pv, 0, &reply_val) != 0) {
+        LM_ERR("failed to set output pvar!\n");
+        ret = -1;
+    }
+
+	return ret;
 }
 
 /**

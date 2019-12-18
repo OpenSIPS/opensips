@@ -100,6 +100,8 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 			pv_spec_t *ctype_pv, pv_spec_t *code_pv);
 
 static int w_rest_append_hf(struct sip_msg *msg, str *hfv);
+static int w_rest_escape_string(struct sip_msg *msg, str *input_str,
+                                pv_spec_t *reply_pv);
 static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom);
 int validate_curl_http_version(const int *http_version);
 
@@ -166,6 +168,10 @@ static cmd_export_t cmds[] = {
 		ALL_ROUTES},
 	{"rest_append_hf",(cmd_function)w_rest_append_hf, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{"rest_escape_string",(cmd_function)w_rest_escape_string, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR,fixup_check_var,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"rest_init_client_tls",(cmd_function)w_rest_init_client_tls, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -561,6 +567,12 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 static int w_rest_append_hf(struct sip_msg *msg, str *hfv)
 {
 	return rest_append_hf_method(msg, hfv);
+}
+
+static int w_rest_escape_string(struct sip_msg *msg, str *input_str,
+                                pv_spec_t *reply_pv)
+{
+	return rest_escape_string_method(msg, input_str, reply_pv);
 }
 
 static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom)
