@@ -1065,8 +1065,7 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 				*val = value->value.v_int32;
 				break;
 			default:
-				LM_ERR("unsupported type %d for key %.*s!\n", attr->len,
-				       value->value_type, attr->s);
+				LM_ERR("unsupported type %d for key %.*s!\n", value->value_type, attr->len, attr->s);
 				ret = -1;
 				goto out;
 			}
