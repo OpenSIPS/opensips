@@ -659,14 +659,6 @@ static int parse_subscribe_xml(str *subs_body, int *feature_idx)
 
 	xmlFree(xml_s);
 
-	/* just check that the 'device' node is present and has content */
-	xml_s = get_node_content(root, DEVICE_NODE_NAME, 1, &ct);
-	if (!xml_s) {
-		rc = -1;
-		goto end;
-	}
-	xmlFree(xml_s);
-
 	xml_s = get_node_content(root, req_status_nodes[*feature_idx], 1, &ct);
 	if (!xml_s) {
 		rc = -1;
