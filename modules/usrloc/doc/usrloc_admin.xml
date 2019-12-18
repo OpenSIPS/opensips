@@ -1753,6 +1753,12 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 				contact (as integer value from 0 to 10).
 			</para></listitem>
 			<listitem><para>
+				<emphasis>user_agent</emphasis> - The User-Agent header
+				value.
+			</para>
+			<para><emphasis>NOTICE: </emphasis>Can contain spaces.
+			</para></listitem>
+			<listitem><para>
 				<emphasis>socket</emphasis> - The SIP socket/listener
 				(as string) used by OpenSIPS to receive the contact
 				registations.
