@@ -836,7 +836,7 @@ error_sec:
 void tcpconn_put(struct tcp_connection* c)
 {
 	TCPCONN_LOCK(c->id);
-	c->refcnt--; /* FIXME: atomic_dec */
+	c->refcnt--;
 	TCPCONN_UNLOCK(c->id);
 }
 
@@ -844,7 +844,7 @@ void tcpconn_put(struct tcp_connection* c)
 static inline void tcpconn_ref(struct tcp_connection* c)
 {
 	TCPCONN_LOCK(c->id);
-	c->refcnt++; /* FIXME: atomic_dec */
+	c->refcnt++;
 	TCPCONN_UNLOCK(c->id);
 }
 
