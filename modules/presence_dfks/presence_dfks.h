@@ -51,10 +51,12 @@
 
 #define BASE_FEATURES_NO 4
 #define MAX_FEATURES_NO 16
+#define MAX_VALUES_NO 8
 
 #define PV_SUBNAME_ASSIGN "assigned"
 #define PV_SUBNAME_STATUS "status"
-#define PV_SUBNAME_VALUE "value"
+#define PV_SUBNAME_VALUE "value/"
+#define PV_SUBNAME_VALUE_LEN (sizeof(PV_SUBNAME_VALUE)-1)
 #define PV_SUBNAME_FEATURE "feature"
 #define PV_SUBNAME_PRESENTITY "presentity"
 
@@ -90,6 +92,7 @@
 #define REQ_STATUS_NODE_FWD "activateForward"
 #define RESP_VALUE_NODE_FWD "forwardTo"
 #define REQ_VALUE_NODE_FWD "forwardDN"
+#define VALUE_NODE_RING "ringCount"
 #define TYPE_NODE_FWD "forwardingType"
 #define TYPE_VAL_FWD_CFA "forwardImmediate"
 #define TYPE_VAL_FWD_CFB "forwardBusy"
@@ -103,15 +106,20 @@ struct dfks_ctx {
 	int status;
 	int idx;
 	str pres_uri;
-	str value;
+	str values[MAX_VALUES_NO];
 };
 
 struct dfks_ipc_params {
 	str pres_uri;
-	str value;
+	str values[MAX_VALUES_NO];
 	int feature_idx;
 	int status;
 	int run_route;
+};
+
+struct dfks_pv_name {
+	int type;
+	str value_node;
 };
 
 #endif

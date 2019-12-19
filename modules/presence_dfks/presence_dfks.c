@@ -89,10 +89,18 @@ static char *resp_status_nodes[MAX_FEATURES_NO] = {STATUS_NODE_DND,
 static char *req_status_nodes[MAX_FEATURES_NO] = {STATUS_NODE_DND,
 	REQ_STATUS_NODE_FWD, REQ_STATUS_NODE_FWD, REQ_STATUS_NODE_FWD};
 
-static char *resp_value_nodes[MAX_FEATURES_NO] = {NULL,
-	RESP_VALUE_NODE_FWD, RESP_VALUE_NODE_FWD, RESP_VALUE_NODE_FWD};
-static char *req_value_nodes[MAX_FEATURES_NO] = {NULL,
-	REQ_VALUE_NODE_FWD, REQ_VALUE_NODE_FWD, REQ_VALUE_NODE_FWD};
+static char *resp_value_nodes[MAX_FEATURES_NO][MAX_VALUES_NO] = {
+	{NULL},
+	{RESP_VALUE_NODE_FWD, NULL},
+	{RESP_VALUE_NODE_FWD, NULL},
+	{RESP_VALUE_NODE_FWD, VALUE_NODE_RING, NULL}
+};
+static char *req_value_nodes[MAX_FEATURES_NO][MAX_VALUES_NO] = {
+	{NULL},
+	{REQ_VALUE_NODE_FWD, NULL},
+	{REQ_VALUE_NODE_FWD, NULL},
+	{REQ_VALUE_NODE_FWD, VALUE_NODE_RING, NULL}
+};
 
 static char *type_nodes[MAX_FEATURES_NO] = {NULL,
 	TYPE_NODE_FWD, TYPE_NODE_FWD, TYPE_NODE_FWD};
@@ -115,7 +123,7 @@ static param_export_t params[] = {
 static mi_export_t mi_cmds[] = {
 	{ "dfks_set_feature", 0, 0, 0, {
 		{mi_dfks_set, {"set_route", "presentity", "feature", "status", 0}},
-		{mi_dfks_set, {"set_route", "presentity", "feature", "status", "value", 0}},
+		{mi_dfks_set, {"set_route", "presentity", "feature", "status", "values", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -223,30 +231,65 @@ static int mod_init(void)
 
 static int pv_parse_dfks_name(pv_spec_p sp, str *in)
 {
-	if (!str_strcmp(in, _str(PV_SUBNAME_ASSIGN))) {
-		sp->pvp.pvn.u.dname = (void*)PV_TYPE_ASSIGN;
+	struct dfks_pv_name *name;
+	str val_node;
+
+	name = pkg_malloc(sizeof *name);
+	if (!name) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(name, 0, sizeof *name);
+
+	if (in->len > PV_SUBNAME_VALUE_LEN &&
+		!memcmp(in->s, PV_SUBNAME_VALUE, PV_SUBNAME_VALUE_LEN)) {
+		val_node.s = in->s + PV_SUBNAME_VALUE_LEN;
+		val_node.len = in->len - PV_SUBNAME_VALUE_LEN;
+		if (pkg_str_dup(&name->value_node, &val_node) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+		name->type = PV_TYPE_VALUE;
+	} else if (!str_strcmp(in, _str(PV_SUBNAME_ASSIGN))) {
+		name->type = PV_TYPE_ASSIGN;
 	} else if (!str_strcmp(in, _str(PV_SUBNAME_STATUS))) {
-		sp->pvp.pvn.u.dname = (void*)PV_TYPE_STATUS;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_VALUE))) {
-		sp->pvp.pvn.u.dname = (void*)PV_TYPE_VALUE;
+		name->type = PV_TYPE_STATUS;
 	} else if (!str_strcmp(in, _str(PV_SUBNAME_FEATURE))) {
-		sp->pvp.pvn.u.dname = (void*)PV_TYPE_FEATURE;
+		name->type = PV_TYPE_FEATURE;
 	} else if (!str_strcmp(in, _str(PV_SUBNAME_PRESENTITY))) {
-		sp->pvp.pvn.u.dname = (void*)PV_TYPE_PRESENTITY;
+		name->type = PV_TYPE_PRESENTITY;
 	} else {
 		LM_ERR("Bad subname for $dfks\n");
 		return -1;
 	}
 
+	sp->pvp.pvn.u.dname = (void*)name;
+
 	return 0;
+}
+
+static int get_value_idx(int feature_idx, str *val_node)
+{
+	int i, idx = -1;
+
+	for (i = 0; i < MAX_VALUES_NO && resp_value_nodes[feature_idx][i]; i++)
+		if (!str_strcmp(_str(resp_value_nodes[feature_idx][i]), val_node))
+			idx = i;
+
+	if (idx == -1)
+		LM_DBG("Unknown value: %.*s\n", val_node->len,
+			val_node->s);
+
+	return idx;
 }
 
 static int pv_set_dfks(struct sip_msg *msg, pv_param_t *param, int op,
 	pv_value_t *val)
 {
-	int type = (int)(long)param->pvn.u.dname;
+	struct dfks_pv_name *name = (struct dfks_pv_name *)param->pvn.u.dname;
+	int val_idx;
 
-	switch (type) {
+	switch (name->type) {
 	case PV_TYPE_ASSIGN:
 		if (!val || val->flags & PV_VAL_NULL)
 			feature_ctx.assigned = 0;
@@ -268,15 +311,19 @@ static int pv_set_dfks(struct sip_msg *msg, pv_param_t *param, int op,
 		}
 		break;
 	case PV_TYPE_VALUE:
+		if ((val_idx = get_value_idx(feature_ctx.idx, &name->value_node)) < 0) {
+			return 0;
+		}
+
 		if (!val || val->flags & PV_VAL_NULL) {
-			feature_ctx.value.s = NULL;
-			feature_ctx.value.len = 0;
+			feature_ctx.values[val_idx].s = NULL;
+			feature_ctx.values[val_idx].len = 0;
 		} else if (val->flags & PV_VAL_STR) {
 			/* free the value if already strdup'ed */
-			if (feature_ctx.value.s)
-				pkg_free(feature_ctx.value.s);
+			if (feature_ctx.values[val_idx].s)
+				pkg_free(feature_ctx.values[val_idx].s);
 
-			if (pkg_str_dup(&feature_ctx.value, &val->rs) < 0) {
+			if (pkg_str_dup(&feature_ctx.values[val_idx], &val->rs) < 0) {
 				LM_ERR("oom!\n");
 				return -1;
 			}
@@ -302,9 +349,10 @@ static int pv_set_dfks(struct sip_msg *msg, pv_param_t *param, int op,
 
 static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
-	int type = (int)(long)param->pvn.u.dname;
+	struct dfks_pv_name *name = (struct dfks_pv_name *)param->pvn.u.dname;
+	int val_idx;
 
-	switch (type) {
+	switch (name->type) {
 	case PV_TYPE_ASSIGN:
 		res->ri = feature_ctx.assigned;
 		res->rs.s = int2str(res->ri, &res->rs.len);
@@ -316,8 +364,11 @@ static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 		break;
 	case PV_TYPE_VALUE:
-		if (feature_ctx.value.s) {
-			res->rs = feature_ctx.value;
+		if ((val_idx = get_value_idx(feature_ctx.idx, &name->value_node)) < 0)
+			return pv_get_null(msg, param, res);
+
+		if (feature_ctx.values[val_idx].s) {
+			res->rs = feature_ctx.values[val_idx];
 			res->flags = PV_VAL_STR;
 		} else
 			return pv_get_null(msg, param, res);
@@ -370,6 +421,7 @@ static xmlDoc *build_feature_doc(int feature_idx)
 	xmlDoc *doc;
 	xmlNode *root_node, *node, *text_node;
 	xmlNs *default_ns;
+	int j;
 
 	doc = xmlNewDoc(BAD_CAST XML_VERSION_STR);
 	if (!doc) {
@@ -414,22 +466,24 @@ static xmlDoc *build_feature_doc(int feature_idx)
 		goto error;
 	}
 
-	if (feature_ctx.value.s && resp_value_nodes[feature_idx]) {
-		node = xmlNewChild(root_node, NULL,
-			BAD_CAST resp_value_nodes[feature_idx], NULL);
-		if (!node) {
-			LM_ERR("Failed to create xml node\n");
-			goto error;
-		}
-		text_node = xmlNewTextLen(BAD_CAST feature_ctx.value.s,
-			feature_ctx.value.len);
-		if (!text_node) {
-			LM_ERR("Failed to create xml node\n");
-			goto error;
-		}
-		if (!xmlAddChild(node, text_node)) {
-			LM_ERR("Failed to add xml node to parent\n");
-			goto error;
+	for (j = 0; j < MAX_VALUES_NO; j++) {
+		if (feature_ctx.values[j].s && resp_value_nodes[feature_idx][j]) {
+			node = xmlNewChild(root_node, NULL,
+				BAD_CAST resp_value_nodes[feature_idx][j], NULL);
+			if (!node) {
+				LM_ERR("Failed to create xml node\n");
+				goto error;
+			}
+			text_node = xmlNewTextLen(BAD_CAST feature_ctx.values[j].s,
+				feature_ctx.values[j].len);
+			if (!text_node) {
+				LM_ERR("Failed to create xml node\n");
+				goto error;
+			}
+			if (!xmlAddChild(node, text_node)) {
+				LM_ERR("Failed to add xml node to parent\n");
+				goto error;
+			}
 		}
 	}
 
@@ -438,6 +492,17 @@ static xmlDoc *build_feature_doc(int feature_idx)
 error:
 	xmlFreeDoc(doc);
 	return NULL;
+}
+
+static void free_ctx_values(void)
+{
+	int j;
+
+	for (j = 0; j < MAX_VALUES_NO; j++)
+		if (feature_ctx.values[j].s) {
+			pkg_free(feature_ctx.values[j].s);
+			feature_ctx.values[j].s = NULL;
+		}
 }
 
 static str *build_full_notify(str *pres_uri, str *content_type)
@@ -454,8 +519,7 @@ static str *build_full_notify(str *pres_uri, str *content_type)
 	for (i = 0; i < features_no; i++) {
 		feature_ctx.assigned = 1;
 		feature_ctx.status = 0;
-		feature_ctx.value.s = NULL;
-		feature_ctx.value.len = 0;
+		memset(feature_ctx.values, 0, MAX_VALUES_NO * sizeof(str));
 		feature_ctx.idx = i;
 		feature_ctx.pres_uri = *pres_uri;
 		run_dfks_route(dfks_get_route_idx);
@@ -463,8 +527,7 @@ static str *build_full_notify(str *pres_uri, str *content_type)
 		if (feature_ctx.assigned) {
 			doc = build_feature_doc(i);
 
-			if (feature_ctx.value.s)
-				pkg_free(feature_ctx.value.s);
+			free_ctx_values();
 
 			if (!doc) {
 				LM_ERR("Failed to build XML document for feature <%.*s>\n",
@@ -485,8 +548,7 @@ static str *build_full_notify(str *pres_uri, str *content_type)
 
 			xmlFreeDoc(doc);
 		} else {
-			if (feature_ctx.value.s)
-				pkg_free(feature_ctx.value.s);	
+			free_ctx_values();
 		}
 	}
 
@@ -611,7 +673,7 @@ static int parse_subscribe_xml(str *subs_body, int *feature_idx)
 {
 	xmlDoc *doc;
 	xmlNode *root;
-	int i;
+	int i, j;
 	str ct = {NULL,0};
 	char *xml_s = NULL;
 	int rc = 0;
@@ -677,22 +739,27 @@ static int parse_subscribe_xml(str *subs_body, int *feature_idx)
 	xmlFree(xml_s);
 	xml_s = NULL;
 
-	if (!req_value_nodes[*feature_idx]) {
-		feature_ctx.value.s = NULL;
-		feature_ctx.value.len = 0;
-		goto end;
-	}
+	for (j = 0; j < MAX_VALUES_NO; j++)
+		if (!req_value_nodes[*feature_idx][j]) {
+			feature_ctx.values[j].s = NULL;
+			feature_ctx.values[j].len = 0;
+			continue;
+		} else {
+			xml_s = get_node_content(root,
+				req_value_nodes[*feature_idx][j], 0, &ct);
+			if (!xml_s) {
+				feature_ctx.values[j].s = NULL;
+				feature_ctx.values[j].len = 0;
+			} else {
+				if (pkg_str_dup(&feature_ctx.values[j], &ct) < 0) {
+					LM_ERR("oom!\n");
+					rc = -1;
+				}
 
-	xml_s = get_node_content(root, req_value_nodes[*feature_idx], 0, &ct);
-	if (!xml_s) {
-		feature_ctx.value.s = NULL;
-		feature_ctx.value.len = 0;
-	} else {
-		if (pkg_str_dup(&feature_ctx.value, &ct) < 0) {
-			LM_ERR("oom!\n");
-			rc = -1;
+				xmlFree(xml_s);
+				xml_s = NULL;
+			}
 		}
-	}
 
 end:
 	if (xml_s)
@@ -759,8 +826,7 @@ static str *build_feature_notify(str *pres_uri, int feature_idx, int from_subs,
 		content_type->len = 0;
 	}
 
-	if (feature_ctx.value.s)
-		pkg_free(feature_ctx.value.s);
+	free_ctx_values();
 
 	return notify_body;
 error:
@@ -769,8 +835,7 @@ error:
 			pkg_free(notify_body->s);
 		pkg_free(notify_body);
 	}
-	if (feature_ctx.value.s)
-		pkg_free(feature_ctx.value.s);
+	free_ctx_values();
 	if (xml_buf.s)
 		xmlFree(xml_buf.s);
 	if (doc)
@@ -800,10 +865,9 @@ static str *dfks_handle_subscribe(str *pres_uri, str *subs_body,
 		}
 
 		LM_DBG("Received feature status update for feature <%.*s>, "
-			"presentity <%.*s> - new status <%d>, new value <%.*s>\n",
+			"presentity <%.*s> - new status <%d>\n",
 			feature_names[feature_idx].len, feature_names[feature_idx].s,
-			pres_uri->len, pres_uri->s, feature_ctx.status,
-			feature_ctx.value.len, feature_ctx.value.s);
+			pres_uri->len, pres_uri->s, feature_ctx.status);
 
 		notify_body = build_feature_notify(pres_uri, feature_idx, 1, 1, ct_type);
 		if (notify_body == (str*)-1) {
@@ -837,16 +901,17 @@ void mi_feature_notify(int sender, void *_params)
 	struct dfks_ipc_params *params = (struct dfks_ipc_params *)_params;
 	str *notify_body = NULL;
 	str ct_type = {NULL, 0};
+	int j;
 
 	feature_ctx.status = params->status ? 1 : 0;
-	feature_ctx.value.s = NULL;
-	feature_ctx.value.len = 0;
+	memset(feature_ctx.values, 0, MAX_VALUES_NO * sizeof(str));
 
-	if (params->value.s &&
-		pkg_str_dup(&feature_ctx.value, &params->value) < 0) {
-		LM_ERR("oom!\n");
-		goto end;
-	}
+	for (j = 0; j < MAX_VALUES_NO; j++)
+		if (params->values[j].s &&
+			pkg_str_dup(&feature_ctx.values[j], &params->values[j]) < 0) {
+			LM_ERR("oom!\n");
+			goto end;
+		}
 
 	notify_body = build_feature_notify(&params->pres_uri, params->feature_idx,
 		0, params->run_route, &ct_type);
@@ -865,8 +930,9 @@ void mi_feature_notify(int sender, void *_params)
 
 end:
 	shm_free(params->pres_uri.s);
-	if (params->value.s)
-		shm_free(params->value.s);
+	for (j = 0; j < MAX_VALUES_NO; j++)
+		if (params->values[j].s)
+			shm_free(params->values[j].s);
 	shm_free(params);
 
 	if (notify_body) {
@@ -877,9 +943,13 @@ end:
 }
 
 int ipc_dispatch_feature_notify(str *pres_uri, int feature_idx, int status,
-	str *value, int run_route)
+	str *values, int run_route)
 {
 	struct dfks_ipc_params *params;
+	int i;
+	str val_node;
+	str val;
+	int val_idx;
 
 	params = shm_malloc(sizeof *params);
 	if (!params) {
@@ -896,10 +966,32 @@ int ipc_dispatch_feature_notify(str *pres_uri, int feature_idx, int status,
 		LM_ERR("oom!\n");
 		goto error;
 	}
-	if (value->s && shm_str_dup(&params->value, value) < 0) {
-		LM_ERR("oom!\n");
-		goto error;
-	}
+
+	memset(params->values, 0, MAX_VALUES_NO * sizeof(str));
+
+	for (i = 0; i < MAX_VALUES_NO; i++)
+		if (values[i].s) {
+			val.s = q_memchr(values[i].s, '/', values[i].len);
+			if (!val.s) {
+				LM_ERR("Missing '/' value separator\n");
+				goto error;
+			}
+			val_node.s = values[i].s;
+			val_node.len = val.s - values[i].s;
+			val.s++;
+			val.len = values[i].len - val_node.len - 1;
+
+			val_idx = get_value_idx(feature_idx, &val_node);
+			if (val_idx < 0) {
+				LM_ERR("Unknown value node: %.*s\n", val_node.len, val_node.s);
+				goto error;
+			}
+
+			if (shm_str_dup(&params->values[val_idx], &val) < 0) {
+				LM_ERR("oom!\n");
+				goto error;
+			}
+		}
 
 	return ipc_dispatch_rpc(mi_feature_notify, params);
 
@@ -907,8 +999,9 @@ error:
 	shm_free(params);
 	if (params->pres_uri.s)
 		shm_free(params->pres_uri.s);
-	if (params->value.s)
-		shm_free(params->value.s);
+	for (i = 0; i < MAX_VALUES_NO; i++)
+		if (params->values[i].s)
+			shm_free(params->values[i].s);
 	return -1;
 }
 
@@ -918,9 +1011,11 @@ static mi_response_t *mi_dfks_set(const mi_params_t *params,
 	str pres_uri;
 	str feature;
 	int status;
-	str value = {NULL, 0};
+	str values[MAX_VALUES_NO];
 	int set_route = 0;
-	int i;
+	int i, j;
+	mi_item_t *vals_arr;
+	int no_vals = 0;
 
 	if (get_mi_int_param(params, "set_route", &set_route) < 0)
 		return init_mi_param_error();
@@ -939,9 +1034,16 @@ static mi_response_t *mi_dfks_set(const mi_params_t *params,
 	if (get_mi_int_param(params, "status", &status) < 0)
 		return init_mi_param_error();
 
-	try_get_mi_string_param(params, "value", &value.s, &value.len);
+	memset(values, 0, MAX_VALUES_NO * sizeof(str));
 
-	if (ipc_dispatch_feature_notify(&pres_uri, i, status, &value, set_route) < 0) {
+	if (try_get_mi_array_param(params, "values", &vals_arr, &no_vals) == 0) {
+		for (j = 0; j < no_vals; j++)
+			if (get_mi_arr_param_string(vals_arr, j,
+				&values[j].s, &values[j].len) < 0)
+				return init_mi_param_error();
+	}
+
+	if (ipc_dispatch_feature_notify(&pres_uri, i, status, values, set_route) < 0) {
 		LM_ERR("Failed to dispatch NOTIFY sending to worker process\n");
 		return init_mi_error(500, MI_SSTR("Internal Error"));
 	}
