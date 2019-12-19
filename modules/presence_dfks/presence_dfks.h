@@ -59,12 +59,14 @@
 #define PV_SUBNAME_VALUE_LEN (sizeof(PV_SUBNAME_VALUE)-1)
 #define PV_SUBNAME_FEATURE "feature"
 #define PV_SUBNAME_PRESENTITY "presentity"
+#define PV_SUBNAME_NOTIFY "notify"
 
 #define PV_TYPE_ASSIGN 0
 #define PV_TYPE_STATUS 1
 #define PV_TYPE_VALUE 2
 #define PV_TYPE_FEATURE 3
 #define PV_TYPE_PRESENTITY 4
+#define PV_TYPE_NOTIFY 5
 
 #define CT_TYPE_MULTIPART "multipart/mixed;boundary=" OSS_BOUNDARY
 #define CT_TYPE_MULTIPART_LEN (sizeof(CT_TYPE_MULTIPART)-1)
@@ -103,6 +105,7 @@
 
 struct dfks_ctx {
 	int assigned;
+	int notify;
 	int status;
 	int idx;
 	str pres_uri;

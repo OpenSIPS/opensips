@@ -258,6 +258,8 @@ static int pv_parse_dfks_name(pv_spec_p sp, str *in)
 		name->type = PV_TYPE_FEATURE;
 	} else if (!str_strcmp(in, _str(PV_SUBNAME_PRESENTITY))) {
 		name->type = PV_TYPE_PRESENTITY;
+	} else if (!str_strcmp(in, _str(PV_SUBNAME_NOTIFY))) {
+		name->type = PV_TYPE_NOTIFY;
 	} else {
 		LM_ERR("Bad subname for $dfks\n");
 		return -1;
@@ -295,6 +297,16 @@ static int pv_set_dfks(struct sip_msg *msg, pv_param_t *param, int op,
 			feature_ctx.assigned = 0;
 		else if (val->flags & (PV_TYPE_INT|PV_VAL_INT))
 			feature_ctx.assigned = val->ri ? 1 : 0;
+		else {
+			LM_ERR("Value should be an integer\n");
+			return -1;
+		}
+		break;
+	case PV_TYPE_NOTIFY:
+		if (!val || val->flags & PV_VAL_NULL)
+			feature_ctx.notify = 0;
+		else if (val->flags & (PV_TYPE_INT|PV_VAL_INT))
+			feature_ctx.notify = val->ri ? 1 : 0;
 		else {
 			LM_ERR("Value should be an integer\n");
 			return -1;
@@ -355,6 +367,11 @@ static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	switch (name->type) {
 	case PV_TYPE_ASSIGN:
 		res->ri = feature_ctx.assigned;
+		res->rs.s = int2str(res->ri, &res->rs.len);
+		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+		break;
+	case PV_TYPE_NOTIFY:
+		res->ri = feature_ctx.notify;
 		res->rs.s = int2str(res->ri, &res->rs.len);
 		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 		break;
@@ -518,13 +535,14 @@ static str *build_full_notify(str *pres_uri, str *content_type)
 
 	for (i = 0; i < features_no; i++) {
 		feature_ctx.assigned = 1;
+		feature_ctx.notify = 1;
 		feature_ctx.status = 0;
 		memset(feature_ctx.values, 0, MAX_VALUES_NO * sizeof(str));
 		feature_ctx.idx = i;
 		feature_ctx.pres_uri = *pres_uri;
 		run_dfks_route(dfks_get_route_idx);
 
-		if (feature_ctx.assigned) {
+		if (feature_ctx.assigned && feature_ctx.notify) {
 			doc = build_feature_doc(i);
 
 			free_ctx_values();
@@ -776,11 +794,15 @@ static str *build_feature_notify(str *pres_uri, int feature_idx, int from_subs,
 	str *notify_body = NULL;
 
 	feature_ctx.assigned = 1;
+	feature_ctx.notify = 1;
 	feature_ctx.idx = feature_idx;
 	feature_ctx.pres_uri = *pres_uri;
 
 	if (run_route)
 		run_dfks_route(dfks_set_route_idx);
+
+	if (!feature_ctx.notify)
+		goto end;
 
 	if (feature_ctx.assigned ||
 		/* if not triggered by a SUBSCRIBE, the NOTIFY must always have a body
@@ -825,7 +847,7 @@ static str *build_feature_notify(str *pres_uri, int feature_idx, int from_subs,
 		content_type->s = NULL;
 		content_type->len = 0;
 	}
-
+end:
 	free_ctx_values();
 
 	return notify_body;
@@ -852,7 +874,12 @@ static str *dfks_handle_subscribe(str *pres_uri, str *subs_body,
 	if (subs_body->len == 0) {
 		if ((notify_body = build_full_notify(pres_uri, ct_type)) == (str*)-1) {
 			LM_ERR("Failed to build NOTIFY body\n");
-			return NULL;
+			goto no_repl;
+		}
+
+		if (!feature_ctx.notify) {
+			LM_DBG("NOTIFY suppressed\n");
+			goto no_repl;
 		}
 
 		LM_DBG("Built full feature status for presentity <%.*s>\n",
@@ -861,9 +888,8 @@ static str *dfks_handle_subscribe(str *pres_uri, str *subs_body,
 	} else {
 		if (parse_subscribe_xml(subs_body, &feature_idx) < 0) {
 			LM_ERR("Invalid XML in SUBSCRIBE body\n");
-			return NULL;
+			goto no_repl;
 		}
-
 		LM_DBG("Received feature status update for feature <%.*s>, "
 			"presentity <%.*s> - new status <%d>\n",
 			feature_names[feature_idx].len, feature_names[feature_idx].s,
@@ -872,7 +898,12 @@ static str *dfks_handle_subscribe(str *pres_uri, str *subs_body,
 		notify_body = build_feature_notify(pres_uri, feature_idx, 1, 1, ct_type);
 		if (notify_body == (str*)-1) {
 			LM_ERR("Failed to build NOTIFY body\n");
-			return NULL;
+			goto no_repl;
+		}
+
+		if (!feature_ctx.notify) {
+			LM_DBG("NOTIFY suppressed\n");
+			goto no_repl;
 		}
 
 		if (pres_api.notify_all_on_publish(pres_uri, dfks_event, notify_body) < 0)
@@ -885,10 +916,11 @@ static str *dfks_handle_subscribe(str *pres_uri, str *subs_body,
 		}
 		if (ct_type->s)
 			pkg_free(ct_type->s);
-
-		*suppress_notify = 1;
-		return NULL;
 	}
+
+no_repl:
+	*suppress_notify = 1;
+	return NULL;
 }
 
 static void pkg_free_w(char* s)
@@ -920,7 +952,13 @@ void mi_feature_notify(int sender, void *_params)
 		goto end;
 	}
 
-	pkg_free(ct_type.s);
+	if (!feature_ctx.notify) {
+		LM_DBG("NOTIFY suppressed\n");
+		goto end;
+	}
+
+	if (ct_type.s)
+		pkg_free(ct_type.s);
 
 	if (pres_api.notify_all_on_publish(&params->pres_uri, dfks_event,
 		notify_body) < 0) {
