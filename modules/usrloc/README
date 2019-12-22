@@ -1211,6 +1211,8 @@ modparam("usrloc", "mi_dump_kv_store", 1)
        message.(empty string if not present)
      * qval - The Q value (priority) of the contact (as integer
        value from 0 to 10).
+     * user_agent - The User-Agent header value.
+       NOTICE: Can contain spaces.
      * socket - The SIP socket/listener (as string) used by
        OpenSIPS to receive the contact registations.
      * bflags - The branch flags (bflags) of the contact (in
@@ -1518,8 +1520,8 @@ Chapter 3. Contributors
    Brandinger (@NormB), David Sanders, Konstantin Bokarius, Walter
    Doekes (@wdoekes), Klaus Darilion, Iouri Kharon, Aron Podrigal
    (@ar45), Dan Pascu (@danpascu), Matthew M. Boedicker, Peter
-   Lemenkov (@lemenkov), UnixDev, Edson Gellert Schubert,
-   Elena-Ramona Modroiu, Stephane Alnet.
+   Lemenkov (@lemenkov), UnixDev, Edson Gellert Schubert, Alexey
+   Vasilyev (@vasilevalex), Elena-Ramona Modroiu, Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1541,19 +1543,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2019
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2019
-   3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
-   4.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
-   5.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2019
-   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   8.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Shlomi Gutman                       Mar 2018 - Mar 2018
+   1.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2019
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2019
+   4.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
+   5.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
+   6.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2019
+   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   9.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: @jalung, Vlad Paiu (@vladpaiu),
-   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   All remaining contributors: Shlomi Gutman, @jalung, Vlad Paiu
+   (@vladpaiu), Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Ovidiu Sas (@ovidiusas), Dusan Klinec, Eseanu
    Marius Cristian (@eseanucristian), David Sanders, Andrei Datcu
    (@andrei-datcu), Stephane Alnet, Andrei Dragus, Phil D'Amore,
@@ -1573,16 +1575,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
-   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
-   (@eseanucristian), Ovidiu Sas (@ovidiusas), Andrei Datcu
-   (@andrei-datcu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen
-   (@juha-h), Jan Janak (@janakj), Maksym Sobolyev (@sobomax),
-   Nils Ohlmeier.
+   Last edited by: Alexey Vasilyev (@vasilevalex), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
+   Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
+   (@ovidiusas), Andrei Datcu (@andrei-datcu), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Marcus Hunger, Elena-Ramona
+   Modroiu, Juha Heinanen (@juha-h), Jan Janak (@janakj), Maksym
+   Sobolyev (@sobomax), Nils Ohlmeier.
 
    Documentation Copyrights:
 
