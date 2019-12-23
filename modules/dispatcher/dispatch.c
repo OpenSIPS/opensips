@@ -743,11 +743,15 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 		val_set.type = DB_INT;
 		val_set.nul  = 0;
 
+		/* access ds data under reader's lock */
+		lock_start_read( partition->lock );
+
 		/* update the gateways */
 		if (partition->dbf.use_table(*partition->db_handle,
 					&partition->table_name) < 0) {
 			LM_ERR("cannot select table \"%.*s\"\n",
 				partition->table_name.len, partition->table_name.s);
+			lock_stop_read( partition->lock );
 			continue;
 		}
 		key_cmp[0] = &ds_set_id_col;
@@ -784,6 +788,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 				}
 			}
 		}
+
+		lock_stop_read( partition->lock );
 	}
 
 	return;
