@@ -2368,12 +2368,27 @@ fallback_failed:
 }
 
 
-#define DR_MAX_GWLIST	64
+#define resize_dr_sort_buffer( _buf, _old_size, _new_size, _error) \
+	do { \
+		if (_new_size > _old_size) { \
+			/* need a larger buffer */ \
+			_buf = (unsigned short*)pkg_realloc( _buf, \
+				_new_size *sizeof(unsigned short) ); \
+			if (_buf==NULL) { \
+				LM_ERR("no more pkg mem (needed  %ld)\n", \
+					_new_size*sizeof(unsigned short));\
+				_old_size = 0; \
+				goto _error;\
+			}\
+			_old_size = _new_size; \
+		} \
+	}while(0) \
 
 static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 		int weight, unsigned short *idx)
 {
-	unsigned short running_sum[DR_MAX_GWLIST];
+	static unsigned short *running_sum = NULL;
+	static unsigned short sum_buf_size = 0;
 	unsigned int i, first, weight_sum, rand_no;
 
 	/* populate the index array */
@@ -2384,6 +2399,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 		return 0;
 
 	while (size-first>1) {
+		resize_dr_sort_buffer( running_sum, sum_buf_size, size, err);
 		/* calculate the running sum */
 		for( i=first,weight_sum=0 ; i<size ; i++ ) {
 			weight_sum += pgwl[ idx[i] ].weight ;
@@ -2400,7 +2416,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 				if (running_sum[i]>rand_no) break;
 			if (i==size) {
 				LM_CRIT("bug in weight sort\n");
-				return -1;
+				goto err;
 			}
 		} else {
 			/* randomly select index */
@@ -2418,6 +2434,8 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 	}
 
 	return 0;
+err:
+	return -1;
 }
 
 
@@ -2569,8 +2587,10 @@ struct head_db * get_partition(const str *name)
 static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 													int flags, str* whitelist)
 {
-	unsigned short dsts_idx[DR_MAX_GWLIST];
-	unsigned short carrier_idx[DR_MAX_GWLIST];
+	static unsigned short *dsts_idx = NULL;
+	static unsigned short dsts_idx_size = 0;
+	static unsigned short *carrier_idx = NULL;
+	static unsigned short carrier_idx_size = 0;
 	struct to_body  *from;
 	struct sip_uri  uri;
 	rt_info_t  *rt_info;
@@ -2804,6 +2824,7 @@ search_again:
 	}
 
 	/* sort the destination elements in the rule */
+	resize_dr_sort_buffer( dsts_idx, dsts_idx_size, rt_info->pgwa_len, error2);
 	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len,
 			flags&DR_PARAM_USE_WEIGTH, dsts_idx);
 	if (i!=0) {
@@ -2843,6 +2864,8 @@ search_again:
 				continue;
 
 			/* sort the gws of the carrier */
+			resize_dr_sort_buffer( carrier_idx, carrier_idx_size,
+				dst->dst.carrier->pgwa_len, skip);
 			j = sort_rt_dst(dst->dst.carrier->pgwl, dst->dst.carrier->pgwa_len,
 					dst->dst.carrier->flags&DR_CR_FLAG_WEIGHT, carrier_idx);
 			if (j!=0) {
@@ -2883,6 +2906,8 @@ search_again:
 				}
 
 			}
+			skip:
+			;
 
 		} else {
 
@@ -3068,7 +3093,8 @@ error1:
 static int route2_carrier(struct sip_msg* msg, str* ids,
 				pv_spec_t* gw_att, pv_spec_t* carr_att, struct head_db *part)
 {
-	unsigned short carrier_idx[DR_MAX_GWLIST];
+	static unsigned short *carrier_idx;
+	static unsigned short carrier_idx_size;
 	struct sip_uri  uri;
 	pgw_list_t *cdst;
 	pcr_t *cr;
@@ -3172,6 +3198,8 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 			continue;
 
 		/* sort the gws of the carrier */
+		resize_dr_sort_buffer( carrier_idx, carrier_idx_size,
+			cr->pgwa_len, skip);
 		j = sort_rt_dst( cr->pgwl, cr->pgwa_len, cr->flags&DR_CR_FLAG_WEIGHT,
 				carrier_idx);
 		if (j!=0) {
@@ -3211,6 +3239,9 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 			}
 
 		}
+
+		skip:
+		;
 
 	}
 
