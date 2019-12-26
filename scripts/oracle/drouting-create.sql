@@ -38,7 +38,7 @@ CREATE TABLE dr_rules (
 CREATE OR REPLACE TRIGGER dr_rules_tr
 before insert on dr_rules FOR EACH ROW
 BEGIN
-  auto_id(:NEW.id);
+  auto_id(:NEW.ruleid);
 END dr_rules_tr;
 /
 BEGIN map2users('dr_rules'); END;

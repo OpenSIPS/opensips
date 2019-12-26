@@ -85,6 +85,4 @@ BEGIN
 END cc_calls_tr;
 /
 BEGIN map2users('cc_calls'); END;
-/
-CREATE INDEX cc_calls_b2buaid_idx  ON cc_calls (b2buaid);
 

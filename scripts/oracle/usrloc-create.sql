@@ -1,6 +1,6 @@
 INSERT INTO version (table_name, table_version) values ('location','1013');
 CREATE TABLE location (
-    contact_id BIGINT(10) PRIMARY KEY,
+    contact_id NUMBER(10) PRIMARY KEY,
     username VARCHAR2(64) DEFAULT '',
     domain VARCHAR2(64) DEFAULT NULL,
     contact VARCHAR2(255) DEFAULT '',
@@ -17,14 +17,14 @@ CREATE TABLE location (
     socket VARCHAR2(64) DEFAULT NULL,
     methods NUMBER(10) DEFAULT NULL,
     sip_instance VARCHAR2(255) DEFAULT NULL,
-    kv_store CLOB(512) DEFAULT NULL,
+    kv_store CLOB DEFAULT NULL,
     attr VARCHAR2(255) DEFAULT NULL
 );
 
 CREATE OR REPLACE TRIGGER location_tr
 before insert on location FOR EACH ROW
 BEGIN
-  auto_id(:NEW.id);
+  auto_id(:NEW.contact_id);
 END location_tr;
 /
 BEGIN map2users('location'); END;

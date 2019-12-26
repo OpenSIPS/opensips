@@ -12,7 +12,7 @@ DBSYSUSER="sys"
 
 
 # path to the database schemas
-DATA_DIR="/usr/local/share/opensips"
+DATA_DIR="/usr/local/opensips/share/opensips/"
 if [ -d "$DATA_DIR/oracle" ]; then
 	DB_SCHEMA="$DATA_DIR/oracle"
 elif [ -d "scripts/oracle" ]; then
@@ -142,9 +142,8 @@ if [ -n "$DBSYSUSER" ]; then
 			SUFF="@$1"
 		fi
 		SYSCMD="$SQLPLUS -S -L -R 3 $DBSYSUSER/${DBSYSPW}$SUFF AS SYSDBA"
-
 		echo "create user $DBROOTUSER identified by $DBROOTPW
-		    default tablespace DATA temporary tablespace TEMP
+		    default tablespace USERS temporary tablespace TEMP
 		    profile DEFAULT;" | $SYSCMD >$ORALOG
 		if [ $? -ne 0 ] || check_oracle_log ; then
 			mwarn "Create privileged user in database failed, perhaps they allready exist? Try to continue.."
@@ -174,8 +173,9 @@ if [ $? -ne 0 ] || check_oracle_log ; then
 fi
 
 prompt_oracle_pw rw
+
 echo "create user $DBRWUSER identified by $DBRWPW
-    default tablespace DATA temporary tablespace TEMP profile DEFAULT;
+    default tablespace USERS temporary tablespace TEMP profile DEFAULT;
     grant connect to $DBRWUSER;" | $ORACLE_ROOT_CMD >$ORALOG
 if [ $? -ne 0 ] || check_oracle_log ; then
 	mwarn "Create user in database scheme failed, perhaps they allready exist? Try to continue.."

@@ -52,7 +52,7 @@ CREATE TABLE b2b_logic (
     sparam2 VARCHAR2(64),
     sparam3 VARCHAR2(64),
     sparam4 VARCHAR2(64),
-    sdp CLOB(64),
+    sdp CLOB,
     lifetime NUMBER(10) DEFAULT 0 NOT NULL,
     e1_type NUMBER(10),
     e1_sid VARCHAR2(64),
