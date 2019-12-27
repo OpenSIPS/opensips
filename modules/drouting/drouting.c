@@ -2597,28 +2597,27 @@ static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 	wl_list = NULL;
 	rt_info = NULL;
 
-	if (use_partitions) {
-		if (part==NULL) {   /* WILDCARD partition */
-			for (current_partition = head_db_start;
-			current_partition; current_partition = current_partition->next) {
-				ret=do_routing( msg, part, grp, flags, whitelist);
-				if (ret > 0) {
-					if (partition_pvar.s) {
-						pv_val.rs = current_partition->partition;
-						pv_val.flags = PV_VAL_STR;
-						if (pv_set_value(msg, &partition_spec, 0, &pv_val) != 0) {
-							LM_ERR("cannot print the PV-formatted"
-									" partition string\n");
-							return -1;
-						}
+	if (use_partitions && part==NULL) {
+		/* WILDCARD partition */
+		for (current_partition = head_db_start;
+		current_partition; current_partition = current_partition->next) {
+			ret=do_routing( msg, part, grp, flags, whitelist);
+			if (ret > 0) {
+				if (partition_pvar.s) {
+					pv_val.rs = current_partition->partition;
+					pv_val.flags = PV_VAL_STR;
+					if (pv_set_value(msg, &partition_spec, 0, &pv_val) != 0) {
+						LM_ERR("cannot print the PV-formatted"
+								" partition string\n");
+						return -1;
 					}
-					break;
 				}
+				break;
 			}
-
-			/* ret must be less than 0 here if nothing found */
-			return ret;
 		}
+
+		/* ret must be less than 0 here if nothing found */
+		return ret;
 	} else {
 		current_partition = part;
 	}
