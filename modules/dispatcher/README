@@ -1188,7 +1188,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 148 92 2775 1900
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 149 93 2781 1900
    2. Liviu Chircu (@liviuchircu) 91 53 1539 1365
    3. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
@@ -1229,11 +1229,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2019
-   2.  Roman Sevko                         Oct 2019 - Oct 2019
-   3.  Razvan Crainea (@razvancrainea)     May 2011 - Oct 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jun 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Dec 2019
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2019
+   3.  Roman Sevko                         Oct 2019 - Oct 2019
+   4.  Razvan Crainea (@razvancrainea)     May 2011 - Oct 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
    8.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016
