@@ -21,7 +21,11 @@
 %global _without_aaa_radius 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
+%if 0%{?fedora} > 30
+%global _without_python 1
+%endif
+
+%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{?_without_python:python}
 
 Summary:  Open Source SIP Server
 Name:     opensips
@@ -57,7 +61,9 @@ BuildRequires:  openldap-devel
 BuildRequires:  curl-devel
 BuildRequires:  GeoIP-devel
 BuildRequires:  pcre-devel
+%if 0%{!?_without_python:1}
 BuildRequires:  python-devel
+%endif
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 BuildRequires:  systemd-units
 %endif
@@ -830,6 +836,7 @@ This module is a gateway for presence between SIP and XMPP. It translates one
 format into another and uses xmpp, pua and presence modules to manage the
 transmition of presence state information.
 
+%if 0%{!?_without_python:1}
 %package  python
 Summary:  Python scripting support
 Group:    System Environment/Daemons
@@ -837,6 +844,7 @@ Requires: %{name} = %{version}-%{release}
 
 %description  python
 Helps implement your own OpenSIPS extensions in Python
+%endif
 
 %package  rabbitmq
 Summary:  RabbitMQ module
@@ -1686,8 +1694,10 @@ fi
 %{_libdir}/opensips/modules/pua_xmpp.so
 %doc docdir/README.pua_xmpp
 
+%if 0%{!?_without_python:1}
 %files python
 %{_libdir}/opensips/modules/python.so
+%endif
 
 %files rabbitmq
 %{_libdir}/opensips/modules/rabbitmq.so
