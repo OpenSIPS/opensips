@@ -21,7 +21,11 @@
 %global _without_aaa_radius 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
+%if 0%{?fedora} > 30
+%global _without_python 1
+%endif
+
+%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{?_without_python:python}
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
@@ -58,7 +62,9 @@ BuildRequires:  curl-devel
 # BuildRequires:  GeoIP-devel
 BuildRequires:  libmaxminddb-devel
 BuildRequires:  pcre-devel
+%if 0%{!?_without_python:1}
 BuildRequires:  python-devel
+%endif
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 BuildRequires:  systemd-units
 %endif
@@ -497,6 +503,7 @@ This package provides several OpenSIPS modules for implementing presence
 server and presence user agent for RICH presence, registrar-based presence,
 external triggered presence and XCAP support.
 
+%if 0%{!?_without_python:1}
 %package  python-module
 Summary:  Python scripting support
 Group:    System Environment/Daemons
@@ -508,6 +515,7 @@ server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
 This module provides a Python interface to implement your scripting logic.
+%endif
 
 %package  rabbitmq-modules
 Summary:  Interface module to interact with a RabbitMQ server
@@ -1274,8 +1282,10 @@ fi
 %{_libdir}/opensips/modules/xcap_client.so
 %doc docdir/README.xcap_client
 
+%if 0%{!?_without_python:1}
 %files python-module
 %{_libdir}/opensips/modules/python.so
+%endif
 
 %files rabbitmq-modules
 %{_libdir}/opensips/modules/event_rabbitmq.so
