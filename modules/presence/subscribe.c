@@ -1347,8 +1347,27 @@ void timer_db_update(unsigned int ticks,void *param)
 
 	update_db_subs(pa_db, &pa_dbf, subs_htable,
 			shtable_size, no_lock, handle_expired_subs);
-
 }
+
+
+static inline int is_shtag_active( str *my_tag, str **active_tags)
+{
+	int i=0;
+
+	while (active_tags[i]) {
+
+		if (my_tag->len==active_tags[i]->len &&
+		strncmp( my_tag->s, active_tags[i]->s, active_tags[i]->len)==0)
+			/* found -> tag is active */
+			return 1;
+
+		i++;
+	}
+
+	/* not found -> tag is not active */
+	return 0;
+}
+
 
 void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	int htable_size, int no_lock, handle_expired_func_t handle_expired_func)
@@ -1357,7 +1376,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	static db_ps_t my_ps_update = NULL, my_ps_insert = NULL;
 	db_key_t query_cols[22], update_cols[8];
 	db_val_t query_vals[22], update_vals[8];
-	db_op_t update_ops[1];
+	db_op_t update_ops[2];
 	subs_t* del_s;
 	int pres_uri_col, to_user_col, to_domain_col, from_user_col, from_domain_col,
 		callid_col, totag_col, fromtag_col, event_col,status_col, event_id_col,
@@ -1369,149 +1388,159 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	subs_t* s= NULL, *prev_s= NULL;
 	int n_query_cols= 0, n_update_cols= 0;
 	int n_query_update;
+	str **sh_tags=NULL;
 
-	query_cols[pres_uri_col= n_query_cols] =&str_presentity_uri_col;
-	query_vals[pres_uri_col].type = DB_STR;
-	query_vals[pres_uri_col].nul = 0;
-	n_query_cols++;
 
-	query_cols[callid_col= n_query_cols] =&str_callid_col;
-	query_vals[callid_col].type = DB_STR;
-	query_vals[callid_col].nul = 0;
-	n_query_cols++;
+	if (fallback2db==0) {
+		/* if `fallback2db` is enabled, all the INSERT/UPDATED/DELETES ops
+		 * triggered by received SUBSCRIBE requests are done in realtime, not
+		 * on timer. */
+		query_cols[pres_uri_col= n_query_cols] =&str_presentity_uri_col;
+		query_vals[pres_uri_col].type = DB_STR;
+		query_vals[pres_uri_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[totag_col= n_query_cols] =&str_to_tag_col;
-	query_vals[totag_col].type = DB_STR;
-	query_vals[totag_col].nul = 0;
-	n_query_cols++;
+		query_cols[callid_col= n_query_cols] =&str_callid_col;
+		query_vals[callid_col].type = DB_STR;
+		query_vals[callid_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[fromtag_col= n_query_cols] =&str_from_tag_col;
-	query_vals[fromtag_col].type = DB_STR;
-	query_vals[fromtag_col].nul = 0;
-	n_query_cols++;
+		query_cols[totag_col= n_query_cols] =&str_to_tag_col;
+		query_vals[totag_col].type = DB_STR;
+		query_vals[totag_col].nul = 0;
+		n_query_cols++;
 
-	n_query_update= n_query_cols;
+		query_cols[fromtag_col= n_query_cols] =&str_from_tag_col;
+		query_vals[fromtag_col].type = DB_STR;
+		query_vals[fromtag_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[to_user_col= n_query_cols] =&str_to_user_col;
-	query_vals[to_user_col].type = DB_STR;
-	query_vals[to_user_col].nul = 0;
-	n_query_cols++;
+		n_query_update= n_query_cols;
 
-	query_cols[to_domain_col= n_query_cols] =&str_to_domain_col;
-	query_vals[to_domain_col].type = DB_STR;
-	query_vals[to_domain_col].nul = 0;
-	n_query_cols++;
+		query_cols[to_user_col= n_query_cols] =&str_to_user_col;
+		query_vals[to_user_col].type = DB_STR;
+		query_vals[to_user_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[from_user_col= n_query_cols] =&str_watcher_username_col;
-	query_vals[from_user_col].type = DB_STR;
-	query_vals[from_user_col].nul = 0;
-	n_query_cols++;
+		query_cols[to_domain_col= n_query_cols] =&str_to_domain_col;
+		query_vals[to_domain_col].type = DB_STR;
+		query_vals[to_domain_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[from_domain_col= n_query_cols] =&str_watcher_domain_col;
-	query_vals[from_domain_col].type = DB_STR;
-	query_vals[from_domain_col].nul = 0;
-	n_query_cols++;
+		query_cols[from_user_col= n_query_cols] =&str_watcher_username_col;
+		query_vals[from_user_col].type = DB_STR;
+		query_vals[from_user_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[event_col= n_query_cols] =&str_event_col;
-	query_vals[event_col].type = DB_STR;
-	query_vals[event_col].nul = 0;
-	n_query_cols++;
+		query_cols[from_domain_col= n_query_cols] =&str_watcher_domain_col;
+		query_vals[from_domain_col].type = DB_STR;
+		query_vals[from_domain_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[event_id_col= n_query_cols] =&str_event_id_col;
-	query_vals[event_id_col].type = DB_STR;
-	query_vals[event_id_col].nul = 0;
-	n_query_cols++;
+		query_cols[event_col= n_query_cols] =&str_event_col;
+		query_vals[event_col].type = DB_STR;
+		query_vals[event_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[local_cseq_col= n_query_cols]=&str_local_cseq_col;
-	query_vals[local_cseq_col].type = DB_INT;
-	query_vals[local_cseq_col].nul = 0;
-	n_query_cols++;
+		query_cols[event_id_col= n_query_cols] =&str_event_id_col;
+		query_vals[event_id_col].type = DB_STR;
+		query_vals[event_id_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[remote_cseq_col= n_query_cols]=&str_remote_cseq_col;
-	query_vals[remote_cseq_col].type = DB_INT;
-	query_vals[remote_cseq_col].nul = 0;
-	n_query_cols++;
+		query_cols[local_cseq_col= n_query_cols]=&str_local_cseq_col;
+		query_vals[local_cseq_col].type = DB_INT;
+		query_vals[local_cseq_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[expires_col= n_query_cols] =&str_expires_col;
-	query_vals[expires_col].type = DB_INT;
-	query_vals[expires_col].nul = 0;
-	n_query_cols++;
+		query_cols[remote_cseq_col= n_query_cols]=&str_remote_cseq_col;
+		query_vals[remote_cseq_col].type = DB_INT;
+		query_vals[remote_cseq_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[status_col= n_query_cols] =&str_status_col;
-	query_vals[status_col].type = DB_INT;
-	query_vals[status_col].nul = 0;
-	n_query_cols++;
+		query_cols[expires_col= n_query_cols] =&str_expires_col;
+		query_vals[expires_col].type = DB_INT;
+		query_vals[expires_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[reason_col= n_query_cols] =&str_reason_col;
-	query_vals[reason_col].type = DB_STR;
-	query_vals[reason_col].nul = 0;
-	n_query_cols++;
+		query_cols[status_col= n_query_cols] =&str_status_col;
+		query_vals[status_col].type = DB_INT;
+		query_vals[status_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[record_route_col= n_query_cols] =&str_record_route_col;
-	query_vals[record_route_col].type = DB_STR;
-	query_vals[record_route_col].nul = 0;
-	n_query_cols++;
+		query_cols[reason_col= n_query_cols] =&str_reason_col;
+		query_vals[reason_col].type = DB_STR;
+		query_vals[reason_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[contact_col= n_query_cols] =&str_contact_col;
-	query_vals[contact_col].type = DB_STR;
-	query_vals[contact_col].nul = 0;
-	n_query_cols++;
+		query_cols[record_route_col= n_query_cols] =&str_record_route_col;
+		query_vals[record_route_col].type = DB_STR;
+		query_vals[record_route_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[local_contact_col= n_query_cols] =&str_local_contact_col;
-	query_vals[local_contact_col].type = DB_STR;
-	query_vals[local_contact_col].nul = 0;
-	n_query_cols++;
+		query_cols[contact_col= n_query_cols] =&str_contact_col;
+		query_vals[contact_col].type = DB_STR;
+		query_vals[contact_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[socket_info_col= n_query_cols] =&str_socket_info_col;
-	query_vals[socket_info_col].type = DB_STR;
-	query_vals[socket_info_col].nul = 0;
-	n_query_cols++;
+		query_cols[local_contact_col= n_query_cols] =&str_local_contact_col;
+		query_vals[local_contact_col].type = DB_STR;
+		query_vals[local_contact_col].nul = 0;
+		n_query_cols++;
 
-	query_cols[version_col= n_query_cols]=&str_version_col;
-	query_vals[version_col].type = DB_INT;
-	query_vals[version_col].nul = 0;
-	n_query_cols++;
+		query_cols[socket_info_col= n_query_cols] =&str_socket_info_col;
+		query_vals[socket_info_col].type = DB_STR;
+		query_vals[socket_info_col].nul = 0;
+		n_query_cols++;
 
-	/* cols and values used for update */
-	update_cols[u_expires_col= n_update_cols]= &str_expires_col;
-	update_vals[u_expires_col].type = DB_INT;
-	update_vals[u_expires_col].nul = 0;
-	n_update_cols++;
+		query_cols[version_col= n_query_cols]=&str_version_col;
+		query_vals[version_col].type = DB_INT;
+		query_vals[version_col].nul = 0;
+		n_query_cols++;
 
-	update_cols[u_status_col= n_update_cols]= &str_status_col;
-	update_vals[u_status_col].type = DB_INT;
-	update_vals[u_status_col].nul = 0;
-	n_update_cols++;
+		/* cols and values used for update */
+		update_cols[u_expires_col= n_update_cols]= &str_expires_col;
+		update_vals[u_expires_col].type = DB_INT;
+		update_vals[u_expires_col].nul = 0;
+		n_update_cols++;
 
-	update_cols[u_reason_col= n_update_cols]= &str_reason_col;
-	update_vals[u_reason_col].type = DB_STR;
-	update_vals[u_reason_col].nul = 0;
-	n_update_cols++;
+		update_cols[u_status_col= n_update_cols]= &str_status_col;
+		update_vals[u_status_col].type = DB_INT;
+		update_vals[u_status_col].nul = 0;
+		n_update_cols++;
 
-	update_cols[u_remote_cseq_col= n_update_cols]= &str_remote_cseq_col;
-	update_vals[u_remote_cseq_col].type = DB_INT;
-	update_vals[u_remote_cseq_col].nul = 0;
-	n_update_cols++;
+		update_cols[u_reason_col= n_update_cols]= &str_reason_col;
+		update_vals[u_reason_col].type = DB_STR;
+		update_vals[u_reason_col].nul = 0;
+		n_update_cols++;
 
-	update_cols[u_local_cseq_col= n_update_cols]= &str_local_cseq_col;
-	update_vals[u_local_cseq_col].type = DB_INT;
-	update_vals[u_local_cseq_col].nul = 0;
-	n_update_cols++;
+		update_cols[u_remote_cseq_col= n_update_cols]= &str_remote_cseq_col;
+		update_vals[u_remote_cseq_col].type = DB_INT;
+		update_vals[u_remote_cseq_col].nul = 0;
+		n_update_cols++;
 
-	update_cols[u_contact_col= n_update_cols]= &str_contact_col;
-	update_vals[u_contact_col].type = DB_STR;
-	update_vals[u_contact_col].nul = 0;
-	n_update_cols++;
+		update_cols[u_local_cseq_col= n_update_cols]= &str_local_cseq_col;
+		update_vals[u_local_cseq_col].type = DB_INT;
+		update_vals[u_local_cseq_col].nul = 0;
+		n_update_cols++;
 
-	update_cols[u_version_col= n_update_cols]= &str_version_col;
-	update_vals[u_version_col].type = DB_INT;
-	update_vals[u_version_col].nul = 0;
-	n_update_cols++;
+		update_cols[u_contact_col= n_update_cols]= &str_contact_col;
+		update_vals[u_contact_col].type = DB_STR;
+		update_vals[u_contact_col].nul = 0;
+		n_update_cols++;
+
+		update_cols[u_version_col= n_update_cols]= &str_version_col;
+		update_vals[u_version_col].type = DB_INT;
+		update_vals[u_version_col].nul = 0;
+		n_update_cols++;
+	}
 
 	if (db==NULL){
 		LM_ERR("null database connection\n");
 		return;
 	}
+
+	sh_tags = is_presence_cluster_enabled() ?
+		get_all_active_shtags() : NULL;
 
 	for(i=0; i<htable_size; i++)
 	{
@@ -1524,6 +1553,9 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 		while(s)
 		{
 			printf_subs(s);
+
+			/* delete from memory (only) whatever is expired, disregarding the
+			 * any clustering policy */
 			if(s->expires < (int)time(NULL))
 			{
 				LM_DBG("Found expired record\n");
@@ -1532,13 +1564,16 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 				prev_s->next= s;
 
 				if(!no_lock)
-				{
 					lock_release(&hash_table[i].lock);
-					if(handle_expired_func(del_s)< 0)
-					{
+
+				/* if sharing tags (from clustering) are present, run the
+				 * del callback only if the subscription's tag is active */
+				if (sh_tags==NULL || del_s->sh_tag.len==0 ||
+				is_shtag_active( &del_s->sh_tag, sh_tags)) {
+					if (handle_expired_func(del_s)< 0)
 						LM_ERR("in function handle_expired_record\n");
-					}
 				}
+
 				free_subs(del_s);
 
 				if(!no_lock)
@@ -1546,79 +1581,93 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 
 				continue;
 			}
-			switch(s->db_flag)
-			{
-				case NO_UPDATEDB_FLAG:
+
+			/* perform pending UPDATE/INSERT if not in DB realtime */
+			if (fallback2db==0) {
+
+				switch(s->db_flag)
 				{
-					LM_DBG("NO_UPDATEDB_FLAG\n");
-					break;
-				}
-				case UPDATEDB_FLAG:
-				{
-					LM_DBG("UPDATEDB_FLAG\n");
-
-					query_vals[pres_uri_col].val.str_val= s->pres_uri;
-					query_vals[callid_col].val.str_val= s->callid;
-					query_vals[totag_col].val.str_val= s->to_tag;
-					query_vals[fromtag_col].val.str_val= s->from_tag;
-
-					update_vals[u_expires_col].val.int_val= s->expires;
-					update_vals[u_local_cseq_col].val.int_val= s->local_cseq;
-					update_vals[u_remote_cseq_col].val.int_val= s->remote_cseq;
-					update_vals[u_version_col].val.int_val= s->version;
-					update_vals[u_status_col].val.int_val= s->status;
-					update_vals[u_reason_col].val.str_val= s->reason;
-					update_vals[u_contact_col].val.str_val= s->contact;
-
-					CON_PS_REFERENCE(db) = &my_ps_update;
-					if(dbf->update(db, query_cols, 0, query_vals, update_cols,
-								update_vals, n_query_update, n_update_cols)< 0)
+					case NO_UPDATEDB_FLAG:
 					{
-						LM_ERR("updating in database\n");
+						LM_DBG("NO_UPDATEDB_FLAG\n");
+						break;
 					}
-					break;
-				}
-				case  INSERTDB_FLAG:
-				{
-					LM_DBG("INSERTDB_FLAG\n");
-
-					query_vals[pres_uri_col].val.str_val= s->pres_uri;
-					query_vals[callid_col].val.str_val= s->callid;
-					query_vals[totag_col].val.str_val= s->to_tag;
-					query_vals[fromtag_col].val.str_val= s->from_tag;
-					query_vals[to_user_col].val.str_val = s->to_user;
-					query_vals[to_domain_col].val.str_val = s->to_domain;
-					query_vals[from_user_col].val.str_val = s->from_user;
-					query_vals[from_domain_col].val.str_val = s->from_domain;
-					query_vals[event_col].val.str_val = s->event->name;
-					query_vals[event_id_col].val.str_val = s->event_id;
-					query_vals[local_cseq_col].val.int_val= s->local_cseq;
-					query_vals[remote_cseq_col].val.int_val= s->remote_cseq;
-					query_vals[expires_col].val.int_val = s->expires;
-					query_vals[record_route_col].val.str_val = s->record_route;
-					query_vals[contact_col].val.str_val = s->contact;
-					query_vals[local_contact_col].val.str_val = s->local_contact;
-					query_vals[version_col].val.int_val= s->version;
-					query_vals[status_col].val.int_val= s->status;
-					query_vals[reason_col].val.str_val= s->reason;
-					if(s->sockinfo)
-						query_vals[socket_info_col].val.str_val= s->sockinfo->sock_str;
-					else
+					case UPDATEDB_FLAG:
 					{
-						query_vals[socket_info_col].val.str_val.s = 0;
-						query_vals[socket_info_col].val.str_val.len = 0;
-					}
+						LM_DBG("UPDATEDB_FLAG\n");
 
-					CON_PS_REFERENCE(db) = &my_ps_insert;
-					if(dbf->insert(db,query_cols,query_vals,n_query_cols )<0)
+						query_vals[pres_uri_col].val.str_val= s->pres_uri;
+						query_vals[callid_col].val.str_val= s->callid;
+						query_vals[totag_col].val.str_val= s->to_tag;
+						query_vals[fromtag_col].val.str_val= s->from_tag;
+
+						update_vals[u_expires_col].val.int_val= s->expires;
+						update_vals[u_local_cseq_col].val.int_val=
+							s->local_cseq;
+						update_vals[u_remote_cseq_col].val.int_val=
+							s->remote_cseq;
+						update_vals[u_version_col].val.int_val= s->version;
+						update_vals[u_status_col].val.int_val= s->status;
+						update_vals[u_reason_col].val.str_val= s->reason;
+						update_vals[u_contact_col].val.str_val= s->contact;
+
+						CON_PS_REFERENCE(db) = &my_ps_update;
+						if(dbf->update(db, query_cols, 0, query_vals,
+						update_cols, update_vals, n_query_update,
+						n_update_cols)< 0)
+						{
+							LM_ERR("updating in database\n");
+						}
+						break;
+					}
+					case  INSERTDB_FLAG:
 					{
-						LM_ERR("unsuccessful sql insert\n");
-					}
-					break;
-				}
+						LM_DBG("INSERTDB_FLAG\n");
 
+						query_vals[pres_uri_col].val.str_val= s->pres_uri;
+						query_vals[callid_col].val.str_val= s->callid;
+						query_vals[totag_col].val.str_val= s->to_tag;
+						query_vals[fromtag_col].val.str_val= s->from_tag;
+						query_vals[to_user_col].val.str_val = s->to_user;
+						query_vals[to_domain_col].val.str_val = s->to_domain;
+						query_vals[from_user_col].val.str_val = s->from_user;
+						query_vals[from_domain_col].val.str_val =
+							s->from_domain;
+						query_vals[event_col].val.str_val = s->event->name;
+						query_vals[event_id_col].val.str_val = s->event_id;
+						query_vals[local_cseq_col].val.int_val= s->local_cseq;
+						query_vals[remote_cseq_col].val.int_val=s->remote_cseq;
+						query_vals[expires_col].val.int_val = s->expires;
+						query_vals[record_route_col].val.str_val =
+							s->record_route;
+						query_vals[contact_col].val.str_val = s->contact;
+						query_vals[local_contact_col].val.str_val =
+							s->local_contact;
+						query_vals[version_col].val.int_val= s->version;
+						query_vals[status_col].val.int_val= s->status;
+						query_vals[reason_col].val.str_val= s->reason;
+						if(s->sockinfo)
+							query_vals[socket_info_col].val.str_val=
+								s->sockinfo->sock_str;
+						else
+						{
+							query_vals[socket_info_col].val.str_val.s = 0;
+							query_vals[socket_info_col].val.str_val.len = 0;
+						}
+
+						CON_PS_REFERENCE(db) = &my_ps_insert;
+						if (dbf->insert( db, query_cols, query_vals,
+						n_query_cols) < 0)
+						{
+							LM_ERR("unsuccessful sql insert\n");
+						}
+						break;
+					}
+
+				}
+				s->db_flag= NO_UPDATEDB_FLAG;
 			}
-			s->db_flag= NO_UPDATEDB_FLAG;
+
 			prev_s= s;
 			s= s->next;
 		}
@@ -1628,15 +1677,45 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 
 	/* now that all records were updated, delete whatever 
 	   was still left as expired */
-	LM_DBG("delete expired\n");
+	update_cols[0]= &str_expires_col;
+	update_vals[0].type = DB_INT;
+	update_vals[0].nul = 0;
 	update_vals[0].val.int_val = (int)time(NULL);
 	update_ops[0] = OP_LT;
+
 	CON_PS_REFERENCE(db) = &my_ps_delete;
 	if (dbf->use_table(db, &active_watchers_table) < 0) {
 		LM_ERR("deleting expired information from database\n");
-	} else {
+		return;
+	}
+
+	if (sh_tags==NULL) {
+
+		/* no clustering, simply delete all expired subs */
+		LM_DBG("delete all expired subscriptions\n");
+
 		if (dbf->delete(db, update_cols, update_ops, update_vals, 1) < 0)
 			LM_ERR("deleting expired information from database\n");
+
+	} else {
+
+		/* clustering, delete only expired subs with active sh tags */
+		update_cols[1]= &str_sharing_tag_col;
+		update_vals[1].type = DB_STR;
+		update_vals[1].nul = 0;
+		update_ops[1] = OP_EQ;
+
+		i = 0;
+		while(sh_tags[i]) {
+			LM_DBG("delete expired subscriptions for tag <%.*s>\n",
+				sh_tags[i]->len, sh_tags[i]->s);
+
+			update_vals[1].val.str_val = *sh_tags[i];
+			if (dbf->delete(db, update_cols, update_ops, update_vals, 2) < 0)
+				LM_ERR("deleting expired information from database\n");
+			i++;
+		}
+
 	}
 
 	return;
