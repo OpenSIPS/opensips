@@ -144,7 +144,7 @@ static evi_export_t evi_backend_ebr = {
 	/* function for printing an EBR socket */
 	ebr_print,
 	/* super flags for unknown purposes :D */
-	(1<<25)
+	(1<<22)
 };
 
 
