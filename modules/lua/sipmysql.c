@@ -23,6 +23,9 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <mysql/mysql.h>
+#if (defined LIBMYSQL_VERSION_ID) && (LIBMYSQL_VERSION_ID >= 80000)
+# define my_bool bool
+#endif
 
 #include "../../mem/mem.h"
 
