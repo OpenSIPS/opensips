@@ -1,4 +1,4 @@
-%if 0%{?rhel}
+%if 0%{?rhel} < 8
 # copied from lm_sensors exclusive arch
 %ifnarch alpha i386 i486 i586 i686 pentium3 pentium4 athlon x86_64
 %global _without_snmpstats 1
@@ -17,11 +17,11 @@
 %global _with_cachedb_mongodb 1
 %endif
 
-%if 0%{?fedora} > 23
+%if 0%{?rhel} > 7 || 0%{?fedora} > 23
 %global _without_aaa_radius 1
 %endif
 
-%if 0%{?fedora} > 30
+%if 0%{?rhel} > 7 || 0%{?fedora} > 30
 %global _without_python 1
 %endif
 
@@ -52,7 +52,7 @@ BuildRequires:  openssl-devel
 BuildRequires:  expat-devel
 BuildRequires:  xmlrpc-c-devel
 BuildRequires:  libconfuse-devel
-%if 0%{?rhel}
+%if 0%{?rhel} < 8
 BuildRequires:  db4-devel
 %else
 BuildRequires:  libdb-devel
@@ -522,7 +522,7 @@ The LDAP module implements an LDAP search interface for OpenSIPS.
 Summary:  Call LUA scripts from OpenSIPS cfg
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-%if 0%{?fedora} > 0
+%if 0%{?rhel} > 7 || 0%{?fedora} > 0
 BuildRequires: compat-lua-devel
 %else
 BuildRequires: lua-devel
@@ -591,7 +591,7 @@ Summary:  Helps implement your own OpenSIPS extensions in Perl
 Group:    System Environment/Daemons
 # require perl-devel for >F7 and perl for <=F6
 BuildRequires:  perl(ExtUtils::MakeMaker)
-%if 0%{?rhel}
+%if 0%{?rhel} < 8
 BuildRequires:  perl(ExtUtils::Embed)
 %else
 %if 0%{?rhel} == 5
