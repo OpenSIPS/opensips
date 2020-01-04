@@ -236,6 +236,18 @@ modparam("rr", "enable_socket_mismatch_warning", 0)
 		header is removed and the function returns FALSE.
 		</para>
 		<para>
+		The function is able to automatically detecting if it deals with a
+		'strict' or 'loose' routing scenario (the difference is how the SIP
+		path is stored across the RURI and Route hdrs). To make the difference
+		between the two scenarios OpenSIPS has to determine which SIP URI
+		holds its address/domain - the RURI (then it is a strict routing
+		scenario) or the top Route URI (then it is a loose route scenario).
+		In order to check if the SIP URI holds its address/domain, OpenSIPS 
+		checks the host URI against the listening IPs/interfaces (as a static
+		component) and the domains listed from the "domain" module/table (as 
+		the dynamic component).
+		</para>
+		<para>
 		If there is a Route header but other parsing errors occur ( like
 		parsing the TO header to get the TAG ), the function also returns
 		FALSE.
