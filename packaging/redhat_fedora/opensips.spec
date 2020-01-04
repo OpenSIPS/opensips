@@ -21,6 +21,10 @@
 %global _without_aaa_radius 1
 %endif
 
+%if 0%{?rhel} > 7
+%global _with_python3 1
+%endif
+
 %global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
 
 Summary:  Very fast and configurable SIP server
@@ -58,7 +62,11 @@ BuildRequires:  curl-devel
 # BuildRequires:  GeoIP-devel
 BuildRequires:  libmaxminddb-devel
 BuildRequires:  pcre-devel
+%if 0%{?_with_python3:1}
+BuildRequires:  python3-devel
+%else
 BuildRequires:  python-devel
+%endif
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 BuildRequires:  systemd-units
 %endif
@@ -781,7 +789,7 @@ This package provides the SIP to XMPP IM translator module for OpenSIPS.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
