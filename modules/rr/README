@@ -226,6 +226,18 @@ modparam("rr", "enable_socket_mismatch_warning", 0)
    indicating the local proxy, then the Route header is removed
    and the function returns FALSE.
 
+   The function is able to automatically detecting if it deals
+   with a 'strict' or 'loose' routing scenario (the difference is
+   how the SIP path is stored across the RURI and Route hdrs). To
+   make the difference between the two scenarios OpenSIPS has to
+   determine which SIP URI holds its address/domain - the RURI
+   (then it is a strict routing scenario) or the top Route URI
+   (then it is a loose route scenario). In order to check if the
+   SIP URI holds its address/domain, OpenSIPS checks the host URI
+   against the listening IPs/interfaces (as a static component)
+   and the domains listed from the "domain" module/table (as the
+   dynamic component).
+
    If there is a Route header but other parsing errors occur (
    like parsing the TO header to get the TAG ), the function also
    returns FALSE.
@@ -531,7 +543,7 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 144 59 4374 2763
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 91 61 1895 835
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 92 62 1907 835
    3. Daniel-Constantin Mierla (@miconda) 18 14 244 92
    4. Liviu Chircu (@liviuchircu) 16 13 62 99
    5. Vlad Paiu (@vladpaiu) 15 10 333 88
@@ -567,9 +579,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
-   2.  Varghese Paul                       Jun 2019 - Jun 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - May 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Jan 2020
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
+   3.  Varghese Paul                       Jun 2019 - Jun 2019
    4.  Liviu Chircu (@liviuchircu)         Oct 2013 - Feb 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
