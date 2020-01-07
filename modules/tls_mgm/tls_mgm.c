@@ -34,6 +34,10 @@
  *
  */
 
+#ifdef __OS_linux
+#define _GNU_SOURCE /* we need this for gettid() */
+#endif
+
 #include <openssl/ui.h>
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
@@ -1489,7 +1493,11 @@ static int tls_init_multithread(void)
 		CRYPTO_set_locking_callback(tls_static_locks_ops);
 	}
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
 	CRYPTO_set_id_callback(tls_get_id);
+#else /* between 1.0.0 and 1.1.0 */
+	CRYPTO_THREADID_set_callback(tls_get_thread_id);
+#endif /* OPENSSL_VERSION_NUMBER */
 
 	/* dynamic locks support*/
 	CRYPTO_set_dynlock_create_callback(tls_dyn_lock_create);
