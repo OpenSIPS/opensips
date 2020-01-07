@@ -91,7 +91,7 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 		if (dom) {
 			LM_DBG("found socket based TLS server domain "
 				"[%s:%d]\n", ip_addr2a(&dom->addr), dom->port);
-				c->extra_data = SSL_new(dom->ctx);
+				c->extra_data = SSL_new(dom->ctx[process_no]);
 				api->release_domain(dom);
 		} else {
 			LM_ERR("no TLS server domain found\n");
@@ -103,7 +103,7 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 
 		dom = api->find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
 		if (dom) {
-			c->extra_data = SSL_new(dom->ctx);
+			c->extra_data = SSL_new(dom->ctx[process_no]);
 			api->release_domain(dom);
 		} else {
 			LM_ERR("no TLS client domain found\n");

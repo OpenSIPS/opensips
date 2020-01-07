@@ -51,7 +51,8 @@ struct tls_domain {
 	int             type;
 	struct ip_addr  addr;
 	unsigned short  port;
-	void           *ctx; /* libssl's SSL_CTX  */
+	void             **ctx;  /* libssl's SSL_CTX  */
+	int             ctx_no;  /* number of allocated SSL_CTXes */
 	int             verify_cert;
 	int             require_client_cert;
 	int             crl_check_all;
