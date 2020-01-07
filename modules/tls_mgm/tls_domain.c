@@ -108,11 +108,15 @@ void map_remove_tls_dom(struct tls_domain *dom)
 void tls_free_domain(struct tls_domain *dom)
 {
 	struct str_list *m_it, *m_tmp;
+	int i;
 
 	dom->refs--;
 	if (dom->refs == 0) {
-		if (dom->ctx)
-			SSL_CTX_free(dom->ctx);
+		if (dom->ctx) {
+			for (i = 0; i < dom->ctx_no; i++)
+				SSL_CTX_free(dom->ctx[i]);
+			shm_free(dom->ctx);
+		}
 		lock_destroy(dom->lock);
 		lock_dealloc(dom->lock);
 
