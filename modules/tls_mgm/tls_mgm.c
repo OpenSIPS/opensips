@@ -719,7 +719,7 @@ int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 	} else if (new_dom && new_dom != dom) {
 		/* switch SSL context to the one with the proper certificate
 		 * for the indicated hostname */
-		SSL_set_SSL_CTX(ssl, new_dom->ctx);
+		SSL_set_SSL_CTX(ssl, new_dom->ctx[process_no]);
 
 		if (!SSL_set_ex_data(ssl, SSL_EX_DOM_IDX, new_dom)) {
 			LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
@@ -739,70 +739,8 @@ int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 }
 
 
-/*
- * Setup default SSL_CTX (and SSL * ) behavior:
- *     verification, cipherlist, acceptable versions, ...
- */
-static int init_ssl_ctx_behavior(struct tls_domain *d) {
-	int verify_mode;
-	int from_file = 0;
-
-#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
-	/*
-	 * set dh params
-	 */
-	if (!d->dh_param.s) {
-		from_file = 1;
-		LM_DBG("no DH params file for tls domain '%.*s' defined, using default '%s'\n",
-				d->name.len, ZSW(d->name.s), tls_tmp_dh_file);
-		d->dh_param.s = tls_tmp_dh_file;
-		d->dh_param.len = len(tls_tmp_dh_file);
-	}
-	if (!(d->flags & DOM_FLAG_DB) || from_file) {
-		if (d->dh_param.s && set_dh_params(d->ctx, d->dh_param.s) < 0)
-			return -1;
-	} else {
-		set_dh_params_db(d->ctx, &d->dh_param);
-	}
-	if (d->tls_ec_curve) {
-		if (set_ec_params(d->ctx, d->tls_ec_curve) < 0) {
-			return -1;
-		}
-	}
-	else {
-		LM_NOTICE("No EC curve defined\n");
-	}
-#else
-	if (d->tmp_dh_file  || tls_tmp_dh_file)
-		LM_INFO("DH params file discarded as not supported by your "
-			"openSSL version\n");
-	if (d->tls_ec_curve)
-		LM_INFO("EC params file discarded as not supported by your "
-			"openSSL version\n");
-#endif
-
-	if( d->ciphers_list != 0 ) {
-		if( SSL_CTX_set_cipher_list(d->ctx, d->ciphers_list) == 0 ) {
-			LM_ERR("failure to set SSL context "
-					"cipher list '%s'\n", d->ciphers_list);
-			return -1;
-		} else {
-			LM_NOTICE("cipher list set to %s\n", d->ciphers_list);
-		}
-	} else {
-		LM_DBG( "cipher list null ... setting default\n");
-	}
-
-	/* Set a bunch of options:
-	 *     do not accept SSLv2 / SSLv3
-	 *     no session resumption
-	 *     choose cipher according to server's preference's*/
-
-	SSL_CTX_set_options(d->ctx,
-			SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
-			SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
-			SSL_OP_CIPHER_SERVER_PREFERENCE);
-
+static void get_ssl_ctx_verify_mode(struct tls_domain *d, int *verify_mode)
+{
 	/* Set verification procedure
 	 * The verification can be made null with SSL_VERIFY_NONE, or
 	 * at least easier with SSL_VERIFY_CLIENT_ONCE instead of
@@ -836,16 +774,16 @@ static int init_ssl_ctx_behavior(struct tls_domain *d) {
 		 */
 
 		if( d->verify_cert ) {
-			verify_mode = SSL_VERIFY_PEER;
+			*verify_mode = SSL_VERIFY_PEER;
 			if( d->require_client_cert ) {
 				LM_INFO("client verification activated. Client "
 						"certificates are mandatory.\n");
-				verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+				*verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 			} else
 				LM_INFO("client verification activated. Client "
 						"certificates are NOT mandatory.\n");
 		} else {
-			verify_mode = SSL_VERIFY_NONE;
+			*verify_mode = SSL_VERIFY_NONE;
 			LM_INFO("client verification NOT activated. Weaker security.\n");
 		}
 	} else {
@@ -870,28 +808,13 @@ static int init_ssl_ctx_behavior(struct tls_domain *d) {
 		 */
 
 		if( d->verify_cert ) {
-			verify_mode = SSL_VERIFY_PEER;
+			*verify_mode = SSL_VERIFY_PEER;
 			LM_INFO("server verification activated.\n");
 		} else {
-			verify_mode = SSL_VERIFY_NONE;
+			*verify_mode = SSL_VERIFY_NONE;
 			LM_INFO("server verification NOT activated. Weaker security.\n");
 		}
 	}
-
-	SSL_CTX_set_verify( d->ctx, verify_mode, verify_callback);
-	SSL_CTX_set_verify_depth( d->ctx, VERIFY_DEPTH_S);
-
-	SSL_CTX_set_session_cache_mode( d->ctx, SSL_SESS_CACHE_SERVER );
-	SSL_CTX_set_session_id_context( d->ctx, OS_SSL_SESS_ID,
-			OS_SSL_SESS_ID_LEN );
-
-	/* install callback for SNI */
-	if (d->flags & DOM_FLAG_SRV) {
-		SSL_CTX_set_tlsext_servername_callback(d->ctx, ssl_servername_cb);
-		SSL_CTX_set_tlsext_servername_arg(d->ctx, d);
-	}
-
-	return 0;
 }
 
 /*
@@ -1217,13 +1140,64 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 	return 0;
 }
 
+static void destroy_tls_dom(struct tls_domain *d)
+{
+	int i;
+	if (d->ctx) {
+		for (i = 0; i < d->ctx_no; i++)
+			SSL_CTX_free(d->ctx[i]);
+		shm_free(d->ctx);
+	}
+	lock_destroy(d->lock);
+	lock_dealloc(d->lock);
+	shm_free(d);
+}
 
 static int init_tls_dom(struct tls_domain *d)
 {
-	int from_file = 0;
+	int cert_from_file = 0;
+	int ca_from_file = 0;
+	int verify_mode = 0;
+	unsigned i, tcp_procs;
+	SSL_CTX *ctx;
+	char *ciphers_list = NULL;
+#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
+	int dh_from_file = 0;
+#endif
 
 	LM_INFO("Processing TLS domain '%.*s'\n",
 			d->name.len, ZSW(d->name.s));
+
+#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
+	/*
+	 * set dh params
+	 */
+	if (!d->dh_param.s) {
+		dh_from_file = 1;
+		LM_DBG("no DH params file for tls domain '%.*s' defined, using default '%s'\n",
+				d->name.len, ZSW(d->name.s), tls_tmp_dh_file);
+		d->dh_param.s = tls_tmp_dh_file;
+		d->dh_param.len = len(tls_tmp_dh_file);
+	}
+	if (!d->tls_ec_curve)
+		LM_NOTICE("No EC curve defined\n");
+#else
+	if (d->tmp_dh_file  || tls_tmp_dh_file)
+		LM_INFO("DH params file discarded as not supported by your "
+			"openSSL version\n");
+	if (d->tls_ec_curve)
+		LM_INFO("EC params file discarded as not supported by your "
+			"openSSL version\n");
+#endif
+
+	if( d->ciphers_list != 0 ) {
+		ciphers_list = d->ciphers_list;
+		LM_NOTICE("setting cipher list to %s\n", ciphers_list);
+	} else {
+		LM_DBG( "cipher list null ... setting default\n");
+	}
+
+	get_ssl_ctx_verify_mode(d, &verify_mode);
 
 	/*
 	 * set method
@@ -1234,83 +1208,20 @@ static int init_tls_dom(struct tls_domain *d)
 		d->method = tls_default_method;
 	}
 
-	/*
-	 * create context
-	 */
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-	d->ctx = SSL_CTX_new(TLS_method());
-#else
-	d->ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
-#endif
-	if (d->ctx == NULL) {
-		LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
-			d->name.len, ZSW(d->name.s));
-		return -1;
-	}
-
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-	if (d->method != TLS_USE_SSLv23) {
-		if (!SSL_CTX_set_min_proto_version(d->ctx,
-				ssl_versions[d->method - 1]) ||
-			!SSL_CTX_set_max_proto_version(d->ctx,
-				ssl_versions[d->method - 1])) {
-			LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
-				d->name.len, ZSW(d->name.s));
-			return -1;
-		}
-	}
-#endif
-
-	if (init_ssl_ctx_behavior(d) < 0)
-		return -1;
-
-	/*
-	 * load certificate
-	 */
 	if (!d->cert.s) {
-		from_file = 1;
+		cert_from_file = 1;
 		LM_NOTICE("no certificate for tls domain '%.*s' defined, using default '%s'\n",
 				d->name.len, ZSW(d->name.s), tls_cert_file);
 		d->cert.s = tls_cert_file;
 		d->cert.len = len(tls_cert_file);
 	}
 
-	if (!(d->flags & DOM_FLAG_DB) || from_file) {
-		if (load_certificate(d->ctx, d->cert.s) < 0)
-			return -1;
-	} else
-		if (load_certificate_db(d->ctx, &d->cert) < 0)
-			return -1;
-
-	from_file = 0;
-
-	/**
-	 * load crl from directory
-	 */
-	if (!d->crl_directory) {
-		LM_NOTICE("no crl for tls, using none\n");
-	} else {
-		if(load_crl(d->ctx, d->crl_directory, d->crl_check_all) < 0)
-			return -1;
-	}
-
-	/*
-	 * load ca
-	 */
 	if (!d->ca.s) {
-		from_file = 1;
+		ca_from_file = 1;
 		LM_NOTICE("no CA list for tls domain '%.*s' defined, using default '%s'\n",
 				d->name.len, ZSW(d->name.s), tls_ca_file);
 		d->ca.s = tls_ca_file;
 		d->ca.len = len(tls_ca_file);
-	}
-
-	if (!(d->flags & DOM_FLAG_DB) || from_file) {
-		if (d->ca.s && load_ca(d->ctx, d->ca.s) < 0)
-			return -1;
-	} else {
-		if (load_ca_db(d->ctx, &d->ca) < 0)
-			return -1;
 	}
 
 	/*
@@ -1322,8 +1233,120 @@ static int init_tls_dom(struct tls_domain *d)
 		d->ca_directory = tls_ca_dir;
 	}
 
-	if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
-		return -1;
+	if (!d->crl_directory)
+		LM_NOTICE("no crl for tls, using none\n");
+
+	tcp_procs = count_child_processes();
+
+	d->ctx = shm_malloc(tcp_procs * sizeof(SSL_CTX *));
+	if (!d->ctx) {
+		LM_ERR("cannot allocate ssl ctx per process!\n");
+		return 0;
+	}
+	d->ctx_no = tcp_procs;
+
+	for (i = 0; i < tcp_procs; i++) {
+		/*
+		 * create context
+		 */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+		ctx = SSL_CTX_new(TLS_method());
+#else
+		ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
+#endif
+		if (ctx == NULL) {
+			LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
+				d->name.len, ZSW(d->name.s));
+			return -1;
+		}
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+		if (d->method != TLS_USE_SSLv23) {
+			if (!SSL_CTX_set_min_proto_version(ctx,
+					ssl_versions[d->method - 1]) ||
+				!SSL_CTX_set_max_proto_version(ctx,
+					ssl_versions[d->method - 1])) {
+				LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
+						d->name.len, ZSW(d->name.s));
+				return -1;
+			}
+		}
+#endif
+
+#if (OPENSSL_VERSION_NUMBER > 0x10001000L)
+		if (!(d->flags & DOM_FLAG_DB) || dh_from_file) {
+			if (d->dh_param.s && set_dh_params(ctx, d->dh_param.s) < 0)
+				return -1;
+		} else {
+			set_dh_params_db(ctx, &d->dh_param);
+		}
+		if (d->tls_ec_curve && set_ec_params(ctx, d->tls_ec_curve) < 0)
+			return -1;
+#endif
+
+		if (ciphers_list != 0 && SSL_CTX_set_cipher_list(ctx, d->ciphers_list) == 0 ) {
+			LM_ERR("failure to set SSL context "
+					"cipher list '%s'\n", d->ciphers_list);
+			return -1;
+		}
+
+		/* Set a bunch of options:
+		 *     do not accept SSLv2 / SSLv3
+		 *     no session resumption
+		 *     choose cipher according to server's preference's*/
+
+		SSL_CTX_set_options(ctx,
+				SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
+				SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
+				SSL_OP_CIPHER_SERVER_PREFERENCE);
+
+
+		SSL_CTX_set_verify(ctx, verify_mode, verify_callback);
+		SSL_CTX_set_verify_depth(ctx, VERIFY_DEPTH_S);
+
+		//SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_SERVER );
+		SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF );
+		SSL_CTX_set_session_id_context(ctx, OS_SSL_SESS_ID,
+				OS_SSL_SESS_ID_LEN );
+
+		/* install callback for SNI */
+		if (d->flags & DOM_FLAG_SRV) {
+			SSL_CTX_set_tlsext_servername_callback(ctx, ssl_servername_cb);
+			SSL_CTX_set_tlsext_servername_arg(ctx, d);
+		}
+
+		/*
+		 * load certificate
+		 */
+		if (!(d->flags & DOM_FLAG_DB) || cert_from_file) {
+			if (load_certificate(ctx, d->cert.s) < 0)
+				return -1;
+		} else
+			if (load_certificate_db(ctx, &d->cert) < 0)
+				return -1;
+
+		/**
+		 * load crl from directory
+		 */
+		if (d->crl_directory && load_crl(ctx, d->crl_directory, d->crl_check_all) < 0)
+			return -1;
+
+		/*
+		 * load ca
+		 */
+		if (!(d->flags & DOM_FLAG_DB) || ca_from_file) {
+			if (d->ca.s && load_ca(ctx, d->ca.s) < 0)
+				return -1;
+		} else {
+			if (load_ca_db(ctx, &d->ca) < 0)
+				return -1;
+		}
+
+		if (d->ca_directory && load_ca_dir(ctx, d->ca_directory) < 0)
+			return -1;
+
+		d->ctx[i] = ctx;
+	}
 
 	return 0;
 }
@@ -1336,6 +1359,7 @@ static int init_tls_domains(struct tls_domain **dom)
 	struct tls_domain *d, *tmp, *prev = NULL;
 	int from_file = 0;
 	int rc;
+	int i;
 	int db = 0;
 
 	d = *dom;
@@ -1356,11 +1380,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			if (tmp->ctx)
-				SSL_CTX_free(tmp->ctx);
-			lock_destroy(tmp->lock);
-			lock_dealloc(tmp->lock);
-			shm_free(tmp);
+			destroy_tls_dom(tmp);
 
 			if (!db)
 				return -1;
@@ -1384,10 +1404,15 @@ static int init_tls_domains(struct tls_domain **dom)
 			from_file = 1;
 		}
 
-		if (!(d->flags & DOM_FLAG_DB) || from_file)
-			rc = load_private_key(d->ctx, d->pkey.s);
-		else
-			rc = load_private_key_db(d->ctx, &d->pkey);
+		rc = 0;
+		for (i = 0; i < d->ctx_no; i++) {
+			if (!(d->flags & DOM_FLAG_DB) || from_file)
+				rc = load_private_key(d->ctx[i], d->pkey.s);
+			else
+				rc = load_private_key_db(d->ctx[i], &d->pkey);
+			if (rc < 0)
+				break;
+		}
 
 		if (rc < 0) {
 			db = d->flags & DOM_FLAG_DB;
@@ -1405,11 +1430,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			if (tmp->ctx)
-				SSL_CTX_free(tmp->ctx);
-			lock_destroy(tmp->lock);
-			lock_dealloc(tmp->lock);
-			shm_free(tmp);
+			destroy_tls_dom(tmp);
 
 			if (!db)
 				return -1;

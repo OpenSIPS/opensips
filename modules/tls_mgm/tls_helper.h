@@ -53,7 +53,8 @@ struct tls_domain {
 	struct str_list *match_domains;
 	struct str_list *match_addresses;
 	int ssl_ex_index;
-	void *ctx;  /* libssl's SSL_CTX  */
+	void **ctx;  /* libssl's SSL_CTX  */
+	int ctx_no;  /* number of allocated SSL_CTXes */
 	int verify_cert;
 	int require_client_cert;
 	int crl_check_all;

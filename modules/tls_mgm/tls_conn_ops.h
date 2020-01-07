@@ -116,7 +116,7 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
 		dom = api->find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
 		if (dom) {
-			c->extra_data = SSL_new(dom->ctx);
+			c->extra_data = SSL_new(dom->ctx[process_no]);
 
 			/* put pointers to the tcp_connection and tls_domain structs
 			 * in the SSL struct as extra data */
@@ -137,7 +137,7 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 		c->proto_flags = F_TLS_DO_CONNECT;
 		dom = api->find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
 		if (dom) {
-			c->extra_data = SSL_new(dom->ctx);
+			c->extra_data = SSL_new(dom->ctx[process_no]);
 
 			if (!SSL_set_ex_data(c->extra_data, SSL_EX_CONN_IDX, c)) {
 				LM_ERR("Failed to store tcp_connection pointer in SSL struct\n");
