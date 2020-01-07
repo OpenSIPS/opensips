@@ -175,6 +175,16 @@ again:
 				goto error;
 			}
 
+			if (!(con->flags & F_CONN_INIT)) {
+				if (protos[con->type].net.conn_init &&
+						protos[con->type].net.conn_init(con) < 0) {
+					LM_ERR("failed to do proto %d specific init for conn %p\n",
+							con->type, con);
+					goto con_error;
+				}
+				con->flags |= F_CONN_INIT;
+			}
+
 			LM_DBG("We have received conn %p with rw %d on fd %d\n",con,rw,s);
 			if (rw & IO_WATCH_READ) {
 				if (tcpconn_list_find(con, tcp_conn_lst)) {
