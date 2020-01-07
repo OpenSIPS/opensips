@@ -42,6 +42,7 @@
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
+#include <openssl/rand.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -1655,6 +1656,85 @@ static void openssl_on_exit(int status, void *param)
 }
 #endif
 
+
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+static gen_lock_t *ssl_lock;
+static const RAND_METHOD *os_ssl_method;
+
+static int os_ssl_seed(const void *buf, int num)
+{
+	int ret;
+	if (!os_ssl_method || !ssl_lock || !os_ssl_method->seed)
+		return 0;
+	lock_get(ssl_lock);
+	ret = os_ssl_method->seed(buf, num);
+	lock_release(ssl_lock);
+	return ret;
+}
+
+static int os_ssl_bytes(unsigned char *buf, int num)
+{
+	int ret;
+	if (!os_ssl_method || !ssl_lock || !os_ssl_method->bytes)
+		return 0;
+	lock_get(ssl_lock);
+	ret = os_ssl_method->bytes(buf, num);
+	lock_release(ssl_lock);
+	return ret;
+}
+
+static void os_ssl_cleanup(void)
+{
+	if (!os_ssl_method || !ssl_lock || !os_ssl_method->cleanup)
+		return;
+	lock_get(ssl_lock);
+	os_ssl_method->cleanup();
+	lock_release(ssl_lock);
+}
+
+static int os_ssl_add(const void *buf, int num, double entropy)
+{
+	int ret;
+	if (!os_ssl_method || !ssl_lock || !os_ssl_method->add)
+		return 0;
+	lock_get(ssl_lock);
+	ret = os_ssl_method->add(buf, num, entropy);
+	lock_release(ssl_lock);
+	return ret;
+}
+
+static int os_ssl_pseudorand(unsigned char *buf, int num)
+{
+	int ret;
+	if (!os_ssl_method || !ssl_lock || !os_ssl_method->pseudorand)
+		return 0;
+	lock_get(ssl_lock);
+	ret = os_ssl_method->pseudorand(buf, num);
+	lock_release(ssl_lock);
+	return ret;
+}
+
+static int os_ssl_status(void)
+{
+	int ret;
+	if (!os_ssl_method || !ssl_lock || !os_ssl_method->status)
+		return 0;
+	lock_get(ssl_lock);
+	ret = os_ssl_method->status();
+	lock_release(ssl_lock);
+	return ret;
+}
+
+static RAND_METHOD opensips_ssl_method = {
+	os_ssl_seed,
+	os_ssl_bytes,
+	os_ssl_cleanup,
+	os_ssl_add,
+	os_ssl_pseudorand,
+	os_ssl_status
+};
+#endif
+
 static int mod_load(void)
 {
 	/*
@@ -1819,6 +1899,21 @@ static int mod_init(void) {
 #endif
 			, NULL);
 #endif
+
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+	ssl_lock = lock_alloc();
+	if (!ssl_lock || !lock_init(ssl_lock)) {
+		LM_ERR("could not initialize ssl lock!\n");
+		return -1;
+	}
+	os_ssl_method = RAND_get_rand_method();
+	if (!os_ssl_method) {
+		LM_ERR("could not get the default ssl rand method!\n");
+		return -1;
+	}
+	RAND_set_rand_method(&opensips_ssl_method);
+#endif
+
 	init_ssl_methods();
 
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
