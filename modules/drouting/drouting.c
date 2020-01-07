@@ -2601,7 +2601,7 @@ static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 		/* WILDCARD partition */
 		for (current_partition = head_db_start;
 		current_partition; current_partition = current_partition->next) {
-			ret=do_routing( msg, part, grp, flags, whitelist);
+			ret=do_routing( msg, current_partition, grp, flags, whitelist);
 			if (ret > 0) {
 				if (partition_pvar.s) {
 					pv_val.rs = current_partition->partition;
