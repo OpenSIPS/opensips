@@ -82,6 +82,7 @@
 #define F_CONN_REMOVED_WRITE	(1<<4) /*!< no longer in "main" reactor for write */
 /*!< no longer in "main" reactor for read or write */
 #define F_CONN_REMOVED			(F_CONN_REMOVED_READ|F_CONN_REMOVED_WRITE)
+#define F_CONN_INIT				(1<<5) /*!< the connection was initialized */
 
 enum tcp_conn_states { S_CONN_ERROR=-2, S_CONN_BAD=-1, S_CONN_OK=0,
 		S_CONN_CONNECTING, S_CONN_EOF };
