@@ -569,11 +569,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			d_entry = &d_table->entries[hash_entry];
 			dlg_lock(d_table, d_entry);
-			dlg->locked_by = process_no;
 
 			if (get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag,
 			                   &dlg) == 0) {
-				dlg->locked_by = 0;
 				dlg_unlock(d_table, d_entry);
 				LM_DBG("dialog already exists, skipping (ci: %.*s)\n",
 				       callid.len, callid.s);
@@ -632,8 +630,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg_unsafe(dlg, 1, d_entry);
-				dlg->locked_by = 0;
-				dlg_unlock(d_table, d_entry);
 				continue;
 			}
 			dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
@@ -686,8 +682,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 				/* destroy the dialog */
 				unref_dlg_unsafe(dlg, 1, d_entry);
-				dlg->locked_by = 0;
-				dlg_unlock(d_table, d_entry);
 				continue;
 			}
 
@@ -702,7 +696,6 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			dlg->legs[callee_idx(dlg)].last_gen_cseq =
 				(unsigned int)(VAL_INT(values+21));
 
-			dlg->locked_by = 0;
 			dlg_unlock(d_table, d_entry);
 
 			/* profiles */
