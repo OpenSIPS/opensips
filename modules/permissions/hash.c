@@ -544,7 +544,7 @@ int subnet_table_mi_print(struct subnet* table, mi_item_t *part_item,
 		if (add_mi_string(dest_item, MI_SSTR("ip"), ip_buff, strlen(ip_buff)) < 0)
 			return -1;
 
-		if (add_mi_string(dest_item, MI_SSTR("ip"), mask, strlen(mask)) < 0)
+		if (add_mi_string(dest_item, MI_SSTR("mask"), mask, strlen(mask)) < 0)
 			return -1;
 
 		if (add_mi_number(dest_item, MI_SSTR("port"), table[i].port) < 0)
