@@ -82,10 +82,16 @@ int create_status_pipe(void)
 
 retry:
 	rc = pipe(status_pipe);
-	if (rc < 0 && errno == EINTR)
-		goto retry;
+	if (rc < 0) {
+		if (errno == EINTR)
+			goto retry;
 
-	LM_DBG("pipe created ? rc = %d, errno = %s\n",rc,strerror(errno));
+		LM_ERR("pipe() failed (%d): %d, %s\n", rc, errno, strerror(errno));
+	} else {
+		LM_DBG("created status pipe, fds=[%d, %d]\n",
+		       status_pipe[0], status_pipe[1]);
+	}
+
 	return rc;
 }
 
@@ -97,10 +103,15 @@ int send_status_code(char val)
 
 retry:
 	rc = write(status_pipe[1], &val, 1);
-	if (rc < 0 && errno == EINTR)
-		goto retry;
+	if (rc < 0) {
+		if (errno == EINTR)
+			goto retry;
 
-	LM_DBG("send %d ? rc = %d , errno=%s\n",val,rc,strerror(errno));
+		LM_ERR("write(%d) failed (%d): %d, %s\n", val, rc,
+		       errno, strerror(errno));
+	} else {
+		LM_DBG("sent code %d (%d byte)\n", val, rc);
+	}
 
 	if (rc == 1)
 		return 0;
@@ -121,10 +132,14 @@ static int wait_status_code(char *code)
 
 retry:
 	rc = read(status_pipe[0], code, 1);
-	if (rc < 0 && errno == EINTR)
+	if (rc < 0) {
+		if (errno == EINTR)
 			goto retry;
 
-	LM_DBG("read code %d ? rc = %d, errno=%s\n",*code,rc,strerror(errno));
+		LM_ERR("read(1) failed (%d): %d, %s\n", rc, errno, strerror(errno));
+	} else {
+		LM_DBG("read code %d (%d byte)\n", *code, rc);
+	}
 
 	if (rc == 1)
 		return 0;
