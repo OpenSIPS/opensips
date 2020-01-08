@@ -171,8 +171,12 @@ static str ws_rand_key(void)
 	static str key = { ws_key, WS_KEY_LEN };
 	int i;
 
-	for (i = 0; i < WS_KEY_LEN; i++)
+	/* randomly selected 16-byte base64 encoded value requires
+	 * 22 characters and 2 paddings at the end */
+	for (i = 0; i < WS_KEY_LEN - 2; i++)
 		ws_key[i] = base64alphabet[rand() % BASE64ALPHABET_LEN];
+	ws_key[i++] = '=';
+	ws_key[i++] = '=';
 
 	return key;
 }
