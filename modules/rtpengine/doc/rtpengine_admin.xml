@@ -1092,6 +1092,39 @@ rtpengine_stop_forwarding();
 		</example>
 	</section>
 
+	<section id="func_rtpengine_play_dtmf" xreflabel="rtpengine_play_dtmf()">
+		<title>
+		<function moreinfo="none">rtpengine_play_dtmf(code, [flags[, sockvar]])</function>
+		</title>
+		<para>
+			This function instructs &rtp; to send the DTMF <emphasis>code</emphasis>
+			to the participant of the call. The <emphasis>code</emphasis> can be a digit
+			(<quote>0-9</quote>) or a special character (one of <quote>*,#,A,B,C,D</quote>).
+			Additional parameters can be configured using the <emphasis>flags</emphasis>
+			parameter. For more information, please consult the &rtp; documentation.
+		</para>
+		<para>
+			<emphasis>NOTE:</emphasis> if you are planning to inject DTMF in a session,
+			you have to specify the <emphasis>inject-DTMF</emphasis> flag when the
+			session is created.
+		</para>
+		<para>
+			This function can be used to convert SIP INFO DTMF keys to RTP DTMF.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Example of <function>rtpengine_play_dtmf</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_play_dtmf("0"); # send the 0 code upstream
+...
+		</programlisting>
+		</example>
+	</section>
+
+
 	</section>
 
 	<section id="exported_pseudo_variables">
