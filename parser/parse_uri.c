@@ -43,13 +43,14 @@
 #include "../core_stats.h"
 #include "../strcommon.h"
 
-static const str uri_type_names[6] = {
+static const str uri_type_names[7] = {
 	{NULL, 0}, /*This is the error type*/
 	str_init("sip"),
 	str_init("sips"),
 	str_init("tel"),
 	str_init("tels"),
-	str_init("urn:service")
+	str_init("urn:service"),
+	str_init("urn:nena:service")
 };
 
 char* uri_type2str(const uri_type type, char *result)
@@ -83,6 +84,9 @@ uri_type str2uri_type(char * buf)
 	}else if (scheme==URN_SERVICE_SCH){
 		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
 			type=URN_SERVICE_URI_T;
+		}
+		else if (memcmp(buf+3,URN_NENA_SERVICE_STR,URN_NENA_SERVICE_STR_LEN) == 0) {
+			type=URN_NENA_SERVICE_URI_T;
 		}
 	}
 	return type;
@@ -623,7 +627,11 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
 			p+= URN_SERVICE_STR_LEN-1;
 			uri->type=URN_SERVICE_URI_T;
-		} else goto error_bad_uri;
+		}
+		else if (memcmp(buf+3,URN_NENA_SERVICE_STR,URN_NENA_SERVICE_STR_LEN) == 0) {
+			p+= URN_NENA_SERVICE_STR_LEN-1;
+			uri->type=URN_NENA_SERVICE_URI_T;
+		}else goto error_bad_uri;
 	}else goto error_bad_uri;
 
 	s=p;
@@ -1352,6 +1360,12 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case SIPS_URI_T:
 		case URN_SERVICE_URI_T:
 			/* nothing to do for these URIs */
+			break;
+		case URN_NENA_SERVICE_URI_T:
+			uri->user.s=0;
+			uri->user.len=0;
+			uri->host.s="";
+			uri->host.len=0;
 			break;
 		case ERROR_URI_T:
 			LM_ERR("unexpected error (BUG?)\n");

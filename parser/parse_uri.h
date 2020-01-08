@@ -38,6 +38,8 @@
 #define URN_SERVICE_SCH		0x3a6e7275
 #define URN_SERVICE_STR 	":service:"
 #define URN_SERVICE_STR_LEN	(sizeof(URN_SERVICE_STR) - 1)
+#define URN_NENA_SERVICE_STR 	":nena:service:"
+#define URN_NENA_SERVICE_STR_LEN	(sizeof(URN_NENA_SERVICE_STR) - 1)
 
 /* buf= pointer to beginning of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
