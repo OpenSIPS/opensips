@@ -1048,6 +1048,50 @@ rtpengine_unblock_dtmf();
 		</example>
 	</section>
 
+	<section id="func_rtpengine_start_forwarding" xreflabel="rtpengine_start_forwarding()">
+		<title>
+		<function moreinfo="none">rtpengine_start_forwarding([flags[, sockvar]])</function>
+		</title>
+		<para>
+			This function will start forwarding the media to a TLS destination specified
+			in the <emphasis>tls-send-to</emphasis> parmeter of RTPEngine. This function allows you
+			to select the media stream to forward, by specifing the <emphasis>from-tag</emphasis>
+			of the entity you want to forward the media. If missing, all media streams are forwarded.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Example of <function>rtpengine_start_forwarding</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_start_forwarding();
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_rtpengine_stop_forwarding" xreflabel="rtpengine_stop_forwarding()">
+		<title>
+		<function moreinfo="none">rtpengine_stop_forwarding([flags[, sockvar]])</function>
+		</title>
+		<para>
+			This function will stop forwarding of the media previously started using the
+			<emphasis>rtpengine_start_forwarding()</emphasis> function.
+		</para>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title>Example of <function>rtpengine_stop_forwarding</function> usage</title>
+		<programlisting format="linespecific">
+...
+rtpengine_stop_forwarding();
+...
+		</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_pseudo_variables">

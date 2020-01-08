@@ -147,6 +147,8 @@ enum rtpe_operation {
 	OP_UNBLOCK_MEDIA,
 	OP_BLOCK_DTMF,
 	OP_UNBLOCK_DTMF,
+	OP_START_FORWARD,
+	OP_STOP_FORWARD,
 };
 
 enum rtpe_stat {
@@ -216,6 +218,8 @@ static const char *command_strings[] = {
 	[OP_UNBLOCK_MEDIA] = "unblock media",
 	[OP_BLOCK_DTMF]= "block DTMF",
 	[OP_UNBLOCK_DTMF] = "unblock DTMF",
+	[OP_START_FORWARD]= "start forward",
+	[OP_STOP_FORWARD] = "stop forward",
 };
 
 static const str stat_maps[] = {
@@ -260,6 +264,8 @@ static int rtpengine_blockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *sp
 static int rtpengine_unblockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_blockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_unblockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int rtpengine_start_forward_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
+static int rtpengine_stop_forward_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -400,6 +406,16 @@ static cmd_export_t cmds[] = {
 		{0,0,0}},
 		ALL_ROUTES},
 	{"rtpengine_unblock_dtmf", (cmd_function)rtpengine_unblockdtmf_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		ALL_ROUTES},
+	{"rtpengine_start_forwarding", (cmd_function)rtpengine_start_forward_f, {
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
+		ALL_ROUTES},
+	{"rtpengine_stop_forwarding", (cmd_function)rtpengine_stop_forward_f, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0},
 		{0,0,0}},
@@ -1896,7 +1912,9 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		ng_flags.rtcp_mux = bencode_list(bencbuf);
 
 		bencode_dictionary_add_str(ng_flags.dict, "sdp", body_in);
-	}
+	} else if (op == OP_BLOCK_DTMF || op == OP_BLOCK_MEDIA || op == OP_UNBLOCK_DTMF ||
+			op == OP_UNBLOCK_MEDIA || op == OP_START_FORWARD || op == OP_STOP_FORWARD)
+		ng_flags.flags = bencode_list(bencbuf);
 
 	/*** parse flags & build dictionary ***/
 
@@ -3275,4 +3293,14 @@ static int rtpengine_blockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spv
 static int rtpengine_unblockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
 	return rtpe_function_call_simple(msg, OP_UNBLOCK_DTMF, flags, spvar);
+}
+
+static int rtpengine_start_forward_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+{
+	return rtpe_function_call_simple(msg, OP_START_FORWARD, flags, spvar);
+}
+
+static int rtpengine_stop_forward_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
+{
+	return rtpe_function_call_simple(msg, OP_STOP_FORWARD, flags, spvar);
 }
