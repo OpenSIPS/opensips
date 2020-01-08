@@ -3260,19 +3260,7 @@ static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 
 static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
-	bencode_buffer_t bencbuf;
-	bencode_item_t *dict;
-
-	if (set_rtpengine_set_from_avp(msg) == -1)
-		return -1;
-
-	dict = rtpe_function_call_ok(&bencbuf, msg, OP_STOP_MEDIA, flags, NULL, spvar);
-	if (!dict) {
-		LM_ERR("could not stop media!\n");
-		return -1;
-	}
-	bencode_buffer_free(&bencbuf);
-	return 1;
+	return rtpe_function_call_simple(msg, OP_START_MEDIA, flags, spvar);
 }
 
 static int rtpengine_blockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
