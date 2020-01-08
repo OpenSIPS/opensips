@@ -62,7 +62,6 @@
 #include "pt.h"
 
 static int status_pipe[2];
-static int *init_timer_no;
 
 static enum opensips_states *osips_state = NULL;
 
@@ -83,26 +82,7 @@ retry:
 		goto retry;
 
 	LM_DBG("pipe created ? rc = %d, errno = %s\n",rc,strerror(errno));
-
-	/* also create SHM var which the attendent will use
-	 * to notify us about the overall number of timers
-	 * that need init
-	 *
-	 * at this point we do not know how many timers we will need */
-	init_timer_no = shm_malloc(sizeof(int));
-	if (!init_timer_no) {
-		LM_ERR("no more shm\n");
-		return -1;
-	}
-
-	*init_timer_no = 0;
 	return rc;
-}
-
-void inc_init_timer(void)
-{
-	LM_DBG("incrementing init timer no\n");
-	(*init_timer_no)++;
 }
 
 /* attempts to send the val
@@ -165,19 +145,6 @@ int wait_for_all_children(void)
 	for (i=0;i<procs_no;i++) {
 		ret = wait_status_code(&rc);
 		if (ret < 0 || rc < 0)
-			return -1;
-	}
-
-	/* we got this far, means everything went ok with
-	 * SIP listeners and module procs
-	 *
-	 * still need to see if
-	 * timers initialized ok */
-
-	for (i=0;i<*init_timer_no;i++) {
-		LM_DBG("waiting for timer\n");
-		ret = wait_status_code(&rc);
-		if (ret < 0 || rc < 0 )
 			return -1;
 	}
 
