@@ -855,7 +855,7 @@ static int main_loop(void)
 	if (auto_scaling_enabled) {
 		/* re-create the status pipes to collect the status of the
 		 * dynamically forked processes */
-		if (create_status_pipe(1) < 0) {
+		if (create_status_pipe() < 0) {
 			LM_ERR("failed to create status pipe\n");
 			goto error;
 		}
@@ -1280,7 +1280,7 @@ try_again:
 		goto error;
 	}
 
-	if (create_status_pipe(0) < 0) {
+	if (create_status_pipe() < 0) {
 		LM_ERR("failed to create status pipe\n");
 		goto error;
 	}
