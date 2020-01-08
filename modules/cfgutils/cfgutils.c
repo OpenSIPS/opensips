@@ -86,6 +86,8 @@ static int m_usleep(struct sip_msg*, int *);
 static int dbg_abort(struct sip_msg*);
 static int dbg_pkg_status(struct sip_msg*);
 static int dbg_shm_status(struct sip_msg*);
+static int get_accurate_time(struct sip_msg* msg,
+			pv_spec_t *pv_sec, pv_spec_t *pv_usec, pv_spec_t *pv_sec_usec);
 static int pv_set_count(struct sip_msg* msg,
 					pv_spec_t *pv_name, pv_spec_t *pv_result);
 static int pv_sel_weight(struct sip_msg* msg, pv_spec_t *pv_name);
@@ -167,6 +169,12 @@ static cmd_export_t cmds[]={
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"set_select_weight",(cmd_function)pv_sel_weight, {
 		{CMD_PARAM_VAR, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+	{"get_accurate_time",  (cmd_function)get_accurate_time, {
+		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_VAR, 0, 0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"ts_usec_delta", (cmd_function)ts_usec_delta, {
@@ -653,6 +661,50 @@ static void mod_destroy(void)
 	destroy_shvars();
 
 	destroy_script_locks();
+}
+
+
+static int get_accurate_time(struct sip_msg* msg,
+			pv_spec_t *pv_sec, pv_spec_t *pv_usec, pv_spec_t *pv_sec_usec)
+{
+	struct timeval tv;
+	pv_value_t val;
+	char sec_usec_buf[20 + 1 + 20 + 1];
+
+	if (gettimeofday(&tv, NULL) != 0)
+		return -1;
+
+	memset(&val, 0, sizeof val);
+
+	val.flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	val.ri = tv.tv_sec;
+	val.rs.s = int2str(tv.tv_sec, &val.rs.len);
+	if (pv_set_value(msg, pv_sec, 0, &val) != 0) {
+		LM_ERR("failed to set 'pv_sec'\n");
+		return -1;
+	}
+
+	val.flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	val.ri = tv.tv_usec;
+	val.rs.s = int2str(tv.tv_usec, &val.rs.len);
+	if (pv_set_value(msg, pv_usec, 0, &val) != 0) {
+		LM_ERR("failed to set 'pv_usec'\n");
+		return -1;
+	}
+
+	if (pv_sec_usec) {
+		memset(&val, 0, sizeof val);
+
+		val.flags = PV_VAL_STR;
+		val.rs.s = sec_usec_buf;
+		val.rs.len = sprintf(sec_usec_buf, "%ld.%06ld", tv.tv_sec, tv.tv_usec);
+		if (pv_set_value(msg, pv_sec_usec, 0, &val) != 0) {
+			LM_ERR("failed to set 'pv_sec_usec'\n");
+			return -1;
+		}
+	}
+
+	return 1;
 }
 
 
