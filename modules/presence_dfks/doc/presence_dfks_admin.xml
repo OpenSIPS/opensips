@@ -1,0 +1,283 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	  <title>Overview</title>
+	    <para>
+	    The module enables the handling of the "as-feature-event" event package (as
+	    defined by Broadsoft's
+	    <ulink url="http://community.polycom.com/polycom/attachments/polycom/VoIP/2234/1/DeviceFeatureKeySynchronizationFD.pdf">Device Feature Key Synchronization</ulink>
+	    protocol) by the presence module. This can be used to synchronize the status of
+	    features such as Do Not Disturb and different forwarding types between a SIP
+	    phone and a SIP server.
+	    </para>
+	    <para>
+	    The module supports synchronization for the following features: Do Not Disturb,
+	    Call Forwarding Always, Call Forwarding Busy and Call Forwarding No Answer.
+	    Feature status can be changed either from the SIP phone or the OpenSIPS Server(
+	    by running an MI command).
+	    </para>
+	    <para>
+	    When handling a SUBSCRIBE message without a body, the module will run a script
+	    route for each feature, that will be used to retrieve the current status of that
+	    feature. Conversely, a SUBSCRIBE with a body will trigger a script route where the
+	    updated status of a specific feature is available. This route might also be run
+	    if the feature update was triggered from OpenSIPS via MI.
+	    </para>
+	    <para>
+	    Note that the module does not automatically cache or persist any feature information
+	    as this is left for the script writer to implement in the routes triggered by the module.
+	    </para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	  <title>Dependencies</title>
+	  <section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>presence</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	  </section>
+
+	  <section>
+		<title>External Libraries or Applications</title>
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libxml2-dev</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+	  </section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+
+		<section id="param_get_route" xreflabel="get_route">
+		<title><varname>get_route</varname> (string)</title>
+		<para>
+		The name of the script route to be run in order to retrieve the status
+		of a feature.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>dfks_get</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname></varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("presence_dfks", "get_route", "dfks_get")
+...
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_set_route" xreflabel="set_route">
+		<title><varname>set_route</varname> (string)</title>
+		<para>
+		The name of the script route to be run when a feature status update
+		from a SIP phone is received.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>dfks_get</quote>.</emphasis>
+		</para>
+		<example>
+			<title>Set <varname></varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("presence_dfks", "set_route", "dfks_set")
+...
+</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+		<para>
+		None.
+		</para>
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+		<title>Exported MI Functions</title>
+		<section id="mi_dfks_set_feature" xreflabel="dfks_set_feature">
+		<title>
+		<function moreinfo="none">dfks_set_feature</function>
+		</title>
+		<para>
+		Triggers the sending of NOTIFY messages containing a feature status update
+		to all watchers.
+		</para>
+		<para>
+		Name: <emphasis>dfks_set_feature</emphasis>
+		</para>
+		<para>Parameters:
+		<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis>set_route</emphasis>: <emphasis>1</emphasis> - run the set_route,
+				<emphasis>0</emphasis> - do not run the set_route
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>presentity</emphasis>: the URI of the user whose feature status
+				should be updated
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>feature</emphasis>: The name of the feature to update. Takes one
+				of the following values:
+				</para>
+				<itemizedlist>
+				<listitem>
+					<para><emphasis>DoNotDisturb</emphasis></para>
+				</listitem>
+				<listitem>
+					<para><emphasis>CallForwardingAlways</emphasis></para>
+				</listitem>
+				<listitem>
+					<para><emphasis>CallForwardingBusy</emphasis></para>
+				</listitem>
+				<listitem>
+					<para><emphasis>CallForwardingNoAnswer</emphasis></para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>status</emphasis>: the new status of the feature:
+				<emphasis>0</emphasis> - disabled, <emphasis>1</emphasis> - enabled
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>values</emphasis>: an array of extra values that can be updated
+				for a feature. The format of an array element is:
+				<emphasis>field</emphasis>/<emphasis>value</emphasis>. Supported fields are:
+				<itemizedlist>
+				<listitem>
+					<para><emphasis>forwardTo</emphasis> - for all forwarding types</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>ringCount</emphasis> - for <emphasis>CallForwardingNoAnswer</emphasis></para>
+				</listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+
+		<para>
+		MI FIFO Command Format:
+		</para>
+<programlisting  format="linespecific">
+opensips-cli -x mi dfks_set_feature 0 sip:alice@10.0.0.11 CallForwardingNoAnswer 1 ringCount/4 forwardTo/sip:bob@10.0.0.11
+</programlisting>
+		</section>
+	</section>
+
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+	<section id="pv_dfks" xreflabel="$dfks">
+	<title>
+		<varname>$dfks(field)</varname>
+	</title>
+	<para>This pseudo-variable can be used in the routes triggered by the module
+		to handle the feature information through the following subnames:</para>
+	<itemizedlist>
+	<listitem>
+		<para><emphasis>assigned</emphasis> - inform the SIP phone that a
+		feature is unassigned by setting this to <emphasis>0</emphasis> (the NOTIFY response
+		will contain no XML data for the corresponding feature) By default, features are assigned.
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>notify</emphasis> - suppress the sending of the NOTIFY
+		message by setting this to <emphasis>0</emphasis>. By default, the NOTIFY is sent.
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>presentity</emphasis> - read-only, returns the current presentity URI.
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>feature</emphasis> - read-only, returns the current feature name.
+		Possible values are:
+		</para>
+		<itemizedlist>
+				<listitem>
+					<para><emphasis>DoNotDisturb</emphasis></para>
+				</listitem>
+				<listitem>
+					<para><emphasis>CallForwardingAlways</emphasis></para>
+				</listitem>
+				<listitem>
+					<para><emphasis>CallForwardingBusy</emphasis></para>
+				</listitem>
+				<listitem>
+					<para><emphasis>CallForwardingNoAnswer</emphasis></para>
+				</listitem>
+				</itemizedlist>
+	</listitem>
+	<listitem>
+		<para><emphasis>status</emphasis> - read or write the feature status. A value of
+		<emphasis>1</emphasis> means enabled and <emphasis>0</emphasis> disabled.
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>value/field</emphasis> - read or write extra feature values.
+		<emphasis>field</emphasis> can be one of:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>forwardTo</emphasis> - for all forwarding types</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>ringCount</emphasis> - for <emphasis>CallForwardingNoAnswer</emphasis></para>
+		</listitem>
+		</itemizedlist>
+		</para>
+
+	</listitem>
+	</itemizedlist>
+	<example>
+	<title><varname>dfks</varname> usage</title>
+	<programlisting format="linespecific">
+...
+route[dfks_set] {
+    xlog("New status: $dfks(status) for feature '$dfks(feature)' of user '$dfks(presentity)'\n");
+    ...
+}
+...
+route[dfks_get] {
+    ...
+    if ($dfks(feature) == "CallForwardingNoAnswer") {
+        $dfks(status) = 1;
+        $dfks(value/forwardTo) = "sip:bob@10.0.0.11";
+        $dfks(value/ringCount) = "3";
+} else
+   $dfks(assigned) = 0;
+....
+}
+...
+	</programlisting>
+	</example>
+	</section>
+
+	</section>
+
+</chapter>
