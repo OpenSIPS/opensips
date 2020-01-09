@@ -411,7 +411,8 @@ int db_do_replace(const db_con_t* _h, const db_key_t* _k, const db_val_t* _v,
 		return -1;
 	}
 
-	ret = snprintf(sql_buf, SQL_BUF_LEN, "replace %.*s (", CON_TABLE(_h)->len, CON_TABLE(_h)->s);
+	ret = snprintf(sql_buf, SQL_BUF_LEN, "replace into %.*s (",
+		CON_TABLE(_h)->len, CON_TABLE(_h)->s);
 	if (ret < 0 || ret >= SQL_BUF_LEN) goto error;
 	off = ret;
 
