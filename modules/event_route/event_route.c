@@ -64,7 +64,7 @@ static inline int get_script_event_route_ID_by_name(char* name, struct script_ev
  *  * module process
  *   */
 static proc_export_t procs[] = {
-	{"event-route handler",  0,  0, event_route_handler, 1, PROC_FLAG_INITCHILD},
+	{"event-route handler",  0,  0, event_route_handler, 1, 0},
 	{0,0,0,0,0,0}
 };
 /**
