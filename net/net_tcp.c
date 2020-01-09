@@ -619,6 +619,13 @@ static void _tcpconn_rm(struct tcp_connection* c)
 			&c->con_aliases[r], next, prev);
 	lock_destroy(&c->write_lock);
 
+	if (c->async) {
+		for (r = 0; r<c->async->pending; r++)
+			shm_free(c->async->chunks[r]);
+		shm_free(c->async);
+		c->async = NULL;
+	}
+
 	if (protos[c->type].net.conn_clean)
 		protos[c->type].net.conn_clean(c);
 
@@ -784,6 +791,18 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 #ifdef DBG_TCPCON
 	c->hist = sh_push(c, con_hist);
 #endif
+
+	if (protos[si->proto].net.async_chunks) {
+		c->async = shm_malloc(sizeof(struct tcp_async_data) +
+				protos[si->proto].net.async_chunks *
+				sizeof(struct tcp_async_chunk));
+		if (c->async) {
+			c->async->allocated = protos[si->proto].net.async_chunks;
+			c->async->oldest = 0;
+			c->async->pending = 0;
+		} else
+			LM_WARN("could not allocate async data for con!\n");
+	}
 
 	tcp_connections_no++;
 	return c;
@@ -2116,6 +2135,3 @@ error:
 	free_mi_response(resp);
 	return 0;
 }
-
-
-

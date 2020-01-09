@@ -66,10 +66,7 @@ static struct tcp_req tcp_current_req;
 #define _tcp_common_current_req tcp_current_req
 #include "tcp_common.h"
 
-static int tcp_write_async_req(struct tcp_connection* con,int fd);
 static int tcp_read_req(struct tcp_connection* con, int* bytes_read);
-static int tcp_conn_init(struct tcp_connection* c);
-static void tcp_conn_clean(struct tcp_connection* c);
 static void tcp_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
 static mi_response_t *w_tcp_trace_mi(const mi_params_t *params,
@@ -119,26 +116,6 @@ static int tcp_crlf_pingpong = 1;
 
 /* 0: do not drop single CRLF messages */
 static int tcp_crlf_drop = 0;
-
-
-
-struct tcp_send_chunk {
-	char *buf; /* buffer that needs to be sent out */
-	char *pos; /* the position that we should be writing next */
-	int len;   /* length of the buffer */
-	int ticks; /* time at which this chunk was initially
-				  attempted to be written */
-};
-
-struct tcp_data {
-	/* the chunks that need to be written on this
-	 * connection when it will become writable */
-	struct tcp_send_chunk **async_chunks;
-	/* the total number of chunks pending to be written */
-	int async_chunks_no;
-	/* the oldest chunk in our write list */
-	int oldest_chunk;
-};
 
 
 static cmd_export_t cmds[] = {
@@ -222,7 +199,7 @@ static int proto_tcp_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)tcp_read_req;
-	pi->net.write			= (proto_net_write_f)tcp_write_async_req;
+	pi->net.write			= (proto_net_write_f)tcp_async_write;
 	pi->net.report			= tcp_report;
 
 	if (tcp_async && !tcp_has_async_write()) {
@@ -232,10 +209,8 @@ static int proto_tcp_init(struct proto_info *pi)
 	}
 
 	/* without async support, there is nothing to init/clean per conn */
-	if (tcp_async!=0) {
-		pi->net.conn_init	= tcp_conn_init;
-		pi->net.conn_clean	= tcp_conn_clean;
-	}
+	if (tcp_async!=0)
+		pi->net.async_chunks= tcp_async_max_postponed_chunks;
 
 	return 0;
 }
@@ -286,47 +261,6 @@ static int proto_tcp_init_listener(struct socket_info *si)
 	/* we do not do anything particular to TCP plain here, so
 	 * transparently use the generic listener init from net TCP layer */
 	return tcp_init_listener(si);
-}
-
-
-static int tcp_conn_init(struct tcp_connection* c)
-{
-	struct tcp_data *d;
-
-	/* allocate the tcp_data and the array of chunks as a single mem chunk */
-	d = (struct tcp_data*)shm_malloc( sizeof(*d) +
-		sizeof(struct tcp_send_chunk *) * tcp_async_max_postponed_chunks );
-	if (d==NULL) {
-		LM_ERR("failed to create tcp chunks in shm mem\n");
-		return -1;
-	}
-
-	d->async_chunks = (struct tcp_send_chunk **)(d+1);
-	d->async_chunks_no = 0;
-	d->oldest_chunk = 0;
-
-	c->proto_data = (void*)d;
-
-	return 0;
-}
-
-
-static void tcp_conn_clean(struct tcp_connection* c)
-{
-	struct tcp_data *d = (struct tcp_data*)c->proto_data;
-	int r;
-
-	/* was the connection initialized yet ?? */
-	if (d==NULL)
-		return;
-
-	for (r=0;r<d->async_chunks_no;r++) {
-		shm_free(d->async_chunks[r]);
-	}
-
-	shm_free(d);
-
-	c->proto_data = NULL;
 }
 
 
@@ -400,154 +334,14 @@ static void tcp_report(int type, unsigned long long conn_id, int conn_flags,
 }
 
 
-/**************  CONNECT related functions ***************/
-
-/* returns :
- * 0  - in case of success
- * -1 - in case there was an internal error
- * -2 - in case our chunks buffer is full
- *		and we need to let the connection go
- */
-static inline int add_write_chunk(struct tcp_connection *con,char *buf,int len,
-					int lock)
-{
-	struct tcp_send_chunk *c;
-	struct tcp_data *d = (struct tcp_data*)con->proto_data;
-
-	c = shm_malloc(sizeof(struct tcp_send_chunk) + len);
-	if (!c) {
-		LM_ERR("No more SHM\n");
-		return -1;
-	}
-
-	c->len = len;
-	c->ticks = get_ticks();
-	c->buf = (char *)(c+1);
-	memcpy(c->buf,buf,len);
-	c->pos = c->buf;
-
-	if (lock)
-		lock_get(&con->write_lock);
-
-	if (d->async_chunks_no == tcp_async_max_postponed_chunks) {
-		LM_ERR("We have reached the limit of max async postponed chunks\n");
-		if (lock)
-			lock_release(&con->write_lock);
-		shm_free(c);
-		return -2;
-	}
-
-	d->async_chunks[d->async_chunks_no++] = c;
-	if (d->async_chunks_no == 1)
-		d->oldest_chunk = c->ticks;
-
-	if (lock)
-		lock_release(&con->write_lock);
-
-	return 0;
-}
-
-
 /**************  WRITE related functions ***************/
-/**
- * called under the TCP connection write lock, timeout is in milliseconds
- *
- * @return: -1 or bytes written (if 0 < ret < len: the last bytes are chunked)
- */
-static int async_tsend_stream(struct tcp_connection *c,
-		int fd, char* buf, unsigned int len, int timeout)
-{
-	int written;
-	int n;
-	struct pollfd pf;
-
-	pf.fd=fd;
-	pf.events=POLLOUT;
-	written=0;
-
-again:
-	n=send(fd, buf, len,
-#ifdef HAVE_MSG_NOSIGNAL
-			MSG_NOSIGNAL
-#else
-			0
-#endif
-		);
-
-	if (n<0){
-		if (errno==EINTR) goto again;
-		else if (errno!=EAGAIN && errno!=EWOULDBLOCK) {
-			LM_ERR("Failed first TCP async send : (%d) %s\n",
-					errno, strerror(errno));
-			return -1;
-		} else
-			goto poll_loop;
-	}
-
-	written+=n;
-	if (n<len) {
-		/* partial write */
-		buf+=n;
-		len-=n;
-	} else {
-		/* successful write from the first try */
-		LM_DBG("Async successful write from first try on %p\n",c);
-		return written;
-	}
-
-poll_loop:
-	n=poll(&pf,1,timeout);
-	if (n<0) {
-		if (errno==EINTR)
-			goto poll_loop;
-		LM_ERR("Polling while trying to async send failed %s [%d]\n",
-				strerror(errno), errno);
-		return -1;
-	} else if (n==0) {
-		LM_DBG("timeout -> do an async write (add it to conn)\n");
-		/* timeout - let's just pass to main */
-		if (add_write_chunk(c,buf,len,0) < 0) {
-			LM_ERR("Failed to add write chunk to connection \n");
-			return -1;
-		} else {
-			/* we have successfully added async write chunk
-			 * tell MAIN to poll out for us */
-			LM_DBG("Data still pending for write on conn %p\n",c);
-			return written;
-		}
-	}
-
-	if (pf.revents&POLLOUT)
-		goto again;
-
-	/* some other events triggered by poll - treat as errors */
-	return -1;
-}
-
-
 /* This is just a wrapper around the writing function, so we can use them
  * internally, but also export them to the "tcp_common" funcs */
 inline static int _tcp_write_on_socket(struct tcp_connection *c, int fd,
 															char *buf, int len)
 {
-	int n;
-
-	lock_get(&c->write_lock);
-	if (tcp_async) {
-		/*
-		 * if there is any data pending to write, we have to wait for those chunks
-		 * to be sent, otherwise we will completely break the messages' order
-		 */
-		if (((struct tcp_data*)c->proto_data)->async_chunks_no)
-			n = add_write_chunk(c, buf, len, 0);
-		else
-			n = async_tsend_stream(c,fd,buf,len,tcp_async_local_write_timeout);
-	} else {
-		n=tsend_stream(fd, buf, len, tcp_send_timeout);
-	}
-	lock_release(&c->write_lock);
-
-	return n;
+	return tcp_write_on_socket(c, fd, buf, len,
+			tcp_send_timeout, tcp_async_local_write_timeout);
 }
 
 
@@ -614,7 +408,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 
 			if (n==0) {
 				/* attach the write buffer to it */
-				if (add_write_chunk(c, buf, len, 1) < 0) {
+				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
 					LM_ERR("Failed to add the initial write chunk\n");
 					len = -1; /* report an error - let the caller decide what to do */
 				}
@@ -712,7 +506,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			 * case we ever manage to get through */
 			LM_DBG("We have acquired a TCP connection which is still "
 				"pending to connect - delaying write \n");
-			n = add_write_chunk(c,buf,len,1);
+			n = tcp_async_add_chunk(c,buf,len,1);
 			if (n < 0) {
 				LM_ERR("Failed to add another write chunk to %p\n",c);
 				/* we failed due to internal errors - put the
@@ -745,7 +539,8 @@ send_it:
 
 	start_expire_timer(snd,tcpthreshold);
 
-	n = _tcp_write_on_socket(c, fd, buf, len);
+	n = tcp_write_on_socket(c, fd, buf, len,
+			tcp_send_timeout, tcp_async_local_write_timeout);
 
 	get_time_difference(snd,tcpthreshold,tcp_timeout_send);
 	stop_expire_timer(get,tcpthreshold,"tcp ops",buf,(int)len,1);
@@ -778,78 +573,6 @@ send_it:
 	sh_log(c->hist, TCP_SEND2MAIN, "send 6, (%d, async: %d)", c->refcnt, n < len);
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;
-}
-
-
-/* Responsible for writing the TCP send chunks - called under con write lock
- *	* if returns = 1 : the connection will be released for more writting
- *	* if returns = 0 : the connection will be released
- *	* if returns < 0 : the connection will be released as BAD /  broken
- */
-static int tcp_write_async_req(struct tcp_connection* con,int fd)
-{
-	int n,left;
-	struct tcp_send_chunk *chunk;
-	struct tcp_data *d = (struct tcp_data*)con->proto_data;
-
-	if (d->async_chunks_no == 0) {
-		LM_DBG("The connection has been triggered "
-		" for a write event - but we have no pending write chunks\n");
-		return 0;
-	}
-
-next_chunk:
-	chunk=d->async_chunks[0];
-again:
-	left = (int)((chunk->buf+chunk->len)-chunk->pos);
-	LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
-		   left,chunk,con,chunk->ticks,get_ticks());
-	n=send(fd, chunk->pos, left,
-#ifdef HAVE_MSG_NOSIGNAL
-			MSG_NOSIGNAL
-#else
-			0
-#endif
-	);
-
-	if (n<0) {
-		if (errno==EINTR)
-			goto again;
-		else if (errno==EAGAIN || errno==EWOULDBLOCK) {
-			LM_DBG("Can't finish to write chunk %p on conn %p\n",
-				   chunk,con);
-			/* report back we have more writting to be done */
-			return 1;
-		} else {
-			LM_ERR("Error occurred while sending async chunk %d (%s)\n",
-				   errno,strerror(errno));
-			/* report the conn as broken */
-			return -1;
-		}
-	}
-
-	if (n < left) {
-		/* partial write */
-		chunk->pos+=n;
-		goto again;
-	} else {
-		/* written a full chunk - move to the next one, if any */
-		shm_free(chunk);
-		d->async_chunks_no--;
-		if (d->async_chunks_no == 0) {
-			LM_DBG("We have finished writing all our async chunks in %p\n",con);
-			d->oldest_chunk=0;
-			/*  report back everything ok */
-			return 0;
-		} else {
-			LM_DBG("We still have %d chunks pending on %p\n",
-					d->async_chunks_no,con);
-			memmove(&d->async_chunks[0],&d->async_chunks[1],
-					d->async_chunks_no * sizeof(struct tcp_send_chunk*));
-			d->oldest_chunk = d->async_chunks[0]->ticks;
-			goto next_chunk;
-		}
-	}
 }
 
 

@@ -99,6 +99,26 @@ struct tcp_conn_alias{
 };
 
 
+struct tcp_async_chunk {
+	char *buf; /* buffer that needs to be sent out */
+	int len;   /* length of the buffer */
+	int ticks; /* time at which this chunk was initially
+				  attempted to be written */
+};
+
+struct tcp_async_data {
+	/* the number of chunks pending to be written */
+	int pending;
+	/* the number of chunks allocated */
+	int allocated;
+	/* the oldest chunk in our write list */
+	int oldest;
+	/* the chunks that need to be written on this
+	 * connection when it will become writable */
+	struct tcp_async_chunk *chunks[0];
+};
+
+
 /*! \brief TCP connection structure */
 struct tcp_connection{
 	int s;					/*!< socket, used by "tcp main" */
@@ -132,6 +152,7 @@ struct tcp_connection{
 	/*!< protocol related & reserved flags */
 	unsigned short proto_flags;
 	struct struct_hist *hist;
+	struct tcp_async_data *async;
 	/* protocol specific data attached to this connection */
 	void *proto_data;
 };

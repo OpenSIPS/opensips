@@ -43,6 +43,7 @@ typedef void (*proto_net_report_f)( int type, unsigned long long conn_id,
 
 struct api_proto_net {
 	int						flags;
+	unsigned				async_chunks;
 	proto_net_write_f		write;
 	proto_net_read_f		read;
 	proto_net_conn_init_f	conn_init;

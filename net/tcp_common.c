@@ -21,6 +21,8 @@
 
 #include "../reactor_defs.h"
 #include "net_tcp.h"
+#include "tcp_common.h"
+#include "../tsend.h"
 
 /*! \brief blocking connect on a non-blocking fd; it will timeout after
  * tcp_connect_timeout
@@ -204,7 +206,7 @@ int tcp_async_connect(struct socket_info* send_sock,
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 	fd_set sel_set;
 	fd_set orig_set;
-	struct timeval timeout;
+	struct timeval timeout_val;
 #else
 	struct pollfd pf;
 #endif
@@ -281,9 +283,9 @@ again:
 		}
 #if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
 		sel_set=orig_set;
-		timeout.tv_sec=to/1000000;
-		timeout.tv_usec=to%1000000;
-		n=select(fd+1, 0, &sel_set, 0, &timeout);
+		timeout_val.tv_sec=to/1000000;
+		timeout_val.tv_usec=to%1000000;
+		n=select(fd+1, 0, &sel_set, 0, &timeout_val);
 #else
 		n=poll(&pf, 1, to/1000);
 #endif
@@ -342,4 +344,216 @@ error:
 	close(fd);
 	*c = NULL;
 	return -1;
+}
+
+int tcp_async_write(struct tcp_connection* con,int fd)
+{
+	int n;
+	struct tcp_async_chunk *chunk;
+
+	while ((chunk = tcp_async_get_chunk(con)) != NULL) {
+		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
+				chunk->len, chunk, con, chunk->ticks, get_ticks());
+		n=send(fd, chunk->buf, chunk->len,
+#ifdef HAVE_MSG_NOSIGNAL
+				MSG_NOSIGNAL
+#else
+				0
+#endif
+			  );
+
+		if (n<0) {
+			if (errno==EINTR)
+				continue;
+			else if (errno==EAGAIN || errno==EWOULDBLOCK) {
+				LM_DBG("Can't finish to write chunk %p on conn %p\n",
+						chunk,con);
+				/* report back we have more writting to be done */
+				return 1;
+			} else {
+				LM_ERR("Error occurred while sending async chunk %d (%s)\n",
+						errno,strerror(errno));
+				/* report the conn as broken */
+				return -1;
+			}
+		}
+		tcp_async_update_write(con, n);
+	}
+	return 0;
+}
+
+/**
+ * called under the TCP connection write lock, timeout is in milliseconds
+ *
+ * @return: -1 or bytes written (if 0 < ret < len: the last bytes are chunked)
+ */
+static int tsend_stream_async(struct tcp_connection *c,
+		int fd, char* buf, unsigned int len, int timeout)
+{
+	int written;
+	int n;
+	struct pollfd pf;
+
+	pf.fd=fd;
+	pf.events=POLLOUT;
+	written=0;
+
+again:
+	n=send(fd, buf, len,0);
+	if (n<0){
+		if (errno==EINTR) goto again;
+		else if (errno!=EAGAIN && errno!=EWOULDBLOCK) {
+			LM_ERR("Failed first TCP async send : (%d) %s\n",
+					errno, strerror(errno));
+			return -1;
+		} else
+			goto poll_loop;
+	}
+
+	written+=n;
+	if (n < len) {
+		/* partial write */
+		buf += n;
+		len -= n;
+	} else {
+		/* successful write from the first try */
+		LM_DBG("Async successful write from first try on %p\n",c);
+		return len;
+	}
+
+poll_loop:
+	n = poll(&pf,1,timeout);
+	if (n<0) {
+		if (errno==EINTR)
+			goto poll_loop;
+		LM_ERR("Polling while trying to async send failed %s [%d]\n",
+				strerror(errno), errno);
+		return -1;
+	} else if (n == 0) {
+		LM_DBG("timeout -> do an async write (add it to conn)\n");
+		/* timeout - let's just pass to main */
+		if (tcp_async_add_chunk(c,buf,len,0) < 0) {
+			LM_ERR("Failed to add write chunk to connection \n");
+			return -1;
+		} else {
+			/* we have successfully added async write chunk
+			 * tell MAIN to poll out for us */
+			LM_DBG("Data still pending for write on conn %p\n",c);
+			return 0;
+		}
+	}
+
+	if (pf.revents&POLLOUT)
+		goto again;
+
+	/* some other events triggered by poll - treat as errors */
+	return -1;
+}
+
+int tcp_write_on_socket(struct tcp_connection* c, int fd,
+		char *buf, int len, int write_timeout, int async_write_timeout)
+{
+	int n;
+
+	lock_get(&c->write_lock);
+	if (c->async) {
+		/*
+		 * if there is any data pending to write, we have to wait for those chunks
+		 * to be sent, otherwise we will completely break the messages' order
+		 */
+		if (c->async->pending)
+			n = tcp_async_add_chunk(c, buf, len, 0);
+		else
+			n = tsend_stream_async(c,fd,buf,len, async_write_timeout);
+	} else {
+		n = tsend_stream(fd, buf, len, write_timeout);
+	}
+	lock_release(&c->write_lock);
+
+	return n;
+}
+
+/* returns :
+ * 0  - in case of success
+ * -1 - in case there was an internal error
+ * -2 - in case our chunks buffer is full
+ *		and we need to let the connection go
+ */
+int tcp_async_add_chunk(struct tcp_connection *con, char *buf,
+		int len, int lock)
+{
+	struct tcp_async_chunk *c;
+
+	c = shm_malloc(sizeof(struct tcp_async_chunk) + len);
+	if (!c) {
+		LM_ERR("No more SHM\n");
+		return -1;
+	}
+
+	c->len = len;
+	c->ticks = get_ticks();
+	c->buf = (char *)(c+1);
+	memcpy(c->buf,buf,len);
+
+	if (lock)
+		lock_get(&con->write_lock);
+
+	if (con->async->allocated == con->async->pending) {
+		LM_ERR("We have reached the limit of max async postponed chunks %d\n",
+				con->async->pending);
+		if (lock)
+			lock_release(&con->write_lock);
+		shm_free(c);
+		return -2;
+	}
+
+	con->async->chunks[con->async->pending++] = c;
+	if (con->async->pending == 1)
+		con->async->oldest = c->ticks;
+
+	if (lock)
+		lock_release(&con->write_lock);
+
+	return 0;
+}
+
+
+struct tcp_async_chunk *tcp_async_get_chunk(struct tcp_connection *con)
+{
+	if (con->async->pending == 0)
+		return NULL;
+	return con->async->chunks[0];
+}
+
+void tcp_async_update_write(struct tcp_connection *con, int len)
+{
+	int i = 0, c;
+	struct tcp_async_chunk *chunk;
+
+	while (len > 0) {
+		chunk = con->async->chunks[i];
+		if (len < chunk->len) {
+			/* partial write */
+			chunk->len -= len;
+			memmove(chunk->buf, chunk->buf + len, chunk->len);
+			return;
+		} else {
+			/* written the entire chunk */
+			i++;
+			len -= chunk->len;
+		}
+	}
+	con->async->pending -= i;
+	for (c = 0; c < i; c++)
+		shm_free(con->async->chunks[c]);
+	if (con->async->pending) {
+		LM_DBG("We still have %d chunks pending on %p\n",
+				con->async->pending, con);
+		memmove(con->async->chunks, con->async->chunks + i,
+				con->async->pending * sizeof(struct tcp_async_chunk *));
+		con->async->oldest = con->async->chunks[0]->ticks;
+	} else {
+		LM_DBG("We have finished writing all our async chunks in %p\n", con);
+		con->async->oldest = 0;
+	}
 }
