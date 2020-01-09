@@ -96,6 +96,8 @@ static union tmp_route_send_t {
 	char buf[sizeof(route_send_t *)];
 } recv_buf;
 
+static pid_t event_route_process_pid = -1;
+
 static route_send_t * route_receive(void)
 {
 	int rc;
@@ -129,6 +131,9 @@ int init_writer(void)
 {
 	int flags;
 
+	if (event_route_process_pid == getpid())
+		return 0;
+
 	if (route_pipe[0] != -1) {
 		close(route_pipe[0]);
 		route_pipe[0] = -1;
@@ -158,6 +163,7 @@ static void route_init_reader(void)
 		close(route_pipe[1]);
 		route_pipe[1] = -1;
 	}
+	event_route_process_pid = getpid();
 }
 
 
@@ -258,6 +264,12 @@ void event_route_handler(int rank)
 	dummy_req->first_line.u.request.uri.len= 19;
 	dummy_req->rcv.src_ip.af = AF_INET;
 	dummy_req->rcv.dst_ip.af = AF_INET;
+
+	if (init_child(PROC_MODULE) != 0) {
+		LM_ERR("cannot init child process\n");
+		pkg_free(dummy_req);
+		return;
+	}
 
 	/* waiting for commands */
 	for (;;) {
