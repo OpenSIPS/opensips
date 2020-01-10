@@ -65,8 +65,6 @@ struct tm_binds {
 	new_auto_dlg_uac_f new_auto_dlg_uac;
 	dlg_add_extra_f    dlg_add_extra;
 	dlg_response_uac_f dlg_response_uac;
-	new_dlg_uas_f      new_dlg_uas;
-	dlg_request_uas_f  dlg_request_uas;
 	free_dlg_f         free_dlg;
 	print_dlg_f        print_dlg;
 	tgett_f            t_gett;

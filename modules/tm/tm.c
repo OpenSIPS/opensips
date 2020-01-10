@@ -665,8 +665,6 @@ int load_tm( struct tm_binds *tmb)
 	tmb->new_auto_dlg_uac = new_auto_dlg_uac;
 	tmb->dlg_add_extra = dlg_add_extra;
 	tmb->dlg_response_uac = dlg_response_uac;
-	tmb->new_dlg_uas = new_dlg_uas;
-	tmb->dlg_request_uas = dlg_request_uas;
 	tmb->free_dlg = free_dlg;
 	tmb->print_dlg = print_dlg;
 	tmb->setlocalTholder = setlocalTholder;

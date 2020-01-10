@@ -136,20 +136,6 @@ int dlg_response_uac(dlg_t* _d, struct sip_msg* _m);
 typedef int (*dlg_response_uac_f)(dlg_t* _d, struct sip_msg* _m);
 
 /*
- * Establishing a new dialog, UAS side
- */
-int new_dlg_uas(struct sip_msg* _req, int _code, /*str* _tag,*/ dlg_t** _d);
-typedef int (*new_dlg_uas_f)(struct sip_msg* _req, int _code, dlg_t** _d);
-
-
-/*
- * UAS side - update a dialog from a request
- */
-int dlg_request_uas(dlg_t* _d, struct sip_msg* _m);
-typedef int (*dlg_request_uas_f)(dlg_t* _d, struct sip_msg* _m);
-
-
-/*
  * Destroy a dialog state
  */
 void free_dlg(dlg_t* _d);
