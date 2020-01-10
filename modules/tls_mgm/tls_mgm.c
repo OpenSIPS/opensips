@@ -115,8 +115,6 @@ static char *sip_domain_avp = NULL;
 static int  mod_init(void);
 static int  mod_load(void);
 static void mod_destroy(void);
-static int tls_get_handshake_timeout(void);
-static int tls_get_send_timeout(void);
 static int load_tls_mgm(struct tls_mgm_binds *binds);
 static mi_response_t *tls_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -168,8 +166,6 @@ static param_export_t params[] = {
 	{ "ciphers_list_col",	STR_PARAM,  &cplist_col.s	},
 	{ "dh_params_col",	STR_PARAM,  &dhparams_col.s	},
 	{ "ec_curve_col",	STR_PARAM,  &eccurve_col.s	},
-	{ "tls_handshake_timeout", INT_PARAM,         &tls_handshake_timeout     },
-	{ "tls_send_timeout",      INT_PARAM,         &tls_send_timeout          },
 	{0, 0, 0}
 };
 
@@ -2127,17 +2123,6 @@ error:
 	return -1;
 }
 
-static int tls_get_handshake_timeout(void)
-{
-	return tls_handshake_timeout;
-}
-
-static int tls_get_send_timeout(void)
-{
-	return tls_send_timeout;
-}
-
-/* lists client or server domains*/
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
 {
 	mi_item_t *domain_item, *addrf_arr, *domf_arr;
@@ -2292,8 +2277,6 @@ static int load_tls_mgm(struct tls_mgm_binds *binds)
 	binds->find_server_domain = tls_find_server_domain;
 	binds->find_client_domain = tls_find_client_domain;
 	binds->find_client_domain_name = tls_find_client_domain_name;
-	binds->get_handshake_timeout = tls_get_handshake_timeout;
-	binds->get_send_timeout = tls_get_send_timeout;
 	binds->release_domain = tls_release_domain;
 	/* everything ok*/
 	return 1;
