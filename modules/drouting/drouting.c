@@ -3833,12 +3833,19 @@ static mi_response_t *mi_dr_list_gw(struct head_db *current_partition,
 	if (!resp)
 		return 0;
 
+	if (gw->attrs.s != NULL && gw->attrs.len > 0)
+		if (add_mi_string(resp_obj, MI_SSTR("ATTRS"),
+			gw->attrs.s,gw->attrs.len) < 0)
+			goto error;
+
 	if (mi_dr_print_gw_state(gw, resp_obj) < 0) {
-		free_mi_response(resp);
-		return 0;
+		goto error;
 	}
 
 	return resp;
+error:
+	free_mi_response(resp);
+	return 0;
 }
 
 static mi_response_t *mi_dr_list_all_gw(struct head_db *current_partition)
@@ -3883,6 +3890,10 @@ static mi_response_t *mi_dr_list_all_gw(struct head_db *current_partition)
 			goto error;
 		if (add_mi_string(gw_item, MI_SSTR("IP"), gw->ip_str.s, gw->ip_str.len) < 0)
 			goto error;
+		if (gw->attrs.s != NULL && gw->attrs.len > 0)
+			if (add_mi_string(gw_item, MI_SSTR("ATTRS"),
+				gw->attrs.s,gw->attrs.len) < 0)
+				goto error;
 		if (mi_dr_print_gw_state(gw, gw_item) < 0)
 			goto error;
 	}
@@ -4033,13 +4044,20 @@ static mi_response_t *mi_dr_list_cr(struct head_db *current_partition,
 	if (!resp)
 		return 0;
 
+	if (cr->attrs.s != NULL && cr->attrs.len > 0)
+		if (add_mi_string(resp_obj, MI_SSTR("ATTRS"),
+			cr->attrs.s,cr->attrs.len) < 0)
+			goto error;
+
 	if (add_mi_string(resp_obj, MI_SSTR("Enabled"),
 		MI_SSTR((cr->flags&DR_CR_FLAG_IS_OFF) ? "no " : "yes")) < 0) {
-		free_mi_response(resp);
-		return 0;
+		goto error;
 	}
 
 	return resp;
+error:
+	free_mi_response(resp);
+	return 0;
 }
 
 static mi_response_t *mi_dr_list_all_cr(struct head_db *current_partition)
@@ -4082,6 +4100,11 @@ static mi_response_t *mi_dr_list_all_cr(struct head_db *current_partition)
 
 		if (add_mi_string(cr_item, MI_SSTR("ID"), cr->id.s, cr->id.len) < 0)
 			goto error;
+
+		if (cr->attrs.s != NULL && cr->attrs.len > 0)
+			if (add_mi_string(cr_item, MI_SSTR("ATTRS"),
+				cr->attrs.s,cr->attrs.len) < 0)
+				goto error;
 
 		if (add_mi_string(cr_item, MI_SSTR("Enabled"),
 			MI_SSTR((cr->flags&DR_CR_FLAG_IS_OFF) ? "no " : "yes")) < 0)
