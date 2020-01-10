@@ -1311,7 +1311,7 @@ int handle_expired_subs(subs_t* s)
 		s->reason.len= 7;
 		s->expires= 0;
 
-		LM_INFO("notify\n");
+		LM_DBG("send timeout NOTIFY's out\n");
 		if(send_notify_request(s, NULL, NULL, 1, NULL, 0)< 0)
 		{
 			LM_ERR("send Notify not successful\n");
