@@ -163,6 +163,11 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 		LM_DBG("Setting in CONNECT mode (client)\n");
 		SSL_set_connect_state((SSL *) c->extra_data);
 	}
+
+	/* if the connection is asynchronous, allow partial writes */
+	if (c->async && !SSL_set_mode((SSL *)c->extra_data,
+			SSL_MODE_ENABLE_PARTIAL_WRITE))
+		LM_ERR("Failed to enable non-blocking write! Running in blocking mode!\n");
 	return 0;
 }
 

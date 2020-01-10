@@ -332,6 +332,9 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 				if (poll_events)
 					*poll_events = POLLOUT;
 				return 0;
+			case SSL_ERROR_SYSCALL:
+				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
+					strerror(errno), errno);
 			default:
 				c->state = S_CONN_BAD;
 				LM_ERR("New TLS connection from %s:%d failed to accept\n",
@@ -504,6 +507,178 @@ static int tls_connect(struct tcp_connection *c, short *poll_events, trace_dest 
 	return -1;
 }
 
+/* wrapper around async connect */
+static int tls_async_connect(struct tcp_connection *con, int fd, int timeout, trace_dest t_dst)
+{
+	unsigned int elapsed,to;
+	unsigned int err_len;
+	int poll_err, n, err;
+	struct timeval begin;
+	str tls_err_s;
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+	fd_set sel_set;
+	fd_set orig_set;
+	struct timeval timeout_val;
+#else
+	struct pollfd pf;
+#endif
+	SSL *ssl = (SSL *)con->extra_data;
+
+	/* attempt to do connect and see if we do block or not */
+	poll_err=0;
+	elapsed = 0;
+	to = timeout*1000;
+	fd = con->fd;
+
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+	FD_ZERO(&orig_set);
+	FD_SET(fd, &orig_set);
+#else
+	pf.fd=fd;
+	pf.events=POLLOUT|POLLIN;
+#endif
+
+	if (gettimeofday(&(begin), NULL)) {
+		LM_ERR("Failed to get TLS connect start time\n");
+		goto failure;
+	}
+
+	while (1) {
+		n = SSL_connect(ssl);
+		if (n > 0) {
+			LM_INFO("new TLS connection to %s:%d established\n",
+					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);
+			trace_tls(con, ssl, TRANS_TRACE_CONNECTED,
+					TRANS_TRACE_SUCCESS, &CONNECT_FAIL);
+
+			tls_send_trace_data(con, t_dst);
+			con->proto_flags &= ~F_TLS_DO_CONNECT;
+			return 1;
+		} else if (n == 0) {
+			err = SSL_get_error(ssl, n);
+			LM_ERR("Failed to connect to %s:%d %d:%d (%s)\n",
+					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
+					err, errno, strerror(errno));
+
+			goto failure;
+		}
+		err = SSL_get_error(ssl, n);
+		switch (err) {
+			case SSL_ERROR_ZERO_RETURN:
+				LM_INFO("New TLS connection to %s:%d failed cleanly\n",
+					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);
+
+				goto failure;
+			case SSL_ERROR_WANT_READ:
+			case SSL_ERROR_WANT_WRITE:
+				/* we need to retry, if time has not passed yet */
+again:
+				elapsed=get_time_diff(&begin);
+				if (elapsed >= to) /* timed out */ {
+					LM_DBG("handshake timeout for connection %p %dms elapsed\n",
+							con, timeout);
+					return 0;
+				}
+				to -= elapsed;
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+				sel_set=orig_set;
+				timeout_val.tv_sec=to/1000000;
+				timeout_val.tv_usec=to%1000000;
+				n=select(fd+1, 0, &sel_set, 0, &timeout_val);
+#else
+				n=poll(&pf, 1, to/1000);
+#endif
+				if (n<0){
+					if (errno == EINTR)
+						goto again;
+					LM_ERR("poll/select failed:[server=%s:%d] (%d) %s\n",
+							ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
+							errno, strerror(errno));
+					goto failure;
+				}else if (n==0) /* timeout */
+					goto again;
+#if defined(HAVE_SELECT) && defined(BLOCKING_USE_SELECT)
+				if (FD_ISSET(fd, &sel_set))
+#else
+				if (pf.revents&(POLLERR|POLLHUP|POLLNVAL)){
+					LM_ERR("poll error: flags %x\n", pf.revents);
+					poll_err=1;
+				}
+#endif
+				{
+					err_len=sizeof(err);
+					getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+					if ((err==0) && (poll_err==0))
+						continue; /* retry ssl connect */
+					if (err!=EINPROGRESS && err!=EALREADY){
+						LM_ERR("failed to retrieve SO_ERROR [server=%s:%d] (%d) %s\n",
+								ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
+								err, strerror(err));
+						goto failure;
+					}
+					continue;
+				}
+			case SSL_ERROR_SYSCALL:
+				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
+					strerror(errno), errno);
+			default:
+				LM_ERR("New TLS connection to %s:%d failed\n",
+					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);
+
+				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
+					err, n, strerror(errno), errno);
+				con->state = S_CONN_BAD;
+
+				if ( TRACE_IS_ON( con ) ) {
+					if ( ( tls_err_s.len =
+							tls_get_errstack( tls_err_buf, TLS_ERR_MAX ) ) == 0 ) {
+						tls_err_s.len = snprintf( tls_err_buf, TLS_ERR_MAX,
+								"New TLS connection failed to connect" );
+					}
+					tls_err_s.s = tls_err_buf;
+					trace_tls( con, ssl, TRANS_TRACE_CONNECTED,
+							TRANS_TRACE_FAILURE, &tls_err_s);
+
+					tls_send_trace_data(con, t_dst);
+				}
+				tls_print_errstack();
+
+				return -1;
+		}
+	}
+failure:
+	trace_tls(con, ssl, TRANS_TRACE_CONNECTED,
+			TRANS_TRACE_FAILURE, &CONNECT_FAIL);
+
+	tls_send_trace_data(con, t_dst);
+
+	con->state = S_CONN_BAD;
+	return -1;
+}
+
+static inline int tls_fix_read_conn_unlocked(struct tcp_connection *c,
+		int fd, int async_timeout, trace_dest t_dst)
+{
+	int ret = 0;
+
+	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
+		ret = tls_update_fd(c, fd);
+		if (!ret)
+			ret = tls_accept(c, NULL);
+	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
+		ret = tls_update_fd(c, fd);
+		if (!ret) {
+			if (c->async && async_timeout)
+				ret = tls_async_connect(c, fd, async_timeout, t_dst);
+			else
+				ret = tls_connect(c, NULL, t_dst);
+		}
+	} else
+		ret = 1;
+
+	return ret;
+}
+
 
 /*
  * called before tls_read, the this function should attempt tls_accept or
@@ -511,14 +686,13 @@ static int tls_connect(struct tcp_connection *c, short *poll_events, trace_dest 
  * does not transit a connection into S_CONN_OK then tcp layer would not
  * call tcp_read
  */
-static inline int tls_fix_read_conn(struct tcp_connection *c, trace_dest t_dst)
+static inline int tls_fix_read_conn(struct tcp_connection *c,
+		int async_timeout, trace_dest t_dst)
 {
 	/*
 	* no lock acquired
 	*/
 	int             ret;
-
-	ret = 0;
 
 	/*
 	* We have to acquire the lock before testing c->state, otherwise a
@@ -526,17 +700,7 @@ static inline int tls_fix_read_conn(struct tcp_connection *c, trace_dest t_dst)
 	* something to write
 	*/
 	lock_get(&c->write_lock);
-
-	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
-		ret = tls_update_fd(c, c->fd);
-		if (!ret)
-			ret = tls_accept(c, NULL);
-	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
-		ret = tls_update_fd(c, c->fd);
-		if (!ret)
-			ret = tls_connect(c, NULL, t_dst);
-	}
-
+	ret = tls_fix_read_conn_unlocked(c, c->fd, async_timeout, t_dst);
 	lock_release(&c->write_lock);
 
 	return ret;
