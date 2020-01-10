@@ -27,13 +27,14 @@
 #include "../../db/db.h"
 #include "lb_db.h"
 
-#define LB_TABLE_VERSION  2
+#define LB_TABLE_VERSION  3
 
 str lb_id_column			=	str_init(LB_ID_COL);
 str lb_grpid_column			=	str_init(LB_GRP_ID_COL);
 str lb_dsturi_column		=	str_init(LB_DST_URI_COL);
 str lb_resource_column		=	str_init(LB_RESOURCES_COL);
 str lb_pmode_column			=	str_init(LB_PMODE_COL);
+str lb_attrs_column			=	str_init(LB_ATTRS_COL);
 str lb_table_name			=	str_init(LB_TABLE_NAME);
 
 
@@ -110,11 +111,11 @@ int init_lb_db(const str *db_url, char *table)
 
 int lb_db_load_data( struct lb_data *data)
 {
-	db_key_t columns[5];
+	db_key_t columns[LB_NO_COLS];
 	db_res_t* res = NULL;
 	db_row_t* row;
 	int i, n;
-	char *resource, *uri;
+	char *resource, *uri, *attrs;
 	int id, group, pmode;
 	unsigned int flags;
 	int no_rows = 10;
@@ -127,20 +128,21 @@ int lb_db_load_data( struct lb_data *data)
 	columns[2] = &lb_dsturi_column;
 	columns[3] = &lb_resource_column;
 	columns[4] = &lb_pmode_column;
+	columns[5] = &lb_attrs_column;
 
 	if (0/*DB_CAPABILITY(lb_dbf, DB_CAP_FETCH))*/) {
-		if ( lb_dbf.query( lb_db_handle, 0, 0, 0, columns, 0, 5, 0, 0 ) < 0) {
+		if (lb_dbf.query(lb_db_handle, 0, 0, 0, columns, 0, LB_NO_COLS, 0, 0) < 0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
-		no_rows = estimate_available_rows( 4+4+64+256+8, 5/*cols*/);
+		no_rows = estimate_available_rows( 4+4+64+256+8+256, LB_NO_COLS/*cols*/);
 		if (no_rows==0) no_rows = 10;
 		if(lb_dbf.fetch_result( lb_db_handle, &res, no_rows)<0) {
 			LM_ERR("Error fetching rows\n");
 			return -1;
 		}
 	} else {
-		if ( lb_dbf.query( lb_db_handle, 0, 0, 0, columns, 0, 5, 0, &res)<0) {
+		if (lb_dbf.query(lb_db_handle, 0, 0, 0, columns, 0, LB_NO_COLS, 0, &res)<0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -179,9 +181,12 @@ int lb_db_load_data( struct lb_data *data)
 			} else if (pmode>=2) {
 				flags |= LB_DST_PING_PERM_FLAG;
 			}
+			/* ATTRS column */
+			check_val( ROW_VALUES(row)+5, DB_STRING, 0, 0);
+			attrs = (char*)VAL_STRING(ROW_VALUES(row)+5);
 
 			/* add the destinaton definition in */
-			if ( add_lb_dsturi( data, id, group, uri, resource, flags)<0 ) {
+			if ( add_lb_dsturi( data, id, group, uri, resource, attrs, flags)<0 ) {
 				LM_ERR("failed to add destination %d -> skipping\n",n);
 				continue;
 			}

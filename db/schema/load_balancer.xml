@@ -9,7 +9,7 @@
 
 <table id="load_balancer" xmlns:db="http://docbook.org/ns/docbook">
 	<name>load_balancer</name>
-	<version>2</version>
+	<version>3</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Load-Balancer module to store
@@ -59,6 +59,16 @@
 		<size>11</size>
 		<default>0</default>
 		<description>Probing mode (0-none, 1-if disabled, 2-all the time)</description>
+	</column>
+
+	<column id="attrs">
+		<name>attrs</name>
+		<type>string</type>
+		<size>255</size>
+		<null/>
+		<default><null/></default>
+		<description>Attribute string - custom, opaque string that
+		will simply be pushed into script</description>
 	</column>
 
 	<column id="description">

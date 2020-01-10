@@ -1,1 +1,1 @@
-id(int,auto) group_id(int) dst_uri(string) resources(string) probe_mode(int) description(string,null) 
+id(int,auto) group_id(int) dst_uri(string) resources(string) probe_mode(int) attrs(string,null) description(string,null) 

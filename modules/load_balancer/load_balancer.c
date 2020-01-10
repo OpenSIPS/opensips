@@ -84,6 +84,8 @@ int mask_avp_name;
 int id_avp_name;
 int res_avp_name;
 
+static str attrs_empty = str_init("");
+
 mi_response_t *mi_lb_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_lb_resize(const mi_params_t *params,
@@ -99,14 +101,15 @@ static int fixup_resources(void** param);
 static int fixup_free_resources(void** param);
 
 static int w_lb_start(struct sip_msg *req, int *grp_no,
-				struct lb_res_str_list *lb_rl, str *flstr);
-static int w_lb_next(struct sip_msg *req);
-static int w_lb_start_or_next(struct sip_msg *req,void *grp,void *rl,void *fl);
+				struct lb_res_str_list *lb_rl, str *flstr, pv_spec_t *attrs_var);
+static int w_lb_next(struct sip_msg *req, pv_spec_t *attrs_var);
+static int w_lb_start_or_next(struct sip_msg *req,void *grp,void *rl,void *fl,
+				pv_spec_t *attrs_var);
 static int w_lb_reset(struct sip_msg *req);
 static int w_lb_is_started(struct sip_msg *req);
 static int w_lb_disable_dst(struct sip_msg *req);
 static int w_lb_is_dst(struct sip_msg *msg,str *ip,int *port,int *group,
-					int *active);
+					int *active, pv_spec_t *attrs_var);
 static int w_lb_count_call(struct sip_msg *req, str *ip_str, int *port, char *grp,
 					struct lb_res_str_list *lb_rl, int *dir);
 
@@ -119,19 +122,23 @@ static cmd_export_t cmds[]={
 	{"lb_start", (cmd_function)w_lb_start, {
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR, fixup_resources, fixup_free_resources},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"load_balance", (cmd_function)w_lb_start_or_next, {
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR, fixup_resources, fixup_free_resources},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_start_or_next", (cmd_function)w_lb_start_or_next, {
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR, fixup_resources, fixup_free_resources},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"lb_next", (cmd_function)w_lb_next, {{0,0,0}},
+	{"lb_next", (cmd_function)w_lb_next, {
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"lb_reset", (cmd_function)w_lb_reset, {{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
@@ -143,7 +150,8 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"lb_count_call",    (cmd_function)w_lb_count_call, {
 		{CMD_PARAM_STR,0,0},
@@ -509,16 +517,27 @@ static void mod_destroy(void)
 }
 
 
-static int w_lb_next(struct sip_msg *req)
+static int w_lb_next(struct sip_msg *req, pv_spec_t *attrs_var)
 {
 	int ret;
+	str attrs_str = {0,0};
+	pv_value_t pv_val;
 
 	lock_start_read(ref_lock);
 
 	/* do lb */
-	ret = do_lb_next(req, *curr_data);
+	ret = do_lb_next(req, *curr_data, attrs_var ? &attrs_str : NULL);
 
 	lock_stop_read(ref_lock);
+
+	if (attrs_var) {
+		pv_val.flags = PV_VAL_STR;
+		pv_val.rs = (attrs_str.s && attrs_str.len) ? attrs_str : attrs_empty;
+		if (pv_set_value(req, attrs_var, 0, &pv_val) != 0) {
+			LM_ERR("failed to set output variable\n");
+			return -1;
+		}
+	}
 
 	if( ret < 0 )
 		return ret;
@@ -527,11 +546,13 @@ static int w_lb_next(struct sip_msg *req)
 
 
 static int w_lb_start(struct sip_msg *req, int *grp_no,
-				struct lb_res_str_list *lb_rl, str *flstr)
+				struct lb_res_str_list *lb_rl, str *flstr, pv_spec_t *attrs_var)
 {
 	int ret;
 	int flags=LB_FLAGS_DEFAULT;
 	char *f;
+	str attrs_str = {0,0};
+	pv_value_t pv_val;
 
 	if( flstr ) {
 		for( f=flstr->s ; f<flstr->s+flstr->len ; f++ ) {
@@ -557,9 +578,19 @@ static int w_lb_start(struct sip_msg *req, int *grp_no,
 	lock_start_read( ref_lock );
 
 	/* do lb */
-	ret = do_lb_start(req, *grp_no, lb_rl, flags, *curr_data);
+	ret = do_lb_start(req, *grp_no, lb_rl, flags, *curr_data,
+		attrs_var ? &attrs_str : NULL);
 
 	lock_stop_read( ref_lock );
+
+	if (attrs_var) {
+		pv_val.flags = PV_VAL_STR;
+		pv_val.rs = (attrs_str.s && attrs_str.len) ? attrs_str : attrs_empty;
+		if (pv_set_value(req, attrs_var, 0, &pv_val) != 0) {
+			LM_ERR("failed to set output variable\n");
+			return -1;
+		}
+	}
 
 	if (ret<0)
 		return ret;
@@ -567,11 +598,12 @@ static int w_lb_start(struct sip_msg *req, int *grp_no,
 }
 
 
-static int w_lb_start_or_next(struct sip_msg *req,void *grp,void *rl,void *fl)
+static int w_lb_start_or_next(struct sip_msg *req,void *grp,void *rl,void *fl,
+	pv_spec_t *attrs_var)
 {
 	return (do_lb_is_started(req) > 0) ?
-		w_lb_next(req) :
-		w_lb_start(req, grp, rl, fl)
+		w_lb_next(req, attrs_var) :
+		w_lb_start(req, grp, rl, fl, attrs_var)
 	;
 }
 
@@ -624,16 +656,25 @@ static int w_lb_disable_dst(struct sip_msg *req)
 
 
 static int w_lb_is_dst(struct sip_msg *msg,str *ip,int *port,int *group,
-															int *active)
+										int *active, pv_spec_t *attrs_var)
 {
 	int ret;
+	str attrs_str = {0,0};
+	pv_value_t pv_val;
 
 	lock_start_read( ref_lock );
 
 	ret = lb_is_dst(*curr_data, msg, ip, *port,
-	                group ? *group : -1, active ? *active : 0);
+	    group ? *group : -1, active ? *active : 0, attrs_var ? &attrs_str : NULL);
 
 	lock_stop_read( ref_lock );
+
+	if (attrs_var) {
+		pv_val.flags = PV_VAL_STR;
+		pv_val.rs = (attrs_str.s && attrs_str.len) ? attrs_str : attrs_empty;
+		if (pv_set_value(msg, attrs_var, 0, &pv_val) != 0)
+			LM_ERR("failed to set output variable\n");
+	}
 
 	if (ret<0)
 		return ret;
@@ -882,6 +923,11 @@ mi_response_t *mi_lb_status(const mi_params_t *params,
 			if (add_mi_string(resp_obj, MI_SSTR("enable"), MI_SSTR("yes")) < 0)
 				goto error;
 		}
+
+		if (dst->attrs.s && dst->attrs.len &&
+			add_mi_string(resp_obj, MI_SSTR("attrs"),
+				dst->attrs.s, dst->attrs.len) < 0)
+			goto error;
 	}
 
 	lock_stop_read( ref_lock );
@@ -1011,6 +1057,11 @@ mi_response_t *mi_lb_list(const mi_params_t *params,
 				(dst->rmap[i].resource->profile, &dst->profile_id)) < 0)
 				goto error;
 		}
+
+		if (dst->attrs.s && dst->attrs.len &&
+			add_mi_string(dest_item, MI_SSTR("attrs"),
+				dst->attrs.s, dst->attrs.len) < 0)
+			goto error;
 	}
 
 	lock_stop_read( ref_lock );

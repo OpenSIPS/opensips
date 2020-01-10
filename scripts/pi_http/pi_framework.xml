@@ -642,6 +642,7 @@
 		<column><field>dst_uri</field><type>DB_STR</type></column>
 		<column><field>resources</field><type>DB_STR</type></column>
 		<column><field>probe_mode</field><type>DB_INT</type></column>
+		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of silo table-->
@@ -3373,6 +3374,7 @@
 				<col><field>dst_uri</field></col>
 				<col><field>resources</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -3384,6 +3386,7 @@
 				<col><field>dst_uri</field></col>
 				<col><field>resources</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -3398,6 +3401,7 @@
 				<col><field>dst_uri</field></col>
 				<col><field>resources</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>

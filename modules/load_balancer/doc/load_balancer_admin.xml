@@ -481,7 +481,7 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 	<title>Exported Functions</title>
 	<section id="func_lb_start" xreflabel="lb_start()">
 		<title>
-		<function moreinfo="none">lb_start(grp,resources[,flags])</function>
+		<function moreinfo="none">lb_start(grp,resources[,flags],[attrs])</function>
 		</title>
 		<para>
 		The function starts a new load-balancing session over the available
@@ -540,6 +540,11 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 			</listitem>
 			</itemizedlist>
 		</listitem>
+		<listitem>
+			<para><emphasis>attrs</emphasis> (var, optional) - a writable variable 
+			to be populated with the attributes of the selected destination.
+			</para>
+		</listitem>
 		</itemizedlist>
 		<para>
 		The function may return:
@@ -591,7 +596,7 @@ if (lb_start(1,"trascoding;conference")) {
 
 	<section id="func_lb_next" xreflabel="lb_next()">
 		<title>
-		<function moreinfo="none">lb_next()</function>
+		<function moreinfo="none">lb_next([attrs])</function>
 		</title>
 		<para>
 		Function to be used to pull the next available (and less loaded)
@@ -602,6 +607,14 @@ if (lb_start(1,"trascoding;conference")) {
 		This function is mainly used for implementing failover for the LB
 		destinations.
 		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>attrs</emphasis> (var, optional) - a writable variable 
+			to be populated with the attributes of the selected destination.
+			</para>
+		</listitem>
+		</itemizedlist>
 		<para>
 		The function may return:
 		</para>
@@ -652,7 +665,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 	<section id="func_lb_start_or_next" xreflabel="lb_start_or_next()">
 		<title>
-		<function moreinfo="none">lb_start_or_next(grp,resources[,flags])</function>
+		<function moreinfo="none">lb_start_or_next(grp,resources[,flags],[attrs])</function>
 		</title>
 		<para>
 		This is just a wrapper function to simplify scripting. If there is no
@@ -664,7 +677,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 	<section id="func_load_balance" xreflabel="load_balance()">
 		<title>
-		<function moreinfo="none">load_balance(grp,resources[,flags])</function>
+		<function moreinfo="none">load_balance(grp,resources[,flags],[attrs])</function>
 		</title>
 		<para>
 		Old name of the lb_start_or_next() function.
@@ -762,7 +775,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 	<section id="func_lb_is_destination" xreflabel="lb_is_destination()">
 		<title>
-		<function moreinfo="none">lb_is_destination(ip,port[,group[,active]])</function>
+		<function moreinfo="none">lb_is_destination(ip,port,[group],[active],[attrs]])</function>
 		</title>
 		<para>
 		Checks if the given IP and PORT belongs to a destination configured in
@@ -794,6 +807,11 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 			<para><emphasis>active</emphasis>  (int, optional)- if "1", the search will be
 			performed only over "active" (not disabled) destinations. If 
 			missing, the search will consider any kind of destinations.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>attrs</emphasis> (var, optional) - a writable variable 
+			to be populated with the attributes of the identified destination.
 			</para>
 		</listitem>
 

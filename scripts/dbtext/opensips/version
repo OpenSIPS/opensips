@@ -34,7 +34,7 @@ globalblacklist:2
 grp:3
 imc_members:2
 imc_rooms:2
-load_balancer:2
+load_balancer:3
 location:1013
 missed_calls:5
 presentity:5
