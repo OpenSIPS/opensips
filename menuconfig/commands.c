@@ -33,6 +33,7 @@
 #include<time.h>
 #include<curses.h>
 #include<signal.h>
+#include<errno.h>
 
 #include "main.h"
 
@@ -203,7 +204,9 @@ int generate_cfg(select_menu *menu,void *arg)
 	static char generated_name[128];
 	static char defs_cfg_path[256];
 	static char cfg_path[256];
-	char *p;
+	static char buffer[1024];
+	char *p, *error_msg;
+	int bytes, pipe_fd[2];
 	cfg_gen_t *m4_cfg;
 	int n,ret,fd,status;
 	time_t now;
@@ -242,6 +245,10 @@ int generate_cfg(select_menu *menu,void *arg)
 		fprintf(output,"Failed to create command to generate cfg\n");
 		return -1;
 	}
+	if (pipe(pipe_fd) < 0) {
+		fprintf(output,"Failed to allocate pipe fd\n");
+		return -1;
+	}
 
 	/* skip all the signal crap. M4 should be much much faster than make install */
 	ret = fork();
@@ -249,12 +256,22 @@ int generate_cfg(select_menu *menu,void *arg)
 		fprintf(output,"Failed to fork process \n");
 		return -1;
 	} else if (ret > 0) {
+		close(pipe_fd[1]);
+
+		bytes = read(pipe_fd[0], buffer, 1024);
+		close(pipe_fd[0]);
 		/* parent */
 		wait(&status);
-		print_notice(NOTICE_Y,NOTICE_X,1,
-			"Config generated : %s =  %s. Press any key to continue",
-			generated_name,status?"FAILED":"SUCCESS");
+		if (!status)
+			print_notice(NOTICE_Y,NOTICE_X,1,
+				"Config generated : %s = SUCCESS. Press any key to continue",
+				generated_name);
+		else
+			print_notice(NOTICE_Y,NOTICE_X,1,
+				"Config generated : %s = FAILED (%.*s). Press any key to continue",
+				generated_name, bytes, buffer);
 	} else {
+		close(pipe_fd[0]);
 		fd = open(generated_name,O_RDWR|O_CREAT,S_IRUSR|S_IWUSR);
 		if (fd < 0) {
 			fprintf(output,"Failed to open output file\n");
@@ -272,9 +289,22 @@ int generate_cfg(select_menu *menu,void *arg)
 		/* child */
 		/* redirect child output to generated file name */
 		dup2(fd,STDOUT_FILENO);
+		dup2(pipe_fd[1],STDERR_FILENO);
+		close(pipe_fd[1]);
 		close(fd);
 		execlp("m4","m4",defs_cfg_path,cfg_path,(char *)0);
-		fprintf(output,"Failed to execute\n");
+		switch(errno) {
+			case EACCES:
+				error_msg = "permissions error";
+				break;
+			case ENOENT:
+				error_msg = "'m4' not found - make sure you have 'm4' installed";
+				break;
+			default:
+				error_msg = strerror(errno);
+		}
+		write(STDERR_FILENO, error_msg, strlen(error_msg));
+		fprintf(output,"Error generating config: %s\n", error_msg);
 		exit(-1);
 	}
 
