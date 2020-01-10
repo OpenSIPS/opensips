@@ -662,7 +662,7 @@ static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
 		LM_ERR("tcp_blocking_connect failed\n");
 		goto error;
 	}
-	con=tcp_conn_new(s, server, send_sock, S_CONN_OK);
+	con=tcp_conn_create(s, server, send_sock, S_CONN_OK, 0);
 	if (con==NULL){
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;

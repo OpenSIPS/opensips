@@ -176,7 +176,7 @@ error:
 }
 
 struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server, int *fd)
+		union sockaddr_union* server, int *fd, int send2main)
 {
 	struct tcp_connection* con;
 	int s;
@@ -185,7 +185,7 @@ struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 	if (s < 0)
 		return NULL;
 
-	con=tcp_conn_create(s, server, send_sock, S_CONN_OK);
+	con=tcp_conn_create(s, server, send_sock, S_CONN_OK, send2main);
 	if (con==NULL){
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		close(s);
@@ -197,7 +197,7 @@ struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 
 int tcp_async_connect(struct socket_info* send_sock,
 					union sockaddr_union* server, int timeout,
-					struct tcp_connection** c, int *ret_fd)
+					struct tcp_connection** c, int *ret_fd, int send2main)
 {
 	int fd, n;
 	union sockaddr_union my_name;
@@ -320,7 +320,7 @@ again:
 async_connect:
 	LM_DBG("Create connection for async connect\n");
 	/* create a new dummy connection */
-	con=tcp_conn_create(fd, server, send_sock, S_CONN_CONNECTING);
+	con=tcp_conn_create(fd, server, send_sock, S_CONN_CONNECTING, send2main);
 	if (con==NULL) {
 		LM_ERR("tcp_conn_create failed\n");
 		goto error;
@@ -330,7 +330,7 @@ async_connect:
 	return 0;
 
 local_connect:
-	con=tcp_conn_create(fd, server, send_sock, S_CONN_OK);
+	con=tcp_conn_create(fd, server, send_sock, S_CONN_OK, send2main);
 	if (con==NULL) {
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;

@@ -807,7 +807,7 @@ static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
 		LM_ERR("error getting send socket\n");
 		return NULL;
 	}
-	return tcp_sync_connect(send_socket, &server, fd);
+	return tcp_sync_connect(send_socket, &server, fd, 1);
 }
 
 static int smpp_send_msg(smpp_session_t *smsc, str *buffer)

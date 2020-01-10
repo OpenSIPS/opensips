@@ -85,14 +85,9 @@ int tcp_init_sock_opt(int s);
 int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
 		void *proto_extra_id, struct tcp_connection** conn, int* conn_fd);
 
-/* creates a new tcp conn around a newly connected socket
- * and sends it to the master */
-struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
-		struct socket_info* si, int state);
-
 /* creates a new tcp conn around a newly connected socket */
-struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
-		struct socket_info* si, int state);
+struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
+		struct socket_info* si, int state, int send2main);
 
 /* sends a connected connection to the master */
 int tcp_conn_send(struct tcp_connection *con);

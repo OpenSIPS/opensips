@@ -439,7 +439,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {
+		if ((c=tcp_sync_connect(send_sock, to, &fd, 1))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}

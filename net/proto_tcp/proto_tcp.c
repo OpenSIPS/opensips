@@ -395,7 +395,8 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			tcp_async);
 		/* create tcp connection */
 		if (tcp_async) {
-			n = tcp_async_connect(send_sock, to, tcp_async_local_connect_timeout, &c, &fd);
+			n = tcp_async_connect(send_sock, to,
+					tcp_async_local_connect_timeout, &c, &fd, 1);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
 				get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
@@ -456,7 +457,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 				}
 			}
 		} else {
-			if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {
+			if ((c=tcp_sync_connect(send_sock, to, &fd, 1))==0) {
 				LM_ERR("connect failed\n");
 				get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
 				return -1;

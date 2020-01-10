@@ -32,7 +32,7 @@ int tcp_connect_blocking_timeout(int s, const struct sockaddr *servaddr,
 int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst);
 
 struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server, int *fd);
+		union sockaddr_union* server, int *fd, int send2main);
 
 /* Attempts do a connect to the given destination. It returns:
  *   1 - connect was done local (completed)
@@ -41,7 +41,7 @@ struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
  */
 int tcp_async_connect(struct socket_info* send_sock,
 					union sockaddr_union* server, int timeout,
-					struct tcp_connection** c, int *ret_fd);
+					struct tcp_connection** c, int *ret_fd, int send2main);
 
 /* Responsible for writing the TCP send chunks - called under con write lock
  *	* if returns = 1 : the connection will be released for more writting

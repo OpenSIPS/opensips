@@ -357,7 +357,6 @@ static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 
 
 
->>>>>> tcp: merge similar code in a common tcp file
 /**************  WRITE related functions ***************/
 
 

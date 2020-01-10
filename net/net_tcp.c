@@ -815,26 +815,14 @@ error0:
 }
 
 
-/* creates a new tcp connection structure and informs the TCP Main on that
+/* creates a new tcp connection structure
+ * if send2main is 1, the function informs the TCP Main about the new conn
  * a +1 ref is set for the new conn !
  * IMPORTANT - the function assumes you want to create a new TCP conn as
  * a result of a connect operation - the conn will be set as connect !!
  * Accepted connection are triggered internally only */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
-											struct socket_info* si, int state)
-{
-	struct tcp_connection *c;
-
-	/* create the connection structure */
-	c = tcp_conn_new(sock, su, si, state);
-	if (c==NULL)
-		return NULL;
-
-	return (tcp_conn_send(c) == 0 ? c : NULL);
-}
-
-struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
-		struct socket_info* si, int state)
+		struct socket_info* si, int state, int send2main)
 {
 	struct tcp_connection *c;
 
@@ -844,9 +832,6 @@ struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
 		LM_ERR("tcpconn_new failed\n");
 		return NULL;
 	}
-	c->refcnt++; /* safe to do it w/o locking, it's not yet
-					available to the rest of the world */
-	sh_log(c->hist, TCP_REF, "connect, (%d)", c->refcnt);
 
 	if (protos[c->type].net.conn_init &&
 			protos[c->type].net.conn_init(c) < 0) {
@@ -857,9 +842,14 @@ struct tcp_connection* tcp_conn_new(int sock, union sockaddr_union* su,
 	}
 	c->flags |= F_CONN_INIT;
 
-	return c;
-}
+	c->refcnt++; /* safe to do it w/o locking, it's not yet
+					available to the rest of the world */
+	sh_log(c->hist, TCP_REF, "connect, (%d)", c->refcnt);
+	if (!send2main)
+		return c;
 
+	return (tcp_conn_send(c) == 0 ? c : NULL);
+}
 
 /* sends a new connection from a worker to main */
 int tcp_conn_send(struct tcp_connection *c)

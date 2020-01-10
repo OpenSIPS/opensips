@@ -176,7 +176,8 @@ static int proto_bin_send(struct socket_info* send_sock,
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n",bin_async);
 		/* create tcp connection */
 		if (bin_async) {
-			n = tcp_async_connect(send_sock, to, bin_async_local_connect_timeout, &c, &fd);
+			n = tcp_async_connect(send_sock, to,
+					bin_async_local_connect_timeout, &c, &fd, 1);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
 				return -1;
@@ -202,7 +203,7 @@ static int proto_bin_send(struct socket_info* send_sock,
 				return len;
 			}
 			/* our first connect attempt succeeded - go ahead as normal */
-		} else if ((c=tcp_sync_connect(send_sock, to, &fd))==0) {
+		} else if ((c=tcp_sync_connect(send_sock, to, &fd, 1))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
