@@ -37,6 +37,7 @@ cfgutils Module
               1.4.16. get_dynamic_lock(key)
               1.4.17. release_dynamic_lock(key)
               1.4.18. strings_share_lock(key1, key2)
+              1.4.19. get_accurate_time(sec, usec, [str_sec_usec])
 
         1.5. Exported Asyncronous Functions
 
@@ -101,19 +102,20 @@ cfgutils Module
    1.21. get_dynamic_lock usage
    1.22. release_dynamic_lock usage
    1.23. strings_share_lock usage
-   1.24. async sleep usage
-   1.25. async usleep usage
-   1.26. rand_set_prob usage
-   1.27. rand_reset_prob usage
-   1.28. rand_get_prob usage
-   1.29. check_config_hash usage
-   1.30. get_config_hash usage
-   1.31. shv_set usage
-   1.32. shv_get usage
-   1.33. env(name) pseudo-variable usage
-   1.34. RANDOM pseudo-variable usage
-   1.35. ctime(name) pseudo-variable usage
-   1.36. shv(name) pseudo-variable usage
+   1.24. get_accurate_time usage
+   1.25. async sleep usage
+   1.26. async usleep usage
+   1.27. rand_set_prob usage
+   1.28. rand_reset_prob usage
+   1.29. rand_get_prob usage
+   1.30. check_config_hash usage
+   1.31. get_config_hash usage
+   1.32. shv_set usage
+   1.33. shv_get usage
+   1.34. env(name) pseudo-variable usage
+   1.35. RANDOM pseudo-variable usage
+   1.36. ctime(name) pseudo-variable usage
+   1.37. shv(name) pseudo-variable usage
 
 Chapter 1. Admin Guide
 
@@ -623,6 +625,28 @@ if (!release_dynamic_lock($avp(foo)) {
 }
 ...
 
+1.4.19.  get_accurate_time(sec, usec, [str_sec_usec])
+
+   Fetch the current UNIX time epoch with microsecond precision.
+   Optionally, print this value as a floating point number (3rd
+   parameter).
+
+   Meaning of the parameters is as follows:
+     * sec (int) - the current UNIX timestamp (integer part)
+     * usec (int) - the current UNIX timestamp (decimal part)
+     * str_sec_usec (string, optional) - the current UNIX
+       timestamp as a floating point number (6-digit precision)
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
+   TIMER_ROUTE, EVENT_ROUTE.
+
+   Example 1.24. get_accurate_time usage
+...
+get_accurate_time($var(sec), $var(usec));
+xlog("Current UNIX timestamp: $var(sec) s, $var(usec) us\n");
+...
+
 1.5. Exported Asyncronous Functions
 
 1.5.1.  sleep(seconds)
@@ -636,7 +660,7 @@ if (!release_dynamic_lock($avp(foo)) {
    to use them and what are their advantages, please refer to the
    OpenSIPS online Manual.
 
-   Example 1.24. async sleep usage
+   Example 1.25. async sleep usage
 {
 ...
 async( sleep("5"), after_sleep );
@@ -657,7 +681,7 @@ route[after_sleep] {
    to use them and what are their advantages, please refer to the
    OpenSIPS online Manual.
 
-   Example 1.25. async usleep usage
+   Example 1.26. async usleep usage
 {
 ...
 async( usleep("1000"), after_usleep );
@@ -677,7 +701,7 @@ route[after_usleep] {
      * prob_proc - the parameter should be a percent value (number
        from 0 to 99).
 
-   Example 1.26. rand_set_prob usage
+   Example 1.27. rand_set_prob usage
 ...
 $ opensips-cli -x mi rand_set_prob 10
 ...
@@ -688,7 +712,7 @@ $ opensips-cli -x mi rand_set_prob 10
 
    This command don't need a parameter.
 
-   Example 1.27.  rand_reset_prob usage
+   Example 1.28.  rand_reset_prob usage
 ...
 $ opensips-cli -x mi rand_reset_prob
 ...
@@ -699,7 +723,7 @@ $ opensips-cli -x mi rand_reset_prob
 
    The function return the actual probability value.
 
-   Example 1.28. rand_get_prob usage
+   Example 1.29. rand_get_prob usage
 ...
 $ opensips-cli -x mi get_prob
 The actual probability is 50 percent.
@@ -715,7 +739,7 @@ The actual probability is 50 percent.
    been configured and 500 on errors. Additional a short text
    message is printed.
 
-   Example 1.29. check_config_hash usage
+   Example 1.30. check_config_hash usage
 ...
 $ opensips-cli -x mi check_config_hash
 The actual config file hash is identical to the stored one.
@@ -728,7 +752,7 @@ The actual config file hash is identical to the stored one.
    The function returns 200 OK and the hash value on success or
    404 if no file for hashing has been configured.
 
-   Example 1.30. get_config_hash usage
+   Example 1.31. get_config_hash usage
 ...
 $ opensips-cli -x mi get_config_hash
 1580a37104eb4de69ab9f31ce8d6e3e0
@@ -745,7 +769,7 @@ $ opensips-cli -x mi get_config_hash
           + “str”: string value
      * value : value to be set
 
-   Example 1.31. shv_set usage
+   Example 1.32. shv_set usage
 ...
 $ opensips-cli -x mi shv_set debug int 0
 ...
@@ -758,7 +782,7 @@ $ opensips-cli -x mi shv_set debug int 0
      * name : shared variable name. If this parameter is missing,
        all shared variables are returned.
 
-   Example 1.32. shv_get usage
+   Example 1.33. shv_get usage
 ...
 $ opensips-cli -x mi shv_get debug
 $ opensips-cli -x mi shv_get
@@ -770,7 +794,7 @@ $ opensips-cli -x mi shv_get
 
    This PV provides access to the environment variable 'name'.
 
-   Example 1.33. env(name) pseudo-variable usage
+   Example 1.34. env(name) pseudo-variable usage
 ...
 xlog("PATH environment variable is $env(PATH)\n");
 ...
@@ -779,7 +803,7 @@ xlog("PATH environment variable is $env(PATH)\n");
 
    Returns a random value from the [0 - 2^31) range.
 
-   Example 1.34. RANDOM pseudo-variable usage
+   Example 1.35. RANDOM pseudo-variable usage
 ...
 $avp(10) = ($RANDOM / 16777216); # 2^24
 if ($avp(10) < 10) {
@@ -807,7 +831,7 @@ exit;
      * isdst - return daylight saving time status (int, 0 - DST
        off, >0 DST on)
 
-   Example 1.35. ctime(name) pseudo-variable usage
+   Example 1.36. ctime(name) pseudo-variable usage
 ...
 if ($ctime(year) == 2008) {
         xlog("request: $rm from $fu to $ru in year 2008\n");
@@ -823,7 +847,7 @@ if ($ctime(year) == 2008) {
    variable. The module exports a set of MI functions to get/set
    the value of shared variables.
 
-   Example 1.36. shv(name) pseudo-variable usage
+   Example 1.37. shv(name) pseudo-variable usage
 ...
 modparam("cfgutils", "shvset", "debug=i:1")
 ...
@@ -839,7 +863,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 30 18 869 261
+   1. Liviu Chircu (@liviuchircu) 32 19 961 261
    2. Henning Westerholt (@henningw) 29 18 1088 86
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 22 367 109
    4. Razvan Crainea (@razvancrainea) 19 14 282 75
@@ -874,9 +898,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2019
-   2.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jan 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2019
+   3.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionel Cerghit (@ionel-cerghit)      Dec 2015 - Dec 2015
@@ -897,8 +921,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Peter
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
    Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Anca
    Vamanu, Sergio Gutierrez, Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Elena-Ramona Modroiu,

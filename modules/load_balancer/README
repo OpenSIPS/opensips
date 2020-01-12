@@ -30,14 +30,20 @@ Load Balancer Module
 
         1.6. Exported Functions
 
-              1.6.1. lb_start(grp,resources[,flags])
-              1.6.2. lb_next()
-              1.6.3. lb_start_or_next(grp,resources[,flags])
-              1.6.4. load_balance(grp,resources[,flags])
+              1.6.1. lb_start(grp,resources[,flags],[attrs])
+              1.6.2. lb_next([attrs])
+              1.6.3.
+                      lb_start_or_next(grp,resources[,flags],[attrs]
+                      )
+
+              1.6.4. load_balance(grp,resources[,flags],[attrs])
               1.6.5. lb_reset()
               1.6.6. lb_is_started()
               1.6.7. lb_disable_dst()
-              1.6.8. lb_is_destination(ip,port[,group[,active]])
+              1.6.8.
+                      lb_is_destination(ip,port,[group],[active],[at
+                      trs]])
+
               1.6.9. lb_count_call(ip,port,grp,resources[,undo])
 
         1.7. Exported MI Functions
@@ -394,7 +400,7 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 
 1.6. Exported Functions
 
-1.6.1.  lb_start(grp,resources[,flags])
+1.6.1.  lb_start(grp,resources[,flags],[attrs])
 
    The function starts a new load-balancing session over the
    available destinations. This translates into finding the less
@@ -429,6 +435,8 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
             and distribute load in situations when failed calls
             always routed to first destination, since they almost
             does not affect load counters of destinations.
+     * attrs (var, optional) - a writable variable to be populated
+       with the attributes of the selected destination.
 
    The function may return:
      * 1 (true) - if a new destination URI is set, pointing to the
@@ -456,7 +464,7 @@ if (lb_start(1,"trascoding;conference")) {
 }
 ...
 
-1.6.2.  lb_next()
+1.6.2.  lb_next([attrs])
 
    Function to be used to pull the next available (and less
    loaded) destination. You need to have an ongoing LB session
@@ -464,6 +472,10 @@ if (lb_start(1,"trascoding;conference")) {
 
    This function is mainly used for implementing failover for the
    LB destinations.
+
+   Meaning of the parameters is as follows:
+     * attrs (var, optional) - a writable variable to be populated
+       with the attributes of the selected destination.
 
    The function may return:
      * 1 (true) - if a new destination URI is set, pointing to the
@@ -492,13 +504,13 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 ...
 
-1.6.3.  lb_start_or_next(grp,resources[,flags])
+1.6.3.  lb_start_or_next(grp,resources[,flags],[attrs])
 
    This is just a wrapper function to simplify scripting. If there
    is no ongoing LB session, it acts as lb_start(); If there is an
    ongoing LB session, it acts as lb_next().
 
-1.6.4.  load_balance(grp,resources[,flags])
+1.6.4.  load_balance(grp,resources[,flags],[attrs])
 
    Old name of the lb_start_or_next() function.
 
@@ -564,7 +576,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 ...
 
-1.6.8.  lb_is_destination(ip,port[,group[,active]])
+1.6.8.  lb_is_destination(ip,port,[group],[active],[attrs]])
 
    Checks if the given IP and PORT belongs to a destination
    configured in the load-balancer's list. Returns true if found
@@ -584,6 +596,8 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
        performed only over "active" (not disabled) destinations.
        If missing, the search will consider any kind of
        destinations.
+     * attrs (var, optional) - a writable variable to be populated
+       with the attributes of the identified destination.
 
    Example 1.17. lb_is_destination usage
 ...
@@ -756,7 +770,7 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 116 68 4263 730
    2. Liviu Chircu (@liviuchircu) 41 31 682 169
-   3. Vlad Patrascu (@rvlad-patrascu) 31 15 378 688
+   3. Vlad Patrascu (@rvlad-patrascu) 35 16 517 738
    4. Razvan Crainea (@razvancrainea) 25 19 260 142
    5. Sergey Khripchenko 19 6 649 366
    6. shripchenko 11 4 409 150
@@ -788,10 +802,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Jul 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Jul 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Jeremy Martinez                     Feb 2017 - Feb 2017
    7.  Dusan Klinec                        Dec 2015 - Dec 2015

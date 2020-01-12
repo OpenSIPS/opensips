@@ -24,6 +24,8 @@ proto_tls module
               1.5.7. trace_destination (string)
               1.5.8. trace_on (int)
               1.5.9. trace_filter_route (string)
+              1.5.10. tls_handshake_timeout (integer)
+              1.5.11. tls_send_timeout (integer)
 
         1.6. Exported MI Functions
 
@@ -57,6 +59,8 @@ proto_tls module
    1.7. Set trace_destination parameter
    1.8. Set trace_on parameter
    1.9. Set trace_filter_route parameter
+   1.10. Set tls_handshake_timeout variable
+   1.11. Set tls_send_timeout variable
 
 Chapter 1. Admin Guide
 
@@ -376,6 +380,40 @@ route[tls_filter] {
 }
 ...
 
+1.5.10. tls_handshake_timeout (integer)
+
+   Sets the timeout (in milliseconds) for the SSL handshake
+   sequence to complete. It may be necessary to increase this
+   value when using a CPU intensive cipher for the connection to
+   allow time for keys to be generated and processed.
+
+   The timeout is invoked during acceptance of a new connection
+   (inbound) and during the wait period when a new session is
+   being initiated (outbound).
+
+   Default value is 100.
+
+   Example 1.10. Set tls_handshake_timeout variable
+
+param("proto_tls", "tls_handshake_timeout", 200) # number of millisecond
+s
+
+
+1.5.11. tls_send_timeout (integer)
+
+   Sets the timeout (in milliseconds) for the send operations to
+   complete
+
+   The send timeout is invoked for all TLS write operations,
+   excluding the handshake process (see: tls_handshake_timeout)
+
+   Default value is 100.
+
+   Example 1.11. Set tls_send_timeout variable
+
+param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
+
+
 1.6. Exported MI Functions
 
 1.6.1.  tls_trace
@@ -479,7 +517,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 55 27 1539 805
    2. Eseanu Marius Cristian (@eseanucristian) 45 5 55 2133
-   3. Razvan Crainea (@razvancrainea) 41 24 570 638
+   3. Razvan Crainea (@razvancrainea) 43 26 626 641
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
    5. Liviu Chircu (@liviuchircu) 10 7 30 105
    6. Vlad Patrascu (@rvlad-patrascu) 8 5 53 63
@@ -510,7 +548,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Feb 2015 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)          Feb 2015 - Jan 2020
    2.  Liviu Chircu (@liviuchircu)              Mar 2015 - May 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2015 - May 2019
    4.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2018
@@ -530,8 +568,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
    Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Ionut
    Ionita (@ionutrazvanionita), Eseanu Marius Cristian
    (@eseanucristian), Vlad Paiu (@vladpaiu).
