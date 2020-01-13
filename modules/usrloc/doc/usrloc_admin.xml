@@ -1527,7 +1527,9 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		<function moreinfo="none">ul_flush</function>
 		</title>
 		<para>
-		Triggers the flush of USRLOC memory cache into DB.
+		Force a flush of all pending usrloc cache changes to the database.
+		Normally, this routine runs every
+		<xref linkend="param_timer_interval"/> seconds.
 		</para>
 	</section>
 
@@ -1603,14 +1605,14 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		<function moreinfo="none">ul_sync</function>
 		</title>
 		<para>
-		Synchronizes the contacts from memory with the ones from database.
-		Note that this can not be used when no database is specified or with the
-		DB-Only scheme.
-
+		Empty the location table, then synchronize it with all contacts from
+		memory.  Note that this can not be used when no database is specified
+		or with the DB-Only scheme.
+		</para>
+		<para>
 		Important: make sure that all your contacts are in memory
 		(<emphasis>ul_dump</emphasis> MI function) before executing this
-		command. If the AOR is not specified, the whole table will be
-		synchronized.
+		command.
 		</para>
 		<para>Parameters: </para>
 		<itemizedlist>
@@ -1619,9 +1621,10 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 				resides (Ex: location).
 			</para></listitem>
 			<listitem><para>
-				<emphasis>AOR (optional)</emphasis> - user AOR in username[@domain]
-				format (domain must be supplied only if use_domain option
-				is on).
+				<emphasis>AOR (optional)</emphasis> - only delete/sync this
+				user AOR, not the whole table.  Format: "username[@domain]"
+				(<emphasis>domain</emphasis> is required only if
+				<xref linkend="param_use_domain"/> option is on).
 			</para></listitem>
 		</itemizedlist>
 	</section>
