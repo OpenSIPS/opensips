@@ -103,4 +103,6 @@ int tlsops_comp(struct sip_msg *msg, pv_param_t *param,
 int tlsops_alt(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
+int tls_is_peer_verified(struct sip_msg* msg);
+
 #endif
