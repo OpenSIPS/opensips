@@ -342,13 +342,38 @@ err:
 	return -1;
 }
 
-static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq, 
-	str *src, str *dst, str *message, int message_type, 
+static int convert_utf16_to_ucs2(str *input, char *output)
+{
+	int i,hex_4grp,hex_val;
+	char *p;
+
+	hex_val = 0;
+	p = output;
+	for (i = 0; i < input->len;i++) {
+		hex_4grp = hex2int(input->s[i]);
+		if (i % 2 == 0) {
+			hex_val = hex_4grp << 4;
+		} else {
+			hex_val |= hex_4grp;
+			*p++ = hex_val;
+		}
+	}
+	return input->len / 2;
+}
+
+static int convert_utf8_to_gsm7(str *input, char *output)
+{
+	/* TODO: proper convert UTF8 to GSM7 */
+	memcpy(output, input->s, input->len);
+	return input->len;
+}
+
+static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
+	str *src, str *dst, str *message, int message_type,
 	smpp_session_t *session,int *delivery_confirmation,
 	int chunk_id, int total_chunks,uint8_t chunk_group_id)
 {
-	int i,hex_4grp,hex_val;
-	char *start,*p;
+	char *start;
 
 	if (!preq || !src || !dst || !message) {
 		LM_ERR("NULL params");
@@ -394,46 +419,33 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
 
 	if (total_chunks > 1) {
 		body->esm_class = 0x40;
-		p = body->short_message;
+		start = body->short_message;
 
 		/* length of UDH = 5 bytes */
-		*p++ = 5;
+		*start++ = 5;
 		/* concatenated chunks indicator */
-		*p++ = 0;
+		*start++ = 0;
 		/* data length */
-		*p++ = 3;
+		*start++ = 3;
 		/* chunk group identifier */
-		*p++ = chunk_group_id;
+		*start++ = chunk_group_id;
 		/* number of total chunks */
-		*p++ = total_chunks; 
+		*start++ = total_chunks;
 		/* current chunk */
-		*p++ = chunk_id; 
-		
+		*start++ = chunk_id;
+
 		body->sm_length = 6;
-		start = body->short_message + 6;
 	} else {
 		start = body->short_message;
 	}
 
 	if (message_type == SMPP_CODING_DEFAULT) {
-		body->sm_length += message->len;
-		strncpy(start, message->s, message->len);
+		body->data_coding = SMPP_CODING_DEFAULT;
+		body->sm_length += convert_utf8_to_gsm7(message, start);
 	} else {
 		/* UTF-16 */
 		body->data_coding = SMPP_CODING_UCS2;
-		body->sm_length += message->len / 2; 
-
-		hex_val = 0;
-		p = start;
-		for (i=0;i<message->len;i++) {
-			hex_4grp = hex2int(message->s[i]);
-			if (i % 2 == 0) {
-				hex_val = hex_4grp << 4;
-			} else {
-				hex_val |= hex_4grp; 
-				*p++ = hex_val;	
-			} 
-		}
+		body->sm_length += convert_utf16_to_ucs2(message, start);
 	}
 
 	if (delivery_confirmation && *delivery_confirmation > 0)
@@ -1141,7 +1153,7 @@ int send_submit_or_deliver_request(str *msg, int msg_type, str *src, str *dst,
 	LM_DBG("TO: %.*s\n", dst->len, dst->s);
 	LM_DBG("MESSAGE: %.*s type = %d\n", msg->len, msg->s,msg_type);
 
-	if ( (msg_type == SMPP_CODING_DEFAULT && msg->len > MAX_SMS_CHARACTERS) || 
+	if ( (msg_type == SMPP_CODING_DEFAULT && msg->len > MAX_SMS_CHARACTERS) ||
 	(msg_type == SMPP_CODING_UCS2 && msg->len > MAX_SMS_CHARACTERS * 2) ) {
 		/* need to split into multiple chunks */
 
@@ -1157,7 +1169,7 @@ int send_submit_or_deliver_request(str *msg, int msg_type, str *src, str *dst,
 			max_chunk_bytes = 67 * 4;
 
 		if (msg->len % max_chunk_bytes > 0)
-			chunks_no = msg->len / max_chunk_bytes + 1; 
+			chunks_no = msg->len / max_chunk_bytes + 1;
 		else
 			chunks_no = msg->len / max_chunk_bytes;
 
@@ -1179,7 +1191,7 @@ int send_submit_or_deliver_request(str *msg, int msg_type, str *src, str *dst,
 			LM_DBG("sending type %d [%.*s] with len %d \n",
 			msg_type,chunked_msg.len,chunked_msg.s,chunked_msg.len);
 
-			if (build_submit_or_deliver_request(&req, src, dst, 
+			if (build_submit_or_deliver_request(&req, src, dst,
 			&chunked_msg, msg_type, session,delivery_confirmation,
 			i+1,chunks_no,chunk_group_id)) {
 				LM_ERR("error creating submit_sm request\n");
@@ -1194,13 +1206,13 @@ int send_submit_or_deliver_request(str *msg, int msg_type, str *src, str *dst,
 				return -1;
 			}
 		}
-	} else { 
-		if (build_submit_or_deliver_request(&req, src, dst, msg, msg_type, 
+	} else {
+		if (build_submit_or_deliver_request(&req, src, dst, msg, msg_type,
 		session,delivery_confirmation,1,1,0)) {
 			LM_ERR("error creating submit_sm request\n");
 			return -1;
 		}
-		
+
 		ret = smpp_send_msg(session, &req->payload);
 		pkg_free(req);
 	}
@@ -1261,7 +1273,7 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 	if (body->data_coding == SMPP_CODING_UCS2) {
 		memset(sms_body,0,2*MAX_SMS_CHARACTERS);
 		body_str.len = string2hex((unsigned char *)body->short_message,
-		body->sm_length,sms_body);	
+		body->sm_length,sms_body);
 
 		body_str.s = sms_body;
 	} else {
