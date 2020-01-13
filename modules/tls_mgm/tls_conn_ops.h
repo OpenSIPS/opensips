@@ -66,6 +66,8 @@ static int tls_conn_shutdown(struct tcp_connection *c)
 		return -1;
 	}
 
+	ERR_clear_error();
+
 	ret = SSL_shutdown(ssl);
 	if (ret == 1) {
 		LM_DBG("shutdown successful\n");
@@ -209,6 +211,8 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 	SSL *ssl;
 
 	ssl = c->extra_data;
+
+	ERR_clear_error();
 
 	ret = SSL_read(ssl, buf, len);
 	if (ret > 0) {

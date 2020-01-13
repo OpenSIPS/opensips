@@ -267,6 +267,7 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 		ssl->kssl_ctx = kssl_ctx_new( );
 #endif
 #endif
+	ERR_clear_error();
 	ret = SSL_accept(ssl);
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #ifndef OPENSSL_NO_KRB5
@@ -405,6 +406,8 @@ static int tls_connect(struct tcp_connection *c, short *poll_events, trace_dest 
 	}
 
 	ssl = (SSL *) c->extra_data;
+
+	ERR_clear_error();
 
 	ret = SSL_connect(ssl);
 	if (ret > 0) {
@@ -553,6 +556,8 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 	SSL            *ssl;
 
 	ssl = (SSL *) c->extra_data;
+
+	ERR_clear_error();
 
 	ret = SSL_write(ssl, buf, len);
 	if (ret > 0) {
