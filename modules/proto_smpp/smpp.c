@@ -55,6 +55,15 @@ static void send_enquire_link_request(smpp_session_t *session);
 
 static uint32_t increment_sequence_number(smpp_session_t *session);
 
+#define free_smpp_msg(_msg) \
+	do { \
+		pkg_free((_msg)->header); \
+		pkg_free((_msg)->body); \
+		if ((_msg)->payload.s) \
+			pkg_free((_msg)->payload.s); \
+		pkg_free((_msg)); \
+	} while (0)
+
 
 /** TM bind */
 struct tm_binds tmb;
@@ -579,7 +588,7 @@ static int send_bind(smpp_session_t *session)
 	n = tsend_stream(fd, req->payload.s, req->payload.len, smpp_send_timeout);
 	LM_DBG("sent %d bytes on smpp connection %p\n", n, conn);
 free_req:
-	pkg_free(req);
+	free_smpp_msg(req);
 	return n;
 }
 
@@ -749,7 +758,7 @@ void send_submit_or_deliver_resp(smpp_submit_sm_req_t *req, smpp_session_t *sess
 	}
 
 	smpp_send_msg(session, &resp->payload);
-	pkg_free(resp);
+	free_smpp_msg(resp);
 }
 
 uint32_t check_bind_session(smpp_bind_transceiver_t *body, smpp_session_t *session)
@@ -789,7 +798,7 @@ void send_bind_resp(smpp_header_t *header, smpp_bind_transceiver_t *body, uint32
 	}
 
 	smpp_send_msg(session, &req->payload);
-	pkg_free(req);
+	free_smpp_msg(req);
 }
 
 void handle_generic_nack_cmd(smpp_header_t *header, char *buffer, smpp_session_t *session)
@@ -1085,10 +1094,9 @@ int send_submit_or_deliver_request(str *msg, str *src, str *dst,
 	ret = smpp_send_msg(session, &req->payload);
 	pkg_free(req);
 
-	if (ret <=0)
-		return -1;
-
-	return 1;
+free_req:
+	free_smpp_msg(req);
+	return ret;
 }
 
 static void send_enquire_link_request(smpp_session_t *session)
@@ -1104,6 +1112,8 @@ static void send_enquire_link_request(smpp_session_t *session)
 		session = list_entry(g_sessions->next, smpp_session_t, list);
 
 	smpp_send_msg(session, &req->payload);
+	pkg_free(req->header);
+	pkg_free(req->payload.s);
 	pkg_free(req);
 }
 
