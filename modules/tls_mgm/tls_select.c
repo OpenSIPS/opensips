@@ -49,7 +49,7 @@ struct tcp_connection* get_cur_connection(struct sip_msg* msg)
 {
 	struct tcp_connection* c;
 
-	if (msg->rcv.proto != PROTO_TLS) {
+	if (msg->rcv.proto != PROTO_TLS && msg->rcv.proto != PROTO_WSS) {
 		LM_ERR("transport protocol is not TLS (bug in config)\n");
 		return 0;
 	}
@@ -57,7 +57,7 @@ struct tcp_connection* get_cur_connection(struct sip_msg* msg)
 	/* get conn by ID */
 	tcp_conn_get(msg->rcv.proto_reserved1, 0, 0, PROTO_NONE, NULL,
 		&c, NULL/*fd*/);
-	if (c && c->type != PROTO_TLS) {
+	if (c && c->type != PROTO_TLS && c->type != PROTO_WSS) {
 		LM_ERR("connection found but is not TLS (bug in config)\n");
 		tcp_conn_release(c, 0);
 		return 0;
@@ -615,5 +615,56 @@ int tlsops_alt(struct sip_msg *msg, pv_param_t *param,
 	if (!my) X509_free(cert);
 	tcp_conn_release(c,0);
 	return pv_get_null(msg, param, res);
+}
+
+int tls_is_peer_verified(struct sip_msg* msg)
+{
+	struct tcp_connection *c;
+	SSL *ssl;
+	long ssl_verify;
+	X509 *x509_cert;
+
+	c = get_cur_connection(msg);
+	if (c==NULL) {
+		LM_ERR("no corresponding TLS/TCP connection found."
+				" This should not happen... return -1\n");
+		return -1;
+	}
+	LM_DBG("corresponding TLS/TCP connection found. s=%d, fd=%d, id=%d\n",
+			c->s, c->fd, c->id);
+
+	if (!c->extra_data) {
+		LM_ERR("no extra_data specified in TLS/TCP connection found."
+				" This should not happen... return -1\n");
+		goto error;
+	}
+
+	ssl = (SSL *) c->extra_data;
+
+	ssl_verify = SSL_get_verify_result(ssl);
+	if ( ssl_verify != X509_V_OK ) {
+		LM_INFO("verification of presented certificate failed... return -1\n");
+		goto error;
+	}
+
+	/* now, we have only valid peer certificates or peers without certificates.
+	 * Thus we have to check for the existence of a peer certificate
+	 */
+	x509_cert = SSL_get_peer_certificate(ssl);
+	if ( x509_cert == NULL ) {
+		LM_INFO("peer did not presented "
+				"a certificate. Thus it could not be verified... return -1\n");
+		goto error;
+	}
+
+	X509_free(x509_cert);
+
+	tcp_conn_release(c, 0);
+
+	LM_DBG("peer is successfully verified... done\n");
+	return 1;
+error:
+	tcp_conn_release(c, 0);
+	return -1;
 }
 
