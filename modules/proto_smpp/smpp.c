@@ -368,6 +368,96 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 	return input->len;
 }
 
+static int convert_gsm7_to_utf8(unsigned char *input, int input_len, char *output)
+{
+	static unsigned int table_gsm7_to_utf8[] = {\
+		  '@',  0xA3,   '$',  0xA5,  0xE8,  0xE9,  0xF9,  0xEC,
+		 0xF2,  0xC7,  0x10,  0xd8,  0xF8,  0x13,  0xC5,  0xE5,
+		0x394,   '_', 0x3A6, 0x393, 0x39B, 0x3A9, 0x3A0, 0x3A8,
+		0x3A3, 0x398, 0x39E,   '?',  0xC6,  0xE6,  0xDF,  0xC9,
+		  ' ',   '!',   '"',   '#',  0xA4,   '%',   '&',  '\'',
+		  '(',   ')',   '*',   '+',   ',',   '-',   '.',   '/',
+		  '0',   '1',   '2',   '3',   '4',   '5',   '6',   '7',
+		  '8',   '9',   ':',   ';',   '<',   '=',   '>',   '?',
+		  0xA1,  'A',   'B',   'C',   'D',   'E',   'F',   'G',
+		  'H',   'I',   'J',   'K',   'L',   'M',   'N',   'O',
+		  'P',   'Q',   'R',   'S',   'T',   'U',   'V',   'W',
+		  'X',   'Y',   'Z',  0xC4,  0xD6,  0xD1,  0xDC,  0xA7,
+		 0xBF,   'a',   'b',   'c',   'd',   'e',   'f',   'g',
+		  'h',   'i',   'j',   'k',   'l',   'm',   'n',   'o',
+		  'p',   'q',   'r',   's',   't',   'u',   'v',   'w',
+		  'x',   'y',   'z',  0xE4,  0xF6,  0xF1,  0xFC,  0xE0,
+	};
+	char *p = output;
+	int i, t;
+	unsigned char c;
+	for (i = 0; i < input_len; i++) {
+		c = input[i];
+		if (c == 0x1B) {
+			/* escaped character - check the next char */
+			switch (input[++i]) {
+			case 0x0A:
+				t = 0x0A; /* FF is a Page Break control, treated like LF */
+				break;
+			case 0x14:
+				t = '^';
+				break;
+			case 0x28:
+				t = '{';
+				break;
+			case 0x29:
+				t = '}';
+				break;
+			case 0x2F:
+				t = '\\';
+				break;
+			case 0x3C:
+				t = '[';
+				break;
+			case 0x3D:
+				t = '~';
+				break;
+			case 0x3E:
+				t = ']';
+				break;
+			case 0x40:
+				t = '|';
+				break;
+			case 0x65:
+				t = 0x20AC;
+				break;
+			case 0x0D: /* CR2 - control character */
+			case 0x1B: /* SS2 - Single shift Escape */
+				t = '?'; /* unknown extended char */
+				break;
+			}
+		} else if (c < 0x80)
+			t = table_gsm7_to_utf8[c];
+		else
+			t = c;
+		if (t > 0xFF) {
+			if (t > 0x10000) {
+				/* four bytes */
+				*p++ = 0xF0 | ((t >> 18) & 0x07); /* 11110xxx */
+				*p++ = 0x80 | ((t >> 12) & 0x3F); /* 10xxxxxx */
+				*p++ = 0x80 | ((t >> 6) & 0x3F);  /* 10xxxxxx */
+				*p++ = 0x80 | (t & 0x3F);         /* 10xxxxxx */
+			} else if (t > 0x800) {
+				/* three bytes */
+				*p++ = 0xE0 | ((t >> 12) & 0x0F); /* 1110xxxx */
+				*p++ = 0x80 | ((t >> 6) & 0x3F);  /* 10xxxxxx */
+				*p++ = 0x80 | (t & 0x3F);         /* 10xxxxxx */
+			} else {
+				/* two bytes */
+				*p++ = 0xC0 | ((t >> 6) & 0x1F);  /* 110xxxxx */
+				*p++ = 0x80 | (t & 0x3F);         /* 10xxxxxx */
+			}
+		} else
+			*p++ = (unsigned char )t;             /* 0xxxxxxx */
+	}
+	return p - output;
+}
+
 static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
 	str *src, str *dst, str *message, int message_type,
 	smpp_session_t *session,int *delivery_confirmation,
@@ -1277,8 +1367,9 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 
 		body_str.s = sms_body;
 	} else {
-		body_str.s = body->short_message;
-		body_str.len = body->sm_length;
+		body_str.len = convert_gsm7_to_utf8((unsigned char *)body->short_message,
+				body->sm_length,sms_body);
+		body_str.s = sms_body;
 	}
 
 	tmb.t_request(&msg_type, /* Type of the message */
