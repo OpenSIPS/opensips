@@ -224,7 +224,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 
 		/*destroy linkers */
 		destroy_linkers(dlg);
-		remove_dlg_prof_table(dlg,0);
+		remove_dlg_prof_table(dlg,is_active);
 
 		/* remove from timer */
 		ret = remove_dlg_timer(&dlg->tl);
