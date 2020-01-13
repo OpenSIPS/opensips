@@ -131,6 +131,7 @@ typedef struct smpp_optional{
 #define MAX_SCHEDULE_DELIVERY_LEN 1
 #define MAX_VALIDITY_PERIOD 1
 #define MAX_MESSAGE_ID 65
+#define MAX_SMS_CHARACTERS 254
 
 typedef struct {
 	char system_id[MAX_SYSTEM_ID_LEN];
@@ -174,7 +175,7 @@ typedef struct {
 	uint8_t data_coding;
 	uint8_t sm_default_msg_id;
 	uint8_t sm_length;
-	char short_message[254];
+	char short_message[MAX_SMS_CHARACTERS];
 } smpp_submit_sm_t;
 
 typedef struct {
