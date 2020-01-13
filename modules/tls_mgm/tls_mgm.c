@@ -118,9 +118,6 @@ static db_con_t *db_hdl = 0;
 /* DB functions */
 static db_func_t dr_dbf;
 
-/* definition of exported functions */
-static int is_peer_verified(struct sip_msg*, char*, char*);
-
 static param_export_t params[] = {
 	{ "client_domain_avp",     STR_PARAM,         &tls_domain_avp            },
 	{ "server_domain", STR_PARAM|USE_FUNC_PARAM,  (void*)tlsp_add_srv_domain },
@@ -159,7 +156,7 @@ static param_export_t params[] = {
 };
 
 static cmd_export_t cmds[] = {
-	{"is_peer_verified", (cmd_function)is_peer_verified,   0, 0, 0,
+	{"is_peer_verified", (cmd_function)tls_is_peer_verified,   0, 0, 0,
 		REQUEST_ROUTE},
 	{"load_tls_mgm", (cmd_function)load_tls_mgm,   0, 0, 0, 0},
 	{0,0,0,0,0,0}
@@ -1947,68 +1944,6 @@ static void mod_destroy(void)
 	EVP_cleanup();
 	CRYPTO_cleanup_all_ex_data();
 	return;
-}
-
-static int is_peer_verified(struct sip_msg* msg, char* foo, char* foo2)
-{
-	struct tcp_connection *c;
-	SSL *ssl;
-	long ssl_verify;
-	X509 *x509_cert;
-
-	LM_DBG("started...\n");
-	if (msg->rcv.proto != PROTO_TLS) {
-		LM_ERR("proto != TLS --> peer can't be verified, return -1\n");
-		return -1;
-	}
-
-	LM_DBG("trying to find TCP connection of received message...\n");
-	/* what if we have multiple connections to the same remote socket? e.g. we can have
-	   connection 1: localIP1:localPort1 <--> remoteIP:remotePort
-	   connection 2: localIP2:localPort2 <--> remoteIP:remotePort
-	   but I think the is very unrealistic */
-	tcp_conn_get(0, &(msg->rcv.src_ip), msg->rcv.src_port, PROTO_TLS, &c, NULL/*fd*/);
-	if (c==NULL) {
-		LM_ERR("no corresponding TLS/TCP connection found."
-				" This should not happen... return -1\n");
-		return -1;
-	}
-	LM_DBG("corresponding TLS/TCP connection found. s=%d, fd=%d, id=%d\n",
-			c->s, c->fd, c->id);
-
-	if (!c->extra_data) {
-		LM_ERR("no extra_data specified in TLS/TCP connection found."
-				" This should not happen... return -1\n");
-		goto error;
-	}
-
-	ssl = (SSL *) c->extra_data;
-
-	ssl_verify = SSL_get_verify_result(ssl);
-	if ( ssl_verify != X509_V_OK ) {
-		LM_INFO("verification of presented certificate failed... return -1\n");
-		goto error;
-	}
-
-	/* now, we have only valid peer certificates or peers without certificates.
-	 * Thus we have to check for the existence of a peer certificate
-	 */
-	x509_cert = SSL_get_peer_certificate(ssl);
-	if ( x509_cert == NULL ) {
-		LM_INFO("peer did not presented "
-				"a certificate. Thus it could not be verified... return -1\n");
-		goto error;
-	}
-
-	X509_free(x509_cert);
-
-	tcp_conn_release(c, 0);
-
-	LM_DBG("peer is successfully verified... done\n");
-	return 1;
-error:
-	tcp_conn_release(c, 0);
-	return -1;
 }
 
 static int tls_get_handshake_timeout(void)
