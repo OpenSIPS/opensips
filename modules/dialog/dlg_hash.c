@@ -197,7 +197,7 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 
 	if (dlg->profile_links) {
 		destroy_linkers_unsafe(dlg);
-		remove_dlg_prof_table(dlg, 0, 1);
+		remove_dlg_prof_table(dlg, 1, 1);
 	}
 
 	if (dlg->legs) {

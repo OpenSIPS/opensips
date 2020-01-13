@@ -642,7 +642,7 @@ void destroy_linkers(struct dlg_cell *dlg)
 }
 
 static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
-		char is_replicated, int safe)
+		char cachedb_dec, int safe)
 {
 	map_t entry;
 	void ** dest;
@@ -698,7 +698,7 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 			/* warn everybody we are deleting */
 			/* XXX: we should queue these */
 			repl_prof_remove(&l->profile->name, &l->value);
-	} else if (!is_replicated) {
+	} else if (cachedb_dec) {
 		if (!cdbc) {
 			LM_WARN("CacheDB not initialized - some information might"
 					" not be deleted from the cachedb engine\n");
@@ -738,7 +738,7 @@ static void destroy_linker(struct dlg_profile_link *l, struct dlg_cell *dlg,
 
 /* this function should be called after destroy_linkers()
  * or destroy_linkers_unsafe() */
-void remove_dlg_prof_table(struct dlg_cell *dlg, char is_replicated, int safe)
+void remove_dlg_prof_table(struct dlg_cell *dlg, char cachedb_dec, int safe)
 {
 	struct dlg_profile_link *l;
 	struct dlg_profile_link *linker = tmp_linkers;
@@ -748,7 +748,7 @@ void remove_dlg_prof_table(struct dlg_cell *dlg, char is_replicated, int safe)
 		linker = linker->next;
 		/* unlink from profile table */
 
-		destroy_linker(l, dlg, is_replicated, safe);
+		destroy_linker(l, dlg, cachedb_dec, safe);
 	}
 	/* removed what we had to - we can release the tmp linkers */
 	if (tmp_linkers) {
@@ -974,7 +974,7 @@ found:
 	if (dlg->locked_by!=process_no)
 		dlg_unlock( d_table, d_entry);
 
-	destroy_linker(linker, dlg, 0, 0);
+	destroy_linker(linker, dlg, 1, 0);
 
 	shm_free(linker);
 

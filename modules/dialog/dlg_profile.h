@@ -115,7 +115,7 @@ struct dlg_profile_table *get_dlg_profile(str *name);
 
 void destroy_linkers(struct dlg_cell *dlg);
 void destroy_linkers_unsafe(struct dlg_cell *dlg);
-void remove_dlg_prof_table(struct dlg_cell *dlg, char is_replicated, int safe);
+void remove_dlg_prof_table(struct dlg_cell *dlg, char cachedb_dec, int safe);
 
 int set_dlg_profile(struct dlg_cell *dlg, str *value,
 		struct dlg_profile_table *profile, char is_replicated);
