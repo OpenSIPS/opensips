@@ -299,12 +299,10 @@ static int wss_conn_init(struct tcp_connection* c)
 
 static void ws_conn_clean(struct tcp_connection* c)
 {
-	struct ws_data *d = (struct ws_data*)c->proto_data;
-
-	if (d) {
+	if (c->proto_data) {
 
 		if (c->state == S_CONN_OK && !is_tcp_main) {
-			switch (d->code) {
+			switch (((struct ws_data*)c->proto_data)->code) {
 			case WS_ERR_NOSEND:
 				break;
 			case WS_ERR_NONE:
@@ -315,7 +313,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 			}
 		}
 
-		shm_free(d);
+		shm_free(c->proto_data);
 		c->proto_data = NULL;
 
 	}

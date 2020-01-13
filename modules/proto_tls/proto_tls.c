@@ -366,10 +366,8 @@ out:
 
 static void proto_tls_conn_clean(struct tcp_connection* c)
 {
-	struct tls_data *data = (struct tls_data*)c->proto_data;
-
-	if (data) {
-		shm_free(data);
+	if (c->proto_data) {
+		shm_free(c->proto_data);
 		c->proto_data = NULL;
 	}
 
