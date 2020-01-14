@@ -99,6 +99,8 @@ int t_resume_async(int fd, void *param)
 	uac.uri = *GET_RURI( t->uas.request );
 	uac.duri = t->uas.request->dst_uri;
 	uac.path_vec = t->uas.request->path_vec;
+	uac.adv_address = t->uas.request->set_global_address;
+	uac.adv_port = t->uas.request->set_global_port;
 	if (!fake_req( &faked_req /* the fake msg to be built*/,
 		t->uas.request, /* the template msg saved in transaction */
 		&t->uas, /*the UAS side of the transaction*/
