@@ -12,11 +12,11 @@ LIB_LUA_NAME?=$(shell \
 	elif pkg-config --exists lua5.3; then echo lua5.3; \
 	elif pkg-config --exists lua-5.3; then echo lua-5.3; \
 	elif pkg-config --exists lua53; then echo lua53; \
-	elif pkg-config --exists lua5.2; then ehco lua5.2; \
-	elif pkg-config --exists lua-5.2; then ehco lua-5.2; \
+	elif pkg-config --exists lua5.2; then echo lua5.2; \
+	elif pkg-config --exists lua-5.2; then echo lua-5.2; \
 	elif pkg-config --exists lua52; then echo lua52; \
-	elif pkg-config --exists lua5.1; then ehco lua5.1; \
-	elif pkg-config --exists lua-5.1; then ehco lua-5.1; \
+	elif pkg-config --exists lua5.1; then echo lua5.1; \
+	elif pkg-config --exists lua-5.1; then echo lua-5.1; \
 	elif pkg-config --exists lua51; then echo lua51; fi)
 
 LIB_LUA = $(shell pkg-config --libs $(LIB_LUA_NAME) 2>/dev/null)
