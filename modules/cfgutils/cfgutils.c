@@ -966,8 +966,8 @@ done:
 	return 1;
 
 parse_error:
-	LM_ERR("parse error in <%s> around position %i\n",
-		time_str, (int)(long)(p-time_str));
+	LM_ERR("parse error in <%.*s> around position %i\n",
+		ret.len, ret.s, (int)(long)(p-ret.s));
 error:
 	if (time_rec)
 		tmrec_free( time_rec );
