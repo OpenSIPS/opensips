@@ -227,23 +227,21 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	if (inherit_br_data) {
 		/* duplicate the dst_uri and path_vec into private mem
 		 * so that they can be visible and changed at script level */
-		if (shm_msg->dst_uri.s) {
-			faked_req->dst_uri.s = pkg_malloc(shm_msg->dst_uri.len);
+		if (uac->duri.s) {
+			faked_req->dst_uri.s = pkg_malloc(uac->duri.len);
 			if (!faked_req->dst_uri.s) {
 				LM_ERR("out of pkg mem\n");
 				goto out;
 			}
-			memcpy(faked_req->dst_uri.s, shm_msg->dst_uri.s,
-				shm_msg->dst_uri.len);
+			memcpy(faked_req->dst_uri.s, uac->duri.s, uac->duri.len);
 		}
-		if (shm_msg->path_vec.s) {
-			faked_req->path_vec.s = pkg_malloc(shm_msg->path_vec.len);
+		if (uac->path_vec.s) {
+			faked_req->path_vec.s = pkg_malloc(uac->path_vec.len);
 			if (!faked_req->path_vec.s) {
 				LM_ERR("out of pkg mem\n");
 				goto out2;
 			}
-			memcpy(faked_req->path_vec.s, shm_msg->path_vec.s,
-				shm_msg->path_vec.len);
+			memcpy(faked_req->path_vec.s, uac->path_vec.s, uac->path_vec.len);
 		}
 		/* Q value was already copied as part of the sip_msg struct */
 	} else {
