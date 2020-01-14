@@ -305,6 +305,9 @@ inline static void rpm_free(void *_p)
 
 inline static void rpm_status(void)
 {
+	if (!RPM_STATUS || !rpm_block)
+		return;
+
 	rpm_lock();
 	RPM_STATUS(rpm_block);
 	rpm_unlock();
