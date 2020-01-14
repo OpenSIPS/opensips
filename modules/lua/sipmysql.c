@@ -301,7 +301,7 @@ static int l_sipmysql_escape(lua_State *L)
   to = pkg_malloc(2 * len + 1);
   if (!to)
     {
-      siplua_log(L_CRIT, "malloc of %d bytes failed", 2 * len + 1);
+      siplua_log(L_CRIT, "malloc of %d bytes failed\n", 2 * len + 1);
       lua_pushnil(L);
       return 1;
     }
@@ -369,7 +369,7 @@ static int l_sipmysql_prepare(lua_State *L)
 	      o_stmt->bind = pkg_malloc(o_stmt->param_count * sizeof(MYSQL_BIND));
 	      if (!o_stmt->bind)
 		{
-		  siplua_log(L_CRIT, "malloc of %d bytes failed",
+		  siplua_log(L_CRIT, "malloc of %d bytes failed\n",
 			     o_stmt->param_count * sizeof(MYSQL_BIND));
 		  lua_remove(L, -1);
 		  lua_pushnil(L);
@@ -379,7 +379,7 @@ static int l_sipmysql_prepare(lua_State *L)
 	      o_stmt->is_null = pkg_malloc(o_stmt->param_count * sizeof(my_bool));
 	      if (!o_stmt->is_null)
 		{
-		  siplua_log(L_CRIT, "malloc of %d bytes failed",
+		  siplua_log(L_CRIT, "malloc of %d bytes failed\n",
 			     o_stmt->param_count * sizeof(my_bool));
 		  lua_remove(L, -1);
 		  lua_pushnil(L);
@@ -389,7 +389,7 @@ static int l_sipmysql_prepare(lua_State *L)
 	      o_stmt->length = pkg_malloc(o_stmt->param_count * sizeof(unsigned long));
 	      if (!o_stmt->length)
 		{
-		  siplua_log(L_CRIT, "malloc of %d bytes failed",
+		  siplua_log(L_CRIT, "malloc of %d bytes failed\n",
 			     o_stmt->param_count * sizeof(unsigned long));
 		  lua_remove(L, -1);
 		  lua_pushnil(L);
@@ -411,7 +411,7 @@ static int l_sipmysql_prepare(lua_State *L)
 	      o_stmt->result = pkg_malloc(o_stmt->num_fields * sizeof(MYSQL_BIND));
 	      if (!o_stmt->result)
 		{
-		  siplua_log(L_CRIT, "malloc of %d bytes failed",
+		  siplua_log(L_CRIT, "malloc of %d bytes failed\n",
 			     o_stmt->num_fields * sizeof(MYSQL_BIND));
 		  lua_remove(L, -1);
 		  lua_pushnil(L);
@@ -421,7 +421,7 @@ static int l_sipmysql_prepare(lua_State *L)
 	      o_stmt->real_length = pkg_malloc(o_stmt->num_fields * sizeof(unsigned long));
 	      if (!o_stmt->real_length)
 		{
-		  siplua_log(L_CRIT, "malloc of %d bytes failed",
+		  siplua_log(L_CRIT, "malloc of %d bytes failed\n",
 			     o_stmt->num_fields * sizeof(unsigned long));
 		  lua_remove(L, -1);
 		  lua_pushnil(L);
@@ -464,7 +464,7 @@ static void sipmysql_stmt_free_result(struct sipmysql_stmt *o)
       o->num_rows = 0;
       ret = mysql_stmt_free_result(o->stmt);
       if (ret)
-	siplua_log(L_CRIT, "mysql_stmt_free_result failed: [%d] %s",
+	siplua_log(L_CRIT, "mysql_stmt_free_result failed: [%d] %s\n",
 		   mysql_stmt_errno(o->stmt), mysql_stmt_error(o->stmt));
       o->result_set_exist = 0;
     }
@@ -578,7 +578,7 @@ static int sipmysql_stmt_bind(struct sipmysql_stmt *o, lua_State *L, int n, int 
 	o->bind[n].buffer = pkg_malloc(sizeof(number));
 	if (!o->bind[n].buffer)
 	  {
-	    siplua_log(L_CRIT, "malloc of %d bytes failed", sizeof(number));
+	    siplua_log(L_CRIT, "malloc of %d bytes failed\n", sizeof(number));
 	    lua_pushnil(L);
 	    return 1;
 	  }
@@ -597,7 +597,7 @@ static int sipmysql_stmt_bind(struct sipmysql_stmt *o, lua_State *L, int n, int 
 	o->bind[n].buffer = pkg_malloc(len);
 	if (!o->bind[n].buffer)
 	  {
-	    siplua_log(L_CRIT, "malloc of %d bytes failed", len);
+	    siplua_log(L_CRIT, "malloc of %d bytes failed\n", len);
 	    lua_pushnil(L);
 	    return 1;
 	  }
@@ -608,7 +608,7 @@ static int sipmysql_stmt_bind(struct sipmysql_stmt *o, lua_State *L, int n, int 
       break;
     default:
       /* light & full userdata */
-      siplua_log(L_CRIT, "invalid bind parameter #%d, Lua type %s not yet handled",
+      siplua_log(L_CRIT, "invalid bind parameter #%d, Lua type %s not yet handled\n",
 		 n, lua_typename(L, lua_type(L, index)));
       lua_pushnil(L);
     }
@@ -687,7 +687,7 @@ static int l_sipmysql_stmt_execute(lua_State *L)
 	      ret = mysql_stmt_bind_result(o->stmt, o->result); /* try to execute it only once */
 	      if (ret) /* failure */
 		{
-		  siplua_log(L_CRIT, "mysql_stmt_bind_result failed: [%d] %s",
+		  siplua_log(L_CRIT, "mysql_stmt_bind_result failed: [%d] %s\n",
 			     mysql_stmt_errno(o->stmt), mysql_stmt_error(o->stmt));
 		  sipmysql_stmt_free_result(o);
 		  lua_pushnil(L);
@@ -699,7 +699,7 @@ static int l_sipmysql_stmt_execute(lua_State *L)
 		    {
 		      /* unlike without prepared statement, store_result will succeed even with
 			 a result set of 0 rows. We thus do not need to check mysql_field_count */
-		      siplua_log(L_CRIT, "mysql_stmt_store_result failed: [%d] %s ",
+		      siplua_log(L_CRIT, "mysql_stmt_store_result failed: [%d] %s\n",
 				 mysql_stmt_errno(o->stmt), mysql_stmt_error(o->stmt));
 		      sipmysql_stmt_free_result(o);
 		      lua_pushnil(L);
@@ -762,7 +762,7 @@ static int sipmysql_stmt_fetch(lua_State *L, int result_type)
       ret = mysql_stmt_fetch(o->stmt);
       if (ret == 1) /* an error occurred */
 	{
-	  siplua_log(L_CRIT, "mysql_stmt_fetch failed: [%d] %s",
+	  siplua_log(L_CRIT, "mysql_stmt_fetch failed: [%d] %s\n",
 		     mysql_stmt_errno(o->stmt), mysql_stmt_error(o->stmt));
 	  lua_remove(L, -1);
 	  lua_pushnil(L);
@@ -785,7 +785,7 @@ static int sipmysql_stmt_fetch(lua_State *L, int result_type)
 	      buf = pkg_realloc(o->result[i].buffer, o->real_length[i]);
 	      if (!buf)
 		{
-		  siplua_log(L_CRIT, "realloc of %d bytes failed", o->real_length[i]);
+		  siplua_log(L_CRIT, "realloc of %d bytes failed\n", o->real_length[i]);
 		  lua_remove(L, -1);
 		  lua_pushnil(L);
 		  return 1;
@@ -796,7 +796,7 @@ static int sipmysql_stmt_fetch(lua_State *L, int result_type)
 	      ret = mysql_stmt_fetch_column(o->stmt, &o->result[i], i, 0);
 	      if (ret)
 		{
-		  siplua_log(L_CRIT, "mysql_stmt_fetch_column failed: [%d] %s",
+		  siplua_log(L_CRIT, "mysql_stmt_fetch_column failed: [%d] %s\n",
 			     mysql_stmt_errno(o->stmt), mysql_stmt_error(o->stmt));
 		  lua_remove(L, -1);
 		  lua_pushnil(L);

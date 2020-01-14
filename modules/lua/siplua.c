@@ -100,16 +100,16 @@ struct module_exports exports = {
 
 static int child_init(int rank)
 {
-  siplua_log(L_INFO, "child_init");
+  siplua_log(L_INFO, "child_init\n");
   if (sipstate_open(lua_allocator))
     {
-      siplua_log(L_ERR, "failed to initialize siplua's Lua state");
+      siplua_log(L_ERR, "failed to initialize siplua's Lua state\n");
       return -1;
     }
 
   if (sipstate_load(luafilename))
     {
-      siplua_log(L_ERR, "failed to load siplua's file %s", luafilename);
+      siplua_log(L_ERR, "failed to load siplua's file %s\n", luafilename);
       sipstate_close();
       return -1;
     }
@@ -124,7 +124,7 @@ static int mod_init(void)
 {
   int ret = 0;
 
-  siplua_log(L_INFO, "mod_init");
+  siplua_log(L_INFO, "mod_init\n");
 
   /* load the SL API */
   if (load_sl_api(&slb)!=0) {
@@ -134,7 +134,7 @@ static int mod_init(void)
 
   if (sipwatch_create_object())
     {
-      siplua_log(L_CRIT, "failed to initialized siplua's watch object");
+      siplua_log(L_CRIT, "failed to initialized siplua's watch object\n");
       return -1;
     }
   return ret;
@@ -146,5 +146,5 @@ static int mod_init(void)
  */
 static void destroy(void)
 {
-  siplua_log(L_INFO, "destroy");
+  siplua_log(L_INFO, "destroy\n");
 }

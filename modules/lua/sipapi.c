@@ -282,7 +282,7 @@ static int l_siplua_getContact(lua_State *L)
 	{
 	  lua_remove(L, -1);
 	  lua_pushnil(L);
-	  siplua_log(L_DBG, "l_siplua_getContact Found Contact HF with both star and no star.");
+	  siplua_log(L_DBG, "l_siplua_getContact Found Contact HF with both star and no star.\n");
 	}
       else
 	{
@@ -293,7 +293,7 @@ static int l_siplua_getContact(lua_State *L)
 	    {
 	      lua_remove(L, -1);
 	      lua_pushnil(L);
-	      siplua_log(L_DBG, "l_siplua_getContact Found Contact HF star with unvalid expires.");
+	      siplua_log(L_DBG, "l_siplua_getContact Found Contact HF star with unvalid expires.\n");
 	    }
 	}
     }
@@ -446,7 +446,7 @@ static int l_siplua_getSrcIp(lua_State *L)
   if (getnameinfo(&sa, sizeof(sa), hbuf, sizeof(hbuf), sbuf,
 		  sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV))
     {
-      siplua_log(L_DBG, "could not get numeric hostname");
+      siplua_log(L_DBG, "could not get numeric hostname\n");
       lua_pushnil(L);
     }
   else
@@ -473,7 +473,7 @@ static int l_siplua_getDstIp(lua_State *L)
   if (getnameinfo(&sa, sizeof(sa), hbuf, sizeof(hbuf), sbuf,
 		  sizeof(sbuf), NI_NUMERICHOST | NI_NUMERICSERV))
     {
-      siplua_log(L_DBG, "could not get numeric hostname");
+      siplua_log(L_DBG, "could not get numeric hostname\n");
       lua_pushnil(L);
     }
   else
