@@ -30,6 +30,7 @@
 #include "../../mem/mem.h"
 
 #include "sipluafunc.h"
+#include "compat.h"
 
 #define SIPMYSQL_FETCH_NUM (1 << 0)
 #define SIPMYSQL_FETCH_ASSOC (1 << 1)
@@ -882,7 +883,7 @@ int l_sipmysql_stmt___index(lua_State *L)
   return 1;
 }
 
-static const struct luaL_reg siplua_mysql_mylib [] =
+static const struct luaL_Reg siplua_mysql_mylib [] =
   {
     {"close", l_sipmysql_close},
     {"query", l_sipmysql_query},
@@ -899,7 +900,7 @@ static const struct luaL_reg siplua_mysql_mylib [] =
     {NULL, NULL} /* sentinel */
   };
 
-static const struct luaL_reg siplua_mysql_stmt_mylib [] =
+static const struct luaL_Reg siplua_mysql_stmt_mylib [] =
   {
     {"close", l_sipmysql_stmt_close},
     {"bind", l_sipmysql_stmt_bind},

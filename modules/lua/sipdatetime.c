@@ -25,6 +25,7 @@
 
 #include <lua.h>
 #include <lauxlib.h>
+#include "compat.h"
 
 struct sipdatetime
 {
@@ -182,7 +183,7 @@ static int l_sipdatetime___index(lua_State *L)
   return 1;
 }
 
-static const struct luaL_reg siplua_datetime_mylib [] =
+static const struct luaL_Reg siplua_datetime_mylib [] =
   {
     {"duplicate", l_sipdatetime_duplicate},
     {"strftime", l_sipdatetime_strftime},

@@ -49,6 +49,7 @@
 #include "siplua.h"
 #include "sipluafunc.h"
 #include "sipapi.h"
+#include "compat.h"
 
 #if 0
 static void siplua_moduleFunc_free(const char *func, cmd_export_t *exp_func_struct,
@@ -892,7 +893,7 @@ static int l_siplua_moduleFunc(lua_State *L)
   return 1;
 }
 
-static const struct luaL_reg siplua_api_mylib [] =
+static const struct luaL_Reg siplua_api_mylib [] =
   {
     {"getType", l_siplua_getType},
     {"getURI_User", l_siplua_getURI_User},
@@ -920,7 +921,7 @@ static const struct luaL_reg siplua_api_mylib [] =
 
 void siplua_register_api_cclosures(lua_State *L)
 {
-  lua_pushvalue(L, LUA_GLOBALSINDEX);
+  lua_pushglobaltable(L);
   luaL_openlib(L, NULL, siplua_api_mylib, 0);
   lua_remove(L, -1);
 }

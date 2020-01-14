@@ -39,6 +39,7 @@
 #include "sipwatch.h"
 #include "sipdatetime.h"
 #include "sipstate.h"
+#include "compat.h"
 
 static const luaL_Reg siplua_libs[] = {
   {"", luaopen_base},
@@ -307,7 +308,7 @@ static int l_sipstate_setCoreDebug(lua_State *L)
   return 0;
 }
 
-static const struct luaL_reg siplua_state_mylib [] =
+static const struct luaL_Reg siplua_state_mylib [] =
   {
     {"xlog", l_sipstate_xlog},
     {"xdbg", l_sipstate_xdbg},
@@ -327,7 +328,7 @@ static const struct luaL_reg siplua_state_mylib [] =
 
 static void siplua_register_state_cclosures(lua_State *L)
 {
-  lua_pushvalue(L, LUA_GLOBALSINDEX);
+  lua_pushglobaltable(L);
   luaL_openlib(L, NULL, siplua_state_mylib, 0);
   lua_remove(L, -1);
 }
