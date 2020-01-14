@@ -190,7 +190,7 @@ next_contact:
 
 
 static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
-		struct ua_server *uas, struct ua_client *uac, int inherit_br_data)
+								struct ua_server *uas, struct ua_client *uac)
 {
 	/* on_negative_reply faked msg now copied from shmem msg (as opposed
 	 * to zero-ing) -- more "read-only" actions (exec in particular) will
@@ -208,8 +208,11 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 
 	faked_req->msg_flags |= FL_TM_FAKE_REQ;
 
-	/* new_uri can change -- make a private copy */
 	if (uac) {
+
+		/* duplicate some values into private mem
+		 * so that they can be visible and changed at script level */
+		/* RURI / new URI */
 		faked_req->new_uri.s=pkg_malloc( uac->uri.len+1 );
 		if (!faked_req->new_uri.s) {
 			LM_ERR("no uri/pkg mem\n");
@@ -218,13 +221,6 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 		faked_req->new_uri.len = uac->uri.len;
 		memcpy( faked_req->new_uri.s, uac->uri.s, uac->uri.len);
 		faked_req->new_uri.s[faked_req->new_uri.len]=0;
-	} else {
-		faked_req->new_uri.s = NULL;
-		faked_req->new_uri.len = 0;
-	}
-	faked_req->parsed_uri_ok = 0;
-
-	if (inherit_br_data) {
 
 		/* duplicate the dst_uri and path_vec into private mem
 		 * so that they can be visible and changed at script level */
@@ -244,6 +240,11 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			}
 			memcpy(faked_req->path_vec.s, uac->path_vec.s, uac->path_vec.len);
 		}
+
+		/* set the branch flags from the elected branch */
+		setb0flags( faked_req, uac->br_flags);
+		/* Q and force_send_socket values were already copied
+		 * as part of the sip_msg struct */
 
 		/* duplicate advertised address and port from UAC into
 		 * private mem so that they can be changed at script level */
@@ -272,8 +273,11 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			faked_req->set_global_port.len = 0;
 		}
 
-		/* Q value was already copied as part of the sip_msg struct */
 	} else {
+
+		/* reset new URI value */
+		faked_req->new_uri.s = NULL;
+		faked_req->new_uri.len = 0;
 
 		/* reset DST URI, PATH vector and Q value */
 		faked_req->dst_uri.s = NULL;
@@ -281,6 +285,10 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 		faked_req->path_vec.s = NULL;
 		faked_req->path_vec.len = 0;
 		faked_req->ruri_q = Q_UNSPECIFIED;
+
+		/* reset force_send_socket and the per-branch flags */
+		faked_req->force_send_socket = NULL;
+		setb0flags( faked_req, 0);
 
 		/* duplicate advertised address and port from SIP MSG into
 		 * private mem so that they can be changed at script level */
@@ -318,11 +326,8 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 		goto out4;
 	}
 
-	/* set as flags the global flags and the branch flags from the
-	 * elected branch */
+	/* set as flags the global flags */
 	faked_req->flags = uas->request->flags;
-	if (uac)
-		setb0flags( faked_req, uac->br_flags);
 
 	return 1;
 out4:

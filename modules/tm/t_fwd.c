@@ -1013,7 +1013,7 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 		return -2;
 	}
 
-	if (!fake_req( &faked_req, t->uas.request, &t->uas, NULL, 0)) {
+	if (!fake_req( &faked_req, t->uas.request, &t->uas, NULL)) {
 		LM_ERR("fake_req failed\n");
 		return -1;
 	}
