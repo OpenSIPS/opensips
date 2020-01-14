@@ -524,7 +524,10 @@ static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 
 static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 {
-	int p;
+	str ts;
+	int p, op;
+	char time_buf[256];
+	struct tm t;
 	struct list_head *it;
 	struct srs_sdp_stream *stream;
 	str xml_header = str_init("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
@@ -594,6 +597,61 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 			SIPREC_COPY_INT(stream->label, buf);
 			SIPREC_COPY("</label>\r\n\t</stream>\r\n", buf);
 		}
+	}
+	SIPREC_COPY("\t<sessionrecordingassoc session_id=\"", buf);
+	SIPREC_COPY_UUID(sess->uuid, buf);
+	SIPREC_COPY("\">\r\n\t\t<associate-time>", buf);
+	localtime_r(&sess->ts, &t);
+	ts.s = time_buf;
+	ts.len = strftime(time_buf, 256, "%Y-%m-%dT%T%z", &t);
+	SIPREC_COPY_STR(ts, buf);
+	SIPREC_COPY("</associate-time>\r\n\t</sessionrecordingassoc>\r\n", buf);
+
+	for (p = 0; p < sess->participants_no; p++) {
+		if (!sess->participants[p].aor.s && !sess->participants[p].xml_val.s)
+			continue;
+		SIPREC_COPY("\t<participantsessionassoc participant_id=\"", buf);
+		SIPREC_COPY_UUID(sess->participants[p].uuid, buf);
+		SIPREC_COPY("\" session_id=\"", buf);
+		SIPREC_COPY_UUID(sess->uuid, buf);
+		SIPREC_COPY("\">\r\n\t\t<associate-time>", buf);
+		localtime_r(&sess->participants[p].ts, &t);
+		ts.s = time_buf;
+		ts.len = strftime(time_buf, 256, "%Y-%m-%dT%T%z", &t);
+		SIPREC_COPY_STR(ts, buf);
+		SIPREC_COPY("</associate-time>\r\n\t</participantsessionassoc>\r\n", buf);
+	}
+
+	/* build stream associations */
+	for (p = 0; p < sess->participants_no; p++) {
+		if (!sess->participants[p].aor.s && !sess->participants[p].xml_val.s)
+			continue;
+		SIPREC_COPY("\t<participantstreamassoc participant_id=\"", buf);
+		SIPREC_COPY_UUID(sess->participants[p].uuid, buf);
+		SIPREC_COPY("\">\r\n", buf);
+		list_for_each(it, &sess->participants[p].streams) {
+			stream = list_entry(it, struct srs_sdp_stream, list);
+			/* TODO: check if stream is active */
+			SIPREC_COPY("\t\t<send>", buf);
+			SIPREC_COPY_UUID(stream->uuid, buf);
+			SIPREC_COPY("</send>\r\n", buf);
+		}
+		/* add the streams of all the other participants */
+		for (op = 0; op < sess->participants_no; op++) {
+			if (op == p)
+				continue;
+			if (!sess->participants[op].aor.s && !sess->participants[op].xml_val.s)
+				continue;
+
+			list_for_each(it, &sess->participants[op].streams) {
+				stream = list_entry(it, struct srs_sdp_stream, list);
+				/* TODO: check if stream is active */
+				SIPREC_COPY("\t\t<recv>", buf);
+				SIPREC_COPY_UUID(stream->uuid, buf);
+				SIPREC_COPY("</recv>\r\n", buf);
+			}
+		}
+		SIPREC_COPY("\t</participantstreamassoc>\r\n", buf);
 	}
 
 	SIPREC_COPY_CLOSE_TAG("recording", buf);

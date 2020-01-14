@@ -173,7 +173,7 @@ void src_free_session(struct src_sess *sess)
 }
 
 int src_add_participant(struct src_sess *sess, str *aor, str *name,
-					str *xml_val, siprec_uuid *uuid)
+					str *xml_val, siprec_uuid *uuid, time_t *start)
 {
 	struct src_part *part;
 	if (sess->participants_no >= SRC_MAX_PARTICIPANTS) {
@@ -218,6 +218,10 @@ int src_add_participant(struct src_sess *sess, str *aor, str *name,
 			memcpy(part->name.s, name->s, name->len);
 		}
 	}
+	if (start)
+		part->ts = *start;
+	else
+		part->ts = time(NULL);
 
 	sess->participants_no++;
 
@@ -371,7 +375,14 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 			goto error;
 		}
 		memcpy(&uuid, tmp.s, tmp.len);
-		if (src_add_participant(sess, &aor, &name, xml, &uuid) < 0) {
+		SIPREC_BIN_POP(str, &tmp);
+		if (tmp.len != sizeof(ts)) {
+			LM_ERR("invalid length for timestamp (%d != %d)\n", tmp.len,
+					(int)sizeof(ts));
+			return;
+		}
+		memcpy(&ts, tmp.s, tmp.len);
+		if (src_add_participant(sess, &aor, &name, xml, &uuid, &ts) < 0) {
 			LM_ERR("cannot add new participant!\n");
 			goto error;
 		}
@@ -490,6 +501,7 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 			SIPREC_BIN_PUSH(str, &ss->participants[p].name);
 		}
 		SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(ss->participants[p].uuid));
+		SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(ss->participants[p].ts));
 		/* count the number of sessions */
 		c = 0;
 		list_for_each(l, &ss->participants[p].streams)
