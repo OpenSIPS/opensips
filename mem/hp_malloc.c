@@ -568,7 +568,10 @@ int hp_mem_warming(struct hp_block *hpb)
 		sf = sf->next;
 	}
 
+	/* the big frag is typically next-to-last */
 	big_frag = hpb->first_frag;
+	while (FRAG_NEXT(big_frag) != hpb->last_frag)
+		big_frag = FRAG_NEXT(big_frag);
 
 	/* populate each free hash bucket with proper number of fragments */
 	for (sf = sorted_sf; sf; sf = sf->next) {
