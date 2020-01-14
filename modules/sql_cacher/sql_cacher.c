@@ -261,7 +261,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 			}
 			col_idx = 0;
 			tmp = memchr(p2 + 1, spec_delimiter.s[0],
-						parse_str.len - (p2 - parse_str.s));
+						parse_str.len - (p2 - parse_str.s + 1));
 			/* just count how many columns there are */
 			new_entry->nr_columns = 1;
 			c_tmp1 = memchr(p2 + 1, columns_delimiter.s[0],
@@ -300,7 +300,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 
 			new_entry->columns[col_idx] = shm_malloc(sizeof(str));
 			if (!tmp)
-				(*new_entry->columns[col_idx]).len = parse_str.len - (p2 - c_tmp1 + 1);
+				(*new_entry->columns[col_idx]).len = parse_str.len - (c_tmp1 - parse_str.s);
 			else
 				(*new_entry->columns[col_idx]).len = tmp - c_tmp1;
 
