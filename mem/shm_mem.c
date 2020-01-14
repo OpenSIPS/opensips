@@ -754,7 +754,8 @@ void shm_mem_destroy(void)
 #ifdef HP_MALLOC
 	int j;
 
-	if (mem_allocator_shm == MM_HP_MALLOC)
+	if (mem_allocator_shm == MM_HP_MALLOC ||
+	    mem_allocator_shm == MM_HP_MALLOC_DBG)
 		hp_update_shm_pattern_file();
 #endif
 
