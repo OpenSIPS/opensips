@@ -190,7 +190,7 @@ next_contact:
 
 
 static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
-		struct ua_server *uas, struct ua_client *uac, int with_dst)
+		struct ua_server *uas, struct ua_client *uac, int inherit_br_data)
 {
 	/* on_negative_reply faked msg now copied from shmem msg (as opposed
 	 * to zero-ing) -- more "read-only" actions (exec in particular) will
@@ -224,9 +224,9 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	}
 	faked_req->parsed_uri_ok = 0;
 
-	/* duplicate the dst_uri, advertised address and port into private mem
-	 * so that they can be changed at script level */
-	if (with_dst) {
+	if (inherit_br_data) {
+		/* duplicate the dst_uri and path_vec into private mem
+		 * so that they can be visible and changed at script level */
 		if (shm_msg->dst_uri.s) {
 			faked_req->dst_uri.s = pkg_malloc(shm_msg->dst_uri.len);
 			if (!faked_req->dst_uri.s) {
@@ -236,11 +236,27 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 			memcpy(faked_req->dst_uri.s, shm_msg->dst_uri.s,
 				shm_msg->dst_uri.len);
 		}
+		if (shm_msg->path_vec.s) {
+			faked_req->path_vec.s = pkg_malloc(shm_msg->path_vec.len);
+			if (!faked_req->path_vec.s) {
+				LM_ERR("out of pkg mem\n");
+				goto out2;
+			}
+			memcpy(faked_req->path_vec.s, shm_msg->path_vec.s,
+				shm_msg->path_vec.len);
+		}
+		/* Q value was already copied as part of the sip_msg struct */
 	} else {
+		/* reset DST URI, PATH vector and Q value */
 		faked_req->dst_uri.s = NULL;
 		faked_req->dst_uri.len = 0;
+		faked_req->path_vec.s = NULL;
+		faked_req->path_vec.len = 0;
+		faked_req->ruri_q = Q_UNSPECIFIED;
 	}
 
+	/* duplicate advertised address and port into private mem
+	 * so that they can be changed at script level */
 	if (shm_msg->set_global_address.s) {
 		faked_req->set_global_address.s = pkg_malloc
 			(shm_msg->set_global_address.len);
@@ -260,16 +276,6 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 		}
 		memcpy(faked_req->set_global_port.s, shm_msg->set_global_port.s,
 			shm_msg->set_global_port.len);
-	}
-
-	if (shm_msg->path_vec.s) {
-		faked_req->path_vec.s = pkg_malloc(shm_msg->path_vec.len);
-		if (!faked_req->path_vec.s) {
-			LM_ERR("out of pkg mem\n");
-			goto out2;
-		}
-		memcpy(faked_req->path_vec.s, shm_msg->path_vec.s,
-			   shm_msg->path_vec.len);
 	}
 
 	if (fix_fake_req_headers(faked_req) < 0) {
