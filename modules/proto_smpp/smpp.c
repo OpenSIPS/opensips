@@ -408,6 +408,8 @@ static int convert_gsm7_to_utf8(unsigned char *input, int input_len, char *outpu
 			case 0x65:
 				t = 0x20AC;
 				break;
+			default:
+				--i; /* consider the previous character */
 			case 0x0D: /* CR2 - control character */
 			case 0x1B: /* SS2 - Single shift Escape */
 				t = '?'; /* unknown extended char */
