@@ -801,7 +801,7 @@ int check_time_rec(struct sip_msg *msg, str *time_str)
 
 	LM_DBG("Parsing : %.*s\n", time_str->len, time_str->s);
 
-	time_rec = tmrec_new(SHM_ALLOC);
+	time_rec = tmrec_new(PKG_ALLOC);
 	if (time_rec==0) {
 		LM_ERR("no more shm mem\n");
 		goto error;
@@ -826,17 +826,20 @@ int check_time_rec(struct sip_msg *msg, str *time_str)
 done:
 	/* shortcut: if there is no dstart, timerec is valid */
 	if (time_rec->dtstart==0)
-		return 1;
+		goto success;
 
 	memset( &att, 0, sizeof(att));
 
 	/* set current time */
 	if ( ac_tm_set_time( &att, time(0) ) )
-		return -1;
+		goto error;
 
 	/* does the recv_time match the specified interval?  */
 	if (check_tmrec( time_rec, &att, 0)!=0)
-		return -1;
+		goto error;
+
+success:
+	tmrec_free(time_rec);
 
 	return 1;
 
