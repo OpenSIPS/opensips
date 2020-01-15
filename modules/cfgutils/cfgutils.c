@@ -909,7 +909,7 @@ static int ts_usec_delta(struct sip_msg *msg, char *_t1s,
 int check_time_rec(struct sip_msg *msg, char *time_str)
 {
 	tmrec_p time_rec = 0;
-	char *p, *s;
+	char *p, *s, *bkp;
 	str ret;
 	ac_tm_t att;
 
@@ -918,19 +918,26 @@ int check_time_rec(struct sip_msg *msg, char *time_str)
 		return E_CFG;
 	}
 
-	p = ret.s;
+	bkp = pkg_malloc(ret.len + 1);
+	if (!bkp) {
+		LM_ERR("cannot allocate temporary pointer\n");
+		goto error;
+	}
+	memcpy(bkp, ret.s, ret.len);
+	bkp[ret.len] = '\0';
+	p = bkp;
 
-	LM_DBG("Parsing : %.*s\n", ret.len, ret.s);
+	LM_DBG("Parsing : %s\n", p);
 
-	time_rec = tmrec_new(SHM_ALLOC);
+	time_rec = tmrec_new(PKG_ALLOC);
 	if (time_rec==0) {
 		LM_ERR("no more shm mem\n");
 		goto error;
 	}
 
 	/* empty definition? */
-	if ( time_str==0 || *time_str==0 )
-		return -1;
+	if (*p==0)
+		goto error;
 
 	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
 	load_TR_value( p, s, time_rec, tr_parse_dtend, parse_error, done);
@@ -951,25 +958,31 @@ int check_time_rec(struct sip_msg *msg, char *time_str)
 done:
 	/* shortcut: if there is no dstart, timerec is valid */
 	if (time_rec->dtstart==0)
-		return 1;
+		goto success;
 
 	memset( &att, 0, sizeof(att));
 
 	/* set current time */
 	if ( ac_tm_set_time( &att, time(0) ) )
-		return -1;
+		goto error;
 
 	/* does the recv_time match the specified interval?  */
 	if (check_tmrec( time_rec, &att, 0)!=0)
-		return -1;
+		goto error;
+
+success:
+	pkg_free(bkp);
+	tmrec_free(time_rec);
 
 	return 1;
 
 parse_error:
-	LM_ERR("parse error in <%.*s> around position %i\n",
-		ret.len, ret.s, (int)(long)(p-ret.s));
+	LM_ERR("parse error in <%s> around position %i\n",
+		bkp, (int)(long)(p-bkp));
 error:
 	if (time_rec)
 		tmrec_free( time_rec );
+	if (bkp)
+		pkg_free(bkp);
 	return -1;
 }
