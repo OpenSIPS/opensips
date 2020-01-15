@@ -816,6 +816,25 @@ static inline int pkg_str_dup(str* dst, const str* src)
 	return 0;
 }
 
+/*
+ * Make a copy of a str structure using pkg_malloc
+ *	  + an additional '\0' byte, so you can make use of dst->s
+ */
+static inline int pkg_nt_str_dup(str* dst, const str* src)
+{
+	dst->s = pkg_malloc(src->len + 1);
+	if (!dst->s) {
+		LM_ERR("no private memory left\n");
+		dst->len = 0;
+		return -1;
+	}
+
+	memcpy(dst->s, src->s, src->len);
+	dst->len = src->len;
+	dst->s[dst->len] = '\0';
+	return 0;
+}
+
 static inline char *pkg_strdup(const char *str)
 {
 	char *rval;
