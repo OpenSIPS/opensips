@@ -1538,6 +1538,9 @@ init_ssl_methods(void)
 	ssl_methods[TLS_USE_TLSv1_2-1] = (SSL_METHOD*)TLSv1_2_method();
 #endif
 #else
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+	ssl_versions[TLS_USE_TLSv1_3-1] = TLS1_3_VERSION;
+#endif
 	ssl_versions[TLS_USE_TLSv1_2-1] = TLS1_2_VERSION;
 	ssl_versions[TLS_USE_TLSv1-1] = TLS1_VERSION;
 #endif
@@ -2113,6 +2116,11 @@ static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
 		case TLS_USE_TLSv1_2:
 			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
 				MI_SSTR("TLSv1_2")) < 0)
+				goto error;
+			break;
+		case TLS_USE_TLSv1_3:
+			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
+				MI_SSTR("TLSv1_3")) < 0)
 				goto error;
 			break;
 		default: goto error;

@@ -219,6 +219,12 @@ listen = tls:1.2.3.4:5061
 			</para>
 			<itemizedlist>
 				<listitem>
+				<para><emphasis>TLSv1_3</emphasis> - means &osips; will
+				accept only TLSv1.3 connections. This version is only
+				available starting with OpenSSL 1.1.1 version.
+				</para>
+				</listitem>
+				<listitem>
 				<para><emphasis>TLSv1_2</emphasis> - means &osips; will
 				accept only TLSv1.2 connections (rfc3261 conformant).
 				</para>

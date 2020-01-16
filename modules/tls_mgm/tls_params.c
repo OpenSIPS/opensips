@@ -225,6 +225,8 @@ int tlsp_set_method(modparam_t type, void *in)
 		method = TLS_USE_TLSv1;
 	else if (strcasecmp(val.s, "TLSV1_2")==0 )
 		method = TLS_USE_TLSv1_2;
+	else if (strcasecmp(val.s, "TLSV1_3")==0 )
+		method = TLS_USE_TLSv1_3;
 	else {
 		LM_ERR("unsupported method [%s]\n",val.s);
 		return -1;

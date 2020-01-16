@@ -223,6 +223,8 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 		d->method = TLS_USE_TLSv1;
 	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1_2") == 0)
 		d->method = TLS_USE_TLSv1_2;
+	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1_3") == 0)
+		d->method = TLS_USE_TLSv1_3;
 
 	if (int_vals[INT_VALS_VERIFY_CERT_COL] != -1) {
 		d->verify_cert = int_vals[INT_VALS_VERIFY_CERT_COL];

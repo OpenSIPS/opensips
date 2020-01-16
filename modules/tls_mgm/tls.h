@@ -61,7 +61,9 @@
 	#warning ""
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+static int ssl_versions[TLS_USE_TLSv1_3 + 1];
+#elif OPENSSL_VERSION_NUMBER >= 0x10100000L
 static int ssl_versions[TLS_USE_TLSv1_2 + 1];
 #else
 static SSL_METHOD     *ssl_methods[TLS_USE_TLSv1_2 + 1];
