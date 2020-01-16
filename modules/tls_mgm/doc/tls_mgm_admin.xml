@@ -229,17 +229,6 @@ listen = tls:1.2.3.4:5061
 				</para>
 				</listitem>
 				<listitem>
-				<para><emphasis>SSLv3</emphasis> - means &osips; will
-				accept only SSLv3 connections
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>SSLv2</emphasis> - means &osips; will
-				accept only SSLv2 connections (almost all old clients
-				support this).
-				</para>
-				</listitem>
-				<listitem>
 				<para><emphasis>SSLv23</emphasis> - means &osips; will
 				accept any of the above methods, but the initial SSL
 				hello must be v2 (in the initial hello all the supported
@@ -254,10 +243,7 @@ listen = tls:1.2.3.4:5061
 				Default value is SSLv23.
 			</emphasis></para>
 			<warning><para>
-			Best is to use SSLv23, for extended compatibility. Using any
-			of the other will restrict the version to just that one
-			version. In fact, SSLv2 is disabled in the source code; to
-			use it, you need to edit tls/tls_init.c
+			For extended compatibility with older system, best use SSLv23.
 			</para></warning>
 			<para>
 			If you want RFC3261 conformance and all your clients support
