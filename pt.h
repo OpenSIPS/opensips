@@ -69,6 +69,7 @@ extern struct process_table *pt;
 extern int process_no;
 extern unsigned int counted_processes;
 
+int count_child_processes(void);
 int   init_multi_proc_support();
 void  set_proc_attrs( char *fmt, ...);
 int   count_init_children(int flags);

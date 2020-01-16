@@ -314,7 +314,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	sip_workers_no = udp_count_processes() + tcp_count_processes();
+	sip_workers_no = count_child_processes();
 
 	LM_DBG("Children: %d\n", sip_workers_no);
 
