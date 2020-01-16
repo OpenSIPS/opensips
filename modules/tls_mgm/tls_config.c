@@ -38,7 +38,7 @@
 #include "../../config.h"
 #include "../../ut.h"
 
-int             tls_default_method = TLS_USE_SSLv23;
+int             tls_default_method = TLS_USE_TLSv1;
 
 /*
  * These are the default values which will be used

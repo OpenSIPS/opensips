@@ -240,7 +240,7 @@ listen = tls:1.2.3.4:5061
 				</listitem>
 			</itemizedlist>
 			<para><emphasis>
-				Default value is SSLv23.
+				Default value is TLSv1_2.
 			</emphasis></para>
 			<warning><para>
 			For extended compatibility with older system, best use SSLv23.
