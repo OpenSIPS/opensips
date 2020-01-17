@@ -419,7 +419,7 @@ static int convert_gsm7_to_utf8(unsigned char *input, int input_len, char *outpu
 			t = table_gsm7_to_utf8[c];
 		else
 			t = c;
-		if (t > 0xFF) {
+		if (t > 0x7F) {
 			if (t > 0x10000) {
 				/* four bytes */
 				*p++ = 0xF0 | ((t >> 18) & 0x07); /* 11110xxx */
