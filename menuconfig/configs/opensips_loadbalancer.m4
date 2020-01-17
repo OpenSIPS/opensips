@@ -129,7 +129,6 @@ modparam("load_balancer", "probing_interval", 30)
 ')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
-loadmodule "httpd.so"
 loadmodule "mi_http.so"
 ',`')
 

@@ -125,7 +125,6 @@ modparam("dialplan", "db_url",
 ',`')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
-loadmodule "httpd.so"
 loadmodule "mi_http.so"
 ',`')
 
@@ -156,7 +155,7 @@ route{
 
 	if ( check_source_address( 1, $avp(trunk_attrs)) ) {
 		# request comes from trunks
-		setflag(IS_TRUNK);
+		setflag("IS_TRUNK");
 	} else if ( is_from_gw() ) {
 		# request comes from GWs
 	} else {
@@ -202,7 +201,7 @@ route{
 
 	#### INITIAL REQUESTS
 
-	if ( !isflagset(IS_TRUNK) ) {
+	if ( !isflagset("IS_TRUNK") ) {
 		## accept new calls only from trunks
 		send_reply(403,"Not from trunk");
 		exit;
