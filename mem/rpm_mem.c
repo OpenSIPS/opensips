@@ -190,6 +190,7 @@ int rpm_mem_init_allocs(void)
 		gen_rpm_get_free       = (osips_get_mmstat_f)fm_get_free;
 		gen_rpm_get_frags      = (osips_get_mmstat_f)fm_get_frags;
 		break;
+#endif
 #ifdef Q_MALLOC
 	case MM_Q_MALLOC:
 		gen_rpm_malloc         = (osips_block_malloc_f)qm_malloc;
@@ -288,7 +289,6 @@ int rpm_mem_init_allocs(void)
 		return -1;
 	}
 
-#endif
 #endif
 
 	/* store locks in sharem memory, so we don't have to clean them up */
