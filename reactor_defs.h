@@ -78,10 +78,13 @@ int init_reactor_size(void);
 	init_io_wait(&_worker_io, _name, reactor_size, io_poll_method, _prio_max)
 
 #define reactor_add_reader( _fd, _type, _prio, _data) \
-	io_watch_add(&_worker_io, _fd, _type, _data, _prio, IO_WATCH_READ)
+	io_watch_add(&_worker_io, _fd, _type, _data, _prio, 0, IO_WATCH_READ)
+
+#define reactor_add_reader_with_timeout( _fd, _type, _prio, _t, _data) \
+	io_watch_add(&_worker_io, _fd, _type, _data, _prio, _t, IO_WATCH_READ)
 
 #define reactor_add_writer( _fd, _type, _prio, _data) \
-	io_watch_add(&_worker_io, _fd, _type, _data, _prio, IO_WATCH_WRITE)
+	io_watch_add(&_worker_io, _fd, _type, _data, _prio, 0, IO_WATCH_WRITE)
 
 #define reactor_del_reader( _fd, _idx, _io_flags) \
 	io_watch_del(&_worker_io, _fd, _idx, _io_flags, IO_WATCH_READ)
