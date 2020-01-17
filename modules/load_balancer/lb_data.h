@@ -47,6 +47,8 @@
 /* max number of IPs for a destination (DNS loookup) */
 #define LB_MAX_IPS  32
 
+extern rw_lock_t *ref_lock;
+
 struct lb_resource {
 	str name;
 	gen_lock_t *lock;

@@ -48,8 +48,6 @@ static char *table_name = NULL;
 /* dialog stuff */
 struct dlg_binds lb_dlg_binds;
 
-/* reader-writers lock for data reloading */
-static rw_lock_t *ref_lock = NULL;
 struct lb_data **curr_data = NULL;
 
 /* probing related stuff */
@@ -839,6 +837,9 @@ mi_response_t *mi_lb_reload(const mi_params_t *params,
 		goto error;
 	}
 
+	if (lb_cluster_id && lb_cluster_sync() < 0)
+		return init_mi_error(500, MI_SSTR("Failed to synchronize from cluster"));
+
 	return init_mi_result_ok();
 error:
 	return init_mi_error( 500, MI_SSTR("Failed to reload"));
@@ -1075,7 +1076,7 @@ error:
 
 
 int lb_update_from_replication( unsigned int group, str *uri,
-														unsigned int flags)
+										unsigned int flags, int raise_event)
 {
 	struct lb_dst *dst;
 
@@ -1088,8 +1089,9 @@ int lb_update_from_replication( unsigned int group, str *uri,
 				/* import the status flags */
 				dst->flags = ((~LB_DST_STAT_MASK)&dst->flags)|
 					(LB_DST_STAT_MASK&flags);
-				/* raise event of status change */
-				lb_raise_event(dst);
+				if (raise_event)
+					/* raise event of status change */
+					lb_raise_event(dst);
 				lock_stop_read( ref_lock );
 				return 0;
 			}

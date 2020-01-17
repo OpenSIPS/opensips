@@ -42,6 +42,9 @@ extern int fetch_freeswitch_stats;
 extern int initial_fs_load;
 extern struct fs_binds fs_api;
 
+/* reader-writers lock for data reloading */
+rw_lock_t *ref_lock = NULL;
+
 
 struct lb_data* load_lb_data(void)
 {

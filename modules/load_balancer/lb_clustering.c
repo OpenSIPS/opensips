@@ -38,7 +38,7 @@ static str status_repl_cap = str_init("load_balancer-status-repl");
 
 /* implemented in load_balancer.c which has no .h file */
 int lb_update_from_replication( unsigned int group, str *uri,
-		unsigned int flags);
+		unsigned int flags, int raise_event);
 
 
 int lb_cluster_shtag_is_active(void)
@@ -51,6 +51,12 @@ int lb_cluster_shtag_is_active(void)
 	return 0;
 }
 
+static void bin_push_dst_status(bin_packet_t *packet, struct lb_dst *dst)
+{
+	bin_push_int(packet, dst->group);
+	bin_push_str(packet, &dst->uri);
+	bin_push_int(packet, dst->flags&LB_DST_STAT_MASK);
+}
 
 void replicate_lb_status(struct lb_dst *dst)
 {
@@ -67,9 +73,7 @@ void replicate_lb_status(struct lb_dst *dst)
 		return;
 	}
 
-	bin_push_int(&packet, dst->group);
-	bin_push_str(&packet, &dst->uri);
-	bin_push_int(&packet, dst->flags&LB_DST_STAT_MASK);
+	bin_push_dst_status(&packet, dst);
 
 	rc = c_api.send_all(&packet, lb_cluster_id);
 	switch (rc) {
@@ -88,30 +92,89 @@ void replicate_lb_status(struct lb_dst *dst)
 	bin_free_packet(&packet);
 }
 
-
-static void receive_lb_binary_packet(bin_packet_t *packet)
+static int lb_recv_status_update(bin_packet_t *packet, int raise_event)
 {
 	unsigned int group, flags;
 	str uri;
 
-	LM_DBG("received a binary packet [%d]!\n", packet->type);
+	bin_pop_int(packet, &group);
+	bin_pop_str(packet, &uri);
+	bin_pop_int(packet, &flags);
 
-	if(get_bin_pkg_version(packet) != BIN_VERSION) {
-		LM_ERR("incompatible bin protocol version\n");
-		return;
-	}
+	return lb_update_from_replication( group, &uri, flags, raise_event);
+}
 
-	if (packet->type == REPL_LB_STATUS_UPDATE) {
-		bin_pop_int(packet, &group);
-		bin_pop_str(packet, &uri);
-		bin_pop_int(packet, &flags);
+static void receive_lb_binary_packet(bin_packet_t *packet)
+{
+	bin_packet_t *pkt;
+	int rc;
 
-		lb_update_from_replication( group, &uri, flags);
-	} else {
-		LM_ERR("invalid load_balancer binary packet type: %d\n", packet->type);
+	for (pkt = packet; pkt; pkt = pkt->next) {
+		LM_DBG("received a binary packet [%d]!\n", packet->type);
+
+		switch (pkt->type) {
+		case REPL_LB_STATUS_UPDATE:
+			ensure_bin_version(pkt, BIN_VERSION);
+
+			rc = lb_recv_status_update(pkt, 1);
+			break;
+		case SYNC_PACKET_TYPE:
+			_ensure_bin_version(pkt, BIN_VERSION, "load_balancer sync packet");
+
+			while (c_api.sync_chunk_iter(pkt))
+				if (lb_recv_status_update(pkt, 0) < 0)
+					LM_WARN("failed to process sync chunk!\n");
+			break;
+		default:
+			LM_ERR("invalid load_balancer binary packet type: %d\n", pkt->type);
+		}
+
+		if (rc != 0)
+			LM_ERR("failed to process binary packet!\n");
 	}
 }
 
+static int lb_recv_sync_request(int node_id)
+{
+	bin_packet_t *sync_packet;
+	struct lb_dst *dst;
+
+	lock_start_read(ref_lock);
+
+	for (dst = (*curr_data)->dsts; dst; dst = dst->next) {
+		sync_packet = c_api.sync_chunk_start(&status_repl_cap, lb_cluster_id,
+			node_id, BIN_VERSION);
+		if (!sync_packet)
+			goto error;
+
+		bin_push_dst_status(sync_packet, dst);
+	}
+
+	lock_stop_read(ref_lock);
+
+	return 0;
+
+error:
+	return -1;
+	lock_stop_read(ref_lock);
+}
+
+void receive_lb_cluster_event(enum clusterer_event ev, int node_id)
+{
+	if (ev == SYNC_REQ_RCV && lb_recv_sync_request(node_id) < 0)
+		LM_ERR("Failed to send sync data to node: %d\n", node_id);
+	else if (ev == SYNC_DONE)
+		LM_INFO("Synchronized destinations status from cluster\n");
+}
+
+int lb_cluster_sync(void) {
+	if (c_api.request_sync(&status_repl_cap, lb_cluster_id) < 0) {
+		LM_ERR("Sync request failed\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 int lb_init_cluster(void)
 {
@@ -124,7 +187,8 @@ int lb_init_cluster(void)
 	/* register handler for processing load-balancer  packets 
 	 * to the clusterer module */
 	if (c_api.register_capability( &status_repl_cap,
-	receive_lb_binary_packet, NULL, lb_cluster_id, 0, NODE_CMP_ANY) < 0) {
+		receive_lb_binary_packet, receive_lb_cluster_event, lb_cluster_id, 1,
+		NODE_CMP_ANY) < 0) {
 		LM_ERR("cannot register binary packet callback to "
 			"clusterer module!\n");
 		return -1;
@@ -142,6 +206,13 @@ int lb_init_cluster(void)
 		lb_cluster_shtag.len = 0;
 	}
 
+	if (c_api.request_sync(&status_repl_cap, lb_cluster_id) < 0) {
+		LM_ERR("Sync request failed\n");
+		return -1;
+	}
+
+	if (lb_cluster_sync() < 0)
+		return -1;
+
 	return 0;
 }
-
