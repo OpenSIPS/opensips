@@ -33,9 +33,9 @@
 /*  TM function to handle async I/O ops based on trasactions
  */
 int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
-				void **params);
+										unsigned int timeout, void **params);
 
-int t_resume_async(int fd, void *param);
+int t_resume_async(int fd, void *param, int was_timeout);
 
 
 #endif

@@ -563,7 +563,7 @@ void handle_ebr_ipc(int sender, void *payload)
 		((async_ctx*)job->data)->resume_param = job->avps;
 
 		/* invoke the global resume ASYNC function */
-		async_script_resume_f(ASYNC_FD_NONE, job->data /*the async ctx*/ );
+		async_script_resume_f(ASYNC_FD_NONE, job->data /*the async ctx*/, 0 );
 
 		shm_free(job);
 
