@@ -129,7 +129,6 @@ modparam("dialplan", "db_url",
 ',`')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
-loadmodule "httpd.so"
 loadmodule "mi_http.so"
 ',`')
 

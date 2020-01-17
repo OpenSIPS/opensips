@@ -183,7 +183,6 @@ modparam("drouting", "db_url",
 
 ',`')dnl
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`####  MI_HTTP module
-loadmodule "httpd.so"
 loadmodule "mi_http.so"
 
 ',`')dnl
@@ -374,7 +373,7 @@ ifelse(USE_NAT,`yes',`
 		}
 		
 		if ($au!=$tU) {
-			send_reply("403","Forbidden auth ID");
+			send_reply(403,"Forbidden auth ID");
 			exit;
 		}',`')dnl
 ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
