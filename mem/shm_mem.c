@@ -677,24 +677,24 @@ void init_shm_post_yyparse(void)
 
 #ifdef SHM_SHOW_DEFAULT_GROUP
 		p = (stat_var *)&memory_mods_stats[0].fragments;
-		if (register_stat(STAT_PREFIX "default", "fragments", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+		if (register_stat(STAT_PREFIX "default", "fragments", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 		p = (stat_var *)&memory_mods_stats[0].memory_used;
-		if (register_stat(STAT_PREFIX "default", "memory_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+		if (register_stat(STAT_PREFIX "default", "memory_used", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 
 		p = (stat_var *)&memory_mods_stats[0].real_used;
-		if (register_stat(STAT_PREFIX "default", "real_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+		if (register_stat(STAT_PREFIX "default", "real_used", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
 
 		p = (stat_var *)&memory_mods_stats[0].max_real_used;
-		if (register_stat(STAT_PREFIX "default", "max_real_used", &p, STAT_NO_ALLOC)!=0 ) {
+		if (register_stat(STAT_PREFIX "default", "max_real_used", &p, STAT_NOT_ALLOCATED)!=0 ) {
 			LM_CRIT("can't add stat variable");
 			return;
 		}
@@ -711,25 +711,25 @@ void init_shm_post_yyparse(void)
 			strcpy(full_name, STAT_PREFIX);
 			strcat(full_name, mod_name->s);
 			p = (stat_var *)&memory_mods_stats[i].fragments;
-			if (register_stat(full_name, "fragments", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+			if (register_stat(full_name, "fragments", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
 
 			p = (stat_var *)&memory_mods_stats[i].memory_used;
-			if (register_stat(full_name, "memory_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+			if (register_stat(full_name, "memory_used", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
 
 			p = (stat_var *) &memory_mods_stats[i].real_used;
-			if (register_stat(full_name, "real_used", &p, STAT_NO_RESET|STAT_NO_ALLOC)!=0 ) {
+			if (register_stat(full_name, "real_used", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
 
 			p = (stat_var *) &memory_mods_stats[i].max_real_used;
-			if (register_stat(full_name, "max_real_used", &p, STAT_NO_ALLOC) != 0) {
+			if (register_stat(full_name, "max_real_used", &p, STAT_NOT_ALLOCATED) != 0) {
 				LM_CRIT("can't add stat variable");
 				return;
 			}
