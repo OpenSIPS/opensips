@@ -36,6 +36,7 @@ str ds_cluster_shtag = {NULL,0};
 static str status_repl_cap = str_init("dispatcher-status-repl");
 static struct clusterer_binds c_api;
 
+extern ds_partition_t *partitions;
 
 int ds_cluster_shtag_is_active(void)
 {
@@ -45,6 +46,24 @@ int ds_cluster_shtag_is_active(void)
 		return 1;
 
 	return 0;
+}
+
+static void bin_push_dst_status(bin_packet_t *packet, str *partition,
+	int group, str *address, int type, int state, int is_sync)
+{
+	/* replicate the partition name */
+	bin_push_str(packet, partition);
+	/* replicate the group ID */
+	bin_push_int(packet, group);
+	/* replicate the address of the destination */
+	bin_push_str(packet, address);
+
+	if (!is_sync)
+		/* replicate the type of operation set/reset */
+		bin_push_int(packet, type);
+
+	/* replicate the state of the destination */
+	bin_push_int(packet, state);
 }
 
 void replicate_ds_status_event(str *partition, int group, str *address,
@@ -64,16 +83,7 @@ void replicate_ds_status_event(str *partition, int group, str *address,
 		return;
 	}
 
-	/* replicate the partition name */
-	bin_push_str(&packet, partition);
-	/* replicate the group ID */
-	bin_push_int(&packet, group);
-	/* replicate the address of the destination */
-	bin_push_str(&packet, address);
-	/* replicate the type of operation set/reset */
-	bin_push_int(&packet, type);
-	/* replicate the state of the destination */
-	bin_push_int(&packet, state);
+	bin_push_dst_status(&packet, partition, group, address, type, state, 0);
 
 	rc = c_api.send_all(&packet, ds_cluster_id);
 	switch (rc) {
@@ -93,49 +103,115 @@ void replicate_ds_status_event(str *partition, int group, str *address,
 }
 
 
-static int ds_status_update(bin_packet_t *packet)
+static int ds_status_update(bin_packet_t *packet, int is_sync)
 {
 	unsigned int group, state;
-	int type;
+	int type = -1;
 	str address, partition_name;
 	ds_partition_t *partition;
 
 	bin_pop_str(packet, &partition_name);
 	bin_pop_int(packet, &group);
 	bin_pop_str(packet, &address);
-	bin_pop_int(packet, &type);
+
+	if (!is_sync)
+		bin_pop_int(packet, &type);
+
 	bin_pop_int(packet, &state);
 
 	partition = find_partition_by_name(&partition_name);
 	if (partition == NULL)
 		return -1;
 
-	ds_set_state_repl( group, &address, state, type, partition, 0 /*no repl*/);
+	if (ds_set_state_repl( group, &address, state, type, partition,
+		0 /*no repl*/, is_sync) < 0)
+		return -1;
 
 	return 0;
 }
 
-
 static void receive_ds_binary_packet(bin_packet_t *packet)
 {
-	LM_DBG("received a binary packet [%d]!\n", packet->type);
+	bin_packet_t *pkt;
+	int rc;
 
-	if(get_bin_pkg_version(packet) != BIN_VERSION) {
-		LM_ERR("incompatible bin protocol version\n");
-		return;
-	}
+	for (pkt = packet; pkt; pkt = pkt->next) {
+		LM_DBG("received a binary packet [%d]!\n", packet->type);
 
-	switch (packet->type) {
-	case REPL_DS_STATUS_UPDATE:
-		ds_status_update(packet);
-		break;
-	default:
-		LM_WARN("Invalid dispatcher binary packet command: %d "
-			"(from node: %d in cluster: %d)\n",
-			packet->type, packet->src_id, ds_cluster_id);
+		switch (packet->type) {
+		case REPL_DS_STATUS_UPDATE:
+			ensure_bin_version(pkt, BIN_VERSION);
+
+			rc = ds_status_update(packet, 0);
+			break;
+		case SYNC_PACKET_TYPE:
+			_ensure_bin_version(pkt, BIN_VERSION, "dispatcher sync packet");
+
+			while (c_api.sync_chunk_iter(pkt))
+				if (ds_status_update(pkt, 1) < 0)
+					LM_WARN("failed to process sync chunk!\n");
+			break;
+		default:
+			LM_WARN("Invalid dispatcher binary packet command: %d "
+				"(from node: %d in cluster: %d)\n",
+				packet->type, packet->src_id, ds_cluster_id);
+		}
+
+		if (rc != 0)
+			LM_ERR("failed to process binary packet!\n");
 	}
 }
 
+static int ds_recv_sync_request(int node_id)
+{
+	bin_packet_t *sync_packet;
+	ds_partition_t *part_it;
+	ds_set_p set;
+	int i;
+
+	for (part_it = partitions; part_it; part_it = part_it->next) {
+		if ((*part_it->data)->sets == NULL)
+			continue;
+
+		lock_start_read(part_it->lock);
+
+		for (set = (*part_it->data)->sets; set; set = set->next)
+			for(i = 0; i < set->nr; i++) {
+				sync_packet = c_api.sync_chunk_start(&status_repl_cap,
+					ds_cluster_id, node_id, BIN_VERSION);
+				if (!sync_packet)
+					goto error;
+
+				bin_push_dst_status(sync_packet, &part_it->name, set->id,
+					&set->dlist[i].uri, -1, set->dlist[i].flags, 1);
+			}
+
+		lock_stop_read(part_it->lock);
+	}
+
+	return 0;
+
+error:
+	lock_stop_read(part_it->lock);
+	return -1;
+}
+
+void receive_ds_cluster_event(enum clusterer_event ev, int node_id)
+{
+	if (ev == SYNC_REQ_RCV && ds_recv_sync_request(node_id) < 0)
+		LM_ERR("Failed to send sync data to node: %d\n", node_id);
+	else if (ev == SYNC_DONE)
+		LM_INFO("Synchronized destinations status from cluster\n");
+}
+
+int ds_cluster_sync(void) {
+	if (c_api.request_sync(&status_repl_cap, ds_cluster_id) < 0) {
+		LM_ERR("Sync request failed\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 int ds_init_cluster(void)
 {
@@ -148,7 +224,8 @@ int ds_init_cluster(void)
 	/* register handler for processing drouting packets 
 	 * to the clusterer module */
 	if (c_api.register_capability( &status_repl_cap,
-	receive_ds_binary_packet, NULL, ds_cluster_id, 0, NODE_CMP_ANY) < 0) {
+		receive_ds_binary_packet, receive_ds_cluster_event, ds_cluster_id, 0,
+		NODE_CMP_ANY) < 0) {
 		LM_ERR("cannot register binary packet callback to "
 			"clusterer module!\n");
 		return -1;
@@ -166,7 +243,9 @@ int ds_init_cluster(void)
 		ds_cluster_shtag.len = 0;
 	}
 
+	if (ds_cluster_sync() < 0)
+		return -1;
+
 	return 0;
 }
-
 
