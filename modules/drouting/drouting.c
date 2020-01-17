@@ -1978,6 +1978,9 @@ mi_response_t *dr_reload_cmd(const mi_params_t *params,
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
 
+	if (dr_cluster_id && dr_cluster_sync() < 0)
+		return init_mi_error(500, MI_SSTR("Failed to synchronize states from cluster"));
+
 	return init_mi_result_ok();
 }
 
@@ -1997,6 +2000,9 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 		LM_CRIT("Failed to load data head\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
+
+	if (dr_cluster_id && dr_cluster_sync() < 0)
+		return init_mi_error(500, MI_SSTR("Failed to synchronize from cluster"));
 
 	return init_mi_result_ok();
 }

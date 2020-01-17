@@ -54,6 +54,17 @@ int dr_cluster_shtag_is_active(void)
 	return 0;
 }
 
+static void bin_push_gw_status(bin_packet_t *packet, str *part_name,
+	pgw_t *gw)
+{
+	/* replicate the partition name */
+	bin_push_str(packet, part_name);
+	/* replicate the ID of the gateway */
+	bin_push_str(packet, &gw->id);
+	/* replicate the state-related flags of the gateway */
+	bin_push_int(packet, gw->flags&DR_DST_STAT_MASK);
+}
+
 void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw)
 {
 	bin_packet_t packet;
@@ -70,12 +81,7 @@ void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw)
 		return;
 	}
 
-	/* replicate the partition name */
-	bin_push_str(&packet, &p->partition);
-	/* replicate the ID of the gateway */
-	bin_push_str(&packet, &gw->id);
-	/* replicate the state-related flags of the gateway */
-	bin_push_int(&packet, gw->flags&DR_DST_STAT_MASK);
+	bin_push_gw_status(&packet, &p->partition, gw);
 
 	rc = c_api.send_all(&packet, dr_cluster_id);
 	switch (rc) {
@@ -94,6 +100,16 @@ void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw)
 	bin_free_packet(&packet);
 }
 
+static void bin_push_carrier_status(bin_packet_t *packet, str *part_name,
+	pcr_t *cr)
+{
+	/* replicate the partition name */
+	bin_push_str(packet, part_name);
+	/* replicate the ID of the carrier */
+	bin_push_str(packet, &cr->id);
+	/* replicate the state-related flags of the gateway */
+	bin_push_int(packet, cr->flags&DR_CR_FLAG_IS_OFF);
+}
 
 void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr)
 {
@@ -111,12 +127,7 @@ void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr)
 		return;
 	}
 
-	/* replicate the partition name */
-	bin_push_str(&packet, &p->partition);
-	/* replicate the ID of the carrier */
-	bin_push_str(&packet, &cr->id);
-	/* replicate the state-related flags of the gateway */
-	bin_push_int(&packet, cr->flags&DR_CR_FLAG_IS_OFF);
+	bin_push_carrier_status(&packet, &p->partition, cr);
 
 	rc = c_api.send_all(&packet, dr_cluster_id);
 	switch (rc) {
@@ -136,7 +147,7 @@ void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr)
 }
 
 
-static int gw_status_update(bin_packet_t *packet)
+static int gw_status_update(bin_packet_t *packet, int raise_event)
 {
 	struct head_db *part;
 	str gw_id;
@@ -160,8 +171,9 @@ static int gw_status_update(bin_packet_t *packet)
 		gw->flags = ((~DR_DST_STAT_MASK)&gw->flags) | (DR_DST_STAT_MASK&flags);
 		/* set the DIRTY flag to force flushing to DB */
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
-		/* raise event for the status change */
-		dr_raise_event(part, gw);
+		if (raise_event)
+			/* raise event for the status change */
+			dr_raise_event(part, gw);
 		lock_stop_read(part->ref_lock);
 		return 0;
 	}
@@ -206,29 +218,134 @@ static int cr_status_update(bin_packet_t *packet)
 }
 
 
-static void receive_dr_binary_packet(bin_packet_t *packet)
+static void dr_recv_sync_packet(bin_packet_t *packet)
 {
-	LM_DBG("received a binary packet [%d]!\n", packet->type);
+	int is_gw;
 
-	if(get_bin_pkg_version(packet) != BIN_VERSION) {
-		LM_ERR("incompatible bin protocol version\n");
-		return;
-	}
-
-	switch (packet->type) {
-	case REPL_GW_STATUS_UPDATE:
-		gw_status_update(packet);
-		break;
-	case REPL_CR_STATUS_UPDATE:
-		cr_status_update(packet);
-		break;
-	default:
-		LM_WARN("Invalid drouting binary packet command: %d "
-			"(from node: %d in cluster: %d)\n",
-			packet->type, packet->src_id, dr_cluster_id);
+	while (c_api.sync_chunk_iter(packet)) {
+		bin_pop_int(packet, &is_gw);
+		if (is_gw) {
+			if (gw_status_update(packet, 0) < 0)
+				LM_WARN("failed to process sync chunk!\n");
+		} else
+			if (cr_status_update(packet) < 0)
+				LM_WARN("failed to process sync chunk!\n");
 	}
 }
 
+static void receive_dr_binary_packet(bin_packet_t *packet)
+{
+	bin_packet_t *pkt;
+	int rc;
+
+	for (pkt = packet; pkt; pkt = pkt->next) {
+		LM_DBG("received a binary packet [%d]!\n", packet->type);
+
+		switch (pkt->type) {
+		case REPL_GW_STATUS_UPDATE:
+			ensure_bin_version(pkt, BIN_VERSION);
+
+			rc = gw_status_update(pkt, 1);
+			break;
+		case REPL_CR_STATUS_UPDATE:
+			ensure_bin_version(pkt, BIN_VERSION);
+
+			rc = cr_status_update(pkt);
+			break;
+		case SYNC_PACKET_TYPE:
+			_ensure_bin_version(pkt, BIN_VERSION, "drouting sync packet");
+
+			dr_recv_sync_packet(pkt);
+			break;
+		default:
+			LM_WARN("Invalid drouting binary packet command: %d "
+				"(from node: %d in cluster: %d)\n",
+				pkt->type, pkt->src_id, dr_cluster_id);
+		}
+
+		if (rc != 0)
+			LM_ERR("failed to process binary packet!\n");
+	}
+}
+
+static int dr_recv_sync_request(int node_id)
+{
+	bin_packet_t *sync_packet;
+	struct head_db *cur_part;
+	map_iterator_t it;
+	void** dest;
+
+	for (cur_part = head_db_start; cur_part; cur_part = cur_part->next) {
+		lock_start_read(cur_part->ref_lock);
+
+		if (!cur_part->rdata) {
+			lock_stop_read(cur_part->ref_lock);
+			continue;
+		}
+
+		for (map_first(cur_part->rdata->carriers_tree, &it);
+			iterator_is_valid(&it); iterator_next(&it)) {
+			dest = iterator_val(&it);
+			if (!dest)
+				continue;
+
+			sync_packet = c_api.sync_chunk_start(&status_repl_cap,
+				dr_cluster_id, node_id, BIN_VERSION);
+			if (!sync_packet)
+				goto error;
+
+			/* carrier status in this chunk */
+			bin_push_int(sync_packet, 0);
+
+			bin_push_carrier_status(sync_packet, &cur_part->partition,
+				(pcr_t*)*dest);
+		}
+
+		for (map_first(cur_part->rdata->pgw_tree, &it);
+			iterator_is_valid(&it); iterator_next(&it)) {
+			dest = iterator_val(&it);
+			if (!dest)
+				continue;
+
+			sync_packet = c_api.sync_chunk_start(&status_repl_cap,
+				dr_cluster_id, node_id, BIN_VERSION);
+			if (!sync_packet)
+				goto error;
+
+			/* gateway status in this chunk */
+			bin_push_int(sync_packet, 1);
+
+			bin_push_gw_status(sync_packet, &cur_part->partition,
+				(pgw_t*)*dest);
+		}
+
+		lock_stop_read(cur_part->ref_lock);
+	}
+
+	return 0;
+
+error:
+	lock_stop_read(cur_part->ref_lock);
+	return -1;
+}
+
+void receive_dr_cluster_event(enum clusterer_event ev, int node_id)
+{
+	if (ev == SYNC_REQ_RCV && dr_recv_sync_request(node_id) < 0)
+		LM_ERR("Failed to send sync data to node: %d\n", node_id);
+	else if (ev == SYNC_DONE)
+		LM_INFO("Synchronized carriers and gateways status from cluster\n");
+}
+
+int dr_cluster_sync(void)
+{
+	if (c_api.request_sync(&status_repl_cap, dr_cluster_id) < 0) {
+		LM_ERR("Sync request failed\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 int dr_init_cluster(void)
 {
@@ -241,7 +358,8 @@ int dr_init_cluster(void)
 	/* register handler for processing drouting packets 
 	 * to the clusterer module */
 	if (c_api.register_capability( &status_repl_cap,
-	receive_dr_binary_packet, NULL, dr_cluster_id, 0, NODE_CMP_ANY) < 0) {
+		receive_dr_binary_packet, receive_dr_cluster_event, dr_cluster_id, 1,
+		NODE_CMP_ANY) < 0) {
 		LM_ERR("cannot register binary packet callback to "
 			"clusterer module!\n");
 		return -1;
@@ -259,7 +377,8 @@ int dr_init_cluster(void)
 		dr_cluster_shtag.len = 0;
 	}
 
+	if (dr_cluster_sync() < 0)
+		return -1;
+
 	return 0;
 }
-
-

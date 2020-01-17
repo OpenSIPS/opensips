@@ -40,4 +40,7 @@ void replicate_dr_gw_status_event(struct head_db *p, pgw_t *gw);
 /* replicate the Carrier status via BIN */
 void replicate_dr_carrier_status_event(struct head_db *p, pcr_t *cr);
 
+/* request sync of carrier and gateway states from cluster */
+int dr_cluster_sync(void);
+
 #endif
