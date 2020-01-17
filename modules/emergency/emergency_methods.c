@@ -72,9 +72,9 @@ static param_export_t params[] = {
 	{ "emergency_codes", STR_PARAM | USE_FUNC_PARAM, (void *) &set_codes},
 	{ "timer_interval", INT_PARAM, &timer_interval},
 	{ "db_url", STR_PARAM, &db_url.s},
-	{ "db_table_routing", STR_PARAM, &table_name},
-	{ "db_table_report", STR_PARAM, &table_report},
-	{ "db_table_provider", STR_PARAM, &table_provider},
+	{ "db_table_routing", STR_PARAM, &table_name.s},
+	{ "db_table_report", STR_PARAM, &table_report.s},
+	{ "db_table_provider", STR_PARAM, &table_provider.s},
 	{ "url_vpc", STR_PARAM, &url_vpc},
 	{ "contingency_hostname", STR_PARAM, &contingency_hostname},
 	{ "emergency_call_server", STR_PARAM, &call_server_hostname},
@@ -197,6 +197,10 @@ void destroy_codes(struct code_number *codes){
 static int mod_init(void) {
 
 	LM_DBG("Initializing module\n");
+
+	table_name.len = strlen(table_name.s);
+	table_report.len = strlen(table_report.s);
+	table_provider.len = strlen(table_provider.s);
 
 	// checks for mandatory fields
 	mandatory_parm = shm_malloc(2);

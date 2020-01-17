@@ -141,10 +141,10 @@ static param_export_t params[] = {
 	{"realm_prefix",   STR_PARAM, &cpl_env.realm_prefix.s            },
 	{"lookup_domain",  STR_PARAM, &lookup_domain                     },
 	{"lookup_append_branches", INT_PARAM, &cpl_env.lu_append_branches},
-	{"username_column",STR_PARAM, &cpl_username_col                  },
-	{"domain_column",  STR_PARAM, &cpl_domain_col                    },
-	{"cpl_xml_column", STR_PARAM, &cpl_xml_col                       },
-	{"cpl_bin_column", STR_PARAM, &cpl_bin_col                       },
+	{"username_column",STR_PARAM, &cpl_username_col.s                },
+	{"domain_column",  STR_PARAM, &cpl_domain_col.s                  },
+	{"cpl_xml_column", STR_PARAM, &cpl_xml_col.s                     },
+	{"cpl_bin_column", STR_PARAM, &cpl_bin_col.s                     },
 	{"use_domain",     INT_PARAM, &cpl_env.use_domain                },
 	{0, 0, 0}
 };
@@ -250,6 +250,10 @@ static int cpl_init(void)
 
 	init_db_url( db_url , 0 /*cannot be null*/);
 	db_table.len = strlen(db_table.s);
+	cpl_username_col.len = strlen(cpl_username_col.s);
+	cpl_domain_col.len = strlen(cpl_domain_col.s);
+	cpl_xml_col.len = strlen(cpl_xml_col.s);
+	cpl_bin_col.len = strlen(cpl_bin_col.s);
 
 	LM_INFO("initializing...\n");
 

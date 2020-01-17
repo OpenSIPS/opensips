@@ -173,7 +173,7 @@ static param_export_t params[]={
 	{ "enable_sphere_check",    INT_PARAM, &sphere_enable},
 	{ "waiting_subs_daysno",    INT_PARAM, &waiting_subs_daysno},
 	{ "mix_dialog_presence",    INT_PARAM, &mix_dialog_presence},
-	{ "bla_presentity_spec",    STR_PARAM, &bla_presentity_spec_param},
+	{ "bla_presentity_spec",    STR_PARAM, &bla_presentity_spec_param.s},
 	{ "bla_fix_remote_target",  INT_PARAM, &fix_remote_target},
 	{ "notify_offline_body",    INT_PARAM, &notify_offline_body},
 	{ "end_sub_on_timeout",     INT_PARAM, &end_sub_on_timeout},

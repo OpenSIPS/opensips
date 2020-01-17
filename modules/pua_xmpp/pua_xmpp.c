@@ -89,7 +89,7 @@ static cmd_export_t cmds[]=
 };
 
 static param_export_t params[]={
-	{"server_address",		STR_PARAM,	&server_address	},
+	{"server_address",		STR_PARAM,	&server_address.s},
 	{"presence_server",		STR_PARAM,	&presence_server},
 	{0,						0,			0				}
 };

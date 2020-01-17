@@ -127,7 +127,7 @@ static param_export_t params[]= {
 	{"default_expires",	INT_PARAM,			&default_expires},
 	{"timer_interval",	INT_PARAM,			&timer_interval},
 	{"db_url",		STR_PARAM,			&db_url.s},
-	{"table_name",		STR_PARAM,			&reg_table_name},
+	{"table_name",		STR_PARAM,			&reg_table_name.s},
 	{"registrar_column",	STR_PARAM,			&registrar_column.s},
 	{"proxy_column",	STR_PARAM,			&proxy_column.s},
 	{"aor_column",		STR_PARAM,			&aor_column.s},

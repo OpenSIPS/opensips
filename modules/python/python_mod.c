@@ -35,9 +35,9 @@ static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy(void);
 
-static str script_name = {.s = "/usr/local/etc/opensips/handler.py", .len = 0};
-static str mod_init_fname = { .s = "mod_init", .len = 0};
-static str child_init_mname = { .s = "child_init", .len = 0};
+static str script_name = str_init("/usr/local/etc/opensips/handler.py");
+static str mod_init_fname = str_init("mod_init");
+static str child_init_mname = str_init("child_init");
 PyObject *handler_obj;
 PyObject *format_exc_obj;
 
@@ -45,9 +45,9 @@ PyThreadState *myThreadState;
 
 /** module parameters */
 static param_export_t params[]={
-    {"script_name",        STR_PARAM, &script_name },
-    {"mod_init_function",  STR_PARAM, &mod_init_fname },
-    {"child_init_method",  STR_PARAM, &child_init_mname },
+    {"script_name",        STR_PARAM, &script_name.s },
+    {"mod_init_function",  STR_PARAM, &mod_init_fname.s },
+    {"child_init_method",  STR_PARAM, &child_init_mname.s },
     {0,0,0}
 };
 
@@ -95,15 +95,9 @@ mod_init(void)
     PyObject *sys_path, *pDir, *pModule, *pFunc, *pArgs;
     PyThreadState *mainThreadState;
 
-    if (script_name.len == 0) {
-        script_name.len = strlen(script_name.s);
-    }
-    if (mod_init_fname.len == 0) {
-        mod_init_fname.len = strlen(mod_init_fname.s);
-    }
-    if (child_init_mname.len == 0) {
-        child_init_mname.len = strlen(child_init_mname.s);
-    }
+    script_name.len = strlen(script_name.s);
+    mod_init_fname.len = strlen(mod_init_fname.s);
+    child_init_mname.len = strlen(child_init_mname.s);
 
     bname = basename(script_name.s);
     i = strlen(bname);
