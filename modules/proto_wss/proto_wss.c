@@ -130,7 +130,7 @@ static param_export_t params[] = {
 	/* XXX: should we drop the ws prefix? */
 	{ "wss_port",           INT_PARAM, &wss_port           },
 	{ "wss_max_msg_chunks", INT_PARAM, &wss_max_msg_chunks },
-	{ "wss_resource",       STR_PARAM, &wss_resource       },
+	{ "wss_resource",       STR_PARAM, &wss_resource.s     },
 	{ "wss_send_timeout",   INT_PARAM, &wss_send_tout      },
 	{ "wss_handshake_timeout", INT_PARAM, &wss_hs_read_tout},
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
@@ -214,6 +214,8 @@ static int proto_wss_init(struct proto_info *pi)
 static int mod_init(void)
 {
 	LM_INFO("initializing Secure WebSocket protocol\n");
+
+	wss_resource.len = strlen(wss_resource.s);
 
 	if(load_tls_mgm_api(&tls_mgm_api) != 0){
 		LM_DBG("failed to find tls API - is tls_mgm module loaded?\n");
