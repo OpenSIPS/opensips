@@ -1077,7 +1077,9 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
 1.7.4.  ul_flush
 
-   Triggers the flush of USRLOC memory cache into DB.
+   Force a flush of all pending usrloc cache changes to the
+   database. Normally, this routine runs every timer_interval
+   seconds.
 
 1.7.5.  ul_add
 
@@ -1107,17 +1109,18 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
 1.7.7.  ul_sync
 
-   Synchronizes the contacts from memory with the ones from
-   database. Note that this can not be used when no database is
-   specified or with the DB-Only scheme. Important: make sure that
-   all your contacts are in memory (ul_dump MI function) before
-   executing this command. If the AOR is not specified, the whole
-   table will be synchronized.
+   Empty the location table, then synchronize it with all contacts
+   from memory. Note that this can not be used when no database is
+   specified or with the DB-Only scheme.
+
+   Important: make sure that all your contacts are in memory
+   (ul_dump MI function) before executing this command.
 
    Parameters:
      * table name - table where the AOR resides (Ex: location).
-     * AOR (optional) - user AOR in username[@domain] format
-       (domain must be supplied only if use_domain option is on).
+     * AOR (optional) - only delete/sync this user AOR, not the
+       whole table. Format: "username[@domain]" (domain is
+       required only if use_domain option is on).
 
 1.7.8.  ul_cluster_sync
 
@@ -1477,7 +1480,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 235 139 3977 3533
-   3. Liviu Chircu (@liviuchircu) 217 135 5906 1932
+   3. Liviu Chircu (@liviuchircu) 218 136 5919 1942
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Jiri Kuthan (@jiriatipteldotorg) 36 25 975 120
@@ -1518,7 +1521,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2020
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2019
    3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
    4.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019

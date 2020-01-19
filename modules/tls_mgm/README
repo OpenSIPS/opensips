@@ -368,9 +368,6 @@ listen = tls:1.2.3.4:5061
        connections (rfc3261 conformant).
      * TLSv1 - means OpenSIPS will accept only TLSv1 connections
        (rfc3261 conformant).
-     * SSLv3 - means OpenSIPS will accept only SSLv3 connections
-     * SSLv2 - means OpenSIPS will accept only SSLv2 connections
-       (almost all old clients support this).
      * SSLv23 - means OpenSIPS will accept any of the above
        methods, but the initial SSL hello must be v2 (in the
        initial hello all the supported protocols are advertised
@@ -386,10 +383,7 @@ listen = tls:1.2.3.4:5061
 
 Warning
 
-   Best is to use SSLv23, for extended compatibility. Using any of
-   the other will restrict the version to just that one version.
-   In fact, SSLv2 is disabled in the source code; to use it, you
-   need to edit tls/tls_init.c
+   For extended compatibility with older system, best use SSLv23.
 
    If you want RFC3261 conformance and all your clients support
    TLSv1 (or you are planning to use encrypted "tunnels" only
@@ -1479,9 +1473,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 53 16 1813 1181
-   2. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
-   3. Razvan Crainea (@razvancrainea) 47 36 660 267
+   1. Razvan Crainea (@razvancrainea) 60 41 1037 522
+   2. Vlad Patrascu (@rvlad-patrascu) 53 16 1813 1181
+   3. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 22 10 269 448
    5. Liviu Chircu (@liviuchircu) 20 14 131 210
    6. Ionut Ionita (@ionutrazvanionita) 17 9 383 169
@@ -1513,8 +1507,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Sep 2015 - Oct 2019
+   1.  Razvan Crainea (@razvancrainea)     Sep 2015 - Jan 2020
+   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Nov 2019
    3.  Dan Pascu (@danpascu)               Jun 2019 - Aug 2019
    4.  Alexey Vasilyev (@vasilevalex)      May 2019 - May 2019
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Nov 2018
@@ -1534,9 +1528,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Callum Guy, Liviu Chircu (@liviuchircu),
-   Razvan Crainea (@razvancrainea), Eseanu Marius Cristian
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Callum
+   Guy, Liviu Chircu (@liviuchircu), Eseanu Marius Cristian
    (@eseanucristian).
 
    doc copyrights:
