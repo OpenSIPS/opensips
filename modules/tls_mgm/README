@@ -329,13 +329,13 @@ listen = tls:1.2.3.4:5061
 
    Sets the TLS protocol. The domain part represents the name of
    the TLS domain. The supported TLS methods are:
+     * TLSv1_3 - means OpenSIPS will accept only TLSv1.3
+       connections. This version is only available starting with
+       OpenSSL 1.1.1 version.
      * TLSv1_2 - means OpenSIPS will accept only TLSv1.2
        connections (rfc3261 conformant).
      * TLSv1 - means OpenSIPS will accept only TLSv1 connections
        (rfc3261 conformant).
-     * SSLv3 - means OpenSIPS will accept only SSLv3 connections
-     * SSLv2 - means OpenSIPS will accept only SSLv2 connections
-       (almost all old clients support this).
      * SSLv23 - means OpenSIPS will accept any of the above
        methods, but the initial SSL hello must be v2 (in the
        initial hello all the supported protocols are advertised
@@ -347,10 +347,7 @@ listen = tls:1.2.3.4:5061
 
 Warning
 
-   Best is to use SSLv23, for extended compatibility. Using any of
-   the other will restrict the version to just that one version.
-   In fact, SSLv2 is disabled in the source code; to use it, you
-   need to edit tls/tls_init.c
+   For extended compatibility with older system, best use SSLv23.
 
    If you want RFC3261 conformance and all your clients support
    TLSv1 (or you are planning to use encrypted "tunnels" only
@@ -1449,12 +1446,12 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 101 32 3280 2387
-   2. Razvan Crainea (@razvancrainea) 60 42 975 522
+   2. Razvan Crainea (@razvancrainea) 67 47 1059 609
    3. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 23 11 285 454
    5. Liviu Chircu (@liviuchircu) 22 16 135 214
    6. Ionut Ionita (@ionutrazvanionita) 17 9 383 169
-   7. Dan Pascu (@danpascu) 10 6 24 157
+   7. Dan Pascu (@danpascu) 11 7 33 157
    8. Ionel Cerghit (@ionel-cerghit) 7 1 494 109
    9. Alexey Vasilyev (@vasilevalex) 4 2 33 19
    10. Callum Guy 3 1 33 8
@@ -1483,8 +1480,8 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Sep 2015 - Jan 2020
-   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Oct 2019
-   3.  Dan Pascu (@danpascu)               Jun 2019 - Aug 2019
+   2.  Dan Pascu (@danpascu)               Jun 2019 - Jan 2020
+   3.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Oct 2019
    4.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jul 2019
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - May 2019
    6.  Alexey Vasilyev (@vasilevalex)      Nov 2018 - May 2019

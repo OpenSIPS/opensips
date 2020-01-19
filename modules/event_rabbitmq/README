@@ -18,6 +18,7 @@ event_rabbitmq Module
               1.5.1. heartbeat (integer)
               1.5.2. sync_mode (integer)
               1.5.3. connect_timeout (integer)
+              1.5.4. suppress_event_name (int)
 
         1.6. Exported Functions
         1.7. Example
@@ -47,9 +48,10 @@ event_rabbitmq Module
    1.1. Set heartbeat parameter
    1.2. Set sync_mode parameter
    1.3. Setting the connect_timeout parameter
-   1.4. E_PIKE_BLOCKED event
-   1.5. RabbitMQ socket
-   1.6. OpenSIPS config script - sample event_rabbitmq usage
+   1.4. Set suppress_event_name parameter
+   1.5. E_PIKE_BLOCKED event
+   1.6. RabbitMQ socket
+   1.7. OpenSIPS config script - sample event_rabbitmq usage
    2.1. Event subscription
    2.2. Event subscription
 
@@ -167,6 +169,18 @@ modparam("event_rabbitmq", "sync_mode", 1)
 modparam("event_rabbitmq", "connect_timeout", 1000)
 ...
 
+1.5.4. suppress_event_name (int)
+
+   Suppresses the name of the event in the raised event.
+
+   Default value is “0/OFF” (the event's name is sent).
+
+   Example 1.4. Set suppress_event_name parameter
+                                        ...
+                                        modparam("event_rabbitmq", "supp
+ress_event_name", 1)
+                                        ...
+
 1.6. Exported Functions
 
    No function exported to be used from configuration file.
@@ -176,13 +190,13 @@ modparam("event_rabbitmq", "connect_timeout", 1000)
    This is an example of an event raised by the pike module when
    it decides an ip should be blocked:
 
-   Example 1.4. E_PIKE_BLOCKED event
+   Example 1.5. E_PIKE_BLOCKED event
 
         E_PIKE_BLOCKED
         ip::192.168.2.11
 
 
-   Example 1.5. RabbitMQ socket
+   Example 1.6. RabbitMQ socket
 
         rabbitmq:guest:guest@127.0.0.1:5672/pike
 
@@ -200,7 +214,7 @@ modparam("event_rabbitmq", "connect_timeout", 1000)
    The parameters passed to the server are the R-URI username and
    the message body.
 
-   Example 1.6. OpenSIPS config script - sample event_rabbitmq
+   Example 1.7. OpenSIPS config script - sample event_rabbitmq
    usage
 ...
 loadmodule "signaling.so"
@@ -443,7 +457,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 54 33 1881 293
+   1. Razvan Crainea (@razvancrainea) 55 34 1913 296
    2. Liviu Chircu (@liviuchircu) 8 6 14 31
    3. Vlad Patrascu (@rvlad-patrascu) 8 5 183 10
    4. Ovidiu Sas (@ovidiusas) 5 3 35 7
@@ -477,8 +491,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Sep 2019
-   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jan 2020
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Sep 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -497,9 +511,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Razvan Crainea (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ionut Ionita (@ionutrazvanionita).
 
    Documentation Copyrights:
 
