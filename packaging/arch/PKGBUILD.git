@@ -5,31 +5,35 @@ pkgbase=opensips-git
 _pkgname=opensips
 _branch=master
 pkgname=('opensips-git' 'opensips-git-modules' 'opensips-git-documentation')
-pkgver=0.r13459.g2e6e3f9a6
+pkgver=0.r14120.gd7314cfd5
 pkgrel=1
 pkgdesc="An Open Source SIP Server able to act as a SIP proxy, registrar, location server, redirect server ..."
 url="https://www.opensips.org"
-depends=('openssl' 'db' 'attr' 'libxml2')
+depends=('attr' 'db' 'gcc-libs' 'libxml2' 'openssl')
 makedepends=(
+	'bison'
 	'confuse' 'cassandra-cpp-driver'
-	'doxygen' 'docbook-sgml' 'docbook-utils'
+	'doxygen' 'docbook-sgml' 'docbook-utils' 'docbook-xsl'
 	'expat'
+	'flex'
 	'hiredis'
 	'geoip'
 	'json-c'
 	'freeradius'
 	'libldap>=2.4.18' 'libmariadbclient' 'libmemcached' 'libmicrohttpd'
-	'librabbitmq-c' 'libtap-git' 'libuv' 'libxslt'
+	'librabbitmq-c' 'libtap-git' 'libutf8proc' 'libuv' 'libxslt'
 	'lksctp-tools'
-	'lua51'
+	'lua>=5.1'
 	'lynx'
 	'mongo-c-driver'
 	'net-snmp'
-	'openssl' 
+	'openssl'
 	'osptoolkit'
 	'postgresql-libs>=8.4.1'
 	'radcli'
-	'thrift' 'unixodbc' 'xmlrpc-c' 'zlib')
+	'thrift' 'unixodbc' 'xmlrpc-c' 'zlib'
+	)
+checkdepends=('expat' 'libtap-git')
 backup=("etc/opensips/opensips.cfg"
 	"etc/opensips/regex_groups.cfg"
 	"etc/opensips/osipsconsolerc"
@@ -40,35 +44,39 @@ options=('!emptydirs' 'zipman' '!makeflags' 'docs')
 source=("${pkgname}::git+https://github.com/OpenSIPS/$_pkgname.git#branch=$_branch"
 	Makefile.conf.template)
 sha256sums=('SKIP'
-            '2eefae7d8d40259d9a0a4a6554574cf94418ea033d3a69936e928a52bcfcca63')
+	    '2d6114c21a9bd59bfaac755ec21568fefa4f64f356dc2d1bc8610476f7cc6ca8')
+validpgpkeys=(
+		'1EC4BE4FF2A6C9F4DDDF30F33C5F485DBD250D66' # Ralf Zerres (Package Signing)
+	)
 
 prepare() {
 	cd "$srcdir"/${pkgbase}
 
-	if [ -h "$srcdir"/Makefile.conf.devel.template ]; then
+	# check out given branch and update to head
+	git checkout $_branch
+	echo "prepare: pull $_branch"
+	git pull --rebase
+
+	if [ -h "$srcdir"/Makefile.conf.template ]; then
 		msg2 "preset Makefile.conf template"
-		test ! -f Makefile.conf.devel.template.orig  &&
+		test ! -f Makefile.conf.template.orig  &&
 		mv Makefile.conf.template Makefile.conf.template.orig
-		cp "$srcdir"/Makefile.conf.devel.template Makefile.conf.template
+		cp "$srcdir"/Makefile.conf.template Makefile.conf.template
 	fi
 
 	# patching
 	if [ ! -f .makepkg-patched ]; then
-		echo "  -> patching: "
-		git am --signoff ../../patches-git/0000-packaging-support-arch-linux.patch
-		git am --signoff ../../patches-git/0001-osp-Fix-module-compilation.patch
-		git am --signoff ../../patches-git/0002-opensips_json_c_helper.h-fix-preprocessor-definition.patch
-		git am --signoff ../../patches-git/0003-Makefile.defs-adapt-default-settings-for-XSL-parser.patch
-		git am --signoff ../../patches-git/0004-doxygen-update-element-list.patch
-		echo "  -> patching [done]"
+		msg2 "patching:"
+		git am --signoff ../../patches-git/0001-packaging-Arch-Linux-update-search-path-for-docbook.patch
+		#git am --signoff ../../patches-git/0002-packaging-Arch-Linux-update-PKGBUILD.git.patch
 		touch .makepkg-patched
-		#echo "  -> no patches for branch '${_branch}' needed"
+		#msg2 "no patches for branch '${_branch}' needed"
 	fi
 
 	msg2 "ensure python2 usage"
 	for file in $(find . -name '*.py' -print); do
-		sed -i 's_^#!.*/usr/bin/python_#!/usr/bin/python2_' $file
-		sed -i 's_^#!.*/usr/bin/env.*python_#!/usr/bin/env python2_' $file
+		sed -i 's_^#!.*/usr/bin/python$_#!/usr/bin/python2_' $file
+		sed -i 's_^#!.*/usr/bin/env.*python$_#!/usr/bin/env python2_' $file
 	done
 
 	msg2 "ensure binaries live in /bin and /usr/bin"
@@ -87,18 +95,19 @@ build() {
 	# create binary targets
 	#FASTER=1
 	#make -j$(nproc) \
-	make \
-		LIBDIR=lib PREFIX=/usr
+	make LIBDIR=lib \
+	     PREFIX=/usr
 
 	# create documentation targets
-	make \
-		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib \
-		doxygen \
-		modules-docbook-html \
-		modules-readme
-		# dbschema-docbook-html
-		# dbschema-docbook-pdf \
-		# modules-docbook-pdf \
+	make BASEDIR="$pkgdir" \
+	     PREFIX=/usr \
+	     LIBDIR=lib \
+	     doxygen \
+	     modules-docbook-html \
+	     modules-readme
+	     # dbschema-docbook-html
+	     # dbschema-docbook-pdf \
+	     # modules-docbook-pdf \
 }
 
 package_opensips-git() {
@@ -136,7 +145,6 @@ package_opensips-git() {
 		'rabbitmq: Rabbit CacheMemory support'
 		'thrift: Thrift support'
 		'unixodbc: UNIX ODBC support')
-	checkdepends=('expat' 'libtap-git')
 	install=opensips.install
 
 	provides=("opensips=${pkgver}")
@@ -148,8 +156,10 @@ package_opensips-git() {
 
 	# install app only, excluding console, modules and modules docs
 	for _cmp in ${_components[@]}; do
-		make \
-		      BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib install-app
+		make BASEDIR="$pkgdir" \
+		     PREFIX=/usr \
+		     LIBDIR=lib \
+		     install-app
 
 		# Conforms to the arch packaging standards (https://wiki.archlinux.org/index.php/Arch_Packaging_Standards)
 		mkdir -p "$pkgdir"/etc/
@@ -184,12 +194,13 @@ package_opensips-git-modules() {
 
 	cd "$srcdir"/${pkgbase}
 
-	make \
-		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib install-modules
+	make BASEDIR="$pkgdir" \
+	     PREFIX=/usr \
+	     LIBDIR=lib \
+	     install-modules
 
 	msg2 "ensure binaries live in /bin and /usr/bin"
 	mv "$pkgdir"/usr/sbin "$pkgdir"/usr/bin
-
 }
 
 package_opensips-git-documentation() {
@@ -198,11 +209,14 @@ package_opensips-git-documentation() {
 	provides=("opensips-documentation=${pkgver}")
 	conflicts=('opensips-documentation')
 
-  	cd "$srcdir"/${pkgbase}
+	cd "$srcdir"/${pkgbase}
 
 	msg2 "install documentation targets"
-	make \
-		BASEDIR="$pkgdir" PREFIX=/usr LIBDIR=lib install-doc install-modules-docbook
+	make BASEDIR="$pkgdir" \
+	     PREFIX=/usr \
+	     LIBDIR=lib \
+	     install-doc \
+	     install-modules-docbook
 
 	DOC_DIR="$pkgdir/usr/share/doc/${_pkgname}"
 
@@ -219,14 +233,19 @@ package_opensips-git-documentation() {
 		mkdir -p "$DOC_DIR/doxygen"
 		chmod 0755 "$DOC_DIR/doxygen"
 	fi
-	find $pkgdir/usr/share/doc/${_pkgname}/html  -print0 | xargs -0 -I '{}' cp -r '{}' "$DOC_DIR/doxygen/"
-	chmod --recursive 0644 "$DOC_DIR/doxygen"
+
+	if [ -d "$srcdir/${pkgbase}/doc/html" ]; then
+		cd "$srcdir/${pkgbase}/doc/html"
+		find . -print0 | xargs -0 -I {} cp -a {} "$DOC_DIR/doxygen/"
+		chmod --recursive 0644 "$DOC_DIR/doxygen"
+	fi
 
 	msg2 "install example configurations"
 	if [ ! -d $DOC_DIR/examples ]; then
 		mkdir -p "$DOC_DIR/examples"
 		chmod 0755 "$DOC_DIR/examples"
 	fi
+
 	if [ -d ./examples ]; then
 		mv ./examples "$DOC_DIR"
 		chmod --recursive 0644 "$DOC_DIR/examples"
