@@ -1681,7 +1681,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 	str inet6 = str_init("INET6");
 	struct hostent *server;
 	struct ip_addr ip;
-	unsigned int len;
+	unsigned int len, rc;
 	struct net *mask;
 	pv_value_t v;
 	str sv;
@@ -1876,8 +1876,12 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 					val->rs.len,val->rs.s);
 				goto error;
 			}
+
 			mask = mk_net_bitlen(p_ip, len);
-			switch ( matchnet( &ip, mask) ) {
+			rc = matchnet(&ip, mask);
+			pkg_free(mask);
+
+			switch (rc) {
 				case 1: /* matches */
 					val->ri = 1; break;
 				case 0: /* does not matches */
