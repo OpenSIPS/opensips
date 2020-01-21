@@ -583,19 +583,40 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
 			<emphasis>-1</emphasis> if there was an internal error,
 			or positive value in case of success.
 		</para>
-                <para>Meaning of the parameters is as follows:</para>
-                <itemizedlist>
-                <listitem>
-                        <para><emphasis>sms_name (string)</emphasis> - name of the SMS
-                        to be used for sending the SMPP traffic.
-                        </para>
-                </listitem>
-                <listitem>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>sms_name (string)</emphasis> - name of the SMS
+					to be used for sending the SMPP traffic.
+				</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>from (string, optional)</emphasis> - the source number.
+				If missing, the SIP message from username is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>to (string, optional)</emphasis> - the destination number.
+				If missing, the SIP request URI username is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>body (string, optional)</emphasis> - the body of the SMS.
+				If missing, the SIP message body is used.
+			</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>UTF-16 (int, optional)</emphasis> - set to
+				<emphasis>1</emphasis> if the body of the message is in UTF-16.
+				format. If missing or <emphasis>0</emphasis>, UTF-8 is used.
+			</para>
+			</listitem>
+			<listitem>
 			<para><emphasis>delivery_receipt (int, optional)</emphasis> - Whether
-			the SMSC should confirm delivery for this SMS or not
-                        </para>
-                </listitem>
-                </itemizedlist>
+				the SMSC should confirm delivery for this SMS or not
+			</para>
+			</listitem>
+		</itemizedlist>
 
 		<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
