@@ -1264,7 +1264,7 @@ static int init_tls_dom(struct tls_domain *d)
 			if (!SSL_CTX_set_min_proto_version(ctx,
 					ssl_versions[d->method - 1]) ||
 				!SSL_CTX_set_max_proto_version(ctx,
-					ssl_versions[d->method - 1])) {
+					ssl_versions[d->method_max - 1])) {
 				LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
 						d->name.len, ZSW(d->name.s));
 				return -1;
@@ -1544,6 +1544,36 @@ init_ssl_methods(void)
 	ssl_versions[TLS_USE_TLSv1_2-1] = TLS1_2_VERSION;
 	ssl_versions[TLS_USE_TLSv1-1] = TLS1_VERSION;
 #endif
+}
+
+static struct {
+	char *name;
+	enum tls_method method;
+} ssl_versions_struct[] = {
+	{ "SSLv23",  TLS_USE_SSLv23   },
+	{ "TLSv1",   TLS_USE_TLSv1    },
+	{ "TLSv1_2", TLS_USE_TLSv1_2  },
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+	{ "TLSv1_3", TLS_USE_TLSv1_3  },
+#endif
+};
+
+static inline char *get_ssl_method(enum tls_method method)
+{
+	if (method < 1 || method >
+			((sizeof ssl_versions_struct/sizeof(ssl_versions_struct[0]))))
+		return "UNKNOWN";
+	return ssl_versions_struct[method-1].name;
+}
+
+enum tls_method parse_ssl_method(str *name)
+{
+	enum tls_method method;
+	for (method = 0; method <
+			((sizeof ssl_versions_struct/sizeof(ssl_versions_struct[0]))); method++)
+		if (strncasecmp(name->s, ssl_versions_struct[method].name, name->len) == 0)
+			return ssl_versions_struct[method].method;
+	return -1;
 }
 
 /* reloads data from the db */
@@ -2067,6 +2097,7 @@ static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
 {
 	mi_item_t *domain_item, *addrf_arr, *domf_arr;
 	struct str_list *filt;
+	char *method;
 
 	while (d) {
 		domain_item = add_mi_object(domains_arr, NULL, 0);
@@ -2102,28 +2133,15 @@ static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
 			if (add_mi_string(domf_arr, 0, 0, filt->s.s, filt->s.len) < 0)
 				goto error;
 
-		switch (d->method) {
-		case TLS_USE_TLSv1:
+		if (d->method == d->method_max) {
+			method = get_ssl_method(d->method);
 			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
-				MI_SSTR("TLSv1")) < 0)
-				goto error;
-			break;
-		case TLS_USE_SSLv23:
-			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
-				MI_SSTR("SSLv23")) < 0)
-				goto error;
-			break;
-		case TLS_USE_TLSv1_2:
-			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
-				MI_SSTR("TLSv1_2")) < 0)
-				goto error;
-			break;
-		case TLS_USE_TLSv1_3:
-			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
-				MI_SSTR("TLSv1_3")) < 0)
-				goto error;
-			break;
-		default: goto error;
+					method, strlen(method)) < 0)
+						goto error;
+		} else {
+			if (add_mi_string_fmt(domain_item, MI_SSTR("METHOD"),
+					"%s-%s", get_ssl_method(d->method), get_ssl_method(d->method_max)) < 0)
+						goto error;
 		}
 
 		if (add_mi_bool(domain_item, MI_SSTR("VERIFY_CERT"), d->verify_cert) < 0)

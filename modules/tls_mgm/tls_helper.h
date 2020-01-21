@@ -69,6 +69,7 @@ struct tls_domain {
 	int refs;
 	gen_lock_t *lock;
 	enum tls_method method;
+	enum tls_method method_max;
 	struct tls_domain *next;
 };
 

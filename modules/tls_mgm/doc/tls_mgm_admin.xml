@@ -246,6 +246,10 @@ listen = tls:1.2.3.4:5061
 				</listitem>
 			</itemizedlist>
 			<para><emphasis>
+				If you are using an OpenSSL library newer than 1.1.0, you can
+				also specify a range of accepted TLS versions.
+			</emphasis></para>
+			<para><emphasis>
 				Default value is SSLv23.
 			</emphasis></para>
 			<warning><para>
@@ -263,6 +267,14 @@ listen = tls:1.2.3.4:5061
 				<programlisting format="linespecific">
 ...
 modparam("tls_mgm", "tls_method", "[dom]TLSv1")
+...
+				</programlisting>
+			</example>
+			<example>
+				<title>Set <varname>tls_method</varname> range variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "tls_method", "[dom]TLSv1-TLSv1_3")
 ...
 				</programlisting>
 			</example>
