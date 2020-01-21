@@ -372,9 +372,121 @@ static int convert_utf16_to_ucs2(str *input, char *output)
 
 static int convert_utf8_to_gsm7(str *input, char *output)
 {
-	/* TODO: proper convert UTF8 to GSM7 */
-	memcpy(output, input->s, input->len);
-	return input->len;
+#define CASE_OUT_REPR(_c, _v) \
+	case (_c): *o++ = (_v); break;
+#define CASE_OUT_REPR_EN(_c, _v) \
+	case (_c): *o++ = 0x1B; *o++ = (_v); break;
+
+	int i;
+	unsigned char c, c1, c2, *o;
+	unsigned int t;
+	o = (unsigned char *)output;
+	/* GSM7 is definitely smaller than UTF8 */
+	for (i = 0; i < input->len; i++) {
+		c = input->s[i];
+		if ((c & 0xF8) == 0xF0) {
+			/* four bytes - no representation in GSM */
+			*o++ = '?';
+			i += 3; /* skip a total of 4 bytes */
+			continue;
+		} if ((c & 0xF0) == 0xE0) {
+			/* three bytes */
+			if (i + 2 >= input->len) {
+				*o++ = '?';
+				i += 2; /* terminate */
+				continue;
+			}
+			c1 = input->s[++i];
+			c2 = input->s[++i];
+			t = ((c & 0x0F) << 12) | ((c1 & 0x3F) << 6) | (c2 & 0x3F);
+			/* we only support the euro sign */
+			if (t == 0xE282AC) {
+				*o++ = 0x1B;
+				*o++ = 0x65;
+			} else {
+				*o++ = '?';
+			}
+			continue;
+		} if ((c & 0xE0) == 0xC0) {
+			/* two bytes */
+			if (i + 1 >= input->len) {
+				*o++ = '?';
+				i++; /* terminate */
+				continue;
+			}
+			c1 = input->s[++i];
+			t = ((c & 0x1F) << 6) | (c1 & 0x3F);
+		} else {
+			t = c;
+		}
+		if ((t >= 0x20 /* ' ' */ && t <= 0x5A /* 'Z' */) ||
+			(t >= 0x61 /* 'z' */ && t <= 0x7A /* 'z' */)) {
+			*o++ = t;
+		} else {
+			/* handle exceptions */
+			switch (t) {
+				/* newline */
+				CASE_OUT_REPR(0x0A, 0x0A);
+				CASE_OUT_REPR(0x0D, 0x0D);
+				/* escaped */
+				CASE_OUT_REPR_EN('^', 0x14);
+				CASE_OUT_REPR_EN('{', 0x28);
+				CASE_OUT_REPR_EN('}', 0x29);
+				CASE_OUT_REPR_EN('\\', 0x2F);
+				CASE_OUT_REPR_EN('[', 0x3C);
+				CASE_OUT_REPR_EN('~', 0x3D);
+				CASE_OUT_REPR_EN(']', 0x3E);
+				CASE_OUT_REPR_EN('|', 0x40);
+				/* special */
+				CASE_OUT_REPR(0xA1, 0x40);
+				CASE_OUT_REPR(0xA5, 0x03);
+				CASE_OUT_REPR(0xA7, 0x4F);
+				CASE_OUT_REPR(0xBF, 0x60);
+				CASE_OUT_REPR(0xC4, 0x5B);
+				CASE_OUT_REPR(0xC5, 0x0E);
+				CASE_OUT_REPR(0xC6, 0x1C);
+				CASE_OUT_REPR(0xC7, 0x09);
+				CASE_OUT_REPR(0xC9, 0x1F);
+				CASE_OUT_REPR(0xD1, 0x5D);
+				CASE_OUT_REPR(0xD6, 0x5C);
+				CASE_OUT_REPR(0xD8, 0x0B);
+				CASE_OUT_REPR(0xDC, 0x5E);
+				CASE_OUT_REPR(0xDF, 0x1E);
+				CASE_OUT_REPR(0xE0, 0x7F);
+				CASE_OUT_REPR(0xE4, 0x7B);
+				CASE_OUT_REPR(0xE5, 0x0F);
+				CASE_OUT_REPR(0xE6, 0x1D);
+				CASE_OUT_REPR(0xE7, 0x09);
+				CASE_OUT_REPR(0xE8, 0x04);
+				CASE_OUT_REPR(0xE9, 0x05);
+				CASE_OUT_REPR(0xEC, 0x07);
+				CASE_OUT_REPR(0xF1, 0x7D);
+				CASE_OUT_REPR(0xF2, 0x08);
+				CASE_OUT_REPR(0xF6, 0x7C);
+				CASE_OUT_REPR(0xF8, 0x0C);
+				CASE_OUT_REPR(0xF9, 0x06);
+				CASE_OUT_REPR(0xFC, 0x7E);
+				/* large */
+				CASE_OUT_REPR(0x394, 0x10);
+				CASE_OUT_REPR(0x3A6, 0x12);
+				CASE_OUT_REPR(0x393, 0x13);
+				CASE_OUT_REPR(0x39B, 0x14);
+				CASE_OUT_REPR(0x3A9, 0x15);
+				CASE_OUT_REPR(0x3A0, 0x16);
+				CASE_OUT_REPR(0x3A8, 0x17);
+				CASE_OUT_REPR(0x3A3, 0x18);
+				CASE_OUT_REPR(0x398, 0x19);
+				CASE_OUT_REPR(0x39E, 0x1A);
+				default:
+					/* unknown representation */
+					*o++ = '?';
+					break;
+			}
+		}
+	}
+	return (char *)o - output;
+#undef CASE_OUT_REPR
+#undef CASE_OUT_REPR_EN
 }
 
 static int convert_gsm7_to_utf8(unsigned char *input, int input_len, char *output)

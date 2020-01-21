@@ -495,6 +495,11 @@ static int send_smpp_msg(struct sip_msg *msg, str *name,int *delivery_confirmati
 		LM_ERR("Failed to parse content type header \n");
 		return -1;
 	} else if (body_type > 0) {
+
+		if (body_type != (TYPE_TEXT | SUBTYPE_PLAIN))
+			LM_WARN("Don't know how to parse body type %d(%s). "
+					"Treating as text/plain\n", body_type, convert_mime2string_CT(body_type));
+		body_type = SMPP_CODING_DEFAULT;
 		/* Expecting Content-Type:text/plain; charset=UTF-16 */
 		
 		/* check the charset */
