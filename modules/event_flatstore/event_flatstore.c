@@ -162,6 +162,10 @@ static int mod_init(void) {
 
 	if (!delimiter.s) {
 		delimiter.s = pkg_malloc(sizeof(char));
+		if (!delimiter.s) {
+			LM_ERR("oom!\n");
+			return -1;
+		}
 		delimiter.s[0] = ',';
 		delimiter.len = 1;
 	} else {
@@ -201,7 +205,15 @@ static int mod_init(void) {
 	}
 
 	opened_fds = pkg_malloc(initial_capacity * sizeof(int));
+	if (!opened_fds) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 	rotate_version = pkg_malloc(initial_capacity * sizeof(int));
+	if (!rotate_version) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 
 	memset(rotate_version, 0, initial_capacity * sizeof(int));
 
@@ -423,6 +435,10 @@ static evi_reply_sock* flat_parse(str socket){
 		*/
 		if (dirc == NULL || dir_size < (socket.len + 1)) {
 			dirc = pkg_realloc(dirc, (socket.len + 1) * sizeof(char));
+			if (!dirc) {
+				LM_ERR("oom!\n");
+				goto error;
+			}
 			dir_size = socket.len + 1;
 		}
 
@@ -548,8 +564,14 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		return -1;
 	}
 
-	if (io_param == NULL)
+	if (io_param == NULL) {
 		io_param = pkg_malloc(cap_params * sizeof(struct iovec));
+		if (!io_param) {
+			LM_ERR("oom!\n");
+			return -1;
+		}
+	}
+
 
 	if (!suppress_event_name && ev_name && ev_name->s) {
 		io_param[idx].iov_base = ev_name->s;
@@ -566,6 +588,10 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 		if (buff == NULL || required_length > buff_convert_len) {
 			buff = pkg_realloc(buff, required_length * sizeof(char) + 1);
+			if (!buff) {
+				LM_ERR("oom!\n");
+				return -1;
+			}
 			buff_convert_len = required_length;
 		}
 
@@ -575,6 +601,10 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 			if(idx + 3 > cap_params){
 				io_param = pkg_realloc(io_param, (cap_params + 20) * sizeof(struct iovec));
+				if (!io_param) {
+					LM_ERR("oom!\n");
+					return -1;
+				}
 				cap_params += 20;
 			}
 
