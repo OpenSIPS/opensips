@@ -92,8 +92,8 @@ unsigned long hp_rpm_get_frags(struct hp_block *hpb);
 #else /* HP_MALLOC_FAST_STATS */
 	#define update_stats_shm_frag_attach(frag) \
 		do { \
-			update_stat(shm_used, -(int)(frag)->size); \
-			update_stat(shm_rused, -(int)((frag)->size + FRAG_OVERHEAD)); \
+			update_stat(shm_used, -(long)(frag)->size); \
+			update_stat(shm_rused, -(long)((frag)->size + FRAG_OVERHEAD)); \
 		} while (0)
 
 	#define update_stats_shm_frag_detach(frag) \
@@ -111,8 +111,8 @@ unsigned long hp_rpm_get_frags(struct hp_block *hpb);
 
 	#define update_stats_rpm_frag_attach(frag) \
 		do { \
-			update_stat(rpm_used, -(int)(frag)->size); \
-			update_stat(rpm_rused, -(int)((frag)->size + FRAG_OVERHEAD)); \
+			update_stat(rpm_used, -(long)(frag)->size); \
+			update_stat(rpm_rused, -(long)((frag)->size + FRAG_OVERHEAD)); \
 		} while (0)
 
 	#define update_stats_rpm_frag_detach(frag) \
