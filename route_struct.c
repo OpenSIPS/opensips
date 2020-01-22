@@ -188,6 +188,8 @@ static void free_action_elem( action_elem_t *e )
 		free_action_list( (struct action*)e->u.data );
 	else if (e->type==SCRIPTVAR_ST)
 		pkg_free(e->u.data);
+	else if (e->type==SCRIPTVAR_ELEM_ST)
+		pv_elem_free_all(e->u.data);
 }
 
 

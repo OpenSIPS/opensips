@@ -138,6 +138,7 @@ static str s_tmp;
 static str tstr;
 static struct net* net_tmp;
 static pv_spec_t *spec;
+static pv_elem_t *elem;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
 
@@ -164,6 +165,13 @@ struct listen_param {
 	char *auto_scaling_profile;
 } p_tmp;
 static void fill_socket_id(struct listen_param *param, struct socket_id *s);
+
+union route_name_var {
+	int iname;
+	struct _pv_spec *sname;
+	struct _pv_elem *ename;
+	void *data;
+} rn_tmp;
 
 #ifndef SHM_EXTRA_STATS
 struct multi_str{
@@ -503,6 +511,7 @@ extern int cfg_parse_only_routes;
 %type <intval> assignop
 %type <intval> snumber
 %type <strval> route_name
+%type <intval> route_name_var
 %type <intval> route_param
 %type <strval> folded_string
 %type <multistr> multi_string
@@ -1426,6 +1435,33 @@ route_name:  ID {
 		}
 ;
 
+route_name_var: route_name {
+				/* check to see if there are any "$" in the string name */
+				tmp = strchr($1, '$');
+				if (!tmp) {
+					/* route name is a cosntant string - search for the route */
+					rn_tmp.iname = get_script_route_idx($1, sroutes->request,
+							RT_NO, 0);
+					if (rn_tmp.iname==-1)
+						yyerror("too many script routes");
+					$$ = NUMBER_ST;
+				} else {
+					tstr.s = $1;
+					tstr.len = strlen(tstr.s);
+					if (pv_parse_format(&tstr, &elem) < 0) {
+						yyerror("cannot parse format");
+						YYABORT;
+					}
+					/* the route name is a format, so we can't evaluate it now */
+					rn_tmp.ename = elem;
+					$$ = SCRIPTVAR_ELEM_ST;
+				}
+			}
+		| script_var {
+				rn_tmp.sname = $1;
+				$$ = SCRIPTVAR_ST;
+		}
+
 route_stm:  ROUTE LBRACE actions RBRACE {
 						if (sroutes->request[DEFAULT_RT].a!=0) {
 							yyerror("overwriting default "
@@ -2144,18 +2180,11 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 		| ERROR error { $$=0; yyerror("missing '(' or ')' ?"); }
 		| ERROR LPAREN error RPAREN { $$=0; yyerror("bad error"
 														"argument"); }
-		| ROUTE LPAREN route_name RPAREN	{
-						i_tmp = get_script_route_idx( $3, sroutes->request,
-							RT_NO, 0);
-						if (i_tmp==-1) yyerror("too many script routes");
-						mk_action2( $$, ROUTE_T, NUMBER_ST,
-							0, (void*)(long)i_tmp, 0);
+		| ROUTE LPAREN route_name_var RPAREN	{
+						mk_action2( $$, ROUTE_T, $3, 0, rn_tmp.data, 0);
 					}
 
-		| ROUTE LPAREN route_name COMMA route_param RPAREN	{
-						i_tmp = get_script_route_idx( $3, sroutes->request,
-							RT_NO, 0);
-						if (i_tmp==-1) yyerror("too many script routes");
+		| ROUTE LPAREN route_name_var COMMA route_param RPAREN	{
 						if ($5 <= 0) yyerror("too many route parameters");
 
 						/* duplicate the list */
@@ -2166,10 +2195,10 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 						}
 						memcpy(a_tmp, route_elems, $5*sizeof(action_elem_t));
 
-						mk_action3( $$, ROUTE_T, NUMBER_ST,	/* route idx */
+						mk_action3( $$, ROUTE_T, $3,	/* route idx */
 							NUMBER_ST,					/* number of params */
-							SCRIPTVAR_ELEM_ST,			/* parameters */
-							(void*)(long)i_tmp,
+							SCRIPTVAR_ST,				/* parameters */
+							rn_tmp.data,
 							(void*)(long)$5,
 							(void*)a_tmp);
 					}
