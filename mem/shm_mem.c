@@ -659,12 +659,16 @@ mi_response_t *mi_shm_check(const mi_params_t *params,
 void init_shm_post_yyparse(void)
 {
 #ifdef HP_MALLOC
-	if (mem_warming_enabled && hp_mem_warming(shm_block) != 0) {
-		LM_INFO("skipped memory warming\n");
-	}
 	if (mem_allocator_shm == MM_HP_MALLOC ||
-	    mem_allocator_shm == MM_HP_MALLOC_DBG)
+	    mem_allocator_shm == MM_HP_MALLOC_DBG) {
+
+		if (mem_warming_enabled && hp_mem_warming(shm_block) != 0)
+			LM_INFO("skipped memory warming\n");
+
 		hp_init_shm_statistics(shm_block);
+	} else if (mem_warming_enabled) {
+		LM_WARN("SHM memory warming only makes sense with HP_MALLOC!\n");
+	}
 #endif
 
 #ifdef SHM_EXTRA_STATS
