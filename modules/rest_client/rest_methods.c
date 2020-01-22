@@ -1020,59 +1020,6 @@ int rest_append_hf_method(struct sip_msg *msg, str *hfv)
 }
 
 /**
- * rest_escape_string - URL encode a string value
- * @msg:		        sip message struct
- * @input_str:		    String value to encode
- * @reply_pv:           Output as encoded by libcurl
- * @return:
- *  1 - success
- * -1 - error
- */
-int rest_escape_string_method(struct sip_msg *msg, str *input_str,
-                              pv_spec_t *reply_pv)
-{
-    pv_value_t reply_val;
-    int ret = 1;
-
-#if ( LIBCURL_VERSION_NUM >= 0x071504 )
-	CURL *curl = curl_easy_init();
-    if (curl) {
-        char *encoded = curl_easy_escape(curl, input_str->s, input_str->len);
-        if (!encoded) {
-            LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
-                   input_str->len, input_str->s);
-            return -1;
-        }
-
-        LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str->len,
-               input_str->s, encoded);
-
-        curl_free(encoded);
-    }
-#else
-    char *encoded = curl_escape(input_str->s, input_str->len);
-    if (!encoded) {
-        LM_ERR("failed to execute curl_escape on '%.*s'\n",
-               input_str->len, input_str->s);
-        return -1;
-    }
-
-    LM_DBG("curl_escape '%.*s' returns '%s'\n", input_str->len,
-           input_str->s, encoded);
-#endif
-
-    reply_val.flags = PV_VAL_STR;
-    reply_val.rs = encoded;
-
-    if (pv_set_value(msg, reply_pv, 0, &reply_val) != 0) {
-        LM_ERR("failed to set output pvar!\n");
-        ret = -1;
-    }
-
-	return ret;
-}
-
-/**
  * rest_set_tls - set a custom TLS client cert/key for the next transfer
  * @msg:            sip message struct
  * @tls_client_dom:	tls_mgm specific client domain identifier

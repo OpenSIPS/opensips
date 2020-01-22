@@ -100,8 +100,6 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 			pv_spec_t *ctype_pv, pv_spec_t *code_pv);
 
 static int w_rest_append_hf(struct sip_msg *msg, str *hfv);
-static int w_rest_escape_string(struct sip_msg *msg, str *input_str,
-                                pv_spec_t *reply_pv);
 static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom);
 int validate_curl_http_version(const int *http_version);
 
@@ -169,16 +167,23 @@ static cmd_export_t cmds[] = {
 	{"rest_append_hf",(cmd_function)w_rest_append_hf, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		ALL_ROUTES},
-	{"rest_escape_string",(cmd_function)w_rest_escape_string, {
-		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_VAR,fixup_check_var,0}, {0,0,0}},
-		ALL_ROUTES},
 	{"rest_init_client_tls",(cmd_function)w_rest_init_client_tls, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
+/*
+ * Exported transformations
+ */
+int tr_rest_parse(str* in, trans_t *t);
+int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val);
+
+static trans_export_t trans[] = {
+	{str_init("rest"), tr_rest_parse, tr_rest_eval},
+	{{0,0},0,0}
+};
 
 /*
  * Exported parameters
@@ -201,25 +206,25 @@ static param_export_t params[] = {
  */
 struct module_exports exports = {
 	"rest_client",
-	MOD_TYPE_DEFAULT,/* class of this module */
-	MODULE_VERSION,  /* module version */
-	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,				 /* load function */
+	MOD_TYPE_DEFAULT, /* class of this module */
+	MODULE_VERSION,   /* module version */
+	DEFAULT_DLFLAGS,  /* dlopen flags */
+	0,				  /* load function */
 	&deps,            /* OpenSIPS module dependencies */
-	cmds,     /* Exported functions */
-	acmds,    /* Exported async functions */
-	params,   /* Exported parameters */
-	NULL,     /* exported statistics */
-	NULL,     /* exported MI functions */
-	NULL,     /* exported pseudo-variables */
-	NULL,	  /* exported transformations */
-	NULL,     /* extra processes */
-	NULL,     /* module pre-initialization function */
-	mod_init, /* module initialization function */
-	NULL,     /* response function*/
-	mod_destroy,
-	child_init, /* per-child init function */
-	cfg_validate/* reload confirm function */
+	cmds,             /* Exported functions */
+	acmds,            /* Exported async functions */
+	params,           /* Exported parameters */
+	NULL,             /* exported statistics */
+	NULL,             /* exported MI functions */
+	NULL,             /* exported pseudo-variables */
+	trans,	          /* exported transformations */
+	NULL,             /* extra processes */
+	NULL,             /* module pre-initialization function */
+	mod_init,         /* module initialization function */
+	NULL,             /* response function*/
+	mod_destroy,      /* module destroy/cleanup function */
+	child_init,       /* per-child init function */
+	cfg_validate      /* reload confirm function */
 };
 
 static int mod_init(void)
@@ -339,6 +344,130 @@ int validate_curl_http_version(const int *http_version)
 	}
 
 	return 1;
+}
+
+/**************************** Transformations ********************************/
+
+/**
+ * tr_rest_parse - Prepare to URL encode a string value
+ * @in:		        raw parameter list (expect name only)
+ * @t:		        transformation parameters (unused)
+ *
+ * @return:
+ *  0 - success
+ * -1 - error
+*/
+int tr_rest_parse(str* in, trans_t *t)
+{
+	char *p;
+	str name;
+
+	if(in == NULL || in->s == NULL || t == NULL)
+		return -1;
+
+	p = in->s;
+	name.s = in->s;
+
+	/* Scan parameter list - expect a transformation name only, reject anything else */
+	while (*p && *p != TR_PARAM_MARKER && *p != TR_RBRACKET) p++;
+	if (*p == '\0') {
+		LM_ERR("rest_client invalid transformation: %.*s\n", in->len, in->s);
+		return -1;
+	}
+	if (*p == TR_RBRACKET || *p == TR_PARAM_MARKER) {
+		LM_ERR("rest_client transformation supports single parameter only: %.*s\n", in->len, in->s);
+		return -1;
+	}
+
+	/* todo Check if we can just trim and read length of the transformation to avoid p entirely */
+	name.len = p - name.s;
+
+	/* Validate that this is a known transformation */
+	if (name.len == 11 && !memcmp(name.s, "rest.escape", 11))
+		t->subtype = TR_REST_ESCAPE;
+	else {
+		LM_ERR("Unknown rest_client transformation: <%.*s>\n", name.len, name.s);
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
+ * tr_rest_eval - Perform URL encode on a string value
+ * @msg:		        sip message struct
+ * @tp:     		    transformation parameters (unused)
+ * @subtype:            transformation mode (configured in t_rest_parse)
+ * @val:		        input/output - on success will be as encoded by libcurl, else NULL
+ *
+ * @return:
+ *  0 - success
+ * -1 - error
+*/
+int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
+		pv_value_t *val)
+{
+	pv_value_t reply_val;
+	str input_str;
+
+	if (!val)
+		return -1;
+
+	if (val->flags & PV_VAL_NULL)
+		return 0;
+
+	if((!(val->flags & PV_VAL_STR)) || val->rs.len <= 0)
+		goto error;
+
+	input_str = val->rs;
+
+	if (subtype == TR_REST_ESCAPE) {
+
+#if ( LIBCURL_VERSION_NUM >= 0x071504 )
+        CURL *curl = curl_easy_init();
+        if (curl) {
+            char *encoded = curl_easy_escape(curl, input_str->s, input_str->len);
+            if (!encoded) {
+                LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
+                       input_str->len, input_str->s);
+                goto error;
+            }
+
+            LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str->len,
+                   input_str->s, encoded);
+
+            curl_free(encoded);
+        }
+#else
+        char *encoded = curl_escape(input_str->s, input_str->len);
+        if (!encoded) {
+            LM_ERR("failed to execute curl_escape on '%.*s'\n",
+                   input_str->len, input_str->s);
+            goto error;
+        }
+
+        LM_DBG("curl_escape '%.*s' returns '%s'\n", input_str->len,
+               input_str->s, encoded);
+#endif
+
+        reply_val.flags = PV_VAL_STR;
+        reply_val.rs = encoded;
+
+        if (pv_set_value(msg, val, 0, &reply_val) != 0) {
+            LM_ERR("rest_client escape transform failed to set output pvar!\n");
+            goto error;
+        }
+
+	} else {
+		LM_BUG("Unknown transformation subtype [%d]\n", subtype);
+		goto error;
+	}
+
+	return 0;
+
+error:
+	val->flags = PV_VAL_NULL;
+	return -1;
 }
 
 /**************************** Module functions *******************************/
@@ -567,12 +696,6 @@ static int w_async_rest_put(struct sip_msg *msg, async_ctx *ctx,
 static int w_rest_append_hf(struct sip_msg *msg, str *hfv)
 {
 	return rest_append_hf_method(msg, hfv);
-}
-
-static int w_rest_escape_string(struct sip_msg *msg, str *input_str,
-                                pv_spec_t *reply_pv)
-{
-	return rest_escape_string_method(msg, input_str, reply_pv);
 }
 
 static int w_rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom)
