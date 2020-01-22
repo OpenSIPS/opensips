@@ -1440,6 +1440,7 @@ route_name_var: route_name {
 				tmp = strchr($1, '$');
 				if (!tmp) {
 					/* route name is a cosntant string - search for the route */
+					rn_tmp.data = 0;
 					rn_tmp.iname = get_script_route_idx($1, sroutes->request,
 							RT_NO, 0);
 					if (rn_tmp.iname==-1)
