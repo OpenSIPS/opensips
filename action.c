@@ -823,7 +823,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case ASYNC_T:
 			/* first param - an ACTIONS_ST containing an ACMD_ST
-			 * second param - a NUMBER_ST pointing to resume route */
+			 * second param - a NUMBER_ST pointing to resume route
+			 * third param - an optional NUMBER_ST with a timeout */
 			aitem = (struct action *)(a->elem[0].u.data);
 			acmd = (acmd_export_t *)aitem->elem[0].u.data;
 
@@ -840,7 +841,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 					break;
 				}
 
-				ret = async_script_start_f(msg, aitem, a->elem[1].u.number, cmdp);
+				ret = async_script_start_f(msg, aitem, a->elem[1].u.number,
+					(unsigned int)a->elem[2].u.number, cmdp);
 				if (ret>=0)
 					action_flags |= ACT_FL_TBCONT;
 

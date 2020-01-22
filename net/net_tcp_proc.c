@@ -194,7 +194,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			handle_timer_job();
 			break;
 		case F_SCRIPT_ASYNC:
-			async_script_resume_f( fm->fd, fm->data);
+			async_script_resume_f( fm->fd, fm->data,
+				(event_type==IO_WATCH_TIMEOUT)?1:0 );
 			break;
 		case F_FD_ASYNC:
 			async_fd_resume( fm->fd, fm->data);
@@ -233,6 +234,16 @@ again:
 				LM_BUG("read_fd:no fd read\n");
 				/* FIXME? */
 				goto error;
+			}
+
+			if (!(con->flags & F_CONN_INIT)) {
+				if (protos[con->type].net.conn_init &&
+						protos[con->type].net.conn_init(con) < 0) {
+					LM_ERR("failed to do proto %d specific init for conn %p\n",
+							con->type, con);
+					goto con_error;
+				}
+				con->flags |= F_CONN_INIT;
 			}
 
 			LM_DBG("We have received conn %p with rw %d on fd %d\n",con,rw,s);

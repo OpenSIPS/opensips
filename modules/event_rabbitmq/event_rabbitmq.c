@@ -48,6 +48,7 @@ static void destroy(void);
  */
 static unsigned int heartbeat = 0;
 extern unsigned rmq_sync_mode;
+static int suppress_event_name = 0;
 static int rmq_connect_timeout = RMQ_DEFAULT_CONNECT_TIMEOUT;
 struct timeval conn_timeout_tv;
 
@@ -72,6 +73,7 @@ static param_export_t mod_params[] = {
 	{"heartbeat",					INT_PARAM, &heartbeat},
 	{"sync_mode",		INT_PARAM, &rmq_sync_mode},
 	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
+	{"suppress_event_name", INT_PARAM, &suppress_event_name},
 	{0,0,0}
 };
 
@@ -488,17 +490,21 @@ static int rmq_build_params(str* ev_name, evi_params_p ev_params)
 	rmq_buffer_len = 0;
 
 	/* first is event name - cannot be larger than the buffer size */
-	memcpy(rmq_buffer, ev_name->s, ev_name->len);
-	rmq_buffer_len = ev_name->len;
-	buff = rmq_buffer + ev_name->len;
+	if (!suppress_event_name) {
+		memcpy(rmq_buffer, ev_name->s, ev_name->len);
+		rmq_buffer_len = ev_name->len;
+		buff = rmq_buffer + ev_name->len;
+		*buff = PARAM_SEP;
+		buff++;
+	} else {
+		rmq_buffer_len = 0;
+		buff = rmq_buffer;
+	}
 
 	if (!ev_params)
 		goto end;
 
 	for (node = ev_params->first; node; node = node->next) {
-		*buff = PARAM_SEP;
-		buff++;
-
 		/* parameter name */
 		if (node->name.len && node->name.s) {
 			DO_COPY(buff, node->name.s, node->name.len);
@@ -537,7 +543,11 @@ static int rmq_build_params(str* ev_name, evi_params_p ev_params)
 		} else {
 			LM_DBG("unknown parameter type [%x]\n", node->flags);
 		}
+		*buff = PARAM_SEP;
+		buff++;
 	}
+	/* remove the last separator, to be compliant with previous versions */
+	buff--;
 
 end:
 	/* set buffer end */

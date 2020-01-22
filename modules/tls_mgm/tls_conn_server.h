@@ -267,6 +267,7 @@ static int tls_accept(struct tcp_connection *c, short *poll_events)
 		ssl->kssl_ctx = kssl_ctx_new( );
 #endif
 #endif
+	ERR_clear_error();
 	ret = SSL_accept(ssl);
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #ifndef OPENSSL_NO_KRB5
@@ -405,6 +406,8 @@ static int tls_connect(struct tcp_connection *c, short *poll_events, trace_dest 
 	}
 
 	ssl = (SSL *) c->extra_data;
+
+	ERR_clear_error();
 
 	ret = SSL_connect(ssl);
 	if (ret > 0) {
@@ -554,6 +557,8 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 
 	ssl = (SSL *) c->extra_data;
 
+	ERR_clear_error();
+
 	ret = SSL_write(ssl, buf, len);
 	if (ret > 0) {
 		LM_DBG("write was successful (%d bytes)\n", ret);
@@ -595,7 +600,8 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
  * fixme: probably does not work correctly
  */
 static inline int tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
-										size_t len, struct tls_mgm_binds *api, trace_dest t_dst)
+										size_t len, int handshake_timeout, int send_timeout,
+										trace_dest t_dst)
 {
 	#define MAX_SSL_RETRIES 32
 	int             written, n;
@@ -614,7 +620,7 @@ static inline int tls_blocking_write(struct tcp_connection *c, int fd, const cha
 	if (tls_update_fd(c, fd) < 0)
 		goto error;
 
-	timeout = api->get_send_timeout();
+	timeout = send_timeout;
 again:
 	n = 0;
 	pf.events = 0;
@@ -622,14 +628,14 @@ again:
 	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
 		if (tls_accept(c, &(pf.events)) < 0)
 			goto error;
-		timeout = api->get_handshake_timeout();
+		timeout = handshake_timeout;
 	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
 		if (tls_connect(c, &(pf.events), t_dst) < 0)
 			goto error;
-		timeout = api->get_handshake_timeout();
+		timeout = handshake_timeout;
 	} else {
 		n = tls_write(c, fd, buf, len, &(pf.events));
-		timeout = api->get_send_timeout();
+		timeout = send_timeout;
 	}
 
 	if (n < 0) {

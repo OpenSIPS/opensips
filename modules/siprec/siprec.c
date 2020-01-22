@@ -211,7 +211,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 		xml_val = NULL;
 	}
 
-	if (src_add_participant(ss, aor, display, xml_val, NULL) < 0) {
+	if (src_add_participant(ss, aor, display, xml_val, NULL, NULL) < 0) {
 		LM_ERR("cannot add caller participant!\n");
 		goto session_cleanup;
 	}
@@ -232,7 +232,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 		xml_val = NULL;
 	}
 
-	if (src_add_participant(ss, aor, display, xml_val, NULL) < 0) {
+	if (src_add_participant(ss, aor, display, xml_val, NULL, NULL) < 0) {
 		LM_ERR("cannot add callee pariticipant!\n");
 		goto session_cleanup;
 	}

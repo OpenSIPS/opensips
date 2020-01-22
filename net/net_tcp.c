@@ -836,7 +836,7 @@ error_sec:
 void tcpconn_put(struct tcp_connection* c)
 {
 	TCPCONN_LOCK(c->id);
-	c->refcnt--; /* FIXME: atomic_dec */
+	c->refcnt--;
 	TCPCONN_UNLOCK(c->id);
 }
 
@@ -844,7 +844,7 @@ void tcpconn_put(struct tcp_connection* c)
 static inline void tcpconn_ref(struct tcp_connection* c)
 {
 	TCPCONN_LOCK(c->id);
-	c->refcnt++; /* FIXME: atomic_dec */
+	c->refcnt++;
 	TCPCONN_UNLOCK(c->id);
 }
 
@@ -899,17 +899,9 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->hist = sh_push(c, con_hist);
 #endif
 
-	if (protos[si->proto].net.conn_init &&
-	protos[si->proto].net.conn_init(c)<0) {
-		LM_ERR("failed to do proto %d specific init for conn %p\n",
-			si->proto,c);
-		goto error1;
-	}
-
 	tcp_connections_no++;
 	return c;
 
-error1:
 	lock_destroy(&c->write_lock);
 error0:
 	shm_free(c);
@@ -931,6 +923,15 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 	c = tcp_conn_new(sock, su, si, state);
 	if (c==NULL)
 		return NULL;
+
+	if (protos[c->type].net.conn_init &&
+			protos[c->type].net.conn_init(c) < 0) {
+		LM_ERR("failed to do proto %d specific init for conn %p\n",
+				c->type, c);
+		tcp_conn_destroy(c);
+		return NULL;
+	}
+	c->flags |= F_CONN_INIT;
 
 	return (tcp_conn_send(c) == 0 ? c : NULL);
 }

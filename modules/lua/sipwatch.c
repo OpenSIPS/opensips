@@ -30,6 +30,7 @@
 #include "crc32.h"
 #include "sipapi.h"
 #include "sipwatch.h"
+#include "compat.h"
 
 struct siplua_watch *siplua_watch;
 
@@ -154,7 +155,7 @@ static int l_sipwatch_getFlagFromExtension(lua_State *L)
   return 1;
 }
 
-static const struct luaL_reg siplua_watch_mylib [] =
+static const struct luaL_Reg siplua_watch_mylib [] =
   {
     {"watch_getFlag", l_sipwatch_getFlag},
     {"watch_getFlagFromExtension", l_sipwatch_getFlagFromExtension},
@@ -163,7 +164,7 @@ static const struct luaL_reg siplua_watch_mylib [] =
 
 void siplua_register_watch_cclosures(lua_State *L)
 {
-  lua_pushvalue(L, LUA_GLOBALSINDEX);
+  lua_pushglobaltable(L);
   luaL_openlib(L, NULL, siplua_watch_mylib, 0);
   lua_remove(L, -1);
 }

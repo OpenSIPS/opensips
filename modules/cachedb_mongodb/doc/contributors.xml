@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">147</entry>
-		<entry align="center">75</entry>
-		<entry align="center">2852</entry>
-		<entry align="center">2706</entry>
+		<entry align="center">148</entry>
+		<entry align="center">76</entry>
+		<entry align="center">2874</entry>
+		<entry align="center">2718</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -68,6 +68,14 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Alessio Garzi (<ulink url="https://github.com/Ozzyboshi">@Ozzyboshi</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry><ulink url="https://github.com/jalung">@jalung</ulink></entry>
 		<entry align="center">4</entry>
 		<entry align="center">1</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">56</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Julián Moreno Patiño</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -83,20 +91,12 @@
 		<entry align="center">1</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Alessio Garzi (<ulink url="https://github.com/Ozzyboshi">@Ozzyboshi</ulink>)</entry>
-		<entry align="center">2</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-		<entry align="center">0</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Alessio Garzi (<ulink url="https://github.com/Ozzyboshi">@Ozzyboshi</ulink>)</entry>
-		<entry align="center">Nov 2019 - Nov 2019</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2014 - Jan 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Aug 2015 - Sep 2019</entry>
+		<entry>Alessio Garzi (<ulink url="https://github.com/Ozzyboshi">@Ozzyboshi</ulink>)</entry>
+		<entry align="center">Nov 2019 - Dec 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - Sep 2019</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Aug 2015 - Sep 2019</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

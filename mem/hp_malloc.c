@@ -395,18 +395,20 @@ int hp_mem_warming(struct hp_block *hpb)
 		sf = sf->next;
 	}
 
+	/* the big frag is typically next-to-last */
 	big_frag = hpb->first_frag;
+	while (FRAG_NEXT(big_frag) != hpb->last_frag)
+		big_frag = FRAG_NEXT(big_frag);
 
 	/* populate each free hash bucket with proper number of fragments */
 	for (sf = sorted_sf; sf; sf = sf->next) {
-		LM_INFO("[%d][%s] fraction: %.12lf total mem: %llu, %lu\n", sf->hash_index,
-		         hpb->free_hash[sf->hash_index].is_optimized ? "X" : " ",
-				 sf->amount, (unsigned long long) (sf->amount *
-				 hpb->size * mem_warming_percentage / 100),
-				 ROUNDTO * sf->hash_index);
-
 		current_frag_size = ROUNDTO * sf->hash_index;
 		bucket_mem = sf->amount * hpb->size * mem_warming_percentage / 100;
+
+		LM_INFO("[%d][%ld][%s] fraction: %.12lf total mem: %llu, %d\n",
+		        sf->hash_index, sf->fragments,
+		        hpb->free_hash[sf->hash_index].is_optimized ? "X" : " ",
+		        sf->amount, bucket_mem, current_frag_size);
 
 		/* create free fragments worth of 'bucket_mem' memory */
 		while (bucket_mem >= FRAG_OVERHEAD + current_frag_size) {

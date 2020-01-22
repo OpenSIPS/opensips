@@ -594,7 +594,8 @@ int rl_stats(mi_item_t *resp_obj, str * value)
 		pipe = RL_FIND_PIPE(i, *value);
 		if (!pipe || !*pipe) {
 			LM_DBG("pipe %.*s not found\n", value->len, value->s);
-			goto error;
+			RL_RELEASE_LOCK(i);
+			return 1;
 		}
 		pipe_item = add_mi_object(resp_obj, MI_SSTR("Pipe"));
 		if (!pipe_item)

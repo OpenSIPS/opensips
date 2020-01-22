@@ -1106,6 +1106,7 @@ static int w_ds_mark_dst(struct sip_msg *msg, str *flags, void *part)
 /************************** MI STUFF ************************/
 
 #define MI_ERR_RELOAD 			"ERROR Reloading data"
+#define MI_ERR_RELOAD_SYNC 		"ERROR Synchronizing from cluster"
 #define MI_NOT_SUPPORTED		"DB mode not configured"
 #define MI_UNK_PARTITION		"ERROR Unknown partition"
 
@@ -1251,6 +1252,9 @@ mi_response_t *ds_mi_reload(const mi_params_t *params,
 		if (ds_reload_db(part_it)<0)
 			return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
 
+	if (ds_cluster_id && ds_cluster_sync() < 0)
+		return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD_SYNC));
+
 	return init_mi_result_ok();
 }
 
@@ -1269,8 +1273,11 @@ mi_response_t *ds_mi_reload_1(const mi_params_t *params,
 		return init_mi_error(500, MI_SSTR(MI_UNK_PARTITION));
 	if (ds_reload_db(partition) < 0)
 		return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
-	else
-		return init_mi_result_ok();
+	
+	if (ds_cluster_id && ds_cluster_sync() < 0)
+		return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD_SYNC));
+
+	return init_mi_result_ok();
 }
 
 static int w_ds_is_in_list(struct sip_msg *msg, str *ip, int *port,

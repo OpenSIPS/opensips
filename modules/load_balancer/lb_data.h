@@ -47,6 +47,8 @@
 /* max number of IPs for a destination (DNS loookup) */
 #define LB_MAX_IPS  32
 
+extern rw_lock_t *ref_lock;
+
 struct lb_resource {
 	str name;
 	gen_lock_t *lock;
@@ -76,6 +78,7 @@ struct lb_dst {
 	unsigned short int protos[LB_MAX_IPS]; /* Protocol of the request URI */
 	unsigned short ips_cnt;
 	fs_evs *fs_sock;
+	str attrs;
 	struct lb_dst *next;
 };
 
@@ -90,14 +93,14 @@ struct lb_data {
 struct lb_data* load_lb_data(void);
 
 int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
-		char* resource, unsigned int flags);
+						char* resource, char* attrs, unsigned int flags);
 
 void free_lb_data(struct lb_data *data);
 
 int do_lb_start(struct sip_msg *req, int group, struct lb_res_str_list *rl,
-		unsigned int flags, struct lb_data *data);
+		unsigned int flags, struct lb_data *data, str *attrs);
 
-int do_lb_next(struct sip_msg *req, struct lb_data *data);
+int do_lb_next(struct sip_msg *req, struct lb_data *data, str *attrs);
 
 int do_lb_reset(struct sip_msg *req, struct lb_data *data);
 
@@ -107,7 +110,7 @@ int do_lb_disable_dst(struct sip_msg *req, struct lb_data *data,
 		unsigned int verbose);
 
 int lb_is_dst(struct lb_data *data, struct sip_msg *_m,
-				str *ip_str, int port, int group, int active);
+				str *ip_str, int port, int group, int active, str *attrs);
 
 int lb_count_call(struct lb_data *data, struct sip_msg *req,struct ip_addr *ip,
 					int port, int group, struct lb_res_str_list *rl, int dir);

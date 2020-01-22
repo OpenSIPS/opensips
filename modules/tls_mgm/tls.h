@@ -61,10 +61,19 @@
 	#warning ""
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+static int ssl_versions[TLS_USE_TLSv1_3 + 1];
+#elif OPENSSL_VERSION_NUMBER >= 0x10100000L
 static int ssl_versions[TLS_USE_TLSv1_2 + 1];
 #else
 static SSL_METHOD     *ssl_methods[TLS_USE_TLSv1_2 + 1];
+#endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L && defined __OS_linux
+#include <sys/types.h>
+#if (__GLIBC__ < 2) || (__GLIBC_MINOR__ < 30)
+#include <sys/syscall.h>
+#endif
 #endif
 
 #define VERIFY_DEPTH_S 3
@@ -120,16 +129,33 @@ static void os_free(void *ptr)
 
 
 
+inline static unsigned long tls_get_id(void)
+{
+#if defined __OS_linux
+#if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ >= 30)
+	return gettid();
+#else
+	return syscall(SYS_gettid);
+#endif
+#else /* __OS_linux */
+	return my_pid(); /* TODO: fix on non linux systems, where we have to
+						1. include a thread id alongside with the PID
+						2. alocate a new structure that indicates PID + thread id */
+#endif /* __OS_linux */
+}
+
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
+void tls_get_thread_id(CRYPTO_THREADID *tid)
+{
+	CRYPTO_THREADID_set_numeric(tid, tls_get_id());
+}
+#endif /* OPENSSL_VERSION_NUMBER */
+
 /* these locks can not be used in 1.1.0, because the interface has changed */
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 struct CRYPTO_dynlock_value {
 	gen_lock_t lock;
 };
-
-static unsigned long tls_get_id(void)
-{
-	return my_pid();
-}
 
 static struct CRYPTO_dynlock_value* tls_dyn_lock_create(const char* file,
 																	int line)

@@ -37,10 +37,9 @@ int set_core_dump(int enable, unsigned int size);
 int send_status_code(char val);
 void clean_read_pipeend(void);
 void clean_write_pipeend(void);
-int create_status_pipe(int no_timers);
+int create_status_pipe(void);
 int wait_for_one_child(void);
 int wait_for_all_children(void);
-void inc_init_timer(void);
 
 enum opensips_states {STATE_NONE, STATE_STARTING,
 	STATE_RUNNING, STATE_TERMINATING};

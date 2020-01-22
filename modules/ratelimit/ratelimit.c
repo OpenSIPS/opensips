@@ -629,7 +629,7 @@ mi_response_t *mi_stats(const mi_params_t *params,
 	if (!resp)
 		return 0;
 
-	if (rl_stats(resp_obj, NULL)) {
+	if (rl_stats(resp_obj, NULL) < 0) {
 		LM_ERR("cannot mi print values\n");
 		goto free;
 	}
@@ -654,6 +654,7 @@ mi_response_t *mi_stats_1(const mi_params_t *params,
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
 	str pipe_name;
+	int rc;
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
@@ -662,9 +663,12 @@ mi_response_t *mi_stats_1(const mi_params_t *params,
 	if (get_mi_string_param(params, "pipe", &pipe_name.s, &pipe_name.len) < 0)
 		return init_mi_param_error();
 
-	if (rl_stats(resp_obj, &pipe_name)) {
+	rc = rl_stats(resp_obj, &pipe_name);
+	if (rc < 0) {
 		LM_ERR("cannot mi print values\n");
 		goto free;
+	} else if (rc == 1) {
+		return init_mi_error(404, MI_SSTR("Pipe Not Found"));
 	}
 
 	LOCK_GET(rl_lock);

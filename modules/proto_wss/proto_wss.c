@@ -59,7 +59,9 @@ static struct tcp_req tcp_current_req;
 
 static struct ws_req wss_current_req;
 
-int wss_hs_read_tout = 100;
+static int wss_hs_read_tout = 100;
+static int wss_hs_tls_tout = 100;
+static int wss_send_tout = 100;
 
 /* check the SSL certificate when comes to TCP conn reusage */
 static int cert_check_on_conn_reusage = 0;
@@ -128,9 +130,11 @@ static param_export_t params[] = {
 	/* XXX: should we drop the ws prefix? */
 	{ "wss_port",           INT_PARAM, &wss_port           },
 	{ "wss_max_msg_chunks", INT_PARAM, &wss_max_msg_chunks },
-	{ "wss_resource",       STR_PARAM, &wss_resource       },
+	{ "wss_resource",       STR_PARAM, &wss_resource.s     },
+	{ "wss_send_timeout",   INT_PARAM, &wss_send_tout      },
 	{ "wss_handshake_timeout", INT_PARAM, &wss_hs_read_tout},
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
+	{ "wss_tls_handshake_timeout",  INT_PARAM, &wss_hs_tls_tout           },
 	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
 	{ "trace_filter_route",			STR_PARAM, &trace_filter_route        },
 	{ "cert_check_on_conn_reusage",	INT_PARAM, &cert_check_on_conn_reusage},
@@ -210,6 +214,8 @@ static int proto_wss_init(struct proto_info *pi)
 static int mod_init(void)
 {
 	LM_INFO("initializing Secure WebSocket protocol\n");
+
+	wss_resource.len = strlen(wss_resource.s);
 
 	if(load_tls_mgm_api(&tls_mgm_api) != 0){
 		LM_DBG("failed to find tls API - is tls_mgm module loaded?\n");
@@ -295,12 +301,10 @@ static int wss_conn_init(struct tcp_connection* c)
 
 static void ws_conn_clean(struct tcp_connection* c)
 {
-	struct ws_data *d = (struct ws_data*)c->proto_data;
-
-	if (d) {
+	if (c->proto_data) {
 
 		if (c->state == S_CONN_OK && !is_tcp_main) {
-			switch (d->code) {
+			switch (((struct ws_data*)c->proto_data)->code) {
 			case WS_ERR_NOSEND:
 				break;
 			case WS_ERR_NONE:
@@ -311,7 +315,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 			}
 		}
 
-		shm_free(d);
+		shm_free(c->proto_data);
 		c->proto_data = NULL;
 
 	}
@@ -635,7 +639,8 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #ifndef TLS_DONT_WRITE_FRAGMENTS
 	lock_get(&c->write_lock);
 	for (i = 0; i < iovcnt; i++) {
-		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len, &tls_mgm_api, t_dst);
+		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len,
+				wss_hs_tls_tout, wss_send_tout, t_dst);
 		if (n < 0) {
 			ret = -1;
 			goto end;
@@ -657,7 +662,8 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 		n += iov[i].iov_len;
 	}
 	lock_get(&c->write_lock);
-	n = tls_blocking_write(c, fd, buf, n, &tls_mgm_api);
+	n = tls_blocking_write(c, fd, buf, n,
+				wss_hs_tls_tout, wss_send_tout, t_dst);
 #endif /* TLS_DONT_WRITE_FRAGMENTS */
 
 end:

@@ -33,6 +33,8 @@
 #include <string.h>
 #include <hiredis/hiredis.h>
 
+#define QUERY_ATTEMPTS 2
+
 int redis_query_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int redis_connnection_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int shutdown_on_error = 0;
@@ -275,10 +277,10 @@ void redis_destroy(cachedb_con *con) {
 				return -1; \
 			} \
 		} \
-		for (i=2;i;i--) { \
+		for (i = QUERY_ATTEMPTS; i; i--) { \
 			reply = redisCommand(node->context,fmt,##args); \
 			if (reply == NULL || reply->type == REDIS_REPLY_ERROR) { \
-				LM_ERR("Redis operation failure - %p %.*s\n",\
+				LM_INFO("Redis query failed: %p %.*s\n",\
 					reply,reply?(unsigned)reply->len:7,reply?reply->str:"FAILURE"); \
 				if (reply) \
 					freeReplyObject(reply); \
@@ -291,6 +293,9 @@ void redis_destroy(cachedb_con *con) {
 			LM_ERR("giving up on query\n"); \
 			return -1; \
 		} \
+		if (i != QUERY_ATTEMPTS) \
+			LM_INFO("successfully ran query after %d failed attempt(s)\n", \
+			        QUERY_ATTEMPTS - i); \
 	} while (0)
 
 int redis_get(cachedb_con *connection,str *attr,str *val)
@@ -675,10 +680,10 @@ int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entr
 	end = attr->s[attr->len];
 	attr->s[attr->len] = 0;
 
-	for (i=2;i;i--) {
+	for (i = QUERY_ATTEMPTS; i; i--) {
 		*reply = redisvCommand(node->context,attr->s,ap);
 		if (*reply == NULL || (*reply)->type == REDIS_REPLY_ERROR) {
-			LM_ERR("Redis operation failure - %.*s\n",
+			LM_INFO("Redis query failed: %.*s\n",
 				*reply?(unsigned)((*reply)->len):7,*reply?(*reply)->str:"FAILURE");
 			if (*reply)
 				freeReplyObject(*reply);
@@ -695,6 +700,10 @@ int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entr
 		LM_ERR("giving up on query\n");
 		return -1;
 	}
+
+	if (i != QUERY_ATTEMPTS)
+		LM_INFO("successfully ran query after %d failed attempt(s)\n",
+		        QUERY_ATTEMPTS - i);
 
 	return 0;
 }

@@ -32,6 +32,9 @@
 #define LB_DST_URI_COL   "dst_uri"
 #define LB_RESOURCES_COL "resources"
 #define LB_PMODE_COL     "probe_mode"
+#define LB_ATTRS_COL     "attrs"
+
+#define LB_NO_COLS 6
 
 #include "../../str.h"
 #include "lb_data.h"

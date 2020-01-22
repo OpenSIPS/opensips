@@ -29,6 +29,7 @@
 #include "../../ut.h"
 
 #include "sipluafunc.h"
+#include "compat.h"
 
 #if !defined(LIBMEMCACHED_VERSION_HEX) || LIBMEMCACHED_VERSION_HEX < 0x00037000
 typedef memcached_return memcached_return_t;
@@ -324,7 +325,7 @@ int l_sipmemcache_multi_get(lua_State *L)
   return 1;
 }
 
-static const struct luaL_reg siplua_memcache_mylib [] =
+static const struct luaL_Reg siplua_memcache_mylib [] =
   {
     {"server_add", l_sipmemcache_server_add},
     {"add", l_sipmemcache_add},

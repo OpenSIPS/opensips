@@ -36,4 +36,7 @@ int lb_cluster_shtag_is_active(void);
 /* replicate the LB status via BIN */
 void replicate_lb_status(struct lb_dst *dst);
 
+/* request sync of destination states from cluster */
+int lb_cluster_sync(void);
+
 #endif

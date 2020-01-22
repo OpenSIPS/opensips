@@ -447,7 +447,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 	}
 
 	destroy_linkers(dlg);
-	remove_dlg_prof_table(dlg, 1);
+	remove_dlg_prof_table(dlg, 0);
 
 	/* simulate BYE received from caller */
 	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_DOWNSTREAM, &old_state,
@@ -926,7 +926,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 
 				dlg_unlock(d_table, &d_table->entries[i]);
 
-				remove_dlg_prof_table(dlg, 0);
+				remove_dlg_prof_table(dlg, 1);
 
 				dlg_lock(d_table, &d_table->entries[i]);
 
@@ -1111,9 +1111,20 @@ void receive_prof_repl(bin_packet_t *packet)
 		if (!old_profile || old_name.len != name.len ||
 			memcmp(name.s, old_name.s, name.len) != 0) {
 			old_profile = get_dlg_profile(&name);
-			if (!old_profile)
+			if (!old_profile) {
 				LM_WARN("received unknown profile <%.*s> from node %d\n",
 					name.len, name.s, packet->src_id);
+
+				if (bin_pop_int(packet, &has_value) < 0) {
+					LM_ERR("cannot pop profile's has_value int\n");
+					return;
+				}
+				if (has_value)
+					bin_skip_str(packet, 1);
+				bin_skip_int(packet, 1);
+
+				continue;
+			}
 			old_name = name;
 		}
 		profile = old_profile;

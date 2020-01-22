@@ -467,6 +467,51 @@ route[tls_filter] {
 		</example>
 	</section>
 
+	<section id="param_tls_handshake_timeout" xreflabel="tls_handshake_timeout">
+		<title><varname>tls_handshake_timeout</varname> (integer)</title>
+		<para>
+		Sets the timeout (in milliseconds) for the SSL handshake sequence to complete.
+			It may be necessary to increase this value when using a CPU intensive cipher
+			for the connection to allow time for keys to be generated and processed.
+		</para>
+		<para>
+		The timeout is invoked during acceptance of a new connection (inbound) and
+			during the wait period when a new session is being initiated (outbound).
+		</para>
+		<para><emphasis>
+			Default value is 100.
+		</emphasis></para>
+		<example>
+			<title>Set <varname>tls_handshake_timeout</varname> variable</title>
+			<programlisting format="linespecific">
+
+param("proto_tls", "tls_handshake_timeout", 200) # number of milliseconds
+
+			</programlisting>
+		</example>
+	</section>
+
+	<section id="param_tls_send_timeout" xreflabel="tls_send_timeout">
+		<title><varname>tls_send_timeout</varname> (integer)</title>
+		<para>
+			Sets the timeout (in milliseconds) for the send operations to complete
+		</para>
+		<para>
+			The send timeout is invoked for all TLS write operations, excluding
+			the handshake process (see: tls_handshake_timeout)
+		</para>
+		<para><emphasis>
+			Default value is 100.
+		</emphasis></para>
+		<example>
+			<title>Set <varname>tls_send_timeout</varname> variable</title>
+			<programlisting format="linespecific">
+
+param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
+
+			</programlisting>
+		</example>
+	</section>
 	</section>
 
 

@@ -219,12 +219,16 @@ int build_str_hdr(subs_t* subs, int is_body, str* hdr, str *ct_body,
 		p += CRLF_LEN;
 	}
 
-	if(is_body && subs->event->content_type.s && subs->event->content_type.len)
+	if (!ct_body->len &&
+		subs->event->content_type.s && subs->event->content_type.len)
+		ct_body = &subs->event->content_type;
+
+	if(is_body && ct_body->len)
 	{
 		memcpy(p,"Content-Type: ", 14);
 		p += 14;
-		memcpy(p, subs->event->content_type.s , subs->event->content_type.len);
-		p += subs->event->content_type.len;
+		memcpy(p, ct_body->s , ct_body->len);
+		p += ct_body->len;
 		memcpy(p, CRLF, CRLF_LEN);
 		p += CRLF_LEN;
 	}
@@ -1996,6 +2000,7 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 	str* aux_body = 0;
 	free_body_t* free_fct = 0;
 	str ct_body = {NULL,0};
+	int suppress_notify = 0;
 
 	LM_DBG("enter: have_body=%d force_null=%d dialog info:\n",
 	  (n_body!=0&&n_body->s!=0)?1:0, force_null_body);
@@ -2050,8 +2055,11 @@ int send_notify_request(subs_t* subs, subs_t * watcher_subs,
 				if (from_publish && n_body!= 0 && n_body->s!= 0) {
 					notify_body = n_body;
 				} else if (subs->event->build_notify_body) {
-					notify_body = subs->event->build_notify_body(
-						&subs->pres_uri, &subs->subs_body, &ct_body);
+					notify_body = subs->event->build_notify_body(&subs->pres_uri,
+						&subs->subs_body, &ct_body, &suppress_notify);
+					if (suppress_notify)
+						return 0;
+					free_fct = subs->event->free_body;
 				} else {
 					notify_body = get_p_notify_body(subs->pres_uri,
 							subs->event, 0, 0, (subs->contact.s)?&subs->contact:NULL,
@@ -2200,8 +2208,8 @@ error:
 				if(subs->event->type& WINFO_TYPE)
 					xmlFree(notify_body->s);
 				else
-				if(subs->event->apply_auth_nbody== NULL && subs->event->agg_nbody== NULL)
-					pkg_free(notify_body->s);
+				if(free_fct)
+					free_fct(notify_body->s);
 				else
 				subs->event->free_body(notify_body->s);
 			}

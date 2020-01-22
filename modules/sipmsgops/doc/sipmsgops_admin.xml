@@ -929,13 +929,19 @@ add_body_part("Hello World!", "text/plain");
 				</para></listitem>
 				<listitem><para><emphasis>-22</emphasis> - To header parse error
 				</para></listitem>
-				<listitem><para><emphasis>-23</emphasis> - From header parse error
+				<listitem><para><emphasis>-23</emphasis> - Bad hostname in To header
 				</para></listitem>
-				<listitem><para><emphasis>-24</emphasis> - Bad hostname in To header
+				<listitem><para><emphasis>-24</emphasis> - From header parse error
 				</para></listitem>
 				<listitem><para><emphasis>-25</emphasis> - Bad hostname in From header
 				</para></listitem>
 				<listitem><para><emphasis>-26</emphasis> - Contact header parse error
+				</para></listitem>
+				<listitem><para><emphasis>-27</emphasis> - Bad URI username
+				</para></listitem>
+				<listitem><para><emphasis>-28</emphasis> - Bad From URI username
+				</para></listitem>
+				<listitem><para><emphasis>-29</emphasis> - Bad To URI username
 				</para></listitem>
 				<listitem><para><emphasis>-255</emphasis> - undefined errors.
 				</para></listitem>

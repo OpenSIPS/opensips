@@ -171,8 +171,12 @@ static str ws_rand_key(void)
 	static str key = { ws_key, WS_KEY_LEN };
 	int i;
 
-	for (i = 0; i < WS_KEY_LEN; i++)
+	/* randomly selected 16-byte base64 encoded value requires
+	 * 22 characters and 2 paddings at the end */
+	for (i = 0; i < WS_KEY_LEN - 2; i++)
 		ws_key[i] = base64alphabet[rand() % BASE64ALPHABET_LEN];
+	ws_key[i++] = '=';
+	ws_key[i++] = '=';
 
 	return key;
 }
@@ -912,10 +916,17 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 
 				str_trim_spaces_lr(hf->body);
 
-				/* the key is already in the buffer, so we can just copy it */
-				WS_KEY(c) = hf->body;
-
-				flags |= WS_KEY_F;
+				/* RFC-6455 4.1: Opening Handshake: Client Requirements
+				 * 7.  The request MUST include a header field with the name
+				 *     |Sec-WebSocket-Key|.  The value of this header field MUST be a
+				 *     nonce consisting of a randomly selected 16-byte value that has
+				 *     been base64-encoded (see Section 4 of [RFC4648]).  The nonce
+				 *     MUST be selected randomly for each connection. */
+				if (hf->body.len == WS_KEY_LEN) {
+					/* the key is already in the buffer, so we can just copy it */
+					WS_KEY(c) = hf->body;
+					flags |= WS_KEY_F;
+				}
 			} else if (hf->name.len == HDR_LEN("Sec-WebSocket-Version") &&
 					GET_LOWER(hf->name.s + 14) == 'v' &&
 					GET_LOWER(hf->name.s + 15) == 'e' &&
@@ -967,7 +978,8 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 		if (flags & WS_ORIGIN_F)
 			LM_ERR("Origin header not present!\n");
 		if (flags & WS_KEY_F)
-			LM_ERR("Sec-WebSocket-Key header not present!\n");
+			LM_ERR("Sec-WebSocket-Key header not present or does not "
+					"have the desired length (%d)!\n", WS_KEY_LEN);
 		if (flags & WS_VER_F)
 			LM_ERR("Sec-WebSocket-Version header not present!\n");
 		if (flags & WS_PROTO_F)

@@ -1978,6 +1978,9 @@ mi_response_t *dr_reload_cmd(const mi_params_t *params,
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
 
+	if (dr_cluster_id && dr_cluster_sync() < 0)
+		return init_mi_error(500, MI_SSTR("Failed to synchronize states from cluster"));
+
 	return init_mi_result_ok();
 }
 
@@ -1997,6 +2000,9 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 		LM_CRIT("Failed to load data head\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
+
+	if (dr_cluster_id && dr_cluster_sync() < 0)
+		return init_mi_error(500, MI_SSTR("Failed to synchronize from cluster"));
 
 	return init_mi_result_ok();
 }
@@ -2375,12 +2381,27 @@ fallback_failed:
 }
 
 
-#define DR_MAX_GWLIST	64
+#define resize_dr_sort_buffer( _buf, _old_size, _new_size, _error) \
+	do { \
+		if (_new_size > _old_size) { \
+			/* need a larger buffer */ \
+			_buf = (unsigned short*)pkg_realloc( _buf, \
+				_new_size *sizeof(unsigned short) ); \
+			if (_buf==NULL) { \
+				LM_ERR("no more pkg mem (needed  %ld)\n", \
+					_new_size*sizeof(unsigned short));\
+				_old_size = 0; \
+				goto _error;\
+			}\
+			_old_size = _new_size; \
+		} \
+	}while(0) \
 
 static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 		int weight, unsigned short *idx)
 {
-	unsigned short running_sum[DR_MAX_GWLIST];
+	static unsigned short *running_sum = NULL;
+	static unsigned short sum_buf_size = 0;
 	unsigned int i, first, weight_sum, rand_no;
 
 	/* populate the index array */
@@ -2391,6 +2412,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 		return 0;
 
 	while (size-first>1) {
+		resize_dr_sort_buffer( running_sum, sum_buf_size, size, err);
 		/* calculate the running sum */
 		for( i=first,weight_sum=0 ; i<size ; i++ ) {
 			weight_sum += pgwl[ idx[i] ].weight ;
@@ -2407,7 +2429,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 				if (running_sum[i]>rand_no) break;
 			if (i==size) {
 				LM_CRIT("bug in weight sort\n");
-				return -1;
+				goto err;
 			}
 		} else {
 			/* randomly select index */
@@ -2425,6 +2447,8 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 	}
 
 	return 0;
+err:
+	return -1;
 }
 
 
@@ -2576,8 +2600,10 @@ struct head_db * get_partition(const str *name)
 static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 													int flags, str* whitelist)
 {
-	unsigned short dsts_idx[DR_MAX_GWLIST];
-	unsigned short carrier_idx[DR_MAX_GWLIST];
+	static unsigned short *dsts_idx = NULL;
+	static unsigned short dsts_idx_size = 0;
+	static unsigned short *carrier_idx = NULL;
+	static unsigned short carrier_idx_size = 0;
 	struct to_body  *from;
 	struct sip_uri  uri;
 	rt_info_t  *rt_info;
@@ -2604,28 +2630,27 @@ static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 	wl_list = NULL;
 	rt_info = NULL;
 
-	if (use_partitions) {
-		if (part==NULL) {   /* WILDCARD partition */
-			for (current_partition = head_db_start;
-			current_partition; current_partition = current_partition->next) {
-				ret=do_routing( msg, part, grp, flags, whitelist);
-				if (ret > 0) {
-					if (partition_pvar.s) {
-						pv_val.rs = current_partition->partition;
-						pv_val.flags = PV_VAL_STR;
-						if (pv_set_value(msg, &partition_spec, 0, &pv_val) != 0) {
-							LM_ERR("cannot print the PV-formatted"
-									" partition string\n");
-							return -1;
-						}
+	if (use_partitions && part==NULL) {
+		/* WILDCARD partition */
+		for (current_partition = head_db_start;
+		current_partition; current_partition = current_partition->next) {
+			ret=do_routing( msg, current_partition, grp, flags, whitelist);
+			if (ret > 0) {
+				if (partition_pvar.s) {
+					pv_val.rs = current_partition->partition;
+					pv_val.flags = PV_VAL_STR;
+					if (pv_set_value(msg, &partition_spec, 0, &pv_val) != 0) {
+						LM_ERR("cannot print the PV-formatted"
+								" partition string\n");
+						return -1;
 					}
-					break;
 				}
+				break;
 			}
-
-			/* ret must be less than 0 here if nothing found */
-			return ret;
 		}
+
+		/* ret must be less than 0 here if nothing found */
+		return ret;
 	} else {
 		current_partition = part;
 	}
@@ -2812,6 +2837,7 @@ search_again:
 	}
 
 	/* sort the destination elements in the rule */
+	resize_dr_sort_buffer( dsts_idx, dsts_idx_size, rt_info->pgwa_len, error2);
 	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len,
 			flags&DR_PARAM_USE_WEIGTH, dsts_idx);
 	if (i!=0) {
@@ -2851,6 +2877,8 @@ search_again:
 				continue;
 
 			/* sort the gws of the carrier */
+			resize_dr_sort_buffer( carrier_idx, carrier_idx_size,
+				dst->dst.carrier->pgwa_len, skip);
 			j = sort_rt_dst(dst->dst.carrier->pgwl, dst->dst.carrier->pgwa_len,
 					dst->dst.carrier->flags&DR_CR_FLAG_WEIGHT, carrier_idx);
 			if (j!=0) {
@@ -2891,6 +2919,8 @@ search_again:
 				}
 
 			}
+			skip:
+			;
 
 		} else {
 
@@ -3076,7 +3106,8 @@ error1:
 static int route2_carrier(struct sip_msg* msg, str* ids,
 				pv_spec_t* gw_att, pv_spec_t* carr_att, struct head_db *part)
 {
-	unsigned short carrier_idx[DR_MAX_GWLIST];
+	static unsigned short *carrier_idx;
+	static unsigned short carrier_idx_size;
 	struct sip_uri  uri;
 	pgw_list_t *cdst;
 	pcr_t *cr;
@@ -3180,6 +3211,8 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 			continue;
 
 		/* sort the gws of the carrier */
+		resize_dr_sort_buffer( carrier_idx, carrier_idx_size,
+			cr->pgwa_len, skip);
 		j = sort_rt_dst( cr->pgwl, cr->pgwa_len, cr->flags&DR_CR_FLAG_WEIGHT,
 				carrier_idx);
 		if (j!=0) {
@@ -3219,6 +3252,9 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 			}
 
 		}
+
+		skip:
+		;
 
 	}
 
@@ -3803,12 +3839,19 @@ static mi_response_t *mi_dr_list_gw(struct head_db *current_partition,
 	if (!resp)
 		return 0;
 
+	if (gw->attrs.s != NULL && gw->attrs.len > 0)
+		if (add_mi_string(resp_obj, MI_SSTR("ATTRS"),
+			gw->attrs.s,gw->attrs.len) < 0)
+			goto error;
+
 	if (mi_dr_print_gw_state(gw, resp_obj) < 0) {
-		free_mi_response(resp);
-		return 0;
+		goto error;
 	}
 
 	return resp;
+error:
+	free_mi_response(resp);
+	return 0;
 }
 
 static mi_response_t *mi_dr_list_all_gw(struct head_db *current_partition)
@@ -3853,6 +3896,10 @@ static mi_response_t *mi_dr_list_all_gw(struct head_db *current_partition)
 			goto error;
 		if (add_mi_string(gw_item, MI_SSTR("IP"), gw->ip_str.s, gw->ip_str.len) < 0)
 			goto error;
+		if (gw->attrs.s != NULL && gw->attrs.len > 0)
+			if (add_mi_string(gw_item, MI_SSTR("ATTRS"),
+				gw->attrs.s,gw->attrs.len) < 0)
+				goto error;
 		if (mi_dr_print_gw_state(gw, gw_item) < 0)
 			goto error;
 	}
@@ -4003,13 +4050,20 @@ static mi_response_t *mi_dr_list_cr(struct head_db *current_partition,
 	if (!resp)
 		return 0;
 
+	if (cr->attrs.s != NULL && cr->attrs.len > 0)
+		if (add_mi_string(resp_obj, MI_SSTR("ATTRS"),
+			cr->attrs.s,cr->attrs.len) < 0)
+			goto error;
+
 	if (add_mi_string(resp_obj, MI_SSTR("Enabled"),
 		MI_SSTR((cr->flags&DR_CR_FLAG_IS_OFF) ? "no " : "yes")) < 0) {
-		free_mi_response(resp);
-		return 0;
+		goto error;
 	}
 
 	return resp;
+error:
+	free_mi_response(resp);
+	return 0;
 }
 
 static mi_response_t *mi_dr_list_all_cr(struct head_db *current_partition)
@@ -4052,6 +4106,11 @@ static mi_response_t *mi_dr_list_all_cr(struct head_db *current_partition)
 
 		if (add_mi_string(cr_item, MI_SSTR("ID"), cr->id.s, cr->id.len) < 0)
 			goto error;
+
+		if (cr->attrs.s != NULL && cr->attrs.len > 0)
+			if (add_mi_string(cr_item, MI_SSTR("ATTRS"),
+				cr->attrs.s,cr->attrs.len) < 0)
+				goto error;
 
 		if (add_mi_string(cr_item, MI_SSTR("Enabled"),
 			MI_SSTR((cr->flags&DR_CR_FLAG_IS_OFF) ? "no " : "yes")) < 0)

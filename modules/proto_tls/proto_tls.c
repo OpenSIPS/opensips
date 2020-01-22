@@ -104,6 +104,9 @@ static int tls_crlf_drop = 0;
 /* check the SSL certificate when comes to TCP conn reusage */
 static int cert_check_on_conn_reusage = 0;
 
+static int tls_handshake_tout = 100;
+static int tls_send_tout = 100;
+
 static int  mod_init(void);
 static void mod_destroy(void);
 static int proto_tls_init(struct proto_info *pi);
@@ -126,7 +129,8 @@ static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *bu
 	int ret;
 
 	lock_get(&c->write_lock);
-	ret = tls_blocking_write(c, fd, buf, len, &tls_mgm_api, t_dst);
+	ret = tls_blocking_write(c, fd, buf, len,
+			tls_handshake_tout, tls_send_tout, t_dst);
 	lock_release(&c->write_lock);
 	return ret;
 }
@@ -151,6 +155,7 @@ trace_proto_t tprot;
 static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
 static int trace_filter_route_id = -1;
+
 /**/
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read);
@@ -168,6 +173,8 @@ static param_export_t params[] = {
 	{ "tls_crlf_pingpong",     INT_PARAM,         &tls_crlf_pingpong         },
 	{ "tls_crlf_drop",         INT_PARAM,         &tls_crlf_drop             },
 	{ "tls_max_msg_chunks",    INT_PARAM,         &tls_max_msg_chunks        },
+	{ "tls_send_timeout",      INT_PARAM,         &tls_send_tout             },
+	{ "tls_handshake_timeout", INT_PARAM,         &tls_handshake_tout        },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
 	{ "trace_filter_route",			STR_PARAM, &trace_filter_route        },
@@ -359,10 +366,8 @@ out:
 
 static void proto_tls_conn_clean(struct tcp_connection* c)
 {
-	struct tls_data *data = (struct tls_data*)c->proto_data;
-
-	if (data) {
-		shm_free(data);
+	if (c->proto_data) {
+		shm_free(c->proto_data);
 		c->proto_data = NULL;
 	}
 
@@ -493,7 +498,8 @@ send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
 	lock_get(&c->write_lock);
-	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api, t_dst);
+	n = tls_blocking_write(c, fd, buf, len,
+			tls_handshake_tout, tls_send_tout, t_dst);
 	lock_release(&c->write_lock);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 

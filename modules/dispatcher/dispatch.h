@@ -202,9 +202,9 @@ int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock, int m
 int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl, ds_selected_dst_p selected_dst, int ds_flags);
 int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 #define ds_set_state(_group, _address, _state, _type, _partition) \
-	ds_set_state_repl(_group, _address, _state, _type, _partition, 1)
+	ds_set_state_repl(_group, _address, _state, _type, _partition, 1, 0)
 int ds_set_state_repl(int group, str *address, int state, int type,
-		ds_partition_t *partition, int do_repl);
+		ds_partition_t *partition, int do_repl, int is_sync);
 int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition);
 int ds_print_mi_list(mi_item_t *part_item, ds_partition_t *partition, int full);
 int ds_count(struct sip_msg *msg, int set_id, void *_cmp, pv_spec_p ret,

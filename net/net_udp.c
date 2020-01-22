@@ -276,7 +276,8 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 			handle_timer_job();
 			break;
 		case F_SCRIPT_ASYNC:
-			async_script_resume_f( fm->fd, fm->data);
+			async_script_resume_f( fm->fd, fm->data,
+				(event_type==IO_WATCH_TIMEOUT)?1:0 );
 			break;
 		case F_FD_ASYNC:
 			async_fd_resume( fm->fd, fm->data);

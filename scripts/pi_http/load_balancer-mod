@@ -9,6 +9,7 @@
 				<col><field>dst_uri</field></col>
 				<col><field>resources</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -20,6 +21,7 @@
 				<col><field>dst_uri</field></col>
 				<col><field>resources</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>
@@ -34,6 +36,7 @@
 				<col><field>dst_uri</field></col>
 				<col><field>resources</field></col>
 				<col><field>probe_mode</field></col>
+				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
 		</cmd>

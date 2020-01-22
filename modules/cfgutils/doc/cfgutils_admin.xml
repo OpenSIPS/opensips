@@ -738,6 +738,46 @@ if (!release_dynamic_lock($avp(foo)) {
 </programlisting>
 		</example>
 	</section>
+
+	<section id="func_get_accurate_time" xreflabel="get_accurate_time()">
+		<title>
+		<function moreinfo="none">get_accurate_time(sec, usec, [str_sec_usec])</function>
+		</title>
+		<para>
+		Fetch the current UNIX time epoch with microsecond precision.
+		Optionally, print this value as a floating point number (3rd parameter).
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>sec (int)</emphasis> - the current UNIX timestamp (integer part)
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>usec (int)</emphasis> - the current UNIX timestamp (decimal part)
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>str_sec_usec (string, optional)</emphasis> - the current UNIX
+					timestamp as a floating point number (6-digit precision)
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE,
+		BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE, EVENT_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">get_accurate_time</function> usage</title>
+		<programlisting format="linespecific">
+...
+get_accurate_time($var(sec), $var(usec));
+xlog("Current UNIX timestamp: $var(sec) s, $var(usec) us\n");
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>

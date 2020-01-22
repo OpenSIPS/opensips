@@ -1762,7 +1762,7 @@ void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
 	struct sip_msg *req = params->req;
 	int code = rpl->first_line.u.reply.statuscode;
 
-	LM_DBG("request -------------- \n%s\nxxx: \n", req->buf);
+	LM_DBG("request -------------- \n%s\n", req->buf);
 	LM_DBG("reply: %d -------------- \n%s\n", code, rpl->buf);
 
 	lock_start_write(mri->tm_lock);
@@ -2579,6 +2579,11 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 	if (msg->REQ_METHOD != METHOD_REGISTER) {
 		LM_ERR("ignoring non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
 		return -1;
+	}
+
+	if (((int (*)(struct sip_msg *))tm_api.t_check_trans)(msg) == 0) {
+		LM_INFO("absorbing retransmission, use t_check_trans() earlier!\n");
+		return 0;
 	}
 
 	rerrno = R_FINE;

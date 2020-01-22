@@ -38,4 +38,7 @@ int ds_cluster_shtag_is_active(void);
 void replicate_ds_status_event(str *partition, int group, str *address,
 		int state, int type);
 
+/* request sync of destinations states from cluster */
+int ds_cluster_sync(void);
+
 #endif

@@ -214,23 +214,43 @@ int tlsp_set_method(modparam_t type, void *in)
 {
 	str name;
 	str val;
-	int method;
+	str val_max;
+	enum tls_method method;
+	char *s;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
 		return -1;
 
-	if (strcasecmp(val.s, "SSLV23")==0 || strcasecmp(val.s, "TLSany")==0 )
-		method = TLS_USE_SSLv23;
-	else if (strcasecmp(val.s, "TLSV1")==0 )
-		method = TLS_USE_TLSv1;
-	else if (strcasecmp(val.s, "TLSV1_2")==0 )
-		method = TLS_USE_TLSv1_2;
-	else {
+
+	/* search for a '-' to denote an interval */
+	s = q_memchr(val.s, '-', val.len);
+	if (s) {
+		val_max.s = s + 1;
+		val.len = s - val.s;
+		val_max.len = val.len - (s - val.s) - 1;
+		val.len = s - val.s;
+		trim(&val_max);
+	}
+	trim(&val);
+	method = parse_ssl_method(&val);
+	if (method < 0) {
 		LM_ERR("unsupported method [%s]\n",val.s);
 		return -1;
 	}
 
 	set_domain_attr(name, method, method);
+	if (s) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+		method = parse_ssl_method(&val_max);
+		if (method < 0) {
+			LM_ERR("unsupported method [%s]\n",val_max.s);
+			return -1;
+		}
+#else
+		LM_WARN("TLS method range not supported for versions lower than 1.1.0\n");
+#endif
+	}
+	set_domain_attr(name, method_max, method);
 
 	return 1;
 }

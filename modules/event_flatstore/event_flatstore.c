@@ -54,6 +54,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 static int *opened_fds;
 static int *rotate_version;
+
 static int buff_convert_len;
 static int cap_params;
 static str delimiter;
@@ -61,8 +62,9 @@ static char *dirc;
 static int dir_size;
 static char *buff;
 static struct iovec *io_param ;
-static struct flat_socket **list_files;
-static struct flat_deleted **list_deleted_files;
+static struct flat_socket **list_sockets;
+static struct flat_file **list_files;
+static struct flat_delete **list_delete;
 static gen_lock_t *global_lock;
 static int initial_capacity = FLAT_DEFAULT_MAX_FD;
 static int suppress_event_name = 0;
@@ -137,11 +139,33 @@ static int mod_init(void) {
 		return -1;
 	}
 
-	list_files =  shm_malloc(sizeof(struct flat_socket*) + sizeof(struct flat_deleted*));
+	list_files =  shm_malloc(sizeof(struct flat_file*));
+	if (!list_files) {
+		LM_ERR("oom!\n");
+		return -1;
+	}
 	*list_files = NULL;
+
+	list_delete =  shm_malloc(sizeof(struct flat_delete*));
+	if (!list_delete) {
+		LM_ERR("oom!\n");
+		return -1;
+	}
+	*list_delete = NULL;
+
+	list_sockets =  shm_malloc(sizeof(struct flat_socket*));
+	if (!list_sockets) {
+		LM_ERR("oom!\n");
+		return -1;
+	}
+	*list_sockets = NULL;
 
 	if (!delimiter.s) {
 		delimiter.s = pkg_malloc(sizeof(char));
+		if (!delimiter.s) {
+			LM_ERR("oom!\n");
+			return -1;
+		}
 		delimiter.s[0] = ',';
 		delimiter.len = 1;
 	} else {
@@ -168,14 +192,6 @@ static int mod_init(void) {
 
 	LM_DBG("file permissions set to: %o\n", file_permissions_oct);
 
-	if (!list_files) {
-		LM_ERR("no more memory for list pointer\n");
-		return -1;
-	}
-
-	list_deleted_files = (struct flat_deleted**)(list_files + 1);
-	*list_deleted_files = NULL;
-
 	global_lock = lock_alloc();
 
 	if (global_lock == NULL) {
@@ -189,7 +205,15 @@ static int mod_init(void) {
 	}
 
 	opened_fds = pkg_malloc(initial_capacity * sizeof(int));
+	if (!opened_fds) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 	rotate_version = pkg_malloc(initial_capacity * sizeof(int));
+	if (!rotate_version) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 
 	memset(rotate_version, 0, initial_capacity * sizeof(int));
 
@@ -201,10 +225,12 @@ static int mod_init(void) {
 
 /* free allocated memory */
 static void destroy(void){
-	struct flat_socket* list_header = *list_files;
+	struct flat_socket* list_header = *list_sockets;
 	struct flat_socket* tmp;
-	struct flat_deleted *deleted_header = *list_deleted_files;
-	struct flat_deleted *aux;
+	struct flat_file* file_it = *list_files;
+	struct flat_file* file_tmp;
+	struct flat_delete* del_it = *list_delete;
+	struct flat_delete* del_tmp;
 
 	LM_NOTICE("destroying module ...\n");
 
@@ -212,21 +238,32 @@ static void destroy(void){
 	lock_destroy(global_lock);
 	lock_dealloc(global_lock);
 
-	/* free file descriptors list from shared memory */
+	/* free files list from shared memory */
+	while (file_it != NULL) {
+		file_tmp = file_it;
+		file_it = file_it->next;
+		shm_free(file_tmp);
+	}
+
+	shm_free(list_files);
+
+	/* free delete list from shared memory */
+	while (del_it != NULL) {
+		del_tmp = del_it;
+		del_it = del_it->next;
+		shm_free(del_tmp);
+	}
+
+	shm_free(list_delete);
+
+	/* free flatstore sockets list from shared memory */
 	while (list_header != NULL) {
 		tmp = list_header;
 		list_header = list_header->next;
 		shm_free(tmp);
 	}
 
-	/* free deleted files from shared memory */
-	while (deleted_header != NULL) {
-		aux = deleted_header;
-		deleted_header = deleted_header->next;
-		shm_free(aux);
-	}
-
-	shm_free(list_files);
+	shm_free(list_sockets);
 
 }
 
@@ -243,8 +280,8 @@ static int str_cmp(str a , str b){
 }
 
 /* search for a file descriptor using the file's path */
-static struct flat_socket *search_for_fd(str value){
-	struct flat_socket *list = *list_files;
+static struct flat_file *search_for_fd(str value){
+	struct flat_file *list = *list_files;
 	while (list != NULL) {
 		if (str_cmp(list->path, value)) {
 			/* file descriptor found */
@@ -269,7 +306,7 @@ mi_response_t *mi_rotate(const mi_params_t *params,
 	 */
 	lock_get(global_lock);
 
-	struct flat_socket *found_fd = search_for_fd(path);
+	struct flat_file *found_fd = search_for_fd(path);
 
 	if (found_fd == NULL) {
 		LM_DBG("Path: %.*s is not valid\n", path.len,
@@ -298,14 +335,14 @@ static int flat_match (evi_reply_sock *sock1, evi_reply_sock *sock2) {
 		fs1 = (struct flat_socket *)sock1->params;
 		fs2 = (struct flat_socket *)sock2->params;
 		/* if the path is equal then the file descriptor structures are equal*/
-		return str_cmp(fs1->path, fs2->path);
+		return str_cmp(fs1->file->path, fs2->file->path);
 	}
 	/* not equal */
 	return 0;
 }
 
-static int insert_in_list(struct flat_socket *entry) {
-	struct flat_socket *head = *list_files, *aux, *parent = NULL;
+static int insert_in_list(struct flat_file *entry) {
+	struct flat_file *head = *list_files, *aux, *parent = NULL;
 	int expected = initial_capacity - 1;
 
 	if (head == NULL) {
@@ -360,8 +397,7 @@ static evi_reply_sock* flat_parse(str socket){
 	evi_reply_sock *sock;
 	struct flat_socket* entry;
 	struct stat st_buf;
-	struct flat_deleted *head = *list_deleted_files;
-	struct flat_deleted *aux, *tmp;
+	struct flat_file *file = NULL;
 	char *dname;
 
 	if (!socket.s || !socket.len) {
@@ -371,86 +407,64 @@ static evi_reply_sock* flat_parse(str socket){
 
 	lock_get(global_lock);
 
-	/* if not all processes finished closing the file
-	   find the structure and reuse it */
-	if (head) {
-		if (str_cmp(socket, head->socket->path)) {
-			LM_DBG("Found structure at head of deleted list, reusing it [%s]\n",
-				head->socket->path.s);
-			*list_deleted_files = head->next;
-			entry = head->socket;
-			shm_free(head);
-
-			lock_release(global_lock);
-			return (evi_reply_sock *)((char*)(entry + 1) + socket.len + 1);
-		} else {
-			for (aux = head; aux->next != NULL; aux=aux->next)
-				if (str_cmp(socket, aux->next->socket->path)) {
-					LM_DBG("Found structure inside deleted list, reusing it [%s]\n",
-						aux->next->socket->path.s);
-					tmp = aux->next;
-					aux->next = aux->next->next;
-					entry = tmp->socket;
-					shm_free(tmp);
-
-					lock_release(global_lock);
-					return (evi_reply_sock *)((char*)(entry + 1) + socket.len + 1);
-				}
-		}
-	}
-
-	entry = shm_malloc(sizeof(struct flat_socket) + socket.len + 1 + sizeof(evi_reply_sock));
-
+	entry = shm_malloc(sizeof(struct flat_socket) + sizeof(evi_reply_sock));
 	if (!entry) {
 		LM_ERR("not enough shared memory\n");
 		lock_release(global_lock);
 		return NULL;
 	}
 
-	entry->path.s = (char *)(entry + 1);
-	entry->path.len = socket.len;
-	memcpy(entry->path.s, socket.s, socket.len);
-	entry->path.s[socket.len] = '\0';
+	/* check if other flatstore sockets already use this file */
+	for (file = *list_files; file; file = file->next)
+		if (str_cmp(socket, file->path))
+			break;
+	if (!file) {
+		file = shm_malloc(sizeof *file + socket.len + 1);
+		if (!file) {
+			LM_ERR("oom!\n");
+			goto error;
+		}
+		memset(file, 0, sizeof *file);
 
-	/* verify if the path is valid (not a directory) and a file can be created
-	*/
-	if (dirc == NULL || dir_size < (socket.len + 1)) {
-		dirc = pkg_realloc(dirc, (socket.len + 1) * sizeof(char));
-		dir_size = socket.len + 1;
+		file->path.s = (char *)(file + 1);
+		file->path.len = socket.len;
+		memcpy(file->path.s, socket.s, socket.len);
+		file->path.s[socket.len] = '\0';
+
+		/* verify if the path is valid (not a directory) and a file can be created
+		*/
+		if (dirc == NULL || dir_size < (socket.len + 1)) {
+			dirc = pkg_realloc(dirc, (socket.len + 1) * sizeof(char));
+			if (!dirc) {
+				LM_ERR("oom!\n");
+				goto error;
+			}
+			dir_size = socket.len + 1;
+		}
+
+		memcpy(dirc, file->path.s, socket.len + 1);
+
+		dname = dirname(dirc);
+
+		if (stat(dname, &st_buf) < 0) {
+			LM_ERR("invalid directory name\n");
+			goto error;
+		}
+
+		memset(&st_buf, 0, sizeof(struct stat));
+
+		if (stat(file->path.s, &st_buf) == 0 && S_ISDIR (st_buf.st_mode)) {
+			LM_ERR("path is a directory\n");
+			goto error;
+		}
+
+		if (insert_in_list(file) < 0)
+			goto error;
 	}
 
-	memcpy(dirc, entry->path.s, socket.len + 1);
-
-	dname = dirname(dirc);
-
-	if (stat(dname, &st_buf) < 0) {
-		LM_ERR("invalid directory name\n");
-		shm_free(entry);
-		lock_release(global_lock);
-		return NULL;
-	}
-
-	memset(&st_buf, 0, sizeof(struct stat));
-
-	if (stat(entry->path.s, &st_buf) == 0 && S_ISDIR (st_buf.st_mode)) {
-		LM_ERR("path is a directory\n");
-		shm_free(entry);
-		lock_release(global_lock);
-		return NULL;
-	}
-
-	if (insert_in_list(entry) < 0) {
-		shm_free(entry);
-		lock_release(global_lock);
-		return NULL;
-	}
-
-	entry->rotate_version = 0;
-	entry->counter_open = 0;
-
-	sock = (evi_reply_sock *)((char*)(entry + 1) + socket.len + 1);
+	sock = (evi_reply_sock *)((char*)(entry + 1));
 	memset(sock, 0, sizeof(evi_reply_sock));
-	sock->address.s = (char *)(entry + 1);
+	sock->address.s = (char *)(file + 1);
 	sock->address.len = socket.len + 1;
 	sock->params = entry;
 
@@ -458,44 +472,57 @@ static evi_reply_sock* flat_parse(str socket){
 	sock->flags |= EVI_ADDRESS;
 	sock->flags |= EVI_EXPIRE;
 
+	entry->file = file;
+	file->flat_socket_ref++;
+
+	entry->next = *list_sockets;
+	*list_sockets = entry;
+
 	lock_release(global_lock);
 
 	return sock;
+
+error:
+	lock_release(global_lock);
+	if (file && !file->next)
+		shm_free(file);
+	shm_free(entry);
+	return NULL;
 }
 
 /*  check if the local 'version' of the file descriptor asociated with entry fs
 	is different from the global version, if it is different reopen the file
 */
-static void rotating(struct flat_socket *fs){
+static void rotating(struct flat_file *file){
 	int index;
 	int rc;
 
-	if (!fs)
+	if (!file)
 		return;
 
 	lock_get(global_lock);
 
-	index = fs->file_index_process;
+	index = file->file_index_process;
 
 	if (opened_fds[index] == -1) {
-		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
+		opened_fds[index] = open(file->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
 		if (opened_fds[index] < 0) {
 			LM_ERR("Opening socket error\n");
 			lock_release(global_lock);
 			return;
 		}
-		rotate_version[index] = fs->rotate_version;
-		fs->counter_open++;
-		LM_DBG("File %s is opened %d time\n", fs->path.s, fs->counter_open);
+		rotate_version[index] = file->rotate_version;
+		file->counter_open++;
+		LM_DBG("File %s is opened %d time\n", file->path.s, file->counter_open);
 
 		lock_release(global_lock);
 		return;
 	}
 
-	if (rotate_version[index] != fs->rotate_version && opened_fds[index] != -1) {
+	if (rotate_version[index] != file->rotate_version && opened_fds[index] != -1) {
 
 	   /* update version */
-		rotate_version[index] = fs->rotate_version;
+		rotate_version[index] = file->rotate_version;
 		lock_release(global_lock);
 
 		/* rotate */
@@ -505,12 +532,12 @@ static void rotating(struct flat_socket *fs){
 			return;
 		}
 
-		opened_fds[index] = open(fs->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
+		opened_fds[index] = open(file->path.s,O_RDWR | O_APPEND | O_CREAT, file_permissions_oct);
 		if (opened_fds[index] < 0) {
 			LM_ERR("Opening socket error\n");
 			return;
 		}
-		LM_DBG("Rotating file %s\n",fs->path.s);
+		LM_DBG("Rotating file %s\n",file->path.s);
 
 	} else
 		lock_release(global_lock);
@@ -527,8 +554,9 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 	int nr_params = 0;
 	int f_idx;
 
-	rotating(entry);
+	rotating(entry->file);
 
+	/* check list of files to be deleted */
 	verify_delete();
 
 	if (!sock || !(sock->params)) {
@@ -536,8 +564,14 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 		return -1;
 	}
 
-	if (io_param == NULL)
+	if (io_param == NULL) {
 		io_param = pkg_malloc(cap_params * sizeof(struct iovec));
+		if (!io_param) {
+			LM_ERR("oom!\n");
+			return -1;
+		}
+	}
+
 
 	if (!suppress_event_name && ev_name && ev_name->s) {
 		io_param[idx].iov_base = ev_name->s;
@@ -554,6 +588,10 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 		if (buff == NULL || required_length > buff_convert_len) {
 			buff = pkg_realloc(buff, required_length * sizeof(char) + 1);
+			if (!buff) {
+				LM_ERR("oom!\n");
+				return -1;
+			}
 			buff_convert_len = required_length;
 		}
 
@@ -563,6 +601,10 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 
 			if(idx + 3 > cap_params){
 				io_param = pkg_realloc(io_param, (cap_params + 20) * sizeof(struct iovec));
+				if (!io_param) {
+					LM_ERR("oom!\n");
+					return -1;
+				}
 				cap_params += 20;
 			}
 
@@ -592,7 +634,7 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 	idx++;
 
 	lock_get(global_lock);
-	f_idx = entry->file_index_process;
+	f_idx = entry->file->file_index_process;
 	lock_release(global_lock);
 
 	do {
@@ -611,90 +653,108 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 }
 
 static void flat_free(evi_reply_sock *sock) {
-	struct flat_deleted *head = *list_deleted_files;
-	struct flat_deleted *new;
+	struct flat_socket *fs, *it;
+	struct flat_file *file;
+	struct flat_delete *new_del, *del_it;
 
 	if (sock->params == NULL) {
 		LM_ERR("socket not found\n");
-	}
-
-	new = shm_malloc(sizeof(struct flat_deleted));
-	if (!new) {
-		LM_ERR("no more shm mem\n");
 		return;
 	}
-	new->socket = (struct flat_socket*)sock->params;
-	LM_DBG("File %s is being deleted...\n",new->socket->path.s);
-	new->next = NULL;
+	fs = (struct flat_socket*)sock->params;
+	file = fs->file;
+
+	LM_DBG("Socket '%s' is being deleted...\n",file->path.s);
 
 	lock_get(global_lock);
 
-	if(head	!= NULL)
-		new->next = head;
+	file->flat_socket_ref--;
 
-	*list_deleted_files = new;
+	/* free flatstore socket */
+	if (fs == *list_sockets) {
+		*list_sockets = fs->next;
+		shm_free(fs);
+	} else {
+		for (it = *list_sockets; it->next && fs != it->next; it = it->next) ;
+		if (it->next) {
+			it->next = it->next->next;
+			shm_free(it->next);
+		}
+	}
+
+	/* add to list of files to be deleted if not already present */
+	for (del_it = *list_delete; del_it && del_it->file != file; del_it = del_it->next) ;
+	if (!del_it) {
+		new_del = shm_malloc(sizeof *new_del);
+		if (!new_del) {
+			LM_ERR("oom!\n");
+			return;
+		}
+		new_del->file = file;
+
+		new_del->next = *list_delete;
+		*list_delete = new_del;
+	}
 
 	lock_release(global_lock);
 
+	/* check if we can close the file and actually delete it */
     verify_delete();
 }
 
 static str flat_print(evi_reply_sock *sock){
 	struct flat_socket * fs = (struct flat_socket *)sock->params;
-	return fs->path;
+	return fs->file->path;
 }
 
 static void verify_delete(void) {
-	struct flat_deleted *head = *list_deleted_files;
-	struct flat_deleted *aux, *prev, *tmp;
-
-	if (opened_fds == NULL)
-		return;
+	struct flat_delete *del_it, *del_prev, *del_tmp;
 
 	lock_get(global_lock);
 
-	if (head == NULL) {
-		lock_release(global_lock);
-		return;
-	}
+	del_it = *list_delete;
+	del_prev = NULL;
 
-	/* close fd if necessary */
-	aux = head;
-	prev = NULL;
-	while (aux != NULL) {
-		if (opened_fds[aux->socket->file_index_process] != -1) {
-			LM_DBG("File %s is closed locally, open_counter is %d\n",
-				aux->socket->path.s, aux->socket->counter_open - 1);
-			close(opened_fds[aux->socket->file_index_process]);
-			aux->socket->counter_open--;
-			opened_fds[aux->socket->file_index_process] = -1;
+	while (del_it) {
+		if (del_it->file->flat_socket_ref != 0) {
+			del_it = del_it->next;
+			continue;
 		}
 
-		/* free file from lists if all other processes closed it */
-		if (aux->socket->counter_open == 0) {
+		if (opened_fds[del_it->file->file_index_process] != -1) {
+			LM_DBG("Closing file %s from current process, open_counter is %d\n",
+				del_it->file->path.s, del_it->file->counter_open - 1);
+			close(opened_fds[del_it->file->file_index_process]);
+			del_it->file->counter_open--;
+			opened_fds[del_it->file->file_index_process] = -1;
+		}
+
+		/* free file from list if all other processes closed it */
+		if (del_it->file->counter_open == 0) {
 			LM_DBG("File %s is deleted globally, count open reached 0\n",
-				aux->socket->path.s);
-			if (aux->socket->prev)
-				aux->socket->prev->next = aux->socket->next;
+				del_it->file->path.s);
+			if (del_it->file->prev)
+				del_it->file->prev->next = del_it->file->next;
 			else
-				*list_files = aux->socket->next;
+				*list_files = del_it->file->next;
 
-			if (aux->socket->next)
-				aux->socket->next->prev = aux->socket->prev;
+			if (del_it->file->next)
+				del_it->file->next->prev = del_it->file->prev;
 
-			shm_free(aux->socket);
+			shm_free(del_it->file);
 
-			if (prev != NULL)
-				prev->next = aux->next;
+			/* remove file from delete list */
+			if (del_prev != NULL)
+				del_prev->next = del_it->next;
 			else
-				*list_deleted_files = aux->next;
+				*list_delete = del_it->next;
 
-			tmp = aux;
-			aux = aux->next;
-			shm_free(tmp);
+			del_tmp = del_it;
+			del_it = del_it->next;
+			shm_free(del_tmp);
 		} else {
-			prev = aux;
-			aux = aux->next;
+			del_prev = del_it;
+			del_it = del_it->next;
 		}
 	}
 

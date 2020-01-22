@@ -34,20 +34,24 @@
 
 #define FLAT_DEFAULT_MAX_FD 100
 
+struct flat_file {
+	str path;
+	unsigned int file_index_process;
+	unsigned int counter_open;
+	unsigned int rotate_version;
+	unsigned int flat_socket_ref;
+	struct flat_file *next;
+	struct flat_file *prev;
+};
+
 struct flat_socket {
-    str path;
-    unsigned int file_index_process;
-    unsigned int counter_open;
-    unsigned int rotate_version;
-    struct flat_socket *next;
-    struct flat_socket *prev;
-
+	struct flat_file *file;
+	struct flat_socket *next;
 };
 
-struct flat_deleted {
-    struct flat_socket *socket;
-    struct flat_deleted *next;
+struct flat_delete {
+	struct flat_file *file;
+	struct flat_delete *next;
 };
-
 
 #endif

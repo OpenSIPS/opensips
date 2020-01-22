@@ -1093,7 +1093,9 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
 1.7.4.  ul_flush
 
-   Triggers the flush of USRLOC memory cache into DB.
+   Force a flush of all pending usrloc cache changes to the
+   database. Normally, this routine runs every timer_interval
+   seconds.
 
 1.7.5.  ul_add
 
@@ -1123,17 +1125,18 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
 1.7.7.  ul_sync
 
-   Synchronizes the contacts from memory with the ones from
-   database. Note that this can not be used when no database is
-   specified or with the DB-Only scheme. Important: make sure that
-   all your contacts are in memory (ul_dump MI function) before
-   executing this command. If the AOR is not specified, the whole
-   table will be synchronized.
+   Empty the location table, then synchronize it with all contacts
+   from memory. Note that this can not be used when no database is
+   specified or with the DB-Only scheme.
+
+   Important: make sure that all your contacts are in memory
+   (ul_dump MI function) before executing this command.
 
    Parameters:
      * table name - table where the AOR resides (Ex: location).
-     * AOR (optional) - user AOR in username[@domain] format
-       (domain must be supplied only if use_domain option is on).
+     * AOR (optional) - only delete/sync this user AOR, not the
+       whole table. Format: "username[@domain]" (domain is
+       required only if use_domain option is on).
 
 1.7.8.  ul_cluster_sync
 
@@ -1211,6 +1214,8 @@ modparam("usrloc", "mi_dump_kv_store", 1)
        message.(empty string if not present)
      * qval - The Q value (priority) of the contact (as integer
        value from 0 to 10).
+     * user_agent - The User-Agent header value.
+       NOTICE: Can contain spaces.
      * socket - The SIP socket/listener (as string) used by
        OpenSIPS to receive the contact registations.
      * bflags - The branch flags (bflags) of the contact (in
@@ -1499,7 +1504,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 243 145 4198 3609
-   3. Liviu Chircu (@liviuchircu) 240 152 6255 2072
+   3. Liviu Chircu (@liviuchircu) 241 153 6268 2082
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Vlad Patrascu (@rvlad-patrascu) 40 21 770 633
@@ -1518,8 +1523,8 @@ Chapter 3. Contributors
    Brandinger (@NormB), David Sanders, Konstantin Bokarius, Walter
    Doekes (@wdoekes), Klaus Darilion, Iouri Kharon, Aron Podrigal
    (@ar45), Dan Pascu (@danpascu), Matthew M. Boedicker, Peter
-   Lemenkov (@lemenkov), UnixDev, Edson Gellert Schubert,
-   Elena-Ramona Modroiu, Stephane Alnet.
+   Lemenkov (@lemenkov), UnixDev, Edson Gellert Schubert, Alexey
+   Vasilyev (@vasilevalex), Elena-Ramona Modroiu, Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1541,19 +1546,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2019
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2019
-   3.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
-   4.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
-   5.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2019
-   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   8.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Shlomi Gutman                       Mar 2018 - Mar 2018
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2020
+   2.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2019
+   4.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
+   5.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
+   6.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2019
+   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   9.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: @jalung, Vlad Paiu (@vladpaiu),
-   Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   All remaining contributors: Shlomi Gutman, @jalung, Vlad Paiu
+   (@vladpaiu), Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Ovidiu Sas (@ovidiusas), Dusan Klinec, Eseanu
    Marius Cristian (@eseanucristian), David Sanders, Andrei Datcu
    (@andrei-datcu), Stephane Alnet, Andrei Dragus, Phil D'Amore,
@@ -1573,16 +1578,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
-   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
-   (@eseanucristian), Ovidiu Sas (@ovidiusas), Andrei Datcu
-   (@andrei-datcu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen
-   (@juha-h), Jan Janak (@janakj), Maksym Sobolyev (@sobomax),
-   Nils Ohlmeier.
+   Last edited by: Liviu Chircu (@liviuchircu), Alexey Vasilyev
+   (@vasilevalex), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
+   Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
+   (@ovidiusas), Andrei Datcu (@andrei-datcu), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Marcus Hunger, Elena-Ramona
+   Modroiu, Juha Heinanen (@juha-h), Jan Janak (@janakj), Maksym
+   Sobolyev (@sobomax), Nils Ohlmeier.
 
    Documentation Copyrights:
 

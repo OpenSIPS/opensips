@@ -219,6 +219,12 @@ listen = tls:1.2.3.4:5061
 			</para>
 			<itemizedlist>
 				<listitem>
+				<para><emphasis>TLSv1_3</emphasis> - means &osips; will
+				accept only TLSv1.3 connections. This version is only
+				available starting with OpenSSL 1.1.1 version.
+				</para>
+				</listitem>
+				<listitem>
 				<para><emphasis>TLSv1_2</emphasis> - means &osips; will
 				accept only TLSv1.2 connections (rfc3261 conformant).
 				</para>
@@ -226,17 +232,6 @@ listen = tls:1.2.3.4:5061
 				<listitem>
 				<para><emphasis>TLSv1</emphasis> - means &osips; will
 				accept only TLSv1 connections (rfc3261 conformant).
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>SSLv3</emphasis> - means &osips; will
-				accept only SSLv3 connections
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>SSLv2</emphasis> - means &osips; will
-				accept only SSLv2 connections (almost all old clients
-				support this).
 				</para>
 				</listitem>
 				<listitem>
@@ -251,13 +246,14 @@ listen = tls:1.2.3.4:5061
 				</listitem>
 			</itemizedlist>
 			<para><emphasis>
+				If you are using an OpenSSL library newer than 1.1.0, you can
+				also specify a range of accepted TLS versions.
+			</emphasis></para>
+			<para><emphasis>
 				Default value is SSLv23.
 			</emphasis></para>
 			<warning><para>
-			Best is to use SSLv23, for extended compatibility. Using any
-			of the other will restrict the version to just that one
-			version. In fact, SSLv2 is disabled in the source code; to
-			use it, you need to edit tls/tls_init.c
+			For extended compatibility with older system, best use SSLv23.
 			</para></warning>
 			<para>
 			If you want RFC3261 conformance and all your clients support
@@ -271,6 +267,14 @@ listen = tls:1.2.3.4:5061
 				<programlisting format="linespecific">
 ...
 modparam("tls_mgm", "tls_method", "[dom]TLSv1")
+...
+				</programlisting>
+			</example>
+			<example>
+				<title>Set <varname>tls_method</varname> range variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "tls_method", "[dom]TLSv1-TLSv1_3")
 ...
 				</programlisting>
 			</example>
@@ -510,52 +514,6 @@ modparam("tls_mgm", "verify_cert", "[dom]0")
 				<programlisting format="linespecific">
 ...
 modparam("tls_mgm", "require_cert", "[dom]0")
-...
-				</programlisting>
-			</example>
-		</section>
-
-		<section id="param_tls_handshake_timeout" xreflabel="tls_handshake_timeout">
-			<title><varname>tls_handshake_timeout</varname> (integer)</title>
-			<para>
-			Sets the timeout (in milliseconds) for the handshake sequence to complete.
-				It may be necessary to increase this value when using a CPU intensive cipher
-				for the connection to allow time for keys to be generated and processed.
-			</para>
-			<para>
-			The timeout is invoked during acceptance of a new connection (inbound) and
-				during the wait period when a new session is being initiated (outbound).
-			</para>
-			<para><emphasis>
-				Default value is 100.
-			</emphasis></para>
-			<example>
-				<title>Set <varname>tls_handshake_timeout</varname> variable</title>
-				<programlisting format="linespecific">
-...
-modparam("tls_mgm", "tls_handshake_timeout", 200) # number of milliseconds
-...
-				</programlisting>
-			</example>
-		</section>
-
-		<section id="param_tls_send_timeout" xreflabel="tls_send_timeout">
-			<title><varname>tls_send_timeout</varname> (integer)</title>
-			<para>
-				Sets the timeout (in milliseconds) for the send operations to complete
-			</para>
-			<para>
-				The send timeout is invoked for all TLS write operations, excluding
-				the handshake process (see: tls_handshake_timeout)
-			</para>
-			<para><emphasis>
-				Default value is 100.
-			</emphasis></para>
-			<example>
-				<title>Set <varname>tls_send_timeout</varname> variable</title>
-				<programlisting format="linespecific">
-...
-modparam("tls_mgm", "tls_send_timeout", 200) # number of milliseconds
 ...
 				</programlisting>
 			</example>

@@ -73,8 +73,6 @@ extern str     cplist_col;
 extern str     dhparams_col;
 extern str     eccurve_col;
 
-extern int      tls_handshake_timeout;
-extern int      tls_send_timeout;
 extern int      tls_client_domain_avp;
 extern int      sip_client_domain_avp;
 

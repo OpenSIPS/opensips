@@ -108,11 +108,15 @@ void map_remove_tls_dom(struct tls_domain *dom)
 void tls_free_domain(struct tls_domain *dom)
 {
 	struct str_list *m_it, *m_tmp;
+	int i;
 
 	dom->refs--;
 	if (dom->refs == 0) {
-		if (dom->ctx)
-			SSL_CTX_free(dom->ctx);
+		if (dom->ctx) {
+			for (i = 0; i < dom->ctx_no; i++)
+				SSL_CTX_free(dom->ctx[i]);
+			shm_free(dom->ctx);
+		}
 		lock_destroy(dom->lock);
 		lock_dealloc(dom->lock);
 
@@ -219,6 +223,8 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 		d->method = TLS_USE_TLSv1;
 	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1_2") == 0)
 		d->method = TLS_USE_TLSv1_2;
+	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1_3") == 0)
+		d->method = TLS_USE_TLSv1_3;
 
 	if (int_vals[INT_VALS_VERIFY_CERT_COL] != -1) {
 		d->verify_cert = int_vals[INT_VALS_VERIFY_CERT_COL];

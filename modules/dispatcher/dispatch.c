@@ -743,11 +743,15 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 		val_set.type = DB_INT;
 		val_set.nul  = 0;
 
+		/* access ds data under reader's lock */
+		lock_start_read( partition->lock );
+
 		/* update the gateways */
 		if (partition->dbf.use_table(*partition->db_handle,
 					&partition->table_name) < 0) {
 			LM_ERR("cannot select table \"%.*s\"\n",
 				partition->table_name.len, partition->table_name.s);
+			lock_stop_read( partition->lock );
 			continue;
 		}
 		key_cmp[0] = &ds_set_id_col;
@@ -784,6 +788,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 				}
 			}
 		}
+
+		lock_stop_read( partition->lock );
 	}
 
 	return;
@@ -1920,13 +1926,105 @@ static str status_str = str_init("status");
 static str inactive_str = str_init("inactive");
 static str active_str = str_init("active");
 
+static void _ds_set_state(ds_set_p set, int idx, str *address, int state,
+	int type, ds_partition_t *partition, int do_repl, int raise_event)
+{
+	evi_params_p list = NULL;
+	int old_flags;
+
+	/* remove the Probing/Inactive-State? Set the fail-count to 0. */
+	if (state == DS_PROBING_DST) {
+		if (type) {
+			if (set->dlist[idx].flags & DS_INACTIVE_DST) {
+				LM_INFO("Ignoring the request to set this destination"
+						" to probing: It is already inactive!\n");
+				return;
+			}
+
+			if (do_repl) {
+				set->dlist[idx].failure_count++;
+				/* Fire only, if the Threshold is reached. */
+				if (set->dlist[idx].failure_count
+						< probing_threshold)
+					return;
+
+				if (set->dlist[idx].failure_count
+						> probing_threshold)
+					set->dlist[idx].failure_count
+						= probing_threshold;
+			}
+		}
+	}
+	/* Reset the Failure-Counter */
+	if ((state & DS_RESET_FAIL_DST) > 0) {
+		set->dlist[idx].failure_count = 0;
+		state &= ~DS_RESET_FAIL_DST;
+	}
+
+	/* set the new state of the destination */
+	old_flags = set->dlist[idx].flags;
+	if(type)
+		set->dlist[idx].flags |= state;
+	else
+		set->dlist[idx].flags &= ~state;
+
+	if ( set->dlist[idx].flags != old_flags) {
+
+		/* state actually changed -> do all updates */
+		set->dlist[idx].flags |= DS_STATE_DIRTY_DST;
+
+		/* replicate the change of status */
+		if (do_repl) replicate_ds_status_event( &partition->name,
+			set->id, address, state, type);
+
+		/* update info on active destinations */
+		if ( ((old_flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) !=
+		((set->dlist[idx].flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) )
+			/* this destination switched state between
+			 * disabled <> enabled -> update active info */
+			re_calculate_active_dsts( set );
+
+		if (raise_event && evi_probe_event(dispatch_evi_id)) {
+			if (!(list = evi_get_params()))
+				return;
+
+			if (partition != default_partition &&
+			evi_param_add_str(list,&partition_str,&partition->name)){
+				LM_ERR("unable to add partition parameter\n");
+				evi_free_params(list);
+				return;
+			}
+			if (evi_param_add_int(list, &group_str, &group)) {
+				LM_ERR("unable to add group parameter\n");
+				evi_free_params(list);
+				return;
+			}
+			if (evi_param_add_str(list, &address_str, address)) {
+				LM_ERR("unable to add address parameter\n");
+				evi_free_params(list);
+				return;
+			}
+			if (evi_param_add_str(list, &status_str,
+						type ? &inactive_str : &active_str)) {
+				LM_ERR("unable to add status parameter\n");
+				evi_free_params(list);
+				return;
+			}
+			if (evi_raise_event(dispatch_evi_id, list)) {
+				LM_ERR("unable to send event\n");
+			}
+		} else {
+			LM_DBG("no event sent\n");
+		}
+
+	} /* end 'if status changed' */
+}
+
 int ds_set_state_repl(int group, str *address, int state, int type,
-		ds_partition_t *partition, int do_repl)
+		ds_partition_t *partition, int do_repl, int is_sync)
 {
 	int i=0;
 	ds_set_p idx = NULL;
-	evi_params_p list = NULL;
-	int old_flags;
 
 	if ( (*partition->data)->sets==NULL ){
 		LM_DBG("empty destination set\n");
@@ -1949,100 +2047,28 @@ int ds_set_state_repl(int group, str *address, int state, int type,
 				&& strncasecmp(idx->dlist[i].uri.s, address->s,
 					address->len)==0)
 		{
-
-			/* remove the Probing/Inactive-State? Set the fail-count to 0. */
-			if (state == DS_PROBING_DST) {
-				if (type) {
-					if (idx->dlist[i].flags & DS_INACTIVE_DST) {
-						LM_INFO("Ignoring the request to set this destination"
-								" to probing: It is already inactive!\n");
-						lock_stop_read( partition->lock );
-						return 0;
-					}
-
-					if (do_repl) {
-						idx->dlist[i].failure_count++;
-						/* Fire only, if the Threshold is reached. */
-						if (idx->dlist[i].failure_count
-								< probing_threshold) {
-							lock_stop_read( partition->lock );
-							return 0;
-						}
-						if (idx->dlist[i].failure_count
-								> probing_threshold)
-							idx->dlist[i].failure_count
-								= probing_threshold;
+			if (is_sync) {
+				if ((idx->dlist[i].flags & (DS_INACTIVE_DST|DS_PROBING_DST)) !=
+					(state & (DS_INACTIVE_DST|DS_PROBING_DST))) {
+					/* status has changed */
+					if (state & DS_INACTIVE_DST) {
+						_ds_set_state(idx, i, address, DS_INACTIVE_DST, 1,
+							partition, 0, 0);
+						_ds_set_state(idx, i, address, DS_PROBING_DST, 0,
+							partition, 0, 0);
+					} else if (state & DS_PROBING_DST) {
+						_ds_set_state(idx, i, address, DS_PROBING_DST, 1,
+							partition, 0, 0);
+						_ds_set_state(idx, i, address, DS_INACTIVE_DST, 0,
+							partition, 0, 0);
+					} else {  /* set active */
+						_ds_set_state(idx, i, address,
+							DS_INACTIVE_DST|DS_PROBING_DST, 0, partition, 0, 0);
 					}
 				}
-			}
-			/* Reset the Failure-Counter */
-			if ((state & DS_RESET_FAIL_DST) > 0) {
-				idx->dlist[i].failure_count = 0;
-				state &= ~DS_RESET_FAIL_DST;
-			}
-
-			/* set the new state of the destination */
-			old_flags = idx->dlist[i].flags;
-			if(type)
-				idx->dlist[i].flags |= state;
-			else
-				idx->dlist[i].flags &= ~state;
-
-			if ( idx->dlist[i].flags != old_flags) {
-
-				/* state actually changed -> do all updates */
-				idx->dlist[i].flags |= DS_STATE_DIRTY_DST;
-
-				/* replicate the change of status */
-				if (do_repl) replicate_ds_status_event( &partition->name,
-					group, address, state, type);
-
-				/* update info on active destinations */
-				if ( ((old_flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) !=
-				((idx->dlist[i].flags&(DS_PROBING_DST|DS_INACTIVE_DST))?0:1) )
-					/* this destination switched state between 
-					 * disabled <> enabled -> update active info */
-					re_calculate_active_dsts( idx );
-
-				if (evi_probe_event(dispatch_evi_id)) {
-					if (!(list = evi_get_params())) {
-						lock_stop_read( partition->lock );
-						return 0;
-					}
-					if (partition != default_partition &&
-					evi_param_add_str(list,&partition_str,&partition->name)){
-						LM_ERR("unable to add partition parameter\n");
-						evi_free_params(list);
-						lock_stop_read( partition->lock );
-						return 0;
-					}
-					if (evi_param_add_int(list, &group_str, &group)) {
-						LM_ERR("unable to add group parameter\n");
-						evi_free_params(list);
-						lock_stop_read( partition->lock );
-						return 0;
-					}
-					if (evi_param_add_str(list, &address_str, address)) {
-						LM_ERR("unable to add address parameter\n");
-						evi_free_params(list);
-						lock_stop_read( partition->lock );
-						return 0;
-					}
-					if (evi_param_add_str(list, &status_str,
-								type ? &inactive_str : &active_str)) {
-						LM_ERR("unable to add status parameter\n");
-						evi_free_params(list);
-						lock_stop_read( partition->lock );
-						return 0;
-					}
-					if (evi_raise_event(dispatch_evi_id, list)) {
-						LM_ERR("unable to send event\n");
-					}
-				} else {
-					LM_DBG("no event sent\n");
-				}
-
-			} /* end 'if status changed' */
+			} else
+				_ds_set_state(idx, i, address, state, type, partition,
+					do_repl, 1);
 
 			lock_stop_read( partition->lock );
 			return 0;

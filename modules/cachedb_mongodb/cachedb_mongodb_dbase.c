@@ -1065,8 +1065,7 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 				*val = value->value.v_int32;
 				break;
 			default:
-				LM_ERR("unsupported type %d for key %.*s!\n", attr->len,
-				       value->value_type, attr->s);
+				LM_ERR("unsupported type %d for key %.*s!\n", value->value_type, attr->len, attr->s);
 				ret = -1;
 				goto out;
 			}
@@ -1208,10 +1207,10 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 	bson_iter_t iter;
 	struct timeval start;
 	int ri, c, old_rows, rows = 0;
-	unsigned int ts, ulen, _;
-	const unsigned char *bin;
+	unsigned int ts, _;
 	mongoc_collection_t *col = NULL;
 	char *strf, *stro;
+	str st;
 
 	*_r = NULL;
 
@@ -1328,7 +1327,7 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 			}
 
 			hex_oid_id = pkg_realloc(hex_oid_id,
-			                         sizeof *hex_oid_id * rows * HEX_OID_SIZE);
+			                         sizeof *hex_oid_id * rows * (HEX_OID_SIZE + 1));
 			if (!hex_oid_id) {
 				LM_ERR("oom\n");
 				goto out_err;
@@ -1368,10 +1367,15 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						       _c[c]->len, _c[c]->s, VAL_DOUBLE(cur_val));
 						break;
 					case BSON_TYPE_UTF8:
-						VAL_TYPE(cur_val) = DB_STRING;
-						VAL_STRING(cur_val) = bson_iter_utf8(&iter, NULL);
-						LM_DBG("Found string [%.*s]=[%s]\n",
-						       _c[c]->len, _c[c]->s, VAL_STRING(cur_val));
+						VAL_TYPE(cur_val) = DB_STR;
+						st.s = (char *)bson_iter_utf8(&iter, (unsigned int *)&st.len);
+						if (pkg_nt_str_dup(&VAL_STR(cur_val), &st) != 0) {
+							LM_ERR("oom\n");
+							goto out_err;
+						}
+						VAL_FREE(cur_val) = 1;
+						LM_DBG("Found string [%.*s]=[%.*s]\n",
+						       _c[c]->len, _c[c]->s, st.len, st.s);
 						break;
 					case BSON_TYPE_INT64:
 						VAL_TYPE(cur_val) = DB_BIGINT;
@@ -1387,8 +1391,9 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						break;
 					case BSON_TYPE_OID:
 						bson_oid_to_string(bson_iter_oid(&iter), hex_oid);
-						p = &hex_oid_id[ri * HEX_OID_SIZE];
+						p = &hex_oid_id[ri * (HEX_OID_SIZE + 1)];
 						memcpy(p, hex_oid, HEX_OID_SIZE);
+						p[HEX_OID_SIZE] = '\0';
 						VAL_TYPE(cur_val) = DB_STRING;
 						VAL_STRING(cur_val) = p;
 						LM_DBG("Found oid [%.*s]=[%s]\n",
@@ -1407,11 +1412,15 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						LM_DBG("Found timestamp [%u]\n", ts);
 						break;
 					case BSON_TYPE_BINARY:
-						bson_iter_binary(&iter, NULL, &ulen, &bin);
+						bson_iter_binary(&iter, NULL, (unsigned int *)&st.len,
+						                 (const unsigned char **)&st.s);
 						VAL_TYPE(cur_val) = DB_STR;
-						VAL_STR(cur_val).s = (char *)bin;
-						VAL_STR(cur_val).len = (int)ulen;
-						LM_DBG("Found binary data: '%.*s'\n", ulen, bin);
+						if (pkg_nt_str_dup(&VAL_STR(cur_val), &st) != 0) {
+							LM_ERR("oom\n");
+							goto out_err;
+						}
+						VAL_FREE(cur_val) = 1;
+						LM_DBG("Found binary data: '%.*s'\n", st.len, st.s);
 						break;
 					default:
 						LM_WARN("Unsupported type [%d] for [%.*s] - treating as NULL\n",
