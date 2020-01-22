@@ -69,8 +69,8 @@
 #else
 	double myfloor(double x)
 	{
-		if ( x > 0 ) return (int)x;
-		return (int)(x-0.9999999999999999);
+		if ( x > 0 ) return (long)x;
+		return (long)(x-0.9999999999999999);
 	}
 	#define FLOOR myfloor
 #endif
