@@ -1112,7 +1112,7 @@ static int fix_actions(struct action* a)
 		switch(t->type){
 			case ROUTE_T:
 				ret = 0;
-				switch (a->elem[0].type) {
+				switch (t->elem[0].type) {
 					case SCRIPTVAR_ST:
 					case SCRIPTVAR_ELEM_ST:
 						break;
