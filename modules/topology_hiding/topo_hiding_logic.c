@@ -1429,7 +1429,7 @@ int topo_callid_post_raw(str *data, struct sip_msg* foo)
 	msg.buf=data->s;
 	msg.len=data->len;
 	if (dlg_th_callid_pre_parse(&msg,1) < 0) {
-		LM_ERR("could not parse resulted sip message!\n");
+		LM_ERR("could not parse resulted sip message: %.*s\n", data->len, data->s);
 		goto done;
 	}
 
