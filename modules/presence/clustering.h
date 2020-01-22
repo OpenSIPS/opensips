@@ -31,6 +31,11 @@
 #define is_cluster_federation_enabled() \
 	(is_presence_cluster_enabled() && cluster_federation>0)
 
+/* Discard broadcast presentity state when there are no local
+ * subscribers */
+#define discard_unused_cluster_federation_data() \
+	(cluster_federation == 1)
+
 /* The ID of the presence cluster */
 extern int pres_cluster_id;
 

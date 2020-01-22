@@ -383,7 +383,9 @@ static void handle_replicated_publish(bin_packet_t *packet)
 	delete_cluster_query( &s, ev.parsed, hash_code);
 	lock_release( &pres_htable[hash_code].lock );
 
-	if (presentity_has_subscribers( &s, pres.event)==0) {
+	if (!discard_unused_cluster_federation_data()) {
+		LM_DBG("Keeping presentity regardless of subscriber existence\n");
+	} else if (presentity_has_subscribers(&s, pres.event) == 0) {
 		LM_DBG("Presentity has NO local subscribers\n");
 		/* no subscribers for this presentity, discard the publish */
 		if (p==NULL)
@@ -392,8 +394,9 @@ static void handle_replicated_publish(bin_packet_t *packet)
 		LM_DBG("Forcing expires 0\n");
 		/* force an expire of the presentity */
 		pres.expires = 0;
-	} else
+	} else {
 		LM_DBG("Presentity has some local subscribers\n");
+	}
 	pkg_free(s.s); // allocated by uandd_to_uri()
 
 	/* the publish is worthy to be handle, carry on */
