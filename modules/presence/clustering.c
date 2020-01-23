@@ -380,10 +380,11 @@ static void handle_replicated_publish(bin_packet_t *packet)
 	}
 	/* take the chance of the lock and delete the record for
 	 * waiting for a cluster query on this presentity */
-	delete_cluster_query( &s, ev.parsed, hash_code);
+	if (cluster_federation == FEDERATION_ON_DEMAND)
+		delete_cluster_query( &s, ev.parsed, hash_code);
 	lock_release( &pres_htable[hash_code].lock );
 
-	if (!discard_unused_cluster_federation_data()) {
+	if (cluster_federation == FEDERATION_FULL_SHARING) {
 		LM_DBG("Keeping presentity regardless of subscriber existence\n");
 	} else if (presentity_has_subscribers(&s, pres.event) == 0) {
 		LM_DBG("Presentity has NO local subscribers\n");

@@ -26,15 +26,20 @@
 #include "../clusterer/api.h"
 #include "presentity.h"
 
+enum federation_mode {
+	FEDERATION_DISABLED,
+	FEDERATION_ON_DEMAND,
+	FEDERATION_FULL_SHARING
+} federation_mode_t;
+
 #define is_presence_cluster_enabled() (pres_cluster_id>0)
 
 #define is_cluster_federation_enabled() \
 	(is_presence_cluster_enabled() && cluster_federation>0)
 
-/* Discard broadcast presentity state when there are no local
- * subscribers */
-#define discard_unused_cluster_federation_data() \
-	(cluster_federation == 1)
+#define is_federation_full_sharing() \
+	(is_presence_cluster_enabled() && \
+	cluster_federation == FEDERATION_FULL_SHARING)
 
 /* The ID of the presence cluster */
 extern int pres_cluster_id;
