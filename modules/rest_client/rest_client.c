@@ -379,9 +379,11 @@ int tr_rest_parse(str* in, trans_t *t)
 	name.len = p - name.s;
 
 	/* Validate that this is a known transformation */
-	if (name.len == 6 && !memcmp(name.s, "escape", 6))
+	if (name.len == 6 && !memcmp(name.s, "escape", 6)) {
 		t->subtype = TR_REST_ESCAPE;
-	else {
+	} else if (name.len == 8 && !memcmp(name.s, "unescape", 8)) {
+		t->subtype = TR_REST_UNESCAPE;
+	} else {
 		LM_ERR("unknown transformation: <%.*s>\n", name.len, name.s);
 		return -1;
 	}
@@ -393,7 +395,7 @@ int tr_rest_parse(str* in, trans_t *t)
  * tr_rest_eval - Perform URL encode on a string value
  * @msg:		        sip message struct
  * @tp:     		    transformation parameters (unused)
- * @subtype:            transformation mode (configured in t_rest_parse)
+ * @subtype:            transformation mode (TR_REST_ESCAPE or TR_REST_UNESCAPE)
  * @val:		        input/output - on success will be as encoded by libcurl, else NULL
  *
  * @return:
@@ -404,8 +406,8 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val)
 {
 	str input_str;
-	str sencoded;
-	char *encoded;
+	str s_curl_out;
+	char *curl_out;
 
 	if (!val)
 		return -1;
@@ -423,42 +425,88 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 #if ( LIBCURL_VERSION_NUM >= 0x071504 )
 		CURL *curl = curl_easy_init();
 		if (curl) {
-			encoded = curl_easy_escape(curl, input_str.s, input_str.len);
-			if (!encoded) {
+			curl_out = curl_easy_escape(curl, input_str.s, input_str.len);
+			if (!curl_out) {
 				LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
 				       input_str.len, input_str.s);
 				goto error;
 			}
 
 			LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str.len,
-			input_str.s, encoded);
+			input_str.s, curl_out);
 
 			/*
  			todo
-			curl_free(encoded);
+			curl_free(curl_out);
 			curl_easy_cleanup(curl);
 			*/
 		}
 #else
-		encoded = curl_escape(input_str.s, input_str.lenif (!encoded) {
-		if (!encoded) {
+		curl_out = curl_escape(input_str.s, input_str.len);
+		if (!curl_out) {
 			LM_ERR("failed to execute curl_escape on '%.*s'\n",
 			       input_str.len, input_str.s);
 			goto error;
 		}
 
 		LM_DBG("curl_escape '%.*s' returns '%s'\n", input_str.len,
-		       input_str.s, encoded);
+		       input_str.s, curl_out);
 
 		/*
 		todo
-		curl_free(encoded);
+		curl_free(curl_out);
 		*/
 #endif
 
-		init_str(&sencoded, encoded);
+		init_str(&s_curl_out, curl_out);
 
-	        if (pv_get_strval(msg, NULL, val, &sencoded) != 0) {
+		if (pv_get_strval(msg, NULL, val, &s_curl_out) != 0) {
+			LM_ERR("transform failed to set output pvar!\n");
+			goto error;
+		}
+
+    } else if (subtype == TR_REST_UNESCAPE) {
+
+#if ( LIBCURL_VERSION_NUM >= 0x071504 )
+		CURL *curl = curl_easy_init();
+		if (curl) {
+		    /* todo review usage for outlength parameter */
+			curl_out = curl_easy_unescape(curl, input_str.s, input_str.len);
+			if (!curl_out) {
+				LM_ERR("failed to execute curl_easy_unescape on '%.*s'\n",
+				       input_str.len, input_str.s);
+				goto error;
+			}
+
+			LM_DBG("curl_easy_unescape '%.*s' returns '%s'\n", input_str.len,
+			input_str.s, curl_out);
+
+			/*
+ 			todo
+			curl_free(curl_out);
+			curl_easy_cleanup(curl);
+			*/
+		}
+#else
+		curl_out = curl_unescape(input_str.s, input_str.len);
+		if (!curl_out) {
+			LM_ERR("failed to execute curl_unescape on '%.*s'\n",
+			       input_str.len, input_str.s);
+			goto error;
+		}
+
+		LM_DBG("curl_unescape '%.*s' returns '%s'\n", input_str.len,
+		       input_str.s, curl_out);
+
+		/*
+		todo
+		curl_free(curl_out);
+		*/
+#endif
+
+		init_str(&s_curl_out, curl_out);
+
+		if (pv_get_strval(msg, NULL, val, &s_curl_out) != 0) {
 			LM_ERR("transform failed to set output pvar!\n");
 			goto error;
 		}

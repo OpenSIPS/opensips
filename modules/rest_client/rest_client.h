@@ -27,7 +27,7 @@
 #define _REST_CLIENT_
 
 enum tr_rest_subtype {
-	TR_REST_ESCAPE
+	TR_REST_ESCAPE, TR_REST_UNESCAPE
 };
 
 #endif /* _REST_CLIENT_ */
