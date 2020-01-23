@@ -659,5 +659,65 @@ route [resume] {
 
 	</section>
 
+    <section id="exported_transformations">
+        <title>Exported script transformations</title>
+        <para>
+            The module also provides a way for encoding and decoding parameters contained in a arbitrary script variable, in accordance with RFC3986. This is done by applying a transformation to a script variable containing the data to be encoded. The value of the original variable is not altered and a corresponding string value is returned. The transformation is performed through libcurl API method curl_easy_escape (or curl_escape for libcurl < 7.15.4).
+        </para>
+
+        <section id="tran_rest.escape" xreflabel="rest.escape">
+            <title>
+                <varname>{rest.escape}</varname>
+            </title>
+            <para>
+                The result of this transformation is to produce percent encoded string value which can be safely used in URI construction.
+            </para>
+
+            <para>There are no parameters for this transformation.</para>
+
+            <example>
+                <title><varname>rest.escape</varname> usage</title>
+                <programlisting format="linespecific">
+...
+# This example would produce log entry: "Output: call%40example.com%26safe%3Dfalse"
+$var(tmp) = "call@example.com&safe=false";
+xlog("Output: $(var(tmp){rest.escape})\n");
+
+# Encode call ID before transmission:
+$var(rc) = rest_get("https://call-info.org/?id=$(ci{rest.escape})", $var(body_pv));
+...
+                </programlisting>
+            </example>
+
+        </section>
+
+        <section id="tran_rest.unescape" xreflabel="rest.unescape">
+            <title>
+                <varname>{rest.unescape}</varname>
+            </title>
+            <para>
+                The result of this transformation is to decode percent encoded string values.
+            </para>
+
+            <para>There are no parameters for this transformation.</para>
+
+            <example>
+                <title><varname>rest.unescape</varname> usage</title>
+                <programlisting format="linespecific">
+...
+# This example would produce log entry: "Output: 1+1=2!"
+$var(tmp) = "1%2B1%3D2%21";
+xlog("Output: $(var(tmp){rest.unescape})\n");
+
+# This example would produce log entry: "Output: the rats have been driven from the streets" (phew)
+$var(tmp) = "the%20rats%20have%20been%20driven%20from%20the%20streets";
+xlog("Output: $(var(tmp){rest.unescape})\n");
+...
+                </programlisting>
+            </example>
+
+        </section>
+
+    </section>
 
 </chapter>
