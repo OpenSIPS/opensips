@@ -35,6 +35,7 @@
 #include "../../mod_fix.h"
 #include "../../lib/list.h"
 #include "../../trace_api.h"
+#include "rest_client.h"
 
 #include "../tls_mgm/api.h"
 
@@ -350,7 +351,7 @@ int validate_curl_http_version(const int *http_version)
 
 /**
  * tr_rest_parse - Prepare to URL encode a string value
- * @in:		        raw parameter list (expect name only)
+ * @in:		        raw parameter list (braces removed, module name truncated) i.e. "escape"
  * @t:		        transformation parameters (unused)
  *
  * @return:
@@ -367,26 +368,21 @@ int tr_rest_parse(str* in, trans_t *t)
 
 	p = in->s;
 	name.s = in->s;
-
-	/* Scan parameter list - expect a transformation name only, reject anything else */
+	
+	/* scan parameter list - expect a transformation name only, reject anything else */
 	while (*p && *p != TR_PARAM_MARKER && *p != TR_RBRACKET) p++;
-	if (*p == '\0') {
-		LM_ERR("rest_client invalid transformation: %.*s\n", in->len, in->s);
-		return -1;
-	}
-	if (*p == TR_RBRACKET || *p == TR_PARAM_MARKER) {
-		LM_ERR("rest_client transformation supports single parameter only: %.*s\n", in->len, in->s);
+	if (*p == TR_PARAM_MARKER) {
+		LM_ERR("transformation supports single parameter only: %.*s\n", in->len, in->s);
 		return -1;
 	}
 
-	/* todo Check if we can just trim and read length of the transformation to avoid p entirely */
 	name.len = p - name.s;
 
 	/* Validate that this is a known transformation */
-	if (name.len == 11 && !memcmp(name.s, "rest.escape", 11))
+	if (name.len == 6 && !memcmp(name.s, "escape", 6))
 		t->subtype = TR_REST_ESCAPE;
 	else {
-		LM_ERR("Unknown rest_client transformation: <%.*s>\n", name.len, name.s);
+		LM_ERR("unknown transformation: <%.*s>\n", name.len, name.s);
 		return -1;
 	}
 
@@ -407,8 +403,9 @@ int tr_rest_parse(str* in, trans_t *t)
 int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val)
 {
-	pv_value_t reply_val;
 	str input_str;
+	str sencoded;
+	char *encoded;
 
 	if (!val)
 		return -1;
@@ -424,39 +421,47 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	if (subtype == TR_REST_ESCAPE) {
 
 #if ( LIBCURL_VERSION_NUM >= 0x071504 )
-        CURL *curl = curl_easy_init();
-        if (curl) {
-            char *encoded = curl_easy_escape(curl, input_str->s, input_str->len);
-            if (!encoded) {
-                LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
-                       input_str->len, input_str->s);
-                goto error;
-            }
+		CURL *curl = curl_easy_init();
+		if (curl) {
+			encoded = curl_easy_escape(curl, input_str.s, input_str.len);
+			if (!encoded) {
+				LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
+				       input_str.len, input_str.s);
+				goto error;
+			}
 
-            LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str->len,
-                   input_str->s, encoded);
+			LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str.len,
+			input_str.s, encoded);
 
-            curl_free(encoded);
-        }
+			/*
+ 			todo
+			curl_free(encoded);
+			curl_easy_cleanup(curl);
+			*/
+		}
 #else
-        char *encoded = curl_escape(input_str->s, input_str->len);
-        if (!encoded) {
-            LM_ERR("failed to execute curl_escape on '%.*s'\n",
-                   input_str->len, input_str->s);
-            goto error;
-        }
+		encoded = curl_escape(input_str.s, input_str.lenif (!encoded) {
+		if (!encoded) {
+			LM_ERR("failed to execute curl_escape on '%.*s'\n",
+			       input_str.len, input_str.s);
+			goto error;
+		}
 
-        LM_DBG("curl_escape '%.*s' returns '%s'\n", input_str->len,
-               input_str->s, encoded);
+		LM_DBG("curl_escape '%.*s' returns '%s'\n", input_str.len,
+		       input_str.s, encoded);
+
+		/*
+		todo
+		curl_free(encoded);
+		*/
 #endif
 
-        reply_val.flags = PV_VAL_STR;
-        reply_val.rs = encoded;
+		init_str(&sencoded, encoded);
 
-        if (pv_set_value(msg, val, 0, &reply_val) != 0) {
-            LM_ERR("rest_client escape transform failed to set output pvar!\n");
-            goto error;
-        }
+	        if (pv_get_strval(msg, NULL, val, &sencoded) != 0) {
+			LM_ERR("transform failed to set output pvar!\n");
+			goto error;
+		}
 
 	} else {
 		LM_BUG("Unknown transformation subtype [%d]\n", subtype);
