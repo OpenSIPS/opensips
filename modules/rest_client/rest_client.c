@@ -471,7 +471,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		CURL *curl = curl_easy_init();
 		if (curl) {
 		    /* todo review usage for outlength parameter */
-			curl_out = curl_easy_unescape(curl, input_str.s, input_str.len);
+			curl_out = curl_easy_unescape(curl, input_str.s, input_str.len, NULL);
 			if (!curl_out) {
 				LM_ERR("failed to execute curl_easy_unescape on '%.*s'\n",
 				       input_str.len, input_str.s);
