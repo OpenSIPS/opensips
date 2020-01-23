@@ -164,6 +164,20 @@ int get_script_route_ID_by_name(char *name, struct script_route *sr, int size)
 	return -1;
 }
 
+int get_script_route_ID_by_name_str(str *name, struct script_route *sr, int size)
+{
+	unsigned int i;
+
+	for(i=1;i<size;i++) {
+		if (sr[i].name==0)
+			return -1;
+		if (strlen(sr[i].name)==name->len &&
+				strncmp(sr[i].name, name->s, name->len) == 0)
+			return i;
+	}
+	return -1;
+}
+
 
 /********************** Interpreter related functions ***********************/
 
@@ -1097,28 +1111,37 @@ static int fix_actions(struct action* a)
 	for(t=a; t!=0; t=t->next){
 		switch(t->type){
 			case ROUTE_T:
-				if (t->elem[0].type!=NUMBER_ST){
+				ret = 0;
+				switch (t->elem[0].type) {
+					case SCRIPTVAR_ST:
+					case SCRIPTVAR_ELEM_ST:
+						break;
+					case NUMBER_ST:
+						if ((t->elem[0].u.number>RT_NO)||(t->elem[0].u.number<0)){
+							LM_ALERT("invalid routing table number in"
+									"route(%lu)\n", t->elem[0].u.number);
+							ret = -1;
+						}
+						if (sroutes->request[t->elem[0].u.number].a==NULL) {
+							LM_ERR("called route [%s] (id=%d) is not defined\n",
+									sroutes->request[t->elem[0].u.number].name,
+									(int)t->elem[0].u.number);
+							ret = -1;
+						}
+						break;
+					default:
+						ret = -1;
+						break;
+				}
+				if (ret == -1) {
 					LM_ALERT("BUG in route() type %d\n",
 						t->elem[0].type);
-					ret = E_BUG;
-					goto error;
-				}
-				if ((t->elem[0].u.number>RT_NO)||(t->elem[0].u.number<0)){
-					LM_ALERT("invalid routing table number in"
-							"route(%lu)\n", t->elem[0].u.number);
-					ret = E_CFG;
-					goto error;
-				}
-				if ( sroutes->request[t->elem[0].u.number].a==NULL ) {
-					LM_ERR("called route [%s] (id=%d) is not defined\n",
-						sroutes->request[t->elem[0].u.number].name,
-						(int)t->elem[0].u.number);
 					ret = E_CFG;
 					goto error;
 				}
 				if (t->elem[1].type != 0) {
 					if (t->elem[1].type != NUMBER_ST ||
-							t->elem[2].type != SCRIPTVAR_ELEM_ST) {
+							t->elem[2].type != SCRIPTVAR_ST) {
 						LM_ALERT("BUG in route() type %d/%d\n",
 								 t->elem[1].type, t->elem[2].type);
 						ret=E_BUG;

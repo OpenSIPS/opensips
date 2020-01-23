@@ -433,6 +433,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	acmd_export_t *acmd;
 	void* cmdp[MAX_CMD_PARAMS];
 	pv_value_t tmp_vals[MAX_CMD_PARAMS];
+	str sval;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
 	   functions to return with error (status<0) and not setting it
@@ -537,23 +538,49 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case ROUTE_T:
-			script_trace("route", sroutes->request[a->elem[0].u.number].name,
-				msg, a->file, a->line) ;
-			if (a->elem[0].type!=NUMBER_ST){
+			switch (a->elem[0].type) {
+				case NUMBER_ST:
+					i = a->elem[0].u.number;
+					break;
+				case SCRIPTVAR_ST:
+					if (pv_get_spec_value(msg, a->elem[0].u.item, &val) < 0) {
+						LM_ERR("cannot print route name!\n");
+						i = -1;
+						break;
+					}
+					if (val.flags & PV_VAL_INT)
+						sval.s = int2str(val.ri, &sval.len);
+					else
+						sval = val.rs;
+					i = get_script_route_ID_by_name_str(&sval, sroutes->request, RT_NO);
+					break;
+				case SCRIPTVAR_ELEM_ST:
+					if (pv_printf_s(msg, a->elem[0].u.data, &sval) < 0) {
+						LM_ERR("cannot print route name!\n");
+						i = -1;
+					}
+					i = get_script_route_ID_by_name_str(&sval, sroutes->request, RT_NO);
+					break;
+				default:
+					i = -1;
+					break;
+			}
+			if (i == -1) {
 				LM_ALERT("BUG in route() type %d\n",
 						a->elem[0].type);
 				ret=E_BUG;
 				break;
 			}
-			if ((a->elem[0].u.number>RT_NO)||(a->elem[0].u.number<0)){
-				LM_ALERT("BUG - invalid routing table number in"
-							"route(%lu)\n", a->elem[0].u.number);
+			script_trace("route", sroutes->request[i].name,
+				msg, a->file, a->line) ;
+			if ((i>RT_NO)||(i<0)){
+				LM_BUG("invalid routing table number in route(%u)\n", i);
 				ret=E_CFG;
 				break;
 			}
 			/* check if the route has parameters */
 			if (a->elem[1].type != 0) {
-				if (a->elem[1].type != NUMBER_ST || a->elem[2].type != SCRIPTVAR_ELEM_ST) {
+				if (a->elem[1].type != NUMBER_ST || a->elem[2].type != SCRIPTVAR_ST) {
 					LM_ALERT("BUG in route() type %d/%d\n",
 							a->elem[1].type, a->elem[2].type);
 					ret=E_BUG;
@@ -561,11 +588,11 @@ int do_action(struct action* a, struct sip_msg* msg)
 				}
 				route_params_push_level(a->elem[2].u.data,
 						(void*)(unsigned long)a->elem[1].u.number, route_param_get);
-				return_code=run_actions(sroutes->request[a->elem[0].u.number].a, msg);
+				return_code=run_actions(sroutes->request[i].a, msg);
 				route_params_pop_level();
 			} else {
 				route_params_push_level(NULL, 0, route_param_get);
-				return_code=run_actions(sroutes->request[a->elem[0].u.number].a, msg);
+				return_code=run_actions(sroutes->request[i].a, msg);
 				route_params_pop_level();
 			}
 			ret=return_code;
