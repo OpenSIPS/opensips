@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">55</entry>
-		<entry align="center">28</entry>
-		<entry align="center">1765</entry>
-		<entry align="center">702</entry>
+		<entry align="center">59</entry>
+		<entry align="center">30</entry>
+		<entry align="center">1944</entry>
+		<entry align="center">715</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -125,7 +125,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
 </section>
 
 </chapter>
