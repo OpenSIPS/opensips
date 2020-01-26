@@ -522,8 +522,8 @@ add_body_part("Hello World!", "text/plain");
      * -20 - No WWW-Authorize header in 401 reply.
      * -21 - No Content-Type header
      * -22 - To header parse error
-     * -23 - From header parse error
-     * -24 - Bad hostname in To header
+     * -23 - Bad hostname in To header
+     * -24 - From header parse error
      * -25 - Bad hostname in From header
      * -26 - Contact header parse error
      * -255 - undefined errors.
@@ -909,7 +909,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 49 26 1518 604
    2. Razvan Crainea (@razvancrainea) 41 17 2893 39
-   3. Liviu Chircu (@liviuchircu) 23 17 238 221
+   3. Liviu Chircu (@liviuchircu) 24 18 240 223
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
    6. Ovidiu Sas (@ovidiusas) 4 2 22 1
@@ -943,9 +943,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jan 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
    4.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
    5.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
