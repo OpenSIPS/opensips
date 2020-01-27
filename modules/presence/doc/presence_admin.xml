@@ -42,6 +42,11 @@
 	implement scenarios like High-Availability, Load Balancing or Federations,
 	please refer to this article <ulink url="https://blog.opensips.org/2018/03/27/clustering-presence-services-with-opensips-2-4/">https://blog.opensips.org/2018/03/27/clustering-presence-services-with-opensips-2-4/</ulink>.
 	</para>
+	<para>
+	As data synchronization at startup is performed when using the
+	<emphasis>full-sharing</emphasis> <xref linkend="param_cluster_federation_mode"/>,
+	you should define at least one "seed" node in the cluster in this case.
+	</para>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
