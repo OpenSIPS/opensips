@@ -294,24 +294,12 @@ get_db_struct(str *url, str *tb_name, st_db_struct_t **st_db)
 	}
 
 	if (!DB_CAPABILITY(dbs->funcs, DB_CAP_INSERT)) {
-		LM_ERR("database modules does not provide all functions needed by module\n");
-		return -1;
-	}
-
-	if ((dbs->con=dbs->funcs.init(url)) == 0) {
-		LM_CRIT("Cannot connect to DB\n");
-		return -1;
-	}
-
-	if (db_check_table_version(&dbs->funcs, dbs->con,
-						&dbs->table, SIPTRACE_TABLE_VERSION) < 0) {
-		LM_ERR("error during table version check.\n");
+		LM_ERR("database modules does not provide all functions "
+			"needed by module\n");
 		return -1;
 	}
 
 	dbs->url = *url;
-	dbs->funcs.close(dbs->con);
-	dbs->con = 0;
 
 	*st_db = dbs;
 
@@ -763,30 +751,63 @@ static int mod_init(void)
 
 	*trace_on_flag = trace_on;
 
-	/* initialize hep api */
+	/* initialize the trace IDs */
 	for (it=trace_list;it;it=it->next) {
-		if (it->type!=TYPE_HEP)
-			continue;
 
-		if (tprot.get_trace_dest_by_name == NULL) {
-			LM_DBG("Loading tracing protocol!\n");
-			/*
-			 * if more tracing protocols shall implement the api then
-			 * this should be a modparam
-			 */
-			if (trace_prot_bind(TRACE_PROTO, &tprot)) {
-				LM_ERR("Failed to bind tracing protocol!\n");
-				return -1;
-			}
-		}
+		switch (it->type) {
 
-		it->el.hep.hep_id = tprot.get_trace_dest_by_name(&it->el.hep.name);
-		if (it->el.hep.hep_id == NULL) {
-			LM_ERR("hep id not found!\n");
-			return -1;
-		}
-		LM_DBG("hep id {%.*s} loaded successfully!\n",
+			case TYPE_HEP:
+
+				if (tprot.get_trace_dest_by_name == NULL) {
+					LM_DBG("Loading tracing protocol!\n");
+					/*
+					 * if more tracing protocols shall implement the api then
+					 * this should be a modparam
+					 */
+					if (trace_prot_bind(TRACE_PROTO, &tprot)) {
+						LM_ERR("Failed to bind tracing protocol!\n");
+						return -1;
+					}
+				}
+
+				it->el.hep.hep_id = tprot.get_trace_dest_by_name
+					(&it->el.hep.name);
+				if (it->el.hep.hep_id == NULL) {
+					LM_ERR("hep id not found!\n");
+					return -1;
+				}
+				LM_DBG("hep id {%.*s} loaded successfully!\n",
 					it->el.hep.name.len, it->el.hep.name.s);
+
+				break;
+
+			case TYPE_DB:
+
+				if((it->el.db->con=it->el.db->funcs.init(&it->el.db->url))==0){
+					LM_CRIT("Cannot connect to DB <%.*s>\n",
+						it->el.db->url.len, it->el.db->url.s );
+					return -1;
+				}
+
+				if (db_check_table_version(&it->el.db->funcs, it->el.db->con,
+						&it->el.db->table, SIPTRACE_TABLE_VERSION) < 0) {
+					LM_ERR("failed to check table version for <%.*s>\n",
+						it->el.db->url.len, it->el.db->url.s );
+					return -1;
+				}
+				it->el.db->funcs.close(it->el.db->con);
+				it->el.db->con = 0;
+
+				break;
+
+			case TYPE_SIP:
+			case TYPE_END:
+
+				/* nothing to do here*/
+
+				break;
+		}
+
 	}
 
 	/* set db_keys/vals info */
