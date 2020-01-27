@@ -7,9 +7,29 @@
 	<title>Overview</title>
 	<para> The modules handles PUBLISH and SUBSCRIBE messages and generates
 	NOTIFY messages in a general, event independent way. It allows registering 
-	events to it from other &osips; modules. Events that can currently be added to
-	it are: presence, presence.winfo, dialog;sla from presence_xml
-	module and message-summary from presence_mwi module.
+	events from other &osips; modules. Events that can currently be added are:
+	<itemizedlist>
+	<listitem><para>
+		<emphasis>presence</emphasis>, <emphasis>presence.winfo</emphasis>,
+		<emphasis>dialog;sla</emphasis> from presence_xml module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>message-summary</emphasis> from presence_mwi module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>call-info</emphasis>, <emphasis>line-seize</emphasis> from
+		presence_callinfo module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>dialog</emphasis> from presence_dialoginfo module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>xcap-diff</emphasis> from presence_xcapdiff module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>as-feature-event</emphasis> from presence_dfks module
+	</para></listitem>
+	</itemizedlist>
 	</para>
 	<para>
 	The module uses database storage. 
