@@ -1292,8 +1292,8 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type, struct tmcb_
 		return;
 	}
 
-
-	dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
+	if (ps->code == 200)
+		dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
 }
 
 static void dlg_update_callee_rpl_contact(struct cell* t, int type, struct tmcb_params *ps)
@@ -1314,7 +1314,8 @@ static void dlg_update_callee_rpl_contact(struct cell* t, int type, struct tmcb_
 		return;
 	}
 
-	dlg_update_contact(dlg, msg, callee_idx(dlg));
+	if (ps->code == 200)
+		dlg_update_contact(dlg, msg, callee_idx(dlg));
 }
 
 
