@@ -1236,9 +1236,15 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 {
 	str contact;
 	char *tmp;
-	if (!msg->contact || !msg->contact->parsed ||
-			!((contact_body_t *)msg->contact->parsed)->contacts)
-		return 0; /* contact not updated */
+
+	if (!msg->contact &&
+		(parse_headers(msg, HDR_CONTACT_F, 0) < 0 || !msg->contact)) {
+		LM_DBG("INVITE or UPDATE without a contact - not updating!\n");
+		return 0;
+	} else if (!msg->contact->parsed && parse_contact(msg->contact) < 0) {
+		LM_INFO("INVITE or UPDATE with broken contact - not updating!\n");
+		return 0;
+	}
 	contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
 	if (dlg->legs[leg].contact.s) {
 		/* if the same contact, don't do anything */
@@ -1455,31 +1461,16 @@ error:
 	return -1;
 }
 
-static inline void update_contact_and_sdp(struct dlg_cell *dlg, struct sip_msg *req,
+static inline void update_sequential_sdp(struct dlg_cell *dlg, struct sip_msg *req,
 		unsigned int leg)
 {
 	int ret;
-	int update_contact = 0;
 
 	if (req->REQ_METHOD != METHOD_INVITE && req->REQ_METHOD != METHOD_UPDATE)
 		return;
 
-	/* make sure contact is parsed */
-	if (!req->contact &&
-		(parse_headers(req, HDR_CONTACT_F, 0) < 0 || !req->contact))
-		LM_INFO("INVITE or UPDATE without a contact - not updating!\n");
-	else if (!req->contact->parsed && parse_contact(req->contact) < 0)
-		LM_INFO("INVITE or UPDATE with broken contact - not updating!\n");
-	else
-		update_contact = 1;
-
 	dlg_lock_dlg(dlg);
-	if (update_contact)
-		ret = dlg_update_contact(dlg, req, leg);
-	else
-		ret = 0;
-	if (ret >= 0)
-		ret += dlg_update_sdp(dlg, req, leg);
+	ret = dlg_update_sdp(dlg, req, leg);
 	dlg_unlock_dlg(dlg);
 
 	/* if anything has changed in the meantime, also update replicate */
@@ -1671,7 +1662,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 			return;
 		}
 	}
-	update_contact_and_sdp(dlg, req,
+	update_sequential_sdp(dlg, req,
 			dst_leg == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG);
 
 	if (dialog_repl_cluster)
