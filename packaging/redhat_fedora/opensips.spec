@@ -29,7 +29,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.0.1
+Version:  3.0.2
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1380,10 +1380,10 @@ fi
 
 
 %changelog
-* Tue Apr 16 2019 Razvan Crainea <razvan@opensips.org> - 3.0.1-1
+* Tue Apr 16 2019 Razvan Crainea <razvan@opensips.org> - 3.0.2-1
 - Remove osipsconsole
 
-* Thu Apr 11 2019 Nick Altmann <nick.altmann@gmail.com> - 3.0.1-1
+* Thu Apr 11 2019 Nick Altmann <nick.altmann@gmail.com> - 3.0.2-1
 - Specification updated for opensips 3.0
 - Package names and layout were changed similar to debian packaging
 
