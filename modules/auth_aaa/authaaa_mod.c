@@ -116,6 +116,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "aaa_url", get_deps_aaa_url },
+		{ NULL, NULL },
 	},
 };
 
