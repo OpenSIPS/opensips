@@ -201,6 +201,11 @@ modparam("perl", "modpath", "/usr/local/lib/opensips/perl/")
 			An arbitrary string may optionally be passed as a parameter.
 			</para>
 			<para>
+			The function returns <emphasis>1</emphasis> if the perl function was successfully called
+			or <emphasis>-1</emphasis> if an internal error occured. Note that it does not propagate
+			the return value of the perl function.
+			</para>
+			<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE and BRANCH_ROUTE.
 			</para>
 			<example>
@@ -227,6 +232,11 @@ if ($rm=="INVITE") {
 			<para>
 			The first parameter is the function to be called.
 			An arbitrary string may be passed as a parameter.
+			</para>
+			<para>
+			The function returns back to the OpenSIPS script the value returned by the perl function.
+			Note that if this value is <emphasis>0</emphasis> the script execution
+			will be stoped, similarly to calling <emphasis>exit</emphasis>.
 			</para>
 			<para>
 			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, ONREPLY_ROUTE and BRANCH_ROUTE.
