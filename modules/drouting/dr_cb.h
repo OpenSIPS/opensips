@@ -19,17 +19,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * History
+ * -------
+ *  2014-09-24  initial version (Mihai Tiganus)
+ *  2016-02-18  ported to 2.2 (bogdan)
  */
+
 
 #ifndef _DR_CB_H_
 #define _DR_CB_H_
-
-/* parameters needed for the registration of a gw */
-struct dr_reg_param {
-	void *rule;
-	int n_dst; /* the index of the destination within the rule */
-	void *cr_or_gw;
-};
 
 /* callback types used on top of DRouting */
 enum drcb_types {
@@ -48,33 +47,6 @@ enum drcb_types {
 	DRCB_MAX /*keep this at the end*/
 };
 
-struct dr_acc_call_params {
-	void *rule; /* qr_handler/rule */
-	int cr_id; /* destination id */
-	int gw_id; /* in the case the destination is a carrier */
-	struct sip_msg *msg;
-};
-
-struct dr_sort_params {
-	pgw_list_t *pgwl; /* gws/cr to be sorted */
-	int size; /* the size of pgwl */
-	unsigned short *sorted_dst; /* returns an array with the indexes of the sorted dest */
-	int rc; /* return code for the funciton */
-};
-
-
-#include "prefix_tree.h"
-#include "dr_sorting_cbs.h"
-
-#define POINTER_CLOSED_MARKER  ((void *)(-1))
-
-
-
-struct dr_cb_params {
-	void **param; /* parameter passed at callback registration*/
-};
-
-
 /* callback function prototype */
 typedef void (dr_cb) (void *param);
 /* function to free callback param */
@@ -92,7 +64,6 @@ struct dr_callback {
 	dr_param_free_cb* callback_param_free;
 	struct dr_callback * next;
 };
-/* TODO: should i have a different structure for sort_callbacks */
 
 
 /* sorting related data */
