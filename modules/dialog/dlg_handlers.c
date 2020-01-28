@@ -1466,30 +1466,6 @@ error:
 	return -1;
 }
 
-static inline void update_contact(struct dlg_cell *dlg, struct sip_msg *req,
-		unsigned int leg)
-{
-	int ret;
-
-	if (req->REQ_METHOD != METHOD_INVITE && req->REQ_METHOD != METHOD_UPDATE)
-		return;
-
-	/* make sure contact is parsed */
-	if (!req->contact &&
-		(parse_headers(req, HDR_CONTACT_F, 0) < 0 || !req->contact)) {
-		LM_INFO("INVITE or UPDATE without a contact - not updating!\n");
-		return;
-	}
-	if (!req->contact->parsed && parse_contact(req->contact) < 0) {
-		LM_INFO("INVITE or UPDATE with broken contact - not updating!\n");
-		return;
-	}
-	ret = dlg_update_contact(dlg, req, leg);
-
-	/* if anything has changed in the meantime, also update replicate */
-	if (ret > 0 && dialog_repl_cluster)
-		replicate_dialog_updated(dlg);
-}
 
 /* update inv_cseq field if update_field=1
  * else update r_cseq */
