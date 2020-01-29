@@ -1,1 +1,1 @@
-id(int,auto) carrierid(string) gwlist(string) flags(int) sort_alg(string) state(int) attrs(string,null) description(string) 
+id(int,auto) carrierid(string) gwlist(string) flags(int) sort_alg(string) state(int) attrs(string,null) description(string,null) 

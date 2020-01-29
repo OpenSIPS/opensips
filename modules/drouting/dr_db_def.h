@@ -52,6 +52,8 @@ extern str time_drr_col;
 extern str priority_drr_col;
 extern str routeid_drr_col;
 extern str dstlist_drr_col;
+extern str sort_alg_drr_col;
+extern str sort_profile_drr_col;
 extern str attrs_drr_col;
 
 /* DR carrier table related defs */
@@ -59,6 +61,7 @@ extern str drc_table;
 extern str id_drc_col;
 extern str cid_drc_col;
 extern str flags_drc_col;
+extern str sort_alg_drc_col;
 extern str gwlist_drc_col;
 extern str attrs_drc_col;
 extern str state_drc_col;

@@ -2,7 +2,7 @@
  *
  * drouting module sorting callbacks header
  *
- * Copyright (C) 2014-2016 OpenSIPS Solutions
+ * Copyright (C) 2014-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,15 +20,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Sui *  2016-02-18  ported to 2.2 (bogdan)
 te 330, Boston, MA  02111-1307  USA
- *
- * History
- * -------
- *  2014-10-10  initial version (Mihai Tiganus)
- *  2016-02-18  ported to 2.2 (bogdan)
 */
 
-#ifndef _DR_SORTING_CBS_H_
-#define _DR_SORTING_CBS_H_
+#ifndef _DR_CB_SORTING_H_
+#define _DR_CB_SORTING_H_
 
 #include "prefix_tree.h"
 
@@ -109,6 +104,7 @@ struct dr_create_partition_list_params {
 	int n_parts; /* the number of partitions:provided by dr */
 };
 
+typedef void (*dr_sort_cb) (void *param);
+int run_dr_sort_cbs(sort_cb_type type, struct dr_sort_params *param);
+
 #endif
-
-

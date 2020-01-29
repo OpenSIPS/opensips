@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
+#include <string.h>
 #include <ctype.h>
 
 #include "dr_partitions.h"
@@ -43,6 +44,9 @@
 #include "../../time_rec.h"
 #include "prefix_tree.h"
 #include "parse.h"
+#include "dr_cb.h"
+#include "dr_cb_sorting.h"
+
 
 #define is_valid_gw_char(_c) \
 	(isalpha(_c) || isdigit(_c) || (_c)=='_' || (_c)=='-' || (_c)=='.')
@@ -89,11 +93,12 @@ int parse_destination_list(rt_data_t* rd, char *dstlist, pgw_list_t** pgwl_ret,
 		unsigned short *len, int no_resize, osips_malloc_f mf)
 {
 #define PGWL_SIZE 32
-	pgw_list_t *pgwl=NULL, *p=NULL;
+	pgw_list_t *pgwl=NULL, *p = NULL;
 	unsigned int size, pgwl_size;
 	long int t;
 	char *tmp, *ep;
 	str id;
+
 
 	/* temporary list of gw while parsing */
 	pgwl_size = PGWL_SIZE;
@@ -185,6 +190,10 @@ int parse_destination_list(rt_data_t* rd, char *dstlist, pgw_list_t** pgwl_ret,
 			size++;
 		}
 
+
+
+
+
 		/* separator */
 		if ( (*tmp==SEP) || (*tmp==SEP1) ) {
 			tmp++;
@@ -216,6 +225,7 @@ int parse_destination_list(rt_data_t* rd, char *dstlist, pgw_list_t** pgwl_ret,
 		goto error;
 	}
 	memcpy( p, pgwl, size*sizeof(pgw_list_t));
+
 	pkg_free(pgwl);
 	*len = size;
 	*pgwl_ret = p;
@@ -229,12 +239,13 @@ error:
 }
 
 
-int add_carrier(char *id, int flags, char *gwlist, char *attrs,
+int add_carrier(char *id, int flags, char *sort_alg, char *gwlist, char *attrs,
 										int state, rt_data_t *rd,
 										osips_malloc_f mf, osips_free_f ff)
 {
 	pcr_t *cr = NULL;
 	unsigned int i;
+	unsigned char * sort_p, n_alg;
 
 	str key;
 
@@ -266,6 +277,20 @@ int add_carrier(char *id, int flags, char *gwlist, char *attrs,
 
 	/* copy integer fields */
 	cr->flags = flags;
+
+	sort_p = memchr(sort_algs, sort_alg[0], N_MAX_SORT_CBS);
+	if(sort_p == NULL) {
+		n_alg = 1;
+	} else {
+		n_alg = (unsigned char)(sort_p - sort_algs);
+
+		if(n_alg == 0) {
+			n_alg = 1;
+		}
+	}
+
+	cr->sort_alg = n_alg;
+
 
 	/* set state */
 	if (state!=0)
@@ -308,17 +333,34 @@ build_rt_info(
 	int id,
 	int priority,
 	tmrec_t *trec,
-	/* script route name */
-	char* route_idx,
+	/* script routing table index */
+	char *route_idx,
 	/* list of destinations indexes */
 	char* dstlst,
+	char* sort_alg,
+	int sort_profile,
 	char* attrs,
 	rt_data_t* rd,
+	void *qr_parts_data,
+	int part_index,
+	str *part_name,
 	osips_malloc_f mf,
 	osips_free_f ff
 	)
 {
 	rt_info_t* rt = NULL;
+
+	/* callback parameters for the QR module */
+	int i;
+	void * qr_rule = NULL;
+	struct dr_cb_params *cb_params;
+	struct dr_reg_init_rule_params *init_rule_params;
+	struct dr_reg_param *reg_dst_param;
+	struct dr_set_profile_params *profile_params;
+	struct dr_add_rule_params *add_rule_params = NULL;
+	pgw_list_t *p = NULL;
+
+	unsigned char * sort_p, n_alg;
 
 	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t) +
 		(attrs?strlen(attrs):0) + (route_idx?strlen(route_idx)+1:0) );
@@ -331,6 +373,20 @@ build_rt_info(
 	rt->id = id;
 	rt->priority = priority;
 	rt->time_rec = trec;
+
+	rt->route_idx = route_idx;
+	sort_p = memchr(sort_algs, sort_alg[0], N_MAX_SORT_CBS);
+	if(sort_p == NULL) {
+		n_alg = 1;
+	} else {
+		n_alg = (unsigned char)(sort_p - sort_algs);
+		if(n_alg == 0) {
+			n_alg = 1;
+		}
+	}
+
+	rt->sort_alg = n_alg;
+
 	if (attrs && strlen(attrs)) {
 		rt->attrs.s = (char*)(rt+1);
 		rt->attrs.len = strlen(attrs);
@@ -347,6 +403,90 @@ build_rt_info(
 			goto err_exit;
 		}
 	}
+
+	if(n_alg == 3) { /* if the sorting algorithm for this rule is qr sorting */
+
+		/* call the create rule callbacks */
+		init_rule_params = (struct dr_reg_init_rule_params *) pkg_malloc(
+				sizeof(struct dr_reg_init_rule_params));
+		cb_params = (struct dr_cb_params *) pkg_malloc(sizeof(struct dr_cb_params));
+		if(init_rule_params != NULL && cb_params != NULL) {
+			memset(init_rule_params, 0, sizeof(struct dr_reg_init_rule_params));
+			init_rule_params->n_dst = rt->pgwa_len;
+			init_rule_params->r_id = id; /* name of the rule */
+			cb_params->param = (void*)&init_rule_params;
+
+			if (run_dr_cbs(DRCB_REG_INIT_RULE, cb_params) != 0)
+				LM_BUG("No callback for DRCB_REG_INIT_RULE\n");
+
+			qr_rule = (void*)((struct dr_reg_init_rule_params*)*cb_params->param)->rule;
+			rt->qr_handler = qr_rule;
+
+			p = rt->pgwl;
+
+
+			/* TODO: params should be pkg - and freed in the cbs */
+			/* TODO: should check if qr loaded */
+
+
+			profile_params = (struct dr_set_profile_params *) pkg_malloc(
+					sizeof(struct dr_set_profile_params));
+			if(profile_params == NULL) {
+				LM_ERR("no more pkg memory");
+				return NULL;
+			}
+
+			profile_params->qr_rule = qr_rule;
+			profile_params->profile = sort_profile;
+
+			run_dr_cbs(DRCB_SET_PROFILE, profile_params); /* save the threholds from qr
+											   to the rule */
+			for(i = 0; i < rt->pgwa_len; i++) {
+				if(p[i].is_carrier) {
+					reg_dst_param = (struct dr_reg_param *) pkg_malloc(
+							sizeof(struct dr_reg_param));
+					if(reg_dst_param == NULL) {
+						LM_ERR("no more pkg memory\n");
+					} else {
+						reg_dst_param->rule = qr_rule;
+						reg_dst_param->n_dst = i;
+						reg_dst_param->cr_or_gw = p[i].dst.carrier;
+
+						run_dr_cbs(DRCB_REG_CR, reg_dst_param);
+					}
+
+				} else {
+					reg_dst_param = (struct dr_reg_param *) pkg_malloc(sizeof(struct
+								dr_reg_param));
+					if(reg_dst_param == NULL) {
+						LM_ERR("no more pkg memory\n");
+						/* TODO: should we crash all together? */
+					} else {
+						reg_dst_param->rule = qr_rule;
+						reg_dst_param->n_dst = i;
+						reg_dst_param->cr_or_gw = p[i].dst.gw;
+
+						run_dr_cbs(DRCB_REG_GW, reg_dst_param);
+					}
+				}
+
+			}
+		}
+		/* add rule to the partition list */
+		add_rule_params = (struct dr_add_rule_params *) pkg_malloc(
+				sizeof(struct dr_add_rule_params));
+		if(add_rule_params == NULL) {
+			LM_ERR("no more pkg memory\n");
+		}
+
+		add_rule_params->qr_rule = qr_rule;
+		add_rule_params->qr_parts = qr_parts_data;
+		add_rule_params->part_name = *part_name;
+		add_rule_params->part_index = part_index;
+		run_dr_cbs(DRCB_REG_ADD_RULE, add_rule_params);
+		pkg_free(add_rule_params);
+	}
+
 
 	return rt;
 
@@ -513,7 +653,7 @@ add_dst(
 	if( sip_prefix==0 ) {
 		if(l_ip+4>=GWABUF_MAX_SIZE) {
 			LM_ERR("GW address (%d) longer "
-				"than %d\n",l_ip+4,GWABUF_MAX_SIZE);
+					"than %d\n",l_ip+4,GWABUF_MAX_SIZE);
 			goto err_exit;
 		}
 		memcpy(gwabuf, "sip:", 4);
@@ -528,7 +668,7 @@ add_dst(
 	memset(&uri, 0, sizeof(struct sip_uri));
 	if(parse_uri(gwas.s, gwas.len, &uri)!=0) {
 		LM_ERR("invalid uri <%.*s>\n",
-			gwas.len, gwas.s);
+				gwas.len, gwas.s);
 		goto err_exit;
 	}
 	/* update the sip_prefix to skip to domain part */
@@ -540,7 +680,7 @@ add_dst(
 		l_pri + l_attrs);
 	if (NULL==pgw) {
 		LM_ERR("no more shm mem (%u)\n",
-			(unsigned int)(sizeof(pgw_t)+l_id+l_ip-sip_prefix+l_pri +l_attrs));
+				(unsigned int)(sizeof(pgw_t)+l_id+l_ip-sip_prefix+l_pri +l_attrs));
 		goto err_exit;
 	}
 	memset(pgw,0,sizeof(pgw_t));
@@ -604,7 +744,7 @@ add_dst(
 	if (proxy==NULL) {
 		if(dr_force_dns) {
 			LM_ERR("cannot resolve <%.*s>\n",
-				uri.host.len, uri.host.s);
+					uri.host.len, uri.host.s);
 			goto err_exit;
 		} else {
 			LM_DBG("cannot resolve <%.*s> - won't be used"
@@ -624,7 +764,7 @@ add_dst(
 		pgw->ports[pgw->ips_no] = proxy->port;
 		pgw->protos[pgw->ips_no] = proxy->proto;
 		LM_DBG("additional gw ip addr [%s]\n",
-			ip_addr2a( &pgw->ips[pgw->ips_no] ) );
+				ip_addr2a( &pgw->ips[pgw->ips_no] ) );
 		pgw->ips_no++;
 	}
 
@@ -692,7 +832,7 @@ void del_carriers_list(
 				destroy_pcr_rpm_w:destroy_pcr_shm_w));
 }
 
-void
+	void
 free_rt_data(
 		rt_data_t* rt_data,
 		osips_free_f free_f

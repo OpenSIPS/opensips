@@ -37,6 +37,7 @@
 #include "dr_clustering.h"
 #include "dr_api.h"
 #include "dr_api_internal.h"
+#include "dr_cb.h"
 
 #include "../../mem/rpm_mem.h"
 
@@ -44,12 +45,13 @@
 #define DR_PARAM_RULE_FALLBACK      (1<<1)
 #define DR_PARAM_STRICT_LEN         (1<<2)
 #define DR_PARAM_ONLY_CHECK         (1<<3)
+#define DR_PARAM_USE_QR             (1<<4)
 #define DR_PARAM_INTERNAL_TRIGGERED (1<<30)
 
 #define DRD_TABLE_VER 6
-#define DRR_TABLE_VER 3
+#define DRR_TABLE_VER 4
 #define DRG_TABLE_VER 2
-#define DRC_TABLE_VER 2
+#define DRC_TABLE_VER 3
 #define PART_TABLE_VER 1
 
 #define MAX_LEN_NAME_W_PART 510 /* max len of variable containing
@@ -151,6 +153,7 @@ static str attrs_empty = str_init("");
 /* configuration loader from db specific stuff */
 static str db_partitions_table = str_init("dr_partitions"); /* default url */
 static str db_partitions_url;
+rw_lock_t *reload_lock; /* lock to protect the partitions while reloading */
 
 
 //static int use_partitions = 0;
@@ -174,13 +177,33 @@ static struct head_config {
 	str carrier_attrs_avp_spec; /* extracted from database - has default value */
 	struct head_config *next;
 }* head_start = NULL;
+int *n_partitions; /* the number of partitions accepted by modules init */
 
-struct head_db * head_db_start = NULL;
+struct head_db *head_db_start;
 
 typedef struct param_prob_callback {
 	struct head_db * current_partition;
 	unsigned int  _id;
 }param_prob_callback_t;
+
+typedef struct dr_partition {
+	union {
+		struct head_db * part;
+		gparam_p part_name;
+	} v;
+
+	enum dr_partition_type { DR_PTR_PART, DR_GPARAM_PART, DR_NO_PART } type;
+} dr_partition_t;
+
+typedef struct dr_part_group {
+	dr_partition_t * dr_part;
+	dr_group_t * group;
+} dr_part_group_t;
+
+typedef struct dr_part_old {
+	dr_partition_t *dr_part;
+	gparam_p gw_or_cr; /* gateway or carrier */
+} dr_part_old_t;
 
 typedef struct dr_part_cr {
 	gparam_p part;
@@ -191,6 +214,11 @@ typedef struct dr_part_gw {
 	gparam_p part;
 	gparam_p gw;
 } dr_part_gw_t;
+
+typedef struct dr_dst_ids {
+	int gw_id;
+	int cr_id;
+} dr_dst_ids_t;
 
 
 static int get_config_from_db();
@@ -304,6 +332,15 @@ mi_response_t *mi_dr_enable_probing_1(const mi_params_t *params,
 
 /*0-> disabled, 1 ->enabled*/
 unsigned int *dr_enable_probing_state=0;
+
+/* sorting functions used by dr */
+static void no_sort(void *params);
+static void weight_based_sort_cb(void *params);
+static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx);
+static int sort_rt_dst(rt_info_t *dr_rule, unsigned short dst_id, unsigned short *idx);
+static inline int get_pgwl_params(struct dr_sort_params *sort_params,
+		pgw_list_t **pgwl, int *size, unsigned short **sorted_dst);
+
 
 /* event */
 static str dr_event = str_init("E_DROUTING_STATUS");
@@ -515,6 +552,7 @@ static module_dependency_t *get_deps_probing_interval(param_export_t *param)
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "qrouting", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -941,7 +979,8 @@ static void dr_state_timer(unsigned int ticks, void* param)
  * -1, else return 0
  */
 
-static inline int dr_reload_data_head(struct head_db *hd, int initial)
+static inline int dr_reload_data_head( struct head_db *hd,
+		void *qr_parts, int part_index, str *part_name, int initial)
 {
 	rt_data_t *new_data;
 	rt_data_t *old_data;
@@ -971,7 +1010,8 @@ static inline int dr_reload_data_head(struct head_db *hd, int initial)
 	}
 
 	LM_INFO("loading drouting data!\n");
-	new_data = dr_load_routing_info(hd, dr_persistent_state);
+	new_data = dr_load_routing_info(hd, dr_persistent_state, qr_parts,
+			part_index, part_name);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
 		goto error;
@@ -1050,12 +1090,65 @@ error:
 static inline int dr_reload_data(int initial) {
 	struct head_db * it_head_db;
 	int ret_val = 0;
+	void *old_list = NULL; /* list to be freed */
+	void *qr_parts_data = NULL; /* all the partitions */
+	int part_index;
+	struct dr_mark_as_main_list_params * mark_as_main_list;
+	struct dr_free_qr_list_params *free_list_params;
+	struct dr_create_partition_list_params *create_parts_list_params;
 
-	for( it_head_db=head_db_start; it_head_db!=NULL;
-			it_head_db=it_head_db->next ) {
-		if( dr_reload_data_head(it_head_db, initial)!=0 )
-			ret_val = -1;
+
+	create_parts_list_params = (struct dr_create_partition_list_params*)
+		pkg_malloc(sizeof(struct dr_create_partition_list_params));
+
+	if(create_parts_list_params == NULL) {
+		LM_ERR("no more pkg memory");
+		ret_val = -1;
 	}
+	create_parts_list_params->part_list = &qr_parts_data;
+	create_parts_list_params->n_parts = *n_partitions;
+	run_dr_cbs(DRCB_REG_CREATE_PARTS_LIST,
+			create_parts_list_params ); /* create the QR list for
+										   all the partitions */
+
+	/* TODO will atomize operations  under lock (rt_info_t vector) */
+	lock_start_write(reload_lock);
+	for( it_head_db=head_db_start, part_index = 0; it_head_db!=NULL;
+			it_head_db=it_head_db->next, part_index++ ) {
+		if( dr_reload_data_head(it_head_db, qr_parts_data, part_index,
+					&it_head_db->partition, initial)!=0 )
+			ret_val = -1;
+
+	}
+
+	mark_as_main_list = (struct dr_mark_as_main_list_params*)
+		pkg_malloc(sizeof(struct dr_mark_as_main_list_params));
+
+	if(mark_as_main_list == NULL) {
+		LM_ERR("no more pkg memory\n");
+		ret_val = -1; /* TODO */
+	}
+	/* TODO: only this should be under lock */
+	mark_as_main_list->qr_parts_new_list = qr_parts_data;
+	mark_as_main_list->qr_parts_old_list = &old_list;
+	/* make the new list the main list used by the QR */
+	run_dr_cbs(DRCB_REG_MARK_AS_RULE_LIST, mark_as_main_list);
+	lock_stop_write(reload_lock);
+
+	pkg_free(mark_as_main_list); /* free the parameters for the callback */
+
+	free_list_params = (struct dr_free_qr_list_params*)
+		pkg_malloc(sizeof(struct dr_free_qr_list_params));
+	if(free_list_params == NULL) {
+		LM_ERR("No more pkg memory");
+		ret_val = -1;
+	}
+
+	free_list_params->old_list = old_list;
+	/* free the old QR list */
+	run_dr_cbs(DRCB_REG_FREE_LIST, free_list_params);
+	pkg_free(free_list_params);
+
 	return ret_val;
 }
 
@@ -1367,6 +1460,12 @@ static int dr_init(void)
 	head_start = NULL; //empty head list
 
 	LM_INFO("Dynamic-Routing - initializing\n");
+	reload_lock = lock_init_rw();
+	if(reload_lock == NULL) {
+		LM_ERR("failed to init rw lock for dr_reload\n");
+	}
+	n_partitions = (int*)shm_malloc(sizeof(int));
+	*n_partitions = 0;
 
 	drd_table.len = strlen(drd_table.s);
 	drg_table.len = strlen(drg_table.s);
@@ -1385,6 +1484,26 @@ static int dr_init(void)
 		else
 			LM_INFO("starting drouting with cache head=%p\n", dr_cache);
 	}
+
+	/* register dr callbacks for sorting */
+	if(register_dr_cb(DRCB_SORT_DST, no_sort, (void*)NO_SORT, NULL) < 0) {
+		LM_ERR("[DR] failed to register DRCB_SORT_DST callback [no_sort] to dr\n");
+		return -1;
+	}
+	if(register_dr_cb(DRCB_SORT_DST, weight_based_sort_cb,
+				(void*)WEIGHT_BASED_SORT, NULL) < 0) {
+		LM_ERR("[DR] failed to register DRCB_SORT_DST callback" \
+				" [weight_based_sort] to dr\n");
+		return -1;
+
+	}
+
+	name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of
+													   fixed string */);
+		if( name_w_part.s == 0 ) {
+			LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
+			goto error;
+		}
 
 	if( use_partitions == 1 ) { /* loading configurations from db */
 		if (get_config_from_db() == -1) {
@@ -1543,6 +1662,11 @@ static int dr_init(void)
 
 		/* fix specs for internal AVP (used for fallback) */
 		/* partition name is added to AVP name */
+		add_partition_to_avp_name("_dr_dst_ids_");
+		if ( parse_avp_spec( &name_w_part, &db_part->acc_call_params_avp)!=0 ) {
+			LM_ERR("failed to init internal AVP for dst IDs\n");
+			goto error_cfg;
+		}
 
 		add_partition_to_avp_name("_dr_fb_ruri_");
 		if (parse_avp_spec(&name_w_part, &db_part->avpID_store_ruri) != 0) {
@@ -1989,6 +2113,7 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 {
 	struct head_db * part;
 	mi_response_t *resp;
+	void *rule_list;
 
 	LM_INFO("dr_reload MI command received!\n");
 
@@ -1996,7 +2121,7 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 	if (resp)
 		return resp;
 
-	if( dr_reload_data_head(part, 0)<0 ) {
+	if( dr_reload_data_head(part, &rule_list, 0, &part->partition, 0)<0 ) {
 		LM_CRIT("Failed to load data head\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
@@ -2171,6 +2296,7 @@ static int use_next_gw(struct sip_msg* msg,
 	int ok = 0;
 	pgw_t * dst;
 	struct socket_info *sock;
+	struct dr_acc_call_params *acc_call_params;
 
 	if(part==NULL) {
 		LM_ERR("Partition is mandatory for use_next_gw.\n");
@@ -2310,6 +2436,25 @@ static int use_next_gw(struct sip_msg* msg,
 			destroy_avp(avp_sk);
 		}
 
+		avp_sk = NULL;
+		do {
+			if (avp_sk) destroy_avp(avp_sk);
+			avp_sk = search_first_avp( 0, current_partition->acc_call_params_avp,
+					&val, NULL);
+		}while (avp_sk && (avp_sk->flags&AVP_VAL_STR)==0 );
+		if (!avp_sk) {
+			/* this shuold not happen, it is a bogus state */
+			acc_call_params = NULL;
+		} else {
+			acc_call_params = (struct dr_acc_call_params*)
+				(*(struct dr_acc_call_params**)val.s.s);
+			run_dr_cbs(DRCB_ACC_CALL, acc_call_params); /* do accouting
+																		  for the call */
+			destroy_avp(avp_sk);
+		}
+		if(acc_call_params != NULL) {
+		}
+
 		LM_DBG("new RURI set to <%.*s> via socket <%.*s>\n",
 				ruri.len, ruri.s,
 				sock?sock->name.len:4, sock?sock->name.s:"none");
@@ -2397,19 +2542,128 @@ fallback_failed:
 		} \
 	}while(0) \
 
-static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
-		int weight, unsigned short *idx)
+/* don't sort anything let the list as it is */
+static void no_sort(void *params) {
+	struct dr_sort_params *dsp = (struct dr_sort_params *)params;
+	int i = 0;
+	unsigned short *sorted_dst = NULL;
+	int size = 0;
+	pgw_list_t *pgwl = NULL;
+	int rc = 0;
+
+	rc = get_pgwl_params(dsp, &pgwl, &size, &sorted_dst);
+
+
+	for(i = 0; i < size; i++) {
+		sorted_dst[i] = i; /* leave the gw list as itis */
+	}
+
+	if(rc < 0) {
+		LM_ERR("failed to sort\n");
+		dsp->rc = -1; /* everything ok */
+	}
+	dsp->sorted_dst = sorted_dst;
+	dsp->rc = 0; /* everything ok */
+}
+static inline int get_pgwl_params(struct dr_sort_params *sort_params,
+		pgw_list_t **pgwl, int *size, unsigned short **sorted_dst) {
+	if(sort_params->dst_id == (unsigned short)-1) {
+		*pgwl = sort_params->dr_rule->pgwl;
+		*size = sort_params->dr_rule->pgwa_len;
+	} else { /* it is a carrier */
+		if(sort_params->dst_id >= 0 && sort_params->dst_id < sort_params->dr_rule->pgwa_len) {
+			if(sort_params->dr_rule->pgwl[sort_params->dst_id].is_carrier) {
+				*pgwl = sort_params->dr_rule->pgwl[sort_params->dst_id].dst.carrier->pgwl;
+				*size = sort_params->dr_rule->pgwl[sort_params->dst_id].dst.carrier->pgwa_len;
+			} else {
+				LM_WARN("provided destination for sorting is not a carrier\n");
+				return -1;
+			}
+		} else {
+			LM_WARN("no destination with this id (%d)\n", sort_params->dst_id);
+			return -1;
+		}
+	}
+	*sorted_dst = sort_params->sorted_dst;
+	return 0;
+}
+
+#define DR_MAX_GWLIST	64
+
+static int sort_rt_dst(rt_info_t *dr_rule, unsigned short dst_id,
+		unsigned short *idx) {
+	struct dr_sort_params * sort_params;
+	pgw_list_t * pgwl;
+	int i;
+	int size;
+	unsigned short *tmp;
+	unsigned char sort_alg;
+
+
+
+	sort_params = (struct dr_sort_params *)pkg_malloc(
+			sizeof(struct dr_sort_params));
+	if(sort_params == NULL) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	memset(sort_params, 0, sizeof(struct dr_sort_params));
+	sort_params->dr_rule = dr_rule;
+	sort_params->dst_id = dst_id;
+	sort_params->sorted_dst = idx;
+
+	if(get_pgwl_params(sort_params, &pgwl, &size, &tmp) < 0) {
+		return -1;
+	}
+	/* extract the sorting algorithm */
+	if(dst_id != (unsigned short)-1) { /* if destionation is carrier */
+		sort_alg = dr_rule->pgwl[dst_id].dst.carrier->sort_alg;
+	} else { /* if destionation is gw */
+		sort_alg = dr_rule->sort_alg;
+	}
+
+	run_dr_sort_cbs(sort_alg, sort_params);
+
+	LM_DBG("Sorted destination list:\n");
+	for(i = 0; i < size; i++) {
+		LM_DBG("%d\n",idx[i]);
+	}
+
+	return 0;
+}
+/* sort based on the weight of the gws */
+static void weight_based_sort_cb(void *params)
+{
+	pgw_list_t *pgwl;
+	int size;
+	int rc;
+	unsigned short *idx;
+	struct dr_sort_params *dsp = (struct dr_sort_params *)params;
+
+	rc = get_pgwl_params(dsp, &pgwl, &size, &idx);
+	if(rc < 0) {
+		LM_WARN("failed to sort\n");
+		dsp->rc = -1;
+		return ;
+	}
+
+	if (weight_based_sort(pgwl, size, idx) < 0)
+		dsp->rc = -1;
+	else
+		dsp->rc = 0;
+}
+
+/* sort based on the weight of the gws */
+static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx)
 {
 	static unsigned short *running_sum = NULL;
 	static unsigned short sum_buf_size = 0;
+
 	unsigned int i, first, weight_sum, rand_no;
 
 	/* populate the index array */
 	for( i=0 ; i<size ; i++ ) idx[i] = i;
 	first = 0;
-
-	if (weight==0)
-		return 0;
 
 	while (size-first>1) {
 		resize_dr_sort_buffer( running_sum, sum_buf_size, size, err);
@@ -2417,7 +2671,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 		for( i=first,weight_sum=0 ; i<size ; i++ ) {
 			weight_sum += pgwl[ idx[i] ].weight ;
 			running_sum[i] = weight_sum;
-			LM_DBG("elen %d, weight=%d, sum=%d\n",i,
+			LM_DBG("elem %d, weight=%d, sum=%d\n",i,
 					pgwl[ idx[i] ].weight, running_sum[i]);
 		}
 		if (weight_sum) {
@@ -2429,7 +2683,7 @@ static int sort_rt_dst(pgw_list_t *pgwl, unsigned short size,
 				if (running_sum[i]>rand_no) break;
 			if (i==size) {
 				LM_CRIT("bug in weight sort\n");
-				goto err;
+				return -1;
 			}
 		} else {
 			/* randomly select index */
@@ -2452,16 +2706,42 @@ err:
 }
 
 
-inline static int push_gw_for_usage(struct sip_msg *msg,
-		struct head_db *current_partition,
-		struct sip_uri *uri, pgw_t *gw , str *c_id, str *c_attrs, int idx)
+inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current_partition,
+		struct sip_uri *uri, rt_info_t *rt, pgw_list_t * dst, int cr_id, int gw_id, int idx)
 {
 	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	str *ruri;
+	pgw_t *gw = NULL;
+	str *c_id = NULL;
+	str *c_attrs = NULL;
 	int_str val;
-
+	int_str dst_id_acc;
+	struct dr_acc_call_params * acc_call_params = NULL;
 	if( current_partition==NULL ) {
 		return -1;
+	}
+
+	if(rt != NULL) { /* qrouting is requested => called from drouting */
+		if(cr_id == -1) { /* it is not a carrier */
+			gw = rt->pgwl[gw_id].dst.gw;
+		} else { /* destination is a carrier */
+			c_id = &rt->pgwl[cr_id].dst.carrier->id;
+			c_attrs = &rt->pgwl[cr_id].dst.carrier->attrs;
+			gw = rt->pgwl[cr_id].dst.carrier->pgwl[gw_id].dst.gw;
+		}
+
+	} else if(dst != NULL) { /* routing was not done rule-based => don't use
+qrouting : called from route_2gw or route_2cr */
+		/* TODO: should insert empty string or something */
+		if(dst->is_carrier) {
+			gw = dst->dst.carrier->pgwl[gw_id].dst.gw;
+			c_id = &dst->dst.carrier->id;
+			c_attrs = &dst->dst.carrier->attrs;
+		} else {
+			gw = dst->dst.gw;
+		}
+		cr_id = -1;
+		gw_id = -1;
 	}
 
 	/* build uri*/
@@ -2486,6 +2766,25 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 		if (gw->sock)
 			msg->force_send_socket = gw->sock;
 
+		if(rt != NULL) { /* if routing was done rule based */
+			acc_call_params = (struct dr_acc_call_params*)pkg_malloc(
+					sizeof(struct dr_acc_call_params));
+			if(acc_call_params == NULL) {
+				LM_ERR("no more pkg memory!\n");
+				goto error;
+			}
+			memset(acc_call_params, 0, sizeof(struct dr_acc_call_params));
+			/* save callback parameters */
+			acc_call_params->rule = (void*)rt->qr_handler;
+			acc_call_params->cr_id = cr_id;
+			acc_call_params->gw_id = gw_id;
+			acc_call_params->msg = msg;
+
+
+			run_dr_cbs(DRCB_ACC_CALL, acc_call_params); /* qr
+																		  accouting */
+		}
+
 	} else {
 
 		/* add ruri as AVP */
@@ -2503,6 +2802,30 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 			LM_ERR("failed to insert sock avp\n");
 			goto error;
 		}
+
+		/*add the destination id to be used for QR */
+		/* TODO: what should happen when qr is not loaded? */
+		acc_call_params = (struct dr_acc_call_params*)shm_malloc(
+				sizeof(struct dr_acc_call_params));
+		if(acc_call_params == NULL) {
+			LM_ERR("no more shm memory!\n");
+			goto error;
+		}
+		memset(acc_call_params, 0, sizeof(struct dr_acc_call_params));
+		/* save callback parameters */
+		acc_call_params->rule = (void*)rt->qr_handler;
+		acc_call_params->cr_id = cr_id;
+		acc_call_params->gw_id = gw_id;
+		acc_call_params->msg = msg;
+
+		dst_id_acc.s.s = (char*)&acc_call_params;
+		dst_id_acc.s.len = sizeof(char*);
+		if(add_avp_last(AVP_VAL_STR, current_partition->acc_call_params_avp,
+					dst_id_acc)) {
+			LM_ERR("failed to insert dst_id avp\n");
+			goto error;
+		}
+
 
 	}
 
@@ -2838,14 +3161,14 @@ search_again:
 
 	/* sort the destination elements in the rule */
 	resize_dr_sort_buffer( dsts_idx, dsts_idx_size, rt_info->pgwa_len, error2);
-	i = sort_rt_dst(rt_info->pgwl, rt_info->pgwa_len,
-			flags&DR_PARAM_USE_WEIGTH, dsts_idx);
+	i = sort_rt_dst(rt_info, -1, dsts_idx);
 	if (i!=0) {
 		LM_ERR("failed to sort destinations in rule\n");
 		goto error2;
 	}
 
-	/* parse the whitelist of GWs/CARRIERs, if provided and
+
+	/* evaluate and parse the whitelist of GWs/CARRIERs, if provided and
 	   if the first time here */
 	if (whitelist && wl_list==NULL) {
 		tmp = whitelist->s[whitelist->len];
@@ -2861,6 +3184,10 @@ search_again:
 	/* iterate through the list, skip the disabled destination */
 	for ( i=0 ; i<rt_info->pgwa_len ; i++ ) {
 
+		if(dsts_idx[i] == (unsigned short)-1) {
+			LM_DBG("All available destinations were inserted\n");
+			break;
+		}
 		dst = &rt_info->pgwl[dsts_idx[i]];
 
 		/* is the destination carrier or gateway ? */
@@ -2879,8 +3206,8 @@ search_again:
 			/* sort the gws of the carrier */
 			resize_dr_sort_buffer( carrier_idx, carrier_idx_size,
 				dst->dst.carrier->pgwa_len, skip);
-			j = sort_rt_dst(dst->dst.carrier->pgwl, dst->dst.carrier->pgwa_len,
-					dst->dst.carrier->flags&DR_CR_FLAG_WEIGHT, carrier_idx);
+			j = sort_rt_dst(rt_info, dsts_idx[i],
+					carrier_idx);
 			if (j!=0) {
 				LM_ERR("failed to sort gws for carrier <%.*s>, skipping\n",
 						dst->dst.carrier->id.len, dst->dst.carrier->id.s);
@@ -2890,6 +3217,12 @@ search_again:
 			/* iterate through the list of GWs provided by carrier */
 			for ( j=0 ; j<dst->dst.carrier->pgwa_len ; j++ ) {
 
+				if(carrier_idx[j] == (unsigned short)-1) {
+					LM_DBG("All available destinations (for carrier id '%d') were"\
+							"inserted\n", carrier_idx[j]);
+					break;
+				}
+
 				cdst = &dst->dst.carrier->pgwl[carrier_idx[j]];
 
 				/* is gateway disabled ? */
@@ -2897,9 +3230,8 @@ search_again:
 					/*ignore it*/
 				} else {
 					/* add gateway to usage list */
-					if ( push_gw_for_usage(msg, current_partition,
-					&uri, cdst->dst.gw ,
-					&dst->dst.carrier->id, &dst->dst.carrier->attrs, n ) ) {
+					if ( push_gw_for_usage(msg, current_partition, &uri, rt_info ,
+								NULL, dsts_idx[i], carrier_idx[j], n) ) {
 						LM_ERR("failed to use gw <%.*s>, skipping\n",
 								cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 					} else {
@@ -2912,6 +3244,7 @@ search_again:
 							next_gw_attrs = cdst->dst.gw->attrs;
 						}
 
+						/* TODO: should be deleted as i guess? */
 						/* use only first valid GW */
 						if (dst->dst.carrier->flags&DR_CR_FLAG_FIRST)
 							break;
@@ -2931,7 +3264,7 @@ search_again:
 
 			/* add gateway to usage list */
 			if ( push_gw_for_usage(msg, current_partition, &uri,
-						dst->dst.gw, NULL, NULL, n) ) {
+						rt_info, NULL, -1, dsts_idx[i], n) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 						dst->dst.gw->id.len, dst->dst.gw->id.s);
 			} else {
@@ -2948,7 +3281,6 @@ search_again:
 	}
 
 	if( n < 1) {
-		LM_INFO("All the gateways are disabled\n");
 		if ( flags & DR_PARAM_RULE_FALLBACK )
 			goto search_again;
 		goto error2;
@@ -3110,12 +3442,13 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 	static unsigned short carrier_idx_size;
 	struct sip_uri  uri;
 	pgw_list_t *cdst;
+	pgw_list_t tmp;
 	pcr_t *cr;
 	pv_value_t pv_val;
 	str ruri, id;
 	str next_carrier_attrs = {NULL, 0};
 	str next_gw_attrs = {NULL, 0};
-	int j,n;
+	int i, j, n;
 	struct head_db * current_partition = 0;
 	char *ruri_buf=NULL, *p;
 
@@ -3169,7 +3502,7 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 	}
 
 	/* ref the data for reading */
-	lock_start_read( current_partition->ref_lock );
+	lock_start_read( current_partition->ref_lock);
 
 	/* how many gws will be added */
 	n = 0;
@@ -3213,12 +3546,24 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 		/* sort the gws of the carrier */
 		resize_dr_sort_buffer( carrier_idx, carrier_idx_size,
 			cr->pgwa_len, skip);
-		j = sort_rt_dst( cr->pgwl, cr->pgwa_len, cr->flags&DR_CR_FLAG_WEIGHT,
-				carrier_idx);
-		if (j!=0) {
-			LM_ERR("failed to sort gws for carrier <%.*s>, skipping\n",
-					cr->id.len, cr->id.s);
-			continue;
+
+		/* sort the gws of the carrier */
+		if(cr->sort_alg == WEIGHT_BASED_SORT) {
+			/* just weight based sort permitted, because qr-based
+			 * sorting is rule-oriented*/
+			j = weight_based_sort( cr->pgwl, cr->pgwa_len,
+					carrier_idx);
+
+			if (j!=0) {
+				LM_ERR("failed to sort gws for carrier <%.*s>, skipping\n",
+						cr->id.len, cr->id.s);
+				goto error;
+			}
+		} else {
+			/* No sort */
+			for(i = 0; i < cr->pgwa_len; i++) {
+				carrier_idx[i] = i;
+			}
 		}
 
 		/* iterate through the list of GWs provided by carrier */
@@ -3231,8 +3576,10 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 				/*ignore it*/
 			} else {
 				/* add gateway to usage list */
+				tmp.is_carrier = 1;
+				tmp.dst.carrier = cr;
 				if ( push_gw_for_usage(msg, current_partition, &uri,
-				cdst->dst.gw, &cr->id, &cr->attrs, n ) ) {
+				NULL, &tmp, -1, carrier_idx[j], n ) ) {
 					LM_ERR("failed to use gw <%.*s>, skipping\n",
 						cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 				} else {
@@ -3305,6 +3652,7 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 {
 	struct sip_uri  uri;
 	pgw_t *gw;
+	pgw_list_t tmp;
 	pv_value_t pv_val;
 	str ruri, id;
 	str next_gw_attrs = {NULL, 0};
@@ -3367,8 +3715,8 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 			if (gw==NULL) {
 				LM_ERR("no GW found with ID <%.*s> -> ignorring\n",
 					id.len, id.s);
-			} else if ( push_gw_for_usage(msg, current_partition, &uri, gw,
-			NULL, NULL, idx ) ) {
+			} else if ( push_gw_for_usage(msg, current_partition, &uri, NULL,
+			&tmp, -1, -1, idx ) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 						gw->id.len, gw->id.s);
 			} else {
@@ -3431,6 +3779,10 @@ static int fix_flags(void** param)
 				case 'C':
 					flags |= DR_PARAM_ONLY_CHECK;
 					LM_DBG("only check the prefix\n");
+					break;
+				case 'Q':
+					flags |= DR_PARAM_USE_QR;
+					/* TODO: maybe mutual exclusion with weight sort */
 					break;
 				default:
 					LM_DBG("unknown flag : [%c] . Skipping\n",*p);
@@ -4250,6 +4602,7 @@ mi_response_t *mi_dr_cr_status_6(const mi_params_t *params,
 void init_head_db(struct head_db *new)
 {
 	memset(new, 0, sizeof(struct head_db));
+	new->acc_call_params_avp = -1;
 	new->avpID_store_ruri = -1;
 	new->avpID_store_prefix = -1;
 	new->avpID_store_index = -1;

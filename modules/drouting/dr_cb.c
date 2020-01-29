@@ -33,6 +33,10 @@
 #include "../../mem/mem.h"
 #include "dr_cb.h"
 
+struct dr_head_cbl {
+    struct dr_callback *first;
+    int types;
+};
 
 #define POINTER_CLOSED_MARKER  ((void *)(-1))
 
@@ -61,7 +65,6 @@ static void destroy_dr_callbacks_list(struct dr_callback *cb)
 	}
 }
 
-
 void destroy_dr_cbs(void)
 {
 	int i;
@@ -82,49 +85,77 @@ void destroy_dr_cbs(void)
 	}
 }
 
+/*
+ * adds a given callback to a given callback list
+ */
+int insert_drcb(struct dr_head_cbl **dr_cb_list, struct dr_callback *cb,
+		int types)
+{
+	int i;
+	struct dr_callback *dr_sort_cb_it;
+
+	for( i=0 ; i<DRCB_MAX ; i++ ) {
+		if (dr_cbs[i] && dr_cbs[i]!=POINTER_CLOSED_MARKER)
+			destroy_dr_callbacks_list(dr_cbs[i]);
+		dr_cbs[i] = POINTER_CLOSED_MARKER;
+	}
+
+	for(i=0; i <N_MAX_SORT_CBS; i++) {
+		if ( (dr_sort_cb_it=dr_sort_cbs[i])!=NULL &&
+		dr_sort_cb_it->callback_param_free && dr_sort_cb_it->param) {
+			dr_sort_cb_it->callback_param_free(dr_sort_cb_it->param);
+			dr_sort_cb_it->param = NULL;
+		}
+	}
+	cb->next = (*dr_cb_list)->first;
+	(*dr_cb_list)->first = cb;
+	(*dr_cb_list)->types |= types;
+	return 0;
+}
 
 /* TODO: param will be the index in the array */
 int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
-														dr_param_free_cb ff)
+                   dr_param_free_cb ff)
 {
 	long int cb_sort_index = 0;
 	struct dr_callback *cb;
 
-	cb = (struct dr_callback*)shm_malloc(sizeof(struct dr_callback));
-	if (cb == 0) {
-		LM_ERR("no more shm memory\n");
+	cb = shm_malloc(sizeof *cb);
+	if (!cb) {
+		LM_ERR("oom\n");
 		return -1;
 	}
+	memset(cb, 0, sizeof *cb);
 
 	cb->callback = f;
 	cb->callback_param_free = ff;
-	cb->next = NULL;
 
-	if (type!=DRCB_SORT_DST) {
+	if (type != DRCB_SORT_DST) {
 		cb->param = param; /* because now param holds the type of the
 							* sorting function */
 		/* insert callback to the right list (based on type) */
-		if( dr_cbs[type]==POINTER_CLOSED_MARKER) {
+		if (dr_cbs[type] == POINTER_CLOSED_MARKER) {
 			LM_CRIT("DRCB_SORT_DST registered after shut down!\n");
 			goto error;
 		}
 		cb->next = dr_cbs[type];
 		dr_cbs[type] = cb;
 	} else {
-		cb->param = NULL;
-		if(param == NULL) {
+		if (!param) {
 			LM_ERR("no index supplied for sort callback registered at dr\n");
 			goto error;
 		}
+
 		cb_sort_index = (long int)param;
-		if(cb_sort_index >= N_MAX_SORT_CBS) {
+		if (cb_sort_index >= N_MAX_SORT_CBS) {
 			LM_ERR("Sort cbs array not large enough to accommodate cb at dr\n");
 			goto error;
 		}
-		if(dr_sort_cbs[cb_sort_index] != NULL) {
-			LM_WARN("[dr] sort callback at index '%ld' will be overwritten\n",
+
+		if (dr_sort_cbs[cb_sort_index])
+			LM_WARN("sort callback at index '%ld' will be overwritten\n",
 				cb_sort_index);
-		}
+
 		dr_sort_cbs[cb_sort_index] = cb;
 	}
 
@@ -137,7 +168,7 @@ error:
 
 /* runs a callback from an array - sort_cb_type will represent
  * the index within the array */
-int run_dr_sort_cbs(sort_cb_type type, void *param)
+int run_dr_sort_cbs(sort_cb_type type, struct dr_sort_params *param)
 {
 	if(dr_sort_cbs[type] == NULL) {
 		LM_WARN("callback type '%d' not registered\n", type);
@@ -147,16 +178,15 @@ int run_dr_sort_cbs(sort_cb_type type, void *param)
 	return 0;
 }
 
-
 int run_dr_cbs(enum drcb_types type, void *param)
 {
-	struct dr_callback *it;
+	struct dr_callback *it = dr_cbs[type];
 
-	it = dr_cbs[type];
-	while(it) {
+	if (!it)
+		return -1;
+
+	for (; it; it = it->next)
 		it->callback(param);
-		it = it->next;
-	}
+
 	return 0;
 }
-

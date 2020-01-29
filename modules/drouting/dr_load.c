@@ -278,33 +278,37 @@ void dr_update_head_cache(struct head_db *head)
 #define STR_VALS_ID_DRD_COL       4
 
 /* dr_carriers table */
-#define INT_VALS_FLAGS_DRC_COL    0
-#define INT_VALS_STATE_DRC_COL    1
+#define INT_VALS_STATE_DRC_COL    0
+#define INT_VALS_FLAGS_DRC_COL    1
 #define STR_VALS_CID_DRC_COL      0
 #define STR_VALS_GWLIST_DRC_COL   1
 #define STR_VALS_ATTRS_DRC_COL    2
 #define STR_VALS_ID_DRC_COL       3
+#define STR_VALS_SORT_ALG_DRC_COL 4
 
 /* dr_rules table */
 #define INT_VALS_RULE_ID_DRR_COL  0
 #define INT_VALS_BLANK_1          1
 #define INT_VALS_PRIORITY_DRR_COL 2
+#define INT_VALS_SCRIPT_ROUTE_ID  3
+#define INT_VALS_SORT_PROFILE_DRR_COL 4
 #define STR_VALS_GROUP_DRR_COL    0
 #define STR_VALS_PREFIX_DRR_COL   1
 #define STR_VALS_TIME_DRR_COL     2
 #define STR_VALS_ROUTEID_DRR_COL  3
 #define STR_VALS_DSTLIST_DRR_COL  4
 #define STR_VALS_ATTRS_DRR_COL    5
+#define STR_VALS_SORT_ALG_DRR_COL 6
 
 /* loads routing info for given partition; if partition_name is NULL
  * loads all partitions
  */
 
 rt_data_t* dr_load_routing_info(struct head_db *current_partition
-		, int persistent_state)
+		, int persistent_state, void *qr_parts, int part_index, str *part_name)
 {
 	int    int_vals[5];
-	char * str_vals[6];
+	char * str_vals[7];
 	str tmp;
 	db_func_t *dr_dbf = &current_partition->db_funcs;
 	db_con_t* db_hdl = *current_partition->db_con;
@@ -334,9 +338,6 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 		LM_ERR("failed to build rdata\n");
 		goto error;
 	}
-
-	if (db_check_table_version(dr_dbf, db_hdl, drd_table, 6/*version*/ )!= 0)
-		goto error;
 
 	/* read the destinations */
 	if (dr_dbf->use_table( db_hdl, drd_table) < 0) {
@@ -489,6 +490,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	dr_dbf->free_result(db_hdl, res);
 	res = 0;
 
+
 	/* read the carriers, if any */
 	if (dr_dbf->use_table( db_hdl, drc_table) < 0) {
 		LM_ERR("cannot select table \"%.*s\"\n", drc_table->len,drc_table->s);
@@ -498,13 +500,14 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	columns[0] = &id_drc_col;
 	columns[1] = &cid_drc_col;
 	columns[2] = &flags_drc_col;
-	columns[3] = &gwlist_drc_col;
-	columns[4] = &attrs_drc_col;
+	columns[3] = &sort_alg_drc_col;
+	columns[4] = &gwlist_drc_col;
+	columns[5] = &attrs_drc_col;
 	if (persistent_state) {
-		columns[5] = &state_drc_col;
-		db_cols = 6;
+		columns[6] = &state_drc_col;
+		db_cols = 7;
 	} else {
-		db_cols = 5;
+		db_cols = 6;
 	}
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
@@ -512,7 +515,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		no_rows = estimate_available_rows( 4+4+32+64+64, db_cols);
+		no_rows = estimate_available_rows( 4+4+32+64+64+1, db_cols);
 		if (no_rows==0) no_rows = 10;
 		if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 			LM_ERR("Error fetching rows\n");
@@ -552,16 +555,26 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 				/* flags column */
 				check_val2( flags_drc_col, ROW_VALUES(row)+2, DB_INT, DB_BIGINT, 1, 0);
 				int_vals[INT_VALS_FLAGS_DRC_COL] = VAL_INT(ROW_VALUES(row)+2);
+				/* sort_alg column */
+				if( VAL_TYPE(ROW_VALUES(row)+3) == DB_INT ) {
+					check_val(sort_alg_drc_col, ROW_VALUES(row)+3, DB_INT, 1, 0);
+					str_vals[STR_VALS_SORT_ALG_DRC_COL] = int2bstr((unsigned long)
+							VAL_INT(ROW_VALUES(row)+3), id_buf, &int_vals[0]);
+				} else {
+					check_val(sort_alg_drc_col, ROW_VALUES(row)+3, DB_STRING, 1, 0);
+					str_vals[STR_VALS_SORT_ALG_DRC_COL] = (char*)VAL_STRING(
+							ROW_VALUES(row)+3);
+				}
 				/* GWLIST column */
-				check_val( gwlist_drc_col, ROW_VALUES(row)+3, DB_STRING, 1, 1);
-				str_vals[STR_VALS_GWLIST_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+3);
+				check_val( gwlist_drc_col, ROW_VALUES(row)+4, DB_STRING, 1, 1);
+				str_vals[STR_VALS_GWLIST_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
 				/* ATTRS column */
-				check_val( attrs_drc_col, ROW_VALUES(row)+4, DB_STRING, 0, 0);
-				str_vals[STR_VALS_ATTRS_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
+				check_val( attrs_drc_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
+				str_vals[STR_VALS_ATTRS_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+5);
 				/* STATE column */
 				if (persistent_state) {
-					check_val2( state_drc_col, ROW_VALUES(row)+5, DB_INT, DB_BIGINT, 1, 0);
-					int_vals[INT_VALS_STATE_DRC_COL] = VAL_INT(ROW_VALUES(row)+5);
+					check_val( state_drc_col, ROW_VALUES(row)+6, DB_INT, 1, 0);
+					int_vals[INT_VALS_STATE_DRC_COL] = VAL_INT(ROW_VALUES(row)+6);
 				} else {
 					/* by default enabled */
 					int_vals[INT_VALS_STATE_DRC_COL] = 0;
@@ -570,6 +583,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 				/* add the new carrier */
 				if ( add_carrier( str_vals[STR_VALS_CID_DRC_COL],
 							int_vals[INT_VALS_FLAGS_DRC_COL],
+							str_vals[STR_VALS_SORT_ALG_DRC_COL],
 							str_vals[STR_VALS_GWLIST_DRC_COL],
 							str_vals[STR_VALS_ATTRS_DRC_COL],
 							int_vals[INT_VALS_STATE_DRC_COL], rdata,
@@ -607,21 +621,23 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 	columns[4] = &priority_drr_col;
 	columns[5] = &routeid_drr_col;
 	columns[6] = &dstlist_drr_col;
-	columns[7] = &attrs_drr_col;
+	columns[7] = &sort_alg_drr_col;
+	columns[8] = &sort_profile_drr_col;
+	columns[9] = &attrs_drr_col;
 
 	if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, 0) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 10, 0, 0) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
-		no_rows = estimate_available_rows( 4+32+32+128+32+64+128, 8/*cols*/);
+		no_rows = estimate_available_rows( 4+32+32+128+32+64+128+4+1, 10/*cols*/);
 		if (no_rows==0) no_rows = 10;
 		if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
 			LM_ERR("Error fetching rows\n");
 			goto error;
 		}
 	} else {
-		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 8, 0, &res) < 0) {
+		if ( dr_dbf->query( db_hdl, 0, 0, 0, columns, 0, 10, 0, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -667,10 +683,23 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			check_val( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, 1, 1);
 			str_vals[STR_VALS_DSTLIST_DRR_COL] =
 				(char*)VAL_STRING(ROW_VALUES(row)+6);
+			/* SORT_ALG column */
+			if( VAL_TYPE(ROW_VALUES(row)+7) == DB_INT ) {
+				check_val(sort_alg_drr_col, ROW_VALUES(row)+7, DB_INT, 1, 0);
+				str_vals[STR_VALS_SORT_ALG_DRR_COL] = int2bstr((unsigned long)
+						VAL_INT(ROW_VALUES(row)+7), id_buf, &int_vals[0]);
+			} else {
+				check_val(sort_alg_drr_col, ROW_VALUES(row)+7, DB_STRING, 1, 0);
+				str_vals[STR_VALS_SORT_ALG_DRR_COL] = (char*)VAL_STRING(
+						ROW_VALUES(row)+7);
+			}
+			/* SORT_PROFILE column */
+			check_val(sort_profile_drr_col, ROW_VALUES(row)+8, DB_INT, 1, 0);
+			int_vals[INT_VALS_SORT_PROFILE_DRR_COL] = VAL_INT(ROW_VALUES(row)+8);
 			/* ATTRS column */
-			check_val( attrs_drr_col, ROW_VALUES(row)+7, DB_STRING, 0, 0);
+			check_val( attrs_drr_col, ROW_VALUES(row)+9, DB_STRING, 0, 0);
 			str_vals[STR_VALS_ATTRS_DRR_COL] =
-				(char*)VAL_STRING(ROW_VALUES(row)+7);
+				(char*)VAL_STRING(ROW_VALUES(row)+9);
 			/* parse the time definition */
 			if ( VAL_NULL(ROW_VALUES(row)+3) ||
 			((str_vals[STR_VALS_TIME_DRR_COL]=
@@ -696,7 +725,10 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 							int_vals[INT_VALS_PRIORITY_DRR_COL], time_rec,
 							str_vals[STR_VALS_ROUTEID_DRR_COL],
 							str_vals[STR_VALS_DSTLIST_DRR_COL],
+							str_vals[STR_VALS_SORT_ALG_DRR_COL],
+							int_vals[INT_VALS_SORT_PROFILE_DRR_COL],
 							str_vals[STR_VALS_ATTRS_DRR_COL], rdata,
+							qr_parts, part_index, part_name,
 							current_partition->malloc,
 							current_partition->free))== 0 ) {
 				LM_ERR("failed to add routing info for rule id %d -> "

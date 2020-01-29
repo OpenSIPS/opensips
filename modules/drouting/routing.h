@@ -66,6 +66,14 @@ typedef struct rt_data_ {
 	ptree_t *pt;
 }rt_data_t;
 
+typedef struct _dr_group {
+	/* 0 - use grp ; 1 - use AVP */
+	int type;
+	union {
+		unsigned int grp_id;
+		int avp_name;
+	}u;
+} dr_group_t;
 
 struct head_cache_socket {
 	str host;
@@ -93,6 +101,7 @@ int
 add_carrier(
 	char *id,
 	int flags,
+	char *sort_alg,
 	char *gwlist,
 	char *attrs,
 	int state,
@@ -137,8 +146,13 @@ build_rt_info(
 	char* route_idx,
 	/* list of destinations indexes */
 	char* dstlst,
+	char* sort_alg,
+	int sort_profile,
 	char* attr,
 	rt_data_t* rd,
+	void *qr_parts,
+	int part_index,
+	str *part_name,
 	osips_malloc_f mf,
 	osips_free_f ff
 	);
