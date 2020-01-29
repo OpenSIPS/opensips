@@ -2771,6 +2771,8 @@ int pv_set_ru_q(struct sip_msg* msg, pv_param_t *param,
 int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
+	str sval;
+
 	if(msg==NULL || param==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2778,17 +2780,14 @@ int pv_set_ruri_user(struct sip_msg* msg, pv_param_t *param,
 	}
 
 	if(val == NULL)
-	{
-		val->rs = str_empty;
-	}
-
-	if(!(val->flags&PV_VAL_STR))
-	{
+		sval = str_empty;
+	else if(!(val->flags&PV_VAL_STR)) {
 		LM_ERR("str value required to set R-URI user\n");
 		return -1;
-	}
+	} else
+		sval = val->rs;
 
-	if (rewrite_ruri(msg, &val->rs, 0, RW_RURI_USER) < 0) {
+	if (rewrite_ruri(msg, &sval, 0, RW_RURI_USER) < 0) {
 		LM_ERR("Failed to set R-URI user\n");
 		return -1;
 	}
