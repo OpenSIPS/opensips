@@ -1009,7 +1009,7 @@ int set_dst_host_port(struct sip_msg *msg, str *host, str *port)
 		tmp = uri.port.s;
 		len = uri.port.len;
 	}
-	if (tmp) {
+	if (tmp && len > 0) {
 		if (crt+len+1>end) goto error_uri;
 		*crt++=':';
 		memcpy(crt, tmp, len);

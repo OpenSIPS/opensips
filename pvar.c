@@ -2845,6 +2845,8 @@ int pv_set_dsturi_host(struct sip_msg* msg, pv_param_t *param,
 int pv_set_dsturi_port(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
+	str sval;
+
 	if(msg==NULL || param==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2852,14 +2854,13 @@ int pv_set_dsturi_port(struct sip_msg* msg, pv_param_t *param,
 	}
 
 	if(val == NULL)
-	{
-		val->rs = str_empty;
-	} else if(!(val->flags&PV_VAL_STR))
-	{
-		val->rs.s = int2str(val->ri, &val->rs.len);
-	}
+		sval = str_empty;
+	else if(!(val->flags&PV_VAL_STR))
+		sval.s = int2str(val->ri, &sval.len);
+	else
+		sval = val->rs;
 
-	if (set_dst_host_port(msg, NULL, &val->rs) < 0) {
+	if (set_dst_host_port(msg, NULL, &sval) < 0) {
 		LM_ERR("Failed to set DST-URI port\n");
 		return -1;
 	}
@@ -2873,6 +2874,8 @@ int pv_set_dsturi_port(struct sip_msg* msg, pv_param_t *param,
 int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
+	str sval;
+
 	if(msg==NULL || param==NULL)
 	{
 		LM_ERR("bad parameters\n");
@@ -2880,14 +2883,13 @@ int pv_set_ruri_port(struct sip_msg* msg, pv_param_t *param,
 	}
 
 	if(val == NULL)
-	{
-		val->rs = str_empty;
-	}
+		sval = str_empty;
+	else if(!(val->flags&PV_VAL_STR))
+		sval.s = int2str(val->ri, &sval.len);
+	else
+		sval = val->rs;
 
-	if(!(val->flags&PV_VAL_STR))
-		val->rs.s = int2str(val->ri, &val->rs.len);
-
-	if (rewrite_ruri(msg, &val->rs, 0, RW_RURI_PORT) < 0) {
+	if (rewrite_ruri(msg, &sval, 0, RW_RURI_PORT) < 0) {
 		LM_ERR("Failed to set R-URI hostname\n");
 		return -1;
 	}
