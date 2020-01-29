@@ -460,8 +460,8 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 		// Capture and free the result
 		// Ensure the output buffer can accommodate the response value
-		if (output_buf.len < (curl_out.len + 1)) {
-            if (pkg_str_extend(&output_buf, curl_out.len + 1) != 0) {
+		if (output_buf.len < (strlen(curl_out) + 1)) {
+            if (pkg_str_extend(&output_buf, strlen(curl_out) + 1) != 0) {
                 LM_ERR("oom\n");
                 goto error;
             }
@@ -515,8 +515,8 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 		// Capture and free the result
 		// Ensure the output buffer can accommodate the response value
-		if (output_buf.len < (curl_out.len + 1)) {
-            if (pkg_str_extend(&output_buf, curl_out.len + 1) != 0) {
+		if (output_buf.len < (strlen(curl_out) + 1)) {
+            if (pkg_str_extend(&output_buf, strlen(curl_out) + 1) != 0) {
                 LM_ERR("oom\n");
                 goto error;
             }
