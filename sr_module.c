@@ -89,8 +89,9 @@ struct sr_module* modules=0;
 	extern struct module_exports sl_exports;
 #endif
 
+#define MPATH_LEN	256
 static const char *mpath;
-static char mpath_buf[256];
+static char mpath_buf[MPATH_LEN];
 static int  mpath_len;
 
 /* initializes statically built (compiled in) modules*/
@@ -352,9 +353,14 @@ static int load_static_module(char *path)
 
 void set_mpath(const char *new_mpath)
 {
+	int len = strlen(new_mpath);
+	if (len >= MPATH_LEN) {
+		LM_ERR("mpath %s too long!\n", new_mpath);
+		return;
+	}
 	mpath = new_mpath;
 	strcpy(mpath_buf, new_mpath);
-	mpath_len = strlen(mpath);
+	mpath_len = len;
 	if (mpath_len == 0 || mpath_buf[mpath_len - 1] != '/') {
 		mpath_buf[mpath_len] = '/';
 		mpath_len++;
@@ -373,7 +379,7 @@ int load_module(char* name)
 		return 0;
 
 	if(*name!='/' && mpath!=NULL
-		&& strlen(name)+mpath_len<255)
+		&& strlen(name)+mpath_len<(MPATH_LEN-1))
 	{
 		strcpy(mpath_buf+mpath_len, name);
 		if (stat(mpath_buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
@@ -381,7 +387,7 @@ int load_module(char* name)
 			if(strchr(name, '/')==NULL &&
 				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
 			{
-				if(i_tmp+strlen(name)<255)
+				if(i_tmp+strlen(name)<(MPATH_LEN-1))
 				{
 					strcpy(mpath_buf+i_tmp-3, "/");
 					strcpy(mpath_buf+i_tmp-2, name);
