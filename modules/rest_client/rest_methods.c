@@ -53,6 +53,9 @@ struct tls_domain *tls_dom;
 static int transfers;
 static int read_fds[FD_SETSIZE];
 
+/* handle for use with synchronous reqs */
+CURL *sync_handle;
+
 /* libcurl's reported running handles */
 static int running_handles;
 
