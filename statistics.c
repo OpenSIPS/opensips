@@ -926,7 +926,7 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 	int i, no_params;
 	str val;
 	stat_var *stat;
-	int found;
+	int found = 0;
 
 	if (get_mi_array_param(params, "statistics", &params_arr, &no_params) < 0)
 		return init_mi_param_error();
