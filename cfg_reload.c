@@ -349,6 +349,7 @@ static void routes_reload_per_proc(int sender, void *param)
 	parsed_sr = new_sroutes_holder();
 	if (parsed_sr==NULL) {
 		LM_ERR("failed to allocate a new script routes holder\n");
+		fclose(cfg);
 		goto error;
 	}
 	sr_bk = sroutes;
