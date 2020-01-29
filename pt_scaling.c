@@ -309,6 +309,11 @@ void do_workers_auto_scaling(void)
 
 		}
 
+		if (!procs_no) {
+			LM_BUG("no process beloging to group %d\n", pg->type);
+			continue;
+		}
+
 		/* set the current value */
 		idx = (pg->history_idx+1)%pg->history_size;
 		pg->history_map[idx] = (unsigned char) ( load / procs_no );
