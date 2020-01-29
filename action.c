@@ -876,7 +876,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 				if (free_cmd_fixups(acmd->params, aitem->elem, cmdp) < 0) {
 					LM_ERR("Failed to free fixups for command <%s>\n",
-						cmd->name);
+						acmd->name);
 					break;
 				}
 			}
