@@ -870,7 +870,7 @@ static int main_loop(void)
 			handle_sigs();
 			if (auto_scaling_enabled) {
 				sleep( auto_scaling_cycle );
-				if ( (get_uticks()-last_check) >= auto_scaling_cycle*1000000) {
+				if ( (get_uticks()-last_check) >= (utime_t)auto_scaling_cycle*1000000) {
 					do_workers_auto_scaling();
 					last_check = get_uticks();
 				} else {
