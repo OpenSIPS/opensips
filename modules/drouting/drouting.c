@@ -3594,11 +3594,11 @@ static int _is_dr_gw(struct sip_msg* msg,
 				/* strip ? */
 				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 					strip_username(msg, pgwa->strip);
-				/* prefix ? */
-				if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.len>0) {
+				/* prefix ? - set it even if it is "" */
+				if ( (flags&DR_IFG_PREFIX_FLAG) && pgwa->pri.s) {
 					/* pri prefix ? */
 					if (current_partition->gw_priprefix_avp!=-1) {
-						val.s = pgwa->pri.s ? pgwa->pri : attrs_empty ;
+						val.s = pgwa->pri;
 						if (add_avp(AVP_VAL_STR,
 						current_partition->gw_priprefix_avp, val)!=0)
 							LM_ERR("failed to insert GW pri prefix avp\n");
