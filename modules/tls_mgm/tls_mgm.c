@@ -942,7 +942,7 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 
 	if (!crl_added) {
 		LM_ERR("No suitable CRL files found in directory %s\n", crl_directory);
-		return -1;
+		return 0;
 	}
 
 	/*Enable CRL checking*/
