@@ -49,6 +49,9 @@ extern int ssl_verifyhost;
 
 extern int curl_http_version;
 
+/* handle for use with synchronous reqs */
+extern CURL *sync_handle;
+
 /* Currently supported HTTP verbs */
 enum rest_client_method {
 	REST_CLIENT_GET,
