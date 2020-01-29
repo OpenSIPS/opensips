@@ -456,7 +456,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
         }
 
         init_str(&output_buf, curl_out);
-        curl_free(curl_out);
+        //curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
 			LM_ERR("transform failed to set output pvar!\n");
@@ -499,7 +499,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
         }
 
         init_str(&output_buf, curl_out);
-		curl_free(curl_out);
+		//curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
 			LM_ERR("transform failed to set output pvar!\n");
