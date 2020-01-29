@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2005-2008 Voice Sistem SRL
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of Open SIP Server (OpenSIPS).
  *
@@ -16,17 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- * For any questions about this software and its license, please contact
- * Voice Sistem at following e-mail address:
- *         office@voice-system.ro
- *
- * History:
- * ---------
- *  2005-02-20  first version (cristian)
- *  2005-02-27  ported to 0.9.0 (bogdan)
  */
-
 
 #include <stdlib.h>
 #include <errno.h>

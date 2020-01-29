@@ -2,7 +2,7 @@
  *
  * drouting module callbacks header
  *
- * Copyright (C) 2014-2106 OpenSIPS Foundation
+ * Copyright (C) 2014-2020 OpenSIPS Foundation
  *
  * This file is part of opensips, a free SIP server.
  *

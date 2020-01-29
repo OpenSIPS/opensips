@@ -2,7 +2,7 @@
  *
  * drouting module callbacks
  *
- * Copyright (C) 2014-2106 OpenSIPS Solutions
+ * Copyright (C) 2014-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -19,11 +19,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History
- * -------
- *  2014-09-13  initial version (Mihai Tiganus)
- *  2016-02-18  ported to 2.2 (bogdan)
  */
 
 

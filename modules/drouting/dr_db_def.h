@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 OpenSIPS Solutions
+ * Copyright (C) 2013-2020 OpenSIPS Solutions
  *
  * This file is part of Open SIP Server (OpenSIPS).
  *

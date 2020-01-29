@@ -1,7 +1,7 @@
 /**
  * drouting module developer api
  *
- * Copyright (C) 2014-2016 OpenSIPS Solutions
+ * Copyright (C) 2014-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,11 +18,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History
- * -------
- *  2014-08-13  initial version (Andrei Datcu)
-*/
+ */
 
 #ifndef _DROUTING_API_H_
 #define _DROUTING_API_H_

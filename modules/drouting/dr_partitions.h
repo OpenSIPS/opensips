@@ -4,6 +4,7 @@
  * Copyright (C) 2004-2005 FhG Fokus
  * Copyright (C) 2006-2010 Voice Sistem SRL
  * Copyright (C) 2014 OpenSIPS Foundation
+ * Copyright (C) 2015-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,11 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History
- * -------
- *  2014-07-23  initial version (Mihai Tiganus)
  */
+
 #ifndef DR_DR_PARTITIONS_H
 #define DR_DR_PARTITIONS_H
 
