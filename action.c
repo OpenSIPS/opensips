@@ -558,6 +558,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					if (pv_printf_s(msg, a->elem[0].u.data, &sval) < 0) {
 						LM_ERR("cannot print route name!\n");
 						i = -1;
+						break;
 					}
 					i = get_script_route_ID_by_name_str(&sval, sroutes->request, RT_NO);
 					break;
