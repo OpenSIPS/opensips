@@ -573,7 +573,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			script_trace("route", sroutes->request[i].name,
 				msg, a->file, a->line) ;
-			if ((i>RT_NO)||(i<0)){
+			if ((i>=RT_NO)||(i<0)){
 				LM_BUG("invalid routing table number in route(%u)\n", i);
 				ret=E_CFG;
 				break;
