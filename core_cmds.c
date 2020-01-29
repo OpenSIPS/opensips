@@ -1135,12 +1135,12 @@ static int w_cache_raw_query(struct sip_msg *msg, str *id, str *raw_query_s,
 	unsigned short avp_type;
 	int ret;
 
-	if (!raw_query_s->s || !raw_query_s->len) {
+	if (!raw_query_s || !raw_query_s->s || !raw_query_s->len) {
 		LM_ERR("raw query cannot be empty\n");
 		return E_UNSPEC;
 	}
 
-	if (!raw_query_s)
+	if (!avp_list)
 		return cachedb_raw_query(id, raw_query_s, NULL,0,NULL);
 
 	for (it=avp_list;it;it=it->next)
