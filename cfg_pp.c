@@ -636,9 +636,13 @@ static int exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline,
 		argv = realloc(argv, (argv_len + 1) * sizeof *argv);
 		argv[argv_len++] = NULL;
 
-		execvp(pp_binary, argv);
-		LM_ERR("failed to exec preprocessor '%s': %d (%s)\n",
-		       preproc_cmdline, errno, strerror(errno));
+		if (pp_binary) {
+			execvp(pp_binary, argv);
+			LM_ERR("failed to exec preprocessor '%s': %d (%s)\n",
+				   preproc_cmdline, errno, strerror(errno));
+		} else
+			LM_ERR("no binary to run: '%s'\n", preproc_cmdline);
+
 		exit(-1);
 	}
 
