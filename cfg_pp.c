@@ -412,6 +412,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	}
 
 	free(line);
+	line = NULL;
 
 	needed = cfgtok_fileend.len + 1 + 1;
 	if (*bytes_left < needed) {
@@ -430,6 +431,8 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	return 0;
 
 out_err:
+	if (line)
+		free(line);
 	fclose(cfg);
 	return -1;
 }
