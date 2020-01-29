@@ -94,7 +94,7 @@ void xmlrpc_destroy_pipe(void)
 int xmlrpc_send(xmlrpc_send_t* xmlrpcs)
 {
 	int rc, retries = XMLRPC_SEND_RETRY;
-	int send_status;
+	long send_status;
 
 	xmlrpcs->process_idx = process_no;
 
@@ -117,7 +117,7 @@ int xmlrpc_send(xmlrpc_send_t* xmlrpcs)
 			send_status = XMLRPC_SEND_FAIL;
 		}
 
-		return send_status;
+		return (int)send_status;
 	} else
 		return XMLRPC_SEND_SUCCESS;
 }

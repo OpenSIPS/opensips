@@ -109,7 +109,7 @@ void jsonrpc_destroy_pipe(void)
 int jsonrpc_send(jsonrpc_send_t* jsonrpcs)
 {
 	int rc, retries = JSONRPC_SEND_RETRY;
-	int send_status;
+	long send_status;
 
 	jsonrpcs->process_idx = process_no;
 
@@ -131,7 +131,7 @@ int jsonrpc_send(jsonrpc_send_t* jsonrpcs)
 			send_status = JSONRPC_SEND_FAIL;
 		}
 
-		return send_status;
+		return (int)send_status;
 	} else
 		return JSONRPC_SEND_SUCCESS;
 }
