@@ -839,7 +839,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			if ((a->elem[0].u.number>RT_NO)||(a->elem[0].u.number<0)){
+			if ((a->elem[0].u.number>=RT_NO)||(a->elem[0].u.number<0)){
 				LM_ALERT("BUG - invalid routing table number in"
 							"route(%lu)\n", a->elem[0].u.number);
 				ret=E_CFG;
