@@ -54,7 +54,7 @@ static int transfers;
 static int read_fds[FD_SETSIZE];
 
 /* handle for use with synchronous reqs */
-static CURL *sync_handle;
+extern CURL *sync_handle;
 
 /* libcurl's reported running handles */
 static int running_handles;

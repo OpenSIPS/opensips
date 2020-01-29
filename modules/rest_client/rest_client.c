@@ -423,24 +423,15 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	if (subtype == TR_REST_ESCAPE) {
 
 #if ( LIBCURL_VERSION_NUM >= 0x071504 )
-		CURL *curl = curl_easy_init();
-		if (curl) {
-			curl_out = curl_easy_escape(curl, input_str.s, input_str.len);
-			if (!curl_out) {
-				LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
-				       input_str.len, input_str.s);
-				goto error;
-			}
+        curl_out = curl_easy_escape(sync_handle, input_str.s, input_str.len);
+        if (!curl_out) {
+            LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
+                   input_str.len, input_str.s);
+            goto error;
+        }
 
-			LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str.len,
-			input_str.s, curl_out);
-
-			/*
- 			todo
-			curl_free(curl_out);
-			curl_easy_cleanup(curl);
-			*/
-		}
+        LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str.len,
+        input_str.s, curl_out);
 #else
 		curl_out = curl_escape(input_str.s, input_str.len);
 		if (!curl_out) {
@@ -451,11 +442,6 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 		LM_DBG("curl_escape '%.*s' returns '%s'\n", input_str.len,
 		       input_str.s, curl_out);
-
-		/*
-		todo
-		curl_free(curl_out);
-		*/
 #endif
 
 		// Capture and free the result
@@ -469,6 +455,9 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
             LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
         }
 
+        init_str(&output_buf, curl_out);
+        curl_free(curl_out);
+
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
 			LM_ERR("transform failed to set output pvar!\n");
 			goto error;
@@ -477,25 +466,15 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
     } else if (subtype == TR_REST_UNESCAPE) {
 
 #if ( LIBCURL_VERSION_NUM >= 0x071504 )
-		CURL *curl = curl_easy_init();
-		if (curl) {
-		    /* todo review usage for outlength parameter */
-			curl_out = curl_easy_unescape(curl, input_str.s, input_str.len, NULL);
-			if (!curl_out) {
-				LM_ERR("failed to execute curl_easy_unescape on '%.*s'\n",
-				       input_str.len, input_str.s);
-				goto error;
-			}
+        curl_out = curl_easy_unescape(sync_handle, input_str.s, input_str.len, NULL);
+        if (!curl_out) {
+            LM_ERR("failed to execute curl_easy_unescape on '%.*s'\n",
+                   input_str.len, input_str.s);
+            goto error;
+        }
 
-			LM_DBG("curl_easy_unescape '%.*s' returns '%s'\n", input_str.len,
-			input_str.s, curl_out);
-
-			/*
- 			todo
-			curl_free(curl_out);
-			curl_easy_cleanup(curl);
-			*/
-		}
+        LM_DBG("curl_easy_unescape '%.*s' returns '%s'\n", input_str.len,
+        input_str.s, curl_out);
 #else
 		curl_out = curl_unescape(input_str.s, input_str.len);
 		if (!curl_out) {
@@ -506,11 +485,6 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 
 		LM_DBG("curl_unescape '%.*s' returns '%s'\n", input_str.len,
 		       input_str.s, curl_out);
-
-		/*
-		todo
-		curl_free(curl_out);
-		*/
 #endif
 
 		// Capture and free the result
@@ -524,6 +498,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
             LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
         }
 
+        init_str(&output_buf, curl_out);
 		curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
