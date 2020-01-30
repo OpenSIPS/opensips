@@ -68,71 +68,6 @@ void empty_qr_sorted_list(qr_sorted_list_t **sorted_list) {
 
 	}
 }
-/* compute answer seizure ratio for gw */
-inline double asr(qr_gw_t *gw) {
-	double asr;
-	lock_start_read(gw->ref_lock);
-	if(gw->history_stats.n.ok == 0) {
-		lock_stop_read(gw->ref_lock);
-		return -1;
-	}
-	asr = (double)gw->history_stats.stats.as/gw->history_stats.n.ok;
-	lock_stop_read(gw->ref_lock);
-	return asr;
-}
-
-/* compute completed calls ratio for gw */
-inline double ccr(qr_gw_t *gw) {
-	double ccr;
-	lock_start_read(gw->ref_lock);
-	if(gw->history_stats.n.ok == 0) {
-		lock_stop_read(gw->ref_lock);
-		return -1;
-	}
-	ccr = (double)gw->history_stats.stats.cc/gw->history_stats.n.ok;
-	lock_stop_read(gw->ref_lock);
-	return ccr;
-}
-
-/* compute post dial delay for gw */
-inline double pdd(qr_gw_t *gw) {
-	double pdd;
-	lock_start_read(gw->ref_lock);
-	if(gw->history_stats.n.pdd == 0) {
-		lock_stop_read(gw->ref_lock);
-		return -1;
-	}
-	pdd = (double)gw->history_stats.stats.pdd/gw->history_stats.n.pdd;
-	lock_stop_read(gw->ref_lock);
-	return pdd;
-}
-
-/* compute average setup time for gw */
-inline double ast(qr_gw_t *gw) {
-	double ast;
-	lock_start_read(gw->ref_lock);
-	if(gw->history_stats.n.setup == 0) {
-		lock_stop_read(gw->ref_lock);
-		return -1;
-	}
-	ast = (double)gw->history_stats.stats.st/gw->history_stats.n.setup;
-	lock_stop_read(gw->ref_lock);
-	return ast;
-}
-
-/* compute average call duration for gw */
-inline double acd(qr_gw_t *gw) {
-	double acd;
-	lock_start_read(gw->ref_lock);
-	if(gw->history_stats.n.cd == 0) {
-		lock_stop_read(gw->ref_lock);
-		return -1;
-	}
-	acd = (double)gw->history_stats.stats.cd/gw->history_stats.n.cd;
-	lock_stop_read(gw->ref_lock);
-	return acd;
-}
-
 static inline void qr_mark_gw_dsbl(qr_gw_t *gw) {
 	lock_start_write(gw->ref_lock);
 	gw->state |= QR_STATUS_DSBL; /* mark the gateway as disabled */
@@ -277,7 +212,10 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 }
 
 
-void qr_sort(int type, struct dr_cb_params *params) {
+void qr_sort(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
+	struct dr_sort_params *srp = (struct dr_sort_params *)*cbp->param;
 	qr_rule_t *rule;
 	unsigned short dst_id;
 	int i,j,k;
@@ -287,15 +225,14 @@ void qr_sort(int type, struct dr_cb_params *params) {
 
 
 
-	rule = (qr_rule_t*)drb.get_qr_rule_handle(((struct dr_sort_params *)
-				*params->param)->dr_rule);
+	rule = (qr_rule_t*)drb.get_qr_rule_handle(srp->dr_rule);
 	if(rule == NULL) {
 		LM_ERR("No qr rule provided for sorting (qr_handle needed)\n");
 		goto error;
 	}
-	us_sorted_dst = ((struct dr_sort_params *)*params->param)->sorted_dst;
 
-	dst_id = ((struct dr_sort_params *)*params->param)->dst_id;
+	us_sorted_dst = srp->sorted_dst;
+	dst_id = srp->dst_id;
 
 
 	if(*n_sampled < *qr_n) { /* we don't have enough statistics to sort */
@@ -380,7 +317,7 @@ void qr_sort(int type, struct dr_cb_params *params) {
 	pkg_free(sorted_list);
 	sorted_list = NULL;
 
-	((struct dr_sort_params *)*params->param)->dst_id = 0;
+	srp->dst_id = 0;
 	return ;
 error:
 	if(sorted_list != NULL) {
@@ -388,7 +325,7 @@ error:
 		pkg_free(sorted_list);
 		sorted_list = NULL;
 	}
-	((struct dr_sort_params *)*params->param)->dst_id = -1;
+	srp->dst_id = -1;
 }
 
 

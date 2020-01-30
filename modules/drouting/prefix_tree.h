@@ -28,6 +28,7 @@
 #include "../../ip_addr.h"
 #include "../../time_rec.h"
 #include "../../map.h"
+#include "../../mem/mem_funcs.h"
 
 #define IS_DECIMAL_DIGIT(d) \
 	(((d)>='0') && ((d)<= '9'))

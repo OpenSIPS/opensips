@@ -77,21 +77,23 @@ static void release_trans_prop(void *param) {
 	shm_free(to_free);
 }
 
-void qr_acc(int type, struct dr_cb_params * params) {
+void qr_acc(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	qr_trans_prop_t *trans_prop;
 	qr_rule_t *rule;
 	int gw_id, cr_id;
 	struct sip_msg *msg = NULL;
 
-	msg = ((struct dr_acc_call_params*)(*params->param))->msg;
+	msg = ((struct dr_acc_call_params*)*cbp->param)->msg;
 
 	if(/*msg->first_line.type != SIP_REQUEST ||*/
 			msg->first_line.u.request.method_value == METHOD_INVITE) {
 		/*TODO: check if works only on invite (as it should) */
 
-		rule = ((struct dr_acc_call_params*)(*params->param))->rule;
-		gw_id = ((struct dr_acc_call_params*)(*params->param))->gw_id;
-		cr_id = ((struct dr_acc_call_params*)(*params->param))->cr_id;
+		rule = ((struct dr_acc_call_params*)*cbp->param)->rule;
+		gw_id = ((struct dr_acc_call_params*)*cbp->param)->gw_id;
+		cr_id = ((struct dr_acc_call_params*)*cbp->param)->cr_id;
 
 		trans_prop = (qr_trans_prop_t*)shm_malloc(sizeof(qr_trans_prop_t));
 		if(trans_prop == NULL) {

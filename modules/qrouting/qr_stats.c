@@ -104,15 +104,17 @@ error:
 }
 
 /* make gateway a given destination - to be registered as callback */
-void qr_dst_is_gw(int type, struct dr_cb_params *param){
+void qr_dst_is_gw(void *param)
+{
 	void *dst; /* pgw_t received from dr */
 	qr_rule_t *rule; /* qr_rule that was initialised with the qr callback from dr */
 	int   n_dst; /* the number of the destination within the dr rule */
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 
 	/* extract the parameters from dr */
-	rule = (qr_rule_t*)((struct dr_reg_param *)(*param->param))->rule;
-	dst = ((struct dr_reg_param *)*param->param)->cr_or_gw;
-	n_dst = ((struct dr_reg_param *)*param->param)->n_dst;
+	rule = (qr_rule_t*)((struct dr_reg_param *)*cbp->param)->rule;
+	dst = ((struct dr_reg_param *)*cbp->param)->cr_or_gw;
+	n_dst = ((struct dr_reg_param *)*cbp->param)->n_dst;
 	LM_DBG("Adding gw to rule %d\n", rule->r_id);
 
 	if(rule != NULL) {
@@ -202,9 +204,11 @@ void free_qr_list(qr_partitions_t *qr_parts) {
 
 }
 
-void free_qr_cb(int type, struct dr_cb_params *param) {
+void free_qr_cb(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	struct dr_free_qr_list_params * free_params = (struct dr_free_qr_list_params *)
-		*param->param;
+		*cbp->param;
 	LM_DBG("freeing the old rules...\n");
 
 	qr_partitions_t * old_list = free_params->old_list;
@@ -215,11 +219,12 @@ void free_qr_cb(int type, struct dr_cb_params *param) {
 /* TODO: thresholds must be freed separatley */
 
 /* creates a rule n_dest destinations (by default marked as gws) */
-void qr_create_rule(int type, struct dr_cb_params * param) {
+void qr_create_rule(void *param) {
 	qr_rule_t *new = NULL;
 	int r_id;
-	struct dr_reg_init_rule_params *init_rule_params = NULL;
-	init_rule_params = (struct dr_reg_init_rule_params *)*param->param;
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
+	struct dr_reg_init_rule_params *init_rule_params =
+		(struct dr_reg_init_rule_params *)*cbp->param;
 
 	r_id = init_rule_params->r_id;
 
@@ -242,15 +247,17 @@ void qr_create_rule(int type, struct dr_cb_params * param) {
 }
 
 /* marks index_grp destination from the rule as group and creates the gw array */
-void qr_dst_is_grp(int type, struct dr_cb_params *params) {
-	qr_rule_t *rule = (qr_rule_t*)((struct dr_reg_param *)*params->param)
+void qr_dst_is_grp(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
+	qr_rule_t *rule = (qr_rule_t*)((struct dr_reg_param *)*cbp->param)
 		->rule;
 	void * dr_gw;
 	str *cr_name, *gw_name;
 	int i;
-	int n_dst = ((struct dr_reg_param*)*params->param)->n_dst;
+	int n_dst = ((struct dr_reg_param*)*cbp->param)->n_dst;
 	int n_gws ;
-	void *grp = ((struct dr_reg_param*)*params->param)->cr_or_gw;
+	void *grp = ((struct dr_reg_param*)*cbp->param)->cr_or_gw;
 	n_gws = drb.get_cr_n_gw(grp);
 	cr_name = drb.get_cr_name(grp);
 	LM_DBG("Carrier '%.*s' with  %d gateways added to rule %d\n", cr_name->len,
@@ -292,9 +299,11 @@ error:
 		shm_free(rule->dest[n_dst].dst.grp.gw);
 }
 
-void qr_create_partition_list(int type, struct dr_cb_params *param) {
+void qr_create_partition_list(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	struct dr_create_partition_list_params *partition_list_params;
-	partition_list_params = (struct dr_create_partition_list_params*)*param->param;
+	partition_list_params = (struct dr_create_partition_list_params*)*cbp->param;
 	qr_partitions_t **part_list =
 		(qr_partitions_t**)partition_list_params->part_list;
 	int n_partitions = partition_list_params->n_parts;
@@ -341,9 +350,11 @@ error:
 }
 
 /* add rule to list. if the list is NULL a new list is created */
-void qr_add_rule_to_list(int type, struct dr_cb_params * param) {
+void qr_add_rule_to_list(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	struct dr_add_rule_params  *add_rule_params =
-		(struct dr_add_rule_params*)*param->param;
+		(struct dr_add_rule_params*)*cbp->param;
 	qr_partitions_t *qr_parts = (qr_partitions_t*)add_rule_params->qr_parts;
 	qr_rule_t *new = add_rule_params->qr_rule;
 	int part_index = add_rule_params->part_index;
@@ -366,9 +377,11 @@ void qr_add_rule_to_list(int type, struct dr_cb_params * param) {
 /* TODO: add lock */
 /* saves rule list rcvd as parameter, to the main rule list used
  * by the QR module */
-void qr_mark_as_main_list(int type, struct dr_cb_params * param) {
+void qr_mark_as_main_list(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	struct dr_mark_as_main_list_params * mark_as_main_list =
-		(struct dr_mark_as_main_list_params*) *param->param;
+		(struct dr_mark_as_main_list_params*) *cbp->param;
 	qr_partitions_t *qr_parts_new = (qr_partitions_t*)mark_as_main_list
 		->qr_parts_new_list;
 
@@ -381,9 +394,11 @@ void qr_mark_as_main_list(int type, struct dr_cb_params * param) {
 
 /* copy link two rule lists together => used for dr_reload and partitions
  * (every partition will create a separate list) */
-void qr_link_rule_list(int type, struct dr_cb_params *param) {
+void qr_link_rule_list(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	struct dr_link_rule_list_params * rule_lists =
-		(struct dr_link_rule_list_params *)*param->param;
+		(struct dr_link_rule_list_params *)*cbp->param;
 	qr_rule_t **first_list = (qr_rule_t**)rule_lists->first_list;
 	qr_rule_t *second_list = (qr_rule_t*)rule_lists->second_list;
 	qr_rule_t *rule_it;
@@ -397,13 +412,14 @@ void qr_link_rule_list(int type, struct dr_cb_params *param) {
 		}
 		rule_it->next = second_list; /* link it to the second list */
 	}
-
 }
 
-void qr_search_profile(int type, struct dr_cb_params *param) {
+void qr_search_profile(void *param)
+{
+	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	qr_rule_t *rule = (qr_rule_t*)
-		((struct dr_set_profile_params *)*param->param)->qr_rule;
-	unsigned int profile = ((struct dr_set_profile_params*)*param->param)
+		((struct dr_set_profile_params *)*cbp->param)->qr_rule;
+	unsigned int profile = ((struct dr_set_profile_params*)*cbp->param)
 		->profile;
 	unsigned int current_id;
 	int m, left,right, found = 0;
