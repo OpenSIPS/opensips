@@ -35,10 +35,8 @@
 #include "../../mod_fix.h"
 #include "../../lib/list.h"
 #include "../../trace_api.h"
-#include "rest_client.h"
-
 #include "../tls_mgm/api.h"
-
+#include "rest_client.h"
 #include "rest_methods.h"
 
 /*
@@ -423,15 +421,15 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	if (subtype == TR_REST_ESCAPE) {
 
 #if ( LIBCURL_VERSION_NUM >= 0x071504 )
-        curl_out = curl_easy_escape(sync_handle, input_str.s, input_str.len);
-        if (!curl_out) {
-            LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
-                   input_str.len, input_str.s);
-            goto error;
-        }
+		curl_out = curl_easy_escape(sync_handle, input_str.s, input_str.len);
+		if (!curl_out) {
+			LM_ERR("failed to execute curl_easy_escape on '%.*s'\n",
+			       input_str.len, input_str.s);
+			goto error;
+		}
 
-        LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str.len,
-        input_str.s, curl_out);
+		LM_DBG("curl_easy_escape '%.*s' returns '%s'\n", input_str.len,
+		input_str.s, curl_out);
 #else
 		curl_out = curl_escape(input_str.s, input_str.len);
 		if (!curl_out) {
@@ -447,34 +445,34 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		// Capture and free the result
 		// Ensure the output buffer can accommodate the response value
 		if (output_buf.len < (strlen(curl_out) + 1)) {
-            if (pkg_str_extend(&output_buf, strlen(curl_out) + 1) != 0) {
-                LM_ERR("oom\n");
-                goto error;
-            }
+			if (pkg_str_extend(&output_buf, strlen(curl_out) + 1) != 0) {
+				LM_ERR("oom\n");
+				goto error;
+			}
 
-            LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
-        }
+			LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
+		}
 
-        init_str(&output_buf, curl_out);
-        //curl_free(curl_out);
+		init_str(&output_buf, curl_out);
+		//curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
 			LM_ERR("transform failed to set output pvar!\n");
 			goto error;
 		}
 
-    } else if (subtype == TR_REST_UNESCAPE) {
+	} else if (subtype == TR_REST_UNESCAPE) {
 
 #if ( LIBCURL_VERSION_NUM >= 0x071504 )
-        curl_out = curl_easy_unescape(sync_handle, input_str.s, input_str.len, NULL);
-        if (!curl_out) {
-            LM_ERR("failed to execute curl_easy_unescape on '%.*s'\n",
-                   input_str.len, input_str.s);
-            goto error;
-        }
+		curl_out = curl_easy_unescape(sync_handle, input_str.s, input_str.len, NULL);
+		if (!curl_out) {
+			LM_ERR("failed to execute curl_easy_unescape on '%.*s'\n",
+			       input_str.len, input_str.s);
+			goto error;
+		}
 
-        LM_DBG("curl_easy_unescape '%.*s' returns '%s'\n", input_str.len,
-        input_str.s, curl_out);
+		LM_DBG("curl_easy_unescape '%.*s' returns '%s'\n", input_str.len,
+		input_str.s, curl_out);
 #else
 		curl_out = curl_unescape(input_str.s, input_str.len);
 		if (!curl_out) {
@@ -490,15 +488,15 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		// Capture and free the result
 		// Ensure the output buffer can accommodate the response value
 		if (output_buf.len < (strlen(curl_out) + 1)) {
-            if (pkg_str_extend(&output_buf, strlen(curl_out) + 1) != 0) {
-                LM_ERR("oom\n");
-                goto error;
-            }
+			if (pkg_str_extend(&output_buf, strlen(curl_out) + 1) != 0) {
+				LM_ERR("oom\n");
+				goto error;
+			}
 
-            LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
-        }
+			LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
+		}
 
-        init_str(&output_buf, curl_out);
+		init_str(&output_buf, curl_out);
 		//curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
