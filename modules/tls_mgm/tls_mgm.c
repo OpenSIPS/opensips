@@ -1662,7 +1662,25 @@ static void openssl_on_exit(int status, void *param)
 
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+#define SSL_LOCK_REENTRANT(_cmd) \
+	do { \
+		int __ssl_lock_unlock; \
+		if (ssl_lock_pid != process_no) { \
+			lock_get(ssl_lock); \
+			ssl_lock_pid = process_no; \
+			__ssl_lock_unlock = 1; \
+		} else { \
+			__ssl_lock_unlock = 0; \
+		} \
+		_cmd; \
+		if (__ssl_lock_unlock) { \
+			ssl_lock_pid = -1; \
+			lock_release(ssl_lock); \
+		} \
+	} while (0)
+
 static gen_lock_t *ssl_lock;
+static int ssl_lock_pid = -1;
 static const RAND_METHOD *os_ssl_method;
 
 static int os_ssl_seed(const void *buf, int num)
@@ -1670,9 +1688,7 @@ static int os_ssl_seed(const void *buf, int num)
 	int ret;
 	if (!os_ssl_method || !ssl_lock || !os_ssl_method->seed)
 		return 0;
-	lock_get(ssl_lock);
-	ret = os_ssl_method->seed(buf, num);
-	lock_release(ssl_lock);
+	SSL_LOCK_REENTRANT(ret = os_ssl_method->seed(buf, num));
 	return ret;
 }
 
@@ -1681,9 +1697,7 @@ static int os_ssl_bytes(unsigned char *buf, int num)
 	int ret;
 	if (!os_ssl_method || !ssl_lock || !os_ssl_method->bytes)
 		return 0;
-	lock_get(ssl_lock);
-	ret = os_ssl_method->bytes(buf, num);
-	lock_release(ssl_lock);
+	SSL_LOCK_REENTRANT(ret = os_ssl_method->bytes(buf, num));
 	return ret;
 }
 
@@ -1691,9 +1705,7 @@ static void os_ssl_cleanup(void)
 {
 	if (!os_ssl_method || !ssl_lock || !os_ssl_method->cleanup)
 		return;
-	lock_get(ssl_lock);
-	os_ssl_method->cleanup();
-	lock_release(ssl_lock);
+	SSL_LOCK_REENTRANT(os_ssl_method->cleanup());
 }
 
 static int os_ssl_add(const void *buf, int num, double entropy)
@@ -1701,9 +1713,7 @@ static int os_ssl_add(const void *buf, int num, double entropy)
 	int ret;
 	if (!os_ssl_method || !ssl_lock || !os_ssl_method->add)
 		return 0;
-	lock_get(ssl_lock);
-	ret = os_ssl_method->add(buf, num, entropy);
-	lock_release(ssl_lock);
+	SSL_LOCK_REENTRANT(ret = os_ssl_method->add(buf, num, entropy));
 	return ret;
 }
 
@@ -1712,9 +1722,7 @@ static int os_ssl_pseudorand(unsigned char *buf, int num)
 	int ret;
 	if (!os_ssl_method || !ssl_lock || !os_ssl_method->pseudorand)
 		return 0;
-	lock_get(ssl_lock);
-	ret = os_ssl_method->pseudorand(buf, num);
-	lock_release(ssl_lock);
+	SSL_LOCK_REENTRANT(ret = os_ssl_method->pseudorand(buf, num));
 	return ret;
 }
 
@@ -1723,9 +1731,7 @@ static int os_ssl_status(void)
 	int ret;
 	if (!os_ssl_method || !ssl_lock || !os_ssl_method->status)
 		return 0;
-	lock_get(ssl_lock);
-	ret = os_ssl_method->status();
-	lock_release(ssl_lock);
+	SSL_LOCK_REENTRANT(ret = os_ssl_method->status());
 	return ret;
 }
 
