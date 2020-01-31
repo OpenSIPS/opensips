@@ -54,7 +54,7 @@ static int transfers;
 static int read_fds[FD_SETSIZE];
 
 /* handle for use with synchronous reqs */
-static CURL *sync_handle;
+CURL *sync_handle;
 
 /* libcurl's reported running handles */
 static int running_handles;
@@ -180,7 +180,7 @@ int trace_rest_request_cb(CURL *handle, curl_infotype type, char *data, size_t s
 			}
 
 			/* generate a new correlation each time we send a message */
-			/* FIXME what if 2 messages are sent before recieving reply?
+			/* FIXME what if 2 messages are sent before receiving reply?
 			 * Ex: destination has 2 ip's */
 			if ( type == CURLINFO_HEADER_OUT ) {
 				tparam->correlation.s = (char *)tprot.generate_guid(REST_CORRELATION_COOKIE);
