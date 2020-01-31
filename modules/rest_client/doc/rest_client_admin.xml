@@ -709,9 +709,9 @@ $var(rc) = rest_get("https://call-info.org/?id=$(ci{rest.escape})", $var(body_pv
 $var(tmp) = "1%2B1%3D2%21";
 xlog("Output: $(var(tmp){rest.unescape})\n");
 
-# This example would produce log entry: "Output: the rats have been driven from the streets" (phew)
-$var(tmp) = "the%20rats%20have%20been%20driven%20from%20the%20streets";
-xlog("Output: $(var(tmp){rest.unescape})\n");
+# This example would produce log entry: "OpenSIPs, tastes better with every SIP!"
+$var(tmp) = "OpenSIPs%2C%20tastes%20better%20with%20every%20SIP%21";
+xlog("$(var(tmp){rest.unescape})\n");
 ...
                 </programlisting>
             </example>
