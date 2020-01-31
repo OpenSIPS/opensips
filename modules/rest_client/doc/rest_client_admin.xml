@@ -662,7 +662,7 @@ route [resume] {
     <section id="exported_transformations">
         <title>Exported script transformations</title>
         <para>
-            The module also provides a way for encoding and decoding parameters contained in a arbitrary script variable, in accordance with RFC3986. This is done by applying a transformation to a script variable containing the data to be encoded. The value of the original variable is not altered and a corresponding string value is returned. The transformation is performed through libcurl API method curl_easy_escape (or curl_escape for libcurl < 7.15.4).
+            The module also provides a way for encoding and decoding parameters contained in a arbitrary script variable, in accordance with RFC3986. This is done by applying a transformation to a script variable containing the data to be encoded. The value of the original variable is not altered and a corresponding string value is returned. The transformation is performed through libcurl API method curl_easy_escape (or curl_escape for libcurl &lt; 7.15.4).
         </para>
 
         <section id="tran_rest.escape" xreflabel="rest.escape">
@@ -680,7 +680,7 @@ route [resume] {
                 <programlisting format="linespecific">
 ...
 # This example would produce log entry: "Output: call%40example.com%26safe%3Dfalse"
-$var(tmp) = "call@example.com&safe=false";
+$var(tmp) = "call@example.com&amp;safe=false";
 xlog("Output: $(var(tmp){rest.escape})\n");
 
 # Encode call ID before transmission:
