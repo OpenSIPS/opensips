@@ -350,7 +350,7 @@ int validate_curl_http_version(const int *http_version)
 /**
  * tr_rest_parse - Prepare to URL encode a string value
  * @in:		        raw parameter list (braces removed, module name truncated) i.e. "escape"
- * @t:		        transformation parameters (unused)
+ * @t:		        transformation parameters, will return transformation subtype
  *
  * @return:
  *  0 - success
@@ -392,9 +392,9 @@ int tr_rest_parse(str* in, trans_t *t)
 /**
  * tr_rest_eval - Perform URL encode on a string value
  * @msg:		        sip message struct
- * @tp:     		    transformation parameters (unused)
- * @subtype:            transformation mode (TR_REST_ESCAPE or TR_REST_UNESCAPE)
- * @val:		        input/output - on success will be as encoded by libcurl, else NULL
+ * @tp:     		    transformation parameters
+ * @subtype:            transformation mode (see: parse) (TR_REST_ESCAPE/TR_REST_UNESCAPE)
+ * @val:		        i/o, on success as (un)escaped by libcurl, else NULL
  *
  * @return:
  *  0 - success
@@ -445,6 +445,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		// Ensure the output buffer can accommodate the response value
 		if (pkg_str_extend(&output_buf, strlen(curl_out)+1) != 0) {
 			LM_ERR("oom\n");
+			curl_free(curl_out);
 			goto error;
 		}
 		LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
@@ -485,6 +486,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		// Ensure the output buffer can accommodate the response value
 		if (pkg_str_extend(&output_buf, strlen(curl_out)+1) != 0) {
 			LM_ERR("oom\n");
+			curl_free(curl_out);
 			goto error;
 		}
 		LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
@@ -499,7 +501,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		}
 
 	} else {
-		LM_BUG("Unknown transformation subtype [%d]\n", subtype);
+		LM_BUG("unknown transformation subtype [%d]\n", subtype);
 		goto error;
 	}
 
