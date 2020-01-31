@@ -442,19 +442,19 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		       input_str.s, curl_out);
 #endif
 
-		// Capture and free the result
 		// Ensure the output buffer can accommodate the response value
-		if (pkg_str_extend(&output_buf, strlen(curl_out) + 1) != 0) {
+		if (pkg_str_extend(&output_buf, strlen(curl_out)+1) != 0) {
 			LM_ERR("oom\n");
 			goto error;
 		}
 		LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
 
-		str_cpy(&output_buf, curl_out);
-		//curl_free(curl_out);
+		// Capture and free the result
+		memcpy(output_buf.s, curl_out, strlen(curl_out)+1);
+		curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
-			LM_ERR("transform failed to set output pvar!\n");
+			LM_ERR("transform escape failed to set output pvar!\n");
 			goto error;
 		}
 
@@ -482,19 +482,19 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		       input_str.s, curl_out);
 #endif
 
-		// Capture and free the result
 		// Ensure the output buffer can accommodate the response value
-		if (pkg_str_extend(&output_buf, strlen(curl_out) + 1) != 0) {
+		if (pkg_str_extend(&output_buf, strlen(curl_out)+1) != 0) {
 			LM_ERR("oom\n");
 			goto error;
 		}
 		LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
 
-		str_cpy(&output_buf, curl_out);
-		//curl_free(curl_out);
+		// Capture and free the result
+		memcpy(output_buf.s, curl_out, strlen(curl_out)+1);
+		curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
-			LM_ERR("transform failed to set output pvar!\n");
+			LM_ERR("transform unescape failed to set output pvar!\n");
 			goto error;
 		}
 
