@@ -1839,7 +1839,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 		case TR_IP_MATCHES:
 			/* get the input which must be an IP addr as string */
 			if ( (p_ip=str2ip(&val->rs))==NULL &&
-			(p_ip=str2ip6(&val->rs)) ) {
+			(p_ip=str2ip6(&val->rs))==NULL ) {
 				LM_ERR("Invalid input IP address <%.*s>\n",
 					val->rs.len,val->rs.s);
 				goto error;
@@ -1864,7 +1864,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			val->rs.s = sv.s;
 			val->rs.len = p-sv.s;
 			if ( (p_ip=str2ip(&val->rs))==NULL &&
-			(p_ip=str2ip6(&val->rs)) ) {
+			(p_ip=str2ip6(&val->rs))==NULL ) {
 				LM_ERR("Invalid parameter IP address <%.*s>\n",
 					val->rs.len,val->rs.s);
 				goto error;

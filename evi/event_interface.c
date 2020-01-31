@@ -852,7 +852,8 @@ struct mi_raise_event_dispatch {
 void mi_raise_event_rpc(int sender, void *param)
 {
 	struct mi_raise_event_dispatch *p = (struct mi_raise_event_dispatch *)param;
-	evi_raise_event(p->id, p->params);
+	if (evi_raise_event(p->id, p->params))
+		LM_ERR("cannot raise event RPC\n");
 	evi_free_shm_params(p->params);
 	shm_free(p);
 }

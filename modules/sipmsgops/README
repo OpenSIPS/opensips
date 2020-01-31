@@ -640,10 +640,13 @@ add_body_part("Hello World!", "text/plain");
      * -20 - No WWW-Authorize header in 401 reply.
      * -21 - No Content-Type header
      * -22 - To header parse error
-     * -23 - From header parse error
-     * -24 - Bad hostname in To header
+     * -23 - Bad hostname in To header
+     * -24 - From header parse error
      * -25 - Bad hostname in From header
      * -26 - Contact header parse error
+     * -27 - Bad URI username
+     * -28 - Bad From URI username
+     * -29 - Bad To URI username
      * -255 - undefined errors.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1037,7 +1040,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 58 31 1904 671
-   2. Liviu Chircu (@liviuchircu) 49 19 757 1313
+   2. Liviu Chircu (@liviuchircu) 50 20 765 1315
    3. Razvan Crainea (@razvancrainea) 40 16 2890 36
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
@@ -1072,9 +1075,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jan 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
    4.  Dan Pascu (@danpascu)               May 2019 - May 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019

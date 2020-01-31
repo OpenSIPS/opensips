@@ -253,6 +253,8 @@ unsigned int pt_get_rt_load(int _)
 			SUM_UP_LOAD( usec_now, n, ST, 1);
 			summed_procs++;
 		}
+	if (!summed_procs)
+		return 0;
 
 	return (used*100/(ST_WINDOW_TIME*summed_procs));
 }
@@ -275,6 +277,8 @@ unsigned int pt_get_1m_load(int _)
 			SUM_UP_LOAD( usec_now, n, LT, LT_1m_RATIO);
 			summed_procs++;
 		}
+	if (!summed_procs)
+		return 0;
 
 	return (used*100/((long long)LT_WINDOW_TIME*summed_procs*LT_1m_RATIO));
 }
@@ -297,6 +301,8 @@ unsigned int pt_get_10m_load(int _)
 			SUM_UP_LOAD( usec_now, n, LT, 1);
 			summed_procs++;
 		}
+	if (!summed_procs)
+		return 0;
 
 	return (used*100/((long long)LT_WINDOW_TIME*summed_procs));
 }
@@ -318,6 +324,8 @@ unsigned int pt_get_rt_loadall(int _)
 			SUM_UP_LOAD( usec_now, n, ST, 1);
 			summed_procs++;
 		}
+	if (!summed_procs)
+		return 0;
 
 	return (used*100/((long long)ST_WINDOW_TIME*summed_procs));
 }
@@ -339,6 +347,8 @@ unsigned int pt_get_1m_loadall(int _)
 			SUM_UP_LOAD( usec_now, n, LT, LT_1m_RATIO);
 			summed_procs++;
 		}
+	if (!summed_procs)
+		return 0;
 
 	return (used*100/((long long)LT_WINDOW_TIME*summed_procs*LT_1m_RATIO));
 }
@@ -360,6 +370,8 @@ unsigned int pt_get_10m_loadall(int _)
 			SUM_UP_LOAD( usec_now, n, LT, 1);
 			summed_procs++;
 		}
+	if (!summed_procs)
+		return 0;
 
 	return (used*100/((long long)LT_WINDOW_TIME*summed_procs));
 }

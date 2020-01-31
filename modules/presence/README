@@ -1065,23 +1065,23 @@ Chapter 3. Contributors
    1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jan 2020
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2019
-   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   5.  Dan Pascu (@danpascu)               Nov 2007 - Jul 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  James Criscuolo                     Mar 2016 - Mar 2016
-   8.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Dusan Klinec                        Dec 2015 - Dec 2015
+   4.  Walter Doekes (@wdoekes)            Apr 2010 - Nov 2019
+   5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   6.  Dan Pascu (@danpascu)               Nov 2007 - Jul 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  James Criscuolo                     Mar 2016 - Mar 2016
+   9.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Carlos Oliva, Damien Sandras
-   (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra Corretgé
-   (@saghul), Anca Vamanu, Walter Doekes (@wdoekes), Vallimamod
-   Abdullah, Kennard White, Stanislaw Pitucha, Angel Marin, John
-   Riordan, Vasil Kolev, UnixDev, Sergio Gutierrez, Kobi Eshun
-   (@ekobi), Klaus Darilion, Denis Bilenko, Henning Westerholt
-   (@henningw), Juha Heinanen (@juha-h), Daniel-Constantin Mierla
-   (@miconda), Edson Gellert Schubert, Julien Blache, Benny
-   Prijono, Elena-Ramona Modroiu.
+   All remaining contributors: Dusan Klinec, Carlos Oliva, Damien
+   Sandras (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra
+   Corretgé (@saghul), Anca Vamanu, Vallimamod Abdullah, Kennard
+   White, Stanislaw Pitucha, Angel Marin, John Riordan, Vasil
+   Kolev, UnixDev, Sergio Gutierrez, Kobi Eshun (@ekobi), Klaus
+   Darilion, Denis Bilenko, Henning Westerholt (@henningw), Juha
+   Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda), Edson
+   Gellert Schubert, Julien Blache, Benny Prijono, Elena-Ramona
+   Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1090,14 +1090,15 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Dan Pascu (@danpascu), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Saúl Ibarra Corretgé (@saghul), Ovidiu
-   Sas (@ovidiusas), Anca Vamanu, Kennard White, Angel Marin, Kobi
-   Eshun (@ekobi), Klaus Darilion, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
-   Juha Heinanen (@juha-h), Elena-Ramona Modroiu.
+   Last edited by: Walter Doekes (@wdoekes), Dan Pascu
+   (@danpascu), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl
+   Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
+   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
+   Darilion, Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Edson Gellert Schubert, Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

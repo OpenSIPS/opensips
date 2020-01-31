@@ -412,6 +412,7 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	}
 
 	free(line);
+	line = NULL;
 
 	needed = cfgtok_fileend.len + 1 + 1;
 	if (*bytes_left < needed) {
@@ -430,6 +431,8 @@ static int __flatten_opensips_cfg(FILE *cfg, const char *cfg_path,
 	return 0;
 
 out_err:
+	if (line)
+		free(line);
 	fclose(cfg);
 	return -1;
 }
@@ -636,9 +639,13 @@ static int exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline,
 		argv = realloc(argv, (argv_len + 1) * sizeof *argv);
 		argv[argv_len++] = NULL;
 
-		execvp(pp_binary, argv);
-		LM_ERR("failed to exec preprocessor '%s': %d (%s)\n",
-		       preproc_cmdline, errno, strerror(errno));
+		if (pp_binary) {
+			execvp(pp_binary, argv);
+			LM_ERR("failed to exec preprocessor '%s': %d (%s)\n",
+				   preproc_cmdline, errno, strerror(errno));
+		} else
+			LM_ERR("no binary to run: '%s'\n", preproc_cmdline);
+
 		exit(-1);
 	}
 

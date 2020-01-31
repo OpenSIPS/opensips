@@ -41,17 +41,6 @@
 #include "sipstate.h"
 #include "compat.h"
 
-static const luaL_Reg siplua_libs[] = {
-  {"", luaopen_base},
-  {"string", luaopen_string},
-  {"os", luaopen_os},
-  {"table", luaopen_table},
-  {"math", luaopen_math},
-  {"io", luaopen_io},
-  {"package", luaopen_package},
-  {NULL, NULL}
-};
-
 static const char *sipstate_filename;
 static int sipstate_time;
 static lua_State *siplua_L;
@@ -329,16 +318,13 @@ static const struct luaL_Reg siplua_state_mylib [] =
 static void siplua_register_state_cclosures(lua_State *L)
 {
   lua_pushglobaltable(L);
-  luaL_openlib(L, NULL, siplua_state_mylib, 0);
+  luaL_openlib(L, "opensips", siplua_state_mylib, 0);
   lua_remove(L, -1);
 }
 
 int sipstate_open(char *allocator)
 {
   lua_State *L;
-  const luaL_Reg *lib = siplua_libs;
-  const char *errmsg;
-
   if (!strcmp(allocator, "opensips"))
     L = lua_newstate(siplua_lua_Alloc, NULL);
   else if (!strcmp(allocator, "malloc"))
@@ -355,18 +341,7 @@ int sipstate_open(char *allocator)
     }
   else
     siplua_log(L_DBG, "Lua state opened\n");
-  for (; lib->func; lib++) {
-    lua_pushcfunction(L, lib->func);
-    lua_pushstring(L, lib->name);
-    if (lua_pcall(L, 1, 0, 0))
-      {
-	errmsg = lua_tostring(L, -1);
-	siplua_log(L_ERR, "Error loading library `%s': %s\n", lib->name, errmsg);
-	lua_remove(L, -1);
-	sipstate_close();
-	return -1;
-      }
-  }
+  luaL_openlibs(L);
   siplua_register_state_cclosures(L);
   siplua_register_api_cclosures(L);
   siplua_register_mysql_cclosures(L);

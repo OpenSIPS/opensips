@@ -7,9 +7,29 @@
 	<title>Overview</title>
 	<para> The modules handles PUBLISH and SUBSCRIBE messages and generates
 	NOTIFY messages in a general, event independent way. It allows registering 
-	events to it from other &osips; modules. Events that can currently be added to
-	it are: presence, presence.winfo, dialog;sla from presence_xml
-	module and message-summary from presence_mwi module.
+	events from other &osips; modules. Events that can currently be added are:
+	<itemizedlist>
+	<listitem><para>
+		<emphasis>presence</emphasis>, <emphasis>presence.winfo</emphasis>,
+		<emphasis>dialog;sla</emphasis> from presence_xml module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>message-summary</emphasis> from presence_mwi module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>call-info</emphasis>, <emphasis>line-seize</emphasis> from
+		presence_callinfo module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>dialog</emphasis> from presence_dialoginfo module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>xcap-diff</emphasis> from presence_xcapdiff module
+	</para></listitem>
+	<listitem><para>
+		<emphasis>as-feature-event</emphasis> from presence_dfks module
+	</para></listitem>
+	</itemizedlist>
 	</para>
 	<para>
 	The module uses database storage. 
@@ -41,6 +61,11 @@
 	To read and understand the presence clustering, its abilities and how to
 	implement scenarios like High-Availability, Load Balancing or Federations,
 	please refer to this article <ulink url="https://blog.opensips.org/2018/03/27/clustering-presence-services-with-opensips-2-4/">https://blog.opensips.org/2018/03/27/clustering-presence-services-with-opensips-2-4/</ulink>.
+	</para>
+	<para>
+	As data synchronization at startup is performed when using the
+	<emphasis>full-sharing</emphasis> <xref linkend="param_cluster_federation_mode"/>,
+	you should define at least one "seed" node in the cluster in this case.
 	</para>
 	</section>
 
@@ -159,55 +184,49 @@ modparam("presence", "cluster_id", 2)
 	<section id="param_cluster_federation_mode" xreflabel="cluster_federation_mode">
 		<title><varname>cluster_federation_mode</varname> (int)</title>
 		<para>
-		When enabling the federation mode, the node inside the presence
-		cluster will start broadcasting the data to other nodes in the
-		cluster via the clustering support. Each node will keep its own
-		data set. A non-zero value means enabled.
+		When enabling the federation mode, nodes inside the presence
+		cluster will start broadcasting the data to other nodes via the
+		clustering support.
 		</para>
 		<para>
-		<emphasis>Possible values for mode:</emphasis>
+		<emphasis>Possible values:</emphasis>
 		<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>0 (default) - no federation/partitioning.</emphasis>
+				<emphasis>disabled</emphasis> - federation mode is disabled
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>1 - the minimum needed information is
-				broadcast/kept.</emphasis>
+				<emphasis>on-demand-sharing</emphasis> - the minimum needed information is
+				kept on each node. Replicated information for non local
+				subscribers is discarded and queries are broadcasted
+				in the cluster for new subscribers.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>2 - published state is kept on all
-				presence nodes on all presence nodes, even when
-				there aren't any subscribers.</emphasis>
+				<emphasis>full-sharing</emphasis> - published state is kept on all presence
+				nodes even when there aren't any local subscribers.
 			</para>
 			</listitem>
 		</itemizedlist>
 		</para>
 		<para>
-		<emphasis>
-			If you don't want to use a shared database using
-			<xref linkend="param_fallback2db"/>, but still want a
-			complete data set everywhere, you may choose mode 2.
-		</emphasis>
-		</para>
-		<para>
-		<emphasis>
-			This mode allows you to switch PUBLISH endpoints,
-			even for already published Event States, thus allowing
-			you to add and remove presence servers without losing
-			state.
-		</emphasis>
+		If you don't want to use a shared database (via
+		<xref linkend="param_fallback2db"/>), but still want a
+		complete data set everywhere, you may choose mode 2.
+		This mode allows you to switch PUBLISH endpoints,
+		even for already published Event States, thus allowing
+		you to add and remove presence servers without losing
+		state.
 		</para>
 		<para>
 		For more on presence clustering see the 
 		<xref linkend="presence_clustering"/> chapter.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>0</quote> (disabled).
+		<emphasis>Default value is <quote>disabled</quote>.
 		</emphasis>
 		</para>
 		<example>

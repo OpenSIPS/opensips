@@ -558,6 +558,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					if (pv_printf_s(msg, a->elem[0].u.data, &sval) < 0) {
 						LM_ERR("cannot print route name!\n");
 						i = -1;
+						break;
 					}
 					i = get_script_route_ID_by_name_str(&sval, sroutes->request, RT_NO);
 					break;
@@ -573,7 +574,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			}
 			script_trace("route", sroutes->request[i].name,
 				msg, a->file, a->line) ;
-			if ((i>RT_NO)||(i<0)){
+			if ((i>=RT_NO)||(i<0)){
 				LM_BUG("invalid routing table number in route(%u)\n", i);
 				ret=E_CFG;
 				break;
@@ -875,7 +876,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 				if (free_cmd_fixups(acmd->params, aitem->elem, cmdp) < 0) {
 					LM_ERR("Failed to free fixups for command <%s>\n",
-						cmd->name);
+						acmd->name);
 					break;
 				}
 			}

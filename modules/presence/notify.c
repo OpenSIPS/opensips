@@ -974,7 +974,7 @@ static str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		if(!fallback2db)
 		{
 			/* we do not have the presentity */
-			if (query_cluster && is_cluster_federation_enabled())
+			if (query_cluster && is_federation_full_sharing())
 				query_cluster_for_presentity(&pres_uri, event->evp);
 
 			/* for pidf manipulation && dialog-presence mixing */
@@ -1026,7 +1026,7 @@ static str* get_p_notify_body(str pres_uri, pres_ev_t* event, str* etag,
 		result= NULL;
 
 		/* we do not have the presentity */
-		if (query_cluster && is_cluster_federation_enabled() &&
+		if (query_cluster && is_federation_full_sharing() &&
 		is_event_clustered(event->evp->parsed))
 			query_cluster_for_presentity(&pres_uri, event->evp);
 

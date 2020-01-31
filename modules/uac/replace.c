@@ -235,7 +235,7 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
  * Expand the @uri buffer to include its enclosing left-angle quotes
  * (< and >), if they are present within the given @llim and @rlim boundaries.
  */
-static void expand_laquotes(str *uri, const char *llim, const char *rlim)
+static void expand_aquotes(str *uri, const char *llim, const char *rlim)
 {
 	char *p;
 
@@ -343,7 +343,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 
 	/* trim away any <, > (the replacement URI always includes them) */
 	old_uri = body->uri;
-	expand_laquotes(&old_uri,
+	expand_aquotes(&old_uri,
 			hdr->name.s + hdr->name.len,
 			hdr->body.s + hdr->body.len);
 
@@ -512,7 +512,7 @@ int restore_uri( struct sip_msg *msg, int to, int check_from)
 	struct hdr_field *old_hdr;
 	struct lump* l;
 	str param_val;
-	str old_uri;
+	str old_uri, ou;
 	str new_uri;
 	str *rr_param;
 	char *p;
@@ -554,7 +554,7 @@ int restore_uri( struct sip_msg *msg, int to, int check_from)
 			LM_ERR("failed to parse TO hdr\n");
 			goto failed;
 		}
-		old_uri = ((struct to_body*)msg->to->parsed)->uri;
+		ou = old_uri = ((struct to_body*)msg->to->parsed)->uri;
 		old_hdr = msg->to;
 		flag = FL_USE_UAC_TO;
 	} else {
@@ -563,10 +563,15 @@ int restore_uri( struct sip_msg *msg, int to, int check_from)
 			LM_ERR("failed to find/parse FROM hdr\n");
 			goto failed;
 		}
-		old_uri = ((struct to_body*)msg->from->parsed)->uri;
+		ou = old_uri = ((struct to_body*)msg->from->parsed)->uri;
 		old_hdr = msg->from;
 		flag = FL_USE_UAC_FROM;
 	}
+
+	if (uac_rrb.is_direction(msg, RR_FLOW_UPSTREAM) == 0)
+		expand_aquotes(&old_uri,
+				old_hdr->name.s + old_hdr->name.len,
+				old_hdr->body.s + old_hdr->body.len);
 
 	/* get new uri */
 	if ( new_uri.len<old_uri.len ) {
@@ -603,10 +608,11 @@ int restore_uri( struct sip_msg *msg, int to, int check_from)
 	memcpy( p, new_uri.s, new_uri.len);
 	new_uri.s = p;
 
-	/* trim away any <, > (the replacement URI always includes them) */
-	expand_laquotes(&old_uri,
-			old_hdr->name.s + old_hdr->name.len,
-			old_hdr->body.s + old_hdr->body.len);
+	old_uri = ou;
+	if (uac_rrb.is_direction(msg, RR_FLOW_DOWNSTREAM) == 0)
+		expand_aquotes(&old_uri,
+				old_hdr->name.s + old_hdr->name.len,
+				old_hdr->body.s + old_hdr->body.len);
 
 	/* build del/add lumps */
 	l = del_lump( msg, old_uri.s-msg->buf, old_uri.len, 0);
@@ -734,9 +740,10 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 	new_uri.s = p;
 
 	/* trim away any <, > (the replacement URI always includes them) */
-	expand_laquotes(&old_uri,
-			old_hdr->name.s + old_hdr->name.len,
-			old_hdr->body.s + old_hdr->body.len);
+	if (_params->direction == DLG_DIR_DOWNSTREAM)
+		expand_aquotes(&old_uri,
+				old_hdr->name.s + old_hdr->name.len,
+				old_hdr->body.s + old_hdr->body.len);
 
 	/* build del/add lumps */
 	l = del_lump( msg, old_uri.s-msg->buf, old_uri.len, 0);

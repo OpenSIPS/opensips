@@ -427,6 +427,15 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
    Meaning of the parameters is as follows:
      * sms_name (string) - name of the SMS to be used for sending
        the SMPP traffic.
+     * from (string, optional) - the source number. If missing,
+       the SIP message from username is used.
+     * to (string, optional) - the destination number. If missing,
+       the SIP request URI username is used.
+     * body (string, optional) - the body of the SMS. If missing,
+       the SIP message body is used.
+     * UTF-16 (int, optional) - set to 1 if the body of the
+       message is in UTF-16. format. If missing or 0, UTF-8 is
+       used.
      * delivery_receipt (int, optional) - Whether the SMSC should
        confirm delivery for this SMS or not
 
@@ -447,7 +456,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Victor Ciurel (@victor-ciurel) 81 21 3760 1658
-   2. Razvan Crainea (@razvancrainea) 55 28 1765 702
+   2. Razvan Crainea (@razvancrainea) 59 30 1944 715
    3. Vlad Paiu (@vladpaiu) 8 5 234 37
    4. Vlad Patrascu (@rvlad-patrascu) 4 2 10 13
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
@@ -485,7 +494,7 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu), Vlad Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:

@@ -40,12 +40,13 @@ static str presence_capability = str_init("presence");
 
 static str empty_val = str_init(" ");
 
-#define CL_PRESENCE_PUBLISH     101
-#define CL_PRESENCE_PRES_QUERY  102
+#define CL_PRESENCE_PUBLISH     1
+#define CL_PRESENCE_PRES_QUERY  2
 
 #define BIN_VERSION    1
 
 static void bin_packet_handler(bin_packet_t *packet);
+static void cluster_event_handler(enum clusterer_event ev, int node_id);
 
 
 int init_pres_clustering(void)
@@ -65,7 +66,9 @@ int init_pres_clustering(void)
 
 	/* register handler for receiving packets from the clusterer module */
 	if (c_api.register_capability( &presence_capability,
-	bin_packet_handler, NULL, pres_cluster_id, 0, NODE_CMP_ANY) < 0) {
+		bin_packet_handler, cluster_event_handler, pres_cluster_id,
+		(cluster_federation == FEDERATION_FULL_SHARING) ? 1 : 0,
+		NODE_CMP_ANY) < 0) {
 		LM_ERR("cannot register callbacks to clusterer module!\n");
 		return -1;
 	}
@@ -92,6 +95,10 @@ int init_pres_clustering(void)
 		/* enable all the events */
 		memset( clustered_events, 1, sizeof(clustered_events) );
 	}
+
+	if (cluster_federation == FEDERATION_FULL_SHARING &&
+		c_api.request_sync(&presence_capability, pres_cluster_id) < 0)
+		LM_ERR("Sync request failed\n");
 
 	return 0;
 }
@@ -145,18 +152,10 @@ static void cluster_send_to_node(bin_packet_t *packet, int c_id, int node_id)
 }
 
 
-static int pack_replicated_publish(bin_packet_t *packet, presentity_t *pres)
+static int bin_push_presentity(bin_packet_t *packet, presentity_t *pres)
 {
 	int step=0;
 	str s;
-
-	memset( packet, 0, sizeof(bin_packet_t) );
-
-	if (bin_init(packet, &presence_capability,
-	CL_PRESENCE_PUBLISH, BIN_VERSION, 0) < 0) {
-		LM_ERR("cannot initiate bin packet\n");
-		return -1;
-	}
 
 	if (bin_push_str(packet, &pres->user) < 0)
 		goto error;
@@ -235,7 +234,12 @@ void replicate_publish_on_cluster(presentity_t *pres)
 {
 	bin_packet_t packet;
 
-	if (pack_replicated_publish( &packet, pres)<0) {
+	memset( &packet, 0, sizeof(bin_packet_t) );
+	if (bin_init(&packet, &presence_capability,
+		CL_PRESENCE_PUBLISH, BIN_VERSION, 0) < 0)
+		LM_ERR("cannot initiate bin packet\n");
+
+	if (bin_push_presentity( &packet, pres)<0) {
 		LM_ERR("failed to build replicated publish\n");
 	} else {
 		cluster_broadcast(&packet, pres_cluster_id);
@@ -299,7 +303,7 @@ error:
 
 }
 
-static void handle_replicated_publish(bin_packet_t *packet)
+static int handle_replicated_publish(bin_packet_t *packet)
 {
 	unsigned int hash_code;
 	presentity_t pres;
@@ -335,7 +339,7 @@ static void handle_replicated_publish(bin_packet_t *packet)
 	}
 	/* do we cluster on this event ?? */
 	if (!is_event_clustered( ev.parsed ))
-		return;
+		return 0;
 
 	/* old (received) etag */
 	if (bin_pop_str(packet, &s) < 0)
@@ -380,16 +384,17 @@ static void handle_replicated_publish(bin_packet_t *packet)
 	}
 	/* take the chance of the lock and delete the record for
 	 * waiting for a cluster query on this presentity */
-	delete_cluster_query( &s, ev.parsed, hash_code);
+	if (cluster_federation == FEDERATION_ON_DEMAND)
+		delete_cluster_query( &s, ev.parsed, hash_code);
 	lock_release( &pres_htable[hash_code].lock );
 
-	if (!discard_unused_cluster_federation_data()) {
+	if (cluster_federation == FEDERATION_FULL_SHARING) {
 		LM_DBG("Keeping presentity regardless of subscriber existence\n");
 	} else if (presentity_has_subscribers(&s, pres.event) == 0) {
 		LM_DBG("Presentity has NO local subscribers\n");
 		/* no subscribers for this presentity, discard the publish */
 		if (p==NULL)
-			return;
+			return 0;
 
 		LM_DBG("Forcing expires 0\n");
 		/* force an expire of the presentity */
@@ -457,86 +462,51 @@ static void handle_replicated_publish(bin_packet_t *packet)
 		goto error_all;
 	}
 
-	return;
+	return 0;
 error:
 	LM_ERR("failed to pop data (step=%d) from bin packet\n",step);
+	return -1;
 error_all:
 	LM_ERR("failed to handle bin packet %d from node %d\n",
 		packet->type, packet->src_id);
 	if (pres.sphere)
 		pkg_free(pres.sphere);
-	return;
+	return -1;
 }
 
 
-static void handle_presentity_query(bin_packet_t *packet)
+int pack_repl_presentity(bin_packet_t *packet, str *pres_uri, pres_ev_t *ev)
 {
-	bin_packet_t reply_packet;
-	unsigned int hash_code;
 	presentity_t pres;
-	struct sip_uri uri;
 	db_res_t *res = NULL;
-	event_t ev;
-	str pres_uri, s;
-	pres_entry_t* p;
-	int step = 0;
+	struct sip_uri uri;
 	int body_col, extra_hdrs_col, expires_col, etag_col= 0;
-
-	/* presentity URI */
-	if (bin_pop_str(packet, &pres_uri) < 0)
-		goto error;
-	step++;
-
-	/* event (convert from name to pointer) */
-	if (bin_pop_str(packet, &s) < 0)
-		goto error;
-	step++;
-	if (event_parser(s.s, s.len, &ev) < 0 ) {
-		LM_ERR("Bad/inexisting event <%.*s> received\n", s.len, s.s);
-		return;
-	}
-	/* do we cluster on this event ?? */
-	if (!is_event_clustered( ev.parsed ))
-		return;
-
-	/* now, search the presentity ! */
-	hash_code= core_hash(&pres_uri, NULL, phtable_size);
-	lock_get(&pres_htable[hash_code].lock);
-	p= search_phtable(&pres_uri, ev.parsed, hash_code);
-	lock_release(&pres_htable[hash_code].lock);
-
-	if (p && (p->flags & PRES_FLAG_REPLICATED)!=0 ) {
-		/* our presentity is a replicated copy, so we do not answer 
-		 * to the query; only the real owner of the presentity will
-		 * reply */
-		return;
-	}
+	str s;
 
 	/* get the presentity body from the DB, if there */
-	if(parse_uri(pres_uri.s, pres_uri.len, &uri)< 0) {
+	if(parse_uri(pres_uri->s, pres_uri->len, &uri)< 0) {
 		LM_ERR("failed to parse preentity uri <%.*s>\n",
-			pres_uri.len, pres_uri.s);
-		goto error_all;
+			pres_uri->len, pres_uri->s);
+		return -1;
 	}
 
-	res = pres_search_db( &uri,&ev.text, &body_col, &extra_hdrs_col,
+	res = pres_search_db(&uri, &ev->evp->text, &body_col, &extra_hdrs_col,
 		&expires_col, &etag_col);
 	if(res==NULL)
-		goto error_all;
+		return -1;
 	if (res->n<=0 ) {
 		LM_DBG("presentity not found in DB: [username]='%.*s'"
 			" [domain]='%.*s' [event]='%.*s'\n",uri.user.len, uri.user.s,
-			uri.host.len, uri.host.s, ev.text.len, ev.text.s);
+			uri.host.len, uri.host.s, ev->evp->text.len, ev->evp->text.s);
 		pa_dbf.free_result(pa_db, res);
-		/* we do not answer back, do nothing */
-		return ;
+		return 0;
 	}
 
 	/* we have a valid presentity to send back as reply */
-	memset( &pres, 0, sizeof(pres));
+	memset(&pres, 0, sizeof(pres));
 	pres.user = uri.user;
 	pres.domain = uri.host;
-	pres.event = search_event(&ev);
+	pres.event = ev;
 	pres.new_etag.s = (char*)VAL_STRING(ROW_VALUES(RES_ROWS(res))+etag_col);
 	pres.new_etag.len = strlen(pres.new_etag.s);
 	pres.expires = VAL_INT(ROW_VALUES(RES_ROWS(res))+expires_col) -
@@ -551,39 +521,169 @@ static void handle_presentity_query(bin_packet_t *packet)
 	pres.body.len = strlen(pres.body.s);
 
 	/* pack and end*/
-	if (pack_replicated_publish( &reply_packet, &pres)<0) {
+	if (bin_push_presentity(packet, &pres)<0) {
 		LM_ERR("failed to build replicated publish\n");
+		bin_free_packet(packet);
+		return -1;
+	}
+
+	return 1;
+}
+
+static int handle_presentity_query(bin_packet_t *packet)
+{
+	bin_packet_t reply_packet;
+	unsigned int hash_code;
+	event_t event;
+	str pres_uri, s;
+	pres_entry_t* p;
+	pres_ev_t *ev;
+	int step = 0;
+	int rc;
+
+	/* presentity URI */
+	if (bin_pop_str(packet, &pres_uri) < 0)
+		goto error;
+	step++;
+
+	/* event (convert from name to pointer) */
+	if (bin_pop_str(packet, &s) < 0)
+		goto error;
+	step++;
+	if (event_parser(s.s, s.len, &event) < 0 ) {
+		LM_ERR("Bad/inexisting event <%.*s> received\n", s.len, s.s);
+		return -1;
+	}
+	/* do we cluster on this event ?? */
+	if (!is_event_clustered( event.parsed ))
+		return 0;
+
+	ev = search_event(&event);
+	if (!ev)
+		return 0;
+
+	/* now, search the presentity ! */
+	hash_code= core_hash(&pres_uri, NULL, phtable_size);
+	lock_get(&pres_htable[hash_code].lock);
+	p= search_phtable(&pres_uri, event.parsed, hash_code);
+	lock_release(&pres_htable[hash_code].lock);
+
+	if (p && (p->flags & PRES_FLAG_REPLICATED)!=0 ) {
+		/* our presentity is a replicated copy, so we do not answer
+		 * to the query; only the real owner of the presentity will
+		 * reply */
+		return 0;
+	}
+
+	memset(&reply_packet, 0, sizeof(bin_packet_t));
+	if (bin_init(&reply_packet, &presence_capability,
+		CL_PRESENCE_PUBLISH, BIN_VERSION, 0) < 0)
+		LM_ERR("cannot initiate bin packet\n");
+
+	rc = pack_repl_presentity(&reply_packet, &pres_uri, ev);
+	if (rc < 0) {
+		LM_ERR("Failed to pack presentity BIN packet\n");
 		bin_free_packet(&reply_packet);
-		goto error_all;
+		return -1;
+	} else if (rc == 0) { /* presentity not found in DB - we do not answer back */
+		bin_free_packet(&reply_packet);
+		return 0;
 	}
 
 	cluster_send_to_node( &reply_packet, pres_cluster_id, packet->src_id);
 
 	bin_free_packet(&reply_packet);
 
-	return;
+	return 0;
 error:
 	LM_ERR("failed to pop data (step=%d) from bin packet\n",step);
-error_all:
-	LM_ERR("failed to handle bin packet %d from node %d\n",
-		packet->type, packet->src_id);
-	return;
+	return -1;
 }
 
 
 static void bin_packet_handler(bin_packet_t *packet)
 {
-	switch (packet->type) {
-		case CL_PRESENCE_PUBLISH:
-			handle_replicated_publish(packet);
-			break;
-		case CL_PRESENCE_PRES_QUERY:
-			handle_presentity_query(packet);
-			break;
-		default:
-			LM_ERR("Unknown binary packet %d received from node %d in "
-				"presence cluster %d)\n", packet->type,
-				packet->src_id, pres_cluster_id);
+	int rc;
+	bin_packet_t *pkt;
+
+	for (pkt = packet; pkt; pkt = pkt->next) {
+		switch (pkt->type) {
+			case CL_PRESENCE_PUBLISH:
+				ensure_bin_version(pkt, BIN_VERSION);
+				rc = handle_replicated_publish(pkt);
+				break;
+			case CL_PRESENCE_PRES_QUERY:
+				ensure_bin_version(pkt, BIN_VERSION);
+				rc = handle_presentity_query(pkt);
+				break;
+			case SYNC_PACKET_TYPE:
+				_ensure_bin_version(pkt, BIN_VERSION, "presence sync packet");
+				while (c_api.sync_chunk_iter(pkt))
+					if (handle_replicated_publish(pkt) < 0)
+						LM_WARN("failed to process sync chunk!\n");
+				break;
+			default:
+				LM_ERR("Unknown binary packet %d received from node %d in "
+					"presence cluster %d)\n", pkt->type,
+					pkt->src_id, pres_cluster_id);
+				rc = -1;
+		}
+
+		if (rc != 0)
+			LM_ERR("failed to process binary packet!\n");
 	}
-	return;
+}
+
+static int receive_sync_request(int node_id)
+{
+	bin_packet_t *sync_packet;
+	unsigned int i;
+	pres_entry_t* p;
+	pres_ev_t *ev;
+	event_t event;
+
+	for (i = 0; i < phtable_size; i++)
+	{
+		lock_get(&pres_htable[i].lock);
+		p = pres_htable[i].entries->next;
+		while (p) {
+			if (!is_event_clustered(p->event)) {
+				p = p->next;
+				continue;
+			}
+
+			memset(&event, 0, sizeof(event));
+			event.parsed = p->event;
+			ev = search_event(&event);
+			if (!ev) {
+				p = p->next;
+				continue;
+			}
+
+			sync_packet = c_api.sync_chunk_start(&presence_capability,
+				pres_cluster_id, node_id, BIN_VERSION);
+			if (!sync_packet)
+				goto error;
+
+			if (pack_repl_presentity(sync_packet, &p->pres_uri, ev) != 1) {
+				LM_ERR("Failed to pack presentity BIN packet\n");
+				goto error;
+			}
+
+			p = p->next;
+		}
+		lock_release(&pres_htable[i].lock);
+	}
+
+	return 0;
+
+error:
+	lock_release(&pres_htable[i].lock);
+	return -1;
+}
+
+static void cluster_event_handler(enum clusterer_event ev, int node_id)
+{
+	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
+		LM_ERR("Failed to send sync data to node: %d\n", node_id);
 }

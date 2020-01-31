@@ -400,7 +400,7 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 			c2 = input->s[++i];
 			t = ((c & 0x0F) << 12) | ((c1 & 0x3F) << 6) | (c2 & 0x3F);
 			/* we only support the euro sign */
-			if (t == 0xE282AC) {
+			if (t == 0x20AC) {
 				*o++ = 0x1B;
 				*o++ = 0x65;
 			} else {
@@ -419,7 +419,8 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 		} else {
 			t = c;
 		}
-		if ((t >= 0x20 /* ' ' */ && t <= 0x5A /* 'Z' */) ||
+		if ((t >= 0x20 /* ' ' */ && t <= 0x5A /* 'Z' */ &&
+				t != 0x24 && t != 0x40) ||
 			(t >= 0x61 /* 'z' */ && t <= 0x7A /* 'z' */)) {
 			*o++ = t;
 		} else {
@@ -428,6 +429,9 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 				/* newline */
 				CASE_OUT_REPR(0x0A, 0x0A);
 				CASE_OUT_REPR(0x0D, 0x0D);
+				/* skipped characters */
+				CASE_OUT_REPR(0x24, 0x02);
+				CASE_OUT_REPR(0x40, 0x00);
 				/* escaped */
 				CASE_OUT_REPR_EN('^', 0x14);
 				CASE_OUT_REPR_EN('{', 0x28);
@@ -437,10 +441,13 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 				CASE_OUT_REPR_EN('~', 0x3D);
 				CASE_OUT_REPR_EN(']', 0x3E);
 				CASE_OUT_REPR_EN('|', 0x40);
+				CASE_OUT_REPR('_', 0x11);
 				/* special */
 				CASE_OUT_REPR(0xA1, 0x40);
+				CASE_OUT_REPR(0xA3, 0x01);
+				CASE_OUT_REPR(0xA4, 0x24);
 				CASE_OUT_REPR(0xA5, 0x03);
-				CASE_OUT_REPR(0xA7, 0x4F);
+				CASE_OUT_REPR(0xA7, 0x5F);
 				CASE_OUT_REPR(0xBF, 0x60);
 				CASE_OUT_REPR(0xC4, 0x5B);
 				CASE_OUT_REPR(0xC5, 0x0E);
