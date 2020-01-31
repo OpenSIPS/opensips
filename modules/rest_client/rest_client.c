@@ -450,7 +450,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
 
 		// Capture and free the result
-		memcpy(output_buf.s, curl_out, strlen(curl_out)+1);
+		str_cpy(&output_buf, _str(curl_out));
 		curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
@@ -490,7 +490,7 @@ int tr_rest_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		LM_DBG("extended output_buf to %d (%p)\n", output_buf.len, output_buf.s);
 
 		// Capture and free the result
-		memcpy(output_buf.s, curl_out, strlen(curl_out)+1);
+		str_cpy(&output_buf, _str(curl_out));
 		curl_free(curl_out);
 
 		if (pv_get_strval(msg, NULL, val, &output_buf) != 0) {
