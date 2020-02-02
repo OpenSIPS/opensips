@@ -566,7 +566,7 @@ modparam("proto_smpp", "session_type_col", "smsc_session_type")
 
 	<section id="func_send_smpp_message" xreflabel="send_smpp_message()">
 		<title>
-		<function moreinfo="none">send_smpp_message(smsc_name,[delivery_receipt])</function>
+		<function moreinfo="none">send_smpp_message(smsc_name, [from],[to],[body],[utf-16],[delivery_receipt])</function>
 		</title>
 		<para>
 			This function is used to convert a SIP message received in the
