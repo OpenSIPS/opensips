@@ -51,6 +51,11 @@ rest_client Module
                       recv_body_pv[, [recv_ctype_pv][,
                       [retcode_pv]]])
 
+        1.7. Exported script transformations
+
+              1.7.1. {rest.escape}
+              1.7.2. {rest.unescape}
+
    2. Contributors
 
         2.1. By Commit Statistics
@@ -85,6 +90,8 @@ rest_client Module
    1.14. async rest_get usage
    1.15. async rest_post usage
    1.16. async rest_put usage
+   1.17. rest.escape usage
+   1.18. rest.unescape usage
 
 Chapter 1. Admin Guide
 
@@ -558,6 +565,55 @@ route [resume] {
         ...
 }
 
+1.7. Exported script transformations
+
+   The module also provides a way for encoding and decoding
+   parameters contained in a arbitrary script variable, in
+   accordance with RFC3986. This is done by applying a
+   transformation to a script variable containing the data to be
+   encoded. The value of the original variable is not altered and
+   a corresponding string value is returned. The transformation is
+   performed through libcurl API method curl_easy_escape (or
+   curl_escape for libcurl < 7.15.4).
+
+1.7.1.  {rest.escape}
+
+   The result of this transformation is to produce percent encoded
+   string value which can be safely used in URI construction.
+
+   There are no parameters for this transformation.
+
+   Example 1.17. rest.escape usage
+...
+# This example would produce log entry: "Output: call%40example.com%26sa
+fe%3Dfalse"
+$var(tmp) = "call@example.com&safe=false";
+xlog("Output: $(var(tmp){rest.escape})\n");
+
+# Encode call ID before transmission:
+$var(rc) = rest_get("https://call-info.org/?id=$(ci{rest.escape})", $var
+(body_pv));
+...
+
+1.7.2.  {rest.unescape}
+
+   The result of this transformation is to decode percent encoded
+   string values.
+
+   There are no parameters for this transformation.
+
+   Example 1.18. rest.unescape usage
+...
+# This example would produce log entry: "Output: 1+1=2!"
+$var(tmp) = "1%2B1%3D2%21";
+xlog("Output: $(var(tmp){rest.unescape})\n");
+
+# This example would produce log entry: "OpenSIPs, tastes better with ev
+ery SIP!"
+$var(tmp) = "OpenSIPs%2C%20tastes%20better%20with%20every%20SIP%21";
+xlog("$(var(tmp){rest.unescape})\n");
+...
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -565,16 +621,18 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 121 65 3410 1579
+   1. Liviu Chircu (@liviuchircu) 122 66 3412 1581
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Razvan Crainea (@razvancrainea) 15 13 41 17
    4. Vlad Patrascu (@rvlad-patrascu) 15 5 279 341
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 114 47
    6. Jarrod Baumann (@jarrodb) 6 3 131 32
    7. Agalya Ramachandran (@AgalyaR) 6 2 354 1
-   8. Ryan Bullock (@rrb3942) 5 2 91 77
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
-   10. Andrey Vorobiev (@andrey-vorobiev) 2 1 4 0
+   8. Callum Guy 6 2 281 8
+   9. Ryan Bullock (@rrb3942) 5 2 91 77
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+
+   All remaining contributors: Andrey Vorobiev (@andrey-vorobiev).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -596,16 +654,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jul 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
-   7.  Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
-   8.  Ryan Bullock (@rrb3942)             Jan 2017 - Jan 2017
-   9.  Agalya Ramachandran (@AgalyaR)      Oct 2016 - Oct 2016
-   10. Jarrod Baumann (@jarrodb)           Apr 2015 - May 2015
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2020
+   2.  Callum Guy                          Jan 2020 - Jan 2020
+   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
+   8.  Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
+   9.  Ryan Bullock (@rrb3942)             Jan 2017 - Jan 2017
+   10. Agalya Ramachandran (@AgalyaR)      Oct 2016 - Oct 2016
+
+   All remaining contributors: Jarrod Baumann (@jarrodb).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -614,10 +674,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan Crainea
-   (@razvancrainea), Agalya Ramachandran (@AgalyaR), Jarrod
-   Baumann (@jarrodb), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Liviu Chircu (@liviuchircu), Callum Guy, Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan
+   Crainea (@razvancrainea), Agalya Ramachandran (@AgalyaR),
+   Jarrod Baumann (@jarrodb), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

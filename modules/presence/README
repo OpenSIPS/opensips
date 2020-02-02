@@ -129,10 +129,15 @@ Chapter 1. Admin Guide
 
    The modules handles PUBLISH and SUBSCRIBE messages and
    generates NOTIFY messages in a general, event independent way.
-   It allows registering events to it from other OpenSIPS modules.
-   Events that can currently be added to it are: presence,
-   presence.winfo, dialog;sla from presence_xml module and
-   message-summary from presence_mwi module.
+   It allows registering events from other OpenSIPS modules.
+   Events that can currently be added are:
+     * presence, presence.winfo, dialog;sla from presence_xml
+       module
+     * message-summary from presence_mwi module
+     * call-info, line-seize from presence_callinfo module
+     * dialog from presence_dialoginfo module
+     * xcap-diff from presence_xcapdiff module
+     * as-feature-event from presence_dfks module
 
    The module uses database storage. It has later been improved
    with memory caching operations to improve performance. The
@@ -162,6 +167,10 @@ Chapter 1. Admin Guide
    Balancing or Federations, please refer to this article
    https://blog.opensips.org/2018/03/27/clustering-presence-servic
    es-with-opensips-2-4/.
+
+   As data synchronization at startup is performed when using the
+   full-sharing cluster_federation_mode, you should define at
+   least one "seed" node in the cluster in this case.
 
 1.3. Dependencies
 
@@ -227,29 +236,29 @@ modparam("presence", "cluster_id", 2)
 
 1.4.4. cluster_federation_mode (int)
 
-   When enabling the federation mode, the node inside the presence
-   cluster will start broadcasting the data to other nodes in the
-   cluster via the clustering support. Each node will keep its own
-   data set. A non-zero value means enabled.
+   When enabling the federation mode, nodes inside the presence
+   cluster will start broadcasting the data to other nodes via the
+   clustering support.
 
-   Possible values for mode:
-     * 0 (default) - no federation/partitioning.
-     * 1 - the minimum needed information is broadcast/kept.
-     * 2 - published state is kept on all presence nodes on all
-       presence nodes, even when there aren't any subscribers.
+   Possible values:
+     * disabled - federation mode is disabled
+     * on-demand-sharing - the minimum needed information is kept
+       on each node. Replicated information for non local
+       subscribers is discarded and queries are broadcasted in the
+       cluster for new subscribers.
+     * full-sharing - published state is kept on all presence
+       nodes even when there aren't any local subscribers.
 
-   If you don't want to use a shared database using fallback2db,
+   If you don't want to use a shared database (via fallback2db),
    but still want a complete data set everywhere, you may choose
-   mode 2.
-
-   This mode allows you to switch PUBLISH endpoints, even for
-   already published Event States, thus allowing you to add and
-   remove presence servers without losing state.
+   mode 2. This mode allows you to switch PUBLISH endpoints, even
+   for already published Event States, thus allowing you to add
+   and remove presence servers without losing state.
 
    For more on presence clustering see the Section 1.2, “Presence
    clustering” chapter.
 
-   Default value is “0” (disabled).
+   Default value is “disabled”.
 
    Example 1.4. Set cluster_federation_mode parameter
 ...
@@ -1025,10 +1034,10 @@ Chapter 3. Contributors
    1. Anca Vamanu 663 247 24146 12623
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 144 86 3083 1807
    3. Razvan Crainea (@razvancrainea) 32 25 397 142
-   4. Ovidiu Sas (@ovidiusas) 27 19 615 167
-   5. Liviu Chircu (@liviuchircu) 26 17 248 373
-   6. Daniel-Constantin Mierla (@miconda) 24 19 174 165
-   7. Vlad Patrascu (@rvlad-patrascu) 23 13 382 366
+   4. Vlad Patrascu (@rvlad-patrascu) 31 17 629 476
+   5. Ovidiu Sas (@ovidiusas) 27 19 615 167
+   6. Liviu Chircu (@liviuchircu) 26 17 248 373
+   7. Daniel-Constantin Mierla (@miconda) 24 19 174 165
    8. Dan Pascu (@danpascu) 19 13 161 200
    9. Henning Westerholt (@henningw) 15 6 340 302
    10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
@@ -1062,9 +1071,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jan 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2020
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jan 2020
    4.  Walter Doekes (@wdoekes)            Apr 2010 - Nov 2019
    5.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
    6.  Dan Pascu (@danpascu)               Nov 2007 - Jul 2019
@@ -1090,12 +1099,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Walter Doekes (@wdoekes), Dan Pascu
-   (@danpascu), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl
-   Ibarra Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca
-   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Walter Doekes
+   (@wdoekes), Dan Pascu (@danpascu), Liviu Chircu (@liviuchircu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl Ibarra
+   Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca Vamanu,
+   Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
    Darilion, Henning Westerholt (@henningw), Daniel-Constantin
    Mierla (@miconda), Edson Gellert Schubert, Juha Heinanen
    (@juha-h), Elena-Ramona Modroiu.
