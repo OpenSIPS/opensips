@@ -333,6 +333,10 @@ modparam("perl", "modpath", "/usr/local/lib/opensips/perl/")
    The first parameter is the function to be called. An arbitrary
    string may optionally be passed as a parameter.
 
+   The function returns 1 if the perl function was successfully
+   called or -1 if an internal error occured. Note that it does
+   not propagate the return value of the perl function.
+
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE and BRANCH_ROUTE.
 
@@ -352,6 +356,10 @@ if ($rm=="INVITE") {
 
    The first parameter is the function to be called. An arbitrary
    string may be passed as a parameter.
+
+   The function returns back to the OpenSIPS script the value
+   returned by the perl function. Note that if this value is 0 the
+   script execution will be stoped, similarly to calling exit.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE and BRANCH_ROUTE.
@@ -1370,11 +1378,11 @@ Chapter 5. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bastian Friedrich 112 38 8597 284
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 47 28 702 681
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 48 29 703 682
    3. Razvan Crainea (@razvancrainea) 24 21 99 60
    4. Daniel-Constantin Mierla (@miconda) 19 14 164 125
-   5. Liviu Chircu (@liviuchircu) 16 13 54 67
-   6. Vlad Patrascu (@rvlad-patrascu) 16 7 228 360
+   5. Vlad Patrascu (@rvlad-patrascu) 18 9 239 361
+   6. Liviu Chircu (@liviuchircu) 16 13 54 67
    7. Julien Blache 4 1 80 64
    8. Edson Gellert Schubert 4 1 0 141
    9. Ionut Ionita (@ionutrazvanionita) 3 1 100 7
@@ -1404,9 +1412,9 @@ Chapter 5. Contributors
 
    Table 5.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Apr 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Jan 2020
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -1426,10 +1434,10 @@ Chapter 6. Documentation
 
 6.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu
-   Sas (@ovidiusas), Klaus Darilion, Daniel-Constantin Mierla
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
+   (@ovidiusas), Klaus Darilion, Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Bastian Friedrich.
 

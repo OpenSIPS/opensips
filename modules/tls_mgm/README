@@ -1481,7 +1481,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 93 29 3068 2172
-   2. Razvan Crainea (@razvancrainea) 61 42 1023 525
+   2. Razvan Crainea (@razvancrainea) 63 44 1048 544
    3. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 23 11 285 454
    5. Liviu Chircu (@liviuchircu) 22 16 135 214
@@ -1491,8 +1491,9 @@ Chapter 3. Contributors
    9. Alexey Vasilyev (@vasilevalex) 4 2 33 19
    10. Callum Guy 3 1 33 8
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Peter
-   Lemenkov (@lemenkov), Maksym Sobolyev (@sobomax).
+   All remaining contributors: Fabian Gast (@fgast), Ovidiu Sas
+   (@ovidiusas), Peter Lemenkov (@lemenkov), Maksym Sobolyev
+   (@sobomax).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1514,20 +1515,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2015 - Jan 2020
-   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Nov 2019
-   3.  Dan Pascu (@danpascu)               Jun 2019 - Aug 2019
-   4.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jul 2019
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - May 2019
-   6.  Alexey Vasilyev (@vasilevalex)      Nov 2018 - May 2019
-   7.  Callum Guy                          Jun 2018 - Jun 2018
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Ovidiu Sas (@ovidiusas)             Jun 2017 - Jun 2017
-   10. Ionut Ionita (@ionutrazvanionita)   Apr 2016 - Apr 2017
+   1.  Razvan Crainea (@razvancrainea)     Sep 2015 - Feb 2020
+   2.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
+   3.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Nov 2019
+   4.  Dan Pascu (@danpascu)               Jun 2019 - Aug 2019
+   5.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jul 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - May 2019
+   7.  Alexey Vasilyev (@vasilevalex)      Nov 2018 - May 2019
+   8.  Callum Guy                          Jun 2018 - Jun 2018
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Ovidiu Sas (@ovidiusas)             Jun 2017 - Jun 2017
 
-   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
-   Maksym Sobolyev (@sobomax), Eseanu Marius Cristian
-   (@eseanucristian).
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Ionel Cerghit (@ionel-cerghit), Maksym Sobolyev (@sobomax),
+   Eseanu Marius Cristian (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits
