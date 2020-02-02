@@ -441,7 +441,7 @@ inline static int string2hex(
 		str++;
 
 	}
-	return orig_len-len;
+	return orig_len * 2;
 }
 
 /* portable sleep in microseconds (no interrupt handling now) */
