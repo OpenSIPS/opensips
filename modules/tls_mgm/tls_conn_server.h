@@ -91,7 +91,7 @@ static inline void tls_append_master_secret( SSL* ctx, struct tls_data* data )
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	master.len = string2hex( s->master_key, s->master_key_length, ssl_print_master_buf );
 #else
-	SSL_SESSION_get_master_key(s, (unsigned char *)master.s,
+	master.len = SSL_SESSION_get_master_key(s, (unsigned char *)master.s,
 		SSL_MAX_MASTER_KEY_LENGTH * 2);
 #endif
 
