@@ -592,7 +592,7 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 				dlg->tag[1].s, dlg->tag[1].len) < 0)
 				goto error;
 
-			cseq_item = add_mi_object(arr_item, MI_SSTR("cseq") < 0);
+			cseq_item = add_mi_object(arr_item, MI_SSTR("cseq"));
 			if (!cseq_item)
 				goto error;
 			if (add_mi_number(cseq_item, MI_SSTR("caller"), dlg->cseq[0]) < 0)
@@ -602,7 +602,7 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 
 			if (dlg->route_set[0].len||dlg->route_set[1].len)
 			{
-				rs_item = add_mi_object(arr_item, MI_SSTR("route_set") < 0);
+				rs_item = add_mi_object(arr_item, MI_SSTR("route_set"));
 				if (!rs_item)
 					goto error;
 
@@ -617,7 +617,7 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 						goto error;
 			}
 
-			ct_item = add_mi_object(arr_item, MI_SSTR("contact") < 0);
+			ct_item = add_mi_object(arr_item, MI_SSTR("contact"));
 			if (!ct_item)
 				goto error;
 			if (add_mi_string(ct_item, MI_SSTR("caller"),
