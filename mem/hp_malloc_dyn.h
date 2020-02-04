@@ -1041,11 +1041,11 @@ void hp_shm_free(struct hp_block *hpb, void *p,
 	}
 
 	f = HP_FRAG(p);
-	check_double_free(p, f, hpb);
 
 	hash = PEEK_HASH_RR(hpb, f->size);
 
 	SHM_LOCK(hash);
+	check_double_free(p, f, hpb);
 	hp_frag_attach(hpb, f);
 	#ifdef DBG_MALLOC
 	f->file=file;
@@ -1082,11 +1082,11 @@ void hp_rpm_free(struct hp_block *hpb, void *p,
 	}
 
 	f = HP_FRAG(p);
-	check_double_free(p, f, hpb);
 
 	hash = PEEK_HASH_RR(hpb, f->size);
 
 	RPM_LOCK(hash);
+	check_double_free(p, f, hpb);
 	hp_frag_attach(hpb, f);
 	#ifdef DBG_MALLOC
 	f->file=file;
