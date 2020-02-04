@@ -294,7 +294,7 @@ int pv_parse_isup_param_index(pv_spec_p sp, str* in)
 	return 0;
 }
 
-void free_isup_parsed(void *parsed, pb_free free_f)
+void free_isup_parsed(void *parsed, osips_free_f free_f)
 {
 	struct opt_param *it, *tmp;
 
@@ -302,14 +302,14 @@ void free_isup_parsed(void *parsed, pb_free free_f)
 	while (it) {
 		tmp = it;
 		it = it->next;
-		free_f(tmp);
+		func_free(free_f, tmp);
 	}
 
-	free_f(parsed);
+	func_free(free_f, parsed);
 }
 
 void *clone_isup_parsed(struct body_part *old_part, struct body_part *new_part,
-			struct sip_msg *src_msg, struct sip_msg *dst_msg, pb_malloc malloc_f)
+			struct sip_msg *src_msg, struct sip_msg *dst_msg, osips_malloc_f malloc_f)
 {
 	struct isup_parsed_struct *new_ps, *old_ps;
 	struct opt_param *optp_it, *optp_new = NULL, *optp_prev = NULL;
@@ -325,7 +325,7 @@ void *clone_isup_parsed(struct body_part *old_part, struct body_part *new_part,
 		return NULL;
 	}
 
-	new_ps = malloc_f(sizeof(struct isup_parsed_struct));
+	new_ps = func_malloc(malloc_f, sizeof(struct isup_parsed_struct));
 	if (!new_ps) {
 		LM_ERR("No more pkg mem for cloned data\n");
 		return NULL;
@@ -336,7 +336,7 @@ void *clone_isup_parsed(struct body_part *old_part, struct body_part *new_part,
 
 	/* clone list of optional params */
 	for (optp_it = old_ps->opt_params_list; optp_it; optp_it = optp_it->next) {
-		optp_new = malloc_f(sizeof(struct opt_param));
+		optp_new = func_malloc(malloc_f, sizeof(struct opt_param));
 		if (!optp_new) {
 			LM_ERR("No more pkg mem\n");
 			return NULL;

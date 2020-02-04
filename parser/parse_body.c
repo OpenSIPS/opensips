@@ -406,34 +406,13 @@ int delete_body_part(struct sip_msg *msg, struct body_part *part)
 }
 
 
-static void *pb_pkg_malloc(unsigned long size)
-{
-	return pkg_malloc(size);
-}
-
-static void pb_pkg_free(void *p)
-{
-	pkg_free(p);
-}
-
-static void *pb_shm_malloc(unsigned long size)
-{
-	return shm_malloc(size);
-}
-
-static void pb_shm_free(void *p)
-{
-	shm_free(p);
-}
-
-
 void free_sip_body(struct sip_msg_body *body)
 {
 	struct body_part * p, *tmp;
-	pb_free my_free;
+	osips_free_f my_free;
 
 	if (body) {
-		my_free = (body->flags&SIP_BODY_FLAG_SHM) ? pb_shm_free : pb_pkg_free;
+		my_free = (body->flags&SIP_BODY_FLAG_SHM) ? shm_free_func : pkg_free_func;
 		/* the first part does not need to be freed */
 		p = &body->first;
 		if (p->parsed && p->free_parsed_f)
@@ -446,9 +425,9 @@ void free_sip_body(struct sip_msg_body *body)
 			/* any need to free some parsed format of the part ? */
 			if (tmp->parsed && tmp->free_parsed_f)
 				tmp->free_parsed_f( tmp->parsed, my_free );
-			my_free(tmp);
+			func_free(my_free, tmp);
 		}
-		my_free(body);
+		func_free(my_free, body);
 	}
 }
 
@@ -470,7 +449,7 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 {
 	struct sip_msg_body *dst, *src;
 	struct body_part *p, *np;
-	pb_malloc my_malloc;
+	osips_malloc_f my_malloc;
 	int extra_len;
 
 	if (src_msg==NULL || src_msg->body==NULL) {
@@ -478,13 +457,13 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 		return 0;
 	}
 
-	my_malloc = shared ? pb_shm_malloc : pb_pkg_malloc;
+	my_malloc = shared ? shm_malloc_func : pkg_malloc_func;
 	src = src_msg->body;
 
 	/* clone the SIP MSG BODY */
 	extra_len = (src->flags&SIP_BODY_FLAG_NEW) ?
 		src->first.mime_s.len+src->first.body.len : 0 ;
-	if ( (dst=my_malloc(sizeof(struct sip_msg_body)+extra_len))==NULL ) {
+	if ( (dst=func_malloc(my_malloc, sizeof(struct sip_msg_body)+extra_len))==NULL ) {
 		LM_ERR("failed to allocate new sip_msg_body clone (shared=%d)\n",
 			shared);
 		goto err;
@@ -510,7 +489,7 @@ int clone_sip_msg_body(struct sip_msg *src_msg, struct sip_msg *dst_msg,
 		} else {
 			extra_len = (p->flags&SIP_BODY_PART_FLAG_NEW) ?
 				p->mime_s.len+p->body.len : 0 ;
-			if((np->next=my_malloc(sizeof(struct body_part)+extra_len))==NULL){
+			if((np->next=func_malloc(my_malloc, sizeof(struct body_part)+extra_len))==NULL){
 				LM_ERR("failed to allocate new body_part clone (shared=%d)\n",
 					shared);
 				goto err;

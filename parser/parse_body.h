@@ -24,14 +24,13 @@
 #ifndef _PARSE_SIPBODY
 #define _PARSE_SIPBODY
 
+#include "../mem/mem.h"
+
 struct body_part;
 
-typedef void* (*pb_malloc)(unsigned long);
-typedef void  (*pb_free)(void *);
-
-typedef void (*free_parsed_part_function)(void *, pb_free);
+typedef void (*free_parsed_part_function)(void *, osips_free_f);
 typedef void* (*clone_parsed_part_function)(struct body_part*,
-		struct body_part*, struct sip_msg *, struct sip_msg* , pb_malloc);
+		struct body_part*, struct sip_msg *, struct sip_msg* , osips_malloc_f);
 typedef int (*dump_part_function)(void *, struct sip_msg *, str *buf);
 
 
