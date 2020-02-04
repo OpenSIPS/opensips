@@ -1391,9 +1391,9 @@ void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size)
 	if (orig_size > size) {
 		/* shrink */
 		#ifdef DBG_MALLOC
-		shm_frag_split_unsafe(hpb, f, size, file, "fragm. from hp_realloc", line);
+		shm_frag_split(hpb, f, size, hash, file, "fragm. from hp_realloc", line);
 		#else
-		shm_frag_split_unsafe(hpb, f, size);
+		shm_frag_split(hpb, f, size, hash);
 		#endif
 
 	} else if (orig_size < size) {
