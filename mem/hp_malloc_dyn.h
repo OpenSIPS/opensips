@@ -1399,11 +1399,11 @@ void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size,
 	if (orig_size > size) {
 		/* shrink */
 		#if !defined INLINE_ALLOC && defined DBG_MALLOC
-		shm_frag_split_unsafe_dbg(hpb, f, size, file, "hp_realloc frag", line);
+		shm_frag_split_dbg(hpb, f, size, hash, file, "hp_realloc frag", line);
 		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
-		shm_frag_split_unsafe(hpb, f, size);
+		shm_frag_split(hpb, f, hash, size);
 		#else
-		shm_frag_split_unsafe(hpb, f, size, file, "hp_realloc frag", line);
+		shm_frag_split(hpb, f, size, hash, file, "hp_realloc frag", line);
 		#endif
 
 	} else if (orig_size < size) {
@@ -1482,11 +1482,11 @@ void *hp_rpm_realloc(struct hp_block *hpb, void *p, unsigned long size,
 	if (orig_size > size) {
 		/* shrink */
 		#if !defined INLINE_ALLOC && defined DBG_MALLOC
-		rpm_frag_split_unsafe_dbg(hpb, f, size, file, "hp_realloc frag", line);
+		rpm_frag_split_dbg(hpb, f, size, hash, file, "hp_realloc frag", line);
 		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
-		rpm_frag_split_unsafe(hpb, f, size);
+		rpm_frag_split(hpb, f, size, hash);
 		#else
-		rpm_frag_split_unsafe(hpb, f, size, file, "hp_realloc frag", line);
+		rpm_frag_split(hpb, f, size, hash, file, "hp_realloc frag", line);
 		#endif
 
 	} else if (orig_size < size) {
