@@ -1122,6 +1122,11 @@ void hp_pkg_free(struct hp_block *hpb, void *p)
 
 	hp_frag_attach(hpb, f);
 	update_stats_pkg_frag_attach(hpb, f);
+#ifdef DBG_MALLOC
+	f->file=file;
+	f->func=func;
+	f->line=line;
+#endif
 
 #if defined(DBG_MALLOC) && !defined(STATISTICS)
 	hpb->used -= f->size;
@@ -1148,6 +1153,11 @@ void hp_shm_free_unsafe(struct hp_block *hpb, void *p)
 
 	hp_frag_attach(hpb, f);
 	update_stats_shm_frag_attach(f);
+#ifdef DBG_MALLOC
+	f->file=file;
+	f->func=func;
+	f->line=line;
+#endif
 
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	hpb->used -= f->size;
@@ -1177,6 +1187,11 @@ void hp_shm_free(struct hp_block *hpb, void *p)
 
 	SHM_LOCK(hash);
 	hp_frag_attach(hpb, f);
+#ifdef DBG_MALLOC
+	f->file=file;
+	f->func=func;
+	f->line=line;
+#endif
 	SHM_UNLOCK(hash);
 
 	update_stats_shm_frag_attach(f);
