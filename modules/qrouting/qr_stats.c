@@ -214,31 +214,34 @@ void free_qr_cb(void *param)
 /* TODO: thresholds must be freed separatley */
 
 /* creates a rule n_dest destinations (by default marked as gws) */
-void qr_create_rule(void *param) {
-	qr_rule_t *new = NULL;
+void qr_create_rule(void *param)
+{
+	qr_rule_t *new;
 	int r_id;
 	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	struct dr_reg_init_rule_params *init_rule_params =
+	struct dr_reg_init_rule_params *irp =
 		(struct dr_reg_init_rule_params *)*cbp->param;
 
-	r_id = init_rule_params->r_id;
+	r_id = irp->r_id;
 
-	if((new = (qr_rule_t*)shm_malloc(sizeof(qr_rule_t))) == NULL) {
-		LM_ERR("no more shm memory\n");
+	if (!(new = shm_malloc(sizeof *new))) {
+		LM_ERR("oom\n");
+		return;
 	}
-	memset(new, 0, sizeof(qr_rule_t));
+	memset(new, 0, sizeof *new);
 
 	/* prepare an array for adding gateways */
-	if((new->dest = (qr_dst_t*)shm_malloc(init_rule_params->n_dst*
-					sizeof(qr_dst_t))) == NULL) {
-		LM_ERR("no more shm memory\n");
+	if (!(new->dest = shm_malloc(irp->n_dst * sizeof *new->dest))) {
+		LM_ERR("oom\n");
 		shm_free(new);
+		return;
 	}
-	new->n = init_rule_params->n_dst; /* save the number of destinations for
+
+	new->n = irp->n_dst; /* save the number of destinations for
 										 this rule, as rcvd from dr*/
 	new->r_id = r_id;
-	init_rule_params->rule = new; /* send the rule to the dr */
-	LM_DBG("Rule %d created\n", r_id);
+	irp->rule = new; /* send the rule to the dr */
+	LM_DBG("rule %d created\n", r_id);
 }
 
 /* marks index_grp destination from the rule as group and creates the gw array */
@@ -394,19 +397,10 @@ void qr_link_rule_list(void *param)
 	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	struct dr_link_rule_list_params * rule_lists =
 		(struct dr_link_rule_list_params *)*cbp->param;
-	qr_rule_t **first_list = (qr_rule_t**)rule_lists->first_list;
-	qr_rule_t *second_list = (qr_rule_t*)rule_lists->second_list;
-	qr_rule_t *rule_it;
+	qr_rule_t **first_list = (qr_rule_t**)rule_lists->first_list,
+	           *second_list = (qr_rule_t*)rule_lists->second_list;
 
-	if(*first_list == NULL) {
-		*first_list = second_list;
-	} else {
-		for(rule_it = *first_list; rule_it->next != NULL;
-				rule_it = rule_it->next) { /* go to the last rule from the first
-											  list */
-		}
-		rule_it->next = second_list; /* link it to the second list */
-	}
+	add_last(second_list, *first_list);
 }
 
 void qr_search_profile(void *param)

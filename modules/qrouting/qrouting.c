@@ -65,18 +65,19 @@ static int qr_init_globals(void);
 static int qr_check_db(void);
 static int qr_init_dr_cb(void);
 
-static void timer_func(void);
+static timer_function qr_rotate_samples;
+
 
 static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
+
 static param_export_t params[] = {
 	{"history", INT_PARAM, &history},
 	{"sampling_interval", INT_PARAM, &sampling_interval},
 	{"db_url", STR_PARAM, &db_url.s},
 	{0, 0, 0}
 };
-
 
 #define HLP1 "Params: [partition_name [, rule_id [, dst_id]]]; List QR statistics"
 static mi_export_t mi_cmds[] = {
@@ -89,7 +90,6 @@ static mi_export_t mi_cmds[] = {
 	},
 	{EMPTY_MI_EXPORT}
 };
-
 
 struct module_exports exports = {
 	"qrouting",
@@ -114,6 +114,7 @@ struct module_exports exports = {
 	0                /* reload confirm function */
 };
 
+
 static int qr_init(void)
 {
 	LM_INFO("qrouting module - initializing\n");
@@ -125,7 +126,7 @@ static int qr_init(void)
 		return -1;
 	}
 
-	register_timer(T_PROC_LABEL, (void*)timer_func, NULL,
+	register_timer(T_PROC_LABEL, qr_rotate_samples, NULL,
 	               sampling_interval, TIMER_FLAG_SKIP_ON_DELAY);
 
 	if (qr_check_db() != 0) {
@@ -151,39 +152,37 @@ static int qr_init(void)
 	return 0;
 }
 
-static int qr_child_init(int rank) {
+static int qr_child_init(int rank)
+{
 	db_func_t qr_dbf;
 	db_con_t *qr_db_hdl = 0;
 
-	if(rank == PROC_TCP_MAIN)
+	if (rank == PROC_TCP_MAIN)
 		return 0;
 
 	/* re-connect to the db */
-	if(db_bind_mod(&db_url, &qr_dbf)) {
+	if (db_bind_mod(&db_url, &qr_dbf)) {
 		LM_CRIT("cannot bind to database module! "
 				"Did you forget to load a database module ? (%.*s)\n",
 				db_url.len, db_url.s);
 		return -1;
-
 	}
 
-	if((qr_db_hdl = qr_dbf.init(&db_url)) == 0) {
+	if (!(qr_db_hdl = qr_dbf.init(&db_url)))
 		LM_ERR("failed to load db url %.*s\n", db_url.len, db_url.s);
-
-	}
 
 	/* do not change the rank of the process loading
 	 * the db, because it must match the rank of the
 	 * corespoding drouting process to ensure the qr db
 	 * is loaded before the dr db */
-	if(rank == 1 && qr_load(&qr_dbf, qr_db_hdl) < 0) {
+	if (rank == 1 && qr_load(&qr_dbf, qr_db_hdl) < 0)
 		LM_ERR("failed to load data from db\n");
-	}
 
 	return 0;
 }
 
-static int qr_exit(void) {
+static int qr_exit(void)
+{
 	free_qr_list(*qr_main_list);
 
 	/* free the thresholds */
@@ -195,15 +194,13 @@ static int qr_exit(void) {
 	return 0;
 }
 
-static void timer_func(void) {
+static void qr_rotate_samples(unsigned int ticks, void *param)
+{
 	qr_rule_t *it;
 	int i, j;
 
-	if(*n_sampled < qr_n) {
+	if (*n_sampled < qr_n)
 		++(*n_sampled); /* the number of intervals sampled */
-	}
-
-
 
 	lock_start_read(*rw_lock_qr);
 	if(*qr_main_list != NULL) { /* if there is a list */
@@ -343,12 +340,7 @@ static int qr_check_db(void)
 	db_func_t qr_dbf;
 	db_con_t *qr_db_hdl;
 
-	if (db_url.s != NULL) {
-		db_url.len = strlen(db_url.s);
-	} else {
-		LM_ERR("db_url param not provided for qrouting module\n");
-		return -1;
-	}
+	init_db_url(db_url, 0);
 
 	/* test the db */
 	if (db_bind_mod(&db_url, &qr_dbf)) {
@@ -356,7 +348,6 @@ static int qr_check_db(void)
 				"Did you forget to load a database module ? (%.*s)\n",
 				db_url.len, db_url.s);
 		return -1;
-
 	}
 
 	if (!(qr_db_hdl = qr_dbf.init(&db_url))) {
