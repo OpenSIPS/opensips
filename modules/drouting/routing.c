@@ -344,7 +344,6 @@ build_rt_info(
 	/* callback parameters for the QR module */
 	int i;
 	void * qr_rule = NULL;
-	struct dr_cb_params cbp;
 	struct dr_reg_param rdp;
 	struct dr_add_rule_params arp;
 	struct dr_reg_init_rule_params irp;
@@ -398,9 +397,8 @@ build_rt_info(
 		irp.n_dst = rt->pgwa_len;
 		irp.r_id = id;
 		irp.qr_profile = qr_profile;
-		cbp.param = (void **)&irp;
 
-		run_dr_cbs(DRCB_REG_INIT_RULE, &cbp);
+		run_dr_cbs(DRCB_REG_INIT_RULE, &irp);
 
 		qr_rule = irp.rule;
 		rt->qr_handler = qr_rule;

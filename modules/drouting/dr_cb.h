@@ -45,13 +45,6 @@ enum drcb_types {
 
 #define POINTER_CLOSED_MARKER  ((void *)(-1))
 
-
-
-struct dr_cb_params {
-	void **param; /* parameter passed at callback registration*/
-};
-
-
 /* callback function prototype */
 typedef void (*dr_cb) (void *param);
 /* function to free callback param */
@@ -67,7 +60,7 @@ struct dr_callback {
 	dr_cb callback;
 	void *param;
 	dr_param_free_cb callback_param_free;
-	struct dr_callback * next;
+	struct dr_callback *next;
 };
 /* TODO: should i have a different structure for sort_callbacks */
 

@@ -1093,23 +1093,14 @@ static inline int dr_reload_data(int initial) {
 	void *old_list = NULL; /* list to be freed */
 	void *qr_parts_data = NULL; /* all the partitions */
 	int part_index;
-	struct dr_mark_as_main_list_params * mark_as_main_list;
-	struct dr_free_qr_list_params *free_list_params;
-	struct dr_create_partition_list_params *create_parts_list_params;
+	struct dr_mark_as_main_list_params mmp;
+	struct dr_free_qr_list_params flp;
+	struct dr_create_partition_list_params cpp;
 
-
-	create_parts_list_params = (struct dr_create_partition_list_params*)
-		pkg_malloc(sizeof(struct dr_create_partition_list_params));
-
-	if(create_parts_list_params == NULL) {
-		LM_ERR("no more pkg memory");
-		ret_val = -1;
-	}
-	create_parts_list_params->part_list = &qr_parts_data;
-	create_parts_list_params->n_parts = *n_partitions;
-	run_dr_cbs(DRCB_REG_CREATE_PARTS_LIST,
-			create_parts_list_params ); /* create the QR list for
-										   all the partitions */
+	/* create the QR list for all the partitions */
+	cpp.part_list = &qr_parts_data;
+	cpp.n_parts = *n_partitions;
+	run_dr_cbs(DRCB_REG_CREATE_PARTS_LIST, &cpp);
 
 	/* TODO will atomize operations  under lock (rt_info_t vector) */
 	lock_start_write(reload_lock);
@@ -1121,33 +1112,16 @@ static inline int dr_reload_data(int initial) {
 
 	}
 
-	mark_as_main_list = (struct dr_mark_as_main_list_params*)
-		pkg_malloc(sizeof(struct dr_mark_as_main_list_params));
-
-	if(mark_as_main_list == NULL) {
-		LM_ERR("no more pkg memory\n");
-		ret_val = -1; /* TODO */
-	}
 	/* TODO: only this should be under lock */
-	mark_as_main_list->qr_parts_new_list = qr_parts_data;
-	mark_as_main_list->qr_parts_old_list = &old_list;
+	mmp.qr_parts_new_list = qr_parts_data;
+	mmp.qr_parts_old_list = &old_list;
 	/* make the new list the main list used by the QR */
-	run_dr_cbs(DRCB_REG_MARK_AS_RULE_LIST, mark_as_main_list);
+	run_dr_cbs(DRCB_REG_MARK_AS_RULE_LIST, &mmp);
 	lock_stop_write(reload_lock);
 
-	pkg_free(mark_as_main_list); /* free the parameters for the callback */
-
-	free_list_params = (struct dr_free_qr_list_params*)
-		pkg_malloc(sizeof(struct dr_free_qr_list_params));
-	if(free_list_params == NULL) {
-		LM_ERR("No more pkg memory");
-		ret_val = -1;
-	}
-
-	free_list_params->old_list = old_list;
+	flp.old_list = old_list;
 	/* free the old QR list */
-	run_dr_cbs(DRCB_REG_FREE_LIST, free_list_params);
-	pkg_free(free_list_params);
+	run_dr_cbs(DRCB_REG_FREE_LIST, &flp);
 
 	return ret_val;
 }
@@ -2452,8 +2426,6 @@ static int use_next_gw(struct sip_msg* msg,
 																		  for the call */
 			destroy_avp(avp_sk);
 		}
-		if(acc_call_params != NULL) {
-		}
 
 		LM_DBG("new RURI set to <%.*s> via socket <%.*s>\n",
 				ruri.len, ruri.s,
@@ -2716,7 +2688,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
 	str *c_attrs = NULL;
 	int_str val;
 	int_str dst_id_acc;
-	struct dr_acc_call_params * acc_call_params = NULL;
+	struct dr_acc_call_params acp, *pacp;
 	if( current_partition==NULL ) {
 		return -1;
 	}
@@ -2767,24 +2739,14 @@ qrouting : called from route_2gw or route_2cr */
 			msg->force_send_socket = gw->sock;
 
 		if(rt != NULL) { /* if routing was done rule based */
-			acc_call_params = (struct dr_acc_call_params*)pkg_malloc(
-					sizeof(struct dr_acc_call_params));
-			if(acc_call_params == NULL) {
-				LM_ERR("no more pkg memory!\n");
-				goto error;
-			}
-			memset(acc_call_params, 0, sizeof(struct dr_acc_call_params));
 			/* save callback parameters */
-			acc_call_params->rule = (void*)rt->qr_handler;
-			acc_call_params->cr_id = cr_id;
-			acc_call_params->gw_id = gw_id;
-			acc_call_params->msg = msg;
+			acp.rule = (void *)rt->qr_handler;
+			acp.cr_id = cr_id;
+			acp.gw_id = gw_id;
+			acp.msg = msg;
 
-
-			run_dr_cbs(DRCB_ACC_CALL, acc_call_params); /* qr
-																		  accouting */
+			run_dr_cbs(DRCB_ACC_CALL, &acp); /* qr accounting */
 		}
-
 	} else {
 
 		/* add ruri as AVP */
@@ -2805,28 +2767,25 @@ qrouting : called from route_2gw or route_2cr */
 
 		/*add the destination id to be used for QR */
 		/* TODO: what should happen when qr is not loaded? */
-		acc_call_params = (struct dr_acc_call_params*)shm_malloc(
-				sizeof(struct dr_acc_call_params));
-		if(acc_call_params == NULL) {
-			LM_ERR("no more shm memory!\n");
+		pacp = shm_malloc(sizeof *pacp);
+		if (!pacp) {
+			LM_ERR("oom\n");
 			goto error;
 		}
-		memset(acc_call_params, 0, sizeof(struct dr_acc_call_params));
+		memset(pacp, 0, sizeof *pacp);
 		/* save callback parameters */
-		acc_call_params->rule = (void*)rt->qr_handler;
-		acc_call_params->cr_id = cr_id;
-		acc_call_params->gw_id = gw_id;
-		acc_call_params->msg = msg;
+		pacp->rule = (void*)rt->qr_handler;
+		pacp->cr_id = cr_id;
+		pacp->gw_id = gw_id;
+		pacp->msg = msg;
 
-		dst_id_acc.s.s = (char*)&acc_call_params;
-		dst_id_acc.s.len = sizeof(char*);
+		dst_id_acc.s.s = (char *)&pacp;
+		dst_id_acc.s.len = sizeof(char *);
 		if(add_avp_last(AVP_VAL_STR, current_partition->acc_call_params_avp,
 					dst_id_acc)) {
 			LM_ERR("failed to insert dst_id avp\n");
 			goto error;
 		}
-
-
 	}
 
 	/* add GW id avp */

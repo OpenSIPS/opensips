@@ -209,8 +209,7 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 
 void qr_sort(void *param)
 {
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	struct dr_sort_params *srp = (struct dr_sort_params *)*cbp->param;
+	struct dr_sort_params *srp = (struct dr_sort_params *)param;
 	qr_rule_t *rule;
 	unsigned short dst_id;
 	int i,j,k;

@@ -105,12 +105,12 @@ void qr_dst_is_gw(void *param)
 	void *dst; /* pgw_t received from dr */
 	qr_rule_t *rule; /* qr_rule that was initialised with the qr callback from dr */
 	int   n_dst; /* the number of the destination within the dr rule */
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
+	struct dr_reg_param *drp = (struct dr_reg_param *)param;
 
 	/* extract the parameters from dr */
-	rule = (qr_rule_t*)((struct dr_reg_param *)*cbp->param)->rule;
-	dst = ((struct dr_reg_param *)*cbp->param)->cr_or_gw;
-	n_dst = ((struct dr_reg_param *)*cbp->param)->n_dst;
+	rule = drp->rule;
+	dst = drp->cr_or_gw;
+	n_dst = drp->n_dst;
 	LM_DBG("Adding gw to rule %d\n", rule->r_id);
 
 	if(rule != NULL) {
@@ -195,13 +195,10 @@ void free_qr_list(qr_partitions_t *qr_parts)
 
 void free_qr_cb(void *param)
 {
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	struct dr_free_qr_list_params * free_params = (struct dr_free_qr_list_params *)
-		*cbp->param;
-	LM_DBG("freeing the old rules...\n");
+	struct dr_free_qr_list_params *fp = (struct dr_free_qr_list_params *)param;
 
-	qr_partitions_t * old_list = free_params->old_list;
-	free_qr_list(old_list);
+	LM_DBG("freeing the old rules...\n");
+	free_qr_list(fp->old_list);
 }
 
 int qr_set_profile(qr_rule_t *rule, unsigned int qrp)
@@ -224,9 +221,7 @@ int qr_set_profile(qr_rule_t *rule, unsigned int qrp)
 		}
 	}
 
-	if (left > right)
-		LM_WARN("profile '%d' not found\n", qrp);
-
+	LM_WARN("profile '%d' not found\n", qrp);
 	return -1;
 }
 
@@ -237,9 +232,8 @@ void qr_create_rule(void *param)
 {
 	qr_rule_t *new;
 	int r_id;
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
 	struct dr_reg_init_rule_params *irp =
-		(struct dr_reg_init_rule_params *)*cbp->param;
+		(struct dr_reg_init_rule_params *)param;
 
 	r_id = irp->r_id;
 
@@ -271,15 +265,14 @@ void qr_create_rule(void *param)
 /* marks index_grp destination from the rule as group and creates the gw array */
 void qr_dst_is_grp(void *param)
 {
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	qr_rule_t *rule = (qr_rule_t*)((struct dr_reg_param *)*cbp->param)
-		->rule;
+	struct dr_reg_param *drp = (struct dr_reg_param *)param;
+	qr_rule_t *rule = drp->rule;
 	void * dr_gw;
 	str *cr_name, *gw_name;
 	int i;
-	int n_dst = ((struct dr_reg_param*)*cbp->param)->n_dst;
+	int n_dst = drp->n_dst;
 	int n_gws ;
-	void *grp = ((struct dr_reg_param*)*cbp->param)->cr_or_gw;
+	void *grp = drp->cr_or_gw;
 	n_gws = drb.get_cr_n_gw(grp);
 	cr_name = drb.get_cr_name(grp);
 	LM_DBG("Carrier '%.*s' with  %d gateways added to rule %d\n", cr_name->len,
@@ -323,65 +316,61 @@ error:
 
 void qr_create_partition_list(void *param)
 {
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	struct dr_create_partition_list_params *partition_list_params;
-	partition_list_params = (struct dr_create_partition_list_params*)*cbp->param;
-	qr_partitions_t **part_list =
-		(qr_partitions_t**)partition_list_params->part_list;
-	int n_partitions = partition_list_params->n_parts;
+	struct dr_create_partition_list_params *pp =
+		       (struct dr_create_partition_list_params *)param;
+	qr_partitions_t **pl = (qr_partitions_t **)pp->part_list;
+	int np = pp->n_parts;
 
-	*part_list = (qr_partitions_t*)shm_malloc(sizeof(qr_partitions_t));
-	memset(*part_list, 0, sizeof(qr_partitions_t));
-	if (part_list == NULL) {
-		LM_ERR("no more shm memory");
+	*pl = shm_malloc(sizeof *pl);
+	if (!pl) {
+		LM_ERR("oom\n");
 		return;
 	}
-	if(((*part_list)->rw_lock = lock_init_rw()) == NULL) {
+	memset(pl, 0, sizeof *pl);
+
+	if (!((*pl)->rw_lock = lock_init_rw())) {
 		LM_ERR("failed to init rw lock");
 		goto error;
 	}
-	(*part_list)->qr_rules_start = (qr_rule_t**)shm_malloc(
-			n_partitions * sizeof(qr_rule_t*));
-	if((*part_list)->qr_rules_start == NULL) {
-		LM_ERR("no more shm memory");
+
+	(*pl)->qr_rules_start = shm_malloc(np * sizeof (qr_rule_t *));
+	if (!(*pl)->qr_rules_start) {
+		LM_ERR("oom\n");
 		goto error;
 	}
 
-	(*part_list)->part_name = (str*)shm_malloc(n_partitions*sizeof(str));
-	(*part_list)->n_parts = n_partitions;
+	(*pl)->part_name = shm_malloc(np * sizeof (str));
+	if (!(*pl)->part_name) {
+		LM_ERR("oom\n");
+		goto error;
+	}
 
-	memset((*part_list)->part_name, 0, n_partitions*sizeof(str));
-	memset((*part_list)->qr_rules_start, 0,n_partitions*sizeof(qr_rule_t*));
+	(*pl)->n_parts = np;
 
-	return ;
+	memset((*pl)->part_name, 0, np * sizeof (str));
+	memset((*pl)->qr_rules_start, 0, np * sizeof (qr_rule_t *));
+
+	return;
 error:
-	if((*part_list)->rw_lock != NULL) {
-		lock_destroy_rw((*part_list)->rw_lock);
+	if ((*pl)->rw_lock)
+		lock_destroy_rw((*pl)->rw_lock);
 
-	}
+	if ((*pl)->qr_rules_start)
+		shm_free((*pl)->qr_rules_start);
 
-	if((*part_list)->qr_rules_start) {
-		shm_free((*part_list)->qr_rules_start);
-	}
-
-	if(part_list != NULL) {
-		shm_free(part_list);
-		part_list = NULL;
-	}
-
+	if (pl)
+		shm_free(pl);
 }
 
 /* add rule to list. if the list is NULL a new list is created */
 void qr_add_rule_to_list(void *param)
 {
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	struct dr_add_rule_params  *add_rule_params =
-		(struct dr_add_rule_params*)*cbp->param;
-	qr_partitions_t *qr_parts = (qr_partitions_t*)add_rule_params->qr_parts;
-	qr_rule_t *new = add_rule_params->qr_rule;
-	int part_index = add_rule_params->part_index;
+	struct dr_add_rule_params *arp = (struct dr_add_rule_params *)param;
+	qr_partitions_t *qr_parts = arp->qr_parts;
+	qr_rule_t *new = arp->qr_rule;
+	int part_index = arp->part_index;
 	qr_rule_t **rule_list = &qr_parts->qr_rules_start[part_index];
-	str part_name = add_rule_params->part_name;
+	str part_name = arp->part_name;
 
 	if(new != NULL) {
 		if(*rule_list == NULL) {
@@ -401,14 +390,12 @@ void qr_add_rule_to_list(void *param)
  * by the QR module */
 void qr_mark_as_main_list(void *param)
 {
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	struct dr_mark_as_main_list_params * mark_as_main_list =
-		(struct dr_mark_as_main_list_params*) *cbp->param;
-	qr_partitions_t *qr_parts_new = (qr_partitions_t*)mark_as_main_list
-		->qr_parts_new_list;
+	struct dr_mark_as_main_list_params *mmp =
+		(struct dr_mark_as_main_list_params *)param;
+	qr_partitions_t *qr_parts_new = mmp->qr_parts_new_list;
 
 	LM_DBG("Mark main QR rule list\n");
-	*mark_as_main_list->qr_parts_old_list = *qr_main_list; /* save old list so it can be freed */
+	*mmp->qr_parts_old_list = *qr_main_list; /* save old list so it can be freed */
 	lock_start_write(*rw_lock_qr);
 	*qr_main_list = qr_parts_new; /* the new list that the QR will work with */
 	lock_stop_write(*rw_lock_qr);
@@ -418,12 +405,9 @@ void qr_mark_as_main_list(void *param)
  * (every partition will create a separate list) */
 void qr_link_rule_list(void *param)
 {
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	struct dr_link_rule_list_params * rule_lists =
-		(struct dr_link_rule_list_params *)*cbp->param;
-	qr_rule_t **first_list = (qr_rule_t**)rule_lists->first_list,
-	           *second_list = (qr_rule_t*)rule_lists->second_list;
+	struct dr_link_rule_list_params *rl =
+	             (struct dr_link_rule_list_params *)param;
+	qr_rule_t **first_list = *rl->first_list, *second_list = rl->second_list;
 
 	add_last(second_list, *first_list);
 }
-
