@@ -120,6 +120,7 @@ github_handles=(
   ["Andrey Vorobiev <andrey.o.vorobiev@gmail.com>"]="andrey-vorobiev"
   ["Aron Podrigal <aronp@guaranteedplus.com>"]="ar45"
   ["Bogdan-Andrei Iancu"]="bogdan-iancu"
+  ["Callum Guy"]="spacetourist"
   ["Chad Attermann"]="attermann"
   ["Christophe Sollet"]="csollet"
   ["Damien Sandras <dsandras@beip.be>"]="dsandras"
