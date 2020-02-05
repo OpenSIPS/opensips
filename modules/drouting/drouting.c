@@ -483,10 +483,10 @@ static mi_export_t mi_cmds[] = {
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dr_number_routing", HLP4, MI_NAMED_PARAMS_ONLY, 0, {
-		{mi_dr_number_routing_1, {"number"}},
+		{mi_dr_number_routing_1, {"number", 0}},
 		{mi_dr_number_routing_2, {"group_id", "number", 0}},
-		{mi_dr_number_routing_3, {"partition_name", "number"}},
-		{mi_dr_number_routing_4, {"partition_name", "group_id", "number"}},
+		{mi_dr_number_routing_3, {"partition_name", "number", 0}},
+		{mi_dr_number_routing_4, {"partition_name", "group_id", "number", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dr_reload_status", HLP5, 0, 0, {
