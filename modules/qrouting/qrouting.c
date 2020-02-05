@@ -260,11 +260,6 @@ static int qr_init_dr_cb(void)
 		return -1;
 	}
 
-	if (drb.register_drcb(DRCB_REG_LINK_LISTS, &qr_link_rule_list, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_LINK_QR_LISTS callback to DR\n");
-		return -1;
-	}
-
 	if (drb.register_drcb(DRCB_REG_FREE_LIST, &free_qr_cb, NULL, NULL) < 0) {
 		LM_ERR("[QR] failed to register DRCB_REG_FREE_LIST callback to DR\n");
 		return -1;

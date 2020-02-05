@@ -400,14 +400,3 @@ void qr_mark_as_main_list(void *param)
 	*qr_main_list = qr_parts_new; /* the new list that the QR will work with */
 	lock_stop_write(*rw_lock_qr);
 }
-
-/* copy link two rule lists together => used for dr_reload and partitions
- * (every partition will create a separate list) */
-void qr_link_rule_list(void *param)
-{
-	struct dr_link_rule_list_params *rl =
-	             (struct dr_link_rule_list_params *)param;
-	qr_rule_t **first_list = *rl->first_list, *second_list = rl->second_list;
-
-	add_last(second_list, *first_list);
-}
