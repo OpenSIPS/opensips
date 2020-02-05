@@ -93,13 +93,26 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "drouting", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
+
 struct module_exports exports = {
 	"qrouting",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
 	0,               /* load function */
-	0,               /* OpenSIPS module dependencies */
+	&deps,           /* OpenSIPS module dependencies */
 	cmds,            /* Exported functions */
 	0,               /* Exported async functions */
 	params,          /* Exported parameters */
