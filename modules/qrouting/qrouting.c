@@ -255,11 +255,6 @@ static int qr_init_dr_cb(void)
 		return -1;
 	}
 
-	if (drb.register_drcb(DRCB_SET_PROFILE, &qr_search_profile, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_SET_PROFILE callback to DR\n");
-		return -1;
-	}
-
 	if (drb.register_drcb(DRCB_REG_MARK_AS_RULE_LIST, &qr_mark_as_main_list, NULL, NULL) < 0) {
 		LM_ERR("[QR] failed to register DRCB_MARK_AS_QR_RULE_LIST callback to DR\n");
 		return -1;

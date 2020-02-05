@@ -283,7 +283,7 @@ void dr_update_head_cache(struct head_db *head)
 #define INT_VALS_BLANK_1          1
 #define INT_VALS_PRIORITY_DRR_COL 2
 #define INT_VALS_SCRIPT_ROUTE_ID  3
-#define INT_VALS_SORT_PROFILE_DRR_COL 4
+#define INT_VALS_QR_PROFILE_DRR_COL 4
 #define STR_VALS_GROUP_DRR_COL    0
 #define STR_VALS_PREFIX_DRR_COL   1
 #define STR_VALS_TIME_DRR_COL     2
@@ -687,7 +687,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			}
 			/* SORT_PROFILE column */
 			check_val(sort_profile_drr_col, ROW_VALUES(row)+8, DB_INT, 1, 0);
-			int_vals[INT_VALS_SORT_PROFILE_DRR_COL] = VAL_INT(ROW_VALUES(row)+8);
+			int_vals[INT_VALS_QR_PROFILE_DRR_COL] = VAL_INT(ROW_VALUES(row)+8);
 			/* ATTRS column */
 			check_val( attrs_drr_col, ROW_VALUES(row)+9, DB_STRING, 0, 0);
 			str_vals[STR_VALS_ATTRS_DRR_COL] =
@@ -718,7 +718,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 							str_vals[STR_VALS_ROUTEID_DRR_COL],
 							str_vals[STR_VALS_DSTLIST_DRR_COL],
 							str_vals[STR_VALS_SORT_ALG_DRR_COL],
-							int_vals[INT_VALS_SORT_PROFILE_DRR_COL],
+							int_vals[INT_VALS_QR_PROFILE_DRR_COL],
 							str_vals[STR_VALS_ATTRS_DRR_COL], rdata,
 							qr_parts, part_index, part_name,
 							current_partition->malloc,

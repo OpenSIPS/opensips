@@ -64,7 +64,7 @@ qr_gw_t *qr_create_gw(void *dst)
 	str *gw_name;
 	gw_name = drb.get_gw_name(dst);
 
-	LM_DBG("Creating gw '%.*s'\n", gw_name->len, gw_name->s);
+	LM_DBG("creating gw '%.*s'\n", gw_name->len, gw_name->s);
 
 	if (!(gw = shm_malloc(sizeof *gw))) {
 		LM_ERR("oom\n");
@@ -204,6 +204,31 @@ void free_qr_cb(void *param)
 	free_qr_list(old_list);
 }
 
+int qr_set_profile(qr_rule_t *rule, unsigned int qrp)
+{
+	unsigned int current_id;
+	int m, left, right;
+
+	left = 0;
+	right = *n_qr_profiles - 1;
+	while (left<=right) {
+		m = left + (right-left)/2;
+		current_id = ((*qr_profiles)[m]).id;
+		if(current_id == qrp) {
+			rule->thresholds = &(*qr_profiles)[m];
+			return 0;
+		} else if(current_id > qrp) {
+			right = m-1;
+		} else {
+			left = m+1;
+		}
+	}
+
+	if (left > right)
+		LM_WARN("profile '%d' not found\n", qrp);
+
+	return -1;
+}
 
 /* TODO: thresholds must be freed separatley */
 
@@ -235,6 +260,11 @@ void qr_create_rule(void *param)
 										 this rule, as rcvd from dr*/
 	new->r_id = r_id;
 	irp->rule = new; /* send the rule to the dr */
+
+	if (qr_set_profile(new, irp->qr_profile) != 0)
+		LM_ERR("failed to set profile %d for rule %d\n",
+		       irp->qr_profile, r_id);
+
 	LM_DBG("rule %d created\n", r_id);
 }
 
@@ -397,31 +427,3 @@ void qr_link_rule_list(void *param)
 	add_last(second_list, *first_list);
 }
 
-void qr_search_profile(void *param)
-{
-	struct dr_cb_params *cbp = (struct dr_cb_params *)param;
-	qr_rule_t *rule = (qr_rule_t*)
-		((struct dr_set_profile_params *)*cbp->param)->qr_rule;
-	unsigned int profile = ((struct dr_set_profile_params*)*cbp->param)
-		->profile;
-	unsigned int current_id;
-	int m, left,right, found = 0;
-	left = 0;
-	right = *n_qr_profiles - 1;
-	while(left<=right && !found) {
-		m = left + (right-left)/2;
-		current_id = ((*qr_profiles)[m]).id;
-		if(current_id == profile) {
-			rule->thresholds = &(*qr_profiles)[m];
-			found = 1;
-		} else if(current_id > profile) {
-			right = m-1;
-		} else {
-			left = m+1;
-		}
-
-	}
-	if(left>right) {
-		LM_WARN("profile '%d' not found\n", profile);
-	}
-}

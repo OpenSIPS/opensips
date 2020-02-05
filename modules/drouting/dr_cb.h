@@ -37,7 +37,6 @@ enum drcb_types {
 	DRCB_REG_FREE_LIST,
 	DRCB_ACC_CALL,
 	DRCB_SORT_DST,
-	DRCB_SET_PROFILE,
 	DRCB_MAX /*keep this at the end*/
 };
 

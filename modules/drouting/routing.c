@@ -329,7 +329,7 @@ build_rt_info(
 	/* list of destinations indexes */
 	char* dstlst,
 	char* sort_alg,
-	int sort_profile,
+	int qr_profile,
 	char* attrs,
 	rt_data_t* rd,
 	void *qr_parts_data,
@@ -344,11 +344,10 @@ build_rt_info(
 	/* callback parameters for the QR module */
 	int i;
 	void * qr_rule = NULL;
-	struct dr_cb_params *cb_params;
-	struct dr_reg_init_rule_params *init_rule_params;
-	struct dr_reg_param *reg_dst_param;
-	struct dr_set_profile_params *profile_params;
-	struct dr_add_rule_params *add_rule_params = NULL;
+	struct dr_cb_params cbp;
+	struct dr_reg_param rdp;
+	struct dr_add_rule_params arp;
+	struct dr_reg_init_rule_params irp;
 	pgw_list_t *p = NULL;
 
 	unsigned char * sort_p, n_alg;
@@ -395,89 +394,44 @@ build_rt_info(
 		}
 	}
 
-	if(n_alg == 3) { /* if the sorting algorithm for this rule is qr sorting */
+	if (n_alg == 3) { /* qr sorting */
+		irp.n_dst = rt->pgwa_len;
+		irp.r_id = id;
+		irp.qr_profile = qr_profile;
+		cbp.param = (void **)&irp;
 
-		/* call the create rule callbacks */
-		init_rule_params = (struct dr_reg_init_rule_params *) pkg_malloc(
-				sizeof(struct dr_reg_init_rule_params));
-		cb_params = (struct dr_cb_params *) pkg_malloc(sizeof(struct dr_cb_params));
-		if(init_rule_params != NULL && cb_params != NULL) {
-			memset(init_rule_params, 0, sizeof(struct dr_reg_init_rule_params));
-			init_rule_params->n_dst = rt->pgwa_len;
-			init_rule_params->r_id = id; /* name of the rule */
-			cb_params->param = (void*)&init_rule_params;
+		run_dr_cbs(DRCB_REG_INIT_RULE, &cbp);
 
-			if (run_dr_cbs(DRCB_REG_INIT_RULE, cb_params) != 0)
-				LM_BUG("No callback for DRCB_REG_INIT_RULE\n");
+		qr_rule = irp.rule;
+		rt->qr_handler = qr_rule;
 
-			qr_rule = (void*)((struct dr_reg_init_rule_params*)*cb_params->param)->rule;
-			rt->qr_handler = qr_rule;
+		p = rt->pgwl;
 
-			p = rt->pgwl;
+		/* TODO: should check if qr loaded */
 
+		for (i = 0; i < rt->pgwa_len; i++) {
+			if (p[i].is_carrier) {
+				rdp.rule = qr_rule;
+				rdp.n_dst = i;
+				rdp.cr_or_gw = p[i].dst.carrier;
 
-			/* TODO: params should be pkg - and freed in the cbs */
-			/* TODO: should check if qr loaded */
+				run_dr_cbs(DRCB_REG_CR, &rdp);
+			} else {
+				rdp.rule = qr_rule;
+				rdp.n_dst = i;
+				rdp.cr_or_gw = p[i].dst.gw;
 
-
-			profile_params = (struct dr_set_profile_params *) pkg_malloc(
-					sizeof(struct dr_set_profile_params));
-			if(profile_params == NULL) {
-				LM_ERR("no more pkg memory");
-				return NULL;
-			}
-
-			profile_params->qr_rule = qr_rule;
-			profile_params->profile = sort_profile;
-
-			run_dr_cbs(DRCB_SET_PROFILE, profile_params); /* save the threholds from qr
-											   to the rule */
-			for(i = 0; i < rt->pgwa_len; i++) {
-				if(p[i].is_carrier) {
-					reg_dst_param = (struct dr_reg_param *) pkg_malloc(
-							sizeof(struct dr_reg_param));
-					if(reg_dst_param == NULL) {
-						LM_ERR("no more pkg memory\n");
-					} else {
-						reg_dst_param->rule = qr_rule;
-						reg_dst_param->n_dst = i;
-						reg_dst_param->cr_or_gw = p[i].dst.carrier;
-
-						run_dr_cbs(DRCB_REG_CR, reg_dst_param);
-					}
-
-				} else {
-					reg_dst_param = (struct dr_reg_param *) pkg_malloc(sizeof(struct
-								dr_reg_param));
-					if(reg_dst_param == NULL) {
-						LM_ERR("no more pkg memory\n");
-						/* TODO: should we crash all together? */
-					} else {
-						reg_dst_param->rule = qr_rule;
-						reg_dst_param->n_dst = i;
-						reg_dst_param->cr_or_gw = p[i].dst.gw;
-
-						run_dr_cbs(DRCB_REG_GW, reg_dst_param);
-					}
-				}
-
+				run_dr_cbs(DRCB_REG_GW, &rdp);
 			}
 		}
+
 		/* add rule to the partition list */
-		add_rule_params = (struct dr_add_rule_params *) pkg_malloc(
-				sizeof(struct dr_add_rule_params));
-		if(add_rule_params == NULL) {
-			LM_ERR("no more pkg memory\n");
-		}
-
-		add_rule_params->qr_rule = qr_rule;
-		add_rule_params->qr_parts = qr_parts_data;
-		add_rule_params->part_name = *part_name;
-		add_rule_params->part_index = part_index;
-		run_dr_cbs(DRCB_REG_ADD_RULE, add_rule_params);
-		pkg_free(add_rule_params);
+		arp.qr_rule = qr_rule;
+		arp.qr_parts = qr_parts_data;
+		arp.part_name = *part_name;
+		arp.part_index = part_index;
+		run_dr_cbs(DRCB_REG_ADD_RULE, &arp);
 	}
-
 
 	return rt;
 

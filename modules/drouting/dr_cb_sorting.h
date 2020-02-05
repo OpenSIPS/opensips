@@ -51,9 +51,11 @@ struct dr_reg_param {
 
 struct dr_reg_init_rule_params {
 	void *rule; /* created at qr, set to dr */
+
 	int n_dst; /* the number of destination for the new rule;
 				  sent by dr */
 	int r_id; /* the rule id: sent by dr */
+	int qr_profile; /* sent by dr */
 };
 
 struct dr_acc_call_params {
@@ -69,12 +71,6 @@ struct dr_sort_params {
 	unsigned short *sorted_dst; /* returns an array with the
 								 * indexes of the sorted dest */
 	int rc; /* return code for the funciton */
-};
-
-struct dr_set_profile_params {
-	void *qr_rule; /* qr_rule_t * to which the profile will be added.
-					* provided by dr */
-	unsigned int profile; /* profile id, sent by dr to qr */
 };
 
 struct dr_add_rule_params {
