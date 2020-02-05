@@ -1,10 +1,8 @@
-/**
- *
- * qrouting module:qr_acc.h
- *
+/*
  * Copyright (C) 2004-2005 FhG Fokus
  * Copyright (C) 2006-2010 Voice Sistem SRL
  * Copyright (C) 2014 OpenSIPS Foundation
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -21,11 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History
- * -------
- *  2014-08-28  initial version (Mihai Tiganus)
  */
+
 #ifndef __QR_ACC_H__
 #define __QR_ACC_H__
 
@@ -36,14 +31,12 @@
 #include "qr_stats.h"
 #include "../drouting/dr_api.h"
 
-
 #define QR_TM_100RCVD (1<<0)
 
-struct tm_binds tmb;
-struct dlg_binds dlgcb;
-struct dr_binds drb;
-struct dlg * dlg_cell;
-
+extern struct tm_binds tmb;
+extern struct dlg_binds dlgcb;
+extern struct dr_binds drb;
+extern struct dlg * dlg_cell;
 
 typedef struct qr_trans_prop {
 	qr_gw_t *gw;
@@ -57,13 +50,10 @@ typedef struct qr_dialog_prop {
 	struct timespec *time_200OK;
 } qr_dialog_prop_t;
 
-
 void update_gw_stats(qr_gw_t *);
 void update_grp_stats(qr_grp_t );
 void qr_acc(void *param);
 void qr_check_reply_tmcb(struct cell*, int ,struct tmcb_params*);
 void show_stats(qr_gw_t *gw);
-
-
 
 #endif

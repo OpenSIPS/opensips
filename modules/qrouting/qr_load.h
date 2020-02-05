@@ -1,10 +1,8 @@
-/**
- *
- * qrouting module: qr_load.h
- *
+/*
  * Copyright (C) 2004-2005 FhG Fokus
  * Copyright (C) 2006-2010 Voice Sistem SRL
  * Copyright (C) 2014 OpenSIPS Foundation
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -21,11 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * History
- * -------
- *  2014-10-13  initial version (Mihai Tiganus)
  */
+
 #include "../../db/db.h"
 
 /* qr_profiles table */
