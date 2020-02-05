@@ -58,29 +58,31 @@ qr_sample_t * create_history(void) {
 	return history;
 }
 
-qr_gw_t * qr_create_gw(void *dst) {
-	qr_gw_t *gw = NULL; /* internal gw for qr */
+qr_gw_t *qr_create_gw(void *dst)
+{
+	qr_gw_t *gw; /* internal gw for qr */
 	str *gw_name;
 	gw_name = drb.get_gw_name(dst);
 
 	LM_DBG("Creating gw '%.*s'\n", gw_name->len, gw_name->s);
 
-	if ((gw = (qr_gw_t*)shm_malloc(sizeof(qr_gw_t))) == NULL) {
-		LM_ERR("no more shm memory\n");
+	if (!(gw = shm_malloc(sizeof *gw))) {
+		LM_ERR("oom\n");
 		goto error;
 	}
-	memset(gw, 0, sizeof(qr_gw_t));
-	gw->acc_lock = (gen_lock_t*)lock_alloc();
+	memset(gw, 0, sizeof *gw);
+
+	gw->acc_lock = lock_alloc();
 	if (!lock_init(gw->acc_lock)) {
 		LM_ERR("failed to init lock\n");
 		goto error;
 	}
-	if ((gw->ref_lock = lock_init_rw()) == NULL) {
+	if (!(gw->ref_lock = lock_init_rw())) {
 		LM_ERR("failed to init RW lock\n");
 		goto error;
 	}
 
-	if( (gw->next_interval = create_history()) == NULL) {
+	if (!(gw->next_interval = create_history())) {
 		LM_ERR("failed to create history\n");
 		goto error;
 	}
@@ -92,10 +94,9 @@ qr_gw_t * qr_create_gw(void *dst) {
 	//rule->dest[n_dst].dst.gw = gw;
 	return gw;
 error:
-	if(gw)
+	if (gw)
 		qr_free_gw(gw);
 	return NULL;
-
 }
 
 /* make gateway a given destination - to be registered as callback */
@@ -120,83 +121,76 @@ void qr_dst_is_gw(void *param)
 	}
 }
 
-/* free all the samples in a gateway's history */
-void free_history(qr_sample_t * history) {
-	qr_sample_t *tmp;
-	while(history) {
-		tmp = history;
-		history = history->next;
-		shm_free(tmp);
-	}
-}
-
 /* free gateway information */
-void qr_free_gw(qr_gw_t * gw) {
-	free_history(gw->next_interval);
-	gw->next_interval = NULL;
-	if(gw->acc_lock) {
+void qr_free_gw(qr_gw_t * gw)
+{
+	shm_free_all(gw->next_interval);
+
+	if (gw->acc_lock) {
 		lock_destroy(gw->acc_lock);
 		lock_dealloc(gw->acc_lock);
 	}
-	if(gw->ref_lock) {
+
+	if (gw->ref_lock)
 		lock_destroy_rw(gw->ref_lock);
-	}
+
 	shm_free(gw);
 }
 
-void qr_free_grp(qr_grp_t *grp) {
+void qr_free_grp(qr_grp_t *grp)
+{
 	int i;
 
-	for(i = 0; i < grp->n; i++) {
+	for (i = 0; i < grp->n; i++)
 		qr_free_gw(grp->gw[i]);
-		grp->gw[i] = NULL;
-	}
 
-	if(grp->ref_lock) {
+	shm_free(grp->gw);
+
+	if (grp->ref_lock)
 		lock_destroy_rw(grp->ref_lock);
-	}
-
 }
 
-void qr_free_dst(qr_dst_t *dst) {
-	if(dst->type & QR_DST_GW) {
+void qr_free_dst(qr_dst_t *dst)
+{
+	if (dst->type & QR_DST_GW)
 		qr_free_gw(dst->dst.gw);
-	} else {
+	else
 		qr_free_grp(&dst->dst.grp);
-	}
 }
-void qr_free_rule(qr_rule_t *rule) {
+
+void qr_free_rule(qr_rule_t *rule)
+{
 	int i;
 
-	for(i = 0; i < rule->n; i++) {
+	for (i = 0; i < rule->n; i++)
 		qr_free_dst(&rule->dest[i]);
-	}
-	shm_free(rule->dest);
 
+	shm_free(rule->dest);
+	shm_free(rule);
 }
 
-void free_qr_list(qr_partitions_t *qr_parts) {
-	qr_rule_t * rule_it, *next;
+void free_qr_list(qr_partitions_t *qr_parts)
+{
+	qr_rule_t *rule_it, *next;
 	int i;
 
-	if(qr_parts == NULL) {
-		return ;
-	}
-	for(i = 0; i < qr_parts->n_parts; i++) {
+	if (!qr_parts)
+		return;
+
+	for (i = 0; i < qr_parts->n_parts; i++) {
 		rule_it = qr_parts->qr_rules_start[i];
-		/* free the rules from the given list */
-		while(rule_it != NULL) {
+		while (rule_it) {
 			next = rule_it->next;
 			qr_free_rule(rule_it);
-			rule_it->next = NULL;
 			rule_it = next;
 		}
 	}
-	if(qr_parts->rw_lock != NULL)
+
+	if (qr_parts->rw_lock)
 		lock_destroy_rw(qr_parts->rw_lock);
+
 	shm_free(qr_parts->qr_rules_start);
 	shm_free(qr_parts);
-
 }
 
 void free_qr_cb(void *param)

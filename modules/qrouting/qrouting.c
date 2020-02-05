@@ -42,17 +42,19 @@
 #define QR_TABLE_VER 1
 
 /* modparam */
-rw_lock_t **rw_lock_qr; /* used to protect the qr_main_list */
 static int history = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
+
 str db_url;
-int *n_qr_profiles = 0;
 
 qr_partitions_t **qr_main_list; /* the history itself */
+rw_lock_t **rw_lock_qr; /* protects qr_main_list */
+
 qr_thresholds_t **qr_profiles;
+int *n_qr_profiles;
 
 int qr_n;
-int * n_sampled;
+int *n_sampled;
 
 /* avps */
 str avp_invite_time_name_pdd = str_init("$avp(qr_invite_time_pdd)");
