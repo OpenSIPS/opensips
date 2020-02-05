@@ -138,7 +138,7 @@ error:
 }
 
 /* a call for this gateway returned 200OK */
-inline void qr_add_200OK(qr_gw_t * gw) {
+static inline void qr_add_200OK(qr_gw_t * gw) {
 	lock_get(gw->acc_lock);
 	++(gw->current_interval.stats.as);
 	++(gw->current_interval.stats.cc);
@@ -146,20 +146,20 @@ inline void qr_add_200OK(qr_gw_t * gw) {
 }
 
 /* a call for this gateway returned 4XX */
-inline void qr_add_4xx(qr_gw_t * gw) {
+static inline void qr_add_4xx(qr_gw_t * gw) {
 	lock_get(gw->acc_lock);
 	++(gw->current_interval.stats.cc);
 	lock_release(gw->acc_lock);
 }
 
-inline void qr_add_pdd(qr_gw_t *gw, double pdd_tm) {
+static inline void qr_add_pdd(qr_gw_t *gw, double pdd_tm) {
 	lock_get(gw->acc_lock); /* protect the statistics */
 	++(gw->current_interval.n.pdd);
 	gw->current_interval.stats.pdd += pdd_tm;
 	lock_release(gw->acc_lock);
 }
 
-inline void qr_add_setup(qr_gw_t *gw, double st) {
+static inline void qr_add_setup(qr_gw_t *gw, double st) {
 	lock_get(gw->acc_lock); /* protect the statistics */
 	++(gw->current_interval.n.setup);
 	gw->current_interval.stats.st += st;
