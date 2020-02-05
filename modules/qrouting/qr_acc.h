@@ -36,7 +36,6 @@
 extern struct tm_binds tmb;
 extern struct dlg_binds dlgcb;
 extern struct dr_binds drb;
-extern struct dlg * dlg_cell;
 
 typedef struct qr_trans_prop {
 	qr_gw_t *gw;

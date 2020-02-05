@@ -318,45 +318,46 @@ void qr_create_partition_list(void *param)
 {
 	struct dr_create_partition_list_params *pp =
 		       (struct dr_create_partition_list_params *)param;
-	qr_partitions_t **pl = (qr_partitions_t **)pp->part_list;
+	qr_partitions_t **ppl = (qr_partitions_t **)pp->part_list, *pl = NULL;
 	int np = pp->n_parts;
 
-	*pl = shm_malloc(sizeof *pl);
+	pl = shm_malloc(sizeof *pl);
 	if (!pl) {
 		LM_ERR("oom\n");
 		return;
 	}
 	memset(pl, 0, sizeof *pl);
+	*ppl = pl;
 
-	if (!((*pl)->rw_lock = lock_init_rw())) {
+	if (!(pl->rw_lock = lock_init_rw())) {
 		LM_ERR("failed to init rw lock");
 		goto error;
 	}
 
-	(*pl)->qr_rules_start = shm_malloc(np * sizeof (qr_rule_t *));
-	if (!(*pl)->qr_rules_start) {
+	pl->qr_rules_start = shm_malloc(np * sizeof (qr_rule_t *));
+	if (!pl->qr_rules_start) {
 		LM_ERR("oom\n");
 		goto error;
 	}
 
-	(*pl)->part_name = shm_malloc(np * sizeof (str));
-	if (!(*pl)->part_name) {
+	pl->part_name = shm_malloc(np * sizeof (str));
+	if (!pl->part_name) {
 		LM_ERR("oom\n");
 		goto error;
 	}
 
-	(*pl)->n_parts = np;
+	pl->n_parts = np;
 
-	memset((*pl)->part_name, 0, np * sizeof (str));
-	memset((*pl)->qr_rules_start, 0, np * sizeof (qr_rule_t *));
+	memset(pl->part_name, 0, np * sizeof (str));
+	memset(pl->qr_rules_start, 0, np * sizeof (qr_rule_t *));
 
 	return;
 error:
-	if ((*pl)->rw_lock)
-		lock_destroy_rw((*pl)->rw_lock);
+	if (pl->rw_lock)
+		lock_destroy_rw(pl->rw_lock);
 
-	if ((*pl)->qr_rules_start)
-		shm_free((*pl)->qr_rules_start);
+	if (pl->qr_rules_start)
+		shm_free(pl->qr_rules_start);
 
 	if (pl)
 		shm_free(pl);

@@ -366,7 +366,7 @@ static int qr_check_db(void)
 	}
 
 	if (!DB_CAPABILITY(qr_dbf, DB_CAP_QUERY)) {
-		LM_ERR("database module does not provide"\
+		LM_ERR("database module does not provide"
 				" query functions required by qrouting\n");
 		return -1;
 	}

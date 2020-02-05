@@ -21,11 +21,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "qr_acc.h"
-
 #include "../drouting/dr_cb.h"
 
-int myn = 0;
+#include "qr_acc.h"
+
+struct tm_binds tmb;
+struct dlg_binds dlgcb;
+struct dr_binds drb;
 
 #define QR_PTR_POISON ((void *)0x10203040)
 
