@@ -230,7 +230,7 @@ void qr_sort(void *param)
 	dst_id = srp->dst_id;
 
 
-	if(*n_sampled < *qr_n) { /* we don't have enough statistics to sort */
+	if(*n_sampled < qr_n) { /* we don't have enough statistics to sort */
 		if(dst_id == (unsigned short)-1) {
 			for(i = 0; i < rule->n ; i++)
 				us_sorted_dst[i] = i; /* unordered list for destinations

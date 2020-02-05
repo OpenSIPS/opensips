@@ -36,7 +36,7 @@
 #include "qr_acc.h"
 
 
-qr_rule_t ** qr_rules_start = NULL;
+qr_rule_t **qr_rules_start;
 
 
 /* create the samples for a gateway's history */
@@ -49,7 +49,7 @@ qr_sample_t * create_history(void) {
 		LM_ERR("no more shm_memory\n");
 		return NULL;
 	}
-	for(tmp = history, i = 0; i < *qr_n-1; tmp = tmp->next, ++i) {
+	for(tmp = history, i = 0; i < qr_n-1; tmp = tmp->next, ++i) {
 		tmp->next = (qr_sample_t*)shm_malloc(sizeof(qr_sample_t));
 		if(tmp->next == NULL)
 			return NULL;

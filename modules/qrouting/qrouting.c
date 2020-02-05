@@ -39,15 +39,19 @@
 #define T_PROC_LABEL "qrouting-sampling"
 #define MAX_HISTORY 1000 /* TODO:*/
 
+#define QR_TABLE_VER 1
+
 /* modparam */
 rw_lock_t **rw_lock_qr; /* used to protect the qr_main_list */
 static int history = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
 str db_url;
 int *n_qr_profiles = 0;
+
 qr_partitions_t **qr_main_list; /* the history itself */
-qr_thresholds_t **qr_profiles = 0;
-int * qr_n;
+qr_thresholds_t **qr_profiles;
+
+int qr_n;
 int * n_sampled;
 
 /* avps */
@@ -57,6 +61,9 @@ str avp_invite_time_name_ast = str_init("$avp(qr_invite_time_ast)");
 static int qr_init(void);
 static int qr_child_init(int rank);
 static int qr_exit(void);
+static int qr_init_globals(void);
+static int qr_check_db(void);
+static int qr_init_dr_cb(void);
 
 static void timer_func(void);
 
@@ -107,167 +114,39 @@ struct module_exports exports = {
 	0                /* reload confirm function */
 };
 
-static int qr_init(void){
-	LM_INFO("QR module\n");
+static int qr_init(void)
+{
+	LM_INFO("qrouting module - initializing\n");
 	LM_DBG("history = %d, sampling_interval = %d\n", history,
 			sampling_interval);
-	db_func_t qr_dbf;
-	db_con_t *qr_db_hdl = 0;
 
-	/* TODO: should become obsolete */
-	/* lock to protect from reloading */
-	rw_lock_qr = (rw_lock_t**)shm_malloc(sizeof(rw_lock_t*));
-	if ((*rw_lock_qr = lock_init_rw()) == NULL) {
-		LM_ERR("failed to init rw lock\n");
-	}
-
-	qr_main_list = (qr_partitions_t**)shm_malloc(sizeof(qr_partitions_t*));
-
-	if(qr_main_list == NULL) {
-		LM_ERR("no more shm memory\n");
+	if (qr_init_globals() != 0) {
+		LM_ERR("oom\n");
 		return -1;
 	}
-
-	*qr_main_list = NULL; /* mark main list as empty */
 
 	register_timer(T_PROC_LABEL, (void*)timer_func, NULL,
-			sampling_interval, TIMER_FLAG_SKIP_ON_DELAY);
+	               sampling_interval, TIMER_FLAG_SKIP_ON_DELAY);
 
-	qr_n = (int*)shm_malloc(sizeof(int));
-	/*TODO history in minutes */
-	*qr_n = (history*60)/sampling_interval; /* the number of sampling
-												intervals in history */
-
-	n_sampled = (int*)shm_malloc(sizeof(int));
-	*n_sampled = 0;
-
-	if(db_url.s != NULL) {
-		db_url.len = strlen(db_url.s);
-	} else {
-		LM_ERR("db_url param not provided for qr module\n");
+	if (qr_check_db() != 0) {
+		LM_ERR("DB check failed\n");
 		return -1;
 	}
 
-	/* test the db */
-	if(db_bind_mod(&db_url, &qr_dbf)) {
-		LM_CRIT("cannot bind to database module! "
-				"Did you forget to load a database module ? (%.*s)\n",
-				db_url.len, db_url.s);
-		return -1;
-
-	}
-
-	if((qr_db_hdl = qr_dbf.init(&db_url)) == 0) {
-		LM_ERR("failed to load db url %.*s", db_url.len, db_url.s);
-
-	}
-
-	if(!DB_CAPABILITY(qr_dbf, DB_CAP_QUERY)) {
-		LM_ERR("database modules does not provide"\
-				" QUERY functions needed by QRouting\n");
-	}
-
-	if(db_check_table_version(&qr_dbf, qr_db_hdl, &qr_profiles_table, 1) != 0) {
-		LM_ERR("Not the expected table version for table <%.*s>\n",
-				qr_profiles_table.len, qr_profiles_table.s);
-		return -1;
-	}
-
-	/* close the connection to the db */
-	qr_dbf.close(qr_db_hdl);
-	qr_db_hdl = 0;
-
-	if(load_tm_api(&tmb) == -1) {
+	if (load_tm_api(&tmb) != 0) {
 		LM_ERR("failed to load tm functions. Tm module loaded?\n");
 		return -1;
 	}
-	if(load_dlg_api(&dlgcb) == -1) {
+
+	if (load_dlg_api(&dlgcb) != 0) {
 		LM_ERR("failed to load dlg functions. Dialog module loaded?\n");
 		return -1;
 	}
-	if(load_dr_api(&drb) == -1) {
-		LM_ERR("Failed to load dr functions. DR modules loaded?\n");
+
+	if (qr_init_dr_cb() != 0) {
+		LM_ERR("failed to register drouting callbacks\n");
 		return -1;
 	}
-
-	qr_rules_start = (qr_rule_t **)shm_malloc(sizeof(qr_rule_t*));
-	if(qr_rules_start == NULL) {
-		LM_ERR("no more shm memory\n");
-		return -1;
-	}
-	*qr_rules_start = NULL;
-
-
-	if(drb.register_drcb(DRCB_REG_INIT_RULE, &qr_create_rule, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_INIT_RULE callback to DR\n");
-		return -1;
-	}
-	if(drb.register_drcb(DRCB_REG_GW, &qr_dst_is_gw, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
-		return -1;
-	}
-	if(drb.register_drcb(DRCB_REG_CR, &qr_dst_is_grp, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
-		return -1;
-	}
-	if(drb.register_drcb(DRCB_REG_ADD_RULE, &qr_add_rule_to_list, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_ADD_RULE callback to DR\n");
-		return -1;
-	}
-	if(drb.register_drcb(DRCB_ACC_CALL, &qr_acc, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_ACC_CALL callback to DR\n");
-		return -1;
-	}
-
-	if(drb.register_drcb(DRCB_SORT_DST, &qr_sort, (void*)QR_BASED_SORT, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_SORT_DST callback to DR\n");
-		return -1;
-	}
-
-	if(drb.register_drcb(DRCB_SET_PROFILE, &qr_search_profile, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_SET_PROFILE callback to DR\n");
-		return -1;
-	}
-
-	if(drb.register_drcb(DRCB_REG_MARK_AS_RULE_LIST, &qr_mark_as_main_list, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_MARK_AS_QR_RULE_LIST callback to DR\n");
-		return -1;
-	}
-
-	if(drb.register_drcb(DRCB_REG_LINK_LISTS, &qr_link_rule_list, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_LINK_QR_LISTS callback to DR\n");
-		return -1;
-	}
-
-	if(drb.register_drcb(DRCB_REG_FREE_LIST, &free_qr_cb, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_FREE_LIST callback to DR\n");
-		return -1;
-	}
-
-	if(drb.register_drcb(DRCB_REG_CREATE_PARTS_LIST, &qr_create_partition_list,
-				NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_CREATE_PARTS_LIST callback to DR\n");
-		return -1;
-	}
-
-	LM_DBG("[QR] callbacks in DR were registered\n");
-
-	qr_profiles = (qr_thresholds_t**) shm_malloc(sizeof(qr_thresholds_t *));
-
-	if(qr_profiles == NULL) {
-		LM_ERR("no more shm memory\n");
-		return -1;
-	}
-
-	*qr_profiles = 0;
-
-	n_qr_profiles = (int*)shm_malloc(sizeof(int));
-
-	if(n_qr_profiles == NULL) {
-		LM_ERR("no more shm memory\n");
-		return -1;
-	}
-	*n_qr_profiles = 0;
 
 	return 0;
 }
@@ -320,7 +199,7 @@ static void timer_func(void) {
 	qr_rule_t *it;
 	int i, j;
 
-	if(*n_sampled < *qr_n) {
+	if(*n_sampled < qr_n) {
 		++(*n_sampled); /* the number of intervals sampled */
 	}
 
@@ -342,4 +221,164 @@ static void timer_func(void) {
 		}
 	}
 	lock_stop_read(*rw_lock_qr);
+}
+
+static int qr_init_dr_cb(void)
+{
+	if (load_dr_api(&drb) == -1) {
+		LM_ERR("Failed to load dr functions. DR modules loaded?\n");
+		return -1;
+	}
+
+	if (drb.register_drcb(DRCB_REG_INIT_RULE, &qr_create_rule, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_INIT_RULE callback to DR\n");
+		return -1;
+	}
+	if (drb.register_drcb(DRCB_REG_GW, &qr_dst_is_gw, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
+		return -1;
+	}
+	if (drb.register_drcb(DRCB_REG_CR, &qr_dst_is_grp, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
+		return -1;
+	}
+	if (drb.register_drcb(DRCB_REG_ADD_RULE, &qr_add_rule_to_list, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_ADD_RULE callback to DR\n");
+		return -1;
+	}
+	if (drb.register_drcb(DRCB_ACC_CALL, &qr_acc, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_ACC_CALL callback to DR\n");
+		return -1;
+	}
+
+	if (drb.register_drcb(DRCB_SORT_DST, &qr_sort, (void*)QR_BASED_SORT, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_SORT_DST callback to DR\n");
+		return -1;
+	}
+
+	if (drb.register_drcb(DRCB_SET_PROFILE, &qr_search_profile, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_SET_PROFILE callback to DR\n");
+		return -1;
+	}
+
+	if (drb.register_drcb(DRCB_REG_MARK_AS_RULE_LIST, &qr_mark_as_main_list, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_MARK_AS_QR_RULE_LIST callback to DR\n");
+		return -1;
+	}
+
+	if (drb.register_drcb(DRCB_REG_LINK_LISTS, &qr_link_rule_list, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_LINK_QR_LISTS callback to DR\n");
+		return -1;
+	}
+
+	if (drb.register_drcb(DRCB_REG_FREE_LIST, &free_qr_cb, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_FREE_LIST callback to DR\n");
+		return -1;
+	}
+
+	if (drb.register_drcb(DRCB_REG_CREATE_PARTS_LIST, &qr_create_partition_list,
+				NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_CREATE_PARTS_LIST callback to DR\n");
+		return -1;
+	}
+
+	LM_DBG("initialized drouting callbacks\n");
+	return 0;
+}
+
+static int qr_init_globals(void)
+{
+	/* TODO: should become obsolete */
+	/* lock to protect from reloading */
+	rw_lock_qr = shm_malloc(sizeof *rw_lock_qr);
+	if (!rw_lock_qr || !(*rw_lock_qr = lock_init_rw())) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	qr_main_list = shm_malloc(sizeof *qr_main_list);
+	if (!qr_main_list) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	*qr_main_list = NULL;
+
+	/* TODO history in minutes */
+	qr_n = (history * 60) / sampling_interval; /* the number of sampling
+												  intervals in history */
+
+	n_sampled = shm_malloc(sizeof *n_sampled);
+	if (!n_sampled) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	*n_sampled = 0;
+
+	qr_rules_start = shm_malloc(sizeof *qr_rules_start);
+	if (!qr_rules_start) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	*qr_rules_start = NULL;
+
+	qr_profiles = shm_malloc(sizeof *qr_profiles);
+	if (!qr_profiles) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	*qr_profiles = NULL;
+
+	n_qr_profiles = shm_malloc(sizeof *n_qr_profiles);
+	if (!n_qr_profiles) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	*n_qr_profiles = 0;
+
+	return 0;
+}
+
+static int qr_check_db(void)
+{
+	db_func_t qr_dbf;
+	db_con_t *qr_db_hdl;
+
+	if (db_url.s != NULL) {
+		db_url.len = strlen(db_url.s);
+	} else {
+		LM_ERR("db_url param not provided for qrouting module\n");
+		return -1;
+	}
+
+	/* test the db */
+	if (db_bind_mod(&db_url, &qr_dbf)) {
+		LM_CRIT("cannot bind to database module! "
+				"Did you forget to load a database module ? (%.*s)\n",
+				db_url.len, db_url.s);
+		return -1;
+
+	}
+
+	if (!(qr_db_hdl = qr_dbf.init(&db_url))) {
+		LM_ERR("failed to load db url %.*s", db_url.len, db_url.s);
+		return -1;
+	}
+
+	if (!DB_CAPABILITY(qr_dbf, DB_CAP_QUERY)) {
+		LM_ERR("database module does not provide"\
+				" query functions required by qrouting\n");
+		return -1;
+	}
+
+	if (db_check_table_version(&qr_dbf, qr_db_hdl, &qr_profiles_table,
+	                           QR_TABLE_VER) != 0) {
+		LM_ERR("bad version for <%.*s> table (need %d)\n",
+		       qr_profiles_table.len, qr_profiles_table.s, QR_TABLE_VER);
+		return -1;
+	}
+
+	/* close the connection to the db */
+	qr_dbf.close(qr_db_hdl);
+
+	return 0;
 }

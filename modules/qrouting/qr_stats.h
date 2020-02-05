@@ -41,7 +41,7 @@
 #define MIN_DEST 4
 
 
-extern int* qr_n; /* number of intervals in history */
+extern int qr_n; /* number of intervals in history */
 extern int* n_sampled;
 
 /* number of calls accounted for each statistic */
