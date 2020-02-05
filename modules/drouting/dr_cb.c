@@ -24,7 +24,6 @@
 
 #include <stdlib.h>
 #include "../../dprint.h"
-#include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
 #include "dr_cb.h"
 
@@ -56,7 +55,7 @@ static void destroy_dr_callbacks_list(struct dr_callback *cb)
 			cb_t->callback_param_free(cb_t->param);
 			cb_t->param = NULL;
 		}
-		shm_free(cb_t);
+		pkg_free(cb_t);
 	}
 }
 
@@ -115,7 +114,7 @@ int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
 	long int cb_sort_index = 0;
 	struct dr_callback *cb;
 
-	cb = shm_malloc(sizeof *cb);
+	cb = pkg_malloc(sizeof *cb);
 	if (!cb) {
 		LM_ERR("oom\n");
 		return -1;
@@ -156,7 +155,7 @@ int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
 
 	return 0;
 error:
-	shm_free(cb);
+	pkg_free(cb);
 	return -1;
 }
 
