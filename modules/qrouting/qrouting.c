@@ -229,6 +229,14 @@ static int qr_init_dr_cb(void)
 		return -1;
 	}
 
+	/* 1. dr_reload callbacks */
+
+	if (drb.register_drcb(DRCB_REG_CREATE_PARTS_LIST, &qr_create_partition_list,
+				NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_REG_CREATE_PARTS_LIST callback to DR\n");
+		return -1;
+	}
+
 	if (drb.register_drcb(DRCB_REG_INIT_RULE, &qr_create_rule, NULL, NULL) < 0) {
 		LM_ERR("[QR] failed to register DRCB_REG_INIT_RULE callback to DR\n");
 		return -1;
@@ -245,15 +253,6 @@ static int qr_init_dr_cb(void)
 		LM_ERR("[QR] failed to register DRCB_REG_ADD_RULE callback to DR\n");
 		return -1;
 	}
-	if (drb.register_drcb(DRCB_ACC_CALL, &qr_acc, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_ACC_CALL callback to DR\n");
-		return -1;
-	}
-
-	if (drb.register_drcb(DRCB_SORT_DST, &qr_sort, (void*)QR_BASED_SORT, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_SORT_DST callback to DR\n");
-		return -1;
-	}
 
 	if (drb.register_drcb(DRCB_REG_MARK_AS_RULE_LIST, &qr_mark_as_main_list, NULL, NULL) < 0) {
 		LM_ERR("[QR] failed to register DRCB_MARK_AS_QR_RULE_LIST callback to DR\n");
@@ -265,9 +264,15 @@ static int qr_init_dr_cb(void)
 		return -1;
 	}
 
-	if (drb.register_drcb(DRCB_REG_CREATE_PARTS_LIST, &qr_create_partition_list,
-				NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_CREATE_PARTS_LIST callback to DR\n");
+	/* 2. other callbacks */
+
+	if (drb.register_drcb(DRCB_ACC_CALL, &qr_acc, NULL, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_ACC_CALL callback to DR\n");
+		return -1;
+	}
+
+	if (drb.register_drcb(DRCB_SORT_DST, &qr_sort, (void*)QR_BASED_SORT, NULL) < 0) {
+		LM_ERR("[QR] failed to register DRCB_SORT_DST callback to DR\n");
 		return -1;
 	}
 

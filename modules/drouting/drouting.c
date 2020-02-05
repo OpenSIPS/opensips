@@ -176,8 +176,8 @@ static struct head_config {
 	str rule_attrs_avp_spec; /* extracted from database - has default value */
 	str carrier_attrs_avp_spec; /* extracted from database - has default value */
 	struct head_config *next;
-}* head_start = NULL;
-int *n_partitions; /* the number of partitions accepted by modules init */
+} *head_start;
+int *n_partitions; /* total number of partitions (does not change at runtime) */
 
 struct head_db *head_db_start;
 
@@ -1090,8 +1090,8 @@ error:
 static inline int dr_reload_data(int initial) {
 	struct head_db * it_head_db;
 	int ret_val = 0;
-	void *old_list = NULL; /* list to be freed */
-	void *qr_parts_data = NULL; /* all the partitions */
+	void *old_list; /* list to be freed */
+	void *qr_parts_data; /* all the partitions */
 	int part_index;
 	struct dr_mark_as_main_list_params mmp;
 	struct dr_free_qr_list_params flp;
@@ -1431,14 +1431,18 @@ static int dr_init(void)
 	char name_w_buf[MAX_LEN_NAME_W_PART];
 	name_w_part.s = name_w_buf;
 
-	head_start = NULL; //empty head list
-
-	LM_INFO("Dynamic-Routing - initializing\n");
+	LM_INFO("dynamic routing - initializing\n");
 	reload_lock = lock_init_rw();
-	if(reload_lock == NULL) {
+	if (!reload_lock) {
 		LM_ERR("failed to init rw lock for dr_reload\n");
+		return -1;
 	}
-	n_partitions = (int*)shm_malloc(sizeof(int));
+
+	n_partitions = shm_malloc(sizeof *n_partitions);
+	if (!n_partitions) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 	*n_partitions = 0;
 
 	drd_table.len = strlen(drd_table.s);
@@ -4595,6 +4599,8 @@ int add_head_config(void)
 
 	new->next = head_start;
 	head_start = new;
+
+	(*n_partitions)++;
 	return 0;
 }
 
