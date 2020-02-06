@@ -61,7 +61,7 @@
 #define TIMER_N				132  // Timer N = 64*T1      T1 = (0,5s)
 #define MAXNUMBERLEN 			31
 
-struct tm_binds eme_tm;
+extern struct tm_binds eme_tm;
 
 struct parms_cb{
 	str callid_ori;

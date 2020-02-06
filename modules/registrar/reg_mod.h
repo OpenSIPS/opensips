@@ -64,7 +64,7 @@ extern int max_contacts;
 extern int retry_after;
 extern str sock_hdr_name;
 
-usrloc_api_t ul;  /*!< Structure containing pointers to usrloc functions */
+extern usrloc_api_t ul;  /*!< Structure containing pointers to usrloc functions */
 
 extern struct sig_binds sigb;
 extern struct tm_binds tmb;

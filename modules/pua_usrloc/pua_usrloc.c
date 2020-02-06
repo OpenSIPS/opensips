@@ -44,7 +44,8 @@
 #include "../pua/pua_bind.h"
 #include "pua_usrloc.h"
 
-
+send_publish_t pua_send_publish = NULL;
+send_subscribe_t pua_send_subscribe = NULL;
 
 str default_domain= {NULL, 0};
 pua_api_t pua;

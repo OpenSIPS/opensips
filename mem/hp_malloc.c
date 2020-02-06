@@ -47,6 +47,9 @@
 
 extern unsigned long *mem_hash_usage;
 
+unsigned int optimized_get_indexes[HP_HASH_SIZE];
+unsigned int optimized_put_indexes[HP_HASH_SIZE];
+
 /*
  * adaptive image of OpenSIPS's memory usage during runtime
  * used to fragment the shared memory pool at daemon startup

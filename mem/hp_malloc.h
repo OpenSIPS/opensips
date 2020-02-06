@@ -95,10 +95,10 @@ extern stat_var *shm_frags;
  */
 
 /* used when detaching free fragments */
-unsigned int optimized_get_indexes[HP_HASH_SIZE];
+extern unsigned int optimized_get_indexes[HP_HASH_SIZE];
 
 /* used when attaching free fragments */
-unsigned int optimized_put_indexes[HP_HASH_SIZE];
+extern unsigned int optimized_put_indexes[HP_HASH_SIZE];
 
 /* finds the hash value for s, s=ROUNDTO multiple */
 #define GET_HASH(s)  (((unsigned long)(s) <= HP_MALLOC_OPTIMIZE) ? \

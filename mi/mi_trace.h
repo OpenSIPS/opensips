@@ -37,22 +37,27 @@ struct mi_trace_req {
 	str cmd;
 	str backend;
 	char params[MAX_TRACE_FIELD];
-} mi_treq;
+};
 
 struct mi_trace_rpl {
 	char code[MAX_TRACE_FIELD];
 	str reason;
 	str rpl;
-} mi_trpl;
+};
+
+extern struct mi_trace_rpl mi_trpl;
 
 enum mi_trace_type { MI_TRACE_REQ, MI_TRACE_RPL};
+
 struct mi_trace_param {
 	enum mi_trace_type type;
 	union {
 		struct mi_trace_req* req;
 		struct mi_trace_rpl* rpl;
 	} d;
-} mi_tparam;
+};
+
+extern struct mi_trace_param mi_tparam;
 
 void try_load_trace_api(void);
 int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,

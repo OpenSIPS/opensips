@@ -118,7 +118,7 @@ extern b2b_scenario_t* extern_scenaries;
 
 extern str custom_headers_lst[HDR_LST_LEN];
 extern regex_t* custom_headers_re;
-int custom_headers_lst_len;
+extern int custom_headers_lst_len;
 extern int use_init_sdp;
 extern str server_address;
 extern unsigned int max_duration;

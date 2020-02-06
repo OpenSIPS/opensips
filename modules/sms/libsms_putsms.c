@@ -25,8 +25,6 @@ mailto:s.frings@mail.isis.de
 #include "libsms_modem.h"
 
 
-int  sms_report_type;
-
 static char hexa[16] = {
 	'0','1','2','3','4','5','6','7',
 	'8','9','A','B','C','D','E','F'

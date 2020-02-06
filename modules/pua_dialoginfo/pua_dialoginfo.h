@@ -25,7 +25,7 @@
 #define _PUA_DLGINFO_H
 #include "../pua/pua_bind.h"
 
-send_publish_t pua_send_publish;
+extern send_publish_t pua_send_publish;
 
 void dialog_publish(char *state, struct to_body* entity, struct to_body *peer, str *callid,
 	unsigned int initiator, unsigned int lifetime, str *localtag, str *remotetag);

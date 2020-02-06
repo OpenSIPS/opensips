@@ -52,9 +52,8 @@ struct tm_binds tmb;
 
 #endif
 
-
-
-
+regex_t *portExpression = NULL;
+regex_t *ipExpression = NULL;
 
 /*
  * Module destroy function prototype
