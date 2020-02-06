@@ -83,6 +83,7 @@ static int osips_ps = 1;
 static int publish_on_trying = 0;
 static int nopublish_flag = -1;
 static char *nopublish_flag_str = 0;
+send_publish_t pua_send_publish = NULL;
 
 
 

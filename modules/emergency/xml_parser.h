@@ -56,7 +56,7 @@
 #include "../rr/api.h"
 #include "../tm/tm_load.h" /*load_tm_api*/
 
-char *empty;
+extern char *empty;
 #define MAX_TIME_SIZE            80
 #define MAX_DISPOSITION_SIZE     20
 

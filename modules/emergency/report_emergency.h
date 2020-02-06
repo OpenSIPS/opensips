@@ -57,8 +57,8 @@
 
 #include "sip_emergency.h"
 
-db_func_t db_funcs;
-db_con_t *db_con;
+extern db_func_t db_funcs;
+extern db_con_t *db_con;
 
 struct emergency_report {
 	str callid;
@@ -83,7 +83,7 @@ struct esrn_routing {
 	struct esrn_routing *next;
 };
 
-struct esrn_routing **db_esrn_esgwri;
+extern struct esrn_routing **db_esrn_esgwri;
 
 struct service_provider {
 	str nodeIP;
@@ -97,9 +97,9 @@ struct service_provider {
 	struct service_provider *next;
 };
 
-struct service_provider **db_service_provider;
+extern struct service_provider **db_service_provider;
 
-char* mandatory_parm;
+extern char* mandatory_parm;
 
 #define ACK_TIME 				 3
 #define BYE_TIME 				 10

@@ -112,6 +112,7 @@ char* attr_avp_param = 0;
 unsigned short attr_avp_type = 0;
 int attr_avp_name;
 
+usrloc_api_t ul;
 
 int reg_use_domain = 0;
 /*!< Realm prefix to be removed */

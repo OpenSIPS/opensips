@@ -30,8 +30,7 @@ struct dlginfo_part {
 	str display;
 };
 
-
-send_publish_t pua_send_publish;
+extern send_publish_t pua_send_publish;
 
 void dialog_publish(char *state,
 		struct dlginfo_part* entity, struct dlginfo_part *peer,
