@@ -2566,30 +2566,23 @@ static inline int get_pgwl_params(struct dr_sort_params *sort_params,
 #define DR_MAX_GWLIST	64
 
 static int sort_rt_dst(rt_info_t *dr_rule, unsigned short dst_id,
-		unsigned short *idx) {
-	struct dr_sort_params * sort_params;
+		unsigned short *idx)
+{
+	struct dr_sort_params sort_params;
 	pgw_list_t * pgwl;
 	int i;
 	int size;
 	unsigned short *tmp;
 	unsigned char sort_alg;
 
+	memset(&sort_params, 0, sizeof sort_params);
+	sort_params.dr_rule = dr_rule;
+	sort_params.dst_id = dst_id;
+	sort_params.sorted_dst = idx;
 
-
-	sort_params = (struct dr_sort_params *)pkg_malloc(
-			sizeof(struct dr_sort_params));
-	if(sort_params == NULL) {
-		LM_ERR("no more pkg memory\n");
+	if (get_pgwl_params(&sort_params, &pgwl, &size, &tmp) < 0)
 		return -1;
-	}
-	memset(sort_params, 0, sizeof(struct dr_sort_params));
-	sort_params->dr_rule = dr_rule;
-	sort_params->dst_id = dst_id;
-	sort_params->sorted_dst = idx;
 
-	if(get_pgwl_params(sort_params, &pgwl, &size, &tmp) < 0) {
-		return -1;
-	}
 	/* extract the sorting algorithm */
 	if(dst_id != (unsigned short)-1) { /* if destionation is carrier */
 		sort_alg = dr_rule->pgwl[dst_id].dst.carrier->sort_alg;
@@ -2597,7 +2590,7 @@ static int sort_rt_dst(rt_info_t *dr_rule, unsigned short dst_id,
 		sort_alg = dr_rule->sort_alg;
 	}
 
-	run_dr_sort_cbs(sort_alg, sort_params);
+	run_dr_sort_cbs(sort_alg, &sort_params);
 
 	LM_DBG("Sorted destination list:\n");
 	for(i = 0; i < size; i++) {

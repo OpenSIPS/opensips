@@ -197,6 +197,7 @@ void free_qr_list(qr_partitions_t *qr_parts)
 		lock_destroy_rw(qr_parts->rw_lock);
 
 	shm_free(qr_parts->qr_rules_start);
+	shm_free(qr_parts->part_name);
 	shm_free(qr_parts);
 }
 
