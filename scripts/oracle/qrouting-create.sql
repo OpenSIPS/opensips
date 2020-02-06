@@ -7,11 +7,11 @@ CREATE TABLE qr_profiles (
     warn_threshold_pdd NUMBER DEFAULT -1 NOT NULL,
     warn_threshold_ast NUMBER DEFAULT -1 NOT NULL,
     warn_threshold_acd NUMBER DEFAULT -1 NOT NULL,
-    dsbl_threshold_asr NUMBER DEFAULT -1 NOT NULL,
-    dsbl_threshold_ccr NUMBER DEFAULT -1 NOT NULL,
-    dsbl_threshold_pdd NUMBER DEFAULT -1 NOT NULL,
-    dsbl_threshold_ast NUMBER DEFAULT -1 NOT NULL,
-    dsbl_threshold_acd NUMBER DEFAULT -1 NOT NULL
+    crit_threshold_asr NUMBER DEFAULT -1 NOT NULL,
+    crit_threshold_ccr NUMBER DEFAULT -1 NOT NULL,
+    crit_threshold_pdd NUMBER DEFAULT -1 NOT NULL,
+    crit_threshold_ast NUMBER DEFAULT -1 NOT NULL,
+    crit_threshold_acd NUMBER DEFAULT -1 NOT NULL
 );
 
 CREATE OR REPLACE TRIGGER qr_profiles_tr

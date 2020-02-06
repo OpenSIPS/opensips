@@ -26,10 +26,10 @@
 #include "qr_stats.h"
 
 #define QR_PENALTY_THRESHOLD_1 1
-#define QR_PENALTY_THRESHOLD_2 1
+#define QR_PENALTY_THRESHOLD_2 10
+
 /* the number of elements for the hashmap used by the sorting */
 #define QR_N_SORTED_LIST 6
-
 
 int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_id, int score) {
 	qr_sorted_list_t *new_elem = (qr_sorted_list_t*)pkg_malloc(
@@ -63,18 +63,23 @@ void empty_qr_sorted_list(qr_sorted_list_t **sorted_list) {
 
 	}
 }
-static inline void qr_mark_gw_dsbl(qr_gw_t *gw) {
-	lock_start_write(gw->ref_lock);
-	gw->state |= QR_STATUS_DSBL; /* mark the gateway as disabled */
-	lock_stop_write(gw->ref_lock);
-}
+
+#define log_warn_thr(thr) \
+	LM_WARN("warn "thr" threshold exceeded, gwid: %.*s\n", nam->len, nam->s)
+
+#define log_crit_thr(thr) \
+	LM_WARN("crit "thr" threshold exceeded, gwid: %.*s\n", nam->len, nam->s)
+
 /*
  * computes the score of the gateway using the warning
  * thresholds
  */
-int qr_score_gw(qr_gw_t *gw, qr_thresholds_t * thresholds) {
+int qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds)
+{
 	int score = 0;
 	double asr_v, ccr_v, pdd_v, ast_v, acd_v;
+	str *nam = drb.get_gw_name(gw->dr_gw);
+
 	/* FIXME: might be better under a single lock
 	 * because of possible changes between lock ( a
 	 * new sampling interval might bring new statistics)
@@ -82,51 +87,46 @@ int qr_score_gw(qr_gw_t *gw, qr_thresholds_t * thresholds) {
 	asr_v = asr(gw);
 	if(asr_v < thresholds->asr1 && asr_v != -1) {
 		score += QR_PENALTY_THRESHOLD_1;
-		LM_WARN("warn thrsh asr\n");
+		log_warn_thr("ASR");
 		if(asr_v < thresholds->asr2) {
 			score += QR_PENALTY_THRESHOLD_2;
-			LM_WARN("gw dsbl because of asr: %lf\n", asr_v);
-			qr_mark_gw_dsbl(gw);
+			log_crit_thr("ASR");
 		}
 	}
 	ccr_v = ccr(gw);
 	if(ccr_v < thresholds->ccr1 && ccr_v != -1) {
 		score += QR_PENALTY_THRESHOLD_1;
-		LM_WARN("warn thrsh ccr\n");
+		log_warn_thr("CCR");
 		if(ccr_v < thresholds->ccr2) {
 			score += QR_PENALTY_THRESHOLD_2;
-			LM_WARN("gw dsbl because of ccr: %lf\n", ccr_v);
-			qr_mark_gw_dsbl(gw);
+			log_crit_thr("CCR");
 		}
 	}
 	pdd_v = pdd(gw);
 	if(pdd_v > thresholds->pdd1 && pdd_v != -1) {
 		score += QR_PENALTY_THRESHOLD_1;
-		LM_WARN("warn thrsh pdd\n");
+		log_warn_thr("PDD");
 		if(pdd_v > thresholds->pdd2) {
 			score += QR_PENALTY_THRESHOLD_2;
-			LM_WARN("gw dsbl because of pdd: %lf\n", pdd_v);
-			qr_mark_gw_dsbl(gw);
+			log_crit_thr("PDD");
 		}
 	}
 	ast_v = ast(gw);
 	if(ast_v > thresholds->ast1 && ast_v != -1) {
 		score += QR_PENALTY_THRESHOLD_1;
-		LM_WARN("warn thrsh ast\n");
+		log_warn_thr("AST");
 		if(ast_v > thresholds->ast2) {
 			score +=QR_PENALTY_THRESHOLD_2;
-			LM_WARN("gw dsbl because of ast: %lf\n", ast_v);
-			qr_mark_gw_dsbl(gw);
+			log_crit_thr("AST");
 		}
 	}
 	acd_v = acd(gw);
 	if(acd_v < thresholds->acd1 && acd_v != -1) {
 		score += QR_PENALTY_THRESHOLD_1;
-		LM_WARN("warn thrsh acd\n");
+		log_warn_thr("ACD");
 		if(acd_v < thresholds->acd2) {
 			score += QR_PENALTY_THRESHOLD_2;
-			LM_WARN("gw dsbl because of acd: %lf\n", acd_v);
-			qr_mark_gw_dsbl(gw);
+			log_crit_thr("ACD");
 		}
 	}
 
@@ -166,11 +166,12 @@ int qr_score_grp(qr_grp_t *grp, qr_thresholds_t * thresholds) {
  * inserts gw in sorted list
  */
 int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
-		int cr_id, int gw_id) {
+		int cr_id, int gw_id)
+{
 	int cur_dst_score;
 	qr_gw_t *gw;
 
-	if(cr_id == -1) { /* the gw is within a rule */
+	if (cr_id == -1) { /* the gw is within a rule */
 		gw = rule->dest[gw_id].dst.gw;
 	} else { /* the gw is within a carrier */
 		gw = rule->dest[cr_id].dst.grp.gw[gw_id];
@@ -186,22 +187,12 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 		cur_dst_score = gw->score;
 		lock_stop_read(gw->ref_lock);
 	}
-	lock_start_read(gw->ref_lock);
-	if(gw->state & QR_STATUS_DSBL) {
-		LM_DBG("gw is disabled cr_id = %d gw_id = %d\n", cr_id, gw_id);
-		lock_stop_read(gw->ref_lock);
-		return 0;
-	}
-	lock_stop_read(gw->ref_lock);
 
-
-	if(qr_add_dst_to_list(sorted, gw_id, cur_dst_score) < 0) { /* insert
-																  into sorted
-																  list */
+	/* insert into sorted list */
+	if (qr_add_dst_to_list(sorted, gw_id, cur_dst_score) < 0) {
 		LM_ERR("failed to insert destination id in qr sorted list\n");
 		return -1;
 	}
-
 
 	return 0;
 }

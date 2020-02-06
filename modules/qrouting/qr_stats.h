@@ -34,8 +34,7 @@
 #define QR_DST_GRP (1<<1) /* group more destinations together */
 /* states for gateways */
 #define QR_STATUS_DIRTY (1<<0)
-#define QR_STATUS_DSBL (1<<1)
-#define QR_STATUS_SKIP (1<<2)
+#define QR_STATUS_SKIP  (1<<1)
 /* sort methods */
 #define QR_SORT_QR (1<<0)
 #define MIN_DEST 4
@@ -88,7 +87,7 @@ typedef struct qr_gw {
 	void  *dr_gw; /* pointer to the gateway from drouting*/
 	qr_stats_t current_interval; /* the current interval */
 	qr_stats_t summed_stats; /* the sum of the @lru_interval list */
-	char state; /* the state of the gateway: dirty/disabled */
+	char state;
 	int score; /* the score of the gateway (based on thresholds) */
 	rw_lock_t *ref_lock; /* lock for protecting the overall statistics (history) */
 	gen_lock_t *acc_lock; /* lock for protecting the current interval */

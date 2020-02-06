@@ -9,9 +9,9 @@
 		<column><field>warn_threshold_pdd</field><type>DB_DOUBLE</type></column>
 		<column><field>warn_threshold_ast</field><type>DB_DOUBLE</type></column>
 		<column><field>warn_threshold_acd</field><type>DB_DOUBLE</type></column>
-		<column><field>dsbl_threshold_asr</field><type>DB_DOUBLE</type></column>
-		<column><field>dsbl_threshold_ccr</field><type>DB_DOUBLE</type></column>
-		<column><field>dsbl_threshold_pdd</field><type>DB_DOUBLE</type></column>
-		<column><field>dsbl_threshold_ast</field><type>DB_DOUBLE</type></column>
-		<column><field>dsbl_threshold_acd</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_asr</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_ccr</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_pdd</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_ast</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_acd</field><type>DB_DOUBLE</type></column>
 	</db_table>

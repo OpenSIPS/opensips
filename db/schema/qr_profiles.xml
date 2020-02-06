@@ -65,32 +65,32 @@
         <default>-1</default>
         <description>The warning threshold for average call duration</description>
     </column>
-    <column id="dsbl_threshold_asr">
-        <name>dsbl_threshold_asr</name>
+    <column id="crit_threshold_asr">
+        <name>crit_threshold_asr</name>
         <type>double</type>
         <default>-1</default>
         <description>The disable threshold for answer seizure ratio</description>
     </column>
-    <column id="dsbl_threshold_ccr">
-        <name>dsbl_threshold_ccr</name>
+    <column id="crit_threshold_ccr">
+        <name>crit_threshold_ccr</name>
         <type>double</type>
         <default>-1</default>
         <description>The disable threshold for call completion ratio</description>
     </column>
-    <column id="dsbl_threshold_pdd">
-        <name>dsbl_threshold_pdd</name>
+    <column id="crit_threshold_pdd">
+        <name>crit_threshold_pdd</name>
         <type>double</type>
         <default>-1</default>
         <description>The disable threshold for post dial delay</description>
     </column>
-    <column id="dsbl_threshold_ast">
-        <name>dsbl_threshold_ast</name>
+    <column id="crit_threshold_ast">
+        <name>crit_threshold_ast</name>
         <type>double</type>
         <default>-1</default>
         <description>The disable threshold for average setup time</description>
     </column>
-    <column id="dsbl_threshold_acd">
-        <name>dsbl_threshold_acd</name>
+    <column id="crit_threshold_acd">
+        <name>crit_threshold_acd</name>
         <type>double</type>
         <default>-1</default>
         <description>The disable threshold for average call duration</description>

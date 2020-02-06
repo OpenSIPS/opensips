@@ -29,11 +29,11 @@
 #define DOUBLE_VALS_WARN_PDD 2
 #define DOUBLE_VALS_WARN_AST 3
 #define DOUBLE_VALS_WARN_ACD 4
-#define DOUBLE_VALS_DSBL_ASR 5
-#define DOUBLE_VALS_DSBL_CCR 6
-#define DOUBLE_VALS_DSBL_PDD 7
-#define DOUBLE_VALS_DSBL_AST 8
-#define DOUBLE_VALS_DSBL_ACD 9
+#define DOUBLE_VALS_CRIT_ASR 5
+#define DOUBLE_VALS_CRIT_CCR 6
+#define DOUBLE_VALS_CRIT_PDD 7
+#define DOUBLE_VALS_CRIT_AST 8
+#define DOUBLE_VALS_CRIT_ACD 9
 #define INT_VALS_ID 0
 #define STR_VALS_PROFILE_NAME 0
 
@@ -49,11 +49,11 @@
 #define WARN_PDD_QP_COL "warn_threshold_pdd"
 #define WARN_AST_QP_COL "warn_threshold_ast"
 #define WARN_ACD_QP_COL "warn_threshold_acd"
-#define DSBL_ASR_QP_COL "dsbl_threshold_asr"
-#define DSBL_CCR_QP_COL "dsbl_threshold_ccr"
-#define DSBL_PDD_QP_COL "dsbl_threshold_pdd"
-#define DSBL_AST_QP_COL "dsbl_threshold_ast"
-#define DSBL_ACD_QP_COL "dsbl_threshold_acd"
+#define CRIT_ASR_QP_COL "crit_threshold_asr"
+#define CRIT_CCR_QP_COL "crit_threshold_ccr"
+#define CRIT_PDD_QP_COL "crit_threshold_pdd"
+#define CRIT_AST_QP_COL "crit_threshold_ast"
+#define CRIT_ACD_QP_COL "crit_threshold_acd"
 
 extern str qr_profiles_table;
 

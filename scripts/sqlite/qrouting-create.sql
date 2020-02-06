@@ -7,10 +7,10 @@ CREATE TABLE qr_profiles (
     warn_threshold_pdd DOUBLE DEFAULT -1 NOT NULL,
     warn_threshold_ast DOUBLE DEFAULT -1 NOT NULL,
     warn_threshold_acd DOUBLE DEFAULT -1 NOT NULL,
-    dsbl_threshold_asr DOUBLE DEFAULT -1 NOT NULL,
-    dsbl_threshold_ccr DOUBLE DEFAULT -1 NOT NULL,
-    dsbl_threshold_pdd DOUBLE DEFAULT -1 NOT NULL,
-    dsbl_threshold_ast DOUBLE DEFAULT -1 NOT NULL,
-    dsbl_threshold_acd DOUBLE DEFAULT -1 NOT NULL
+    crit_threshold_asr DOUBLE DEFAULT -1 NOT NULL,
+    crit_threshold_ccr DOUBLE DEFAULT -1 NOT NULL,
+    crit_threshold_pdd DOUBLE DEFAULT -1 NOT NULL,
+    crit_threshold_ast DOUBLE DEFAULT -1 NOT NULL,
+    crit_threshold_acd DOUBLE DEFAULT -1 NOT NULL
 );
 

@@ -54,15 +54,15 @@ str warn_ccr_qp_col = str_init(WARN_CCR_QP_COL);
 str warn_pdd_qp_col = str_init(WARN_PDD_QP_COL);
 str warn_ast_qp_col = str_init(WARN_AST_QP_COL);
 str warn_acd_qp_col = str_init(WARN_ACD_QP_COL);
-str dsbl_asr_qp_col = str_init(DSBL_ASR_QP_COL);
-str dsbl_ccr_qp_col = str_init(DSBL_CCR_QP_COL);
-str dsbl_pdd_qp_col = str_init(DSBL_PDD_QP_COL);
-str dsbl_ast_qp_col = str_init(DSBL_AST_QP_COL);
-str dsbl_acd_qp_col = str_init(DSBL_ACD_QP_COL);
+str crit_asr_qp_col = str_init(CRIT_ASR_QP_COL);
+str crit_ccr_qp_col = str_init(CRIT_CCR_QP_COL);
+str crit_pdd_qp_col = str_init(CRIT_PDD_QP_COL);
+str crit_ast_qp_col = str_init(CRIT_AST_QP_COL);
+str crit_acd_qp_col = str_init(CRIT_ACD_QP_COL);
 
 void add_profile(int id, char *name, double warn_asr, double warn_ccr,
-		double warn_pdd, double warn_ast, double warn_acd, double dsbl_asr,
-		double dsbl_ccr, double dsbl_pdd, double dsbl_ast, double dsbl_acd) {
+		double warn_pdd, double warn_ast, double warn_acd, double crit_asr,
+		double crit_ccr, double crit_pdd, double crit_ast, double crit_acd) {
 
 	((*qr_profiles)[*n_qr_profiles]).id = id;
 	((*qr_profiles)[*n_qr_profiles]).name.s = name;
@@ -74,11 +74,11 @@ void add_profile(int id, char *name, double warn_asr, double warn_ccr,
 	(*qr_profiles)[*n_qr_profiles].ast1 = warn_ast;
 	(*qr_profiles)[*n_qr_profiles].acd1 = warn_acd;
 
-	(*qr_profiles)[*n_qr_profiles].asr2 = dsbl_asr;
-	(*qr_profiles)[*n_qr_profiles].ccr2 = dsbl_ccr;
-	(*qr_profiles)[*n_qr_profiles].pdd2 = dsbl_pdd;
-	(*qr_profiles)[*n_qr_profiles].ast2 = dsbl_ast;
-	(*qr_profiles)[*n_qr_profiles].acd2 = dsbl_acd;
+	(*qr_profiles)[*n_qr_profiles].asr2 = crit_asr;
+	(*qr_profiles)[*n_qr_profiles].ccr2 = crit_ccr;
+	(*qr_profiles)[*n_qr_profiles].pdd2 = crit_pdd;
+	(*qr_profiles)[*n_qr_profiles].ast2 = crit_ast;
+	(*qr_profiles)[*n_qr_profiles].acd2 = crit_acd;
 	(*n_qr_profiles)++;
 }
 
@@ -104,11 +104,11 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 	columns[4] = &warn_pdd_qp_col;
 	columns[5] = &warn_ast_qp_col;
 	columns[6] = &warn_acd_qp_col;
-	columns[7] = &dsbl_asr_qp_col;
-	columns[8] = &dsbl_ccr_qp_col;
-	columns[9] = &dsbl_pdd_qp_col;
-	columns[10] = &dsbl_ast_qp_col;
-	columns[11] = &dsbl_acd_qp_col;
+	columns[7] = &crit_asr_qp_col;
+	columns[8] = &crit_ccr_qp_col;
+	columns[9] = &crit_pdd_qp_col;
+	columns[10] = &crit_ast_qp_col;
+	columns[11] = &crit_acd_qp_col;
 
 	db_cols = 12;
 
@@ -174,36 +174,36 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 			check_val(warn_acd_qp_col, ROW_VALUES(row)+6, DB_DOUBLE, 1, 1);
 			double_vals[DOUBLE_VALS_WARN_ACD] = VAL_DOUBLE(ROW_VALUES(row)+6);
 
-			check_val(dsbl_asr_qp_col, ROW_VALUES(row)+7, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_DSBL_ASR] = VAL_DOUBLE(ROW_VALUES(row)+7);
+			check_val(crit_asr_qp_col, ROW_VALUES(row)+7, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_ASR] = VAL_DOUBLE(ROW_VALUES(row)+7);
 
-			check_val(dsbl_ccr_qp_col, ROW_VALUES(row)+8, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_DSBL_CCR] = VAL_DOUBLE(ROW_VALUES(row)+8);
+			check_val(crit_ccr_qp_col, ROW_VALUES(row)+8, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_CCR] = VAL_DOUBLE(ROW_VALUES(row)+8);
 
-			check_val(dsbl_pdd_qp_col, ROW_VALUES(row)+9, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_DSBL_PDD] = VAL_DOUBLE(ROW_VALUES(row)+9);
+			check_val(crit_pdd_qp_col, ROW_VALUES(row)+9, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_PDD] = VAL_DOUBLE(ROW_VALUES(row)+9);
 
-			check_val(dsbl_ast_qp_col, ROW_VALUES(row)+10, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_DSBL_AST] = VAL_DOUBLE(ROW_VALUES(row)+10);
+			check_val(crit_ast_qp_col, ROW_VALUES(row)+10, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_AST] = VAL_DOUBLE(ROW_VALUES(row)+10);
 
-			check_val(dsbl_acd_qp_col, ROW_VALUES(row)+11, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_DSBL_ACD] = VAL_DOUBLE(ROW_VALUES(row)+11);
+			check_val(crit_acd_qp_col, ROW_VALUES(row)+11, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_ACD] = VAL_DOUBLE(ROW_VALUES(row)+11);
 			n++;
 
 			LM_DBG("qr_profile row: %d %s %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
 					int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
 					double_vals[DOUBLE_VALS_WARN_ASR], double_vals[DOUBLE_VALS_WARN_CCR],
 					double_vals[DOUBLE_VALS_WARN_PDD], double_vals[DOUBLE_VALS_WARN_AST],
-					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_DSBL_ASR],
-					double_vals[DOUBLE_VALS_DSBL_CCR], double_vals[DOUBLE_VALS_DSBL_PDD],
-					double_vals[DOUBLE_VALS_DSBL_AST], double_vals[DOUBLE_VALS_DSBL_ACD]);
+					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_CRIT_ASR],
+					double_vals[DOUBLE_VALS_CRIT_CCR], double_vals[DOUBLE_VALS_CRIT_PDD],
+					double_vals[DOUBLE_VALS_CRIT_AST], double_vals[DOUBLE_VALS_CRIT_ACD]);
 			add_profile(
 					int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
 					double_vals[DOUBLE_VALS_WARN_ASR], double_vals[DOUBLE_VALS_WARN_CCR],
 					double_vals[DOUBLE_VALS_WARN_PDD], double_vals[DOUBLE_VALS_WARN_AST],
-					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_DSBL_ASR],
-					double_vals[DOUBLE_VALS_DSBL_CCR], double_vals[DOUBLE_VALS_DSBL_PDD],
-					double_vals[DOUBLE_VALS_DSBL_AST], double_vals[DOUBLE_VALS_DSBL_ACD]);
+					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_CRIT_ASR],
+					double_vals[DOUBLE_VALS_CRIT_CCR], double_vals[DOUBLE_VALS_CRIT_PDD],
+					double_vals[DOUBLE_VALS_CRIT_AST], double_vals[DOUBLE_VALS_CRIT_ACD]);
 		}
 		if (DB_CAPABILITY(*qr_dbf, DB_CAP_FETCH)) {
 			if(qr_dbf->fetch_result(qr_db_hdl, &res, no_rows)<0) {
