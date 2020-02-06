@@ -134,28 +134,28 @@ struct sip_msg;
 	_add_last(what, where, next)
 
 /**
- * pkg_free_all() - pkg_free() each element of the given list.
+ * pkg_free_all() - pkg_free() each element of the given (circular) list.
  * @things: Pointer to the list that is to be freed in succession.
  *
  * The list is walked using "->next".
  */
 #define pkg_free_all(things) \
 	do { \
-		typeof(things) pos; \
-		while (things) \
+		typeof(things) pos = NULL, head = things; \
+		while (things && (!pos || things != head)) \
 			{ pos = (things); (things) = (things)->next; pkg_free(pos); } \
 	} while (0)
 
 /**
- * shm_free_all() - shm_free() each element of the given list.
+ * shm_free_all() - shm_free() each element of the given (circular) list.
  * @things: Pointer to the list that is to be freed in succession.
  *
  * The list is walked using "->next".
  */
 #define shm_free_all(things) \
 	do { \
-		typeof(things) pos; \
-		while (things) \
+		typeof(things) pos = NULL, head = things; \
+		while (things && (!pos || things != head)) \
 			{ pos = (things); (things) = (things)->next; shm_free(pos); } \
 	} while (0)
 

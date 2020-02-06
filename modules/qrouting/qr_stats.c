@@ -41,21 +41,26 @@ qr_rule_t **qr_rules_start;
 
 /* create the samples for a gateway's history */
 qr_sample_t * create_history(void) {
-	qr_sample_t * history, *tmp;
+	qr_sample_t *history, *tmp;
 	int i;
 
-	history = (qr_sample_t*)shm_malloc(sizeof(qr_sample_t));
-	if(history == NULL) {
-		LM_ERR("no more shm_memory\n");
+	history = shm_malloc(sizeof *history);
+	if (!history) {
+		LM_ERR("oom\n");
 		return NULL;
 	}
-	for(tmp = history, i = 0; i < qr_n-1; tmp = tmp->next, ++i) {
-		tmp->next = (qr_sample_t*)shm_malloc(sizeof(qr_sample_t));
-		if(tmp->next == NULL)
-			return NULL;
+
+	for (tmp = history, i = 0; i < qr_n-1; tmp = tmp->next, ++i) {
+		tmp->next = shm_malloc(sizeof *tmp->next);
+		if (!tmp->next)
+			goto error;
 	}
+
 	tmp->next = history;
 	return history;
+error:
+	shm_free_all(history);
+	return NULL;
 }
 
 qr_gw_t *qr_create_gw(void *dst)
