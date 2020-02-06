@@ -81,10 +81,13 @@ typedef struct qr_thresholds {
 
 /* history for gateway: sum of sampled intervals */
 typedef struct qr_gw {
-	qr_sample_t * next_interval; /* sampled intervals */
+	/* circular list of sampled stats (constant size),
+	 * always points to the least recently updated sample */
+	qr_sample_t *lru_interval;
+
 	void  *dr_gw; /* pointer to the gateway from drouting*/
 	qr_stats_t current_interval; /* the current interval */
-	qr_stats_t history_stats; /* the statistcs for all the intervals */
+	qr_stats_t summed_stats; /* the sum of the @lru_interval list */
 	char state; /* the state of the gateway: dirty/disabled */
 	int score; /* the score of the gateway (based on thresholds) */
 	rw_lock_t *ref_lock; /* lock for protecting the overall statistics (history) */

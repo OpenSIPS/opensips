@@ -352,34 +352,41 @@ static inline void add_stats(qr_stats_t *x, qr_stats_t *y, char op) {
 /* testing purpose only */
 void show_stats(qr_gw_t *gw) {
 	LM_INFO("*****************************\n");
-	LM_INFO("ans seizure: %lf / %lf\n", gw->history_stats.stats.as,
-			gw->history_stats.n.ok);
-	LM_INFO("completed calls: %lf / %lf\n", gw->history_stats.stats.cc,
-			gw->history_stats.n.ok);
-	LM_INFO("post dial delay: %lf / %lf\n", gw->history_stats.stats.pdd,
-			gw->history_stats.n.pdd);
-	LM_INFO("setup time: %lf / %lf\n", gw->history_stats.stats.st,
-			gw->history_stats.n.setup);
-	LM_INFO("call duration: %lf / %lf\n", gw->history_stats.stats.cd,
-			gw->history_stats.n.cd);
+	LM_INFO("ans seizure: %lf / %lf\n", gw->summed_stats.stats.as,
+			gw->summed_stats.n.ok);
+	LM_INFO("completed calls: %lf / %lf\n", gw->summed_stats.stats.cc,
+			gw->summed_stats.n.ok);
+	LM_INFO("post dial delay: %lf / %lf\n", gw->summed_stats.stats.pdd,
+			gw->summed_stats.n.pdd);
+	LM_INFO("setup time: %lf / %lf\n", gw->summed_stats.stats.st,
+			gw->summed_stats.n.setup);
+	LM_INFO("call duration: %lf / %lf\n", gw->summed_stats.stats.cd,
+			gw->summed_stats.n.cd);
 	LM_INFO("*****************************\n");
 }
 
 /* update the statistics for a gateway */
-void update_gw_stats(qr_gw_t *gw) {
-	qr_stats_t current, last;
+void update_gw_stats(qr_gw_t *gw)
+{
+	qr_stats_t diff;
+
 	lock_get(gw->acc_lock);
-	current = gw->current_interval;
-	last = gw->next_interval->calls;
-	add_stats(&current, &last, '-');
+
+	/* prepare a diff of current/last stat samples */
+	diff = gw->current_interval;
+	add_stats(&diff, &gw->lru_interval->calls, '-');
+
+	/* apply the diff to the summed stats */
 	lock_start_write(gw->ref_lock);
-	add_stats(&gw->history_stats, &current, '+');
+	add_stats(&gw->summed_stats, &diff, '+');
 	gw->state |= QR_STATUS_DIRTY;
 	lock_stop_write(gw->ref_lock);
-	gw->next_interval->calls = gw->current_interval;
+
+	/* rotate the sampling window */
+	gw->lru_interval->calls = gw->current_interval;
 //	show_stats(gw);
 	memset(&gw->current_interval, 0, sizeof(qr_stats_t));
-	gw->next_interval = gw->next_interval->next; /* the 'oldest' sample interval
+	gw->lru_interval = gw->lru_interval->next; /* the 'oldest' sample interval
 													becomes the 'newest' */
 	lock_release(gw->acc_lock);
 }

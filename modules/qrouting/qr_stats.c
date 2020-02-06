@@ -40,7 +40,8 @@ qr_rule_t **qr_rules_start;
 
 
 /* create the samples for a gateway's history */
-qr_sample_t * create_history(void) {
+qr_sample_t *create_history(void)
+{
 	qr_sample_t *history, *tmp;
 	int i;
 
@@ -87,7 +88,7 @@ qr_gw_t *qr_create_gw(void *dst)
 		goto error;
 	}
 
-	if (!(gw->next_interval = create_history())) {
+	if (!(gw->lru_interval = create_history())) {
 		LM_ERR("failed to create history\n");
 		goto error;
 	}
@@ -116,7 +117,8 @@ void qr_dst_is_gw(void *param)
 	rule = drp->rule;
 	dst = drp->cr_or_gw;
 	n_dst = drp->n_dst;
-	LM_DBG("Adding gw to rule %d\n", rule->r_id);
+
+	LM_DBG("adding gw to rule %d\n", rule->r_id);
 
 	if(rule != NULL) {
 		rule->dest[n_dst].type = QR_DST_GW;
@@ -129,7 +131,7 @@ void qr_dst_is_gw(void *param)
 /* free gateway information */
 void qr_free_gw(qr_gw_t * gw)
 {
-	shm_free_all(gw->next_interval);
+	shm_free_all(gw->lru_interval);
 
 	if (gw->acc_lock) {
 		lock_destroy(gw->acc_lock);
@@ -272,50 +274,50 @@ void qr_dst_is_grp(void *param)
 {
 	struct dr_reg_param *drp = (struct dr_reg_param *)param;
 	qr_rule_t *rule = drp->rule;
-	void * dr_gw;
-	str *cr_name, *gw_name;
-	int i;
-	int n_dst = drp->n_dst;
-	int n_gws ;
-	void *grp = drp->cr_or_gw;
-	n_gws = drb.get_cr_n_gw(grp);
-	cr_name = drb.get_cr_name(grp);
-	LM_DBG("Carrier '%.*s' with  %d gateways added to rule %d\n", cr_name->len,
-			cr_name->s, n_gws, rule->r_id);
+	int i, n_dst = drp->n_dst;
+	void *dr_gw, *grp = drp->cr_or_gw;
+	int n_gws = drb.get_cr_n_gw(grp);
+	str *gw_name, *cr_name = drb.get_cr_name(grp);
 
-
-	if(rule != NULL) {
-		rule->dest[n_dst].type = QR_DST_GRP;
-		memset(&rule->dest[n_dst].dst.grp, 0, sizeof(qr_grp_t));
-		rule->dest[n_dst].dst.grp.state |= QR_STATUS_DIRTY;
-		rule->dest[n_dst].dst.grp.gw = (qr_gw_t**)shm_malloc(n_gws *
-				sizeof(qr_gw_t*));
-		if(rule->dest[n_dst].dst.grp.gw == NULL) {
-			LM_ERR("no more shm memory\n");
-			goto error;
-		}
-		if ((rule->dest[n_dst].dst.grp.ref_lock = lock_init_rw()) == NULL) {
-			LM_ERR("failed to init RW lock\n");
-			goto error;
-		}
-
-		rule->dest[n_dst].dst.grp.n = n_gws;
-		rule->dest[n_dst].dst.grp.dr_cr = grp;
-		for(i = 0; i < n_gws; i++) {
-			dr_gw = (void*)drb.get_gw_from_cr(grp, i); /* get the gateway
-														  as pgw_t from dr */
-			rule->dest[n_dst].dst.grp.gw[i] = qr_create_gw(dr_gw);
-			gw_name = drb.get_gw_name(rule->dest[n_dst].dst.grp.gw[i]->dr_gw);
-			LM_DBG("Gw '%.*s' added to carrier '%.*s' from rule %d\n",
-					gw_name->len, gw_name->s, cr_name->len, cr_name->s,
-					rule->r_id);
-		}
-	} else {
-		LM_ERR("bad rule\n");
+	if (!rule) {
+		LM_ERR("null rule\n");
+		return;
 	}
-	return ;
+
+	LM_DBG("carrier '%.*s' with %d gateways added to rule %d\n",
+	       cr_name->len, cr_name->s, n_gws, rule->r_id);
+
+	rule->dest[n_dst].type = QR_DST_GRP;
+	memset(&rule->dest[n_dst].dst.grp, 0, sizeof (qr_grp_t));
+	rule->dest[n_dst].dst.grp.state |= QR_STATUS_DIRTY;
+
+	rule->dest[n_dst].dst.grp.gw = shm_malloc(n_gws * sizeof (qr_gw_t *));
+	if (!rule->dest[n_dst].dst.grp.gw) {
+		LM_ERR("oom\n");
+		goto error;
+	}
+
+	if ((rule->dest[n_dst].dst.grp.ref_lock = lock_init_rw()) == NULL) {
+		LM_ERR("failed to init RW lock\n");
+		goto error;
+	}
+
+	rule->dest[n_dst].dst.grp.n = n_gws;
+	rule->dest[n_dst].dst.grp.dr_cr = grp;
+
+	for (i = 0; i < n_gws; i++) {
+		dr_gw = (void*)drb.get_gw_from_cr(grp, i); /* get the gateway
+													  as pgw_t from dr */
+		rule->dest[n_dst].dst.grp.gw[i] = qr_create_gw(dr_gw);
+		gw_name = drb.get_gw_name(rule->dest[n_dst].dst.grp.gw[i]->dr_gw);
+		LM_DBG("gw '%.*s' added to carrier '%.*s' from rule %d\n",
+				gw_name->len, gw_name->s, cr_name->len, cr_name->s,
+				rule->r_id);
+	}
+
+	return;
 error:
-	if(rule->dest[n_dst].dst.grp.gw != NULL)
+	if (rule->dest[n_dst].dst.grp.gw)
 		shm_free(rule->dest[n_dst].dst.grp.gw);
 }
 
@@ -356,7 +358,9 @@ void qr_create_partition_list(void *param)
 	memset(pl->part_name, 0, np * sizeof (str));
 	memset(pl->qr_rules_start, 0, np * sizeof (qr_rule_t *));
 
+	LM_DBG("created new partition list (%d items)\n", np);
 	return;
+
 error:
 	if (pl->rw_lock)
 		lock_destroy_rw(pl->rw_lock);
@@ -366,6 +370,7 @@ error:
 
 	if (pl)
 		shm_free(pl);
+	*ppl = NULL;
 }
 
 /* add rule to list. if the list is NULL a new list is created */
