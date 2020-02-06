@@ -332,9 +332,6 @@ build_rt_info(
 	int qr_profile,
 	char* attrs,
 	rt_data_t* rd,
-	void *qr_parts_data,
-	int part_index,
-	str *part_name,
 	osips_malloc_f mf,
 	osips_free_f ff
 	)
@@ -398,7 +395,7 @@ build_rt_info(
 		irp.r_id = id;
 		irp.qr_profile = qr_profile;
 
-		run_dr_cbs(DRCB_REG_INIT_RULE, &irp);
+		run_dr_cbs(DRCB_RLD_INIT_RULE, &irp);
 
 		qr_rule = irp.rule;
 		rt->qr_handler = qr_rule;
@@ -413,22 +410,19 @@ build_rt_info(
 				rdp.n_dst = i;
 				rdp.cr_or_gw = p[i].dst.carrier;
 
-				run_dr_cbs(DRCB_REG_CR, &rdp);
+				run_dr_cbs(DRCB_RLD_CR, &rdp);
 			} else {
 				rdp.rule = qr_rule;
 				rdp.n_dst = i;
 				rdp.cr_or_gw = p[i].dst.gw;
 
-				run_dr_cbs(DRCB_REG_GW, &rdp);
+				run_dr_cbs(DRCB_RLD_GW, &rdp);
 			}
 		}
 
 		/* add rule to the partition list */
 		arp.qr_rule = qr_rule;
-		arp.qr_parts = qr_parts_data;
-		arp.part_name = *part_name;
-		arp.part_index = part_index;
-		run_dr_cbs(DRCB_REG_ADD_RULE, &arp);
+		run_dr_cbs(DRCB_RLD_ADD_RULE, &arp);
 	}
 
 	return rt;

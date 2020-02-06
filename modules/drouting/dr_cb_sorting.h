@@ -74,10 +74,7 @@ struct dr_sort_params {
 };
 
 struct dr_add_rule_params {
-	int part_index; /* partition index */
-	str part_name;
 	void *qr_rule; /* rule to be added to list */
-	void *qr_parts; /* the partitions list to which the rule will be added */
 };
 
 struct dr_link_rule_list_params {
@@ -94,9 +91,8 @@ struct dr_free_qr_list_params {
 	void *old_list;
 };
 
-struct dr_create_partition_list_params {
-	void **part_list; /* the list of partitions created at QR returned for DR*/
-	int n_parts; /* the number of partitions:provided by dr */
+struct dr_prepare_part_params {
+	str part_name;
 };
 
 typedef void (*dr_sort_cb) (void *param);

@@ -141,14 +141,13 @@ extern qr_partitions_t **qr_main_list;
 
 qr_gw_t *  qr_create_gw(void *);
 void qr_free_gw(qr_gw_t *);
-void qr_dst_is_grp(void *param);
-void qr_create_rule(void *param);
-void qr_add_rule_to_list(void *param);
-void qr_dst_is_gw(void *param);
-void qr_mark_as_main_list(void *param);
-void qr_link_rule_list(void *param);
-void qr_create_partition_list(void *param);
-void free_qr_cb(void *param);
 void free_qr_list(qr_partitions_t *qr_parts);
+
+void qr_rld_prepare_part(void *param);
+void qr_create_rule(void *param);
+void qr_dst_is_gw(void *param);
+void qr_dst_is_grp(void *param);
+void qr_add_rule_to_list(void *param);
+void qr_rld_finalize(void *param);
 
 #endif

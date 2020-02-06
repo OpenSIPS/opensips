@@ -29,7 +29,7 @@
 #include "routing.h"
 
 void dr_update_head_cache(struct head_db *head);
-rt_data_t* dr_load_routing_info(struct head_db * ,int persistent_state,
-		void* qr_parts, int part_index, str *part_name);
+rt_data_t* dr_load_routing_info(struct head_db *current_partition,
+                                int persistent_state);
 
 #endif

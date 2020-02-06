@@ -978,8 +978,8 @@ static void dr_state_timer(unsigned int ticks, void* param)
  * -1, else return 0
  */
 
-static inline int dr_reload_data_head( struct head_db *hd,
-		void *qr_parts, int part_index, str *part_name, int initial)
+static inline int dr_reload_data_head(struct head_db *hd,
+                           str *part_name, int initial)
 {
 	rt_data_t *new_data;
 	rt_data_t *old_data;
@@ -987,6 +987,7 @@ static inline int dr_reload_data_head( struct head_db *hd,
 	pcr_t *cr, *old_cr;
 	time_t rawtime;
 	struct head_cache *cache = NULL;
+	struct dr_prepare_part_params pp;
 
 	void **dest;
 	map_iterator_t it;
@@ -1008,9 +1009,11 @@ static inline int dr_reload_data_head( struct head_db *hd,
 		goto success;
 	}
 
+	pp.part_name = *part_name;
+	run_dr_cbs(DRCB_RLD_PREPARE_PART, &pp);
+
 	LM_INFO("loading drouting data!\n");
-	new_data = dr_load_routing_info(hd, dr_persistent_state, qr_parts,
-			part_index, part_name);
+	new_data = dr_load_routing_info(hd, dr_persistent_state);
 	if ( new_data==0 ) {
 		LM_CRIT("failed to load routing info\n");
 		goto error;
@@ -1086,41 +1089,19 @@ error:
 	return -1;
 }
 
-static inline int dr_reload_data(int initial) {
-	struct head_db * it_head_db;
+static inline int dr_reload_data(int initial)
+{
+	struct head_db *part;
 	int ret_val = 0;
-	void *old_list; /* list to be freed */
-	void *qr_parts_data; /* all the partitions */
-	int part_index;
-	struct dr_mark_as_main_list_params mmp;
-	struct dr_free_qr_list_params flp;
-	struct dr_create_partition_list_params cpp;
 
-	/* create the QR list for all the partitions */
-	cpp.part_list = &qr_parts_data;
-	cpp.n_parts = *n_partitions;
-	run_dr_cbs(DRCB_REG_CREATE_PARTS_LIST, &cpp);
-
-	/* TODO will atomize operations  under lock (rt_info_t vector) */
-	lock_start_write(reload_lock);
-	for( it_head_db=head_db_start, part_index = 0; it_head_db!=NULL;
-			it_head_db=it_head_db->next, part_index++ ) {
-		if( dr_reload_data_head(it_head_db, qr_parts_data, part_index,
-					&it_head_db->partition, initial)!=0 )
+	for (part = head_db_start; part; part = part->next)
+		if (dr_reload_data_head(part, &part->partition, initial) != 0)
 			ret_val = -1;
 
-	}
-
-	/* TODO: only this should be under lock */
-	mmp.qr_parts_new_list = qr_parts_data;
-	mmp.qr_parts_old_list = &old_list;
-	/* make the new list the main list used by the QR */
-	run_dr_cbs(DRCB_REG_MARK_AS_RULE_LIST, &mmp);
+	/* make the new list the main list used by qrouting */
+	lock_start_write(reload_lock);
+	run_dr_cbs(DRCB_RLD_FINALIZE, NULL);
 	lock_stop_write(reload_lock);
-
-	flp.old_list = old_list;
-	/* free the old QR list */
-	run_dr_cbs(DRCB_REG_FREE_LIST, &flp);
 
 	return ret_val;
 }
@@ -2088,9 +2069,8 @@ mi_response_t *dr_reload_cmd(const mi_params_t *params,
 mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	struct head_db * part;
+	struct head_db *part;
 	mi_response_t *resp;
-	void *rule_list;
 
 	LM_INFO("dr_reload MI command received!\n");
 
@@ -2098,10 +2078,15 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 	if (resp)
 		return resp;
 
-	if( dr_reload_data_head(part, &rule_list, 0, &part->partition, 0)<0 ) {
+	if (dr_reload_data_head(part, &part->partition, 0) < 0) {
 		LM_CRIT("Failed to load data head\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
+
+	/* put the new part in use within qrouting */
+	lock_start_write(reload_lock);
+	run_dr_cbs(DRCB_RLD_FINALIZE, NULL);
+	lock_stop_write(reload_lock);
 
 	if (dr_cluster_id && dr_cluster_sync() < 0)
 		return init_mi_error(500, MI_SSTR("Failed to synchronize from cluster"));

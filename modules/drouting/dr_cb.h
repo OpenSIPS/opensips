@@ -26,17 +26,18 @@
 
 /* callback types used on top of DRouting */
 enum drcb_types {
-	DRCB_REG_CREATE_PARTS_LIST /* create a partitions list */,
-	/* params: */
-	DRCB_REG_INIT_RULE,
-	DRCB_REG_GW,
-	DRCB_REG_CR,
-	DRCB_REG_ADD_RULE,
-	DRCB_REG_MARK_AS_RULE_LIST,
-	DRCB_REG_FREE_LIST,
+	DRCB_RLD_PREPARE_PART /* prepare to reload a new partition */,
+	DRCB_RLD_INIT_RULE,
+	DRCB_RLD_GW,
+	DRCB_RLD_CR,
+	DRCB_RLD_ADD_RULE,
+	DRCB_RLD_FINALIZE, /* finalize the entire reload (1+ partitions) */
+
 	DRCB_ACC_CALL,
+
 	DRCB_SORT_DST,
-	DRCB_MAX /*keep this at the end*/
+
+	DRCB_MAX /* keep this at the end */
 };
 
 #include "prefix_tree.h"

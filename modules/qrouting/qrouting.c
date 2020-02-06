@@ -244,48 +244,43 @@ static int qr_init_dr_cb(void)
 
 	/* 1. dr_reload callbacks */
 
-	if (drb.register_drcb(DRCB_REG_CREATE_PARTS_LIST, &qr_create_partition_list,
+	if (drb.register_drcb(DRCB_RLD_PREPARE_PART, &qr_rld_prepare_part,
 				NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_CREATE_PARTS_LIST callback to DR\n");
+		LM_ERR("failed to register DRCB_RLD_PREPARE_PART callback to DR\n");
 		return -1;
 	}
 
-	if (drb.register_drcb(DRCB_REG_INIT_RULE, &qr_create_rule, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_INIT_RULE callback to DR\n");
+	if (drb.register_drcb(DRCB_RLD_INIT_RULE, &qr_create_rule, NULL, NULL) < 0) {
+		LM_ERR("failed to register DRCB_RLD_INIT_RULE callback to DR\n");
 		return -1;
 	}
-	if (drb.register_drcb(DRCB_REG_GW, &qr_dst_is_gw, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
+	if (drb.register_drcb(DRCB_RLD_GW, &qr_dst_is_gw, NULL, NULL) < 0) {
+		LM_ERR("failed to register DRCB_RLD_REG_GW callback to DR\n");
 		return -1;
 	}
-	if (drb.register_drcb(DRCB_REG_CR, &qr_dst_is_grp, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_REG_GW callback to DR\n");
+	if (drb.register_drcb(DRCB_RLD_CR, &qr_dst_is_grp, NULL, NULL) < 0) {
+		LM_ERR("failed to register DRCB_RLD_REG_GW callback to DR\n");
 		return -1;
 	}
-	if (drb.register_drcb(DRCB_REG_ADD_RULE, &qr_add_rule_to_list, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_ADD_RULE callback to DR\n");
-		return -1;
-	}
-
-	if (drb.register_drcb(DRCB_REG_MARK_AS_RULE_LIST, &qr_mark_as_main_list, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_MARK_AS_QR_RULE_LIST callback to DR\n");
+	if (drb.register_drcb(DRCB_RLD_ADD_RULE, &qr_add_rule_to_list, NULL, NULL) < 0) {
+		LM_ERR("failed to register DRCB_RLD_ADD_RULE callback to DR\n");
 		return -1;
 	}
 
-	if (drb.register_drcb(DRCB_REG_FREE_LIST, &free_qr_cb, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_REG_FREE_LIST callback to DR\n");
+	if (drb.register_drcb(DRCB_RLD_FINALIZE, &qr_rld_finalize, NULL, NULL) < 0) {
+		LM_ERR("failed to register DRCB_RLD_FREE_LIST callback to DR\n");
 		return -1;
 	}
 
 	/* 2. other callbacks */
 
 	if (drb.register_drcb(DRCB_ACC_CALL, &qr_acc, NULL, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_ACC_CALL callback to DR\n");
+		LM_ERR("failed to register DRCB_ACC_CALL callback to DR\n");
 		return -1;
 	}
 
 	if (drb.register_drcb(DRCB_SORT_DST, &qr_sort, (void*)QR_BASED_SORT, NULL) < 0) {
-		LM_ERR("[QR] failed to register DRCB_SORT_DST callback to DR\n");
+		LM_ERR("failed to register DRCB_SORT_DST callback to DR\n");
 		return -1;
 	}
 
