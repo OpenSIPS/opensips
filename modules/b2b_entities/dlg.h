@@ -178,8 +178,8 @@ typedef struct b2b_rpl_data
 
 
 /** Hash table declaration: for client and server dialogs */
-b2b_table server_htable;
-b2b_table client_htable;
+extern b2b_table server_htable;
+extern b2b_table client_htable;
 
 
 void print_b2b_dlg(b2b_dlg_t *dlg);

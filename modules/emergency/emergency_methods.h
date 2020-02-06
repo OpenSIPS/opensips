@@ -140,7 +140,7 @@ struct code_number *codes = NULL;
 
 struct multi_body *mbody;
 struct esct *call_cell;
-struct lump *l;
+extern struct lump *l;
 
 int timer_interval=10;
 str table_name=str_init("emergency_routing");

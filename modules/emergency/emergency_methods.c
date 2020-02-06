@@ -50,7 +50,28 @@ static void mod_destroy(void);
 struct dlg_binds dlgb;
 struct rr_binds rr_api;
 
+struct tm_binds eme_tm;
+
+str db_url;
+str *db_table = NULL;
+db_func_t db_funcs;
+db_con_t *db_con = NULL;
+
+struct esrn_routing **db_esrn_esgwri = NULL;
+struct service_provider **db_service_provider = NULL;
+
 str callid_aux;
+char* url_vpc;
+
+int emet_size = 0;
+int subst_size = 0;
+
+char *empty = NULL;
+
+char* mandatory_parm = NULL;
+
+struct call_htable* call_htable = NULL;
+struct subs_htable* subs_htable = NULL;
 
 /*
  * Exported functions

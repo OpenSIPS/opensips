@@ -39,6 +39,9 @@ int mi_message_id;
 static char* correlation_name = "correlation_id";
 str correlation_value;
 int correlation_id=-1, correlation_vendor=-1;
+str mi_trpl;
+struct mi_trace_req mi_treq;
+struct mi_trace_param mi_tparam;
 
 
 void try_load_trace_api(void)

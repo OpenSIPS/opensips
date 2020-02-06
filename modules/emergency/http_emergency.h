@@ -59,15 +59,15 @@
 
 #include "post_curl.h"
 
-struct call_htable* call_htable;
-struct subs_htable* subs_htable;
+extern struct call_htable* call_htable;
+extern struct subs_htable* subs_htable;
 
-char *url_vpc;
-str db_url;
-str *db_table;
+extern char *url_vpc;
+extern str db_url;
+extern str *db_table;
 
-int emet_size;
-int subst_size;
+extern int emet_size;
+extern int subst_size;
 
 int send_esct(struct sip_msg *msg, str callid_ori, str from_tag);
 int treat_parse_esrResponse(struct sip_msg *msg, ESCT *call_cell, PARSED *parsed, int proxy_role);
