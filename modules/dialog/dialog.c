@@ -595,6 +595,7 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->dlg_unref = unref_dlg_destroy_safe;
 
 	dlgb->get_dlg_by_callid = get_dlg_by_callid;
+	dlgb->send_indialog_request = send_indialog_request;
 
 	dlgb->get_rr_param = get_rr_param;
 

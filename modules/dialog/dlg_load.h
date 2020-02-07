@@ -62,6 +62,7 @@ struct dlg_binds {
 	unref_dlg_f          dlg_unref;
 
 	get_dlg_by_callid_f  get_dlg_by_callid;
+	send_indialog_req_f  send_indialog_request;
 
 	get_rr_param_f       get_rr_param;
 
