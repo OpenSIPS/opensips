@@ -49,11 +49,13 @@ qr_sample_t *create_history(void)
 		LM_ERR("oom\n");
 		return NULL;
 	}
+	memset(history, 0, sizeof *history);
 
 	for (tmp = history, i = 0; i < qr_n-1; tmp = tmp->next, ++i) {
 		tmp->next = shm_malloc(sizeof *tmp->next);
 		if (!tmp->next)
 			goto error;
+		memset(tmp->next, 0, sizeof *tmp->next);
 	}
 
 	tmp->next = history;
@@ -399,6 +401,8 @@ error:
 
 	if (pl)
 		shm_free(pl);
+
+	qr_rld_list = NULL;
 }
 
 void qr_rld_finalize(void *param)
@@ -408,10 +412,9 @@ void qr_rld_finalize(void *param)
 	qr_rule_t *old_rules = NULL;
 	int i;
 
-	if (!qr_rld_list) {
-		LM_BUG("NULL qr_rld_list\n");
+	/* may happen if we ran OOM while preparing a new part */
+	if (!qr_rld_list)
 		return;
-	}
 
 	part_name = qr_rld_list->part_name[0];
 
