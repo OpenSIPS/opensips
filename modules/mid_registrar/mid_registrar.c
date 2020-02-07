@@ -44,6 +44,7 @@
 #include "ulcb.h"
 
 #include "../../lib/reg/rerrno.h"
+#include "../../lib/reg/config.h"
 #include "../../lib/reg/sip_msg.h"
 #include "../../lib/reg/regtime.h"
 
@@ -76,6 +77,9 @@ int max_expires     = 3600;
 
 int max_contacts = 0;		/*!< Maximum number of contacts per AOR
                                  (0=no checking) */
+int max_username_len = USERNAME_MAX_SIZE;
+int max_domain_len   = DOMAIN_MAX_SIZE;
+int max_aor_len      = MAX_AOR_LEN;
 int retry_after = 0;		/*!< The value of Retry-After HF in 5xx replies */
 
 qvalue_t default_q  = Q_UNSPECIFIED; /*!< Default q value multiplied by 1000 */
@@ -106,8 +110,7 @@ str rcv_param = str_init(RCV_NAME);
 int case_sensitive  = 1; /*!< If set to 0, username in aor will be case insensitive */
 str gruu_secret = {0,0};
 int disable_gruu = 1;
-char* realm_pref    = "";
-str realm_prefix;
+str realm_prefix = str_init("");
 int reg_use_domain = 0;
 
 static int mod_init(void);
@@ -155,11 +158,14 @@ static param_export_t mod_params[] = {
 	{ "max_expires",          INT_PARAM, &max_expires },
 	{ "default_q",            INT_PARAM, &default_q },
 	{ "tcp_persistent_flag",  STR_PARAM, &tcp_persistent_flag_s },
-	{ "realm_prefix",         STR_PARAM, &realm_pref },
+	{ "realm_prefix",         STR_PARAM, &realm_prefix.s },
 	{ "case_sensitive",       INT_PARAM, &case_sensitive },
 	{ "received_avp",         STR_PARAM, &rcv_avp_param },
 	{ "received_param",       STR_PARAM, &rcv_param.s },
 	{ "max_contacts",         INT_PARAM, &max_contacts },
+	{ "max_username_len",     INT_PARAM, &max_username_len },
+	{ "max_domain_len",       INT_PARAM, &max_domain_len },
+	{ "max_aor_len",          INT_PARAM, &max_aor_len },
 	{ "retry_after",          INT_PARAM, &retry_after },
 	{ "gruu_secret",          STR_PARAM, &gruu_secret.s },
 	{ "disable_gruu",         INT_PARAM, &disable_gruu },
@@ -317,8 +323,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	realm_prefix.s = realm_pref;
-	realm_prefix.len = strlen(realm_pref);
+	realm_prefix.len = strlen(realm_prefix.s);
 
 	if (gruu_secret.s)
 		gruu_secret.len = strlen(gruu_secret.s);

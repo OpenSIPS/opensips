@@ -70,8 +70,6 @@ static struct {
 	int data_len;
 } contact = {0, 0, 0};
 
-#define MAX_AOR_LEN 256
-
 #define MSG_200 "OK"
 #define MSG_400 "Bad Request"
 #define MSG_420 "Bad Extension"
@@ -2092,8 +2090,7 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 
 int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 {
-	static char aor_buf[MAX_AOR_LEN];
-	memset(aor_buf, 0, MAX_AOR_LEN);
+	char aor_buf[max_aor_len + 1];
 
 	str tmp;
 	struct sip_uri puri;
@@ -2183,9 +2180,9 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 		}
 	}
 
-	if ( (puri.user.len + puri.host.len + 1) > MAX_AOR_LEN
-	|| puri.user.len > USERNAME_MAX_SIZE
-	||  puri.host.len > DOMAIN_MAX_SIZE ) {
+	if ( (puri.user.len + puri.host.len + 1) > max_aor_len
+	|| puri.user.len > max_username_len
+	||  puri.host.len > max_domain_len ) {
 		rerrno = R_AOR_LEN;
 		LM_ERR("Address Of Record too long\n");
 		return -2;
@@ -2216,6 +2213,8 @@ int extract_aor(str* _uri, str* _a,str *sip_instance,str *call_id)
 			_a->len += puri.host.len;
 		}
 	}
+
+	_a->s[_a->len] = '\0';
 
 	if (case_sensitive && user_len) {
 		tmp.s = _a->s + user_len + 1;

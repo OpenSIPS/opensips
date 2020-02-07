@@ -45,8 +45,6 @@
 #include "common.h"
 
 
-#define MAX_AOR_LEN 256
-
 #define TEMP_GRUU		"tgruu."
 #define TEMP_GRUU_SIZE	(sizeof(TEMP_GRUU)-1)
 

@@ -32,6 +32,8 @@
 #define CALLID_MAX_SIZE        255
 #define UA_MAX_SIZE            255
 
+#define MAX_AOR_LEN            256
+
 #define PATH_MODE_STRICT	2
 #define PATH_MODE_LAZY		1
 #define PATH_MODE_OFF		0
