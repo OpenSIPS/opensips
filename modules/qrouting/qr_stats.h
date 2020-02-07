@@ -135,7 +135,6 @@ typedef struct qr_partitions {
 	rw_lock_t *rw_lock; /* protect the partitions for reloading */
 }qr_partitions_t;
 
-extern qr_rule_t ** qr_rules_start; /* used when updating statistics */
 extern rw_lock_t ** rw_lock_qr;
 extern qr_thresholds_t **qr_profiles;
 extern int *qr_profiles_n;

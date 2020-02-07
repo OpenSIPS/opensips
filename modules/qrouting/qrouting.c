@@ -322,13 +322,6 @@ static int qr_init_globals(void)
 	}
 	*n_sampled = 0;
 
-	qr_rules_start = shm_malloc(sizeof *qr_rules_start);
-	if (!qr_rules_start) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	*qr_rules_start = NULL;
-
 	qr_profiles = shm_malloc(sizeof *qr_profiles);
 	if (!qr_profiles) {
 		LM_ERR("oom\n");

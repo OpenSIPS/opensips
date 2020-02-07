@@ -35,9 +35,6 @@
 #include "qr_stats.h"
 #include "qr_acc.h"
 
-
-qr_rule_t **qr_rules_start;
-
 /* temporary list of 1+ reloaded partitions, during dr_reload */
 static qr_partitions_t *qr_rld_list;
 
