@@ -605,6 +605,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	context_p *new_ctx;
 	dlg_t* dialog_info;
 	int result;
+	/*
 	unsigned int method_type;
 
 	if (parse_method(method->s,method->s+method->len,&method_type) == 0)
@@ -613,7 +614,6 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		return -1;
 	}
 
-	/*
 	 * we can send INVITEs with body for late negotiation
 	if (method_type == METHOD_INVITE && (body == NULL || body->s == NULL ||
 				body->len == 0))
