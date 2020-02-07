@@ -25,6 +25,7 @@
 #define __LIB_REG_RERRNO_H__
 
 #define EI_R_FINE       "No problem"                                /* R_FINE */
+#define EI_R_INTERNAL   "Server Internal Error"                     /* R_INTERNAL */
 #define EI_R_UL_DEL_R   "usrloc_record_delete failed"               /* R_UL_DEL_R */
 #define EI_R_UL_GET_R   "usrloc_record_get failed"                  /* R_UL_GET */
 #define EI_R_UL_NEW_R   "usrloc_record_new failed"                  /* R_UL_NEW_R */
@@ -57,6 +58,7 @@
 
 typedef enum rerr {
 	R_FINE = 0,   /*!< Everything went OK */
+	R_INTERNAL,   /*!< Internal Error */
 	R_UL_DEL_R,   /*!< Usrloc record delete failed */
 	R_UL_GET_R,   /*!< Usrloc record get failed */
 	R_UL_NEW_R,   /*!< Usrloc new record failed */
