@@ -48,7 +48,7 @@ static int sampling_interval = 5; /* the sampling interval in seconds */
 str db_url;
 
 qr_partitions_t **qr_main_list; /* the history itself */
-rw_lock_t **rw_lock_qr; /* protects qr_main_list */
+rw_lock_t *qr_main_list_rwl; /* protection during dr_reload */
 
 qr_thresholds_t **qr_profiles;
 int *qr_profiles_n;
@@ -218,7 +218,7 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 	if (*n_sampled < qr_n)
 		++(*n_sampled); /* the number of intervals sampled */
 
-	lock_start_read(*rw_lock_qr);
+	lock_start_read(qr_main_list_rwl);
 	if(*qr_main_list != NULL) { /* if there is a list */
 		for(j = 0; j < (*qr_main_list)->n_parts; j++) { /* for every partition */
 			for(it = (*qr_main_list)->qr_rules_start[j];
@@ -233,7 +233,7 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 			}
 		}
 	}
-	lock_stop_read(*rw_lock_qr);
+	lock_stop_read(qr_main_list_rwl);
 }
 
 static int qr_init_dr_cb(void)
@@ -291,10 +291,7 @@ static int qr_init_dr_cb(void)
 
 static int qr_init_globals(void)
 {
-	/* TODO: should become obsolete */
-	/* lock to protect from reloading */
-	rw_lock_qr = shm_malloc(sizeof *rw_lock_qr);
-	if (!rw_lock_qr || !(*rw_lock_qr = lock_init_rw())) {
+	if (!(qr_main_list_rwl = lock_init_rw())) {
 		LM_ERR("oom\n");
 		return -1;
 	}

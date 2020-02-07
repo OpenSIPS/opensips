@@ -418,7 +418,7 @@ void qr_rld_finalize(void *param)
 	/* save old list so it can be freed */
 	old_list = *qr_main_list;
 
-	lock_start_write(*rw_lock_qr);
+	lock_start_write(qr_main_list_rwl);
 	if (!old_list || qr_rld_list->n_parts == (*qr_main_list)->n_parts) {
 		*qr_main_list = qr_rld_list;
 	} else {
@@ -433,7 +433,7 @@ void qr_rld_finalize(void *param)
 		}
 	}
 
-	lock_stop_write(*rw_lock_qr);
+	lock_stop_write(qr_main_list_rwl);
 
 	free_qr_list(old_list);
 	qr_rld_list = NULL;

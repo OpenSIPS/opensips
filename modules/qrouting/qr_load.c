@@ -89,12 +89,12 @@ static inline void qr_refresh_threshold_set(qr_thresholds_t *thr,
 	qr_partitions_t *parts;
 	int i;
 
-	lock_start_write(*rw_lock_qr);
+	lock_start_write(qr_main_list_rwl);
 	parts = *qr_main_list;
 
 	/* XXX: is this dead code?  also review qr_rotate_samples() */
 	if (!parts) {
-		lock_stop_write(*rw_lock_qr);
+		lock_stop_write(qr_main_list_rwl);
 		return;
 	}
 
@@ -103,7 +103,7 @@ static inline void qr_refresh_threshold_set(qr_thresholds_t *thr,
 			if (r->thresholds == thr)
 				r->thresholds = new;
 
-	lock_stop_write(*rw_lock_qr);
+	lock_stop_write(qr_main_list_rwl);
 }
 
 /* refresh all reloaded threshold sets (rows) */
