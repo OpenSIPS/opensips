@@ -29,8 +29,6 @@ struct tm_binds tmb;
 struct dlg_binds dlgcb;
 struct dr_binds drb;
 
-#define QR_PTR_POISON ((void *)0x10203040)
-
 /* free the parameter of the dialog callback */
 inline static void release_dialog_prop(void *param)
 {

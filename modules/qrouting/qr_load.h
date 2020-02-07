@@ -22,6 +22,7 @@
  */
 
 #include "../../db/db.h"
+#include "../../rw_locking.h"
 
 /* qr_profiles table */
 #define DOUBLE_VALS_WARN_ASR 0
@@ -55,8 +56,12 @@
 #define CRIT_AST_QP_COL "crit_threshold_ast"
 #define CRIT_ACD_QP_COL "crit_threshold_acd"
 
+#define QR_NAME_COL_SZ 64
+
 extern str qr_profiles_table;
+extern rw_lock_t *qr_profiles_rwl;
 
-int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl);
+extern db_func_t qr_dbf;
+extern db_con_t *qr_db_hdl;
 
-
+int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl);

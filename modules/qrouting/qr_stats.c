@@ -184,27 +184,34 @@ void free_qr_list(qr_partitions_t *qr_parts)
 	shm_free(qr_parts);
 }
 
-int qr_set_profile(qr_rule_t *rule, unsigned int qrp)
+int qr_set_profile(qr_rule_t *rule, unsigned int prof_id)
 {
 	unsigned int current_id;
 	int m, left, right;
 
 	left = 0;
-	right = *n_qr_profiles - 1;
+	right = *qr_profiles_n - 1;
+
+	lock_start_read(qr_profiles_rwl);
+
 	while (left<=right) {
 		m = left + (right-left)/2;
 		current_id = ((*qr_profiles)[m]).id;
-		if(current_id == qrp) {
+		if(current_id == prof_id) {
 			rule->thresholds = &(*qr_profiles)[m];
+			lock_stop_read(qr_profiles_rwl);
+			LM_DBG("found profile %d\n", prof_id);
 			return 0;
-		} else if(current_id > qrp) {
+		} else if(current_id > prof_id) {
 			right = m-1;
 		} else {
 			left = m+1;
 		}
 	}
 
-	LM_WARN("profile '%d' not found\n", qrp);
+	lock_stop_read(qr_profiles_rwl);
+
+	LM_WARN("profile '%d' not found\n", prof_id);
 	return -1;
 }
 

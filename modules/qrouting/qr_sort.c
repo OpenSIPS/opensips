@@ -80,6 +80,10 @@ int qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds)
 	double asr_v, ccr_v, pdd_v, ast_v, acd_v;
 	str *nam = drb.get_gw_name(gw->dr_gw);
 
+	/* the corresponding dr_rule points to an invalid qr_profile */
+	if (!thresholds)
+		goto set_score;
+
 	/* FIXME: might be better under a single lock
 	 * because of possible changes between lock ( a
 	 * new sampling interval might bring new statistics)
@@ -130,6 +134,7 @@ int qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds)
 		}
 	}
 
+set_score:
 	/* update gw score and status */
 	lock_start_write(gw->ref_lock);
 	gw->score = score;
@@ -168,6 +173,7 @@ int qr_score_grp(qr_grp_t *grp, qr_thresholds_t * thresholds) {
 int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 		int cr_id, int gw_id)
 {
+	qr_thresholds_t thr;
 	int cur_dst_score;
 	qr_gw_t *gw;
 
@@ -180,9 +186,13 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 	lock_start_read(gw->ref_lock);
 	if(gw->state & QR_STATUS_DIRTY) {
 		lock_stop_read(gw->ref_lock);
+
+		lock_start_read(qr_profiles_rwl);
+		thr = *rule->thresholds;
+		lock_stop_read(qr_profiles_rwl);
+
 		LM_DBG("evaluating score for:cr_id = %d gw_id = %d\n", cr_id, gw_id);
-		cur_dst_score = qr_score_gw(gw, rule->thresholds); /* compute the
-															  score */
+		cur_dst_score = qr_score_gw(gw, &thr);
 	} else {
 		cur_dst_score = gw->score;
 		lock_stop_read(gw->ref_lock);

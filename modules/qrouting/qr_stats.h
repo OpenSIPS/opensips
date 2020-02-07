@@ -29,6 +29,8 @@
 #include "../drouting/prefix_tree.h"
 #include "../drouting/dr_cb.h"
 
+#include "qr_load.h"
+
 /* type of destinations */
 #define QR_DST_GW (1<<0)
 #define QR_DST_GRP (1<<1) /* group more destinations together */
@@ -39,6 +41,7 @@
 #define QR_SORT_QR (1<<0)
 #define MIN_DEST 4
 
+#define QR_PTR_POISON ((void *)0x10203040)
 
 extern int qr_n; /* number of intervals in history */
 extern int* n_sampled;
@@ -70,7 +73,7 @@ typedef struct qr_sample {
 /* thresholds */
 typedef struct qr_thresholds {
 	int id;
-	str name;
+	char name[QR_NAME_COL_SZ + 1];
 	double asr1, asr2;
 	double ccr1, ccr2;
 	double pdd1, pdd2;
@@ -134,8 +137,8 @@ typedef struct qr_partitions {
 
 extern qr_rule_t ** qr_rules_start; /* used when updating statistics */
 extern rw_lock_t ** rw_lock_qr;
-extern qr_thresholds_t **qr_profiles;/* profiles from db */
-extern int *n_qr_profiles; /* the number of profiles from db */
+extern qr_thresholds_t **qr_profiles;
+extern int *qr_profiles_n;
 extern qr_partitions_t **qr_main_list;
 
 qr_gw_t *  qr_create_gw(void *);

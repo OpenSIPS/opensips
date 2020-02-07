@@ -21,13 +21,11 @@
 #ifndef __QR_MI__
 #define __QR_MI__
 
-mi_response_t *mi_qr_status_0(const mi_params_t *params,
-                              struct mi_handler *async_hdl);
-mi_response_t *mi_qr_status_1(const mi_params_t *params,
-                              struct mi_handler *async_hdl);
-mi_response_t *mi_qr_status_2(const mi_params_t *params,
-                              struct mi_handler *async_hdl);
-mi_response_t *mi_qr_status_3(const mi_params_t *params,
-                              struct mi_handler *async_hdl);
+mi_cmd_f mi_qr_status_0;
+mi_cmd_f mi_qr_status_1;
+mi_cmd_f mi_qr_status_2;
+mi_cmd_f mi_qr_status_3;
+
+mi_cmd_f mi_qr_reload_0;
 
 #endif /* __QR_MI__ */

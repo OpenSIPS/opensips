@@ -175,8 +175,7 @@ int qr_fill_mi_partition(mi_item_t *part, const str *part_name,
 	return 0;
 }
 
-mi_response_t *mi_qr_status_0(const mi_params_t *params,
-							struct mi_handler *async_hdl)
+mi_response_t *mi_qr_status_0(const mi_params_t *_, struct mi_handler *__)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj, *part_arr, *part;
@@ -205,8 +204,7 @@ error:
 	return NULL;
 }
 
-mi_response_t *mi_qr_status_1(const mi_params_t *params,
-							struct mi_handler *async_hdl)
+mi_response_t *mi_qr_status_1(const mi_params_t *params, struct mi_handler *_)
 {
 	qr_rule_t *qr_part;
 	mi_response_t *resp, *err_resp = NULL;
@@ -245,8 +243,7 @@ error:
 	return err_resp;
 }
 
-mi_response_t *mi_qr_status_2(const mi_params_t *params,
-							struct mi_handler *async_hdl)
+mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 {
 	qr_rule_t *qr_part, *rule;
 	mi_response_t *resp, *err_resp = NULL;
@@ -297,8 +294,7 @@ error:
 	return err_resp;
 }
 
-mi_response_t *mi_qr_status_3(const mi_params_t *params,
-							struct mi_handler *async_hdl)
+mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 {
 	qr_rule_t *qr_part, *rule;
 	qr_dst_t *dst;
@@ -355,4 +351,12 @@ error:
 	if (!err_resp)
 		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error\n"));
 	return err_resp;
+}
+
+mi_response_t *mi_qr_reload_0(const mi_params_t *_, struct mi_handler *__)
+{
+	if (qr_reload(&qr_dbf, qr_db_hdl) < 0)
+		LM_ERR("failed to load data from db\n");
+
+	return init_mi_result_ok();
 }

@@ -51,10 +51,15 @@ qr_partitions_t **qr_main_list; /* the history itself */
 rw_lock_t **rw_lock_qr; /* protects qr_main_list */
 
 qr_thresholds_t **qr_profiles;
-int *n_qr_profiles;
+int *qr_profiles_n;
+rw_lock_t *qr_profiles_rwl; /* protection during qr_reload */
 
 int qr_n;
 int *n_sampled;
+
+/* DB connection - useful for runtime reloads */
+db_func_t qr_dbf;
+db_con_t *qr_db_hdl;
 
 /* avps */
 str avp_invite_time_name_pdd = str_init("$avp(qr_invite_time_pdd)");
@@ -83,11 +88,15 @@ static param_export_t params[] = {
 
 #define HLP1 "Params: [partition_name [, rule_id [, dst_id]]]; List QR statistics"
 static mi_export_t mi_cmds[] = {
-	{ "qr_status", HLP1, 0, 0, {
-		{mi_qr_status_0, {0}},
-		{mi_qr_status_1, {"partition_name", 0}},
-		{mi_qr_status_2, {"partition_name", "rule_id", 0}},
-		{mi_qr_status_3, {"partition_name", "rule_id", "dst_id", 0}},
+	{ "qr_status", HLP1, 0, NULL, {
+		{mi_qr_status_0, {NULL}},
+		{mi_qr_status_1, {"partition_name", NULL}},
+		{mi_qr_status_2, {"partition_name", "rule_id", NULL}},
+		{mi_qr_status_3, {"partition_name", "rule_id", "dst_id", NULL}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "qr_reload", NULL, 0, NULL, {
+		{mi_qr_reload_0, {NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -96,7 +105,6 @@ static mi_export_t mi_cmds[] = {
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
-		{ MOD_TYPE_DEFAULT, "drouting", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -169,9 +177,6 @@ static int qr_init(void)
 
 static int qr_child_init(int rank)
 {
-	db_func_t qr_dbf;
-	db_con_t *qr_db_hdl = 0;
-
 	if (rank == PROC_TCP_MAIN)
 		return 0;
 
@@ -186,11 +191,7 @@ static int qr_child_init(int rank)
 	if (!(qr_db_hdl = qr_dbf.init(&db_url)))
 		LM_ERR("failed to load db url %.*s\n", db_url.len, db_url.s);
 
-	/* do not change the rank of the process loading
-	 * the db, because it must match the rank of the
-	 * corespoding drouting process to ensure the qr db
-	 * is loaded before the dr db */
-	if (rank == 1 && qr_load(&qr_dbf, qr_db_hdl) < 0)
+	if (rank == 1 && qr_reload(&qr_dbf, qr_db_hdl) < 0)
 		LM_ERR("failed to load data from db\n");
 
 	return 0;
@@ -201,11 +202,11 @@ static int qr_exit(void)
 	free_qr_list(*qr_main_list);
 
 	/* free the thresholds */
-	*n_qr_profiles = 0;
+	*qr_profiles_n = 0;
 	shm_free(*qr_profiles);
 	shm_free(qr_profiles);
-	shm_free(n_qr_profiles);
-	qr_profiles = NULL;
+	shm_free(qr_profiles_n);
+	qr_profiles = QR_PTR_POISON;
 	return 0;
 }
 
@@ -237,8 +238,8 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 
 static int qr_init_dr_cb(void)
 {
-	if (load_dr_api(&drb) == -1) {
-		LM_ERR("Failed to load dr functions. DR modules loaded?\n");
+	if (load_dr_api(&drb) != 0) {
+		LM_ERR("failed to load dr API.  Is the drouting module loaded?\n");
 		return -1;
 	}
 
@@ -298,6 +299,11 @@ static int qr_init_globals(void)
 		return -1;
 	}
 
+	if (!(qr_profiles_rwl = lock_init_rw())) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	qr_main_list = shm_malloc(sizeof *qr_main_list);
 	if (!qr_main_list) {
 		LM_ERR("oom\n");
@@ -330,12 +336,12 @@ static int qr_init_globals(void)
 	}
 	*qr_profiles = NULL;
 
-	n_qr_profiles = shm_malloc(sizeof *n_qr_profiles);
-	if (!n_qr_profiles) {
+	qr_profiles_n = shm_malloc(sizeof *qr_profiles_n);
+	if (!qr_profiles_n) {
 		LM_ERR("oom\n");
 		return -1;
 	}
-	*n_qr_profiles = 0;
+	*qr_profiles_n = 0;
 
 	return 0;
 }

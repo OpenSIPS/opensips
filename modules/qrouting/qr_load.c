@@ -60,37 +60,93 @@ str crit_pdd_qp_col = str_init(CRIT_PDD_QP_COL);
 str crit_ast_qp_col = str_init(CRIT_AST_QP_COL);
 str crit_acd_qp_col = str_init(CRIT_ACD_QP_COL);
 
-void add_profile(int id, char *name, double warn_asr, double warn_ccr,
-		double warn_pdd, double warn_ast, double warn_acd, double crit_asr,
-		double crit_ccr, double crit_pdd, double crit_ast, double crit_acd) {
+static inline void add_profile(qr_thresholds_t *prof, int id, const char *name,
+		double warn_asr, double warn_ccr, double warn_pdd, double warn_ast,
+		double warn_acd, double crit_asr, double crit_ccr, double crit_pdd,
+		double crit_ast, double crit_acd)
+{
+	prof->id = id;
+	strncpy(prof->name, name, QR_NAME_COL_SZ + 1);
 
-	((*qr_profiles)[*n_qr_profiles]).id = id;
-	((*qr_profiles)[*n_qr_profiles]).name.s = name;
-	((*qr_profiles)[*n_qr_profiles]).name.len = strlen(name);
+	prof->asr1 = warn_asr;
+	prof->ccr1 = warn_ccr;
+	prof->pdd1 = warn_pdd;
+	prof->ast1 = warn_ast;
+	prof->acd1 = warn_acd;
 
-	(*qr_profiles)[*n_qr_profiles].asr1 = warn_asr;
-	(*qr_profiles)[*n_qr_profiles].ccr1 = warn_ccr;
-	(*qr_profiles)[*n_qr_profiles].pdd1 = warn_pdd;
-	(*qr_profiles)[*n_qr_profiles].ast1 = warn_ast;
-	(*qr_profiles)[*n_qr_profiles].acd1 = warn_acd;
-
-	(*qr_profiles)[*n_qr_profiles].asr2 = crit_asr;
-	(*qr_profiles)[*n_qr_profiles].ccr2 = crit_ccr;
-	(*qr_profiles)[*n_qr_profiles].pdd2 = crit_pdd;
-	(*qr_profiles)[*n_qr_profiles].ast2 = crit_ast;
-	(*qr_profiles)[*n_qr_profiles].acd2 = crit_acd;
-	(*n_qr_profiles)++;
+	prof->asr2 = crit_asr;
+	prof->ccr2 = crit_ccr;
+	prof->pdd2 = crit_pdd;
+	prof->ast2 = crit_ast;
+	prof->acd2 = crit_acd;
 }
 
-int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
+/* refresh a single threshold set (1 row) */
+static inline void qr_refresh_threshold_set(qr_thresholds_t *thr,
+                                            qr_thresholds_t *new)
+{
+	qr_rule_t *r;
+	qr_partitions_t *parts;
+	int i;
+
+	lock_start_write(*rw_lock_qr);
+	parts = *qr_main_list;
+
+	/* XXX: is this dead code?  also review qr_rotate_samples() */
+	if (!parts) {
+		lock_stop_write(*rw_lock_qr);
+		return;
+	}
+
+	for (i = 0; i < parts->n_parts; i++) /* for every partition */
+		for (r = parts->qr_rules_start[i]; r; r = r->next) /* and rule */
+			if (r->thresholds == thr)
+				r->thresholds = new;
+
+	lock_stop_write(*rw_lock_qr);
+}
+
+/* refresh all reloaded threshold sets (rows) */
+static inline void qr_refresh_threshold_sets(qr_thresholds_t *old, int old_n,
+                                             qr_thresholds_t *new, int new_n)
+{
+	int i, j, id, found;
+
+	LM_DBG("updating references for %p -> %p qr_profiles reload\n", old, new);
+
+	/* try to match each old qr profile with a new one:
+	 *   - if found, just refresh all references to it
+	 *   - otherwise, just set the references to NULL */
+	for (i = 0; i < old_n; i++) {
+		id = old[i].id;
+		found = 0;
+
+		for (j = 0; j < new_n; j++) {
+			if (id == new[j].id) {
+				LM_DBG("matched qr_profile %d with reloaded data\n", id);
+				qr_refresh_threshold_set(&old[i], &new[j]);
+				found = 1;
+				break;
+			}
+		}
+
+		/* this old threshold id was discarded (replaced?), then reloaded */
+		if (!found)
+			qr_refresh_threshold_set(&old[i], NULL);
+	}
+}
+
+int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
+{
 	int int_vals[N_INT_VALS];
 	char *str_vals[N_STR_VALS];
 	double double_vals[N_DOUBLE_VALS];
 
+	qr_thresholds_t *profs = NULL, *old_profs;
 	db_key_t columns[12];
 	db_res_t *res = 0;
 	db_row_t *row = 0;
-	int i, n, no_rows = 0;
+	int i, no_rows = 0, total_rows = 0, old_n;
 	int db_cols = 0;
 
 	memset(double_vals, 0, N_DOUBLE_VALS*sizeof(double));
@@ -124,7 +180,8 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 			goto error;
 		}
 
-		no_rows = estimate_available_rows( 4+64+10*sizeof(double), db_cols);
+		no_rows = estimate_available_rows(4+QR_NAME_COL_SZ+10*sizeof(double),
+		                                  db_cols);
 		if (no_rows==0) no_rows = 10;
 		if(qr_dbf->fetch_result(qr_db_hdl, &res, no_rows )<0) {
 			LM_ERR("Error fetching rows\n");
@@ -137,20 +194,25 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 		}
 	}
 
+	if (RES_ROW_N(res) == 0) {
+		LM_INFO("table '%.*s' is empty\n",
+		        qr_profiles_table.len, qr_profiles_table.s);
+		goto swap_data;
+	}
+
 	LM_DBG("%d records found in table %.*s\n",
 			RES_ROW_N(res), qr_profiles_table.len,qr_profiles_table.s);
 
-	n = 0;
-
-	*qr_profiles = (qr_thresholds_t*)shm_malloc(RES_ROW_N(res)*
-			sizeof(qr_thresholds_t));
-
-	if(*qr_profiles == NULL) {
-		LM_ERR("no more shm memory\n");
-		return -1;
-	}
 	do {
-		for(i = 0; i < RES_ROW_N(res); i++) {
+		profs = shm_realloc(profs, (total_rows + RES_ROW_N(res)) *
+		                            sizeof *profs);
+		if (!profs) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+		memset(&profs[total_rows], 0, RES_ROW_N(res) * sizeof *profs);
+
+		for (i = 0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 
 			check_val(id_qp_col, ROW_VALUES(row), DB_INT, 1, 1);
@@ -188,7 +250,6 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 
 			check_val(crit_acd_qp_col, ROW_VALUES(row)+11, DB_DOUBLE, 1, 1);
 			double_vals[DOUBLE_VALS_CRIT_ACD] = VAL_DOUBLE(ROW_VALUES(row)+11);
-			n++;
 
 			LM_DBG("qr_profile row: %d %s %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
 					int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
@@ -197,28 +258,46 @@ int qr_load(db_func_t *qr_dbf, db_con_t* qr_db_hdl) {
 					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_CRIT_ASR],
 					double_vals[DOUBLE_VALS_CRIT_CCR], double_vals[DOUBLE_VALS_CRIT_PDD],
 					double_vals[DOUBLE_VALS_CRIT_AST], double_vals[DOUBLE_VALS_CRIT_ACD]);
-			add_profile(
-					int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
+
+			add_profile(&profs[total_rows], int_vals[INT_VALS_ID],
+					str_vals[STR_VALS_PROFILE_NAME],
 					double_vals[DOUBLE_VALS_WARN_ASR], double_vals[DOUBLE_VALS_WARN_CCR],
 					double_vals[DOUBLE_VALS_WARN_PDD], double_vals[DOUBLE_VALS_WARN_AST],
 					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_CRIT_ASR],
 					double_vals[DOUBLE_VALS_CRIT_CCR], double_vals[DOUBLE_VALS_CRIT_PDD],
 					double_vals[DOUBLE_VALS_CRIT_AST], double_vals[DOUBLE_VALS_CRIT_ACD]);
+
+			total_rows++;
 		}
+
 		if (DB_CAPABILITY(*qr_dbf, DB_CAP_FETCH)) {
-			if(qr_dbf->fetch_result(qr_db_hdl, &res, no_rows)<0) {
-				LM_ERR( "fetching rows (1)\n");
+			if (qr_dbf->fetch_result(qr_db_hdl, &res, no_rows) < 0) {
+				LM_ERR("fetching rows (1)\n");
 				goto error;
 			}
 		} else {
 			break;
 		}
 
-	} while(RES_ROW_N(res));
+	} while (RES_ROW_N(res));
 
+swap_data:
+	lock_start_write(qr_profiles_rwl);
+	old_profs = *qr_profiles;
+	old_n = *qr_profiles_n;
+
+	*qr_profiles = profs;
+	*qr_profiles_n = total_rows;
+
+	qr_refresh_threshold_sets(old_profs, old_n, profs, total_rows);
+	lock_stop_write(qr_profiles_rwl);
+
+	shm_free(old_profs);
+
+	LM_DBG("reloaded into %d new profiles (%p -> %p)\n",
+	       total_rows, old_profs, profs);
 	return 0;
+
 error:
 	return -1;
-
 }
-
