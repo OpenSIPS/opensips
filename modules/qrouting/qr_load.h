@@ -21,6 +21,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef __QR_LOAD_H__
+#define __QR_LOAD_H__
+
 #include "../../db/db.h"
 #include "../../rw_locking.h"
 
@@ -65,3 +68,5 @@ extern db_func_t qr_dbf;
 extern db_con_t *qr_db_hdl;
 
 int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl);
+
+#endif /* __QR_LOAD_H__ */
