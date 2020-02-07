@@ -35,6 +35,7 @@
 
 #include "../../lib/reg/regtime.h"
 #include "../../lib/reg/ci.h"
+#include "../../lib/reg/sip_msg.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_uri.h"
 #include "../../dset.h"

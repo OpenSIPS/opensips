@@ -61,6 +61,9 @@ extern float def_q;
 
 extern str rcv_param;
 extern int max_contacts;
+extern int max_username_len;
+extern int max_domain_len;
+extern int max_aor_len;
 extern int retry_after;
 extern str sock_hdr_name;
 

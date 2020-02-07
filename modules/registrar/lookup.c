@@ -46,7 +46,6 @@
 #include "../../lib/reg/config.h"
 #include "../../lib/reg/ci.h"
 
-#include "common.h"
 #include "reg_mod.h"
 #include "lookup.h"
 #include "sip_msg.h"

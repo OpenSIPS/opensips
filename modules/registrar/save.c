@@ -67,7 +67,6 @@
 #include "../../lib/reg/config.h"
 #include "../../lib/reg/path.h"
 
-#include "common.h"
 #include "sip_msg.h"
 #include "reply.h"
 #include "reg_mod.h"

@@ -54,24 +54,23 @@
  */
 
 #include <stdio.h>
+
 #include "../../sr_module.h"
 #include "../../timer.h"
 #include "../../dprint.h"
 #include "../../error.h"
 #include "../../socket_info.h"
 #include "../../pvar.h"
+#include "../../mod_fix.h"
+#include "../../lib/reg/config.h"
+
 #include "../usrloc/ul_mod.h"
 #include "../signaling/signaling.h"
-#include "../../mod_fix.h"
 
 #include "save.h"
 #include "lookup.h"
 #include "reply.h"
 #include "reg_mod.h"
-
-
-
-
 
 /*! \brief Module init & destroy function */
 static int  mod_init(void);
@@ -95,6 +94,9 @@ int min_expires     = 60;			/*!< Minimum expires the phones are allowed to use i
 int max_expires     = 0;			/*!< Maximum expires the phones are allowed to use in seconds,
  						 * use 0 to switch expires checking off */
 int max_contacts = 0;		/*!< Maximum number of contacts per AOR (0=no checking) */
+int max_username_len = USERNAME_MAX_SIZE;
+int max_domain_len   = DOMAIN_MAX_SIZE;
+int max_aor_len      = MAX_AOR_LEN;
 int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
 
 extern ucontact_t **selected_cts;
@@ -191,6 +193,9 @@ static param_export_t params[] = {
 	{"received_param",     STR_PARAM, &rcv_param.s           },
 	{"received_avp",       STR_PARAM, &rcv_avp_param         },
 	{"max_contacts",       INT_PARAM, &max_contacts          },
+	{"max_username_len",   INT_PARAM, &max_username_len      },
+	{"max_domain_len",     INT_PARAM, &max_domain_len        },
+	{"max_aor_len",        INT_PARAM, &max_aor_len           },
 	{"retry_after",        INT_PARAM, &retry_after           },
 	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s       },
 	{"mcontact_avp",       STR_PARAM, &mct_avp_param         },

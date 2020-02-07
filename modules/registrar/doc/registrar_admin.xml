@@ -392,6 +392,54 @@ modparam("registrar", "max_contacts", 10)
 		</example>
 	</section>
 
+	<section id="param_max_username_len" xreflabel="max_username_len">
+		<title><varname>max_username_len</varname> (integer)</title>
+		<para>
+		The maximum length of the "username" part of an Address-of-Record SIP URI.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>64</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_username_len</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("registrar", "max_username_len", 128)
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_max_domain_len" xreflabel="max_domain_len">
+		<title><varname>max_domain_len</varname> (integer)</title>
+		<para>
+		The maximum length of the "domain" part of an Address-of-Record SIP URI.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>64</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_domain_len</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("registrar", "max_domain_len", 128)
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_max_aor_len" xreflabel="max_aor_len">
+		<title><varname>max_aor_len</varname> (integer)</title>
+		<para>
+		The maximum length of an Address-of-Record SIP URI.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>256</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_aor_len</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("registrar", "max_aor_len", 512)
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_retry_after" xreflabel="retry_after">
 		<title><varname>retry_after</varname> (integer)</title>
 		<para>
