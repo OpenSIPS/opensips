@@ -94,7 +94,7 @@ static param_export_t params[] = {
 
 /* module exports */
 struct module_exports exports = {
-	"siprec",						/* module name */
+	"media_exchange",				/* module name */
 	MOD_TYPE_DEFAULT,				/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,				/* dlopen flags */
