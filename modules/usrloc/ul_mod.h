@@ -43,7 +43,7 @@ extern enum ul_rr_persist rr_persist;
 extern enum ul_sql_write_mode sql_wmode;
 
 /* manner in which node data should be restored (or not) following a restart */
-enum ul_rr_persist {
+typedef enum ul_rr_persist {
 	RRP_NONE,
 	RRP_LOAD_FROM_SQL,
 	RRP_SYNC_FROM_CLUSTER,
@@ -52,7 +52,7 @@ enum ul_rr_persist {
 
 /* if using SQL for restart persistency,
  * should runtime SQL blocking writes be performed eagerly or lazily? */
-enum ul_sql_write_mode {
+typedef enum ul_sql_write_mode {
 	SQL_NO_WRITE,
 	SQL_WRITE_THROUGH,
 	SQL_WRITE_BACK,
