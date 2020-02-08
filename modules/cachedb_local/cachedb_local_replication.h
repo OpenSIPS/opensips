@@ -34,10 +34,10 @@ extern struct clusterer_binds clusterer_api;
 extern str cache_repl_cap;
 extern int cluster_id;
 
-enum cachedb_rr_persist {
+typedef enum cachedb_rr_persist {
 	RRP_NONE,
 	RRP_SYNC_FROM_CLUSTER,
-} rr_persist_t;
+} cachedb_rr_persist_t;
 
 void receive_binary_packet(bin_packet_t *packet);
 void receive_cluster_event(enum clusterer_event ev, int node_id);
