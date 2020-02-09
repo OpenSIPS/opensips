@@ -628,7 +628,7 @@ Chapter 2. Contributors
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 114 47
    6. Jarrod Baumann (@jarrodb) 6 3 131 32
    7. Agalya Ramachandran (@AgalyaR) 6 2 354 1
-   8. Callum Guy 6 2 281 8
+   8. Callum Guy (@spacetourist) 6 2 281 8
    9. Ryan Bullock (@rrb3942) 5 2 91 77
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -655,7 +655,7 @@ Chapter 2. Contributors
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2020
-   2.  Callum Guy                          Jan 2020 - Jan 2020
+   2.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
    3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
@@ -674,10 +674,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Callum Guy, Vlad
-   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan
-   Crainea (@razvancrainea), Agalya Ramachandran (@AgalyaR),
-   Jarrod Baumann (@jarrodb), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Liviu Chircu (@liviuchircu), Callum Guy
+   (@spacetourist), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Agalya
+   Ramachandran (@AgalyaR), Jarrod Baumann (@jarrodb),
+   Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

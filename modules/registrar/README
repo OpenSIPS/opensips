@@ -27,12 +27,15 @@ registrar Module
               1.3.8. received_avp (str)
               1.3.9. received_param (string)
               1.3.10. max_contacts (integer)
-              1.3.11. retry_after (integer)
-              1.3.12. sock_hdr_name (string)
-              1.3.13. mcontact_avp (string)
-              1.3.14. attr_avp (string)
-              1.3.15. gruu_secret (string)
-              1.3.16. disable_gruu (int)
+              1.3.11. max_username_len (integer)
+              1.3.12. max_domain_len (integer)
+              1.3.13. max_aor_len (integer)
+              1.3.14. retry_after (integer)
+              1.3.15. sock_hdr_name (string)
+              1.3.16. mcontact_avp (string)
+              1.3.17. attr_avp (string)
+              1.3.18. gruu_secret (string)
+              1.3.19. disable_gruu (int)
 
         1.4. Exported Functions
 
@@ -86,19 +89,22 @@ registrar Module
    1.8. Set received_avp parameter
    1.9. Set received_param parameter
    1.10. Set max_contacts parameter
-   1.11. Set retry_after parameter
-   1.12. Set sock_hdr_namer parameter
-   1.13. Set mcontact_avp parameter
-   1.14. Set attr_avp parameter
-   1.15. Set gruu_secret parameter
-   1.16. Set gruu_secret parameter
-   1.17. save usage
-   1.18. remove usage
-   1.19. lookup usage
-   1.20. is_registered usage
-   1.21. is_contact_registered usage
-   1.22. is_ip_registered usage
-   1.23. add_sock_hdr usage
+   1.11. Setting the max_username_len module parameter
+   1.12. Setting the max_domain_len module parameter
+   1.13. Setting the max_aor_len module parameter
+   1.14. Set retry_after parameter
+   1.15. Set sock_hdr_namer parameter
+   1.16. Set mcontact_avp parameter
+   1.17. Set attr_avp parameter
+   1.18. Set gruu_secret parameter
+   1.19. Set gruu_secret parameter
+   1.20. save usage
+   1.21. remove usage
+   1.22. lookup usage
+   1.23. is_registered usage
+   1.24. is_contact_registered usage
+   1.25. is_ip_registered usage
+   1.26. add_sock_hdr usage
 
 Chapter 1. Admin Guide
 
@@ -337,7 +343,36 @@ modparam("registrar", "received_param", "rcv")
 modparam("registrar", "max_contacts", 10)
 ...
 
-1.3.11. retry_after (integer)
+1.3.11. max_username_len (integer)
+
+   The maximum length of the "username" part of an
+   Address-of-Record SIP URI.
+
+   Default value is 64.
+
+   Example 1.11. Setting the max_username_len module parameter
+modparam("registrar", "max_username_len", 128)
+
+1.3.12. max_domain_len (integer)
+
+   The maximum length of the "domain" part of an Address-of-Record
+   SIP URI.
+
+   Default value is 64.
+
+   Example 1.12. Setting the max_domain_len module parameter
+modparam("registrar", "max_domain_len", 128)
+
+1.3.13. max_aor_len (integer)
+
+   The maximum length of an Address-of-Record SIP URI.
+
+   Default value is 256.
+
+   Example 1.13. Setting the max_aor_len module parameter
+modparam("registrar", "max_aor_len", 512)
+
+1.3.14. retry_after (integer)
 
    The registrar can generate 5xx reply to REGISTER in various
    situations. It can, for example, happen when the max_contacts
@@ -352,12 +387,12 @@ modparam("registrar", "max_contacts", 10)
 
    Default value is 0 (disabled).
 
-   Example 1.11. Set retry_after parameter
+   Example 1.14. Set retry_after parameter
 ...
 modparam("registrar", "retry_after", 30)
 ...
 
-1.3.12. sock_hdr_name (string)
+1.3.15. sock_hdr_name (string)
 
    Header which contains a socket description (proto:IP:port) to
    override the received socket info. The header will be search
@@ -368,12 +403,12 @@ modparam("registrar", "retry_after", 30)
 
    Default value is NULL.
 
-   Example 1.12. Set sock_hdr_namer parameter
+   Example 1.15. Set sock_hdr_namer parameter
 ...
 modparam("registrar", "sock_hdr_name", "Sock-Info")
 ...
 
-1.3.13. mcontact_avp (string)
+1.3.16. mcontact_avp (string)
 
    AVP to store the modified binding/contact that is set during
    cached registrations scenario (when REGISTER is forwarded to
@@ -386,7 +421,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 
    Default value is NULL.
 
-   Example 1.13. Set mcontact_avp parameter
+   Example 1.16. Set mcontact_avp parameter
 ...
 modparam("registrar", "mcontact_avp", "$avp(orig_ct)")
 ...
@@ -407,7 +442,7 @@ onreply_route[do_save] {
 }
 ...
 
-1.3.14. attr_avp (string)
+1.3.17. attr_avp (string)
 
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
@@ -422,7 +457,7 @@ onreply_route[do_save] {
 
    Default value is NULL.
 
-   Example 1.14. Set attr_avp parameter
+   Example 1.17. Set attr_avp parameter
 # reading attributes from the attr_pvar when doing parallel forking
 ...
 modparam("registrar", "attr_avp", "$avp(attr)")
@@ -443,25 +478,25 @@ _idx])\n");
 }
 
 
-1.3.15. gruu_secret (string)
+1.3.18. gruu_secret (string)
 
    The string that will be used in XORing when generating
    temporary GRUUs.
 
    If not set, 'OpenSIPS' is the default secret.
 
-   Example 1.15. Set gruu_secret parameter
+   Example 1.18. Set gruu_secret parameter
 ...
 modparam("registrar", "gruu_secret", "top_secret")
 ...
 
-1.3.16. disable_gruu (int)
+1.3.19. disable_gruu (int)
 
    Globally disable GRUU handling
 
    Default value is 1 ( GRUU will not be handled ).
 
-   Example 1.16. Set gruu_secret parameter
+   Example 1.19. Set gruu_secret parameter
 ...
 modparam("registrar", "disable_gruu", 0)
 ...
@@ -566,7 +601,7 @@ modparam("registrar", "disable_gruu", 0)
    If you plan to use the “save()” function in reply route, please
    refer to mcontact_avp module parameter.
 
-   Example 1.17. save usage
+   Example 1.20. save usage
 ...
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
@@ -623,7 +658,7 @@ save("location", , , "vip");
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.18. remove usage
+   Example 1.21. remove usage
 ...
 # remove all contacts belonging to the "bob" AOR
 remove("location", "sip:bob@atlanta.com");
@@ -740,7 +775,7 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.19. lookup usage
+   Example 1.22. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
@@ -784,7 +819,7 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.20. is_registered usage
+   Example 1.23. is_registered usage
 ...
 /**/
 if (is_method("REGISTER")) {
@@ -825,7 +860,7 @@ if (is_registered("location",$fu)) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.21. is_contact_registered usage
+   Example 1.24. is_contact_registered usage
 ...
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
@@ -865,7 +900,7 @@ if(is_method("INVITE")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.22. is_ip_registered usage
+   Example 1.25. is_ip_registered usage
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
@@ -889,7 +924,7 @@ if (is_method("REGISTER")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.23. add_sock_hdr usage
+   Example 1.26. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
@@ -1031,7 +1066,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 168 112 2380 2031
    2. Jan Janak (@janakj) 121 73 3465 1102
-   3. Liviu Chircu (@liviuchircu) 99 58 1611 1535
+   3. Liviu Chircu (@liviuchircu) 106 60 1672 1785
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
    5. Razvan Crainea (@razvancrainea) 19 14 265 73
    6. Vlad Paiu (@vladpaiu) 16 10 489 81
@@ -1071,7 +1106,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Feb 2020
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Nov 2019
    3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -1101,8 +1136,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
    Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Ionut
    Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
    (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),
