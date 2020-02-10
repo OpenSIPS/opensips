@@ -74,7 +74,6 @@ const char *FROMTAG_PARAM = ";from-tag=";
 
 
 struct lump *l;
-//struct rr_binds rr_api;
 
 /* verify if the INVITE has the header Geolocation-Routing with the value "yes"
 */
