@@ -78,16 +78,19 @@ str *media_session_get_hold_sdp(struct media_session_leg *msl)
 	return &new_body;
 }
 
-int media_session_resume_dlg(struct dlg_cell *dlg, int first_leg)
+int media_session_resume_dlg(struct media_session_leg *msl)
 {
-	if (media_session_reinvite(dlg, first_leg, NULL) < 0)
+	int first_leg = MEDIA_SESSION_DLG_LEG(msl);
+	if (media_session_reinvite(msl, first_leg, NULL) < 0)
 		LM_ERR("could not resume call for leg %d\n", first_leg);
-	if (media_session_reinvite(dlg, other_leg(dlg, first_leg), NULL) < 0)
-		LM_ERR("could not resume call for leg %d\n", other_leg(dlg, first_leg));
+	if (!msl->nohold && media_session_reinvite(msl,
+			other_leg(msl->ms->dlg, first_leg), NULL) < 0)
+		LM_ERR("could not resume call for leg %d\n",
+				other_leg(msl->ms->dlg, first_leg));
 	return 0;
 }
 
-int media_session_reinvite(struct dlg_cell *dlg, int leg, str *pbody)
+int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody)
 {
 	static str inv = str_init("INVITE");
 
@@ -95,6 +98,7 @@ int media_session_reinvite(struct dlg_cell *dlg, int leg, str *pbody)
 	if (pbody)
 		body = *pbody;
 	else
-		body = dlg_get_out_sdp(dlg, leg);
-	return media_dlg.send_indialog_request(dlg, &inv, leg, &body, &ct_sdp, NULL, NULL);
+		body = dlg_get_out_sdp(msl->ms->dlg, leg);
+	return media_dlg.send_indialog_request(msl->ms->dlg,
+			&inv, leg, &body, &ct_sdp, NULL, NULL);
 }

@@ -23,7 +23,8 @@
 
 str *media_session_get_hold_sdp(struct media_session_leg *msl);
 
-int media_session_reinvite(struct dlg_cell *dlg, int leg, str *pbody);
+int media_session_resume_dlg(struct media_session_leg *msl);
 
-int media_session_resume_dlg(struct dlg_cell *dlg, int first_leg);
+int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody);
+
 #endif /* _MEDIA_UTILS_H_ */

@@ -245,7 +245,7 @@ static int media_session_fetch_server_reply(struct sip_msg *msg, int status, voi
 		if (!pbody)
 			goto error;
 		/* XXX: should we care whether the other party is properly on hold? */
-		if (media_session_reinvite(msl->ms->dlg,
+		if (media_session_reinvite(msl,
 				MEDIA_SESSION_DLG_OTHER_LEG(msl), pbody) < 0)
 			LM_ERR("could not copy send indialog request for hold\n");
 		pkg_free(pbody->s);
@@ -384,7 +384,7 @@ static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void
 				if (media_b2b.send_reply(&reply_data) < 0)
 					LM_ERR("could not confirm session ending!\n");
 
-				if (media_session_resume_dlg(msl->ms->dlg, MEDIA_SESSION_DLG_LEG(msl)) < 0)
+				if (media_session_resume_dlg(msl) < 0)
 					LM_ERR("could not resume media session!\n");
 
 				/* should be last unref */
