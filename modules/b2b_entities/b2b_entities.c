@@ -58,21 +58,21 @@ static mi_response_t *mi_b2be_list(const mi_params_t *params,
 /** Global variables */
 unsigned int server_hsize = 9;
 unsigned int client_hsize = 9;
-static char* script_req_route = NULL;
-static char* script_reply_route = NULL;
+static char* script_req_route;
+static char* script_reply_route;
 int req_routeid  = -1;
 int reply_routeid = -1;
-int replication_mode= 0;
-static str db_url= {0, 0};
-db_con_t *b2be_db = NULL;
+int replication_mode = 0;
+static str db_url;
+db_con_t *b2be_db;
 db_func_t b2be_dbf;
 str b2be_dbtable= str_init("b2b_entities");
 static int b2b_update_period = 100;
 int uac_auth_loaded;
 str b2b_key_prefix = str_init("B2B");
 int b2be_db_mode = WRITE_BACK;
-b2b_table server_htable = NULL;
-b2b_table client_htable = NULL;
+b2b_table server_htable;
+b2b_table client_htable;
 
 #define DB_COLS_NO  26
 
