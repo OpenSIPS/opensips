@@ -231,7 +231,7 @@ static int media_session_fetch_server_reply(struct sip_msg *msg, int status, voi
 	}
 
 	/* finished processing this reply */
-	MEDIA_SERVER_UNREF(msl->ms);
+	MSL_UNREF(msl);
 	return 0;
 
 terminate:
@@ -248,6 +248,10 @@ terminate:
 
 	/* no need of this session leg - remote it */
 	media_session_leg_free(msl);
+	return -1;
+
+error:
+	MSL_UNREF(msl);
 	return -1;
 }
 
@@ -311,7 +315,7 @@ static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *n
 	/* looks good - push in dialog */
 	caller = (leg == MEDIA_LEG_CALLER?1:0);
 	/* all good - send the invite to the client */
-	MEDIA_SERVER_REF(msl->ms);
+	MSL_REF(msl);
 	if (media_dlg.send_indialog_request(dlg, &inv, caller,
 			&body, &msg->content_type->body, media_session_fetch_server_reply, msl) < 0) {
 		LM_ERR("could not copy b2b server key for callid %.*s\n", callid->len, callid->s);
@@ -321,7 +325,7 @@ static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *n
 	return 0;
 
 destroy:
-	media_session_leg_free(msl);
+	MSL_UNREF(msl);
 unref:
 	media_dlg.dlg_unref(dlg, 1);
 	return -2;

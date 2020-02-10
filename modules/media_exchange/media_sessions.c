@@ -25,7 +25,11 @@ static int media_session_dlg_idx;
 void media_session_unref(void *param)
 {
 	struct media_session *ms = (struct media_session *)param;
-	MEDIA_SERVER_UNREF(ms);
+	if (!MEDIA_SERVER_FREE(ms))
+		LM_WARN("media session %p still in use %p|%p!\n",
+				ms, ms->legs[0], ms->legs[1]);
+	else
+		media_session_free(ms);
 }
 
 int init_media_sessions(void)
@@ -41,13 +45,10 @@ int init_media_sessions(void)
 
 void media_session_leg_free(struct media_session_leg *msl)
 {
-	MEDIA_SERVER_LOCK(msl->ms);
 	if (msl->ms->legs[0] == msl)
 		msl->ms->legs[0] = NULL;
 	else
 		msl->ms->legs[1] = NULL;
-	MEDIA_SERVER_UNLOCK(msl->ms);
-	MEDIA_SERVER_UNREF(msl->ms);
 	if (msl->b2b_key.s) {
 		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, NULL, 1);
 		shm_free(msl->b2b_key.s);
@@ -81,7 +82,6 @@ struct media_session *media_session_create(struct dlg_cell *dlg)
 		return NULL;
 	}
 	memset(ms, 0, sizeof *ms);
-	ms->ref = 1/* dlg */;
 	ms->dlg = dlg;
 	lock_init(&ms->lock);
 
@@ -97,7 +97,6 @@ struct media_session_leg *media_session_new_leg(struct dlg_cell *dlg,
 {
 	struct media_session *ms;
 	struct media_session_leg *msl;
-	int new = 0;
 
 	ms = media_session_get(dlg);
 	if (!ms) {
@@ -107,7 +106,6 @@ struct media_session_leg *media_session_new_leg(struct dlg_cell *dlg,
 			LM_ERR("cannot create media session!\n");
 			return NULL;
 		}
-		new  = 1;
 		MEDIA_SERVER_LOCK(ms);
 	} else {
 		MEDIA_SERVER_LOCK(ms);
@@ -120,10 +118,11 @@ struct media_session_leg *media_session_new_leg(struct dlg_cell *dlg,
 	msl = shm_malloc(sizeof *msl);
 	if (!msl) {
 		LM_ERR("could not allocate new media session leg for %d\n", leg);
-		MEDIA_SERVER_UNLOCK(ms);
-		if (new) {
-			/* remove the media session now */
-			MEDIA_SERVER_UNREF(ms);
+		if (MEDIA_SERVER_FREE(ms)) {
+			MEDIA_SERVER_UNLOCK(ms);
+			media_session_free(ms);
+		} else {
+			MEDIA_SERVER_UNLOCK(ms);
 		}
 		return NULL;
 	}
@@ -132,7 +131,7 @@ struct media_session_leg *media_session_new_leg(struct dlg_cell *dlg,
 	msl->ms = ms;
 	msl->nohold = nohold;
 	msl->state = MEDIA_SERVER_STATE_INIT;
-	MEDIA_SERVER_REF_UNSAFE(ms); /* ref for media server leg */
+	msl->ref = 1; /* creation */
 	MEDIA_SERVER_LEG(ms, leg) = msl;
 	MEDIA_SERVER_UNLOCK(ms);
 	LM_DBG(" creating media_session_leg=%p\n", msl);

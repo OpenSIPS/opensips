@@ -37,14 +37,14 @@ enum media_session_state {
 struct media_session_leg {
 	struct media_session *ms;
 	enum media_session_state state;
-	int nohold;
 	int type;
+	int ref;
 	str b2b_key;
+	int nohold;
 	enum b2b_entity_type b2b_entity;
 };
 
 struct media_session {
-	int ref;
 	gen_lock_t lock;
 	struct dlg_cell *dlg;
 
@@ -54,45 +54,53 @@ struct media_session {
 #define MEDIA_SERVER_LOCK(_ms) lock_get(&(_ms)->lock)
 #define MEDIA_SERVER_UNLOCK(_ms) lock_release(&(_ms)->lock)
 #define MEDIA_SERVER_LEG(_ms, _leg) (_ms->legs[(_leg) - 1])
+#define MEDIA_SERVER_FREE(_ms) (!_ms->legs[0] && !_ms->legs[1])
 
-#define MEDIA_SERVER_REF_UNSAFE(_ms) \
+#define MSL_REF_UNSAFE(_msl) \
 	do { \
-		(_ms)->ref++; \
+		(_msl)->ref++; \
 	} while(0)
 
-#define MEDIA_SERVER_REF(_ms) \
+#define MSL_REF(_msl) \
 	do { \
-		MEDIA_SERVER_LOCK(_ms); \
-		MEDIA_SERVER_REF_UNSAFE(_ms); \
-		MEDIA_SERVER_UNLOCK(_ms); \
+		MEDIA_SERVER_LOCK(_msl->ms); \
+		MSL_REF_UNSAFE(_msl); \
+		MEDIA_SERVER_UNLOCK(_msl->ms); \
 	} while(0)
 
-#define MEDIA_SERVER_UNREF(_ms) \
+#define MSL_UNREF(_msl) \
 	do { \
-		MEDIA_SERVER_LOCK(_ms); \
-		(_ms)->ref--; \
-		if ((_ms)->ref == 0) { \
-			LM_DBG("destroying media session=%p\n", _ms); \
-			MEDIA_SERVER_UNLOCK(_ms); \
-			media_session_free(_ms); \
-		} else { \
-			if ((_ms)->ref < 0) \
-				LM_BUG("invalid ref for media session=%p ref=%d (%s:%d)\n", \
-						(_ms), (_ms)->ref, __func__, __LINE__); \
-			MEDIA_SERVER_UNLOCK(_ms); \
+		MEDIA_SERVER_LOCK(_msl->ms); \
+		(_msl)->ref--; \
+		if ((_msl)->ref == 0) { \
+			struct media_session *__tmp_ms = _msl->ms; \
+			LM_DBG("destroying media session leg=%p\n", _msl); \
+			media_session_leg_free(_msl); \
+			if (MEDIA_SERVER_FREE(__tmp_ms)) { \
+				MEDIA_SERVER_UNLOCK(__tmp_ms); \
+				media_session_free(__tmp_ms); \
+			} else { \
+				MEDIA_SERVER_UNLOCK(__tmp_ms); \
+			} \
+		} else if ((_msl)->ref < 0) { \
+				LM_BUG("invalid ref for media session leg=%p ref=%d (%s:%d)\n", \
+						(_msl), (_msl)->ref, __func__, __LINE__); \
+			MEDIA_SERVER_UNLOCK(_msl->ms); \
 		} \
 	} while(0)
 
-#define MEDIA_SERVER_UNREF_UNSAFE(_ms) \
+#define MSL_UNREF_UNSAFE(_msl) \
 	do { \
-		(_ms)->ref--; \
-		if ((_ms)->ref == 0) { \
-			LM_DBG("destroying media session=%p\n", _ms); \
-			media_session_free(_ms); \
-		} else { \
-			if ((_ms)->ref < 0) \
-				LM_BUG("invalid ref for media session=%p ref=%d (%s:%d)\n", \
-						(_ms), (_ms)->ref, __func__, __LINE__); \
+		(_msl)->ref--; \
+		if ((_msl)->ref == 0) { \
+			struct media_session *__tmp_ms = _msl->ms; \
+			LM_DBG("destroying media session leg=%p\n", _msl); \
+			media_session_leg_free(_msl); \
+			if (MEDIA_SERVER_FREE(__tmp_ms)) \
+				media_session_free(__tmp_ms); \
+		} else if ((_msl)->ref < 0) \
+				LM_BUG("invalid ref for media session leg=%p ref=%d (%s:%d)\n", \
+						(_msl), (_msl)->ref, __func__, __LINE__); \
 		} \
 	} while(0)
 
