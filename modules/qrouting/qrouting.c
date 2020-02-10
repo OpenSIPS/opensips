@@ -42,7 +42,7 @@
 #define QR_TABLE_VER 1
 
 /* modparam */
-static int history = 30; /* the history span in minutes */
+static int history_span = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
 
 str db_url;
@@ -80,7 +80,7 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t params[] = {
-	{"history", INT_PARAM, &history},
+	{"history_span", INT_PARAM, &history_span},
 	{"sampling_interval", INT_PARAM, &sampling_interval},
 	{"db_url", STR_PARAM, &db_url.s},
 	{0, 0, 0}
@@ -141,7 +141,7 @@ struct module_exports exports = {
 static int qr_init(void)
 {
 	LM_INFO("qrouting module - initializing\n");
-	LM_DBG("history = %d, sampling_interval = %d\n", history,
+	LM_DBG("history_span = %d, sampling_interval = %d\n", history_span,
 			sampling_interval);
 
 	if (qr_init_globals() != 0) {
@@ -308,8 +308,7 @@ static int qr_init_globals(void)
 	}
 	*qr_main_list = NULL;
 
-	/* TODO history in minutes */
-	qr_n = (history * 60) / sampling_interval; /* the number of sampling
+	qr_n = history_span * 60 / sampling_interval; /* the number of sampling
 												  intervals in history */
 
 	n_sampled = shm_malloc(sizeof *n_sampled);

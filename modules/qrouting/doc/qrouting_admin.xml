@@ -1,0 +1,220 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+<title>&adminguide;</title>
+
+<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+	<emphasis>qrouting</emphasis> is a module which sits on top of
+	<ulink url="../../drouting/doc/drouting.html">drouting</ulink>,
+	<ulink url="../../dialog/doc/dialog.html">dialog</ulink> and
+	<ulink url="../../tm/doc/tm.html">tm</ulink> and performs live
+	tracking of a series of essential gateway signaling quality indicators
+	(i.e. ASR, CCR, PDD, AST, ACD -- more details below).  Thus, qrouting is
+	able to adjust the prefix routing behavior at runtime, by dynamically
+	re-ordering the gateways based on how well they perform during live
+	traffic, such that:
+	<itemizedlist>
+		<listitem><para>
+			well-performing gateways get prioritized for routing
+		</para></listitem>
+		<listitem><para>
+			gateways which show a degradation in signaling quality are
+			demoted to the end of the routing list
+		</para></listitem>
+	</itemizedlist>
+	</para>
+</section>
+
+<section id="monitored_statistics" xreflabel="Monitored Statistics">
+	<title>Monitored Statistics</title>
+	<para>
+	The module keeps track of the following statistics, <emphasis role='bold'>
+	for each drouting gateway</emphasis>:
+	<itemizedlist>
+		<listitem>
+			<para>ASR (Answer Seizure Ratio) - the percentage of telephone
+				calls which are answered (200 reply status code).
+			</para>
+		</listitem>
+		<listitem>
+			<para>CCR (Call Completion Ratio) - the percentage of telephone
+				calls which are answered back by the gateway, excluding
+				5xx, 6xx reply codes and internal 408 timeouts.  The following
+				is always true: CCR >= ASR.
+			</para>
+		</listitem>
+		<listitem>
+			<para>PDD (Post Dial Delay) - the duration, in milliseconds,
+				between the receival of the initial INVITE and the receival
+				of the first 180/183 provisional reply (the call state
+				advances to <emphasis>"ringing"</emphasis>).
+			</para>
+		</listitem>
+		<listitem>
+			<para>AST (Average Setup Time) - the duration, in milliseconds,
+				between the receival of the initial INVITE and the receival
+				of the first 200 OK reply (the call state advances to
+				<emphasis>"answered"</emphasis>).  The following is always
+				true: AST >= PDD.
+			</para>
+		</listitem>
+		<listitem>
+			<para>ACD (Average Call Duration) - the duration, in seconds,
+				between the receival of the initial INVITE and the receival
+				of the first BYE request from either participant (the call
+				state advances to <emphasis>"ended"</emphasis>).
+			</para>
+		</listitem>
+	</itemizedlist>
+	</para>
+</section>
+
+<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section id="deps_modules" xreflabel="OpenSIPS Module Dependencies">
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded for this module to work:
+		<itemizedlist>
+			<listitem><para><emphasis>an SQL DB module, offering access to the
+						"qr_profiles" table</emphasis></para></listitem>
+			<listitem><para><emphasis>tm</emphasis></para></listitem>
+			<listitem><para><emphasis>dialog</emphasis></para></listitem>
+			<listitem><para><emphasis>drouting</emphasis></para></listitem>
+		</itemizedlist>
+		</para>
+	</section>
+</section>
+
+<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		An SQL database URL.
+		</para>
+		<para>
+			<emphasis>
+			Default value is <emphasis role='bold'>NULL</emphasis>.
+			</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "db_url", "mysql://opensips:opensipsrw@localhost/opensips")
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_history_span" xreflabel="history_span">
+		<title><varname>history_span</varname> (integer)</title>
+		<para>
+		The duration (in minutes) that a gateway's statistics for a given call
+		will be kept for.
+		</para>
+		<para>
+			<emphasis>
+			Default value is <emphasis role='bold'>30</emphasis> minutes.
+			</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>connection_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "history_span", 15)
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_sampling_interval" xreflabel="sampling_interval">
+		<title><varname>sampling_interval</varname> (integer)</title>
+		<para>
+		The duration (in seconds) of the statistics sampling window.  Every
+		<emphasis><xref linkend="param_sampling_interval"/></emphasis> seconds,
+		the accumulated statistics during the most recent sampling windows get
+		added to each gateway, while the oldest sampled interval statistics are
+		subtracted (rotated away) from each gateway.
+		</para>
+		<para>
+		A lower value will lead to a closer to realtime adjustment to traffic
+		changes, but it will also increase CPU usage and internal contention
+		due to locking.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>5</emphasis> seconds.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>connect_poll_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "sampling_interval", 5)
+	</programlisting>
+		</example>
+	</section>
+</section>
+
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+	<section id="mi_qr_reload" xreflabel="qr_reload">
+		<title><function moreinfo="none">qr_reload</function></title>
+
+		<para>
+		Reload all quality-based routing rules from the SQL database.
+		</para>
+		<para>
+		MI FIFO Command Format:
+		</para>
+
+		<programlisting  format="linespecific">
+
+opensips-cli -x mi qr_reload
+		</programlisting>
+	</section>
+
+	<section id="mi_qr_status" xreflabel="qr_status">
+		<title><function moreinfo="none">qr_status</function></title>
+
+		<para>
+		Inspect the signaling quality statistics of the current
+		<xref linkend="param_history_span"/> for all drouting gateways in all
+		partitions, with various levels of filtering.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>partition_name (optional)</emphasis> - a specific
+				drouting partition to list statistics for
+			</para></listitem>
+			<listitem><para>
+				<emphasis>rule_id (optional)</emphasis> - a specific drouting
+				rule ID to list statistics for
+			</para></listitem>
+			<listitem><para>
+				<emphasis>dst_id (optional)</emphasis> - a specific gateway or
+				carrier ID to list statistics for
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+
+		<programlisting  format="linespecific">
+
+opensips-cli -x mi qr_status
+opensips-cli -x mi qr_status pstn
+opensips-cli -x mi qr_status pstn MY-GW-3
+opensips-cli -x mi qr_status pstn MY-CARR-7
+		</programlisting>
+	</section>
+
+</section>
+
+</chapter>
