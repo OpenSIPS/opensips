@@ -1098,10 +1098,9 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 			inc_stat(total); \
 	} while (0)
 
-
-int tcp_timeout_con_get;
-int tcp_timeout_receive_fd;
-int tcp_timeout_send;
+extern int tcp_timeout_con_get;
+extern int tcp_timeout_receive_fd;
+extern int tcp_timeout_send;
 
 #define reset_tcp_vars(threshold) \
 	do { \

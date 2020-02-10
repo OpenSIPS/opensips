@@ -55,10 +55,6 @@ struct network networks[MAX_NETWORKS];
 int net_pipes_in[MAX_NETWORKS];
 int nr_of_networks;
 int nr_of_modems;
-int *queued_msgs;
-int use_contact;
-int sms_report_type;
-struct tm_binds tmb;
 
 
 #define ERR_NUMBER_TEXT " is an invalid number! Please resend your SMS "\

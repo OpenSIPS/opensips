@@ -32,6 +32,10 @@
 
 char int2str_buf[INT2STR_BUF_NO][INT2STR_MAX_LEN];
 
+int tcp_timeout_con_get = 0;
+int tcp_timeout_receive_fd = 0;
+int tcp_timeout_send = 0;
+
 /* make a null-termianted copy of the given string (in STR format) into
  * a static local buffer
  * !!IMPORTANT!! sequential calls do overwrite the previous values.

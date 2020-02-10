@@ -116,9 +116,6 @@ int mem_warming_enabled;
 int mem_warming_percentage = MEM_WARMING_DEFAULT_PERCENTAGE;
 
 #if defined(HP_MALLOC)
-stat_var *rpm_used;
-stat_var *rpm_rused;
-stat_var *rpm_frags;
 #if !defined(HP_MALLOC_FAST_STATS)
 stat_var *shm_used;
 stat_var *shm_rused;

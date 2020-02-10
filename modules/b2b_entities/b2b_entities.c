@@ -71,6 +71,8 @@ static int b2b_update_period = 100;
 int uac_auth_loaded;
 str b2b_key_prefix = str_init("B2B");
 int b2be_db_mode = WRITE_BACK;
+b2b_table server_htable = NULL;
+b2b_table client_htable = NULL;
 
 #define DB_COLS_NO  26
 

@@ -43,7 +43,6 @@
 #endif
 
 unsigned rmq_sync_mode = 0;
-struct timeval conn_timeout_tv;
 
 /* used to communicate with the sending process */
 static int rmq_pipe[2];

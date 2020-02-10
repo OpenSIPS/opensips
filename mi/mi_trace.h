@@ -37,18 +37,21 @@ struct mi_trace_req {
 	str cmd;
 	str backend;
 	char params[MAX_TRACE_FIELD];
-} mi_treq;
+};
 
-str mi_trpl;
+extern str mi_trpl;
 
 enum mi_trace_type { MI_TRACE_REQ, MI_TRACE_RPL};
+
 struct mi_trace_param {
 	enum mi_trace_type type;
 	union {
 		struct mi_trace_req* req;
 		str *rpl;
 	} d;
-} mi_tparam;
+};
+
+extern struct mi_trace_param mi_tparam;
 
 void try_load_trace_api(void);
 
