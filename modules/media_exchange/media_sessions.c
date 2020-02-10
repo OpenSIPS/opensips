@@ -25,11 +25,11 @@ static int media_session_dlg_idx;
 void media_session_unref(void *param)
 {
 	struct media_session *ms = (struct media_session *)param;
-	if (!MEDIA_SERVER_FREE(ms))
-		LM_WARN("media session %p still in use %p|%p!\n",
-				ms, ms->legs[0], ms->legs[1]);
+	MEDIA_SESSION_LOCK(ms);
+	if (ms->legs)
+		LM_WARN("media session %p still in use %p!\n", ms, ms->legs);
 	else
-		media_session_free(ms);
+		media_session_release(ms, 1);
 }
 
 int init_media_sessions(void)
@@ -43,12 +43,34 @@ int init_media_sessions(void)
 	return 0;
 }
 
+struct media_session_leg *media_session_get_leg(struct media_session *ms,
+		int leg)
+{
+	struct media_session_leg *msl;
+	for (msl = ms->legs; msl; msl = msl->next)
+		if (msl->leg == leg || msl->leg == MEDIA_LEG_BOTH)
+			return msl;
+	return NULL;
+}
+
+/* assumes the media session lock is acquired */
 void media_session_leg_free(struct media_session_leg *msl)
 {
-	if (msl->ms->legs[0] == msl)
-		msl->ms->legs[0] = NULL;
-	else
-		msl->ms->legs[1] = NULL;
+	struct media_session_leg *tmsl, *pmsl;
+
+	/* unlink the media session */
+	for (pmsl = NULL, tmsl = msl->ms->legs; tmsl; pmsl = tmsl, tmsl = tmsl->next)
+		if (tmsl == msl)
+			break;
+	if (tmsl) {
+		if (pmsl)
+			pmsl->next = msl->next;
+		else
+			msl->ms->legs = msl->next;
+	} else {
+		LM_ERR("media session leg %p not found in media session %p\n",
+				msl, msl->ms);
+	}
 	if (msl->b2b_key.s) {
 		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, NULL, 1);
 		shm_free(msl->b2b_key.s);
@@ -58,10 +80,26 @@ void media_session_leg_free(struct media_session_leg *msl)
 	shm_free(msl);
 }
 
+void media_session_release(struct media_session *ms, int unlock)
+{
+	int existing_legs = (ms->legs != NULL);
+
+	if (unlock)
+		MEDIA_SESSION_UNLOCK(ms);
+	if (existing_legs) {
+		LM_DBG("media session %p has onhoing legs!\n", ms);
+		return;
+	}
+	media_session_free(ms);
+}
+
 void media_session_free(struct media_session *ms)
 {
-	if (ms->dlg)
+
+	if (ms->dlg) {
 		media_dlg.dlg_ctx_put_ptr(ms->dlg, media_session_dlg_idx, NULL);
+		media_dlg.dlg_unref(ms->dlg, 1);
+	}
 	lock_destroy(&ms->lock);
 	LM_DBG("releasing media_session=%p\n", ms);
 	shm_free(ms);
@@ -106,34 +144,32 @@ struct media_session_leg *media_session_new_leg(struct dlg_cell *dlg,
 			LM_ERR("cannot create media session!\n");
 			return NULL;
 		}
-		MEDIA_SERVER_LOCK(ms);
+		MEDIA_SESSION_LOCK(ms);
 	} else {
-		MEDIA_SERVER_LOCK(ms);
-		if (MEDIA_SERVER_LEG(ms, leg) != NULL) {
+		MEDIA_SESSION_LOCK(ms);
+		if (media_session_get_leg(ms, leg)) {
 			LM_WARN("media session already engaged for leg %d\n", leg);
-			MEDIA_SERVER_UNLOCK(ms);
+			MEDIA_SESSION_UNLOCK(ms);
 			return NULL;
 		}
 	}
 	msl = shm_malloc(sizeof *msl);
 	if (!msl) {
 		LM_ERR("could not allocate new media session leg for %d\n", leg);
-		if (MEDIA_SERVER_FREE(ms)) {
-			MEDIA_SERVER_UNLOCK(ms);
-			media_session_free(ms);
-		} else {
-			MEDIA_SERVER_UNLOCK(ms);
-		}
+		media_session_release(ms, 1);
 		return NULL;
 	}
 	memset(msl, 0, sizeof *msl);
 	msl->type = type;
 	msl->ms = ms;
+	msl->leg = leg;
 	msl->nohold = nohold;
-	msl->state = MEDIA_SERVER_STATE_INIT;
+	msl->state = MEDIA_SESSION_STATE_INIT;
 	msl->ref = 1; /* creation */
-	MEDIA_SERVER_LEG(ms, leg) = msl;
-	MEDIA_SERVER_UNLOCK(ms);
+	/* link it to the session */
+	msl->next = ms->legs;
+	ms->legs = msl;
+	MEDIA_SESSION_UNLOCK(ms);
 	LM_DBG(" creating media_session_leg=%p\n", msl);
 	return msl;
 }

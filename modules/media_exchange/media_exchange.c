@@ -22,6 +22,7 @@
 #include "../../sr_module.h"
 #include "media_exchange.h"
 #include "media_sessions.h"
+#include "media_utils.h"
 
 struct tm_binds media_tm;
 struct dlg_binds media_dlg;
@@ -199,17 +200,24 @@ static int media_fetch_from_uri(struct sip_msg *msg, str *uri, int leg,
 	return -1;
 }
 
+#define MEDIA_SESSION_REPLY_PREP(_rd, _msl) \
+	do { \
+		memset((_rd), 0, sizeof (*(_rd))); \
+		(_rd)->et = (_msl)->b2b_entity; \
+		(_rd)->b2b_key = &(_msl)->b2b_key; \
+	} while (0);
 
 static int media_session_fetch_server_reply(struct sip_msg *msg, int status, void *param)
 {
 	struct media_session_leg *msl;
 	b2b_rpl_data_t reply_data;
-	str reason, body;
+	str reason, body, *pbody;
 
 	if (status < 200) /* don't mind about provisional */
 		return 0;
 	msl = (struct media_session_leg *)param;
 
+	/* final reply here - unref the session */
 	if (msg == FAKED_REPLY || status >= 300)
 		goto terminate;
 
@@ -219,15 +227,28 @@ static int media_session_fetch_server_reply(struct sip_msg *msg, int status, voi
 		goto terminate;
 	}
 
-	/* TODO: handle success */
+	MEDIA_SESSION_REPLY_PREP(&reply_data, msl);
+	reply_data.method = METHOD_INVITE;
+	reply_data.code = 200;
+	reason.s = "OK";
+	reason.len = 2;
+	reply_data.text = &reason;
+	reply_data.body = &body;
+	if (media_b2b.send_reply(&reply_data) < 0) {
+		LM_ERR("could not send reply to media server!\n");
+		goto terminate;
+	}
 
 	if (!msl->nohold) {
 		/* we need to put the other party on hold */
-
-		/* TODO: fetch the body and replace it with a=invalid label */
-
+		pbody = media_session_get_hold_sdp(msl);
+		if (!pbody)
+			goto error;
 		/* XXX: should we care whether the other party is properly on hold? */
-		return 0;
+		if (media_session_reinvite(msl->ms->dlg,
+				MEDIA_SESSION_DLG_OTHER_LEG(msl), pbody) < 0)
+			LM_ERR("could not copy send indialog request for hold\n");
+		pkg_free(pbody->s);
 	}
 
 	/* finished processing this reply */
@@ -236,9 +257,7 @@ static int media_session_fetch_server_reply(struct sip_msg *msg, int status, voi
 
 terminate:
 	/* the client declined the invite - propagate the code */
-	memset(&reply_data, 0, sizeof(b2b_rpl_data_t));
-	reply_data.et = msl->b2b_entity;
-	reply_data.b2b_key = &msl->b2b_key;
+	MEDIA_SESSION_REPLY_PREP(&reply_data, msl);
 	reply_data.method = METHOD_INVITE;
 	reply_data.code = status;
 	reason.s = error_text(status);
@@ -246,6 +265,7 @@ terminate:
 	reply_data.text = &reason;
 	media_b2b.send_reply(&reply_data);
 
+	MSL_UNREF(msl);
 	/* no need of this session leg - remote it */
 	media_session_leg_free(msl);
 	return -1;
@@ -258,7 +278,6 @@ error:
 static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *nohold)
 {
 	str body;
-	int caller;
 	str contact;
 	str *b2b_key;
 	struct dlg_cell *dlg;
@@ -312,13 +331,11 @@ static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *n
 		goto destroy;
 	}
 	msl->b2b_entity = B2B_SERVER;
-	/* looks good - push in dialog */
-	caller = (leg == MEDIA_LEG_CALLER?1:0);
 	/* all good - send the invite to the client */
 	MSL_REF(msl);
-	if (media_dlg.send_indialog_request(dlg, &inv, caller,
+	if (media_dlg.send_indialog_request(dlg, &inv, MEDIA_SESSION_DLG_LEG(msl),
 			&body, &msg->content_type->body, media_session_fetch_server_reply, msl) < 0) {
-		LM_ERR("could not copy b2b server key for callid %.*s\n", callid->len, callid->s);
+		LM_ERR("could not send indialog request for callid %.*s\n", callid->len, callid->s);
 		goto destroy;
 	}
 	media_dlg.dlg_unref(dlg, 1);
@@ -339,19 +356,47 @@ static int media_terminate(struct sip_msg *msg, int leg, int *nohold)
 
 static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void *param)
 {
+	str reason;
+	b2b_rpl_data_t reply_data;
+	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
+
 	if (type == B2B_REPLY) {
 		if (msg->REQ_METHOD == METHOD_BYE) {
 			LM_DBG("final BYE for %.*s\n", key->len, key->s);
+			/* TODO: handle final BYE */
 		} else {
 			LM_DBG("unexpected method %d for %.*s\n", msg->REQ_METHOD,
 					key->len, key->s);
 		}
-		return 0;
 	} else {
-		if (msg->REQ_METHOD == METHOD_ACK)
-			return 0;
-		LM_DBG("unexpected reply for method %d for %.*s\n", msg->REQ_METHOD,
-				key->len, key->s);
+		switch (msg->REQ_METHOD) {
+			case METHOD_ACK:
+				return 0;
+			case METHOD_BYE:
+				LM_DBG("media server ended the playback for %.*s\n",
+						key->len, key->s);
+				MEDIA_SESSION_REPLY_PREP(&reply_data, msl);
+				reply_data.method = METHOD_BYE;
+				reply_data.code = 200;
+				reason.s = "OK";
+				reason.len = 2;
+				reply_data.text = &reason;
+				if (media_b2b.send_reply(&reply_data) < 0)
+					LM_ERR("could not confirm session ending!\n");
+
+				if (media_session_resume_dlg(msl->ms->dlg, MEDIA_SESSION_DLG_LEG(msl)) < 0)
+					LM_ERR("could not resume media session!\n");
+
+				/* should be last unref */
+				MSL_UNREF(msl);
+
+				break;
+			/* TODO: handle re-invite? */
+			default:
+				LM_DBG("unexpected reply for method %d for %.*s\n",
+						msg->REQ_METHOD, key->len, key->s);
+				return -1;
+		}
 	}
 	return 0;
 }
