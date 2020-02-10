@@ -1052,13 +1052,11 @@ static void dlg_indialog_reply(struct cell* t, int type, struct tmcb_params* ps)
 }
 
 int send_indialog_request(struct dlg_cell *dlg, str *method,
-		int caller, str *body, str *ct, indialog_reply_f func, void *param)
+		int dstleg, str *body, str *ct, indialog_reply_f func, void *param)
 {
-	int dstleg;
 	str extra_headers;
 	struct dlg_indialog_req_param *p;
 
-	dstleg = (caller?DLG_CALLER_LEG:callee_idx(dlg));
 	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, dstleg), dstleg, ct, &extra_headers)) {
 		LM_ERR("could not build extra headers!\n");
 		return -1;

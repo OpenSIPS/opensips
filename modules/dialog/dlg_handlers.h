@@ -129,9 +129,9 @@ typedef int (*terminate_dlg_f)(str *callid, unsigned int h_entry, unsigned int h
 
 typedef int (*indialog_reply_f) (struct sip_msg *msg, int statuscode, void *param);
 typedef int (*send_indialog_req_f)(struct dlg_cell *dlg, str *method,
-		int caller, str *body, str *ct, indialog_reply_f func, void *param);
+		int leg, str *body, str *ct, indialog_reply_f func, void *param);
 int send_indialog_request(struct dlg_cell *dlg, str *method,
-		int caller, str *body, str *ct, indialog_reply_f func, void *param);
+		int leg, str *body, str *ct, indialog_reply_f func, void *param);
 
 void unreference_dialog(void *dialog);
 
