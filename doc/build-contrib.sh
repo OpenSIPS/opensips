@@ -21,10 +21,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
 
 ### global OpenSIPS commit stats, self-generated on each "rebuild-proj-stats"
-__PROJ_COMMITS=15686
-__PROJ_LINES_ADD=2001541
-__PROJ_LINES_DEL=877383
-__LAST_REBUILD_SHA=736315e5c7f005d645883f2e968471fdaec9dda1
+__PROJ_COMMITS=17783
+__PROJ_LINES_ADD=2184345
+__PROJ_LINES_DEL=1089621
+__LAST_REBUILD_SHA=b6ef99633e17d0fac08b98364389678f8ae3a3d2
 
 TMP_FILE=/var/tmp/.opensips-build-contrib.tmp
 
@@ -921,12 +921,18 @@ while read line; do
   doc_authors+="$(mk_author_xml_str "$(echo $line | awk -F'[,]' '{print $1}')"), "
 done < $tmp_file
 
+if [ -n "$doc_authors" ]; then
+  doc_authors_para="<para><emphasis role='bold'>Last edited by:</emphasis> ${doc_authors::-2}.</para>"
+else
+  doc_authors_para=
+fi
+
 cat <<EOF >>modules/$1/doc/contributors.xml
 <chapter id="documentation" xreflabel="documentation">
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> ${doc_authors::-2}.</para>
+	$doc_authors_para
 </section>
 
 </chapter>
