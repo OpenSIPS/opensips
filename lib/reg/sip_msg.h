@@ -34,6 +34,8 @@
 #define CONTACT_MAX_SIZE       255
 #define RECEIVED_MAX_SIZE      255
 
+extern char tgruu_dec[];
+
 /*! \brief
  * Parse the whole message and bodies of all header fields
  * that will be needed by registrar

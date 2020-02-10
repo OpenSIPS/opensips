@@ -26,7 +26,7 @@
 #include "../clusterer/api.h"
 #include "presentity.h"
 
-enum federation_mode {
+typedef enum federation_mode {
 	FEDERATION_DISABLED,
 	FEDERATION_ON_DEMAND,
 	FEDERATION_FULL_SHARING

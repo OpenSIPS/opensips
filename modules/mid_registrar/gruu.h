@@ -49,7 +49,6 @@
 #define GR_NO_VAL ";gr"
 #define GR_NO_VAL_SIZE (sizeof(GR_NO_VAL) - 1)
 
-extern char tgruu_dec[];
 extern str default_gruu_secret;
 
 int calc_temp_gruu_len(str* aor,str* instance,str *callid);

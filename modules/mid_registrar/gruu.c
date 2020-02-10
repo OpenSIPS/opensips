@@ -43,7 +43,6 @@
 #define MAX_TGRUU_SIZE 255
 #define GR_MAGIC 73
 str default_gruu_secret=str_init("0p3nS1pS");
-char tgruu_dec[MAX_TGRUU_SIZE];
 
 int calc_temp_gruu_len(str* aor,str* instance,str *callid)
 {
