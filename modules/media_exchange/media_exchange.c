@@ -74,18 +74,18 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg,0}, /* leg */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* body */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* headers */
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* nohold */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
 		{0,0,0}},
 		REQUEST_ROUTE},
 	{"media_fetch_to_call",(cmd_function)media_fetch_to_call, {
 		{CMD_PARAM_STR,0,0}, /* callid */
 		{CMD_PARAM_STR,fixup_media_leg,0}, /* leg */
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* nohold */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
 		{0,0,0}},
 		REQUEST_ROUTE},
 	{"media_terminate",(cmd_function)media_terminate, {
 		{CMD_PARAM_STR,fixup_media_leg,0}, /* leg */
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* nohold */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
 		{0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
