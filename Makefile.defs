@@ -170,8 +170,7 @@ ifneq (,$(findstring clang, $(CC_LONGVER)))
 else ifneq (,$(findstring gcc, $(CC_LONGVER)))
 	CC_NAME=gcc
 	CC_VER=$(word 1,$(CC)) $(shell $(CC) - -dumpversion|head -n 1|cut -d" " -f 3|\
-			 sed -e 's/^.*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/' \
-			 	 -e 's/^[^0-9].*\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/')
+			 sed -e 's/^[^0-9]*\([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)[^0-9]*/\1/')
 	# sun sed is a little brain damaged => this complicated expression
 	MKDEP=$(CC) -MM
 	CC_SHORTVER=$(shell echo "$(CC_VER)" | cut -d" " -f 2| \
@@ -181,7 +180,7 @@ else ifneq (,$(findstring gcc, $(CC_LONGVER)))
 	#XXX: for now treat 4+.x the same as 4.x
 	CC_CLASS=$(shell echo "$(CC_SHORTVER)" | \
 				 sed -e 's/2\.9.*/2.9x/' -e 's/3\.[0-9]/3.x/' \
-				 -e 's/[4-9]\(\.[0-9]\)\?/4.x/')
+				 -e 's/\([4-9]\|10\)\(\.[0-9]\)\?/4.x/')
 endif
 
 ifneq (, $(findstring Sun, $(CC_LONGVER)))
@@ -841,6 +840,7 @@ endif
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
+							-fno-common \
 							-mtune=$(CPU_TYPE) \
 					-Wold-style-definition -Wmissing-field-initializers -Wredundant-decls
 
@@ -886,7 +886,7 @@ ifeq		($(CC_NAME), suncc)
 			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
 ifeq		($(CC_NAME), clang)
-			CFLAGS+=$(CC_OPTIMIZE_FLAG) -Wall -funroll-loops
+			CFLAGS+=$(CC_OPTIMIZE_FLAG) -Wall -funroll-loops -fno-common
 else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
@@ -913,6 +913,7 @@ ifeq			($(CC_CLASS), 4.x)
 					CFLAGS+=-minline-all-stringops \
 							-falign-loops \
 							-ftree-vectorize \
+							-fno-common \
 							-mtune=$(CPU_TYPE) \
 					-Wold-style-definition -Wmissing-field-initializers -Wredundant-decls
 else
@@ -953,7 +954,7 @@ ifeq		($(CC_NAME), suncc)
 				# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
 ifeq		($(CC_NAME), clang)
-			CFLAGS+=$(CC_OPTIMIZE_FLAG) -Wall -funroll-loops
+			CFLAGS+=$(CC_OPTIMIZE_FLAG) -Wall -funroll-loops -fno-common
 else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
