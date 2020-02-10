@@ -68,6 +68,7 @@ extern struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
 extern ds_partition_t *default_partition;
 
+struct tm_binds tmb;
 struct fs_binds fs_api;
 
 #define dst_is_active(_dst) \
