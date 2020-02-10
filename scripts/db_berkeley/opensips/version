@@ -55,7 +55,7 @@ domain|3
 domainpolicy|
 domainpolicy|3
 dr_carriers|
-dr_carriers|2
+dr_carriers|3
 dr_gateways|
 dr_gateways|6
 dr_groups|
@@ -63,7 +63,7 @@ dr_groups|2
 dr_partitions|
 dr_partitions|1
 dr_rules|
-dr_rules|3
+dr_rules|4
 emergency_report|
 emergency_report|1
 emergency_routing|
@@ -94,6 +94,8 @@ presentity|
 presentity|5
 pua|
 pua|8
+qr_profiles|
+qr_profiles|1
 re_grp|
 re_grp|2
 registrant|

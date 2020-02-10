@@ -14,7 +14,7 @@ CREATE TABLE dr_gateways (
     CONSTRAINT dr_gw_idx UNIQUE (gwid)
 ) ENGINE=InnoDB;
 
-INSERT INTO version (table_name, table_version) values ('dr_rules','3');
+INSERT INTO version (table_name, table_version) values ('dr_rules','4');
 CREATE TABLE dr_rules (
     ruleid INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     groupid CHAR(255) NOT NULL,
@@ -23,16 +23,19 @@ CREATE TABLE dr_rules (
     priority INT(11) DEFAULT 0 NOT NULL,
     routeid CHAR(255) DEFAULT NULL,
     gwlist CHAR(255) NOT NULL,
+    sort_alg CHAR(1) DEFAULT 0 NOT NULL,
+    sort_profile INT(10) UNSIGNED DEFAULT 0 NOT NULL,
     attrs CHAR(255) DEFAULT NULL,
     description CHAR(128) DEFAULT NULL
 ) ENGINE=InnoDB;
 
-INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
+INSERT INTO version (table_name, table_version) values ('dr_carriers','3');
 CREATE TABLE dr_carriers (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     carrierid CHAR(64) NOT NULL,
     gwlist CHAR(255) NOT NULL,
     flags INT(11) UNSIGNED DEFAULT 0 NOT NULL,
+    sort_alg CHAR(1) DEFAULT 0 NOT NULL,
     state INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     attrs CHAR(255) DEFAULT NULL,
     description CHAR(128) DEFAULT NULL,

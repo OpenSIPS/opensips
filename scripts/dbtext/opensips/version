@@ -20,11 +20,11 @@ dialplan:5
 dispatcher:8
 domain:3
 domainpolicy:3
-dr_carriers:2
+dr_carriers:3
 dr_gateways:6
 dr_groups:2
 dr_partitions:1
-dr_rules:3
+dr_rules:4
 emergency_report:1
 emergency_routing:1
 emergency_service_provider:1
@@ -39,6 +39,7 @@ location:1013
 missed_calls:5
 presentity:5
 pua:8
+qr_profiles:1
 re_grp:2
 registrant:2
 rls_presentity:1

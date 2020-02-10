@@ -480,6 +480,8 @@
 		<column><field>priority</field><type>DB_INT</type></column>
 		<column><field>routeid</field><type>DB_STR</type></column>
 		<column><field>gwlist</field><type>DB_STR</type></column>
+		<column><field>sort_alg</field><type>DB_STR</type></column>
+		<column><field>sort_profile</field><type>DB_INT</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
 	</db_table>
@@ -491,6 +493,7 @@
 		<column><field>carrierid</field><type>DB_STR</type></column>
 		<column><field>gwlist</field><type>DB_STR</type></column>
 		<column><field>flags</field><type>DB_INT</type></column>
+		<column><field>sort_alg</field><type>DB_STR</type></column>
 		<column><field>state</field><type>DB_INT</type></column>
 		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>description</field><type>DB_STR</type></column>
@@ -766,6 +769,23 @@
 		<column><field>remote_contact</field><type>DB_STR</type></column>
 		<column><field>version</field><type>DB_INT</type></column>
 		<column><field>extra_headers</field><type>DB_BLOB</type></column>
+	</db_table>
+	<!-- Declaration of qr_profiles table-->
+	<db_table id="qr_profiles">
+		<table_name>qr_profiles</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>profile_name</field><type>DB_STR</type></column>
+		<column><field>warn_threshold_asr</field><type>DB_DOUBLE</type></column>
+		<column><field>warn_threshold_ccr</field><type>DB_DOUBLE</type></column>
+		<column><field>warn_threshold_pdd</field><type>DB_DOUBLE</type></column>
+		<column><field>warn_threshold_ast</field><type>DB_DOUBLE</type></column>
+		<column><field>warn_threshold_acd</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_asr</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_ccr</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_pdd</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_ast</field><type>DB_DOUBLE</type></column>
+		<column><field>crit_threshold_acd</field><type>DB_DOUBLE</type></column>
 	</db_table>
 	<!-- Declaration of registrant table-->
 	<db_table id="registrant">
@@ -2702,6 +2722,8 @@
 				<col><field>priority</field></col>
 				<col><field>routeid</field></col>
 				<col><field>gwlist</field></col>
+				<col><field>sort_alg</field></col>
+				<col><field>sort_profile</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
@@ -2716,6 +2738,8 @@
 				<col><field>priority</field></col>
 				<col><field>routeid</field></col>
 				<col><field>gwlist</field></col>
+				<col><field>sort_alg</field></col>
+				<col><field>sort_profile</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
@@ -2733,6 +2757,8 @@
 				<col><field>priority</field></col>
 				<col><field>routeid</field></col>
 				<col><field>gwlist</field></col>
+				<col><field>sort_alg</field></col>
+				<col><field>sort_profile</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
 			</query_cols>
@@ -2755,6 +2781,7 @@
 				<col><field>carrierid</field></col>
 				<col><field>gwlist</field></col>
 				<col><field>flags</field></col>
+				<col><field>sort_alg</field></col>
 				<col><field>state</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
@@ -2767,6 +2794,7 @@
 				<col><field>carrierid</field></col>
 				<col><field>gwlist</field></col>
 				<col><field>flags</field></col>
+				<col><field>sort_alg</field></col>
 				<col><field>state</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
@@ -2782,6 +2810,7 @@
 				<col><field>carrierid</field></col>
 				<col><field>gwlist</field></col>
 				<col><field>flags</field></col>
+				<col><field>sort_alg</field></col>
 				<col><field>state</field></col>
 				<col><field>attrs</field></col>
 				<col><field>description</field></col>
@@ -3871,6 +3900,71 @@
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
 			<db_table_id>pua</db_table_id>
+			<cmd_type>DB_DELETE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+		</cmd>
+	</mod>
+	<!-- qr_profiles provisionning -->
+	<mod><mod_name>qr_profiles</mod_name>
+		<cmd><cmd_name>show</cmd_name>
+			<db_table_id>qr_profiles</db_table_id>
+			<cmd_type>DB_QUERY</cmd_type>
+			<query_cols>
+				<col><field>id</field><link_cmd>update</link_cmd></col>
+				<col><field>profile_name</field></col>
+				<col><field>warn_threshold_asr</field></col>
+				<col><field>warn_threshold_ccr</field></col>
+				<col><field>warn_threshold_pdd</field></col>
+				<col><field>warn_threshold_ast</field></col>
+				<col><field>warn_threshold_acd</field></col>
+				<col><field>crit_threshold_asr</field></col>
+				<col><field>crit_threshold_ccr</field></col>
+				<col><field>crit_threshold_pdd</field></col>
+				<col><field>crit_threshold_ast</field></col>
+				<col><field>crit_threshold_acd</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>add</cmd_name>
+			<db_table_id>qr_profiles</db_table_id>
+			<cmd_type>DB_INSERT</cmd_type>
+			<query_cols>
+				<col><field>profile_name</field></col>
+				<col><field>warn_threshold_asr</field></col>
+				<col><field>warn_threshold_ccr</field></col>
+				<col><field>warn_threshold_pdd</field></col>
+				<col><field>warn_threshold_ast</field></col>
+				<col><field>warn_threshold_acd</field></col>
+				<col><field>crit_threshold_asr</field></col>
+				<col><field>crit_threshold_ccr</field></col>
+				<col><field>crit_threshold_pdd</field></col>
+				<col><field>crit_threshold_ast</field></col>
+				<col><field>crit_threshold_acd</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>update</cmd_name>
+			<db_table_id>qr_profiles</db_table_id>
+			<cmd_type>DB_UPDATE</cmd_type>
+			<clause_cols>
+				<col><field>id</field><operator>=</operator></col>
+			</clause_cols>
+			<query_cols>
+				<col><field>profile_name</field></col>
+				<col><field>warn_threshold_asr</field></col>
+				<col><field>warn_threshold_ccr</field></col>
+				<col><field>warn_threshold_pdd</field></col>
+				<col><field>warn_threshold_ast</field></col>
+				<col><field>warn_threshold_acd</field></col>
+				<col><field>crit_threshold_asr</field></col>
+				<col><field>crit_threshold_ccr</field></col>
+				<col><field>crit_threshold_pdd</field></col>
+				<col><field>crit_threshold_ast</field></col>
+				<col><field>crit_threshold_acd</field></col>
+			</query_cols>
+		</cmd>
+		<cmd><cmd_name>delete</cmd_name>
+			<db_table_id>qr_profiles</db_table_id>
 			<cmd_type>DB_DELETE</cmd_type>
 			<clause_cols>
 				<col><field>id</field><operator>=</operator></col>

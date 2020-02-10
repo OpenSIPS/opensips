@@ -1,8 +1,5 @@
-/**
- * drouting module developer api
- *
- * Copyright (C) 2014 OpenSIPS Foundation
- * Copyright (C) 2015-2020 OpenSIPS Solutions
+/*
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,16 +15,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _DROUTING_INTERNAL_API_H_
-#define _DROUTING_INTERNAL_API_H_
+#ifndef __QR_MI__
+#define __QR_MI__
 
-#include "dr_api.h"
+mi_cmd_f mi_qr_status_0;
+mi_cmd_f mi_qr_status_1;
+mi_cmd_f mi_qr_status_2;
+mi_cmd_f mi_qr_status_3;
 
-int load_dr (struct dr_binds *drb);
-rt_info_t* find_rule_by_prefix_unsafe(ptree_t *pt, ptree_node_t *noprefix,
-		str prefix, unsigned int grp_id, unsigned int *matched_len);
+mi_cmd_f mi_qr_reload_0;
 
-#endif
+#endif /* __QR_MI__ */

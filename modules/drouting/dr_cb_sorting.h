@@ -2,7 +2,7 @@
  *
  * drouting module sorting callbacks header
  *
- * Copyright (C) 2014-2016 OpenSIPS Solutions
+ * Copyright (C) 2014-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,17 +18,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Sui *  2016-02-18  ported to 2.2 (bogdan)
-te 330, Boston, MA  02111-1307  USA
- *
- * History
- * -------
- *  2014-10-10  initial version (Mihai Tiganus)
- *  2016-02-18  ported to 2.2 (bogdan)
-*/
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
-#ifndef _DR_SORTING_CBS_H_
-#define _DR_SORTING_CBS_H_
+#ifndef _DR_CB_SORTING_H_
+#define _DR_CB_SORTING_H_
 
 #include "prefix_tree.h"
 
@@ -57,9 +51,11 @@ struct dr_reg_param {
 
 struct dr_reg_init_rule_params {
 	void *rule; /* created at qr, set to dr */
+
 	int n_dst; /* the number of destination for the new rule;
 				  sent by dr */
 	int r_id; /* the rule id: sent by dr */
+	int qr_profile; /* sent by dr */
 };
 
 struct dr_acc_call_params {
@@ -77,17 +73,8 @@ struct dr_sort_params {
 	int rc; /* return code for the funciton */
 };
 
-struct dr_set_profile_params {
-	void *qr_rule; /* qr_rule_t * to which the profile will be added.
-					* provided by dr */
-	unsigned int profile; /* profile id, sent by dr to qr */
-};
-
 struct dr_add_rule_params {
-	int part_index; /* partition index */
-	str part_name;
 	void *qr_rule; /* rule to be added to list */
-	void *qr_parts; /* the partitions list to which the rule will be added */
 };
 
 struct dr_link_rule_list_params {
@@ -104,11 +91,11 @@ struct dr_free_qr_list_params {
 	void *old_list;
 };
 
-struct dr_create_partition_list_params {
-	void **part_list; /* the list of partitions created at QR returned for DR*/
-	int n_parts; /* the number of partitions:provided by dr */
+struct dr_prepare_part_params {
+	str part_name;
 };
 
+typedef void (*dr_sort_cb) (void *param);
+int run_dr_sort_cbs(sort_cb_type type, struct dr_sort_params *param);
+
 #endif
-
-

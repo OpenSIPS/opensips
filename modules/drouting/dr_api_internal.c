@@ -2,6 +2,7 @@
  * drouting module developer api
  *
  * Copyright (C) 2014 OpenSIPS Foundation
+ * Copyright (C) 2015-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,14 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History
- * -------
- *  2014-08-13  initial version (Andrei Datcu)
-*/
+ */
 
 #include "dr_api_internal.h"
 #include "dr_api.h"
+#include "dr_cb.h"
 
 
 #include "../../str.h"
@@ -37,6 +35,36 @@ static void free_dr_head(dr_head_p partition);
 static int add_rule_api(dr_head_p partition, unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
 		tmrec_t *time_rec, void *attr);
+
+
+static str * get_gw_name(pgw_t * gw);
+static str * get_cr_name(pcr_t * cr);
+static int get_cr_n_gw(pcr_t * cr); /* gets the number of gateways from a carrier */
+static  pgw_t * get_gw_from_cr (pcr_t *cr, int n);
+static void * get_qr_rule_handle(rt_info_t *rule);
+
+
+static str * get_gw_name(pgw_t *gw) {
+	return &gw->id;
+}
+
+static int get_cr_n_gw(pcr_t * cr) {
+	return cr->pgwa_len;
+}
+
+static inline pgw_t * get_gw_from_cr(pcr_t *cr, int n) {
+	if(cr->pgwa_len > n)
+		return cr->pgwl[n].dst.gw; /* a carrier cannot contain another carrier */
+	return NULL; /* provided index was bigger than the vector */
+}
+
+static inline str *get_cr_name(pcr_t * cr) {
+	return &cr->id;
+}
+
+static inline void * get_qr_rule_handle(rt_info_t *rule) {
+	return rule->qr_handler;
+}
 
 
 /* Warning this function assumes the lock is already taken */
@@ -68,6 +96,11 @@ int load_dr (struct dr_binds *drb)
 	drb->free_head = free_dr_head;
 	drb->add_rule = add_rule_api;
 	drb->register_drcb = register_dr_cb;
+	drb->get_gw_name = get_gw_name;
+	drb->get_cr_n_gw = get_cr_n_gw;
+	drb->get_cr_name = get_cr_name;
+	drb->get_gw_from_cr = get_gw_from_cr;
+	drb->get_qr_rule_handle = get_qr_rule_handle;
 	return 0;
 }
 

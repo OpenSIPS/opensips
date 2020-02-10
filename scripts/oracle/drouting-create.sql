@@ -22,7 +22,7 @@ END dr_gateways_tr;
 /
 BEGIN map2users('dr_gateways'); END;
 /
-INSERT INTO version (table_name, table_version) values ('dr_rules','3');
+INSERT INTO version (table_name, table_version) values ('dr_rules','4');
 CREATE TABLE dr_rules (
     ruleid NUMBER(10) PRIMARY KEY,
     groupid VARCHAR2(255),
@@ -31,6 +31,8 @@ CREATE TABLE dr_rules (
     priority NUMBER(10) DEFAULT 0 NOT NULL,
     routeid VARCHAR2(255) DEFAULT NULL,
     gwlist VARCHAR2(255),
+    sort_alg VARCHAR2(1) DEFAULT 0 NOT NULL,
+    sort_profile NUMBER(10) DEFAULT 0 NOT NULL,
     attrs VARCHAR2(255) DEFAULT NULL,
     description VARCHAR2(128) DEFAULT NULL
 );
@@ -43,12 +45,13 @@ END dr_rules_tr;
 /
 BEGIN map2users('dr_rules'); END;
 /
-INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
+INSERT INTO version (table_name, table_version) values ('dr_carriers','3');
 CREATE TABLE dr_carriers (
     id NUMBER(10) PRIMARY KEY,
     carrierid VARCHAR2(64),
     gwlist VARCHAR2(255),
     flags NUMBER(10) DEFAULT 0 NOT NULL,
+    sort_alg VARCHAR2(1) DEFAULT 0 NOT NULL,
     state NUMBER(10) DEFAULT 0 NOT NULL,
     attrs VARCHAR2(255) DEFAULT NULL,
     description VARCHAR2(128) DEFAULT NULL,

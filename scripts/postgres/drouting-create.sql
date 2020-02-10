@@ -15,7 +15,7 @@ CREATE TABLE dr_gateways (
 );
 
 ALTER SEQUENCE dr_gateways_id_seq MAXVALUE 2147483647 CYCLE;
-INSERT INTO version (table_name, table_version) values ('dr_rules','3');
+INSERT INTO version (table_name, table_version) values ('dr_rules','4');
 CREATE TABLE dr_rules (
     ruleid SERIAL PRIMARY KEY NOT NULL,
     groupid VARCHAR(255) NOT NULL,
@@ -24,17 +24,20 @@ CREATE TABLE dr_rules (
     priority INTEGER DEFAULT 0 NOT NULL,
     routeid VARCHAR(255) DEFAULT NULL,
     gwlist VARCHAR(255) NOT NULL,
+    sort_alg VARCHAR(1) DEFAULT 0 NOT NULL,
+    sort_profile INTEGER DEFAULT 0 NOT NULL,
     attrs VARCHAR(255) DEFAULT NULL,
     description VARCHAR(128) DEFAULT NULL
 );
 
 ALTER SEQUENCE dr_rules_ruleid_seq MAXVALUE 2147483647 CYCLE;
-INSERT INTO version (table_name, table_version) values ('dr_carriers','2');
+INSERT INTO version (table_name, table_version) values ('dr_carriers','3');
 CREATE TABLE dr_carriers (
     id SERIAL PRIMARY KEY NOT NULL,
     carrierid VARCHAR(64) NOT NULL,
     gwlist VARCHAR(255) NOT NULL,
     flags INTEGER DEFAULT 0 NOT NULL,
+    sort_alg VARCHAR(1) DEFAULT 0 NOT NULL,
     state INTEGER DEFAULT 0 NOT NULL,
     attrs VARCHAR(255) DEFAULT NULL,
     description VARCHAR(128) DEFAULT NULL,

@@ -16,14 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- *
- * For any questions about this software and its license, please contact
- * Voice Sistem at following e-mail address:
- *         office@voice-system.ro
- *
- * History:
- * ---------
- *  2005-07-27  first version (bogdan)
  */
 
 

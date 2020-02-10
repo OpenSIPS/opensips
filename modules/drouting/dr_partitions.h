@@ -4,6 +4,7 @@
  * Copyright (C) 2004-2005 FhG Fokus
  * Copyright (C) 2006-2010 Voice Sistem SRL
  * Copyright (C) 2014 OpenSIPS Foundation
+ * Copyright (C) 2015-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,11 +21,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History
- * -------
- *  2014-07-23  initial version (Mihai Tiganus)
  */
+
 #ifndef DR_DR_PARTITIONS_H
 #define DR_DR_PARTITIONS_H
 
@@ -44,6 +42,7 @@
 #include "../tm/tm_load.h"
 
 extern int use_partitions;
+extern rw_lock_t *reload_lock;
 
 struct head_db {
 	str db_url;
@@ -55,6 +54,7 @@ struct head_db {
 	str drc_table; /* drc_table name extracted from database */
 	str drg_table; /* drg_table name extracted from database */
 	time_t time_last_update;
+	int acc_call_params_avp;
 	int avpID_store_ruri;       /* from parse_avp_spec */
 	int avpID_store_prefix;    /* from parse_avp_spec */
 	int avpID_store_index;     /* from parse_avp_spec */
