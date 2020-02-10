@@ -206,6 +206,10 @@ extern int dlg_enable_stats;
 #define other_leg(dlg, l) \
 	(l == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG)
 
+#define dlg_get_out_sdp(_dlg, _dst) \
+	((_dlg)->legs[(_dst)].out_sdp.s? \
+	 (_dlg)->legs[(_dst)].out_sdp:(_dlg)->legs[other_leg(_dlg, _dst)].in_sdp)
+
 
 #define ctx_dialog_get() \
 	((struct dlg_cell*)context_get_ptr(CONTEXT_GLOBAL,current_processing_ctx,ctx_dlg_idx) )
