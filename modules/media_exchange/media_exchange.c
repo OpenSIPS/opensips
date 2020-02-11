@@ -66,7 +66,7 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE},
 	{"media_send_from_call",(cmd_function)media_send_from_call, {
 		{CMD_PARAM_STR,0,0}, /* callid */
-		{CMD_PARAM_STR,fixup_media_leg_both,0}, /* leg */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{0,0,0}},
 		REQUEST_ROUTE},
 	{"media_fetch_from_uri",(cmd_function)media_fetch_from_uri, {
