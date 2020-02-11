@@ -74,8 +74,28 @@ static int qr_init_dr_cb(void);
 
 static timer_function qr_rotate_samples;
 
+static int w_qr_disable_dst(struct sip_msg *_,
+                            int *rule_id, str *dst_name, str *part);
+static int w_qr_enable_dst(struct sip_msg *_,
+                           int *rule_id, str *dst_name, str *part);
 
 static cmd_export_t cmds[] = {
+	{"qr_disable_dst", (cmd_function)w_qr_disable_dst,
+		{ {CMD_PARAM_INT, NULL, NULL},
+		  {CMD_PARAM_STR, NULL, NULL},
+		  {CMD_PARAM_STR|CMD_PARAM_OPT, NULL, NULL},
+		  {0, 0, 0}
+		},
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE
+	},
+	{"qr_enable_dst", (cmd_function)w_qr_enable_dst,
+		{ {CMD_PARAM_INT, NULL, NULL},
+		  {CMD_PARAM_STR, NULL, NULL},
+		  {CMD_PARAM_STR|CMD_PARAM_OPT, NULL, NULL},
+		  {0, 0, 0}
+		},
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE
+	},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -384,4 +404,43 @@ static int qr_check_db(void)
 	qr_dbf.close(qr_db_hdl);
 
 	return 0;
+}
+
+static int w_qr_set_dst_state(int rule_id, str *dst_name, str *part, int state)
+{
+	qr_rule_t *rules;
+	int rc;
+
+	if (!part) {
+		lock_start_read(qr_main_list_rwl);
+		rc = qr_set_dst_state((*qr_main_list)->qr_rules_start[0], rule_id,
+		                      dst_name, state, NULL);
+		lock_stop_read(qr_main_list_rwl);
+	} else {
+		lock_start_read(qr_main_list_rwl);
+
+		rules = qr_get_rules(part);
+		if (!rules) {
+			LM_DBG("partition not found: %.*s\n", part->len, part->s);
+			lock_stop_read(qr_main_list_rwl);
+			return -2;
+		}
+
+		rc = qr_set_dst_state(rules, rule_id, dst_name, state, NULL);
+		lock_stop_read(qr_main_list_rwl);
+	}
+
+	return rc == 0 ? 1 : -1;
+}
+
+static int w_qr_disable_dst(struct sip_msg *_,
+                            int *rule_id, str *dst_name, str *part)
+{
+	return w_qr_set_dst_state(*rule_id, dst_name, part, 0);
+}
+
+static int w_qr_enable_dst(struct sip_msg *_,
+                           int *rule_id, str *dst_name, str *part)
+{
+	return w_qr_set_dst_state(*rule_id, dst_name, part, 1);
 }

@@ -21,6 +21,8 @@
 #ifndef __QR_MI__
 #define __QR_MI__
 
+qr_rule_t *qr_get_rules(str *part_name);
+
 mi_cmd_f mi_qr_status_0;
 mi_cmd_f mi_qr_status_1;
 mi_cmd_f mi_qr_status_2;
@@ -33,5 +35,8 @@ mi_cmd_f mi_qr_disable_dst_3;
 
 mi_cmd_f mi_qr_enable_dst_2;
 mi_cmd_f mi_qr_enable_dst_3;
+
+int qr_set_dst_state(qr_rule_t *rules, int rule_id, str *dst_name,
+                     int active, mi_response_t **err_resp);
 
 #endif /* __QR_MI__ */

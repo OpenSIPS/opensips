@@ -23,7 +23,7 @@
 #include "qr_sort.h"
 
 /* returns the linked list of rules for a certain partition */
-static qr_rule_t *qr_get_rules(str *part_name)
+qr_rule_t *qr_get_rules(str *part_name)
 {
 	int i;
 
@@ -397,20 +397,22 @@ mi_response_t *mi_qr_reload_0(const mi_params_t *_, struct mi_handler *__)
 }
 
 int qr_set_dst_state(qr_rule_t *rules, int rule_id, str *dst_name,
-                     mi_response_t **err_resp, int active)
+                     int active, mi_response_t **err_resp)
 {
 	qr_rule_t *rule;
 	qr_dst_t *dst;
 
 	rule = qr_search_rule(rules, rule_id);
 	if (!rule) {
-		*err_resp = init_mi_error(404, MI_SSTR("Rule Not Found\n"));
+		if (err_resp)
+			*err_resp = init_mi_error(404, MI_SSTR("Rule Not Found\n"));
 		return -1;
 	}
 
 	dst = qr_search_dst(rule, dst_name);
 	if (!dst) {
-		*err_resp = init_mi_error(404, MI_SSTR("GW/Carrier Not Found\n"));
+		if (err_resp)
+			*err_resp = init_mi_error(404, MI_SSTR("GW/Carrier Not Found\n"));
 		return -1;
 	}
 
@@ -448,7 +450,7 @@ static mi_response_t *mi_qr_set_dst_state_2(const mi_params_t *params, int activ
 
 	lock_start_read(qr_main_list_rwl);
 	rc = qr_set_dst_state((*qr_main_list)->qr_rules_start[0], rule_id, &dst_name,
-	                      &err_resp, active);
+	                      active, &err_resp);
 	lock_stop_read(qr_main_list_rwl);
 
 	if (rc != 0)
@@ -493,7 +495,7 @@ static mi_response_t *mi_qr_set_dst_state_3(const mi_params_t *params, int activ
 		return init_mi_error(404, MI_SSTR("Partition Not Found\n"));
 	}
 
-	rc = qr_set_dst_state(rules, rule_id, &dst_name, &err_resp, active);
+	rc = qr_set_dst_state(rules, rule_id, &dst_name, active, &err_resp);
 	lock_stop_read(qr_main_list_rwl);
 
 	if (rc != 0)
