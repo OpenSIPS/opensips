@@ -102,3 +102,22 @@ int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody)
 	return media_dlg.send_indialog_request(msl->ms->dlg,
 			&inv, leg, &body, &ct_sdp, NULL, NULL);
 }
+
+int media_session_b2b_end(struct media_session_leg *msl)
+{
+	struct b2b_req_data req;
+	str bye = str_init(BYE);
+
+	memset(&req, 0, sizeof(req));
+	req.et = msl->b2b_entity;
+	req.b2b_key = &msl->b2b_key;
+	req.method = &bye;
+	req.no_cb = 1; /* do not call callback */
+
+	if (media_b2b.send_request(&req) < 0) {
+		LM_ERR("Cannot end recording session for key %.*s\n",
+				req.b2b_key->len, req.b2b_key->s);
+		return -1;
+	}
+	return 0;
+}

@@ -79,7 +79,6 @@ struct media_session {
 		(_msl)->ref--; \
 		if ((_msl)->ref == 0) { \
 			struct media_session *__tmp_ms = _msl->ms; \
-			LM_DBG("destroying media session leg=%p\n", _msl); \
 			media_session_leg_free(_msl); \
 			media_session_release(__tmp_ms, 1/* release ms lock */); \
 		} else { \
@@ -95,13 +94,21 @@ struct media_session {
 		(_msl)->ref--; \
 		if ((_msl)->ref == 0) { \
 			struct media_session *__tmp_ms = _msl->ms; \
-			LM_DBG("destroying media session leg=%p\n", _msl); \
 			media_session_leg_free(_msl); \
 			media_session_release(__tmp_ms, 0); \
 		} else if ((_msl)->ref < 0) \
 				LM_BUG("invalid ref for media session leg=%p ref=%d (%s:%d)\n", \
 						(_msl), (_msl)->ref, __func__, __LINE__); \
-		} \
+	} while(0)
+
+#define MSL_UNREF_NORELEASE(_msl) \
+	do { \
+		(_msl)->ref--; \
+		if ((_msl)->ref == 0) \
+			media_session_leg_free(_msl); \
+		else if ((_msl)->ref < 0) \
+				LM_BUG("invalid ref for media session leg=%p ref=%d (%s:%d)\n", \
+						(_msl), (_msl)->ref, __func__, __LINE__); \
 	} while(0)
 
 int init_media_sessions(void);
