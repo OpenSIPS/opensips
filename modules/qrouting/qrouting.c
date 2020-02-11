@@ -87,6 +87,8 @@ static param_export_t params[] = {
 };
 
 #define HLP1 "Params: [partition_name [, rule_id [, dst_id]]]; List QR statistics"
+#define HLP2 "Params: [partition_name] rule_id dst_id; Remove a gateway/carrier from routing"
+#define HLP3 "Params: [partition_name] rule_id dst_id; Re-introduce a gateway/carrier into routing"
 static mi_export_t mi_cmds[] = {
 	{ "qr_status", HLP1, 0, NULL, {
 		{mi_qr_status_0, {NULL}},
@@ -97,6 +99,16 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "qr_reload", NULL, 0, NULL, {
 		{mi_qr_reload_0, {NULL}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "qr_disable_dst", HLP2, MI_NAMED_PARAMS_ONLY, NULL, {
+		{mi_qr_disable_dst_2, {"rule_id", "dst_id", NULL}},
+		{mi_qr_disable_dst_3, {"partition_name", "rule_id", "dst_id", NULL}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "qr_enable_dst", HLP3, MI_NAMED_PARAMS_ONLY, NULL, {
+		{mi_qr_disable_dst_2, {"rule_id", "dst_id", NULL}},
+		{mi_qr_disable_dst_3, {"partition_name", "rule_id", "dst_id", NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}

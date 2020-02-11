@@ -395,3 +395,119 @@ mi_response_t *mi_qr_reload_0(const mi_params_t *_, struct mi_handler *__)
 
 	return init_mi_result_ok();
 }
+
+int qr_set_dst_state(qr_rule_t *rules, int rule_id, str *dst_name,
+                     mi_response_t **err_resp, int active)
+{
+	qr_rule_t *rule;
+	qr_dst_t *dst;
+
+	rule = qr_search_rule(rules, rule_id);
+	if (!rule) {
+		*err_resp = init_mi_error(404, MI_SSTR("Rule Not Found\n"));
+		return -1;
+	}
+
+	dst = qr_search_dst(rule, dst_name);
+	if (!dst) {
+		*err_resp = init_mi_error(404, MI_SSTR("GW/Carrier Not Found\n"));
+		return -1;
+	}
+
+	lock_start_write(dst->gw->ref_lock);
+
+	if (dst->type == QR_DST_GW)
+		if (active) {
+			dst->gw->state &= ~QR_STATUS_DSBL;
+		} else {
+			dst->gw->state |= QR_STATUS_DSBL;
+		}
+	else
+		if (active) {
+			dst->grp.state &= ~QR_STATUS_DSBL;
+		} else {
+			dst->grp.state |= QR_STATUS_DSBL;
+		}
+
+	lock_stop_write(dst->gw->ref_lock);
+
+	return 0;
+}
+
+static mi_response_t *mi_qr_set_dst_state_2(const mi_params_t *params, int active)
+{
+	int rule_id, rc;
+	str dst_name;
+	mi_response_t *err_resp = NULL;
+
+	if (get_mi_int_param(params, "rule_id", &rule_id) != 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "dst_id", &dst_name.s, &dst_name.len) != 0)
+		return init_mi_param_error();
+
+	lock_start_read(qr_main_list_rwl);
+	rc = qr_set_dst_state((*qr_main_list)->qr_rules_start[0], rule_id, &dst_name,
+	                      &err_resp, active);
+	lock_stop_read(qr_main_list_rwl);
+
+	if (rc != 0)
+		return err_resp;
+
+	return init_mi_result_ok();
+}
+
+mi_response_t *mi_qr_enable_dst_2(const mi_params_t *params, struct mi_handler *_)
+{
+	return mi_qr_set_dst_state_2(params, 1);
+}
+
+mi_response_t *mi_qr_disable_dst_2(const mi_params_t *params, struct mi_handler *_)
+{
+	return mi_qr_set_dst_state_2(params, 0);
+}
+
+static mi_response_t *mi_qr_set_dst_state_3(const mi_params_t *params, int active)
+{
+	qr_rule_t *rules;
+	mi_response_t *err_resp = NULL;
+	int rule_id, rc;
+	str part_name, dst_name;
+
+	if (get_mi_string_param(params, "partition_name",
+	        &part_name.s, &part_name.len))
+		return init_mi_param_error();
+
+	if (get_mi_int_param(params, "rule_id", &rule_id) != 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "dst_id", &dst_name.s, &dst_name.len) != 0)
+		return init_mi_param_error();
+
+	lock_start_read(qr_main_list_rwl);
+
+	rules = qr_get_rules(&part_name);
+	if (!rules) {
+		LM_DBG("partition not found: %.*s\n", part_name.len, part_name.s);
+		lock_stop_read(qr_main_list_rwl);
+		return init_mi_error(404, MI_SSTR("Partition Not Found\n"));
+	}
+
+	rc = qr_set_dst_state(rules, rule_id, &dst_name, &err_resp, active);
+	lock_stop_read(qr_main_list_rwl);
+
+	if (rc != 0)
+		return err_resp;
+
+	return init_mi_result_ok();
+}
+
+mi_response_t *mi_qr_enable_dst_3(const mi_params_t *params, struct mi_handler *_)
+{
+	return mi_qr_set_dst_state_3(params, 1);
+}
+
+mi_response_t *mi_qr_disable_dst_3(const mi_params_t *params, struct mi_handler *_)
+{
+	return mi_qr_set_dst_state_3(params, 0);
+}

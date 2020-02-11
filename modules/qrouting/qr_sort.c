@@ -184,7 +184,7 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 	}
 
 	lock_start_read(gw->ref_lock);
-	if(gw->state & QR_STATUS_DIRTY) {
+	if (gw->state & QR_STATUS_DIRTY) {
 		lock_stop_read(gw->ref_lock);
 
 		lock_start_read(qr_profiles_rwl);
@@ -197,6 +197,14 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 		cur_dst_score = gw->score;
 		lock_stop_read(gw->ref_lock);
 	}
+
+	lock_start_read(gw->ref_lock);
+	if (gw->state & QR_STATUS_DSBL) {
+		LM_DBG("gw is disabled cr_id = %d gw_id = %d\n", cr_id, gw_id);
+		lock_stop_read(gw->ref_lock);
+		return 0;
+	}
+	lock_stop_read(gw->ref_lock);
 
 	/* insert into sorted list */
 	if (qr_add_dst_to_list(sorted, gw_id, cur_dst_score) < 0) {

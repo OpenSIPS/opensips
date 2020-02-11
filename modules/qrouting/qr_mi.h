@@ -28,4 +28,10 @@ mi_cmd_f mi_qr_status_3;
 
 mi_cmd_f mi_qr_reload_0;
 
+mi_cmd_f mi_qr_disable_dst_2;
+mi_cmd_f mi_qr_disable_dst_3;
+
+mi_cmd_f mi_qr_enable_dst_2;
+mi_cmd_f mi_qr_enable_dst_3;
+
 #endif /* __QR_MI__ */

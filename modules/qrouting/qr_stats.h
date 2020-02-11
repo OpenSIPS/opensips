@@ -36,7 +36,8 @@
 #define QR_DST_GRP (1<<1) /* group more destinations together */
 /* states for gateways */
 #define QR_STATUS_DIRTY (1<<0)
-#define QR_STATUS_SKIP  (1<<1)
+#define QR_STATUS_DSBL  (1<<1)
+#define QR_STATUS_SKIP  (1<<2)
 /* sort methods */
 #define QR_SORT_QR (1<<0)
 #define MIN_DEST 4
