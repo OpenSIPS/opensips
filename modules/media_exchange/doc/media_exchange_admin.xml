@@ -1,0 +1,362 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module provides the means to exchange media SDP between different
+		SIP proxied calls, and calls started or received from a Media Server.
+		The module itself does not have any media capabilities, it simply 
+		exposes primitives to exchange the SDP body between two or more different
+		calls.
+	</para>
+	<para>
+		The module can both originate calls, pushing an existing sdp to a
+		media server, to playback, or simply record an existing rtp, as well
+		as take the sdp of a new call and inject the sdp into an existing,
+		proxied sip call. in order to manipulate the new calls, either generated,
+		or terminated, the module behaves as a back-to-back user agent with the
+		aim of the <ulink url='b2b_entities'>&osips; b2b entities module</ulink>.
+	</para>
+	<para>
+		In terms of the SDP media exchanged, the module can have two different
+		modes:
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>Two way Media</emphasis> - in this mode, the media of a new
+			call will be pushed towards one of the legs of an existing call. This
+			will result in a party of the call talking with the Media Server. By
+			default, the other participant of the call will be put on hold, but this
+			behavior can be tuned when the new leg is originated.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Fork Media</emphasis> - the new B2B call, either originted
+			or terminated, will just have a copy of the RTP forked by RTPProxy. In
+			this mode, the proxied call should have had RTPProxy already engaged in
+			the media path before the forked call starts. One can fork only one
+			media leg, or both legs.
+			
+		</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		This module can provide different functionalities and can be used in various
+		use cases, such as:
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>Call Recording</emphasis> - similar to the <ulink
+			url='siprec'>&osips; SIPREC</ulink> module, it can be used to fork the
+			RTP media to a new SIP destination, but without the SIPREC payload.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Call Listening</emphasis> - one might want to call into
+			&osips; and start listening an existing call.
+		</para>
+		</listitem>
+		<listitem>
+		<para>
+			<emphasis>Call Annoucements</emphasis> - inject an announcement from a
+			Media Server to the participants of an ongoing call.
+		</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section id="siprec_modules_dependencies">
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>TM</emphasis> - Transaction module.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>Dialog</emphasis> - Dialog module for keeping track of the proxied calls.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>RTPProxy</emphasis> - optional, the RTPProxy module is
+					only used when running in media forking mode.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>B2B_ENTITIES</emphasis> - Back-2-Back module used form
+					manipulating calls with the Media Server.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	
+	<section id="siprec_external_dependencies">
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+	
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+		<section id="func_media_send_to_uri" xreflabel="media_send_to_uri()">
+			<title>
+			<function moreinfo="none">media_send_to_uri(URI[, leg[, body[, headers]]])</function>
+			</title>
+			<para>
+				Behaves as a B2B user agent client to initiate a call to a SIP
+				URI and then stream the media to the SDP received in the 200
+				OK response.
+			</para>
+			<para>
+				<emphasis>Note</emphasis> Not implemented yet!
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>URI</emphasis> (string) - destination where to push
+						the current call's media
+				</para></listitem>
+				<listitem><para>
+					<emphasis>leg</emphasis> (string, optional) - the leg that will
+						be streamed. Possible values are <emphasis>caller</emphasis>,
+						<emphasis>callee</emphasis> and <emphasis>both</emphasis>. If
+						missing, the direction of the indialog request is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>body</emphasis> (string, optional) - custom body used
+						for the generated INVITE. If missing, the body of the current
+						request is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>headers</emphasis> (string, optional) - optional
+						headers added to the generated request.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE.
+			</para>
+			<example>
+				<title>Use <function>media_send_to_uri()</function> function to fork
+					media to a Media Server</title>
+			<programlisting format="linespecific">
+...
+if (!has_totag() &amp;&amp; is_method("INVITE"))
+	media_send_to_uri("sip:record@127.0.0.1:5080");
+...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_media_send_from_call" xreflabel="media_send_from_call()">
+			<title>
+			<function moreinfo="none">media_send_from_call(callid[, leg])</function>
+			</title>
+			<para>
+				Starts streaming the media of an existing proxied call, identified
+				by the <emphasis>callid</emphasis> parameter to the SDP in the
+				request's body.
+			</para>
+			<para>
+				<emphasis>Note</emphasis> Not implemented yet!
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>callid</emphasis> (string) - the identifier of the callid
+						to stream/fork media from
+				</para></listitem>
+				<listitem><para>
+					<emphasis>leg</emphasis> (string, optional) - the leg that will
+						be streamed. Possible values are <emphasis>caller</emphasis>,
+						<emphasis>callee</emphasis> and <emphasis>both</emphasis>. If
+						missing, both legs will be streamed.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE.
+			</para>
+			<example>
+				<title>Use <function>media_send_from_call()</function> function to fork
+					media to a Media Server</title>
+			<programlisting format="linespecific">
+...
+if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NULL)
+	media_send_from_call($hdr(X-CallID));
+...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_media_fetch_from_uri" xreflabel="media_fetch_from_uri()">
+			<title>
+			<function moreinfo="none">media_fetch_from_uri(URI[, leg[, body[, headers[, nohold]]]])</function>
+			</title>
+			<para>
+				Originates a call to the specified URI. The SDP in the response is
+				fetched and pushed towards one of the call's legs, resulting in two
+				way audio between the participant of the ongoing call, and the new
+				call. By default, the other participant leg is put on hold.
+			</para>
+			<para>
+				<emphasis>Note</emphasis> Not implemented yet!
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>URI</emphasis> (string) - destination used to
+						originate the new call.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>leg</emphasis> (string, optional) - the leg where the
+						new media SDP will be pushed. Possible values are
+						<emphasis>caller</emphasis> and <emphasis>callee</emphasis>.
+						If missing, the direction of the indialog request is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>body</emphasis> (string, optional) - custom body used
+						for the generated INVITE. If missing, the body of the current
+						request is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>headers</emphasis> (string, optional) - optional
+						headers added to the generated request.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>nohold</emphasis> (integer, optional) - if set to true,
+						the other participant will not be put on hold. This is useful
+						when a new call will be generated for the other leg as well.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE.
+			</para>
+			<example>
+				<title>Use <function>media_fetch_from_uri()</function> function to
+					fetch media from a Media Server's call</title>
+			<programlisting format="linespecific">
+...
+if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; is_audio_on_hold())
+	media_fetch_from_uri("sip:moh@127.0.0.1:5080");
+...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_media_fetch_to_call" xreflabel="media_fetch_to_call()">
+			<title>
+			<function moreinfo="none">media_fetch_to_call(callid[, leg[, nohold]])</function>
+			</title>
+			<para>
+				Pushes the SDP of a new call received in an exisiting proxied
+				call, resulting in two-way audio between a Media Server that
+				originated the call, and the exising participant of the ongoing
+				proxied call.
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>callid</emphasis> (string) - the identifier of the callid
+						to exchange media.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>leg</emphasis> (string) - the leg that will
+						be streamed. Possible values are <emphasis>caller</emphasis>
+							and <emphasis>callee</emphasis>.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>nohold</emphasis> (integer, optional) - if set to true,
+						the other participant will not be put on hold. This is useful
+						when a new call will be generated for the other leg as well.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE.
+			</para>
+			<example>
+				<title>Use <function>media_fetch_to_call()</function> function to make
+					an annoucement</title>
+			<programlisting format="linespecific">
+...
+if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NULL)
+	media_fetch_to_call($hdr(X-CallID), "caller");
+...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_media_terminate" xreflabel="media_terminate()">
+			<title>
+			<function moreinfo="none">media_terminate([leg[, nohold]])</function>
+			</title>
+			<para>
+				Terminates an ongoing media session exchange, whether the media is
+				only streamed, or two way audio is flowing. If the pariticipant leg
+				is involved in a different media exchange, the current leg is put on
+				hold.
+			</para>
+			<para>
+				<emphasis>Note</emphasis> Not implemented yet!
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>leg</emphasis> (string, optional) - the leg to terminate
+						the media exchange. Possible values are
+						<emphasis>caller</emphasis> and <emphasis>callee</emphasis>.
+						If missing, the direction of the indialog request is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>nohold</emphasis> (integer, optional) - if set to true,
+						and the other participant is envolved in a different media
+						exchange, the current leg is no longer put on hold.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE.
+			</para>
+			<example>
+				<title>Use <function>media_terminate()</function> function to
+					terminate an announcement</title>
+			<programlisting format="linespecific">
+...
+if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; !is_audio_on_hold())
+	media_terminate();
+...
+	</programlisting>
+			</example>
+		</section>
+	</section>
+
+</chapter>
