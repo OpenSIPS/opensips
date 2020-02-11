@@ -188,15 +188,20 @@ mi_response_t *mi_qr_status_0(const mi_params_t *_, struct mi_handler *__)
 	if (!part_arr)
 		goto error;
 
+	lock_start_read(qr_main_list_rwl);
+
 	for (i = 0; i < (*qr_main_list)->n_parts; i++) {/* for every partition */
 		part = add_mi_object(part_arr, NULL, 0);
-		if (!part)
+		if (!part) {
+			lock_stop_read(qr_main_list_rwl);
 			goto error;
+		}
 
 		qr_fill_mi_partition(part, &(*qr_main_list)->part_name[i],
 		                     (*qr_main_list)->qr_rules_start[i]);
 	}
 
+	lock_stop_read(qr_main_list_rwl);
 	return resp;
 
 error:
@@ -215,11 +220,15 @@ mi_response_t *mi_qr_status_1(const mi_params_t *params, struct mi_handler *_)
 	if (!resp)
 		return NULL;
 
+	lock_start_read(qr_main_list_rwl);
+
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
 		if (get_mi_string_param(params, "partition_name",
-			&part_name.s, &part_name.len) < 0)
+			&part_name.s, &part_name.len) < 0) {
+			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
+		}
 		qr_part = qr_search_partition(&part_name);
 
 	} else {
@@ -234,9 +243,13 @@ mi_response_t *mi_qr_status_1(const mi_params_t *params, struct mi_handler *_)
 	}
 
 	qr_fill_mi_partition(resp_obj, &part_name, qr_part);
+	lock_stop_read(qr_main_list_rwl);
+
 	return resp;
 
 error:
+	lock_stop_read(qr_main_list_rwl);
+
 	free_mi_response(resp);
 	if (!err_resp)
 		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error\n"));
@@ -255,11 +268,15 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 	if (!resp)
 		return NULL;
 
+	lock_start_read(qr_main_list_rwl);
+
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
 		if (get_mi_string_param(params, "partition_name",
-			&part_name.s, &part_name.len) != 0)
+			&part_name.s, &part_name.len) != 0) {
+			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
+		}
 		qr_part = qr_search_partition(&part_name);
 
 	} else {
@@ -273,8 +290,10 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 		goto error;
 	}
 
-	if (get_mi_int_param(params, "rule_id", (int *)&rule_id) != 0)
+	if (get_mi_int_param(params, "rule_id", (int *)&rule_id) != 0) {
+		lock_stop_read(qr_main_list_rwl);
 		return init_mi_param_error();
+	}
 
 	rule = qr_search_rule(qr_part, rule_id);
 	if (!rule) {
@@ -285,9 +304,13 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 	for (i = 0; i < rule->n; i++)
 		qr_dst_attr(resp_obj, &rule->dest[i]);
 
+	lock_stop_read(qr_main_list_rwl);
+
 	return resp;
 
 error:
+	lock_stop_read(qr_main_list_rwl);
+
 	free_mi_response(resp);
 	if (!err_resp)
 		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error\n"));
@@ -300,18 +323,22 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 	qr_dst_t *dst;
 	mi_response_t *resp, *err_resp = NULL;
 	mi_item_t *resp_obj;
-	str part_name, gw_name;
-	unsigned int rule_id;
+	str part_name, dst_name;
+	int rule_id;
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
 		return NULL;
 
+	lock_start_read(qr_main_list_rwl);
+
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
 		if (get_mi_string_param(params, "partition_name",
-			&part_name.s, &part_name.len) != 0)
+			&part_name.s, &part_name.len) != 0) {
+			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
+		}
 		qr_part = qr_search_partition(&part_name);
 
 	} else {
@@ -325,8 +352,10 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 		goto error;
 	}
 
-	if (get_mi_int_param(params, "rule_id", (int *)&rule_id) != 0)
+	if (get_mi_int_param(params, "rule_id", &rule_id) != 0) {
+		lock_stop_read(qr_main_list_rwl);
 		return init_mi_param_error();
+	}
 
 	rule = qr_search_rule(qr_part, rule_id);
 	if (!rule) {
@@ -334,19 +363,25 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 		goto error;
 	}
 
-	if (get_mi_string_param(params, "dst_id", &gw_name.s, &gw_name.len) != 0)
+	if (get_mi_string_param(params, "dst_id", &dst_name.s, &dst_name.len) != 0) {
+		lock_stop_read(qr_main_list_rwl);
 		return init_mi_param_error();
+	}
 
-	dst = qr_search_dst(rule, &gw_name);
+	dst = qr_search_dst(rule, &dst_name);
 	if (!dst) {
 		err_resp = init_mi_error(404, MI_SSTR("GW/Carrier Not Found\n"));
 		goto error;
 	}
 
 	qr_dst_attr(resp_obj, dst);
+	lock_stop_read(qr_main_list_rwl);
+
 	return resp;
 
 error:
+	lock_stop_read(qr_main_list_rwl);
+
 	free_mi_response(resp);
 	if (!err_resp)
 		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error\n"));
