@@ -126,6 +126,7 @@ static int media_session_leg_end(struct media_session_leg *msl, int nohold)
 {
 	int ret = 0;
 	str *body = NULL;
+	struct media_session_leg *omsl;
 
 	/* end the leg towards media server */
 	if (media_session_b2b_end(msl) < 0)
@@ -136,9 +137,10 @@ static int media_session_leg_end(struct media_session_leg *msl, int nohold)
 		if (!nohold) {
 			/* we need to put on hold the leg, if there's a different
 			 * media session going on on the other leg */
-			if (media_session_other_leg(msl)) {
-				body = media_session_get_hold_sdp(msl);
-			} else if (msl->nohold) {
+			omsl = media_session_other_leg(msl);
+			if (omsl) {
+				body = media_session_get_hold_sdp(omsl);
+			} else if (!msl->nohold) {
 				/* there's no other session going on there - check to see if
 				 * the other leg has been put on hold */
 				if (media_session_reinvite(msl, MEDIA_SESSION_DLG_OTHER_LEG(msl), NULL) < 0)
