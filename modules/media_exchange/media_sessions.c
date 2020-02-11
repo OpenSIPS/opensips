@@ -195,3 +195,13 @@ struct media_session_leg *media_session_new_leg(struct dlg_cell *dlg,
 	LM_DBG(" creating media_session_leg=%p\n", msl);
 	return msl;
 }
+
+struct media_session_leg *media_session_other_leg(
+		struct media_session_leg *msl)
+{
+	struct media_session_leg *it;
+	for (it = msl->ms->legs; it; it = it->next)
+		if (msl != it)
+			return it;
+	return NULL;
+}

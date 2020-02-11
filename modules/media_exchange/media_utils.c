@@ -122,16 +122,6 @@ int media_session_b2b_end(struct media_session_leg *msl)
 	return 0;
 }
 
-static struct media_session_leg *media_session_other_leg(
-		struct media_session_leg *msl)
-{
-	struct media_session_leg *it;
-	for (it = msl->ms->legs; it; it = it->next)
-		if (msl != it)
-			return it;
-	return NULL;
-}
-
 static int media_session_leg_end(struct media_session_leg *msl, int nohold)
 {
 	int ret = 0;

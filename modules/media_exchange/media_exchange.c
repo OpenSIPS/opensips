@@ -300,7 +300,7 @@ static int media_session_fetch_server_reply(struct sip_msg *msg, int status, voi
 		goto terminate;
 	}
 
-	if (!msl->nohold) {
+	if (!msl->nohold && !media_session_other_leg(msl)) {
 		/* we need to put the other party on hold */
 		pbody = media_session_get_hold_sdp(msl);
 		if (!pbody)

@@ -123,5 +123,7 @@ struct media_session_leg *media_session_new_leg(struct dlg_cell *dlg,
 void media_session_leg_free(struct media_session_leg *ms);
 struct media_session_leg *media_session_get_leg(struct media_session *ms,
 		int leg);
+struct media_session_leg *media_session_other_leg(
+		struct media_session_leg *msl);
 
 #endif /* _MEDIA_SESSION_H_ */
