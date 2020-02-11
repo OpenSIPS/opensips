@@ -110,9 +110,9 @@ void qr_acc(void *param)
 
 		/* save transaction properties */
 		if (cr_id == -1) /* if the destination is not within a carrier */
-			trans_prop->gw = rule->dest[gw_id].dst.gw;
+			trans_prop->gw = rule->dest[gw_id].gw;
 		else /* if the destination is within a carrier */
-			trans_prop->gw = rule->dest[cr_id].dst.grp.gw[gw_id];
+			trans_prop->gw = rule->dest[cr_id].grp.gw[gw_id];
 
 		/* get the time of INVITE */
 		if (clock_gettime(CLOCK_REALTIME, trans_prop->invite) < 0) {

@@ -111,9 +111,9 @@ typedef struct qr_grp {
 /* two types of destination */
 typedef struct qr_dst {
 	union {
-		qr_gw_t  * gw;
+		qr_gw_t  *gw;
 		qr_grp_t  grp;
-	} dst;
+	};
 	char type;
 } qr_dst_t;
 

@@ -178,9 +178,9 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 	qr_gw_t *gw;
 
 	if (cr_id == -1) { /* the gw is within a rule */
-		gw = rule->dest[gw_id].dst.gw;
+		gw = rule->dest[gw_id].gw;
 	} else { /* the gw is within a carrier */
-		gw = rule->dest[cr_id].dst.grp.gw[gw_id];
+		gw = rule->dest[cr_id].grp.gw[gw_id];
 	}
 
 	lock_start_read(gw->ref_lock);
@@ -236,7 +236,7 @@ void qr_sort(void *param)
 				us_sorted_dst[i] = i; /* unordered list for destinations
 										 within a rule */
 		} else {
-			for(i = 0; i < rule->dest[dst_id].dst.grp.n; i++) {
+			for(i = 0; i < rule->dest[dst_id].grp.n; i++) {
 				us_sorted_dst[i] = i; /* unordered list for destinations
 										 within a carrier */
 			}
@@ -284,8 +284,8 @@ void qr_sort(void *param)
 		}
 	} else { /* sorting for a given carrier */
 		/* TODO: should contain a RW_lock per rule to protect data from reloading */
-		lock_start_read(rule->dest[dst_id].dst.grp.ref_lock);
-		n_gw_list = rule->dest[dst_id].dst.grp.n;
+		lock_start_read(rule->dest[dst_id].grp.ref_lock);
+		n_gw_list = rule->dest[dst_id].grp.n;
 		for(i = 0; i < n_gw_list; i++)
 			us_sorted_dst[i] = -1;
 		for(i = 0; i < n_gw_list; i++) {
@@ -293,7 +293,7 @@ void qr_sort(void *param)
 				goto error;
 			}
 		}
-		lock_stop_read(rule->dest[dst_id].dst.grp.ref_lock);
+		lock_stop_read(rule->dest[dst_id].grp.ref_lock);
 
 	}
 

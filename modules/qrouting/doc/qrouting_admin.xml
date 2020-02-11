@@ -8,9 +8,9 @@
 	<title>Overview</title>
 	<para>
 	<emphasis>qrouting</emphasis> is a module which sits on top of
-	<ulink url="../../drouting/doc/drouting.html">drouting</ulink>,
-	<ulink url="../../dialog/doc/dialog.html">dialog</ulink> and
-	<ulink url="../../tm/doc/tm.html">tm</ulink> and performs live
+	<ulink url="../drouting/doc/drouting.html">drouting</ulink>,
+	<ulink url="../dialog/doc/dialog.html">dialog</ulink> and
+	<ulink url="../tm/doc/tm.html">tm</ulink> and performs live
 	tracking of a series of essential gateway signaling quality indicators
 	(i.e. ASR, CCR, PDD, AST, ACD -- more details below).  Thus, qrouting is
 	able to adjust the prefix routing behavior at runtime, by dynamically

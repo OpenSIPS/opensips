@@ -225,9 +225,9 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 					it != NULL; it = it->next) { /* for every rule */
 				for(i = 0; i < it->n; i++) { /* for every destination */
 					if(it->dest[i].type == QR_DST_GW) {
-						update_gw_stats(it->dest[i].dst.gw);
+						update_gw_stats(it->dest[i].gw);
 					} else {
-						update_grp_stats(it->dest[i].dst.grp);
+						update_grp_stats(it->dest[i].grp);
 					}
 				}
 			}

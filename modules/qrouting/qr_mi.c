@@ -23,7 +23,7 @@
 #include "qr_sort.h"
 
 /* returns the linked list of rules for a certain partition */
-static qr_rule_t *qr_search_partition(str *part_name)
+static qr_rule_t *qr_get_rules(str *part_name)
 {
 	int i;
 
@@ -50,9 +50,9 @@ static qr_rule_t *qr_search_rule(qr_rule_t *list, int r_id)
 
 static str * qr_get_dst_name(qr_dst_t * dst) {
 	if(dst->type == QR_DST_GW) {
-		return drb.get_gw_name(dst->dst.gw->dr_gw);
+		return drb.get_gw_name(dst->gw->dr_gw);
 	} else {
-		return drb.get_cr_name(dst->dst.grp.dr_cr);
+		return drb.get_cr_name(dst->grp.dr_cr);
 	}
 }
 
@@ -140,9 +140,9 @@ static void qr_grp_attr(mi_item_t *node, qr_grp_t * grp, str *group_name)
 static void qr_dst_attr(mi_item_t *node, qr_dst_t *dst)
 {
 	if(dst->type == QR_DST_GW) {
-		qr_gw_attr(node, dst->dst.gw);
+		qr_gw_attr(node, dst->gw);
 	} else {
-		qr_grp_attr(node, &dst->dst.grp, qr_get_dst_name(dst));
+		qr_grp_attr(node, &dst->grp, qr_get_dst_name(dst));
 	}
 }
 
@@ -229,7 +229,7 @@ mi_response_t *mi_qr_status_1(const mi_params_t *params, struct mi_handler *_)
 			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
 		}
-		qr_part = qr_search_partition(&part_name);
+		qr_part = qr_get_rules(&part_name);
 
 	} else {
 		qr_part = (*qr_main_list)->qr_rules_start[0]; /* use the default
@@ -277,7 +277,7 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
 		}
-		qr_part = qr_search_partition(&part_name);
+		qr_part = qr_get_rules(&part_name);
 
 	} else {
 		qr_part = (*qr_main_list)->qr_rules_start[0]; /* use the default
@@ -339,7 +339,7 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
 		}
-		qr_part = qr_search_partition(&part_name);
+		qr_part = qr_get_rules(&part_name);
 
 	} else {
 		qr_part = (*qr_main_list)->qr_rules_start[0]; /* use the default

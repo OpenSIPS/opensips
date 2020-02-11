@@ -98,7 +98,7 @@ qr_gw_t *qr_create_gw(void *dst)
 
 	/* save gateway to rule */
 	//rule->dest[n_dst].type = QR_DST_GW;
-	//rule->dest[n_dst].dst.gw = gw;
+	//rule->dest[n_dst].gw = gw;
 	return gw;
 error:
 	if (gw)
@@ -138,9 +138,9 @@ void qr_free_grp(qr_grp_t *grp)
 void qr_free_dst(qr_dst_t *dst)
 {
 	if (dst->type & QR_DST_GW)
-		qr_free_gw(dst->dst.gw);
+		qr_free_gw(dst->gw);
 	else
-		qr_free_grp(&dst->dst.grp);
+		qr_free_grp(&dst->grp);
 }
 
 void qr_free_rule(qr_rule_t *rule)
@@ -266,7 +266,7 @@ void qr_dst_is_gw(void *param)
 
 	if(rule != NULL) {
 		rule->dest[n_dst].type = QR_DST_GW;
-		rule->dest[n_dst].dst.gw = qr_create_gw(dst);
+		rule->dest[n_dst].gw = qr_create_gw(dst);
 	} else {
 		LM_ERR("no rule to add the gateway to\n");
 	}
@@ -291,28 +291,28 @@ void qr_dst_is_grp(void *param)
 	       cr_name->len, cr_name->s, n_gws, rule->r_id);
 
 	rule->dest[n_dst].type = QR_DST_GRP;
-	memset(&rule->dest[n_dst].dst.grp, 0, sizeof (qr_grp_t));
-	rule->dest[n_dst].dst.grp.state |= QR_STATUS_DIRTY;
+	memset(&rule->dest[n_dst].grp, 0, sizeof (qr_grp_t));
+	rule->dest[n_dst].grp.state |= QR_STATUS_DIRTY;
 
-	rule->dest[n_dst].dst.grp.gw = shm_malloc(n_gws * sizeof (qr_gw_t *));
-	if (!rule->dest[n_dst].dst.grp.gw) {
+	rule->dest[n_dst].grp.gw = shm_malloc(n_gws * sizeof (qr_gw_t *));
+	if (!rule->dest[n_dst].grp.gw) {
 		LM_ERR("oom\n");
 		goto error;
 	}
 
-	if ((rule->dest[n_dst].dst.grp.ref_lock = lock_init_rw()) == NULL) {
+	if ((rule->dest[n_dst].grp.ref_lock = lock_init_rw()) == NULL) {
 		LM_ERR("failed to init RW lock\n");
 		goto error;
 	}
 
-	rule->dest[n_dst].dst.grp.n = n_gws;
-	rule->dest[n_dst].dst.grp.dr_cr = grp;
+	rule->dest[n_dst].grp.n = n_gws;
+	rule->dest[n_dst].grp.dr_cr = grp;
 
 	for (i = 0; i < n_gws; i++) {
 		dr_gw = (void*)drb.get_gw_from_cr(grp, i); /* get the gateway
 													  as pgw_t from dr */
-		rule->dest[n_dst].dst.grp.gw[i] = qr_create_gw(dr_gw);
-		gw_name = drb.get_gw_name(rule->dest[n_dst].dst.grp.gw[i]->dr_gw);
+		rule->dest[n_dst].grp.gw[i] = qr_create_gw(dr_gw);
+		gw_name = drb.get_gw_name(rule->dest[n_dst].grp.gw[i]->dr_gw);
 		LM_DBG("gw '%.*s' added to carrier '%.*s' from rule %d\n",
 				gw_name->len, gw_name->s, cr_name->len, cr_name->s,
 				rule->r_id);
@@ -320,8 +320,8 @@ void qr_dst_is_grp(void *param)
 
 	return;
 error:
-	if (rule->dest[n_dst].dst.grp.gw)
-		shm_free(rule->dest[n_dst].dst.grp.gw);
+	if (rule->dest[n_dst].grp.gw)
+		shm_free(rule->dest[n_dst].grp.gw);
 }
 
 /* add rule to list. if the list is NULL a new list is created */
