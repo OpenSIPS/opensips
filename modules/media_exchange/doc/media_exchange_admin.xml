@@ -359,4 +359,135 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; !is_audio_on_hold())
 		</section>
 	</section>
 
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+		<section id="mi_media_send_from_call_to_uri"
+			xreflabel="media_send_from_call_to_uri">
+		<title>
+		<function moreinfo="none">media_send_from_call_to_uri</function>
+		</title>
+		<para>
+		MI command that has the same behavior as
+		<xref linkend="func_media_send_to_uri"/>, only that the triggering
+		is not script driven, but exterior driven. Useful for starting
+		listeneing a call.
+		</para>
+		<para>
+		Name: <emphasis>media_send_from_call_to_uri</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> (string) - the callid of the
+					dialog that will have its RTP streamed to the new call
+					towards the Media Server
+			</para></listitem>
+			<listitem><para>
+				<emphasis>uri</emphasis> (string) - the destination URI of
+					the new call
+			</para></listitem>
+			<listitem><para>
+				<emphasis>leg</emphasis> (string, optional) - indicates the
+					participant leg that will have its RTP streamed in the
+					new call. Possible values are <quote>caller</quote>,
+					<quote>callee</quote> or <quote>both</quote>. If missing,
+					both media streams are forked
+			</para></listitem>
+			<listitem><para>
+				<emphasis>headers</emphasis> (string, optional) - extra
+					headers to add to the outgoing request
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+# start streaming a callid to record media server
+opensips-cli -x mi media_send_from_call_to_uri \
+	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
+	uri=sip:record@127.0.0.1:5080
+		</programlisting>
+		</section>
+		<section id="mi_media_send_from_call_to_uri_body"
+			xreflabel="media_send_from_call_to_uri_body">
+		<title>
+		<function moreinfo="none">media_send_from_call_to_uri_body</function>
+		</title>
+		<para>
+		MI command that does the same thing as the
+		<xref linkend="mi_media_send_from_call_to_uri"/> MI function, but
+		also allows you to specify a custom body in the outgoing request.
+		The body has to be specified in the mandatory <emphasis>body</emphasis>
+		parameter, all the other parameters being the same as the ones of
+		<xref linkend="mi_media_send_from_call_to_uri"/>.
+		</para>
+		</section>
+		<section id="mi_media_fetch_from_call_to_uri"
+			xreflabel="media_fetch_from_call_to_uri">
+		<title>
+		<function moreinfo="none">media_fetch_from_call_to_uri</function>
+		</title>
+		<para>
+		MI command that has the same behavior as
+		<xref linkend="func_media_fetch_from_uri"/>, only that the triggering
+		is not script driven, but exterior driven. Useful for injecting media
+		announcements during a call.
+		</para>
+		<para>
+		Name: <emphasis>media_fetch_from_call_to_uri</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> (string) - the callid of the
+					dialog that will have it's leg mixed with the new call
+					to the Media Server
+			</para></listitem>
+			<listitem><para>
+				<emphasis>uri</emphasis> (string) - the destination URI of
+					the new call
+			</para></listitem>
+			<listitem><para>
+				<emphasis>leg</emphasis> (string) - indicates the participant
+					that will have its media pined into the new call. Possible
+					values are <quote>caller</quote> and <quote>callee</quote>.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>headers</emphasis> (string, optional) - extra headers
+					to add to the outgoing request
+			</para></listitem>
+			<listitem><para>
+				<emphasis>nohold</emphasis> (integer, optional) - if set to a
+					non-zero value, the module avoids putting the other participant
+					on hold when the media exchanging starts
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+# start playing back an annoucement to caller
+opensips-cli -x mi media_fetch_from_call_to_uri \
+	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
+	uri=sip:announcement@127.0.0.1:5080 \
+	leg=caller
+		</programlisting>
+		</section>
+		<section id="mi_media_fetch_from_call_to_uri_body"
+			xreflabel="media_fetch_from_call_to_uri_body">
+		<title>
+		<function moreinfo="none">media_fetch_from_call_to_uri_body</function>
+		</title>
+		<para>
+		MI command that does the same thing as the
+		<xref linkend="mi_media_fetch_from_call_to_uri"/> MI function, but
+		also allows you to specify a custom body in the outgoing request.
+		The body has to be specified in the mandatory <emphasis>body</emphasis>
+		parameter, all the other parameters being the same as the ones of
+		<xref linkend="mi_media_fetch_from_call_to_uri"/>.
+		</para>
+		</section>
+	</section>
+
 </chapter>

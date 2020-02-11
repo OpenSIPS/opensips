@@ -41,6 +41,11 @@ static int fixup_media_leg_both(void **param);
 
 static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void *param);
 
+static mi_response_t *mi_media_send_from_call_to_uri(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_media_fetch_from_call_to_uri(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
 /* modules dependencies */
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -96,6 +101,38 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static mi_export_t mi_cmds[] = {
+	{ "media_send_from_call_to_uri", 0, 0, 0, {
+		{mi_media_send_from_call_to_uri, {"callid", "uri", 0}},
+		{mi_media_send_from_call_to_uri, {"callid", "uri", "leg", 0}},
+		{mi_media_send_from_call_to_uri, {"callid", "uri", "headers", 0}},
+		{mi_media_send_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "media_send_from_call_to_uri_body", 0, 0, 0, {
+		{mi_media_send_from_call_to_uri, {"callid", "uri", "body", 0}},
+		{mi_media_send_from_call_to_uri, {"callid", "uri", "body", "leg", 0}},
+		{mi_media_send_from_call_to_uri, {"callid", "uri", "body", "headers", 0}},
+		{mi_media_send_from_call_to_uri, {"callid", "uri", "body", "leg", "headers", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "media_fetch_from_call_to_uri", 0, 0, 0, {
+		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", 0}},
+		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
+		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "nohold", 0}},
+		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "headers", "nohold", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "media_fetch_from_call_to_uri_body", 0, 0, 0, {
+		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", 0}},
+		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", 0}},
+		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", "nohold", 0}},
+		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", "nohold", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
 /* module exports */
 struct module_exports exports = {
 	"media_exchange",				/* module name */
@@ -108,7 +145,7 @@ struct module_exports exports = {
 	0,								/* exported async functions */
 	params,							/* exported parameters */
 	0,								/* exported statistics */
-	0,								/* exported MI functions */
+	mi_cmds,							/* exported MI functions */
 	0,								/* exported pseudo-variables */
 	0,								/* extra processes */
 	0,								/* extra transformations */
@@ -399,4 +436,18 @@ static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void
 		}
 	}
 	return 0;
+}
+
+static mi_response_t *mi_media_send_from_call_to_uri(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	LM_WARN("not implemented yet!\n");
+	return NULL;
+}
+
+static mi_response_t *mi_media_fetch_from_call_to_uri(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	LM_WARN("not implemented yet!\n");
+	return NULL;
 }
