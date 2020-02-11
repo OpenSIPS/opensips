@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2004-2005 FhG Fokus
- * Copyright (C) 2006-2010 Voice Sistem SRL
  * Copyright (C) 2014 OpenSIPS Foundation
  * Copyright (C) 2020 OpenSIPS Solutions
  *
