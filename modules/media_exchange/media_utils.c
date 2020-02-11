@@ -121,3 +121,75 @@ int media_session_b2b_end(struct media_session_leg *msl)
 	}
 	return 0;
 }
+
+static struct media_session_leg *media_session_other_leg(
+		struct media_session_leg *msl)
+{
+	struct media_session_leg *it;
+	for (it = msl->ms->legs; it; it = it->next)
+		if (msl != it)
+			return it;
+	return NULL;
+}
+
+static int media_session_leg_end(struct media_session_leg *msl, int nohold)
+{
+	int ret = 0;
+	str *body = NULL;
+
+	/* end the leg towards media server */
+	if (media_session_b2b_end(msl) < 0)
+		ret = -1;
+
+	/* if the call is ongoing, we need to manipulate its participants too */
+	if (msl->ms && msl->ms->dlg && msl->ms->dlg->state < DLG_STATE_DELETED) {
+		if (!nohold) {
+			/* we need to put on hold the leg, if there's a different
+			 * media session going on on the other leg */
+			if (media_session_other_leg(msl)) {
+				body = media_session_get_hold_sdp(msl);
+			} else if (msl->nohold) {
+				/* there's no other session going on there - check to see if
+				 * the other leg has been put on hold */
+				if (media_session_reinvite(msl, MEDIA_SESSION_DLG_OTHER_LEG(msl), NULL) < 0)
+					ret = -2;
+			}
+		}
+
+		if (media_session_reinvite(msl, MEDIA_SESSION_DLG_LEG(msl), body) < 0)
+			ret = -2;
+		if (body)
+			pkg_free(body->s);
+	}
+	MSL_UNREF_NORELEASE(msl);
+	return ret;
+}
+
+int media_session_end(struct media_session *ms, int leg, int nohold)
+{
+	int ret = 0;
+	struct media_session_leg *msl, *nmsl;
+
+	MEDIA_SESSION_LOCK(ms);
+	if (leg == MEDIA_LEG_BOTH) {
+		for (msl = ms->legs; msl; msl = nmsl) {
+			nmsl = msl->next;
+			/* we do not put anything on hold here */
+			if (media_session_leg_end(msl, 1) < 0)
+				ret = -1;
+		}
+		goto release;
+	}
+	/* only one leg - search for it */
+	msl = media_session_get_leg(ms, leg);
+	if (!msl) {
+		MEDIA_SESSION_UNLOCK(ms);
+		LM_DBG("could not find the %d leg!\n", leg);
+		return -1;
+	}
+	if (media_session_leg_end(msl, nohold) < 0)
+		ret = -1;
+release:
+	media_session_release(ms, 1/* unlock */);
+	return ret;
+}

@@ -111,24 +111,16 @@ struct media_session *media_session_get(struct dlg_cell *dlg)
 	return media_dlg.dlg_ctx_get_ptr(dlg, media_session_dlg_idx);
 }
 
-static void media_session_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
+static void media_session_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
 	/* dialog has terminated - we need to terminate all ongoing legs */
-	struct media_session_leg *msl, *msln;
 	struct media_session *ms = media_session_get(dlg);
 
 	/* media server no longer exists, so it's been already handled */
 	if (!ms)
 		return;
 
-	MEDIA_SESSION_LOCK(ms);
-	for (msl = ms->legs; msl; msl = msln) {
-		media_session_b2b_end(msl);
-		msln = msl->next;
-		/* leg might dissapear here */
-		MSL_UNREF_NORELEASE(msl);
-	}
-	media_session_release(ms, 1/* unlock */);
+	media_session_end(ms, MEDIA_LEG_BOTH, 0);
 }
 
 struct media_session *media_session_create(struct dlg_cell *dlg)
@@ -148,7 +140,7 @@ struct media_session *media_session_create(struct dlg_cell *dlg)
 	media_dlg.dlg_ctx_put_ptr(dlg, media_session_dlg_idx, ms);
 
 	if (media_dlg.register_dlgcb(dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
-			media_session_end, NULL, NULL) < 0) {
+			media_session_dlg_end, NULL, NULL) < 0) {
 		/* we are not storing media session in the dialog, as it might
 		 * dissapear along the way, if the playback ends */
 		LM_ERR("could not register media_session_termination!\n");

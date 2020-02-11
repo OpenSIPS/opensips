@@ -45,6 +45,8 @@ static mi_response_t *mi_media_send_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_media_fetch_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_media_terminate(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 /* modules dependencies */
 static dep_export_t deps = {
@@ -130,6 +132,13 @@ static mi_export_t mi_cmds[] = {
 		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", "nohold", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
+	{ "media_terminate", 0, 0, 0, {
+		{mi_media_terminate, {"callid", 0}},
+		{mi_media_terminate, {"callid", "leg", 0}},
+		{mi_media_terminate, {"callid", "nohold", 0}},
+		{mi_media_terminate, {"callid", "leg", "nohold", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
@@ -191,31 +200,46 @@ static int mod_init(void)
 	return 0;
 }
 
+static int fixup_get_media_leg(str *s)
+{
+	if (s->len != 6)
+		return -1;
+	if (!strncasecmp(s->s, "caller", 6))
+		return MEDIA_LEG_CALLER;
+	if (!strncasecmp(s->s, "callee", 6))
+		return MEDIA_LEG_CALLEE;
+	return -2;
+}
+
+static int fixup_get_media_leg_both(str *s)
+{
+	if (s->len == 4 && strncasecmp(s->s, "both", 4) == 0)
+		return MEDIA_LEG_BOTH;
+	return fixup_get_media_leg(s);
+}
+
 static int fixup_media_leg(void **param)
 {
 	str *s = *param;
-	if (s->len != 6)
-		goto unknown;
-	if (!strncasecmp(s->s, "caller", 6)) {
-		*param = (void *)(unsigned long)MEDIA_LEG_CALLER;
-		return 0;
-	} else if (!strncasecmp(s->s, "callee", 6)) {
-		*param = (void *)(unsigned long)MEDIA_LEG_CALLEE;
-		return 0;
+	int leg = fixup_get_media_leg(s);
+	if (leg < 0) {
+		LM_ERR("unsupported leg '%.*s'\n", s->len, s->s);
+		return E_CFG;
 	}
-unknown:
-	LM_ERR("unsupported leg '%.*s'\n", s->len, s->s);
-	return E_CFG;
+	*param = (void *)(unsigned long)leg;
+	return 0;
 }
 
 static int fixup_media_leg_both(void **param)
 {
 	str *s = *param;
-	if (s->len == 4 && strncasecmp(s->s, "both", 4) == 0) {
-		*param = (void *)(unsigned long)MEDIA_LEG_BOTH;
-		return 0;
+	int leg = fixup_get_media_leg_both(s);
+	if (leg < 0) {
+		LM_ERR("unsupported leg '%.*s'\n", s->len, s->s);
+		return E_CFG;
 	}
-	return fixup_media_leg(param);
+	*param = (void *)(unsigned long)leg;
+	return 0;
 }
 
 static int media_send_to_uri(struct sip_msg *msg, str *uri, int leg, str *body, str *headers)
@@ -450,4 +474,59 @@ static mi_response_t *mi_media_fetch_from_call_to_uri(const mi_params_t *params,
 {
 	LM_WARN("not implemented yet!\n");
 	return NULL;
+}
+
+static mi_response_t *mi_media_terminate(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int hold;
+	int media_leg;
+	str callid, leg;
+	struct dlg_cell *dlg;
+	struct media_session *ms;
+
+	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+
+	switch (try_get_mi_string_param(params, "leg", &leg.s, &leg.len)) {
+		case 0:
+			media_leg = fixup_get_media_leg_both(&leg);
+			if (media_leg < 0)
+				return init_mi_error(406, MI_SSTR("invalid leg parameter"));
+			break;
+		case -1:
+			/* not found: terminate both */
+			media_leg = MEDIA_LEG_BOTH;
+			break;
+		default:
+			return init_mi_param_error();
+	}
+
+	switch (try_get_mi_int_param(params, "hold", &hold)) {
+		case -1:
+			hold = 0;
+		case 0:
+			break;
+		default:
+			return init_mi_param_error();
+	}
+
+	/* params are now ok, let's lookup the media session */
+	dlg = media_dlg.get_dlg_by_callid(&callid, 1);
+	if (!dlg)
+		return init_mi_error(404, MI_SSTR("Dialog not found"));
+
+	ms = media_session_get(dlg);
+	if (!ms) {
+		media_dlg.dlg_unref(dlg, 1);
+		return init_mi_error(404, MI_SSTR("Media Session not found"));
+	}
+
+	/* all good - implement the logic now */
+	if (media_session_end(ms, media_leg, hold) < 0) {
+		media_dlg.dlg_unref(dlg, 1);
+		return init_mi_error(500, MI_SSTR("Terminate failed"));
+	}
+	media_dlg.dlg_unref(dlg, 1);
+	return init_mi_result_ok();
 }

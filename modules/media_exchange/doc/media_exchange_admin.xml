@@ -488,6 +488,47 @@ opensips-cli -x mi media_fetch_from_call_to_uri \
 		<xref linkend="mi_media_fetch_from_call_to_uri"/>.
 		</para>
 		</section>
+		<section id="mi_media_terminate"
+			xreflabel="media_terminate">
+		<title>
+		<function moreinfo="none">media_terminate</function>
+		</title>
+		<para>
+		MI command to terminate an ongoing media exchange.
+		</para>
+		<para>
+		Name: <emphasis>media_terminate</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> (string) - the callid of the
+					dialog that will have the media exchange terminated.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>leg</emphasis> (string, optional) - the leg for
+					whom to terminate the media exchange. Accepted values are
+					<emphasis>caller</emphasis>, <emphasis>callee</emphasis>
+					and <emphasis>both</emphasis>. If missing, all media
+					sessions are terminated.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>nohold</emphasis> (integer, optional) - if specified
+					and has a non-zero value, the leg that is being terminated
+					is not put on hold if the other participant still has an
+					ongoing media session.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+# terminate a caller announcement
+opensips-cli -x mi media_terminate \
+	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
+	leg=caller
+		</programlisting>
+		</section>
 	</section>
 
 </chapter>
