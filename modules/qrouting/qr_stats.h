@@ -79,11 +79,11 @@ typedef struct qr_sample {
 typedef struct qr_thresholds {
 	int id;
 	char name[QR_NAME_COL_SZ + 1];
-	double asr1, asr2;
-	double ccr1, ccr2;
-	double pdd1, pdd2;
-	double ast1, ast2;
-	double acd1, acd2;
+	double weight_asr, asr1, asr2;
+	double weight_ccr, ccr1, ccr2;
+	double weight_pdd, pdd1, pdd2;
+	double weight_ast, ast1, ast2;
+	double weight_acd, acd1, acd2;
 } qr_thresholds_t;
 
 /* history for gateway: sum of sampled intervals */

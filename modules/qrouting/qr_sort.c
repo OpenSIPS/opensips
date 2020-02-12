@@ -73,7 +73,7 @@ int qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds,
                 str *part, int rule_id)
 {
 	extern int event_bad_dst_threshold;
-	int score = 0;
+	double score = 0;
 	double asr_v, ccr_v, pdd_v, ast_v, acd_v;
 	str *gw_name = drb.get_gw_name(gw->dr_gw);
 
@@ -86,47 +86,51 @@ int qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds,
 	 * new sampling interval might bring new statistics)
 	 */
 	asr_v = asr(gw);
-	if(asr_v < thresholds->asr1 && asr_v != -1) {
-		score += QR_PENALTY_THRESHOLD_1;
+	if (asr_v < thresholds->asr1 && asr_v != -1) {
+		score += thresholds->weight_asr * QR_PENALTY_THRESHOLD_1;
 		log_warn_thr("ASR");
 		if(asr_v < thresholds->asr2) {
-			score += QR_PENALTY_THRESHOLD_2;
+			score += thresholds->weight_asr * QR_PENALTY_THRESHOLD_2;
 			log_crit_thr("ASR");
 		}
 	}
+
 	ccr_v = ccr(gw);
-	if(ccr_v < thresholds->ccr1 && ccr_v != -1) {
-		score += QR_PENALTY_THRESHOLD_1;
+	if (ccr_v < thresholds->ccr1 && ccr_v != -1) {
+		score += thresholds->weight_ccr * QR_PENALTY_THRESHOLD_1;
 		log_warn_thr("CCR");
 		if(ccr_v < thresholds->ccr2) {
-			score += QR_PENALTY_THRESHOLD_2;
+			score += thresholds->weight_ccr * QR_PENALTY_THRESHOLD_2;
 			log_crit_thr("CCR");
 		}
 	}
+
 	pdd_v = pdd(gw);
-	if(pdd_v > thresholds->pdd1 && pdd_v != -1) {
-		score += QR_PENALTY_THRESHOLD_1;
+	if (pdd_v > thresholds->pdd1 && pdd_v != -1) {
+		score += thresholds->weight_pdd * QR_PENALTY_THRESHOLD_1;
 		log_warn_thr("PDD");
 		if(pdd_v > thresholds->pdd2) {
-			score += QR_PENALTY_THRESHOLD_2;
+			score += thresholds->weight_pdd * QR_PENALTY_THRESHOLD_2;
 			log_crit_thr("PDD");
 		}
 	}
+
 	ast_v = ast(gw);
-	if(ast_v > thresholds->ast1 && ast_v != -1) {
-		score += QR_PENALTY_THRESHOLD_1;
+	if (ast_v > thresholds->ast1 && ast_v != -1) {
+		score += thresholds->weight_ast * QR_PENALTY_THRESHOLD_1;
 		log_warn_thr("AST");
 		if(ast_v > thresholds->ast2) {
-			score +=QR_PENALTY_THRESHOLD_2;
+			score += thresholds->weight_ast * QR_PENALTY_THRESHOLD_2;
 			log_crit_thr("AST");
 		}
 	}
+
 	acd_v = acd(gw);
-	if(acd_v < thresholds->acd1 && acd_v != -1) {
-		score += QR_PENALTY_THRESHOLD_1;
+	if (acd_v < thresholds->acd1 && acd_v != -1) {
+		score += thresholds->weight_acd * QR_PENALTY_THRESHOLD_1;
 		log_warn_thr("ACD");
 		if(acd_v < thresholds->acd2) {
-			score += QR_PENALTY_THRESHOLD_2;
+			score += thresholds->weight_acd * QR_PENALTY_THRESHOLD_2;
 			log_crit_thr("ACD");
 		}
 	}

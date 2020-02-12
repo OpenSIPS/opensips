@@ -35,6 +35,36 @@
 		<size>64</size>
 		<description> The name of the profile</description>
 	</column>
+	<column id="weight_asr">
+		<name>weight_asr</name>
+		<type>double</type>
+		<default>1</default>
+		<description> Weight of the ASR stat in the GW score computation</description>
+	</column>
+	<column id="weight_ccr">
+		<name>weight_ccr</name>
+		<type>double</type>
+		<default>1</default>
+		<description> Weight of the CCR stat in the GW score computation</description>
+	</column>
+	<column id="weight_pdd">
+		<name>weight_pdd</name>
+		<type>double</type>
+		<default>1</default>
+		<description> Weight of the PDD stat in the GW score computation</description>
+	</column>
+	<column id="weight_ast">
+		<name>weight_ast</name>
+		<type>double</type>
+		<default>1</default>
+		<description> Weight of the AST stat in the GW score computation</description>
+	</column>
+	<column id="weight_acd">
+		<name>weight_acd</name>
+		<type>double</type>
+		<default>1</default>
+		<description> Weight of the ACD stat in the GW score computation</description>
+	</column>
 	<column id="warn_threshold_asr">
         <name>warn_threshold_asr</name>
         <type>double</type>
@@ -69,31 +99,31 @@
         <name>crit_threshold_asr</name>
         <type>double</type>
         <default>-1</default>
-        <description>The disable threshold for answer seizure ratio</description>
+        <description>The critical threshold for answer seizure ratio</description>
     </column>
     <column id="crit_threshold_ccr">
         <name>crit_threshold_ccr</name>
         <type>double</type>
         <default>-1</default>
-        <description>The disable threshold for call completion ratio</description>
+        <description>The critical threshold for call completion ratio</description>
     </column>
     <column id="crit_threshold_pdd">
         <name>crit_threshold_pdd</name>
         <type>double</type>
         <default>-1</default>
-        <description>The disable threshold for post dial delay</description>
+        <description>The critical threshold for post dial delay</description>
     </column>
     <column id="crit_threshold_ast">
         <name>crit_threshold_ast</name>
         <type>double</type>
         <default>-1</default>
-        <description>The disable threshold for average setup time</description>
+        <description>The critical threshold for average setup time</description>
     </column>
     <column id="crit_threshold_acd">
         <name>crit_threshold_acd</name>
         <type>double</type>
         <default>-1</default>
-        <description>The disable threshold for average call duration</description>
+        <description>The critical threshold for average call duration</description>
     </column>
 
 </table>

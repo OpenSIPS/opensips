@@ -776,6 +776,11 @@
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>profile_name</field><type>DB_STR</type></column>
+		<column><field>weight_asr</field><type>DB_DOUBLE</type></column>
+		<column><field>weight_ccr</field><type>DB_DOUBLE</type></column>
+		<column><field>weight_pdd</field><type>DB_DOUBLE</type></column>
+		<column><field>weight_ast</field><type>DB_DOUBLE</type></column>
+		<column><field>weight_acd</field><type>DB_DOUBLE</type></column>
 		<column><field>warn_threshold_asr</field><type>DB_DOUBLE</type></column>
 		<column><field>warn_threshold_ccr</field><type>DB_DOUBLE</type></column>
 		<column><field>warn_threshold_pdd</field><type>DB_DOUBLE</type></column>
@@ -3914,6 +3919,11 @@
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>profile_name</field></col>
+				<col><field>weight_asr</field></col>
+				<col><field>weight_ccr</field></col>
+				<col><field>weight_pdd</field></col>
+				<col><field>weight_ast</field></col>
+				<col><field>weight_acd</field></col>
 				<col><field>warn_threshold_asr</field></col>
 				<col><field>warn_threshold_ccr</field></col>
 				<col><field>warn_threshold_pdd</field></col>
@@ -3931,6 +3941,11 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>profile_name</field></col>
+				<col><field>weight_asr</field></col>
+				<col><field>weight_ccr</field></col>
+				<col><field>weight_pdd</field></col>
+				<col><field>weight_ast</field></col>
+				<col><field>weight_acd</field></col>
 				<col><field>warn_threshold_asr</field></col>
 				<col><field>warn_threshold_ccr</field></col>
 				<col><field>warn_threshold_pdd</field></col>
@@ -3951,6 +3966,11 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>profile_name</field></col>
+				<col><field>weight_asr</field></col>
+				<col><field>weight_ccr</field></col>
+				<col><field>weight_pdd</field></col>
+				<col><field>weight_ast</field></col>
+				<col><field>weight_acd</field></col>
 				<col><field>warn_threshold_asr</field></col>
 				<col><field>warn_threshold_ccr</field></col>
 				<col><field>warn_threshold_pdd</field></col>

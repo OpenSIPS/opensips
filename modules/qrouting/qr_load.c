@@ -45,38 +45,48 @@
 	}while(0)
 
 str qr_profiles_table = str_init("qr_profiles");
-str id_qp_col = str_init(ID_QP_COL);
-str profile_name_qp_col = str_init(PROFILE_NAME_QP_COL);
-str warn_asr_qp_col = str_init(WARN_ASR_QP_COL);
-str warn_ccr_qp_col = str_init(WARN_CCR_QP_COL);
-str warn_pdd_qp_col = str_init(WARN_PDD_QP_COL);
-str warn_ast_qp_col = str_init(WARN_AST_QP_COL);
-str warn_acd_qp_col = str_init(WARN_ACD_QP_COL);
-str crit_asr_qp_col = str_init(CRIT_ASR_QP_COL);
-str crit_ccr_qp_col = str_init(CRIT_CCR_QP_COL);
-str crit_pdd_qp_col = str_init(CRIT_PDD_QP_COL);
-str crit_ast_qp_col = str_init(CRIT_AST_QP_COL);
-str crit_acd_qp_col = str_init(CRIT_ACD_QP_COL);
 
-static inline void add_profile(qr_thresholds_t *prof, int id, const char *name,
-		double warn_asr, double warn_ccr, double warn_pdd, double warn_ast,
-		double warn_acd, double crit_asr, double crit_ccr, double crit_pdd,
-		double crit_ast, double crit_acd)
+static str qp_id_col = str_init(QP_ID_COL);
+static str qp_profile_name_col = str_init(QP_PROFILE_NAME_COL);
+static str qp_wght_asr_col = str_init(QP_WGHT_ASR_COL);
+static str qp_wght_ccr_col = str_init(QP_WGHT_CCR_COL);
+static str qp_wght_pdd_col = str_init(QP_WGHT_PDD_COL);
+static str qp_wght_ast_col = str_init(QP_WGHT_AST_COL);
+static str qp_wght_acd_col = str_init(QP_WGHT_ACD_COL);
+static str qp_warn_asr_col = str_init(QP_WARN_ASR_COL);
+static str qp_warn_ccr_col = str_init(QP_WARN_CCR_COL);
+static str qp_warn_pdd_col = str_init(QP_WARN_PDD_COL);
+static str qp_warn_ast_col = str_init(QP_WARN_AST_COL);
+static str qp_warn_acd_col = str_init(QP_WARN_ACD_COL);
+static str qp_crit_asr_col = str_init(QP_CRIT_ASR_COL);
+static str qp_crit_ccr_col = str_init(QP_CRIT_CCR_COL);
+static str qp_crit_pdd_col = str_init(QP_CRIT_PDD_COL);
+static str qp_crit_ast_col = str_init(QP_CRIT_AST_COL);
+static str qp_crit_acd_col = str_init(QP_CRIT_ACD_COL);
+
+static inline void add_profile(qr_thresholds_t *prof,
+		const int *int_vals, char * const *str_vals, const double *double_vals)
 {
-	prof->id = id;
-	strncpy(prof->name, name, QR_NAME_COL_SZ + 1);
+	prof->id = int_vals[INT_VALS_ID];
+	strncpy(prof->name, str_vals[STR_VALS_PROFILE_NAME], QR_NAME_COL_SZ + 1);
 
-	prof->asr1 = warn_asr;
-	prof->ccr1 = warn_ccr;
-	prof->pdd1 = warn_pdd;
-	prof->ast1 = warn_ast;
-	prof->acd1 = warn_acd;
+	prof->weight_asr = double_vals[DOUBLE_VALS_WGHT_ASR];
+	prof->weight_ccr = double_vals[DOUBLE_VALS_WGHT_CCR];
+	prof->weight_pdd = double_vals[DOUBLE_VALS_WGHT_PDD];
+	prof->weight_ast = double_vals[DOUBLE_VALS_WGHT_AST];
+	prof->weight_acd = double_vals[DOUBLE_VALS_WGHT_ACD];
 
-	prof->asr2 = crit_asr;
-	prof->ccr2 = crit_ccr;
-	prof->pdd2 = crit_pdd;
-	prof->ast2 = crit_ast;
-	prof->acd2 = crit_acd;
+	prof->asr1 = double_vals[DOUBLE_VALS_WARN_ASR];
+	prof->ccr1 = double_vals[DOUBLE_VALS_WARN_CCR];
+	prof->pdd1 = double_vals[DOUBLE_VALS_WARN_PDD];
+	prof->ast1 = double_vals[DOUBLE_VALS_WARN_AST];
+	prof->acd1 = double_vals[DOUBLE_VALS_WARN_ACD];
+
+	prof->asr2 = double_vals[DOUBLE_VALS_CRIT_ASR];
+	prof->ccr2 = double_vals[DOUBLE_VALS_CRIT_CCR];
+	prof->pdd2 = double_vals[DOUBLE_VALS_CRIT_PDD];
+	prof->ast2 = double_vals[DOUBLE_VALS_CRIT_AST];
+	prof->acd2 = double_vals[DOUBLE_VALS_CRIT_ACD];
 }
 
 /* refresh a single threshold set (1 row) */
@@ -141,30 +151,35 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 	double double_vals[N_DOUBLE_VALS];
 
 	qr_thresholds_t *profs = NULL, *old_profs;
-	db_key_t columns[12];
+	db_key_t columns[N_INT_VALS + N_STR_VALS + N_DOUBLE_VALS];
 	db_res_t *res = 0;
 	db_row_t *row = 0;
 	int i, no_rows = 0, total_rows = 0, old_n;
 	int db_cols = 0;
 
-	memset(double_vals, 0, N_DOUBLE_VALS*sizeof(double));
-	memset(int_vals, 0, N_INT_VALS*sizeof(int));
-	memset(str_vals, 0, N_STR_VALS*sizeof(char*));
+	memset(double_vals, 0, N_DOUBLE_VALS * sizeof *double_vals);
+	memset(int_vals, 0, N_INT_VALS * sizeof *int_vals);
+	memset(str_vals, 0, N_STR_VALS * sizeof *str_vals);
 
-	columns[0] = &id_qp_col;
-	columns[1] = &profile_name_qp_col;
-	columns[2] = &warn_asr_qp_col;
-	columns[3] = &warn_ccr_qp_col;
-	columns[4] = &warn_pdd_qp_col;
-	columns[5] = &warn_ast_qp_col;
-	columns[6] = &warn_acd_qp_col;
-	columns[7] = &crit_asr_qp_col;
-	columns[8] = &crit_ccr_qp_col;
-	columns[9] = &crit_pdd_qp_col;
-	columns[10] = &crit_ast_qp_col;
-	columns[11] = &crit_acd_qp_col;
+	columns[0]  = &qp_id_col;
+	columns[1]  = &qp_profile_name_col;
+	columns[2]  = &qp_wght_asr_col;
+	columns[3]  = &qp_wght_ccr_col;
+	columns[4]  = &qp_wght_pdd_col;
+	columns[5]  = &qp_wght_ast_col;
+	columns[6]  = &qp_wght_acd_col;
+	columns[7]  = &qp_warn_asr_col;
+	columns[8]  = &qp_warn_ccr_col;
+	columns[9]  = &qp_warn_pdd_col;
+	columns[10] = &qp_warn_ast_col;
+	columns[11] = &qp_warn_acd_col;
+	columns[12] = &qp_crit_asr_col;
+	columns[13] = &qp_crit_ccr_col;
+	columns[14] = &qp_crit_pdd_col;
+	columns[15] = &qp_crit_ast_col;
+	columns[16] = &qp_crit_acd_col;
 
-	db_cols = 12;
+	db_cols = N_INT_VALS + N_STR_VALS + N_DOUBLE_VALS;
 
 	if (qr_dbf->use_table( qr_db_hdl, &qr_profiles_table) < 0) {
 		LM_ERR("cannot select table \"%.*s\"\n", qr_profiles_table.len,
@@ -213,58 +228,73 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 		for (i = 0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
 
-			check_val(id_qp_col, ROW_VALUES(row), DB_INT, 1, 1);
+			check_val(qp_id_col, ROW_VALUES(row), DB_INT, 1, 1);
 			int_vals[INT_VALS_ID] = VAL_INT(ROW_VALUES(row));
 
-			check_val(profile_name_qp_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
+			check_val(qp_profile_name_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
 			str_vals[STR_VALS_PROFILE_NAME] = (char*)VAL_STRING(ROW_VALUES(row)+1);
 
-			check_val(warn_asr_qp_col, ROW_VALUES(row)+2, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_WARN_ASR] = VAL_DOUBLE(ROW_VALUES(row)+2);
 
-			check_val(warn_ccr_qp_col, ROW_VALUES(row)+3, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_WARN_CCR] = VAL_DOUBLE(ROW_VALUES(row)+3);
+			check_val(qp_wght_asr_col, ROW_VALUES(row)+2, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WGHT_ASR] = VAL_DOUBLE(ROW_VALUES(row)+2);
 
-			check_val(warn_pdd_qp_col, ROW_VALUES(row)+4, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_WARN_PDD] = VAL_DOUBLE(ROW_VALUES(row)+4);
+			check_val(qp_wght_ccr_col, ROW_VALUES(row)+3, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WGHT_CCR] = VAL_DOUBLE(ROW_VALUES(row)+3);
 
-			check_val(warn_ast_qp_col, ROW_VALUES(row)+5, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_WARN_AST] = VAL_DOUBLE(ROW_VALUES(row)+5);
+			check_val(qp_wght_pdd_col, ROW_VALUES(row)+4, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WGHT_PDD] = VAL_DOUBLE(ROW_VALUES(row)+4);
 
-			check_val(warn_acd_qp_col, ROW_VALUES(row)+6, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_WARN_ACD] = VAL_DOUBLE(ROW_VALUES(row)+6);
+			check_val(qp_wght_ast_col, ROW_VALUES(row)+5, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WGHT_AST] = VAL_DOUBLE(ROW_VALUES(row)+5);
 
-			check_val(crit_asr_qp_col, ROW_VALUES(row)+7, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_CRIT_ASR] = VAL_DOUBLE(ROW_VALUES(row)+7);
+			check_val(qp_wght_acd_col, ROW_VALUES(row)+6, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WGHT_ACD] = VAL_DOUBLE(ROW_VALUES(row)+6);
 
-			check_val(crit_ccr_qp_col, ROW_VALUES(row)+8, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_CRIT_CCR] = VAL_DOUBLE(ROW_VALUES(row)+8);
 
-			check_val(crit_pdd_qp_col, ROW_VALUES(row)+9, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_CRIT_PDD] = VAL_DOUBLE(ROW_VALUES(row)+9);
+			check_val(qp_warn_asr_col, ROW_VALUES(row)+7, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WARN_ASR] = VAL_DOUBLE(ROW_VALUES(row)+7);
 
-			check_val(crit_ast_qp_col, ROW_VALUES(row)+10, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_CRIT_AST] = VAL_DOUBLE(ROW_VALUES(row)+10);
+			check_val(qp_warn_ccr_col, ROW_VALUES(row)+8, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WARN_CCR] = VAL_DOUBLE(ROW_VALUES(row)+8);
 
-			check_val(crit_acd_qp_col, ROW_VALUES(row)+11, DB_DOUBLE, 1, 1);
-			double_vals[DOUBLE_VALS_CRIT_ACD] = VAL_DOUBLE(ROW_VALUES(row)+11);
+			check_val(qp_warn_pdd_col, ROW_VALUES(row)+9, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WARN_PDD] = VAL_DOUBLE(ROW_VALUES(row)+9);
 
-			LM_DBG("qr_profile row: %d %s %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+			check_val(qp_warn_ast_col, ROW_VALUES(row)+10, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WARN_AST] = VAL_DOUBLE(ROW_VALUES(row)+10);
+
+			check_val(qp_warn_acd_col, ROW_VALUES(row)+11, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_WARN_ACD] = VAL_DOUBLE(ROW_VALUES(row)+11);
+
+
+			check_val(qp_crit_asr_col, ROW_VALUES(row)+12, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_ASR] = VAL_DOUBLE(ROW_VALUES(row)+12);
+
+			check_val(qp_crit_ccr_col, ROW_VALUES(row)+13, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_CCR] = VAL_DOUBLE(ROW_VALUES(row)+13);
+
+			check_val(qp_crit_pdd_col, ROW_VALUES(row)+14, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_PDD] = VAL_DOUBLE(ROW_VALUES(row)+14);
+
+			check_val(qp_crit_ast_col, ROW_VALUES(row)+15, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_AST] = VAL_DOUBLE(ROW_VALUES(row)+15);
+
+			check_val(qp_crit_acd_col, ROW_VALUES(row)+16, DB_DOUBLE, 1, 1);
+			double_vals[DOUBLE_VALS_CRIT_ACD] = VAL_DOUBLE(ROW_VALUES(row)+16);
+
+			LM_DBG("qr_profile row: %d %s [%lf %lf %lf %lf %lf] [%lf %lf %lf %lf %lf] "
+			       "[%lf %lf %lf %lf %lf]\n",
 					int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
+					double_vals[DOUBLE_VALS_WGHT_ASR], double_vals[DOUBLE_VALS_WGHT_CCR],
+					double_vals[DOUBLE_VALS_WGHT_PDD], double_vals[DOUBLE_VALS_WGHT_AST],
+					double_vals[DOUBLE_VALS_WGHT_ACD],
 					double_vals[DOUBLE_VALS_WARN_ASR], double_vals[DOUBLE_VALS_WARN_CCR],
 					double_vals[DOUBLE_VALS_WARN_PDD], double_vals[DOUBLE_VALS_WARN_AST],
 					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_CRIT_ASR],
 					double_vals[DOUBLE_VALS_CRIT_CCR], double_vals[DOUBLE_VALS_CRIT_PDD],
 					double_vals[DOUBLE_VALS_CRIT_AST], double_vals[DOUBLE_VALS_CRIT_ACD]);
 
-			add_profile(&profs[total_rows], int_vals[INT_VALS_ID],
-					str_vals[STR_VALS_PROFILE_NAME],
-					double_vals[DOUBLE_VALS_WARN_ASR], double_vals[DOUBLE_VALS_WARN_CCR],
-					double_vals[DOUBLE_VALS_WARN_PDD], double_vals[DOUBLE_VALS_WARN_AST],
-					double_vals[DOUBLE_VALS_WARN_ACD], double_vals[DOUBLE_VALS_CRIT_ASR],
-					double_vals[DOUBLE_VALS_CRIT_CCR], double_vals[DOUBLE_VALS_CRIT_PDD],
-					double_vals[DOUBLE_VALS_CRIT_AST], double_vals[DOUBLE_VALS_CRIT_ACD]);
-
+			add_profile(&profs[total_rows], int_vals, str_vals, double_vals);
 			total_rows++;
 		}
 
