@@ -38,6 +38,7 @@ struct rtpe_node {
 	unsigned			rn_weight;		/* for load balancing */
 	unsigned int		rn_recheck_ticks;
 	struct rtpe_node	*rn_next;
+	bool busy;
 };
 
 

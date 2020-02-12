@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 #include "../../str.h"
@@ -870,6 +871,7 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 		pnode->rn_weight = weight;
 		pnode->rn_umode = 0;
 		pnode->rn_disabled = 0;
+		pnode->busy = false;
 		pnode->rn_url.s = shm_malloc(p2 - p1 + 1);
 		if (pnode->rn_url.s == NULL) {
 			shm_free(pnode);
@@ -2250,6 +2252,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 	v = bencode_iovec(dict, &vcnt, 1, 0);
 	if (!v) {
 		LM_ERR("error converting bencode to iovec\n");
+		node->busy = false;
 		return NULL;
 	}
 
@@ -2362,12 +2365,13 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 out:
 	cp[len] = '\0';
 	*outlen = len;
+	node->busy = false;
 	return cp;
 badproxy:
 	LM_ERR("proxy <%s> does not respond, disable it\n", node->rn_url.s);
 	node->rn_disabled = 1;
 	node->rn_recheck_ticks = get_ticks() + rtpengine_disable_tout;
-
+	node->busy = false;
 	return NULL;
 }
 
@@ -2424,6 +2428,7 @@ select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 		if (node->rn_disabled)
 			return NULL;
 
+		node->busy = true;
 		return node;
 	}
 
@@ -2467,7 +2472,7 @@ retry:
 	was_forced = 0;
 	for (node=set->rn_first; node!=NULL;) {
 		if (sumcut < (int)node->rn_weight) {
-			if (!node->rn_disabled)
+			if (!node->rn_disabled && !node->busy)
 				goto found;
 			if (was_forced == 0) {
 				/* appropriate proxy is disabled : redistribute on enabled ones */
@@ -2488,7 +2493,7 @@ found:
 		if (node->rn_disabled)
 			goto retry;
 	}
-
+	node->busy = true;
 	return node;
 }
 
