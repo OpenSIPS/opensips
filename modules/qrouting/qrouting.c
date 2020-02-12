@@ -96,7 +96,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, NULL, NULL},
 		  {0, 0, 0}
 		},
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE
+		ALL_ROUTES
 	},
 	{"qr_enable_dst", (cmd_function)w_qr_enable_dst,
 		{ {CMD_PARAM_INT, NULL, NULL},
@@ -104,7 +104,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, NULL, NULL},
 		  {0, 0, 0}
 		},
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE
+		ALL_ROUTES
 	},
 	{0,0,{{0,0,0}},0}
 };

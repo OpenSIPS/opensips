@@ -72,6 +72,8 @@
 	</para>
 </section>
 
+<!-- ============================= PARAM ================================  -->
+
 <section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section id="deps_modules" xreflabel="OpenSIPS Module Dependencies">
@@ -158,7 +160,114 @@ modparam("qrouting", "sampling_interval", 5)
 	</programlisting>
 		</example>
 	</section>
+
+	<section id="param_event_bad_dst_threshold" xreflabel="event_bad_dst_threshold">
+		<title><varname>event_bad_dst_threshold</varname> (integer)</title>
+		<para>
+		The minimally accepted quality of a gateway.  If a destination (i.e.
+		prefix + gateway combination) receives a score below this threshold,
+		the E_QROUTING_BAD_DST event will be triggered.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>5</emphasis> (all stats are
+			allowed to hit the WARN threshold simultaneously)
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>event_bad_dst_threshold</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "event_bad_dst_threshold", 4)
+	</programlisting>
+		</example>
+	</section>
+
 </section>
+
+<!-- ============================= FUNC ================================  -->
+
+<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+
+	<section id="func_qr_disable_dst" xreflabel="qr_disable_dst()">
+		<title>
+		<function moreinfo="none">qr_disable_dst(rule_id, dst_name, [part])</function>
+		</title>
+		<para>
+		Within a given routing rule, temporarily remove the given gateway or
+		carrier from routing, until they are re-enabled via
+		<xref linkend="func_qr_enable_dst"/> or <xref linkend="mi_qr_enable_dst"/>.
+		The removal effect will be lost on an OpenSIPS restart.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>rule_id (integer)</emphasis> - database id of the
+				drouting rule
+			</para></listitem>
+			<listitem><para>
+				<emphasis>dst_name (string)</emphasis> - gateway or carrier
+					to disable
+			</para></listitem>
+			<listitem><para>
+				<emphasis>part (string, optional)</emphasis> - drouting partition
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>qr_disable_dst()</function> usage</title>
+		<programlisting format="linespecific">
+
+# the signaling quality for @rule_id through @dst_name is degrading, remove it!
+event_route [E_QROUTING_BAD_DST]
+{
+	qr_disable_dst($param(rule_id), $param(dst_name), $param(partition));
+}
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="func_qr_enable_dst" xreflabel="qr_enable_dst()">
+		<title>
+		<function moreinfo="none">qr_enable_dst(rule_id, dst_name, [part])</function>
+		</title>
+		<para>
+		Within a given routing rule, re-introduce the given gateway or
+		carrier into the routing process.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>rule_id (integer)</emphasis> - database id of the
+				drouting rule
+			</para></listitem>
+			<listitem><para>
+				<emphasis>dst_name (string)</emphasis> - gateway or carrier
+					to disable
+			</para></listitem>
+			<listitem><para>
+				<emphasis>part (string, optional)</emphasis> - drouting partition
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>qr_enable_dst()</function> usage</title>
+		<programlisting format="linespecific">
+
+# the ban has expired, let's re-enable this gateway and see how it behaves
+qr_enable_dst($param(rule_id), $param(dst_name), $param(partition));
+	</programlisting>
+		</example>
+	</section>
+
+</section>
+
+<!-- ================================ MI =================================  -->
 
 <section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
@@ -190,16 +299,16 @@ opensips-cli -x mi qr_reload
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>partition_name (optional)</emphasis> - a specific
+				<emphasis>partition (optional)</emphasis> - a specific
 				drouting partition to list statistics for
 			</para></listitem>
 			<listitem><para>
 				<emphasis>rule_id (optional)</emphasis> - a specific drouting
-				rule ID to list statistics for
+				rule database id to list statistics for
 			</para></listitem>
 			<listitem><para>
-				<emphasis>dst_id (optional)</emphasis> - a specific gateway or
-				carrier ID to list statistics for
+				<emphasis>dst_name (optional)</emphasis> - a specific gateway or
+				carrier name to list statistics for
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -213,6 +322,95 @@ opensips-cli -x mi qr_status pstn
 opensips-cli -x mi qr_status pstn MY-GW-3
 opensips-cli -x mi qr_status pstn MY-CARR-7
 		</programlisting>
+	</section>
+
+	<section id="mi_qr_disable_dst" xreflabel="qr_disable_dst">
+		<title><function moreinfo="none">qr_disable_dst</function></title>
+
+		<para>
+		Within a given routing rule, temporarily remove the given gateway or
+		carrier from routing, until they are re-enabled manually.  The removal
+		effect will be lost on an OpenSIPS restart.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>partition (optional)</emphasis> - drouting partition
+			</para></listitem>
+			<listitem><para>
+				<emphasis>rule_id</emphasis> - database id of the drouting rule
+			</para></listitem>
+			<listitem><para>
+				<emphasis>dst_name</emphasis> - gateway or carrier to disable
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+
+		<programlisting  format="linespecific">
+
+opensips-cli -x mi qr_disable_dst 14 MY-CARR-7
+opensips-cli -x mi qr_disable_dst pstn 81 MY-GW-3
+		</programlisting>
+	</section>
+
+	<section id="mi_qr_enable_dst" xreflabel="qr_enable_dst">
+		<title><function moreinfo="none">qr_enable_dst</function></title>
+
+		<para>
+		Within a given routing rule, re-introduce the given gateway or
+		carrier into the routing process.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>partition (optional)</emphasis> - drouting partition
+			</para></listitem>
+			<listitem><para>
+				<emphasis>rule_id</emphasis> - database id of the drouting rule
+			</para></listitem>
+			<listitem><para>
+				<emphasis>dst_name</emphasis> - gateway or carrier to enable
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+
+		<programlisting  format="linespecific">
+
+opensips-cli -x mi qr_enable_dst 14 MY-CARR-7
+opensips-cli -x mi qr_enable_dst pstn 81 MY-GW-3
+		</programlisting>
+	</section>
+
+</section>
+
+<!-- ============================= EVENT ================================  -->
+
+<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_E_QROUTING_BAD_DST" xreflabel="E_QROUTING_BAD_DST">
+		<title>
+		<function moreinfo="none">E_QROUTING_BAD_DST</function>
+		</title>
+		<para>
+		This event may be raised during routing, asynchronously, whenever a
+		gateway's score falls below <xref linkend="param_event_bad_dst_threshold"/>.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>partition</emphasis> - drouting partition name
+			</para></listitem>
+			<listitem><para>
+					<emphasis>rule_id</emphasis> - database id of the drouting rule
+			</para></listitem>
+			<listitem><para>
+					<emphasis>dst_name</emphasis> - name of the concerned gateway or carrier
+			</para></listitem>
+		</itemizedlist>
 	</section>
 
 </section>
