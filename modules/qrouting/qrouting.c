@@ -281,25 +281,25 @@ static int qr_init_dr_cb(void)
 		return -1;
 	}
 
-	if (drb.register_drcb(DRCB_RLD_INIT_RULE, &qr_create_rule, NULL, NULL) < 0) {
+	if (drb.register_drcb(DRCB_RLD_INIT_RULE, &qr_rld_create_rule, NULL, NULL) < 0) {
 		LM_ERR("failed to register DRCB_RLD_INIT_RULE callback to DR\n");
 		return -1;
 	}
-	if (drb.register_drcb(DRCB_RLD_GW, &qr_dst_is_gw, NULL, NULL) < 0) {
-		LM_ERR("failed to register DRCB_RLD_REG_GW callback to DR\n");
+	if (drb.register_drcb(DRCB_RLD_GW, &qr_rld_dst_is_gw, NULL, NULL) < 0) {
+		LM_ERR("failed to register DRCB_RLD_GW callback to DR\n");
 		return -1;
 	}
-	if (drb.register_drcb(DRCB_RLD_CR, &qr_dst_is_grp, NULL, NULL) < 0) {
-		LM_ERR("failed to register DRCB_RLD_REG_GW callback to DR\n");
+	if (drb.register_drcb(DRCB_RLD_CR, &qr_rld_dst_is_grp, NULL, NULL) < 0) {
+		LM_ERR("failed to register DRCB_RLD_CR callback to DR\n");
 		return -1;
 	}
-	if (drb.register_drcb(DRCB_RLD_ADD_RULE, &qr_add_rule_to_list, NULL, NULL) < 0) {
-		LM_ERR("failed to register DRCB_RLD_ADD_RULE callback to DR\n");
+	if (drb.register_drcb(DRCB_RLD_LINK_RULE, &qr_rld_link_rule, NULL, NULL) < 0) {
+		LM_ERR("failed to register DRCB_RLD_LINK_RULE callback to DR\n");
 		return -1;
 	}
 
 	if (drb.register_drcb(DRCB_RLD_FINALIZE, &qr_rld_finalize, NULL, NULL) < 0) {
-		LM_ERR("failed to register DRCB_RLD_FREE_LIST callback to DR\n");
+		LM_ERR("failed to register DRCB_RLD_FINALIZE callback to DR\n");
 		return -1;
 	}
 

@@ -30,7 +30,7 @@ enum drcb_types {
 	DRCB_RLD_INIT_RULE,
 	DRCB_RLD_GW,
 	DRCB_RLD_CR,
-	DRCB_RLD_ADD_RULE,
+	DRCB_RLD_LINK_RULE,
 	DRCB_RLD_FINALIZE, /* finalize the entire reload (1+ partitions) */
 
 	DRCB_ACC_CALL,

@@ -422,7 +422,7 @@ build_rt_info(
 
 		/* add rule to the partition list */
 		arp.qr_rule = qr_rule;
-		run_dr_cbs(DRCB_RLD_ADD_RULE, &arp);
+		run_dr_cbs(DRCB_RLD_LINK_RULE, &arp);
 	}
 
 	return rt;

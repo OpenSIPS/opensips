@@ -213,7 +213,7 @@ int qr_set_profile(qr_rule_t *rule, unsigned int prof_id)
 }
 
 /* creates a rule n_dest destinations (by default marked as gws) */
-void qr_create_rule(void *param)
+void qr_rld_create_rule(void *param)
 {
 	qr_rule_t *new;
 	int r_id;
@@ -248,7 +248,7 @@ void qr_create_rule(void *param)
 }
 
 /* make gateway a given destination - to be registered as callback */
-void qr_dst_is_gw(void *param)
+void qr_rld_dst_is_gw(void *param)
 {
 	void *dst; /* pgw_t received from dr */
 	qr_rule_t *rule; /* qr_rule that was initialised with the qr callback from dr */
@@ -271,7 +271,7 @@ void qr_dst_is_gw(void *param)
 }
 
 /* marks index_grp destination from the rule as group and creates the gw array */
-void qr_dst_is_grp(void *param)
+void qr_rld_dst_is_grp(void *param)
 {
 	struct dr_reg_param *drp = (struct dr_reg_param *)param;
 	qr_rule_t *rule = drp->rule;
@@ -322,8 +322,8 @@ error:
 		shm_free(rule->dest[n_dst].grp.gw);
 }
 
-/* add rule to list. if the list is NULL a new list is created */
-void qr_add_rule_to_list(void *param)
+/* link a rule into the current partition */
+void qr_rld_link_rule(void *param)
 {
 	struct dr_add_rule_params *arp = (struct dr_add_rule_params *)param;
 	qr_rule_t *new = arp->qr_rule;
@@ -333,6 +333,8 @@ void qr_add_rule_to_list(void *param)
 
 	if (!new)
 		return;
+
+	new->part_name = part_name;
 
 	if (!*rule_list) {
 		*rule_list = new;

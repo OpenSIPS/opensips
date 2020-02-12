@@ -123,6 +123,7 @@ typedef struct qr_rule {
 	int r_id;/* rule_id */
 	char sort_method; /* sorting for the rule */
 	int n;
+	str *part_name; /* backpointer, don't free */
 	struct qr_rule *next;
 } qr_rule_t;
 
@@ -130,7 +131,7 @@ typedef struct qr_partitions {
 	qr_rule_t **qr_rules_start; /* an array of partition - each partition
 								   contains rules */
 	int n_parts; /* the number of partitions */
-	str *part_name;
+	str *part_name; /* backpointer, don't free */
 	rw_lock_t *rw_lock; /* protect the partitions for reloading */
 }qr_partitions_t;
 
@@ -139,15 +140,19 @@ extern qr_thresholds_t **qr_profiles;
 extern int *qr_profiles_n;
 extern qr_partitions_t **qr_main_list;
 
+extern str qr_param_part;
+extern str qr_param_rule_id;
+extern str qr_param_dst_name;
+
 qr_gw_t *  qr_create_gw(void *);
 void qr_free_gw(qr_gw_t *);
 void free_qr_list(qr_partitions_t *qr_parts);
 
 void qr_rld_prepare_part(void *param);
-void qr_create_rule(void *param);
-void qr_dst_is_gw(void *param);
-void qr_dst_is_grp(void *param);
-void qr_add_rule_to_list(void *param);
+void qr_rld_create_rule(void *param);
+void qr_rld_dst_is_gw(void *param);
+void qr_rld_dst_is_grp(void *param);
+void qr_rld_link_rule(void *param);
 void qr_rld_finalize(void *param);
 
 #endif
