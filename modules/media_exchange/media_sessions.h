@@ -24,8 +24,8 @@
 #include "media_exchange.h"
 #include "../dialog/dlg_load.h"
 
-#define MEDIA_SESSION_TYPE_STREAM 0
-#define MEDIA_SESSION_TYPE_FETCH 1
+#define MEDIA_SESSION_TYPE_FORK 0
+#define MEDIA_SESSION_TYPE_EXCHANGE 1
 
 struct media_session;
 

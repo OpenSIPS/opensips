@@ -30,20 +30,20 @@ struct b2b_api media_b2b;
 struct rtpproxy_binds media_rtp;
 
 static int mod_init(void);
-static int media_send_to_uri(struct sip_msg *msg, str *uri, int leg, str *body, str *headers);
-static int media_send_from_call(struct sip_msg *msg, str *callid, int leg);
-static int media_fetch_from_uri(struct sip_msg *msg, str *uri, int leg,
+static int media_fork_to_uri(struct sip_msg *msg, str *uri, int leg, str *body, str *headers);
+static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg);
+static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 		str *body, str *headers, int *nohold);
-static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *nohold);
+static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int *nohold);
 static int media_terminate(struct sip_msg *msg, int leg, int *nohold);
 static int fixup_media_leg(void **param);
 static int fixup_media_leg_both(void **param);
 
 static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void *param);
 
-static mi_response_t *mi_media_send_from_call_to_uri(const mi_params_t *params,
+static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-static mi_response_t *mi_media_fetch_from_call_to_uri(const mi_params_t *params,
+static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_media_terminate(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -64,19 +64,7 @@ static dep_export_t deps = {
 
 /* exported commands */
 static cmd_export_t cmds[] = {
-	{"media_send_to_uri",(cmd_function)media_send_to_uri, {
-		{CMD_PARAM_STR,0,0}, /* uri */
-		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* body */
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* headers */
-		{0,0,0}},
-		REQUEST_ROUTE},
-	{"media_send_from_call",(cmd_function)media_send_from_call, {
-		{CMD_PARAM_STR,0,0}, /* callid */
-		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
-		{0,0,0}},
-		REQUEST_ROUTE},
-	{"media_fetch_from_uri",(cmd_function)media_fetch_from_uri, {
+	{"media_exchange_from_uri",(cmd_function)media_exchange_from_uri, {
 		{CMD_PARAM_STR,0,0}, /* uri */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg,0}, /* leg */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* body */
@@ -84,10 +72,22 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
 		{0,0,0}},
 		REQUEST_ROUTE},
-	{"media_fetch_to_call",(cmd_function)media_fetch_to_call, {
+	{"media_exchange_to_call",(cmd_function)media_exchange_to_call, {
 		{CMD_PARAM_STR,0,0}, /* callid */
 		{CMD_PARAM_STR,fixup_media_leg,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{"media_fork_to_uri",(cmd_function)media_fork_to_uri, {
+		{CMD_PARAM_STR,0,0}, /* uri */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* body */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* headers */
+		{0,0,0}},
+		REQUEST_ROUTE},
+	{"media_fork_from_call",(cmd_function)media_fork_from_call, {
+		{CMD_PARAM_STR,0,0}, /* callid */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{0,0,0}},
 		REQUEST_ROUTE},
 	{"media_terminate",(cmd_function)media_terminate, {
@@ -104,32 +104,32 @@ static param_export_t params[] = {
 };
 
 static mi_export_t mi_cmds[] = {
-	{ "media_send_from_call_to_uri", 0, 0, 0, {
-		{mi_media_send_from_call_to_uri, {"callid", "uri", 0}},
-		{mi_media_send_from_call_to_uri, {"callid", "uri", "leg", 0}},
-		{mi_media_send_from_call_to_uri, {"callid", "uri", "headers", 0}},
-		{mi_media_send_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
+	{ "media_fork_from_call_to_uri", 0, 0, 0, {
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "headers", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "media_send_from_call_to_uri_body", 0, 0, 0, {
-		{mi_media_send_from_call_to_uri, {"callid", "uri", "body", 0}},
-		{mi_media_send_from_call_to_uri, {"callid", "uri", "body", "leg", 0}},
-		{mi_media_send_from_call_to_uri, {"callid", "uri", "body", "headers", 0}},
-		{mi_media_send_from_call_to_uri, {"callid", "uri", "body", "leg", "headers", 0}},
+	{ "media_fork_from_call_to_uri_body", 0, 0, 0, {
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "body", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "body", "leg", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "body", "headers", 0}},
+		{mi_media_fork_from_call_to_uri, {"callid", "uri", "body", "leg", "headers", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "media_fetch_from_call_to_uri", 0, 0, 0, {
-		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", 0}},
-		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
-		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "nohold", 0}},
-		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "headers", "nohold", 0}},
+	{ "media_exchange_from_call_to_uri", 0, 0, 0, {
+		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", 0}},
+		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
+		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "nohold", 0}},
+		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "headers", "nohold", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "media_fetch_from_call_to_uri_body", 0, 0, 0, {
-		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", 0}},
-		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", 0}},
-		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", "nohold", 0}},
-		{mi_media_fetch_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", "nohold", 0}},
+	{ "media_exchange_from_call_to_uri_body", 0, 0, 0, {
+		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "body", 0}},
+		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", 0}},
+		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "body", "nohold", 0}},
+		{mi_media_exchange_from_call_to_uri, {"callid", "uri", "leg", "body", "headers", "nohold", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "media_terminate", 0, 0, 0, {
@@ -242,19 +242,19 @@ static int fixup_media_leg_both(void **param)
 	return 0;
 }
 
-static int media_send_to_uri(struct sip_msg *msg, str *uri, int leg, str *body, str *headers)
+static int media_fork_to_uri(struct sip_msg *msg, str *uri, int leg, str *body, str *headers)
 {
 	LM_WARN("not implemented yet!\n");
 	return -1;
 }
 
-static int media_send_from_call(struct sip_msg *msg, str *callid, int leg)
+static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg)
 {
 	LM_WARN("not implemented yet!\n");
 	return -1;
 }
 
-static int media_fetch_from_uri(struct sip_msg *msg, str *uri, int leg,
+static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 		str *body, str *headers, int *nohold)
 {
 	LM_WARN("not implemented yet!\n");
@@ -268,7 +268,7 @@ static int media_fetch_from_uri(struct sip_msg *msg, str *uri, int leg,
 		(_rd)->b2b_key = &(_msl)->b2b_key; \
 	} while (0);
 
-static int media_session_fetch_server_reply(struct sip_msg *msg, int status, void *param)
+static int media_session_exchange_server_reply(struct sip_msg *msg, int status, void *param)
 {
 	struct media_session_leg *msl;
 	b2b_rpl_data_t reply_data;
@@ -336,7 +336,7 @@ error:
 	return -1;
 }
 
-static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *nohold)
+static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int *nohold)
 {
 	str body;
 	str contact;
@@ -347,7 +347,7 @@ static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *n
 	str hack;
 
 	if (leg == MEDIA_LEG_UNSPEC) {
-		LM_BUG("leg parameter is mandatory for media_fetch_to_call!\n");
+		LM_BUG("leg parameter is mandatory for media_exchange_to_call!\n");
 		return -1;
 	}
 
@@ -371,10 +371,10 @@ static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *n
 		return -1;
 	}
 
-	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FETCH, leg,
+	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_EXCHANGE, leg,
 			((nohold && *nohold)?1:0));
 	if (!msl) {
-		LM_ERR("cannot create new fetch leg!\n");
+		LM_ERR("cannot create new exchange leg!\n");
 		goto unref;
 	}
 
@@ -395,7 +395,7 @@ static int media_fetch_to_call(struct sip_msg *msg, str *callid, int leg, int *n
 	/* all good - send the invite to the client */
 	MSL_REF(msl);
 	if (media_dlg.send_indialog_request(dlg, &inv, MEDIA_SESSION_DLG_LEG(msl),
-			&body, &msg->content_type->body, media_session_fetch_server_reply, msl) < 0) {
+			&body, &msg->content_type->body, media_session_exchange_server_reply, msl) < 0) {
 		LM_ERR("could not send indialog request for callid %.*s\n", callid->len, callid->s);
 		goto destroy;
 	}
@@ -462,14 +462,14 @@ static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void
 	return 0;
 }
 
-static mi_response_t *mi_media_send_from_call_to_uri(const mi_params_t *params,
+static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	LM_WARN("not implemented yet!\n");
 	return NULL;
 }
 
-static mi_response_t *mi_media_fetch_from_call_to_uri(const mi_params_t *params,
+static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	LM_WARN("not implemented yet!\n");

@@ -126,9 +126,9 @@
 	
 	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
-		<section id="func_media_send_to_uri" xreflabel="media_send_to_uri()">
+		<section id="func_media_fork_to_uri" xreflabel="media_fork_to_uri()">
 			<title>
-			<function moreinfo="none">media_send_to_uri(URI[, leg[, body[, headers]]])</function>
+			<function moreinfo="none">media_fork_to_uri(URI[, leg[, body[, headers]]])</function>
 			</title>
 			<para>
 				Behaves as a B2B user agent client to initiate a call to a SIP
@@ -166,19 +166,19 @@
 				This function can be used from REQUEST_ROUTE.
 			</para>
 			<example>
-				<title>Use <function>media_send_to_uri()</function> function to fork
+				<title>Use <function>media_fork_to_uri()</function> function to fork
 					media to a Media Server</title>
 			<programlisting format="linespecific">
 ...
 if (!has_totag() &amp;&amp; is_method("INVITE"))
-	media_send_to_uri("sip:record@127.0.0.1:5080");
+	media_fork_to_uri("sip:record@127.0.0.1:5080");
 ...
 	</programlisting>
 			</example>
 		</section>
-		<section id="func_media_send_from_call" xreflabel="media_send_from_call()">
+		<section id="func_media_fork_from_call" xreflabel="media_fork_from_call()">
 			<title>
-			<function moreinfo="none">media_send_from_call(callid[, leg])</function>
+			<function moreinfo="none">media_fork_from_call(callid[, leg])</function>
 			</title>
 			<para>
 				Starts streaming the media of an existing proxied call, identified
@@ -214,19 +214,19 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 					exit the processing after running the function.
 			</para>
 			<example>
-				<title>Use <function>media_send_from_call()</function> function to fork
+				<title>Use <function>media_fork_from_call()</function> function to fork
 					media to a Media Server</title>
 			<programlisting format="linespecific">
 ...
 if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NULL)
-	media_send_from_call($hdr(X-CallID));
+	media_fork_from_call($hdr(X-CallID));
 ...
 	</programlisting>
 			</example>
 		</section>
-		<section id="func_media_fetch_from_uri" xreflabel="media_fetch_from_uri()">
+		<section id="func_media_exchange_from_uri" xreflabel="media_exchange_from_uri()">
 			<title>
-			<function moreinfo="none">media_fetch_from_uri(URI[, leg[, body[, headers[, nohold]]]])</function>
+			<function moreinfo="none">media_exchange_from_uri(URI[, leg[, body[, headers[, nohold]]]])</function>
 			</title>
 			<para>
 				Originates a call to the specified URI. The SDP in the response is
@@ -270,19 +270,19 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 				This function can be used from REQUEST_ROUTE.
 			</para>
 			<example>
-				<title>Use <function>media_fetch_from_uri()</function> function to
+				<title>Use <function>media_exchange_from_uri()</function> function to
 					fetch media from a Media Server's call</title>
 			<programlisting format="linespecific">
 ...
 if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; is_audio_on_hold())
-	media_fetch_from_uri("sip:moh@127.0.0.1:5080");
+	media_exchange_from_uri("sip:moh@127.0.0.1:5080");
 ...
 	</programlisting>
 			</example>
 		</section>
-		<section id="func_media_fetch_to_call" xreflabel="media_fetch_to_call()">
+		<section id="func_media_exchange_to_call" xreflabel="media_exchange_to_call()">
 			<title>
-			<function moreinfo="none">media_fetch_to_call(callid[, leg[, nohold]])</function>
+			<function moreinfo="none">media_exchange_to_call(callid[, leg[, nohold]])</function>
 			</title>
 			<para>
 				Pushes the SDP of a new call received in an exisiting proxied
@@ -320,12 +320,12 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; is_audio_on_hold())
 					exit the processing after running the function.
 			</para>
 			<example>
-				<title>Use <function>media_fetch_to_call()</function> function to make
+				<title>Use <function>media_exchange_to_call()</function> function to make
 					an annoucement</title>
 			<programlisting format="linespecific">
 ...
 if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NULL)
-	media_fetch_to_call($hdr(X-CallID), "caller");
+	media_exchange_to_call($hdr(X-CallID), "caller");
 ...
 	</programlisting>
 			</example>
@@ -378,19 +378,19 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; !is_audio_on_hold())
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 	<title>Exported MI Functions</title>
 
-		<section id="mi_media_send_from_call_to_uri"
-			xreflabel="media_send_from_call_to_uri">
+		<section id="mi_media_fork_from_call_to_uri"
+			xreflabel="media_fork_from_call_to_uri">
 		<title>
-		<function moreinfo="none">media_send_from_call_to_uri</function>
+		<function moreinfo="none">media_fork_from_call_to_uri</function>
 		</title>
 		<para>
 		MI command that has the same behavior as
-		<xref linkend="func_media_send_to_uri"/>, only that the triggering
+		<xref linkend="func_media_fork_to_uri"/>, only that the triggering
 		is not script driven, but exterior driven. Useful for starting
 		listeneing a call.
 		</para>
 		<para>
-		Name: <emphasis>media_send_from_call_to_uri</emphasis>
+		Name: <emphasis>media_fork_from_call_to_uri</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -420,38 +420,38 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; !is_audio_on_hold())
 		</para>
 		<programlisting  format="linespecific">
 # start streaming a callid to record media server
-opensips-cli -x mi media_send_from_call_to_uri \
+opensips-cli -x mi media_fork_from_call_to_uri \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
 	uri=sip:record@127.0.0.1:5080
 		</programlisting>
 		</section>
-		<section id="mi_media_send_from_call_to_uri_body"
-			xreflabel="media_send_from_call_to_uri_body">
+		<section id="mi_media_fork_from_call_to_uri_body"
+			xreflabel="media_fork_from_call_to_uri_body">
 		<title>
-		<function moreinfo="none">media_send_from_call_to_uri_body</function>
+		<function moreinfo="none">media_fork_from_call_to_uri_body</function>
 		</title>
 		<para>
 		MI command that does the same thing as the
-		<xref linkend="mi_media_send_from_call_to_uri"/> MI function, but
+		<xref linkend="mi_media_fork_from_call_to_uri"/> MI function, but
 		also allows you to specify a custom body in the outgoing request.
 		The body has to be specified in the mandatory <emphasis>body</emphasis>
 		parameter, all the other parameters being the same as the ones of
-		<xref linkend="mi_media_send_from_call_to_uri"/>.
+		<xref linkend="mi_media_fork_from_call_to_uri"/>.
 		</para>
 		</section>
-		<section id="mi_media_fetch_from_call_to_uri"
-			xreflabel="media_fetch_from_call_to_uri">
+		<section id="mi_media_exchange_from_call_to_uri"
+			xreflabel="media_exchange_from_call_to_uri">
 		<title>
-		<function moreinfo="none">media_fetch_from_call_to_uri</function>
+		<function moreinfo="none">media_exchange_from_call_to_uri</function>
 		</title>
 		<para>
 		MI command that has the same behavior as
-		<xref linkend="func_media_fetch_from_uri"/>, only that the triggering
+		<xref linkend="func_media_exchange_from_uri"/>, only that the triggering
 		is not script driven, but exterior driven. Useful for injecting media
 		announcements during a call.
 		</para>
 		<para>
-		Name: <emphasis>media_fetch_from_call_to_uri</emphasis>
+		Name: <emphasis>media_exchange_from_call_to_uri</emphasis>
 		</para>
 		<para>Parameters</para>
 		<itemizedlist>
@@ -484,24 +484,24 @@ opensips-cli -x mi media_send_from_call_to_uri \
 		</para>
 		<programlisting  format="linespecific">
 # start playing back an annoucement to caller
-opensips-cli -x mi media_fetch_from_call_to_uri \
+opensips-cli -x mi media_exchange_from_call_to_uri \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
 	uri=sip:announcement@127.0.0.1:5080 \
 	leg=caller
 		</programlisting>
 		</section>
-		<section id="mi_media_fetch_from_call_to_uri_body"
-			xreflabel="media_fetch_from_call_to_uri_body">
+		<section id="mi_media_exchange_from_call_to_uri_body"
+			xreflabel="media_exchange_from_call_to_uri_body">
 		<title>
-		<function moreinfo="none">media_fetch_from_call_to_uri_body</function>
+		<function moreinfo="none">media_exchange_from_call_to_uri_body</function>
 		</title>
 		<para>
 		MI command that does the same thing as the
-		<xref linkend="mi_media_fetch_from_call_to_uri"/> MI function, but
+		<xref linkend="mi_media_exchange_from_call_to_uri"/> MI function, but
 		also allows you to specify a custom body in the outgoing request.
 		The body has to be specified in the mandatory <emphasis>body</emphasis>
 		parameter, all the other parameters being the same as the ones of
-		<xref linkend="mi_media_fetch_from_call_to_uri"/>.
+		<xref linkend="mi_media_exchange_from_call_to_uri"/>.
 		</para>
 		</section>
 		<section id="mi_media_terminate"
