@@ -151,7 +151,7 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 	double double_vals[N_DOUBLE_VALS];
 
 	qr_thresholds_t *profs = NULL, *old_profs;
-	db_key_t columns[N_INT_VALS + N_STR_VALS + N_DOUBLE_VALS];
+	db_key_t columns[N_INT_VALS + N_STR_VALS + N_DOUBLE_VALS], orderby = &qp_id_col;
 	db_res_t *res = 0;
 	db_row_t *row = 0;
 	int i, no_rows = 0, total_rows = 0, old_n;
@@ -188,7 +188,8 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 	}
 
 	if (DB_CAPABILITY(*qr_dbf, DB_CAP_FETCH)) {
-		if ( qr_dbf->query( qr_db_hdl, 0, 0, 0, columns, 0, db_cols, 0, 0 ) < 0) {
+		if (qr_dbf->query(qr_db_hdl, 0, 0, 0, columns, 0,
+		                  db_cols, orderby, 0) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -201,7 +202,8 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 			goto error;
 		}
 	} else {
-		if ( qr_dbf->query(qr_db_hdl,0,0,0,columns,0,db_cols,0,&res) < 0) {
+		if (qr_dbf->query(qr_db_hdl, 0, 0, 0, columns, 0,
+		                  db_cols, orderby, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
