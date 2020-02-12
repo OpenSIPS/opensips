@@ -110,10 +110,11 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t params[] = {
-	{"history_span", INT_PARAM, &history_span},
-	{"sampling_interval", INT_PARAM, &sampling_interval},
+	{"history_span",            INT_PARAM, &history_span},
+	{"sampling_interval",       INT_PARAM, &sampling_interval},
 	{"event_bad_dst_threshold", INT_PARAM, &event_bad_dst_threshold},
-	{"db_url", STR_PARAM, &db_url.s},
+	{"db_url",                  STR_PARAM, &db_url.s},
+	{"table_name",              STR_PARAM, &qr_profiles_table.s},
 	{0, 0, 0}
 };
 
@@ -392,6 +393,7 @@ static int qr_check_db(void)
 	db_con_t *qr_db_hdl;
 
 	init_db_url(db_url, 0);
+	qr_profiles_table.len = strlen(qr_profiles_table.s);
 
 	/* test the db */
 	if (db_bind_mod(&db_url, &qr_dbf)) {

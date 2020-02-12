@@ -113,6 +113,25 @@ modparam("qrouting", "db_url", "mysql://opensips:opensipsrw@localhost/opensips")
 		</example>
 	</section>
 
+	<section id="param_table_name" xreflabel="table_name">
+		<title><varname>table_name</varname> (string)</title>
+		<para>
+		The name of the quality-based routing profiles table.
+		</para>
+		<para>
+			<emphasis>
+			Default value is <emphasis role='bold'>"qr_profiles"</emphasis>.
+			</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>table_name</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "table_name", "qr_profiles_bak")
+	</programlisting>
+		</example>
+	</section>
+
 	<section id="param_history_span" xreflabel="history_span">
 		<title><varname>history_span</varname> (integer)</title>
 		<para>
