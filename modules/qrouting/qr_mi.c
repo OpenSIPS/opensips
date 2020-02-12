@@ -224,7 +224,7 @@ mi_response_t *mi_qr_status_1(const mi_params_t *params, struct mi_handler *_)
 
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
-		if (get_mi_string_param(params, "partition_name",
+		if (get_mi_string_param(params, qr_param_part.s,
 			&part_name.s, &part_name.len) < 0) {
 			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
@@ -272,7 +272,7 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
-		if (get_mi_string_param(params, "partition_name",
+		if (get_mi_string_param(params, qr_param_part.s,
 			&part_name.s, &part_name.len) != 0) {
 			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
@@ -290,7 +290,7 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 		goto error;
 	}
 
-	if (get_mi_int_param(params, "rule_id", (int *)&rule_id) != 0) {
+	if (get_mi_int_param(params, qr_param_rule_id.s, (int *)&rule_id) != 0) {
 		lock_stop_read(qr_main_list_rwl);
 		return init_mi_param_error();
 	}
@@ -334,7 +334,7 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 
 	if ((*qr_main_list)->n_parts > 1) { /*=> the first parameter should be
 										 the partition */
-		if (get_mi_string_param(params, "partition_name",
+		if (get_mi_string_param(params, qr_param_part.s,
 			&part_name.s, &part_name.len) != 0) {
 			lock_stop_read(qr_main_list_rwl);
 			return init_mi_param_error();
@@ -352,7 +352,7 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 		goto error;
 	}
 
-	if (get_mi_int_param(params, "rule_id", &rule_id) != 0) {
+	if (get_mi_int_param(params, qr_param_rule_id.s, &rule_id) != 0) {
 		lock_stop_read(qr_main_list_rwl);
 		return init_mi_param_error();
 	}
@@ -363,7 +363,8 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 		goto error;
 	}
 
-	if (get_mi_string_param(params, "dst_id", &dst_name.s, &dst_name.len) != 0) {
+	if (get_mi_string_param(params, qr_param_dst_name.s,
+	                        &dst_name.s, &dst_name.len) != 0) {
 		lock_stop_read(qr_main_list_rwl);
 		return init_mi_param_error();
 	}
@@ -442,10 +443,11 @@ static mi_response_t *mi_qr_set_dst_state_2(const mi_params_t *params, int activ
 	str dst_name;
 	mi_response_t *err_resp = NULL;
 
-	if (get_mi_int_param(params, "rule_id", &rule_id) != 0)
+	if (get_mi_int_param(params, qr_param_rule_id.s, &rule_id) != 0)
 		return init_mi_param_error();
 
-	if (get_mi_string_param(params, "dst_id", &dst_name.s, &dst_name.len) != 0)
+	if (get_mi_string_param(params, qr_param_dst_name.s,
+	                        &dst_name.s, &dst_name.len) != 0)
 		return init_mi_param_error();
 
 	lock_start_read(qr_main_list_rwl);
@@ -476,14 +478,15 @@ static mi_response_t *mi_qr_set_dst_state_3(const mi_params_t *params, int activ
 	int rule_id, rc;
 	str part_name, dst_name;
 
-	if (get_mi_string_param(params, "partition_name",
+	if (get_mi_string_param(params, qr_param_part.s,
 	        &part_name.s, &part_name.len))
 		return init_mi_param_error();
 
-	if (get_mi_int_param(params, "rule_id", &rule_id) != 0)
+	if (get_mi_int_param(params, qr_param_rule_id.s, &rule_id) != 0)
 		return init_mi_param_error();
 
-	if (get_mi_string_param(params, "dst_id", &dst_name.s, &dst_name.len) != 0)
+	if (get_mi_string_param(params, qr_param_dst_name.s,
+	                        &dst_name.s, &dst_name.len) != 0)
 		return init_mi_param_error();
 
 	lock_start_read(qr_main_list_rwl);

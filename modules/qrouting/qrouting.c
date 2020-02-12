@@ -33,15 +33,21 @@
 #include "qr_acc.h"
 #include "qr_load.h"
 #include "qr_mi.h"
+#include "qr_event.h"
 
 #define T_PROC_LABEL "qrouting-sampling"
 #define MAX_HISTORY 1000 /* TODO:*/
+
+#define QR_PARAM_PART     "partition"
+#define QR_PARAM_RULE_ID  "rule_id"
+#define QR_PARAM_DST_NAME "dst_name"
 
 #define QR_TABLE_VER 1
 
 /* modparam */
 static int history_span = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
+int event_bad_dst_threshold = 5 * QR_PENALTY_THRESHOLD_1;
 
 str db_url;
 
@@ -62,6 +68,12 @@ db_con_t *qr_db_hdl;
 /* avps */
 str avp_invite_time_name_pdd = str_init("$avp(qr_invite_time_pdd)");
 str avp_invite_time_name_ast = str_init("$avp(qr_invite_time_ast)");
+
+/* event/MI parameters */
+str qr_param_part = str_init(QR_PARAM_PART);
+str qr_param_rule_id = str_init(QR_PARAM_RULE_ID);
+str qr_param_dst_name = str_init(QR_PARAM_DST_NAME);
+
 
 static int qr_init(void);
 static int qr_child_init(int rank);
@@ -100,19 +112,21 @@ static cmd_export_t cmds[] = {
 static param_export_t params[] = {
 	{"history_span", INT_PARAM, &history_span},
 	{"sampling_interval", INT_PARAM, &sampling_interval},
+	{"event_bad_dst_threshold", INT_PARAM, &event_bad_dst_threshold},
 	{"db_url", STR_PARAM, &db_url.s},
 	{0, 0, 0}
 };
 
-#define HLP1 "Params: [partition_name [, rule_id [, dst_id]]]; List QR statistics"
-#define HLP2 "Params: [partition_name] rule_id dst_id; Remove a gateway/carrier from routing"
-#define HLP3 "Params: [partition_name] rule_id dst_id; Re-introduce a gateway/carrier into routing"
+#define HLP1 "Params: [partition [, rule_id [, dst_name]]]; List QR statistics"
+#define HLP2 "Params: [partition] rule_id dst_name; Remove a gateway/carrier from routing"
+#define HLP3 "Params: [partition] rule_id dst_name; Re-introduce a gateway/carrier into routing"
 static mi_export_t mi_cmds[] = {
 	{ "qr_status", HLP1, 0, NULL, {
 		{mi_qr_status_0, {NULL}},
-		{mi_qr_status_1, {"partition_name", NULL}},
-		{mi_qr_status_2, {"partition_name", "rule_id", NULL}},
-		{mi_qr_status_3, {"partition_name", "rule_id", "dst_id", NULL}},
+		{mi_qr_status_1, {QR_PARAM_PART, NULL}},
+		{mi_qr_status_2, {QR_PARAM_PART, QR_PARAM_RULE_ID, NULL}},
+		{mi_qr_status_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
+		                  QR_PARAM_DST_NAME, NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "qr_reload", NULL, 0, NULL, {
@@ -120,13 +134,15 @@ static mi_export_t mi_cmds[] = {
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "qr_disable_dst", HLP2, MI_NAMED_PARAMS_ONLY, NULL, {
-		{mi_qr_disable_dst_2, {"rule_id", "dst_id", NULL}},
-		{mi_qr_disable_dst_3, {"partition_name", "rule_id", "dst_id", NULL}},
+		{mi_qr_disable_dst_2, {QR_PARAM_RULE_ID, QR_PARAM_DST_NAME, NULL}},
+		{mi_qr_disable_dst_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
+		                       QR_PARAM_DST_NAME, NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "qr_enable_dst", HLP3, MI_NAMED_PARAMS_ONLY, NULL, {
-		{mi_qr_disable_dst_2, {"rule_id", "dst_id", NULL}},
-		{mi_qr_disable_dst_3, {"partition_name", "rule_id", "dst_id", NULL}},
+		{mi_qr_disable_dst_2, {QR_PARAM_RULE_ID, QR_PARAM_DST_NAME, NULL}},
+		{mi_qr_disable_dst_3, {QR_PARAM_PART, QR_PARAM_RULE_ID,
+		                       QR_PARAM_DST_NAME, NULL}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -175,6 +191,11 @@ static int qr_init(void)
 			sampling_interval);
 
 	if (qr_init_globals() != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (qr_init_events() != 0) {
 		LM_ERR("oom\n");
 		return -1;
 	}

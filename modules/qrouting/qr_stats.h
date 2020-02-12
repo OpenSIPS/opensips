@@ -42,6 +42,12 @@
 
 #define QR_PTR_POISON ((void *)0x10203040)
 
+#define QR_PENALTY_THRESHOLD_1 1
+#define QR_PENALTY_THRESHOLD_2 10
+
+/* the number of elements for the hashmap used by the sorting */
+#define QR_N_SORTED_LIST 6
+
 extern int qr_n; /* number of intervals in history */
 extern int* n_sampled;
 

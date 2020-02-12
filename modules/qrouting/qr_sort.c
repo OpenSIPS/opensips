@@ -22,12 +22,7 @@
 #include "qr_sort.h"
 #include "qr_acc.h"
 #include "qr_stats.h"
-
-#define QR_PENALTY_THRESHOLD_1 1
-#define QR_PENALTY_THRESHOLD_2 10
-
-/* the number of elements for the hashmap used by the sorting */
-#define QR_N_SORTED_LIST 6
+#include "qr_event.h"
 
 int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_id, int score) {
 	qr_sorted_list_t *new_elem = (qr_sorted_list_t*)pkg_malloc(
@@ -63,20 +58,24 @@ void empty_qr_sorted_list(qr_sorted_list_t **sorted_list) {
 }
 
 #define log_warn_thr(thr) \
-	LM_WARN("warn "thr" threshold exceeded, gwid: %.*s\n", nam->len, nam->s)
+	LM_WARN("warn "thr" threshold exceeded, gwid: %.*s\n", \
+	        gw_name->len, gw_name->s)
 
 #define log_crit_thr(thr) \
-	LM_WARN("crit "thr" threshold exceeded, gwid: %.*s\n", nam->len, nam->s)
+	LM_WARN("crit "thr" threshold exceeded, gwid: %.*s\n", \
+	        gw_name->len, gw_name->s)
 
 /*
  * computes the score of the gateway using the warning
  * thresholds
  */
-int qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds)
+int qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds,
+                str *part, int rule_id)
 {
+	extern int event_bad_dst_threshold;
 	int score = 0;
 	double asr_v, ccr_v, pdd_v, ast_v, acd_v;
-	str *nam = drb.get_gw_name(gw->dr_gw);
+	str *gw_name = drb.get_gw_name(gw->dr_gw);
 
 	/* the corresponding dr_rule points to an invalid qr_profile */
 	if (!thresholds)
@@ -133,6 +132,9 @@ int qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds)
 	}
 
 set_score:
+	if (score > event_bad_dst_threshold)
+		qr_raise_event_bad_dst(rule_id, part, gw_name);
+
 	/* update gw score and status */
 	lock_start_write(gw->ref_lock);
 	gw->score = score;
@@ -150,7 +152,7 @@ int qr_score_grp(qr_grp_t *grp, qr_thresholds_t * thresholds) {
 		lock_start_read(grp->gw[i]->ref_lock);
 		if(grp->gw[i]->state & QR_STATUS_DIRTY) {
 			lock_stop_read(grp->gw[i]->ref_lock);
-			mean += qr_score_gw(grp->gw[i], thresholds);
+			mean += qr_score_gw(grp->gw[i], thresholds, NULL, -1); /* TODO */
 
 		} else {
 			lock_stop_read(grp->gw[i]->ref_lock);
@@ -190,7 +192,7 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 		lock_stop_read(qr_profiles_rwl);
 
 		LM_DBG("evaluating score for:cr_id = %d gw_id = %d\n", cr_id, gw_id);
-		cur_dst_score = qr_score_gw(gw, &thr);
+		cur_dst_score = qr_score_gw(gw, &thr, rule->part_name, rule->r_id);
 	} else {
 		cur_dst_score = gw->score;
 		lock_stop_read(gw->ref_lock);

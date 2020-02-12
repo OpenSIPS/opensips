@@ -616,7 +616,7 @@ static str dr_probing_str = str_init("probing");
 
 void dr_raise_event(struct head_db *p, pgw_t *gw)
 {
-	evi_params_p list = NULL;
+	evi_params_p list;
 	str *txt;
 
 	if (dr_evi_id == EVI_ERROR || !evi_probe_event(dr_evi_id))
