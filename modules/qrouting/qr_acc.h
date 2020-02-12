@@ -29,7 +29,7 @@
 #include "qr_stats.h"
 #include "../drouting/dr_api.h"
 
-#define QR_TM_100RCVD (1<<0)
+#define QR_TM_180_RCVD (1<<0)
 
 extern struct tm_binds tmb;
 extern struct dlg_binds dlgcb;

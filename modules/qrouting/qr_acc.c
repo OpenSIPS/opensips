@@ -237,8 +237,8 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 		lock_get(trans_prop->prop_lock);
 
 		/* compute the PDD _at most once_ */
-		if (!(trans_prop->state & QR_TM_100RCVD)) {
-			trans_prop->state |= QR_TM_100RCVD;
+		if (!(trans_prop->state & QR_TM_180_RCVD)) {
+			trans_prop->state |= QR_TM_180_RCVD;
 			lock_release(trans_prop->prop_lock);
 
 			if ((pdd_tm = get_elapsed_time(trans_prop->invite, 'm')) < 0) {
@@ -257,6 +257,18 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 				LM_ERR("negative setup time\n");
 				return;
 			}
+
+			/* if there was no 180/183, count PDD using the 200 OK! */
+			lock_get(trans_prop->prop_lock);
+			if (!(trans_prop->state & QR_TM_180_RCVD)) {
+				trans_prop->state |= QR_TM_180_RCVD;
+				lock_release(trans_prop->prop_lock);
+
+				qr_add_pdd(trans_prop->gw, pdd_tm);
+			} else {
+				lock_release(trans_prop->prop_lock);
+			}
+
 			qr_add_setup(trans_prop->gw, st);
 
 			qr_add_200OK(trans_prop->gw);
