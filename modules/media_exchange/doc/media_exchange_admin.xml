@@ -40,8 +40,10 @@
 			or terminated, will just have a copy of the RTP forked by RTPProxy. In
 			this mode, the proxied call should have had RTPProxy already engaged in
 			the media path before the forked call starts. One can fork only one
-			media leg, or both legs.
-			
+			media leg, or both legs. <emphasis>NOTE:</emphasis> RTPProxy currently
+			does not support stopping media streaming, therefore if the streaming
+			call terminates, RTPProxy will continue streaming, even if there is no
+			one listening on the other end.
 		</para>
 		</listitem>
 		</itemizedlist>
@@ -204,6 +206,13 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 			<para>
 				This function can be used from REQUEST_ROUTE.
 			</para>
+			<para>
+				<emphasis>NOTE:</emphasis> the request of this call is completely
+					handled by the B2B engine. Therefore, after running this function,
+					please make sure you do not relay the message further, otherwise
+					you will run into an unexpected behavior. Best thing to do is to
+					exit the processing after running the function.
+			</para>
 			<example>
 				<title>Use <function>media_send_from_call()</function> function to fork
 					media to a Media Server</title>
@@ -302,6 +311,13 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; is_audio_on_hold())
 			</para>
 			<para>
 				This function can be used from REQUEST_ROUTE.
+			</para>
+			<para>
+				<emphasis>NOTE:</emphasis> the request of this call is completely
+					handled by the B2B engine. Therefore, after running this function,
+					please make sure you do not relay the message further, otherwise
+					you will run into an unexpected behavior. Best thing to do is to
+					exit the processing after running the function.
 			</para>
 			<example>
 				<title>Use <function>media_fetch_to_call()</function> function to make
