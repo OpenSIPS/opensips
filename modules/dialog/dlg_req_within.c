@@ -1089,3 +1089,15 @@ int send_indialog_request(struct dlg_cell *dlg, str *method,
 	pkg_free(extra_headers.s);
 	return 0;
 }
+
+int get_dlg_direction(void)
+{
+	struct dlg_cell *dlg;
+
+	if ( (dlg=get_current_dialog())==NULL || ctx_lastdstleg_get()<0)
+		return DLG_DIR_NONE;
+	if (ctx_lastdstleg_get()==0)
+		return DLG_DIR_UPSTREAM;
+	else
+		return DLG_DIR_DOWNSTREAM;
+}

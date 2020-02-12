@@ -594,6 +594,7 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->dlg_ref = _ref_dlg;
 	dlgb->dlg_unref = unref_dlg_destroy_safe;
 
+	dlgb->get_direction = get_dlg_direction;
 	dlgb->get_dlg_by_callid = get_dlg_by_callid;
 	dlgb->send_indialog_request = send_indialog_request;
 
@@ -1566,20 +1567,26 @@ int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	struct dlg_cell *dlg;
+	int dir;
 
 	if(res==NULL)
 		return -1;
 
-	if ( (dlg=get_current_dialog())==NULL || ctx_lastdstleg_get()<0)
-		return pv_get_null( msg, param, res);
-
-	if (ctx_lastdstleg_get()==0) {
-		res->rs.s = "upstream";
-		res->rs.len = 8;
-	} else {
-		res->rs.s = "downstream";
-		res->rs.len = 10;
+	dir = get_dlg_direction();
+	switch (dir) {
+		case DLG_DIR_NONE:
+			return pv_get_null( msg, param, res);
+		case DLG_DIR_UPSTREAM:
+			res->rs.s = "upstream";
+			res->rs.len = 8;
+			break;
+		case DLG_DIR_DOWNSTREAM:
+			res->rs.s = "downstream";
+			res->rs.len = 10;
+			break;
+		default:
+			LM_BUG("unknwn dlg direction %d!\n", dir);
+			return -1;
 	}
 
 	res->flags = PV_VAL_STR;
