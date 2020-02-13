@@ -162,10 +162,15 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 		 * if there is any data pending to write, we have to wait for those chunks
 		 * to be sent, otherwise we will completely break the messages' order
 		 */
-		if (c->async->pending)
-			n = tcp_async_add_chunk(c, buf, len, 0);
-		else
+		if (!c->async->pending) {
 			n = tls_write(c, fd, buf, len, NULL);
+			if (n >= 0 && len - n) {
+				/* if could not write entire buffer, delay it */
+				n = tcp_async_add_chunk(c, buf + n, len - n, 0);
+			}
+		} else {
+			n = tcp_async_add_chunk(c, buf, len, 0);
+		}
 	} else {
 		n = tls_blocking_write(c, fd, buf, len,
 				tls_handshake_tout, tls_send_tout, t_dst);
