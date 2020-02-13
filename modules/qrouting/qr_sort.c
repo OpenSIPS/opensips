@@ -24,7 +24,7 @@
 #include "qr_stats.h"
 #include "qr_event.h"
 
-int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_id, int score) {
+int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_idx, int score) {
 	qr_sorted_list_t *new_elem = (qr_sorted_list_t*)pkg_malloc(
 			sizeof(qr_sorted_list_t));
 	if(new_elem == NULL) {
@@ -34,7 +34,7 @@ int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_id, int score) {
 	memset(new_elem, 0, sizeof(qr_sorted_list_t));
 
 	new_elem->next = sorted_list[score];
-	new_elem->dst_id = dst_id;
+	new_elem->dst_idx = dst_idx;
 	sorted_list[score] = new_elem;
 
 	return 0;
@@ -171,6 +171,7 @@ int qr_score_grp(qr_grp_t *grp, qr_thresholds_t * thresholds) {
 	return mean;
 
 }
+
 /*
  * inserts gw in sorted list
  */
@@ -204,8 +205,8 @@ int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
 
 	lock_start_read(gw->ref_lock);
 	if (gw->state & QR_STATUS_DSBL) {
-		LM_DBG("gw is disabled cr_id = %d gw_id = %d\n", cr_id, gw_id);
 		lock_stop_read(gw->ref_lock);
+		LM_DBG("gw is disabled cr_id = %d gw_id = %d\n", cr_id, gw_id);
 		return 0;
 	}
 	lock_stop_read(gw->ref_lock);
@@ -224,57 +225,51 @@ void qr_sort(void *param)
 {
 	struct dr_sort_params *srp = (struct dr_sort_params *)param;
 	qr_rule_t *rule;
-	unsigned short dst_id;
+	unsigned short dst_idx;
 	int i,j,k;
 	int n_gw_list;
-	unsigned short *us_sorted_dst;
+	unsigned short *sorted_dst;
 	qr_sorted_list_t **sorted_list = NULL, *sorted_list_it = NULL;
 
-
-
-	rule = (qr_rule_t*)drb.get_qr_rule_handle(srp->dr_rule);
-	if(rule == NULL) {
+	rule = drb.get_qr_rule_handle(srp->dr_rule);
+	if (!rule) {
 		LM_ERR("No qr rule provided for sorting (qr_handle needed)\n");
 		goto error;
 	}
 
-	us_sorted_dst = srp->sorted_dst;
-	dst_id = srp->dst_id;
+	sorted_dst = srp->sorted_dst;
+	dst_idx = srp->dst_idx;
 
-
-	if(*n_sampled < qr_n) { /* we don't have enough statistics to sort */
-		if(dst_id == (unsigned short)-1) {
-			for(i = 0; i < rule->n ; i++)
-				us_sorted_dst[i] = i; /* unordered list for destinations
-										 within a rule */
-		} else {
-			for(i = 0; i < rule->dest[dst_id].grp.n; i++) {
-				us_sorted_dst[i] = i; /* unordered list for destinations
-										 within a carrier */
-			}
-		}
-		return ;
-	}
-	sorted_list = (qr_sorted_list_t **)pkg_malloc(QR_N_SORTED_LIST *
-			sizeof(qr_sorted_list_t*) );
-	if(sorted_list == NULL) {
-		LM_ERR("no more pkg memory\n");
-		goto error;
-	}
-	if(us_sorted_dst == NULL) {
+	if (!sorted_dst) {
 		LM_ERR("no array provided to save destination indexes to\n");
 		goto error;
 	}
-	memset(sorted_list, 0, QR_N_SORTED_LIST*sizeof(qr_sorted_list_t*));
 
+	if (*n_sampled < qr_n) { /* we don't have enough statistics to sort */
+		if (dst_idx == (unsigned short)-1) {
+			for (i = 0; i < rule->n ; i++)
+				sorted_dst[i] = i; /* return the gws in DB order */
+		} else {
+			for (i = 0; i < rule->dest[dst_idx].grp.n; i++)
+				sorted_dst[i] = i; /* maintain DB order */
+		}
 
+		return;
+	}
+
+	sorted_list = pkg_malloc(QR_N_SORTED_LIST * sizeof *sorted_list);
+	if (!sorted_list) {
+		LM_ERR("oom\n");
+		goto error;
+	}
+	memset(sorted_list, 0, QR_N_SORTED_LIST * sizeof *sorted_list);
 
 	j = 0;
-	if(dst_id == (unsigned short)-1) { /* sorting for the rule */
-		for(i = 0; i < rule->n; i++) {
-			us_sorted_dst[i] = -1;
-		}
-		for(i = 0; i < rule->n; i++) {
+	if (dst_idx == (unsigned short)-1) { /* sorting for the rule */
+		for (i = 0; i < rule->n; i++)
+			sorted_dst[i] = -1;
+
+		for (i = 0; i < rule->n; i++) {
 			if(rule->dest[i].type & QR_DST_GW) {
 				if(qr_insert_dst(sorted_list, rule, -1, i) < 0)
 					goto error;
@@ -283,12 +278,12 @@ void qr_sort(void *param)
 					sorted_list_it = sorted_list[k];
 
 					while(sorted_list_it != NULL) {
-						us_sorted_dst[j++] = sorted_list_it->dst_id;
+						sorted_dst[j++] = sorted_list_it->dst_idx;
 						sorted_list_it = sorted_list_it->next;
 					}
 
 				}
-				us_sorted_dst[j++] = i; /* because some of the destinations might
+				sorted_dst[j++] = i; /* because some of the destinations might
 										   have been disabled */
 				empty_qr_sorted_list(sorted_list);
 
@@ -296,41 +291,40 @@ void qr_sort(void *param)
 		}
 	} else { /* sorting for a given carrier */
 		/* TODO: should contain a RW_lock per rule to protect data from reloading */
-		lock_start_read(rule->dest[dst_id].grp.ref_lock);
-		n_gw_list = rule->dest[dst_id].grp.n;
+		lock_start_read(rule->dest[dst_idx].grp.ref_lock);
+		n_gw_list = rule->dest[dst_idx].grp.n;
 		for(i = 0; i < n_gw_list; i++)
-			us_sorted_dst[i] = -1;
+			sorted_dst[i] = -1;
 		for(i = 0; i < n_gw_list; i++) {
-			if(qr_insert_dst(sorted_list, rule, dst_id, i)) {
+			if(qr_insert_dst(sorted_list, rule, dst_idx, i)) {
 				goto error;
 			}
 		}
-		lock_stop_read(rule->dest[dst_id].grp.ref_lock);
+		lock_stop_read(rule->dest[dst_idx].grp.ref_lock);
 
 	}
 
 	/* saving the sorted list to the provided array */
-	for(i = 0; i < QR_N_SORTED_LIST; i++) {
+	for (i = 0; i < QR_N_SORTED_LIST; i++) {
 		sorted_list_it = sorted_list[i];
 
-		while(sorted_list_it != NULL) {
-			us_sorted_dst[j++] = sorted_list_it->dst_id;
+		while (sorted_list_it) {
+			sorted_dst[j++] = sorted_list_it->dst_idx;
 			sorted_list_it = sorted_list_it->next;
 		}
-
 	}
 
 	empty_qr_sorted_list(sorted_list);
 	pkg_free(sorted_list);
-	sorted_list = NULL;
 
-	srp->dst_id = 0;
-	return ;
+	srp->rc = 0;
+	return;
+
 error:
-	if(sorted_list != NULL) {
+	if (sorted_list) {
 		empty_qr_sorted_list(sorted_list);
 		pkg_free(sorted_list);
-		sorted_list = NULL;
 	}
-	srp->dst_id = -1;
+
+	srp->rc = -1;
 }

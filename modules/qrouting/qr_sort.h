@@ -31,11 +31,11 @@
  * a sorted list of gateways
  */
 typedef struct qr_sorted_list {
-	int dst_id;
+	int dst_idx;
 	struct qr_sorted_list *next;
 }qr_sorted_list_t;
 
-int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_id, int score);
+int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_idx, int score);
 
 /* compute answer seizure ratio for gw */
 static inline double asr(qr_gw_t *gw) {

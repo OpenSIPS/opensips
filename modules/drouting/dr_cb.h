@@ -62,7 +62,6 @@ struct dr_callback {
 	dr_param_free_cb callback_param_free;
 	struct dr_callback *next;
 };
-/* TODO: should i have a different structure for sort_callbacks */
 
 int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
 		dr_param_free_cb ff);

@@ -334,11 +334,11 @@ mi_response_t *mi_dr_enable_probing_1(const mi_params_t *params,
 unsigned int *dr_enable_probing_state=0;
 
 /* sorting functions used by dr */
-static void no_sort(void *params);
+static void no_sort_cb(void *params);
 static void weight_based_sort_cb(void *params);
 static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx);
-static int sort_rt_dst(rt_info_t *dr_rule, unsigned short dst_id, unsigned short *idx);
-static inline int get_pgwl_params(struct dr_sort_params *sort_params,
+static int sort_rt_dst(rt_info_t *dr_rule, unsigned short dst_idx, unsigned short *idx);
+static inline int get_pgwl_params(struct dr_sort_params *dsp,
 		pgw_list_t **pgwl, int *size, unsigned short **sorted_dst);
 
 
@@ -1448,16 +1448,15 @@ static int dr_init(void)
 	}
 
 	/* register dr callbacks for sorting */
-	if(register_dr_cb(DRCB_SORT_DST, no_sort, (void*)NO_SORT, NULL) < 0) {
-		LM_ERR("[DR] failed to register DRCB_SORT_DST callback [no_sort] to dr\n");
+	if (register_dr_cb(DRCB_SORT_DST, no_sort_cb, (void *)NO_SORT, NULL) < 0) {
+		LM_ERR("failed to register no_sort cb\n");
 		return -1;
 	}
-	if(register_dr_cb(DRCB_SORT_DST, weight_based_sort_cb,
-				(void*)WEIGHT_BASED_SORT, NULL) < 0) {
-		LM_ERR("[DR] failed to register DRCB_SORT_DST callback" \
-				" [weight_based_sort] to dr\n");
-		return -1;
 
+	if (register_dr_cb(DRCB_SORT_DST, weight_based_sort_cb,
+				(void *)WEIGHT_BASED_SORT, NULL) < 0) {
+		LM_ERR("failed to register weight_based_sort cb\n");
+		return -1;
 	}
 
 	name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of
@@ -2262,7 +2261,6 @@ static int use_next_gw(struct sip_msg* msg,
 	int ok = 0;
 	pgw_t * dst;
 	struct socket_info *sock;
-	struct dr_acc_call_params *acc_call_params;
 
 	if(part==NULL) {
 		LM_ERR("Partition is mandatory for use_next_gw.\n");
@@ -2407,15 +2405,13 @@ static int use_next_gw(struct sip_msg* msg,
 			if (avp_sk) destroy_avp(avp_sk);
 			avp_sk = search_first_avp( 0, current_partition->acc_call_params_avp,
 					&val, NULL);
-		}while (avp_sk && (avp_sk->flags&AVP_VAL_STR)==0 );
+		} while (avp_sk && !(avp_sk->flags & AVP_VAL_STR));
+
 		if (!avp_sk) {
 			/* this shuold not happen, it is a bogus state */
-			acc_call_params = NULL;
+			LM_BUG("call params AVP not found\n");
 		} else {
-			acc_call_params = (struct dr_acc_call_params*)
-				(*(struct dr_acc_call_params**)val.s.s);
-			run_dr_cbs(DRCB_ACC_CALL, acc_call_params); /* do accouting
-																		  for the call */
+			run_dr_cbs(DRCB_ACC_CALL, *(struct dr_acc_call_params **)val.s.s);
 			destroy_avp(avp_sk);
 		}
 
@@ -2506,8 +2502,75 @@ fallback_failed:
 		} \
 	}while(0) \
 
-/* don't sort anything let the list as it is */
-static void no_sort(void *params) {
+static inline int get_pgwl_params(struct dr_sort_params *dsp,
+		pgw_list_t **pgwl, int *size, unsigned short **sorted_dst)
+{
+	if (dsp->dst_idx == (unsigned short)-1) {
+		*pgwl = dsp->dr_rule->pgwl;
+		*size = dsp->dr_rule->pgwa_len;
+	} else { /* it is a carrier */
+		if (dsp->dst_idx >= 0 && dsp->dst_idx < dsp->dr_rule->pgwa_len) {
+			if (dsp->dr_rule->pgwl[dsp->dst_idx].is_carrier) {
+				*pgwl = dsp->dr_rule->pgwl[dsp->dst_idx].dst.carrier->pgwl;
+				*size = dsp->dr_rule->pgwl[dsp->dst_idx].dst.carrier->pgwa_len;
+			} else {
+				LM_WARN("provided destination for sorting is not a carrier\n");
+				return -1;
+			}
+		} else {
+			LM_WARN("no destination with this id (%d)\n", dsp->dst_idx);
+			return -1;
+		}
+	}
+
+	*sorted_dst = dsp->sorted_dst;
+	return 0;
+}
+
+#define DR_MAX_GWLIST	64
+
+static int sort_rt_dst(rt_info_t *dr_rule, unsigned short dst_idx,
+		unsigned short *idx)
+{
+	struct dr_sort_params dsp;
+	pgw_list_t *_;
+	int i;
+	int size;
+	unsigned short *__;
+	unsigned char sort_alg;
+
+	memset(&dsp, 0, sizeof dsp);
+	dsp.dr_rule = dr_rule;
+	dsp.dst_idx = dst_idx;
+	dsp.sorted_dst = idx;
+
+	if (get_pgwl_params(&dsp, &_, &size, &__) < 0) {
+		LM_ERR("failed to extract params\n");
+		return -1;
+	}
+
+	/* extract the sorting algorithm */
+	if (dst_idx == (unsigned short)-1) /* destination is a gw */
+		sort_alg = dr_rule->sort_alg;
+	else /* destination is a carrier */
+		sort_alg = dr_rule->pgwl[dst_idx].dst.carrier->sort_alg;
+
+	run_dr_sort_cbs(sort_alg, &dsp);
+	if (dsp.rc != 0) {
+		LM_ERR("failed to sort destinations (%d)\n", dsp.rc);
+		return -1;
+	}
+
+	LM_DBG("Sorted destination list:\n");
+	for (i = 0; i < size; i++)
+		LM_DBG("%d\n", idx[i]);
+
+	return 0;
+}
+
+/* preserve the order of the destinations */
+static void no_sort_cb(void *params)
+{
 	struct dr_sort_params *dsp = (struct dr_sort_params *)params;
 	int i = 0;
 	unsigned short *sorted_dst = NULL;
@@ -2516,95 +2579,35 @@ static void no_sort(void *params) {
 	int rc = 0;
 
 	rc = get_pgwl_params(dsp, &pgwl, &size, &sorted_dst);
-
-
-	for(i = 0; i < size; i++) {
-		sorted_dst[i] = i; /* leave the gw list as itis */
-	}
-
-	if(rc < 0) {
+	if (rc < 0) {
 		LM_ERR("failed to sort\n");
-		dsp->rc = -1; /* everything ok */
+		dsp->rc = -1;
+		return;
 	}
-	dsp->sorted_dst = sorted_dst;
+
+	for (i = 0; i < size; i++)
+		sorted_dst[i] = i;
+
 	dsp->rc = 0; /* everything ok */
 }
-static inline int get_pgwl_params(struct dr_sort_params *sort_params,
-		pgw_list_t **pgwl, int *size, unsigned short **sorted_dst) {
-	if(sort_params->dst_id == (unsigned short)-1) {
-		*pgwl = sort_params->dr_rule->pgwl;
-		*size = sort_params->dr_rule->pgwa_len;
-	} else { /* it is a carrier */
-		if(sort_params->dst_id >= 0 && sort_params->dst_id < sort_params->dr_rule->pgwa_len) {
-			if(sort_params->dr_rule->pgwl[sort_params->dst_id].is_carrier) {
-				*pgwl = sort_params->dr_rule->pgwl[sort_params->dst_id].dst.carrier->pgwl;
-				*size = sort_params->dr_rule->pgwl[sort_params->dst_id].dst.carrier->pgwa_len;
-			} else {
-				LM_WARN("provided destination for sorting is not a carrier\n");
-				return -1;
-			}
-		} else {
-			LM_WARN("no destination with this id (%d)\n", sort_params->dst_id);
-			return -1;
-		}
-	}
-	*sorted_dst = sort_params->sorted_dst;
-	return 0;
-}
 
-#define DR_MAX_GWLIST	64
-
-static int sort_rt_dst(rt_info_t *dr_rule, unsigned short dst_id,
-		unsigned short *idx)
-{
-	struct dr_sort_params sort_params;
-	pgw_list_t * pgwl;
-	int i;
-	int size;
-	unsigned short *tmp;
-	unsigned char sort_alg;
-
-	memset(&sort_params, 0, sizeof sort_params);
-	sort_params.dr_rule = dr_rule;
-	sort_params.dst_id = dst_id;
-	sort_params.sorted_dst = idx;
-
-	if (get_pgwl_params(&sort_params, &pgwl, &size, &tmp) < 0)
-		return -1;
-
-	/* extract the sorting algorithm */
-	if(dst_id != (unsigned short)-1) { /* if destionation is carrier */
-		sort_alg = dr_rule->pgwl[dst_id].dst.carrier->sort_alg;
-	} else { /* if destionation is gw */
-		sort_alg = dr_rule->sort_alg;
-	}
-
-	run_dr_sort_cbs(sort_alg, &sort_params);
-
-	LM_DBG("Sorted destination list:\n");
-	for(i = 0; i < size; i++) {
-		LM_DBG("%d\n",idx[i]);
-	}
-
-	return 0;
-}
 /* sort based on the weight of the gws */
 static void weight_based_sort_cb(void *params)
 {
 	pgw_list_t *pgwl;
 	int size;
 	int rc;
-	unsigned short *idx;
+	unsigned short *sorted_dst;
 	struct dr_sort_params *dsp = (struct dr_sort_params *)params;
 
-	rc = get_pgwl_params(dsp, &pgwl, &size, &idx);
-	if(rc < 0) {
+	rc = get_pgwl_params(dsp, &pgwl, &size, &sorted_dst);
+	if (rc < 0) {
 		LM_WARN("failed to sort\n");
 		dsp->rc = -1;
-		return ;
+		return;
 	}
 
-	if (weight_based_sort(pgwl, size, idx) < 0)
+	if (weight_based_sort(pgwl, size, sorted_dst) < 0)
 		dsp->rc = -1;
 	else
 		dsp->rc = 0;
@@ -3125,7 +3128,7 @@ search_again:
 		whitelist->s[whitelist->len] = tmp;
 	}
 
-	/* iterate through the list, skip the disabled destination */
+	/* walk the sorted list, skip disabled destinations */
 	for ( i=0 ; i<rt_info->pgwa_len ; i++ ) {
 
 		if(dsts_idx[i] == (unsigned short)-1) {
@@ -3162,8 +3165,8 @@ search_again:
 			for ( j=0 ; j<dst->dst.carrier->pgwa_len ; j++ ) {
 
 				if(carrier_idx[j] == (unsigned short)-1) {
-					LM_DBG("All available destinations (for carrier id '%d') were"\
-							"inserted\n", carrier_idx[j]);
+					LM_DBG("All available destinations (dst idx %d) were"
+					       "inserted\n", carrier_idx[j]);
 					break;
 				}
 

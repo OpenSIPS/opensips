@@ -36,7 +36,6 @@
 #include "qr_event.h"
 
 #define T_PROC_LABEL "qrouting-sampling"
-#define MAX_HISTORY 1000 /* TODO:*/
 
 #define QR_PARAM_PART     "partition"
 #define QR_PARAM_RULE_ID  "rule_id"

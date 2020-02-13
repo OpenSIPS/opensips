@@ -136,7 +136,7 @@ typedef struct rt_info_ {
 	unsigned short pgwa_len;
 	/* how many lists link this element */
 	unsigned short ref_cnt;
-	/* handler used by qr for accouting (actually qr_rule_t*) */
+	/* handler used by qr for accounting (actually qr_rule_t *) */
 	void *qr_handler;
 	/* sorting algorithm for the destinations inside rule */
 	unsigned char sort_alg;

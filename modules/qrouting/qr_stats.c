@@ -298,7 +298,7 @@ void qr_rld_dst_is_grp(void *param)
 		goto error;
 	}
 
-	if ((rule->dest[n_dst].grp.ref_lock = lock_init_rw()) == NULL) {
+	if (!(rule->dest[n_dst].grp.ref_lock = lock_init_rw())) {
 		LM_ERR("failed to init RW lock\n");
 		goto error;
 	}

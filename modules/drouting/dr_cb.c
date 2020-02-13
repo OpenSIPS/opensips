@@ -164,10 +164,11 @@ error:
  * the index within the array */
 int run_dr_sort_cbs(sort_cb_type type, struct dr_sort_params *param)
 {
-	if(dr_sort_cbs[type] == NULL) {
+	if (!dr_sort_cbs[type]) {
 		LM_WARN("callback type '%d' not registered\n", type);
 		return -1;
 	}
+
 	dr_sort_cbs[type]->callback(param);
 	return 0;
 }

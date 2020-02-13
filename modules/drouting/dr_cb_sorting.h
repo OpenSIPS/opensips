@@ -67,10 +67,15 @@ struct dr_acc_call_params {
 
 struct dr_sort_params {
 	rt_info_t *dr_rule; /* dr_rule which contains the dst to be sorted */
-	unsigned short dst_id; /* the size of pgwl */
-	unsigned short *sorted_dst; /* returns an array with the
-								 * indexes of the sorted dest */
-	int rc; /* return code for the funciton */
+
+	/* -1 for rule gwlist sort, carrier dst index for carrier gwlist sort */
+	unsigned short dst_idx;
+
+	/* output (pre-allocated): sorted array of dst indexes */
+	unsigned short *sorted_dst;
+
+	/* output: return code of the callback (0: success) */
+	int rc;
 };
 
 struct dr_add_rule_params {

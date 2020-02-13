@@ -53,7 +53,7 @@ static int get_cr_n_gw(pcr_t * cr) {
 }
 
 static inline pgw_t * get_gw_from_cr(pcr_t *cr, int n) {
-	if(cr->pgwa_len > n)
+	if (cr->pgwa_len > n)
 		return cr->pgwl[n].dst.gw; /* a carrier cannot contain another carrier */
 	return NULL; /* provided index was bigger than the vector */
 }

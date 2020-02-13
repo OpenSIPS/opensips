@@ -230,7 +230,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 {
 	double pdd_tm = 0, st = 0;
 	qr_trans_prop_t *trans_prop = (qr_trans_prop_t *)*ps->param;
-	struct dlg_cell *cur_dlg; /* for accouting call time */
+	struct dlg_cell *cur_dlg; /* for accounting call time */
 	struct qr_dialog_prop *dialog_prop;
 
 	if (ps->code == 180 || ps->code == 183) { /* Ringing - provisional response */
