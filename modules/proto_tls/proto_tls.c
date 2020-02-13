@@ -163,6 +163,11 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 		 * to be sent, otherwise we will completely break the messages' order
 		 */
 		if (!c->async->pending) {
+			if (tls_update_fd(c, fd) < 0) {
+				n = -1;
+				goto release;
+			}
+
 			n = tls_write(c, fd, buf, len, NULL);
 			if (n >= 0 && len - n) {
 				/* if could not write entire buffer, delay it */
@@ -175,6 +180,7 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 		n = tls_blocking_write(c, fd, buf, len,
 				tls_handshake_tout, tls_send_tout, t_dst);
 	}
+release:
 	lock_release(&c->write_lock);
 
 	return n;
