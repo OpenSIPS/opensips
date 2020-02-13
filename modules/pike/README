@@ -278,25 +278,25 @@ tree root /                  \ 142
    leafs, the nodes corresponding to each byte of the ip address
    are expanded. In order to be expended a node has to be hit for
    a given number of times (possible by different addresses; in
-   the previous example, the node “37” was expended by the
+   the previous example, the node "37" was expended by the
    195.37.78.163 and 195.37.79.134 hits).
 
    For 193.175.132.164 with x= reqs_density_per_unit:
-     * After first req hits -> the “193” node is built.
-     * After x more hits, the “175” node is build; the hits of
-       “193” node are split between itself and its child--both of
+     * After first req hits -> the "193" node is built.
+     * After x more hits, the "175" node is build; the hits of
+       "193" node are split between itself and its child--both of
        them gone have x/2.
-     * And so on for node “132” and “164”.
-     * Once “164” build the entire address can be found in the
-       tree. “164” becomes a leaf. After it will be hit as a leaf
-       for x times, it will become “RED” (further request from
+     * And so on for node "132" and "164".
+     * Once "164" build the entire address can be found in the
+       tree. "164" becomes a leaf. After it will be hit as a leaf
+       for x times, it will become "RED" (further request from
        this address will be blocked).
 
    So, to build and block this address were needed 3*x hits. Now,
    if reqs start coming from 193.175.132.142, the first 3 bytes
    are already in the tree (they are shared with the previous
-   address), so I will need only x hits (to build node “142” and
-   to make it “RED”) to make this address also to be blocked. This
+   address), so I will need only x hits (to build node "142" and
+   to make it "RED") to make this address also to be blocked. This
    is the reason for the variable number of hits necessary to
    block an IP.
 
@@ -316,8 +316,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 137 56 4151 2665
-   2. Andrei Pelinescu-Onciul 16 8 120 336
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 134 56 4151 2665
+   2. Andrei Pelinescu-Onciul 15 8 120 336
    3. Razvan Crainea (@razvancrainea) 13 11 94 18
    4. Daniel-Constantin Mierla (@miconda) 11 9 24 20
    5. Liviu Chircu (@liviuchircu) 11 8 28 66
@@ -328,7 +328,7 @@ Chapter 3. Contributors
    10. Henning Westerholt (@henningw) 4 2 2 2
 
    All remaining contributors: Elena-Ramona Modroiu, Ancuta
-   Onofrei, Konstantin Bokarius, Julián Moreno Patiño, Jesus
+   Onofrei, Konstantin Bokarius, Juli�n Moreno Pati�o, Jesus
    Rodrigues, Norman Brandinger (@NormB), Peter Lemenkov
    (@lemenkov), Edson Gellert Schubert.
 
@@ -357,7 +357,7 @@ Chapter 3. Contributors
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   6.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
    7.  Jarrod Baumann (@jarrodb)           Apr 2015 - Apr 2015
    8.  Norman Brandinger (@NormB)          Aug 2013 - Aug 2013
    9.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
@@ -377,7 +377,7 @@ Chapter 4. Documentation
 
    Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
    (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Julián Moreno Patiño, Jarrod Baumann
+   (@rvlad-patrascu), Juli�n Moreno Pati�o, Jarrod Baumann
    (@jarrodb), Norman Brandinger (@NormB), Bogdan-Andrei Iancu
    (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues,
@@ -385,6 +385,6 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2005-2009 Voice Sistem SRL
+   Copyright � 2005-2009 Voice Sistem SRL
 
-   Copyright © 2003 FhG FOKUS
+   Copyright � 2003 FhG FOKUS

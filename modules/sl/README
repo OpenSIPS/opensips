@@ -196,11 +196,11 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 74 54 876 711
-   2. Jiri Kuthan (@jiriatipteldotorg) 43 32 665 232
-   3. Daniel-Constantin Mierla (@miconda) 23 16 295 172
+   2. Jiri Kuthan (@jiriatipteldotorg) 42 32 665 232
+   3. Daniel-Constantin Mierla (@miconda) 22 16 295 172
    4. Andrei Pelinescu-Onciul 16 14 50 50
-   5. Liviu Chircu (@liviuchircu) 12 9 28 60
-   6. Jan Janak (@janakj) 12 8 355 21
+   5. Jan Janak (@janakj) 12 8 355 21
+   6. Liviu Chircu (@liviuchircu) 11 9 28 60
    7. Henning Westerholt (@henningw) 7 5 12 12
    8. Razvan Crainea (@razvancrainea) 7 5 12 11
    9. Vlad Patrascu (@rvlad-patrascu) 7 4 30 83
@@ -263,4 +263,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS

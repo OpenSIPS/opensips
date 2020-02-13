@@ -186,7 +186,7 @@ Chapter 1. Admin Guide
    are stored.
 
    Default value is
-   “mysql://opensips:opensipsrw@localhost/opensips”.
+   "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.1. Set db_url parameter
 ...
@@ -198,7 +198,7 @@ modparam("load_balancer", "db_url", "dbdriver://username:password@dbhost
 
    The name of the DB table containing the load-balancing rules.
 
-   Default value is “load_balancer”.
+   Default value is "load_balancer".
 
    Example 1.2. Set db_table parameter
 ...
@@ -211,7 +211,7 @@ modparam("load_balancer", "db_table", "lb")
    done. If set to 0, the probing will be disabled as
    functionality (for all destinations)
 
-   Default value is “30”.
+   Default value is "30".
 
    Example 1.3. Set probing_interval parameter
 ...
@@ -222,7 +222,7 @@ modparam("load_balancer", "probing_interval", 60)
 
    The SIP method to be used for the probing requests.
 
-   Default value is “"OPTIONS"”.
+   Default value is ""OPTIONS"".
 
    Example 1.4. Set probing_method parameter
 ...
@@ -233,7 +233,7 @@ modparam("load_balancer", "probing_method", "INFO")
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
-   Default value is “"sip:prober@localhost"”.
+   Default value is ""sip:prober@localhost"".
 
    Example 1.5. Set probing_from parameter
 ...
@@ -246,7 +246,7 @@ modparam("load_balancer", "probing_from", "sip:pinger@192.168.2.10")
    here will be considered as valid reply codes for probing
    messages, apart for 200.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.6. Set probing_reply_codes parameter
 ...
@@ -263,7 +263,7 @@ modparam("load_balancer", "probing_reply_codes", "501, 403")
 
    The extra logging will be done on INFO level.
 
-   Default value is “0” (disabled).
+   Default value is "0" (disabled).
 
    Example 1.7. Set probing_verbose parameter
 ...
@@ -278,7 +278,7 @@ modparam("load_balancer", "probing_verbose", 1)
 
    Multiple instances of this param are allowed.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.8. Set the lb_define_blacklist parameter
 ...
@@ -321,7 +321,7 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
    max_load = (Idle-CPU / 100) * (Max-Sessions - (Session-Count -
    current_load))
 
-   Default value is “0” (disabled).
+   Default value is "0" (disabled).
 
    Example 1.9. Set the fetch_freeswitch_load parameter
 ...
@@ -337,7 +337,7 @@ modparam("load_balancer", "fetch_freeswitch_stats", 1)
    value for the entire interval mentioned above (up to 20
    seconds!).
 
-   Default value is “1000”.
+   Default value is "1000".
 
    Example 1.10. Set the initial_freeswitch_load parameter
 ...
@@ -365,7 +365,7 @@ modparam("load_balancer", "initial_freeswitch_load", 200)
    For more info on how to define and populate a cluster (with
    OpenSIPS nodes) see the "clusterer" module.
 
-   Default value is “0 (none)”.
+   Default value is "0 (none)".
 
    Example 1.11. Set cluster_id parameter
 ...
@@ -388,7 +388,7 @@ modparam("load_balancer", "cluster_id", 9)
    cluster will individually do the probing and share the status
    changes.
 
-   Default value is “empty (none)”.
+   Default value is "empty (none)".
 
    Example 1.12. Set cluster_sharing_tag parameter
 ...
@@ -768,11 +768,11 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 116 68 4263 730
-   2. Liviu Chircu (@liviuchircu) 41 31 682 169
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 115 68 4263 730
+   2. Liviu Chircu (@liviuchircu) 40 31 682 169
    3. Vlad Patrascu (@rvlad-patrascu) 36 17 619 759
    4. Razvan Crainea (@razvancrainea) 25 19 260 142
-   5. Sergey Khripchenko 19 6 649 366
+   5. Sergey Khripchenko 18 6 649 366
    6. shripchenko 11 4 409 150
    7. Vlad Paiu (@vladpaiu) 5 3 7 5
    8. Walter Doekes (@wdoekes) 5 3 3 3
@@ -831,4 +831,4 @@ Chapter 5. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2009 Voice Sistem SRL
+   Copyright � 2009 Voice Sistem SRL

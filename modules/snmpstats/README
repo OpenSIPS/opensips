@@ -331,7 +331,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    snmpget query to the master agent. You can use this parameter
    to set the path to your instance of SNMP's snmpget program.
 
-   Default value is ‚Äú/usr/local/bin/‚Äù.
+   Default value is "/usr/local/bin/".
 
    Example 1.6. Setting the snmpgetPath parameter
 ...
@@ -346,7 +346,7 @@ modparam("snmpstats", "snmpgetPath",     "/my/custom/path/")
    community string for the snmp daemon, you need to specify it
    with this parameter.
 
-   Default value is ‚Äúpublic‚Äù.
+   Default value is "public".
 
    Example 1.7. Setting the snmpCommunity parameter
 ...
@@ -693,16 +693,16 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Jeffrey Magder 110 4 13157 64
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 51 36 519 526
+   1. Jeffrey Magder 114 4 13157 64
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 50 36 519 526
    3. Razvan Crainea (@razvancrainea) 22 19 90 66
-   4. Liviu Chircu (@liviuchircu) 15 11 44 116
-   5. Ovidiu Sas (@ovidiusas) 14 3 6 505
+   4. Liviu Chircu (@liviuchircu) 14 11 44 116
+   5. Ovidiu Sas (@ovidiusas) 13 3 6 505
    6. Daniel-Constantin Mierla (@miconda) 12 10 48 41
    7. Anca Vamanu 6 2 161 111
    8. Henning Westerholt (@henningw) 5 3 5 5
    9. Jesus Rodrigues 3 1 7 7
-   10. Juli√°n Moreno Pati√±o 3 1 6 6
+   10. Juli·n Moreno PatiÒo 3 1 6 6
 
    All remaining contributors: Klaus Darilion, Konstantin
    Bokarius, Peter Lemenkov (@lemenkov), Ionut Ionita
@@ -735,7 +735,7 @@ Chapter 3. Contributors
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6.  Juli√°n Moreno Pati√±o                Feb 2016 - Feb 2016
+   6.  Juli·n Moreno PatiÒo                Feb 2016 - Feb 2016
    7.  Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
    8.  Walter Doekes (@wdoekes)            May 2014 - May 2014
    9.  Ovidiu Sas (@ovidiusas)             Feb 2007 - Mar 2009
@@ -754,7 +754,7 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Juli√°n Moreno Pati√±o,
+   (@lemenkov), Liviu Chircu (@liviuchircu), Juli·n Moreno PatiÒo,
    Ionut Ionita (@ionutrazvanionita), Bogdan-Andrei Iancu
    (@bogdan-iancu), Henning Westerholt (@henningw), Klaus
    Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
@@ -762,4 +762,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright ¬© 2006 SOMA Networks, Inc.
+   Copyright © 2006 SOMA Networks, Inc.

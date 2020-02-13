@@ -452,11 +452,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. William Quan 38 1 4682 0
+   1. William Quan 40 1 4682 0
    2. Henning Westerholt (@henningw) 26 10 381 688
-   3. Razvan Crainea (@razvancrainea) 25 20 140 115
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 25 19 149 170
-   5. Anonymous 17 4 681 341
+   3. Razvan Crainea (@razvancrainea) 24 20 140 115
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 24 19 149 170
+   5. Anonymous 16 4 681 341
    6. Liviu Chircu (@liviuchircu) 12 9 19 77
    7. Daniel-Constantin Mierla (@miconda) 10 8 47 30
    8. Vlad Patrascu (@rvlad-patrascu) 6 4 34 28
@@ -518,4 +518,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2007 Cisco Systems
+   Copyright © 2007 Cisco Systems

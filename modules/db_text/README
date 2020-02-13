@@ -92,12 +92,12 @@ Chapter 1. Admin Guide
      * a database is represented by a directory in the local file
        system. NOTE: when you use db_text in OpenSIPS, the
        database URL for modules must be the path to the directory
-       where the table-files are located, prefixed by “text://”,
-       e.g., “text:///var/dbtext/opensips”. If there is no “/”
-       after “text://” then “CFG_DIR/” is inserted at the
+       where the table-files are located, prefixed by "text://",
+       e.g., "text:///var/dbtext/opensips". If there is no "/"
+       after "text://" then "CFG_DIR/" is inserted at the
        beginning of the database path. So, either you provide an
        absolute path to database directory or a relative one to
-       “CFG_DIR” directory.
+       "CFG_DIR" directory.
      * a table is represented by a text file inside database
        directory.
 
@@ -108,7 +108,7 @@ Chapter 1. Admin Guide
      * the name of column must not include white spaces.
      * the format of a column definition is: name(type,attr).
      * between two column definitions must be a white space, e.g.,
-       “first_name(str) last_name(str)”.
+       "first_name(str) last_name(str)".
      * the type of a column can be:
           + int - integer numbers.
           + double - real numbers with two decimals.
@@ -121,12 +121,12 @@ Chapter 1. Admin Guide
           + if no attribute is set, the fields of the column
             cannot have null value.
      * each other line is a row with data. The line ends with
-       “\n”.
-     * the fields are separated by “:”.
+       "\n".
+     * the fields are separated by ":".
      * no value between two ':' (or between ':' and start/end of a
-       row) means “null” value.
-     * next characters must be escaped in strings: “\n”, “\r”,
-       “\t”, “:”.
+       row) means "null" value.
+     * next characters must be escaped in strings: "\n", "\r",
+       "\t", ":".
      * 0 -- the zero value must be escaped too.
 
    Example 1.1. Sample of a db_text table
@@ -180,7 +180,7 @@ suser:supasswd:xxx:alpha.org:xxx
    file on disk has changed, and if yes, will re-load table from
    file.
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.4. Set db_mode parameter
 ...
@@ -233,11 +233,11 @@ opensips-cli -x mi dbt_reload /path/to/dbtext/database table_name
 
    REMINDER: when you use db_text in OpenSIPS, the database URL
    for modules must be the path to the directory where the
-   table-files are located, prefixed by “text://”, e.g.,
-   “text:///var/dbtext/opensips”. If there is no “/” after
-   “text://” then “CFG_DIR/” is inserted at the beginning of the
+   table-files are located, prefixed by "text://", e.g.,
+   "text:///var/dbtext/opensips". If there is no "/" after
+   "text://" then "CFG_DIR/" is inserted at the beginning of the
    database path. So, either you provide an absolute path to
-   database directory or a relative one to “CFG_DIR” directory.
+   database directory or a relative one to "CFG_DIR" directory.
 
    Example 1.5. Load the db_text module
 ...
@@ -432,12 +432,12 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Daniel-Constantin Mierla (@miconda) 134 59 6126 1441
+   1. Daniel-Constantin Mierla (@miconda) 133 59 6126 1441
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 30 308 307
    3. Henning Westerholt (@henningw) 25 15 252 410
    4. Liviu Chircu (@liviuchircu) 16 13 39 90
    5. Razvan Crainea (@razvancrainea) 14 12 106 38
-   6. Jan Janak (@janakj) 10 7 124 106
+   6. Jan Janak (@janakj) 11 7 124 106
    7. Vlad Patrascu (@rvlad-patrascu) 7 5 76 49
    8. Ovidiu Sas (@ovidiusas) 7 5 61 8
    9. Sergey Khripchenko 5 2 185 2
@@ -501,4 +501,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2003-2004 FhG FOKUS
+   Copyright � 2003-2004 FhG FOKUS

@@ -651,12 +651,12 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Christian Schlatter 20 3 1993 1
+   1. Christian Schlatter 21 3 1993 1
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 52 44
    3. Daniel-Constantin Mierla (@miconda) 12 9 79 83
    4. Liviu Chircu (@liviuchircu) 10 8 25 37
    5. Vlad Patrascu (@rvlad-patrascu) 9 3 80 247
-   6. Razvan Crainea (@razvancrainea) 8 5 50 59
+   6. Razvan Crainea (@razvancrainea) 7 5 50 59
    7. Konstantin Bokarius 3 1 1 4
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
    9. Edson Gellert Schubert 3 1 0 85
@@ -706,4 +706,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2007 University of North Carolina
+   Copyright © 2007 University of North Carolina

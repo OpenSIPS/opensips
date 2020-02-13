@@ -350,7 +350,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ionut Ionita (@ionutrazvanionita) 148 66 8047 998
+   1. Ionut Ionita (@ionutrazvanionita) 149 66 8047 998
    2. Razvan Crainea (@razvancrainea) 23 21 55 33
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 20 14 361 151
    4. Liviu Chircu (@liviuchircu) 10 8 39 49
@@ -399,4 +399,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2015 www.opensips-solutions.com
+   Copyright © 2015 www.opensips-solutions.com

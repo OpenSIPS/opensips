@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">54</entry>
+		<entry align="center">53</entry>
 		<entry align="center">40</entry>
 		<entry align="center">424</entry>
 		<entry align="center">551</entry>
@@ -37,7 +37,7 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>)</entry>
-		<entry align="center">31</entry>
+		<entry align="center">30</entry>
 		<entry align="center">20</entry>
 		<entry align="center">700</entry>
 		<entry align="center">233</entry>
@@ -76,19 +76,19 @@
 	</row>
 	<row>
 		<entry>8. </entry>
-		<entry>Andrei Pelinescu-Onciul</entry>
-		<entry align="center">9</entry>
-		<entry align="center">4</entry>
-		<entry align="center">186</entry>
-		<entry align="center">121</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
 		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">8</entry>
 		<entry align="center">4</entry>
 		<entry align="center">232</entry>
 		<entry align="center">101</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
+		<entry>Andrei Pelinescu-Onciul</entry>
+		<entry align="center">8</entry>
+		<entry align="center">4</entry>
+		<entry align="center">186</entry>
+		<entry align="center">121</entry>
 	</row>
 	<row>
 		<entry>10. </entry>

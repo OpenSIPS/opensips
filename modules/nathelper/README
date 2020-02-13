@@ -177,7 +177,7 @@ modparam("nathelper", "natping_interval", 10)
 1.4.2. ping_nated_only (integer)
 
    If this variable is set then only contacts that have
-   “behind_NAT” flag in user location database set will get ping.
+   "behind_NAT" flag in user location database set will get ping.
 
    Default value is 0.
 
@@ -242,7 +242,7 @@ modparam("nathelper", "received_avp", "$avp(received)")
    OpenSIPS will choose the first listening interface matching the
    destination protocol and AF family.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.6. Set force_socket parameter
 ...
@@ -311,7 +311,7 @@ modparam("nathelper", "sipping_ignore_rpl_codes", "408, 480, 404")
    pinging feature, you have to set this parameter. The SIP
    request pinging will be used only for requests marked so.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.11. Set sipping_from parameter
 ...
@@ -323,7 +323,7 @@ modparam("nathelper", "sipping_from", "sip:pinger@siphub.net")
    The parameter sets the SIP method to be used in generating the
    SIP requests for NAT ping purposes.
 
-   Default value is “OPTIONS”.
+   Default value is "OPTIONS".
 
    Example 1.12. Set sipping_method parameter
 ...
@@ -342,7 +342,7 @@ Note
    The string must be a complete SDP line, including the EOH
    (\r\n).
 
-   Default value is “a=nortpproxy:yes\r\n”.
+   Default value is "a=nortpproxy:yes\r\n".
 
    Example 1.13. Set nortpproxy_str parameter
 ...
@@ -415,7 +415,7 @@ modparam("nathelper", "max_pings_lost", 5)
    For more info on how to define and populate a cluster (with
    OpenSIPS nodes) see the "clusterer" module.
 
-   Default value is “0 (none)”.
+   Default value is "0 (none)".
 
    Example 1.18. Set cluster_id parameter
 ...
@@ -435,7 +435,7 @@ modparam("nathelper", "cluster_id", 9)
    This is an optional parameter. If not set, all the nodes in the
    cluster will individually do the pinging.
 
-   Default value is “empty (none)”.
+   Default value is "empty (none)".
 
    Example 1.19. Set cluster_sharing_tag parameter
 ...
@@ -474,19 +474,19 @@ if (search("User-Agent: Cisco ATA.*") {
 1.5.2.  fix_nated_sdp(flags [, ip_address [, sdp_fields]])
 
    Alters the SDP information in orer to facilitate NAT traversal.
-   What changes to be performed may be controled via the “flags”
+   What changes to be performed may be controled via the "flags"
    parameter. Since version 1.12 the name of the old ip fields are
    "a=oldoip" for old origin ip and "a=oldcip" for old meda ip.
 
    Meaning of the parameters is as follows:
      * flags (int) - the value may be a bitwise OR of the
        following flags:
-          + 0x01 - adds “a=direction:active” SDP line;
+          + 0x01 - adds "a=direction:active" SDP line;
           + 0x02 - rewrite media IP address (c=) with source
             address of the message or the provided IP address (the
             provided IP address takes precedence over the source
             address).
-          + 0x04 - adds “a=nortpproxy:yes” SDP line;
+          + 0x04 - adds "a=nortpproxy:yes" SDP line;
           + 0x08 - rewrite IP from origin description (o=) with
             source address of the message or the provided IP
             address (the provided IP address takes precedence over
@@ -644,19 +644,19 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Maksym Sobolyev (@sobomax) 153 39 3533 4766
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 149 117 2025 853
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 148 117 2025 853
+   2. Maksym Sobolyev (@sobomax) 146 39 3533 4766
    3. Liviu Chircu (@liviuchircu) 41 32 396 273
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
-   5. Razvan Crainea (@razvancrainea) 33 26 149 240
+   5. Razvan Crainea (@razvancrainea) 32 26 149 240
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
-   7. Jan Janak (@janakj) 21 11 780 129
-   8. Anca Vamanu 21 4 1602 185
+   7. Anca Vamanu 22 4 1602 185
+   8. Jan Janak (@janakj) 21 11 780 129
    9. Andrei Pelinescu-Onciul 20 17 121 110
-   10. Ovidiu Sas (@ovidiusas) 18 13 110 173
+   10. Jiri Kuthan (@jiriatipteldotorg) 18 10 764 47
 
-   All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
-   Ancuta Onofrei, Vlad Patrascu (@rvlad-patrascu), Andrei Dragus,
+   All remaining contributors: Ancuta Onofrei, Ovidiu Sas
+   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Andrei Dragus,
    Vlad Paiu (@vladpaiu), Henning Westerholt (@henningw), Dan
    Pascu (@danpascu), Christophe Sollet (@csollet), Marcus Hunger,
    Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu,
@@ -727,8 +727,8 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2018 VoIP Embedded, Inc.
+   Copyright � 2018 VoIP Embedded, Inc.
 
-   Copyright © 2003-2008 Sippy Software, Inc.
+   Copyright � 2003-2008 Sippy Software, Inc.
 
-   Copyright © 2005 Voice Sistem SRL
+   Copyright � 2005 Voice Sistem SRL

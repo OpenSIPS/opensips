@@ -21,26 +21,26 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
-		<entry align="center">126</entry>
+		<entry align="center">124</entry>
 		<entry align="center">80</entry>
 		<entry align="center">2085</entry>
 		<entry align="center">1607</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Hardy Kahl</entry>
-		<entry align="center">50</entry>
-		<entry align="center">3</entry>
-		<entry align="center">2713</entry>
-		<entry align="center">1360</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
 		<entry>Jonas Appel</entry>
-		<entry align="center">50</entry>
+		<entry align="center">52</entry>
 		<entry align="center">1</entry>
 		<entry align="center">6240</entry>
 		<entry align="center">0</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
+		<entry>Hardy Kahl</entry>
+		<entry align="center">49</entry>
+		<entry align="center">3</entry>
+		<entry align="center">2713</entry>
+		<entry align="center">1360</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -53,7 +53,7 @@
 	<row>
 		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">23</entry>
+		<entry align="center">22</entry>
 		<entry align="center">5</entry>
 		<entry align="center">384</entry>
 		<entry align="center">764</entry>

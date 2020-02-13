@@ -94,7 +94,7 @@ Chapter 1. Admin Guide
    The name of the script route to be run in order to retrieve the
    status of a feature.
 
-   Default value is “dfks_get”.
+   Default value is "dfks_get".
 
    Example 1.1. Set parameter
 ...
@@ -106,7 +106,7 @@ modparam("presence_dfks", "get_route", "dfks_get")
    The name of the script route to be run when a feature status
    update from a SIP phone is received.
 
-   Default value is “dfks_get”.
+   Default value is "dfks_get".
 
    Example 1.2. Set parameter
 ...
@@ -203,7 +203,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    21       6      1631      86
+   1. Vlad Patrascu (@rvlad-patrascu)    22       6      1631      86
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -238,4 +238,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2019 www.opensips-solutions.com
+   Copyright � 2019 www.opensips-solutions.com

@@ -20,19 +20,19 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">153</entry>
-		<entry align="center">39</entry>
-		<entry align="center">3533</entry>
-		<entry align="center">4766</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">149</entry>
+		<entry align="center">148</entry>
 		<entry align="center">117</entry>
 		<entry align="center">2025</entry>
 		<entry align="center">853</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">146</entry>
+		<entry align="center">39</entry>
+		<entry align="center">3533</entry>
+		<entry align="center">4766</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -53,7 +53,7 @@
 	<row>
 		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">33</entry>
+		<entry align="center">32</entry>
 		<entry align="center">26</entry>
 		<entry align="center">149</entry>
 		<entry align="center">240</entry>
@@ -68,19 +68,19 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Anca Vamanu</entry>
+		<entry align="center">22</entry>
+		<entry align="center">4</entry>
+		<entry align="center">1602</entry>
+		<entry align="center">185</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry>Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>)</entry>
 		<entry align="center">21</entry>
 		<entry align="center">11</entry>
 		<entry align="center">780</entry>
 		<entry align="center">129</entry>
-	</row>
-	<row>
-		<entry>8. </entry>
-		<entry>Anca Vamanu</entry>
-		<entry align="center">21</entry>
-		<entry align="center">4</entry>
-		<entry align="center">1602</entry>
-		<entry align="center">185</entry>
 	</row>
 	<row>
 		<entry>9. </entry>
@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
+		<entry>Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>)</entry>
 		<entry align="center">18</entry>
-		<entry align="center">13</entry>
-		<entry align="center">110</entry>
-		<entry align="center">173</entry>
+		<entry align="center">10</entry>
+		<entry align="center">764</entry>
+		<entry align="center">47</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Ancuta Onofrei, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Andrei Dragus, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Marcus Hunger, Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer, Konstantin Bokarius, John Riordan, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Elena-Ramona Modroiu, Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ancuta Onofrei, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Andrei Dragus, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Marcus Hunger, Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer, Konstantin Bokarius, John Riordan, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Elena-Ramona Modroiu, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>

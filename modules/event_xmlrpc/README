@@ -98,7 +98,7 @@ Chapter 1. Admin Guide
    parameters. Set it to zero to disable or to non-zero to enable
    it.
 
-   Default value is “0 (disabled)”.
+   Default value is "0 (disabled)".
 
    Example 1.1. Set use_struct_param parameter
 ...
@@ -114,7 +114,7 @@ modparam("event_xmlrpc", "use_struct_param", 1)
    mode the process continues its operation without receiving any
    confirmation.
 
-   Default value is “0 (asynchronous)”.
+   Default value is "0 (asynchronous)".
 
    Example 1.2. Set sync_mode parameter
 ...
@@ -168,7 +168,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 36 23 1239 131
+   1. Razvan Crainea (@razvancrainea) 37 23 1239 131
    2. Liviu Chircu (@liviuchircu) 9 7 63 31
    3. Vlad Patrascu (@rvlad-patrascu) 6 3 153 10
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 8 9
@@ -219,4 +219,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2012 www.opensips-solutions.com
+   Copyright � 2012 www.opensips-solutions.com

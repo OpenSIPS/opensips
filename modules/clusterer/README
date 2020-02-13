@@ -246,11 +246,11 @@ modparam("clusterer", "my_node_id", 1)
    Specifies whether the node information for the local instance,
    as well as other instances in the cluster, should be loaded
    from the database or configured in the script(see my_node_info
-   and neighbor_node_info). A value of “0” means that DB is not
+   and neighbor_node_info). A value of "0" means that DB is not
    used and the cluster topology in terms of node information will
    be discovered dynamically at runtime.
 
-   Default value is “1”
+   Default value is "1"
 
    Example 1.2. Set db_mode parameter
 ...
@@ -261,7 +261,7 @@ modparam("clusterer", "db_mode", 0)
 
    The database url.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.3. Set db_url parameter
 ...
@@ -273,7 +273,7 @@ modparam("clusterer", "db_url",
 
    The name of the table storing the clustering information.
 
-   Default value is “clusterer”.
+   Default value is "clusterer".
 
    Example 1.4. Set db_table parameter
 ...
@@ -290,11 +290,11 @@ modparam("clusterer", "db_table", "clusterer")
    Note that ohter tags may be dynamically learned during runtime
    via clustering communication with other nodes.
 
-   The format for this value is “tag_name / cluster_id =
-   active/backup”.
+   The format for this value is "tag_name / cluster_id =
+   active/backup".
 
    Multiple definitions of this parameter are allowed. The default
-   value is “none”.
+   value is "none".
 
    Example 1.5. Set sharing_tag parameter
 ...
@@ -314,7 +314,7 @@ modparam("clusterer", "sharing_tag", "node/10=backup")
    as the DB column names. At least the cluster_id and url
    properties must be defined.
 
-   This parameter is required if db_mode is set to “0” in order to
+   This parameter is required if db_mode is set to "0" in order to
    properly advertise information about the local instance in the
    dynamic node learning process.
 
@@ -355,7 +355,7 @@ bin:192.168.0.6:5566")
    The interval in seconds between regular pings sent to a
    neighbour node.
 
-   Default value is “4”
+   Default value is "4"
 
    Example 1.8. Set ping_interval parameter
 ...
@@ -369,7 +369,7 @@ modparam("clusterer", "ping_interval", 1)
    neighbour node down. This is also the interval between
    successive retries if the send fails.
 
-   Default value is “1000”
+   Default value is "1000"
 
    Example 1.9. Set ping_timeout parameter
 ...
@@ -381,7 +381,7 @@ modparam("clusterer", "ping_timeout", 500)
    The time in seconds to wait before pinging is restarted for a
    failed node.
 
-   Default value is “60”
+   Default value is "60"
 
    Example 1.10. Set node_timeout parameter
 ...
@@ -394,7 +394,7 @@ modparam("clusterer", "node_timeout", 10)
    for a suitable donor node before falling back to a "synced"
    state, following a node restart or an MI cluster sync command.
 
-   Default value is “5”.
+   Default value is "5".
 
    Example 1.11. Set seed_fallback_interval parameter
 ...
@@ -407,7 +407,7 @@ modparam("clusterer", "seed_fallback_interval", 10)
    synchronization. This is only a suggested value as the actual
    size of the packets may be slightly larger.
 
-   Default value is “65535”.
+   Default value is "65535".
 
    Example 1.12. Set sync_packet_max_size parameter
 ...
@@ -418,7 +418,7 @@ modparam("clusterer", "sync_packet_max_size", 32765)
 
    The name of the column storing an id for the table rows.
 
-   Default value is “id”.
+   Default value is "id".
 
    Example 1.13. Set id_col parameter
 ...
@@ -429,7 +429,7 @@ modparam("clusterer", "id_col", "id")
 
    The name of the column to store the id of a cluster.
 
-   Default value is “cluster_id”.
+   Default value is "cluster_id".
 
    Example 1.14. Set cluster_id_col parameter
 ...
@@ -441,7 +441,7 @@ modparam("clusterer", "cluster_id_col", "cluster_id")
    The name of the column to store the id of an instance. The
    values must be greater than 0.
 
-   Default value is “node_id”.
+   Default value is "node_id".
 
    Example 1.15. Set node_id_col parameter
 ...
@@ -453,7 +453,7 @@ modparam("clusterer", "node_id_col", "node_id")
    The name of the column containing the instance url. The values
    must be greater than 0.
 
-   Default value is “url”.
+   Default value is "url".
 
    Example 1.16. Set url_col parameter
 ...
@@ -465,7 +465,7 @@ modparam("clusterer", "url_col", "url")
    The name of the column storing the state of the
    node(enabled/disabled).
 
-   Default value is “state”.
+   Default value is "state".
 
    Example 1.17. Set state_col parameter
 ...
@@ -478,7 +478,7 @@ modparam("clusterer", "state_col", "state")
    retries before the link with the neighbour node is considered
    down.
 
-   Default value is “no_ping_retries”.
+   Default value is "no_ping_retries".
 
    Example 1.18. Set no_ping_retries_col parameter
 ...
@@ -491,7 +491,7 @@ modparam("clusterer", "no_ping_retries_col", "no_ping_retries")
    as next hop in case of same length(number of hops) paths when
    rerouting messages.
 
-   Default value is “priority”.
+   Default value is "priority".
 
    Example 1.19. Set priority_col parameter
 ...
@@ -502,7 +502,7 @@ modparam("clusterer", "priority_col", "priority")
 
    The name of the column containing a SIP address for the node.
 
-   Default value is “sip_addr”.
+   Default value is "sip_addr".
 
    Example 1.20. Set sip_addr_col parameter
 ...
@@ -513,7 +513,7 @@ modparam("clusterer", "sip_addr_col", "sip_addr")
 
    The name of the column containing the node flags.
 
-   Default value is “flags”.
+   Default value is "flags".
 
    Example 1.21. Set flags_col parameter
 ...
@@ -524,7 +524,7 @@ modparam("clusterer", "flags_col", "flags")
 
    The name of the column containing a node description.
 
-   Default value is “description”.
+   Default value is "description".
 
    Example 1.22. Set description_col parameter
 ...
@@ -954,30 +954,30 @@ ries | priority | sip_addr | flags | description |
 +----+------------+---------+----------------------+-------+------------
 -----+----------+----------+-------+-------------+
 
-     * “cluster_id” - identifier of the cluster. All nodes within
+     * "cluster_id" - identifier of the cluster. All nodes within
        a group/cluster should have the same id (in our example,
        both nodes have ID 1). The values must be greater than 0.
-     * “node_id” - identifier of the machine/node so each instance
+     * "node_id" - identifier of the machine/node so each instance
        within a cluster should have a different ID. The values
        must be greater than 0. In our example, Node A will have ID
        1, and Node B ID 2.
-     * “url” - address where all the BIN packets for that instance
+     * "url" - address where all the BIN packets for that instance
        will be sent to.
-     * “state” - state of the node: 1 means Enabled, 0 means
+     * "state" - state of the node: 1 means Enabled, 0 means
        Disabled. A disabled node will not send any BIN packets and
        will drop received ones.
-     * “no_ping_retries” - maximum number of ping retries before
+     * "no_ping_retries" - maximum number of ping retries before
        the link with a node is considered down.
-     * “priority” - the priority of a node to be chosen as next
+     * "priority" - the priority of a node to be chosen as next
        hop in case of same length(number of hops) paths when
        rerouting messages; it is not relevant for this two-node
        topology example.
-     * “sip_addr” - SIP address for the node that is transparently
+     * "sip_addr" - SIP address for the node that is transparently
        provided to modules; it has no use for the ratelimit module
        in our example.
-     * “flags” - used to define a seed node; it has no use in our
+     * "flags" - used to define a seed node; it has no use in our
        example.
-     * “description” - an opaque value used to describe the node
+     * "description" - an opaque value used to describe the node
 
    After provisioning the two nodes in the database, we have to
    configure the two instances of OpenSIPS. First, we configure
@@ -1180,12 +1180,12 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 265 92 10026 5239
+   1. Vlad Patrascu (@rvlad-patrascu) 260 92 10026 5239
    2. Liviu Chircu (@liviuchircu) 48 35 611 435
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Razvan Crainea (@razvancrainea) 23 17 319 143
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 20 9 1116 102
-   6. Ionel Cerghit (@ionel-cerghit) 8 2 250 212
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 21 9 1116 102
+   6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Gohar Ahmed (@goharahmed) 3 1 6 5
    8. Fabian Gast (@fgast) 3 1 1 1
    9. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -1235,4 +1235,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2015-2017 www.opensips-solutions.com
+   Copyright � 2015-2017 www.opensips-solutions.com

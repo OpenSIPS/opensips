@@ -290,7 +290,7 @@ if ($rs == "183") {
    parameter or parameter subfield have a string alias defined.
 
    For more information on supported subfields and aliases check
-   Section 1.7, “ISUP parameter subfields and string aliases”.
+   Section 1.7, "ISUP parameter subfields and string aliases".
 
    Example 1.6. isup_param usage
 ...
@@ -758,7 +758,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 125 42 6679 1638
+   1. Vlad Patrascu (@rvlad-patrascu) 124 42 6679 1638
    2. Razvan Crainea (@razvancrainea) 10 8 17 15
    3. Liviu Chircu (@liviuchircu) 8 6 24 31
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 82 10
@@ -805,4 +805,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2016 www.opensips-solutions.com
+   Copyright � 2016 www.opensips-solutions.com

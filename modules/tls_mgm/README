@@ -198,7 +198,7 @@ Chapter 1. Admin Guide
    module parameters (script level) and via an SQL table.
 
    A script example which details this module's usage can be found
-   in Section 1.10, “OpenSIPS with TLS - script example”.
+   in Section 1.10, "OpenSIPS with TLS - script example".
 
 1.3. TLS domains
 
@@ -553,7 +553,7 @@ modparam("tls_mgm", "client_tls_domain_avp", "tls_match_dom")
    effect.
 
    For the AVP usage example, refer to Section 1.8.35,
-   “server_domain, client_domain (string)”.
+   "server_domain, client_domain (string)".
 
    No default value.
 
@@ -877,7 +877,7 @@ route{
 
    Some variables are available for both, the peer'S certificate
    and the local certificate. Further, some parameters can be read
-   from the “Subject” field or the “Issuer” field.
+   from the "Subject" field or the "Issuer" field.
 
 1.9.1. $tls_version
 
@@ -950,23 +950,23 @@ route{
 
 1.9.14. $tls_[peer|my]_san_email
 
-   $tls_[peer|my]_san_email - email address in the “subject
-   alternative name” extension. String type.
+   $tls_[peer|my]_san_email - email address in the "subject
+   alternative name" extension. String type.
 
 1.9.15. $tls_[peer|my]_san_hostname
 
-   $tls_[peer|my]_san_hostname - hostname (DNS) in the “subject
-   alternative name” extension. String type.
+   $tls_[peer|my]_san_hostname - hostname (DNS) in the "subject
+   alternative name" extension. String type.
 
 1.9.16. $tls_[peer|my]_san_uri
 
-   $tls_[peer|my]_san_uri - URI in the “subject alternative name”
+   $tls_[peer|my]_san_uri - URI in the "subject alternative name"
    extension. String type.
 
 1.9.17. $tls_[peer|my]_san_ip
 
-   $tls_[peer|my]_san_ip - ip address in the “subject alternative
-   name” extension. String type.
+   $tls_[peer|my]_san_ip - ip address in the "subject alternative
+   name" extension. String type.
 
 1.9.18. $tls_peer_verified
 
@@ -1454,14 +1454,14 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 101 32 3280 2387
-   2. Razvan Crainea (@razvancrainea) 72 50 1165 658
-   3. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 23 11 285 454
-   5. Liviu Chircu (@liviuchircu) 22 16 135 214
-   6. Ionut Ionita (@ionutrazvanionita) 17 9 383 169
+   1. Vlad Patrascu (@rvlad-patrascu) 98 32 3280 2387
+   2. Razvan Crainea (@razvancrainea) 72 51 1166 658
+   3. Eseanu Marius Cristian (@eseanucristian) 52 11 4268 321
+   4. Liviu Chircu (@liviuchircu) 22 16 135 214
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 22 11 285 454
+   6. Ionut Ionita (@ionutrazvanionita) 16 9 383 169
    7. Dan Pascu (@danpascu) 11 7 33 157
-   8. Ionel Cerghit (@ionel-cerghit) 7 1 494 109
+   8. Ionel Cerghit (@ionel-cerghit) 8 1 494 109
    9. Alexey Vasilyev (@vasilevalex) 4 2 33 19
    10. Callum Guy (@spacetourist) 3 1 33 8
 
@@ -1518,12 +1518,12 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2015 www.opensips-solutions.com
+   Copyright � 2015 www.opensips-solutions.com
 
-   Copyright © 2013 Secusmart GmbH
+   Copyright � 2013 Secusmart GmbH
 
-   Copyright © 2006 enum.at
+   Copyright � 2006 enum.at
 
-   Copyright © 2005 Cesc Santasusana
+   Copyright � 2005 Cesc Santasusana
 
-   Copyright © 2005 Voice Sistem SRL
+   Copyright � 2005 Voice Sistem SRL

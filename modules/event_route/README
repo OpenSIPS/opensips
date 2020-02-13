@@ -134,10 +134,10 @@ Chapter 2. Frequently Asked Questions
 
    2.2.
 
-       What happened with the “fetch_event_params()” function?
+       What happened with the "fetch_event_params()" function?
 
        This function has been dropped starting with OpenSIPS 3.0. Its
-       functionality has been replaced by the “$param(name)” variable.
+       functionality has been replaced by the "$param(name)" variable.
 
    2.3.
 
@@ -177,8 +177,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 36 22 989 313
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 14 6 99 357
+   1. Razvan Crainea (@razvancrainea) 37 22 989 313
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 13 6 99 357
    3. Liviu Chircu (@liviuchircu) 11 9 20 41
    4. Ionut Ionita (@ionutrazvanionita) 8 5 138 51
    5. Ovidiu Sas (@ovidiusas) 7 2 384 9
@@ -233,4 +233,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2012 www.opensips-solutions.com
+   Copyright � 2012 www.opensips-solutions.com

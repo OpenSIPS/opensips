@@ -82,7 +82,7 @@ Chapter 1. Admin Guide
    The database url.
 
    Default value is
-   ‚Äúmysql://opensips:opensipsrw@localhost/opensips‚Äù.
+   "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.1. Set db_url parameter
 ...
@@ -93,7 +93,7 @@ modparam("xcap", "db_url", "dbdriver://username:password@dbhost/dbname")
 
    The name of the db table where XCAP documents are stored.
 
-   Default value is ‚Äúxcap‚Äù.
+   Default value is "xcap".
 
    Example 1.2. Set xcap_table parameter
 ...
@@ -109,7 +109,7 @@ modparam("xcap", "xcap_table", "xcap")
    integrated server must send an MI command refershWatchers
    [pres_uri] [event] when a user modifies a rules document.
 
-   Default value is ‚Äú0‚Äù.
+   Default value is "0".
 
    Example 1.3. Set integrated_xcap_server parameter
 ...
@@ -214,7 +214,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Sa√∫l Ibarra Corretg√© (@saghul) 14 3 1260 53
+   1. Sa˙l Ibarra CorretgÈ (@saghul) 15 3 1260 53
    2. Liviu Chircu (@liviuchircu) 10 7 55 102
    3. Razvan Crainea (@razvancrainea) 7 5 25 21
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 6 2
@@ -248,7 +248,7 @@ Chapter 3. Contributors
    4. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
    5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   7. Sa√∫l Ibarra Corretg√© (@saghul)      Nov 2012 - Jan 2013
+   7. Sa˙l Ibarra CorretgÈ (@saghul)      Nov 2012 - Jan 2013
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -258,8 +258,8 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Sa√∫l Ibarra Corretg√© (@saghul).
+   (@liviuchircu), Sa˙l Ibarra CorretgÈ (@saghul).
 
    Documentation Copyrights:
 
-   Copyright ¬© 2012 AG Projects
+   Copyright © 2012 AG Projects

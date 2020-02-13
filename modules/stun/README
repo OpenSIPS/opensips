@@ -198,9 +198,9 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Pistolea 19 3 1891 19
+   1. Razvan Pistolea 20 3 1891 19
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 13 137 128
-   3. Liviu Chircu (@liviuchircu) 18 12 259 117
+   3. Liviu Chircu (@liviuchircu) 17 12 259 117
    4. Razvan Crainea (@razvancrainea) 14 12 27 20
    5. Vlad Paiu (@vladpaiu) 7 5 25 4
    6. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -247,4 +247,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2009 Voice Sistem SRL
+   Copyright © 2009 Voice Sistem SRL

@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>)</entry>
-		<entry align="center">277</entry>
+		<entry align="center">269</entry>
 		<entry align="center">107</entry>
 		<entry align="center">7717</entry>
 		<entry align="center">6060</entry>
@@ -29,7 +29,7 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">49</entry>
+		<entry align="center">48</entry>
 		<entry align="center">32</entry>
 		<entry align="center">693</entry>
 		<entry align="center">604</entry>
@@ -76,6 +76,14 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Anca Vamanu</entry>
+		<entry align="center">12</entry>
+		<entry align="center">5</entry>
+		<entry align="center">497</entry>
+		<entry align="center">77</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
 		<entry align="center">11</entry>
 		<entry align="center">8</entry>
@@ -83,17 +91,9 @@
 		<entry align="center">100</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
-		<entry>Anca Vamanu</entry>
-		<entry align="center">11</entry>
-		<entry align="center">5</entry>
-		<entry align="center">497</entry>
-		<entry align="center">77</entry>
-	</row>
-	<row>
 		<entry>10. </entry>
 		<entry>Edson Gellert Schubert</entry>
-		<entry align="center">9</entry>
+		<entry align="center">8</entry>
 		<entry align="center">1</entry>
 		<entry align="center">0</entry>
 		<entry align="center">412</entry>

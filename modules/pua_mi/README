@@ -138,7 +138,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Anca Vamanu 30 15 1246 267
+   1. Anca Vamanu 31 15 1246 267
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 42 53
    3. Razvan Crainea (@razvancrainea) 11 9 16 17
    4. Juha Heinanen (@juha-h) 11 7 160 73
@@ -201,4 +201,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2006 Voice Sistem SRL
+   Copyright © 2006 Voice Sistem SRL

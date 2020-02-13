@@ -78,7 +78,7 @@ Chapter 1. Admin Guide
    The default domain to use when constructing the presentity uri
    if it is missing from recorded aor.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.1. Set default_domain parameter
 ...
@@ -90,7 +90,7 @@ modparam("pua_usrloc", "default_domain", "opensips.org")
    The prefix when construstructing entity attribute to be added
    to presence node in xml pidf. (ex: pres:user@domain ).
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.2. Set presentity_prefix parameter
 ...
@@ -129,17 +129,17 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 34 17 1245 365
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 13 46 60
-   3. Liviu Chircu (@liviuchircu) 15 13 54 55
+   2. Liviu Chircu (@liviuchircu) 15 13 54 55
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 46 60
    4. Razvan Crainea (@razvancrainea) 12 10 12 20
    5. Daniel-Constantin Mierla (@miconda) 10 8 25 19
    6. Vlad Patrascu (@rvlad-patrascu) 5 3 14 7
    7. Ovidiu Sas (@ovidiusas) 4 2 14 2
-   8. Konstantin Bokarius 3 1 2 5
-   9. Elena-Ramona Modroiu 3 1 1 1
-   10. Juha Heinanen (@juha-h) 3 1 1 1
+   8. Peter Lemenkov (@lemenkov) 4 2 5 4
+   9. Konstantin Bokarius 3 1 2 5
+   10. Elena-Ramona Modroiu 3 1 1 1
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Walter
+   All remaining contributors: Juha Heinanen (@juha-h), Walter
    Doekes (@wdoekes), Edson Gellert Schubert, Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -162,11 +162,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2007 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2007 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Mar 2014
    7.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2010
    8.  Anca Vamanu                         Nov 2006 - Oct 2009
@@ -191,4 +191,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2006 Voice Sistem SRL
+   Copyright � 2006 Voice Sistem SRL

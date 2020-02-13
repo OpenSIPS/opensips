@@ -79,9 +79,9 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * TM - Transaction Module.
      * RR - Record-Route Module, but only if restore mode for FROM
-       URI is set to “auto”.
+       URI is set to "auto".
      * UAC_AUTH - UAC Authentication Module.
-     * Dialog Module, if “force_dialog” module parameter is
+     * Dialog Module, if "force_dialog" module parameter is
        enabled, or a dialog is created from the configuration
        script.
 
@@ -97,15 +97,15 @@ Chapter 1. Admin Guide
 
    There are 3 mode of restoring the original headers (FROM/TO)
    URI:
-     * “none” - no information about original URI is stored;
+     * "none" - no information about original URI is stored;
        restoration is not possible.
-     * “manual” - all following replies will be restored, except
+     * "manual" - all following replies will be restored, except
        for the sequential requests - these must be manually
        updated based on original URI.
-     * “auto” - all sequential requests and replies will be
+     * "auto" - all sequential requests and replies will be
        automatically updated based on stored original URI.
 
-   This parameter is optional, it's default value being “auto”.
+   This parameter is optional, it's default value being "auto".
 
    Example 1.1. Set restore_mode parameter
 ...
@@ -130,7 +130,7 @@ modparam("uac","restore_passwd","my_secret_passwd")
    Name of Record-Route header parameter that will be used to
    store (encoded) the original FROM URI.
 
-   This parameter is optional, it's default value being “vsf”.
+   This parameter is optional, it's default value being "vsf".
 
    Example 1.3. Set rr_from_store_param parameter
 ...
@@ -142,7 +142,7 @@ modparam("uac","rr_from_store_param","my_Fparam")
    Name of Record-Route header parameter that will be used to
    store (encoded) the original TO URI.
 
-   This parameter is optional, it's default value being “vst”.
+   This parameter is optional, it's default value being "vst".
 
    Example 1.4. Set rr_to_store_param parameter
 ...
@@ -279,13 +279,13 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 121 70 4070 1052
-   2. Ovidiu Sas (@ovidiusas) 35 7 371 1346
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 122 70 4070 1052
+   2. Ovidiu Sas (@ovidiusas) 33 7 371 1346
    3. Razvan Crainea (@razvancrainea) 29 22 485 148
-   4. Liviu Chircu (@liviuchircu) 22 13 262 289
+   4. Liviu Chircu (@liviuchircu) 21 13 262 289
    5. Daniel-Constantin Mierla (@miconda) 15 11 138 88
-   6. Vlad Paiu (@vladpaiu) 8 5 243 18
-   7. Vlad Patrascu (@rvlad-patrascu) 8 4 127 161
+   6. Vlad Patrascu (@rvlad-patrascu) 9 4 127 161
+   7. Vlad Paiu (@vladpaiu) 8 5 243 18
    8. Andreas Heise 7 3 105 129
    9. Edson Gellert Schubert 5 1 0 201
    10. Elena-Ramona Modroiu 4 2 95 42
@@ -347,4 +347,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2005-2009 Voice Sistem SRL
+   Copyright � 2005-2009 Voice Sistem SRL

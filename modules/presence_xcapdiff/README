@@ -83,8 +83,8 @@ Chapter 2. Contributors
    3. Denis Bilenko 7 3 300 4
    4. Razvan Crainea (@razvancrainea) 6 4 4 2
    5. Vlad Patrascu (@rvlad-patrascu) 5 3 4 7
-   6. Dan Pascu (@danpascu) 5 1 76 120
-   7. Anca Vamanu 4 2 2 11
+   6. Anca Vamanu 4 2 2 11
+   7. Dan Pascu (@danpascu) 4 1 76 120
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -128,4 +128,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2008 AG Projects
+   Copyright © 2008 AG Projects

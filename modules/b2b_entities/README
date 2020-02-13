@@ -122,7 +122,7 @@ Chapter 1. Admin Guide
    The size of the hash table that stores the b2b server entities.
    It is the 2 logarithmic value of the real size.
 
-   Default value is “9” (512 records).
+   Default value is "9" (512 records).
 
    Example 1.1. Set server_hsize parameter
 ...
@@ -134,7 +134,7 @@ modparam("b2b_entities", "server_hsize", 10)
    The size of the hash table that stores the b2b client entities.
    It is the 2 logarithmic value of the real size.
 
-   Default value is “9” (512 records).
+   Default value is "9" (512 records).
 
    Example 1.2. Set client_hsize parameter
 ...
@@ -176,7 +176,7 @@ modparam("b2b_entities", "db_url", "mysql://opensips:opensipsrw@127.0.0.
 
    The time interval at which to update the info in database.
 
-   Default value is “100”.
+   Default value is "100".
 
    Example 1.6. Set update_period parameter
 ...
@@ -192,7 +192,7 @@ modparam("b2b_entities", "update_period", 60)
    callid or totag to see if it has the format it uses to
    determine if the request was sent by it.
 
-   Default value is “B2B”.
+   Default value is "B2B".
 
    Example 1.7. Set b2b_key_prefix parameter
 ...
@@ -209,7 +209,7 @@ modparam("b2b_entities", "b2b_key_prefix", "B2B1")
      * WRITE BACK (update in db from time to time) - set this
        parameter to 2
 
-   Default value is “2” (WRITE BACK).
+   Default value is "2" (WRITE BACK).
 
    Example 1.8. Set db_mode parameter
 ...
@@ -221,7 +221,7 @@ modparam("b2b_entities", "db_mode", 1)
    The name of the table that will be used for storing B2B
    entities
 
-   Default value is “b2b_entities”
+   Default value is "b2b_entities"
 
    Example 1.9. Set db_table parameter
 ...
@@ -235,7 +235,7 @@ modparam("b2b_entities", "db_table", "some table name")
    different callid's per instance 1 will lead to generating of
    the same callid's in more instances
 
-   Default value is “0”
+   Default value is "0"
 
    Example 1.10. Set replication_mode parameter
 ...
@@ -444,19 +444,19 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Anca Vamanu 182 94 6839 1860
-   2. Ovidiu Sas (@ovidiusas) 52 39 853 291
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 44 38 307 121
+   1. Anca Vamanu 181 94 6839 1860
+   2. Ovidiu Sas (@ovidiusas) 51 39 853 291
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 43 38 307 121
    4. Razvan Crainea (@razvancrainea) 26 23 90 66
-   5. Liviu Chircu (@liviuchircu) 14 10 72 114
+   5. Liviu Chircu (@liviuchircu) 14 11 79 121
    6. Vlad Patrascu (@rvlad-patrascu) 11 6 177 154
    7. Vlad Paiu (@vladpaiu) 6 4 74 47
    8. Stanislaw Pitucha 4 2 6 6
-   9. Nick Altmann (@nikbyte) 4 1 157 26
-   10. Ionut Ionita (@ionutrazvanionita) 3 1 31 3
+   9. Peter Lemenkov (@lemenkov) 4 2 5 3
+   10. Nick Altmann (@nikbyte) 4 1 157 26
 
-   All remaining contributors: @DMOsipov, Stéphane Alnet
-   (@shimaore), Henk Hesselink, Peter Lemenkov (@lemenkov), Ryan
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   @DMOsipov, St�phane Alnet (@shimaore), Henk Hesselink, Ryan
    Bullock (@rrb3942), Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -479,11 +479,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2020
-   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Nov 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2020
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2020
+   4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Nov 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jun 2019
    6.  @DMOsipov                           Mar 2016 - Mar 2016
    7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
    8.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2015
@@ -491,7 +491,7 @@ Chapter 3. Contributors
    10. Vlad Paiu (@vladpaiu)               Aug 2011 - Apr 2014
 
    All remaining contributors: Ryan Bullock (@rrb3942), Nick
-   Altmann (@nikbyte), Stéphane Alnet (@shimaore), Anca Vamanu,
+   Altmann (@nikbyte), St�phane Alnet (@shimaore), Anca Vamanu,
    Henk Hesselink, Stanislaw Pitucha.
 
    (1) including any documentation-related commits, excluding
@@ -508,4 +508,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2009 Anca-Maria Vamanu
+   Copyright � 2009 Anca-Maria Vamanu

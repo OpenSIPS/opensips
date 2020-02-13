@@ -21,39 +21,39 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">371</entry>
+		<entry align="center">366</entry>
 		<entry align="center">171</entry>
 		<entry align="center">12770</entry>
 		<entry align="center">5536</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">100</entry>
+		<entry align="center">49</entry>
+		<entry align="center">1879</entry>
+		<entry align="center">2122</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">92</entry>
+		<entry align="center">89</entry>
 		<entry align="center">44</entry>
 		<entry align="center">1113</entry>
 		<entry align="center">2144</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">51</entry>
-		<entry align="center">34</entry>
-		<entry align="center">858</entry>
-		<entry align="center">536</entry>
-	</row>
-	<row>
 		<entry>4. </entry>
 		<entry>Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>)</entry>
-		<entry align="center">48</entry>
-		<entry align="center">10</entry>
-		<entry align="center">3130</entry>
-		<entry align="center">710</entry>
+		<entry align="center">71</entry>
+		<entry align="center">20</entry>
+		<entry align="center">4301</entry>
+		<entry align="center">910</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">40</entry>
+		<entry align="center">38</entry>
 		<entry align="center">17</entry>
 		<entry align="center">1090</entry>
 		<entry align="center">728</entry>
@@ -85,7 +85,7 @@
 	<row>
 		<entry>9. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
-		<entry align="center">14</entry>
+		<entry align="center">15</entry>
 		<entry align="center">9</entry>
 		<entry align="center">370</entry>
 		<entry align="center">108</entry>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Ozzyboshi, Julián Moreno Patiño, Dusan Klinec, Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Matt Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Ozzyboshi, Julián Moreno Patiño, Dusan Klinec, Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Matt Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

@@ -127,7 +127,7 @@ modparam("group", "db_url", "mysql://username:password@dbhost/opensips")
    Name of the table holding strict definitions of groups and
    their members.
 
-   Default value is “grp”.
+   Default value is "grp".
 
    Example 1.2. Set table parameter
 
@@ -138,9 +138,9 @@ modparam("group", "table", "grp_table")
 
 1.3.3. user_column (string)
 
-   Name of the “table” column holding usernames.
+   Name of the "table" column holding usernames.
 
-   Default value is “username”.
+   Default value is "username".
 
    Example 1.3. Set user_column parameter
 
@@ -151,9 +151,9 @@ modparam("group", "user_column", "user")
 
 1.3.4. domain_column (string)
 
-   Name of the “table” column holding domains.
+   Name of the "table" column holding domains.
 
-   Default value is “domain”.
+   Default value is "domain".
 
    Example 1.4. Set domain_column parameter
 
@@ -164,9 +164,9 @@ modparam("group", "domain_column", "realm")
 
 1.3.5. group_column (string)
 
-   Name of the “table” column holding groups.
+   Name of the "table" column holding groups.
 
-   Default value is “grp”.
+   Default value is "grp".
 
    Example 1.5. Set group_column parameter
 
@@ -196,7 +196,7 @@ modparam("group", "use_domain", 1)
    based groups. If no table is defined, the regular-expression
    support is disabled.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.7. Set re_table parameter
 
@@ -207,10 +207,10 @@ modparam("group", "re_table", "re_grp")
 
 1.3.8. re_exp_column (string)
 
-   Name of the “re_table” column holding the regular expression
+   Name of the "re_table" column holding the regular expression
    used for user matching.
 
-   Default value is “reg_exp”.
+   Default value is "reg_exp".
 
    Example 1.8. Set reg_exp_column parameter
 
@@ -221,9 +221,9 @@ modparam("group", "reg_exp_column", "re")
 
 1.3.9. re_gid_column (string)
 
-   Name of the “re_table” column holding the group IDs.
+   Name of the "re_table" column holding the group IDs.
 
-   Default value is “group_id”.
+   Default value is "group_id".
 
    Example 1.9. Set re_gid_column parameter
 
@@ -238,7 +238,7 @@ modparam("group", "re_gid_column", "grp_id")
    will return all group IDs that match the user; otherwise only
    the first will be returned.
 
-   Default value is “1”.
+   Default value is "1".
 
    Example 1.10. Set multiple_gid parameter
 
@@ -363,11 +363,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 45 30 848 395
-   2. Jan Janak (@janakj) 34 20 1370 148
-   3. Daniel-Constantin Mierla (@miconda) 25 18 176 226
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 44 30 848 395
+   2. Jan Janak (@janakj) 35 20 1370 148
+   3. Daniel-Constantin Mierla (@miconda) 24 18 176 226
    4. Liviu Chircu (@liviuchircu) 14 10 80 132
-   5. Irina-Maria Stanescu 10 4 466 59
+   5. Irina-Maria Stanescu 9 4 466 59
    6. Razvan Crainea (@razvancrainea) 8 6 16 12
    7. Andrei Pelinescu-Onciul 7 5 101 40
    8. Henning Westerholt (@henningw) 7 5 27 46
@@ -432,6 +432,6 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2009 Voice Sistem SRL
+   Copyright � 2009 Voice Sistem SRL
 
-   Copyright © 2003 FhG FOKUS
+   Copyright � 2003 FhG FOKUS

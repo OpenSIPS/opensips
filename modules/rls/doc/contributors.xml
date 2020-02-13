@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Anca Vamanu</entry>
-		<entry align="center">99</entry>
+		<entry align="center">100</entry>
 		<entry align="center">41</entry>
 		<entry align="center">5335</entry>
 		<entry align="center">863</entry>
@@ -29,7 +29,7 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>)</entry>
-		<entry align="center">41</entry>
+		<entry align="center">40</entry>
 		<entry align="center">18</entry>
 		<entry align="center">1150</entry>
 		<entry align="center">710</entry>
@@ -45,7 +45,7 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">14</entry>
+		<entry align="center">15</entry>
 		<entry align="center">10</entry>
 		<entry align="center">127</entry>
 		<entry align="center">138</entry>
@@ -76,19 +76,19 @@
 	</row>
 	<row>
 		<entry>8. </entry>
-		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
-		<entry align="center">8</entry>
-		<entry align="center">3</entry>
-		<entry align="center">164</entry>
-		<entry align="center">114</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">7</entry>
 		<entry align="center">5</entry>
 		<entry align="center">28</entry>
 		<entry align="center">35</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
+		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
+		<entry align="center">7</entry>
+		<entry align="center">3</entry>
+		<entry align="center">164</entry>
+		<entry align="center">114</entry>
 	</row>
 	<row>
 		<entry>10. </entry>

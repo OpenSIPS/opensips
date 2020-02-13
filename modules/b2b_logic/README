@@ -138,7 +138,7 @@ Chapter 1. Admin Guide
    The size of the hash table that stores the scenario
    instatiation entities.
 
-   Default value is “9” (512 records).
+   Default value is "9" (512 records).
 
    Example 1.1. Set server_hsize parameter
 ...
@@ -181,7 +181,7 @@ b_marketing.xml")
    BYE is sent in all the dialogs from that context and the
    context is deleted.
 
-   Default value is “100”.
+   Default value is "100".
 
    Example 1.4. Set cleanup_period parameter
 ...
@@ -212,7 +212,7 @@ modparam("b2b_logic", "cleanup_period", 60)
      * i - Case insensitive search.
      * e - Use extended regexp.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.5. Set parameter
 ...
@@ -237,7 +237,7 @@ modparam("b2b_logic", "custom_headers_regexp", "/^x-/i")
    If you wish some other headers to be passed also you should
    define them by setting this parameter.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.6. Set parameter
 ...
@@ -258,7 +258,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
    is enabled. You can also set use_init_sdp per scenario and
    overwrite this global value.
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.7. Set parameter
 ...
@@ -279,7 +279,7 @@ pensips")
 
    The time interval at which to update the info in database.
 
-   Default value is “100”.
+   Default value is "100".
 
    Example 1.9. Set update_period parameter
 ...
@@ -290,7 +290,7 @@ modparam("b2b_logic", "update_period", 60)
 
    The maximum duration of a call.
 
-   Default value is “12 * 3600 (12 hours)”.
+   Default value is "12 * 3600 (12 hours)".
 
    If you set it to 0, there will be no limitation.
 
@@ -301,10 +301,10 @@ modparam("b2b_logic", "max_duration", 7200)
 
 1.3.11. b2bl_from_spec_param (string)
 
-   The name of the pseudo variable for storing the new “From”
-   header. The PV must be set before calling “b2b_init_request”.
+   The name of the pseudo variable for storing the new "From"
+   header. The PV must be set before calling "b2b_init_request".
 
-   Default value is “NULL” (disabled).
+   Default value is "NULL" (disabled).
 
    Example 1.11. Set b2bl_from_spec_param parameter
 ...
@@ -355,7 +355,7 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
      * WRITE BACK (update in db from time to time) - set this
        parameter to 2
 
-   Default value is “2” (WRITE BACK).
+   Default value is "2" (WRITE BACK).
 
    Example 1.14. Set db_mode parameter
 ...
@@ -366,7 +366,7 @@ modparam("b2b_logic", "db_mode", 1)
 
    Name of the database table to be used
 
-   Default value is “b2b_logic”
+   Default value is "b2b_logic"
 
    Example 1.15. Set db_table parameter
 ...
@@ -377,7 +377,7 @@ modparam("b2b_logic", "db_table", "some_table_name")
 
    Call setup timeout for topology hiding scenario.
 
-   Default value is “60”
+   Default value is "60"
 
    Example 1.16. Set b2bl_th_init_timeout parameter
 ...
@@ -675,18 +675,18 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
-   2. Ovidiu Sas (@ovidiusas) 145 101 2915 1129
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 39 32 211 236
+   2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 38 32 211 236
    4. Razvan Crainea (@razvancrainea) 32 23 607 189
    5. Vlad Patrascu (@rvlad-patrascu) 18 8 326 372
    6. Liviu Chircu (@liviuchircu) 14 11 52 99
    7. Nick Altmann (@nikbyte) 14 6 461 199
    8. Vlad Paiu (@vladpaiu) 7 5 35 21
-   9. Dan Pascu (@danpascu) 3 1 6 6
-   10. Ezequiel Lovelle 3 1 1 1
+   9. Peter Lemenkov (@lemenkov) 4 2 2 2
+   10. Dan Pascu (@danpascu) 3 1 6 6
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Walter
-   Doekes (@wdoekes).
+   All remaining contributors: Ezequiel Lovelle, Walter Doekes
+   (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -708,13 +708,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Sep 2019
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   3.  Dan Pascu (@danpascu)               Jul 2019 - Jul 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Sep 2019
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   4.  Dan Pascu (@danpascu)               Jul 2019 - Jul 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2019
    8.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
    9.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
    10. Nick Altmann (@nikbyte)             Oct 2012 - Jan 2013
@@ -736,6 +736,6 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2010 VoIP Embedded, Inc.
+   Copyright � 2010 VoIP Embedded, Inc.
 
-   Copyright © 2009 Anca-Maria Vamanu
+   Copyright � 2009 Anca-Maria Vamanu

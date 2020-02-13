@@ -1,0 +1,341 @@
+qrouting (Quality-based Routing) Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Monitored Statistics
+        1.3. Dependencies
+
+              1.3.1. OpenSIPS Modules
+
+        1.4. Exported Parameters
+
+              1.4.1. db_url (string)
+              1.4.2. table_name (string)
+              1.4.3. history_span (integer)
+              1.4.4. sampling_interval (integer)
+              1.4.5. event_bad_dst_threshold (integer)
+
+        1.5. Exported Functions
+
+              1.5.1. qr_disable_dst(rule_id, dst_name, [part])
+              1.5.2. qr_enable_dst(rule_id, dst_name, [part])
+
+        1.6. Exported MI Functions
+
+              1.6.1. qr_reload
+              1.6.2. qr_status
+              1.6.3. qr_disable_dst
+              1.6.4. qr_enable_dst
+
+        1.7. Exported Events
+
+              1.7.1. E_QROUTING_BAD_DST
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set db_url parameter
+   1.2. Set table_name parameter
+   1.3. Setting the connection_timeout parameter
+   1.4. Setting the connect_poll_interval parameter
+   1.5. Setting the event_bad_dst_threshold parameter
+   1.6. qr_disable_dst() usage
+   1.7. qr_enable_dst() usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   qrouting is a module which sits on top of drouting, dialog and
+   tm and performs live tracking of a series of essential gateway
+   signaling quality indicators (i.e. ASR, CCR, PDD, AST, ACD --
+   more details below). Thus, qrouting is able to adjust the
+   prefix routing behavior at runtime, by dynamically re-ordering
+   the gateways based on how well they perform during live
+   traffic, such that:
+     * well-performing gateways get prioritized for routing
+     * gateways which show a degradation in signaling quality are
+       demoted to the end of the routing list
+
+1.2. Monitored Statistics
+
+   The module keeps track of the following statistics, for each
+   drouting gateway:
+     * ASR (Answer Seizure Ratio) - the percentage of telephone
+       calls which are answered (200 reply status code).
+     * CCR (Call Completion Ratio) - the percentage of telephone
+       calls which are answered back by the gateway, excluding
+       5xx, 6xx reply codes and internal 408 timeouts. The
+       following is always true: CCR >= ASR.
+     * PDD (Post Dial Delay) - the duration, in milliseconds,
+       between the receival of the initial INVITE and the receival
+       of the first 180/183 provisional reply (the call state
+       advances to "ringing").
+     * AST (Average Setup Time) - the duration, in milliseconds,
+       between the receival of the initial INVITE and the receival
+       of the first 200 OK reply (the call state advances to
+       "answered"). The following is always true: AST >= PDD.
+     * ACD (Average Call Duration) - the duration, in seconds,
+       between the receival of the initial INVITE and the receival
+       of the first BYE request from either participant (the call
+       state advances to "ended").
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
+
+   The following modules must be loaded for this module to work:
+     * an SQL DB module, offering access to the "qr_profiles"
+       table
+     * tm
+     * dialog
+     * drouting
+
+1.4. Exported Parameters
+
+1.4.1. db_url (string)
+
+   An SQL database URL.
+
+   Default value is NULL.
+
+   Example 1.1. Set db_url parameter
+
+modparam("qrouting", "db_url", "mysql://opensips:opensipsrw@localhost/op
+ensips")
+
+1.4.2. table_name (string)
+
+   The name of the quality-based routing profiles table.
+
+   Default value is "qr_profiles".
+
+   Example 1.2. Set table_name parameter
+
+modparam("qrouting", "table_name", "qr_profiles_bak")
+
+1.4.3. history_span (integer)
+
+   The duration (in minutes) that a gateway's statistics for a
+   given call will be kept for.
+
+   Default value is 30 minutes.
+
+   Example 1.3. Setting the connection_timeout parameter
+
+modparam("qrouting", "history_span", 15)
+
+1.4.4. sampling_interval (integer)
+
+   The duration (in seconds) of the statistics sampling window.
+   Every sampling_interval seconds, the accumulated statistics
+   during the most recent sampling windows get added to each
+   gateway, while the oldest sampled interval statistics are
+   subtracted (rotated away) from each gateway.
+
+   A lower value will lead to a closer to realtime adjustment to
+   traffic changes, but it will also increase CPU usage and
+   internal contention due to locking.
+
+   Default value is 5 seconds.
+
+   Example 1.4. Setting the connect_poll_interval parameter
+
+modparam("qrouting", "sampling_interval", 5)
+
+1.4.5. event_bad_dst_threshold (integer)
+
+   The minimally accepted quality of a gateway. If a destination
+   (i.e. prefix + gateway combination) receives a score below this
+   threshold, the E_QROUTING_BAD_DST event will be triggered.
+
+   Default value is 5 (all stats are allowed to hit the WARN
+   threshold simultaneously)
+
+   Example 1.5. Setting the event_bad_dst_threshold parameter
+
+modparam("qrouting", "event_bad_dst_threshold", 4)
+
+1.5. Exported Functions
+
+1.5.1.  qr_disable_dst(rule_id, dst_name, [part])
+
+   Within a given routing rule, temporarily remove the given
+   gateway or carrier from routing, until they are re-enabled via
+   qr_enable_dst() or qr_enable_dst. The removal effect will be
+   lost on an OpenSIPS restart.
+
+   Parameters:
+     * rule_id (integer) - database id of the drouting rule
+     * dst_name (string) - gateway or carrier to disable
+     * part (string, optional) - drouting partition
+
+   This function can be used from any route.
+
+   Example 1.6. qr_disable_dst() usage
+
+# the signaling quality for @rule_id through @dst_name is degrading, rem
+ove it!
+event_route [E_QROUTING_BAD_DST]
+{
+        qr_disable_dst($param(rule_id), $param(dst_name), $param(partiti
+on));
+}
+
+1.5.2.  qr_enable_dst(rule_id, dst_name, [part])
+
+   Within a given routing rule, re-introduce the given gateway or
+   carrier into the routing process.
+
+   Parameters:
+     * rule_id (integer) - database id of the drouting rule
+     * dst_name (string) - gateway or carrier to disable
+     * part (string, optional) - drouting partition
+
+   This function can be used from any route.
+
+   Example 1.7. qr_enable_dst() usage
+
+# the ban has expired, let's re-enable this gateway and see how it behav
+es
+qr_enable_dst($param(rule_id), $param(dst_name), $param(partition));
+
+1.6. Exported MI Functions
+
+1.6.1. qr_reload
+
+   Reload all quality-based routing rules from the SQL database.
+
+   MI FIFO Command Format:
+
+opensips-cli -x mi qr_reload
+
+1.6.2. qr_status
+
+   Inspect the signaling quality statistics of the current
+   history_span for all drouting gateways in all partitions, with
+   various levels of filtering.
+
+   Parameters:
+     * partition (optional) - a specific drouting partition to
+       list statistics for
+     * rule_id (optional) - a specific drouting rule database id
+       to list statistics for
+     * dst_name (optional) - a specific gateway or carrier name to
+       list statistics for
+
+   MI FIFO Command Format:
+
+opensips-cli -x mi qr_status
+opensips-cli -x mi qr_status pstn
+opensips-cli -x mi qr_status pstn MY-GW-3
+opensips-cli -x mi qr_status pstn MY-CARR-7
+
+1.6.3. qr_disable_dst
+
+   Within a given routing rule, temporarily remove the given
+   gateway or carrier from routing, until they are re-enabled
+   manually. The removal effect will be lost on an OpenSIPS
+   restart.
+
+   Parameters:
+     * partition (optional) - drouting partition
+     * rule_id - database id of the drouting rule
+     * dst_name - gateway or carrier to disable
+
+   MI FIFO Command Format:
+
+opensips-cli -x mi qr_disable_dst 14 MY-CARR-7
+opensips-cli -x mi qr_disable_dst pstn 81 MY-GW-3
+
+1.6.4. qr_enable_dst
+
+   Within a given routing rule, re-introduce the given gateway or
+   carrier into the routing process.
+
+   Parameters:
+     * partition (optional) - drouting partition
+     * rule_id - database id of the drouting rule
+     * dst_name - gateway or carrier to enable
+
+   MI FIFO Command Format:
+
+opensips-cli -x mi qr_enable_dst 14 MY-CARR-7
+opensips-cli -x mi qr_enable_dst pstn 81 MY-GW-3
+
+1.7. Exported Events
+
+1.7.1.  E_QROUTING_BAD_DST
+
+   This event may be raised during routing, asynchronously,
+   whenever a gateway's score falls below event_bad_dst_threshold.
+
+   Parameters:
+     * partition - drouting partition name
+     * rule_id - database id of the drouting rule
+     * dst_name - name of the concerned gateway or carrier
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                  Name             DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu)     92      35      3055     1920
+   2. Mihai Tiganus (@tallicamike)    49      15      2955     509
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                  Name               Commit Activity
+   1. Liviu Chircu (@liviuchircu)  Jan 2020 - Feb 2020
+   2. Mihai Tiganus (@tallicamike) Aug 2014 - Nov 2014
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu).
+
+   Documentation Copyrights:
+
+   Copyright © 2020 www.opensips-solutions.com

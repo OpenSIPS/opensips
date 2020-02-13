@@ -103,7 +103,7 @@ Chapter 1. Admin Guide
    The database url.
 
    The default value is
-   “mysql://opensips:opensipsrw@localhost/opensips”.
+   "mysql://opensips:opensipsrw@localhost/opensips".
 
    Example 1.1. Set db_url parameter
 ...
@@ -318,11 +318,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Daniel-Constantin Mierla (@miconda) 44 12 1604 1007
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 40 27 305 546
-   3. Anca Vamanu 30 5 3014 16
+   1. Daniel-Constantin Mierla (@miconda) 43 12 1604 1007
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 27 305 546
+   3. Anca Vamanu 31 5 3014 16
    4. Razvan Crainea (@razvancrainea) 17 15 31 38
-   5. Liviu Chircu (@liviuchircu) 12 9 34 59
+   5. Liviu Chircu (@liviuchircu) 11 9 34 59
    6. Henning Westerholt (@henningw) 10 7 76 105
    7. Vlad Patrascu (@rvlad-patrascu) 9 6 75 80
    8. Elena-Ramona Modroiu 4 2 68 5
@@ -382,4 +382,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2006-2008 Voice Sistem SRL
+   Copyright � 2006-2008 Voice Sistem SRL

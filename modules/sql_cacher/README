@@ -72,9 +72,9 @@ Chapter 1. Admin Guide
    configuration script.
 
    The cached data is available in the script through the
-   read-only pseudovariable “$sql_cached_value” similar to a
+   read-only pseudovariable "$sql_cached_value" similar to a
    Key-Value system. A specified column from the SQL table has the
-   role of “key” therefore the value of this column along with the
+   role of "key" therefore the value of this column along with the
    name of a required column are provided as "parameters" to the
    pseudovariable returning the appropriate value of the column.
 
@@ -105,7 +105,7 @@ Chapter 1. Admin Guide
    This parameter can be set multiple times in order to cache
    multiple SQL tables or even the same table but with a different
    configuration. The module distinguishes those different entries
-   by an “id” string.
+   by an "id" string.
 
    The caching entry is specified via this parameter that has it's
    own subparameters. Each of those parameters are separated by a
@@ -119,7 +119,7 @@ Chapter 1. Admin Guide
      * db_url : the URL of the SQL database
      * cachedb_url : the URL of the CacheDB database
      * table : SQL database table name
-     * key : SQL database column name of the “key” column
+     * key : SQL database column name of the "key" column
      * columns : names of the columns to be cached from the SQL
        database, separated by a delimiter configured by
        columns_delimiter.
@@ -128,10 +128,10 @@ Chapter 1. Admin Guide
      * on_demand : specifies the type of caching:
           + 0 : full caching
           + 1 : on demand
-       If not present, default value is “0”
+       If not present, default value is "0"
      * expire : expire period for the values stored in the cache
        for the on demand caching type in seconds
-       If not present, default value is “1 hour”
+       If not present, default value is "1 hour"
 
    The parameters must be given in the exact order specified
    above.
@@ -166,11 +166,11 @@ modparam("sql_cacher", "spec_delimiter", "\n")
 
 1.3.3. pvar_delimiter (string)
 
-   The delimiter to be used in the “$sql_cached_value”
+   The delimiter to be used in the "$sql_cached_value"
    pseudovariable to separate the caching id, the desired column
    name and the value of the key. It must be a single character.
 
-   The default value is “:”.
+   The default value is ":".
 
    Example 1.3. pvar_delimiter parameter usage
 
@@ -184,7 +184,7 @@ modparam("sql_cacher", "pvar_delimiter", " ")
    parameter to separate the desired columns names. It must be a
    single character.
 
-   The default value is “ ”(space).
+   The default value is " "(space).
 
    Example 1.4. columns_delimiter parameter usage
 
@@ -198,7 +198,7 @@ modparam("sql_cacher", "columns_delimiter", ",")
    tables, adjust this parameter accordingly to avoid the filling
    of OpenSIPS private memory.
 
-   The default value is “100”.
+   The default value is "100".
 
    Example 1.5. sql_fetch_nr_rows parameter usage
 
@@ -211,7 +211,7 @@ modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
    caching type in seconds. This is the longest time that deleted
    or modified data remains in cache.
 
-   The default value is “24 hours”.
+   The default value is "24 hours".
 
    Example 1.6. full_caching_expire parameter usage
 
@@ -224,7 +224,7 @@ modparam("sql_cacher", "full_caching_expire", 3600)
    expires (for full caching) the automatic reloading is
    triggered.
 
-   The default value is “60 s”.
+   The default value is "60 s".
 
    Example 1.7. reload_interval parameter usage
 
@@ -265,7 +265,7 @@ $ opensips-cli -x mi sql_cacher_reload subs_caching alice@domain.com
      * sep : separator configured by pvar_delimiter
      * id : cache entry id
      * col : name of the required column
-     * key : value of the “key” column
+     * key : value of the "key" column
 
    Example 1.9. sql_cached_value(id{sep}col{sep}key)
    pseudo-variable usage
@@ -278,9 +278,9 @@ $avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
    This section provides an usage example for the caching of an
    SQL table.
 
-   Suppose one in interested in caching the columns: “host_name”,
-   “reply_code”, “flags” and “next_domain” from the
-   “carrierfailureroute” table of the OpenSIPS database.
+   Suppose one in interested in caching the columns: "host_name",
+   "reply_code", "flags" and "next_domain" from the
+   "carrierfailureroute" table of the OpenSIPS database.
 
    Example 1.10. Example database content - carrierfailureroute
    table
@@ -296,7 +296,7 @@ $avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
 ...
 
    In the first place, the details of the caching must be provided
-   by setting the module parameter “cache_table” in the OpenSIPS
+   by setting the module parameter "cache_table" in the OpenSIPS
    configuration script.
 
    Example 1.11. Setting the cache_table parameter
@@ -309,7 +309,7 @@ key=id
 columns=host_name reply_code flags next_domain")
 
    Next, the values of the cached columns ca be accessed through
-   the “$sql_cached_value” PV.
+   the "$sql_cached_value" PV.
 
    Example 1.12. Accessing cached values
 ...
@@ -330,8 +330,8 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 84 36 3530 1092
-   2. Liviu Chircu (@liviuchircu) 23 18 166 115
+   1. Vlad Patrascu (@rvlad-patrascu) 83 36 3530 1092
+   2. Liviu Chircu (@liviuchircu) 22 18 166 115
    3. Razvan Crainea (@razvancrainea) 14 12 22 14
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 12 10
    5. Ionel Cerghit (@ionel-cerghit) 4 1 50 92
@@ -381,4 +381,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2015 www.opensips-solutions.com
+   Copyright � 2015 www.opensips-solutions.com

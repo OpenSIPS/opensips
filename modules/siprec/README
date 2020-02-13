@@ -148,7 +148,7 @@ Chapter 1. Admin Guide
      * Cannot handle Recording Sessions initiated by SRS - we do
        not support the scenario when an SRS suddently decides to
        record a call in the middle of the dialog.
-     * OpenSIPS cannot be “queried” for ongoing recording sessions
+     * OpenSIPS cannot be "queried" for ongoing recording sessions
        - this is scheduled to be implemented in further releases.
 
 1.6. Dependencies
@@ -177,7 +177,7 @@ Chapter 1. Admin Guide
    This value should correlate to the port-range configured in the
    RTPProxy Media Server.
 
-   Default value is “35000”.
+   Default value is "35000".
 
    Example 1.1. Set media_port_min parameter
 ...
@@ -190,7 +190,7 @@ modparam("siprec", "media_port_min", 10000)
    This value should correlate to the port-range configured in the
    RTPProxy Media Server.
 
-   Default value is “65000”.
+   Default value is "65000".
 
    Example 1.2. Set media_port_max parameter
 ...
@@ -306,7 +306,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 81 41 3563 655
+   1. Razvan Crainea (@razvancrainea) 82 41 3563 655
    2. Vlad Patrascu (@rvlad-patrascu) 10 5 152 134
    3. Liviu Chircu (@liviuchircu) 8 6 27 50
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
@@ -348,4 +348,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2017 www.opensips-solutions.com
+   Copyright � 2017 www.opensips-solutions.com

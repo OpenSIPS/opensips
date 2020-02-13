@@ -21,7 +21,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">28</entry>
+		<entry align="center">29</entry>
 		<entry align="center">24</entry>
 		<entry align="center">124</entry>
 		<entry align="center">128</entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Edson Gellert Schubert, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Elena-Ramona Modroiu.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>

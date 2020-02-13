@@ -223,7 +223,7 @@ modparam("mi_datagram", "trace_bwlist", "w: sip_trace")
    Indicates whether the JSONRPC responses sent through MI should
    be pretty-printed or not.
 
-   Default value is ‚Äú0 - no pretty-printing‚Äù.
+   Default value is "0 - no pretty-printing".
 
    Example 1.9. Set pretty_printing parameter
 ...
@@ -237,7 +237,7 @@ modparam("mi_fifo", "pretty_printing", 1)
 1.6. Example
 
    This is an example showing the DATAGRAM format for the
-   ‚Äúget_statistics dialog: tm:‚Äù MI commad: request.
+   "get_statistics dialog: tm:" MI commad: request.
 
    Example 1.10. DATAGRAM request
 
@@ -300,18 +300,18 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 41 32 317 295
-   2. Ancuta Onofrei 26 2 2423 252
-   3. Vlad Patrascu (@rvlad-patrascu) 23 2 189 1049
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 40 32 317 295
+   2. Ancuta Onofrei 27 2 2423 252
+   3. Vlad Patrascu (@rvlad-patrascu) 22 2 189 1049
    4. Razvan Crainea (@razvancrainea) 12 10 50 34
    5. Liviu Chircu (@liviuchircu) 9 7 21 50
    6. Daniel-Constantin Mierla (@miconda) 9 7 18 16
-   7. Ionut Ionita (@ionutrazvanionita) 7 4 252 25
+   7. Ionut Ionita (@ionutrazvanionita) 8 4 252 25
    8. Henning Westerholt (@henningw) 5 3 9 11
    9. Klaus Darilion 3 1 4 4
    10. Walter Doekes (@wdoekes) 3 1 4 4
 
-   All remaining contributors: Juli√°n Moreno Pati√±o, Konstantin
+   All remaining contributors: Juli·n Moreno PatiÒo, Konstantin
    Bokarius, Dusan Klinec, Peter Lemenkov (@lemenkov), Edson
    Gellert Schubert.
 
@@ -341,7 +341,7 @@ Chapter 3. Contributors
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   7.  Juli√°n Moreno Pati√±o                Feb 2016 - Feb 2016
+   7.  Juli·n Moreno PatiÒo                Feb 2016 - Feb 2016
    8.  Dusan Klinec                        Dec 2015 - Dec 2015
    9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
    10. Henning Westerholt (@henningw)      Aug 2007 - Jul 2008
@@ -359,11 +359,11 @@ Chapter 4. Documentation
 
    Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
    (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Juli√°n Moreno Pati√±o, Bogdan-Andrei Iancu
+   (@ionutrazvanionita), Juli·n Moreno PatiÒo, Bogdan-Andrei Iancu
    (@bogdan-iancu), Razvan Crainea (@razvancrainea), Klaus
    Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Ancuta Onofrei.
 
    Documentation Copyrights:
 
-   Copyright ¬© 2007 Voice Sistem SRL
+   Copyright © 2007 Voice Sistem SRL

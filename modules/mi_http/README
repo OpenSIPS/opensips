@@ -142,7 +142,7 @@ modparam("mi_http", "trace_bwlist", "w: sip_trace")
 1.6. Examples
 
    This is an example showing the JSON-RPC request and reply over
-   HTTP for the “ps” MI command.
+   HTTP for the "ps" MI command.
 
    Example 1.4. JSON-RPC request
 
@@ -173,7 +173,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Stephane Alnet 20 5 1265 233
-   2. Vlad Patrascu (@rvlad-patrascu) 20 3 170 814
+   2. Vlad Patrascu (@rvlad-patrascu) 19 3 170 814
    3. Razvan Crainea (@razvancrainea) 15 12 171 34
    4. Ionut Ionita (@ionutrazvanionita) 14 10 273 52
    5. Liviu Chircu (@liviuchircu) 9 7 30 36
@@ -224,4 +224,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2013 shimaore.net
+   Copyright � 2013 shimaore.net

@@ -41,8 +41,8 @@ unixodbc Module
 
    List of Examples
 
-   1.1. Set the “auto_reconnect” parameter
-   1.2. Set the “use_escape_common” parameter
+   1.1. Set the "auto_reconnect" parameter
+   1.2. Set the "use_escape_common" parameter
 
 Chapter 1. Admin Guide
 
@@ -77,9 +77,9 @@ Chapter 1. Admin Guide
 
    Turns on or off the auto_reconnect mode.
 
-   Default value is “1”, this means it is enabled.
+   Default value is "1", this means it is enabled.
 
-   Example 1.1. Set the “auto_reconnect” parameter
+   Example 1.1. Set the "auto_reconnect" parameter
 ...
 modparam("db_unixodbc", "auto_reconnect", 0)
 ...
@@ -95,9 +95,9 @@ modparam("db_unixodbc", "auto_reconnect", 0)
    begin and end of a value, escape other characters ...). It
    prevents against SQL injection.
 
-   Default value is “0” (0 = disabled; 1 = enabled).
+   Default value is "0" (0 = disabled; 1 = enabled).
 
-   Example 1.2. Set the “use_escape_common” parameter
+   Example 1.2. Set the "use_escape_common" parameter
 ...
 modparam("db_unixodbc", "use_escape_common", 1)
 ...
@@ -159,9 +159,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Henning Westerholt (@henningw) 47 22 385 1129
+   1. Henning Westerholt (@henningw) 45 22 385 1129
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 44 31 617 418
-   3. Marco Lorrai 22 1 2660 0
+   3. Marco Lorrai 23 1 2660 0
    4. Daniel-Constantin Mierla (@miconda) 20 15 221 140
    5. Liviu Chircu (@liviuchircu) 18 10 136 313
    6. Razvan Crainea (@razvancrainea) 8 6 51 14
@@ -226,4 +226,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2005-2006 Marco Lorrai
+   Copyright � 2005-2006 Marco Lorrai

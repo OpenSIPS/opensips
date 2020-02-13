@@ -193,7 +193,7 @@ alice@example    server     server     bob@example   watcher@example
    confirmed as often you might want to pickup a call if the
    originall callee is already busy in a call.
 
-   Default value is “0”.
+   Default value is "0".
 
    Example 1.1. Set parameter
 ...
@@ -218,7 +218,7 @@ Chapter 2. Contributors
    5. Walter Doekes (@wdoekes) 7 4 66 82
    6. Ovidiu Sas (@ovidiusas) 6 4 78 18
    7. shiningstarj 4 2 2 2
-   8. Angel Marin 3 1 123 1
+   8. Angel Marin 4 1 123 1
    9. Anca Vamanu 3 1 14 18
    10. Vallimamod Abdullah 3 1 4 3
 
@@ -271,7 +271,7 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2008 Klaus Darilion, IPCom (Module implementation
+   Copyright � 2008 Klaus Darilion, IPCom (Module implementation
    was partly sponsored by Silver Server (www.sil.at))
 
-   Copyright © 2007 Juha Heinanen
+   Copyright � 2007 Juha Heinanen

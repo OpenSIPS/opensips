@@ -185,7 +185,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 33 14 2076 59
+   1. Liviu Chircu (@liviuchircu) 32 14 2076 59
    2. Razvan Crainea (@razvancrainea) 8 6 12 9
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 8 5 28 63
    4. Vlad Patrascu (@rvlad-patrascu) 6 4 28 28
@@ -229,4 +229,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2013 www.opensips-solutions.com
+   Copyright © 2013 www.opensips-solutions.com

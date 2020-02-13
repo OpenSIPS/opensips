@@ -270,7 +270,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ovidiu Sas (@ovidiusas) 70 31 4389 206
+   1. Ovidiu Sas (@ovidiusas) 71 31 4389 206
    2. Liviu Chircu (@liviuchircu) 14 12 38 54
    3. Razvan Crainea (@razvancrainea) 13 11 30 31
    4. Vlad Patrascu (@rvlad-patrascu) 6 4 21 19
@@ -322,4 +322,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2012-2013 VoIP Embedded, Inc.
+   Copyright © 2012-2013 VoIP Embedded, Inc.

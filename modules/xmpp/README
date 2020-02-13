@@ -342,9 +342,9 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Daniel-Constantin Mierla (@miconda) 65 16 5988 76
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 27 21 117 242
-   3. Anca Vamanu 21 9 438 398
+   1. Daniel-Constantin Mierla (@miconda) 67 16 5988 76
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 26 21 117 242
+   3. Anca Vamanu 20 9 438 398
    4. Liviu Chircu (@liviuchircu) 12 9 52 92
    5. Razvan Crainea (@razvancrainea) 9 7 31 23
    6. Henning Westerholt (@henningw) 5 3 13 13
@@ -406,4 +406,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2006-2008 Voice Sistem SRL
+   Copyright © 2006-2008 Voice Sistem SRL

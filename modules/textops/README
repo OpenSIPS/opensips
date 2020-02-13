@@ -78,7 +78,7 @@ Chapter 1. Admin Guide
 1.1.1. Known Limitations
 
    search ignores folded lines. For example,
-   search(‚Äú(From|f):.*@foo.bar‚Äù) doesn't match the following From
+   search("(From|f):.*@foo.bar") doesn't match the following From
    header field:
 From: medabeda
  <sip:medameda@foo.bar>;tag=1234
@@ -368,14 +368,14 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 56 43 440 475
-   2. Razvan Crainea (@razvancrainea) 42 6 16 1952
-   3. Daniel-Constantin Mierla (@miconda) 40 28 938 201
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 55 43 440 475
+   2. Daniel-Constantin Mierla (@miconda) 40 28 938 201
+   3. Razvan Crainea (@razvancrainea) 39 6 16 1952
    4. Andrei Dragus 32 15 1540 196
    5. Andrei Pelinescu-Onciul 28 21 446 134
    6. Jiri Kuthan (@jiriatipteldotorg) 18 14 293 45
-   7. Liviu Chircu (@liviuchircu) 12 9 32 58
-   8. Jan Janak (@janakj) 11 6 496 27
+   7. Jan Janak (@janakj) 12 6 496 27
+   8. Liviu Chircu (@liviuchircu) 11 9 32 58
    9. Vlad Patrascu (@rvlad-patrascu) 10 5 129 147
    10. Juha Heinanen (@juha-h) 8 5 210 8
 
@@ -383,7 +383,7 @@ Chapter 2. Contributors
    Westerholt (@henningw), Ovidiu Sas (@ovidiusas), Anca Vamanu,
    Marc Haisenko, Andreas Heise, Klaus Darilion, Vlad Paiu
    (@vladpaiu), Andreas Granig, Hugues Mitonneau, Konstantin
-   Bokarius, Sa√∫l Ibarra Corretg√© (@saghul), Peter Lemenkov
+   Bokarius, Sa˙l Ibarra CorretgÈ (@saghul), Peter Lemenkov
    (@lemenkov), Edson Gellert Schubert, Maksym Sobolyev
    (@sobomax), Christophe Sollet (@csollet).
 
@@ -418,7 +418,7 @@ Chapter 2. Contributors
    9.  Vlad Paiu (@vladpaiu)               Oct 2010 - Oct 2010
    10. Andrei Dragus                       Jul 2009 - Aug 2010
 
-   All remaining contributors: Sa√∫l Ibarra Corretg√© (@saghul),
+   All remaining contributors: Sa˙l Ibarra CorretgÈ (@saghul),
    Hugues Mitonneau, Andreas Granig, Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Henning Westerholt (@henningw), Juha Heinanen (@juha-h),
@@ -445,4 +445,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright ¬© 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
