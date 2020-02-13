@@ -27,8 +27,10 @@ int media_session_resume_dlg(struct media_session_leg *msl);
 
 int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody);
 
-int media_session_b2b_end(struct media_session_leg *msl);
+int media_session_ack(struct media_session_leg *msl);
 
-int media_session_end(struct media_session *ms, int legs, int nohold);
+int media_session_req(struct media_session_leg *msl, const char *method);
+
+int media_session_end(struct media_session *ms, int legs, int nohold, int proxied);
 
 #endif /* _MEDIA_UTILS_H_ */

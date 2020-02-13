@@ -235,7 +235,9 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 				call. By default, the other participant leg is put on hold.
 			</para>
 			<para>
-				<emphasis>Note</emphasis> Not implemented yet!
+				Can be called for an in-dialog request, such as a re-INVITE (for
+				example when putting an entity on hold), or for an INFO request
+				(triggered for example by a DTMF).
 			</para>
 			<para>
 				Parameters:
@@ -248,12 +250,13 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 					<emphasis>leg</emphasis> (string, optional) - the leg where the
 						new media SDP will be pushed. Possible values are
 						<emphasis>caller</emphasis> and <emphasis>callee</emphasis>.
-						If missing, the direction of the indialog request is used.
+						If missing, the module considers it is an hold re-INVITE,
+						and exchanges the media SDP of the other leg.
 				</para></listitem>
 				<listitem><para>
 					<emphasis>body</emphasis> (string, optional) - custom body used
-						for the generated INVITE. If missing, the body of the current
-						request is used.
+						for the generated INVITE. If missing, the body stored in the
+						dialog associated with the involved leg will be used.
 				</para></listitem>
 				<listitem><para>
 					<emphasis>headers</emphasis> (string, optional) - optional
@@ -356,6 +359,12 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 					<emphasis>nohold</emphasis> (integer, optional) - if set to true,
 						and the other participant is envolved in a different media
 						exchange, the current leg is no longer put on hold.
+						<emphasis>Note:</emphasis> if the request that terminates
+						the media exchange is a re-INVITE within the dialog, this
+						function will not un-hold the other leg, as the re-INVITE
+						itself should be relayed further to do that. This behavior
+						can be changed by explicitely setting the
+						<emphasis>nohold</emphasis> parameter
 				</para></listitem>
 				</itemizedlist>
 			</para>

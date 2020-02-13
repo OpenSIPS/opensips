@@ -40,6 +40,8 @@ static int fixup_media_leg(void **param);
 static int fixup_media_leg_both(void **param);
 
 static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void *param);
+static int b2b_media_client_notify(struct sip_msg *msg, str *key, int type, void *param);
+static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info);
 
 static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -91,7 +93,7 @@ static cmd_export_t cmds[] = {
 		{0,0,0}},
 		REQUEST_ROUTE},
 	{"media_terminate",(cmd_function)media_terminate, {
-		{CMD_PARAM_STR,fixup_media_leg,0}, /* leg */
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
 		{0,0,0}},
 		REQUEST_ROUTE},
@@ -254,11 +256,125 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg)
 	return -1;
 }
 
+static inline client_info_t *media_get_client_info(struct sip_msg *msg,
+		str *uri, str *hdrs, str *body)
+{
+	static client_info_t ci;
+
+	memset(&ci, 0, sizeof ci);
+
+	ci.method.s = INVITE;
+	ci.method.len = INVITE_LEN;
+	ci.req_uri = *uri;
+	ci.to_uri = ci.req_uri;
+	ci.from_uri = ci.req_uri;
+	ci.extra_headers = hdrs;
+	ci.body = body;
+	ci.send_sock = msg->force_send_socket;
+	if (!msg->force_send_socket) {
+		union sockaddr_union tmp;
+		ci.send_sock = uri2sock(msg, uri, &tmp, PROTO_NONE);
+		if (!ci.send_sock)
+			return NULL;
+	} else {
+		ci.send_sock = msg->force_send_socket;
+	}
+
+	ci.local_contact.s = contact_builder(ci.send_sock, &ci.local_contact.len);
+	return &ci;
+}
+
+struct media_session_tm_param {
+	struct cell *t;
+	int leg;
+};
+
 static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 		str *body, str *headers, int *nohold)
 {
-	LM_WARN("not implemented yet!\n");
-	return -1;
+	str hack;
+	struct cell *t = NULL;
+	struct dlg_cell *dlg;
+	struct media_session_leg *msl;
+	struct media_session_tm_param *p;
+	static client_info_t *ci;
+	str sbody;
+	str *b2b_key;
+	int req_leg;
+
+	/* if we have an indialog re-invite, we need to respond to it after we get
+	 * the SDP - so we need to store the transaction until we have a new body
+	 */
+	if (msg->REQ_METHOD == METHOD_INVITE) {
+		media_tm.t_newtran(msg);
+		t = media_tm.t_gett();
+	}
+
+	dlg = media_dlg.get_dlg();
+	if (!dlg) {
+		LM_WARN("dialog does not exist! please engage this function "
+				"after creating/matching the dialog!\n");
+		return -1;
+	}
+	if (media_dlg.get_direction() == DLG_DIR_DOWNSTREAM)
+		req_leg = DLG_CALLER_LEG;
+	else
+		req_leg = callee_idx(dlg);
+	if (leg == MEDIA_LEG_UNSPEC) {
+		/* media not specified - use the current leg */
+		if (req_leg == DLG_CALLER_LEG)
+			leg = MEDIA_LEG_CALLEE;
+		else
+			leg = MEDIA_LEG_CALLER;
+	}
+	if (!body) {
+		sbody = dlg_get_out_sdp(dlg, req_leg);
+		body = &sbody;
+	}
+
+	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_EXCHANGE, leg,
+			((nohold && *nohold)?1:0));
+	if (!msl) {
+		LM_ERR("cannot create new exchange leg!\n");
+		return -2;
+	}
+	if ((ci = media_get_client_info(msg, uri, headers, body)) == NULL) {
+		LM_ERR("could not create client!\n");
+		goto destroy;
+	}
+	hack.s = (char *)&msl;
+	hack.len = sizeof(void *);
+	MSL_REF(msl);
+	if (t) {
+		p = shm_malloc(sizeof(struct media_session_tm_param));
+		if (p) {
+			p->t = t;
+			p->leg = req_leg;
+
+			media_tm.ref_cell(t); /* ref the cell to be able to reply */
+			MSL_REF(msl); /* make sure the media session leg does not dissapear either */
+			msl->params = p;
+		} else {
+			LM_WARN("could not allocate media session tm param!\n");
+		}
+	}
+	b2b_key = media_b2b.client_new(ci, b2b_media_client_notify,
+			b2b_media_confirm, &hack);
+	if (!b2b_key) {
+		LM_ERR("could not create b2b client!\n");
+		goto destroy;
+	}
+	if (shm_str_dup(&msl->b2b_key, b2b_key) < 0) {
+		LM_ERR("could not copy b2b client key\n");
+		/* key is not yet stored, so cannot be deleted */
+		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1);
+		goto destroy;
+	}
+	msl->b2b_entity = B2B_CLIENT;
+	return 1;
+destroy:
+	MSL_UNREF(msl);
+	return -2;
 }
 
 #define MEDIA_SESSION_REPLY_PREP(_rd, _msl) \
@@ -411,8 +527,251 @@ unref:
 
 static int media_terminate(struct sip_msg *msg, int leg, int *nohold)
 {
-	LM_WARN("not implemented yet!\n");
+	struct dlg_cell *dlg;
+	struct media_session *ms;
+	struct cell *t = NULL;
+	int proxied;
+
+	dlg = media_dlg.get_dlg();
+	if (!dlg) {
+		LM_WARN("dialog does not exist! please engage this function "
+				"after creating/matching the dialog!\n");
+		return -1;
+	}
+	if (leg == MEDIA_LEG_UNSPEC)
+		leg = MEDIA_LEG_BOTH;
+	ms = media_session_get(dlg);
+	if (!ms) {
+		LM_WARN("could not find media session for dialog %.*s\n",
+				dlg->callid.len, dlg->callid.s);
+		return -1;
+	}
+	proxied = 0;
+	if (msg->REQ_METHOD == METHOD_INVITE) {
+		media_tm.t_newtran(msg);
+		t = media_tm.t_gett();
+		if (t && !nohold) {
+			/* we have a transaction, and we were triggered by a proxied
+			 * invite, therefore we should let this invite go through and
+			 * resume the call
+			 */
+			proxied = 1;
+		}
+	}
+	if (media_session_end(ms,leg, ((nohold && *nohold)?1:0), proxied) < 0) {
+		LM_ERR("could not terminate media session!\n");
+		return -2;
+	}
+	return 1;
+}
+
+static str *get_dlg_headers(struct dlg_cell *dlg, int dleg)
+{
+	static str content_type = str_init("Content-Type: application/sdp\r\n");
+	static str contact_start = str_init("Contact: <");
+	static str contact_end = str_init(">\r\n");
+	static str hdrs;
+	char *p;
+	int sleg = other_leg(dlg, dleg);
+
+	if (dlg->legs[dleg].adv_contact.len)
+		hdrs.len =  dlg->legs[dleg].adv_contact.len;
+	else
+		hdrs.len = contact_start.len +
+			dlg->legs[sleg].contact.len +
+			contact_end.len;
+	hdrs.len += content_type.len;
+	hdrs.s = pkg_malloc(hdrs.len);
+	if (!hdrs.s) {
+		LM_ERR("No more pkg for extra headers \n");
+		return 0;
+	}
+	p = hdrs.s;
+	if (dlg->legs[dleg].adv_contact.len) {
+		memcpy(p, dlg->legs[dleg].adv_contact.s,
+				dlg->legs[dleg].adv_contact.len);
+
+		p += dlg->legs[dleg].adv_contact.len;
+	} else {
+		memcpy(p, contact_start.s, contact_start.len);
+		p += contact_start.len;
+		memcpy(p, dlg->legs[sleg].contact.s,
+				dlg->legs[sleg].contact.len);
+
+		p += dlg->legs[sleg].contact.len;
+		memcpy(p, contact_end.s, contact_end.len);
+		p += contact_end.len;
+	}
+	memcpy(p, content_type.s, content_type.len);
+	p += content_type.len;
+	return &hdrs;
+}
+
+static int handle_media_session_reply(struct media_session_leg *msl, struct sip_msg *msg)
+{
+	/* we end up here with a request that has to be forwarded to
+	 * one of the participants
+	 */
+	int ret;
+	str *hdrs;
+	str body, *pbody;
+	str ok = str_init("OK");
+	struct dlg_cell *dlg;
+	struct media_session_tm_param *p = msl->params;
+
+	/* all good now :D */
+	if (get_body(msg, &body) < 0 || body.len == 0) {
+		LM_WARN("no body to exchange media with!\n");
+		return -1;
+	}
+	dlg = msl->ms->dlg;
+	if (!p) {
+		/* here we were triggered outside of a request - simply reinvite the
+		 * other leg with the new body */
+		ret = media_session_reinvite(msl, MEDIA_SESSION_DLG_LEG(msl), &body);
+		if (!msl->nohold && !media_session_other_leg(msl)) {
+			/* we need to put the other party on hold */
+			pbody = media_session_get_hold_sdp(msl);
+			if (pbody) {
+				if (media_session_reinvite(msl,
+						MEDIA_SESSION_DLG_OTHER_LEG(msl), pbody) < 0)
+					LM_ERR("could not copy send indialog request for hold\n");
+				pkg_free(pbody->s);
+			}
+		}
+		return 0;
+	}
+	/* if we have params, this means that the request was
+	 * triggered in the context of a transaction, so we have to
+	 * reply to that transaction
+	 */
+	msl->params = NULL;
+	if ((p->leg == DLG_CALLER_LEG && msl->leg == MEDIA_LEG_CALLER) ||
+		(p->leg != DLG_CALLER_LEG && msl->leg == MEDIA_LEG_CALLEE)) {
+		/* if we have media on the same leg that triggered the request,
+		 * then we have to send the body to that leg, in reply */
+		ret = media_tm.t_reply_with_body(p->t, 200, &ok,
+				&body, NULL, &dlg->legs[p->leg].tag);
+
+		if (!msl->nohold && !media_session_other_leg(msl)) {
+			/* we need to put the other party on hold */
+			pbody = media_session_get_hold_sdp(msl);
+			if (pbody) {
+				if (media_session_reinvite(msl,
+						MEDIA_SESSION_DLG_OTHER_LEG(msl), pbody) < 0)
+					LM_ERR("could not copy send indialog request for hold\n");
+				pkg_free(pbody->s);
+			}
+		}
+
+	} else {
+		/* we have a differet leg, so we need to request in the oposite
+		 * direction */
+		ret = media_session_reinvite(msl, other_leg(dlg, p->leg), &body);
+		hdrs = get_dlg_headers(dlg, p->leg);
+		if (!msl->nohold && !media_session_other_leg(msl)) {
+			/* we need to put the other party on hold */
+			pbody = media_session_get_hold_sdp(msl);
+			if (media_tm.t_reply_with_body(p->t, 200, &ok,
+					pbody, hdrs, &dlg->legs[other_leg(dlg, p->leg)].tag) < 0)
+				LM_ERR("could not copy send indialog reply for hold\n");
+			pkg_free(pbody->s);
+		} else {
+			body = dlg_get_out_sdp(dlg, other_leg(dlg, p->leg));
+			if (media_tm.t_reply_with_body(p->t, 200, &ok,
+					&body, hdrs, &dlg->legs[other_leg(dlg, p->leg)].tag) < 0)
+				LM_ERR("could not copy send indialog reply for hold\n");
+		}
+		pkg_free(hdrs->s);
+	}
+	MSL_UNREF(msl);
+	media_tm.unref_cell(p->t);
+	shm_free(p);
+	return ret;
+}
+
+
+static int b2b_media_client_notify(struct sip_msg *msg, str *key, int type, void *param)
+{
+	str reason;
+	b2b_rpl_data_t reply_data;
+	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
+
+	if (type == B2B_REQUEST) {
+		switch (msg->REQ_METHOD) {
+			case METHOD_ACK:
+				return 0;
+			case METHOD_BYE:
+				LM_DBG("media server ended the playback for %.*s\n",
+						key->len, key->s);
+				MEDIA_SESSION_REPLY_PREP(&reply_data, msl);
+				reply_data.method = METHOD_BYE;
+				reply_data.code = 200;
+				reason.s = "OK";
+				reason.len = 2;
+				reply_data.text = &reason;
+				if (media_b2b.send_reply(&reply_data) < 0)
+					LM_ERR("could not confirm session ending!\n");
+
+				if (media_session_resume_dlg(msl) < 0)
+					LM_ERR("could not resume media session!\n");
+
+				/* should be last unref */
+				MSL_UNREF(msl);
+
+				return 0;
+			default:
+				LM_DBG("unexpected method %d for %.*s\n", msg->REQ_METHOD,
+						key->len, key->s);
+				return -1;
+		}
+	} else {
+		if (msg->REPLY_STATUS < 200) /* don't care about provisional replies */
+			return 0;
+
+		if (parse_headers(msg, HDR_CSEQ_F, 0) < 0) {
+			LM_ERR("could not parse reply cseq!\n");
+			return -1;
+		}
+		switch (get_cseq(msg)->method_id) {
+			case METHOD_INVITE:
+				if (msg->REPLY_STATUS >= 300) {
+					LM_ERR("could not stream media due to negative reply %d\n",
+							msg->REPLY_STATUS);
+					goto drop_leg;
+				}
+				media_session_req(msl, ACK);
+				if (handle_media_session_reply(msl, msg) < 0) {
+					LM_ERR("could not establish media exchange!\n");
+					goto terminate;
+				}
+				/* successfully processed reply */
+				MSL_UNREF(msl);
+				break;
+			case METHOD_BYE:
+				/* nothing to do now, just absorb! */
+				return 0;
+			default:
+				LM_DBG("unexpected reply with status %d for %.*s\n",
+						msg->REPLY_STATUS, key->len, key->s);
+				return -1;
+		}
+	}
+	return 0;
+terminate:
+	media_session_req(msl, BYE);
+drop_leg:
+	MSL_UNREF(msl);
+	media_session_leg_free(msl);
 	return -1;
+}
+
+static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info)
+{
+	/* TODO: copy from info fromtag, totag, callid
+	struct media_session_leg *msl = *(struct media_session_leg **)((str *)key)->s;
+	*/
+	return 0;
 }
 
 static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void *param)
@@ -422,13 +781,8 @@ static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void
 	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
 
 	if (type == B2B_REPLY) {
-		if (msg->REQ_METHOD == METHOD_BYE) {
-			LM_DBG("final BYE for %.*s\n", key->len, key->s);
-			/* TODO: handle final BYE */
-		} else {
-			LM_DBG("unexpected method %d for %.*s\n", msg->REQ_METHOD,
-					key->len, key->s);
-		}
+			LM_DBG("unexpected reply with status %d for %.*s\n",
+					msg->REPLY_STATUS, key->len, key->s);
 	} else {
 		switch (msg->REQ_METHOD) {
 			case METHOD_ACK:
@@ -454,8 +808,8 @@ static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void
 				break;
 			/* TODO: handle re-invite? */
 			default:
-				LM_DBG("unexpected reply for method %d for %.*s\n",
-						msg->REQ_METHOD, key->len, key->s);
+				LM_DBG("unexpected method %d for %.*s\n", msg->REQ_METHOD,
+						key->len, key->s);
 				return -1;
 		}
 	}
@@ -523,7 +877,7 @@ static mi_response_t *mi_media_terminate(const mi_params_t *params,
 	}
 
 	/* all good - implement the logic now */
-	if (media_session_end(ms, media_leg, hold) < 0) {
+	if (media_session_end(ms, media_leg, hold, 0) < 0) {
 		media_dlg.dlg_unref(dlg, 1);
 		return init_mi_error(500, MI_SSTR("Terminate failed"));
 	}

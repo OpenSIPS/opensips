@@ -120,7 +120,7 @@ static void media_session_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_
 	if (!ms)
 		return;
 
-	media_session_end(ms, MEDIA_LEG_BOTH, 0);
+	media_session_end(ms, MEDIA_LEG_BOTH, 0, 0);
 }
 
 struct media_session *media_session_create(struct dlg_cell *dlg)

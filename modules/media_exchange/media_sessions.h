@@ -44,6 +44,7 @@ struct media_session_leg {
 	int nohold;
 	enum b2b_entity_type b2b_entity;
 	struct media_session_leg *next;
+	void *params;
 };
 
 struct media_session {

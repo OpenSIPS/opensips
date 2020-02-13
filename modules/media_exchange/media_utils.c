@@ -103,33 +103,34 @@ int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody)
 			&inv, leg, &body, &ct_sdp, NULL, NULL);
 }
 
-int media_session_b2b_end(struct media_session_leg *msl)
+int media_session_req(struct media_session_leg *msl, const char *method)
 {
 	struct b2b_req_data req;
-	str bye = str_init(BYE);
+	str m;
+	init_str(&m, method);
 
 	memset(&req, 0, sizeof(req));
 	req.et = msl->b2b_entity;
 	req.b2b_key = &msl->b2b_key;
-	req.method = &bye;
+	req.method = &m;
 	req.no_cb = 1; /* do not call callback */
 
 	if (media_b2b.send_request(&req) < 0) {
-		LM_ERR("Cannot end recording session for key %.*s\n",
+		LM_ERR("Cannot send %s to b2b entity key %.*s\n", method,
 				req.b2b_key->len, req.b2b_key->s);
 		return -1;
 	}
 	return 0;
 }
 
-static int media_session_leg_end(struct media_session_leg *msl, int nohold)
+static int media_session_leg_end(struct media_session_leg *msl, int nohold, int proxied)
 {
 	int ret = 0;
 	str *body = NULL;
 	struct media_session_leg *omsl;
 
 	/* end the leg towards media server */
-	if (media_session_b2b_end(msl) < 0)
+	if (media_session_req(msl, BYE) < 0)
 		ret = -1;
 
 	/* if the call is ongoing, we need to manipulate its participants too */
@@ -148,7 +149,7 @@ static int media_session_leg_end(struct media_session_leg *msl, int nohold)
 			}
 		}
 
-		if (media_session_reinvite(msl, MEDIA_SESSION_DLG_LEG(msl), body) < 0)
+		if (!proxied && media_session_reinvite(msl, MEDIA_SESSION_DLG_LEG(msl), body) < 0)
 			ret = -2;
 		if (body)
 			pkg_free(body->s);
@@ -157,7 +158,7 @@ static int media_session_leg_end(struct media_session_leg *msl, int nohold)
 	return ret;
 }
 
-int media_session_end(struct media_session *ms, int leg, int nohold)
+int media_session_end(struct media_session *ms, int leg, int nohold, int proxied)
 {
 	int ret = 0;
 	struct media_session_leg *msl, *nmsl;
@@ -167,7 +168,7 @@ int media_session_end(struct media_session *ms, int leg, int nohold)
 		for (msl = ms->legs; msl; msl = nmsl) {
 			nmsl = msl->next;
 			/* we do not put anything on hold here */
-			if (media_session_leg_end(msl, 1) < 0)
+			if (media_session_leg_end(msl, 1, proxied) < 0)
 				ret = -1;
 		}
 		goto release;
@@ -179,7 +180,7 @@ int media_session_end(struct media_session *ms, int leg, int nohold)
 		LM_DBG("could not find the %d leg!\n", leg);
 		return -1;
 	}
-	if (media_session_leg_end(msl, nohold) < 0)
+	if (media_session_leg_end(msl, nohold, proxied) < 0)
 		ret = -1;
 release:
 	media_session_release(ms, 1/* unlock */);
