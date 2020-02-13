@@ -64,7 +64,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|ONREPLY_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
