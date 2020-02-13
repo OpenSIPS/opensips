@@ -504,9 +504,14 @@ static void tm_update_recording(struct cell *t, int type, struct tmcb_params *ps
 
 void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 {
+	str body;
 	struct src_sess *ss;
 
-	if (!is_invite(t) || ps->code < 200 || ps->code >= 300)
+	if (!is_invite(t) || ps->code >= 300)
+		return;
+
+	/* check if we have a reply with body */
+	if (get_body(ps->rpl, &body) != 0 || body.len==0)
 		return;
 
 	ss = (struct src_sess *)*ps->param;
@@ -514,7 +519,7 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 	SIPREC_LOCK(ss);
 	/* if session has been started, do not start it again */
 	if (ss->flags & SIPREC_STARTED)
-		LM_WARN("Session %p (%s) already started!\n", ss, ss->uuid);
+		LM_DBG("Session %p (%s) already started!\n", ss, ss->uuid);
 	else if (src_start_recording(ps->rpl, ss) < 0)
 		LM_ERR("cannot start recording!\n");
 	SIPREC_UNLOCK(ss);
