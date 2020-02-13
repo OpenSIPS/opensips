@@ -744,8 +744,8 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 				*poll_events = POLLOUT;
 			return 0;
 		default:
-			LM_ERR("TLS connection to %s:%d write failed\n",
-				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+			LM_ERR("TLS connection to %s:%d write failed (%d:%d:%d)\n",
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port, err, ret, errno);
 			LM_ERR("TLS write error:\n");
 			c->state = S_CONN_BAD;
 			tls_print_errstack();
