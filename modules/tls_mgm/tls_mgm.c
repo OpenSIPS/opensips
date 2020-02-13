@@ -1205,6 +1205,7 @@ static int init_tls_dom(struct tls_domain *d)
 		LM_DBG("no method for tls domain '%.*s', using default\n",
 				d->name.len, ZSW(d->name.s));
 		d->method = tls_default_method;
+		d->method_max = tls_default_method;
 	}
 
 	if (!d->cert.s) {
