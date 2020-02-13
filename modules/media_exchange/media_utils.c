@@ -165,12 +165,18 @@ int media_session_end(struct media_session *ms, int leg, int nohold, int proxied
 
 	MEDIA_SESSION_LOCK(ms);
 	if (leg == MEDIA_LEG_BOTH) {
-		for (msl = ms->legs; msl; msl = nmsl) {
-			nmsl = msl->next;
-			/* we do not put anything on hold here */
-			if (media_session_leg_end(msl, 1, proxied) < 0)
-				ret = -1;
+		msl = ms->legs;
+		nmsl = msl->next;
+		if (nmsl) {
+			/* we will end both legs, so there's no reason to put the other
+			 * one on hold, if we're going to resume the sessions for both
+			 */
+			nohold = 1;
 		}
+		if (media_session_leg_end(msl, nohold, proxied) < 0)
+			ret = -1;
+		if (nmsl && media_session_leg_end(nmsl, nohold, proxied) < 0)
+			ret = -1;
 		goto release;
 	}
 	/* only one leg - search for it */

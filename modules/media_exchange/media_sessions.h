@@ -57,8 +57,10 @@ struct media_session {
 #define MEDIA_SESSION_LOCK(_ms) lock_get(&(_ms)->lock)
 #define MEDIA_SESSION_UNLOCK(_ms) lock_release(&(_ms)->lock)
 
+#define DLG_MEDIA_SESSION_LEG(_dlg, _leg) \
+	(_leg == MEDIA_LEG_CALLER?DLG_CALLER_LEG:callee_idx(_dlg))
 #define MEDIA_SESSION_DLG_LEG(_msl) \
-	(_msl->leg == MEDIA_LEG_CALLER?DLG_CALLER_LEG:callee_idx(_msl->ms->dlg))
+	DLG_MEDIA_SESSION_LEG(_msl->ms->dlg, _msl->leg)
 #define MEDIA_SESSION_DLG_OTHER_LEG(_msl) \
 	(other_leg(_msl->ms->dlg, MEDIA_SESSION_DLG_LEG(_msl)))
 

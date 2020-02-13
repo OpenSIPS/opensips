@@ -344,9 +344,6 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 				hold.
 			</para>
 			<para>
-				<emphasis>Note</emphasis> Not implemented yet!
-			</para>
-			<para>
 				Parameters:
 				<itemizedlist>
 				<listitem><para>

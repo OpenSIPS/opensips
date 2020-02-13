@@ -256,7 +256,7 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg)
 	return -1;
 }
 
-static inline client_info_t *media_get_client_info(struct sip_msg *msg,
+static inline client_info_t *media_get_client_info(struct socket_info *si,
 		str *uri, str *hdrs, str *body)
 {
 	static client_info_t ci;
@@ -270,17 +270,9 @@ static inline client_info_t *media_get_client_info(struct sip_msg *msg,
 	ci.from_uri = ci.req_uri;
 	ci.extra_headers = hdrs;
 	ci.body = body;
-	ci.send_sock = msg->force_send_socket;
-	if (!msg->force_send_socket) {
-		union sockaddr_union tmp;
-		ci.send_sock = uri2sock(msg, uri, &tmp, PROTO_NONE);
-		if (!ci.send_sock)
-			return NULL;
-	} else {
-		ci.send_sock = msg->force_send_socket;
-	}
+	ci.send_sock = si;
 
-	ci.local_contact.s = contact_builder(ci.send_sock, &ci.local_contact.len);
+	ci.local_contact.s = contact_builder(si, &ci.local_contact.len);
 	return &ci;
 }
 
@@ -289,18 +281,67 @@ struct media_session_tm_param {
 	int leg;
 };
 
+static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cell *dlg,
+		str *uri, int leg, str *body, str *headers, int nohold,
+		struct media_session_tm_param *p)
+{
+	str hack;
+	struct media_session_leg *msl;
+	static client_info_t *ci;
+	str *b2b_key;
+
+	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_EXCHANGE, leg, nohold);
+	if (!msl) {
+		LM_ERR("cannot create new exchange leg!\n");
+		return -2;
+	}
+	if ((ci = media_get_client_info(si, uri, headers, body)) == NULL) {
+		LM_ERR("could not create client!\n");
+		goto destroy;
+	}
+	if (p) {
+			media_tm.ref_cell(p->t); /* ref the cell to be able to reply */
+			MSL_REF(msl); /* make sure the media session leg does not dissapear either */
+			msl->params = p;
+	}
+
+	hack.s = (char *)&msl;
+	hack.len = sizeof(void *);
+	MSL_REF(msl);
+	b2b_key = media_b2b.client_new(ci, b2b_media_client_notify,
+			b2b_media_confirm, &hack);
+	if (!b2b_key) {
+		LM_ERR("could not create b2b client!\n");
+		goto unref;
+	}
+	if (shm_str_dup(&msl->b2b_key, b2b_key) < 0) {
+		LM_ERR("could not copy b2b client key\n");
+		/* key is not yet stored, so cannot be deleted */
+		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1);
+		goto unref;
+	}
+	msl->b2b_entity = B2B_CLIENT;
+	return 1;
+unref:
+	if (p) {
+		MSL_UNREF(msl);
+		media_tm.unref_cell(p->t);
+		msl->params = NULL;
+	}
+destroy:
+	MSL_UNREF(msl);
+	return -2;
+}
+
 static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 		str *body, str *headers, int *nohold)
 {
-	str hack;
 	struct cell *t = NULL;
 	struct dlg_cell *dlg;
-	struct media_session_leg *msl;
-	struct media_session_tm_param *p;
-	static client_info_t *ci;
 	str sbody;
-	str *b2b_key;
 	int req_leg;
+	struct socket_info *si;
+	struct media_session_tm_param *p = NULL;
 
 	/* if we have an indialog re-invite, we need to respond to it after we get
 	 * the SDP - so we need to store the transaction until we have a new body
@@ -332,49 +373,34 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 		body = &sbody;
 	}
 
-	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_EXCHANGE, leg,
-			((nohold && *nohold)?1:0));
-	if (!msl) {
-		LM_ERR("cannot create new exchange leg!\n");
-		return -2;
+	if (!msg->force_send_socket) {
+		union sockaddr_union tmp;
+		si = uri2sock(msg, uri, &tmp, PROTO_NONE);
+		if (!si) {
+			LM_ERR("could not find suitable socket for originating "
+					"traffic to %.*s\n", uri->len, uri->s);
+			return -2;
+		}
+	} else {
+		si = msg->force_send_socket;
 	}
-	if ((ci = media_get_client_info(msg, uri, headers, body)) == NULL) {
-		LM_ERR("could not create client!\n");
-		goto destroy;
-	}
-	hack.s = (char *)&msl;
-	hack.len = sizeof(void *);
-	MSL_REF(msl);
+
 	if (t) {
 		p = shm_malloc(sizeof(struct media_session_tm_param));
 		if (p) {
 			p->t = t;
 			p->leg = req_leg;
-
-			media_tm.ref_cell(t); /* ref the cell to be able to reply */
-			MSL_REF(msl); /* make sure the media session leg does not dissapear either */
-			msl->params = p;
 		} else {
 			LM_WARN("could not allocate media session tm param!\n");
 		}
 	}
-	b2b_key = media_b2b.client_new(ci, b2b_media_client_notify,
-			b2b_media_confirm, &hack);
-	if (!b2b_key) {
-		LM_ERR("could not create b2b client!\n");
-		goto destroy;
+	if (handle_media_exchange_from_uri(si, dlg, uri, leg,
+			body, headers, ((nohold && *nohold)?1:0), p) < 0) {
+		if (p)
+			shm_free(p);
+		return -3;
 	}
-	if (shm_str_dup(&msl->b2b_key, b2b_key) < 0) {
-		LM_ERR("could not copy b2b client key\n");
-		/* key is not yet stored, so cannot be deleted */
-		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1);
-		goto destroy;
-	}
-	msl->b2b_entity = B2B_CLIENT;
 	return 1;
-destroy:
-	MSL_UNREF(msl);
-	return -2;
 }
 
 #define MEDIA_SESSION_REPLY_PREP(_rd, _msl) \
@@ -826,14 +852,69 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	LM_WARN("not implemented yet!\n");
-	return NULL;
+	int nohold;
+	int media_leg;
+	str callid, leg, uri;
+	str body, shdrs, *hdrs;
+	struct dlg_cell *dlg;
+	struct socket_info *si;
+	union sockaddr_union tmp;
+
+	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "uri", &uri.s, &uri.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "leg", &leg.s, &leg.len) < 0)
+		return init_mi_param_error();
+
+	switch (try_get_mi_int_param(params, "nohold", &nohold)) {
+		case -1:
+			nohold = 0;
+		case 0:
+			break;
+		default:
+			return init_mi_param_error();
+	}
+	if (try_get_mi_string_param(params, "headers", &shdrs.s, &shdrs.len) < 0)
+		hdrs = NULL;
+	else
+		hdrs = &shdrs;
+
+	media_leg = fixup_get_media_leg(&leg);
+	if (media_leg < 0)
+		return init_mi_error(406, MI_SSTR("invalid leg parameter"));
+
+	si = uri2sock(NULL, &uri, &tmp, PROTO_NONE);
+	if (!si)
+		return init_mi_error(500, MI_SSTR("No suitable socket"));
+
+	/* params are now ok, let's lookup the media session */
+	dlg = media_dlg.get_dlg_by_callid(&callid, 1);
+	if (!dlg)
+		return init_mi_error(404, MI_SSTR("Dialog not found"));
+
+	if (try_get_mi_string_param(params, "body", &body.s, &body.len) < 0) {
+		/* body not found - need to get the body from dialog */
+		body = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, media_leg));
+	}
+
+	if (handle_media_exchange_from_uri(si, dlg, &uri, media_leg, &body,
+			hdrs, nohold, NULL) < 0) {
+		media_dlg.dlg_unref(dlg, 1);
+		return init_mi_error(500, MI_SSTR("Could not start media session"));
+	}
+
+	/* all good now, unref the dialog as it is reffed by the ms */
+	media_dlg.dlg_unref(dlg, 1);
+	return init_mi_result_ok();
 }
 
 static mi_response_t *mi_media_terminate(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	int hold;
+	int nohold;
 	int media_leg;
 	str callid, leg;
 	struct dlg_cell *dlg;
@@ -856,9 +937,9 @@ static mi_response_t *mi_media_terminate(const mi_params_t *params,
 			return init_mi_param_error();
 	}
 
-	switch (try_get_mi_int_param(params, "hold", &hold)) {
+	switch (try_get_mi_int_param(params, "nohold", &nohold)) {
 		case -1:
-			hold = 0;
+			nohold = 0;
 		case 0:
 			break;
 		default:
@@ -877,7 +958,7 @@ static mi_response_t *mi_media_terminate(const mi_params_t *params,
 	}
 
 	/* all good - implement the logic now */
-	if (media_session_end(ms, media_leg, hold, 0) < 0) {
+	if (media_session_end(ms, media_leg, nohold, 0) < 0) {
 		media_dlg.dlg_unref(dlg, 1);
 		return init_mi_error(500, MI_SSTR("Terminate failed"));
 	}
