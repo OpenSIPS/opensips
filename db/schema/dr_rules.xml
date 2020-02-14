@@ -98,9 +98,10 @@
 		<name>sort_profile</name>
 		<type>unsigned int</type>
 		<size>10</size>
-		<default>0</default>
-		<description>The id of the sorting profile employed by the chosen algorithm. Available
-			only for qrouting now, the sorting_profile id is found in qr_profiles table.
+		<null/>
+		<description>Whenever the 'Q' (quality-based routing) sorting algorithm
+			is provided, this column must hold a profile id belonging to the
+			"qr_profiles" table.
 		</description>
 	</column>
 

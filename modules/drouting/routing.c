@@ -377,8 +377,6 @@ build_rt_info(
 
 		p = rt->pgwl;
 
-		/* TODO: should check if qr loaded */
-
 		for (i = 0; i < rt->pgwa_len; i++) {
 			if (p[i].is_carrier) {
 				rdp.rule = qr_rule;
