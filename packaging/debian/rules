@@ -208,14 +208,14 @@ SIPREC_PKGNAME = opensips-siprec-module
 SIPREC_MODULES = siprec
 SIPREC_MOD_PATH=$(addprefix modules/, $(SIPREC_MODULES))
 PYTHON_PKGNAME = opensips-python-module
-PYTHON_MODULE = python
-PYTHON_MOD_PATH=$(addprefix modules/, $(PYTHON_MODULE))
+PYTHON_MODULES = python
+PYTHON_MOD_PATH=$(addprefix modules/, $(PYTHON_MODULES))
 STIR_SHAKEN_PKGNAME = opensips-stir-shaken-module
-STIR_SHAKEN_MODULE = stir_shaken
-STIR_SHAKEN_MOD_PATH=$(addprefix modules/, $(STIR_SHAKEN_MODULE))
+STIR_SHAKEN_MODULES = stir_shaken
+STIR_SHAKEN_MOD_PATH=$(addprefix modules/, $(STIR_SHAKEN_MODULES))
 UUID_PKGNAME = opensips-uuid-module
-UUID_MODULE = uuid
-UUID_MOD_PATH=$(addprefix modules/, $(UUID_MODULE))
+UUID_MODULES = uuid
+UUID_MOD_PATH=$(addprefix modules/, $(UUID_MODULES))
 
 
 # Need this per-package variables available in environment so accessible
