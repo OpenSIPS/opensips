@@ -36,8 +36,8 @@
  * computes the score of the gateway using the warning
  * thresholds
  */
-int _qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds,
-                 str *part, int rule_id, int *disabled)
+static double _qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds,
+                           str *part, int rule_id, int *disabled)
 {
 	extern int event_bad_dst_threshold;
 	double score = 0;
@@ -117,7 +117,7 @@ set_score:
 		qr_raise_event_bad_dst(rule_id, part, gw_name);
 
 	*disabled = skip_event;
-	return 0;
+	return score;
 }
 
 
@@ -144,6 +144,7 @@ static inline double qr_score_gw(qr_gw_t *gw, const qr_rule_t *rule,
 static inline double qr_score_grp(qr_grp_t *grp, const qr_rule_t *rule,
                                   qr_thresholds_t *thr)
 {
+	qr_gw_t *gw;
 	int i, valid_gws = 0, disabled;
 	double mean = 0, score;
 
@@ -157,19 +158,23 @@ static inline double qr_score_grp(qr_grp_t *grp, const qr_rule_t *rule,
 	lock_stop_read(grp->ref_lock);
 
 	for (i = 0; i < grp->n; i++) {
-		lock_start_read(grp->gw[i]->ref_lock);
-		if (grp->gw[i]->state & QR_STATUS_DIRTY) {
-			lock_stop_read(grp->gw[i]->ref_lock);
+		gw = grp->gw[i];
 
-			score = _qr_score_gw(grp->gw[i], thr, rule->part_name,
+		lock_start_read(gw->ref_lock);
+		if (gw->state & QR_STATUS_DIRTY) {
+			lock_stop_read(gw->ref_lock);
+
+			score = _qr_score_gw(gw, thr, rule->part_name,
 			                     rule->r_id, &disabled);
 			if (!disabled) {
 				mean += score;
 				valid_gws++;
 			}
 
-		} else {
-			lock_stop_read(grp->gw[i]->ref_lock);
+		} else if (!(gw->state & QR_STATUS_DSBL)) {
+			mean += gw->score;
+			valid_gws++;
+			lock_stop_read(gw->ref_lock);
 		}
 	}
 
