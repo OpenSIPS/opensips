@@ -30,6 +30,8 @@
 #include "../../map.h"
 #include "../../mem/mem_funcs.h"
 
+#include "dr_cb_sorting.h"
+
 #define IS_DECIMAL_DIGIT(d) \
 	(((d)>='0') && ((d)<= '9'))
 
@@ -105,8 +107,8 @@ struct pcr_ {
 	str id;
 	/* flags */
 	unsigned int flags;
-	/* the id of the sorting algorithm from the sort_cb_type enum */
-	unsigned char sort_alg;
+	/* gateway sorting algorithm */
+	sort_cb_type sort_alg;
 	/* array of pointers into the PSTN gw list */
 	pgw_list_t *pgwl;
 	/* length of the PSTN gw array */
@@ -138,8 +140,8 @@ typedef struct rt_info_ {
 	unsigned short ref_cnt;
 	/* handler used by qr for accounting (actually qr_rule_t *) */
 	void *qr_handler;
-	/* sorting algorithm for the destinations inside rule */
-	unsigned char sort_alg;
+	/* sorting algorithm for the destinations */
+	sort_cb_type sort_alg;
 } rt_info_t;
 
 typedef struct rt_info_wrp_ {

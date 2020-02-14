@@ -34,7 +34,7 @@ struct dr_head_cbl {
 
 #define POINTER_CLOSED_MARKER  ((void *)(-1))
 
-unsigned char sort_algs[N_MAX_SORT_CBS] = {0,'O','W','Q'};
+unsigned char sort_algs[N_MAX_SORT_CBS] = {'N', 'W', 'Q'};
 
 /* the array with all the cb lists (per type) */
 static struct dr_callback *dr_cbs[DRCB_MAX];
@@ -111,7 +111,7 @@ int insert_drcb(struct dr_head_cbl **dr_cb_list, struct dr_callback *cb,
 int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
                    dr_param_free_cb ff)
 {
-	long int cb_sort_index = 0;
+	sort_cb_type alg = (sort_cb_type)param;
 	struct dr_callback *cb;
 
 	cb = pkg_malloc(sizeof *cb);
@@ -135,22 +135,15 @@ int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
 		cb->next = dr_cbs[type];
 		dr_cbs[type] = cb;
 	} else {
-		if (!param) {
-			LM_ERR("no index supplied for sort callback registered at dr\n");
+		if (alg >= N_MAX_SORT_CBS) {
+			LM_ERR("invalid sorting algorithm: %u\n", alg);
 			goto error;
 		}
 
-		cb_sort_index = (long int)param;
-		if (cb_sort_index >= N_MAX_SORT_CBS) {
-			LM_ERR("Sort cbs array not large enough to accommodate cb at dr\n");
-			goto error;
-		}
+		if (dr_sort_cbs[alg])
+			LM_WARN("sort callback for alg %u will be overwritten\n", alg);
 
-		if (dr_sort_cbs[cb_sort_index])
-			LM_WARN("sort callback at index '%ld' will be overwritten\n",
-				cb_sort_index);
-
-		dr_sort_cbs[cb_sort_index] = cb;
+		dr_sort_cbs[alg] = cb;
 	}
 
 	return 0;

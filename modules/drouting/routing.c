@@ -234,10 +234,8 @@ int add_carrier(char *id, int flags, char *sort_alg, char *gwlist, char *attrs,
 										int state, rt_data_t *rd,
 										osips_malloc_f mf, osips_free_f ff)
 {
-	pcr_t *cr = NULL;
+	pcr_t *cr;
 	unsigned int i;
-	unsigned char * sort_p, n_alg;
-
 	str key;
 
 	/* allocate a new carrier structure */
@@ -268,20 +266,7 @@ int add_carrier(char *id, int flags, char *sort_alg, char *gwlist, char *attrs,
 
 	/* copy integer fields */
 	cr->flags = flags;
-
-	sort_p = memchr(sort_algs, sort_alg[0], N_MAX_SORT_CBS);
-	if(sort_p == NULL) {
-		n_alg = 1;
-	} else {
-		n_alg = (unsigned char)(sort_p - sort_algs);
-
-		if(n_alg == 0) {
-			n_alg = 1;
-		}
-	}
-
-	cr->sort_alg = n_alg;
-
+	cr->sort_alg = dr_get_sort_alg(sort_alg[0]);
 
 	/* set state */
 	if (state!=0)
@@ -345,8 +330,7 @@ build_rt_info(
 	struct dr_add_rule_params arp;
 	struct dr_reg_init_rule_params irp;
 	pgw_list_t *p = NULL;
-
-	unsigned char * sort_p, n_alg;
+	sort_cb_type alg;
 
 	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t) +
 		(attrs?strlen(attrs):0) + (route_idx?strlen(route_idx)+1:0) );
@@ -361,17 +345,8 @@ build_rt_info(
 	rt->time_rec = trec;
 
 	rt->route_idx = route_idx;
-	sort_p = memchr(sort_algs, sort_alg[0], N_MAX_SORT_CBS);
-	if(sort_p == NULL) {
-		n_alg = 1;
-	} else {
-		n_alg = (unsigned char)(sort_p - sort_algs);
-		if(n_alg == 0) {
-			n_alg = 1;
-		}
-	}
-
-	rt->sort_alg = n_alg;
+	alg = dr_get_sort_alg(sort_alg[0]);
+	rt->sort_alg = alg;
 
 	if (attrs && strlen(attrs)) {
 		rt->attrs.s = (char*)(rt+1);
@@ -390,7 +365,7 @@ build_rt_info(
 		}
 	}
 
-	if (n_alg == 3) { /* qr sorting */
+	if (alg == QR_BASED_SORT) {
 		irp.n_dst = rt->pgwa_len;
 		irp.r_id = id;
 		irp.qr_profile = qr_profile;

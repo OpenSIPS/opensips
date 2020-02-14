@@ -26,21 +26,29 @@
 
 #include "prefix_tree.h"
 
+struct rt_info_;
+
 /* if new callbacks are added you must increase the N_MAX_SORT_CBS
  * constant accordingly, add the letter which will be provided in the db
  * to the sort_algs array, add the corresponding sorting algorithm id to the
  * enum an register the callback to the dr_sort_cbs in the appropriate position*/
 
-/* The maximum number of sorting functions provided by dr */
-#define N_MAX_SORT_CBS 4
+typedef enum {
+	NO_SORT,
+	WEIGHT_BASED_SORT,
+	QR_BASED_SORT,
 
-typedef enum { NO_SORT = 1, WEIGHT_BASED_SORT = 2, QR_BASED_SORT = 3}
-	sort_cb_type;
-
+	N_MAX_SORT_CBS = 3
+} sort_cb_type;
 
 /* used for mapping the db information (sort_alg = a letter) to an index
  * in the sort_cb_type enum */
 extern unsigned char sort_algs[N_MAX_SORT_CBS];
+
+static inline sort_cb_type dr_get_sort_alg(char alg) {
+	unsigned char *p = memchr(sort_algs, alg, N_MAX_SORT_CBS);
+	return !p ? NO_SORT : (sort_cb_type)(p - sort_algs);
+}
 
 /* parameters needed for the registration of a gw */
 struct dr_reg_param {
@@ -66,7 +74,7 @@ struct dr_acc_call_params {
 };
 
 struct dr_sort_params {
-	rt_info_t *dr_rule; /* dr_rule which contains the dst to be sorted */
+	struct rt_info_ *dr_rule; /* dr_rule which contains the dst to be sorted */
 
 	/* -1 for rule gwlist sort, carrier dst index for carrier gwlist sort */
 	unsigned short dst_idx;
