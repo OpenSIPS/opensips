@@ -437,14 +437,14 @@ int store_sngtc_info(struct dlg_cell *dlg, str *body)
 	memset(info, 0, sizeof(*info));
 
 	lock_init(&info->lock);
-	info->caller_sdp.s = shm_malloc(body->len + 2);
+	info->caller_sdp.s = shm_malloc(body->len);
 	if (!info->caller_sdp.s) {
 		LM_ERR("no more shm\n");
 		goto exit;
 	}
 
-	info->caller_sdp.len = body->len + 2; /* SDP parser needs starting CRLF */
-	memcpy(info->caller_sdp.s, body->s - 2, info->caller_sdp.len);
+	info->caller_sdp.len = body->len; /* SDP parser needs starting CRLF */
+	memcpy(info->caller_sdp.s, body->s, info->caller_sdp.len);
 
 	st.s   = (void *)&info;
 	st.len = sizeof(void *);

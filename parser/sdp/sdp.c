@@ -392,9 +392,22 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 	 * unconditionally.
 	 */
 	bodylimit = body.s + body.len;
-	v1p = find_sdp_line(body.s, bodylimit, 'v');
-	if (v1p == NULL) {
-		LM_ERR("no sessions in SDP\n");
+	if (body.len < 2) {
+		LM_ERR("body too short!\n");
+		return -1;
+	}
+	v1p = body.s;
+	/* skip over the first initial \r\n  (optional) */
+	if (*v1p == '\r' || *v1p == '\n')
+		v1p++;
+	if (*v1p == '\r' || *v1p == '\n')
+		v1p++;
+	if (v1p + 1 >= bodylimit) {
+		LM_ERR("body too short %ld!\n", bodylimit - v1p);
+		return -1;
+	}
+	if (*v1p != 'v' || *(v1p+1) != '=') {
+		LM_ERR("invalid SDP start: [%c%c]\n", *v1p, *(v1p + 1));
 		return -1;
 	}
 	/* get session origin */
