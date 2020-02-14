@@ -129,4 +129,14 @@ struct media_session_leg *media_session_get_leg(struct media_session *ms,
 struct media_session_leg *media_session_other_leg(
 		struct media_session_leg *msl);
 
+int media_session_resume_dlg(struct media_session_leg *msl);
+
+int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody);
+
+int media_session_ack(struct media_session_leg *msl);
+
+int media_session_req(struct media_session_leg *msl, const char *method);
+
+int media_session_end(struct media_session *ms, int legs, int nohold, int proxied);
+
 #endif /* _MEDIA_SESSION_H_ */

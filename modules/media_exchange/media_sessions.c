@@ -205,3 +205,119 @@ struct media_session_leg *media_session_other_leg(
 			return it;
 	return NULL;
 }
+
+
+int media_session_resume_dlg(struct media_session_leg *msl)
+{
+	int first_leg = MEDIA_SESSION_DLG_LEG(msl);
+	if (media_session_reinvite(msl, first_leg, NULL) < 0)
+		LM_ERR("could not resume call for leg %d\n", first_leg);
+	if (!msl->nohold && media_session_reinvite(msl,
+			other_leg(msl->ms->dlg, first_leg), NULL) < 0)
+		LM_ERR("could not resume call for leg %d\n",
+				other_leg(msl->ms->dlg, first_leg));
+	return 0;
+}
+
+int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody)
+{
+	static str inv = str_init("INVITE");
+
+	str body;
+	if (pbody)
+		body = *pbody;
+	else
+		body = dlg_get_out_sdp(msl->ms->dlg, leg);
+	return media_dlg.send_indialog_request(msl->ms->dlg,
+			&inv, leg, &body, &content_type_sdp, NULL, NULL);
+}
+
+int media_session_req(struct media_session_leg *msl, const char *method)
+{
+	struct b2b_req_data req;
+	str m;
+	init_str(&m, method);
+
+	memset(&req, 0, sizeof(req));
+	req.et = msl->b2b_entity;
+	req.b2b_key = &msl->b2b_key;
+	req.method = &m;
+	req.no_cb = 1; /* do not call callback */
+
+	if (media_b2b.send_request(&req) < 0) {
+		LM_ERR("Cannot send %s to b2b entity key %.*s\n", method,
+				req.b2b_key->len, req.b2b_key->s);
+		return -1;
+	}
+	return 0;
+}
+
+static int media_session_leg_end(struct media_session_leg *msl, int nohold, int proxied)
+{
+	int ret = 0;
+	str *body = NULL;
+	struct media_session_leg *omsl;
+
+	/* end the leg towards media server */
+	if (media_session_req(msl, BYE) < 0)
+		ret = -1;
+
+	/* if the call is ongoing, we need to manipulate its participants too */
+	if (msl->ms && msl->ms->dlg && msl->ms->dlg->state < DLG_STATE_DELETED) {
+		if (!nohold) {
+			/* we need to put on hold the leg, if there's a different
+			 * media session going on on the other leg */
+			omsl = media_session_other_leg(msl);
+			if (omsl) {
+				body = media_session_get_hold_sdp(omsl);
+			} else if (!msl->nohold) {
+				/* there's no other session going on there - check to see if
+				 * the other leg has been put on hold */
+				if (media_session_reinvite(msl, MEDIA_SESSION_DLG_OTHER_LEG(msl), NULL) < 0)
+					ret = -2;
+			}
+		}
+
+		if (!proxied && media_session_reinvite(msl, MEDIA_SESSION_DLG_LEG(msl), body) < 0)
+			ret = -2;
+		if (body)
+			pkg_free(body->s);
+	}
+	MSL_UNREF_NORELEASE(msl);
+	return ret;
+}
+
+int media_session_end(struct media_session *ms, int leg, int nohold, int proxied)
+{
+	int ret = 0;
+	struct media_session_leg *msl, *nmsl;
+
+	MEDIA_SESSION_LOCK(ms);
+	if (leg == MEDIA_LEG_BOTH) {
+		msl = ms->legs;
+		nmsl = msl->next;
+		if (nmsl) {
+			/* we will end both legs, so there's no reason to put the other
+			 * one on hold, if we're going to resume the sessions for both
+			 */
+			nohold = 1;
+		}
+		if (media_session_leg_end(msl, nohold, proxied) < 0)
+			ret = -1;
+		if (nmsl && media_session_leg_end(nmsl, nohold, proxied) < 0)
+			ret = -1;
+		goto release;
+	}
+	/* only one leg - search for it */
+	msl = media_session_get_leg(ms, leg);
+	if (!msl) {
+		MEDIA_SESSION_UNLOCK(ms);
+		LM_DBG("could not find the %d leg!\n", leg);
+		return -1;
+	}
+	if (media_session_leg_end(msl, nohold, proxied) < 0)
+		ret = -1;
+release:
+	media_session_release(ms, 1/* unlock */);
+	return ret;
+}
