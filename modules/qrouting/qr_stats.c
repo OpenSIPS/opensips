@@ -93,10 +93,6 @@ qr_gw_t *qr_create_gw(void *dst)
 	}
 
 	gw->dr_gw = dst; /* save the pointer to the dr gateway */
-
-	/* save gateway to rule */
-	//rule->dest[n_dst].type = QR_DST_GW;
-	//rule->dest[n_dst].gw = gw;
 	return gw;
 error:
 	if (gw)

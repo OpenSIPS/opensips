@@ -25,18 +25,6 @@
 #include "../drouting/prefix_tree.h"
 #include "qr_stats.h"
 
-
-/*
- * dictionary-like-structure which contains
- * a sorted list of gateways
- */
-typedef struct qr_sorted_list {
-	int dst_idx;
-	struct qr_sorted_list *next;
-}qr_sorted_list_t;
-
-int qr_add_dst_to_list(qr_sorted_list_t **sorted_list, int dst_idx, int score);
-
 /* compute answer seizure ratio for gw */
 static inline double asr(qr_gw_t *gw) {
 	double asr;
@@ -102,14 +90,5 @@ static inline double acd(qr_gw_t *gw) {
 	return acd;
 }
 
-/*
- * computes the score of the gateway using the warning
- * thresholds
- */
-void qr_score(qr_gw_t *gw, qr_thresholds_t * thresholds);/*
- * inserts destination in sorted list
- */
 void qr_sort(void *param);
-int qr_insert_dst(qr_sorted_list_t **sorted, qr_rule_t *rule,
-		int cr_id, int gw_id);
 #endif

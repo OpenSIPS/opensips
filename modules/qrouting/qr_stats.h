@@ -96,7 +96,7 @@ typedef struct qr_gw {
 	qr_stats_t current_interval; /* the current interval */
 	qr_stats_t summed_stats; /* the sum of the @lru_interval list */
 	char state;
-	int score; /* the score of the gateway (based on thresholds) */
+	double score; /* score of the gateway, based on weights & thresholds */
 	rw_lock_t *ref_lock; /* lock for protecting the overall statistics (history) */
 	gen_lock_t *acc_lock; /* lock for protecting the current interval */
 } qr_gw_t;

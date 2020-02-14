@@ -270,20 +270,21 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 		++(*n_sampled); /* the number of intervals sampled */
 
 	lock_start_read(qr_main_list_rwl);
-	if(*qr_main_list != NULL) { /* if there is a list */
-		for(j = 0; j < (*qr_main_list)->n_parts; j++) { /* for every partition */
-			for(it = (*qr_main_list)->qr_rules_start[j];
-					it != NULL; it = it->next) { /* for every rule */
-				for(i = 0; i < it->n; i++) { /* for every destination */
-					if(it->dest[i].type == QR_DST_GW) {
+
+	if (!*qr_main_list) {
+		/* for every partition, rule and destination */
+		for (j = 0; j < (*qr_main_list)->n_parts; j++) {
+			for (it = (*qr_main_list)->qr_rules_start[j]; it; it = it->next) {
+				for (i = 0; i < it->n; i++) {
+					if (it->dest[i].type == QR_DST_GW)
 						update_gw_stats(it->dest[i].gw);
-					} else {
+					else
 						update_grp_stats(it->dest[i].grp);
-					}
 				}
 			}
 		}
 	}
+
 	lock_stop_read(qr_main_list_rwl);
 }
 
