@@ -328,7 +328,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (!strcasecmp(federation_mode_str, "disabled")) {
+	if (!federation_mode_str || !strcasecmp(federation_mode_str, "disabled")) {
 		cluster_federation = FEDERATION_DISABLED;
 	} else if (!strcasecmp(federation_mode_str, "on-demand-sharing")) {
 		cluster_federation = FEDERATION_ON_DEMAND;
