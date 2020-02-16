@@ -82,7 +82,7 @@ Warning
    Otherwise it is possible for the decoding step to fail/produce
    wrong results.
 
-   Default value is “*”.
+   Default value is "*".
 
    Example 1.1. Set db_url parameter
 ...
@@ -108,7 +108,7 @@ modparam("mangler", "contact_flds_separator", "-")
        located inside SDP package in lines c=IN IP4 ip. This lines
        will only be mangled if located IP is in the network
        described by this pattern. Examples of valid patterns are
-       “10.0.0.0/255.0.0.0” or “10.0.0.0/8” etc.
+       "10.0.0.0/255.0.0.0" or "10.0.0.0/8" etc.
      * newip (string) - the new IP to be put inside SDP package if
        old IP address matches pattern.
 
@@ -274,4 +274,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2003 FhG FOKUS
+   Copyright � 2003 FhG FOKUS

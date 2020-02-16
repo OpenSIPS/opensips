@@ -105,7 +105,7 @@ Chapter 1. Admin Guide
    An SQL database URL which the module will use in order to load
    a set of FreeSWITCH ESL sockets and their event subscriptions.
 
-   Default value is “NULL” (DB support disabled).
+   Default value is "NULL" (DB support disabled).
 
    Example 1.1. Setting the db_url parameter
 ...
@@ -117,7 +117,7 @@ modparam("freeswitch_scripting", "db_url", "dbdriver://username:password
 
    The SQL table name for this module.
 
-   Default value is “freeswitch”.
+   Default value is "freeswitch".
 
    Example 1.2. Setting the db_table parameter
 ...
@@ -128,7 +128,7 @@ modparam("freeswitch_scripting", "db_table", "freeswitch_sockets")
 
    The SQL column name for the "username" ESL connect information.
 
-   Default value is “username”.
+   Default value is "username".
 
    Example 1.3. Setting the db_col_username parameter
 ...
@@ -139,7 +139,7 @@ modparam("freeswitch_scripting", "db_col_username", "user")
 
    The SQL column name for the "password" ESL connect information.
 
-   Default value is “password”.
+   Default value is "password".
 
    Example 1.4. Setting the db_col_password parameter
 ...
@@ -150,7 +150,7 @@ modparam("freeswitch_scripting", "db_col_password", "pass")
 
    The SQL column name for the "ip" ESL connect information.
 
-   Default value is “ip”.
+   Default value is "ip".
 
    Example 1.5. Setting the db_col_ip parameter
 ...
@@ -161,7 +161,7 @@ modparam("freeswitch_scripting", "db_col_ip", "ip_addr")
 
    The SQL column name for the "port" ESL connect information.
 
-   Default value is “port”.
+   Default value is "port".
 
    Example 1.6. Setting the db_col_port parameter
 ...
@@ -173,7 +173,7 @@ modparam("freeswitch_scripting", "db_col_port", "tcp_port")
    The SQL column name for the comma-separated, case-sensitive
    FreeSWITCH event names which OpenSIPS will subscribe to.
 
-   Default value is “events_csv”.
+   Default value is "events_csv".
 
    Example 1.7. Setting the db_col_events parameter
 ...
@@ -366,4 +366,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2017 www.opensips-solutions.com
+   Copyright � 2017 www.opensips-solutions.com

@@ -97,40 +97,40 @@ dispatcher Module
 
    List of Examples
 
-   1.1. Set the 'default' partition's“db_url” parameter
-   1.2. Set the 'default' partition's “attrs_avp” parameter
+   1.1. Set the 'default' partition's"db_url" parameter
+   1.2. Set the 'default' partition's "attrs_avp" parameter
    1.3. Use $avp(273) for hashing:
    1.4. Use combination of PVs for hashing:
-   1.5. Set the “setid_pvar” parameter
-   1.6. Set the “ds_ping_method” parameter
-   1.7. Set the “ds_ping_from” parameter
-   1.8. Set the “ds_ping_interval” parameter
-   1.9. Set the “ds_ping_maxfwd” parameter
-   1.10. Set the “ds_probing_sock” parameter
-   1.11. Set the “ds_probing_threshold” parameter
-   1.12. Set the “ds_probing_mode” parameter
-   1.13. Set the “ds_probing_list” parameter
-   1.14. Set the 'default' partition's “ds_define_blacklist”
+   1.5. Set the "setid_pvar" parameter
+   1.6. Set the "ds_ping_method" parameter
+   1.7. Set the "ds_ping_from" parameter
+   1.8. Set the "ds_ping_interval" parameter
+   1.9. Set the "ds_ping_maxfwd" parameter
+   1.10. Set the "ds_probing_sock" parameter
+   1.11. Set the "ds_probing_threshold" parameter
+   1.12. Set the "ds_probing_mode" parameter
+   1.13. Set the "ds_probing_list" parameter
+   1.14. Set the 'default' partition's "ds_define_blacklist"
           parameter
 
-   1.15. Set the “options_reply_codes” parameter
-   1.16. Set the 'default' partition's “dst_avp” parameter
-   1.17. Set the 'default' partition's “grp_avp” parameter
-   1.18. Set the 'default' partition's “cnt_avp” parameter
-   1.19. Set the 'default' partition's “sock_avp” parameter
-   1.20. Set the “pvar_algo_pattern” parameter
+   1.15. Set the "options_reply_codes" parameter
+   1.16. Set the 'default' partition's "dst_avp" parameter
+   1.17. Set the 'default' partition's "grp_avp" parameter
+   1.18. Set the 'default' partition's "cnt_avp" parameter
+   1.19. Set the 'default' partition's "sock_avp" parameter
+   1.20. Set the "pvar_algo_pattern" parameter
    1.21. Set the persistent_state parameter
    1.22. Set cluster_id parameter
    1.23. Set cluster_sharing_tag parameter
    1.24. Create a new partition called 'part2'
-   1.25. Set the 'default' partition's “table_name” parameter
-   1.26. Set “setid_col” parameter
-   1.27. Set “destination_col” parameter
-   1.28. Set “state_col” parameter
-   1.29. Set “weight_col” parameter
-   1.30. Set “priority_col” parameter
-   1.31. Set “attrs_col” parameter
-   1.32. Set “socket_col” parameter
+   1.25. Set the 'default' partition's "table_name" parameter
+   1.26. Set "setid_col" parameter
+   1.27. Set "destination_col" parameter
+   1.28. Set "state_col" parameter
+   1.29. Set "weight_col" parameter
+   1.30. Set "priority_col" parameter
+   1.31. Set "attrs_col" parameter
+   1.32. Set "socket_col" parameter
    1.33. Set the fetch_freeswitch_load parameter
    1.34. Set the max_freeswitch_weight parameter
    1.35. ds_select_dst usage
@@ -208,10 +208,10 @@ Chapter 1. Admin Guide
    start (he value of global default db_url is not inherited here!
    ).
 
-   Default value is “NULL”. At least one db_url should be defined
+   Default value is "NULL". At least one db_url should be defined
    for the dispatcher module to work.
 
-   Example 1.1. Set the 'default' partition's“db_url” parameter
+   Example 1.1. Set the 'default' partition's"db_url" parameter
 ...
 modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database
 ")
@@ -230,9 +230,9 @@ modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database
 
 Note
 
-   Default value is “null” - don't provide ATTRIBUTEs.
+   Default value is "null" - don't provide ATTRIBUTEs.
 
-   Example 1.2. Set the 'default' partition's “attrs_avp”
+   Example 1.2. Set the 'default' partition's "attrs_avp"
    parameter
 ...
 modparam("dispatcher", "attrs_avp", "$avp(272)")
@@ -247,7 +247,7 @@ Note
    You must set this parameter if you want do hashing over custom
    message parts.
 
-   Default value is “null” - disabled.
+   Default value is "null" - disabled.
 
    Example 1.3. Use $avp(273) for hashing:
 ...
@@ -265,9 +265,9 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
    calling ds_is_in_list() without group parameter (third
    parameter).
 
-   Default value is “null” - don't set PV.
+   Default value is "null" - don't set PV.
 
-   Example 1.5. Set the “setid_pvar” parameter
+   Example 1.5. Set the "setid_pvar" parameter
 ...
 modparam("dispatcher", "setid_pvar", "$var(setid)")
 ...
@@ -278,9 +278,9 @@ modparam("dispatcher", "setid_pvar", "$var(setid)")
    probe the failed gateways. This method is only available, if
    compiled with the probing of failed gateways enabled.
 
-   Default value is “OPTIONS”.
+   Default value is "OPTIONS".
 
-   Example 1.6. Set the “ds_ping_method” parameter
+   Example 1.6. Set the "ds_ping_method" parameter
 ...
 modparam("dispatcher", "ds_ping_method", "INFO")
 ...
@@ -292,9 +292,9 @@ modparam("dispatcher", "ds_ping_method", "INFO")
    available, if compiled with the probing of failed gateways
    enabled.
 
-   Default value is “sip:dispatcher@localhost”.
+   Default value is "sip:dispatcher@localhost".
 
-   Example 1.7. Set the “ds_ping_from” parameter
+   Example 1.7. Set the "ds_ping_from" parameter
 ...
 modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 ...
@@ -303,12 +303,12 @@ modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 
    With this Method you can define the interval for sending a
    request to a failed gateway. This parameter is only used, when
-   the TM-Module is loaded. If set to “0”, the pinging of failed
+   the TM-Module is loaded. If set to "0", the pinging of failed
    requests is disabled.
 
-   Default value is “0” (disabled).
+   Default value is "0" (disabled).
 
-   Example 1.8. Set the “ds_ping_interval” parameter
+   Example 1.8. Set the "ds_ping_interval" parameter
 ...
 modparam("dispatcher", "ds_ping_interval", 30)
 ...
@@ -322,9 +322,9 @@ modparam("dispatcher", "ds_ping_interval", 30)
    Max-Forward value.
 
    The accepted values are any positive integer values, including
-   the “0” value.
+   the "0" value.
 
-   Example 1.9. Set the “ds_ping_maxfwd” parameter
+   Example 1.9. Set the "ds_ping_maxfwd" parameter
 ...
 modparam("dispatcher", "ds_ping_maxfwd", 2)
 ...
@@ -335,9 +335,9 @@ modparam("dispatcher", "ds_ping_maxfwd", 2)
    (which is used by OpenSIPS for SIP traffic) to be used (if
    multiple) for sending the probing messages from.
 
-   Default value is “NULL(none)”.
+   Default value is "NULL(none)".
 
-   Example 1.10. Set the “ds_probing_sock” parameter
+   Example 1.10. Set the "ds_probing_sock" parameter
 ...
 modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 ...
@@ -349,9 +349,9 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
    to probing. The number of attempts can be set with this
    parameter.
 
-   Default value is “3”.
+   Default value is "3".
 
-   Example 1.11. Set the “ds_probing_threshold” parameter
+   Example 1.11. Set the "ds_probing_threshold" parameter
 ...
 modparam("dispatcher", "ds_probing_threshold", 10)
 ...
@@ -364,9 +364,9 @@ modparam("dispatcher", "ds_probing_threshold", 10)
    response is 408 (timeout), an active gateway is set to PROBING
    state.
 
-   Default value is “0”.
+   Default value is "0".
 
-   Example 1.12. Set the “ds_probing_mode” parameter
+   Example 1.12. Set the "ds_probing_mode" parameter
 ...
 modparam("dispatcher", "ds_probing_mode", 1)
 ...
@@ -379,9 +379,9 @@ modparam("dispatcher", "ds_probing_mode", 1)
    want to limit which ones are responsible for probing specific
    destinations.
 
-   Default value is “NULL(none)”.
+   Default value is "NULL(none)".
 
-   Example 1.13. Set the “ds_probing_list” parameter
+   Example 1.13. Set the "ds_probing_list" parameter
 ...
 modparam("dispatcher", "ds_probing_list", "1,2,3")
 ...
@@ -396,10 +396,10 @@ modparam("dispatcher", "ds_probing_list", "1,2,3")
 
    Multiple instances of this param are allowed.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.14. Set the 'default' partition's
-   “ds_define_blacklist” parameter
+   "ds_define_blacklist" parameter
 ...
 modparam("dispatcher", "ds_define_blacklist", "list= 1,4,3")
 modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
@@ -412,9 +412,9 @@ modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
    reply codes for OPTIONS messages used for pinging, apart for
    200.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
-   Example 1.15. Set the “options_reply_codes” parameter
+   Example 1.15. Set the "options_reply_codes" parameter
 ...
 modparam("dispatcher", "options_reply_codes", "501, 403")
 ...
@@ -433,10 +433,10 @@ modparam("dispatcher", "options_reply_codes", "501, 403")
    alter other partitions.
 
    For the 'default' partition the default value is
-   “$avp(ds_dst_failover)”. For any other partition, the default
-   value is “$avp(ds_dst_failover_partitionname)”.
+   "$avp(ds_dst_failover)". For any other partition, the default
+   value is "$avp(ds_dst_failover_partitionname)".
 
-   Example 1.16. Set the 'default' partition's “dst_avp” parameter
+   Example 1.16. Set the 'default' partition's "dst_avp" parameter
 ...
 modparam("dispatcher", "dst_avp", "$avp(271)")
 ...
@@ -450,10 +450,10 @@ modparam("dispatcher", "dst_avp", "$avp(271)")
    parameter to create and alter other partitions.
 
    For the 'default' partition the default value is
-   “$avp(ds_grp_failover)”. For any other partition, the default
-   value is “$avp(ds_grp_failover_partitionname)”.
+   "$avp(ds_grp_failover)". For any other partition, the default
+   value is "$avp(ds_grp_failover_partitionname)".
 
-   Example 1.17. Set the 'default' partition's “grp_avp” parameter
+   Example 1.17. Set the 'default' partition's "grp_avp" parameter
 ...
 modparam("dispatcher", "grp_avp", "$avp(273)")
 ...
@@ -467,10 +467,10 @@ modparam("dispatcher", "grp_avp", "$avp(273)")
    create and alter other partitions.
 
    For the 'default' partition the default value is
-   “$avp(ds_cnt_failover)”. For any other partition, the default
-   value is “$avp(ds_cnt_failover_partitionname)”.
+   "$avp(ds_cnt_failover)". For any other partition, the default
+   value is "$avp(ds_cnt_failover_partitionname)".
 
-   Example 1.18. Set the 'default' partition's “cnt_avp” parameter
+   Example 1.18. Set the 'default' partition's "cnt_avp" parameter
 ...
 modparam("dispatcher", "cnt_avp", "$avp(274)")
 ...
@@ -484,10 +484,10 @@ modparam("dispatcher", "cnt_avp", "$avp(274)")
    parameter to create and alter other partitions.
 
    For the 'default' partition the default value is
-   “$avp(ds_sock_failover)”. For any other partition, the default
-   value is “$avp(ds_sock_failover_partitionname)”.
+   "$avp(ds_sock_failover)". For any other partition, the default
+   value is "$avp(ds_sock_failover_partitionname)".
 
-   Example 1.19. Set the 'default' partition's “sock_avp”
+   Example 1.19. Set the 'default' partition's "sock_avp"
    parameter
 ...
 modparam("dispatcher", "sock_avp", "$avp(275)")
@@ -498,12 +498,12 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
    This parameter is used by the PVAR(9) algorithm to specify the
    pseudovariable pattern used to detect the load of each
    destination. The name of the pseudovariable should contain the
-   string “%u”, which will be internally replaced by the module
+   string "%u", which will be internally replaced by the module
    with the uri of the destination.
 
-   Default value is “none”.
+   Default value is "none".
 
-   Example 1.20. Set the “pvar_algo_pattern” parameter
+   Example 1.20. Set the "pvar_algo_pattern" parameter
 ...
 modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 ...
@@ -513,7 +513,7 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
    Specifies whether the state column should be loaded at startup
    and flushed during runtime or not.
 
-   Default value is “1” (enabled).
+   Default value is "1" (enabled).
 
    Example 1.21. Set the persistent_state parameter
 ...
@@ -542,7 +542,7 @@ modparam("dispatcher", "persistent_state", 0)
    For more info on how to define and populate a cluster (with
    OpenSIPS nodes) see the "clusterer" module.
 
-   Default value is “0 (none)”.
+   Default value is "0 (none)".
 
    Example 1.22. Set cluster_id parameter
 ...
@@ -565,7 +565,7 @@ modparam("dispatcher", "cluster_id", 9)
    cluster will individually do the probing and share the status
    changes.
 
-   Default value is “empty (none)”.
+   Default value is "empty (none)".
 
    Example 1.23. Set cluster_sharing_tag parameter
 ...
@@ -607,9 +607,9 @@ modparam("dispatcher", "partition",
    Use the partition parameter to create and alter other
    partitions.
 
-   For every partition the default value is “dispatcher”.
+   For every partition the default value is "dispatcher".
 
-   Example 1.25. Set the 'default' partition's “table_name”
+   Example 1.25. Set the 'default' partition's "table_name"
    parameter
 ...
 modparam("dispatcher", "table_name", "my_dispatcher")
@@ -620,9 +620,9 @@ modparam("dispatcher", "table_name", "my_dispatcher")
    The column's name in the database storing the gateway's group
    id.
 
-   Default value is “setid”.
+   Default value is "setid".
 
-   Example 1.26. Set “setid_col” parameter
+   Example 1.26. Set "setid_col" parameter
 ...
 modparam("dispatcher", "setid_col", "groupid")
 ...
@@ -632,9 +632,9 @@ modparam("dispatcher", "setid_col", "groupid")
    The column's name in the database storing the destination's sip
    uri.
 
-   Default value is “destination”.
+   Default value is "destination".
 
-   Example 1.27. Set “destination_col” parameter
+   Example 1.27. Set "destination_col" parameter
 ...
 modparam("dispatcher", "destination_col", "uri")
 ...
@@ -644,9 +644,9 @@ modparam("dispatcher", "destination_col", "uri")
    The column's name in the database storing the state of the
    destination uri.
 
-   Default value is “state”.
+   Default value is "state".
 
-   Example 1.28. Set “state_col” parameter
+   Example 1.28. Set "state_col" parameter
 ...
 modparam("dispatcher", "state_col", "dststate")
 ...
@@ -656,9 +656,9 @@ modparam("dispatcher", "state_col", "dststate")
    The column's name in the database storing the weight for
    destination uri.
 
-   Default value is “weight”.
+   Default value is "weight".
 
-   Example 1.29. Set “weight_col” parameter
+   Example 1.29. Set "weight_col" parameter
 ...
 modparam("dispatcher", "weight_col", "dstweight")
 ...
@@ -668,9 +668,9 @@ modparam("dispatcher", "weight_col", "dstweight")
    The column's name in the database storing the priority for
    destination uri.
 
-   Default value is “priority”.
+   Default value is "priority".
 
-   Example 1.30. Set “priority_col” parameter
+   Example 1.30. Set "priority_col" parameter
 ...
 modparam("dispatcher", "priority_col", "dstprio")
 ...
@@ -680,9 +680,9 @@ modparam("dispatcher", "priority_col", "dstprio")
    The column's name in the database storing the attributes
    (opaque string) for destination uri.
 
-   Default value is “attrs”.
+   Default value is "attrs".
 
-   Example 1.31. Set “attrs_col” parameter
+   Example 1.31. Set "attrs_col" parameter
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
 ...
@@ -692,9 +692,9 @@ modparam("dispatcher", "attrs_col", "dstattrs")
    The column's name in the database storing the socket (as
    string) for destination uri.
 
-   Default value is “socket”.
+   Default value is "socket".
 
-   Example 1.32. Set “socket_col” parameter
+   Example 1.32. Set "socket_col" parameter
 ...
 modparam("dispatcher", "socket_col", "my_sock")
 ...
@@ -771,25 +771,25 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
        destinations
      * alg (int) - the algorithm used to select the destination
        address
-          + “0” - hash over callid
-          + “1” - hash over from uri.
-          + “2” - hash over to uri.
-          + “3” - hash over request-uri.
-          + “4” - weighted round-robin (next destination). the
+          + "0" - hash over callid
+          + "1" - hash over from uri.
+          + "2" - hash over to uri.
+          + "3" - hash over request-uri.
+          + "4" - weighted round-robin (next destination). the
             destination's weight determines how many times it is
             chosen before going to the next one
-          + “5” - hash over authorization-username
+          + "5" - hash over authorization-username
             (Proxy-Authorization or "normal" authorization). If no
             username is found, weighted round-robin is used.
-          + “6” - random (using rand()).
-          + “7” - hash over the content of PVs string. Note: This
+          + "6" - random (using rand()).
+          + "7" - hash over the content of PVs string. Note: This
             works only when the parameter hash_pvar is set.
-          + “8” - the first entry in set is chosen.
-          + “9” - The pvar_algo_pattern parameter is used to
+          + "8" - the first entry in set is chosen.
+          + "9" - The pvar_algo_pattern parameter is used to
             determine the load on each server. If the parameter is
             not specified, then the first entry in the set is
             chosen.
-          + “X” - if the algorithm is not implemented, the first
+          + "X" - if the algorithm is not implemented, the first
             entry in set is chosen.
      * flags (string, optional) - a string of flag-settings which
        tweak the function's behavior:
@@ -984,9 +984,9 @@ t2" partition
 
    Parameters:
      * state : state of the destination address
-          + “a”: active
-          + “i”: inactive
-          + “p”: probing
+          + "a": active
+          + "i": inactive
+          + "p": probing
      * group: partition name followed by colon and destination
        group id. If the partition name is omitted, the default
        partition will be used
@@ -1205,7 +1205,7 @@ Chapter 3. Contributors
    (@wdoekes), Nick Altmann (@nikbyte), Jan Janak (@janakj),
    Andrei Pelinescu-Onciul, Stanislaw Pitucha, Federico Cabiddu,
    Konstantin Bokarius, Andreas Granig, John Riordan, Aron
-   Podrigal (@ar45), Julián Moreno Patiño, Kevin McAllister, Peter
+   Podrigal (@ar45), Juli�n Moreno Pati�o, Kevin McAllister, Peter
    Lemenkov (@lemenkov), Roman Sevko, UnixDev, David Sanders,
    Edson Gellert Schubert.
 
@@ -1238,7 +1238,7 @@ Chapter 3. Contributors
    7.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
    8.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016
    9.  Ionut Ionita (@ionutrazvanionita)   Jul 2014 - May 2016
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
 
    All remaining contributors: Jarrod Baumann (@jarrodb), Ovidiu
    Sas (@ovidiusas), David Sanders, Aron Podrigal (@ar45), Andrei
@@ -1270,6 +1270,6 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2005-2010 Voice Sistem SRL
+   Copyright � 2005-2010 Voice Sistem SRL
 
-   Copyright © 2004 FhG FOKUS
+   Copyright � 2004 FhG FOKUS

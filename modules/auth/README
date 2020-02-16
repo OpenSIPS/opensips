@@ -163,7 +163,7 @@ modparam("auth", "nonce_expire", 15)   # Set nonce_expire to 15s
    Prefix to be added to Remote-Party-ID header field just before
    the URI returned from either radius or database.
 
-   Default value is “”.
+   Default value is "".
 
    Example 1.3. rpid_prefix parameter example
 modparam("auth", "rpid_prefix", "Whatever <")
@@ -174,7 +174,7 @@ modparam("auth", "rpid_prefix", "Whatever <")
    URI returned from either radius or database.
 
    Default value is
-   “;party=calling;id-type=subscriber;screen=yes”.
+   ";party=calling;id-type=subscriber;screen=yes".
 
    Example 1.4. rpid_suffix parameter example
 modparam("auth", "rpid_suffix", "@1.2.3.4>")
@@ -185,7 +185,7 @@ modparam("auth", "rpid_suffix", "@1.2.3.4>")
    to SRV records (not all SIP clients support SRV lookup), a
    subdomain of the master domain can be defined for SIP purposes
    (like sip.mydomain.net pointing to same IP address as the SRV
-   record for mydomain.net). By ignoring the realm_prefix “sip.”,
+   record for mydomain.net). By ignoring the realm_prefix "sip.",
    at authentication, sip.mydomain.net will be equivalent to
    mydomain.net .
 
@@ -204,7 +204,7 @@ modparam("auth", "realm_prefix", "sip.")
    If defined to NULL string, all RPID functions will fail at
    runtime.
 
-   Default value is “$avp(rpid)”.
+   Default value is "$avp(rpid)".
 
    Example 1.6. rpid_avp parameter example
 modparam("auth", "rpid_avp", "$avp(13)")
@@ -213,7 +213,7 @@ modparam("auth", "rpid_avp", "$avp(13)")
 
    This name of the pseudo-variable that will hold the username.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.7. username_spec parameter usage
 modparam("auth", "username_spec", "$var(username)")
@@ -222,7 +222,7 @@ modparam("auth", "username_spec", "$var(username)")
 
    This name of the pseudo-variable that will hold the password.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.8. password_spec parameter usage
 modparam("auth", "password_spec", "$avp(password)")
@@ -234,7 +234,7 @@ modparam("auth", "password_spec", "$avp(password)")
    HA1 string.
 
    If the parameter is set to 1 then the server will assume that
-   the “password_spec” pseudo-variable contains plaintext
+   the "password_spec" pseudo-variable contains plaintext
    passwords and it will calculate HA1 strings on the fly. If the
    parameter is set to 0 then the server assumes the
    pseudo-variable contains the HA1 strings directly and will not
@@ -254,7 +254,7 @@ modparam("auth", "calculate_ha1", 1)
    architecture where load is balanced by having more servers with
    the same dns name. This parameter has to be set in this case.
 
-   Default value is “0” (enabled).
+   Default value is "0" (enabled).
 
    Example 1.10. disable_nonce_check parameter usage
 modparam("auth", "disable_nonce_check", 1)
@@ -276,13 +276,13 @@ modparam("auth", "disable_nonce_check", 1)
        agent should present to the user so it can decide what
        username and password to use. Usually this is domain of the
        host the server is running on.
-       If an empty string “” is used then the server will generate
+       If an empty string "" is used then the server will generate
        it from the request. In case of REGISTER request's To
        header field, domain will be used (because this header
        field represents a user being registered), for all other
        messages From header field domain will be used.
-     * qop (int) - Value of this parameter can be either “1” or
-       “0”. When set to 1 then the server will put a qop parameter
+     * qop (int) - Value of this parameter can be either "1" or
+       "0". When set to 1 then the server will put a qop parameter
        in the challenge. When set to 0 then the server will not
        put the qop parameter in the challenge. It is recommended
        to use the qop parameter, however there are still some user
@@ -320,11 +320,11 @@ if (!www_authorize("siphub.net", "subscriber")) {
        agent should present to the user so it can decide what
        username and password to use. Usually this is domain of the
        host the server is running on.
-       If an empty string “” is used then the server will generate
-       it from the request. “From” header field domain will be
+       If an empty string "" is used then the server will generate
+       it from the request. "From" header field domain will be
        used as realm.
-     * qop (int) - Value of this parameter can be either “1” or
-       “0”. When set to 1 then the server will put a qop parameter
+     * qop (int) - Value of this parameter can be either "1" or
+       "0". When set to 1 then the server will put a qop parameter
        in the challenge. When set to 0 then the server will not
        put the qop parameter in the challenge. It is recommended
        to use the qop parameter, however there are still some user
@@ -450,7 +450,7 @@ append_rpid_hf("", ";party=calling;id-type=subscriber;screen=yes");
        agent should present to the user so he can decide what
        username and password to use. Usually this is domain of the
        host the server is running on.
-       If an empty string “” is used then the server will generate
+       If an empty string "" is used then the server will generate
        it from the request. In case of REGISTER requests To header
        field domain will be used (because this header field
        represents a user being registered), for all other messages
@@ -483,7 +483,7 @@ if (!pv_www_authorize("opensips.org")) {
        agent should present to the user so he can decide what
        username and password to use. Usually this is domain of the
        host the server is running on.
-       If an empty string “” is used then the server will generate
+       If an empty string "" is used then the server will generate
        it from the request. From header field domain will be used
        as realm.
 
@@ -577,6 +577,6 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2005 Voice Sistem SRL
+   Copyright � 2005 Voice Sistem SRL
 
-   Copyright © 2002-2003 FhG FOKUS
+   Copyright � 2002-2003 FhG FOKUS
