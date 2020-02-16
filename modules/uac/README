@@ -81,9 +81,9 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * TM - Transaction Module.
      * RR - Record-Route Module, but only if restore mode for FROM
-       URI is set to “auto”.
+       URI is set to "auto".
      * UAC_AUTH - UAC Authentication Module.
-     * Dialog Module, if “force_dialog” module parameter is
+     * Dialog Module, if "force_dialog" module parameter is
        enabled, or a dialog is created from the configuration
        script.
 
@@ -99,15 +99,15 @@ Chapter 1. Admin Guide
 
    There are 3 mode of restoring the original headers (FROM/TO)
    URI:
-     * “none” - no information about original URI is stored;
+     * "none" - no information about original URI is stored;
        restoration is not possible.
-     * “manual” - all following replies will be restored, except
+     * "manual" - all following replies will be restored, except
        for the sequential requests - these must be manually
        updated based on original URI.
-     * “auto” - all sequential requests and replies will be
+     * "auto" - all sequential requests and replies will be
        automatically updated based on stored original URI.
 
-   This parameter is optional, it's default value being “auto”.
+   This parameter is optional, it's default value being "auto".
 
    Example 1.1. Set restore_mode parameter
 ...
@@ -132,7 +132,7 @@ modparam("uac","restore_passwd","my_secret_passwd")
    Name of Record-Route header parameter that will be used to
    store (encoded) the original FROM URI.
 
-   This parameter is optional, it's default value being “vsf”.
+   This parameter is optional, it's default value being "vsf".
 
    Example 1.3. Set rr_from_store_param parameter
 ...
@@ -144,7 +144,7 @@ modparam("uac","rr_from_store_param","my_Fparam")
    Name of Record-Route header parameter that will be used to
    store (encoded) the original TO URI.
 
-   This parameter is optional, it's default value being “vst”.
+   This parameter is optional, it's default value being "vst".
 
    Example 1.4. Set rr_to_store_param parameter
 ...
@@ -357,4 +357,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright © 2005-2009 Voice Sistem SRL
+   Copyright � 2005-2009 Voice Sistem SRL

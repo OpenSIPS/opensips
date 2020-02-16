@@ -46,11 +46,11 @@ Flatstore Module
 
    List of Examples
 
-   1.1. Set “flush” parameter
-   1.2. Set “delimiter” parameter
-   1.3. Set “suffix” parameter
-   1.4. Set “prefix” parameter
-   1.5. Set “single_file” parameter
+   1.1. Set "flush" parameter
+   1.2. Set "delimiter" parameter
+   1.3. Set "suffix" parameter
+   1.4. Set "prefix" parameter
+   1.5. Set "single_file" parameter
 
 Chapter 1. Admin Guide
 
@@ -157,7 +157,7 @@ opensipsctl fifo flat_rotate
 
    Default value is 1.
 
-   Example 1.1. Set “flush” parameter
+   Example 1.1. Set "flush" parameter
 ...
 modparam("db_flatstore", "flush", 0)
 ...
@@ -168,7 +168,7 @@ modparam("db_flatstore", "flush", 0)
 
    Default value is '|'.
 
-   Example 1.2. Set “delimiter” parameter
+   Example 1.2. Set "delimiter" parameter
 ...
 modparam("db_flatstore", "delimiter", ";")
 ...
@@ -180,7 +180,7 @@ modparam("db_flatstore", "delimiter", ";")
 
    Default value is ".log".
 
-   Example 1.3. Set “suffix” parameter
+   Example 1.3. Set "suffix" parameter
 ...
 modparam("db_flatstore", "suffix", "$time(%H)")
 ...
@@ -191,7 +191,7 @@ modparam("db_flatstore", "suffix", "$time(%H)")
 
    Defaul value is none.
 
-   Example 1.4. Set “prefix” parameter
+   Example 1.4. Set "prefix" parameter
 ...
 modparam("db_flatstore", "prefix", "$time(%H)")
 ...
@@ -203,7 +203,7 @@ modparam("db_flatstore", "prefix", "$time(%H)")
 
    Default value is 0.
 
-   Example 1.5. Set “single_file” parameter
+   Example 1.5. Set "single_file" parameter
 ...
 modparam("db_flatstore", "single_file", 1)
 ...
@@ -300,4 +300,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright © 2004-2005 FhG FOKUS
+   Copyright � 2004-2005 FhG FOKUS

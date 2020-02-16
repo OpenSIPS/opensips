@@ -41,8 +41,8 @@ unixodbc Module
 
    List of Examples
 
-   1.1. Set the “auto_reconnect” parameter
-   1.2. Set the “use_escape_common” parameter
+   1.1. Set the "auto_reconnect" parameter
+   1.2. Set the "use_escape_common" parameter
 
 Chapter 1. Admin Guide
 
@@ -77,9 +77,9 @@ Chapter 1. Admin Guide
 
    Turns on or off the auto_reconnect mode.
 
-   Default value is “1”, this means it is enabled.
+   Default value is "1", this means it is enabled.
 
-   Example 1.1. Set the “auto_reconnect” parameter
+   Example 1.1. Set the "auto_reconnect" parameter
 ...
 modparam("db_unixodbc", "auto_reconnect", 0)
 ...
@@ -95,9 +95,9 @@ modparam("db_unixodbc", "auto_reconnect", 0)
    begin and end of a value, escape other characters ...). It
    prevents against SQL injection.
 
-   Default value is “0” (0 = disabled; 1 = enabled).
+   Default value is "0" (0 = disabled; 1 = enabled).
 
-   Example 1.2. Set the “use_escape_common” parameter
+   Example 1.2. Set the "use_escape_common" parameter
 ...
 modparam("db_unixodbc", "use_escape_common", 1)
 ...
@@ -224,4 +224,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright © 2005-2006 Marco Lorrai
+   Copyright � 2005-2006 Marco Lorrai

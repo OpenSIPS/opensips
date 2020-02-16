@@ -78,7 +78,7 @@ Chapter 1. Admin Guide
 1.1.1. Known Limitations
 
    search ignores folded lines. For example,
-   search(‚Äú(From|f):.*@foo.bar‚Äù) doesn't match the following From
+   search("(From|f):.*@foo.bar") doesn't match the following From
    header field:
 From: medabeda
  <sip:medameda@foo.bar>;tag=1234
@@ -378,7 +378,7 @@ Chapter 2. Contributors
    All remaining contributors: Henning Westerholt (@henningw),
    Ovidiu Sas (@ovidiusas), Anca Vamanu, Marc Haisenko, Andreas
    Heise, Klaus Darilion, Vlad Paiu (@vladpaiu), Andreas Granig,
-   Hugues Mitonneau, Konstantin Bokarius, Sa√∫l Ibarra Corretg√©
+   Hugues Mitonneau, Konstantin Bokarius, Sa˙l Ibarra CorretgÈ
    (@saghul), Edson Gellert Schubert, Maksym Sobolyev (@sobomax),
    Christophe Sollet (@csollet), Vlad Patrascu (@rvlad-patrascu).
 
@@ -411,7 +411,7 @@ Chapter 2. Contributors
    7.  Christophe Sollet (@csollet)        Dec 2010 - Dec 2010
    8.  Vlad Paiu (@vladpaiu)               Oct 2010 - Oct 2010
    9.  Andrei Dragus                       Jul 2009 - Aug 2010
-   10. Sa√∫l Ibarra Corretg√© (@saghul)      Apr 2010 - Apr 2010
+   10. Sa˙l Ibarra CorretgÈ (@saghul)      Apr 2010 - Apr 2010
 
    All remaining contributors: Hugues Mitonneau, Andreas Granig,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
@@ -439,4 +439,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright ¬© 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS

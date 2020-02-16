@@ -240,7 +240,7 @@ append_urihf("CC-Diversion: ", "\r\n");
 Note
 
    The function is also able to distinguish the compact names. For
-   exmaple “From” will match with “f”
+   exmaple "From" will match with "f"
 
    Meaning of the parameters is as follows:
      * hf_name - Header field name.(long or compact form). The
@@ -261,8 +261,8 @@ if (is_present_hf("From")) log(1, "From HF Present");
 
    Adds a time header to the reply of the request. You must use it
    before functions that are likely to send a reply, e.g., save()
-   from 'registrar' module. Header format is: “Date: %a, %d %b %Y
-   %H:%M:%S GMT”, with the legend:
+   from 'registrar' module. Header format is: "Date: %a, %d %b %Y
+   %H:%M:%S GMT", with the legend:
      * %a abbreviated week of day name (locale)
      * %d day of month as decimal number
      * %b abbreviated month name (locale)
@@ -320,7 +320,7 @@ if(is_method("OPTION|UPDATE"))
 
 1.3.10.  remove_hf(hname [,flags])
 
-   Remove from message all headers with name “hname”
+   Remove from message all headers with name "hname"
 
    Returns true if at least one header is found and removed.
 
@@ -914,7 +914,7 @@ Chapter 2. Contributors
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
    6. Ovidiu Sas (@ovidiusas) 4 2 22 1
    7. Boris Ratner 4 1 129 46
-   8. Julián Moreno Patiño 3 1 8 8
+   8. Juli�n Moreno Pati�o 3 1 8 8
    9. Fabian Gast (@fgast) 3 1 4 4
    10. Jarrod Baumann (@jarrodb) 3 1 2 2
 
@@ -950,7 +950,7 @@ Chapter 2. Contributors
    5.  Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    7.  Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
    9.  Ionut Ionita (@ionutrazvanionita)   Dec 2015 - Dec 2015
    10. Ezequiel Lovelle                    Oct 2014 - Oct 2014
 
@@ -967,10 +967,10 @@ Chapter 3. Documentation
 
    Last edited by: Liviu Chircu (@liviuchircu), Fabian Gast
    (@fgast), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
-   (@ovidiusas), Julián Moreno Patiño, Razvan Crainea
+   (@ovidiusas), Juli�n Moreno Pati�o, Razvan Crainea
    (@razvancrainea), Mihai Tiganus (@tallicamike), Vlad Paiu
    (@vladpaiu), Boris Ratner, Nick Altmann (@nikbyte).
 
    doc copyrights:
 
-   Copyright © 2003 FhG FOKUS
+   Copyright � 2003 FhG FOKUS

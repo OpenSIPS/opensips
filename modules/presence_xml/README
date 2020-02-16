@@ -97,7 +97,7 @@ Chapter 1. Admin Guide
    Note: When switching from one value to another, the watchers
    table must be emptied.
 
-   Default value is ‚Äú0‚Äù.
+   Default value is "0".
 
    Example 1.1. Set force_active parameter
 ...
@@ -115,7 +115,7 @@ modparam("presence_xml", "force_active", 1)
    also possible to have information notified even if not issuing
    any Publish (useful for services such as email, SMS, MMS).
 
-   Default value is ‚Äú0‚Äù.
+   Default value is "0".
 
    Example 1.2. Set pidf_manipulation parameter
 ...
@@ -196,7 +196,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 124 54 4745 1776
-   2. Sa√∫l Ibarra Corretg√© (@saghul) 30 9 1499 471
+   2. Sa˙l Ibarra CorretgÈ (@saghul) 30 9 1499 471
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 26 22 77 126
    4. Razvan Crainea (@razvancrainea) 13 11 31 28
    5. Liviu Chircu (@liviuchircu) 12 9 42 68
@@ -235,7 +235,7 @@ Chapter 3. Contributors
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Jun 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6.  Sa√∫l Ibarra Corretg√© (@saghul)      May 2012 - Mar 2013
+   6.  Sa˙l Ibarra CorretgÈ (@saghul)      May 2012 - Mar 2013
    7.  Anca Vamanu                         Apr 2007 - Jun 2012
    8.  Vlad Paiu (@vladpaiu)               Oct 2011 - Oct 2011
    9.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Mar 2011
@@ -254,11 +254,11 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Sa√∫l Ibarra Corretg√© (@saghul), Razvan
+   Chircu (@liviuchircu), Sa˙l Ibarra CorretgÈ (@saghul), Razvan
    Crainea (@razvancrainea), Anca Vamanu, Henning Westerholt
    (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu).
 
    doc copyrights:
 
-   Copyright ¬© 2007 Voice Sistem SRL
+   Copyright © 2007 Voice Sistem SRL

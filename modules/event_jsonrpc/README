@@ -133,7 +133,7 @@ Chapter 1. Admin Guide
    this module in a failover setup (using the event_virtual
    module), you should also set this parameter to 1/yes.
 
-   Default value is “0 (disabled)”.
+   Default value is "0 (disabled)".
 
    Example 1.1. Set sync_mode parameter
 ...
@@ -151,7 +151,7 @@ modparam("event_jsonrpc", "sync_mode", yes)
    NOTE that if the event is not using names for its parameters,
    the event will be the first parameter in the JSON-RPC command.
 
-   Default value is “1000 milliseconds = 1 second”.
+   Default value is "1000 milliseconds = 1 second".
 
    Example 1.2. Set timeout parameter
 ...
@@ -167,7 +167,7 @@ modparam("event_jsonrpc", "timeout", 200)
    of JSON object within the params that will contain the name of
    the event.
 
-   Default value is “disabled” - event is not added.
+   Default value is "disabled" - event is not added.
 
    Example 1.3. Set event_param parameter
 ...
@@ -337,4 +337,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright © 2018 www.opensips-solutions.com
+   Copyright � 2018 www.opensips-solutions.com
