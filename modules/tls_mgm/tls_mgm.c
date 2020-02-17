@@ -1565,7 +1565,7 @@ static struct {
 #define MATCH(name, field) ((field) && strncasecmp(field, (name)->s, (name)->len) == 0)
 
 
-static inline char *get_ssl_method(enum tls_method method)
+static inline char *get_ssl_method_name(enum tls_method method)
 {
 	if (method < 1 || method > SSL_VERSIONS_SIZE)
 		return "UNKNOWN";
@@ -2145,13 +2145,13 @@ static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
 				goto error;
 
 		if (d->method == d->method_max) {
-			method = get_ssl_method(d->method);
+			method = get_ssl_method_name(d->method);
 			if (add_mi_string(domain_item, MI_SSTR("METHOD"),
 					method, strlen(method)) < 0)
 						goto error;
 		} else {
 			if (add_mi_string_fmt(domain_item, MI_SSTR("METHOD"),
-					"%s-%s", get_ssl_method(d->method), get_ssl_method(d->method_max)) < 0)
+					"%s-%s", get_ssl_method_name(d->method), get_ssl_method_name(d->method_max)) < 0)
 						goto error;
 		}
 
