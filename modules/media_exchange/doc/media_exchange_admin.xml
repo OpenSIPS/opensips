@@ -9,7 +9,7 @@
 	<para>
 		This module provides the means to exchange media SDP between different
 		SIP proxied calls, and calls started or received from a Media Server.
-		The module itself does not have any media capabilities, it simply 
+		The module itself does not have any media capabilities, it simply
 		exposes primitives to exchange the SDP body between two or more different
 		calls.
 	</para>
@@ -77,7 +77,7 @@
 
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
-	<section id="siprec_modules_dependencies">
+	<section id="media_exchange_modules_dependencies">
 		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
@@ -108,7 +108,7 @@
 		</para>
 	</section>
 	
-	<section id="siprec_external_dependencies">
+	<section id="media_exchange_external_dependencies">
 		<title>External Libraries or Applications</title>
 		<para>
 		The following libraries or applications must be installed before
@@ -178,15 +178,12 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 		</section>
 		<section id="func_media_fork_from_call" xreflabel="media_fork_from_call()">
 			<title>
-			<function moreinfo="none">media_fork_from_call(callid[, leg])</function>
+			<function moreinfo="none">media_fork_from_call(callid[, leg[, medianum]])</function>
 			</title>
 			<para>
 				Starts streaming the media of an existing proxied call, identified
 				by the <emphasis>callid</emphasis> parameter to the SDP in the
 				request's body.
-			</para>
-			<para>
-				<emphasis>Note</emphasis> Not implemented yet!
 			</para>
 			<para>
 				Parameters:
@@ -202,6 +199,17 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 						missing, both legs will be streamed.
 				</para></listitem>
 				</itemizedlist>
+				<listitem><para>
+					<emphasis>medianum</emphasis> (integer, optional) - the media
+						stream that will be forked within the call. First index is 0.
+						If missing, all media streams of that leg(s) are streamed,
+						as long as the body has enough streams.
+					<para>
+						<emphasis>Note:</emphasis> RTPProxy does not do any media mixing,
+						therefore you need to make sure that the INVITE has enough SDP
+						streams to handle all the media streams selected to fork.
+					</para>
+				</para></listitem>
 			</para>
 			<para>
 				This function can be used from REQUEST_ROUTE.
@@ -215,11 +223,21 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 			</para>
 			<example>
 				<title>Use <function>media_fork_from_call()</function> function to fork
-					media to a Media Server</title>
+					all media streams of a call</title>
 			<programlisting format="linespecific">
 ...
 if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NULL)
 	media_fork_from_call($hdr(X-CallID));
+...
+	</programlisting>
+			</example>
+			<example>
+				<title>Use <function>media_fork_from_call()</function> function to fork
+					only the first caller's stream</title>
+			<programlisting format="linespecific">
+...
+if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NULL)
+	media_fork_from_call($hdr(X-CallID), "caller", 0);
 ...
 	</programlisting>
 			</example>

@@ -209,6 +209,10 @@ struct media_session_leg *media_session_other_leg(
 
 int media_session_resume_dlg(struct media_session_leg *msl)
 {
+	if (msl->type == MEDIA_SESSION_TYPE_FORK) {
+		LM_WARN("termination of RTP streaming is not yet available!\n");
+		return 0;
+	}
 	int first_leg = MEDIA_SESSION_DLG_LEG(msl);
 	if (media_session_reinvite(msl, first_leg, NULL) < 0)
 		LM_ERR("could not resume call for leg %d\n", first_leg);
@@ -252,6 +256,24 @@ int media_session_req(struct media_session_leg *msl, const char *method)
 	return 0;
 }
 
+int media_session_rpl(struct media_session_leg *msl,
+		int method, int code, str *reason, str *body)
+{
+	b2b_rpl_data_t reply_data;
+
+	memset(&reply_data, 0, sizeof (reply_data));
+	reply_data.et = msl->b2b_entity;
+	reply_data.b2b_key = &msl->b2b_key;
+	reply_data.method = method;
+	reply_data.code = code;
+	reply_data.text = reason;
+	reply_data.body = body;
+	if (body)
+		reply_data.extra_headers = &content_type_sdp_hdr;
+
+	return media_b2b.send_reply(&reply_data);
+}
+
 static int media_session_leg_end(struct media_session_leg *msl, int nohold, int proxied)
 {
 	int ret = 0;
@@ -261,6 +283,9 @@ static int media_session_leg_end(struct media_session_leg *msl, int nohold, int 
 	/* end the leg towards media server */
 	if (media_session_req(msl, BYE) < 0)
 		ret = -1;
+
+	if (msl->type == MEDIA_SESSION_TYPE_FORK)
+		goto unref;
 
 	/* if the call is ongoing, we need to manipulate its participants too */
 	if (msl->ms && msl->ms->dlg && msl->ms->dlg->state < DLG_STATE_DELETED) {
@@ -283,6 +308,7 @@ static int media_session_leg_end(struct media_session_leg *msl, int nohold, int 
 		if (body)
 			pkg_free(body->s);
 	}
+unref:
 	MSL_UNREF_NORELEASE(msl);
 	return ret;
 }

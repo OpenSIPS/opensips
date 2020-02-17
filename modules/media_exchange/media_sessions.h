@@ -137,6 +137,9 @@ int media_session_ack(struct media_session_leg *msl);
 
 int media_session_req(struct media_session_leg *msl, const char *method);
 
+int media_session_rpl(struct media_session_leg *msl,
+		int method, int code, str *reason, str *body);
+
 int media_session_end(struct media_session *ms, int legs, int nohold, int proxied);
 
 #endif /* _MEDIA_SESSION_H_ */
