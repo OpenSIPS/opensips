@@ -395,17 +395,12 @@ static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
 	action_elem_p actions = (action_elem_p)params;
 	int params_no = (int)(unsigned long)extra;
 
-	if (!params || params_no == 0)
-	{
-		LM_DBG("no parameter specified for this route\n");
-		return pv_get_null(msg, ip, res);
-	}
-
 	if(ip->pvn.type==PV_NAME_INTSTR)
 	{
 		if (ip->pvn.u.isname.type != 0)
 		{
-			LM_ERR("route params name be numbers - names are not accepted!\n");
+			LM_ERR("$param expects an integer index here.  Strings "
+			       "(named parameters) are only accepted within event_route\n");
 			return -1;
 		}
 		index = ip->pvn.u.isname.name.n;
@@ -431,6 +426,12 @@ static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
 			LM_ERR("invalid index <%.*s>\n", tv.rs.len, tv.rs.s);
 			return -1;
 		}
+	}
+
+	if (!params)
+	{
+		LM_DBG("no parameter specified for this route\n");
+		return pv_get_null(msg, ip, res);
 	}
 
 	if (index < 1 || index > params_no)
