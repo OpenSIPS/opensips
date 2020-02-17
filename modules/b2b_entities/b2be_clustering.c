@@ -481,7 +481,7 @@ int receive_entity_update(bin_packet_t *packet)
 
 	if (dlg->state == B2B_TERMINATED) {
 		lock_release(&htable[hash_index].lock);
-		return 0;		
+		return 0;
 	}
 
 	if (packet->type == REPL_ENTITY_UPDATE)
@@ -539,7 +539,7 @@ int receive_entity_delete(bin_packet_t *packet)
 	}
 
 	b2b_entity_db_delete(type, dlg);
-	b2b_delete_record(dlg, htable, hash_index);	
+	b2b_delete_record(dlg, htable, hash_index);
 
 	lock_release(&htable[hash_index].lock);
 

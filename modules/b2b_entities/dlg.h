@@ -62,14 +62,13 @@ typedef int (*b2b_add_dlginfo_t)(str* key, str* entity_key, int src,
  * Dialog state
  */
 typedef enum b2b_state {
-	B2B_UNDEFINED = 0, /* New dialog, no reply received yet */
+	B2B_UNDEFINED = 0,
 	B2B_NEW,        /* New dialog, no reply received yet */
 	B2B_NEW_AUTH,   /* New dialog with auth info, no reply received yet */
 	B2B_EARLY,      /* Early dialog, provisional response received */
 	B2B_CONFIRMED,  /* Confirmed dialog, 2xx received */
 	B2B_ESTABLISHED,/* Established dialog, sent or received ACK received */
 	B2B_MODIFIED,   /* ReInvite inside dialog */
-	B2B_DESTROYED,  /* Destroyed dialog */
 	B2B_TERMINATED, /* Terminated dialog */
 	B2B_LAST_STATE  /* Just to know the number of states */
 } b2b_state_t;

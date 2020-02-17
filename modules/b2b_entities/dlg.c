@@ -132,7 +132,7 @@ b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, uns
 			{
 
 				leg = dlg->legs;
-				if(dlg->state < B2B_CONFIRMED || dlg->state>=B2B_DESTROYED)
+				if(dlg->state < B2B_CONFIRMED || dlg->state==B2B_TERMINATED)
 				{
 					if(from_tag == NULL || from_tag->len==0 || leg==NULL)
 					{
@@ -155,7 +155,7 @@ b2b_dlg_t* b2b_search_htable_next_dlg(b2b_dlg_t* start_dlg, b2b_table table, uns
 						return dlg;
 					leg = leg->next;
 				}
-				if(dlg->state < B2B_CONFIRMED || dlg->state>=B2B_DESTROYED) /* state not confirmed yet and a new leg */
+				if(dlg->state < B2B_CONFIRMED || dlg->state==B2B_TERMINATED) /* state not confirmed yet and a new leg */
 					return dlg;
 			}
 		}
