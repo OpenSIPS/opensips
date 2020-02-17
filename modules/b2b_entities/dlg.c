@@ -44,6 +44,7 @@
 #include "dlg.h"
 #include "b2b_entities.h"
 #include "b2be_db.h"
+#include "b2be_clustering.h"
 
 #define BUF_LEN              1024
 
@@ -52,11 +53,6 @@ str bye = str_init(BYE);
 
 /* used to make WRITE_THROUGH db mode more efficient */
 b2b_dlg_t* current_dlg= NULL;
-
-#define UPDATE_DBFLAG(dlg) do{ \
-	if(b2be_db_mode == WRITE_BACK && dlg->db_flag==NO_UPDATEDB_FLAG) \
-			dlg->db_flag = UPDATEDB_FLAG; \
-	} while(0)
 
 
 void print_b2b_dlg(b2b_dlg_t *dlg)
@@ -538,6 +534,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		puri.proto?puri.proto:PROTO_UDP)!= 1 ) {
 			LM_DBG("First Route uri is not mine\n");
 			return SCB_RUN_ALL;  /* not for b2b */
+
 		}
 		/* check if second route is local*/
 		rt = rt->next;
@@ -949,6 +946,13 @@ done:
 		lock_release(&table[hash_index].lock);
 	}
 
+	if (b2be_cluster && etype != B2B_NONE) {
+		if (dlg_state == B2B_ESTABLISHED)
+			replicate_entity_update(dlg, etype, hash_index, NULL);
+		else if (dlg_state == B2B_TERMINATED)
+			replicate_entity_delete(dlg, etype, hash_index);
+	}
+
 	return SCB_DROP_MSG;
 }
 
@@ -1215,6 +1219,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	struct to_body *pto;
 	unsigned int method_value = METHOD_UPDATE;
 	str local_contact;
+	int prev_state;
 
 	if(et == B2B_SERVER)
 	{
@@ -1322,6 +1327,8 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		return 0;
 	}
 
+	prev_state = dlg->state;
+
 	if(code >= 200)
 	{
 		if(method_value==METHOD_INVITE)
@@ -1380,7 +1387,17 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 			LM_ERR("Failed to update in database\n");
 	}
 
-	lock_release(&table[hash_index].lock);
+	if (b2be_cluster) {
+		lock_release(&table[hash_index].lock);
+
+		if (prev_state < B2B_CONFIRMED && dlg->state == B2B_CONFIRMED)
+			replicate_entity_create(dlg, et, hash_index);
+
+		if (prev_state == B2B_MODIFIED && dlg->state == B2B_CONFIRMED)
+			replicate_entity_update(dlg, et, hash_index, NULL);
+	} else {
+		lock_release(&table[hash_index].lock);
+	}
 
 	if((extra_headers?extra_headers->len:0) + 14 + local_contact.len
 			+ 20 + CRLF_LEN > BUF_LEN)
@@ -1463,8 +1480,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 {
 	b2b_table table;
 	unsigned int hash_index, local_index;
-	b2b_dlg_t* dlg;
-
+	b2b_dlg_t* dlg, tmp_dlg;
 
 	if(et == B2B_SERVER)
 		table = server_htable;
@@ -1498,8 +1514,35 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	if(db_del)
 		b2b_entity_db_delete(et, dlg);
 
+	if (b2be_cluster) {
+		memset(&tmp_dlg, 0, sizeof tmp_dlg);
+		tmp_dlg.state = B2B_TERMINATED;
+		if (pkg_str_dup(&tmp_dlg.callid, &dlg->callid) < 0) {
+			LM_ERR("oom!\n");
+			return;
+		}
+		if (pkg_str_dup(&tmp_dlg.tag[0], &dlg->tag[0]) < 0) {
+			LM_ERR("oom!\n");
+			pkg_free(tmp_dlg.callid.s);
+			return;
+		}
+		if (pkg_str_dup(&tmp_dlg.tag[1], &dlg->tag[1]) < 0) {
+			LM_ERR("oom!\n");
+			pkg_free(tmp_dlg.callid.s);
+			pkg_free(tmp_dlg.tag[0].s);
+			return;
+		}
+	}
+
 	b2b_delete_record(dlg, table, hash_index);
 	lock_release(&table[hash_index].lock);
+
+	if (b2be_cluster) {
+		replicate_entity_delete(&tmp_dlg, et, hash_index);
+		pkg_free(tmp_dlg.callid.s);
+		pkg_free(tmp_dlg.tag[0].s);
+		pkg_free(tmp_dlg.tag[1].s);
+	}
 }
 
 void shm_free_param(void* param)
@@ -1667,6 +1710,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	str totag={NULL,0}, fromtag={NULL, 0};
 	unsigned int method_value;
 	int ret;
+	int dlg_state;
 
 	if(et == B2B_SERVER)
 	{
@@ -1811,7 +1855,16 @@ int b2b_send_request(b2b_req_data_t* req_data)
 			LM_ERR("Failed to update in database\n");
 	}
 
+	dlg_state = dlg->state;
+
 	lock_release(&table[hash_index].lock);
+
+	if (b2be_cluster) {
+		if (dlg_state == B2B_ESTABLISHED)
+			replicate_entity_update(dlg, et, hash_index, NULL);
+		else if (dlg_state == B2B_TERMINATED)
+			replicate_entity_delete(dlg, et, hash_index);
+	}
 
 	return 0;
 error:
@@ -1918,6 +1971,56 @@ dlg_leg_t* b2b_new_leg(struct sip_msg* msg, str* to_tag, int mem_type)
 		LM_ERR("failed to parse cseq number - not an integer\n");
 		goto error;
 	}
+
+	return new_leg;
+
+error:
+	return 0;
+}
+
+dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type)
+{
+	int size;
+	dlg_leg_t* new_leg;
+
+	size = sizeof(dlg_leg_t) + leg->route_set.len + leg->tag.len + leg->contact.len;
+
+	if(mem_type == SHM_MEM_TYPE)
+		new_leg = (dlg_leg_t*)shm_malloc(size);
+	else
+		new_leg = (dlg_leg_t*)pkg_malloc(size);
+
+	if(new_leg == NULL)
+	{
+		LM_ERR("No more shared memory\n");
+		goto error;
+	}
+	memset(new_leg, 0, size);
+	size = sizeof(dlg_leg_t);
+
+	if(leg->contact.s && leg->contact.len)
+	{
+		new_leg->contact.s = (char*)new_leg + size;
+		memcpy(new_leg->contact.s, leg->contact.s, leg->contact.len);
+		new_leg->contact.len = leg->contact.len;
+		size+= leg->contact.len;
+	}
+
+	if(leg->route_set.s)
+	{
+		new_leg->route_set.s = (char*)new_leg + size;
+		memcpy(new_leg->route_set.s, leg->route_set.s, leg->route_set.len);
+		new_leg->route_set.len = leg->route_set.len;
+		size+= leg->route_set.len;
+	}
+
+	new_leg->tag.s = (char*)new_leg + size;
+	memcpy(new_leg->tag.s, leg->tag.s, leg->tag.len);
+	new_leg->tag.len = leg->tag.len;
+	size += leg->tag.len;
+
+	new_leg->cseq = leg->cseq;
+	new_leg->id = leg->id;
 
 	return new_leg;
 
@@ -2105,7 +2208,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	int dlg_based_search = 0;
 	struct hdr_field callid_hdr, from_hdr, to_hdr;
 	struct to_body to_hdr_parsed, from_hdr_parsed;
-	int dlg_state = 0;
+	int dlg_state = 0, prev_state = B2B_UNDEFINED;
 	struct uac_credential* crd;
 	struct authenticate_body *auth = NULL;
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
@@ -2304,6 +2407,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			return;
 		}
 	}
+
+	prev_state = dlg->state;
 
 	b2b_cback = dlg->b2b_cback;
 	if(dlg->param.s)
@@ -2736,6 +2841,10 @@ dummy_reply:
 						goto error1;
 					}
 					UPDATE_DBFLAG(dlg);
+
+					if (b2be_cluster)
+						replicate_entity_create(dlg, etype, hash_index);
+
 					goto done1;
 				}
 			}
@@ -2802,6 +2911,9 @@ b2b_route:
 		b2be_db_update(dlg, etype);
 		lock_release(&htable[hash_index].lock);
 	}
+
+	if (b2be_cluster && dlg_state == B2B_CONFIRMED && prev_state == B2B_MODIFIED)
+		replicate_entity_update(dlg, etype, hash_index, NULL);
 
 	if (to_hdr_parsed.param_lst) {
 		/* message was built on the fly from T

@@ -228,7 +228,6 @@ int b2be_db_update(b2b_dlg_t* dlg, int type)
 		return 0;
 	}
 
-	LM_DBG("State= %d\n", dlg->state);
 	qvals[13].val.int_val = dlg->state;
 	qvals[14].val.int_val = dlg->cseq[0];
 	qvals[15].val.int_val = dlg->cseq[1];
@@ -255,7 +254,8 @@ int b2be_db_update(b2b_dlg_t* dlg, int type)
 		LM_ERR("Sql update failed\n");
 		return -1;
 	}
-	LM_DBG("UPDATED [%.*s], [%.*s]\n", dlg->tag[0].len, dlg->tag[0].s, dlg->callid.len, dlg->callid.s);
+	LM_DBG("UPDATED [%.*s], [%.*s] State= %d\n", dlg->tag[0].len, dlg->tag[0].s,
+		dlg->callid.len, dlg->callid.s, dlg->state);
 	return 0;
 }
 
@@ -358,56 +358,6 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 		if(!no_lock)
 			lock_release(&htable[i].lock);
 	}
-}
-
-dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type)
-{
-	int size;
-	dlg_leg_t* new_leg;
-
-	size = sizeof(dlg_leg_t) + leg->route_set.len + leg->tag.len + leg->contact.len;
-
-	if(mem_type == SHM_MEM_TYPE)
-		new_leg = (dlg_leg_t*)shm_malloc(size);
-	else
-		new_leg = (dlg_leg_t*)pkg_malloc(size);
-
-	if(new_leg == NULL)
-	{
-		LM_ERR("No more shared memory\n");
-		goto error;
-	}
-	memset(new_leg, 0, size);
-	size = sizeof(dlg_leg_t);
-
-	if(leg->contact.s && leg->contact.len)
-	{
-		new_leg->contact.s = (char*)new_leg + size;
-		memcpy(new_leg->contact.s, leg->contact.s, leg->contact.len);
-		new_leg->contact.len = leg->contact.len;
-		size+= leg->contact.len;
-	}
-
-	if(leg->route_set.s)
-	{
-		new_leg->route_set.s = (char*)new_leg + size;
-		memcpy(new_leg->route_set.s, leg->route_set.s, leg->route_set.len);
-		new_leg->route_set.len = leg->route_set.len;
-		size+= leg->route_set.len;
-	}
-
-	new_leg->tag.s = (char*)new_leg + size;
-	memcpy(new_leg->tag.s, leg->tag.s, leg->tag.len);
-	new_leg->tag.len = leg->tag.len;
-	size += leg->tag.len;
-
-	new_leg->cseq = leg->cseq;
-	new_leg->id = leg->id;
-
-	return new_leg;
-
-error:
-	return 0;
 }
 
 int b2b_entities_restore(void)

@@ -37,4 +37,9 @@ void b2be_initialize(void);
 void b2b_db_delete(str param);
 void b2b_entity_db_delete(int type, b2b_dlg_t* dlg);
 
+#define UPDATE_DBFLAG(dlg) do{ \
+	if(b2be_db_mode == WRITE_BACK && dlg->db_flag==NO_UPDATEDB_FLAG) \
+			dlg->db_flag = UPDATEDB_FLAG; \
+	} while(0)
+
 #endif

@@ -45,7 +45,6 @@
 
 #define B2B_MAX_KEY_SIZE	(B2B_MAX_PREFIX_LEN+4+10+10+INT2STR_MAX_LEN)
 
-
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
 typedef struct b2b_dlginfo
@@ -244,5 +243,7 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 
 int b2b_apply_lumps(struct sip_msg* msg);
 typedef int (*b2b_apply_lumps_t)(struct sip_msg* msg);
+
+dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type);
 
 #endif

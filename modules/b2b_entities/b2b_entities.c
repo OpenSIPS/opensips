@@ -44,6 +44,7 @@
 #include "b2b_entities.h"
 #include "server.h"
 #include "dlg.h"
+#include "b2be_clustering.h"
 
 #define TABLE_VERSION 1
 
@@ -74,6 +75,8 @@ int b2be_db_mode = WRITE_BACK;
 b2b_table server_htable;
 b2b_table client_htable;
 
+int b2be_cluster;
+
 #define DB_COLS_NO  26
 
 /* TM bind */
@@ -100,6 +103,7 @@ static param_export_t params[]={
 	{ "db_mode",               INT_PARAM,    &b2be_db_mode       },
 	{ "update_period",         INT_PARAM,    &b2b_update_period  },
 	{ "b2b_key_prefix",        STR_PARAM,    &b2b_key_prefix.s   },
+	{ "cluster_id",            INT_PARAM,    &b2be_cluster		 },
 	{ 0,                       0,            0                   }
 };
 
@@ -119,6 +123,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "db_url", get_deps_sqldb_url },
+		{ "cluster_id", get_deps_clusterer },
 		{ NULL, NULL },
 	},
 };
@@ -292,6 +297,11 @@ static int mod_init(void)
 			b2b_update_period, TIMER_FLAG_SKIP_ON_DELAY);
 	//register_timer("b2b2-clean", b2be_clean,  0, b2b_update_period);
 
+	if (b2be_init_clustering() < 0) {
+		LM_ERR("Failed to init clustering support\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -443,6 +453,9 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 	memcpy(dlg->param.s, param->s, param->len);
 	dlg->param.len = param->len;
 	lock_release(&table[hash_index].lock);
+
+	if (b2be_cluster)
+		replicate_entity_update(dlg, type, hash_index, param);
 
 	return 0;
 }
