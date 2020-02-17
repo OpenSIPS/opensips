@@ -359,7 +359,6 @@ static int media_fork_stream_cmp(struct media_forks *mf,
 	return attr_matches;
 }
 
-
 #undef MS_UTIL_BUF_RESET
 #undef MS_UTIL_BUF_EXTEND
 #undef MS_UTIL_BUF_COPY
@@ -413,7 +412,8 @@ static struct media_forks *media_fork_session(sdp_info_t *invite_sdp, int dlg_le
 		for (stream = session->streams; stream; stream = stream->next) {
 			if ((mstream = media_fork_stream_match(totalmf, &ms_util_sdp1, stream))) {
 				leg = dlg_leg1; /* matched in sdp of leg 1 */
-			} else if ((mstream = media_fork_stream_match(totalmf, &ms_util_sdp2, stream))) {
+			} else if (dlg_leg2 >= 0 &&
+					(mstream = media_fork_stream_match(totalmf, &ms_util_sdp2, stream))) {
 				leg = dlg_leg2; /* matched in sdp of leg 2 */
 			} else {
 				media_fork_stream_disable(stream);
@@ -490,16 +490,14 @@ static struct media_forks *media_fork_medianum(sdp_info_t *invite_sdp,
 			totalmf = mf;
 		}
 
+#endif
 	return totalmf;
 }
 
-struct media_forks *media_sdp_match(struct dlg_cell *dlg,
-		int leg, sdp_info_t *invite_sdp, int medianum)
+static int media_sdp_parse(struct dlg_cell *dlg, int leg, int medianum)
 {
 	str body;
 	int leg_streams = 0;
-	struct media_forks *mf;
-
 	switch (leg) {
 		case MEDIA_LEG_CALLER:
 		case MEDIA_LEG_CALLEE:
@@ -534,6 +532,17 @@ struct media_forks *media_sdp_match(struct dlg_cell *dlg,
 				leg_streams += ms_util_sdp2.streams_num;
 			break;
 	}
+	return leg_streams;
+error:
+	return -1;
+}
+
+struct media_forks *media_sdp_match(struct dlg_cell *dlg,
+		int leg, sdp_info_t *invite_sdp, int medianum)
+{
+	struct media_forks *mf;
+
+	int leg_streams = media_sdp_parse(dlg, leg, medianum);
 	if (!leg_streams) {
 		LM_WARN("no stream to fork!\n");
 		goto error;
@@ -569,10 +578,17 @@ struct media_forks *media_sdp_match(struct dlg_cell *dlg,
 	} else {
 		if (medianum < 0)
 			mf = media_fork_session(invite_sdp,
-					DLG_MEDIA_SESSION_LEG(dlg, leg), 0);
+					DLG_MEDIA_SESSION_LEG(dlg, leg), -1);
 		else
 			mf = media_fork_medianum(invite_sdp,
-					DLG_MEDIA_SESSION_LEG(dlg, leg), 0, medianum);
+					DLG_MEDIA_SESSION_LEG(dlg, leg), -1, medianum);
+	}
+	return mf;
+error:
+	media_util_release_static();
+	return NULL;
+}
+
 	}
 	return mf;
 error:
