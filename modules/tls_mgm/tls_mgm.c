@@ -1549,31 +1549,35 @@ init_ssl_methods(void)
 
 static struct {
 	char *name;
+	char *alias;
 	enum tls_method method;
 } ssl_versions_struct[] = {
-	{ "SSLv23",  TLS_USE_SSLv23   },
-	{ "TLSv1",   TLS_USE_TLSv1    },
-	{ "TLSv1_2", TLS_USE_TLSv1_2  },
+	{ "SSLv23",  "TLSany", TLS_USE_SSLv23  },
+	{ "TLSv1",   NULL,     TLS_USE_TLSv1   },
+	{ "TLSv1_2", NULL,     TLS_USE_TLSv1_2 },
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
-	{ "TLSv1_3", TLS_USE_TLSv1_3  },
+	{ "TLSv1_3", NULL,     TLS_USE_TLSv1_3 },
 #endif
 };
 
+#define SSL_VERSIONS_SIZE (sizeof(ssl_versions_struct)/sizeof(ssl_versions_struct[0]))
+
+#define MATCH(name, field) ((field) && strncasecmp(field, (name)->s, (name)->len) == 0)
+
+
 static inline char *get_ssl_method(enum tls_method method)
 {
-	if (method < 1 || method >
-			((sizeof ssl_versions_struct/sizeof(ssl_versions_struct[0]))))
+	if (method < 1 || method > SSL_VERSIONS_SIZE)
 		return "UNKNOWN";
 	return ssl_versions_struct[method-1].name;
 }
 
 enum tls_method parse_ssl_method(str *name)
 {
-	enum tls_method method;
-	for (method = 0; method <
-			((sizeof ssl_versions_struct/sizeof(ssl_versions_struct[0]))); method++)
-		if (strncasecmp(name->s, ssl_versions_struct[method].name, name->len) == 0)
-			return ssl_versions_struct[method].method;
+	int index;
+	for (index = 0; index < SSL_VERSIONS_SIZE; index++)
+		if (MATCH(name, ssl_versions_struct[index].name) || MATCH(name, ssl_versions_struct[index].alias))
+			return ssl_versions_struct[index].method;
 	return -1;
 }
 
