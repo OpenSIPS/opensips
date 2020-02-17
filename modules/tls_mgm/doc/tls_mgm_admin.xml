@@ -283,7 +283,7 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 modparam("tls_mgm", "tls_method", "[dom]TLSv1-TLSv1_3")  # between v1 and v1.3
 modparam("tls_mgm", "tls_method", "[dom]TLSv1-")         # v1 or higher
 modparam("tls_mgm", "tls_method", "[dom]-TLSv1_2")       # up to v1.2
-modparam("tls_mgm", "tls_method", "[dom]-")              # all methods
+modparam("tls_mgm", "tls_method", "[dom]-")              # all supported
 ...
 				</programlisting>
 			</example>
