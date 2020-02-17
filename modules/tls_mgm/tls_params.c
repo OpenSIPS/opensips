@@ -226,7 +226,6 @@ int tlsp_set_method(modparam_t type, void *in)
 	s = q_memchr(val.s, '-', val.len);
 	if (s) {
 		val_max.s = s + 1;
-		val.len = s - val.s;
 		val_max.len = val.len - (s - val.s) - 1;
 		val.len = s - val.s;
 		trim(&val_max);
