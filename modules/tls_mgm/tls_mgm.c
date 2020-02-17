@@ -1572,6 +1572,16 @@ static inline char *get_ssl_method_name(enum tls_method method)
 	return ssl_versions_struct[method-1].name;
 }
 
+enum tls_method get_ssl_min_method(void)
+{
+	return ssl_versions_struct[1].method;  // skip SSLv23/TLSany
+}
+
+enum tls_method get_ssl_max_method(void)
+{
+	return ssl_versions_struct[SSL_VERSIONS_SIZE-1].method;
+}
+
 enum tls_method parse_ssl_method(str *name)
 {
 	int index;

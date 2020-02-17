@@ -247,7 +247,13 @@ listen = tls:1.2.3.4:5061
 			</itemizedlist>
 			<para><emphasis>
 				If you are using an OpenSSL library newer than 1.1.0, you can
-				also specify a range of accepted TLS versions.
+				also specify a range of accepted TLS versions as [VLOW]-[VHIGH].
+				If VLOW is not specified it will use the minimum supported
+				protocol version and if VHIGH is not specified it will use
+				the maximum supported protocol version. This means that using
+				a range where both the low and high values are missing, will
+				accept all the supported methods, but unlike SSLv23 will not
+				require the initial hello to be SSLv2.
 			</emphasis></para>
 			<para><emphasis>
 				Default value is SSLv23.
@@ -274,7 +280,10 @@ modparam("tls_mgm", "tls_method", "[dom]TLSv1")
 				<title>Set <varname>tls_method</varname> range variable</title>
 				<programlisting format="linespecific">
 ...
-modparam("tls_mgm", "tls_method", "[dom]TLSv1-TLSv1_3")
+modparam("tls_mgm", "tls_method", "[dom]TLSv1-TLSv1_3")  # between v1 and v1.3
+modparam("tls_mgm", "tls_method", "[dom]TLSv1-")         # v1 or higher
+modparam("tls_mgm", "tls_method", "[dom]-TLSv1_2")       # up to v1.2
+modparam("tls_mgm", "tls_method", "[dom]-")              # all methods
 ...
 				</programlisting>
 			</example>

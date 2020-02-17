@@ -231,7 +231,10 @@ int tlsp_set_method(modparam_t type, void *in)
 		trim(&val_max);
 	}
 	trim(&val);
-	method = parse_ssl_method(&val);
+	if (val.len == 0)
+		method = get_ssl_min_method();
+	else
+		method = parse_ssl_method(&val);
 	if (method < 0) {
 		LM_ERR("unsupported method [%s]\n",val.s);
 		return -1;
@@ -240,11 +243,20 @@ int tlsp_set_method(modparam_t type, void *in)
 	set_domain_attr(name, method, method);
 	if (s) {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-		method = parse_ssl_method(&val_max);
+		if (method == TLS_USE_SSLv23)
+			LM_WARN("Using SSLv23/TLSany as the lower value for the method range makes no sense\n");
+
+		if (val_max.len == 0)
+			method = get_ssl_max_method();
+		else
+			method = parse_ssl_method(&val_max);
 		if (method < 0) {
 			LM_ERR("unsupported method [%s]\n",val_max.s);
 			return -1;
 		}
+
+		if (method == TLS_USE_SSLv23)
+			LM_WARN("Using SSLv23/TLSany as the higher value for the method range makes no sense\n");
 #else
 		LM_WARN("TLS method range not supported for versions lower than 1.1.0\n");
 #endif
