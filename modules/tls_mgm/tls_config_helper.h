@@ -37,8 +37,8 @@
 
 enum tls_method {
 	TLS_METHOD_UNSPEC = 0,
-	TLS_USE_TLSv1,
 	TLS_USE_SSLv23,
+	TLS_USE_TLSv1,
 	TLS_USE_TLSv1_2,
 	TLS_USE_TLSv1_3
 };
