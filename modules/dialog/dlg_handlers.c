@@ -391,11 +391,10 @@ routing_info:
 
 		if (dlg->flags & DLG_FLAG_CSEQ_ENFORCE) {
 			/* increase all future requests going to this leg */
-			if (str2int(&(((struct cseq_body *)t->uas.request->cseq->parsed)->number),&cseq_no) < 0) {
+			if (str2int( &(get_cseq(rpl)->number), &cseq_no) < 0) {
 				LM_ERR("Failed to convert cseq to integer \n");
 			} else {
-				/* XXX - fix this */
-				dlg->legs[dlg->legs_no[DLG_LEG_200OK]].last_gen_cseq = cseq_no + 1;
+				dlg->legs[dlg->legs_no[DLG_LEG_200OK]].last_gen_cseq = cseq_no;
 			}
 		}
 
