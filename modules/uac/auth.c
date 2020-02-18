@@ -167,6 +167,7 @@ void apply_cseq_decrement(struct cell* t, int type, struct tmcb_params *p)
 {
 	struct sip_msg *req;
 	struct sip_msg *rpl;
+	unsigned int cseq_req, cseq_rpl;
 
 	if ( !t || !t->uas.request || !p->rpl )
 		return;
@@ -176,7 +177,12 @@ void apply_cseq_decrement(struct cell* t, int type, struct tmcb_params *p)
 	if (req == FAKED_REPLY || rpl == FAKED_REPLY)
 		return;
 
-	apply_cseq_op(rpl,-1);
+	if (str2int( &(get_cseq(req)->number),&cseq_req) < 0
+	|| str2int( &(get_cseq(rpl)->number),&cseq_rpl) < 0 ||
+	cseq_req==cseq_rpl )
+		return;
+
+	apply_cseq_op(rpl, (int)cseq_req-(int)cseq_rpl);
 }
 
 int uac_auth( struct sip_msg *msg)
