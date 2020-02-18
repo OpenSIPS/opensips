@@ -724,10 +724,6 @@ end:
 }
 
 
-static void param_prob_callback_free(void *param) {
-	shm_free(param);
-}
-
 static void dr_prob_handler(unsigned int ticks, void* param)
 {
 	static char buff[1000] = {"sip:"};
@@ -795,12 +791,14 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 			params->current_partition = it;
 
 			if (dr_tmb.t_request_within(&dr_probe_method, NULL, NULL, dlg,
-			dr_probing_callback, (void*)params, param_prob_callback_free)<0) {
+			dr_probing_callback, (void*)params, osips_shm_free)<0) {
 				LM_ERR("unable to execute dialog, disabling destination...\n");
 				if ( (dst->flags&DR_DST_STAT_DSBL_FLAG)==0 ) {
 					dst->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
 					dr_gw_status_changed( it, dst);
 				}
+
+				shm_free(params);
 			}
 			dr_tmb.free_dlg(dlg);
 
