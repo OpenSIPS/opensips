@@ -58,7 +58,13 @@ struct tm_binds {
 	tlookup_ident_f  t_lookup_ident;
 	taddblind_f      t_addblind;
 	treply_f         t_reply_unsafe;
+
+	/*
+	 * @return: 1 (success) or an error.h code otherwise.  On error, make sure
+	 * to free your parameter manually, as @release_func will be skipped!
+	 */
 	reqwith_t        t_request_within;
+
 	reqout_t         t_request_outside;
 	req_t            t_request;
 	new_dlg_uac_f      new_dlg_uac;

@@ -189,7 +189,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	 * - needed by external ua to send a request within a dlg
 	 */
 	if(!dialog->hooks.next_hop && w_calculate_hooks(dialog)<0)
-		goto error3;
+		goto error_out;
 
 	if(dialog->obp.s)
 		dialog->hooks.next_hop = &dialog->obp;
@@ -202,7 +202,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		dialog->send_sock ? dialog->send_sock->proto : PROTO_NONE );
 	if (proxy==0)  {
 		ret=E_BAD_ADDRESS;
-		goto error3;
+		goto error_out;
 	}
 	/* use the first address */
 	hostent2su( &to_su,
@@ -221,7 +221,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		if (!dialog->send_sock) {
 			LM_ERR("no corresponding socket for af %d\n", to_su.s.sa_family);
 			ser_error = E_NO_SOCKET;
-			goto error2;
+			goto error3;
 		}
 	}
 	LM_DBG("sending socket is %.*s \n",
@@ -233,7 +233,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	if (!new_cell) {
 		ret=E_OUT_OF_MEM;
 		LM_ERR("short of cell shmem\n");
-		goto error2;
+		goto error3;
 	}
 
 	/* if we have a dialog ctx, link it to the newly created transaction
@@ -493,11 +493,12 @@ error1:
 	LOCK_HASH(hi);
 	remove_from_hash_table_unsafe(new_cell);
 	UNLOCK_HASH(hi);
-	free_cell(new_cell);
 error2:
+	free_cell(new_cell);
+error3:
 	free_proxy( proxy );
 	pkg_free( proxy );
-error3:
+error_out:
 	return ret;
 }
 
