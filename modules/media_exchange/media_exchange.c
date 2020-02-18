@@ -30,11 +30,14 @@ struct b2b_api media_b2b;
 struct rtpproxy_binds media_rtp;
 
 static int mod_init(void);
-static int media_fork_to_uri(struct sip_msg *msg, str *uri, int leg, str *body, str *headers);
-static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *medianum);
-static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
-		str *body, str *headers, int *nohold);
-static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int *nohold);
+static int media_fork_to_uri(struct sip_msg *msg, str *uri,
+		int leg, str *headers, int *medianum);
+static int media_fork_from_call(struct sip_msg *msg, str *callid,
+		int leg, int *medianum);
+static int media_exchange_from_uri(struct sip_msg *msg, str *uri,
+		int leg, str *body, str *headers, int *nohold);
+static int media_exchange_to_call(struct sip_msg *msg, str *callid,
+		int leg, int *nohold);
 static int media_terminate(struct sip_msg *msg, int leg, int *nohold);
 static int fixup_media_leg(void **param);
 static int fixup_media_leg_both(void **param);
@@ -83,8 +86,8 @@ static cmd_export_t cmds[] = {
 	{"media_fork_to_uri",(cmd_function)media_fork_to_uri, {
 		{CMD_PARAM_STR,0,0}, /* uri */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* body */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* headers */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
 		{0,0,0}},
 		REQUEST_ROUTE},
 	{"media_fork_from_call",(cmd_function)media_fork_from_call, {
@@ -112,13 +115,6 @@ static mi_export_t mi_cmds[] = {
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", 0}},
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "headers", 0}},
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", "headers", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
-	{ "media_fork_from_call_to_uri_body", 0, 0, 0, {
-		{mi_media_fork_from_call_to_uri, {"callid", "uri", "body", 0}},
-		{mi_media_fork_from_call_to_uri, {"callid", "uri", "body", "leg", 0}},
-		{mi_media_fork_from_call_to_uri, {"callid", "uri", "body", "headers", 0}},
-		{mi_media_fork_from_call_to_uri, {"callid", "uri", "body", "leg", "headers", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "media_exchange_from_call_to_uri", 0, 0, 0, {
@@ -245,10 +241,117 @@ static int fixup_media_leg_both(void **param)
 	return 0;
 }
 
-static int media_fork_to_uri(struct sip_msg *msg, str *uri, int leg, str *body, str *headers)
+static inline client_info_t *media_get_client_info(struct socket_info *si,
+		str *uri, str *hdrs, str *body)
 {
-	LM_WARN("not implemented yet!\n");
-	return -1;
+	static client_info_t ci;
+
+	memset(&ci, 0, sizeof ci);
+
+	ci.method.s = INVITE;
+	ci.method.len = INVITE_LEN;
+	ci.req_uri = *uri;
+	ci.to_uri = ci.req_uri;
+	ci.from_uri = ci.req_uri;
+	ci.extra_headers = hdrs;
+	ci.body = body;
+	ci.send_sock = si;
+
+	ci.local_contact.s = contact_builder(si, &ci.local_contact.len);
+	return &ci;
+}
+
+static int handle_media_fork_to_uri(struct socket_info *si, struct dlg_cell *dlg,
+		str *uri, int leg, str *headers, int medianum)
+{
+	str hack;
+	struct media_session_leg *msl;
+	static client_info_t *ci;
+	struct media_fork_info *mf;
+	str *b2b_key;
+
+	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, leg, 0);
+	if (!msl) {
+		LM_ERR("cannot create new exchange leg!\n");
+		return -2;
+	}
+	if (media_util_init_static() < 0) {
+		LM_ERR("could not initalize media util static!\n");
+		goto release;
+	}
+	mf = media_sdp_get(dlg, leg, medianum);
+	if (!mf) {
+		LM_ERR("could not generate media fork SDP!\n");
+		goto destroy;
+	}
+	if ((ci = media_get_client_info(si, uri, headers, media_sdp_buf_get())) == NULL) {
+		LM_ERR("could not create client!\n");
+		goto free;
+	}
+
+	hack.s = (char *)&msl;
+	hack.len = sizeof(void *);
+	MSL_REF(msl);
+	b2b_key = media_b2b.client_new(ci, b2b_media_client_notify,
+			b2b_media_confirm, &hack);
+	if (!b2b_key) {
+		LM_ERR("could not create b2b client!\n");
+		goto free;
+	}
+	if (shm_str_dup(&msl->b2b_key, b2b_key) < 0) {
+		LM_ERR("could not copy b2b client key\n");
+		/* key is not yet stored, so cannot be deleted */
+		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1);
+		goto free;
+	}
+	msl->params = mf;
+	msl->b2b_entity = B2B_CLIENT;
+	media_util_release_static();
+	return 1;
+free:
+	media_forks_free(mf);
+release:
+	media_util_release_static();
+destroy:
+	MSL_UNREF(msl);
+	return -2;
+}
+
+
+static int media_fork_to_uri(struct sip_msg *msg,
+		str *uri, int leg, str *headers, int *medianum)
+{
+	struct dlg_cell *dlg;
+	struct socket_info *si;
+
+	dlg = media_dlg.get_dlg();
+	if (!dlg) {
+		LM_WARN("dialog does not exist! please engage this function "
+				"after creating/matching the dialog!\n");
+		return -1;
+	}
+
+	if (!msg->force_send_socket) {
+		union sockaddr_union tmp;
+		si = uri2sock(msg, uri, &tmp, PROTO_NONE);
+		if (!si) {
+			LM_ERR("could not find suitable socket for originating "
+					"traffic to %.*s\n", uri->len, uri->s);
+			return -2;
+		}
+	} else {
+		si = msg->force_send_socket;
+	}
+
+	if (handle_media_fork_to_uri(si, dlg, uri, leg,
+			headers, (medianum?*medianum:-1)) < 0) {
+		media_dlg.dlg_unref(dlg, 1);
+		return -3;
+	}
+
+	/* all good now, unref the dialog as it is reffed by the ms */
+	media_dlg.dlg_unref(dlg, 1);
+	return 1;
 }
 
 static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *medianum)
@@ -259,7 +362,7 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 	sdp_info_t *sdp;
 	struct dlg_cell *dlg;
 	struct media_session_leg *msl;
-	struct media_forks *mf;
+	struct media_fork_info *mf;
 
 	if (msg->REQ_METHOD != METHOD_INVITE) {
 		LM_ERR("this method should only be called on initial invites!\n");
@@ -342,26 +445,6 @@ unref:
 	return -2;
 }
 
-
-static inline client_info_t *media_get_client_info(struct socket_info *si,
-		str *uri, str *hdrs, str *body)
-{
-	static client_info_t ci;
-
-	memset(&ci, 0, sizeof ci);
-
-	ci.method.s = INVITE;
-	ci.method.len = INVITE_LEN;
-	ci.req_uri = *uri;
-	ci.to_uri = ci.req_uri;
-	ci.from_uri = ci.req_uri;
-	ci.extra_headers = hdrs;
-	ci.body = body;
-	ci.send_sock = si;
-
-	ci.local_contact.s = contact_builder(si, &ci.local_contact.len);
-	return &ci;
-}
 
 struct media_session_tm_param {
 	struct cell *t;
@@ -661,36 +744,27 @@ static int media_terminate(struct sip_msg *msg, int leg, int *nohold)
 	return 1;
 }
 
-static int handle_media_session_reply(struct media_session_leg *msl, struct sip_msg *msg)
+static int handle_media_session_reply_exchange(struct media_session_leg *msl,
+		str *body, struct media_session_tm_param *p)
 {
-	/* we end up here with a request that has to be forwarded to
-	 * one of the participants
-	 */
 	int ret;
-	str *hdrs;
-	str body, *pbody;
+	str *hdrs, sbody;
 	str ok = str_init("OK");
 	struct dlg_cell *dlg;
-	struct media_session_tm_param *p = msl->params;
 
-	/* all good now :D */
-	if (get_body(msg, &body) < 0 || body.len == 0) {
-		LM_WARN("no body to exchange media with!\n");
-		return -1;
-	}
 	dlg = msl->ms->dlg;
 	if (!p) {
 		/* here we were triggered outside of a request - simply reinvite the
 		 * other leg with the new body */
-		ret = media_session_reinvite(msl, MEDIA_SESSION_DLG_LEG(msl), &body);
+		ret = media_session_reinvite(msl, MEDIA_SESSION_DLG_LEG(msl), body);
 		if (!msl->nohold && !media_session_other_leg(msl)) {
 			/* we need to put the other party on hold */
-			pbody = media_session_get_hold_sdp(msl);
-			if (pbody) {
+			body = media_session_get_hold_sdp(msl);
+			if (body) {
 				if (media_session_reinvite(msl,
-						MEDIA_SESSION_DLG_OTHER_LEG(msl), pbody) < 0)
+						MEDIA_SESSION_DLG_OTHER_LEG(msl), body) < 0)
 					LM_ERR("could not copy send indialog request for hold\n");
-				pkg_free(pbody->s);
+				pkg_free(body->s);
 			}
 		}
 		return 0;
@@ -705,42 +779,120 @@ static int handle_media_session_reply(struct media_session_leg *msl, struct sip_
 		/* if we have media on the same leg that triggered the request,
 		 * then we have to send the body to that leg, in reply */
 		ret = media_tm.t_reply_with_body(p->t, 200, &ok,
-				&body, NULL, &dlg->legs[p->leg].tag);
+				body, NULL, &dlg->legs[p->leg].tag);
 
 		if (!msl->nohold && !media_session_other_leg(msl)) {
 			/* we need to put the other party on hold */
-			pbody = media_session_get_hold_sdp(msl);
-			if (pbody) {
+			body = media_session_get_hold_sdp(msl);
+			if (body) {
 				if (media_session_reinvite(msl,
-						MEDIA_SESSION_DLG_OTHER_LEG(msl), pbody) < 0)
+						MEDIA_SESSION_DLG_OTHER_LEG(msl), body) < 0)
 					LM_ERR("could not copy send indialog request for hold\n");
-				pkg_free(pbody->s);
+				pkg_free(body->s);
 			}
 		}
 
 	} else {
 		/* we have a differet leg, so we need to request in the oposite
 		 * direction */
-		ret = media_session_reinvite(msl, other_leg(dlg, p->leg), &body);
+		ret = media_session_reinvite(msl, other_leg(dlg, p->leg), body);
 		hdrs = media_get_dlg_headers(dlg, p->leg);
 		if (!msl->nohold && !media_session_other_leg(msl)) {
 			/* we need to put the other party on hold */
-			pbody = media_session_get_hold_sdp(msl);
+			body = media_session_get_hold_sdp(msl);
 			if (media_tm.t_reply_with_body(p->t, 200, &ok,
-					pbody, hdrs, &dlg->legs[other_leg(dlg, p->leg)].tag) < 0)
+					body, hdrs, &dlg->legs[other_leg(dlg, p->leg)].tag) < 0)
 				LM_ERR("could not copy send indialog reply for hold\n");
-			pkg_free(pbody->s);
+			pkg_free(body->s);
 		} else {
-			body = dlg_get_out_sdp(dlg, other_leg(dlg, p->leg));
+			sbody = dlg_get_out_sdp(dlg, other_leg(dlg, p->leg));
 			if (media_tm.t_reply_with_body(p->t, 200, &ok,
-					&body, hdrs, &dlg->legs[other_leg(dlg, p->leg)].tag) < 0)
+					&sbody, hdrs, &dlg->legs[other_leg(dlg, p->leg)].tag) < 0)
 				LM_ERR("could not copy send indialog reply for hold\n");
 		}
 		pkg_free(hdrs->s);
 	}
-	MSL_UNREF(msl);
 	media_tm.unref_cell(p->t);
 	shm_free(p);
+	return ret;
+}
+
+static int handle_media_session_reply_fork(struct media_session_leg *msl, str *body)
+{
+	sdp_info_t sdp;
+	sdp_stream_cell_t *stream;
+	sdp_session_cell_t *session;
+	struct media_fork_info *mf = msl->params;
+	struct media_fork_info *minfo;
+	int ret = -2;
+	str *ip;
+	str nullip = str_init("0.0.0.0");
+
+	if (!mf) {
+		LM_ERR("media fork info not available!\n");
+		return -1;
+	}
+	memset(&sdp, 0, sizeof(sdp));
+	if (parse_sdp_session(body, 0, NULL, &sdp) < 0) {
+		LM_ERR("invalid SDP body in reply!\n");
+		goto error;
+	}
+	ret = 0;
+	/* we need to match the SDP against the media_fork_info we have */
+	for (session = sdp.sessions; session; session = session->next) {
+		for (stream = session->streams; stream; stream = stream->next) {
+			if (stream->ip_addr.len)
+				ip = &stream->ip_addr;
+			else
+				ip = &session->ip_addr;
+			/* skip disabled media streams */
+			if (str_strcmp(ip, &nullip) == 0)
+				continue;
+			if (stream->port.len == 1 && stream->port.s[0] == '0')
+				continue;
+
+			minfo = media_fork_search(mf,
+					(void *)(unsigned long)stream->stream_num);
+			if (minfo) {
+				media_fork_fill(minfo, ip, &stream->port);
+				if (media_fork(msl->ms->dlg, minfo) == 0)
+					ret++;
+			}
+		}
+	}
+	free_sdp_content(&sdp);
+error:
+	/* done - release the media forks */
+	media_forks_free(msl->params);
+	msl->params = NULL;
+	if (ret == 0) {
+		LM_WARN("no valid streams to fork!\n");
+		media_session_req(msl, BYE);
+		MSL_UNREF(msl);
+		media_session_leg_free(msl);
+	}
+	return ret;
+}
+
+static int handle_media_session_reply(struct media_session_leg *msl, struct sip_msg *msg)
+{
+	/* we end up here with a request that has to be forwarded to
+	 * one of the participants
+	 */
+	int ret;
+	str body;
+
+	/* all good now :D */
+	if (get_body(msg, &body) < 0 || body.len == 0) {
+		LM_WARN("no body to exchange media with!\n");
+		return -1;
+	}
+	if (msl->type == MEDIA_SESSION_TYPE_EXCHANGE)
+		ret = handle_media_session_reply_exchange(msl, &body, msl->params);
+	else
+		ret = handle_media_session_reply_fork(msl, &body);
+
+	MSL_UNREF(msl);
 	return ret;
 }
 
@@ -843,8 +995,52 @@ static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void
 static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	LM_WARN("not implemented yet!\n");
-	return NULL;
+	int medianum;
+	int media_leg;
+	str shdrs, *hdrs;
+	str callid, leg, uri;
+	struct dlg_cell *dlg;
+	struct socket_info *si;
+	union sockaddr_union tmp;
+
+	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "uri", &uri.s, &uri.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "leg", &leg.s, &leg.len) < 0)
+		return init_mi_param_error();
+
+	if (try_get_mi_int_param(params, "medianum", &medianum) < 0)
+		medianum = -1;
+	if (try_get_mi_string_param(params, "headers", &shdrs.s, &shdrs.len) < 0)
+		hdrs = NULL;
+	else
+		hdrs = &shdrs;
+
+	media_leg = fixup_get_media_leg_both(&leg);
+	if (media_leg < 0)
+		return init_mi_error(406, MI_SSTR("invalid leg parameter"));
+
+	si = uri2sock(NULL, &uri, &tmp, PROTO_NONE);
+	if (!si)
+		return init_mi_error(500, MI_SSTR("No suitable socket"));
+
+	/* params are now ok, let's lookup the media session */
+	dlg = media_dlg.get_dlg_by_callid(&callid, 1);
+	if (!dlg)
+		return init_mi_error(404, MI_SSTR("Dialog not found"));
+
+	if (handle_media_fork_to_uri(si, dlg, &uri, media_leg,
+			hdrs, medianum) < 0) {
+		media_dlg.dlg_unref(dlg, 1);
+		return init_mi_error(500, MI_SSTR("Could not start media forking"));
+	}
+
+	/* all good now, unref the dialog as it is reffed by the ms */
+	media_dlg.dlg_unref(dlg, 1);
+	return init_mi_result_ok();
 }
 
 static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *params,

@@ -26,18 +26,29 @@
 extern str content_type_sdp;
 extern str content_type_sdp_hdr;
 
-struct media_forks;
+struct media_fork_info;
 
 str *media_session_get_hold_sdp(struct media_session_leg *msl);
 
 str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg);
 
-int media_fork_streams(struct media_session_leg *msl, struct media_forks *forks);
+int media_fork_streams(struct media_session_leg *msl, struct media_fork_info *forks);
 
-struct media_forks *media_sdp_match(struct dlg_cell *dlg,
+struct media_fork_info *media_sdp_match(struct dlg_cell *dlg,
 		int leg, sdp_info_t *invite_sdp, int medianum);
 
-void media_forks_free(struct media_forks *mf);
+struct media_fork_info *media_sdp_get(struct dlg_cell *dlg,
+		int leg, int medianum);
+
+str *media_sdp_buf_get(void);
+
+int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf);
+
+void media_forks_free(struct media_fork_info *mf);
+
+void media_fork_fill(struct media_fork_info *mf, str *ip, str *port);
+
+struct media_fork_info *media_fork_search(struct media_fork_info *mf, void *search);
 
 int media_util_init_static(void);
 

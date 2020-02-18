@@ -128,15 +128,12 @@
 		<title>Exported Functions</title>
 		<section id="func_media_fork_to_uri" xreflabel="media_fork_to_uri()">
 			<title>
-			<function moreinfo="none">media_fork_to_uri(URI[, leg[, body[, headers]]])</function>
+			<function moreinfo="none">media_fork_to_uri(URI[, leg[, headers[, medianum]]])</function>
 			</title>
 			<para>
 				Behaves as a B2B user agent client to initiate a call to a SIP
 				URI and then stream the media to the SDP received in the 200
 				OK response.
-			</para>
-			<para>
-				<emphasis>Note</emphasis> Not implemented yet!
 			</para>
 			<para>
 				Parameters:
@@ -152,15 +149,15 @@
 						missing, the direction of the indialog request is used.
 				</para></listitem>
 				<listitem><para>
-					<emphasis>body</emphasis> (string, optional) - custom body used
-						for the generated INVITE. If missing, the body of the current
-						request is used.
-				</para></listitem>
-				<listitem><para>
 					<emphasis>headers</emphasis> (string, optional) - optional
 						headers added to the generated request.
 				</para></listitem>
 				</itemizedlist>
+				<listitem><para>
+					<emphasis>medianum</emphasis> (integer, optional) - the media
+						stream that will be forked within the call. First index is 0.
+						If missing, all media streams of that leg(s) are streamed.
+				</para></listitem>
 			</para>
 			<para>
 				This function can be used from REQUEST_ROUTE.
@@ -438,6 +435,11 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; !is_audio_on_hold())
 				<emphasis>headers</emphasis> (string, optional) - extra
 					headers to add to the outgoing request
 			</para></listitem>
+			<listitem><para>
+				<emphasis>medianum</emphasis> (integer, optional) - the media
+					stream that will be forked within the call. First index is 0.
+					If missing, all media streams of that leg(s) are streamed.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
@@ -448,20 +450,6 @@ opensips-cli -x mi media_fork_from_call_to_uri \
 	callid=c6fdb0f9-47dc-495d-8d38-0f37e836a531 \
 	uri=sip:record@127.0.0.1:5080
 		</programlisting>
-		</section>
-		<section id="mi_media_fork_from_call_to_uri_body"
-			xreflabel="media_fork_from_call_to_uri_body">
-		<title>
-		<function moreinfo="none">media_fork_from_call_to_uri_body</function>
-		</title>
-		<para>
-		MI command that does the same thing as the
-		<xref linkend="mi_media_fork_from_call_to_uri"/> MI function, but
-		also allows you to specify a custom body in the outgoing request.
-		The body has to be specified in the mandatory <emphasis>body</emphasis>
-		parameter, all the other parameters being the same as the ones of
-		<xref linkend="mi_media_fork_from_call_to_uri"/>.
-		</para>
 		</section>
 		<section id="mi_media_exchange_from_call_to_uri"
 			xreflabel="media_exchange_from_call_to_uri">
