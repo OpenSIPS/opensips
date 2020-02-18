@@ -2309,11 +2309,6 @@ static void ds_options_callback( struct cell *t, int type,
 	return;
 }
 
-void shm_free_cb_param(void *param)
-{
-	shm_free(param);
-}
-
 /*
  * Timer for checking inactive destinations
  *
@@ -2383,8 +2378,9 @@ void ds_check_timer(unsigned int ticks, void* param)
 							dlg,
 							ds_options_callback,
 							(void*)cb_param,
-							shm_free_cb_param) < 0) {
+							osips_shm_free) < 0) {
 						LM_ERR("unable to execute dialog\n");
+						shm_free(cb_param);
 					}
 					tmb.free_dlg(dlg);
 				}

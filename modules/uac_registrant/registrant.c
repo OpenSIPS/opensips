@@ -296,8 +296,6 @@ static int child_init(int rank)
 }
 
 
-void shm_free_param(void* param) {shm_free(param);}
-
 struct reg_tm_cback_data {
 	struct cell *t;
 	struct tmcb_params *ps;
@@ -717,7 +715,11 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 		&rec->td,		/* dialog structure*/
 		reg_tm_cback,		/* callback function */
 		(void *)cb_param,	/* callback param */
-		shm_free_param);	/* function to release the parameter */
+		osips_shm_free);	/* function to release the parameter */
+
+	if (result < 1)
+		shm_free(cb_param);
+
 	LM_DBG("result=[%d]\n", result);
 	return result;
 }
@@ -765,7 +767,11 @@ int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 		&rec->td,		/* dialog structure*/
 		reg_tm_cback,		/* callback function */
 		(void *)cb_param,	/* callback param */
-		shm_free_param);	/* function to release the parameter */
+		osips_shm_free);	/* function to release the parameter */
+
+	if (result < 1)
+		shm_free(cb_param);
+
 	LM_DBG("result=[%d]\n", result);
 	return result;
 }
