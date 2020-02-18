@@ -134,6 +134,15 @@
 			lock_stop_read(rtpe_lock); \
 	} while (0)
 
+#define RTPE_IO_ERROR_CLOSE(_fd) \
+	do { \
+		if (errno == EPIPE || errno == EBADF) { \
+			LM_INFO("Closing rtpengine socket %d\n", (_fd)); \
+			close((_fd)); \
+			(_fd) = -1; \
+		} \
+	} while (0)
+
 enum rtpe_operation {
 	OP_OFFER = 1,
 	OP_ANSWER,
@@ -2198,15 +2207,6 @@ error:
 	return 1;
 }
 
-#define RTPE_IO_ERROR_CLOSE(_fd) \
-	do { \
-		if (errno == EPIPE || errno == EBADF) { \
-			LM_INFO("Closing rtpengine socket %d\n", (_fd)); \
-			close((_fd)); \
-			(_fd) = -1; \
-		} \
-	} while (0)
-
 static char *
 send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 {
@@ -2339,7 +2339,6 @@ badproxy:
 	node->rn_recheck_ticks = get_ticks() + rtpengine_disable_tout;
 
 	return NULL;
-#undef RTPE_IO_ERROR_CLOSE
 }
 
 /*
