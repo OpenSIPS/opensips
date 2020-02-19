@@ -231,6 +231,9 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 				goto out;
 			}
 			memcpy(faked_req->dst_uri.s, uac->duri.s, uac->duri.len);
+		} else {
+			faked_req->dst_uri.s = NULL;
+			faked_req->dst_uri.len = 0;
 		}
 		if (uac->path_vec.s) {
 			faked_req->path_vec.s = pkg_malloc(uac->path_vec.len);
@@ -239,6 +242,9 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 				goto out2;
 			}
 			memcpy(faked_req->path_vec.s, uac->path_vec.s, uac->path_vec.len);
+		} else {
+			faked_req->path_vec.s = NULL;
+			faked_req->path_vec.len = 0;
 		}
 
 		/* set the branch flags from the elected branch */
