@@ -469,6 +469,7 @@ struct srec_buffer {
 static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 {
 	int p;
+	str media_ip;
 	struct srs_sdp_stream *stream;
 	struct list_head *it;
 	/*
@@ -482,22 +483,22 @@ static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 	 * <streams*>
 	 */
 	str header1 = str_init("v=0" CRLF "o=- ");
-	str header2 = str_init(" IN IP4 0.0.0.0" CRLF "s=-" CRLF);
-	str header3 = str_init("c=IN IP4 ");
+	str header2 = str_init(" IN IP4 ");
+	str header3 = str_init(CRLF "s=-" CRLF "c=IN IP4 ");
 	str header4 = str_init("t=0 0" CRLF);
 	str localh = str_init("127.0.0.1");
 	str crlf_str = str_init(CRLF);
+
+	media_ip = (sess->media_ip.s?sess->media_ip:localh);
 
 	SIPREC_COPY_STR(header1, buf);
 	SIPREC_COPY_INT(sess->ts, buf);
 	SIPREC_COPY_CHAR(' ', buf);
 	SIPREC_COPY_INT(sess->version, buf);
 	SIPREC_COPY_STR(header2, buf);
+	SIPREC_COPY_STR(media_ip, buf);
 	SIPREC_COPY_STR(header3, buf);
-	if (sess->media_ip.s)
-		SIPREC_COPY_STR(sess->media_ip, buf);
-	else
-		SIPREC_COPY_STR(localh, buf);
+	SIPREC_COPY_STR(media_ip, buf);
 	SIPREC_COPY_STR(crlf_str, buf);
 	SIPREC_COPY_STR(header4, buf);
 	for (p = 0; p < sess->participants_no; p++) {
