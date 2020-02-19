@@ -323,7 +323,7 @@ static inline int fake_req(struct sip_msg *faked_req, struct sip_msg *shm_msg,
 	}
 
 	if (fix_fake_req_headers(faked_req) < 0) {
-		LM_ERR("could not fix haed request headers!\n");
+		LM_ERR("could not fix request headers!\n");
 		goto out3;
 	}
 
