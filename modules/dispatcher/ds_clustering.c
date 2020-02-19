@@ -133,7 +133,7 @@ static int ds_status_update(bin_packet_t *packet, int is_sync)
 static void receive_ds_binary_packet(bin_packet_t *packet)
 {
 	bin_packet_t *pkt;
-	int rc;
+	int rc = 0;
 
 	for (pkt = packet; pkt; pkt = pkt->next) {
 		LM_DBG("received a binary packet [%d]!\n", packet->type);

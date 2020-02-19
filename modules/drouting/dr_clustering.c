@@ -236,7 +236,7 @@ static void dr_recv_sync_packet(bin_packet_t *packet)
 static void receive_dr_binary_packet(bin_packet_t *packet)
 {
 	bin_packet_t *pkt;
-	int rc;
+	int rc = 0;
 
 	for (pkt = packet; pkt; pkt = pkt->next) {
 		LM_DBG("received a binary packet [%d]!\n", packet->type);
