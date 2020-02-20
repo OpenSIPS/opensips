@@ -60,6 +60,7 @@
 #define PV_SUBNAME_FEATURE "feature"
 #define PV_SUBNAME_PRESENTITY "presentity"
 #define PV_SUBNAME_NOTIFY "notify"
+#define PV_SUBNAME_PARAM "param"
 
 #define PV_TYPE_ASSIGN 0
 #define PV_TYPE_STATUS 1
@@ -67,6 +68,7 @@
 #define PV_TYPE_FEATURE 3
 #define PV_TYPE_PRESENTITY 4
 #define PV_TYPE_NOTIFY 5
+#define PV_TYPE_PARAM 6
 
 #define CT_TYPE_MULTIPART "multipart/mixed;boundary=" OSS_BOUNDARY
 #define CT_TYPE_MULTIPART_LEN (sizeof(CT_TYPE_MULTIPART)-1)
@@ -110,6 +112,7 @@ struct dfks_ctx {
 	int idx;
 	str pres_uri;
 	str values[MAX_VALUES_NO];
+	str param;
 };
 
 struct dfks_ipc_params {
@@ -117,7 +120,7 @@ struct dfks_ipc_params {
 	str values[MAX_VALUES_NO];
 	int feature_idx;
 	int status;
-	int run_route;
+	str param;
 };
 
 struct dfks_pv_name {

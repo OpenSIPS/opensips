@@ -122,8 +122,10 @@ static param_export_t params[] = {
 
 static mi_export_t mi_cmds[] = {
 	{ "dfks_set_feature", 0, 0, 0, {
-		{mi_dfks_set, {"set_route", "presentity", "feature", "status", 0}},
-		{mi_dfks_set, {"set_route", "presentity", "feature", "status", "values", 0}},
+		{mi_dfks_set, {"presentity", "feature", "status", 0}},
+		{mi_dfks_set, {"presentity", "feature", "status", "values", 0}},
+		{mi_dfks_set, {"presentity", "feature", "status", "route_param", 0}},
+		{mi_dfks_set, {"presentity", "feature", "status", "route_param", "values", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -260,6 +262,8 @@ static int pv_parse_dfks_name(pv_spec_p sp, str *in)
 		name->type = PV_TYPE_PRESENTITY;
 	} else if (!str_strcmp(in, _str(PV_SUBNAME_NOTIFY))) {
 		name->type = PV_TYPE_NOTIFY;
+	} else if (!str_strcmp(in, _str(PV_SUBNAME_PARAM))) {
+		name->type = PV_TYPE_PARAM;
 	} else {
 		LM_ERR("Bad subname for $dfks\n");
 		return -1;
@@ -351,6 +355,9 @@ static int pv_set_dfks(struct sip_msg *msg, pv_param_t *param, int op,
 	case PV_TYPE_PRESENTITY:
 		LM_INFO("$dfks(presentity) is read-only\n");
 		break;
+	case PV_TYPE_PARAM:
+		LM_INFO("$dfks(route_param) is read-only\n");
+		break;
 	default:
 		LM_ERR("Bad $dfks subname\n");
 		return -1;
@@ -396,6 +403,12 @@ static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		break;
 	case PV_TYPE_PRESENTITY:
 		res->rs = feature_ctx.pres_uri;
+		res->flags = PV_VAL_STR;
+		break;
+	case PV_TYPE_PARAM:
+		if (feature_ctx.param.len == 0 && feature_ctx.param.s == NULL)
+			return pv_get_null(msg, param, res);
+		res->rs = feature_ctx.param;
 		res->flags = PV_VAL_STR;
 		break;
 	default:
@@ -787,7 +800,7 @@ end:
 }
 
 static str *build_feature_notify(str *pres_uri, int feature_idx, int from_subs,
-	int run_route, str *content_type)
+	str *param, str *content_type)
 {
 	xmlDoc *doc = NULL;
 	str xml_buf = {0,0};
@@ -797,9 +810,14 @@ static str *build_feature_notify(str *pres_uri, int feature_idx, int from_subs,
 	feature_ctx.notify = 1;
 	feature_ctx.idx = feature_idx;
 	feature_ctx.pres_uri = *pres_uri;
+	if (!param) {
+		feature_ctx.param.len = 0;
+		feature_ctx.param.s = NULL;
+	} else {
+		feature_ctx.param = *param;
+	}
 
-	if (run_route)
-		run_dfks_route(dfks_set_route_idx);
+	run_dfks_route(dfks_set_route_idx);
 
 	if (!feature_ctx.notify)
 		goto end;
@@ -895,7 +913,7 @@ static str *dfks_handle_subscribe(str *pres_uri, str *subs_body,
 			feature_names[feature_idx].len, feature_names[feature_idx].s,
 			pres_uri->len, pres_uri->s, feature_ctx.status);
 
-		notify_body = build_feature_notify(pres_uri, feature_idx, 1, 1, ct_type);
+		notify_body = build_feature_notify(pres_uri, feature_idx, 1, NULL, ct_type);
 		if (notify_body == (str*)-1) {
 			LM_ERR("Failed to build NOTIFY body\n");
 			goto no_repl;
@@ -946,7 +964,7 @@ void mi_feature_notify(int sender, void *_params)
 		}
 
 	notify_body = build_feature_notify(&params->pres_uri, params->feature_idx,
-		0, params->run_route, &ct_type);
+		0, &params->param, &ct_type);
 	if (notify_body == (str*)-1) {
 		LM_ERR("Failed to build NOTIFY body");
 		goto end;
@@ -967,6 +985,8 @@ void mi_feature_notify(int sender, void *_params)
 	}
 
 end:
+	if (params->param.len && params->param.s)
+		shm_free(params->param.s);
 	shm_free(params->pres_uri.s);
 	for (j = 0; j < MAX_VALUES_NO; j++)
 		if (params->values[j].s)
@@ -981,7 +1001,7 @@ end:
 }
 
 int ipc_dispatch_feature_notify(str *pres_uri, int feature_idx, int status,
-	str *values, int run_route)
+	str *values, str *param)
 {
 	struct dfks_ipc_params *params;
 	int i;
@@ -998,7 +1018,11 @@ int ipc_dispatch_feature_notify(str *pres_uri, int feature_idx, int status,
 
 	params->feature_idx = feature_idx;
 	params->status = status;
-	params->run_route = run_route;
+
+	if (param->s && param->len && shm_str_dup(&params->param, param) < 0) {
+		LM_ERR("oom!\n");
+		goto error;
+	}
 
 	if (shm_str_dup(&params->pres_uri, pres_uri) < 0) {
 		LM_ERR("oom!\n");
@@ -1034,29 +1058,28 @@ int ipc_dispatch_feature_notify(str *pres_uri, int feature_idx, int status,
 	return ipc_dispatch_rpc(mi_feature_notify, params);
 
 error:
-	shm_free(params);
+	if (params->param.s)
+		shm_free(params->param.s);
 	if (params->pres_uri.s)
 		shm_free(params->pres_uri.s);
 	for (i = 0; i < MAX_VALUES_NO; i++)
 		if (params->values[i].s)
 			shm_free(params->values[i].s);
+	shm_free(params);
 	return -1;
 }
 
 static mi_response_t *mi_dfks_set(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
+	str param;
 	str pres_uri;
 	str feature;
 	int status;
 	str values[MAX_VALUES_NO];
-	int set_route = 0;
 	int i, j;
 	mi_item_t *vals_arr;
 	int no_vals = 0;
-
-	if (get_mi_int_param(params, "set_route", &set_route) < 0)
-		return init_mi_param_error();
 
 	if (get_mi_string_param(params, "presentity", &pres_uri.s, &pres_uri.len) < 0)
 		return init_mi_param_error();
@@ -1072,6 +1095,11 @@ static mi_response_t *mi_dfks_set(const mi_params_t *params,
 	if (get_mi_int_param(params, "status", &status) < 0)
 		return init_mi_param_error();
 
+	if (try_get_mi_string_param(params, "route_param", &param.s, &param.len) < 0) {
+		param.len = 0;
+		param.s = NULL;
+	}
+
 	memset(values, 0, MAX_VALUES_NO * sizeof(str));
 
 	if (try_get_mi_array_param(params, "values", &vals_arr, &no_vals) == 0) {
@@ -1081,7 +1109,7 @@ static mi_response_t *mi_dfks_set(const mi_params_t *params,
 				return init_mi_param_error();
 	}
 
-	if (ipc_dispatch_feature_notify(&pres_uri, i, status, values, set_route) < 0) {
+	if (ipc_dispatch_feature_notify(&pres_uri, i, status, values, &param) < 0) {
 		LM_ERR("Failed to dispatch NOTIFY sending to worker process\n");
 		return init_mi_error(500, MI_SSTR("Internal Error"));
 	}

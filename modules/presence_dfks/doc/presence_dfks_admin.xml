@@ -122,16 +122,16 @@ modparam("presence_dfks", "set_route", "dfks_set")
 		to all watchers.
 		</para>
 		<para>
+			<emphasis>Note:</emphasis> calling this MI function also triggers the
+			<emphasis>set_route</emphasis> run. One can determine if the route is
+			triggered by an MI function by checking the existence of the
+			<emphasis>$dfks(param)</emphasis> variable.
+		</para>
+		<para>
 		Name: <emphasis>dfks_set_feature</emphasis>
 		</para>
 		<para>Parameters:
 		<itemizedlist>
-			<listitem>
-				<para>
-				<emphasis>set_route</emphasis>: <emphasis>1</emphasis> - run the set_route,
-				<emphasis>0</emphasis> - do not run the set_route
-				</para>
-			</listitem>
 			<listitem>
 				<para>
 				<emphasis>presentity</emphasis>: the URI of the user whose feature status
@@ -162,6 +162,13 @@ modparam("presence_dfks", "set_route", "dfks_set")
 				<para>
 				<emphasis>status</emphasis>: the new status of the feature:
 				<emphasis>0</emphasis> - disabled, <emphasis>1</emphasis> - enabled
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis>route_param</emphasis>: optional string parameter
+				passed to the <emphasis>$dfks(param)</emphasis> variable in
+				<emphasis>set_route</emphasis>.
 				</para>
 			</listitem>
 			<listitem>
@@ -237,6 +244,14 @@ opensips-cli -x mi dfks_set_feature 0 sip:alice@10.0.0.11 CallForwardingNoAnswer
 	<listitem>
 		<para><emphasis>status</emphasis> - read or write the feature status. A value of
 		<emphasis>1</emphasis> means enabled and <emphasis>0</emphasis> disabled.
+		</para>
+	</listitem>
+	<listitem>
+		<para><emphasis>param</emphasis> - returns the parameter passed by the
+		<emphasis>mi_dfks_set_feature</emphasis> MI function. This field will be
+		<emphasis>NULL</emphasis> if the parameter was not specified, or if the
+		<emphasis>set_route</emphasis> is not triggered by an MI command, but by
+		SIP signalling.
 		</para>
 	</listitem>
 	<listitem>
