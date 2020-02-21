@@ -443,8 +443,8 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 		LM_ERR("could not fork streams!\n");
 		goto destroy;
 	}
+	msl->params = mf;
 	media_util_release_static();
-	media_forks_free(mf);
 	media_dlg.dlg_unref(dlg, 1);
 	return 1;
 destroy:
@@ -876,12 +876,12 @@ static int handle_media_session_reply_fork(struct media_session_leg *msl, str *b
 	free_sdp_content(&sdp);
 error:
 	/* done - release the media forks */
-	media_forks_free(msl->params);
-	msl->params = NULL;
 	if (ret == 0) {
 		LM_WARN("no valid streams to fork!\n");
 		media_session_req(msl, BYE);
 		MSL_UNREF(msl);
+		media_forks_free(msl->params);
+		msl->params = NULL;
 		media_session_leg_free(msl);
 	}
 	return ret;

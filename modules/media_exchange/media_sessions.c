@@ -209,10 +209,9 @@ struct media_session_leg *media_session_other_leg(
 
 int media_session_resume_dlg(struct media_session_leg *msl)
 {
-	if (msl->type == MEDIA_SESSION_TYPE_FORK) {
-		LM_WARN("termination of RTP streaming is not yet available!\n");
-		return 0;
-	}
+	if (msl->type == MEDIA_SESSION_TYPE_FORK)
+		return media_forks_stop(msl);
+
 	int first_leg = MEDIA_SESSION_DLG_LEG(msl);
 	if (media_session_reinvite(msl, first_leg, NULL) < 0)
 		LM_ERR("could not resume call for leg %d\n", first_leg);

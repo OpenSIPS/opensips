@@ -51,6 +51,8 @@ void media_fork_fill(struct media_fork_info *mf, str *ip, str *port);
 
 struct media_fork_info *media_fork_search(struct media_fork_info *mf, void *search);
 
+int media_forks_stop(struct media_session_leg *msl);
+
 int media_util_init_static(void);
 
 void media_util_release_static(void);
