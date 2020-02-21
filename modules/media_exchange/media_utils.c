@@ -766,3 +766,103 @@ void media_forks_free(struct media_fork_info *mf)
 	}
 }
 #undef MS_UTIL_BUF_RELEASE
+
+void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store)
+{
+	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
+
+	/* nothing to do with update right now */
+	if (event_type == B2B_EVENT_UPDATE)
+		return;
+
+	/* we always need to identify the media session */
+	bin_push_str(store, &msl->ms->dlg->callid);
+
+	if (event_type == B2B_EVENT_CREATE) {
+		bin_push_int(store, msl->type);
+		bin_push_int(store, msl->nohold);
+	}
+	bin_push_int(store, msl->leg);
+}
+
+void media_exchange_event_received(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store)
+{
+	str callid, b2b_key;
+	struct dlg_cell *dlg;
+	int type, nohold, leg;
+	struct media_session *ms;
+	struct media_session_leg *msl;
+
+	/* nothing to do for update for us */
+	if (event_type == B2B_EVENT_UPDATE)
+		return;
+
+	if (bin_pop_str(store, &callid) != 0)
+		return;
+
+	dlg = media_dlg.get_dlg_by_callid(&callid, 0);
+	if (!dlg) {
+		LM_ERR("could not find %.*s\n", callid.len, callid.s);
+		goto drain;
+	}
+
+	if (event_type == B2B_EVENT_CREATE) {
+		if (bin_pop_int(store, &type) != 0)
+			goto release;
+		if (bin_pop_int(store, &nohold) != 0)
+			goto release;
+	}
+	if (bin_pop_int(store, &leg) != 0)
+		goto release;
+
+	/* check to see if we have a media sesion */
+	if (event_type == B2B_EVENT_CREATE) {
+		if (shm_str_dup(&b2b_key, key) < 0) {
+			LM_ERR("could not duplicate b2b key!\n");
+			goto release;
+		}
+		msl = media_session_new_leg(dlg, type, leg, nohold);
+		if (!msl) {
+			LM_ERR("cannot create new leg!\n");
+			shm_free(b2b_key.s);
+			goto release;
+		}
+		msl->b2b_entity = et;
+		msl->b2b_key = b2b_key;
+		if (b2b_media_restore_callbacks(msl) < 0) {
+			MSL_UNREF(msl);
+			/* no need of this session leg - remote it */
+			media_session_leg_free(msl);
+		}
+	} else {
+		ms = media_session_get(dlg);
+		if (!ms) {
+			LM_ERR("could not get media session!\n");
+			goto release;
+		}
+		msl = media_session_get_leg(ms, leg);
+		if (msl) {
+			LM_ERR("could not get media session leg!\n");
+			goto release;
+		}
+		/* do not delete the key, as it's being deleted anyway */
+		shm_free(msl->b2b_key.s);
+		msl->b2b_key.s = NULL;
+		MSL_UNREF(msl);
+		media_session_leg_free(msl);
+	}
+
+	media_dlg.dlg_unref(dlg, 1);
+	return;
+release:
+	media_dlg.dlg_unref(dlg, 1);
+	return;
+drain:
+	if (event_type == B2B_EVENT_CREATE) {
+		bin_pop_int(store, &type);
+		bin_pop_int(store, &nohold);
+	}
+	bin_pop_int(store, &leg);
+}

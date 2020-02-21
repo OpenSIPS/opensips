@@ -188,6 +188,19 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (media_b2b.register_cb(media_exchange_loaded,
+			B2BCB_LOADED, exports.name) < 0) {
+		LM_ERR("could not register loaded callback!\n");
+		return -1;
+	}
+
+	if (media_b2b.register_cb(media_exchange_serialize,
+			B2BCB_SERIALIZE, exports.name) < 0) {
+		LM_ERR("could not register loaded callback!\n");
+		return -1;
+	}
+
+
 	if (load_rtpproxy_api(&media_rtp) != 0)
 		LM_DBG("rtpproxy module not loaded! Cannot use streaming functions\n");
 
@@ -989,6 +1002,28 @@ static int b2b_media_server_notify(struct sip_msg *msg, str *key, int type, void
 	} else {
 		return handle_indialog_request(msg, msl, key);
 	}
+	return 0;
+}
+
+int b2b_media_restore_callbacks(struct media_session_leg *msl)
+{
+	str hack;
+	b2b_notify_t cb;
+	if (msl->b2b_entity == B2B_CLIENT)
+		cb = b2b_media_client_notify;
+	else
+		cb = b2b_media_server_notify;
+	hack.s = (char *)&msl;
+	hack.len = sizeof(void *);
+	if (media_b2b.update_b2bl_param(msl->b2b_entity, &msl->b2b_key, &hack) < 0) {
+		LM_ERR("could not register restore logic!\n");
+		return -1;
+	}
+	if (media_b2b.restore_logic_info(msl->b2b_entity, &msl->b2b_key, cb) < 0) {
+		LM_ERR("could not register restore logic!\n");
+		return -1;
+	}
+
 	return 0;
 }
 
