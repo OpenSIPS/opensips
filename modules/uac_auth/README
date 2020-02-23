@@ -92,8 +92,8 @@ modparam("uac_auth","credential","username:domain:0xc17ba8157756f263d07e
    The definition of an AVP that might contain the realm to be
    used to perform authentication.
 
-   If you define it, you also need to define "auth_username_avp"
-   (auth_username_avp) and "auth_password_avp"
+   If you define it, you also need to define “auth_username_avp”
+   (auth_username_avp) and “auth_password_avp”
    (auth_password_avp).
 
    Example 1.2. Set auth_realm_avp parameter
@@ -106,8 +106,8 @@ modparam("uac_auth","auth_realm_avp","$avp(10)")
    The definition of an AVP that might contain the username to be
    used to perform authentication.
 
-   If you define it, you also need to define "auth_realm_avp"
-   (auth_realm_avp) and "auth_password_avp" (auth_password_avp).
+   If you define it, you also need to define “auth_realm_avp”
+   (auth_realm_avp) and “auth_password_avp” (auth_password_avp).
 
    Example 1.3. Set auth_username_avp parameter
 ...
@@ -123,8 +123,8 @@ modparam("uac_auth","auth_username_avp","$avp(11)")
    total of 34 chars) (for example
    "0xc17ba8157756f263d07e158504204629")
 
-   If you define it, you also need to define "auth_realm_avp"
-   (auth_realm_avp) and "auth_username_avp" (auth_username_avp).
+   If you define it, you also need to define “auth_realm_avp”
+   (auth_realm_avp) and “auth_username_avp” (auth_username_avp).
 
    Example 1.4. Set auth_password_avp parameter
 ...
@@ -185,6 +185,6 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2013 www.opensips-solutions.com
+   Copyright © 2013 www.opensips-solutions.com
 
-   Copyright � 2011 VoIP Embedded, Inc.
+   Copyright © 2011 VoIP Embedded, Inc.

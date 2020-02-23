@@ -94,7 +94,7 @@ Chapter 1. Admin Guide
    The name of the script route to be run in order to retrieve the
    status of a feature.
 
-   Default value is "dfks_get".
+   Default value is “dfks_get”.
 
    Example 1.1. Set parameter
 ...
@@ -106,7 +106,7 @@ modparam("presence_dfks", "get_route", "dfks_get")
    The name of the script route to be run when a feature status
    update from a SIP phone is received.
 
-   Default value is "dfks_get".
+   Default value is “dfks_get”.
 
    Example 1.2. Set parameter
 ...
@@ -124,11 +124,13 @@ modparam("presence_dfks", "set_route", "dfks_set")
    Triggers the sending of NOTIFY messages containing a feature
    status update to all watchers.
 
+   Note: calling this MI function also triggers the set_route run.
+   One can determine if the route is triggered by an MI function
+   by checking the existence of the $dfks(param) variable.
+
    Name: dfks_set_feature
 
    Parameters:
-     * set_route: 1 - run the set_route, 0 - do not run the
-       set_route
      * presentity: the URI of the user whose feature status should
        be updated
      * feature: The name of the feature to update. Takes one of
@@ -139,6 +141,8 @@ modparam("presence_dfks", "set_route", "dfks_set")
           + CallForwardingNoAnswer
      * status: the new status of the feature: 0 - disabled, 1 -
        enabled
+     * route_param: optional string parameter passed to the
+       $dfks(param) variable in set_route.
      * values: an array of extra values that can be updated for a
        feature. The format of an array element is: field/value.
        Supported fields are:
@@ -171,6 +175,10 @@ NoAnswer 1 ringCount/4 forwardTo/sip:bob@10.0.0.11
           + CallForwardingNoAnswer
      * status - read or write the feature status. A value of 1
        means enabled and 0 disabled.
+     * param - returns the parameter passed by the
+       mi_dfks_set_feature MI function. This field will be NULL if
+       the parameter was not specified, or if the set_route is not
+       triggered by an MI command, but by SIP signalling.
      * value/field - read or write extra feature values. field can
        be one of:
           + forwardTo - for all forwarding types
@@ -204,6 +212,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu)    22       6      1631      86
+   2. Razvan Crainea (@razvancrainea)    3        1       67       21
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -225,7 +234,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) Dec 2019 - Jan 2020
+   1. Razvan Crainea (@razvancrainea) Feb 2020 - Feb 2020
+   2. Vlad Patrascu (@rvlad-patrascu) Dec 2019 - Jan 2020
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -234,8 +244,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu).
 
    Documentation Copyrights:
 
-   Copyright � 2019 www.opensips-solutions.com
+   Copyright © 2019 www.opensips-solutions.com

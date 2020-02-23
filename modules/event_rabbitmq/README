@@ -134,7 +134,7 @@ Chapter 1. Admin Guide
    waiting for a response from a dead rabbitmq-server. The value
    represents the heartbit interval in seconds.
 
-   Default value is "0 (disabled)".
+   Default value is “0 (disabled)”.
 
    Example 1.1. Set heartbeat parameter
 ...
@@ -150,7 +150,7 @@ modparam("event_rabbitmq", "heartbeat", 3)
    mode the process continues its operation without receiving any
    confirmation.
 
-   Default value is "0 (asynchronous)".
+   Default value is “0 (asynchronous)”.
 
    Example 1.2. Set sync_mode parameter
 ...
@@ -162,7 +162,7 @@ modparam("event_rabbitmq", "sync_mode", 1)
    The maximally allowed duration (in milliseconds) for the
    establishment of a TCP connection with a RabbitMQ server.
 
-   Default value is "500" (milliseconds).
+   Default value is “500” (milliseconds).
 
    Example 1.3. Setting the connect_timeout parameter
 ...
@@ -173,7 +173,7 @@ modparam("event_rabbitmq", "connect_timeout", 1000)
 
    Suppresses the name of the event in the raised event.
 
-   Default value is "0/OFF" (the event's name is sent).
+   Default value is “0/OFF” (the event's name is sent).
 
    Example 1.4. Set suppress_event_name parameter
                                         ...
@@ -468,7 +468,7 @@ Chapter 3. Contributors
    9. Peter Lemenkov (@lemenkov) 4 2 1 2
    10. Eric Tamme (@etamme) 3 1 1 2
 
-   All remaining contributors: Juli�n Moreno Pati�o, Vlad Paiu
+   All remaining contributors: Julián Moreno Patiño, Vlad Paiu
    (@vladpaiu).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -497,7 +497,7 @@ Chapter 3. Contributors
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    6.  Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
-   7.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Ovidiu Sas (@ovidiusas)             Jun 2015 - Jun 2015
    9.  Eric Tamme (@etamme)                May 2015 - May 2015
    10. Ionut Ionita (@ionutrazvanionita)   Jun 2014 - Jun 2014
@@ -517,4 +517,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2011 www.opensips-solutions.com
+   Copyright © 2011 www.opensips-solutions.com

@@ -73,7 +73,7 @@ Chapter 1. Admin Guide
        for redirection.
 
    When selecting from a 3xx branch the contacts to be used, the
-   contacts will be ordered and prioritized based on the "q"
+   contacts will be ordered and prioritized based on the “q”
    value.
 
 1.2. Dependencies
@@ -95,10 +95,10 @@ Chapter 1. Admin Guide
 
 1.3.1. default_filter (string)
 
-   The default behavior in filtering contacts. It may be "accept"
-   or "deny".
+   The default behavior in filtering contacts. It may be “accept”
+   or “deny”.
 
-   The default value is "accept".
+   The default value is “accept”.
 
    Example 1.1. Set default_filter module parameter
 ...
@@ -109,7 +109,7 @@ modparam("uac_redirect","default_filter","deny")
 
    The regular expression for default deny filtering. It make sens
    to be defined on only if the default_filter parameter is set to
-   "accept". All contacts matching the deny_filter will be
+   “accept”. All contacts matching the deny_filter will be
    rejected; the rest of them will be accepted for redirection.
 
    The parameter may be defined only one - multiple definition
@@ -128,7 +128,7 @@ modparam("uac_redirect","deny_filter",".*@siphub\.net")
 
    The regular expression for default accept filtering. It make
    sens to be defined on only if the default_filter parameter is
-   set to "deny". All contacts matching the accept_filter will be
+   set to “deny”. All contacts matching the accept_filter will be
    accepted; the rest of them will be rejected for redirection.
 
    The parameter may be defined only one - multiple definition
@@ -211,10 +211,10 @@ set_accept_filter(".*@domain1.net","");
      * max_branch (int, optional) - max number of contacts per
        branch to be selected
 
-   Both "max_total" and "max_branch" default to 0 (unlimited).
+   Both “max_total” and “max_branch” default to 0 (unlimited).
 
    NOTE that during the selection process, each set of contacts
-   from a specific branch are ordered based on "q" value.
+   from a specific branch are ordered based on “q” value.
 
    This function can be used from FAILURE_ROUTE.
 
@@ -348,4 +348,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2005 Voice Sistem SRL
+   Copyright © 2005 Voice Sistem SRL

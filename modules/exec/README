@@ -46,8 +46,8 @@ exec Module
 
    List of Examples
 
-   1.1. Set "setvars" parameter
-   1.2. Set "time_to_kill" parameter
+   1.1. Set “setvars” parameter
+   1.2. Set “time_to_kill” parameter
    1.3. exec usage
    1.4. async exec usage
 
@@ -107,7 +107,7 @@ Chapter 1. Admin Guide
 
    Default value is 0 (disabled).
 
-   Example 1.1. Set "setvars" parameter
+   Example 1.1. Set “setvars” parameter
 ...
 modparam("exec", "setvars", 1)
 ...
@@ -129,7 +129,7 @@ modparam("exec", "setvars", 1)
 
    Default value is 0 (disabled).
 
-   Example 1.2. Set "time_to_kill" parameter
+   Example 1.2. Set “time_to_kill” parameter
 ...
 modparam("exec", "time_to_kill", 20)
 ...
@@ -254,8 +254,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Walter Doekes (@wdoekes), Anca
    Vamanu, Dan Pascu (@danpascu), Elena-Ramona Modroiu, Konstantin
-   Bokarius, Vlad Paiu (@vladpaiu), Andreas Granig, Juli�n Moreno
-   Pati�o, Octavian Cerna, Peter Lemenkov (@lemenkov), Edson
+   Bokarius, Vlad Paiu (@vladpaiu), Andreas Granig, Julián Moreno
+   Patiño, Octavian Cerna, Peter Lemenkov (@lemenkov), Edson
    Gellert Schubert, Dror Wald.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -285,7 +285,7 @@ Chapter 2. Contributors
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2017
    7.  Octavian Cerna                      Oct 2016 - Oct 2016
-   8.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Walter Doekes (@wdoekes)            Mar 2014 - Sep 2015
    10. Vlad Paiu (@vladpaiu)               Mar 2015 - Mar 2015
 
@@ -313,4 +313,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS
