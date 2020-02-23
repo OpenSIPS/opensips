@@ -122,8 +122,8 @@ Chapter 1. Admin Guide
    script the collection shall be identified using the schema and,
    if exists, the group name.
 
-   "If no URL defined, the url with no group name and collection
-   "default" will be used.".
+   “If no URL defined, the url with no group name and collection
+   "default" will be used.”.
 
    Example 1.1. Set cachedb_url parameter
 ...
@@ -155,8 +155,8 @@ cache_store("local:group2", ...)
    '='. Every collection that is defined in this parameter SHOULD
    be used in at least one URL, else you'll receive a WARNING.
 
-   "If no collection is defined, the collection with name
-   "default" will be created.".
+   “If no collection is defined, the collection with name
+   "default" will be created.”.
 
    Example 1.2. Set cache_collections parameter
 ...
@@ -174,7 +174,7 @@ modparam("cachedb_local", "cache_collections", "collection1; collection2
    The time interval in seconds at which to go through all the
    records and delete the expired ones.
 
-   Default value is "600 (10 minutes)".
+   Default value is “600 (10 minutes)”.
 
    Example 1.3. Set cache_clean_period parameter
 ...
@@ -288,8 +288,8 @@ Chapter 3. Contributors
    9. Razvan Crainea (@razvancrainea) 7 5 8 6
    10. Dusan Klinec 3 1 4 4
 
-   All remaining contributors: Ryan Bullock (@rrb3942), Juli�n
-   Moreno Pati�o, Peter Lemenkov (@lemenkov).
+   All remaining contributors: Ryan Bullock (@rrb3942), Julián
+   Moreno Patiño, Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -318,7 +318,7 @@ Chapter 3. Contributors
    5.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
-   8.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Dusan Klinec                        Dec 2015 - Dec 2015
    10. Ryan Bullock (@rrb3942)             Jan 2014 - Jan 2014
 
@@ -340,4 +340,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2009 Anca-Maria Vamanu
+   Copyright © 2009 Anca-Maria Vamanu

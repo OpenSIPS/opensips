@@ -76,7 +76,7 @@ Chapter 1. Admin Guide
    improvements were added.
 
    The TLS support was simultaneously added in both projects. In
-   SER, the support was committed in a separate "experimental" CVS
+   SER, the support was committed in a separate “experimental” CVS
    tree, as patch to the main CVS tree. In OpenSIPS, the support
    was integrated directly into the CVS tree, as a built-in
    component, and is part of stable OpenSIPS since release
@@ -161,12 +161,12 @@ Chapter 1. Admin Guide
    This phones can change their ringing tone based on the present
    or content of the "Alert-Info" SIP header as follows:
      * CISCO ATA - it has 4 pre-defined ringing types. The
-       Alert-Info header must look like "Alert-info: Bellcore-drX
-       EOH" where X can be between 1 and 4. Note that 1 is the
+       Alert-Info header must look like “Alert-info: Bellcore-drX
+       EOH” where X can be between 1 and 4. Note that 1 is the
        phone default ringing tone.
      * CISCO 7960 - it has 2 pre-defined ringing types and the
-       possibility of uploading new ones. The "Alert-Info" header
-       must look like "Alert-info: X EOH" where X can be whatever
+       possibility of uploading new ones. The “Alert-Info” header
+       must look like “Alert-info: X EOH” where X can be whatever
        number. When this header is present, the phones will not
        change the ringing tone, but the ringing pattern. Normally,
        the phone rings like [ring.........ring..........ring]
@@ -176,8 +176,8 @@ Chapter 1. Admin Guide
        hear some difference between the two patterns (and not only
        as length), its strongly recommended to have a highly
        asymmetric ringing type (as the pre-defined are not!!).
-     * SNOM - The "Alert-Info" header must look like "Alert-info:
-       URL EOH"" where URL can be a HTTP URL (for example) from
+     * SNOM - The “Alert-Info” header must look like “Alert-info:
+       URL EOH"” where URL can be a HTTP URL (for example) from
        where the phone can retrieve a ringing tone.
 
 1.4. Dependencies
@@ -485,7 +485,7 @@ Chapter 3. Contributors
    6. Vlad Patrascu (@rvlad-patrascu) 8 5 53 63
    7. Bogdan Chifor 5 2 141 1
    8. Vlad Paiu (@vladpaiu) 4 2 84 3
-   9. Juli�n Moreno Pati�o 3 1 1 1
+   9. Julián Moreno Patiño 3 1 1 1
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    All remaining contributors: Maksym Sobolyev (@sobomax).
@@ -517,7 +517,7 @@ Chapter 3. Contributors
    5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
    6.  Maksym Sobolyev (@sobomax)               Jul 2017 - Jul 2017
    7.  Ionut Ionita (@ionutrazvanionita)        Mar 2015 - Apr 2017
-   8.  Juli�n Moreno Pati�o                     Feb 2016 - Feb 2016
+   8.  Julián Moreno Patiño                     Feb 2016 - Feb 2016
    9.  Eseanu Marius Cristian (@eseanucristian) Sep 2015 - Sep 2015
    10. Bogdan Chifor                            Aug 2015 - Aug 2015
 
@@ -538,12 +538,12 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2015 www.opensips-solutions.com
+   Copyright © 2015 www.opensips-solutions.com
 
-   Copyright � 2013 Secusmart GmbH
+   Copyright © 2013 Secusmart GmbH
 
-   Copyright � 2006 enum.at
+   Copyright © 2006 enum.at
 
-   Copyright � 2005 Voice Sistem SRL
+   Copyright © 2005 Voice Sistem SRL
 
-   Copyright � 2005 Cesc Santasusana
+   Copyright © 2005 Cesc Santasusana

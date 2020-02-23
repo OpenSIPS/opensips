@@ -40,8 +40,8 @@ mmgeoip Module
 
    List of Examples
 
-   1.1. Set "mmgeoip_city_db_path" parameter
-   1.2. Set "cache_type" parameter
+   1.1. Set “mmgeoip_city_db_path” parameter
+   1.2. Set “cache_type” parameter
    1.3. mmg_lookup usage
 
 Chapter 1. Admin Guide
@@ -95,7 +95,7 @@ Chapter 1. Admin Guide
 
    Mandatory parameter.
 
-   Example 1.1. Set "mmgeoip_city_db_path" parameter
+   Example 1.1. Set “mmgeoip_city_db_path” parameter
 ...
 modparam("mmgeoip", "mmgeoip_city_db_path",
   "/usr/share/GeoIP/GeoLiteCity.dat")
@@ -121,7 +121,7 @@ modparam("mmgeoip", "mmgeoip_city_db_path",
    as the library only supports loading the database into mmap
    allocated memory.
 
-   Example 1.2. Set "cache_type" parameter
+   Example 1.2. Set “cache_type” parameter
 ...
 modparam("mmgeoip", "cache_type","MEM_CACHE_CHECK")
 ...
@@ -249,4 +249,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2008 SightSpeed, Inc.
+   Copyright © 2008 SightSpeed, Inc.
