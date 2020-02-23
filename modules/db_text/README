@@ -92,12 +92,12 @@ Chapter 1. Admin Guide
      * a database is represented by a directory in the local file
        system. NOTE: when you use db_text in OpenSIPS, the
        database URL for modules must be the path to the directory
-       where the table-files are located, prefixed by "text://",
-       e.g., "text:///var/dbtext/opensips". If there is no "/"
-       after "text://" then "CFG_DIR/" is inserted at the
+       where the table-files are located, prefixed by “text://”,
+       e.g., “text:///var/dbtext/opensips”. If there is no “/”
+       after “text://” then “CFG_DIR/” is inserted at the
        beginning of the database path. So, either you provide an
        absolute path to database directory or a relative one to
-       "CFG_DIR" directory.
+       “CFG_DIR” directory.
      * a table is represented by a text file inside database
        directory.
 
@@ -108,7 +108,7 @@ Chapter 1. Admin Guide
      * the name of column must not include white spaces.
      * the format of a column definition is: name(type,attr).
      * between two column definitions must be a white space, e.g.,
-       "first_name(str) last_name(str)".
+       “first_name(str) last_name(str)”.
      * the type of a column can be:
           + int - integer numbers.
           + double - real numbers with two decimals.
@@ -121,12 +121,12 @@ Chapter 1. Admin Guide
           + if no attribute is set, the fields of the column
             cannot have null value.
      * each other line is a row with data. The line ends with
-       "\n".
-     * the fields are separated by ":".
+       “\n”.
+     * the fields are separated by “:”.
      * no value between two ':' (or between ':' and start/end of a
-       row) means "null" value.
-     * next characters must be escaped in strings: "\n", "\r",
-       "\t", ":".
+       row) means “null” value.
+     * next characters must be escaped in strings: “\n”, “\r”,
+       “\t”, “:”.
      * 0 -- the zero value must be escaped too.
 
    Example 1.1. Sample of a db_text table
@@ -180,7 +180,7 @@ suser:supasswd:xxx:alpha.org:xxx
    file on disk has changed, and if yes, will re-load table from
    file.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.4. Set db_mode parameter
 ...
@@ -240,11 +240,11 @@ _empty_line_
 
    REMINDER: when you use db_text in OpenSIPS, the database URL
    for modules must be the path to the directory where the
-   table-files are located, prefixed by "text://", e.g.,
-   "text:///var/dbtext/opensips". If there is no "/" after
-   "text://" then "CFG_DIR/" is inserted at the beginning of the
+   table-files are located, prefixed by “text://”, e.g.,
+   “text:///var/dbtext/opensips”. If there is no “/” after
+   “text://” then “CFG_DIR/” is inserted at the beginning of the
    database path. So, either you provide an absolute path to
-   database directory or a relative one to "CFG_DIR" directory.
+   database directory or a relative one to “CFG_DIR” directory.
 
    Example 1.5. Load the db_text module
 ...
@@ -508,4 +508,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright � 2003-2004 FhG FOKUS
+   Copyright © 2003-2004 FhG FOKUS

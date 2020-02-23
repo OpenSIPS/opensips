@@ -407,7 +407,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 
    How long the history in SBT should be in seconds.
 
-   Default value is "10".
+   Default value is ‚Äú10‚Äù.
 
    Example 1.12. Set window_size parameter
 ...
@@ -420,7 +420,7 @@ modparam("ratelimit", "window_size", 5)
    how granular the algorithm should be. The number of slots will
    be determined by window_size/slot_period.
 
-   Default value is "200".
+   Default value is ‚Äú200‚Äù.
 
    Example 1.13. Set slot_period parameter
 ...
@@ -643,8 +643,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
    Arnaud Boussus, Sergio Gutierrez, Stanislaw Pitucha, Bill Hau,
-   Konstantin Bokarius, Vlad Paiu (@vladpaiu), Juli·n Moreno
-   PatiÒo, Edson Gellert Schubert.
+   Konstantin Bokarius, Vlad Paiu (@vladpaiu), Juli√°n Moreno
+   Pati√±o, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -671,7 +671,7 @@ Chapter 2. Contributors
    3.  Liviu Chircu (@liviuchircu)              Mar 2014 - May 2019
    4.  Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Mar 2018
    5.  Ionel Cerghit (@ionel-cerghit)           Jul 2015 - Dec 2016
-   6.  Juli·n Moreno PatiÒo                     Feb 2016 - Feb 2016
+   6.  Juli√°n Moreno Pati√±o                     Feb 2016 - Feb 2016
    7.  Ionut Ionita (@ionutrazvanionita)        Dec 2015 - Dec 2015
    8.  Eseanu Marius Cristian (@eseanucristian) Aug 2015 - Sep 2015
    9.  Bill Hau                                 Jul 2014 - Jul 2014
@@ -699,8 +699,8 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright © 2011 OpenSIPS Foundation
+   Copyright ¬© 2011 OpenSIPS Foundation
 
-   Copyright © 2008 VoIP Embedded Inc.
+   Copyright ¬© 2008 VoIP Embedded Inc.
 
-   Copyright © 2006 Freenet Cityline GmbH
+   Copyright ¬© 2006 Freenet Cityline GmbH

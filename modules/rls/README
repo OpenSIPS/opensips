@@ -126,7 +126,7 @@ Chapter 1. Admin Guide
    The name of the db table where resource lists subscription
    information is stored.
 
-   Default value is "rls_watchers".
+   Default value is “rls_watchers”.
 
    Example 1.1. Set rlsubs_table parameter
 ...
@@ -138,7 +138,7 @@ modparam("rls", "rlsubs_table", "rls_subscriptions")
    The name of the db table where notified event specific
    information is stored.
 
-   Default value is "rls_presentity".
+   Default value is “rls_presentity”.
 
    Example 1.2. Set rlpres_table parameter
 ...
@@ -149,7 +149,7 @@ modparam("rls", "rlpres_table", "rls_notify")
 
    The period at which to check for expired information.
 
-   Default value is "100".
+   Default value is “100”.
 
    Example 1.3. Set clean_period parameter
 ...
@@ -162,7 +162,7 @@ modparam("rls", "clean_period", 100)
    Notifies with the updated presence state of the subscribed list
    or watcher information.
 
-   Default value is "50".
+   Default value is “50”.
 
    Example 1.4. Set waitn_time parameter
 ...
@@ -173,7 +173,7 @@ modparam("rls", "waitn_time", 10)
 
    The maximum accepted expires for a subscription to a list.
 
-   Default value is "7200".
+   Default value is “7200”.
 
    Example 1.5. Set max_expires parameter
 ...
@@ -186,7 +186,7 @@ modparam("rls", "max_expires", 10800)
    list. This parameter will be used as the power of 2 when
    computing table size.
 
-   Default value is "9 (512)".
+   Default value is “9 (512)”.
 
    Example 1.6. Set hash_size parameter
 ...
@@ -197,7 +197,7 @@ modparam("rls", "hash_size", 11)
 
    The address of the xcap server.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.7. Set hash_size parameter
 ...
@@ -212,7 +212,7 @@ modparam("rls", "xcap_root", "http://192.168.2.132/xcap-root:800")
    collocated on the same machine, to call handle_subscribe on the
    message causing this code.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.8. Set to_presence_code parameter
 ...
@@ -225,7 +225,7 @@ modparam("rls", "to_presence_code", 10)
    events should also be handled by RLS they should be added using
    this parameter. It can be set more than once.
 
-   Default value is ""presence"".
+   Default value is “"presence"”.
 
    Example 1.9. Set rls_event parameter
 ...
@@ -351,7 +351,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 99 41 5335 863
-   2. Sa�l Ibarra Corretg� (@saghul) 41 18 1150 710
+   2. Saúl Ibarra Corretgé (@saghul) 41 18 1150 710
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 24 20 105 123
    4. Liviu Chircu (@liviuchircu) 13 10 58 77
    5. Razvan Crainea (@razvancrainea) 12 10 17 37
@@ -363,8 +363,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Stanislaw Pitucha, Vlad Patrascu
    (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Sergio Gutierrez,
-   Konstantin Bokarius, UnixDev, John Riordan, Juli�n Moreno
-   Pati�o, Edson Gellert Schubert.
+   Konstantin Bokarius, UnixDev, John Riordan, Julián Moreno
+   Patiño, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -391,9 +391,9 @@ Chapter 3. Contributors
    3.  Dan Pascu (@danpascu)               Aug 2008 - Jul 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   6.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   8.  Sa�l Ibarra Corretg� (@saghul)      Oct 2012 - Jan 2013
+   8.  Saúl Ibarra Corretgé (@saghul)      Oct 2012 - Jan 2013
    9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Mar 2012
    10. Anca Vamanu                         Sep 2007 - Jan 2012
 
@@ -410,12 +410,12 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sa�l
-   Ibarra Corretg� (@saghul), Razvan Crainea (@razvancrainea),
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Saúl
+   Ibarra Corretgé (@saghul), Razvan Crainea (@razvancrainea),
    Walter Doekes (@wdoekes), Anca Vamanu, Dan Pascu (@danpascu),
    Henning Westerholt (@henningw), Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
 
    doc copyrights:
 
-   Copyright � 2007 Voice Sistem SRL
+   Copyright © 2007 Voice Sistem SRL

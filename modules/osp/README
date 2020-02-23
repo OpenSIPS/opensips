@@ -983,8 +983,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Ovidiu Sas (@ovidiusas), Vlad Paiu
    (@vladpaiu), Konstantin Bokarius, Dan Pascu (@danpascu),
-   fabriziopicconi, Andreas Granig, Ezequiel Lovelle, Julián
-   Moreno Patiño, Edson Gellert Schubert.
+   fabriziopicconi, Andreas Granig, Ezequiel Lovelle, JuliÃ¡n
+   Moreno PatiÃ±o, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1012,7 +1012,7 @@ Chapter 3. Contributors
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
    6.  Di-Shi Sun (@di-shi)                Mar 2006 - Sep 2016
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  JuliÃ¡n Moreno PatiÃ±o                Feb 2016 - Feb 2016
    8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
    9.  fabriziopicconi                     Aug 2013 - Aug 2013
    10. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
@@ -1037,4 +1037,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright © 2003 FhG FOKUS
+   Copyright Â© 2003 FhG FOKUS

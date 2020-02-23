@@ -99,7 +99,7 @@ Chapter 1. Admin Guide
    close" indication, the module will keep and reuse the TCP
    connections it creates as much as possible, regardless if the
    script writer performs blocking or asynchronous HTTP requests.
-   These connections are not shared among OpenSIPS workers -- each
+   These connections are not shared among OpenSIPS workers — each
    worker maintains its own set of connections.
 
 1.3. Dependencies
@@ -124,7 +124,7 @@ Chapter 1. Admin Guide
    hence the value of this parameter must be greater than or equal
    to connection_timeout.
 
-   Default value is "20" seconds.
+   Default value is “20” seconds.
 
    Example 1.1. Setting the curl_timeout parameter
 ...
@@ -136,7 +136,7 @@ modparam("rest_client", "curl_timeout", 10)
    The maximum allowed time to establish a connection with the
    server.
 
-   Default value is "20" seconds.
+   Default value is “20” seconds.
 
    Example 1.2. Setting the connection_timeout parameter
 ...
@@ -151,7 +151,7 @@ modparam("rest_client", "connection_timeout", 4)
    background. A lower connect_poll_interval may speed up all
    async HTTP transfers, but will also increase CPU usage.
 
-   Default value is "20" milliseconds.
+   Default value is “20” milliseconds.
 
    Example 1.3. Setting the connect_poll_interval parameter
 ...
@@ -166,7 +166,7 @@ modparam("rest_client", "connect_poll_interval", 2)
    attempts to perform will be done in a blocking manner, with
    appropriate logging warnings.
 
-   Default value is "100".
+   Default value is “100”.
 
    Example 1.4. Setting the max_async_transfers parameter
 ...
@@ -179,7 +179,7 @@ modparam("rest_client", "max_async_transfers", 300)
    remote peer's certificate. Verification is done using a default
    bundle of CA certificates which come with libcurl.
 
-   Default value is "1" (enabled).
+   Default value is “1” (enabled).
 
    Example 1.5. Setting the ssl_verifypeer parameter
 ...
@@ -192,7 +192,7 @@ modparam("rest_client", "ssl_verifypeer", 0)
    remote peer actually corresponds to the server listed in the
    certificate.
 
-   Default value is "1" (enabled).
+   Default value is “1” (enabled).
 
    Example 1.6. Setting the ssl_verifyhost parameter
 ...
@@ -614,4 +614,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright � 2013 www.opensips-solutions.com
+   Copyright © 2013 www.opensips-solutions.com

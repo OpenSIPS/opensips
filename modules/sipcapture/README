@@ -717,7 +717,7 @@ route[capture_resume] {
           + off
        The parameter is optional - if missing, the command will
        return the status of the SIP message capturing (as string
-       "on" or "off" ) without changing anything.
+       ‚Äúon‚Äù or ‚Äúoff‚Äù ) without changing anything.
 
    MI FIFO Command Format:
                 :sip_capture:_reply_fifo_file_
@@ -762,7 +762,7 @@ Chapter 2. Contributors
    7. Vlad Paiu (@vladpaiu) 3 1 3 3
    8. Dusan Klinec 3 1 1 1
    9. Ezequiel Lovelle 3 1 1 1
-   10. Juli·n Moreno PatiÒo 3 1 1 1
+   10. Juli√°n Moreno Pati√±o 3 1 1 1
 
    All remaining contributors: Walter Doekes (@wdoekes).
 
@@ -791,7 +791,7 @@ Chapter 2. Contributors
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
    5.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
-   6.  Juli·n Moreno PatiÒo                Feb 2016 - Feb 2016
+   6.  Juli√°n Moreno Pati√±o                Feb 2016 - Feb 2016
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
    8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
    9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
@@ -812,4 +812,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright © 2011 QSC AG
+   Copyright ¬© 2011 QSC AG

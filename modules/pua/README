@@ -112,7 +112,7 @@ Chapter 1. Admin Guide
    Publish information. This parameter will be used as the power
    of 2 when computing table size.
 
-   Default value is "9".
+   Default value is “9”.
 
    Example 1.1. Set hash_size parameter
 ...
@@ -124,7 +124,7 @@ modparam("pua", "hash_size", 11)
    Database url.
 
    Default value is
-   ">mysql://opensips:opensipsrw@localhost/opensips".
+   “>mysql://opensips:opensipsrw@localhost/opensips”.
 
    Example 1.2. Set db_url parameter
 ...
@@ -135,7 +135,7 @@ modparam("pua", "db_url" "dbdriver://username:password@dbhost/dbname")
 
    The name of the database table.
 
-   Default value is "pua".
+   Default value is “pua”.
 
    Example 1.3. Set db_table parameter
 ...
@@ -146,7 +146,7 @@ modparam("pua", "db_table", "pua")
 
    The inferior expires limit for both Publish and Subscribe.
 
-   Default value is "300".
+   Default value is “300”.
 
    Example 1.4. Set min_expires parameter
 ...
@@ -158,7 +158,7 @@ modparam("pua", "min_expires", 0)
    The default expires value used in case this information is not
    provisioned.
 
-   Default value is "3600".
+   Default value is “3600”.
 
    Example 1.5. Set default_expires parameter
 ...
@@ -171,7 +171,7 @@ modparam("pua", "default_expires", 3600)
    table should be updated. In the case of the hash table updating
    is deleting expired messages.
 
-   Default value is "30".
+   Default value is “30”.
 
    Example 1.6. Set update_period parameter
 ...
@@ -429,7 +429,7 @@ Chapter 3. Contributors
    5. Daniel-Constantin Mierla (@miconda) 12 8 144 97
    6. Edson Gellert Schubert 10 1 0 501
    7. Razvan Crainea (@razvancrainea) 9 6 73 80
-   8. Sa�l Ibarra Corretg� (@saghul) 8 5 243 31
+   8. Saúl Ibarra Corretgé (@saghul) 8 5 243 31
    9. Henning Westerholt (@henningw) 7 4 86 76
    10. Vlad Paiu (@vladpaiu) 5 3 14 50
 
@@ -467,7 +467,7 @@ Chapter 3. Contributors
    5.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2016
    6.  Dusan Klinec                        Dec 2015 - Dec 2015
    7.  Damien Sandras (@dsandras)          Sep 2013 - Sep 2013
-   8.  Sa�l Ibarra Corretg� (@saghul)      Oct 2012 - Aug 2013
+   8.  Saúl Ibarra Corretgé (@saghul)      Oct 2012 - Aug 2013
    9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Aug 2012
    10. Anca Vamanu                         Nov 2006 - Mar 2011
 
@@ -486,12 +486,12 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sa�l
-   Ibarra Corretg� (@saghul), Razvan Crainea (@razvancrainea),
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Saúl
+   Ibarra Corretgé (@saghul), Razvan Crainea (@razvancrainea),
    Anca Vamanu, Henning Westerholt (@henningw), Daniel-Constantin
    Mierla (@miconda), Juha Heinanen (@juha-h), Konstantin
    Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu.
 
    doc copyrights:
 
-   Copyright � 2006 Voice Sistem SRL
+   Copyright © 2006 Voice Sistem SRL

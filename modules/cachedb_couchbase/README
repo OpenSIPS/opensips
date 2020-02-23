@@ -125,7 +125,7 @@ modparam("cachedb_couchbase", "timeout",5000000);
    last. Anything above the threshold will trigger a warning
    message to the log
 
-   Default value is "0 ( unlimited - no warnings )".
+   Default value is ‚Äú0 ( unlimited - no warnings )‚Äù.
 
    Example 1.3. Set exec_threshold parameter
 ...
@@ -172,7 +172,7 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 8 6 21 39
    4. Ryan Bullock (@rrb3942) 6 2 230 87
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 2 1
-   6. Juli·n Moreno PatiÒo 3 1 1 1
+   6. Juli√°n Moreno Pati√±o 3 1 1 1
    7. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -199,7 +199,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    3. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5. Juli·n Moreno PatiÒo                Feb 2016 - Feb 2016
+   5. Juli√°n Moreno Pati√±o                Feb 2016 - Feb 2016
    6. Ryan Bullock (@rrb3942)             Oct 2013 - Jun 2015
    7. Vlad Paiu (@vladpaiu)               Jan 2013 - May 2014
 
@@ -211,9 +211,9 @@ Chapter 3. Documentation
 3.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Juli·n
-   Moreno PatiÒo, Vlad Paiu (@vladpaiu), Ryan Bullock (@rrb3942).
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Juli√°n
+   Moreno Pati√±o, Vlad Paiu (@vladpaiu), Ryan Bullock (@rrb3942).
 
    doc copyrights:
 
-   Copyright © 2013 www.opensips-solutions.com
+   Copyright ¬© 2013 www.opensips-solutions.com

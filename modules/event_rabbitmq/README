@@ -132,7 +132,7 @@ Chapter 1. Admin Guide
    waiting for a response from a dead rabbitmq-server. The value
    represents the heartbit interval in seconds.
 
-   Default value is "0 (disabled)".
+   Default value is “0 (disabled)”.
 
    Example 1.1. Set heartbeat parameter
 ...
@@ -148,7 +148,7 @@ modparam("event_rabbitmq", "heartbeat", 3)
    mode the process continues its operation without receiving any
    confirmation.
 
-   Default value is "0 (asynchronous)".
+   Default value is “0 (asynchronous)”.
 
    Example 1.2. Set sync_mode parameter
 ...
@@ -160,7 +160,7 @@ modparam("event_rabbitmq", "sync_mode", 1)
    The maximally allowed duration (in milliseconds) for the
    establishment of a TCP connection with a RabbitMQ server.
 
-   Default value is "10000" (10 seconds).
+   Default value is “10000” (10 seconds).
 
    NOTE: This parameter is only available since OpenSIPS 2.4.7
 
@@ -454,7 +454,7 @@ Chapter 3. Contributors
    7. Jarrod Baumann (@jarrodb) 4 2 2 2
    8. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 2 1
    9. Eric Tamme (@etamme) 3 1 1 2
-   10. Juli�n Moreno Pati�o 3 1 1 1
+   10. Julián Moreno Patiño 3 1 1 1
 
    All remaining contributors: Vlad Paiu (@vladpaiu).
 
@@ -483,7 +483,7 @@ Chapter 3. Contributors
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    5.  Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
-   6.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    7.  Ovidiu Sas (@ovidiusas)             Jun 2015 - Jun 2015
    8.  Eric Tamme (@etamme)                May 2015 - May 2015
    9.  Ionut Ionita (@ionutrazvanionita)   Jun 2014 - Jun 2014
@@ -504,4 +504,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright � 2011 www.opensips-solutions.com
+   Copyright © 2011 www.opensips-solutions.com

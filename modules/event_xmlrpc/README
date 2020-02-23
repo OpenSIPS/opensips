@@ -98,7 +98,7 @@ Chapter 1. Admin Guide
    parameters. Set it to zero to disable or to non-zero to enable
    it.
 
-   Default value is "0 (disabled)".
+   Default value is “0 (disabled)”.
 
    Example 1.1. Set use_struct_param parameter
 ...
@@ -114,7 +114,7 @@ modparam("event_xmlrpc", "use_struct_param", 1)
    mode the process continues its operation without receiving any
    confirmation.
 
-   Default value is "0 (asynchronous)".
+   Default value is “0 (asynchronous)”.
 
    Example 1.2. Set sync_mode parameter
 ...
@@ -217,4 +217,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright � 2012 www.opensips-solutions.com
+   Copyright © 2012 www.opensips-solutions.com

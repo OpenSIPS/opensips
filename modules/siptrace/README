@@ -307,7 +307,7 @@ var(user)");
           + trace_id name
        The parameter is optional - if missing, the command will
        return the status of the SIP message tracing (as string
-       "on" or "off") marked with global and the status for each
+       “on” or “off”) marked with global and the status for each
        trace id without changing anything.
      * trace_mode : this parameter has the same meaning as the
        trace_mode in the first parameter, but this time it
@@ -415,4 +415,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright � 2006 Voice Sistem SRL
+   Copyright © 2006 Voice Sistem SRL

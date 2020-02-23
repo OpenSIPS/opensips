@@ -289,7 +289,7 @@ modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
    partition. The db_url must be defined for the default partition
    in order to be able to define it's table name.
 
-   Default value is "dialplan".
+   Default value is “dialplan”.
 
    Example 1.4. Set table_name parameter
 ...
@@ -300,7 +300,7 @@ modparam("dialplan", "table_name", "my_table")
 
    The column name to store the dialplan ID group.
 
-   Default value is "dpid".
+   Default value is “dpid”.
 
    Example 1.5. Set dpid_col parameter
 ...
@@ -313,7 +313,7 @@ modparam("dialplan", "dpid_col", "column_name")
    from the table row. Smaller priority values have higher
    precedence.
 
-   Default value is "pr".
+   Default value is “pr”.
 
    Example 1.6. Set pr_col parameter
 ...
@@ -324,7 +324,7 @@ modparam("dialplan", "pr_col", "column_name")
 
    The column name to store the type of matching of the rule.
 
-   Default value is "match_op".
+   Default value is “match_op”.
 
    Example 1.7. Set match_op_col parameter
 ...
@@ -335,7 +335,7 @@ modparam("dialplan", "match_op_col", "column_name")
 
    The column name to store the rule match expression.
 
-   Default value is "match_exp".
+   Default value is “match_exp”.
 
    Example 1.8. Set match_exp_col parameter
 ...
@@ -347,7 +347,7 @@ modparam("dialplan", "match_exp_col", "column_name")
    The column name to store various matching flags. Currently 0 -
    case sensitive matching, 1 - case insensitive matching.
 
-   Default value is "match_flags".
+   Default value is “match_flags”.
 
    Example 1.9. Set match_flags_col parameter
 ...
@@ -358,7 +358,7 @@ modparam("dialplan", "match_flags_col", "column_name")
 
    The column name to store the rule's substitution expression.
 
-   Default value is "subst_exp".
+   Default value is “subst_exp”.
 
    Example 1.10. Set subs_exp_col parameter
 ...
@@ -369,7 +369,7 @@ modparam("dialplan", "subst_exp_col", "column_name")
 
    The column name to store the rule's replacement expression.
 
-   Default value is "repl_exp".
+   Default value is “repl_exp”.
 
    Example 1.11. Set repl_exp_col parameter
 ...
@@ -382,7 +382,7 @@ modparam("dialplan", "repl_exp_col", "column_name")
    check within the rule. (column values are RFC 2445-compatible
    strings)
 
-   Default value is "timerec".
+   Default value is “timerec”.
 
    Example 1.12. Set timerec_col parameter
 ...
@@ -394,7 +394,7 @@ modparam("dialplan", "timerec_col", "month_match")
    The column name that indicates if the dialplan rule is
    disabled.
 
-   Default value is "disabled".
+   Default value is “disabled”.
 
    Example 1.13. Set disabled_col parameter
 ...
@@ -405,7 +405,7 @@ modparam("dialplan", "disabled_col", "disabled_column")
 
    The column name to store rule-specific attributes.
 
-   Default value is "attrs".
+   Default value is “attrs”.
 
    Example 1.14. Set attrs_col parameter
 ...
@@ -434,10 +434,10 @@ modparam("dialplan", "attrs_col", "column_name")
             pseudo-variable (as string value)
      * src/dest - input and output of the function. If this
        parameter is missing the default parameter
-       "ruri.user/ruri.user" will be used, thus translating the
+       “ruri.user/ruri.user” will be used, thus translating the
        request uri.
-       The "src" variable can be any type of pseudo-variable.
-       The "dest" variable can be also any type of
+       The “src” variable can be any type of pseudo-variable.
+       The “dest” variable can be also any type of
        pseudo-variable, but it must be a writable one.
      * attrs_pvar (output, optional) - a pseudo-variable which
        will hold the attributes of the matched translation rule.
@@ -612,4 +612,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright � 2007-2008 Voice Sistem SRL
+   Copyright © 2007-2008 Voice Sistem SRL
