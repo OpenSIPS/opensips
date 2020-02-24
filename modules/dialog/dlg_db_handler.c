@@ -708,7 +708,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 				else {
 					/* reference dialog as kept in ping timer list */
-					ref_dlg_unsafe(dlg, 1);
+					ref_dlg(dlg, 1);
 				}
 			}
 
@@ -722,7 +722,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					        "ping timer\n", dlg);
 				else {
 					/* reference dialog as kept in reinvite ping timer list */
-					ref_dlg_unsafe(dlg, 1);
+					ref_dlg(dlg, 1);
 				}
 			}
 
@@ -734,7 +734,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			if (dlg_db_mode == DB_MODE_DELAYED) {
 				/* to be later removed by timer */
-				ref_dlg_unsafe(dlg, 1);
+				ref_dlg(dlg, 1);
 			}
 
 			update_dlg_stats(dlg, +1);
