@@ -26,8 +26,8 @@ str content_type_sdp_hdr = str_init("Content-Type: application/sdp\r\n");
 
 struct media_fork_info {
 	int leg;
-	str *ip;
-	str *port;
+	str ip;
+	str port;
 	int medianum;
 	void *params;
 	struct media_fork_info *next;
@@ -198,16 +198,16 @@ int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf)
 	str destination;
 
 	destination.s = pkg_malloc(4 /* udp: */ +
-		mf->ip->len + 1 /* : */ + mf->port->len);
+		mf->ip.len + 1 /* : */ + mf->port.len);
 	if (!destination.s)
 		return -1;
 	memcpy(destination.s, "udp:", 4);
 	destination.len = 4;
-	memcpy(destination.s + destination.len, mf->ip->s, mf->ip->len);
-	destination.len += mf->ip->len;
+	memcpy(destination.s + destination.len, mf->ip.s, mf->ip.len);
+	destination.len += mf->ip.len;
 	destination.s[destination.len++] = ':';
-	memcpy(destination.s + destination.len, mf->port->s, mf->port->len);
-	destination.len += mf->port->len;
+	memcpy(destination.s + destination.len, mf->port.s, mf->port.len);
+	destination.len += mf->port.len;
 
 	if (media_rtp.start_recording(&dlg->callid,
 			&dlg->legs[mf->leg].tag, &dlg->legs[other_leg(dlg, mf->leg)].tag,
@@ -219,9 +219,6 @@ int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf)
 	}
 	pkg_free(destination.s);
 
-	/* clean the ip and port */
-	mf->ip->s = mf->port->s = NULL;
-	mf->ip->len = mf->port->len = 0;
 	mf->params = NULL;
 
 	return ret;
@@ -459,11 +456,13 @@ static inline sdp_stream_cell_t *media_fork_stream_match(struct media_fork_info 
 
 void media_fork_fill(struct media_fork_info *mf, str *ip, str *port)
 {
-	mf->ip = ip;
-	mf->port = port;
+	if (ip)
+		shm_str_dup(&mf->ip, ip);
+	if (port)
+		shm_str_dup(&mf->port, port);
 }
 
-static inline struct media_fork_info *media_fork_new(int leg, str *port, str *ip, int medianum)
+static inline struct media_fork_info *media_fork_new(int leg, str *ip, str *port, int medianum)
 {
 	struct media_fork_info *mf;
 	mf = shm_malloc(sizeof *mf);
@@ -506,7 +505,7 @@ static struct media_fork_info *media_fork_session(sdp_info_t *invite_sdp, int dl
 				ip = &stream->ip_addr;
 			else
 				ip = &session->ip_addr;
-			mf = media_fork_new(leg, &stream->port, ip, mstream->stream_num);
+			mf = media_fork_new(leg, ip, &stream->port, mstream->stream_num);
 			if (!mf)
 				continue;
 			mf->params = mstream;
@@ -564,7 +563,7 @@ static struct media_fork_info *media_fork_medianum(sdp_info_t *invite_sdp,
 				ip = &stream->ip_addr;
 			else
 				ip = &session->ip_addr;
-			mf = media_fork_new(leg, &stream->port, ip, mstream->stream_num);
+			mf = media_fork_new(leg, ip, &stream->port, mstream->stream_num);
 			if (!mf)
 				continue;
 			mf->params = mstream;
@@ -784,6 +783,10 @@ void media_forks_free(struct media_fork_info *mf)
 
 	for (mfork = mf; mfork; mfork = mf) {
 		mf = mfork->next;
+		if (mfork->ip.s)
+			shm_free(mfork->ip.s);
+		if (mfork->port.s)
+			shm_free(mfork->port.s);
 		shm_free(mfork);
 	}
 }
@@ -820,6 +823,8 @@ void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
 			/* we only need the dlg leg and medianum */
 			bin_push_int(store, mf->leg);
 			bin_push_int(store, mf->medianum);
+			bin_push_str(store, &mf->ip);
+			bin_push_str(store, &mf->port);
 		}
 	}
 }
@@ -828,6 +833,7 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 		str *param, enum b2b_event_type event_type, bin_packet_t *store)
 {
 	str callid, b2b_key;
+	str ip, port;
 	struct dlg_cell *dlg;
 	int type, nohold, leg, medianum;
 	int mf_count = 0;
@@ -875,7 +881,10 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 		while (mf_count-- >= 0) {
 			bin_pop_int(store, &leg);
 			bin_pop_int(store, &medianum);
-			mf = media_fork_new(leg, NULL, NULL, medianum);
+			bin_pop_str(store, &ip);
+			bin_pop_str(store, &port);
+			mf = media_fork_new(leg, (ip.len?&ip:NULL),
+					(port.len?&port:NULL), medianum);
 			if (!mf)
 				continue;
 			mf->next = msl->params;
