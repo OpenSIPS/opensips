@@ -1269,13 +1269,12 @@ static int connect_rtpengines(void)
 static int
 child_init(int rank)
 {
+	mypid = getpid();
 
 	if(*rtpe_set_list==NULL )
 		return 0;
 
 	/* Iterate known RTP proxies - create sockets */
-	mypid = getpid();
-
 	return connect_rtpengines();
 }
 
