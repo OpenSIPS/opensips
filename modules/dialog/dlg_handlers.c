@@ -361,6 +361,8 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	if (tag.len==0 && rpl->REPLY_STATUS<200 )
 		return;
 
+	dlg_lock_dlg(dlg);
+
 	/* is the totag already known ?? */
 	for(leg=DLG_FIRST_CALLEE_LEG ; leg<dlg->legs_no[DLG_LEGS_USED] ; leg++ ) {
 		if ( dlg->legs[leg].tag.len==tag.len &&
@@ -379,7 +381,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 		leg = dlg_clone_callee_leg(dlg, leg);
 		if (leg < 0) {
 			LM_ERR("failed to add callee leg!\n");
-			return;
+			goto out;
 		}
 	}
 
@@ -388,7 +390,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	if (update_leg_info(leg, dlg, rpl, &tag,extract_mangled_fromuri(mangled_from),
 				extract_mangled_touri(mangled_to)) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
-		return;
+		goto out;
 	}
 
 routing_info:
@@ -424,6 +426,9 @@ routing_info:
 		if( rr_set.s )
 			pkg_free( rr_set.s);
 	}
+
+out:
+	dlg_unlock_dlg(dlg);
 }
 
 static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
@@ -707,8 +712,7 @@ static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, st
 {
 	str sdp;
 	char *tmp;
-	str *in_sdp = &dlg->legs[in_leg].in_sdp;
-	str *out_sdp = &dlg->legs[out_leg].out_sdp;
+	str *in_sdp, *out_sdp;
 
 	if (get_body(msg,&sdp) < 0) {
 		LM_ERR("Failed to extract SDP \n");
@@ -717,6 +721,10 @@ static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, st
 	}
 
 	dlg_lock_dlg(dlg);
+
+	in_sdp = &dlg->legs[in_leg].in_sdp;
+	out_sdp = &dlg->legs[out_leg].out_sdp;
+
 	if (in_sdp->len == sdp.len &&
 			memcmp(in_sdp->s, sdp.s, sdp.len) == 0) {
 		/* we have the same sdp in outbound as the one in inbound */
@@ -1045,13 +1053,16 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 				contact.s = msg->contact->name.s;
 				contact.len = msg->contact->len;
 
+				dlg_lock_dlg(dlg);
 				if (shm_str_sync(&dlg->legs[DLG_CALLER_LEG].adv_contact,
 				                  &contact) != 0) {
+					dlg_unlock_dlg(dlg);
 					LM_ERR("No more shm mem for outgoing contact hdr\n");
 					free_sip_msg(msg);
 					pkg_free(msg);
 					return;
 				}
+				dlg_unlock_dlg(dlg);
 			}
 		}
 
@@ -1173,6 +1184,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	struct dlg_cell *dlg;
 	struct dlg_leg *leg;
 	str buffer, contact;
+	int callee_leg;
 
 	buffer.s = ((str*)ps->extra1)->s;
 	buffer.len = ((str*)ps->extra1)->len;
@@ -1197,16 +1209,24 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 		goto out_free;
 	}
 
-	/* we get called exactly once for each outgoing branch, so we can safely
-	 * start creating each leg */
+	/*
+	 * - we get called exactly once for each outgoing branch
+	 * - in parallel forking, we may concurrently run with reply code!
+	 */
+	dlg_lock_dlg(dlg);
 
 	if (ensure_leg_array(dlg->legs_no[DLG_LEGS_USED] + 1, dlg) != 0)
 		goto out_free;
 
 	/* store the caller SDP into each callee leg, useful for Re-INVITE pings */
 	leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED]];
+	callee_leg = dlg->legs_no[DLG_LEGS_USED];
 
-	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, dlg->legs_no[DLG_LEGS_USED], msg);
+	dlg_unlock_dlg(dlg);
+
+	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_leg, msg);
+
+	dlg_lock_dlg(dlg);
 
 	/* save the outgoing contact only if TH */
 	if (dlg->mod_flags & TOPOH_ONGOING) {
@@ -1228,6 +1248,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 	dlg->legs_no[DLG_LEGS_USED]++;
 
 out_free:
+	dlg_unlock_dlg(dlg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }

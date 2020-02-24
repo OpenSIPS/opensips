@@ -721,7 +721,6 @@ init_error:
 	LM_ERR("Failed to replicate updated dialog\n");
 end:
 	dlg_unlock_dlg(dlg);
-	return;
 }
 
 /**
