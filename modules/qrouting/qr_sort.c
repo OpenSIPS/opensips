@@ -26,11 +26,11 @@
 #include "qr_event.h"
 
 #define log_warn_thr(thr) \
-	LM_WARN("warn "thr" threshold exceeded, gwid: %.*s\n", \
+	LM_WARN("warn %s threshold exceeded, gwid: %.*s\n", thr, \
 	        gw_name->len, gw_name->s)
 
 #define log_crit_thr(thr) \
-	LM_WARN("crit "thr" threshold exceeded, gwid: %.*s\n", \
+	LM_WARN("crit %s threshold exceeded, gwid: %.*s\n", thr, \
 	        gw_name->len, gw_name->s)
 
 
@@ -40,10 +40,10 @@ static inline void qr_weight_based_sort(unsigned short *dsts,
 static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
                                   str *part, int rule_id, int *disabled)
 {
-	double score = 1;
+	double score = 1, val;
 	double asr_v, ccr_v, pdd_v, ast_v, acd_v;
 	str *gw_name = drb.get_gw_name(gw->dr_gw);
-	int skip_event = 0;
+	int i, skip_event = 0;
 
 	/* the corresponding dr_rule points to an invalid qr_profile */
 	if (!prof)
@@ -54,57 +54,82 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 	 * new sampling interval might bring new statistics)
 	 */
 	asr_v = asr(gw);
-	if (asr_v < prof->asr1 && asr_v != -1) {
+	if (asr_v != -1) {
 		if (asr_v < prof->asr2) {
 			score *= prof->asr_pty2;
 			log_crit_thr("ASR");
-		} else {
+		} else if (asr_v < prof->asr1) {
 			score *= prof->asr_pty1;
 			log_warn_thr("ASR");
 		}
 	}
 
 	ccr_v = ccr(gw);
-	if (ccr_v < prof->ccr1 && ccr_v != -1) {
+	if (ccr_v != -1) {
 		if (ccr_v < prof->ccr2) {
 			score *= prof->ccr_pty2;
 			log_crit_thr("CCR");
-		} else {
+		} else if (ccr_v < prof->ccr1) {
 			score *= prof->ccr_pty1;
 			log_warn_thr("CCR");
 		}
 	}
 
 	pdd_v = pdd(gw);
-	if (pdd_v > prof->pdd1 && pdd_v != -1) {
+	if (pdd_v != -1) {
 		if (pdd_v > prof->pdd2) {
 			score *= prof->pdd_pty2;
 			log_crit_thr("PDD");
-		} else {
+		} else if (pdd_v > prof->pdd1) {
 			score *= prof->pdd_pty1;
 			log_warn_thr("PDD");
 		}
 	}
 
 	ast_v = ast(gw);
-	if (ast_v > prof->ast1 && ast_v != -1) {
+	if (ast_v != -1) {
 		if (ast_v > prof->ast2) {
 			score *= prof->ast_pty2;
 			log_crit_thr("AST");
-		} else {
+		} else if (ast_v > prof->ast1) {
 			score *= prof->ast_pty1;
 			log_warn_thr("AST");
 		}
 	}
 
 	acd_v = acd(gw);
-	if (acd_v < prof->acd1 && acd_v != -1) {
+	if (acd_v != -1) {
 		if (acd_v < prof->acd2) {
 			score *= prof->acd_pty2;
 			log_crit_thr("ACD");
-		} else {
+		} else if (acd_v < prof->acd1) {
 			score *= prof->acd_pty1;
 			log_warn_thr("ACD");
+		}
+	}
+
+	/* extra stats */
+	for (i = 0; i < qr_xstats_n; i++) {
+		val = get_xstat(gw, i);
+		if (val == -1)
+			continue;
+
+		if (qr_xstats[i].increasing) {
+			if (val < prof->xstats[i].thr2) {
+				score *= prof->xstats[i].pty2;
+				log_crit_thr(qr_xstats[i].name.s);
+			} else if (val < prof->xstats[i].thr1) {
+				score *= prof->xstats[i].pty1;
+				log_warn_thr(qr_xstats[i].name.s);
+			}
+		} else {
+			if (val > prof->xstats[i].thr2) {
+				score *= prof->xstats[i].pty2;
+				log_crit_thr(qr_xstats[i].name.s);
+			} else if (val > prof->xstats[i].thr1) {
+				score *= prof->xstats[i].pty1;
+				log_warn_thr(qr_xstats[i].name.s);
+			}
 		}
 	}
 

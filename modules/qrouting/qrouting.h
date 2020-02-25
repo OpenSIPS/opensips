@@ -21,6 +21,8 @@
 #ifndef __QROUTING_H__
 #define __QROUTING_H__
 
+#include "../../str.h"
+
 typedef enum qr_algo {
 	QR_ALGO_INVALID,
 	QR_ALGO_DYNAMIC_WEIGHTS,
@@ -31,6 +33,13 @@ typedef enum qr_algo {
 		!strcasecmp(s, "best-dest-first") ? QR_ALGO_BEST_DEST_FIRST : \
 		QR_ALGO_INVALID)
 
+typedef struct qr_xstat_desc {
+	str name;
+	char increasing; /* 1 if "more is better", 0 if "less is better" */
+} qr_xstat_desc_t;
+
+extern qr_xstat_desc_t *qr_xstats;
+extern int qr_xstats_n;
 extern double event_bad_dst_threshold;
 extern qr_algo_t qr_algorithm;
 extern int qr_interval_list_sz;

@@ -42,12 +42,12 @@
 
 #define QR_PTR_POISON ((void *)0x10203040)
 
-#define QR_PENALTY_THRESHOLD_1 1
-#define QR_PENALTY_THRESHOLD_2 10
+#define QR_MAX_XSTATS 5
 
 /* number of calls accounted for each statistic */
 typedef struct qr_n_calls {
 	double ok, pdd, setup, cd;
+	double xtot[QR_MAX_XSTATS]; /* "total" counters for each extra stat */
 } qr_n_calls_t;
 
 typedef struct qr_calls {
@@ -56,12 +56,19 @@ typedef struct qr_calls {
 	double pdd; /* total post dial delay for sampled interval */
 	double st; /* total setup time for sampled interval */
 	double cd; /* total call duration for sampled interval */
+
+	double xsum[QR_MAX_XSTATS]; /* sums for each extra stat */
 } qr_calls_t;
 
 typedef struct qr_stats {
 	qr_n_calls_t n;
 	qr_calls_t stats;
 } qr_stats_t;
+
+typedef struct qr_xstat {
+	double thr1, thr2;
+	double pty1, pty2;
+} qr_xstat_t;
 
 /* sample interval */
 typedef struct qr_sample {
@@ -77,6 +84,8 @@ typedef struct qr_profile {
 	double pdd1, pdd_pty1, pdd2, pdd_pty2;
 	double ast1, ast_pty1, ast2, ast_pty2;
 	double acd1, acd_pty1, acd2, acd_pty2;
+
+	qr_xstat_t xstats[QR_MAX_XSTATS];
 } qr_profile_t;
 
 /* history for gateway: sum of sampled intervals */
@@ -132,7 +141,7 @@ typedef struct qr_partitions {
 	int n_parts; /* the number of partitions */
 	str *part_name; /* backpointer, don't free */
 	rw_lock_t *rw_lock; /* protect the partitions for reloading */
-}qr_partitions_t;
+} qr_partitions_t;
 
 extern rw_lock_t *qr_main_list_rwl;
 extern qr_profile_t **qr_profiles;
@@ -142,6 +151,12 @@ extern qr_partitions_t **qr_main_list;
 extern str qr_param_part;
 extern str qr_param_rule_id;
 extern str qr_param_dst_name;
+
+/* returns the linked list of rules for a certain partition */
+qr_rule_t *qr_get_rules(str *part_name);
+/* searches for a given rule in the QR list */
+qr_rule_t *qr_search_rule(qr_rule_t *list, int r_id);
+qr_gw_t *qr_search_gw(qr_rule_t *list, str *gw_name);
 
 qr_gw_t *  qr_create_gw(void *);
 void qr_free_gw(qr_gw_t *);

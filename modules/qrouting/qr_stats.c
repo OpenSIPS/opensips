@@ -178,6 +178,57 @@ void free_qr_list(qr_partitions_t *qr_parts)
 	shm_free(qr_parts);
 }
 
+/* returns the linked list of rules for a certain partition */
+qr_rule_t *qr_get_rules(str *part_name)
+{
+	int i;
+
+	for (i = 0; i < (*qr_main_list)->n_parts; i++)
+		if (!str_strcmp(part_name, &(*qr_main_list)->part_name[i]))
+			return (*qr_main_list)->qr_rules_start[i];
+
+	return NULL;
+}
+
+/* searches for a given rule in the QR list */
+qr_rule_t *qr_search_rule(qr_rule_t *rules, int r_id)
+{
+	qr_rule_t *rule;
+
+	LM_DBG("searching for rule_id %d\n", r_id);
+
+	for (rule = rules; rule; rule = rule->next)
+		if (rule->r_id == r_id)
+			return rule;
+
+	return NULL;
+}
+
+qr_gw_t *qr_search_gw(qr_rule_t *rule, str *gw_name)
+{
+	int i, j;
+	str *name;
+	qr_dst_t *dst;
+
+	for (i = 0; i < rule->n; i++) {
+		dst = &rule->dest[i];
+
+		if (dst->type == QR_DST_GW) {
+			name = drb.get_gw_name(dst->gw->dr_gw);
+			if (!str_strcmp(name, gw_name))
+				return dst->gw;
+		} else {
+			for (j = 0; j < dst->grp.n; j++) {
+				name = drb.get_gw_name(dst->grp.gw[j]->dr_gw);
+				if (!str_strcmp(name, gw_name))
+					return dst->grp.gw[j];
+			}
+		}
+	}
+
+	return NULL;
+}
+
 int qr_set_profile(qr_rule_t *rule, unsigned int prof_id)
 {
 	unsigned int current_id;

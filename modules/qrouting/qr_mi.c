@@ -22,32 +22,6 @@
 #include "qr_acc.h"
 #include "qr_sort.h"
 
-/* returns the linked list of rules for a certain partition */
-qr_rule_t *qr_get_rules(str *part_name)
-{
-	int i;
-
-	for (i = 0; i < (*qr_main_list)->n_parts; i++)
-		if (!str_strcmp(part_name, &(*qr_main_list)->part_name[i]))
-			return (*qr_main_list)->qr_rules_start[i];
-
-	return NULL;
-}
-
-/* searches for a given rule in the QR list */
-static qr_rule_t *qr_search_rule(qr_rule_t *list, int r_id)
-{
-	qr_rule_t *rule_it;
-
-	LM_DBG("searching for rule_id %d\n", r_id);
-
-	for (rule_it = list; rule_it; rule_it = rule_it->next)
-		if (rule_it->r_id == r_id)
-			return rule_it;
-
-	return NULL;
-}
-
 static str * qr_get_dst_name(qr_dst_t * dst) {
 	if(dst->type == QR_DST_GW) {
 		return drb.get_gw_name(dst->gw->dr_gw);

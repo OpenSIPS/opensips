@@ -25,8 +25,9 @@
 #include "../../ut.h"
 #include "../../mem/shm_mem.h"
 
-#include "qr_load.h"
+#include "qrouting.h"
 #include "qr_stats.h"
+#include "qr_load.h"
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
 	do{\
@@ -49,6 +50,8 @@ str qr_profiles_table = str_init("qr_profiles");
 static inline void add_profile(qr_profile_t *prof,
 		const int *int_vals, char * const *str_vals, const double *double_vals)
 {
+	int i;
+
 	prof->id = int_vals[INT_VALS_ID];
 	strncpy(prof->name, str_vals[STR_VALS_PROFILE_NAME], QR_NAME_COL_SZ + 1);
 
@@ -75,6 +78,13 @@ static inline void add_profile(qr_profile_t *prof,
 	prof->pdd_pty2 = double_vals[DBL_VALS_CPTY_PDD];
 	prof->ast_pty2 = double_vals[DBL_VALS_CPTY_AST];
 	prof->acd_pty2 = double_vals[DBL_VALS_CPTY_ACD];
+
+	for (i = 0; i < qr_xstats_n; i++) {
+		prof->xstats[i].thr1 = double_vals[DBL_VALS_CPTY_ACD + i*4 + 0];
+		prof->xstats[i].thr2 = double_vals[DBL_VALS_CPTY_ACD + i*4 + 1];
+		prof->xstats[i].pty1 = double_vals[DBL_VALS_CPTY_ACD + i*4 + 2];
+		prof->xstats[i].pty2 = double_vals[DBL_VALS_CPTY_ACD + i*4 + 3];
+	}
 }
 
 /* refresh a single profile (1 row) */
@@ -135,12 +145,12 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 {
 	int int_vals[N_INT_VALS];
 	char *str_vals[N_STR_VALS];
-	double dbl_vals[N_DBL_VALS];
+	double dbl_vals[N_DBL_VALS + 4 * qr_xstats_n];
 
 	qr_profile_t *profs = NULL, *old_profs;
 	db_res_t *res = 0;
 	db_row_t *row = 0;
-	int i, no_rows = 0, total_rows = 0, old_n;
+	int i, j, no_rows = 0, total_rows = 0, old_n;
 	int n_cols = N_INT_VALS + N_STR_VALS + N_DBL_VALS;
 	str _columns[] = {
 		str_init(QP_ID_COL),
@@ -165,15 +175,57 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 		str_init(QP_CPTY_PDD_COL),
 		str_init(QP_CPTY_AST_COL),
 		str_init(QP_CPTY_ACD_COL),
-	};
-	db_key_t columns[n_cols], orderby = &_columns[0];
+	}, *p;
+	db_key_t *columns, orderby = &_columns[0];
 
 	memset(int_vals, 0, N_INT_VALS * sizeof *int_vals);
 	memset(str_vals, 0, N_STR_VALS * sizeof *str_vals);
-	memset(dbl_vals, 0, N_DBL_VALS * sizeof *dbl_vals);
+	memset(dbl_vals, 0, (N_DBL_VALS + 4 * qr_xstats_n) * sizeof *dbl_vals);
+
+	columns = pkg_malloc((n_cols + 4 * qr_xstats_n) * sizeof *columns);
+	if (!columns) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(columns, 0, (n_cols + 4 * qr_xstats_n) * sizeof *columns);
 
 	for (i = 0; i < n_cols; i++)
 		columns[i] = &_columns[i];
+
+	if (qr_xstats_n) {
+		p = pkg_malloc(qr_xstats_n * (4 * (sizeof(str) + QR_NAME_COL_SZ)));
+		if (!p) {
+			LM_ERR("oom\n");
+			goto error;
+		}
+	}
+
+	for (i = 0; i < qr_xstats_n; i++) {
+		columns[n_cols + i*4] = p;
+		p->s = (char *)(p + 1);
+		p->len = snprintf(p->s, QR_NAME_COL_SZ, "warn_threshold_%.*s",
+		                  qr_xstats[i].name.len, qr_xstats[i].name.s);
+
+		p = (str *)(p->s + p->len);
+		columns[n_cols + i*4 + 1] = p;
+		p->s = (char *)(p + 1);
+		p->len = snprintf(p->s, QR_NAME_COL_SZ, "crit_threshold_%.*s",
+		                  qr_xstats[i].name.len, qr_xstats[i].name.s);
+
+		p = (str *)(p->s + p->len);
+		columns[n_cols + i*4 + 2] = p;
+		p->s = (char *)(p + 1);
+		p->len = snprintf(p->s, QR_NAME_COL_SZ, "warn_penalty_%.*s",
+		                  qr_xstats[i].name.len, qr_xstats[i].name.s);
+
+		p = (str *)(p->s + p->len);
+		columns[n_cols + i*4 + 3] = p;
+		p->s = (char *)(p + 1);
+		p->len = snprintf(p->s, QR_NAME_COL_SZ, "crit_penalty_%.*s",
+		                  qr_xstats[i].name.len, qr_xstats[i].name.s);
+
+		p = (str *)(p->s + p->len);
+	}
 
 	if (qr_dbf->use_table( qr_db_hdl, &qr_profiles_table) < 0) {
 		LM_ERR("cannot select table \"%.*s\"\n", qr_profiles_table.len,
@@ -183,13 +235,14 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 
 	if (DB_CAPABILITY(*qr_dbf, DB_CAP_FETCH)) {
 		if (qr_dbf->query(qr_db_hdl, 0, 0, 0, columns, 0,
-		                  n_cols, orderby, 0) < 0) {
+		                  n_cols + 4 * qr_xstats_n, orderby, 0) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
 
-		no_rows = estimate_available_rows(4+QR_NAME_COL_SZ+10*sizeof(double),
-		                                  n_cols);
+		no_rows = estimate_available_rows(4 + QR_NAME_COL_SZ +
+				(N_DBL_VALS + 4 * qr_xstats_n) * sizeof(double),
+		                                  n_cols + 4 * qr_xstats_n);
 		if (no_rows==0) no_rows = 10;
 		if(qr_dbf->fetch_result(qr_db_hdl, &res, no_rows )<0) {
 			LM_ERR("Error fetching rows\n");
@@ -197,7 +250,7 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 		}
 	} else {
 		if (qr_dbf->query(qr_db_hdl, 0, 0, 0, columns, 0,
-		                  n_cols, orderby, &res) < 0) {
+		                  n_cols + 4 * qr_xstats_n, orderby, &res) < 0) {
 			LM_ERR("DB query failed\n");
 			goto error;
 		}
@@ -294,7 +347,6 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 			check_val(QP_CPTY_ACD_COL, ROW_VALUES(row)+21, DB_DOUBLE, 1, 1);
 			dbl_vals[DBL_VALS_CPTY_ACD] = VAL_DOUBLE(ROW_VALUES(row)+21);
 
-
 			LM_DBG("qr_profile (%d, %s) thresholds: [%lf %lf %lf %lf %lf] "
 					"[%lf %lf %lf %lf %lf]\n",
 					int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
@@ -312,6 +364,35 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 					dbl_vals[DBL_VALS_WPTY_ACD], dbl_vals[DBL_VALS_CPTY_ASR],
 					dbl_vals[DBL_VALS_CPTY_CCR], dbl_vals[DBL_VALS_CPTY_PDD],
 					dbl_vals[DBL_VALS_CPTY_AST], dbl_vals[DBL_VALS_CPTY_ACD]);
+
+			for (j = 0; j < qr_xstats_n; j++) {
+				check_val(columns[n_cols + j*4]->s,
+							ROW_VALUES(row)+21 + j*4, DB_DOUBLE, 1, 1);
+				dbl_vals[DBL_VALS_CPTY_ACD + j*4] =
+							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4);
+
+				check_val(columns[n_cols + j*4 + 1]->s,
+							ROW_VALUES(row)+21 + j*4 + 1, DB_DOUBLE, 1, 1);
+				dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 1] =
+							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4 + 1);
+
+				check_val(columns[n_cols + j*4 + 2]->s,
+							ROW_VALUES(row)+21 + j*4 + 2, DB_DOUBLE, 1, 1);
+				dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 2] =
+							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4 + 2);
+
+				check_val(columns[n_cols + j*4 + 3]->s,
+							ROW_VALUES(row)+21 + j*4 + 3, DB_DOUBLE, 1, 1);
+				dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 3] =
+							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4 + 3);
+
+				LM_DBG("qr_profile (%d, %s) xstat #%d: [%lf %lf | %lf %lf]\n",
+						int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
+						j, dbl_vals[DBL_VALS_CPTY_ACD + j*4],
+						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 1],
+						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 2],
+						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 3]);
+			}
 
 			add_profile(&profs[total_rows], int_vals, str_vals, dbl_vals);
 			total_rows++;
@@ -339,6 +420,10 @@ swap_data:
 	qr_refresh_profiles(old_profs, old_n, profs, total_rows);
 	lock_stop_write(qr_profiles_rwl);
 
+	if (qr_xstats_n)
+		pkg_free(columns[n_cols]);
+
+	pkg_free(columns);
 	shm_free(old_profs);
 
 	LM_DBG("reloaded into %d new profiles (%p -> %p)\n",
@@ -346,5 +431,10 @@ swap_data:
 	return 0;
 
 error:
+	if (qr_xstats_n)
+		pkg_free(columns[n_cols]);
+
+	pkg_free(columns);
+	shm_free(profs);
 	return -1;
 }

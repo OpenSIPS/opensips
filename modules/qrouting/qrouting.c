@@ -27,6 +27,7 @@
 #include "../../sr_module.h"
 #include "../../str.h"
 #include "../../timer.h"
+#include "../../lib/csv.h"
 
 #include "qrouting.h"
 #include "qr_stats.h"
@@ -54,6 +55,10 @@ str db_url;
 
 qr_algo_t qr_algorithm = QR_ALGO_DYNAMIC_WEIGHTS;
 static char *qr_algorithm_s;
+
+qr_xstat_desc_t *qr_xstats;
+int qr_xstats_n;
+static char *qr_xstats_s;
 
 qr_partitions_t **qr_main_list; /* the history itself */
 rw_lock_t *qr_main_list_rwl; /* protection during dr_reload */
@@ -87,12 +92,27 @@ static int qr_init_dr_cb(void);
 
 static timer_function qr_rotate_samples;
 
+static int w_qr_set_xstat(struct sip_msg *_, int *rule_id, str *gw_name,
+                    void *stat_name, str *_inc_by, str *part, int *_inc_total);
 static int w_qr_disable_dst(struct sip_msg *_,
                             int *rule_id, str *dst_name, str *part);
 static int w_qr_enable_dst(struct sip_msg *_,
                            int *rule_id, str *dst_name, str *part);
 
+static int qr_fix_xstat(void **param);
+
 static cmd_export_t cmds[] = {
+	{"qr_set_xstat", (cmd_function)w_qr_set_xstat,
+		{ {CMD_PARAM_INT, NULL, NULL},
+		  {CMD_PARAM_STR, NULL, NULL},
+		  {CMD_PARAM_STR, qr_fix_xstat, NULL},
+		  {CMD_PARAM_STR, NULL, NULL},
+		  {CMD_PARAM_STR|CMD_PARAM_OPT, NULL, NULL},
+		  {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
+		  {0, 0, 0}
+		},
+		ALL_ROUTES
+	},
 	{"qr_disable_dst", (cmd_function)w_qr_disable_dst,
 		{ {CMD_PARAM_INT, NULL, NULL},
 		  {CMD_PARAM_STR, NULL, NULL},
@@ -113,9 +133,12 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t params[] = {
+	{"db_url",                  STR_PARAM, &db_url.s},
+	{"table_name",              STR_PARAM, &qr_profiles_table.s},
 	{"algorithm",               STR_PARAM, &qr_algorithm_s},
 	{"history_span",            INT_PARAM, &history_span},
 	{"sampling_interval",       INT_PARAM, &sampling_interval},
+	{"extra_stats",             STR_PARAM, &qr_xstats_s},
 
 	/* TODO */
 	{"min_samples_asr",         INT_PARAM, NULL},
@@ -125,8 +148,6 @@ static param_export_t params[] = {
 	{"min_samples_acd",         INT_PARAM, NULL},
 
 	{"event_bad_dst_threshold", STR_PARAM, &event_bad_dst_threshold_s},
-	{"db_url",                  STR_PARAM, &db_url.s},
-	{"table_name",              STR_PARAM, &qr_profiles_table.s},
 	{0, 0, 0}
 };
 
@@ -204,12 +225,12 @@ static int qr_init(void)
 			sampling_interval);
 
 	if (qr_init_globals() != 0) {
-		LM_ERR("oom\n");
+		LM_ERR("failed to init global structures\n");
 		return -1;
 	}
 
 	if (qr_init_events() != 0) {
-		LM_ERR("oom\n");
+		LM_ERR("failed to init events\n");
 		return -1;
 	}
 
@@ -359,6 +380,67 @@ static int qr_init_dr_cb(void)
 	return 0;
 }
 
+static int qr_parse_extra_stats(void)
+{
+	csv_record *stats, *stat;
+	qr_xstat_desc_t *desc;
+
+	if (!qr_xstats_s)
+		return 0;
+
+	stats = __parse_csv_record(_str(qr_xstats_s), 0, ';');
+	for (stat = stats; stat; stat = stat->next) {
+		if (ZSTR(stat->s))
+			continue;
+
+		qr_xstats = pkg_realloc(qr_xstats, (qr_xstats_n + 1) * sizeof *qr_xstats);
+		if (!qr_xstats) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		desc = &qr_xstats[qr_xstats_n];
+		memset(desc, 0, sizeof *desc);
+
+		if (stat->s.s[0] == '-') {
+			stat->s.s++;
+			stat->s.len--;
+		} else if (stat->s.s[0] == '+') {
+			stat->s.s++;
+			stat->s.len--;
+			desc->increasing = 1;
+		} else {
+			desc->increasing = 1;
+		}
+
+		trim(&stat->s);
+		if (ZSTR(stat->s)) {
+			continue;
+		} else if (stat->s.len > QR_MAX_STAT_NAME_LEN) {
+			LM_ERR("stat name too long (%.*s), use max %lu chars\n",
+			       stat->s.len, stat->s.s, QR_MAX_STAT_NAME_LEN);
+			return -1;
+		}
+
+		desc->name.s = pkg_malloc(stat->s.len + 1);
+		if (!desc->name.s) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		str_cpy(&desc->name, &stat->s);
+		desc->name.s[desc->name.len] = '\0';
+
+		qr_xstats_n++;
+
+		LM_DBG("parsed extra stat '%s%s'\n", desc->increasing ? "+" : "-",
+		       desc->name.s);
+	}
+
+	free_csv_record(stats);
+	return 0;
+}
+
 static int qr_init_globals(void)
 {
 	if (event_bad_dst_threshold_s)
@@ -367,6 +449,11 @@ static int qr_init_globals(void)
 	if (qr_algorithm_s && \
 	        (qr_algorithm = qr_str2algo(qr_algorithm_s)) == QR_ALGO_INVALID) {
 		LM_ERR("invalid algorithm: '%s'\n", qr_algorithm_s);
+		return -1;
+	}
+
+	if (qr_parse_extra_stats() != 0) {
+		LM_ERR("failed to parse extra stats\n");
 		return -1;
 	}
 
@@ -423,7 +510,7 @@ static int qr_check_db(void)
 	}
 
 	if (!(qr_db_hdl = qr_dbf.init(&db_url))) {
-		LM_ERR("failed to load db url %.*s", db_url.len, db_url.s);
+		LM_ERR("failed to load db url %.*s\n", db_url.len, db_url.s);
 		return -1;
 	}
 
@@ -483,4 +570,90 @@ static int w_qr_enable_dst(struct sip_msg *_,
                            int *rule_id, str *dst_name, str *part)
 {
 	return w_qr_set_dst_state(*rule_id, dst_name, part, 1);
+}
+
+
+static int qr_set_xstat(qr_rule_t *rules, int rule_id, str *gw_name,
+                        int stat_idx, double inc_by, int inc_total)
+{
+	qr_rule_t *rule;
+	qr_gw_t *gw;
+
+	rule = qr_search_rule(rules, rule_id);
+	if (!rule) {
+		LM_ERR("failed to locate rule %d, "
+		       "perhaps you forgot to dr_reload?\n", rule_id);
+		return -1;
+	}
+
+	gw = qr_search_gw(rule, gw_name);
+	if (!gw) {
+		LM_ERR("failed to locate gw %.*s within rule %d, "
+		       "perhaps you forgot to dr_reload?\n",
+		       gw_name->len, gw_name->s, rule_id);
+		return -1;
+	}
+
+	lock_get(gw->acc_lock);
+	gw->current_interval.n.xtot[stat_idx] += inc_total;
+	gw->current_interval.stats.xsum[stat_idx] += inc_by;
+	lock_release(gw->acc_lock);
+
+	LM_DBG("successfully updated (rule %d, gw %.*s)\n", rule_id,
+	       gw_name->len, gw_name->s);
+
+	return 0;
+}
+
+
+static int w_qr_set_xstat(struct sip_msg *_, int *rule_id, str *gw_name,
+                    void *stat_name, str *_inc_by, str *part, int *_inc_total)
+{
+	qr_rule_t *rules;
+	int rc, stat_idx = (int)(long)stat_name;
+	int inc_total = _inc_total ? *_inc_total : 1;
+	double inc_by = strtod(_inc_by->s, NULL);
+
+	LM_DBG("rule=%d, gw=%.*s, stat=%s, inc_by=%lf, part=%s, inc_tot=%d\n",
+	       *rule_id, gw_name->len, gw_name->s, qr_xstats[stat_idx].name.s,
+	       inc_by, part ? part->s : NULL, inc_total);
+
+	if (!part) {
+		lock_start_read(qr_main_list_rwl);
+		rc = qr_set_xstat((*qr_main_list)->qr_rules_start[0], *rule_id,
+		                      gw_name, stat_idx, inc_by, inc_total);
+		lock_stop_read(qr_main_list_rwl);
+	} else {
+		lock_start_read(qr_main_list_rwl);
+
+		rules = qr_get_rules(part);
+		if (!rules) {
+			LM_DBG("partition not found: %.*s\n", part->len, part->s);
+			lock_stop_read(qr_main_list_rwl);
+			return -2;
+		}
+
+		rc = qr_set_xstat(rules, *rule_id, gw_name, stat_idx, inc_by, inc_total);
+		lock_stop_read(qr_main_list_rwl);
+	}
+
+	return rc == 0 ? 1 : -1;
+}
+
+
+static int qr_fix_xstat(void **param)
+{
+	str *stat = (str *)*param;
+	int i;
+
+	for (i = 0; i < qr_xstats_n; i++) {
+		if (!strcmp(qr_xstats[i].name.s, stat->s)) {
+			LM_DBG("located stat %s on pos %d\n", stat->s, i);
+			*param = (void *)(long)i;
+			return 0;
+		}
+	}
+
+	LM_ERR("failed to locate stat %s, define it via extra_stats!\n", stat->s);
+	return -1;
 }

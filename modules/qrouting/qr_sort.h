@@ -92,6 +92,20 @@ static inline double acd(qr_gw_t *gw) {
 	return acd;
 }
 
+/* compute the value of an extra stat */
+static inline double get_xstat(qr_gw_t *gw, int stat_idx) {
+	double val;
+	lock_start_read(gw->ref_lock);
+	if(gw->summed_stats.n.xtot[stat_idx] == 0) {
+		lock_stop_read(gw->ref_lock);
+		return -1;
+	}
+	val = (double)gw->summed_stats.stats.xsum[stat_idx] /
+	              gw->summed_stats.n.xtot[stat_idx];
+	lock_stop_read(gw->ref_lock);
+	return val;
+}
+
 double _qr_score_gw_dw(qr_gw_t *gw, qr_profile_t *prof,
                        str *part, int rule_id, int *disabled);
 double _qr_score_gw_bdf(qr_gw_t *gw, qr_profile_t *prof,

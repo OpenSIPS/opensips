@@ -21,6 +21,7 @@
 
 #include "../drouting/dr_cb.h"
 
+#include "qrouting.h"
 #include "qr_acc.h"
 
 struct tm_binds tmb;
@@ -318,35 +319,53 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 }
 
 /* adds/removes two qr_n_calls_t structures */
-static inline void add_n_calls(qr_n_calls_t *x, qr_n_calls_t *y, char op) {
-	if(op == '+') {
+static inline void add_n_calls(qr_n_calls_t *x, qr_n_calls_t *y, char op)
+{
+	int i;
+
+	if (op == '+') {
 		x->ok += y->ok;
 		x->pdd += y->pdd;
 		x->setup += y->setup;
 		x->cd += y->cd;
-	} else if(op == '-') {
+
+		for (i = 0; i < qr_xstats_n; i++)
+			x->xtot[i] += y->xtot[i];
+
+	} else if (op == '-') {
 		x->ok -= y->ok;
 		x->pdd -= y->pdd;
 		x->setup -= y->setup;
 		x->cd -= y->cd;
 
+		for (i = 0; i < qr_xstats_n; i++)
+			x->xtot[i] -= y->xtot[i];
 	}
 }
 
 /* adds/removes two qr_calls_t structures */
 static inline void add_calls(qr_calls_t *x, qr_calls_t *y, char op) {
-	if(op == '+') {
+	int i;
+
+	if (op == '+') {
 		x->as += y->as;
 		x->cc += y->cc;
 		x->pdd += y->pdd;
 		x->st += y->st;
 		x->cd += y->cd;
-	} else if(op == '-') {
+
+		for (i = 0; i < qr_xstats_n; i++)
+			x->xsum[i] += y->xsum[i];
+
+	} else if (op == '-') {
 		x->as -= y->as;
 		x->cc -= y->cc;
 		x->pdd -= y->pdd;
 		x->st -= y->st;
 		x->cd -= y->cd;
+
+		for (i = 0; i < qr_xstats_n; i++)
+			x->xsum[i] -= y->xsum[i];
 	}
 }
 

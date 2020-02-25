@@ -143,7 +143,7 @@ modparam("qrouting", "table_name", "qr_profiles_bak")
 				<listitem>
 					<para>
 					<emphasis role='bold'>"dynamic-weights"</emphasis> -
-					for a given prefix, all destinations start with equal
+					for each prefix, all destinations start with equal
 					weights and receive an equal share of the traffic.  As
 					signaling statistics are gathered for the destinations, the
 					ones which underperform will receive less traffic,
@@ -153,8 +153,8 @@ modparam("qrouting", "table_name", "qr_profiles_bak")
 				</listitem>
 				<listitem>
 					<para>
-					<emphasis role='bold'>"best-dest-first"</emphasis> - for a
-					given prefix, the 1st (i.e. <emphasis>best scoring</emphasis>)
+					<emphasis role='bold'>"best-dest-first"</emphasis> - for each
+					prefix, the 1st (i.e. <emphasis>best scoring</emphasis>)
 					destination will receive all the traffic as long as its
 					quality stays the same.  Initially, all destinations start
 					with a perfect score.  This score may degrade if one or
@@ -235,6 +235,53 @@ modparam("qrouting", "sampling_interval", 5)
 		</example>
 	</section>
 
+	<section id="param_extra_stats" xreflabel="extra_stats">
+		<title><varname>extra_stats</varname> (string)</title>
+		<para>
+		A semicolon-separated list of custom statistics to be additionally kept
+		and monitored by the module.  In order to gather these statistics, the
+		module expects the script writer to call
+		<xref linkend="func_qr_set_xstat"/> whenever they want to increment a
+		custom statistic for a (prefix, destination) tuple.
+		</para>
+
+		<para>
+		Extra statistics come in two flavours: <emphasis>positive</emphasis>
+		(a higher value is better, e.g. ASR) or <emphasis>negative</emphasis>
+		(a lower value is better, e.g. PDD).  The flavour determines the
+		comparison operator to be used against the statistics's thresholds, and
+		can be specified by prepending <emphasis role='bold'>"+"</emphasis> or
+		<emphasis role='bold'>"-"</emphasis>, respectively, in front
+		of the statistic's name (see example below).
+		</para>
+
+		<para>
+		The thresholds and penalties for a custom statistic must be provided
+		via the <emphasis>qr_profiles</emphasis> table, by extending it with 4
+		columns for each extra statistic, named according to these
+		templates:
+		<itemizedlist>
+		<listitem><para>warn_threshold_<emphasis>&lt;STAT&gt;</emphasis></para></listitem>
+		<listitem><para>crit_threshold_<emphasis>&lt;STAT&gt;</emphasis></para></listitem>
+		<listitem><para>warn_penalty_<emphasis>&lt;STAT&gt;</emphasis></para></listitem>
+		<listitem><para>crit_penalty_<emphasis>&lt;STAT&gt;</emphasis></para></listitem>
+		</itemizedlist>
+		</para>
+
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>NULL</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>extra_stats</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "extra_stats", "+mos; +r_factor; -503_replies")
+	</programlisting>
+		</example>
+	</section>
+
 	<section id="param_event_bad_dst_threshold" xreflabel="event_bad_dst_threshold">
 		<title><varname>event_bad_dst_threshold</varname> (string)</title>
 		<para>
@@ -264,6 +311,62 @@ modparam("qrouting", "event_bad_dst_threshold", "0.5")
 
 <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>
+
+	<section id="func_qr_set_xstat" xreflabel="qr_set_xstat()">
+		<title>
+			<function moreinfo="none">qr_set_xstat(rule_id, gw_name, stat_name,
+										inc_by, [part], [inc_total])</function>
+		</title>
+		<para>
+		Provide a new sample value for an extra statistic on a given (prefix,
+		gateway) combination.  Extra statistics may be defined using the
+		<xref linkend="param_extra_stats"/> module parameter.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>rule_id (integer)</emphasis> - database id of the
+				drouting rule holding the prefix and its destinations
+			</para></listitem>
+			<listitem><para>
+				<emphasis>gw_name (string)</emphasis> - gateway to account the
+				statistic for.  The gateway must be part of the above rule's
+				destinations.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>stat_name (string)</emphasis> - statistic to account
+			</para></listitem>
+			<listitem><para>
+				<emphasis>inc_by (string)</emphasis> - quoted floating point
+				number, representing the amount to add to the stat
+			</para></listitem>
+			<listitem><para>
+				<emphasis>part (string, optional, default: 'Default')</emphasis> -
+				the drouting partition to use
+			</para></listitem>
+			<listitem><para>
+				<emphasis>inc_total (string, optional, default: 1)</emphasis> -
+				the amount to add to the total stat counter.  Usually, this
+				value should be 1, but it may make sense to set it to 0 when a
+				custom statistic needs to be set a 2nd, 3rd, etc. time across
+				the duration of the same established call.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>qr_set_xstat()</function> usage</title>
+		<programlisting format="linespecific">
+
+# the MoS is set exactly once per call, so we can omit "inc_total"
+$var(rule_id) = 1574;
+$var(gw_name) = "GW-28";
+$var(mos_score) = "4.28";
+qr_set_xstat($var(rule_id), $var(gw_name), "mos", $var(mos_score));
+	</programlisting>
+		</example>
+	</section>
 
 	<section id="func_qr_disable_dst" xreflabel="qr_disable_dst()">
 		<title>
