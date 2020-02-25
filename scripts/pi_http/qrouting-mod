@@ -6,11 +6,6 @@
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>profile_name</field></col>
-				<col><field>weight_asr</field></col>
-				<col><field>weight_ccr</field></col>
-				<col><field>weight_pdd</field></col>
-				<col><field>weight_ast</field></col>
-				<col><field>weight_acd</field></col>
 				<col><field>warn_threshold_asr</field></col>
 				<col><field>warn_threshold_ccr</field></col>
 				<col><field>warn_threshold_pdd</field></col>
@@ -21,6 +16,16 @@
 				<col><field>crit_threshold_pdd</field></col>
 				<col><field>crit_threshold_ast</field></col>
 				<col><field>crit_threshold_acd</field></col>
+				<col><field>warn_penalty_asr</field></col>
+				<col><field>warn_penalty_ccr</field></col>
+				<col><field>warn_penalty_pdd</field></col>
+				<col><field>warn_penalty_ast</field></col>
+				<col><field>warn_penalty_acd</field></col>
+				<col><field>crit_penalty_asr</field></col>
+				<col><field>crit_penalty_ccr</field></col>
+				<col><field>crit_penalty_pdd</field></col>
+				<col><field>crit_penalty_ast</field></col>
+				<col><field>crit_penalty_acd</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -28,11 +33,6 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>profile_name</field></col>
-				<col><field>weight_asr</field></col>
-				<col><field>weight_ccr</field></col>
-				<col><field>weight_pdd</field></col>
-				<col><field>weight_ast</field></col>
-				<col><field>weight_acd</field></col>
 				<col><field>warn_threshold_asr</field></col>
 				<col><field>warn_threshold_ccr</field></col>
 				<col><field>warn_threshold_pdd</field></col>
@@ -43,6 +43,16 @@
 				<col><field>crit_threshold_pdd</field></col>
 				<col><field>crit_threshold_ast</field></col>
 				<col><field>crit_threshold_acd</field></col>
+				<col><field>warn_penalty_asr</field></col>
+				<col><field>warn_penalty_ccr</field></col>
+				<col><field>warn_penalty_pdd</field></col>
+				<col><field>warn_penalty_ast</field></col>
+				<col><field>warn_penalty_acd</field></col>
+				<col><field>crit_penalty_asr</field></col>
+				<col><field>crit_penalty_ccr</field></col>
+				<col><field>crit_penalty_pdd</field></col>
+				<col><field>crit_penalty_ast</field></col>
+				<col><field>crit_penalty_acd</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -53,11 +63,6 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>profile_name</field></col>
-				<col><field>weight_asr</field></col>
-				<col><field>weight_ccr</field></col>
-				<col><field>weight_pdd</field></col>
-				<col><field>weight_ast</field></col>
-				<col><field>weight_acd</field></col>
 				<col><field>warn_threshold_asr</field></col>
 				<col><field>warn_threshold_ccr</field></col>
 				<col><field>warn_threshold_pdd</field></col>
@@ -68,6 +73,16 @@
 				<col><field>crit_threshold_pdd</field></col>
 				<col><field>crit_threshold_ast</field></col>
 				<col><field>crit_threshold_acd</field></col>
+				<col><field>warn_penalty_asr</field></col>
+				<col><field>warn_penalty_ccr</field></col>
+				<col><field>warn_penalty_pdd</field></col>
+				<col><field>warn_penalty_ast</field></col>
+				<col><field>warn_penalty_acd</field></col>
+				<col><field>crit_penalty_asr</field></col>
+				<col><field>crit_penalty_ccr</field></col>
+				<col><field>crit_penalty_pdd</field></col>
+				<col><field>crit_penalty_ast</field></col>
+				<col><field>crit_penalty_acd</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

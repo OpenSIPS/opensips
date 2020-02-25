@@ -23,6 +23,8 @@
 #define _QR_SORT_H_
 
 #include "../drouting/prefix_tree.h"
+#include "../drouting/dr_cb.h"
+
 #include "qr_stats.h"
 
 /* compute answer seizure ratio for gw */
@@ -90,5 +92,11 @@ static inline double acd(qr_gw_t *gw) {
 	return acd;
 }
 
-void qr_sort(void *param);
+double _qr_score_gw_dw(qr_gw_t *gw, qr_profile_t *prof,
+                       str *part, int rule_id, int *disabled);
+double _qr_score_gw_bdf(qr_gw_t *gw, qr_profile_t *prof,
+                        str *part, int rule_id, int *disabled);
+
+void qr_sort_dynamic_weights(void *param);
+void qr_sort_best_dest_first(void *param);
 #endif

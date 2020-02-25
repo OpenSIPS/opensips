@@ -45,12 +45,6 @@
 #define QR_PENALTY_THRESHOLD_1 1
 #define QR_PENALTY_THRESHOLD_2 10
 
-/* the number of elements for the hashmap used by the sorting */
-#define QR_N_SORTED_LIST 6
-
-extern int qr_n; /* number of intervals in history */
-extern int* n_sampled;
-
 /* number of calls accounted for each statistic */
 typedef struct qr_n_calls {
 	double ok, pdd, setup, cd;
@@ -75,16 +69,15 @@ typedef struct qr_sample {
 	struct qr_sample *next;
 } qr_sample_t;
 
-/* thresholds */
-typedef struct qr_thresholds {
+typedef struct qr_profile {
 	int id;
 	char name[QR_NAME_COL_SZ + 1];
-	double weight_asr, asr1, asr2;
-	double weight_ccr, ccr1, ccr2;
-	double weight_pdd, pdd1, pdd2;
-	double weight_ast, ast1, ast2;
-	double weight_acd, acd1, acd2;
-} qr_thresholds_t;
+	double asr1, asr_pty1, asr2, asr_pty2;
+	double ccr1, ccr_pty1, ccr2, ccr_pty2;
+	double pdd1, pdd_pty1, pdd2, pdd_pty2;
+	double ast1, ast_pty1, ast2, ast_pty2;
+	double acd1, acd_pty1, acd2, acd_pty2;
+} qr_profile_t;
 
 /* history for gateway: sum of sampled intervals */
 typedef struct qr_gw {
@@ -96,7 +89,7 @@ typedef struct qr_gw {
 	qr_stats_t current_interval; /* the current interval */
 	qr_stats_t summed_stats; /* the sum of the @lru_interval list */
 	char state;
-	double score; /* score of the gateway, based on weights & thresholds */
+	double score; /* score of the gateway, based on thresholds & penalties */
 	rw_lock_t *ref_lock; /* lock for protecting the overall statistics (history) */
 	gen_lock_t *acc_lock; /* lock for protecting the current interval */
 } qr_gw_t;
@@ -125,7 +118,7 @@ typedef struct qr_dst {
 /* destinations associated with a rule */
 typedef struct qr_rule {
 	qr_dst_t *dest;
-	qr_thresholds_t *thresholds;
+	qr_profile_t *profile;
 	int r_id;/* rule_id */
 	char sort_method; /* sorting for the rule */
 	int n;
@@ -142,7 +135,7 @@ typedef struct qr_partitions {
 }qr_partitions_t;
 
 extern rw_lock_t *qr_main_list_rwl;
-extern qr_thresholds_t **qr_profiles;
+extern qr_profile_t **qr_profiles;
 extern int *qr_profiles_n;
 extern qr_partitions_t **qr_main_list;
 

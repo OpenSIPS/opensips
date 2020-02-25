@@ -28,34 +28,34 @@
 /* qr_profiles table */
 #define INT_VALS_ID 0
 #define STR_VALS_PROFILE_NAME 0
-#define DOUBLE_VALS_WGHT_ASR 0
-#define DOUBLE_VALS_WGHT_CCR 1
-#define DOUBLE_VALS_WGHT_PDD 2
-#define DOUBLE_VALS_WGHT_AST 3
-#define DOUBLE_VALS_WGHT_ACD 4
-#define DOUBLE_VALS_WARN_ASR 5
-#define DOUBLE_VALS_WARN_CCR 6
-#define DOUBLE_VALS_WARN_PDD 7
-#define DOUBLE_VALS_WARN_AST 8
-#define DOUBLE_VALS_WARN_ACD 9
-#define DOUBLE_VALS_CRIT_ASR 10
-#define DOUBLE_VALS_CRIT_CCR 11
-#define DOUBLE_VALS_CRIT_PDD 12
-#define DOUBLE_VALS_CRIT_AST 13
-#define DOUBLE_VALS_CRIT_ACD 14
+#define DBL_VALS_WARN_ASR 0
+#define DBL_VALS_WARN_CCR 1
+#define DBL_VALS_WARN_PDD 2
+#define DBL_VALS_WARN_AST 3
+#define DBL_VALS_WARN_ACD 4
+#define DBL_VALS_CRIT_ASR 5
+#define DBL_VALS_CRIT_CCR 6
+#define DBL_VALS_CRIT_PDD 7
+#define DBL_VALS_CRIT_AST 8
+#define DBL_VALS_CRIT_ACD 9
+#define DBL_VALS_WPTY_ASR 10
+#define DBL_VALS_WPTY_CCR 11
+#define DBL_VALS_WPTY_PDD 12
+#define DBL_VALS_WPTY_AST 13
+#define DBL_VALS_WPTY_ACD 14
+#define DBL_VALS_CPTY_ASR 15
+#define DBL_VALS_CPTY_CCR 16
+#define DBL_VALS_CPTY_PDD 17
+#define DBL_VALS_CPTY_AST 18
+#define DBL_VALS_CPTY_ACD 19
 
 #define N_INT_VALS 1
 #define N_STR_VALS 1
-#define N_DOUBLE_VALS 15
+#define N_DBL_VALS 20
 
 /* column names */
 #define QP_ID_COL "id"
 #define QP_PROFILE_NAME_COL "profile_name"
-#define QP_WGHT_ASR_COL "weight_asr"
-#define QP_WGHT_CCR_COL "weight_ccr"
-#define QP_WGHT_PDD_COL "weight_pdd"
-#define QP_WGHT_AST_COL "weight_ast"
-#define QP_WGHT_ACD_COL "weight_acd"
 #define QP_WARN_ASR_COL "warn_threshold_asr"
 #define QP_WARN_CCR_COL "warn_threshold_ccr"
 #define QP_WARN_PDD_COL "warn_threshold_pdd"
@@ -66,6 +66,16 @@
 #define QP_CRIT_PDD_COL "crit_threshold_pdd"
 #define QP_CRIT_AST_COL "crit_threshold_ast"
 #define QP_CRIT_ACD_COL "crit_threshold_acd"
+#define QP_WPTY_ASR_COL "warn_penalty_asr"
+#define QP_WPTY_CCR_COL "warn_penalty_asr"
+#define QP_WPTY_PDD_COL "warn_penalty_asr"
+#define QP_WPTY_AST_COL "warn_penalty_asr"
+#define QP_WPTY_ACD_COL "warn_penalty_asr"
+#define QP_CPTY_ASR_COL "crit_penalty_asr"
+#define QP_CPTY_CCR_COL "crit_penalty_asr"
+#define QP_CPTY_PDD_COL "crit_penalty_asr"
+#define QP_CPTY_AST_COL "crit_penalty_asr"
+#define QP_CPTY_ACD_COL "crit_penalty_asr"
 
 #define QR_NAME_COL_SZ 64
 

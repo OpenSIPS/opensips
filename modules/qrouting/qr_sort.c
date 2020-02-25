@@ -19,6 +19,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "qrouting.h"
 #include "qr_sort.h"
 #include "qr_acc.h"
 #include "qr_stats.h"
@@ -32,21 +33,20 @@
 	LM_WARN("crit "thr" threshold exceeded, gwid: %.*s\n", \
 	        gw_name->len, gw_name->s)
 
-/*
- * computes the score of the gateway using the warning
- * thresholds
- */
-static double _qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds,
-                           str *part, int rule_id, int *disabled)
+
+static inline void qr_weight_based_sort(unsigned short *dsts,
+                                        const double *scores, int n);
+
+static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
+                                  str *part, int rule_id, int *disabled)
 {
-	extern int event_bad_dst_threshold;
-	double score = 0;
+	double score = 1;
 	double asr_v, ccr_v, pdd_v, ast_v, acd_v;
 	str *gw_name = drb.get_gw_name(gw->dr_gw);
 	int skip_event = 0;
 
 	/* the corresponding dr_rule points to an invalid qr_profile */
-	if (!thresholds)
+	if (!prof)
 		goto set_score;
 
 	/* FIXME: might be better under a single lock
@@ -54,52 +54,57 @@ static double _qr_score_gw(qr_gw_t *gw, qr_thresholds_t *thresholds,
 	 * new sampling interval might bring new statistics)
 	 */
 	asr_v = asr(gw);
-	if (asr_v < thresholds->asr1 && asr_v != -1) {
-		score += thresholds->weight_asr * QR_PENALTY_THRESHOLD_1;
-		log_warn_thr("ASR");
-		if(asr_v < thresholds->asr2) {
-			score += thresholds->weight_asr * QR_PENALTY_THRESHOLD_2;
+	if (asr_v < prof->asr1 && asr_v != -1) {
+		if (asr_v < prof->asr2) {
+			score *= prof->asr_pty2;
 			log_crit_thr("ASR");
+		} else {
+			score *= prof->asr_pty1;
+			log_warn_thr("ASR");
 		}
 	}
 
 	ccr_v = ccr(gw);
-	if (ccr_v < thresholds->ccr1 && ccr_v != -1) {
-		score += thresholds->weight_ccr * QR_PENALTY_THRESHOLD_1;
-		log_warn_thr("CCR");
-		if(ccr_v < thresholds->ccr2) {
-			score += thresholds->weight_ccr * QR_PENALTY_THRESHOLD_2;
+	if (ccr_v < prof->ccr1 && ccr_v != -1) {
+		if (ccr_v < prof->ccr2) {
+			score *= prof->ccr_pty2;
 			log_crit_thr("CCR");
+		} else {
+			score *= prof->ccr_pty1;
+			log_warn_thr("CCR");
 		}
 	}
 
 	pdd_v = pdd(gw);
-	if (pdd_v > thresholds->pdd1 && pdd_v != -1) {
-		score += thresholds->weight_pdd * QR_PENALTY_THRESHOLD_1;
-		log_warn_thr("PDD");
-		if(pdd_v > thresholds->pdd2) {
-			score += thresholds->weight_pdd * QR_PENALTY_THRESHOLD_2;
+	if (pdd_v > prof->pdd1 && pdd_v != -1) {
+		if (pdd_v > prof->pdd2) {
+			score *= prof->pdd_pty2;
 			log_crit_thr("PDD");
+		} else {
+			score *= prof->pdd_pty1;
+			log_warn_thr("PDD");
 		}
 	}
 
 	ast_v = ast(gw);
-	if (ast_v > thresholds->ast1 && ast_v != -1) {
-		score += thresholds->weight_ast * QR_PENALTY_THRESHOLD_1;
-		log_warn_thr("AST");
-		if(ast_v > thresholds->ast2) {
-			score += thresholds->weight_ast * QR_PENALTY_THRESHOLD_2;
+	if (ast_v > prof->ast1 && ast_v != -1) {
+		if (ast_v > prof->ast2) {
+			score *= prof->ast_pty2;
 			log_crit_thr("AST");
+		} else {
+			score *= prof->ast_pty1;
+			log_warn_thr("AST");
 		}
 	}
 
 	acd_v = acd(gw);
-	if (acd_v < thresholds->acd1 && acd_v != -1) {
-		score += thresholds->weight_acd * QR_PENALTY_THRESHOLD_1;
-		log_warn_thr("ACD");
-		if(acd_v < thresholds->acd2) {
-			score += thresholds->weight_acd * QR_PENALTY_THRESHOLD_2;
+	if (acd_v < prof->acd1 && acd_v != -1) {
+		if (acd_v < prof->acd2) {
+			score *= prof->acd_pty2;
 			log_crit_thr("ACD");
+		} else {
+			score *= prof->acd_pty1;
+			log_warn_thr("ACD");
 		}
 	}
 
@@ -113,7 +118,8 @@ set_score:
 		skip_event = 1;
 	lock_stop_write(gw->ref_lock);
 
-	if (score > event_bad_dst_threshold && !skip_event)
+	if (event_bad_dst_threshold && score < event_bad_dst_threshold
+	        && !skip_event)
 		qr_raise_event_bad_dst(rule_id, part, gw_name);
 
 	*disabled = skip_event;
@@ -122,7 +128,7 @@ set_score:
 
 
 static inline double qr_score_gw(qr_gw_t *gw, const qr_rule_t *rule,
-                                 qr_thresholds_t *thr)
+                                    qr_profile_t *prof)
 {
 	double cur_dst_score;
 	int disabled = 0;
@@ -131,7 +137,7 @@ static inline double qr_score_gw(qr_gw_t *gw, const qr_rule_t *rule,
 	if (gw->state & QR_STATUS_DIRTY) {
 		lock_stop_read(gw->ref_lock);
 
-		cur_dst_score = _qr_score_gw(gw, thr, rule->part_name,
+		cur_dst_score = _qr_score_gw(gw, prof, rule->part_name,
 		                             rule->r_id, &disabled);
 	} else {
 		cur_dst_score = gw->score;
@@ -142,7 +148,7 @@ static inline double qr_score_gw(qr_gw_t *gw, const qr_rule_t *rule,
 }
 
 static inline double qr_score_grp(qr_grp_t *grp, const qr_rule_t *rule,
-                                  qr_thresholds_t *thr)
+                                  qr_profile_t *prof)
 {
 	qr_gw_t *gw;
 	int i, valid_gws = 0, disabled;
@@ -164,7 +170,7 @@ static inline double qr_score_grp(qr_grp_t *grp, const qr_rule_t *rule,
 		if (gw->state & QR_STATUS_DIRTY) {
 			lock_stop_read(gw->ref_lock);
 
-			score = _qr_score_gw(gw, thr, rule->part_name,
+			score = _qr_score_gw(gw, prof, rule->part_name,
 			                     rule->r_id, &disabled);
 			if (!disabled) {
 				mean += score;
@@ -212,14 +218,14 @@ static int qr_cmp_dst(const void *d1, const void *d2)
 	return s1 < s2 ? -1 : (s1 == s2 ? 0 : 1);
 }
 
-void qr_sort(void *param)
+void qr_sort_best_dest_first(void *param)
 {
 	struct dr_sort_params *srp = (struct dr_sort_params *)param;
 	unsigned short dst_idx;
 	int i, disabled = 0, ndst;
 	unsigned short *sorted_dst;
 	double *new_scores;
-	qr_thresholds_t thr;
+	qr_profile_t prof;
 	qr_rule_t *rule;
 
 	rule = drb.get_qr_rule_handle(srp->dr_rule);
@@ -244,9 +250,6 @@ void qr_sort(void *param)
 	for (i = 0; i < ndst; i++)
 		sorted_dst[i] = i;
 
-	if (*n_sampled < qr_n) /* we don't have enough statistics to sort */
-		goto out;
-
 	if (ndst > qr_scores_sz) {
 		new_scores = pkg_realloc(qr_scores, ndst * sizeof *new_scores);
 		if (!new_scores) {
@@ -259,16 +262,16 @@ void qr_sort(void *param)
 	}
 
 	lock_start_read(qr_profiles_rwl);
-	thr = *rule->thresholds;
+	prof = *rule->profile;
 	lock_stop_read(qr_profiles_rwl);
 
 	/* compute the score of each destination.  A carrier's final score will be
 	 * the average score of all of their active gateways */
 	for (i = 0; i < ndst; i++) {
 		if (rule->dest[i].type & QR_DST_GW)
-			qr_scores[i] = qr_score_gw(rule->dest[i].gw, rule, &thr);
+			qr_scores[i] = qr_score_gw(rule->dest[i].gw, rule, &prof);
 		else
-			qr_scores[i] = qr_score_grp(&rule->dest[i].grp, rule, &thr);
+			qr_scores[i] = qr_score_grp(&rule->dest[i].grp, rule, &prof);
 
 		LM_DBG("score for dst type %d, i: %d is %lf\n",
 		       rule->dest[i].type, i, qr_scores[i]);
@@ -282,10 +285,122 @@ void qr_sort(void *param)
 	/* mark the disabled destinations with -1 */
 	memset(sorted_dst + ndst - disabled, -1, disabled * sizeof *sorted_dst);
 
-out:
 	srp->rc = 0;
 	return;
 
 error:
 	srp->rc = -1;
+}
+
+void qr_sort_dynamic_weights(void *param)
+{
+	struct dr_sort_params *srp = (struct dr_sort_params *)param;
+	unsigned short dst_idx;
+	int i, j, di, ndst, ndisabled;
+	unsigned short *sorted_dst;
+	double *new_scores;
+	qr_profile_t prof;
+	qr_rule_t *rule;
+
+	rule = drb.get_qr_rule_handle(srp->dr_rule);
+	if (!rule) {
+		LM_ERR("No qr rule provided for sorting (qr_handle needed)\n");
+		goto error;
+	}
+
+	sorted_dst = srp->sorted_dst;
+	dst_idx = srp->dst_idx;
+
+	if (!sorted_dst) {
+		LM_ERR("no array provided to save destination indexes to\n");
+		goto error;
+	}
+
+	if (dst_idx == (unsigned short)-1)
+		ndst = rule->n;
+	else
+		ndst = rule->dest[dst_idx].grp.n;
+
+	if (ndst > qr_scores_sz) {
+		new_scores = pkg_realloc(qr_scores, ndst * sizeof *new_scores);
+		if (!new_scores) {
+			LM_ERR("oom\n");
+			goto error;
+		}
+
+		qr_scores = new_scores;
+		qr_scores_sz = ndst;
+	}
+
+	lock_start_read(qr_profiles_rwl);
+	prof = *rule->profile;
+	lock_stop_read(qr_profiles_rwl);
+
+	/* compute the score of each destination.  A carrier's final score will be
+	 * the average score of all of their active gateways */
+	for (i = 0, j = 0, di = ndst - 1; i < ndst; i++, j++) {
+		if (rule->dest[i].type & QR_DST_GW)
+			qr_scores[j] = qr_score_gw(rule->dest[i].gw, rule, &prof);
+		else
+			qr_scores[j] = qr_score_grp(&rule->dest[i].grp, rule, &prof);
+
+		LM_DBG("score for dst type %d, i: %d is %lf\n",
+		       rule->dest[i].type, i, qr_scores[j]);
+
+		/* if it's disabled, place it towards the end */
+		if (qr_scores[j] == -1) {
+			j--;
+			sorted_dst[di--] = i;
+		} else {
+			sorted_dst[j] = i;
+		}
+	}
+
+	ndisabled = ndst - 1 - di;
+
+	qr_weight_based_sort(sorted_dst, qr_scores, ndst - ndisabled);
+
+	/* mark the disabled destinations with -1 */
+	memset(sorted_dst + ndst - ndisabled, -1, ndisabled * sizeof *sorted_dst);
+
+	srp->rc = 0;
+	return;
+
+error:
+	srp->rc = -1;
+}
+
+static inline void qr_weight_based_sort(unsigned short *dsts,
+                                        const double *scores, int n)
+{
+	double running_sum[n], sum, rnd, aux;
+	int i, first = 0;
+
+	while (first < n - 1) {
+		for (i = first, sum = 0; i < n; i++) {
+			sum += scores[i];
+			running_sum[i] = sum;
+		}
+
+		if (sum) {
+			rnd = sum * ((float)rand() / RAND_MAX);
+
+			for (i = first; i < n; i++)
+				if (running_sum[i] > rnd)
+					break;
+
+			if (i == n) {
+				LM_BUG("bug encountered during weight based sort!");
+				return;
+			}
+
+		} else {
+			i = first;
+		}
+
+		aux = dsts[first];
+		dsts[first] = dsts[i];
+		dsts[i] = aux;
+		first++;
+	}
 }

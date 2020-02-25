@@ -30,6 +30,7 @@
 
 #include "../drouting/dr_cb.h"
 
+#include "qrouting.h"
 #include "qr_stats.h"
 #include "qr_acc.h"
 
@@ -49,7 +50,7 @@ qr_sample_t *create_history(void)
 	}
 	memset(history, 0, sizeof *history);
 
-	for (tmp = history, i = 0; i < qr_n-1; tmp = tmp->next, ++i) {
+	for (tmp = history, i=0; i < qr_interval_list_sz-1; tmp = tmp->next, ++i) {
 		tmp->next = shm_malloc(sizeof *tmp->next);
 		if (!tmp->next)
 			goto error;
@@ -191,7 +192,7 @@ int qr_set_profile(qr_rule_t *rule, unsigned int prof_id)
 		m = left + (right-left)/2;
 		current_id = ((*qr_profiles)[m]).id;
 		if(current_id == prof_id) {
-			rule->thresholds = &(*qr_profiles)[m];
+			rule->profile = &(*qr_profiles)[m];
 			lock_stop_read(qr_profiles_rwl);
 			LM_DBG("found profile %d\n", prof_id);
 			return 0;

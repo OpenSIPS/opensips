@@ -28,6 +28,7 @@
 #include "../../str.h"
 #include "../../timer.h"
 
+#include "qrouting.h"
 #include "qr_stats.h"
 #include "qr_sort.h"
 #include "qr_acc.h"
@@ -46,19 +47,22 @@
 /* modparam */
 static int history_span = 30; /* the history span in minutes */
 static int sampling_interval = 5; /* the sampling interval in seconds */
-int event_bad_dst_threshold = 5 * QR_PENALTY_THRESHOLD_1;
+static char *event_bad_dst_threshold_s;
+double event_bad_dst_threshold;
 
 str db_url;
+
+qr_algo_t qr_algorithm = QR_ALGO_DYNAMIC_WEIGHTS;
+static char *qr_algorithm_s;
 
 qr_partitions_t **qr_main_list; /* the history itself */
 rw_lock_t *qr_main_list_rwl; /* protection during dr_reload */
 
-qr_thresholds_t **qr_profiles;
+qr_profile_t **qr_profiles;
 int *qr_profiles_n;
 rw_lock_t *qr_profiles_rwl; /* protection during qr_reload */
 
-int qr_n;
-int *n_sampled;
+int qr_interval_list_sz; /* the maximum number of kept intervals (samples) */
 
 /* DB connection - useful for runtime reloads */
 db_func_t qr_dbf;
@@ -109,9 +113,18 @@ static cmd_export_t cmds[] = {
 };
 
 static param_export_t params[] = {
+	{"algorithm",               STR_PARAM, &qr_algorithm_s},
 	{"history_span",            INT_PARAM, &history_span},
 	{"sampling_interval",       INT_PARAM, &sampling_interval},
-	{"event_bad_dst_threshold", INT_PARAM, &event_bad_dst_threshold},
+
+	/* TODO */
+	{"min_samples_asr",         INT_PARAM, NULL},
+	{"min_samples_ccr",         INT_PARAM, NULL},
+	{"min_samples_pdd",         INT_PARAM, NULL},
+	{"min_samples_ast",         INT_PARAM, NULL},
+	{"min_samples_acd",         INT_PARAM, NULL},
+
+	{"event_bad_dst_threshold", STR_PARAM, &event_bad_dst_threshold_s},
 	{"db_url",                  STR_PARAM, &db_url.s},
 	{"table_name",              STR_PARAM, &qr_profiles_table.s},
 	{0, 0, 0}
@@ -266,9 +279,6 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 	qr_rule_t *it;
 	int i, j;
 
-	if (*n_sampled < qr_n)
-		++(*n_sampled); /* the number of intervals sampled */
-
 	lock_start_read(qr_main_list_rwl);
 
 	if (!*qr_main_list) {
@@ -290,6 +300,8 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 
 static int qr_init_dr_cb(void)
 {
+	dr_cb sort_cb;
+
 	if (load_dr_api(&drb) != 0) {
 		LM_ERR("failed to load dr API.  Is the drouting module loaded?\n");
 		return -1;
@@ -332,7 +344,13 @@ static int qr_init_dr_cb(void)
 		return -1;
 	}
 
-	if (drb.register_drcb(DRCB_SORT_DST, &qr_sort, (void*)QR_BASED_SORT, NULL) < 0) {
+	if (qr_algorithm == QR_ALGO_BEST_DEST_FIRST) {
+		sort_cb = &qr_sort_best_dest_first;
+	} else {
+		sort_cb = &qr_sort_dynamic_weights;
+	}
+
+	if (drb.register_drcb(DRCB_SORT_DST, sort_cb, (void*)QR_BASED_SORT, NULL) < 0) {
 		LM_ERR("failed to register DRCB_SORT_DST callback to DR\n");
 		return -1;
 	}
@@ -343,6 +361,15 @@ static int qr_init_dr_cb(void)
 
 static int qr_init_globals(void)
 {
+	if (event_bad_dst_threshold_s)
+		event_bad_dst_threshold = strtod(event_bad_dst_threshold_s, NULL);
+
+	if (qr_algorithm_s && \
+	        (qr_algorithm = qr_str2algo(qr_algorithm_s)) == QR_ALGO_INVALID) {
+		LM_ERR("invalid algorithm: '%s'\n", qr_algorithm_s);
+		return -1;
+	}
+
 	if (!(qr_main_list_rwl = lock_init_rw())) {
 		LM_ERR("oom\n");
 		return -1;
@@ -360,16 +387,6 @@ static int qr_init_globals(void)
 	}
 	*qr_main_list = NULL;
 
-	qr_n = history_span * 60 / sampling_interval; /* the number of sampling
-												  intervals in history */
-
-	n_sampled = shm_malloc(sizeof *n_sampled);
-	if (!n_sampled) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	*n_sampled = 0;
-
 	qr_profiles = shm_malloc(sizeof *qr_profiles);
 	if (!qr_profiles) {
 		LM_ERR("oom\n");
@@ -383,6 +400,8 @@ static int qr_init_globals(void)
 		return -1;
 	}
 	*qr_profiles_n = 0;
+
+	qr_interval_list_sz = history_span * 60 / sampling_interval;
 
 	return 0;
 }

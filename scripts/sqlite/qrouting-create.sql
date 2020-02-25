@@ -2,11 +2,6 @@ INSERT INTO version (table_name, table_version) values ('qr_profiles','1');
 CREATE TABLE qr_profiles (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     profile_name CHAR(64) NOT NULL,
-    weight_asr DOUBLE DEFAULT 1 NOT NULL,
-    weight_ccr DOUBLE DEFAULT 1 NOT NULL,
-    weight_pdd DOUBLE DEFAULT 1 NOT NULL,
-    weight_ast DOUBLE DEFAULT 1 NOT NULL,
-    weight_acd DOUBLE DEFAULT 1 NOT NULL,
     warn_threshold_asr DOUBLE DEFAULT -1 NOT NULL,
     warn_threshold_ccr DOUBLE DEFAULT -1 NOT NULL,
     warn_threshold_pdd DOUBLE DEFAULT -1 NOT NULL,
@@ -16,6 +11,16 @@ CREATE TABLE qr_profiles (
     crit_threshold_ccr DOUBLE DEFAULT -1 NOT NULL,
     crit_threshold_pdd DOUBLE DEFAULT -1 NOT NULL,
     crit_threshold_ast DOUBLE DEFAULT -1 NOT NULL,
-    crit_threshold_acd DOUBLE DEFAULT -1 NOT NULL
+    crit_threshold_acd DOUBLE DEFAULT -1 NOT NULL,
+    warn_penalty_asr DOUBLE DEFAULT 0.5 NOT NULL,
+    warn_penalty_ccr DOUBLE DEFAULT 0.5 NOT NULL,
+    warn_penalty_pdd DOUBLE DEFAULT 0.5 NOT NULL,
+    warn_penalty_ast DOUBLE DEFAULT 0.5 NOT NULL,
+    warn_penalty_acd DOUBLE DEFAULT 0.5 NOT NULL,
+    crit_penalty_asr DOUBLE DEFAULT 0.05 NOT NULL,
+    crit_penalty_ccr DOUBLE DEFAULT 0.05 NOT NULL,
+    crit_penalty_pdd DOUBLE DEFAULT 0.05 NOT NULL,
+    crit_penalty_ast DOUBLE DEFAULT 0.05 NOT NULL,
+    crit_penalty_acd DOUBLE DEFAULT 0.05 NOT NULL
 );
 

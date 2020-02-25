@@ -35,36 +35,6 @@
 		<size>64</size>
 		<description> The name of the profile</description>
 	</column>
-	<column id="weight_asr">
-		<name>weight_asr</name>
-		<type>double</type>
-		<default>1</default>
-		<description> Weight of the ASR stat in the GW score computation</description>
-	</column>
-	<column id="weight_ccr">
-		<name>weight_ccr</name>
-		<type>double</type>
-		<default>1</default>
-		<description> Weight of the CCR stat in the GW score computation</description>
-	</column>
-	<column id="weight_pdd">
-		<name>weight_pdd</name>
-		<type>double</type>
-		<default>1</default>
-		<description> Weight of the PDD stat in the GW score computation</description>
-	</column>
-	<column id="weight_ast">
-		<name>weight_ast</name>
-		<type>double</type>
-		<default>1</default>
-		<description> Weight of the AST stat in the GW score computation</description>
-	</column>
-	<column id="weight_acd">
-		<name>weight_acd</name>
-		<type>double</type>
-		<default>1</default>
-		<description> Weight of the ACD stat in the GW score computation</description>
-	</column>
 	<column id="warn_threshold_asr">
         <name>warn_threshold_asr</name>
         <type>double</type>
@@ -125,5 +95,65 @@
         <default>-1</default>
         <description>The critical threshold for average call duration</description>
     </column>
+	<column id="warn_penalty_asr">
+		<name>warn_penalty_asr</name>
+		<type>double</type>
+		<default>0.5</default>
+		<description>Traffic volume reduction when ASR falls below warn limit</description>
+	</column>
+	<column id="warn_penalty_ccr">
+		<name>warn_penalty_ccr</name>
+		<type>double</type>
+		<default>0.5</default>
+		<description>Traffic volume reduction when CCR falls below warn limit</description>
+	</column>
+	<column id="warn_penalty_pdd">
+		<name>warn_penalty_pdd</name>
+		<type>double</type>
+		<default>0.5</default>
+		<description>Traffic volume reduction when PDD falls below warn limit</description>
+	</column>
+	<column id="warn_penalty_ast">
+		<name>warn_penalty_ast</name>
+		<type>double</type>
+		<default>0.5</default>
+		<description>Traffic  volume reduction when AST falls below warn limit</description>
+	</column>
+	<column id="warn_penalty_acd">
+		<name>warn_penalty_acd</name>
+		<type>double</type>
+		<default>0.5</default>
+		<description>Traffic volume reduction when ACD falls below warn limit</description>
+	</column>
+	<column id="crit_penalty_asr">
+		<name>crit_penalty_asr</name>
+		<type>double</type>
+		<default>0.05</default>
+		<description>Traffic volume reduction when ASR falls below crit limit</description>
+	</column>
+	<column id="crit_penalty_ccr">
+		<name>crit_penalty_ccr</name>
+		<type>double</type>
+		<default>0.05</default>
+		<description>Traffic volume reduction when CCR falls below crit limit</description>
+	</column>
+	<column id="crit_penalty_pdd">
+		<name>crit_penalty_pdd</name>
+		<type>double</type>
+		<default>0.05</default>
+		<description>Traffic volume reduction when PDD falls below crit limit</description>
+	</column>
+	<column id="crit_penalty_ast">
+		<name>crit_penalty_ast</name>
+		<type>double</type>
+		<default>0.05</default>
+		<description>Traffic  volume reduction when AST falls below crit limit</description>
+	</column>
+	<column id="crit_penalty_acd">
+		<name>crit_penalty_acd</name>
+		<type>double</type>
+		<default>0.05</default>
+		<description>Traffic volume reduction when ACD falls below crit limit</description>
+	</column>
 
 </table>

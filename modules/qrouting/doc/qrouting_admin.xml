@@ -105,7 +105,7 @@
 			</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>db_url</varname> parameter</title>
+		<title>Setting the <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">
 
 modparam("qrouting", "db_url", "mysql://opensips:opensipsrw@localhost/opensips")
@@ -124,10 +124,65 @@ modparam("qrouting", "db_url", "mysql://opensips:opensipsrw@localhost/opensips")
 			</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>table_name</varname> parameter</title>
+		<title>Setting the <varname>table_name</varname> parameter</title>
 		<programlisting format="linespecific">
 
 modparam("qrouting", "table_name", "qr_profiles_bak")
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_algorithm" xreflabel="algorithm">
+		<title><varname>algorithm</varname> (integer)</title>
+		<para>
+			Quality-based destination selection/balancing algorithm to use.
+		</para>
+		<para>
+			Possible values:
+			<itemizedlist>
+				<listitem>
+					<para>
+					<emphasis role='bold'>"dynamic-weights"</emphasis> -
+					for a given prefix, all destinations start with equal
+					weights and receive an equal share of the traffic.  As
+					signaling statistics are gathered for the destinations, the
+					ones which underperform will receive less traffic,
+					based on the "penalty" columns of the
+					<emphasis>qr_profiles</emphasis> table
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>"best-dest-first"</emphasis> - for a
+					given prefix, the 1st (i.e. <emphasis>best scoring</emphasis>)
+					destination will receive all the traffic as long as its
+					quality stays the same.  Initially, all destinations start
+					with a perfect score.  This score may degrade if one or
+					more signaling statistics fall below the "warn" or "crit"
+					thresholds during routing, case in which the destinations
+					will be sorted accordingly and traffic will be routed to
+					the newly determined 1st position in the list
+					</para>
+					<para>
+						<emphasis>NOTE</emphasis>:  for optimal results when
+						using the "best-dest-first" algorithm, the destinations
+						must be provisioned in descending order of their
+						expected quality! (i.e. best quality gateways must be
+						placed towards the start of the list)
+					</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			<emphasis>
+			Default value is <emphasis role='bold'>"dynamic-weights"</emphasis>.
+			</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>algorithm</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "algorithm", "best-dest-first")
 	</programlisting>
 		</example>
 	</section>
@@ -181,23 +236,24 @@ modparam("qrouting", "sampling_interval", 5)
 	</section>
 
 	<section id="param_event_bad_dst_threshold" xreflabel="event_bad_dst_threshold">
-		<title><varname>event_bad_dst_threshold</varname> (integer)</title>
+		<title><varname>event_bad_dst_threshold</varname> (string)</title>
 		<para>
-		The minimally accepted quality of a gateway.  If a destination (i.e.
-		prefix + gateway combination) receives a score below this threshold,
-		the E_QROUTING_BAD_DST event will be triggered.
+		The minimally accepted quality of a (prefix, destination) combination,
+		given as a quoted floating point number in the [0, 1] interval.
+		Whenever a (prefix + destination combination) receives a score below
+		this threshold, the <xref linkend="event_E_QROUTING_BAD_DST"/> event
+		will be triggered.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <emphasis role='bold'>5</emphasis> (all stats are
-			allowed to hit the WARN threshold simultaneously)
+			Default value is <emphasis role='bold'>NULL</emphasis> (not set).
 		</emphasis>
 		</para>
 		<example>
 		<title>Setting the <varname>event_bad_dst_threshold</varname> parameter</title>
 		<programlisting format="linespecific">
 
-modparam("qrouting", "event_bad_dst_threshold", 4)
+modparam("qrouting", "event_bad_dst_threshold", "0.5")
 	</programlisting>
 		</example>
 	</section>
