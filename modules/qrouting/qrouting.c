@@ -67,6 +67,12 @@ qr_profile_t **qr_profiles;
 int *qr_profiles_n;
 rw_lock_t *qr_profiles_rwl; /* protection during qr_reload */
 
+int qr_min_samples_asr = 30;
+int qr_min_samples_ccr = 30;
+int qr_min_samples_pdd = 10;
+int qr_min_samples_ast = 10;
+int qr_min_samples_acd = 20;
+
 int qr_interval_list_sz; /* the maximum number of kept intervals (samples) */
 
 /* DB connection - useful for runtime reloads */
@@ -139,14 +145,11 @@ static param_export_t params[] = {
 	{"history_span",            INT_PARAM, &history_span},
 	{"sampling_interval",       INT_PARAM, &sampling_interval},
 	{"extra_stats",             STR_PARAM, &qr_xstats_s},
-
-	/* TODO */
-	{"min_samples_asr",         INT_PARAM, NULL},
-	{"min_samples_ccr",         INT_PARAM, NULL},
-	{"min_samples_pdd",         INT_PARAM, NULL},
-	{"min_samples_ast",         INT_PARAM, NULL},
-	{"min_samples_acd",         INT_PARAM, NULL},
-
+	{"min_samples_asr",         INT_PARAM, &qr_min_samples_asr},
+	{"min_samples_ccr",         INT_PARAM, &qr_min_samples_ccr},
+	{"min_samples_pdd",         INT_PARAM, &qr_min_samples_pdd},
+	{"min_samples_ast",         INT_PARAM, &qr_min_samples_ast},
+	{"min_samples_acd",         INT_PARAM, &qr_min_samples_acd},
 	{"event_bad_dst_threshold", STR_PARAM, &event_bad_dst_threshold_s},
 	{0, 0, 0}
 };
@@ -384,6 +387,8 @@ static int qr_parse_extra_stats(void)
 {
 	csv_record *stats, *stat;
 	qr_xstat_desc_t *desc;
+	char *p;
+	str samples;
 
 	if (!qr_xstats_s)
 		return 0;
@@ -414,6 +419,23 @@ static int qr_parse_extra_stats(void)
 		}
 
 		trim(&stat->s);
+		p = memchr(stat->s.s, '/', stat->s.len);
+		if (!p) {
+			desc->min_samples = QR_MIN_XSTAT_SAMPLES;
+		} else {
+			samples.s = p + 1;
+			samples.len = stat->s.s + stat->s.len - samples.s;
+			trim(&samples);
+			if (samples.len == 0 || str2int(&samples, &desc->min_samples)) {
+				LM_ERR("bad 'min_samples' part: '%.*s'\n",
+				       samples.len, samples.s);
+				return -1;
+			}
+
+			stat->s.len = p - stat->s.s;
+			trim(&stat->s);
+		}
+
 		if (ZSTR(stat->s)) {
 			continue;
 		} else if (stat->s.len > QR_MAX_STAT_NAME_LEN) {
@@ -433,8 +455,8 @@ static int qr_parse_extra_stats(void)
 
 		qr_xstats_n++;
 
-		LM_DBG("parsed extra stat '%s%s'\n", desc->increasing ? "+" : "-",
-		       desc->name.s);
+		LM_DBG("parsed extra stat '%s%s/%d'\n", desc->increasing ? "+" : "-",
+		       desc->name.s, desc->min_samples);
 	}
 
 	free_csv_record(stats);

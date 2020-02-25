@@ -35,13 +35,22 @@ typedef enum qr_algo {
 
 typedef struct qr_xstat_desc {
 	str name;
+	unsigned int min_samples;
 	char increasing; /* 1 if "more is better", 0 if "less is better" */
 } qr_xstat_desc_t;
+
+#define QR_MIN_XSTAT_SAMPLES 30
 
 extern qr_xstat_desc_t *qr_xstats;
 extern int qr_xstats_n;
 extern double event_bad_dst_threshold;
 extern qr_algo_t qr_algorithm;
 extern int qr_interval_list_sz;
+
+extern int qr_min_samples_asr;
+extern int qr_min_samples_ccr;
+extern int qr_min_samples_pdd;
+extern int qr_min_samples_ast;
+extern int qr_min_samples_acd;
 
 #endif /* __QROUTING_H__ */

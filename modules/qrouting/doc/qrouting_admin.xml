@@ -256,6 +256,13 @@ modparam("qrouting", "sampling_interval", 5)
 		</para>
 
 		<para>
+		The minimally accepted number of samples for each statistic may be
+		changed using the optional <emphasis role='bold'>/&lt;min_samples&gt;</emphasis>
+		suffix.  Default value: <emphasis role='bold'>30</emphasis> samples
+		(minimum).
+		</para>
+
+		<para>
 		The thresholds and penalties for a custom statistic must be provided
 		via the <emphasis>qr_profiles</emphasis> table, by extending it with 4
 		columns for each extra statistic, named according to these
@@ -277,7 +284,117 @@ modparam("qrouting", "sampling_interval", 5)
 		<title>Setting the <varname>extra_stats</varname> parameter</title>
 		<programlisting format="linespecific">
 
-modparam("qrouting", "extra_stats", "+mos; +r_factor; -503_replies")
+modparam("qrouting", "extra_stats", "+mos/60; +r_factor; -503_replies/100")
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_min_samples_asr" xreflabel="min_samples_asr">
+		<title><varname>min_samples_asr</varname> (integer)</title>
+		<para>
+		The minimally accepted amount of sampled ASR statistics for each
+		(prefix, destination) pair before they can be taken into account.  As
+		long as the number of samples stays below this limit, the ASR statistic
+		of the pair is assumed to be healthy.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>30</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>min_samples_asr</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "min_samples_asr", 50)
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_min_samples_ccr" xreflabel="min_samples_ccr">
+		<title><varname>min_samples_ccr</varname> (integer)</title>
+		<para>
+		The minimally accepted amount of sampled CCR statistics for each
+		(prefix, destination) pair before they can be taken into account.  As
+		long as the number of samples stays below this limit, the CCR statistic
+		of the pair is assumed to be healthy.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>30</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>min_samples_ccr</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "min_samples_ccr", 50)
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_min_samples_pdd" xreflabel="min_samples_pdd">
+		<title><varname>min_samples_pdd</varname> (integer)</title>
+		<para>
+		The minimally accepted amount of sampled PDD statistics for each
+		(prefix, destination) pair before they can be taken into account.  As
+		long as the number of samples stays below this limit, the PDD statistic
+		of the pair is assumed to be healthy.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>10</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>min_samples_pdd</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "min_samples_pdd", 15)
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_min_samples_ast" xreflabel="min_samples_ast">
+		<title><varname>min_samples_ast</varname> (integer)</title>
+		<para>
+		The minimally accepted amount of sampled AST statistics for each
+		(prefix, destination) pair before they can be taken into account.  As
+		long as the number of samples stays below this limit, the AST statistic
+		of the pair is assumed to be healthy.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>10</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>min_samples_ast</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "min_samples_ast", 15)
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_min_samples_acd" xreflabel="min_samples_acd">
+		<title><varname>min_samples_acd</varname> (integer)</title>
+		<para>
+		The minimally accepted amount of sampled ACD statistics for each
+		(prefix, destination) pair before they can be taken into account.  As
+		long as the number of samples stays below this limit, the ACD statistic
+		of the pair is assumed to be healthy.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>20</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>min_samples_acd</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "min_samples_acd", 30)
 	</programlisting>
 		</example>
 	</section>
