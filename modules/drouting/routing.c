@@ -321,14 +321,12 @@ build_rt_info(
 	osips_free_f ff
 	)
 {
-	rt_info_t* rt = NULL;
-
-	/* callback parameters for the QR module */
 	int i;
 	void * qr_rule = NULL;
 	struct dr_reg_param rdp;
-	struct dr_add_rule_params arp;
+	struct dr_link_rule_params lrp;
 	struct dr_reg_init_rule_params irp;
+	rt_info_t* rt = NULL;
 	pgw_list_t *p = NULL;
 	sort_cb_type alg;
 
@@ -370,6 +368,7 @@ build_rt_info(
 		irp.r_id = id;
 		irp.qr_profile = qr_profile;
 
+		/* begin new rule */
 		run_dr_cbs(DRCB_RLD_INIT_RULE, &irp);
 
 		qr_rule = irp.rule;
@@ -377,6 +376,7 @@ build_rt_info(
 
 		p = rt->pgwl;
 
+		/* learn each destination */
 		for (i = 0; i < rt->pgwa_len; i++) {
 			if (p[i].is_carrier) {
 				rdp.rule = qr_rule;
@@ -393,9 +393,9 @@ build_rt_info(
 			}
 		}
 
-		/* add rule to the partition list */
-		arp.qr_rule = qr_rule;
-		run_dr_cbs(DRCB_RLD_LINK_RULE, &arp);
+		/* rule can be linked */
+		lrp.qr_rule = qr_rule;
+		run_dr_cbs(DRCB_RLD_LINK_RULE, &lrp);
 	}
 
 	return rt;

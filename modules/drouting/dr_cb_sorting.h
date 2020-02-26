@@ -86,26 +86,12 @@ struct dr_sort_params {
 	int rc;
 };
 
-struct dr_add_rule_params {
-	void *qr_rule; /* rule to be added to list */
-};
-
-struct dr_link_rule_list_params {
-	void **first_list; /* list to be appended to */
-	void *second_list; /* list to be appended */
-};
-
-struct dr_mark_as_main_list_params{
-	void *qr_parts_new_list; /* list to become qr rules list */
-	void **qr_parts_old_list; /* old list: to be freed */
-};
-
-struct dr_free_qr_list_params {
-	void *old_list;
-};
-
 struct dr_prepare_part_params {
 	str part_name;
+};
+
+struct dr_link_rule_params {
+	void *qr_rule; /* rule to be added to list */
 };
 
 typedef void (*dr_sort_cb) (void *param);

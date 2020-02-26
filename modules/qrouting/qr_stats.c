@@ -376,8 +376,8 @@ error:
 /* link a rule into the current partition */
 void qr_rld_link_rule(void *param)
 {
-	struct dr_add_rule_params *arp = (struct dr_add_rule_params *)param;
-	qr_rule_t *new = arp->qr_rule;
+	struct dr_link_rule_params *lrp = (struct dr_link_rule_params *)param;
+	qr_rule_t *new = lrp->qr_rule;
 	qr_rule_t **rule_list =
 		&qr_rld_list->qr_rules_start[qr_rld_list->n_parts - 1];
 	str *part_name = &qr_rld_list->part_name[qr_rld_list->n_parts - 1];
