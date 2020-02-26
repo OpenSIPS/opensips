@@ -303,9 +303,11 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 	qr_rule_t *it;
 	int i, j;
 
+	LM_DBG("rotating samples for all (prefix, destination) pairs...\n");
+
 	lock_start_read(qr_main_list_rwl);
 
-	if (!*qr_main_list) {
+	if (*qr_main_list) {
 		/* for every partition, rule and destination */
 		for (j = 0; j < (*qr_main_list)->n_parts; j++) {
 			for (it = (*qr_main_list)->qr_rules_start[j]; it; it = it->next) {
@@ -320,6 +322,8 @@ static void qr_rotate_samples(unsigned int ticks, void *param)
 	}
 
 	lock_stop_read(qr_main_list_rwl);
+
+	LM_DBG("done!\n");
 }
 
 static int qr_init_dr_cb(void)
@@ -368,11 +372,10 @@ static int qr_init_dr_cb(void)
 		return -1;
 	}
 
-	if (qr_algorithm == QR_ALGO_BEST_DEST_FIRST) {
+	if (qr_algorithm == QR_ALGO_BEST_DEST_FIRST)
 		sort_cb = &qr_sort_best_dest_first;
-	} else {
+	else
 		sort_cb = &qr_sort_dynamic_weights;
-	}
 
 	if (drb.register_drcb(DRCB_SORT_DST, sort_cb, (void*)QR_BASED_SORT, NULL) < 0) {
 		LM_ERR("failed to register DRCB_SORT_DST callback to DR\n");

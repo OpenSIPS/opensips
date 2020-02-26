@@ -2721,7 +2721,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 		if (gw->sock)
 			msg->force_send_socket = gw->sock;
 
-		if (rt) {
+		if (rt && rt->sort_alg == QR_BASED_SORT) {
 			acp.rule = (void *)rt->qr_handler;
 			acp.cr_id = cr_id;
 			acp.gw_id = gw_id;
@@ -2747,7 +2747,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 			goto error;
 		}
 
-		if (rt) {
+		if (rt && rt->sort_alg == QR_BASED_SORT) {
 			memset(&acp, 0, sizeof acp);
 
 			acp.rule = (void *)rt->qr_handler;

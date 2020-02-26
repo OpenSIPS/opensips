@@ -26,12 +26,12 @@
 #include "qr_event.h"
 
 #define log_warn_thr(thr) \
-	LM_WARN("warn %s threshold exceeded, gwid: %.*s\n", thr, \
-	        gw_name->len, gw_name->s)
+	LM_WARN("warn %s threshold exceeded (rule_id %d, gw_id: %.*s)\n", thr, \
+	        rule_id, gw_name->len, gw_name->s)
 
 #define log_crit_thr(thr) \
-	LM_WARN("crit %s threshold exceeded, gwid: %.*s\n", thr, \
-	        gw_name->len, gw_name->s)
+	LM_WARN("crit %s threshold exceeded (rule_id %d, gw_id: %.*s)\n", thr, \
+	        rule_id, gw_name->len, gw_name->s)
 
 
 static inline void qr_weight_based_sort(unsigned short *dsts,

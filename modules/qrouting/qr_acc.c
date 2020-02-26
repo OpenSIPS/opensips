@@ -90,6 +90,9 @@ void qr_acc(void *param)
 	int gw_id, cr_id;
 	struct sip_msg *msg = ap->msg;
 
+	LM_DBG("engaging accounting for rule %p, cr: %d, gw: %d\n", ap->rule,
+	       ap->cr_id, ap->gw_id);
+
 	if (msg->first_line.u.request.method_value == METHOD_INVITE) {
 		rule = ap->rule;
 		gw_id = ap->gw_id;
