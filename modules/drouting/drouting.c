@@ -2664,8 +2664,9 @@ err:
 }
 
 
-inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current_partition,
-		struct sip_uri *uri, rt_info_t *rt, pgw_list_t * dst, int cr_id, int gw_id, int idx)
+inline static int push_gw_for_usage(struct sip_msg *msg,
+         struct head_db *current_partition, struct sip_uri *uri,
+         rt_info_t *rt, pgw_list_t *dst, int cr_id, int gw_id, int idx)
 {
 	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	str *ruri;
@@ -2675,12 +2676,9 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
 	int_str val;
 	int_str dst_id_acc;
 	struct dr_acc_call_params acp, *pacp;
-	if( current_partition==NULL ) {
-		return -1;
-	}
 
-	if(rt != NULL) { /* qrouting is requested => called from drouting */
-		if(cr_id == -1) { /* it is not a carrier */
+	if (rt) { /* rule based routing, e.g. do_routing() */
+		if (cr_id == -1) { /* it is not a carrier */
 			gw = rt->pgwl[gw_id].dst.gw;
 		} else { /* destination is a carrier */
 			c_id = &rt->pgwl[cr_id].dst.carrier->id;
@@ -2688,18 +2686,17 @@ inline static int push_gw_for_usage(struct sip_msg *msg, struct head_db *current
 			gw = rt->pgwl[cr_id].dst.carrier->pgwl[gw_id].dst.gw;
 		}
 
-	} else if(dst != NULL) { /* routing was not done rule-based => don't use
-qrouting : called from route_2gw or route_2cr */
-		/* TODO: should insert empty string or something */
-		if(dst->is_carrier) {
+	} else if (dst) {
+		/* routing was not done rule-based => don't use qrouting
+		     (called from route_2gw or route_2cr) */
+
+		if (dst->is_carrier) {
 			gw = dst->dst.carrier->pgwl[gw_id].dst.gw;
 			c_id = &dst->dst.carrier->id;
 			c_attrs = &dst->dst.carrier->attrs;
 		} else {
 			gw = dst->dst.gw;
 		}
-		cr_id = -1;
-		gw_id = -1;
 	}
 
 	/* build uri*/
@@ -2724,8 +2721,7 @@ qrouting : called from route_2gw or route_2cr */
 		if (gw->sock)
 			msg->force_send_socket = gw->sock;
 
-		if(rt != NULL) { /* if routing was done rule based */
-			/* save callback parameters */
+		if (rt) {
 			acp.rule = (void *)rt->qr_handler;
 			acp.cr_id = cr_id;
 			acp.gw_id = gw_id;
@@ -2746,31 +2742,32 @@ qrouting : called from route_2gw or route_2cr */
 		val.s.len = 1 + snprintf( buf, PTR_STR_SIZE, "%p", gw->sock );
 		val.s.s = buf;
 		LM_DBG("setting GW sock [%.*s] as avp\n",val.s.len, val.s.s);
-		if (add_avp_last( AVP_VAL_STR, current_partition->gw_sock_avp, val)!=0 ) {
+		if (add_avp_last(AVP_VAL_STR, current_partition->gw_sock_avp, val)) {
 			LM_ERR("failed to insert sock avp\n");
 			goto error;
 		}
 
-		/*add the destination id to be used for QR */
-		/* TODO: what should happen when qr is not loaded? */
-		pacp = shm_malloc(sizeof *pacp);
-		if (!pacp) {
-			LM_ERR("oom\n");
-			goto error;
-		}
-		memset(pacp, 0, sizeof *pacp);
-		/* save callback parameters */
-		pacp->rule = (void*)rt->qr_handler;
-		pacp->cr_id = cr_id;
-		pacp->gw_id = gw_id;
-		pacp->msg = msg;
+		if (rt) {
+			/* save callback parameters */
+			pacp = shm_malloc(sizeof *pacp);
+			if (!pacp) {
+				LM_ERR("oom\n");
+				goto error;
+			}
+			memset(pacp, 0, sizeof *pacp);
 
-		dst_id_acc.s.s = (char *)&pacp;
-		dst_id_acc.s.len = sizeof(char *);
-		if(add_avp_last(AVP_VAL_STR, current_partition->acc_call_params_avp,
-					dst_id_acc)) {
-			LM_ERR("failed to insert dst_id avp\n");
-			goto error;
+			pacp->rule = (void*)rt->qr_handler;
+			pacp->cr_id = cr_id;
+			pacp->gw_id = gw_id;
+			pacp->msg = msg;
+
+			dst_id_acc.s.s = (char *)&pacp;
+			dst_id_acc.s.len = sizeof(void *);
+			if (add_avp_last(AVP_VAL_STR, current_partition->acc_call_params_avp,
+			                 dst_id_acc)) {
+				LM_ERR("failed to insert dst_id avp\n");
+				goto error;
+			}
 		}
 	}
 
@@ -3387,7 +3384,7 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 	static unsigned short carrier_idx_size;
 	struct sip_uri  uri;
 	pgw_list_t *cdst;
-	pgw_list_t tmp;
+	pgw_list_t dst;
 	pcr_t *cr;
 	pv_value_t pv_val;
 	str ruri, id;
@@ -3521,10 +3518,10 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 				/*ignore it*/
 			} else {
 				/* add gateway to usage list */
-				tmp.is_carrier = 1;
-				tmp.dst.carrier = cr;
+				dst.is_carrier = 1;
+				dst.dst.carrier = cr;
 				if ( push_gw_for_usage(msg, current_partition, &uri,
-				NULL, &tmp, -1, carrier_idx[j], n ) ) {
+				NULL, &dst, -1, carrier_idx[j], n ) ) {
 					LM_ERR("failed to use gw <%.*s>, skipping\n",
 						cdst->dst.gw->id.len, cdst->dst.gw->id.s);
 				} else {
@@ -3597,7 +3594,7 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 {
 	struct sip_uri  uri;
 	pgw_t *gw;
-	pgw_list_t tmp;
+	pgw_list_t dst;
 	pv_value_t pv_val;
 	str ruri, id;
 	str next_gw_attrs = {NULL, 0};
@@ -3657,11 +3654,14 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 			LM_DBG("found and looking for gw id <%.*s>,len=%d\n",
 				id.len, id.s, id.len);
 			gw = get_gw_by_id(current_partition->rdata->pgw_tree, &id);
+			dst.is_carrier = 0;
+			dst.dst.gw = gw;
+
 			if (gw==NULL) {
 				LM_ERR("no GW found with ID <%.*s> -> ignorring\n",
 					id.len, id.s);
 			} else if ( push_gw_for_usage(msg, current_partition, &uri, NULL,
-			&tmp, -1, -1, idx ) ) {
+			&dst, -1, -1, idx ) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 						gw->id.len, gw->id.s);
 			} else {
