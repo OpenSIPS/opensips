@@ -22,29 +22,25 @@
 #include "qr_acc.h"
 #include "qr_sort.h"
 
-static str * qr_get_dst_name(qr_dst_t * dst) {
-	if(dst->type == QR_DST_GW) {
+static inline str *qr_get_dst_name(qr_dst_t *dst)
+{
+	if (dst->type == QR_DST_GW)
 		return drb.get_gw_name(dst->gw->dr_gw);
-	} else {
+	else
 		return drb.get_cr_name(dst->grp.dr_cr);
-	}
 }
 
 /* searches for a given gw inside a rule */
 static qr_dst_t *qr_search_dst(qr_rule_t *rule, str *dst_name)
 {
 	int i;
-	str *cur_dst_name;
 
 	if (!dst_name)
 		return NULL;
 
-	for (i = 0; i < rule->n; i++) {
-		cur_dst_name = qr_get_dst_name(&rule->dest[i]);
-		/* TODO: cur_dst_name != NULL because no dr_api */
-		if (!str_strcmp(cur_dst_name, dst_name))
+	for (i = 0; i < rule->n; i++)
+		if (!str_strcmp(qr_get_dst_name(&rule->dest[i]), dst_name))
 			return &rule->dest[i];
-	}
 
 	return NULL;
 }
@@ -122,11 +118,10 @@ static void qr_grp_attr(mi_item_t *node, qr_grp_t * grp, str *group_name)
 
 static void qr_dst_attr(mi_item_t *node, qr_dst_t *dst)
 {
-	if(dst->type == QR_DST_GW) {
+	if (dst->type == QR_DST_GW)
 		qr_gw_attr(node, dst->gw);
-	} else {
+	else
 		qr_grp_attr(node, &dst->grp, qr_get_dst_name(dst));
-	}
 }
 
 int qr_fill_mi_partition(mi_item_t *part, const str *part_name,

@@ -61,16 +61,8 @@ str state_drd_col = str_init(STATE_DRD_COL);
 #define DSTLIST_DRR_COL   "gwlist"
 #define SORT_ALG_DRR_COL "sort_alg"
 #define SORT_PROFILE_DRR_COL "sort_profile"
-/*TODO: gotoqr */
-#define WARN_TH_ASR_DRR_COL "warn_threshold_asr"
-#define WARN_TH_CCR_DRR_COL "warn_threshold_ccr"
-#define WARN_TH_AST_DRR_COL "warn_threshold_ast"
-#define WARN_TH_ACD_DRR_COL "warn_threshold_acd"
-#define DSBL_TH_ASR_DRR_COL "dsbl_threshold_asr"
-#define DSBL_TH_CCR_DRR_COL "dsbl_threshold_ccr"
-#define DSBL_TH_AST_DRR_COL "dsbl_threshold_ast"
-#define DSBL_TH_ACD_DRR_COL "dsbl_threshold_acd"
 #define ATTRS_DRR_COL     "attrs"
+
 str drr_table = str_init("dr_rules");
 str rule_id_drr_col = str_init(RULE_ID_DRR_COL);
 str group_drr_col = str_init(GROUP_DRR_COL);

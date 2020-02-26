@@ -107,7 +107,6 @@ int insert_drcb(struct dr_head_cbl **dr_cb_list, struct dr_callback *cb,
 	return 0;
 }
 
-/* TODO: param will be the index in the array */
 int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
                    dr_param_free_cb ff)
 {

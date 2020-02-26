@@ -3180,7 +3180,6 @@ search_again:
 							next_gw_attrs = cdst->dst.gw->attrs;
 						}
 
-						/* TODO: should be deleted as i guess? */
 						/* use only first valid GW */
 						if (dst->dst.carrier->flags&DR_CR_FLAG_FIRST)
 							break;
@@ -3718,10 +3717,6 @@ static int fix_flags(void** param)
 				case 'C':
 					flags |= DR_PARAM_ONLY_CHECK;
 					LM_DBG("only check the prefix\n");
-					break;
-				case 'Q':
-					flags |= DR_PARAM_USE_QR;
-					/* TODO: maybe mutual exclusion with weight sort */
 					break;
 				default:
 					LM_DBG("unknown flag : [%c] . Skipping\n",*p);
