@@ -45,10 +45,9 @@ static qr_dst_t *qr_search_dst(qr_rule_t *rule, str *dst_name)
 	return NULL;
 }
 
-static void qr_gw_attr(mi_item_t *node, qr_gw_t *gw)
+static void qr_gw_attr(mi_item_t *gw_node, qr_gw_t *gw)
 {
 	int i, buf_sz = QR_MAX_STAT_NAME_LEN;
-	mi_item_t *gw_node = NULL;
 	str tmp, *p_tmp;
 
 	tmp.s = pkg_malloc(buf_sz);
@@ -56,9 +55,6 @@ static void qr_gw_attr(mi_item_t *node, qr_gw_t *gw)
 		return;
 
 	p_tmp = drb.get_gw_name(gw->dr_gw);
-	gw_node = add_mi_object(node, MI_SSTR("Gw"));
-	if (!gw_node)
-		goto out;
 
 	if (add_mi_string(gw_node, MI_SSTR("GWID"), p_tmp->s, p_tmp->len) != 0)
 		goto out;
@@ -101,7 +97,7 @@ out:
 
 static void qr_grp_attr(mi_item_t *node, qr_grp_t * grp, str *group_name)
 {
-	mi_item_t *grp_node;
+	mi_item_t *grp_node, *gw_arr, *gw;
 	int i;
 
 	grp_node = add_mi_object(node, MI_SSTR("Carrier"));
@@ -112,22 +108,32 @@ static void qr_grp_attr(mi_item_t *node, qr_grp_t * grp, str *group_name)
 	                  group_name->s, group_name->len) != 0)
 		return;
 
-	for (i = 0; i < grp->n; i++)
-		qr_gw_attr(grp_node, grp->gw[i]);
+	gw_arr = add_mi_array(grp_node, MI_SSTR("Gateways"));
+	if (!gw_arr)
+		return;
+
+	for (i = 0; i < grp->n; i++) {
+		gw = add_mi_object(gw_arr, NULL, 0);
+		qr_gw_attr(gw, grp->gw[i]);
+	}
 }
 
 static void qr_dst_attr(mi_item_t *node, qr_dst_t *dst)
 {
-	if (dst->type == QR_DST_GW)
-		qr_gw_attr(node, dst->gw);
-	else
+	mi_item_t *gw;
+
+	if (dst->type == QR_DST_GW) {
+		gw = add_mi_object(node, MI_SSTR("Gateway"));
+		qr_gw_attr(gw, dst->gw);
+	} else {
 		qr_grp_attr(node, &dst->grp, qr_get_dst_name(dst));
+	}
 }
 
 int qr_fill_mi_partition(mi_item_t *part, const str *part_name,
                          qr_rule_t *rules)
 {
-	mi_item_t *rule_arr, *mi_rule;
+	mi_item_t *rule_arr, *mi_rule, *dst_arr, *dst;
 	qr_rule_t *rule;
 	int i;
 
@@ -146,8 +152,17 @@ int qr_fill_mi_partition(mi_item_t *part, const str *part_name,
 		if (add_mi_number(mi_rule, MI_SSTR("Id"), rule->r_id) != 0)
 			return -1;
 
-		for (i = 0; i < rule->n; i++)
-			qr_dst_attr(mi_rule, &rule->dest[i]);
+		dst_arr = add_mi_array(mi_rule, MI_SSTR("Destinations"));
+		if (!dst_arr)
+			return -1;
+
+		for (i = 0; i < rule->n; i++) {
+			dst = add_mi_object(dst_arr, NULL, 0);
+			if (!dst)
+				return -1;
+
+			qr_dst_attr(dst, &rule->dest[i]);
+		}
 	}
 
 	return 0;
@@ -238,7 +253,7 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 {
 	qr_rule_t *qr_part, *rule;
 	mi_response_t *resp, *err_resp = NULL;
-	mi_item_t *resp_obj;
+	mi_item_t *resp_obj, *dst_arr, *dst;
 	str part_name;
 	unsigned int rule_id, i;
 
@@ -279,8 +294,17 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 		goto error;
 	}
 
-	for (i = 0; i < rule->n; i++)
-		qr_dst_attr(resp_obj, &rule->dest[i]);
+	dst_arr = add_mi_array(resp_obj, MI_SSTR("Destinations"));
+	if (!dst_arr)
+		goto error;
+
+	for (i = 0; i < rule->n; i++) {
+		dst = add_mi_object(dst_arr, NULL, 0);
+		if (!dst)
+			goto error;
+
+		qr_dst_attr(dst, &rule->dest[i]);
+	}
 
 	lock_stop_read(qr_main_list_rwl);
 
