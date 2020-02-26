@@ -21,8 +21,6 @@
 #ifndef __QR_MI__
 #define __QR_MI__
 
-qr_rule_t *qr_get_rules(str *part_name);
-
 mi_cmd_f mi_qr_status_0;
 mi_cmd_f mi_qr_status_1;
 mi_cmd_f mi_qr_status_2;
