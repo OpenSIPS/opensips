@@ -351,6 +351,8 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	if (tag.len==0 && rpl->REPLY_STATUS<200 )
 		return;
 
+	dlg_lock_dlg(dlg);
+
 	/* is the totag already known ?? */
 	for(leg=DLG_FIRST_CALLEE_LEG ; leg<dlg->legs_no[DLG_LEGS_USED] ; leg++ ) {
 		if ( dlg->legs[leg].tag.len==tag.len &&
@@ -369,7 +371,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 		leg = dlg_clone_callee_leg(dlg, leg);
 		if (leg < 0) {
 			LM_ERR("failed to add callee leg!\n");
-			return;
+			goto out;
 		}
 	}
 
@@ -378,7 +380,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	if (update_leg_info(leg, dlg, rpl, &tag,extract_mangled_fromuri(mangled_from),
 				extract_mangled_touri(mangled_to)) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
-		return;
+		goto out;
 	}
 
 routing_info:
@@ -413,6 +415,9 @@ routing_info:
 		if( rr_set.s )
 			pkg_free( rr_set.s);
 	}
+
+out:
+	dlg_unlock_dlg(dlg);
 }
 
 static void _dlg_setup_reinvite_callbacks(struct cell *t, struct sip_msg *req,
