@@ -183,6 +183,9 @@ qr_rule_t *qr_get_rules(str *part_name)
 {
 	int i;
 
+	if (!*qr_main_list)
+		return NULL;
+
 	for (i = 0; i < (*qr_main_list)->n_parts; i++)
 		if (!str_strcmp(part_name, &(*qr_main_list)->part_name[i]))
 			return (*qr_main_list)->qr_rules_start[i];
@@ -460,6 +463,8 @@ void qr_rld_finalize(void *param)
 	qr_rule_t *old_rules = NULL;
 	int i;
 
+	LM_DBG("finalizing reload, qr_main_list: %p\n", *qr_main_list);
+
 	/* may happen if we ran OOM while preparing a new part */
 	if (!qr_rld_list)
 		return;
@@ -485,6 +490,8 @@ void qr_rld_finalize(void *param)
 	}
 
 	lock_stop_write(qr_main_list_rwl);
+
+	LM_DBG("new qr_main_list: %p\n", *qr_main_list);
 
 	free_qr_list(old_list);
 	qr_rld_list = NULL;

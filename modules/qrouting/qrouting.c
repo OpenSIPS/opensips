@@ -117,7 +117,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {0, 0, 0}
 		},
-		ALL_ROUTES
+		ALL_ROUTES & (~STARTUP_ROUTE)
 	},
 	{"qr_disable_dst", (cmd_function)w_qr_disable_dst,
 		{ {CMD_PARAM_INT, NULL, NULL},
@@ -125,7 +125,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, NULL, NULL},
 		  {0, 0, 0}
 		},
-		ALL_ROUTES
+		ALL_ROUTES & (~STARTUP_ROUTE)
 	},
 	{"qr_enable_dst", (cmd_function)w_qr_enable_dst,
 		{ {CMD_PARAM_INT, NULL, NULL},
@@ -133,7 +133,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, NULL, NULL},
 		  {0, 0, 0}
 		},
-		ALL_ROUTES
+		ALL_ROUTES & (~STARTUP_ROUTE)
 	},
 	{0,0,{{0,0,0}},0}
 };
@@ -642,6 +642,12 @@ static int w_qr_set_xstat(struct sip_msg *_, int *rule_id, str *gw_name,
 
 	if (!part) {
 		lock_start_read(qr_main_list_rwl);
+		if (!*qr_main_list) {
+			lock_stop_read(qr_main_list_rwl);
+			LM_BUG("main partition not available\n");
+			return -2;
+		}
+
 		rc = qr_set_xstat((*qr_main_list)->qr_rules_start[0], *rule_id,
 		                      gw_name, stat_idx, inc_by, inc_total);
 		lock_stop_read(qr_main_list_rwl);
@@ -650,8 +656,8 @@ static int w_qr_set_xstat(struct sip_msg *_, int *rule_id, str *gw_name,
 
 		rules = qr_get_rules(part);
 		if (!rules) {
-			LM_DBG("partition not found: %.*s\n", part->len, part->s);
 			lock_stop_read(qr_main_list_rwl);
+			LM_DBG("partition not found: %.*s\n", part->len, part->s);
 			return -2;
 		}
 

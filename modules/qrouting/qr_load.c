@@ -386,9 +386,9 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 				dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 3] =
 							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4 + 3);
 
-				LM_DBG("qr_profile (%d, %s) xstat #%d: [%lf %lf | %lf %lf]\n",
+				LM_DBG("qr_profile (%d, %s) %s: [%lf %lf | %lf %lf]\n",
 						int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
-						j, dbl_vals[DBL_VALS_CPTY_ACD + j*4],
+						qr_xstats[j].name.s, dbl_vals[DBL_VALS_CPTY_ACD + j*4],
 						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 1],
 						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 2],
 						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 3]);
