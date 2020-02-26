@@ -51,10 +51,11 @@ static qr_dst_t *qr_search_dst(qr_rule_t *rule, str *dst_name)
 
 static void qr_gw_attr(mi_item_t *node, qr_gw_t *gw)
 {
+	int i, buf_sz = QR_MAX_STAT_NAME_LEN;
 	mi_item_t *gw_node = NULL;
 	str tmp, *p_tmp;
 
-	tmp.s = pkg_malloc(20);
+	tmp.s = pkg_malloc(buf_sz);
 	if (!tmp.s)
 		return;
 
@@ -70,25 +71,33 @@ static void qr_gw_attr(mi_item_t *node, qr_gw_t *gw)
 	if (add_mi_string(gw_node, MI_SSTR("ASR"), tmp.s, tmp.len) != 0)
 		goto out;
 
-	memset(tmp.s, 0, 20 * sizeof *tmp.s);
+	memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
 	tmp.len = sprintf(tmp.s, "%lf", ccr(gw));
 	if (add_mi_string(gw_node, MI_SSTR("CCR"), tmp.s, tmp.len) != 0)
 		goto out;
 
-	memset(tmp.s, 0, 20 * sizeof *tmp.s);
+	memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
 	tmp.len = sprintf(tmp.s, "%lf", pdd(gw));
 	if (add_mi_string(gw_node, MI_SSTR("PDD"), tmp.s, tmp.len) != 0)
 		goto out;
 
-	memset(tmp.s, 0, 20 * sizeof *tmp.s);
+	memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
 	tmp.len = sprintf(tmp.s, "%lf", ast(gw));
 	if (add_mi_string(gw_node, MI_SSTR("AST"), tmp.s, tmp.len) != 0)
 		goto out;
 
-	memset(tmp.s, 0, 20 * sizeof *tmp.s);
+	memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
 	tmp.len = sprintf(tmp.s, "%lf", acd(gw));
 	if (add_mi_string(gw_node, MI_SSTR("ACD"), tmp.s, tmp.len) != 0)
 		goto out;
+
+	for (i = 0; i < qr_xstats_n; i++) {
+		memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
+		tmp.len = sprintf(tmp.s, "%lf", get_xstat(gw, i));
+		if (add_mi_string(gw_node, qr_xstats[i].name.s, qr_xstats[i].name.len,
+		                  tmp.s, tmp.len) != 0)
+			goto out;
+	}
 
 out:
 	pkg_free(tmp.s);
