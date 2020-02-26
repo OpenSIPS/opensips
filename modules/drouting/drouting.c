@@ -2409,7 +2409,7 @@ static int use_next_gw(struct sip_msg* msg,
 			/* this shuold not happen, it is a bogus state */
 			LM_BUG("call params AVP not found\n");
 		} else {
-			run_dr_cbs(DRCB_ACC_CALL, *(struct dr_acc_call_params **)val.s.s);
+			run_dr_cbs(DRCB_ACC_CALL, (struct dr_acc_call_params *)val.s.s);
 			destroy_avp(avp_sk);
 		}
 
@@ -2675,7 +2675,7 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 	str *c_attrs = NULL;
 	int_str val;
 	int_str dst_id_acc;
-	struct dr_acc_call_params acp, *pacp;
+	struct dr_acc_call_params acp;
 
 	if (rt) { /* rule based routing, e.g. do_routing() */
 		if (cr_id == -1) { /* it is not a carrier */
@@ -2748,23 +2748,17 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 		}
 
 		if (rt) {
-			/* save callback parameters */
-			pacp = shm_malloc(sizeof *pacp);
-			if (!pacp) {
-				LM_ERR("oom\n");
-				goto error;
-			}
-			memset(pacp, 0, sizeof *pacp);
+			memset(&acp, 0, sizeof acp);
 
-			pacp->rule = (void*)rt->qr_handler;
-			pacp->cr_id = cr_id;
-			pacp->gw_id = gw_id;
-			pacp->msg = msg;
+			acp.rule = (void *)rt->qr_handler;
+			acp.cr_id = cr_id;
+			acp.gw_id = gw_id;
+			acp.msg = msg;
 
-			dst_id_acc.s.s = (char *)&pacp;
-			dst_id_acc.s.len = sizeof(void *);
-			if (add_avp_last(AVP_VAL_STR, current_partition->acc_call_params_avp,
-			                 dst_id_acc)) {
+			dst_id_acc.s.s = (char *)&acp;
+			dst_id_acc.s.len = sizeof acp;
+			if (add_avp_last(AVP_VAL_STR,
+			        current_partition->acc_call_params_avp, dst_id_acc)) {
 				LM_ERR("failed to insert dst_id avp\n");
 				goto error;
 			}

@@ -125,7 +125,7 @@ struct usr_avp* new_avp(unsigned short flags, int id, int_str val)
 
 	if (flags & AVP_VAL_STR) {
 		/* avp type ID, str value */
-		s = (str*)(void*)&(avp->data);
+		s = (str *)&avp->data;
 		s->len = val.s.len;
 		s->s = (char*)s + sizeof(str);
 		memcpy( s->s, val.s.s , s->len);
