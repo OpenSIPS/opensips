@@ -607,37 +607,12 @@ modparam("mid_registrar", "case_sensitive", 0)
 </programlisting>
 		</example>
 	</section>
-	<section id="param_max_contacts" xreflabel="max_contacts">
-		<title><varname>max_contacts</varname> (integer)</title>
-		<para>
-		This parameter can be used to limit the number of contacts per
-		AOR (Address-of-Record) allowed at mid-registrar level. A value of
-		<emphasis role='bold'>0</emphasis> disables the check.
-		</para>
-		<para>
-		This is a global value and will only be used if no other value
-		(for max_contacts) is passed as parameter to
-		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>
-		(i.e. a "max_contacts" function flag will override this parameter)
-		</para>
-		<para>
-			Default value is <emphasis role='bold'>0</emphasis> (disabled)
-		</para>
-		<example>
-		<title>Setting the <emphasis>max_contacts</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "max_contacts", 10)
-</programlisting>
-		</example>
-	</section>
 	<section id="param_retry_after" xreflabel="retry_after">
 		<title><varname>retry_after</varname> (integer)</title>
 		<para>
 		The mid-registrar can generate 5xx replies to registrations in various
-		situations. It could, for example, happen when the
-		<emphasis><xref linkend="param_max_contacts"/></emphasis> parameter
-		is set and the processing of REGISTER request would exceed the limit.
-		In this case, OpenSIPS would respond with "503 Service Unavailable".
+		situations.  In this case, OpenSIPS would respond with "503 Service
+		Unavailable".
 		</para>
 		<para>
 		If you want to add the Retry-After header field in 5xx replies, set
