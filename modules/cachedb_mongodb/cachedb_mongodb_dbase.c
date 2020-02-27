@@ -789,12 +789,11 @@ out_err:
 	return -1;
 }
 
-static char *raw_query_buf;
-static int raw_query_buf_len;
-
 int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
                         int expected_kv_no, int *reply_no)
 {
+	static str raw_query_buf;
+
 	struct json_object *obj = NULL;
 	bson_t doc, rpl;
 	bson_iter_t iter;
@@ -807,23 +806,15 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	LM_DBG("Get operation on namespace %s\n", MONGO_NAMESPACE(con));
 	start_expire_timer(start,mongo_exec_threshold);
 
-	if (qstr->len > raw_query_buf_len) {
-		raw_query_buf = pkg_realloc(raw_query_buf, qstr->len + 1);
-		if (!raw_query_buf) {
-			LM_ERR("oom!\n");
-			return -1;
-		}
-
-		memcpy(raw_query_buf, qstr->s, qstr->len);
-		raw_query_buf[qstr->len] = '\0';
-
-		raw_query_buf_len = qstr->len;
-	} else {
-		memcpy(raw_query_buf, qstr->s, qstr->len);
-		raw_query_buf[qstr->len] = '\0';
+	if (pkg_str_extend(&raw_query_buf, qstr->len + 1)) {
+		LM_ERR("oom!\n");
+		return -1;
 	}
 
-	ret = json_to_bson(raw_query_buf, &doc);
+	memcpy(raw_query_buf.s, qstr->s, qstr->len);
+	raw_query_buf.s[qstr->len] = '\0';
+
+	ret = json_to_bson(raw_query_buf.s, &doc);
 	if (ret < 0) {
 		LM_ERR("Failed to convert [%.*s] to BSON\n", qstr->len, qstr->s);
 		ret = -1;
