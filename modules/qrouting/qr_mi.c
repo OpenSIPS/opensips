@@ -47,8 +47,9 @@ static qr_dst_t *qr_search_dst(qr_rule_t *rule, str *dst_name)
 
 static void qr_gw_attr(mi_item_t *gw_node, qr_gw_t *gw)
 {
-	int i, buf_sz = QR_MAX_STAT_NAME_LEN;
+	int i, samples, buf_sz = QR_MAX_STAT_NAME_LEN + 1 + INT2STR_MAX_LEN + 1;
 	str tmp, *p_tmp;
+	double val;
 
 	tmp.s = pkg_malloc(buf_sz);
 	if (!tmp.s)
@@ -59,33 +60,34 @@ static void qr_gw_attr(mi_item_t *gw_node, qr_gw_t *gw)
 	if (add_mi_string(gw_node, MI_SSTR("GWID"), p_tmp->s, p_tmp->len) != 0)
 		goto out;
 
-	tmp.len = sprintf(tmp.s, "%lf", asr(gw));
+	val = asr(gw, &samples);
+	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("ASR"), tmp.s, tmp.len) != 0)
 		goto out;
 
-	memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
-	tmp.len = sprintf(tmp.s, "%lf", ccr(gw));
+	val = ccr(gw, &samples);
+	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("CCR"), tmp.s, tmp.len) != 0)
 		goto out;
 
-	memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
-	tmp.len = sprintf(tmp.s, "%lf", pdd(gw));
+	val = pdd(gw, &samples);
+	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("PDD"), tmp.s, tmp.len) != 0)
 		goto out;
 
-	memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
-	tmp.len = sprintf(tmp.s, "%lf", ast(gw));
+	val = ast(gw, &samples);
+	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("AST"), tmp.s, tmp.len) != 0)
 		goto out;
 
-	memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
-	tmp.len = sprintf(tmp.s, "%lf", acd(gw));
+	val = acd(gw, &samples);
+	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("ACD"), tmp.s, tmp.len) != 0)
 		goto out;
 
 	for (i = 0; i < qr_xstats_n; i++) {
-		memset(tmp.s, 0, buf_sz * sizeof *tmp.s);
-		tmp.len = sprintf(tmp.s, "%lf", get_xstat(gw, i));
+		val = get_xstat(gw, i, &samples);
+		tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
 		if (add_mi_string(gw_node, qr_xstats[i].name.s, qr_xstats[i].name.len,
 		                  tmp.s, tmp.len) != 0)
 			goto out;

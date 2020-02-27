@@ -79,7 +79,7 @@
 #define QP_CPTY_ACD_COL "crit_penalty_asr"
 
 #define QR_NAME_COL_SZ 64
-#define QR_MAX_STAT_NAME_LEN (QR_NAME_COL_SZ - strlen("warn_threshold_") - 1)
+#define QR_MAX_STAT_NAME_LEN (QR_NAME_COL_SZ - strlen("warn_threshold_"))
 
 extern str qr_profiles_table;
 extern rw_lock_t *qr_profiles_rwl;

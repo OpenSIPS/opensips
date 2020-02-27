@@ -29,11 +29,13 @@
 #include "qr_stats.h"
 
 /* compute answer seizure ratio for gw */
-static inline double asr(qr_gw_t *gw)
+static inline double asr(qr_gw_t *gw, int *samples)
 {
 	double asr;
 
 	lock_start_read(gw->ref_lock);
+	*samples = gw->summed_stats.n.ok;
+
 	if (gw->summed_stats.n.ok == 0 ||
 	        gw->summed_stats.n.ok < qr_min_samples_asr) {
 		lock_stop_read(gw->ref_lock);
@@ -47,11 +49,13 @@ static inline double asr(qr_gw_t *gw)
 }
 
 /* compute completed calls ratio for gw */
-static inline double ccr(qr_gw_t *gw)
+static inline double ccr(qr_gw_t *gw, int *samples)
 {
 	double ccr;
 
 	lock_start_read(gw->ref_lock);
+	*samples = gw->summed_stats.n.ok;
+
 	if (gw->summed_stats.n.ok == 0 ||
 	        gw->summed_stats.n.ok < qr_min_samples_ccr) {
 		lock_stop_read(gw->ref_lock);
@@ -65,11 +69,13 @@ static inline double ccr(qr_gw_t *gw)
 }
 
 /* compute post dial delay for gw */
-static inline double pdd(qr_gw_t *gw)
+static inline double pdd(qr_gw_t *gw, int *samples)
 {
 	double pdd;
 
 	lock_start_read(gw->ref_lock);
+	*samples = gw->summed_stats.n.pdd;
+
 	if (gw->summed_stats.n.pdd == 0 ||
 	        gw->summed_stats.n.pdd < qr_min_samples_pdd) {
 		lock_stop_read(gw->ref_lock);
@@ -83,11 +89,13 @@ static inline double pdd(qr_gw_t *gw)
 }
 
 /* compute average setup time for gw */
-static inline double ast(qr_gw_t *gw)
+static inline double ast(qr_gw_t *gw, int *samples)
 {
 	double ast;
 
 	lock_start_read(gw->ref_lock);
+	*samples = gw->summed_stats.n.setup;
+
 	if (gw->summed_stats.n.setup == 0 ||
 	        gw->summed_stats.n.setup < qr_min_samples_ast) {
 		lock_stop_read(gw->ref_lock);
@@ -101,11 +109,13 @@ static inline double ast(qr_gw_t *gw)
 }
 
 /* compute average call duration for gw */
-static inline double acd(qr_gw_t *gw)
+static inline double acd(qr_gw_t *gw, int *samples)
 {
 	double acd;
 
 	lock_start_read(gw->ref_lock);
+	*samples = gw->summed_stats.n.cd;
+
 	if (gw->summed_stats.n.cd == 0 ||
 	        gw->summed_stats.n.cd < qr_min_samples_acd) {
 		lock_stop_read(gw->ref_lock);
@@ -119,11 +129,13 @@ static inline double acd(qr_gw_t *gw)
 }
 
 /* compute the value of an extra stat */
-static inline double get_xstat(qr_gw_t *gw, int idx)
+static inline double get_xstat(qr_gw_t *gw, int idx, int *samples)
 {
 	double val;
 
 	lock_start_read(gw->ref_lock);
+	*samples = gw->summed_stats.n.xtot[idx];
+
 	if (gw->summed_stats.n.xtot[idx] == 0 ||
 	        gw->summed_stats.n.xtot[idx] < qr_xstats[idx].min_samples) {
 		lock_stop_read(gw->ref_lock);

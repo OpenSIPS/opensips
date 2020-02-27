@@ -26,13 +26,13 @@
 #include "qr_event.h"
 
 #define log_warn_thr(thr_name, _val, _cmp, _lim) \
-	LM_WARN("warn %s threshold exceeded (%.2lf %c %.2lf, rule_id: %d, " \
-	        "gw_id: %.*s)\n", thr_name, _val, _cmp, _lim, \
+	LM_WARN("warn %s threshold exceeded (%.2lf %c %.2lf, %d samples, " \
+	        "rule: %d, gw: %.*s)\n", thr_name, _val, _cmp, _lim, samples, \
 	        rule_id, gw_name->len, gw_name->s)
 
 #define log_crit_thr(thr_name, _val, _cmp, _lim) \
-	LM_WARN("crit %s threshold exceeded (%.2lf %c %.2lf, rule_id: %d, " \
-	        "gw_id: %.*s)\n", thr_name, _val, _cmp, _lim, \
+	LM_WARN("crit %s threshold exceeded (%.2lf %c %.2lf, %d samples, " \
+	        "rule: %d, gw: %.*s)\n", thr_name, _val, _cmp, _lim, samples, \
 	        rule_id, gw_name->len, gw_name->s)
 
 
@@ -45,7 +45,7 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 	double score = 1, val;
 	double asr_v, ccr_v, pdd_v, ast_v, acd_v;
 	str *gw_name = drb.get_gw_name(gw->dr_gw);
-	int i, skip_event = 0;
+	int i, samples, skip_event = 0;
 
 	/* the corresponding dr_rule points to an invalid qr_profile */
 	if (!prof)
@@ -55,7 +55,7 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 	 * because of possible changes between lock ( a
 	 * new sampling interval might bring new statistics)
 	 */
-	asr_v = asr(gw);
+	asr_v = asr(gw, &samples);
 	if (asr_v != -1) {
 		if (asr_v < prof->asr2) {
 			score *= prof->asr_pty2;
@@ -66,7 +66,7 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 		}
 	}
 
-	ccr_v = ccr(gw);
+	ccr_v = ccr(gw, &samples);
 	if (ccr_v != -1) {
 		if (ccr_v < prof->ccr2) {
 			score *= prof->ccr_pty2;
@@ -77,7 +77,7 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 		}
 	}
 
-	pdd_v = pdd(gw);
+	pdd_v = pdd(gw, &samples);
 	if (pdd_v != -1) {
 		if (pdd_v > prof->pdd2) {
 			score *= prof->pdd_pty2;
@@ -88,7 +88,7 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 		}
 	}
 
-	ast_v = ast(gw);
+	ast_v = ast(gw, &samples);
 	if (ast_v != -1) {
 		if (ast_v > prof->ast2) {
 			score *= prof->ast_pty2;
@@ -99,7 +99,7 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 		}
 	}
 
-	acd_v = acd(gw);
+	acd_v = acd(gw, &samples);
 	if (acd_v != -1) {
 		if (acd_v < prof->acd2) {
 			score *= prof->acd_pty2;
@@ -112,7 +112,7 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 
 	/* extra stats */
 	for (i = 0; i < qr_xstats_n; i++) {
-		val = get_xstat(gw, i);
+		val = get_xstat(gw, i, &samples);
 		if (val == -1)
 			continue;
 
