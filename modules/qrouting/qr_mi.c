@@ -61,33 +61,33 @@ static void qr_gw_attr(mi_item_t *gw_node, qr_gw_t *gw)
 		goto out;
 
 	val = asr(gw, &samples);
-	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
+	tmp.len = sprintf(tmp.s, "%0.*lf/%d", qr_decimal_digits, val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("ASR"), tmp.s, tmp.len) != 0)
 		goto out;
 
 	val = ccr(gw, &samples);
-	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
+	tmp.len = sprintf(tmp.s, "%0.*lf/%d", qr_decimal_digits, val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("CCR"), tmp.s, tmp.len) != 0)
 		goto out;
 
 	val = pdd(gw, &samples);
-	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
+	tmp.len = sprintf(tmp.s, "%0.*lf/%d", qr_decimal_digits, val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("PDD"), tmp.s, tmp.len) != 0)
 		goto out;
 
 	val = ast(gw, &samples);
-	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
+	tmp.len = sprintf(tmp.s, "%0.*lf/%d", qr_decimal_digits, val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("AST"), tmp.s, tmp.len) != 0)
 		goto out;
 
 	val = acd(gw, &samples);
-	tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
+	tmp.len = sprintf(tmp.s, "%0.*lf/%d", qr_decimal_digits, val, samples);
 	if (add_mi_string(gw_node, MI_SSTR("ACD"), tmp.s, tmp.len) != 0)
 		goto out;
 
 	for (i = 0; i < qr_xstats_n; i++) {
 		val = get_xstat(gw, i, &samples);
-		tmp.len = sprintf(tmp.s, "%lf/%d", val, samples);
+		tmp.len = sprintf(tmp.s, "%0.*lf/%d", qr_decimal_digits, val, samples);
 		if (add_mi_string(gw_node, qr_xstats[i].name.s, qr_xstats[i].name.len,
 		                  tmp.s, tmp.len) != 0)
 			goto out;

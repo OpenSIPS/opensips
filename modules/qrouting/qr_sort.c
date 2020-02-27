@@ -25,15 +25,16 @@
 #include "qr_stats.h"
 #include "qr_event.h"
 
+#define log_thr_exceeded(_thr, thr_name, _val, _cmp, _lim) \
+	LM_WARN(_thr" %s threshold exceeded (%0.*lf %c %0.*lf, %d samples, " \
+	       "rule: %d, gw: %.*s)\n", thr_name, qr_decimal_digits, _val, _cmp, \
+	       qr_decimal_digits, _lim, samples, rule_id, gw_name->len, gw_name->s)
+
 #define log_warn_thr(thr_name, _val, _cmp, _lim) \
-	LM_WARN("warn %s threshold exceeded (%.2lf %c %.2lf, %d samples, " \
-	        "rule: %d, gw: %.*s)\n", thr_name, _val, _cmp, _lim, samples, \
-	        rule_id, gw_name->len, gw_name->s)
+	log_thr_exceeded("warn", thr_name, _val, _cmp, _lim)
 
 #define log_crit_thr(thr_name, _val, _cmp, _lim) \
-	LM_WARN("crit %s threshold exceeded (%.2lf %c %.2lf, %d samples, " \
-	        "rule: %d, gw: %.*s)\n", thr_name, _val, _cmp, _lim, samples, \
-	        rule_id, gw_name->len, gw_name->s)
+	log_thr_exceeded("crit", thr_name, _val, _cmp, _lim)
 
 
 static inline void qr_weight_based_sort(unsigned short *dsts,

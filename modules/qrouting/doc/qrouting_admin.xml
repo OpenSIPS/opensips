@@ -422,6 +422,25 @@ modparam("qrouting", "event_bad_dst_threshold", "0.5")
 		</example>
 	</section>
 
+	<section id="param_decimal_digits" xreflabel="decimal_digits">
+		<title><varname>decimal_digits</varname> (string)</title>
+		<para>
+		The amount of decimal digits to use in logging or MI output.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>2</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>decimal_digits</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("qrouting", "decimal_digits", 4)
+	</programlisting>
+		</example>
+	</section>
+
 </section>
 
 <!-- ============================= FUNC ================================  -->

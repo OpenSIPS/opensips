@@ -73,6 +73,9 @@ int qr_min_samples_pdd = 10;
 int qr_min_samples_ast = 10;
 int qr_min_samples_acd = 20;
 
+/* the amount of decimal digits to use in logging or MI output */
+int qr_decimal_digits = 2;
+
 int qr_interval_list_sz; /* the maximum number of kept intervals (samples) */
 
 /* DB connection - useful for runtime reloads */
@@ -151,6 +154,7 @@ static param_export_t params[] = {
 	{"min_samples_ast",         INT_PARAM, &qr_min_samples_ast},
 	{"min_samples_acd",         INT_PARAM, &qr_min_samples_acd},
 	{"event_bad_dst_threshold", STR_PARAM, &event_bad_dst_threshold_s},
+	{"decimal_digits",          INT_PARAM, &qr_decimal_digits},
 	{0, 0, 0}
 };
 

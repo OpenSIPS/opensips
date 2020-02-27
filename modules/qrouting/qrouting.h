@@ -45,6 +45,7 @@ extern qr_xstat_desc_t *qr_xstats;
 extern int qr_xstats_n;
 extern double event_bad_dst_threshold;
 extern qr_algo_t qr_algorithm;
+extern int qr_decimal_digits;
 extern int qr_interval_list_sz;
 
 extern int qr_min_samples_asr;
