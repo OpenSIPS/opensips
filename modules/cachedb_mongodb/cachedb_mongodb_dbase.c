@@ -919,6 +919,9 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		csz++;
 	} while (bson_iter_next(&iter));
 
+	bson_destroy(&doc);
+	bson_destroy(&rpl);
+
 out:
 	*reply_no = csz;
 	if (csz == 0)
@@ -927,6 +930,9 @@ out:
 	return 1;
 
 out_err:
+	bson_destroy(&doc);
+	bson_destroy(&rpl);
+
 	if (obj)
 		json_object_put(obj);
 
