@@ -95,8 +95,9 @@ void qr_acc(void *param)
 			}
 
 			/* register callback for the responses to this INVITE */
-			if (tmb.register_tmcb(msg, 0, TMCB_RESPONSE_IN, qr_check_reply_tmcb,
-						(void *)trans_prop, release_trans_prop) <= 0) {
+			if (tmb.register_tmcb(msg, 0, TMCB_RESPONSE_IN|TMCB_ON_FAILURE,
+			        qr_check_reply_tmcb, (void *)trans_prop,
+			        release_trans_prop) <= 0) {
 				LM_ERR("cannot register TMCB_RESPONSE_IN\n");
 				goto error;
 			}
@@ -223,7 +224,8 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 	struct qr_dialog_prop *dialog_prop;
 
 	LM_DBG("tm reply (%d%s) from gw %.*s\n", ps->code,
-	       ps->code == 408 ? " external" : "",
+	       ps->code == 408 ? cell->flags & T_UAC_HAS_RECV_REPLY ?
+	       " external" : " internal" : "",
 	       drb.get_gw_name(trans_prop->gw->dr_gw)->len,
 	       drb.get_gw_name(trans_prop->gw->dr_gw)->s);
 
@@ -291,8 +293,9 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 				LM_ERR("failed to register callback for call termination\n");
 				return;
 			}
+
 		} else if (ps->code != 408 || (cell->flags & T_UAC_HAS_RECV_REPLY)) {
-						/* if it's 408 it must have one provisional response */
+			/* an internal 408 timeout is not a completed call! */
 			qr_add_4xx(trans_prop->gw);
 		}
 	}
