@@ -40,6 +40,9 @@ str topo_hiding_prefix = str_init("DLGCH_");
 str topo_hiding_seed = str_init("OpenSIPS");
 str topo_hiding_ct_encode_pw = str_init("ToPoCtPaSS");
 str th_contact_encode_param = str_init("thinfo");
+str th_contact_encode_scheme = str_init("base64");
+
+int th_ct_enc_scheme;
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -67,6 +70,7 @@ static param_export_t params[] = {
 	{ "th_callid_prefix",            STR_PARAM, &topo_hiding_prefix.s        },
 	{ "th_contact_encode_passwd",    STR_PARAM, &topo_hiding_ct_encode_pw.s  },
 	{ "th_contact_encode_param",     STR_PARAM, &th_contact_encode_param.s   },
+	{ "th_contact_encode_scheme",    STR_PARAM, &th_contact_encode_scheme.s   },
 	{0, 0, 0}
 };
 
@@ -138,6 +142,17 @@ static int mod_init(void)
 		topo_hiding_ct_hdr_params.len = strlen(topo_hiding_ct_hdr_params.s);
 		topo_parse_passed_hdr_ct_params(&topo_hiding_ct_hdr_params);
 	}
+	th_contact_encode_scheme.len = strlen(th_contact_encode_scheme.s);
+	if (!str_strcmp(&th_contact_encode_scheme, _str("base64")))
+		th_ct_enc_scheme = ENC_BASE64;
+	else if (!str_strcmp(&th_contact_encode_scheme, _str("base32")))
+		th_ct_enc_scheme = ENC_BASE32;
+	else {
+		LM_ERR("Unsupported value for 'th_contact_encode_scheme' modparam!"
+			"Use 'base64' or 'base32'\n");
+		goto error;
+	}
+
 
 	/* loading dependencies */
 	if (load_tm_api(&tm_api)!=0) {

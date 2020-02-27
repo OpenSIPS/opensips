@@ -192,6 +192,27 @@ modparam("topology_hiding", "th_contact_encode_param", "customparam")
 		</example>
 	</section>
 
+	<section id="param_th_contact_encode_scheme" xreflabel="th_contact_encode_scheme">
+		<title><varname>th_contact_encode_scheme</varname> (string)</title>
+		<para>
+			When not relying on the dialog module ( due to script writer preference or simply when doing topo hiding for non INVITE dialogs ), the module will store the needed information in a Contact URI param. This parameter configures the encoding scheme to be used for the data stored in
+			the Contact URI param.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>"base64"</quote>
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>th_contact_encode_scheme</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("topology_hiding", "th_contact_encode_scheme", "base32")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 	<section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>

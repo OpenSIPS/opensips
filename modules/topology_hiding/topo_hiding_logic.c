@@ -34,6 +34,7 @@ extern str topo_hiding_prefix;
 extern str topo_hiding_seed;
 extern str topo_hiding_ct_encode_pw;
 extern str th_contact_encode_param;
+extern int th_ct_enc_scheme;
 
 struct th_ct_params {
 	str param_name;
@@ -1546,7 +1547,8 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 
 	addr_len = (short)msg->rcv.bind_address->sock_str.len;
 	local_len += rr_len + ct_len + addr_len; 
-	enc_len = calc_word64_encode_len(local_len);
+	enc_len = th_ct_enc_scheme == ENC_BASE64 ?
+		calc_word64_encode_len(local_len) : calc_word32_encode_len(local_len);
 	total_len = enc_len +  
 		1 /* ; */ + 
 		th_contact_encode_param.len + 
@@ -1639,7 +1641,10 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 	memcpy(s,th_contact_encode_param.s,th_contact_encode_param.len);
 	s+= th_contact_encode_param.len;
 	*s++ = '=';
-	word64encode((unsigned char*)s,(unsigned char *)suffix_plain,p-suffix_plain);
+	if (th_ct_enc_scheme == ENC_BASE64)
+		word64encode((unsigned char*)s,(unsigned char *)suffix_plain,p-suffix_plain);
+	else
+		word32encode((unsigned char*)s,(unsigned char *)suffix_plain,p-suffix_plain);
 	s = s+enc_len;
 	
 	if (th_param_list) {
@@ -1824,14 +1829,21 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		}
 	}
 
-	max_size = calc_max_word64_decode_len(info->len);
+	max_size = th_ct_enc_scheme == ENC_BASE64 ?
+		calc_max_word64_decode_len(info->len) :
+		calc_max_word32_decode_len(info->len);
 	dec_buf = pkg_malloc(max_size);
 	if (dec_buf==NULL) {
 		LM_ERR("No more pkg\n");
 		return -1;
 	}
 
-	dec_len = word64decode((unsigned char *)dec_buf,(unsigned char *)info->s,info->len);
+	if (th_ct_enc_scheme == ENC_BASE64)
+		dec_len = word64decode((unsigned char *)dec_buf,
+			(unsigned char *)info->s,info->len);
+	else
+		dec_len = word32decode((unsigned char *)dec_buf,
+			(unsigned char *)info->s,info->len);
 	for (i=0;i<dec_len;i++)
 		dec_buf[i] ^= topo_hiding_ct_encode_pw.s[i%topo_hiding_ct_encode_pw.len]; 
 

@@ -40,6 +40,8 @@
 #include "../rr/api.h"
 #include "../dialog/dlg_load.h"
 
+enum encode_scheme {ENC_BASE64, ENC_BASE32};
+
 int topo_parse_passed_ct_params(str *params);
 int topo_parse_passed_hdr_ct_params(str *params);
 int topology_hiding(struct sip_msg *req,int extra_flags);
