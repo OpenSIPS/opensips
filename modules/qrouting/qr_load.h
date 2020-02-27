@@ -48,6 +48,7 @@
 #define DBL_VALS_CPTY_PDD 17
 #define DBL_VALS_CPTY_AST 18
 #define DBL_VALS_CPTY_ACD 19
+#define DBL_VALS_XSTATS   20
 
 #define N_INT_VALS 1
 #define N_STR_VALS 1

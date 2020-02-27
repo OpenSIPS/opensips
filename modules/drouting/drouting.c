@@ -2250,6 +2250,7 @@ static int use_next_gw(struct sip_msg* msg,
 {
 	struct head_db * current_partition;
 	struct usr_avp *avp, *avp_ru, *avp_sk;
+	struct dr_acc_call_params *acp;
 	unsigned int flags;
 	int grp;
 	str *wl_list;
@@ -2409,7 +2410,10 @@ static int use_next_gw(struct sip_msg* msg,
 			/* this shuold not happen, it is a bogus state */
 			LM_BUG("call params AVP not found\n");
 		} else {
-			run_dr_cbs(DRCB_ACC_CALL, (struct dr_acc_call_params *)val.s.s);
+			acp = (struct dr_acc_call_params *)val.s.s;
+			acp->msg = msg;
+
+			run_dr_cbs(DRCB_ACC_CALL, acp);
 			destroy_avp(avp_sk);
 		}
 
@@ -2668,6 +2672,8 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
          struct head_db *current_partition, struct sip_uri *uri,
          rt_info_t *rt, pgw_list_t *dst, int cr_id, int gw_id, int idx)
 {
+	static void *qr_data;
+
 	char buf[PTR_STRING_SIZE]; /* a hexa string */
 	str *ruri;
 	pgw_t *gw = NULL;
@@ -2722,12 +2728,14 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 			msg->force_send_socket = gw->sock;
 
 		if (rt && rt->sort_alg == QR_BASED_SORT) {
+			memset(&acp, 0, sizeof acp);
 			acp.rule = (void *)rt->qr_handler;
 			acp.cr_id = cr_id;
 			acp.gw_id = gw_id;
 			acp.msg = msg;
 
 			run_dr_cbs(DRCB_ACC_CALL, &acp); /* qr accounting */
+			qr_data = acp.data;
 		}
 	} else {
 
@@ -2748,12 +2756,10 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 		}
 
 		if (rt && rt->sort_alg == QR_BASED_SORT) {
-			memset(&acp, 0, sizeof acp);
-
 			acp.rule = (void *)rt->qr_handler;
 			acp.cr_id = cr_id;
 			acp.gw_id = gw_id;
-			acp.msg = msg;
+			acp.data = qr_data;
 
 			dst_id_acc.s.s = (char *)&acp;
 			dst_id_acc.s.len = sizeof acp;

@@ -67,10 +67,12 @@ struct dr_reg_init_rule_params {
 };
 
 struct dr_acc_call_params {
-	void *rule; /* qr_handler/rule */
+	struct sip_msg *msg;
 	int cr_id; /* destination id */
 	int gw_id; /* in the case the destination is a carrier */
-	struct sip_msg *msg;
+
+	void *rule; /* qr_handler/rule */
+	void *data; /* holder for module-specific information */
 };
 
 struct dr_sort_params {

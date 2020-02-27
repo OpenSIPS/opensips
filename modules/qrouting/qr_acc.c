@@ -70,46 +70,55 @@ void qr_acc(void *param)
 	LM_DBG("engaging accounting for rule %p, cr: %d, gw: %d\n", ap->rule,
 	       ap->cr_id, ap->gw_id);
 
-	if (msg->first_line.u.request.method_value == METHOD_INVITE) {
+	if (msg->REQ_METHOD == METHOD_INVITE) {
 		rule = ap->rule;
 		gw_id = ap->gw_id;
 		cr_id = ap->cr_id;
 
-		trans_prop = shm_malloc(sizeof *trans_prop);
-		if (!trans_prop) {
-			LM_ERR("oom\n");
-			goto error;
-		}
-		memset(trans_prop, 0, sizeof *trans_prop);
+		/* first invocation of this callback, for branch #0 */
+		if (!ap->data) {
+			trans_prop = shm_malloc(sizeof *trans_prop);
+			if (!trans_prop) {
+				LM_ERR("oom\n");
+				goto error;
+			}
+			memset(trans_prop, 0, sizeof *trans_prop);
 
-		if (init_trans_prop(trans_prop) < 0) {
-			LM_ERR("failed to init transaction properties (for qrouting)\n");
-			goto error;
+			if (init_trans_prop(trans_prop) < 0) {
+				LM_ERR("failed to init transaction properties\n");
+				goto error;
+			}
+
+			if (dlgcb.create_dlg(msg, 0) < 0) { /* for call duration */
+				LM_ERR("failed to create dialog\n");
+				goto error;
+			}
+
+			/* register callback for the responses to this INVITE */
+			if (tmb.register_tmcb(msg, 0, TMCB_RESPONSE_IN, qr_check_reply_tmcb,
+						(void *)trans_prop, release_trans_prop) <= 0) {
+				LM_ERR("cannot register TMCB_RESPONSE_IN\n");
+				goto error;
+			}
+
+			ap->data = trans_prop;
+		} else {
+			trans_prop = (qr_trans_prop_t *)ap->data;
 		}
 
-		/* save transaction properties */
+		/* update the gateway in use */
 		if (cr_id == -1) /* if the destination is not within a carrier */
 			trans_prop->gw = rule->dest[gw_id].gw;
 		else /* if the destination is within a carrier */
 			trans_prop->gw = rule->dest[cr_id].grp.gw[gw_id];
 
-		/* get the time of INVITE */
+		/* refresh the time of this new INVITE branch */
 		if (clock_gettime(CLOCK_REALTIME, &trans_prop->invite) < 0) {
 			LM_ERR("failed to get system time\n");
 			goto error;
 		}
-
-		if (dlgcb.create_dlg(msg, 0) < 0) { /* for call duration */
-			LM_ERR("failed to create dialog\n");
-			goto error;
-		}
-
-		/* register callback for the responses to this INVITE */
-		if (tmb.register_tmcb(msg, 0, TMCB_RESPONSE_IN, qr_check_reply_tmcb,
-					(void *)trans_prop, release_trans_prop) <= 0) {
-			LM_ERR("cannot register TMCB_RESPONSE_IN\n");
-			goto error;
-		}
+	} else {
+		LM_DBG("skipping method %d\n", msg->REQ_METHOD);
 	}
 
 	return;
@@ -186,8 +195,8 @@ static double get_elapsed_time(struct timespec * start, char mu) {
 /*
  * callback for getting the duration of the call
  */
-static void call_ended(struct dlg_cell*dlg, int type,
-                       struct dlg_cb_params *params)
+static void qr_call_ended(struct dlg_cell*dlg, int type,
+                          struct dlg_cb_params *params)
 {
 	double cd;
 	qr_dialog_prop_t *dialog_prop = (qr_dialog_prop_t *)*params->param;
@@ -212,6 +221,11 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 	qr_trans_prop_t *trans_prop = (qr_trans_prop_t *)*ps->param;
 	struct dlg_cell *cur_dlg; /* for accounting call time */
 	struct qr_dialog_prop *dialog_prop;
+
+	LM_DBG("tm reply (%d%s) from gw %.*s\n", ps->code,
+	       ps->code == 408 ? " external" : "",
+	       drb.get_gw_name(trans_prop->gw->dr_gw)->len,
+	       drb.get_gw_name(trans_prop->gw->dr_gw)->s);
 
 	if (ps->code == 180 || ps->code == 183) { /* Ringing - provisional response */
 		lock_get(trans_prop->prop_lock);
@@ -272,7 +286,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 			}
 
 			/* callback for call duration => called at the end of the call */
-			if (dlgcb.register_dlgcb(cur_dlg, DLGCB_TERMINATED, (void *)call_ended,
+			if (dlgcb.register_dlgcb(cur_dlg, DLGCB_TERMINATED, qr_call_ended,
 						(void *)dialog_prop, osips_shm_free) != 0) {
 				LM_ERR("failed to register callback for call termination\n");
 				return;

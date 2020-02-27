@@ -80,10 +80,10 @@ static inline void add_profile(qr_profile_t *prof,
 	prof->acd_pty2 = double_vals[DBL_VALS_CPTY_ACD];
 
 	for (i = 0; i < qr_xstats_n; i++) {
-		prof->xstats[i].thr1 = double_vals[DBL_VALS_CPTY_ACD + i*4 + 0];
-		prof->xstats[i].thr2 = double_vals[DBL_VALS_CPTY_ACD + i*4 + 1];
-		prof->xstats[i].pty1 = double_vals[DBL_VALS_CPTY_ACD + i*4 + 2];
-		prof->xstats[i].pty2 = double_vals[DBL_VALS_CPTY_ACD + i*4 + 3];
+		prof->xstats[i].thr1 = double_vals[DBL_VALS_XSTATS + i*4 + 0];
+		prof->xstats[i].thr2 = double_vals[DBL_VALS_XSTATS + i*4 + 1];
+		prof->xstats[i].pty1 = double_vals[DBL_VALS_XSTATS + i*4 + 2];
+		prof->xstats[i].pty2 = double_vals[DBL_VALS_XSTATS + i*4 + 3];
 	}
 }
 
@@ -367,31 +367,31 @@ int qr_reload(db_func_t *qr_dbf, db_con_t *qr_db_hdl)
 
 			for (j = 0; j < qr_xstats_n; j++) {
 				check_val(columns[n_cols + j*4]->s,
-							ROW_VALUES(row)+21 + j*4, DB_DOUBLE, 1, 1);
-				dbl_vals[DBL_VALS_CPTY_ACD + j*4] =
-							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4);
+							ROW_VALUES(row)+22 + j*4, DB_DOUBLE, 1, 1);
+				dbl_vals[DBL_VALS_XSTATS + j*4] =
+							VAL_DOUBLE(ROW_VALUES(row)+22 + j*4);
 
 				check_val(columns[n_cols + j*4 + 1]->s,
-							ROW_VALUES(row)+21 + j*4 + 1, DB_DOUBLE, 1, 1);
-				dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 1] =
-							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4 + 1);
+							ROW_VALUES(row)+22 + j*4 + 1, DB_DOUBLE, 1, 1);
+				dbl_vals[DBL_VALS_XSTATS + j*4 + 1] =
+							VAL_DOUBLE(ROW_VALUES(row)+22 + j*4 + 1);
 
 				check_val(columns[n_cols + j*4 + 2]->s,
-							ROW_VALUES(row)+21 + j*4 + 2, DB_DOUBLE, 1, 1);
-				dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 2] =
-							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4 + 2);
+							ROW_VALUES(row)+22 + j*4 + 2, DB_DOUBLE, 1, 1);
+				dbl_vals[DBL_VALS_XSTATS + j*4 + 2] =
+							VAL_DOUBLE(ROW_VALUES(row)+22 + j*4 + 2);
 
 				check_val(columns[n_cols + j*4 + 3]->s,
-							ROW_VALUES(row)+21 + j*4 + 3, DB_DOUBLE, 1, 1);
-				dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 3] =
-							VAL_DOUBLE(ROW_VALUES(row)+21 + j*4 + 3);
+							ROW_VALUES(row)+22 + j*4 + 3, DB_DOUBLE, 1, 1);
+				dbl_vals[DBL_VALS_XSTATS + j*4 + 3] =
+							VAL_DOUBLE(ROW_VALUES(row)+22 + j*4 + 3);
 
 				LM_DBG("qr_profile (%d, %s) %s: [%lf %lf | %lf %lf]\n",
 						int_vals[INT_VALS_ID], str_vals[STR_VALS_PROFILE_NAME],
-						qr_xstats[j].name.s, dbl_vals[DBL_VALS_CPTY_ACD + j*4],
-						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 1],
-						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 2],
-						dbl_vals[DBL_VALS_CPTY_ACD + j*4 + 3]);
+						qr_xstats[j].name.s, dbl_vals[DBL_VALS_XSTATS + j*4],
+						dbl_vals[DBL_VALS_XSTATS + j*4 + 1],
+						dbl_vals[DBL_VALS_XSTATS + j*4 + 2],
+						dbl_vals[DBL_VALS_XSTATS + j*4 + 3]);
 			}
 
 			add_profile(&profs[total_rows], int_vals, str_vals, dbl_vals);

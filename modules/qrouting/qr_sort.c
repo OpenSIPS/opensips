@@ -25,12 +25,14 @@
 #include "qr_stats.h"
 #include "qr_event.h"
 
-#define log_warn_thr(thr) \
-	LM_WARN("warn %s threshold exceeded (rule_id %d, gw_id: %.*s)\n", thr, \
+#define log_warn_thr(thr_name, _val, _cmp, _lim) \
+	LM_WARN("warn %s threshold exceeded (%.2lf %c %.2lf, rule_id: %d, " \
+	        "gw_id: %.*s)\n", thr_name, _val, _cmp, _lim, \
 	        rule_id, gw_name->len, gw_name->s)
 
-#define log_crit_thr(thr) \
-	LM_WARN("crit %s threshold exceeded (rule_id %d, gw_id: %.*s)\n", thr, \
+#define log_crit_thr(thr_name, _val, _cmp, _lim) \
+	LM_WARN("crit %s threshold exceeded (%.2lf %c %.2lf, rule_id: %d, " \
+	        "gw_id: %.*s)\n", thr_name, _val, _cmp, _lim, \
 	        rule_id, gw_name->len, gw_name->s)
 
 
@@ -57,10 +59,10 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 	if (asr_v != -1) {
 		if (asr_v < prof->asr2) {
 			score *= prof->asr_pty2;
-			log_crit_thr("ASR");
+			log_crit_thr("ASR", asr_v, '<', prof->asr2);
 		} else if (asr_v < prof->asr1) {
 			score *= prof->asr_pty1;
-			log_warn_thr("ASR");
+			log_warn_thr("ASR", asr_v, '<', prof->asr1);
 		}
 	}
 
@@ -68,10 +70,10 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 	if (ccr_v != -1) {
 		if (ccr_v < prof->ccr2) {
 			score *= prof->ccr_pty2;
-			log_crit_thr("CCR");
+			log_crit_thr("CCR", ccr_v, '<', prof->ccr2);
 		} else if (ccr_v < prof->ccr1) {
 			score *= prof->ccr_pty1;
-			log_warn_thr("CCR");
+			log_warn_thr("CCR", ccr_v, '<', prof->ccr1);
 		}
 	}
 
@@ -79,10 +81,10 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 	if (pdd_v != -1) {
 		if (pdd_v > prof->pdd2) {
 			score *= prof->pdd_pty2;
-			log_crit_thr("PDD");
+			log_crit_thr("PDD", pdd_v, '>', prof->pdd2);
 		} else if (pdd_v > prof->pdd1) {
 			score *= prof->pdd_pty1;
-			log_warn_thr("PDD");
+			log_warn_thr("PDD", pdd_v, '>', prof->pdd1);
 		}
 	}
 
@@ -90,10 +92,10 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 	if (ast_v != -1) {
 		if (ast_v > prof->ast2) {
 			score *= prof->ast_pty2;
-			log_crit_thr("AST");
+			log_crit_thr("AST", ast_v, '>', prof->ast2);
 		} else if (ast_v > prof->ast1) {
 			score *= prof->ast_pty1;
-			log_warn_thr("AST");
+			log_warn_thr("AST", ast_v, '>', prof->ast1);
 		}
 	}
 
@@ -101,10 +103,10 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 	if (acd_v != -1) {
 		if (acd_v < prof->acd2) {
 			score *= prof->acd_pty2;
-			log_crit_thr("ACD");
+			log_crit_thr("ACD", acd_v, '<', prof->acd2);
 		} else if (acd_v < prof->acd1) {
 			score *= prof->acd_pty1;
-			log_warn_thr("ACD");
+			log_warn_thr("ACD", acd_v, '<', prof->acd1);
 		}
 	}
 
@@ -117,18 +119,22 @@ static inline double _qr_score_gw(qr_gw_t *gw, qr_profile_t *prof,
 		if (qr_xstats[i].increasing) {
 			if (val < prof->xstats[i].thr2) {
 				score *= prof->xstats[i].pty2;
-				log_crit_thr(qr_xstats[i].name.s);
+				log_crit_thr(qr_xstats[i].name.s,
+				             val, '<', prof->xstats[i].thr2);
 			} else if (val < prof->xstats[i].thr1) {
 				score *= prof->xstats[i].pty1;
-				log_warn_thr(qr_xstats[i].name.s);
+				log_warn_thr(qr_xstats[i].name.s,
+				             val, '<', prof->xstats[i].thr1);
 			}
 		} else {
 			if (val > prof->xstats[i].thr2) {
 				score *= prof->xstats[i].pty2;
-				log_crit_thr(qr_xstats[i].name.s);
+				log_crit_thr(qr_xstats[i].name.s,
+				             val, '>', prof->xstats[i].thr2);
 			} else if (val > prof->xstats[i].thr1) {
 				score *= prof->xstats[i].pty1;
-				log_warn_thr(qr_xstats[i].name.s);
+				log_warn_thr(qr_xstats[i].name.s,
+				             val, '>', prof->xstats[i].thr1);
 			}
 		}
 	}
@@ -225,6 +231,7 @@ static inline double qr_score_grp(qr_grp_t *grp, const qr_rule_t *rule,
 static double *qr_scores;
 static int qr_scores_sz;
 
+/* a higher score (weight) is better */
 static int qr_cmp_dst(const void *d1, const void *d2)
 {
 	double s1 = qr_scores[*(unsigned short *)d1],
@@ -240,7 +247,7 @@ static int qr_cmp_dst(const void *d1, const void *d2)
 	if (s2 == -1)
 		return -1;
 
-	return s1 < s2 ? -1 : (s1 == s2 ? 0 : 1);
+	return s1 > s2 ? -1 : (s1 == s2 ? 0 : 1);
 }
 
 void qr_sort_best_dest_first(void *param)
