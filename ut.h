@@ -1321,11 +1321,31 @@ int base64urldecode(unsigned char *out,unsigned char *in,int len);
 void word64encode(unsigned char *out, unsigned char *in, int inlen);
 int word64decode(unsigned char *out, unsigned char *in, int len);
 
+void _base32encode(unsigned char *out, unsigned char *in, int inlen,
+	unsigned char pad_char);
+int _base32decode(unsigned char *out, unsigned char *in, int len,
+	unsigned char pad_char);
+
+#define base32encode(out, in, inlen) _base32encode(out, in, inlen, '=')
+
+/* also accepts lowercase letters as equivalent encoding characters
+ * of uppercase letters */
+#define base32decode(out, in, len) _base32decode(out, in, len, '=')
+
+/* same as base32 but uses '-' instead of '=' as pad character */
+#define word32encode(out, in, inlen) _base32encode(out, in, inlen, '-')
+#define word32decode(out, in, len) _base32decode(out, in, len, '-')
+
 #define calc_base64_encode_len(_l) (((_l)/3 + ((_l)%3?1:0))*4)
 #define calc_max_base64_decode_len(_l) ((_l)*3/4)
 
 #define calc_word64_encode_len calc_base64_encode_len
 #define calc_max_word64_decode_len calc_max_base64_decode_len
 
+#define calc_base32_encode_len(_l) (((_l)/5 + ((_l)%5?1:0))*8)
+#define calc_max_base32_decode_len(_l) ((_l)*5/8)
+
+#define calc_word32_encode_len calc_base32_encode_len
+#define calc_max_word32_decode_len calc_max_base32_decode_len
 
 #endif

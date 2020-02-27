@@ -205,6 +205,9 @@ static const char base64urldigits[] =
 static const char word64digits[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+.";
 
+static const char base32digits[] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+
 #define BAD     ((unsigned char)-1)
 static const unsigned char base64val[] = {
 BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
@@ -267,6 +270,27 @@ BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
 BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD
 };
 
+/* also accept lowercase letters as equivalent encoding characters
+ * of uppercase letters */
+static const unsigned char base32val[] = {
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD, 26, 27,  28, 29, 30, 31, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14,
+15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25, BAD, BAD,BAD,BAD,BAD,
+BAD,  0,  1,  2,   3,  4,  5,  6,   7,  8,  9, 10,  11, 12, 13, 14,
+15, 16, 17, 18,  19, 20, 21, 22,  23, 24, 25, BAD, BAD,BAD,BAD,BAD,
+
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD,
+BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD, BAD,BAD,BAD,BAD
+};
 
 /* function that encodes to base64
  * output buffer is assumed to have the right length */
@@ -354,6 +378,74 @@ void word64encode(unsigned char *out, unsigned char *in, int inlen)
 		*out++ = word64digits[fragment];
 		*out++ = (inlen < 2) ? '-' : word64digits[(in[1] << 2) & 0x3c];
 		*out++ = '-';
+	}
+}
+
+/* function that encodes to base32
+ * output buffer is assumed to have the right length */
+void _base32encode(unsigned char *out, unsigned char *in, int inlen,
+	unsigned char pad_char)
+{
+	for (; inlen >= 5; inlen -= 5)
+	{
+		*out++ = base32digits[in[0] >> 3];
+		*out++ = base32digits[((in[0] << 2) & 0x1c) | (in[1] >> 6)];
+		*out++ = base32digits[(in[1] >> 1) & 0x1f];
+		*out++ = base32digits[((in[1] << 4) & 0x10) | (in[2] >> 4)];
+		*out++ = base32digits[((in[2] << 1) & 0x1e) | (in[3] >> 7)];
+		*out++ = base32digits[(in[3] >> 2) & 0x1f];
+		*out++ = base32digits[((in[3] << 3) & 0x18) | (in[4] >> 5)];
+		*out++ = base32digits[in[4] & 0x1f];
+		in += 5;
+	}
+
+	if (inlen > 0)
+	{
+		unsigned char fragment;
+
+		*out++ = base32digits[in[0] >> 3];
+
+		fragment = (in[0] << 2) & 0x1c;
+		if (inlen > 1)
+			fragment |= in[1] >> 6;
+		*out++ = base32digits[fragment];
+
+		if (inlen < 2)
+			goto pad;
+
+		*out++ = base32digits[(in[1] >> 1) & 0x1f];
+
+		fragment = (in[1] << 4) & 0x10;
+		if (inlen > 2)
+			fragment |= in[2] >> 4;
+		*out++ = base32digits[fragment];
+
+		if (inlen < 3)
+			goto pad;
+
+		fragment = (in[2] << 1) & 0x1e;
+		if (inlen > 3)
+			fragment |= in[3] >> 7;
+		*out++ = base32digits[fragment];
+
+		if (inlen < 4)
+			goto pad;
+
+		*out++ = base32digits[(in[3] >> 2) & 0x1f];
+		*out++ = base32digits[(in[3] << 3) & 0x18];
+pad:
+		switch (inlen) {
+		case 1:
+			*out++ = pad_char;
+			*out++ = pad_char;
+		case 2:
+			*out++ = pad_char;
+		case 3:
+			*out++ = pad_char;
+			*out++ = pad_char;
+		case 4:
+			*out++ = pad_char;
+		}
 	}
 }
 
@@ -529,6 +621,113 @@ int word64decode(unsigned char *out, unsigned char *in, int len)
 			break;
 
 		out[out_len++] = ((c3 & 0x03) << 6) | c4;
+	}
+
+	return out_len;
+}
+
+/* function that decodes from base32
+ * output buffer is assumed to have the right length */
+int _base32decode(unsigned char *out, unsigned char *in, int len,
+	unsigned char pad_char)
+{
+	int i=0;
+	unsigned char c1,c2,c3,c4,c5,c6,c7,c8;
+	int out_len=0;
+
+	while (len > i)
+	{
+		do
+		{
+			c1 = base32val[in[i++]];
+		} while (i<len && c1 == BAD);
+
+		if (c1 == BAD)
+			break;
+
+		do
+		{
+			c2 = base32val[in[i++]];
+		} while (i<len && c2 == BAD);
+
+		if (c2 == BAD)
+			break;
+
+		out[out_len++] = (c1 << 3) | ((c2 & 0x1c) >> 2);
+
+		do
+		{
+			c3 = in[i++];
+			if (c3 == pad_char)
+				return out_len;
+			c3 = base32val[c3];
+		} while (i<len && c3 == BAD);
+
+		if (c3 == BAD)
+			break;
+
+		do
+		{
+			c4 = in[i++];
+			if (c4 == pad_char)
+				return out_len;
+			c4 = base32val[c4];
+		} while (i<len && c4 == BAD);
+
+		if (c4 == BAD)
+			break;
+
+		out[out_len++] = ((c2 & 0x03) << 6) | (c3 << 1) | ((c4 & 0x10) >> 4);
+
+		do
+		{
+			c5 = in[i++];
+			if (c5 == pad_char)
+				return out_len;
+			c5 = base32val[c5];
+		} while (i<len && c5 == BAD);
+
+		if (c5 == BAD)
+			break;
+
+		out[out_len++] = ((c4 & 0x0f) << 4) | ((c5 & 0x1e) >> 1);
+
+		do
+		{
+			c6 = in[i++];
+			if (c6 == pad_char)
+				return out_len;
+			c6 = base32val[c6];
+		} while (i<len && c6 == BAD);
+
+		if (c6 == BAD)
+			break;
+
+		do
+		{
+			c7 = in[i++];
+			if (c7 == pad_char)
+				return out_len;
+			c7 = base32val[c7];
+		} while (i<len && c7 == BAD);
+
+		if (c7 == BAD)
+			break;
+
+		out[out_len++] = ((c5 & 0x01) << 7) | (c6 << 2) | ((c7 & 0x18) >> 3);
+
+		do
+		{
+			c8 = in[i++];
+			if (c8 == pad_char)
+				return out_len;
+			c8 = base32val[c8];
+		} while (i<len && c8 == BAD);
+
+		if (c8 == BAD)
+			break;
+
+		out[out_len++] = ((c7 & 0x07) << 5) | c8;
 	}
 
 	return out_len;
