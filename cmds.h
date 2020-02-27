@@ -36,7 +36,7 @@
 
 #define CMD_PARAM_OPT        (1<<4)  /* optional parameter */
 #define CMD_PARAM_FIX_NULL   (1<<5)  /* run fixup even if optional parameter is omitted */
-#define CMD_PARAM_NO_EXPAND  (1<<6)  /* TMPHACK: do not pv-expand strings */
+#define CMD_PARAM_NO_EXPAND  (1<<6)  /* do not pv-expand strings */
 #define CMD_PARAM_STATIC	 (1<<7)  /* don't accept variables or formatted string */
 
 typedef  int (*cmd_function)(struct sip_msg*, void*, void*, void*, void*,
