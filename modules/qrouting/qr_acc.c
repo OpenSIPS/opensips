@@ -28,19 +28,6 @@ struct tm_binds tmb;
 struct dlg_binds dlgcb;
 struct dr_binds drb;
 
-/* free the parameter of the dialog callback */
-inline static void release_dialog_prop(void *param)
-{
-	qr_dialog_prop_t *dp = (qr_dialog_prop_t *)param;
-
-	if (dp->time_200OK) {
-		shm_free(dp->time_200OK);
-		dp->time_200OK = QR_PTR_POISON;
-	}
-
-	shm_free(dp);
-}
-
 /* initialize the qr_trans_prop_t structure */
 static inline int init_trans_prop(qr_trans_prop_t *trans_prop)
 {
@@ -55,11 +42,6 @@ static inline int init_trans_prop(qr_trans_prop_t *trans_prop)
 		return -1;
 	}
 
-	if (!(trans_prop->invite = shm_malloc(sizeof *trans_prop->invite))) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-
 	return 0;
 }
 
@@ -67,11 +49,6 @@ static inline int init_trans_prop(qr_trans_prop_t *trans_prop)
 static void release_trans_prop(void *param)
 {
 	qr_trans_prop_t *to_free = (qr_trans_prop_t *)param;
-
-	if (to_free->invite) {
-		shm_free(to_free->invite);
-		to_free->invite = QR_PTR_POISON;
-	}
 
 	if (to_free->prop_lock) {
 		lock_destroy(to_free->prop_lock);
@@ -117,7 +94,7 @@ void qr_acc(void *param)
 			trans_prop->gw = rule->dest[cr_id].grp.gw[gw_id];
 
 		/* get the time of INVITE */
-		if (clock_gettime(CLOCK_REALTIME, trans_prop->invite) < 0) {
+		if (clock_gettime(CLOCK_REALTIME, &trans_prop->invite) < 0) {
 			LM_ERR("failed to get system time\n");
 			goto error;
 		}
@@ -214,9 +191,8 @@ static void call_ended(struct dlg_cell*dlg, int type,
 {
 	double cd;
 	qr_dialog_prop_t *dialog_prop = (qr_dialog_prop_t *)*params->param;
-	struct timespec *time_200OK = dialog_prop->time_200OK;
 
-	if ((cd = get_elapsed_time(time_200OK,'s')) < 0) {
+	if ((cd = get_elapsed_time(&dialog_prop->time_200OK, 's')) < 0) {
 		LM_ERR("call duration negative\n");
 		return;
 	}
@@ -245,7 +221,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 			trans_prop->state |= QR_TM_180_RCVD;
 			lock_release(trans_prop->prop_lock);
 
-			if ((pdd_tm = get_elapsed_time(trans_prop->invite, 'm')) < 0) {
+			if ((pdd_tm = get_elapsed_time(&trans_prop->invite, 'm')) < 0) {
 				lock_release(trans_prop->prop_lock);
 				return;
 			}
@@ -257,7 +233,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 
 	} else if (ps->code >= 200 && ps->code < 500) { /* completed calls */
 		if (ps->code == 200) { /* calee answered */
-			if ((st = get_elapsed_time(trans_prop->invite, 'm')) < 0) {
+			if ((st = get_elapsed_time(&trans_prop->invite, 'm')) < 0) {
 				LM_ERR("negative setup time\n");
 				return;
 			}
@@ -283,13 +259,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 			}
 			memset(dialog_prop, 0, sizeof *dialog_prop);
 
-			if (!(dialog_prop->time_200OK = shm_malloc(
-							sizeof *dialog_prop->time_200OK))) {
-				LM_ERR("oom\n");
-				return;
-			}
-
-			if (clock_gettime(CLOCK_REALTIME, dialog_prop->time_200OK) < 0) {
+			if (clock_gettime(CLOCK_REALTIME, &dialog_prop->time_200OK) < 0) {
 				LM_ERR("failed to get system time\n");
 				return;
 			}
@@ -303,7 +273,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 
 			/* callback for call duration => called at the end of the call */
 			if (dlgcb.register_dlgcb(cur_dlg, DLGCB_TERMINATED, (void *)call_ended,
-						(void *)dialog_prop, release_dialog_prop) != 0) {
+						(void *)dialog_prop, osips_shm_free) != 0) {
 				LM_ERR("failed to register callback for call termination\n");
 				return;
 			}

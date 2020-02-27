@@ -38,13 +38,13 @@ extern struct dr_binds drb;
 typedef struct qr_trans_prop {
 	qr_gw_t *gw;
 	gen_lock_t *prop_lock;
-	struct timespec *invite;
+	struct timespec invite;
 	char state;
 } qr_trans_prop_t;
 
 typedef struct qr_dialog_prop {
 	qr_gw_t *gw;
-	struct timespec *time_200OK;
+	struct timespec time_200OK;
 } qr_dialog_prop_t;
 
 void update_gw_stats(qr_gw_t *);
