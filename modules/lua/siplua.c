@@ -46,7 +46,7 @@ static cmd_export_t cmds[] = {
   {"lua_exec", (cmd_function)siplua_exec, {
     {CMD_PARAM_STR,0,0},
     {CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
-    REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
+    REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
   {"lua_meminfo", (cmd_function)siplua_meminfo, {{0,0,0}},
     REQUEST_ROUTE},
   {0,0,{{0,0,0}},0}
