@@ -15,14 +15,25 @@ qrouting (Quality-based Routing) Module
 
               1.4.1. db_url (string)
               1.4.2. table_name (string)
-              1.4.3. history_span (integer)
-              1.4.4. sampling_interval (integer)
-              1.4.5. event_bad_dst_threshold (integer)
+              1.4.3. algorithm (integer)
+              1.4.4. history_span (integer)
+              1.4.5. sampling_interval (integer)
+              1.4.6. extra_stats (string)
+              1.4.7. min_samples_asr (integer)
+              1.4.8. min_samples_ccr (integer)
+              1.4.9. min_samples_pdd (integer)
+              1.4.10. min_samples_ast (integer)
+              1.4.11. min_samples_acd (integer)
+              1.4.12. event_bad_dst_threshold (string)
+              1.4.13. decimal_digits (string)
 
         1.5. Exported Functions
 
-              1.5.1. qr_disable_dst(rule_id, dst_name, [part])
-              1.5.2. qr_enable_dst(rule_id, dst_name, [part])
+              1.5.1. qr_set_xstat(rule_id, gw_name, stat_name,
+                      inc_by, [part], [inc_total])
+
+              1.5.2. qr_disable_dst(rule_id, dst_name, [part])
+              1.5.3. qr_enable_dst(rule_id, dst_name, [part])
 
         1.6. Exported MI Functions
 
@@ -53,13 +64,22 @@ qrouting (Quality-based Routing) Module
 
    List of Examples
 
-   1.1. Set db_url parameter
-   1.2. Set table_name parameter
-   1.3. Setting the connection_timeout parameter
-   1.4. Setting the connect_poll_interval parameter
-   1.5. Setting the event_bad_dst_threshold parameter
-   1.6. qr_disable_dst() usage
-   1.7. qr_enable_dst() usage
+   1.1. Setting the db_url parameter
+   1.2. Setting the table_name parameter
+   1.3. Setting the algorithm parameter
+   1.4. Setting the connection_timeout parameter
+   1.5. Setting the connect_poll_interval parameter
+   1.6. Setting the extra_stats parameter
+   1.7. Setting the min_samples_asr parameter
+   1.8. Setting the min_samples_ccr parameter
+   1.9. Setting the min_samples_pdd parameter
+   1.10. Setting the min_samples_ast parameter
+   1.11. Setting the min_samples_acd parameter
+   1.12. Setting the event_bad_dst_threshold parameter
+   1.13. Setting the decimal_digits parameter
+   1.14. qr_set_xstat() usage
+   1.15. qr_disable_dst() usage
+   1.16. qr_enable_dst() usage
 
 Chapter 1. Admin Guide
 
@@ -118,7 +138,7 @@ Chapter 1. Admin Guide
 
    Default value is NULL.
 
-   Example 1.1. Set db_url parameter
+   Example 1.1. Setting the db_url parameter
 
 modparam("qrouting", "db_url", "mysql://opensips:opensipsrw@localhost/op
 ensips")
@@ -129,22 +149,53 @@ ensips")
 
    Default value is "qr_profiles".
 
-   Example 1.2. Set table_name parameter
+   Example 1.2. Setting the table_name parameter
 
 modparam("qrouting", "table_name", "qr_profiles_bak")
 
-1.4.3. history_span (integer)
+1.4.3. algorithm (integer)
+
+   Quality-based destination selection/balancing algorithm to use.
+
+   Possible values:
+     * "dynamic-weights" - for each prefix, all destinations start
+       with equal weights and receive an equal share of the
+       traffic. As signaling statistics are gathered for the
+       destinations, the ones which underperform will receive less
+       traffic, based on the "penalty" columns of the qr_profiles
+       table
+     * "best-dest-first" - for each prefix, the 1st (i.e. best
+       scoring) destination will receive all the traffic as long
+       as its quality stays the same. Initially, all destinations
+       start with a perfect score. This score may degrade if one
+       or more signaling statistics fall below the "warn" or
+       "crit" thresholds during routing, case in which the
+       destinations will be sorted accordingly and traffic will be
+       routed to the newly determined 1st position in the list
+       NOTE: for optimal results when using the "best-dest-first"
+       algorithm, the destinations must be provisioned in
+       descending order of their expected quality! (i.e. best
+       quality gateways must be placed towards the start of the
+       list)
+
+   Default value is "dynamic-weights".
+
+   Example 1.3. Setting the algorithm parameter
+
+modparam("qrouting", "algorithm", "best-dest-first")
+
+1.4.4. history_span (integer)
 
    The duration (in minutes) that a gateway's statistics for a
    given call will be kept for.
 
    Default value is 30 minutes.
 
-   Example 1.3. Setting the connection_timeout parameter
+   Example 1.4. Setting the connection_timeout parameter
 
 modparam("qrouting", "history_span", 15)
 
-1.4.4. sampling_interval (integer)
+1.4.5. sampling_interval (integer)
 
    The duration (in seconds) of the statistics sampling window.
    Every sampling_interval seconds, the accumulated statistics
@@ -158,26 +209,170 @@ modparam("qrouting", "history_span", 15)
 
    Default value is 5 seconds.
 
-   Example 1.4. Setting the connect_poll_interval parameter
+   Example 1.5. Setting the connect_poll_interval parameter
 
 modparam("qrouting", "sampling_interval", 5)
 
-1.4.5. event_bad_dst_threshold (integer)
+1.4.6. extra_stats (string)
 
-   The minimally accepted quality of a gateway. If a destination
-   (i.e. prefix + gateway combination) receives a score below this
-   threshold, the E_QROUTING_BAD_DST event will be triggered.
+   A semicolon-separated list of custom statistics to be
+   additionally kept and monitored by the module. In order to
+   gather these statistics, the module expects the script writer
+   to call qr_set_xstat() whenever they want to increment a custom
+   statistic for a (prefix, destination) tuple.
 
-   Default value is 5 (all stats are allowed to hit the WARN
-   threshold simultaneously)
+   Extra statistics come in two flavours: positive (a higher value
+   is better, e.g. ASR) or negative (a lower value is better, e.g.
+   PDD). The flavour determines the comparison operator to be used
+   against the statistics's thresholds, and can be specified by
+   prepending "+" or "-", respectively, in front of the
+   statistic's name (see example below).
 
-   Example 1.5. Setting the event_bad_dst_threshold parameter
+   The minimally accepted number of samples for each statistic may
+   be changed using the optional /<min_samples> suffix. Default
+   value: 30 samples (minimum).
 
-modparam("qrouting", "event_bad_dst_threshold", 4)
+   The thresholds and penalties for a custom statistic must be
+   provided via the qr_profiles table, by extending it with 4
+   columns for each extra statistic, named according to these
+   templates:
+     * warn_threshold_<STAT>
+     * crit_threshold_<STAT>
+     * warn_penalty_<STAT>
+     * crit_penalty_<STAT>
+
+   Default value is NULL.
+
+   Example 1.6. Setting the extra_stats parameter
+
+modparam("qrouting", "extra_stats", "+mos/60; +r_factor; -503_replies/10
+0")
+
+1.4.7. min_samples_asr (integer)
+
+   The minimally accepted amount of sampled ASR statistics for
+   each (prefix, destination) pair before they can be taken into
+   account. As long as the number of samples stays below this
+   limit, the ASR statistic of the pair is assumed to be healthy.
+
+   Default value is 30.
+
+   Example 1.7. Setting the min_samples_asr parameter
+
+modparam("qrouting", "min_samples_asr", 50)
+
+1.4.8. min_samples_ccr (integer)
+
+   The minimally accepted amount of sampled CCR statistics for
+   each (prefix, destination) pair before they can be taken into
+   account. As long as the number of samples stays below this
+   limit, the CCR statistic of the pair is assumed to be healthy.
+
+   Default value is 30.
+
+   Example 1.8. Setting the min_samples_ccr parameter
+
+modparam("qrouting", "min_samples_ccr", 50)
+
+1.4.9. min_samples_pdd (integer)
+
+   The minimally accepted amount of sampled PDD statistics for
+   each (prefix, destination) pair before they can be taken into
+   account. As long as the number of samples stays below this
+   limit, the PDD statistic of the pair is assumed to be healthy.
+
+   Default value is 10.
+
+   Example 1.9. Setting the min_samples_pdd parameter
+
+modparam("qrouting", "min_samples_pdd", 15)
+
+1.4.10. min_samples_ast (integer)
+
+   The minimally accepted amount of sampled AST statistics for
+   each (prefix, destination) pair before they can be taken into
+   account. As long as the number of samples stays below this
+   limit, the AST statistic of the pair is assumed to be healthy.
+
+   Default value is 10.
+
+   Example 1.10. Setting the min_samples_ast parameter
+
+modparam("qrouting", "min_samples_ast", 15)
+
+1.4.11. min_samples_acd (integer)
+
+   The minimally accepted amount of sampled ACD statistics for
+   each (prefix, destination) pair before they can be taken into
+   account. As long as the number of samples stays below this
+   limit, the ACD statistic of the pair is assumed to be healthy.
+
+   Default value is 20.
+
+   Example 1.11. Setting the min_samples_acd parameter
+
+modparam("qrouting", "min_samples_acd", 30)
+
+1.4.12. event_bad_dst_threshold (string)
+
+   The minimally accepted quality of a (prefix, destination)
+   combination, given as a quoted floating point number in the [0,
+   1] interval. Whenever a (prefix + destination combination)
+   receives a score below this threshold, the E_QROUTING_BAD_DST
+   event will be triggered.
+
+   Default value is NULL (not set).
+
+   Example 1.12. Setting the event_bad_dst_threshold parameter
+
+modparam("qrouting", "event_bad_dst_threshold", "0.5")
+
+1.4.13. decimal_digits (string)
+
+   The amount of decimal digits to use in logging or MI output.
+
+   Default value is 2.
+
+   Example 1.13. Setting the decimal_digits parameter
+
+modparam("qrouting", "decimal_digits", 4)
 
 1.5. Exported Functions
 
-1.5.1.  qr_disable_dst(rule_id, dst_name, [part])
+1.5.1.  qr_set_xstat(rule_id, gw_name, stat_name, inc_by, [part],
+[inc_total])
+
+   Provide a new sample value for an extra statistic on a given
+   (prefix, gateway) combination. Extra statistics may be defined
+   using the extra_stats module parameter.
+
+   Parameters:
+     * rule_id (integer) - database id of the drouting rule
+       holding the prefix and its destinations
+     * gw_name (string) - gateway to account the statistic for.
+       The gateway must be part of the above rule's destinations.
+     * stat_name (string) - statistic to account
+     * inc_by (string) - quoted floating point number,
+       representing the amount to add to the stat
+     * part (string, optional, default: 'Default') - the drouting
+       partition to use
+     * inc_total (string, optional, default: 1) - the amount to
+       add to the total stat counter. Usually, this value should
+       be 1, but it may make sense to set it to 0 when a custom
+       statistic needs to be set a 2nd, 3rd, etc. time across the
+       duration of the same established call.
+
+   This function can be used from any route.
+
+   Example 1.14. qr_set_xstat() usage
+
+# the MoS is set exactly once per call, so we can omit "inc_total"
+$var(rule_id) = 1574;
+$var(gw_name) = "GW-28";
+$var(mos_score) = "4.28";
+qr_set_xstat($var(rule_id), $var(gw_name), "mos", $var(mos_score));
+
+1.5.2.  qr_disable_dst(rule_id, dst_name, [part])
 
    Within a given routing rule, temporarily remove the given
    gateway or carrier from routing, until they are re-enabled via
@@ -191,7 +386,7 @@ modparam("qrouting", "event_bad_dst_threshold", 4)
 
    This function can be used from any route.
 
-   Example 1.6. qr_disable_dst() usage
+   Example 1.15. qr_disable_dst() usage
 
 # the signaling quality for @rule_id through @dst_name is degrading, rem
 ove it!
@@ -201,7 +396,7 @@ event_route [E_QROUTING_BAD_DST]
 on));
 }
 
-1.5.2.  qr_enable_dst(rule_id, dst_name, [part])
+1.5.3.  qr_enable_dst(rule_id, dst_name, [part])
 
    Within a given routing rule, re-introduce the given gateway or
    carrier into the routing process.
@@ -213,7 +408,7 @@ on));
 
    This function can be used from any route.
 
-   Example 1.7. qr_enable_dst() usage
+   Example 1.16. qr_enable_dst() usage
 
 # the ban has expired, let's re-enable this gateway and see how it behav
 es
@@ -300,9 +495,10 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                  Name             DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu)    101      38      3239     2174
-   2. Mihai Tiganus (@tallicamike)    49      15      2955     509
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu)       136      52      4753     2697
+   2. Mihai Tiganus (@tallicamike)       49      15      2955     509
+   3. Razvan Crainea (@razvancrainea)    2        1       0        2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -323,9 +519,10 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                  Name               Commit Activity
-   1. Liviu Chircu (@liviuchircu)  Jan 2020 - Feb 2020
-   2. Mihai Tiganus (@tallicamike) Aug 2014 - Nov 2014
+                   Name                 Commit Activity
+   1. Liviu Chircu (@liviuchircu)     Jan 2020 - Feb 2020
+   2. Razvan Crainea (@razvancrainea) Feb 2020 - Feb 2020
+   3. Mihai Tiganus (@tallicamike)    Aug 2014 - Nov 2014
 
    (1) including any documentation-related commits, excluding
    merge commits
