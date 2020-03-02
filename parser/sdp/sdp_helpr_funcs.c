@@ -229,7 +229,6 @@ int extract_sendrecv_mode(str *body, str *sendrecv_mode, int *is_on_hold)
 		} else {
 			*is_on_hold = RFC3264_HOLD;
 		}
-		return -1;
 	}
 
 	sendrecv_mode->s = body->s + 2; /* skip `a=' */
