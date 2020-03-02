@@ -240,7 +240,7 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_INT, fixup_reply_code, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
-		REQUEST_ROUTE},
+		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_new_request", (cmd_function)w_t_new_request, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
