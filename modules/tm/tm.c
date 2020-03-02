@@ -232,7 +232,7 @@ static cmd_export_t cmds[]={
 	{"t_add_hdrs",      (cmd_function)w_t_add_hdrs,     1, fixup_spve_null,
 		0, REQUEST_ROUTE },
 	{"t_reply_with_body",(cmd_function)w_t_reply_body,  3,fixup_t_send_reply,
-		0, REQUEST_ROUTE },
+		0, REQUEST_ROUTE|FAILURE_ROUTE},
 	{"t_new_request",    (cmd_function)w_t_new_request, 4, fixup_t_new_request,
 		0, REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_new_request",    (cmd_function)w_t_new_request, 5, fixup_t_new_request,
