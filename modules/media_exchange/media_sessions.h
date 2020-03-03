@@ -31,7 +31,8 @@ struct media_session;
 
 enum media_session_state {
 	MEDIA_SESSION_STATE_INIT,
-	MEDIA_SESSION_STATE_ONGOING
+	MEDIA_SESSION_STATE_ONGOING,
+	MEDIA_SESSION_STATE_UPDATE,
 };
 
 struct media_session_leg {
@@ -135,7 +136,7 @@ int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody);
 
 int media_session_ack(struct media_session_leg *msl);
 
-int media_session_req(struct media_session_leg *msl, const char *method);
+int media_session_req(struct media_session_leg *msl, const char *method, str *body);
 
 int media_session_rpl(struct media_session_leg *msl,
 		int method, int code, str *reason, str *body);

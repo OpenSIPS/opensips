@@ -31,7 +31,7 @@ struct media_fork_info;
 
 str *media_session_get_hold_sdp(struct media_session_leg *msl);
 
-str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg);
+str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg, int ct);
 
 int media_fork_streams(struct media_session_leg *msl, struct media_fork_info *forks);
 
@@ -47,11 +47,16 @@ int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf);
 
 void media_forks_free(struct media_fork_info *mf);
 
-void media_fork_fill(struct media_fork_info *mf, str *ip, str *port);
-
-struct media_fork_info *media_fork_search(struct media_fork_info *mf, void *search);
+struct media_fork_info *media_fork_search(struct media_fork_info *mf, int search);
 
 int media_forks_stop(struct media_session_leg *msl);
+
+int media_fork_body_update(struct media_session_leg *ml, str *body, int leg);
+
+int media_session_fork_update(struct media_session_leg *msl);
+
+int media_fork_update(struct media_session_leg *msl,
+		struct media_fork_info *mf, str *ip, str *port, int disabled);
 
 int media_util_init_static(void);
 

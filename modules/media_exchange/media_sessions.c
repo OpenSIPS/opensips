@@ -78,6 +78,8 @@ void media_session_leg_free(struct media_session_leg *msl)
 		msl->b2b_key.s = NULL;
 	}
 	LM_DBG("releasing media_session_leg=%p\n", msl);
+	if (msl->params && msl->type == MEDIA_SESSION_TYPE_FORK)
+		media_forks_free(msl->params);
 	shm_free(msl);
 }
 
@@ -235,7 +237,7 @@ int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody)
 			&inv, leg, &body, &content_type_sdp, NULL, NULL);
 }
 
-int media_session_req(struct media_session_leg *msl, const char *method)
+int media_session_req(struct media_session_leg *msl, const char *method, str *body)
 {
 	struct b2b_req_data req;
 	str m;
@@ -245,6 +247,9 @@ int media_session_req(struct media_session_leg *msl, const char *method)
 	req.et = msl->b2b_entity;
 	req.b2b_key = &msl->b2b_key;
 	req.method = &m;
+	req.body = body;
+	if (body)
+		req.extra_headers = &content_type_sdp_hdr;
 	req.no_cb = 1; /* do not call callback */
 
 	if (media_b2b.send_request(&req) < 0) {
@@ -280,7 +285,7 @@ static int media_session_leg_end(struct media_session_leg *msl, int nohold, int 
 	struct media_session_leg *omsl;
 
 	/* end the leg towards media server */
-	if (media_session_req(msl, BYE) < 0)
+	if (media_session_req(msl, BYE, NULL) < 0)
 		ret = -1;
 
 	if (msl->type == MEDIA_SESSION_TYPE_FORK)

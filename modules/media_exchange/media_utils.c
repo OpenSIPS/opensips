@@ -24,12 +24,20 @@
 str content_type_sdp = str_init("application/sdp");
 str content_type_sdp_hdr = str_init("Content-Type: application/sdp\r\n");
 
+enum media_fork_state {
+	MEDIA_FORK_INIT,
+	MEDIA_FORK_ON,
+	MEDIA_FORK_OFF
+};
+
 struct media_fork_info {
 	int leg;
 	str ip;
 	str port;
 	int medianum;
+	int fork_medianum;
 	void *params;
+	enum media_fork_state state;
 	struct media_fork_info *next;
 };
 
@@ -88,7 +96,7 @@ str *media_session_get_hold_sdp(struct media_session_leg *msl)
 	return &new_body;
 }
 
-str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg)
+str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg, int ct)
 {
 	static str contact_start = str_init("Contact: <");
 	static str contact_end = str_init(">\r\n");
@@ -102,7 +110,8 @@ str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg)
 		hdrs.len = contact_start.len +
 			dlg->legs[sleg].contact.len +
 			contact_end.len;
-	hdrs.len += content_type_sdp_hdr.len;
+	if (ct)
+		hdrs.len += content_type_sdp_hdr.len;
 	hdrs.s = pkg_malloc(hdrs.len);
 	if (!hdrs.s) {
 		LM_ERR("No more pkg for extra headers \n");
@@ -124,8 +133,10 @@ str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg)
 		memcpy(p, contact_end.s, contact_end.len);
 		p += contact_end.len;
 	}
-	memcpy(p, content_type_sdp_hdr.s, content_type_sdp_hdr.len);
-	p += content_type_sdp_hdr.len;
+	if (ct) {
+		memcpy(p, content_type_sdp_hdr.s, content_type_sdp_hdr.len);
+		p += content_type_sdp_hdr.len;
+	}
 	return &hdrs;
 }
 
@@ -211,15 +222,15 @@ int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf)
 
 	if (media_rtp.start_recording(&dlg->callid,
 			&dlg->legs[mf->leg].tag, &dlg->legs[other_leg(dlg, mf->leg)].tag,
-			NULL, NULL, &destination, mf->medianum) < 0) {
+			NULL, NULL, &destination, mf->medianum + 1) < 0) {
 		LM_ERR("cannot start forking for medianum %d\n", mf->medianum);
 		ret = -2;
+		mf->state = MEDIA_FORK_OFF;
 	} else {
+		mf->state = MEDIA_FORK_ON;
 		ret = 0;
 	}
 	pkg_free(destination.s);
-
-	mf->params = NULL;
 
 	return ret;
 }
@@ -229,11 +240,12 @@ static int media_nofork(struct dlg_cell *dlg, struct media_fork_info *mf)
 	int ret;
 	if (media_rtp.stop_recording(&dlg->callid,
 			&dlg->legs[mf->leg].tag, &dlg->legs[other_leg(dlg, mf->leg)].tag,
-			NULL, mf->medianum) < 0) {
+			NULL, mf->medianum + 1) < 0) {
 		LM_ERR("cannot stop forking for medianum %d\n", mf->medianum);
 		ret = -2;
 	} else {
 		ret = 0;
+		mf->state = MEDIA_FORK_OFF;
 	}
 	return ret;
 }
@@ -307,10 +319,29 @@ int media_fork_streams(struct media_session_leg *msl, struct media_fork_info *mf
 /* we are currently only saving top 3 matching payloads */
 #define MEDIA_MAX_SDP_PAYLOAD 3
 
-struct media_fork_info *media_fork_search(struct media_fork_info *mf, void *search)
+struct media_fork_info *media_fork_search(struct media_fork_info *mf, int search)
+{
+	for (; mf; mf = mf->next)
+		if (mf->fork_medianum == search)
+			return mf;
+	return NULL;
+}
+
+struct media_fork_info *media_fork_search_param(struct media_fork_info *mf,
+		void *search)
 {
 	for (; mf; mf = mf->next)
 		if (mf->params == search)
+			return mf;
+	return NULL;
+}
+
+
+static struct media_fork_info *media_fork_get(struct media_fork_info *mf,
+		int leg, int medianum)
+{
+	for (; mf; mf = mf->next)
+		if (mf->leg == leg && mf->medianum == medianum)
 			return mf;
 	return NULL;
 }
@@ -332,7 +363,7 @@ static int media_fork_stream_push(struct media_fork_info *mf,
 	sdp_payload_attr_t *matched_attr[MEDIA_MAX_SDP_PAYLOAD];
 
 	/* first, check if this stream is already reserved */
-	if (media_fork_search(mf, search) != NULL)
+	if (media_fork_search_param(mf, search) != NULL)
 		return 0;
 
 	/* check if they have the same media type */
@@ -392,10 +423,11 @@ static int media_fork_stream_push(struct media_fork_info *mf,
 	return attr_matches;
 }
 
-static inline int media_fork_add_stream(sdp_stream_cell_t *stream)
+static inline int media_fork_add_stream(sdp_stream_cell_t *stream, int disabled)
 {
 	/* all good - create media forks info */
 	static str sendonly = str_init("a=sendonly\r\n");
+	static str inactive = str_init("a=inactive\r\n");
 	static str port = str_init("9");
 	str tmp;
 
@@ -429,7 +461,10 @@ static inline int media_fork_add_stream(sdp_stream_cell_t *stream)
 	/* last chunk */
 	tmp.len = stream->body.s + stream->body.len - tmp.s;
 	MS_UTIL_BUF_COPY(tmp);
-	MS_UTIL_BUF_COPY(sendonly);
+	if (disabled)
+		MS_UTIL_BUF_COPY(inactive);
+	else
+		MS_UTIL_BUF_COPY(sendonly);
 
 	return 0;
 }
@@ -454,15 +489,31 @@ static inline sdp_stream_cell_t *media_fork_stream_match(struct media_fork_info 
 	return stream;
 }
 
-void media_fork_fill(struct media_fork_info *mf, str *ip, str *port)
+static void media_fork_fill(struct media_fork_info *mf, str *ip, str *port)
 {
-	if (ip)
+	if (ip) {
+		shm_free(mf->ip.s);
 		shm_str_dup(&mf->ip, ip);
-	if (port)
+	}
+	if (port) {
+		shm_free(mf->port.s);
 		shm_str_dup(&mf->port, port);
+	}
 }
 
-static inline struct media_fork_info *media_fork_new(int leg, str *ip, str *port, int medianum)
+static int media_fork_cmp(struct media_fork_info *mf, str *ip, str *port)
+{
+	if (!mf->ip.s || !mf->port.s)
+		return 1;
+	if (str_strcmp(&mf->ip, ip) != 0)
+		return 1;
+	if (str_strcmp(&mf->port, port) != 0)
+		return 1;
+	return 0;
+}
+
+static inline struct media_fork_info *media_fork_new(int leg, str *ip, str *port,
+		int medianum, int fork_medianum)
 {
 	struct media_fork_info *mf;
 	mf = shm_malloc(sizeof *mf);
@@ -474,6 +525,8 @@ static inline struct media_fork_info *media_fork_new(int leg, str *ip, str *port
 	mf->leg = leg;
 	media_fork_fill(mf, ip, port);
 	mf->medianum = medianum;
+	mf->fork_medianum = fork_medianum;
+	mf->state = MEDIA_FORK_INIT;
 	return mf;
 }
 
@@ -485,6 +538,7 @@ static struct media_fork_info *media_fork_session(sdp_info_t *invite_sdp, int dl
 	sdp_stream_cell_t *stream, *mstream;
 	str *ip;
 	int leg;
+	int fork_medianum = 1;
 
 	/* we start with empty media fork list */
 	totalmf = NULL;
@@ -505,9 +559,11 @@ static struct media_fork_info *media_fork_session(sdp_info_t *invite_sdp, int dl
 				ip = &stream->ip_addr;
 			else
 				ip = &session->ip_addr;
-			mf = media_fork_new(leg, ip, &stream->port, mstream->stream_num);
+			mf = media_fork_new(leg, ip, &stream->port,
+					mstream->stream_num, fork_medianum);
 			if (!mf)
 				continue;
+			fork_medianum++;
 			mf->params = mstream;
 			/* link it to the total list */
 			mf->next = totalmf;
@@ -522,6 +578,7 @@ static struct media_fork_info *media_fork_medianum(sdp_info_t *invite_sdp,
 {
 	int leg;
 	str *ip;
+	int fork_medianum = 1;
 	struct media_fork_info *totalmf, *mf;
 	sdp_session_cell_t *session;
 	sdp_stream_cell_t *stream, *mstream;
@@ -563,9 +620,11 @@ static struct media_fork_info *media_fork_medianum(sdp_info_t *invite_sdp,
 				ip = &stream->ip_addr;
 			else
 				ip = &session->ip_addr;
-			mf = media_fork_new(leg, ip, &stream->port, mstream->stream_num);
+			mf = media_fork_new(leg, ip, &stream->port,
+					mstream->stream_num, fork_medianum);
 			if (!mf)
 				continue;
+			fork_medianum++;
 			mf->params = mstream;
 			/* link it to the total list */
 			mf->next = totalmf;
@@ -585,8 +644,9 @@ static struct media_fork_info *media_fork_session_sdp(int dlg_leg1, int dlg_leg2
 
 	for (session = ms_util_sdp1.sessions; session; session = session->next)
 		for (stream = session->streams; stream; stream = stream->next) {
-			if (media_fork_add_stream(stream) == 0 &&
-					(mf = media_fork_new(dlg_leg1, NULL, NULL, medianum))) {
+			if (media_fork_add_stream(stream, 0) == 0 &&
+					(mf = media_fork_new(dlg_leg1, NULL, NULL,
+										 stream->stream_num, medianum))) {
 				mf->params = (void *)medianum;
 				mf->next = totalmf;
 				totalmf = mf;
@@ -596,8 +656,9 @@ static struct media_fork_info *media_fork_session_sdp(int dlg_leg1, int dlg_leg2
 	if (dlg_leg2 >= 0) {
 		for (session = ms_util_sdp2.sessions; session; session = session->next)
 			for (stream = session->streams; stream; stream = stream->next) {
-				if (media_fork_add_stream(stream) == 0 &&
-					(mf = media_fork_new(dlg_leg2, NULL, NULL, medianum))) {
+				if (media_fork_add_stream(stream, 0) == 0 &&
+					(mf = media_fork_new(dlg_leg2, NULL, NULL,
+										 stream->stream_num, medianum))) {
 					mf->params = (void *)medianum;
 					mf->next = totalmf;
 					totalmf = mf;
@@ -619,8 +680,9 @@ static struct media_fork_info *media_fork_medianum_sdp(int dlg_leg1, int dlg_leg
 	for (session = ms_util_sdp1.sessions; session; session = session->next)
 		for (stream = session->streams; stream; stream = stream->next)
 			if (stream->stream_num == medianum &&
-					media_fork_add_stream(stream) == 0 &&
-					(mf = media_fork_new(dlg_leg1, NULL, NULL, medianum))) {
+					media_fork_add_stream(stream, 0) == 0 &&
+					(mf = media_fork_new(dlg_leg1, NULL, NULL,
+										 medianum, medianum_idx))) {
 				mf->params = (void *)medianum_idx;
 				mf->next = totalmf;
 				totalmf = mf;
@@ -630,8 +692,9 @@ static struct media_fork_info *media_fork_medianum_sdp(int dlg_leg1, int dlg_leg
 		for (session = ms_util_sdp2.sessions; session; session = session->next)
 			for (stream = session->streams; stream; stream = stream->next)
 				if (stream->stream_num == medianum &&
-						media_fork_add_stream(stream) == 0 &&
-						(mf = media_fork_new(dlg_leg2, NULL, NULL, medianum))) {
+						media_fork_add_stream(stream, 0) == 0 &&
+						(mf = media_fork_new(dlg_leg2, NULL, NULL,
+											medianum, medianum_idx))) {
 					mf->params = (void *)medianum_idx;
 					mf->next = totalmf;
 					totalmf = mf;
@@ -792,6 +855,130 @@ void media_forks_free(struct media_fork_info *mf)
 }
 #undef MS_UTIL_BUF_RELEASE
 
+int media_fork_update(struct media_session_leg *msl,
+		struct media_fork_info *mf, str *ip, str *port, int disabled)
+{
+	if (mf->state == MEDIA_FORK_OFF) {
+		/* we don't care right now, stream is off anyway !
+		 * we update it when it gets resumed*/
+		return 1;
+	} else {
+		/* stream should be enabled */
+		if (disabled)
+			return 0;
+		if (mf->state == MEDIA_FORK_ON) {
+			/* there's an ongoing forking happening - drop if changed */
+			if (media_fork_cmp(mf, ip, port)) {
+				/* same thing - leave it like this */
+				return 1;
+			} else {
+				/* disable previous forking */
+				media_nofork(msl->ms->dlg, mf);
+			}
+		}
+		/* here it is INIT or OFF */
+		media_fork_fill(mf, ip, port);
+		if (media_fork(msl->ms->dlg, mf) == 0)
+			return 1;
+	}
+	return 0;
+}
+
+int media_fork_body_update(struct media_session_leg *ml, str *body, int leg)
+{
+	int changed = 0;
+	sdp_info_t sdp;
+	sdp_session_cell_t *session;
+	sdp_stream_cell_t *stream;
+	struct media_fork_info *mf;
+
+	memset(&sdp, 0, sizeof sdp);
+
+	if (parse_sdp_session(body, 0, NULL, &sdp) < 0) {
+		LM_ERR("could not parse SDP body!\n");
+		return -1;
+	}
+
+	for (session = sdp.sessions; session; session = session->next)
+		for (stream = session->streams; stream; stream = stream->next) {
+			mf = media_fork_get(ml->params, leg, stream->stream_num);
+			if (mf) {
+				if (stream->is_on_hold) {
+					if (mf->state == MEDIA_FORK_ON) {
+						mf->state = MEDIA_FORK_OFF;
+						changed++;
+					} else {
+						LM_DBG("media stream %d already OFF!\n", stream->stream_num);
+					}
+				} else {
+					if (mf->state == MEDIA_FORK_OFF) {
+						mf->state = MEDIA_FORK_ON;
+						changed++;
+					} else {
+						LM_DBG("media stream %d already ON!\n", stream->stream_num);
+					}
+				}
+			} else {
+				LM_DBG("media stream %d not found!\n", stream->stream_num);
+			}
+		}
+	free_sdp_content(&sdp);
+	return changed;
+}
+
+int media_session_fork_update(struct media_session_leg *msl)
+{
+	int ret = -1;
+	struct media_fork_info *mf;
+	media_util_init_static();
+	int media_idx = 1;
+	sdp_session_cell_t *session;
+	sdp_stream_cell_t *stream;
+	sdp_info_t *sdp;
+
+	/* let us prepare the SDPs */
+	if (!media_sdp_parse(msl->ms->dlg, msl->leg, -1)) {
+		LM_ERR("could not parse the dialog SDPs!\n");
+		goto error;
+	}
+
+	if (media_fork_prepare_body() < 0) {
+		LM_ERR("could not prepare fork body!\n");
+		goto error;
+	}
+	/* go through each media fork and dump the stream */
+	while (1) {
+		for (mf = msl->params; mf; mf = mf->next)
+			if (mf->fork_medianum == media_idx)
+				break;
+		if (!mf)
+			break;
+		media_idx++;
+		/* check to see on which SDP we should look */
+		if (mf->leg == DLG_CALLER_LEG)
+			sdp = &ms_util_sdp1;
+		else if (msl->leg == MEDIA_LEG_BOTH)
+			sdp = &ms_util_sdp2;
+		else
+			sdp = &ms_util_sdp1;
+		for (session = sdp->sessions; session; session = session->next)
+			for (stream = session->streams; stream; stream = stream->next)
+				media_fork_add_stream(stream, (mf->state == MEDIA_FORK_OFF?1:0));
+	}
+	if (media_idx != 1) {
+		if (media_session_req(msl, "INVITE", MS_UTIL_BUF_STR) < 0) {
+			LM_ERR("could not challenge media server!\n");
+			ret = -3;
+		} else {
+			msl->state = MEDIA_SESSION_STATE_UPDATE;
+		}
+	}
+	ret = 0;
+error:
+	media_util_release_static();
+	return ret;
+}
+
 void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
 		str *param, enum b2b_event_type event_type, bin_packet_t *store)
 {
@@ -823,6 +1010,8 @@ void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
 			/* we only need the dlg leg and medianum */
 			bin_push_int(store, mf->leg);
 			bin_push_int(store, mf->medianum);
+			bin_push_int(store, mf->fork_medianum);
+			bin_push_int(store, mf->state);
 			bin_push_str(store, &mf->ip);
 			bin_push_str(store, &mf->port);
 		}
@@ -835,11 +1024,12 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 	str callid, b2b_key;
 	str ip, port;
 	struct dlg_cell *dlg;
-	int type, nohold, leg, medianum;
+	int type, nohold, leg, medianum, fork_medianum;
 	int mf_count = 0;
 	struct media_fork_info *mf;
 	struct media_session *ms;
 	struct media_session_leg *msl;
+	enum media_fork_state state;
 
 	/* nothing to do for update for us */
 	if (event_type == B2B_EVENT_UPDATE)
@@ -881,22 +1071,22 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 		while (mf_count-- >= 0) {
 			bin_pop_int(store, &leg);
 			bin_pop_int(store, &medianum);
+			bin_pop_int(store, &fork_medianum);
+			bin_pop_int(store, &state);
 			bin_pop_str(store, &ip);
 			bin_pop_str(store, &port);
 			mf = media_fork_new(leg, (ip.len?&ip:NULL),
-					(port.len?&port:NULL), medianum);
+					(port.len?&port:NULL), medianum, fork_medianum);
 			if (!mf)
 				continue;
 			mf->next = msl->params;
+			mf->state = state;
 			msl->params = mf;
 		}
 		msl->b2b_entity = et;
 		msl->b2b_key = b2b_key;
 		if (b2b_media_restore_callbacks(msl) < 0) {
 			MSL_UNREF(msl);
-			/* no need of this session leg - remote it */
-			if (mf->params)
-				media_forks_free(msl->params);
 			media_session_leg_free(msl);
 		}
 	} else {

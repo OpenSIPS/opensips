@@ -394,6 +394,67 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; !is_audio_on_hold())
 	</programlisting>
 			</example>
 		</section>
+
+		<section id="func_media_handle_indialog" xreflabel="media_handle_indialog()">
+			<title>
+			<function moreinfo="none">media_handle_indialog()</function>
+			</title>
+			<para>
+				Searches for an existing media session started for any leg,
+				and if there is ongoing session found, it performs additional
+				logic for handling that request. For example, if media has been
+				started in forking mode, and the INVITE is for activating on-hold,
+				then the function will also pause the forked stream.
+			</para>
+			<para>
+				Depending on the return code of this function, one has to
+				perform additional logic in the script. Possible return codes are:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>1</emphasis> - indicates that the message has been
+					handled, but there's no additional tasks to be performed in
+					the script.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>-1</emphasis> - indicates that there is no ongoing
+					media exchange or fork happening for that call, or that there
+					was no additional logic to do for that request.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>-2</emphasis> - indicates that all additional
+					handling of the request was performed, and that the request
+					should not be forwarded to the user agent, but instead it
+					should be dropped.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>-3</emphasis> - signals an internal error.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE,
+				BRANCH_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title>Use <function>media_terminate()</function> function to
+					terminate an announcement</title>
+			<programlisting format="linespecific">
+...
+if (has_totag() &amp;&amp; loose_route()) {
+	# handling sequential
+	media_handle_indialog();
+	switch ($rc) {
+	case -2:
+		drop;
+	case -1:
+		xlog("no ongoing media session for $ci!\n");
+	case 1:
+		break;
+}
+...
+	</programlisting>
+			</example>
+		</section>
 	</section>
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
