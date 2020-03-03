@@ -479,7 +479,7 @@ mi_response_t *mi_usrloc_add(const mi_params_t *params,
 	str table;
 	str qval;
 
-	if (get_mi_string_param(params, "table", &table.s, &table.len) < 0)
+	if (get_mi_string_param(params, "table_name", &table.s, &table.len) < 0)
 		return init_mi_param_error();
 
 	dom = mi_find_domain(&table);
