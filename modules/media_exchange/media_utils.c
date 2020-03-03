@@ -27,7 +27,8 @@ str content_type_sdp_hdr = str_init("Content-Type: application/sdp\r\n");
 enum media_fork_state {
 	MEDIA_FORK_INIT,
 	MEDIA_FORK_ON,
-	MEDIA_FORK_OFF
+	MEDIA_FORK_OFF,
+	MEDIA_FORK_CLOSE,
 };
 
 struct media_fork_info {
@@ -276,6 +277,43 @@ static int media_fork_stream_disable(sdp_stream_cell_t *stream)
 
 	return 0;
 }
+
+int media_fork_pause_leg(struct media_session_leg *msl, int medianum)
+{
+	struct media_fork_info *mf;
+	int ret = 0;
+
+	for (mf = msl->params; mf; mf = mf->next) {
+		if (medianum < 0 || medianum == mf->medianum) {
+			if (mf->state != MEDIA_FORK_ON)
+				continue;
+			mf->state = MEDIA_FORK_CLOSE;
+			ret++;
+			if (medianum >= 0)
+				break;
+		}
+	}
+	return ret;
+}
+
+int media_fork_resume_leg(struct media_session_leg *msl, int medianum)
+{
+	struct media_fork_info *mf;
+	int ret = 0;
+
+	for (mf = msl->params; mf; mf = mf->next) {
+		if (medianum < 0 || medianum == mf->medianum) {
+			if (mf->state == MEDIA_FORK_INIT || mf->state == MEDIA_FORK_ON)
+				continue;
+			mf->state = MEDIA_FORK_INIT;
+			ret++;
+			if (medianum >= 0)
+				break;
+		}
+	}
+	return ret;
+}
+
 
 static int media_fork_prepare_body(void)
 {
@@ -858,24 +896,33 @@ void media_forks_free(struct media_fork_info *mf)
 int media_fork_update(struct media_session_leg *msl,
 		struct media_fork_info *mf, str *ip, str *port, int disabled)
 {
-	if (mf->state == MEDIA_FORK_OFF) {
+	switch (mf->state) {
+	case MEDIA_FORK_CLOSE:
+		/* we don't care right now, stream is off anyway !
+		 * we update it when it gets resumed*/
+		if (media_nofork(msl->ms->dlg, mf) == 0)
+			return 1;
+		break;
+	case MEDIA_FORK_OFF:
 		/* we don't care right now, stream is off anyway !
 		 * we update it when it gets resumed*/
 		return 1;
-	} else {
+	case MEDIA_FORK_ON:
 		/* stream should be enabled */
 		if (disabled)
 			return 0;
-		if (mf->state == MEDIA_FORK_ON) {
-			/* there's an ongoing forking happening - drop if changed */
-			if (media_fork_cmp(mf, ip, port)) {
-				/* same thing - leave it like this */
-				return 1;
-			} else {
-				/* disable previous forking */
-				media_nofork(msl->ms->dlg, mf);
-			}
+		/* there's an ongoing forking happening - drop if changed */
+		if (media_fork_cmp(mf, ip, port)) {
+			/* same thing - leave it like this */
+			return 1;
+		} else {
+			/* disable previous forking */
+			media_nofork(msl->ms->dlg, mf);
 		}
+		/* fallback to init */
+	case MEDIA_FORK_INIT:
+		if (disabled)
+			return 0;
 		/* here it is INIT or OFF */
 		media_fork_fill(mf, ip, port);
 		if (media_fork(msl->ms->dlg, mf) == 0)
@@ -932,6 +979,7 @@ int media_session_fork_update(struct media_session_leg *msl)
 	struct media_fork_info *mf;
 	media_util_init_static();
 	int media_idx = 1;
+	int media_disabled;
 	sdp_session_cell_t *session;
 	sdp_stream_cell_t *stream;
 	sdp_info_t *sdp;
@@ -962,15 +1010,18 @@ int media_session_fork_update(struct media_session_leg *msl)
 		else
 			sdp = &ms_util_sdp1;
 		for (session = sdp->sessions; session; session = session->next)
-			for (stream = session->streams; stream; stream = stream->next)
-				media_fork_add_stream(stream, (mf->state == MEDIA_FORK_OFF?1:0));
+			for (stream = session->streams; stream; stream = stream->next) {
+				if (mf->state == MEDIA_FORK_OFF || mf->state == MEDIA_FORK_CLOSE)
+					media_disabled = 1;
+				else
+					media_disabled = 0;
+				media_fork_add_stream(stream, media_disabled);
+			}
 	}
 	if (media_idx != 1) {
 		if (media_session_req(msl, "INVITE", MS_UTIL_BUF_STR) < 0) {
 			LM_ERR("could not challenge media server!\n");
 			ret = -3;
-		} else {
-			msl->state = MEDIA_SESSION_STATE_UPDATE;
 		}
 	}
 	ret = 0;

@@ -34,6 +34,8 @@ static int media_fork_to_uri(struct sip_msg *msg, str *uri,
 		int leg, str *headers, int *medianum);
 static int media_fork_from_call(struct sip_msg *msg, str *callid,
 		int leg, int *medianum);
+static int media_fork_pause(struct sip_msg *msg, int leg, int *medianum);
+static int media_fork_resume(struct sip_msg *msg, int leg, int *medianum);
 static int media_exchange_from_uri(struct sip_msg *msg, str *uri,
 		int leg, str *body, str *headers, int *nohold);
 static int media_exchange_to_call(struct sip_msg *msg, str *callid,
@@ -101,6 +103,16 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
 		{0,0,0}},
 		REQUEST_ROUTE},
+	{"media_fork_pause",(cmd_function)media_fork_pause, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
+		{0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|EVENT_ROUTE},
+	{"media_fork_resume",(cmd_function)media_fork_resume, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
+		{0,0,0}},
+		REQUEST_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|EVENT_ROUTE},
 	{"media_terminate",(cmd_function)media_terminate, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
@@ -1011,6 +1023,112 @@ static int media_send_fail(struct cell *t, struct dlg_cell *dlg, int leg)
 	ret = media_tm.t_reply_with_body(t, 488, &reason,
 			NULL, hdrs, &dlg->legs[leg].tag);
 	pkg_free(hdrs->s);
+	return ret;
+}
+
+static int media_fork_pause(struct sip_msg *msg, int leg, int *medianum)
+{
+	struct dlg_cell *dlg;
+	struct media_session *ms;
+	struct media_session_leg *msl;
+	int ret = 0, n;
+
+	dlg = media_dlg.get_dlg();
+	if (!dlg) {
+		LM_WARN("dialog does not exist! please engage this function "
+				"after creating/matching the dialog!\n");
+		return -1;
+	}
+
+	ms = media_session_get(dlg);
+	if (!ms) {
+		LM_WARN("could not find media session for dialog %.*s\n",
+				dlg->callid.len, dlg->callid.s);
+		return -1;
+	}
+	if (leg == MEDIA_LEG_UNSPEC) {
+		for (msl = ms->legs; msl; msl = msl->next)
+			if (msl->type == MEDIA_SESSION_TYPE_FORK) {
+				n = media_fork_pause_leg(msl, medianum?*medianum:-1);
+				if (n > 0) {
+					if (media_session_fork_update(msl) == 0)
+						ret+=n;
+					else
+						LM_ERR("could not update media session leg!\n");
+				}
+			}
+	} else {
+		msl = media_session_get_leg(ms, leg);
+		if (!msl) {
+			LM_WARN("media session leg %d does not exist!\n", leg);
+			return -1;
+		}
+		n = media_fork_pause_leg(msl, medianum?*medianum:-1);
+		if (n > 0) {
+			if (media_session_fork_update(msl) == 0)
+				ret=n;
+			else
+				LM_ERR("could not update media session leg!\n");
+		}
+	}
+
+	if (ret == 0) {
+		LM_DBG("no sessions to resume!\n");
+		return -1;
+	}
+	return ret;
+}
+
+static int media_fork_resume(struct sip_msg *msg, int leg, int *medianum)
+{
+	struct dlg_cell *dlg;
+	struct media_session *ms;
+	struct media_session_leg *msl;
+	int ret = 0, n;
+
+	dlg = media_dlg.get_dlg();
+	if (!dlg) {
+		LM_WARN("dialog does not exist! please engage this function "
+				"after creating/matching the dialog!\n");
+		return -1;
+	}
+
+	ms = media_session_get(dlg);
+	if (!ms) {
+		LM_WARN("could not find media session for dialog %.*s\n",
+				dlg->callid.len, dlg->callid.s);
+		return -1;
+	}
+	if (leg == MEDIA_LEG_UNSPEC) {
+		for (msl = ms->legs; msl; msl = msl->next)
+			if (msl->type == MEDIA_SESSION_TYPE_FORK) {
+				n = media_fork_resume_leg(msl, medianum?*medianum:-1);
+				if (n > 0) {
+					if (media_session_fork_update(msl) == 0)
+						ret+=n;
+					else
+						LM_ERR("could not update media session leg!\n");
+				}
+			}
+	} else {
+		msl = media_session_get_leg(ms, leg);
+		if (!msl) {
+			LM_WARN("media session leg %d does not exist!\n", leg);
+			return -1;
+		}
+		n = media_fork_resume_leg(msl, medianum?*medianum:-1);
+		if (n > 0) {
+			if (media_session_fork_update(msl) == 0)
+				ret=n;
+			else
+				LM_ERR("could not update media session leg!\n");
+		}
+	}
+
+	if (ret == 0) {
+		LM_DBG("no sessions to resume!\n");
+		return -1;
+	}
 	return ret;
 }
 

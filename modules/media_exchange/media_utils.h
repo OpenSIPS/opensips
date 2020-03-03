@@ -51,6 +51,10 @@ struct media_fork_info *media_fork_search(struct media_fork_info *mf, int search
 
 int media_forks_stop(struct media_session_leg *msl);
 
+int media_fork_pause_leg(struct media_session_leg *msl, int medianum);
+
+int media_fork_resume_leg(struct media_session_leg *msl, int medianum);
+
 int media_fork_body_update(struct media_session_leg *ml, str *body, int leg);
 
 int media_session_fork_update(struct media_session_leg *msl);
