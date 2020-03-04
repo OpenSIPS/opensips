@@ -232,7 +232,7 @@ char* parse_content_length( char* buffer, char* end, int* length)
 
 	p = buffer;
 	/* search the beginning of the number */
-	while ( p<end && (*p==' ' || *p=='\t' ||
+	while ( p<end && (*p==' ' || *p=='\t' || (*p=='\r' && *(p+1)=='\n') ||
 	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
 	if (p==end)
@@ -282,7 +282,7 @@ char* decode_mime_type(char *start, char *end, unsigned int *mime_type, content_
 	LM_DBG("Decoding MIME type for:[%.*s]\n",(int)(end-start),start);
 
 	/* search the beginning of the type */
-	while ( p<end && (*p==' ' || *p=='\t' ||
+	while ( p<end && (*p==' ' || *p=='\t' || (*p=='\r' && *(p+1)=='\n') ||
 	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
 	if (p==end)
