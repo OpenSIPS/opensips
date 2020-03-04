@@ -1445,6 +1445,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					ng_flags->transport |= 0x101;
 				else if (str_eq(&key, "AVPF"))
 					ng_flags->transport |= 0x102;
+				else if (str_eq(&key, "callid") && val.s)
+					ng_flags->call_id = val;
 				else
 					break;
 				continue;
@@ -1695,18 +1697,6 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	memset(&ng_flags, 0, sizeof(ng_flags));
 
-	if (get_callid(msg, &ng_flags.call_id) == -1 || ng_flags.call_id.len == 0) {
-		LM_ERR("can't get Call-Id field\n");
-		return NULL;
-	}
-	if (get_to_tag(msg, &ng_flags.to_tag) == -1) {
-		LM_ERR("can't get To tag\n");
-		return NULL;
-	}
-	if (get_from_tag(msg, &ng_flags.from_tag) == -1 || ng_flags.from_tag.len == 0) {
-		LM_ERR("can't get From tag\n");
-		return NULL;
-	}
 	if (bencode_buffer_init(bencbuf)) {
 		LM_ERR("could not initialize bencode_buffer_t\n");
 		return NULL;
@@ -1733,6 +1723,23 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	if (parse_flags(&ng_flags, msg, &op, flags_nt.s))
 		goto error;
+
+	if (!ng_flags.call_id.len &&
+			(get_callid(msg, &ng_flags.call_id) == -1 || ng_flags.call_id.len == 0)) {
+		LM_ERR("can't get Call-Id field\n");
+		goto error;
+	}
+	if (!ng_flags.to_tag.len &&
+			get_to_tag(msg, &ng_flags.to_tag) == -1) {
+		LM_ERR("can't get To tag\n");
+		goto error;
+	}
+
+	if (!ng_flags.from_tag.len &&
+			(get_from_tag(msg, &ng_flags.from_tag) == -1 || ng_flags.from_tag.len == 0)) {
+		LM_ERR("can't get From tag\n");
+		goto error;
+	}
 
 	/* only add those if any flags were given at all */
 	if (ng_flags.direction && ng_flags.direction->child)
