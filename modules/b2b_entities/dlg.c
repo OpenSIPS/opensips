@@ -1677,6 +1677,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	unsigned int hash_index, local_index;
 	b2b_dlg_t* dlg, tmp_dlg;
 	bin_packet_t storage;
+	int trig_ev = 0;
 
 	if(et == B2B_SERVER)
 		table = server_htable;
@@ -1707,13 +1708,15 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	LM_DBG("Deleted dlg [%p]->[%.*s] with dlginfo [%p]\n",
 			dlg, b2b_key->len, b2b_key->s, dlginfo);
 
-	if (B2BE_SERIALIZE_STORAGE())
+	if (dlg->state != B2B_TERMINATED && B2BE_SERIALIZE_STORAGE()) {
+		trig_ev = 1;
 		b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, B2B_EVENT_DELETE, &storage);
+	}
 
 	if(db_del)
 		b2b_entity_db_delete(et, dlg);
 
-	if (b2be_cluster) {
+	if (trig_ev && b2be_cluster) {
 		memset(&tmp_dlg, 0, sizeof tmp_dlg);
 		tmp_dlg.state = B2B_TERMINATED;
 		if (pkg_str_dup(&tmp_dlg.callid, &dlg->callid) < 0) {
@@ -1739,14 +1742,14 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	b2b_delete_record(dlg, table, hash_index);
 	lock_release(&table[hash_index].lock);
 
-	if (b2be_cluster) {
+	if (trig_ev && b2be_cluster) {
 		replicate_entity_delete(&tmp_dlg, et, hash_index, &storage);
 		pkg_free(tmp_dlg.callid.s);
 		pkg_free(tmp_dlg.tag[0].s);
 		pkg_free(tmp_dlg.tag[1].s);
 	}
 
-	if (B2BE_SERIALIZE_STORAGE() && storage.buffer.s)
+	if (trig_ev && storage.buffer.s)
 		bin_free_packet(&storage);
 }
 
