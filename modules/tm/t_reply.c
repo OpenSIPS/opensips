@@ -1696,37 +1696,8 @@ not_found:
 	return 1;
 }
 
-int w_t_reply_body(struct sip_msg* msg, unsigned int* code, str *text,
-				str *body)
-{
-	struct cell *t;
-	int r;
-
-	t=get_t();
-	if ( t==0 || t==T_UNDEFINED ) {
-		/* t_reply_with_body() is a bit of a weird function as it 
-		 * receiving as parameter the actual msg, but the transaction
-		 * (and uses the saved msg from transaction).
-		 * So we need to take care and save everything into transaction,
-		 * otherwise we will loose the rpl lumps. --bogdan */
-		r = t_newtran( msg, 1/*full uas cloning*/ );
-		if (r==0) {
-			/* retransmission -> break the script */
-			return 0;
-		} else if (r<0) {
-			LM_ERR("could not create a new transaction\n");
-			return -1;
-		}
-		t=get_t();
-	} else {
-		update_cloned_msg_from_msg( t->uas.request, msg);
-	}
-	return t_reply_with_body(t, *code, text, body, 0, 0);
-}
-
-
-int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
-									str *body, str *new_header, str *to_tag )
+static int _reply_with_body( struct cell *trans, unsigned int code, str *text,
+						str *body, str *new_header, str *to_tag, int lock_replies)
 {
 	struct lump_rpl *hdr_lump;
 	struct lump_rpl *body_lump;
@@ -1795,7 +1766,7 @@ int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
 		goto error;
 	}
 	ret=_reply_light( trans, rpl.s, rpl.len, code, to_tag_rpl.s, to_tag_rpl.len,
-			1 /* lock replies */, &bm );
+			lock_replies, &bm );
 
 	/* mark the transaction as replied */
 	if (code>=200) set_kr(REQ_RPLD);
@@ -1810,3 +1781,59 @@ error:
 	return -1;
 }
 
+
+int w_t_reply_body(struct sip_msg* msg, unsigned int* code, str *text,
+				str *body)
+{
+	struct cell *t;
+	int r, lock_replies = 1;
+
+	if (msg->REQ_METHOD==METHOD_ACK) {
+		LM_DBG("ACKs are not replied\n");
+		return 0;
+	}
+
+	switch (route_type) {
+		case FAILURE_ROUTE:
+			t=get_t();
+			if ( t==0 || t==T_UNDEFINED ) {
+				LM_BUG("no transaction found in Failure Route\n");
+				return -1;
+			}
+			lock_replies = 0;
+			break;
+		case REQUEST_ROUTE:
+			t=get_t();
+			if ( t==0 || t==T_UNDEFINED ) {
+				/* t_reply_with_body() is a bit of a weird function as it is
+				 * receiving as parameter the actual msg, but the transaction
+				 * (and uses the saved msg from transaction).
+				 * So we need to take care and save everything into transaction,
+				 * otherwise we will loose the rpl lumps. --bogdan */
+				r = t_newtran( msg, 1/*full uas cloning*/ );
+				if (r==0) {
+					/* retransmission -> break the script */
+					return 0;
+				} else if (r<0) {
+					LM_ERR("could not create a new transaction\n");
+					return -1;
+				}
+				t=get_t();
+			} else {
+				update_cloned_msg_from_msg( t->uas.request, msg);
+			}
+			break;
+		default:
+			LM_CRIT("unsupported route_type (%d)\n", route_type);
+			return -1;
+	}
+	return _reply_with_body(t, *code, text, body, 0, 0, lock_replies);
+}
+
+
+int t_reply_with_body( struct cell *trans, unsigned int code, str *text,
+									str *body, str *new_header, str *to_tag)
+{
+	return _reply_with_body(trans, code, text, body, new_header,
+			to_tag, 1 /* lock replies */);
+}
