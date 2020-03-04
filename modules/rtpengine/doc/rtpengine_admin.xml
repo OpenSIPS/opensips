@@ -379,6 +379,18 @@ rtpengine_offer();
 				&rtp; proxy at the moment!</emphasis>
 				</para></listitem>
 				<listitem><para>
+				<emphasis>call-id</emphasis> - provide a custom Call-ID for the session. If
+				missing, the Call-Id of the request/reply is used.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>from-tag</emphasis> - provide a custom from-tag for the session. If
+				missing, the from-tag request is used.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>to-tag</emphasis> - provide a custom to-tag of the session. If
+				missing, the to-tag of the request/reply is used, is present.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>asymmetric</emphasis> - flags that UA from which message is
 				received doesn't support symmetric RTP. (automatically sets the 'r' flag)
 				</para></listitem>
