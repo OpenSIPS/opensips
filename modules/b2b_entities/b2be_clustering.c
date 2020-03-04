@@ -38,6 +38,8 @@
 #include "b2b_entities.h"
 #include "b2be_db.h"
 
+#define NO_REPL_CONSTANT_STRS 10
+
 struct clusterer_binds cl_api;
 str entities_repl_cap = str_init("b2be-entities-repl");
 
@@ -92,6 +94,7 @@ void bin_pack_entity(bin_packet_t *packet, b2b_dlg_t *dlg, int etype)
 	bin_push_str(packet, dlg->send_sock ?
 		get_socket_internal_name(dlg->send_sock) : NULL);
 	bin_push_str(packet, &dlg->param);
+	bin_push_str(packet, &dlg->mod_name);
 
 	bin_push_int(packet, dlg->state);
 	bin_push_int(packet, dlg->cseq[0]);
@@ -112,11 +115,13 @@ void bin_pack_entity(bin_packet_t *packet, b2b_dlg_t *dlg, int etype)
 		bin_push_str(packet, NULL);
 }
 
-void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index)
+void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
+	bin_packet_t *storage)
 {
 	int rc;
 	bin_packet_t packet;
 	b2b_table htable = (etype == B2B_SERVER) ? server_htable : client_htable;
+	str storage_cnt_buf;
 
 	lock_get(&htable[hash_index].lock);
 
@@ -128,10 +133,21 @@ void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index)
 	if (bin_init(&packet, &entities_repl_cap, REPL_ENTITY_CREATE,
 		B2BE_BIN_VERSION, 0) != 0) {
 		LM_ERR("Failed to init bin packet\n");
+		lock_release(&htable[hash_index].lock);
 		return;
 	}
 
 	bin_pack_entity(&packet, dlg, etype);
+
+	if (storage->buffer.s) {  /* the callback was called */
+		bin_get_content_start(storage, &storage_cnt_buf);
+		if (storage_cnt_buf.len > 0 &&  /* content has been pushed */
+			bin_append_buffer(&packet, &storage_cnt_buf) < 0) {
+			LM_ERR("Failed to push the entity storage content into the packet\n");
+			lock_release(&htable[hash_index].lock);
+			goto end;
+		}
+	}
 
 	lock_release(&htable[hash_index].lock);
 
@@ -158,11 +174,12 @@ end:
 }
 
 void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
-	str *b2bl_param)
+	str *b2bl_param, bin_packet_t *storage)
 {
 	int rc;
 	bin_packet_t packet;
 	b2b_table htable = (etype == B2B_SERVER) ? server_htable : client_htable;
+	str storage_cnt_buf;
 
 	lock_get(&htable[hash_index].lock);
 
@@ -175,14 +192,26 @@ void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 		b2bl_param ? REPL_ENTITY_PARAM_UPDATE : REPL_ENTITY_UPDATE,
 		B2BE_BIN_VERSION, 0) != 0) {
 		LM_ERR("Failed to init bin packet\n");
+		lock_release(&htable[hash_index].lock);
 		return;
 	}
 
 	if (b2bl_param) {  /* replicate only the b2bl param update */
 		bin_pack_entity_coords(&packet, dlg, etype);
 		bin_push_str(&packet, b2bl_param);
-	} else
+	} else {
 		bin_pack_entity(&packet, dlg, etype);
+
+		if (storage->buffer.s) {
+			bin_get_content_start(storage, &storage_cnt_buf);
+			if (storage_cnt_buf.len > 0 &&
+				bin_append_buffer(&packet, &storage_cnt_buf) < 0) {
+				LM_ERR("Failed to push the entity storage content into the packet\n");
+				lock_release(&htable[hash_index].lock);
+				goto end;
+			}
+		}
+	}
 
 	lock_release(&htable[hash_index].lock);
 
@@ -208,11 +237,13 @@ end:
 	return;
 }
 
-void replicate_entity_delete(b2b_dlg_t *dlg, int etype, unsigned int hash_index)
+void replicate_entity_delete(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
+	bin_packet_t *storage)
 {
 	int rc;
 	bin_packet_t packet;
 	b2b_table htable = (etype == B2B_SERVER) ? server_htable : client_htable;
+	str storage_cnt_buf;
 
 	lock_get(&htable[hash_index].lock);
 
@@ -224,10 +255,21 @@ void replicate_entity_delete(b2b_dlg_t *dlg, int etype, unsigned int hash_index)
 	if (bin_init(&packet, &entities_repl_cap, REPL_ENTITY_DELETE,
 		B2BE_BIN_VERSION, 0) != 0) {
 		LM_ERR("Failed to init bin packet\n");
+		lock_release(&htable[hash_index].lock);
 		return;
 	}
 
 	bin_pack_entity_coords(&packet, dlg, etype);
+
+	if (storage->buffer.s) {
+		bin_get_content_start(storage, &storage_cnt_buf);
+		if (storage_cnt_buf.len > 0 &&
+			bin_append_buffer(&packet, &storage_cnt_buf) < 0) {
+			LM_ERR("Failed to push the entity storage content into the packet\n");
+			lock_release(&htable[hash_index].lock);
+			goto end;
+		}
+	}
 
 	lock_release(&htable[hash_index].lock);
 
@@ -279,7 +321,9 @@ static struct socket_info *fetch_socket_info(str *addr)
 
 static inline void unpack_update_fields(bin_packet_t *packet, b2b_dlg_t *dlg)
 {
-	bin_skip_str(packet, 9);
+	str s;
+
+	bin_skip_str(packet, NO_REPL_CONSTANT_STRS);
 
 	bin_pop_int(packet, &dlg->state);
 	bin_pop_int(packet, &dlg->cseq[0]);
@@ -287,6 +331,14 @@ static inline void unpack_update_fields(bin_packet_t *packet, b2b_dlg_t *dlg)
 	bin_pop_int(packet, &dlg->last_method);
 	bin_pop_int(packet, &dlg->last_reply_code);
 	bin_pop_int(packet, &dlg->last_invite_cseq);
+
+	bin_skip_str(packet, 2);
+
+	bin_pop_str(packet, &s);
+	if (s.s) {
+		bin_skip_int(packet, 1);
+		bin_skip_str(packet, 2);
+	}
 }
 
 int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
@@ -362,6 +414,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 	}
 
 	bin_pop_str(packet, &dlg->param);
+	bin_pop_str(packet, &dlg->mod_name);
 
 	bin_pop_int(packet, &dlg->state);
 	bin_pop_int(packet, &dlg->cseq[0]);
@@ -399,11 +452,18 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 	if (leg.tag.s)
 		new_dlg->legs = new_leg;
 
-	new_key = b2b_htable_insert(htable, new_dlg, hash_index, type, 0);
+	lock_get(&htable[h_idx].lock);
+
+	b2b_run_cb(new_dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE, packet);
+
+	new_key = b2b_htable_insert(htable, new_dlg, hash_index, type, 1, 1);
 	if (new_key == NULL) {
 		LM_ERR("Failed to insert new record\n");
 		goto error;
 	}
+
+	lock_release(&htable[h_idx].lock);
+
 	pkg_free(new_key);
 
 	return 0;
@@ -484,10 +544,13 @@ int receive_entity_update(bin_packet_t *packet)
 		return 0;
 	}
 
-	if (packet->type == REPL_ENTITY_UPDATE)
+	if (packet->type == REPL_ENTITY_UPDATE) {
 		unpack_update_fields(packet, dlg);
-	else
+
+		b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_UPDATE, packet);
+	} else {
 		rc = recv_b2bl_param_update(packet, dlg);
+	}
 
 	UPDATE_DBFLAG(dlg);
 	if (b2be_db_mode == WRITE_THROUGH && b2be_db_update(dlg, type) < 0)
@@ -537,6 +600,8 @@ int receive_entity_delete(bin_packet_t *packet)
 
 		return 0;
 	}
+
+	b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_DELETE, packet);
 
 	b2b_entity_db_delete(type, dlg);
 	b2b_delete_record(dlg, htable, hash_index);

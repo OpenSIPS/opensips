@@ -9,7 +9,7 @@
 
 <table id="b2b_entities" xmlns:db="http://docbook.org/ns/docbook">
     <name>b2b_entities</name>
-    <version>1</version>
+    <version>2</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>Table for the b2b_entities module. More information can be found at: &OPENSIPS_MOD_DOC;b2b_entities.html
@@ -158,6 +158,22 @@
         <type>string</type>
         <size>&uri_len;</size>
         <description>Logic parameter</description>
+    </column>
+
+    <column>
+        <name>mod_name</name>
+        <type>string</type>
+        <size>32</size>
+        <description>OpenSIPS module that this entity belongs to</description>
+    </column>
+
+    <column>
+        <name>storage</name>
+        <type>binary</type>
+        <size>4096</size>
+        <default><null/></default>
+        <null/>
+        <description>Generic binary data storage</description>
     </column>
 
     <column>

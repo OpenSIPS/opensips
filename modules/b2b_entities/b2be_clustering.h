@@ -51,9 +51,11 @@ extern int b2be_cluster;
 extern str entities_repl_cap;
 
 int b2be_init_clustering(void);
-void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index);
+void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
+	bin_packet_t *storage);
 void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
-	str *b2bl_param);
-void replicate_entity_delete(b2b_dlg_t *dlg, int etype, unsigned int hash_index);
+	str *b2bl_param, bin_packet_t *storage);
+void replicate_entity_delete(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
+	bin_packet_t *storage);
 
 #endif /* _B2BE_CLUSTERING_H_ */

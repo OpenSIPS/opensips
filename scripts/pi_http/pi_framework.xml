@@ -130,6 +130,8 @@
 		<column><field>route1</field><type>DB_BLOB</type></column>
 		<column><field>sockinfo_srv</field><type>DB_STR</type></column>
 		<column><field>param</field><type>DB_STR</type></column>
+		<column><field>mod_name</field><type>DB_STR</type></column>
+		<column><field>storage</field><type>DB_BLOB</type></column>
 		<column><field>lm</field><type>DB_INT</type></column>
 		<column><field>lrc</field><type>DB_INT</type></column>
 		<column><field>lic</field><type>DB_INT</type></column>
@@ -1376,6 +1378,8 @@
 				<col><field>route1</field></col>
 				<col><field>sockinfo_srv</field></col>
 				<col><field>param</field></col>
+				<col><field>mod_name</field></col>
+				<col><field>storage</field></col>
 				<col><field>lm</field></col>
 				<col><field>lrc</field></col>
 				<col><field>lic</field></col>
@@ -1408,6 +1412,8 @@
 				<col><field>route1</field></col>
 				<col><field>sockinfo_srv</field></col>
 				<col><field>param</field></col>
+				<col><field>mod_name</field></col>
+				<col><field>storage</field></col>
 				<col><field>lm</field></col>
 				<col><field>lrc</field></col>
 				<col><field>lic</field></col>
@@ -1443,6 +1449,8 @@
 				<col><field>route1</field></col>
 				<col><field>sockinfo_srv</field></col>
 				<col><field>param</field></col>
+				<col><field>mod_name</field></col>
+				<col><field>storage</field></col>
 				<col><field>lm</field></col>
 				<col><field>lrc</field></col>
 				<col><field>lic</field></col>

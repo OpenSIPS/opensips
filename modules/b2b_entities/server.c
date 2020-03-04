@@ -48,7 +48,7 @@
  *	*/
 
 str* server_new(struct sip_msg* msg, str* local_contact,
-		b2b_notify_t b2b_cback, str* param)
+		b2b_notify_t b2b_cback, str *mod_name, str* param)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
@@ -62,7 +62,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 	}
 
 	/* create new entry in hash table */
-	dlg = b2b_new_dlg(msg, local_contact, 0, param);
+	dlg = b2b_new_dlg(msg, local_contact, 0, param, mod_name);
 	if( dlg == NULL )
 	{
 		LM_ERR("failed to create new dialog structure entry\n");
@@ -102,7 +102,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 
 	/* add the record in hash table */
 	dlg->db_flag = INSERTDB_FLAG;
-	return b2b_htable_insert(server_htable, dlg, hash_index, B2B_SERVER, 0);
+	return b2b_htable_insert(server_htable, dlg, hash_index, B2B_SERVER, 0, 1);
 error:
 	if(dlg)
 		shm_free(dlg);

@@ -33,6 +33,7 @@
 #include "../tm/h_table.h"
 #include "../tm/dlg.h"
 #include "../dialog/dlg_load.h"
+#include "../../bin_interface.h"
 #include "b2b_common.h"
 
 #define CALLER_LEG   0
@@ -44,6 +45,14 @@
 #define DLG_ESTABLISHED   1
 
 #define B2B_MAX_KEY_SIZE	(B2B_MAX_PREFIX_LEN+4+10+10+INT2STR_MAX_LEN)
+
+#define B2BCB_TRIGGER_EVENT    (1<<0)
+#define B2BCB_RECV_EVENT       (1<<1)
+
+#define B2BE_STORAGE_BIN_TYPE 1
+#define B2BE_STORAGE_BIN_VERS 1
+
+#define B2BE_SERIALIZE_STORAGE() (b2be_db_mode != NO_DB || b2be_cluster)
 
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
@@ -57,6 +66,11 @@ typedef struct b2b_dlginfo
 typedef int (*b2b_notify_t)(struct sip_msg* , str* , int , void* );
 typedef int (*b2b_add_dlginfo_t)(str* key, str* entity_key, int src,
 	 b2b_dlginfo_t* info);
+
+enum b2b_event_type {B2B_EVENT_CREATE, B2B_EVENT_UPDATE, B2B_EVENT_DELETE};
+
+typedef void (*b2b_cb_t)(enum b2b_entity_type entity_type, str* entity_key,
+	str *param, enum b2b_event_type event_type, bin_packet_t *storage);
 
 /*
  * Dialog state
@@ -110,6 +124,8 @@ typedef struct b2b_dlg
 	b2b_notify_t         b2b_cback;
 	b2b_add_dlginfo_t    add_dlginfo;
 	str                  param;
+	str                  storage;
+	str                  mod_name;
 	str                  ack_sdp;
 	struct cell*         uac_tran;
 	struct cell*         uas_tran;
@@ -174,16 +190,21 @@ typedef struct b2b_rpl_data
 	b2b_dlginfo_t* dlginfo;
 }b2b_rpl_data_t;
 
+struct b2b_callback {
+	b2b_cb_t cbf;
+	str mod_name;
+	struct b2b_callback *next;
+};
+
 
 /** Hash table declaration: for client and server dialogs */
 extern b2b_table server_htable;
 extern b2b_table client_htable;
 
-
 void print_b2b_dlg(b2b_dlg_t *dlg);
 
 str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
-		int src, int reload);
+		int src, int safe, int db_insert);
 
 b2b_dlg_t* b2b_htable_search_safe(str callid, str to_tag, str from_tag);
 
@@ -197,14 +218,14 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg);
 int init_b2b_htables(void);
 void destroy_b2b_htables();
 b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
-		b2b_dlg_t* init_dlg, str* param);
+	b2b_dlg_t* init_dlg, str* param, str *mod_name);
 
 int b2b_prescript_f(struct sip_msg *msg, void* param);
 
 typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
-		b2b_notify_t , str* param);
+		b2b_notify_t , str *mod_name, str* param);
 typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo_f, str* param);
+		b2b_add_dlginfo_t add_dlginfo_f, str *mod_name, str* param);
 
 int b2b_send_reply(b2b_rpl_data_t*);
 
@@ -242,6 +263,12 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 
 int b2b_apply_lumps(struct sip_msg* msg);
 typedef int (*b2b_apply_lumps_t)(struct sip_msg* msg);
+
+int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name);
+typedef int (*b2b_reg_cb_t) (b2b_cb_t cb, int cb_type, str *mod_name);
+
+void b2b_run_cb(b2b_dlg_t *dlg, int entity_type, int cbs_type,
+	int event_type, bin_packet_t *storage);
 
 dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type);
 

@@ -65,6 +65,7 @@ typedef struct b2b_api
 	b2b_entity_delete_t       entity_delete;
 	b2b_db_delete_t           entities_db_delete;
 	b2b_restore_linfo_t       restore_logic_info;
+	b2b_reg_cb_t       		  register_cb;
 	b2b_update_b2bl_param_t   update_b2bl_param;
 	b2b_get_b2bl_key_t        get_b2bl_key;
 	b2b_apply_lumps_t         apply_lumps;

@@ -46,7 +46,7 @@
 #include "dlg.h"
 #include "b2be_clustering.h"
 
-#define TABLE_VERSION 1
+#define TABLE_VERSION 2
 
 /** Functions declarations */
 static int mod_init(void);
@@ -455,7 +455,7 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 	lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster)
-		replicate_entity_update(dlg, type, hash_index, param);
+		replicate_entity_update(dlg, type, hash_index, param, NULL);
 
 	return 0;
 }
@@ -532,6 +532,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->send_reply         = b2b_send_reply;
 	api->entity_delete      = b2b_entity_delete;
 	api->restore_logic_info = b2b_restore_logic_info;
+	api->register_cb 		= b2b_register_cb;
 	api->update_b2bl_param  = b2b_update_b2bl_param;
 	api->entities_db_delete = b2b_db_delete;
 	api->get_b2bl_key       = b2b_get_b2bl_key;
@@ -562,6 +563,9 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 				goto error;
 			if (add_mi_string(arr_item, MI_SSTR("param"),
 				dlg->param.s, dlg->param.len) < 0)
+				goto error;
+			if (add_mi_string(arr_item, MI_SSTR("mod_name"),
+				dlg->mod_name.s, dlg->mod_name.len) < 0)
 				goto error;
 			if (add_mi_number(arr_item, MI_SSTR("state"), dlg->state) < 0)
 				goto error;

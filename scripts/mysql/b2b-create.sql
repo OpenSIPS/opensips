@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('b2b_entities','1');
+INSERT INTO version (table_name, table_version) values ('b2b_entities','2');
 CREATE TABLE b2b_entities (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     type INT(2) NOT NULL,
@@ -19,6 +19,8 @@ CREATE TABLE b2b_entities (
     route1 TEXT,
     sockinfo_srv CHAR(64),
     param CHAR(255) NOT NULL,
+    mod_name CHAR(32) NOT NULL,
+    storage BLOB(4096) DEFAULT NULL,
     lm INT(11) NOT NULL,
     lrc INT(11),
     lic INT(11),

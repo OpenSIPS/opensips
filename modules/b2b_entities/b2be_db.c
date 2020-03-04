@@ -35,7 +35,7 @@
 #include "b2b_entities.h"
 #include "b2be_db.h"
 
-#define DB_COLS_NO  25
+#define DB_COLS_NO  27
 
 static str str_type_col         = str_init("type");
 static str str_state_col        = str_init("state");
@@ -62,6 +62,8 @@ static str str_leg_route_col    = str_init("leg_route");
 static str str_leg_contact_col  = str_init("leg_contact");
 static str str_sockinfo_srv_col = str_init("sockinfo_srv");
 static str str_param_col        = str_init("param");
+static str str_mod_name_col     = str_init("mod_name");
+static str str_storage_col      = str_init("storage");
 
 static db_key_t qcols[DB_COLS_NO];
 static db_val_t qvals[DB_COLS_NO];
@@ -99,32 +101,36 @@ void b2be_initialize(void)
 	qvals[11].type= DB_STR;
 	qcols[12]     = &str_param_col;
 	qvals[12].type= DB_STR;
-	n_start_update= 13;
+	qcols[13]     = &str_mod_name_col;
+	qvals[13].type= DB_STR;
+	n_start_update= 14;
 
-	qcols[13]     = &str_state_col;
-	qvals[13].type= DB_INT;
-	qcols[14]     = &str_cseq0_col;
-	qvals[14].type= DB_INT;
-	qcols[15]     = &str_cseq1_col;
+	qcols[14]     = &str_storage_col;
+	qvals[14].type= DB_BLOB;
+	qcols[15]     = &str_state_col;
 	qvals[15].type= DB_INT;
-	qcols[16]     = &str_lm_col;
+	qcols[16]     = &str_cseq0_col;
 	qvals[16].type= DB_INT;
-	qcols[17]     = &str_lrc_col;
+	qcols[17]     = &str_cseq1_col;
 	qvals[17].type= DB_INT;
-	qcols[18]     = &str_lic_col;
+	qcols[18]     = &str_lm_col;
 	qvals[18].type= DB_INT;
-	qcols[19]     = &str_contact0_col;
-	qvals[19].type= DB_STR;
-	qcols[20]     = &str_contact1_col;
-	qvals[20].type= DB_STR;
-	qcols[21]     = &str_leg_tag_col;
+	qcols[19]     = &str_lrc_col;
+	qvals[19].type= DB_INT;
+	qcols[20]     = &str_lic_col;
+	qvals[20].type= DB_INT;
+	qcols[21]     = &str_contact0_col;
 	qvals[21].type= DB_STR;
-	qcols[22]     = &str_leg_cseq_col;
-	qvals[22].type= DB_INT;
-	qcols[23]     = &str_leg_contact_col;
+	qcols[22]     = &str_contact1_col;
+	qvals[22].type= DB_STR;
+	qcols[23]     = &str_leg_tag_col;
 	qvals[23].type= DB_STR;
-	qcols[24]     = &str_leg_route_col;
-	qvals[24].type= DB_STR;
+	qcols[24]     = &str_leg_cseq_col;
+	qvals[24].type= DB_INT;
+	qcols[25]     = &str_leg_contact_col;
+	qvals[25].type= DB_STR;
+	qcols[26]     = &str_leg_route_col;
+	qvals[26].type= DB_STR;
 }
 
 int b2be_db_insert(b2b_dlg_t* dlg, int type)
@@ -168,26 +174,32 @@ int b2be_db_insert(b2b_dlg_t* dlg, int type)
 				break;
 			}
 	}
+	qvals[13].val.str_val= dlg->mod_name;
 
-	qvals[13].val.int_val = dlg->state;
-	qvals[14].val.int_val = dlg->cseq[0];
-	qvals[15].val.int_val = dlg->cseq[1];
-	qvals[16].val.int_val = dlg->last_method;
-	qvals[17].val.int_val = dlg->last_reply_code;
-	qvals[18].val.int_val = dlg->last_invite_cseq;
-	qvals[19].val.str_val = dlg->contact[0];
-	qvals[20].val.str_val = dlg->contact[1];
-	cols_no = 21;
+	if (!dlg->storage.len)
+		VAL_NULL(qvals+14) = 1;
+	else
+		VAL_BLOB(qvals+14) = dlg->storage;
+
+	qvals[15].val.int_val = dlg->state;
+	qvals[16].val.int_val = dlg->cseq[0];
+	qvals[17].val.int_val = dlg->cseq[1];
+	qvals[18].val.int_val = dlg->last_method;
+	qvals[19].val.int_val = dlg->last_reply_code;
+	qvals[20].val.int_val = dlg->last_invite_cseq;
+	qvals[21].val.str_val = dlg->contact[0];
+	qvals[22].val.str_val = dlg->contact[1];
+	cols_no = 23;
 
 
 	leg = dlg->legs;
 	if(leg) /* there can only be one leg as we do not deal with dialogs in early state */
 	{
-		qvals[21].val.str_val= leg->tag;
-		qvals[22].val.int_val= leg->cseq;
-		qvals[23].val.str_val= leg->contact;
-		qvals[24].val.str_val= leg->route_set;
-		cols_no = 25;
+		qvals[23].val.str_val= leg->tag;
+		qvals[24].val.int_val= leg->cseq;
+		qvals[25].val.str_val= leg->contact;
+		qvals[26].val.str_val= leg->route_set;
+		cols_no = 27;
 	}
 
 	/* insert into database */
@@ -228,23 +240,28 @@ int b2be_db_update(b2b_dlg_t* dlg, int type)
 		return 0;
 	}
 
-	qvals[13].val.int_val = dlg->state;
-	qvals[14].val.int_val = dlg->cseq[0];
-	qvals[15].val.int_val = dlg->cseq[1];
-	qvals[16].val.int_val = dlg->last_method;
-	qvals[17].val.int_val = dlg->last_reply_code;
-	qvals[18].val.int_val = dlg->last_invite_cseq;
-	qvals[19].val.str_val = dlg->contact[0];
-	qvals[20].val.str_val = dlg->contact[1];
-	cols_no = 21;
+	if (!dlg->storage.len)
+		VAL_NULL(qvals+14) = 1;
+	else
+		VAL_BLOB(qvals+14) = dlg->storage;
+
+	qvals[15].val.int_val = dlg->state;
+	qvals[16].val.int_val = dlg->cseq[0];
+	qvals[17].val.int_val = dlg->cseq[1];
+	qvals[18].val.int_val = dlg->last_method;
+	qvals[19].val.int_val = dlg->last_reply_code;
+	qvals[20].val.int_val = dlg->last_invite_cseq;
+	qvals[21].val.str_val = dlg->contact[0];
+	qvals[22].val.str_val = dlg->contact[1];
+	cols_no = 23;
 	leg = dlg->legs;
 	if(leg) /* there can only be one leg as we do not deal with dialogs in early state */
 	{
-		qvals[21].val.str_val= leg->tag;
-		qvals[22].val.int_val= leg->cseq;
-		qvals[23].val.str_val= leg->contact;
-		qvals[24].val.str_val= leg->route_set;
-		cols_no = 25;
+		qvals[23].val.str_val= leg->tag;
+		qvals[24].val.int_val= leg->cseq;
+		qvals[25].val.str_val= leg->contact;
+		qvals[26].val.str_val= leg->route_set;
+		cols_no = 27;
 	}
 
 	if(b2be_dbf.update(b2be_db, qcols, 0, qvals,
@@ -308,24 +325,30 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 					qvals[11].val.str_val.len = 0;
 				}
 				qvals[12].val.str_val= dlg->param;
+				qvals[13].val.str_val= dlg->mod_name;
 			}
 
-			qvals[13].val.int_val = dlg->state;
-			qvals[14].val.int_val = dlg->cseq[0];
-			qvals[15].val.int_val = dlg->cseq[1];
-			qvals[16].val.int_val = dlg->last_method;
-			qvals[17].val.int_val = dlg->last_reply_code;
-			qvals[18].val.int_val = dlg->last_invite_cseq;
-			qvals[19].val.str_val = dlg->contact[0];
-			qvals[20].val.str_val = dlg->contact[1];
+			if (!dlg->storage.len)
+				VAL_NULL(qvals+14) = 1;
+			else
+				VAL_BLOB(qvals+14) = dlg->storage;
+
+			qvals[15].val.int_val = dlg->state;
+			qvals[16].val.int_val = dlg->cseq[0];
+			qvals[17].val.int_val = dlg->cseq[1];
+			qvals[18].val.int_val = dlg->last_method;
+			qvals[19].val.int_val = dlg->last_reply_code;
+			qvals[20].val.int_val = dlg->last_invite_cseq;
+			qvals[21].val.str_val = dlg->contact[0];
+			qvals[22].val.str_val = dlg->contact[1];
 
 			leg = dlg->legs;
 			if(leg) /* there can only be one leg as we do not deal with dialogs in early state */
 			{
-				qvals[21].val.str_val= leg->tag;
-				qvals[22].val.int_val= leg->cseq;
-				qvals[23].val.str_val= leg->contact;
-				qvals[24].val.str_val= leg->route_set;
+				qvals[23].val.str_val= leg->tag;
+				qvals[24].val.int_val= leg->cseq;
+				qvals[25].val.str_val= leg->contact;
+				qvals[26].val.str_val= leg->route_set;
 			}
 
 			if(dlg->db_flag == INSERTDB_FLAG)
@@ -350,6 +373,12 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 						lock_release(&htable[i].lock);
 					return;
 				}
+			}
+
+			if (b2be_db_mode == WRITE_BACK && dlg->storage.len) {
+				shm_free(dlg->storage.s);
+				dlg->storage.len = 0;
+				dlg->storage.s = NULL;
 			}
 
 			dlg->db_flag = NO_UPDATEDB_FLAG;
@@ -453,7 +482,7 @@ int b2b_entities_restore(void)
 				}
 			}
 			dlg.id               = local_index;
-			dlg.state            = row_vals[13].val.int_val;
+			dlg.state            = row_vals[15].val.int_val;
 			dlg.ruri.s           = (char*)row_vals[4].val.string_val;
 			dlg.ruri.len         = dlg.ruri.s?strlen(dlg.ruri.s):0;
 			dlg.from_uri.s       = (char*)row_vals[5].val.string_val;
@@ -466,21 +495,23 @@ int b2b_entities_restore(void)
 			dlg.to_dname.len     = dlg.to_dname.s?strlen(dlg.to_dname.s):0;
 			dlg.tag[0].s         = (char*)row_vals[1].val.string_val;
 			dlg.tag[0].len       = dlg.tag[0].s?strlen(dlg.tag[0].s):0;
-			dlg.cseq[0]          = row_vals[14].val.int_val;
-			dlg.cseq[1]          = row_vals[15].val.int_val;
+			dlg.cseq[0]          = row_vals[16].val.int_val;
+			dlg.cseq[1]          = row_vals[17].val.int_val;
 			dlg.route_set[0].s   = (char*)row_vals[9].val.string_val;
 			dlg.route_set[0].len = dlg.route_set[0].s?strlen(dlg.route_set[0].s):0;
 			dlg.route_set[1].s   = (char*)row_vals[10].val.string_val;
 			dlg.route_set[1].len = dlg.route_set[1].s?strlen(dlg.route_set[1].s):0;
-			dlg.contact[0].s     = (char*)row_vals[19].val.string_val;
+			dlg.contact[0].s     = (char*)row_vals[21].val.string_val;
 			dlg.contact[0].len   = dlg.contact[0].s?strlen(dlg.contact[0].s):0;
-			dlg.contact[1].s     = (char*)row_vals[20].val.string_val;
+			dlg.contact[1].s     = (char*)row_vals[22].val.string_val;
 			dlg.contact[1].len   = dlg.contact[1].s?strlen(dlg.contact[1].s):0;
-			dlg.last_method      = row_vals[16].val.int_val;
-			dlg.last_reply_code  = row_vals[17].val.int_val;
-			dlg.last_invite_cseq = row_vals[18].val.int_val;
+			dlg.last_method      = row_vals[18].val.int_val;
+			dlg.last_reply_code  = row_vals[19].val.int_val;
+			dlg.last_invite_cseq = row_vals[20].val.int_val;
 			dlg.param.s          = (char*)row_vals[12].val.string_val;
 			dlg.param.len        = dlg.param.s?strlen(dlg.param.s):0;
+			dlg.mod_name.s       = (char*)row_vals[13].val.string_val;
+			dlg.mod_name.len     = dlg.mod_name.s?strlen(dlg.mod_name.s):0;
 			sockinfo_str.s       = (char*)row_vals[11].val.string_val;
 			if(sockinfo_str.s)
 			{
@@ -505,7 +536,7 @@ int b2b_entities_restore(void)
 				LM_ERR("Failed to create new dialog structure\n");
 				goto error;
 			}
-			b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index,type, 1);
+			b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index,type, 1, 0);
 			if(b2b_key == NULL)
 			{
 				LM_ERR("Failed to insert new record\n");
@@ -513,15 +544,22 @@ int b2b_entities_restore(void)
 			}
 			pkg_free(b2b_key);
 
+			if (!VAL_NULL(row_vals+14)) {
+				if (shm_str_dup(&shm_dlg->storage, &(VAL_BLOB(row_vals+14))) < 0) {
+					LM_ERR("oom!\n");
+					goto error;
+				}
+			}
+
 			memset(&leg, 0, sizeof(dlg_leg_t));
-			leg.tag.s= (char*)row_vals[21].val.string_val;
+			leg.tag.s= (char*)row_vals[23].val.string_val;
 			if(!leg.tag.s)
 				continue;
 			leg.tag.len       = strlen(leg.tag.s);
-			leg.cseq          = row_vals[22].val.int_val;
-			leg.contact.s     = (char*)row_vals[23].val.string_val;
+			leg.cseq          = row_vals[24].val.int_val;
+			leg.contact.s     = (char*)row_vals[25].val.string_val;
 			leg.contact.len   = leg.contact.s?strlen(leg.contact.s):0;
-			leg.route_set.s   = (char*)row_vals[24].val.string_val;
+			leg.route_set.s   = (char*)row_vals[26].val.string_val;
 			leg.route_set.len = leg.route_set.s?strlen(leg.route_set.s):0;
 
 			new_leg = b2b_dup_leg(&leg, SHM_MEM_TYPE);
