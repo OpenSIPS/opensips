@@ -1080,7 +1080,7 @@ t_reply("404", "Use $rU not found");
 		All parameters accept any kind of variables.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE.
 		</para>
 		<example>
 		<title><function>t_reply_with_body</function> usage</title>
