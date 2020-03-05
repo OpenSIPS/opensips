@@ -248,9 +248,10 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src,
 		}
 		memcpy(dlg->tag[CALLEE_LEG].s, b2b_key->s, b2b_key->len);
 		dlg->tag[CALLEE_LEG].len = b2b_key->len;
-		if(db_insert && b2be_db_mode == WRITE_THROUGH)
-			b2be_db_insert(dlg, src);
 	}
+
+	if(db_insert && b2be_db_mode == WRITE_THROUGH)
+		b2be_db_insert(dlg, src);
 
 	if(!safe)
 		lock_release(&table[hash_index].lock);
