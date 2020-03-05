@@ -29,7 +29,9 @@
 
 #include <libxml/parser.h>
 #include "../../str.h"
-#include "../b2b_entities/b2b_entities.h"
+#include "../../db/db.h"
+#include "../../timer.h"
+#include "../b2b_entities/b2be_load.h"
 
 #define MAX_SCENARIO_PARAMS     10
 #define B2B_BRIDGING_STATE      -1
@@ -52,6 +54,11 @@
 /* B2BL_FLAGS constants */
 #define		B2BL_FLAG_TRANSPARENT_AUTH	0x01
 #define		B2BL_FLAG_TRANSPARENT_TO	0x02
+
+/* modes to write in db */
+#define NO_DB         0
+#define WRITE_THROUGH 1
+#define WRITE_BACK    2
 
 extern b2b_api_t b2b_api;
 

@@ -33,6 +33,7 @@
 #include "../../locking.h"
 #include "../../ut.h"
 #include "../../trim.h"
+#include "../../timer.h"
 #include "../b2b_logic/b2b_load.h"
 #include "cc_data.h"
 

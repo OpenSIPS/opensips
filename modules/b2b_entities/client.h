@@ -31,9 +31,10 @@
 #include "../../parser/msg_parser.h"
 #include "dlg.h"
 #include "b2b_entities.h"
+#include "b2be_load.h"
 
 str* client_new(client_info_t* ci, b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo, str* param);
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param);
 
 void b2b_client_tm_cback( struct cell *t, int type, struct tmcb_params *ps);
 

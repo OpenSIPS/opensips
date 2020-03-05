@@ -78,7 +78,7 @@ static void generate_tag(str* tag, str* src, str* callid)
  *	*/
 #define HASH_SIZE 1<<23
 str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo, str* param)
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param)
 {
 	int result;
 	b2b_dlg_t* dlg;
@@ -113,7 +113,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
 	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
 		+ ci->from_dname.len + ci->to_dname.len +
-		from_tag.len + ci->local_contact.len + B2B_MAX_KEY_SIZE + B2BL_MAX_KEY_LEN;
+		from_tag.len + ci->local_contact.len + B2B_MAX_KEY_SIZE +
+		B2BL_MAX_KEY_LEN + mod_name->len;
 
 	/* create record in hash table */
 	dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -143,6 +144,9 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 	dlg->b2b_cback = b2b_cback;
 	dlg->add_dlginfo = add_dlginfo;
+
+	CONT_COPY(dlg, dlg->mod_name, (*mod_name));
+
 	if(parse_method(ci->method.s, ci->method.s+ci->method.len, &dlg->last_method) == 0)
 	{
 		LM_ERR("wrong method %.*s\n", ci->method.len, ci->method.s);
@@ -165,7 +169,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	/* callid must have the special format */
 	dlg->db_flag = NO_UPDATEDB_FLAG;
-	callid = b2b_htable_insert(client_htable, dlg, hash_index, B2B_CLIENT, 0);
+	callid = b2b_htable_insert(client_htable, dlg, hash_index, B2B_CLIENT, 0, 0);
 	if(callid == NULL)
 	{
 		LM_ERR("Inserting new record in hash table failed\n");

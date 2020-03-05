@@ -23,6 +23,8 @@
 				<col><field>route1</field></col>
 				<col><field>sockinfo_srv</field></col>
 				<col><field>param</field></col>
+				<col><field>mod_name</field></col>
+				<col><field>storage</field></col>
 				<col><field>lm</field></col>
 				<col><field>lrc</field></col>
 				<col><field>lic</field></col>
@@ -55,6 +57,8 @@
 				<col><field>route1</field></col>
 				<col><field>sockinfo_srv</field></col>
 				<col><field>param</field></col>
+				<col><field>mod_name</field></col>
+				<col><field>storage</field></col>
 				<col><field>lm</field></col>
 				<col><field>lrc</field></col>
 				<col><field>lic</field></col>
@@ -90,6 +94,8 @@
 				<col><field>route1</field></col>
 				<col><field>sockinfo_srv</field></col>
 				<col><field>param</field></col>
+				<col><field>mod_name</field></col>
+				<col><field>storage</field></col>
 				<col><field>lm</field></col>
 				<col><field>lrc</field></col>
 				<col><field>lic</field></col>

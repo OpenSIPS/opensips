@@ -44,8 +44,9 @@
 #include "b2b_entities.h"
 #include "server.h"
 #include "dlg.h"
+#include "b2be_clustering.h"
 
-#define TABLE_VERSION 1
+#define TABLE_VERSION 2
 
 /** Functions declarations */
 static int mod_init(void);
@@ -74,6 +75,8 @@ int b2be_db_mode = WRITE_BACK;
 b2b_table server_htable;
 b2b_table client_htable;
 
+int b2be_cluster;
+
 #define DB_COLS_NO  26
 
 /* TM bind */
@@ -100,6 +103,7 @@ static param_export_t params[]={
 	{ "db_mode",               INT_PARAM,    &b2be_db_mode       },
 	{ "update_period",         INT_PARAM,    &b2b_update_period  },
 	{ "b2b_key_prefix",        STR_PARAM,    &b2b_key_prefix.s   },
+	{ "cluster_id",            INT_PARAM,    &b2be_cluster		 },
 	{ 0,                       0,            0                   }
 };
 
@@ -119,6 +123,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "db_url", get_deps_sqldb_url },
+		{ "cluster_id", get_deps_clusterer },
 		{ NULL, NULL },
 	},
 };
@@ -292,6 +297,11 @@ static int mod_init(void)
 			b2b_update_period, TIMER_FLAG_SKIP_ON_DELAY);
 	//register_timer("b2b2-clean", b2be_clean,  0, b2b_update_period);
 
+	if (b2be_init_clustering() < 0) {
+		LM_ERR("Failed to init clustering support\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -444,6 +454,9 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 	dlg->param.len = param->len;
 	lock_release(&table[hash_index].lock);
 
+	if (b2be_cluster)
+		replicate_entity_update(dlg, type, hash_index, param, NULL);
+
 	return 0;
 }
 
@@ -519,6 +532,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->send_reply         = b2b_send_reply;
 	api->entity_delete      = b2b_entity_delete;
 	api->restore_logic_info = b2b_restore_logic_info;
+	api->register_cb 		= b2b_register_cb;
 	api->update_b2bl_param  = b2b_update_b2bl_param;
 	api->entities_db_delete = b2b_db_delete;
 	api->get_b2bl_key       = b2b_get_b2bl_key;
@@ -549,6 +563,9 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 				goto error;
 			if (add_mi_string(arr_item, MI_SSTR("param"),
 				dlg->param.s, dlg->param.len) < 0)
+				goto error;
+			if (add_mi_string(arr_item, MI_SSTR("mod_name"),
+				dlg->mod_name.s, dlg->mod_name.len) < 0)
 				goto error;
 			if (add_mi_number(arr_item, MI_SSTR("state"), dlg->state) < 0)
 				goto error;

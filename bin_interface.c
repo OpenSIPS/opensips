@@ -120,6 +120,25 @@ void bin_init_buffer(bin_packet_t *packet, char *buffer, int length)
 	LM_DBG("init buffer length %d\n", length);
 }
 
+int bin_append_buffer(bin_packet_t *packet, str *buf)
+{
+	if (!packet->buffer.s || !packet->size) {
+		LM_ERR("not initialized yet, call bin_init before altering buffer\n");
+		return -1;
+	}
+
+	if (packet->buffer.len + buf->len > packet->size) {
+		if (bin_extend(packet, buf->len) < 0)
+			return -1;
+	}
+
+	memcpy(packet->buffer.s + packet->buffer.len, buf->s, buf->len);
+	packet->buffer.len += buf->len;
+	set_len(packet);
+
+	return packet->buffer.len;
+}
+
 /*
  * copies the given string at the end position in the packet
  * allows null strings (NULL content or NULL param)
@@ -491,6 +510,30 @@ int bin_get_buffer(bin_packet_t *packet, str *buffer)
 	buffer->len = packet->buffer.len;
 
 	return 1;
+}
+
+int bin_get_content_start(bin_packet_t *packet, str *buf)
+{
+	if (!buf)
+		return -1;
+
+	buf->s = packet->buffer.s + HEADER_SIZE + LEN_FIELD_SIZE +
+		*(unsigned short *)(packet->buffer.s + HEADER_SIZE) + sizeof(int);
+	buf->len = packet->buffer.len - (buf->s - packet->buffer.s);
+
+	return buf->len;
+}
+
+int bin_get_content_pos(bin_packet_t *packet, str *buf)
+{
+	if (!buf)
+		return -1;
+
+	buf->s = packet->front_pointer;
+	buf->len = packet->buffer.len - (packet->front_pointer -
+		packet->buffer.s);
+
+	return buf->len;
 }
 
 int bin_reset_back_pointer(bin_packet_t *packet)

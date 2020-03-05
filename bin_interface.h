@@ -134,6 +134,17 @@ int bin_init(bin_packet_t *packet, str *capability, int packet_type, short versi
 void bin_init_buffer(bin_packet_t *packet, char *buffer, int length);
 
 /*
+ * appends a buffer to a binary packet
+ * @buf: buffer to be appended
+ * @len: length of @buf
+ *
+ * @return:
+ *		> 0: success, the size of the buffer
+ *		< 0: internal buffer limit reached
+ */
+int bin_append_buffer(bin_packet_t *packet, str *buf);
+
+/*
  * adds a new string value to the packet being currently built
  * @info: may also be NULL
  *
@@ -242,6 +253,18 @@ int bin_reset_back_pointer(bin_packet_t *packet);
  * returns the buffer with the data in the bin packet
 */
 int bin_get_buffer(bin_packet_t *packet, str *buffer);
+
+/*
+ * returns the bin packet's buffer from the position where
+ * the serialized content actually starts
+*/
+int bin_get_content_start(bin_packet_t *packet, str *buf);
+
+/*
+ * returns the bin packet's buffer from the position of the
+ * next field to be consumed
+*/
+int bin_get_content_pos(bin_packet_t *packet, str *buf);
 
 #endif /* __BINARY_INTERFACE__ */
 

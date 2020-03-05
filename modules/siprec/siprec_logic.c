@@ -31,6 +31,8 @@ struct b2b_api srec_b2b;
 str skip_failover_codes = str_init("");
 static regex_t skip_codes_regex;
 
+static str mod_name = str_init("siprec");
+
 static int srs_send_invite(struct src_sess *sess);
 
 int src_init(void)
@@ -388,7 +390,7 @@ static int srs_send_invite(struct src_sess *sess)
 	param.s = (char *)&sess;
 	param.len = sizeof(void *);
 	client = srec_b2b.client_new(&ci, srec_b2b_notify, srec_b2b_confirm,
-			(str *)&param);
+			&mod_name, (str *)&param);
 	if (!client) {
 		LM_ERR("cannot start recording with %.*s!\n",
 				ci.req_uri.len, ci.req_uri.s);

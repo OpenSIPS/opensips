@@ -37,13 +37,14 @@
 #include "../../parser/parse_hname2.h"
 #include "../../parser/parse_refer_to.h"
 #include "../../parser/parse_replaces.h"
+#include "../../parser/parse_uri.h"
 #include "../../strcommon.h"
 #include "../../ut.h"
 #include "../../trim.h"
 #include "../../mem/shm_mem.h"
 #include "../../mem/mem.h"
 #include "../../msg_translator.h"
-#include "../b2b_entities/dlg.h"
+#include "../b2b_entities/b2be_load.h"
 #include "../presence/hash.h"
 #include "../presence/utils_func.h"
 
@@ -82,6 +83,8 @@ static str method_cancel= {CANCEL, CANCEL_LEN};
 
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
+
+str mod_name = str_init("b2b_logic");
 
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 {
@@ -612,7 +615,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	}
 	LM_DBG("Send Invite without a body to a new client entity\n");
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, tuple->key);
+			b2b_add_dlginfo, &mod_name, tuple->key);
 	if(client_id == NULL)
 	{
 		LM_ERR("Failed to create client id\n");
@@ -731,7 +734,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			}
 			bentity0->state = B2BL_ENT_CONFIRMED;
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
-					b2b_add_dlginfo, tuple->key);
+					b2b_add_dlginfo, &mod_name, tuple->key);
 			if(client_id == NULL)
 			{
 				LM_ERR("Failed to create new client entity\n");
@@ -2597,7 +2600,7 @@ entity_search_done:
 		}
 		LM_DBG("Send Invite without a body to a new client entity\n");
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, tuple->key);
+				b2b_add_dlginfo, &mod_name, tuple->key);
 		if(client_id == NULL)
 		{
 			LM_ERR("Failed to create new client entity\n");
@@ -2759,7 +2762,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	/* create new server */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, b2bl_key);
+			b2b_server_notify, &mod_name, b2bl_key);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -2807,7 +2810,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, b2bl_key);
+			b2b_add_dlginfo, &mod_name, b2bl_key);
 	if(client_id == NULL)
 	{
 		LM_ERR("failed to create new b2b client instance\n");
@@ -2843,7 +2846,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		ci.req_uri = uri;
 		ci.avps = clone_avp_list( *get_avp_list() );
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, b2bl_key);
+			b2b_add_dlginfo, &mod_name, b2bl_key);
 		if(client_id == NULL)
 		{
 			LM_ERR("failed to create new b2b client instance\n");
@@ -3338,7 +3341,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 
 		/* create new server entity */
 		server_id = b2b_api.server_new(msg, &tuple->local_contact,
-				b2b_server_notify, b2bl_key);
+				b2b_server_notify, &mod_name, b2bl_key);
 		if(server_id == NULL)
 		{
 			LM_ERR("failed to create new b2b server instance\n");
@@ -3443,7 +3446,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			}
 
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
-					b2b_add_dlginfo, b2bl_key);
+					b2b_add_dlginfo, &mod_name, b2bl_key);
 			if(client_id == NULL)
 			{
 				LM_ERR("failed to create new b2b client instance\n");
@@ -3753,7 +3756,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		ci.local_contact = tuple->local_contact;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, tuple->key);
+				b2b_add_dlginfo, &mod_name, tuple->key);
 		if(client_id == NULL)
 		{
 			LM_ERR("Failed to create new client entity\n");
@@ -4301,7 +4304,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, tuple->key);
+			b2b_server_notify, &mod_name, tuple->key);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
