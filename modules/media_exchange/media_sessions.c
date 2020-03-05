@@ -188,6 +188,8 @@ struct media_session_leg *media_session_new_leg(struct dlg_cell *dlg,
 	msl->ms = ms;
 	msl->leg = leg;
 	msl->nohold = nohold;
+	lock_init(&msl->lock);
+	MEDIA_LEG_STATE_SET_UNSAFE(msl, MEDIA_SESSION_STATE_INIT);
 	msl->state = MEDIA_SESSION_STATE_INIT;
 	msl->ref = 1; /* creation */
 	/* link it to the session */
@@ -250,7 +252,8 @@ int media_session_req(struct media_session_leg *msl, const char *method, str *bo
 	req.body = body;
 	if (body)
 		req.extra_headers = &content_type_sdp_hdr;
-	req.no_cb = 1; /* do not call callback */
+	else
+		req.no_cb = 1; /* no body - do not call callback */
 
 	if (media_b2b.send_request(&req) < 0) {
 		LM_ERR("Cannot send %s to b2b entity key %.*s\n", method,
@@ -288,8 +291,10 @@ static int media_session_leg_end(struct media_session_leg *msl, int nohold, int 
 	if (media_session_req(msl, BYE, NULL) < 0)
 		ret = -1;
 
-	if (msl->type == MEDIA_SESSION_TYPE_FORK)
+	if (msl->type == MEDIA_SESSION_TYPE_FORK) {
+		media_forks_stop(msl);
 		goto unref;
+	}
 
 	/* if the call is ongoing, we need to manipulate its participants too */
 	if (msl->ms && msl->ms->dlg && msl->ms->dlg->state < DLG_STATE_DELETED) {

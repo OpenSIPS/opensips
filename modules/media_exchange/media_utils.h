@@ -39,7 +39,7 @@ struct media_fork_info *media_sdp_match(struct dlg_cell *dlg,
 		int leg, sdp_info_t *invite_sdp, int medianum);
 
 struct media_fork_info *media_sdp_get(struct dlg_cell *dlg,
-		int leg, int medianum);
+		int leg, int medianum, str *caller_body, str *callee_body);
 
 str *media_sdp_buf_get(void);
 
@@ -51,9 +51,7 @@ struct media_fork_info *media_fork_search(struct media_fork_info *mf, int search
 
 int media_forks_stop(struct media_session_leg *msl);
 
-int media_fork_pause_leg(struct media_session_leg *msl, int medianum);
-
-int media_fork_resume_leg(struct media_session_leg *msl, int medianum);
+int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int resume);
 
 int media_fork_body_update(struct media_session_leg *ml, str *body, int leg);
 

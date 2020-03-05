@@ -31,8 +31,9 @@ struct media_session;
 
 enum media_session_state {
 	MEDIA_SESSION_STATE_INIT,
-	MEDIA_SESSION_STATE_ONGOING,
-	MEDIA_SESSION_STATE_UPDATE,
+	MEDIA_SESSION_STATE_RUNNING,
+	MEDIA_SESSION_STATE_PENDING,
+	MEDIA_SESSION_STATE_UPDATING,
 };
 
 struct media_session_leg {
@@ -43,6 +44,7 @@ struct media_session_leg {
 	int leg;
 	str b2b_key;
 	int nohold;
+	gen_lock_t lock;
 	enum b2b_entity_type b2b_entity;
 	struct media_session_leg *next;
 	void *params;
@@ -57,6 +59,26 @@ struct media_session {
 
 #define MEDIA_SESSION_LOCK(_ms) lock_get(&(_ms)->lock)
 #define MEDIA_SESSION_UNLOCK(_ms) lock_release(&(_ms)->lock)
+
+#define MEDIA_LEG_LOCK(_msl) lock_get(&(_msl)->lock)
+#define MEDIA_LEG_UNLOCK(_msl) lock_release(&(_msl)->lock)
+
+#define MEDIA_LEG_STATE_SET_UNSAFE(_msl, _newstate) \
+	do { \
+		LM_DBG("msl=%p new_state=%d\n", (_msl), (_newstate)); \
+		(_msl)->state = (_newstate); \
+	} while (0)
+
+#define MEDIA_LEG_STATE_SET(_msl, _newstate) \
+	do { \
+		MEDIA_LEG_LOCK(_msl); \
+		MEDIA_LEG_STATE_SET_UNSAFE(_msl, _newstate); \
+		MEDIA_LEG_UNLOCK(_msl); \
+	} while (0)
+
+
+#define MEDIA_LEG_LOCK(_msl) lock_get(&(_msl)->lock)
+#define MEDIA_LEG_UNLOCK(_msl) lock_release(&(_msl)->lock)
 
 #define DLG_MEDIA_SESSION_LEG(_dlg, _leg) \
 	(_leg == MEDIA_LEG_CALLER?DLG_CALLER_LEG:callee_idx(_dlg))
