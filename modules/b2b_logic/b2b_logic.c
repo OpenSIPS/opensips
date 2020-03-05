@@ -31,15 +31,16 @@
 #include <stdlib.h>
 #include <libxml/parser.h>
 
-#include "../../db/db.h"
 #include "../../sr_module.h"
 #include "../../dprint.h"
 #include "../../error.h"
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_content.h"
+#include "../../parser/parse_uri.h"
 #include "../../ut.h"
 #include "../../trim.h"
 #include "../../mem/mem.h"
+#include "../../timer.h"
 
 #include "records.h"
 #include "pidf.h"

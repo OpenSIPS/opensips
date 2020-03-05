@@ -35,42 +35,19 @@
 #include "../dialog/dlg_load.h"
 #include "../../bin_interface.h"
 #include "b2b_common.h"
+#include "b2be_load.h"
 
 #define CALLER_LEG   0
 #define CALLEE_LEG   1
-
-#define B2B_REQUEST   0
-#define B2B_REPLY     1
 
 #define DLG_ESTABLISHED   1
 
 #define B2B_MAX_KEY_SIZE	(B2B_MAX_PREFIX_LEN+4+10+10+INT2STR_MAX_LEN)
 
-#define B2BCB_TRIGGER_EVENT    (1<<0)
-#define B2BCB_RECV_EVENT       (1<<1)
-
 #define B2BE_STORAGE_BIN_TYPE 1
 #define B2BE_STORAGE_BIN_VERS 1
 
 #define B2BE_SERIALIZE_STORAGE() (b2be_db_mode != NO_DB || b2be_cluster)
-
-enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
-
-typedef struct b2b_dlginfo
-{
-	str callid;
-	str fromtag;
-	str totag;
-}b2b_dlginfo_t;
-
-typedef int (*b2b_notify_t)(struct sip_msg* , str* , int , void* );
-typedef int (*b2b_add_dlginfo_t)(str* key, str* entity_key, int src,
-	 b2b_dlginfo_t* info);
-
-enum b2b_event_type {B2B_EVENT_CREATE, B2B_EVENT_UPDATE, B2B_EVENT_DELETE};
-
-typedef void (*b2b_cb_t)(enum b2b_entity_type entity_type, str* entity_key,
-	str *param, enum b2b_event_type event_type, bin_packet_t *storage);
 
 /*
  * Dialog state
@@ -95,7 +72,6 @@ typedef struct b2b_dlg_leg {
 	str contact;
 	struct b2b_dlg_leg* next;
 }dlg_leg_t;
-
 
 #define NO_UPDATEDB_FLAG    0
 #define UPDATEDB_FLAG       1
@@ -137,25 +113,6 @@ typedef struct b2b_dlg
 	int                  db_flag;
 }b2b_dlg_t;
 
-typedef struct client_info
-{
-	str method;
-	str from_uri;
-	str from_dname;
-	str req_uri;
-	str dst_uri;
-	str to_uri;
-	str to_dname;
-	str* extra_headers;
-	str* client_headers;
-	str* body;
-	str* from_tag;
-	str local_contact;
-	unsigned int cseq;
-	struct socket_info* send_sock;
-	struct usr_avp *avps;
-}client_info_t;
-
 typedef struct b2b_entry
 {
 	b2b_dlg_t* first;
@@ -164,31 +121,6 @@ typedef struct b2b_entry
 }b2b_entry_t;
 
 typedef b2b_entry_t* b2b_table;
-
-
-typedef struct b2b_req_data
-{
-	enum b2b_entity_type et;
-	str* b2b_key;
-	str* method;
-	str* extra_headers;
-	str* client_headers;
-	str* body;
-	b2b_dlginfo_t* dlginfo;
-	unsigned int no_cb;
-}b2b_req_data_t;
-
-typedef struct b2b_rpl_data
-{
-	enum b2b_entity_type et;
-	str* b2b_key;
-	int method;
-	int code;
-	str* text;
-	str* body;
-	str* extra_headers;
-	b2b_dlginfo_t* dlginfo;
-}b2b_rpl_data_t;
 
 struct b2b_callback {
 	b2b_cb_t cbf;
@@ -222,16 +154,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 
 int b2b_prescript_f(struct sip_msg *msg, void* param);
 
-typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
-		b2b_notify_t , str *mod_name, str* param);
-typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo_f, str *mod_name, str* param);
-
 int b2b_send_reply(b2b_rpl_data_t*);
-
-typedef int (*b2b_send_reply_t)(b2b_rpl_data_t*);
-
-typedef int (*b2b_send_request_t)(b2b_req_data_t*);
 
 int b2b_send_request(b2b_req_data_t*);
 
@@ -246,8 +169,6 @@ void shm_free_param(void* param);
 void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	 b2b_dlginfo_t* dlginfo, int db_del);
 
-typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_key,
-	 b2b_dlginfo_t* dlginfo, int db_del);
 b2b_dlg_t* b2b_search_htable(b2b_table table,
 		unsigned int hash_index, unsigned int local_index);
 
@@ -262,10 +183,8 @@ b2b_dlg_t* b2b_search_htable_dlg(b2b_table table, unsigned int hash_index,
 		unsigned int local_index, str* to_tag, str* from_tag, str* callid);
 
 int b2b_apply_lumps(struct sip_msg* msg);
-typedef int (*b2b_apply_lumps_t)(struct sip_msg* msg);
 
 int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name);
-typedef int (*b2b_reg_cb_t) (b2b_cb_t cb, int cb_type, str *mod_name);
 
 void b2b_run_cb(b2b_dlg_t *dlg, int entity_type, int cbs_type,
 	int event_type, bin_packet_t *storage);

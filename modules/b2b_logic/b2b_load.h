@@ -3,7 +3,7 @@
 
 #include "../../sr_module.h"
 #include "../b2b_entities/b2b_common.h"
-#include "../b2b_entities/dlg.h"
+#include "../b2b_entities/b2be_load.h"
 
 #define B2B_BYE_CB        (1<<0)
 #define B2B_REJECT_CB     (1<<1)
