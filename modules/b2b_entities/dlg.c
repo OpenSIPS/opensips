@@ -199,7 +199,6 @@ b2b_dlg_t* b2b_search_htable(b2b_table table, unsigned int hash_index,
 	return b2b_search_htable_next(NULL, table, hash_index, local_index);
 }
 
-/* this is only called by server new */
 str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src,
 	int safe, int db_insert)
 {
@@ -236,7 +235,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src,
 		return NULL;
 	}
 
-	if(src == B2B_SERVER)
+	if(src == B2B_SERVER && !dlg->tag[CALLEE_LEG].s)
 	{
 		dlg->tag[CALLEE_LEG].s = (char*)shm_malloc(b2b_key->len);
 		if(dlg->tag[CALLEE_LEG].s == NULL)
