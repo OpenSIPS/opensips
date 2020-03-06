@@ -82,42 +82,37 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* body */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* headers */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
-		{0,0,0}},
-		REQUEST_ROUTE},
+		{0,0,0}}, ALL_ROUTES},
 	{"media_exchange_to_call",(cmd_function)media_exchange_to_call, {
 		{CMD_PARAM_STR,0,0}, /* callid */
 		{CMD_PARAM_STR,fixup_media_leg,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
 		{0,0,0}},
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE},
 	{"media_fork_to_uri",(cmd_function)media_fork_to_uri, {
 		{CMD_PARAM_STR,0,0}, /* uri */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, /* headers */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
-		{0,0,0}},
-		REQUEST_ROUTE},
+		{0,0,0}}, ALL_ROUTES},
 	{"media_fork_from_call",(cmd_function)media_fork_from_call, {
 		{CMD_PARAM_STR,0,0}, /* callid */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
 		{0,0,0}},
-		REQUEST_ROUTE},
+		REQUEST_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE},
 	{"media_fork_pause",(cmd_function)media_fork_pause, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
-		{0,0,0}},
-		REQUEST_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|EVENT_ROUTE},
+		{0,0,0}}, ALL_ROUTES},
 	{"media_fork_resume",(cmd_function)media_fork_resume, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg_both,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* medianum */
-		{0,0,0}},
-		REQUEST_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|EVENT_ROUTE},
+		{0,0,0}}, ALL_ROUTES},
 	{"media_terminate",(cmd_function)media_terminate, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg,0}, /* leg */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, /* nohold */
-		{0,0,0}},
-		REQUEST_ROUTE},
+		{0,0,0}}, ALL_ROUTES},
 	{"media_handle_indialog",(cmd_function)media_indialog, {
 		{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE},

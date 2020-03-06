@@ -160,7 +160,7 @@
 				</para></listitem>
 			</para>
 			<para>
-				This function can be used from REQUEST_ROUTE.
+				This function can be used from any route.
 			</para>
 			<example>
 				<title>Use <function>media_fork_to_uri()</function> function to fork
@@ -209,7 +209,8 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 				</para></listitem>
 			</para>
 			<para>
-				This function can be used from REQUEST_ROUTE.
+				This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+				FAILURE_ROUTE and ONREPLY_ROUTE.
 			</para>
 			<para>
 				<emphasis>NOTE:</emphasis> the request of this call is completely
@@ -266,8 +267,7 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 				</para></listitem>
 			</para>
 			<para>
-				This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-				ONREPLY_ROUTE, EVENT_ROUTE.
+				This function can be used from any route.
 			</para>
 			<example>
 				<title>Use <function>media_fork_pause()</function> function to temporarily
@@ -306,8 +306,7 @@ if (has_totag() &amp;&amp; is_method("INVITE"))
 				</para></listitem>
 			</para>
 			<para>
-				This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
-				ONREPLY_ROUTE, EVENT_ROUTE.
+				This function can be used from any route.
 			</para>
 			<example>
 				<title>Use <function>media_fork_resume()</function> function to resume
@@ -366,7 +365,7 @@ if (has_totag() &amp;&amp; is_method("INVITE"))
 				</itemizedlist>
 			</para>
 			<para>
-				This function can be used from REQUEST_ROUTE.
+				This function can be used from any route.
 			</para>
 			<example>
 				<title>Use <function>media_exchange_from_uri()</function> function to
@@ -409,7 +408,8 @@ if (has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; is_audio_on_hold())
 				</itemizedlist>
 			</para>
 			<para>
-				This function can be used from REQUEST_ROUTE.
+				This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+				FAILURE_ROUTE and ONREPLY_ROUTE.
 			</para>
 			<para>
 				<emphasis>NOTE:</emphasis> the request of this call is completely
@@ -462,7 +462,7 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 				</itemizedlist>
 			</para>
 			<para>
-				This function can be used from REQUEST_ROUTE.
+				This function can be used from any route.
 			</para>
 			<example>
 				<title>Use <function>media_terminate()</function> function to
