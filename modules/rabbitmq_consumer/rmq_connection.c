@@ -72,9 +72,13 @@ int rmq_conn_add(modparam_t mtype, void *val)
 			it->s.s++, it->s.len--)
 			p.len++;
 		if (p.len == 0) {
-			LM_ERR("Empty connection parameter\n");
-			free_csv_record(p_list);
-			return -1;
+			if (it->next) {
+				LM_ERR("Empty connection parameter\n");
+				free_csv_record(p_list);
+				return -1;
+			} else {
+				break;
+			}
 		}
 
 		if (!strncasecmp(p.s, "uri", 3))
