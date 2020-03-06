@@ -152,12 +152,12 @@
 					<emphasis>headers</emphasis> (string, optional) - optional
 						headers added to the generated request.
 				</para></listitem>
-				</itemizedlist>
 				<listitem><para>
 					<emphasis>medianum</emphasis> (integer, optional) - the media
 						stream that will be forked within the call. First index is 0.
 						If missing, all media streams of that leg(s) are streamed.
 				</para></listitem>
+				</itemizedlist>
 			</para>
 			<para>
 				This function can be used from any route.
@@ -195,7 +195,6 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 						<emphasis>callee</emphasis> and <emphasis>both</emphasis>. If
 						missing, both legs will be streamed.
 				</para></listitem>
-				</itemizedlist>
 				<listitem><para>
 					<emphasis>medianum</emphasis> (integer, optional) - the media
 						stream that will be forked within the call. First index is 0.
@@ -207,6 +206,7 @@ if (!has_totag() &amp;&amp; is_method("INVITE"))
 						streams to handle all the media streams selected to fork.
 					</para>
 				</para></listitem>
+				</itemizedlist>
 			</para>
 			<para>
 				This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -258,13 +258,13 @@ if (!has_totag() &amp;&amp; is_method("INVITE") &amp;&amp; $hdr(X-CallID) != NUL
 						<emphasis>callee</emphasis> and <emphasis>both</emphasis>. If
 						missing, all ongoing media sessions will be paused.
 				</para></listitem>
-				</itemizedlist>
 				<listitem><para>
 					<emphasis>medianum</emphasis> (integer, optional) - the media
 						stream to be paused. First index is 0.
 						If missing, all ongoing media streams associated to the
 						selected leg will be paused.
 				</para></listitem>
+				</itemizedlist>
 			</para>
 			<para>
 				This function can be used from any route.
@@ -297,13 +297,13 @@ if (has_totag() &amp;&amp; is_method("INVITE"))
 						<emphasis>callee</emphasis> and <emphasis>both</emphasis>. If
 						missing, all existing media legs that are stopped will be started.
 				</para></listitem>
-				</itemizedlist>
 				<listitem><para>
 					<emphasis>medianum</emphasis> (integer, optional) - the media
 						stream to be paused. First index is 0.
 						If missing, all ongoing media streams associated to the
 						selected leg will be paused.
 				</para></listitem>
+				</itemizedlist>
 			</para>
 			<para>
 				This function can be used from any route.
