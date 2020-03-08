@@ -152,7 +152,7 @@ int list_hdr_has_option(struct hdr_field *hdr, str *opt)
 
 		/* not in this header, try the next hdr if any */
 		hdr = hdr->sibling;
-	} while (hdr!=NULL);
+	}
 
 	/* option not found in any header instaces */
 	return -1;
