@@ -546,6 +546,11 @@ void cfg_dump_context(const char *file, int line, int colstart, int colend)
 	/* error indicator line */
 	len = strlen(con->lines[i-1]);
 	wsbuf = malloc(len + 1);
+	if (!wsbuf) {
+		LM_ERR("oom\n");
+		return;
+	}
+
 	wb = wsbuf;
 	for (p = con->lines[i-1], end = p + len; p < end && is_ws(*p); p++)
 		*wb++ = *p;
@@ -555,6 +560,10 @@ void cfg_dump_context(const char *file, int line, int colstart, int colend)
 		hiline = NULL;
 	} else {
 		hiline = malloc(colend - colstart);
+		if (!hiline) {
+			LM_ERR("oom\n");
+			return;
+		}
 		memset(hiline, '~', colend - colstart);
 	}
 
