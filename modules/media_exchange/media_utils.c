@@ -308,7 +308,6 @@ int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int res
 
 	for (mf = msl->params; mf; mf = mf->next) {
 		if (medianum < 0 || medianum == mf->medianum) {
-			LM_INFO("checking %p [%d] state=%x\n", mf, mf->medianum, mf->state);
 			if (!resume) {
 				if (mf->state != MEDIA_FORK_ON)
 					continue;
@@ -317,7 +316,6 @@ int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int res
 					continue;
 			}
 			mf->state = newstate;
-			LM_INFO("changing %p [%d] state=%x\n", mf, mf->medianum, mf->state);
 			ret++;
 			if (medianum >= 0)
 				break;
