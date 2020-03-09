@@ -4627,7 +4627,6 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 		/* not found; set it to empty */
 		if ( !it ) {
 			db_vals[13].val.str_val.s = "";
-			db_vals[13].val.str_val.s = "";
 		}
 
 		/* get incoming interface ip from receive info */
