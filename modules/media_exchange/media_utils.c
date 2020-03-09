@@ -286,7 +286,7 @@ static int media_fork_stream_disable(sdp_stream_cell_t *stream)
 
 int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int resume)
 {
-	enum media_session_state newstate;
+	enum media_fork_state newstate;
 	struct media_fork_info *mf;
 	int ret = 0;
 
