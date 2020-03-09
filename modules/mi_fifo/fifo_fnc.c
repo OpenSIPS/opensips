@@ -652,7 +652,7 @@ void mi_fifo_server(FILE *fifo_stream)
 	mi_request_t request;
 	int read_len, parse_len;
 	char *req_method = NULL;
-	char *file_sep, *file, *p;
+	char *file_sep, *file, *p, *f;
 	struct mi_cmd *cmd = NULL;
 	FILE *reply_stream;
 	int remain_len = 0;
@@ -709,11 +709,13 @@ void mi_fifo_server(FILE *fifo_stream)
 		if (file_sep==file) {
 			file = NULL; /* no reply expected */
 		} else {
-			file = get_reply_filename(file, file_sep - file);
-			if (file==NULL) {
+			f = get_reply_filename(file, file_sep - file);
+			if (f==NULL) {
 				LM_ERR("error trimming filename: %.*s\n", (int)(file_sep - file), file);
+				file = f;
 				goto skip_unparsed;
 			}
+			file = f;
 		}
 
 		/* make the command null terminated */
