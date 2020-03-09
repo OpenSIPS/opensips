@@ -470,6 +470,8 @@ int b2b_entities_restore(void)
 					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.tag[1].len, dlg.tag[1].s);
 					goto error;
 				}
+				dlg.tag[1].s = NULL;
+				dlg.tag[1].len = 0;
 			}
 			else
 			{
