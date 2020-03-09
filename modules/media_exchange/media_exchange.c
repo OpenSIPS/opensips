@@ -29,6 +29,8 @@ struct dlg_binds media_dlg;
 struct b2b_api media_b2b;
 struct rtpproxy_binds media_rtp;
 
+static str b2b_media_exchange_cap = str_init("media_exchange");
+
 static int mod_init(void);
 static int media_fork_to_uri(struct sip_msg *msg, str *uri,
 		int leg, str *headers, int *medianum);
@@ -202,14 +204,14 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (media_b2b.register_cb(media_exchange_loaded,
-			B2BCB_LOADED, exports.name) < 0) {
+	if (media_b2b.register_cb(media_exchange_event_received,
+			B2BCB_RECV_EVENT, &b2b_media_exchange_cap) < 0) {
 		LM_ERR("could not register loaded callback!\n");
 		return -1;
 	}
 
-	if (media_b2b.register_cb(media_exchange_serialize,
-			B2BCB_SERIALIZE, exports.name) < 0) {
+	if (media_b2b.register_cb(media_exchange_event_trigger,
+			B2BCB_TRIGGER_EVENT, &b2b_media_exchange_cap) < 0) {
 		LM_ERR("could not register loaded callback!\n");
 		return -1;
 	}
@@ -321,7 +323,7 @@ static int handle_media_fork_to_uri(struct media_session_leg *msl, struct socket
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
 	b2b_key = media_b2b.client_new(ci, b2b_media_notify,
-			b2b_media_confirm, &hack);
+			b2b_media_confirm, &b2b_media_exchange_cap, &hack);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b client!\n");
 		goto release;
@@ -520,7 +522,8 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
-	b2b_key = media_b2b.server_new(msg, &contact, b2b_media_notify, &hack);
+	b2b_key = media_b2b.server_new(msg, &contact, b2b_media_notify,
+			&b2b_media_exchange_cap, &hack);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b server for callid %.*s\n", callid->len, callid->s);
 		goto destroy;
@@ -602,7 +605,7 @@ static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cel
 	hack.len = sizeof(void *);
 	MSL_REF(msl);
 	b2b_key = media_b2b.client_new(ci, b2b_media_notify,
-			b2b_media_confirm, &hack);
+			b2b_media_confirm, &b2b_media_exchange_cap, &hack);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b client!\n");
 		goto unref;
@@ -793,7 +796,8 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
-	b2b_key = media_b2b.server_new(msg, &contact, b2b_media_notify, &hack);
+	b2b_key = media_b2b.server_new(msg, &contact, b2b_media_notify,
+			&b2b_media_exchange_cap, &hack);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b server for callid %.*s\n", callid->len, callid->s);
 		goto destroy;

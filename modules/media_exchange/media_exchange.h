@@ -32,7 +32,7 @@ struct media_session_leg;
 extern struct tm_binds media_tm;
 #include "../dialog/dlg_load.h"
 extern struct dlg_binds media_dlg;
-#include "../b2b_entities/b2b_entities.h"
+#include "../b2b_entities/b2be_load.h"
 extern struct b2b_api media_b2b;
 #include "../rtpproxy/rtpproxy_load.h"
 extern struct rtpproxy_binds media_rtp;
