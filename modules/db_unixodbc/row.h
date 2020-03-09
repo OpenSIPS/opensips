@@ -33,7 +33,7 @@
 #include "../../db/db_res.h"
 #include "../../db/db_row.h"
 
-#include "con.h"
+#include "db_con.h"
 
 /*
  * Duplicate result columns in pkg memory, stack them linearly

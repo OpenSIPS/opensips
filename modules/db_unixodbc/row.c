@@ -33,7 +33,7 @@
 #include "../../db/db_ut.h"
 #include "val.h"
 #include "row.h"
-#include "con.h"
+#include "db_con.h"
 
 /* gradually growing buffer; holds MAX(rows x columns) pointers */
 static str *rows;
