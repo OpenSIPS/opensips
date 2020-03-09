@@ -1131,7 +1131,7 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 				_amp->mday)%_amp->mday + ((_trp->bymday->req[i]<0)?1:0));
 #endif
 			if(_atp->t.tm_mday == (_trp->bymday->xxx[i]*_trp->bymday->req[i]+
-						_amp->mday)%_amp->mday + (_trp->bymday->req[i]<0)?1:0)
+						_amp->mday)%_amp->mday + ((_trp->bymday->req[i]<0)?1:0))
 				break;
 		}
 		if(i>=_trp->bymday->nr)
