@@ -407,7 +407,7 @@ int put_value_in_result(  char * start, int len , db_res_t * res ,
 
 	db_val_t * row;
 
-	LM_DBG("Found value: %.*s\n",len,start);
+	LM_DBG("Found type and value: [%d][%.*s]\n",res->col.types[cur_col],len,start);
 
 	row = res->rows[cur_line].values;
 	row[cur_col].type = res->col.types[cur_col];
@@ -514,8 +514,10 @@ int form_result(var_str buff, db_res_t** r)
 				if( cur_line == -1 )
 					col_count = cur_col;
 				else
-					if(cur_col != col_count)
+					if(cur_col != col_count) {
+						LM_ERR("cur_col=[%d] != col_count=[%d]\n", cur_col, col_count);
 						goto error_before;
+					}
 
 				delim_count++;
 				cur_line++;
@@ -541,15 +543,19 @@ int form_result(var_str buff, db_res_t** r)
 	line_count = cur_line;
 
 
-	if( col_count == 0 || line_count == 0 )
+	if( col_count == 0 || line_count == 0 ) {
+		LM_ERR("col_count=[%d] or line_count=[%d] is zero\n", col_count, line_count);
 		goto error_before;
+	}
 
 
 
 	/* validate input */
 
-	if( delim_count != (line_count+1)*col_count)
+	if( delim_count != (line_count+1)*col_count) {
+		LM_ERR("delim_count=[%d] != (line_count=[%d]+1)*col_count=[%d]\n", delim_count, line_count, col_count);
 		goto error_before;
+	}
 
 
 
@@ -889,7 +895,7 @@ str value_to_string(const db_val_t * v)
 			rez = v ->val.str_val;
 			break;
 		case(DB_DATETIME):
-			ctime_r(&v->val.time_val, buff);
+			sprintf(buff,"%s",ctime(&v->val.time_val));
 			rez.s = buff;
 			rez.len = strlen(rez.s);
 			break;
