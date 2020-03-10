@@ -544,6 +544,12 @@ int db_query_avp_print_results(struct sip_msg *msg, const db_res_t *db_res,
 					avp_val.n =
 						(int)RES_ROWS(db_res)[i].values[j].val.bigint_val;
 				break;
+				case DB_DOUBLE:
+					avp_type |= AVP_VAL_STR;
+					avp_val.s.s = double2str(
+					        RES_ROWS(db_res)[i].values[j].val.double_val,
+					        &avp_val.s.len);
+				break;
 				default:
 					LM_WARN("Unknown type %d\n",
 						RES_ROWS(db_res)[i].values[j].type);

@@ -288,6 +288,17 @@ static inline char* sint2str(long l, int* len)
 	return p;
 }
 
+static inline char* double2str(double d, int* len)
+{
+	static int buf;
+
+	buf = (buf + 1) % INT2STR_BUF_NO;
+	*len = snprintf(int2str_buf[buf], INT2STR_MAX_LEN - 1, "%lf", d);
+	int2str_buf[buf][*len] = '\0';
+
+	return int2str_buf[buf];
+}
+
 
 /* faster memchr version */
 static inline char* q_memchr(char* p, int c, unsigned int size)
