@@ -141,7 +141,7 @@ int db_do_raw_query(const db_con_t* _h, const str* _s, db_res_t** _r,
 	if(_r) {
 		int tmp = store_result(_h, _r);
 		if (tmp < 0) {
-			LM_ERR("error while storing result");
+			LM_ERR("error while storing result\n");
 			return tmp;
 		}
 	}
