@@ -204,11 +204,13 @@ ucontact_t **select_contacts(struct sip_msg *msg, ucontact_t *contacts,
 			have_gruu = 1;
 			LM_DBG("ruri has gruu\n");
 
-			if (ct->instance.len-2 != sip_instance->len ||
-			    memcmp(ct->instance.s+1, sip_instance->s, sip_instance->len)) {
+			if (ZSTR(ct->instance) || ct->instance.len-2 != sip_instance->len ||
+			        memcmp(ct->instance.s+1, sip_instance->s, sip_instance->len)) {
+
 				LM_DBG("no match to sip instance - [%.*s] - [%.*s]\n",
-				       ct->instance.len-2, ct->instance.s+1,
-						sip_instance->len, sip_instance->s);
+				       ZSTR(ct->instance) ? 0 : ct->instance.len-2,
+				       ZSTR(ct->instance) ? NULL : ct->instance.s+1,
+				       sip_instance->len, sip_instance->s);
 				/* not the targeted instance, search some more */
 				continue;
 			}
