@@ -53,6 +53,9 @@ typedef struct _int_str_t {
 
 struct sip_msg;
 
+/* the amount of decimals to be displayed for "float" and "double" values */
+#define FLOATING_POINT_PRECISION 8
+
 /* zero-string wrapper */
 #define ZSW(_c) ((_c)?(_c):"")
 
@@ -293,7 +296,8 @@ static inline char* double2str(double d, int* len)
 	static int buf;
 
 	buf = (buf + 1) % INT2STR_BUF_NO;
-	*len = snprintf(int2str_buf[buf], INT2STR_MAX_LEN - 1, "%lf", d);
+	*len = snprintf(int2str_buf[buf], INT2STR_MAX_LEN - 1, "%0.*lf",
+	                FLOATING_POINT_PRECISION, d);
 	int2str_buf[buf][*len] = '\0';
 
 	return int2str_buf[buf];
