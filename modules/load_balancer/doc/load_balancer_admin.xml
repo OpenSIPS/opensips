@@ -30,7 +30,7 @@
 	<title>How it works</title>
 		<para>
 		Please refer to the Load-Balancer tutorial from the &osips; website:
-		<ulink url='http://www.opensips.org/Documentation/Tutorials-LoadBalancing-1-9'>http://www.opensips.org/Documentation/Tutorials-LoadBalancing-1-9</ulink>.
+		<ulink url='https://opensips.org/Documentation/Tutorials-LoadBalancing-1-9'>https://opensips.org/Documentation/Tutorials-LoadBalancing-1-9</ulink>.
 		</para>
 	</section>
 

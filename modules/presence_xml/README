@@ -181,7 +181,7 @@ modparam("presence_xml", "generate_offline_body", 0)
    in the database directories in the opensips/scripts folder. You
    can also find the complete database documentation on the
    project webpage,
-   http://www.opensips.org/html/docs/db/db-schema-devel.html.
+   https://opensips.org/docs/db/db-schema-devel.html.
 
 Chapter 2. Developer Guide
 

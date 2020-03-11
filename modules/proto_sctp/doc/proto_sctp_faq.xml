@@ -16,7 +16,7 @@
 			You need to load the "proto_sctp" module. In your script, make sure
 			you do a <emphasis role='bold'>loadmodule "proto_sctp.so"</emphasis>
 			after setting the <emphasis role='bold'><ulink
-				url="http://www.opensips.org/Documentation/Script-CoreParameters-2-1#toc74">mpath</ulink></emphasis>.
+				url="https://opensips.org/Documentation/Script-CoreParameters-2-1#toc74">mpath</ulink></emphasis>.
 		</para>
 		</answer>
 	</qandaentry>
