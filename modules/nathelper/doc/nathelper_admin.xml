@@ -442,7 +442,7 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>natping_interval</varname> parameter</title>
+		<title>Set <varname>natping_tcp</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("nathelper", "natping_tcp", 1)
@@ -465,7 +465,7 @@ modparam("nathelper", "natping_tcp", 1)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>natping_interval</varname> parameter</title>
+		<title>Set <varname>oldip_skip</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("nathelper", "oldip_skip", "oc")
@@ -508,7 +508,7 @@ modparam("nathelper", "ping_threshold", 10)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>ping_threshold</varname> parameter</title>
+		<title>Set <varname>max_pings_lost</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("nathelper", "max_pings_lost", 5)
