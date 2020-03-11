@@ -734,7 +734,7 @@ route[capture_resume] {
    sipcapture-st-create.sql SQL script in the database directories
    in the opensips/scripts folder as template. You can also find
    the complete database documentation on the project webpage,
-   http://www.opensips.org/html/docs/db/db-schema-devel.html.
+   https://opensips.org/docs/db/db-schema-devel.html.
 
 1.9. Limitation
 

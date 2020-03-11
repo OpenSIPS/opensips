@@ -13,12 +13,12 @@
 <!ENTITY osipssolname "OpenSIPS Solutions">
 <!ENTITY osipssol "<ulink url='http://www.opensips-solutions.com/'>www.opensips-solutions.com</ulink>">
 
-<!ENTITY osipshome "http://www.opensips.org/">
+<!ENTITY osipshome "https://opensips.org/">
 <!ENTITY osipsbugs "https://github.com/OpenSIPS/opensips/issues">
 <!ENTITY osipshelp "http://lists.opensips.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY osipsusers "http://lists.opensips.org/cgi-bin/mailman/listinfo/users">
 <!ENTITY osipsdev "http://lists.opensips.org/cgi-bin/mailman/listinfo/devel">
-<!ENTITY osipsdbdocs "http://www.opensips.org/html/docs/db/db-schema-devel.html">
+<!ENTITY osipsdbdocs "https://opensips.org/docs/db/db-schema-devel.html">
 
 <!ENTITY osipshomelink "<ulink url='&osipshome;'>&osipshome;</ulink>">
 <!ENTITY osipsbugslink "<ulink url='&osipsbugs;'>&osipsbugs;</ulink>">

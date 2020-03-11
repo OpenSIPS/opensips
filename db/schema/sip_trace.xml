@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE table PUBLIC "-//pub/opensips/.org//DTD DBSchema V1.1//EN"
-  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+  "https://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
 
 <!ENTITY % entities SYSTEM "entities.xml">
 %entities;

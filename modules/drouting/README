@@ -1530,7 +1530,7 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
    located in the database directories of the opensips/scripts
    folder. You can also find the complete database documentation
    on the project webpage,
-   http://www.opensips.org/html/docs/db/db-schema-devel.html.
+   https://opensips.org/docs/db/db-schema-devel.html.
 
 Chapter 2. Developer Guide
 

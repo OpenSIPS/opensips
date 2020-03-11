@@ -477,7 +477,7 @@ $avp(cc_call_token) := $RANDOM;
 		<para>
 			The right-hand side of the assignment must be a script pseudo variable or
 			a script AVP. For more information about them see <ulink 
-				url='http://www.opensips.org/Resources/DocsCoreVar15'>
+				url='https://opensips.org/Resources/DocsCoreVar15'>
 				CookBooks - Scripting Variables</ulink>.
 		</para>
       <para>
@@ -520,7 +520,7 @@ modparam("call_control", "init", "call-id=$ci to=$tu from=$fu
 		<para>
 			The right-hand side of the assignment must be a script pseudo variable or
 			a script AVP. For more information about them see <ulink 
-				url='http://www.opensips.org/Resources/DocsCoreVar15'>
+				url='https://opensips.org/Resources/DocsCoreVar15'>
 				CookBooks - Scripting Variables</ulink>.
 		</para>
       <para>
@@ -562,7 +562,7 @@ modparam("call_control", "start", "call-id=$ci to=$tu from=$fu
 		<para>
 			The right-hand side of the assignment must be a script pseudo variable or
 			a script AVP. For more information about them see <ulink 
-				url='http://www.opensips.org/Resources/DocsCoreVar15'>
+				url='https://opensips.org/Resources/DocsCoreVar15'>
 				CookBooks - Scripting Variables</ulink>.
 		</para>
       <para>

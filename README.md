@@ -31,10 +31,10 @@ For a quick overview of OpenSIPS modules, please see the [README-MODULES](README
 
 Documentation about each module can be found in the [README]() file in each
 module directory. For online documentation, please see
-           <http://www.opensips.org/Resources/Documentation>
+           <https://opensips.org/Resources/Documentation>
 
 For additional documentation, tutorials and examples please see also
-           <http://www.opensips.org/Resources/DocsTutorials>
+           <https://opensips.org/Resources/DocsTutorials>
 
 
 

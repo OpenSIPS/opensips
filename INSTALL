@@ -5,7 +5,7 @@ $Id$
 
             OpenSIPS Installation Notes
 
-             http://www.opensips.org/
+               https://opensips.org/
 
      ===========================================
 
@@ -230,14 +230,14 @@ A) Getting Help
 This guide gives you instructions on how to quickly set up OpenSIPS 
 on your box. In case the default configuration does not fly, check 
 documentation at opensips site
-  http://www.opensips.org/
+  https://opensips.org/
 to learn how to configure OpenSIPS for your site.
 
 If the documentation does not resolve your problem you may try contacting 
 our user forum by E-mail at users@opensips.org -- that is the mailing list 
 of opensips community. To participate in the mailing list, subscribe at the 
 following web address:
-  http://www.opensips.org/cgi-bin/mailman/listinfo/users
+  https://opensips.org/cgi-bin/mailman/listinfo/users
 
 
 B) Disclaimers
@@ -257,13 +257,13 @@ then you have to install additional MySql support -- proceed to section D)
 after you are finished with C).
 
 1) Download an RPM or debian package from our site
-     http://opensips.org/pub/opensips/latest/packages/
+     https://opensips.org/pub/opensips/latest/packages/
 If you don't use an rpm or debian based distribution, see if corresponding 
 packages are available or try our tar.gz'ed binaries.
 If you use Gentoo Linux you do not have to download a package.
 For debian, packages are available via the Debian official repositories for
 testing and unstable. For stable, use the project's repository at:
-     deb http://www.opensips.org/debian stable main
+     deb https://opensips.org/debian stable main
 
 2) install the package
 RPM:
@@ -338,7 +338,7 @@ locations across reboots, opensips can be configured to use MySQL. Before you
 proceed, you need to make sure MySQL is installed on your box.
 
 1) Download the package containing mysql support for opensips from: 
-    http://www.opensips.org/pub/opensips/
+    https://opensips.org/pub/opensips/
     (rpm and deb provided, most of the binary tar.gz distributions and the 
      solaris package include it; if it is not present you'll have to rebuild
      from the source).
