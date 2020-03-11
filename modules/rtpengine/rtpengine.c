@@ -3468,7 +3468,7 @@ static void rtpengine_notify_process(int rank)
 	}
 
 	if (bind(rtpengine_notify_fd, &ss.s, sizeof(ss)) == -1) {
-		LM_ERR("could not bind notification socket %s:%hu (%s:%d)\n",
+		LM_ERR("could not bind notification socket %s:%u (%s:%d)\n",
 				rtpengine_notify_sock.s, port, strerror(errno), errno);
 		goto end;
 	}
@@ -3478,7 +3478,7 @@ static void rtpengine_notify_process(int rank)
 			ret = read(rtpengine_notify_fd, buffer, RTPENGINE_DGRAM_BUF);
 		while (ret == -1 && errno == EINTR);
 		if (ret < 0) {
-			LM_ERR("problem reading on socket %s:%hu (%s:%d)\n",
+			LM_ERR("problem reading on socket %s:%u (%s:%d)\n",
 					rtpengine_notify_sock.s, port, strerror(errno), errno);
 			goto end;
 		}
