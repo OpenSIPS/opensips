@@ -465,11 +465,12 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 	<section id="param_rtpp_notify_socket" xreflabel="rtpp_notify_socket">
 		<title><varname>rtpp_notify_socket</varname> (string)</title>
 		<para>
-			The socket used by &osips; to receive timeout notifications.
+			The socket &osips; listens for notifications from RTPProxy.
+			Currently &osips; can receive RTP timeout and DTMF events.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>NULL</quote>.
+			Default value is <quote>NULL</quote> - no notifications are received.
 		</emphasis>
 		</para>
 
@@ -580,7 +581,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 				<listitem><para>
 				<emphasis>n[&lt;SOCKET&gt;]</emphasis> - flags that enables
 				the notification timeout for the session. One can specify an
-				optiona "advertised" socket between the &lt; and &gt; tags.
+				optional "advertised" socket between the &lt; and &gt; tags.
 				If the socket is not specified, the value of
 				<emphasis>rtpp_notify_socket</emphasis> is used.
 				</para></listitem>
