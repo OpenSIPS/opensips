@@ -278,6 +278,7 @@ static int rtpengine_unblockdtmf_f(struct sip_msg* msg, str *flags, pv_spec_t *s
 static int rtpengine_start_forward_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_stop_forward_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar);
 static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_spec_t *spvar);
+static void rtpengine_notify_process(int rank);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -332,6 +333,10 @@ static int rtpe_set_count = 0;
 static int rtpe_ctx_idx = -1;
 struct rtpe_set_head **rtpe_set_list =0;
 struct rtpe_set **default_rtpe_set=0;
+
+static str rtpengine_notify_sock;
+static str rtpengine_notify_event_name = str_init("E_RTPENGINE_NOTIFICATION");
+static event_id_t rtpengine_notify_event = EVI_ERROR;
 
 /* array with the sockets used by rtpengine (per process)*/
 static int *rtpe_socks = 0;
@@ -623,6 +628,7 @@ static param_export_t params[] = {
 	{"rtpengine_disable_tout", INT_PARAM, &rtpengine_disable_tout },
 	{"rtpengine_retr",         INT_PARAM, &rtpengine_retr         },
 	{"rtpengine_tout",         INT_PARAM, &rtpengine_tout         },
+	{"notification_sock",      STR_PARAM, &rtpengine_notify_sock.s},
 	{"extra_id_pv",            STR_PARAM, &extra_id_pv_param.s },
 	{"setid_avp",              STR_PARAM, &setid_avp_param },
 	{"db_url",                 STR_PARAM, &db_url.s               },
@@ -664,6 +670,12 @@ static dep_export_t deps = {
 	},
 };
 
+static proc_export_t procs[] = {
+	{"RTPEngine notification receiver",  0,  0, rtpengine_notify_process, 1, 0},
+	{0,0,0,0,0,0}
+};
+
+
 struct module_exports exports = {
 	"rtpengine",
 	MOD_TYPE_DEFAULT,/* class of this module */
@@ -678,7 +690,7 @@ struct module_exports exports = {
 	mi_cmds,     /* exported MI functions */
 	mod_pvs,     /* exported pseudo-variables */
 	0,			 /* exported transformations */
-	0,           /* extra processes */
+	procs,       /* extra processes */
 	0,
 	mod_init,
 	0,           /* reply processing */
@@ -1235,6 +1247,17 @@ mod_init(void)
 		return -1;
 	}
 	*rtpe_set_list = 0;
+	if (rtpengine_notify_sock.s) {
+		rtpengine_notify_sock.len = strlen(rtpengine_notify_sock.s);
+		LM_DBG("starting notification listener on %.*s\n",
+				rtpengine_notify_sock.len, rtpengine_notify_sock.s);
+		rtpengine_notify_event = evi_publish_event(rtpengine_notify_event_name);
+		if (rtpengine_notify_event == EVI_ERROR) {
+			LM_ERR("cannot register RTPEngine Notification socket\n");
+			return -1;
+		}
+	} else
+		exports.procs = NULL;
 
 	if(db_url.s == NULL) {
 		/* storing the list of rtp proxy sets in shared memory*/
@@ -3332,4 +3355,154 @@ static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_
 
 	bencode_buffer_free(&bencbuf);
 	return rcode;
+}
+
+static void rtpengine_raise_event(int sender, void *p)
+{
+	int err;
+	cJSON *param;
+	cJSON *jparams;
+	str name, jstring;
+	evi_params_p eparams = NULL;
+	char *buf = (char *)p;
+
+	jparams = cJSON_Parse(buf);
+	shm_free(p);
+	if (!jparams) {
+		LM_ERR("could not parse json notification %s\n", buf);
+		return;
+	}
+
+	if (!(jparams->type &cJSON_Object)) {
+		LM_ERR("json is not an object\n");
+		return;
+	}
+
+	if (!(eparams = evi_get_params())) {
+		LM_ERR("cannot create parameters list\n");
+		goto end;
+	}
+
+	for (param = jparams->child; param; param = param->next) {
+		name.s = param->string;
+		name.len = strlen(name.s);
+		switch (param->type) {
+			case cJSON_Number:
+				err = evi_param_add_int(eparams, &name, &param->valueint);
+				break;
+			case cJSON_String:
+				jstring.s = param->valuestring;
+				jstring.len = strlen(jstring.s);
+				err = evi_param_add_str(eparams, &name, &jstring);
+				break;
+			default:
+				jstring.s = cJSON_PrintUnformatted(param);
+				jstring.len = strlen(jstring.s);
+				err = evi_param_add_str(eparams, &name, &jstring);
+				cJSON_PurgeString(jstring.s);
+				break;
+		}
+		if (err) {
+			LM_ERR("could not add parameter %s\n", name.s);
+			evi_free_params(eparams);
+			goto end;
+		}
+	}
+
+	/* all good: dispatch job! */
+	evi_raise_event(rtpengine_notify_event, eparams);
+
+end:
+	cJSON_Delete(jparams);
+}
+
+#define RTPENGINE_DGRAM_BUF		35536
+
+static void rtpengine_notify_process(int rank)
+{
+	int ret;
+	char *p;
+	str s_port;
+	unsigned int port;
+	static int rtpengine_notify_fd;
+	union sockaddr_union ss;
+	char buffer[RTPENGINE_DGRAM_BUF];
+
+	p = strrchr(rtpengine_notify_sock.s, ':');
+	if (!p) {
+		LM_ERR("no port specified in notification socket %.*s!\n",
+				rtpengine_notify_sock.len, rtpengine_notify_sock.s);
+		return;
+	}
+
+	s_port.s = p + 1;
+	s_port.len = rtpengine_notify_sock.s + rtpengine_notify_sock.len - s_port.s;
+
+	if (s_port.len <= 0 || str2int(&s_port, &port) < 0 || port > 65535) {
+		LM_ERR("invalid port specified in notification socket %.*s\n",
+				rtpengine_notify_sock.len, rtpengine_notify_sock.s);
+		return;
+	}
+	rtpengine_notify_sock.len -= s_port.len + 1;
+	trim(&rtpengine_notify_sock);
+	rtpengine_notify_sock.s[rtpengine_notify_sock.len] = '\0';
+
+	memset(&ss, 0, sizeof(ss));
+	if (rtpengine_notify_sock.s[0] == '[') {
+		ss.sin6.sin6_family = AF_INET6;
+		ss.sin6.sin6_port = htons(port);
+		ret = inet_pton(AF_INET6, rtpengine_notify_sock.s, &ss.sin6.sin6_addr);
+	} else {
+		ss.sin.sin_family = AF_INET;
+		ss.sin.sin_port = htons(port);
+		ret = inet_pton(AF_INET, rtpengine_notify_sock.s, &ss.sin.sin_addr);
+	}
+	if (ret != 1) {
+		LM_ERR("could not create address for %s\n", rtpengine_notify_sock.s);
+		return;
+	}
+	rtpengine_notify_fd = socket(ss.s.sa_family, SOCK_DGRAM, 0);
+	if (rtpengine_notify_fd < 0) {
+		LM_ERR("could not create notification socket!\n");
+		return;
+	}
+
+	if (bind(rtpengine_notify_fd, &ss.s, sizeof(ss)) == -1) {
+		LM_ERR("could not bind notification socket %s:%hu (%s:%d)\n",
+				rtpengine_notify_sock.s, port, strerror(errno), errno);
+		goto end;
+	}
+
+	for (;;) {
+		do
+			ret = read(rtpengine_notify_fd, buffer, RTPENGINE_DGRAM_BUF);
+		while (ret == -1 && errno == EINTR);
+		if (ret < 0) {
+			LM_ERR("problem reading on socket %s:%hu (%s:%d)\n",
+					rtpengine_notify_sock.s, port, strerror(errno), errno);
+			goto end;
+		}
+
+		if (!evi_probe_event(rtpengine_notify_event)) {
+			LM_DBG("nothing to do - nobody is listening!\n");
+			continue;
+		}
+
+		p = shm_malloc(ret + 1);
+		if (!p) {
+			LM_ERR("could not allocate %d for buffer %.*s\n", ret, ret, buffer);
+			continue;
+		}
+		memcpy(p, buffer, ret);
+		p[ret] = '\0';
+
+		LM_INFO("dispatching buffer: %s\n", p);
+		if (ipc_dispatch_rpc(rtpengine_raise_event, p) < 0) {
+			LM_ERR("could not dispatch notification job!\n");
+			shm_free(p);
+		}
+	}
+
+end:
+	close(rtpengine_notify_fd);
 }

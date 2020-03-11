@@ -188,6 +188,31 @@ modparam("rtpengine", "rtpengine_retr", 2)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_notification_sock" xreflabel="notification_sock">
+		<title><varname>notification_sock</varname> (string)</title>
+		<para>
+		An UDP socket formatted as <emphasis>IP:port</emphasis>
+		that indicates the listening IP and port &osips; will bind for to
+		receive notifications (such as DTMF events) from RTPengine.
+		</para>
+		<para>
+		Every notification received from RTPengine will trigger an
+		<emphasis>E_RTPENGINE_NOTIFICATION</emphasis> event.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>none</quote> - notifications are ignored.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>notification_sock</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpengine", "notification_sock", "127.0.0.1:9999")
+...
+</programlisting>
+		</example>
+	</section>
 	<section id="param_extra_id_pv" xreflabel="extra_id_pv">
 		<title><varname>extra_id_pv</varname> (string)</title>
 		<para>
@@ -1416,6 +1441,56 @@ $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 
 
 	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_E_RTPENGINE_NOTIFICATION" xreflabel="E_RTPENGINE_NOTIFICATION">
+		<title>
+		<function moreinfo="none">E_RTPENGINE_NOTIFICATION</function>
+		</title>
+		<para>
+			This event is raised when a notification is received from RTPengine.
+		</para>
+        <para>
+			Parameters represent the nodes within the Json request received from RTPengine.
+			Common values are:
+        </para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>type</emphasis> - identifies the type of notification (i.e. DTMF)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>callid</emphasis> - the callid of the call this event is triggered for
+			</para></listitem>
+			<listitem><para>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>source_tag</emphasis> - from tag of the call this event is triggered for
+			</para></listitem>
+			<listitem><para>
+				<emphasis>timestamp</emphasis> - timestamp when the event was triggered
+			</para></listitem>
+		</itemizedlist>
+        <para>
+			For a DTMF event received, you will also get the following nodes:
+        </para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>source_ip</emphasis> - the IP that triggered the DTMF
+			</para></listitem>
+			<listitem><para>
+				<emphasis>event</emphasis> - the event/digit pressed
+			</para></listitem>
+			<listitem><para>
+				<emphasis>duration</emphasis> - how long the digit was pressed
+			</para></listitem>
+			<listitem><para>
+				<emphasis>volume</emphasis> - volume of the tone
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
 
 </chapter>
 
