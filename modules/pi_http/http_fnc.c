@@ -313,7 +313,7 @@ static const str PI_HTTP_Response_Head_1 = str_init("<html><head><title>"\
 
 
 static const str PI_HTTP_Response_Head_2 = str_init(\
-"<link rel=\"icon\" type=\"image/png\" href=\"http://opensips.org/favicon.png\">"\
+"<link rel=\"icon\" type=\"image/png\" href=\"https://opensips.org/favicon.png\">"\
 "</head>\n"\
 "<body alink=\"#000000\" bgcolor=\"#ffffff\" link=\"#000000\" text=\"#000000\" vlink=\"#000000\">");
 
@@ -392,7 +392,7 @@ static const str PI_HTTP_Post_Form_2 = str_init(\
 static const str PI_HTTP_Response_Foot = str_init(\
 "\n</center>\n<div align=\"center\" class=\"foot\" style=\"margin:20px auto\">"\
 	"<span style='margin-left:5px;'></span>"\
-	"<a href=\"http://opensips.org\">OpenSIPS web site</a><br/>"\
+	"<a href=\"https://opensips.org\">OpenSIPS web site</a><br/>"\
 	"Copyright &copy; 2012-2015 <a href=\"http://www.voipembedded.com/\">VoIP Embedded, Inc.</a>"\
 								". All rights reserved."\
 "</div></body></html>");

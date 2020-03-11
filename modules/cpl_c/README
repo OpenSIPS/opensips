@@ -487,7 +487,7 @@ pt.xml
    the name of the columns must be as they are in the SQL script.
    You can also find the complete database documentation on the
    project webpage,
-   http://www.opensips.org/html/docs/db/db-schema-devel.html.
+   https://opensips.org/docs/db/db-schema-devel.html.
 
 Chapter 2. Contributors
 

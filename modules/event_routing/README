@@ -62,7 +62,7 @@ Chapter 1. Admin Guide
    provides a mechanism that allows different SIP processings (of
    messages in script) to communicate and synchronize between
    through OpenSIPS Events (see
-   http://www.opensips.org/Documentation/Interface-Events-2-3).
+   https://opensips.org/Documentation/Interface-Events-2-3).
 
    This mechanism is based on the Subscribe-Notify concept. Any
    SIP processing may subscribe to various OpenSIPS Events Upon
@@ -76,7 +76,7 @@ Chapter 1. Admin Guide
    (predefined Events), either from the script level (custom
    Events). Please refer to the Event Interface documentation for
    more on how the Events are generated
-   (http://www.opensips.org/Documentation/Interface-Events-2-3).
+   (https://opensips.org/Documentation/Interface-Events-2-3).
 
    Depending on how the notification is handled by the subscribing
    processing, we distinguish two main scenarios:
@@ -342,7 +342,7 @@ Chapter 3. Frequently Asked Questions
 
        Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+       Take a look at https://opensips.org/.
 
    3.2.
 

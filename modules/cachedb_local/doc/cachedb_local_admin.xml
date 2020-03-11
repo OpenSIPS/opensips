@@ -42,7 +42,7 @@
 			try to learn all the local cache information from antoher node in the cluster at startup.
 			The data synchronization mechanism requires defining one of the nodes in the cluster
 			as a "<emphasis role='bold'>seed</emphasis>" node.
-			See the <ulink url="http://www.opensips.org/html/docs/modules/3.0.x/clusterer.html#capabilities">clusterer</ulink>
+			See the <ulink url="https://opensips.org/docs/modules/3.0.x/clusterer.html#capabilities">clusterer</ulink>
 			module for details on how to do this and why is it needed.
 		</para>
 		<para>

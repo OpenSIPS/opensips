@@ -216,7 +216,7 @@ Chapter 1. Admin Guide
      * Patch RTPProxy: “patch < path_to_rtpproxy_patch”
 
    The patched version can also be found at:
-   http://opensips.org/pub/rtpproxy/
+   https://opensips.org/pub/rtpproxy/
 
 1.4. Dependencies
 
@@ -889,7 +889,7 @@ Chapter 2. Frequently Asked Questions
 
        Where can I find more about OpenSIPS?
 
-       Take a look at http://www.opensips.org/.
+       Take a look at https://opensips.org/.
 
    2.3.
 

@@ -21,9 +21,9 @@ Release:      %rel
 Packager:     Bogdan-Andrei Iancu <bogdan@opensips.org>
 Copyright:    GPL
 Group:        Networking/Daemons
-Source:       http://opensips.org/pub/opensips/stable/%{name}-%{ver}_src.tar.gz
+Source:       https://opensips.org/pub/opensips/stable/%{name}-%{ver}_src.tar.gz
 Source2:      opensips.init.SuSE
-URL:          http://www.opensips.org/
+URL:          https://opensips.org/
 Vendor:       opensips.org
 BuildRoot:    /var/tmp/%{name}-%{ver}-root
 Conflicts:    opensips < %ver, opensips-mysql < %ver, opensips-xmpp < %ver, opensips-radius < %ver, opensips-postgres < %ver, opensips-unixodbc < %ver, opensips-presence < %ver

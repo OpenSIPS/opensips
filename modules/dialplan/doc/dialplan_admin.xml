@@ -99,7 +99,7 @@
 		</para>
 		<para>
 		The definition of the tables used by the dialplan module can be found
-		at <ulink url="http://www.opensips.org/html/db-schema.html#AEN1501">&osipsdbdocslink;#AEN1501</ulink>
+		at <ulink url="https://opensips.org/db-schema.html#AEN1501">&osipsdbdocslink;#AEN1501</ulink>
 		</para>
 		<section>
 		<title>What to place in table</title>

@@ -31,7 +31,7 @@
 		Each entity has a corresponding table in the database, for 
 		provisioning purposes - the <emphasis>cc_flows</emphasis> and 
 		<emphasis>cc_agents</emphasis> tables, see
-		<ulink url='http://www.opensips.org/Documentation/Install-DBSchema-1-11#AEN2361'>DB schema</ulink>.
+		<ulink url='https://opensips.org/Documentation/Install-DBSchema-1-11#AEN2361'>DB schema</ulink>.
 		Data is loaded at startup and cached into memory ; runtime reload is 
 		possible via the MI commands (see the <emphasis>cc_reload</emphasis> 
 		command in <xref linkend="exported_mi_functions"/>).
