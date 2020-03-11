@@ -118,7 +118,7 @@
 		<para>
 			The right-hand side of the assignment must be a script pseudo variable or
 			a script AVP. For more information about them see <ulink
-				url='http://www.opensips.org/Resources/DocsCoreVar15'>
+				url='https://opensips.org/Resources/DocsCoreVar15'>
 				CookBooks - Scripting Variables</ulink>.
 		</para>
 		<example>

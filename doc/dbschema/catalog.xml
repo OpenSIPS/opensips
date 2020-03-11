@@ -38,10 +38,10 @@
     <public publicId="-//opensips.org//DTD DBSchema V1.1//EN"
             uri="dtd/dbschema.dtd"/>
 
-    <rewriteURI uriStartString="http://opensips.org/pub/opensips/dbschema/dtd/1.1/"
+    <rewriteURI uriStartString="https://opensips.org/pub/opensips/dbschema/dtd/1.1/"
                 rewritePrefix="dtd/"/> 
 
-    <rewriteURI uriStartString="http://opensips.org/dbschema/xsl/current/"
+    <rewriteURI uriStartString="https://opensips.org/dbschema/xsl/current/"
                 rewritePrefix="xsl/"/> 
 
     <!-- Uncomment the following entry if you have docbook DTDs in unusual

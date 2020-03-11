@@ -31,8 +31,8 @@ What is new in 1.6.0
 
     * $an - the nonce from Authorization or Proxy-Authorization header
     * $ar - the authentication response from Authorization or Proxy-Authorization header
-    * $branch - replaces the $br variable (http://www.opensips.org/Resources/DocsCoreVar#toc13)
-    * $(branch()[n]) - this variable provides read/write access to all fields/attributes of an already existing branch (priorly created with append_branch()). The variable accepts also index $(branch(uri)[1]) for accessing a specific branch (multiple branches can be defined at a moment). The index starts from 0 (first branch). If the index is negative, it is considered the n-th branch from the end ( index -1 means the last branch).To get all branches, use the * index - $(branch(uri)[*]). - see http://www.opensips.org/Resources/DocsCoreVar#toc14. The fields of the branch are:
+    * $branch - replaces the $br variable (https://opensips.org/Resources/DocsCoreVar#toc13)
+    * $(branch()[n]) - this variable provides read/write access to all fields/attributes of an already existing branch (priorly created with append_branch()). The variable accepts also index $(branch(uri)[1]) for accessing a specific branch (multiple branches can be defined at a moment). The index starts from 0 (first branch). If the index is negative, it is considered the n-th branch from the end ( index -1 means the last branch).To get all branches, use the * index - $(branch(uri)[*]). - see https://opensips.org/Resources/DocsCoreVar#toc14. The fields of the branch are:
           o uri - the RURI of the branch (string value)
           o duri - destination URI of the branch (outbound proxy of the branch) (string value)
           o q - q value of the branch (int value)
@@ -92,7 +92,7 @@ This feature is implemented in two modules: b2b_entities and b2b_logic.
 
 The services are defined in XML documents that are parsed and applied by the b2b_logic module. It uses the basic dialog management functions offered by the b2b_entities module to command the actions needed to implement the service.
 
-Find more on http://www.opensips.org/Main/News0036.
+Find more on https://opensips.org/Main/News0036.
 2.7  MEMCACHED module (NEW)
 
 A new module that provides a new caching method using memcached servers was added. It provides a way to access memcached servers using the existing memcache API.
@@ -106,7 +106,7 @@ Advantages over the existing "localcache" module:
     * servers may be grouped together (e.g. for security purposes : some can be inside a private network, some can be in a public one). 
 
 Find more on http://lists.opensips.org/pipermail/users/2009-July/007024.html or
-http://www.opensips.org/html/docs/modules/devel/memcached.html
+https://opensips.org/docs/modules/devel/memcached.html
 2.8  DB_HTTP module (NEW)
 
 This module provides access to a database that is implemented as a HTTP server. It may be used in special cases where traversing firewalls is a problem, or where data encryption is required.
@@ -117,7 +117,7 @@ The module can provide SSL, authentication, and all the functionalities of an op
 
 There is a slight difference between the url of db_http and the urls of the other db modules. The url doesn't have to contain the database name. Instead, everything that is after the address is considered to be a path to the db resource, it may be missing.
 
-Find more on http://www.opensips.org/html/docs/modules/devel/db_http.html
+Find more on https://opensips.org/docs/modules/devel/db_http.html
 2.9  DB_VIRTUAL module (NEW)
 
 The DB_VIRTUAL module allows you to create virtual DB connection on top of real connections. A virtual connection may use multiple real connection (a set), acting as a mixer layer - based on different algorithms, the DB operation pushed on the virtual DB will be pushed further to one or more real DB connections.
@@ -126,7 +126,7 @@ The DB_VIRTUAL provides failover mode (you have a master real connection and whe
 
 The purpose of this module is to provide failover and load-balancing at DB connection level in a totally transparent way for the modules that needs DB support.
 
-Read more on http://www.opensips.org/Main/News0035.
+Read more on https://opensips.org/Main/News0035.
 2.10  JSON module (NEW)
 
 This module introduces a new type of variable that provides both serialization and de-serialization from JSON format. The Json format it is very useful as you can encode an unlimited number (and types) of info elements into a single string. For example a gateway description may contain several infos on the GW (if SST is accepted, RPID/PAI, etc), also a user profile (with all its date) can be condensed into a single string, so that DB ops are reduced to a maximum.
@@ -137,7 +137,7 @@ The correct approach is to consider a json object as a hashtable ( you can put (
 
 Since the JSON format can have objects inside other objects you can have multiple nested hashtables or arrays and you can access these using paths.
 
-See more on http://www.opensips.org/html/docs/modules/devel/json.html
+See more on https://opensips.org/docs/modules/devel/json.html
 2.11  STUN server module (NEW)
 
 There is a new STUN server(rfc 3489) module integrated in OpenSIPS.
@@ -167,13 +167,13 @@ Example:
         alternate_ip = 34.34.34.12; primary_port = 5060 - dedicated stun socket
         alternate_ip = 34.34.34.12; alternate_port = 3478 - dedicated stun socket
 
-Documentation can be found here: http://www.opensips.org/html/docs/modules/devel/stun.html
+Documentation can be found here: https://opensips.org/docs/modules/devel/stun.html
 2.12  ALIAS_DB module
 
     * new function alias_db_find("table","input_var","output_var") - similar to alias_db_lookup(), but instead of using fixed input (RURI) and output (RURI) is able to get the input SIP URI from a pseudo-variable and place the result back also in a pseudo-variable.
       The function is useful as the alias lookup does not affect the request it self (no RURI changes), can be used in a reply context (as it does not work with RURI only) and can be used for others URI than the RURI ( To URI, From URI, custom URI).
       The function returns TRUE any alias mapping was found and returned.
-      ->See http://www.opensips.org/html/docs/modules/1.6.x/alias_db.html#id228302
+      ->See https://opensips.org/docs/modules/1.6.x/alias_db.html#id228302
     * both alias_db_lookup() and alias_db_find() may take an optional param, a list of flags (char based flags):
           o 'd' - do not use domain part in the lookup (by default domain is used)
           o 'r' - do reverse lookup - the input is the ID URI and the result is alias URI (normally the input is the alias URI and the result is the ID URI) 
@@ -239,7 +239,7 @@ important - Removed as merged into GROUP module - see the AAA API and module cha
 2.24  LOAD_BALANCER module
 
     * more algorithm for computing the load are available - relative or absolute values. See:
-      http://www.opensips.org/html/docs/modules/1.6.x/load_balancer.html#id227286
+      https://opensips.org/docs/modules/1.6.x/load_balancer.html#id227286
     * function load_balance() accepts the group parameter as pseudo-variable also
     * support for destination probing (pinging) and enabling / disabling state. The module is now capable to monitor the status of the destinations by doing SIP probing (sending SIP requests like OPTIONS) and to automatically enables / disable destination based on the probing result. See:
       http://lists.opensips.org/pipermail/users/2009-July/006818.html 
@@ -273,10 +273,10 @@ New extensions on the pike module for extending the flood detection : (1) from c
 2.30  REGISTRAR module
 
     * former global parameters like method_filtering, max_contacts, append_branches, use_path, path_mode and path_use_received are now per AOR / function parameters ; also
-    * lookup() function takes char flags (see http://www.opensips.org/html/docs/modules/devel/registrar.html#id271073):
+    * lookup() function takes char flags (see https://opensips.org/docs/modules/devel/registrar.html#id271073):
           o if parallel forking should be done or not for this lookup (if branches should be appended or not)
           o if method filtering should be performed or not for this lookup 
-    * save() function takes char flags (see http://www.opensips.org/html/docs/modules/devel/registrar.html#id228571):
+    * save() function takes char flags (see https://opensips.org/docs/modules/devel/registrar.html#id228571):
           o if contacts should not be saved in DB (cache update only)
           o if no reply should be sent out
           o the maximum number of contacts allowed for AOR

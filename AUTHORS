@@ -19,7 +19,7 @@ D: Modules Contributor to OpenSIPS
 N: Bogdan Andrei Iancu
 U: bogdan-iancu
 E: bogdan@opensips.org
-W: http://www.opensips.org
+W: https://opensips.org
 D: Core developer of SER / OpenSER / OpenSIPS
 
 
@@ -137,7 +137,7 @@ D: Contributor to OpenSER
 N: Daniel-Constantin Mierla
 U: miconda
 E: daniel@opensips.org
-W: http://www.opensips.org
+W: https://opensips.org
 D: Core developer of SER / OpenSER
 
 
@@ -282,7 +282,7 @@ D: Packager for OpenSIPS
 N: Ramona-Elena Modroiu
 U: ramona
 E: ramona@opensips.org
-W: http://www.opensips.org
+W: https://opensips.org
 D: Main developer of SER / OpenSER
 
 

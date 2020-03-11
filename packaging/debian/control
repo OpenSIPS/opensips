@@ -41,7 +41,7 @@ Build-Depends: bison,
                xsltproc,
                zlib1g-dev
 Standards-Version: 3.9.8
-Homepage: http://www.opensips.org/
+Homepage: https://opensips.org/
 
 Package: opensips
 Architecture: any

@@ -34,7 +34,7 @@ Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
 Source0:  http://download.opensips.org/%{name}-%{version}.tar.gz
-URL:      http://opensips.org
+URL:      https://opensips.org
 
 BuildRequires:  expat-devel
 BuildRequires:  libxml2-devel

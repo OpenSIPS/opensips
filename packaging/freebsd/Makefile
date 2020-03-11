@@ -8,7 +8,7 @@
 PORTNAME=	opensips
 PORTVERSION=	3.0.2
 CATEGORIES=	net
-MASTER_SITES=	http://opensips.org/pub/opensips/${PORTVERSION}/src/
+MASTER_SITES=	https://opensips.org/pub/opensips/${PORTVERSION}/src/
 DISTNAME=	${PORTNAME}-${PORTVERSION}-tls_src
 
 MAINTAINER=	jesusr@FreeBSD.org

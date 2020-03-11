@@ -8,7 +8,7 @@
 #   re-generating the scenario with different options.
 #
 # Please refer to the Core CookBook at:
-#      http://www.opensips.org/Resources/DocsCookbooks
+#      https://opensips.org/Resources/DocsCookbooks
 # for a explanation of possible statements, functions and parameters.
 #
 
