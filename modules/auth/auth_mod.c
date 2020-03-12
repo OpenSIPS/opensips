@@ -443,7 +443,7 @@ static inline int pv_authorize(struct sip_msg* msg, gparam_p realm,
 	cred = (auth_body_t*)h->parsed;
 
 	res = auth_get_ha1(msg, &cred->digest.username, &domain, ha1);
-	if (res < 0) {
+	if (res != 0) {
 		/* Error */
 		if (sigb.reply(msg, 500, &auth_500_err, NULL) == -1) {
 			LM_ERR("failed to send 500 reply\n");
