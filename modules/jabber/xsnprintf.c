@@ -193,7 +193,7 @@ ap_gcvt(double number, int ndigit, char *buf)
     for (i = ndigit - 1; i > 0 && p1[i] == '0'; i--)
         ndigit--;
     if ((decpt >= 0 && decpt - ndigit > 4)
-            || (decpt < 0 && decpt < -3)) {     /* use E-style */
+            || decpt < -3) {     /* use E-style */
         decpt--;
         *p2++ = *p1++;
         *p2++ = '.';
