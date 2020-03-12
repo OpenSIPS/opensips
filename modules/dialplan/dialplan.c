@@ -288,7 +288,8 @@ static int dp_create_head(str part_desc)
 				part_desc.len + part_desc.s - start);
 
 		if (param_value.s == 0) {
-			LM_ERR("[[%s]]!\n", param_value.s);
+			LM_ERR("failed to locate '%c' separator in 'partition' string\n",
+			       DP_CHAR_EQUAL);
 			goto out_err;
 		}
 
