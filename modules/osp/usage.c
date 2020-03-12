@@ -774,8 +774,8 @@ void ospReportTermSetupUsage(void)
     OSPE_ROLE_STATE rstate;
     int errorcode;
 
-    if (inbound == NULL) {
-        if (dest == NULL) {
+    if (inbound != NULL) {
+        if (dest != NULL) {
             if (dest->reported == 0) {
                 dest->reported = 1;
                 LM_INFO("report term setup for call_id '%.*s' transaction_id '%llu'\n",
