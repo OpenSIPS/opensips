@@ -336,6 +336,10 @@ int media_session_end(struct media_session *ms, int leg, int nohold, int proxied
 			 * one on hold, if we're going to resume the sessions for both
 			 */
 			nohold = 1;
+		} else if (proxied) {
+			/* if there's no other session on the other leg, do not put this
+			 * one on hold, as it is going to be resumed */
+			nohold = 1;
 		}
 		if (media_session_leg_end(msl, nohold, proxied) < 0)
 			ret = -1;
