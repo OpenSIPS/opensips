@@ -35,6 +35,7 @@
 #include "../../dprint.h"
 #include "../../error.h"
 #include "../../ut.h"
+#include "../../pt.h"
 #include "../../script_cb.h"
 #include "../../parser/parse_from.h"
 #include "../dialog/dlg_load.h"
@@ -416,6 +417,7 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 	b2b_dlg_t* dlg;
 	b2b_table table;
 	unsigned int hash_index, local_index;
+	int unlock = 1;
 
 	if(!param)
 	{
@@ -442,17 +444,23 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 		LM_ERR("Wrong format for b2b key [%.*s]\n", key->len, key->s);
 		return -1;
 	}
-	lock_get(&table[hash_index].lock);
+	if (table[hash_index].locked_by != process_no)
+		lock_get(&table[hash_index].lock);
+	else
+		unlock = 0;
+
 	dlg = b2b_search_htable(table, hash_index, local_index);
 	if(dlg == NULL)
 	{
 		LM_ERR("No dialog found\n");
-		lock_release(&table[hash_index].lock);
+		if (unlock)
+			lock_release(&table[hash_index].lock);
 		return -1;
 	}
 	memcpy(dlg->param.s, param->s, param->len);
 	dlg->param.len = param->len;
-	lock_release(&table[hash_index].lock);
+	if (unlock)
+		lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster)
 		replicate_entity_update(dlg, type, hash_index, param, NULL);
