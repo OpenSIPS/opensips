@@ -510,7 +510,6 @@ int ospReportUsage(
     char* whorelease,
     char* ignore2)
 {
-    str relstr;
     OSPE_RELEASE release;
     char* tmp;
     char* token;
