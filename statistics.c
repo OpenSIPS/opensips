@@ -774,7 +774,7 @@ static mi_response_t *mi_get_stats(const mi_params_t *params,
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
 	mi_item_t *params_arr;
-	int i, no_params;
+	int i, j, no_params;
 	int found;
 	module_stats *mods;
 	stat_var *stat;
@@ -797,8 +797,8 @@ static mi_response_t *mi_get_stats(const mi_params_t *params,
 
 		if ( val.len==3 && memcmp(val.s,"all",3)==0) {
 			/* add all statistic variables */
-			for( i=0 ; i<collector->mod_no ;i++ ) {
-				if (mi_add_module_stats(resp_obj, &collector->amodules[i] )!=0)
+			for( j=0 ; j<collector->mod_no ;j++ ) {
+				if (mi_add_module_stats(resp_obj, &collector->amodules[j] )!=0)
 					goto error;
 			}
 
