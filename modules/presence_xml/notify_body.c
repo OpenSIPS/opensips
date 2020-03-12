@@ -177,7 +177,7 @@ int presence_offline_body(str* body, str** offline_body)
 	}
 
 	pres_node= xmlDocGetNodeByName(doc, "presence", NULL);
-	if(node== NULL)
+	if(pres_node== NULL)
 	{
 		LM_ERR("while extracting presence node\n");
 		goto done;
