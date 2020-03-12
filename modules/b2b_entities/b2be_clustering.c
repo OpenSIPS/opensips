@@ -454,17 +454,16 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 		new_dlg->legs = new_leg;
 
 	lock_get(&htable[h_idx].lock);
-	htable[h_idx].locked_by = process_no;
-
-	b2b_run_cb(new_dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE, packet);
-
-	htable[h_idx].locked_by = -1;
 
 	new_key = b2b_htable_insert(htable, new_dlg, hash_index, type, 1, 1);
 	if (new_key == NULL) {
 		LM_ERR("Failed to insert new record\n");
 		goto error;
 	}
+
+	htable[h_idx].locked_by = process_no;
+	b2b_run_cb(new_dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE, packet);
+	htable[h_idx].locked_by = -1;
 
 	lock_release(&htable[h_idx].lock);
 
