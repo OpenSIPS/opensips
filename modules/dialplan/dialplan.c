@@ -199,8 +199,8 @@ static int dp_head_insert(int dp_insert_type, str *content,
 	dp_head_p start = dp_hlist;
 	dp_head_p tmp = NULL;
 
-	if ((!content && (!content->s || !content->len)) ||
-		(!partition && (!partition->s || !partition->len))) {
+	if ((!content || (!content->s || !content->len)) ||
+		(!partition || (!partition->s || !partition->len))) {
 		LM_ERR("invalid insert in partition!\n");
 		return -1;
 	}
