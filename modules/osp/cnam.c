@@ -64,9 +64,9 @@ static int ospParseSubscribe(
         LM_ERR("failed to parse message\n");
     } else if (parse_sip_msg_uri(msg) < 0) {
         LM_ERR("failed to parse ruri\n");
-    } else if (parse_from_uri(msg) < 0) {
+    } else if (parse_from_uri(msg) == NULL) {
         LM_ERR("failed to parse from\n");
-    } else if (parse_to_uri(msg) < 0) {
+    } else if (parse_to_uri(msg) == NULL) {
         LM_ERR("failed to parse to\n");
     } else if ((msg->contact == NULL) || (msg->contact->body.len <= 0) || (parse_contact(msg->contact) < 0)) {
         LM_ERR("failed to parse contact\n");
