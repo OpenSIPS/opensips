@@ -403,7 +403,7 @@ static int mod_init(void)
 
 	if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
 		cid_keys = pkg_malloc(max_contact_delete *
-				(sizeof(db_key_t) * sizeof(db_val_t)));
+				(sizeof(db_key_t) + sizeof(db_val_t)));
 		if (cid_keys == NULL) {
 			LM_ERR("no more pkg memory\n");
 			return -1;
