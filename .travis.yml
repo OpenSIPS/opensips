@@ -33,8 +33,9 @@ addons:
             - libncurses5-dev
             - libjson0-dev
             - uuid-dev
+#            - libjwt-dev
 script: CC_EXTRA_OPTS=-Werror FASTER=1 NICER=0 make \
-    exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb" all
+    exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb auth_jwt" all
 notifications:
     irc:
         channels:
