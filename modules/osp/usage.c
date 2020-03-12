@@ -509,7 +509,6 @@ int ospReportUsage(
     struct sip_msg* msg,
     int* whorelease)
 {
-    str relstr;
     OSPE_RELEASE release;
     char* tmp;
     char* token;
