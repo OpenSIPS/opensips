@@ -91,7 +91,7 @@ int ospValidateHeader(
     ospInitInboundInfo(&inbound);
     ospInitDestination(&dest);
 
-    if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction) != OSPC_ERR_NO_ERROR)) {
+    if ((errorcode = OSPPTransactionNew(_osp_provider, &transaction)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to create a new OSP transaction handle (%d)\n", errorcode);
     } else if (ospGetFromUser(msg, dest.calling, sizeof(dest.calling)) != 0) {
         LM_ERR("failed to extract calling number\n");
