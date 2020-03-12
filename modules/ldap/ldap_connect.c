@@ -64,7 +64,7 @@ static inline int ldap_word2upper(char* input)
 			continue;
 		}
 
-		if (input[index] <= 'A' && input[index] >= 'Z') {
+		if (input[index] < 'A' || input[index] > 'Z') {
 			LM_ERR("invalid req_cert parameter!"
 					" must contain only letters\n");
 			return -1;
