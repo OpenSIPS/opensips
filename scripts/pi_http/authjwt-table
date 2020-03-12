@@ -1,0 +1,18 @@
+	<!-- Declaration of jwt_profiles table-->
+	<db_table id="jwt_profiles">
+		<table_name>jwt_profiles</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>tag</field><type>DB_STR</type></column>
+		<column><field>sip_username</field><type>DB_STR</type></column>
+	</db_table>
+	<!-- Declaration of jwt_secrets table-->
+	<db_table id="jwt_secrets">
+		<table_name>jwt_secrets</table_name>
+		<db_url_id>mysql</db_url_id>
+		<column><field>id</field><type>DB_INT</type></column>
+		<column><field>corresponding_tag</field><type>DB_STR</type></column>
+		<column><field>secret</field><type>DB_STR</type></column>
+		<column><field>start_ts</field><type>DB_INT</type></column>
+		<column><field>end_ts</field><type>DB_INT</type></column>
+	</db_table>

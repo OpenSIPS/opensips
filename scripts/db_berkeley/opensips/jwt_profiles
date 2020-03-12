@@ -1,0 +1,12 @@
+METADATA_COLUMNS
+id(int) tag(str) sip_username(str)
+METADATA_KEY
+0 
+METADATA_READONLY
+0
+METADATA_LOGFLAGS
+0
+METADATA_DEFAULTS
+NIL|NIL|NIL
+jwt_profiles|
+jwt_profiles|1

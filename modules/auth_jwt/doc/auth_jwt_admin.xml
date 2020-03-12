@@ -1,0 +1,342 @@
+<!-- AUTH_JWT Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		The module implements authentication over JSON Web Tokens.
+		In some cases ( ie. WebRTC ) the user authenticates on another layer ( other than SIP ), so it makes no sense to double-authenticate it on the SIP layer.
+		Thus, the SIP client will simply present the JWT auth token it received from the server, and pass it on to OpenSIPS which will use that for authentication purposes.
+
+		It relies on two DB tables, one containing JWT profiles ( a profile name and it's SIP username associated to it ) and one containing JWT secrets. Each secret has a corresponding profile, the KEY used for signing the JWT and two timestamps describing a validation interval. Multiple JWT secrets can point to the same JWT profile. 
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The module depends on the following modules (in the other words
+			the listed modules must be loaded before this module):
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>database</emphasis> -- Any database module
+				(currently mysql, postgres, dbtext)
+				</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+			The following libraries or applications must be installed
+			before running &osips; with this module loaded:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>libjwt-dev</emphasis></para>
+				</listitem>
+			</itemizedlist>
+		</section>
+	</section>
+
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (string)</title>
+		<para>
+		This is URL of the database to be used. Value of the parameter depends
+		on the database module used. For example for mysql and postgres modules
+		this is something like mysql://username:password@host:port/database.
+		For dbtext module (which stores data in plaintext files) it is
+		directory in which the database resides.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>&defaultrodb;</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title><varname>db_url</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("auth_jwt", "db_url", "&exampledb;")
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_profiles_table" xreflabel="profiles_table">
+		<title><varname>profiles_table</varname> (string)</title>
+		<para>
+		Name of the DB table containing the jwt profiles
+		</para>
+		<para>
+		Default value of this parameter is jwt_profiles.
+		</para>
+		<example>
+		<title><varname>profiles_table</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("auth_jwt", "profiles_table", "my_profiles")
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_secrets_table" xreflabel="secrets_table">
+		<title><varname>secrets_table</varname> (string)</title>
+		<para>
+		Name of the DB table containing the jwt secrets
+		</para>
+		<para>
+		Default value of this parameter is jwt_secrets.
+		</para>
+		<example>
+		<title><varname>secrets_table</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("auth_jwt", "secrets_table", "my_secrets")
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_tag_column" xreflabel="tag_column">
+		<title><varname>tag_column</varname> (string)</title>
+		<para>
+		Column holding the JWT profile tag.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>tag</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>tag_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("auth_jwt", "tag_column", "my_tag_column")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_username_column" xreflabel="username_column">
+		<title><varname>username_column</varname> (string)</title>
+		<para>
+		Column holding the JWT profile associated SIP username.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>sip_username</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>username_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("auth_jwt", "username_column", "my_username_column")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_secret_tag_column" xreflabel="secret_tag_column">
+		<title><varname>secret_tag_column</varname> (string)</title>
+		<para>
+		Column holding the JWT secret associated tag.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>corresponding_tag</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>secret_tag_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("auth_jwt", "secret_tag_column", "my_secret_tag_column")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_secret_column" xreflabel="secret_column">
+		<title><varname>secret_column</varname> (string)</title>
+		<para>
+		Column holding the actual jwt signing secret.
+		</para>
+		<para>
+		<emphasis>
+			default value is <quote>secret</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>set <varname>secret_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("auth_jwt", "secret_column", "my_secret_column")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_start_ts_column" xreflabel="start_ts_column">
+		<title><varname>start_ts_column</varname> (string)</title>
+		<para>
+		Column holding the JWT secret start UNIX timestamp.
+		</para>
+		<para>
+		<emphasis>
+			default value is <quote>start_ts</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>set <varname>start_ts</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("auth_jwt", "start_ts", "my_start_ts_column")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_end_ts_column" xreflabel="end_ts_column">
+		<title><varname>end_ts_column</varname> (string)</title>
+		<para>
+		column holding the jwt secret end unix timestamp.
+		</para>
+		<para>
+		<emphasis>
+			default value is <quote>end_ts</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>set <varname>end_ts</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("auth_jwt", "end_ts", "my_end_ts_column")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_tag_claim" xreflabel="tag_claim">
+		<title><varname>tag_claim</varname> (string)</title>
+		<para>
+		The JWT claim which will be used to identify the JWT profile
+		</para>
+		<para>
+		<emphasis>
+			default value is <quote>tag</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>set <varname>tag_claim</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("auth_jwt", "tag_claim", "my_tag_claim")
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_load_credentials" xreflabel="load_credentials">
+		<title><varname>load_credentials</varname> (string)</title>
+		<para>
+		This parameter specifies credentials to be fetched from the JWT profiles table when
+		the authentication is performed. The loaded credentials will be stored
+		in AVPs. If the AVP name is not specificaly given, it will be used a
+		NAME AVP with the same name as the column name.
+		</para>
+		<para>
+		 Parameter syntax:
+		<itemizedlist>
+			<listitem><para><emphasis>
+			load_credentials = credential (';' credential)*
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			credential = (avp_specification '=' column_name) |
+							(column_name)
+			</emphasis></para></listitem>
+			<listitem><para><emphasis>
+			avp_specification = '$avp(' + NAME + ')'
+			</emphasis></para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		Default value of this parameter is <quote>none ( empty )</quote>.
+		</para>
+		<example>
+		<title><varname>load_credentials</varname> parameter usage</title>
+		<programlisting format="linespecific">
+# load my_extra_column into $avp(extra_jwt_info)
+modparam("auth_jwt", "load_credentials", "$avp(extra_jwt_info)=my_extra_column")
+</programlisting>
+		</example>
+	</section>
+
+
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_jwt_authorize" xreflabel="jwt_authorize()">
+		<title>
+			<function moreinfo="none">jwt_authorize(jwt_token,out_decoded_token,out_sip_username)</function>
+		</title>
+		<para>
+			The function will read the first param ( jwt_token ), extract the tag claim and then try to authenticate it against the DB secrets for the respective profile tag. In case of success, it populates the out_decoded_token pvar with the decoded JWT ( in plaintext format header_json.payload_json ) and the out_sip_username with the SIP username corresponding to that JWT profile.
+		</para>
+		<para>Negative codes may be interpreted as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>-1 ( error)</emphasis> - JWT authentication failed
+			</para></listitem>
+		</itemizedlist>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>jwt_token (string)</emphasis> - The JWT token to perform auth on
+			</para>
+			<para>
+			The string may contain pseudo variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_decoded_token (pvar)</emphasis> - PVAR used to store the decoded JWT upon succesful auth
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_sip_username (pvar)</emphasis> - PVAR used to store the SIP username corresponding to the JWT profile, upon succesful auth
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">www_authorize</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (!jwt_authorize("$avp(my_jwt_token)", $avp(decoded_token), $avp(sip_username) )) {
+	send_reply("401","Unauthorized");
+	exit;
+} else {
+	xlog("Succesful JWT auth - $avp(decoded_token) \n");
+	if ($fU != $avp(sip_username)) {
+		send_reply("403","Forbidden AUTH ID");
+		exit;
+	}	
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+</chapter>
+
