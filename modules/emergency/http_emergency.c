@@ -99,9 +99,9 @@ int send_esct(struct sip_msg *msg, str callid_ori, str from_tag){
 		localtime_r(&rawtime, &timeinfo);
 
 		strftime(info_call->esct->datetimestamp, MAX_TIME_SIZE, "%Y-%m-%dT%H:%M:%S%Z", &timeinfo);
-		LM_DBG(" --- TREAT BYE - XML ESCT %s \n \n", xml);
 
 		xml = buildXmlFromModel(info_call->esct);
+		LM_DBG(" --- TREAT BYE - XML ESCT %s \n \n", xml);
 
 		// sends HTTP POST esctRequest to VPC
 		resp = post(url_vpc, xml, &response);
