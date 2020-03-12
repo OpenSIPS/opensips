@@ -544,7 +544,7 @@ static int mi_xmlrpc_parse_params(xmlNodePtr params_node, mi_request_t *req_item
 			return 0;
 		}
 
-		mi_xmlrpc_get_param(value_node, req_item->params, NULL);
+		rc = mi_xmlrpc_get_param(value_node, req_item->params, NULL);
 		if (rc<0)
 			return -1;
 		else if (rc>0) {
