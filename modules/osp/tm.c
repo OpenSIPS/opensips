@@ -110,8 +110,6 @@ static void ospTmcbFunc(
 {
     if (type & TMCB_RESPONSE_OUT) {
         LM_DBG("RESPONSE_OUT\n");
-    } else if (type & TMCB_ON_FAILURE) {
-        LM_DBG("FAILURE_RO\n");
     } else if (type & TMCB_RESPONSE_IN) {
         LM_DBG("RESPONSE_IN\n");
     } else if (type & TMCB_REQUEST_FWDED) {
