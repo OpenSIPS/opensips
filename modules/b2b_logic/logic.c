@@ -3929,7 +3929,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	b2bl_tuple_t* tuple;
 	unsigned int hash_index, local_index;
 	b2bl_entity_id_t *e2= 0, *e1= 0;
-	b2bl_entity_id_t *e;
+	b2bl_entity_id_t *e= 0;
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
 
