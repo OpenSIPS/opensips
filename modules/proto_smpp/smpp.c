@@ -389,7 +389,8 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 			*o++ = '?';
 			i += 3; /* skip a total of 4 bytes */
 			continue;
-		} if ((c & 0xF0) == 0xE0) {
+		}
+		if ((c & 0xF0) == 0xE0) {
 			/* three bytes */
 			if (i + 2 >= input->len) {
 				*o++ = '?';
@@ -407,7 +408,8 @@ static int convert_utf8_to_gsm7(str *input, char *output)
 				*o++ = '?';
 			}
 			continue;
-		} if ((c & 0xE0) == 0xC0) {
+		}
+		if ((c & 0xE0) == 0xC0) {
 			/* two bytes */
 			if (i + 1 >= input->len) {
 				*o++ = '?';
