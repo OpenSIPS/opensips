@@ -864,7 +864,7 @@ static int pack_cb_params(struct sip_msg * msg, str* flag_s,
 		goto error2;
 
 	*param2 = build_cb_param(flags, entity_p, peer_p);
-	if (*param1==NULL) {
+	if (*param2==NULL) {
 		shm_free(*param1);
 		goto error2;
 	}
