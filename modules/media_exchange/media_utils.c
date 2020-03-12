@@ -1147,7 +1147,7 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 			goto release;
 		}
 		/* if we have any media forks, pop them */
-		while (mf_count-- >= 0) {
+		while (mf_count-- > 0) {
 			bin_pop_int(store, &leg);
 			bin_pop_int(store, &medianum);
 			bin_pop_int(store, &fork_medianum);
