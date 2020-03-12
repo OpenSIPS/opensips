@@ -175,11 +175,6 @@ int gzip_uncompress(unsigned char* in, unsigned long ilen, str* out, unsigned lo
 		}
 	} while (rc != Z_STREAM_END);
 
-	if (rc != Z_STREAM_END) {
-		deflateEnd(&zlibStream);
-		return rc;
-	}
-
 	deflateEnd(&zlibStream);
 	return Z_OK;
 memerr:
