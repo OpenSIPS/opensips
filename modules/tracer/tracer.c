@@ -3404,7 +3404,7 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param)
 		for (filter = el->filters; filter; filter = filter->next) {
 			switch (filter->type) {
 				case TRACE_FILTER_CALLER:
-					if (parse_from_uri(msg) < 0)
+					if (parse_from_uri(msg) == NULL)
 						goto skip;
 
 					if (!dyn_tracing_uri_match(&filter->match, &get_from(msg)->parsed_uri))
