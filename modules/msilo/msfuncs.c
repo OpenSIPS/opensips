@@ -242,7 +242,7 @@ int m_build_body(str *body, time_t date, str msg, time_t sdate)
 	char *p;
 
 	if(!body || !(body->s) || body->len <= 0 || msg.len <= 0
-			|| date < 0 || msg.len < 0 || (46+msg.len > body->len) )
+			|| date < 0 || (46+msg.len > body->len) )
 		goto error;
 
 	p = body->s;
