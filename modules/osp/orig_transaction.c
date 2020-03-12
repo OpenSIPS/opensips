@@ -471,6 +471,7 @@ int ospRequestRouting(
     if ((errcode = OSPPTransactionNew(_osp_provider, &trans)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to create new OSP transaction (%d)\n", errcode);
     } else if (ospGetCallId(msg, &(callids[0])) != 0) {
+        callids[0] = NULL;
         LM_ERR("failed to extract call id\n");
     } else if (ospGetFromUser(msg, inbound.calling, sizeof(inbound.calling)) != 0) {
         LM_ERR("failed to extract calling number\n");
