@@ -29,9 +29,12 @@
 
 typedef int (*start_recording_f)(str *callid, str *from_tag,
 		str *to_tag, str *node, str *flags, str *destination, int medianum);
+typedef int (*stop_recording_f)(str *callid, str *from_tag,
+		str *to_tag, str *node, int medianum);
 
 struct rtpproxy_binds {
 	start_recording_f start_recording;
+	stop_recording_f stop_recording;
 };
 
 typedef int (*load_rtpproxy_f)(struct rtpproxy_binds *rtpb);
@@ -42,10 +45,9 @@ static inline int load_rtpproxy_api(struct rtpproxy_binds *rtpb)
 	load_rtpproxy_f load_rtpproxy;
 
 	/* import the rtpproxy auto-loading function */
-	if ( !(load_rtpproxy=(load_rtpproxy_f)find_export("load_rtpproxy", 0))) {
-		LM_ERR("failed to import load_rtpproxy\n");
+	if ( !(load_rtpproxy=(load_rtpproxy_f)find_export("load_rtpproxy", 0)))
 		return -1;
-	}
+
 	/* let the auto-loading function load all rtpproxy stuff */
 	if (load_rtpproxy(rtpb) == -1)
 		return -1;

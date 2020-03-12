@@ -4090,7 +4090,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	e1->no = 0;
 	e2->no = 1;
 
-	if(b2b_api.update_b2bl_param(e2->type, &e2->key, tuple->key) < 0)
+	if(b2b_api.update_b2bl_param(e2->type, &e2->key, tuple->key, 1) < 0)
 	{
 		LM_ERR("Failed to update b2bl parameter in b2b_entities\n");
 		goto error;

@@ -117,6 +117,7 @@ typedef struct b2b_entry
 {
 	b2b_dlg_t* first;
 	gen_lock_t lock;
+	int locked_by;
 	int checked;
 }b2b_entry_t;
 

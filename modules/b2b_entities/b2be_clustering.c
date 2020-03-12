@@ -37,6 +37,7 @@
 #include "b2be_clustering.h"
 #include "b2b_entities.h"
 #include "b2be_db.h"
+#include "../../pt.h"
 
 #define NO_REPL_CONSTANT_STRS 10
 
@@ -456,13 +457,15 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 
 	lock_get(&htable[h_idx].lock);
 
-	b2b_run_cb(new_dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE, packet);
-
 	new_key = b2b_htable_insert(htable, new_dlg, hash_index, type, 1, 1);
 	if (new_key == NULL) {
 		LM_ERR("Failed to insert new record\n");
 		goto error;
 	}
+
+	htable[h_idx].locked_by = process_no;
+	b2b_run_cb(new_dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE, packet);
+	htable[h_idx].locked_by = -1;
 
 	lock_release(&htable[h_idx].lock);
 
@@ -551,7 +554,9 @@ int receive_entity_update(bin_packet_t *packet)
 	if (packet->type == REPL_ENTITY_UPDATE) {
 		unpack_update_fields(packet, dlg);
 
+		htable[hash_index].locked_by = process_no;
 		b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_UPDATE, packet);
+		htable[hash_index].locked_by = -1;
 	} else {
 		rc = recv_b2bl_param_update(packet, dlg);
 	}
@@ -605,7 +610,9 @@ int receive_entity_delete(bin_packet_t *packet)
 		return 0;
 	}
 
+	htable[hash_index].locked_by = process_no;
 	b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_DELETE, packet);
+	htable[hash_index].locked_by = -1;
 
 	b2b_entity_db_delete(type, dlg);
 	b2b_delete_record(dlg, htable, hash_index);

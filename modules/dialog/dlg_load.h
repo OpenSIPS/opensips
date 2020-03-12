@@ -35,7 +35,9 @@
 #include "../../sr_module.h"
 
 typedef struct dlg_cell *(*get_dlg_f) (void);
+typedef struct dlg_cell *(*get_dlg_by_callid_f) (str *, int);
 typedef int (*match_dialog_f) (struct sip_msg *msg, int _seq_match_mode);
+typedef int (*get_direction_f) (void);
 
 struct dlg_binds {
 	register_dlgcb_f     register_dlgcb;
@@ -59,6 +61,10 @@ struct dlg_binds {
 
 	ref_dlg_f            dlg_ref;
 	unref_dlg_f          dlg_unref;
+
+	get_direction_f      get_direction;
+	get_dlg_by_callid_f  get_dlg_by_callid;
+	send_indialog_req_f  send_indialog_request;
 
 	get_rr_param_f       get_rr_param;
 

@@ -605,6 +605,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	context_p *new_ctx;
 	dlg_t* dialog_info;
 	int result;
+	/*
 	unsigned int method_type;
 
 	if (parse_method(method->s,method->s+method->len,&method_type) == 0)
@@ -613,7 +614,6 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		return -1;
 	}
 
-	/*
 	 * we can send INVITEs with body for late negotiation
 	if (method_type == METHOD_INVITE && (body == NULL || body->s == NULL ||
 				body->len == 0))
@@ -1011,4 +1011,93 @@ mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
 
 	return mi_send_sequential(dlg, leg, &method,
 			(body_mode == 0?NULL:&body), extra_headers, challenge, async_hdl);
+}
+
+struct dlg_indialog_req_param {
+	int leg;
+	int is_invite;
+	struct dlg_cell *dlg;
+	indialog_reply_f func;
+	void *param;
+};
+
+static void dlg_indialog_reply_release(void *param)
+{
+	struct dlg_indialog_req_param *p = (struct dlg_indialog_req_param *)param;
+	unref_dlg(p->dlg, 1);
+	shm_free(p);
+}
+
+static void dlg_indialog_reply(struct cell* t, int type, struct tmcb_params* ps)
+{
+	int statuscode;
+	str ack = str_init("ACK");
+	struct dlg_indialog_req_param *param;
+
+	if (!ps || !ps->rpl || !ps->param) {
+		LM_ERR("wrong tm callback params!\n");
+		return;
+	}
+
+	statuscode = ps->code;
+	param = *(struct dlg_indialog_req_param **)ps->param;
+
+	if (param->func)
+		param->func(ps->rpl, statuscode, param->param);
+
+	if (param->is_invite && statuscode < 300 &&
+			send_leg_msg(param->dlg, &ack, other_leg(param->dlg, param->leg), param->leg,
+				NULL, NULL, NULL, NULL, NULL, NULL, 0) < 0)
+		LM_ERR("cannot send ACK message!\n");
+}
+
+int send_indialog_request(struct dlg_cell *dlg, str *method,
+		int dstleg, str *body, str *ct, indialog_reply_f func, void *param)
+{
+	str extra_headers;
+	struct dlg_indialog_req_param *p;
+
+	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, dstleg), dstleg, ct, &extra_headers)) {
+		LM_ERR("could not build extra headers!\n");
+		return -1;
+	}
+
+	p = shm_malloc(sizeof *p);
+	if (!p) {
+		LM_ERR("oom for allocating params!\n");
+		pkg_free(extra_headers.s);
+		return -1;
+	}
+	if (method->len == 6 && memcmp(method->s, "INVITE", 6) == 0)
+		p->is_invite = 1;
+	else
+		p->is_invite = 0;
+	p->dlg = dlg;
+	p->func = func;
+	p->param = param;
+	p->leg = dstleg;
+
+	ref_dlg(dlg, 1);
+	if (send_leg_msg(dlg, method, other_leg(dlg, dstleg), dstleg, &extra_headers,
+			body, dlg_indialog_reply, p, dlg_indialog_reply_release,
+			&dlg->legs[dstleg].reply_received, 1) < 0) {
+		pkg_free(extra_headers.s);
+		unref_dlg(dlg, 1);
+		shm_free(p);
+		return -2;
+	}
+	pkg_free(extra_headers.s);
+	return 0;
+}
+
+int get_dlg_direction(void)
+{
+	struct dlg_cell *dlg;
+
+	if ( (dlg=get_current_dialog())==NULL || ctx_lastdstleg_get()<0)
+		return DLG_DIR_NONE;
+	if (ctx_lastdstleg_get()==0)
+		return DLG_DIR_UPSTREAM;
+	else
+		return DLG_DIR_DOWNSTREAM;
 }
