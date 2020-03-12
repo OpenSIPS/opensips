@@ -412,7 +412,7 @@ int b2b_restore_logic_info(enum b2b_entity_type type, str* key,
 }
 
 int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
-		str* param)
+		str* param, int replicate)
 {
 	b2b_dlg_t* dlg;
 	b2b_table table;
@@ -462,7 +462,7 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 	if (unlock)
 		lock_release(&table[hash_index].lock);
 
-	if (b2be_cluster)
+	if (b2be_cluster && replicate)
 		replicate_entity_update(dlg, type, hash_index, param, NULL);
 
 	return 0;

@@ -218,7 +218,7 @@ typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
 			<programlisting format="linespecific">
 ...
 typedef int (*b2b_update_b2bl_param_t)(enum b2b_entity_type type, str* key,
-		str* param);
+		str* param, int replicate);
 ...
 </programlisting>
 		<para>

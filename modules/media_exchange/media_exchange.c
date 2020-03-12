@@ -1454,7 +1454,7 @@ int b2b_media_restore_callbacks(struct media_session_leg *msl)
 	str hack;
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
-	if (media_b2b.update_b2bl_param(msl->b2b_entity, &msl->b2b_key, &hack) < 0) {
+	if (media_b2b.update_b2bl_param(msl->b2b_entity, &msl->b2b_key, &hack, 0) < 0) {
 		LM_ERR("could not update restore param!\n");
 		return -1;
 	}

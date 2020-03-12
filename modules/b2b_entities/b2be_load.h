@@ -124,7 +124,7 @@ typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
 typedef int (*b2b_reg_cb_t) (b2b_cb_t cb, int cb_type, str *mod_name);
 
 typedef int (*b2b_update_b2bl_param_t)(enum b2b_entity_type type, str* key,
-		str* param);
+		str* param, int replicate);
 typedef int (*b2b_get_b2bl_key_t)(str* callid, str* from_tag, str* to_tag,
 		str* entity_key, str* tuple_key);
 
