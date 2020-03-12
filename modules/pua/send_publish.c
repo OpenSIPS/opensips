@@ -469,7 +469,7 @@ int send_publish_int(ua_pres_t* presentity, publ_info_t* publ, pua_event_t* ev,
 		if(publ->expires== 0)
 		{
 			LM_DBG("expires= 0- delete from hash table\n");
-			if (presentity->flag|MI_ASYN_PUBLISH)
+			if (presentity->flag&MI_ASYN_PUBLISH)
 				mi_hdl = presentity->cb_param;
 			delete_htable_safe(presentity, hash_index);
 		}
