@@ -282,7 +282,7 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 
 			dialog_prop->gw = trans_prop->gw;
 
-			if ((cur_dlg = dlgcb.get_dlg()) < 0) {
+			if ((cur_dlg = dlgcb.get_dlg()) == NULL) {
 				LM_ERR("failed to create dialog\n");
 				return;
 			}
