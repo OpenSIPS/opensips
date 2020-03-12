@@ -568,8 +568,9 @@ int cr_do_route(struct sip_msg * _msg, void *_carrier,
 	if (set_ruri(_msg, &dest) < 0) {
 		LM_ERR("Error setting RURI\n");
 		ret = -1;
+	} else {
+		ret = 1;
 	}
-	ret = 1;
 
 	pkg_free(dest.s);
 
