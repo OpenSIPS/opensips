@@ -603,7 +603,6 @@ static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cel
 
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
-	MSL_REF(msl);
 	b2b_key = media_b2b.client_new(ci, b2b_media_notify,
 			b2b_media_confirm, &b2b_media_exchange_cap, &hack);
 	if (!b2b_key) {
