@@ -1380,15 +1380,15 @@ static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 				}
 			}
 		} else
-		/* if it is an 1->1 keeping the part, try to preserve the
-		 * the packing (multi-part or not) of this part */
-		if ( (part->flags & SIP_BODY_PART_FLAG_NEW)==0 &&
-		msg->body->part_count==1 &&
-		msg->body->flags & SIP_BODY_RCV_MULTIPART) {
-			/* preserve the original multi-part packing by preserving
-			 * the before and after padding between part and body */
-			len += msg->body->body.len - part->body.len;
-		}
+			/* if it is an 1->1 keeping the part, try to preserve the
+			 * the packing (multi-part or not) of this part */
+			if ( (part->flags & SIP_BODY_PART_FLAG_NEW)==0 &&
+			msg->body->part_count==1 &&
+			msg->body->flags & SIP_BODY_RCV_MULTIPART) {
+				/* preserve the original multi-part packing by preserving
+				 * the before and after padding between part and body */
+				len += msg->body->body.len - part->body.len;
+			}
 
 	} else if (msg->body->part_count<2) {
 
