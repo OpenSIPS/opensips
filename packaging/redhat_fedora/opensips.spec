@@ -25,7 +25,7 @@
 %global _with_python3 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
+%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
@@ -106,6 +106,31 @@ XMLRPC Interface.
 .
 This package contains the main OpenSIPS binary along with the principal modules
 and support binaries including opensipsmc configuration tool.
+
+%if 0%{?_with_auth_jwt:1}
+%package  auth-jwt-module
+Summary:  JSON Web Tokens authentication module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  auth-jwt-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+The module implements authentication over JSON Web Tokens. In
+some cases ( ie. WebRTC ) the user authenticates on another
+layer ( other than SIP ), so it makes no sense to
+double-authenticate it on the SIP layer. Thus, the SIP client
+will simply present the JWT auth token it received from the
+server, and pass it on to OpenSIPS which will use that for
+authentication purposes. It relies on two DB tables, one
+containing JWT profiles ( a profile name and it's SIP username
+associated to it ) and one containing JWT secrets. Each secret
+has a corresponding profile, the KEY used for signing the JWT
+and two timestamps describing a validation interval. Multiple
+JWT secrets can point to the same JWT profile.
+%endif
 
 %package  b2bua-module
 Summary:  B2B User Agent modules for OpenSIPS
@@ -1106,6 +1131,12 @@ fi
 %doc docdir/README.uac_registrant
 %doc docdir/README.userblacklist
 %doc docdir/README.usrloc
+
+%if 0%{?_with_auth_jwt:1}
+%files auth-jwt-module
+%{_libdir}/opensips/modules/auth_jwt.so
+%doc docdir/README.auth_jwt
+%endif
 
 %files b2bua-module
 %{_libdir}/opensips/modules/b2b_entities.so
