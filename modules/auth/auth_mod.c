@@ -382,7 +382,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 				|| (sval.flags&PV_VAL_EMPTY) || (!(sval.flags&PV_VAL_STR)))
 		{
 			pv_value_destroy(&sval);
-			return 1;
+			return -1;
 		}
 		if(sval.rs.len!= _username->whole.len
 				|| strncasecmp(sval.rs.s, _username->whole.s, sval.rs.len))
@@ -403,7 +403,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 				|| (sval.flags&PV_VAL_EMPTY) || (!(sval.flags&PV_VAL_STR)))
 		{
 			pv_value_destroy(&sval);
-			return 1;
+			return -1;
 		}
 	} else {
 		return 1;
@@ -443,12 +443,11 @@ static inline int pv_authorize(struct sip_msg* msg, str *domain,
 	res = auth_get_ha1(msg, &cred->digest.username, domain, ha1);
 	if (res < 0) {
 		/* Error */
-		if (sigb.reply(msg, 500, &auth_500_err, NULL) == -1) {
+		if (sigb.reply(msg, 500, &auth_500_err, NULL) == -1)
 			LM_ERR("failed to send 500 reply\n");
-		}
+
 		return ERROR;
-	}
-	if (res > 0) {
+	} else if (res > 0) {
 		/* Username not found */
 		return USER_UNKNOWN;
 	}
