@@ -393,7 +393,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 			return 1;
 		}
 	} else {
-		return 1;
+		return -1;
 	}
 	/* get password from PV */
 	memset(&sval, 0, sizeof(pv_value_t));
@@ -406,7 +406,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 			return 1;
 		}
 	} else {
-		return 1;
+		return -1;
 	}
 	if (auth_calc_ha1) {
 		/* Only plaintext passwords are stored in database,
