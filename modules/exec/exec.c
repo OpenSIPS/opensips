@@ -170,7 +170,7 @@ int start_async_exec(struct sip_msg* msg, str* command, str* input,
 													pv_spec_t *outvar, int *fd)
 {
 	pid_t pid;
-	FILE *pin = NULL, *pout;
+	FILE *pin = NULL, *pout = NULL;
 	int val;
 
 	if ((input&&input->s&&input->len) || outvar) {
