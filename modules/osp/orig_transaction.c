@@ -451,7 +451,7 @@ int ospRequestRouting(
     char cinfo[OSP_DEF_CINFONUM][OSP_STRBUF_SIZE];
     char cinfostr[OSP_STRBUF_SIZE];
     unsigned int callidnumber = 1;
-    OSPT_CALL_ID* callids[callidnumber];
+    OSPT_CALL_ID* callids[callidnumber] = { NULL };
     unsigned int logsize = 0;
     char* detaillog = NULL;
     char desthost[OSP_STRBUF_SIZE];
@@ -471,7 +471,6 @@ int ospRequestRouting(
     if ((errcode = OSPPTransactionNew(_osp_provider, &trans)) != OSPC_ERR_NO_ERROR) {
         LM_ERR("failed to create new OSP transaction (%d)\n", errcode);
     } else if (ospGetCallId(msg, &(callids[0])) != 0) {
-        callids[0] = NULL;
         LM_ERR("failed to extract call id\n");
     } else if (ospGetFromUser(msg, inbound.calling, sizeof(inbound.calling)) != 0) {
         LM_ERR("failed to extract calling number\n");
