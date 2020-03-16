@@ -663,13 +663,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_BUG;
 				break;
 			}
-			script_trace("route", sroutes->request[i].name,
-				msg, a->file, a->line) ;
 			if ((i>=RT_NO)||(i<0)){
 				LM_BUG("invalid routing table number in route(%u)\n", i);
 				ret=E_CFG;
 				break;
 			}
+			script_trace("route", sroutes->request[i].name,
+				msg, a->file, a->line) ;
 			/* check if the route has parameters */
 			if (a->elem[1].type != 0) {
 				if (a->elem[1].type != NUMBER_ST || a->elem[2].type != SCRIPTVAR_ST) {
