@@ -832,8 +832,6 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case ROUTE_T:
-			script_trace("route", sroutes->request[a->elem[0].u.number].name,
-				msg, a->file, a->line) ;
 			if (a->elem[0].type!=NUMBER_ST){
 				LM_ALERT("BUG in route() type %d\n",
 						a->elem[0].type);
@@ -846,6 +844,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				ret=E_CFG;
 				break;
 			}
+			script_trace("route", sroutes->request[a->elem[0].u.number].name,
+				msg, a->file, a->line) ;
 			/* check if the route has parameters */
 			if (a->elem[1].type != 0) {
 				if (a->elem[1].type != NUMBER_ST || a->elem[2].type != SCRIPTVAR_ELEM_ST) {
