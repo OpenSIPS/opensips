@@ -113,7 +113,7 @@ modparam("proto_hep", "hep_id", "[hep_dst] 1.2.3.4:5000")
 		<para>
 			Specify how the data should be encapsulated in the HEP packet. If set to
 			<emphasis>0</emphasis>, then the JSON based HOMER 6 format will be used. Otherwise,
-			if set to anything different than <emhoasis>0</emphasis>, the plain text HOMER 5
+			if set to anything different than <emphasis>0</emphasis>, the plain text HOMER 5
 			format will be used for encapsulation. On the capturing node, this parameter
 			affects the behavior of the <emphasis>report_capture</emphasis> function from the
 			<ulink url="sipcapture#func_report_capture">sipcapture</ulink>
