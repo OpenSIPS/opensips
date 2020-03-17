@@ -3113,17 +3113,23 @@ b2b_route:
 
 	if (B2BE_SERIALIZE_STORAGE()) {
 		if (dlg_state == B2B_CONFIRMED && prev_state == B2B_MODIFIED) {
-			b2b_ev = B2B_EVENT_UPDATE;
 			lock_get(&htable[hash_index].lock);
 
-			b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage);
+			if (dlg->state != B2B_TERMINATED) {
+				b2b_ev = B2B_EVENT_UPDATE;
+				b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage);
+			} else
+				b2b_ev = -1;
 		} else if (b2b_ev == B2B_EVENT_CREATE) {
 			lock_get(&htable[hash_index].lock);
 
-			b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage);
+			if (dlg->state != B2B_TERMINATED) {
+				b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage);
 
-			if (b2be_db_mode == WRITE_THROUGH)
-				b2be_db_insert(dlg, etype);
+				if (b2be_db_mode == WRITE_THROUGH)
+					b2be_db_insert(dlg, etype);
+			} else
+				b2b_ev = -1;
 		}
 	}
 
