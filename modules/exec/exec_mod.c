@@ -447,10 +447,10 @@ static struct hf_wrapper* get_avp_values_list(struct sip_msg* msg, pv_param_p av
 
 	while ((avp_ptr = search_next_avp( avp_ptr, &value)) != 0) {
 		hf->next_other=pkg_malloc(sizeof(struct hf_wrapper));
+		hf=hf->next_other;
+
 		if (!hf)
 			goto memerr;
-
-		hf=hf->next_other;
 
 		setenvvar(&hf, &value, (avp_ptr->flags & AVP_VAL_STR), idx++);
 	}
