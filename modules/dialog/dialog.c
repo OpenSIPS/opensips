@@ -525,7 +525,7 @@ static int fixup_dlg_flag(void** param)
 		return E_CFG;
 	}
 
-	*param=(void *)(unsigned long)(1<<val);
+	*param=(void *)(1UL<<val);
 	return 0;
 }
 
