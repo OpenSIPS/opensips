@@ -495,7 +495,7 @@ static int fixup_broute(void** param)
 
 static int flag_fixup(void** param)
 {
-	*param = (void*)(unsigned long int)((*(unsigned int*)*param)<<1);
+	*param = (void*)((unsigned long int)(*(unsigned int*)*param)<<1);
 	return 0;
 }
 
