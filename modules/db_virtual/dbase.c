@@ -281,6 +281,11 @@ db_con_t* db_virtual_init(const str* _set_url)
     allocate
     populate with db_init
 */
+    if(!_set_url || !_set_url->s){
+        LM_ERR("url or url.s NULL\n");
+        return NULL;
+    }
+
     LM_DBG("INIT set_name, %.*s\n", _set_url->len, _set_url->s);
 
     int i;
@@ -289,11 +294,6 @@ db_con_t* db_virtual_init(const str* _set_url)
     char buffer[256];
     char * token;
     handle_set_t* p;
-
-    if(!_set_url || !_set_url->s){
-        LM_ERR("url or url.s NULL\n");
-        return NULL;
-    }
 
     /* so that loadmodule order does not matter */
     if(!global){
