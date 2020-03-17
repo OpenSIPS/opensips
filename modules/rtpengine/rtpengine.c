@@ -1232,14 +1232,15 @@ mod_init(void)
 
 	rtpe_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
 	list_version = (unsigned int*)shm_malloc(sizeof(unsigned int));
-	*rtpe_no = 0;
-	*list_version = 0;
-	my_version = 0;
 
 	if(!rtpe_no || !list_version) {
 		LM_ERR("No more shared memory\n");
 		return -1;
 	}
+
+	*rtpe_no = 0;
+	*list_version = 0;
+	my_version = 0;
 
 	if (!(rtpe_set_list = (struct rtpe_set_head **)
 		shm_malloc(sizeof(struct rtpe_set_head *)))) {
