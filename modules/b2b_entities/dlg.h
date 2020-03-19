@@ -111,6 +111,7 @@ typedef struct b2b_dlg
 	struct socket_info*  send_sock;
 	unsigned int         last_reply_code;
 	int                  db_flag;
+	int                  replicated;
 }b2b_dlg_t;
 
 typedef struct b2b_entry

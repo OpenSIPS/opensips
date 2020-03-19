@@ -2061,7 +2061,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	set_dlg_state(dlg, method_value);
 
 	if (B2BE_SERIALIZE_STORAGE()) {
-		if (dlg->state == B2B_ESTABLISHED) {
+		if (dlg->state == B2B_ESTABLISHED && dlg->replicated) {
 			b2b_ev = B2B_EVENT_UPDATE;
 			b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage);
 		} else if (dlg->state == B2B_TERMINATED) {

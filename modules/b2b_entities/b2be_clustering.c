@@ -126,10 +126,11 @@ void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 
 	lock_get(&htable[hash_index].lock);
 
-	if (dlg->state != B2B_CONFIRMED) {
+	if (dlg->replicated) {
 		lock_release(&htable[hash_index].lock);
 		return;
-	}
+	} else
+		dlg->replicated = 1;
 
 	if (bin_init(&packet, &entities_repl_cap, REPL_ENTITY_CREATE,
 		B2BE_BIN_VERSION, 0) != 0) {
