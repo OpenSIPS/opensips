@@ -1263,7 +1263,7 @@ out_free:
 static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 											unsigned int leg)
 {
-	str contact;
+	str contact, contact_hdr;
 	char *tmp;
 
 	if (!msg->contact &&
@@ -1275,6 +1275,15 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		return 0;
 	}
 	contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
+	contact_hdr.s = msg->contact->name.s;
+	contact_hdr.len = msg->contact->len;
+
+	if ((dlg->mod_flags & TOPOH_ONGOING) &&
+			str_strcmp(&dlg->legs[leg].adv_contact, &contact_hdr) == 0) {
+		LM_DBG("skip updating topo hiding advertised contact\n");
+		return 0;
+	}
+
 	if (dlg->legs[leg].contact.s) {
 		/* if the same contact, don't do anything */
 		if (dlg->legs[leg].contact.len == contact.len &&
