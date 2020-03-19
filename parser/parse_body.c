@@ -154,6 +154,28 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 
 	part->mime = -1;
 
+	if (*start=='\r') {
+		start++;
+		if (*start=='\n') start++;
+	} else if (*start=='\n') {
+		start++;
+	} else {
+		LM_ERR("invalid separator between boundry and body [%x/%x]\n",
+			*start,*(start+1));
+		return -1;
+	}
+
+	if (*(end-1)=='\n') {
+		end--;
+		if (*(end-1)=='\r') end--;
+	} else if (*(end-1)=='\n') {
+		end--;
+	} else {
+		LM_ERR("invalid separator between body and boundry [%x/%x]\n",
+			*(end-2),*(end-1));
+		return -1;
+	}
+
 	LM_DBG("parsing part [%.*s...]\n",
 		(int)((end-start)<25?end-start:25), start);
 
@@ -268,9 +290,8 @@ int parse_sip_body(struct sip_msg * msg)
 					return 0;
 			}
 
-			/* add 4 to delimiter 2 for "--" and 2 for "\n\r" */
-			/* subtract 2 from end for last "\n\r" */
-			if (parse_single_part(part, start + delimiter.len + 4, end-2)!=0) {
+			/* add 4 to delimiter 2 for "--"*/
+			if (parse_single_part(part, start + delimiter.len + 2, end)!=0) {
 				LM_ERR("Unable to parse part:[%.*s]\n",(int)(end-start),start);
 				return -1;
 			}
