@@ -2043,7 +2043,7 @@ next_avp:
 
 				ret = async_script_launch( msg, aitem, a->elem[1].u.number, cmdp);
 
-				if ((ret = free_cmd_fixups(acmd->params, aitem->elem, cmdp)) < 0) {
+				if (free_cmd_fixups(acmd->params, aitem->elem, cmdp) < 0) {
 					LM_ERR("Failed to free fixups for command <%s>\n",
 						cmd->name);
 					break;
