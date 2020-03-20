@@ -467,9 +467,6 @@ void mod_destroy(void)
 	RL_SHM_FREE(pid_setpoint);
 	RL_SHM_FREE(drop_rate);
 	RL_SHM_FREE(rl_feedback_limit);
-
-	if (db_url.s && db_url.len)
-		destroy_cachedb();
 }
 
 

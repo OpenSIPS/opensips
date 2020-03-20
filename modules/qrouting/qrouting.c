@@ -269,9 +269,6 @@ static int qr_init(void)
 
 static int qr_child_init(int rank)
 {
-	if (rank == PROC_TCP_MAIN)
-		return 0;
-
 	/* re-connect to the db */
 	if (db_bind_mod(&db_url, &qr_dbf)) {
 		LM_CRIT("cannot bind to database module! "

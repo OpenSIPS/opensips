@@ -507,7 +507,7 @@ static void destroy(void)
 {
 	LM_NOTICE("destroy module ...\n");
 
-	if(subs_htable && pa_db)
+	if(subs_htable && !library_mode && child_init(process_no)==0)
 		timer_db_update(0, 0);
 
 	if(subs_htable)

@@ -556,8 +556,8 @@ static int child_init(int _rank)
 	if (!have_db_conns())
 		return 0;
 
-	/* we need connection from SIP workers and MAIN procs */
-	if (_rank < PROC_MAIN )
+	/* we need connection from SIP workers only */
+	if (_rank < 1 )
 		return 0;
 
 	ul_dbh = ul_dbf.init(&db_url); /* Get a new database connection */
@@ -605,19 +605,24 @@ static int mi_child_init(void)
 static void destroy(void)
 {
 	/* we need to sync DB in order to flush the cache */
-	if (ul_dbh) {
-		ul_unlock_locks();
-		if (sync_lock)
-			lock_start_read(sync_lock);
-		if (synchronize_all_udomains() != 0) {
-			LM_ERR("flushing cache failed\n");
+	if (have_db_conns() && ul_dbf.init) {
+		ul_dbh = ul_dbf.init(&db_url); /* Get a new database connection */
+		if (!ul_dbh) {
+			LM_ERR("failed to connect to database\n");
+	} else {
+			ul_unlock_locks();
+			if (sync_lock)
+				lock_start_read(sync_lock);
+			if (synchronize_all_udomains() != 0) {
+				LM_ERR("flushing cache failed\n");
+			}
+			if (sync_lock) {
+				lock_stop_read(sync_lock);
+				lock_destroy_rw(sync_lock);
+				sync_lock = 0;
+			}
+			ul_dbf.close(ul_dbh);
 		}
-		if (sync_lock) {
-			lock_stop_read(sync_lock);
-			lock_destroy_rw(sync_lock);
-			sync_lock = 0;
-		}
-		ul_dbf.close(ul_dbh);
 	}
 
 	if (cdbc)

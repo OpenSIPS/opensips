@@ -1351,7 +1351,7 @@ static int
 child_init(int rank)
 {
 	/* we need DB conn in the worker processes only */
-	if (rank<=PROC_MAIN)
+	if (rank<1)
 		return 0;
 
 	if(*rtpp_set_list==NULL )

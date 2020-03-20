@@ -269,9 +269,9 @@ static int child_init(int rank)
 	struct cgr_engine *e;
 	struct cgr_conn *c;
 
-	/* main and external modules don't have a reactor, so they won't be able
+	/* external procs don't have a reactor, so they won't be able
 	 * to run any commands received by CGRateS, nor they will generate cmds */
-	if (rank == PROC_MODULE || rank == PROC_MAIN)
+	if (rank == PROC_MODULE)
 		return 0;
 
 	/* go through each server and initialize a default connection */

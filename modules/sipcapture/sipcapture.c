@@ -2195,10 +2195,6 @@ int extract_host_port(void)
 
 static int child_init(int rank)
 {
-
-	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN)
-			return 0; /* do nothing for the main process */
-
 	if (db_url.s)
 	  return sipcapture_db_init(&db_url);
 

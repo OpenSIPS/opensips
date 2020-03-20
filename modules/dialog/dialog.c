@@ -924,12 +924,9 @@ static int child_init(int rank)
 		if_update_stat(dlg_enable_stats, early_dlgs, early_dlgs_cnt);
 	}
 
-	if (
-	(dlg_db_mode==DB_MODE_REALTIME && (rank>=PROC_MAIN||rank==PROC_MODULE)) ||
-	(dlg_db_mode==DB_MODE_SHUTDOWN && (rank==PROC_MAIN||rank==PROC_MODULE)) ||
-	(dlg_db_mode==DB_MODE_DELAYED  && (rank>=PROC_MAIN||rank==PROC_MODULE))
-	){
-		if ( dlg_connect_db(&db_url) ) {
+	if ( (dlg_db_mode==DB_MODE_REALTIME || dlg_db_mode==DB_MODE_DELAYED ) &&
+	(rank>=1 || rank==PROC_MODULE) ) {
+		if ( dlg_connect_db(&db_url)<0 ) {
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
 			return -1;
 		}
@@ -946,8 +943,12 @@ static int child_init(int rank)
 static void mod_destroy(void)
 {
 	if (dlg_db_mode != DB_MODE_NONE) {
-		dialog_update_db(0, 0/*do not do locking*/);
-		destroy_dlg_db();
+		if ( dlg_connect_db(&db_url)<0 ) {
+			LM_ERR("failed to connect to database\n");
+		} else {
+			dialog_update_db(0, 0/*do not do locking*/);
+			destroy_dlg_db();
+		}
 	}
 
 	/* no DB interaction from now on */

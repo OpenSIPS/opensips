@@ -1162,12 +1162,6 @@ int cmd_check_addr(struct sip_msg *msg, int *cluster_id, str *ip_str,
 
 static void destroy(void)
 {
-	if (db_hdl) {
-		/* close DB connection */
-		dr_dbf.close(db_hdl);
-		db_hdl = NULL;
-	}
-
 	/* destroy data */
 	if (cluster_list) {
 		if (*cluster_list)
