@@ -866,10 +866,8 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		_r->next_clabel = CLABEL_INC_AND_TEST(_r->next_clabel);
 	}
 
-	if (cluster_mode==CM_FULL_SHARING_CACHEDB
-	&& _ci->cdb_key.s==NULL) {
-		/* we need to build the cdb key for this new ucontact */
-		if (cdb_build_ucontact_key( _contact, _ci) < 0) {
+	if (cluster_mode == CM_FULL_SHARING_CACHEDB && !_ci->cdb_key.s) {
+		if (cdb_build_ucontact_key(_contact, _ci) < 0) {
 			LM_ERR("failed to generate CDB key\n");
 			return -1;
 		}
