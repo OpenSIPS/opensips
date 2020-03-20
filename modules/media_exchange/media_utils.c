@@ -1175,7 +1175,7 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 			goto release;
 		}
 		msl = media_session_get_leg(ms, leg);
-		if (msl) {
+		if (!msl) {
 			LM_ERR("could not get media session leg!\n");
 			goto release;
 		}
