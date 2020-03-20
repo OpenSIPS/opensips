@@ -1183,7 +1183,6 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 		shm_free(msl->b2b_key.s);
 		msl->b2b_key.s = NULL;
 		MSL_UNREF(msl);
-		media_session_leg_free(msl);
 	}
 
 	media_dlg.dlg_unref(dlg, 1);
