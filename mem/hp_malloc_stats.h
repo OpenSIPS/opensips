@@ -71,13 +71,12 @@ unsigned long hp_rpm_get_frags(struct hp_block *hpb);
 #define update_stats_pkg_frag_split(blk, ...) \
 	do { \
 		(blk)->used -= FRAG_OVERHEAD; \
-		(blk)->real_used += FRAG_OVERHEAD; \
 		(blk)->total_fragments++; \
 	} while (0)
 
 #define update_stats_pkg_frag_merge(blk, ...) \
 	do { \
-		(blk)->real_used -= FRAG_OVERHEAD; \
+		(blk)->used += FRAG_OVERHEAD; \
 		(blk)->total_fragments--; \
 	} while (0)
 

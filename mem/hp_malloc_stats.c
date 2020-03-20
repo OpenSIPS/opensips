@@ -180,8 +180,9 @@ void hp_init_shm_statistics(struct hp_block *hpb)
 	update_stat(shm_rused, (long)hpb->real_used);
 	update_stat(shm_frags, (long)hpb->total_fragments);
 
-	LM_ERR("initializing atomic shm statistics: "
-	       "[ us: %ld | rus: %ld | frags: %ld ]\n", hpb->used, hpb->real_used, hpb->total_fragments);
+	LM_INFO("initializing atomic shm statistics: "
+	       "[ us: %ld | rus: %ld | frags: %ld ]\n", hpb->used, hpb->real_used,
+	       hpb->total_fragments);
 }
 
 unsigned long hp_shm_get_used(struct hp_block *hpb)
