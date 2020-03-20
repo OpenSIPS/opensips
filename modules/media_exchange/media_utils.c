@@ -1111,7 +1111,7 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 	enum media_fork_state state;
 
 	/* nothing to do for update for us */
-	if (event_type == B2B_EVENT_UPDATE)
+	if (event_type == B2B_EVENT_UPDATE || store == NULL)
 		return;
 
 	if (bin_pop_str(store, &callid) != 0)
