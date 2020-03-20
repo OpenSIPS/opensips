@@ -24,17 +24,29 @@
 str content_type_sdp = str_init("application/sdp");
 str content_type_sdp_hdr = str_init("Content-Type: application/sdp\r\n");
 
+#define MEDIA_FORK_START (1<<0)
+#define MEDIA_FORK_STOP (1<<1)
+#define MEDIA_FORK_DIRTY (1<<2)
+
+#define MEDIA_FORK_HAS_FLAG(_mf, _flag) \
+	(((_mf)->flags & (_flag)) == (_flag))
+
+#define MEDIA_FORK_SET_FLAG(_mf, _flag) \
+	(_mf)->flags |= (_flag)
+
+#define MEDIA_FORK_RESET_FLAG(_mf, _flag) \
+	(_mf)->flags &= ~(_flag)
+
 enum media_fork_state {
-	MEDIA_FORK_INIT,
 	MEDIA_FORK_ON,
 	MEDIA_FORK_OFF,
-	MEDIA_FORK_CLOSE,
 };
 
 struct media_fork_info {
 	int leg;
 	str ip;
 	str port;
+	int flags;
 	int medianum;
 	int fork_medianum;
 	void *params;
@@ -209,7 +221,7 @@ int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf)
 	int ret;
 	str destination;
 
-	if (mf->state != MEDIA_FORK_OFF && mf->state != MEDIA_FORK_INIT)
+	if (mf->state != MEDIA_FORK_OFF)
 		return 0;
 
 	destination.s = pkg_malloc(4 /* udp: */ +
@@ -229,7 +241,6 @@ int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf)
 			NULL, NULL, &destination, mf->medianum + 1) < 0) {
 		LM_ERR("cannot start forking for medianum %d\n", mf->medianum);
 		ret = -2;
-		mf->state = MEDIA_FORK_OFF;
 	} else {
 		mf->state = MEDIA_FORK_ON;
 		ret = 0;
@@ -242,7 +253,7 @@ int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf)
 static int media_nofork(struct dlg_cell *dlg, struct media_fork_info *mf)
 {
 	int ret;
-	if (mf->state != MEDIA_FORK_ON && mf->state != MEDIA_FORK_CLOSE)
+	if (mf->state != MEDIA_FORK_ON)
 		return 0;
 
 	if (media_rtp.stop_recording(&dlg->callid,
@@ -286,7 +297,7 @@ static int media_fork_stream_disable(sdp_stream_cell_t *stream)
 
 int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int resume)
 {
-	enum media_fork_state newstate;
+	int flags;
 	struct media_fork_info *mf;
 	int ret = 0;
 
@@ -304,7 +315,7 @@ int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int res
 	MEDIA_LEG_STATE_SET_UNSAFE(msl, MEDIA_SESSION_STATE_PENDING);
 	MEDIA_LEG_UNLOCK(msl);
 
-	newstate = (resume?MEDIA_FORK_INIT:MEDIA_FORK_CLOSE);
+	flags = (resume?MEDIA_FORK_START:MEDIA_FORK_STOP);
 
 	for (mf = msl->params; mf; mf = mf->next) {
 		if (medianum < 0 || medianum == mf->medianum) {
@@ -312,10 +323,10 @@ int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int res
 				if (mf->state != MEDIA_FORK_ON)
 					continue;
 			} else {
-				if (mf->state == MEDIA_FORK_INIT || mf->state == MEDIA_FORK_ON)
+				if (mf->state != MEDIA_FORK_OFF)
 					continue;
 			}
-			mf->state = newstate;
+			MEDIA_FORK_SET_FLAG(mf, flags);
 			ret++;
 			if (medianum >= 0)
 				break;
@@ -580,7 +591,8 @@ static inline struct media_fork_info *media_fork_new(int leg, str *ip, str *port
 	media_fork_fill(mf, ip, port);
 	mf->medianum = medianum;
 	mf->fork_medianum = fork_medianum;
-	mf->state = MEDIA_FORK_INIT;
+	mf->state = MEDIA_FORK_OFF;
+	mf->flags = MEDIA_FORK_START;
 	return mf;
 }
 
@@ -920,22 +932,23 @@ void media_forks_free(struct media_fork_info *mf)
 int media_fork_update(struct media_session_leg *msl,
 		struct media_fork_info *mf, str *ip, str *port, int disabled)
 {
-	switch (mf->state) {
-	case MEDIA_FORK_CLOSE:
-		/* we don't care right now, stream is off anyway !
-		 * we update it when it gets resumed*/
-		if (media_nofork(msl->ms->dlg, mf) == 0)
-			return 1;
-		break;
-	case MEDIA_FORK_OFF:
-		/* we don't care right now, stream is off anyway !
-		 * we update it when it gets resumed*/
-		return 1;
-	case MEDIA_FORK_ON:
-		/* stream should be enabled */
-		if (disabled)
+	if (disabled) {
+		if (mf->state == MEDIA_FORK_OFF)
 			return 0;
-		/* there's an ongoing forking happening - drop if changed */
+		if (media_nofork(msl->ms->dlg, mf) != 0)
+			return 0;
+		MEDIA_FORK_RESET_FLAG(mf, MEDIA_FORK_STOP);
+		MEDIA_FORK_SET_FLAG(mf, MEDIA_FORK_DIRTY);
+		return 1;
+	}
+
+	if (MEDIA_FORK_HAS_FLAG(mf, MEDIA_FORK_STOP)) {
+		LM_WARN("media fork should be stopped, but media server didn't do it!\n");
+		MEDIA_FORK_RESET_FLAG(mf, MEDIA_FORK_STOP);
+	}
+
+	if (mf->state == MEDIA_FORK_ON) {
+		/* if we have an ongoing media fork, update it */
 		if (media_fork_cmp(mf, ip, port)) {
 			/* same thing - leave it like this */
 			return 1;
@@ -943,16 +956,14 @@ int media_fork_update(struct media_session_leg *msl,
 			/* disable previous forking */
 			media_nofork(msl->ms->dlg, mf);
 		}
-		/* fallback to init */
-	case MEDIA_FORK_INIT:
-		if (disabled)
-			return 0;
-		/* here it is INIT or OFF */
-		media_fork_fill(mf, ip, port);
-		if (media_fork(msl->ms->dlg, mf) == 0)
-			return 1;
 	}
-	return 0;
+	media_fork_fill(mf, ip, port);
+	if (media_fork(msl->ms->dlg, mf) != 0)
+		return 0;
+
+	MEDIA_FORK_RESET_FLAG(mf, MEDIA_FORK_START);
+	MEDIA_FORK_SET_FLAG(mf, MEDIA_FORK_DIRTY);
+	return 1;
 }
 
 int media_fork_body_update(struct media_session_leg *ml, str *body, int leg)
@@ -976,14 +987,14 @@ int media_fork_body_update(struct media_session_leg *ml, str *body, int leg)
 			if (mf) {
 				if (stream->is_on_hold) {
 					if (mf->state == MEDIA_FORK_ON) {
-						mf->state = MEDIA_FORK_OFF;
+						MEDIA_FORK_SET_FLAG(mf, MEDIA_FORK_STOP);
 						changed++;
 					} else {
 						LM_DBG("media stream %d already OFF!\n", stream->stream_num);
 					}
 				} else {
 					if (mf->state == MEDIA_FORK_OFF) {
-						mf->state = MEDIA_FORK_ON;
+						MEDIA_FORK_SET_FLAG(mf, MEDIA_FORK_START);
 						changed++;
 					} else {
 						LM_DBG("media stream %d already ON!\n", stream->stream_num);
@@ -1035,7 +1046,7 @@ int media_session_fork_update(struct media_session_leg *msl)
 			sdp = &ms_util_sdp1;
 		for (session = sdp->sessions; session; session = session->next)
 			for (stream = session->streams; stream; stream = stream->next) {
-				if (mf->state == MEDIA_FORK_OFF || mf->state == MEDIA_FORK_CLOSE)
+				if (mf->state == MEDIA_FORK_OFF)
 					media_disabled = 1;
 				else
 					media_disabled = 0;
@@ -1058,23 +1069,11 @@ error:
 	return ret;
 }
 
-void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store)
+static void media_exchange_event_create(struct media_session_leg *msl,
+		bin_packet_t *store)
 {
-	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
 	struct media_fork_info *mf;
 	int count = 0;
-
-	/* nothing to do with update right now */
-	if (event_type == B2B_EVENT_UPDATE)
-		return;
-
-	/* we always need to identify the media session */
-	bin_push_str(store, &msl->ms->dlg->callid);
-	bin_push_int(store, msl->leg);
-
-	if (event_type != B2B_EVENT_CREATE)
-		return;
 
 	bin_push_int(store, msl->type);
 	bin_push_int(store, msl->nohold);
@@ -1097,63 +1096,88 @@ void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
 	}
 }
 
-void media_exchange_event_received(enum b2b_entity_type et, str *key,
+static void media_exchange_event_update(struct media_session_leg *msl,
+		bin_packet_t *store)
+{
+	struct media_fork_info *mf;
+	int count = 0;
+
+	/* we only need to update forked sessions */
+	if (msl->type != MEDIA_SESSION_TYPE_FORK)
+		return;
+
+	count = 0; /* count how many forks have been updated */
+	for (mf = msl->params; mf; mf = mf->next)
+		if (MEDIA_FORK_HAS_FLAG(mf, MEDIA_FORK_DIRTY))
+			count++;
+	bin_push_int(store, count);
+	for (mf = msl->params; mf; mf = mf->next) {
+		if (!MEDIA_FORK_HAS_FLAG(mf, MEDIA_FORK_DIRTY))
+			continue;
+		bin_push_int(store, mf->fork_medianum);
+		bin_push_int(store, mf->state);
+		bin_push_str(store, &mf->ip);
+		bin_push_str(store, &mf->port);
+	}
+}
+
+void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
 		str *param, enum b2b_event_type event_type, bin_packet_t *store)
 {
-	str callid, b2b_key;
+	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
+
+	/* we always need to identify the media session */
+	bin_push_str(store, &msl->ms->dlg->callid);
+	bin_push_int(store, msl->leg);
+
+	switch (event_type) {
+		case B2B_EVENT_CREATE:
+			media_exchange_event_create(msl, store);
+			break;
+		case B2B_EVENT_UPDATE:
+			media_exchange_event_update(msl, store);
+			break;
+		default:
+			/* nothing else to do for delete */
+			break;
+	}
+}
+
+static void media_exchange_event_received_create(struct dlg_cell *dlg,
+		int leg, enum b2b_entity_type et, str *key, bin_packet_t *store)
+{
+
 	str ip, port;
-	struct dlg_cell *dlg;
-	int type, nohold, leg, medianum, fork_medianum;
+	int type, nohold, medianum, fork_medianum;
 	int mf_count = 0;
 	struct media_fork_info *mf;
-	struct media_session *ms;
 	struct media_session_leg *msl;
 	enum media_fork_state state;
 
-	/* nothing to do for update for us */
-	if (event_type == B2B_EVENT_UPDATE || store == NULL)
+	if (bin_pop_int(store, &type) != 0)
+		return;
+	if (bin_pop_int(store, &nohold) != 0)
 		return;
 
-	if (bin_pop_str(store, &callid) != 0)
-		return;
+	if (type == MEDIA_SESSION_TYPE_FORK)
+		bin_pop_int(store, &mf_count);
 
-	dlg = media_dlg.get_dlg_by_callid(&callid, 0);
-	if (!dlg) {
-		LM_ERR("could not find %.*s\n", callid.len, callid.s);
-		goto drain;
-	}
-
-	if (bin_pop_int(store, &leg) != 0)
-		goto release;
-
-	/* check to see if we have a media sesion */
-	if (event_type == B2B_EVENT_CREATE) {
-		if (bin_pop_int(store, &type) != 0)
-			goto release;
-		if (bin_pop_int(store, &nohold) != 0)
-			goto release;
-
-		if (type == MEDIA_SESSION_TYPE_FORK)
-			bin_pop_int(store, &mf_count);
-
-		if (shm_str_dup(&b2b_key, key) < 0) {
-			LM_ERR("could not duplicate b2b key!\n");
-			goto release;
-		}
+	if (dlg) {
 		msl = media_session_new_leg(dlg, type, leg, nohold);
-		if (!msl) {
+		if (!msl)
 			LM_ERR("cannot create new leg!\n");
-			shm_free(b2b_key.s);
-			goto release;
-		}
-		/* if we have any media forks, pop them */
-		while (mf_count-- > 0) {
-			bin_pop_int(store, &leg);
-			bin_pop_int(store, &medianum);
-			bin_pop_int(store, &fork_medianum);
-			bin_pop_int(store, &state);
-			bin_pop_str(store, &ip);
-			bin_pop_str(store, &port);
+	} else {
+		msl = NULL;
+	}
+	/* if we have any media forks, pop them */
+	while (mf_count-- > 0) {
+		bin_pop_int(store, &leg);
+		bin_pop_int(store, &medianum);
+		bin_pop_int(store, &fork_medianum);
+		bin_pop_int(store, &state);
+		bin_pop_str(store, &ip);
+		bin_pop_str(store, &port);
+		if (msl) {
 			mf = media_fork_new(leg, (ip.len?&ip:NULL),
 					(port.len?&port:NULL), medianum, fork_medianum);
 			if (!mf)
@@ -1162,38 +1186,125 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 			mf->state = state;
 			msl->params = mf;
 		}
-		msl->b2b_entity = et;
-		msl->b2b_key = b2b_key;
-		if (b2b_media_restore_callbacks(msl) < 0) {
-			MSL_UNREF(msl);
-			media_session_leg_free(msl);
-		}
-	} else {
+	}
+	/* if we do not have a dialog, the drain is completed */
+	if (!msl)
+		return;
+
+	if (shm_str_dup(&msl->b2b_key, key) < 0) {
+		LM_ERR("could not duplicate b2b key!\n");
+		goto error;
+	}
+
+	msl->b2b_entity = et;
+	if (b2b_media_restore_callbacks(msl) >= 0)
+		return; /* success */
+error:
+	MSL_UNREF(msl);
+	media_session_leg_free(msl);
+}
+
+static void media_exchange_event_received_update(struct dlg_cell *dlg,
+		int leg, bin_packet_t *store)
+{
+	struct media_session_leg *msl = NULL;
+	struct media_fork_info *mf;
+	struct media_session *ms;
+	enum media_fork_state state;
+	int fork_medianum;
+	int mf_count = 0;
+	str ip, port;
+
+	if (dlg) {
 		ms = media_session_get(dlg);
-		if (!ms) {
+		if (ms) {
+			msl = media_session_get_leg(ms, leg);
+			if (!msl)
+				LM_ERR("could not get media session leg!\n");
+		} else {
 			LM_ERR("could not get media session!\n");
-			goto release;
 		}
-		msl = media_session_get_leg(ms, leg);
-		if (!msl) {
-			LM_ERR("could not get media session leg!\n");
-			goto release;
+	}
+
+	if (msl && msl->type != MEDIA_SESSION_TYPE_FORK)
+		return;
+
+	bin_pop_int(store, &mf_count);
+	while (mf_count-- > 0) {
+		if (bin_pop_int(store, &fork_medianum) != 0)
+			return;
+		if (bin_pop_int(store, &state) != 0)
+			return;
+		if (bin_pop_str(store, &ip) != 0)
+			return;
+		if (bin_pop_str(store, &port) != 0)
+			return;
+		if (msl && (mf = media_fork_search(msl->params, fork_medianum))) {
+			media_fork_fill(mf, &ip, &port);
+			mf->state = state;
 		}
-		/* do not delete the key, as it's being deleted anyway */
-		shm_free(msl->b2b_key.s);
-		msl->b2b_key.s = NULL;
-		MSL_UNREF(msl);
+	}
+}
+
+static void media_exchange_event_received_delete(struct dlg_cell *dlg, int leg)
+{
+	struct media_session *ms;
+	struct media_session_leg *msl;
+
+	if (!dlg)
+		return; /* nothing to draing */
+
+	ms = media_session_get(dlg);
+	if (!ms) {
+		LM_ERR("could not get media session!\n");
+		return;
+	}
+	msl = media_session_get_leg(ms, leg);
+	if (!msl) {
+		LM_ERR("could not get media session leg!\n");
+		return;
+	}
+	/* do not delete the key, as it's being deleted anyway */
+	shm_free(msl->b2b_key.s);
+	msl->b2b_key.s = NULL;
+	MSL_UNREF(msl);
+}
+
+void media_exchange_event_received(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store)
+{
+	struct dlg_cell *dlg;
+	str callid;
+	int leg;
+
+	/* nothing to do */
+	if (store == NULL)
+		return;
+
+	if (bin_pop_str(store, &callid) != 0)
+		return;
+
+	if (bin_pop_int(store, &leg) != 0)
+		return;
+
+	dlg = media_dlg.get_dlg_by_callid(&callid, 0);
+	/* if dlg is null, each function will do the drain */
+
+	switch (event_type) {
+		case B2B_EVENT_CREATE:
+			media_exchange_event_received_create(dlg, leg, et, key, store);
+			break;
+		case B2B_EVENT_UPDATE:
+			media_exchange_event_received_update(dlg, leg, store);
+			break;
+		case B2B_EVENT_DELETE:
+			media_exchange_event_received_delete(dlg, leg);
+			break;
+		default:
+			LM_WARN("unhandled B2B event %d\n", event_type);
+			break;
 	}
 
 	media_dlg.dlg_unref(dlg, 1);
 	return;
-release:
-	media_dlg.dlg_unref(dlg, 1);
-	return;
-drain:
-	if (event_type == B2B_EVENT_CREATE) {
-		bin_pop_int(store, &type);
-		bin_pop_int(store, &nohold);
-	}
-	bin_pop_int(store, &leg);
 }
