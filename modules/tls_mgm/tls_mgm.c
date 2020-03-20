@@ -1242,6 +1242,9 @@ static int init_tls_dom(struct tls_domain *d)
 						d->name.len, ZSW(d->name.s));
 				return -1;
 			}
+		} else {
+			/* support at least TLSv1, as v2.3 is no longer supported */
+			SSL_CTX_set_min_proto_version(ctx, TLS1_VERSION);
 		}
 #endif
 
