@@ -41,11 +41,15 @@
 #endif
 
 #define MIN_FRAG_SIZE	ROUNDTO
-#define FRAG_NEXT(f) ((struct hp_frag *) \
-		((char *)(f) + sizeof(struct hp_frag) + ((struct hp_frag *)(f))->size))
 
-#define FRAG_OVERHEAD	(sizeof(struct hp_frag))
-#define frag_is_free(_f) ((_f)->prev)
+/* only perform a split if the resulting free fragment is at least this size */
+#define MIN_SHM_SPLIT_SIZE	4096
+#define MIN_PKG_SPLIT_SIZE	 256
+
+#define FRAG_NEXT(f) ((struct hp_frag *)((char *)((f) + 1) + (f)->size))
+
+#define FRAG_OVERHEAD	   HP_FRAG_OVERHEAD
+#define frag_is_free(_f)   ((_f)->prev)
 
 /* used when detaching free fragments */
 static unsigned int optimized_get_indexes[HP_HASH_SIZE];
@@ -56,7 +60,7 @@ static unsigned int optimized_put_indexes[HP_HASH_SIZE];
 /* finds the hash value for s, s=ROUNDTO multiple */
 #define GET_HASH(s)  (((unsigned long)(s) <= HP_MALLOC_OPTIMIZE) ? \
 	(unsigned long)(s) / ROUNDTO : \
-	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
+	HP_LINEAR_HASH_SIZE + big_hash_idx(s) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
 
 /*
  * - for heavily used sizes (which need some optimizing) it returns
@@ -96,10 +100,6 @@ static unsigned int optimized_put_indexes[HP_HASH_SIZE];
 	}) : \
 	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
 
-
-
-
-
 extern unsigned long *shm_hash_usage;
 
 /*
@@ -138,12 +138,14 @@ stat_var *shm_frags;
 
 #define MEM_FRAG_AVOIDANCE
 
-#define HP_MALLOC_LARGE_LIMIT    HP_MALLOC_OPTIMIZE
-#define HP_MALLOC_DEFRAG_LIMIT (HP_MALLOC_LARGE_LIMIT * 5)
-#define HP_MALLOC_DEFRAG_PERCENT 5
+#define can_split_frag(frag, wanted_size, min_size) \
+	((frag)->size - wanted_size >= min_size)
 
-#define can_split_frag(frag, wanted_size) \
-	((frag)->size - wanted_size > (FRAG_OVERHEAD + MIN_FRAG_SIZE))
+#define can_split_pkg_frag(frag, wanted_size) \
+	can_split_frag(frag, wanted_size, MIN_PKG_SPLIT_SIZE)
+#define can_split_shm_frag(frag, wanted_size) \
+	can_split_frag(frag, wanted_size, MIN_SHM_SPLIT_SIZE)
+#define can_split_rpm_frag can_split_shm_frag
 
 /* computes hash number for big buckets */
 inline static unsigned long big_hash_idx(unsigned long s)
@@ -160,6 +162,36 @@ inline static unsigned long big_hash_idx(unsigned long s)
 		;
 
 	return idx;
+}
+
+static inline void hp_lock(struct hp_block *hpb, unsigned int hash)
+{
+	int i;
+
+	if (!hpb->free_hash[hash].is_optimized) {
+		SHM_LOCK(hash);
+		return;
+	}
+
+	/* for optimized buckets, we have to lock the entire array */
+	hash = HP_HASH_SIZE + hash * shm_secondary_hash_size;
+	for (i = 0; i < shm_secondary_hash_size; i++)
+		SHM_LOCK(hash + i);
+}
+
+static inline void hp_unlock(struct hp_block *hpb, unsigned int hash)
+{
+	int i;
+
+	if (!hpb->free_hash[hash].is_optimized) {
+		SHM_UNLOCK(hash);
+		return;
+	}
+
+	/* for optimized buckets, we have to unlock the entire array */
+	hash = HP_HASH_SIZE + hash * shm_secondary_hash_size;
+	for (i = 0; i < shm_secondary_hash_size; i++)
+		SHM_UNLOCK(hash + i);
 }
 
 #ifdef SHM_EXTRA_STATS
@@ -181,26 +213,43 @@ void hp_stats_set_index(void *ptr, unsigned long idx)
 }
 #endif
 
+#if 0
+/* walk through all fragments and write them to the log.  Useful for dev */
+static void hp_dump(struct hp_block *hpb)
+{
+	struct hp_frag *f;
+
+	fprintf(stderr, "dumping all fragments...\n");
+
+	for (f = hpb->first_frag; f < hpb->last_frag; f = FRAG_NEXT(f)) {
+		fprintf(stderr, "    | sz: %lu, prev: %p, next: %p |\n", f->size,
+		       f->prev, f->nxt_free);
+	}
+}
+#endif
+
 static inline void hp_frag_attach(struct hp_block *hpb, struct hp_frag *frag)
 {
 	struct hp_frag **f;
 	unsigned int hash;
 
+
 	hash = GET_HASH_RR(hpb, frag->size);
+
 	f = &(hpb->free_hash[hash].first);
 
 	if (frag->size > HP_MALLOC_OPTIMIZE){ /* because of '<=' in GET_HASH,
 											 purpose --andrei ) */
-		for(; *f; f=&((*f)->u.nxt_free)){
+		for(; *f; f=&((*f)->nxt_free)){
 			if (frag->size <= (*f)->size) break;
 		}
 	}
 
 	/*insert it here*/
 	frag->prev = f;
-	frag->u.nxt_free=*f;
+	frag->nxt_free=*f;
 	if (*f)
-		(*f)->prev = &(frag->u.nxt_free);
+		(*f)->prev = &(frag->nxt_free);
 
 	*f = frag;
 
@@ -216,10 +265,10 @@ static inline void hp_frag_detach(struct hp_block *hpb, struct hp_frag *frag)
 	pf = frag->prev;
 
 	/* detach */
-	*pf = frag->u.nxt_free;
+	*pf = frag->nxt_free;
 
-	if (frag->u.nxt_free)
-		frag->u.nxt_free->prev = pf;
+	if (frag->nxt_free)
+		frag->nxt_free->prev = pf;
 
 	frag->prev = NULL;
 
@@ -414,7 +463,7 @@ int hp_mem_warming(struct hp_block *hpb)
 		while (bucket_mem >= FRAG_OVERHEAD + current_frag_size) {
 			hp_frag_detach(hpb, big_frag);
 			if (stats_are_ready()) {
-				update_stats_shm_frag_detach(big_frag);
+				update_stats_shm_frag_detach(big_frag->size);
 				#if defined(DBG_MALLOC) || defined(STATISTICS)
 				hpb->used += big_frag->size;
 				hpb->real_used += big_frag->size + FRAG_OVERHEAD;
@@ -441,10 +490,6 @@ int hp_mem_warming(struct hp_block *hpb)
 			hp_frag_attach(hpb, big_frag);
 			if (stats_are_ready()) {
 				update_stats_shm_frag_attach(big_frag);
-				#if defined(DBG_MALLOC) || defined(STATISTICS)
-					hpb->used -= big_frag->size;
-					hpb->real_used -= big_frag->size + FRAG_OVERHEAD;
-				#endif
 			} else {
 				hpb->used -= big_frag->size;
 				hpb->real_used -= big_frag->size + FRAG_OVERHEAD;
@@ -500,8 +545,7 @@ static struct hp_block *hp_malloc_init(char *address, unsigned long size,
 
 	size = ROUNDDOWN(size);
 
-	init_overhead = (ROUNDUP(sizeof(struct hp_block)) + 2 * FRAG_OVERHEAD);
-
+	init_overhead = ROUNDUP(sizeof(struct hp_block)) + 2 * FRAG_OVERHEAD;
 	if (size < init_overhead)
 	{
 		LM_ERR("not enough memory for the basic structures! "
@@ -519,24 +563,19 @@ static struct hp_block *hp_malloc_init(char *address, unsigned long size,
 	hpb->used = 0;
 	hpb->real_used = init_overhead;
 	hpb->max_real_used = init_overhead;
+	hpb->total_fragments = 2;
 	gettimeofday(&hpb->last_updated, NULL);
 
 	hpb->first_frag = (struct hp_frag *)(start + ROUNDUP(sizeof(struct hp_block)));
-	hpb->last_frag = (struct hp_frag *)(end - sizeof(struct hp_frag));
-	/* init initial fragment*/
-	hpb->first_frag->size = size - init_overhead;
+	hpb->last_frag = (struct hp_frag *)(end - sizeof *hpb->last_frag);
 	hpb->last_frag->size = 0;
 
-	hpb->last_frag->prev  = NULL;
+	/* init initial fragment */
+	hpb->first_frag->size = size - init_overhead;
 	hpb->first_frag->prev = NULL;
+	hpb->last_frag->prev  = NULL;
 
-	/* link initial fragment into the free list*/
-
-	hpb->large_space = 0;
-	hpb->large_limit = hpb->size / 100 * HP_MALLOC_DEFRAG_PERCENT;
-
-	if (hpb->large_limit < HP_MALLOC_DEFRAG_LIMIT)
-		hpb->large_limit = HP_MALLOC_DEFRAG_LIMIT;
+	hp_frag_attach(hpb, hpb->first_frag);
 
 	return hpb;
 }
@@ -551,14 +590,6 @@ struct hp_block *hp_pkg_malloc_init(char *address, unsigned long size,
 		LM_ERR("failed to initialize shm block\n");
 		return NULL;
 	}
-
-	hp_frag_attach(hpb, hpb->first_frag);
-
-	/* first fragment attach is the equivalent of a split  */
-#if defined(DBG_MALLOC) && !defined(STATISTICS)
-	hpb->real_used += FRAG_OVERHEAD;
-	hpb->total_fragments++;
-#endif
 
 	return hpb;
 }
@@ -577,23 +608,6 @@ struct hp_block *hp_shm_malloc_init(char *address, unsigned long size,
 #ifdef HP_MALLOC_FAST_STATS
 	hpb->free_hash[PEEK_HASH_RR(hpb, hpb->first_frag->size)].total_no++;
 #endif
-
-	hp_frag_attach(hpb, hpb->first_frag);
-
-	/* first fragment attach is the equivalent of a split  */
-	if (stats_are_ready()) {
-#if defined(STATISTICS) && !defined(HP_MALLOC_FAST_STATS)
-		update_stat(shm_rused, FRAG_OVERHEAD);
-		update_stat(shm_frags, 1);
-#endif
-#if defined(DBG_MALLOC) || defined(STATISTICS)
-		hpb->real_used += FRAG_OVERHEAD;
-		hpb->total_fragments++;
-#endif
-	} else {
-		hpb->real_used += FRAG_OVERHEAD;
-		hpb->total_fragments++;
-	}
 
 #ifdef HP_MALLOC_FAST_STATS
 #ifdef DBG_MALLOC
@@ -622,7 +636,7 @@ void hp_stats_core_init(struct hp_block *hp, int core_index)
 {
 	struct hp_frag *f;
 
-	for (f=hp->first_frag; (char*)f<(char*)hp->last_frag; f=FRAG_NEXT(f))
+	for (f=hp->first_frag; f < hp->last_frag; f=FRAG_NEXT(f))
 		if (!frag_is_free(f))
 			f->statistic_index = core_index;
 }
