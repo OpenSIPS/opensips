@@ -175,6 +175,30 @@ Date: Fri, 01 Nov 2013 12:00:00 GMT
 ]]>
 </programlisting>
 	</example>
+		<para>
+		This is an example showing the JSON-RPC request with params and reply over HTTP
+		for the <quote>get_statistics</quote> MI command.
+		</para>
+		<example>
+		<title>JSON-RPC request with params</title>
+		<programlisting format="linespecific">
+<![CDATA[
+POST /mi HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Host: example.net
+
+{"jsonrpc":"2.0","method":"get_statistics","params":[["dialog:","tm:"]],"id":10}
+
+HTTP/1.1 200 OK
+Content-Length: 317
+Content-Type: application/json
+Date: Fri, 01 Nov 2013 12:00:00 GMT
+
+{"jsonrpc":"2.0","result":{"dialog:active_dialogs":0,"dialog:early_dialogs":0,"dialog:processed_dialogs":2,"dialog:expired_dialogs":0,"dialog:failed_dialogs":2,"dialog:create_sent":0,"dialog:update_sent":0,"dialog:delete_sent":0,"dialog:create_recv":0,"dialog:update_recv":0,"dialog:delete_recv":0,"tm:received_replies":49252,"tm:relayed_replies":49220,"tm:local_replies":370,"tm:UAS_transactions":49584,"tm:UAC_transactions":0,"tm:2xx_transactions":12004,"tm:3xx_transactions":0,"tm:4xx_transactions":37580,"tm:5xx_transactions":0,"tm:6xx_transactions":0,"tm:inuse_transactions":60},"id":10}
+]]>
+</programlisting>
+	</example>
 	</section>
 
 </chapter>
