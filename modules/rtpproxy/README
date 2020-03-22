@@ -408,9 +408,10 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 
 1.5.13. rtpp_notify_socket (string)
 
-   The socket used by OpenSIPS to receive timeout notifications.
+   The socket OpenSIPS listens for notifications from RTPProxy.
+   Currently OpenSIPS can receive RTP timeout and DTMF events.
 
-   Default value is “NULL”.
+   Default value is “NULL” - no notifications are received.
 
    Example 1.12. Set rtpp_notify_socket parameter
 ...
@@ -484,7 +485,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
           + s/w - flags that for the UA from which message is
             received, support symmetric RTP must be forced.
           + n[<SOCKET>] - flags that enables the notification
-            timeout for the session. One can specify an optiona
+            timeout for the session. One can specify an optional
             "advertised" socket between the < and > tags. If the
             socket is not specified, the value of
             rtpp_notify_socket is used.
@@ -923,9 +924,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 170 113 3677 1631
+   1. Razvan Crainea (@razvancrainea) 174 116 3756 1637
    2. Maksym Sobolyev (@sobomax) 41 3 4527 3
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 23 20 116 109
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 24 21 117 110
    4. Vlad Patrascu (@rvlad-patrascu) 23 8 362 699
    5. Liviu Chircu (@liviuchircu) 20 16 91 183
    6. Vlad Paiu (@vladpaiu) 6 4 15 9
@@ -936,7 +937,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Ezequiel Lovelle, Christophe Sollet
    (@csollet), Anca Vamanu, Mikko Lehto, Dan Pascu (@danpascu),
-   Walter Doekes (@wdoekes), Dusan Klinec, Julián Moreno Patiño.
+   Walter Doekes (@wdoekes), Dusan Klinec, Julián Moreno Patiño,
+   Zero King.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -958,21 +960,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Dec 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Jul 2019
-   4.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   5.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
-   6.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
-   7.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
-   8.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Feb 2018
-   9.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jul 2017
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Mar 2020
+   2.  Razvan Crainea (@razvancrainea)     Mar 2011 - Mar 2020
+   3.  Zero King                           Mar 2020 - Mar 2020
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   6.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
+   7.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
+   8.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
+   9.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Feb 2018
+   10. Maksym Sobolyev (@sobomax)          Mar 2011 - Jul 2017
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Dusan
-   Klinec, Dave Sidwell (@davesidwell), Ezequiel Lovelle, Mikko
-   Lehto, Walter Doekes (@wdoekes), Christophe Sollet (@csollet),
-   Anca Vamanu.
+   All remaining contributors: Julián Moreno Patiño, Vlad Paiu
+   (@vladpaiu), Dusan Klinec, Dave Sidwell (@davesidwell),
+   Ezequiel Lovelle, Mikko Lehto, Walter Doekes (@wdoekes),
+   Christophe Sollet (@csollet), Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -981,11 +983,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei Iancu
-   (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942), Maksym
-   Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas).
+   Last edited by: Razvan Crainea (@razvancrainea), Zero King,
+   Vlad Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu),
+   Peter Lemenkov (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei
+   Iancu (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942),
+   Maksym Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

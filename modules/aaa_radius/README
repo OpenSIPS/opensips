@@ -406,7 +406,7 @@ Chapter 3. Contributors
 
    All remaining contributors: Alex Massover, Julián Moreno
    Patiño, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes),
-   Dan Pascu (@danpascu).
+   Zero King, Dan Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -428,19 +428,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2019
-   2.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Apr 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
-   10. Boris Ratner                        Mar 2012 - Jan 2013
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2019
+   3.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2019
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Apr 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
 
-   All remaining contributors: Matt Lehner, Irina-Maria Stanescu,
-   Авдиенко Михаил, Alex Massover, Anca Vamanu.
+   All remaining contributors: Boris Ratner, Matt Lehner,
+   Irina-Maria Stanescu, Авдиенко Михаил, Alex Massover, Anca
+   Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -449,11 +450,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Ionut Ionita (@ionutrazvanionita), Walter
-   Doekes (@wdoekes), Bogdan-Andrei Iancu (@bogdan-iancu), Boris
-   Ratner, Irina-Maria Stanescu.
+   Last edited by: Zero King, Vlad Patrascu (@rvlad-patrascu),
+   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
+   Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
+   Walter Doekes (@wdoekes), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Boris Ratner, Irina-Maria Stanescu.
 
    Documentation Copyrights:
 

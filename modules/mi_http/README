@@ -43,6 +43,7 @@ mi_http Module
    1.2. Set trace_destination parameter
    1.3. Set trace_destination parameter
    1.4. JSON-RPC request
+   1.5. JSON-RPC request with params
 
 Chapter 1. Admin Guide
 
@@ -165,6 +166,35 @@ dant"},{"ID":1,"PID":9468,"Type":"HTTPD127.0.0.1:8008"},{"ID":3,"PID":94
 :"Timerhandler"},]},"id":10}
 
 
+   This is an example showing the JSON-RPC request with params and
+   reply over HTTP for the “get_statistics” MI command.
+
+   Example 1.5. JSON-RPC request with params
+
+POST /mi HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Host: example.net
+
+{"jsonrpc":"2.0","method":"get_statistics","params":[["dialog:","tm:"]],
+"id":10}
+
+HTTP/1.1 200 OK
+Content-Length: 317
+Content-Type: application/json
+Date: Fri, 01 Nov 2013 12:00:00 GMT
+
+{"jsonrpc":"2.0","result":{"dialog:active_dialogs":0,"dialog:early_dialo
+gs":0,"dialog:processed_dialogs":2,"dialog:expired_dialogs":0,"dialog:fa
+iled_dialogs":2,"dialog:create_sent":0,"dialog:update_sent":0,"dialog:de
+lete_sent":0,"dialog:create_recv":0,"dialog:update_recv":0,"dialog:delet
+e_recv":0,"tm:received_replies":49252,"tm:relayed_replies":49220,"tm:loc
+al_replies":370,"tm:UAS_transactions":49584,"tm:UAC_transactions":0,"tm:
+2xx_transactions":12004,"tm:3xx_transactions":0,"tm:4xx_transactions":37
+580,"tm:5xx_transactions":0,"tm:6xx_transactions":0,"tm:inuse_transactio
+ns":60},"id":10}
+
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -180,6 +210,7 @@ Chapter 2. Contributors
    6. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 102 36
    7. Vlad Paiu (@vladpaiu) 5 3 8 3
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Ovidiu Sas (@ovidiusas) 2 1 24 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -201,14 +232,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Dec 2013 - Sep 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2014 - Apr 2019
-   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
-   6. Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
-   7. Vlad Paiu (@vladpaiu)               Nov 2013 - Jan 2016
-   8. Stephane Alnet                      Oct 2013 - Nov 2013
+   1. Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   2. Razvan Crainea (@razvancrainea)     Dec 2013 - Sep 2019
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2014 - Apr 2019
+   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   7. Ionut Ionita (@ionutrazvanionita)   May 2016 - Feb 2017
+   8. Vlad Paiu (@vladpaiu)               Nov 2013 - Jan 2016
+   9. Stephane Alnet                      Oct 2013 - Nov 2013
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -217,10 +249,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Stephane Alnet.
+   Last edited by: Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut Ionita
+   (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Stephane Alnet.
 
    Documentation Copyrights:
 

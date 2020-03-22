@@ -51,6 +51,11 @@ Chapter 1. Admin Guide
    This module provides a minimal web user interface for the
    OpenSIPS's Management Interface.
 
+   Parameters for mi commands must be given in a json array
+   format. For example, to get all statistics, the param is to be
+   given as [["all"]]. To get only dialog and tm statistics, the
+   param is to be given as [["dialog:","tm:"]].
+
 1.2. To-do
 
    Features to be added in the future:
@@ -161,14 +166,15 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ovidiu Sas (@ovidiusas) 62 31 2243 697
+   1. Ovidiu Sas (@ovidiusas) 63 32 2249 697
    2. Vlad Patrascu (@rvlad-patrascu) 14 3 167 493
    3. Liviu Chircu (@liviuchircu) 9 7 29 41
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 109 44
    5. Razvan Crainea (@razvancrainea) 8 6 24 13
    6. Ionut Ionita (@ionutrazvanionita) 8 5 217 10
-   7. Peter Lemenkov (@lemenkov) 3 1 1 1
-   8. Vlad Paiu (@vladpaiu) 2 1 0 1
+   7. Zero King 3 1 2 2
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Vlad Paiu (@vladpaiu) 2 1 0 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -190,14 +196,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Mar 2015 - Sep 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2011 - Apr 2019
-   4. Ovidiu Sas (@ovidiusas)             Oct 2011 - Feb 2019
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
-   7. Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   8. Vlad Paiu (@vladpaiu)               Jan 2016 - Jan 2016
+   1. Ovidiu Sas (@ovidiusas)             Oct 2011 - Mar 2020
+   2. Zero King                           Mar 2020 - Mar 2020
+   3. Razvan Crainea (@razvancrainea)     Mar 2015 - Sep 2019
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2011 - Apr 2019
+   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7. Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   8. Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
+   9. Vlad Paiu (@vladpaiu)               Jan 2016 - Jan 2016
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -206,10 +213,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
-   (@ionutrazvanionita), Ovidiu Sas (@ovidiusas), Bogdan-Andrei
-   Iancu (@bogdan-iancu).
+   Last edited by: Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

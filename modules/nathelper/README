@@ -80,10 +80,10 @@ nathelper Module
    1.11. Set sipping_from parameter
    1.12. Set sipping_method parameter
    1.13. Set nortpproxy_str parameter
-   1.14. Set natping_interval parameter
-   1.15. Set natping_interval parameter
+   1.14. Set natping_tcp parameter
+   1.15. Set oldip_skip parameter
    1.16. Set ping_threshold parameter
-   1.17. Set ping_threshold parameter
+   1.17. Set max_pings_lost parameter
    1.18. Set cluster_id parameter
    1.19. Set cluster_sharing_tag parameter
    1.20. fix_nated_contact usage
@@ -356,7 +356,7 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 
    Default value is 0 (not set).
 
-   Example 1.14. Set natping_interval parameter
+   Example 1.14. Set natping_tcp parameter
 ...
 modparam("nathelper", "natping_tcp", 1)
 ...
@@ -370,7 +370,7 @@ modparam("nathelper", "natping_tcp", 1)
 
    Default value is 0 (not set).
 
-   Example 1.15. Set natping_interval parameter
+   Example 1.15. Set oldip_skip parameter
 ...
 modparam("nathelper", "oldip_skip", "oc")
 ...
@@ -395,7 +395,7 @@ modparam("nathelper", "ping_threshold", 10)
 
    Default value is 3 (pings).
 
-   Example 1.17. Set ping_threshold parameter
+   Example 1.17. Set max_pings_lost parameter
 ...
 modparam("nathelper", "max_pings_lost", 5)
 ...
@@ -661,9 +661,9 @@ Chapter 3. Contributors
    Pascu (@danpascu), Christophe Sollet (@csollet), Marcus Hunger,
    Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu,
    Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq,
-   Laurent Schweizer, Konstantin Bokarius, John Riordan, Peter
-   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Elena-Ramona
-   Modroiu, Edson Gellert Schubert.
+   Laurent Schweizer, Jasper Hafkenscheid, Konstantin Bokarius,
+   John Riordan, Peter Lemenkov (@lemenkov), Walter Doekes
+   (@wdoekes), Elena-Ramona Modroiu, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -685,26 +685,27 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jul 2019
-   4.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Shlomi Gutman                       Mar 2018 - Mar 2018
-   8.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
-   9.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
-   10. Walter Doekes (@wdoekes)            May 2014 - May 2014
+   1.  Jasper Hafkenscheid                 Mar 2020 - Mar 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
+   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jul 2019
+   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   9.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
+   10. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
 
-   All remaining contributors: Christophe Sollet (@csollet), Vlad
-   Paiu (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu, John
-   Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
-   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
-   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
-   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
+   All remaining contributors: Walter Doekes (@wdoekes),
+   Christophe Sollet (@csollet), Vlad Paiu (@vladpaiu), Maksym
+   Sobolyev (@sobomax), Anca Vamanu, John Riordan, Emmanuel Buu,
+   Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Ancuta
+   Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent
+   Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona
+   Modroiu, Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj),
+   Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -713,10 +714,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
-   (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   Last edited by: Jasper Hafkenscheid, Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Walter Doekes (@wdoekes), Christophe
    Sollet (@csollet), Vlad Paiu (@vladpaiu), Maksym Sobolyev
    (@sobomax), Anca Vamanu, Andrei Dragus, Sergio Gutierrez, Klaus

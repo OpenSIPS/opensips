@@ -1091,8 +1091,8 @@ domain register {
    parameters so they can be changed, but the name of the columns
    must be as they are in the SQL script. You can also find the
    complete database documentation on the project webpage,
-   https://opensips.org/docs/db/db-schema-devel.html. The
-   flags and mask columns have the same function as in the
+   https://opensips.org/docs/db/db-schema-devel.html. The flags
+   and mask columns have the same function as in the
    carrierfailureroute table. A zero value in the flags and mask
    column means that any message flags will match this rule.
 
@@ -1232,9 +1232,9 @@ Chapter 2. Contributors
    10. Bob Atkins 3 1 29 1
 
    All remaining contributors: Julián Moreno Patiño, Ovidiu Sas
-   (@ovidiusas), Sergio Gutierrez, Iouri Kharon, UnixDev, Peter
-   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Edson Gellert
-   Schubert.
+   (@ovidiusas), Sergio Gutierrez, Iouri Kharon, UnixDev, Zero
+   King, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes),
+   Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1256,20 +1256,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   8.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   9.  UnixDev                             Feb 2009 - Feb 2009
-   10. Henning Westerholt (@henningw)      Aug 2007 - Dec 2008
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   9.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   10. UnixDev                             Feb 2009 - Feb 2009
 
-   All remaining contributors: Sergio Gutierrez, Iouri Kharon,
-   Hardy Kahl, Daniel-Constantin Mierla (@miconda), Edson Gellert
-   Schubert, Bob Atkins, Carsten Bock, Jonas Appel.
+   All remaining contributors: Henning Westerholt (@henningw),
+   Sergio Gutierrez, Iouri Kharon, Hardy Kahl, Daniel-Constantin
+   Mierla (@miconda), Edson Gellert Schubert, Bob Atkins, Carsten
+   Bock, Jonas Appel.
 
    (1) including any documentation-related commits, excluding
    merge commits
