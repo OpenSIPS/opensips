@@ -10,6 +10,12 @@
 		This module provides a minimal web user interface for the &osips;'s
 		Management Interface.
 	</para>
+	<para>
+		Parameters for mi commands must be given in a json array format.
+		For example, to get all statistics, the param is to be given as [["all"]].
+		To get only dialog and tm statistics, the param is to be given as [["dialog:","tm:"]].
+	</para>
+
 	</section>
 
 	<section>
