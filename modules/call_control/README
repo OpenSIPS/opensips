@@ -516,9 +516,11 @@ Chapter 2. Contributors
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 15 47
    6. Irina-Maria Stanescu 6 2 356 17
    7. Vlad Paiu (@vladpaiu) 4 2 5 12
-   8. Julián Moreno Patiño 3 1 2 2
-   9. Mauro Davi 2 1 15 0
-   10. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   8. Zero King 3 1 3 3
+   9. Julián Moreno Patiño 3 1 2 2
+   10. Mauro Davi 2 1 15 0
+
+   All remaining contributors: Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -540,16 +542,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Dec 2018
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Saúl Ibarra Corretgé (@saghul)      Aug 2010 - Jan 2012
-   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011
-   8.  Irina-Maria Stanescu                Sep 2009 - Oct 2009
-   9.  Mauro Davi                          Apr 2009 - Apr 2009
-   10. Dan Pascu (@danpascu)               Dec 2008 - Dec 2008
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Dec 2018
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Saúl Ibarra Corretgé (@saghul)      Aug 2010 - Jan 2012
+   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011
+   9.  Irina-Maria Stanescu                Sep 2009 - Oct 2009
+   10. Mauro Davi                          Apr 2009 - Apr 2009
+
+   All remaining contributors: Dan Pascu (@danpascu).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -558,10 +562,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Razvan
-   Crainea (@razvancrainea), Irina-Maria Stanescu, Dan Pascu
-   (@danpascu).
+   Last edited by: Zero King, Liviu Chircu (@liviuchircu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Saúl Ibarra Corretgé
+   (@saghul), Razvan Crainea (@razvancrainea), Irina-Maria
+   Stanescu, Dan Pascu (@danpascu).
 
    doc copyrights:
 

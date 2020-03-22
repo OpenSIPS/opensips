@@ -78,10 +78,10 @@ nathelper Module
    1.11. Set sipping_from parameter
    1.12. Set sipping_method parameter
    1.13. Set nortpproxy_str parameter
-   1.14. Set natping_interval parameter
-   1.15. Set natping_interval parameter
+   1.14. Set natping_tcp parameter
+   1.15. Set oldip_skip parameter
    1.16. Set ping_threshold parameter
-   1.17. Set ping_threshold parameter
+   1.17. Set max_pings_lost parameter
    1.18. fix_nated_contact usage
    1.19. fix_nated_sdp usage
    1.20. add_rcv_paramer usage
@@ -357,7 +357,7 @@ modparam("nathelper", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 
    Default value is 0 (not set).
 
-   Example 1.14. Set natping_interval parameter
+   Example 1.14. Set natping_tcp parameter
 ...
 modparam("nathelper", "natping_tcp", 1)
 ...
@@ -371,7 +371,7 @@ modparam("nathelper", "natping_tcp", 1)
 
    Default value is 0 (not set).
 
-   Example 1.15. Set natping_interval parameter
+   Example 1.15. Set oldip_skip parameter
 ...
 modparam("nathelper", "oldip_skip", "oc")
 ...
@@ -396,7 +396,7 @@ modparam("nathelper", "ping_threshold", 10)
 
    Default value is 3 (pings).
 
-   Example 1.17. Set ping_threshold parameter
+   Example 1.17. Set max_pings_lost parameter
 ...
 modparam("nathelper", "max_pings_lost", 5)
 ...
@@ -614,9 +614,9 @@ Chapter 3. Contributors
    Westerholt (@henningw), Christophe Sollet (@csollet), Marcus
    Hunger, Vlad Patrascu (@rvlad-patrascu), Klaus Darilion, Sergio
    Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi
-   Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer,
-   Konstantin Bokarius, John Riordan, Walter Doekes (@wdoekes),
-   Elena-Ramona Modroiu, Edson Gellert Schubert.
+   Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer, Jasper
+   Hafkenscheid, Konstantin Bokarius, John Riordan, Walter Doekes
+   (@wdoekes), Elena-Ramona Modroiu, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -638,25 +638,26 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jul 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
-   4.  Shlomi Gutman                       Mar 2018 - Mar 2018
-   5.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
-   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
-   8.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   9.  Christophe Sollet (@csollet)        Dec 2009 - Oct 2013
-   10. Vlad Paiu (@vladpaiu)               Aug 2010 - Jun 2012
+   1.  Jasper Hafkenscheid                 Mar 2020 - Mar 2020
+   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jul 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
+   5.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   6.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
+   8.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
+   9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   10. Christophe Sollet (@csollet)        Dec 2009 - Oct 2013
 
-   All remaining contributors: Maksym Sobolyev (@sobomax), Anca
-   Vamanu, John Riordan, Emmanuel Buu, Andrei Dragus, Sergio
-   Gutierrez, Klaus Darilion, Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
-   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
-   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
-   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
+   All remaining contributors: Vlad Paiu (@vladpaiu), Maksym
+   Sobolyev (@sobomax), Anca Vamanu, John Riordan, Emmanuel Buu,
+   Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Ancuta
+   Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent
+   Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona
+   Modroiu, Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj),
+   Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -665,16 +666,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas), Ionut Ionita
-   (@ionutrazvanionita), Razvan Crainea (@razvancrainea), Walter
-   Doekes (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu
-   (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu, Andrei
-   Dragus, Sergio Gutierrez, Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Carsten Bock, Ancuta Onofrei, Marcus Hunger, Jeremie Le Hen,
-   Bayan Towfiq, Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
-   Kuthan (@jiriatipteldotorg).
+   Last edited by: Jasper Hafkenscheid, Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Razvan Crainea
+   (@razvancrainea), Walter Doekes (@wdoekes), Christophe Sollet
+   (@csollet), Vlad Paiu (@vladpaiu), Maksym Sobolyev (@sobomax),
+   Anca Vamanu, Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Carsten Bock, Ancuta Onofrei, Marcus Hunger,
+   Jeremie Le Hen, Bayan Towfiq, Elena-Ramona Modroiu, Jan Janak
+   (@janakj), Jiri Kuthan (@jiriatipteldotorg).
 
    doc copyrights:
 

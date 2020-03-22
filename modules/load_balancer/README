@@ -120,8 +120,7 @@ Chapter 1. Admin Guide
 
    Please refer to the Load-Balancer tutorial from the OpenSIPS
    website:
-   https://opensips.org/Documentation/Tutorials-LoadBalancing-1
-   -9.
+   https://opensips.org/Documentation/Tutorials-LoadBalancing-1-9.
 
 1.3. Probing and Disabling destinations
 
@@ -739,7 +738,7 @@ Chapter 4. Contributors
    10. Ezequiel Lovelle 4 2 3 3
 
    All remaining contributors: Anca Vamanu, Andrei Dragus, James
-   Van Vleet, Dusan Klinec, TaoZhiying.
+   Van Vleet, Dusan Klinec, Zero King, TaoZhiying.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -761,19 +760,20 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
-   3.  TaoZhiying                          May 2019 - May 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Sep 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Mar 2018
-   6.  Jeremy Martinez                     Feb 2017 - Feb 2017
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
-   8.  Sergey Khripchenko                  Nov 2014 - Oct 2015
-   9.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
-   10. shripchenko                         Oct 2014 - Oct 2014
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
+   4.  TaoZhiying                          May 2019 - May 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Sep 2018
+   6.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Mar 2018
+   7.  Jeremy Martinez                     Feb 2017 - Feb 2017
+   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Sergey Khripchenko                  Nov 2014 - Oct 2015
+   10. Ezequiel Lovelle                    Oct 2014 - Oct 2014
 
-   All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
-   (@vladpaiu), Andrei Dragus, James Van Vleet, Anca Vamanu.
+   All remaining contributors: shripchenko, Walter Doekes
+   (@wdoekes), Vlad Paiu (@vladpaiu), Andrei Dragus, James Van
+   Vleet, Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -782,10 +782,10 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sergey
-   Khripchenko, Razvan Crainea (@razvancrainea), Ezequiel Lovelle,
-   Walter Doekes (@wdoekes), Vlad Paiu (@vladpaiu).
+   Last edited by: Zero King, Bogdan-Andrei Iancu (@bogdan-iancu),
+   Liviu Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu),
+   Sergey Khripchenko, Razvan Crainea (@razvancrainea), Ezequiel
+   Lovelle, Walter Doekes (@wdoekes), Vlad Paiu (@vladpaiu).
 
    doc copyrights:
 
