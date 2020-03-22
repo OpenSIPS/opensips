@@ -354,7 +354,8 @@ Chapter 2. Contributors
    10. Konstantin Bokarius 3 1 2 5
 
    All remaining contributors: John Riordan, Juha Heinanen
-   (@juha-h), Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
+   (@juha-h), Peter Lemenkov (@lemenkov), Zero King, Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -376,20 +377,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Vlad Paiu (@vladpaiu)               Feb 2012 - Feb 2012
-   7.  Anca Vamanu                         Oct 2007 - Sep 2010
-   8.  John Riordan                        May 2009 - May 2009
-   9.  Sergio Gutierrez                    Nov 2008 - Nov 2008
-   10. Henning Westerholt (@henningw)      Aug 2007 - Jul 2008
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   7.  Vlad Paiu (@vladpaiu)               Feb 2012 - Feb 2012
+   8.  Anca Vamanu                         Oct 2007 - Sep 2010
+   9.  John Riordan                        May 2009 - May 2009
+   10. Sergio Gutierrez                    Nov 2008 - Nov 2008
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Juha
-   Heinanen (@juha-h).
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Juha Heinanen (@juha-h).
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -907,7 +907,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Ezequiel Lovelle, Christophe Sollet
    (@csollet), Anca Vamanu, Mikko Lehto, Dan Pascu (@danpascu),
-   Walter Doekes (@wdoekes), Dusan Klinec, Julián Moreno Patiño.
+   Walter Doekes (@wdoekes), Dusan Klinec, Julián Moreno Patiño,
+   Zero King.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -929,21 +930,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Mar 2011 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Jul 2019
-   4.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   5.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
-   6.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
-   7.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
-   8.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Feb 2018
-   9.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jul 2017
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Mar 2011 - Sep 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Jul 2019
+   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   6.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
+   7.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
+   8.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
+   9.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Feb 2018
+   10. Maksym Sobolyev (@sobomax)          Mar 2011 - Jul 2017
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Dusan
-   Klinec, Dave Sidwell (@davesidwell), Ezequiel Lovelle, Mikko
-   Lehto, Walter Doekes (@wdoekes), Christophe Sollet (@csollet),
-   Anca Vamanu.
+   All remaining contributors: Julián Moreno Patiño, Vlad Paiu
+   (@vladpaiu), Dusan Klinec, Dave Sidwell (@davesidwell),
+   Ezequiel Lovelle, Mikko Lehto, Walter Doekes (@wdoekes),
+   Christophe Sollet (@csollet), Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -952,11 +953,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei Iancu
-   (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942), Maksym
-   Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas).
+   Last edited by: Zero King, Vlad Patrascu (@rvlad-patrascu),
+   Razvan Crainea (@razvancrainea), Liviu Chircu (@liviuchircu),
+   Peter Lemenkov (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei
+   Iancu (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942),
+   Maksym Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

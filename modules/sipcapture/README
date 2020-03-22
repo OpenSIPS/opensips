@@ -756,13 +756,13 @@ Chapter 2. Contributors
    4. Alexandr Dubovikov (@adubovikov) 21 2 2360 0
    5. Razvan Crainea (@razvancrainea) 19 17 33 18
    6. Vlad Patrascu (@rvlad-patrascu) 8 6 70 52
-   7. Maxim Azhnakin 3 1 16 18
-   8. Vlad Paiu (@vladpaiu) 3 1 3 3
-   9. Dusan Klinec 3 1 1 1
-   10. Ezequiel Lovelle 3 1 1 1
+   7. Zero King 4 2 2 3
+   8. Maxim Azhnakin 3 1 16 18
+   9. Vlad Paiu (@vladpaiu) 3 1 3 3
+   10. Dusan Klinec 3 1 1 1
 
-   All remaining contributors: Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov), Walter Doekes (@wdoekes).
+   All remaining contributors: Ezequiel Lovelle, Julián Moreno
+   Patiño, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -784,19 +784,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Nov 2019
-   2.  Maxim Azhnakin                      Oct 2019 - Oct 2019
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec                        Dec 2015 - Dec 2015
-   10. Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Nov 2019
+   3.  Maxim Azhnakin                      Oct 2019 - Oct 2019
+   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Dusan Klinec                        Dec 2015 - Dec 2015
 
-   All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
-   (@vladpaiu), Alexandr Dubovikov (@adubovikov).
+   All remaining contributors: Ezequiel Lovelle, Walter Doekes
+   (@wdoekes), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
+   (@adubovikov).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -805,10 +806,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
-   (@vladpaiu), Alexandr Dubovikov (@adubovikov).
+   Last edited by: Zero King, Vlad Patrascu (@rvlad-patrascu),
+   Liviu Chircu (@liviuchircu), Razvan Crainea (@razvancrainea),
+   Peter Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita),
+   Vlad Paiu (@vladpaiu), Alexandr Dubovikov (@adubovikov).
 
    Documentation Copyrights:
 

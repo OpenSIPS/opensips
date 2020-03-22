@@ -113,8 +113,8 @@ Chapter 1. Admin Guide
 Note
 
    A more complete guide about SIMPLE2Jabber gateway can be found
-   at https://opensips.org/. The part below will be removed
-   soon, only the manual from web will be updated.
+   at https://opensips.org/. The part below will be removed soon,
+   only the manual from web will be updated.
 
    The Jabber server setup is not a subject of this guide. Check
    http://www.jabber.org for that.
@@ -514,7 +514,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Elena-Ramona Modroiu, Jamey Hicks,
    Konstantin Bokarius, John Riordan, Vlad Paiu (@vladpaiu),
-   Julián Moreno Patiño, Klaus Darilion, Edson Gellert Schubert.
+   Julián Moreno Patiño, Klaus Darilion, Zero King, Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -536,21 +537,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - May 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          May 2007 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Vlad Paiu (@vladpaiu)               Feb 2012 - Feb 2012
-   8.  John Riordan                        May 2009 - May 2009
-   9.  Klaus Darilion                      Jul 2008 - Jul 2008
-   10. Henning Westerholt (@henningw)      Jan 2008 - Jun 2008
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - May 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          May 2007 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Vlad Paiu (@vladpaiu)               Feb 2012 - Feb 2012
+   9.  John Riordan                        May 2009 - May 2009
+   10. Klaus Darilion                      Jul 2008 - Jul 2008
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Elena-Ramona Modroiu, Jan Janak (@janakj), Andrei
-   Pelinescu-Onciul, Jamey Hicks, Jiri Kuthan
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj),
+   Andrei Pelinescu-Onciul, Jamey Hicks, Jiri Kuthan
    (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding

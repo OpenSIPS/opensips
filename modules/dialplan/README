@@ -162,8 +162,7 @@ Chapter 1. Admin Guide
 
    The definition of the tables used by the dialplan module can be
    found at
-   https://opensips.org/docs/db/db-schema-devel.html#AEN15
-   01
+   https://opensips.org/docs/db/db-schema-devel.html#AEN1501
 
 1.4.1. What to place in table
 
@@ -544,7 +543,7 @@ Chapter 3. Contributors
    9. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
    10. Henning Westerholt (@henningw) 5 3 5 14
 
-   All remaining contributors: Parantido Julius De Rica
+   All remaining contributors: Zero King, Parantido Julius De Rica
    (@Parantido), Paul Wise, Sergio Gutierrez, Vlad Paiu
    (@vladpaiu), Rudy Pedraza, Juha Heinanen (@juha-h), Peter
    Lemenkov (@lemenkov), UnixDev, David Sanders.
@@ -569,21 +568,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Jul 2012 - Dec 2019
-   2.  Razvan Crainea (@razvancrainea)          Dec 2010 - Sep 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Apr 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   6.  Ovidiu Sas (@ovidiusas)                  Sep 2008 - Nov 2015
-   7.  Ionut Ionita (@ionutrazvanionita)        Jul 2014 - Nov 2015
-   8.  David Sanders                            Sep 2015 - Sep 2015
-   9.  Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
-   10. Parantido Julius De Rica (@Parantido)    Sep 2014 - Sep 2014
+   1.  Zero King                                Mar 2020 - Mar 2020
+   2.  Liviu Chircu (@liviuchircu)              Jul 2012 - Dec 2019
+   3.  Razvan Crainea (@razvancrainea)          Dec 2010 - Sep 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2008 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   7.  Ovidiu Sas (@ovidiusas)                  Sep 2008 - Nov 2015
+   8.  Ionut Ionita (@ionutrazvanionita)        Jul 2014 - Nov 2015
+   9.  David Sanders                            Sep 2015 - Sep 2015
+   10. Eseanu Marius Cristian (@eseanucristian)   Jul 2015 - Jul
+                                                2015
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Rudy
-   Pedraza, Sergio Gutierrez, Paul Wise, Anca Vamanu, Andrei
-   Dragus, UnixDev, Juha Heinanen (@juha-h), Henning Westerholt
-   (@henningw).
+   All remaining contributors: Parantido Julius De Rica
+   (@Parantido), Vlad Paiu (@vladpaiu), Rudy Pedraza, Sergio
+   Gutierrez, Paul Wise, Anca Vamanu, Andrei Dragus, UnixDev, Juha
+   Heinanen (@juha-h), Henning Westerholt (@henningw).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -592,11 +592,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Ovidiu
-   Sas (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei
-   Dragus, Anca Vamanu.
+   Last edited by: Zero King, Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Andrei Dragus, Anca Vamanu.
 
    Documentation Copyrights:
 

@@ -352,6 +352,13 @@ rtpengine_offer();
             the full call, breaking the subsequent “answer” for
             the new branch. This flag is only supported by the
             Sipwise rtpengine RTP proxy at the moment!
+          + call-id - provide a custom Call-ID for the session. If
+            missing, the Call-Id of the request/reply is used.
+          + from-tag - provide a custom from-tag for the session.
+            If missing, the from-tag request is used.
+          + to-tag - provide a custom to-tag of the session. If
+            missing, the to-tag of the request/reply is used, is
+            present.
           + asymmetric - flags that UA from which message is
             received doesn't support symmetric RTP. (automatically
             sets the 'r' flag)
@@ -885,7 +892,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 127 49 4000 2566
+   1. Razvan Crainea (@razvancrainea) 129 50 4031 2578
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 15 421 593
    3. Richard Fuchs 21 2 640 723
    4. Liviu Chircu (@liviuchircu) 15 11 66 131
@@ -916,7 +923,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Feb 2020
+   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Mar 2020
    2.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jul 2019
    4.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
