@@ -1003,6 +1003,7 @@ fi
 %{_libdir}/opensips/modules/mangler.so
 %{_libdir}/opensips/modules/mathops.so
 %{_libdir}/opensips/modules/maxfwd.so
+%{_libdir}/opensips/modules/media_exchange.so
 %{_libdir}/opensips/modules/mediaproxy.so
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_fifo.so
@@ -1088,6 +1089,7 @@ fi
 %doc docdir/README.load_balancer
 %doc docdir/README.mangler
 %doc docdir/README.maxfwd
+%doc docdir/README.media_exchange
 %doc docdir/README.mediaproxy
 %doc docdir/README.mi_datagram
 %doc docdir/README.mi_fifo
@@ -1446,8 +1448,8 @@ fi
 %changelog
 * Tue Feb 11 2020 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
 - Specification updated for opensips 3.1
-- New modules: presence_dfks, qrouting, rabbitmq_consumer, stir_shaken,
-  uuid
+- New modules: media_exchange, presence_dfks, qrouting,
+  rabbitmq_consumer, stir_shaken, uuid
 - New package: stir-shaken-module
 - Obsoleted modules: seas, sms
 - Removed: opensipsunix, osipsconsole, opensipsctl, opensipsdbctl
