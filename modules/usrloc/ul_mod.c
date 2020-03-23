@@ -44,13 +44,15 @@
 
 #include <stdio.h>
 #include "../../sr_module.h"
-#include "ul_mod.h"
 #include "../../rw_locking.h"
 #include "../../dprint.h"
 #include "../../timer.h"     /* register_timer */
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
 #include "../../ipc.h"
+#include "../../lib/csv.h"
+
+#include "ul_mod.h"
 #include "dlist.h"           /* register_udomain */
 #include "udomain.h"         /* {insert,delete,get,release}_urecord */
 #include "urecord.h"         /* {insert,delete,get}_ucontact */
@@ -59,7 +61,6 @@
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
-
 
 #define CONTACTID_COL  "contact_id"
 #define USER_COL       "username"
@@ -106,6 +107,15 @@ db_val_t *cid_vals=NULL;
 
 int cid_regen=0;
 
+/* SIP Push Notification support (RFC 8599) */
+int pn_enable;
+
+str *pn_ct_params; /* parsed array of match params */
+int pn_ct_params_n;
+char *_pn_ct_params = "pn-provider; pn-prid; pn-param";
+
+int pn_pnsreg_interval = 130;
+int pn_trigger_interval = 120;
 
 
 /*
@@ -238,11 +248,19 @@ static param_export_t params[] = {
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
-    /* data replication through clusterer using TCP binary packets */
+
+	/* data replication through clusterer using TCP binary packets */
 	{ "location_cluster",	INT_PARAM, &location_cluster   },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops   },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
+
+	/* SIP Push Notifications */
+	{"pn_enable",           INT_PARAM, &pn_enable},
+	{"pn_ct_match_params",  STR_PARAM, &_pn_ct_params},
+	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval},
+	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval},
+
 	{0, 0, 0}
 };
 
@@ -815,7 +833,8 @@ int ul_deprec_shp(modparam_t _, void *modparam)
 
 int ul_init_globals(void)
 {
-	int idx;
+	csv_record *pn_params, *pnp;
+	int i;
 
 	init_db_url(db_url, 1 /* can be null */);
 
@@ -876,10 +895,10 @@ int ul_init_globals(void)
 		}
 
 		cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
-		for (idx=0; idx < max_contact_delete; idx++) {
-			VAL_TYPE(cid_vals+idx) = DB_BIGINT;
-			VAL_NULL(cid_vals+idx) = 0;
-			cid_keys[idx] = &contactid_col;
+		for (i = 0; i < max_contact_delete; i++) {
+			VAL_TYPE(cid_vals + i) = DB_BIGINT;
+			VAL_NULL(cid_vals + i) = 0;
+			cid_keys[i] = &contactid_col;
 		}
 	}
 
@@ -892,6 +911,39 @@ int ul_init_globals(void)
 		return -1;
 	} else {
 		nat_bflag = 1 << nat_bflag;
+	}
+
+	if (pn_enable) {
+		/* parse the list of PN params */
+		pn_params = __parse_csv_record(_str(_pn_ct_params), 0, ';');
+		for (pnp = pn_params; pnp; pnp = pnp->next) {
+			if (ZSTR(pnp->s))
+				continue;
+
+			pn_ct_params = pkg_realloc(pn_ct_params,
+			                      (pn_ct_params_n + 1) * sizeof *pn_ct_params);
+			if (!pn_ct_params) {
+				LM_ERR("oom\n");
+				return -1;
+			}
+
+			if (pkg_nt_str_dup(&pn_ct_params[pn_ct_params_n], &pnp->s)) {
+				LM_ERR("oom\n");
+				return -1;
+			}
+
+			pn_ct_params_n++;
+		}
+		free_csv_record(pn_params);
+
+		if (!pn_ct_params) {
+			LM_ERR("'pn_ct_match_params' must contain at least 1 param!\n");
+			return -1;
+		}
+
+		for (i = 0; i < pn_ct_params_n; i++)
+			LM_DBG("pn_ct_match_param #%d: '%.*s'\n", i + 1,
+			       pn_ct_params[i].len, pn_ct_params[i].s);
 	}
 
 	return 0;

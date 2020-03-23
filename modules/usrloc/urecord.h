@@ -73,7 +73,8 @@ struct ct_match {
 		CT_MATCH_NONE=-1,
 		CT_MATCH_CONTACT_ONLY,
 		CT_MATCH_CONTACT_CALLID,
-		CT_MATCH_PARAM
+		CT_MATCH_PARAM,
+		CT_MATCH_PN_PARAMS,
 	} mode;
 	str param;
 };

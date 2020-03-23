@@ -141,6 +141,11 @@ extern cachedb_con *cdbc;
 
 extern int matching_mode;
 
+extern int pn_enable;
+extern int pn_pnsreg_interval;
+extern int pn_trigger_interval;
+extern str *pn_ct_params;
+extern int pn_ct_params_n;
 
 /*! \brief
  * Initialize event structures

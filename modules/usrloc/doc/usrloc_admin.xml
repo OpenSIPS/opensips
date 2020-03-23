@@ -1447,6 +1447,62 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		</example>
 	</section>
 
+	<section id="param_pn_enable" xreflabel="pn_enable">
+		<title><varname>pn_enable</varname> (integer)</title>
+		<para>
+			Enable SIP Push Notifications support (<ulink url="https://tools.ietf.org/html/rfc8599"><citetitle>RFC 8599</citetitle></ulink>).
+			If enabled, contacts will be first matched against the
+			list of <xref linkend="param_pn_ct_match_params"/>.  On a no-match,
+			the module will attempt to match them as usual, using the
+			<xref linkend="param_matching_mode"/>.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>false</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_enable</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "pn_enable", true)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_pn_ct_match_params" xreflabel="pn_ct_match_params">
+		<title><varname>pn_ct_match_params</varname> (string)</title>
+		<para>
+			The minimally required list of RFC 8599 parameters (custom ones are
+			accepted as well) which must be present in a Contact URI and
+			identically matching an existing binding in order for the binding
+			to be refreshed.  Otherwise, on a no-match, the module will fall
+			back to performing regular contact matching.
+		</para>
+		<para>
+			Note that if the above PN Contact URI parameters match an existing
+			binding, the match is considered to be successful regardless if
+			other parts of the SIP URI do not match (e.g. hostname, port,
+			other URI parameters, etc.).
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>"pn-provider; pn-prid; pn-param"</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_ct_match_params</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "pn_ct_match_params", "pn-provider; pn-prid")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
