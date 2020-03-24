@@ -31,6 +31,22 @@ AUTH_JWT Module
                       jwt_authorize(jwt_token,out_decoded_token,out_
                       sip_username)
 
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
    List of Examples
 
    1.1. db_url parameter usage
@@ -252,3 +268,45 @@ sername) )) {
         }
 }
 ...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Paiu (@vladpaiu) 11 1 1134 0
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 0 4
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                     Name                   Commit Activity
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2020 - Mar 2020
+   2. Vlad Paiu (@vladpaiu)               Mar 2020 - Mar 2020
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Vlad Paiu (@vladpaiu).

@@ -4,6 +4,7 @@
 
 <!ENTITY admin SYSTEM "auth_jwt_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -19,4 +20,5 @@
 
 	&admin;
 	&faq;
+	&contrib;
 </book>
