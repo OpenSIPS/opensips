@@ -165,8 +165,10 @@ int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 			extra->value.len = s.len;
 		}
 
-		if (extra->value.s == NULL)
+		if (extra->value.s == NULL) {
+			extra->shm_buf_len = extra->value.len = 0;
 			goto memerr;
+		}
 
 		memcpy(extra->value.s, s.s, s.len);
 	}
