@@ -1021,6 +1021,7 @@ fi
 %{_libdir}/opensips/modules/proto_ws.so
 %{_libdir}/opensips/modules/qos.so
 %{_libdir}/opensips/modules/qrouting.so
+%{_libdir}/opensips/modules/rate_cacher.so
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
@@ -1107,6 +1108,7 @@ fi
 %doc docdir/README.proto_ws
 %doc docdir/README.qos
 %doc docdir/README.qrouting
+%doc docdir/README.rate_cacher
 %doc docdir/README.ratelimit
 %doc docdir/README.registrar
 %doc docdir/README.rr
@@ -1449,7 +1451,7 @@ fi
 * Tue Feb 11 2020 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
 - Specification updated for opensips 3.1
 - New modules: media_exchange, presence_dfks, qrouting,
-  rabbitmq_consumer, stir_shaken, uuid
+  rabbitmq_consumer, rate_cacher, stir_shaken, uuid
 - New package: stir-shaken-module
 - Obsoleted modules: seas, sms
 - Removed: opensipsunix, osipsconsole, opensipsctl, opensipsdbctl
