@@ -77,6 +77,7 @@ b2b_table server_htable;
 b2b_table client_htable;
 
 int b2be_cluster;
+int serialize_backend;
 
 #define DB_COLS_NO  26
 
@@ -302,6 +303,11 @@ static int mod_init(void)
 		LM_ERR("Failed to init clustering support\n");
 		return -1;
 	}
+
+	if (b2be_db_mode != NO_DB)
+		serialize_backend |= B2BCB_BACKEND_DB;
+	if (b2be_cluster)
+		serialize_backend |= B2BCB_BACKEND_CLUSTER;
 
 	return 0;
 }

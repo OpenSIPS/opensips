@@ -47,7 +47,7 @@
 #define B2BE_STORAGE_BIN_TYPE 1
 #define B2BE_STORAGE_BIN_VERS 1
 
-#define B2BE_SERIALIZE_STORAGE() (b2be_db_mode != NO_DB || b2be_cluster)
+#define B2BE_SERIALIZE_STORAGE() (serialize_backend != 0)
 
 /*
  * Dialog state
@@ -189,7 +189,7 @@ int b2b_apply_lumps(struct sip_msg* msg);
 int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name);
 
 void b2b_run_cb(b2b_dlg_t *dlg, int entity_type, int cbs_type,
-	int event_type, bin_packet_t *storage);
+	int event_type, bin_packet_t *storage, int backend);
 
 dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type);
 

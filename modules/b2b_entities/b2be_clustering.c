@@ -465,7 +465,8 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 	}
 
 	htable[h_idx].locked_by = process_no;
-	b2b_run_cb(new_dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE, packet);
+	b2b_run_cb(new_dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE, packet,
+		B2BCB_BACKEND_CLUSTER);
 	htable[h_idx].locked_by = -1;
 
 	lock_release(&htable[h_idx].lock);
@@ -556,7 +557,8 @@ int receive_entity_update(bin_packet_t *packet)
 		unpack_update_fields(packet, dlg);
 
 		htable[hash_index].locked_by = process_no;
-		b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_UPDATE, packet);
+		b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_UPDATE, packet,
+			B2BCB_BACKEND_CLUSTER);
 		htable[hash_index].locked_by = -1;
 	} else {
 		rc = recv_b2bl_param_update(packet, dlg);
@@ -612,7 +614,8 @@ int receive_entity_delete(bin_packet_t *packet)
 	}
 
 	htable[hash_index].locked_by = process_no;
-	b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_DELETE, packet);
+	b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_DELETE, packet,
+		B2BCB_BACKEND_CLUSTER);
 	htable[hash_index].locked_by = -1;
 
 	b2b_entity_db_delete(type, dlg);
