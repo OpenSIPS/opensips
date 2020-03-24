@@ -84,6 +84,10 @@ imc_members|
 imc_members|2
 imc_rooms|
 imc_rooms|2
+jwt_profiles|
+jwt_profiles|1
+jwt_secrets|
+jwt_secrets|1
 load_balancer|
 load_balancer|3
 location|
@@ -96,6 +100,14 @@ pua|
 pua|8
 qr_profiles|
 qr_profiles|1
+rc_clients|
+rc_clients|1
+rc_demo_ratesheet|
+rc_demo_ratesheet|1
+rc_ratesheets|
+rc_ratesheets|1
+rc_vendors|
+rc_vendors|1
 re_grp|
 re_grp|2
 registrant|

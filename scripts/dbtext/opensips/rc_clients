@@ -1,0 +1,1 @@
+id(int,auto) client_id(string) wholesale_rate(int) retail_rate(int) 

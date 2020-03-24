@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) tag(str) sip_username(str)
+id(int) ratesheet_table(str) currency(str)
 METADATA_KEY
 0 
 METADATA_READONLY

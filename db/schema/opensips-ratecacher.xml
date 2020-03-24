@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE database PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
+	"http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<database xmlns:xi="http://www.w3.org/2001/XInclude">
+	<name>Rate Cacher</name>
+	<xi:include href="rc_clients.xml"/>
+	<xi:include href="rc_vendors.xml"/>
+	<xi:include href="rc_ratesheets.xml"/>
+	<xi:include href="rc_demo_ratesheet.xml"/>
+</database>

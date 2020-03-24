@@ -1,0 +1,745 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+	The <emphasis>rate_cacher</emphasis> module provides a means of caching
+	and real-time querying of the ratesheets assigned to your clients and / or vendors.
+	It also allows for real-time cost-based routing and cost-based filtering.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules.</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+	<section id="vendor_db_url" xreflabel="vendor_db_url">
+		<title><varname>vendors_db_url</varname> (str)</title>
+		<para>
+		The DB URL for querying the Vendors used by the module
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>vendors_db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rate_cacher", "vendors_db_url", "mysql://opensips:opensipsrw@localhost/opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="vendors_db_table" xreflabel="vendors_db_table">
+		<title><varname>vendors_db_table</varname> (str)</title>
+		<para>
+		The DB Table for querying the Vendors used by the module
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>rc_vendors</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>vendors_db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rate_cacher", "vendors_db_table", "my_vendors_view")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="vendors_hash_size" xreflabel="vendors_hash_size">
+		<title><varname>vendors_hash_size</varname> (str)</title>
+		<para>
+		The size of the hash table internally used to keep the vendors. A
+		larger table is much faster but consumes more memory. The hash size
+		must be a power of 2 number.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>256</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>vendors_hash_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rate_cacher", "vendors_hash_size", 1024)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="clients_db_url" xreflabel="clients_db_url">
+		<title><varname>clients_db_url</varname> (str)</title>
+		<para>
+		The DB URL for querying the Clients used by the module
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>clients_db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rate_cacher", "clients_db_url", "mysql://opensips:opensipsrw@localhost/opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="clients_db_table" xreflabel="clients_db_table">
+		<title><varname>clients_db_table</varname> (str)</title>
+		<para>
+		The DB Table for querying the Clients used by the module
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>rc_clients</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>clients_db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rate_cacher", "clients_db_table", "my_clients_view")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="clients_hash_size" xreflabel="clients_hash_size">
+		<title><varname>clients_hash_size</varname> (str)</title>
+		<para>
+		The size of the hash table internally used to keep the clients. A
+		larger table is much faster but consumes more memory. The hash size
+		must be a power of 2 number.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>256</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>vendors_hash_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rate_cacher", "clients_hash_size", 1024)
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section id="rates_db_url" xreflabel="rates_db_url">
+		<title><varname>rates_db_url</varname> (str)</title>
+		<para>
+		The DB URL for querying the Ratesheets used by the module
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>rates_db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rate_cacher", "rates_db_url", "mysql://opensips:opensipsrw@localhost/opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="rates_db_table" xreflabel="rates_db_table">
+		<title><varname>rates_db_table</varname> (str)</title>
+		<para>
+		The DB Table for querying the Ratesheets used by the module
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>rc_ratesheets</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>rates_db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rate_cacher", "rates_db_table", "my_clients_view")
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="get_client_price" xreflabel="get_client_price">
+		<title>
+		<function moreinfo="none">get_client_price(client_id,is_wholesale,dialled_no,prefix_pvar,destination_pvar,price_pvar,minimum_pvar,increment_pvar)</function>
+		</title>
+		<para>
+		For a call originating from the provided Client ID, on a wholesale or retail quality, going to dialled_no, the function will matched the dialled number against the client's ratesheet and return the matched prefix, destination, price, minimum and increment. 
+		</para>
+		<para>
+		The <emphasis>client_id</emphasis> pseudo-var will hold the client_id originating this call
+		</para>
+		<para>
+		The  <emphasis>is_wholesale</emphasis> pseudo-var will contain either a 1 or a 0, depending on whether the call is wholesale or retail ( see client ratesheet provisioning ).
+		</para>
+		<para>
+		The <emphasis>dialled_no</emphasis> pseudo-var contains the DNIS - the dialled number for the current call. It needs to be in E164 format, without the leading +
+		</para>
+		<para>
+		The <emphasis>prefix</emphasis> pseudo-var will contain the matched prefix from the client's ratesheet
+		</para>
+		<para>
+		The <emphasis>destination</emphasis> pseudo-var will contain the matched destination from the client's ratesheet
+		</para>
+		<para>
+		The <emphasis>price</emphasis> pseudo-var will contain the matched price from the client's ratesheet
+		</para>
+		<para>
+		The <emphasis>minimum</emphasis> pseudo-var will contain the matched minimum from the client's ratesheet
+		</para>
+		<para>
+		The <emphasis>increment</emphasis> pseudo-var will contain the matched increment from the client's ratesheet
+		</para>
+
+		<para>Possible parameter types</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>ALL Parameters</emphasis> - String/Integer or pseudo-variables
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">get_client_price</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (get_client_price("my_client",1,"4072794242",$var(prefix),$var(dest),$var(price),$var(min),$var(inc))) {
+                        xlog("We matched $var(prefix) , $var(dest) , $var(price) , $var(min) , $var(inc) for the client's ratesheet\n");
+                }
+
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="get_vendor_price" xreflabel="get_vendor_price">
+		<title>
+		<function moreinfo="none">get_vendor_price(vendor_id,dialled_no,prefix_pvar,destination_pvar,price_pvar,minimum_pvar,increment_pvar)</function>
+		</title>
+		<para>
+		For a call originating going to the provided vendor ID, going to dialled_no, the function will matched the dialled number against the vendor's ratesheet and return the matched prefix, destination, price, minimum and increment. 
+		</para>
+		<para>
+		The <emphasis>vendor_id</emphasis> pseudo-var will hold the vendor_id
+		</para>
+		<para>
+		The <emphasis>dialled_no</emphasis> pseudo-var contains the DNIS - the dialled number for the current call. It needs to be in E164 format, without the leading +
+		</para>
+		<para>
+		The <emphasis>prefix</emphasis> pseudo-var will contain the matched prefix from the vendor's ratesheet
+		</para>
+		<para>
+		The <emphasis>destination</emphasis> pseudo-var will contain the matched destination from the vendor's ratesheet
+		</para>
+		<para>
+		The <emphasis>price</emphasis> pseudo-var will contain the matched price from the vendor's ratesheet
+		</para>
+		<para>
+		The <emphasis>minimum</emphasis> pseudo-var will contain the matched minimum from the vendor's ratesheet
+		</para>
+		<para>
+		The <emphasis>increment</emphasis> pseudo-var will contain the matched increment from the vendor's ratesheet
+		</para>
+
+		<para>Possible parameter types</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>ALL Parameters</emphasis> - String/Integer or pseudo-variables
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">get_vendor_price</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (get_vendor_price("my_vendor","4072794242",$var(prefix),$var(dest),$var(price),$var(min),$var(inc))) {
+                        xlog("We matched $var(prefix) , $var(dest) , $var(price) , $var(min) , $var(inc) for the vendor's ratesheet\n");
+                }
+
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="cost_based_filtering" xreflabel="cost_based_filtering">
+		<title>
+		<function moreinfo="none">cost_based_filtering(client_id,is_wholesale,vendors_csv,dialled_no,desired_margin,out_vendor_csv)</function>
+		</title>
+		<para>
+		For a call originating from the provided Client ID, on a wholesale or retail quality, going to dialled_no, the function removes the Vendors ( from the vendor_csv list ) which do not pass the desired_margin condition, and sets the out_vendor_csv variable to the list of Vendor that meet the margin condition, while maintaining the initial order provided in the vendor_csv variable.
+		</para>
+		<para>
+		The <emphasis>client_id</emphasis> pseudo-var will hold the client_id originating this call
+		</para>
+		<para>
+		The  <emphasis>is_wholesale</emphasis> pseudo-var will contain either a 1 or a 0, depending on whether the call is wholesale or retail ( see client ratesheet provisioning ).
+		</para>
+		<para>
+		The <emphasis>vendors_csv</emphasis> pseudo-var contains a list of Vendors that need to be filtered based on the desired margin ( keep just those that match your desired percentage margin for this call )
+		</para>
+		<para>
+		The <emphasis>dialled_no</emphasis> pseudo-var contains the DNIS - the dialled number for the current call. It needs to be in E164 format, without the leading +
+		</para>
+		<para>
+		The <emphasis>desired_margin</emphasis> pseudo-var contains the minimum Integer margin that the script writer wants to achieve, based on the Client sell and Vendor buy prices. The formula used is : vendor_margin=(client_price - results[i])*100/client_price) . If the vendor_margin is higher than the desired_margin, then the Vendor is ok to use. The desired margin can be positive ( call will be profitable ) or negative ( the call will cause a loss ).
+		</para>
+		<para>
+		The <emphasis>out_vendors_csv</emphasis> pseudo-var is an output parameter, and the pvar will get populated with the CSV list of Vendors that meet the desired margin condition
+		</para>
+
+		<para>Possible parameter types</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>ALL Parameters</emphasis> - String/Integer or pseudo-variables
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from a REQUEST or FAILURE route.
+		</para>
+		<example>
+		<title><function moreinfo="none">cost_based_filtering</function> usage</title>
+		<programlisting format="linespecific">
+...
+
+
+# If we get a call from testClient on it's wholesale quality,
+# going to number 40720018124, and we have to pick from the list 
+# of vendors 'testVendor,testVendor2' based on a a profit margin 
+# of 0 ( we do not want to lose money on this call ),
+# then $avp(out_vendor_csv) will have the vendors that we need 
+# to use based on the above call characteristics, the order of the
+# vendors that was provided in $avp(carrierlist) and the desired margin
+$avp(client_id)="testClient";
+$avp(is_ws)=1;  
+$avp(carrierlist)="testVendor,testVendor2";
+$avp(dnis)="40720018124";
+$avp(profit_margin)=0;
+
+if (cost_based_filtering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$avp(dnis)","$avp(profit_margin)","$avp(out_vendor_result)")) {
+	xlog("XXX - Out of the $avp(carrierlist) carriers, we should only use $avp(out_vendor_result) \n");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="cost_based_ordering" xreflabel="cost_based_ordering">
+		<title>
+		<function moreinfo="none">cost_based_ordering(client_id,is_wholesale,vendors_csv,dialled_no,desired_margin,out_vendor_csv)</function>
+		</title>
+		<para>
+		For a call originating from the provided Client ID, on a wholesale or retail quality, going to dialled_no, the function removes the Vendors ( from the vendor_csv list ) which do not pass the desired_margin condition, and sets th out_vendor_csv variable to the list of Vendor that meet the margin condition, in descending order of their margin ( from most profitable Vendor to least profitable Vendor that still meets the margin condition )
+		</para>
+		<para>
+		The <emphasis>client_id</emphasis> pseudo-var will hold the client_id originating this call
+		</para>
+		<para>
+		The  <emphasis>is_wholesale</emphasis> pseudo-var will contain either a 1 or a 0, depending on whether the call is wholesale or retail ( see client ratesheet provisioning ).
+		</para>
+		<para>
+		The <emphasis>vendors_csv</emphasis> pseudo-var contains a list of Vendors that need to be filtered based on the desired margin ( keep just those that match your desired percentage margin for this call )
+		</para>
+		<para>
+		The <emphasis>dialled_no</emphasis> pseudo-var contains the DNIS - the dialled number for the current call. It needs to be in E164 format, without the leading +
+		</para>
+		<para>
+		The <emphasis>desired_margin</emphasis> pseudo-var contains the minimum Integer margin that the script writer wants to achieve, based on the Client sell and Vendor buy prices. The formula used is : vendor_margin=(client_price - results[i])*100/client_price) . If the vendor_margin is higher than the desired_margin, then the Vendor is ok to use. The desired margin can be positive ( call will be profitable ) or negative ( the call will cause a loss ).
+		</para>
+		<para>
+		The <emphasis>out_vendors_csv</emphasis> pseudo-var is an output parameter, and the pvar will get populated with the CSV list of Vendors that meet the desired margin condition
+		</para>
+
+		<para>Possible parameter types</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>ALL Parameters</emphasis> - String/Integer or pseudo-variables
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">cost_based_ordering</function> usage</title>
+		<programlisting format="linespecific">
+...
+# If we get a call from testClient on it's wholesale quality,
+# going to number 40720018124, and we have to pick from the list 
+# of vendors 'testVendor,testVendor2' based on a a profit margin 
+# of 0 ( we do not want to lose money on this call ),
+# then $avp(out_vendor_csv) will have the vendors that we need 
+# to use based on the above call characteristics, and the desired margin
+# The order in $avp(carrierlist) does not matter, the vendors will be
+# ordered from most profitable to least profitable
+$avp(client_id)="testClient";
+$avp(is_ws)=1;  
+$avp(carrierlist)="testVendor,testVendor2";
+$avp(dnis)="40720018124";
+$avp(profit_margin)=0;
+
+if (cost_based_ordering("$avp(client_id)","$avp(is_ws)","$avp(carrierlist)","$avp(dnis)","$avp(profit_margin)","$avp(out_vendor_result)")) {
+	xlog("XXX - Out of the $avp(carrierlist) carriers, we should only use $avp(out_vendor_result) , in the provided order\n");
+
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+		<section id="rc_addVendor" xreflabel="rc_addVendor">
+		<title>
+		<function moreinfo="none">rc_addVendor</function>
+		</title>
+		<para>
+		Adds a new Vendor, without assigning any ratesheet to it.
+		</para>
+		<para>
+		Name: <emphasis>rc_addVendor</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>vendorName</emphasis> - name of the Vendor to be added
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Add a new Vendor
+# opensips-cli -x mi rc_addVendor myNewVendor
+		</programlisting>
+		</section>
+
+		<section id="rc_deleteVendor" xreflabel="rc_deleteVendor">
+		<title>
+		<function moreinfo="none">rc_deleteVendor</function>
+		</title>
+		<para>
+		Removes a vendor from memory, along with the ratesheet asigned with it ( if any )
+		</para>
+		<para>
+		Name: <emphasis>rc_deleteVendor</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>vendorName</emphasis> - name of the Vendor to be deleted
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Delete a Vendor
+# opensipss-cli -x mi rc_deleteVendor myNewVendor
+		</programlisting>
+		</section>
+
+		<section id="rc_reloadVendorRate" xreflabel="rc_reloadVendorRate">
+		<title>
+		<function moreinfo="none">rc_reloadVendorRate</function>
+		</title>
+		<para>
+		Reloads the provided ratesheet and assigns it to the Vendor
+		</para>
+		<para>
+		Name: <emphasis>rc_reloadVendorRate</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>vendorName</emphasis> - name of the Vendor 
+		</para></listitem>
+		<listitem><para>
+		<emphasis>ratesheet_id</emphasis> - ID of the ratesheet to be reloaded and assigned
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Reloads a Vendor Ratesheet
+# opensips-cli -x mi rc_reloadVendorRate myVendor 3
+		</programlisting>
+		</section>
+
+		<section id="rc_deleteVendorRate" xreflabel="rc_deleteVendorRate">
+		<title>
+		<function moreinfo="none">rc_deleteVendorRate</function>
+		</title>
+		<para>
+		Deletes the assigned ratesheet from the Vendor
+		</para>
+		<para>
+		Name: <emphasis>rc_deleteVendorRate</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>vendorName</emphasis> - name of the Vendor 
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Reloads a Vendor Ratesheet
+# opensips-cli -x mi rc_deleteVendorRate myVendor
+		</programlisting>
+		</section>
+
+		<section id="rc_getVendorPrice" xreflabel="rc_getVendorPrice">
+		<title>
+		<function moreinfo="none">rc_getVendorPrice</function>
+		</title>
+		<para>
+		Fetches all the ratesheet information ( destination name, price, minimum, increment ) for the provided Vendor and dialled number
+		</para>
+		<para>
+		Name: <emphasis>rc_getVendorPrice</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>vendorName</emphasis> - name of the Vendor
+		</para></listitem>
+		<listitem><para>
+		<emphasis>dialledNumber</emphasis> - number to match in the above Vendor's ratesheet
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Query for the price of myVendor for the 4072731825 number
+#/usr/local/bin/opensips-cli -x mi rc_getVendorPrice myVendor 4072731825
+{
+    "prefix": "40727",
+    "destination": "ROMANIA MOBILE VODAFONE",
+    "price": 0.05,
+    "minimum": 1,
+    "increment": 1,
+    "currency": "USD"
+}
+		</programlisting>
+		</section>
+
+		<section id="rc_addClient" xreflabel="rc_addClient">
+		<title>
+		<function moreinfo="none">rc_addClient</function>
+		</title>
+		<para>
+		Adds a new Client, without assigning any ratesheet to it.
+		</para>
+		<para>
+		Name: <emphasis>rc_addClient</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>clientName</emphasis> - name of the Client to be added
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Add a new Client
+# opensips-cli -x mi fifo rc_addClient myNewClient
+		</programlisting>
+		</section>
+
+		<section id="rc_deleteClient" xreflabel="rc_deleteClient">
+		<title>
+		<function moreinfo="none">rc_deleteClient</function>
+		</title>
+		<para>
+		Removes a Client from memory, along with the ratesheet asigned with it ( if any )
+		</para>
+		<para>
+		Name: <emphasis>rc_deleteClient</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>clientName</emphasis> - name of the Client to be deleted
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Delete a Client
+# opensips-cli -x mi rc_deleteClient myClient
+		</programlisting>
+		</section>
+
+		<section id="rc_reloadClientRate" xreflabel="rc_reloadClientRate">
+		<title>
+		<function moreinfo="none">rc_reloadClientRate</function>
+		</title>
+		<para>
+		Reloads the provided ratesheet and assigns it to the Client
+		</para>
+		<para>
+		Name: <emphasis>rc_reloadClientRate</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>clientName</emphasis> - name of the Cient
+		</para></listitem>
+		<listitem><para>
+		<emphasis>isWholesale</emphasis> - is the ratesheet assigned on the wholesale or retail quality
+		</para></listitem>
+		<listitem><para>
+		<emphasis>ratesheet_id</emphasis> - ID of the ratesheet to be reloaded and assigned
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Reloads the Client's wholesale Ratesheet, assigning it rate id 3
+# opensips-cli -x mi rc_reloadClientRate myClient 1 3
+		</programlisting>
+		</section>
+
+		<section id="rc_deleteClientRate" xreflabel="rc_deleteClientRate">
+		<title>
+		<function moreinfo="none">rc_deleteClientRate</function>
+		</title>
+		<para>
+		Deletes the assigned ratesheet from the Client
+		</para>
+		<para>
+		Name: <emphasis>rc_deleteClientRate</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>ClientName</emphasis> - name of the Client 
+		</para></listitem>
+		<listitem><para>
+		<emphasis>isWholesale</emphasis> - delete the wholesale or retail ratesheet
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Reloads a Vendor Ratesheet
+# opensips-cli -x mi rc_deleteVendorRate myVendor
+		</programlisting>
+		</section>
+
+		<section id="rc_getClientPrice" xreflabel="rc_getClientPrice">
+		<title>
+		<function moreinfo="none">rc_getClientPrice</function>
+		</title>
+		<para>
+		Fetches all the ratesheet information ( destination name, price, minimum, increment ) for the provided Client, on the specified quality ( wholesale vs retail ) and dialled number
+		</para>
+		<para>
+		Name: <emphasis>rc_getClientPrice</emphasis>
+		</para>
+		<para>Parameters :</para>
+		<itemizedlist>
+		<listitem><para>
+		<emphasis>ClientName</emphasis> - name of the Client
+		</para></listitem>
+		<listitem><para>
+		<emphasis>isWholesale</emphasis> - wholesale = 1, retail = 0
+		</para></listitem>
+		<listitem><para>
+		<emphasis>dialledNumber</emphasis> - number to match in the above Client's ratesheet
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+## Query for the price of myClient, on the retail quality, for the 4072731825 number
+#/usr/local/bin/opensips-cli -x mi rc_getClientPrice myClient 0 4072731825
+{
+    "prefix": "40727",
+    "destination": "ROMANIA MOBILE VODAFONE",
+    "price": 0.03,
+    "minimum": 1,
+    "increment": 1,
+    "currency": "USD"
+}
+
+		</programlisting>
+		</section>
+
+	</section>
+
+</chapter>

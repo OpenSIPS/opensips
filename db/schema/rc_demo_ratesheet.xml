@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN" 
+  "http://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="rc_demo_ratesheet" xmlns:db="http://docbook.org/ns/docbook">
+	<name>rc_demo_ratesheet</name>
+	<version>1</version>
+	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
+	<description>
+		<db:para>This table is a demo table to be used by the Rate Cacher module to keep track of the
+		prices for the traffic.
+		More information can be found at: &OPENSIPS_MOD_DOC;rate_cacher.html.
+		</db:para>
+	</description>
+
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Table primary key, not used by module
+		</description>
+	</column>
+
+	<column id="prefix">
+		<name>prefix</name>
+		<type>string</type>
+		<size>64</size>
+		<description>Prefix of the currenty entry in the ratesheet 
+		</description>
+	</column>
+
+	<column id="destination">
+		<name>destination</name>
+		<type>string</type>
+		<size>128</size>
+		<description>Plain-Text description of current entry in the ratesheet</description>
+	</column>
+
+	<column id="price">
+		<name>price</name>
+		<type>float</type>
+		<default>0</default>
+		<description>Price for the current entry</description>
+	</column>
+
+	<column id="minimum">
+		<name>minimum</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>Minimum seconds to bill for this entry</description>
+	</column>
+
+	<column id="increment">
+		<name>increment</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>1</default>
+		<description>Increment to bill for this entry</description>
+	</column>
+
+	<index>
+		<name>prefix_idx</name>
+		<colref linkend="prefix"/>
+		<unique/>
+	</index>
+
+</table>

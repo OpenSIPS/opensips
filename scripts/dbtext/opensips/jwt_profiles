@@ -1,2 +1,1 @@
 id(int,auto) tag(string) sip_username(string) 
-jwt_profiles:1
