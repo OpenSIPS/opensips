@@ -49,7 +49,7 @@ static int mi_destroy(void);
 
 /* FIFO server vars */
 /* FIFO name */
-static char *mi_fifo = 0;
+static char *mi_fifo = "/tmp/opensips_fifo";
 /* dir where reply fifos are allowed */
 static char *mi_fifo_reply_dir = DEFAULT_MI_REPLY_DIR;
 static int  mi_fifo_uid = -1;

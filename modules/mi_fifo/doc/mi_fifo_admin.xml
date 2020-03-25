@@ -96,14 +96,14 @@
 		</para>
 		<para>
 		<emphasis>
-			Default value is NONE.
+			Default value is "/tmp/opensips_fifo".
 		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>fifo_name</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("mi_fifo", "fifo_name", "/tmp/opensips_fifo")
+modparam("mi_fifo", "fifo_name", "/tmp/opensips_b2b_fifo")
 ...
 </programlisting>
 		</example>
