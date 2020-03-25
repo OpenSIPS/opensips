@@ -243,6 +243,16 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 				NULL, DLG_DIR_NONE, NULL, 1, 0);
 	}
 
+	dlg->locked_by = process_no;
+
+	if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
+		if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
+			LM_ERR("No more shm memory\n");
+	} else if (rc == -1)
+		LM_ERR("Failed to get dlg value for sharing tag\n");
+
+	dlg->locked_by = 0;
+
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		/* to be later removed by timer */
 		ref_dlg_unsafe(dlg, 1);
@@ -266,12 +276,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 			ref_dlg(dlg, 1);
 		}
 	}
-
-	if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
-		if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
-			LM_ERR("No more shm memory\n");
-	} else if (rc == -1)
-		LM_ERR("Failed to get dlg value for sharing tag\n");
 
 	if (profiles.s && profiles.len != 0)
 		read_dialog_profiles(profiles.s, profiles.len, dlg, 0, 1);
