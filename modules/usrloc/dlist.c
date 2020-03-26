@@ -597,7 +597,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 				if (contacts)
 					goto pack_data;
 			} else {
-				if (!str_strcmp(&pair->key.name, &contacts_key)) {
+				if (str_match(&pair->key.name, &contacts_key)) {
 					if (pair->val.type == CDB_NULL)
 						goto done_packing;
 

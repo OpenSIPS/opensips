@@ -1221,7 +1221,7 @@ cdb_load_urecord_locations(const udomain_t *_d, const str *_aor, urecord_t *_r)
 			continue;
 		}
 
-		if (!str_strcmp(&my_sip_addr, &pair->val.val.st)) {
+		if (str_match(&my_sip_addr, &pair->val.val.st)) {
 			LM_DBG("skipping my own SIP addr (%.*s)\n",
 			       my_sip_addr.len, my_sip_addr.s);
 			continue;
@@ -1316,7 +1316,7 @@ urecord_t* cdb_load_urecord(const udomain_t* _d, const str *_aor)
 	row = list_entry(res.rows.next, cdb_row_t, list);
 	list_for_each (_, &row->dict) {
 		contacts = list_entry(_, cdb_pair_t, list);
-		if (!str_strcmp(&contacts->key.name, &contacts_key)) {
+		if (str_match(&contacts->key.name, &contacts_key)) {
 			if (contacts->val.type == CDB_NULL)
 				goto done_loading;
 

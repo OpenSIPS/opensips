@@ -115,6 +115,8 @@ typedef struct ucontact {
 	str shtag;              /*!< helps determine the logical owner node */
 	str cdb_key;            /*!< the key of the contact in cache_db; makes
 	                              sense only in full_sharing_cachedb mode */
+	str *pn_params;         /*!< Array of PN param pointers (only if all of
+	                              them are present in the Contact URI) */
 
 	map_t kv_storage;       /*!< data attached by API subscribers >*/
 

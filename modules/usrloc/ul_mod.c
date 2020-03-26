@@ -50,7 +50,6 @@
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
 #include "../../ipc.h"
-#include "../../lib/csv.h"
 
 #include "ul_mod.h"
 #include "dlist.h"           /* register_udomain */
@@ -60,6 +59,7 @@
 #include "ul_cluster.h"
 #include "ul_mi.h"
 #include "ul_callback.h"
+#include "ul_pn.h"
 #include "usrloc.h"
 
 #define CONTACTID_COL  "contact_id"
@@ -106,17 +106,6 @@ db_key_t *cid_keys=NULL;
 db_val_t *cid_vals=NULL;
 
 int cid_regen=0;
-
-/* SIP Push Notification support (RFC 8599) */
-int pn_enable;
-
-str *pn_ct_params; /* parsed array of match params */
-int pn_ct_params_n;
-char *_pn_ct_params = "pn-provider; pn-prid; pn-param";
-
-int pn_pnsreg_interval = 130;
-int pn_trigger_interval = 120;
-
 
 /*
  * Module parameters and their default values
@@ -413,8 +402,13 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (ul_init_pn() < 0) {
+		LM_ERR("failed to init SIP Push Notification support\n");
+		return -1;
+	}
+
 	if (ul_init_cluster() < 0) {
-		LM_ERR("failed to init clustering support!\n");
+		LM_ERR("failed to init clustering support\n");
 		return -1;
 	}
 
@@ -833,7 +827,6 @@ int ul_deprec_shp(modparam_t _, void *modparam)
 
 int ul_init_globals(void)
 {
-	csv_record *pn_params, *pnp;
 	int i;
 
 	init_db_url(db_url, 1 /* can be null */);
@@ -911,39 +904,6 @@ int ul_init_globals(void)
 		return -1;
 	} else {
 		nat_bflag = 1 << nat_bflag;
-	}
-
-	if (pn_enable) {
-		/* parse the list of PN params */
-		pn_params = __parse_csv_record(_str(_pn_ct_params), 0, ';');
-		for (pnp = pn_params; pnp; pnp = pnp->next) {
-			if (ZSTR(pnp->s))
-				continue;
-
-			pn_ct_params = pkg_realloc(pn_ct_params,
-			                      (pn_ct_params_n + 1) * sizeof *pn_ct_params);
-			if (!pn_ct_params) {
-				LM_ERR("oom\n");
-				return -1;
-			}
-
-			if (pkg_nt_str_dup(&pn_ct_params[pn_ct_params_n], &pnp->s)) {
-				LM_ERR("oom\n");
-				return -1;
-			}
-
-			pn_ct_params_n++;
-		}
-		free_csv_record(pn_params);
-
-		if (!pn_ct_params) {
-			LM_ERR("'pn_ct_match_params' must contain at least 1 param!\n");
-			return -1;
-		}
-
-		for (i = 0; i < pn_ct_params_n; i++)
-			LM_DBG("pn_ct_match_param #%d: '%.*s'\n", i + 1,
-			       pn_ct_params[i].len, pn_ct_params[i].s);
 	}
 
 	return 0;

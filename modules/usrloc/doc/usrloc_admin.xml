@@ -1451,8 +1451,9 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		<title><varname>pn_enable</varname> (integer)</title>
 		<para>
 			Enable SIP Push Notifications support (<ulink url="https://tools.ietf.org/html/rfc8599"><citetitle>RFC 8599</citetitle></ulink>).
-			If enabled, contacts will be first matched against the
-			list of <xref linkend="param_pn_ct_match_params"/>.  On a no-match,
+			If enabled, contacts URIs which include all
+			<xref linkend="param_pn_ct_match_params"/> will be matched against
+			existing bindings using only these parameters.  Otherwise,
 			the module will attempt to match them as usual, using the
 			<xref linkend="param_matching_mode"/>.
 		</para>
@@ -1478,11 +1479,12 @@ modparam("usrloc", "pn_enable", true)
 			The minimally required list of RFC 8599 parameters (custom ones are
 			accepted as well) which must be present in a Contact URI and
 			identically matching an existing binding in order for the binding
-			to be refreshed.  Otherwise, on a no-match, the module will fall
-			back to performing regular contact matching.
+			to be refreshed.  If at least one parameter is missing from a Contact
+			header URI, the module will fall back to performing regular contact
+			matching.
 		</para>
 		<para>
-			Note that if the above PN Contact URI parameters match an existing
+			Note that if all above PN Contact URI parameters match an existing
 			binding, the match is considered to be successful regardless if
 			other parts of the SIP URI do not match (e.g. hostname, port,
 			other URI parameters, etc.).

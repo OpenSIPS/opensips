@@ -42,11 +42,13 @@
 #include "../../dprint.h"
 #include "../../db/db.h"
 #include "../../db/db_insertq.h"
+
 #include "ul_mod.h"
 #include "ul_callback.h"
 #include "urecord.h"
 #include "ucontact.h"
 #include "ul_cluster.h"
+#include "ul_pn.h"
 #include "udomain.h"
 #include "dlist.h"
 #include "utime.h"
@@ -99,9 +101,10 @@ static int compute_next_hop(ucontact_t *contact)
 ucontact_t*
 new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 {
-	struct sip_uri tmp_uri;
+	struct sip_uri ct_uri;
 	ucontact_t *c;
 	int_str_t shtag, *shtagp;
+	int _;
 
 	c = (ucontact_t*)shm_malloc(sizeof(ucontact_t));
 	if (!c) {
@@ -116,16 +119,24 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		else
 			c->kv_storage = map_create(AVLMAP_SHARED);
 
-		if (!c->kv_storage) {
-			LM_ERR("oom\n");
-			goto out_free;
-		}
+		if (!c->kv_storage)
+			goto mem_error;
 	}
 
-	if (parse_uri(_contact->s, _contact->len, &tmp_uri) < 0) {
+	if (parse_uri(_contact->s, _contact->len, &ct_uri) < 0) {
 		LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
 			  _contact->len, _contact->s);
 		goto out_free;
+	} else {
+		if (pn_enable &&
+		        _extract_pn_params(&ct_uri, pn_ct_param_vals, &_) == 0) {
+			c->pn_params = shm_malloc(pn_ct_params_n * sizeof *c->pn_params);
+			if (!c->pn_params)
+				goto mem_error;
+
+			memcpy(c->pn_params, pn_ct_param_vals,
+			       pn_ct_params_n * sizeof *c->pn_params);
+		}
 	}
 
 	if (shm_str_dup( &c->c, _contact) < 0) goto mem_error;
@@ -232,6 +243,7 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->attr.s) shm_free(_c->attr.s);
 	if (_c->cdb_key.s) shm_free(_c->cdb_key.s);
 	if (_c->shtag.s) shm_free(_c->shtag.s);
+	if (_c->pn_params) shm_free(_c->pn_params);
 	if (_c->kv_storage) store_destroy(_c->kv_storage);
 
 skip_fields:
@@ -1016,8 +1028,7 @@ int ucontact_coords_cmp(ucontact_coords _a, ucontact_coords _b)
 	a = (ucontact_sip_coords *)(unsigned long)_a;
 	b = (ucontact_sip_coords *)(unsigned long)_b;
 
-	if (a->aor.len != b->aor.len || a->ct_key.len != b->ct_key.len ||
-		  str_strcmp(&a->aor, &b->aor) || str_strcmp(&a->ct_key, &b->ct_key))
+	if (!str_match(&a->aor, &b->aor) || !str_match(&a->ct_key, &b->ct_key))
 		return -1;
 
 	return 0;
