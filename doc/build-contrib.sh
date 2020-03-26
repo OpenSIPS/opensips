@@ -53,6 +53,7 @@ author_aliases=(
   ["Andrei Pelinescu-Onciul"]="Andrei Pelinescu-Onciul <andrei@iptel.org>"
   ["Bogdan Andrei IANCU <bogdan@opensips.org>"]="Bogdan-Andrei Iancu <bogdan@opensips.org>"
   ["Bogdan-Andrei Iancu <bogdan@voice-system.ro>"]="Bogdan-Andrei Iancu <bogdan@opensips.org>"
+  ["Bogdan Iancu <bogdan@opensips.org>"]="Bogdan-Andrei Iancu <bogdan@opensips.org>"
   ["Carsten Bock"]="Carsten Bock <lists@bock.info>"
   ["Cerghit Ionel <ionel.cerghit@gmail.com>"]="Ionel Cerghit <ionel.cerghit@gmail.com>"
   ["Christian Schlatter <USERNAME@DOMAIN.COM>"]="Christian Schlatter <cs@unc.edu>"
