@@ -66,6 +66,11 @@ int init_multi_proc_support(void)
 	 * all the other modules already adjusted their extra numbers */
 	counted_max_processes = count_child_processes();
 
+#ifdef UNIT_TESTS
+#include "mem/test/test_malloc.h"
+	counted_max_processes += TEST_MALLOC_PROCS - 1;
+#endif
+
 	/* allocate the PID table to accomodate the maximum possible number of
 	 * process we may have during runtime (covering extra procs created 
 	 * due auto-scaling) */

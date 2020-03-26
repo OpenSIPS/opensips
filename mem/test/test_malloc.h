@@ -1,7 +1,5 @@
 /*
- * Starting point for writing and including OpenSIPS unit tests
- *
- * Copyright (C) 2018 OpenSIPS Solutions
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,28 +18,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-#include <tap.h>
+#ifndef __TEST_MALLOC_H__
+#define __TEST_MALLOC_H__
 
-#include "../cachedb/test/test_backends.h"
-#include "../lib/test/test_csv.h"
-#include "../parser/test/test_parse_qop.h"
-#include "../mem/test/test_malloc.h"
+/* attendant + 7 more */
+#define TEST_MALLOC_PROCS  8
 
-#include "../lib/list.h"
-#include "../dprint.h"
-#include "../sr_module.h"
+/* stress-test the PKG and/or SHM allocator implementations */
+void init_malloc_tests(void);
+void test_malloc(void);
 
-void init_unit_tests(void) {
-	set_mpath("modules/");
-	//init_cachedb_tests();
-	//init_malloc_tests();
-}
-
-int run_unit_tests(void) {
-	test_lib_csv();
-	test_parse_qop_val();
-
-	//test_cachedb_backends();
-	//test_malloc();
-	done_testing();
-}
+#endif /* __TEST_MALLOC_H__ */
