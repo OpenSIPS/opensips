@@ -1448,7 +1448,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 	</section>
 
 	<section id="param_pn_enable" xreflabel="pn_enable">
-		<title><varname>pn_enable</varname> (integer)</title>
+		<title><varname>pn_enable</varname> (boolean)</title>
 		<para>
 			Enable SIP Push Notifications support (<ulink url="https://tools.ietf.org/html/rfc8599"><citetitle>RFC 8599</citetitle></ulink>).
 			If enabled, contacts URIs which include all
@@ -1479,9 +1479,9 @@ modparam("usrloc", "pn_enable", true)
 			The minimally required list of RFC 8599 parameters (custom ones are
 			accepted as well) which must be present in a Contact URI and
 			identically matching an existing binding in order for the binding
-			to be refreshed.  If at least one parameter is missing from a Contact
-			header URI, the module will fall back to performing regular contact
-			matching.
+			to be refreshed.  If at least one such parameter is missing from a
+			Contact header field URI, the module will fall back to performing
+			regular contact matching.
 		</para>
 		<para>
 			Note that if all above PN Contact URI parameters match an existing
@@ -1500,6 +1500,31 @@ modparam("usrloc", "pn_enable", true)
 		<programlisting format="linespecific">
 ...
 modparam("usrloc", "pn_ct_match_params", "pn-provider; pn-prid")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_pn_pnsreg_interval" xreflabel="pn_pnsreg_interval">
+		<title><varname>pn_pnsreg_interval</varname> (integer)</title>
+		<para>
+			For devices capable of waking up and refreshing their binding on
+			their own (signified by the ";+sip.pnsreg" Contact header field
+			parameter), this parameter denotes the prior-to-expiration interval
+			advertised by the server at which the device should issue its
+			binding refresh request.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>130 (seconds)</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_pnsreg_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "pn_pnsreg_interval", 140)
 ...
 </programlisting>
 		</example>
