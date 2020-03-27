@@ -118,9 +118,9 @@ typedef fs_evs* (*get_evs_by_url_f) (const str *fs_url);
 typedef fs_evs* (*get_stats_evs_f) (str *fs_url, str *tag);
 
 typedef int (*evs_sub_f) (fs_evs *sock, const str *tag,
-                    const struct str_list *events, ipc_handler_type ipc_type);
+                    const str_list *events, ipc_handler_type ipc_type);
 typedef void (*evs_unsub_f) (fs_evs *sock, const str *tag,
-                             const struct str_list *events);
+                             const str_list *events);
 
 typedef void (*put_evs_f) (fs_evs *sock);
 typedef void (*put_stats_evs_f) (fs_evs *sock, str *tag);

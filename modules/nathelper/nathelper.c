@@ -1722,7 +1722,7 @@ check_wait_timer:
 int fix_ignore_rpl_codes(void)
 {
 	csv_record *chopped_codes;
-	struct str_list *code;
+	str_list *code;
 	unsigned short icode, *it;
 	int count = 0;
 

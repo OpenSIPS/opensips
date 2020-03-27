@@ -96,11 +96,11 @@ static inline mi_response_t *mi_check_msg(struct sip_msg* msg, str* method,
 }
 
 
-static inline struct str_list *new_str(char *s, int len,
-											struct str_list **last, int *total)
+static inline str_list *new_str(char *s, int len, str_list **last, int *total)
 {
-	struct str_list *new;
-	new=pkg_malloc(sizeof(struct str_list));
+	str_list *new;
+
+	new = pkg_malloc(sizeof *new);
 	if (!new) {
 		LM_ERR("no more pkg mem\n");
 		return 0;
@@ -120,7 +120,7 @@ static inline struct str_list *new_str(char *s, int len,
 static inline char *get_hfblock( str *uri, struct hdr_field *hf, int *l,
 											struct socket_info** send_sock)
 {
-	struct str_list sl, *last, *new, *i, *foo;
+	str_list sl, *last, *new, *i, *foo;
 	int hf_avail, frag_len, total_len;
 	char *begin, *needle, *dst, *ret, *d;
 	str *sock_name, *portname;

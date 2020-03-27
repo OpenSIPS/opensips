@@ -61,8 +61,8 @@ struct list_head *fs_sockets_esl;
 rw_lock_t *sockets_esl_lock;
 
 /* mem reusage - unique string tags and events accumulated so far */
-static struct str_list *all_tags;
-//static struct str_list *all_events;
+static str_list *all_tags;
+//static str_list *all_events;
 
 int fs_api_init(void)
 {
@@ -340,7 +340,7 @@ static fs_evs *get_evs_by_url(const str *_fs_url)
 
 int dup_common_tag(const str *tag, str *out)
 {
-	struct str_list *t;
+	str_list *t;
 
 	if (!tag || !tag->s || tag->len == 0) {
 		memset(out, 0, sizeof *out);
@@ -480,7 +480,7 @@ struct fs_event *get_event(fs_evs *sock, const str *name)
 	return NULL;
 }
 
-int evs_sub(fs_evs *sock, const str *tag, const struct str_list *name,
+int evs_sub(fs_evs *sock, const str *tag, const str_list *name,
             ipc_handler_type ipc_type)
 {
 	struct fs_event *event;
@@ -532,7 +532,7 @@ int evs_sub(fs_evs *sock, const str *tag, const struct str_list *name,
 	return ret;
 }
 
-void evs_unsub(fs_evs *sock, const str *tag, const struct str_list *name)
+void evs_unsub(fs_evs *sock, const str *tag, const str_list *name)
 {
 	struct fs_event *event;
 	int ret = 0;
@@ -608,7 +608,7 @@ void put_evs(fs_evs *sock)
 fs_evs *get_stats_evs(str *fs_url, str *tag)
 {
 	fs_evs *sock;
-	struct str_list ev_list = {FS_STATS_EVENT_STR, NULL};
+	str_list ev_list = {FS_STATS_EVENT_STR, NULL};
 
 	if (!fs_url->s || fs_url->len == 0 || !tag || !tag->s || tag->len == 0) {
 		LM_ERR("bad params: '%.*s', %.*s\n", fs_url->len, fs_url->s,
@@ -636,7 +636,7 @@ fs_evs *get_stats_evs(str *fs_url, str *tag)
 
 void put_stats_evs(fs_evs *sock, str *tag)
 {
-	struct str_list ev_list = {FS_STATS_EVENT_STR, NULL};
+	str_list ev_list = {FS_STATS_EVENT_STR, NULL};
 
 	/* prevents deadlocks on shutdown.
 	 *
