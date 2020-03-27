@@ -4338,8 +4338,9 @@ static int goes_to_gw_1(struct sip_msg* msg, char * part, char* _type, char* fla
 		return _is_dr_uri_gw(msg, part, flags_pv, (!_type ? -1 : *(int *)_type),
 				GET_NEXT_HOP(msg));
 	} else {
+		/* if no partitions, all the parms shift one to left (100 weird) */
 		gw_attrs_spec = (pv_spec_p)flags_pv;
-		return _is_dr_uri_gw(msg, NULL, flags_pv, (!_type ? -1 : *(int *)_type),
+		return _is_dr_uri_gw(msg, NULL, _type, (!part ? -1 : *(int *)part),
 				GET_NEXT_HOP(msg));
 	}
 }
