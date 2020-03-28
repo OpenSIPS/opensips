@@ -42,6 +42,7 @@
 #include "../../mem/mem.h"
 #include "../../usr_avp.h"
 #include "../../db/db.h"
+#include "../../db/db_pi.h"
 #include "../../db/db_insertq.h"
 #include "../../parser/hf.h"
 #include "../../parser/msg_parser.h"
@@ -487,12 +488,18 @@ int acc_db_init(const str* db_url)
 
 /* initialize the database connection
  * returns 0 on success, -1 on error */
-int acc_db_init_child(const str *db_url)
+int acc_db_init_child(const str *db_url, int provision)
 {
+	static str name = str_init("acc");
+
 	db_handle=acc_dbf.init(db_url);
 	if (db_handle==0){
 		LM_ERR("unable to connect to the database\n");
 		return -1;
+	}
+	if (provision) {
+		db_pi_add(&name, &db_table_acc, db_handle, 0);
+		db_pi_add(&name, &db_table_mc, db_handle, 0);
 	}
 
 	return 0;

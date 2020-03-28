@@ -412,7 +412,7 @@ static int mod_init( void )
 
 static int child_init(int rank)
 {
-	if(db_url.s && acc_db_init_child(&db_url)<0) {
+	if(db_url.s && acc_db_init_child(&db_url, (rank == PROC_MODULE))<0) {
 		LM_ERR("could not open database connection");
 		return -1;
 	}
