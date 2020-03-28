@@ -41,6 +41,7 @@ int db_pi_add(str *name, str *table, db_con_t *con, unsigned int flags)
 mi_response_t *w_mi_pi_list(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
+    static str any = str_init("*");
     static str pi_conns[] = {
         str_init("auth_db"),
         str_init("call_center"),
@@ -50,12 +51,12 @@ mi_response_t *w_mi_pi_list(const mi_params_t *params,
     };
 
     int i;
-	mi_item_t *resp_arr;
-	mi_response_t *resp = init_mi_result_array(&resp_arr);
+	mi_item_t *resp_obj;
+	mi_response_t *resp = init_mi_result_object(&resp_obj);
 	if (!resp)
 		return 0;
     /* quick hack to return a list of provisioned connectors */
     for (i = 0; i < sizeof(pi_conns)/sizeof(pi_conns[0]); i++)
-        add_mi_string(resp_arr, 0, 0, pi_conns[i].s, pi_conns[i].len);
+        add_mi_string(resp_obj, pi_conns[i].s, pi_conns[i].len, any.s, any.len);
     return resp;
 }
