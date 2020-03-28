@@ -49,6 +49,7 @@
 #include "../ipc.h"
 #include "../xlog.h"
 #include "../cfg_reload.h"
+#include "../db/db_pi.h"
 #include "mi.h"
 #include "mi_trace.h"
 
@@ -900,6 +901,11 @@ static mi_export_t mi_core_cmds[] = {
 	{ "help", "prints information about MI commands usage", 0, 0, {
 		{w_mi_help, {0}},
 		{w_mi_help_1, {"mi_cmd", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "pi_list", "lists all the available provisioning interface connectors", 0, 0, {
+		{w_mi_pi_list, {0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
