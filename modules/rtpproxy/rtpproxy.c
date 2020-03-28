@@ -169,6 +169,7 @@
 #include "../../parser/sdp/sdp_helpr_funcs.h"
 #include "../../parser/sdp/sdp.h"
 #include "../../db/db.h"
+#include "../../db/db_pi.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_body.h"
@@ -1249,6 +1250,8 @@ mod_init(void)
 
 static int mi_child_init(void)
 {
+    str name = str_init("rtpproxy");
+
 	if(child_init(1) < 0)
 	{
 		LM_ERR("Failed to initial rtpp socks\n");
@@ -1269,6 +1272,9 @@ static int mi_child_init(void)
 		LM_ERR("Failed to connect to database\n");
 		return -1;
 	}
+
+    if (db_pi_add(&name, &table, db_connection, 0) < 0)
+		LM_ERR("Failed to add table to provisioning interface\n");
 
 	LM_DBG("Database connection opened successfully\n");
 

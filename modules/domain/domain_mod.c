@@ -196,7 +196,7 @@ static int mod_init(void)
 	/* Check if cache needs to be loaded from domain table */
 	if (db_mode != 0) {
 
-		if (domain_db_init(&db_url)<0) return -1;
+		if (domain_db_init(&db_url, 0)<0) return -1;
 
 		/* Check table version */
 		if (domain_db_ver(&domain_table, TABLE_VERSION) < 0) {
@@ -251,7 +251,7 @@ static int child_init(int rank)
 {
 	/* Check if database is needed by worker processes only */
 	if ( db_mode==0 && (rank>PROC_MAIN) ) {
-		if (domain_db_init(&db_url)<0) {
+		if (domain_db_init(&db_url, 0)<0) {
 			LM_ERR("Unable to connect to the database\n");
 			return -1;
 		}
@@ -262,7 +262,7 @@ static int child_init(int rank)
 
 static int mi_child_init(void)
 {
-	return domain_db_init(&db_url);
+	return domain_db_init(&db_url, 1);
 }
 
 

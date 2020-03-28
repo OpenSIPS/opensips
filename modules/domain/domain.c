@@ -30,6 +30,7 @@
 #include "domain_mod.h"
 #include "hash.h"
 #include "../../db/db.h"
+#include "../../db/db_pi.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_from.h"
 #include "../../ut.h"
@@ -56,8 +57,10 @@ int domain_db_bind(const str* db_url)
 
 
 
-int domain_db_init(const str* db_url)
+int domain_db_init(const str* db_url, int mi)
 {
+    str name = str_init("domain");
+
 	if (domain_dbf.init==0){
 		LM_ERR("Unbound database module\n");
 		goto error;
@@ -67,6 +70,9 @@ int domain_db_init(const str* db_url)
 		LM_ERR("Cannot initialize database connection\n");
 		goto error;
 	}
+    if (mi && db_pi_add(&name, &domain_table, db_handle, 0) < 0)
+		LM_ERR("Failed to add table to provisioning interface\n");
+
 	return 0;
 error:
 	return -1;

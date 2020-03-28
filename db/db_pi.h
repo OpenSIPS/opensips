@@ -21,6 +21,8 @@
 #ifndef _DB_PI_H_
 #define _DB_PI_H_
 
+int db_pi_add(str *name, str *table, db_con_t *con, unsigned int flags);
+
 mi_response_t *w_mi_pi_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 

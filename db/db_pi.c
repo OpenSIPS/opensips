@@ -20,18 +20,35 @@
 
 #include "../str.h"
 #include "../mi/mi.h"
+#include "../db/db.h"
 
- static str pi_conns[] = {
-    str_init("auth_db"),
-    str_init("call_center"),
-    str_init("domain"),
-    str_init("dialplan"),
-    str_init("rtpproxy"),
- };
+struct pi_conns {
+    str name;           /* the name of the connector */
+    str table;          /* the name of the table */
+    db_con_t *con;      /* database connector */
+    unsigned int flags; /* different flags */
+    struct pi_conns *next;
+} *pi_conns_list;
+
+int db_pi_add(str *name, str *table, db_con_t *con, unsigned int flags)
+{
+    LM_INFO("adding %.*s connector to PI table=%.*s\n",
+            name->len, name->s, table->len, table->s);
+    /* TODO: add a new element in pi_conns_list */
+    return 0;
+}
 
 mi_response_t *w_mi_pi_list(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
+    static str pi_conns[] = {
+        str_init("auth_db"),
+        str_init("call_center"),
+        str_init("domain"),
+        str_init("dialplan"),
+        str_init("rtpproxy"),
+    };
+
     int i;
 	mi_item_t *resp_arr;
 	mi_response_t *resp = init_mi_result_array(&resp_arr);
