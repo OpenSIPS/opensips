@@ -414,7 +414,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ionut Ionita (@ionutrazvanionita) 105 52 2676 1887
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 95 74 883 742
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 96 75 892 750
    3. Razvan Crainea (@razvancrainea) 50 34 1226 348
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
    5. Liviu Chircu (@liviuchircu) 21 18 75 73
@@ -425,10 +425,10 @@ Chapter 2. Contributors
    10. Alexandr Dubovikov (@adubovikov) 7 1 500 4
 
    All remaining contributors: Dan Pascu (@danpascu), Dusan
-   Klinec, Andreas Heise, Sergio Gutierrez, Bogdan Iancu, Walter
-   Doekes (@wdoekes), Konstantin Bokarius, Iouri Kharon, Peter
-   Lemenkov (@lemenkov), Zero King, Edson Gellert Schubert,
-   Elena-Ramona Modroiu, Eric Tamme (@etamme).
+   Klinec, Andreas Heise, Sergio Gutierrez, Walter Doekes
+   (@wdoekes), Konstantin Bokarius, Iouri Kharon, Peter Lemenkov
+   (@lemenkov), Zero King, Edson Gellert Schubert, Elena-Ramona
+   Modroiu, Eric Tamme (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -457,16 +457,16 @@ Chapter 2. Contributors
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
    7.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
-   8.  Bogdan Iancu                        Apr 2019 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   10. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2017
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Dusan Klinec, Andrei Datcu (@andrei-datcu), Vlad Paiu
-   (@vladpaiu), Alexandr Dubovikov (@adubovikov), Sergio
-   Gutierrez, Daniel-Constantin Mierla (@miconda), Iouri Kharon,
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
+   All remaining contributors: Dusan Klinec, Andrei Datcu
+   (@andrei-datcu), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
+   (@adubovikov), Sergio Gutierrez, Daniel-Constantin Mierla
+   (@miconda), Iouri Kharon, Konstantin Bokarius, Edson Gellert
+   Schubert, Henning Westerholt (@henningw), Andreas Heise,
+   Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

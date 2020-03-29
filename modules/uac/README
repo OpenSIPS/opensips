@@ -279,7 +279,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 123 71 4077 1053
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 124 72 4082 1057
    2. Ovidiu Sas (@ovidiusas) 33 7 371 1346
    3. Razvan Crainea (@razvancrainea) 29 22 485 148
    4. Liviu Chircu (@liviuchircu) 21 13 262 289
@@ -291,9 +291,8 @@ Chapter 3. Contributors
    10. Elena-Ramona Modroiu 4 2 95 42
 
    All remaining contributors: Henning Westerholt (@henningw),
-   Bogdan Iancu, Konstantin Bokarius, Peter Lemenkov (@lemenkov),
-   Dan Pascu (@danpascu), Dusan Klinec, Jesus Rodrigues, Sergio
-   Gutierrez.
+   Konstantin Bokarius, Peter Lemenkov (@lemenkov), Dan Pascu
+   (@danpascu), Dusan Klinec, Jesus Rodrigues, Sergio Gutierrez.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -319,17 +318,17 @@ Chapter 3. Contributors
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
    3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   5.  Bogdan Iancu                        Apr 2019 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
-   8.  Vlad Paiu (@vladpaiu)               Aug 2011 - Sep 2015
-   9.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Oct 2013
-   10. Sergio Gutierrez                    Nov 2008 - Nov 2008
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Dusan Klinec                        Dec 2015 - Dec 2015
+   7.  Vlad Paiu (@vladpaiu)               Aug 2011 - Sep 2015
+   8.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Oct 2013
+   9.  Sergio Gutierrez                    Nov 2008 - Nov 2008
+   10. Dan Pascu (@danpascu)               Nov 2008 - Nov 2008
 
-   All remaining contributors: Dan Pascu (@danpascu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Jesus
-   Rodrigues, Andreas Heise, Elena-Ramona Modroiu.
+   All remaining contributors: Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Jesus Rodrigues, Andreas Heise,
+   Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
