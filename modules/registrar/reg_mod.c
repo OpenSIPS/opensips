@@ -63,6 +63,7 @@
 #include "../../pvar.h"
 #include "../../mod_fix.h"
 #include "../../lib/reg/config.h"
+#include "../../lib/reg/pn.h"
 
 #include "../usrloc/ul_mod.h"
 #include "../signaling/signaling.h"
@@ -203,6 +204,14 @@ static param_export_t params[] = {
 	{"attr_avp",           STR_PARAM, &attr_avp_param        },
 	{"gruu_secret",        STR_PARAM, &gruu_secret.s         },
 	{"disable_gruu",       INT_PARAM, &disable_gruu          },
+
+	/* SIP Push Notifications */
+	{"pn_enable",           INT_PARAM, &pn_enable},
+	{"pn_providers",        STR_PARAM, &_pn_providers},
+	{"pn_ct_match_params",  STR_PARAM, &_pn_ct_params},
+	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval},
+	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval},
+
 	{0, 0, 0}
 };
 
@@ -376,6 +385,11 @@ static int mod_init(void)
 	selected_cts = pkg_malloc(selected_cts_sz * sizeof *selected_cts);
 	if (!selected_cts) {
 		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (pn_init() < 0) {
+		LM_ERR("failed to init SIP Push Notification support\n");
 		return -1;
 	}
 

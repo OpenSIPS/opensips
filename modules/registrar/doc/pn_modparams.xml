@@ -1,0 +1,105 @@
+	<section id="param_pn_enable" xreflabel="pn_enable">
+		<title><varname>pn_enable</varname> (boolean)</title>
+		<para>
+			Enable SIP Push Notifications support (<ulink url="https://tools.ietf.org/html/rfc8599"><citetitle>RFC 8599</citetitle></ulink>).
+			If enabled, contacts URIs which include all
+			<xref linkend="param_pn_ct_match_params"/> will be matched against
+			existing bindings using only these parameters.  Otherwise,
+			the module will attempt to match them as usual, using the current
+			<emphasis>matching_mode</emphasis>.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>false</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_enable</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "pn_enable", true)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_pn_providers" xreflabel="pn_providers">
+		<title><varname>pn_providers</varname> (string)</title>
+		<para>
+		A list of supported Push Notification providers.  While only three
+		possible values are defined by RFC 8599 ("apns", "fcm" and "webpush"),
+		non-standard values may be specified as well.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>NULL (not set)</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_providers</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "pn_providers", "fcm, webpush")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_pn_ct_match_params" xreflabel="pn_ct_match_params">
+		<title><varname>pn_ct_match_params</varname> (string)</title>
+		<para>
+			The minimally required list of RFC 8599 parameters (custom ones are
+			accepted as well) which must be present in a Contact URI and
+			identically matching an existing binding in order for the binding
+			to be refreshed.  If at least one such parameter is missing from a
+			Contact header field URI, the module will fall back to performing
+			regular contact matching.
+		</para>
+		<para>
+			Note that if all above PN Contact URI parameters match an existing
+			binding, the match is considered to be successful regardless if
+			other parts of the SIP URI do not match (e.g. hostname, port,
+			other URI parameters, etc.).
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>"pn-provider, pn-prid, pn-param"</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_ct_match_params</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "pn_ct_match_params", "pn-provider, pn-prid")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_pn_pnsreg_interval" xreflabel="pn_pnsreg_interval">
+		<title><varname>pn_pnsreg_interval</varname> (integer)</title>
+		<para>
+			For devices capable of waking up and refreshing their binding on
+			their own (signified by the ";+sip.pnsreg" Contact header field
+			parameter), this parameter denotes the prior-to-expiration interval
+			advertised by the server at which the device should issue its
+			binding refresh request.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>130 (seconds)</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_pnsreg_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "pn_pnsreg_interval", 140)
+...
+</programlisting>
+		</example>
+	</section>

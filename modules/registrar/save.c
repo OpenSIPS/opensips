@@ -66,6 +66,7 @@
 #include "../../lib/reg/regtime.h"
 #include "../../lib/reg/config.h"
 #include "../../lib/reg/path.h"
+#include "../../lib/reg/pn.h"
 
 #include "sip_msg.h"
 #include "reply.h"
@@ -648,10 +649,16 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		c = get_first_contact(_m);
 	}
 
+	if (sctx.cmatch.mode == CT_MATCH_NONE && pn_enable &&
+	        pn_uri_has_params(&c->uri)) {
+		sctx.cmatch.mode = CT_MATCH_PARAMS;
+		sctx.cmatch.match_params = pn_ct_params;
+	}
+
 	update_act_time();
 
 	if (!uri)
-		uri = &(get_to(_m)->uri);
+		uri = &get_to(_m)->uri;
 
 	if (_owtag)
 		sctx.ownership_tag = *_owtag;

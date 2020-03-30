@@ -115,8 +115,6 @@ typedef struct ucontact {
 	str shtag;              /*!< helps determine the logical owner node */
 	str cdb_key;            /*!< the key of the contact in cache_db; makes
 	                              sense only in full_sharing_cachedb mode */
-	str *pn_params;         /*!< Array of PN param pointers (only if all of
-	                              them are present in the Contact URI) */
 
 	map_t kv_storage;       /*!< data attached by API subscribers >*/
 
@@ -150,8 +148,8 @@ typedef struct ucontact_info {
 	str *attr;
 	str shtag;
 	str cdb_key;
-	/* info on how the contact matching should be performed.
-	 * it points to a record part of the 'save_ctx' structure */
+
+	/* contact matching algorithm - no need to free anything */
 	struct ct_match *cmatch;
 } ucontact_info_t;
 

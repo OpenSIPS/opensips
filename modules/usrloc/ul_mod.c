@@ -59,7 +59,6 @@
 #include "ul_cluster.h"
 #include "ul_mi.h"
 #include "ul_callback.h"
-#include "ul_pn.h"
 #include "usrloc.h"
 
 #define CONTACTID_COL  "contact_id"
@@ -244,12 +243,6 @@ static param_export_t params[] = {
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
 
-	/* SIP Push Notifications */
-	{"pn_enable",           INT_PARAM, &pn_enable},
-	{"pn_ct_match_params",  STR_PARAM, &_pn_ct_params},
-	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval},
-	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval},
-
 	{0, 0, 0}
 };
 
@@ -399,11 +392,6 @@ static int mod_init(void)
 
 	if (ul_event_init() < 0) {
 		LM_ERR("cannot initialize USRLOC events\n");
-		return -1;
-	}
-
-	if (ul_init_pn() < 0) {
-		LM_ERR("failed to init SIP Push Notification support\n");
 		return -1;
 	}
 

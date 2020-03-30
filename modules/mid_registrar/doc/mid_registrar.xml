@@ -5,6 +5,7 @@
 
 <!ENTITY admin SYSTEM "mid_registrar_admin.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
+<!ENTITY pn_modparams SYSTEM "../../registrar/doc/pn_modparams.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

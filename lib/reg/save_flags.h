@@ -22,6 +22,7 @@
 #define __LIB_REG_SAVE_FLAGS__
 
 #include "../../str.h"
+#include "../../modules/usrloc/urecord.h"
 
 struct save_ctx {
 	unsigned int flags;

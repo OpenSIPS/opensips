@@ -6,6 +6,7 @@
 <!ENTITY admin SYSTEM "registrar_admin.xml">
 <!ENTITY faq SYSTEM "registrar_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
+<!ENTITY pn_modparams SYSTEM "pn_modparams.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

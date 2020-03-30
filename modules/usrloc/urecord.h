@@ -32,15 +32,17 @@
 #ifndef URECORD_H
 #define URECORD_H
 
-
 #include <stdio.h>
 #include <time.h>
-#include "hslot.h"
+
 #include "../../map.h"
 #include "../../str.h"
 #include "../../qvalue.h"
+#include "../../str_list.h"
 #include "../../db/db_insertq.h"
+
 #include "ucontact.h"
+#include "hslot.h"
 
 
 struct hslot;
@@ -70,14 +72,15 @@ typedef struct urecord {
 
 struct ct_match {
 	enum {
-		CT_MATCH_NONE=-1,
+		CT_MATCH_NONE,
 		CT_MATCH_CONTACT_ONLY,
 		CT_MATCH_CONTACT_CALLID,
-		CT_MATCH_PARAM,
-		CT_MATCH_PN_PARAMS,
+		CT_MATCH_PARAMS,
 	} mode;
-	str param;
+
+	str_list *match_params;
 };
+
 
 /* Create a new record */
 int new_urecord(str* _dom, str* _aor, urecord_t** _r);

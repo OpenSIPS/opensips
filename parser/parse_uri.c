@@ -1679,7 +1679,7 @@ int get_uri_param_idx(const str *param, struct sip_uri *parsed_uri)
 	int i;
 
 	for (i = 0; i < parsed_uri->u_params_no; i++) {
-		if (!str_strcmp(&parsed_uri->u_name[i], param))
+		if (str_match(&parsed_uri->u_name[i], param))
 			return i;
 	}
 

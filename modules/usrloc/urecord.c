@@ -45,7 +45,6 @@
 #include "utime.h"
 #include "ul_callback.h"
 #include "ul_cluster.h"
-#include "ul_pn.h"
 #include "udomain.h"
 #include "dlist.h"
 #include "usrloc.h"
@@ -700,48 +699,58 @@ err_free:
 }
 
 
-static inline int get_param_from_uri(str* _uri, str *_param, str *_val)
-{
-	struct sip_uri puri;
-	unsigned int i;
-
-	//LM_DBG("checking <%.*s> for param <%.*s>\n",
-	//	_uri->len, _uri->s, _param->len, _param->s);
-
-	if( parse_uri( _uri->s, _uri->len, &puri)==0 ) {
-		/* search the param by name */
-		for( i=0 ; i<puri.u_params_no ; i++ ) {
-			if (_param->len==puri.u_name[i].len
-			&& memcmp( _param->s, puri.u_name[i].s, _param->len)==0 ) {
-				*_val = puri.u_val[i];
-				//LM_DBG("extracted value <%.*s> for param <%.*s>\n",
-				//	_val->len, _val->s, _param->len, _param->s);
-				return 0;
-			}
-		}
-	}
-
-	return -1;
-}
-
-
 static int cdb_build_ucontact_key(str* _ct, ucontact_info_t* _ci)
 {
 	static str ctkey_pkg_buf, ctkeyb64_pkg_buf;
-	int i, len, base64len;
+	int i, np, len = 0, base64len;
 	char *p;
-	str ct_val;
+	struct sip_uri puri;
+	str_list *pnp;
+	str params[URI_MAX_U_PARAMS];
 
-	if (pn_enable) {
-		if (extract_pn_params(_ct, pn_ct_param_vals, &len) == 0)
-			_ci->cmatch->mode = CT_MATCH_PN_PARAMS;
-		else
-			_ci->cmatch->mode = matching_mode;
-	} else if (_ci->cmatch->mode == CT_MATCH_NONE) {
+	if (_ci->cmatch->mode == CT_MATCH_NONE)
 		_ci->cmatch->mode = matching_mode;
-	}
 
 	switch (_ci->cmatch->mode) {
+	case CT_MATCH_PARAMS:
+		if (parse_uri(_ct->s, _ct->len, &puri) != 0) {
+			LM_ERR("failed to parse Contact: '%.*s'\n", _ct->len, _ct->s);
+			return -1;
+		}
+
+		for (pnp = _ci->cmatch->match_params, np = 0; pnp;
+		         pnp = pnp->next, np++) {
+			/* if we can't locate the required parameters although
+			 * CT_MATCH_PARAMS was enforced, recover and use "matching_mode" */
+			if ((i = get_uri_param_idx(&pnp->s, &puri)) < 0) {
+				_ci->cmatch->mode = matching_mode;
+				goto use_matching_mode;
+			}
+
+			params[np] = puri.u_val[i];
+			len += pnp->s.len;
+		}
+
+		len += np - 1; /* add separators */
+		base64len = calc_base64_encode_len(len);
+
+		if (pkg_str_extend(&ctkey_pkg_buf, len) < 0 ||
+		        pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		for (i = 0, p = ctkey_pkg_buf.s; i < np; i++) {
+			memcpy(p, params[i].s, params[i].len);
+			p += params[i].len;
+
+			if (i < np - 1)
+				*p++ = ':';
+		}
+
+		break;
+
+use_matching_mode:
 	case CT_MATCH_CONTACT_ONLY:
 		len = _ct->len;
 		base64len = calc_base64_encode_len(len);
@@ -771,48 +780,6 @@ static int cdb_build_ucontact_key(str* _ct, ucontact_info_t* _ci)
 		ctkey_pkg_buf.s[_ct->len] = ':';
 		memcpy(ctkey_pkg_buf.s + _ct->len + 1, _ci->callid->s,
 			_ci->callid->len);
-		break;
-
-	case CT_MATCH_PARAM:
-		if (get_param_from_uri( _ct, &_ci->cmatch->param, &ct_val)<0 ) {
-			LM_ERR("parse error on contact.....weird\n");
-			return -1;
-		}
-		len = _ci->cmatch->param.len + 1 + ct_val.len;
-		base64len = calc_base64_encode_len(len);
-		if (pkg_str_extend(&ctkey_pkg_buf, len) < 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-		if (pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-		memcpy(ctkey_pkg_buf.s, _ci->cmatch->param.s,
-			_ci->cmatch->param.len);
-		ctkey_pkg_buf.s[_ci->cmatch->param.len] = ':';
-		memcpy(ctkey_pkg_buf.s + _ci->cmatch->param.len + 1, ct_val.s,
-			ct_val.len);
-		break;
-
-	case CT_MATCH_PN_PARAMS:
-		len += pn_ct_params_n - 1; /* add separators */
-		base64len = calc_base64_encode_len(len);
-
-		if (pkg_str_extend(&ctkey_pkg_buf, len) < 0 ||
-		        pkg_str_extend(&ctkeyb64_pkg_buf, base64len) < 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-
-		for (i = 0, p = ctkey_pkg_buf.s; i < pn_ct_params_n; i++) {
-			memcpy(p, pn_ct_param_vals[i].s, pn_ct_param_vals[i].len);
-			p += pn_ct_param_vals[i].len;
-
-			if (i < pn_ct_params_n - 1)
-				*p++ = ':';
-		}
-
 		break;
 
 	default:
@@ -998,43 +965,36 @@ static inline struct ucontact* contact_callid_match( ucontact_t* ptr,
 }
 
 
-static inline struct ucontact* contact_param_match( ucontact_t* ptr,
-														str* _c, str *_param)
+static inline struct ucontact* contact_params_match(ucontact_t* contacts,
+														str* _c, str_list *_param)
 {
-	str ct_val, uct_val;
+	struct sip_uri ct, cti;
+	str_list *name;
+	int i, j;
 
-	if (get_param_from_uri(_c, _param, &ct_val) < 0)
+	if (parse_uri(_c->s, _c->len, &ct) != 0) {
+		LM_ERR("failed to parse Contact: '%.*s'\n", _c->len, _c->s);
 		return NULL;
+	}
 
-	while(ptr) {
-		/* parse the contact URI and extract the param + value */
-		if ( ptr->expires != UL_EXPIRED_TIME
-		&& get_param_from_uri( &ptr->c, _param, &uct_val)==0
-		&& ct_val.len == uct_val.len
-		&& memcmp(ct_val.s, uct_val.s, uct_val.len)==0
-		) {
-			return ptr;
+	for (; contacts; contacts = contacts->next) {
+		if (parse_uri(contacts->c.s, contacts->c.len, &cti) != 0) {
+			LM_ERR("failed to parse Contact: '%.*s'\n",
+			       contacts->c.len, contacts->c.s);
+			return NULL;
 		}
 
-		ptr = ptr->next;
-	}
-	return NULL;
-}
-
-
-/* attempt to match all @pn_param_vals for a non-expired contact */
-static inline struct ucontact* contact_pn_match(ucontact_t *ct,
-                                                str *pn_param_vals)
-{
-	for (; ct; ct = ct->next) {
-		if (!ct->pn_params || ct->expires == UL_EXPIRED_TIME)
+		if (contacts->expires != UL_EXPIRED_TIME)
 			continue;
 
-		for (int i = 0; i < pn_ct_params_n; i++)
-			if (!str_match(&pn_param_vals[i], &ct->pn_params[i]))
+		for (name = _param; name; name = name->next) {
+			if ((i = get_uri_param_idx(&name->s, &cti)) < 0 ||
+			    (j = get_uri_param_idx(&name->s, &ct)) < 0 ||
+			    !str_match(&cti.u_val[i], &ct.u_val[j]))
 				goto next_contact;
+		}
 
-		return ct;
+		return contacts;
 
 next_contact:;
 	}
@@ -1055,20 +1015,14 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 								struct ct_match *match, struct ucontact** _co)
 {
 	ucontact_t* ptr;
-	int no_callid, _;
+	int no_callid;
 
 	ptr = 0;
 	no_callid = 0;
 	*_co = 0;
 
-	if (pn_enable) {
-		if (extract_pn_params(_c, pn_ct_param_vals, &_) == 0)
-			match->mode = CT_MATCH_PN_PARAMS;
-		else
-			match->mode = matching_mode;
-	} else if (match->mode == CT_MATCH_NONE) {
+	if (match->mode == CT_MATCH_NONE)
 		match->mode = matching_mode;
-	}
 
 	LM_DBG("using ct mathing mode %d\n", match->mode);
 	switch (match->mode) {
@@ -1079,12 +1033,8 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 		ptr = contact_callid_match(_r->contacts, _c, _callid);
 		no_callid = 1;
 		break;
-	case CT_MATCH_PARAM:
-		ptr = contact_param_match(_r->contacts, _c, &match->param);
-		break;
-	case CT_MATCH_PN_PARAMS:
-		ptr = contact_pn_match(_r->contacts, pn_ct_param_vals);
-		no_callid = 1;
+	case CT_MATCH_PARAMS:
+		ptr = contact_params_match(_r->contacts, _c, match->match_params);
 		break;
 	default:
 		LM_CRIT("unknown contact matching mode %d\n", match->mode);

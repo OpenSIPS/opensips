@@ -21,13 +21,13 @@
 #include <ctype.h>
 
 #include "../../dprint.h"
-#include "../../modules/usrloc/urecord.h"
 #include "config.h"
 #include "save_flags.h"
 
 
 void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx)
 {
+	static str_list mp;
 	int st;
 
 	sctx->cmatch.mode = CT_MATCH_NONE;
@@ -87,20 +87,21 @@ void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx)
 						sctx->cmatch.mode = CT_MATCH_CONTACT_CALLID;
 					else if (flags_s->s[st]=='<' && st<flags_s->len-3) {
 						st++;
-						sctx->cmatch.param.s = flags_s->s + st;
+						mp.s.s = flags_s->s + st;
 						while (st<flags_s->len-1 && flags_s->s[st+1]!='>')
 							st++;
 						if (st<flags_s->len-1 && flags_s->s[st+1]=='>') {
-							sctx->cmatch.param.len = flags_s->s + st + 1
-								 - sctx->cmatch.param.s;
-							sctx->cmatch.mode = CT_MATCH_PARAM;
+							mp.s.len = flags_s->s + st + 1
+								 - mp.s.s;
+
+							sctx->cmatch.match_params = &mp;
+							sctx->cmatch.mode = CT_MATCH_PARAMS;
 							st++;
 						} else {
 							LM_ERR("invalid format for MATCH 'M' param, "
 								"discarding trailing '%.*s'\n",
-								(int)(flags_s->s+st-sctx->cmatch.param.s),
-								sctx->cmatch.param.s);
-							sctx->cmatch.param.s = NULL;
+								(int)(flags_s->s + st - mp.s.s), mp.s.s);
+							mp.s.s = NULL;
 						}
 					} else {
 						LM_ERR("invalid value for MATCH 'M' param, "

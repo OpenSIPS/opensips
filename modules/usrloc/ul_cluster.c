@@ -441,7 +441,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	int rc, port, proto, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
-	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, {NULL,0}};
+	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
 
 	memset(&ci, 0, sizeof ci);
 
@@ -582,7 +582,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	int port, proto, rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
-	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, {NULL,0}};
+	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
 
 	memset(&ci, 0, sizeof ci);
 
@@ -721,7 +721,7 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	ucontact_t *contact;
 	str d, aor, contact_str, callid;
 	int cseq, rc;
-	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, {NULL,0}};
+	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet,&aor);

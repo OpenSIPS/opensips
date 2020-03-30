@@ -619,6 +619,9 @@ modparam("registrar", "disable_gruu", 0)
 		</programlisting>
 		</example>
 	</section>
+
+	&pn_modparams;
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">

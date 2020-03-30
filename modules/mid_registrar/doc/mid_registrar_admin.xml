@@ -781,6 +781,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 		</example>
 	</section>
 
+	&pn_modparams;
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
