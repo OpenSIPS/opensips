@@ -966,10 +966,10 @@ static inline struct ucontact* contact_callid_match( ucontact_t* ptr,
 
 
 static inline struct ucontact* contact_params_match(ucontact_t* contacts,
-														str* _c, str_list *_param)
+                                                    str* _c, str_list* _params)
 {
 	struct sip_uri ct, cti;
-	str_list *name;
+	str_list *param;
 	int i, j;
 
 	if (parse_uri(_c->s, _c->len, &ct) != 0) {
@@ -978,18 +978,18 @@ static inline struct ucontact* contact_params_match(ucontact_t* contacts,
 	}
 
 	for (; contacts; contacts = contacts->next) {
+		if (contacts->expires == UL_EXPIRED_TIME)
+			continue;
+
 		if (parse_uri(contacts->c.s, contacts->c.len, &cti) != 0) {
 			LM_ERR("failed to parse Contact: '%.*s'\n",
 			       contacts->c.len, contacts->c.s);
 			return NULL;
 		}
 
-		if (contacts->expires != UL_EXPIRED_TIME)
-			continue;
-
-		for (name = _param; name; name = name->next) {
-			if ((i = get_uri_param_idx(&name->s, &cti)) < 0 ||
-			    (j = get_uri_param_idx(&name->s, &ct)) < 0 ||
+		for (param = _params; param; param = param->next) {
+			if ((i = get_uri_param_idx(&param->s, &cti)) < 0 ||
+			    (j = get_uri_param_idx(&param->s, &ct)) < 0 ||
 			    !str_match(&cti.u_val[i], &ct.u_val[j]))
 				goto next_contact;
 		}
@@ -1024,7 +1024,7 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 	if (match->mode == CT_MATCH_NONE)
 		match->mode = matching_mode;
 
-	LM_DBG("using ct mathing mode %d\n", match->mode);
+	LM_DBG("using ct matching mode %d\n", match->mode);
 	switch (match->mode) {
 	case CT_MATCH_CONTACT_ONLY:
 		ptr = contact_match(_r->contacts, _c);
@@ -1042,6 +1042,8 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 	}
 
 	if (ptr) {
+		LM_DBG("successfully matched contact '%.*s'\n", ptr->c.len, ptr->c.s);
+
 		/* found -> check callid and cseq */
 		if (no_callid || str_match(_callid, &ptr->callid)) {
 			if (_cseq<ptr->cseq)
@@ -1053,6 +1055,8 @@ int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 		}
 		*_co = ptr;
 		return 0;
+	} else {
+		LM_DBG("failed to match any existing contacts\n");
 	}
 
 	return 1;
