@@ -1839,10 +1839,8 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	LM_DBG("Contact: '%.*s'\n", msg->contact->body.len, msg->contact->body.s);
 
 	mri = mri_alloc();
-	if (!mri) {
-		LM_ERR("oom\n");
-		return -1;
-	}
+	if (!mri)
+		goto oom;
 
 	mri->expires = 0;
 	mri->expires_out = sctx->expires_out;
@@ -1851,51 +1849,41 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	mri->reg_flags = sctx->flags;
 	mri->star = sctx->star;
 
-	if (shm_str_dup(&mri->aor, &sctx->aor) != 0) {
-		LM_ERR("oom\n");
-		goto out_free;
-	}
+	if (shm_str_dup(&mri->aor, &sctx->aor) != 0)
+		goto oom;
 
 	if (sctx->ownership_tag.s
-		&& shm_str_dup(&mri->ownership_tag, &sctx->ownership_tag) != 0) {
-		LM_ERR("oom\n");
-		goto out_free;
-	}
+	        && shm_str_dup(&mri->ownership_tag, &sctx->ownership_tag) != 0)
+		goto oom;
 
 	mri->cmatch.mode = sctx->cmatch.mode;
-	if (sctx->cmatch.param.s &&
-	shm_str_dup(&mri->cmatch.param, &sctx->cmatch.param) != 0) {
-		LM_ERR("oom\n");
-		goto out_free;
+	if (sctx->cmatch.match_params) {
+		mri->cmatch.match_params = dup_shm_str_list(sctx->cmatch.match_params);
+		if (!mri->cmatch.match_params)
+			goto oom;
 	}
 
 	if (parse_from_header(msg) != 0) {
 		LM_ERR("failed to parse From hf\n");
-		goto out_free;
+		goto out;
 	}
 
 	from = get_from(msg);
-	if (shm_str_dup(&mri->from, &from->uri) != 0) {
-		LM_ERR("oom\n");
-		goto out_free;
-	}
+	if (shm_str_dup(&mri->from, &from->uri) != 0)
+		goto oom;
 
 	to = get_to(msg);
-	if (shm_str_dup(&mri->to, &to->uri) != 0) {
-		LM_ERR("oom\n");
-		goto out_free;
-	}
+	if (shm_str_dup(&mri->to, &to->uri) != 0)
+		goto oom;
 
-	if (shm_str_dup(&mri->callid, &msg->callid->body) != 0) {
-		LM_ERR("oom\n");
-		goto out_free;
-	}
+	if (shm_str_dup(&mri->callid, &msg->callid->body) != 0)
+		goto oom;
 
 	LM_DBG("registering ptr %p on TMCB_REQUEST_FWDED ...\n", mri);
 	if (tm_api.register_tmcb(msg, NULL, TMCB_REQUEST_FWDED,
 	    mid_reg_req_fwded, mri, NULL) <= 0) {
 		LM_ERR("cannot register additional callbacks\n");
-		goto out_free;
+		goto out;
 	}
 
 	LM_DBG("registering for TMCB_RESPONSE_FWDED, mri=%p ...\n", mri);
@@ -1914,7 +1902,9 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 
 	return 1;
 
-out_free:
+oom:
+	LM_ERR("oom\n");
+out:
 	mri_free(mri);
 	return -1;
 }

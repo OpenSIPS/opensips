@@ -26,6 +26,7 @@
 #include "str.h"
 #include "lib/osips_malloc.h"
 #include "lib/list.h"
+#include "ut.h"
 
 typedef struct _str_list {
 	str s;
@@ -59,6 +60,31 @@ static inline void _free_str_list(str_list *list,
 
 #define free_shm_str_list(list) \
 	_free_str_list(list, osips_shm_free, osips_shm_free)
+
+static inline str_list *dup_shm_str_list(const str_list *list)
+{
+	str_list *item, *ret = NULL;
+	const str_list *it;
+
+	for (it = list; it; it = it->next) {
+		item = shm_malloc(sizeof *item);
+		if (!item)
+			goto oom;
+
+		if (shm_str_dup(&item->s, &it->s) != 0)
+			goto oom;
+
+		item->next = NULL;
+		add_last(item, ret);
+	}
+
+	return ret;
+
+oom:
+	LM_ERR("oom\n");
+	free_shm_str_list(ret);
+	return NULL;
+}
 
 static inline void _free_str_dlist(struct list_head *dlist,
                         osips_free_t free_item, osips_free_t free_str)

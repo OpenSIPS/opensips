@@ -67,7 +67,7 @@ typedef evi_reply_sock* (parse_f)(str);
 /* tries to match two sockets */
 typedef int (match_f)(evi_reply_sock *sock1, evi_reply_sock *sock2);
 /* free a socket */
-typedef void (free_f)(evi_reply_sock *sock);
+typedef void (evi_free_f)(evi_reply_sock *sock);
 /* prints a given socket */
 typedef str (print_f)(evi_reply_sock *sock);
 
@@ -76,7 +76,7 @@ typedef struct evi_export_ {
 	raise_f *raise;		/* raise function */
 	parse_f *parse;		/* parse function */
 	match_f *match;		/* sockets match function */
-	free_f *free;		/* free a socket */
+	evi_free_f *free;	/* free a socket */
 	print_f *print;		/* prints a socket */
 	unsigned int flags;
 } evi_export_t;
