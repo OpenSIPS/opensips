@@ -346,7 +346,8 @@ modparam("tracer", "trace_id",
 		</title>
 		<para>
 			Enable/disable tracing(globally or for a specific trace id) or dump
-			info about trace ids.
+			info about trace ids. This command requires named parameters
+			(each parameter is ginven in the format param_name=param_value).
 		</para>
 		<para>
 			Name: <emphasis>trace</emphasis>
@@ -392,7 +393,12 @@ modparam("tracer", "trace_id",
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi trace tid2 on
+# Display global tracing mode and all trace destinations:
+opensips-cli -x mi trace
+# Turn off global tracing:
+opensips-cli -x mi trace mode=off
+# Turn on tracing for destination id tid2:
+opensips-cli -x mi trace id=tid2 mode=on
 		</programlisting>
 	</section>
 
