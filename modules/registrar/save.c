@@ -649,10 +649,30 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		c = get_first_contact(_m);
 	}
 
-	if (sctx.cmatch.mode == CT_MATCH_NONE && pn_enable &&
-	        pn_uri_has_params(&c->uri)) {
-		sctx.cmatch.mode = CT_MATCH_PARAMS;
-		sctx.cmatch.match_params = pn_ct_params;
+	if (sctx.cmatch.mode == CT_MATCH_NONE && pn_enable) {
+		switch (pn_inspect_ct_params(&c->uri)) {
+		case PN_NONE:
+			LM_DBG("Contact URI has no PN params\n");
+			break;
+
+		case PN_ON:
+			LM_DBG("Contact URI includes all required PN params\n");
+			sctx.cmatch.mode = CT_MATCH_PARAMS;
+			sctx.cmatch.match_params = pn_ct_params;
+			break;
+
+		case PN_LIST_ALL_PNS:
+			LM_DBG("Contact URI includes PN capability query (all PNS)\n");
+			break;
+
+		case PN_LIST_ONE_PNS:
+			LM_DBG("Contact URI includes PN capability query (one PNS)\n");
+			break;
+
+		case PN_UNSUPPORTED_PNS:
+			rerrno = R_PNS_UNSUP;
+			goto error;
+		}
 	}
 
 	update_act_time();

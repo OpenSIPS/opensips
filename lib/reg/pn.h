@@ -30,20 +30,29 @@
 struct pn_provider {
 	str name;
 	str feature_caps;
+	int append_fcaps;
 
 	struct pn_provider *next;
+};
+
+enum pn_action {
+	PN_NONE,            /* no 'pn-provider' was given */
+	PN_UNSUPPORTED_PNS, /* the given 'pn-provider' value is not supported */
+	PN_LIST_ALL_PNS,    /* only 'pn-provider' given, no value */
+	PN_LIST_ONE_PNS,    /* a known 'pn-provider' value was given */
+	PN_ON,              /* all required 'pn-*' params are given */
 };
 
 /* modparams */
 extern int pn_enable;
 extern int pn_pnsreg_interval;
 extern int pn_trigger_interval;
+extern char *pn_provider_param;
 extern char *_pn_ct_params;
 extern char *_pn_providers;
 
 /* useful fixups */
 extern str_list *pn_ct_params;  /* list of parsed match params */
-extern int pn_ct_params_n;      /* list size */
 extern struct pn_provider *pn_providers;
 
 
@@ -53,86 +62,10 @@ extern struct pn_provider *pn_providers;
 int pn_init(void);
 
 
-//TODO
-#if 0
 /**
- * parse and extract all PN parameters from @uri into the
- *     @val_arr array.  Also sum their lengths into @val_len
- * @return: 0 if all parameters found, otherwise -1
+ * look for any RFC 8599 URI parameters and take the appropriate action
  */
-int pn_extract_params(const str *uri, str *val_arr, int *val_len);
+enum pn_action pn_inspect_ct_params(const str *ct_uri);
 
-
-/**
- * similar to the above, except it receives a parsed URI
- * @return: 0 if all parameters found, otherwise -1
- */
-static inline int _pn_extract_params(const struct sip_uri *uri,
-                                     str *val_arr, int *val_len);
-#endif
-
-
-/**
- * check whether the given SIP @uri string contains all PN params
- * @return: 1 on success, otherwise 0
- */
-static inline int pn_uri_has_params(const str *uri);
-
-
-/**
- * build a Feature-Caps header with all server capabilities, store it in @out
- * @return: 0 on success, -1 otherwise
- */
-int pn_build_feature_caps(const str *provider, str *out);
-
-
-/* ------------------------------------------------------------------------- */
-
-
-static inline int pn_uri_has_params(const str *uri)
-{
-	struct sip_uri puri;
-	str_list *pnp;
-
-	if (parse_uri(uri->s, uri->len, &puri) != 0) {
-		LM_ERR("failed to parse URI: '%.*s'\n", uri->len, uri->s);
-		return -1;
-	}
-
-	for (pnp = pn_ct_params; pnp; pnp = pnp->next) {
-		for (int i = 0; i < puri.u_params_no; i++)
-			if (str_match(&pnp->s, &puri.u_name[i]))
-				goto found_param;
-
-		return 0;
-
-found_param:;
-	}
-
-	return 1;
-}
-
-//TODO
-#if 0
-static inline int _pn_extract_params(const struct sip_uri *uri,
-                                     str *val_arr, int *val_len)
-{
-	for (int i = 0; i < pn_ct_params_n; i++) {
-		for (int j = 0; j < uri->u_params_no; j++) {
-			if (str_match(&pn_ct_params[i], &uri->u_name[j])) {
-				val_arr[i] = uri->u_val[j];
-				*val_len += uri->u_val[j].len;
-				goto found_param;
-			}
-		}
-
-		return -1;
-
-found_param:;
-	}
-
-	return 0;
-}
-#endif
 
 #endif /* __REG_PN_H__ */

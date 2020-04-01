@@ -28,11 +28,11 @@
 int pn_enable;
 int pn_pnsreg_interval = 130;  /* sec */
 int pn_trigger_interval = 120; /* sec */
+char *pn_provider_param = "pn-provider";
 char *_pn_ct_params = "pn-provider, pn-prid, pn-param";
 char *_pn_providers;
 
 str_list *pn_ct_params;
-int pn_ct_params_n;
 
 struct pn_provider *pn_providers;
 
@@ -42,6 +42,7 @@ struct pn_provider *pn_providers;
 	(sizeof("Feature-Caps: +sip.pns=\"\";" \
 			"+sip.pnsreg=\"\";+sip.pnspurr=\"\"") + \
 			MAX_PROVIDER_LEN + INT2STR_MAX_LEN + MAX_PNSPURR_LEN + CRLF_LEN)
+
 
 int pn_init(void)
 {
@@ -74,7 +75,6 @@ int pn_init(void)
 		str_cpy(&param->s, &pnp->s);
 		param->s.s[pnp->s.len] = '\0';
 
-		pn_ct_params_n++;
 		add_last(param, pn_ct_params);
 
 		LM_DBG("parsed PN contact param: '%.*s'\n",
@@ -122,7 +122,51 @@ int pn_init(void)
 }
 
 
-int pn_build_feature_caps(const str *provider, str *out)
+enum pn_action pn_inspect_ct_params(const str *ct_uri)
 {
-	return 0;
+	struct sip_uri puri;
+	struct pn_provider *pvd;
+	str_list *param;
+	int i;
+
+	if (parse_uri(ct_uri->s, ct_uri->len, &puri) != 0) {
+		LM_ERR("failed to parse URI: '%.*s'\n", ct_uri->len, ct_uri->s);
+		return -1;
+	}
+
+	for (i = 0; i < puri.u_params_no; i++)
+		if (str_match(&puri.u_name[i], _str(pn_provider_param)))
+			goto match_provider;
+
+	return PN_NONE;
+
+match_provider:
+	if (ZSTR(puri.u_val[i])) {
+		for (pvd = pn_providers; pvd; pvd = pvd->next)
+			pvd->append_fcaps = 1;
+		return PN_LIST_ALL_PNS;
+	}
+
+	for (pvd = pn_providers; pvd; pvd = pvd->next)
+		if (str_match(&puri.u_val[i], &pvd->name)) {
+			pvd->append_fcaps = 1;
+			goto match_params;
+		}
+
+	LM_DBG("unsupported PN provider: '%.*s'\n", puri.u_val[i].len,
+	       puri.u_val[i].s);
+	return PN_UNSUPPORTED_PNS;
+
+match_params:
+	for (param = pn_ct_params; param; param = param->next) {
+		for (int i = 0; i < puri.u_params_no; i++)
+			if (str_match(&param->s, &puri.u_name[i]))
+				goto next_param;
+
+		return PN_LIST_ONE_PNS;
+
+next_param:;
+	}
+
+	return PN_ON;
 }

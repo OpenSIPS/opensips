@@ -70,12 +70,6 @@ static struct {
 	int data_len;
 } contact = {0, 0, 0};
 
-#define MSG_200 "OK"
-#define MSG_400 "Bad Request"
-#define MSG_420 "Bad Extension"
-#define MSG_500 "Server Internal Error"
-#define MSG_503 "Service Unavailable"
-
 #define RETRY_AFTER "Retry-After: "
 #define RETRY_AFTER_LEN (sizeof(RETRY_AFTER) - 1)
 

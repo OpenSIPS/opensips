@@ -11,6 +11,7 @@ NAME=registrar.so
 LIBS=
 
 REG_LIB_DIR = ../../lib/reg
-extra_sources=$(patsubst %,$(REG_LIB_DIR)/%,*.c)
+_SRC=ci.c regtime.c rerrno.c sip_msg.c path.c save_flags.c pn.c
+extra_sources=$(patsubst %,$(REG_LIB_DIR)/%,$(_SRC))
 
 include ../../Makefile.modules

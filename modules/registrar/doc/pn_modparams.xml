@@ -41,7 +41,7 @@ modparam("usrloc", "pn_enable", true)
 		<title>Setting the <varname>pn_providers</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "pn_providers", "fcm, webpush")
+modparam("usrloc", "pn_providers", "apns, fcm, webpush")
 ...
 </programlisting>
 		</example>
