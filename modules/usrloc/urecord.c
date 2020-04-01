@@ -45,6 +45,7 @@
 #include "utime.h"
 #include "ul_callback.h"
 #include "ul_cluster.h"
+#include "ul_evi.h"
 #include "udomain.h"
 #include "dlist.h"
 #include "usrloc.h"
@@ -58,9 +59,6 @@ extern int cid_len;
 int matching_mode = CT_MATCH_CONTACT_ONLY;
 
 int cseq_delay = 20;
-
-extern event_id_t ei_c_ins_id;
-extern event_id_t ei_c_del_id;
 
 str urec_store_key = str_init("_urec_kvs");
 

@@ -48,13 +48,12 @@
 #include "urecord.h"
 #include "ucontact.h"
 #include "ul_cluster.h"
+#include "ul_evi.h"
 #include "udomain.h"
 #include "dlist.h"
 #include "utime.h"
 #include "usrloc.h"
 #include "kv_store.h"
-
-extern event_id_t ei_c_update_id;
 
 /*
  * Determines the IP address of the next hop on the way to given contact based

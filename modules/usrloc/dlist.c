@@ -50,6 +50,7 @@
 #include "udomain.h"           /* new_udomain, free_udomain */
 #include "utime.h"
 #include "ul_mod.h"
+#include "ul_evi.h"
 #include "ul_callback.h"
 #include "ul_cluster.h"
 #include "usrloc.h"
@@ -62,7 +63,6 @@
 dlist_t* root = 0;
 
 
-extern event_id_t ei_c_latency_update_id;
 /*! \brief
  * Returned the first udomain if input param in NULL or the next following
  * udomain after the given udomain
