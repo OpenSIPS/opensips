@@ -45,6 +45,7 @@
 #include "utime.h"
 #include "ul_callback.h"
 #include "ul_cluster.h"
+#include "ul_timer.h"
 #include "ul_evi.h"
 #include "udomain.h"
 #include "dlist.h"
@@ -196,6 +197,8 @@ ucontact_t* mem_insert_ucontact(urecord_t* _r, str* _c, ucontact_info_t* _ci)
 void mem_remove_ucontact(urecord_t* _r, ucontact_t* _c)
 {
 	int_str_t **rstore;
+
+	stop_refresh_timer(_c);
 
 	if (_c->prev) {
 		_c->prev->next = _c->next;

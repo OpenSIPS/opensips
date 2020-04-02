@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "../../timer.h"
+#include "../../locking.h"
 #include "../../lib/list.h"
 
 #include "ul_timer.h"
@@ -27,6 +27,7 @@
 
 static struct list_head *pending_refreshes;
 static gen_lock_t *ul_refresh_lock;
+
 
 int ul_init_timers(void)
 {
@@ -47,6 +48,7 @@ int ul_init_timers(void)
 	return 0;
 }
 
+
 void start_refresh_timer(ucontact_t *ct)
 {
 	struct list_head *el, *_;
@@ -56,6 +58,7 @@ void start_refresh_timer(ucontact_t *ct)
 	if (!list_empty(&ct->refresh_list))
 		list_del(&ct->refresh_list);
 
+	/* insert into sorted list (ascending) */
 	list_for_each_safe (el, _, pending_refreshes) {
 		c = list_entry(el, ucontact_t, refresh_list);
 		if (ct->refresh_time < c->refresh_time) {
@@ -69,6 +72,16 @@ void start_refresh_timer(ucontact_t *ct)
 done:
 	lock_release(ul_refresh_lock);
 }
+
+
+void stop_refresh_timer(ucontact_t *ct)
+{
+	lock_get(ul_refresh_lock);
+	if (!list_empty(&ct->refresh_list))
+		list_del(&ct->refresh_list);
+	lock_release(ul_refresh_lock);
+}
+
 
 void trigger_ct_refreshes(unsigned int ticks, void *param)
 {

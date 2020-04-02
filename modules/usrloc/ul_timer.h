@@ -22,12 +22,14 @@
 #ifndef __UL_TIMER_H__
 #define __UL_TIMER_H__
 
-#include "../../locking.h"
+#include "../../timer.h"
 
 #include "ucontact.h"
 
 int ul_init_timers(void);
 void start_refresh_timer(ucontact_t *ct);
-void trigger_ct_refreshes(unsigned int ticks, void *param);
+void stop_refresh_timer(ucontact_t *ct);
+
+timer_function trigger_ct_refreshes;
 
 #endif /* __UL_TIMER_H__ */
