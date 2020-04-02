@@ -1117,7 +1117,7 @@ int mem_insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
 		return -1;
 	}
 
-	ul_raise_event(ei_ins_id, *_r);
+	ul_raise_aor_event(ei_ins_id, *_r);
 	update_stat( _d->users, 1);
 	return 0;
 }
@@ -1128,7 +1128,7 @@ int mem_insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r)
  */
 void mem_delete_urecord(udomain_t* _d, struct urecord* _r)
 {
-	ul_raise_event(ei_del_id, _r);
+	ul_raise_aor_event(ei_del_id, _r);
 	slot_rem(_r->slot, _r);
 	free_urecord(_r);
 	update_stat( _d->users, -1);

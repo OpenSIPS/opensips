@@ -1447,6 +1447,31 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		</example>
 	</section>
 
+	<section id="param_contact_refresh_timer" xreflabel="contact_refresh_timer">
+		<title><varname>contact_refresh_timer</varname> (integer)</title>
+		<para>
+		Enable a timer which will periodically scan a sorted list of contacts
+		and raise the <xref linkend="event_E_UL_CONTACT_REFRESH"/> for any of
+		them which are past their re-registration time interval limit.  This
+		limit may given by registrar's <emphasis>pn_trigger_interval</emphasis>
+		module parameter, for example.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <quote>0 (disabled)</quote>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Set <varname>contact_refresh_timer</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "contact_refresh_timer", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -1826,6 +1851,20 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 		<para>
 			This event is raised when a contact's info is updated by receiving
 			another registration message.
+		</para>
+		<para>Parameters: same as the
+			<xref linkend="event_E_UL_CONTACT_INSERT"/> event</para>
+	</section>
+
+	<section id="event_E_UL_CONTACT_REFRESH" xreflabel="E_UL_CONTACT_REFRESH">
+		<title>
+		<function moreinfo="none">E_UL_CONTACT_REFRESH</function>
+		</title>
+		<para>
+		Set <xref linkend="param_contact_refresh_timer"/> to 1 in order to enable
+		this event.  The event is raised within reasonable time before a contact
+		binding will expire, such that the script writer can take action,
+		possibly force a registration refresh from the endpoint.
 		</para>
 		<para>Parameters: same as the
 			<xref linkend="event_E_UL_CONTACT_INSERT"/> event</para>

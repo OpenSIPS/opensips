@@ -70,18 +70,6 @@ typedef struct urecord {
 } urecord_t;
 
 
-struct ct_match {
-	enum {
-		CT_MATCH_NONE,
-		CT_MATCH_CONTACT_ONLY,
-		CT_MATCH_CONTACT_CALLID,
-		CT_MATCH_PARAMS,
-	} mode;
-
-	str_list *match_params;
-};
-
-
 /* Create a new record */
 int new_urecord(str* _dom, str* _aor, urecord_t** _r);
 

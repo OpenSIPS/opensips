@@ -24,8 +24,10 @@
 #include "../../trim.h"
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_allow.h"
+#include "../../timer.h"
 
 #include "ci.h"
+#include "pn.h"
 #include "path.h"
 #include "config.h"
 #include "rerrno.h"
@@ -134,6 +136,10 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 
 		/* set expire time */
 		ci.expires = _e;
+
+		if (pn_enable && cmatch->mode == CT_MATCH_PARAMS &&
+		        _e > pn_trigger_interval)
+			ci.refresh_time = _e - pn_trigger_interval;
 
 		/* Get methods of contact */
 		if (_c->methods) {

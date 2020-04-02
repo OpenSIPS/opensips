@@ -141,9 +141,4 @@ extern cachedb_con *cdbc;
 
 extern int matching_mode;
 
-/*! \brief
- * Initialize event structures
- */
-int ul_event_init(void);
-
 #endif /* UL_MOD_H */

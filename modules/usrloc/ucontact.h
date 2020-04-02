@@ -35,16 +35,17 @@
 #ifndef UCONTACT_H
 #define UCONTACT_H
 
-
 #include <stdio.h>
 #include <time.h>
+
 #include "../../map.h"
 #include "../../qvalue.h"
 #include "../../str.h"
 #include "../../proxy.h"
 #include "../../socket_info.h"
 #include "../../db/db_insertq.h"
-
+#include "../../lib/list.h"
+#include "../../str_list.h"
 
 
 /*! \brief States for in-memory contacts in regards to contact storage handler (db, in-memory, ldap etc) */
@@ -78,6 +79,19 @@ typedef enum flags {
  * in order to perform very fast "ucontact_t" lookups
  */
 typedef uint64_t ucontact_id;
+
+
+struct ct_match {
+	enum {
+		CT_MATCH_NONE,
+		CT_MATCH_CONTACT_ONLY,
+		CT_MATCH_CONTACT_CALLID,
+		CT_MATCH_PARAMS,
+	} mode;
+
+	str_list *match_params;
+};
+
 
 /*! \brief
  * Main structure for handling of registered Contact: data
@@ -118,6 +132,9 @@ typedef struct ucontact {
 
 	map_t kv_storage;       /*!< data attached by API subscribers >*/
 
+	int refresh_time;         /*!< when to trigger the next refresh event >*/
+	struct list_head refresh_list;
+
 	struct ucontact* next;  /*!< Next contact in the linked list */
 	struct ucontact* prev;  /*!< Previous contact in the linked list */
 } ucontact_t;
@@ -148,6 +165,7 @@ typedef struct ucontact_info {
 	str *attr;
 	str shtag;
 	str cdb_key;
+	int refresh_time;
 
 	/* contact matching algorithm - no need to free anything */
 	struct ct_match *cmatch;

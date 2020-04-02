@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2001-2003 FhG Fokus
  * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
@@ -18,25 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __UL_EVI_H__
-#define __UL_EVI_H__
+#ifndef __UL_TIMER_H__
+#define __UL_TIMER_H__
 
-#include "urecord.h"
+#include "../../locking.h"
 
-/* AoR event IDs */
-extern event_id_t ei_ins_id;
-extern event_id_t ei_del_id;
+#include "ucontact.h"
 
-/* Contact event IDs */
-extern event_id_t ei_c_ins_id;
-extern event_id_t ei_c_del_id;
-extern event_id_t ei_c_update_id;
-extern event_id_t ei_c_latency_update_id;
-extern event_id_t ei_c_refresh_id;
+int ul_init_timers(void);
+void start_refresh_timer(ucontact_t *ct);
+void trigger_ct_refreshes(unsigned int ticks, void *param);
 
-int ul_event_init(void);
-void ul_raise_aor_event(event_id_t _e, struct urecord *_r);
-void ul_raise_contact_event(event_id_t _e, struct ucontact *_c);
-void ul_raise_refresh_event(struct ucontact *_c);
-
-#endif /* __UL_EVI_H__ */
+#endif /* __UL_TIMER_H__ */

@@ -29,12 +29,14 @@ event_id_t ei_c_ins_id = EVI_ERROR;
 event_id_t ei_c_del_id = EVI_ERROR;
 event_id_t ei_c_update_id = EVI_ERROR;
 event_id_t ei_c_latency_update_id = EVI_ERROR;
+event_id_t ei_c_refresh_id = EVI_ERROR;
 
 static str ei_ins_name = str_init("E_UL_AOR_INSERT");
 static str ei_del_name = str_init("E_UL_AOR_DELETE");
 static str ei_contact_ins_name = str_init("E_UL_CONTACT_INSERT");
 static str ei_contact_del_name = str_init("E_UL_CONTACT_DELETE");
 static str ei_contact_update_name = str_init("E_UL_CONTACT_UPDATE");
+static str ei_contact_refresh_name = str_init("E_UL_CONTACT_REFRESH");
 static str ei_contact_latency_update_name = str_init("E_UL_LATENCY_UPDATE");
 
 static str ei_aor_name = str_init("aor");
@@ -52,8 +54,8 @@ static str ei_attr_name = str_init("attr");
 static str ei_latency_name = str_init("latency");
 static str ei_shtag_name = str_init("shtag");
 
+static evi_params_p ul_aor_event_params;
 static evi_params_p ul_contact_event_params;
-static evi_params_p ul_event_params;
 
 static evi_param_p ul_aor_param;
 static evi_param_p ul_c_aor_param;
@@ -106,19 +108,25 @@ int ul_event_init(void)
 		return -1;
 	}
 
+	ei_c_refresh_id = evi_publish_event(ei_contact_refresh_name);
+	if (ei_c_refresh_id == EVI_ERROR) {
+		LM_ERR("cannot register contact refresh event\n");
+		return -1;
+	}
+
 	ei_c_latency_update_id = evi_publish_event(ei_contact_latency_update_name);
 	if (ei_c_latency_update_id == EVI_ERROR) {
 		LM_ERR("cannot register contact latency update event\n");
 		return -1;
 	}
 
-	ul_event_params = pkg_malloc(sizeof(evi_params_t));
-	if (!ul_event_params) {
+	ul_aor_event_params = pkg_malloc(sizeof(evi_params_t));
+	if (!ul_aor_event_params) {
 		LM_ERR("no more pkg memory\n");
 		return -1;
 	}
-	memset(ul_event_params, 0, sizeof(evi_params_t));
-	ul_aor_param = evi_param_create(ul_event_params, &ei_aor_name);
+	memset(ul_aor_event_params, 0, sizeof(evi_params_t));
+	ul_aor_param = evi_param_create(ul_aor_event_params, &ei_aor_name);
 	if (!ul_aor_param) {
 		LM_ERR("cannot create AOR parameter\n");
 		return -1;
@@ -231,7 +239,7 @@ int ul_event_init(void)
 /*! \brief
  * Raise an event when an AOR is inserted/deleted
  */
-void ul_raise_event(event_id_t _e, struct urecord* _r)
+void ul_raise_aor_event(event_id_t _e, struct urecord* _r)
 {
 	if (_e == EVI_ERROR) {
 		LM_ERR("event not yet registered %d\n", _e);
@@ -241,7 +249,7 @@ void ul_raise_event(event_id_t _e, struct urecord* _r)
 		LM_ERR("cannot set AOR parameter\n");
 		return;
 	}
-	if (evi_raise_event(_e, ul_event_params) < 0)
+	if (evi_raise_event(_e, ul_aor_event_params) < 0)
 		LM_ERR("cannot raise event\n");
 }
 

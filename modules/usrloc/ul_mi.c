@@ -448,7 +448,7 @@ mi_response_t *w_mi_usrloc_dump_1(const mi_params_t *params,
 mi_response_t *mi_usrloc_flush(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	synchronize_all_udomains();
+	_synchronize_all_udomains();
 	return init_mi_result_ok();
 }
 

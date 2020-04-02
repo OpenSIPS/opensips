@@ -1053,7 +1053,7 @@ unsigned long get_number_of_users(void* foo)
  *		* update DB state (bulk inserts/updates/deletes)
  *		* clean up any in-memory expired contacts or empty records
  */
-int synchronize_all_udomains(void)
+int _synchronize_all_udomains(void)
 {
 	int res = 0;
 	dlist_t* ptr;

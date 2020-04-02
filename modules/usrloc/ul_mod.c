@@ -46,7 +46,6 @@
 #include "../../sr_module.h"
 #include "../../rw_locking.h"
 #include "../../dprint.h"
-#include "../../timer.h"     /* register_timer */
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
 #include "../../ipc.h"
@@ -57,6 +56,8 @@
 #include "urecord.h"         /* {insert,delete,get}_ucontact */
 #include "ucontact.h"        /* update_ucontact */
 #include "ul_cluster.h"
+#include "ul_timer.h"
+#include "ul_evi.h"
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
@@ -83,7 +84,7 @@
 
 static int mod_init(void);        /*!< Module initialization */
 static void destroy(void);        /*!< Module destroy */
-static void _synchronize_all_udomains(unsigned int ticks, void* param);
+static void synchronize_all_udomains(unsigned int ticks, void* param);
 static int child_init(int rank);  /*!< Per-child init function */
 static int mi_child_init(void);
 int ul_init_globals(void);
@@ -155,6 +156,7 @@ int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
 int desc_time_order = 0;   /*!< By default do not enable timestamp ordering */
 
 int ul_hash_size = 9;
+int ct_refresh_timer;
 
 /* flag */
 unsigned int nat_bflag = (unsigned int)-1;
@@ -236,6 +238,7 @@ static param_export_t params[] = {
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
+	{"contact_refresh_timer",  INT_PARAM, &ct_refresh_timer },
 
 	/* data replication through clusterer using TCP binary packets */
 	{ "location_cluster",	INT_PARAM, &location_cluster   },
@@ -381,9 +384,19 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* Register cache timer */
-	register_timer("ul-timer", _synchronize_all_udomains, 0, timer_interval,
+	if (ul_init_timers() != 0) {
+		LM_ERR("failed to init timers\n");
+		return -1;
+	}
+
+	/* cache timer */
+	register_timer("ul-timer", synchronize_all_udomains, 0, timer_interval,
 	               TIMER_FLAG_DELAY_ON_DELAY);
+
+	/* contact-refresh timer */
+	if (ct_refresh_timer)
+		register_timer("ul-refresh-timer", trigger_ct_refreshes, 0,
+		               1, TIMER_FLAG_SKIP_ON_DELAY);
 
 	if (ul_init_cbs() < 0) {
 		LM_ERR("usrloc/callbacks initialization failed\n");
@@ -501,7 +514,7 @@ static void destroy(void)
 			ul_unlock_locks();
 			if (sync_lock)
 				lock_start_read(sync_lock);
-			if (synchronize_all_udomains() != 0) {
+			if (_synchronize_all_udomains() != 0) {
 				LM_ERR("flushing cache failed\n");
 			}
 			if (sync_lock) {
@@ -528,11 +541,11 @@ static void destroy(void)
 /*! \brief
  * Timer handler
  */
-static void _synchronize_all_udomains(unsigned int ticks, void* param)
+static void synchronize_all_udomains(unsigned int ticks, void* param)
 {
 	if (sync_lock)
 		lock_start_read(sync_lock);
-	if (synchronize_all_udomains() != 0) {
+	if (_synchronize_all_udomains() != 0) {
 		LM_ERR("synchronizing cache failed\n");
 	}
 	if (sync_lock)
