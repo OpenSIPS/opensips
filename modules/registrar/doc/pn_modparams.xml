@@ -84,13 +84,13 @@ modparam("usrloc", "pn_ct_match_params", "pn-provider, pn-prid")
 		<para>
 			For devices capable of waking up and refreshing their binding on
 			their own (signified by the ";+sip.pnsreg" Contact header field
-			parameter), this parameter denotes the prior-to-expiration interval
+			parameter), this setting denotes the prior-to-expiration interval
 			advertised by the server at which the device should issue its
 			binding refresh request.
 		</para>
 		<para>
 			<emphasis>
-				Default value is <emphasis>130 (seconds)</emphasis>.
+				Default value is <emphasis>130 (seconds before expiry)</emphasis>.
 			</emphasis>
 		</para>
 
@@ -99,6 +99,37 @@ modparam("usrloc", "pn_ct_match_params", "pn-provider, pn-prid")
 		<programlisting format="linespecific">
 ...
 modparam("usrloc", "pn_pnsreg_interval", 140)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_pn_trigger_interval" xreflabel="pn_trigger_interval">
+		<title><varname>pn_trigger_interval</varname> (integer)</title>
+		<para>
+			If a binding refresh REGISTER request from a given SIP endpoint does
+			not arrive within at least <xref linkend="param_pn_trigger_interval"/>
+			seconds prior to expiration (e.g. because the device does not
+			support ";+sip.pnsreg" or because of other error conditions), the
+			E_UL_CONTACT_REFRESH usrloc event will be triggered.
+		</para>
+		<para>
+			Once E_UL_CONTACT_REFRESH is triggered, the script writer should use
+			the RFC 8599 parameters from the Contact URI in order to generate a
+			push notification request towards the PN provider of the device, to
+			cause the device to wake up and re-register.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>120 (seconds before expiry)</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_trigger_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("usrloc", "pn_trigger_interval", 130)
 ...
 </programlisting>
 		</example>

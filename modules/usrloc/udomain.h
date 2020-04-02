@@ -189,8 +189,4 @@ typedef int  (*delete_urecord_t)(udomain_t* _d, str* _a, struct urecord* _r,
 int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
                    char is_replicated);
 
-
-
-void ul_raise_contact_event(event_id_t _e, struct ucontact *_c);
-
 #endif /* UDOMAIN_H */
