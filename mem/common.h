@@ -99,7 +99,7 @@ typedef unsigned long (*osips_get_mmstat_f) (void *block);
 typedef void (*osips_shm_stats_init_f) (void *block, int core_index);
 
 #define oom_errorf \
-	"not enough free %s memory (%lu bytes left, need %lu), " \
+	"not enough free %s memory (%ld bytes left, need %lu), " \
 	"please increase the \"-%s\" command line parameter!\n"
 
 #define oom_nostats_errorf \

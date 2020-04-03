@@ -99,11 +99,10 @@ extern stat_var *rpm_frags;
 
 struct hp_frag {
 	unsigned long size;
-	union {
-		struct hp_frag *nxt_free;
-		long reserved;
-	} u;
+
 	struct hp_frag **prev;
+	struct hp_frag *nxt_free;
+
 #ifdef DBG_MALLOC
 	const char *file;
 	const char *func;
@@ -140,9 +139,6 @@ struct hp_block {
 	char *name; /* purpose of this memory block */
 
 	unsigned long size; /* total size */
-	unsigned long large_space;
-	unsigned long large_limit;
-
 	unsigned long used; /* alloc'ed size */
 	unsigned long real_used; /* used+malloc overhead */
 	unsigned long max_real_used;
