@@ -175,7 +175,14 @@ inline static int io_wait_loop_epoll(io_wait_h* h, int t, int repeat)
 	unsigned int curr_time;
 
 again:
+#ifdef EPOLLEXCLUSIVE
+		/* When using EPOLLEXCLUSIVE we don't want a single wakeup to handle multiple fds at once
+		   as it could introduce latency in handling requests.
+		   Limit each wakeup to handling events from a single fd */
+		ret=n=epoll_wait(h->epfd, h->ep_array, 1, t*1000);
+#else
 		ret=n=epoll_wait(h->epfd, h->ep_array, h->fd_no, t*1000);
+#endif
 		if (n==-1){
 			if (errno == EINTR) {
 				goto again; /* signal, ignore it */
