@@ -133,9 +133,9 @@ static int udp_read_req(struct socket_info *si, int* bytes_read)
 	fromlen=sockaddru_len(si->su);
 	len=recvfrom(bind_address->socket, buf, BUF_SIZE,0,&ri.src_su.s,&fromlen);
 	if (len==-1){
-		if (errno==EAGAIN)
-			return 0;
-		if ((errno==EINTR)||(errno==EWOULDBLOCK)|| (errno==ECONNREFUSED))
+		if (errno==EAGAIN || errno==EWOULDBLOCK || errno==EINTR)
+			return 1;
+		if (errno==ECONNREFUSED)
 			return -1;
 		LM_ERR("recvfrom:[%d] %s\n", errno, strerror(errno));
 		return -2;
