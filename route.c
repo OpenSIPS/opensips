@@ -707,7 +707,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 							break;
 						default:
 							LM_ERR("invalid int op %d\n", e->op);
-								val->ri = 0;
+							if(val!=NULL) val->ri = 0;
 							pv_value_destroy(&lval);
 							pv_value_destroy(&rval);
 							return 0;
