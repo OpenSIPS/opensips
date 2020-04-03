@@ -273,16 +273,14 @@ do{                                                                             
 }while(0)                                                                       \
 
 
-db_con_t* db_virtual_init(const str* _set_url)
-{
 /*
     find set_url in global state
     get index
     allocate
     populate with db_init
 */
-    LM_DBG("INIT set_name, %.*s\n", _set_url->len, _set_url->s);
-
+db_con_t* db_virtual_init(const str* _set_url)
+{
     int i;
     int index = -1;
     db_con_t * res=NULL;
@@ -294,6 +292,8 @@ db_con_t* db_virtual_init(const str* _set_url)
         LM_ERR("url or url.s NULL\n");
         return NULL;
     }
+
+    LM_DBG("INIT set_name, %.*s\n", _set_url->len, _set_url->s);
 
     /* so that loadmodule order does not matter */
     if(!global){
