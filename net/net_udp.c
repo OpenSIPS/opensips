@@ -292,8 +292,11 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 
 	switch(fm->type){
 		case F_UDP_READ:
-			n = protos[((struct socket_info*)fm->data)->proto].net.
-				read( fm->data /*si*/, &read);
+			do {
+				n = protos[((struct socket_info*)fm->data)->proto].net.
+					read( fm->data /*si*/, &read);
+			//Continue reading packets until we get an error
+			} while (n == 0);
 			break;
 		case F_TIMER_JOB:
 			handle_timer_job();
@@ -327,6 +330,10 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	post_run_handle_script_reload();
 
 	pt_become_idle();
+
+	if (n == 1) {
+		n = 0;
+	}
 	return n;
 }
 
