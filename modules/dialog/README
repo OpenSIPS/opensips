@@ -2277,14 +2277,14 @@ Chapter 4. Contributors
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Andrei
    Dragus, Walter Doekes (@wdoekes), John Riordan, Hugues
    Mitonneau, Carsten Bock, Jerome Martin, Klaus Darilion, Jarrod
-   Baumann (@jarrodb), Michel Bensoussan, Richard Revels,
-   Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu
+   Baumann (@jarrodb), Zero King, Michel Bensoussan, Richard
+   Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu
    (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy Pyles,
    Julián Moreno Patiño, Konstantin Bokarius, Alex Massover,
    Damien Sandras (@dsandras), Alex Hermann, Dusan Klinec, Norman
-   Brandinger (@NormB), Peter Lemenkov (@lemenkov), UnixDev, Zero
-   King, Eliot Gable, Ryan Bullock (@rrb3942), Nick Altmann
-   (@nikbyte), Edson Gellert Schubert.
+   Brandinger (@NormB), Peter Lemenkov (@lemenkov), UnixDev, Eliot
+   Gable, Ryan Bullock (@rrb3942), Nick Altmann (@nikbyte), Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

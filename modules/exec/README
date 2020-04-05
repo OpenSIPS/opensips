@@ -252,11 +252,11 @@ Chapter 2. Contributors
    9. Vlad Patrascu (@rvlad-patrascu) 8 2 46 297
    10. Henning Westerholt (@henningw) 4 2 8 8
 
-   All remaining contributors: Walter Doekes (@wdoekes), Anca
-   Vamanu, Dan Pascu (@danpascu), Elena-Ramona Modroiu, Konstantin
-   Bokarius, Vlad Paiu (@vladpaiu), Andreas Granig, Julián Moreno
-   Patiño, Octavian Cerna, Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert, Dror Wald.
+   All remaining contributors: Walter Doekes (@wdoekes), Zero
+   King, Anca Vamanu, Dan Pascu (@danpascu), Elena-Ramona Modroiu,
+   Konstantin Bokarius, Vlad Paiu (@vladpaiu), Andreas Granig,
+   Julián Moreno Patiño, Octavian Cerna, Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert, Dror Wald.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -278,23 +278,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2020
-   2.  Liviu Chircu (@liviuchircu)         Feb 2014 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2017
-   7.  Octavian Cerna                      Oct 2016 - Oct 2016
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Walter Doekes (@wdoekes)            Mar 2014 - Sep 2015
-   10. Vlad Paiu (@vladpaiu)               Mar 2015 - Mar 2015
+   1.  Zero King                           Mar 2020 - Mar 2020
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2020
+   3.  Liviu Chircu (@liviuchircu)         Feb 2014 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2017
+   8.  Octavian Cerna                      Oct 2016 - Oct 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Walter Doekes (@wdoekes)            Mar 2014 - Sep 2015
 
-   All remaining contributors: Anca Vamanu, Dror Wald, Dan Pascu
-   (@danpascu), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Elena-Ramona Modroiu, Andreas Granig, Jan Janak
-   (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
-   (@jiriatipteldotorg).
+   All remaining contributors: Vlad Paiu (@vladpaiu), Anca Vamanu,
+   Dror Wald, Dan Pascu (@danpascu), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Henning Westerholt (@henningw), Elena-Ramona Modroiu, Andreas
+   Granig, Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri
+   Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits

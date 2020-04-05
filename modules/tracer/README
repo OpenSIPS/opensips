@@ -299,7 +299,9 @@ ww_challenge() */
 1.5.1.  trace
 
    Enable/disable tracing(globally or for a specific trace id) or
-   dump info about trace ids.
+   dump info about trace ids. This command requires named
+   parameters (each parameter is ginven in the format
+   param_name=param_value).
 
    Name: trace
 
@@ -324,7 +326,12 @@ ww_challenge() */
        global tracing state and dump info for each id.
 
    MI FIFO Command Format:
-                opensips-cli -x mi trace tid2 on
+# Display global tracing mode and all trace destinations:
+opensips-cli -x mi trace
+# Turn off global tracing:
+opensips-cli -x mi trace mode=off
+# Turn on tracing for destination id tid2:
+opensips-cli -x mi trace id=tid2 mode=on
 
 1.5.2.  trace_start
 
@@ -425,10 +432,10 @@ Chapter 2. Contributors
    10. Alexandr Dubovikov (@adubovikov) 7 1 500 4
 
    All remaining contributors: Dan Pascu (@danpascu), Dusan
-   Klinec, Andreas Heise, Sergio Gutierrez, Walter Doekes
-   (@wdoekes), Konstantin Bokarius, Iouri Kharon, Peter Lemenkov
-   (@lemenkov), Zero King, Edson Gellert Schubert, Elena-Ramona
-   Modroiu, Eric Tamme (@etamme).
+   Klinec, Andreas Heise, Sergio Gutierrez, Ovidiu Sas
+   (@ovidiusas), Walter Doekes (@wdoekes), Konstantin Bokarius,
+   Iouri Kharon, Peter Lemenkov (@lemenkov), Zero King, Edson
+   Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -450,23 +457,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Mar 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   4.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   7.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Eric Tamme (@etamme)                Sep 2017 - Sep 2017
-   10. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Apr 2017
+   1.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Mar 2020
+   3.  Zero King                           Mar 2020 - Mar 2020
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   5.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   8.  Liviu Chircu (@liviuchircu)         Jan 2013 - Apr 2019
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Eric Tamme (@etamme)                Sep 2017 - Sep 2017
 
-   All remaining contributors: Dusan Klinec, Andrei Datcu
-   (@andrei-datcu), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
-   (@adubovikov), Sergio Gutierrez, Daniel-Constantin Mierla
-   (@miconda), Iouri Kharon, Konstantin Bokarius, Edson Gellert
-   Schubert, Henning Westerholt (@henningw), Andreas Heise,
-   Elena-Ramona Modroiu.
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Dusan Klinec, Andrei Datcu (@andrei-datcu), Vlad Paiu
+   (@vladpaiu), Alexandr Dubovikov (@adubovikov), Sergio
+   Gutierrez, Daniel-Constantin Mierla (@miconda), Iouri Kharon,
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -475,12 +482,13 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
-   (@andrei-datcu), Bogdan-Andrei Iancu (@bogdan-iancu), Alexandr
-   Dubovikov (@adubovikov), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   Last edited by: Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Alexandr Dubovikov
+   (@adubovikov), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Elena-Ramona Modroiu.
 
    Documentation Copyrights:
