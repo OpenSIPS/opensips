@@ -23,6 +23,31 @@
 
 #include "urecord.h"
 
+/* event names */
+#define UL_EV_AOR_INSERT     "E_UL_AOR_INSERT"
+#define UL_EV_AOR_DELETE     "E_UL_AOR_DELETE"
+#define UL_EV_CT_INSERT      "E_UL_CONTACT_INSERT"
+#define UL_EV_CT_UPDATE      "E_UL_CONTACT_UPDATE"
+#define UL_EV_CT_DELETE      "E_UL_CONTACT_DELETE"
+#define UL_EV_CT_REFRESH     "E_UL_CONTACT_REFRESH"
+#define UL_EV_LATENCY_UPDATE "E_UL_LATENCY_UPDATE"
+
+/* event params */
+#define UL_EV_PARAM_AOR_URI  "aor"
+#define UL_EV_PARAM_CT_URI   "uri"
+#define UL_EV_PARAM_CT_RCV   "received"
+#define UL_EV_PARAM_CT_PATH  "path"
+#define UL_EV_PARAM_CT_QVAL  "qval"
+#define UL_EV_PARAM_CT_UA    "user_agent"
+#define UL_EV_PARAM_CT_SOCK  "socket"
+#define UL_EV_PARAM_CT_BFL   "bflags"
+#define UL_EV_PARAM_CT_EXP   "expires"
+#define UL_EV_PARAM_CT_CLID  "callid"
+#define UL_EV_PARAM_CT_CSEQ  "cseq"
+#define UL_EV_PARAM_CT_ATTR  "attr"
+#define UL_EV_PARAM_CT_LTCY  "latency"
+#define UL_EV_PARAM_CT_SHTAG "shtag"
+
 /* AoR event IDs */
 extern event_id_t ei_ins_id;
 extern event_id_t ei_del_id;

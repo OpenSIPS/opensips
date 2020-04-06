@@ -61,6 +61,7 @@
 #include "fix_lumps.h"
 #include "config.h"
 #include "cluster.h"
+#include "../usrloc/ul_evi.h"
 #include "../../msg_callbacks.h"
 #include "../../mod_fix.h"
 
@@ -882,12 +883,13 @@ static int ul_contact_event_to_msg(struct sip_msg *req)
 {
 	static enum ul_attrs { UL_URI, UL_RECEIVED, UL_PATH, UL_QVAL,
 		UL_SOCKET, UL_BFLAGS, UL_ATTR, UL_MAX } ul_attr;
-	/* keep the names of the AVPs aligned with the contact-related events
-	 * from USRLOC module !!!! */
-	static str ul_names[UL_MAX]= {str_init("uri"),str_init("received"),
-	                              str_init("path"),str_init("qval"),
-	                              str_init("socket"),str_init("bflags"),
-	                              str_init("attr") };
+	static str ul_names[UL_MAX]= {str_init(UL_EV_PARAM_CT_URI),
+	                              str_init(UL_EV_PARAM_CT_RCV),
+	                              str_init(UL_EV_PARAM_CT_PATH),
+	                              str_init(UL_EV_PARAM_CT_QVAL),
+	                              str_init(UL_EV_PARAM_CT_SOCK),
+	                              str_init(UL_EV_PARAM_CT_BFL),
+	                              str_init(UL_EV_PARAM_CT_ATTR) };
 	static int avp_ids[UL_MAX] = { -1, -1, -1, -1, -1, -1, -1};
 	int_str vals[UL_MAX];
 	int proto, port;

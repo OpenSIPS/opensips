@@ -31,28 +31,28 @@ event_id_t ei_c_update_id = EVI_ERROR;
 event_id_t ei_c_latency_update_id = EVI_ERROR;
 event_id_t ei_c_refresh_id = EVI_ERROR;
 
-static str ei_ins_name = str_init("E_UL_AOR_INSERT");
-static str ei_del_name = str_init("E_UL_AOR_DELETE");
-static str ei_contact_ins_name = str_init("E_UL_CONTACT_INSERT");
-static str ei_contact_del_name = str_init("E_UL_CONTACT_DELETE");
-static str ei_contact_update_name = str_init("E_UL_CONTACT_UPDATE");
-static str ei_contact_refresh_name = str_init("E_UL_CONTACT_REFRESH");
-static str ei_contact_latency_update_name = str_init("E_UL_LATENCY_UPDATE");
+static str ei_ins_name = str_init(UL_EV_AOR_INSERT);
+static str ei_del_name = str_init(UL_EV_AOR_DELETE);
+static str ei_contact_ins_name = str_init(UL_EV_CT_INSERT);
+static str ei_contact_update_name = str_init(UL_EV_CT_UPDATE);
+static str ei_contact_del_name = str_init(UL_EV_CT_DELETE);
+static str ei_contact_refresh_name = str_init(UL_EV_CT_REFRESH);
+static str ei_contact_latency_update_name = str_init(UL_EV_LATENCY_UPDATE);
 
-static str ei_aor_name = str_init("aor");
-static str ei_c_uri_name = str_init("uri");
-static str ei_c_recv_name = str_init("received");
-static str ei_c_path_name = str_init("path");
-static str ei_c_qval_name = str_init("qval");
-static str ei_c_user_agent_name = str_init("user_agent");
-static str ei_c_socket_name = str_init("socket");
-static str ei_c_bflags_name = str_init("bflags");
-static str ei_c_expires_name = str_init("expires");
-static str ei_callid_name = str_init("callid");
-static str ei_cseq_name = str_init("cseq");
-static str ei_attr_name = str_init("attr");
-static str ei_latency_name = str_init("latency");
-static str ei_shtag_name = str_init("shtag");
+static str ei_aor_name = str_init(UL_EV_PARAM_AOR_URI);
+static str ei_c_uri_name = str_init(UL_EV_PARAM_CT_URI);
+static str ei_c_recv_name = str_init(UL_EV_PARAM_CT_RCV);
+static str ei_c_path_name = str_init(UL_EV_PARAM_CT_PATH);
+static str ei_c_qval_name = str_init(UL_EV_PARAM_CT_QVAL);
+static str ei_c_user_agent_name = str_init(UL_EV_PARAM_CT_UA);
+static str ei_c_socket_name = str_init(UL_EV_PARAM_CT_SOCK);
+static str ei_c_bflags_name = str_init(UL_EV_PARAM_CT_BFL);
+static str ei_c_expires_name = str_init(UL_EV_PARAM_CT_EXP);
+static str ei_c_callid_name = str_init(UL_EV_PARAM_CT_CLID);
+static str ei_c_cseq_name = str_init(UL_EV_PARAM_CT_CSEQ);
+static str ei_c_attr_name = str_init(UL_EV_PARAM_CT_ATTR);
+static str ei_c_latency_name = str_init(UL_EV_PARAM_CT_LTCY);
+static str ei_c_shtag_name = str_init(UL_EV_PARAM_CT_SHTAG);
 
 static evi_params_p ul_aor_event_params;
 static evi_params_p ul_contact_event_params;
@@ -202,31 +202,31 @@ int ul_event_init(void)
 	}
 
 	ul_c_callid_param = evi_param_create(ul_contact_event_params,
-		&ei_callid_name);
+		&ei_c_callid_name);
 	if (!ul_c_callid_param) {
 		LM_ERR("cannot create callid parameter\n");
 		return -1;
 	}
 
-	ul_c_cseq_param = evi_param_create(ul_contact_event_params, &ei_cseq_name);
+	ul_c_cseq_param = evi_param_create(ul_contact_event_params, &ei_c_cseq_name);
 	if (!ul_c_cseq_param) {
 		LM_ERR("cannot create cseq parameter\n");
 		return -1;
 	}
 
-	ul_c_attr_param = evi_param_create(ul_contact_event_params, &ei_attr_name);
+	ul_c_attr_param = evi_param_create(ul_contact_event_params, &ei_c_attr_name);
 	if (!ul_c_attr_param) {
 		LM_ERR("cannot create cseq parameter\n");
 		return -1;
 	}
 
-	ul_c_latency_param = evi_param_create(ul_contact_event_params, &ei_latency_name);
+	ul_c_latency_param = evi_param_create(ul_contact_event_params, &ei_c_latency_name);
 	if (!ul_c_latency_param) {
 		LM_ERR("cannot create latency parameter\n");
 		return -1;
 	}
 
-	ul_c_shtag_param = evi_param_create(ul_contact_event_params, &ei_shtag_name);
+	ul_c_shtag_param = evi_param_create(ul_contact_event_params, &ei_c_shtag_name);
 	if (!ul_c_shtag_param) {
 		LM_ERR("cannot create shtag parameter\n");
 		return -1;
