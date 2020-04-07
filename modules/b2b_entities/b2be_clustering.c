@@ -176,12 +176,13 @@ end:
 }
 
 void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
-	str *b2bl_param, bin_packet_t *storage)
+	str *b2bl_param, int event_type, bin_packet_t *storage)
 {
 	int rc;
 	bin_packet_t packet;
 	b2b_table htable = (etype == B2B_SERVER) ? server_htable : client_htable;
 	str storage_cnt_buf;
+	int pkt_type;
 
 	lock_get(&htable[hash_index].lock);
 
@@ -190,15 +191,29 @@ void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 		return;
 	}
 
-	if (bin_init(&packet, &entities_repl_cap,
-		b2bl_param ? REPL_ENTITY_PARAM_UPDATE : REPL_ENTITY_UPDATE,
-		B2BE_BIN_VERSION, 0) != 0) {
+	switch (event_type) {
+	case -1:
+		pkt_type = REPL_ENTITY_PARAM_UPDATE;
+		break;
+	case B2B_EVENT_ACK:
+		pkt_type = REPL_ENTITY_ACK;
+		break;
+	case B2B_EVENT_UPDATE:
+		pkt_type = REPL_ENTITY_UPDATE;
+		break;
+	default:
+		LM_ERR("Bad entity event %d\n", event_type);
+		lock_release(&htable[hash_index].lock);
+		return;
+	}
+
+	if (bin_init(&packet, &entities_repl_cap, pkt_type, B2BE_BIN_VERSION, 0) < 0) {
 		LM_ERR("Failed to init bin packet\n");
 		lock_release(&htable[hash_index].lock);
 		return;
 	}
 
-	if (b2bl_param) {  /* replicate only the b2bl param update */
+	if (pkt_type == REPL_ENTITY_PARAM_UPDATE) {  /* replicate only the b2bl param update */
 		bin_pack_entity_coords(&packet, dlg, etype);
 		bin_push_str(&packet, b2bl_param);
 	} else {
@@ -553,12 +568,13 @@ int receive_entity_update(bin_packet_t *packet)
 		return 0;
 	}
 
-	if (packet->type == REPL_ENTITY_UPDATE) {
+	if (packet->type != REPL_ENTITY_PARAM_UPDATE) {
 		unpack_update_fields(packet, dlg);
 
 		htable[hash_index].locked_by = process_no;
-		b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_UPDATE, packet,
-			B2BCB_BACKEND_CLUSTER);
+		b2b_run_cb(dlg, type, B2BCB_RECV_EVENT,
+			packet->type == REPL_ENTITY_UPDATE ? B2B_EVENT_UPDATE : B2B_EVENT_ACK,
+			packet, B2BCB_BACKEND_CLUSTER);
 		htable[hash_index].locked_by = -1;
 	} else {
 		rc = recv_b2bl_param_update(packet, dlg);
@@ -642,6 +658,7 @@ void b2be_recv_bin_packets(bin_packet_t *packet)
 			break;
 		case REPL_ENTITY_UPDATE:
 		case REPL_ENTITY_PARAM_UPDATE:
+		case REPL_ENTITY_ACK:
 			ensure_bin_version(pkt, B2BE_BIN_VERSION);
 
 			rc = receive_entity_update(pkt);

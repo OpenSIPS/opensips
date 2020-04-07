@@ -1135,6 +1135,7 @@ void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
 		case B2B_EVENT_CREATE:
 			media_exchange_event_create(msl, store);
 			break;
+		case B2B_EVENT_ACK:
 		case B2B_EVENT_UPDATE:
 			media_exchange_event_update(msl, store);
 			break;
@@ -1296,6 +1297,7 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 		case B2B_EVENT_CREATE:
 			media_exchange_event_received_create(dlg, leg, et, key, store);
 			break;
+		case B2B_EVENT_ACK:
 		case B2B_EVENT_UPDATE:
 			media_exchange_event_received_update(dlg, leg, store);
 			break;

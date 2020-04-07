@@ -44,7 +44,8 @@
 #define REPL_ENTITY_CREATE 1
 #define REPL_ENTITY_UPDATE 2
 #define REPL_ENTITY_PARAM_UPDATE 3
-#define REPL_ENTITY_DELETE 4
+#define REPL_ENTITY_ACK 4
+#define REPL_ENTITY_DELETE 5
 
 extern struct clusterer_binds cl_api;
 extern int b2be_cluster;
@@ -54,7 +55,7 @@ int b2be_init_clustering(void);
 void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 	bin_packet_t *storage);
 void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
-	str *b2bl_param, bin_packet_t *storage);
+	str *b2bl_param, int event_type, bin_packet_t *storage);
 void replicate_entity_delete(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 	bin_packet_t *storage);
 

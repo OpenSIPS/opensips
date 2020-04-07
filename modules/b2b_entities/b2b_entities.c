@@ -473,7 +473,7 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 		lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster && replicate)
-		replicate_entity_update(dlg, type, hash_index, param, NULL);
+		replicate_entity_update(dlg, type, hash_index, param, -1, NULL);
 
 	return 0;
 }

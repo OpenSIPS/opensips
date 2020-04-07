@@ -99,7 +99,8 @@ typedef struct b2b_rpl_data
 	b2b_dlginfo_t* dlginfo;
 }b2b_rpl_data_t;
 
-enum b2b_event_type {B2B_EVENT_CREATE, B2B_EVENT_UPDATE, B2B_EVENT_DELETE};
+enum b2b_event_type {B2B_EVENT_CREATE, B2B_EVENT_ACK, B2B_EVENT_UPDATE,
+	B2B_EVENT_DELETE};
 
 typedef void (*b2b_cb_t)(enum b2b_entity_type entity_type, str* entity_key,
 	str *param, enum b2b_event_type event_type, bin_packet_t *storage,

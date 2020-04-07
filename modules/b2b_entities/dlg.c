@@ -1086,7 +1086,7 @@ done:
 
 	if (B2BE_SERIALIZE_STORAGE()) {
 		if (etype != B2B_NONE && dlg_state == B2B_ESTABLISHED) {
-			b2b_ev = B2B_EVENT_UPDATE;
+			b2b_ev = B2B_EVENT_ACK;
 			lock_get(&table[hash_index].lock);
 
 			b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
@@ -1125,8 +1125,9 @@ done:
 		lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster) {
-		if (b2b_ev == B2B_EVENT_UPDATE)
-			replicate_entity_update(dlg, etype, hash_index, NULL, &storage);
+		if (b2b_ev == B2B_EVENT_ACK)
+			replicate_entity_update(dlg, etype, hash_index, NULL, B2B_EVENT_ACK,
+				&storage);
 		else if (b2b_ev == B2B_EVENT_DELETE)
 			replicate_entity_delete(dlg, etype, hash_index, &storage);
 	}
@@ -1591,7 +1592,8 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 			replicate_entity_create(dlg, et, hash_index, &storage);
 
 		if (b2b_ev == B2B_EVENT_UPDATE)
-			replicate_entity_update(dlg, et, hash_index, NULL, &storage);
+			replicate_entity_update(dlg, et, hash_index, NULL, B2B_EVENT_UPDATE,
+				&storage);
 	} else {
 		lock_release(&table[hash_index].lock);
 	}
@@ -2067,7 +2069,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 
 	if (B2BE_SERIALIZE_STORAGE()) {
 		if (dlg->state == B2B_ESTABLISHED && dlg->replicated) {
-			b2b_ev = B2B_EVENT_UPDATE;
+			b2b_ev = B2B_EVENT_ACK;
 			b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
 				serialize_backend);
 		} else if (dlg->state == B2B_TERMINATED) {
@@ -2085,8 +2087,9 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster) {
-		if (b2b_ev == B2B_EVENT_UPDATE)
-			replicate_entity_update(dlg, et, hash_index, NULL, &storage);
+		if (b2b_ev == B2B_EVENT_ACK)
+			replicate_entity_update(dlg, et, hash_index, NULL, B2B_EVENT_ACK,
+				&storage);
 		else if (b2b_ev == B2B_EVENT_DELETE)
 			replicate_entity_delete(dlg, et, hash_index, &storage);
 	}
@@ -3166,7 +3169,8 @@ b2b_route:
 
 	if (b2be_cluster) {
 		if (b2b_ev == B2B_EVENT_UPDATE)
-			replicate_entity_update(dlg, etype, hash_index, NULL, &storage);
+			replicate_entity_update(dlg, etype, hash_index, NULL,
+				B2B_EVENT_UPDATE, &storage);
 		if (b2b_ev == B2B_EVENT_CREATE)
 			replicate_entity_create(dlg, etype, hash_index, &storage);
 	}
