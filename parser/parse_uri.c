@@ -1669,18 +1669,3 @@ headers_check:
 	compare_uri_val(headers,strncasecmp);
 	return 0;
 }
-
-/* Unknown URI param index.
- *
- * Returns >= 0 on success, -1 on failure.
- */
-int get_uri_param_idx(const str *param, struct sip_uri *parsed_uri)
-{
-	int i;
-
-	for (i = 0; i < parsed_uri->u_params_no; i++)
-		if (str_match(&parsed_uri->u_name[i], param))
-			return i;
-
-	return -1;
-}

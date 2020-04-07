@@ -28,6 +28,7 @@
  */
 
 
+#include "../ut.h"
 #include "../str.h"
 #include "../net/trans.h"
 #include "../parser/msg_parser.h"
@@ -68,7 +69,8 @@ int parse_sip_msg_uri(struct sip_msg* msg);
 int parse_orig_ruri(struct sip_msg* msg);
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b);
-int get_uri_param_idx(const str *param, struct sip_uri *parsed_uri);
+static inline int get_uri_param_idx(const str *param,
+                                    const struct sip_uri *parsed_uri);
 
 char * uri_type2str(const uri_type type, char *result);
 int uri_typestrlen(const uri_type type);
@@ -98,6 +100,22 @@ static inline unsigned short get_uri_port(struct sip_uri* _uri,
 	if (_proto) *_proto = proto;
 
 	return port;
+}
+
+/* Unknown URI param index.
+ *
+ * Returns >= 0 on success, -1 on failure.
+ */
+static inline int get_uri_param_idx(const str *param,
+                                    const struct sip_uri *parsed_uri)
+{
+	int i;
+
+	for (i = 0; i < parsed_uri->u_params_no; i++)
+		if (str_match(&parsed_uri->u_name[i], param))
+			return i;
+
+	return -1;
 }
 
 #endif /* PARSE_URI_H */
