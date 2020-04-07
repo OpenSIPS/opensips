@@ -1206,6 +1206,71 @@ static int media_fork_resume(struct sip_msg *msg, int leg, int *medianum)
 	return ret;
 }
 
+static int media_session_exchange_negative_reply(struct sip_msg *msg, int status, void *param)
+{
+	struct media_session_leg *msl;
+	struct media_session_tm_param *p;
+	str sbody, *body;
+
+	if (status < 200) /* don't mind about provisional */
+		return 0;
+	msl = (struct media_session_leg *)param;
+	p = msl->params;
+	msl->params = NULL;
+
+	if (msg != FAKED_REPLY) {
+		if (get_body(msg, &sbody) < 0 || sbody.len == 0)
+			body = NULL;
+		else
+			body = &sbody;
+	} else {
+		status = 408;
+		body = NULL;
+	}
+	if (status < 300)
+		media_send_ok(p->t, msl->ms->dlg, p->leg, body);
+	else
+		media_send_fail(p->t, msl->ms->dlg, p->leg);
+	MSL_UNREF(msl);
+	media_session_tm_free(p);
+	return 1;
+}
+
+static void handle_media_session_negative(struct media_session_leg *msl)
+{
+	static str inv = str_init("INVITE");
+	struct media_session_tm_param *p = msl->params;
+	int dlg_leg;
+	str sbody, *body;
+
+	/* if it is a fork, there's nothing to do */
+	if (msl->type != MEDIA_SESSION_TYPE_EXCHANGE)
+		return;
+
+	/* if no transaction is hanging, we don't have anything to do */
+	if (!p)
+		return;
+
+	/* now we reinvite the other participant with the actual body, and wait
+	 * for the reply to relay it downstream */
+	dlg_leg = MEDIA_SESSION_DLG_LEG(msl);
+
+	/* we need to get the body from the request */
+	if (get_body(p->t->uas.request, &sbody) < 0 || sbody.len == 0)
+		body = NULL;
+	else
+		body = &sbody;
+	if (media_dlg.send_indialog_request(msl->ms->dlg,
+			&inv, dlg_leg, body, &content_type_sdp,
+			media_session_exchange_negative_reply, msl) < 0) {
+		LM_ERR("could not forward INVITE!\n");
+		media_send_fail(p->t, msl->ms->dlg, dlg_leg);
+		msl->params = NULL;
+		MSL_UNREF(msl);
+		media_session_tm_free(p);
+	}
+}
+
 static int handle_media_session_reply_exchange(struct media_session_leg *msl,
 		str *body, struct media_session_tm_param *p)
 {
@@ -1433,7 +1498,7 @@ terminate:
 	if (initial_state == MEDIA_SESSION_STATE_INIT) {
 		/* this is the initial leg, not a re-invite */
 		MEDIA_LEG_UNLOCK(msl);
-		media_session_req(msl, BYE, NULL);
+		handle_media_session_negative(msl);
 		MSL_UNREF(msl);
 	} else {
 		MEDIA_LEG_UNLOCK(msl);
