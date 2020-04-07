@@ -1359,6 +1359,11 @@ static void dlg_update_contact_req(struct cell* t, int type, struct tmcb_params 
 		return;
 	}
 
+	/* we only update the caller if branch index is 0, since all the other
+	   branches contain unfixed contact */
+	if (d_tmb.get_branch_index() != 0)
+		return;
+
 	dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
 }
 
