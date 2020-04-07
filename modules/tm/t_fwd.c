@@ -204,8 +204,10 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 	}
 
 	/* run the specific callbacks for this transaction */
+	_tm_branch_index = branch;
 	run_trans_callbacks( TMCB_REQUEST_FWDED, t, request, 0,
 			-request->REQ_METHOD);
+	_tm_branch_index = 0;
 
 	/* copy dst_uri into branch (after branch route possible updated it) */
 	if (request->dst_uri.len) {
