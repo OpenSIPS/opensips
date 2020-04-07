@@ -269,7 +269,7 @@ static int notify_on_event(struct sip_msg *msg, ebr_event* event, pv_spec_t *avp
 	/* we have a valid EBR event here, let's subscribe on it */
 	if (add_ebr_subscription( msg, event, avp_filter->pvp.pvn.u.isname.name.n,
 	    timeout ? *timeout : 0, route,
-	    EBR_SUBS_TYPE_NOTY ) <0 ) {
+	    EBR_SUBS_TYPE_NOTY|EBR_DATA_TYPE_ROUT ) <0 ) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 			event->event_id);
 		return -1;

@@ -31,6 +31,8 @@
 
 typedef struct _ebr_filter {
 	str key;
+	/* possibility to filter by SIP URI param value; use .s = NULL to ignore */
+	str uri_param_key;
 	str val;
 	struct _ebr_filter *next;
 } ebr_filter;
@@ -39,6 +41,8 @@ struct _ebr_event;
 
 #define EBR_SUBS_TYPE_WAIT  (1<<0)
 #define EBR_SUBS_TYPE_NOTY  (1<<1)
+#define EBR_DATA_TYPE_ROUT  (1<<2)
+#define EBR_DATA_TYPE_FUNC  (1<<3)
 
 typedef struct _ebr_subscription {
 	struct _ebr_event *event;
