@@ -25,8 +25,9 @@
 #include "../../evi/evi_transport.h"
 #include "../../evi/evi_modules.h"
 #include "../tm/tm_load.h"
-#include "ebr_data.h"
 
+#include "ebr_data.h"
+#include "api.h"
 
 
 /* module API */
@@ -49,6 +50,11 @@ static evi_reply_sock* ebr_parse(str socket);
 static int ebr_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static str ebr_print(evi_reply_sock *sock);
 
+void ebr_bind(ebr_api_t *api);
+ebr_event *get_ebr_event(const str *name);
+int api_notify_on_event(ebr_event *event, const ebr_filter *filters,
+                        ebr_pack_params_cb pack_params,
+                        ebr_notify_cb notify, int timeout);
 
 /* IPC type registered with the IPC layer */
 ipc_handler_type ebr_ipc_type;
@@ -72,6 +78,7 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, fix_notification_route, 0},
 		{CMD_PARAM_INT, 0 ,0}, {0,0,0}},
 		EVENT_ROUTE|REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
+	{"ebr_bind", (cmd_function)ebr_bind, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -186,6 +193,13 @@ static int mod_init(void)
 }
 
 
+void ebr_bind(ebr_api_t *api)
+{
+	api->get_ebr_event = get_ebr_event;
+	api->notify_on_event = api_notify_on_event;
+}
+
+
 static int cfg_validate(void)
 {
 	if ( ebr_tmb.t_gett==NULL && is_script_func_used("notify_on_event",-1)) {
@@ -198,27 +212,34 @@ static int cfg_validate(void)
 }
 
 
-/* Fixes an EBR event (given by name) by coverting to an internal
- * structure (if not already found)
- */
-int fix_event_name(void** param)
+ebr_event *get_ebr_event(const str *name)
 {
 	ebr_event *ev;
 
 	/* check if we have the ID in our list */
-	ev = search_ebr_event((str*)*param);
-
-	if (ev==NULL) {
+	if (!(ev = search_ebr_event(name))) {
 		/* add the new event into the list */
-		if ( (ev=add_ebr_event((str*)*param)) == NULL ) {
-			LM_ERR("failed to add event <%.*s>\n",
-				((str*)*param)->len, ((str*)*param)->s);
-			return -1;
+		if (!(ev = add_ebr_event(name))) {
+			LM_ERR("failed to add event <%.*s>\n", name->len, name->s);
+			return NULL;
 		}
 	}
 
-	*param = ev;
+	return ev;
+}
 
+
+/* Fix an EBR event (given by name) by converting to an internal structure */
+int fix_event_name(void** param)
+{
+	ebr_event *ev;
+
+	if (!(ev = get_ebr_event((str *)*param))) {
+		LM_ERR("failed to fix event name\n");
+		return -1;
+	}
+
+	*param = ev;
 	return 0;
 }
 
@@ -276,6 +297,24 @@ static int notify_on_event(struct sip_msg *msg, ebr_event* event, pv_spec_t *avp
 	}
 
 	return 1;
+}
+
+
+int api_notify_on_event(ebr_event *event, const ebr_filter *filters,
+                        ebr_pack_params_cb pack_params,
+                        ebr_notify_cb notify, int timeout)
+{
+	if (event->event_id == -1) {
+		/* do the init of the event*/
+		if (init_ebr_event(event)<0) {
+			LM_ERR("failed to init event\n");
+			return -1;
+		}
+	}
+
+	// TODO
+
+	return 0;
 }
 
 

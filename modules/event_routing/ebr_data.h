@@ -67,9 +67,9 @@ typedef struct _ebr_event {
 
 
 
-ebr_event * search_ebr_event( str *name );
+ebr_event * search_ebr_event( const str *name );
 
-ebr_event * add_ebr_event( str *name );
+ebr_event * add_ebr_event( const str *name );
 
 int init_ebr_event( ebr_event *ev );
 

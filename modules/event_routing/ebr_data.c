@@ -28,8 +28,9 @@
 #include "../../route.h"
 #include "../../evi/evi_modules.h"
 #include "../tm/tm_load.h"
-#include "ebr_data.h"
 
+#include "ebr_data.h"
+#include "api.h"
 
 /* structure holding all the needed data to be passed via IPC to 
  * the process that has to run the notification route */
@@ -59,7 +60,7 @@ static ebr_event *ebr_events = NULL;
 
 
 
-ebr_event* search_ebr_event( str *name )
+ebr_event* search_ebr_event( const str *name )
 {
 	ebr_event *ev;
 
@@ -71,7 +72,7 @@ ebr_event* search_ebr_event( str *name )
 	return NULL;
 }
 
-ebr_event* add_ebr_event( str *name )
+ebr_event* add_ebr_event( const str *name )
 {
 	ebr_event *ev;
 

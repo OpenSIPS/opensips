@@ -25,9 +25,10 @@
 
 #include "ebr_data.h"
 
+typedef struct usr_avp *(*ebr_pack_params_cb) (evi_params_t *params);
 typedef void (*ebr_notify_cb) (void);
 
-struct ebr_api {
+typedef struct ebr_api {
 	/**
 	 * get_ebr_event() - look up the ebr_event corresponding to the given @name
 	 *
@@ -53,9 +54,25 @@ struct ebr_api {
 	 * callback is invoked, so the user can perform some transactional-related
 	 * actions related to the event (for now, only tm.t_inject_branch())
 	 */
-	int (*notify_on_event) (const ebr_event *event, const ebr_filter *filters,
-	               struct usr_avp *(*pack_params_cb) (evi_params_t *params),
-	               void (*notify_cb) (void), int timeout);
-};
+	int (*notify_on_event) (ebr_event *event, const ebr_filter *filters,
+	                        ebr_pack_params_cb pack_params,
+	                        ebr_notify_cb notify, int timeout);
+} ebr_api_t;
+
+typedef int (*ebr_bind_f)(ebr_api_t *api);
+
+static inline int load_ebr_api(ebr_api_t *api)
+{
+	ebr_bind_f ebr_bind;
+
+	ebr_bind = (ebr_bind_f)find_export("ebr_bind", 0);
+	if (!ebr_bind) {
+		LM_ERR("failed to bind EBR API\n");
+		return -1;
+	}
+
+	ebr_bind(api);
+	return 0;
+}
 
 #endif /* __EBR_API_H__ */
