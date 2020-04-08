@@ -331,7 +331,7 @@ static int handle_media_fork_to_uri(struct media_session_leg *msl, struct socket
 	if (shm_str_dup(&msl->b2b_key, b2b_key) < 0) {
 		LM_ERR("could not copy b2b client key\n");
 		/* key is not yet stored, so cannot be deleted */
-		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1);
+		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1, 1);
 		goto release;
 	}
 	msl->params = mf;
@@ -531,7 +531,7 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 	if (shm_str_dup(&msl->b2b_key, b2b_key) < 0) {
 		LM_ERR("could not copy b2b server key for callid %.*s\n", callid->len, callid->s);
 		/* key is not yet stored, so cannot be deleted */
-		media_b2b.entity_delete(B2B_SERVER, b2b_key, NULL, 1);
+		media_b2b.entity_delete(B2B_SERVER, b2b_key, NULL, 1, 1);
 		goto destroy;
 	}
 	msl->b2b_entity = B2B_SERVER;
@@ -612,7 +612,7 @@ static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cel
 	if (shm_str_dup(&msl->b2b_key, b2b_key) < 0) {
 		LM_ERR("could not copy b2b client key\n");
 		/* key is not yet stored, so cannot be deleted */
-		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1);
+		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1, 1);
 		goto unref;
 	}
 	msl->b2b_entity = B2B_CLIENT;
@@ -804,7 +804,7 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 	if (shm_str_dup(&msl->b2b_key, b2b_key) < 0) {
 		LM_ERR("could not copy b2b server key for callid %.*s\n", callid->len, callid->s);
 		/* key is not yet stored, so cannot be deleted */
-		media_b2b.entity_delete(B2B_SERVER, b2b_key, NULL, 1);
+		media_b2b.entity_delete(B2B_SERVER, b2b_key, NULL, 1, 1);
 		goto destroy;
 	}
 	msl->b2b_entity = B2B_SERVER;

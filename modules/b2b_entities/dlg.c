@@ -1678,7 +1678,7 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 }
 
 void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
-		 b2b_dlginfo_t* dlginfo, int db_del)
+		 b2b_dlginfo_t* dlginfo, int db_del, int replicate)
 {
 	b2b_table table;
 	unsigned int hash_index, local_index;
@@ -1715,7 +1715,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	LM_DBG("Deleted dlg [%p]->[%.*s] with dlginfo [%p]\n",
 			dlg, b2b_key->len, b2b_key->s, dlginfo);
 
-	if (dlg->state != B2B_TERMINATED && B2BE_SERIALIZE_STORAGE()) {
+	if (dlg->state != B2B_TERMINATED && B2BE_SERIALIZE_STORAGE() && replicate) {
 		trig_ev = 1;
 		b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, B2B_EVENT_DELETE, &storage,
 			serialize_backend);

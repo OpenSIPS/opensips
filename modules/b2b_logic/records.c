@@ -382,7 +382,7 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head)
 {
 	unchain_ent(entity, head);
-	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 0);
+	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 0, 1);
 	LM_DBG("destroying dlginfo=[%p]\n", entity->dlginfo);
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
@@ -409,7 +409,7 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	{
 		LM_DBG("delete entity [%p]->[%.*s] from tuple [%.*s]\n",
 			entity, entity->key.len, entity->key.s, tuple->key->len, tuple->key->s);
-		b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 1);
+		b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 1, 1);
 	}
 	else
 	{
@@ -554,7 +554,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		if (e)
 		{
 			if (e->key.s && e->key.len && !not_del_b2be)
-				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0);
+				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0, 1);
 			if(e->dlginfo)
 				shm_free(e->dlginfo);
 			shm_free(e);
@@ -563,7 +563,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		if (e)
 		{
 			if (e->key.s && e->key.len && !not_del_b2be)
-				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0);
+				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0, 1);
 			if(e->dlginfo)
 				shm_free(e->dlginfo);
 			shm_free(e);

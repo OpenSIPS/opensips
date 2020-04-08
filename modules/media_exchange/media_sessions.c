@@ -73,7 +73,7 @@ void media_session_leg_free(struct media_session_leg *msl)
 				msl, msl->ms);
 	}
 	if (msl->b2b_key.s) {
-		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, NULL, 1);
+		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, NULL, 1, 1);
 		shm_free(msl->b2b_key.s);
 		msl->b2b_key.s = NULL;
 	}

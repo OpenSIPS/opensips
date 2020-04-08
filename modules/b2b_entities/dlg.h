@@ -169,7 +169,7 @@ str* b2b_key_copy_shm(str* b2b_key);
 void shm_free_param(void* param);
 
 void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
-	 b2b_dlginfo_t* dlginfo, int db_del);
+	 b2b_dlginfo_t* dlginfo, int db_del, int replicate);
 
 b2b_dlg_t* b2b_search_htable(b2b_table table,
 		unsigned int hash_index, unsigned int local_index);

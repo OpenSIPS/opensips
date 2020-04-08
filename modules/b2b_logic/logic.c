@@ -1293,7 +1293,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 									e->key.len, e->key.s);
 							}
 							b2b_api.entity_delete(e->type, &e->key,
-										e->dlginfo, 0);
+										e->dlginfo, 0, 1);
 							LM_DBG("destroying dlginfo=[%p]\n",
 									e->dlginfo);
 							if(e->dlginfo)
@@ -4285,7 +4285,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 
 		/* destroy the old_entity */
 		b2b_api.entity_delete(old_entity->type, &old_entity->key,
-			old_entity->dlginfo, 1);
+			old_entity->dlginfo, 1, 1);
 		if(old_entity->dlginfo)
 			shm_free(old_entity->dlginfo);
 		shm_free(old_entity);

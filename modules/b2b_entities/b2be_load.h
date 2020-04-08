@@ -120,7 +120,7 @@ typedef int (*b2b_send_request_t)(b2b_req_data_t*);
 typedef int (*b2b_send_reply_t)(b2b_rpl_data_t*);
 
 typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_key,
-	 b2b_dlginfo_t* dlginfo, int db_del);
+	 b2b_dlginfo_t* dlginfo, int db_del, int replicate);
 typedef void (*b2b_db_delete_t)(str param);
 
 typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
