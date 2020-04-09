@@ -85,6 +85,7 @@ typedef struct b2bl_tuple
 	str sdp;
 	str b1_sdp; /* used for multiple attempts to bridge the first entity */
 	int db_flag;
+	int repl_flag;  /* sent/received through entities replication */
 	b2bl_cback_f cbf;
 	unsigned int cb_mask;
 	void* cb_param;
@@ -94,6 +95,7 @@ typedef struct b2bl_entry
 {
 	b2bl_tuple_t* first;
 	gen_lock_t lock;
+	int locked_by;
 	int flags;
 }b2bl_entry_t;
 
@@ -112,13 +114,25 @@ typedef b2bl_entry_t* b2bl_table_t;
 	rpl_data.dlginfo =(entity)->dlginfo;	\
 }while(0)
 
+static inline int bridge_get_entityno(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity)
+{
+	int i;
+
+	/*check to which entity the reply belongs to */
+	for(i = 0; i< 3; i++)
+	{
+		if(tuple->bridge_entities[i]== entity)
+				return i;
+	}
+	return -1;
+}
 
 void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level);
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		unsigned int hash_index, b2b_scenario_t* scenario,
 		str* args[], str* body, str* custom_hdrs, int local_index,
-		str** b2bl_key_s, int db_flag);
+		str** b2bl_key_s, int db_flag, int repl_flag);
 
 str* b2bl_generate_key(unsigned int hash_index, unsigned int local_index);
 
@@ -129,7 +143,7 @@ b2bl_tuple_t* b2bl_search_tuple_safe(unsigned int hash_index,
 		unsigned int local_index);
 
 void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
-		int not_del_b2be);
+		int db_del, int del_entities);
 
 int init_b2bl_htable(void);
 
@@ -145,14 +159,19 @@ b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_
 		str* to_uri,str* from_uri,str* from_dname,str* ssid,str* hdrs,struct sip_msg* msg);
 
 void unchain_ent(b2bl_entity_id_t *ent, b2bl_entity_id_t **head);
-void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head);
+void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head,
+	unsigned int hash_index);
 int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
-void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
+void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple,
+	unsigned int hash_index, int b2be_del1);
 
 int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str* extra_headers);
 
 int b2bl_add_client(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
 int b2bl_add_server(b2bl_tuple_t* tuple, b2bl_entity_id_t* entity);
+
+b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src,
+	b2bl_entity_id_t*** head);
 
 void b2bl_db_delete(b2bl_tuple_t* tuple);
 

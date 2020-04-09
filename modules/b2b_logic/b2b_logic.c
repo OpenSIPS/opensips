@@ -41,12 +41,14 @@
 #include "../../trim.h"
 #include "../../mem/mem.h"
 #include "../../timer.h"
+#include "../../pt.h"
 
 #include "records.h"
 #include "pidf.h"
 #include "b2b_logic.h"
 #include "b2b_load.h"
 #include "b2bl_db.h"
+#include "b2bl_clustering.h"
 
 #define TABLE_VERSION 3
 
@@ -129,6 +131,8 @@ str init_callid_hdr={0, 0};
 str server_address = {0, 0};
 int b2bl_db_mode = WRITE_BACK;
 int unsigned b2bl_th_init_timeout = 60;
+
+str b2bl_mod_name = str_init("b2b_logic");
 
 static cmd_export_t cmds[]=
 {
@@ -469,6 +473,17 @@ next_hdr:
 		register_timer("b2bl-dbupdate", b2bl_db_timer_update, 0,
 			b2b_update_period, TIMER_FLAG_SKIP_ON_DELAY);
 
+	if (b2b_api.register_cb(entity_event_trigger,
+		B2BCB_TRIGGER_EVENT, &b2bl_mod_name) < 0) {
+		LM_ERR("could not register entity event trigger callback!\n");
+		return -1;
+	}
+	if (b2b_api.register_cb(entity_event_received,
+		B2BCB_RECV_EVENT, &b2bl_mod_name) < 0) {
+		LM_ERR("could not register entity event received callback!\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -505,17 +520,21 @@ void b2bl_clean(unsigned int ticks, void* param)
 						memset(&req_data, 0, sizeof(b2b_req_data_t));
 						PREP_REQ_DATA(tuple->bridge_entities[0]);
 						req_data.method =&bye;
+						b2bl_htable[i].locked_by = process_no;
 						b2b_api.send_request(&req_data);
+						b2bl_htable[i].locked_by = -1;
 					}
 					if(!tuple->bridge_entities[1]->disconnected)
 					{
 						memset(&req_data, 0, sizeof(b2b_req_data_t));
 						PREP_REQ_DATA(tuple->bridge_entities[1]);
 						req_data.method =&bye;
+						b2bl_htable[i].locked_by = process_no;
 						b2b_api.send_request(&req_data);
+						b2bl_htable[i].locked_by = -1;
 					}
 				}
-				b2bl_delete(tuple, i, 0);
+				b2bl_delete(tuple, i, 1, tuple->repl_flag != TUPLE_REPL_RECV);
 			}
 			tuple = tuple_next;
 		}
@@ -1073,7 +1092,7 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 
 	/* apply the init part of the scenario */
 	tuple = b2bl_insert_new(NULL, hash_index, scenario_struct, args,
-				NULL, NULL, -1, &b2bl_key, INSERTDB_FLAG);
+				NULL, NULL, -1, &b2bl_key, INSERTDB_FLAG, TUPLE_NO_REPL);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -1308,7 +1327,9 @@ static mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		PREP_REQ_DATA(old_entity);
 		req_data.method =&meth_bye;
+		b2bl_htable[hash_index].locked_by = process_no;
 		b2b_api.send_request(&req_data);
+		b2bl_htable[hash_index].locked_by = -1;
 	}
 
 	if (0 == b2bl_drop_entity(old_entity, tuple))

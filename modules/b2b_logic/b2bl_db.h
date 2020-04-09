@@ -29,6 +29,11 @@
 
 #include "records.h"
 
+#define UPDATE_DBFLAG(dlg) do{ \
+	if(dlg->db_flag==NO_UPDATEDB_FLAG) \
+		dlg->db_flag = UPDATEDB_FLAG; \
+}while(0)
+
 void b2b_logic_dump(int no_lock);
 int b2b_logic_restore(void);
 void b2bl_db_insert(b2bl_tuple_t* tuple);

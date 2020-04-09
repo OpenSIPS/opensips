@@ -30,6 +30,7 @@
 #include "../../db/db.h"
 #include "b2b_logic.h"
 #include "b2bl_db.h"
+#include "b2bl_clustering.h"
 
 #define B2BL_FETCH_SIZE  128
 static str str_key_col         = str_init("si_key");
@@ -281,7 +282,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 	}
 	shm_tuple = b2bl_insert_new(NULL, hash_index, tuple->scenario, params,
 			(tuple->sdp.s?&tuple->sdp:NULL), NULL, local_index,
-			&b2bl_key, UPDATEDB_FLAG);
+			&b2bl_key, UPDATEDB_FLAG, TUPLE_NO_REPL);
 	if(shm_tuple == NULL)
 	{
 		LM_ERR("Failed to insert new tuple\n");
