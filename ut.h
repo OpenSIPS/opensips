@@ -939,6 +939,15 @@ static inline int str_match(const str *a, const str *b)
 
 
 /*
+ * test if two str's are equal, case-insensitive
+ */
+static inline int str_casematch(const str *a, const str *b)
+{
+	return a->len == b->len && !strncasecmp(a->s, b->s, a->len);
+}
+
+
+/*
  * compare two str's
  */
 static inline int str_strcmp(const str *stra, const str *strb)

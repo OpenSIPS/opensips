@@ -343,6 +343,74 @@ static struct usr_avp *pack_evi_params_as_avp_list(evi_params_t *params)
 }
 
 
+/* Return: 1 on successful match, 0 otherwise */
+static inline int ebr_filter_match_evp(const ebr_filter *filter,
+                                       const evi_param_t *e_param)
+{
+	char *s;
+	str match_str;
+	struct sip_uri puri;
+	int i;
+
+	/* a "no value" matches anything */
+	if (filter->val.len == 0)
+		return 1;
+
+	/* do we have to perform an URI param value matching? */
+	if (filter->uri_param_key.s) {
+		if (!(e_param->flags & EVI_STR_VAL))
+			return 0;
+
+		if (parse_uri(e_param->val.s.s, e_param->val.s.len, &puri) != 0) {
+			LM_ERR("failed to parse URI: '%.*s'\n",
+			       e_param->val.s.len, e_param->val.s.s);
+			return 0;
+		}
+
+		i = get_uri_param_idx(&filter->uri_param_key, &puri);
+		if (i < 0)
+			return 0;
+
+		match_str = puri.u_val[i];
+	} else if (e_param->flags & EVI_STR_VAL) {
+		match_str = e_param->val.s;
+	}
+
+	if (e_param->flags&EVI_INT_VAL) {
+		s=int2str((unsigned long)e_param->val.n, NULL);
+		if (s==NULL) {
+			LM_ERR("failed to covert int EVI param to "
+				"string, EBR filter failed\n");
+			return 0;
+		} else {
+			/* the output of int2str is NULL terminated */
+			if (fnmatch( filter->val.s, s, 0)!=0)
+				return 0;
+		}
+
+	} else if (e_param->flags&EVI_STR_VAL) {
+		s=(char*)pkg_malloc(match_str.len + 1);
+		if (s==NULL) {
+			LM_ERR("failed to allocate PKG fnmatch "
+				"buffer, EBR filter failed\n");
+			return 0;
+		} else {
+			memcpy(s, match_str.s, match_str.len);
+			s[match_str.len] = 0;
+			i = fnmatch( filter->val.s, s, 0);
+			pkg_free(s);
+			if (i != 0)
+				return 0;
+		}
+	} else {
+		LM_ERR("non-string EVI params are not supported yet\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+
 int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 {
 	ebr_subscription *sub, *sub_next, *sub_prev;
@@ -350,7 +418,6 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 	ebr_ipc_job *job;
 	evi_param_t *e_param;
 	int matches;
-	char *s;
 	struct usr_avp *avps=(void*)-1;
 	unsigned int my_time;
 
@@ -392,56 +459,19 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 
 			/* look for the evi param with the same name */
 			for ( e_param=params->first ; e_param ; e_param=e_param->next ) {
+				if (str_casematch(&e_param->name, &filter->key)) {
+					LM_DBG("key <%.*s> found, checking value\n",
+					       filter->key.len, filter->key.s);
 
-				if (e_param->name.len==filter->key.len &&
-				strncasecmp(e_param->name.s,filter->key.s,filter->key.len)==0){
+					if (!ebr_filter_match_evp(filter, e_param))
+						matches = 0;
 
-					/* name matches, let's see the value */
-					LM_DBG("key <%.*s> found, checking value \n",
-						filter->key.len, filter->key.s);
-
-					if (filter->val.len==0) {
-						/* a "no value" matches anything */
-					} else {
-						if (e_param->flags&EVI_INT_VAL) {
-							s=int2str((unsigned long)e_param->val.n, NULL);
-							if (s==NULL) {
-								LM_ERR("failed to covert int EVI param to "
-									"string, EBR filter failed\n");
-								matches = 0;
-							} else {
-								/* the output of int2str is NULL terminated */
-								if (fnmatch( filter->val.s, s, 0)!=0)
-									matches = 0;
-							}
-						} else
-						if (e_param->flags&EVI_STR_VAL) {
-							s=(char*)pkg_malloc(e_param->val.s.len+1);
-							if (s==NULL) {
-								LM_ERR("failed to allocate PKG fnmatch "
-									"buffer, EBR filter failed\n");
-								matches = 0;
-							} else {
-								memcpy(s,e_param->val.s.s,e_param->val.s.len);
-								s[e_param->val.s.len] = 0;
-								if (fnmatch( filter->val.s, s, 0)!=0)
-									matches = 0;
-								pkg_free(s);
-							}
-						} else {
-							LM_ERR("non-string EVI params are not supported "
-								"yet\n");
-							matches = 0;
-						}
-					}
 					break;
-
 				}
-				/* a filter not matching any EVI params is simply ignored */
+			}
 
-			} /* end EVI param iterator */
-
-		} /* end EBR filter iterator */
+			/* a filter not matching any EVI params is simply ignored */
+		}
 
 		/* did the EVI event match the EBR filters for this subscription ? */
 		if (matches) {
@@ -541,9 +571,13 @@ void handle_ebr_ipc(int sender, void *payload)
 		if (ebr_tmb.t_set_remote_t && job->tm.hash!=0 && job->tm.label!=0 )
 			ebr_tmb.t_set_remote_t( &job->tm );
 
-		/* route the notification route */
-		set_route_type( REQUEST_ROUTE );
-		run_top_route( sroutes->request[(int)(long)job->data].a, &req);
+		if (job->flags & EBR_DATA_TYPE_FUNC) {
+			((ebr_notify_cb)job->data)();
+		} else {
+			/* run the notification route */
+			set_route_type( REQUEST_ROUTE );
+			run_top_route( sroutes->request[(int)(long)job->data].a, &req);
+		}
 
 		if (ebr_tmb.t_set_remote_t)
 			ebr_tmb.t_set_remote_t( NULL );
