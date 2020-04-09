@@ -171,7 +171,48 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 	return ret;
 }
 
+int run_top_route_get_code(struct action*a, struct sip_msg *msg, int *code_ret)
+{
+	int bk_action_flags;
+	int bk_rec_lev;
+	int ret, cret;
+	context_p ctx = NULL;
 
+	bk_action_flags = action_flags;
+	bk_rec_lev = rec_lev;
+
+	action_flags = 0;
+	rec_lev = 0;
+	init_err_info();
+
+	if (current_processing_ctx==NULL) {
+		if ( (ctx=context_alloc(CONTEXT_GLOBAL))==NULL) {
+			LM_ERR("failed to allocated new global context\n");
+			return -1;
+		}
+		memset( ctx, 0, context_size(CONTEXT_GLOBAL));
+		current_processing_ctx = ctx;
+	}
+
+	cret = run_actions(a, msg);
+	if (code_ret)
+		*code_ret = cret;
+
+	ret = action_flags;
+
+	action_flags = bk_action_flags;
+	rec_lev = bk_rec_lev;
+	/* reset script tracing */
+	use_script_trace = 0;
+
+	if (ctx && current_processing_ctx) {
+		context_destroy(CONTEXT_GLOBAL, ctx);
+		context_free(ctx);
+		current_processing_ctx = NULL;
+	}
+
+	return ret;
+}
 
 int run_top_route(struct action* a, struct sip_msg* msg)
 {

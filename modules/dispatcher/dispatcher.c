@@ -60,6 +60,7 @@
 /** parameters */
 static str pvar_algo_param = str_init("");
 str hash_pvar_param = {NULL, 0};
+str algo_route_param = {NULL, 0};
 
 pv_elem_t * hash_param_model = NULL;
 
@@ -88,6 +89,7 @@ typedef struct _ds_db_head
 	str cnt_avp;
 	str sock_avp;
 	str attrs_avp;
+	str script_attrs_avp;
 
 	struct _ds_db_head *next;
 } ds_db_head_t;
@@ -99,6 +101,7 @@ ds_db_head_t default_db_head = {
 	{NULL, 0},
 
 
+	{NULL, 0},
 	{NULL, 0},
 	{NULL, 0},
 	{NULL, 0},
@@ -165,6 +168,10 @@ static int w_ds_count(struct sip_msg* msg, int *set, void *filter,
 						pv_spec_t *res_pv, void *part);
 static int w_ds_is_in_list(struct sip_msg *msg, str *ip, int *port,
                            int *set, void *part, int *active_only);
+static int w_ds_push_script_attrs(struct sip_msg *msg, str* script_attrs,
+			str *ip, int *port,int *set,void *part);
+static int w_ds_get_script_attrs(struct sip_msg *msg, str *uri, int* set,
+			void *part, pv_spec_t *res_pv );
 
 static void destroy(void);
 
@@ -177,6 +184,10 @@ mi_response_t *w_ds_mi_list_1(const mi_params_t *params,
 mi_response_t *ds_mi_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *ds_mi_reload_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *ds_mi_push_script_attrs(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *ds_mi_push_script_attrs_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static int mi_child_init(void);
 
@@ -233,7 +244,21 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
 			{0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-
+	{"ds_push_script_attrs",    (cmd_function)w_ds_push_script_attrs, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_INT, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
+			{0, 0, 0}},
+		ALL_ROUTES},
+	{"ds_get_script_attrs",    (cmd_function)w_ds_get_script_attrs, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_INT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
+		{CMD_PARAM_VAR, 0, 0},
+			{0, 0, 0}},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -255,6 +280,8 @@ static param_export_t params[]={
 	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},
 	{"sock_avp",        STR_PARAM, &default_db_head.sock_avp.s},
 	{"attrs_avp",       STR_PARAM, &default_db_head.attrs_avp.s},
+	{"script_attrs_avp",       STR_PARAM, &default_db_head.script_attrs_avp.s},
+	{"algo_route",      STR_PARAM, &algo_route_param.s},
 	{"hash_pvar",       STR_PARAM, &hash_pvar_param.s},
 	{"setid_pvar",      STR_PARAM, &ds_setid_pvname.s},
 	{"pvar_algo_pattern",     STR_PARAM, &pvar_algo_param.s},
@@ -309,6 +336,11 @@ static mi_export_t mi_cmds[] = {
 		{ds_mi_reload_1, {"partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
+	{ "ds_push_script_attrs", 0, 0, 0, {
+		{ds_mi_push_script_attrs, {"attrs", "ip", "port", "set", 0}},
+		{ds_mi_push_script_attrs_1, {"attrs", "ip", "port", "set", "partition", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
 	{EMPTY_MI_EXPORT}
 };
 
@@ -357,6 +389,7 @@ DEF_GETTER_FUNC(grp_avp);
 DEF_GETTER_FUNC(cnt_avp);
 DEF_GETTER_FUNC(sock_avp);
 DEF_GETTER_FUNC(attrs_avp);
+DEF_GETTER_FUNC(script_attrs_avp);
 
 static partition_specific_param_t partition_params[] = {
 	{str_init("db_url"), {NULL, 0}, GETTER_FUNC(db_url)},
@@ -366,6 +399,7 @@ static partition_specific_param_t partition_params[] = {
 	PARTITION_SPECIFIC_PARAM (cnt_avp, "$avp(ds_cnt_failover)"),
 	PARTITION_SPECIFIC_PARAM (sock_avp, "$avp(ds_sock_failover)"),
 	PARTITION_SPECIFIC_PARAM (attrs_avp, ""),
+	PARTITION_SPECIFIC_PARAM (script_attrs_avp, ""),
 };
 
 static const unsigned int partition_param_count = sizeof (partition_params) /
@@ -647,6 +681,25 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 		partition->attrs_avp_type = 0;
 	}
 
+	if (db_head->script_attrs_avp.s && db_head->script_attrs_avp.len > 0) {
+		if (pv_parse_spec(&db_head->script_attrs_avp, &avp_spec)==0
+		|| avp_spec.type!=PVT_AVP) {
+			LM_ERR("malformed or non AVP %.*s SCRIPT AVP definition\n",
+					db_head->script_attrs_avp.len, db_head->script_attrs_avp.s);
+			return -1;
+		}
+
+		if (pv_get_avp_name(0, &(avp_spec.pvp), &partition->script_attrs_avp_name,
+		&partition->script_attrs_avp_type)!=0){
+			LM_ERR("[%.*s]- invalid SCRIPT AVP definition\n", db_head->script_attrs_avp.len,
+					db_head->script_attrs_avp.s);
+			return -1;
+		}
+	} else {
+		partition->script_attrs_avp_name = -1;
+		partition->script_attrs_avp_type = 0;
+	}
+
 	return 0;
 }
 
@@ -778,7 +831,7 @@ static int mod_init(void)
 	pvar_algo_param.len = strlen(pvar_algo_param.s);
 	if (pvar_algo_param.len)
 		ds_pvar_parse_pattern(pvar_algo_param);
-
+	algo_route_param.len = strlen(algo_route_param.s);
 
 	if (init_ds_bls()!=0) {
 		LM_ERR("failed to init DS blacklists\n");
@@ -1335,3 +1388,127 @@ int check_options_rplcode(int code)
 }
 
 
+static int w_ds_push_script_attrs(struct sip_msg *msg, str* script_attrs,
+			str *ip, int *port,int *set, void *part)
+{
+	ds_partition_t *partition = default_partition;
+
+	if (part)
+		partition = (ds_partition_t *)part;
+
+	if (partition == NULL) {
+		LM_ERR ("unknown partition\n");
+		return -1;
+	}
+
+	return ds_push_script_attrs(msg,script_attrs,ip,*port,set ? *set : -1,partition);
+}
+
+static int w_ds_get_script_attrs(struct sip_msg *msg, str *uri, int* set,
+			void *part, pv_spec_t *res_pv )
+{
+	ds_partition_t *partition = default_partition;
+
+	if (part)
+		partition = (ds_partition_t *)part;
+
+	if (partition == NULL) {
+		LM_ERR ("unknown partition\n");
+		return -1;
+	}
+
+	return ds_get_script_attrs(msg,uri,set ? *set : -1,partition,res_pv);
+}
+
+mi_response_t *ds_mi_push_script_attrs(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str attrs, ip;
+	int ret, set, port;
+	ds_partition_t *partition;
+
+	if (get_mi_string_param(params, "attrs", &attrs.s, &attrs.len) < 0)
+		return init_mi_param_error();
+
+	if(attrs.len<=0 || !attrs.s) {
+		LM_ERR("bad attrs value\n");
+		return init_mi_error( 500, MI_SSTR("Bad attrs value") );
+	}
+
+	if (get_mi_string_param(params, "ip", &ip.s, &ip.len) < 0)
+		return init_mi_param_error();
+
+	if(ip.s == NULL) {
+		return init_mi_error(500, MI_SSTR("ip not found"));
+	}
+
+	if (get_mi_int_param(params, "port", &port) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_int_param(params, "set", &set) < 0)
+		return init_mi_param_error();
+
+	partition = default_partition;
+	if (partition == NULL) {
+		return init_mi_error(404, MI_SSTR(MI_UNK_PARTITION) );
+	}
+
+	ret =  ds_push_script_attrs(NULL,&attrs,&ip,port,set,partition);
+
+	if(ret<0)
+		return init_mi_error(404, MI_SSTR("destination not found"));
+
+	return init_mi_result_ok();
+}
+
+mi_response_t *ds_mi_push_script_attrs_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str attrs, ip,p_name;
+	int ret, set, port;
+	ds_partition_t *partition, *it;
+
+	if (get_mi_string_param(params, "attrs", &attrs.s, &attrs.len) < 0)
+		return init_mi_param_error();
+
+	if(attrs.len<=0 || !attrs.s) {
+		LM_ERR("bad attrs value\n");
+		return init_mi_error( 500, MI_SSTR("Bad attrs value") );
+	}
+
+	if (get_mi_string_param(params, "ip", &ip.s, &ip.len) < 0)
+		return init_mi_param_error();
+
+	if(ip.s == NULL) {
+		return init_mi_error(500, MI_SSTR("ip not found"));
+	}
+
+	if (get_mi_int_param(params, "port", &port) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_int_param(params, "set", &set) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "partition", &p_name.s, &p_name.len) < 0)
+		return init_mi_param_error();
+	
+	if (p_name.s == NULL) {
+		partition = default_partition;
+	} else {
+		partition = NULL;
+		for (it = partitions; it; it = it->next)
+			if (!str_strcmp(&it->name, &p_name))
+				partition = it;
+	}
+
+	if (partition == NULL) {
+		return init_mi_error(404, MI_SSTR(MI_UNK_PARTITION) );
+	}
+
+	ret =  ds_push_script_attrs(NULL,&attrs,&ip,port,set,partition);
+
+	if(ret<0)
+		return init_mi_error(404, MI_SSTR("destination not found"));
+
+	return init_mi_result_ok();
+}

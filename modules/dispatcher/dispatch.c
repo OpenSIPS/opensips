@@ -118,6 +118,8 @@ static void ds_destroy_data_set( ds_data_t *d)
 					shm_free(dest->param);
 				if (dest->fs_sock)
 					fs_api.put_stats_evs(dest->fs_sock, &ds_str);
+				if (dest->script_attrs.s)
+					shm_free(dest->script_attrs.s);
 				dest = dest->next;
 			}while(dest);
 			shm_free(sp_curr->dlist);
@@ -613,6 +615,136 @@ int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set,
 	return cnt;
 }
 
+int ds_route_param_get(struct sip_msg *msg, pv_param_t *ip,
+		pv_value_t *res, void *params, void *extra)
+{
+	pv_value_t tv;
+	ds_dest_p entry = (ds_dest_p)params;
+	
+	if(ip->pvn.type==PV_NAME_INTSTR) {
+		if (ip->pvn.u.isname.type != 0) {
+			tv.rs =  ip->pvn.u.isname.name.s;
+			tv.flags = PV_VAL_STR;
+		} else {
+			tv.ri = ip->pvn.u.isname.name.n;
+			tv.flags = PV_VAL_INT|PV_TYPE_INT;
+		}
+	} else {
+		/* pvar -> it might be another $param variable! */
+		if(pv_get_spec_value(msg, (pv_spec_p)(ip->pvn.u.dname), &tv)!=0) {
+			LM_ERR("cannot get spec value\n");
+			return -1;
+		}
+
+		if(tv.flags&PV_VAL_NULL || tv.flags&PV_VAL_EMPTY) {
+			LM_ERR("null or empty name\n");
+			return -1;
+		}
+	}
+
+	res->flags = PV_VAL_STR;
+	/* search for the param we want top add, based on index */
+	if (tv.flags & PV_VAL_INT) {
+		if (tv.ri == 1) {
+			res->rs.s = entry->dst_uri.s; 
+			res->rs.len = entry->dst_uri.len;
+		} else if (tv.ri == 2) {
+			if (entry->attrs.s) {
+				res->rs.s = entry->attrs.s; 
+				res->rs.len = entry->attrs.len;
+			} else
+				return pv_get_null(msg, ip, res);
+		} else if (tv.ri == 3) {
+			if (entry->script_attrs.s) {
+				res->rs.s = entry->script_attrs.s; 
+				res->rs.len = entry->script_attrs.len;
+			} else
+				return pv_get_null(msg, ip, res);
+		} else
+			return pv_get_null(msg, ip, res);
+	} else {
+		if (tv.rs.len == 7 && 
+		memcmp(tv.rs.s,"dst_uri",7) == 0) {
+			res->rs.s = entry->dst_uri.s; 
+			res->rs.len = entry->dst_uri.len;
+		} else if (tv.rs.len == 5 && 
+		memcmp(tv.rs.s,"attrs",5) == 0) {
+			res->rs.s = entry->attrs.s; 
+			res->rs.len = entry->attrs.len;
+		} else if (tv.rs.len == 12 && 
+		memcmp(tv.rs.s,"script_attrs",12) == 0) {
+			res->rs.s = entry->script_attrs.s; 
+			res->rs.len = entry->script_attrs.len;
+		} else 
+			return pv_get_null(msg, ip, res);
+	}
+
+	return 0;
+}
+
+int run_route_algo(struct sip_msg *msg, int rt_idx,ds_dest_p entry)
+{
+	int fret;
+
+	route_params_push_level(entry, NULL, ds_route_param_get);
+	run_top_route_get_code(sroutes->request[rt_idx].a, msg, &fret);
+	route_params_pop_level();
+
+	return fret;
+}
+
+int ds_route_algo(struct sip_msg *msg, ds_set_p set, 
+		ds_dest_p **sorted_set,	int ds_use_default)
+{
+	int i, j, k, end_idx, cnt, rt_idx, fret;
+	ds_dest_p *sset;
+
+	if (!set) {
+		LM_ERR("invalid set\n");
+		return -1;
+	}
+
+	if ((rt_idx = get_script_route_ID_by_name(algo_route_param.s,
+	sroutes->request, RT_NO)) == -1) {
+		LM_ERR("Invalid route parameter \n");
+		return -1;
+	}
+
+	sset = shm_realloc(*sorted_set, set->nr * sizeof(ds_dest_p));
+	if (!sset) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+	*sorted_set = sset;
+
+	end_idx = set->nr - 1;
+	if (ds_use_default) {
+		sset[end_idx] = &set->dlist[end_idx];
+		end_idx--;
+	}
+
+	for (i = 0, cnt = 0; i < set->nr - (ds_use_default?1:0); i++) {
+		if ( !dst_is_active(set->dlist[i]) ) {
+			/* move to the end of the list */
+			sset[end_idx--] = &set->dlist[i];
+			continue;
+		}
+
+		fret = run_route_algo(msg, rt_idx, &set->dlist[i]);
+		set->dlist[i].route_algo_value = fret;
+
+		/* search the proper position */
+		j = 0;
+		for (; j < cnt && sset[j]->route_algo_value <= fret; j++);
+		/* make space for the new entry */
+		for (k = cnt; k > j; k--)
+			sset[k] = sset[k - 1];
+		sset[j] = &set->dlist[i];
+		cnt++;
+	}
+
+	return cnt;
+}
 
 int ds_connect_db(ds_partition_t *partition)
 {
@@ -1444,6 +1576,15 @@ static inline int push_ds_2_avps( ds_dest_t *ds, ds_partition_t *partition )
 			return -1;
 		}
 	}
+
+	if (partition->script_attrs_avp_name >= 0) {
+		avp_val.s = ds->script_attrs;
+		if(add_avp(AVP_VAL_STR| partition->script_attrs_avp_type,
+		partition->script_attrs_avp_name, avp_val)!=0) {
+			LM_ERR("failed to add Script ATTR avp\n");
+			return -1;
+		}
+	}
 	return 0;
 }
 
@@ -1602,6 +1743,19 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 				goto error;
 			}
 			selected = sorted_set[0];
+			ds_id = 0;
+		case 10:
+			if (algo_route_param.s == NULL || algo_route_param.len == 0) {
+				LM_ERR("No hash_route param provided \n");
+				goto error;
+			}
+			if (ds_route_algo(msg, idx, &sorted_set, ds_flags&DS_USE_DEFAULT)
+			<= 0) {
+				LM_ERR("can't route \n");
+				goto error;
+			}	
+			selected = sorted_set[0];
+			ds_id = 0;
 		break;
 		default:
 			LM_WARN("dispatching via [%d] with unknown algo [%d]"
@@ -1748,7 +1902,10 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 		destroy_avps(0/*all types*/,ds_select_ctl->partition->sock_avp_name,1);
 		if (ds_select_ctl->partition->attrs_avp_name>0)
 			destroy_avps( 0 /*all types*/,
-					ds_select_ctl->partition->attrs_avp_name, 1 /*all*/);
+			ds_select_ctl->partition->attrs_avp_name, 1 /*all*/);
+		if (ds_select_ctl->partition->script_attrs_avp_name>0)
+			destroy_avps( 0 /*all types*/,
+			ds_select_ctl->partition->script_attrs_avp_name, 1 /*all*/);
 	}
 
 	if((ds_flags&DS_USE_DEFAULT) && ds_id!=idx->nr-1)
@@ -1770,7 +1927,9 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 
 	for(i_unwrapped = ds_id-1+idx->nr; i_unwrapped>ds_id; i_unwrapped--) {
 		i = i_unwrapped % idx->nr;
-		dest = (ds_select_ctl->alg == 9 ? sorted_set[i] : &idx->dlist[i]);
+		dest = ((ds_select_ctl->alg == 9 || ds_select_ctl->alg == 10) ? 
+			sorted_set[i] : 
+			&idx->dlist[i]);
 
 		if ( !dst_is_active(*dest) ||
 		((ds_flags&DS_USE_DEFAULT) && i==(idx->nr-1)) )
@@ -1801,7 +1960,14 @@ done:
 	if (ds_select_ctl->partition->attrs_avp_name>0) {
 		avp_val.s = selected->attrs;
 		if(add_avp(AVP_VAL_STR | ds_select_ctl->partition->attrs_avp_type,
-					ds_select_ctl->partition->attrs_avp_name,avp_val)!=0)
+		ds_select_ctl->partition->attrs_avp_name,avp_val)!=0)
+			goto error;
+	}
+
+	if (ds_select_ctl->partition->script_attrs_avp_name>0) {
+		avp_val.s = selected->script_attrs;
+		if(add_avp(AVP_VAL_STR | ds_select_ctl->partition->script_attrs_avp_type,
+		ds_select_ctl->partition->script_attrs_avp_name,avp_val)!=0)
 			goto error;
 	}
 
@@ -1848,6 +2014,12 @@ int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	if (partition->attrs_avp_name >= 0) {
 		attr_avp = search_first_avp(partition->attrs_avp_type,
 				partition->attrs_avp_name, NULL, 0);
+		if (attr_avp)
+			destroy_avp(attr_avp);
+	}
+	if (partition->script_attrs_avp_name >= 0) {
+		attr_avp = search_first_avp(partition->script_attrs_avp_type,
+				partition->script_attrs_avp_name, NULL, 0);
 		if (attr_avp)
 			destroy_avp(attr_avp);
 	}
@@ -2133,6 +2305,13 @@ int ds_is_in_list(struct sip_msg *_m, str *_ip, int port, int set,
 								goto error;
 						}
 
+						if (partition->script_attrs_avp_name>= 0) {
+							avp_val.s = list->dlist[j].script_attrs;
+							if(add_avp(AVP_VAL_STR|partition->script_attrs_avp_type,
+										partition->script_attrs_avp_name,avp_val)!=0)
+								goto error;
+						}
+
 						lock_stop_read( partition->lock );
 						return 1;
 					}
@@ -2216,6 +2395,11 @@ int ds_print_mi_list(mi_item_t *part_item, ds_partition_t *partition, int full)
 			if (list->dlist[j].attrs.s)
 				if (add_mi_string(dest_item, MI_SSTR("attr"),
 					list->dlist[j].attrs.s, list->dlist[j].attrs.len) < 0)
+					goto error;
+
+			if (list->dlist[j].script_attrs.s)
+				if (add_mi_string(dest_item, MI_SSTR("script_attr"),
+					list->dlist[j].script_attrs.s, list->dlist[j].script_attrs.len) < 0)
 					goto error;
 
 			if (full) {
@@ -2500,3 +2684,86 @@ ds_partition_t* find_partition_by_name (const str *partition_name)
 	return part_it; //and NULL if there's no partition matching the name
 }
 
+int ds_push_script_attrs(struct sip_msg *_m, str *script_attrs, 
+		str *_ip, int port, int set, ds_partition_t *partition)
+{
+	ds_set_p list;
+	struct ip_addr *ip;
+	int j,k;
+
+	if (!(ip = str2ip(_ip)) && !(ip = str2ip6(_ip))) {
+		LM_ERR("IP val is not IP <%.*s>\n",_ip->len,_ip->s);
+		return -1;
+	}
+
+	/* access ds data under reader's lock */
+	lock_start_write( partition->lock );
+
+	for(list = (*partition->data)->sets ; list!= NULL; list= list->next) {
+		if ((set == -1) || (set == list->id)) {
+			/* interate through all elements/destinations in the list */
+			for(j=0; j<list->nr; j++) {
+				/* interate through all IPs of each destination */
+				for(k=0 ; k<list->dlist[j].ips_cnt ; k++ ) {
+					if ( (list->dlist[j].ports[k]==0 || port==0
+					|| port==list->dlist[j].ports[k]) &&
+					ip_addr_cmp( ip, &list->dlist[j].ips[k]) ) {
+						/* matching destination */
+						
+						list->dlist[j].script_attrs.s = shm_realloc(list->dlist[j].script_attrs.s,script_attrs->len);
+						if (list->dlist[j].script_attrs.s == NULL) {
+							LM_ERR("No more shm :( \n");
+							goto error;
+						}
+
+						list->dlist[j].script_attrs.len = script_attrs->len;
+						memcpy(list->dlist[j].script_attrs.s,script_attrs->s,script_attrs->len);
+						
+					}
+				}
+			}
+		}
+	}
+
+	lock_stop_write( partition->lock );
+	return 1;
+
+error:
+	lock_stop_write( partition->lock );
+	return -1;
+
+}
+
+int ds_get_script_attrs(struct sip_msg *_m,str *uri,int set, 
+	ds_partition_t *partition, pv_spec_t *attrs)
+{
+	pv_value_t val;
+	ds_set_p list;
+	int j;
+
+	memset(&val, 0, sizeof(pv_value_t));
+	val.flags = PV_VAL_STR;
+
+	lock_start_read( partition->lock );
+
+	for(list = (*partition->data)->sets ; list!= NULL; list= list->next) {
+		if ((set == -1) || (set == list->id)) {
+			/* interate through all elements/destinations in the list */
+			for(j=0; j<list->nr; j++) {
+				if (list->dlist[j].dst_uri.len == uri->len && 
+				memcmp(list->dlist[j].dst_uri.s,uri->s,uri->len) == 0) {
+
+					val.rs = list->dlist[j].script_attrs;	
+					if (pv_set_value(_m,attrs,0,&val) != 0) {
+						LM_ERR("Failed to set value for script attrs \n");
+					}
+					lock_stop_read( partition->lock );
+					return 1;
+				} 
+			}
+		}
+	}
+
+	lock_stop_read( partition->lock );
+	return -1;
+}

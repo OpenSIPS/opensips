@@ -154,6 +154,69 @@ modparam("dispatcher", "attrs_avp", "$avp(272)")
 		</example>
 	</section>
 
+	<section id="param_script_attrs_avp" xreflabel="script_attrs_avp">
+		<title><varname>script_attrs_avp</varname> (str)</title>
+		<para>
+		Name of the avp to contain the script attributes string of the current
+		destination. When a destination is selected, automatically, this AVP
+		will provide the attributes string - this is an opaque string (from
+		OpenSIPS point of view) : it is provided via the ds_push_script_attrs
+		MI or SCRIPT function.
+		</para>
+		<note>
+		</note>
+		<para>
+		<emphasis>
+			Default value is <quote>null</quote> - don't provide SCRIPT ATTRIBUTEs.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the 'default' partition's <quote>script_attrs_avp</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "attrs_avp", "$avp(script_attrs)")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="algo_route_param" xreflabel="algo_route">
+		<title><varname>algo_route</varname> (str)</title>
+		<para>
+		Name of the route to be called when using algo 10.
+		The route will get as param the dst_uri, attrs and script_attrs for the
+		dispatcher entry that currently needs to be evaluated ( available via 
+		$param(1), $param(2) and $param(3) or via $param(dst_uri), $param(attrs) and $param(script_attrs) when the route gets called ).
+		The return value of the route is considered by the dispatcher module to
+		be the current weight of the dispatcher entry, and when using the 10
+		algo, the dispatcher entries are sorted in ascending weight order.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>null</quote> - disabled.
+		</emphasis>
+		</para>
+		<example>
+		<title>Use algo_route for hashing:</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "algo_route", "my_dispatcher_logic)")
+...
+route[my_dispatcher_logic] {
+        $var(curent_score) = 0;
+        xlog("DISPATCHER - Running logic for $param(dst_uri) with attrs $param(attrs) and script attrs $param(script_attrs) \n");
+
+	# decide to penalize current dispatcher entry, based on your logic
+	if (my_condition_here)
+		$var(current_score) = $var(current_score) + 10;
+
+        return $var(rc);
+}
+
+</programlisting>
+		</example>
+	</section>
+
 
 	<section id="param_hash_pvar" xreflabel="hash_pvar">
 		<title><varname>hash_pvar</varname> (str)</title>
@@ -682,7 +745,7 @@ modparam("dispatcher", "cluster_sharing_tag", "vip")
 		<title><varname>partition</varname> (string)</title>
 		<para>
 		Using this parameter the partition specific parameters (db_url, table_name, dst_avp,
-		grp_avp, cnt_avp, sock_avp, attrs_avp, ds_define_blacklist) can be defined.
+		grp_avp, cnt_avp, sock_avp, attrs_avp, script_attrs, ds_define_blacklist) can be defined.
 		</para>
 		<para>
 		The syntax is: "partition_name: param1 = value1; param2 = value2; param3 = value3".
@@ -1043,6 +1106,14 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
 				chosen.
 				</para>
 			</listitem>
+			<listitem>
+				<para>
+				<quote>10</quote> - The <emphasis>algo_route</emphasis>
+				OpenSIPS route is called for each dispatcher entry in 
+				the setid, in order to decide the routing order.
+				See the algo_route parameter for usage examples
+				</para>
+			</listitem>
 
 			<listitem>
 				<para>
@@ -1345,6 +1416,100 @@ if (ds_is_in_list($rd, $rp, 2, "part2")) {
 		</example>
 
 	</section>
+
+	<section id="func_ds_push_script_attrs" xreflabel="ds_push_script_attrs()">
+		<title>
+		<function moreinfo="none">ds_push_script_attrs(script_attr, ip, port, set, [partition])</function>
+		</title>
+		<para>
+		Set the script attrs for the dispatcher entry defined by IP, Port, setid and partition.
+		</para>
+		<para>Meaning of the parameters:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>script_attr (str or pvar)</emphasis> - The new script attributes
+			</para>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>IP (string)</emphasis> -
+			IP address for which we are pushing script attributes </para>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>port (int)</emphasis> Port for which we are pushing script attributes</para>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>setid (int)</emphasis> Setid for which we are pushing script attributes</para>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>partition (string, optional)</emphasis> - name of a
+				DB partition.  If omitted, the "default" partition
+				will be used.</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
+		LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
+		</para>
+		<example>
+		<title><function>ds_count</function> usage</title>
+<programlisting format="linespecific">
+...
+if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition')) {
+	...
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_ds_get_script_attrs" xreflabel="ds_get_script_attrs()">
+		<title>
+		<function moreinfo="none">ds_get_script_attrs(uri, set, [partition], out_attrs)</function>
+		</title>
+		<para>
+		Get the script attrs for the dispatcher entry defined by the URI, setid and partition.
+		</para>
+		<para>Meaning of the parameters:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>URI (string)</emphasis> -
+			URI address for which we are getting script attributes </para>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>setid (int)</emphasis> Setid for which we are pushing script attributes</para>
+		</listitem>
+
+		<listitem>
+			<para><emphasis>partition (string, optional)</emphasis> - name of a
+				DB partition.  If omitted, the "default" partition
+				will be used.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_atrs (pvar)</emphasis> - name of a
+				variable where we will store the script attrs.</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE,
+		LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
+		</para>
+		<example>
+		<title><function>ds_count</function> usage</title>
+<programlisting format="linespecific">
+...
+if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition')) {
+	...
+}
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
@@ -1430,6 +1595,36 @@ opensips-cli -x mi ds_list
 		</para>
 <programlisting  format="linespecific">
 opensips-cli -x mi ds_reload
+</programlisting>
+	</section>
+
+	<section id="mi_ds_push_script_attrs" xreflabel="ds_push_script_attrs">
+		<title>
+		<function moreinfo="none">ds_push_script_attrs</function>
+		</title>
+		<para>
+		Pushes script attrs for the dispatcher entry defined by IP, Port, setid, and optionally partition. 
+		</para>
+		<para>
+		Name: <emphasis>ds_push_script_attrs</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para><emphasis>attrs</emphasis> : new attributes to be pushed</para>
+			</listitem>
+
+			<listitem><para><emphasis>ip</emphasis>: IP for which we are pushing script attributes</para></listitem>
+
+			<listitem><para><emphasis>port</emphasis>: Port for which we are pushing script attributes</para></listitem>
+
+			<listitem><para><emphasis>setid</emphasis>: Setid for which we are pushing script attributes</para></listitem>
+			<listitem><para><emphasis>partition ( optional )</emphasis>: Partition for which we are pushing script attributes</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+<programlisting  format="linespecific">
+#opensips-cli -x mi ds_push_script_attrs '{"ping":"30000","load":"50"}' '192.168.0.107' 5091 1 main
 </programlisting>
 	</section>
 

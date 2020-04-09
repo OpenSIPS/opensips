@@ -65,6 +65,7 @@ typedef struct _ds_dest
 	str uri;        /* URI used in pinging and for matching destination at reload */
 	str dst_uri;    /* Actual uri used in ds_select_dst ds_select_domain */
 	str attrs;
+	str script_attrs;
 	str description;
 	int flags;
 	unsigned short weight;    /* dynamic weight - may change at runtime */
@@ -80,6 +81,7 @@ typedef struct _ds_dest
 	unsigned short failure_count;
 	unsigned short chosen_count;
 	void *param;
+	int route_algo_value;
 	fs_evs *fs_sock;
 	struct _ds_dest *next;
 } ds_dest_t, *ds_dest_p;
@@ -134,6 +136,9 @@ typedef struct _ds_partition
 	int attrs_avp_name;
 	unsigned short attrs_avp_type;
 
+	int script_attrs_avp_name;
+	unsigned short script_attrs_avp_type;
+
 	struct _ds_partition *next;
 } ds_partition_t;
 
@@ -172,6 +177,8 @@ extern str ds_dest_attrs_col;
 extern str ds_dest_description_col;
 
 extern pv_elem_t * hash_param_model;
+extern str hash_pvar_param;
+extern str algo_route_param;
 
 extern str ds_setid_pvname;
 extern pv_spec_t ds_setid_pv;
@@ -212,6 +219,11 @@ int ds_count(struct sip_msg *msg, int set_id, void *_cmp, pv_spec_p ret,
 
 int ds_is_in_list(struct sip_msg *_m, str *ip, int port, int set,
                   ds_partition_t *partition, int active_only);
+
+int ds_push_script_attrs(struct sip_msg *_m, str *script_attrs, 
+		str *ip, int port, int set, ds_partition_t *partition);
+int ds_get_script_attrs(struct sip_msg *_m,str *uri,int set, 
+	ds_partition_t *partition, pv_spec_t *pvar);
 /*
  * Timer for checking inactive destinations
  */

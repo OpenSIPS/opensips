@@ -15,37 +15,39 @@ dispatcher Module
 
               1.3.1. db_url (string)
               1.3.2. attrs_avp (str)
-              1.3.3. hash_pvar (str)
-              1.3.4. setid_pvar (str)
-              1.3.5. ds_ping_method (string)
-              1.3.6. ds_ping_from (string)
-              1.3.7. ds_ping_interval (int)
-              1.3.8. ds_ping_maxfwd (int)
-              1.3.9. ds_probing_sock (str)
-              1.3.10. ds_probing_threshold (int)
-              1.3.11. ds_probing_mode (int)
-              1.3.12. ds_probing_list (str)
-              1.3.13. ds_define_blacklist (str)
-              1.3.14. options_reply_codes (str)
-              1.3.15. dst_avp (str)
-              1.3.16. grp_avp (str)
-              1.3.17. cnt_avp (str)
-              1.3.18. sock_avp (str)
-              1.3.19. pvar_algo_pattern (str)
-              1.3.20. persistent_state (int)
-              1.3.21. cluster_id (integer)
-              1.3.22. cluster_sharing_tag (string)
-              1.3.23. partition (string)
-              1.3.24. table_name (string)
-              1.3.25. setid_col (string)
-              1.3.26. destination_col (string)
-              1.3.27. state_col (string)
-              1.3.28. weight_col (string)
-              1.3.29. priority_col (string)
-              1.3.30. attrs_col (string)
-              1.3.31. socket_col (string)
-              1.3.32. fetch_freeswitch_stats (integer)
-              1.3.33. max_freeswitch_weight (integer)
+              1.3.3. script_attrs_avp (str)
+              1.3.4. algo_route (str)
+              1.3.5. hash_pvar (str)
+              1.3.6. setid_pvar (str)
+              1.3.7. ds_ping_method (string)
+              1.3.8. ds_ping_from (string)
+              1.3.9. ds_ping_interval (int)
+              1.3.10. ds_ping_maxfwd (int)
+              1.3.11. ds_probing_sock (str)
+              1.3.12. ds_probing_threshold (int)
+              1.3.13. ds_probing_mode (int)
+              1.3.14. ds_probing_list (str)
+              1.3.15. ds_define_blacklist (str)
+              1.3.16. options_reply_codes (str)
+              1.3.17. dst_avp (str)
+              1.3.18. grp_avp (str)
+              1.3.19. cnt_avp (str)
+              1.3.20. sock_avp (str)
+              1.3.21. pvar_algo_pattern (str)
+              1.3.22. persistent_state (int)
+              1.3.23. cluster_id (integer)
+              1.3.24. cluster_sharing_tag (string)
+              1.3.25. partition (string)
+              1.3.26. table_name (string)
+              1.3.27. setid_col (string)
+              1.3.28. destination_col (string)
+              1.3.29. state_col (string)
+              1.3.30. weight_col (string)
+              1.3.31. priority_col (string)
+              1.3.32. attrs_col (string)
+              1.3.33. socket_col (string)
+              1.3.34. fetch_freeswitch_stats (integer)
+              1.3.35. max_freeswitch_weight (integer)
 
         1.4. Exported Functions
 
@@ -64,11 +66,18 @@ dispatcher Module
               1.4.7. ds_is_in_list(ip, port, [set], [partition],
                       [active_only])
 
+              1.4.8. ds_push_script_attrs(script_attr, ip, port,
+                      set, [partition])
+
+              1.4.9. ds_get_script_attrs(uri, set, [partition],
+                      out_attrs)
+
         1.5. Exported MI Functions
 
               1.5.1. ds_set_state
               1.5.2. ds_list
               1.5.3. ds_reload
+              1.5.4. ds_push_script_attrs
 
         1.6. Exported Events
 
@@ -99,44 +108,48 @@ dispatcher Module
 
    1.1. Set the 'default' partition's“db_url” parameter
    1.2. Set the 'default' partition's “attrs_avp” parameter
-   1.3. Use $avp(273) for hashing:
-   1.4. Use combination of PVs for hashing:
-   1.5. Set the “setid_pvar” parameter
-   1.6. Set the “ds_ping_method” parameter
-   1.7. Set the “ds_ping_from” parameter
-   1.8. Set the “ds_ping_interval” parameter
-   1.9. Set the “ds_ping_maxfwd” parameter
-   1.10. Set the “ds_probing_sock” parameter
-   1.11. Set the “ds_probing_threshold” parameter
-   1.12. Set the “ds_probing_mode” parameter
-   1.13. Set the “ds_probing_list” parameter
-   1.14. Set the 'default' partition's “ds_define_blacklist”
+   1.3. Set the 'default' partition's “script_attrs_avp” parameter
+   1.4. Use algo_route for hashing:
+   1.5. Use $avp(273) for hashing:
+   1.6. Use combination of PVs for hashing:
+   1.7. Set the “setid_pvar” parameter
+   1.8. Set the “ds_ping_method” parameter
+   1.9. Set the “ds_ping_from” parameter
+   1.10. Set the “ds_ping_interval” parameter
+   1.11. Set the “ds_ping_maxfwd” parameter
+   1.12. Set the “ds_probing_sock” parameter
+   1.13. Set the “ds_probing_threshold” parameter
+   1.14. Set the “ds_probing_mode” parameter
+   1.15. Set the “ds_probing_list” parameter
+   1.16. Set the 'default' partition's “ds_define_blacklist”
           parameter
 
-   1.15. Set the “options_reply_codes” parameter
-   1.16. Set the 'default' partition's “dst_avp” parameter
-   1.17. Set the 'default' partition's “grp_avp” parameter
-   1.18. Set the 'default' partition's “cnt_avp” parameter
-   1.19. Set the 'default' partition's “sock_avp” parameter
-   1.20. Set the “pvar_algo_pattern” parameter
-   1.21. Set the persistent_state parameter
-   1.22. Set cluster_id parameter
-   1.23. Set cluster_sharing_tag parameter
-   1.24. Create a new partition called 'part2'
-   1.25. Set the 'default' partition's “table_name” parameter
-   1.26. Set “setid_col” parameter
-   1.27. Set “destination_col” parameter
-   1.28. Set “state_col” parameter
-   1.29. Set “weight_col” parameter
-   1.30. Set “priority_col” parameter
-   1.31. Set “attrs_col” parameter
-   1.32. Set “socket_col” parameter
-   1.33. Set the fetch_freeswitch_load parameter
-   1.34. Set the max_freeswitch_weight parameter
-   1.35. ds_select_dst usage
-   1.36. ds_count usage
-   1.37. ds_is_in_list usage
-   1.38. OpenSIPS config script - sample dispatcher usage
+   1.17. Set the “options_reply_codes” parameter
+   1.18. Set the 'default' partition's “dst_avp” parameter
+   1.19. Set the 'default' partition's “grp_avp” parameter
+   1.20. Set the 'default' partition's “cnt_avp” parameter
+   1.21. Set the 'default' partition's “sock_avp” parameter
+   1.22. Set the “pvar_algo_pattern” parameter
+   1.23. Set the persistent_state parameter
+   1.24. Set cluster_id parameter
+   1.25. Set cluster_sharing_tag parameter
+   1.26. Create a new partition called 'part2'
+   1.27. Set the 'default' partition's “table_name” parameter
+   1.28. Set “setid_col” parameter
+   1.29. Set “destination_col” parameter
+   1.30. Set “state_col” parameter
+   1.31. Set “weight_col” parameter
+   1.32. Set “priority_col” parameter
+   1.33. Set “attrs_col” parameter
+   1.34. Set “socket_col” parameter
+   1.35. Set the fetch_freeswitch_load parameter
+   1.36. Set the max_freeswitch_weight parameter
+   1.37. ds_select_dst usage
+   1.38. ds_count usage
+   1.39. ds_is_in_list usage
+   1.40. ds_count usage
+   1.41. ds_count usage
+   1.42. OpenSIPS config script - sample dispatcher usage
 
 Chapter 1. Admin Guide
 
@@ -238,7 +251,57 @@ Note
 modparam("dispatcher", "attrs_avp", "$avp(272)")
 ...
 
-1.3.3. hash_pvar (str)
+1.3.3. script_attrs_avp (str)
+
+   Name of the avp to contain the script attributes string of the
+   current destination. When a destination is selected,
+   automatically, this AVP will provide the attributes string -
+   this is an opaque string (from OpenSIPS point of view) : it is
+   provided via the ds_push_script_attrs MI or SCRIPT function.
+
+Note
+
+   Default value is “null” - don't provide SCRIPT ATTRIBUTEs.
+
+   Example 1.3. Set the 'default' partition's “script_attrs_avp”
+   parameter
+...
+modparam("dispatcher", "attrs_avp", "$avp(script_attrs)")
+...
+
+1.3.4. algo_route (str)
+
+   Name of the route to be called when using algo 10. The route
+   will get as param the dst_uri, attrs and script_attrs for the
+   dispatcher entry that currently needs to be evaluated (
+   available via $param(1), $param(2) and $param(3) or via
+   $param(dst_uri), $param(attrs) and $param(script_attrs) when
+   the route gets called ). The return value of the route is
+   considered by the dispatcher module to be the current weight of
+   the dispatcher entry, and when using the 10 algo, the
+   dispatcher entries are sorted in ascending weight order.
+
+   Default value is “null” - disabled.
+
+   Example 1.4. Use algo_route for hashing:
+...
+modparam("dispatcher", "algo_route", "my_dispatcher_logic)")
+...
+route[my_dispatcher_logic] {
+        $var(curent_score) = 0;
+        xlog("DISPATCHER - Running logic for $param(dst_uri) with attrs
+$param(attrs) and script attrs $param(script_attrs) \n");
+
+        # decide to penalize current dispatcher entry, based on your log
+ic
+        if (my_condition_here)
+                $var(current_score) = $var(current_score) + 10;
+
+        return $var(rc);
+}
+
+
+1.3.5. hash_pvar (str)
 
    String with PVs used for the hashing algorithm 7.
 
@@ -249,17 +312,17 @@ Note
 
    Default value is “null” - disabled.
 
-   Example 1.3. Use $avp(273) for hashing:
+   Example 1.5. Use $avp(273) for hashing:
 ...
 modparam("dispatcher", "hash_pvar", "$avp(273)")
 ...
 
-   Example 1.4. Use combination of PVs for hashing:
+   Example 1.6. Use combination of PVs for hashing:
 ...
 modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 ...
 
-1.3.4. setid_pvar (str)
+1.3.6. setid_pvar (str)
 
    The name of the PV where to store the set ID (group ID) when
    calling ds_is_in_list() without group parameter (third
@@ -267,12 +330,12 @@ modparam("dispatcher", "hash_pvar", "hash the $fU@$ci")
 
    Default value is “null” - don't set PV.
 
-   Example 1.5. Set the “setid_pvar” parameter
+   Example 1.7. Set the “setid_pvar” parameter
 ...
 modparam("dispatcher", "setid_pvar", "$var(setid)")
 ...
 
-1.3.5. ds_ping_method (string)
+1.3.7. ds_ping_method (string)
 
    With this Method you can define, with which method you want to
    probe the failed gateways. This method is only available, if
@@ -280,12 +343,12 @@ modparam("dispatcher", "setid_pvar", "$var(setid)")
 
    Default value is “OPTIONS”.
 
-   Example 1.6. Set the “ds_ping_method” parameter
+   Example 1.8. Set the “ds_ping_method” parameter
 ...
 modparam("dispatcher", "ds_ping_method", "INFO")
 ...
 
-1.3.6. ds_ping_from (string)
+1.3.8. ds_ping_from (string)
 
    With this Method you can define the "From:"-Line for the
    request, sent to the failed gateways. This method is only
@@ -294,12 +357,12 @@ modparam("dispatcher", "ds_ping_method", "INFO")
 
    Default value is “sip:dispatcher@localhost”.
 
-   Example 1.7. Set the “ds_ping_from” parameter
+   Example 1.9. Set the “ds_ping_from” parameter
 ...
 modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 ...
 
-1.3.7. ds_ping_interval (int)
+1.3.9. ds_ping_interval (int)
 
    With this Method you can define the interval for sending a
    request to a failed gateway. This parameter is only used, when
@@ -308,12 +371,12 @@ modparam("dispatcher", "ds_ping_from", "sip:proxy@sip.somehost.com")
 
    Default value is “0” (disabled).
 
-   Example 1.8. Set the “ds_ping_interval” parameter
+   Example 1.10. Set the “ds_ping_interval” parameter
 ...
 modparam("dispatcher", "ds_ping_interval", 30)
 ...
 
-1.3.8. ds_ping_maxfwd (int)
+1.3.10. ds_ping_maxfwd (int)
 
    This parameter allows you to enforce a specific Max-Forward
    value for the SIP pinging requests generated by the Dispatcher
@@ -324,12 +387,12 @@ modparam("dispatcher", "ds_ping_interval", 30)
    The accepted values are any positive integer values, including
    the “0” value.
 
-   Example 1.9. Set the “ds_ping_maxfwd” parameter
+   Example 1.11. Set the “ds_ping_maxfwd” parameter
 ...
 modparam("dispatcher", "ds_ping_maxfwd", 2)
 ...
 
-1.3.9. ds_probing_sock (str)
+1.3.11. ds_probing_sock (str)
 
    A socket description [proto:]host[:port] of the local socket
    (which is used by OpenSIPS for SIP traffic) to be used (if
@@ -337,12 +400,12 @@ modparam("dispatcher", "ds_ping_maxfwd", 2)
 
    Default value is “NULL(none)”.
 
-   Example 1.10. Set the “ds_probing_sock” parameter
+   Example 1.12. Set the “ds_probing_sock” parameter
 ...
 modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 ...
 
-1.3.10. ds_probing_threshold (int)
+1.3.12. ds_probing_threshold (int)
 
    If you want to set a gateway into probing mode, you will need a
    specific number of requests until it will change from "active"
@@ -351,12 +414,12 @@ modparam("dispatcher", "ds_probing_sock", "udp:192.168.1.100:5077")
 
    Default value is “3”.
 
-   Example 1.11. Set the “ds_probing_threshold” parameter
+   Example 1.13. Set the “ds_probing_threshold” parameter
 ...
 modparam("dispatcher", "ds_probing_threshold", 10)
 ...
 
-1.3.11. ds_probing_mode (int)
+1.3.13. ds_probing_mode (int)
 
    Controls what gateways are tested to see if they are reachable.
    If set to 0, only the gateways with state PROBING are tested,
@@ -366,12 +429,12 @@ modparam("dispatcher", "ds_probing_threshold", 10)
 
    Default value is “0”.
 
-   Example 1.12. Set the “ds_probing_mode” parameter
+   Example 1.14. Set the “ds_probing_mode” parameter
 ...
 modparam("dispatcher", "ds_probing_mode", 1)
 ...
 
-1.3.12. ds_probing_list (str)
+1.3.14. ds_probing_list (str)
 
    Defines a list of one or more setids that limits which
    destinations are probed if probing is active. This is useful
@@ -381,12 +444,12 @@ modparam("dispatcher", "ds_probing_mode", 1)
 
    Default value is “NULL(none)”.
 
-   Example 1.13. Set the “ds_probing_list” parameter
+   Example 1.15. Set the “ds_probing_list” parameter
 ...
 modparam("dispatcher", "ds_probing_list", "1,2,3")
 ...
 
-1.3.13. ds_define_blacklist (str)
+1.3.15. ds_define_blacklist (str)
 
    Defines a blacklist based on a dispatching setid from the
    'default' partition. This list will contain the IPs (no port,
@@ -398,14 +461,14 @@ modparam("dispatcher", "ds_probing_list", "1,2,3")
 
    Default value is “NULL”.
 
-   Example 1.14. Set the 'default' partition's
+   Example 1.16. Set the 'default' partition's
    “ds_define_blacklist” parameter
 ...
 modparam("dispatcher", "ds_define_blacklist", "list= 1,4,3")
 modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
 ...
 
-1.3.14. options_reply_codes (str)
+1.3.16. options_reply_codes (str)
 
    This parameter must contain a list of SIP reply codes separated
    by comma. The codes defined here will be considered as valid
@@ -414,12 +477,12 @@ modparam("dispatcher", "ds_define_blacklist", "blist2= 2,10,6")
 
    Default value is “NULL”.
 
-   Example 1.15. Set the “options_reply_codes” parameter
+   Example 1.17. Set the “options_reply_codes” parameter
 ...
 modparam("dispatcher", "options_reply_codes", "501, 403")
 ...
 
-1.3.15. dst_avp (str)
+1.3.17. dst_avp (str)
 
    This is mainly for internal usage and represents the name of
    the avp which will hold the list with addresses, in the order
@@ -436,12 +499,12 @@ modparam("dispatcher", "options_reply_codes", "501, 403")
    “$avp(ds_dst_failover)”. For any other partition, the default
    value is “$avp(ds_dst_failover_partitionname)”.
 
-   Example 1.16. Set the 'default' partition's “dst_avp” parameter
+   Example 1.18. Set the 'default' partition's “dst_avp” parameter
 ...
 modparam("dispatcher", "dst_avp", "$avp(271)")
 ...
 
-1.3.16. grp_avp (str)
+1.3.18. grp_avp (str)
 
    This is mainly for internal usage and represents the name of
    the avp storing the group id of the destination set. Good to
@@ -453,12 +516,12 @@ modparam("dispatcher", "dst_avp", "$avp(271)")
    “$avp(ds_grp_failover)”. For any other partition, the default
    value is “$avp(ds_grp_failover_partitionname)”.
 
-   Example 1.17. Set the 'default' partition's “grp_avp” parameter
+   Example 1.19. Set the 'default' partition's “grp_avp” parameter
 ...
 modparam("dispatcher", "grp_avp", "$avp(273)")
 ...
 
-1.3.17. cnt_avp (str)
+1.3.19. cnt_avp (str)
 
    This is mainly for internal usage and represents the name of
    the avp storing the number of destination addresses kept in
@@ -470,12 +533,12 @@ modparam("dispatcher", "grp_avp", "$avp(273)")
    “$avp(ds_cnt_failover)”. For any other partition, the default
    value is “$avp(ds_cnt_failover_partitionname)”.
 
-   Example 1.18. Set the 'default' partition's “cnt_avp” parameter
+   Example 1.20. Set the 'default' partition's “cnt_avp” parameter
 ...
 modparam("dispatcher", "cnt_avp", "$avp(274)")
 ...
 
-1.3.18. sock_avp (str)
+1.3.20. sock_avp (str)
 
    This is mainly for internal usage and represents the name of
    the avp storing the sockets to be used for the destination
@@ -487,13 +550,13 @@ modparam("dispatcher", "cnt_avp", "$avp(274)")
    “$avp(ds_sock_failover)”. For any other partition, the default
    value is “$avp(ds_sock_failover_partitionname)”.
 
-   Example 1.19. Set the 'default' partition's “sock_avp”
+   Example 1.21. Set the 'default' partition's “sock_avp”
    parameter
 ...
 modparam("dispatcher", "sock_avp", "$avp(275)")
 ...
 
-1.3.19. pvar_algo_pattern (str)
+1.3.21. pvar_algo_pattern (str)
 
    This parameter is used by the PVAR(9) algorithm to specify the
    pseudovariable pattern used to detect the load of each
@@ -503,25 +566,25 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
 
    Default value is “none”.
 
-   Example 1.20. Set the “pvar_algo_pattern” parameter
+   Example 1.22. Set the “pvar_algo_pattern” parameter
 ...
 modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 ...
 
-1.3.20. persistent_state (int)
+1.3.22. persistent_state (int)
 
    Specifies whether the state column should be loaded at startup
    and flushed during runtime or not.
 
    Default value is “1” (enabled).
 
-   Example 1.21. Set the persistent_state parameter
+   Example 1.23. Set the persistent_state parameter
 ...
 # disable all DB operations with the state of a destination
 modparam("dispatcher", "persistent_state", 0)
 ...
 
-1.3.21. cluster_id (integer)
+1.3.23. cluster_id (integer)
 
    The ID of the cluster the module is part of. The clustering
    support is used in dispatcher module for two purposes: for
@@ -544,13 +607,13 @@ modparam("dispatcher", "persistent_state", 0)
 
    Default value is “0 (none)”.
 
-   Example 1.22. Set cluster_id parameter
+   Example 1.24. Set cluster_id parameter
 ...
 # replicate destination status with all OpenSIPS in cluster ID 9
 modparam("dispatcher", "cluster_id", 9)
 ...
 
-1.3.22. cluster_sharing_tag (string)
+1.3.24. cluster_sharing_tag (string)
 
    The name of the sharing tag (as defined per clusterer modules)
    to control which node is responsible for perform the
@@ -567,7 +630,7 @@ modparam("dispatcher", "cluster_id", 9)
 
    Default value is “empty (none)”.
 
-   Example 1.23. Set cluster_sharing_tag parameter
+   Example 1.25. Set cluster_sharing_tag parameter
 ...
 # only the node with the active "vip" sharing tag will perform pinging
 # and broadcast the status changes
@@ -575,11 +638,11 @@ modparam("dispatcher", "cluster_id", 9)
 modparam("dispatcher", "cluster_sharing_tag", "vip")
 ...
 
-1.3.23. partition (string)
+1.3.25. partition (string)
 
    Using this parameter the partition specific parameters (db_url,
    table_name, dst_avp, grp_avp, cnt_avp, sock_avp, attrs_avp,
-   ds_define_blacklist) can be defined.
+   script_attrs, ds_define_blacklist) can be defined.
 
    The syntax is: "partition_name: param1 = value1; param2 =
    value2; param3 = value3". Each value format is the same as the
@@ -589,7 +652,7 @@ modparam("dispatcher", "cluster_sharing_tag", "vip")
    be automatically created. The 'default' partition can also be
    defined using this parameter.
 
-   Example 1.24.  Create a new partition called 'part2'
+   Example 1.26.  Create a new partition called 'part2'
 ...
 modparam("dispatcher", "partition",
                 "part2:
@@ -599,7 +662,7 @@ modparam("dispatcher", "partition",
                     ds_define_blacklist = list2 = 4,6;")
 ...
 
-1.3.24. table_name (string)
+1.3.26. table_name (string)
 
    If you want to load the sets of gateways from the database you
    must set this parameter as the database name. Setting this
@@ -609,97 +672,97 @@ modparam("dispatcher", "partition",
 
    For every partition the default value is “dispatcher”.
 
-   Example 1.25. Set the 'default' partition's “table_name”
+   Example 1.27. Set the 'default' partition's “table_name”
    parameter
 ...
 modparam("dispatcher", "table_name", "my_dispatcher")
 ...
 
-1.3.25. setid_col (string)
+1.3.27. setid_col (string)
 
    The column's name in the database storing the gateway's group
    id.
 
    Default value is “setid”.
 
-   Example 1.26. Set “setid_col” parameter
+   Example 1.28. Set “setid_col” parameter
 ...
 modparam("dispatcher", "setid_col", "groupid")
 ...
 
-1.3.26. destination_col (string)
+1.3.28. destination_col (string)
 
    The column's name in the database storing the destination's sip
    uri.
 
    Default value is “destination”.
 
-   Example 1.27. Set “destination_col” parameter
+   Example 1.29. Set “destination_col” parameter
 ...
 modparam("dispatcher", "destination_col", "uri")
 ...
 
-1.3.27. state_col (string)
+1.3.29. state_col (string)
 
    The column's name in the database storing the state of the
    destination uri.
 
    Default value is “state”.
 
-   Example 1.28. Set “state_col” parameter
+   Example 1.30. Set “state_col” parameter
 ...
 modparam("dispatcher", "state_col", "dststate")
 ...
 
-1.3.28. weight_col (string)
+1.3.30. weight_col (string)
 
    The column's name in the database storing the weight for
    destination uri.
 
    Default value is “weight”.
 
-   Example 1.29. Set “weight_col” parameter
+   Example 1.31. Set “weight_col” parameter
 ...
 modparam("dispatcher", "weight_col", "dstweight")
 ...
 
-1.3.29. priority_col (string)
+1.3.31. priority_col (string)
 
    The column's name in the database storing the priority for
    destination uri.
 
    Default value is “priority”.
 
-   Example 1.30. Set “priority_col” parameter
+   Example 1.32. Set “priority_col” parameter
 ...
 modparam("dispatcher", "priority_col", "dstprio")
 ...
 
-1.3.30. attrs_col (string)
+1.3.32. attrs_col (string)
 
    The column's name in the database storing the attributes
    (opaque string) for destination uri.
 
    Default value is “attrs”.
 
-   Example 1.31. Set “attrs_col” parameter
+   Example 1.33. Set “attrs_col” parameter
 ...
 modparam("dispatcher", "attrs_col", "dstattrs")
 ...
 
-1.3.31. socket_col (string)
+1.3.33. socket_col (string)
 
    The column's name in the database storing the socket (as
    string) for destination uri.
 
    Default value is “socket”.
 
-   Example 1.32. Set “socket_col” parameter
+   Example 1.34. Set “socket_col” parameter
 ...
 modparam("dispatcher", "socket_col", "my_sock")
 ...
 
-1.3.32. fetch_freeswitch_stats (integer)
+1.3.34. fetch_freeswitch_stats (integer)
 
    If enabled, FreeSWITCH destinations may have dynamic
    dispatching weights, refreshed at runtime, using the FreeSWITCH
@@ -729,12 +792,12 @@ modparam("dispatcher", "socket_col", "my_sock")
 
    Default value is 0 (disabled).
 
-   Example 1.33. Set the fetch_freeswitch_load parameter
+   Example 1.35. Set the fetch_freeswitch_load parameter
 ...
 modparam("dispatcher", "fetch_freeswitch_stats", 1)
 ...
 
-1.3.33. max_freeswitch_weight (integer)
+1.3.35. max_freeswitch_weight (integer)
 
    The maximum weight of a FreeSWITCH ESL-enabled destination.
    This value is also used during startup/reload, when no stats
@@ -753,7 +816,7 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
 
    Default value is 100.
 
-   Example 1.34. Set the max_freeswitch_weight parameter
+   Example 1.36. Set the max_freeswitch_weight parameter
 ...
 modparam("dispatcher", "max_freeswitch_weight", 1000)
 ...
@@ -789,6 +852,10 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
             determine the load on each server. If the parameter is
             not specified, then the first entry in the set is
             chosen.
+          + “10” - The algo_route OpenSIPS route is called for
+            each dispatcher entry in the setid, in order to decide
+            the routing order. See the algo_route parameter for
+            usage examples
           + “X” - if the algorithm is not implemented, the first
             entry in set is chosen.
      * flags (string, optional) - a string of flag-settings which
@@ -816,7 +883,7 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.35. ds_select_dst usage
+   Example 1.37. ds_select_dst usage
 ...
 if (!ds_select_dst(1, 0)) {
         xlog("ERROR: no active destinations found!\n");
@@ -924,7 +991,7 @@ res));
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
-   Example 1.36. ds_count usage
+   Example 1.38. ds_count usage
 ...
 if (ds_count(1, "a", $avp(result))) {
         ...
@@ -956,7 +1023,7 @@ if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.37. ds_is_in_list usage
+   Example 1.39. ds_is_in_list usage
 ...
 if (ds_is_in_list($si, $sp)) {
         # source IP:PORT is in a dispatcher list
@@ -970,6 +1037,58 @@ ault" partition
 if (ds_is_in_list($rd, $rp, 2, "part2")) {
         # the R-URI (IP and port) is in the dispatcher set 2 of the "par
 t2" partition
+}
+...
+
+1.4.8.  ds_push_script_attrs(script_attr, ip, port, set, [partition])
+
+   Set the script attrs for the dispatcher entry defined by IP,
+   Port, setid and partition.
+
+   Meaning of the parameters:
+     * script_attr (str or pvar) - The new script attributes
+     * IP (string) - IP address for which we are pushing script
+       attributes
+     * port (int) Port for which we are pushing script attributes
+     * setid (int) Setid for which we are pushing script
+       attributes
+     * partition (string, optional) - name of a DB partition. If
+       omitted, the "default" partition will be used.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
+
+   Example 1.40. ds_count usage
+...
+if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition
+')) {
+        ...
+}
+...
+
+1.4.9.  ds_get_script_attrs(uri, set, [partition], out_attrs)
+
+   Get the script attrs for the dispatcher entry defined by the
+   URI, setid and partition.
+
+   Meaning of the parameters:
+     * URI (string) - URI address for which we are getting script
+       attributes
+     * setid (int) Setid for which we are pushing script
+       attributes
+     * partition (string, optional) - name of a DB partition. If
+       omitted, the "default" partition will be used.
+     * out_atrs (pvar) - name of a variable where we will store
+       the script attrs.
+
+   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+   BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
+
+   Example 1.41. ds_count usage
+...
+if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition
+')) {
+        ...
 }
 ...
 
@@ -1023,6 +1142,25 @@ opensips-cli -x mi ds_list
    MI FIFO Command Format:
 opensips-cli -x mi ds_reload
 
+1.5.4.  ds_push_script_attrs
+
+   Pushes script attrs for the dispatcher entry defined by IP,
+   Port, setid, and optionally partition.
+
+   Name: ds_push_script_attrs
+
+   Parameters:
+     * attrs : new attributes to be pushed
+     * ip: IP for which we are pushing script attributes
+     * port: Port for which we are pushing script attributes
+     * setid: Setid for which we are pushing script attributes
+     * partition ( optional ): Partition for which we are pushing
+       script attributes
+
+   MI FIFO Command Format:
+#opensips-cli -x mi ds_push_script_attrs '{"ping":"30000","load":"50"}'
+'192.168.0.107' 5091 1 main
+
 1.6. Exported Events
 
 1.6.1.  E_DISPATCHER_STATUS
@@ -1043,7 +1181,7 @@ opensips-cli -x mi ds_reload
 
    Next picture displays a sample usage of dispatcher.
 
-   Example 1.38. OpenSIPS config script - sample dispatcher usage
+   Example 1.42. OpenSIPS config script - sample dispatcher usage
 ...
 #
 # sample config file for dispatcher module
@@ -1094,92 +1232,92 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Does dispatcher provide a fair distribution?
+   Does dispatcher provide a fair distribution?
 
-       There is no guarantee of that. You should do some measurements
-       to decide what distribution algorithm fits better in your
-       environment.
+   There is no guarantee of that. You should do some measurements
+   to decide what distribution algorithm fits better in your
+   environment.
 
    2.2.
 
-       Is dispatcher dialog stateful?
+   Is dispatcher dialog stateful?
 
-       No. Dispatcher is stateless, although some distribution
-       algorithms are designed to select same destination for
-       subsequent requests of the same dialog (e.g., hashing the
-       call-id).
+   No. Dispatcher is stateless, although some distribution
+   algorithms are designed to select same destination for
+   subsequent requests of the same dialog (e.g., hashing the
+   call-id).
 
    2.3.
 
-       What happened with the ds_is_from_list() function?
+   What happened with the ds_is_from_list() function?
 
-       The function was replaced by the more generic ds_is_in_list()
-       function that takes as parameters the IP and PORT to test
-       against the dispatcher list.
+   The function was replaced by the more generic ds_is_in_list()
+   function that takes as parameters the IP and PORT to test
+   against the dispatcher list.
 
-       ds_is_from_list() == ds_is_in_list("$si", "$sp")
+   ds_is_from_list() == ds_is_in_list("$si", "$sp")
 
    2.4.
 
-       How is weight and priority used by the dispatcher in selecting
-       a destination?
+   How is weight and priority used by the dispatcher in selecting
+   a destination?
 
-       The weight of a destination is currently used in the hashing
-       algorithms and it increases the probability of it to be
-       chosen(if we have two destinations with weights 1 respectively
-       4 than the second one is 4 times more likely to be selected
-       than the other). The sum of all weights does not need to add up
-       to a specific number. Weights are now used in the round-robin
-       algorithm, a destination is chosen a number of times equal to
-       its weight consecutively before going to the next destination.
+   The weight of a destination is currently used in the hashing
+   algorithms and it increases the probability of it to be
+   chosen(if we have two destinations with weights 1 respectively
+   4 than the second one is 4 times more likely to be selected
+   than the other). The sum of all weights does not need to add up
+   to a specific number. Weights are now used in the round-robin
+   algorithm, a destination is chosen a number of times equal to
+   its weight consecutively before going to the next destination.
 
-       The priority field is used at ordering the destinations from a
-       set. It does not affect the overall probability of a
-       destination to be chosen. It is reflected when listing the
-       destination, the field can definetly be used in further
-       selecting algorithms.
+   The priority field is used at ordering the destinations from a
+   set. It does not affect the overall probability of a
+   destination to be chosen. It is reflected when listing the
+   destination, the field can definetly be used in further
+   selecting algorithms.
 
    2.5.
 
-       What happened with the list_file module parameter ?
+   What happened with the list_file module parameter ?
 
-       The support for text file (for provisioning destinations) was
-       dropped. Only the DB support (provisioning via a DB table) is
-       now available - if you still want to use a text file for
-       provisioning, use db_text DB driver (DB emulated via text
-       files)
+   The support for text file (for provisioning destinations) was
+   dropped. Only the DB support (provisioning via a DB table) is
+   now available - if you still want to use a text file for
+   provisioning, use db_text DB driver (DB emulated via text
+   files)
 
    2.6.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    2.7.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable version should be sent to
-       <users@lists.opensips.org> and e-mail regarding development
-       versions or SVN snapshots should be send to
-       <devel@lists.opensips.org>.
+   E-mails regarding any stable version should be sent to
+   <users@lists.opensips.org> and e-mail regarding development
+   versions or SVN snapshots should be send to
+   <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.8.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues
 
 Chapter 3. Contributors
 
