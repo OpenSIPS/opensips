@@ -3070,7 +3070,10 @@ dummy_reply:
 
 					current_dlg = dlg;
 					dlg_state = dlg->state;
-					b2b_ev = B2B_EVENT_CREATE;
+
+					if (B2BE_SERIALIZE_STORAGE())
+						b2b_ev = B2B_EVENT_CREATE;
+
 					UPDATE_DBFLAG(dlg);
 
 					lock_release(&htable[hash_index].lock);
