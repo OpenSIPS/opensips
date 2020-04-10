@@ -44,11 +44,14 @@ struct _ebr_event;
 #define EBR_DATA_TYPE_ROUT  (1<<2)
 #define EBR_DATA_TYPE_FUNC  (1<<3)
 
+typedef struct usr_avp *(*ebr_pack_params_cb) (evi_params_t *params);
+
 typedef struct _ebr_subscription {
 	struct _ebr_event *event;
 	ebr_filter *filters;
 	int proc_no;
 	int flags;
+	ebr_pack_params_cb pack_params;
 	void *data;
 	int expire;
 	/* Transaction ID data */
@@ -65,16 +68,19 @@ typedef struct _ebr_event {
 	struct _ebr_event *next;
 } ebr_event;
 
-
-
 ebr_event * search_ebr_event( const str *name );
 
 ebr_event * add_ebr_event( const str *name );
 
 int init_ebr_event( ebr_event *ev );
 
+int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
+                     ebr_filter **filters);
+int dup_ebr_filters(const ebr_filter *src, ebr_filter **dst);
+
 int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
-		int filter_avp_id, int expires, void *data, int flags);
+               ebr_filter *filters, int expire, ebr_pack_params_cb pack_params,
+               void *data, int flags);
 
 int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params);
 

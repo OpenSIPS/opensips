@@ -25,7 +25,6 @@
 
 #include "ebr_data.h"
 
-typedef struct usr_avp *(*ebr_pack_params_cb) (evi_params_t *params);
 typedef void (*ebr_notify_cb) (void);
 
 typedef struct ebr_api {
@@ -38,23 +37,27 @@ typedef struct ebr_api {
 
 	/**
 	 * notify_on_event() - subscribe to the @event given by @filters
+	 * @msg: the SIP msg being currently processed (typically, an INVITE)
 	 * @event: an EBR event obtained with api.get_ebr_event()
 	 * @filters: a list of filters (either event param value matching, or
 	 *            event param SIP URI param value matching)
 	 * @pack_params_cb: optional callback where the EVI param data may be
 	 *                  changed.  Specify NULL in order to simply have the
-	 *                  event data unchanged and simply passed further
+	 *                  event data unchanged and packed as AVPs named according
+	 *                  to the event parameter names
 	 * @notify_cb: mandatory callback, a hook where to take action once the
 	 *             desired event takes place
 	 *
 	 * Return: 0 on successful registration, -1 otherwise
 	 *
-	 * When the event is triggered, the @pack_params_cb callback gets invoked
-	 * first, so the event parameters can be changed.  Finally, the @notify_cb
-	 * callback is invoked, so the user can perform some transactional-related
-	 * actions related to the event (for now, only tm.t_inject_branch())
+	 * When the event is triggered, the @pack_params_cb callback, if set, gets
+	 * invoked first, so the event parameters can be prepared.  Finally, the
+	 * @notify_cb callback is invoked, so the user can perform some
+	 * transactional-related actions related to the event
+	 * (for now, only tm.t_inject_branch())
 	 */
-	int (*notify_on_event) (ebr_event *event, const ebr_filter *filters,
+	int (*notify_on_event) (struct sip_msg *msg, ebr_event *event,
+	                        const ebr_filter *filters,
 	                        ebr_pack_params_cb pack_params,
 	                        ebr_notify_cb notify, int timeout);
 } ebr_api_t;

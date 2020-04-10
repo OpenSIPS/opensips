@@ -144,8 +144,8 @@ struct sip_msg;
  */
 #define pkg_free_all(things) \
 	do { \
-		typeof(things) pos = NULL, head = things; \
-		while (things && (things != head || !pos)) \
+		typeof(things) pos = NULL, head = (things); \
+		while ((things) && ((things) != head || !pos)) \
 			{ pos = (things); (things) = (things)->next; pkg_free(pos); } \
 	} while (0)
 
@@ -157,8 +157,8 @@ struct sip_msg;
  */
 #define shm_free_all(things) \
 	do { \
-		typeof(things) pos = NULL, head = things; \
-		while (things && (things != head || !pos)) \
+		typeof(things) pos = NULL, head = (things); \
+		while ((things) && ((things) != head || !pos)) \
 			{ pos = (things); (things) = (things)->next; shm_free(pos); } \
 	} while (0)
 

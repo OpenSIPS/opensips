@@ -52,7 +52,8 @@ static str ebr_print(evi_reply_sock *sock);
 
 void ebr_bind(ebr_api_t *api);
 ebr_event *get_ebr_event(const str *name);
-int api_notify_on_event(ebr_event *event, const ebr_filter *filters,
+int api_notify_on_event(struct sip_msg *msg, ebr_event *event,
+                        const ebr_filter *filters,
                         ebr_pack_params_cb pack_params,
                         ebr_notify_cb notify, int timeout);
 
@@ -279,6 +280,8 @@ static int fixup_check_avp(void** param)
 static int notify_on_event(struct sip_msg *msg, ebr_event* event, pv_spec_t *avp_filter,
 									void *route, int *timeout)
 {
+	ebr_filter *filters;
+
 	if (event->event_id==-1) {
 		/* do the init of the event*/
 		if (init_ebr_event(event)<0) {
@@ -287,9 +290,15 @@ static int notify_on_event(struct sip_msg *msg, ebr_event* event, pv_spec_t *avp
 		}
 	}
 
+	if (pack_ebr_filters(msg, avp_filter->pvp.pvn.u.isname.name.n,
+	                     &filters) < 0) {
+		LM_ERR("failed to build list of EBR filters\n");
+		return -1;
+	}
+
 	/* we have a valid EBR event here, let's subscribe on it */
-	if (add_ebr_subscription( msg, event, avp_filter->pvp.pvn.u.isname.name.n,
-	    timeout ? *timeout : 0, route,
+	if (add_ebr_subscription( msg, event, filters,
+	    timeout ? *timeout : 0, NULL, route,
 	    EBR_SUBS_TYPE_NOTY|EBR_DATA_TYPE_ROUT ) <0 ) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 			event->event_id);
@@ -300,10 +309,13 @@ static int notify_on_event(struct sip_msg *msg, ebr_event* event, pv_spec_t *avp
 }
 
 
-int api_notify_on_event(ebr_event *event, const ebr_filter *filters,
+int api_notify_on_event(struct sip_msg *msg, ebr_event *event,
+                        const ebr_filter *filters,
                         ebr_pack_params_cb pack_params,
                         ebr_notify_cb notify, int timeout)
 {
+	ebr_filter *filters_cpy;
+
 	if (event->event_id == -1) {
 		/* do the init of the event*/
 		if (init_ebr_event(event)<0) {
@@ -312,7 +324,19 @@ int api_notify_on_event(ebr_event *event, const ebr_filter *filters,
 		}
 	}
 
-	// TODO
+	if (dup_ebr_filters(filters, &filters_cpy) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	/* we have a valid EBR event here, let's subscribe on it */
+	if (add_ebr_subscription( msg, event, filters_cpy,
+	    timeout, pack_params, notify,
+	    EBR_SUBS_TYPE_NOTY|EBR_DATA_TYPE_FUNC ) <0 ) {
+		LM_ERR("failed to add ebr subscription for event %d\n",
+			event->event_id);
+		return -1;
+	}
 
 	return 0;
 }
@@ -321,6 +345,8 @@ int api_notify_on_event(ebr_event *event, const ebr_filter *filters,
 static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 					ebr_event* event, pv_spec_t* avp_filter, int* timeout)
 {
+	ebr_filter *filters;
+
 	if (event->event_id==-1) {
 		/* do the init of the event*/
 		if (init_ebr_event(event)<0) {
@@ -329,10 +355,15 @@ static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 		}
 	}
 
+	if (pack_ebr_filters(msg, avp_filter->pvp.pvn.u.isname.name.n,
+	                     &filters) < 0) {
+		LM_ERR("failed to build list of EBR filters\n");
+		return -1;
+	}
+
 	/* we have a valid EBR event here, let's subscribe on it */
-	if (add_ebr_subscription( msg, event, avp_filter->pvp.pvn.u.isname.name.n,
-	    *timeout, (void*)ctx,
-	    EBR_SUBS_TYPE_WAIT ) <0 ) {
+	if (add_ebr_subscription( msg, event, filters,
+	    *timeout, NULL, (void*)ctx, EBR_SUBS_TYPE_WAIT ) <0 ) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
 			event->event_id);
 		return -1;

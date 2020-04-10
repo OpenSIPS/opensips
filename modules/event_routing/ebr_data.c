@@ -157,8 +157,8 @@ error:
 }
 
 
-static int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
-														ebr_filter **filters)
+int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
+                     ebr_filter **filters)
 {
 	struct usr_avp *avp;
 	int_str val;
@@ -227,12 +227,52 @@ static int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
 	return 0;
 
 error:
-	while(f_first) {
-		f_curr = f_first->next;
-		shm_free(f_first);
-		f_first = f_curr;
-	}
+	shm_free_all(f_first);
 	*filters = NULL;
+	return -1;
+}
+
+
+int dup_ebr_filters(const ebr_filter *src, ebr_filter **dst)
+{
+	ebr_filter *filter, *first = NULL, *last;
+
+	for (; src; src = src->next) {
+		filter = shm_malloc(sizeof *filter + src->key.len + 1 +
+		                    src->uri_param_key.len + 1 + src->val.len + 1);
+		if (!filter)
+			goto oom;
+
+		filter->key.s = (char *)(filter + 1);
+		str_cpy(&filter->key, &src->key);
+		filter->key.s[filter->key.len] = '\0';
+
+		filter->uri_param_key.s = (char *)(filter->key.s + filter->key.len + 1);
+		str_cpy(&filter->uri_param_key, &src->uri_param_key);
+		filter->uri_param_key.s[filter->uri_param_key.len] = '\0';
+
+		filter->val.s = (char *)(filter->uri_param_key.s +
+		                         filter->uri_param_key.len + 1);
+		str_cpy(&filter->val, &src->val);
+		filter->val.s[filter->val.len] = '\0';
+
+		filter->next = NULL;
+
+		if (!first) {
+			first = last = filter;
+		} else {
+			last->next = filter;
+			last = filter;
+		}
+	}
+
+	*dst = first;
+	return 0;
+
+oom:
+	shm_free_all(first);
+	LM_ERR("oom\n");
+	*dst = NULL;
 	return -1;
 }
 
@@ -252,7 +292,8 @@ void free_ebr_subscription( ebr_subscription *sub)
 
 
 int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
-						int filter_avp_id, int expire, void *data, int flags)
+               ebr_filter *filters, int expire, ebr_pack_params_cb pack_params,
+               void *data, int flags)
 {
 	ebr_subscription *sub;
 
@@ -262,12 +303,9 @@ int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
 		return -1;
 	}
 
-	if (pack_ebr_filters( msg, filter_avp_id, &sub->filters) < 0 ) {
-		LM_ERR("failed to build list of EBR filters\n");
-		goto error;
-	}
-
 	sub->data = data;
+	sub->filters = filters;
+	sub->pack_params = pack_params;
 	sub->flags = flags;
 	sub->proc_no = process_no;
 	sub->event = ev;
@@ -292,10 +330,6 @@ int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
 		ev->event_name.len, ev->event_name.s, ev->event_id, process_no);
 
 	return 0;
-
-error:
-	free_ebr_subscription( sub );
-	return -1;
 }
 
 
@@ -482,9 +516,8 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				sub->proc_no, pt[sub->proc_no].pid);
 
 			/* convert the EVI params into AVP (only once) */
-			if (avps==(void*)-1) {
+			if (avps == (void *)-1 && !sub->pack_params)
 				avps = pack_evi_params_as_avp_list(params);
-			}
 
 			/* pack the EVI params to be attached to the IPC job */
 			job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
@@ -492,8 +525,13 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				LM_ERR("failed to allocated new IPC job, skipping..\n");
 				continue; /* with the next subscription */
 			}
+
+			if (sub->pack_params)
+				job->avps = sub->pack_params(params);
+			else
+				job->avps = clone_avp_list( avps );
+
 			job->ev = ev;
-			job->avps = clone_avp_list( avps );
 			job->data = sub->data;
 			job->flags = sub->flags;
 			job->tm = sub->tm;
