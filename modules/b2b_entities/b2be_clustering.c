@@ -471,7 +471,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 	if (leg.tag.s)
 		new_dlg->legs = new_leg;
 
-	lock_get(&htable[h_idx].lock);
+	lock_get(&htable[hash_index].lock);
 
 	new_key = b2b_htable_insert(htable, new_dlg, hash_index, type, 1, 1);
 	if (new_key == NULL) {
@@ -479,12 +479,12 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 		goto error;
 	}
 
-	htable[h_idx].locked_by = process_no;
-	b2b_run_cb(new_dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE, packet,
-		B2BCB_BACKEND_CLUSTER);
-	htable[h_idx].locked_by = -1;
+	htable[hash_index].locked_by = process_no;
+	b2b_run_cb(new_dlg, hash_index, type, B2BCB_RECV_EVENT, B2B_EVENT_CREATE,
+		packet, B2BCB_BACKEND_CLUSTER);
+	htable[hash_index].locked_by = -1;
 
-	lock_release(&htable[h_idx].lock);
+	lock_release(&htable[hash_index].lock);
 
 	pkg_free(new_key);
 
@@ -572,7 +572,7 @@ int receive_entity_update(bin_packet_t *packet)
 		unpack_update_fields(packet, dlg);
 
 		htable[hash_index].locked_by = process_no;
-		b2b_run_cb(dlg, type, B2BCB_RECV_EVENT,
+		b2b_run_cb(dlg, hash_index, type, B2BCB_RECV_EVENT,
 			packet->type == REPL_ENTITY_UPDATE ? B2B_EVENT_UPDATE : B2B_EVENT_ACK,
 			packet, B2BCB_BACKEND_CLUSTER);
 		htable[hash_index].locked_by = -1;
@@ -630,7 +630,7 @@ int receive_entity_delete(bin_packet_t *packet)
 	}
 
 	htable[hash_index].locked_by = process_no;
-	b2b_run_cb(dlg, type, B2BCB_RECV_EVENT, B2B_EVENT_DELETE, packet,
+	b2b_run_cb(dlg, hash_index, type, B2BCB_RECV_EVENT, B2B_EVENT_DELETE, packet,
 		B2BCB_BACKEND_CLUSTER);
 	htable[hash_index].locked_by = -1;
 

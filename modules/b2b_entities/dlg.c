@@ -490,8 +490,8 @@ b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
 	return dlg;
 }
 
-void b2b_run_cb(b2b_dlg_t *dlg, int entity_type, int cbs_type,
-	int event_type, bin_packet_t *storage, int backend)
+void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
+	int cbs_type, int event_type, bin_packet_t *storage, int backend)
 {
 	struct b2b_callback *cb;
 	str st;
@@ -544,8 +544,18 @@ void b2b_run_cb(b2b_dlg_t *dlg, int entity_type, int cbs_type,
 		}
 	}
 
+	if (entity_type == B2B_SERVER)
+		lock_release(&server_htable[hash_index].lock);
+	else
+		lock_release(&client_htable[hash_index].lock);
+
 	cb->cbf(entity_type, entity_type == B2B_SERVER ? &dlg->tag[1] : &dlg->callid,
 		&dlg->param, event_type, storage, backend);
+
+	if (entity_type == B2B_SERVER)
+		lock_get(&server_htable[hash_index].lock);
+	else
+		lock_get(&client_htable[hash_index].lock);
 
 	if (cbs_type == B2BCB_TRIGGER_EVENT && event_type != B2B_EVENT_DELETE &&
 		b2be_db_mode != NO_DB && bin_get_content_start(storage, &st) < 0) {
@@ -1089,14 +1099,14 @@ done:
 			b2b_ev = B2B_EVENT_ACK;
 			lock_get(&table[hash_index].lock);
 
-			b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-				serialize_backend);
+			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend);
 		} else if (etype != B2B_NONE && dlg_state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
 			lock_get(&table[hash_index].lock);
 
-			b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-				serialize_backend);
+			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend);
 		}
 	}
 
@@ -1571,11 +1581,11 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	if (B2BE_SERIALIZE_STORAGE()) {
 		if (prev_state < B2B_CONFIRMED && dlg->state == B2B_CONFIRMED) {
 			b2b_ev = B2B_EVENT_CREATE;
-			b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
+			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
 				serialize_backend);
 		} else if (prev_state == B2B_MODIFIED && dlg->state == B2B_CONFIRMED) {
 			b2b_ev = B2B_EVENT_UPDATE;
-			b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
+			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
 				serialize_backend);
 		}
 	}
@@ -1717,8 +1727,8 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 
 	if (dlg->state != B2B_TERMINATED && B2BE_SERIALIZE_STORAGE() && replicate) {
 		trig_ev = 1;
-		b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, B2B_EVENT_DELETE, &storage,
-			serialize_backend);
+		b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, B2B_EVENT_DELETE,
+			&storage, serialize_backend);
 	}
 
 	if(db_del)
@@ -2070,11 +2080,11 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	if (B2BE_SERIALIZE_STORAGE()) {
 		if (dlg->state == B2B_ESTABLISHED && dlg->replicated) {
 			b2b_ev = B2B_EVENT_ACK;
-			b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
+			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
 				serialize_backend);
 		} else if (dlg->state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
-			b2b_run_cb(dlg, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
+			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
 				serialize_backend);
 		}
 	}
@@ -3127,16 +3137,16 @@ b2b_route:
 
 			if (dlg->state != B2B_TERMINATED) {
 				b2b_ev = B2B_EVENT_UPDATE;
-				b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-					serialize_backend);
+				b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
+					&storage, serialize_backend);
 			} else
 				b2b_ev = -1;
 		} else if (b2b_ev == B2B_EVENT_CREATE) {
 			lock_get(&htable[hash_index].lock);
 
 			if (dlg->state != B2B_TERMINATED) {
-				b2b_run_cb(dlg, etype, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-					serialize_backend);
+				b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
+					&storage, serialize_backend);
 
 				if (b2be_db_mode == WRITE_THROUGH)
 					b2be_db_insert(dlg, etype);
