@@ -23,9 +23,11 @@
  * --------
  *  2007-04-14  initial version (anca)
  */
-#define _XOPEN_SOURCE
 
+/* make strptime available */
+#define _GNU_SOURCE
 #include <time.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <libxml/parser.h>
