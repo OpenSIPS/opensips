@@ -645,6 +645,18 @@ void cancel_invite(struct sip_msg *cancel_msg,
 	 * timer; this helps with better coping with missed/lated provisional
 	 * replies in the context of cancelling the transaction
 	 */
+
+	 /* Handle a special case here, when there is only one PHONY
+	  * branch (not a real signaling branch, just a fake one
+	  * to force keeping the transaction alive) - if the case,
+	  * it means there are no other real signaling branches, 
+	  * so we can force a 487 reply on the PHONY branch, in order
+	  * to terminate the whole transaction on the spot */
+	if ( (t_invite->nr_of_outgoings-t_invite->first_branch)==1 &&
+	(t_invite->uac[t_invite->first_branch].flags & T_UAC_IS_PHONY) ) {
+		relay_reply( t_invite, FAKED_REPLY, t_invite->first_branch,
+			487, &cancel_bitmap);
+	}
 #if 0
 	/* internally cancel branches with no received reply */
 	for (i=t_invite->first_branch; i<t_invite->nr_of_outgoings; i++) {
