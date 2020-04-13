@@ -1098,7 +1098,8 @@ modparam("dialog", "timer_bulk_del_no", 10)
 	<section id="race_condition_timeout" xreflabel="race_condition_timeout">
 		<title><varname>race_condition_timeout</varname> (int)</title>
 		<para>
-		If dialog is created using the 'E' flag, and a 200OK with CANCEL race condition occurs, then the dialog will be terminated after 'race_condition_timeout' seconds.
+		If dialog is created using the 'E' flag, and a SIP Race condition happens, then the dialog will be terminated after 'race_condition_timeout' seconds.
+		Currently, the only supported race conditions are (200OK vs CANCEL) and (early BYE vs 200OK)
 		</para>
 		<para>
 		<emphasis>
@@ -1371,26 +1372,42 @@ modparam("dialog", "replicate_profiles_expire", 10)
 		request must be an initial request.
 
 		Optionally,the function also receives a string parameter, which specifies
-		whether the dialog end-points should be pinged via SIP options
-		messages. The parameter can be "P" to specify to only ping the
-		caller, "p" to only ping the callee or "Pp" to ping both dialog
-		sides. If the extra string parameter is provided and one
-		end-point fails to respond to a options ping, OpenSIPS will
-		terminate the dialog from the middle.
-		Also, the end-points can be pinged via in-dialog Re-INVITE SIP messages. This
-		behaviour is controlled via the "R" flags for pinging the caller side, and
-		the "r" flag for re-invite pinging the callee side. If one end-points fails
-		to re-negotiate the session via the Re-INVITE pings, OpenSIPS will terminate
-		the dialog from the middle
-
-		The string parameter can also contain "B" to activate the bye on
-		timeout behavior.
+		special behavior to be done for the current dialog. 
 
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>flags (string, optional)</emphasis>
+				Possible values here are :
+				<itemizedlist>
+				<listitem><para>
+				B - Upon reaching dialog lifetime, BYEs will be triggered
+				both ways
+				</para></listitem>
+				<listitem><para>
+				P - Ping caller side with OPTIONS messages, once every
+				options_ping_interval seconds
+				</para></listitem>
+				<listitem><para>
+				p - Ping callee side with OPTIONS messages, once every
+				options_ping_interval seconds
+				</para></listitem>
+				<listitem><para>
+				R - Ping caller side with RE-INVITE messages, once every
+				reinvite_ping_interval seconds
+				</para></listitem>
+				<listitem><para>
+				r - Ping callee side with RE-INVITE messages, once every
+				reinvite_ping_interval seconds
+				</para></listitem>
+				<listitem><para>
+				E - Upon detecting a SIP Race condition (see RFC 5407),
+				end the call after race_condition_timeout seconds
+				</para></listitem>
+				</itemizedlist>
+				Multiple string flags can be used at the same time,
+				ie. passing "BPp" flags will enable all 3 flags.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2923,11 +2940,19 @@ set_dlg_sharing_tag("vip1");
 						</para>
 					</listitem>
 					<listitem>
-						<para><emphasis>Ping Timeout</emphasis> - Dialog ended because no reply to in-dialog pings
+						<para><emphasis>Ping Timeout</emphasis> - Dialog ended because no reply to option pings
+						</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>ReINVITE Ping Timeout</emphasis> - Dialog ended because no reply to reinvite pings
 						</para>
 					</listitem>
 					<listitem>
 						<para><emphasis>RTPProxy Timeout</emphasis> - Media timeout signaled by RTPProxy
+						</para>
+					</listitem>
+					<listitem>
+						<para><emphasis>SIP Race Condition</emphasis> - SIP Race Condition occurred
 						</para>
 					</listitem>
 				</itemizedlist>

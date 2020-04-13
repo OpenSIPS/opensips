@@ -495,19 +495,16 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		/* only if we did force match the Cancel to the
 		 * dialog before ( from the script ) */
 		dlg->flags |= DLG_FLAG_WAS_CANCELLED;
-		init_dlg_term_reason(dlg,"Cancelled",sizeof("Cancelled")-1);
 
 		if (dlg->flags & DLG_FLAG_END_ON_RACE_CONDITION &&
 		dlg->state>= DLG_STATE_CONFIRMED_NA) {
 			dlg->lifetime_dirty = 1;
 
-			/* XXX - end dialog in 5 seconds, to let nomal flow occur
-			Make this configurable ? A good UA should end the
-			call anyway by then  */
 			LM_DBG("Received CANCEL for a 200 OK'ed call call %.*s - terminating\n",
 			dlg->callid.len,dlg->callid.s);
 
 			dlg->lifetime = race_condition_timeout; 
+			dlg->flags |= DLG_FLAG_RACE_CONDITION_OCCURRED;
 
 			switch ( update_dlg_timer( &dlg->tl, dlg->lifetime ) ) {
 			case -1:
@@ -519,6 +516,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 				/* dlg inserted in timer list with new expire (reference it)*/
 				ref_dlg(dlg,1);
 			}
+		} else {
+			init_dlg_term_reason(dlg,"Cancelled",sizeof("Cancelled")-1);
 		}
 
 		if (current_processing_ctx && ctx_dialog_get()==NULL) {
@@ -567,7 +566,16 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			dlg->callid.len,dlg->callid.s);
 			
 			dlg->lifetime = race_condition_timeout;
+			dlg->flags |= DLG_FLAG_RACE_CONDITION_OCCURRED;
+		} else if (dlg->flags & DLG_FLAG_HASBYE &&
+		dlg->flags & DLG_FLAG_END_ON_RACE_CONDITION) {
+			LM_DBG("Received 200OK for early BYE call %.*s - terminating\n",
+			dlg->callid.len,dlg->callid.s);
+
+			dlg->lifetime = race_condition_timeout;
+			dlg->flags |= DLG_FLAG_RACE_CONDITION_OCCURRED;
 		}
+
 
 		/* set start time */
 		dlg->start_ts = (unsigned int)(time(0));
@@ -2092,8 +2100,12 @@ void dlg_ontimeout(struct dlg_tl *tl)
 	if ((dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
 		(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
 
-		if (do_expire_actions)
-			init_dlg_term_reason(dlg,"Lifetime Timeout",sizeof("Lifetime Timeout")-1);
+		if (do_expire_actions) {
+			if (dlg->flags & DLG_FLAG_RACE_CONDITION_OCCURRED)
+				init_dlg_term_reason(dlg,"SIP Race Condition",sizeof("SIP Race Condition")-1);
+			else
+				init_dlg_term_reason(dlg,"Lifetime Timeout",sizeof("Lifetime Timeout")-1);
+		}
 		/* we just send the BYEs in both directions */
 		dlg_end_dlg(dlg, NULL, do_expire_actions);
 		/* dialog is no longer refed by timer; from now on it is refed

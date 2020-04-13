@@ -1222,8 +1222,13 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 					 *
 					 * RFC says caller may send BYEs for early dialogs,
 					 * while the callee side MUST not send such requests*/
-					if (last_dst_leg == 0)
+					if (last_dst_leg == 0) {
 						log_next_state_dlg(event, dlg);
+					} else {
+						/* we don't transition, but rather we
+						 * mark the BYE as received */
+						dlg->flags |= DLG_FLAG_HASBYE;
+					}
 			}
 			break;
 		case DLG_EVENT_REQPRACK:

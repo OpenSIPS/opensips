@@ -81,6 +81,7 @@
 #define DLG_FLAG_REINVITE_PING_ENGAGED_REPL	(1<<14)
 #define DLG_FLAG_END_ON_RACE_CONDITION		(1<<15)
 #define DLG_FLAG_WAS_CANCELLED			(1<<16)
+#define DLG_FLAG_RACE_CONDITION_OCCURRED	(1<<17)
 
 #define dlg_has_reinvite_pinging(dlg) \
 	(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || \

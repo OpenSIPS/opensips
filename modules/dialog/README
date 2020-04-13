@@ -916,9 +916,10 @@ modparam("dialog", "timer_bulk_del_no", 10)
 
 1.6.40. race_condition_timeout (int)
 
-   If dialog is created using the 'E' flag, and a 200OK with
-   CANCEL race condition occurs, then the dialog will be
-   terminated after 'race_condition_timeout' seconds.
+   If dialog is created using the 'E' flag, and a SIP Race
+   condition happens, then the dialog will be terminated after
+   'race_condition_timeout' seconds. Currently, the only supported
+   race conditions are (200OK vs CANCEL) and (early BYE vs 200OK)
 
    Default value is “5” seconds.
 
@@ -1080,22 +1081,25 @@ modparam("dialog", "replicate_profiles_expire", 10)
    The function creats the dialog for the currently processed
    request. The request must be an initial request. Optionally,the
    function also receives a string parameter, which specifies
-   whether the dialog end-points should be pinged via SIP options
-   messages. The parameter can be "P" to specify to only ping the
-   caller, "p" to only ping the callee or "Pp" to ping both dialog
-   sides. If the extra string parameter is provided and one
-   end-point fails to respond to a options ping, OpenSIPS will
-   terminate the dialog from the middle. Also, the end-points can
-   be pinged via in-dialog Re-INVITE SIP messages. This behaviour
-   is controlled via the "R" flags for pinging the caller side,
-   and the "r" flag for re-invite pinging the callee side. If one
-   end-points fails to re-negotiate the session via the Re-INVITE
-   pings, OpenSIPS will terminate the dialog from the middle The
-   string parameter can also contain "B" to activate the bye on
-   timeout behavior.
+   special behavior to be done for the current dialog.
 
    Parameters:
-     * flags (string, optional)
+     * flags (string, optional) Possible values here are :
+          + B - Upon reaching dialog lifetime, BYEs will be
+            triggered both ways
+          + P - Ping caller side with OPTIONS messages, once every
+            options_ping_interval seconds
+          + p - Ping callee side with OPTIONS messages, once every
+            options_ping_interval seconds
+          + R - Ping caller side with RE-INVITE messages, once
+            every reinvite_ping_interval seconds
+          + r - Ping callee side with RE-INVITE messages, once
+            every reinvite_ping_interval seconds
+          + E - Upon detecting a SIP Race condition (see RFC
+            5407), end the call after race_condition_timeout
+            seconds
+       Multiple string flags can be used at the same time, ie.
+       passing "BPp" flags will enable all 3 flags.
 
    The function returns true if the dialog was successfully
    created or if the dialog was previously created.
@@ -2072,9 +2076,12 @@ GIwZjAzNGM1ZDY
      * Downstream BYE - Caller has sent a BYE
      * Lifetime Timeout - Dialog lifetime expired
      * MI Termination - Dialog ended via the MI interface
-     * Ping Timeout - Dialog ended because no reply to in-dialog
+     * Ping Timeout - Dialog ended because no reply to option
        pings
+     * ReINVITE Ping Timeout - Dialog ended because no reply to
+       reinvite pings
      * RTPProxy Timeout - Media timeout signaled by RTPProxy
+     * SIP Race Condition - SIP Race Condition occurred
 
    NULL will be returned if there is no dialog for the request, or
    if the dialog is not ended in the current context.
@@ -2196,64 +2203,64 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       What happened with “topology_hiding()” function?
+   What happened with “topology_hiding()” function?
 
-       The respective functionality was moved into the topology_hiding
-       module. Function prototype has remained the same.
+   The respective functionality was moved into the topology_hiding
+   module. Function prototype has remained the same.
 
    3.2.
 
-       What happened with “use_tight_match” parameter?
+   What happened with “use_tight_match” parameter?
 
-       The parameter was removed with version 1.3 as the option of
-       tight matching became mandatory and not configurable. Now, the
-       tight matching is done all the time (when using DID matching).
+   The parameter was removed with version 1.3 as the option of
+   tight matching became mandatory and not configurable. Now, the
+   tight matching is done all the time (when using DID matching).
 
    3.3.
 
-       What happened with “bye_on_timeout_flag” parameter?
+   What happened with “bye_on_timeout_flag” parameter?
 
-       The parameter was removed in a dialog module parameter
-       restructuring. To keep the bye on timeout behavior, you need to
-       provide a "B" string parameter to the create_dialog() function.
+   The parameter was removed in a dialog module parameter
+   restructuring. To keep the bye on timeout behavior, you need to
+   provide a "B" string parameter to the create_dialog() function.
 
    3.4.
 
-       What happened with “dlg_flag” parameter?
+   What happened with “dlg_flag” parameter?
 
-       The parameter is considered obsolete. The only way to create a
-       dialog is to call the create_dialog() function
+   The parameter is considered obsolete. The only way to create a
+   dialog is to call the create_dialog() function
 
    3.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    3.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    3.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 4. Contributors
 
