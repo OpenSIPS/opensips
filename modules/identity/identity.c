@@ -57,30 +57,11 @@
  * Some functions are based on or copied from the source of the Textops module.
  */
 
-
-/**
- * make strptime available
- * use 600 for 'Single UNIX Specification, Version 3'
- */
-
-
-
 #include <fnmatch.h>
 
-#define _XOPEN_SOURCE 600          /* glibc2 on linux, bsd */
-#define _XOPEN_SOURCE_EXTENDED 1   /* solaris */
-
-/**
- * _XOPEN_SOURCE creates conflict in swab definition in Solaris
- */
-#ifdef __OS_solaris
-	#undef _XOPEN_SOURCE
-#endif
-
+/* make strptime available */
+#define _GNU_SOURCE
 #include <time.h>
-
-#undef _XOPEN_SOURCE
-#undef _XOPEN_SOURCE_EXTENDED
 
 #include <stdlib.h>
 #include <locale.h>
