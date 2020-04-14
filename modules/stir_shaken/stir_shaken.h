@@ -85,6 +85,9 @@
 #define TN_AUTH_LIST_LN "TNAuthorizationList"
 #define TN_AUTH_LIST_SN "TNAuthList"
 
+#define R_S_INT_LEN 32
+#define RAW_SIG_LEN 64
+
 struct parsed_identity {
 	cJSON *header;
 	cJSON *x5u;

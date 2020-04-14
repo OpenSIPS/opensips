@@ -667,15 +667,50 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 	return 0;
 }
 
+/* compatibility functions for openssl versions lower than 1.1 */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
+{
+	int bnlen, padlen;
+
+	bnlen = BN_num_bytes(a);
+
+	if (tolen < bnlen)
+		return -1;
+
+	padlen = tolen - bnlen;
+	memset(to, 0, padlen);
+
+	if (BN_bn2bin(a, to + padlen) == 0)
+		return -1;
+
+	return tolen;
+}
+
+const BIGNUM *ECDSA_SIG_get0_r(const ECDSA_SIG *sig)
+{
+    return sig->r;
+}
+
+const BIGNUM *ECDSA_SIG_get0_s(const ECDSA_SIG *sig)
+{
+    return sig->s;
+}
+#endif
+
 static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	time_t date_ts, str *attest, str *cr_url, str *orig_tn,
 	str *dest_tn, str *origid)
 {
 	str hdr_buf = {0,0};
 	str unsigned_buf;
-	str sig_buf = {0,0};
+	str der_sig_buf = {0,0};
+	unsigned char *der_sig_p;
+	unsigned char raw_sig_buf[RAW_SIG_LEN];
 	struct lump* anchor;
 	EVP_MD_CTX *mdctx = NULL;
+	ECDSA_SIG *sig = NULL;
+	int len;
 
 	if (build_unsigned_pport(&unsigned_buf, date_ts, attest, cr_url,
 		orig_tn, dest_tn, origid) < 0) {
@@ -697,24 +732,53 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 		goto error;
 	}
 
-	if (EVP_DigestSignFinal(mdctx, NULL, (size_t *)&sig_buf.len) <= 0) {
+	if (EVP_DigestSignFinal(mdctx, NULL, (size_t *)&der_sig_buf.len) <= 0) {
 		LM_ERR("Failed to get maximum signature length\n");
 		goto error;
 	}
-	sig_buf.s = pkg_malloc(sig_buf.len);
-	if (!sig_buf.s) {
+	der_sig_buf.s = pkg_malloc(der_sig_buf.len);
+	if (!der_sig_buf.s) {
 		LM_ERR("oom!\n");
 		goto error;
 	}
-	if (EVP_DigestSignFinal(mdctx, (unsigned char*)sig_buf.s,
-		(size_t *)&sig_buf.len) <= 0) {
+	der_sig_p = (unsigned char *)der_sig_buf.s;
+
+	if (EVP_DigestSignFinal(mdctx, (unsigned char*)der_sig_buf.s,
+		(size_t *)&der_sig_buf.len) <= 0) {
 		LM_ERR("Failed to sign data\n");
 		goto error;
 	}
+
 	EVP_MD_CTX_destroy(mdctx);
 
+	/* convert from DER format to the internal structure in order to extract
+	 * the R and S values */
+	sig = d2i_ECDSA_SIG(NULL, (const unsigned char **)&der_sig_p, der_sig_buf.len);
+	if (!sig) {
+		LM_ERR("Failed to convert from DER to internal format\n");
+		goto error;
+	}
+
+	pkg_free(der_sig_buf.s);
+	der_sig_buf.s = NULL;
+
+	len = BN_bn2binpad(ECDSA_SIG_get0_r(sig), raw_sig_buf, R_S_INT_LEN);
+	if (len < 0 || len != R_S_INT_LEN) {
+		LM_ERR("Failed to convert R integer into binay represantation\n");
+		goto error;
+	}
+	len = BN_bn2binpad(ECDSA_SIG_get0_s(sig), raw_sig_buf + R_S_INT_LEN,
+		R_S_INT_LEN);
+	if (len < 0 || len != R_S_INT_LEN) {
+		LM_ERR("Failed to convert S integer into binay represantation\n");
+		goto error;
+	}
+
+	ECDSA_SIG_free(sig);
+	sig = NULL;
+
 	hdr_buf.len = IDENTITY_HDR_LEN + unsigned_buf.len + 1/*'.'*/ +
-		calc_base64_encode_len(sig_buf.len) + 1/*';'*/ + HDR_INFO_PARAM_LEN +
+		calc_base64_encode_len(RAW_SIG_LEN) + 1/*';'*/ + HDR_INFO_PARAM_LEN +
 		2/*'<','>'*/ + cr_url->len + 1/*';'*/ + HDR_PPT_PARAM_LEN + CRLF_LEN;
 	hdr_buf.s = pkg_malloc(hdr_buf.len);
 	if (!hdr_buf.s) {
@@ -730,14 +794,12 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	pkg_free(unsigned_buf.s);
 
 	base64urlencode((unsigned char*)(hdr_buf.s + hdr_buf.len),
-		(unsigned char*)sig_buf.s, sig_buf.len);
-	hdr_buf.len += calc_base64_encode_len(sig_buf.len);
+		(unsigned char*)raw_sig_buf, RAW_SIG_LEN);
+	hdr_buf.len += calc_base64_encode_len(RAW_SIG_LEN);
 	if (hdr_buf.s[hdr_buf.len-1] == BASE64_PAD_CHAR)
 		hdr_buf.len--;
 	if (hdr_buf.s[hdr_buf.len-1] == BASE64_PAD_CHAR)
 		hdr_buf.len--;
-
-	pkg_free(sig_buf.s);
 
 	hdr_buf.s[hdr_buf.len++] = ';';
 	memcpy(hdr_buf.s + hdr_buf.len, HDR_INFO_PARAM_S, HDR_INFO_PARAM_LEN);
@@ -770,8 +832,10 @@ error:
 		EVP_MD_CTX_destroy(mdctx);
 	if (hdr_buf.s)
 		pkg_free(hdr_buf.s);
-	if (sig_buf.s)
-		pkg_free(sig_buf.s);
+	if (der_sig_buf.s)
+		pkg_free(der_sig_buf.s);
+	if (sig)
+		ECDSA_SIG_free(sig);
 	return -1;
 }
 
@@ -1341,6 +1405,16 @@ static int verify_signature(X509 *cert,
 	EVP_PKEY *pubkey = NULL;
 	str attest_s, x5u_s, origid_s;
 	int rc = -1;
+	str der_sig_buf = {0,0};
+	unsigned char *der_sig_p;
+	ECDSA_SIG *sig = NULL;
+	BIGNUM *r_int = NULL, *s_int = NULL;
+
+	if (parsed->dec_signature.len != RAW_SIG_LEN) {
+		LM_ERR("Bad raw signature length [%d], should be [%d]\n",
+			parsed->dec_signature.len, RAW_SIG_LEN);
+		goto error;
+	}
 
 	if (!(pubkey = X509_get_pubkey(cert))) {
 		LM_ERR("Failed to get public key from certificate\n");
@@ -1378,28 +1452,82 @@ static int verify_signature(X509 *cert,
 		goto error;
 	}
 
-	rc = EVP_DigestVerifyFinal(mdctx, (unsigned char*)parsed->dec_signature.s,
-		parsed->dec_signature.len);
+	/* convert the signature to DER fromat before verifying it
+	 * with EVP_DigestVerifyFinal() */
+
+	sig = ECDSA_SIG_new();
+
+	#if OPENSSL_VERSION_NUMBER < 0x10100000L
+	/* R and S components are already initialised by ECDSA_SIG_new() so
+	 * they should be passed to BN_bin2bn() */
+	r_int = sig->r;
+	s_int = sig->s;
+	#endif
+
+	r_int = BN_bin2bn((unsigned char*)parsed->dec_signature.s, R_S_INT_LEN,
+		r_int);
+	if (!r_int) {
+		LM_ERR("Failed to convert R integer from binay represantation\n");
+		goto error;
+	}
+	s_int = BN_bin2bn((unsigned char*)parsed->dec_signature.s + R_S_INT_LEN,
+		R_S_INT_LEN, s_int);
+	if (!s_int) {
+		LM_ERR("Failed to convert S integer from binay represantation\n");
+		goto error;
+	}
+
+	#if OPENSSL_VERSION_NUMBER > 0x10100000L
+	/* set the R and S components as they were not initialised by ECDSA_SIG_new() */
+	ECDSA_SIG_set0(sig, r_int, s_int);
+	#endif
+
+	der_sig_buf.len = i2d_ECDSA_SIG(sig, NULL);
+	if (!der_sig_buf.len) {
+		LM_ERR("Failed to get DER format signature lenght\n");
+		goto error;
+	}
+	der_sig_buf.s = pkg_malloc(der_sig_buf.len);
+	if (!der_sig_buf.s) {
+		LM_ERR("oom!\n");
+		goto error;
+	}
+	der_sig_p = (unsigned char*)der_sig_buf.s;
+
+	der_sig_buf.len = i2d_ECDSA_SIG(sig, &der_sig_p);
+	if (der_sig_buf.len < 0) {
+		LM_ERR("Failed to encode raw signature into DER format\n");
+		goto error;
+	}
+
+	rc = EVP_DigestVerifyFinal(mdctx, (unsigned char*)der_sig_buf.s,
+		der_sig_buf.len);
 	if (rc == 0)
 		goto verify_fail;
 	else if (rc != 1)
 		goto error;
 
+	ECDSA_SIG_free(sig);
 	EVP_PKEY_free(pubkey);
 	EVP_MD_CTX_destroy(mdctx);
 	pkg_free(unsigned_buf.s);
+	pkg_free(der_sig_buf.s);
 
 	return 0;
 
 verify_fail:
 	rc = -9;
 error:
+	if (sig)
+		ECDSA_SIG_free(sig);
 	if (pubkey)
 		EVP_PKEY_free(pubkey);
 	if (mdctx)
 		EVP_MD_CTX_destroy(mdctx);
 	if (unsigned_buf.s)
 		pkg_free(unsigned_buf.s);
+	if (der_sig_buf.s)
+		pkg_free(der_sig_buf.s);
 	return rc;
 }
 
