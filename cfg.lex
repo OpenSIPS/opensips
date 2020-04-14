@@ -212,6 +212,7 @@ LOGSTDERROR	log_stderror
 LOGFACILITY	log_facility
 LOGNAME		log_name
 LISTEN		listen
+LISTEN_SCTP_SEC		listen_sctp_sec
 MEMGROUP	mem-group
 ALIAS		alias
 AUTO_ALIASES	auto_aliases
@@ -417,6 +418,7 @@ SPACE		[ ]
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
+<INITIAL>{LISTEN_SCTP_SEC}	{ count(); yylval.strval=yytext; return LISTEN_SCTP_SEC; }
 <INITIAL>{MEMGROUP}	{ count(); yylval.strval=yytext; return MEMGROUP; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
 <INITIAL>{AUTO_ALIASES}	{ count(); yylval.strval=yytext; return AUTO_ALIASES; }

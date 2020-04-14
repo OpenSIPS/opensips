@@ -150,4 +150,6 @@ extern int disable_503_translation;
 
 extern int enable_asserts;
 extern int abort_on_assert;
+
+extern union sockaddr_union sctp_sec_addr;
 #endif

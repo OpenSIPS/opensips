@@ -314,6 +314,7 @@ int is_main = 1; /* flag = is this the  "main" process? */
 char* pid_file = 0; /* filename as asked by user */
 char* pgid_file = 0;
 
+union sockaddr_union sctp_sec_addr = { .s.sa_family = 0 };
 
 /**
  * Clean up on exit. This should be called before exiting.

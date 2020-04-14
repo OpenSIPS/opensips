@@ -341,6 +341,7 @@ extern int cfg_parse_only_routes;
 %token LOGNAME
 %token AVP_ALIASES
 %token LISTEN
+%token LISTEN_SCTP_SEC
 %token MEMGROUP
 %token ALIAS
 %token AUTO_ALIASES
@@ -1137,6 +1138,14 @@ assign_stm: DEBUG EQUAL snumber
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
 						"expected (use quotes if the hostname includes"
 						" config keywords)"); }
+		| LISTEN_SCTP_SEC EQUAL  ip {
+							if (init_su(&sctp_sec_addr, $3, 0)!=0){
+								LM_CRIT("cfg. parser: failed"
+										" to add secondary sctp address\n");
+								break;
+							}
+						}
+		| LISTEN_SCTP_SEC EQUAL  error { yyerror("ip address expected"); }
 		| MEMGROUP EQUAL STRING COLON multi_string { IFOR();
 							/* convert STIRNG ($3) to an ID */
 							/* update the memstats type for each module */
