@@ -21,6 +21,7 @@
  * History:
  * ---------
  *  2017-12-12 first version (besser82)
+ *  2020-04-13 adaptions for upcoming json-c 0.14.0 (besser82)
  */
 
 #ifndef OPENSIPS_JSON_C_HELPER_H
@@ -57,12 +58,27 @@
 #endif
 
 /* Macros for checking specific versions. */
-#define JSON_C_VERSION_010 (10 << 8)
-#define JSON_C_VERSION_013 (13 << 8)
+#define JSON_C_VERSION_010   (10 << 8)
+#define JSON_C_VERSION_013   (13 << 8)
+#define JSON_C_VERSION_01399 ((13 << 8) | 99)
 
 /* json_object_private.h is gone and not needed anymore in json-c v0.13+. */
 #if JSON_C_VERSION_NUM < JSON_C_VERSION_013
 #include <json_object_private.h>
+#endif
+
+/*
+ * json-c 0.13.99 does not define TRUE/FALSE anymore
+ * the json-c maintainers replaced them with pure 1/0
+ * https://github.com/json-c/json-c/commit/0992aac61f8b
+ */
+#if JSON_C_VERSION_NUM >= JSON_C_VERSION_01399
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE  1
+#endif
 #endif
 
 /*
