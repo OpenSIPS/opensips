@@ -39,7 +39,7 @@ static str ei_contact_del_name = str_init(UL_EV_CT_DELETE);
 static str ei_contact_refresh_name = str_init(UL_EV_CT_REFRESH);
 static str ei_contact_latency_update_name = str_init(UL_EV_LATENCY_UPDATE);
 
-static str ei_aor_name = str_init(UL_EV_PARAM_AOR_URI);
+static str ei_aor_name = str_init(UL_EV_PARAM_AOR);
 static str ei_c_uri_name = str_init(UL_EV_PARAM_CT_URI);
 static str ei_c_recv_name = str_init(UL_EV_PARAM_CT_RCV);
 static str ei_c_path_name = str_init(UL_EV_PARAM_CT_PATH);

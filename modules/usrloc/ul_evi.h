@@ -33,7 +33,7 @@
 #define UL_EV_LATENCY_UPDATE "E_UL_LATENCY_UPDATE"
 
 /* event params */
-#define UL_EV_PARAM_AOR_URI  "aor"
+#define UL_EV_PARAM_AOR      "aor"
 #define UL_EV_PARAM_CT_URI   "uri"
 #define UL_EV_PARAM_CT_RCV   "received"
 #define UL_EV_PARAM_CT_PATH  "path"

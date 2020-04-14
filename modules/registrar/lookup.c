@@ -88,7 +88,7 @@ int push_branch(struct sip_msg *msg, ucontact_t *ct, int *ruri_is_pushed)
 	if (*ruri_is_pushed)
 		goto append_branch;
 
-	LM_DBG("setting as ruri <%.*s>\n", ct->c.len, ct->c.s);
+	LM_DBG("setting msg R-URI <%.*s>\n", ct->c.len, ct->c.s);
 
 	if (set_ruri(msg, &ct->c) < 0) {
 		LM_ERR("unable to rewrite Request-URI\n");
@@ -148,7 +148,6 @@ append_branch:
 
 		/* The same as for the first contact applies for branches
 		 * regarding path vs. received. */
-		LM_DBG("setting branch R-URI <%.*s>\n", ct->c.len, ct->c.s);
 		if (append_branch(msg, &ct->c,
 		           path_dst.len ? &path_dst : &ct->received,
 		           &ct->path, ct->q, ct->cflags, ct->sock) == -1) {
@@ -427,9 +426,7 @@ fetch_urecord:
 		return -1;
 	}
 
-#ifdef EXTRA_DEBUG
 	print_urecord(r);
-#endif
 
 	ptr = select_contacts(_m, r->contacts, flags, &sip_instance, &call_id,
 	                      &ua_re, max_latency, &ret);
