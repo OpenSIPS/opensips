@@ -49,11 +49,9 @@ REGENERATE_MEM_STATS=remove-mem-stats
 endif
 endif
 
-# if unit tests are enabled and the module has tests, build them into the .so
+# if unit tests are enabled, build any module test code into the module .so
 ifneq (,$(findstring UNIT_TESTS,$(DEFS)))
-ifneq ($(wildcard test/),)
-extra_sources+=test/*.c
-endif
+extra_sources+=$(wildcard test/*.c)
 endif
 
 include ../../Makefile.sources

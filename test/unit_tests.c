@@ -41,6 +41,8 @@ void init_unit_tests(void)
 		solve_module_dependencies(modules);
 		//init_cachedb_tests();
 		//init_malloc_tests();
+	} else {
+		ensure_global_context();
 	}
 }
 
