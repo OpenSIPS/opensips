@@ -196,10 +196,6 @@ error:
 	return ret;
 }
 
-#ifndef DLSYM_PREFIX
-/* define it to null */
-#define DLSYM_PREFIX
-#endif
 
 static inline int version_control(struct module_exports* exp, char *path)
 {
@@ -694,10 +690,8 @@ int init_modules(void)
 	struct sr_module *currentMod;
 	int ret;
 
-	if (testing_framework) {
+	if (testing_framework)
 		init_unit_tests();
-		solve_module_dependencies(modules);
-	}
 
 	/* pre-initialize all modules */
 	for (currentMod=modules; currentMod; currentMod=currentMod->next) {
@@ -718,6 +712,7 @@ int init_modules(void)
 	return ret;
 }
 
+
 /* Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
 int module_loaded(char *name)
 {
@@ -731,6 +726,18 @@ int module_loaded(char *name)
 	}
 
 	return 0;
+}
+
+
+void *get_mod_handle(const char *name)
+{
+	struct sr_module *mod;
+
+	for (mod = modules; mod; mod = mod->next)
+		if (!strcasecmp(name, mod->exports->name))
+			return mod->handle;
+
+	return NULL;
 }
 
 

@@ -148,14 +148,17 @@
 #include "ssl_tweaks.h"
 
 /*
- * when enabled ("-T" cmdline param), OpenSIPS startup will unfold as follows:
+ * when enabled ("-T <module>" cmdline param), OpenSIPS will behave as follows:
  *   - enable debug mode
  *   - fork workers normally
  *   - run all currently enabled unit tests
+ *     (if module != "core", the modules/<module>/test/ suite is ran,
+ *      otherwise the core's ./test/ suite)
  *   - print the unit test summary
  *   - exit with 0 on success, non-zero otherwise
  */
 int testing_framework;
+char *testing_module = "core";
 
 static char* version=OPENSIPS_FULL_VERSION;
 static char* flags=OPENSIPS_COMPILE_FLAGS;
@@ -918,7 +921,7 @@ int main(int argc, char** argv)
 
 	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
 #ifdef UNIT_TESTS
-	"T"
+	"T:"
 #endif
 	;
 
@@ -1130,8 +1133,14 @@ int main(int argc, char** argv)
 					break;
 #ifdef UNIT_TESTS
 			case 'T':
-					LM_INFO("running in testing framework mode!\n");
+					LM_INFO("running in testing framework mode, for '%s'\n", optarg);
 					testing_framework = 1;
+					testing_module = optarg;
+					if (strcmp(testing_module, "core")) {
+						cfg_file = malloc(100);
+						snprintf(cfg_file, 100, "modules/%s/test/opensips.cfg",
+						         testing_module);
+					}
 					break;
 #endif
 			case '?':
@@ -1199,7 +1208,8 @@ try_again:
 
 	set_osips_state( STATE_STARTING );
 
-	if (!testing_framework && parse_opensips_cfg(cfg_file, preproc, NULL) < 0) {
+	if ((!testing_framework || strcmp(testing_module, "core"))
+	        && parse_opensips_cfg(cfg_file, preproc, NULL) < 0) {
 		LM_ERR("failed to parse config file %s\n", cfg_file);
 		goto error00;
 	}
