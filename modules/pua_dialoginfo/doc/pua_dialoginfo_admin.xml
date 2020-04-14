@@ -564,6 +564,38 @@ branch_route[out]
 		</example>
 	</section>
 
+	<section id="func_dialoginfo_mute_branch" xreflabel="dialoginfo_mute_branch()">
+		<title>
+		<function moreinfo="none">dialoginfo_mute_branch([side])</function>
+		</title>
+		<para>
+		This function must be called for INVITE messages, in the branch route
+		only, in order to mute the publishing of the dialoginfo information
+		for caller/callee/both parties involved in that branch.
+		</para>
+		<para>
+		Meaning of the parameters:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>side</emphasis> (string, optional) - can be
+			"A" or/and "B" for caller or callee muting only - if missing,
+			both sides will be muted.</para>
+		</listitem>
+		</itemizedlist>
+		<example>
+		<title><function>dialoginfo_mute_branch</function> usage</title>
+		<programlisting format="linespecific">
+...
+	branch_route[out] {
+		# mute publishing for callee side if not a local domain
+		if (!is_domain_local("$rd"))
+			dialoginfo_mute_branch("B");
+	}
+...
+		</programlisting>
+		</example>
+	</section>
 
 	</section>
 
