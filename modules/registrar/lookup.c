@@ -385,6 +385,7 @@ int lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri)
 {
 	static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
 	static str branch_uris[MAX_BRANCHES-1];
+	struct sip_uri puri;
 	int idx = 0, nbranches = 0, tlen;
 	char *turi;
 	qvalue_t tq;
@@ -479,6 +480,28 @@ fetch_urecord:
 			rc = push_branch(_m, ct, &ruri_is_pushed);
 			if (rc == 0 && (flags & REG_LOOKUP_NOBRANCH_FLAG))
 				goto done;
+		}
+	}
+
+	/* awake any PN Contacts */
+	for (; cts < pn_cts; cts++) {
+		if (parse_uri((*cts)->c.s, (*cts)->c.len, &puri) != 0) {
+			LM_ERR("failed to parse Contact '%.*s'\n",
+			       (*cts)->c.len, (*cts)->c.s);
+			continue;
+		}
+
+		if (have_pn_cts == 0) {
+			// TODO
+			//tmb.t_newtran();
+			//tmb.t_wait_for_new_branches();
+			have_pn_cts = 1;
+		}
+
+		if (pn_trigger_pn(_m, *cts, &puri) != 0) {
+			LM_ERR("failed to trigger PN for Contact: '%.*s'\n",
+			       (*cts)->c.len, (*cts)->c.s);
+			continue;
 		}
 	}
 

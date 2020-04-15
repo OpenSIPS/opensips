@@ -195,6 +195,7 @@ int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
 			LM_ERR("failed to shm malloc a new EBR filter\n");
 			goto error;
 		}
+		memset(&f_curr->uri_param_key, 0, sizeof f_curr->uri_param_key);
 
 		/* the key string comes just right after the structure */
 		f_curr->key.s = (char*)(f_curr+1);

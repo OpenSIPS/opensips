@@ -20,7 +20,13 @@
  */
 
 #include "../../lib/csv.h"
+#include "../../ipc.h"
+#include "../../usr_avp.h"
 #include "../../parser/parse_uri.h"
+#include "../../modules/tm/tm_load.h"
+#include "../../modules/usrloc/usrloc.h"
+#include "../../modules/usrloc/ul_evi.h"
+#include "../../modules/event_routing/api.h"
 
 #include "pn.h"
 
@@ -37,6 +43,7 @@ char *_pn_providers;
 str_list *pn_ct_params;
 
 struct pn_provider *pn_providers;
+static ebr_filter *pn_ebr_filters;
 
 #define MAX_PROVIDER_LEN 20
 #define MAX_PNSPURR_LEN 40
@@ -45,12 +52,18 @@ struct pn_provider *pn_providers;
 			"+sip.pnsreg=\"\";+sip.pnspurr=\"\"") + \
 			MAX_PROVIDER_LEN + INT2STR_MAX_LEN + MAX_PNSPURR_LEN + CRLF_LEN)
 
+static ebr_api_t ebr;
+extern usrloc_api_t ul;
+extern struct tm_binds tmb;
+static ebr_event *ev_ct_update;
+
 
 int pn_init(void)
 {
 	str_list *param;
 	csv_record *items, *pnp;
 	struct pn_provider *provider;
+	ebr_filter *filter;
 
 	if (!pn_enable)
 		return 0;
@@ -59,6 +72,17 @@ int pn_init(void)
 
 	if (!_pn_providers) {
 		LM_ERR("the 'pn_providers' modparam is missing\n");
+		return -1;
+	}
+
+	if (load_ebr_api(&ebr) != 0) {
+		LM_ERR("failed to load EBR API\n");
+		return -1;
+	}
+
+	ev_ct_update = ebr.get_ebr_event(_str(UL_EV_CT_UPDATE));
+	if (!ev_ct_update) {
+		LM_ERR("failed to obtain EBR event for Contact UPDATE\n");
 		return -1;
 	}
 
@@ -83,6 +107,18 @@ int pn_init(void)
 
 		LM_DBG("parsed PN contact param: '%.*s'\n",
 		       param->s.len, param->s.s);
+
+		/* build the filter templates, values are to be filled in at runtime */
+		filter = shm_malloc(sizeof *filter);
+		if (!filter) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+		memset(filter, 0, sizeof *filter);
+
+		filter->key = *_str(UL_EV_PARAM_CT_URI);
+		filter->uri_param_key = param->s;
+		add_last(filter, pn_ebr_filters);
 	}
 	free_csv_record(items);
 
@@ -173,6 +209,119 @@ next_param:;
 	}
 
 	return PN_ON;
+}
+
+
+/**
+ * On an incoming REGISTER triggered by a PN, this callback trims away the RFC
+ * 8599 Contact URI parameters from the E_UL_CONTACT_UPDATE event data before
+ * packing the data as AVPs, to be included in the outgoing SIP branch R-URI
+ */
+static struct usr_avp *pn_trim_pn_params(evi_params_t *params)
+{
+	struct usr_avp *avp, *head = NULL;
+	struct sip_uri puri;
+	evi_param_t *p;
+	int_str val;
+	int avp_id;
+	str *sval, _sval;
+
+	for (p = params->first; p; p = p->next) {
+		/* get an AVP name matching the param name */
+		if (parse_avp_spec(&p->name, &avp_id) < 0) {
+			LM_ERR("cannot get AVP ID for name <%.*s>, skipping..\n",
+			       p->name.len, p->name.s);
+			continue;
+		}
+
+		/* the Contact URI is the only EVI param we're interested in */
+		if (str_match(&p->name, _str(UL_EV_PARAM_CT_URI)) &&
+              pn_has_uri_params(&p->val.s, &puri)) {
+			if (pn_remove_uri_params(&puri, p->val.s.len, &_sval) != 0) {
+				LM_ERR("failed to remove PN params from Contact '%.*s'\n",
+				       p->val.s.len, p->val.s.s);
+				sval = &p->val.s;
+			} else {
+				sval = &_sval;
+			}
+		} else {
+			sval = &p->val.s;
+		}
+
+		/* create a new AVP */
+		if (p->flags & EVI_STR_VAL) {
+			val.s = *sval;
+			avp = new_avp(AVP_VAL_STR, avp_id, val);
+		} else if (p->flags & EVI_INT_VAL) {
+			val.n = p->val.n;
+			avp = new_avp(0, avp_id, val);
+		} else {
+			LM_BUG("EVI param no STR, nor INT, ignoring...\n");
+			continue;
+		}
+
+		if (!avp) {
+			LM_ERR("cannot get create new AVP name <%.*s>, skipping..\n",
+			       p->name.len, p->name.s);
+			continue;
+		}
+
+		/* link the AVP */
+		avp->next = head;
+		head = avp;
+	}
+
+	return head;
+}
+
+
+static void pn_inject_branch(void)
+{
+	// TODO
+	//tmb.t_inject_branch()
+}
+
+
+static void pn_rpc_raise_ct_refresh(int _, void *param)
+{
+	ul.raise_ev_ct_refresh((ucontact_t *)param);
+}
+
+
+int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
+                  const struct sip_uri *ct_uri)
+{
+	ebr_filter *f;
+
+	/* fill in the filter templates */
+	for (f = pn_ebr_filters; f; f = f->next) {
+		for (int i = 0; i < ct_uri->u_params_no; i++) {
+			if (str_match(&f->uri_param_key, ct_uri->u_name + i)) {
+				f->val = ct_uri->u_val[i];
+				goto next_param;
+			}
+		}
+
+		LM_ERR("failed to locate '%.*s' URI param in Contact '%.*s'\n",
+		       f->uri_param_key.len, f->uri_param_key.s, ct->c.len, ct->c.s);
+		return -1;
+
+next_param:;
+	}
+
+	if (ebr.notify_on_event(req, ev_ct_update, pn_ebr_filters,
+	        pn_trim_pn_params, pn_inject_branch, pn_inv_timeout) != 0) {
+		LM_ERR("failed to subscribe to "UL_EV_CT_UPDATE", Contact: %.*s\n",
+		       ct->c.len, ct->c.s);
+		return -1;
+	}
+
+	if (ipc_dispatch_rpc(pn_rpc_raise_ct_refresh, (void *)ct) != 0) {
+		LM_ERR("failed to send RPC for "UL_EV_CT_REFRESH"\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 

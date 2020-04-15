@@ -27,6 +27,7 @@
 #include "../../str_list.h"
 #include "../../ut.h"
 
+#include "../../modules/usrloc/ucontact.h"
 #include "regtime.h"
 
 struct pn_provider {
@@ -71,6 +72,17 @@ int pn_init(void);
  */
 enum pn_action pn_inspect_ct_params(const str *ct_uri);
 
+
+/**
+ * Trigger an asynchronous Push Notification, by use of the
+ * E_UL_CONTACT_REFRESH event + all required data, and return immediately.
+ *
+ * Return: 0 on success, -1 otherwise.
+ */
+int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
+                  const struct sip_uri *ct_uri);
+
+
 /**
  * Check if the given Contact URI contains all required RFC 8599 URI parameters
  * @ct: the contact URI to be parsed
@@ -79,6 +91,7 @@ enum pn_action pn_inspect_ct_params(const str *ct_uri);
  * Return: 1 if true, 0 otherwise
  */
 int pn_has_uri_params(const str *ct, struct sip_uri *parsed_uri);
+
 
 /**
  * Remove any RFC 8599 URI parameters from the given parsed Contact URI,
@@ -91,8 +104,10 @@ int pn_has_uri_params(const str *ct, struct sip_uri *parsed_uri);
  */
 int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri);
 
+
 #define pn_required(ucontact) \
 	(((ucontact)->last_modified + pn_skip_pn_interval >= get_act_time()) || \
 	 (ucontact)->last_modified == 0)
+
 
 #endif /* __REG_PN_H__ */

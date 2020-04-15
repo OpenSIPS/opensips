@@ -24,6 +24,7 @@
 #define _MODULE_EBR_H
 
 #include "../../locking.h"
+#include "../tm/t_lookup.h"
 
 #define EVI_ROUTING_NAME "routing"
 

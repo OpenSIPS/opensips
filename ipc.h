@@ -104,8 +104,8 @@ int ipc_dispatch_job(ipc_handler_type type, void *payload);
  *
  * Return: 0 on success, -1 on failure
  */
-
 int ipc_dispatch_rpc( ipc_rpc_f *rpc, void *param);
+
 
 /*
  * default handler for F_IPC reactor jobs. Copy-paste its code and improve
@@ -123,7 +123,9 @@ void ipc_handle_all_pending_jobs(int fd);
 /* internal functions */
 int init_ipc(void);
 
+
 int create_ipc_pipes(int proc_no);
+
 
 /* required by the IPC PIPE macros */
 #include "pt.h"
