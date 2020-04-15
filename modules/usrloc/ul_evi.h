@@ -61,8 +61,7 @@ extern event_id_t ei_c_refresh_id;
 
 int ul_event_init(void);
 void ul_raise_aor_event(event_id_t _e, struct urecord *_r);
-void ul_raise_contact_event(event_id_t _e, ucontact_t *_c);
-void ul_raise_contact_event_api(ucontact_t *_c);
-void ul_raise_refresh_event(struct ucontact *_c);
+void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c);
+void ul_raise_ct_refresh_event(const ucontact_t *_c, int async);
 
 #endif /* __UL_EVI_H__ */

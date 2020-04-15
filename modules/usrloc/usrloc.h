@@ -99,7 +99,8 @@ typedef struct usrloc_api {
 	register_ulcb_t           register_ulcb;
 	update_sipping_latency_t  update_sipping_latency;
 
-	void (*raise_ev_ct_refresh) (ucontact_t *ct);
+	/* @async: set to 1 to raise the refresh event in a non-blocking way */
+	void (*raise_ev_ct_refresh) (const ucontact_t *ct, int async);
 } usrloc_api_t;
 
 

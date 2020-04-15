@@ -19,6 +19,7 @@
  */
 
 #include "../../evi/evi_modules.h"
+#include "../../ipc.h"
 
 #include "ul_evi.h"
 
@@ -72,6 +73,7 @@ static evi_param_p ul_c_cseq_param;
 static evi_param_p ul_c_attr_param;
 static evi_param_p ul_c_latency_param;
 static evi_param_p ul_c_shtag_param;
+
 
 /*! \brief
  * Initialize event structures
@@ -254,7 +256,7 @@ void ul_raise_aor_event(event_id_t _e, struct urecord* _r)
 }
 
 
-void ul_raise_contact_event(event_id_t _e, ucontact_t *_c)
+void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c)
 {
 	static str str_empty = {"", 0};
 
@@ -353,7 +355,92 @@ void ul_raise_contact_event(event_id_t _e, ucontact_t *_c)
 		LM_ERR("cannot raise event\n");
 }
 
-void ul_raise_contact_event_api(ucontact_t *_c)
+
+static void ul_rpc_raise_ct_refresh(int _, void *ct)
 {
-	ul_raise_contact_event(ei_c_refresh_id, _c);
+	ul_raise_contact_event(ei_c_refresh_id, (ucontact_t *)ct);
+	shm_free(ct);
+}
+
+
+void ul_raise_ct_refresh_event(const ucontact_t *c, int async)
+{
+	ucontact_t *ct;
+	char *p;
+
+	if (!async) {
+		ul_raise_contact_event(ei_c_refresh_id, c);
+	} else {
+		/* since we cannot send a (ucontact_t *), we must dup the data */
+		ct = shm_malloc(sizeof *ct + sizeof *c->aor + c->aor->len + c->c.len +
+				c->received.len + c->path.len + c->user_agent.len +
+				(c->sock ? (sizeof *c->sock + c->sock->sock_str.len) : 0) +
+				c->callid.len + c->attr.len + c->shtag.len);
+		if (!ct) {
+			LM_ERR("oom\n");
+			return;
+		}
+
+		p = (char *)(ct + 1);
+
+		ct->aor = (str *)p;
+		p += sizeof *ct->aor;
+
+		ct->aor->s = p;
+		str_cpy(ct->aor, c->aor);
+		p += ct->aor->len;
+
+		ct->c.s = p;
+		str_cpy(&ct->c, &c->c);
+		p += ct->c.len;
+
+		ct->received.s = p;
+		str_cpy(&ct->received, &c->received);
+		p += ct->received.len;
+
+		ct->path.s = p;
+		str_cpy(&ct->path, &c->path);
+		p += ct->path.len;
+
+		ct->user_agent.s = p;
+		str_cpy(&ct->user_agent, &c->user_agent);
+		p += ct->user_agent.len;
+
+		if (!c->sock) {
+			ct->sock = NULL;
+		} else {
+			ct->sock = (struct socket_info *)p;
+			p += sizeof *ct->sock;
+
+			ct->sock->sock_str.s = p;
+			str_cpy(&ct->sock->sock_str, &c->sock->sock_str);
+			p += ct->sock->sock_str.len;
+		}
+
+		ct->callid.s = p;
+		str_cpy(&ct->callid, &c->callid);
+		p += ct->callid.len;
+
+		ct->attr.s = p;
+		str_cpy(&ct->attr, &c->attr);
+		p += ct->attr.len;
+
+		if (!c->shtag.s) {
+			memset(&ct->shtag, 0, sizeof ct->shtag);
+		} else {
+			ct->shtag.s = p;
+			str_cpy(&ct->shtag, &c->shtag);
+		}
+
+		ct->q = c->q;
+		ct->cflags = c->cflags;
+		ct->expires = c->expires;
+		ct->cseq = c->cseq;
+		ct->sipping_latency = c->sipping_latency;
+
+		if (ipc_dispatch_rpc(ul_rpc_raise_ct_refresh, (void *)ct) != 0) {
+			LM_ERR("failed to send RPC for "UL_EV_CT_REFRESH"\n");
+			return;
+		}
+	}
 }

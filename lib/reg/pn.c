@@ -20,7 +20,6 @@
  */
 
 #include "../../lib/csv.h"
-#include "../../ipc.h"
 #include "../../usr_avp.h"
 #include "../../parser/parse_uri.h"
 #include "../../modules/tm/tm_load.h"
@@ -282,12 +281,6 @@ static void pn_inject_branch(void)
 }
 
 
-static void pn_rpc_raise_ct_refresh(int _, void *param)
-{
-	ul.raise_ev_ct_refresh((ucontact_t *)param);
-}
-
-
 int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
                   const struct sip_uri *ct_uri)
 {
@@ -316,10 +309,7 @@ next_param:;
 		return -1;
 	}
 
-	if (ipc_dispatch_rpc(pn_rpc_raise_ct_refresh, (void *)ct) != 0) {
-		LM_ERR("failed to send RPC for "UL_EV_CT_REFRESH"\n");
-		return -1;
-	}
+	ul.raise_ev_ct_refresh(ct, 1);
 
 	return 0;
 }

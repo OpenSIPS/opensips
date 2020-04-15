@@ -83,7 +83,7 @@ int bind_usrloc(usrloc_api_t* api)
 	api->have_mem_storage = have_mem_storage;
 	api->tags_in_use = tags_in_use;
 
-	api->raise_ev_ct_refresh = ul_raise_contact_event_api;
+	api->raise_ev_ct_refresh = ul_raise_ct_refresh_event;
 
 	return 0;
 }
