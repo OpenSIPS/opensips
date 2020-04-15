@@ -212,6 +212,7 @@ static param_export_t params[] = {
 	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval},
 	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval},
 	{"pn_skip_pn_interval", INT_PARAM, &pn_skip_pn_interval},
+	{"pn_inv_timeout",      INT_PARAM, &pn_inv_timeout},
 
 	{0, 0, 0}
 };

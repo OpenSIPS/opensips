@@ -50,6 +50,7 @@ extern int pn_enable;
 extern int pn_pnsreg_interval;
 extern int pn_trigger_interval;
 extern int pn_skip_pn_interval;
+extern int pn_inv_timeout;
 extern str pn_provider_param;
 extern char *_pn_ct_params;
 extern char *_pn_providers;

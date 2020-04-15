@@ -29,6 +29,7 @@ int pn_enable;
 int pn_pnsreg_interval = 130;  /* sec */
 int pn_trigger_interval = 120; /* sec */
 int pn_skip_pn_interval = 0; /* sec */
+int pn_inv_timeout = 6; /* sec */
 str pn_provider_param = str_init("pn-provider");
 char *_pn_ct_params = "pn-provider, pn-prid, pn-param";
 char *_pn_providers;

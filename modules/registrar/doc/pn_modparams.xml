@@ -121,8 +121,8 @@ modparam("registrar", "pn_pnsreg_interval", 140)
 		<para>
 			Once E_UL_CONTACT_REFRESH is triggered, the script writer should use
 			the RFC 8599 parameters from the Contact URI in order to generate a
-			push notification request towards the PN provider of the device, to
-			cause the device to wake up and re-register.
+			Push Notification request to the PN provider of the device, in
+			order to cause the device to wake up and re-register.
 		</para>
 		<para>
 			<emphasis>
@@ -145,7 +145,7 @@ modparam("registrar", "pn_trigger_interval", 130)
 		<para>
 			Following a successful (re)registration of a contact, this setting
 			denotes a time interval, in seconds, during which the contact is
-			assumed to be reachable and any Push Notifications will be skipped.
+			assumed to be reachable, so any Push Notifications will be skipped.
 		</para>
 		<para>
 			<emphasis>
@@ -159,6 +159,37 @@ modparam("registrar", "pn_trigger_interval", 130)
 		<programlisting format="linespecific">
 ...
 modparam("registrar", "pn_skip_pn_interval", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_pn_inv_timeout" xreflabel="pn_inv_timeout">
+		<title><varname>pn_inv_timeout</varname> (integer)</title>
+		<para>
+			This timeout starts counting following a <xref linkend="func_lookup"/>
+			which triggers at least one Push Notification.  The value
+			represents the maximum allowed time for the Push Notifications and
+			their corresponding re-registrations from the awoken SIP UA to take
+			place.
+		</para>
+		<para>
+			Once this timeout is exceeded for the pending INVITE, any
+			further re-registrations corresponding to the pending Push
+			Notifications will no longer cause the INVITE to automatically
+			fork out to the registering devices.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>6 seconds</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_inv_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrar", "pn_inv_timeout", 5)
 ...
 </programlisting>
 		</example>
