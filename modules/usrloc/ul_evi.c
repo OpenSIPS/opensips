@@ -40,6 +40,7 @@ static str ei_contact_del_name = str_init(UL_EV_CT_DELETE);
 static str ei_contact_refresh_name = str_init(UL_EV_CT_REFRESH);
 static str ei_contact_latency_update_name = str_init(UL_EV_LATENCY_UPDATE);
 
+static str ei_dom_name = str_init(UL_EV_PARAM_DOMAIN);
 static str ei_aor_name = str_init(UL_EV_PARAM_AOR);
 static str ei_c_uri_name = str_init(UL_EV_PARAM_CT_URI);
 static str ei_c_recv_name = str_init(UL_EV_PARAM_CT_RCV);
@@ -58,7 +59,9 @@ static str ei_c_shtag_name = str_init(UL_EV_PARAM_CT_SHTAG);
 static evi_params_p ul_aor_event_params;
 static evi_params_p ul_contact_event_params;
 
+static evi_param_p ul_dom_param;
 static evi_param_p ul_aor_param;
+static evi_param_p ul_c_dom_param;
 static evi_param_p ul_c_aor_param;
 static evi_param_p ul_c_uri_param;
 static evi_param_p ul_c_recv_param;
@@ -80,6 +83,8 @@ static evi_param_p ul_c_shtag_param;
  */
 int ul_event_init(void)
 {
+	/* Event IDs */
+
 	ei_ins_id = evi_publish_event(ei_ins_name);
 	if (ei_ins_id == EVI_ERROR) {
 		LM_ERR("cannot register aor insert event\n");
@@ -122,17 +127,28 @@ int ul_event_init(void)
 		return -1;
 	}
 
+	/* AoR event params */
+
 	ul_aor_event_params = pkg_malloc(sizeof(evi_params_t));
 	if (!ul_aor_event_params) {
 		LM_ERR("no more pkg memory\n");
 		return -1;
 	}
 	memset(ul_aor_event_params, 0, sizeof(evi_params_t));
+
+	ul_dom_param = evi_param_create(ul_aor_event_params, &ei_dom_name);
+	if (!ul_dom_param) {
+		LM_ERR("cannot create AoR domain parameter\n");
+		return -1;
+	}
+
 	ul_aor_param = evi_param_create(ul_aor_event_params, &ei_aor_name);
 	if (!ul_aor_param) {
 		LM_ERR("cannot create AOR parameter\n");
 		return -1;
 	}
+
+	/* Contact event params */
 
 	ul_contact_event_params = pkg_malloc(sizeof(evi_params_t));
 	if (!ul_contact_event_params) {
@@ -140,6 +156,12 @@ int ul_event_init(void)
 		return -1;
 	}
 	memset(ul_contact_event_params, 0, sizeof(evi_params_t));
+
+	ul_c_dom_param = evi_param_create(ul_contact_event_params, &ei_dom_name);
+	if (!ul_c_dom_param) {
+		LM_ERR("cannot create contact domain parameter\n");
+		return -1;
+	}
 
 	ul_c_aor_param = evi_param_create(ul_contact_event_params, &ei_aor_name);
 	if (!ul_c_aor_param) {
@@ -247,10 +269,17 @@ void ul_raise_aor_event(event_id_t _e, struct urecord* _r)
 		LM_ERR("event not yet registered %d\n", _e);
 		return;
 	}
+
+	if (evi_param_set_str(ul_dom_param, _r->domain) < 0) {
+		LM_ERR("cannot set domain parameter\n");
+		return;
+	}
+
 	if (evi_param_set_str(ul_aor_param, &_r->aor) < 0) {
 		LM_ERR("cannot set AOR parameter\n");
 		return;
 	}
+
 	if (evi_raise_event(_e, ul_aor_event_params) < 0)
 		LM_ERR("cannot raise event\n");
 }
@@ -262,6 +291,12 @@ void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c)
 
 	if (_e == EVI_ERROR) {
 		LM_ERR("event not yet registered %d\n", _e);
+		return;
+	}
+
+	/* the domain */
+	if (evi_param_set_str(ul_c_dom_param, _c->domain) < 0) {
+		LM_ERR("cannot set contact domain parameter\n");
 		return;
 	}
 
@@ -372,16 +407,24 @@ void ul_raise_ct_refresh_event(const ucontact_t *c, int async)
 		ul_raise_contact_event(ei_c_refresh_id, c);
 	} else {
 		/* since we cannot send a (ucontact_t *), we must dup the data */
-		ct = shm_malloc(sizeof *ct + sizeof *c->aor + c->aor->len + c->c.len +
-				c->received.len + c->path.len + c->user_agent.len +
-				(c->sock ? (sizeof *c->sock + c->sock->sock_str.len) : 0) +
-				c->callid.len + c->attr.len + c->shtag.len);
+		ct = shm_malloc(sizeof *ct + sizeof *c->domain + c->domain->len +
+		            sizeof *c->aor + c->aor->len + c->c.len +
+		            c->received.len + c->path.len + c->user_agent.len +
+		            (c->sock ? (sizeof *c->sock + c->sock->sock_str.len) : 0) +
+		            c->callid.len + c->attr.len + c->shtag.len);
 		if (!ct) {
 			LM_ERR("oom\n");
 			return;
 		}
 
 		p = (char *)(ct + 1);
+
+		ct->domain = (str *)p;
+		p += sizeof *ct->domain;
+
+		ct->domain->s = p;
+		str_cpy(ct->domain, c->domain);
+		p += ct->domain->len;
 
 		ct->aor = (str *)p;
 		p += sizeof *ct->aor;

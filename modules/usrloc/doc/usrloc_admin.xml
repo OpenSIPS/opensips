@@ -1728,6 +1728,9 @@ modparam("usrloc", "contact_refresh_timer", 1)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
+				<emphasis>domain</emphasis> - The name of the table.
+			</para></listitem>
+			<listitem><para>
 				<emphasis>aor</emphasis> - The AOR of the inserted record.
 			</para></listitem>
 		</itemizedlist>
@@ -1742,6 +1745,9 @@ modparam("usrloc", "contact_refresh_timer", 1)
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
+			<listitem><para>
+				<emphasis>domain</emphasis> - The name of the table.
+			</para></listitem>
 			<listitem><para>
 				<emphasis>aor</emphasis> - The AOR of the deleted record.
 			</para></listitem>
@@ -1759,6 +1765,9 @@ modparam("usrloc", "contact_refresh_timer", 1)
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
+			<listitem><para>
+				<emphasis>domain</emphasis> - The name of the table.
+			</para></listitem>
 			<listitem><para>
 				<emphasis>aor</emphasis> - The AOR of the inserted contact.
 			</para></listitem>
