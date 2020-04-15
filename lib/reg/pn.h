@@ -70,6 +70,25 @@ int pn_init(void);
  */
 enum pn_action pn_inspect_ct_params(const str *ct_uri);
 
+/**
+ * Check if the given Contact URI contains all required RFC 8599 URI parameters
+ * @ct: the contact URI to be parsed
+ * @parsed_uri: optional holder for the parsing result
+ *
+ * Return: 1 if true, 0 otherwise
+ */
+int pn_has_uri_params(const str *ct, struct sip_uri *parsed_uri);
+
+/**
+ * Remove any RFC 8599 URI parameters from the given parsed Contact URI,
+ * write results to @out_uri
+ * @puri: a parsed version of the input URI
+ * @uri_len: the length of the input URI
+ * @out_uri: the printed output URI, stripped of PN parameters
+ *
+ * Return: 0 on success, -1 otherwise
+ */
+int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri);
 
 #define pn_required(ucontact) \
 	(((ucontact)->last_modified + pn_skip_pn_interval >= get_act_time()) || \

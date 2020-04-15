@@ -1085,12 +1085,19 @@ remove("location", "sip:bob@atlanta.com", , , "&lt;urn:uuid:e5e68d40-f08a-4600-b
 			<para>
 			<emphasis>1</emphasis> - contacts found and returned.
 			</para>
+		</listitem>
+		<listitem>
 			<para>
 			<emphasis>-1</emphasis> - no contact found.
 			</para>
+		</listitem>
+		<listitem>
 			<para>
-			<emphasis>-2</emphasis> - contacts found, but method not supported.
+			<emphasis>-2</emphasis> - contacts found, but neither of them
+			supports the current SIP method.
 			</para>
+		</listitem>
+		<listitem>
 			<para>
 			<emphasis>-3</emphasis> - internal error during processing.
 			</para>

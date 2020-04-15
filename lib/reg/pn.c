@@ -173,3 +173,70 @@ next_param:;
 
 	return PN_ON;
 }
+
+
+int pn_has_uri_params(const str *ct, struct sip_uri *puri)
+{
+	str_list *param;
+	struct sip_uri _puri;
+
+	if (!puri)
+		puri = &_puri;
+
+	memset(puri, 0, sizeof *puri);
+
+	if (parse_uri(ct->s, ct->len, puri) != 0) {
+		LM_ERR("failed to parse contact: '%.*s'\n", ct->len, ct->s);
+		return 0;
+	}
+
+	for (param = pn_ct_params; param; param = param->next) {
+		for (int i = 0; i < puri->u_params_no; i++)
+			if (str_match(&param->s, &puri->u_name[i]))
+				goto next_param;
+
+		return 0;
+
+next_param:;
+	}
+
+	return 1;
+}
+
+
+int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
+{
+	static str buf;
+	static int buf_len;
+	str_list *param;
+	str u_name_bak[URI_MAX_U_PARAMS];
+
+	if (pkg_str_extend(&buf, uri_len) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	buf_len = buf.len;
+
+	memcpy(u_name_bak, puri->u_name, URI_MAX_U_PARAMS * sizeof *u_name_bak);
+
+	for (param = pn_ct_params; param; param = param->next)
+		for (int i = 0; i < puri->u_params_no; i++)
+			if (str_match(&param->s, &puri->u_name[i])) {
+				puri->u_name[i].s = NULL;
+				break;
+			}
+
+	if (print_uri(puri, &buf) != 0) {
+		LM_ERR("failed to print contact URI\n");
+		return -1;
+	}
+
+	/* fix the struct sip_uri back */
+	memcpy(puri->u_name, u_name_bak, URI_MAX_U_PARAMS * sizeof *u_name_bak);
+
+	LM_DBG("trimmed URI: '%.*s'\n", buf.len, buf.s);
+
+	*out_uri = buf;
+	buf.len = buf_len;
+	return 0;
+}

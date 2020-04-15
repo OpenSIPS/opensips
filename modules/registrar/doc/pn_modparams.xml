@@ -64,6 +64,11 @@ modparam("registrar", "pn_providers", "apns, fcm, webpush")
 			other URI parameters, etc.).
 		</para>
 		<para>
+			After calling <xref linkend="func_lookup"/>, the above PN-related
+			parameters will be automatically stripped from the resulting
+			Request URI(s).
+		</para>
+		<para>
 			<emphasis>
 				Default value is <emphasis>"pn-provider, pn-prid, pn-param"</emphasis>.
 			</emphasis>

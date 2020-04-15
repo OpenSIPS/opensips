@@ -45,6 +45,7 @@
 #include "../../lib/reg/regtime.h"
 #include "../../lib/reg/config.h"
 #include "../../lib/reg/ci.h"
+#include "../../lib/reg/pn.h"
 
 #include "reg_mod.h"
 #include "lookup.h"
@@ -77,22 +78,46 @@ static int cmp_ucontact(const void *_ct1, const void *_ct2)
 	return ct1->sipping_latency - ct2->sipping_latency;
 }
 
+/**
+ * Return:
+ *     0 - success: contact pushed
+ *     1 - success: nothing to push
+ *     2 - success: contact not pushed, as it must be awoken by a PN first
+ *    -1 - failure to push to R-URI
+ *    -2 - failure to push to new branch
+ */
 int push_branch(struct sip_msg *msg, ucontact_t *ct, int *ruri_is_pushed)
 {
 	str path_dst;
 	int_str istr;
+	str *ct_uri, _ct_uri;
+	struct sip_uri puri;
 
 	if (!ct)
 		return 1;
 
+	if (pn_enable && pn_has_uri_params(&ct->c, &puri)) {
+		if (pn_required(ct))
+			return 2;
+
+		if (pn_remove_uri_params(&puri, ct->c.len, &_ct_uri) != 0) {
+			LM_ERR("failed to remove PN URI params\n");
+			return *ruri_is_pushed ? -1 : -2;
+		}
+
+		ct_uri = &_ct_uri;
+	} else {
+		ct_uri = &ct->c;
+	}
+
 	if (*ruri_is_pushed)
 		goto append_branch;
 
-	LM_DBG("setting msg R-URI <%.*s>\n", ct->c.len, ct->c.s);
+	LM_DBG("setting msg R-URI <%.*s>\n", ct_uri->len, ct_uri->s);
 
-	if (set_ruri(msg, &ct->c) < 0) {
+	if (set_ruri(msg, ct_uri) < 0) {
 		LM_ERR("unable to rewrite Request-URI\n");
-		return -3;
+		return -2;
 	}
 
 	/* If a Path is present, use first path-uri in favour of
@@ -101,19 +126,19 @@ int push_branch(struct sip_msg *msg, ucontact_t *ct, int *ruri_is_pushed)
 	if (ct->path.s && ct->path.len) {
 		if (get_path_dst_uri(&ct->path, &path_dst) < 0) {
 			LM_ERR("failed to get dst_uri for Path\n");
-			return -3;
+			return -2;
 		}
 		if (set_path_vector(msg, &ct->path) < 0) {
 			LM_ERR("failed to set path vector\n");
-			return -3;
+			return -2;
 		}
 		if (set_dst_uri(msg, &path_dst) < 0) {
 			LM_ERR("failed to set dst_uri of Path\n");
-			return -3;
+			return -2;
 		}
 	} else if (ct->received.s && ct->received.len) {
 		if (set_dst_uri(msg, &ct->received) < 0)
-			return -3;
+			return -2;
 	}
 
 	if (!(ct->flags & FL_EXTRA_HOP)) {
@@ -129,10 +154,10 @@ int push_branch(struct sip_msg *msg, ucontact_t *ct, int *ruri_is_pushed)
 	goto add_attr_avp;
 
 append_branch:
-	LM_DBG("setting branch R-URI <%.*s>\n", ct->c.len, ct->c.s);
+	LM_DBG("setting branch R-URI <%.*s>\n", ct_uri->len, ct_uri->s);
 
 	if (ct->flags & FL_EXTRA_HOP) {
-		if (append_branch(msg, &ct->c, &ct->received, &msg->path_vec,
+		if (append_branch(msg, ct_uri, &ct->received, &msg->path_vec,
 		                  get_ruri_q(msg), getb0flags(msg),
 		                  msg->force_send_socket) == -1) {
 			LM_ERR("failed to append a branch\n");
@@ -148,7 +173,7 @@ append_branch:
 
 		/* The same as for the first contact applies for branches
 		 * regarding path vs. received. */
-		if (append_branch(msg, &ct->c,
+		if (append_branch(msg, ct_uri,
 		           path_dst.len ? &path_dst : &ct->received,
 		           &ct->path, ct->q, ct->cflags, ct->sock) == -1) {
 			LM_ERR("failed to append a branch\n");
@@ -366,10 +391,10 @@ int lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri)
 
 	urecord_t* r;
 	str aor;
-	ucontact_t *ct, **ptr;
+	ucontact_t *ct, **ptr, **pn_cts, **cts;
 	int max_latency = 0, ruri_is_pushed = 0, regexp_flags = 0;
 	unsigned int flags;
-	int rc, ret = -1;
+	int rc, ret = -1, have_pn_cts = 0;
 	str sip_instance = STR_NULL, call_id = STR_NULL;
 	regex_t ua_re;
 
@@ -428,18 +453,20 @@ fetch_urecord:
 
 	print_urecord(r);
 
-	ptr = select_contacts(_m, r->contacts, flags, &sip_instance, &call_id,
+	cts = select_contacts(_m, r->contacts, flags, &sip_instance, &call_id,
 	                      &ua_re, max_latency, &ret);
 
 	/* do not attempt to push anything to RURI if the flags say so */
-	if (flags&REG_LOOKUP_NO_RURI_FLAG)
+	if (flags & REG_LOOKUP_NO_RURI_FLAG)
 		ruri_is_pushed = 1;
 
-	for (; *ptr; ptr++) {
+	for (ptr = pn_cts = cts; *ptr; ptr++) {
 		rc = push_branch(_m, *ptr, &ruri_is_pushed);
-		if (rc == -3) {
+		if (rc == -2) {
 			ret = -3;
 			goto done;
+		} else if (rc == 2) {
+			*pn_cts++ = *ptr;
 		}
 
 		if (rc == 0 && (flags & REG_LOOKUP_NOBRANCH_FLAG))
