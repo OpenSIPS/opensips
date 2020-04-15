@@ -24,11 +24,12 @@
 
 #include "pn.h"
 
-/* modparams */
+/* registrar modparams */
 int pn_enable;
 int pn_pnsreg_interval = 130;  /* sec */
 int pn_trigger_interval = 120; /* sec */
-char *pn_provider_param = "pn-provider";
+int pn_skip_pn_interval = 0; /* sec */
+str pn_provider_param = str_init("pn-provider");
 char *_pn_ct_params = "pn-provider, pn-prid, pn-param";
 char *_pn_providers;
 
@@ -52,6 +53,8 @@ int pn_init(void)
 
 	if (!pn_enable)
 		return 0;
+
+	pn_provider_param.len = strlen(pn_provider_param.s);
 
 	if (!_pn_providers) {
 		LM_ERR("the 'pn_providers' modparam is missing\n");
@@ -135,7 +138,7 @@ enum pn_action pn_inspect_ct_params(const str *ct_uri)
 	}
 
 	for (i = 0; i < puri.u_params_no; i++)
-		if (str_match(&puri.u_name[i], _str(pn_provider_param)))
+		if (str_match(&puri.u_name[i], &pn_provider_param))
 			goto match_provider;
 
 	return PN_NONE;

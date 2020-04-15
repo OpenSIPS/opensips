@@ -18,7 +18,7 @@
 		<title>Setting the <varname>pn_enable</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "pn_enable", true)
+modparam("registrar", "pn_enable", true)
 ...
 </programlisting>
 		</example>
@@ -41,7 +41,7 @@ modparam("usrloc", "pn_enable", true)
 		<title>Setting the <varname>pn_providers</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "pn_providers", "apns, fcm, webpush")
+modparam("registrar", "pn_providers", "apns, fcm, webpush")
 ...
 </programlisting>
 		</example>
@@ -73,7 +73,7 @@ modparam("usrloc", "pn_providers", "apns, fcm, webpush")
 		<title>Setting the <varname>pn_ct_match_params</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "pn_ct_match_params", "pn-provider, pn-prid")
+modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 ...
 </programlisting>
 		</example>
@@ -98,7 +98,7 @@ modparam("usrloc", "pn_ct_match_params", "pn-provider, pn-prid")
 		<title>Setting the <varname>pn_pnsreg_interval</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "pn_pnsreg_interval", 140)
+modparam("registrar", "pn_pnsreg_interval", 140)
 ...
 </programlisting>
 		</example>
@@ -129,7 +129,31 @@ modparam("usrloc", "pn_pnsreg_interval", 140)
 		<title>Setting the <varname>pn_trigger_interval</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("usrloc", "pn_trigger_interval", 130)
+modparam("registrar", "pn_trigger_interval", 130)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_pn_skip_pn_interval" xreflabel="pn_skip_pn_interval">
+		<title><varname>pn_skip_pn_interval</varname> (integer)</title>
+		<para>
+			Following a successful (re)registration of a contact, this setting
+			denotes a time interval, in seconds, during which the contact is
+			assumed to be reachable and any Push Notifications will be skipped.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis>0 seconds (always generate Push
+					Notifications)</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_skip_pn_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("registrar", "pn_skip_pn_interval", 10)
 ...
 </programlisting>
 		</example>

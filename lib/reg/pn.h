@@ -27,6 +27,8 @@
 #include "../../str_list.h"
 #include "../../ut.h"
 
+#include "regtime.h"
+
 struct pn_provider {
 	str name;
 	str feature_caps;
@@ -38,16 +40,17 @@ struct pn_provider {
 enum pn_action {
 	PN_NONE,            /* no 'pn-provider' was given */
 	PN_UNSUPPORTED_PNS, /* the given 'pn-provider' value is not supported */
-	PN_LIST_ALL_PNS,    /* only 'pn-provider' given, no value */
-	PN_LIST_ONE_PNS,    /* a known 'pn-provider' value was given */
-	PN_ON,              /* all required 'pn-*' params are given */
+	PN_LIST_ALL_PNS,    /* cap query: only 'pn-provider' given, no value */
+	PN_LIST_ONE_PNS,    /* cap query: a known 'pn-provider' value was given */
+	PN_ON,              /* enable PN: all required 'pn-*' params are present */
 };
 
 /* modparams */
 extern int pn_enable;
 extern int pn_pnsreg_interval;
 extern int pn_trigger_interval;
-extern char *pn_provider_param;
+extern int pn_skip_pn_interval;
+extern str pn_provider_param;
 extern char *_pn_ct_params;
 extern char *_pn_providers;
 
@@ -67,5 +70,9 @@ int pn_init(void);
  */
 enum pn_action pn_inspect_ct_params(const str *ct_uri);
 
+
+#define pn_required(ucontact) \
+	(((ucontact)->last_modified + pn_skip_pn_interval >= get_act_time()) || \
+	 (ucontact)->last_modified == 0)
 
 #endif /* __REG_PN_H__ */

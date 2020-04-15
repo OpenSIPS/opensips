@@ -211,6 +211,7 @@ static param_export_t params[] = {
 	{"pn_ct_match_params",  STR_PARAM, &_pn_ct_params},
 	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval},
 	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval},
+	{"pn_skip_pn_interval", INT_PARAM, &pn_skip_pn_interval},
 
 	{0, 0, 0}
 };
