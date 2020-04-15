@@ -254,7 +254,7 @@ void ul_raise_aor_event(event_id_t _e, struct urecord* _r)
 }
 
 
-void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
+void ul_raise_contact_event(event_id_t _e, ucontact_t *_c)
 {
 	static str str_empty = {"", 0};
 
@@ -351,4 +351,9 @@ void ul_raise_contact_event(event_id_t _e, struct ucontact *_c)
 
 	if (evi_raise_event(_e, ul_contact_event_params) < 0)
 		LM_ERR("cannot raise event\n");
+}
+
+void ul_raise_contact_event_api(ucontact_t *_c)
+{
+	ul_raise_contact_event(ei_c_refresh_id, _c);
 }

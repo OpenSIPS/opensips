@@ -34,6 +34,7 @@
 #include "usrloc.h"
 #include "../../sr_module.h"
 #include "ul_mod.h"
+#include "ul_evi.h"
 
 extern unsigned int nat_bflag;
 
@@ -81,6 +82,8 @@ int bind_usrloc(usrloc_api_t* api)
 	api->nat_flag   = nat_bflag;
 	api->have_mem_storage = have_mem_storage;
 	api->tags_in_use = tags_in_use;
+
+	api->raise_ev_ct_refresh = ul_raise_contact_event_api;
 
 	return 0;
 }

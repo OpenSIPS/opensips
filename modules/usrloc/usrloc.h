@@ -98,6 +98,8 @@ typedef struct usrloc_api {
 
 	register_ulcb_t           register_ulcb;
 	update_sipping_latency_t  update_sipping_latency;
+
+	void (*raise_ev_ct_refresh) (ucontact_t *ct);
 } usrloc_api_t;
 
 
