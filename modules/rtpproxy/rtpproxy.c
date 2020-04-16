@@ -336,6 +336,10 @@ static struct {
 	{.s = "rtp/avpf",  .len = 8, .is_rtp = 1},
 	{.s = "rtp/savp",  .len = 8, .is_rtp = 1},
 	{.s = "rtp/savpf", .len = 9, .is_rtp = 1},
+	{.s = "dccp/tls/rtp/savp", .len = 17, .is_rtp = 1},
+	{.s = "dccp/tls/rtp/savpf", .len = 18, .is_rtp = 1},
+	{.s = "udp/tls/rtp/savp", .len = 16, .is_rtp = 1},
+	{.s = "udp/tls/rtp/savpf", .len = 17, .is_rtp = 1},
 	{.s = "udp/bfcp",  .len = 8, .is_rtp = 0},
 	{.s = NULL,        .len = 0, .is_rtp = 0}
 };
