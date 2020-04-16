@@ -79,6 +79,72 @@ static inline gparam_p alloc_gp(void)
 	return gp;
 }
 
+int check_cmd(struct cmd_param *params, action_elem_t *elems)
+{
+	int i;
+	struct cmd_param *param;
+	pv_elem_t *pve;
+
+	for (param=params, i=1; param->flags; param++, i++) {
+		pve = NULL;
+
+		if (elems[i].type == NOSUBTYPE || elems[i].type == NULLV_ST) {
+			if (!(param->flags & CMD_PARAM_OPT)) {
+				LM_BUG("Mandatory parameter missing\n");
+				return -1;
+			} else {
+				continue;
+			}
+		}
+
+		if (param->flags & CMD_PARAM_INT) {
+			if (elems[i].type != NUMBER_ST && elems[i].type != SCRIPTVAR_ST) {
+				LM_ERR("Param [%d] expected to be an integer or variable\n", i);
+				return -1;
+			}
+		} else if (param->flags & CMD_PARAM_STR) {
+			if (elems[i].type == STR_ST) {
+				if (!(param->flags & CMD_PARAM_NO_EXPAND) &&
+					pv_parse_format(&elems[i].u.s, &pve) < 0) {
+					LM_ERR("Failed to parse formatted string in param "
+						"[%d]\n",i);
+					return -1;
+				}
+
+				if ((!(param->flags & CMD_PARAM_NO_EXPAND) &&
+				    (pve->next || pve->spec.type != PVT_NONE)) &&
+					(param->flags & CMD_PARAM_STATIC)) {
+					LM_ERR("Param [%d] does not support formatted strings\n",i);
+					return -1;
+				}
+
+				if (pve)
+					pv_elem_free_all(pve);
+			} else if (elems[i].type == SCRIPTVAR_ST) {
+				if (param->flags & CMD_PARAM_STATIC) {
+					LM_ERR("Param [%d] does not support variables\n",i);
+					return -1;
+				}
+			} else {
+				LM_ERR("Param [%d] expected to be a string or variable\n", i);
+				return -1;
+			}
+		} else if (param->flags & CMD_PARAM_VAR) {
+			if (elems[i].type != SCRIPTVAR_ST) {
+				LM_ERR("Param [%d] expected to be a variable\n",i);
+				return -1;
+			}
+		} else if (param->flags & CMD_PARAM_REGEX) {
+			if (elems[i].type != STR_ST && elems[i].type != SCRIPTVAR_ST) {
+				LM_ERR("Param [%d] expected to be an integer or variable\n", i);
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 {
 	int i;

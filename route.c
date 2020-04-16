@@ -1843,6 +1843,8 @@ static int rcheck_stack[RT_NO];
 static int rcheck_stack_p = 0;
 static int rcheck_status = 0;
 
+static int check_expr(struct expr* exp, int r_type);
+
 static int check_actions(struct action *a, int r_type)
 {
 	struct action *aitem;
@@ -1870,6 +1872,8 @@ static int check_actions(struct action *a, int r_type)
 				rcheck_stack_p--;
 				break;
 			case IF_T:
+				if (check_expr((struct expr*)a->elem[0].u.data, r_type) < 0)
+					goto error;
 				if (check_actions((struct action*)a->elem[1].u.data, r_type)!=0)
 					goto error;
 				if (check_actions((struct action*)a->elem[2].u.data, r_type)!=0)
@@ -1903,6 +1907,12 @@ static int check_actions(struct action *a, int r_type)
 						LM_ERR("route stack[%d]=%d\n",n,rcheck_stack[n]);
 					}
 				}
+
+				if (check_cmd(fct->params, a->elem) < 0) {
+					LM_ERR("check failed for function <%s>, %s:%d\n", fct->name,
+						a->file, a->line);
+					rcheck_status = -1;
+				}
 				break;
 			default:
 				break;
@@ -1912,6 +1922,57 @@ static int check_actions(struct action *a, int r_type)
 	return 0;
 error:
 	return -1;
+}
+
+static int check_expr(struct expr* exp, int r_type)
+{
+	int ret = -1;
+
+	if (exp==0) {
+		LM_CRIT("null pointer\n");
+		return -1;
+	}
+
+	if (exp->type==EXP_T){
+		switch(exp->op){
+			case AND_OP:
+			case OR_OP:
+				if (check_expr(exp->left.v.expr, r_type) < 0)
+					return -1;
+				return check_expr(exp->right.v.expr, r_type);
+			case NOT_OP:
+			case EVAL_OP:
+				return check_expr(exp->left.v.expr, r_type);
+			default:
+				LM_CRIT("unknown op %d\n", exp->op);
+				return -1;
+		}
+	} else if (exp->type==ELEM_T){
+			if (exp->left.type==ACTION_O){
+				ret=check_actions((struct action*)exp->right.v.data, r_type);
+				if (ret!=0){
+					LM_CRIT("check_actions error\n");
+					return ret;
+				}
+			}
+			if (exp->left.type==EXPR_O){
+				ret=check_expr(exp->left.v.expr, r_type);
+				if (ret!=0){
+					LM_CRIT("check left exp error\n");
+					return ret;
+				}
+			}
+			if (exp->right.type==EXPR_ST){
+				ret=check_expr(exp->right.v.expr, r_type);
+				if (ret!=0){
+					LM_CRIT("fix right exp error\n");
+					return ret;
+				}
+			}
+			ret=0;
+	}
+
+	return ret;
 }
 
 
