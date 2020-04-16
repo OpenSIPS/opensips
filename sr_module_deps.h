@@ -56,6 +56,8 @@
  *		- it is up to the module writers to prevent such side effects
  */
 
+#include <stdarg.h>
+
 #include "str.h"
 
 #define MAX_MOD_DEPS 10
@@ -90,9 +92,17 @@ typedef struct modparam_dependency {
 	struct module_dependency *(*get_deps_f)(param_export_t *param);
 } modparam_dependency_t;
 
+
 /* helps to avoid duplicate code when writing "get_deps_f" functions */
 module_dependency_t *alloc_module_dep(enum module_type mod_type, char *mod_name,
 									  enum dep_type dep_type);
+
+
+/* same as above, but with VLA, (3 * N + 1) arguments
+ * and _must_ end with the special MOD_TYPE_NULL value */
+module_dependency_t *_alloc_module_dep(enum module_type mod_type, char *mod_name,
+                             enum dep_type dep_type, ... /* , MOD_TYPE_NULL */);
+
 
 /* commonly used modparam dependency functions */
 
