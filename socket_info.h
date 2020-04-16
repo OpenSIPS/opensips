@@ -416,8 +416,8 @@ static inline char* proto2str(int proto, char *p)
 			break;
 		default:
 			LM_CRIT("unsupported proto %d\n", proto);
-			return 0;
 	}
+
 	return p;
 }
 
