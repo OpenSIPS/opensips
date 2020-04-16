@@ -20,8 +20,10 @@
  */
 
 #include "../../lib/csv.h"
-#include "../../usr_avp.h"
 #include "../../parser/parse_uri.h"
+#include "../../usr_avp.h"
+#include "../../data_lump_rpl.h"
+
 #include "../../modules/tm/tm_load.h"
 #include "../../modules/usrloc/usrloc.h"
 #include "../../modules/usrloc/ul_evi.h"
@@ -41,7 +43,7 @@ char *_pn_providers;
 
 str_list *pn_ct_params;
 
-struct pn_provider *pn_providers;
+static struct pn_provider *pn_providers;
 static ebr_filter *pn_ebr_filters;
 
 #define MAX_PROVIDER_LEN 20
@@ -222,6 +224,23 @@ next_param:;
 	}
 
 	return PN_ON;
+}
+
+
+void pn_append_feature_caps(struct sip_msg *msg)
+{
+	struct pn_provider *prov;
+
+	for (prov = pn_providers; prov; prov = prov->next) {
+		if (!prov->append_fcaps)
+			continue;
+
+		if (!add_lump_rpl(msg, prov->feature_caps.s, prov->feature_caps.len,
+		                  LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE))
+			LM_ERR("oom\n");
+
+		prov->append_fcaps = 0;
+	}
 }
 
 

@@ -431,7 +431,6 @@ static int add_unsupported(struct sip_msg* _m, str* _p)
  */
 int send_reply(struct sip_msg* _m, unsigned int _flags)
 {
-	struct pn_provider *prov;
 	str unsup = str_init(SUPPORTED_PATH_STR);
 	long code;
 	str msg = str_init(MSG_200); /* makes gcc shut up */
@@ -464,18 +463,8 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 		}
 	}
 
-	if (pn_enable) {
-		/* append any required Feature-Caps header fields */
-		for (prov = pn_providers; prov; prov = prov->next) {
-			if (!prov->append_fcaps)
-				continue;
-
-			if (!add_lump_rpl(_m, prov->feature_caps.s, prov->feature_caps.len,
-			             LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE))
-				LM_ERR("oom\n");
-			prov->append_fcaps = 0;
-		}
-	}
+	if (pn_enable)
+		pn_append_feature_caps(_m);
 
 	code = rerr_codes[rerrno];
 	switch(code) {

@@ -75,19 +75,26 @@ struct module_dependency *pn_get_deps(param_export_t *param);
 
 /* useful fixups */
 extern str_list *pn_ct_params;  /* list of parsed match params */
-extern struct pn_provider *pn_providers;
 
 
 /**
- * initialize RFC 8599 support
+ * Initialize RFC 8599 support
  */
 int pn_init(void);
 
 
 /**
- * look for any RFC 8599 URI parameters and take the appropriate action
+ * Look for any RFC 8599 URI parameters and take the appropriate action
  */
 enum pn_action pn_inspect_ct_params(const str *ct_uri);
+
+
+/**
+ * Append any required Feature-Caps header fields.  Before calling this
+ * function, you must call pn_inspect_ct_params() in order to interpret the
+ * UA's intentions and prepare the appropriate Feature-Caps header content.
+ */
+void pn_append_feature_caps(struct sip_msg *msg);
 
 
 /**
