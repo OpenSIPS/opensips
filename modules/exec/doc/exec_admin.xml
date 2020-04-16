@@ -434,18 +434,27 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
 		<para>
 		Executes an external command. This function does exactly the same as
 		<xref linkend="func_exec"/> (in terms of input, output and processing),
-		but in an asynchronous way. The script execution is suspended until the external script
-		provided all its output. OpenSIPS waits for the external script to close its output
-		stream, not necessarily to terminate (so the script may still be running when OpenSIPS
-		resumes the script execution on "seeing" EOF on the the output stream).
+		but in an asynchronous way. The script execution is suspended until
+		the external script provided all its output. OpenSIPS waits for the
+		external script to close its output stream, not necessarily to
+		terminate (so the script may still be running when OpenSIPS
+		resumes the script execution on "seeing" EOF on the the output stream)
+		</para>
+		NOTE: if the stdout variable is missing, OpenSIPS will assume that the
+		output of the external script is not needed and it will NOT WAIT at
+		all for the script. So, if triggered via "launch()", there will be no 
+		asynchronous waiting, so no resume route triggering!!
+		<para>
 		</para>
 		<para>
-		NOTE: this function ignore the "error" parameters for now - the asynchronous waiting is
-		done only on the output stream !! This may be fixed in the following versions.
+		NOTE: this function ignore the "stderr" parameter for now - the
+		asynchronous waiting is done only on the output stream !! This may
+		be fixed in the following versions.
 		</para>
 		<para>
-		To read and understand more on the asynchronous functions, how to use them and what are their
-		advantages, please refer to the OpenSIPS online Manual.
+		To read and understand more on the asynchronous functions, how to use
+		them and what are their advantages, please refer to the OpenSIPS 
+		online Manual.
 		</para>
 		<example>
 		<title><function moreinfo="none">async exec</function> usage</title>
