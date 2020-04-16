@@ -334,7 +334,7 @@ static struct {
 	{.s = "udptl",     .len = 5, .is_rtp = 0},
 	{.s = "rtp/avp",   .len = 7, .is_rtp = 1},
 	{.s = "rtp/avpf",  .len = 8, .is_rtp = 1},
- 	{.s = "rtp/savp",  .len = 8, .is_rtp = 1},
+	{.s = "rtp/savp",  .len = 8, .is_rtp = 1},
 	{.s = "rtp/savpf", .len = 9, .is_rtp = 1},
 	{.s = "dccp/tls/rtp/savp", .len = 17, .is_rtp = 1},
 	{.s = "dccp/tls/rtp/savpf", .len = 18, .is_rtp = 1},
