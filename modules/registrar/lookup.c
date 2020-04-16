@@ -492,9 +492,32 @@ fetch_urecord:
 		}
 
 		if (have_pn_cts == 0) {
-			// TODO
-			//tmb.t_newtran();
-			//tmb.t_wait_for_new_branches();
+			rc = tmb.t_newtran(_m);
+			switch (rc) {
+			case 1:
+				break;
+
+			case E_SCRIPT:
+				LM_DBG("%.*s transaction already exists, continuing...\n",
+				       _m->REQ_METHOD_S.len, _m->REQ_METHOD_S.s);
+				break;
+
+			case 0:
+				LM_INFO("absorbing %.*s retransmission, use t_check_trans() "
+				        "earlier\n", _m->REQ_METHOD_S.len, _m->REQ_METHOD_S.s);
+				ret = 0;
+				goto done;
+
+			default:
+				LM_ERR("internal error %d while creating %.*s transaction\n",
+				       rc, _m->REQ_METHOD_S.len, _m->REQ_METHOD_S.s);
+				ret = -3;
+				goto done;
+			}
+
+			if (tmb.t_wait_for_new_branches(_m) != 1)
+				LM_ERR("failed to enable waiting for new branches\n");
+
 			have_pn_cts = 1;
 		}
 

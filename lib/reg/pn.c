@@ -276,8 +276,8 @@ static struct usr_avp *pn_trim_pn_params(evi_params_t *params)
 
 static void pn_inject_branch(void)
 {
-	// TODO
-	//tmb.t_inject_branch()
+	if (tmb.t_inject_ul_event_branch() != 1)
+		LM_ERR("failed to inject a branch for the "UL_EV_CT_UPDATE" event!\n");
 }
 
 
