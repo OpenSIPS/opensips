@@ -248,7 +248,7 @@ static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
 
 
 static inline void post_print_uac_request(struct sip_msg *request,
-				str *org_uri, str *org_dst, struct sip_msg_body *body_clone)
+			const str *org_uri, str *org_dst, struct sip_msg_body *body_clone)
 {
 	reset_init_lump_flags();
 	/* delete inserted branch lumps */
@@ -383,7 +383,7 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
    or error (<0); it doesn't send a message yet -- a reply to it
    might interfere with the processes of adding multiple branches
 */
-static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
+static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 		str* next_hop, unsigned int bflags, str* path, struct proxy_l *proxy)
 {
 	unsigned short branch;
@@ -754,9 +754,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			t->first_branch--;
 	}
 
-	/* as first branch, use current uri */
-	current_uri = *GET_RURI(p_msg);
-	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst,
+	/* as first branch, use current R-URI, bflags, etc. */
+	branch_ret = add_uac( t, p_msg, GET_RURI(p_msg), &backup_dst,
 		getb0flags(p_msg), &p_msg->path_vec, proxy);
 	if (branch_ret>=0)
 		added_branches |= 1<<branch_ret;

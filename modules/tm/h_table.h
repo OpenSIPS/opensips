@@ -258,8 +258,11 @@ typedef struct cell
 	/* first branch - when serial forking is performed, keeps the first
 	 * branch for each step ; it allows proper branch selection */
 	int first_branch;
-	/* number of forks */
+
+	/* total number of UAC structures (forks), regardless whether the
+	 * messages have been successfully relayed or not.  Starts at 0. */
 	int nr_of_outgoings;
+
 	/* nr of replied branch; 0..MAX_BRANCHES=branch value,
 	 * -1 no reply, -2 local reply */
 	int relaied_reply_branch;
