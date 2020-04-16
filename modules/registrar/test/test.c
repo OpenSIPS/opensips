@@ -22,6 +22,8 @@
 
 #include "../../../dprint.h"
 #include "../../../test/ut.h"
+#include "../../../parser/parse_methods.h"
+#include "../../../parser/msg_parser.h"
 #include "../../../lib/reg/pn.h"
 #include "../../../lib/reg/regtime.h"
 
@@ -30,27 +32,22 @@
 #include "../lookup.h"
 
 
-ucontact_t *create_contact(const char *ct_uri, const struct ct_match *cmatch,
-                           urecord_t *r)
+void fill_ucontact_info(ucontact_info_t *ci)
 {
-	ucontact_t *c;
-	ucontact_info_t ci;
-	char cid_buf[9];
-	str callid = {cid_buf, 0};
-	str no_ua = str_init("n/a");
+	static char cid_buf[9];
+	static str callid = {cid_buf, 0};
+	static str no_ua = str_init("n/a");
 
 	update_act_time();
 
-	memset(&ci, 0, sizeof ci);
+	memset(ci, 0, sizeof *ci);
 
 	callid.len = sprintf(cid_buf, "%x", rand());
-	ci.callid = &callid;
-	ci.user_agent = &no_ua;
-	ci.q = Q_UNSPECIFIED;
-	ci.expires = get_act_time() + 120;
-
-	ok(ul.insert_ucontact(r, _str(ct_uri), &ci, &c, 0) == 0, "Insert Contact");
-	return c;
+	ci->callid = &callid;
+	ci->user_agent = &no_ua;
+	ci->q = Q_UNSPECIFIED;
+	ci->expires = get_act_time() + 120;
+	ci->methods = ALL_METHODS;
 }
 
 
@@ -59,31 +56,64 @@ void test_lookup(void)
 	udomain_t *d;
 	urecord_t *r;
 	ucontact_t *c;
-	struct ct_match cmatch;
-	struct sip_msg msg;
-
-	ok(ul.register_udomain("location", &d) == 0, "get 'location' udomain");
-	ok(ul.insert_urecord(d, _str("alice"), &r, 0) == 0, "create AoR");
-
-	cmatch.mode = CT_MATCH_PARAMS;
-	cmatch.match_params = pn_ct_params;
-	ok((c = create_contact("sip:cell@127.0.0.1:44444;"
+	ucontact_info_t ci;
+	str aor = str_init("alice");
+	str aor_ruri = str_init("sip:alice@localhost");
+	str ct1 = str_init("sip:cell@127.0.0.1:44444;"
 			"pn-provider=apns;"
 			"pn-prid=ZTY4ZDJlMzODE1NmUgKi0K;"
 			"pn-param=ezenSQIywP8:APA91bHFH7p41WUFljaUPM2PPEjQUEslb6NtIqN6Pyc"
 			         "gN5eDCyzuomQMyWboTVum0MY8YL_3E8vFIZUur_B71DHVgXQVD6UfZJ"
-			         "mAq9Px0UY8YjVmo2LnmCocmFRBU0gPMV2ebheGGWCc", &cmatch, r))
-		!= NULL, "create Contact 1");
+			         "mAq9Px0UY8YjVmo2LnmCocmFRBU0gPMV2ebheGGWCc");
+	str ct2 = str_init("sip:desk@127.0.0.2");
+	struct ct_match cmatch;
+	struct sip_msg msg;
 
-	cmatch.mode = CT_MATCH_CONTACT_ONLY;
-	ok((c = create_contact("sip:desk@127.0.0.2", &cmatch, r)) != NULL, "create Contact 2");
+	ok(ul.register_udomain("location", &d) == 0, "get 'location' udomain");
 
 	mk_sip_req("INVITE", "sip:alice@localhost", &msg);
+	ok(lookup(&msg, d, _str(""), NULL) == -1, "lookup: -1 (no contacts)");
 
-	lookup(&msg, d, _str(""), NULL);
+	ul.lock_udomain(d, &aor);
+	ok(ul.insert_urecord(d, &aor, &r, 0) == 0, "create AoR");
+
+	fill_ucontact_info(&ci);
+	ci.methods = METHOD_UNDEF;
+	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert Contact");
+	ul.unlock_udomain(d, &aor);
+
+	ok(lookup(&msg, d, _str(""), NULL) == 1, "lookup-1: 1 (success)");
+
+	set_ruri(&msg, &aor_ruri);
+	ok(lookup(&msg, d, _str("m"), NULL) == -2, "lookup-2: -2 (bad method)");
+
+	c->methods = ALL_METHODS;
+
+	set_ruri(&msg, &aor_ruri);
+	ok(lookup(&msg, d, _str(""), NULL) == 1, "lookup-3: 1 (success)");
+
+	set_ruri(&msg, &aor_ruri);
+	ok(lookup(&msg, d, _str("m"), NULL) == 1, "lookup-4: 1 (success)");
+
+	ok(ul.delete_ucontact(r, c, 0) == 0, "delete ucontact");
+
+	cmatch.mode = CT_MATCH_PARAMS;
+	cmatch.match_params = pn_ct_params;
+	fill_ucontact_info(&ci);
+	ok(ul.insert_ucontact(r, &ct1, &ci, &c, 0) == 0, "insert ct1 (PN)");
+
+	set_ruri(&msg, &aor_ruri);
+	ok(lookup(&msg, d, _str(""), NULL) == 2, "lookup-5: 2 (success, PN)");
+
+	cmatch.mode = CT_MATCH_CONTACT_ONLY;
+	fill_ucontact_info(&ci);
+	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert ct2 (normal)");
+
+	set_ruri(&msg, &aor_ruri);
+	ok(lookup(&msg, d, _str(""), NULL) == 1, "lookup-6: 1 (success)");
 
 	/* the PN contact should just trigger a PN without becoming a branch */
-	ok(str_match(&msg.new_uri, _str("sip:desk@127.0.0.2")), "lookup R-URI");
+	ok(str_match(&msg.new_uri, &ct2), "lookup-7: R-URI is ct2");
 }
 
 

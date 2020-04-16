@@ -31,6 +31,10 @@
 #include "../../ut.h"
 #include "../../qvalue.h"
 
+#define allowed_method(_msg, _c, _f) \
+	(!((_f) & REG_LOOKUP_METHODFILTER_FLAG) || \
+		((_msg)->REQ_METHOD) & ((_c)->methods))
+
 #define CONTACT_MAX_SIZE       255
 #define RECEIVED_MAX_SIZE      255
 

@@ -54,10 +54,6 @@
 #define GR_E_PART_SIZE	22
 #define GR_A_PART_SIZE	14
 
-#define allowed_method(_msg, _c, _f) \
-	( !((_f)&REG_LOOKUP_METHODFILTER_FLAG) || \
-		((_msg)->REQ_METHOD)&((_c)->methods) )
-
 ucontact_t **selected_cts; /* always has an extra terminating NULL ptr */
 int selected_cts_sz = 20;
 
@@ -550,6 +546,8 @@ fetch_urecord:
 done:
 	if (ruri_is_pushed)
 		ret = 1;
+	else if (have_pn_cts)
+		ret = 2;
 
 	ul.release_urecord(r, 0);
 	ul.unlock_udomain((udomain_t*)_t, &aor);

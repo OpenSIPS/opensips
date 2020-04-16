@@ -47,10 +47,6 @@
 #include "../usrloc/urecord.h"
 
 
-#define allowed_method(_msg, _c, _f) \
-	( !((_f)&REG_LOOKUP_METHODFILTER_FLAG) || \
-		((_msg)->REQ_METHOD)&((_c)->methods) )
-
 #define ua_re_check(return) \
 	if (flags & REG_LOOKUP_UAFILTER_FLAG) { \
 		if (regexec(&ua_re, ptr->user_agent.s, 1, &ua_match, 0)) { \
