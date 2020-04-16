@@ -206,13 +206,7 @@ static param_export_t params[] = {
 	{"disable_gruu",       INT_PARAM, &disable_gruu          },
 
 	/* SIP Push Notifications */
-	{"pn_enable",           INT_PARAM, &pn_enable},
-	{"pn_providers",        STR_PARAM, &_pn_providers},
-	{"pn_ct_match_params",  STR_PARAM, &_pn_ct_params},
-	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval},
-	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval},
-	{"pn_skip_pn_interval", INT_PARAM, &pn_skip_pn_interval},
-	{"pn_inv_timeout",      INT_PARAM, &pn_inv_timeout},
+	pn_modparams,
 
 	{0, 0, 0}
 };
@@ -236,6 +230,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		pn_modparam_deps,
 		{ NULL, NULL },
 	},
 };

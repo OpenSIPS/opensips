@@ -56,6 +56,23 @@ extern str pn_provider_param;
 extern char *_pn_ct_params;
 extern char *_pn_providers;
 
+#define pn_modparams \
+	{"pn_enable",           INT_PARAM, &pn_enable}, \
+	{"pn_providers",        STR_PARAM, &_pn_providers}, \
+	{"pn_ct_match_params",  STR_PARAM, &_pn_ct_params}, \
+	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval}, \
+	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval}, \
+	{"pn_skip_pn_interval", INT_PARAM, &pn_skip_pn_interval}, \
+	{"pn_inv_timeout",      INT_PARAM, &pn_inv_timeout}
+
+
+/* module dependencies */
+struct module_dependency *pn_get_deps(param_export_t *param);
+
+#define pn_modparam_deps \
+	{"pn_enable", pn_get_deps}
+
+
 /* useful fixups */
 extern str_list *pn_ct_params;  /* list of parsed match params */
 extern struct pn_provider *pn_providers;

@@ -161,6 +161,20 @@ int pn_init(void)
 }
 
 
+struct module_dependency *pn_get_deps(param_export_t *param)
+{
+	int pn_is_on = *(int *)param->param_pointer;
+
+	if (!pn_is_on)
+		return NULL;
+
+	return _alloc_module_dep(
+		MOD_TYPE_DEFAULT, "tm", DEP_ABORT,
+		MOD_TYPE_DEFAULT, "event_routing", DEP_ABORT,
+		MOD_TYPE_NULL);
+}
+
+
 enum pn_action pn_inspect_ct_params(const str *ct_uri)
 {
 	struct sip_uri puri;
