@@ -1131,7 +1131,15 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 	}
 }
 
+
 int get_branch_index(void)
 {
 	return _tm_branch_index;
+}
+
+
+int t_inject_ul_event_branch(void)
+{
+	return w_t_inject_branches(NULL,
+	            (void *)(unsigned long)TM_INJECT_SRC_EVENT, (void *)0);
 }
