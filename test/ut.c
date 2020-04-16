@@ -56,6 +56,10 @@ int mk_sip_req(const char *method, const char *ruri, struct sip_msg *msg)
 		ruri, rand(), rand(), rand(), rand(), (int)strlen(body), body);
 
 	memset(msg, 0, sizeof *msg);
+	msg->buf = msgbuf;
+	msg->len = len;
+	msg->ruri_q = Q_UNSPECIFIED;
+
 	if (parse_msg(msgbuf, len, msg) != 0) {
 		LM_ERR("failed to parse test msg\n");
 		return -1;
