@@ -60,6 +60,7 @@ static void pack_tuple(b2bl_tuple_t* tuple, str *b2bl_key, bin_packet_t *storage
 		bin_push_str(storage, &tuple->scenario_params[4]);
 
 		bin_push_str(storage, &tuple->sdp);
+		bin_push_str(storage, tuple->extra_headers);
 
 		tuple->repl_flag = TUPLE_REPL_SENT;
 	} else
@@ -173,6 +174,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	str params_s[MAX_SCENARIO_PARAMS];
 	str* params_p[MAX_SCENARIO_PARAMS];
 	str tuple_sdp;
+	str extra_headers;
 	int lifetime;
 	b2b_dlginfo_t dlginfo;
 	b2bl_entity_id_t *entity = NULL, **entity_head = NULL;
@@ -196,6 +198,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	case REPL_TUPLE_NEW:
 		if (!old_tuple) {
 			bin_pop_str(storage, &scenario_id);
+
 			bin_pop_str(storage, &params_s[0]);
 			params_p[0] = &params_s[0];
 			bin_pop_str(storage, &params_s[1]);
@@ -206,18 +209,20 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 			params_p[3] = &params_s[3];
 			bin_pop_str(storage, &params_s[4]);
 			params_p[4] = &params_s[4];
+
 			bin_pop_str(storage, &tuple_sdp);
+			bin_pop_str(storage, &extra_headers);
 		} else {
 			LM_DBG("Tuple [%.*s] already created\n", b2bl_key->len, b2bl_key->s);
-			bin_skip_str(storage, 7);
+			bin_skip_str(storage, 8);
 		}
 
 		if (old_tuple) {
 			tuple = old_tuple;
 		} else {
 			tuple = b2bl_insert_new(NULL, hash_index, get_scenario_id(&scenario_id),
-				params_p, tuple_sdp.s ? &tuple_sdp : NULL, NULL, local_index, &b2bl_key,
-				INSERTDB_FLAG, TUPLE_REPL_RECV);
+				params_p, tuple_sdp.s ? &tuple_sdp : NULL, &extra_headers,
+				local_index, &b2bl_key, INSERTDB_FLAG, TUPLE_REPL_RECV);
 			if (!tuple) {
 				LM_ERR("Failed to insert new tuple\n");
 				goto error;

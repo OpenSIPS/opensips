@@ -147,6 +147,17 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			tuple->extra_headers->len = extra_headers.len;
 			pkg_free(extra_headers.s);
 		}
+	} else if (repl_flag == TUPLE_REPL_RECV && custom_hdrs->s) {
+		/* all extra headers are received for replicated tuples */
+		tuple->extra_headers = shm_malloc(sizeof(str) + custom_hdrs->len);
+		if(tuple->extra_headers == NULL)
+		{
+			LM_ERR("No more shared memory\n");
+			goto error;
+		}
+		tuple->extra_headers->s = (char*)tuple->extra_headers + sizeof(str);
+		memcpy(tuple->extra_headers->s, custom_hdrs->s, custom_hdrs->len);
+		tuple->extra_headers->len = custom_hdrs->len;
 	}
 
 	if(use_init_sdp || (scenario && scenario->use_init_sdp))
