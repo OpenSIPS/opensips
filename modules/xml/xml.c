@@ -389,6 +389,7 @@ static xmlNode *get_node_by_path(xmlNode *root, xml_element_t *path_el)
 	xmlNode *cur;
 	str n_name;
 	int i;
+	char *p;
 
 	cur = root;
 	while (path_el) {
@@ -396,6 +397,15 @@ static xmlNode *get_node_by_path(xmlNode *root, xml_element_t *path_el)
 		while (cur) {
 			n_name.s = (char *)cur->name;
 			n_name.len = strlen(n_name.s);
+
+			/* skip an undefined namespace prefix that may appear
+			 * in the element name */
+			p = q_memchr(n_name.s, ':', n_name.len);
+			if (p) {
+				n_name.len = n_name.len - (p - n_name.s + 1);
+				n_name.s = p + 1;
+			}
+
 			if (!str_strcmp(&path_el->tag, &n_name)) {
 				if (i == path_el->idx)
 					break;
