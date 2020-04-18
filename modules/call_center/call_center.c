@@ -108,6 +108,13 @@ static param_export_t mod_params[]={
 	{ "b2b_scenario",         STR_PARAM, &b2b_scenario.s       },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
+	{ "cc_agents_table",      STR_PARAM, &cc_agent_table_name.s  },
+	{ "cca_agentid_column",   STR_PARAM, &cca_agentid_column.s   },
+	{ "cca_location_column",  STR_PARAM, &cca_location_column.s  },
+	{ "cca_skills_column",    STR_PARAM, &cca_skills_column.s    },
+	{ "cca_logstate_column",  STR_PARAM, &cca_logstate_column.s  },
+	{ "cca_wrapupend_column", STR_PARAM, &cca_wrapupend_column.s },
+	{ "cca_wrapuptime_column",STR_PARAM, &cca_wrapuptime_column.s},
 	{ 0,0,0 }
 };
 
@@ -269,6 +276,15 @@ static int mod_init(void)
 
 	init_db_url( db_url , 0 /*cannot be null*/);
 	init_db_url( acc_db_url , 0 /*cannot be null*/);
+
+	cc_agent_table_name.len = strlen(cc_agent_table_name.s);
+	cca_agentid_column.len = strlen(cca_agentid_column.s);
+	cca_location_column.len = strlen(cca_location_column.s);
+	cca_skills_column.len = strlen(cca_skills_column.s);
+	cca_logstate_column.len = strlen(cca_logstate_column.s);
+	cca_wrapupend_column.len = strlen(cca_wrapupend_column.s);
+	cca_wrapuptime_column.len = strlen(cca_wrapuptime_column.s);
+
 	b2b_scenario.len = strlen(b2b_scenario.s);
 	if (queue_pos_param.s)
 		queue_pos_param.len = strlen(queue_pos_param.s);

@@ -299,6 +299,145 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 		</example>
 	</section>
 
+	<section id="param_cc_agents_table" xreflabel="cc_agents_table">
+		<title><varname>cc_agents_table</varname> (string)</title>
+		<para>
+		Name to be used for the table holding the agents.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>cc_agents</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cc_agents_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cc_agents_table", "my_agents")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_agentid_column" xreflabel="cca_agentid_column">
+		<title><varname>cc_agents_table</varname> (string)</title>
+		<para>
+		Name to be used for the "agent id" (unique DB id) column in the
+		agents table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>agentid</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_agentid_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_agentid_column", "cid")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_location_column" xreflabel="cca_location_column">
+		<title><varname>cc_location_table</varname> (string)</title>
+		<para>
+		Name to be used for the "location" (SIP URI) column in the
+		agents table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>agentid</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_location_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_location_column", "sip_uri")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_skills_column" xreflabel="cca_skills_column">
+		<title><varname>cc_skills_table</varname> (string)</title>
+		<para>
+		Name to be used for the "skills" (list of skills) column in the
+		agents table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>skills</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_skills_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_skills_column", "skills")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_logstate_column" xreflabel="cca_logstate_column">
+		<title><varname>cc_logstate_table</varname> (string)</title>
+		<para>
+		Name to be used for the "logstate" (original login state) column in the
+		agents table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>logstate</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_logstate_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_logstate_column", "log_state")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_wrapuptime_column" xreflabel="cca_wrapuptime_column">
+		<title><varname>cc_wrapuptime_table</varname> (string)</title>
+		<para>
+		Name to be used for the "wrapuptime" (per-agent wrapup time) column 
+		in the agents table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>wrapup_time</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_wrapuptime_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_wrapuptime_column", "wtime")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_wrapupend_column" xreflabel="cca_wrapupend_column">
+		<title><varname>cc_wrapupend_table</varname> (string)</title>
+		<para>
+		Name to be used for the "wrapupend" (timestamp when the wrapup ends) 
+		column in the agents table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>wrapup_end_time</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_wrapupend_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_wrapupend_column", "wrapup_ends")
+...
+</programlisting>
+		</example>
+	</section>
+
 </section>
 
 

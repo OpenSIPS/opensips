@@ -29,7 +29,64 @@
 #include "../b2b_logic/b2b_load.h"
 #include "cc_db.h"
 
-#define CC_FETCH_ROWS     100
+
+#define CC_FLOW_TABLE_NAME "cc_flows"
+#define CC_FLOW_TABLE_VERSION  1
+#define CCF_FLOWID_COL "flowid"
+#define CCF_PRIORITY_ID_COL "priority"
+#define CCF_SKILL_COL "skill"
+#define CCF_CID_COL "prependcid"
+#define CCF_MAX_WRAPUP_COL "max_wrapup_time"
+#define CCF_DISSUADING_HANGUP_COL "dissuading_hangup"
+#define CCF_DISSUADING_ONHOLD_TH_COL "dissuading_onhold_th"
+#define CCF_DISSUADING_EWT_TH_COL "dissuading_ewt_th"
+#define CCF_DISSUADING_QSIZE_TH_COL "dissuading_qsize_th"
+#define CCF_WELCOME_COL "message_welcome"
+#define CCF_M_QUEUE_COL "message_queue"
+#define CCF_M_DISSUADING_COL "message_dissuading"
+
+#define CC_AGENT_TABLE_NAME "cc_agents"
+#define CC_AGENT_TABLE_VERSION  1
+#define CCA_AGENTID_COL "agentid"
+#define CCA_LOCATION_ID_COL "location"
+#define CCA_SKILLS_COL "skills"
+#define CCA_LOGSTATE_COL "logstate"
+#define CCA_WRAPUPEND_COL "wrapup_end_time"
+#define CCA_WRAPUPTIME_COL "wrapup_time"
+
+#define CC_GLOBALS_TABLE_NAME "cc_globals"
+#define CC_GLOBALS_TABLE_VERSION  1
+#define CCG_NAME_COL "name"
+#define CCG_VALUE_COL "value"
+
+#define CC_CDRS_TABLE_NAME "cc_cdrs"
+#define CCC_CALLER_COL "caller"
+#define CCC_RECV_TIME_COL "received_timestamp"
+#define CCC_WAIT_TIME_COL "wait_time"
+#define CCC_TALK_TIME_COL "talk_time"
+#define CCC_PICKUP_TIME_COL "pickup_time"
+#define CCC_FLOW_ID_COL "flow_id"
+#define CCC_AGENT_ID_COL "agent_id"
+#define CCC_CC_ID_COL "callcenter_id"
+#define CCC_TYPE_COL "call_type"
+#define CCC_REJECTED_COL "rejected"
+#define CCC_FSTATS_COL "fstats"
+#define CCC_CID_COL "cid"
+
+#define CC_CALLS_TABLE_NAME "cc_calls"
+#define CCQ_STATE_COL       "state"
+#define CCQ_IGCBACK_COL     "ig_cback"
+#define CCQ_NOREJ_COL       "no_rej"
+#define CCQ_SETUP_TIME_COL  "setup_time"
+#define CCQ_ETA_COL         "eta"
+#define CCQ_LAST_START_COL  "last_start"
+#define CCQ_RECV_TIME_COL   "recv_time"
+#define CCQ_CALLER_DN_COL   "caller_dn"
+#define CCQ_CALLER_UN_COL   "caller_un"
+#define CCQ_B2BUAID_COL     "b2buaid"
+#define CCQ_FLOW_COL        "flow"
+#define CCQ_AGENT_COL       "agent"
+#define CCQ_QID_COL         "qid"
 
 str cc_flow_table_name			=	str_init(CC_FLOW_TABLE_NAME);
 str ccf_flowid_column			=	str_init(CCF_FLOWID_COL);
@@ -85,6 +142,8 @@ str ccq_b2buaid_column			=	str_init(CCQ_B2BUAID_COL);
 str ccq_flow_column				=	str_init(CCQ_FLOW_COL);
 str ccq_agent_column			=	str_init(CCQ_AGENT_COL);
 #define CCQ_COLS_NO  12
+
+#define CC_FETCH_ROWS     100
 
 static db_con_t* cc_db_handle    = 0; /* database connection handle */
 static db_con_t* cc_acc_db_handle    = 0; /* database connection handle */
