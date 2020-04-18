@@ -582,7 +582,7 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 			goto error;
 		}
 #endif
-		if (wrapup_end_time && (wrapup_end_time < (int)time(NULL))) {
+		if (wrapup_end_time && (wrapup_end_time > (int)time(NULL))) {
 			agent->state = CC_AGENT_WRAPUP;
 			agent->wrapup_end_time = wrapup_end_time - startup_time;
 		}
