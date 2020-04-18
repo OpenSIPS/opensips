@@ -818,8 +818,9 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		str* args[3]={&call->agent->location, new_leg, &call->caller_dn};
 	
 		call->ref_cnt++;
+
 		id = b2b_api.bridge_extern( &b2b_scenario_agent, args, b2bl_callback_agent,
-				(void*)call );
+				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB );
 
 		if (id==NULL || id->len==0 || id->s==NULL) {
 			LM_ERR("failed to connect agent to media server "
