@@ -92,6 +92,8 @@ unsigned int wrapup_time = 30;
 
 /* the name of the URI param to report the queue position */
 str queue_pos_param = {NULL,0};
+/* by default reject new calls if there are no agents logged */
+static int reject_on_no_agents = 1;
 
 static cmd_export_t cmds[]={
 	{"cc_handle_call", (cmd_function)w_handle_call,
@@ -109,6 +111,7 @@ static param_export_t mod_params[]={
 	{ "rt_db_url",            STR_PARAM, &rt_db_url.s          },
 	{ "b2b_scenario",         STR_PARAM, &b2b_scenario.s       },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
+	{ "reject_on_no_agents",  INT_PARAM, &reject_on_no_agents  },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
 	{ "cc_agents_table",      STR_PARAM, &cc_agent_table_name.s  },
 	{ "cca_agentid_column",   STR_PARAM, &cca_agentid_column.s   },
@@ -847,7 +850,8 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name)
 	}
 	LM_DBG("using call flow %p\n", flow);
 
-	if (flow->logged_agents==0 /* no logged agents */ ) {
+	if (flow->logged_agents==0 /* no logged agents */
+	&& reject_on_no_agents /*reject calls if no agents logged*/) {
 		LM_NOTICE("flow <%.*s> closed\n",flow->id.len,flow->id.s);
 		ret = -4;
 		goto error;

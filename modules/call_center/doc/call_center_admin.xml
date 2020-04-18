@@ -323,6 +323,28 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 		</example>
 	</section>
 
+	<section id="param_reject_on_no_agents" xreflabel="reject_on_no_agents">
+		<title><varname>reject_on_no_agents</varname> (int)</title>
+		<para>
+		A parameter to tell if an incoming call should be rejected or
+		quueued if there are no logged in agents. Basically this allows
+		call queueing on flows with no agents yet.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1 (true)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>reject_on_no_agents</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "reject_on_no_agents", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section id="param_cc_agents_table" xreflabel="cc_agents_table">
 		<title><varname>cc_agents_table</varname> (string)</title>
 		<para>
