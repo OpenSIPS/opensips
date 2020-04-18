@@ -474,7 +474,7 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple,
 			b2bl_htable[hash_index].locked_by = -1;
 		}
 	}
-	else
+	else if (entity->key.len)
 	{
 		LM_WARN("entity [%p]->[%.*s] not found for tuple [%.*s]\n",
 			entity, entity->key.len, entity->key.s, tuple->key->len, tuple->key->s);
