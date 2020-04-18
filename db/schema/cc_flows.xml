@@ -71,6 +71,18 @@
 		</description>
 	</column>
 
+	<column id="max_wrapup_time">
+		<name>max_wrapup_time</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>The maximum warpup time (in seconds) allowed
+		for the call terminated via this flow. This value will 
+		limit the default or per-agent wrapup time. A 0 value means
+		no limit/max defined.
+		</description>
+	</column>
+
 	<column id="message_welcome">
 		<name>message_welcome</name>
 		<type>string</type>

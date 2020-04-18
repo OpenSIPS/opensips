@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) agentid(str) location(str) logstate(int) skills(str) last_call_end(int)
+id(int) agentid(str) location(str) logstate(int) skills(str) wrapup_end_time(int)
 METADATA_KEY
 
 METADATA_READONLY

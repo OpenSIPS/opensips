@@ -5,6 +5,7 @@ CREATE TABLE cc_flows (
     priority INTEGER DEFAULT 256 NOT NULL,
     skill CHAR(64) NOT NULL,
     prependcid CHAR(32) NOT NULL,
+    max_wrapup_time INTEGER DEFAULT 0 NOT NULL,
     message_welcome CHAR(128) DEFAULT NULL,
     message_queue CHAR(128) NOT NULL,
     CONSTRAINT cc_flows_unique_flowid  UNIQUE (flowid)
@@ -17,7 +18,7 @@ CREATE TABLE cc_agents (
     location CHAR(128) NOT NULL,
     logstate INTEGER DEFAULT 0 NOT NULL,
     skills CHAR(255) NOT NULL,
-    last_call_end INTEGER DEFAULT 0 NOT NULL,
+    wrapup_end_time INTEGER DEFAULT 0 NOT NULL,
     CONSTRAINT cc_agents_unique_agentid  UNIQUE (agentid)
 );
 

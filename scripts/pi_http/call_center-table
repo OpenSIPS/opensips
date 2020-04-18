@@ -7,6 +7,7 @@
 		<column><field>priority</field><type>DB_INT</type></column>
 		<column><field>skill</field><type>DB_STR</type></column>
 		<column><field>prependcid</field><type>DB_STR</type></column>
+		<column><field>max_wrapup_time</field><type>DB_INT</type></column>
 		<column><field>message_welcome</field><type>DB_STR</type></column>
 		<column><field>message_queue</field><type>DB_STR</type></column>
 	</db_table>
@@ -19,7 +20,7 @@
 		<column><field>location</field><type>DB_STR</type></column>
 		<column><field>logstate</field><type>DB_INT</type></column>
 		<column><field>skills</field><type>DB_STR</type></column>
-		<column><field>last_call_end</field><type>DB_INT</type></column>
+		<column><field>wrapup_end_time</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of cc_cdrs table-->
 	<db_table id="cc_cdrs">

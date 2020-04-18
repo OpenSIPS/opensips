@@ -9,6 +9,7 @@
 				<col><field>priority</field></col>
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
+				<col><field>max_wrapup_time</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 			</query_cols>
@@ -21,6 +22,7 @@
 				<col><field>priority</field></col>
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
+				<col><field>max_wrapup_time</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 			</query_cols>
@@ -36,6 +38,7 @@
 				<col><field>priority</field></col>
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
+				<col><field>max_wrapup_time</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 			</query_cols>
@@ -59,7 +62,7 @@
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
-				<col><field>last_call_end</field></col>
+				<col><field>wrapup_end_time</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -70,7 +73,7 @@
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
-				<col><field>last_call_end</field></col>
+				<col><field>wrapup_end_time</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -84,7 +87,7 @@
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
-				<col><field>last_call_end</field></col>
+				<col><field>wrapup_end_time</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
