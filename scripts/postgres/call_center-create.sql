@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('cc_flows','1');
+INSERT INTO version (table_name, table_version) values ('cc_flows','2');
 CREATE TABLE cc_flows (
     id SERIAL PRIMARY KEY NOT NULL,
     flowid VARCHAR(64) NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE cc_flows (
 );
 
 ALTER SEQUENCE cc_flows_id_seq MAXVALUE 2147483647 CYCLE;
-INSERT INTO version (table_name, table_version) values ('cc_agents','1');
+INSERT INTO version (table_name, table_version) values ('cc_agents','2');
 CREATE TABLE cc_agents (
     id SERIAL PRIMARY KEY NOT NULL,
     agentid VARCHAR(128) NOT NULL,

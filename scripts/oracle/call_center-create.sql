@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('cc_flows','1');
+INSERT INTO version (table_name, table_version) values ('cc_flows','2');
 CREATE TABLE cc_flows (
     id NUMBER(10) PRIMARY KEY,
     flowid VARCHAR2(64),
@@ -24,7 +24,7 @@ END cc_flows_tr;
 /
 BEGIN map2users('cc_flows'); END;
 /
-INSERT INTO version (table_name, table_version) values ('cc_agents','1');
+INSERT INTO version (table_name, table_version) values ('cc_agents','2');
 CREATE TABLE cc_agents (
     id NUMBER(10) PRIMARY KEY,
     agentid VARCHAR2(128),

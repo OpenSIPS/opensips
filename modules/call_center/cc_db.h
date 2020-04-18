@@ -33,7 +33,7 @@
 
 
 #define CC_FLOW_TABLE_NAME "cc_flows"
-#define CC_FLOW_TABLE_VERSION  1
+#define CC_FLOW_TABLE_VERSION  2
 #define CCF_FLOWID_COL "flowid"
 #define CCF_PRIORITY_ID_COL "priority"
 #define CCF_SKILL_COL "skill"
@@ -48,7 +48,7 @@
 #define CCF_M_DISSUADING_COL "message_dissuading"
 
 #define CC_AGENT_TABLE_NAME "cc_agents"
-#define CC_AGENT_TABLE_VERSION  1
+#define CC_AGENT_TABLE_VERSION  2
 #define CCA_AGENTID_COL "agentid"
 #define CCA_LOCATION_ID_COL "location"
 #define CCA_SKILLS_COL "skills"
