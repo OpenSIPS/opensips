@@ -393,7 +393,7 @@ void b2b_end_dialog(b2bl_entity_id_t* bentity, b2bl_tuple_t* tuple,
 	}
 	if(bentity->key.s)
 	{
-		if(!bentity->disconnected)
+		if(!bentity->disconnected && !bentity->rejected)
 		{
 			if(bentity->state == B2BL_ENT_CONFIRMED)
 			{
@@ -1132,6 +1132,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			/* if a negative reply */
 			if(statuscode >= 300)
 			{
+				entity->rejected = 1;
 				ret = process_bridge_negreply(tuple, hash_index, entity, msg);
 
 				if(ret < 0)

@@ -43,6 +43,7 @@ typedef struct b2bl_entity_id
 	str from_dname;
 	str hdrs;
 	b2b_dlginfo_t* dlginfo;
+	int rejected;
 	int disconnected;
 	int state;
 	unsigned short no;
