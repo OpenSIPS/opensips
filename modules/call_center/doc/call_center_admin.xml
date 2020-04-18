@@ -73,6 +73,22 @@
 		front of the calls from flows with a lower priority.
 		</para>
 		<para>
+		Configurable per flow, the module may do per-flow call dissuading; this
+		means to redirect a call to another destination, if the queue/flow 
+		is overloaded:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para>if the number of calls already in the queue exceeds the diss_qsize_th threshold</para>
+			</listitem>
+			<listitem>
+			<para>if the estimated time to wait of the queue exceeds the diss_ewt_th threshold</para>
+			</listitem>
+			<listitem>
+			<para>if the call was waiting in the queue for longer than diss_onhold_th threshold</para>
+			</listitem>
+		</itemizedlist>
+		<para>
 		Optionally, the flow may define a <emphasis>prependcid</emphasis> - a
 		prefix to be added to the CLI (Caller ID) when the call is delivered to
 		the agents - as an agent may receive call from multiple flows, it is 
