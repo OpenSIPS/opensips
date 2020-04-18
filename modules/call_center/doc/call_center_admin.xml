@@ -88,6 +88,11 @@
 		provided as SIP URIs (where the call has to be sent in order to get
 		the playback).
 		</para>
+		<para>
+		The flow also has an optional <emphasis>wrapup time</emphasis>, which
+		overrides the per-agent/global value (the flow forces a certain
+		value for all its calls).
+		</para>
 		</section>
 
 		<section>
@@ -108,12 +113,14 @@
 		<xref linkend="exported_mi_functions"/>.
 		</para>
 		<para>
-		There is a <emphasis>wrapup_time</emphasis> defined, saying the 
-		time interval for an agent before getting a new call from the system 
-		(after he finished a call).
+		There is an optional per-agent <emphasis>wrapup_time</emphasis>
+		defined, saying the time interval for an agent before getting a new 
+		call from the system (after he finished a call). If no value is defined
+		for the agent, the global <emphasis>wrapup_time</emphasis> will be 
+		used. Note that the resulting value may be overridden by the
+		per-flow <emphasis>wrapup_time</emphasis> if defined.
 		</para>
 		</section>
-
 	</section>
 
 
@@ -235,6 +242,10 @@ modparam("call_center", "b2b_scenario", "call center")
 		Time for an agent between finishing a call and receiving the next
 		call from the system. Even if there are queued calls, the module
 		will not deliver call to agent during this wrapup interval.
+		</para>
+		<para>
+		This value may be overwritten by the per-agent value (if defined)
+		and furher more, by the per-flow value (if defined).
 		</para>
 		<para>
 		<emphasis>Default value is <quote>30 seconds</quote>.
