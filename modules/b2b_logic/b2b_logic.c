@@ -1054,7 +1054,7 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 
 
 str* b2bl_bridge_extern(str* scenario_name, str* args[],
-		b2bl_cback_f cbf, void* cb_param)
+		b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
 {
 	b2b_scenario_t* scenario_struct;
 	unsigned int hash_index;
@@ -1099,6 +1099,7 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 		return 0;
 	}
 	tuple->cbf = cbf;
+	tuple->cb_mask = cb_mask;
 	tuple->cb_param = cb_param;
 	tuple->lifetime = 60 + get_ticks();
 
@@ -1172,7 +1173,7 @@ mi_response_t *mi_trigger_scenario(const mi_params_t *params,
 		argsp[i] = &args[i];
 	}
 
-	if(b2bl_bridge_extern(&scenario_name, argsp, 0, 0) == 0)
+	if(b2bl_bridge_extern(&scenario_name, argsp, 0, 0, 0) == 0)
 	{
 		LM_ERR("Failed to initialize scenario\n");
 		return 0;

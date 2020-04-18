@@ -58,7 +58,7 @@ typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int ent
 typedef int (*b2bl_set_state_f)(str* key, int state);
 
 typedef str* (*b2bl_bridge_extern_f)(str* scenario_name, str* args[5],
-		b2bl_cback_f cbf, void* cb_param);
+		b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask);
 
 int b2bl_terminate_call(str* key);
 typedef int (*b2bl_terminate_call_t)(str* key);
@@ -103,7 +103,8 @@ str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
 typedef int(*load_b2bl_f)( b2bl_api_t *api );
 int b2b_logic_bind(b2bl_api_t* api);
 
-str* b2bl_bridge_extern(str* scenario_name, str* args[5], b2bl_cback_f cbf, void* cb_param);
+str* b2bl_bridge_extern(str* scenario_name, str* args[5], b2bl_cback_f cbf,
+		void* cb_param, unsigned int cb_mask);
 
 static inline int load_b2b_logic_api( b2bl_api_t *api)
 {
