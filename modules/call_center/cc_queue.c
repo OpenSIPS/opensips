@@ -57,6 +57,28 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 			}
 			/* no Welcome message -> got for queue/agent  */
 		case CC_CALL_WELCOME:
+			/* next should be dissuading, if the case and if any */
+			if (call->flow->diss_ewt_th && call->eta > call->flow->diss_ewt_th
+			&& call->flow->recordings[AUDIO_DISSUADING].len ) {
+				/* callback/dissuading message */
+				LM_DBG("selecting DISSUADING on EWT\n");
+				out = &(call->flow->recordings[ AUDIO_DISSUADING ]);
+				state = call->flow->diss_hangup ?
+					CC_CALL_DISSUADING2 : CC_CALL_DISSUADING1;
+				break;
+			} else
+			if (call->flow->diss_qsize_th &&
+			call->flow->diss_qsize_th <= data->queue.calls_no &&
+			call->flow->recordings[AUDIO_DISSUADING].len ) {
+				/* callback/dissuading message */
+				LM_DBG("selecting DISSUADING on QUEUE SIZE\n");
+				out = &(call->flow->recordings[ AUDIO_DISSUADING ]);
+				state = call->flow->diss_hangup ?
+					CC_CALL_DISSUADING2 : CC_CALL_DISSUADING1;
+				break;
+			} 
+			/* got for queue/agent */
+		case CC_CALL_DISSUADING1:
 		case CC_CALL_QUEUED:
 			/* search for an available agent */
 			agent = get_free_agent_by_skill( data, call->flow->skill);
@@ -89,6 +111,7 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 				pos = cc_queue_push_call( data, call, 0);
 			}
 			break;
+		case CC_CALL_DISSUADING2:
 		case CC_CALL_TOAGENT:
 		case CC_CALL_ENDED:
 			LM_DBG("selecting END\n");

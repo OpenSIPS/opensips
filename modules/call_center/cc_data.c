@@ -240,8 +240,10 @@ static unsigned long cc_flow_get_load( void *flow_p)
 }
 #endif
 
+
 int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
-									str *cid, int max_wrapup, str *recordings )
+		str *cid, int max_wrapup, int diss_hangup, int diss_ewt_th, 
+		int diss_qsize_th, int diss_onhold_th, str *recordings )
 {
 	struct cc_flow *flow, *prev_flow;
 	unsigned int i;
@@ -270,6 +272,11 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 		flow->priority = priority;
 		/* max wrapup time */
 		flow->max_wrapup = max_wrapup;
+		/* dissuading related options */
+		flow->diss_hangup = diss_hangup;
+		flow->diss_ewt_th = diss_ewt_th;
+		flow->diss_qsize_th = diss_qsize_th;
+		flow->diss_onhold_th = diss_onhold_th;
 		/* skill */
 		flow->skill = get_skill_id( data, skill );
 		if (flow->skill==0) {
@@ -378,6 +385,11 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 		flow->priority = priority;
 		/* max wrapup time */
 		flow->max_wrapup = max_wrapup;
+		/* dissuading related options */
+		flow->diss_hangup = diss_hangup;
+		flow->diss_ewt_th = diss_ewt_th;
+		flow->diss_qsize_th = diss_qsize_th;
+		flow->diss_onhold_th = diss_onhold_th;
 		/* skill - needs to be changed ? */
 		skill_id = get_skill_id(data,skill);
 		if (skill_id==0) {

@@ -36,9 +36,14 @@ str ccf_flowid_column			=	str_init(CCF_FLOWID_COL);
 str ccf_priority_column			=	str_init(CCF_PRIORITY_ID_COL);
 str ccf_skill_column			=	str_init(CCF_SKILL_COL);
 str ccf_cid_column				=	str_init(CCF_CID_COL);
+str ccf_max_wrapup_column		=	str_init(CCF_MAX_WRAPUP_COL);
+str ccf_dissuading_hangup_column=	str_init(CCF_DISSUADING_HANGUP_COL);
+str ccf_dissuading_onhold_th_column=str_init(CCF_DISSUADING_ONHOLD_TH_COL);
+str ccf_dissuading_ewt_th_column=	str_init(CCF_DISSUADING_EWT_TH_COL);
+str ccf_dissuading_qsize_th_column=	str_init(CCF_DISSUADING_QSIZE_TH_COL);
 str ccf_m_welcome_column		=	str_init(CCF_WELCOME_COL);
 str ccf_m_queue_column			=	str_init(CCF_M_QUEUE_COL);
-str ccf_max_wrapup_column		=	str_init(CCF_MAX_WRAPUP_COL);
+str ccf_m_dissuading_column		=	str_init(CCF_M_DISSUADING_COL);
 
 str cc_agent_table_name			=	str_init(CC_AGENT_TABLE_NAME);
 str cca_agentid_column			=	str_init(CCA_AGENTID_COL);
@@ -461,24 +466,30 @@ error:
 
 int cc_load_db_data( struct cc_data *data)
 {
-	db_key_t columns[7];
+	db_key_t columns[12];
 	db_res_t* res;
 	db_row_t* row;
 	int i, j, n;
 	str id,skill,cid;
 	str location;
 	unsigned int priority, wrapup, logstate, wrapup_end_time;
+	unsigned int diss_hangup, diss_ewt_th, diss_qsize_th, diss_onhold_th;
 	str messages[MAX_AUDIO];
 
 	cc_dbf.use_table( cc_db_handle, &cc_flow_table_name);
 
-	columns[0] = &ccf_flowid_column;
-	columns[1] = &ccf_priority_column;
-	columns[2] = &ccf_skill_column;
-	columns[3] = &ccf_cid_column;
-	columns[4] = &ccf_max_wrapup_column;
-	columns[5] = &ccf_m_welcome_column;
-	columns[6] = &ccf_m_queue_column;
+	columns[0]  = &ccf_flowid_column;
+	columns[1]  = &ccf_priority_column;
+	columns[2]  = &ccf_skill_column;
+	columns[3]  = &ccf_cid_column;
+	columns[4]  = &ccf_max_wrapup_column;
+	columns[5]  = &ccf_dissuading_hangup_column;
+	columns[6]  = &ccf_dissuading_ewt_th_column;
+	columns[7]  = &ccf_dissuading_qsize_th_column;
+	columns[8]  = &ccf_dissuading_onhold_th_column;
+	columns[9]  = &ccf_m_welcome_column;
+	columns[10] = &ccf_m_queue_column;
+	columns[11] = &ccf_m_dissuading_column;
 
 	if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
 		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 7, 0, 0 ) < 0) {
@@ -527,14 +538,29 @@ int cc_load_db_data( struct cc_data *data)
 			/* MAX_WRAPUP_TIME column */
 			check_val( ROW_VALUES(row)+4, DB_INT, 1, 0, "max_wrapup_time");
 			wrapup = VAL_INT(ROW_VALUES(row)+4);
+			/* DISSUADING_HANGUP column */
+			check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "dissuading hangup");
+			diss_hangup = VAL_INT(ROW_VALUES(row)+5);
+			/* DISSUADING_EWT_TH column */
+			check_val( ROW_VALUES(row)+6, DB_INT, 1, 0,
+				"dissuading EWT threshold");
+			diss_ewt_th = VAL_INT(ROW_VALUES(row)+6);
+			/* DISSUADING_QSIZE_TH column */
+			check_val( ROW_VALUES(row)+7, DB_INT, 1, 0,
+				"dissuading queue size threshold");
+			diss_qsize_th = VAL_INT(ROW_VALUES(row)+7);
+			/* DISSUADING_ONHOLD_TH column */
+			check_val( ROW_VALUES(row)+8, DB_INT, 1, 0,
+				"dissuading onhold threshold");
+			diss_onhold_th = VAL_INT(ROW_VALUES(row)+8);
 
 			for( j=0 ; j<MAX_AUDIO ; j++ ) {
 				/* MESSAGE_XXXX column */
-				check_val( ROW_VALUES(row)+5+j, DB_STRING, 0, 0, "message");
-				if (VAL_NULL(ROW_VALUES(row)+5+j)) {
+				check_val( ROW_VALUES(row)+9+j, DB_STRING, 0, 0, "message");
+				if (VAL_NULL(ROW_VALUES(row)+9+j)) {
 					messages[j].s = NULL; messages[j].len = 0;
 				} else {
-					messages[j].s = (char*)VAL_STRING(ROW_VALUES(row)+5+j);
+					messages[j].s = (char*)VAL_STRING(ROW_VALUES(row)+9+j);
 					if (messages[j].s==NULL ||
 					(messages[j].len=strlen(messages[j].s))==0 ) {
 						messages[j].s = NULL; messages[j].len = 0;
@@ -543,8 +569,9 @@ int cc_load_db_data( struct cc_data *data)
 			}
 
 			/* add flow */
-			if (add_cc_flow(data,&id,priority,&skill,&cid,
-			wrapup,messages)<0) {
+			if (add_cc_flow(data, &id, priority, &skill, &cid, wrapup,
+			diss_hangup, diss_ewt_th, diss_qsize_th, diss_onhold_th,
+			messages)<0) {
 				LM_ERR("failed to add flow %.*s -> skipping\n",
 					id.len,id.s);
 				continue;

@@ -38,9 +38,14 @@
 #define CCF_PRIORITY_ID_COL "priority"
 #define CCF_SKILL_COL "skill"
 #define CCF_CID_COL "prependcid"
+#define CCF_MAX_WRAPUP_COL "max_wrapup_time"
+#define CCF_DISSUADING_HANGUP_COL "dissuading_hangup"
+#define CCF_DISSUADING_ONHOLD_TH_COL "dissuading_onhold_th"
+#define CCF_DISSUADING_EWT_TH_COL "dissuading_ewt_th"
+#define CCF_DISSUADING_QSIZE_TH_COL "dissuading_qsize_th"
 #define CCF_WELCOME_COL "message_welcome"
 #define CCF_M_QUEUE_COL "message_queue"
-#define CCF_MAX_WRAPUP_COL "max_wrapup_time"
+#define CCF_M_DISSUADING_COL "message_dissuading"
 
 #define CC_AGENT_TABLE_NAME "cc_agents"
 #define CC_AGENT_TABLE_VERSION  1

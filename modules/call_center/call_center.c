@@ -73,6 +73,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name);
 static int w_agent_login(struct sip_msg *req, str *agent_s, int *state);
 
 static void cc_timer_agents(unsigned int ticks, void* param);
+static void cc_timer_calls(unsigned int ticks, void* param);
 static void cc_timer_cleanup(unsigned int ticks, void* param);
 
 unsigned long stg_awt(unsigned short foo);
@@ -281,6 +282,12 @@ static int mod_init(void)
 	if (register_timer( "cc_agents", cc_timer_agents, NULL, 1,
 	TIMER_FLAG_DELAY_ON_DELAY)<0) {
 		LM_ERR("failed to register agents timer function\n");
+		return -1;
+	}
+
+	if (register_timer( "cc_calls", cc_timer_calls, NULL, 1,
+	TIMER_FLAG_DELAY_ON_DELAY)<0) {
+		LM_ERR("failed to register calls timer function\n");
 		return -1;
 	}
 
@@ -1067,6 +1074,87 @@ next_ag:
 		}
 
 	} while (call);
+}
+
+
+static void cc_timer_calls(unsigned int ticks, void* param)
+{
+	struct cc_call  *call;
+	str out;
+
+	if (data==NULL || data->queue.calls_no==0)
+		return;
+
+	/* iterate all queued calls to check for how long they were waiting */
+
+	do {
+
+		call = NULL;
+		lock_get( data->lock );
+
+		for ( call=data->queue.first ; call ; call=call->lower_in_queue) {
+			if (call->flow->diss_onhold_th &&
+			(ticks - call->last_start > call->flow->diss_onhold_th) &&
+			call->flow->recordings[AUDIO_DISSUADING].len ) {
+				LM_DBG("call %p in queue for %d(%d) sec -> dissuading msg\n",
+					call,ticks-call->last_start,call->flow->diss_onhold_th);
+				/* remove from queue */
+				cc_queue_rmv_call( data, call);
+				break;
+			}
+		}
+
+		lock_release( data->lock );
+
+		/* no locking here */
+
+		if (call) {
+
+			lock_set_get( data->call_locks, call->lock_idx );
+			call->ref_cnt--;
+
+			/* is the call state still valid? (as queued) */
+			if(call->state != CC_CALL_QUEUED) {
+				if (call->state==CC_CALL_ENDED && call->ref_cnt==0) {
+					lock_set_release( data->call_locks, call->lock_idx );
+					free_cc_call( data, call);
+				} else {
+					lock_set_release( data->call_locks, call->lock_idx );
+				}
+				continue;
+			}
+			
+			lock_get( data->lock );
+
+			/* make a copy for destination to dissuading */
+			out.len = OUT_BUF_LEN(call->flow->recordings[AUDIO_DISSUADING].len);
+			if (out.len==0) {
+				cc_queue_push_call( data, call, 1/*top*/);
+
+				/* unlock data */
+				lock_release( data->lock );
+			} else {
+				out.s = out_buf;
+				memcpy( out.s, call->flow->recordings[AUDIO_DISSUADING].s,
+					out.len);
+
+				call->state = call->flow->diss_hangup ?
+					CC_CALL_DISSUADING2 : CC_CALL_DISSUADING1;
+
+				/* unlock data */
+				lock_release( data->lock );
+
+				/* send call to selected destination */
+				if (set_call_leg( NULL, call, &out)<-0 ) {
+					LM_ERR("failed to set new destination for call\n");
+				}
+			}
+			lock_set_release( data->call_locks, call->lock_idx );
+		}
+
+	} while(call);
+
+	return;
 }
 
 

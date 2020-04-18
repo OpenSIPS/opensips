@@ -37,6 +37,7 @@
 typedef enum {
 	AUDIO_WELCOME,
 	AUDIO_QUEUE,
+	AUDIO_DISSUADING,
 	MAX_AUDIO
 } audio_files;
 
@@ -48,6 +49,10 @@ struct cc_flow {
 	unsigned int priority;
 	unsigned int skill;
 	unsigned int max_wrapup;
+	unsigned int diss_hangup;
+	unsigned int diss_ewt_th;
+	unsigned int diss_qsize_th;
+	unsigned int diss_onhold_th;
 	str recordings[MAX_AUDIO];
 	str cid;
 	/* runtime data */
@@ -153,6 +158,8 @@ struct cc_data {
 typedef enum {
 	CC_CALL_NONE,
 	CC_CALL_WELCOME,
+	CC_CALL_DISSUADING1,
+	CC_CALL_DISSUADING2,
 	CC_CALL_QUEUED,
 	CC_CALL_TOAGENT,
 	CC_CALL_ENDED
@@ -202,7 +209,8 @@ void free_cc_data(struct cc_data *data);
 str* get_skill_by_id(struct cc_data *data, unsigned int id);
 
 int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
-		str *cid, int max_wrapup, str *recordings );
+		str *cid, int max_wrapup, int diss_hangup, int diss_ewt_th,
+		int diss_qsize_th, int diss_onhold_th, str *recordings );
 
 void update_cc_agent_att(struct cc_agent *agent, unsigned long duration);
 
