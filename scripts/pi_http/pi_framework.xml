@@ -275,6 +275,7 @@
 		<column><field>message_welcome</field><type>DB_STR</type></column>
 		<column><field>message_queue</field><type>DB_STR</type></column>
 		<column><field>message_dissuading</field><type>DB_STR</type></column>
+		<column><field>message_flow_id</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of cc_agents table-->
 	<db_table id="cc_agents">
@@ -1970,6 +1971,7 @@
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 				<col><field>message_dissuading</field></col>
+				<col><field>message_flow_id</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -1988,6 +1990,7 @@
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 				<col><field>message_dissuading</field></col>
+				<col><field>message_flow_id</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -2009,6 +2012,7 @@
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 				<col><field>message_dissuading</field></col>
+				<col><field>message_flow_id</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

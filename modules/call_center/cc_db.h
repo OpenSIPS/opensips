@@ -63,6 +63,5 @@ int cc_db_delete_call(struct cc_call *call);
 int cc_db_restore_calls( struct cc_data *data);
 void cc_db_update_agent_wrapup_end(struct cc_agent* agent);
 int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event);
-int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event);
 
 #endif

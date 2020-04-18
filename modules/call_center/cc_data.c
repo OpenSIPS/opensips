@@ -759,6 +759,9 @@ void free_cc_call(struct cc_data * data, struct cc_call *call)
 	if(call->b2bua_id.s)
 		shm_free(call->b2bua_id.s);
 
+	if (call->b2bua_agent_id.s)
+		shm_free(call->b2bua_agent_id.s);
+
 	shm_free(call);
 }
 

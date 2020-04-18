@@ -45,6 +45,7 @@ static str rt_db_url = {NULL, 0};;
 /* internal data (agents, flows) */
 static struct cc_data *data=NULL;
 static str b2b_scenario = {"call center", 0};
+static str b2b_scenario_agent = {"call center agent", 0};
 
 /* b2b logic API */
 b2bl_api_t b2b_api;
@@ -110,6 +111,7 @@ static param_export_t mod_params[]={
 	{ "acc_db_url",           STR_PARAM, &acc_db_url.s         },
 	{ "rt_db_url",            STR_PARAM, &rt_db_url.s          },
 	{ "b2b_scenario",         STR_PARAM, &b2b_scenario.s       },
+	{ "b2b_scenario_agent",   STR_PARAM, &b2b_scenario_agent.s },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
 	{ "reject_on_no_agents",  INT_PARAM, &reject_on_no_agents  },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
@@ -294,6 +296,7 @@ static int mod_init(void)
 	cca_wrapuptime_column.len = strlen(cca_wrapuptime_column.s);
 
 	b2b_scenario.len = strlen(b2b_scenario.s);
+	b2b_scenario_agent.len = strlen(b2b_scenario_agent.s);
 	if (queue_pos_param.s)
 		queue_pos_param.len = strlen(queue_pos_param.s);
 
@@ -449,7 +452,7 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 
 	prepare_cdr( call, &un, &fid , &aid);
 
-	if (prev_state==CC_CALL_TOAGENT) {
+	if (prev_state==CC_CALL_TOAGENT || prev_state==CC_CALL_PRE_TOAGENT) {
 		/* free the agent */
 		if (stat && stat->call_time && prev_state==CC_CALL_TOAGENT) {
 			call->agent->state = CC_AGENT_WRAPUP;
@@ -566,6 +569,80 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 	cc_db_update_call(call);
 }
 
+int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
+{
+	struct cc_call *call = (struct cc_call*)params->param;
+	int cnt;
+	b2bl_dlg_stat_t* stat = params->stat;
+
+	LM_DBG(" call (%p) has BYE for event %d, \n", call, event);
+
+	lock_set_get( data->call_locks, call->lock_idx );
+	
+	if (event == B2B_DESTROY_CB) {
+		LM_DBG("A delete in b2blogic, call->state=%d, %p\n", call->state, call);
+		cnt = --call->ref_cnt;
+		lock_set_release( data->call_locks, call->lock_idx );
+		if (cnt==0)
+			free_cc_call( data, call);
+		return 0;
+	}
+
+	if(call->ign_cback) {
+		lock_set_release( data->call_locks, call->lock_idx );
+		return 2;
+	}
+	
+	if (event == B2B_BYE_CB && params->entity == 0) {
+		/* BYE from agent */
+		if (call->state==CC_CALL_PRE_TOAGENT) {
+			handle_agent_reject(call, 0, stat->setup_time);
+		}
+		lock_set_release( data->call_locks, call->lock_idx );
+		/* route the BYE according to scenario */
+		return 1;
+	}
+
+	/*
+	 * if negative reply from any entity, send it directly to customer
+	 */
+	if(event == B2B_REJECT_CB) {
+		if(call->state == CC_CALL_PRE_TOAGENT) {
+			handle_agent_reject(call, 0, 0);
+		}
+		lock_set_release( data->call_locks, call->lock_idx );
+		return 1;
+	}
+
+	/* right-side leg of call sent BYE -> get next state */
+
+	if(call->state != CC_CALL_PRE_TOAGENT) {
+		LM_CRIT("State not PRE_TOAGENT\n");
+	}
+
+	call->state = CC_CALL_TOAGENT;
+
+	if (stat) call->setup_time = stat->setup_time;
+
+	/* call no longer on wait */
+	LM_DBG("** onhold-- Bridging [%p]\n", call);
+	update_stat( stg_onhold_calls, -1);
+	update_stat( call->flow->st_onhold_calls, -1);
+
+	LM_DBG("Bridge two calls [%p] - [%p]\n", call, call->agent);
+	cnt = --call->ref_cnt;
+	if(b2b_api.bridge_2calls(&call->b2bua_id, &stat->key) < 0)
+	{
+		LM_ERR("Failed to bridge the agent with the customer\n");
+		lock_set_release( data->call_locks, call->lock_idx );
+		b2b_api.terminate_call(&call->b2bua_id);
+		return -1;
+	}
+	/* if the agent was connected to the costumer */	
+	lock_set_release( data->call_locks, call->lock_idx );
+	
+	return 0;
+}
 
 int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 {
@@ -625,6 +702,10 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	
 	if (event==B2B_BYE_CB && params->entity==0) {
 		LM_DBG("BYE from the customer\n");
+		if(call->state==CC_CALL_PRE_TOAGENT) {
+			/* terminate the call to the agent */
+			b2b_api.terminate_call(&call->b2bua_agent_id);
+		}
 		/* external caller terminated the call */
 		call->state = CC_CALL_ENDED;
 		lock_set_release( data->call_locks, call->lock_idx );
@@ -733,7 +814,27 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 	LM_DBG("call %p moving to %.*s , state %d\n", call,
 		new_leg->len, new_leg->s, call->state);
 
-	if (call->b2bua_id.len==0) {
+	if(call->state==CC_CALL_PRE_TOAGENT) {
+		str* args[3]={&call->agent->location, new_leg, &call->caller_dn};
+	
+		call->ref_cnt++;
+		id = b2b_api.bridge_extern( &b2b_scenario_agent, args, b2bl_callback_agent,
+				(void*)call );
+
+		if (id==NULL || id->len==0 || id->s==NULL) {
+			LM_ERR("failed to connect agent to media server "
+					"(empty ID received)\n");
+			return -2;
+		}
+		call->b2bua_agent_id.len = id->len;
+		call->b2bua_agent_id.s = (char*)shm_malloc(id->len);
+		if(call->b2bua_agent_id.s == NULL) {
+			LM_ERR("No more memory\n");
+			return -2;
+		}
+		memcpy(call->b2bua_agent_id.s, id->s, id->len);
+	}
+	else if (call->b2bua_id.len==0) {
 		/* b2b instance not initialized yet =>
 		 * create new b2bua instance */
 		call->ref_cnt++;
@@ -1075,7 +1176,10 @@ next_ag:
 
 			lock_get( data->lock );
 
-			dest = agent->location;
+			if(!call->flow->recordings[AUDIO_FLOW_ID].len)
+				dest = agent->location;
+			else
+				dest = call->flow->recordings[AUDIO_FLOW_ID];
 
 			/* make a copy for destination to agent */
 			out.len = OUT_BUF_LEN(dest.len);
@@ -1083,11 +1187,15 @@ next_ag:
 			memcpy( out.s, dest.s, out.len);
 			
 			call->prev_state = call->state;
-			call->state = CC_CALL_TOAGENT;
-			/* call no longer on wait */
-			LM_DBG("** onhold-- Took out of the queue [%p]\n", call);
-			update_stat( stg_onhold_calls, -1);
-			update_stat( call->flow->st_onhold_calls, -1);
+			if(!call->flow->recordings[AUDIO_FLOW_ID].len) {
+				call->state = CC_CALL_TOAGENT;
+				/* call no longer on wait */
+				LM_DBG("** onhold-- Took out of the queue [%p]\n", call);
+				update_stat( stg_onhold_calls, -1);
+				update_stat( call->flow->st_onhold_calls, -1);
+			}else{
+				call->state = CC_CALL_PRE_TOAGENT;
+			}
 
 			/* mark agent as used */
 			agent->state = CC_AGENT_INCALL;

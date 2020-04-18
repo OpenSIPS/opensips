@@ -86,9 +86,16 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 				/* send it to agent */
 				LM_DBG("selecting AGENT %p (%.*s)\n",agent,
 					agent->id.len, agent->id.s);
-				state = CC_CALL_TOAGENT;
-				out = &agent->location;
-				LM_DBG("moved to TOAGENT from %d, out=%p\n", call->state, out);
+				if(call->flow->recordings[AUDIO_FLOW_ID].len) {
+					out = &call->flow->recordings[AUDIO_FLOW_ID];
+					state = CC_CALL_PRE_TOAGENT;
+					LM_DBG("moved to PRE_TOAGENT from %d\n", call->state);
+				}
+				else {
+					state = CC_CALL_TOAGENT;
+					out = &agent->location;
+					LM_DBG("moved to TOAGENT from %d, out=%p\n", call->state, out);
+				}
 				/* mark agent as used */
 				agent->state = CC_AGENT_INCALL;
 				call->agent = agent;

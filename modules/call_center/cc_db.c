@@ -44,6 +44,7 @@
 #define CCF_WELCOME_COL "message_welcome"
 #define CCF_M_QUEUE_COL "message_queue"
 #define CCF_M_DISSUADING_COL "message_dissuading"
+#define CCF_M_FLOW_ID_COL "message_flow_id"
 
 #define CC_AGENT_TABLE_NAME "cc_agents"
 #define CC_AGENT_TABLE_VERSION  1
@@ -101,6 +102,7 @@ str ccf_dissuading_qsize_th_column=	str_init(CCF_DISSUADING_QSIZE_TH_COL);
 str ccf_m_welcome_column		=	str_init(CCF_WELCOME_COL);
 str ccf_m_queue_column			=	str_init(CCF_M_QUEUE_COL);
 str ccf_m_dissuading_column		=	str_init(CCF_M_DISSUADING_COL);
+str ccf_m_flow_id_column		=	str_init(CCF_M_FLOW_ID_COL);
 
 str cc_agent_table_name			=	str_init(CC_AGENT_TABLE_NAME);
 str cca_agentid_column			=	str_init(CCA_AGENTID_COL);
@@ -568,7 +570,7 @@ error:
 
 int cc_load_db_data( struct cc_data *data)
 {
-	db_key_t columns[12];
+	db_key_t columns[13];
 	db_res_t* res;
 	db_row_t* row;
 	int i, j, n;
@@ -592,9 +594,10 @@ int cc_load_db_data( struct cc_data *data)
 	columns[9]  = &ccf_m_welcome_column;
 	columns[10] = &ccf_m_queue_column;
 	columns[11] = &ccf_m_dissuading_column;
+	columns[12] = &ccf_m_flow_id_column;
 
 	if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 12, 0, 0 ) < 0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 13, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -603,7 +606,7 @@ int cc_load_db_data( struct cc_data *data)
 			return -1;
 		}
 	} else {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 12, 0, &res)<0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 13, 0, &res)<0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}

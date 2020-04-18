@@ -38,6 +38,7 @@ typedef enum {
 	AUDIO_WELCOME,
 	AUDIO_QUEUE,
 	AUDIO_DISSUADING,
+	AUDIO_FLOW_ID,
 	MAX_AUDIO
 } audio_files;
 
@@ -161,6 +162,7 @@ typedef enum {
 	CC_CALL_DISSUADING1,
 	CC_CALL_DISSUADING2,
 	CC_CALL_QUEUED,
+	CC_CALL_PRE_TOAGENT,
 	CC_CALL_TOAGENT,
 	CC_CALL_ENDED
 } call_state;
@@ -188,6 +190,8 @@ struct cc_call {
 	str caller_un;
 	/* b2b id */
 	str b2bua_id;
+	/* b2b agent id */
+	str b2bua_agent_id;
 	/* flow the call belong to */
 	struct cc_flow *flow;
 	/* agent taking this call  */

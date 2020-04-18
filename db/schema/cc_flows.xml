@@ -156,6 +156,15 @@
 		flow.</description>
 	</column>
 
+	<column id="message_flow_id">
+		<name>message_flow_id</name>
+		<type>string</type>
+		<size>128</size>
+		<description>SIP URI point to a media server; this is
+		used for playing the name of the flow id to the agent
+		before delivering a call to him.</description>
+	</column>
+
 	<index>
 		<name>unique_flowid</name>
 		<colref linkend="flowid"/>
