@@ -12,6 +12,7 @@ CREATE TABLE cc_flows (
     dissuading_onhold_th INTEGER DEFAULT 0 NOT NULL,
     message_welcome CHAR(128) DEFAULT NULL,
     message_queue CHAR(128) NOT NULL,
+    message_dissuading CHAR(128) NOT NULL,
     CONSTRAINT cc_flows_unique_flowid  UNIQUE (flowid)
 );
 

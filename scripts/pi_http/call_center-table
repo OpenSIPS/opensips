@@ -14,6 +14,7 @@
 		<column><field>dissuading_onhold_th</field><type>DB_INT</type></column>
 		<column><field>message_welcome</field><type>DB_STR</type></column>
 		<column><field>message_queue</field><type>DB_STR</type></column>
+		<column><field>message_dissuading</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of cc_agents table-->
 	<db_table id="cc_agents">

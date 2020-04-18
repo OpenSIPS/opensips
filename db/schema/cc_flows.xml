@@ -147,10 +147,19 @@
 		server must never hung up on it.</description>
 	</column>
 
-    <index>
-        <name>unique_flowid</name>
-        <colref linkend="flowid"/>
-        <unique/>
-    </index>
+	<column id="message_dissuading">
+		<name>message_dissuading</name>
+		<type>string</type>
+		<size>128</size>
+		<description>SIP URI point to a media server; this is
+		used for playing the dissuading message for this
+		flow.</description>
+	</column>
+
+	<index>
+		<name>unique_flowid</name>
+		<colref linkend="flowid"/>
+		<unique/>
+	</index>
 
 </table>
