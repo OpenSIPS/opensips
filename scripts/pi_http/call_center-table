@@ -8,6 +8,10 @@
 		<column><field>skill</field><type>DB_STR</type></column>
 		<column><field>prependcid</field><type>DB_STR</type></column>
 		<column><field>max_wrapup_time</field><type>DB_INT</type></column>
+		<column><field>dissuading_hangup</field><type>DB_INT</type></column>
+		<column><field>dissuading_onhold_th</field><type>DB_INT</type></column>
+		<column><field>dissuading_onhold_th</field><type>DB_INT</type></column>
+		<column><field>dissuading_onhold_th</field><type>DB_INT</type></column>
 		<column><field>message_welcome</field><type>DB_STR</type></column>
 		<column><field>message_queue</field><type>DB_STR</type></column>
 	</db_table>

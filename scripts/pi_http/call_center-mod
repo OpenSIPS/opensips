@@ -10,6 +10,10 @@
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
 				<col><field>max_wrapup_time</field></col>
+				<col><field>dissuading_hangup</field></col>
+				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_onhold_th</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 			</query_cols>
@@ -23,6 +27,10 @@
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
 				<col><field>max_wrapup_time</field></col>
+				<col><field>dissuading_hangup</field></col>
+				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_onhold_th</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 			</query_cols>
@@ -39,6 +47,10 @@
 				<col><field>skill</field></col>
 				<col><field>prependcid</field></col>
 				<col><field>max_wrapup_time</field></col>
+				<col><field>dissuading_hangup</field></col>
+				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_onhold_th</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 			</query_cols>

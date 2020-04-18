@@ -1,1 +1,1 @@
-id(int,auto) flowid(string) priority(int) skill(string) prependcid(string) max_wrapup_time(int) message_welcome(string,null) message_queue(string) 
+id(int,auto) flowid(string) priority(int) skill(string) prependcid(string) max_wrapup_time(int) dissuading_hangup(int) dissuading_onhold_th(int) dissuading_onhold_th(int) dissuading_onhold_th(int) message_welcome(string,null) message_queue(string) 

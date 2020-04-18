@@ -83,6 +83,49 @@
 		</description>
 	</column>
 
+	<column id="dissuading_hangup">
+		<name>dissuading_hangup</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>If set to true (non zero value), the calls diverted
+		to dissuading destination will be closed after the dissuading 
+		terminates (useful when using a playback for dissuading).
+		</description>
+	</column>
+
+	<column id="dissuading_onhold_th">
+		<name>dissuading_onhold_th</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>For how long (in seconds) a call will wait in the
+		queue before getting a dissuading redirect.
+		</description>
+	</column>
+
+	<column id="dissuading_ewt_th">
+		<name>dissuading_onhold_th</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>The Estimated Waiting Time (in seconds) threshold that
+		will redirect a new incoming call (not queued yet) to the
+		dissuading destination.
+		</description>
+	</column>
+
+	<column id="dissuading_qsize_th">
+		<name>dissuading_onhold_th</name>
+		<type>unsigned int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>The Size of the Queue (as already waiting calls in this
+		flow) that will redirect a new incoming call (not queued yet) to the
+		dissuading destination.
+		</description>
+	</column>
+
 	<column id="message_welcome">
 		<name>message_welcome</name>
 		<type>string</type>

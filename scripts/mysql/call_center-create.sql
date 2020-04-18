@@ -6,6 +6,10 @@ CREATE TABLE cc_flows (
     skill CHAR(64) NOT NULL,
     prependcid CHAR(32) NOT NULL,
     max_wrapup_time INT(11) UNSIGNED DEFAULT 0 NOT NULL,
+    dissuading_hangup INT(11) UNSIGNED DEFAULT 0 NOT NULL,
+    dissuading_onhold_th INT(11) UNSIGNED DEFAULT 0 NOT NULL,
+    dissuading_onhold_th INT(11) UNSIGNED DEFAULT 0 NOT NULL,
+    dissuading_onhold_th INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     message_welcome CHAR(128) DEFAULT NULL,
     message_queue CHAR(128) NOT NULL,
     CONSTRAINT unique_flowid UNIQUE (flowid)
