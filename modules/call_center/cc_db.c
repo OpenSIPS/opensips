@@ -551,7 +551,7 @@ int cc_load_db_data( struct cc_data *data)
 	columns[11] = &ccf_m_dissuading_column;
 
 	if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 7, 0, 0 ) < 0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 12, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -560,7 +560,7 @@ int cc_load_db_data( struct cc_data *data)
 			return -1;
 		}
 	} else {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 7, 0, &res)<0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 12, 0, &res)<0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -661,7 +661,7 @@ int cc_load_db_data( struct cc_data *data)
 	columns[5] = &cca_wrapuptime_column;
 
 	if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 5, 0, 0 ) < 0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -670,7 +670,7 @@ int cc_load_db_data( struct cc_data *data)
 			return -1;
 		}
 	} else {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 5, 0, &res)<0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, &res)<0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
