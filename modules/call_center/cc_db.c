@@ -17,10 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -28,6 +25,7 @@
 
 #include "../../globals.h"
 #include "../../db/db.h"
+#include "../../timer.h"
 #include "../b2b_logic/b2b_load.h"
 #include "cc_db.h"
 
@@ -40,13 +38,15 @@ str ccf_skill_column			=	str_init(CCF_SKILL_COL);
 str ccf_cid_column				=	str_init(CCF_CID_COL);
 str ccf_m_welcome_column		=	str_init(CCF_WELCOME_COL);
 str ccf_m_queue_column			=	str_init(CCF_M_QUEUE_COL);
+str ccf_max_wrapup_column		=	str_init(CCF_MAX_WRAPUP_COL);
 
 str cc_agent_table_name			=	str_init(CC_AGENT_TABLE_NAME);
 str cca_agentid_column			=	str_init(CCA_AGENTID_COL);
 str cca_location_column			=	str_init(CCA_LOCATION_ID_COL);
 str cca_skills_column			=	str_init(CCA_SKILLS_COL);
 str cca_logstate_column			=	str_init(CCA_LOGSTATE_COL);
-str cca_lastcallend_column		=	str_init(CCA_LASTCALLEND_COL);
+str cca_wrapupend_column		=	str_init(CCA_WRAPUPEND_COL);
+str cca_wrapuptime_column		=	str_init(CCA_WRAPUPTIME_COL);
 
 str cc_globals_table_name		=	str_init(CC_GLOBALS_TABLE_NAME);
 str ccg_name_column				=	str_init(CCG_NAME_COL);
@@ -461,13 +461,13 @@ error:
 
 int cc_load_db_data( struct cc_data *data)
 {
-	db_key_t columns[6];
+	db_key_t columns[7];
 	db_res_t* res;
 	db_row_t* row;
 	int i, j, n;
 	str id,skill,cid;
 	str location;
-	unsigned int priority, logstate, last_call_end;
+	unsigned int priority, wrapup, logstate, wrapup_end_time;
 	str messages[MAX_AUDIO];
 
 	cc_dbf.use_table( cc_db_handle, &cc_flow_table_name);
@@ -476,11 +476,12 @@ int cc_load_db_data( struct cc_data *data)
 	columns[1] = &ccf_priority_column;
 	columns[2] = &ccf_skill_column;
 	columns[3] = &ccf_cid_column;
-	columns[4] = &ccf_m_welcome_column;
-	columns[5] = &ccf_m_queue_column;
+	columns[4] = &ccf_max_wrapup_column;
+	columns[5] = &ccf_m_welcome_column;
+	columns[6] = &ccf_m_queue_column;
 
 	if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 7, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -489,7 +490,7 @@ int cc_load_db_data( struct cc_data *data)
 			return -1;
 		}
 	} else {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, &res)<0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 7, 0, &res)<0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -529,13 +530,17 @@ int cc_load_db_data( struct cc_data *data)
 					cid.s = NULL; cid.len = 0;
 				}
 			}
+			/* MAX_WRAPUP_TIME column */
+			check_val( ROW_VALUES(row)+4, DB_INT, 1, 0, "max_wrapup_time");
+			wrapup = VAL_INT(ROW_VALUES(row)+4);
+
 			for( j=0 ; j<MAX_AUDIO ; j++ ) {
 				/* MESSAGE_XXXX column */
-				check_val( ROW_VALUES(row)+4+j, DB_STRING, 0, 0, "message");
-				if (VAL_NULL(ROW_VALUES(row)+4+j)) {
+				check_val( ROW_VALUES(row)+5+j, DB_STRING, 0, 0, "message");
+				if (VAL_NULL(ROW_VALUES(row)+5+j)) {
 					messages[j].s = NULL; messages[j].len = 0;
 				} else {
-					messages[j].s = (char*)VAL_STRING(ROW_VALUES(row)+4+j);
+					messages[j].s = (char*)VAL_STRING(ROW_VALUES(row)+5+j);
 					if (messages[j].s==NULL ||
 					(messages[j].len=strlen(messages[j].s))==0 ) {
 						messages[j].s = NULL; messages[j].len = 0;
@@ -544,7 +549,8 @@ int cc_load_db_data( struct cc_data *data)
 			}
 
 			/* add flow */
-			if (add_cc_flow(data,&id,priority,&skill,&cid,messages)<0) {
+			if (add_cc_flow(data,&id,priority,&skill,&cid,
+			wrapup,messages)<0) {
 				LM_ERR("failed to add flow %.*s -> skipping\n",
 					id.len,id.s);
 				continue;
@@ -571,7 +577,8 @@ int cc_load_db_data( struct cc_data *data)
 	columns[1] = &cca_location_column;
 	columns[2] = &cca_skills_column;
 	columns[3] = &cca_logstate_column;
-	columns[4] = &cca_lastcallend_column;
+	columns[4] = &cca_wrapupend_column;
+	columns[5] = &cca_wrapuptime_column;
 
 	if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
 		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 5, 0, 0 ) < 0) {
@@ -617,11 +624,15 @@ int cc_load_db_data( struct cc_data *data)
 			/* LOGSTATE column */
 			check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "logstate");
 			logstate = VAL_INT(ROW_VALUES(row)+3);
-			/* LAST_CALL_END column */
-			last_call_end = VAL_INT(ROW_VALUES(row)+4);
+			/* WRAPUP_END_TIME column */
+			wrapup_end_time = VAL_INT(ROW_VALUES(row)+4);
+			/* WRAPUP_TIME column */
+			check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "wrapup time");
+			wrapup = VAL_INT(ROW_VALUES(row)+5);
 
 			/* add agent */
-			if (add_cc_agent(data,&id,&location,&skill,logstate,last_call_end)<0){
+			if (add_cc_agent( data, &id, &location, &skill, logstate, wrapup,
+			wrapup_end_time)<0){
 				LM_ERR("failed to add agent %.*s -> skipping\n",
 					id.len,id.s);
 				continue;
@@ -776,13 +787,13 @@ int cc_write_cdr( str *un, str *fid, str *aid, int type, int rt, int wt, int tt,
 }
 
 
-void cc_db_update_agent_end_call(struct cc_agent* agent)
+void cc_db_update_agent_wrapup_end(struct cc_agent* agent)
 {
 	db_key_t columns[2];
 	db_val_t vals[2];
 
 	columns[0] = &cca_agentid_column;
-	columns[1] = &cca_lastcallend_column;
+	columns[1] = &cca_wrapupend_column;
 
 	vals[0].nul = 0;
 	vals[0].type = DB_STR;
@@ -790,11 +801,12 @@ void cc_db_update_agent_end_call(struct cc_agent* agent)
 
 	vals[1].nul = 0;
 	vals[1].type = DB_INT;
-	vals[1].val.int_val = (int)time(NULL);
+	/* translate from internal time to timestamp */
+	vals[1].val.int_val = (int)time(NULL)-get_ticks()+agent->wrapup_end_time;
 
 	cc_dbf.use_table( cc_db_handle, &cc_agent_table_name);
 
-	if (cc_dbf.update( cc_db_handle, columns, 0, vals, columns+1, vals+1, 1, 1) < 0) {
+	if (cc_dbf.update(cc_db_handle,columns,0,vals,columns+1,vals+1,1,1)<0) {
 		LM_ERR("Agent update failed\n");
 	}
 }

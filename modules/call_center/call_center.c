@@ -17,11 +17,8 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
- * History:
- * --------
- *  2014-03-17 initial version (bogdan)
  */
 
 #include "../../sr_module.h"
@@ -378,6 +375,17 @@ static inline void update_awt( unsigned int duration )
 }
 
 
+static inline int get_wrapup_time(struct cc_agent *ag, struct cc_flow *fl)
+{
+	int x;
+
+	x = (ag && ag->wrapup_time!=0) ? ag->wrapup_time : wrapup_time;
+	if (fl && fl->max_wrapup && fl->max_wrapup<x)
+		return fl->max_wrapup;
+	return x;
+}
+
+
 static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 		call_state prev_state)
 {
@@ -399,7 +407,8 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 		/* free the agent */
 		if (stat && stat->call_time && prev_state==CC_CALL_TOAGENT) {
 			call->agent->state = CC_AGENT_WRAPUP;
-			call->agent->last_call_end = get_ticks();
+			call->agent->wrapup_end_time = get_ticks()
+				+ get_wrapup_time(call->agent, call->flow);
 			call->flow->processed_calls ++;
 			call->flow->avg_call_duration =
 				( ((float)stat->call_time + 
@@ -416,8 +425,8 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 			update_awt( get_ticks() - call->recv_time );
 			update_cc_flow_awt( call->flow, get_ticks() - call->recv_time );
 		}
-		/* update last_call_end for agent */
-		cc_db_update_agent_end_call(call->agent);
+		/* update end time for agent's wrapup */
+		cc_db_update_agent_wrapup_end(call->agent);
 		call->agent->ref_cnt--;
 		call->agent = NULL;
 	} else {
@@ -475,9 +484,10 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 	prepare_cdr( call, &un, &fid , &aid);
 
 	call->agent->state = CC_AGENT_WRAPUP;
-	call->agent->last_call_end = get_ticks();
-	/* update last call_end for agent */
-	cc_db_update_agent_end_call(call->agent);
+	call->agent->wrapup_end_time = get_ticks() +
+				+ get_wrapup_time(call->agent, call->flow);
+	/* update end time for agent's wrapup */
+	cc_db_update_agent_wrapup_end(call->agent);
 	call->agent->ref_cnt--;
 	call->agent = NULL;
 
@@ -901,7 +911,7 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 	if (agent->loged_in != *state) {
 
 		if(*state && (agent->state==CC_AGENT_WRAPUP) &&
-			(get_ticks() - agent->last_call_end > wrapup_time))
+			(get_ticks() > agent->wrapup_end_time))
 			agent->state = CC_AGENT_FREE;
 
 		if(*state && data->agents[CC_AG_ONLINE] == NULL)
@@ -946,11 +956,12 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 		/* iterate all agents*/
 		do {
 
-			//LM_DBG("%.*s , state=%d, last_call_end=%u, ticks=%u, wrapup=%u\n",
-			//		agent->id.len, agent->id.s, agent->state, agent->last_call_end, ticks, wrapup_time);
+			//LM_DBG("%.*s , state=%d, wrapup_end_time=%u, ticks=%u, "
+			//		"wrapup=%u\n", agent->id.len, agent->id.s, agent->state,
+			//		agent->wrapup_end_time, ticks, wrapup_time);
 			/* for agents in WRAPUP time, check if expired */
 			if ( (agent->state==CC_AGENT_WRAPUP) &&
-					(ticks - agent->last_call_end > wrapup_time)) {
+					(ticks > agent->wrapup_end_time )) {
 				agent->state = CC_AGENT_FREE;
 				/* move it to the end of the list*/
 				if(data->last_online_agent != agent) {
@@ -1345,7 +1356,7 @@ static mi_response_t *mi_agent_login(const mi_params_t *params,
 	if (agent->loged_in != loged_in) {
 
 		if(loged_in && (agent->state==CC_AGENT_WRAPUP) &&
-			(get_ticks() - agent->last_call_end > wrapup_time))
+			(get_ticks() > agent->wrapup_end_time))
 			agent->state = CC_AGENT_FREE;
 
 		if(loged_in && data->agents[CC_AG_ONLINE] == NULL)

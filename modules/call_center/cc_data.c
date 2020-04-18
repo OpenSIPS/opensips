@@ -241,7 +241,7 @@ static unsigned long cc_flow_get_load( void *flow_p)
 #endif
 
 int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
-												str *cid, str *recordings )
+									str *cid, int max_wrapup, str *recordings )
 {
 	struct cc_flow *flow, *prev_flow;
 	unsigned int i;
@@ -268,6 +268,8 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 		flow->id.len = id->len;
 		/* priority */
 		flow->priority = priority;
+		/* max wrapup time */
+		flow->max_wrapup = max_wrapup;
 		/* skill */
 		flow->skill = get_skill_id( data, skill );
 		if (flow->skill==0) {
@@ -374,6 +376,8 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 		/* flow already exists -> update */
 		/* priority */
 		flow->priority = priority;
+		/* max wrapup time */
+		flow->max_wrapup = max_wrapup;
 		/* skill - needs to be changed ? */
 		skill_id = get_skill_id(data,skill);
 		if (skill_id==0) {
@@ -472,7 +476,8 @@ static unsigned long cc_agent_get_att( void *agent_p)
 #endif
 
 int add_cc_agent( struct cc_data *data, str *id, str *location,
-				str *skills, unsigned int logstate, unsigned int last_call_end)
+				str *skills, unsigned int logstate, unsigned int own_wrapup,
+												unsigned int wrapup_end_time)
 {
 	struct cc_agent *agent, *prev_agent= 0;
 	struct sip_uri uri;
@@ -514,6 +519,8 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 		agent->did = uri.user;
 		/* LOG STATE */
 		agent->loged_in = logstate;
+		/* WRAPUP TIME */
+		agent->wrapup_time = (own_wrapup==0)? wrapup_time : own_wrapup;
 		/* set of skills */
 		if (skills && skills->len) {
 			p = skills->s;
@@ -563,9 +570,9 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 			goto error;
 		}
 #endif
-		if(last_call_end && (last_call_end + wrapup_time < (int)time(NULL))) {
+		if (wrapup_end_time && (wrapup_end_time < (int)time(NULL))) {
 			agent->state = CC_AGENT_WRAPUP;
-			agent->last_call_end = last_call_end - startup_time; /* it will be a negative value */
+			agent->wrapup_end_time = wrapup_end_time - startup_time;
 		}
 		agent->is_new = 1;
 		/* link the agent */
@@ -597,6 +604,8 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 		if(logstate != agent->loged_in) {
 			agent_switch_login(data, agent, prev_agent);
 		}
+		/* WRAPUP TIME */
+		agent->wrapup_time = (own_wrapup==0)? wrapup_time : own_wrapup;
 		/* skills - needs to be changed ? */
 		agent->no_skills = 0;
 		if (skills && skills->len) {

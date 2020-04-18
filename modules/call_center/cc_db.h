@@ -40,6 +40,7 @@
 #define CCF_CID_COL "prependcid"
 #define CCF_WELCOME_COL "message_welcome"
 #define CCF_M_QUEUE_COL "message_queue"
+#define CCF_MAX_WRAPUP_COL "max_wrapup_time"
 
 #define CC_AGENT_TABLE_NAME "cc_agents"
 #define CC_AGENT_TABLE_VERSION  1
@@ -47,7 +48,8 @@
 #define CCA_LOCATION_ID_COL "location"
 #define CCA_SKILLS_COL "skills"
 #define CCA_LOGSTATE_COL "logstate"
-#define CCA_LASTCALLEND_COL "last_call_end"
+#define CCA_WRAPUPEND_COL "wrapup_end_time"
+#define CCA_WRAPUPTIME_COL "wrapup_time"
 
 #define CC_GLOBALS_TABLE_NAME "cc_globals"
 #define CC_GLOBALS_TABLE_VERSION  1
@@ -102,7 +104,7 @@ int cc_db_insert_call(struct cc_call *call);
 int cc_db_update_call(struct cc_call *call);
 int cc_db_delete_call(struct cc_call *call);
 int cc_db_restore_calls( struct cc_data *data);
-void cc_db_update_agent_end_call(struct cc_agent* agent);
+void cc_db_update_agent_wrapup_end(struct cc_agent* agent);
 int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event);
 int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event);
 

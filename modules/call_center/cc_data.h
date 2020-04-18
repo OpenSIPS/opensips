@@ -47,6 +47,7 @@ struct cc_flow {
 	/* configuration data */
 	unsigned int priority;
 	unsigned int skill;
+	unsigned int max_wrapup;
 	str recordings[MAX_AUDIO];
 	str cid;
 	/* runtime data */
@@ -84,13 +85,15 @@ struct cc_agent {
 	/* configuration data */
 	str location; /* sip address*/
 	str did;  /* shorcut for username in sips address */
+	unsigned int wrapup_time;
 	unsigned int no_skills;
 	unsigned int skills[MAX_SKILLS_PER_AGENT];
 	/* runtime data */
 	int ref_cnt;
 	agent_state state;
 	unsigned int loged_in;
-	int last_call_end;
+	/* seconds to the end of wrap up (relative to internal time)*/
+	int wrapup_end_time;
 	/* statistics */
 	stat_var *st_dist_incalls;
 	stat_var *st_answ_incalls;
@@ -199,16 +202,18 @@ void free_cc_data(struct cc_data *data);
 str* get_skill_by_id(struct cc_data *data, unsigned int id);
 
 int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
-		str *cid, str *recordings );
+		str *cid, int max_wrapup, str *recordings );
 
 void update_cc_agent_att(struct cc_agent *agent, unsigned long duration);
 
 int add_cc_agent( struct cc_data *data, str *id, str *location,
-		str *skills, unsigned int logstate, unsigned int last_call_end);
+		str *skills, unsigned int logstate, unsigned int wrapup_time,
+		unsigned int wrapup_end_time);
 
 void update_cc_flow_awt(struct cc_flow *flow, unsigned long duration);
 
-struct cc_agent* get_agent_by_name(struct cc_data *data, str *name, struct cc_agent **prev_agent);
+struct cc_agent* get_agent_by_name(struct cc_data *data, str *name,
+		struct cc_agent **prev_agent);
 
 struct cc_flow *get_flow_by_name(struct cc_data *data, str *name);
 
