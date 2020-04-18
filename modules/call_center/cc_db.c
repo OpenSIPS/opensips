@@ -496,12 +496,6 @@ int cc_load_db_data( struct cc_data *data)
 		}
 	}
 
-	if (RES_ROW_N(res) == 0) {
-		LM_WARN("table \"%.*s\" empty\n", cc_flow_table_name.len,
-			cc_flow_table_name.s );
-		return -1;
-	}
-
 	LM_DBG("%d records found in %.*s\n",
 		RES_ROW_N(res), cc_flow_table_name.len,cc_flow_table_name.s );
 	n = 0;
@@ -594,12 +588,6 @@ int cc_load_db_data( struct cc_data *data)
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
-	}
-
-	if (RES_ROW_N(res) == 0) {
-		LM_WARN("table \"%.*s\" empty\n", cc_agent_table_name.len,
-			cc_agent_table_name.s );
-		return -1;
 	}
 
 	LM_DBG("%d records found in %.*s\n",
