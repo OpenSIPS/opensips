@@ -40,6 +40,7 @@
 /* db stuff */
 static str db_url = {NULL, 0};
 static str acc_db_url = {NULL, 0};;
+static str rt_db_url = {NULL, 0};;
 
 /* internal data (agents, flows) */
 static struct cc_data *data=NULL;
@@ -105,6 +106,7 @@ static cmd_export_t cmds[]={
 static param_export_t mod_params[]={
 	{ "db_url",               STR_PARAM, &db_url.s             },
 	{ "acc_db_url",           STR_PARAM, &acc_db_url.s         },
+	{ "rt_db_url",            STR_PARAM, &rt_db_url.s          },
 	{ "b2b_scenario",         STR_PARAM, &b2b_scenario.s       },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
@@ -276,6 +278,9 @@ static int mod_init(void)
 
 	init_db_url( db_url , 0 /*cannot be null*/);
 	init_db_url( acc_db_url , 0 /*cannot be null*/);
+	if (rt_db_url.s==NULL)
+		rt_db_url = db_url;
+	init_db_url( rt_db_url , 0 /*cannot be null*/);
 
 	cc_agent_table_name.len = strlen(cc_agent_table_name.s);
 	cca_agentid_column.len = strlen(cca_agentid_column.s);
@@ -320,13 +325,19 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* init and open DB connection */
+	/* init and open DB connection for provisioning data */
 	if (init_cc_db( &db_url )!=0) {
 		LM_ERR("failed to initialize the DB support\n");
 		return -1;
 	}
+	/* init DB connection (no connect) for ACC/CDR data */
 	if (init_cc_acc_db( &acc_db_url )!=0) {
 		LM_ERR("failed to initialize the acc DB support\n");
+		return -1;
+	}
+	/* init and open DB connection for runtime data */
+	if (init_cc_rt_db( &rt_db_url )!=0) {
+		LM_ERR("failed to initialize the realtime DB support\n");
 		return -1;
 	}
 
@@ -343,8 +354,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* close DB connection */
+	/* close DB connections here, to reopen in the worker processes */
 	cc_close_db();
+	cc_close_rt_db();
 
 	return 0;
 }
@@ -363,6 +375,10 @@ static int child_init( int rank )
 		LM_CRIT("cannot initialize acc database connection\n");
 		return -1;
 	}
+	if ( cc_connect_rt_db(&rt_db_url)!=0 ) {
+		LM_CRIT("cannot initialize rt database connection\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -376,6 +392,10 @@ static int mi_child_init( void )
 	}
 	if ( cc_connect_acc_db(&acc_db_url)!=0 ) {
 		LM_CRIT("cannot initialize acc database connection\n");
+		return -1;
+	}
+	if ( cc_connect_rt_db(&rt_db_url)!=0 ) {
+		LM_CRIT("cannot initialize rt database connection\n");
 		return -1;
 	}
 	return 0;

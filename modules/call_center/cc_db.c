@@ -147,8 +147,10 @@ str ccq_agent_column			=	str_init(CCQ_AGENT_COL);
 
 static db_con_t* cc_db_handle    = 0; /* database connection handle */
 static db_con_t* cc_acc_db_handle    = 0; /* database connection handle */
+static db_con_t* cc_rt_db_handle    = 0; /* database connection handle */
 static db_func_t cc_dbf;
 static db_func_t cc_acc_dbf;
+static db_func_t cc_rt_dbf;
 extern b2bl_api_t b2b_api;
 
 
@@ -193,6 +195,20 @@ int cc_connect_acc_db(const str *acc_db_url)
 	return 0;
 }
 
+
+int cc_connect_rt_db(const str *rt_db_url)
+{
+	if (cc_rt_db_handle) {
+		LM_CRIT("BUG - db connection found already open\n");
+		return -1;
+	}
+	if ((cc_rt_db_handle = cc_rt_dbf.init(rt_db_url)) == 0)
+		return -1;
+
+	return 0;
+}
+
+
 void cc_close_db(void)
 {
 	if (cc_db_handle==NULL)
@@ -200,6 +216,16 @@ void cc_close_db(void)
 
 	cc_dbf.close(cc_db_handle);
 	cc_db_handle = NULL;
+}
+
+
+void cc_close_rt_db(void)
+{
+	if (cc_rt_db_handle==NULL)
+		return;
+
+	cc_rt_dbf.close(cc_rt_db_handle);
+	cc_rt_db_handle = NULL;
 }
 
 
@@ -243,12 +269,29 @@ int init_cc_acc_db(const str *acc_db_url)
 }
 
 
+int init_cc_rt_db(const str *rt_db_url)
+{
+	/* Find a database module */
+	if (db_bind_mod(rt_db_url, &cc_rt_dbf) < 0){
+		LM_ERR("Unable to bind to a database driver\n");
+		return -1;
+	}
+
+	if (cc_connect_rt_db(rt_db_url)!=0){
+		LM_ERR("unable to connect to the database\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 int cc_db_delete_call(struct cc_call *call)
 {
 	db_key_t qcols[1];
 	db_val_t qvals[1];
 
-	if(cc_dbf.use_table( cc_db_handle, &cc_calls_table_name) < 0)
+	if(cc_rt_dbf.use_table( cc_rt_db_handle, &cc_calls_table_name) < 0)
 	{
 		LM_ERR("SQL use table for %.*s table failed\n",
 				cc_calls_table_name.len, cc_calls_table_name.s);
@@ -260,7 +303,7 @@ int cc_db_delete_call(struct cc_call *call)
 	qvals[0].nul         = 0;
 	qvals[0].val.str_val = call->b2bua_id;
 
-	if(cc_dbf.delete(cc_db_handle, qcols, 0, qvals, 1) < 0) {
+	if(cc_rt_dbf.delete(cc_rt_db_handle, qcols, 0, qvals, 1) < 0) {
 		LM_ERR("unsuccessful sql delete operation");
 		return -1;
 	}
@@ -275,7 +318,7 @@ int cc_db_update_call(struct cc_call *call)
 	db_val_t qvals[1];
 	db_val_t uvals[5];
 
-	if(cc_dbf.use_table( cc_db_handle, &cc_calls_table_name) < 0) {
+	if(cc_rt_dbf.use_table( cc_rt_db_handle, &cc_calls_table_name) < 0) {
 		LM_ERR("SQL use table for %.*s table failed\n",
 				cc_calls_table_name.len, cc_calls_table_name.s);
 		return -1;
@@ -304,7 +347,7 @@ int cc_db_update_call(struct cc_call *call)
 	if(call->agent)
 		uvals[4].val.str_val = call->agent->id;
 
-	if( cc_dbf.update(cc_db_handle, qcols, 0, qvals,
+	if( cc_rt_dbf.update(cc_rt_db_handle, qcols, 0, qvals,
 			ucols, uvals, 1, 5)<0) 
 	{
 		LM_ERR("updating call record in database\n");
@@ -320,7 +363,7 @@ int cc_db_insert_call(struct cc_call *call)
 	db_key_t columns[CCQ_COLS_NO];
 	db_val_t vals[CCQ_COLS_NO];
 
-	if(cc_dbf.use_table( cc_db_handle, &cc_calls_table_name) < 0)
+	if(cc_rt_dbf.use_table( cc_rt_db_handle, &cc_calls_table_name) < 0)
 	{
 		LM_ERR("SQL use table for %.*s table failed\n",
 				cc_calls_table_name.len, cc_calls_table_name.s);
@@ -367,7 +410,7 @@ int cc_db_insert_call(struct cc_call *call)
 	if(call->agent)
 		vals[11].val.str_val = call->agent->id;
 
-	if (cc_dbf.insert(cc_db_handle, columns, vals, CCQ_COLS_NO) < 0) {
+	if (cc_rt_dbf.insert(cc_rt_db_handle, columns, vals, CCQ_COLS_NO) < 0) {
 		LM_ERR("inserting new record in database\n");
 		return -1;
 	}
@@ -389,7 +432,7 @@ int cc_db_restore_calls( struct cc_data *data)
 	str dn, un;
 	str id;
 
-	cc_dbf.use_table( cc_db_handle, &cc_calls_table_name);
+	cc_rt_dbf.use_table( cc_rt_db_handle, &cc_calls_table_name);
 
 	columns[0] = &ccq_state_column;
 	columns[1] = &ccq_ig_cback_column;
@@ -404,7 +447,7 @@ int cc_db_restore_calls( struct cc_data *data)
 	columns[10] = &ccq_flow_column;
 	columns[11] = &ccq_agent_column;
 
-	if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0,
+	if ( cc_rt_dbf.query( cc_rt_db_handle, 0, 0, 0, columns, 0,
 				CCQ_COLS_NO, 0, &res)<0) {
 		LM_ERR("DB query failed\n");
 		return -1;

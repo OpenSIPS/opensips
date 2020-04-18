@@ -223,6 +223,30 @@ modparam("call_center", "acc_db_url",
 		</example>
 	</section>
 
+	<section id="param_rt_db_url" xreflabel="rt_db_url">
+		<title><varname>rt_db_url</varname> (string)</title>
+		<para>
+		SQL address/URL of the DB server (database specific) where the
+		runtime tables (non provisioning tables) are located. The
+		runtime tables are the tables populated by OpenSIPS with data
+		learned during runtime. To be more specific, the only runtime
+		table we have so far is the "cc_calls" table.
+		</para>
+		If not explicitly set, the global OpenSIPS DB URL will be used.
+		<para>
+		</para>
+		<example>
+		<title>Set <varname>rt_db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "rt_db_url", 
+	"mysql://opensips:opensipsrw@localhost/opensips_runtime")
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section id="param_b2b_scenario" xreflabel="b2b_scenario">
 		<title><varname>b2b_scenario</varname> (string)</title>
 		<para>

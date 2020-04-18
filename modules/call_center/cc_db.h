@@ -41,11 +41,14 @@ extern str cca_wrapuptime_column;
 
 int init_cc_db(const str *db_url);
 int init_cc_acc_db(const str *acc_db_url);
+int init_cc_rt_db(const str *rt_db_url);
 
 int cc_connect_db(const str *db_url);
 int cc_connect_acc_db(const str *acc_db_url);
+int cc_connect_rt_db(const str *rt_db_url);
 
 void cc_close_db(void);
+void cc_close_rt_db(void);
 
 int cc_load_db_data( struct cc_data *data);
 
