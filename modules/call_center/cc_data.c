@@ -1,7 +1,7 @@
 /*
  * call center module - call queuing and distributio
  *
- * Copyright (C) 2014 OpenSIPS Solutions
+ * Copyright (C) 2014-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,11 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2014-03-17 initial version (bogdan)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -34,6 +30,7 @@
 #include "../../ut.h"
 #include "../../trim.h"
 #include "../../timer.h"
+#include "../../evi/evi.h"
 #include "../b2b_logic/b2b_load.h"
 #include "cc_data.h"
 
@@ -43,6 +40,9 @@ extern b2bl_api_t b2b_api;
 
 extern unsigned int wrapup_time;
 
+/* events */
+static str agent_event = str_init("E_CALLCENTER_AGENT_REPORT");
+static event_id_t agent_evi_id;
 
 static void free_cc_flow( struct cc_flow *flow);
 static void free_cc_agent( struct cc_agent *agent);
@@ -130,6 +130,12 @@ struct cc_data* init_cc_data(void)
 	}
 	if (lock_set_init(data->call_locks)==0 ) {
 		LM_CRIT("failed to init set of call locks\n");
+		goto error;
+	}
+
+	agent_evi_id = evi_publish_event(agent_event);
+	if (agent_evi_id == EVI_ERROR) {
+		LM_ERR("cannot register %.*s event\n", agent_event.len, agent_event.s);
 		goto error;
 	}
 
@@ -1063,4 +1069,81 @@ struct cc_call *cc_queue_pop_call_for_agent(struct cc_data *data,
 
 	return NULL;
 }
+
+
+void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
+{
+	static str agent_id_str = str_init("agent_id");
+	static str status_str = str_init("status");
+	static str status_offline_str = str_init("offline");
+	static str status_free_str = str_init("free");
+	static str status_incall_str = str_init("incall");
+	static str status_wrapup_str = str_init("wrapup");
+	static str wrapup_ends_str = str_init("wrapup_ends");
+	static str flow_id_str = str_init("flow_id");
+
+	evi_params_p list;
+	str *txt;
+	int ts;
+
+	if (agent_evi_id == EVI_ERROR || !evi_probe_event(agent_evi_id))
+		return;
+
+	list = evi_get_params();
+	if (!list) {
+		LM_ERR("cannot create event params\n");
+		return;
+	}
+
+	if (evi_param_add_str(list, &agent_id_str, &agent->id) < 0) {
+		LM_ERR("cannot add agent_id\n");
+		goto error;
+	}
+
+	if (!agent->loged_in) {
+		txt = &status_offline_str;
+	} else {
+		switch (agent->state) {
+			case CC_AGENT_FREE:
+				txt = &status_free_str;
+				break;
+			case CC_AGENT_INCALL:
+				txt = &status_incall_str;
+				break;
+			case CC_AGENT_WRAPUP:
+				txt = &status_wrapup_str;
+				break;
+		}
+	}
+
+	if (evi_param_add_str(list, &status_str, txt) < 0) {
+		LM_ERR("cannot add state\n");
+		goto error;
+	}
+
+	if (agent->state==CC_AGENT_WRAPUP) {
+		ts = (int)time(NULL)+agent->wrapup_end_time-get_ticks();
+		if (evi_param_add_int(list, &wrapup_ends_str, &ts) < 0) {
+			LM_ERR("cannot add wrapup time\n");
+			goto error;
+		}
+	}
+
+	if (agent->state==CC_AGENT_INCALL && call) {
+		if (evi_param_add_str(list, &flow_id_str, &call->flow->id) < 0) {
+			LM_ERR("cannot add wrapup time\n");
+			goto error;
+		}
+	}
+
+
+	if (evi_raise_event(agent_evi_id, list)) {
+		LM_ERR("unable to send agent report event\n");
+	}
+	return;
+
+error:
+	evi_free_params(list);
+}
+
 

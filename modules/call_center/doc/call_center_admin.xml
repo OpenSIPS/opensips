@@ -1225,6 +1225,42 @@ opensips-cli -x mi cc_reset_stats
 
 	</section>
 
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_E_CALLCENTER_AGENT_REPORT" xreflabel="E_CALLCENTER_AGENT_REPORT">
+		<title>
+		<function moreinfo="none">E_CALLCENTER_AGENT_REPORT</function>
+		</title>
+		<para>
+			This event is raised when the status of an agent changes.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>agent_id</emphasis> - the id of the agent.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>state</emphasis> - the status of the agent:
+				<itemizedlist>
+					<listitem>offline</listitem>
+					<listitem>free</listitem>
+					<listitem>incall</listitem>
+					<listitem>wrapup</listitem>
+				</itemizedlist>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>wrapup_ends</emphasis> - the timestamp when the 
+				wrapup state will end; published only if the state is 
+				"wrapup"
+			</para></listitem>
+			<listitem><para>
+				<emphasis>flow_id</emphasis> - the flow ID that delivered the
+				call for this agent; published only if the state is "incall"
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
 
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>

@@ -241,6 +241,8 @@ struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
 void log_agent_to_flows(struct cc_data *data, struct cc_agent *agent,
 		int login);
 
+void agent_raise_event(struct cc_agent *agent, struct cc_call *call);
+
 void clean_cc_old_data(struct cc_data *data);
 
 void clean_cc_unref_data(struct cc_data *data);
@@ -293,8 +295,8 @@ static inline void agent_switch_login(struct cc_data* data,
 	/* take out of the current list */
 	remove_cc_agent(data, agent, prev_agent);
 	agent->loged_in ^= 1;
+	agent_raise_event( agent, NULL);
 	/* add on top of the new one */
 	add_cc_agent_top(data, agent);
 }
-
 #endif

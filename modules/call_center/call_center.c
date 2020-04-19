@@ -515,6 +515,7 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 		}
 		/* update end time for agent's wrapup */
 		cc_db_update_agent_wrapup_end(call->agent);
+		agent_raise_event( call->agent, NULL);
 		call->agent->ref_cnt--;
 		call->agent = NULL;
 	} else {
@@ -576,6 +577,7 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 				+ get_wrapup_time(call->agent, call->flow);
 	/* update end time for agent's wrapup */
 	cc_db_update_agent_wrapup_end(call->agent);
+	agent_raise_event( call->agent, NULL);
 	call->agent->ref_cnt--;
 	call->agent = NULL;
 
@@ -1112,6 +1114,7 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 		if(*state && data->agents[CC_AG_ONLINE] == NULL)
 			data->last_online_agent = agent;
 
+		/* agent event is triggered here */
 		agent_switch_login(data, agent, prev_agent);
 
 		if(*state) {
@@ -1158,6 +1161,7 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 			if ( (agent->state==CC_AGENT_WRAPUP) &&
 					(ticks > agent->wrapup_end_time )) {
 				agent->state = CC_AGENT_FREE;
+				agent_raise_event( agent, NULL);
 				/* move it to the end of the list*/
 				if(data->last_online_agent != agent) {
 					remove_cc_agent(data, agent, prev_agent);
@@ -1248,6 +1252,7 @@ next_ag:
 			agent->state = CC_AGENT_INCALL;
 			call->agent = agent;
 			call->agent->ref_cnt++;
+			agent_raise_event( agent, call);
 			update_stat( stg_dist_incalls, 1);
 			update_stat( call->flow->st_dist_incalls, 1);
 			call->fst_flags |= FSTAT_DIST;
@@ -1645,8 +1650,9 @@ static mi_response_t *mi_agent_login(const mi_params_t *params,
 		if(loged_in && data->agents[CC_AG_ONLINE] == NULL)
 			data->last_online_agent = agent;
 
+		/* agent event is triggered here */
 		agent_switch_login(data, agent, prev_agent);
-		
+
 		if(loged_in) {
 			data->logedin_agents++;
 			log_agent_to_flows( data, agent, 1);
