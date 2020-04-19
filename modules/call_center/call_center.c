@@ -317,6 +317,23 @@ static int mod_init(void)
 	cca_wrapupend_column.len = strlen(cca_wrapupend_column.s);
 	cca_wrapuptime_column.len = strlen(cca_wrapuptime_column.s);
 
+	cc_flow_table_name.len = strlen(cc_flow_table_name.s);
+	ccf_flowid_column.len = strlen(ccf_flowid_column.s);
+	ccf_priority_column.len = strlen(ccf_priority_column.s);
+	ccf_skill_column.len = strlen(ccf_skill_column.s);
+	ccf_cid_column.len = strlen(ccf_cid_column.s);
+	ccf_max_wrapup_column.len = strlen(ccf_max_wrapup_column.s);
+	ccf_dissuading_hangup_column.len = strlen(ccf_dissuading_hangup_column.s);
+	ccf_dissuading_onhold_th_column.len =
+		strlen(ccf_dissuading_onhold_th_column.s);
+	ccf_dissuading_ewt_th_column.len = strlen(ccf_dissuading_ewt_th_column.s);
+	ccf_dissuading_qsize_th_column.len =
+		strlen(ccf_dissuading_qsize_th_column.s);
+	ccf_m_welcome_column.len = strlen(ccf_m_welcome_column.s);
+	ccf_m_queue_column.len = strlen(ccf_m_queue_column.s);
+	ccf_m_dissuading_column.len = strlen(ccf_m_dissuading_column.s);
+	ccf_m_flow_id_column.len = strlen(ccf_m_flow_id_column.s);
+
 	b2b_scenario.len = strlen(b2b_scenario.s);
 	b2b_scenario_agent.len = strlen(b2b_scenario_agent.s);
 	if (queue_pos_param.s)
