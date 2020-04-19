@@ -821,9 +821,9 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 				<emphasis>param (string, optional)</emphasis> - an opaque
 				string to be passed as parameter to the "callcenter" and 
 				"agent" B2B scenarios. It is
-				itended for custom integration of the call center module and 
+				intended for custom integration of the call center module and 
 				it is 100% up to the script writer about the value and purpose
-				of this parameter, OpenSIPS will not touch or iterpret it.
+				of this parameter, OpenSIPS will not touch or interpret it.
 			</para></listitem>
 		</itemizedlist>
 		<para>
