@@ -105,9 +105,9 @@
 		the playback).
 		</para>
 		<para>
-		The flow also has an optional <emphasis>wrapup time</emphasis>, which
-		overrides the per-agent/global value (the flow forces a certain
-		value for all its calls).
+		The flow also has an optional <emphasis>max_wrapup time</emphasis>,
+		which acts as an upper limit for the per-agent/global value (the flow 
+		forces a ceiling of the wrapup value for all its calls).
 		</para>
 		</section>
 
@@ -133,8 +133,8 @@
 		defined, saying the time interval for an agent before getting a new 
 		call from the system (after he finished a call). If no value is defined
 		for the agent, the global <emphasis>wrapup_time</emphasis> will be 
-		used. Note that the resulting value may be overridden by the
-		per-flow <emphasis>wrapup_time</emphasis> if defined.
+		used. Note that the resulting value may be upper limited by the
+		per-flow <emphasis>max_wrapup_time</emphasis> if defined.
 		</para>
 		</section>
 	</section>
@@ -395,7 +395,7 @@ modparam("call_center", "cc_agents_table", "my_agents")
 	</section>
 
 	<section id="param_cca_agentid_column" xreflabel="cca_agentid_column">
-		<title><varname>cc_agents_table</varname> (string)</title>
+		<title><varname>cca_agentid_column</varname> (string)</title>
 		<para>
 		Name to be used for the "agent id" (unique DB id) column in the
 		agents table.
@@ -415,7 +415,7 @@ modparam("call_center", "cca_agentid_column", "cid")
 	</section>
 
 	<section id="param_cca_location_column" xreflabel="cca_location_column">
-		<title><varname>cc_location_table</varname> (string)</title>
+		<title><varname>cca_location_column</varname> (string)</title>
 		<para>
 		Name to be used for the "location" (SIP URI) column in the
 		agents table.
@@ -435,7 +435,7 @@ modparam("call_center", "cca_location_column", "sip_uri")
 	</section>
 
 	<section id="param_cca_skills_column" xreflabel="cca_skills_column">
-		<title><varname>cc_skills_table</varname> (string)</title>
+		<title><varname>cca_skills_column</varname> (string)</title>
 		<para>
 		Name to be used for the "skills" (list of skills) column in the
 		agents table.
@@ -455,7 +455,7 @@ modparam("call_center", "cca_skills_column", "skills")
 	</section>
 
 	<section id="param_cca_logstate_column" xreflabel="cca_logstate_column">
-		<title><varname>cc_logstate_table</varname> (string)</title>
+		<title><varname>cca_logstate_column</varname> (string)</title>
 		<para>
 		Name to be used for the "logstate" (original login state) column in the
 		agents table.
@@ -475,7 +475,7 @@ modparam("call_center", "cca_logstate_column", "log_state")
 	</section>
 
 	<section id="param_cca_wrapuptime_column" xreflabel="cca_wrapuptime_column">
-		<title><varname>cc_wrapuptime_table</varname> (string)</title>
+		<title><varname>cca_wrapuptime_column</varname> (string)</title>
 		<para>
 		Name to be used for the "wrapuptime" (per-agent wrapup time) column 
 		in the agents table.
@@ -495,7 +495,7 @@ modparam("call_center", "cca_wrapuptime_column", "wtime")
 	</section>
 
 	<section id="param_cca_wrapupend_column" xreflabel="cca_wrapupend_column">
-		<title><varname>cc_wrapupend_table</varname> (string)</title>
+		<title><varname>cca_wrapupend_column</varname> (string)</title>
 		<para>
 		Name to be used for the "wrapupend" (timestamp when the wrapup ends) 
 		column in the agents table.
@@ -509,6 +509,286 @@ modparam("call_center", "cca_wrapuptime_column", "wtime")
 		<programlisting format="linespecific">
 ...
 modparam("call_center", "cca_wrapupend_column", "wrapup_ends")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cc_flows_table" xreflabel="cc_flows_table">
+		<title><varname>cc_flows_table</varname> (string)</title>
+		<para>
+		Name to be used for the table holding the definition of the
+		flows/queues.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>cc_flows</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cc_flows_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cc_flows_table", "queues")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_flowid_column" xreflabel="ccf_flowid_column">
+		<title><varname>ccf_flowid_column</varname> (string)</title>
+		<para>
+		Name to be used for the "flow id" (unique DB id) column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>flowid</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_flowid_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_flowid_column", "queue_id")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_priority_column" xreflabel="ccf_priority_column">
+		<title><varname>ccf_priority_column</varname> (string)</title>
+		<para>
+		Name to be used for the "priority" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>priority</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_priority_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_priority_column", "queue_prio")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_skill_column" xreflabel="ccf_skill_column">
+		<title><varname>ccf_skill_column</varname> (string)</title>
+		<para>
+		Name to be used for the "skill" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>skill</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_skill_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_skill_column", "queue_skill")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_cid_column" xreflabel="ccf_cid_column">
+		<title><varname>ccf_cid_column</varname> (string)</title>
+		<para>
+		Name to be used for the "caller ID prefix" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>prependcid</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_cid_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_cid_column", "queue_cli_prefix")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_max_wrapup_column" xreflabel="ccf_max_wrapup_column">
+		<title><varname>ccf_max_wrapup_column</varname> (string)</title>
+		<para>
+		Name to be used for the "max limit for wrapup time" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>max_wrapup_time</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_max_wrapup_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_max_wrapup_column", "queue_wrapup")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_dissuading_hangup_column" xreflabel="ccf_dissuading_hangup_column">
+		<title><varname>ccf_dissuading_hangup_column</varname> (string)</title>
+		<para>
+		Name to be used for the "hangup after dissuading" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>dissuading_hangup</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_dissuading_hangup_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_dissuading_hangup_column", "hangup_on_dissuading")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_dissuading_onhold_th_column" xreflabel="ccf_dissuading_onhold_th_column">
+		<title><varname>ccf_dissuading_onhold_th_column</varname> (string)</title>
+		<para>
+		Name to be used for the "on-hold dissuading threshold" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>dissuading_onhold_th</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_dissuading_onhold_th_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_dissuading_onhold_th_column", "th_diss_onhold")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_dissuading_ewt_th_column" xreflabel="ccf_dissuading_ewt_th_column">
+		<title><varname>ccf_dissuading_ewt_th_column</varname> (string)</title>
+		<para>
+		Name to be used for the "EWT dissuading threshold" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>dissuading_ewt_th</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_dissuading_ewt_th_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_dissuading_ewt_th_column", "th_diss_ewt")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_dissuading_qsize_th_column" xreflabel="ccf_dissuading_qsize_th_column">
+		<title><varname>ccf_dissuading_qsize_th_column</varname> (string)</title>
+		<para>
+		Name to be used for the "queue size dissuading threshold" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>dissuading_qsize_th</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_dissuading_qsize_th_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_dissuading_qsize_th_column", "th_diss_qsize")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_m_welcome_column" xreflabel="ccf_m_welcome_column">
+		<title><varname>ccf_m_welcome_column</varname> (string)</title>
+		<para>
+		Name to be used for the "audio message on welcome" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>message_welcome</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_m_welcome_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_m_welcome_column", "audio_welcome")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_m_queue_column" xreflabel="ccf_m_queue_column">
+		<title><varname>ccf_m_queue_column</varname> (string)</title>
+		<para>
+		Name to be used for the "audio message on queueing" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>message_queue</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_m_queue_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_m_queue_column", "audio_queue")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_m_dissuading_column" xreflabel="ccf_m_dissuading_column">
+		<title><varname>ccf_m_dissuading_column</varname> (string)</title>
+		<para>
+		Name to be used for the "audio message on dissuading" column in the
+		flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>message_dissuading</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_m_dissuading_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_m_dissuading_column", "audio_dissuading")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_ccf_m_flow_id_column" xreflabel="ccf_m_flow_id_column">
+		<title><varname>ccf_m_flow_id_column</varname> (string)</title>
+		<para>
+		Name to be used for the "audio message on identifying the flow" column
+		in the flows table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>message_flow_id</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ccf_m_flow_id_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 ...
 </programlisting>
 		</example>

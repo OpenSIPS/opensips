@@ -1,7 +1,7 @@
 /*
  * call center module - call queuing and distribution
  *
- * Copyright (C) 2014 OpenSIPS Solutions
+ * Copyright (C) 2014-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
- *
  */
 
 #include "../../sr_module.h"
@@ -122,6 +121,25 @@ static param_export_t mod_params[]={
 	{ "cca_logstate_column",  STR_PARAM, &cca_logstate_column.s  },
 	{ "cca_wrapupend_column", STR_PARAM, &cca_wrapupend_column.s },
 	{ "cca_wrapuptime_column",STR_PARAM, &cca_wrapuptime_column.s},
+	{ "cc_flows_table",       STR_PARAM, &cc_flow_table_name.s             },
+	{ "ccf_flowid_column",    STR_PARAM, &ccf_flowid_column.s              },
+	{ "ccf_priority_column",  STR_PARAM, &ccf_priority_column.s            },
+	{ "ccf_skill_column",     STR_PARAM, &ccf_skill_column.s               },
+	{ "ccf_cid_column",       STR_PARAM, &ccf_cid_column.s                 },
+	{ "ccf_max_wrapup_column",STR_PARAM, &ccf_max_wrapup_column.s          },
+	{ "ccf_dissuading_hangup_column",
+							  STR_PARAM, &ccf_dissuading_hangup_column.s   },
+	{ "ccf_dissuading_onhold_th_column",
+							  STR_PARAM, &ccf_dissuading_onhold_th_column.s},
+	{ "ccf_dissuading_ewt_th_column",
+							  STR_PARAM, &ccf_dissuading_ewt_th_column.s   },
+	{ "ccf_dissuading_qsize_th_column",
+							  STR_PARAM, &ccf_dissuading_qsize_th_column.s },
+	{ "ccf_m_welcome_column", STR_PARAM, &ccf_m_welcome_column.s           },
+	{ "ccf_m_queue_column",   STR_PARAM, &ccf_m_queue_column.s             },
+	{ "ccf_m_dissuading_column",
+							  STR_PARAM, &ccf_m_dissuading_column.s        },
+	{ "ccf_m_flow_id_column", STR_PARAM, &ccf_m_flow_id_column.s           },
 	{ 0,0,0 }
 };
 

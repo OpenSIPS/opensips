@@ -1,7 +1,7 @@
 /*
  * call center module - call queuing and distribution
  *
- * Copyright (C) 2014 OpenSIPS Solutions
+ * Copyright (C) 2014-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,13 +17,8 @@
  *
  * You should have received a copy of the GNU General Public License 
  * along with this program; if not, write to the Free Software 
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
-
 
 #ifndef CC_CC_DB_H_
 #define CC_CC_DB_H_
@@ -38,6 +33,21 @@ extern str cca_skills_column;
 extern str cca_logstate_column;
 extern str cca_wrapupend_column;
 extern str cca_wrapuptime_column;
+
+extern str cc_flow_table_name;
+extern str ccf_flowid_column;
+extern str ccf_priority_column;
+extern str ccf_skill_column;
+extern str ccf_cid_column;
+extern str ccf_max_wrapup_column;
+extern str ccf_dissuading_hangup_column;
+extern str ccf_dissuading_onhold_th_column;
+extern str ccf_dissuading_ewt_th_column;
+extern str ccf_dissuading_qsize_th_column;
+extern str ccf_m_welcome_column;
+extern str ccf_m_queue_column;
+extern str ccf_m_dissuading_column;
+extern str ccf_m_flow_id_column;
 
 int init_cc_db(const str *db_url);
 int init_cc_acc_db(const str *acc_db_url);
