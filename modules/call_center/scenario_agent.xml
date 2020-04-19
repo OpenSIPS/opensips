@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<scenario id="call center agent" name="CC Agent" param="3" type="extern">
+<init>
+	<bridge>
+	<client>
+		<id>client1</id>
+		<destination>
+			<value type="param">1</value>
+		</destination>
+		<from_dname>
+			<value type="param">3</value>
+		</from_dname>
+	</client>
+	<client>
+		<id>client2</id>
+		<destination>
+			<value type="param">2</value>
+		</destination>
+	</client>
+	</bridge>
+	<state>5</state>
+</init>
+</scenario>
