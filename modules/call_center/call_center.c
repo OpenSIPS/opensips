@@ -653,7 +653,7 @@ int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
 
 	LM_DBG("Bridge two calls [%p] - [%p]\n", call, call->agent);
 	cnt = --call->ref_cnt;
-	if(b2b_api.bridge_2calls(&call->b2bua_id, &stat->key) < 0)
+	if(b2b_api.bridge_2calls(&call->b2bua_id, &call->b2bua_agent_id) < 0)
 	{
 		LM_ERR("Failed to bridge the agent with the customer\n");
 		lock_set_release( data->call_locks, call->lock_idx );
