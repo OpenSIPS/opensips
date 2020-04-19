@@ -28,6 +28,7 @@ pua dialoginfo
 
               1.4.1. dialoginfo_set([side])
               1.4.2. dialoginfo_set_branch_callee(callee)
+              1.4.3. dialoginfo_mute_branch([side])
 
    2. Contributors
 
@@ -60,6 +61,7 @@ pua dialoginfo
    1.11. Set osips_ps parameter
    1.12. dialoginfo_set usage
    1.13. dialoginfo_set_branch_callee usage
+   1.14. dialoginfo_mute_branch usage
 
 Chapter 1. Admin Guide
 
@@ -491,6 +493,27 @@ branch_route[out]
 ...
 }
 
+1.4.3.  dialoginfo_mute_branch([side])
+
+   This function must be called for INVITE messages, in the branch
+   route only, in order to mute the publishing of the dialoginfo
+   information for caller/callee/both parties involved in that
+   branch.
+
+   Meaning of the parameters:
+     * side (string, optional) - can be "A" or/and "B" for caller
+       or callee muting only - if missing, both sides will be
+       muted.
+
+   Example 1.14. dialoginfo_mute_branch usage
+...
+        branch_route[out] {
+                # mute publishing for callee side if not a local domain
+                if (!is_domain_local("$rd"))
+                        dialoginfo_mute_branch("B");
+        }
+...
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -498,7 +521,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 46 26 997 672
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 50 28 1172 709
    2. Anca Vamanu 26 16 713 231
    3. Liviu Chircu (@liviuchircu) 12 9 44 76
    4. Razvan Crainea (@razvancrainea) 11 9 14 16
@@ -533,10 +556,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jul 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2020
+   2.  Zero King                           Mar 2020 - Mar 2020
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019
    7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
