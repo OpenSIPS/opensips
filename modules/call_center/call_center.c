@@ -626,9 +626,9 @@ int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
 	}
 
 	/*
-	 * if negative reply from any entity, send it directly to customer
+	 * if negative reply from agent - deny call
 	 */
-	if(event == B2B_REJECT_CB) {
+	if(event == B2B_REJECT_CB && params->entity == 0) {
 		if(call->state == CC_CALL_PRE_TOAGENT) {
 			handle_agent_reject(call, 0, 0);
 		}
