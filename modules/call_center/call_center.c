@@ -1061,7 +1061,12 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 error:
 	lock_release( data->lock );
 error1:
-	if (call) { free_cc_call( data, call); flow->ongoing_calls--; }
+	if (call) {
+		if (call->state==CC_CALL_QUEUED)
+				cc_queue_rmv_call( data, call);
+		free_cc_call( data, call);
+		flow->ongoing_calls--;
+	}
 	return ret;
 }
 

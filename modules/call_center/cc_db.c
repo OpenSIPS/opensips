@@ -684,6 +684,13 @@ int cc_load_db_data( struct cc_data *data)
 				}
 			}
 
+			/* queue audio cannot be null */
+			if ( messages[1].s == NULL) {
+				LM_ERR("queue audio cannot be null in flow %.*s -> "
+					"skipping\n", id.len,id.s);
+				continue;
+			}
+
 			/* add flow */
 			if (add_cc_flow(data, &id, priority, &skill, &cid, wrapup,
 			diss_hangup, diss_ewt_th, diss_qsize_th, diss_onhold_th,
