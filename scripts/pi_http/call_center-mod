@@ -200,6 +200,7 @@
 				<col><field>b2buaid</field></col>
 				<col><field>flow</field></col>
 				<col><field>agent</field></col>
+				<col><field>script_param</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -218,6 +219,7 @@
 				<col><field>b2buaid</field></col>
 				<col><field>flow</field></col>
 				<col><field>agent</field></col>
+				<col><field>script_param</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -239,6 +241,7 @@
 				<col><field>b2buaid</field></col>
 				<col><field>flow</field></col>
 				<col><field>agent</field></col>
+				<col><field>script_param</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

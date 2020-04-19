@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<scenario id="call center" name="Call center" param="1" type="script">
+<scenario id="call center" name="Call center" param="2" type="script">
 	<init>
 		<bridge>
 			<server>

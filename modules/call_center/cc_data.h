@@ -188,6 +188,7 @@ struct cc_call {
 	unsigned int recv_time;
 	str caller_dn;
 	str caller_un;
+	str script_param;
 	/* b2b id */
 	str b2bua_id;
 	/* b2b agent id */
@@ -230,7 +231,7 @@ struct cc_agent* get_agent_by_name(struct cc_data *data, str *name,
 struct cc_flow *get_flow_by_name(struct cc_data *data, str *name);
 
 struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow,
-		str *dn, str *un);
+		str *dn, str *un, str *param);
 
 void free_cc_call(struct cc_data *data, struct cc_call *call);
 

@@ -31,7 +31,7 @@
 
 
 #define CC_FLOW_TABLE_NAME "cc_flows"
-#define CC_FLOW_TABLE_VERSION  1
+#define CC_FLOW_TABLE_VERSION  2
 #define CCF_FLOWID_COL "flowid"
 #define CCF_PRIORITY_ID_COL "priority"
 #define CCF_SKILL_COL "skill"
@@ -47,7 +47,7 @@
 #define CCF_M_FLOW_ID_COL "message_flow_id"
 
 #define CC_AGENT_TABLE_NAME "cc_agents"
-#define CC_AGENT_TABLE_VERSION  1
+#define CC_AGENT_TABLE_VERSION  2
 #define CCA_AGENTID_COL "agentid"
 #define CCA_LOCATION_ID_COL "location"
 #define CCA_SKILLS_COL "skills"
@@ -87,6 +87,7 @@
 #define CCQ_B2BUAID_COL     "b2buaid"
 #define CCQ_FLOW_COL        "flow"
 #define CCQ_AGENT_COL       "agent"
+#define CCQ_PARAM_COL       "script_param"
 #define CCQ_QID_COL         "qid"
 
 str cc_flow_table_name			=	str_init(CC_FLOW_TABLE_NAME);
@@ -143,7 +144,8 @@ str ccq_caller_un_column		=	str_init(CCQ_CALLER_UN_COL);
 str ccq_b2buaid_column			=	str_init(CCQ_B2BUAID_COL);
 str ccq_flow_column				=	str_init(CCQ_FLOW_COL);
 str ccq_agent_column			=	str_init(CCQ_AGENT_COL);
-#define CCQ_COLS_NO  12
+str ccq_param_column			=	str_init(CCQ_PARAM_COL);
+#define CCQ_COLS_NO  13
 
 #define CC_FETCH_ROWS     100
 
@@ -411,6 +413,9 @@ int cc_db_insert_call(struct cc_call *call)
 	vals[11].type        = DB_STR;
 	if(call->agent)
 		vals[11].val.str_val = call->agent->id;
+	columns[12]          = &ccq_param_column;
+	vals[12].type        = DB_STR;
+	vals[12].val.str_val = call->script_param;
 
 	if (cc_rt_dbf.insert(cc_rt_db_handle, columns, vals, CCQ_COLS_NO) < 0) {
 		LM_ERR("inserting new record in database\n");
@@ -431,7 +436,7 @@ int cc_db_restore_calls( struct cc_data *data)
 	int i;
 	struct cc_agent *agent = NULL;
 	struct cc_agent *prev;
-	str dn, un;
+	str dn, un, param;
 	str id;
 
 	cc_rt_dbf.use_table( cc_rt_db_handle, &cc_calls_table_name);
@@ -448,6 +453,7 @@ int cc_db_restore_calls( struct cc_data *data)
 	columns[9] = &ccq_b2buaid_column;
 	columns[10] = &ccq_flow_column;
 	columns[11] = &ccq_agent_column;
+	columns[12] = &ccq_param_column;
 
 	if ( cc_rt_dbf.query( cc_rt_db_handle, 0, 0, 0, columns, 0,
 				CCQ_COLS_NO, 0, &res)<0) {
@@ -487,7 +493,12 @@ int cc_db_restore_calls( struct cc_data *data)
 		un.s = (char*)VAL_STRING(ROW_VALUES(row)+8);
 		un.len = (un.s ? strlen(un.s) : 0);
 
-		call = new_cc_call(data, flow, &dn, &un);
+		/* SCRIPT_PARAM_COL */
+		check_val( ROW_VALUES(row)+12, DB_STRING, 1, 0, "script param");
+		param.s = (char*)VAL_STRING(ROW_VALUES(row)+12);
+		param.len = (param.s ? strlen(param.s) : 0);
+
+		call = new_cc_call(data, flow, &dn, &un, &param);
 		if (call==NULL) {
 			LM_ERR("failed to create new call\n");
 			goto error;

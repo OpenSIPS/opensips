@@ -322,6 +322,7 @@
 		<column><field>b2buaid</field><type>DB_STR</type></column>
 		<column><field>flow</field><type>DB_STR</type></column>
 		<column><field>agent</field><type>DB_STR</type></column>
+		<column><field>script_param</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of carrierroute table-->
 	<db_table id="carrierroute">
@@ -2154,6 +2155,7 @@
 				<col><field>b2buaid</field></col>
 				<col><field>flow</field></col>
 				<col><field>agent</field></col>
+				<col><field>script_param</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -2172,6 +2174,7 @@
 				<col><field>b2buaid</field></col>
 				<col><field>flow</field></col>
 				<col><field>agent</field></col>
+				<col><field>script_param</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -2193,6 +2196,7 @@
 				<col><field>b2buaid</field></col>
 				<col><field>flow</field></col>
 				<col><field>agent</field></col>
+				<col><field>script_param</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

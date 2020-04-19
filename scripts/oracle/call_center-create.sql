@@ -68,6 +68,7 @@ END cc_cdrs_tr;
 /
 BEGIN map2users('cc_cdrs'); END;
 /
+INSERT INTO version (table_name, table_version) values ('cc_calls','2');
 CREATE TABLE cc_calls (
     id NUMBER(10) PRIMARY KEY,
     state NUMBER(10),
@@ -82,6 +83,7 @@ CREATE TABLE cc_calls (
     b2buaid VARCHAR2(128) DEFAULT '',
     flow VARCHAR2(128),
     agent VARCHAR2(128),
+    script_param VARCHAR2(128),
     CONSTRAINT cc_calls_unique_id  UNIQUE (b2buaid)
 );
 

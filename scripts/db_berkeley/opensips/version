@@ -30,8 +30,8 @@ carrierroute|
 carrierroute|3
 cc_agents|
 cc_agents|2
-METADATA_DEFAULTS
-NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|''|NIL|NIL
+cc_calls|
+cc_calls|2
 cc_cdrs|
 cc_cdrs|1
 cc_flows|

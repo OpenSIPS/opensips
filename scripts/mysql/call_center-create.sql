@@ -13,7 +13,7 @@ CREATE TABLE cc_flows (
     message_welcome CHAR(128) DEFAULT NULL,
     message_queue CHAR(128) NOT NULL,
     message_dissuading CHAR(128) NOT NULL,
-    message_flow_id CHAR(128) NOT NULL,
+    message_flow_id CHAR(128),
     CONSTRAINT unique_flowid UNIQUE (flowid)
 ) ENGINE=InnoDB;
 
@@ -44,6 +44,7 @@ CREATE TABLE cc_cdrs (
     cid INT(11) UNSIGNED DEFAULT 0
 ) ENGINE=InnoDB;
 
+INSERT INTO version (table_name, table_version) values ('cc_calls','2');
 CREATE TABLE cc_calls (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     state INT(11) NOT NULL,
@@ -58,6 +59,7 @@ CREATE TABLE cc_calls (
     b2buaid CHAR(128) DEFAULT '' NOT NULL,
     flow CHAR(128) NOT NULL,
     agent CHAR(128) NOT NULL,
+    script_param CHAR(128) NOT NULL,
     CONSTRAINT unique_id UNIQUE (b2buaid)
 ) ENGINE=InnoDB;
 

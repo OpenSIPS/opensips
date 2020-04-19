@@ -801,7 +801,7 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 	<title>Exported Functions</title>
 	<section id="func_cc_handle_call" xreflabel="cc_handle_call">
 		<title>
-		<function>cc_handle_call(flowID)</function>
+		<function>cc_handle_call( flowID [,param])</function>
 		</title>
 		<para>
 		This must be used only for initial INVITE requests - the function
@@ -816,6 +816,14 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 			<listitem><para>
 				<emphasis>flowID (string)</emphasis> - the ID of the flow to
 				handle this call (push the call to that flow).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>param (string, optional)</emphasis> - an opaque
+				string to be passed as parameter to the "callcenter" and 
+				"agent" B2B scenarios. It is
+				itended for custom integration of the call center module and 
+				it is 100% up to the script writer about the value and purpose
+				of this parameter, OpenSIPS will not touch or iterpret it.
 			</para></listitem>
 		</itemizedlist>
 		<para>

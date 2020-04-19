@@ -70,7 +70,7 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static int w_handle_call(struct sip_msg *msg, str *flow_name);
+static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param);
 static int w_agent_login(struct sip_msg *req, str *agent_s, int *state);
 
 static void cc_timer_agents(unsigned int ticks, void* param);
@@ -97,10 +97,14 @@ static int reject_on_no_agents = 1;
 
 static cmd_export_t cmds[]={
 	{"cc_handle_call", (cmd_function)w_handle_call,
-		{{CMD_PARAM_STR, 0,0}, {0,0,0}},
+		{{CMD_PARAM_STR, 0,0},
+		 {CMD_PARAM_STR|CMD_PARAM_OPT, 0,0},
+		 {0,0,0}},
 		REQUEST_ROUTE},
 	{"cc_agent_login", (cmd_function)w_agent_login,
-		{{CMD_PARAM_STR, 0,0}, {CMD_PARAM_INT, 0,0}, {0,0,0}},
+		{{CMD_PARAM_STR, 0,0},
+		 {CMD_PARAM_INT, 0,0},
+		 {0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
@@ -833,7 +837,8 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		new_leg->len, new_leg->s, call->state);
 
 	if(call->state==CC_CALL_PRE_TOAGENT) {
-		str* args[3]={&call->agent->location, new_leg, &call->caller_dn};
+		str* args[4]={&call->agent->location, new_leg, &call->caller_dn,
+			&call->script_param};
 	
 		call->ref_cnt++;
 
@@ -854,10 +859,11 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		memcpy(call->b2bua_agent_id.s, id->s, id->len);
 	}
 	else if (call->b2bua_id.len==0) {
+		str* args[2]={new_leg, &call->script_param};
 		/* b2b instance not initialized yet =>
 		 * create new b2bua instance */
 		call->ref_cnt++;
-		id = b2b_api.init( msg, &b2b_scenario, &new_leg, b2bl_callback_customer,
+		id = b2b_api.init( msg, &b2b_scenario, args, b2bl_callback_customer,
 				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL /* custom_hdrs */ );
 		if (id==NULL || id->len==0 || id->s==NULL) {
 			LM_ERR("failed to init new b2bua call (empty ID received)\n");
@@ -941,7 +947,7 @@ done:
 }
 
 
-static int w_handle_call(struct sip_msg *msg, str *flow_name)
+static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 {
 	struct cc_flow *flow;
 	struct cc_call *call;
@@ -989,7 +995,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name)
 	}
 	LM_DBG("cid=<%.*s>\n",dn->len,dn->s);
 
-	call = new_cc_call(data, flow, dn, &get_from(msg)->parsed_uri.user);
+	call = new_cc_call(data, flow, dn, &get_from(msg)->parsed_uri.user, param);
 	if (call==NULL) {
 		LM_ERR("failed to create new call\n");
 		ret = -5;

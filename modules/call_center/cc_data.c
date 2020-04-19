@@ -695,14 +695,15 @@ void cc_list_remove_call(struct cc_data *data, struct cc_call *call)
 	print_call_list(data);
 }
 
-struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow, str *dn, str *un)
+struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow,
+		str *dn, str *un, str *param)
 {
 	struct cc_call *call;
 	char *p;
 
 	/* new call structure */
 	call = (struct cc_call*)shm_malloc( sizeof(struct cc_call) +
-		(dn?dn->len:0) + (un?un->len:0) );
+		(dn?dn->len:0) + (un?un->len:0) + (param?param->len:0) );
 	if (call==NULL) {
 		LM_ERR("no more shm mem for a new call\n");
 		return NULL;
@@ -722,6 +723,12 @@ struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow, str *dn,
 		call->caller_un.len = un->len;
 		memcpy( p, un->s, un->len );
 		p += un->len;
+	}
+	if (param && param->s && param->len) {
+		call->script_param.s = p;
+		call->script_param.len = param->len;
+		memcpy( p, param->s, param->len );
+		p += param->len;
 	}
 
 	call->recv_time = get_ticks();

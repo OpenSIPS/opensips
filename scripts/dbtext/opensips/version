@@ -9,6 +9,7 @@ cachedb:2
 carrierfailureroute:2
 carrierroute:3
 cc_agents:2
+cc_calls:2
 cc_cdrs:1
 cc_flows:2
 closeddial:1

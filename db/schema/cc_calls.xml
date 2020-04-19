@@ -9,6 +9,7 @@
 
 <table id="cc_calls" xmlns:db="http://docbook.org/ns/docbook">
 	<name>cc_calls</name>
+	<version>2</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Call Center module to store ongoing calls for restart persitancy.
@@ -125,6 +126,14 @@
 		<type>string</type>
 		<size>128</size>
 		<description>The agent that handles the call.
+		</description>
+	</column>
+
+	<column id="script_param">
+		<name>script_param</name>
+		<type>string</type>
+		<size>128</size>
+		<description>Parameter passed to the callcenter B2B logic scriptt.
 		</description>
 	</column>
 

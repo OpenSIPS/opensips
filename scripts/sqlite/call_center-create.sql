@@ -13,7 +13,7 @@ CREATE TABLE cc_flows (
     message_welcome CHAR(128) DEFAULT NULL,
     message_queue CHAR(128) NOT NULL,
     message_dissuading CHAR(128) NOT NULL,
-    message_flow_id CHAR(128) NOT NULL,
+    message_flow_id CHAR(128),
     CONSTRAINT cc_flows_unique_flowid  UNIQUE (flowid)
 );
 
@@ -44,6 +44,7 @@ CREATE TABLE cc_cdrs (
     cid INTEGER DEFAULT 0
 );
 
+INSERT INTO version (table_name, table_version) values ('cc_calls','2');
 CREATE TABLE cc_calls (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     state INTEGER NOT NULL,
@@ -58,6 +59,7 @@ CREATE TABLE cc_calls (
     b2buaid CHAR(128) DEFAULT '' NOT NULL,
     flow CHAR(128) NOT NULL,
     agent CHAR(128) NOT NULL,
+    script_param CHAR(128) NOT NULL,
     CONSTRAINT cc_calls_unique_id  UNIQUE (b2buaid)
 );
 

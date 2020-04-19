@@ -62,4 +62,5 @@
 		<column><field>b2buaid</field><type>DB_STR</type></column>
 		<column><field>flow</field><type>DB_STR</type></column>
 		<column><field>agent</field><type>DB_STR</type></column>
+		<column><field>script_param</field><type>DB_STR</type></column>
 	</db_table>
