@@ -81,7 +81,11 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 		case CC_CALL_DISSUADING1:
 		case CC_CALL_QUEUED:
 			/* search for an available agent */
-			agent = get_free_agent_by_skill( data, call->flow->skill);
+			/* if we have a flow_id recording, we push the call in the queue */
+			if (!call->flow->recordings[AUDIO_FLOW_ID].len)
+				agent = get_free_agent_by_skill( data, call->flow->skill);
+			else
+				agent = NULL;
 			if (agent) {
 				/* send it to agent */
 				LM_DBG("selecting AGENT %p (%.*s)\n",agent,
