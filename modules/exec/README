@@ -337,9 +337,14 @@ exec_getenv("HOSTNAME", "$avp(localhost)");
    the external script to close its output stream, not necessarily
    to terminate (so the script may still be running when OpenSIPS
    resumes the script execution on "seeing" EOF on the the output
-   stream).
+   stream)
+   NOTE: if the stdout variable is missing, OpenSIPS will assume
+   that the output of the external script is not needed and it
+   will NOT WAIT at all for the script. So, if triggered via
+   "launch()", there will be no asynchronous waiting, so no resume
+   route triggering!!
 
-   NOTE: this function ignore the "error" parameters for now - the
+   NOTE: this function ignore the "stderr" parameter for now - the
    asynchronous waiting is done only on the output stream !! This
    may be fixed in the following versions.
 
@@ -373,7 +378,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 43 28 633 526
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 45 29 650 534
    2. Liviu Chircu (@liviuchircu) 29 20 321 308
    3. Jiri Kuthan (@jiriatipteldotorg) 27 11 1579 152
    4. Daniel-Constantin Mierla (@miconda) 26 19 440 131
@@ -410,10 +415,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2020
-   3.  Liviu Chircu (@liviuchircu)         Feb 2014 - Nov 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Jun 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2004 - Apr 2020
+   2.  Zero King                           Mar 2020 - Mar 2020
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2020
+   4.  Liviu Chircu (@liviuchircu)         Feb 2014 - Nov 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Feb 2017
    7.  Octavian Cerna                      Oct 2016 - Oct 2016
