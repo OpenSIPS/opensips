@@ -2623,7 +2623,7 @@ trace_dest get_next_trace_dest(trace_dest last_dest, int hash)
 		found_last = 1;
 
 	for (it=info->trace_list; it && it->hash == hash; it=it->next) {
-		if (it->type == TYPE_HEP && (*it->traceable)) {
+		if (it->type == TYPE_HEP && (!(it->traceable) || *it->traceable)) {
 			if (found_last)
 				return it->el.hep.hep_id;
 			else if (it->el.hep.hep_id == last_dest)
