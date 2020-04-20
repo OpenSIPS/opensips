@@ -341,6 +341,7 @@ extern int cfg_parse_only_routes;
 %token LOGNAME
 %token AVP_ALIASES
 %token LISTEN
+%token SOCKET
 %token MEMGROUP
 %token ALIAS
 %token AUTO_ALIASES
@@ -391,6 +392,7 @@ extern int cfg_parse_only_routes;
 %token TCP_CONNECT_TIMEOUT
 %token TCP_CON_LIFETIME
 %token TCP_LISTEN_BACKLOG
+%token TCP_SOCKET_BACKLOG
 %token TCP_MAX_CONNECTIONS
 %token TCP_NO_NEW_CONN_BFLAG
 %token TCP_NO_NEW_CONN_RPLFLAG
@@ -501,7 +503,7 @@ extern int cfg_parse_only_routes;
 %type <specval> script_var
 %type <strval> host
 %type <strval> listen_id
-%type <sockid> listen_def
+%type <sockid> socket_def
 %type <sockid> id_lst
 %type <sockid> alias_def
 %type <sockid> listen_id_def
@@ -684,7 +686,7 @@ listen_id_def:	listen_id					{ IFOR();
 					}
 			 ;
 
-listen_def_param: ANYCAST { IFOR();
+socket_def_param: ANYCAST { IFOR();
 					p_tmp.flags |= SI_IS_ANYCAST;
 					}
 				| USE_CHILDREN NUMBER { IFOR();
@@ -706,20 +708,20 @@ listen_def_param: ANYCAST { IFOR();
 					}
 				;
 
-listen_def_params:	listen_def_param
-				 |	listen_def_param listen_def_params
+socket_def_params:	socket_def_param
+				 |	socket_def_param socket_def_params
 				 ;
 
-listen_def:	panyhostport			{ $$=$1; }
+socket_def:	panyhostport			{ $$=$1; }
 			| phostport				{ $$=$1; }
 			| panyhostport { IFOR();
 					memset(&p_tmp, 0, sizeof(p_tmp));
-				} listen_def_params	{ IFOR();
+				} socket_def_params	{ IFOR();
 					$$=$1; fill_socket_id(&p_tmp, $$);
 				}
 			| phostport { IFOR();
 					memset(&p_tmp, 0, sizeof(p_tmp));
-				} listen_def_params	{ IFOR();
+				} socket_def_params	{ IFOR();
 					$$=$1; fill_socket_id(&p_tmp, $$);
 				}
 			;
@@ -1044,9 +1046,14 @@ assign_stm: DEBUG EQUAL snumber
 		}
 		| TCP_CON_LIFETIME EQUAL error { yyerror("number expected"); }
 		| TCP_LISTEN_BACKLOG EQUAL NUMBER { IFOR();
+				warn("tcp_listen_backlog is deprecated, use tcp_socket_backlog");
 				tcp_listen_backlog=$3;
 		}
 		| TCP_LISTEN_BACKLOG EQUAL error { yyerror("number expected"); }
+		| TCP_SOCKET_BACKLOG EQUAL NUMBER { IFOR();
+				tcp_listen_backlog=$3;
+		}
+		| TCP_SOCKET_BACKLOG EQUAL error { yyerror("number expected"); }
 		| TCP_MAX_CONNECTIONS EQUAL NUMBER { IFOR();
 				tcp_max_connections=$3;
 		}
@@ -1127,7 +1134,18 @@ assign_stm: DEBUG EQUAL snumber
 		| XLOG_LEVEL EQUAL NUMBER { IFOR();
 							*xlog_level = $3; }
 		| XLOG_LEVEL EQUAL error { yyerror("number expected"); }
-		| LISTEN EQUAL listen_def { IFOR();
+		| SOCKET EQUAL socket_def { IFOR();
+							if (add_listener($3)!=0){
+								LM_CRIT("cfg. parser: failed"
+										" to add listening socket\n");
+								break;
+							}
+						}
+		| SOCKET EQUAL  error { yyerror("ip address or hostname "
+						"expected (use quotes if the hostname includes"
+						" config keywords)"); }
+		| LISTEN EQUAL socket_def { IFOR();
+							warn("'listen' is deprecated, use 'socket' instead");
 							if (add_listener($3)!=0){
 								LM_CRIT("cfg. parser: failed"
 										" to add listen address\n");

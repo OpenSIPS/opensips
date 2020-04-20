@@ -212,6 +212,7 @@ LOGSTDERROR	log_stderror
 LOGFACILITY	log_facility
 LOGNAME		log_name
 LISTEN		listen
+SOCKET		socket
 MEMGROUP	mem-group
 ALIAS		alias
 AUTO_ALIASES	auto_aliases
@@ -254,6 +255,7 @@ TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
 TCP_CON_LIFETIME    "tcp_connection_lifetime"
 TCP_LISTEN_BACKLOG   "tcp_listen_backlog"
+TCP_SOCKET_BACKLOG   "tcp_socket_backlog"
 TCP_MAX_CONNECTIONS "tcp_max_connections"
 TCP_NO_NEW_CONN_BFLAG "tcp_no_new_conn_bflag"
 TCP_NO_NEW_CONN_RPLFLAG "tcp_no_new_conn_rplflag"
@@ -417,6 +419,7 @@ SPACE		[ ]
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
+<INITIAL>{SOCKET}	{ count(); yylval.strval=yytext; return SOCKET; }
 <INITIAL>{MEMGROUP}	{ count(); yylval.strval=yytext; return MEMGROUP; }
 <INITIAL>{ALIAS}	{ count(); yylval.strval=yytext; return ALIAS; }
 <INITIAL>{AUTO_ALIASES}	{ count(); yylval.strval=yytext; return AUTO_ALIASES; }
@@ -469,6 +472,8 @@ SPACE		[ ]
 									return TCP_CON_LIFETIME; }
 <INITIAL>{TCP_LISTEN_BACKLOG}   { count(); yylval.strval=yytext;
 									return TCP_LISTEN_BACKLOG; }
+<INITIAL>{TCP_SOCKET_BACKLOG}   { count(); yylval.strval=yytext;
+									return TCP_SOCKET_BACKLOG; }
 <INITIAL>{POLL_METHOD}			{ count(); yylval.strval=yytext;
 									return POLL_METHOD; }
 <INITIAL>{TCP_MAX_CONNECTIONS}  { count(); yylval.strval=yytext;
