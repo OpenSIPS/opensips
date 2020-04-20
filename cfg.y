@@ -330,7 +330,6 @@ extern int cfg_parse_only_routes;
 %token SCRIPT_TRACE
 
 /* config vars. */
-%token FORK
 %token DEBUG_MODE
 %token ENABLE_ASSERTS
 %token ABORT_ON_ASSERT
@@ -787,9 +786,7 @@ auto_scale_profile_def:
 		}
 		;
 
-assign_stm: FORK EQUAL NUMBER
-			{yyerror("fork is deprecated, use debug_mode\n");}
-		| LOGLEVEL EQUAL snumber { IFOR();
+assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			/* in debug mode, force logging to DEBUG level*/
 			*log_level = debug_mode?L_DBG:$3;
 			}

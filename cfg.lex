@@ -197,7 +197,6 @@ SCRIPTVAR_START	"$"
 
 /* config vars. */
 DEBUG_MODE	debug_mode
-FORK		fork
 CHILDREN	children
 UDP_WORKERS	udp_workers
 CHROOT		"chroot"
@@ -399,7 +398,6 @@ SPACE		[ ]
 <INITIAL>{LAUNCH_TOKEN}		{ count(); yylval.strval=yytext;
 									return LAUNCH_TOKEN;}
 
-<INITIAL>{FORK}  { count(); yylval.strval=yytext; return FORK; /*obsolete*/ }
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
 <INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{UDP_WORKERS}	{ count(); yylval.strval=yytext; return UDP_WORKERS; }
