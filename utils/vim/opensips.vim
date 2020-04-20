@@ -22,16 +22,16 @@ syn keyword specialOperand yes no true false enable disable on off NULL null
 syn keyword specialOperand UDP TCP TLS SCTP WS WSS HEP_TCP HEP_UDP INET inet INET6 inet6
 
 syn keyword osGlobalParam log_level memdump memlog log_stderror log_facility log_name
-syn keyword osGlobalParam debug_mode children auto_aliases listen mpath tcp_children
+syn keyword osGlobalParam debug_mode udp_workers auto_aliases listen mpath tcp_workers
 syn keyword osGlobalParam disable_tcp disable_tls check_via dns rev_dns
 syn keyword osGlobalParam tcp_send_timeout tcp_connect_timeout tcp_no_new_conn_bflag
 syn keyword osGlobalParam disable_dns_failover disable_dns_blacklist dst_blacklist
 syn keyword osGlobalParam exec_dns_threshold exec_msg_threshold tcpthreshold
 syn keyword osGlobalParam xlog_buf_size xlog_force_color enable_asserts
-syn keyword osGlobalParam user_agent_header db_version_table use_children
+syn keyword osGlobalParam user_agent_header db_version_table use_workers
 syn keyword osGlobalParam advertised_address advertised_port disable_core_dump
 syn keyword osGlobalParam db_max_async_connections include_file avp_aliases
-syn keyword osGlobalParam bin_listen bin_children alias dns_try_ipv6 dns_try_naptr
+syn keyword osGlobalParam alias dns_try_ipv6 dns_try_naptr
 syn keyword osGlobalParam dns_retr_time dns_retr_no dns_servers_no maxbuffer
 syn keyword osGlobalParam dns_use_search_list shm_hash_split_percentage
 syn keyword osGlobalParam shm_secondary_hash_size mem_warming mem_warming_enabled
@@ -39,11 +39,11 @@ syn keyword osGlobalParam mem_warming_pattern_file mem_warming_percentage
 syn keyword osGlobalParam mem_log mem_dump execmsgthreshold execdnsthreshold
 syn keyword osGlobalParam dns_use_search_list shm_hash_split_percentage
 syn keyword osGlobalParam tcp_threshold tcpthreshold event_shm_threshold
-syn keyword osGlobalParam event_pkg_threshold query_buffer_size tcp_children
+syn keyword osGlobalParam event_pkg_threshold query_buffer_size
 syn keyword osGlobalParam query_flush_time sip_warning server_signature
 syn keyword osGlobalParam user uid group gid chroot workdir wdir mhomed
 syn keyword osGlobalParam poll_method tcp_accept_aliases tcp_connection_lifetime
-syn keyword osGlobalParam tcp_listen_backlog tcp_max_connections tcp_keepalive
+syn keyword osGlobalParam tcp_socket_backlog tcp_max_connections tcp_keepalive
 syn keyword osGlobalParam tcp_keepcount tcp_keepidle tcp_keepinterval
 syn keyword osGlobalParam open_files_limit mcast_loopback mcast_ttl tos
 syn keyword osGlobalParam max_while_loops disable_stateless_fwd db_default_url
