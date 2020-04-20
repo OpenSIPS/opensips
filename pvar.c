@@ -2011,6 +2011,155 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 }
 
 
+/******** LISTENING SOCKETS related vars & functions **********/
+
+#define SOCK_IP_S             "ip"
+#define SOCK_IP_LEN           (sizeof(SOCK_IP_S)-1)
+#define SOCK_IP_ID            1
+#define SOCK_PORT_S           "port"
+#define SOCK_PORT_LEN         (sizeof(SOCK_PORT_S)-1)
+#define SOCK_PORT_ID          2
+#define SOCK_PROTO_S          "proto"
+#define SOCK_PROTO_LEN        (sizeof(SOCK_PROTO_S)-1)
+#define SOCK_PROTO_ID         3
+#define SOCK_ADV_IP_S         "advertised_ip"
+#define SOCK_ADV_IP_LEN       (sizeof(SOCK_ADV_IP_S)-1)
+#define SOCK_ADV_IP_ID        4
+#define SOCK_ADV_PORT_S       "advertised_port"
+#define SOCK_ADV_PORT_LEN     (sizeof(SOCK_ADV_PORT_S)-1)
+#define SOCK_ADV_PORT_ID      5
+#define SOCK_TAG_S            "tag"
+#define SOCK_TAG_LEN          (sizeof(SOCK_TAG_S)-1)
+#define SOCK_TAG_ID           6
+#define SOCK_ANYCAST_S        "anycast"
+#define SOCK_ANYCAST_LEN      (sizeof(SOCK_ANYCAST_S)-1)
+#define SOCK_ANYCAST_ID       7
+
+int pv_parse_socket_name(pv_spec_p sp, str *in)
+{
+	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
+		return -1;
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
+
+	if (in->len==SOCK_IP_LEN &&
+	strncasecmp(in->s, SOCK_IP_S, SOCK_IP_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_IP_ID;
+	} else
+	if (in->len==SOCK_PORT_LEN &&
+	strncasecmp(in->s, SOCK_PORT_S, SOCK_PORT_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_PORT_ID;
+	} else
+	if (in->len==SOCK_PROTO_LEN &&
+	strncasecmp(in->s, SOCK_PROTO_S, SOCK_PROTO_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_PROTO_ID;
+	} else
+	if (in->len==SOCK_ADV_IP_LEN &&
+	strncasecmp(in->s, SOCK_ADV_IP_S, SOCK_ADV_IP_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_ADV_IP_ID;
+	} else
+	if (in->len==SOCK_ADV_PORT_LEN &&
+	strncasecmp(in->s, SOCK_ADV_PORT_S, SOCK_ADV_PORT_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_ADV_PORT_ID;
+	} else
+	if (in->len==SOCK_TAG_LEN &&
+	strncasecmp(in->s, SOCK_TAG_S, SOCK_TAG_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_TAG_ID;
+	} else
+	if (in->len==SOCK_ANYCAST_LEN &&
+	strncasecmp(in->s, SOCK_ANYCAST_S, SOCK_ANYCAST_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_ANYCAST_ID;
+	} else {
+		LM_ERR("unsupported SOCKET_IN/OUT field <%.*s>\n",in->len,in->s);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static inline int get_socket_field( struct socket_info *si,
+											pv_name_t *pvn, pv_value_t *res)
+{
+	if (si==NULL)
+		return pv_get_null( NULL, NULL, res);
+
+	/* return the field */
+	switch (pvn->u.isname.name.n) {
+		case 0: /* return full socket description */
+			res->rs = si->sock_str;
+			res->flags = PV_VAL_STR;
+			break;
+		case SOCK_IP_ID: /* return IP address */
+			res->rs = si->address_str;
+			res->flags = PV_VAL_STR;
+			break;
+		case SOCK_PORT_ID: /* return PORT */
+			res->rs = si->port_no_str;
+			res->ri = si->port_no;
+			res->flags = PV_VAL_STR|PV_VAL_INT;
+			break;
+		case SOCK_PROTO_ID: /* return PROTOCOL */
+			if ( si->proto>=PROTO_FIRST && si->proto<PROTO_LAST &&
+			protos[si->proto].id ) {
+				res->rs.s = protos[si->proto].name;
+				res->rs.len = strlen(res->rs.s);
+				res->flags = PV_VAL_STR;
+			} else {
+				return pv_get_null( NULL, NULL, res);
+			}
+			break;
+		case SOCK_ADV_IP_ID: /* return advertised IP address */
+			if (si->adv_name_str.s) {
+				res->rs = si->adv_name_str;
+				res->flags = PV_VAL_STR;
+			} else {
+				return pv_get_null( NULL, NULL, res);
+			}
+			break;
+		case SOCK_ADV_PORT_ID: /* return advertised PORT */
+			if (si->adv_port_str.s) {
+				res->rs = si->adv_port_str;
+				res->ri = si->adv_port;
+				res->flags = PV_VAL_STR|PV_VAL_INT;
+			} else {
+				return pv_get_null( NULL, NULL, res);
+			}
+			break;
+		case SOCK_TAG_ID: /* return internal TAG */
+			if (si->tag.s) {
+				res->rs = si->tag;
+				res->flags = PV_VAL_STR;
+			} else {
+				return pv_get_null( NULL, NULL, res);
+			}
+			break;
+		case SOCK_ANYCAST_ID: /* return ANYCAST */
+			if (si->flags&SI_IS_ANYCAST)
+				res->ri = 1;
+			else
+				res->ri = 0;
+			res->flags = PV_VAL_INT;
+			break;
+		default:
+			LM_CRIT("BUG - unsupported ID %d\n",pvn->u.isname.name.n);
+			return pv_get_null(NULL, NULL, res);
+	}
+	return 0;
+}
+
+
+static int pv_get_socket_in_fields(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	return get_socket_field( msg->rcv.bind_address, &param->pvn, res);
+}
+
 
 
 /************************************************************/
@@ -3682,6 +3831,12 @@ static pv_export_t _pv_names_table[] = {
 	{{"src_ip", (sizeof("src_ip")-1)}, /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},
+	{{"socket_in", (sizeof("socket_in")-1)}, /* */
+		PVT_SOCKET_IN, pv_get_socket_in_fields, NULL,
+		0, 0, 0, 0},
+	{{"socket_in", (sizeof("socket_in")-1)}, /* */
+		PVT_SOCKET_IN, pv_get_socket_in_fields, NULL,
+		pv_parse_socket_name, 0, 0, 0},
 	{{"si", (sizeof("si")-1)}, /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},
