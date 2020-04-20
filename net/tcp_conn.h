@@ -42,8 +42,8 @@
 
 /*!< TCP connection lifetime, in seconds */
 #define DEFAULT_TCP_CONNECTION_LIFETIME 120
-/*!< TCP listen backlog count */
-#define DEFAULT_TCP_LISTEN_BACKLOG 10
+/*!< TCP socket backlog count */
+#define DEFAULT_TCP_SOCKET_BACKLOG 10
 /*!< If a connect doesn't complete in more than 100ms, timeout */
 #define DEFAULT_TCP_CONNECT_TIMEOUT 100
 /*!< Maximum number of connections */

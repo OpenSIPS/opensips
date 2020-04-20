@@ -1022,11 +1022,11 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| TCP_CON_LIFETIME EQUAL error { yyerror("number expected"); }
 		| TCP_LISTEN_BACKLOG EQUAL NUMBER { IFOR();
 				warn("tcp_listen_backlog is deprecated, use tcp_socket_backlog");
-				tcp_listen_backlog=$3;
+				tcp_socket_backlog=$3;
 		}
 		| TCP_LISTEN_BACKLOG EQUAL error { yyerror("number expected"); }
 		| TCP_SOCKET_BACKLOG EQUAL NUMBER { IFOR();
-				tcp_listen_backlog=$3;
+				tcp_socket_backlog=$3;
 		}
 		| TCP_SOCKET_BACKLOG EQUAL error { yyerror("number expected"); }
 		| TCP_MAX_CONNECTIONS EQUAL NUMBER { IFOR();
