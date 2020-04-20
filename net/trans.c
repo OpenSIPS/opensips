@@ -127,7 +127,7 @@ int trans_load(void)
 #undef PROTO_PREFIX_LEN
 
 
-int add_listener(struct socket_id *sock)
+int add_listening_socket(struct socket_id *sock)
 {
 	/*
 	 * XXX: using the new version, the protocol _MUST_ be specified
@@ -150,7 +150,7 @@ int add_listener(struct socket_id *sock)
 	return 0;
 }
 
-int add_cmd_listener(char *name, int port, int proto)
+int add_cmd_listening_socket(char *name, int port, int proto)
 {
 	struct socket_id *tmp = pkg_malloc(sizeof(struct socket_id));
 	if (!tmp) {
@@ -168,13 +168,13 @@ int add_cmd_listener(char *name, int port, int proto)
 }
 
 
-int fix_cmd_listeners(void)
+int fix_cmd_listening_sockets(void)
 {
 	struct socket_id *si, *prev;
 	for (si = cmd_listeners; si;) {
 		if (si->proto == PROTO_NONE)
 			si->proto = PROTO_UDP;
-		if (add_listener(si) < 0)
+		if (add_listening_socket(si) < 0)
 			LM_ERR("Cannot add socket <%s>, skipping...\n", si->name);
 		prev = si;
 		si = si->next;

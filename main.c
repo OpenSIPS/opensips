@@ -1041,7 +1041,7 @@ int main(int argc, char** argv)
 					}
 					tmp[tmp_len]=0; /* null terminate the host */
 					/* add a new addr. to our address list */
-					if (add_cmd_listener(tmp, port, proto)!=0){
+					if (add_cmd_listening_socket(tmp, port, proto)!=0){
 						LM_ERR("failed to add new listen address\n");
 						goto error00;
 					}
@@ -1225,8 +1225,8 @@ try_again:
 
 	fix_poll_method( &io_poll_method );
 
-	/* fix temporary listeners added in the cmd line */
-	if (fix_cmd_listeners() < 0) {
+	/* fix temporary listening sockets added in the cmd line */
+	if (fix_cmd_listening_sockets() < 0) {
 		LM_ERR("cannot add temproray listeners\n");
 		return ret;
 	}

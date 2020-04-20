@@ -1110,7 +1110,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 							*xlog_level = $3; }
 		| XLOG_LEVEL EQUAL error { yyerror("number expected"); }
 		| SOCKET EQUAL socket_def { IFOR();
-							if (add_listener($3)!=0){
+							if (add_listening_socket($3)!=0){
 								LM_CRIT("cfg. parser: failed"
 										" to add listening socket\n");
 								break;
@@ -1121,7 +1121,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 						" config keywords)"); }
 		| LISTEN EQUAL socket_def { IFOR();
 							warn("'listen' is deprecated, use 'socket' instead");
-							if (add_listener($3)!=0){
+							if (add_listening_socket($3)!=0){
 								LM_CRIT("cfg. parser: failed"
 										" to add listen address\n");
 								break;
