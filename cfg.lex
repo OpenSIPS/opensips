@@ -197,7 +197,6 @@ SCRIPTVAR_START	"$"
 
 /* config vars. */
 DEBUG_MODE	debug_mode
-CHILDREN	children
 UDP_WORKERS	udp_workers
 CHROOT		"chroot"
 WDIR		"workdir"|"wdir"
@@ -247,7 +246,6 @@ SERVER_HEADER server_header
 USER_AGENT_HEADER user_agent_header
 MHOMED		mhomed
 POLL_METHOD		"poll_method"
-TCP_CHILDREN	"tcp_children"
 TCP_WORKERS		"tcp_workers"
 TCP_ACCEPT_ALIASES	"tcp_accept_aliases"
 TCP_CONNECT_TIMEOUT	"tcp_connect_timeout"
@@ -305,7 +303,6 @@ QUOTES		\"
 TICK		\'
 SLASH		"/"
 AS			{EAT_ABLE}("as"|"AS"){EAT_ABLE}
-USE_CHILDREN	{EAT_ABLE}("use_children"|"USE_CHILDREN"){EAT_ABLE}
 USE_WORKERS	{EAT_ABLE}("use_workers"|"USE_WORKERS"){EAT_ABLE}
 USE_AUTO_SCALING_PROFILE {EAT_ABLE}("use_auto_scaling_profile"|"USE_AUTO_SCALING_PROFILE"){EAT_ABLE}
 SCALE_UP_TO		{EAT_ABLE}("scale"|"SCALE"){EAT_ABLE}+("up"|"UP"){EAT_ABLE}+("to"|"TO"){EAT_ABLE}
@@ -399,7 +396,6 @@ SPACE		[ ]
 									return LAUNCH_TOKEN;}
 
 <INITIAL>{DEBUG_MODE}	{ count(); yylval.strval=yytext; return DEBUG_MODE; }
-<INITIAL>{CHILDREN}	{ count(); yylval.strval=yytext; return CHILDREN; }
 <INITIAL>{UDP_WORKERS}	{ count(); yylval.strval=yytext; return UDP_WORKERS; }
 <INITIAL>{CHROOT}	{ count(); yylval.strval=yytext; return CHROOT; }
 <INITIAL>{WDIR}	{ count(); yylval.strval=yytext; return WDIR; }
@@ -458,7 +454,6 @@ SPACE		[ ]
 <INITIAL>{MHOMED}	{ count(); yylval.strval=yytext; return MHOMED; }
 <INITIAL>{TCP_NO_NEW_CONN_BFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_BFLAG; }
 <INITIAL>{TCP_NO_NEW_CONN_RPLFLAG}    { count(); yylval.strval=yytext; return TCP_NO_NEW_CONN_RPLFLAG; }
-<INITIAL>{TCP_CHILDREN}	{ count(); yylval.strval=yytext; return TCP_CHILDREN; }
 <INITIAL>{TCP_WORKERS}	{ count(); yylval.strval=yytext; return TCP_WORKERS; }
 <INITIAL>{TCP_ACCEPT_ALIASES}	{ count(); yylval.strval=yytext;
 									return TCP_ACCEPT_ALIASES; }
@@ -568,7 +563,6 @@ SPACE		[ ]
 
 <INITIAL>{COMMA}		{ count(); return COMMA; }
 <INITIAL>{SEMICOLON}	{ count(); return SEMICOLON; }
-<INITIAL>{USE_CHILDREN} { count(); return USE_CHILDREN; }
 <INITIAL>{USE_WORKERS}  { count(); return USE_WORKERS; }
 <INITIAL>{USE_AUTO_SCALING_PROFILE}  { count(); return USE_AUTO_SCALING_PROFILE; }
 <INITIAL>{COLON}	{ count(); return COLON; }

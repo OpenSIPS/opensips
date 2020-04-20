@@ -353,7 +353,6 @@ extern int cfg_parse_only_routes;
 %token DNS_SERVERS_NO
 %token DNS_USE_SEARCH
 %token MAX_WHILE_LOOPS
-%token CHILDREN
 %token UDP_WORKERS
 %token CHECK_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
@@ -385,7 +384,6 @@ extern int cfg_parse_only_routes;
 %token MHOMED
 %token POLL_METHOD
 %token TCP_ACCEPT_ALIASES
-%token TCP_CHILDREN
 %token TCP_WORKERS
 %token TCP_CONNECT_TIMEOUT
 %token TCP_CON_LIFETIME
@@ -471,7 +469,6 @@ extern int cfg_parse_only_routes;
 %token RBRACK
 %token SLASH
 %token AS
-%token USE_CHILDREN
 %token USE_WORKERS
 %token USE_AUTO_SCALING_PROFILE
 %token MAX
@@ -687,11 +684,6 @@ listen_id_def:	listen_id					{ IFOR();
 socket_def_param: ANYCAST { IFOR();
 					p_tmp.flags |= SI_IS_ANYCAST;
 					}
-				| USE_CHILDREN NUMBER { IFOR();
-					warn("'USE_CHILDREN' syntax is deprecated, use "
-						"'USE_WORKERS' instead");
-					p_tmp.workers=$2;
-					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;
 					}
@@ -834,11 +826,6 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| MAX_WHILE_LOOPS EQUAL error { yyerror("number expected"); }
 		| MAXBUFFER EQUAL NUMBER { IFOR(); maxbuffer=$3; }
 		| MAXBUFFER EQUAL error { yyerror("number expected"); }
-		| CHILDREN EQUAL NUMBER { IFOR();
-			warn("'children' option is deprecated, "
-				"use 'udp_workers' instead");
-			udp_workers_no=$3; }
-		| CHILDREN EQUAL error { yyerror("number expected"); }
 		| UDP_WORKERS EQUAL NUMBER { IFOR(); udp_workers_no=$3; }
 		| UDP_WORKERS EQUAL NUMBER USE_AUTO_SCALING_PROFILE ID { IFOR();
 				udp_workers_no=$3;
@@ -1017,12 +1004,6 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 				tcp_accept_aliases=$3;
 		}
 		| TCP_ACCEPT_ALIASES EQUAL error { yyerror("boolean value expected"); }
-		| TCP_CHILDREN EQUAL NUMBER { IFOR();
-				warn("'tcp_children' option is deprecated, "
-					"use 'tcp_workers' instead");
-				tcp_workers_no=$3;
-		}
-		| TCP_CHILDREN EQUAL error { yyerror("number expected"); }
 		| TCP_WORKERS EQUAL NUMBER { IFOR();
 				tcp_workers_no=$3;
 		}
