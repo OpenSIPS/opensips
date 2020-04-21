@@ -272,6 +272,28 @@ modparam("b2b_entities", "replication_mode", 1)
 		</example>
 	</section>
 
+	<section id="param_cluster_id" xreflabel="cluster_id">
+		<title><varname>cluster_id</varname> (int)</title>
+		<para>
+		The ID of the cluster this instance belongs to. Setting this parameter
+		enables clustering support for the OpenSIPS B2BUA by replicating the
+		B2B entities (B2B dialogs) between instances. This also ensures restart
+		persistency through the <emphasis>clusterer</emphasis> module's
+		data "sync" mechanism.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> (clustering disabled)</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "cluster_id", 10)
+...
+	</programlisting>
+		</example>
+	</section>
+
 </section>
 
 

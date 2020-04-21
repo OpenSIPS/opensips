@@ -35,6 +35,12 @@
 			</listitem>
 		</itemizedlist>
 	</para>
+	<para>
+	High Availability for B2B sessions can be achieved by enabling the clustering support
+	offered by the the lower <emphasis>b2b_entities</emphasis> module (by setting the
+	<ulink url="https://opensips.org/docs/modules/3.1.x/b2b_entities.html#param_cluster_id">
+	cluster_id</ulink> modparam from <emphasis>b2b_entities</emphasis>).
+	</para>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
