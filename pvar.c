@@ -2161,6 +2161,22 @@ static int pv_get_socket_in_fields(struct sip_msg *msg, pv_param_t *param,
 }
 
 
+static int pv_get_socket_out_fields(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *res)
+{
+	struct socket_info *si;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	si = (msg->force_send_socket) ?
+		msg->force_send_socket : msg->rcv.bind_address;
+
+	return get_socket_field( si, &param->pvn, res);
+}
+
+
+
 
 /************************************************************/
 
@@ -3836,6 +3852,12 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{{"socket_in", (sizeof("socket_in")-1)}, /* */
 		PVT_SOCKET_IN, pv_get_socket_in_fields, NULL,
+		pv_parse_socket_name, 0, 0, 0},
+	{{"socket_out", (sizeof("socket_out")-1)}, /* */
+		PVT_SOCKET_OUT, pv_get_socket_out_fields, pv_set_force_sock,
+		0, 0, 0, 0},
+	{{"socket_out", (sizeof("socket_out")-1)}, /* */
+		PVT_SOCKET_OUT, pv_get_socket_out_fields, NULL,
 		pv_parse_socket_name, 0, 0, 0},
 	{{"si", (sizeof("si")-1)}, /* */
 		PVT_SRCIP, pv_get_srcip, 0,
