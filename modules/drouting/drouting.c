@@ -2397,10 +2397,7 @@ static int use_next_gw(struct sip_msg* msg,
 					&val, NULL);
 		} while (avp_sk && !(avp_sk->flags & AVP_VAL_STR));
 
-		if (!avp_sk) {
-			/* this shuold not happen, it is a bogus state */
-			LM_BUG("call params AVP not found\n");
-		} else {
+		if (avp_sk) {
 			acp = (struct dr_acc_call_params *)val.s.s;
 			acp->msg = msg;
 
