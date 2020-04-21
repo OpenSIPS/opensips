@@ -53,7 +53,6 @@ extern struct tm_binds tmb;
 extern uac_auth_api_t uac_auth_api;
 extern int req_routeid;
 extern int reply_routeid;
-extern int replication_mode;
 extern db_con_t *b2be_db;
 extern db_func_t b2be_dbf;
 extern str b2be_dbtable;

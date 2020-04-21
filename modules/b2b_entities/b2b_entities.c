@@ -64,7 +64,6 @@ static char* script_req_route;
 static char* script_reply_route;
 int req_routeid  = -1;
 int reply_routeid = -1;
-int replication_mode = 0;
 static str db_url;
 db_con_t *b2be_db;
 db_func_t b2be_dbf;
@@ -99,7 +98,6 @@ static param_export_t params[]={
 	{ "client_hsize",          INT_PARAM,    &client_hsize       },
 	{ "script_req_route",      STR_PARAM,    &script_req_route   },
 	{ "script_reply_route",    STR_PARAM,    &script_reply_route },
-	{ "replication_mode",      INT_PARAM,    &replication_mode   },
 	{ "db_url",                STR_PARAM,    &db_url.s           },
 	{ "db_table",              STR_PARAM,    &b2be_dbtable.s     },
 	{ "db_mode",               INT_PARAM,    &b2be_db_mode       },
