@@ -831,7 +831,8 @@ static int mod_init(void)
 	pvar_algo_param.len = strlen(pvar_algo_param.s);
 	if (pvar_algo_param.len)
 		ds_pvar_parse_pattern(pvar_algo_param);
-	algo_route_param.len = strlen(algo_route_param.s);
+	if (algo_route_param.s)
+		algo_route_param.len = strlen(algo_route_param.s);
 
 	if (init_ds_bls()!=0) {
 		LM_ERR("failed to init DS blacklists\n");
