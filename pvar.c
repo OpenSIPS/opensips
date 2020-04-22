@@ -3566,6 +3566,36 @@ int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
+int pv_is_obsolete(pv_spec_p sp, int param)
+{
+	char *old, *new;
+
+	switch(sp->type) {
+		case PVT_RCVIP: /* added in 3.1 */
+			old="$Ri";
+			new="$socket_in(ip)";
+			break;
+		case PVT_RCVPORT: /* added in 3.1 */
+			old="$Rp";
+			new="$socket_in(port)";
+			break;
+		case PVT_PROTO: /* added in 3.1 */
+			old="$pr/$proto";
+			new="$socket_in(proto)";
+			break;
+		case PVT_FORCE_SOCK: /* added in 3.1 */
+			old="$fs";
+			new="$socket_out";
+			break;
+		default:
+			LM_BUG("unrecognized deprecated pvar %d\n",sp->type);
+			return -1;
+	}
+
+	LM_WARN("variable '%s' is marked as deprecated and it will be soone "
+		"removed, please use '%s' instead\n",old,new);
+	return 0;
+}
 
 
 /**
@@ -3708,7 +3738,7 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, pv_init_iname, 5},
 	{{"fs", (sizeof("fs")-1)}, /* */
 		PVT_FORCE_SOCK, pv_get_force_sock, pv_set_force_sock,
-		0, 0, 0, 0},
+		0, 0, pv_is_obsolete, 0},
 	{{"ft", (sizeof("ft")-1)}, /* */
 		PVT_FROM_TAG, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 4},
@@ -3771,10 +3801,10 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{{"pr", (sizeof("pr")-1)}, /* */
 		PVT_PROTO, pv_get_proto, 0,
-		0, 0, 0, 0},
+		0, 0, pv_is_obsolete, 0},
 	{{"proto", (sizeof("proto")-1)}, /* */
 		PVT_PROTO, pv_get_proto, 0,
-		0, 0, 0, 0},
+		0, 0, pv_is_obsolete, 0},
 	{{"pu", (sizeof("pu")-1)}, /* */
 		PVT_PPI, pv_get_ppi_attr, 0,
 		0, 0, pv_init_iname, 1},
@@ -3840,10 +3870,10 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, pv_init_iname, 1},
 	{{"Ri", (sizeof("Ri")-1)}, /* */
 		PVT_RCVIP, pv_get_rcvip, 0,
-		0, 0, 0, 0},
+		0, 0, pv_is_obsolete, 0},
 	{{"Rp", (sizeof("Rp")-1)}, /* */
 		PVT_RCVPORT, pv_get_rcvport, 0,
-		0, 0, 0, 0},
+		0, 0, pv_is_obsolete, 0},
 	{{"src_ip", (sizeof("src_ip")-1)}, /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},
