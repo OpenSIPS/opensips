@@ -63,6 +63,8 @@ int ssl_verifyhost = 1;
 /* see curl.h or https://curl.haxx.se/libcurl/c/CURLOPT_HTTP_VERSION.html */
 int curl_http_version = CURL_HTTP_VERSION_NONE;
 
+int enable_expect_100;
+
 struct tls_mgm_binds tls_api;
 
 /* trace parameters for this module */
@@ -196,6 +198,7 @@ static param_export_t params[] = {
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
 	{ "ssl_verifyhost",		INT_PARAM, &ssl_verifyhost		},
 	{ "curl_http_version",	INT_PARAM, &curl_http_version	},
+	{ "enable_expect_100",	INT_PARAM, &enable_expect_100	},
 	{ 0, 0, 0 }
 };
 

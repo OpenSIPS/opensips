@@ -35,6 +35,7 @@
 
 #include "../tls_mgm/api.h"
 
+#include "rest_client.h"
 #include "rest_methods.h"
 #include "rest_cb.h"
 
@@ -410,8 +411,17 @@ static inline int set_upload_opts(CURL *handle, str *ctype, str *body)
 		snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Content-Type: %.*s",
 		         ctype->len, ctype->s);
 		header_list = curl_slist_append(header_list, print_buff);
-		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
 	}
+
+	/* by default, cURL will include "Expect: 100-continue" header field for
+	 * bodies larger than 1024 bytes -- an empty value disables the header */
+	if (!enable_expect_100) {
+		snprintf(print_buff, MAX_CONTENT_TYPE_LEN, "Expect:");
+		header_list = curl_slist_append(header_list, print_buff);
+	}
+
+	if (header_list)
+		w_curl_easy_setopt(handle, CURLOPT_HTTPHEADER, header_list);
 
 	/* two rare bugs may occur with older curl versions (pre 7.17.1):
 	 *	1. since body->s is not dup'ed and may point to a PV buf,
@@ -866,9 +876,14 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 	retr = 0;
 	do {
 		mrc = curl_multi_perform(multi_handle, &running);
-		if (mrc != CURLM_CALL_MULTI_PERFORM)
+		LM_DBG("perform result: %d, running: %d\n", mrc, running);
+
+		/* When @enable_expect_100 is on, both the client body upload and the
+		 * server body download will be performed within this loop, blocking */
+		if (mrc != CURLM_CALL_MULTI_PERFORM &&
+		     (mrc != CURLM_OK || !enable_expect_100 || !running))
 			break;
-		LM_DBG("retry last perform...\n");
+
 		usleep(_async_resume_retr_itv);
 		retr += _async_resume_retr_itv;
 	} while (retr < _async_resume_retr_timeout);
@@ -878,7 +893,6 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 		goto out;
 	}
 
-	LM_DBG("running handles: %d\n", running);
 	if (running == 1) {
 		LM_DBG("transfer in progress...\n");
 		async_status = ASYNC_CONTINUE;
