@@ -61,6 +61,8 @@ int _async_resume_retr_itv = 100; /* us */
 int ssl_verifypeer = 1;
 int ssl_verifyhost = 1;
 
+int enable_expect_100;
+
 struct tls_mgm_binds tls_api;
 
 /* trace parameters for this module */
@@ -161,6 +163,7 @@ static param_export_t params[] = {
 	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},
 	{ "ssl_verifyhost",		INT_PARAM, &ssl_verifyhost		},
+	{ "enable_expect_100",	INT_PARAM, &enable_expect_100	},
 	{ 0, 0, 0 }
 };
 

@@ -205,6 +205,29 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 		</example>
 	</section>
 
+	<section id="param_enable_expect_100" xreflabel="enable_expect_100">
+		<title><varname>enable_expect_100</varname> (boolean)</title>
+		<para>
+		Include a "Expect: 100-continue" HTTP header field whenever the body
+		size of a POST or PUT request exceeds 1024 bytes.  Once enabled, the
+		timeout for waiting for a "100 Continue" reply from the server is 1
+		second, after which the body upload will begin.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>false</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>enable_expect_100</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "enable_expect_100", true)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
