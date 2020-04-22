@@ -145,7 +145,7 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 		si->adv_name_str.s=(char *)pkg_malloc(si->adv_name_str.len+1);
 		if (si->adv_name_str.s==0) goto error;
 		memcpy(si->adv_name_str.s, sid->adv_name, si->adv_name_str.len+1);
-		if (!sid->adv_port) sid->adv_port=protos[sid->proto].default_port ;
+		if (!sid->adv_port) sid->adv_port=si->port_no ;
 		si->adv_port_str.s=pkg_malloc(10);
 		if (si->adv_port_str.s==0) goto error;
 		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu",
