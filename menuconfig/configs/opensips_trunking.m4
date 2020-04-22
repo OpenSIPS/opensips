@@ -19,7 +19,7 @@ log_level=3
 log_stderror=no
 log_facility=LOG_LOCAL0
 
-children=4
+udp_workers=4
 
 /* uncomment the following lines to enable debugging */
 #debug_mode=yes
@@ -33,9 +33,9 @@ children=4
 #dns_try_ipv6=yes
 
 
-listen=udp:127.0.0.1:5060   # CUSTOMIZE ME
-ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME',`')
-ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061   # CUSTOMIZE ME',`')
+socket=udp:127.0.0.1:5060   # CUSTOMIZE ME
+ifelse(ENABLE_TCP, `yes', `socket=tcp:127.0.0.1:5060   # CUSTOMIZE ME',`')
+ifelse(ENABLE_TLS,`yes',`socket=tls:127.0.0.1:5061   # CUSTOMIZE ME',`')
 
 ifelse(USE_HTTP_MANAGEMENT_INTERFACE,`yes',`define(`HTTPD_NEEDED',`yes')', `')
 

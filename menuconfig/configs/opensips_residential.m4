@@ -19,7 +19,7 @@ log_level=3
 log_stderror=no
 log_facility=LOG_LOCAL0
 
-children=4
+udp_workers=4
 
 /* uncomment the following lines to enable debugging */
 #debug_mode=yes
@@ -33,9 +33,9 @@ children=4
 #dns_try_ipv6=yes
 
 
-listen=udp:127.0.0.1:5060   # CUSTOMIZE ME
-ifelse(ENABLE_TCP, `yes', `listen=tcp:127.0.0.1:5060   # CUSTOMIZE ME', `')
-ifelse(ENABLE_TLS,`yes',`listen=tls:127.0.0.1:5061   # CUSTOMIZE ME', `')
+socket=udp:127.0.0.1:5060   # CUSTOMIZE ME
+ifelse(ENABLE_TCP, `yes', `socket=tcp:127.0.0.1:5060   # CUSTOMIZE ME', `')
+ifelse(ENABLE_TLS,`yes',`socket=tls:127.0.0.1:5061   # CUSTOMIZE ME', `')
 
 ####### Modules Section ########
 
@@ -373,13 +373,13 @@ ifelse(USE_NAT,`yes',`
 			exit;
 		}',`')dnl
 ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
-		if ($proto == "tcp" || $proto == "tls")
+		if ($socket_in(proto) == "tcp" || $socket_in(proto) == "tls")
 			setflag("TCP_PERSISTENT");
 ', `
-		if ($proto == "tcp")
+		if ($socket_in(proto) == "tcp")
 			setflag("TCP_PERSISTENT");
 '), ifelse(ENABLE_TLS, `yes', `
-		if ($proto == "tls")
+		if ($socket_in(proto) == "tls")
 			setflag("TCP_PERSISTENT");
 ',
 `'))dnl
