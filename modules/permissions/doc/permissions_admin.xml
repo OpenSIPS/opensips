@@ -665,19 +665,19 @@ modparam("permissions", "info_col", "info_col")
 // (given as pvar), belongs to group 4, verifies if the string "texttest"
 // matches the wildcard pattern field in the database table and stores the
 // context information in $avp(ctx)
-if (check_address( 4, "192.168.2.135", 5700, "$proto", $avp(ctx), "texttest")) {
+if (check_address( 4, "192.168.2.135", 5700, "$socket_in(proto)", $avp(ctx), "texttest")) {
 	t_relay();
 	xlog("$avp(ctx)\n");
 }
 
-if (check_address( 4, "192.168.2.135", 5700, "$proto", , , "my_part")) {
+if (check_address( 4, "192.168.2.135", 5700, "$socket_in(proto)", , , "my_part")) {
 	t_relay();
 	xlog("$avp(ctx)\n");
 }
 ...
 
 // Checks if the tuple IP address/port/protocol of the source message is in group 4
-if (check_address( 4, "$si", "$sp", "$proto")) {
+if (check_address( 4, "$si", "$sp", "$socket_in(proto)")) {
 	t_relay();
 }
 
@@ -700,7 +700,7 @@ if (check_address( 4, $avp(ip), $avp(port), $avp(proto), $avp(ctx), , $avp(parti
 // (given as pvar) is in group 4, verifies if string the "texttest" matches
 // the wildcard pattern field in the database table, without storing any
 // context information
-if (check_address( 4,$si, 5700, $proto, ,"texttest")) {
+if (check_address( 4,$si, 5700, $socket_in(proto), ,"texttest")) {
 	t_relay();
 }
 
@@ -715,7 +715,7 @@ if (check_address( 4,$si, 5700, $proto, ,"texttest")) {
 		<function moreinfo="none">check_source_address(group_id , [context_info], [pattern], [partition])</function>
 		</title>
 		<para>
-		Equivalent to check_address(group_id, "$si", "$sp", "$proto", context_info, pattern, partition).
+		Equivalent to check_address(group_id, "$si", "$sp", "$socket_in(proto)", context_info, pattern, partition).
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,

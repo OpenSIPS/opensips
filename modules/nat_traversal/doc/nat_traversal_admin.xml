@@ -803,7 +803,7 @@ modparam("registrar", "tcp_persistent_flag", 10)
 # REGISTER request directly from the user agent.
 if ($rm=="REGISTER") {
     if (client_nat_test(3)) {
-        if ($proto==UDP) {
+        if ($socket_in(proto)==UDP) {
             nat_keepalive();
         } else {
             # Keep TCP/TLS connections open until the registration
