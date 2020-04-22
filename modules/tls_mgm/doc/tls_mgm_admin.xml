@@ -1283,7 +1283,7 @@ route{
   rev_dns=no
   socket=udp:your_serv_IP:5060
   socket=tls:your_serv_IP:5061
-  children=4
+  udp_workers=4
 
   # ------------------ module loading ----------------------------------
 

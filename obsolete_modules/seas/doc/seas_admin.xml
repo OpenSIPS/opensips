@@ -685,7 +685,7 @@ check_via=no    # (cmd. line: -v)
 dns=no          # (cmd. line: -r)
 rev_dns=no      # (cmd. line: -R)
 port=5060
-children=4
+udp_workers=4
 loadmodule "/usr/local/lib/opensips/modules/sl.so"
 loadmodule "/usr/local/lib/opensips/modules/tm.so"
 loadmodule "/usr/local/lib/opensips/modules/rr.so"
@@ -750,7 +750,7 @@ check_via=no    # (cmd. line: -v)
 dns=no          # (cmd. line: -r)
 rev_dns=no      # (cmd. line: -R)
 port=5060
-children=4
+udp_workers=4
 
 socket= tcp:localhost:5060 
 socket= udp:localhost:5060 
