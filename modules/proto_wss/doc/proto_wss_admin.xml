@@ -313,8 +313,8 @@ modparam("proto_wss", "trace_on", 1)
 				$si</emphasis> meaning the source ip if you read the docs) but in reality
 			it is simply the socket other than the &osips; socket. In order to match
 			&osips; interface (either the one that accepted the connection or the one
-			that initiated a connection) <emphasis role="bold">$Ri</emphasis> (ip) and
-			<emphasis role="bold">$Rp</emphasis> (port) can be used.
+			that initiated a connection) <emphasis role="bold">$socket_in(ip)</emphasis> (ip) and
+			<emphasis role="bold">$socket_in(port)</emphasis> (port) can be used.
 		</para>
 
 		<para>
@@ -339,7 +339,7 @@ route[wss_filter] {
 	   on interface 1.1.1.10:5060(opensips listener)
 	   all the other connections won't be */
 	 if ( $si == "1.1.1.1" &amp;&amp; $sp == 8000 &amp;&amp;
-		$Ri == "1.1.1.10"  &amp;&amp; $Rp == 5060)
+		$socket_in(ip) == "1.1.1.10"  &amp;&amp; $socket_in(port) == 5060)
 		exit;
 	else
 		drop;
