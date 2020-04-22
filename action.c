@@ -1877,7 +1877,8 @@ next_avp:
 			aitem = (struct action *)(a->elem[0].u.data);
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
 			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
-				LM_ALERT("BUG in async expression\n");
+				LM_ALERT("BUG in async expression "
+				         "(is the 'tm' module loaded?)\n");
 			} else {
 				script_trace("async",
 					((acmd_export_t*)(aitem->elem[0].u.data))->name,
