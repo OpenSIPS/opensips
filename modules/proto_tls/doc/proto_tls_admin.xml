@@ -227,7 +227,7 @@
 				<title>Set <varname>listen</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-listen = tls:1.2.3.4:5061
+socket= tls:1.2.3.4:5061
 ...
 				</programlisting>
 			</example>

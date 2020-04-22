@@ -20,8 +20,8 @@
 	<para>
 		<programlisting format="linespecific">
 ...
-listen=tcp:127.0.0.1 		# change the listening IP
-listen=tcp:127.0.0.1:5080	# change with the listening IP and port
+socket=tcp:127.0.0.1 		# change the listening IP
+socket=tcp:127.0.0.1:5080	# change with the listening IP and port
 ...
 </programlisting>
 	</para>

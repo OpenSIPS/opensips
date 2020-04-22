@@ -46,7 +46,7 @@
 		</para>
 		<para>
 		If you run several SIP domains you can specify some parameters for each of them
-		separately (regardless if you have only one or multiple listen=tls:ip:port entries
+		separately (regardless if you have only one or multiple socket=tls:ip:port entries
 		in the config file).
 		</para>
 		<para>
@@ -205,7 +205,7 @@ if (is_peer_verified()) {
 				<title>Set <varname>listen</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-listen = tls:1.2.3.4:5061
+socket= tls:1.2.3.4:5061
 ...
 				</programlisting>
 			</example>
@@ -955,7 +955,7 @@ modparam("tls_mgm", "match_sip_domain", "[default_dom]*")
 					</title>
 				<programlisting format="linespecific">
 ...
-listen=tls:10.0.0.10:5061
+socket=tls:10.0.0.10:5061
 ...
 # set the TLS client domain AVP
 modparam("tls_mgm", "client_sip_domain_avp", "tls_sip_dom")
@@ -1281,8 +1281,8 @@ route{
   check_via=no
   dns=no
   rev_dns=no
-  listen=udp:your_serv_IP:5060
-  listen=tls:your_serv_IP:5061
+  socket=udp:your_serv_IP:5060
+  socket=tls:your_serv_IP:5061
   children=4
 
   # ------------------ module loading ----------------------------------

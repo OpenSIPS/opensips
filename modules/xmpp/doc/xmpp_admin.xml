@@ -28,7 +28,7 @@
 			</para>
 		</listitem>
 		<listitem>
-			<para>listen = your ip;</para>
+			<para>socket= your ip;</para>
 		</listitem> 
 		<listitem>
 			<para>alias=opensips domain and 

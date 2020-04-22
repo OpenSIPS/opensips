@@ -23,9 +23,9 @@
 		<programlisting format="linespecific">
 ...
 #HEPv3 listener
-listen = hep_tcp:127.0.0.1:6061 		# change the listening IP
+socket= hep_tcp:127.0.0.1:6061 		# change the listening IP
 #HEPv1, v2, v3 listener
-listen = hep_udp:127.0.0.1:6061 		# change the listening IP
+socket= hep_udp:127.0.0.1:6061 		# change the listening IP
 ...
 </programlisting>
 	</para>

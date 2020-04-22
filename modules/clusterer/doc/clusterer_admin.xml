@@ -1262,7 +1262,7 @@ $ opensips-cli -x mi clusterer_list
 		<title><emphasis>Node A</emphasis> configuration</title>
 		<programlisting format="linespecific">
 ...
-listen = bin:192.168.0.5:5566 # bin listener for Node A
+socket= bin:192.168.0.5:5566 # bin listener for Node A
 
 loadmodule "proto_bin.so"
 
@@ -1282,7 +1282,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 		<title><emphasis>Node B</emphasis> configuration</title>
 		<programlisting format="linespecific">
 ...
-listen = bin:192.168.0.6:5566 # bin listener for Node B
+socket= bin:192.168.0.6:5566 # bin listener for Node B
 
 loadmodule "proto_bin.so"
 

@@ -24,8 +24,8 @@
 ...
 mpath=/path/to/modules
 ...
-listen=wss:10.0.0.1			# change with the listening IP
-listen=wss:10.0.0.1:5060	# change with the listening IP and port
+socket=wss:10.0.0.1			# change with the listening IP
+socket=wss:10.0.0.1:5060	# change with the listening IP and port
 ...
 </programlisting>
 	</para>
@@ -111,7 +111,7 @@ modparam("tls_mgm", "require_cert", "1")
 				<title>Set <varname>listen</varname> variable</title>
 				<programlisting format="linespecific">
 ...
-listen = wss:1.2.3.4:44344
+socket= wss:1.2.3.4:44344
 ...
 				</programlisting>
 			</example>

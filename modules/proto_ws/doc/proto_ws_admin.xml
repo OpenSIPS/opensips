@@ -52,8 +52,8 @@
 ...
 mpath=/path/to/modules
 ...
-listen=ws:127.0.0.1		# change with the listening IP
-listen=ws:127.0.0.1:5060	# change with the listening IP and port
+socket=ws:127.0.0.1		# change with the listening IP
+socket=ws:127.0.0.1:5060	# change with the listening IP and port
 ...
 </programlisting>
 	</para>

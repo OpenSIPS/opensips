@@ -21,8 +21,8 @@
 	<para>
 		<programlisting format="linespecific">
 ...
-listen = bin:127.0.0.1 		# change the listening IP
-listen = bin:127.0.0.1:5080	# change the listening IP and port
+socket= bin:127.0.0.1 		# change the listening IP
+socket= bin:127.0.0.1:5080	# change the listening IP and port
 ...
 </programlisting>
 	</para>

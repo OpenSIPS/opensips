@@ -485,8 +485,8 @@ ServletException, IOException
             <para>this attribute MUST match one of the listening points
             declared within OpenSIPS in the "listen" parameters.</para>
 
-            <para>For example in opensips.cfg:<programlisting>listen = tcp:localhost:5060
-listen = udp:localhost:5060</programlisting></para>
+            <para>For example in opensips.cfg:<programlisting>socket= tcp:localhost:5060
+socket= udp:localhost:5060</programlisting></para>
           </warning>
 
           <para>Within the SIP Connector element there must be an
@@ -752,8 +752,8 @@ rev_dns=no      # (cmd. line: -R)
 port=5060
 children=4
 
-listen = tcp:localhost:5060 
-listen = udp:localhost:5060 
+socket= tcp:localhost:5060 
+socket= udp:localhost:5060 
 
 mpath="/home/elias/src/sipservlet/seas"
 
