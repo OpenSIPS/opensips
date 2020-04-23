@@ -58,10 +58,11 @@ extern str concalls_thresh_crit_col;
 extern str seqcalls_thresh_warn_col;
 extern str seqcalls_thresh_crit_col;
 
-static str cpm_name = str_init("calls per minute");
-static str total_calls_name = str_init("total calls");
-static str concurrent_calls_name = str_init("concurrent calls");
-static str seq_calls_name = str_init("sequential calls");
+static str cpm_name = str_init("calls-per-minute");
+static str total_calls_name = str_init("total-calls");
+static str concurrent_calls_name = str_init("concurrent-calls");
+static str seq_calls_name = str_init("sequential-calls");
+str call_dur_name = str_init("call-duration");
 
 dr_head_p *dr_head;
 struct dr_binds drb;

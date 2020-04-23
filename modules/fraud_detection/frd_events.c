@@ -148,7 +148,7 @@ void raise_critical_event(str *param, unsigned int *val, unsigned int *thr,
 void dialog_terminate_CB(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params)
 {
-	static str call_dur_name = str_init ("call_duration");
+	extern str call_dur_name;
 	frd_dlg_param *frdparam = (frd_dlg_param*) *(params->param);
 
 	if (type & (DLGCB_TERMINATED|DLGCB_EXPIRED)) {
