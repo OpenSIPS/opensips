@@ -2034,6 +2034,9 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 #define SOCK_ANYCAST_S        "anycast"
 #define SOCK_ANYCAST_LEN      (sizeof(SOCK_ANYCAST_S)-1)
 #define SOCK_ANYCAST_ID       7
+#define SOCK_AF_S             "af"
+#define SOCK_AF_LEN           (sizeof(SOCK_AF_S)-1)
+#define SOCK_AF_ID            8
 
 int pv_parse_socket_name(pv_spec_p sp, str *in)
 {
@@ -2070,6 +2073,10 @@ int pv_parse_socket_name(pv_spec_p sp, str *in)
 	if (in->len==SOCK_ANYCAST_LEN &&
 	strncasecmp(in->s, SOCK_ANYCAST_S, SOCK_ANYCAST_LEN)==0 ) {
 		sp->pvp.pvn.u.isname.name.n = SOCK_ANYCAST_ID;
+	} else
+	if (in->len==SOCK_AF_LEN &&
+	strncasecmp(in->s, SOCK_AF_S, SOCK_AF_LEN)==0 ) {
+		sp->pvp.pvn.u.isname.name.n = SOCK_AF_ID;
 	} else {
 		LM_ERR("unsupported SOCKET_IN/OUT field <%.*s>\n",in->len,in->s);
 		return -1;
@@ -2141,6 +2148,16 @@ static inline int get_socket_field( struct socket_info *si,
 			else
 				res->ri = 0;
 			res->flags = PV_VAL_INT;
+			break;
+		case SOCK_AF_ID:  /* returns Address Family */
+			if (si->address.af == AF_INET) {
+				res->rs.s = "INET";
+				res->rs.len = 4;
+			} else if (si->address.af == AF_INET6) {
+				res->rs.s = "INET6";
+				res->rs.len = 5;
+			} else
+				return pv_get_null( NULL, NULL, res);
 			break;
 		default:
 			LM_CRIT("BUG - unsupported ID %d\n",pvn->u.isname.name.n);
@@ -3587,6 +3604,10 @@ int pv_is_obsolete(pv_spec_p sp, int param)
 			old="$fs";
 			new="$socket_out";
 			break;
+		case PVT_AF: /* added in 3.1 */
+			old="$af";
+			new="$socket_in(af)";
+			break;
 		default:
 			LM_BUG("unrecognized deprecated pvar %d\n",sp->type);
 			return -1;
@@ -3657,7 +3678,8 @@ static pv_export_t _pv_names_table[] = {
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
 	{{"af", (sizeof("af") -1)},
-		PVT_AF, pv_get_af, 0, 0, 0, 0, 0},	/* */
+		PVT_AF, pv_get_af, 0,
+		0, 0, pv_is_obsolete, 0},	/* */
 	{{"bf", (sizeof("bf")-1)}, /* */
 		PVT_BFLAGS, pv_get_bflags, 0,
 		0, 0, 0, 0},
