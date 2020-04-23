@@ -28,6 +28,8 @@
 #include "../mem/test/test_malloc.h"
 
 #include "../lib/list.h"
+#include "../globals.h"
+#include "../context.h"
 #include "../dprint.h"
 #include "../sr_module.h"
 #include "../sr_module_deps.h"
@@ -41,9 +43,9 @@ void init_unit_tests(void)
 		solve_module_dependencies(modules);
 		//init_cachedb_tests();
 		//init_malloc_tests();
-	} else {
-		ensure_global_context();
 	}
+
+	ensure_global_context();
 }
 
 int run_unit_tests(void)

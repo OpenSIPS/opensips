@@ -1303,7 +1303,8 @@ try_again:
 			LM_NOTICE("enabling logging to standard error (found disabled)\n");
 			log_stderr = 1;
 		}
-		if (*log_level<L_DBG) {
+		if (*log_level < L_DBG && (!testing_framework ||
+		                           !strcmp(testing_module, "core"))) {
 			LM_NOTICE("setting logging to debug level (found on %d)\n",
 				*log_level);
 			*log_level = L_DBG;

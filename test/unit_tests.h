@@ -35,7 +35,7 @@
  * modules/<module>/test/opensips.cfg, and will be automatically used.
  *    TODO: expand this ^ to a "N x opensips.cfg testing files" mechanism
  */
-typedef int (*mod_tests_f) (void);
+typedef void (*mod_tests_f) (void);
 
 #ifdef UNIT_TESTS
 void init_unit_tests(void);

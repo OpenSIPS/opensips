@@ -66,7 +66,6 @@ void test_lookup(void)
 			         "gN5eDCyzuomQMyWboTVum0MY8YL_3E8vFIZUur_B71DHVgXQVD6UfZJ"
 			         "mAq9Px0UY8YjVmo2LnmCocmFRBU0gPMV2ebheGGWCc");
 	str ct2 = str_init("sip:desk@127.0.0.2");
-	struct ct_match cmatch;
 	struct sip_msg msg;
 
 	ok(ul.register_udomain("location", &d) == 0, "get 'location' udomain");
@@ -97,15 +96,12 @@ void test_lookup(void)
 
 	ok(ul.delete_ucontact(r, c, 0) == 0, "delete ucontact");
 
-	cmatch.mode = CT_MATCH_PARAMS;
-	cmatch.match_params = pn_ct_params;
 	fill_ucontact_info(&ci);
 	ok(ul.insert_ucontact(r, &ct1, &ci, &c, 0) == 0, "insert ct1 (PN)");
 
 	set_ruri(&msg, &aor_ruri);
 	ok(lookup(&msg, d, _str(""), NULL) == 2, "lookup-5: 2 (success, PN)");
 
-	cmatch.mode = CT_MATCH_CONTACT_ONLY;
 	fill_ucontact_info(&ci);
 	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert ct2 (normal)");
 
@@ -117,9 +113,7 @@ void test_lookup(void)
 }
 
 
-int mod_tests(void)
+void mod_tests(void)
 {
 	test_lookup();
-
-	return 0;
 }
