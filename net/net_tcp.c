@@ -530,7 +530,7 @@ int tcp_get_correlation_id( int id, unsigned long long *cid)
 
 /*! \brief _tcpconn_find with locks and acquire fd */
 int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
-									struct tcp_connection** conn, int* conn_fd)
+									struct tcp_connection** conn, int* conn_fd, struct socket_info* send_sock)
 {
 	struct tcp_connection* c;
 	struct tcp_connection* tmp;
@@ -556,21 +556,47 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
 #endif
 	if (ip){
 		hash=tcp_addr_hash(ip, port);
+		if (send_sock!=NULL) {
 		for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
 			TCPCONN_LOCK(part);
 			for (a=TCP_PART(part).tcpconn_aliases_hash[hash]; a; a=a->next) {
 #ifdef EXTRA_DEBUG
-				LM_DBG("a=%p, c=%p, c->id=%d, alias port= %d port=%d\n",
+				LM_DBG("p1 a=%p, c=%p, c->id=%d, alias port= %d src_port=%d dst_port=%d\n",
 					a, a->parent, a->parent->id, a->port,
-					a->parent->rcv.src_port);
-				print_ip("ip=",&a->parent->rcv.src_ip,"\n");
+					a->parent->rcv.src_port, a->parent->rcv.dst_port);
+				print_ip("src_ip=",&a->parent->rcv.src_ip,"\n");
+				print_ip("dst_ip=",&a->parent->rcv.dst_ip,"\n");
 #endif
 				c = a->parent;
 				if (c->state != S_CONN_BAD &&
-				    port == a->port &&
-				    proto == c->type &&
-				    ip_addr_cmp(ip, &c->rcv.src_ip))
+			    	port == a->port &&
+			    	proto == c->type &&
+			    	ip_addr_cmp(ip, &c->rcv.src_ip) &&
+					send_sock->port_no == c->rcv.dst_port &&
+					send_sock->proto == c->type &&
+			    	ip_addr_cmp(&send_sock->address, &c->rcv.dst_ip))
 					goto found;
+			}
+			TCPCONN_UNLOCK(part);
+		}
+		}
+		for( part=0 ; part<TCP_PARTITION_SIZE ; part++ ) {
+			TCPCONN_LOCK(part);
+			for (a=TCP_PART(part).tcpconn_aliases_hash[hash]; a; a=a->next) {
+#ifdef EXTRA_DEBUG
+				LM_DBG("p2 a=%p, c=%p, c->id=%d, alias port= %d src_port=%d dst_port=%d\n",
+					a, a->parent, a->parent->id, a->port,
+					a->parent->rcv.src_port, a->parent->rcv.dst_port);
+				print_ip("src_ip=",&a->parent->rcv.src_ip,"\n");
+				print_ip("dst_ip=",&a->parent->rcv.dst_ip,"\n");
+#endif
+				c = a->parent;
+				if (c->state != S_CONN_BAD &&
+			    	port == a->port &&
+			    	proto == c->type &&
+			    	ip_addr_cmp(ip, &c->rcv.src_ip)) {
+					goto found;
+				}
 			}
 			TCPCONN_UNLOCK(part);
 		}
