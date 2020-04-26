@@ -21,6 +21,7 @@ rest_client Module
               1.4.5. ssl_verifypeer (integer)
               1.4.6. ssl_verifyhost (integer)
               1.4.7. ssl_capath (integer)
+              1.4.8. enable_expect_100 (boolean)
 
         1.5. Exported Functions
 
@@ -76,14 +77,15 @@ rest_client Module
    1.5. Setting the ssl_verifypeer parameter
    1.6. Setting the ssl_verifyhost parameter
    1.7. Setting the ssl_capath parameter
-   1.8. rest_get usage
-   1.9. rest_post usage
-   1.10. rest_put usage
-   1.11. rest_append_hf usage
-   1.12. rest_init_client_tls usage
-   1.13. async rest_get usage
-   1.14. async rest_post usage
-   1.15. async rest_put usage
+   1.8. Setting the enable_expect_100 parameter
+   1.9. rest_get usage
+   1.10. rest_post usage
+   1.11. rest_put usage
+   1.12. rest_append_hf usage
+   1.13. rest_init_client_tls usage
+   1.14. async rest_get usage
+   1.15. async rest_post usage
+   1.16. async rest_put usage
 
 Chapter 1. Admin Guide
 
@@ -209,6 +211,21 @@ modparam("rest_client", "ssl_verifyhost", 0)
 modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 ...
 
+1.4.8. enable_expect_100 (boolean)
+
+   Include a "Expect: 100-continue" HTTP header field whenever the
+   body size of a POST or PUT request exceeds 1024 bytes. Once
+   enabled, the timeout for waiting for a "100 Continue" reply
+   from the server is 1 second, after which the body upload will
+   begin.
+
+   Default value is “false” (disabled).
+
+   Example 1.8. Setting the enable_expect_100 parameter
+...
+modparam("rest_client", "enable_expect_100", true)
+...
+
 1.5. Exported Functions
 
 1.5.1.  rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
@@ -246,7 +263,7 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 
    This function can be used from any route.
 
-   Example 1.8. rest_get usage
+   Example 1.9. rest_get usage
 ...
 # Example of querying a REST service to get the credit of an account
 $var(rc) = rest_get("https://getcredit.org/?account=$fU",
@@ -311,7 +328,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.9. rest_post usage
+   Example 1.10. rest_post usage
 ...
 # Creating a resource using a RESTful service with an HTTP POST request
 $var(rc) = rest_post("https://myserver.org/register_user",
@@ -375,7 +392,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.10. rest_put usage
+   Example 1.11. rest_put usage
 ...
 # Creating/Updating a resource using a RESTful service with an HTTP PUT
 request
@@ -411,7 +428,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.11. rest_append_hf usage
+   Example 1.12. rest_append_hf usage
 ...
 # Example of querying a REST service requiring additional headers
 
@@ -441,7 +458,7 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", "$var(credit)")
 
    This function can be used from any route.
 
-   Example 1.12. rest_init_client_tls usage
+   Example 1.13. rest_init_client_tls usage
 ...
 rest_init_client_tls("1=10.11.12.13:3306");
 if (!rest_get("https://example.com"))
@@ -458,7 +475,7 @@ if (!rest_get("https://example.com"))
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.13. async rest_get usage
+   Example 1.14. async rest_get usage
 route {
         ...
         async(rest_get("http://getcredit.org/?account=$fU",
@@ -493,7 +510,7 @@ $fU\n");
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.14. async rest_post usage
+   Example 1.15. async rest_post usage
 route {
         ...
         async(rest_post("http://myserver.org/register_user",
@@ -528,7 +545,7 @@ route [resume] {
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.15. async rest_put usage
+   Example 1.16. async rest_put usage
 route {
         ...
         async(rest_put("http://myserver.org/users/$fU", "$var(userinfo)"
@@ -561,7 +578,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 115 62 3211 1457
+   1. Liviu Chircu (@liviuchircu) 116 63 3255 1461
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Razvan Crainea (@razvancrainea) 14 12 40 16
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 95 47
@@ -591,8 +608,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
-   2. Liviu Chircu (@liviuchircu)         Mar 2013 - Jul 2019
+   1. Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2020
+   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
    3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2018
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    5. Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
