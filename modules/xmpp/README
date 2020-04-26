@@ -81,7 +81,7 @@ Chapter 1. Admin Guide
    file:
      * xmpp_domain and xmpp_host, which are explained in the
        Exported Parameters section;
-     * listen = your ip;
+     * socket= your ip;
      * alias=opensips domain and alias=gateway domain;
      * you can also change the jabber server password, which must
        be the same as the xmpp_password parameter.
@@ -268,9 +268,9 @@ log_stderror=no    # (cmd line: -E)
 check_via=no    # (cmd. line: -v)
 dns=no          # (cmd. line: -r)
 rev_dns=no      # (cmd. line: -R)
-children=4
+udp_workers=4
 
-listen=udp:10.10.10.10:5076
+socket=udp:10.10.10.10:5076
 alias=sip-xmpp.opensips.org
 
 # ------------------ module loading ----------------------------------
@@ -343,7 +343,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 67 16 5988 76
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 26 21 117 242
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 28 23 120 245
    3. Anca Vamanu 20 9 438 398
    4. Liviu Chircu (@liviuchircu) 12 9 52 92
    5. Razvan Crainea (@razvancrainea) 9 7 31 23
@@ -377,9 +377,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
-   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2020
+   2.  Zero King                           Mar 2020 - Mar 2020
+   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
@@ -399,11 +399,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Anca
-   Vamanu, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Juha Heinanen (@juha-h).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Anca Vamanu,
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Juha
+   Heinanen (@juha-h).
 
    Documentation Copyrights:
 

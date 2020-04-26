@@ -712,7 +712,7 @@ modparam("registrar", "tcp_persistent_flag", 10)
 # REGISTER request directly from the user agent.
 if ($rm=="REGISTER") {
     if (client_nat_test(3)) {
-        if ($proto==UDP) {
+        if ($socket_in(proto)==UDP) {
             nat_keepalive();
         } else {
             # Keep TCP/TLS connections open until the registration
@@ -862,7 +862,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Dan Pascu (@danpascu) 54 26 3085 115
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 36 30 305 127
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 37 31 306 128
    3. Liviu Chircu (@liviuchircu) 16 13 59 81
    4. Razvan Crainea (@razvancrainea) 9 7 11 6
    5. Saúl Ibarra Corretgé (@saghul) 9 5 188 102
@@ -895,9 +895,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   2.  Dan Pascu (@danpascu)               May 2008 - Aug 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Jun 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2020
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   3.  Dan Pascu (@danpascu)               May 2008 - Aug 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -916,8 +916,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Dan Pascu (@danpascu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Dan Pascu
+   (@danpascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
    (@razvancrainea), Saúl Ibarra Corretgé (@saghul).
 

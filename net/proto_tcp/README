@@ -69,8 +69,8 @@ Chapter 1. Admin Guide
    your configuration file, similar to this example:
 
 ...
-listen=tcp:127.0.0.1            # change the listening IP
-listen=tcp:127.0.0.1:5080       # change with the listening IP and port
+socket=tcp:127.0.0.1            # change the listening IP
+socket=tcp:127.0.0.1:5080       # change with the listening IP and port
 ...
 
 1.2. Dependencies
@@ -270,7 +270,8 @@ modparam("proto_tcp", "trace_on", 1)
    read the docs) but in reality it is simply the socket other
    than the OpenSIPS socket. In order to match OpenSIPS interface
    (either the one that accepted the connection or the one that
-   initiated a connection) $Ri (ip) and $Rp (port) can be used.
+   initiated a connection) $socket_in(ip) (ip) and
+   $socket_in(port) (port) can be used.
 
    WARNING: IF Section 1.3.11, “trace_on (int)” is set to 0 or
    tracing is deactived via the mi command Section 1.4.1, “
@@ -290,7 +291,8 @@ route[tcp_filter] {
            on interface 1.1.1.10:5060(opensips listener)
            all the other connections won't be */
          if ( $si == "1.1.1.1" && $sp == 8000 &&
-                $Ri == "1.1.1.10"  && $Rp == 5060)
+                $socket_in(ip) == "1.1.1.10"  && $socket_in(port) == 506
+0)
                 exit;
         else
                 drop;

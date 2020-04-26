@@ -502,7 +502,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 374 80 19649 8172
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 53 31 1379 554
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 55 33 1383 558
    3. Jan Janak (@janakj) 33 15 1007 498
    4. Razvan Crainea (@razvancrainea) 20 18 68 49
    5. Andrei Pelinescu-Onciul 19 12 101 336
@@ -537,7 +537,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Mar 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Apr 2020
    2.  Zero King                           Mar 2020 - Mar 2020
    3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -561,10 +561,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Klaus Darilion, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Klaus Darilion, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Elena-Ramona Modroiu, Jan Janak (@janakj).
 
    Documentation Copyrights:

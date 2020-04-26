@@ -214,7 +214,7 @@ Chapter 1. Admin Guide
 
    Example 1.1. Set listen variable
 ...
-listen = tls:1.2.3.4:5061
+socket= tls:1.2.3.4:5061
 ...
 
 1.5.2. tls_port (integer)
@@ -354,7 +354,8 @@ modparam("proto_tls", "trace_on", 1)
    read the docs) but in reality it is simply the socket other
    than the OpenSIPS socket. In order to match OpenSIPS interface
    (either the one that accepted the connection or the one that
-   initiated a connection) $Ri (ip) and $Rp (port) can be used.
+   initiated a connection) $socket_in(ip) (ip) and
+   $socket_in(port) (port) can be used.
 
    WARNING: IF trace_on is set to 0 or tracing is deactived via
    the mi command tls_trace this route won't be called.
@@ -373,7 +374,8 @@ route[tls_filter] {
            on interface 1.1.1.10:5060(opensips listener)
            all the other connections won't be */
          if ( $si == "1.1.1.1" && $sp == 8000 &&
-                $Ri == "1.1.1.10"  && $Rp == 5060)
+                $socket_in(ip) == "1.1.1.10"  && $socket_in(port) == 506
+0)
                 exit;
         else
                 drop;
@@ -515,7 +517,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 54 27 1539 805
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 56 29 1543 809
    2. Razvan Crainea (@razvancrainea) 43 26 626 641
    3. Eseanu Marius Cristian (@eseanucristian) 41 5 55 2133
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
@@ -549,11 +551,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
-   2.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
-   3.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2020
-   4.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - May 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2020
+   2.  Zero King                           Mar 2020 - Mar 2020
+   3.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
+   4.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2020
+   5.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Maksym Sobolyev (@sobomax)          Jul 2017 - Jul 2017
@@ -570,11 +572,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Zero King, Razvan Crainea (@razvancrainea),
-   Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Peter Lemenkov (@lemenkov), Vlad Patrascu
-   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Eseanu
-   Marius Cristian (@eseanucristian), Vlad Paiu (@vladpaiu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Zero King,
+   Razvan Crainea (@razvancrainea), Liviu Chircu (@liviuchircu),
+   Peter Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
+   Ionut Ionita (@ionutrazvanionita), Eseanu Marius Cristian
+   (@eseanucristian), Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

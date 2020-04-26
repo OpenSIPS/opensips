@@ -293,13 +293,13 @@ aliases:6
 # ----------- global configuration parameters ------------------------
 
 #debug_mode=yes
-children=4
+udp_workers=4
 
 check_via=no    # (cmd. line: -v)
 dns=no          # (cmd. line: -r)
 rev_dns=no      # (cmd. line: -R)
 
-listen=udp:10.100.100.1:5060
+socket=udp:10.100.100.1:5060
 
 # ------------------ module loading ----------------------------------
 
@@ -433,7 +433,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Daniel-Constantin Mierla (@miconda) 133 59 6126 1441
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 30 308 307
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 41 32 310 309
    3. Henning Westerholt (@henningw) 25 15 252 410
    4. Liviu Chircu (@liviuchircu) 16 13 39 90
    5. Razvan Crainea (@razvancrainea) 14 12 106 38
@@ -468,10 +468,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
-   3.  Ovidiu Sas (@ovidiusas)             Dec 2012 - May 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   4.  Ovidiu Sas (@ovidiusas)             Dec 2012 - May 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
@@ -492,9 +492,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Sergey
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sergey
    Khripchenko, Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla
    (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Henning Westerholt (@henningw).

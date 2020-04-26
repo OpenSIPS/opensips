@@ -985,7 +985,7 @@ ries | priority | sip_addr | flags | description |
 
    Example 1.31. Node A configuration
 ...
-listen = bin:192.168.0.5:5566 # bin listener for Node A
+socket= bin:192.168.0.5:5566 # bin listener for Node A
 
 loadmodule "proto_bin.so"
 
@@ -1001,7 +1001,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 
    Example 1.32. Node B configuration
 ...
-listen = bin:192.168.0.6:5566 # bin listener for Node B
+socket= bin:192.168.0.6:5566 # bin listener for Node B
 
 loadmodule "proto_bin.so"
 
@@ -1184,7 +1184,7 @@ Chapter 3. Contributors
    2. Liviu Chircu (@liviuchircu) 48 35 611 435
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Razvan Crainea (@razvancrainea) 23 17 319 143
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 22 10 1116 108
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 23 11 1118 110
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Gohar Ahmed (@goharahmed) 3 1 6 5
    8. Fabian Gast (@fgast) 3 1 1 1
@@ -1210,7 +1210,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Mar 2020
+   1. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2020
    2. Liviu Chircu (@liviuchircu)              Mar 2016 - Nov 2019
    3. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Sep 2019
    4. Razvan Crainea (@razvancrainea)          Nov 2015 - Sep 2019
@@ -1227,11 +1227,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Fabian Gast (@fgast),
-   Peter Lemenkov (@lemenkov), Eseanu Marius Cristian
-   (@eseanucristian).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Crainea (@razvancrainea), Fabian Gast (@fgast), Peter Lemenkov
+   (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:
 

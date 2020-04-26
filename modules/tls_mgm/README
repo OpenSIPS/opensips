@@ -212,7 +212,7 @@ Chapter 1. Admin Guide
 
    If you run several SIP domains you can specify some parameters
    for each of them separately (regardless if you have only one or
-   multiple listen=tls:ip:port entries in the config file).
+   multiple socket=tls:ip:port entries in the config file).
 
    For example, TLS domains can be used in virtual hosting
    scenarios with TLS. OpenSIPS offers SIP service for multiple
@@ -323,7 +323,7 @@ if (is_peer_verified()) {
 
    Example 1.2. Set listen variable
 ...
-listen = tls:1.2.3.4:5061
+socket= tls:1.2.3.4:5061
 ...
 
 1.8.2. tls_method ([domain]string)
@@ -786,7 +786,7 @@ modparam("tls_mgm", "match_sip_domain", "[default_dom]*")
    Example 1.36. Usage of tls_client_domain and tls_server_domain
    block
 ...
-listen=tls:10.0.0.10:5061
+socket=tls:10.0.0.10:5061
 ...
 # set the TLS client domain AVP
 modparam("tls_mgm", "client_sip_domain_avp", "tls_sip_dom")
@@ -1028,9 +1028,9 @@ route{
   check_via=no
   dns=no
   rev_dns=no
-  listen=udp:your_serv_IP:5060
-  listen=tls:your_serv_IP:5061
-  children=4
+  socket=udp:your_serv_IP:5060
+  socket=tls:your_serv_IP:5061
+  udp_workers=4
 
   # ------------------ module loading ----------------------------------
 
@@ -1467,8 +1467,8 @@ Chapter 3. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 98 32 3280 2387
    2. Razvan Crainea (@razvancrainea) 72 51 1166 658
    3. Eseanu Marius Cristian (@eseanucristian) 52 11 4268 321
-   4. Liviu Chircu (@liviuchircu) 22 16 135 214
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 22 11 285 454
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 24 13 291 460
+   5. Liviu Chircu (@liviuchircu) 22 16 135 214
    6. Dan Pascu (@danpascu) 17 13 90 176
    7. Ionut Ionita (@ionutrazvanionita) 16 9 383 169
    8. Ionel Cerghit (@ionel-cerghit) 8 1 494 109
@@ -1499,12 +1499,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
-   2.  Razvan Crainea (@razvancrainea)     Sep 2015 - Feb 2020
-   3.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Oct 2019
-   5.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jul 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - May 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
+   2.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
+   3.  Razvan Crainea (@razvancrainea)     Sep 2015 - Feb 2020
+   4.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
+   5.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Oct 2019
+   6.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jul 2019
    7.  Alexey Vasilyev (@vasilevalex)      Nov 2018 - May 2019
    8.  Callum Guy (@spacetourist)          Jun 2018 - Jun 2018
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -1521,9 +1521,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Dan Pascu (@danpascu), Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Callum Guy
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Dan Pascu
+   (@danpascu), Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Callum Guy
    (@spacetourist), Peter Lemenkov (@lemenkov), Eseanu Marius
    Cristian (@eseanucristian).
 

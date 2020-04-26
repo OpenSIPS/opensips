@@ -22,6 +22,7 @@ rest_client Module
               1.4.6. ssl_verifyhost (integer)
               1.4.7. ssl_capath (integer)
               1.4.8. curl_http_version (integer)
+              1.4.9. enable_expect_100 (boolean)
 
         1.5. Exported Functions
 
@@ -82,16 +83,17 @@ rest_client Module
    1.6. Setting the ssl_verifyhost parameter
    1.7. Setting the ssl_capath parameter
    1.8. Setting the curl_http_version parameter
-   1.9. rest_get usage
-   1.10. rest_post usage
-   1.11. rest_put usage
-   1.12. rest_append_hf usage
-   1.13. rest_init_client_tls usage
-   1.14. async rest_get usage
-   1.15. async rest_post usage
-   1.16. async rest_put usage
-   1.17. rest.escape usage
-   1.18. rest.unescape usage
+   1.9. Setting the enable_expect_100 parameter
+   1.10. rest_get usage
+   1.11. rest_post usage
+   1.12. rest_put usage
+   1.13. rest_append_hf usage
+   1.14. rest_init_client_tls usage
+   1.15. async rest_get usage
+   1.16. async rest_post usage
+   1.17. async rest_put usage
+   1.18. rest.escape usage
+   1.19. rest.unescape usage
 
 Chapter 1. Admin Guide
 
@@ -245,6 +247,21 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 modparam("rest_client", "curl_http_version", 3)
 ...
 
+1.4.9. enable_expect_100 (boolean)
+
+   Include a "Expect: 100-continue" HTTP header field whenever the
+   body size of a POST or PUT request exceeds 1024 bytes. Once
+   enabled, the timeout for waiting for a "100 Continue" reply
+   from the server is 1 second, after which the body upload will
+   begin.
+
+   Default value is “false” (disabled).
+
+   Example 1.9. Setting the enable_expect_100 parameter
+...
+modparam("rest_client", "enable_expect_100", true)
+...
+
 1.5. Exported Functions
 
 1.5.1.  rest_get(url, body_pv, [ctype_pv], [retcode_pv])
@@ -278,7 +295,7 @@ modparam("rest_client", "curl_http_version", 3)
 
    This function can be used from any route.
 
-   Example 1.9. rest_get usage
+   Example 1.10. rest_get usage
 ...
 # Example of querying a REST service to get the credit of an account
 $var(rc) = rest_get("https://getcredit.org/?account=$fU",
@@ -338,7 +355,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.10. rest_post usage
+   Example 1.11. rest_post usage
 ...
 # Creating a resource using a RESTful service with an HTTP POST request
 $var(rc) = rest_post("https://myserver.org/register_user",
@@ -397,7 +414,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.11. rest_put usage
+   Example 1.12. rest_put usage
 ...
 # Creating/Updating a resource using a RESTful service with an HTTP PUT
 request
@@ -431,7 +448,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.12. rest_append_hf usage
+   Example 1.13. rest_append_hf usage
 ...
 # Example of querying a REST service requiring additional headers
 
@@ -453,7 +470,7 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 
    This function can be used from any route.
 
-   Example 1.13. rest_init_client_tls usage
+   Example 1.14. rest_init_client_tls usage
 ...
 rest_init_client_tls("dom1");
 if (!rest_get("https://example.com"))
@@ -470,7 +487,7 @@ if (!rest_get("https://example.com"))
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.14. async rest_get usage
+   Example 1.15. async rest_get usage
 route {
         ...
         async(rest_get("http://getcredit.org/?account=$fU",
@@ -505,7 +522,7 @@ $fU\n");
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.15. async rest_post usage
+   Example 1.16. async rest_post usage
 route {
         ...
         async(rest_post("http://myserver.org/register_user",
@@ -540,7 +557,7 @@ route [resume] {
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.16. async rest_put usage
+   Example 1.17. async rest_put usage
 route {
         ...
         async(rest_put("http://myserver.org/users/$fU", $var(userinfo),
@@ -583,7 +600,7 @@ route [resume] {
 
    There are no parameters for this transformation.
 
-   Example 1.17. rest.escape usage
+   Example 1.18. rest.escape usage
 ...
 # This example would produce log entry: "Output: call%40example.com%26sa
 fe%3Dfalse"
@@ -602,7 +619,7 @@ $var(rc) = rest_get("https://call-info.org/?id=$(ci{rest.escape})", $var
 
    There are no parameters for this transformation.
 
-   Example 1.18. rest.unescape usage
+   Example 1.19. rest.unescape usage
 ...
 # This example would produce log entry: "Output: 1+1=2!"
 $var(tmp) = "1%2B1%3D2%21";
@@ -621,7 +638,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 120 66 3412 1581
+   1. Liviu Chircu (@liviuchircu) 122 67 3458 1585
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Razvan Crainea (@razvancrainea) 15 13 41 17
    4. Vlad Patrascu (@rvlad-patrascu) 14 5 279 341
@@ -654,7 +671,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2020
    2.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
    3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019

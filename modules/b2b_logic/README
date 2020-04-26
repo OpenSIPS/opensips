@@ -119,6 +119,10 @@ Chapter 1. Admin Guide
        connect two end points in a session(Third Party Call
        Control).
 
+   High Availability for B2B sessions can be achieved by enabling
+   the clustering support offered by the the lower b2b_entities
+   module (by setting the cluster_id modparam from b2b_entities).
+
 1.2. Dependencies
 
 1.2.1. OpenSIPS Modules
@@ -678,7 +682,7 @@ Chapter 3. Contributors
    2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 39 33 218 238
    4. Razvan Crainea (@razvancrainea) 37 27 618 196
-   5. Vlad Patrascu (@rvlad-patrascu) 32 13 1145 526
+   5. Vlad Patrascu (@rvlad-patrascu) 33 14 1151 526
    6. Liviu Chircu (@liviuchircu) 14 11 52 99
    7. Nick Altmann (@nikbyte) 14 6 461 199
    8. Vlad Paiu (@vladpaiu) 7 5 35 21
@@ -708,8 +712,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2020
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2020
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Apr 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Mar 2020
    4.  Zero King                           Mar 2020 - Mar 2020
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020

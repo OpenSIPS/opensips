@@ -502,13 +502,14 @@ tocol
 // matches the wildcard pattern field in the database table and stores t
 he
 // context information in $avp(ctx)
-if (check_address( 4, "192.168.2.135", 5700, "$proto", $avp(ctx), "textt
-est")) {
+if (check_address( 4, "192.168.2.135", 5700, "$socket_in(proto)", $avp(c
+tx), "texttest")) {
         t_relay();
         xlog("$avp(ctx)\n");
 }
 
-if (check_address( 4, "192.168.2.135", 5700, "$proto", , , "my_part")) {
+if (check_address( 4, "192.168.2.135", 5700, "$socket_in(proto)", , , "m
+y_part")) {
         t_relay();
         xlog("$avp(ctx)\n");
 }
@@ -516,7 +517,7 @@ if (check_address( 4, "192.168.2.135", 5700, "$proto", , , "my_part")) {
 
 // Checks if the tuple IP address/port/protocol of the source message is
  in group 4
-if (check_address( 4, "$si", "$sp", "$proto")) {
+if (check_address( 4, "$si", "$sp", "$socket_in(proto)")) {
         t_relay();
 }
 
@@ -543,7 +544,7 @@ tocol
 hes
 // the wildcard pattern field in the database table, without storing any
 // context information
-if (check_address( 4,$si, 5700, $proto, ,"texttest")) {
+if (check_address( 4,$si, 5700, $socket_in(proto), ,"texttest")) {
         t_relay();
 }
 
@@ -553,8 +554,8 @@ if (check_address( 4,$si, 5700, $proto, ,"texttest")) {
 1.4.2.  check_source_address(group_id , [context_info], [pattern],
 [partition])
 
-   Equivalent to check_address(group_id, "$si", "$sp", "$proto",
-   context_info, pattern, partition).
+   Equivalent to check_address(group_id, "$si", "$sp",
+   "$socket_in(proto)", context_info, pattern, partition).
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    LOCAL_ROUTE, BRANCH_ROUTE, STARTUP_ROUTE, TIMER_ROUTE,
@@ -746,7 +747,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 117 73 1048 2100
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 118 74 1053 2105
    2. Juha Heinanen (@juha-h) 61 21 3406 729
    3. Jan Janak (@janakj) 56 21 2871 621
    4. Irina-Maria Stanescu 51 9 1218 1908
@@ -785,12 +786,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
-   3.  Razvan Crainea (@razvancrainea)     Jan 2011 - Sep 2019
-   4.  Dan Pascu (@danpascu)               Nov 2006 - May 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2020
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
+   4.  Razvan Crainea (@razvancrainea)     Jan 2011 - Sep 2019
+   5.  Dan Pascu (@danpascu)               Nov 2006 - May 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    7.  wuhanck                             Apr 2018 - Apr 2018
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Dusan Klinec                        Dec 2015 - Dec 2015
@@ -812,8 +813,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Peter
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter
    Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Razvan
    Crainea (@razvancrainea), Irina-Maria Stanescu, Henning
    Westerholt (@henningw), Juha Heinanen (@juha-h),

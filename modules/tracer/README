@@ -432,10 +432,10 @@ Chapter 2. Contributors
    10. Alexandr Dubovikov (@adubovikov) 7 1 500 4
 
    All remaining contributors: Dan Pascu (@danpascu), Dusan
-   Klinec, Andreas Heise, Sergio Gutierrez, Ovidiu Sas
+   Klinec, Zero King, Andreas Heise, Sergio Gutierrez, Ovidiu Sas
    (@ovidiusas), Walter Doekes (@wdoekes), Konstantin Bokarius,
-   Iouri Kharon, Peter Lemenkov (@lemenkov), Zero King, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (@etamme).
+   Iouri Kharon, Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert, Elena-Ramona Modroiu, Eric Tamme (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

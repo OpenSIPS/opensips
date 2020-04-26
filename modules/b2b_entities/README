@@ -22,7 +22,7 @@ B2B_ENTITIES
               1.3.7. b2b_key_prefix (string)
               1.3.8. db_mode (int)
               1.3.9. db_table (str)
-              1.3.10. replication_mode (int)
+              1.3.10. cluster_id (int)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
@@ -67,7 +67,7 @@ B2B_ENTITIES
    1.7. Set b2b_key_prefix parameter
    1.8. Set db_mode parameter
    1.9. Set db_table parameter
-   1.10. Set replication_mode parameter
+   1.10. Set cluster_id parameter
    2.1. b2b_api_t structure
 
 Chapter 1. Admin Guide
@@ -228,18 +228,19 @@ modparam("b2b_entities", "db_mode", 1)
 modparam("b2b_entities", "db_table", "some table name")
 ...
 
-1.3.10. replication_mode (int)
+1.3.10. cluster_id (int)
 
-   Controls if the callid should be the same in more instances
-   running at the same time. 0 will lead to generating of
-   different callid's per instance 1 will lead to generating of
-   the same callid's in more instances
+   The ID of the cluster this instance belongs to. Setting this
+   parameter enables clustering support for the OpenSIPS B2BUA by
+   replicating the B2B entities (B2B dialogs) between instances.
+   This also ensures restart persistency through the clusterer
+   module's data "sync" mechanism.
 
-   Default value is “0”
+   Default value is “0” (clustering disabled)
 
-   Example 1.10. Set replication_mode parameter
+   Example 1.10. Set cluster_id parameter
 ...
-modparam("b2b_entities", "replication_mode", 1)
+modparam("b2b_entities", "cluster_id", 10)
 ...
 
 1.4. Exported Functions
@@ -445,8 +446,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 181 94 6839 1860
-   2. Ovidiu Sas (@ovidiusas) 51 39 853 291
-   3. Vlad Patrascu (@rvlad-patrascu) 49 23 1898 588
+   2. Vlad Patrascu (@rvlad-patrascu) 52 25 1920 615
+   3. Ovidiu Sas (@ovidiusas) 51 39 853 291
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 45 39 313 123
    5. Razvan Crainea (@razvancrainea) 31 27 126 75
    6. Liviu Chircu (@liviuchircu) 14 11 79 121
@@ -501,8 +502,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
    (@vladpaiu), Ovidiu Sas (@ovidiusas), Anca Vamanu.
 
