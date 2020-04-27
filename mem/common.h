@@ -25,7 +25,7 @@
 #define mem_common_h
 
 #define oom_errorf \
-	"not enough free %s memory (%lu bytes left, need %lu), " \
+	"not enough free %s memory (%ld bytes left, need %lu), " \
 	"please increase the \"-%s\" command line parameter!\n"
 
 #define oom_nostats_errorf \

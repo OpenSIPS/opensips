@@ -237,6 +237,8 @@ int init_stats_collector(void)
 		goto error;
 	}
 
+	stats_ready = 1;
+
 #ifdef NO_ATOMIC_OPS
 	/* init BIG (really BIG) lock */
 	stat_lock = lock_alloc();
@@ -279,7 +281,6 @@ int init_stats_collector(void)
 	/* mark it as dynamic, so it will require locking */
 	dy_mod->is_dyn = 1 ;
 
-	stats_ready = 1;
 	LM_DBG("statistics manager successfully initialized\n");
 
 	return 0;
@@ -417,7 +418,7 @@ do_register:
 	smodule.len = strlen(module);
 	mods = get_stat_module(&smodule);
 	if (mods==0) {
-		mods = __add_stat_module(module, 1);
+		mods = __add_stat_module(module, unsafe);
 		if (mods==0) {
 			LM_ERR("failed to add new module\n");
 			goto error2;

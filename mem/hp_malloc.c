@@ -76,12 +76,15 @@ stat_var *shm_frags;
 
 #define MEM_FRAG_AVOIDANCE
 
-#define HP_MALLOC_LARGE_LIMIT    HP_MALLOC_OPTIMIZE
-#define HP_MALLOC_DEFRAG_LIMIT (HP_MALLOC_LARGE_LIMIT * 5)
-#define HP_MALLOC_DEFRAG_PERCENT 5
+#define can_split_frag(frag, wanted_size, min_size) \
+       ((frag)->size - wanted_size >= min_size)
 
-#define can_split_frag(frag, wanted_size) \
-	((frag)->size - wanted_size > (FRAG_OVERHEAD + MIN_FRAG_SIZE))
+#define can_split_pkg_frag(frag, wanted_size) \
+       can_split_frag(frag, wanted_size, MIN_PKG_SPLIT_SIZE)
+#define can_split_shm_frag(frag, wanted_size) \
+       can_split_frag(frag, wanted_size, MIN_SHM_SPLIT_SIZE)
+#define can_split_rpm_frag can_split_shm_frag
+
 
 /*
  * the *_split functions try to split a fragment in an attempt
@@ -90,7 +93,7 @@ stat_var *shm_frags;
 #ifdef DBG_MALLOC
 #define pkg_frag_split(blk, frag, sz, fl, fnc, ln) \
 	do { \
-		if (can_split_frag(frag, sz)) { \
+		if (can_split_pkg_frag(frag, sz)) { \
 			__pkg_frag_split(blk, frag, sz, fl, fnc, ln); \
 			update_stats_pkg_frag_split(blk); \
 		} \
@@ -98,7 +101,7 @@ stat_var *shm_frags;
 #else
 #define pkg_frag_split(blk, frag, sz) \
 	do { \
-		if (can_split_frag(frag, sz)) { \
+		if (can_split_pkg_frag(frag, sz)) { \
 			__pkg_frag_split(blk, frag, sz); \
 			update_stats_pkg_frag_split(blk); \
 		} \
@@ -108,13 +111,12 @@ stat_var *shm_frags;
 #ifdef DBG_MALLOC
 #define shm_frag_split_unsafe(blk, frag, sz, fl, fnc, ln) \
 	do { \
-		if (can_split_frag(frag, sz)) { \
+		if (can_split_shm_frag(frag, sz)) { \
 			__shm_frag_split_unsafe(blk, frag, sz, fl, fnc, ln); \
 			if (stats_are_ready()) { \
 				update_stats_shm_frag_split(); \
 			} else { \
 				(blk)->used -= FRAG_OVERHEAD; \
-				(blk)->real_used += FRAG_OVERHEAD; \
 				(blk)->total_fragments++; \
 			} \
 		} \
@@ -122,34 +124,14 @@ stat_var *shm_frags;
 #else
 #define shm_frag_split_unsafe(blk, frag, sz) \
 	do { \
-		if (can_split_frag(frag, sz)) { \
+		if (can_split_shm_frag(frag, sz)) { \
 			__shm_frag_split_unsafe(blk, frag, sz); \
 			if (stats_are_ready()) { \
 				update_stats_shm_frag_split(); \
 			} else { \
 				(blk)->used -= FRAG_OVERHEAD; \
-				(blk)->real_used += FRAG_OVERHEAD; \
 				(blk)->total_fragments++; \
 			} \
-		} \
-	} while (0)
-#endif
-
-/* Note: the shm lock on "hash" must be acquired when this is called */
-#ifdef DBG_MALLOC
-#define shm_frag_split(blk, frag, sz, hash, fl, fnc, ln) \
-	do { \
-		if (can_split_frag(frag, sz)) { \
-			__shm_frag_split(blk, frag, sz, hash, fl, fnc, ln); \
-			update_stats_shm_frag_split(); \
-		} \
-	} while (0)
-#else
-#define shm_frag_split(blk, frag, sz, hash) \
-	do { \
-		if (can_split_frag(frag, sz)) { \
-			__shm_frag_split(blk, frag, sz, hash); \
-			update_stats_shm_frag_split(); \
 		} \
 	} while (0)
 #endif
@@ -170,6 +152,39 @@ inline static unsigned long big_hash_idx(unsigned long s)
 
 	return idx;
 }
+
+
+static inline void hp_lock(struct hp_block *hpb, unsigned int hash)
+{
+	int i;
+
+	if (!hpb->free_hash[hash].is_optimized) {
+		SHM_LOCK(hash);
+		return;
+	}
+
+	/* for optimized buckets, we have to lock the entire array */
+	hash = HP_HASH_SIZE + hash * shm_secondary_hash_size;
+	for (i = 0; i < shm_secondary_hash_size; i++)
+		SHM_LOCK(hash + i);
+}
+
+
+static inline void hp_unlock(struct hp_block *hpb, unsigned int hash)
+{
+	int i;
+
+	if (!hpb->free_hash[hash].is_optimized) {
+		SHM_UNLOCK(hash);
+		return;
+	}
+
+	/* for optimized buckets, we have to unlock the entire array */
+	hash = HP_HASH_SIZE + hash * shm_secondary_hash_size;
+	for (i = 0; i < shm_secondary_hash_size; i++)
+		SHM_UNLOCK(hash + i);
+}
+
 
 unsigned long frag_size(void* p){
 	if(!p)
@@ -210,16 +225,16 @@ static inline void hp_frag_attach(struct hp_block *hpb, struct hp_frag *frag)
 
 	if (frag->size > HP_MALLOC_OPTIMIZE){ /* because of '<=' in GET_HASH,
 											 purpose --andrei ) */
-		for(; *f; f=&((*f)->u.nxt_free)){
+		for(; *f; f=&((*f)->nxt_free)){
 			if (frag->size <= (*f)->size) break;
 		}
 	}
 
 	/*insert it here*/
 	frag->prev = f;
-	frag->u.nxt_free=*f;
+	frag->nxt_free=*f;
 	if (*f)
-		(*f)->prev = &(frag->u.nxt_free);
+		(*f)->prev = &(frag->nxt_free);
 
 	/* mark fragment as "free" */
 #if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
@@ -240,10 +255,10 @@ static inline void hp_frag_detach(struct hp_block *hpb, struct hp_frag *frag)
 	pf = frag->prev;
 
 	/* detach */
-	*pf = frag->u.nxt_free;
+	*pf = frag->nxt_free;
 
-	if (frag->u.nxt_free)
-		frag->u.nxt_free->prev = pf;
+	if (frag->nxt_free)
+		frag->nxt_free->prev = pf;
 
 	frag->prev = NULL;
 
@@ -324,14 +339,6 @@ void __shm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
 	n->line=line;
 #endif
 
-#if defined(DBG_MALLOC) || defined(STATISTICS)
-	if (stats_are_ready()) {
-		hpb->used -= FRAG_OVERHEAD;
-		hpb->real_used += FRAG_OVERHEAD;
-		hpb->total_fragments++;
-	}
-#endif
-
 #ifdef HP_MALLOC_FAST_STATS
 	hpb->free_hash[PEEK_HASH_RR(hpb, n->size)].total_no++;
 #endif
@@ -340,10 +347,6 @@ void __shm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
 
 	if (stats_are_ready()) {
 		update_stats_shm_frag_attach(n);
-#if defined(DBG_MALLOC) || defined(STATISTICS)
-		hpb->used -= n->size;
-		hpb->real_used -= n->size + FRAG_OVERHEAD;
-#endif
 	} else {
 		hpb->used -= n->size;
 		hpb->real_used -= n->size + FRAG_OVERHEAD;
@@ -352,14 +355,15 @@ void __shm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
 
  /* size should already be rounded-up */
 #ifdef DBG_MALLOC
-void __shm_frag_split(struct hp_block *hpb, struct hp_frag *frag, unsigned long size,
+void shm_frag_split(struct hp_block *hpb, struct hp_frag *frag, unsigned long size,
 			unsigned int old_hash, const char* file, const char* func, unsigned int line)
 #else
-void __shm_frag_split(struct hp_block *hpb, struct hp_frag *frag,
+void shm_frag_split(struct hp_block *hpb, struct hp_frag *frag,
 					 unsigned long size, unsigned int old_hash)
 #endif
 {
-	unsigned long rest, hash;
+	unsigned long rest;
+	unsigned int hash;
 	struct hp_frag *n;
 
 #ifdef HP_MALLOC_FAST_STATS
@@ -381,32 +385,21 @@ void __shm_frag_split(struct hp_block *hpb, struct hp_frag *frag,
 	n->line=line;
 #endif
 
-#if defined(DBG_MALLOC) || defined(STATISTICS)
-	hpb->used -= FRAG_OVERHEAD;
-	hpb->real_used += FRAG_OVERHEAD;
-	hpb->total_fragments++;
-#endif
-
-	/* insert the newly obtained hp_frag in its free list */
 	hash = PEEK_HASH_RR(hpb, n->size);
 
 	if (hash != old_hash)
 		SHM_LOCK(hash);
 
 	hp_frag_attach(hpb, n);
-	update_stats_shm_frag_attach(n);
-
-#if defined(DBG_MALLOC) || defined(STATISTICS)
-	hpb->used -= n->size;
-	hpb->real_used -= n->size + FRAG_OVERHEAD;
-#endif
-
-#ifdef HP_MALLOC_FAST_STATS
-	hpb->free_hash[hash].total_no++;
-#endif
 
 	if (hash != old_hash)
 		SHM_UNLOCK(hash);
+
+	update_stats_shm_frag_attach(n);
+
+#ifdef HP_MALLOC_FAST_STATS
+	hpb->free_hash[PEEK_HASH_RR(hpb, n->size)].total_no++;
+#endif
 }
 
 /**
@@ -588,11 +581,7 @@ int hp_mem_warming(struct hp_block *hpb)
 		while (bucket_mem >= FRAG_OVERHEAD + current_frag_size) {
 			hp_frag_detach(hpb, big_frag);
 			if (stats_are_ready()) {
-				update_stats_shm_frag_detach(big_frag);
-				#if defined(DBG_MALLOC) || defined(STATISTICS)
-				hpb->used += big_frag->size;
-				hpb->real_used += big_frag->size + FRAG_OVERHEAD;
-				#endif
+				update_stats_shm_frag_detach(big_frag->size);
 			} else {
 				hpb->used += big_frag->size;
 				hpb->real_used += big_frag->size + FRAG_OVERHEAD;
@@ -674,7 +663,7 @@ static struct hp_block *hp_malloc_init(char *address, unsigned long size,
 
 	size = ROUNDDOWN(size);
 
-	init_overhead = (ROUNDUP(sizeof(struct hp_block)) + 2 * FRAG_OVERHEAD);
+	init_overhead = ROUNDUP(sizeof(struct hp_block)) + 2 * FRAG_OVERHEAD;
 
 	if (size < init_overhead)
 	{
@@ -693,24 +682,19 @@ static struct hp_block *hp_malloc_init(char *address, unsigned long size,
 	hpb->used = 0;
 	hpb->real_used = init_overhead;
 	hpb->max_real_used = init_overhead;
+	hpb->total_fragments = 2;
 	gettimeofday(&hpb->last_updated, NULL);
 
 	hpb->first_frag = (struct hp_frag *)(start + ROUNDUP(sizeof(struct hp_block)));
-	hpb->last_frag = (struct hp_frag *)(end - sizeof(struct hp_frag));
-	/* init initial fragment*/
-	hpb->first_frag->size = size - init_overhead;
+	hpb->last_frag =  (struct hp_frag *)(end - sizeof *hpb->last_frag);
 	hpb->last_frag->size = 0;
 
-	hpb->last_frag->prev  = NULL;
+	/* init initial fragment */
+	hpb->first_frag->size = size - init_overhead;
 	hpb->first_frag->prev = NULL;
+	hpb->last_frag->prev  = NULL;
 
-	/* link initial fragment into the free list*/
-
-	hpb->large_space = 0;
-	hpb->large_limit = hpb->size / 100 * HP_MALLOC_DEFRAG_PERCENT;
-
-	if (hpb->large_limit < HP_MALLOC_DEFRAG_LIMIT)
-		hpb->large_limit = HP_MALLOC_DEFRAG_LIMIT;
+	hp_frag_attach(hpb, hpb->first_frag);
 
 	return hpb;
 }
@@ -725,14 +709,6 @@ struct hp_block *hp_pkg_malloc_init(char *address, unsigned long size,
 		LM_ERR("failed to initialize shm block\n");
 		return NULL;
 	}
-
-	hp_frag_attach(hpb, hpb->first_frag);
-
-	/* first fragment attach is the equivalent of a split  */
-#if defined(DBG_MALLOC) && !defined(STATISTICS)
-	hpb->real_used += FRAG_OVERHEAD;
-	hpb->total_fragments++;
-#endif
 
 	return hpb;
 }
@@ -751,23 +727,6 @@ struct hp_block *hp_shm_malloc_init(char *address, unsigned long size,
 #ifdef HP_MALLOC_FAST_STATS
 	hpb->free_hash[PEEK_HASH_RR(hpb, hpb->first_frag->size)].total_no++;
 #endif
-
-	hp_frag_attach(hpb, hpb->first_frag);
-
-	/* first fragment attach is the equivalent of a split  */
-	if (stats_are_ready()) {
-#if defined(STATISTICS) && !defined(HP_MALLOC_FAST_STATS)
-		update_stat(shm_rused, FRAG_OVERHEAD);
-		update_stat(shm_frags, 1);
-#endif
-#if defined(DBG_MALLOC) || defined(STATISTICS)
-		hpb->real_used += FRAG_OVERHEAD;
-		hpb->total_fragments++;
-#endif
-	} else {
-		hpb->real_used += FRAG_OVERHEAD;
-		hpb->total_fragments++;
-	}
 
 #ifdef DBG_MALLOC
 	hp_stats_lock = hp_shm_malloc_unsafe(hpb, sizeof *hp_stats_lock,
@@ -805,7 +764,7 @@ void *hp_pkg_malloc(struct hp_block *hpb, unsigned long size)
 	for (hash = GET_HASH(size); hash < HP_HASH_SIZE; hash++) {
 		frag = hpb->free_hash[hash].first;
 
-		for (; frag; frag = frag->u.nxt_free)
+		for (; frag; frag = frag->nxt_free)
 			if (frag->size >= size)
 				goto found;
 
@@ -874,46 +833,40 @@ void *hp_shm_malloc_unsafe(struct hp_block *hpb, unsigned long size)
 	size = ROUNDUP(size);
 
 	/*search for a suitable free frag*/
+	hash = init_hash = GET_HASH(size);
 
-	for (hash = GET_HASH(size), init_hash = hash; hash < HP_HASH_SIZE; hash++) {
-		if (!hpb->free_hash[hash].is_optimized) {
-			frag = hpb->free_hash[hash].first;
-
-			for (; frag; frag = frag->u.nxt_free)
+	if (!hpb->free_hash[hash].is_optimized) {
+		for (; hash < HP_HASH_SIZE; hash++)
+			for (frag = hpb->free_hash[hash].first; frag; frag = frag->nxt_free)
 				if (frag->size >= size)
 					goto found;
 
-		} else {
-			/* optimized size. search through its own hash! */
-			for (i = 0, sec_hash = HP_HASH_SIZE +
-			                       hash * shm_secondary_hash_size +
-				                   optimized_get_indexes[hash];
-				 i < shm_secondary_hash_size;
-				 i++, sec_hash = (sec_hash + 1) % shm_secondary_hash_size) {
+	} else {
+		/* optimized size. search through its own hash! */
+		for (i = 0, sec_hash = HP_HASH_SIZE +
+		                       hash * shm_secondary_hash_size +
+			                   optimized_get_indexes[hash];
+			 i < shm_secondary_hash_size;
+			 i++, sec_hash = (sec_hash + 1) % shm_secondary_hash_size) {
 
-				frag = hpb->free_hash[sec_hash].first;
-				for (; frag; frag = frag->u.nxt_free)
-					if (frag->size >= size) {
-						/* free fragments are detached in a simple round-robin manner */
-						optimized_get_indexes[hash] =
-						    (optimized_get_indexes[hash] + i + 1)
-						     % shm_secondary_hash_size;
-						hash = sec_hash;
-						goto found;
-					}
+			frag = hpb->free_hash[sec_hash].first;
+			if (frag) {
+				/* free fragments are detached in a simple round-robin manner */
+				optimized_get_indexes[hash] =
+				    (optimized_get_indexes[hash] + i + 1)
+				     % shm_secondary_hash_size;
+				goto found;
 			}
 		}
-
-		/* try in a bigger bucket */
 	}
 
 	/* out of memory... we have to shut down */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used, size,
-			hpb->name[0] == 'p' ? "M" : "m");
+	LM_ERR(oom_errorf, hpb->name,
+	       shm_rused ? (hpb->size - get_stat_val(shm_rused)) : -1, size,
+	       hpb->name[0] == 'p' ? "M":"m");
 #else
-	LM_ERR(oom_nostats_errorf, hpb->name, size,
-	       hpb->name[0] == 'p' ? "M" : "m");
+	LM_ERR(oom_nostats_errorf, hpb->name, size, hpb->name[0] == 'p' ? "M":"m");
 #endif
 	return NULL;
 
@@ -921,7 +874,7 @@ found:
 	hp_frag_detach(hpb, frag);
 
 	if (stats_are_ready()) {
-		update_stats_shm_frag_detach(frag);
+		update_stats_shm_frag_detach(frag->size);
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 		hpb->used += frag->size;
 		hpb->real_used += frag->size + FRAG_OVERHEAD;
@@ -953,9 +906,9 @@ found:
 		real_used = get_stat_val(shm_rused);
 		if (real_used > hpb->max_real_used)
 			hpb->max_real_used = real_used;
-	} else
-		if (hpb->real_used > hpb->max_real_used)
+	} else if (hpb->real_used > hpb->max_real_used) {
 			hpb->max_real_used = hpb->real_used;
+	}
 #endif
 
 	if (mem_hash_usage)
@@ -977,53 +930,50 @@ void *hp_shm_malloc(struct hp_block *hpb, unsigned long size)
 {
 	struct hp_frag *frag;
 	unsigned int init_hash, hash, sec_hash;
+	unsigned long old_size;
 	int i;
 
 	/* size must be a multiple of ROUNDTO */
 	size = ROUNDUP(size);
 
 	/*search for a suitable free frag*/
+	hash = init_hash = GET_HASH(size);
 
-	for (hash = GET_HASH(size), init_hash = hash; hash < HP_HASH_SIZE; hash++) {
-		if (!hpb->free_hash[hash].is_optimized) {
+	if (!hpb->free_hash[hash].is_optimized) {
+		for (; hash < HP_HASH_SIZE; hash++) {
 			SHM_LOCK(hash);
-			frag = hpb->free_hash[hash].first;
-
-			for (; frag; frag = frag->u.nxt_free)
+			for (frag = hpb->free_hash[hash].first; frag; frag = frag->nxt_free)
 				if (frag->size >= size)
 					goto found;
 
 			SHM_UNLOCK(hash);
-		} else {
-			/* optimized size. search through its own hash! */
-			for (i = 0, sec_hash = HP_HASH_SIZE +
-			                       hash * shm_secondary_hash_size +
-				                   optimized_get_indexes[hash];
-				 i < shm_secondary_hash_size;
-				 i++, sec_hash = (sec_hash + 1) % shm_secondary_hash_size) {
-
-				SHM_LOCK(sec_hash);
-				frag = hpb->free_hash[sec_hash].first;
-				for (; frag; frag = frag->u.nxt_free)
-					if (frag->size >= size) {
-						/* free fragments are detached in a simple round-robin manner */
-						optimized_get_indexes[hash] =
-						    (optimized_get_indexes[hash] + i + 1)
-						     % shm_secondary_hash_size;
-						hash = sec_hash;
-						goto found;
-					}
-
-				SHM_UNLOCK(sec_hash);
-			}
 		}
+	} else {
+		/* optimized size. search through its own hash! */
+		for (i = 0, sec_hash = HP_HASH_SIZE +
+		                       hash * shm_secondary_hash_size +
+			                   optimized_get_indexes[hash];
+			 i < shm_secondary_hash_size;
+			 i++, sec_hash = (sec_hash + 1) % shm_secondary_hash_size) {
 
-		/* try in a bigger bucket */
+			SHM_LOCK(sec_hash);
+			frag = hpb->free_hash[sec_hash].first;
+			if (frag) {
+				/* free fragments are detached in a simple round-robin manner */
+				optimized_get_indexes[hash] =
+				    (optimized_get_indexes[hash] + i + 1)
+				     % shm_secondary_hash_size;
+				hash = sec_hash;
+				goto found;
+			}
+
+			SHM_UNLOCK(sec_hash);
+		}
 	}
 
 	/* out of memory... we have to shut down */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_ERR(oom_errorf, hpb->name, hpb->size - hpb->real_used, size,
+	LM_ERR(oom_errorf, hpb->name, hpb->size - get_stat_val(shm_rused), size,
 			hpb->name[0] == 'p' ? "M" : "m");
 #else
 	LM_ERR(oom_nostats_errorf, hpb->name, size,
@@ -1034,29 +984,31 @@ void *hp_shm_malloc(struct hp_block *hpb, unsigned long size)
 found:
 	hp_frag_detach(hpb, frag);
 
-	update_stats_shm_frag_detach(frag);
-
-#if defined(DBG_MALLOC) || defined(STATISTICS)
-	hpb->used += (frag)->size;
-	hpb->real_used += (frag)->size + FRAG_OVERHEAD;
-#endif
-
-#if (defined DBG_MALLOC) || (defined SHM_EXTRA_STATS)
-	/* mark fragment as "busy" */
-	frag->is_free = 0;
-#endif
+	old_size = frag->size;
 
 #ifdef DBG_MALLOC
-	/* split the fragment if possible */
-	shm_frag_split(hpb, frag, size, hash, file, "fragm. from hp_malloc", line);
 	frag->file=file;
 	frag->func=func;
 	frag->line=line;
-#else
-	shm_frag_split(hpb, frag, size, hash);
 #endif
 
-	SHM_UNLOCK(hash);
+	update_stats_shm_frag_detach(old_size);
+
+	if (can_split_shm_frag(frag, size)) {
+		#if !defined INLINE_ALLOC && defined DBG_MALLOC
+		/* split the fragment if possible */
+		shm_frag_split_dbg(hpb, frag, size, hash, file, "hp_malloc frag", line);
+		#elif !defined HP_MALLOC_DYN && !defined DBG_MALLOC
+		shm_frag_split(hpb, frag, size, hash);
+		#else
+		shm_frag_split(hpb, frag, size, hash, file, "hp_malloc frag", line);
+		#endif
+		SHM_UNLOCK(hash);
+
+		update_stats_shm_frag_split();
+	} else {
+		SHM_UNLOCK(hash);
+	}
 
 #ifndef HP_MALLOC_FAST_STATS
 	unsigned long real_used;
@@ -1069,7 +1021,7 @@ found:
 	/* ignore concurrency issues, simply obtaining an estimate is enough */
 	mem_hash_usage[init_hash]++;
 
-	return (char *)frag + sizeof *frag;
+	return (void *)(frag + 1);
 }
 
 #ifdef DBG_MALLOC
@@ -1097,7 +1049,7 @@ void hp_pkg_free(struct hp_block *hpb, void *p)
 	 */
 	for (;;) {
 		next = FRAG_NEXT(f);
-		if (next >= hpb->last_frag || !next->prev)
+		if (next >= hpb->last_frag || !frag_is_free(next))
 			break;
 
 		hp_frag_detach(hpb, next);
@@ -1121,17 +1073,18 @@ void hp_pkg_free(struct hp_block *hpb, void *p)
 	}
 
 	hp_frag_attach(hpb, f);
-	update_stats_pkg_frag_attach(hpb, f);
 #ifdef DBG_MALLOC
 	f->file=file;
 	f->func=func;
 	f->line=line;
 #endif
 
-#if defined(DBG_MALLOC) && !defined(STATISTICS)
-	hpb->used -= f->size;
-	hpb->real_used -= f->size + FRAG_OVERHEAD;
-#endif
+	if (stats_are_ready()) {
+		update_stats_shm_frag_attach(f);
+	} else {
+		hpb->used -= f->size;
+		hpb->real_used -= f->size + FRAG_OVERHEAD;
+	}
 }
 
 #ifdef DBG_MALLOC
@@ -1172,8 +1125,9 @@ void hp_shm_free(struct hp_block *hpb, void *p,
 void hp_shm_free(struct hp_block *hpb, void *p)
 #endif
 {
-	struct hp_frag *f;
+	struct hp_frag *f, *neigh;
 	unsigned int hash;
+	unsigned long neigh_size;
 
 	if (!p) {
 		LM_GEN1(memlog, "free(0) called\n");
@@ -1181,11 +1135,31 @@ void hp_shm_free(struct hp_block *hpb, void *p)
 	}
 
 	f = FRAG_OF(p);
+	check_double_free(p, f, hpb);
+
+	/* try to coalesce the next fragment */
+	neigh = FRAG_NEXT(f);
+	if (neigh < hpb->last_frag) {
+		neigh_size = neigh->size;
+		hash = GET_HASH(neigh_size);
+		hp_lock(hpb, hash);
+		if (!frag_is_free(neigh) || neigh->size != neigh_size) {
+			/* the fragment is volatile, abort mission */
+			hp_unlock(hpb, hash);
+		} else {
+			hp_frag_detach(hpb, neigh);
+			hp_unlock(hpb, hash);
+
+			update_stats_shm_frag_detach(neigh_size);
+
+			f->size += neigh_size + FRAG_OVERHEAD;
+			update_stats_shm_frag_merge();
+		}
+	}
 
 	hash = PEEK_HASH_RR(hpb, f->size);
 
 	SHM_LOCK(hash);
-	check_double_free(p, f, hpb);
 	hp_frag_attach(hpb, f);
 #ifdef DBG_MALLOC
 	f->file=file;
@@ -1239,11 +1213,8 @@ void *hp_pkg_realloc(struct hp_block *hpb, void *p, unsigned long size)
 
 	/* shrink operation */
 	if (orig_size > size) {
-		#ifdef DBG_MALLOC
-		pkg_frag_split(hpb, f, size, file, "fragm. from hp_realloc", line);
-		#else
-		pkg_frag_split(hpb, f, size);
-		#endif
+		/* preserve the fragment on a shrink, it may be needed after freeing */
+
 	/* grow operation */
 	} else if (orig_size < size) {
 		
@@ -1251,8 +1222,8 @@ void *hp_pkg_realloc(struct hp_block *hpb, void *p, unsigned long size)
 		next = FRAG_NEXT(f);
 
 		/* try to join with a large enough adjacent free fragment */
-		if (next < hpb->last_frag && next->prev &&
-		    (next->size + FRAG_OVERHEAD) >= diff) {
+		if (next < hpb->last_frag && frag_is_free(next) &&
+		       (next->size + FRAG_OVERHEAD) >= diff) {
 
 			hp_frag_detach(hpb, next);
 			update_stats_pkg_frag_detach(hpb, next);
@@ -1404,12 +1375,7 @@ void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size)
 	orig_size = f->size;
 
 	if (orig_size > size) {
-		/* shrink */
-		#ifdef DBG_MALLOC
-		shm_frag_split(hpb, f, size, hash, file, "fragm. from hp_realloc", line);
-		#else
-		shm_frag_split(hpb, f, size, hash);
-		#endif
+		/* preserve the fragment on a shrink, it may be needed after freeing */
 
 	} else if (orig_size < size) {
 		SHM_UNLOCK(hash);
@@ -1440,7 +1406,7 @@ void *hp_shm_realloc(struct hp_block *hpb, void *p, unsigned long size)
 void set_indexes(int core_index) {
 
 	struct hp_frag* f;
-	for (f=shm_block->first_frag; (char*)f<(char*)shm_block->last_frag; f=FRAG_NEXT(f))
+	for (f=shm_block->first_frag; f<shm_block->last_frag; f=FRAG_NEXT(f))
 		if (!f->is_free)
 			f->statistic_index = core_index;
 }
@@ -1519,7 +1485,7 @@ void hp_status(struct hp_block *hpb)
 				 j < shm_secondary_hash_size; j++, si++, t++) {
 
 				SHM_LOCK(si);
-				for (i=0, f=hpb->free_hash[si].first; f; f=f->u.nxt_free, i++, t++)
+				for (i=0, f=hpb->free_hash[si].first; f; f=f->nxt_free, i++, t++)
 					;
 				SHM_UNLOCK(si);
 
@@ -1530,7 +1496,7 @@ void hp_status(struct hp_block *hpb)
 
 		} else {
 			SHM_LOCK(h);
-				for (i=0, f=hpb->free_hash[h].first; f; f=f->u.nxt_free, i++, t++)
+				for (i=0, f=hpb->free_hash[h].first; f; f=f->nxt_free, i++, t++)
 					;
 			SHM_UNLOCK(h);
 
@@ -1547,8 +1513,7 @@ void hp_status(struct hp_block *hpb)
 	}
 
 	LM_GEN1(memdump, "TOTAL: %6d free fragments\n", t);
-	LM_GEN1(memdump, "TOTAL: %ld large bytes\n", hpb->large_space );
-	LM_GEN1(memdump, "TOTAL: %u overhead\n", (unsigned int)FRAG_OVERHEAD );
+	LM_GEN1(memdump, "Fragment overhead: %u\n", (unsigned int)FRAG_OVERHEAD);
 	LM_GEN1(memdump, "-----------------------------\n");
 }
 

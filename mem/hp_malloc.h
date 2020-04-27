@@ -51,15 +51,18 @@ extern stat_var *shm_frags;
 #define ROUNDTO 8UL
 #define MIN_FRAG_SIZE	ROUNDTO
 
-#define FRAG_NEXT(f) ((struct hp_frag *) \
-		((char *)(f) + sizeof(struct hp_frag) + ((struct hp_frag *)(f))->size))
-
 /* get the fragment which corresponds to a pointer */
 #define FRAG_OF(p) \
 	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
 
-#define FRAG_OVERHEAD	(sizeof(struct hp_frag))
-#define frag_is_free(_f) ((_f)->prev)
+/* only perform a split if the resulting free fragment is at least this size */
+#define MIN_SHM_SPLIT_SIZE     4096
+#define MIN_PKG_SPLIT_SIZE      256
+
+#define FRAG_NEXT(f) ((struct hp_frag *)((char *)((f) + 1) + (f)->size))
+
+
+#define frag_is_free(_f)   ((_f)->prev)
 
 #define HP_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
 #define HP_MALLOC_OPTIMIZE  (1UL << HP_MALLOC_OPTIMIZE_FACTOR)
@@ -148,11 +151,8 @@ unsigned int optimized_put_indexes[HP_HASH_SIZE];
 
 struct hp_frag {
 	unsigned long size;
-	union {
-		struct hp_frag *nxt_free;
-		long reserved;
-	} u;
 	struct hp_frag **prev;
+	struct hp_frag *nxt_free;
 #ifdef DBG_MALLOC
 	const char* file;
 	const char* func;
@@ -166,6 +166,8 @@ struct hp_frag {
 	unsigned long statistic_index;
 #endif
 };
+
+#define FRAG_OVERHEAD     sizeof(struct hp_frag)
 
 struct hp_frag_lnk {
 	/*
@@ -188,8 +190,6 @@ struct hp_block {
 	char *name; /* purpose of this memory block */
 
 	unsigned long size; /* total size */
-	unsigned long large_space;
-	unsigned long large_limit;
 
 	unsigned long used; /* alloc'ed size */
 	unsigned long real_used; /* used+malloc overhead */
