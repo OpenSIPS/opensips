@@ -381,7 +381,6 @@ int lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri)
 {
 	static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
 	static str branch_uris[MAX_BRANCHES-1];
-	struct sip_uri puri;
 	int idx = 0, nbranches = 0, tlen;
 	char *turi;
 	qvalue_t tq;
@@ -479,49 +478,13 @@ fetch_urecord:
 		}
 	}
 
-	/* awake any PN Contacts */
-	for (; cts < pn_cts; cts++) {
-		if (parse_uri((*cts)->c.s, (*cts)->c.len, &puri) != 0) {
-			LM_ERR("failed to parse Contact '%.*s'\n",
-			       (*cts)->c.len, (*cts)->c.s);
-			continue;
-		}
-
-		if (have_pn_cts == 0) {
-			rc = tmb.t_newtran(_m);
-			switch (rc) {
-			case 1:
-				break;
-
-			case E_SCRIPT:
-				LM_DBG("%.*s transaction already exists, continuing...\n",
-				       _m->REQ_METHOD_S.len, _m->REQ_METHOD_S.s);
-				break;
-
-			case 0:
-				LM_INFO("absorbing %.*s retransmission, use t_check_trans() "
-				        "earlier\n", _m->REQ_METHOD_S.len, _m->REQ_METHOD_S.s);
-				ret = 0;
-				goto done;
-
-			default:
-				LM_ERR("internal error %d while creating %.*s transaction\n",
-				       rc, _m->REQ_METHOD_S.len, _m->REQ_METHOD_S.s);
-				ret = -3;
-				goto done;
-			}
-
-			if (tmb.t_wait_for_new_branches(_m) != 1)
-				LM_ERR("failed to enable waiting for new branches\n");
-
+	if (pn_cts > cts) {
+		rc = pn_awake_pn_contacts(_m, cts, pn_cts - cts);
+		if (rc <= 0) {
+			ret = rc;
+			goto done;
+		} else if (rc == 1)
 			have_pn_cts = 1;
-		}
-
-		if (pn_trigger_pn(_m, *cts, &puri) != 0) {
-			LM_ERR("failed to trigger PN for Contact: '%.*s'\n",
-			       (*cts)->c.len, (*cts)->c.s);
-			continue;
-		}
 	}
 
 	if ((flags & REG_BRANCH_AOR_LOOKUP_FLAG) && idx < nbranches) {

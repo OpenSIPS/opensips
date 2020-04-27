@@ -314,6 +314,59 @@ static void pn_inject_branch(void)
 }
 
 
+int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz)
+{
+	ucontact_t **end;
+	struct sip_uri puri;
+	int rc, pn_sent = 0;
+
+	if (sz <= 0)
+		return 2;
+
+	rc = tmb.t_newtran(req);
+	switch (rc) {
+	case 1:
+		break;
+
+	case E_SCRIPT:
+		LM_DBG("%.*s transaction already exists, continuing...\n",
+		       req->REQ_METHOD_S.len, req->REQ_METHOD_S.s);
+		break;
+
+	case 0:
+		LM_INFO("absorbing %.*s retransmission, use t_check_trans() "
+		        "earlier\n", req->REQ_METHOD_S.len, req->REQ_METHOD_S.s);
+		return 0;
+
+	default:
+		LM_ERR("internal error %d while creating %.*s transaction\n",
+		       rc, req->REQ_METHOD_S.len, req->REQ_METHOD_S.s);
+		return -3;
+	}
+
+	if (tmb.t_wait_for_new_branches(req) != 1)
+		LM_ERR("failed to enable waiting for new branches\n");
+
+	for (end = cts + sz; cts < end; cts++) {
+		if (parse_uri((*cts)->c.s, (*cts)->c.len, &puri) != 0) {
+			LM_ERR("failed to parse Contact '%.*s'\n",
+			       (*cts)->c.len, (*cts)->c.s);
+			continue;
+		}
+
+		if (pn_trigger_pn(req, *cts, &puri) != 0) {
+			LM_ERR("failed to trigger PN for Contact: '%.*s'\n",
+			       (*cts)->c.len, (*cts)->c.s);
+			continue;
+		}
+
+		pn_sent = 1;
+	}
+
+	return pn_sent ? 1 : 2;
+}
+
+
 int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
                   const struct sip_uri *ct_uri)
 {

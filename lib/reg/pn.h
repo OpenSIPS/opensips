@@ -98,6 +98,20 @@ void pn_append_feature_caps(struct sip_msg *msg);
 
 
 /**
+ * Create the current transaction, wait for branches and generate PN events
+ * for each PN-compatible contact from the given array.
+ * @req: the current SIP request
+ * @cts: array of PN-enabled contacts
+ * @sz: array size
+ *
+ * Return:
+ *	 success: 1 if at least one PN was sent, 2 otherwise
+ *	 failure: 0 on retransmission, -3 on internal error
+ */
+int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz);
+
+
+/**
  * Trigger an asynchronous Push Notification, by use of the
  * E_UL_CONTACT_REFRESH event + all required data, and return immediately.
  *
