@@ -102,7 +102,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 
 	/* add the record in hash table */
 	dlg->db_flag = INSERTDB_FLAG;
-	return b2b_htable_insert(server_htable, dlg, hash_index, B2B_SERVER, 0, 1);
+	return b2b_htable_insert(server_htable, dlg, hash_index, 0, B2B_SERVER, 0, 1);
 error:
 	if(dlg)
 		shm_free(dlg);

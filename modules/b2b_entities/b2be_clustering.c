@@ -359,7 +359,8 @@ static inline void unpack_update_fields(bin_packet_t *packet, b2b_dlg_t *dlg)
 }
 
 int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
-	b2b_table htable, unsigned int hash_index, unsigned int local_index)
+	b2b_table htable, unsigned int hash_index, unsigned int local_index,
+	uint64_t timestamp)
 {
 	b2b_dlg_t tmp_dlg, *new_dlg = NULL;
 	unsigned int h_idx, l_idx;
@@ -368,6 +369,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 	str sock_str;
 	str b2be_key;
 	dlg_leg_t leg, *new_leg = NULL;
+	uint64_t ts;
 
 	if (!dlg) {
 		memset(&tmp_dlg, 0, sizeof(b2b_dlg_t));
@@ -389,7 +391,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 
 		LM_DBG("Received replicated entity [%.*s]\n", b2be_key.len, b2be_key.s);
 
-		if (b2b_parse_key(&b2be_key, &h_idx, &l_idx) < 0) {
+		if (b2b_parse_key(&b2be_key, &h_idx, &l_idx, &ts) < 0) {
 			LM_ERR("Wrong format for b2b key [%.*s]\n",
 				b2be_key.len, b2be_key.s);
 			return -1;
@@ -412,6 +414,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 
 		hash_index = h_idx;
 		local_index = l_idx;
+		timestamp = ts;
 		dlg = &tmp_dlg;
 		type = rcv_type;
 	}
@@ -473,7 +476,8 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 
 	lock_get(&htable[hash_index].lock);
 
-	new_key = b2b_htable_insert(htable, new_dlg, hash_index, type, 1, 1);
+	new_key = b2b_htable_insert(htable, new_dlg, hash_index, (time_t)timestamp,
+		type, 1, 1);
 	if (new_key == NULL) {
 		LM_ERR("Failed to insert new record\n");
 		goto error;
@@ -522,6 +526,7 @@ int receive_entity_update(bin_packet_t *packet)
 	int type;
 	str b2be_key;
 	b2b_table htable;
+	uint64_t timestamp;
 	int rc = 0;
 
 	memset(&tmp_dlg, 0, sizeof(b2b_dlg_t));
@@ -544,7 +549,7 @@ int receive_entity_update(bin_packet_t *packet)
 	LM_DBG("Received replicated update for entity [%.*s]\n",
 		b2be_key.len, b2be_key.s);
 
-	if (b2b_parse_key(&b2be_key, &hash_index, &local_index) < 0) {
+	if (b2b_parse_key(&b2be_key, &hash_index, &local_index, &timestamp) < 0) {
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2be_key.len, b2be_key.s);
 		return -1;
 	}
@@ -558,7 +563,7 @@ int receive_entity_update(bin_packet_t *packet)
 
 		if (packet->type == REPL_ENTITY_UPDATE)
 			return receive_entity_create(packet, &tmp_dlg, type, htable,
-				hash_index, local_index);
+				hash_index, local_index, timestamp);
 		else
 			return 0;
 	}
@@ -614,7 +619,7 @@ int receive_entity_delete(bin_packet_t *packet)
 	LM_DBG("Received replicated delete for entity [%.*s]\n",
 		b2be_key->len, b2be_key->s);
 
-	if (b2b_parse_key(b2be_key, &hash_index, &local_index) < 0) {
+	if (b2b_parse_key(b2be_key, &hash_index, &local_index, NULL) < 0) {
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2be_key->len, b2be_key->s);
 		return -1;
 	}
@@ -654,7 +659,7 @@ void b2be_recv_bin_packets(bin_packet_t *packet)
 		case REPL_ENTITY_CREATE:
 			ensure_bin_version(pkt, B2BE_BIN_VERSION);
 
-			rc = receive_entity_create(pkt, NULL, B2B_NONE, NULL, 0, 0);
+			rc = receive_entity_create(pkt, NULL, B2B_NONE, NULL, 0, 0, 0);
 			break;
 		case REPL_ENTITY_UPDATE:
 		case REPL_ENTITY_PARAM_UPDATE:
@@ -672,7 +677,7 @@ void b2be_recv_bin_packets(bin_packet_t *packet)
 			ensure_bin_version(pkt, B2BE_BIN_VERSION);
 
 			while (cl_api.sync_chunk_iter(pkt))
-				if (receive_entity_create(pkt, NULL, B2B_NONE, NULL, 0, 0) < 0) {
+				if (receive_entity_create(pkt, NULL, B2B_NONE, NULL, 0, 0, 0) < 0) {
 					LM_ERR("Failed to process sync packet\n");
 					return;
 				}

@@ -465,7 +465,7 @@ int b2b_entities_restore(void)
 			if(type == B2B_SERVER)/* extract hash and local index */
 			{
 				htable = server_htable;
-				if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index) < 0)
+				if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index, NULL) < 0)
 				{
 					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.tag[1].len, dlg.tag[1].s);
 					goto error;
@@ -477,7 +477,7 @@ int b2b_entities_restore(void)
 			{
 				htable = client_htable;
 
-				if(b2b_parse_key(&dlg.callid, &hash_index, &local_index) < 0)
+				if(b2b_parse_key(&dlg.callid, &hash_index, &local_index, NULL) < 0)
 				{
 					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.callid.len, dlg.callid.s);
 					goto error;
@@ -538,7 +538,7 @@ int b2b_entities_restore(void)
 				LM_ERR("Failed to create new dialog structure\n");
 				goto error;
 			}
-			b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index,type, 1, 0);
+			b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index, 0, type, 1, 0);
 			if(b2b_key == NULL)
 			{
 				LM_ERR("Failed to insert new record\n");
