@@ -351,7 +351,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	/* Update the stats */
 
 	lock_get(frd_seq_calls_lock);
-	if (!str_strcmp(&se->stats.last_dial, &number)) {
+	if (!str_match(&se->stats.last_dial, &number)) {
 		/* We have called the same number last time */
 		++se->stats.seq_calls;
 	} else {
