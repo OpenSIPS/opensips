@@ -67,6 +67,11 @@ int count_child_processes(void)
 	/* count the processes requested by modules */
 	proc_no += count_module_procs();
 
+#ifdef UNIT_TESTS
+#include "mem/test/test_hp_malloc.h"
+	proc_no += TEST_MALLOC_PROCS - 1;
+#endif
+
 	return proc_no;
 }
 

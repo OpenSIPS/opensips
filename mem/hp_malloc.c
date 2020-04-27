@@ -325,7 +325,7 @@ void __shm_frag_split_unsafe(struct hp_block *hpb, struct hp_frag *frag,
 #ifdef DBG_MALLOC
 	/* frag created by malloc, mark it*/
 	n->file=file;
-	n->func="frag. from hp_malloc";
+	n->func=func;
 	n->line=line;
 #endif
 
@@ -1287,13 +1287,10 @@ void *hp_shm_realloc_unsafe(struct hp_block *hpb, void *p, unsigned long size)
 	orig_size = f->size;
 
 	/* shrink operation? */
-	if (orig_size > size)
-		#ifdef DBG_MALLOC
-		shm_frag_split_unsafe(hpb, f, size, file, "fragm. from hp_realloc", line);
-		#else
-		shm_frag_split_unsafe(hpb, f, size);
-		#endif
-	else if (orig_size < size) {
+	if (orig_size > size) {
+		/* preserve the fragment on a shrink, it may be needed after freeing */
+
+	} else if (orig_size < size) {
 		#ifdef DBG_MALLOC
 		ptr = hp_shm_malloc_unsafe(hpb, size, file, func, line);
 		#else
