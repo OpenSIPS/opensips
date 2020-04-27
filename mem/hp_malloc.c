@@ -293,20 +293,10 @@ void __pkg_frag_split(struct hp_block *hpb, struct hp_frag *frag,
 	n->file=file;
 	n->func=func;
 	n->line=line;
-#ifndef STATISTICS
-	hpb->used -= FRAG_OVERHEAD;
-	hpb->real_used += FRAG_OVERHEAD;
-	hpb->total_fragments++;
-#endif
 #endif
 
 	hp_frag_attach(hpb, n);
 	update_stats_pkg_frag_attach(hpb, n);
-
-#if defined(DBG_MALLOC) && !defined(STATISTICS)
-	hpb->used -= n->size;
-	hpb->real_used -= n->size + FRAG_OVERHEAD;
-#endif
 }
 
 #ifdef DBG_MALLOC
@@ -789,10 +779,6 @@ found:
 	/* mark fragment as "busy" */
 	frag->is_free = 0;
 #endif
-#ifndef STATISTICS
-	hpb->used += frag->size;
-	hpb->real_used += frag->size + FRAG_OVERHEAD;
-#endif
 
 	/* split the fragment if possible */
 #ifdef DBG_MALLOC
@@ -1056,35 +1042,21 @@ void hp_pkg_free(struct hp_block *hpb, void *p)
 		update_stats_pkg_frag_detach(hpb, next);
 
 #ifdef DBG_MALLOC
-#ifndef STATISTICS
-		hpb->used += next->size;
-		hpb->real_used += next->size + FRAG_OVERHEAD;
-#endif
 		hpb->used += FRAG_OVERHEAD;
 #endif
 
 		f->size += next->size + FRAG_OVERHEAD;
 		update_stats_pkg_frag_merge(hpb);
-
-#if defined(DBG_MALLOC) && !defined(STATISTICS)
-		hpb->real_used -= FRAG_OVERHEAD;
-		hpb->total_fragments--;
-#endif
 	}
 
 	hp_frag_attach(hpb, f);
+	update_stats_pkg_frag_attach(hpb, f);
+
 #ifdef DBG_MALLOC
 	f->file=file;
 	f->func=func;
 	f->line=line;
 #endif
-
-	if (stats_are_ready()) {
-		update_stats_shm_frag_attach(f);
-	} else {
-		hpb->used -= f->size;
-		hpb->real_used -= f->size + FRAG_OVERHEAD;
-	}
 }
 
 #ifdef DBG_MALLOC
@@ -1229,14 +1201,11 @@ void *hp_pkg_realloc(struct hp_block *hpb, void *p, unsigned long size)
 			update_stats_pkg_frag_detach(hpb, next);
 
 			#ifdef DBG_MALLOC
-			#ifndef STATISTICS
-			hpb->used += next->size;
-			hpb->real_used += next->size + FRAG_OVERHEAD;
-			#endif
 			hpb->used += FRAG_OVERHEAD;
 			#endif
 
 			f->size += next->size + FRAG_OVERHEAD;
+			update_stats_pkg_frag_merge(hpb);
 
 			/* split the result if necessary */
 			if (f->size > size)
@@ -1512,7 +1481,7 @@ void hp_status(struct hp_block *hpb)
 		}
 	}
 
-	LM_GEN1(memdump, "TOTAL: %6d free fragments\n", t);
+	LM_GEN1(memdump, "TOTAL: %6d/%ld free fragments\n", t, hpb->total_fragments);
 	LM_GEN1(memdump, "Fragment overhead: %u\n", (unsigned int)FRAG_OVERHEAD);
 	LM_GEN1(memdump, "-----------------------------\n");
 }
