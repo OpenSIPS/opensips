@@ -208,7 +208,7 @@ int mid_reg_lookup(struct sip_msg* req, void* _t, str* flags_s, str* uri)
 
 		LM_DBG("getting ucontact from contact_id %llu\n", (unsigned long long)contact_id);
 
-		ptr = ul_api.get_ucontact_from_id((udomain_t *)_t, contact_id, &r);
+		ptr = ul.get_ucontact_from_id((udomain_t *)_t, contact_id, &r);
 		if (!ptr) {
 			LM_DBG("no record found for %.*s, ci: %.*s\n", uri->len, uri->s,
 			       req->callid->body.len, req->callid->body.s);
@@ -245,16 +245,16 @@ int mid_reg_lookup(struct sip_msg* req, void* _t, str* flags_s, str* uri)
 
 	update_act_time();
 
-	ul_api.lock_udomain((udomain_t*)_t, &aor);
-	if (ul_api.cluster_mode == CM_FEDERATION_CACHEDB
+	ul.lock_udomain((udomain_t*)_t, &aor);
+	if (ul.cluster_mode == CM_FEDERATION_CACHEDB
 	        && (flags & REG_LOOKUP_GLOBAL_FLAG))
-		res = ul_api.get_global_urecord((udomain_t*)_t, &aor, &r);
+		res = ul.get_global_urecord((udomain_t*)_t, &aor, &r);
 	else
-		res = ul_api.get_urecord((udomain_t*)_t, &aor, &r);
+		res = ul.get_urecord((udomain_t*)_t, &aor, &r);
 
 	if (res > 0) {
 		LM_DBG("'%.*s' Not found in usrloc\n", aor.len, ZSW(aor.s));
-		ul_api.unlock_udomain((udomain_t*)_t, &aor);
+		ul.unlock_udomain((udomain_t*)_t, &aor);
 		return -1;
 	}
 
@@ -266,7 +266,7 @@ search_valid_contact:
 	!(VALID_CONTACT(ptr,get_act_time()) && (ret=-2) && allowed_method(req,ptr,flags)))
 		ptr = ptr->next;
 	if (ptr==0) {
-		if (ul_api.cluster_mode == CM_FEDERATION_CACHEDB &&
+		if (ul.cluster_mode == CM_FEDERATION_CACHEDB &&
 		    (flags & REG_LOOKUP_GLOBAL_FLAG) && !remote_cts_done) {
 			ptr = r->remote_aors;
 			remote_cts_done = 1;
@@ -426,7 +426,7 @@ cts_to_branches:
 			}
 		}
 
-		if (ul_api.cluster_mode == CM_FEDERATION_CACHEDB &&
+		if (ul.cluster_mode == CM_FEDERATION_CACHEDB &&
 		    (flags & REG_LOOKUP_GLOBAL_FLAG) && !remote_cts_done) {
 			ptr = r->remote_aors;
 			remote_cts_done = 1;
@@ -439,8 +439,8 @@ cts_to_branches:
 
 
 		/* relsease old aor lock */
-		ul_api.unlock_udomain((udomain_t*)_t, &aor);
-		ul_api.release_urecord(r, 0);
+		ul.unlock_udomain((udomain_t*)_t, &aor);
+		ul.release_urecord(r, 0);
 
 		/* idx starts from -1 */
 		uri = &branch_uris[idx];
@@ -454,12 +454,12 @@ cts_to_branches:
 		/* get lock on new aor */
 		LM_DBG("getting contacts from aor [%.*s]"
 					"in branch %d\n", aor.len, aor.s, idx);
-		ul_api.lock_udomain((udomain_t*)_t, &aor);
-		if (ul_api.cluster_mode == CM_FEDERATION_CACHEDB
+		ul.lock_udomain((udomain_t*)_t, &aor);
+		if (ul.cluster_mode == CM_FEDERATION_CACHEDB
 		        && (flags & REG_LOOKUP_GLOBAL_FLAG))
-			res = ul_api.get_global_urecord((udomain_t*)_t, &aor, &r);
+			res = ul.get_global_urecord((udomain_t*)_t, &aor, &r);
 		else
-			res = ul_api.get_urecord((udomain_t*)_t, &aor, &r);
+			res = ul.get_urecord((udomain_t*)_t, &aor, &r);
 
 		if (res > 0) {
 			LM_DBG("'%.*s' Not found in usrloc\n", aor.len, ZSW(aor.s));
@@ -471,8 +471,8 @@ cts_to_branches:
 	} while (1);
 
 done:
-	ul_api.release_urecord(r, 0);
-	ul_api.unlock_udomain((udomain_t*)_t, &aor);
+	ul.release_urecord(r, 0);
+	ul.unlock_udomain((udomain_t*)_t, &aor);
 	if (flags & REG_LOOKUP_UAFILTER_FLAG) {
 		regfree(&ua_re);
 	}

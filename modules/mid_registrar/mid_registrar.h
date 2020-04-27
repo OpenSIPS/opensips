@@ -120,8 +120,8 @@ extern rw_lock_t *tm_retrans_lk;
 extern str realm_prefix;
 extern int case_sensitive;
 
-extern struct usrloc_api ul_api;
-extern struct tm_binds tm_api;
+extern struct usrloc_api ul;
+extern struct tm_binds tmb;
 extern struct sig_binds sig_api;
 
 extern int default_expires;

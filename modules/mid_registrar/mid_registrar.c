@@ -62,8 +62,8 @@ str contact_hdr = str_init("Contact: ");
 str expires_hdr = str_init("Expires: ");
 str expires_param = str_init("expires");
 
-struct usrloc_api ul_api;
-struct tm_binds tm_api;
+struct usrloc_api ul;
+struct tm_binds tmb;
 struct sig_binds sig_api;
 
 /* specifically used to mutually exclude concurrent calls of the
@@ -223,7 +223,7 @@ static int domain_fixup(void** param)
 	if (pkg_nt_str_dup(&dom_s, (str*)*param) < 0)
 		return E_OUT_OF_MEM;
 
-	if (ul_api.register_udomain(dom_s.s, &d) < 0) {
+	if (ul.register_udomain(dom_s.s, &d) < 0) {
 		LM_ERR("failed to register domain\n");
 		pkg_free(dom_s.s);
 		return E_UNSPEC;
@@ -251,17 +251,17 @@ static int mid_reg_post_script(struct sip_msg *foo, void *bar)
 
 static int mod_init(void)
 {
-	if (load_ul_api(&ul_api) < 0) {
+	if (load_ul_api(&ul) < 0) {
 		LM_ERR("failed to load user location API\n");
 		return -1;
 	}
 
-	if (!ul_api.have_mem_storage()) {
+	if (!ul.have_mem_storage()) {
 		LM_ERR("no support for external-storage usrloc!\n");
 		return -1;
 	}
 
-	if (load_tm_api(&tm_api) < 0) {
+	if (load_tm_api(&tmb) < 0) {
 		LM_ERR("failed to load user location API\n");
 		return -1;
 	}
@@ -271,7 +271,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (is_script_func_used("mid_registrar_save",5) && !ul_api.tags_in_use()) {
+	if (is_script_func_used("mid_registrar_save",5) && !ul.tags_in_use()) {
 		LM_ERR("as per your current usrloc module configuration, "
 				"mid_registrar_save() ownership tags "
 				"will be completely ignored!\n");
@@ -314,7 +314,7 @@ static int mod_init(void)
 	/*
 	 * Import use_domain parameter from usrloc
 	 */
-	reg_use_domain = ul_api.use_domain;
+	reg_use_domain = ul.use_domain;
 
 	rcv_param.len = strlen(rcv_param.s);
 
@@ -334,7 +334,7 @@ static int mod_init(void)
 	ctid_param.len = strlen(ctid_param.s);
 
 	if (reg_mode != MID_REG_MIRROR) {
-		if (ul_api.register_ulcb(
+		if (ul.register_ulcb(
 			UL_CONTACT_INSERT|UL_CONTACT_UPDATE|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE,
 			mid_reg_ct_event) < 0) {
 			LM_ERR("cannot register usrloc contact callback\n");
@@ -342,7 +342,7 @@ static int mod_init(void)
 		}
 
 		if (reg_mode == MID_REG_THROTTLE_AOR) {
-			if (ul_api.register_ulcb(UL_AOR_INSERT|UL_AOR_DELETE|UL_AOR_EXPIRE,
+			if (ul.register_ulcb(UL_AOR_INSERT|UL_AOR_DELETE|UL_AOR_EXPIRE,
 				mid_reg_aor_event) < 0) {
 				LM_ERR("cannot register usrloc AoR callback\n");
 				return -1;
@@ -374,7 +374,7 @@ static int mod_init(void)
 
 static int cfg_validate(void)
 {
-	if (is_script_func_used("mid_registrar_save", 5) && !ul_api.tags_in_use()){
+	if (is_script_func_used("mid_registrar_save", 5) && !ul.tags_in_use()){
 		LM_ERR("mid_registrar_save() with sharing tag was found, but the "
 			"module's configuration has no tag support, better restart\n");
 		return 0;

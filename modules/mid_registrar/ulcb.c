@@ -84,7 +84,7 @@ static int send_unregister(str *from, str *to, str *ruri, str *callid,
 	int ret;
 
 	/* create a tm dialog in preparation for our De-REGISTER */
-	if (tm_api.new_auto_dlg_uac(from, to, ruri, callid, NULL, &dlg)) {
+	if (tmb.new_auto_dlg_uac(from, to, ruri, callid, NULL, &dlg)) {
 		LM_ERR("failed to create new TM dlg\n");
 		return -1;
 	}
@@ -103,7 +103,7 @@ static int send_unregister(str *from, str *to, str *ruri, str *callid,
 		return -1;
 	}
 
-	ret = tm_api.t_request_within(
+	ret = tmb.t_request_within(
 		&register_method,	/* method */
 		&extra_hdrs,		/* extra headers*/
 		NULL,			/* body */
@@ -112,7 +112,7 @@ static int send_unregister(str *from, str *to, str *ruri, str *callid,
 		NULL,	/* callback param */
 		NULL);	/* function to release the parameter */
 
-	tm_api.free_dlg(dlg);
+	tmb.free_dlg(dlg);
 
 	return (ret == 1 ? 0 : ret);
 }
@@ -123,46 +123,46 @@ static int unregister_contact(ucontact_t *c)
 	str *from, *to, *ruri, *callid, *obp = NULL, *ct;
 	unsigned int last_cseq;
 
-	value = ul_api.get_ucontact_key(c, &ul_key_from);
+	value = ul.get_ucontact_key(c, &ul_key_from);
 	if (!value) {
 		LM_ERR("'from' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	from = &value->s;
 
-	value = ul_api.get_ucontact_key(c, &ul_key_to);
+	value = ul.get_ucontact_key(c, &ul_key_to);
 	if (!value) {
 		LM_ERR("'to' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	to = &value->s;
 
-	value = ul_api.get_ucontact_key(c, &ul_key_main_reg_uri);
+	value = ul.get_ucontact_key(c, &ul_key_main_reg_uri);
 	if (!value) {
 		LM_ERR("'main_reg_uri' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	ruri = &value->s;
 
-	value = ul_api.get_ucontact_key(c, &ul_key_callid);
+	value = ul.get_ucontact_key(c, &ul_key_callid);
 	if (!value) {
 		LM_ERR("'callid' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	callid = &value->s;
 
-	value = ul_api.get_ucontact_key(c, &ul_key_main_reg_next_hop);
+	value = ul.get_ucontact_key(c, &ul_key_main_reg_next_hop);
 	if (value)
 		obp = &value->s;
 
-	value = ul_api.get_ucontact_key(c, &ul_key_ct_uri);
+	value = ul.get_ucontact_key(c, &ul_key_ct_uri);
 	if (!value) {
 		LM_ERR("'ct_uri' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	ct = &value->s;
 
-	value = ul_api.get_ucontact_key(c, &ul_key_last_cseq);
+	value = ul.get_ucontact_key(c, &ul_key_last_cseq);
 	if (!value) {
 		LM_ERR("'last_cseq' key not found, skipping De-REGISTER\n");
 		return -1;
@@ -178,46 +178,46 @@ static int unregister_record(urecord_t *r)
 	str *from, *to, *ruri, *callid, *obp = NULL, *ct;
 	unsigned int last_cseq;
 
-	value = ul_api.get_urecord_key(r, &ul_key_from);
+	value = ul.get_urecord_key(r, &ul_key_from);
 	if (!value) {
 		LM_ERR("'from' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	from = &value->s;
 
-	value = ul_api.get_urecord_key(r, &ul_key_to);
+	value = ul.get_urecord_key(r, &ul_key_to);
 	if (!value) {
 		LM_ERR("'to' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	to = &value->s;
 
-	value = ul_api.get_urecord_key(r, &ul_key_main_reg_uri);
+	value = ul.get_urecord_key(r, &ul_key_main_reg_uri);
 	if (!value) {
 		LM_ERR("'main_reg_uri' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	ruri = &value->s;
 
-	value = ul_api.get_urecord_key(r, &ul_key_callid);
+	value = ul.get_urecord_key(r, &ul_key_callid);
 	if (!value) {
 		LM_ERR("'callid' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	callid = &value->s;
 
-	value = ul_api.get_urecord_key(r, &ul_key_main_reg_next_hop);
+	value = ul.get_urecord_key(r, &ul_key_main_reg_next_hop);
 	if (value)
 		obp = &value->s;
 
-	value = ul_api.get_urecord_key(r, &ul_key_ct_uri);
+	value = ul.get_urecord_key(r, &ul_key_ct_uri);
 	if (!value) {
 		LM_ERR("'ct_uri' key not found, skipping De-REGISTER\n");
 		return -1;
 	}
 	ct = &value->s;
 
-	value = ul_api.get_urecord_key(r, &ul_key_last_cseq);
+	value = ul.get_urecord_key(r, &ul_key_last_cseq);
 	if (!value) {
 		LM_ERR("'last_cseq' key not found, skipping De-REGISTER\n");
 		return -1;
@@ -236,7 +236,7 @@ void mid_reg_ct_event(void *binding, ul_cb_type type)
 
 	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
 		if (reg_mode == MID_REG_THROTTLE_CT) {
-			skip_dereg = ul_api.get_ucontact_key(c, &ul_key_skip_dereg);
+			skip_dereg = ul.get_ucontact_key(c, &ul_key_skip_dereg);
 			if (skip_dereg && skip_dereg->i == 1)
 				return;
 
@@ -255,7 +255,7 @@ void mid_reg_aor_event(void *binding, ul_cb_type type)
 	       r->aor.len, r->aor.s);
 
 	if (type & (UL_AOR_DELETE|UL_AOR_EXPIRE)) {
-		skip_dereg = ul_api.get_urecord_key(r, &ul_key_skip_dereg);
+		skip_dereg = ul.get_urecord_key(r, &ul_key_skip_dereg);
 		if (skip_dereg && skip_dereg->i == 1)
 			return;
 
