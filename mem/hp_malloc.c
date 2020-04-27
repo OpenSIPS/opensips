@@ -917,26 +917,37 @@ void *hp_shm_malloc(struct hp_block *hpb, unsigned long size)
 	struct hp_frag *frag;
 	unsigned int init_hash, hash, sec_hash;
 	unsigned long old_size;
-	int i;
+	int i = 0;
 
 	/* size must be a multiple of ROUNDTO */
 	size = ROUNDUP(size);
 
 	/*search for a suitable free frag*/
-	hash = init_hash = GET_HASH(size);
+	init_hash = GET_HASH(size);
 
-	if (!hpb->free_hash[hash].is_optimized) {
-		for (; hash < HP_HASH_SIZE; hash++) {
+	if (!hpb->free_hash[init_hash].is_optimized) {
+rescan:
+		for (hash = init_hash; hash < HP_HASH_SIZE; hash++) {
 			SHM_LOCK(hash);
 			for (frag = hpb->free_hash[hash].first; frag; frag = frag->nxt_free)
 				if (frag->size >= size)
 					goto found;
 
 			SHM_UNLOCK(hash);
+
+			/*
+			 * Given that HP_MALLOC has fine-grained locking, if the big frag
+			 * shifts down from hash bucket N to bucket N-1 due to another
+			 * process performing the allocation, we may actually "lose" it during
+			 * our own scan, since bucket N-1 was empty and we're now block-waiting
+			 * for bucket N to unlock.  So retry the scan as long as it's feasible!
+			 */
+			if (i++ < 10 && (long)hpb->size - get_stat_val(shm_rused) > 20L * size)
+				goto rescan;
 		}
 	} else {
 		/* optimized size. search through its own hash! */
-		for (i = 0, sec_hash = HP_HASH_SIZE +
+		for (hash = init_hash, sec_hash = HP_HASH_SIZE +
 		                       hash * shm_secondary_hash_size +
 			                   optimized_get_indexes[hash];
 			 i < shm_secondary_hash_size;
