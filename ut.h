@@ -891,7 +891,7 @@ static inline int pkg_str_extend(str *in, int size)
  */
 static inline int str_match(const str *a, const str *b)
 {
-    return a->len == b->len && !memcmp(a->s, b->s, a->len);
+	return a->len == b->len && !memcmp(a->s, b->s, a->len);
 }
 
 
@@ -900,7 +900,7 @@ static inline int str_match(const str *a, const str *b)
  */
 static inline int str_casematch(const str *a, const str *b)
 {
-    return a->len == b->len && !strncasecmp(a->s, b->s, a->len);
+	return a->len == b->len && !strncasecmp(a->s, b->s, a->len);
 }
 
 
