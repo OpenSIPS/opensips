@@ -1107,31 +1107,11 @@ logic_notify:
 	if(param.s)
 		pkg_free(param.s);
 
-done:
+	lock_get(&table[hash_index].lock);
 
-	if (B2BE_SERIALIZE_STORAGE()) {
-		if (etype != B2B_NONE && dlg_state == B2B_ESTABLISHED) {
-			b2b_ev = B2B_EVENT_ACK;
-			lock_get(&table[hash_index].lock);
-
-			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-				&storage, serialize_backend);
-		} else if (etype != B2B_NONE && dlg_state == B2B_TERMINATED) {
-			b2b_ev = B2B_EVENT_DELETE;
-			lock_get(&table[hash_index].lock);
-
-			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-				&storage, serialize_backend);
-		}
-	}
-
-	current_dlg = 0;
-	if(b2be_db_mode == WRITE_THROUGH && etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
+	if(etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
 	{
 		/* search the dialog */
-		if (b2b_ev == -1)
-			lock_get(&table[hash_index].lock);
-
 		for(aux_dlg = table[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
 		{
 			if(aux_dlg == dlg)
@@ -1143,11 +1123,30 @@ done:
 			lock_release(&table[hash_index].lock);
 			return SCB_DROP_MSG;
 		}
+	}
+
+	if (B2BE_SERIALIZE_STORAGE()) {
+		if (etype != B2B_NONE && dlg_state == B2B_ESTABLISHED) {
+			b2b_ev = B2B_EVENT_ACK;
+
+			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend);
+		} else if (etype != B2B_NONE && dlg_state == B2B_TERMINATED) {
+			b2b_ev = B2B_EVENT_DELETE;
+
+			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend);
+		}
+	}
+
+	current_dlg = 0;
+	if(b2be_db_mode == WRITE_THROUGH && etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
+	{
 		if(b2be_db_update(dlg, etype) < 0)
 			LM_ERR("Failed to update in database\n");
-		lock_release(&table[hash_index].lock);
-	} else if (b2b_ev != -1)
-		lock_release(&table[hash_index].lock);
+	}
+
+	lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster) {
 		if (b2b_ev == B2B_EVENT_ACK)
@@ -1159,6 +1158,8 @@ done:
 
 	if (b2b_ev != -1 && storage.buffer.s)
 		bin_free_packet(&storage);
+
+done:
 
 	return SCB_DROP_MSG;
 }
@@ -1740,7 +1741,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	LM_DBG("Deleted dlg [%p]->[%.*s] with dlginfo [%p]\n",
 			dlg, b2b_key->len, b2b_key->s, dlginfo);
 
-	if (dlg->state != B2B_TERMINATED && B2BE_SERIALIZE_STORAGE() && replicate) {
+	if (B2BE_SERIALIZE_STORAGE() && replicate) {
 		trig_ev = 1;
 		b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, B2B_EVENT_DELETE,
 			&storage, serialize_backend);
@@ -2114,7 +2115,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	if (b2be_cluster) {
 		if (b2b_ev == B2B_EVENT_ACK)
 			replicate_entity_update(dlg, et, hash_index, NULL, B2B_EVENT_ACK,
-				&storage);
+				&storage)	;
 		else if (b2b_ev == B2B_EVENT_DELETE)
 			replicate_entity_delete(dlg, et, hash_index, &storage);
 	}
