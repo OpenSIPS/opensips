@@ -68,6 +68,9 @@ int b2be_init_clustering(void)
 		return -1;
 	}
 
+	if (cl_api.request_sync(&entities_repl_cap, b2be_cluster) < 0)
+		LM_ERR("Sync request failed\n");
+
 	return 0;
 }
 
@@ -681,6 +684,7 @@ void b2be_recv_bin_packets(bin_packet_t *packet)
 					LM_ERR("Failed to process sync packet\n");
 					return;
 				}
+			rc = 0;
 			break;
 		default:
 			rc = -1;
@@ -693,10 +697,14 @@ void b2be_recv_bin_packets(bin_packet_t *packet)
 }
 
 static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
-	b2b_table htable, unsigned int hsize, int etype)
+	b2b_table htable, unsigned int hsize, int etype, bin_packet_t *storage,
+	int *free_prev)
 {
 	int i;
 	b2b_dlg_t *dlg;
+	str storage_cnt_buf;
+
+	storage->buffer.s = NULL;
 
 	for (i = 0; i < hsize; i++) {
 		lock_get(&htable[i].lock);
@@ -707,6 +715,9 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 				continue;
 			}
 
+			if (*free_prev && storage->buffer.s)
+				bin_free_packet(storage);
+
 			*sync_packet = cl_api.sync_chunk_start(&entities_repl_cap,
 				b2be_cluster, node_id, B2BE_BIN_VERSION);
 			if (!*sync_packet) {
@@ -714,7 +725,22 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 				return -1;
 			}
 
+			b2b_run_cb(dlg, i, etype, B2BCB_TRIGGER_EVENT, B2B_EVENT_CREATE,
+				storage, serialize_backend);
+
 			bin_pack_entity(*sync_packet, dlg, etype);
+
+			if (storage->buffer.s) {  /* the callback was called */
+				bin_get_content_start(storage, &storage_cnt_buf);
+				if (storage_cnt_buf.len > 0 &&  /* content has been pushed */
+					bin_append_buffer(*sync_packet, &storage_cnt_buf) < 0) {
+					LM_ERR("Failed to push the entity storage content into the packet\n");
+					lock_release(&htable[i].lock);
+					return -1;
+				}
+			}
+
+			*free_prev = 1;
 		}
 
 		lock_release(&htable[i].lock);
@@ -726,17 +752,22 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 static int receive_sync_request(int node_id)
 {
 	bin_packet_t *sync_packet = NULL;
+	int free_prev = 0;
+	bin_packet_t storage;
 
 	if (pack_entities_sync(&sync_packet, node_id, server_htable, server_hsize,
-		B2B_SERVER) < 0) {
+		B2B_SERVER, &storage, &free_prev) < 0) {
 		LM_ERR("Failed to pack sever entities for sync\n");
 		return -1;
 	}
 	if (pack_entities_sync(&sync_packet, node_id, client_htable, client_hsize,
-		B2B_CLIENT) < 0) {
+		B2B_CLIENT, &storage, &free_prev) < 0) {
 		LM_ERR("Failed to pack client entities for sync\n");
 		return -1;
 	}
+
+	if (free_prev && storage.buffer.s)
+		bin_free_packet(&storage);
 
 	return 0;
 }
