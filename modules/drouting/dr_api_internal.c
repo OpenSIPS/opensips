@@ -89,16 +89,13 @@ static dr_head_p create_dr_head(void)
 	}
 	memset( new, 0, sizeof(dr_head_t));
 
-	/* data pointer in shm */
-	new->pt = shm_malloc(sizeof (ptree_t));
-	if (new->pt == NULL) {
-		LM_ERR("no more shm memory\n");
-		shm_free(new);
-		return NULL;
-	}
-	memset(new->pt, 0, sizeof(ptree_t));
-
+	INIT_PTREE_NODE(NULL, new->pt);
 	return new;
+
+err_exit:
+	LM_ERR("oom\n");
+	shm_free(new);
+	return NULL;
 }
 
 static void del_rt_list_api(rt_info_wrp_t *rwl)
