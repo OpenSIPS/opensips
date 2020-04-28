@@ -42,10 +42,10 @@
 
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo);
 
-static void pack_tuple(b2bl_tuple_t* tuple, str *b2bl_key, bin_packet_t *storage)
+static void pack_tuple(b2bl_tuple_t* tuple, str *b2bl_key, bin_packet_t *storage,
+	int repl_new)
 {
-	/* the entire tuple info is only replicated through the first entity */
-	if (tuple->repl_flag != TUPLE_REPL_SENT) {
+	if (repl_new) {
 		bin_push_int(storage, REPL_TUPLE_NEW);
 
 		if (tuple->scenario)
@@ -61,8 +61,6 @@ static void pack_tuple(b2bl_tuple_t* tuple, str *b2bl_key, bin_packet_t *storage
 
 		bin_push_str(storage, &tuple->sdp);
 		bin_push_str(storage, tuple->extra_headers);
-
-		tuple->repl_flag = TUPLE_REPL_SENT;
 	} else
 		bin_push_int(storage, REPL_TUPLE_UPDATE);
 
@@ -71,6 +69,9 @@ static void pack_tuple(b2bl_tuple_t* tuple, str *b2bl_key, bin_packet_t *storage
 
 	bin_push_int(storage, tuple->lifetime > 0 ?
 		(tuple->lifetime - get_ticks()) : 0);
+
+	if (tuple->repl_flag != TUPLE_REPL_SENT)
+		tuple->repl_flag = TUPLE_REPL_SENT;
 }
 
 static void pack_entity(b2bl_tuple_t* tuple, enum b2b_entity_type entity_type,
@@ -117,6 +118,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 {
 	unsigned int hash_index, local_index;
 	b2bl_tuple_t* tuple;
+	int tuple_repl_new = 0;
 
 	if (!(backend & B2BCB_BACKEND_CLUSTER))
 		return;
@@ -138,6 +140,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 
 	switch (event_type) {
 	case B2B_EVENT_CREATE:
+		tuple_repl_new = 1;
 	case B2B_EVENT_UPDATE:
 		if (!tuple) {
 			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
@@ -145,7 +148,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 				lock_release(&b2bl_htable[hash_index].lock);
 			return;
 		}
-		pack_tuple(tuple, b2bl_key, storage);
+		pack_tuple(tuple, b2bl_key, storage, tuple_repl_new);
 		pack_entity(tuple, etype, entity_key, event_type, storage);
 		break;
 	case B2B_EVENT_DELETE:
@@ -154,7 +157,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 				b2bl_key->len, b2bl_key->s);
 			bin_push_int(storage, REPL_TUPLE_NO_INFO);
 		} else
-			pack_tuple(tuple, b2bl_key, storage);
+			pack_tuple(tuple, b2bl_key, storage, 0);
 		break;
 	default:
 		LM_ERR("Bad entity callback event type!\n");
