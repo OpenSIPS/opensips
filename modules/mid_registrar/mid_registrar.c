@@ -43,11 +43,7 @@
 #include "encode.h"
 #include "ulcb.h"
 
-#include "../../lib/reg/rerrno.h"
-#include "../../lib/reg/config.h"
-#include "../../lib/reg/sip_msg.h"
-#include "../../lib/reg/regtime.h"
-
+#include "../../lib/reg/common.h"
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/msg_parser.h"
@@ -288,48 +284,15 @@ static int mod_init(void)
 		ctid_insertion = MR_APPEND_PARAM;
 	}
 
-	if (min_expires > default_expires) {
-		LM_ERR("min_expires > default_expires! "
-		       "Decreasing min_expires to %d...\n", default_expires);
-		min_expires = default_expires;
+	if (reg_init_globals() != 0) {
+		LM_ERR("failed to init globals\n");
+		return -1;
 	}
-
-	if (max_expires < default_expires) {
-		LM_ERR("max_expires < default_expires! "
-		       "Increasing max_expires to %d...\n", default_expires);
-		max_expires = default_expires;
-	}
-
-	/* Normalize default_q parameter */
-	if (default_q != Q_UNSPECIFIED) {
-		if (default_q > MAX_Q) {
-			LM_DBG("default_q = %d, lowering to MAX_Q: %d\n", default_q, MAX_Q);
-			default_q = MAX_Q;
-		} else if (default_q < MIN_Q) {
-			LM_DBG("default_q = %d, raising to MIN_Q: %d\n", default_q, MIN_Q);
-			default_q = MIN_Q;
-		}
-	}
-
-	/*
-	 * Import use_domain parameter from usrloc
-	 */
-	reg_use_domain = ul.use_domain;
-
-	rcv_param.len = strlen(rcv_param.s);
 
 	if (solve_avp_defs() != 0) {
 		LM_ERR("failed to parse one or more module AVPs\n");
 		return -1;
 	}
-
-	realm_prefix.len = strlen(realm_prefix.s);
-
-	if (gruu_secret.s)
-		gruu_secret.len = strlen(gruu_secret.s);
-
-	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
-	tcp_persistent_flag = (tcp_persistent_flag != -1) ? (1 << tcp_persistent_flag) : 0;
 
 	ctid_param.len = strlen(ctid_param.s);
 

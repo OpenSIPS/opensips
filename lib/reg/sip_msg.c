@@ -24,8 +24,7 @@
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_uri.h"
 
-#include "sip_msg.h"
-#include "rerrno.h"
+#include "common.h"
 
 #define TEMP_GRUU		"tgruu."
 #define TEMP_GRUU_SIZE	(sizeof(TEMP_GRUU)-1)
@@ -35,14 +34,11 @@
 char tgruu_dec[MAX_TGRUU_SIZE];
 
 /* each variable must be exported by each registrar */
-extern str gruu_secret;
-extern str default_gruu_secret;
 extern int case_sensitive;
-extern str realm_prefix;
-extern int reg_use_domain;
 extern int max_username_len;
 extern int max_domain_len;
 extern int max_aor_len;
+
 
 /*! \brief
  * Parse the whole message and bodies of all header fields
@@ -99,12 +95,14 @@ int parse_reg_headers(struct sip_msg* _m)
 	return 0;
 }
 
+
 /*! \brief
  * Extract Address of Record
  * In case of public GRUUs, also populates sip_instance
  * In case of temp GRUUs, also populates call_id
  */
-int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id)
+int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id,
+                int use_domain)
 {
 	static char *aor_buf;
 
@@ -224,7 +222,7 @@ int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id)
 
 	user_len = _a->len;
 
-	if (reg_use_domain) {
+	if (use_domain) {
 		if (user_len)
 			aor_buf[_a->len++] = '@';
 		/* strip prefix (if defined) */

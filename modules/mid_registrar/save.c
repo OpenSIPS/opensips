@@ -2457,7 +2457,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 	if (owtag)
 		sctx.ownership_tag = *owtag;
 
-	if (extract_aor(to_uri, &sctx.aor, 0, 0) < 0) {
+	if (extract_aor(to_uri, &sctx.aor, 0, 0, reg_use_domain) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		return -1;
 	}

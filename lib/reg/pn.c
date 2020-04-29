@@ -24,12 +24,10 @@
 #include "../../usr_avp.h"
 #include "../../data_lump_rpl.h"
 
-#include "../../modules/tm/tm_load.h"
-#include "../../modules/usrloc/usrloc.h"
 #include "../../modules/usrloc/ul_evi.h"
 #include "../../modules/event_routing/api.h"
 
-#include "pn.h"
+#include "common.h"
 
 /* registrar modparams */
 int pn_enable;
@@ -54,8 +52,6 @@ static ebr_filter *pn_ebr_filters;
 			MAX_PROVIDER_LEN + INT2STR_MAX_LEN + MAX_PNSPURR_LEN + CRLF_LEN)
 
 static ebr_api_t ebr;
-extern usrloc_api_t ul;
-extern struct tm_binds tmb;
 static ebr_event *ev_ct_update;
 
 
@@ -341,7 +337,7 @@ int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz)
 	default:
 		LM_ERR("internal error %d while creating %.*s transaction\n",
 		       rc, req->REQ_METHOD_S.len, req->REQ_METHOD_S.s);
-		return -3;
+		return -1;
 	}
 
 	if (tmb.t_wait_for_new_branches(req) != 1)

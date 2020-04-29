@@ -106,7 +106,7 @@ void pn_append_feature_caps(struct sip_msg *msg);
  *
  * Return:
  *	 success: 1 if at least one PN was sent, 2 otherwise
- *	 failure: 0 on retransmission, -3 on internal error
+ *	 failure: 0 on retransmission, -1 on internal error
  */
 int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz);
 

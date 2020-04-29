@@ -2,6 +2,7 @@
  * Lookup contacts in usrloc
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,7 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 /*!
@@ -35,8 +36,10 @@
 
 /*! \brief
  * Lookup a contact in usrloc and rewrite R-URI if found
+ *
+ * Return: see lookup_rc
  */
-int lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri);
+int reg_lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri);
 
 /*! \brief the is_registered() function
  * Return 1 if the AOR is registered, -1 otherwise

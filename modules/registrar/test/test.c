@@ -71,7 +71,7 @@ void test_lookup(void)
 	ok(ul.register_udomain("location", &d) == 0, "get 'location' udomain");
 
 	mk_sip_req("INVITE", "sip:alice@localhost", &msg);
-	ok(lookup(&msg, d, _str(""), NULL) == -1, "lookup: -1 (no contacts)");
+	ok(reg_lookup(&msg, d, _str(""), NULL) == -1, "lookup: -1 (no contacts)");
 
 	ul.lock_udomain(d, &aor);
 	ok(ul.insert_urecord(d, &aor, &r, 0) == 0, "create AoR");
@@ -81,18 +81,18 @@ void test_lookup(void)
 	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert Contact");
 	ul.unlock_udomain(d, &aor);
 
-	ok(lookup(&msg, d, _str(""), NULL) == 1, "lookup-1: 1 (success)");
+	ok(reg_lookup(&msg, d, _str(""), NULL) == 1, "lookup-1: 1 (success)");
 
 	set_ruri(&msg, &aor_ruri);
-	ok(lookup(&msg, d, _str("m"), NULL) == -2, "lookup-2: -2 (bad method)");
+	ok(reg_lookup(&msg, d, _str("m"), NULL) == -2, "lookup-2: -2 (bad method)");
 
 	c->methods = ALL_METHODS;
 
 	set_ruri(&msg, &aor_ruri);
-	ok(lookup(&msg, d, _str(""), NULL) == 1, "lookup-3: 1 (success)");
+	ok(reg_lookup(&msg, d, _str(""), NULL) == 1, "lookup-3: 1 (success)");
 
 	set_ruri(&msg, &aor_ruri);
-	ok(lookup(&msg, d, _str("m"), NULL) == 1, "lookup-4: 1 (success)");
+	ok(reg_lookup(&msg, d, _str("m"), NULL) == 1, "lookup-4: 1 (success)");
 
 	ok(ul.delete_ucontact(r, c, 0) == 0, "delete ucontact");
 
@@ -100,13 +100,13 @@ void test_lookup(void)
 	ok(ul.insert_ucontact(r, &ct1, &ci, &c, 0) == 0, "insert ct1 (PN)");
 
 	set_ruri(&msg, &aor_ruri);
-	ok(lookup(&msg, d, _str(""), NULL) == 2, "lookup-5: 2 (success, PN)");
+	ok(reg_lookup(&msg, d, _str(""), NULL) == 2, "lookup-5: 2 (success, PN)");
 
 	fill_ucontact_info(&ci);
 	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert ct2 (normal)");
 
 	set_ruri(&msg, &aor_ruri);
-	ok(lookup(&msg, d, _str(""), NULL) == 1, "lookup-6: 1 (success)");
+	ok(reg_lookup(&msg, d, _str(""), NULL) == 1, "lookup-6: 1 (success)");
 
 	/* the PN contact should just trigger a PN without becoming a branch */
 	ok(str_match(&msg.new_uri, &ct2), "lookup-7: R-URI is ct2");

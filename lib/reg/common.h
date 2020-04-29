@@ -1,12 +1,5 @@
 /*
- * contact lookup
- *
- * This module is intended to be used as a middle layer SIP component in
- * environments where a large proportion of SIP UAs (e.g. mobile devices)
- * register at high enough frequencies that they actually degrade the
- * performance of their registrars.
- *
- * Copyright (C) 2016-2020 OpenSIPS Solutions
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -25,11 +18,37 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __MID_REG_LOOKUP_
-#define __MID_REG_LOOKUP_
+#ifndef __LIB_REG_COMMON_H__
+#define __LIB_REG_COMMON_H__
 
-#include "../../parser/msg_parser.h"
+#include "../../modules/tm/tm_load.h"
+#include "../../modules/usrloc/usrloc.h"
 
-int mid_reg_lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *uri);
+#include "config.h"
+#include "rerrno.h"
+#include "sip_msg.h"
+#include "ci.h"
+#include "lookup.h"
+#include "pn.h"
 
-#endif /* __MID_REG_LOOKUP_ */
+extern int reg_use_domain;
+extern int tcp_persistent_flag;
+extern char *tcp_persistent_flag_s;
+extern int default_expires;
+extern int min_expires;
+extern int max_expires;
+extern str gruu_secret;
+extern str default_gruu_secret;
+
+extern int attr_avp_name;
+
+extern str realm_prefix;
+extern str rcv_param;
+
+extern usrloc_api_t ul;
+extern struct tm_binds tmb;
+
+/* common registrar init code */
+int reg_init_globals(void);
+
+#endif /* __LIB_REG_COMMON_H__ */

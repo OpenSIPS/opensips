@@ -683,7 +683,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 	if (_owtag)
 		sctx.ownership_tag = *_owtag;
 
-	if (extract_aor(uri, &sctx.aor,0,0) < 0) {
+	if (extract_aor(uri, &sctx.aor, 0, 0, reg_use_domain) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		goto error;
 	}
@@ -925,7 +925,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 	int ret = 1;
 	unsigned short delete_port = 0;
 
-	if (extract_aor(aor_uri, &aor_user, 0, 0) < 0) {
+	if (extract_aor(aor_uri, &aor_user, 0, 0, reg_use_domain) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		return E_BAD_URI;
 	}

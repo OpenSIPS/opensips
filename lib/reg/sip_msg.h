@@ -49,7 +49,8 @@ int parse_reg_headers(struct sip_msg* _m);
 /*! \brief
  * Extract Address Of Record
  */
-int extract_aor(str* _uri, str* _a, str* sip_instance, str* call_id);
+int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id,
+                int use_domain);
 
 /*! \brief
  * Check if the originating REGISTER message was formed correctly
