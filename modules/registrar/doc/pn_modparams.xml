@@ -64,7 +64,7 @@ modparam("registrar", "pn_providers", "apns, fcm, webpush")
 			other URI parameters, etc.).
 		</para>
 		<para>
-			After calling <xref linkend="func_lookup"/>, the above PN-related
+			After a <emphasis>lookup</emphasis> operation, the above PN-related
 			parameters will be automatically stripped from the resulting
 			Request URI(s).
 		</para>
@@ -167,7 +167,7 @@ modparam("registrar", "pn_skip_pn_interval", 10)
 	<section id="param_pn_inv_timeout" xreflabel="pn_inv_timeout">
 		<title><varname>pn_inv_timeout</varname> (integer)</title>
 		<para>
-			This timeout starts counting following a <xref linkend="func_lookup"/>
+			This timeout starts counting following a <emphasis>lookup</emphasis>.
 			which triggers at least one Push Notification.  The value
 			represents the maximum allowed time for the Push Notifications and
 			their corresponding re-registrations from the awoken SIP UA to take

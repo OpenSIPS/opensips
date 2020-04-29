@@ -7,6 +7,8 @@
 <!ENTITY faq SYSTEM "registrar_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 <!ENTITY pn_modparams SYSTEM "pn_modparams.xml">
+<!ENTITY lookup_flags SYSTEM "lookup_flags.xml">
+<!ENTITY lookup_retcodes SYSTEM "lookup_retcodes.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -27,5 +29,5 @@
 
 	&docCopyrights;
 	<para>&copyright; 2003 &fhg;</para>
-	
+	<para>&copyright; 2020 &osipssolname;</para>
 </book>
