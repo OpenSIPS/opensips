@@ -4,7 +4,8 @@
 <listitem>
 	<para>
 	<emphasis>'b' (no Branches)</emphasis> - this flag controls how
-	lookup function processes multiple contacts.  If there are
+	the &reg_lookup_f; function processes multiple contacts.
+	If there are
 	multiple contacts for the given username in usrloc and this
 	flag is not set, Request-URI will be overwritten with the
 	highest-q rated contact and the rest will be appended to
@@ -20,8 +21,8 @@
 	<emphasis>'B' (to Branches only)</emphasis> - this flags forces
 	all found contacts to be uploaded only as branches (in the
 	destination set) and not at all in the R-URI of the
-	current message.  Using this option allows the lookup() function to also
-	be used in the context of a SIP reply.
+	current message.  Using this option allows the &reg_lookup_f; function to
+	also be used in the context of a SIP reply.
 	</para>
 </listitem>
 
@@ -41,7 +42,7 @@
 	<emphasis role='bold'>WARNING: </emphasis>
 	<emphasis>if you want this flag activated,
 	the 'b' (no Branches) flag must not be set, because by setting
-	that flag you won't allow lookup to write in a branch.</emphasis>
+	that flag you won't allow &reg_lookup_f; to write in a branch.</emphasis>
 	</para>
 </listitem>
 
@@ -78,7 +79,7 @@
 	<para>
 	<emphasis>'g' (Global lookup)</emphasis> - this flag
 	is only relevant with federated user location clustering. If
-	set, the lookup() function will not only perform the classic
+	set, the &reg_lookup_f; function will not only perform the classic
 	in-memory "search-AoR-and-push-branches" operation, but will
 	also perform a metadata lookup and append an additional branch
 	for each returned result. The "in-memory branches" correspond
@@ -110,7 +111,7 @@
 	<para>
 	<emphasis>'yXXXXX' (Max pinging latency)</emphasis> - maximally
 	accepted contact pinging latency (microseconds). Contacts of an
-	AoR with a higher latency will be discarded during the lookup.
+	AoR with a higher latency will be discarded during &reg_lookup_f;.
 	</para>
 </listitem>
 <listitem>

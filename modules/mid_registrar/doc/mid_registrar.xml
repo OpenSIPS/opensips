@@ -2,16 +2,17 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
-<!ENTITY mod_name "<acronym>mid_registrar</acronym>">
+<!ENTITY reg_module "<acronym>mid_registrar</acronym>">
+<!ENTITY reg_lookup_f "<emphasis><acronym>mid_reg_lookup()</acronym></emphasis>">
 
 <!ENTITY admin SYSTEM "mid_registrar_admin.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Common registrar/mid-registrar documentation -->
-<!ENTITY reg_modparams SYSTEM "../../registrar/doc/reg_modparams.xml">
-<!ENTITY pn_modparams SYSTEM "../../registrar/doc/pn_modparams.xml">
-<!ENTITY lookup_flags SYSTEM "../../registrar/doc/lookup_flags.xml">
-<!ENTITY lookup_retcodes SYSTEM "../../registrar/doc/lookup_retcodes.xml">
+<!ENTITY reg_modparams SYSTEM "../../../lib/reg/doc/reg_modparams.xml">
+<!ENTITY pn_modparams SYSTEM "../../../lib/reg/doc/pn_modparams.xml">
+<!ENTITY lookup_flags SYSTEM "../../../lib/reg/doc/lookup_flags.xml">
+<!ENTITY lookup_retcodes SYSTEM "../../../lib/reg/doc/lookup_retcodes.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -29,5 +30,5 @@
 	&contrib;
 
 	&docCopyrights;
-	<para>&copyright; 2016-2020 &osipssol;</para>
+	<para>&copyright; 2016-2020 &OSS;</para>
 </book>

@@ -22,7 +22,7 @@
 		<programlisting format="linespecific">
 ...
 # Allow no more than 10 contacts per AOR
-modparam("&mod_name;", "max_contacts", 10)
+modparam("&reg_module;", "max_contacts", 10)
 ...
 		</programlisting>
 		</example>
@@ -40,7 +40,7 @@ modparam("&mod_name;", "max_contacts", 10)
 		<example>
 		<title>Setting the <emphasis>max_username_len</emphasis> module parameter</title>
 		<programlisting format="linespecific">
-modparam("&mod_name;", "max_username_len", 128)
+modparam("&reg_module;", "max_username_len", 128)
 </programlisting>
 		</example>
 	</section>
@@ -57,7 +57,7 @@ modparam("&mod_name;", "max_username_len", 128)
 		<example>
 		<title>Setting the <emphasis>max_domain_len</emphasis> module parameter</title>
 		<programlisting format="linespecific">
-modparam("&mod_name;", "max_domain_len", 128)
+modparam("&reg_module;", "max_domain_len", 128)
 </programlisting>
 		</example>
 	</section>
@@ -74,7 +74,7 @@ modparam("&mod_name;", "max_domain_len", 128)
 		<example>
 		<title>Setting the <emphasis>max_aor_len</emphasis> module parameter</title>
 		<programlisting format="linespecific">
-modparam("&mod_name;", "max_aor_len", 512)
+modparam("&reg_module;", "max_aor_len", 512)
 </programlisting>
 		</example>
 	</section>
@@ -91,7 +91,7 @@ modparam("&mod_name;", "max_aor_len", 512)
 		<example>
 		<title>Setting the <emphasis>max_contact_len</emphasis> module parameter</title>
 		<programlisting format="linespecific">
-modparam("&mod_name;", "max_contact_len", 512)
+modparam("&reg_module;", "max_contact_len", 512)
 </programlisting>
 		</example>
 	</section>

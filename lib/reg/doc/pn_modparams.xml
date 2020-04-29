@@ -20,7 +20,7 @@
 		<title>Setting the <varname>pn_enable</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "pn_enable", true)
+modparam("&reg_module;", "pn_enable", true)
 ...
 </programlisting>
 		</example>
@@ -44,7 +44,7 @@ modparam("registrar", "pn_enable", true)
 		<title>Setting the <varname>pn_providers</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "pn_providers", "apns, fcm, webpush")
+modparam("&reg_module;", "pn_providers", "apns, fcm, webpush")
 ...
 </programlisting>
 		</example>
@@ -68,7 +68,7 @@ modparam("registrar", "pn_providers", "apns, fcm, webpush")
 			other URI parameters, etc.).
 		</para>
 		<para>
-			After a <emphasis>lookup</emphasis> operation, the above PN-related
+			After calling &reg_lookup_f;, the above PN-related
 			parameters will be automatically stripped from the resulting
 			Request URI(s).
 		</para>
@@ -82,7 +82,7 @@ modparam("registrar", "pn_providers", "apns, fcm, webpush")
 		<title>Setting the <varname>pn_ct_match_params</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
+modparam("&reg_module;", "pn_ct_match_params", "pn-provider, pn-prid")
 ...
 </programlisting>
 		</example>
@@ -108,7 +108,7 @@ modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 		<title>Setting the <varname>pn_pnsreg_interval</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "pn_pnsreg_interval", 140)
+modparam("&reg_module;", "pn_pnsreg_interval", 140)
 ...
 </programlisting>
 		</example>
@@ -140,7 +140,7 @@ modparam("registrar", "pn_pnsreg_interval", 140)
 		<title>Setting the <varname>pn_trigger_interval</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "pn_trigger_interval", 130)
+modparam("&reg_module;", "pn_trigger_interval", 130)
 ...
 </programlisting>
 		</example>
@@ -165,7 +165,7 @@ modparam("registrar", "pn_trigger_interval", 130)
 		<title>Setting the <varname>pn_skip_pn_interval</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "pn_skip_pn_interval", 10)
+modparam("&reg_module;", "pn_skip_pn_interval", 10)
 ...
 </programlisting>
 		</example>
@@ -175,8 +175,8 @@ modparam("registrar", "pn_skip_pn_interval", 10)
 	<section id="param_pn_inv_timeout" xreflabel="pn_inv_timeout">
 		<title><varname>pn_inv_timeout</varname> (integer)</title>
 		<para>
-			This timeout starts counting following a <emphasis>lookup</emphasis>.
-			which triggers at least one Push Notification.  The value
+			This timeout starts counting following a &reg_lookup_f; which
+			triggers at least one Push Notification.  The value
 			represents the maximum allowed time for the Push Notifications and
 			their corresponding re-registrations from the awoken SIP UA to take
 			place.
@@ -197,7 +197,7 @@ modparam("registrar", "pn_skip_pn_interval", 10)
 		<title>Setting the <varname>pn_inv_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("registrar", "pn_inv_timeout", 5)
+modparam("&reg_module;", "pn_inv_timeout", 5)
 ...
 </programlisting>
 		</example>

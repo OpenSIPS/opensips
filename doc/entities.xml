@@ -12,6 +12,7 @@
 
 <!ENTITY osipssolname "OpenSIPS Solutions">
 <!ENTITY osipssol "<ulink url='http://www.opensips-solutions.com/'>www.opensips-solutions.com</ulink>">
+<!ENTITY OSS "<ulink url='http://opensips-solutions.com'>OpenSIPS Solutions</ulink>">
 
 <!ENTITY osipshome "https://opensips.org/">
 <!ENTITY osipsbugs "https://github.com/OpenSIPS/opensips/issues">
