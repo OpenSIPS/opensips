@@ -5,8 +5,7 @@ auto_gen=
 NAME=mid_registrar.so
 LIBS=
 
-REG_LIB_DIR = ../../lib/reg
-_SRC=ci.c regtime.c rerrno.c sip_msg.c path.c save_flags.c pn.c lookup.c
-extra_sources=$(patsubst %,$(REG_LIB_DIR)/%,$(_SRC))
+# include common registrar code
+extra_sources=$(wildcard ../../lib/reg/*.c)
 
 include ../../Makefile.modules
