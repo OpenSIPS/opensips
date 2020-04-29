@@ -1,10 +1,7 @@
 /*
- * Copyright (C) 2020 OpenSIPS Solutions
+ * common contact lookup code
  *
- * This module is intended to be used as a middle layer SIP component in
- * environments where a large proportion of SIP UAs (e.g. mobile devices)
- * register at high enough frequencies that they actually degrade the
- * performance of their registrars.
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *

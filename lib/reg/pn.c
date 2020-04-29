@@ -1,5 +1,6 @@
 /**
  * SIP Push Notification support - RFC 8599
+ *
  * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.

@@ -6,7 +6,7 @@
  * register at high enough frequencies that they actually degrade the
  * performance of their registrars.
  *
- * Copyright (C) 2016 OpenSIPS Solutions
+ * Copyright (C) 2016-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *

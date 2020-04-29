@@ -8,7 +8,7 @@
  * register at high enough frequencies that they actually degrade the
  * performance of their registrars.
  *
- * Copyright (C) 2016 OpenSIPS Solutions
+ * Copyright (C) 2016-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -25,10 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2016-07-06 initial version (liviu)
  */
 
 #include "../../sr_module.h"
@@ -170,6 +166,10 @@ static param_export_t mod_params[] = {
 	{ "contact_id_param",     STR_PARAM, &ctid_param.s },
 	{ "extra_contact_params_avp", STR_PARAM, &extra_ct_params_str.s },
 	{ "attr_avp",             STR_PARAM, &attr_avp_param },
+
+	/* SIP Push Notifications */
+	pn_modparams,
+
 	{ 0,0,0 }
 };
 
@@ -181,6 +181,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		pn_modparam_deps,
 		{ NULL, NULL },
 	},
 };
