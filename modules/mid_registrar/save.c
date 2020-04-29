@@ -160,9 +160,9 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 			return -1;
 	}
 
-	if (anchor == NULL) {
+	if (!anchor) {
 		anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
-		if (anchor == NULL) {
+		if (!anchor) {
 			LM_ERR("failed to add anchor lump\n");
 			return -1;
 		}
@@ -191,7 +191,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 	                   /* > ;expires=<integer> \0 */
 
 	buf = pkg_malloc(len);
-	if (buf == NULL) {
+	if (!buf) {
 		LM_ERR("oom\n");
 		return -1;
 	}
@@ -985,7 +985,7 @@ int append_contacts(ucontact_t *contacts, struct sip_msg *msg)
 	}
 
 	len = sprintf(buf, "%.*s", contact.data_len, contact.buf);
-	if (insert_new_lump_after(anchor, buf, len, HDR_CONTACT_T) == NULL) {
+	if (!insert_new_lump_after(anchor, buf, len, HDR_CONTACT_T)) {
 		pkg_free(buf);
 		return -1;
 	}
@@ -1261,21 +1261,18 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req,
 	else
 		mri->ul_flags = FL_NONE;
 
-	if (is_tcp_based_proto(req->rcv.proto) && (req->flags & tcp_persistent_flag)) {
+	if (is_tcp_based_proto(req->rcv.proto) && req->flags & tcp_persistent_flag)
 		tcp_check = 1;
-	}
 
 	LM_DBG("running\n");
 
 	/* remove all "Contact" headers from the reply */
 	for (hdr = rpl->contact; hdr; hdr = hdr->next) {
-		if (hdr->type == HDR_CONTACT_T) {
-			if (del_lump(rpl, hdr->name.s - rpl->buf,
-			                  hdr->len, HDR_CONTACT_T) == NULL) {
-				LM_ERR("failed to delete contact '%.*s'\n", hdr->name.len,
-				       hdr->name.s);
-				goto error;
-			}
+		if (hdr->type == HDR_CONTACT_T &&
+		     !del_lump(rpl, hdr->name.s - rpl->buf, hdr->len, HDR_CONTACT_T)) {
+			LM_ERR("failed to delete contact '%.*s'\n", hdr->name.len,
+			       hdr->name.s);
+			goto error;
 		}
 	}
 
@@ -1339,7 +1336,7 @@ update_usrloc:
 
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
-			if (ul.insert_ucontact( r, &ctmap->req_ct_uri, ci, &c, 0) < 0) {
+			if (ul.insert_ucontact(r, &ctmap->req_ct_uri, ci, &c, 0) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto error;
@@ -1492,7 +1489,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 
 	/* in MID_REG_THROTTLE_AOR mode, any reply will only contain 1 contact */
 	_c = get_first_contact(rpl);
-	if (_c != NULL)
+	if (_c)
 		calc_contact_expires(rpl, _c->expires, &e_out, 0);
 
 	ul.lock_udomain(mri->dom, &mri->aor);
@@ -1503,7 +1500,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 		 * AoR not yet stored here, and the main registrar is also clean!
 		 * Just skip processing any contacts found in the request, we're good.
 		 */
-		if (_c == NULL)
+		if (!_c)
 			goto out;
 
 		if (ul.insert_urecord(mri->dom, _a, &r, 0) < 0) {
@@ -1527,7 +1524,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 		}
 	}
 
-	if (_c != NULL) {
+	if (_c) {
 		/**
 		 * we now replace the single reply Contact hf with all Contact hfs
 		 * present in the initial request
@@ -1554,7 +1551,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 	list_for_each(_, &mri->ct_mappings) {
 		ctmap = list_entry(_, struct ct_mapping, list);
 
-		if (_c == NULL) {
+		if (!_c) {
 			if (ctmap->expires != 0)
 				LM_ERR("200 OK from main registrar is missing Contact '%.*s'\n",
 				       ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
@@ -1569,13 +1566,13 @@ update_usrloc:
 		c = NULL;
 		/* pack the contact_info */
 		ci = mid_reg_pack_ci(req, rpl, mri, ctmap);
-		if (ci == NULL) {
+		if (!ci) {
 			LM_ERR("failed to extract contact info\n");
 			goto out_clear_err;
 		}
 		ci->expires_out = e_out;
 
-		if ((r->contacts == NULL ||
+		if ((!r->contacts ||
 			ul.get_ucontact(r, &ctmap->req_ct_uri, ci->callid, ci->cseq+1,
 			&mri->cmatch, &c) != 0) && ctmap->expires > 0) {
 			/* contact not found and not present on main reg either */
@@ -2241,7 +2238,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	unsigned int last_reg_ts;
 	int_str_t *value;
 
-	if (urec->contacts == NULL)
+	if (!urec->contacts)
 		return 1;
 
 	value = ul.get_urecord_key(urec, &ul_key_last_reg_ts);

@@ -113,5 +113,4 @@ void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx)
 				LM_WARN("unsupported flag %c \n",flags_s->s[st]);
 		}
 	}
-
 }

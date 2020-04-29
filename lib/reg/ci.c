@@ -155,9 +155,8 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 			ci.methods = allowed;
 		}
 
-		if (_c->instance) {
+		if (_c->instance)
 			ci.instance = _c->instance->body;
-		}
 
 		/* get received */
 		if (ci.received.len==0) {

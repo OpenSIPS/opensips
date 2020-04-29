@@ -56,10 +56,10 @@ static inline void _free_str_list(str_list *list,
 }
 
 #define free_pkg_str_list(list) \
-	_free_str_list(list, osips_pkg_free, osips_pkg_free)
+	_free_str_list(list, osips_pkg_free, NULL)
 
 #define free_shm_str_list(list) \
-	_free_str_list(list, osips_shm_free, osips_shm_free)
+	_free_str_list(list, osips_shm_free, NULL)
 
 static inline str_list *dup_shm_str_list(const str_list *list)
 {
@@ -67,12 +67,13 @@ static inline str_list *dup_shm_str_list(const str_list *list)
 	const str_list *it;
 
 	for (it = list; it; it = it->next) {
-		item = shm_malloc(sizeof *item);
+		item = shm_malloc(sizeof *item + it->s.len + 1);
 		if (!item)
 			goto oom;
 
-		if (shm_str_dup(&item->s, &it->s) != 0)
-			goto oom;
+		item->s.s = (char *)(item + 1);
+		str_cpy(&item->s, &it->s);
+		item->s.s[item->s.len] = '\0';
 
 		item->next = NULL;
 		add_last(item, ret);

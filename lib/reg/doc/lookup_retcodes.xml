@@ -4,12 +4,12 @@
 	<para>
 	<emphasis role='bold'>1</emphasis> - contacts found and successfully
 	pushed as branches.  Contacts which required awakening prior to being
-	reachable have been notified via async Push Notifications.
+	reachable are being notified via async Push Notifications.
 	</para>
 </listitem>
 <listitem>
 	<para>
-	<emphasis role='bold'>2</emphasis> - successfully triggered at least one
+	<emphasis role='bold'>2</emphasis> - successfully started at least one
 	async Push Notification for the found contacts, however no extra branches
 	were populated (i.e. there is no need to call t_relay()).
 	</para>
