@@ -51,12 +51,14 @@ extern int max_contacts;
 extern int max_username_len;
 extern int max_domain_len;
 extern int max_aor_len;
+extern int max_contact_len;
 
 #define reg_modparams \
 	{"max_contacts",       INT_PARAM, &max_contacts}, \
 	{"max_username_len",   INT_PARAM, &max_username_len}, \
 	{"max_domain_len",     INT_PARAM, &max_domain_len}, \
-	{"max_aor_len",        INT_PARAM, &max_aor_len}
+	{"max_aor_len",        INT_PARAM, &max_aor_len}, \
+	{"max_contact_len",    INT_PARAM, &max_contact_len}
 
 /* common registrar init code */
 int reg_init_globals(void);

@@ -26,6 +26,7 @@ int max_contacts = 0;		/*!< Maximum number of contacts per AOR
 int max_username_len = USERNAME_MAX_SIZE;
 int max_domain_len   = DOMAIN_MAX_SIZE;
 int max_aor_len      = MAX_AOR_LEN;
+int max_contact_len  = CONTACT_MAX_SIZE;
 
 int reg_init_globals(void)
 {

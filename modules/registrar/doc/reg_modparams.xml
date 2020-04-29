@@ -78,3 +78,20 @@ modparam("&mod_name;", "max_aor_len", 512)
 </programlisting>
 		</example>
 	</section>
+
+
+	<section id="param_max_contact_len" xreflabel="max_contact_len">
+		<title><varname>max_contact_len</varname> (integer)</title>
+		<para>
+		The maximum length of a Contact header field SIP URI.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>255</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_contact_len</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("&mod_name;", "max_contact_len", 512)
+</programlisting>
+		</example>
+	</section>

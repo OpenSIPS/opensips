@@ -297,7 +297,7 @@ int check_contacts(struct sip_msg* _m, int* _s)
 
 			/* check also the length of all contacts */
 			for (c = ((contact_body_t *)p->parsed)->contacts; c; c = c->next) {
-				if (c->uri.len > CONTACT_MAX_SIZE
+				if (c->uri.len > max_contact_len
 				|| (c->received && c->received->len > RECEIVED_MAX_SIZE)) {
 					rerrno = R_CONTACT_LEN;
 					return 1;
