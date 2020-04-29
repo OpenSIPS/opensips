@@ -58,15 +58,9 @@
 #include "../../dset.h"
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
-#include "../usrloc/usrloc.h"
+#include "../../lib/reg/common.h"
 
-#include "../../lib/reg/rerrno.h"
-#include "../../lib/reg/sip_msg.h"
-#include "../../lib/reg/ci.h"
-#include "../../lib/reg/regtime.h"
-#include "../../lib/reg/config.h"
-#include "../../lib/reg/path.h"
-#include "../../lib/reg/pn.h"
+#include "../usrloc/usrloc.h"
 
 #include "sip_msg.h"
 #include "reply.h"

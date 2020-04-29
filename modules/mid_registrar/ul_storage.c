@@ -26,7 +26,7 @@
  */
 
 #include "../../ut.h"
-#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/common.h"
 
 #include "../usrloc/urecord.h"
 

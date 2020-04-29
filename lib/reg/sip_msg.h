@@ -38,7 +38,9 @@
 #define CONTACT_MAX_SIZE       255
 #define RECEIVED_MAX_SIZE      255
 
+extern int disable_gruu;
 extern char tgruu_dec[];
+extern str gruu_secret;
 
 /*! \brief
  * Parse the whole message and bodies of all header fields

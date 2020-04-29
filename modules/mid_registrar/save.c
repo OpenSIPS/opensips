@@ -50,13 +50,7 @@
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
-
-#include "../../lib/reg/ci.h"
-#include "../../lib/reg/sip_msg.h"
-#include "../../lib/reg/rerrno.h"
-#include "../../lib/reg/regtime.h"
-#include "../../lib/reg/path.h"
-#include "../../lib/reg/save_flags.h"
+#include "../../lib/reg/common.h"
 
 #include "../../trim.h"
 #include "../../strcommon.h"

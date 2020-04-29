@@ -28,7 +28,9 @@
 #include "rerrno.h"
 #include "sip_msg.h"
 #include "ci.h"
+#include "save_flags.h"
 #include "lookup.h"
+#include "path.h"
 #include "pn.h"
 
 extern int reg_use_domain;
@@ -37,10 +39,6 @@ extern char *tcp_persistent_flag_s;
 extern int default_expires;
 extern int min_expires;
 extern int max_expires;
-extern str gruu_secret;
-extern str default_gruu_secret;
-
-extern int attr_avp_name;
 
 extern str realm_prefix;
 extern str rcv_param;

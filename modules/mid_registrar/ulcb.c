@@ -34,8 +34,7 @@
 #include "../../parser/contact/contact.h"
 #include "../tm/tm_load.h"
 #include "../tm/dlg.h"
-#include "../../lib/reg/rerrno.h"
-#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/common.h"
 
 #include "mid_registrar.h"
 #include "ul_storage.h"

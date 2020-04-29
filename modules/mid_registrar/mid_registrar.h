@@ -117,16 +117,9 @@ struct mid_reg_info {
 
 extern rw_lock_t *tm_retrans_lk;
 
-extern str realm_prefix;
 extern int case_sensitive;
 
-extern struct usrloc_api ul;
-extern struct tm_binds tmb;
 extern struct sig_binds sig_api;
-
-extern int default_expires;
-extern int min_expires;
-extern int max_expires;
 
 extern int max_contacts;
 extern int max_username_len;
@@ -146,15 +139,6 @@ extern str expires_hdr;
 extern str expires_param;
 
 extern str matching_param;
-
-extern int disable_gruu;
-extern int reg_use_domain;
-
-extern str rcv_param;
-
-extern str gruu_secret;
-
-extern int tcp_persistent_flag;
 
 struct mid_reg_info *mri_alloc(void);
 struct mid_reg_info *mri_dup(struct mid_reg_info *mri);

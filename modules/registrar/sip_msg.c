@@ -34,9 +34,7 @@
 #include "../../ut.h"
 #include "../../qvalue.h"
 
-#include "../../lib/reg/rerrno.h"
-#include "../../lib/reg/sip_msg.h"
-#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/common.h"
 
 #include "reg_mod.h"                     /* Module parameters */
 #include "sip_msg.h"

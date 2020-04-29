@@ -34,16 +34,14 @@
  */
 
 #include <stdio.h>
+
 #include "../../ut.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_supported.h"
 #include "../../data_lump_rpl.h"
-#include "../usrloc/usrloc.h"
+#include "../../lib/reg/common.h"
 
-#include "../../lib/reg/rerrno.h"
-#include "../../lib/reg/regtime.h"
-#include "../../lib/reg/config.h"
-#include "../../lib/reg/pn.h"
+#include "../usrloc/usrloc.h"
 
 #include "reg_mod.h"
 #include "reply.h"
@@ -87,8 +85,6 @@
 #define CONTACT_SEP ", "
 #define CONTACT_SEP_LEN (sizeof(CONTACT_SEP) - 1)
 
-extern str gruu_secret;
-extern int disable_gruu;
 str default_gruu_secret=str_init("0p3nS1pS");
 
 /*! \brief

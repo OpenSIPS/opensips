@@ -24,8 +24,7 @@
 #include "../../../test/ut.h"
 #include "../../../parser/parse_methods.h"
 #include "../../../parser/msg_parser.h"
-#include "../../../lib/reg/pn.h"
-#include "../../../lib/reg/regtime.h"
+#include "../../../lib/reg/common.h"
 
 #include "../../usrloc/usrloc.h"
 #include "../reg_mod.h"

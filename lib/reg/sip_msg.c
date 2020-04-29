@@ -39,6 +39,7 @@ extern int max_username_len;
 extern int max_domain_len;
 extern int max_aor_len;
 
+extern str default_gruu_secret;
 
 /*! \brief
  * Parse the whole message and bodies of all header fields

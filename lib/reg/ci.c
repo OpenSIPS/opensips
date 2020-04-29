@@ -26,13 +26,7 @@
 #include "../../parser/parse_allow.h"
 #include "../../timer.h"
 
-#include "ci.h"
-#include "pn.h"
-#include "path.h"
-#include "config.h"
-#include "rerrno.h"
-#include "sip_msg.h"
-#include "regtime.h"
+#include "common.h"
 
 
 /*! \brief
