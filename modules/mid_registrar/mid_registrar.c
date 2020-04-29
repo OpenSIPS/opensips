@@ -284,6 +284,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (pn_init() < 0) {
+		LM_ERR("failed to init SIP Push Notification support\n");
+		return -1;
+	}
+
 	if (solve_avp_defs() != 0) {
 		LM_ERR("failed to parse one or more module AVPs\n");
 		return -1;

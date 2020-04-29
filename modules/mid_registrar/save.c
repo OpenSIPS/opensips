@@ -2408,6 +2408,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 {
 	urecord_t *r = NULL;
 	struct save_ctx sctx;
+	contact_t *c;
 	struct hdr_field *path;
 	int rc = -1, st, unlock_udomain = 0;
 
@@ -2455,12 +2456,38 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 	if (check_contacts(msg, &st) != 0)
 		goto out_error;
 
-	if (!get_first_contact(msg)) {
+	if (!(c = get_first_contact(msg))) {
 		if (st) {
 			sctx.star = 1;
 			return prepare_forward(msg, d, &sctx);
 		}
 		goto quick_reply;
+	}
+
+	if (sctx.cmatch.mode == CT_MATCH_NONE && pn_enable) {
+		switch (pn_inspect_ct_params(&c->uri)) {
+		case PN_NONE:
+			LM_DBG("Contact URI has no PN params\n");
+			break;
+
+		case PN_ON:
+			LM_DBG("Contact URI includes all required PN params\n");
+			sctx.cmatch.mode = CT_MATCH_PARAMS;
+			sctx.cmatch.match_params = pn_ct_params;
+			break;
+
+		case PN_LIST_ALL_PNS:
+			LM_DBG("Contact URI includes PN capability query (all PNS)\n");
+			break;
+
+		case PN_LIST_ONE_PNS:
+			LM_DBG("Contact URI includes PN capability query (one PNS)\n");
+			break;
+
+		case PN_UNSUPPORTED_PNS:
+			rerrno = R_PNS_UNSUP;
+			goto quick_reply;
+		}
 	}
 
 	/* mid-registrar always rewrites the Contact, so any Path hf must go! */
