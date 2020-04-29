@@ -619,8 +619,32 @@ err_free:
 	return -1;
 }
 
+
+void mid_reg_reply_fcaps(struct cell *_, int __, struct tmcb_params *params)
+{
+	struct sip_msg *rpl = params->rpl;
+	struct mid_reg_info *mri = (struct mid_reg_info *)(*params->param);
+	struct lump *anchor;
+	str fcaps;
+
+	if (pkg_str_dup(&fcaps, &mri->feature_caps) != 0) {
+		LM_ERR("oom1\n");
+		return;
+	}
+
+	anchor = anchor_lump(rpl, rpl->unparsed - rpl->buf, 0);
+	if (!anchor) {
+		LM_ERR("oom2\n");
+		return;
+	}
+
+	if (!insert_new_lump_before(anchor, fcaps.s, fcaps.len, 0))
+		LM_ERR("oom3\n");
+}
+
+
 /* called exactly once per outgoing branch */
-void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
+void mid_reg_req_fwded(struct cell *_, int __, struct tmcb_params *params)
 {
 	struct sip_msg *req = params->req;
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
@@ -688,6 +712,14 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 	}
 
 out:
+	if (pn_enable) {
+		pn_append_feature_caps(req, 0, &mri->feature_caps);
+
+		if (!ZSTR(mri->feature_caps) && tmb.register_tmcb(req, NULL,
+		         TMCB_RESPONSE_FWDED, mid_reg_reply_fcaps, mri, NULL) <= 0)
+			LM_ERR("failed to register Feature-Caps on-reply callback\n");
+	}
+
 	LM_DBG("REQ FORWARDED TO '%.*s' (obp: %.*s), expires=%d\n",
 	       mri->main_reg_uri.len, mri->main_reg_uri.s,
 	       mri->main_reg_next_hop.len, mri->main_reg_next_hop.s,
@@ -1734,7 +1766,7 @@ static inline void star(struct mid_reg_info *mri, struct sip_msg *_m)
 }
 
 
-void mid_reg_resp_in(struct cell *t, int type, struct tmcb_params *params)
+void mid_reg_resp_in(struct cell *_, int __, struct tmcb_params *params)
 {
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
 	struct sip_msg *rpl = params->rpl;
@@ -1782,7 +1814,7 @@ out:
 	LM_DBG("RESPONSE FORWARDED TO caller!\n");
 }
 
-void mid_reg_tmcb_deleted(struct cell *t, int type, struct tmcb_params *params)
+void mid_reg_tmcb_deleted(struct cell *_, int __, struct tmcb_params *params)
 {
 	struct mid_reg_info *mri = *(struct mid_reg_info **)(params->param);
 	urecord_t *r;
@@ -2025,13 +2057,17 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 	if (prepare_rpl_path(_m, &_m->path_vec, _flags, NULL) != 0)
 		return -1;
 
+	if (pn_enable)
+		pn_append_feature_caps(_m, 1, NULL);
+
 	code = rerr_codes[rerrno];
-	switch(code) {
-	case 200: msg.s = MSG_200; msg.len = sizeof(MSG_200)-1; break;
-	case 400: msg.s = MSG_400; msg.len = sizeof(MSG_400)-1;break;
-	case 420: msg.s = MSG_420; msg.len = sizeof(MSG_420)-1;break;
-	case 500: msg.s = MSG_500; msg.len = sizeof(MSG_500)-1;break;
-	case 503: msg.s = MSG_503; msg.len = sizeof(MSG_503)-1;break;
+	switch (code) {
+	case 200: init_str(&msg, MSG_200); break;
+	case 400: init_str(&msg, MSG_400); break;
+	case 420: init_str(&msg, MSG_420); break;
+	case 500: init_str(&msg, MSG_500); break;
+	case 503: init_str(&msg, MSG_503); break;
+	case 555: init_str(&msg, MSG_555); break;
 	}
 
 	if (code != 200) {

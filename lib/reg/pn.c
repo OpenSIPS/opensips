@@ -23,6 +23,7 @@
 #include "../../lib/csv.h"
 #include "../../parser/parse_uri.h"
 #include "../../usr_avp.h"
+#include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
 
 #include "../../modules/usrloc/ul_evi.h"
@@ -224,19 +225,46 @@ next_param:;
 }
 
 
-void pn_append_feature_caps(struct sip_msg *msg)
+void pn_append_feature_caps(struct sip_msg *msg, int append_to_reply, str *hf)
 {
 	struct pn_provider *prov;
+	struct lump *anchor;
+	str fcaps;
 
 	for (prov = pn_providers; prov; prov = prov->next) {
 		if (!prov->append_fcaps)
 			continue;
 
-		if (!add_lump_rpl(msg, prov->feature_caps.s, prov->feature_caps.len,
-		                  LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE))
-			LM_ERR("oom\n");
-
 		prov->append_fcaps = 0;
+
+		if (append_to_reply) {
+			if (!add_lump_rpl(msg, prov->feature_caps.s, prov->feature_caps.len,
+			                  LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE))
+				LM_ERR("oom1\n");
+		} else {
+			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
+			if (!anchor) {
+				LM_ERR("oom2\n");
+				continue;
+			}
+
+			if (pkg_str_dup(&fcaps, &prov->feature_caps) != 0) {
+				LM_ERR("oom3\n");
+				continue;
+			}
+
+			if (!insert_new_lump_before(anchor, fcaps.s, fcaps.len, 0))
+				LM_ERR("oom4\n");
+
+			if (hf) {
+				if (shm_str_extend(hf, hf->len + fcaps.len) != 0) {
+					LM_ERR("oom5\n");
+					continue;
+				}
+
+				memcpy(hf->s + hf->len - fcaps.len, fcaps.s, fcaps.len);
+			}
+		}
 	}
 }
 

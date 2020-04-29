@@ -94,8 +94,13 @@ enum pn_action pn_inspect_ct_params(const str *ct_uri);
  * Append any required Feature-Caps header fields.  Before calling this
  * function, you must call pn_inspect_ct_params() in order to interpret the
  * UA's intentions and prepare the appropriate Feature-Caps header content.
+ *
+ * @msg: the SIP message in processing
+ * @append_to_reply: if true, the headers will be appended for an internally
+ *                   generated reply, and not for the forwarded request
+ * @hf: if non-NULL, it will contain a fresh SHM buffer with all Feature-Caps
  */
-void pn_append_feature_caps(struct sip_msg *msg);
+void pn_append_feature_caps(struct sip_msg *msg, int append_to_reply, str *hf);
 
 
 /**

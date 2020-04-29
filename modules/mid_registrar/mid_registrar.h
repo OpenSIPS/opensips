@@ -107,6 +107,9 @@ struct mid_reg_info {
 	unsigned int ul_flags;
 	unsigned int cflags;
 
+	str feature_caps; /* the Feature-Caps headers to be appended
+						 to the upstream reply */
+
 	int pending_replies;
 	rw_lock_t *tm_lock;
 };

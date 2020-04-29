@@ -460,10 +460,10 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 	}
 
 	if (pn_enable)
-		pn_append_feature_caps(_m);
+		pn_append_feature_caps(_m, 1, NULL);
 
 	code = rerr_codes[rerrno];
-	switch(code) {
+	switch (code) {
 	case 200: init_str(&msg, MSG_200); break;
 	case 400: init_str(&msg, MSG_400); break;
 	case 420: init_str(&msg, MSG_420); break;
