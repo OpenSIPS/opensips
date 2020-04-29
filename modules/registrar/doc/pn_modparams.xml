@@ -1,3 +1,5 @@
+<!-- Common registrar SIP Push Notification modparams -->
+
 	<section id="param_pn_enable" xreflabel="pn_enable">
 		<title><varname>pn_enable</varname> (boolean)</title>
 		<para>
@@ -24,6 +26,7 @@ modparam("registrar", "pn_enable", true)
 		</example>
 	</section>
 
+
 	<section id="param_pn_providers" xreflabel="pn_providers">
 		<title><varname>pn_providers</varname> (string)</title>
 		<para>
@@ -46,6 +49,7 @@ modparam("registrar", "pn_providers", "apns, fcm, webpush")
 </programlisting>
 		</example>
 	</section>
+
 
 	<section id="param_pn_ct_match_params" xreflabel="pn_ct_match_params">
 		<title><varname>pn_ct_match_params</varname> (string)</title>
@@ -84,6 +88,7 @@ modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 		</example>
 	</section>
 
+
 	<section id="param_pn_pnsreg_interval" xreflabel="pn_pnsreg_interval">
 		<title><varname>pn_pnsreg_interval</varname> (integer)</title>
 		<para>
@@ -108,6 +113,7 @@ modparam("registrar", "pn_pnsreg_interval", 140)
 </programlisting>
 		</example>
 	</section>
+
 
 	<section id="param_pn_trigger_interval" xreflabel="pn_trigger_interval">
 		<title><varname>pn_trigger_interval</varname> (integer)</title>
@@ -140,6 +146,7 @@ modparam("registrar", "pn_trigger_interval", 130)
 		</example>
 	</section>
 
+
 	<section id="param_pn_skip_pn_interval" xreflabel="pn_skip_pn_interval">
 		<title><varname>pn_skip_pn_interval</varname> (integer)</title>
 		<para>
@@ -163,6 +170,7 @@ modparam("registrar", "pn_skip_pn_interval", 10)
 </programlisting>
 		</example>
 	</section>
+
 
 	<section id="param_pn_inv_timeout" xreflabel="pn_inv_timeout">
 		<title><varname>pn_inv_timeout</varname> (integer)</title>

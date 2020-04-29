@@ -96,10 +96,6 @@ int min_expires     = 60;			/*!< Minimum expires the phones are allowed to use i
  						 * use 0 to switch expires checking off */
 int max_expires     = 0;			/*!< Maximum expires the phones are allowed to use in seconds,
  						 * use 0 to switch expires checking off */
-int max_contacts = 0;		/*!< Maximum number of contacts per AOR (0=no checking) */
-int max_username_len = USERNAME_MAX_SIZE;
-int max_domain_len   = DOMAIN_MAX_SIZE;
-int max_aor_len      = MAX_AOR_LEN;
 int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
 
 extern ucontact_t **selected_cts;
@@ -195,10 +191,6 @@ static param_export_t params[] = {
 	{"max_expires",        INT_PARAM, &max_expires           },
 	{"received_param",     STR_PARAM, &rcv_param.s           },
 	{"received_avp",       STR_PARAM, &rcv_avp_param         },
-	{"max_contacts",       INT_PARAM, &max_contacts          },
-	{"max_username_len",   INT_PARAM, &max_username_len      },
-	{"max_domain_len",     INT_PARAM, &max_domain_len        },
-	{"max_aor_len",        INT_PARAM, &max_aor_len           },
 	{"retry_after",        INT_PARAM, &retry_after           },
 	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s       },
 	{"mcontact_avp",       STR_PARAM, &mct_avp_param         },
@@ -206,7 +198,10 @@ static param_export_t params[] = {
 	{"gruu_secret",        STR_PARAM, &gruu_secret.s         },
 	{"disable_gruu",       INT_PARAM, &disable_gruu          },
 
-	/* SIP Push Notifications */
+	/* common registrar modparams */
+	reg_modparams,
+
+	/* common SIP Push Notification (RFC 8599) modparams */
 	pn_modparams,
 
 	{0, 0, 0}

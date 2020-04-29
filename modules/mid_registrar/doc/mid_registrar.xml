@@ -2,9 +2,13 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
+<!ENTITY mod_name "<acronym>mid_registrar</acronym>">
 
 <!ENTITY admin SYSTEM "mid_registrar_admin.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
+
+<!-- Common registrar/mid-registrar documentation -->
+<!ENTITY reg_modparams SYSTEM "../../registrar/doc/reg_modparams.xml">
 <!ENTITY pn_modparams SYSTEM "../../registrar/doc/pn_modparams.xml">
 <!ENTITY lookup_flags SYSTEM "../../registrar/doc/lookup_flags.xml">
 <!ENTITY lookup_retcodes SYSTEM "../../registrar/doc/lookup_retcodes.xml">

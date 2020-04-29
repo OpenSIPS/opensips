@@ -117,11 +117,6 @@ extern int case_sensitive;
 
 extern struct sig_binds sig_api;
 
-extern int max_contacts;
-extern int max_username_len;
-extern int max_domain_len;
-extern int max_aor_len;
-
 extern int retry_after;
 extern unsigned int outgoing_expires;
 

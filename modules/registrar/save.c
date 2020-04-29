@@ -637,9 +637,9 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		st = 0;
 		c = forced_c;
 	} else {
-		if (check_contacts(_m, &st) > 0) {
+		if (check_contacts(_m, &st) > 0)
 			goto error;
-		}
+
 		c = get_first_contact(_m);
 	}
 

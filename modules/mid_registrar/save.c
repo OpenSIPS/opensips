@@ -1812,7 +1812,7 @@ out_free:
 }
 
 /* !! retcodes: 1 or -1 !! */
-static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
+static int prepare_forward(struct sip_msg *msg, udomain_t *d,
                            struct save_ctx *sctx)
 {
 	struct mid_reg_info *mri;
@@ -1829,7 +1829,7 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *ud,
 	mri->expires = 0;
 	mri->expires_out = sctx->expires_out;
 	mri->max_contacts = sctx->max_contacts;
-	mri->dom = ud;
+	mri->dom = d;
 	mri->reg_flags = sctx->flags;
 	mri->star = sctx->star;
 
@@ -2403,10 +2403,10 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 }
 
 
-int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
+int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
                           str *to_uri, int *expires, str *owtag)
 {
-	urecord_t *rec = NULL;
+	urecord_t *r = NULL;
 	struct save_ctx sctx;
 	struct hdr_field *path;
 	int rc = -1, st, unlock_udomain = 0;
@@ -2426,7 +2426,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 
 	sctx.max_contacts = max_contacts;
 
-	LM_DBG("saving to %.*s...\n", ud->name->len, ud->name->s);
+	LM_DBG("saving to %.*s...\n", d->name->len, d->name->s);
 
 	if (flags_str)
 		reg_parse_save_flags(flags_str, &sctx);
@@ -2452,14 +2452,13 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 		return -1;
 	}
 
-	if (check_contacts(msg, &st) > 0) {
+	if (check_contacts(msg, &st) != 0)
 		goto out_error;
-	}
 
-	if (get_first_contact(msg) == NULL) {
+	if (!get_first_contact(msg)) {
 		if (st) {
 			sctx.star = 1;
-			return prepare_forward(msg, ud, &sctx);
+			return prepare_forward(msg, d, &sctx);
 		}
 		goto quick_reply;
 	}
@@ -2477,21 +2476,21 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *ud, str *flags_str,
 
 	/* in mirror mode, all REGISTER requests simply pass through */
 	if (reg_mode == MID_REG_MIRROR)
-		return prepare_forward(msg, ud, &sctx);
+		return prepare_forward(msg, d, &sctx);
 
 	update_act_time();
 	unlock_udomain = 1;
-	ul.lock_udomain(ud, &sctx.aor);
+	ul.lock_udomain(d, &sctx.aor);
 
-	if (ul.get_urecord(ud, &sctx.aor, &rec) != 0) {
-		ul.unlock_udomain(ud, &sctx.aor);
-		return prepare_forward(msg, ud, &sctx);
+	if (ul.get_urecord(d, &sctx.aor, &r) != 0) {
+		ul.unlock_udomain(d, &sctx.aor);
+		return prepare_forward(msg, d, &sctx);
 	}
 
 	if (reg_mode == MID_REG_THROTTLE_CT)
-		rc = process_contacts_by_ct(msg, rec, &sctx);
+		rc = process_contacts_by_ct(msg, r, &sctx);
 	else if (reg_mode == MID_REG_THROTTLE_AOR)
-		rc = process_contacts_by_aor(msg, rec, &sctx);
+		rc = process_contacts_by_aor(msg, r, &sctx);
 
 	if (rc == -1)
 		goto out_error;
@@ -2502,18 +2501,18 @@ quick_reply:
 	/* forwarding not needed! This REGISTER will be absorbed */
 
 	/* prepare the Contact header field for a quick 200 OK response */
-	if (rec != NULL && rec->contacts != NULL) {
+	if (r && r->contacts) {
 		if (sctx.flags & REG_SAVE_REQ_CT_ONLY_FLAG)
-			filter_contacts(rec, NULL, msg);
+			filter_contacts(r, NULL, msg);
 
-		build_contact(rec->contacts, msg);
+		build_contact(r->contacts, msg);
 
 		if (sctx.flags & REG_SAVE_REQ_CT_ONLY_FLAG)
-			restore_contacts(rec);
+			restore_contacts(r);
 	}
 
 	if (unlock_udomain)
-		ul.unlock_udomain(ud, &sctx.aor);
+		ul.unlock_udomain(d, &sctx.aor);
 
 	/* quick SIP reply */
 	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
@@ -2524,12 +2523,12 @@ quick_reply:
 out_forward:
 	clear_path_vector(msg);
 
-	ul.unlock_udomain(ud, &sctx.aor);
-	return prepare_forward(msg, ud, &sctx);
+	ul.unlock_udomain(d, &sctx.aor);
+	return prepare_forward(msg, d, &sctx);
 
 out_error:
 	if (unlock_udomain)
-		ul.unlock_udomain(ud, &sctx.aor);
+		ul.unlock_udomain(d, &sctx.aor);
 	if (!(sctx.flags & REG_SAVE_NOREPLY_FLAG))
 		send_reply(msg, sctx.flags);
 	return -1;

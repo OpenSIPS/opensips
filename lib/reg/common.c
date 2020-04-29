@@ -20,6 +20,13 @@
 
 #include "common.h"
 
+/* modparams */
+int max_contacts = 0;		/*!< Maximum number of contacts per AOR
+                                 (0 == no checking) */
+int max_username_len = USERNAME_MAX_SIZE;
+int max_domain_len   = DOMAIN_MAX_SIZE;
+int max_aor_len      = MAX_AOR_LEN;
+
 int reg_init_globals(void)
 {
 	if (reg_init_lookup() != 0) {

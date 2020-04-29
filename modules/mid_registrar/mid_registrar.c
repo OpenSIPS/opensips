@@ -67,11 +67,6 @@ int min_expires     = 10;   /*!< Minimum expires the phones are allowed to use
 							  in seconds - use 0 to switch expires checking off */
 int max_expires     = 3600;
 
-int max_contacts = 0;		/*!< Maximum number of contacts per AOR
-                                 (0=no checking) */
-int max_username_len = USERNAME_MAX_SIZE;
-int max_domain_len   = DOMAIN_MAX_SIZE;
-int max_aor_len      = MAX_AOR_LEN;
 int retry_after = 0;		/*!< The value of Retry-After HF in 5xx replies */
 
 qvalue_t default_q  = Q_UNSPECIFIED; /*!< Default q value multiplied by 1000 */
@@ -154,10 +149,6 @@ static param_export_t mod_params[] = {
 	{ "case_sensitive",       INT_PARAM, &case_sensitive },
 	{ "received_avp",         STR_PARAM, &rcv_avp_param },
 	{ "received_param",       STR_PARAM, &rcv_param.s },
-	{ "max_contacts",         INT_PARAM, &max_contacts },
-	{ "max_username_len",     INT_PARAM, &max_username_len },
-	{ "max_domain_len",       INT_PARAM, &max_domain_len },
-	{ "max_aor_len",          INT_PARAM, &max_aor_len },
 	{ "retry_after",          INT_PARAM, &retry_after },
 	{ "gruu_secret",          STR_PARAM, &gruu_secret.s },
 	{ "disable_gruu",         INT_PARAM, &disable_gruu },
@@ -167,7 +158,10 @@ static param_export_t mod_params[] = {
 	{ "extra_contact_params_avp", STR_PARAM, &extra_ct_params_str.s },
 	{ "attr_avp",             STR_PARAM, &attr_avp_param },
 
-	/* SIP Push Notifications */
+	/* common registrar modparams */
+	reg_modparams,
+
+	/* common SIP Push Notification (RFC 8599) modparams */
 	pn_modparams,
 
 	{ 0,0,0 }

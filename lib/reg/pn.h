@@ -47,7 +47,7 @@ enum pn_action {
 	PN_ON,              /* enable PN: all required 'pn-*' params are present */
 };
 
-/* modparams */
+/* common registrar PN modparams */
 extern int pn_enable;
 extern int pn_pnsreg_interval;
 extern int pn_trigger_interval;

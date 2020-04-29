@@ -30,7 +30,7 @@
 
 #include "common.h"
 
-/* registrar modparams */
+/* PN modparams */
 int pn_enable;
 int pn_pnsreg_interval = 130;  /* sec */
 int pn_trigger_interval = 120; /* sec */

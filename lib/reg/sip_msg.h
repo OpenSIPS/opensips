@@ -35,9 +35,6 @@
 	(!((_f) & REG_LOOKUP_METHODFILTER_FLAG) || \
 		((_msg)->REQ_METHOD) & ((_c)->methods))
 
-#define CONTACT_MAX_SIZE       255
-#define RECEIVED_MAX_SIZE      255
-
 extern int disable_gruu;
 extern char tgruu_dec[];
 extern str gruu_secret;
@@ -57,7 +54,11 @@ int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id,
 /*! \brief
  * Check if the originating REGISTER message was formed correctly
  * The whole message must be parsed before calling the function
- * _s indicates whether the contact was star
+ * @_s indicates whether the contact was star
+ *
+ * Return
+ *	0 (success): Contacts OK or completely missing or unparsed
+ *  1 (failure): star Contact related error or Contact length exceeded
  */
 int check_contacts(struct sip_msg* _m, int* _s);
 
@@ -75,6 +76,8 @@ int calc_contact_q(param_t* _q, qvalue_t* _r);
  *
  * Note: each pair of functions has a global state, so two pairs are
  * provided in order to satisfy most nested iteration needs
+ *
+ * Return: NULL on star, missing or unparsed Contact header, otherwise the ptr
  */
 contact_t* get_first_contact(struct sip_msg* _m);
 contact_t* get_next_contact(contact_t* _c);

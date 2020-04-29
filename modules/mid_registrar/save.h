@@ -42,11 +42,6 @@
 			REG_SAVE_PATH_LAZY_FLAG|REG_SAVE_PATH_OFF_FLAG)
 #define REG_SAVE_REQ_CT_ONLY_FLAG      (1<<8)
 
-#define CONTACT_MAX_SIZE       255
-#define RECEIVED_MAX_SIZE      255
-#define CALLID_MAX_SIZE        255
-#define UA_MAX_SIZE            255
-
 #define MAX_CONTACT_BUFFER 1024
 
 #define E_INFO "P-Registrar-Error: "
