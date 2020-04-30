@@ -2498,34 +2498,9 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 		goto quick_reply;
 	}
 
-	if (pn_enable && sctx.cmatch.mode == CT_MATCH_NONE) {
-		switch (pn_inspect_ct_params(msg, &c->uri)) {
-		case PN_NONE:
-			LM_DBG("Contact URI has no PN params\n");
-			break;
-
-		case PN_ON:
-			LM_DBG("Contact URI includes all required PN params\n");
-			sctx.cmatch.mode = CT_MATCH_PARAMS;
-			sctx.cmatch.match_params = pn_ct_params;
-			sctx.flags |= REG_SAVE__PN_ON_FLAG;
-			break;
-
-		case PN_LIST_ALL_PNS:
-			LM_DBG("Contact URI includes PN capability query (all PNS)\n");
-			break;
-
-		case PN_LIST_ONE_PNS:
-			LM_DBG("Contact URI includes PN capability query (one PNS)\n");
-			break;
-
-		case PN_HANDLED_UPSTREAM:
-			break;
-
-		case PN_UNSUPPORTED_PNS:
-			rerrno = R_PNS_UNSUP;
-			goto quick_reply;
-		}
+	if (pn_enable && pn_inspect_request(msg, &c->uri, &sctx) != 0) {
+		LM_DBG("SIP PN processing failed\n");
+		goto quick_reply;
 	}
 
 	/* mid-registrar always rewrites the Contact, so any Path hf must go! */

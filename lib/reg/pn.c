@@ -183,7 +183,7 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 	struct hdr_field *fcaps;
 	fcaps_body_t *fcaps_body;
 	str_list *param;
-	int i;
+	int i, is_cap_query = 1, is_handled_upstream = 0;
 
 	if (parse_uri(ct_uri->s, ct_uri->len, &puri) != 0) {
 		LM_ERR("failed to parse URI: '%.*s'\n", ct_uri->len, ct_uri->s);
@@ -217,9 +217,10 @@ match_provider:
 
 		fcaps_body = (fcaps_body_t *)fcaps->parsed;
 		if (str_match(&fcaps_body->pns, &puri.u_val[i])) {
-			LM_DBG("the '%.*s' PNs are being handled by an upstream proxy\n",
+			LM_DBG("PNs for '%.*s' are being handled by an upstream proxy\n",
 			       fcaps_body->pns.len, fcaps_body->pns.s);
-			return PN_HANDLED_UPSTREAM;
+			is_handled_upstream = 1;
+			goto match_params;
 		}
 	}
 
@@ -236,15 +237,73 @@ match_provider:
 match_params:
 	for (param = pn_ct_params; param; param = param->next) {
 		for (int i = 0; i < puri.u_params_no; i++)
-			if (str_match(&param->s, &puri.u_name[i]))
+			if (str_match(&param->s, &puri.u_name[i])) {
+				if (!str_match(&param->s, &pn_provider_param))
+					is_cap_query = 0;
 				goto next_param;
+			}
 
-		return PN_LIST_ONE_PNS;
+		if (is_handled_upstream)
+			/* at least one required PN param is missing and PNs are already
+			 * handled upstream anyway -- just match by URI string */
+			return PN_NONE;
+		else if (!is_cap_query)
+			return PN_UNSUPPORTED_PNS;
 
 next_param:;
 	}
 
+	if (is_cap_query)
+		return PN_LIST_ONE_PNS;
+
+	if (is_handled_upstream)
+		return PN_MATCH_PN_PARAMS;
+
 	return PN_ON;
+}
+
+
+int pn_inspect_request(struct sip_msg *req, const str *ct_uri,
+                       struct save_ctx *sctx)
+{
+	if (sctx->cmatch.mode != CT_MATCH_NONE) {
+		LM_DBG("skip PN processing, matching mode already enforced\n");
+		return 0;
+	}
+
+	switch (pn_inspect_ct_params(req, ct_uri)) {
+	case PN_NONE:
+		LM_DBG("Contact URI has no PN params\n");
+		break;
+
+	case PN_ON:
+		LM_DBG("match this contact using PN params and send PN\n");
+		sctx->cmatch.mode = CT_MATCH_PARAMS;
+		sctx->cmatch.match_params = pn_ct_params;
+		sctx->flags |= REG_SAVE__PN_ON_FLAG;
+		break;
+
+	case PN_LIST_ALL_PNS:
+		LM_DBG("Contact URI includes PN capability query (all PNS)\n");
+		break;
+
+	case PN_LIST_ONE_PNS:
+		LM_DBG("Contact URI includes PN capability query (one PNS)\n");
+		break;
+
+	case PN_MATCH_PN_PARAMS:
+		LM_DBG("match this contact using PN params but don't send PN\n");
+		sctx->cmatch.mode = CT_MATCH_PARAMS;
+		sctx->cmatch.match_params = pn_ct_params;
+		break;
+
+	case PN_UNSUPPORTED_PNS:
+		LM_DBG("at least one required PN param is missing, reply with 555\n");
+		rerrno = R_PNS_UNSUP;
+		return -1;
+	}
+
+	return 0;
 }
 
 

@@ -30,6 +30,7 @@
 
 #include "../../modules/usrloc/ucontact.h"
 #include "regtime.h"
+#include "save_flags.h"
 
 struct pn_provider {
 	str name;
@@ -41,11 +42,22 @@ struct pn_provider {
 
 enum pn_action {
 	PN_NONE,             /* no 'pn-provider' was given */
-	PN_HANDLED_UPSTREAM, /* a Feature-Caps hf is present, so PNs are handled */
 	PN_UNSUPPORTED_PNS,  /* the given 'pn-provider' value is not supported */
+
+	/* Query Network PNS Capabilities */
 	PN_LIST_ALL_PNS,     /* cap query: only 'pn-provider' given, no value */
 	PN_LIST_ONE_PNS,     /* cap query: a known 'pn-provider' value was given */
-	PN_ON,               /* enable PN: all required 'pn-*' params are present */
+
+	/* while the 'pn-*' params are present and the contact must be matched
+	 * using them, we must _not_ send any Push Notifications, since an upstream
+	 * proxy has already indicated that it is doing so */
+	PN_MATCH_PN_PARAMS,
+
+	/* fully enable PN:
+	 *    1. all required 'pn-*' params are present -- match these exclusively
+	 *    2. generate PNs to this contact as required
+	 */
+	PN_ON,
 };
 
 /* common registrar PN modparams */
@@ -83,6 +95,16 @@ extern str_list *pn_ct_params;  /* list of parsed match params */
  * Initialize RFC 8599 support
  */
 int pn_init(void);
+
+
+/**
+ * Perform any required RFC 8599 processing for a SIP request, including
+ * handling for Feature-Caps headers arriving from upstream.
+ *
+ * Return: 0 on success, -1 on failure and should reply immediately
+ */
+int pn_inspect_request(struct sip_msg *req, const str *ct_uri,
+                       struct save_ctx *sctx);
 
 
 /**
