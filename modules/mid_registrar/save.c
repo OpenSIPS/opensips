@@ -634,6 +634,7 @@ void mid_reg_reply_fcaps(struct cell *_, int __, struct tmcb_params *params)
 
 	anchor = anchor_lump(rpl, rpl->unparsed - rpl->buf, 0);
 	if (!anchor) {
+		pkg_free(fcaps.s);
 		LM_ERR("oom2\n");
 		return;
 	}

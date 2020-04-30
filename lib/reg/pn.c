@@ -274,16 +274,16 @@ void pn_append_feature_caps(struct sip_msg *msg, int append_to_reply, str *hf)
 				continue;
 			}
 
-			if (!insert_new_lump_before(anchor, fcaps.s, fcaps.len, 0))
-				LM_ERR("oom4\n");
-
 			if (hf) {
-				if (shm_str_extend(hf, hf->len + fcaps.len) != 0) {
-					LM_ERR("oom5\n");
-					continue;
-				}
+				if (shm_str_extend(hf, hf->len + fcaps.len) != 0)
+					LM_ERR("oom4\n");
+				else
+					memcpy(hf->s + hf->len - fcaps.len, fcaps.s, fcaps.len);
+			}
 
-				memcpy(hf->s + hf->len - fcaps.len, fcaps.s, fcaps.len);
+			if (!insert_new_lump_before(anchor, fcaps.s, fcaps.len, 0)) {
+				pkg_free(fcaps.s);
+				LM_ERR("oom5\n");
 			}
 		}
 	}
