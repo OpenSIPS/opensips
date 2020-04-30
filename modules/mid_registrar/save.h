@@ -30,18 +30,6 @@
 
 #include "../../parser/msg_parser.h"
 
-#define REG_SAVE_MEMORY_FLAG           (1<<0)
-#define REG_SAVE_NOREPLY_FLAG          (1<<1)
-#define REG_SAVE_SOCKET_FLAG           (1<<2)
-#define REG_SAVE_PATH_STRICT_FLAG      (1<<3)
-#define REG_SAVE_PATH_LAZY_FLAG        (1<<4)
-#define REG_SAVE_PATH_OFF_FLAG         (1<<5)
-#define REG_SAVE_PATH_RECEIVED_FLAG    (1<<6)
-#define REG_SAVE_FORCE_REG_FLAG        (1<<7)
-#define REG_SAVE_PATH_FLAG   (REG_SAVE_PATH_STRICT_FLAG|\
-			REG_SAVE_PATH_LAZY_FLAG|REG_SAVE_PATH_OFF_FLAG)
-#define REG_SAVE_REQ_CT_ONLY_FLAG      (1<<8)
-
 #define MAX_CONTACT_BUFFER 1024
 
 #define E_INFO "P-Registrar-Error: "

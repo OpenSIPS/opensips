@@ -615,16 +615,15 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 	if ( flags_s )
 		reg_parse_save_flags( flags_s, &sctx);
 
-	if(route_type == ONREPLY_ROUTE)
+	if (route_type == ONREPLY_ROUTE)
 		sctx.flags |= REG_SAVE_NOREPLY_FLAG;
 
 	/* if no max_contact per AOR is defined, use the global one */
 	if (sctx.max_contacts == -1)
 		sctx.max_contacts = max_contacts;
 
-	if (parse_reg_headers(_m) < 0) {
+	if (parse_reg_headers(_m) < 0)
 		goto error;
-	}
 
 	if (forced_binding) {
 		if (parse_contacts(forced_binding, &forced_c) < 0) {

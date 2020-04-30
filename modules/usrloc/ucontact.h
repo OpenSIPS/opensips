@@ -135,7 +135,7 @@ typedef struct ucontact {
 
 	map_t kv_storage;       /*!< data attached by API subscribers >*/
 
-	int refresh_time;         /*!< when to trigger the next refresh event >*/
+	int refresh_time;         /*!< UNIX timestamp: the next refresh event >*/
 	struct list_head refresh_list;
 
 	struct ucontact* next;  /*!< Next contact in the linked list */

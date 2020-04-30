@@ -210,8 +210,10 @@ match_provider:
 
 	/* are PNs for this provider being handled by an upstream proxy? */
 	for (fcaps = req->feature_caps; fcaps; fcaps = fcaps->sibling) {
-		if (parse_fcaps(fcaps) != 0)
+		if (parse_fcaps(fcaps) != 0) {
+			LM_ERR("failed to parse Feature-Caps hf\n");
 			continue;
+		}
 
 		fcaps_body = (fcaps_body_t *)fcaps->parsed;
 		if (str_match(&fcaps_body->pns, &puri.u_val[i])) {
