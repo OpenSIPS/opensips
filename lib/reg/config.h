@@ -38,6 +38,7 @@
 #define PATH_MODE_LAZY		1
 #define PATH_MODE_OFF		0
 
+/* save() flags which correspond to a char flag */
 #define REG_SAVE_MEMORY_FLAG           (1<<0)
 #define REG_SAVE_NOREPLY_FLAG          (1<<1)
 #define REG_SAVE_SOCKET_FLAG           (1<<2)
@@ -49,5 +50,8 @@
 #define REG_SAVE_PATH_FLAG   (REG_SAVE_PATH_STRICT_FLAG|\
 			REG_SAVE_PATH_LAZY_FLAG|REG_SAVE_PATH_OFF_FLAG)
 #define REG_SAVE_REQ_CT_ONLY_FLAG      (1<<8)
+
+/* save() flags which are internally set, based on the SIP request */
+#define REG_SAVE__PN_ON_FLAG           (1<<9)
 
 #endif /* __LIB_REG_CONFIG__ */

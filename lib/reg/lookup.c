@@ -425,7 +425,7 @@ int push_branch(struct sip_msg *msg, ucontact_t *ct, int *ruri_is_pushed)
 	if (!ct)
 		return 1;
 
-	if (pn_enable && pn_has_uri_params(&ct->c, &puri)) {
+	if (pn_enable && pn_on(ct) && pn_has_uri_params(&ct->c, &puri)) {
 		if (pn_required(ct))
 			return 2;
 

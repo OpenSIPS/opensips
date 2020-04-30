@@ -70,6 +70,9 @@ typedef enum flags {
 	 */
 	FL_EXTRA_HOP   = 1 << 1,
 
+	/* Handle RFC 8599 Push Notifications when routing to this contact */
+	FL_PN_ON       = 1 << 2,
+
 	FL_ALL         = (int)0xFFFFFFFF  /*!< All flags set */
 } ucontact_flags_t;
 

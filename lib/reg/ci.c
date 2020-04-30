@@ -131,9 +131,13 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 		/* set expire time */
 		ci.expires = _e;
 
-		if (pn_enable && cmatch->mode == CT_MATCH_PARAMS &&
-		        _e > pn_trigger_interval)
-			ci.refresh_time = _e - pn_trigger_interval;
+		if (pn_enable && _reg_flags & REG_SAVE__PN_ON_FLAG) {
+			ci.flags |= FL_PN_ON;
+			if (_e > pn_trigger_interval)
+				ci.refresh_time = _e - pn_trigger_interval;
+		} else {
+			ci.flags &= ~FL_PN_ON;
+		}
 
 		/* Get methods of contact */
 		if (_c->methods) {

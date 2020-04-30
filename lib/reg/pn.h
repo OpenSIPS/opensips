@@ -40,11 +40,12 @@ struct pn_provider {
 };
 
 enum pn_action {
-	PN_NONE,            /* no 'pn-provider' was given */
-	PN_UNSUPPORTED_PNS, /* the given 'pn-provider' value is not supported */
-	PN_LIST_ALL_PNS,    /* cap query: only 'pn-provider' given, no value */
-	PN_LIST_ONE_PNS,    /* cap query: a known 'pn-provider' value was given */
-	PN_ON,              /* enable PN: all required 'pn-*' params are present */
+	PN_NONE,             /* no 'pn-provider' was given */
+	PN_HANDLED_UPSTREAM, /* a Feature-Caps hf is present, so PNs are handled */
+	PN_UNSUPPORTED_PNS,  /* the given 'pn-provider' value is not supported */
+	PN_LIST_ALL_PNS,     /* cap query: only 'pn-provider' given, no value */
+	PN_LIST_ONE_PNS,     /* cap query: a known 'pn-provider' value was given */
+	PN_ON,               /* enable PN: all required 'pn-*' params are present */
 };
 
 /* common registrar PN modparams */
@@ -87,7 +88,7 @@ int pn_init(void);
 /**
  * Look for any RFC 8599 URI parameters and take the appropriate action
  */
-enum pn_action pn_inspect_ct_params(const str *ct_uri);
+enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri);
 
 
 /**
@@ -149,6 +150,11 @@ int pn_has_uri_params(const str *ct, struct sip_uri *parsed_uri);
 int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri);
 
 
+/* PN processing is enabled -- always check first during lookup() */
+#define pn_on(ucontact) (ucontact->flags & FL_PN_ON)
+
+
+/* Once pn_on() returns true, can we get away without a PN? :) */
 #define pn_required(ucontact) \
 	(((ucontact)->last_modified + pn_skip_pn_interval >= get_act_time()) || \
 	 (ucontact)->last_modified == 0)
