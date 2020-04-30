@@ -50,6 +50,7 @@
 #include "parse_content.h"
 #include "parse_call_info.h"
 #include "parse_authenticate.h"
+#include "parse_fcaps.h"
 
 
 /*
@@ -217,6 +218,10 @@ void clean_hdr_field(struct hdr_field* hf)
 		case HDR_PROXY_AUTHENTICATE_T:
 			free_authenticate((struct authenticate_body *)hf->parsed);
 			hf->parsed = NULL;
+			break;
+
+		case HDR_FEATURE_CAPS_T:
+			free_fcaps((struct fcaps_body **)&hf->parsed);
 			break;
 
 		default:

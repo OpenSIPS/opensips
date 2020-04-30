@@ -257,6 +257,7 @@ struct sip_msg {
 	struct hdr_field* www_authenticate;
 	struct hdr_field* proxy_authenticate;
 	struct hdr_field* min_expires;
+	struct hdr_field* feature_caps;
 
 	struct sip_msg_body *body;
 
