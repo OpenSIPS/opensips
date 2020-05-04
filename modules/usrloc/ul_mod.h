@@ -79,7 +79,6 @@ typedef enum ul_pinging_mode {
 static inline int have_mem_storage(void)
 {
 	return cluster_mode == CM_NONE ||
-	       cluster_mode == CM_FEDERATION ||
 	       cluster_mode == CM_FEDERATION_CACHEDB ||
 	       cluster_mode == CM_FULL_SHARING;
 }
@@ -91,7 +90,6 @@ static inline int tags_in_use(void)
 
 #define have_data_replication() \
 	(cluster_mode == CM_FEDERATION_CACHEDB || \
-	 cluster_mode == CM_FEDERATION || \
 	 cluster_mode == CM_FULL_SHARING)
 
 /*
