@@ -1156,6 +1156,10 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 
 	memset(&ci, 0, sizeof ci);
 
+	/* if doing param-based Contact matching, force an URI update */
+	if (mri->cmatch.mode == CT_MATCH_PARAMS)
+		ci.c = &ctmap->req_ct_uri;
+
 	/* Get callid of the message */
 	callid = rpl->callid->body;
 	trim_trailing(&callid);
@@ -1383,7 +1387,7 @@ update_usrloc:
 				LM_ERR("failed to attach ucontact data - oom?\n");
 				goto error;
 			}
-		} else if (c != NULL) {
+		} else if (c) {
 			/* delete expired or stale contact (not present on main reg) */
 			if (ctmap->expires == 0 || !_c) {
 				if (reg_mode == MID_REG_THROTTLE_CT) {
@@ -1640,7 +1644,7 @@ update_usrloc:
 				LM_ERR("failed to attach ucontact data - oom?\n");
 				goto out_clear_err;
 			}
-		} else if (c != NULL) {
+		} else if (c) {
 			/* delete expired or stale contact (not present on main reg) */
 			if (ctmap->expires == 0 || !_c) {
 				was_valid = VALID_CONTACT(c, get_act_time());

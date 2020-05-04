@@ -277,6 +277,9 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 
 	update_str( &_c->user_agent, _ci->user_agent, 1);
 
+	if (_ci->c)
+		update_str( &_c->c, _ci->c, 0);
+
 	if (_ci->received.s && _ci->received.len) {
 		update_str( &_c->received, &_ci->received, 0);
 	} else {

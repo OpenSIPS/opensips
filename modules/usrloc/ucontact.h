@@ -149,6 +149,7 @@ typedef struct ucontact_info {
 							  |aorhash| record label| contact label |
 							  0-------0-------------0---------------0
 							*/
+	str* c;
 	str received;
 	str* path;
 	time_t expires;

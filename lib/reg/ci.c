@@ -52,8 +52,8 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 
 	ci.contact_id = 0;
 
-	if (_m!=0) {
-		memset( &ci, 0, sizeof(ucontact_info_t));
+	if (_m) {
+		memset(&ci, 0, sizeof ci);
 
 		/* Get callid of the message */
 		callid = _m->callid->body;
@@ -120,7 +120,11 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 		m = _m; /* remember the message */
 	}
 
-	if(_c!=0) {
+	if (_c) {
+		/* if doing param-based Contact matching, force an URI update */
+		if (cmatch->mode == CT_MATCH_PARAMS)
+			ci.c = &_c->uri;
+
 		/* Calculate q value of the contact */
 		if (calc_contact_q(_c->q, &ci.q) < 0) {
 			rerrno = R_INV_Q;
