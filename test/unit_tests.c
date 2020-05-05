@@ -24,8 +24,7 @@
 
 #include "../cachedb/test/test_backends.h"
 #include "../lib/test/test_csv.h"
-#include "../parser/test/test_parse_qop.h"
-#include "../parser/test/test_parse_fcaps.h"
+#include "../parser/test/test_parser.h"
 #include "../mem/test/test_malloc.h"
 
 #include "../lib/list.h"
@@ -60,8 +59,7 @@ int run_unit_tests(void)
 		//test_cachedb_backends();
 		//test_malloc();
 		test_lib_csv();
-		test_parse_qop_val();
-		test_parse_fcaps();
+		test_parser();
 
 	/* module tests */
 	} else {
