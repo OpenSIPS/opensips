@@ -282,6 +282,10 @@ int print_uri(struct sip_uri *uri, str *out_buf)
 	append_param(lr);
 	append_param(r2);
 	append_param(gr);
+	append_param(pn_provider);
+	append_param(pn_prid);
+	append_param(pn_param);
+	append_param(pn_purr);
 
 	for (i = 0; i < uri->u_params_no; i++)
 		append_uk_param(i);
@@ -335,7 +339,15 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					/* sctp */
 					VS_S, VS_C, VS_T, VS_P_FIN,
 					/* ws */
-					VW_W, VW_S, VW_S_FIN, VWS_S_FIN
+					VW_W, VW_S, VW_S_FIN, VWS_S_FIN,
+
+					/* pn-{provider, prid, param, purr} (RFC 8599 - SIP PN) */
+					PN_P, PN_N, PN_dash, PN_P2, PN_PR,
+					PN1_O, PN1_V, PN1_I, PN1_D, PN1_E, PN1_FIN, PN1_eq,
+					PN2_I, PN2_D, PN2_eq,
+					PN3_A, PN3_R, PN3_A2, PN3_M, PN3_eq,
+					PN4_U, PN4_R, PN4_R2, PN4_eq,
+
 	};
 	register enum states state;
 	char* s;
@@ -541,6 +553,26 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 					case d1: \
 					case d2: \
 						state=(new_state_d); \
+						break; \
+					u_param_common_cases; \
+					default: \
+						state=URI_PARAM_P; \
+				} \
+				break
+#define param_switch_bigger(old_state, c1, c2, d1, d2, e1, e2, new_state_c, new_state_d, new_state_e) \
+			case old_state : \
+				switch(*p){ \
+					case c1: \
+					case c2: \
+						state=(new_state_c); \
+						break; \
+					case d1: \
+					case d2: \
+						state=(new_state_d); \
+						break; \
+					case e1: \
+					case e2: \
+						state=(new_state_e); \
 						break; \
 					u_param_common_cases; \
 					default: \
@@ -877,6 +909,11 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						b=p;
 						state=PR2_R;
 						break;
+					case 'p':
+					case 'P':
+						b=p;
+						state=PN_P;
+						break;
 					default:
 						b=p;
 						state=URI_PARAM_P;
@@ -1100,7 +1137,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_PARAM_P;
 				}
 				break;
-				/* handle lr=something case */
+				/* handle r2=something case */
 			case PR2_eq:
 				param=&uri->r2;
 				param_val=&uri->r2_val;
@@ -1141,6 +1178,102 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			case PG_eq:
 				param=&uri->gr;
 				param_val=&uri->gr_val;
+				switch(*p){
+					param_common_cases;
+					default:
+						v=p;
+						state=URI_VAL_P;
+				}
+				break;
+
+
+			/* pn-* */
+			param_switch(PN_P, 'n', 'N', PN_N);
+			param_switch1(PN_N, '-', PN_dash);
+			param_switch(PN_dash, 'p', 'P', PN_P2);
+
+			param_switch_bigger(PN_P2, 'r', 'R', 'a', 'A', 'u', 'U',
+			                    PN_PR, PN3_A, PN4_U);
+			param_switch_big(PN_PR, 'o', 'O', 'i', 'I', PN1_O, PN2_I);
+
+			/* pn-provider */
+			param_switch(PN1_O, 'v', 'V', PN1_V);
+			param_switch(PN1_V, 'i', 'I', PN1_I);
+			param_switch(PN1_I, 'd', 'D', PN1_D);
+			param_switch(PN1_D, 'e', 'E', PN1_E);
+			param_switch(PN1_E, 'r', 'R', PN1_FIN);
+			case PN1_FIN:
+				param=&uri->pn_provider;
+				switch(*p){
+					case '@':
+						still_at_user;
+						break;
+					case '=':
+						state=PN1_eq;
+						break;
+					semicolon_case;
+						uri->pn_provider.s=b;
+						uri->pn_provider.len=(p-b);
+						break;
+					question_case;
+						uri->pn_provider.s=b;
+						uri->pn_provider.len=(p-b);
+						break;
+					colon_case;
+						break;
+					default:
+						state=URI_PARAM_P;
+				}
+				break;
+				/* handle pn-provider=something case */
+			case PN1_eq:
+				param=&uri->pn_provider;
+				param_val=&uri->pn_provider_val;
+				switch(*p){
+					param_common_cases;
+					default:
+						v=p;
+						state=URI_VAL_P;
+				}
+				break;
+
+			/* pn-prid */
+			param_switch(PN2_I, 'd', 'D', PN2_D);
+			param_switch1(PN2_D, '=', PN2_eq);
+			case PN2_eq:
+				param=&uri->pn_prid;
+				param_val=&uri->pn_prid_val;
+				switch(*p){
+					param_common_cases;
+					default:
+						v=p;
+						state=URI_VAL_P;
+				}
+				break;
+
+			/* pn-param */
+			param_switch(PN3_A, 'r', 'R', PN3_R);
+			param_switch(PN3_R, 'a', 'A', PN3_A2);
+			param_switch(PN3_A2, 'm', 'M', PN3_M);
+			param_switch1(PN3_M, '=', PN3_eq);
+			case PN3_eq:
+				param=&uri->pn_param;
+				param_val=&uri->pn_param_val;
+				switch(*p){
+					param_common_cases;
+					default:
+						v=p;
+						state=URI_VAL_P;
+				}
+				break;
+
+			/* pn-purr */
+			param_switch(PN4_U, 'r', 'R', PN4_R);
+			param_switch(PN4_R, 'r', 'R', PN4_R2);
+			param_switch1(PN4_R2, '=', PN4_eq);
+			case PN4_eq:
+				param=&uri->pn_purr;
+				param_val=&uri->pn_purr_val;
 				switch(*p){
 					param_common_cases;
 					default:
@@ -1286,6 +1419,13 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->gr.s=b;
 			uri->gr.len=p-b;
 			break;
+		case PN1_FIN:
+		case PN1_eq:
+			uri->params.s=s;
+			uri->params.len=p-s;
+			uri->pn_provider.s=b;
+			uri->pn_provider.len=p-b;
+			break;
 		case URI_VAL_P:
 		/* intermediate value states */
 		case VU_U:
@@ -1345,6 +1485,33 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			uri->headers.len=p-s;
 			if (error_headers) goto error_headers;
 			break;
+		/* intermediate PN param states */
+		case PN_P:
+		case PN_N:
+		case PN_dash:
+		case PN_P2:
+		case PN_PR:
+		case PN1_O:
+		case PN1_V:
+		case PN1_I:
+		case PN1_D:
+		case PN1_E:
+		case PN2_I:
+		case PN3_A:
+		case PN3_R:
+		case PN3_A2:
+		case PN4_U:
+		case PN4_R:
+			uri->params.s=s;
+			uri->params.len=p-s;
+			break;
+		case PN2_D:
+		case PN2_eq:
+		case PN3_M:
+		case PN3_eq:
+		case PN4_R2:
+		case PN4_eq:
+			goto error_bad_uri;
 		default:
 			goto error_bug;
 	}
