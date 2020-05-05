@@ -69,6 +69,8 @@ int parse_sip_msg_uri(struct sip_msg* msg);
 int parse_orig_ruri(struct sip_msg* msg);
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b);
+static inline int get_uri_param_val(const struct sip_uri *uri,
+                                    const str *param, str *val);
 static inline int get_uri_param_idx(const str *param,
                                     const struct sip_uri *parsed_uri);
 
@@ -101,6 +103,116 @@ static inline unsigned short get_uri_port(struct sip_uri* _uri,
 
 	return port;
 }
+
+
+/**
+ * get_uri_param_val() - Fetch the value of a given URI parameter
+ * @uri - parsed SIP URI
+ * @param - URI param name to search for
+ * @val - output value
+ *
+ * Return: 0 on success, -1 if not found
+ */
+static inline int get_uri_param_val(const struct sip_uri *uri,
+                                    const str *param, str *val)
+{
+	int i;
+
+	if (ZSTR(*param))
+		return -1;
+
+	switch (param->s[0]) {
+	case 'p':
+	case 'P':
+		if (str_casematch(param, _str("pn-provider"))) {
+			*val = uri->pn_provider;
+			return 0;
+		}
+
+		if (str_casematch(param, _str("pn-prid"))) {
+			*val = uri->pn_prid;
+			return 0;
+		}
+
+		if (str_casematch(param, _str("pn-param"))) {
+			*val = uri->pn_param;
+			return 0;
+		}
+
+		if (str_casematch(param, _str("pn-purr"))) {
+			*val = uri->pn_purr;
+			return 0;
+		}
+		break;
+
+	case 't':
+	case 'T':
+		if (str_casematch(param, _str("transport"))) {
+			*val = uri->transport_val;
+			return 0;
+		}
+
+		if (str_casematch(param, _str("ttl"))) {
+			*val = uri->ttl_val;
+			return 0;
+		}
+		break;
+
+	case 'u':
+	case 'U':
+		if (str_casematch(param, _str("user"))) {
+			*val = uri->user_param_val;
+			return 0;
+		}
+		break;
+
+	case 'm':
+	case 'M':
+		if (str_casematch(param, _str("maddr"))) {
+			*val = uri->maddr_val;
+			return 0;
+		}
+
+		if (str_casematch(param, _str("method"))) {
+			*val = uri->method_val;
+			return 0;
+		}
+		break;
+
+	case 'l':
+	case 'L':
+		if (str_casematch(param, _str("lr"))) {
+			*val = uri->lr_val;
+			return 0;
+		}
+		break;
+
+	case 'r':
+	case 'R':
+		if (str_casematch(param, _str("r2"))) {
+			*val = uri->r2_val;
+			return 0;
+		}
+		break;
+
+	case 'g':
+	case 'G':
+		if (str_casematch(param, _str("gr"))) {
+			*val = uri->gr_val;
+			return 0;
+		}
+		break;
+	}
+
+	for (i = 0; i < uri->u_params_no; i++)
+		if (str_match(param, &uri->u_name[i])) {
+			*val = uri->u_val[i];
+			return 0;
+		}
+
+	return -1;
+}
+
 
 /* Unknown URI param index.
  *

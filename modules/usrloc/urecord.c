@@ -971,7 +971,7 @@ static inline struct ucontact* contact_params_match(ucontact_t* contacts,
 {
 	struct sip_uri ct, cti;
 	str_list *param;
-	int i, j;
+	str v1, v2;
 
 	if (parse_uri(_c->s, _c->len, &ct) != 0) {
 		LM_ERR("failed to parse Contact: '%.*s'\n", _c->len, _c->s);
@@ -989,9 +989,11 @@ static inline struct ucontact* contact_params_match(ucontact_t* contacts,
 		}
 
 		for (param = _params; param; param = param->next) {
-			if ((i = get_uri_param_idx(&param->s, &cti)) < 0 ||
-			    (j = get_uri_param_idx(&param->s, &ct)) < 0 ||
-			    !str_match(&cti.u_val[i], &ct.u_val[j]))
+			if (get_uri_param_val(&ct, &param->s, &v1) != 0 ||
+			        get_uri_param_val(&cti, &param->s, &v2) != 0)
+				continue;
+
+			if (!str_match(&v1, &v2))
 				goto next_contact;
 		}
 

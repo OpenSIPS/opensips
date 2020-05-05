@@ -38,7 +38,12 @@ int pn_pnsreg_interval = 130;  /* sec */
 int pn_trigger_interval = 120; /* sec */
 int pn_skip_pn_interval = 0; /* sec */
 int pn_inv_timeout = 6; /* sec */
-str pn_provider_param = str_init("pn-provider");
+
+str pn_provider_str = str_init("pn-provider");
+str pn_prid_str = str_init("pn-prid");
+str pn_param_str = str_init("pn-param");
+str pn_purr_str = str_init("pn-purr");
+
 char *_pn_ct_params = "pn-provider, pn-prid, pn-param";
 char *_pn_providers;
 
@@ -68,7 +73,7 @@ int pn_init(void)
 	if (!pn_enable)
 		return 0;
 
-	pn_provider_param.len = strlen(pn_provider_param.s);
+	pn_provider_str.len = strlen(pn_provider_str.s);
 
 	if (!_pn_providers) {
 		LM_ERR("the 'pn_providers' modparam is missing\n");
@@ -183,21 +188,17 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 	struct hdr_field *fcaps;
 	fcaps_body_t *fcaps_body;
 	str_list *param;
-	int i, is_cap_query = 1, is_handled_upstream = 0;
+	int is_cap_query = 1, is_handled_upstream = 0;
 
 	if (parse_uri(ct_uri->s, ct_uri->len, &puri) != 0) {
 		LM_ERR("failed to parse URI: '%.*s'\n", ct_uri->len, ct_uri->s);
 		return -1;
 	}
 
-	for (i = 0; i < puri.u_params_no; i++)
-		if (str_match(&puri.u_name[i], &pn_provider_param))
-			goto match_provider;
+	if (!puri.pn_provider.s)
+		return PN_NONE;
 
-	return PN_NONE;
-
-match_provider:
-	if (ZSTR(puri.u_val[i])) {
+	if (!puri.pn_provider_val.s) {
 		for (pvd = pn_providers; pvd; pvd = pvd->next)
 			pvd->append_fcaps = 1;
 		return PN_LIST_ALL_PNS;
@@ -216,7 +217,7 @@ match_provider:
 		}
 
 		fcaps_body = (fcaps_body_t *)fcaps->parsed;
-		if (str_match(&fcaps_body->pns, &puri.u_val[i])) {
+		if (str_match(&fcaps_body->pns, &puri.pn_provider_val)) {
 			LM_DBG("PNs for '%.*s' are being handled by an upstream proxy\n",
 			       fcaps_body->pns.len, fcaps_body->pns.s);
 			is_handled_upstream = 1;
@@ -225,23 +226,28 @@ match_provider:
 	}
 
 	for (pvd = pn_providers; pvd; pvd = pvd->next)
-		if (str_match(&puri.u_val[i], &pvd->name)) {
+		if (str_match(&puri.pn_provider_val, &pvd->name)) {
 			pvd->append_fcaps = 1;
 			goto match_params;
 		}
 
-	LM_DBG("unsupported PN provider: '%.*s'\n", puri.u_val[i].len,
-	       puri.u_val[i].s);
+	LM_DBG("unsupported PN provider: '%.*s'\n", puri.pn_provider_val.len,
+	       puri.pn_provider_val.s);
 	return PN_UNSUPPORTED_PNS;
 
 match_params:
 	for (param = pn_ct_params; param; param = param->next) {
-		for (int i = 0; i < puri.u_params_no; i++)
-			if (str_match(&param->s, &puri.u_name[i])) {
-				if (!str_match(&param->s, &pn_provider_param))
-					is_cap_query = 0;
-				goto next_param;
-			}
+		if (str_match(&param->s, &pn_provider_str)) {
+			continue;
+		} else if ((str_match(&param->s, &pn_prid_str) && puri.pn_prid.s) ||
+		          (str_match(&param->s, &pn_param_str) && puri.pn_param.s)) {
+			is_cap_query = 0;
+			continue;
+		} else {
+			for (int i = 0; i < puri.u_params_no; i++)
+				if (str_match(&param->s, &puri.u_name[i]))
+					goto next_param;
+		}
 
 		if (is_handled_upstream)
 			/* at least one required PN param is missing and PNs are already
@@ -524,9 +530,15 @@ int pn_has_uri_params(const str *ct, struct sip_uri *puri)
 	}
 
 	for (param = pn_ct_params; param; param = param->next) {
-		for (int i = 0; i < puri->u_params_no; i++)
-			if (str_match(&param->s, &puri->u_name[i]))
-				goto next_param;
+		if ((str_match(&param->s, &pn_provider_str) && puri->pn_provider.s) ||
+		        (str_match(&param->s, &pn_prid_str) && puri->pn_prid.s) ||
+		        (str_match(&param->s, &pn_param_str) && puri->pn_param.s)) {
+			continue;
+		} else {
+			for (int i = 0; i < puri->u_params_no; i++)
+				if (str_match(&param->s, &puri->u_name[i]))
+					goto next_param;
+		}
 
 		return 0;
 
@@ -543,6 +555,7 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 	static int buf_len;
 	str_list *param;
 	str u_name_bak[URI_MAX_U_PARAMS];
+	char *pn_prov, *pn_prid, *pn_param;
 
 	if (pkg_str_extend(&buf, uri_len) != 0) {
 		LM_ERR("oom\n");
@@ -551,6 +564,13 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 	buf_len = buf.len;
 
 	memcpy(u_name_bak, puri->u_name, URI_MAX_U_PARAMS * sizeof *u_name_bak);
+	pn_prov = puri->pn_provider.s;
+	pn_prid = puri->pn_prid.s;
+	pn_param = puri->pn_param.s;
+
+	puri->pn_provider.s = NULL;
+	puri->pn_prid.s = NULL;
+	puri->pn_param.s = NULL;
 
 	for (param = pn_ct_params; param; param = param->next)
 		for (int i = 0; i < puri->u_params_no; i++)
@@ -566,6 +586,9 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 
 	/* fix the struct sip_uri back */
 	memcpy(puri->u_name, u_name_bak, URI_MAX_U_PARAMS * sizeof *u_name_bak);
+	puri->pn_provider.s = pn_prov;
+	puri->pn_prid.s = pn_prid;
+	puri->pn_param.s = pn_param;
 
 	LM_DBG("trimmed URI: '%.*s'\n", buf.len, buf.s);
 
