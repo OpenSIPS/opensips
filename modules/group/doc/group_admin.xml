@@ -243,11 +243,11 @@ modparam("group", "re_table", "re_grp")
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>reg_exp_column</varname> parameter</title>
+		<title>Set <varname>re_exp_column</varname> parameter</title>
 		<programlisting format="linespecific">
 
 ...
-modparam("group", "reg_exp_column", "re")
+modparam("group", "re_exp_column", "re")
 ...
 
 </programlisting>
