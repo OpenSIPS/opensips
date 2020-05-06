@@ -88,7 +88,9 @@ struct module_dependency *pn_get_deps(param_export_t *param);
 
 
 /* useful fixups */
-extern str_list *pn_ct_params;  /* list of parsed match params */
+extern str_list *pn_ct_params;
+
+#define OPENSIPS_PURR_LEN  (3 + 1/* . */ + 5 + 1/* . */ + 8)
 
 
 /**
@@ -98,7 +100,7 @@ int pn_init(void);
 
 
 /**
- * Perform any required RFC 8599 processing for a SIP request, including
+ * Perform any required RFC 8599 processing for a SIP REGISTER, including
  * handling for Feature-Caps headers arriving from upstream.
  *
  * Return: 0 on success, -1 on failure and should reply immediately
@@ -108,7 +110,7 @@ int pn_inspect_request(struct sip_msg *req, const str *ct_uri,
 
 
 /**
- * Look for any RFC 8599 URI parameters and take the appropriate action
+ * Look for any RFC 8599 URI parameters and suggest the appropriate action
  */
 enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri);
 
@@ -148,6 +150,22 @@ int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz);
  */
 int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
                   const struct sip_uri *ct_uri);
+
+
+/**
+ * Pack an usrloc @ct_id into a hex representation.
+ *
+ * NOTICE: returns a static buffer!
+ */
+char *pn_purr_pack(ucontact_id ct_id);
+
+
+/**
+ * Validate the format of a given @purr and unpack it into an usrloc @ct_id.
+ *
+ * Return: 0 on success, -1 on unrecognized PURR format
+ */
+int pn_purr_unpack(const str *purr, ucontact_id *ct_id);
 
 
 /**

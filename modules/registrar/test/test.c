@@ -31,7 +31,7 @@
 #include "../lookup.h"
 
 
-void fill_ucontact_info(ucontact_info_t *ci)
+static void fill_ucontact_info(ucontact_info_t *ci)
 {
 	static char cid_buf[9];
 	static str callid = {cid_buf, 0};
@@ -50,7 +50,7 @@ void fill_ucontact_info(ucontact_info_t *ci)
 }
 
 
-void test_lookup(void)
+static void test_lookup(void)
 {
 	udomain_t *d;
 	urecord_t *r;
@@ -97,6 +97,7 @@ void test_lookup(void)
 
 	fill_ucontact_info(&ci);
 	ok(ul.insert_ucontact(r, &ct1, &ci, &c, 0) == 0, "insert ct1 (PN)");
+	c->flags |= FL_PN_ON;
 
 	set_ruri(&msg, &aor_ruri);
 	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_PN_SENT, "lookup-6");
@@ -112,7 +113,43 @@ void test_lookup(void)
 }
 
 
+static void test_purr(void)
+{
+	ucontact_id id = 0UL;
+	char *p;
+
+	ok(!strcmp(pn_purr_pack(0UL), "000.00000.00000000"), "purr-1");
+	ok(!strcmp(pn_purr_pack(18446744073709551615UL),
+	           "fff.fffff.ffffffff"), "purr-2");
+
+	/* tricky PURR formats (all bad) */
+	ok(pn_purr_unpack(_str("000.00000.0000000"), &id) == -1, "purr-4");
+	ok(pn_purr_unpack(_str("000.00000.000000000"), &id) == -1, "purr-5");
+	ok(pn_purr_unpack(_str("00.000000.00000000"), &id) == -1, "purr-6");
+	ok(pn_purr_unpack(_str("0000.0000.00000000"), &id) == -1, "purr-7");
+	ok(pn_purr_unpack(_str("000.0000.000000000"), &id) == -1, "purr-8");
+	ok(pn_purr_unpack(_str("000.000000.0000000"), &id) == -1, "purr-9");
+	ok(pn_purr_unpack(_str("000000000.00000000"), &id) == -1, "purr-10");
+	ok(pn_purr_unpack(_str("000.00000000000000"), &id) == -1, "purr-11");
+	ok(pn_purr_unpack(_str("000000000000000000"), &id) == -1, "purr-12");
+	ok(pn_purr_unpack(_str(".00.00000.00000000"), &id) == -1, "purr-13");
+	ok(pn_purr_unpack(_str("000.00000.0000000."), &id) == -1, "purr-14");
+	ok(pn_purr_unpack(_str(".................."), &id) == -1, "purr-15");
+
+	ok(pn_purr_unpack(_str("000.00000.00000000"), &id) == 0, "purr-16");
+	ok(id == 0UL, "purr-17");
+
+	ok(pn_purr_unpack(_str("fff.fffff.ffffffff"), &id) == 0, "purr-18");
+	ok(id == 18446744073709551615UL, "purr-19");
+
+	p = pn_purr_pack(12345678901234567890UL);
+	ok(pn_purr_unpack(_str(p), &id) == 0, "purr-20");
+	ok(id == 12345678901234567890UL, "purr-21");
+}
+
+
 void mod_tests(void)
 {
 	test_lookup();
+	test_purr();
 }

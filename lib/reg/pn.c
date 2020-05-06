@@ -485,20 +485,14 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 {
 	ebr_filter *f;
 
-	/* fill in the filter templates */
+	/* fill in the EBR filter templates, so we match the future reg event */
 	for (f = pn_ebr_filters; f; f = f->next) {
-		for (int i = 0; i < ct_uri->u_params_no; i++) {
-			if (str_match(&f->uri_param_key, ct_uri->u_name + i)) {
-				f->val = ct_uri->u_val[i];
-				goto next_param;
-			}
+		if (get_uri_param_val(ct_uri, &f->uri_param_key, &f->val) != 0) {
+			LM_ERR("failed to locate '%.*s' URI param in Contact '%.*s'\n",
+			       f->uri_param_key.len, f->uri_param_key.s,
+			       ct->c.len, ct->c.s);
+			return -1;
 		}
-
-		LM_ERR("failed to locate '%.*s' URI param in Contact '%.*s'\n",
-		       f->uri_param_key.len, f->uri_param_key.s, ct->c.len, ct->c.s);
-		return -1;
-
-next_param:;
 	}
 
 	if (ebr.notify_on_event(req, ev_ct_update, pn_ebr_filters,
@@ -521,8 +515,6 @@ int pn_has_uri_params(const str *ct, struct sip_uri *puri)
 
 	if (!puri)
 		puri = &_puri;
-
-	memset(puri, 0, sizeof *puri);
 
 	if (parse_uri(ct->s, ct->len, puri) != 0) {
 		LM_ERR("failed to parse contact: '%.*s'\n", ct->len, ct->s);
@@ -595,4 +587,52 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 	*out_uri = buf;
 	buf.len = buf_len;
 	return 0;
+}
+
+
+char *pn_purr_pack(ucontact_id ct_id)
+{
+	static char purr_buf[OPENSIPS_PURR_LEN + 1];
+
+	sprintf(purr_buf, "%016lx", ct_id);
+
+	memmove(purr_buf + 4, purr_buf + 3, 13);
+	purr_buf[3] = '.';
+
+	memmove(purr_buf + 10, purr_buf + 9, 8);
+	purr_buf[9] = '.';
+
+	/* the last byte is set to '\0' by default */
+	return purr_buf;
+}
+
+
+int pn_purr_unpack(const str *purr, ucontact_id *ct_id)
+{
+	char purr_buf[OPENSIPS_PURR_LEN + 1], *p, c, *end;
+	int i = 0;
+
+	if (purr->len != OPENSIPS_PURR_LEN ||
+	        purr->s[3] != '.' || purr->s[9] != '.')
+		goto unknown_fmt;
+
+	for (p = purr->s, end = p + OPENSIPS_PURR_LEN; p < end; p++) {
+		c = *p;
+		if (c == '.' && (i == 3 || i == 8))
+			continue;
+
+		if (!isxdigit(c))
+			goto unknown_fmt;
+
+		purr_buf[i++] = c;
+	}
+
+	purr_buf[16] = '\0';
+	*ct_id = strtoul(purr_buf, NULL, 16);
+	return 0;
+
+unknown_fmt:
+	LM_DBG("unrecognized pn-purr value format: '%.*s', skipping\n",
+	       purr->len, purr->s);
+	return -1;
 }
