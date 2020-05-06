@@ -1211,6 +1211,14 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 		}
 	}
 
+	if (pn_enable && mri->reg_flags & REG_SAVE__PN_ON_FLAG) {
+		ci.flags |= FL_PN_ON;
+		if (ci.expires > pn_trigger_interval)
+			ci.refresh_time = ci.expires - pn_trigger_interval;
+	} else {
+		ci.flags &= ~FL_PN_ON;
+	}
+
 	/* additional information (script pvar) */
 	if (attr_avp_name != -1) {
 		avp_attr = search_first_avp(attr_avp_type, attr_avp_name,

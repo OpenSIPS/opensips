@@ -271,7 +271,7 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri);
 
 /* Once pn_on() returns true, can we get away without a PN? :) */
 #define pn_required(ucontact) \
-	(((ucontact)->last_modified + pn_skip_pn_interval >= get_act_time()) || \
+	(((ucontact)->last_modified + pn_skip_pn_interval <= get_act_time()) || \
 	 (ucontact)->last_modified == 0)
 
 

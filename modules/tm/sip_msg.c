@@ -491,6 +491,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 			case HDR_CALL_INFO_T:
 			case HDR_WWW_AUTHENTICATE_T:
 			case HDR_PROXY_AUTHENTICATE_T:
+			case HDR_FEATURE_CAPS_T:
 				/* we ignore them for now even if they have something parsed*/
 				break;
 

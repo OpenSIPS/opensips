@@ -77,7 +77,8 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *uri)
 
 	/* we're not in "throttle AoR" mode, so we expect a R-URI contact ID! */
 
-	if ((!req->callid && parse_headers(req, HDR_CALLID_F,0)<0) || !req->callid ) {
+	if (!req->callid && (parse_headers(req, HDR_CALLID_F, 0) < 0 ||
+	                     !req->callid)) {
 		LM_ERR("bad request or missing Call-ID hdr\n");
 		return -1;
 	}
