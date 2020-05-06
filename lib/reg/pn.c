@@ -745,8 +745,9 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 	ucontact_t *c;
 
 	/* locate "pn-purr" in the R-URI */
-	if (parse_sip_msg_uri(req) != 0) {
-		LM_ERR("failed to parse request R-URI\n");
+	if (parse_sip_msg_uri(req) < 0) {
+		LM_ERR("failed to parse R-URI: '%.*s'\n",
+		       GET_RURI(req)->len, GET_RURI(req)->s);
 		return -1;
 	}
 

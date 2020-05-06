@@ -373,7 +373,7 @@ static int cfg_validate(void)
 		return 0;
 	}
 
-	if (pn_cfg_validate() != 0) {
+	if (!pn_cfg_validate()) {
 		LM_ERR("failed to validate opensips.cfg PN configuration\n");
 		return 0;
 	}
