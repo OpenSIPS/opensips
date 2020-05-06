@@ -37,7 +37,8 @@ typedef struct ebr_api {
 
 	/**
 	 * notify_on_event() - subscribe to the @event given by @filters
-	 * @msg: the SIP msg being currently processed (typically, an INVITE)
+	 *
+	 * @msg: the SIP msg currently being processed
 	 * @event: an EBR event obtained with api.get_ebr_event()
 	 * @filters: a list of filters (either event param value matching, or
 	 *            event param SIP URI param value matching)
@@ -61,6 +62,31 @@ typedef struct ebr_api {
 	                        const ebr_filter *filters,
 	                        ebr_pack_params_cb pack_params,
 	                        ebr_notify_cb notify, int timeout);
+
+	/**
+	 * async_wait_for_event() - subscribe to the @event given by @filters.
+	 *     Only meant to be called from an async script function, such that an
+	 *     async @ctx is available.  The @ctx will be filled in here.
+	 *
+	 * @msg: the SIP request currently being processed
+	 * @ctx: the context of your async function
+	 * @event: an EBR event obtained with api.get_ebr_event()
+	 * @filters: a list of filters (either event param value matching, or
+	 *            event param SIP URI param value matching)
+	 * @pack_params: optional callback where the EVI param data may be
+	 *               changed.  Specify NULL in order to simply have the
+	 *               event data unchanged and packed as AVPs named according
+	 *               to the event parameter names
+	 *
+	 * Return: 0 on successful async setup, -1 otherwise
+	 *
+	 * When the event is triggered, the @pack_params callback, if set, gets
+	 * invoked first, so the event parameters can be prepared and made
+	 * available within the async resume route.
+	 */
+	int (*async_wait_for_event) (struct sip_msg *msg, async_ctx *ctx,
+	                             ebr_event *event, const ebr_filter *filters,
+	                             ebr_pack_params_cb pack_params, int timeout);
 } ebr_api_t;
 
 typedef int (*ebr_bind_f)(ebr_api_t *api);

@@ -56,6 +56,9 @@ int api_notify_on_event(struct sip_msg *msg, ebr_event *event,
                         const ebr_filter *filters,
                         ebr_pack_params_cb pack_params,
                         ebr_notify_cb notify, int timeout);
+int api_wait_for_event(struct sip_msg *msg, async_ctx *ctx,
+                        ebr_event *event, const ebr_filter *filters,
+                        ebr_pack_params_cb pack_params, int timeout);
 
 /* IPC type registered with the IPC layer */
 ipc_handler_type ebr_ipc_type;
@@ -375,6 +378,37 @@ static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 	async_status = ASYNC_NO_FD;
 
 	return 1;
+}
+
+
+int api_wait_for_event(struct sip_msg *msg, async_ctx *ctx,
+                        ebr_event *event, const ebr_filter *filters,
+                        ebr_pack_params_cb pack_params, int timeout)
+{
+	ebr_filter *filters_cpy;
+
+	if (event->event_id == -1) {
+		/* do the init of the event*/
+		if (init_ebr_event(event)<0) {
+			LM_ERR("failed to init event\n");
+			return -1;
+		}
+	}
+
+	if (dup_ebr_filters(filters, &filters_cpy) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	/* we have a valid EBR event here, let's subscribe on it */
+	if (add_ebr_subscription( msg, event, filters_cpy,
+	    timeout, pack_params, (void*)ctx, EBR_SUBS_TYPE_WAIT) <0 ) {
+		LM_ERR("failed to add ebr subscription for event %d\n",
+			event->event_id);
+		return -1;
+	}
+
+	return 0;
 }
 
 /************ implementation of the EVI transport API *******************/

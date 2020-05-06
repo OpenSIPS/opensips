@@ -248,12 +248,12 @@ int dup_ebr_filters(const ebr_filter *src, ebr_filter **dst)
 		str_cpy(&filter->key, &src->key);
 		filter->key.s[filter->key.len] = '\0';
 
-		filter->uri_param_key.s = (char *)(filter->key.s + filter->key.len + 1);
+		filter->uri_param_key.s = filter->key.s + filter->key.len + 1;
 		str_cpy(&filter->uri_param_key, &src->uri_param_key);
 		filter->uri_param_key.s[filter->uri_param_key.len] = '\0';
 
-		filter->val.s = (char *)(filter->uri_param_key.s +
-		                         filter->uri_param_key.len + 1);
+		filter->val.s = filter->uri_param_key.s +
+		                         filter->uri_param_key.len + 1;
 		str_cpy(&filter->val, &src->val);
 		filter->val.s[filter->val.len] = '\0';
 
