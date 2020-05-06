@@ -402,11 +402,9 @@ static inline int ebr_filter_match_evp(const ebr_filter *filter,
 			return 0;
 		}
 
-		i = get_uri_param_idx(&filter->uri_param_key, &puri);
-		if (i < 0)
+		if (get_uri_param_val(&puri, &filter->uri_param_key, &match_str) != 0)
 			return 0;
 
-		match_str = puri.u_val[i];
 	} else if (e_param->flags & EVI_STR_VAL) {
 		match_str = e_param->val.s;
 	}
@@ -424,6 +422,11 @@ static inline int ebr_filter_match_evp(const ebr_filter *filter,
 		}
 
 	} else if (e_param->flags&EVI_STR_VAL) {
+#ifdef EXTRA_DEBUG
+		LM_DBG("match %s against '%.*s'\n", filter->val.s,
+		       match_str.len, match_str.s);
+#endif
+
 		s=(char*)pkg_malloc(match_str.len + 1);
 		if (s==NULL) {
 			LM_ERR("failed to allocate PKG fnmatch "

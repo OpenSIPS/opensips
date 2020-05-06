@@ -125,22 +125,22 @@ static inline int get_uri_param_val(const struct sip_uri *uri,
 	case 'p':
 	case 'P':
 		if (str_casematch(param, _str("pn-provider"))) {
-			*val = uri->pn_provider;
+			*val = uri->pn_provider_val;
 			return 0;
 		}
 
 		if (str_casematch(param, _str("pn-prid"))) {
-			*val = uri->pn_prid;
+			*val = uri->pn_prid_val;
 			return 0;
 		}
 
 		if (str_casematch(param, _str("pn-param"))) {
-			*val = uri->pn_param;
+			*val = uri->pn_param_val;
 			return 0;
 		}
 
 		if (str_casematch(param, _str("pn-purr"))) {
-			*val = uri->pn_purr;
+			*val = uri->pn_purr_val;
 			return 0;
 		}
 		break;

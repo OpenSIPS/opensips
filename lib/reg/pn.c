@@ -752,7 +752,7 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 	}
 
 	if (req->parsed_uri.pn_purr.s) {
-		purr = &req->parsed_uri.pn_purr;
+		purr = &req->parsed_uri.pn_purr_val;
 		goto have_purr;
 	}
 
@@ -773,7 +773,7 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 		return 1;
 	}
 
-	purr = &puri.pn_purr;
+	purr = &puri.pn_purr_val;
 
 have_purr:
 	if (pn_purr_unpack(purr, &id) != 0) {

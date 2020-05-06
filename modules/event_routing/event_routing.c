@@ -201,6 +201,7 @@ void ebr_bind(ebr_api_t *api)
 {
 	api->get_ebr_event = get_ebr_event;
 	api->notify_on_event = api_notify_on_event;
+	api->async_wait_for_event = api_wait_for_event;
 }
 
 
@@ -345,30 +346,23 @@ int api_notify_on_event(struct sip_msg *msg, ebr_event *event,
 }
 
 
-static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
-					ebr_event* event, pv_spec_t* avp_filter, int* timeout)
+static int _wait_for_event(struct sip_msg *msg, async_ctx *ctx,
+                    ebr_event *event, ebr_filter *filters, int timeout,
+                    ebr_pack_params_cb pack_params)
 {
-	ebr_filter *filters;
-
-	if (event->event_id==-1) {
+	if (event->event_id == -1) {
 		/* do the init of the event*/
-		if (init_ebr_event(event)<0) {
+		if (init_ebr_event(event) < 0) {
 			LM_ERR("failed to init event\n");
 			return -1;
 		}
 	}
 
-	if (pack_ebr_filters(msg, avp_filter->pvp.pvn.u.isname.name.n,
-	                     &filters) < 0) {
-		LM_ERR("failed to build list of EBR filters\n");
-		return -1;
-	}
-
 	/* we have a valid EBR event here, let's subscribe on it */
-	if (add_ebr_subscription( msg, event, filters,
-	    *timeout, NULL, (void*)ctx, EBR_SUBS_TYPE_WAIT ) <0 ) {
+	if (add_ebr_subscription(msg, event, filters,
+	    timeout, pack_params, (void *)ctx, EBR_SUBS_TYPE_WAIT) < 0) {
 		LM_ERR("failed to add ebr subscription for event %d\n",
-			event->event_id);
+		       event->event_id);
 		return -1;
 	}
 
@@ -377,7 +371,24 @@ static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 	ctx->resume_f = ebr_resume_from_wait;
 	async_status = ASYNC_NO_FD;
 
-	return 1;
+	return 0;
+}
+
+
+static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
+					ebr_event* event, pv_spec_t* avp_filter, int* timeout)
+{
+	ebr_filter *filters;
+	int rc;
+
+	if (pack_ebr_filters(msg, avp_filter->pvp.pvn.u.isname.name.n,
+	                     &filters) < 0) {
+		LM_ERR("failed to build list of EBR filters\n");
+		return -1;
+	}
+
+	rc = _wait_for_event(msg, ctx, event, filters, *timeout, NULL);
+	return rc == 0 ? 1 : rc;
 }
 
 
@@ -387,28 +398,12 @@ int api_wait_for_event(struct sip_msg *msg, async_ctx *ctx,
 {
 	ebr_filter *filters_cpy;
 
-	if (event->event_id == -1) {
-		/* do the init of the event*/
-		if (init_ebr_event(event)<0) {
-			LM_ERR("failed to init event\n");
-			return -1;
-		}
-	}
-
 	if (dup_ebr_filters(filters, &filters_cpy) != 0) {
 		LM_ERR("oom\n");
 		return -1;
 	}
 
-	/* we have a valid EBR event here, let's subscribe on it */
-	if (add_ebr_subscription( msg, event, filters_cpy,
-	    timeout, pack_params, (void*)ctx, EBR_SUBS_TYPE_WAIT) <0 ) {
-		LM_ERR("failed to add ebr subscription for event %d\n",
-			event->event_id);
-		return -1;
-	}
-
-	return 0;
+	return _wait_for_event(msg, ctx, event, filters_cpy, timeout, pack_params);
 }
 
 /************ implementation of the EVI transport API *******************/
