@@ -138,6 +138,11 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
+static acmd_export_t acmds[] = {
+	pn_async_cmds,
+	{0,0,{{0,0,0}}}
+};
+
 static param_export_t mod_params[] = {
 	{ "mode",                 INT_PARAM, &reg_mode },
 	{ "default_expires",      INT_PARAM, &default_expires },
@@ -185,22 +190,22 @@ struct module_exports exports= {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,				 /* load function */
-	&deps,           /* OpenSIPS module dependencies */
-	cmds,            /* exported functions */
-	NULL,               /* exported async functions */
-	mod_params,      /* param exports */
-	NULL,       /* exported statistics */
-	NULL,         /* exported MI functions */
-	NULL,       /* exported pseudo-variables */
-	NULL,	    /* exported transformations */
-	NULL,               /* extra processes */
-	NULL,            /* module pre-initialization function */
-	mod_init,        /* module initialization function */
-	NULL,               /* reply processing function */
+	NULL,        /* load function */
+	&deps,       /* OpenSIPS module dependencies */
+	cmds,        /* exported functions */
+	acmds,       /* exported async functions */
+	mod_params,  /* param exports */
+	NULL,        /* exported statistics */
+	NULL,        /* exported MI functions */
+	NULL,        /* exported pseudo-variables */
+	NULL,        /* exported transformations */
+	NULL,        /* extra processes */
+	NULL,        /* module pre-initialization function */
+	mod_init,    /* module initialization function */
+	NULL,        /* reply processing function */
 	NULL,
-	NULL,       /* per-child init function */
-	cfg_validate/* reload confirm function */
+	NULL,        /* per-child init function */
+	cfg_validate /* reload confirm function */
 };
 
 /*! \brief

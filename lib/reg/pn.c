@@ -507,7 +507,7 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 {
 	ebr_filter *f;
 
-	/* fill in the EBR filter templates, so we match the future reg event */
+	/* fill in the EBR filters, so we can match the future reg event */
 	for (f = pn_ebr_filters; f; f = f->next) {
 		if (get_uri_param_val(ct_uri, &f->uri_param_key, &f->val) != 0) {
 			LM_ERR("failed to locate '%.*s' URI param in Contact '%.*s'\n",
@@ -519,7 +519,7 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 
 	if (ebr.notify_on_event(req, ev_ct_update, pn_ebr_filters,
 	        pn_trim_pn_params, pn_inject_branch, pn_inv_timeout) != 0) {
-		LM_ERR("failed to subscribe to "UL_EV_CT_UPDATE", Contact: %.*s\n",
+		LM_ERR("failed to EBR-subscribe to "UL_EV_CT_UPDATE", Contact: %.*s\n",
 		       ct->c.len, ct->c.s);
 		return -1;
 	}
@@ -609,6 +609,97 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 	*out_uri = buf;
 	buf.len = buf_len;
 	return 0;
+}
+
+
+int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
+{
+	ebr_filter *f;
+	struct sip_uri puri;
+	str *purr, *rt_uri;
+	ucontact_id id;
+	urecord_t *r;
+	ucontact_t *c;
+
+	/* locate "pn-purr" in the R-URI */
+	if (parse_sip_msg_uri(req) != 0) {
+		LM_ERR("failed to parse request R-URI\n");
+		return -1;
+	}
+
+	if (req->parsed_uri.pn_purr.s) {
+		purr = &req->parsed_uri.pn_purr;
+		goto have_purr;
+	}
+
+	/* locate "pn-purr" in the topmost Route hfs */
+	if (!req->route || !req->route->parsed) {
+		LM_ERR("pn_async_process_purr() must be called after loose_route()\n");
+		return -1;
+	}
+
+	rt_uri = &((rr_t *)req->route->parsed)->nameaddr.uri;
+	if (parse_uri(rt_uri->s, rt_uri->len, &puri) != 0) {
+		LM_ERR("failed to parse Route URI: '%.*s'\n", rt_uri->len, rt_uri->s);
+		return -1;
+	}
+
+	if (!puri.pn_purr.s) {
+		LM_DBG("did not find 'pn-purr' in either R-URI or topmost Route\n");
+		return 1;
+	}
+
+	purr = &puri.pn_purr;
+
+have_purr:
+	if (pn_purr_unpack(purr, &id) != 0) {
+		LM_DBG("this 'pn-purr' is not ours, ignoring\n");
+		return 1;
+	}
+
+	/* look up the PURR */
+	c = ul.get_ucontact_from_id(d, id, &r);
+	if (!c) {
+		LM_DBG("recognized pn-purr: '%.*s', ctid: %lu, but ct not found!\n",
+		       purr->len, purr->s, id);
+		return 1;
+	}
+
+	LM_DBG("retrieved ct: '%.*s' from pn-purr: '%.*s'\n", c->c.len, c->c.s,
+	       purr->len, purr->s);
+
+	if (parse_uri(c->c.s, c->c.len, &puri) != 0) {
+		LM_ERR("failed to parse Contact: '%.*s'\n", c->c.len, c->c.s);
+		goto err_unlock;
+	}
+
+	/* fill in the EBR filters, so we can match the future reg event */
+	for (f = pn_ebr_filters; f; f = f->next) {
+		if (get_uri_param_val(&puri, &f->uri_param_key, &f->val) != 0) {
+			LM_ERR("failed to locate '%.*s' URI param in Contact '%.*s'\n",
+			       f->uri_param_key.len, f->uri_param_key.s,
+			       c->c.len, c->c.s);
+			goto err_unlock;
+		}
+	}
+
+	/* subscribe for re-register events from this contact */
+	if (ebr.async_wait_for_event(req, ctx, ev_ct_update, pn_ebr_filters,
+	          pn_trim_pn_params, pn_inv_timeout) != 0) {
+		LM_ERR("failed to EBR-subscribe to "UL_EV_CT_UPDATE", ct: '%.*s'\n",
+		       c->c.len, c->c.s);
+		goto err_unlock;
+	}
+
+	/* trigger the Push Notification */
+	ul.raise_ev_ct_refresh(c, 1);
+
+	ul.unlock_udomain(d, &r->aor);
+	return 1;
+
+err_unlock:
+	ul.unlock_udomain(d, &r->aor);
+	return -1;
 }
 
 

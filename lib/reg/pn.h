@@ -75,6 +75,11 @@ extern int pn_enable_purr;
 extern char *_pn_ct_params;
 extern char *_pn_providers;
 
+#define pn_async_cmds \
+	{"pn_process_purr",  (acmd_function)pn_async_process_purr, { \
+	    {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0}, \
+	    {0,0,0}}}
+
 #define pn_modparams \
 	{"pn_enable",           INT_PARAM, &pn_enable}, \
 	{"pn_providers",        STR_PARAM, &_pn_providers}, \
@@ -174,6 +179,25 @@ int pn_add_reply_purr(const ucontact_t *ct);
  * NOTICE: returns a static buffer!
  */
 char *pn_purr_pack(ucontact_id ct_id);
+
+
+/**
+ * Async, script-level handling for long-lived dialogs (PN RFC Section 6).
+ * If a "pn-purr=xxx" value that matches both our format and an existing
+ * registration is present in the R-URI, dest URI or Route headers, we then:
+ *    - EBR-subscribe to E_UL_CONTACT_UPDATE events for the matched contact
+ *    - raise the E_UL_CONTACT_REFRESH event, so a PN can be sent
+ * @req: mid-dialog SIP request currently in processing
+ * @ctx: the async ctx
+ * @d: usrloc domain within which the 'pn-purr' value will be searched
+ *
+ * Should be called after loose_route().
+ *
+ * Return:
+ *    1 on successful processing (including unknown pn-purr value format)
+ *   -1 on internal error
+ */
+int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d);
 
 
 /**

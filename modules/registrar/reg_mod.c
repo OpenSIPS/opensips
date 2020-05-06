@@ -178,6 +178,11 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
+static acmd_export_t acmds[] = {
+	pn_async_cmds,
+	{0,0,{{0,0,0}}}
+};
+
 /*! \brief
  * Exported parameters
  */
@@ -239,15 +244,15 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,				 /* load function */
-	&deps,           /* OpenSIPS module dependencies */
+	NULL,        /* load function */
+	&deps,       /* OpenSIPS module dependencies */
 	cmds,        /* Exported functions */
-	0,           /* Exported async functions */
+	acmds,       /* Exported async functions */
 	params,      /* Exported parameters */
 	mod_stats,   /* exported statistics */
 	0,           /* exported MI functions */
 	0,           /* exported pseudo-variables */
-	0,			 /* exported transformations */
+	0,           /* exported transformations */
 	0,           /* extra processes */
 	0,           /* module pre-initialization function */
 	mod_init,    /* module initialization function */
