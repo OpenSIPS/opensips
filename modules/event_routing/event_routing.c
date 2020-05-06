@@ -95,6 +95,15 @@ static acmd_export_t acmds[] = {
 	{0,0,{{0,0,0}}}
 };
 
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_DEFAULT, "tm",        DEP_SILENT },
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ NULL, NULL },
+	},
+};
 
 /**
  * module exports
@@ -110,7 +119,7 @@ struct module_exports exports= {
 	/* load function */
 	0,
 	/* OpenSIPS module dependencies */
-	NULL,
+	&deps,
 	/* exported functions */
 	cmds,
 	/* exported async functions */
@@ -181,17 +190,15 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* try binding to TM if needed and if available */
+	/* try binding to TM if available */
 	memset( &ebr_tmb, 0, sizeof(ebr_tmb) );
-	if ( is_script_func_used("notify_on_event",-1) ) {
-		/* TM may be used passing the transaction context to the
-		 * notification routes */
-		LM_DBG("trying to load TM API, if available\n");
-		if (load_tm_api(&ebr_tmb)<0) {
-			LM_NOTICE("unable to load TM API, so TM context will not be "
-				"available in notification routes\n");
-		}
-	}
+
+	/* TM may be used passing the transaction context to the
+	 * notification routes */
+	LM_DBG("trying to load TM API, if available\n");
+	if (load_tm_api(&ebr_tmb) < 0)
+		LM_NOTICE("unable to load TM API, so TM context will not be "
+		          "available in notification routes\n");
 
 	return 0;
 }

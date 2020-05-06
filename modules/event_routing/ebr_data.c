@@ -385,7 +385,7 @@ static inline int ebr_filter_match_evp(const ebr_filter *filter,
 	char *s;
 	str match_str;
 	struct sip_uri puri;
-	int i;
+	int rc;
 
 	/* a "no value" matches anything */
 	if (filter->val.len == 0)
@@ -435,9 +435,9 @@ static inline int ebr_filter_match_evp(const ebr_filter *filter,
 		} else {
 			memcpy(s, match_str.s, match_str.len);
 			s[match_str.len] = 0;
-			i = fnmatch( filter->val.s, s, 0);
+			rc = fnmatch( filter->val.s, s, 0);
 			pkg_free(s);
-			if (i != 0)
+			if (rc != 0)
 				return 0;
 		}
 	} else {
