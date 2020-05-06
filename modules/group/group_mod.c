@@ -77,26 +77,13 @@ static int check_aaaurl_fixup(void** param);
 static int obsolete_fixup_0(void** param);
 static int obsolete_fixup_1(void** param);
 
-#define TABLE "grp"
-#define TABLE_LEN (sizeof(TABLE) - 1)
-
-#define USER_COL "username"
-#define USER_COL_LEN (sizeof(USER_COL) - 1)
-
+#define TABLE      "grp"
+#define USER_COL   "username"
 #define DOMAIN_COL "domain"
-#define DOMAIN_COL_LEN (sizeof(DOMAIN_COL) - 1)
-
-#define GROUP_COL "grp"
-#define GROUP_COL_LEN (sizeof(GROUP_COL) - 1)
-
-#define RE_TABLE "re_grp"
-#define RE_TABLE_LEN (sizeof(TABLE) - 1)
-
+#define GROUP_COL  "grp"
+#define RE_TABLE   "re_grp"
 #define RE_EXP_COL "reg_exp"
-#define RE_EXP_COL_LEN (sizeof(USER_COL) - 1)
-
 #define RE_GID_COL "group_id"
-#define RE_GID_COL_LEN (sizeof(DOMAIN_COL) - 1)
 
 /*
  * Module parameter variables
@@ -105,16 +92,16 @@ static str db_url = {NULL, 0};
 static str aaa_proto_url = {NULL, 0};
 
 /* Table name where group definitions are stored */
-str table         = {TABLE, TABLE_LEN};
-str user_column   = {USER_COL, USER_COL_LEN};
-str domain_column = {DOMAIN_COL, DOMAIN_COL_LEN};
-str group_column  = {GROUP_COL, GROUP_COL_LEN};
+str table         = str_init(TABLE);
+str user_column   = str_init(USER_COL);
+str domain_column = str_init(DOMAIN_COL);
+str group_column  = str_init(GROUP_COL);
 int use_domain    = 0;
 
 /* tabel and columns used for re-based groups */
-str re_table      = {0, 0};
-str re_exp_column = {RE_EXP_COL, RE_EXP_COL_LEN};
-str re_gid_column = {RE_GID_COL, RE_GID_COL_LEN};
+str re_table;
+str re_exp_column = str_init(RE_EXP_COL);
+str re_gid_column = str_init(RE_GID_COL);
 int multiple_gid  = 1;
 
 /* DB functions and handlers */
