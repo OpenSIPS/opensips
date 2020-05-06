@@ -38,21 +38,23 @@ int pn_pnsreg_interval = 130;  /* sec */
 int pn_trigger_interval = 120; /* sec */
 int pn_skip_pn_interval = 0; /* sec */
 int pn_inv_timeout = 6; /* sec */
-
-str pn_provider_str = str_init("pn-provider");
-str pn_prid_str = str_init("pn-prid");
-str pn_param_str = str_init("pn-param");
-str pn_purr_str = str_init("pn-purr");
-
+int pn_enable_purr;
 char *_pn_ct_params = "pn-provider, pn-prid, pn-param";
 char *_pn_providers;
 
+/* list of parsed match params */
 str_list *pn_ct_params;
 
 static struct pn_provider *pn_providers;
 static ebr_filter *pn_ebr_filters;
 
-#define MAX_PROVIDER_LEN 20
+/* Contact URI parameters */
+static str pn_provider_str = str_init("pn-provider");
+static str pn_prid_str = str_init("pn-prid");
+static str pn_param_str = str_init("pn-param");
+//static str pn_purr_str = str_init("pn-purr");
+
+#define MAX_PROVIDER_LEN 40
 #define MAX_PNSPURR_LEN 40
 #define MAX_FEATURE_CAPS_SIZE \
 	(sizeof("Feature-Caps: +sip.pns=\"\";" \
@@ -96,6 +98,12 @@ int pn_init(void)
 	for (pnp = items; pnp; pnp = pnp->next) {
 		if (ZSTR(pnp->s))
 			continue;
+
+		if (pnp->s.len > MAX_PROVIDER_LEN) {
+			LM_ERR("PN provider name too long (%d/%d)\n",
+			       pnp->s.len, MAX_PROVIDER_LEN);
+			return -1;
+		}
 
 		param = shm_malloc(sizeof *param + pnp->s.len + 1);
 		if (!param) {
@@ -150,11 +158,17 @@ int pn_init(void)
 		str_cpy(&provider->name, &pnp->s);
 		provider->name.s[provider->name.len] = '\0';
 
-		provider->feature_caps.s = (char *)(provider->name.s + pnp->s.len + 1);
+		provider->feature_caps_query.s = provider->name.s + pnp->s.len + 1;
+		provider->feature_caps_query.len =
+			sprintf(provider->feature_caps_query.s,
+				"Feature-Caps: +sip.pns=\"%.*s\""CRLF, pnp->s.len, pnp->s.s);
+
+		provider->feature_caps.s = provider->feature_caps_query.s +
+			                       provider->feature_caps_query.len + 1;
 		provider->feature_caps.len = sprintf(provider->feature_caps.s,
-				"Feature-Caps: +sip.pns=\"%.*s\";+sip.pnsreg=\"%u\"\r\n",
-							  // TODO: ";+sip.pnspurr=\"",
-				pnp->s.len, pnp->s.s, pn_pnsreg_interval);
+				"Feature-Caps: +sip.pns=\"%.*s\";+sip.pnsreg=\"%u\"%s",
+				pnp->s.len, pnp->s.s, pn_pnsreg_interval,
+				pn_enable_purr ? ";+sip.pnspurr=\"" : CRLF);
 
 		add_last(provider, pn_providers);
 		LM_DBG("parsed PN provider: '%.*s', hdr: '%.*s'\n", provider->name.len,
@@ -200,7 +214,7 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 
 	if (!puri.pn_provider_val.s) {
 		for (pvd = pn_providers; pvd; pvd = pvd->next)
-			pvd->append_fcaps = 1;
+			pvd->append_fcaps_query = 1;
 		return PN_LIST_ALL_PNS;
 	}
 
@@ -226,10 +240,8 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 	}
 
 	for (pvd = pn_providers; pvd; pvd = pvd->next)
-		if (str_match(&puri.pn_provider_val, &pvd->name)) {
-			pvd->append_fcaps = 1;
+		if (str_match(&puri.pn_provider_val, &pvd->name))
 			goto match_params;
-		}
 
 	LM_DBG("unsupported PN provider: '%.*s'\n", puri.pn_provider_val.len,
 	       puri.pn_provider_val.s);
@@ -259,12 +271,15 @@ match_params:
 next_param:;
 	}
 
-	if (is_cap_query)
+	if (is_cap_query) {
+		pvd->append_fcaps_query = 1;
 		return PN_LIST_ONE_PNS;
+	}
 
 	if (is_handled_upstream)
 		return PN_MATCH_PN_PARAMS;
 
+	pvd->append_fcaps = 1;
 	return PN_ON;
 }
 
@@ -317,16 +332,23 @@ void pn_append_feature_caps(struct sip_msg *msg, int append_to_reply, str *hf)
 {
 	struct pn_provider *prov;
 	struct lump *anchor;
-	str fcaps;
+	str fcaps, *hdr;
 
 	for (prov = pn_providers; prov; prov = prov->next) {
-		if (!prov->append_fcaps)
+		if (!prov->append_fcaps && !prov->append_fcaps_query)
 			continue;
 
-		prov->append_fcaps = 0;
+		if (prov->append_fcaps_query) {
+			hdr = &prov->feature_caps_query;
+			prov->append_fcaps_query = 0;
+		} else {
+			hdr = &prov->feature_caps;
+			hdr->len = strlen(hdr->s); /* count the post-print length */
+			prov->append_fcaps = 0;
+		}
 
 		if (append_to_reply) {
-			if (!add_lump_rpl(msg, prov->feature_caps.s, prov->feature_caps.len,
+			if (!add_lump_rpl(msg, hdr->s, hdr->len,
 			                  LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE))
 				LM_ERR("oom1\n");
 		} else {
@@ -336,7 +358,7 @@ void pn_append_feature_caps(struct sip_msg *msg, int append_to_reply, str *hf)
 				continue;
 			}
 
-			if (pkg_str_dup(&fcaps, &prov->feature_caps) != 0) {
+			if (pkg_str_dup(&fcaps, hdr) != 0) {
 				LM_ERR("oom3\n");
 				continue;
 			}
@@ -586,6 +608,43 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 
 	*out_uri = buf;
 	buf.len = buf_len;
+	return 0;
+}
+
+
+int pn_add_reply_purr(const ucontact_t *ct)
+{
+	struct sip_uri puri;
+	struct pn_provider *prov;
+
+	if (!pn_enable_purr)
+		return 0;
+
+	if (parse_uri(ct->c.s, ct->c.len, &puri) != 0) {
+		LM_ERR("failed to parse Contact URI: '%.*s'\n", ct->c.len, ct->c.s);
+		return -1;
+	}
+
+	if (!puri.pn_provider.s)
+		return 0;
+
+	for (prov = pn_providers; prov; prov = prov->next)
+		if (str_match(&prov->name, &puri.pn_provider_val))
+			goto have_provider;
+
+	LM_DBG("skipping unknown provider '%.*s'\n", prov->name.len, prov->name.s);
+	return 0;
+
+have_provider:
+	if (!prov->append_fcaps) {
+		LM_DBG("cap query for '%.*s', no need to add +sip.pnspurr\n",
+		       prov->name.len, prov->name.s);
+		return 0;
+	}
+
+	sprintf(prov->feature_caps.s + prov->feature_caps.len, "%s\"" CRLF,
+	        pn_purr_pack(ct->contact_id));
+
 	return 0;
 }
 

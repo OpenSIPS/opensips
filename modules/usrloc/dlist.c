@@ -1087,13 +1087,7 @@ int find_domain(str* _d, udomain_t** _p)
 	return 1;
 }
 
-/*
- * retrieve the ucontact from a domain using the contact id
- *
- * Returns:
- *	NULL, if contact not found
- *  contact, *with grabbed ulslot lock*
- */
+
 ucontact_t* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, urecord_t **_r)
 {
 	int count;

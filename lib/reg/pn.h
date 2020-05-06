@@ -32,8 +32,13 @@
 #include "regtime.h"
 #include "save_flags.h"
 
+/* dual-purpose: it represents a provider and helps build a Feature-Caps hf */
 struct pn_provider {
 	str name;
+
+	str feature_caps_query;
+	int append_fcaps_query;
+
 	str feature_caps;
 	int append_fcaps;
 
@@ -66,7 +71,7 @@ extern int pn_pnsreg_interval;
 extern int pn_trigger_interval;
 extern int pn_skip_pn_interval;
 extern int pn_inv_timeout;
-extern str pn_provider_str;
+extern int pn_enable_purr;
 extern char *_pn_ct_params;
 extern char *_pn_providers;
 
@@ -77,7 +82,8 @@ extern char *_pn_providers;
 	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval}, \
 	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval}, \
 	{"pn_skip_pn_interval", INT_PARAM, &pn_skip_pn_interval}, \
-	{"pn_inv_timeout",      INT_PARAM, &pn_inv_timeout}
+	{"pn_inv_timeout",      INT_PARAM, &pn_inv_timeout}, \
+	{"pn_enable_purr",      INT_PARAM, &pn_enable_purr}
 
 
 /* module dependencies */
@@ -95,6 +101,8 @@ extern str_list *pn_ct_params;
 
 /**
  * Initialize RFC 8599 support
+ *
+ * Return: 0 on success, -1 otherwise
  */
 int pn_init(void);
 
@@ -150,6 +158,14 @@ int pn_awake_pn_contacts(struct sip_msg *req, ucontact_t **cts, int sz);
  */
 int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
                   const struct sip_uri *ct_uri);
+
+
+/**
+ * Looks at the PN provider of the given usrloc @ct and copies over any
+ * required Feature-Caps +sip.pnspurr URI parameter information, to be included
+ * in the REGISTER reply.
+ */
+int pn_add_reply_purr(const ucontact_t *ct);
 
 
 /**

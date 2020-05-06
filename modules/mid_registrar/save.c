@@ -1439,6 +1439,10 @@ update_usrloc:
 			}
 		}
 
+		if (pn_enable && pn_add_reply_purr(c) != 0)
+			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
+			       ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
+
 		ctmap->uc = c;
 
 		if (tcp_check) {
@@ -1685,6 +1689,10 @@ update_usrloc:
 				goto out_clear_err;
 			}
 		}
+
+		if (pn_enable && pn_add_reply_purr(c) != 0)
+			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
+			       ctmap->req_ct_uri.len, ctmap->req_ct_uri.s);
 
 		ctmap->uc = c;
 

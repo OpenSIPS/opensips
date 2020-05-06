@@ -96,8 +96,8 @@ static void test_lookup(void)
 	ok(ul.delete_ucontact(r, c, 0) == 0, "delete ucontact");
 
 	fill_ucontact_info(&ci);
+	ci.flags |= FL_PN_ON; /* this is needed until we rewrite to call save() */
 	ok(ul.insert_ucontact(r, &ct1, &ci, &c, 0) == 0, "insert ct1 (PN)");
-	c->flags |= FL_PN_ON;
 
 	set_ruri(&msg, &aor_ruri);
 	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_PN_SENT, "lookup-6");

@@ -368,7 +368,8 @@ void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c)
 	}
 
 	/* the ATTR value */
-	if(evi_param_set_str(ul_c_attr_param,_c->attr.len?&_c->attr:&str_empty)<0){
+	if (evi_param_set_str(ul_c_attr_param,
+	                       _c->attr.len ? &_c->attr : &str_empty) < 0) {
 		LM_ERR("cannot set attr parameter\n");
 		return;
 	}

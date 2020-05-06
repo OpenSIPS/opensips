@@ -290,6 +290,10 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 			}
 		}
 
+		if (pn_enable && pn_add_reply_purr(c) != 0)
+			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
+			       _c->uri.len, _c->uri.s);
+
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
@@ -465,6 +469,9 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					LM_ERR("failed to delete contact\n");
 					goto error;
 				}
+
+				continue;
+
 			} else {
 				/* do update */
 				/* if the contact to be updated is not valid, it will be after
@@ -514,6 +521,11 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				}
 			}
 		}
+
+		if (pn_enable && pn_add_reply_purr(c) != 0)
+			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
+			       _c->uri.len, _c->uri.s);
+
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
