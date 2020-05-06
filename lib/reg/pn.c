@@ -757,8 +757,14 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 	}
 
 	/* locate "pn-purr" in the topmost Route hfs */
-	if (!req->route || !req->route->parsed) {
-		LM_ERR("pn_async_process_purr() must be called after loose_route()\n");
+	if (!req->route && (parse_headers(req, HDR_ROUTE_F, 0) != 0 ||
+	                    !req->route)) {
+		LM_DBG("request has no 'pn-purr' (no Route headers found)\n");
+		return -1;
+	}
+
+	if (!req->route->parsed && parse_rr(req->route) != 0) {
+		LM_ERR("failed to parse Route header\n");
 		return -1;
 	}
 
