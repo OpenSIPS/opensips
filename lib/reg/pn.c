@@ -195,12 +195,44 @@ struct module_dependency *pn_get_deps(param_export_t *param)
 }
 
 
+/**
+ * attempt to match @prov in any Feature-Caps hf value of @req
+ *
+ * Return: 1 on match, 0 on non-match, -1 on error
+ */
+static int pn_fcaps_match_provider(struct sip_msg *req, const str *prov)
+{
+	struct hdr_field *fcaps;
+	fcaps_body_t *fcaps_body;
+
+	if (parse_headers(req, HDR_EOH_F, 0) < 0) {
+		LM_ERR("failed to parse headers\n");
+		return -1;
+	}
+
+	for (fcaps = req->feature_caps; fcaps; fcaps = fcaps->sibling) {
+		if (parse_fcaps(fcaps) != 0) {
+			LM_ERR("failed to parse Feature-Caps hf\n");
+			continue;
+		}
+
+		fcaps_body = (fcaps_body_t *)fcaps->parsed;
+
+		if (str_match(&fcaps_body->pns, prov)) {
+			LM_DBG("PNs for '%.*s' are being handled by an upstream proxy\n",
+			       fcaps_body->pns.len, fcaps_body->pns.s);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
 enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 {
 	struct sip_uri puri;
 	struct pn_provider *pvd;
-	struct hdr_field *fcaps;
-	fcaps_body_t *fcaps_body;
 	str_list *param;
 	int is_cap_query = 1, is_handled_upstream = 0;
 
@@ -212,31 +244,28 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 	if (!puri.pn_provider.s)
 		return PN_NONE;
 
+	/* ";pn-provider" -> this is a query for a full PNS listing */
 	if (!puri.pn_provider_val.s) {
-		for (pvd = pn_providers; pvd; pvd = pvd->next)
-			pvd->append_fcaps_query = 1;
+		/* if any of our providers are being handled upstream, ignore them */
+		for (pvd = pn_providers; pvd; pvd = pvd->next) {
+			switch (pn_fcaps_match_provider(req, &pvd->name)) {
+			case -1:
+				return -1;
+			case 0:
+				pvd->append_fcaps_query = 1;
+			}
+		}
+
 		return PN_LIST_ALL_PNS;
 	}
 
-	if (parse_headers(req, HDR_EOH_F, 0) < 0) {
-		LM_ERR("failed to parse headers\n");
-		return -1;
-	}
-
 	/* are PNs for this provider being handled by an upstream proxy? */
-	for (fcaps = req->feature_caps; fcaps; fcaps = fcaps->sibling) {
-		if (parse_fcaps(fcaps) != 0) {
-			LM_ERR("failed to parse Feature-Caps hf\n");
-			continue;
-		}
-
-		fcaps_body = (fcaps_body_t *)fcaps->parsed;
-		if (str_match(&fcaps_body->pns, &puri.pn_provider_val)) {
-			LM_DBG("PNs for '%.*s' are being handled by an upstream proxy\n",
-			       fcaps_body->pns.len, fcaps_body->pns.s);
-			is_handled_upstream = 1;
-			goto match_params;
-		}
+	switch (pn_fcaps_match_provider(req, &puri.pn_provider_val)) {
+	case -1:
+		return -1;
+	case 1:
+		is_handled_upstream = 1;
+		goto match_params;
 	}
 
 	for (pvd = pn_providers; pvd; pvd = pvd->next)
