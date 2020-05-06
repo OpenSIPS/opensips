@@ -76,6 +76,11 @@ int pn_init(void)
 	if (!pn_enable)
 		return 0;
 
+	if (!pn_cfg_validate()) {
+		LM_ERR("failed to validate opensips.cfg PN configuration\n");
+		return -1;
+	}
+
 	pn_provider_str.len = strlen(pn_provider_str.s);
 
 	if (!_pn_providers) {
@@ -185,6 +190,24 @@ int pn_init(void)
 	free_csv_record(items);
 
 	return 0;
+}
+
+
+int pn_cfg_validate(void)
+{
+	if (is_script_async_func_used("pn_process_purr", 1) && !pn_enable_purr) {
+		LM_ERR("you are calling 'pn_process_purr()' without also enabling "
+		       "modparam 'pn_enable_purr', config not valid\n");
+		return 0;
+	}
+
+	if (!is_script_async_func_used("pn_process_purr", 1) && pn_enable_purr) {
+		LM_ERR("you have enabled modparam 'pn_enable_purr' but there is no "
+		       "async call to 'pn_process_purr()', config not valid\n");
+		return 0;
+	}
+
+	return 1;
 }
 
 

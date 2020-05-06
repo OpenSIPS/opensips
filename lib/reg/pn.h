@@ -119,6 +119,15 @@ int pn_init(void);
 
 
 /**
+ * Validate the current opensips.cfg configuration.  To be used within the
+ * script reloading hook.
+ *
+ * Return: 1 if valid, 0 otherwise
+ */
+int pn_cfg_validate(void);
+
+
+/**
  * Perform any required RFC 8599 processing for a SIP REGISTER, including
  * handling for Feature-Caps headers arriving from upstream.
  *
