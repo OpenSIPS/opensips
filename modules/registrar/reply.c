@@ -460,7 +460,7 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 	}
 
 	if (pn_enable)
-		pn_append_feature_caps(_m, 1, NULL);
+		pn_append_rpl_fcaps(_m);
 
 	code = rerr_codes[rerrno];
 	switch (code) {

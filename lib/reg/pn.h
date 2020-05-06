@@ -45,6 +45,12 @@ struct pn_provider {
 	struct pn_provider *next;
 };
 
+#define PN_PROVIDER_RPL_FCAPS   (1UL << 0)
+#define PN_PROVIDER_RPL_QFCAPS  (1UL << 1)
+#define PN_PROVIDER_FLAGS       2
+
+#define PN_MAX_PROVIDERS   (sizeof(unsigned long) / PN_PROVIDER_FLAGS)
+
 enum pn_action {
 	PN_NONE,             /* no 'pn-provider' was given */
 	PN_UNSUPPORTED_PNS,  /* the given 'pn-provider' value is not supported */
@@ -129,16 +135,36 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri);
 
 
 /**
- * Append any required Feature-Caps header fields.  Before calling this
- * function, you must call pn_inspect_ct_params() in order to interpret the
- * UA's intentions and prepare the appropriate Feature-Caps header content.
+ * Only relevant for the 'PN proxy' scenario (i.e. mid-registrar).  Marks any
+ * PNS requested by the UA in the Contact header, supported by this proxy and
+ * not included in the incoming set of Feature-Caps hfs as such, by appending
+ * a Feature-Caps for each of them.
  *
- * @msg: the SIP message in processing
- * @append_to_reply: if true, the headers will be appended for an internally
- *                   generated reply, and not for the forwarded request
- * @hf: if non-NULL, it will contain a fresh SHM buffer with all Feature-Caps
+ *   Example way of advertising donwstream that 'fcm' is handled here:
+ *		Feature-Caps: +sip.pns="fcm"
+ *
+ * Return: 0 on success, -1 on partial processing (internal error)
  */
-void pn_append_feature_caps(struct sip_msg *msg, int append_to_reply, str *hf);
+int pn_append_req_fcaps(struct sip_msg *msg, void **pn_provider_state);
+
+
+/**
+ * Only relevant for the 'PN proxy' scenario (i.e. mid-registrar).  To be
+ * called earliest on the 200 OK to the REGISTER, in order to restore the PN
+ * provider flags, so the 200 OK Feature-Caps can be properly built.
+ */
+void pn_restore_provider_state(void *pn_provider_state);
+
+
+/**
+ * Append any required Feature-Caps header fields for a REGISTER or its 200 OK
+ * in order to inform each next-hop party of our PN processing capabilities.
+ *
+ * @msg: the SIP message in processing (request or reply)
+ *
+ * Return: 0 on success, -1 on partial processing (internal error)
+ */
+int pn_append_rpl_fcaps(struct sip_msg *msg);
 
 
 /**

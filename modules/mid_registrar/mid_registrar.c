@@ -416,8 +416,7 @@ struct mid_reg_info *mri_dup(struct mid_reg_info *mri)
 	if (mri->main_reg_next_hop.s)
 		shm_str_dup(&new->main_reg_next_hop, &mri->main_reg_next_hop);
 
-	if (mri->feature_caps.s)
-		shm_str_dup(&new->feature_caps, &mri->feature_caps);
+	new->pn_provider_state = mri->pn_provider_state;
 
 	new->cmatch.mode = mri->cmatch.mode;
 	if (mri->cmatch.match_params)
@@ -461,9 +460,6 @@ void mri_free(struct mid_reg_info *mri)
 
 	if (mri->ownership_tag.s)
 		shm_free(mri->ownership_tag.s);
-
-	if (mri->feature_caps.s)
-		shm_free(mri->feature_caps.s);
 
 	if (mri->cmatch.match_params)
 		free_shm_str_list(mri->cmatch.match_params);

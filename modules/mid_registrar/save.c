@@ -622,25 +622,7 @@ err_free:
 
 void mid_reg_reply_fcaps(struct cell *_, int __, struct tmcb_params *params)
 {
-	struct sip_msg *rpl = params->rpl;
-	struct mid_reg_info *mri = (struct mid_reg_info *)(*params->param);
-	struct lump *anchor;
-	str fcaps;
-
-	if (pkg_str_dup(&fcaps, &mri->feature_caps) != 0) {
-		LM_ERR("oom1\n");
-		return;
-	}
-
-	anchor = anchor_lump(rpl, rpl->unparsed - rpl->buf, 0);
-	if (!anchor) {
-		pkg_free(fcaps.s);
-		LM_ERR("oom2\n");
-		return;
-	}
-
-	if (!insert_new_lump_before(anchor, fcaps.s, fcaps.len, 0))
-		LM_ERR("oom3\n");
+	pn_append_rpl_fcaps(params->rpl);
 }
 
 
@@ -714,9 +696,9 @@ void mid_reg_req_fwded(struct cell *_, int __, struct tmcb_params *params)
 
 out:
 	if (pn_enable) {
-		pn_append_feature_caps(req, 0, &mri->feature_caps);
+		pn_append_req_fcaps(req, &mri->pn_provider_state);
 
-		if (!ZSTR(mri->feature_caps) && tmb.register_tmcb(req, NULL,
+		if (mri->pn_provider_state && tmb.register_tmcb(req, NULL,
 		         TMCB_RESPONSE_FWDED, mid_reg_reply_fcaps, mri, NULL) <= 0)
 			LM_ERR("failed to register Feature-Caps on-reply callback\n");
 	}
@@ -1807,6 +1789,8 @@ void mid_reg_resp_in(struct cell *_, int __, struct tmcb_params *params)
 		goto out;
 	}
 
+	pn_restore_provider_state(mri->pn_provider_state);
+
 	if (reg_mode == MID_REG_MIRROR || reg_mode == MID_REG_THROTTLE_CT) {
 		if (save_restore_rpl_contacts(req, rpl, mri, &mri->aor)) {
 			LM_ERR("failed to process rpl contacts for AoR '%.*s'\n",
@@ -2071,7 +2055,7 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 		return -1;
 
 	if (pn_enable)
-		pn_append_feature_caps(_m, 1, NULL);
+		pn_append_rpl_fcaps(_m);
 
 	code = rerr_codes[rerrno];
 	switch (code) {

@@ -71,6 +71,7 @@ int pn_init(void)
 	csv_record *items, *pnp;
 	struct pn_provider *provider;
 	ebr_filter *filter;
+	int nprov = 0;
 
 	if (!pn_enable)
 		return 0;
@@ -145,6 +146,12 @@ int pn_init(void)
 	for (pnp = items; pnp; pnp = pnp->next) {
 		if (ZSTR(pnp->s))
 			continue;
+
+		if (++nprov > PN_MAX_PROVIDERS) {
+			LM_ERR("max number of PN providers exceeded (%lu)\n",
+			       PN_MAX_PROVIDERS);
+			return -1;
+		}
 
 		provider = shm_malloc(sizeof *provider + pnp->s.len + 1 +
 		                      MAX_FEATURE_CAPS_SIZE);
@@ -357,11 +364,74 @@ int pn_inspect_request(struct sip_msg *req, const str *ct_uri,
 }
 
 
-void pn_append_feature_caps(struct sip_msg *msg, int append_to_reply, str *hf)
+int pn_append_req_fcaps(struct sip_msg *msg, void **pn_provider_state)
 {
 	struct pn_provider *prov;
 	struct lump *anchor;
-	str fcaps, *hdr;
+	str fcaps;
+	unsigned long prov_bitmask = 0;
+	int i, rc = 0;
+
+	for (i = 0, prov = pn_providers; prov; i++, prov = prov->next) {
+		if (!prov->append_fcaps && !prov->append_fcaps_query)
+			continue;
+
+		if (prov->append_fcaps_query) {
+			prov->append_fcaps_query = 0;
+			prov_bitmask |= PN_PROVIDER_RPL_QFCAPS << (i * PN_PROVIDER_FLAGS);
+		} else {
+			prov->append_fcaps = 0;
+			prov_bitmask |= PN_PROVIDER_RPL_FCAPS << (i * PN_PROVIDER_FLAGS);
+		}
+
+		if (pkg_str_dup(&fcaps, &prov->feature_caps_query) != 0) {
+			LM_ERR("oom3\n");
+			rc = -1;
+			continue;
+		}
+
+		anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
+		if (!anchor) {
+			pkg_free(fcaps.s);
+			LM_ERR("oom2\n");
+			rc = -1;
+			continue;
+		}
+
+		if (!insert_new_lump_before(anchor, fcaps.s, fcaps.len, 0)) {
+			pkg_free(fcaps.s);
+			LM_ERR("oom5\n");
+			rc = -1;
+		}
+	}
+
+	*pn_provider_state = (void *)prov_bitmask;
+	return rc;
+}
+
+
+void pn_restore_provider_state(void *pn_provider_state)
+{
+	struct pn_provider *prov;
+	unsigned long prov_bitmask = (unsigned long)pn_provider_state;
+	int i;
+
+	for (i = 0, prov = pn_providers; prov; i++, prov = prov->next) {
+		prov->append_fcaps_query = !!(prov_bitmask &
+					(PN_PROVIDER_RPL_QFCAPS << (i * PN_PROVIDER_FLAGS)));
+
+		prov->append_fcaps = !!(prov_bitmask &
+					(PN_PROVIDER_RPL_FCAPS << (i * PN_PROVIDER_FLAGS)));
+	}
+}
+
+
+int pn_append_rpl_fcaps(struct sip_msg *msg)
+{
+	struct pn_provider *prov;
+	struct lump *anchor;
+	str fcaps, *hdr, _hdr;
+	int rc = 0;
 
 	for (prov = pn_providers; prov; prov = prov->next) {
 		if (!prov->append_fcaps && !prov->append_fcaps_query)
@@ -371,40 +441,41 @@ void pn_append_feature_caps(struct sip_msg *msg, int append_to_reply, str *hf)
 			hdr = &prov->feature_caps_query;
 			prov->append_fcaps_query = 0;
 		} else {
-			hdr = &prov->feature_caps;
-			hdr->len = strlen(hdr->s); /* count the post-print length */
+			_hdr = prov->feature_caps;
+			_hdr.len = strlen(_hdr.s); /* count the post-print length */
+			hdr = &_hdr;
 			prov->append_fcaps = 0;
 		}
 
-		if (append_to_reply) {
+		if (msg->first_line.type == SIP_REQUEST) {
 			if (!add_lump_rpl(msg, hdr->s, hdr->len,
-			                  LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE))
+			                  LUMP_RPL_HDR|LUMP_RPL_NODUP|LUMP_RPL_NOFREE)) {
 				LM_ERR("oom1\n");
+				rc = -1;
+			}
 		} else {
 			anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
 			if (!anchor) {
 				LM_ERR("oom2\n");
+				rc = -1;
 				continue;
 			}
 
 			if (pkg_str_dup(&fcaps, hdr) != 0) {
 				LM_ERR("oom3\n");
+				rc = -1;
 				continue;
-			}
-
-			if (hf) {
-				if (shm_str_extend(hf, hf->len + fcaps.len) != 0)
-					LM_ERR("oom4\n");
-				else
-					memcpy(hf->s + hf->len - fcaps.len, fcaps.s, fcaps.len);
 			}
 
 			if (!insert_new_lump_before(anchor, fcaps.s, fcaps.len, 0)) {
 				pkg_free(fcaps.s);
 				LM_ERR("oom5\n");
+				rc = -1;
 			}
 		}
 	}
+
+	return rc;
 }
 
 
@@ -745,6 +816,7 @@ int pn_add_reply_purr(const ucontact_t *ct)
 		return -1;
 	}
 
+	/* non-PN contact, uninteresting */
 	if (!puri.pn_provider.s)
 		return 0;
 
@@ -757,7 +829,7 @@ int pn_add_reply_purr(const ucontact_t *ct)
 
 have_provider:
 	if (!prov->append_fcaps) {
-		LM_DBG("cap query for '%.*s', no need to add +sip.pnspurr\n",
+		LM_DBG("no need to add +sip.pnspurr for '%.*s'\n",
 		       prov->name.len, prov->name.s);
 		return 0;
 	}
