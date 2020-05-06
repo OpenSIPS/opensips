@@ -60,7 +60,7 @@ group Module
    1.5. Set group_column parameter
    1.6. Set use_domain parameter
    1.7. Set re_table parameter
-   1.8. Set reg_exp_column parameter
+   1.8. Set re_exp_column parameter
    1.9. Set re_gid_column parameter
    1.10. Set multiple_gid parameter
    1.11. Set aaa_url parameter
@@ -212,10 +212,10 @@ modparam("group", "re_table", "re_grp")
 
    Default value is “reg_exp”.
 
-   Example 1.8. Set reg_exp_column parameter
+   Example 1.8. Set re_exp_column parameter
 
 ...
-modparam("group", "reg_exp_column", "re")
+modparam("group", "re_exp_column", "re")
 ...
 
 
