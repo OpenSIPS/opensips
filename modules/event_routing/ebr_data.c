@@ -28,8 +28,9 @@
 #include "../../route.h"
 #include "../../evi/evi_modules.h"
 #include "../tm/tm_load.h"
-#include "ebr_data.h"
 
+#include "ebr_data.h"
+#include "api.h"
 
 /* structure holding all the needed data to be passed via IPC to 
  * the process that has to run the notification route */
@@ -59,7 +60,7 @@ static ebr_event *ebr_events = NULL;
 
 
 
-ebr_event* search_ebr_event( str *name )
+ebr_event* search_ebr_event( const str *name )
 {
 	ebr_event *ev;
 
@@ -71,7 +72,7 @@ ebr_event* search_ebr_event( str *name )
 	return NULL;
 }
 
-ebr_event* add_ebr_event( str *name )
+ebr_event* add_ebr_event( const str *name )
 {
 	ebr_event *ev;
 
@@ -156,8 +157,8 @@ error:
 }
 
 
-static int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
-														ebr_filter **filters)
+int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
+                     ebr_filter **filters)
 {
 	struct usr_avp *avp;
 	int_str val;
@@ -194,6 +195,7 @@ static int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
 			LM_ERR("failed to shm malloc a new EBR filter\n");
 			goto error;
 		}
+		memset(&f_curr->uri_param_key, 0, sizeof f_curr->uri_param_key);
 
 		/* the key string comes just right after the structure */
 		f_curr->key.s = (char*)(f_curr+1);
@@ -226,12 +228,52 @@ static int pack_ebr_filters(struct sip_msg *msg, int filter_avp_id,
 	return 0;
 
 error:
-	while(f_first) {
-		f_curr = f_first->next;
-		shm_free(f_first);
-		f_first = f_curr;
-	}
+	shm_free_all(f_first);
 	*filters = NULL;
+	return -1;
+}
+
+
+int dup_ebr_filters(const ebr_filter *src, ebr_filter **dst)
+{
+	ebr_filter *filter, *first = NULL, *last;
+
+	for (; src; src = src->next) {
+		filter = shm_malloc(sizeof *filter + src->key.len + 1 +
+		                    src->uri_param_key.len + 1 + src->val.len + 1);
+		if (!filter)
+			goto oom;
+
+		filter->key.s = (char *)(filter + 1);
+		str_cpy(&filter->key, &src->key);
+		filter->key.s[filter->key.len] = '\0';
+
+		filter->uri_param_key.s = filter->key.s + filter->key.len + 1;
+		str_cpy(&filter->uri_param_key, &src->uri_param_key);
+		filter->uri_param_key.s[filter->uri_param_key.len] = '\0';
+
+		filter->val.s = filter->uri_param_key.s +
+		                         filter->uri_param_key.len + 1;
+		str_cpy(&filter->val, &src->val);
+		filter->val.s[filter->val.len] = '\0';
+
+		filter->next = NULL;
+
+		if (!first) {
+			first = last = filter;
+		} else {
+			last->next = filter;
+			last = filter;
+		}
+	}
+
+	*dst = first;
+	return 0;
+
+oom:
+	shm_free_all(first);
+	LM_ERR("oom\n");
+	*dst = NULL;
 	return -1;
 }
 
@@ -251,7 +293,8 @@ void free_ebr_subscription( ebr_subscription *sub)
 
 
 int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
-						int filter_avp_id, int expire, void *data, int flags)
+               ebr_filter *filters, int expire, ebr_pack_params_cb pack_params,
+               void *data, int flags)
 {
 	ebr_subscription *sub;
 
@@ -261,12 +304,9 @@ int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
 		return -1;
 	}
 
-	if (pack_ebr_filters( msg, filter_avp_id, &sub->filters) < 0 ) {
-		LM_ERR("failed to build list of EBR filters\n");
-		goto error;
-	}
-
 	sub->data = data;
+	sub->filters = filters;
+	sub->pack_params = pack_params;
 	sub->flags = flags;
 	sub->proc_no = process_no;
 	sub->event = ev;
@@ -291,10 +331,6 @@ int add_ebr_subscription( struct sip_msg *msg, ebr_event *ev,
 		ev->event_name.len, ev->event_name.s, ev->event_id, process_no);
 
 	return 0;
-
-error:
-	free_ebr_subscription( sub );
-	return -1;
 }
 
 
@@ -342,6 +378,77 @@ static struct usr_avp *pack_evi_params_as_avp_list(evi_params_t *params)
 }
 
 
+/* Return: 1 on successful match, 0 otherwise */
+static inline int ebr_filter_match_evp(const ebr_filter *filter,
+                                       const evi_param_t *e_param)
+{
+	char *s;
+	str match_str;
+	struct sip_uri puri;
+	int rc;
+
+	/* a "no value" matches anything */
+	if (filter->val.len == 0)
+		return 1;
+
+	/* do we have to perform an URI param value matching? */
+	if (filter->uri_param_key.s) {
+		if (!(e_param->flags & EVI_STR_VAL))
+			return 0;
+
+		if (parse_uri(e_param->val.s.s, e_param->val.s.len, &puri) != 0) {
+			LM_ERR("failed to parse URI: '%.*s'\n",
+			       e_param->val.s.len, e_param->val.s.s);
+			return 0;
+		}
+
+		if (get_uri_param_val(&puri, &filter->uri_param_key, &match_str) != 0)
+			return 0;
+
+	} else if (e_param->flags & EVI_STR_VAL) {
+		match_str = e_param->val.s;
+	}
+
+	if (e_param->flags&EVI_INT_VAL) {
+		s=int2str((unsigned long)e_param->val.n, NULL);
+		if (s==NULL) {
+			LM_ERR("failed to covert int EVI param to "
+				"string, EBR filter failed\n");
+			return 0;
+		} else {
+			/* the output of int2str is NULL terminated */
+			if (fnmatch( filter->val.s, s, 0)!=0)
+				return 0;
+		}
+
+	} else if (e_param->flags&EVI_STR_VAL) {
+#ifdef EXTRA_DEBUG
+		LM_DBG("match %s against '%.*s'\n", filter->val.s,
+		       match_str.len, match_str.s);
+#endif
+
+		s=(char*)pkg_malloc(match_str.len + 1);
+		if (s==NULL) {
+			LM_ERR("failed to allocate PKG fnmatch "
+				"buffer, EBR filter failed\n");
+			return 0;
+		} else {
+			memcpy(s, match_str.s, match_str.len);
+			s[match_str.len] = 0;
+			rc = fnmatch( filter->val.s, s, 0);
+			pkg_free(s);
+			if (rc != 0)
+				return 0;
+		}
+	} else {
+		LM_ERR("non-string EVI params are not supported yet\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+
 int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 {
 	ebr_subscription *sub, *sub_next, *sub_prev;
@@ -349,7 +456,6 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 	ebr_ipc_job *job;
 	evi_param_t *e_param;
 	int matches;
-	char *s;
 	struct usr_avp *avps=(void*)-1;
 	unsigned int my_time;
 
@@ -391,56 +497,19 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 
 			/* look for the evi param with the same name */
 			for ( e_param=params->first ; e_param ; e_param=e_param->next ) {
+				if (str_casematch(&e_param->name, &filter->key)) {
+					LM_DBG("key <%.*s> found, checking value\n",
+					       filter->key.len, filter->key.s);
 
-				if (e_param->name.len==filter->key.len &&
-				strncasecmp(e_param->name.s,filter->key.s,filter->key.len)==0){
+					if (!ebr_filter_match_evp(filter, e_param))
+						matches = 0;
 
-					/* name matches, let's see the value */
-					LM_DBG("key <%.*s> found, checking value \n",
-						filter->key.len, filter->key.s);
-
-					if (filter->val.len==0) {
-						/* a "no value" matches anything */
-					} else {
-						if (e_param->flags&EVI_INT_VAL) {
-							s=int2str((unsigned long)e_param->val.n, NULL);
-							if (s==NULL) {
-								LM_ERR("failed to covert int EVI param to "
-									"string, EBR filter failed\n");
-								matches = 0;
-							} else {
-								/* the output of int2str is NULL terminated */
-								if (fnmatch( filter->val.s, s, 0)!=0)
-									matches = 0;
-							}
-						} else
-						if (e_param->flags&EVI_STR_VAL) {
-							s=(char*)pkg_malloc(e_param->val.s.len+1);
-							if (s==NULL) {
-								LM_ERR("failed to allocate PKG fnmatch "
-									"buffer, EBR filter failed\n");
-								matches = 0;
-							} else {
-								memcpy(s,e_param->val.s.s,e_param->val.s.len);
-								s[e_param->val.s.len] = 0;
-								if (fnmatch( filter->val.s, s, 0)!=0)
-									matches = 0;
-								pkg_free(s);
-							}
-						} else {
-							LM_ERR("non-string EVI params are not supported "
-								"yet\n");
-							matches = 0;
-						}
-					}
 					break;
-
 				}
-				/* a filter not matching any EVI params is simply ignored */
+			}
 
-			} /* end EVI param iterator */
-
-		} /* end EBR filter iterator */
+			/* a filter not matching any EVI params is simply ignored */
+		}
 
 		/* did the EVI event match the EBR filters for this subscription ? */
 		if (matches) {
@@ -451,9 +520,8 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				sub->proc_no, pt[sub->proc_no].pid);
 
 			/* convert the EVI params into AVP (only once) */
-			if (avps==(void*)-1) {
+			if (avps == (void *)-1 && !sub->pack_params)
 				avps = pack_evi_params_as_avp_list(params);
-			}
 
 			/* pack the EVI params to be attached to the IPC job */
 			job =(ebr_ipc_job*)shm_malloc( sizeof(ebr_ipc_job) );
@@ -461,8 +529,13 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 				LM_ERR("failed to allocated new IPC job, skipping..\n");
 				continue; /* with the next subscription */
 			}
+
+			if (sub->pack_params)
+				job->avps = sub->pack_params(params);
+			else
+				job->avps = clone_avp_list( avps );
+
 			job->ev = ev;
-			job->avps = clone_avp_list( avps );
 			job->data = sub->data;
 			job->flags = sub->flags;
 			job->tm = sub->tm;
@@ -540,9 +613,13 @@ void handle_ebr_ipc(int sender, void *payload)
 		if (ebr_tmb.t_set_remote_t && job->tm.hash!=0 && job->tm.label!=0 )
 			ebr_tmb.t_set_remote_t( &job->tm );
 
-		/* route the notification route */
-		set_route_type( REQUEST_ROUTE );
-		run_top_route( sroutes->request[(int)(long)job->data].a, &req);
+		if (job->flags & EBR_DATA_TYPE_FUNC) {
+			((ebr_notify_cb)job->data)();
+		} else {
+			/* run the notification route */
+			set_route_type( REQUEST_ROUTE );
+			run_top_route( sroutes->request[(int)(long)job->data].a, &req);
+		}
 
 		if (ebr_tmb.t_set_remote_t)
 			ebr_tmb.t_set_remote_t( NULL );

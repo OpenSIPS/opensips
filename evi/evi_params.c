@@ -31,7 +31,7 @@
 
 /* creates an element and links it to the parameters list
  * but without populating the parameter value */
-evi_param_p evi_param_create(evi_params_p list, str *name)
+evi_param_p evi_param_create(evi_params_p list, const str *name)
 {
 	evi_param_p new_p;
 
@@ -47,10 +47,8 @@ evi_param_p evi_param_create(evi_params_p list, str *name)
 	}
 	memset(new_p, 0, sizeof(evi_param_t));
 
-	if (name) {
-		new_p->name.s = name->s;
-		new_p->name.len = name->len;
-	}
+	if (name)
+		new_p->name = *name;
 
 	new_p->next = NULL;
 	if (list->last) {
@@ -62,7 +60,7 @@ evi_param_p evi_param_create(evi_params_p list, str *name)
 	return new_p;
 }
 
-int evi_param_set(evi_param_p el, void *param, int flags)
+int evi_param_set(evi_param_p el, const void *param, int flags)
 {
 	if (!el) {
 		LM_ERR("no parameter specified\n");
@@ -88,7 +86,7 @@ int evi_param_set(evi_param_p el, void *param, int flags)
 
 
 /* adds a new parameter to the list */
-int evi_param_add(evi_params_p list, str *name, void *param, int flags)
+int evi_param_add(evi_params_p list, const str *name, const void *param, int flags)
 {
 	evi_param_p new_p;
 

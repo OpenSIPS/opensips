@@ -24,6 +24,13 @@
 #ifndef __LIB_REG_RERRNO_H__
 #define __LIB_REG_RERRNO_H__
 
+#define MSG_200 "OK"
+#define MSG_400 "Bad Request"
+#define MSG_420 "Bad Extension"
+#define MSG_500 "Server Internal Error"
+#define MSG_503 "Service Unavailable"
+#define MSG_555 "Push Notification Service Not Supported"
+
 #define EI_R_FINE       "No problem"                                /* R_FINE */
 #define EI_R_INTERNAL   "Server Internal Error"                     /* R_INTERNAL */
 #define EI_R_UL_DEL_R   "usrloc_record_delete failed"               /* R_UL_DEL_R */
@@ -55,6 +62,7 @@
 #define EI_R_CALLID_LEN  "Callid too long"                          /* R_CALLID_LEN */
 #define EI_R_PARSE_PATH  "Path parse error"                         /* R_PARSE_PATH */
 #define EI_R_PATH_UNSUP  "No support for found Path indicated"      /* R_PATH_UNSUP */
+#define EI_R_PNS_UNSUP   MSG_555                                    /* R_PNS_UNSUP */
 
 typedef enum rerr {
 	R_FINE = 0,   /*!< Everything went OK */
@@ -87,7 +95,8 @@ typedef enum rerr {
 	R_CONTACT_LEN,/*!< Contact URI or RECEIVED too long */
 	R_CALLID_LEN, /*!< Callid too long */
 	R_PARSE_PATH, /*!< Error while parsing Path */
-	R_PATH_UNSUP  /*!< Path not supported by UAC */
+	R_PATH_UNSUP, /*!< Path not supported by UAC */
+	R_PNS_UNSUP,  /*!< Unrecognized Push Notification Service */
 } rerr_t;
 
 extern str error_info[];

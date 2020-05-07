@@ -59,9 +59,6 @@ struct sip_msg;
 /* zero-string wrapper */
 #define ZSW(_c) ((_c)?(_c):"")
 
-/* str initialization */
-#define str_init(_string)  {_string, sizeof(_string) - 1}
-
 /* returns string beginning and length without insignificant chars */
 #define trim_len( _len, _begin, _mystr ) \
 	do{ 	static char _c; \
@@ -144,8 +141,8 @@ struct sip_msg;
  */
 #define pkg_free_all(things) \
 	do { \
-		typeof(things) pos = NULL, head = things; \
-		while (things && (things != head || !pos)) \
+		typeof(things) pos = NULL, head = (things); \
+		while ((things) && ((things) != head || !pos)) \
 			{ pos = (things); (things) = (things)->next; pkg_free(pos); } \
 	} while (0)
 
@@ -157,8 +154,8 @@ struct sip_msg;
  */
 #define shm_free_all(things) \
 	do { \
-		typeof(things) pos = NULL, head = things; \
-		while (things && (things != head || !pos)) \
+		typeof(things) pos = NULL, head = (things); \
+		while ((things) && ((things) != head || !pos)) \
 			{ pos = (things); (things) = (things)->next; shm_free(pos); } \
 	} while (0)
 
@@ -945,7 +942,6 @@ static inline int str_casematch(const str *a, const str *b)
 {
 	return a->len == b->len && !strncasecmp(a->s, b->s, a->len);
 }
-
 
 
 /*

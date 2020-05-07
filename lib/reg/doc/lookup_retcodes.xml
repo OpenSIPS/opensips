@@ -1,0 +1,33 @@
+<para>Return codes:</para>
+<itemizedlist>
+<listitem>
+	<para>
+	<emphasis role='bold'>1</emphasis> - contacts found and successfully
+	pushed as branches.  Contacts which required awakening prior to being
+	reachable are being notified via async Push Notifications.
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis role='bold'>2</emphasis> - successfully started at least one
+	async Push Notification for the found contacts, however no extra branches
+	were populated (i.e. there is no need to call t_relay()).
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis role='bold'>-1</emphasis> - no contact found.
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis role='bold'>-2</emphasis> - contacts found, but neither of them
+	supports the current SIP method.
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis role='bold'>-3</emphasis> - internal error during processing.
+	</para>
+</listitem>
+</itemizedlist>

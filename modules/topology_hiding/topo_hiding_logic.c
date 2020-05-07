@@ -1786,9 +1786,7 @@ error:
 }
 
 #define ROUTE_STR "Route: "
-#define CRLF "\r\n"
 #define ROUTE_LEN (sizeof(ROUTE_STR) - 1)
-#define CRLF_LEN (sizeof(CRLF) - 1)
 #define ROUTE_PREF "Route: <"
 #define ROUTE_PREF_LEN (sizeof(ROUTE_PREF) -1)
 #define ROUTE_SUFF ">\r\n"

@@ -1,0 +1,97 @@
+<!-- Common registrar modparams-->
+
+	<section id="param_max_contacts" xreflabel="max_contacts">
+		<title><varname>max_contacts</varname> (integer)</title>
+		<para>
+		The parameter can be used to limit the number of contacts per
+		AOR (Address of Record) in the user location database. Value 0
+		disables the check.
+		<para>
+		This is the default value and will be used only if no other value
+		(for max_contacts) is passed as parameter to the save() function.
+		That's it - the function parameter overwride this global parameter.
+		</para>
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>max_contacts</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Allow no more than 10 contacts per AOR
+modparam("&reg_module;", "max_contacts", 10)
+...
+		</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_max_username_len" xreflabel="max_username_len">
+		<title><varname>max_username_len</varname> (integer)</title>
+		<para>
+		The maximum length of the "username" part of an Address-of-Record SIP URI.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>64</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_username_len</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("&reg_module;", "max_username_len", 128)
+</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_max_domain_len" xreflabel="max_domain_len">
+		<title><varname>max_domain_len</varname> (integer)</title>
+		<para>
+		The maximum length of the "domain" part of an Address-of-Record SIP URI.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>64</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_domain_len</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("&reg_module;", "max_domain_len", 128)
+</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_max_aor_len" xreflabel="max_aor_len">
+		<title><varname>max_aor_len</varname> (integer)</title>
+		<para>
+		The maximum length of an Address-of-Record SIP URI.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>256</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_aor_len</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("&reg_module;", "max_aor_len", 512)
+</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_max_contact_len" xreflabel="max_contact_len">
+		<title><varname>max_contact_len</varname> (integer)</title>
+		<para>
+		The maximum length of a Contact header field SIP URI.
+		</para>
+		<para>
+			Default value is <emphasis role='bold'>255</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <emphasis>max_contact_len</emphasis> module parameter</title>
+		<programlisting format="linespecific">
+modparam("&reg_module;", "max_contact_len", 512)
+</programlisting>
+		</example>
+	</section>

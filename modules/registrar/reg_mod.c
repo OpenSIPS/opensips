@@ -2,6 +2,7 @@
  * Registrar module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -63,6 +64,8 @@
 #include "../../pvar.h"
 #include "../../mod_fix.h"
 #include "../../lib/reg/config.h"
+#include "../../lib/reg/pn.h"
+#include "../../lib/reg/common.h"
 
 #include "../usrloc/ul_mod.h"
 #include "../signaling/signaling.h"
@@ -93,10 +96,6 @@ int min_expires     = 60;			/*!< Minimum expires the phones are allowed to use i
  						 * use 0 to switch expires checking off */
 int max_expires     = 0;			/*!< Maximum expires the phones are allowed to use in seconds,
  						 * use 0 to switch expires checking off */
-int max_contacts = 0;		/*!< Maximum number of contacts per AOR (0=no checking) */
-int max_username_len = USERNAME_MAX_SIZE;
-int max_domain_len   = DOMAIN_MAX_SIZE;
-int max_aor_len      = MAX_AOR_LEN;
 int retry_after = 0;				/*!< The value of Retry-After HF in 5xx replies */
 
 extern ucontact_t **selected_cts;
@@ -118,8 +117,7 @@ usrloc_api_t ul;
 
 int reg_use_domain = 0;
 /*!< Realm prefix to be removed */
-char* realm_pref    = "";
-str realm_prefix;
+str realm_prefix = str_init("");
 
 str sock_hdr_name = {0,0};
 str gruu_secret = {0,0};
@@ -154,7 +152,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
-	{"lookup", (cmd_function)lookup, {
+	{"lookup", (cmd_function)reg_lookup, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
@@ -180,6 +178,11 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
+static acmd_export_t acmds[] = {
+	pn_async_cmds,
+	{0,0,{{0,0,0}}}
+};
+
 /*! \brief
  * Exported parameters
  */
@@ -188,21 +191,24 @@ static param_export_t params[] = {
 	{"default_q",          INT_PARAM, &default_q             },
 	{"case_sensitive",     INT_PARAM, &case_sensitive        },
 	{"tcp_persistent_flag",STR_PARAM, &tcp_persistent_flag_s },
-	{"realm_prefix",       STR_PARAM, &realm_pref            },
+	{"realm_prefix",       STR_PARAM, &realm_prefix.s         },
 	{"min_expires",        INT_PARAM, &min_expires           },
 	{"max_expires",        INT_PARAM, &max_expires           },
 	{"received_param",     STR_PARAM, &rcv_param.s           },
 	{"received_avp",       STR_PARAM, &rcv_avp_param         },
-	{"max_contacts",       INT_PARAM, &max_contacts          },
-	{"max_username_len",   INT_PARAM, &max_username_len      },
-	{"max_domain_len",     INT_PARAM, &max_domain_len        },
-	{"max_aor_len",        INT_PARAM, &max_aor_len           },
 	{"retry_after",        INT_PARAM, &retry_after           },
 	{"sock_hdr_name",      STR_PARAM, &sock_hdr_name.s       },
 	{"mcontact_avp",       STR_PARAM, &mct_avp_param         },
 	{"attr_avp",           STR_PARAM, &attr_avp_param        },
 	{"gruu_secret",        STR_PARAM, &gruu_secret.s         },
 	{"disable_gruu",       INT_PARAM, &disable_gruu          },
+
+	/* common registrar modparams */
+	reg_modparams,
+
+	/* common SIP Push Notification (RFC 8599) modparams */
+	pn_modparams,
+
 	{0, 0, 0}
 };
 
@@ -225,6 +231,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		pn_modparam_deps,
 		{ NULL, NULL },
 	},
 };
@@ -237,15 +244,15 @@ struct module_exports exports = {
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
-	0,				 /* load function */
-	&deps,           /* OpenSIPS module dependencies */
+	NULL,        /* load function */
+	&deps,       /* OpenSIPS module dependencies */
 	cmds,        /* Exported functions */
-	0,           /* Exported async functions */
+	acmds,       /* Exported async functions */
 	params,      /* Exported parameters */
 	mod_stats,   /* exported statistics */
 	0,           /* exported MI functions */
 	0,           /* exported pseudo-variables */
-	0,			 /* exported transformations */
+	0,           /* exported transformations */
 	0,           /* extra processes */
 	0,           /* module pre-initialization function */
 	mod_init,    /* module initialization function */
@@ -275,11 +282,6 @@ static int mod_init(void)
 	/* load TM API */
 	memset(&tmb, 0, sizeof(struct tm_binds));
 	load_tm_api(&tmb);
-
-	realm_prefix.s = realm_pref;
-	realm_prefix.len = strlen(realm_pref);
-
-	rcv_param.len = strlen(rcv_param.s);
 
 	if (rcv_avp_param && *rcv_avp_param) {
 		s.s = rcv_avp_param; s.len = strlen(s.s);
@@ -346,36 +348,16 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* Normalize default_q parameter */
-	if (default_q != Q_UNSPECIFIED) {
-		if (default_q > MAX_Q) {
-			LM_DBG("default_q = %d, lowering to MAX_Q: %d\n", default_q, MAX_Q);
-			default_q = MAX_Q;
-		} else if (default_q < MIN_Q) {
-			LM_DBG("default_q = %d, raising to MIN_Q: %d\n", default_q, MIN_Q);
-			default_q = MIN_Q;
-		}
+	if (reg_init_globals() != 0) {
+		LM_ERR("failed to init globals\n");
+		return -1;
 	}
-
-	/*
-	 * Import use_domain parameter from usrloc
-	 */
-	reg_use_domain = ul.use_domain;
 
 	if (sock_hdr_name.s)
 		sock_hdr_name.len = strlen(sock_hdr_name.s);
 
-	if (gruu_secret.s)
-		gruu_secret.len = strlen(gruu_secret.s);
-
-	/* fix the flags */
-	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG, tcp_persistent_flag_s);
-	tcp_persistent_flag = (tcp_persistent_flag!=-1)?(1<<tcp_persistent_flag):0;
-
-	/* init contact sorting array */
-	selected_cts = pkg_malloc(selected_cts_sz * sizeof *selected_cts);
-	if (!selected_cts) {
-		LM_ERR("oom\n");
+	if (pn_init() < 0) {
+		LM_ERR("failed to init SIP Push Notification support\n");
 		return -1;
 	}
 
@@ -390,6 +372,12 @@ static int cfg_validate(void)
 			"configuration has no tag support, better restart\n");
 		return 0;
 	}
+
+	if (!pn_cfg_validate()) {
+		LM_ERR("failed to validate opensips.cfg PN configuration\n");
+		return 0;
+	}
+
 	return 1;
 }
 

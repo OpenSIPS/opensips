@@ -34,20 +34,15 @@
 #include "usrloc.h"
 #include "../../sr_module.h"
 #include "ul_mod.h"
+#include "ul_evi.h"
 
 extern unsigned int nat_bflag;
-extern unsigned int init_flag;
 
 
 int bind_usrloc(usrloc_api_t* api)
 {
 	if (!api) {
 		LM_ERR("invalid parameter value\n");
-		return -1;
-	}
-	if (init_flag==0) {
-		LM_ERR("configuration error - trying to bind to usrloc module"
-				" before being initialized\n");
 		return -1;
 	}
 
@@ -87,6 +82,8 @@ int bind_usrloc(usrloc_api_t* api)
 	api->nat_flag   = nat_bflag;
 	api->have_mem_storage = have_mem_storage;
 	api->tags_in_use = tags_in_use;
+
+	api->raise_ev_ct_refresh = ul_raise_ct_refresh_event;
 
 	return 0;
 }

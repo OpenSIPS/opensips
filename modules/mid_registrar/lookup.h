@@ -6,7 +6,7 @@
  * register at high enough frequencies that they actually degrade the
  * performance of their registrars.
  *
- * Copyright (C) 2016 OpenSIPS Solutions
+ * Copyright (C) 2016-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -22,11 +22,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2016-10-23 initial version (liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef __MID_REG_LOOKUP_
@@ -34,6 +30,6 @@
 
 #include "../../parser/msg_parser.h"
 
-int mid_reg_lookup(struct sip_msg* req, void* _t, str* flags_s, str* uri);
+int mid_reg_lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *uri);
 
 #endif /* __MID_REG_LOOKUP_ */

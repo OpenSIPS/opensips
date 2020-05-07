@@ -2,6 +2,7 @@
  * registrar module interface
  *
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -48,29 +49,15 @@
 #include "../signaling/signaling.h"
 #include "../tm/tm_load.h"
 
-extern int default_expires;
 extern int case_sensitive;
 extern int nat_flag;
-extern int tcp_persistent_flag;
-extern int min_expires;
-extern int max_expires;
 extern int received_avp;
-extern int reg_use_domain;
-extern str realm_prefix;
 extern float def_q;
 
-extern str rcv_param;
-extern int max_contacts;
-extern int max_username_len;
-extern int max_domain_len;
-extern int max_aor_len;
 extern int retry_after;
 extern str sock_hdr_name;
 
-extern usrloc_api_t ul;  /*!< Structure containing pointers to usrloc functions */
-
 extern struct sig_binds sigb;
-extern struct tm_binds tmb;
 
 extern stat_var *accepted_registrations;
 extern stat_var *rejected_registrations;

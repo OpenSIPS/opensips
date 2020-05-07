@@ -46,8 +46,8 @@ struct url *parse_url(const str *in, enum url_parse_flags opts, int pkg_dup)
 	str st, port;
 	struct url_host_list *last, *hostlist;
 	struct url_param_list *lastp, *paramlist;
-	struct str_list *hosts_db = NULL, *hosts_chunk = NULL, *hosts = NULL;
-	struct str_list *params, *rec;
+	str_list *hosts_db = NULL, *hosts_chunk = NULL, *hosts = NULL;
+	str_list *params, *rec;
 
 #define ENSURE_N_LEFT(n) \
 	do { \

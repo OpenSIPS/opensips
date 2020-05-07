@@ -61,7 +61,8 @@
 
 /* convenience short-cut macros */
 #define REQ_LINE(_msg) ((_msg)->first_line.u.request)
-#define REQ_METHOD first_line.u.request.method_value
+#define REQ_METHOD   first_line.u.request.method_value
+#define REQ_METHOD_S first_line.u.request.method
 #define REPLY_STATUS first_line.u.reply.statuscode
 #define REPLY_CLASS(_reply) ((_reply)->REPLY_STATUS/100)
 
@@ -171,7 +172,8 @@ struct sip_uri {
 	unsigned short port_no;
 	unsigned short proto; /* from transport */
 	uri_type type; /* uri scheme */
-	/* parameters */
+
+	/* parameters [+ "=value" parts, if any] */
 	str transport;
 	str ttl;
 	str user_param;
@@ -180,7 +182,12 @@ struct sip_uri {
 	str lr;
 	str r2; /* ser specific rr parameter */
 	str gr; /* GRUU */
-	/* values */
+	str pn_provider; /* RFC 8599 (SIP PN) */
+	str pn_prid;
+	str pn_param;
+	str pn_purr;
+
+	/* just values */
 	str transport_val;
 	str ttl_val;
 	str user_param_val;
@@ -189,6 +196,11 @@ struct sip_uri {
 	str lr_val; /* lr value placeholder for lr=on a.s.o*/
 	str r2_val;
 	str gr_val;
+	str pn_provider_val;
+	str pn_prid_val;
+	str pn_param_val;
+	str pn_purr_val;
+
 	/* unknown params */
 	str u_name[URI_MAX_U_PARAMS]; /* Unknown param names */
 	str u_val[URI_MAX_U_PARAMS];  /* Unknown param valss */
@@ -256,6 +268,7 @@ struct sip_msg {
 	struct hdr_field* www_authenticate;
 	struct hdr_field* proxy_authenticate;
 	struct hdr_field* min_expires;
+	struct hdr_field* feature_caps;
 
 	struct sip_msg_body *body;
 

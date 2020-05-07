@@ -6,7 +6,7 @@
  * register at high enough frequencies that they actually degrade the
  * performance of their registrars.
  *
- * Copyright (C) 2016 OpenSIPS Solutions
+ * Copyright (C) 2016-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -23,33 +23,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2016-10-24 initial version (liviu)
  */
 
 #ifndef __MID_REG_SAVE_
 #define __MID_REG_SAVE_
 
 #include "../../parser/msg_parser.h"
-
-#define REG_SAVE_MEMORY_FLAG           (1<<0)
-#define REG_SAVE_NOREPLY_FLAG          (1<<1)
-#define REG_SAVE_SOCKET_FLAG           (1<<2)
-#define REG_SAVE_PATH_STRICT_FLAG      (1<<3)
-#define REG_SAVE_PATH_LAZY_FLAG        (1<<4)
-#define REG_SAVE_PATH_OFF_FLAG         (1<<5)
-#define REG_SAVE_PATH_RECEIVED_FLAG    (1<<6)
-#define REG_SAVE_FORCE_REG_FLAG        (1<<7)
-#define REG_SAVE_PATH_FLAG   (REG_SAVE_PATH_STRICT_FLAG|\
-			REG_SAVE_PATH_LAZY_FLAG|REG_SAVE_PATH_OFF_FLAG)
-#define REG_SAVE_REQ_CT_ONLY_FLAG      (1<<8)
-
-#define CONTACT_MAX_SIZE       255
-#define RECEIVED_MAX_SIZE      255
-#define CALLID_MAX_SIZE        255
-#define UA_MAX_SIZE            255
 
 #define MAX_CONTACT_BUFFER 1024
 

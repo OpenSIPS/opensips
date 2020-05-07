@@ -86,7 +86,7 @@ extern struct ulcb_head_list*  ulcb_list;
 	( (ulcb_list->reg_types)&(_types_) )
 
 
-int init_ulcb_list();
+int ul_init_cbs();
 
 void destroy_ulcb_list();
 

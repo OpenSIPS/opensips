@@ -59,6 +59,7 @@ str error_info[] = {
 	str_init(EI_R_CALLID_LEN),
 	str_init(EI_R_PARSE_PATH),
 	str_init(EI_R_PATH_UNSUP),
+	str_init(EI_R_PNS_UNSUP),
 };
 
 int rerr_codes[] = {
@@ -92,5 +93,6 @@ int rerr_codes[] = {
 	400, /* R_CONTACT_LEN */
 	400, /* R_CALLID_LEN */
 	400, /* R_PARSE_PATH */
-	420  /* R_PATH_UNSUP */
+	420, /* R_PATH_UNSUP */
+	555, /* R_PNS_UNSUP */
 };

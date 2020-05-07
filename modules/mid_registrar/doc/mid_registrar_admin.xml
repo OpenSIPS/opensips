@@ -654,76 +654,7 @@ modparam("mid_registrar", "case_sensitive", 0)
 		</example>
 	</section>
 
-	<section id="param_max_contacts" xreflabel="max_contacts">
-		<title><varname>max_contacts</varname> (integer)</title>
-		<para>
-		This parameter can be used to limit the number of contacts per
-		AOR (Address-of-Record) allowed at mid-registrar level. A value of
-		<emphasis role='bold'>0</emphasis> disables the check.
-		</para>
-		<para>
-		This is a global value and will only be used if no overriding
-		value is passed as the "c" flag to
-		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>.
-		</para>
-		<para>
-			Default value is <emphasis role='bold'>0</emphasis> (disabled)
-		</para>
-		<example>
-		<title>Setting the <emphasis>max_contacts</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "max_contacts", 10)
-</programlisting>
-		</example>
-	</section>
-
-	<section id="param_max_username_len" xreflabel="max_username_len">
-		<title><varname>max_username_len</varname> (integer)</title>
-		<para>
-		The maximum length of the "username" part of an Address-of-Record SIP URI.
-		</para>
-		<para>
-			Default value is <emphasis role='bold'>64</emphasis>.
-		</para>
-		<example>
-		<title>Setting the <emphasis>max_username_len</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "max_username_len", 128)
-</programlisting>
-		</example>
-	</section>
-
-	<section id="param_max_domain_len" xreflabel="max_domain_len">
-		<title><varname>max_domain_len</varname> (integer)</title>
-		<para>
-		The maximum length of the "domain" part of an Address-of-Record SIP URI.
-		</para>
-		<para>
-			Default value is <emphasis role='bold'>64</emphasis>.
-		</para>
-		<example>
-		<title>Setting the <emphasis>max_domain_len</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "max_domain_len", 128)
-</programlisting>
-		</example>
-	</section>
-
-	<section id="param_max_aor_len" xreflabel="max_aor_len">
-		<title><varname>max_aor_len</varname> (integer)</title>
-		<para>
-		The maximum length of an Address-of-Record SIP URI.
-		</para>
-		<para>
-			Default value is <emphasis role='bold'>256</emphasis>.
-		</para>
-		<example>
-		<title>Setting the <emphasis>max_aor_len</emphasis> module parameter</title>
-		<programlisting format="linespecific">
-modparam("mid_registrar", "max_aor_len", 512)
-</programlisting>
-		</example>
-	</section>
+	&reg_modparams;
 
 	<section id="param_retry_after" xreflabel="retry_after">
 		<title><varname>retry_after</varname> (integer)</title>
@@ -780,6 +711,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 </programlisting>
 		</example>
 	</section>
+
+	&pn_modparams;
 
 	</section>
 
@@ -1146,105 +1079,7 @@ if (is_method("REGISTER")) {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>flags</emphasis>(string, optional)</para>
-			<itemizedlist>
-			<listitem>
-				<para>
-				<emphasis>'b' (no Branches)</emphasis> - this flag controls how
-				this function processes multiple contacts.  If there are
-				multiple contacts for the given username in usrloc and this
-				flag is not set, Request-URI will be overwritten with the
-				highest-q rated contact and the rest will be appended to
-				sip_msg structure and can be later used by tm for forking. If
-				the flag is set, only Request-URI will be overwritten
-				with the highest-q rated contact and the rest will be left
-				unprocessed.
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-				<emphasis>'r' (bRanch lookup)</emphasis> - this flag enables
-				searching through existing branches for aor's and expanding
-				them to contacts. For example, you have got AOR A in your
-				ruri but you also want to forward your calls to AOR B. In order
-				to do this, you must put AOR B in a branch, and if this flag
-				enabled, the function will also expand AOR B to contacts,
-				which will be put back into the branches. The AOR's that were
-				in branches before the function call shall be removed.
-				</para>
-
-				<para>
-				<emphasis role='bold'>WARNING: </emphasis>
-				<emphasis>if you want this flag activated,
-				the 'b' (no Branches) flag must not be set, otherwise
-				the lookup function will be unable to add new branches
-				</emphasis>
-				</para>
-			</listitem>
-
-			<listitem>
-				<para>
-				<emphasis>'m' (Method filtering)</emphasis> - setting this flag
-				will enable contact filtering based on the supported methods
-				listed in the "Allow" header field during registration.
-				Contacts which did not present an "Allow" header field during
-				registration are assumed to support all standard SIP methods.
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-				<emphasis>'u' (User-Agent filtering)</emphasis> - this flag
-				enables regexp filtering by user-agent. It's useful with
-				enabled append_branches parameter. Regexp must follow
-				the 'u' flag and must use format like 'u/regexp/'.
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-				<emphasis>'i' (Case insensitive search)</emphasis> - this flag
-				enables case insensitive filtering for the 'u' flag.
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-				<emphasis>'e' (Use extended regexp)</emphasis> - this flag
-				enables using of extended regexp format for the 'u' flag.
-				</para>
-			</listitem>
-			<listitem>
-				<para>
-				<emphasis>'g' (Global lookup)</emphasis> - this flag
-				is only relevant with federated user location clustering. If
-				set, the <xref linkend="func_mid_registrar_lookup"/> function
-				will not only perform the classic
-				in-memory "search-AoR-and-push-branches" operation, but will
-				also perform a metadata lookup and append an additional branch
-				for each returned result. The "in-memory branches" correspond
-				to local contacts (current location), while the "metadata
-				branches" correspond to contacts available on one or more of
-				the remaining locations of the platform.
-				</para>
-				<para>
-				The AoR metadata consists of the minimally required information
-				in order for one of the VoIP platform's locations (data
-				centers) to advertise the presence of a locally registered AoR
-				for the global platform. Specifically, this consists of two
-				pieces of information:
-				<itemizedlist>
-				<listitem>
-					<para>
-						the AoR (e.g. "vladimir@federation-cluster")
-					</para>
-				</listitem>
-				<listitem>
-					<para>
-						the home IP (e.g. "10.0.0.223")
-					</para>
-				</listitem>
-				</itemizedlist>
-				</para>
-			</listitem>
-			</itemizedlist>
+			&lookup_flags;
 		</listitem>
 		<listitem>
 			<para><emphasis>aor (string, optional)</emphasis> - a custom Address-of-Record.
@@ -1252,19 +1087,7 @@ if (is_method("REGISTER")) {
 			</para>
 		</listitem>
 		</itemizedlist>
-		<para><emphasis role='bold'>Return value</emphasis></para>
-		<itemizedlist>
-		<listitem>
-			<para>
-				1 (success) - branch set successfully built
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-				-1 (error) - generic error code; the logs should provide more help
-			</para>
-		</listitem>
-		</itemizedlist>
+		&lookup_retcodes;
 		<para>
 		This function can only be used from the request route.
 		</para>
@@ -1289,7 +1112,16 @@ if (is_method("REGISTER")) {
 		</example>
 	</section>
 
+	</section>
+
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+
+	&pn_async_func;
 
 	</section>
+
+
 </chapter>
 

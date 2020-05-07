@@ -29,10 +29,10 @@
 static osips_malloc_t malloc_f;
 static osips_free_t free_f;
 
-static struct str_list *push_csv_field(const str *field,
-                      struct str_list **record, enum csv_flags parse_flags)
+static str_list *push_csv_field(const str *field,
+                                str_list **record, enum csv_flags parse_flags)
 {
-	struct str_list *rec;
+	str_list *rec;
 	enum csv_flags *flags_holder;
 	int len;
 
@@ -76,7 +76,7 @@ static struct str_list *push_csv_field(const str *field,
 csv_record *__parse_csv_record(const str *_in, enum csv_flags parse_flags,
                                unsigned char sep)
 {
-	struct str_list *record = NULL, **last = &record;
+	str_list *record = NULL, **last = &record;
 	str in = *_in, field;
 	char *ch, *p, *c, finished, *lim, *field_start;
 
@@ -217,7 +217,7 @@ oom:
 void free_csv_record(csv_record *record)
 {
 	enum csv_flags flags_holder;
-	struct str_list *prev;
+	str_list *prev;
 
 	if (!record)
 		return;

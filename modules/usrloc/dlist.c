@@ -50,6 +50,7 @@
 #include "udomain.h"           /* new_udomain, free_udomain */
 #include "utime.h"
 #include "ul_mod.h"
+#include "ul_evi.h"
 #include "ul_callback.h"
 #include "ul_cluster.h"
 #include "usrloc.h"
@@ -62,7 +63,6 @@
 dlist_t* root = 0;
 
 
-extern event_id_t ei_c_latency_update_id;
 /*! \brief
  * Returned the first udomain if input param in NULL or the next following
  * udomain after the given udomain
@@ -597,7 +597,7 @@ get_domain_cdb_ucontacts(udomain_t *d, void *buf, int *len,
 				if (contacts)
 					goto pack_data;
 			} else {
-				if (!str_strcmp(&pair->key.name, &contacts_key)) {
+				if (str_match(&pair->key.name, &contacts_key)) {
 					if (pair->val.type == CDB_NULL)
 						goto done_packing;
 
@@ -1053,7 +1053,7 @@ unsigned long get_number_of_users(void* foo)
  *		* update DB state (bulk inserts/updates/deletes)
  *		* clean up any in-memory expired contacts or empty records
  */
-int synchronize_all_udomains(void)
+int _synchronize_all_udomains(void)
 {
 	int res = 0;
 	dlist_t* ptr;
@@ -1087,13 +1087,7 @@ int find_domain(str* _d, udomain_t** _p)
 	return 1;
 }
 
-/*
- * retrieve the ucontact from a domain using the contact id
- *
- * Returns:
- *	NULL, if contact not found
- *  contact, *with grabbed ulslot lock*
- */
+
 ucontact_t* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, urecord_t **_r)
 {
 	int count;

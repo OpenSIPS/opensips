@@ -2,9 +2,18 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
+<!ENTITY reg_module "<acronym>mid_registrar</acronym>">
+<!ENTITY reg_lookup_f "<emphasis><acronym>mid_registrar_lookup()</acronym></emphasis>">
 
 <!ENTITY admin SYSTEM "mid_registrar_admin.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
+
+<!-- Common registrar/mid-registrar documentation -->
+<!ENTITY reg_modparams SYSTEM "../../../lib/reg/doc/reg_modparams.xml">
+<!ENTITY pn_modparams SYSTEM "../../../lib/reg/doc/pn_modparams.xml">
+<!ENTITY pn_async_func SYSTEM "../../../lib/reg/doc/pn_async_func.xml">
+<!ENTITY lookup_flags SYSTEM "../../../lib/reg/doc/lookup_flags.xml">
+<!ENTITY lookup_retcodes SYSTEM "../../../lib/reg/doc/lookup_retcodes.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
@@ -13,15 +22,14 @@
 ]>
 
 <book>
-    <bookinfo>
+	<bookinfo>
 	<title>mid_registrar Module</title>
-    </bookinfo>
-    <toc></toc>
+	</bookinfo>
+	<toc></toc>
 
-    &admin;
+	&admin;
 	&contrib;
 
 	&docCopyrights;
-	<para>&copyright; 2016 &osipssol;</para>
-
+	<para>&copyright; 2016-2020 &OSS;</para>
 </book>

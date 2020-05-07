@@ -24,8 +24,7 @@
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_uri.h"
 
-#include "sip_msg.h"
-#include "rerrno.h"
+#include "common.h"
 
 #define TEMP_GRUU		"tgruu."
 #define TEMP_GRUU_SIZE	(sizeof(TEMP_GRUU)-1)
@@ -35,14 +34,9 @@
 char tgruu_dec[MAX_TGRUU_SIZE];
 
 /* each variable must be exported by each registrar */
-extern str gruu_secret;
-extern str default_gruu_secret;
 extern int case_sensitive;
-extern str realm_prefix;
-extern int reg_use_domain;
-extern int max_username_len;
-extern int max_domain_len;
-extern int max_aor_len;
+
+extern str default_gruu_secret;
 
 /*! \brief
  * Parse the whole message and bodies of all header fields
@@ -83,28 +77,27 @@ int parse_reg_headers(struct sip_msg* _m)
 	}
 
 	if (_m->contact) {
-		ptr = _m->contact;
-		while(ptr) {
-			if (ptr->type == HDR_CONTACT_T) {
-				if (!ptr->parsed && (parse_contact(ptr) < 0)) {
-					rerrno = R_PARSE_CONT;
-					LM_ERR("failed to parse Contact body\n");
-					return -6;
-				}
+		for (ptr = _m->contact; ptr; ptr = ptr->next) {
+			if (ptr->type == HDR_CONTACT_T && !ptr->parsed &&
+			        parse_contact(ptr) < 0) {
+				rerrno = R_PARSE_CONT;
+				LM_ERR("failed to parse Contact body\n");
+				return -6;
 			}
-			ptr = ptr->next;
 		}
 	}
 
 	return 0;
 }
 
+
 /*! \brief
  * Extract Address of Record
  * In case of public GRUUs, also populates sip_instance
  * In case of temp GRUUs, also populates call_id
  */
-int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id)
+int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id,
+                int use_domain)
 {
 	static char *aor_buf;
 
@@ -224,7 +217,7 @@ int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id)
 
 	user_len = _a->len;
 
-	if (reg_use_domain) {
+	if (use_domain) {
 		if (user_len)
 			aor_buf[_a->len++] = '@';
 		/* strip prefix (if defined) */
@@ -256,20 +249,17 @@ int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id)
 	(!_m->expires || !((exp_body_t*)_m->expires->parsed)->valid || \
 	 ((exp_body_t*)_m->expires->parsed)->val != 0)
 
-/*! \brief
- * Check if the originating REGISTER message was formed correctly
- * The whole message must be parsed before calling the function
- * _s indicates whether the contact was star
- */
+
 int check_contacts(struct sip_msg* _m, int* _s)
 {
 	struct hdr_field* p;
 	contact_t*  c;
 
 	*_s = 0;
+
 	/* Message without contacts is OK */
-	if (_m->contact == 0) return 0;
-	if (_m->contact->parsed == 0) return 0;
+	if (!_m->contact || !_m->contact->parsed)
+		return 0;
 
 	if (((contact_body_t*)_m->contact->parsed)->star == 1) {
 		/* The first Contact HF is star */
@@ -286,35 +276,33 @@ int check_contacts(struct sip_msg* _m, int* _s)
 		}
 
 		/* Message must contain no other Contact HFs */
-		p = _m->contact->next;
-		while(p) {
+		for (p = _m->contact->next; p; p = p->next) {
 			if (p->type == HDR_CONTACT_T) {
 				rerrno = R_STAR_CONT;
 				return 1;
 			}
-			p = p->next;
 		}
 
 		*_s = 1;
 	} else { /* The first Contact HF is not star */
 		/* Message must contain no star Contact HF */
-		p = _m->contact->next;
-		while(p) {
-			if (p->type == HDR_CONTACT_T) {
-				if (((contact_body_t*)p->parsed)->star == 1) {
-					rerrno = R_STAR_CONT;
+		for (p = _m->contact->next; p; p = p->next) {
+			if (p->type != HDR_CONTACT_T)
+				continue;
+
+			if (((contact_body_t*)p->parsed)->star == 1) {
+				rerrno = R_STAR_CONT;
+				return 1;
+			}
+
+			/* check also the length of all contacts */
+			for (c = ((contact_body_t *)p->parsed)->contacts; c; c = c->next) {
+				if (c->uri.len > max_contact_len
+				|| (c->received && c->received->len > RECEIVED_MAX_SIZE)) {
+					rerrno = R_CONTACT_LEN;
 					return 1;
 				}
-				/* check also the lenght of all contacts */
-				for(c=((contact_body_t*)p->parsed)->contacts ; c ; c=c->next) {
-					if (c->uri.len > CONTACT_MAX_SIZE
-					|| (c->received && c->received->len>RECEIVED_MAX_SIZE) ) {
-						rerrno = R_CONTACT_LEN;
-						return 1;
-					}
-				}
 			}
-			p = p->next;
 		}
 	}
 
@@ -329,8 +317,8 @@ static struct hdr_field* act_contact_2;
  */
 static contact_t* __get_first_contact(struct sip_msg* _m, struct hdr_field **act_contact)
 {
-	if (_m->contact == 0) return 0;
-	if (_m->contact->parsed == 0) return 0;
+	if (!_m->contact || !_m->contact->parsed)
+		return NULL;
 
 	*act_contact = _m->contact;
 	return (((contact_body_t*)_m->contact->parsed)->contacts);

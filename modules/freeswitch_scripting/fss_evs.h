@@ -27,7 +27,7 @@
 
 struct fs_evs_list {
 	fs_evs *sock;
-	struct str_list *events;
+	str_list *events;
 
 	struct list_head list;
 };
@@ -41,7 +41,7 @@ int subscribe_to_fs_urls(const struct list_head *urls);
 int is_subscribed(fs_evs *sock, str *event);
 int find_evs(fs_evs *sock);
 int add_evs(fs_evs *sock);
-struct fs_evs_list *mk_fs_sock_list(fs_evs *sock, struct str_list *events);
+struct fs_evs_list *mk_fs_sock_list(fs_evs *sock, str_list *events);
 void free_fs_sock_list(struct list_head *sock_list);
 int add_to_fss_sockets(fs_evs *sock, const str *event);
 int del_from_fss_sockets(fs_evs *sock, const str *event_name);

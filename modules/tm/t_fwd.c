@@ -61,6 +61,7 @@
 #include "fix_lumps.h"
 #include "config.h"
 #include "cluster.h"
+#include "../usrloc/ul_evi.h"
 #include "../../msg_callbacks.h"
 #include "../../mod_fix.h"
 
@@ -247,7 +248,7 @@ static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
 
 
 static inline void post_print_uac_request(struct sip_msg *request,
-				str *org_uri, str *org_dst, struct sip_msg_body *body_clone)
+			const str *org_uri, str *org_dst, struct sip_msg_body *body_clone)
 {
 	reset_init_lump_flags();
 	/* delete inserted branch lumps */
@@ -382,7 +383,7 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
    or error (<0); it doesn't send a message yet -- a reply to it
    might interfere with the processes of adding multiple branches
 */
-static int add_uac( struct cell *t, struct sip_msg *request, str *uri,
+static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 		str* next_hop, unsigned int bflags, str* path, struct proxy_l *proxy)
 {
 	unsigned short branch;
@@ -753,9 +754,8 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			t->first_branch--;
 	}
 
-	/* as first branch, use current uri */
-	current_uri = *GET_RURI(p_msg);
-	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst,
+	/* as first branch, use current R-URI, bflags, etc. */
+	branch_ret = add_uac( t, p_msg, GET_RURI(p_msg), &backup_dst,
 		getb0flags(p_msg), &p_msg->path_vec, proxy);
 	if (branch_ret>=0)
 		added_branches |= 1<<branch_ret;
@@ -881,14 +881,14 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 static int ul_contact_event_to_msg(struct sip_msg *req)
 {
 	static enum ul_attrs { UL_URI, UL_RECEIVED, UL_PATH, UL_QVAL,
-		UL_SOCKET, UL_BFLAGS, UL_ATTR, UL_MAX } ul_attr;
-	/* keep the names of the AVPs aligned with the contact-related events
-	 * from USRLOC module !!!! */
-	static str ul_names[UL_MAX]= {str_init("uri"),str_init("received"),
-	                              str_init("path"),str_init("qval"),
-	                              str_init("socket"),str_init("bflags"),
-	                              str_init("attr") };
-	static int avp_ids[UL_MAX] = { -1, -1, -1, -1, -1, -1, -1};
+		UL_SOCKET, UL_BFLAGS, UL_MAX } ul_attr;
+	static str ul_names[UL_MAX]= {str_init(UL_EV_PARAM_CT_URI),
+	                              str_init(UL_EV_PARAM_CT_RCV),
+	                              str_init(UL_EV_PARAM_CT_PATH),
+	                              str_init(UL_EV_PARAM_CT_QVAL),
+	                              str_init(UL_EV_PARAM_CT_SOCK),
+	                              str_init(UL_EV_PARAM_CT_BFL) };
+	static int avp_ids[UL_MAX] = { -1, -1, -1, -1, -1, -1 };
 	int_str vals[UL_MAX];
 	int proto, port;
 	str host;
@@ -917,14 +917,13 @@ static int ul_contact_event_to_msg(struct sip_msg *req)
 
 	/* OK, we have the values, lets inject them into the SIP msg */
 	LM_DBG("injecting new branch: uri=<%.*s>, received=<%.*s>,"
-		"path=<%.*s>, qval=%d, socket=<%.*s>, bflags=%X, attr=<%.*s>\n",
+		"path=<%.*s>, qval=%d, socket=<%.*s>, bflags=%X\n",
 		vals[UL_URI].s.len, vals[UL_URI].s.s,
 		vals[UL_RECEIVED].s.len, vals[UL_RECEIVED].s.s,
 		vals[UL_PATH].s.len, vals[UL_PATH].s.s,
 		vals[UL_QVAL].n,
 		vals[UL_SOCKET].s.len, vals[UL_SOCKET].s.s,
-		vals[UL_BFLAGS].n,
-		vals[UL_ATTR].s.len, vals[UL_ATTR].s.s);
+		vals[UL_BFLAGS].n);
 
 	/* contact URI goes as RURI */
 	if (set_ruri( req, &vals[UL_URI].s)<0) {
@@ -1132,7 +1131,15 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags)
 	}
 }
 
+
 int get_branch_index(void)
 {
 	return _tm_branch_index;
+}
+
+
+int t_inject_ul_event_branch(void)
+{
+	return w_t_inject_branches(NULL,
+	            (void *)(unsigned long)TM_INJECT_SRC_EVENT, (void *)0);
 }

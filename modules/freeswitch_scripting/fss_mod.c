@@ -139,7 +139,7 @@ struct module_exports exports= {
 struct list_head startup_fs_subs = LIST_HEAD_INIT(startup_fs_subs);
 static int fs_sub_add_url(modparam_t type, void *string)
 {
-	struct str_dlist *strl;
+	str_dlist *strl;
 	str url = {string, strlen(string)};
 
 	strl = shm_malloc(sizeof *strl);
@@ -246,7 +246,7 @@ mi_response_t *mi_fs_subscribe(const mi_params_t *params,
 	mi_item_t *events;
 	str event_str;
 	int i, no_events;
-	struct str_list *evlist = NULL, *li, **last = &evlist;
+	str_list *evlist = NULL, *li, **last = &evlist;
 	fs_evs *sock;
 	str url;
 
@@ -330,7 +330,7 @@ mi_response_t *mi_fs_unsubscribe(const mi_params_t *params,
 	mi_item_t *events;
 	str event_str;
 	int i, no_events;
-	struct str_list *evlist = NULL, *li, **last = &evlist;
+	str_list *evlist = NULL, *li, **last = &evlist;
 	fs_evs *sock;
 	str url;
 	int rc, do_unref = 0;
@@ -417,7 +417,7 @@ mi_response_t *mi_fs_list(const mi_params_t *params,
 	struct fs_evs_list *sock_list;
 	mi_response_t *resp;
 	mi_item_t *resp_obj, *sockets_arr, *socket_item, *events_arr;
-	struct str_list *event;
+	str_list *event;
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)

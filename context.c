@@ -125,6 +125,32 @@ context_p context_alloc(enum osips_context type)
 	return ctx;
 }
 
+
+int ensure_global_context(void)
+{
+	if (current_processing_ctx)
+		return 0;
+
+	current_processing_ctx = context_alloc(CONTEXT_GLOBAL);
+	if (!current_processing_ctx) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	memset(current_processing_ctx, 0, context_size(CONTEXT_GLOBAL));
+	return 0;
+}
+
+
+void clear_global_context(void)
+{
+	if (current_processing_ctx) {
+		context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+		current_processing_ctx = NULL;
+	}
+}
+
+
 int context_register_int(enum osips_context type, context_destroy_f f)
 {
 	context_sizes[type] += sizeof(int);

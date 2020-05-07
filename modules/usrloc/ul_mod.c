@@ -44,22 +44,23 @@
 
 #include <stdio.h>
 #include "../../sr_module.h"
-#include "ul_mod.h"
 #include "../../rw_locking.h"
 #include "../../dprint.h"
-#include "../../timer.h"     /* register_timer */
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
 #include "../../ipc.h"
+
+#include "ul_mod.h"
 #include "dlist.h"           /* register_udomain */
 #include "udomain.h"         /* {insert,delete,get,release}_urecord */
 #include "urecord.h"         /* {insert,delete,get}_ucontact */
 #include "ucontact.h"        /* update_ucontact */
 #include "ul_cluster.h"
+#include "ul_timer.h"
+#include "ul_evi.h"
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
-
 
 #define CONTACTID_COL  "contact_id"
 #define USER_COL       "username"
@@ -83,10 +84,12 @@
 
 static int mod_init(void);        /*!< Module initialization */
 static void destroy(void);        /*!< Module destroy */
-static void _synchronize_all_udomains(unsigned int ticks, void* param);
+static void synchronize_all_udomains(unsigned int ticks, void* param);
 static int child_init(int rank);  /*!< Per-child init function */
 static int mi_child_init(void);
-int check_runtime_config(void);
+int ul_init_globals(void);
+int ul_check_config(void);
+int ul_check_db(void);
 int ul_deprec_shp(modparam_t _, void *modparam);
 
 //static int add_replication_dest(modparam_t type, void *val);
@@ -103,8 +106,6 @@ db_key_t *cid_keys=NULL;
 db_val_t *cid_vals=NULL;
 
 int cid_regen=0;
-
-
 
 /*
  * Module parameters and their default values
@@ -155,11 +156,11 @@ int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
 int desc_time_order = 0;   /*!< By default do not enable timestamp ordering */
 
 int ul_hash_size = 9;
+int ct_refresh_timer;
 
 /* flag */
 unsigned int nat_bflag = (unsigned int)-1;
 static char *nat_bflag_str = 0;
-unsigned int init_flag = 0;
 
 /**
  * A global SIP user location cluster. It must include all
@@ -237,11 +238,14 @@ static param_export_t params[] = {
 	{"cseq_delay",         INT_PARAM, &cseq_delay        },
 	{"hash_size",          INT_PARAM, &ul_hash_size      },
 	{"nat_bflag",          STR_PARAM, &nat_bflag_str     },
-    /* data replication through clusterer using TCP binary packets */
+	{"contact_refresh_timer",  INT_PARAM, &ct_refresh_timer },
+
+	/* data replication through clusterer using TCP binary packets */
 	{ "location_cluster",	INT_PARAM, &location_cluster   },
 	{ "skip_replicated_db_ops", INT_PARAM, &skip_replicated_db_ops   },
 	{ "max_contact_delete", INT_PARAM, &max_contact_delete },
 	{ "regen_broken_contactid", INT_PARAM, &cid_regen},
+
 	{0, 0, 0}
 };
 
@@ -363,141 +367,40 @@ struct module_exports exports = {
  */
 static int mod_init(void)
 {
-	unsigned int db_caps;
-	int idx;
-
 	LM_DBG("initializing\n");
 
-	/* Compute the lengths of string parameters */
-	init_db_url( db_url , 1 /*can be null*/);
-	contactid_col.len = strlen(contactid_col.s);
-	user_col.len = strlen(user_col.s);
-	domain_col.len = strlen(domain_col.s);
-	contact_col.len = strlen(contact_col.s);
-	expires_col.len = strlen(expires_col.s);
-	q_col.len = strlen(q_col.s);
-	callid_col.len = strlen(callid_col.s);
-	cseq_col.len = strlen(cseq_col.s);
-	flags_col.len = strlen(flags_col.s);
-	cflags_col.len = strlen(cflags_col.s);
-	user_agent_col.len = strlen(user_agent_col.s);
-	received_col.len = strlen(received_col.s);
-	path_col.len = strlen(path_col.s);
-	sock_col.len = strlen(sock_col.s);
-	methods_col.len = strlen(methods_col.s);
-	sip_instance_col.len = strlen(sip_instance_col.s);
-	kv_store_col.len = strlen(kv_store_col.s);
-	attr_col.len = strlen(attr_col.s);
-	last_mod_col.len = strlen(last_mod_col.s);
-
-	if (ul_hash_size > 16) {
-		LM_WARN("hash too big! max 2 ^ 16\n");
+	if (ul_init_globals() != 0) {
+		LM_ERR("failed to init globals\n");
 		return -1;
 	}
 
-	if(ul_hash_size<=1)
-		ul_hash_size = 512;
-	else
-		ul_hash_size = 1<<ul_hash_size;
-	ul_locks_no = ul_hash_size;
-
-	if (check_runtime_config() != 0) {
+	if (ul_check_config() != 0) {
 		LM_ERR("bad runtime config - exiting...\n");
 		return -1;
 	}
 
-	if (have_cdb_conns()) {
-		cdb_url.len = strlen(cdb_url.s);
-
-		if (cachedb_bind_mod(&cdb_url, &cdbf) < 0) {
-			LM_ERR("cannot bind functions for cachedb_url %.*s\n",
-			       cdb_url.len, cdb_url.s);
-			return -1;
-		}
-
-		if (!CACHEDB_CAPABILITY(&cdbf, CACHEDB_CAP_COL_ORIENTED)) {
-			LM_ERR("not enough capabilities for cachedb_url %.*s\n",
-			       cdb_url.len, cdb_url.s);
-			return -1;
-		}
-	}
-
-	if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
-		cid_keys = pkg_malloc(max_contact_delete *
-				(sizeof(db_key_t) + sizeof(db_val_t)));
-		if (cid_keys == NULL) {
-			LM_ERR("no more pkg memory\n");
-			return -1;
-		}
-
-		cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
-		for (idx=0; idx < max_contact_delete; idx++) {
-			VAL_TYPE(cid_vals+idx) = DB_BIGINT;
-			VAL_NULL(cid_vals+idx) = 0;
-			cid_keys[idx] = &contactid_col;
-		}
-	}
-
-	/* check matching mode */
-	switch (matching_mode) {
-		case CT_MATCH_CONTACT_ONLY:
-		case CT_MATCH_CONTACT_CALLID:
-			break;
-		default:
-			LM_ERR("invalid matching mode %d\n", matching_mode);
-	}
-
-	if(ul_init_locks()!=0)
-	{
-		LM_ERR("locks array initialization failed\n");
+	if (ul_check_db() != 0) {
+		LM_ERR("DB support check failed\n");
 		return -1;
 	}
 
-	/* Register cache timer */
-	register_timer( "ul-timer", _synchronize_all_udomains, 0, timer_interval,
-		TIMER_FLAG_DELAY_ON_DELAY);
+	if (ul_init_timers() != 0) {
+		LM_ERR("failed to init timers\n");
+		return -1;
+	}
 
-	/* init the callbacks list */
-	if ( init_ulcb_list() < 0) {
+	/* cache timer */
+	register_timer("ul-timer", synchronize_all_udomains, 0, timer_interval,
+	               TIMER_FLAG_DELAY_ON_DELAY);
+
+	/* contact-refresh timer */
+	if (ct_refresh_timer)
+		register_timer("ul-refresh-timer", trigger_ct_refreshes, 0,
+		               1, TIMER_FLAG_SKIP_ON_DELAY);
+
+	if (ul_init_cbs() < 0) {
 		LM_ERR("usrloc/callbacks initialization failed\n");
 		return -1;
-	}
-
-	/* use database if needed */
-	if (cluster_mode == CM_SQL_ONLY || rr_persist == RRP_LOAD_FROM_SQL) {
-		if (db_url.s==NULL || db_url.len==0) {
-			LM_ERR("selected mode requires a db connection -> db_url \n");
-			return -1;
-		}
-		if (db_bind_mod(&db_url, &ul_dbf) < 0) { /* Find database module */
-			LM_ERR("failed to bind database module\n");
-			return -1;
-		}
-		db_caps = DB_CAP_ALL;
-		if (cluster_mode == CM_SQL_ONLY)
-			db_caps |= DB_CAP_RAW_QUERY;
-		if (!DB_CAPABILITY(ul_dbf, db_caps)) {
-			LM_ERR("database module does not implement all functions"
-					" needed by the module\n");
-			return -1;
-		}
-		if (rr_persist == RRP_LOAD_FROM_SQL) {
-			if (!(sync_lock = lock_init_rw())) {
-				LM_ERR("cannot init rw lock\n");
-				return -1;
-			}
-		}
-	}
-
-	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str);
-
-	if (nat_bflag==(unsigned int)-1) {
-		nat_bflag = 0;
-	} else if ( nat_bflag>=8*sizeof(nat_bflag) ) {
-		LM_ERR("bflag index (%d) too big!\n", nat_bflag);
-		return -1;
-	} else {
-		nat_bflag = 1<<nat_bflag;
 	}
 
 	if (ul_event_init() < 0) {
@@ -506,11 +409,9 @@ static int mod_init(void)
 	}
 
 	if (ul_init_cluster() < 0) {
-		LM_ERR("failed to init clustering support!\n");
+		LM_ERR("failed to init clustering support\n");
 		return -1;
 	}
-
-	init_flag = 1;
 
 	return 0;
 }
@@ -613,7 +514,7 @@ static void destroy(void)
 			ul_unlock_locks();
 			if (sync_lock)
 				lock_start_read(sync_lock);
-			if (synchronize_all_udomains() != 0) {
+			if (_synchronize_all_udomains() != 0) {
 				LM_ERR("flushing cache failed\n");
 			}
 			if (sync_lock) {
@@ -640,18 +541,18 @@ static void destroy(void)
 /*! \brief
  * Timer handler
  */
-static void _synchronize_all_udomains(unsigned int ticks, void* param)
+static void synchronize_all_udomains(unsigned int ticks, void* param)
 {
 	if (sync_lock)
 		lock_start_read(sync_lock);
-	if (synchronize_all_udomains() != 0) {
+	if (_synchronize_all_udomains() != 0) {
 		LM_ERR("synchronizing cache failed\n");
 	}
 	if (sync_lock)
 		lock_stop_read(sync_lock);
 }
 
-int check_runtime_config(void)
+int ul_check_config(void)
 {
 	if (db_mode >= NO_DB && db_mode <= DB_ONLY) {
 		if (runtime_preset) {
@@ -923,4 +824,141 @@ int ul_deprec_shp(modparam_t _, void *modparam)
 		pinging_mode = PMD_COOPERATION;
 
 	return 1;
+}
+
+int ul_init_globals(void)
+{
+	int i;
+
+	init_db_url(db_url, 1 /* can be null */);
+
+	/* Compute the lengths of string parameters */
+	contactid_col.len = strlen(contactid_col.s);
+	user_col.len = strlen(user_col.s);
+	domain_col.len = strlen(domain_col.s);
+	contact_col.len = strlen(contact_col.s);
+	expires_col.len = strlen(expires_col.s);
+	q_col.len = strlen(q_col.s);
+	callid_col.len = strlen(callid_col.s);
+	cseq_col.len = strlen(cseq_col.s);
+	flags_col.len = strlen(flags_col.s);
+	cflags_col.len = strlen(cflags_col.s);
+	user_agent_col.len = strlen(user_agent_col.s);
+	received_col.len = strlen(received_col.s);
+	path_col.len = strlen(path_col.s);
+	sock_col.len = strlen(sock_col.s);
+	methods_col.len = strlen(methods_col.s);
+	sip_instance_col.len = strlen(sip_instance_col.s);
+	kv_store_col.len = strlen(kv_store_col.s);
+	attr_col.len = strlen(attr_col.s);
+	last_mod_col.len = strlen(last_mod_col.s);
+
+	if (ul_hash_size > 16) {
+		LM_WARN("hash too big! max 2 ^ 16\n");
+		return -1;
+	}
+
+	if (ul_hash_size <= 1)
+		ul_hash_size = 512;
+	else
+		ul_hash_size = 1 << ul_hash_size;
+
+	ul_locks_no = ul_hash_size;
+
+	if (ul_init_locks() != 0) {
+		LM_ERR("locks array initialization failed\n");
+		return -1;
+	}
+
+	/* check matching mode */
+	switch (matching_mode) {
+		case CT_MATCH_CONTACT_ONLY:
+		case CT_MATCH_CONTACT_CALLID:
+			break;
+		default:
+			LM_ERR("invalid matching mode %d\n", matching_mode);
+			return -1;
+	}
+
+	if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
+		cid_keys = pkg_malloc(max_contact_delete *
+				(sizeof(db_key_t) + sizeof(db_val_t)));
+		if (!cid_keys) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
+		for (i = 0; i < max_contact_delete; i++) {
+			VAL_TYPE(cid_vals + i) = DB_BIGINT;
+			VAL_NULL(cid_vals + i) = 0;
+			cid_keys[i] = &contactid_col;
+		}
+	}
+
+	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str);
+
+	if (nat_bflag == (unsigned int)-1) {
+		nat_bflag = 0;
+	} else if (nat_bflag >= 8 * sizeof(nat_bflag) ) {
+		LM_ERR("bflag index (%d) too big!\n", nat_bflag);
+		return -1;
+	} else {
+		nat_bflag = 1 << nat_bflag;
+	}
+
+	return 0;
+}
+
+int ul_check_db(void)
+{
+	unsigned int db_caps;
+
+	if (have_cdb_conns()) {
+		cdb_url.len = strlen(cdb_url.s);
+
+		if (cachedb_bind_mod(&cdb_url, &cdbf) < 0) {
+			LM_ERR("cannot bind functions for cachedb_url %.*s\n",
+			       cdb_url.len, cdb_url.s);
+			return -1;
+		}
+
+		if (!CACHEDB_CAPABILITY(&cdbf, CACHEDB_CAP_COL_ORIENTED)) {
+			LM_ERR("not enough capabilities for cachedb_url %.*s\n",
+			       cdb_url.len, cdb_url.s);
+			return -1;
+		}
+	}
+
+	/* use database if needed */
+	if (cluster_mode == CM_SQL_ONLY || rr_persist == RRP_LOAD_FROM_SQL) {
+		if (ZSTR(db_url)) {
+			LM_ERR("selected mode requires a db connection -> db_url \n");
+			return -1;
+		}
+
+		if (db_bind_mod(&db_url, &ul_dbf) < 0) { /* Find database module */
+			LM_ERR("failed to bind database module\n");
+			return -1;
+		}
+
+		db_caps = DB_CAP_ALL;
+		if (cluster_mode == CM_SQL_ONLY)
+			db_caps |= DB_CAP_RAW_QUERY;
+
+		if (!DB_CAPABILITY(ul_dbf, db_caps)) {
+			LM_ERR("database module does not implement all functions"
+					" needed by the module\n");
+			return -1;
+		}
+
+		if (rr_persist == RRP_LOAD_FROM_SQL) {
+			if (!(sync_lock = lock_init_rw())) {
+				LM_ERR("cannot init rw lock\n");
+				return -1;
+			}
+		}
+	}
+
+	return 0;
 }

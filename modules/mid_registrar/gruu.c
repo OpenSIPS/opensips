@@ -6,7 +6,7 @@
  * register at high enough frequencies that they actually degrade the
  * performance of their registrars.
  *
- * Copyright (C) 2016 OpenSIPS Solutions
+ * Copyright (C) 2016-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -23,16 +23,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2016-10-24 initial version (liviu)
  */
 
 #include "../../ut.h"
 #include "../../data_lump.h"
 
-#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/common.h"
 
 #include "mid_registrar.h"
 #include "lookup.h"

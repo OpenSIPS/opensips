@@ -125,8 +125,6 @@ static int w_t_add_hdrs(struct sip_msg* msg, str *val);
 static int t_cancel_trans(struct cell *t, str *hdrs);
 static int w_t_new_request(struct sip_msg* msg, str *method,
 			str *ruri, str *from, str *to, str *body, str *p_ctx);
-static int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_flags);
-static int w_t_wait_for_new_branches(struct sip_msg* msg);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -669,6 +667,8 @@ int load_tm( struct tm_binds *tmb)
 	tmb->print_dlg = print_dlg;
 	tmb->setlocalTholder = setlocalTholder;
 	tmb->get_branch_index = get_branch_index;
+	tmb->t_wait_for_new_branches = w_t_wait_for_new_branches;
+	tmb->t_inject_ul_event_branch = t_inject_ul_event_branch;
 
 	/* tm context functions */
 	tmb->t_ctx_register_int = t_ctx_register_int;
@@ -1137,8 +1137,6 @@ static int w_pv_t_reply(struct sip_msg *msg, unsigned int* code, str* text)
 
 static int w_t_newtran( struct sip_msg* p_msg)
 {
-	/* t_newtran returns 0 on error (negative value means
-	   'transaction exists' */
 	return t_newtran( p_msg , 0 /*no full UAS cloning*/);
 }
 
@@ -1496,7 +1494,7 @@ static int w_t_new_request(struct sip_msg* msg, str *method,
 }
 
 
-static int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_flags)
+int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_flags)
 {
 	struct cell *t;
 	int is_local=0;
@@ -1531,7 +1529,7 @@ static int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_fl
 	if (!is_local)
 		LOCK_REPLIES(t);
 
-	/* we the transaction to operate with, do the stuff now */
+	/* we have the transaction to operate with, do the stuff now */
 	rc = t_inject_branch( t, msg, flags);
 
 	if (!is_local) {
@@ -1544,7 +1542,7 @@ static int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_fl
 }
 
 
-static int w_t_wait_for_new_branches(struct sip_msg* msg)
+int w_t_wait_for_new_branches(struct sip_msg* msg)
 {
 	struct cell *t;
 

@@ -39,6 +39,7 @@
 
 #include "../../str.h"
 #include "../../ip_addr.h"
+#include "../../str_list.h"
 #include <openssl/ssl.h>
 
 #include "tls_config.h"
@@ -85,7 +86,7 @@
 #define DOM_FILT_ARR_MAX	64
 
 struct domain_filter {
-	struct str_list *hostname;
+	str_list *hostname;
 	struct tls_domain *dom_link;
 };
 

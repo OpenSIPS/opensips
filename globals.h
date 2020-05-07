@@ -35,6 +35,7 @@
 #define DO_REV_DNS 2
 
 extern int testing_framework;
+extern char *testing_module;
 
 extern char * cfg_file;
 extern char *preproc;

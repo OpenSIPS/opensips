@@ -82,7 +82,17 @@ typedef struct usrloc_api {
 	/* Return: 0 if equal, -1 otherwise */
 	int (*ucontact_coords_cmp) (ucontact_coords a, ucontact_coords b);
 	void (*free_ucontact_coords) (ucontact_coords coords);
-	get_ucontact_from_id_t    get_ucontact_from_id;
+
+	/*
+	 * retrieve the ucontact from a domain using the contact id
+	 *
+	 * Returns:
+	 *	NULL, if contact not found
+	 *  contact, if contact found, *with grabbed ulslot lock*
+	 */
+	ucontact_t *(*get_ucontact_from_id) (udomain_t *d,
+	                                     ucontact_id id, urecord_t **r);
+
 	get_ucontact_t            get_ucontact;
 	update_ucontact_t         update_ucontact;
 
@@ -98,6 +108,9 @@ typedef struct usrloc_api {
 
 	register_ulcb_t           register_ulcb;
 	update_sipping_latency_t  update_sipping_latency;
+
+	/* @async: set to 1 to raise the refresh event in a non-blocking way */
+	void (*raise_ev_ct_refresh) (const ucontact_t *ct, int async);
 } usrloc_api_t;
 
 

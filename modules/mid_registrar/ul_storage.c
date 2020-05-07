@@ -6,7 +6,7 @@
  * register at high enough frequencies that they actually degrade the
  * performance of their registrars.
  *
- * Copyright (C) 2016 OpenSIPS Solutions
+ * Copyright (C) 2016-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -26,7 +26,7 @@
  */
 
 #include "../../ut.h"
-#include "../../lib/reg/regtime.h"
+#include "../../lib/reg/common.h"
 
 #include "../usrloc/urecord.h"
 
@@ -54,44 +54,44 @@ int store_urecord_data(urecord_t *r, struct mid_reg_info *mri,
 	value.is_str = 0;
 
 	value.i = expires_out;
-	if (!ul_api.put_urecord_key(r, &ul_key_expires_out, &value))
+	if (!ul.put_urecord_key(r, &ul_key_expires_out, &value))
 		return -1;
 
 	value.i = last_reg_ts;
-	if (!ul_api.put_urecord_key(r, &ul_key_last_reg_ts, &value))
+	if (!ul.put_urecord_key(r, &ul_key_last_reg_ts, &value))
 		return -1;
 
 	value.i = last_cseq;
-	if (!ul_api.put_urecord_key(r, &ul_key_last_cseq, &value))
+	if (!ul.put_urecord_key(r, &ul_key_last_cseq, &value))
 		return -1;
 
 	/* strings */
 	value.is_str = 1;
 
 	value.s = mri->from;
-	if (!ul_api.put_urecord_key(r, &ul_key_from, &value))
+	if (!ul.put_urecord_key(r, &ul_key_from, &value))
 		return -1;
 
 	value.s = mri->to;
-	if (!ul_api.put_urecord_key(r, &ul_key_to, &value))
+	if (!ul.put_urecord_key(r, &ul_key_to, &value))
 		return -1;
 
 	value.s = mri->callid;
-	if (!ul_api.put_urecord_key(r, &ul_key_callid, &value))
+	if (!ul.put_urecord_key(r, &ul_key_callid, &value))
 		return -1;
 
 	value.s = mri->main_reg_uri;
-	if (!ul_api.put_urecord_key(r, &ul_key_main_reg_uri, &value))
+	if (!ul.put_urecord_key(r, &ul_key_main_reg_uri, &value))
 		return -1;
 
 	if (!ZSTR(mri->main_reg_next_hop)) {
 		value.s = mri->main_reg_next_hop;
-		if (!ul_api.put_urecord_key(r, &ul_key_main_reg_next_hop, &value))
+		if (!ul.put_urecord_key(r, &ul_key_main_reg_next_hop, &value))
 			return -1;
 	}
 
 	value.s = *ct_uri;
-	if (!ul_api.put_urecord_key(r, &ul_key_ct_uri, &value))
+	if (!ul.put_urecord_key(r, &ul_key_ct_uri, &value))
 		return -1;
 
 	return 0;
@@ -103,7 +103,7 @@ int update_urecord_data(urecord_t *r, int no_rpl_contacts, const str *callid,
 	int_str_t value, *cur_callid, *cseq;
 	unsigned int last_reg_ts;
 
-	cur_callid = ul_api.get_urecord_key(r, &ul_key_callid);
+	cur_callid = ul.get_urecord_key(r, &ul_key_callid);
 	if (!cur_callid) {
 		LM_ERR("callid not found!, $ci=%.*s\n", callid->len, callid->s);
 		return -1;
@@ -116,16 +116,16 @@ int update_urecord_data(urecord_t *r, int no_rpl_contacts, const str *callid,
 	if (str_strcmp(&cur_callid->s, callid) != 0) {
 		value.is_str = 1;
 		value.s = *callid;
-		if (!ul_api.put_urecord_key(r, &ul_key_callid, &value))
+		if (!ul.put_urecord_key(r, &ul_key_callid, &value))
 			return -1;
 
 		value.is_str = 0;
 		value.i = last_cseq;
-		if (!ul_api.put_urecord_key(r, &ul_key_last_cseq, &value))
+		if (!ul.put_urecord_key(r, &ul_key_last_cseq, &value))
 			return -1;
 	} else {
 		/* same Call-ID - choose the larger CSeq */
-		cseq = ul_api.get_urecord_key(r, &ul_key_last_cseq);
+		cseq = ul.get_urecord_key(r, &ul_key_last_cseq);
 		if (!cseq) {
 			LM_ERR("cseq not found!, $ci=%.*s\n", callid->len, callid->s);
 			return -1;
@@ -134,7 +134,7 @@ int update_urecord_data(urecord_t *r, int no_rpl_contacts, const str *callid,
 		if (cseq->i < last_cseq) {
 			value.is_str = 0;
 			value.i = last_cseq;
-			if (!ul_api.put_urecord_key(r, &ul_key_last_cseq, &value))
+			if (!ul.put_urecord_key(r, &ul_key_last_cseq, &value))
 				return -1;
 		}
 	}
@@ -144,14 +144,14 @@ int update_urecord_data(urecord_t *r, int no_rpl_contacts, const str *callid,
 	if (no_rpl_contacts) {
 		last_reg_ts = 0;
 		value.i = 1;
-		if (!ul_api.put_urecord_key(r, &ul_key_skip_dereg, &value))
+		if (!ul.put_urecord_key(r, &ul_key_skip_dereg, &value))
 			return -1;
 	} else {
 		last_reg_ts = get_act_time();
 	}
 
 	value.i = last_reg_ts;
-	if (!ul_api.put_urecord_key(r, &ul_key_last_reg_ts, &value))
+	if (!ul.put_urecord_key(r, &ul_key_last_reg_ts, &value))
 		return -1;
 
 	return 0;
@@ -167,48 +167,48 @@ int store_ucontact_data(ucontact_t *c, struct mid_reg_info *mri,
 	value.is_str = 0;
 
 	value.i = expires;
-	if (!ul_api.put_ucontact_key(c, &ul_key_expires, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_expires, &value))
 		return -1;
 
 	value.i = expires_out;
-	if (!ul_api.put_ucontact_key(c, &ul_key_expires_out, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_expires_out, &value))
 		return -1;
 
 	value.i = last_reg_ts;
-	if (!ul_api.put_ucontact_key(c, &ul_key_last_reg_ts, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_last_reg_ts, &value))
 		return -1;
 
 	value.i = last_cseq;
-	if (!ul_api.put_ucontact_key(c, &ul_key_last_cseq, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_last_cseq, &value))
 		return -1;
 
 	/* strings */
 	value.is_str = 1;
 
 	value.s = mri->from;
-	if (!ul_api.put_ucontact_key(c, &ul_key_from, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_from, &value))
 		return -1;
 
 	value.s = mri->to;
-	if (!ul_api.put_ucontact_key(c, &ul_key_to, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_to, &value))
 		return -1;
 
 	value.s = mri->callid;
-	if (!ul_api.put_ucontact_key(c, &ul_key_callid, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_callid, &value))
 		return -1;
 
 	value.s = mri->main_reg_uri;
-	if (!ul_api.put_ucontact_key(c, &ul_key_main_reg_uri, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_main_reg_uri, &value))
 		return -1;
 
 	if (!ZSTR(mri->main_reg_next_hop)) {
 		value.s = mri->main_reg_next_hop;
-		if (!ul_api.put_ucontact_key(c, &ul_key_main_reg_next_hop, &value))
+		if (!ul.put_ucontact_key(c, &ul_key_main_reg_next_hop, &value))
 			return -1;
 	}
 
 	value.s = *ct_uri;
-	if (!ul_api.put_ucontact_key(c, &ul_key_ct_uri, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_ct_uri, &value))
 		return -1;
 
 	return 0;
@@ -222,19 +222,19 @@ int update_ucontact_data(ucontact_t *c, int expires, int expires_out,
 	value.is_str = 0;
 
 	value.i = expires;
-	if (!ul_api.put_ucontact_key(c, &ul_key_expires, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_expires, &value))
 		return -1;
 
 	value.i = expires_out;
-	if (!ul_api.put_ucontact_key(c, &ul_key_expires_out, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_expires_out, &value))
 		return -1;
 
 	value.i = last_cseq;
-	if (!ul_api.put_ucontact_key(c, &ul_key_last_cseq, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_last_cseq, &value))
 		return -1;
 
 	value.i = get_act_time();
-	if (!ul_api.put_ucontact_key(c, &ul_key_last_reg_ts, &value))
+	if (!ul.put_ucontact_key(c, &ul_key_last_reg_ts, &value))
 		return -1;
 
 	return 0;

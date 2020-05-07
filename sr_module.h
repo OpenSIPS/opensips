@@ -222,6 +222,10 @@ void* find_param_export(char* mod, char* name, modparam_t type);
  * \return Returns 1 if the module with name 'name' is loaded, and zero otherwise. */
 int module_loaded(char *name);
 
+/*! \brief Fetch the handle of a module shared object, obtained via dlopen()
+ * \return Pointer to the handle, NULL otherwise. */
+void *get_mod_handle(const char *name);
+
 /*! \brief Gets a specific module
  * \return Returns the module if the module with name 'name' is loaded, and
  * NULL otherwise */
@@ -234,5 +238,10 @@ int start_module_procs(void);
 
 /*! \brief Runs the reload validation function from all modules */
 int modules_validate_reload(void);
+
+#ifndef DLSYM_PREFIX
+/* define it to null */
+#define DLSYM_PREFIX
+#endif
 
 #endif

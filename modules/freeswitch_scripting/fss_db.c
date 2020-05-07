@@ -98,7 +98,7 @@ int fss_db_reload(void)
 {
 	struct list_head new_sockets, old_sockets;
 	struct fs_evs_list *sock_list;
-	struct str_list *evlist;
+	str_list *evlist;
 	fs_evs *sock;
 	db_res_t *res = NULL;
 	db_val_t *values;

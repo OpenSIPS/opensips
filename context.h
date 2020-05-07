@@ -67,17 +67,31 @@ extern unsigned int type_sizes[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
 extern unsigned int type_offsets[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
 
 /*
- * allocate a new GLOBAL context in pkg mem
+ * allocate a new context in pkg mem
  *
  * Note: this will not change the "current_processing_ctx"
  */
 context_p context_alloc(enum osips_context type);
 #define   context_free(context_p) pkg_free(context_p)
 
+
+/*
+ * ensure the global context is non-NULL
+ *
+ * Return: context pointer on success, NULL on internal error
+ */
+int ensure_global_context(void);
+
+
+/* free and reset the global context */
+void clear_global_context(void);
+
+
 /*
  * destroys a context by calling each callback registered
  */
 void context_destroy(enum osips_context type, context_p ctx);
+
 
 /*
  * - register a different function for each field you add in the context

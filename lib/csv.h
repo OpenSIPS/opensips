@@ -41,7 +41,7 @@ enum csv_flags {
 	CSV_DUP_FIELDS  = (1<<3),
 };
 
-typedef struct str_list csv_record;
+typedef str_list csv_record;
 
 /*
  * Chop an input string by the given separator

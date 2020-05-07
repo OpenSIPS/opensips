@@ -1,0 +1,125 @@
+<para><emphasis>flags (string, optional)</emphasis></para>
+
+<itemizedlist>
+<listitem>
+	<para>
+	<emphasis>'b' (no Branches)</emphasis> - this flag controls how
+	the &reg_lookup_f; function processes multiple contacts.
+	If there are
+	multiple contacts for the given username in usrloc and this
+	flag is not set, Request-URI will be overwritten with the
+	highest-q rated contact and the rest will be appended to
+	sip_msg structure and can be later used by tm for forking. If
+	the flag is set, only Request-URI will be overwritten
+	with the highest-q rated contact and the rest will be left
+	unprocessed.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	<emphasis>'B' (to Branches only)</emphasis> - this flags forces
+	all found contacts to be uploaded only as branches (in the
+	destination set) and not at all in the R-URI of the
+	current message.  Using this option allows the &reg_lookup_f; function to
+	also be used in the context of a SIP reply.
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	<emphasis>'r' (bRanch lookup)</emphasis> - this flag enables
+	searching through existing branches for aor's and expanding
+	them to contacts. For example, you have got AOR A in your
+	ruri but you also want to forward your calls to AOR B. In order
+	to do this, you must put AOR B in a branch, and if this flag
+	enabled, the function will also expand AOR B to contacts,
+	which will be put back into the branches. The AOR's that were
+	in branches before the function call shall be removed.
+	</para>
+
+	<para>
+	<emphasis role='bold'>WARNING: </emphasis>
+	<emphasis>if you want this flag activated,
+	the 'b' (no Branches) flag must not be set, because by setting
+	that flag you won't allow &reg_lookup_f; to write in a branch.</emphasis>
+	</para>
+</listitem>
+
+<listitem>
+	<para>
+	<emphasis>'m' (Method filtering)</emphasis> - setting this flag
+	will enable contact filtering based on the supported methods
+	listed in the "Allow" header field during registration.
+	Contacts which did not present an "Allow" header field during
+	registration are assumed to support all standard SIP methods.
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis>'u' (User-Agent filtering)</emphasis> - this flag
+	enables regexp filtering by user-agent. It's useful with
+	enabled append_branches parameter. Regexp must follow
+	the 'u' flag and must use format like 'u/regexp/'.
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis>'i' (Case insensitive search)</emphasis> - this flag
+	enables case insensitive filtering for the 'u' flag.
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis>'e' (Use extended regexp)</emphasis> - this flag
+	enables using of extended regexp format for the 'u' flag.
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis>'g' (Global lookup)</emphasis> - this flag
+	is only relevant with federated user location clustering. If
+	set, the &reg_lookup_f; function will not only perform the classic
+	in-memory "search-AoR-and-push-branches" operation, but will
+	also perform a metadata lookup and append an additional branch
+	for each returned result. The "in-memory branches" correspond
+	to local contacts (current location), while the "metadata
+	branches" correspond to contacts available on one or more of
+	the remaining locations of the platform.
+	</para>
+	<para>
+	The AoR metadata consists of the minimally required information
+	in order for one of the VoIP platform's locations (data
+	centers) to advertise the presence of a locally registered AoR
+	for the global platform. Specifically, this consists of two
+	pieces of information:
+	<itemizedlist>
+	<listitem>
+		<para>
+			the AoR (e.g. "vladimir@federation-cluster")
+		</para>
+	</listitem>
+	<listitem>
+		<para>
+			the home IP (e.g. "10.0.0.223")
+		</para>
+	</listitem>
+	</itemizedlist>
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis>'yXXXXX' (Max pinging latency)</emphasis> - maximally
+	accepted contact pinging latency (microseconds). Contacts of an
+	AoR with a higher latency will be discarded during &reg_lookup_f;.
+	</para>
+</listitem>
+<listitem>
+	<para>
+	<emphasis>'Y' (Sort by pinging latency)</emphasis> - contacts
+	will be picked in ascending order of their last successful
+	pinging latency (fastest ping -> slowest ping). This flag may
+	work together with the "y" flag.
+	</para>
+</listitem>
+</itemizedlist>

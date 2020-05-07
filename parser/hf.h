@@ -58,7 +58,7 @@ enum _hdr_types_t {
 	HDR_MAXFORWARDS_T			     /**< MaxForwards header field */,
 	HDR_ROUTE_T					     /**< Route header field */,
 	HDR_RECORDROUTE_T			     /**< Record-Route header field */,
-	HDR_PATH_T				         /**< Path header fiels */,
+	HDR_PATH_T					     /**< Path header fiels */,
 	HDR_CONTENTTYPE_T			     /**< Content-Type header field */,
 	HDR_CONTENTLENGTH_T			     /**< Content-Length header field */,
 	HDR_AUTHORIZATION_T			     /**< Authorization header field */,
@@ -87,9 +87,10 @@ enum _hdr_types_t {
 	HDR_PRIVACY_T				     /**< Privacy header field */,
 	HDR_RETRY_AFTER_T			     /**< Retry-After header field */,
 	HDR_CALL_INFO_T				     /**< Call-Info header field */,
-	HDR_WWW_AUTHENTICATE_T				/**< WWW-Authenticate header field */,
-	HDR_PROXY_AUTHENTICATE_T			/**< Proxy-Authenticate header field */,
-	HDR_MIN_EXPIRES_T				/**> Min-Expires header field */,
+	HDR_WWW_AUTHENTICATE_T		     /**< WWW-Authenticate header field */,
+	HDR_PROXY_AUTHENTICATE_T	     /**< Proxy-Authenticate header field */,
+	HDR_MIN_EXPIRES_T			     /**> Min-Expires header field */,
+	HDR_FEATURE_CAPS_T			     /**> Feature-Caps header field */,
 	HDR_EOH_T					     /**< Some other header field */
 };
 
@@ -151,9 +152,10 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_PRIVACY_F				HDR_F_DEF(PRIVACY)
 #define HDR_RETRY_AFTER_F			HDR_F_DEF(RETRY_AFTER)
 #define HDR_CALL_INFO_F				HDR_F_DEF(CALL_INFO)
-#define HDR_WWW_AUTHENTICATE_F			HDR_F_DEF(WWW_AUTHENTICATE)
-#define HDR_PROXY_AUTHENTICATE_F		HDR_F_DEF(PROXY_AUTHENTICATE)
+#define HDR_WWW_AUTHENTICATE_F		HDR_F_DEF(WWW_AUTHENTICATE)
+#define HDR_PROXY_AUTHENTICATE_F	HDR_F_DEF(PROXY_AUTHENTICATE)
 #define HDR_MIN_EXPIRES_F			HDR_F_DEF(MIN_EXPIRES)
+#define HDR_FEATURE_CAPS_F			HDR_F_DEF(FEATURE_CAPS)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;

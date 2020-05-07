@@ -1,3 +1,9 @@
+
+# Are we running a specific module's tests or just the core tests?
+ifndef module
+module=core
+endif
+
 .PHONY: test unit_tests system_tests
 
 ensure_test_defs:
@@ -8,7 +14,7 @@ ensure_test_defs:
 
 unit_tests: ensure_test_defs $(NAME)
 	-@echo "          =============   Start Unit Tests   ============="
-	./$(NAME) -T -w . -m1024 -M1024 -a HP_MALLOC
+	./$(NAME) -dd -T $(module) -w . -a HP_MALLOC
 	-@echo "          ================================================"
 	-@echo "          ========   Passed All Tests! ᕦ(ò_óˇ)ᕤ   ========"
 	-@echo "          ================================================"

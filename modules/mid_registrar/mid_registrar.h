@@ -8,7 +8,7 @@
  * register at high enough frequencies that they actually degrade the
  * performance of their registrars.
  *
- * Copyright (C) 2016 OpenSIPS Solutions
+ * Copyright (C) 2016-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -25,10 +25,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2016-07-06 initial version (liviu)
  */
 
 #ifndef __MID_REG_
@@ -111,27 +107,19 @@ struct mid_reg_info {
 	unsigned int ul_flags;
 	unsigned int cflags;
 
+	/* REGISTER-time state of the PN providers -- to be used at 200 OK
+	 * without a re-parse of the REGISTER */
+	void *pn_provider_state;
+
 	int pending_replies;
 	rw_lock_t *tm_lock;
 };
 
 extern rw_lock_t *tm_retrans_lk;
 
-extern str realm_prefix;
 extern int case_sensitive;
 
-extern struct usrloc_api ul_api;
-extern struct tm_binds tm_api;
 extern struct sig_binds sig_api;
-
-extern int default_expires;
-extern int min_expires;
-extern int max_expires;
-
-extern int max_contacts;
-extern int max_username_len;
-extern int max_domain_len;
-extern int max_aor_len;
 
 extern int retry_after;
 extern unsigned int outgoing_expires;
@@ -146,15 +134,6 @@ extern str expires_hdr;
 extern str expires_param;
 
 extern str matching_param;
-
-extern int disable_gruu;
-extern int reg_use_domain;
-
-extern str rcv_param;
-
-extern str gruu_secret;
-
-extern int tcp_persistent_flag;
 
 struct mid_reg_info *mri_alloc(void);
 struct mid_reg_info *mri_dup(struct mid_reg_info *mri);

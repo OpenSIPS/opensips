@@ -107,7 +107,7 @@ void map_remove_tls_dom(struct tls_domain *dom)
 
 void tls_free_domain(struct tls_domain *dom)
 {
-	struct str_list *m_it, *m_tmp;
+	str_list *m_it, *m_tmp;
 	int i;
 
 	dom->refs--;
@@ -524,9 +524,9 @@ int tls_new_domain(str *name, int type, struct tls_domain **dom)
 	return 0;
 }
 
-static int add_match_filt_to_dom(str *filter_s, struct str_list **filter_list)
+static int add_match_filt_to_dom(str *filter_s, str_list **filter_list)
 {
-	struct str_list *match_filt;
+	str_list *match_filt;
 
 	match_filt = shm_malloc(sizeof *match_filt);
 	if (!match_filt) {
@@ -735,7 +735,7 @@ int db_add_domain(char **str_vals, int *int_vals, str* blob_vals,
 
 int update_matching_map(struct tls_domain *tls_dom)
 {
-	struct str_list *addrf_s, *domf_s;
+	str_list *addrf_s, *domf_s;
 	struct dom_filt_array *doms_array;
 	void **val;
 	int pos;

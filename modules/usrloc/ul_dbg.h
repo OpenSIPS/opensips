@@ -1,7 +1,7 @@
 /*
  * Usrloc struct debugging
  *
- * Copyright (C) 2018 OpenSIPS Solutions
+ * Copyright (C) 2018-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -22,6 +22,13 @@
 
 #ifndef USRLOC_DBG__
 #define USRLOC_DBG__
+
+#ifndef EXTRA_DEBUG
+#define print_ucontact(...)
+#define print_urecord(...)
+#define print_udomain(...)
+#define print_all_udomains(...)
+#else
 
 /*! \brief
  * Print contact, for debugging purposes only
@@ -155,5 +162,7 @@ static inline void print_all_udomains(void)
 	}
 	LM_GEN1(L_DBG, "===/Domain list===\n");
 }
+
+#endif /* EXTRA_DEBUG */
 
 #endif /* USRLOC_DBG__ */

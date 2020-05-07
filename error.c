@@ -190,6 +190,7 @@ char *error_text( int code )
 		case 504: return "Server Time-out";
 		case 505: return "Version Not Supported";
 		case 513: return "Message Too Large";
+		case 555: return "Push Notification Service Not Supported";
 		case 580: return "Precondition Failure";
 
 		case 600: return "Busy Everywhere";

@@ -34,15 +34,14 @@
  */
 
 #include <stdio.h>
+
 #include "../../ut.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/parse_supported.h"
 #include "../../data_lump_rpl.h"
-#include "../usrloc/usrloc.h"
+#include "../../lib/reg/common.h"
 
-#include "../../lib/reg/rerrno.h"
-#include "../../lib/reg/regtime.h"
-#include "../../lib/reg/config.h"
+#include "../usrloc/usrloc.h"
 
 #include "reg_mod.h"
 #include "reply.h"
@@ -86,8 +85,6 @@
 #define CONTACT_SEP ", "
 #define CONTACT_SEP_LEN (sizeof(CONTACT_SEP) - 1)
 
-extern str gruu_secret;
-extern int disable_gruu;
 str default_gruu_secret=str_init("0p3nS1pS");
 
 /*! \brief
@@ -363,43 +360,6 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 }
 
 
-#define MSG_200 "OK"
-#define MSG_400 "Bad Request"
-#define MSG_420 "Bad Extension"
-#define MSG_500 "Server Internal Error"
-#define MSG_503 "Service Unavailable"
-
-#define EI_R_FINE       "No problem"                                /* R_FINE */
-#define EI_R_UL_DEL_R   "usrloc_record_delete failed"               /* R_UL_DEL_R */
-#define	EI_R_UL_GET_R   "usrloc_record_get failed"                  /* R_UL_GET */
-#define	EI_R_UL_NEW_R   "usrloc_record_new failed"                  /* R_UL_NEW_R */
-#define	EI_R_INV_CSEQ   "Invalid CSeq number"                       /* R_INV_CSEQ */
-#define	EI_R_UL_INS_C   "usrloc_contact_insert failed"              /* R_UL_INS_C */
-#define	EI_R_UL_INS_R   "usrloc_record_insert failed"               /* R_UL_INS_R */
-#define	EI_R_UL_DEL_C   "usrloc_contact_delete failed"              /* R_UL_DEL_C */
-#define	EI_R_UL_UPD_C   "usrloc_contact_update failed"              /* R_UL_UPD_C */
-#define	EI_R_TO_USER    "No username in To URI"                     /* R_TO_USER */
-#define	EI_R_AOR_LEN    "Address Of Record too long"                /* R_AOR_LEN */
-#define	EI_R_AOR_PARSE  "Error while parsing AOR"                   /* R_AOR_PARSE */
-#define	EI_R_INV_EXP    "Invalid expires param in contact"          /* R_INV_EXP */
-#define	EI_R_INV_Q      "Invalid q param in contact"                /* R_INV_Q */
-#define	EI_R_PARSE      "Message parse error"                       /* R_PARSE */
-#define	EI_R_TO_MISS    "To header not found"                       /* R_TO_MISS */
-#define	EI_R_CID_MISS   "Call-ID header not found"                  /* R_CID_MISS */
-#define	EI_R_CS_MISS    "CSeq header not found"                     /* R_CS_MISS */
-#define	EI_R_PARSE_EXP	"Expires parse error"                       /* R_PARSE_EXP */
-#define	EI_R_PARSE_CONT	"Contact parse error"                       /* R_PARSE_CONT */
-#define	EI_R_STAR_EXP	"* used in contact and expires is not zero" /* R_STAR__EXP */
-#define	EI_R_STAR_CONT	"* used in contact and more than 1 contact" /* R_STAR_CONT */
-#define	EI_R_OOO	"Out of order request"                      /* R_OOO */
-#define	EI_R_RETRANS	"Retransmission"                            /* R_RETRANS */
-#define EI_R_UNESCAPE   "Error while unescaping username"           /* R_UNESCAPE */
-#define EI_R_TOO_MANY   "Too many registered contacts"              /* R_TOO_MANY */
-#define EI_R_CONTACT_LEN  "Contact/received too long"               /* R_CONTACT_LEN */
-#define EI_R_CALLID_LEN  "Callid too long"                          /* R_CALLID_LEN */
-#define EI_R_PARSE_PATH  "Path parse error"                         /* R_PARSE_PATH */
-#define EI_R_PATH_UNSUP  "No support for found Path indicated"      /* R_PATH_UNSUP */
-
 #define RETRY_AFTER "Retry-After: "
 #define RETRY_AFTER_LEN (sizeof(RETRY_AFTER) - 1)
 
@@ -499,13 +459,17 @@ int send_reply(struct sip_msg* _m, unsigned int _flags)
 		}
 	}
 
+	if (pn_enable)
+		pn_append_rpl_fcaps(_m);
+
 	code = rerr_codes[rerrno];
-	switch(code) {
-	case 200: msg.s = MSG_200; msg.len = sizeof(MSG_200)-1; break;
-	case 400: msg.s = MSG_400; msg.len = sizeof(MSG_400)-1;break;
-	case 420: msg.s = MSG_420; msg.len = sizeof(MSG_420)-1;break;
-	case 500: msg.s = MSG_500; msg.len = sizeof(MSG_500)-1;break;
-	case 503: msg.s = MSG_503; msg.len = sizeof(MSG_503)-1;break;
+	switch (code) {
+	case 200: init_str(&msg, MSG_200); break;
+	case 400: init_str(&msg, MSG_400); break;
+	case 420: init_str(&msg, MSG_420); break;
+	case 500: init_str(&msg, MSG_500); break;
+	case 503: init_str(&msg, MSG_503); break;
+	case 555: init_str(&msg, MSG_555); break;
 	}
 
 	if (code != 200) {

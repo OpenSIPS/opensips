@@ -58,14 +58,9 @@
 #include "../../dset.h"
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
-#include "../usrloc/usrloc.h"
+#include "../../lib/reg/common.h"
 
-#include "../../lib/reg/rerrno.h"
-#include "../../lib/reg/sip_msg.h"
-#include "../../lib/reg/ci.h"
-#include "../../lib/reg/regtime.h"
-#include "../../lib/reg/config.h"
-#include "../../lib/reg/path.h"
+#include "../usrloc/usrloc.h"
 
 #include "sip_msg.h"
 #include "reply.h"
@@ -295,6 +290,10 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 			}
 		}
 
+		if (pn_enable && pn_add_reply_purr(c) != 0)
+			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
+			       _c->uri.len, _c->uri.s);
+
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
@@ -470,6 +469,9 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					LM_ERR("failed to delete contact\n");
 					goto error;
 				}
+
+				continue;
+
 			} else {
 				/* do update */
 				/* if the contact to be updated is not valid, it will be after
@@ -519,6 +521,11 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				}
 			}
 		}
+
+		if (pn_enable && pn_add_reply_purr(c) != 0)
+			LM_ERR("failed to add +sip.pnspurr for Contact: '%.*s'\n",
+			       _c->uri.len, _c->uri.s);
+
 		if (tcp_check) {
 			/* parse contact uri to see if transport is TCP */
 			if (parse_uri( _c->uri.s, _c->uri.len, &uri)<0) {
@@ -620,16 +627,15 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 	if ( flags_s )
 		reg_parse_save_flags( flags_s, &sctx);
 
-	if(route_type == ONREPLY_ROUTE)
+	if (route_type == ONREPLY_ROUTE)
 		sctx.flags |= REG_SAVE_NOREPLY_FLAG;
 
 	/* if no max_contact per AOR is defined, use the global one */
 	if (sctx.max_contacts == -1)
 		sctx.max_contacts = max_contacts;
 
-	if (parse_reg_headers(_m) < 0) {
+	if (parse_reg_headers(_m) < 0)
 		goto error;
-	}
 
 	if (forced_binding) {
 		if (parse_contacts(forced_binding, &forced_c) < 0) {
@@ -642,21 +648,26 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		st = 0;
 		c = forced_c;
 	} else {
-		if (check_contacts(_m, &st) > 0) {
+		if (check_contacts(_m, &st) > 0)
 			goto error;
-		}
+
 		c = get_first_contact(_m);
+	}
+
+	if (pn_enable && pn_inspect_request(_m, &c->uri, &sctx) != 0) {
+		LM_DBG("SIP PN processing failed\n");
+		goto error;
 	}
 
 	update_act_time();
 
 	if (!uri)
-		uri = &(get_to(_m)->uri);
+		uri = &get_to(_m)->uri;
 
 	if (_owtag)
 		sctx.ownership_tag = *_owtag;
 
-	if (extract_aor(uri, &sctx.aor,0,0) < 0) {
+	if (extract_aor(uri, &sctx.aor, 0, 0, reg_use_domain) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		goto error;
 	}
@@ -898,7 +909,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 	int ret = 1;
 	unsigned short delete_port = 0;
 
-	if (extract_aor(aor_uri, &aor_user, 0, 0) < 0) {
+	if (extract_aor(aor_uri, &aor_user, 0, 0, reg_use_domain) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
 		return E_BAD_URI;
 	}

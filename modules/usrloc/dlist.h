@@ -72,7 +72,7 @@ void free_all_udomains(void);
 /*! \brief
  * Called from timer
  */
-int synchronize_all_udomains(void);
+int _synchronize_all_udomains(void);
 
 
 /*! \brief

@@ -42,18 +42,19 @@
 #include "../../dprint.h"
 #include "../../db/db.h"
 #include "../../db/db_insertq.h"
+
 #include "ul_mod.h"
 #include "ul_callback.h"
 #include "urecord.h"
 #include "ucontact.h"
 #include "ul_cluster.h"
+#include "ul_timer.h"
+#include "ul_evi.h"
 #include "udomain.h"
 #include "dlist.h"
 #include "utime.h"
 #include "usrloc.h"
 #include "kv_store.h"
-
-extern event_id_t ei_c_update_id;
 
 /*
  * Determines the IP address of the next hop on the way to given contact based
@@ -99,7 +100,7 @@ static int compute_next_hop(ucontact_t *contact)
 ucontact_t*
 new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 {
-	struct sip_uri tmp_uri;
+	struct sip_uri ct_uri;
 	ucontact_t *c;
 	int_str_t shtag, *shtagp;
 
@@ -116,13 +117,11 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		else
 			c->kv_storage = map_create(AVLMAP_SHARED);
 
-		if (!c->kv_storage) {
-			LM_ERR("oom\n");
-			goto out_free;
-		}
+		if (!c->kv_storage)
+			goto mem_error;
 	}
 
-	if (parse_uri(_contact->s, _contact->len, &tmp_uri) < 0) {
+	if (parse_uri(_contact->s, _contact->len, &ct_uri) < 0) {
 		LM_ERR("contact [%.*s] is not valid! Will not store it!\n",
 			  _contact->len, _contact->s);
 		goto out_free;
@@ -175,6 +174,7 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 	c->expires = _ci->expires;
 	c->expires_in = _ci->expires - act_time;
 	c->expires_out = _ci->expires_out;
+	c->refresh_time = _ci->refresh_time;
 	c->q = _ci->q;
 	c->sock = _ci->sock;
 	c->cseq = _ci->cseq;
@@ -190,6 +190,10 @@ new_ucontact(str* _dom, str* _aor, str* _contact, ucontact_info_t* _ci)
 		LM_ERR("failed to resolve next hop\n");
 		goto out_free;
 	}
+
+	INIT_LIST_HEAD(&c->refresh_list);
+	if (c->refresh_time)
+		start_refresh_timer(c);
 
 	return c;
 
@@ -273,6 +277,9 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 
 	update_str( &_c->user_agent, _ci->user_agent, 1);
 
+	if (_ci->c)
+		update_str( &_c->c, _ci->c, 0);
+
 	if (_ci->received.s && _ci->received.len) {
 		update_str( &_c->received, &_ci->received, 0);
 	} else {
@@ -303,6 +310,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	_c->expires = _ci->expires;
 	_c->expires_in = _ci->expires - act_time;
 	_c->expires_out = _ci->expires_out;
+	_c->refresh_time = _ci->refresh_time;
 	_c->q = _ci->q;
 	_c->cseq = _ci->cseq;
 	_c->methods = _ci->methods;
@@ -346,6 +354,9 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	if (compute_next_hop(_c) != 0)
 		LM_ERR("failed to resolve next hop. keeping old one - '%.*s'\n",
 		        _c->next_hop.name.len, _c->next_hop.name.s);
+
+	if (_c->refresh_time)
+		start_refresh_timer(_c);
 
 	ul_raise_contact_event(ei_c_update_id, _c);
 
@@ -891,7 +902,6 @@ int db_multiple_ucontact_delete(str *domain, db_key_t *keys,
 }
 
 
-
 static inline void unlink_contact(struct urecord* _r, ucontact_t* _c)
 {
 	if (_c->prev) {
@@ -906,7 +916,6 @@ static inline void unlink_contact(struct urecord* _r, ucontact_t* _c)
 		}
 	}
 }
-
 
 
 static inline void update_contact_pos(struct urecord* _r, ucontact_t* _c)
@@ -1016,8 +1025,7 @@ int ucontact_coords_cmp(ucontact_coords _a, ucontact_coords _b)
 	a = (ucontact_sip_coords *)(unsigned long)_a;
 	b = (ucontact_sip_coords *)(unsigned long)_b;
 
-	if (a->aor.len != b->aor.len || a->ct_key.len != b->ct_key.len ||
-		  str_strcmp(&a->aor, &b->aor) || str_strcmp(&a->ct_key, &b->ct_key))
+	if (!str_match(&a->aor, &b->aor) || !str_match(&a->ct_key, &b->ct_key))
 		return -1;
 
 	return 0;

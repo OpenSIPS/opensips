@@ -97,13 +97,13 @@ int subscribe_to_fs_urls(const struct list_head *urls)
 	fs_evs *sock;
 	struct list_head *_;
 	struct url *fs_url;
-	struct str_dlist *url;
-	struct str_list *evlist = NULL, *li, **last = &evlist;
+	str_dlist *url;
+	str_list *evlist = NULL, *li, **last = &evlist;
 	struct url_param_list *event;
 	int ret = 0;
 
 	list_for_each(_, urls) {
-		url = list_entry(_, struct str_dlist, list);
+		url = list_entry(_, str_dlist, list);
 
 		fs_url = parse_url(&url->s, URL_REQ_PASS, 0);
 		if (!fs_url) {
@@ -171,7 +171,7 @@ next_url:
 void free_fs_sock_list(struct list_head *sock_list)
 {
 	struct list_head *_, *__;
-	struct str_list *event;
+	str_list *event;
 	struct fs_evs_list *sock;
 
 	list_for_each_safe(_, __, sock_list) {
@@ -189,7 +189,7 @@ void free_fs_sock_list(struct list_head *sock_list)
 	}
 }
 
-struct fs_evs_list *mk_fs_sock_list(fs_evs *sock, struct str_list *events)
+struct fs_evs_list *mk_fs_sock_list(fs_evs *sock, str_list *events)
 {
 	struct fs_evs_list *sock_list;
 
@@ -210,7 +210,7 @@ int add_to_fss_sockets(fs_evs *sock, const str *event_name)
 {
 	struct list_head *_;
 	struct fs_evs_list *sock_list;
-	struct str_list *slist, *event;
+	str_list *slist, *event;
 
 	LM_DBG("adding event: %.*s\n", event_name->len, event_name->s);
 
@@ -253,7 +253,7 @@ int del_from_fss_sockets(fs_evs *sock, const str *event_name)
 {
 	struct list_head *_, *__;
 	struct fs_evs_list *sock_list;
-	struct str_list *event, *bak;
+	str_list *event, *bak;
 
 	list_for_each_safe(_, __, fss_sockets) {
 		sock_list = list_entry(_, struct fs_evs_list, list);

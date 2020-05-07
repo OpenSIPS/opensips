@@ -2117,7 +2117,7 @@ static void mod_destroy(void)
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d)
 {
 	mi_item_t *domain_item, *addrf_arr, *domf_arr;
-	struct str_list *filt;
+	str_list *filt;
 	char *method;
 
 	while (d) {

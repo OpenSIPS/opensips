@@ -45,15 +45,25 @@ static struct sr_module_dep unsolved_deps;
 	 type == MOD_TYPE_AAA ? "aaa module" : \
 	 "module")
 
+
 module_dependency_t *alloc_module_dep(enum module_type mod_type, char *mod_name,
 									  enum dep_type dep_type)
 {
-	module_dependency_t *md;
+	return _alloc_module_dep(mod_type, mod_name, dep_type, MOD_TYPE_NULL);
+}
 
-	/* also allocate a zeroed entry in the end */
+
+module_dependency_t *_alloc_module_dep(enum module_type mod_type, char *mod_name,
+                             enum dep_type dep_type, ... /* , MOD_TYPE_NULL */)
+{
+	va_list ap;
+	module_dependency_t *md;
+	int ndeps = 1;
+
+	/* always keep a zeroed entry at the end */
 	md = pkg_malloc(2 * sizeof *md);
 	if (!md) {
-		LM_ERR("out of pkg\n");
+		LM_ERR("oom\n");
 		return NULL;
 	}
 
@@ -62,8 +72,31 @@ module_dependency_t *alloc_module_dep(enum module_type mod_type, char *mod_name,
 	md->mod_name = mod_name;
 	md->type = dep_type;
 
+	va_start(ap, dep_type);
+
+	for (;;) {
+		mod_type = va_arg(ap, enum module_type);
+		if (mod_type == MOD_TYPE_NULL)
+			break;
+
+		ndeps++;
+
+		md = pkg_realloc(md, (ndeps + 1) * sizeof *md);
+		if (!md) {
+			LM_ERR("oom\n");
+			return NULL;
+		}
+		memset(&md[ndeps], 0, sizeof *md);
+
+		md[ndeps - 1].mod_type = mod_type;
+		md[ndeps - 1].mod_name = va_arg(ap, char *);
+		md[ndeps - 1].type = va_arg(ap, enum dep_type);
+	}
+
+	va_end(ap);
 	return md;
 }
+
 
 module_dependency_t *get_deps_sqldb_url(param_export_t *param)
 {
@@ -78,6 +111,7 @@ module_dependency_t *get_deps_sqldb_url(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_WARN);
 }
 
+
 module_dependency_t *get_deps_cachedb_url(param_export_t *param)
 {
 	char *cdb_url = *(char **)param->param_pointer;
@@ -87,6 +121,7 @@ module_dependency_t *get_deps_cachedb_url(param_export_t *param)
 
 	return alloc_module_dep(MOD_TYPE_CACHEDB, NULL, DEP_ABORT);
 }
+
 
 static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep,
 								 char *script_param)
@@ -124,6 +159,7 @@ static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep
 
 	return 0;
 }
+
 
 /*
  * register all OpenSIPS module dependencies of a single module parameter
@@ -178,6 +214,7 @@ int add_modparam_dependencies(struct sr_module *mod, param_export_t *param)
 	return 0;
 }
 
+
 /*
  * register all OpenSIPS module dependencies of a single module
  */
@@ -194,6 +231,7 @@ int add_module_dependencies(struct sr_module *mod)
 
 	return 0;
 }
+
 
 int solve_module_dependencies(struct sr_module *modules)
 {
@@ -316,6 +354,7 @@ int solve_module_dependencies(struct sr_module *modules)
 
 	return 0;
 }
+
 
 /* after all modules are properly loaded, free all sr_module_dep structures */
 void free_module_dependencies(struct sr_module *modules)
