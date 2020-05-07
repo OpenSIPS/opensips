@@ -195,15 +195,24 @@ int pn_init(void)
 
 int pn_cfg_validate(void)
 {
-	if (is_script_async_func_used("pn_process_purr", 1) && !pn_enable_purr) {
-		LM_ERR("you are calling 'pn_process_purr()' without also enabling "
-		       "modparam 'pn_enable_purr', config not valid\n");
+	if (pn_enable_purr &&
+	        !is_script_func_used("record_route", -1) &&
+	        !is_script_func_used("record_route_preset", -1)) {
+		LM_ERR("you have enabled modparam 'pn_enable_purr' without "
+		       "'record_route()'ing yourself in the mid-dialog SIP flow, "
+		       "config not valid\n");
 		return 0;
 	}
 
-	if (!is_script_async_func_used("pn_process_purr", 1) && pn_enable_purr) {
-		LM_ERR("you have enabled modparam 'pn_enable_purr' but there is no "
+	if (pn_enable_purr && !is_script_async_func_used("pn_process_purr", 1)) {
+		LM_ERR("you have enabled modparam 'pn_enable_purr', but there is no "
 		       "async call to 'pn_process_purr()', config not valid\n");
+		return 0;
+	}
+
+	if (!pn_enable_purr && is_script_async_func_used("pn_process_purr", 1)) {
+		LM_ERR("you are calling 'pn_process_purr()' without also enabling "
+		       "modparam 'pn_enable_purr', config not valid\n");
 		return 0;
 	}
 
