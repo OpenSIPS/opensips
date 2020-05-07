@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
 <!ENTITY reg_module "<acronym>mid_registrar</acronym>">
-<!ENTITY reg_lookup_f "<emphasis><acronym>mid_reg_lookup()</acronym></emphasis>">
+<!ENTITY reg_lookup_f "<emphasis><acronym>mid_registrar_lookup()</acronym></emphasis>">
 
 <!ENTITY admin SYSTEM "mid_registrar_admin.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">

@@ -37,7 +37,7 @@ int pn_enable;
 int pn_pnsreg_interval = 130;  /* sec */
 int pn_trigger_interval = 120; /* sec */
 int pn_skip_pn_interval = 0; /* sec */
-int pn_inv_timeout = 6; /* sec */
+int pn_refresh_timeout = 6; /* sec */
 int pn_enable_purr;
 char *_pn_ct_params = "pn-provider, pn-prid, pn-param";
 char *_pn_providers;
@@ -650,7 +650,7 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 	}
 
 	if (ebr.notify_on_event(req, ev_ct_update, pn_ebr_filters,
-	        pn_trim_pn_params, pn_inject_branch, pn_inv_timeout) != 0) {
+	        pn_trim_pn_params, pn_inject_branch, pn_refresh_timeout) != 0) {
 		LM_ERR("failed to EBR-subscribe to "UL_EV_CT_UPDATE", Contact: %.*s\n",
 		       ct->c.len, ct->c.s);
 		return -1;
@@ -824,7 +824,7 @@ have_purr:
 
 	/* subscribe for re-register events from this contact */
 	if (ebr.async_wait_for_event(req, ctx, ev_ct_update, pn_ebr_filters,
-	          pn_trim_pn_params, pn_inv_timeout) != 0) {
+	          pn_trim_pn_params, pn_refresh_timeout) != 0) {
 		LM_ERR("failed to EBR-subscribe to "UL_EV_CT_UPDATE", ct: '%.*s'\n",
 		       c->c.len, c->c.s);
 		goto err_unlock;

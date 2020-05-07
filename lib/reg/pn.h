@@ -76,7 +76,7 @@ extern int pn_enable;
 extern int pn_pnsreg_interval;
 extern int pn_trigger_interval;
 extern int pn_skip_pn_interval;
-extern int pn_inv_timeout;
+extern int pn_refresh_timeout;
 extern int pn_enable_purr;
 extern char *_pn_ct_params;
 extern char *_pn_providers;
@@ -93,7 +93,7 @@ extern char *_pn_providers;
 	{"pn_pnsreg_interval",  INT_PARAM, &pn_pnsreg_interval}, \
 	{"pn_trigger_interval", INT_PARAM, &pn_trigger_interval}, \
 	{"pn_skip_pn_interval", INT_PARAM, &pn_skip_pn_interval}, \
-	{"pn_inv_timeout",      INT_PARAM, &pn_inv_timeout}, \
+	{"pn_refresh_timeout",  INT_PARAM, &pn_refresh_timeout}, \
 	{"pn_enable_purr",      INT_PARAM, &pn_enable_purr}
 
 
