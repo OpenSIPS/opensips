@@ -1678,8 +1678,6 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					ng_flags->transport |= 0x101;
 				else if (str_eq(&key, "AVPF"))
 					ng_flags->transport |= 0x102;
-				else if (str_eq(&key, "callid") && val.s)
-					ng_flags->call_id = val;
 				else
 					break;
 				continue;
@@ -1689,7 +1687,9 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					if (val.s)
 						ng_flags->to_tag = val;
 					ng_flags->to = 1;
-				} else
+				} else if (str_eq(&key, "callid") && val.s)
+					ng_flags->call_id = val;
+				else
 					break;
 				continue;
 
@@ -1784,7 +1784,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 						goto error;
 					err = "invalid value";
 					delete_delay = (int) strtol(val.s, NULL, 10);
-					if (delete_delay == 0) {
+					if (delete_delay == 0 && errno == EINVAL) {
 						delete_delay = -1;
 						goto error;
 					} else {
