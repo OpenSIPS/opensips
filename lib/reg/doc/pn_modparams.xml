@@ -3,16 +3,17 @@
 	<section id="param_pn_enable" xreflabel="pn_enable">
 		<title><varname>pn_enable</varname> (boolean)</title>
 		<para>
-			Enable SIP Push Notifications support (<ulink url="https://tools.ietf.org/html/rfc8599"><citetitle>RFC 8599</citetitle></ulink>).
-			If enabled, contacts URIs which include all
+			Enable SIP Push Notification support (<ulink url="https://tools.ietf.org/html/rfc8599"><citetitle>RFC 8599</citetitle></ulink>).
+			If enabled, Contact header field URIs which include all
 			<xref linkend="param_pn_ct_match_params"/> will be matched against
 			existing bindings using only these parameters.  Otherwise,
 			the module will attempt to match them as usual, using the current
-			<emphasis>matching_mode</emphasis>.
+			usrloc <ulink url='usrloc#param_matching_mode'>
+					matching_mode</ulink>.
 		</para>
 		<para>
 			<emphasis>
-				Default value is <emphasis>false</emphasis>.
+				Default value is <emphasis role='bold'>false</emphasis>.
 			</emphasis>
 		</para>
 
@@ -36,7 +37,8 @@ modparam("&reg_module;", "pn_enable", true)
 		</para>
 		<para>
 			<emphasis>
-				Default value is <emphasis>NULL (not set)</emphasis>.
+				Default value is <emphasis role='bold'>NULL</emphasis>
+						(not set).
 			</emphasis>
 		</para>
 
@@ -56,7 +58,7 @@ modparam("&reg_module;", "pn_providers", "apns, fcm, webpush")
 		<para>
 			The minimally required list of RFC 8599 parameters (custom ones are
 			accepted as well) which must be present in a Contact URI and
-			identically matching an existing binding in order for the binding
+			identically match an existing binding in order for the binding
 			to be refreshed.  If at least one such parameter is missing from a
 			Contact header field URI, the module will fall back to performing
 			regular contact matching.
@@ -68,13 +70,15 @@ modparam("&reg_module;", "pn_providers", "apns, fcm, webpush")
 			other URI parameters, etc.).
 		</para>
 		<para>
-			After calling &reg_lookup_f;, the above PN-related
+			After calling &reg_lookup_f; or
+			<xref linkend="afunc_pn_process_purr"/>, the above PN-related
 			parameters will be automatically stripped from the resulting
-			Request URI(s).
+			Request and Contact URI event parameter, respectively.
 		</para>
 		<para>
 			<emphasis>
-				Default value is <emphasis>"pn-provider, pn-prid, pn-param"</emphasis>.
+				Default value is <emphasis role='bold'>
+						"pn-provider, pn-prid, pn-param"</emphasis>.
 			</emphasis>
 		</para>
 
@@ -93,14 +97,15 @@ modparam("&reg_module;", "pn_ct_match_params", "pn-provider, pn-prid")
 		<title><varname>pn_pnsreg_interval</varname> (integer)</title>
 		<para>
 			For devices capable of waking up and refreshing their binding on
-			their own (signified by the ";+sip.pnsreg" Contact header field
-			parameter), this setting denotes the prior-to-expiration interval
-			advertised by the server at which the device should issue its
-			binding refresh request.
+			their own (signified by the <emphasis>";+sip.pnsreg"</emphasis>
+			Contact header field parameter), this setting denotes the
+			prior-to-expiration interval advertised by the server at which the
+			device should issue its binding refresh request.
 		</para>
 		<para>
 			<emphasis>
-				Default value is <emphasis>130 (seconds before expiry)</emphasis>.
+				Default value is <emphasis role='bold'>130</emphasis>
+						(seconds before expiry).
 			</emphasis>
 		</para>
 
@@ -121,18 +126,21 @@ modparam("&reg_module;", "pn_pnsreg_interval", 140)
 			If a binding refresh REGISTER request from a given SIP endpoint does
 			not arrive within at least <xref linkend="param_pn_trigger_interval"/>
 			seconds prior to expiration (e.g. because the device does not
-			support ";+sip.pnsreg" or because of other error conditions), the
-			E_UL_CONTACT_REFRESH usrloc event will be triggered.
+			support <emphasis>";+sip.pnsreg"</emphasis> or because of other
+			error conditions), the <ulink url='usrloc#event_E_UL_CONTACT_REFRESH'>E_UL_CONTACT_REFRESH</ulink>
+			usrloc event will be triggered.
 		</para>
 		<para>
-			Once E_UL_CONTACT_REFRESH is triggered, the script writer should use
+			Once <ulink url='usrloc#event_E_UL_CONTACT_REFRESH'>E_UL_CONTACT_REFRESH</ulink>
+			is triggered, the script writer should use
 			the RFC 8599 parameters from the Contact URI in order to generate a
 			Push Notification request to the PN provider of the device, in
 			order to cause the device to wake up and re-register.
 		</para>
 		<para>
 			<emphasis>
-				Default value is <emphasis>120 (seconds before expiry)</emphasis>.
+				Default value is <emphasis role='bold'>120</emphasis>
+						(seconds before expiry).
 			</emphasis>
 		</para>
 
@@ -156,8 +164,8 @@ modparam("&reg_module;", "pn_trigger_interval", 130)
 		</para>
 		<para>
 			<emphasis>
-				Default value is <emphasis>0 seconds (always generate Push
-					Notifications)</emphasis>.
+				Default value is <emphasis role='bold'>0</emphasis> seconds
+					(always generate Push Notifications).
 			</emphasis>
 		</para>
 
@@ -176,7 +184,7 @@ modparam("&reg_module;", "pn_skip_pn_interval", 10)
 		<title><varname>pn_refresh_timeout</varname> (integer)</title>
 		<para>
 			This timeout starts counting following a &reg_lookup_f; or a
-			<xref linkend="afunc_pn_process_purr()"/> which
+			<xref linkend="afunc_pn_process_purr"/> which
 			triggers a Push Notification.  The value represents the maximum
 			allowed sum of the duration required for the Push Notification to
 			be sent and the duration required for the corresponding
@@ -194,14 +202,14 @@ modparam("&reg_module;", "pn_skip_pn_interval", 10)
 			</para></listitem>
 			<listitem><para>
 				pending BYE messages will time out and OpenSIPS will attempt to
-				route them despite having not received a confirmation that the
+				route them despite not having received a confirmation that the
 				target device is actually reachable
 			</para></listitem>
 			</itemizedlist>
 		</para>
 		<para>
 			<emphasis>
-				Default value is <emphasis>6 seconds</emphasis>.
+				Default value is <emphasis role='bold'>6</emphasis> seconds.
 			</emphasis>
 		</para>
 
@@ -210,6 +218,44 @@ modparam("&reg_module;", "pn_skip_pn_interval", 10)
 		<programlisting format="linespecific">
 ...
 modparam("&reg_module;", "pn_refresh_timeout", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_pn_enable_purr" xreflabel="pn_enable_purr">
+		<title><varname>pn_enable_purr</varname> (boolean)</title>
+		<para>
+			Enable the SIP Push Notification mechanism for long-lived dialogs.
+			If enabled, the &reg_module; will include a
+			<emphasis>"+sip.pnspurr"</emphasis>
+			Feature-Caps header field tag in 200 OK replies to REGISTER
+			requests.  This tag represents a unique identifier for the
+			registration (PURR - Proxy Unique Registration Reference).
+		</para>
+		<para>
+			For each initial request for dialog, the UA may include the PURR
+			received from the &reg_module; in its Contact header (using the
+			<emphasis>";pn-purr"</emphasis> URI parameter) if it expects to be
+			first awoken by a Push Notification before being able to receive
+			mid-dialog request sent by the callee side.
+		</para>
+		<para>
+			When enabling this parameter, make sure to also add logic for
+			<xref linkend="afunc_pn_process_purr"/>.
+		</para>
+		<para>
+			<emphasis>
+				Default value is <emphasis role='bold'>false</emphasis>.
+			</emphasis>
+		</para>
+
+		<example>
+		<title>Setting the <varname>pn_enable_purr</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("&reg_module;", "pn_enable_purr", true)
 ...
 </programlisting>
 		</example>

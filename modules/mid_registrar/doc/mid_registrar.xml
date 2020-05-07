@@ -11,6 +11,7 @@
 <!-- Common registrar/mid-registrar documentation -->
 <!ENTITY reg_modparams SYSTEM "../../../lib/reg/doc/reg_modparams.xml">
 <!ENTITY pn_modparams SYSTEM "../../../lib/reg/doc/pn_modparams.xml">
+<!ENTITY pn_async_func SYSTEM "../../../lib/reg/doc/pn_async_func.xml">
 <!ENTITY lookup_flags SYSTEM "../../../lib/reg/doc/lookup_flags.xml">
 <!ENTITY lookup_retcodes SYSTEM "../../../lib/reg/doc/lookup_retcodes.xml">
 

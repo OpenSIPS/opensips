@@ -1112,7 +1112,16 @@ if (is_method("REGISTER")) {
 		</example>
 	</section>
 
+	</section>
+
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+
+	&pn_async_func;
 
 	</section>
+
+
 </chapter>
 

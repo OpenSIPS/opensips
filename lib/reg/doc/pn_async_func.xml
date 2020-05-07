@@ -1,0 +1,84 @@
+	<section id="afunc_pn_process_purr" xreflabel="pn_process_purr()">
+		<title>
+		<function moreinfo="none">pn_process_purr(domain)
+		</function>
+		</title>
+
+		<para>
+		Perform mid-dialog request processing, according to RFC 8599.  For
+		such requests, search the R-URI and topmost Route header field URI for
+		a <emphasis>";pn-purr"</emphasis> parameter value that both matches the
+		OpenSIPS PURR format and corresponds to an usrloc registration. Once a
+		usrloc contact is located, trigger an <ulink url='usrloc#event_E_UL_CONTACT_REFRESH'>E_UL_CONTACT_REFRESH</ulink>
+		event and place the request on async hold for at most
+		<xref linkend="param_pn_refresh_timeout"/> seconds, until a matching
+		Push Notification arrives.
+		</para>
+
+		<para>
+		If processing ends before triggering the Push Notification, the request
+		will no longer block and the resume route will be immediately called.
+		</para>
+
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis>domain (static string)</emphasis> - Logical domain within
+			registrar.  If a database is used, then this must be name of the
+			table which stores the contacts.
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para><emphasis role='bold'>Return Codes</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis role='bold'>1</emphasis> - Success, PN was launched.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis role='bold'>2</emphasis> - Success,
+				but PN was not launched (due to missing PURR, foreign PURR or
+				offline contact)
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis role='bold'>-1</emphasis> - Internal Error
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<example>
+		<title><function moreinfo="none">async pn_process_purr()</function> usage</title>
+		<programlisting format="linespecific">
+route {
+	...
+	if (has_totag()) {
+		if (is_method("ACK") &amp;&amp; t_check_trans()) {
+			t_relay();
+			exit;
+		}
+
+		if (!loose_route()) {
+			send_reply(404, "Not Found");
+			exit;
+		}
+
+		if (!is_method("ACK"))
+			async (pn_process_purr("location"), resume_route);
+
+		route(relay);
+		exit;
+	}
+}
+
+route [resume_route] {
+	$var(rc) = $rc;
+	xlog("pn_process_purr() finished with $var(rc)\n");
+
+	...
+}
+</programlisting>
+		</example>
+	</section>

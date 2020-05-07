@@ -1130,6 +1130,15 @@ add_sock_hdr("Sock-Info");
 	</section>
 	</section>
 
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+
+	&pn_async_func;
+
+	</section>
+
+
 <section>
 	<title>Exported Statistics</title>
 	<section id="max_expires_stat" xreflabel="max_expires_stat">
