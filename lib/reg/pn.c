@@ -753,6 +753,11 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 	urecord_t *r;
 	ucontact_t *c;
 
+	if (req->first_line.type != SIP_REQUEST) {
+		LM_ERR("pn_process_purr() cannot be called on SIP replies\n");
+		return -1;
+	}
+
 	/* locate "pn-purr" in the R-URI */
 	if (parse_sip_msg_uri(req) < 0) {
 		LM_ERR("failed to parse R-URI: '%.*s'\n",
