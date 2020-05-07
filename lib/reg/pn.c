@@ -790,7 +790,7 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 
 	if (!puri.pn_purr.s) {
 		LM_DBG("did not find 'pn-purr' in either R-URI or topmost Route\n");
-		return 1;
+		return 2;
 	}
 
 	purr = &puri.pn_purr_val;
@@ -798,7 +798,7 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 have_purr:
 	if (pn_purr_unpack(purr, &id) != 0) {
 		LM_DBG("this 'pn-purr' is not ours, ignoring\n");
-		return 1;
+		return 2;
 	}
 
 	/* look up the PURR */
@@ -806,7 +806,7 @@ have_purr:
 	if (!c) {
 		LM_DBG("recognized pn-purr: '%.*s', ctid: %lu, but ct not found!\n",
 		       purr->len, purr->s, id);
-		return 1;
+		return 2;
 	}
 
 	LM_DBG("retrieved ct: '%.*s' from pn-purr: '%.*s'\n", c->c.len, c->c.s,
