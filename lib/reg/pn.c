@@ -273,7 +273,7 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 	struct sip_uri puri;
 	struct pn_provider *pvd;
 	str_list *param;
-	int is_cap_query = 1, is_handled_upstream = 0;
+	int i, is_cap_query = 1, is_handled_upstream = 0;
 
 	if (parse_uri(ct_uri->s, ct_uri->len, &puri) != 0) {
 		LM_ERR("failed to parse URI: '%.*s'\n", ct_uri->len, ct_uri->s);
@@ -324,7 +324,7 @@ match_params:
 			is_cap_query = 0;
 			continue;
 		} else {
-			for (int i = 0; i < puri.u_params_no; i++)
+			for (i = 0; i < puri.u_params_no; i++)
 				if (str_match(&param->s, &puri.u_name[i]))
 					goto next_param;
 		}
@@ -666,6 +666,7 @@ int pn_has_uri_params(const str *ct, struct sip_uri *puri)
 {
 	str_list *param;
 	struct sip_uri _puri;
+	int i;
 
 	if (!puri)
 		puri = &_puri;
@@ -681,7 +682,7 @@ int pn_has_uri_params(const str *ct, struct sip_uri *puri)
 		        (str_match(&param->s, &pn_param_str) && puri->pn_param.s)) {
 			continue;
 		} else {
-			for (int i = 0; i < puri->u_params_no; i++)
+			for (i = 0; i < puri->u_params_no; i++)
 				if (str_match(&param->s, &puri->u_name[i]))
 					goto next_param;
 		}
@@ -702,6 +703,7 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 	str_list *param;
 	str u_name_bak[URI_MAX_U_PARAMS];
 	char *pn_prov, *pn_prid, *pn_param;
+	int i;
 
 	if (pkg_str_extend(&buf, uri_len) != 0) {
 		LM_ERR("oom\n");
@@ -719,7 +721,7 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 	puri->pn_param.s = NULL;
 
 	for (param = pn_ct_params; param; param = param->next)
-		for (int i = 0; i < puri->u_params_no; i++)
+		for (i = 0; i < puri->u_params_no; i++)
 			if (str_match(&param->s, &puri->u_name[i])) {
 				puri->u_name[i].s = NULL;
 				break;
