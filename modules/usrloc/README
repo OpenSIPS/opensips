@@ -60,6 +60,7 @@ usrloc Module
               1.5.38. latency_event_min_us_delta (integer)
               1.5.39. pinging_mode (string)
               1.5.40. mi_dump_kv_store (integer)
+              1.5.41. contact_refresh_timer (integer)
 
         1.6. Exported Functions
         1.7. Exported MI Functions
@@ -87,7 +88,8 @@ usrloc Module
               1.9.3. E_UL_CONTACT_INSERT
               1.9.4. E_UL_CONTACT_DELETE
               1.9.5. E_UL_CONTACT_UPDATE
-              1.9.6. E_UL_LATENCY_UPDATE
+              1.9.6. E_UL_CONTACT_REFRESH
+              1.9.7. E_UL_LATENCY_UPDATE
 
    2. Developer Guide
 
@@ -185,6 +187,7 @@ usrloc Module
    1.38. Set latency_event_min_us_delta parameter
    1.39. Set pinging_mode parameter
    1.40. Set mi_dump_kv_store parameter
+   1.41. Set contact_refresh_timer parameter
 
 Chapter 1. Admin Guide
 
@@ -1055,6 +1058,21 @@ modparam("usrloc", "pinging_mode", "ownership")
 modparam("usrloc", "mi_dump_kv_store", 1)
 ...
 
+1.5.41. contact_refresh_timer (integer)
+
+   Enable a timer which will periodically scan a sorted list of
+   contacts and raise the E_UL_CONTACT_REFRESH for any of them
+   which are past their re-registration time interval limit. This
+   limit may given by registrar's pn_trigger_interval module
+   parameter, for example.
+
+   Default value is “0 (disabled)”.
+
+   Example 1.41. Set contact_refresh_timer parameter
+...
+modparam("usrloc", "contact_refresh_timer", 1)
+...
+
 1.6. Exported Functions
 
    There are no exported functions that could be used in scripts.
@@ -1186,6 +1204,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
    memory cache.
 
    Parameters:
+     * domain - The name of the table.
      * aor - The AOR of the inserted record.
 
 1.9.2.  E_UL_AOR_DELETE
@@ -1194,6 +1213,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
    memory cache.
 
    Parameters:
+     * domain - The name of the table.
      * aor - The AOR of the deleted record.
 
 1.9.3.  E_UL_CONTACT_INSERT
@@ -1204,6 +1224,7 @@ modparam("usrloc", "mi_dump_kv_store", 1)
    and E_UL_CONTACT_INSERT events will be raised.
 
    Parameters:
+     * domain - The name of the table.
      * aor - The AOR of the inserted contact.
      * uri - The contact URI of the inserted contact.
      * received - IP, port and protocol the registration message
@@ -1254,7 +1275,17 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 
    Parameters: same as the E_UL_CONTACT_INSERT event
 
-1.9.6.  E_UL_LATENCY_UPDATE
+1.9.6.  E_UL_CONTACT_REFRESH
+
+   Set contact_refresh_timer to 1 in order to enable this event.
+   The event is raised within reasonable time before a contact
+   binding will expire, such that the script writer can take
+   action, possibly force a registration refresh from the
+   endpoint.
+
+   Parameters: same as the E_UL_CONTACT_INSERT event
+
+1.9.7.  E_UL_LATENCY_UPDATE
 
    This event is raised when a contact pinging latency matches
    either of the latency_event_min_us or
@@ -1503,8 +1534,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 241 147 4207 3613
-   3. Liviu Chircu (@liviuchircu) 239 153 6268 2082
+   2. Liviu Chircu (@liviuchircu) 291 175 7854 3181
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 241 147 4207 3613
    4. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    5. Ionut Ionita (@ionutrazvanionita) 40 24 1099 413
    6. Vlad Patrascu (@rvlad-patrascu) 39 21 770 633
@@ -1547,10 +1578,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Mar 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2020
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Mar 2020
+   3.  Zero King                           Mar 2020 - Mar 2020
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    5.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
    6.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
    7.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
@@ -1580,7 +1611,7 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Zero King, Liviu Chircu (@liviuchircu), Alexey
+   Last edited by: Liviu Chircu (@liviuchircu), Zero King, Alexey
    Vasilyev (@vasilevalex), Vlad Patrascu (@rvlad-patrascu), Peter
    Lemenkov (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu),
    Razvan Crainea (@razvancrainea), Ionut Ionita
