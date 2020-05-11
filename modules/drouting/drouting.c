@@ -156,9 +156,8 @@ static str attrs_empty = str_init("");
 static str db_partitions_table = str_init("dr_partitions"); /* default url */
 static str db_partitions_url;
 
+int use_partitions;
 
-//static int use_partitions = 0;
-// int use_partitions = 0; /* by default don't use db for config */
 static struct head_config {
 	str partition; /* partition name extracted from database */
 	str db_url;

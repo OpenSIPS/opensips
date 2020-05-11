@@ -47,7 +47,10 @@
 
 extern unsigned long *mem_hash_usage;
 
+/* used when detaching free fragments */
 unsigned int optimized_get_indexes[HP_HASH_SIZE];
+
+/* used when attaching free fragments */
 unsigned int optimized_put_indexes[HP_HASH_SIZE];
 
 /*

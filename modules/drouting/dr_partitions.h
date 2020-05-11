@@ -47,7 +47,7 @@
 #include "../../mi/mi.h"
 #include "../tm/tm_load.h"
 
-int use_partitions;
+extern int use_partitions;
 
 struct head_db {
 	str db_url;

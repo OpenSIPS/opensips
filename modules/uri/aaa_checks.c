@@ -36,7 +36,11 @@
 #include "uri_mod.h"
 #include "../../pvar.h"
 
+/* Variable to account positive checks (matches) */
+stat_var *positive_checks;
 
+/* Variable to account negative checks (no matches) */
+stat_var *negative_checks;
 
 /*
  * Check from AAA if URI, whose user an host parts are given as

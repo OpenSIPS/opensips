@@ -56,11 +56,7 @@ extern aaa_prot proto;
  * Variables to hold module statistics
  */
 
-/* Variable to account positive checks (matches) */
-stat_var *positive_checks;
-
-/* Variable to account negative checks (no matches) */
-stat_var *negative_checks;
-
+extern stat_var *positive_checks;
+extern stat_var *negative_checks;
 
 #endif /* URI_MOD_H */

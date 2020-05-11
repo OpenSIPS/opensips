@@ -94,10 +94,7 @@ extern stat_var *shm_frags;
  *  sshs = "shm_secondary_hash_size" script parameter
  */
 
-/* used when detaching free fragments */
 extern unsigned int optimized_get_indexes[HP_HASH_SIZE];
-
-/* used when attaching free fragments */
 extern unsigned int optimized_put_indexes[HP_HASH_SIZE];
 
 /* finds the hash value for s, s=ROUNDTO multiple */
