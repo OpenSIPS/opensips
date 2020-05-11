@@ -981,7 +981,7 @@ static trace_message create_hep3_message(union sockaddr_union* from_su, union so
 		/* DST IPv6 */
 		hep_msg->u.hepv3.addr.ip6_addr.dst_ip6.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hep_msg->u.hepv3.addr.ip6_addr.dst_ip6.chunk.type_id   = htons(0x0006);
-		hep_msg->u.hepv3.addr.ip6_addr.dst_ip6.data = from_su->sin6.sin6_addr;
+		hep_msg->u.hepv3.addr.ip6_addr.dst_ip6.data = to_su->sin6.sin6_addr;
 		hep_msg->u.hepv3.addr.ip6_addr.dst_ip6.chunk.length = htons(sizeof(hep_msg->u.hepv3.addr.ip6_addr.dst_ip6));
 
 		iplen = sizeof(hep_msg->u.hepv3.addr.ip6_addr.dst_ip6) + sizeof(hep_msg->u.hepv3.addr.ip6_addr.src_ip6);
