@@ -105,7 +105,7 @@
 	</column>
 
 	<column id="dissuading_ewt_th">
-		<name>dissuading_onhold_th</name>
+		<name>dissuading_ewt_th</name>
 		<type>unsigned int</type>
 		<size>11</size>
 		<default>0</default>
@@ -116,7 +116,7 @@
 	</column>
 
 	<column id="dissuading_qsize_th">
-		<name>dissuading_onhold_th</name>
+		<name>dissuading_qsize_th</name>
 		<type>unsigned int</type>
 		<size>11</size>
 		<default>0</default>

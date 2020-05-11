@@ -12,8 +12,8 @@
 				<col><field>max_wrapup_time</field></col>
 				<col><field>dissuading_hangup</field></col>
 				<col><field>dissuading_onhold_th</field></col>
-				<col><field>dissuading_onhold_th</field></col>
-				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_ewt_th</field></col>
+				<col><field>dissuading_qsize_th</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 				<col><field>message_dissuading</field></col>
@@ -31,8 +31,8 @@
 				<col><field>max_wrapup_time</field></col>
 				<col><field>dissuading_hangup</field></col>
 				<col><field>dissuading_onhold_th</field></col>
-				<col><field>dissuading_onhold_th</field></col>
-				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_ewt_th</field></col>
+				<col><field>dissuading_qsize_th</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 				<col><field>message_dissuading</field></col>
@@ -53,8 +53,8 @@
 				<col><field>max_wrapup_time</field></col>
 				<col><field>dissuading_hangup</field></col>
 				<col><field>dissuading_onhold_th</field></col>
-				<col><field>dissuading_onhold_th</field></col>
-				<col><field>dissuading_onhold_th</field></col>
+				<col><field>dissuading_ewt_th</field></col>
+				<col><field>dissuading_qsize_th</field></col>
 				<col><field>message_welcome</field></col>
 				<col><field>message_queue</field></col>
 				<col><field>message_dissuading</field></col>
