@@ -306,7 +306,7 @@ static inline void test_shm_malloc(void)
 
 void test_hp_malloc(void)
 {
-	//test_pkg_malloc();
+	test_pkg_malloc();
 	test_shm_malloc();
 }
 
