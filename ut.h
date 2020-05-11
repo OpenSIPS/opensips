@@ -985,6 +985,23 @@ static inline int str_strcmp(const str *stra, const str *strb)
 }
 
 /*
+ * compares a str with a const null terminated string
+ */
+static inline int str_match_nt(const str *a, const char *b)
+{
+	return a->len == strlen(b) && !memcmp(a->s, b, a->len);
+}
+
+/*
+ * compares a str with a const null terminated string, case-insensitive
+ */
+static inline int str_casematch_nt(const str *a, const char *b)
+{
+	return a->len == strlen(b) && !strncasecmp(a->s, b, a->len);
+}
+
+
+/*
  * search strb in stra
  */
 static inline char* str_strstr(const str *stra, const str *strb)
