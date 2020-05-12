@@ -181,7 +181,7 @@ static int mod_init(void)
 	vals[V_SIP_SESSION].name			= "Sip-Session";
 	vals[V_CALL_CHECK].name				= "Call-Check";
 
-	use_ruri_flag = get_flag_id_by_name(FLAG_TYPE_MSG, use_ruri_flag_str);
+	use_ruri_flag = get_flag_id_by_name(FLAG_TYPE_MSG, use_ruri_flag_str, 0);
 
 	if (!aaa_proto_url) {
 		LM_ERR("aaa_url is empty\n");

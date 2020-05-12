@@ -68,7 +68,7 @@ int reg_init_globals(void)
 
 	/* fix the flags */
 	tcp_persistent_flag = get_flag_id_by_name(FLAG_TYPE_MSG,
-	                                          tcp_persistent_flag_s);
+	                                          tcp_persistent_flag_s, 0);
 	tcp_persistent_flag = (tcp_persistent_flag != -1) ?
 	                       (1 << tcp_persistent_flag) : 0;
 

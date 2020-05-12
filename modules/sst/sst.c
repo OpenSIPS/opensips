@@ -171,7 +171,7 @@ static int mod_init(void)
 		exports.stats = 0;
 	}
 
-	sst_flag = get_flag_id_by_name(FLAG_TYPE_MSG, sst_flag_str);
+	sst_flag = get_flag_id_by_name(FLAG_TYPE_MSG, sst_flag_str, 0);
 
 	if (sst_flag == -1) {
 		LM_ERR("no sst flag set!!\n");

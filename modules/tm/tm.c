@@ -761,7 +761,7 @@ static int mod_init(void)
 	}
 
 	minor_branch_flag =
-		get_flag_id_by_name(FLAG_TYPE_BRANCH, minor_branch_flag_str);
+		get_flag_id_by_name(FLAG_TYPE_BRANCH, minor_branch_flag_str, 0);
 
 	if (minor_branch_flag!=-1) {
 		if (minor_branch_flag > (8*sizeof(int)-1)) {

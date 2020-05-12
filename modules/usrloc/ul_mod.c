@@ -896,7 +896,7 @@ int ul_init_globals(void)
 		}
 	}
 
-	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str);
+	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str, 0);
 
 	if (nat_bflag == (unsigned int)-1) {
 		nat_bflag = 0;

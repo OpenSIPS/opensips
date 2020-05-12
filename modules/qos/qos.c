@@ -114,7 +114,7 @@ int load_qos( struct qos_binds *qosb)
  */
 static int mod_init(void)
 {
-	qos_flag = get_flag_id_by_name(FLAG_TYPE_MSG, qos_flag_str);
+	qos_flag = get_flag_id_by_name(FLAG_TYPE_MSG, qos_flag_str, 0);
 
 	if (qos_flag == -1) {
 		LM_ERR("no qos flag set!!\n");

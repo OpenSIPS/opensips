@@ -1035,7 +1035,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| TCP_MAX_CONNECTIONS EQUAL error { yyerror("number expected"); }
 		| TCP_NO_NEW_CONN_BFLAG EQUAL ID { IFOR();
 				tcp_no_new_conn_bflag =
-					get_flag_id_by_name(FLAG_TYPE_BRANCH, $3);
+					get_flag_id_by_name(FLAG_TYPE_BRANCH, $3, 0);
 				if (!flag_in_range( (flag_t)tcp_no_new_conn_bflag ) )
 					yyerror("invalid TCP no_new_conn Branch Flag");
 				flag_idx2mask( &tcp_no_new_conn_bflag );
@@ -1043,7 +1043,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| TCP_NO_NEW_CONN_BFLAG EQUAL error { yyerror("number value expected"); }
 		| TCP_NO_NEW_CONN_RPLFLAG EQUAL ID { IFOR();
 				tcp_no_new_conn_rplflag =
-					get_flag_id_by_name(FLAG_TYPE_MSG, $3);
+					get_flag_id_by_name(FLAG_TYPE_MSG, $3, 0);
 				if (!flag_in_range( (flag_t)tcp_no_new_conn_rplflag ) )
 					yyerror("invalid TCP no_new_conn RePLy Flag");
 				flag_idx2mask( &tcp_no_new_conn_rplflag );

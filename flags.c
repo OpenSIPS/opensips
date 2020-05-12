@@ -161,7 +161,7 @@ int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
  * The function MUST be called only in the pre-forking phases of OpenSIPS
  * (mod_init() or in function fixups)
  */
-int get_flag_id_by_name(int flag_type, char *flag_name)
+int get_flag_id_by_name(int flag_type, char *flag_name, int flag_name_len)
 {
 	struct flag_entry *it, **flag_list;
 	str fn;
@@ -172,7 +172,7 @@ int get_flag_id_by_name(int flag_type, char *flag_name)
 	}
 
 	fn.s = flag_name;
-	fn.len = strlen(flag_name);
+	fn.len = (flag_name_len<=0)?strlen(flag_name):flag_name_len;
 
 	if (fn.len == 0) {
 		LM_WARN("found empty string flag modparam! possible scripting error?\n");
@@ -221,7 +221,7 @@ unsigned int fixup_flag(int flag_type, str *flag_name)
 {
 	int ret;
 
-	ret = get_flag_id_by_name(flag_type, flag_name->s);
+	ret = get_flag_id_by_name(flag_type, flag_name->s, flag_name->len);
 
 	if (ret < 0) {
 		LM_CRIT("Failed to get a flag id!\n");
