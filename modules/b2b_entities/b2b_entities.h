@@ -58,5 +58,8 @@ extern db_func_t b2be_dbf;
 extern str b2be_dbtable;
 extern int b2be_db_mode;
 extern int serialize_backend;
+extern int b2b_ctx_idx;
+
+void *b2b_get_context(void);
 
 #endif

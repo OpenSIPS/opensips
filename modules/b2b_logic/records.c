@@ -302,6 +302,8 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 	tuple->db_flag = db_flag;
 	tuple->repl_flag = repl_flag;
 
+	tuple->hash_index = hash_index;
+
 	LM_DBG("new tuple [%p]->[%.*s]\n", tuple, b2bl_key->len, b2bl_key->s);
 
 	return tuple;
@@ -577,6 +579,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 	int i;
 	int index;
 	b2bl_cb_params_t cb_params;
+	struct b2b_ctx_val *v;
 
 	LM_DBG("Delete record [%p]->[%.*s], hash_index=[%d], local_index=[%d]\n",
 			tuple, tuple->key->len, tuple->key->s, hash_index, tuple->id);
@@ -662,6 +665,12 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 
 	if (tuple->sdp.s && tuple->sdp.s != tuple->b1_sdp.s)
 		shm_free(tuple->sdp.s);
+
+	while (tuple->vals) {
+		v = tuple->vals;
+		tuple->vals = tuple->vals->next;
+		shm_free(v);
+	}
 
 	shm_free(tuple);
 }

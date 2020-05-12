@@ -135,6 +135,8 @@ typedef int (*b2b_get_b2bl_key_t)(str* callid, str* from_tag, str* to_tag,
 
 typedef int (*b2b_apply_lumps_t)(struct sip_msg* msg);
 
+typedef void* (*b2b_get_context_t)(void);
+
 typedef struct b2b_api
 {
 	b2b_server_new_t          server_new;
@@ -148,6 +150,7 @@ typedef struct b2b_api
 	b2b_update_b2bl_param_t   update_b2bl_param;
 	b2b_get_b2bl_key_t        get_b2bl_key;
 	b2b_apply_lumps_t         apply_lumps;
+	b2b_get_context_t		  get_context;
 }b2b_api_t;
 
 typedef int(*load_b2b_f) (b2b_api_t* api);

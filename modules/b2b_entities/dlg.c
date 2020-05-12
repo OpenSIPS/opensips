@@ -687,6 +687,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	rr_t *rt;
 	int b2b_ev = -1;
 	bin_packet_t storage;
+	struct b2b_context *ctx;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -848,6 +849,19 @@ search_dialog:
 			LM_DBG("No dialog found for cancel\n");
 			return SCB_RUN_ALL;
 		}
+
+		ctx = b2b_get_context();
+		if (!ctx) {
+			LM_ERR("Failed to get b2b context\n");
+			lock_release(&server_htable[hash_index].lock);
+			return SCB_DROP_MSG;
+		}
+		if (dlg->param.s && pkg_str_dup(&ctx->b2bl_key, &dlg->param) < 0) {
+			LM_ERR("Failed to copy b2b_logic key to b2b context\n");
+			lock_release(&server_htable[hash_index].lock);
+			return SCB_DROP_MSG;
+		}
+
 		table = server_htable;
 		/* send 200 canceling */
 		ret = tmb.t_newtran(msg);
@@ -956,6 +970,18 @@ search_dialog:
 			lock_release(&table[hash_index].lock);
 			return SCB_RUN_ALL;
 		}
+	}
+
+	ctx = b2b_get_context();
+	if (!ctx) {
+		LM_ERR("Failed to get b2b context\n");
+		lock_release(&server_htable[hash_index].lock);
+		return SCB_DROP_MSG;
+	}
+	if (dlg->param.s && pkg_str_dup(&ctx->b2bl_key, &dlg->param) < 0) {
+		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
+		lock_release(&server_htable[hash_index].lock);
+		return SCB_DROP_MSG;
 	}
 
 	if(dlg->state < B2B_CONFIRMED)
@@ -2475,6 +2501,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	int old_route_type;
 	bin_packet_t storage;
 	int b2b_ev = -1;
+	struct b2b_context *ctx;
 
 	to_hdr_parsed.param_lst = from_hdr_parsed.param_lst = NULL;
 
@@ -2617,6 +2644,18 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				callid.len, callid.s);
 		}
 		lock_release(&htable[hash_index].lock);
+		return;
+	}
+
+	ctx = b2b_get_context();
+	if (!ctx) {
+		LM_ERR("Failed to get b2b context\n");
+		lock_release(&server_htable[hash_index].lock);
+		return;
+	}
+	if (dlg->param.s && pkg_str_dup(&ctx->b2bl_key, &dlg->param) < 0) {
+		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
+		lock_release(&server_htable[hash_index].lock);
 		return;
 	}
 

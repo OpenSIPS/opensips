@@ -29,4 +29,9 @@
 
 #define B2BL_MAX_KEY_LEN	21
 
+struct b2b_context {
+	str b2bl_key;
+	void *data;
+};
+
 #endif

@@ -34,6 +34,7 @@
 #include "../tm/dlg.h"
 #include "../dialog/dlg_load.h"
 #include "../../bin_interface.h"
+#include "../../context.h"
 #include "b2b_common.h"
 #include "b2be_load.h"
 

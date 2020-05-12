@@ -78,6 +78,8 @@ b2b_table client_htable;
 int b2be_cluster;
 int serialize_backend;
 
+int b2b_ctx_idx =-1;
+
 #define DB_COLS_NO  26
 
 /* TM bind */
@@ -155,6 +157,15 @@ struct module_exports exports= {
 void b2be_db_timer_update(unsigned int ticks, void* param)
 {
 	b2b_entities_dump(0);
+}
+
+static void b2b_ctx_free(void *param)
+{
+	struct b2b_context *ctx = (struct b2b_context *)param;
+
+	if (ctx->b2bl_key.s)
+		pkg_free(ctx->b2bl_key.s);
+	pkg_free(param);
 }
 
 /** Module initialize function */
@@ -306,6 +317,8 @@ static int mod_init(void)
 		serialize_backend |= B2BCB_BACKEND_DB;
 	if (b2be_cluster)
 		serialize_backend |= B2BCB_BACKEND_CLUSTER;
+
+	b2b_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, b2b_ctx_free);
 
 	return 0;
 }
@@ -534,6 +547,31 @@ int b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key, s
 	return ret;
 }
 
+void *b2b_get_context(void)
+{
+	struct b2b_context *ctx;
+
+	if (!current_processing_ctx) {
+		LM_ERR("no processing ctx found!\n");
+		return NULL;
+	}
+
+	ctx = context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+		b2b_ctx_idx);
+	if (!ctx) {
+		ctx = pkg_malloc(sizeof *ctx);
+		if (!ctx) {
+			LM_ERR("oom!\n");
+			return NULL;
+		}
+		memset(ctx, 0, sizeof *ctx);
+
+		context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, b2b_ctx_idx,
+			ctx);
+	}
+
+	return ctx;
+}
 
 int b2b_entities_bind(b2b_api_t* api)
 {
@@ -553,6 +591,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->entities_db_delete = b2b_db_delete;
 	api->get_b2bl_key       = b2b_get_b2bl_key;
 	api->apply_lumps        = b2b_apply_lumps;
+	api->get_context		= b2b_get_context;
 
 	return 0;
 }

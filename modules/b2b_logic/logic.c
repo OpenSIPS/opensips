@@ -65,6 +65,9 @@ extern unsigned short b2bl_key_avp_type;
 
 extern str b2bl_mod_name;
 
+extern b2bl_tuple_t *local_ctx_tuple;
+extern struct b2b_ctx_val *local_ctx_vals;
+
 struct to_body* get_b2bl_from(struct sip_msg* msg);
 
 int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
@@ -599,9 +602,16 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 			return NULL;
 		}
 	}
+
 	LM_DBG("Send Invite without a body to a new client entity\n");
+
+	b2bl_htable[tuple->hash_index].locked_by = process_no;
+
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
 			b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+
+	b2bl_htable[tuple->hash_index].locked_by = -1;
+
 	if(client_id == NULL)
 	{
 		LM_ERR("Failed to create client id\n");
@@ -666,11 +676,14 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.b2b_key =&bentity0->key;
 			req_data.method =&method_ack;
 			req_data.dlginfo =bentity0->dlginfo;
+			b2bl_htable[hash_index].locked_by = process_no;
 			if(b2b_api.send_request(&req_data) < 0)
 			{
 				LM_ERR("Failed to send second ACK in bridging scenario\n");
+				b2bl_htable[hash_index].locked_by = -1;
 				return -1;
 			}
+			b2bl_htable[hash_index].locked_by = -1;
 			/* mark the scenario as completed */
 			if(tuple->next_scenario_state>= 0)
 			{
@@ -720,13 +733,20 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				return -1;
 			}
 			bentity0->state = B2BL_ENT_CONFIRMED;
+
+			b2bl_htable[hash_index].locked_by = process_no;
+
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
 					b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+
+			b2bl_htable[hash_index].locked_by = -1;
+
 			if(client_id == NULL)
 			{
 				LM_ERR("Failed to create new client entity\n");
 				return -1;
 			}
+
 			/* save the client_id in the structure */
 			entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri,
 					&ci.from_uri, 0, &bentity1->scenario_id, &bentity1->hdrs, 0);
@@ -758,11 +778,14 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			req_data.extra_headers =extra_headers;
 			req_data.body =body;
 			req_data.dlginfo =bentity1->dlginfo;
+			b2bl_htable[hash_index].locked_by = process_no;
 			if(b2b_api.send_request(&req_data) < 0)
 			{
 				LM_ERR("Failed to send second INVITE in bridging scenario\n");
+				b2bl_htable[hash_index].locked_by = -1;
 				return -1;
 			}
+			b2bl_htable[hash_index].locked_by = -1;
 			bentity1->sdp_type = body ? B2BL_SDP_NORMAL : B2BL_SDP_LATE;
 			bentity1->state = B2BL_ENT_NEW;
 		}
@@ -811,9 +834,11 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.extra_headers =extra_headers;
 		req_data.body = (bentity0->sdp_type == B2BL_SDP_LATE) ? body : 0;
 		req_data.dlginfo =bentity0->dlginfo;
+		b2bl_htable[hash_index].locked_by = process_no;
 		if(b2b_api.send_request(&req_data) < 0)
 		{
 			LM_ERR("Failed to send first ACK in bridging scenario\n");
+			b2bl_htable[hash_index].locked_by = -1;
 			return -1;
 		}
 
@@ -826,8 +851,10 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		if(b2b_api.send_request(&req_data) < 0)
 		{
 			LM_ERR("Failed to send second ACK in bridging scenario\n");
+			b2bl_htable[hash_index].locked_by = -1;
 			return -1;
 		}
+		b2bl_htable[hash_index].locked_by = -1;
 
 		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 		tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
@@ -847,11 +874,14 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				req_data.extra_headers = extra_headers;
 				req_data.body = body;
 				req_data.dlginfo =bentity0->dlginfo;
+				b2bl_htable[hash_index].locked_by = process_no;
 				if(b2b_api.send_request(&req_data) < 0)
 				{
 					LM_ERR("Failed to send re-invite in bridging scenario\n");
+					b2bl_htable[hash_index].locked_by = -1;
 					return -1;
 				}
+				b2bl_htable[hash_index].locked_by = -1;
 				/* after sending this invite, the first endpoint should have
 				 * the proper SDP used */
 				bentity0->sdp_type = B2BL_SDP_NORMAL;
@@ -904,11 +934,14 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		req_data.extra_headers =extra_headers;
 		req_data.body =body;
 		req_data.dlginfo =bentity0->dlginfo;
+		b2bl_htable[hash_index].locked_by = process_no;
 		if(b2b_api.send_request(&req_data) < 0)
 		{
 			LM_ERR("Failed to send second Invite in bridging scenario\n");
+			b2bl_htable[hash_index].locked_by = -1;
 			return -1;
 		}
+		b2bl_htable[hash_index].locked_by = -1;
 		bentity0->state = 0;
 
 		tuple->bridge_entities[1] = tuple->bridge_entities[0];
@@ -1779,7 +1812,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		{
 			LM_DBG("Found a bridge node\n");
 
-			if(process_bridge_action(msg, entity, tuple, bridge_node) < 0)
+			if(process_bridge_action(msg, entity, tuple, hash_index, bridge_node) < 0)
 			{
 				LM_ERR("Failed to process bridge action\n");
 				goto send_usual_request;
@@ -2255,7 +2288,7 @@ done:
  *	*/
 
 int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
-		b2bl_tuple_t* tuple, xmlNodePtr bridge_node)
+		b2bl_tuple_t* tuple, unsigned hash_index, xmlNodePtr bridge_node)
 {
 
 	b2bl_entity_id_t* bridge_entities[3];
@@ -2522,7 +2555,9 @@ entity_search_done:
 		req_data.method =&method_invite;
 		req_data.extra_headers = NULL;
 		req_data.client_headers = &old_entity->hdrs;
+		b2bl_htable[hash_index].locked_by = process_no;
 		b2b_api.send_request(&req_data);
+		b2bl_htable[hash_index].locked_by = -1;
 		old_entity->state = 0;
 		old_entity->sdp_type = B2BL_SDP_LATE;
 	}
@@ -2559,14 +2594,22 @@ entity_search_done:
 				goto error1;
 			}
 		}
+
 		LM_DBG("Send Invite without a body to a new client entity\n");
+
+		b2bl_htable[hash_index].locked_by = process_no;
+
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
 				b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+
+		b2bl_htable[hash_index].locked_by = -1;
+
 		if(client_id == NULL)
 		{
 			LM_ERR("Failed to create new client entity\n");
 			goto error1;
 		}
+
 		/* save the client_id in the structure */
 		entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &to_uri,
 				&from_uri,0,&bridge_entities[0]->scenario_id, &hdrs, 0);
@@ -2678,6 +2721,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	str extra_headers = {NULL, 0};
 	str* b2bl_key;
 	b2bl_tuple_t* tuple;
+	struct b2b_context *ctx;
 	unsigned int hash_index;
 	b2b_dlginfo_t* dlginfo, dlginfo_s;
 	client_info_t ci;
@@ -2717,6 +2761,21 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	tuple->cbf = cbf;
 	tuple->cb_mask = cb_mask;
 	tuple->cb_param = cb_param;
+
+	/* save tuple in global variable for accesss from local routes */
+	local_ctx_tuple = tuple;
+
+	/* set the context values already written in the request route */
+	tuple->vals = local_ctx_vals;
+	local_ctx_vals = NULL;
+
+	/* save tuple in context for access in the request route */
+	ctx = b2b_api.get_context();
+	if (!ctx) {
+		LM_ERR("Failed to get b2b context\n");
+		goto error;
+	}
+	ctx->data = tuple;
 
 	/* if it will not be confirmed -> delete */
 	tuple->lifetime = params->init_timeout + get_ticks();
@@ -2770,8 +2829,13 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 
+	b2bl_htable[hash_index].locked_by = process_no;
+
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
 			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+
+	b2bl_htable[hash_index].locked_by = -1;
+
 	if(client_id == NULL)
 	{
 		LM_ERR("failed to create new b2b client instance\n");
@@ -2806,8 +2870,14 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		ci.from_tag = &from_tag_gen;
 		ci.req_uri = uri;
 		ci.avps = clone_avp_list( *get_avp_list() );
+
+		b2bl_htable[hash_index].locked_by = process_no;
+
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
 			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+
+		b2bl_htable[hash_index].locked_by = -1;
+
 		if(client_id == NULL)
 		{
 			LM_ERR("failed to create new b2b client instance\n");
@@ -2850,6 +2920,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
+	local_ctx_tuple = NULL;
+
 	pkg_free(to_uri.s);
 	pkg_free(server_id);
 	pkg_free(client_id);
@@ -2870,6 +2942,7 @@ error:
 		pkg_free(extra_headers.s);
 	if(new_body.s)
 		pkg_free(new_body.s);
+	local_ctx_tuple = NULL;
 	return NULL;
 }
 
@@ -3189,6 +3262,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 	str method = {INVITE, INVITE_LEN};
 	str* b2bl_key = NULL;
 	b2bl_tuple_t* tuple= NULL;
+	struct b2b_context *ctx;
 	xmlNodePtr node, init_node, node_aux;
 	xmlNodePtr server_node = NULL, clients_node= NULL;
 	str entity_sid;
@@ -3258,6 +3332,21 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 		goto error;
 	}
 	tuple->lifetime = 60 + get_ticks();
+
+	/* save tuple in global variable for accesss from local routes */
+	local_ctx_tuple = tuple;
+
+	/* set the context values already written in the request route */
+	tuple->vals = local_ctx_vals;
+	local_ctx_vals = NULL;
+
+	/* save tuple in context for access in the request route */
+	ctx = b2b_api.get_context();
+	if (!ctx) {
+		LM_ERR("Failed to get b2b context\n");
+		goto error;
+	}
+	ctx->data = tuple;
 
 	/* set the state of the scenario after the init section */
 	node = xmlNodeGetChildByName(scenario_struct->init_node, "state");
@@ -3406,8 +3495,13 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 				goto error;
 			}
 
+			b2bl_htable[hash_index].locked_by = process_no;
+
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
 					b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+
+			b2bl_htable[hash_index].locked_by = -1;
+
 			if(client_id == NULL)
 			{
 				LM_ERR("failed to create new b2b client instance\n");
@@ -3475,7 +3569,10 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 	if(b2bl_db_mode == WRITE_THROUGH)
 		b2bl_db_insert(tuple);
 
+	local_ctx_tuple = NULL;
+
 	b2bl_htable[hash_index].flags = params->flags;
+
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	if(new_body.s)
@@ -3497,6 +3594,7 @@ error:
 		pkg_free(to_uri.s);
 	if(new_body.s)
 		pkg_free(new_body.s);
+	local_ctx_tuple = NULL;
 	return NULL;
 }
 
@@ -3664,6 +3762,8 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		goto error;
 	}
 
+	local_ctx_tuple = tuple;
+
 	// FIXME: we may have no server at some point in time
 	if(tuple->servers[0] == NULL)
 	{
@@ -3716,8 +3816,13 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		ci.cseq          = 1;
 		ci.local_contact = tuple->local_contact;
 
+		b2bl_htable[hash_index].locked_by = process_no;
+
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
 				b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+
+		b2bl_htable[hash_index].locked_by = -1;
+
 		if(client_id == NULL)
 		{
 			LM_ERR("Failed to create new client entity\n");
@@ -3754,11 +3859,13 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		PREP_REQ_DATA(tuple->servers[0]);
 		req_data.method =&method_invite;
 		req_data.client_headers =&tuple->servers[0]->hdrs;;
+		b2bl_htable[hash_index].locked_by = process_no;
 		if(b2b_api.send_request(&req_data) < 0)
 		{
 			LM_ERR("Failed to send INVITE request\n");
 			goto error;
 		}
+		b2bl_htable[hash_index].locked_by = -1;
 		tuple->servers[0]->sdp_type = B2BL_SDP_LATE;
 		tuple->servers[0]->state = 0; /* mark it not as CONFIRMED */
 	}
@@ -3774,6 +3881,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 	tuple->servers[0]->stats.start_time = get_ticks();
 	tuple->servers[0]->stats.call_time = 0;
 
+	local_ctx_tuple = NULL;
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
@@ -3782,6 +3890,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 error:
 	if(entity)
 		shm_free(entity);
+	local_ctx_tuple = NULL;
 	lock_release(&b2bl_htable[hash_index].lock);
 	return -1;
 }
@@ -3808,10 +3917,14 @@ int b2bl_terminate_call(str* key)
 		return -1;
 	}
 
+	local_ctx_tuple = tuple;
+
 	b2b_end_dialog(tuple->bridge_entities[0], tuple, hash_index);
 	b2b_end_dialog(tuple->bridge_entities[1], tuple, hash_index);
 
 	b2b_mark_todel(tuple);
+
+	local_ctx_tuple = NULL;
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
@@ -3914,6 +4027,8 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		goto error;
 	}
 
+	local_ctx_tuple = tuple;
+
 	if(tuple->bridge_entities[0] && !tuple->bridge_entities[0]->disconnected)
 	{
 		e2 = tuple->bridge_entities[0];
@@ -3996,8 +4111,12 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		goto error;
 	}
 	b2bl_delete(tuple, hash_index, 1, 1);
+
 	lock_release(&b2bl_htable[hash_index].lock);
+
 	/* must restore the b2bl_key for this entity in b2b_entities */
+
+	local_ctx_tuple = NULL;
 
 	if(b2bl_parse_key(key1, &hash_index, &local_index) < 0)
 	{
@@ -4014,6 +4133,8 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		LM_ERR("No entity found\n");
 		goto error;
 	}
+
+	local_ctx_tuple = tuple;
 
 	e1 = tuple->bridge_entities[0];
 	if(e1 == NULL || e1->disconnected)
@@ -4064,11 +4185,14 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	req_data.method =&method_invite;
 	req_data.extra_headers = NULL;
 	req_data.client_headers = &e1->hdrs;
+	b2bl_htable[hash_index].locked_by = process_no;
 	if(b2b_api.send_request(&req_data) < 0)
 	{
+		b2bl_htable[hash_index].locked_by = -1;
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
 	}
+	b2bl_htable[hash_index].locked_by = -1;
 	e1->sdp_type = B2BL_SDP_LATE;
 	e1->state = 0;
 	tuple->scenario_state = B2B_BRIDGING_STATE;
@@ -4076,7 +4200,10 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		tuple->lifetime = get_ticks() + max_duration;
 	else
 		tuple->lifetime = 0;
+
 	lock_release(&b2bl_htable[hash_index].lock);
+
+	local_ctx_tuple = NULL;
 
 	return 0;
 
@@ -4084,6 +4211,7 @@ error:
 	if(tuple)
 		b2b_mark_todel(tuple);
 	lock_release(&b2bl_htable[hash_index].lock);
+	local_ctx_tuple = NULL;
 	return -1;
 }
 
@@ -4131,6 +4259,7 @@ end:
 int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 {
 	b2bl_tuple_t* tuple;
+	struct b2b_context *ctx;
 	unsigned int hash_index, local_index;
 	b2bl_entity_id_t *bridging_entity= NULL;
 	b2bl_entity_id_t *old_entity;
@@ -4169,6 +4298,23 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		LM_ERR("No entity found\n");
 		goto error;
 	}
+
+	/* save tuple in global variable for accesss from local routes */
+	local_ctx_tuple = tuple;
+
+	/* set the context values already written in the request route;
+	 * todo: do not overwrite the old values but insert the new ones instead */
+	tuple->vals = local_ctx_vals;
+	local_ctx_vals = NULL;
+
+	/* save tuple in context for access in the request route */
+	ctx = b2b_api.get_context();
+	if (!ctx) {
+		LM_ERR("Failed to get b2b context\n");
+		goto error;
+	}
+	ctx->data = tuple;
+
 	if(entity_no!=0 && entity_no!=1)
 	{
 		LM_ERR("entity_no param can take only 0 or 1 value, got [%d]\n",
@@ -4247,10 +4393,8 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		}
 
 		/* destroy the old_entity */
-		b2bl_htable[hash_index].locked_by = process_no;
 		b2b_api.entity_delete(old_entity->type, &old_entity->key,
 			old_entity->dlginfo, 1, 1);
-		b2bl_htable[hash_index].locked_by = -1;
 		if(old_entity->dlginfo)
 			shm_free(old_entity->dlginfo);
 		shm_free(old_entity);
@@ -4314,11 +4458,14 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	req_data.method =&method_invite;
 	req_data.client_headers =&bridging_entity->hdrs;
 	req_data.body = &body;
+	b2bl_htable[hash_index].locked_by = process_no;
 	if(b2b_api.send_request(&req_data) < 0)
 	{
+		b2bl_htable[hash_index].locked_by = -1;
 		LM_ERR("Failed to send reInvite\n");
 		goto error;
 	}
+	b2bl_htable[hash_index].locked_by = -1;
 	bridging_entity->sdp_type = B2BL_SDP_NORMAL;
 	bridging_entity->state = 0;
 	if(max_duration)
@@ -4331,7 +4478,10 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 
 	b2bl_print_tuple(tuple, L_DBG);
 
+	local_ctx_tuple = NULL;
+
 	lock_release(&b2bl_htable[hash_index].lock);
+
 	if(new_body.s)
 		pkg_free(new_body.s);
 	return 0;
@@ -4342,5 +4492,6 @@ error:
 	lock_release(&b2bl_htable[hash_index].lock);
 	if(new_body.s)
 		pkg_free(new_body.s);
+	local_ctx_tuple = NULL;
 	return -1;
 }

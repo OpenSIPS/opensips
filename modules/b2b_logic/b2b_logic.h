@@ -112,6 +112,11 @@ struct b2b_scen_fl {
 	struct b2b_params params;
 };
 
+enum pv_entity_field {
+	PV_ENTITY_KEY,
+	PV_ENTITY_CALLID
+};
+
 
 extern b2b_scenario_t* script_scenaries;
 extern b2b_scenario_t* extern_scenaries;

@@ -646,5 +646,144 @@ route[b2b_request]
 
 </section>
 
+<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+
+	<section id="b2b_logic.key" xreflabel="$b2b_logic.key">
+	<title>
+		<varname>$b2b_logic.key</varname>
+	</title>
+	<para>
+		This is a read-only variable that returns the b2b_logic key of the
+		ongoing B2B session.
+	</para>
+	<para>
+		The variable can be used in request route, local_route
+		and in the custom B2B request and reply routes defined through the
+		<emphasis>b2b_entities</emphasis> module.
+	</para>
+	<example>
+	<title><varname>$b2b_logic.key</varname> usage</title>
+	<programlisting format="linespecific">
+...
+local_route {
+   ...
+   if ($b2b_logic.key) {
+      xlog("request belongs to B2B session: $b2b_logic.key\n");
+      ...
+   }
+   ...
+}
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section id="b2b_logic.entity" xreflabel="$b2b_logic.entity">
+	<title>
+		<varname>$b2b_logic.entity(field)[idx]</varname>
+	</title>
+	<para>
+		This is a read-only variable that returns information about the
+		entities(dialogs) involved in the ongoing B2B session.
+	</para>
+	<para>
+		The available entity information is:
+		<itemizedlist>
+			<listitem><para>
+				the Call-ID of the dialog, accessible by using the
+				<emphasis>callid</emphasis> subname;
+			</para></listitem>
+			<listitem><para>
+				the entity key, accessible by using the
+				<emphasis>key</emphasis> subname or no subname at all.
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		The index is used to select which entity from the B2B session to refer
+		to. The only possible values are <emphasis>0</emphasis> or <emphasis>1
+		</emphasis> and correspond to the positions of the entities
+		in the scenario. Initially, this depends on the order of the entities in
+		the <emphasis>init</emphasis> section of the scenario file. In the case
+		of the internal topology hiding scenario, <emphasis>0</emphasis> is the
+		caller and <emphasis>1</emphasis> is the callee. When a further bridge
+		action happens, the bridged entity is always placed on the <emphasis>0
+		</emphasis> index and the new entity on <emphasis>1</emphasis>.
+	</para>
+	<para>
+		If no index is provided, the variable will refer to the entity(dialog)
+		which the current SIP message belongs to.
+	</para>
+	<para>
+		The variable can be used in request route, local_route
+		and in the custom B2B request and reply routes defined through the
+		<emphasis>b2b_entities</emphasis> module.
+	</para>
+	<example>
+	<title><varname>$b2b_logic.entity</varname> usage</title>
+	<programlisting format="linespecific">
+...
+modparam("b2b_entities", "script_request_route", "b2b_request")
+...
+route[b2b_request] {
+   ...
+   xlog("received request for entity: $b2b_logic.entity\n");
+   ...
+   if ($rm == "BYE" &amp;&amp; $b2b_logic.entity == $(b2b_logic.entity[1]))
+      xlog("Disconnecting callee\n")
+   ...
+}
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section id="b2b_logic.ctx" xreflabel="$b2b_logic.ctx">
+	<title>
+		<varname>$b2b_logic.ctx(key)</varname>
+	</title>
+	<para>
+		This is a read-write variable that provides access to a custom
+		Key-Value storage(of string values) in the context of the ongoing
+		B2B session.
+	</para>
+	<para>
+		The variable can be used in request route, local_route
+		and in the custom B2B request and reply routes defined through the
+		<emphasis>b2b_entities</emphasis> module. In the main request route
+		the variable can be used for storing a new context value even before
+		instantiating the scenario with <emphasis>b2b_init_request()</emphasis>.
+	</para>
+	<para>
+		Setting the variable to <emphasis>NULL</emphasis> will delete the value
+		at the given key.
+	</para>
+	<example>
+	<title><varname>$b2b_logic.ctx</varname> usage</title>
+	<programlisting format="linespecific">
+...
+modparam("b2b_entities", "script_reply_route", "b2b_reply")
+...
+route {
+   ...
+   b2b_init_request("prepaid", "sip:alice@127.0.0.1");
+
+   $b2b_logic.ctx(my_extra_info) = "my_value";
+   ...
+}
+...
+route[b2b_reply] {
+   ...
+   xlog("my info: $b2b_logic.ctx(my_extra_info)\n");
+   ...
+}
+...
+	</programlisting>
+	</example>
+	</section>
+
+</section>
+
 </chapter>
 

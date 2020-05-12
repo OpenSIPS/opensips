@@ -66,9 +66,17 @@ typedef struct b2bl_entity_id
 #define MAX_B2BL_ENT		3
 #define MAX_BRIDGE_ENT		3
 
+struct b2b_ctx_val {
+	unsigned int id;
+	str name;
+	str val;
+	struct b2b_ctx_val *next;
+};
+
 typedef struct b2bl_tuple
 {
 	unsigned int id;
+	unsigned int hash_index;
 	str* key;
 	b2b_scenario_t* scenario;  /* if scenario is NULL it means that the simple Topology Hiding Scenary must be applied*/
 	str scenario_params[MAX_SCENARIO_PARAMS];
@@ -87,6 +95,7 @@ typedef struct b2bl_tuple
 	str b1_sdp; /* used for multiple attempts to bridge the first entity */
 	int db_flag;
 	int repl_flag;  /* sent/received through entities replication */
+	struct b2b_ctx_val *vals;
 	b2bl_cback_f cbf;
 	unsigned int cb_mask;
 	void* cb_param;
@@ -152,7 +161,7 @@ extern b2bl_table_t b2bl_htable;
 extern unsigned int b2bl_hsize;
 
 int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
-		b2bl_tuple_t* tuple, xmlNodePtr bridge_node);
+		b2bl_tuple_t* tuple, unsigned int hash_index, xmlNodePtr bridge_node);
 
 void destroy_b2bl_htable(void);
 
