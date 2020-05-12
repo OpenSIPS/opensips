@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2010-2016 OpenSIPS Solutions
+ * Copyright (C) 2010-2020 OpenSIPS Solutions
  * Copyright (C) 2005-2009 Voice Sistem SRL
  * Copyright (C) 2001-2003 FhG Fokus
  *
@@ -3259,6 +3259,7 @@ error:
 	return -1;
 }
 
+
 /********* end PV set functions *********/
 
 int pv_parse_scriptvar_name(pv_spec_p sp, str *in)
@@ -3583,6 +3584,193 @@ int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
+
+/************** MSG FLAGS function *****************/
+
+int msg_flag_parse_name(pv_spec_p sp, str *in)
+{
+	unsigned int idx;
+	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
+		return -1;
+
+	if ( (idx=fixup_flag(FLAG_TYPE_MSG, in))==NAMED_FLAG_ERROR) {
+		LM_ERR("failed to fix the flag <%.*s>\n",in->len,in->s);
+		return -1;
+	}
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
+
+	sp->pvp.pvn.u.isname.name.n = idx;
+
+	return 0;
+}
+
+
+int msg_flag_set(struct sip_msg* msg, pv_param_t *param, int op,
+															pv_value_t *val)
+{
+	if(param==NULL) {
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if (val==NULL || (val->flags&(PV_VAL_NULL|PV_VAL_NONE))!=0 ||
+	(val->flags&PV_TYPE_INT)==0 ) {
+		LM_ERR("input for $msg.flag() found not to be an integer\n");
+		return -1;
+	}
+
+	if (val->ri==0)
+		resetflag (msg, (unsigned int)param->pvn.u.isname.name.n);
+	else
+		setflag( msg, (unsigned int)param->pvn.u.isname.name.n);
+
+	return 0;
+}
+
+
+int msg_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	if (param==NULL||res==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if ( isflagset( msg, (unsigned int)param->pvn.u.isname.name.n)==1 ) {
+		res->ri = 1;
+		res->rs.s = "true";
+		res->rs.len = 4;
+	} else {
+		res->ri = 0;
+		res->rs.s = "false";
+		res->rs.len = 5;
+	}
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+
+/************** BRANCH FLAGS function *****************/
+
+int branch_flag_parse_name(pv_spec_p sp, str *in)
+{
+	unsigned int idx;
+	if (sp==NULL || in==NULL || in->s==NULL || in->len==0)
+		return -1;
+
+	if ( (idx=fixup_flag(FLAG_TYPE_BRANCH, in))==NAMED_FLAG_ERROR) {
+		LM_ERR("failed to fix the flag <%.*s>\n",in->len,in->s);
+		return -1;
+	}
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+	sp->pvp.pvn.u.isname.type = 0;
+
+	sp->pvp.pvn.u.isname.name.n = idx;
+
+	return 0;
+}
+
+
+int branch_flag_set(struct sip_msg* msg, pv_param_t *param, int op,
+															pv_value_t *val)
+{
+	int idx;
+	int idxf;
+
+	if(param==NULL) {
+		LM_ERR("bad parameters\n");
+		return -1;
+	}
+
+	if (val==NULL || (val->flags&(PV_VAL_NULL|PV_VAL_NONE))!=0 ||
+	(val->flags&PV_TYPE_INT)==0 ) {
+		LM_ERR("input for $branch.flag() found not to be an integer\n");
+		return -1;
+	}
+
+	/* get the index */
+	if (pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
+	if(idxf==PV_IDX_ALL) {
+		LM_ERR("SCRIPT BUG - * not allowed in branch flag assignment\n");
+		return -1;
+	}
+
+	if (idx<0) {
+		idx = get_nr_branches() + idx;
+	}
+
+	if (idx<0 || idx>=get_nr_branches()) {
+		LM_DBG("inexisting branch flag assignment [%d/%d]\n",
+			get_nr_branches(), idx);
+		return -1;
+	}
+
+	if (val->ri==0)
+		resetbflag (msg, idx, param->pvn.u.isname.name.n);
+	else
+		setbflag( msg, idx, param->pvn.u.isname.name.n);
+
+	return 0;
+}
+
+
+int branch_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	int idx;
+	int idxf;
+
+	if (param==NULL||res==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	/* get the index */
+	if (pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
+	if(idxf==PV_IDX_ALL) {
+		LM_ERR("SCRIPT BUG - * not allowed in branch flag reading\n");
+		return -1;
+	}
+
+	if (idx<0) {
+		idx = get_nr_branches() + idx;
+	}
+
+	if (idx<0 || idx>=get_nr_branches()) {
+		LM_DBG("inexisting branch flag reading [%d/%d]\n",
+			get_nr_branches(), idx);
+		return -1;
+	}
+
+	if ( isbflagset( msg, idx, param->pvn.u.isname.name.n)==1 ) {
+		res->ri = 1;
+		res->rs.s = "true";
+		res->rs.len = 4;
+	} else {
+		res->ri = 0;
+		res->rs.s = "false";
+		res->rs.len = 5;
+	}
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+
+/********** generic helper functions ***************/
+
 int pv_is_obsolete(pv_spec_p sp, int param)
 {
 	char *old, *new;
@@ -3689,6 +3877,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"branch", (sizeof("branch")-1)}, /* */
 		PVT_BRANCH, pv_get_branch_fields, pv_set_branch_fields,
 		pv_parse_branch_name, pv_parse_index, 0, 0},
+	{{"branch.flag", (sizeof("branch.flag")-1)}, /* */
+		PVT_BRANCH_FLAG, branch_flag_get, branch_flag_set,
+		branch_flag_parse_name, pv_parse_index, 0, 0},
 	{{"ci", (sizeof("ci")-1)}, /* */
 		PVT_CALLID, pv_get_callid, 0,
 		0, 0, 0, 0},
@@ -3785,6 +3976,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"mf", (sizeof("mf")-1)}, /* */
 		PVT_FLAGS, pv_get_flags, 0,
 		0, 0, 0, 0},
+	{{"msg.flag", (sizeof("msg.flag")-1)}, /* */
+		PVT_MSG_FLAG, msg_flag_get, msg_flag_set,
+		msg_flag_parse_name, 0, 0, 0},
 	{{"mi", (sizeof("mi")-1)}, /* */
 		PVT_MSGID, pv_get_msgid, 0,
 		0, 0, 0, 0},
