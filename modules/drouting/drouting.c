@@ -279,6 +279,9 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 
 static int dr_disable(struct sip_msg *req, struct head_db *current_partition);
 
+static int dr_match(struct sip_msg* msg, int *grp, long flags, str *number,
+		pv_spec_t* rule_att, struct head_db *part);
+
 
 mi_response_t *dr_reload_cmd(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -423,6 +426,16 @@ static cmd_export_t cmds[] = {
 		  {0 , 0, 0}
 		},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE
+	},
+	{"dr_match", (cmd_function)dr_match,
+		{ {CMD_PARAM_INT, NULL, NULL},                    // dr group
+		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_flags, NULL}, // flags
+		  {CMD_PARAM_STR, NULL, NULL},                    // str to check
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_rule_attr, NULL}, // rule attr
+		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
+		  {0 , 0, 0}
+		},
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE
 	},
 	{"load_dr", (cmd_function)load_dr,
 		{ {0 , 0, 0}
@@ -4084,6 +4097,63 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 	return _is_dr_gw(msg, part, (int)flags, type?*type:-1, &ip, port);
 }
 
+
+static int dr_match(struct sip_msg* msg, int *grp, long flags, str *number,
+		pv_spec_t* rule_att, struct head_db *part)
+{
+	rt_info_t* rule;
+	unsigned int matched_len;
+	pv_value_t val;
+	int_str a_val;
+
+	if (part==NULL || part->rdata == 0)
+		return -1;
+
+	lock_start_read( part->ref_lock );
+
+	rule = find_rule_by_prefix_unsafe(part->rdata->pt,
+			&part->rdata->noprefix, *number, *grp, &matched_len);
+	if (rule == NULL){
+		lock_stop_read( part->ref_lock );
+		goto failure;
+	}
+
+	/* some rule matched */
+
+	/* was it a full prefix matching ? */
+	if (flags & DR_PARAM_STRICT_LEN) {
+		if (matched_len!=number->len)
+			goto failure;
+	}
+
+	if (rule_att) {
+		val.flags = PV_VAL_STR;
+		val.rs = !rule->attrs.s ? attrs_empty : rule->attrs;
+		if (pv_set_value(msg, rule_att, 0, &val) != 0) {
+			LM_ERR("failed to set value for rule attrs pvar\n");
+			goto failure;
+		}
+	}
+
+	/* add RULE prefix avp */
+	if (part->rule_prefix_avp!=-1) {
+		a_val.s.s = number->s ;
+		a_val.s.len = matched_len;
+		LM_DBG("setting RULE prefix [%.*s] \n",a_val.s.len,a_val.s.s);
+		if (add_avp( AVP_VAL_STR, part->rule_prefix_avp, a_val)!=0 ) {
+			LM_ERR("failed to insert rule prefix avp\n");
+			goto failure;
+		}
+	}
+
+	lock_stop_read( part->ref_lock );
+
+	return 1;
+
+failure:
+	lock_stop_read( part->ref_lock );
+	return -1;
+}
 
 
 

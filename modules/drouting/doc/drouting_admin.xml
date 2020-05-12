@@ -2034,6 +2034,83 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 </programlisting>
 		</example>
 	</section>
+
+
+	<section id="func_dr_match" xreflabel="dr_match()">
+		<title>
+		<function moreinfo="none">dr_match([groupID], [flags], number, [rule_attrs_pvar], [partition])</function>
+		</title>
+		<para>
+		The function tries to match/check the given number against the
+		rules from the database.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+		BRANCH_ROUTE, ONREPLY_ROUTE and LOCAL_ROUTE.
+		</para>
+		<para>
+		If you set <varname>use_partitions</varname> to 1 the 
+		<emphasis role='bold'>partition</emphasis> last parameter becomes 
+		mandatory.
+		</para>
+		<para>
+		The parameters are:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>groupID</emphasis> (int) - number to 
+			specify the dr group (set of rules) to perform the check against 
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>flags</emphasis> (string, optional) - a list
+			of letter-like flags for controlling the checking/matching behavior.
+			Possible flags are:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>L</emphasis> - Do strict length matching
+				over the prefix - actually DR engine will do full number 
+				matching and not prefix matching anymore.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>rule_attrs_pvar</emphasis> (var, optional) - a
+			writable variable which will be  populated with the attributes of the
+			matched dynamic routing rule.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>partition</emphasis> (string, optional) - the name
+			of the DR partition to be used. This parameter is to be defined
+			ONLY if the "use_partition" module parameter is turned on.
+			</para>
+		</listitem>
+
+		</itemizedlist>
+
+		<example>
+		<title><function>dr_match</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( dr_match( 1, "L" , $fU, ,"dids") )
+	xlog("Full From Username $fU found in group 1 partition DIDS\n");
+...
+if ( dr_match( 1, , $var(did) ) )
+	xlog("DID $var(did) matches rules in group 1\n");
+...
+</programlisting>
+		</example>
+	</section>
+
+
 </section>
 
 
