@@ -21,16 +21,16 @@
 #include <ctype.h>
 
 #include "../../dprint.h"
-#include "config.h"
-#include "save_flags.h"
+#include "common.h"
 
 
 void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx)
 {
 	static str_list mp;
-	int st;
+	int st, max_ct;
 
 	sctx->cmatch.mode = CT_MATCH_NONE;
+	sctx->max_contacts = max_contacts;
 
 	for( st=0 ; st< flags_s->len ; st++ ) {
 		switch (flags_s->s[st]) {
@@ -41,12 +41,14 @@ void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx)
 			case 'v': sctx->flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
 			case 'f': sctx->flags |= REG_SAVE_FORCE_REG_FLAG; break;
 			case 'c':
-				sctx->max_contacts = 0;
+				max_ct = 0;
 				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-					sctx->max_contacts = sctx->max_contacts*10 +
-						flags_s->s[st+1] - '0';
+					max_ct = max_ct * 10 + flags_s->s[st+1] - '0';
 					st++;
 				}
+
+				if (max_ct)
+					sctx->max_contacts = max_ct;
 				break;
 			case 'e':
 				sctx->min_expires = 0;

@@ -619,9 +619,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 
 	rerrno = R_FINE;
 	memset( &sctx, 0 , sizeof(sctx));
-	sctx.max_contacts = -1;
 
-	sctx.flags = 0;
 	sctx.min_expires = min_expires;
 	sctx.max_expires = max_expires;
 	if ( flags_s )
@@ -629,10 +627,6 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 
 	if (route_type == ONREPLY_ROUTE)
 		sctx.flags |= REG_SAVE_NOREPLY_FLAG;
-
-	/* if no max_contact per AOR is defined, use the global one */
-	if (sctx.max_contacts == -1)
-		sctx.max_contacts = max_contacts;
 
 	if (parse_reg_headers(_m) < 0)
 		goto error;
