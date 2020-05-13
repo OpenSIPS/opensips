@@ -267,10 +267,11 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (is_script_func_used("mid_registrar_save",5) && !ul.tags_in_use()) {
+	if (is_script_func_used("mid_registrar_save", 5) && !ul.tags_in_use()) {
 		LM_ERR("as per your current usrloc module configuration, "
 				"mid_registrar_save() ownership tags "
 				"will be completely ignored!\n");
+		LM_ERR("Hint: switch the usrloc 'pinging_mode' to 'ownership'\n");
 		return -1;
 	}
 
