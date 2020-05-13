@@ -339,6 +339,7 @@ static int mod_init(void)
 	if (is_script_func_used("save", 4) && !ul.tags_in_use()) {
 		LM_ERR("as per your current usrloc module configuration, "
 				"save() ownership tags will be completely ignored!\n");
+		LM_ERR("Hint: switch the usrloc 'pinging_mode' to 'ownership'\n");
 		return -1;
 	}
 
