@@ -245,8 +245,6 @@ extern int cfg_parse_only_routes;
 
 
 /* keywords */
-%token FORWARD
-%token SEND
 %token DROP
 %token ASSERT
 %token EXIT
@@ -262,25 +260,6 @@ extern int cfg_parse_only_routes;
 %token ROUTE_STARTUP
 %token ROUTE_TIMER
 %token ROUTE_EVENT
-%token SET_HOST
-%token SET_HOSTPORT
-%token PREFIX
-%token STRIP
-%token STRIP_TAIL
-%token APPEND_BRANCH
-%token REMOVE_BRANCH
-%token PV_PRINTF
-%token SET_USER
-%token SET_USERPASS
-%token SET_PORT
-%token SET_URI
-%token REVERT_URI
-%token SET_DSTURI
-%token RESET_DSTURI
-%token ISDSTURISET
-%token FORCE_RPORT
-%token FORCE_LOCAL_RPORT
-%token FORCE_TCP_ALIAS
 %token IF
 %token ELSE
 %token SWITCH
@@ -290,32 +269,7 @@ extern int cfg_parse_only_routes;
 %token WHILE
 %token FOR
 %token IN
-%token SET_ADV_ADDRESS
-%token SET_ADV_PORT
-%token FORCE_SEND_SOCKET
-%token SERIALIZE_BRANCHES
-%token NEXT_BRANCHES
-%token USE_BLACKLIST
-%token UNUSE_BLACKLIST
-%token SETFLAG
-%token RESETFLAG
-%token ISFLAGSET
-%token SETBFLAG
-%token RESETBFLAG
-%token ISBFLAGSET
-%token METHOD
-%token PROTO
-%token AF
-%token IS_MYSELF
-%token MSGLEN
 %token NULLV
-%token CACHE_STORE
-%token CACHE_FETCH
-%token CACHE_COUNTER_FETCH
-%token CACHE_REMOVE
-%token CACHE_ADD
-%token CACHE_SUB
-%token CACHE_RAW_QUERY
 %token XDBG
 %token XLOG
 %token XLOG_BUF_SIZE
@@ -323,11 +277,6 @@ extern int cfg_parse_only_routes;
 %token XLOG_PRINT_LEVEL
 %token XLOG_LEVEL
 %token PV_PRINT_BUF_SIZE
-%token RAISE_EVENT
-%token SUBSCRIBE_EVENT
-%token CONSTRUCT_URI
-%token GET_TIMESTAMP
-%token SCRIPT_TRACE
 
 /* config vars. */
 %token DEBUG_MODE
