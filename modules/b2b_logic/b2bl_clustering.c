@@ -428,26 +428,19 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 	}
 
 	bin_pop_int(storage, &tuple_repl_type);
-
-	switch (tuple_repl_type) {
-	case REPL_TUPLE_NEW:
-		LM_DBG("Tuple [%.*s] already exists\n",
-			b2bl_key->len, b2bl_key->s);
-		bin_skip_str(storage, 7);
-	case REPL_TUPLE_UPDATE:
-		bin_pop_int(storage, &tuple->scenario_state);
-		bin_pop_int(storage, &tuple->next_scenario_state);
-		bin_pop_int(storage, &lifetime);
-
-		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
-
-		if (unpack_context_vals(tuple, storage) < 0) {
-			LM_ERR("Failed to unpack context values\n");
-			goto error;
-		}
-		break;
-	default:
+	if (tuple_repl_type != REPL_TUPLE_UPDATE) {
 		LM_ERR("Bad tuple replication type: %d\n", tuple_repl_type);
+		goto error;
+	}
+
+	bin_pop_int(storage, &tuple->scenario_state);
+	bin_pop_int(storage, &tuple->next_scenario_state);
+	bin_pop_int(storage, &lifetime);
+
+	tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
+
+	if (unpack_context_vals(tuple, storage) < 0) {
+		LM_ERR("Failed to unpack context values\n");
 		goto error;
 	}
 
@@ -567,10 +560,6 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 	bin_pop_int(storage, &tuple_repl_type);
 
 	switch (tuple_repl_type) {
-	case REPL_TUPLE_NEW:
-		LM_DBG("Tuple [%.*s] already exists\n",
-			b2bl_key->len, b2bl_key->s);
-		bin_skip_str(storage, 7);
 	case REPL_TUPLE_UPDATE:
 		bin_pop_int(storage, &tuple->scenario_state);
 		bin_pop_int(storage, &tuple->next_scenario_state);
