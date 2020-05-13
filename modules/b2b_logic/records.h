@@ -185,4 +185,6 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src,
 
 void b2bl_db_delete(b2bl_tuple_t* tuple);
 
+int store_ctx_value(struct b2b_ctx_val **vals, str *name, str *new_val);
+
 #endif

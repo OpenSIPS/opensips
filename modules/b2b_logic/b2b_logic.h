@@ -177,7 +177,6 @@ b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list);
 b2b_scenario_t* get_scenario_id(str* sid);
 void b2bl_db_init(void);
 
-
 static inline struct b2b_scen_fl* prepare_b2b_scen_fl_struct(void) {
 	struct b2b_scen_fl *scf;
 

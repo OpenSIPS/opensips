@@ -42,8 +42,41 @@
 
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo);
 
-static void pack_tuple(b2bl_tuple_t* tuple, str *b2bl_key, bin_packet_t *storage,
-	int repl_new)
+static void pack_context_vals(b2bl_tuple_t* tuple, bin_packet_t *storage)
+{
+	int no_vals;
+	struct b2b_ctx_val *v;
+
+	for (v = tuple->vals, no_vals = 0; v; v = v->next, no_vals++) ;
+	bin_push_int(storage, no_vals);
+
+	for (v = tuple->vals; v; v = v->next) {
+		bin_push_str(storage, &v->name);
+		bin_push_str(storage, &v->val);
+	}
+}
+
+static int unpack_context_vals(b2bl_tuple_t* tuple, bin_packet_t *storage)
+{
+	int no_vals;
+	int i;
+	str name, val;
+
+	bin_pop_int(storage, &no_vals);
+	for (i = 0; i < no_vals; i++) {
+		bin_pop_str(storage, &name);
+		bin_pop_str(storage, &val);
+
+		if (store_ctx_value(&tuple->vals, &name, &val) < 0) {
+			LM_ERR("Failed to store context value [%.*s]\n", name.len,name.s);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static void pack_tuple(b2bl_tuple_t* tuple, bin_packet_t *storage, int repl_new)
 {
 	if (repl_new) {
 		bin_push_int(storage, REPL_TUPLE_NEW);
@@ -69,6 +102,8 @@ static void pack_tuple(b2bl_tuple_t* tuple, str *b2bl_key, bin_packet_t *storage
 
 	bin_push_int(storage, tuple->lifetime > 0 ?
 		(tuple->lifetime - get_ticks()) : 0);
+
+	pack_context_vals(tuple, storage);
 
 	if (tuple->repl_flag != TUPLE_REPL_SENT)
 		tuple->repl_flag = TUPLE_REPL_SENT;
@@ -122,8 +157,6 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 
 	if (!(backend & B2BCB_BACKEND_CLUSTER))
 		return;
-	if (event_type == B2B_EVENT_ACK)
-		return;
 
 	LM_DBG("Triggerd event [%d] for entity [%.*s]\n",
 		event_type, entity_key->len, entity_key->s);
@@ -148,8 +181,17 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 				lock_release(&b2bl_htable[hash_index].lock);
 			return;
 		}
-		pack_tuple(tuple, b2bl_key, storage, tuple_repl_new);
+		pack_tuple(tuple, storage, tuple_repl_new);
 		pack_entity(tuple, etype, entity_key, event_type, storage);
+		break;
+	case B2B_EVENT_ACK:
+		if (!tuple) {
+			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
+			if (b2bl_htable[hash_index].locked_by != process_no)
+				lock_release(&b2bl_htable[hash_index].lock);
+			return;
+		}
+		pack_tuple(tuple, storage, tuple_repl_new);
 		break;
 	case B2B_EVENT_DELETE:
 		if (!tuple) {
@@ -157,7 +199,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 				b2bl_key->len, b2bl_key->s);
 			bin_push_int(storage, REPL_TUPLE_NO_INFO);
 		} else
-			pack_tuple(tuple, b2bl_key, storage, 0);
+			pack_tuple(tuple, storage, 0);
 		break;
 	default:
 		LM_ERR("Bad entity callback event type!\n");
@@ -237,6 +279,11 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 
 		bin_pop_int(storage, &lifetime);
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
+
+		if (unpack_context_vals(tuple, storage) < 0) {
+			LM_ERR("Failed to unpack context values\n");
+			goto error;
+		}
 		break;
 	case REPL_TUPLE_UPDATE:
 		if (!old_tuple) {
@@ -250,6 +297,11 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 
 		bin_pop_int(storage, &lifetime);
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
+
+		if (unpack_context_vals(tuple, storage) < 0) {
+			LM_ERR("Failed to unpack context values\n");
+			goto error;
+		}
 		break;
 	default:
 		LM_ERR("Bad tuple replication type: %d\n", tuple_repl_type);
@@ -388,6 +440,11 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 		bin_pop_int(storage, &lifetime);
 
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
+
+		if (unpack_context_vals(tuple, storage) < 0) {
+			LM_ERR("Failed to unpack context values\n");
+			goto error;
+		}
 		break;
 	default:
 		LM_ERR("Bad tuple replication type: %d\n", tuple_repl_type);
@@ -434,6 +491,50 @@ error:
 		entity_key->len, entity_key->s);
 }
 
+static void receive_entity_ack(enum b2b_entity_type entity_type,
+	str *entity_key, str *b2bl_key, bin_packet_t *storage)
+{
+	unsigned int hash_index, local_index;
+	b2bl_tuple_t* tuple = NULL;
+	int tuple_repl_type;
+	int lifetime;
+
+	LM_DBG("Received ACK event for entity [%.*s]\n",
+		entity_key->len, entity_key->s);
+
+	if (b2bl_parse_key(b2bl_key, &hash_index, &local_index) < 0) {
+		LM_ERR("Bad tuple key: %.*s\n", b2bl_key->len, b2bl_key->s);
+		return;
+	}
+
+	lock_get(&b2bl_htable[hash_index].lock);
+
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if (!tuple) {
+		LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
+		lock_release(&b2bl_htable[hash_index].lock);
+		return;
+	}
+
+	bin_pop_int(storage, &tuple_repl_type);
+	if (tuple_repl_type != REPL_TUPLE_UPDATE) {
+		LM_ERR("Bad tuple replication type: %d\n", tuple_repl_type);
+		lock_release(&b2bl_htable[hash_index].lock);
+		return;
+	}
+
+	bin_pop_int(storage, &tuple->scenario_state);
+	bin_pop_int(storage, &tuple->next_scenario_state);
+	bin_pop_int(storage, &lifetime);
+
+	tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
+
+	if (unpack_context_vals(tuple, storage) < 0)
+		LM_ERR("Failed to unpack context values\n");
+
+	lock_release(&b2bl_htable[hash_index].lock);
+}
+
 static void receive_entity_delete(enum b2b_entity_type entity_type,
 	str *entity_key, str *b2bl_key, bin_packet_t *storage)
 {
@@ -476,12 +577,19 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 		bin_pop_int(storage, &lifetime);
 
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
+
+		if (unpack_context_vals(tuple, storage) < 0) {
+			LM_ERR("Failed to unpack context values\n");
+			lock_release(&b2bl_htable[hash_index].lock);
+			return;
+		}
 		break;
 	case REPL_TUPLE_NO_INFO:
 		/* tuple already deleted on sender, no info to pop */
 		break;
 	default:
 		LM_ERR("Bad tuple replication type: %d\n", tuple_repl_type);
+		lock_release(&b2bl_htable[hash_index].lock);
 		return;
 	}
 
@@ -516,7 +624,8 @@ void entity_event_received(enum b2b_entity_type etype, str *entity_key,
 	case B2B_EVENT_DELETE:
 		receive_entity_delete(etype, entity_key, b2bl_key, storage);
 		break;
-	case B2B_EVENT_ACK:  /* nothing to do for ACKs */
+	case B2B_EVENT_ACK:
+		receive_entity_ack(etype, entity_key, b2bl_key, storage);
 		break;
 	default:
 		LM_ERR("Bad entity callback event type!\n");
