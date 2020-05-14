@@ -155,9 +155,6 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 	b2bl_tuple_t* tuple;
 	int tuple_repl_new = 0;
 
-	if (!(backend & B2BCB_BACKEND_CLUSTER))
-		return;
-
 	LM_DBG("Triggerd event [%d] for entity [%.*s]\n",
 		event_type, entity_key->len, entity_key->s);
 
@@ -170,6 +167,26 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 		lock_get(&b2bl_htable[hash_index].lock);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+
+	if ((backend & B2BCB_BACKEND_DB) == B2BCB_BACKEND_DB) {
+		/* if the backend is only DB, use the entity storage to only persist
+		 * the context values */
+
+		if (tuple) {
+			bin_push_int(storage, STORAGE_ONLY_VALS);
+
+			pack_context_vals(tuple, storage);
+		} else if (event_type != B2B_EVENT_DELETE) {
+			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
+			if (b2bl_htable[hash_index].locked_by != process_no)
+				lock_release(&b2bl_htable[hash_index].lock);
+			return;
+		}
+
+		if (b2bl_htable[hash_index].locked_by != process_no)
+			lock_release(&b2bl_htable[hash_index].lock);
+		return;
+	}
 
 	switch (event_type) {
 	case B2B_EVENT_CREATE:
@@ -600,8 +617,51 @@ void entity_event_received(enum b2b_entity_type etype, str *entity_key,
 	str *b2bl_key, enum b2b_event_type event_type, bin_packet_t *storage,
 	int backend)
 {
-	if (storage == NULL || backend != B2BCB_BACKEND_CLUSTER)
+	int tuple_storage_type;
+	unsigned int hash_index, local_index;
+	b2bl_tuple_t* tuple;
+
+	if (storage == NULL)
 		return;
+
+	if (backend == B2BCB_BACKEND_DB) {
+		if (b2bl_parse_key(b2bl_key, &hash_index, &local_index) < 0) {
+			LM_ERR("Bad tuple key: %.*s\n", b2bl_key->len, b2bl_key->s);
+			return;
+		}
+
+		lock_get(&b2bl_htable[hash_index].lock);
+
+		tuple = b2bl_search_tuple_safe(hash_index, local_index);
+		if (!tuple) {
+			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
+			lock_release(&b2bl_htable[hash_index].lock);
+		}
+
+		bin_pop_int(storage, &tuple_storage_type);
+
+		switch (tuple_storage_type) {
+		case STORAGE_ONLY_VALS:
+			/* there is no replication info in the storage */
+			if (unpack_context_vals(tuple, storage) < 0)
+				LM_ERR("Failed to unpack context values\n");
+			break;
+		case REPL_TUPLE_NEW:
+			bin_skip_str(storage, 8);
+		case REPL_TUPLE_UPDATE:
+			bin_skip_int(storage, 3);
+			if (unpack_context_vals(tuple, storage) < 0)
+				LM_ERR("Failed to unpack context values\n");
+			break;
+		case REPL_TUPLE_NO_INFO:
+			break;
+		default:
+			LM_ERR("Bad tuple replication type: %d\n", tuple_storage_type);
+		}
+
+		lock_release(&b2bl_htable[hash_index].lock);
+		return;
+	}
 
 	switch (event_type) {
 	case B2B_EVENT_CREATE:

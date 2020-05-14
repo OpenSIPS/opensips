@@ -39,6 +39,7 @@
 #define REPL_TUPLE_NO_INFO 0
 #define REPL_TUPLE_NEW 1
 #define REPL_TUPLE_UPDATE 2
+#define STORAGE_ONLY_VALS 3
 
 #define TUPLE_NO_REPL 0
 #define TUPLE_REPL_SENT 1
