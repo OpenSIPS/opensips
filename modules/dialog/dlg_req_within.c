@@ -785,7 +785,7 @@ static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* p
 		return dlg_async_response(p, rpl, 400);
 	}
 
-	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, p->leg), p->leg, &ct_hdr, &extra_headers)) {
+	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, p->leg), p->leg, &ct_hdr, NULL, &extra_headers)) {
 		LM_ERR("No more pkg for extra headers \n");
 		goto error;
 	}
@@ -809,7 +809,7 @@ error:
 }
 
 static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
-		str *method, str *body, str *hdrs, int challenge, struct mi_handler *async_hdl)
+		str *method, str *body, str *ct, int challenge, struct mi_handler *async_hdl)
 {
 	struct dlg_sequential_param *param;
 	int dleg = other_leg(dlg, sleg);
@@ -830,7 +830,7 @@ static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
 	param->method.s = (char *)(param + 1);
 	memcpy(param->method.s, method->s, method->len);
 
-	if (!dlg_get_leg_hdrs(dlg, sleg, dleg, hdrs, &extra_headers)) {
+	if (!dlg_get_leg_hdrs(dlg, sleg, dleg, ct, NULL, &extra_headers)) {
 		LM_ERR("No more pkg for extra headers \n");
 		shm_free(param);
 		return init_mi_error(500, MI_SSTR("Internal Error"));
@@ -960,7 +960,7 @@ mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
 {
 	static str ct_hdr = str_init("application/sdp");
 	struct dlg_cell *dlg;
-	str *extra_headers = &ct_hdr;
+	str *content = &ct_hdr;
 	str method;
 	str callid;
 	str body;
@@ -1005,12 +1005,12 @@ mi_response_t *mi_send_sequential_dlg(const mi_params_t *params,
 	else if (body_mode == 2)
 		body = dlg->legs[other_leg(dlg, leg)].out_sdp;
 	else if (body_mode == 3)
-		extra_headers = &ct;
+		content = &ct;
 	else /* if mode = 0 */
-		extra_headers = NULL;
+		content = NULL;
 
 	return mi_send_sequential(dlg, leg, &method,
-			(body_mode == 0?NULL:&body), extra_headers, challenge, async_hdl);
+			(body_mode == 0?NULL:&body), content, challenge, async_hdl);
 }
 
 struct dlg_indialog_req_param {
@@ -1052,12 +1052,12 @@ static void dlg_indialog_reply(struct cell* t, int type, struct tmcb_params* ps)
 }
 
 int send_indialog_request(struct dlg_cell *dlg, str *method,
-		int dstleg, str *body, str *ct, indialog_reply_f func, void *param)
+		int dstleg, str *body, str *ct, str *hdrs, indialog_reply_f func, void *param)
 {
 	str extra_headers;
 	struct dlg_indialog_req_param *p;
 
-	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, dstleg), dstleg, ct, &extra_headers)) {
+	if (!dlg_get_leg_hdrs(dlg, other_leg(dlg, dstleg), dstleg, ct, hdrs, &extra_headers)) {
 		LM_ERR("could not build extra headers!\n");
 		return -1;
 	}

@@ -236,7 +236,7 @@ int media_session_reinvite(struct media_session_leg *msl, int leg, str *pbody)
 	else
 		body = dlg_get_out_sdp(msl->ms->dlg, leg);
 	return media_dlg.send_indialog_request(msl->ms->dlg,
-			&inv, leg, &body, &content_type_sdp, NULL, NULL);
+			&inv, leg, &body, &content_type_sdp, NULL, NULL, NULL);
 }
 
 int media_session_req(struct media_session_leg *msl, const char *method, str *body)

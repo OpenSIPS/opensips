@@ -124,7 +124,7 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 #define CONTENT_TYPE_STR_END_LEN (sizeof(CONTENT_TYPE_STR_END)-1)
 
 static inline int dlg_get_leg_hdrs(struct dlg_cell *dlg,
-		int sleg, int dleg, str *ct, str *out)
+		int sleg, int dleg, str *ct, str *hdrs, str *out)
 {
 	char *p;
 	if (dlg->legs[dleg].adv_contact.len)
@@ -135,6 +135,8 @@ static inline int dlg_get_leg_hdrs(struct dlg_cell *dlg,
 			CONTACT_STR_END_LEN;
 	if (ct && ct->len)
 		out->len += CONTENT_TYPE_STR_START_LEN + ct->len + CONTENT_TYPE_STR_END_LEN;
+	if (hdrs && hdrs->len)
+		out->len += hdrs->len;
 	out->s = pkg_malloc(out->len);
 	if (!out->s) {
 		LM_ERR("No more pkg for extra headers \n");
@@ -164,6 +166,11 @@ static inline int dlg_get_leg_hdrs(struct dlg_cell *dlg,
 		p += ct->len;
 		memcpy(p,CONTENT_TYPE_STR_END, CONTENT_TYPE_STR_END_LEN);
 		p += CONTENT_TYPE_STR_END_LEN;
+	}
+
+	if (hdrs && hdrs->len) {
+		memcpy(p, hdrs->s, hdrs->len);
+		p += hdrs->len;
 	}
 
 	return 1;
