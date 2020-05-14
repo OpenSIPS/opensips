@@ -95,13 +95,10 @@ static int call_event_raise(event_id_t event, evi_params_p params, ...)
 		p = va_arg(vl, str *);
 		if (!p)
 			break;
-		LM_ERR("new arg %p\n!", p);
-		LM_ERR("setting param %d %.*s\n", p->len, p->len, p->s);
 		if (evi_param_set_str(param, p) < 0) {
 			LM_ERR("could not set param!\n");
 			goto end;
 		}
-		LM_ERR("sett param %d %.*s\n", p->len, p->len, p->s);
 		param = param->next;
 	}
 	ret = 0;
