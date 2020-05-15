@@ -299,10 +299,14 @@ static void call_blind_transfer_reply(struct cell *t, int type, struct tmcb_para
 		return;
 
 	/* take the status from the message itself */
-	status.s = ps->rpl->first_line.u.reply.status.s;
-	status.len = ps->rpl->first_line.u.reply.reason.s +
-		ps->rpl->first_line.u.reply.reason.len -
-		ps->rpl->first_line.u.reply.status.s;
+	if (ps->rpl != FAKED_REPLY) {
+		status.s = ps->rpl->first_line.u.reply.status.s;
+		status.len = ps->rpl->first_line.u.reply.reason.s +
+			ps->rpl->first_line.u.reply.reason.len -
+			ps->rpl->first_line.u.reply.status.s;
+	} else {
+		init_str(&status, "408 Request Timeout");
+	}
 	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &old_leg, 0) < 0)
 		init_str(&old_leg, "unknown");
 	if (get_callid(ps->req, &new_callid) < 0)
