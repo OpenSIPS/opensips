@@ -1012,7 +1012,7 @@ static void tmcb_func( struct cell* t, int type, struct tmcb_params *ps )
 		ACC_PUT_TM_CTX(t, ctx);
 	}
 
-	if (type&TMCB_RESPONSE_OUT) {
+	if (type&(TMCB_RESPONSE_OUT|TMCB_LOCAL_COMPLETED)) {
 		acc_onreply( t, ps->req, ps->rpl, ps->code, ctx);
 	} else if (type&TMCB_ON_FAILURE) {
 		on_missed( t, ps->req, ps->rpl, ps->code, ctx);
@@ -1350,7 +1350,7 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 		/* install additional handlers */
 		tmcb_types =
 			/* report on completed transactions */
-			TMCB_RESPONSE_IN|TMCB_RESPONSE_OUT
+			TMCB_RESPONSE_IN|TMCB_RESPONSE_OUT|TMCB_LOCAL_COMPLETED
 			/* report on missed calls */
 			|TMCB_ON_FAILURE;
 
