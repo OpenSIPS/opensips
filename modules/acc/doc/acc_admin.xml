@@ -1154,6 +1154,71 @@ acc_evi_request("403 Destination not allowed");
 </programlisting>
 		</example>
 	</section>
+
+	<section id="func_acc_load_ctx_from_dlg" xreflabel="acc_load_ctx_from_dlg()">
+		<title>
+			<function moreinfo="none">acc_load_ctx_from_dlg()</function>
+		</title>
+		<para>
+			The function loads and exposes the accounting context of the
+			currently in-use dialog. By dialog context, it means, from script
+			level, you will read/write the accounting variables from the
+			other dialog. The current accounting context is
+			stashed until an unload operation is done.
+		</para>
+		<para>
+			Note that this functions makes sense only when used together with
+			the <emphasis>load_dialog_ctx()</emphasis> function from the
+			dialog module. After loading the context of another dialog, by
+			using the <emphasis>acc_load_ctx_from_dlg()</emphasis> function,
+			you can also access the accounting context of the loaded dialog.
+		</para>
+		<para>
+		NOTE: you cannot perform a new load until doing an unload - no nested
+		loadings are allowed.
+		</para>
+		<para>
+			This function can be used from any type of route.
+		</para>
+		<example>
+		<title>acc_load_ctx_from_dlg usage</title>
+<programlisting format="linespecific">
+...
+if ( load_dialog_ctx("$var(callid)") ) {
+	# we now have the dialog context of the new dialog
+	acc_load_ctx_from_dlg();
+	# we have now also the accouting context of that dialog
+	xlog("The accounting caller of call '$var(callid)' "
+		"is '$acc_extra(caller)'\n");
+	acc_unload_ctx_from_dlg();
+	unload_dialog_ctx();
+}
+
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_acc_unload_ctx_from_dlg" xreflabel="acc_unload_ctx_from_dlg()">
+		<title>
+		<function moreinfo="none">acc_unload_ctx_from_dlg()</function>
+		</title>
+		<para>
+		The function off-loads a previosuly loaded accounting context, exposing
+		whatever accounting context was present before doing the load.
+		</para>
+		<para>
+		NOTE: you MUST perform from script an explicit unload for each load
+		you did!
+		</para>
+		<para>
+		This function can be used from any type of route.
+		</para>
+		<para>
+		For usage example, see the <xref linkend="func_acc_load_ctx_from_dlg"/>.
+		</para>
+	</section>
+
 	</section>
 
 

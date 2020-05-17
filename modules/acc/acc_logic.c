@@ -1431,3 +1431,54 @@ int w_new_leg(struct sip_msg* msg)
 
 }
 
+
+static acc_ctx_t *stored_local_ctx = NULL;
+static unsigned int stores_local_ctx = 0;
+
+int w_load_ctx_from_dlg(struct sip_msg* msg)
+{
+	acc_ctx_t* ctx;
+	struct dlg_cell *dlg;
+
+	/* no nested calls */
+	if (stores_local_ctx)
+		return -1;
+
+	dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;
+
+	/* any dialog ? */
+	if (!dlg)
+		return -1;
+
+	/* get the acc ctx from dialog */
+	ctx = dlg_api.dlg_ctx_get_ptr(dlg, acc_dlg_ctx_idx);
+	if (!ctx)
+		return -1;
+
+	/* no need for extra ref as we move the ctx pointer */
+	stored_local_ctx = ACC_GET_CTX();
+	stores_local_ctx = 1;
+
+	/* we create one more copy of the pointer, do ref */
+	acc_ref_ex(ctx, 1);
+	ACC_PUT_CTX(ctx);
+
+	return 1;
+}
+
+int w_unload_ctx_from_dlg(struct sip_msg* msg)
+{
+	acc_ctx_t* ctx;
+
+	/* something loaded/stored? */
+	if (!stores_local_ctx)
+		return -1;
+
+	ctx = ACC_GET_CTX();
+	acc_unref_ex(ctx, 1);
+
+	ACC_PUT_CTX(stored_local_ctx);
+	stores_local_ctx = 0;
+
+	return 1;
+}

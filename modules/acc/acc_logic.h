@@ -196,6 +196,10 @@ int w_drop_acc(struct sip_msg* msg, unsigned long long *type,
 
 int w_new_leg(struct sip_msg* msg);
 
+int w_load_ctx_from_dlg(struct sip_msg* msg);
+
+int w_unload_ctx_from_dlg(struct sip_msg* msg);
+
 /*
  * helper function to retrieve acc context from processing context or
  * transaction context

@@ -181,15 +181,26 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"do_accounting", (cmd_function)w_do_acc, {
 		{CMD_PARAM_STR, do_acc_fixup_type, do_acc_fixup_free_ival},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, do_acc_fixup_flags, do_acc_fixup_free_ival},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,
+			do_acc_fixup_flags, do_acc_fixup_free_ival},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"drop_accounting", (cmd_function)w_drop_acc, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, do_acc_fixup_type, do_acc_fixup_free_ival},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, do_acc_fixup_flags, do_acc_fixup_free_ival}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,
+			do_acc_fixup_type, do_acc_fixup_free_ival},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,
+			do_acc_fixup_flags, do_acc_fixup_free_ival},
+		{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"acc_new_leg", (cmd_function)w_new_leg, {{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+	{"acc_load_ctx_from_dlg", (cmd_function)w_load_ctx_from_dlg,
+		{{0,0,0}},
+		ALL_ROUTES},
+	{"acc_unload_ctx_from_dlg", (cmd_function)w_unload_ctx_from_dlg,
+		{{0,0,0}},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
