@@ -71,6 +71,8 @@ Acc Module
               1.8.5. acc_aaa_request(comment)
               1.8.6. acc_evi_request(comment)
               1.8.7. acc_new_leg()
+              1.8.8. acc_load_ctx_from_dlg()
+              1.8.9. acc_unload_ctx_from_dlg()
 
         1.9. Exported Events
 
@@ -124,6 +126,7 @@ Acc Module
    1.25. acc_aaa_request usage
    1.26. acc_evi_request usage
    1.27. acc_new_leg usage
+   1.28. acc_load_ctx_from_dlg usage
 
 Chapter 1. Admin Guide
 
@@ -867,6 +870,52 @@ acc_evi_request("403 Destination not allowed");
         acc_new_leg();
 ...
 
+1.8.8.  acc_load_ctx_from_dlg()
+
+   The function loads and exposes the accounting context of the
+   currently in-use dialog. By dialog context, it means, from
+   script level, you will read/write the accounting variables from
+   the other dialog. The current accounting context is stashed
+   until an unload operation is done.
+
+   Note that this functions makes sense only when used together
+   with the load_dialog_ctx() function from the dialog module.
+   After loading the context of another dialog, by using the
+   acc_load_ctx_from_dlg() function, you can also access the
+   accounting context of the loaded dialog.
+
+   NOTE: you cannot perform a new load until doing an unload - no
+   nested loadings are allowed.
+
+   This function can be used from any type of route.
+
+   Example 1.28. acc_load_ctx_from_dlg usage
+...
+if ( load_dialog_ctx("$var(callid)") ) {
+        # we now have the dialog context of the new dialog
+        acc_load_ctx_from_dlg();
+        # we have now also the accouting context of that dialog
+        xlog("The accounting caller of call '$var(callid)' "
+                "is '$acc_extra(caller)'\n");
+        acc_unload_ctx_from_dlg();
+        unload_dialog_ctx();
+}
+
+...
+
+1.8.9.  acc_unload_ctx_from_dlg()
+
+   The function off-loads a previosuly loaded accounting context,
+   exposing whatever accounting context was present before doing
+   the load.
+
+   NOTE: you MUST perform from script an explicit unload for each
+   load you did!
+
+   This function can be used from any type of route.
+
+   For usage example, see the acc_load_ctx_from_dlg().
+
 1.9. Exported Events
 
 1.9.1.  E_ACC_CDR
@@ -1015,7 +1064,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 218 109 4165 4572
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 222 111 4302 4578
    2. Jan Janak (@janakj) 145 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 139 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 92 60 2643 566
@@ -1055,8 +1104,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Nov 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2020
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2020
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
    4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
    5.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
@@ -1083,8 +1132,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
    Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Razvan
    Crainea (@razvancrainea), Ryan Bullock (@rrb3942), Irina-Maria
    Stanescu, Sergio Gutierrez, Henning Westerholt (@henningw),

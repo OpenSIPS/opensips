@@ -85,17 +85,19 @@ dialog Module
                       get_dialogs_by_profile(name,value,out_avp,out_
                       dlg_no)
 
-              1.7.9. set_dlg_profile(profile,[value])
-              1.7.10. unset_dlg_profile(profile,[value])
-              1.7.11. is_in_profile(profile,[value])
-              1.7.12. get_profile_size(profile,[value],size)
-              1.7.13. set_dlg_flag(idx)
-              1.7.14. test_and_set_dlg_flag(idx, value)
-              1.7.15. reset_dlg_flag(idx)
-              1.7.16. is_dlg_flag_set(idx)
-              1.7.17. store_dlg_value(name,val)
-              1.7.18. fetch_dlg_value(name,val)
-              1.7.19. set_dlg_sharing_tag(tag_name)
+              1.7.9. load_dialog_ctx( dialog [, id_type])
+              1.7.10. unload_dialog_ctx()
+              1.7.11. set_dlg_profile(profile,[value])
+              1.7.12. unset_dlg_profile(profile,[value])
+              1.7.13. is_in_profile(profile,[value])
+              1.7.14. get_profile_size(profile,[value],size)
+              1.7.15. set_dlg_flag(idx)
+              1.7.16. test_and_set_dlg_flag(idx, value)
+              1.7.17. reset_dlg_flag(idx)
+              1.7.18. is_dlg_flag_set(idx)
+              1.7.19. store_dlg_value(name,val)
+              1.7.20. fetch_dlg_value(name,val)
+              1.7.21. set_dlg_sharing_tag(tag_name)
 
         1.8. Exported Statistics
 
@@ -230,17 +232,18 @@ dialog Module
    1.57. get_dialog_vals usage
    1.58. get_dialog_vals usage
    1.59. get_dialog_vals usage
-   1.60. set_dlg_profile usage
-   1.61. unset_dlg_profile usage
-   1.62. is_in_profile usage
-   1.63. get_profile_size usage
-   1.64. set_dlg_flag usage
-   1.65. test_and_set_dlg_flag usage
-   1.66. reset_dlg_flag usage
-   1.67. is_dlg_flag_set usage
-   1.68. store_dlg_value usage
-   1.69. fetch_dlg_value usage
-   1.70. set_dlg_sharing_tag usage
+   1.60. load_dialog_ctx usage
+   1.61. set_dlg_profile usage
+   1.62. unset_dlg_profile usage
+   1.63. is_in_profile usage
+   1.64. get_profile_size usage
+   1.65. set_dlg_flag usage
+   1.66. test_and_set_dlg_flag usage
+   1.67. reset_dlg_flag usage
+   1.68. is_dlg_flag_set usage
+   1.69. store_dlg_value usage
+   1.70. fetch_dlg_value usage
+   1.71. set_dlg_sharing_tag usage
 
 Chapter 1. Admin Guide
 
@@ -1378,7 +1381,54 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
 }
 ...
 
-1.7.9.  set_dlg_profile(profile,[value])
+1.7.9.  load_dialog_ctx( dialog [, id_type])
+
+   The function loads and switches to the context of the given
+   dialog. The context of a dialog is given by the dialog flags,
+   variables, profiles and any other value/state related to the
+   dialog. By switching to the context of another dialog, you will
+   see at the script level, by default, all the data from the new
+   dialog.
+
+   NOTE: you cannot perform a new load until doing an unload - no
+   nested loadings are possible.
+
+   Meaning of the parameters is as follows:
+     * dialog (string) - the identifier of the dialog to be
+       loaded, it may be a SIP Call-ID or a Dialog ID.
+     * id_type (string,optional) - what kind of dialog identified
+       was used in the first parameter. It can be callid (SIP
+       Call-ID) or did (internal Dialog ID). By default callid
+       will be assumed.
+
+   This function can be used from any type of route.
+
+   Example 1.60. load_dialog_ctx usage
+...
+if ( load_dialog_ctx("$var(callid)") ) {
+        xlog("The dialog $var(callid) has an already duration"
+                " of $DLG_lifetime seconds \n);
+        if (is_in_profile("inbound_call"))
+                xlog("this dialog is an inbound call\n");
+        unload_dialog_ctx();
+}
+...
+
+1.7.10.  unload_dialog_ctx()
+
+   The function off-loads the loaded context of another dialog,
+   exposing whatever dialog context was present before doing the
+   load.
+
+   NOTE: you MUST perform from script an explicit unload for each
+   load you did, otherwise the loaded dialog will remain hanged
+   for ever.
+
+   This function can be used from any type of route.
+
+   For usage example, see the load_dialog_ctx()
+
+1.7.11.  set_dlg_profile(profile,[value])
 
    Inserts the current dialog into a profile. Note that if the
    profile does not support values, this will be silently
@@ -1397,13 +1447,13 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.60. set_dlg_profile usage
+   Example 1.61. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller",$fu);
 ...
 
-1.7.10.  unset_dlg_profile(profile,[value])
+1.7.12.  unset_dlg_profile(profile,[value])
 
    Removes the current dialog from a profile.
 
@@ -1419,13 +1469,13 @@ set_dlg_profile("caller",$fu);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.61. unset_dlg_profile usage
+   Example 1.62. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller",$fu);
 ...
 
-1.7.11.  is_in_profile(profile,[value])
+1.7.13.  is_in_profile(profile,[value])
 
    Checks if the current dialog belongs to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -1447,7 +1497,7 @@ unset_dlg_profile("caller",$fu);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.62. is_in_profile usage
+   Example 1.63. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1458,7 +1508,7 @@ if (is_in_profile("caller","XX")) {
 }
 ...
 
-1.7.12.  get_profile_size(profile,[value],size)
+1.7.14.  get_profile_size(profile,[value],size)
 
    Returns the number of dialogs belonging to a profile. If the
    profile supports values, the check can be reinforced to take
@@ -1478,7 +1528,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.63. get_profile_size usage
+   Example 1.64. get_profile_size usage
 modparam("dialog", "profiles_no_value", "inboundCalls")
 modparam("dialog", "profiles_with_value", "caller")
 ...
@@ -1489,7 +1539,7 @@ get_profile_size("caller", $fu, $var(size));
 xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 ...
 
-1.7.13.  set_dlg_flag(idx)
+1.7.15.  set_dlg_flag(idx)
 
    Sets the dialog flag index idx to true. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -1504,12 +1554,12 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.64. set_dlg_flag usage
+   Example 1.65. set_dlg_flag usage
 ...
 set_dlg_flag(3);
 ...
 
-1.7.14.  test_and_set_dlg_flag(idx, value)
+1.7.16.  test_and_set_dlg_flag(idx, value)
 
    Atomically checks if the dialog flag index idx is equal to
    value. If true, changes the value with the opposite one. This
@@ -1523,12 +1573,12 @@ set_dlg_flag(3);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.65. test_and_set_dlg_flag usage
+   Example 1.66. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag(3, 0);
 ...
 
-1.7.15.  reset_dlg_flag(idx)
+1.7.17.  reset_dlg_flag(idx)
 
    Resets the dialog flag index idx to false. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
@@ -1543,12 +1593,12 @@ test_and_set_dlg_flag(3, 0);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.66. reset_dlg_flag usage
+   Example 1.67. reset_dlg_flag usage
 ...
 reset_dlg_flag(16);
 ...
 
-1.7.16.  is_dlg_flag_set(idx)
+1.7.18.  is_dlg_flag_set(idx)
 
    Returns true if the dialog flag index idx is set. The dialog
    flags are dialog persistent and they can be accessed (set and
@@ -1563,14 +1613,14 @@ reset_dlg_flag(16);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.67. is_dlg_flag_set usage
+   Example 1.68. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set(16)) {
         xlog("dialog flag 16 is set\n");
 }
 ...
 
-1.7.17.  store_dlg_value(name,val)
+1.7.19.  store_dlg_value(name,val)
 
    Attaches to the dialog the value val under the name name. The
    values attached to dialogs are dialog persistent and they can
@@ -1590,7 +1640,7 @@ if (is_dlg_flag_set(16)) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.68. store_dlg_value usage
+   Example 1.69. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip",$si);
 store_dlg_value("account type","prepaid");
@@ -1598,7 +1648,7 @@ store_dlg_value("account type","prepaid");
 $dlg_val(account_type) = "prepaid";
 ...
 
-1.7.18.  fetch_dlg_value(name,val)
+1.7.20.  fetch_dlg_value(name,val)
 
    Fetches from the dialog the value of attribute named name. The
    values attached to dialogs are dialog persistent and they can
@@ -1618,7 +1668,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.69. fetch_dlg_value usage
+   Example 1.70. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip",$avp(2));
 fetch_dlg_value("account type",$var(account));
@@ -1626,7 +1676,7 @@ fetch_dlg_value("account type",$var(account));
 $var(account) = $dlg_val(account_type);
 ...
 
-1.7.19.  set_dlg_sharing_tag(tag_name)
+1.7.21.  set_dlg_sharing_tag(tag_name)
 
    Marks the current dialog with the sharing tag tag_name. From
    this point on, actions like in-dialog pinging, BYEs on timeout
@@ -1644,7 +1694,7 @@ $var(account) = $dlg_val(account_type);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.70. set_dlg_sharing_tag usage
+   Example 1.71. set_dlg_sharing_tag usage
 ...
 set_dlg_sharing_tag("vip1");
 ...
@@ -2269,7 +2319,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 415 265 12078 3124
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 418 266 12247 3128
    2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
    3. Razvan Crainea (@razvancrainea) 214 160 4285 1153
    4. Vlad Patrascu (@rvlad-patrascu) 157 78 3362 3093
@@ -2313,10 +2363,10 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Mar 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2020
+   2.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2020
+   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2020
    5.  Zero King                           Mar 2020 - Mar 2020
    6.  Liviu Chircu (@liviuchircu)         Aug 2012 - Feb 2020
    7.  Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
@@ -2344,11 +2394,11 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Paiu (@vladpaiu), Zero King, Razvan
-   Crainea (@razvancrainea), Dan Pascu (@danpascu), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Julián
-   Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu), Zero King, Razvan Crainea (@razvancrainea), Dan
+   Pascu (@danpascu), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián Moreno
+   Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
    Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
    Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
