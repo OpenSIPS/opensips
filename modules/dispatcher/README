@@ -1189,7 +1189,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 149 93 2781 1900
-   2. Liviu Chircu (@liviuchircu) 93 55 1542 1372
+   2. Liviu Chircu (@liviuchircu) 94 56 1543 1372
    3. Daniel-Constantin Mierla (@miconda) 82 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 48 15 2153 846
    5. Ionut Ionita (@ionutrazvanionita) 44 17 1145 969
@@ -1203,11 +1203,11 @@ Chapter 3. Contributors
    Cerghit (@ionel-cerghit), Elena-Ramona Modroiu, Klaus Darilion,
    Anca Vamanu, Jarrod Baumann (@jarrodb), Walter Doekes
    (@wdoekes), Nick Altmann (@nikbyte), Jan Janak (@janakj),
-   Andrei Pelinescu-Onciul, Stanislaw Pitucha, Federico Cabiddu,
-   Konstantin Bokarius, Andreas Granig, John Riordan, Aron
-   Podrigal (@ar45), Julián Moreno Patiño, Kevin McAllister, Peter
-   Lemenkov (@lemenkov), Roman Sevko, UnixDev, David Sanders,
-   Edson Gellert Schubert.
+   Andrei Pelinescu-Onciul, Peter Lemenkov (@lemenkov), Stanislaw
+   Pitucha, Federico Cabiddu, Konstantin Bokarius, Andreas Granig,
+   John Riordan, Aron Podrigal (@ar45), Julián Moreno Patiño,
+   Kevin McAllister, Roman Sevko, UnixDev, David Sanders, Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1230,11 +1230,11 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Feb 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Dec 2019
-   3.  Roman Sevko                         Oct 2019 - Oct 2019
-   4.  Razvan Crainea (@razvancrainea)     May 2011 - Oct 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Dec 2019
+   4.  Roman Sevko                         Oct 2019 - Oct 2019
+   5.  Razvan Crainea (@razvancrainea)     May 2011 - Oct 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
    7.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
    8.  Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016
    9.  Ionut Ionita (@ionutrazvanionita)   Jul 2014 - May 2016
