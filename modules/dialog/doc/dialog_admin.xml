@@ -1814,6 +1814,79 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 		</example>
 	</section>
 
+
+	<section id="func_load_dialog_ctx" xreflabel="load_dialog_ctx()">
+		<title>
+		<function moreinfo="none">load_dialog_ctx( dialog [, id_type])</function>
+		</title>
+		<para>
+		The function loads and switches to the context of the given dialog.
+		The context of a dialog is given by the dialog flags, variables,
+		profiles and any other value/state related to the dialog. By 
+		switching to the context of another dialog, you will see at the script
+		level, by default, all the data from the new dialog.
+		</para>
+		<para>
+		NOTE: you cannot perform a new load until doing an unload - no nested
+		loadings are possible.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>dialog (string)</emphasis> - the identifier of the
+			dialog to be loaded, it may be a SIP Call-ID or a Dialog ID.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>id_type (string,optional)</emphasis> - what kind of
+			dialog identified was used in the first parameter. It can be
+			<emphasis>callid</emphasis> (SIP Call-ID) or 
+			<emphasis>did</emphasis> (internal Dialog ID). By default callid
+			will be assumed.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any type of route.
+		</para>
+		<example>
+		<title><function>load_dialog_ctx</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( load_dialog_ctx("$var(callid)") ) {
+	xlog("The dialog $var(callid) has an already duration"
+		" of $DLG_lifetime seconds \n);
+	if (is_in_profile("inbound_call"))
+		xlog("this dialog is an inbound call\n");
+	unload_dialog_ctx();
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+
+	<section id="func_unload_dialog_ctx" xreflabel="unload_dialog_ctx()">
+		<title>
+		<function moreinfo="none">unload_dialog_ctx()</function>
+		</title>
+		<para>
+		The function off-loads the loaded context of another dialog, exposing
+		whatever dialog context was present before doing the load.
+		</para>
+		<para>
+		NOTE: you MUST perform from script an explicit unload for each load
+		you did, otherwise the loaded dialog will remain hanged for ever.
+		</para>
+		<para>
+		This function can be used from any type of route.
+		</para>
+		<para>
+		For usage example, see the <xref linkend="func_load_dialog_ctx"/>
+		</para>
+	</section>
+
+
 	<section id="func_set_dlg_profile" xreflabel="set_dlg_profile()">
 		<title>
 		<function moreinfo="none">set_dlg_profile(profile,[value])</function>

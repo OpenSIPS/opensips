@@ -144,6 +144,7 @@ static int fixup_mmode(void **param);
 static int fixup_dlg_flag(void** param);
 static int fixup_check_avp(void** param);
 static int fixup_check_var(void** param);
+static int fixup_lmode(void **param);
 static int w_set_dlg_flag(struct sip_msg *msg, void *mask);
 static int w_reset_dlg_flag(struct sip_msg *msg, void *mask);
 static int w_is_dlg_flag_set(struct sip_msg *msg, void *mask);
@@ -159,7 +160,7 @@ static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
 						pv_spec_t *v_val, str *callid);
 static int w_tsl_dlg_flag(struct sip_msg *msg, int *_idx, int *_val);
 static int w_set_dlg_shtag(struct sip_msg *msg, str *shtag);
-static int load_dlg_ctx(struct sip_msg *msg, str *callid);
+static int load_dlg_ctx(struct sip_msg *msg, str *callid, void* lmode);
 static int unload_dlg_ctx(struct sip_msg *msg);
 
 /* item/pseudo-variables functions */
@@ -256,7 +257,8 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"load_dialog_ctx",(cmd_function)load_dlg_ctx, {
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_lmode,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"unload_dialog_ctx",(cmd_function)unload_dlg_ctx,
 		{{0,0,0}}, ALL_ROUTES},
@@ -2186,19 +2188,78 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, str *attr, str *attr_
 }
 
 
+#define DLG_CTX_LOAD_BY_CALLID  0
+#define DLG_CTX_LOAD_BY_DID     1
+
 static struct dlg_cell *load_ctx_backup = NULL;
 static int dlg_ctx_loaded = 0;
 
-static int load_dlg_ctx(struct sip_msg *msg, str *callid)
+static int fixup_lmode(void **param)
 {
+	str *s = (str*)*param;
+
+	if (s->len==6 && strncasecmp( s->s, "callid", 6)==0) {
+		*param = (void*)(unsigned long)DLG_CTX_LOAD_BY_CALLID;
+	} else
+	if (s->len==3 && strncasecmp( s->s, "did", 3)==0) {
+		*param = (void*)(unsigned long)DLG_CTX_LOAD_BY_DID;
+	} else {
+		LM_ERR("unsupported dialog indetifier <%.*s>\n",
+			s->len, s->s);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static inline long long parse_dlg_id(str *id)
+{
+	long long r;
+	char *e;
+	char buf[21]; /* 20 + null termination */
+	if (id->len > 20 || id->len < 0)
+		return 0;
+	memcpy(buf, id->s, id->len);
+	buf[id->len] = 0;
+	r = strtoll(buf, &e, 10);
+	if (r == LLONG_MIN || r == LLONG_MAX)
+		return 0;
+	if (*e != '\0')
+		return 0;
+	return r;
+}
+
+
+static int load_dlg_ctx(struct sip_msg *msg, str *callid, void *lmode)
+{
+	long long dlg_id;
 	struct dlg_cell *dlg;
+	int mode;
+
+	if (lmode)
+		mode = (int)(long)lmode;
+	else
+		mode = DLG_CTX_LOAD_BY_CALLID;
 
 	if (dlg_ctx_loaded) {
 		LM_ERR("nested call of load dlg ctx\n");
 		return -1;
 	}
 
-	dlg = get_dlg_by_callid(callid, 0);
+	switch (mode) {
+		case DLG_CTX_LOAD_BY_CALLID:
+			/* callid */
+			dlg = get_dlg_by_callid( callid, 0 );
+			break;
+
+		case DLG_CTX_LOAD_BY_DID:
+			/* did */
+			dlg_id = parse_dlg_id( callid );
+			dlg = get_dlg_by_did( (unsigned int )(dlg_id >> 32),
+				(unsigned int)(dlg_id & 0x00000000ffffffff), 0);
+			break;
+	}
 
 	if (dlg==NULL) {
 		/* nothing found */

@@ -408,6 +408,9 @@ struct dlg_cell* get_dlg_by_val(str *attr, str *val);
 
 struct dlg_cell* get_dlg_by_callid( str *callid, int active_only);
 
+struct dlg_cell* get_dlg_by_did(unsigned int h_entry, unsigned int h_id,
+		int active_only);
+
 int get_dlg_direction(void);
 
 void link_dlg(struct dlg_cell *dlg, int extra_refs);

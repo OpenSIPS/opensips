@@ -914,6 +914,34 @@ struct dlg_cell* get_dlg_by_callid( str *callid, int active_only)
 }
 
 
+struct dlg_cell* get_dlg_by_did(unsigned int h_entry, unsigned int h_id,
+		int active_only)
+{
+	struct dlg_cell *dlg;
+	struct dlg_entry *d_entry;
+
+	if (h_entry>=d_table->size)
+		return NULL;
+
+	LM_DBG("looking for hentry=%d hid=%d\n", h_entry, h_id);
+
+	d_entry = &(d_table->entries[h_entry]);
+	dlg_lock( d_table, d_entry);
+	for( dlg = d_entry->first ; dlg ; dlg = dlg->next ) {
+		if (active_only && dlg->state>DLG_STATE_CONFIRMED )
+			continue;
+		if (dlg->h_id == h_id) {
+			ref_dlg_unsafe( dlg, 1);
+			dlg_unlock( d_table, d_entry);
+			return dlg;
+		}
+	}
+
+	dlg_unlock( d_table, d_entry);
+	return NULL;
+}
+
+
 void link_dlg(struct dlg_cell *dlg, int extra_refs)
 {
 	struct dlg_entry *d_entry;
