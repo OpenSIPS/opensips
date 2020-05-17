@@ -1000,9 +1000,9 @@ Chapter 3. Contributors
    Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus Hunger,
    Julián Moreno Patiño, Phil D'Amore, Klaus Darilion, Irina-Maria
    Stanescu, Dmitry Semyonov, Konstantin Bokarius, Jesus
-   Rodrigues, Dusan Klinec, Ruslan Bukin, Saúl Ibarra Corretgé
-   (@saghul), @jalung, Tolga Tarhan, Vlad Patrascu
-   (@rvlad-patrascu), Edson Gellert Schubert.
+   Rodrigues, Peter Lemenkov (@lemenkov), Dusan Klinec, Ruslan
+   Bukin, Saúl Ibarra Corretgé (@saghul), @jalung, Tolga Tarhan,
+   Vlad Patrascu (@rvlad-patrascu), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1025,26 +1025,26 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020
-   2.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Aug 2019
-   4.  @jalung                             Aug 2017 - Aug 2017
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
-   7.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec                        Dec 2015 - Dec 2015
-   10. Nick Altmann (@nikbyte)             Aug 2012 - Mar 2015
+   2.  Peter Lemenkov (@lemenkov)          Feb 2020 - Feb 2020
+   3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Aug 2019
+   5.  @jalung                             Aug 2017 - Aug 2017
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   7.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
+   8.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Dusan Klinec                        Dec 2015 - Dec 2015
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Tolga
-   Tarhan, Saúl Ibarra Corretgé (@saghul), Ruslan Bukin,
-   Irina-Maria Stanescu, Kobi Eshun (@ekobi), Phil D'Amore, Sergio
-   Gutierrez, Klaus Darilion, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Jesus Rodrigues, Dan Pascu (@danpascu),
-   Ancuta Onofrei, Marcus Hunger, Juha Heinanen (@juha-h),
-   Elena-Ramona Modroiu, Jeffrey Magder, Carsten Bock, Andreas
-   Granig, Dmitry Semyonov, Maksym Sobolyev (@sobomax), Jan Janak
-   (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
+   All remaining contributors: Nick Altmann (@nikbyte), Vlad Paiu
+   (@vladpaiu), Tolga Tarhan, Saúl Ibarra Corretgé (@saghul),
+   Ruslan Bukin, Irina-Maria Stanescu, Kobi Eshun (@ekobi), Phil
+   D'Amore, Sergio Gutierrez, Klaus Darilion, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Dan Pascu
+   (@danpascu), Ancuta Onofrei, Marcus Hunger, Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Jeffrey Magder, Carsten Bock,
+   Andreas Granig, Dmitry Semyonov, Maksym Sobolyev (@sobomax),
+   Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
    (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding

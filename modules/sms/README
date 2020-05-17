@@ -369,8 +369,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Julián Moreno Patiño, Konstantin
    Bokarius, John Riordan, Dan Pascu (@danpascu), Jesus Rodrigues,
-   Edson Gellert Schubert, Vlad Patrascu (@rvlad-patrascu), Walter
-   Doekes (@wdoekes).
+   Edson Gellert Schubert, Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -392,21 +392,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2002 - May 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   7.  John Riordan                        May 2009 - May 2009
-   8.  Henning Westerholt (@henningw)      Aug 2007 - Jun 2008
-   9.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
-   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+   1.  Peter Lemenkov (@lemenkov)          Feb 2020 - Feb 2020
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2002 - May 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Walter Doekes (@wdoekes)            May 2014 - May 2014
+   8.  John Riordan                        May 2009 - May 2009
+   9.  Henning Westerholt (@henningw)      Aug 2007 - Jun 2008
+   10. Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
 
-   All remaining contributors: Edson Gellert Schubert, Jesus
-   Rodrigues, Anca Vamanu, Elena-Ramona Modroiu, Dan Pascu
-   (@danpascu), Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri
-   Kuthan (@jiriatipteldotorg).
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Jesus Rodrigues, Anca Vamanu, Elena-Ramona Modroiu,
+   Dan Pascu (@danpascu), Jan Janak (@janakj), Andrei
+   Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits

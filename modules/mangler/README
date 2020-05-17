@@ -218,9 +218,9 @@ Chapter 2. Contributors
    9. Vlad Patrascu (@rvlad-patrascu) 6 4 40 22
    10. Jiri Kuthan (@jiriatipteldotorg) 3 2 5 0
 
-   All remaining contributors: Walter Doekes (@wdoekes),
-   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
-   Modroiu.
+   All remaining contributors: Walter Doekes (@wdoekes), Peter
+   Lemenkov (@lemenkov), Konstantin Bokarius, Edson Gellert
+   Schubert, Elena-Ramona Modroiu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -242,20 +242,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2018
-   5.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
-   6.  Henning Westerholt (@henningw)      May 2007 - Jun 2008
-   7.  Daniel-Constantin Mierla (@miconda) Sep 2003 - Mar 2008
-   8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   9.  Edson Gellert Schubert              Feb 2008 - Feb 2008
-   10. Elena-Ramona Modroiu                Oct 2005 - Oct 2005
+   1.  Peter Lemenkov (@lemenkov)          Feb 2020 - Feb 2020
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2018
+   6.  Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
+   7.  Henning Westerholt (@henningw)      May 2007 - Jun 2008
+   8.  Daniel-Constantin Mierla (@miconda) Sep 2003 - Mar 2008
+   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
 
-   All remaining contributors: Jan Janak (@janakj), Andrei
-   Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg), Gabriel
-   Vasile.
+   All remaining contributors: Elena-Ramona Modroiu, Jan Janak
+   (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
+   (@jiriatipteldotorg), Gabriel Vasile.
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -883,6 +883,8 @@ Chapter 3. Contributors
    9. Oliver Severin Mulelid-Tynes (@olivermt) 3 1 1 1
    10. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
+   All remaining contributors: Peter Lemenkov (@lemenkov).
+
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
    / (project_lines_deleted / project_commits)
@@ -905,14 +907,16 @@ Chapter 3. Contributors
                          Name                     Commit Activity
    1.  Zero King                                Mar 2020 - Mar 2020
    2.  Razvan Crainea (@razvancrainea)          Jun 2014 - Feb 2020
-   3.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jun 2018
-   5.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
-   6.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
-   7.  Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
-   8.  Rob Gagnon (@rgagnon24)                  Mar 2015 - Mar 2015
-   9.  Eric Tamme (@etamme)                     Dec 2014 - Mar 2015
-   10. Richard Fuchs                            Mar 2014 - Mar 2014
+   3.  Peter Lemenkov (@lemenkov)               Feb 2020 - Feb 2020
+   4.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jun 2018
+   6.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
+   7.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
+   8.  Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
+   9.  Rob Gagnon (@rgagnon24)                  Mar 2015 - Mar 2015
+   10. Eric Tamme (@etamme)                     Dec 2014 - Mar 2015
+
+   All remaining contributors: Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits
