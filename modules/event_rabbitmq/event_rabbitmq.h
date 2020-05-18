@@ -41,19 +41,7 @@
 /* module flag */
 #define RMQ_FLAG		(1 << 28 )
 
-
-/* default buffer size */
-#define RMQ_BUFFER_SIZE	16384
-
 #define RMQ_DEFAULT_CONNECT_TIMEOUT 500 /* ms */
-
-/* separation char */
-#define COLON_C				':'
-#define PARAM_SEP			'\n'
-#define QUOTE_C				'"'
-#define ESC_C				'\\'
-#define ATTR_SEP_S			"::"
-#define ATTR_SEP_LEN		(sizeof(ATTR_SEP_S) - 1)
 
 #define RMQ_DEFAULT_UP		"guest"
 #define RMQ_DEFAULT_UP_LEN	(sizeof(RMQ_DEFAULT_UP))

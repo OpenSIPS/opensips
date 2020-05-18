@@ -88,7 +88,6 @@ typedef struct evi_trans_ {
 	struct evi_trans_ *next;
 } evi_trans_t;
 
-
 /* functions used by the transport modules */
 /*
  * Used to register a transport module
@@ -99,5 +98,27 @@ typedef struct evi_trans_ {
  *  - 0 if successful or negative on error
  */
 int register_event_mod(evi_export_t *ev);
+
+/*
+ * Used to build the payload of an event
+ * Parameters:
+ *  + event parameters
+ *  + jsonrpc method (usually this should be the event name)
+ *  + jsonrpc id, if 0 the field will be NULL
+ *  + key of an extra string parameter (ignored if the event has array params)
+ *  + value of an extra string parameter
+ *
+ * Returns:
+ *  - the new event payload or NULL on error
+ */
+char *evi_build_payload(evi_params_t *params, str *method, int id,
+	str *extra_param_k, str *extra_param_v);
+
+/*
+ * Used to free an event payload built with evi_build_payload()
+ * Parameters:
+ *  + event payload
+ */
+void evi_free_payload(char *payload);
 
 #endif /* _EVI_TRANSPORT_H_ */

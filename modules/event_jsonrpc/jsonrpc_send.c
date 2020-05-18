@@ -244,73 +244,30 @@ int jsonrpc_build_buffer(str *event_name, evi_reply_sock *sock,
 		evi_params_t *params, jsonrpc_send_t ** msg)
 {
 	char *s;
-	int ret = -1;
-	evi_param_p param;
-	cJSON *param_obj = NULL, *tmp;
 	int id = jsonrpc_unique_id();
 	str *method = (sock->flags & EVI_PARAMS ? (str *)sock->params: event_name);
-	cJSON *ret_obj = cJSON_CreateObject();
-	if (jsonrpc_sync_mode)
-		cJSON_AddNumberToObject(ret_obj, "id", id);
-	else
-		cJSON_AddNullToObject(ret_obj, "id");
-	cJSON_AddItemToObject(ret_obj, "jsonrpc",
-			cJSON_CreateString(JSONRPC_VERSION));
-	cJSON_AddItemToObject(ret_obj, "method",
-			cJSON_CreateStr(method->s, method->len));
+	str extra_param = {0,0};
 
-	if (params->first && !params->first->name.s)
-		param_obj = cJSON_CreateArray();
-	else
-		param_obj = cJSON_CreateObject();
+	if (jsonrpc_event_param)
+		init_str(&extra_param, jsonrpc_event_param);
 
-	if (jsonrpc_event_param) {
-		tmp = cJSON_CreateStr(event_name->s, event_name->len);
-		if (params->first && !params->first->name.s)
-			cJSON_AddItemToArray(param_obj, tmp);
-		else
-			cJSON_AddItemToObject(param_obj, jsonrpc_event_param, tmp);
-	}
-
-	cJSON_AddItemToObject(ret_obj, "params", param_obj);
-	for (param = params->first; param; param = param->next) {
-		if (param->flags & EVI_INT_VAL)
-			tmp = cJSON_CreateNumber(param->val.n);
-		else
-			tmp = cJSON_CreateStr(param->val.s.s, param->val.s.len);
-		if (param->name.s) {
-			s = pkg_malloc(param->name.len + 1);
-			if (!s) {
-				LM_ERR("cannot allocate %d for param's name!\n",
-						param->name.len);
-				goto error;
-			}
-			memcpy(s, param->name.s, param->name.len);
-			s[param->name.len] = 0;
-			cJSON_AddItemToObject(param_obj, s, tmp);
-			pkg_free(s);
-		} else
-			cJSON_AddItemToArray(param_obj, tmp);
-	}
-
-	s = cJSON_PrintUnformatted(ret_obj);
+	s = evi_build_payload(params, method, jsonrpc_sync_mode ? id : 0,
+		extra_param.s ? &extra_param : NULL, extra_param.s ? event_name : NULL);
 	if (!s) {
-		LM_ERR("cannot print json object!\n");
-		goto error;
+		LM_ERR("Failed to build event payload\n");
+		return -1;
 	}
 
 	*msg = jsonrpc_build_send_t(sock, s, id);
 	if (!*msg) {
 		LM_ERR("cannot build send msg\n");
-		cJSON_PurgeString(s);
-		goto error;
+		evi_free_payload(s);
+		return -1;
 	}
-	cJSON_PurgeString(s);
-	ret = 0;
-error:
-	cJSON_Delete(ret_obj);
 
-	return ret;
+	evi_free_payload(s);
+
+	return 0;
 }
 
 static struct jsonrpc_con *jsonrpc_get_con(union sockaddr_union *addr)

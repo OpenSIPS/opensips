@@ -15,31 +15,9 @@
 	<section>
 	<title>DATAGRAM events syntax</title>
 	<para>
-		The raised events will follow the following grammar:
-		<itemizedlist>
-			<listitem><para><emphasis>
-			event = event_name (argument '\n')*
-			</emphasis></para></listitem>
-			<listitem><para><emphasis>
-			event_name = non-quoted_string'\n'
-			</emphasis></para></listitem>
-			<listitem><para><emphasis>
-			argument = ((arg_name '::')? arg_value)? | (arg_value)
-			</emphasis></para></listitem>
-			<listitem><para><emphasis>
-			arg_name = not-quoted_string
-			</emphasis></para></listitem>
-			<listitem><para><emphasis>
-			arg_value = not-quoted_string | '"' string '"'
-			</emphasis></para></listitem>
-			<listitem><para><emphasis>
-			not-quoted_string = string - {',",\n,\r}
-			</emphasis></para></listitem>
-		</itemizedlist>
-	</para>
-	<para>The event name can contain any non-quoted string character, but
-		it is recommended to follow the syntax:
-		E_<emphasis>MODULE_NAME</emphasis>_<emphasis>EXTRA_NAME</emphasis>
+		The event payload is formated as a JSON-RPC notification, with the event
+		name as the <emphasis>method</emphasis> field and the event parameters as
+		the <emphasis>params</emphasis> field.
 	</para>
 	</section>
 	
@@ -110,10 +88,16 @@
 		<example>
 		<title>E_PIKE_BLOCKED event</title>
 		<programlisting format="linespecific">
-
-E_PIKE_BLOCKED
-ip::192.168.2.11
-
+<![CDATA[
+{
+  "id": null,
+  "jsonrpc": "2.0",
+  "method": "E_PIKE_BLOCKED",
+  "params": {
+    "ip": "192.168.2.11"
+  }
+}
+]]>
 </programlisting>
 		</example>
 

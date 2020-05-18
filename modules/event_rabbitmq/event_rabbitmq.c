@@ -32,10 +32,6 @@
 
 
 
-/* send buffer */
-static char rmq_buffer[RMQ_BUFFER_SIZE];
-static int rmq_buffer_len;
-
 /**
  * module functions
  */
@@ -462,111 +458,11 @@ end:
 }
 #undef DO_PRINT
 
-
-
-#define DO_COPY(buff, str, len) \
-	do { \
-		if ((buff) - rmq_buffer + (len) > RMQ_BUFFER_SIZE) { \
-			LM_ERR("buffer too small\n"); \
-			goto end; \
-		} \
-		memcpy((buff), (str), (len)); \
-		buff += (len); \
-	} while (0)
-
-/* builds parameters list */
-static int rmq_build_params(str* ev_name, evi_params_p ev_params)
-{
-	evi_param_p node;
-	int len;
-	char *buff, *int_s, *p, *end, *old;
-	char quote = QUOTE_C, esc = ESC_C;
-
-	if (ev_params && ev_params->flags & RMQ_FLAG) {
-		LM_DBG("buffer already built\n");
-		return rmq_buffer_len;
-	}
-
-	rmq_buffer_len = 0;
-
-	/* first is event name - cannot be larger than the buffer size */
-	if (!suppress_event_name) {
-		memcpy(rmq_buffer, ev_name->s, ev_name->len);
-		rmq_buffer_len = ev_name->len;
-		buff = rmq_buffer + ev_name->len;
-		*buff = PARAM_SEP;
-		buff++;
-	} else {
-		rmq_buffer_len = 0;
-		buff = rmq_buffer;
-	}
-
-	if (!ev_params)
-		goto end;
-
-	for (node = ev_params->first; node; node = node->next) {
-		/* parameter name */
-		if (node->name.len && node->name.s) {
-			DO_COPY(buff, node->name.s, node->name.len);
-			DO_COPY(buff, ATTR_SEP_S, ATTR_SEP_LEN);
-		}
-
-		if (node->flags & EVI_STR_VAL) {
-			/* it is a string value */
-			if (node->val.s.len && node->val.s.s) {
-				/* check to see if enclose is needed */
-				end = node->val.s.s + node->val.s.len;
-				for (p = node->val.s.s; p < end; p++)
-					if (*p == PARAM_SEP)
-						break;
-				if (p == end) {
-					/* copy the whole buffer */
-					DO_COPY(buff, node->val.s.s, node->val.s.len);
-				} else {
-					DO_COPY(buff, &quote, 1);
-					old = node->val.s.s;
-					/* search for '"' to escape */
-					for (p = node->val.s.s; p < end; p++)
-						if (*p == QUOTE_C) {
-							DO_COPY(buff, old, p - old);
-							DO_COPY(buff, &esc, 1);
-							old = p;
-						}
-					/* copy the rest of the string */
-					DO_COPY(buff, old, p - old);
-					DO_COPY(buff, &quote, 1);
-				}
-			}
-		} else if (node->flags & EVI_INT_VAL) {
-			int_s = int2str(node->val.n, &len);
-			DO_COPY(buff, int_s, len);
-		} else {
-			LM_DBG("unknown parameter type [%x]\n", node->flags);
-		}
-		*buff = PARAM_SEP;
-		buff++;
-	}
-	/* remove the last separator, to be compliant with previous versions */
-	buff--;
-
-end:
-	/* set buffer end */
-	*buff = 0;
-	rmq_buffer_len = buff - rmq_buffer + 1;
-	if (ev_params)
-		ev_params->flags |= RMQ_FLAG;
-
-	return rmq_buffer_len;
-}
-
-#undef DO_COPY
-
-
 static int rmq_raise(struct sip_msg *msg, str* ev_name,
 					 evi_reply_sock *sock, evi_params_t * params)
 {
 	rmq_send_t *rmqs;
-	int len;
+	str buf;
 
 	if (!sock || !(sock->flags & RMQ_FLAG)) {
 		LM_ERR("invalid socket type\n");
@@ -580,18 +476,22 @@ static int rmq_raise(struct sip_msg *msg, str* ev_name,
 		return -1;
 	}
 
-	/* check connection */
-	/* build the params list */
-	if ((len = rmq_build_params(ev_name, params)) < 0) {
-		LM_ERR("error while building parameters list\n");
+	buf.s = evi_build_payload(params, ev_name, 0, NULL, NULL);
+	if (!buf.s) {
+		LM_ERR("Failed to build event payload\n");
 		return -1;
 	}
-	rmqs = shm_malloc(sizeof(rmq_send_t) + len);
+	buf.len = strlen(buf.s);
+
+	rmqs = shm_malloc(sizeof(rmq_send_t) + buf.len + 1);
 	if (!rmqs) {
 		LM_ERR("no more shm memory\n");
+		evi_free_payload(buf.s);
 		return -1;
 	}
-	memcpy(rmqs->msg, rmq_buffer, len);
+	memcpy(rmqs->msg, buf.s, buf.len + 1);
+	evi_free_payload(buf.s);
+
 	rmqs->sock = sock;
 
 	if (rmq_send(rmqs) < 0) {

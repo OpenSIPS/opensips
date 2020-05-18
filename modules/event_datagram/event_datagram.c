@@ -43,9 +43,6 @@
 
 /* unix and udp sockets */
 static struct dgram_socks sockets;
-/* send buffer */
-static char dgram_buffer[DGRAM_BUFFER_SIZE];
-static int dgram_buffer_len;
 
 /**
  * module functions
@@ -298,100 +295,11 @@ end:
 }
 #undef DO_PRINT
 
-#define DO_COPY(buff, str, len) \
-	do { \
-		if ((buff) - dgram_buffer + 1 > DGRAM_BUFFER_SIZE) { \
-			LM_ERR("buffer too small\n"); \
-			return -1; \
-		} \
-		memcpy((buff), (str), (len)); \
-		buff += (len); \
-	} while (0)
-
-/* builds parameters list */
-static int datagram_build_params(str* ev_name, evi_params_p ev_params)
-{
-	evi_param_p node;
-	int len;
-	char *buff, *int_s, *p, *end, *old;
-	char quote = QUOTE_C, esc = ESC_C;
-
-	if (ev_params && ev_params->flags & (DGRAM_UDP_FLAG | DGRAM_UNIX_FLAG)) {
-		LM_DBG("buffer already built\n");
-		return dgram_buffer_len;
-	}
-
-	dgram_buffer_len = 0;
-
-	/* first is event name - cannot be larger than the buffer size */
-	memcpy(dgram_buffer, ev_name->s, ev_name->len);
-	dgram_buffer[ev_name->len] = PARAM_SEP;
-	buff = dgram_buffer + ev_name->len + 1;
-	dgram_buffer_len = ev_name->len + 1;
-
-	if (!ev_params)
-		goto end;
-
-	for (node = ev_params->first; node; node = node->next) {
-		/* parameter name */
-		if (node->name.len && node->name.s) {
-			DO_COPY(buff, node->name.s, node->name.len);
-			DO_COPY(buff, ATTR_SEP_S, ATTR_SEP_LEN);
-		}
-
-		if (node->flags & EVI_STR_VAL) {
-			/* it is a string value */
-			if (node->val.s.len && node->val.s.s) {
-				/* check to see if enclose is needed */
-				end = node->val.s.s + node->val.s.len;
-				for (p = node->val.s.s; p < end; p++)
-					if (*p == PARAM_SEP)
-						break;
-				if (p == end) {
-					/* copy the whole buffer */
-					DO_COPY(buff, node->val.s.s, node->val.s.len);
-				} else {
-					DO_COPY(buff, &quote, 1);
-					old = node->val.s.s;
-					/* search for '"' to escape */
-					for (p = node->val.s.s; p < end; p++)
-						if (*p == QUOTE_C) {
-							DO_COPY(buff, old, p - old);
-							DO_COPY(buff, &esc, 1);
-							old = p;
-						}
-					/* copy the rest of the string */
-					DO_COPY(buff, old, p - old);
-					DO_COPY(buff, &quote, 1);
-				}
-			}
-		} else if (node->flags & EVI_INT_VAL) {
-			int_s = int2str(node->val.n, &len);
-			DO_COPY(buff, int_s, len);
-		} else {
-			LM_DBG("unknown parameter type [%x]\n", node->flags);
-		}
-		*buff = PARAM_SEP;
-		buff++;
-	}
-
-end:
-	*buff = PARAM_SEP;
-	buff++;
-
-	/* set buffer len */
-	dgram_buffer_len = buff - dgram_buffer;
-	if (ev_params)
-		ev_params->flags |= (DGRAM_UDP_FLAG | DGRAM_UNIX_FLAG);
-	return dgram_buffer_len;
-}
-
-#undef DO_COPY
-
 static int datagram_raise(struct sip_msg *msg, str* ev_name,
 						  evi_reply_sock *sock, evi_params_t *params)
 {
 	int ret;
+	str buf;
 
 	if (!sock || !(sock->flags & EVI_SOCKET)) {
 		LM_ERR("no socket found\n");
@@ -404,20 +312,24 @@ static int datagram_raise(struct sip_msg *msg, str* ev_name,
 		return -1;
 	}
 
-	/* build the params list */
-	if (datagram_build_params(ev_name, params) < 0) {
-		LM_ERR("error while building parameters list\n");
+	buf.s = evi_build_payload(params, ev_name, 0, NULL, NULL);
+	if (!buf.s) {
+		LM_ERR("Failed to build event payload\n");
 		return -1;
 	}
+	buf.len = strlen(buf.s);
 
 	/* send data */
 	if (sock->flags & DGRAM_UDP_FLAG) {
-		ret = sendto(sockets.udp_sock, dgram_buffer, dgram_buffer_len, 0,
+		ret = sendto(sockets.udp_sock, buf.s, buf.len, 0,
 			&sock->src_addr.udp_addr.s, sizeof(struct sockaddr_in));
 	} else {
-		ret = sendto(sockets.unix_sock, dgram_buffer, dgram_buffer_len, 0,
+		ret = sendto(sockets.unix_sock, buf.s, buf.len, 0,
 			&sock->src_addr.udp_addr.s, sizeof(struct sockaddr_un));
 	}
+
+	evi_free_payload(buf.s);
+
 	if (ret < 0) {
 		LM_ERR("Cannot raise datagram event due to %d:%s\n", errno, strerror(errno));
 		return -1;

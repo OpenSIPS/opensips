@@ -36,17 +36,8 @@
 #define DGRAM_UDP_FLAG		(1 << 30)
 #define DGRAM_UNIX_FLAG		(1 << 29)
 
-
-/* default buffer size */
-#define DGRAM_BUFFER_SIZE	16384
-
 /* separation char */
 #define COLON_C				':'
-#define PARAM_SEP			'\n'
-#define QUOTE_C				'"'
-#define ESC_C				'\\'
-#define ATTR_SEP_S			"::"
-#define ATTR_SEP_LEN		(sizeof(ATTR_SEP_S) - 1)
 
 struct dgram_socks {
 	int udp_sock;
