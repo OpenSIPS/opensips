@@ -50,6 +50,10 @@ int sig_send_reply_mod(struct sip_msg* msg, int code, str* reason, str* to_tag);
 static int fixup_sig_send_reply(void** param);
 static int mod_init(void);
 
+static int pv_get_local_totag(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *val);
+
+
 /** exported commands */
 static cmd_export_t cmds[]={
 	{"send_reply",(cmd_function)sig_send_reply, {	
@@ -58,6 +62,13 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE | ERROR_ROUTE | FAILURE_ROUTE},
 	{"load_sig", (cmd_function)load_sig, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
+};
+
+/** pseudo-variables exported by the module */
+static pv_export_t mod_pvars[] = {
+	{ {"sig_local_totag", sizeof("localtotag") - 1}, 5003,
+		pv_get_local_totag, 0, 0, 0, 0, 0},
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 static dep_export_t deps = {
@@ -84,7 +95,7 @@ struct module_exports exports= {
 	0,							/* exported parameters */
 	0,							/* exported statistics */
 	0,							/* exported MI functions */
-	0,							/* exported pseudo-variables */
+	mod_pvars,					/* exported pseudo-variables */
 	0,							/* exported transformations */
 	0,							/* extra processes */
 	0,							/* module pre-initialization function */
@@ -257,4 +268,32 @@ int load_sig( struct sig_binds *sigb)
 
 	return 1;
 }
+
+
+static int pv_get_local_totag(struct sip_msg *msg, pv_param_t *param,
+															pv_value_t *val)
+{
+	str ttag;
+
+	if (param == NULL || val == NULL) {
+		LM_ERR("bad input params!\n");
+		return -1;
+	}
+
+	if (msg->first_line.type!=SIP_REQUEST) {
+		LM_ERR("SIP message is not a request\n");
+		return -1;
+	}
+
+	if (sig_gen_totag_mod(msg, &ttag)!=1) {
+		LM_ERR("failed to generated local to-tag\n");
+		return -1;
+	}
+
+	val->rs = ttag;
+	val->flags = PV_VAL_STR;
+
+	return 0;
+}
+
 

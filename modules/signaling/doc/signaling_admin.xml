@@ -127,6 +127,44 @@ send_reply($err.rcode, $err.rreason);
 		</example>
 	</section>
 	</section>
-	
+
+	<section id="exported_pseudo_variables" xreflabel="Exported Variables">
+	<title>Exported Variables</title>
+	<section id="pv_sig_local_totag" xreflabel="$sig_local_totag">
+		<title>$sig_local_totag</title>
+		<para>This variable returns the local To-tag that will be used
+		by OpenSIPS for locally sending replies to the current SIP request.
+		Yes, this variable should be used only in the context of a SIP
+		request and it should be used only in conjunction with the 
+		using <xref linkend="func_send_reply"/>.
+		</para>
+		<para>
+		Whenever you use it, be sure that the function is used in the same
+		stateful / stateless SIP mode as the following replying function.
+		Otherwise you may get different values for the To-tag!!
+		</para>
+		<para>
+		NOTE: the variable returns the To-Tag that will be used by OpenSIPS
+		in the locally generated reply. This may be completly different from
+		the To-tag in the replies received and forwarded by OpenSIPS.
+		</para>
+		<example>
+		<title>Usage of <varname>$sig_local_totag</varname> variable</title>
+<programlisting>
+...
+# stateful handling
+t_newtran();
+xlog("the To-tag to be used is $sig_local_totag \n");
+send_reply();  # or t_reply();
+...
+# stateless handling
+xlog("the To-tag to be used is $sig_local_totag \n");
+send_reply(); # or sl_send_reply();
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
 </chapter>
 
