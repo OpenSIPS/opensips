@@ -3653,6 +3653,53 @@ int msg_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 }
 
 
+/************** MSG TYPE function *****************/
+
+int msg_is_request_get(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	if (param==NULL||res==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if ( msg->first_line.type==SIP_REQUEST ) {
+		res->ri = 1;
+		res->rs.s = "true";
+		res->rs.len = 4;
+	} else {
+		res->ri = 0;
+		res->rs.s = "false";
+		res->rs.len = 5;
+	}
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+
+int msg_type_get(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
+{
+	if (param==NULL||res==NULL) {
+		LM_CRIT("BUG - bad parameters\n");
+		return -1;
+	}
+
+	if ( msg->first_line.type==SIP_REQUEST ) {
+		res->rs.s = "request";
+		res->rs.len = 7;
+	} else {
+		res->rs.s = "reply";
+		res->rs.len = 5;
+	}
+
+	res->flags = PV_VAL_STR;
+
+	return 0;
+}
+
+
+
 /************** BRANCH FLAGS function *****************/
 
 int branch_flag_parse_name(pv_spec_p sp, str *in)
@@ -3979,6 +4026,12 @@ static pv_export_t _pv_names_table[] = {
 	{{"msg.flag", (sizeof("msg.flag")-1)}, /* */
 		PVT_MSG_FLAG, msg_flag_get, msg_flag_set,
 		msg_flag_parse_name, 0, 0, 0},
+	{{"msg.is_request", (sizeof("msg.is_request")-1)}, /* */
+		PVT_MSG_FLAG, msg_is_request_get, 0,
+		0, 0, 0, 0},
+	{{"msg.type", (sizeof("msg.type")-1)}, /* */
+		PVT_MSG_FLAG, msg_type_get, 0,
+		0, 0, 0, 0},
 	{{"mi", (sizeof("mi")-1)}, /* */
 		PVT_MSGID, pv_get_msgid, 0,
 		0, 0, 0, 0},
