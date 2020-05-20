@@ -24,6 +24,7 @@
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
 #include "../../parser/parse_uri.h"
+#include "../../parser/parse_event.h"
 
 #define CALL_MATCH_PARAM  0
 #define CALL_MATCH_MANUAL 1
@@ -117,10 +118,12 @@ static struct dlg_binds call_dlg_api;
 static int call_match_mode = CALL_MATCH_DEFAULT;
 static str call_match_param = str_init("osid");
 static str call_transfer_param = str_init("call_transfer_leg");
+static str call_transfer_callid_param = str_init("call_transfer_callid");
 
 
 static int mod_init(void);
 static int call_blind_replace(struct sip_msg *req, str *callid, str *leg);
+static int call_transfer_notify(struct sip_msg *req);
 static void call_dlg_created_CB(struct dlg_cell *did, int type,
 		struct dlg_cb_params * params);
 static mi_response_t *mi_call_transfer(const mi_params_t *params,
@@ -140,6 +143,8 @@ static cmd_export_t cmds[] = {
 	{ "call_blind_replace", (cmd_function)call_blind_replace, {
 		{CMD_PARAM_STR,0,0}, {CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
+	{ "call_transfer_notify", (cmd_function)call_transfer_notify, {{0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -148,6 +153,8 @@ static int calling_mode_func(modparam_t type, void *val)
 	if (type == STR_PARAM) {
 		if (strcasecmp((char *)val, "param") == 0) {
 			call_match_mode = CALL_MATCH_PARAM;
+		} else if (strcasecmp((char *)val, "manual") == 0) {
+			call_match_mode = CALL_MATCH_MANUAL;
 		} else {
 			LM_ERR("unknown matching mode type %s\n", (char *)val);
 			return -1;
@@ -218,7 +225,7 @@ static int mod_init(void)
 	}
 
 	INIT_CALL_EVENT(BLIND_TRANSFER, "transfered_callid", "transfered_leg",
-			"new_callid", "destination", "status", NULL);
+			"new_callid", "destination", "state", "status", NULL);
 
 	return 0;
 }
@@ -289,9 +296,21 @@ static void call_blind_transfer_dlg_unref(void *p)
 	call_dlg_api.dlg_unref(dlg, 1);
 }
 
+static inline void call_blind_raise_dlg(struct dlg_cell *dlg, str *callid, str *ruri,
+		str *state, str *status)
+{
+	str old_leg;
+
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &old_leg, 0) < 0)
+		init_str(&old_leg, "unknown");
+
+	RAISE_CALL_EVENT(BLIND_TRANSFER, &dlg->callid, &old_leg,
+			callid, ruri, state, status, NULL);
+}
+
 static void call_blind_transfer_reply(struct cell *t, int type, struct tmcb_params *ps)
 {
-	str status, old_leg, new_callid;
+	str status, new_callid, state;
 	struct dlg_cell *dlg = *ps->param;
 
 	/* not interested in provisional replies, are we? */
@@ -304,16 +323,21 @@ static void call_blind_transfer_reply(struct cell *t, int type, struct tmcb_para
 		status.len = ps->rpl->first_line.u.reply.reason.s +
 			ps->rpl->first_line.u.reply.reason.len -
 			ps->rpl->first_line.u.reply.status.s;
+
+		/* not interested in provisional replies, are we? */
+		if (ps->code >= 300)
+			init_str(&state, "fail");
+		else
+			init_str(&state, "ok");
 	} else {
+		init_str(&state, "start-failed");
 		init_str(&status, "408 Request Timeout");
 	}
-	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &old_leg, 0) < 0)
-		init_str(&old_leg, "unknown");
+
 	if (get_callid(ps->req, &new_callid) < 0)
 		init_str(&new_callid, "unknown");
 
-	RAISE_CALL_EVENT(BLIND_TRANSFER, &dlg->callid, &old_leg, &new_callid,
-		call_get_ruri(ps->req), &status, NULL);
+	call_blind_raise_dlg(dlg, &new_callid, call_get_ruri(ps->req), &state, &status);
 	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &empty_str);
 }
 
@@ -321,8 +345,8 @@ static int call_blind_transfer(struct sip_msg *msg, str *old_callid, str *old_le
 		str *new_callid)
 {
 	struct dlg_cell *old_dlg;
-	static str status = str_init("100 Trying");
-	static str failure = str_init("500 Server Internal Error");
+	static str state = str_init("start");
+	static str failure = str_init("fail");
 	str *dst = call_get_ruri(msg);
 	str tmp;
 
@@ -343,14 +367,17 @@ static int call_blind_transfer(struct sip_msg *msg, str *old_callid, str *old_le
 	} else {
 		old_leg = &tmp;
 	}
+	/* we also need to "notice" him the callid that is replacing it */
+	call_dlg_api.store_dlg_value(old_dlg, &call_transfer_callid_param, new_callid);
+
 	RAISE_CALL_EVENT(BLIND_TRANSFER, old_callid, old_leg, new_callid,
-			dst, &status, NULL);
+			dst, &state, &empty_str, NULL);
 	if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, call_blind_transfer_reply,
 			old_dlg, call_blind_transfer_dlg_unref) <= 0) {
 		call_dlg_api.dlg_unref(old_dlg, 1);
 		LM_ERR("cannot register reply handler!\n");
 		RAISE_CALL_EVENT(BLIND_TRANSFER, old_callid, old_leg, new_callid,
-				dst, &failure, NULL);
+				dst, &failure, &empty_str, NULL);
 		return -1;
 	}
 	return 1;
@@ -449,6 +476,70 @@ static int mi_call_transfer_reply(struct sip_msg *msg, int status, void *param)
 	return (param?mi_call_async_reply(msg, status, param): 0);
 }
 
+static int call_blind_notify(struct dlg_cell *dlg, struct sip_msg *msg)
+{
+	str state = str_init("notify");
+	int status_code;
+	str new_callid;
+	str status;
+
+	if (msg->REQ_METHOD != METHOD_NOTIFY)
+		return -2;
+
+	/* only interested in refer events */
+	if (parse_headers(msg, HDR_EVENT_F, 0) < 0 ||
+			(!msg->event || msg->event->body.len <= 0))
+		return -1;
+
+	if (!msg->event->parsed && (parse_event(msg->event) < 0))
+		return -1;
+	if (((event_t *)msg->event->parsed)->parsed != EVENT_REFER)
+		return -2;
+
+	status_code = 400;
+	if (get_body(msg, &status) < 0 || status.len < 0)
+		goto reply;
+		/* try to validate, without looking at the content type */
+	if (status.len <= SIP_VERSION_LEN || memcmp(status.s, SIP_VERSION, SIP_VERSION_LEN))
+		goto reply;
+
+	status_code = 404;
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_callid_param, &new_callid, 0) < 0)
+		goto reply;
+	status.len -= SIP_VERSION_LEN;
+	status.s += SIP_VERSION_LEN;
+	trim(&status);
+	call_blind_raise_dlg(dlg, &new_callid, &empty_str, &state, &status);
+
+	status_code = 200;
+
+reply:
+	status.s = error_text(status_code);
+	status.len = strlen(status.s);
+	if (call_tm_api.t_reply(msg, status_code, &status) < 0)
+		return -1;
+	return 0;
+}
+
+static void call_blind_dlg_callback(struct dlg_cell* dlg, int type,
+		struct dlg_cb_params * params)
+{
+	if (!params->msg)
+		return;
+
+	switch (call_blind_notify(dlg, params->msg)) {
+		case 0:
+			LM_DBG("dropping Notify Refer event\n");
+			break;
+		case -1:
+			LM_ERR("error parsing Notify request\n");
+			break;
+		default:
+			/* not an interesting event */
+			break;
+	}
+}
+
 static mi_response_t *mi_call_transfer(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
@@ -497,6 +588,13 @@ static mi_response_t *mi_call_transfer(const mi_params_t *params,
 
 	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &leg);
 
+	/* register callbacks for handling notifies - does not matter if this
+	 * fails, its not like we won't transfer if we don't get the notifications
+	 * - some devices don't even send the :) */
+	if (call_match_mode != CALL_MATCH_MANUAL)
+		call_dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
+				call_blind_dlg_callback, 0, 0);
+
 	if (call_dlg_api.send_indialog_request(dlg, &refer,
 			(caller?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL, refer_hdr,
 			mi_call_transfer_reply, async_hdl) < 0) {
@@ -526,4 +624,14 @@ static int call_blind_replace(struct sip_msg *req, str *old_callid, str *old_leg
 	}
 
 	return call_blind_transfer(req, old_callid, old_leg, &new_callid);
+}
+
+static int call_transfer_notify(struct sip_msg *msg)
+{
+	struct dlg_cell *dlg = call_dlg_api.get_dlg();
+	if (!dlg) {
+		LM_WARN("dialog not found - call this function only after dialog has been matched\n");
+		return -1;
+	}
+	return call_blind_notify(dlg, msg);
 }
