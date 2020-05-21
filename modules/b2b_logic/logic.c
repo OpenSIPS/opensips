@@ -4260,6 +4260,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 {
 	b2bl_tuple_t* tuple;
 	struct b2b_context *ctx;
+	struct b2b_ctx_val *v;
 	unsigned int hash_index, local_index;
 	b2bl_entity_id_t *bridging_entity= NULL;
 	b2bl_entity_id_t *old_entity;
@@ -4302,9 +4303,12 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	/* save tuple in global variable for accesss from local routes */
 	local_ctx_tuple = tuple;
 
-	/* set the context values already written in the request route;
-	 * todo: do not overwrite the old values but insert the new ones instead */
-	tuple->vals = local_ctx_vals;
+	/* update tuple context values with the new ones set in request route */
+	for (v = local_ctx_vals; v; v = v->next) {
+		v->next = tuple->vals;
+		tuple->vals = v;
+	}
+
 	local_ctx_vals = NULL;
 
 	/* save tuple in context for access in the request route */
