@@ -27,6 +27,7 @@
 #include "../../data_lump_rpl.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_event.h"
+#include "../../parser/parse_replaces.h"
 
 #define CALL_MATCH_PARAM  0
 #define CALL_MATCH_MANUAL 1
@@ -128,7 +129,9 @@ static int call_blind_replace(struct sip_msg *req, str *callid, str *leg);
 static int call_transfer_notify(struct sip_msg *req);
 static void call_dlg_created_CB(struct dlg_cell *did, int type,
 		struct dlg_cb_params * params);
-static mi_response_t *mi_call_transfer(const mi_params_t *params,
+static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 static dep_export_t deps = {
@@ -175,7 +178,15 @@ static param_export_t params[] = {
 
 static mi_export_t mi_cmds[] = {
 	{ "call_transfer", 0, 0, 0, {
-		{mi_call_transfer, {"callid", "leg", "destination", 0}},
+		{mi_call_blind_transfer, {"callid", "leg", "destination", 0}},
+		{mi_call_attended_transfer,
+			{"callid", "leg", "transfer_callid", "transfer_leg", 0}},
+		{mi_call_attended_transfer,
+			{"callid", "leg", "transfer_callid", "transfer_leg",
+				"destination", 0}},
+		{mi_call_attended_transfer,
+			{"callid", "leg", "transfer_callid", "transfer_fromtag",
+				"transfer_totag", "transfer_destination", 0}},
 		{EMPTY_MI_RECIPE}}
 	}
 };
@@ -292,13 +303,13 @@ static void call_dlg_rm_uri_param(struct sip_msg *msg, str *param)
 	set_ruri(msg, &buf);
 }
 
-static void call_blind_transfer_dlg_unref(void *p)
+static void call_transfer_dlg_unref(void *p)
 {
 	struct dlg_cell *dlg = p;
 	call_dlg_api.dlg_unref(dlg, 1);
 }
 
-static inline void call_blind_raise_dlg(struct dlg_cell *dlg, str *callid, str *ruri,
+static inline void call_transfer_raise(struct dlg_cell *dlg, str *callid, str *ruri,
 		str *state, str *status)
 {
 	/* XXX: old leg is caller or callee, so it should be safe to use a buffer
@@ -313,7 +324,7 @@ static inline void call_blind_raise_dlg(struct dlg_cell *dlg, str *callid, str *
 			callid, ruri, state, status, NULL);
 }
 
-static void call_blind_transfer_reply(struct cell *t, int type, struct tmcb_params *ps)
+static void call_transfer_reply(struct cell *t, int type, struct tmcb_params *ps)
 {
 	str status, new_callid, state;
 	struct dlg_cell *dlg = *ps->param;
@@ -342,7 +353,7 @@ static void call_blind_transfer_reply(struct cell *t, int type, struct tmcb_para
 	if (get_callid(ps->req, &new_callid) < 0)
 		init_str(&new_callid, "unknown");
 
-	call_blind_raise_dlg(dlg, &new_callid, call_get_ruri(ps->req), &state, &status);
+	call_transfer_raise(dlg, &new_callid, call_get_ruri(ps->req), &state, &status);
 	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &empty_str);
 }
 
@@ -377,8 +388,8 @@ static int call_blind_transfer(struct sip_msg *msg, str *old_callid, str *old_le
 
 	RAISE_CALL_EVENT(TRANSFER, old_callid, old_leg, new_callid,
 			dst, &state, &empty_str, NULL);
-	if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, call_blind_transfer_reply,
-			old_dlg, call_blind_transfer_dlg_unref) <= 0) {
+	if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, call_transfer_reply,
+			old_dlg, call_transfer_dlg_unref) <= 0) {
 		call_dlg_api.dlg_unref(old_dlg, 1);
 		LM_ERR("cannot register reply handler!\n");
 		RAISE_CALL_EVENT(TRANSFER, old_callid, old_leg, new_callid,
@@ -388,11 +399,106 @@ static int call_blind_transfer(struct sip_msg *msg, str *old_callid, str *old_le
 	return 1;
 }
 
+static int call_attended_transfer(struct dlg_cell *dlg, struct sip_msg *msg)
+{
+	static str state = str_init("start");
+	static str failure = str_init("fail");
+	struct replaces_body rpl;
+	struct dlg_cell *init_dlg;
+	struct dlg_cell *rpl_dlg;
+	str rpl_leg, init_callid;
+	str *ruri;
+	int ret;
+
+	/* if we have a Replaces header, this means that we have an attended transfer */
+	if (parse_headers(msg, HDR_REPLACES_F, 0) < 0 || !msg->replaces)
+		return 1;
+
+	if (parse_replaces_body(msg->replaces->body.s, msg->replaces->body.len, &rpl) < 0)
+		return 1;
+
+	/* we've got the callid that is being replaced - fetch it */
+	rpl_dlg = call_dlg_api.get_dlg_by_callid(&rpl.callid_val, 0);
+	if (!rpl_dlg) {
+		/* TODO - check to see if we know any dialog that is being transfered
+		 * for this callid - should search by dialog value */
+		LM_DBG("unknown callid for us - not handling\n");
+		return 1;
+	}
+
+	ret = 1;
+	/* double check the tags to find out the direction */
+	if (str_match(&rpl_dlg->legs[DLG_CALLER_LEG].tag, &rpl.from_tag_val) &&
+			str_match(&rpl_dlg->legs[callee_idx(rpl_dlg)].tag, &rpl.to_tag_val)) {
+		init_str(&rpl_leg, "callee");
+	} else if (str_match(&rpl_dlg->legs[DLG_CALLER_LEG].tag, &rpl.to_tag_val) &&
+			str_match(&rpl_dlg->legs[callee_idx(rpl_dlg)].tag, &rpl.from_tag_val)) {
+		init_str(&rpl_leg, "caller");
+	} else {
+		LM_WARN("tags mismatch replace=[%.*s/%.*s] dlg=[%.*s/%.*s] - not handling\n",
+				rpl.from_tag_val.len, rpl.from_tag_val.s,
+				rpl.to_tag_val.len, rpl.to_tag_val.s,
+				rpl_dlg->legs[DLG_CALLER_LEG].tag.len,
+				rpl_dlg->legs[DLG_CALLER_LEG].tag.s,
+				rpl_dlg->legs[callee_idx(rpl_dlg)].tag.len,
+				rpl_dlg->legs[callee_idx(rpl_dlg)].tag.s);
+		goto unref_rpl;
+	}
+
+	ret = -1;
+	ruri = call_get_ruri(msg);
+
+	/* check if we are aware of the other leg being transfered */
+	if (call_dlg_api.fetch_dlg_value(rpl_dlg, &call_transfer_callid_param,
+			&init_callid, 0) >= 0) {
+		/* search the initial dialog */
+		init_dlg = call_dlg_api.get_dlg_by_callid(&init_callid, 0);
+		if (init_dlg) {
+			/* indicate that the current dialog is being replaced */
+			call_transfer_raise(init_dlg, &dlg->callid, ruri, &state, &empty_str);
+			call_dlg_api.store_dlg_value(init_dlg,
+					&call_transfer_callid_param, &dlg->callid);
+			if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT,
+					call_transfer_reply,
+					init_dlg, call_transfer_dlg_unref) <= 0) {
+				call_transfer_raise(init_dlg, &dlg->callid, ruri, &failure, &empty_str);
+				call_dlg_api.dlg_unref(init_dlg, 1);
+			}
+		} else {
+			LM_WARN("previous dialog %.*s was not found\n",
+					init_callid.len, init_callid.s);
+		}
+	} else {
+		LM_ERR("could not find the transfered callid");
+	}
+
+	call_dlg_api.store_dlg_value(rpl_dlg, &call_transfer_param, &rpl_leg);
+	call_dlg_api.store_dlg_value(rpl_dlg, &call_transfer_callid_param, &dlg->callid);
+	RAISE_CALL_EVENT(TRANSFER, &rpl.callid_val, &rpl_leg, &dlg->callid, ruri,
+			&state, &empty_str, NULL);
+	if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, call_transfer_reply,
+			rpl_dlg, call_transfer_dlg_unref) <= 0) {
+		LM_ERR("cannot register reply handler!\n");
+		RAISE_CALL_EVENT(TRANSFER, &rpl.callid_val, &rpl_leg, &dlg->callid,
+				ruri, &failure, &empty_str, NULL);
+		goto unref_rpl;
+	}
+	return 0;
+
+unref_rpl:
+	call_dlg_api.dlg_unref(rpl_dlg, 1);
+	return ret;
+}
+
 static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_params *params)
 {
 	str *old_callid;
 
-	/* TODO: search for any Replaces header */
+	if (!params->msg)
+		return;
+
+	if (call_attended_transfer(dlg, params->msg) == 0)
+		return; /* call handled as attended transfer */
 
 	/* this is used to match different legs of the same "logical" call */
 	switch (call_match_mode) {
@@ -410,7 +516,7 @@ static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 	}
 }
 
-static str *call_dlg_get_refer_to(str *dst, str *id)
+static str *call_dlg_get_blind_refer_to(str *dst, str *id)
 {
 	static str refer_hdr;
 
@@ -430,6 +536,60 @@ static str *call_dlg_get_refer_to(str *dst, str *id)
 	refer_hdr.s[refer_hdr.len++] = '=';
 	memcpy(refer_hdr.s + refer_hdr.len, id->s, id->len);
 	refer_hdr.len += id->len;
+	memcpy(refer_hdr.s + refer_hdr.len, ">\r\n", 3);
+	refer_hdr.len += 3;
+
+	return &refer_hdr;
+}
+
+static str *call_dlg_get_attended_refer_to(str *dst, str *callid, str *fromtag, str *totag)
+{
+	static str refer_hdr;
+	str tmp;
+
+	refer_hdr.s = pkg_malloc(11 /* Refer-To: < */ + dst->len +
+			10 /* ?Replaces= */ + callid->len * 3 + 12 /* %3Bto-tag%3D */ +
+			totag->len * 3 + /* %3Bfrom-tag%3D */ + fromtag->len * 3 + 3/* >\r\n */);
+	if (!refer_hdr.s) {
+		LM_ERR("oom for refer hdr\n");
+		return NULL;
+	}
+	memcpy(refer_hdr.s, "Refer-To: <", 11);
+	refer_hdr.len = 11;
+	memcpy(refer_hdr.s + refer_hdr.len, dst->s, dst->len);
+	refer_hdr.len += dst->len;
+	memcpy(refer_hdr.s + refer_hdr.len, "?Replaces=", 10);
+	refer_hdr.len += 10;
+	memcpy(refer_hdr.s + refer_hdr.len, callid->s, callid->len);
+	tmp.s = refer_hdr.s + refer_hdr.len;
+	tmp.len = callid->len * 3 + 1;
+	if (escape_user(callid, &tmp) < 0) {
+		LM_ERR("could not print callid\n");
+		pkg_free(refer_hdr.s);
+		return NULL;
+	}
+	refer_hdr.len += tmp.len;
+	memcpy(refer_hdr.s + refer_hdr.len, "%3Bto-tag%3D", 12);
+	refer_hdr.len += 12;
+	tmp.s = refer_hdr.s + refer_hdr.len;
+	tmp.len = totag->len * 3 + 1;
+	if (escape_user(totag, &tmp) < 0) {
+		LM_ERR("could not print to-tag\n");
+		pkg_free(refer_hdr.s);
+		return NULL;
+	}
+	refer_hdr.len += tmp.len;
+	memcpy(refer_hdr.s + refer_hdr.len, "%3Bfrom-tag%3D", 14);
+	refer_hdr.len += 14;
+	tmp.s = refer_hdr.s + refer_hdr.len;
+	tmp.len = fromtag->len * 3 + 1;
+	if (escape_user(fromtag, &tmp) < 0) {
+		LM_ERR("could not print from-tag\n");
+		pkg_free(refer_hdr.s);
+		return NULL;
+	}
+	refer_hdr.len += tmp.len;
+
 	memcpy(refer_hdr.s + refer_hdr.len, ">\r\n", 3);
 	refer_hdr.len += 3;
 
@@ -517,7 +677,7 @@ static int call_handle_notify(struct dlg_cell *dlg, struct sip_msg *msg)
 	status.len -= SIP_VERSION_LEN;
 	status.s += SIP_VERSION_LEN;
 	trim(&status);
-	call_blind_raise_dlg(dlg, &new_callid, &empty_str, &state, &status);
+	call_transfer_raise(dlg, &new_callid, &empty_str, &state, &status);
 
 	status_code = 200;
 
@@ -548,7 +708,7 @@ static void call_transfer_dlg_callback(struct dlg_cell* dlg, int type,
 	}
 }
 
-static mi_response_t *mi_call_transfer(const mi_params_t *params,
+static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	static str refer = str_init("REFER");
@@ -590,7 +750,7 @@ static mi_response_t *mi_call_transfer(const mi_params_t *params,
 		goto unref;
 	}
 
-	refer_hdr = call_dlg_get_refer_to(&dst, &callid);
+	refer_hdr = call_dlg_get_blind_refer_to(&dst, &callid);
 	if (!refer_hdr)
 		goto unref;
 
@@ -621,6 +781,159 @@ unref:
 	call_dlg_api.dlg_unref(dlg, 1);
 	return ret;
 }
+
+static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	static str refer = str_init("REFER");
+	mi_response_t *ret = NULL;
+	str callidA, legA, callidB, legB, tleg;
+	struct dlg_cell *dlgA, *dlgB = NULL;
+	str *refer_hdr, *dst;
+	int callerA = 0, callerB = 0;
+	str fromtag, totag, sdst;
+
+
+	if (get_mi_string_param(params, "callid",
+			&callidA.s, &callidA.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "leg", &legA.s, &legA.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "transfer_callid",
+			&callidB.s, &callidB.len) < 0)
+		return init_mi_param_error();
+
+	if (str_match_nt(&legA, "caller"))
+		callerA = 1;
+	else if (!str_match_nt(&legA, "callee"))
+		return init_mi_param_error();
+
+	/* destination might be missing, but if we have something, use it */
+	switch (try_get_mi_string_param(params, "destination", &sdst.s, &sdst.len)) {
+		case -1:
+			dst = NULL;
+			break;
+		case -2:
+			return init_mi_param_error();
+		default:
+			dst = &sdst;
+	}
+
+	switch (try_get_mi_string_param(params, "transfer_leg", &legB.s, &legB.len)) {
+		case -2:
+		return init_mi_param_error();
+			return init_mi_param_error();
+		case -1:
+			/* we don't have a transfer_leg - we must have from and to tags */
+			if (!dst)
+				return init_mi_param_error();
+			if (get_mi_string_param(params, "transfer_fromtag",
+					&fromtag.s, &fromtag.len) < 0)
+				return init_mi_param_error();
+			if (get_mi_string_param(params, "transfer_totag",
+					&totag.s, &totag.len) < 0)
+				return init_mi_param_error();
+			break;
+		default:
+			if (str_match_nt(&legB, "caller"))
+				callerB = 1;
+			else if (!str_match_nt(&legB, "callee"))
+				return init_mi_param_error();
+
+			/* fetch the callid and get its from and to tags */
+			dlgB = call_dlg_api.get_dlg_by_callid(&callidB, 0);
+			if (!dlgB)
+				return init_mi_error(404, MI_SSTR("Transfer dialog not found"));
+
+			if (dlgB->state >= DLG_STATE_DELETED) {
+				ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
+				call_dlg_api.dlg_unref(dlgB, 1);
+				goto unrefB;
+			}
+
+			if (callerB) {
+				fromtag = dlgB->legs[callee_idx(dlgB)].tag;
+				totag = dlgB->legs[DLG_CALLER_LEG].tag;
+				if (!dst)
+					dst = &dlgB->from_uri;
+			} else {
+				fromtag = dlgB->legs[DLG_CALLER_LEG].tag;
+				totag = dlgB->legs[callee_idx(dlgB)].tag;
+				if (!dst)
+					dst = &dlgB->to_uri;
+			}
+			break;
+	}
+
+	/* all good - find the dialog we need */
+	dlgA = call_dlg_api.get_dlg_by_callid(&callidA, 1);
+	if (!dlgA) {
+		ret =  init_mi_error(404, MI_SSTR("Dialog not found"));
+		goto unrefB;
+	}
+
+	if (dlgA->state >= DLG_STATE_DELETED) {
+		ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
+		goto unrefA;
+	}
+	/* check to see if the call is already in a transfer process */
+	if (call_dlg_api.fetch_dlg_value(dlgA, &call_transfer_param, &tleg, 0) >= 0 &&
+			tleg.len >= 0) {
+		LM_INFO("%.*s is already trasfering %.*s\n",
+				callidA.len, callidA.s, tleg.len, tleg.s);
+		ret = init_mi_error(491, MI_SSTR("Request Pending"));
+		goto unrefA;
+	}
+
+	/* if we are not aware of the other callid, we need to receive it in a
+	 * param */
+	refer_hdr = call_dlg_get_attended_refer_to(dst, &callidB, &fromtag, &totag);
+	if (!refer_hdr)
+		goto unrefA;
+
+	if (dlgB) {
+		/* we also need to store in B the fact that is being replaced by A */
+		if (call_dlg_api.store_dlg_value(dlgB, &call_transfer_callid_param, &callidA) < 0) {
+			LM_ERR("can not store that A(%.*s) is replacing B(%.*s)\n",
+					callidA.len, callidA.s, callidB.len, callidB.s);
+			goto unrefA;
+		}
+	}
+
+	call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &legA);
+	/* register callbacks for handling notifies - does not matter if this
+	 * fails, its not like we won't transfer if we don't get the notifications
+	 * - some devices don't even send the :) */
+	if (call_match_mode != CALL_MATCH_MANUAL)
+		call_dlg_api.register_dlgcb(dlgA, DLGCB_REQ_WITHIN,
+				call_transfer_dlg_callback, 0, 0);
+
+	if (call_dlg_api.send_indialog_request(dlgA, &refer,
+			(callerA?DLG_CALLER_LEG:callee_idx(dlgA)), NULL, NULL, refer_hdr,
+			mi_call_transfer_reply, async_hdl) < 0) {
+		LM_ERR("could not send the transfer message!\n");
+		call_dlg_api.store_dlg_value((dlgB?dlgB:dlgA),
+				&call_transfer_callid_param, &empty_str);
+		call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &empty_str);
+		goto end;
+	}
+
+	if (!async_hdl)
+		ret = init_mi_result_string(MI_SSTR("Accepted"));
+	else
+		ret = MI_ASYNC_RPL;
+end:
+	pkg_free(refer_hdr->s);
+unrefA:
+	call_dlg_api.dlg_unref(dlgA, 1);
+unrefB:
+	if (dlgB)
+		call_dlg_api.dlg_unref(dlgB, 1);
+	return ret;
+}
+
 
 static int call_blind_replace(struct sip_msg *req, str *old_callid, str *old_leg)
 {
