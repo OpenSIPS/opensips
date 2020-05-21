@@ -986,9 +986,9 @@ fi
 %{_libdir}/opensips/modules/enum.so
 %{_libdir}/opensips/modules/event_datagram.so
 %{_libdir}/opensips/modules/event_flatstore.so
-%{_libdir}/opensips/modules/event_jsonrpc.so
 %{_libdir}/opensips/modules/event_route.so
 %{_libdir}/opensips/modules/event_routing.so
+%{_libdir}/opensips/modules/event_stream.so
 %{_libdir}/opensips/modules/event_virtual.so
 %{_libdir}/opensips/modules/event_xmlrpc.so
 %{_libdir}/opensips/modules/exec.so
@@ -1074,9 +1074,9 @@ fi
 %doc docdir/README.enum
 %doc docdir/README.event_datagram
 %doc docdir/README.event_flatstore
-%doc docdir/README.event_jsonrpc
 %doc docdir/README.event_route
 %doc docdir/README.event_routing
+%doc docdir/README.event_stream
 %doc docdir/README.event_virtual
 %doc docdir/README.event_xmlrpc
 %doc docdir/README.exec
@@ -1454,6 +1454,7 @@ fi
   rabbitmq_consumer, rate_cacher, stir_shaken, uuid
 - New package: stir-shaken-module
 - Obsoleted modules: seas, sms
+- Renamed: event_jsonrpc -> event_stream
 - Removed: opensipsunix, osipsconsole, opensipsctl, opensipsdbctl
 
 * Thu Apr 11 2019 Nick Altmann <nick.altmann@gmail.com> - 3.0.0-1
