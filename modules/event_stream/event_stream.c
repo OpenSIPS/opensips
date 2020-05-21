@@ -23,8 +23,8 @@
 #include "../../resolve.h"
 #include "../../evi/evi_transport.h"
 #include "../../ut.h"
-#include "event_jsonrpc.h"
-#include "jsonrpc_send.h"
+#include "event_stream.h"
+#include "stream_send.h"
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -40,26 +40,26 @@ static int child_init(int);
 /**
  * exported functions
  */
-static evi_reply_sock* jsonrpc_parse(str socket);
-static int jsonrpc_raise(struct sip_msg *msg, str* ev_name,
+static evi_reply_sock* stream_parse(str socket);
+static int stream_raise(struct sip_msg *msg, str* ev_name,
 						evi_reply_sock *sock, evi_params_t * params);
-static int jsonrpc_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
-static void jsonrpc_free(evi_reply_sock *sock);
-static str jsonrpc_print(evi_reply_sock *sock);
+static int stream_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
+static void stream_free(evi_reply_sock *sock);
+static str stream_print(evi_reply_sock *sock);
 
 /**
  * module process
  */
 static proc_export_t procs[] = {
-	{"JSON-RPC sender",  0,  0, jsonrpc_process, 1, 0},
+	{"event_stream Sender",  0,  0, stream_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
 /* module parameters */
 static param_export_t mod_params[] = {
-	{"sync_mode",		INT_PARAM, &jsonrpc_sync_mode},
-	{"event_param",		STR_PARAM, &jsonrpc_event_param},
-	{"timeout",			INT_PARAM, &jsonrpc_timeout},
+	{"sync_mode",		INT_PARAM, &stream_sync_mode},
+	{"event_param",		STR_PARAM, &stream_event_param},
+	{"timeout",			INT_PARAM, &stream_timeout},
 	{0,0,0}
 };
 
@@ -67,7 +67,7 @@ static param_export_t mod_params[] = {
  * module exports
  */
 struct module_exports exports = {
-	"event_jsonrpc",				/* module name */
+	"event_stream",				/* module name */
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
@@ -92,18 +92,18 @@ struct module_exports exports = {
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_jsonrpc = {
-	JSONRPC_STR,				/* transport module name */
-	jsonrpc_raise,				/* raise function */
-	jsonrpc_parse,				/* parse function */
-	jsonrpc_match,				/* sockets match function */
-	jsonrpc_free,				/* free function */
-	jsonrpc_print,				/* print function */
-	JSONRPC_FLAG				/* flags */
+static evi_export_t trans_export_stream = {
+	TCP_STR,					/* transport module name */
+	stream_raise,				/* raise function */
+	stream_parse,				/* parse function */
+	stream_match,				/* sockets match function */
+	stream_free,				/* free function */
+	stream_print,				/* print function */
+	STREAM_FLAG					/* flags */
 };
 
 static int child_init(int rank) {
-	if (jsonrpc_init_writer() < 0) {
+	if (stream_init_writer() < 0) {
 		LM_ERR("cannot init writing pipe\n");
 		return -1;
 	}
@@ -117,12 +117,12 @@ static int mod_init(void)
 {
 	LM_NOTICE("initializing module ...\n");
 
-	if (register_event_mod(&trans_export_jsonrpc)) {
-		LM_ERR("cannot register transport functions for jsonrpc\n");
+	if (register_event_mod(&trans_export_stream)) {
+		LM_ERR("cannot register transport functions for event_stream\n");
 		return -1;
 	}
 
-	if (jsonrpc_init_process() < 0) {
+	if (stream_init_process() < 0) {
 		LM_ERR("cannot initialize external process\n");
 		return -1;
 	}
@@ -131,10 +131,10 @@ static int mod_init(void)
 }
 
 /* returns 0 if sockets match */
-static int jsonrpc_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
+static int stream_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 {
 	str *m1, *m2;
-	unsigned needed_flags = JSONRPC_FLAG|EVI_PORT|EVI_ADDRESS;
+	unsigned needed_flags = STREAM_FLAG|EVI_PORT|EVI_ADDRESS;
 	if (!sock1 || !sock2)
 		return 0;
 	/* check for similar flags */
@@ -166,7 +166,7 @@ static int jsonrpc_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
  * The socket grammar should be:
  * 		 ip ':' port ['/'method]
  */
-static evi_reply_sock* jsonrpc_parse(str socket)
+static evi_reply_sock* stream_parse(str socket)
 {
 	evi_reply_sock *sock = NULL;
 	unsigned short port = 0;
@@ -274,7 +274,7 @@ static evi_reply_sock* jsonrpc_parse(str socket)
 	}
 
 	/* needs expire */
-	sock->flags |= EVI_EXPIRE|JSONRPC_FLAG;
+	sock->flags |= EVI_EXPIRE|STREAM_FLAG;
 
 	return sock;
 error:
@@ -285,29 +285,29 @@ error:
 
 #define DO_PRINT(_s, _l) \
 	do { \
-		if (jsonrpc_print_s.len + (_l) > jsonrpc_print_len) { \
-			int new_len = (jsonrpc_print_s.len + (_l)) * 2; \
-			char *new_s = pkg_realloc(jsonrpc_print_s.s, new_len); \
+		if (stream_print_s.len + (_l) > stream_print_len) { \
+			int new_len = (stream_print_s.len + (_l)) * 2; \
+			char *new_s = pkg_realloc(stream_print_s.s, new_len); \
 			if (!new_s) { \
 				LM_ERR("no more pkg mem to realloc\n"); \
 				goto end; \
 			} \
-			jsonrpc_print_s.s = new_s; \
-			jsonrpc_print_len = new_len; \
+			stream_print_s.s = new_s; \
+			stream_print_len = new_len; \
 		} \
-		memcpy(jsonrpc_print_s.s + jsonrpc_print_s.len, (_s), (_l)); \
-		jsonrpc_print_s.len += (_l); \
+		memcpy(stream_print_s.s + stream_print_s.len, (_s), (_l)); \
+		stream_print_s.len += (_l); \
 	} while (0)
 
-static int jsonrpc_print_len = 0;
-static str jsonrpc_print_s = { 0, 0 };
+static int stream_print_len = 0;
+static str stream_print_s = { 0, 0 };
 
-static str jsonrpc_print(evi_reply_sock *sock)
+static str stream_print(evi_reply_sock *sock)
 {
 	str aux;
 	str *method;
 
-	jsonrpc_print_s.len = 0;
+	stream_print_s.len = 0;
 
 	if (!sock) {
 		LM_DBG("Nothing to print\n");
@@ -330,15 +330,15 @@ static str jsonrpc_print(evi_reply_sock *sock)
 	}
 
 end:
-	return jsonrpc_print_s;
+	return stream_print_s;
 }
 #undef DO_PRINT
 
 
-static int jsonrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
+static int stream_raise(struct sip_msg *dummy_msg, str* ev_name,
 						evi_reply_sock *sock, evi_params_t * params)
 {
-	jsonrpc_send_t *msg = NULL;
+	stream_send_t *msg = NULL;
 	str socket;
 	const char *err_msg;
 
@@ -348,7 +348,7 @@ static int jsonrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
 	}
 
 	/* check the socket type */
-	if (!(sock->flags & JSONRPC_FLAG)) {
+	if (!(sock->flags & STREAM_FLAG)) {
 		LM_ERR("invalid socket type %x\n", sock->flags);
 		return -1;
 	}
@@ -363,25 +363,25 @@ static int jsonrpc_raise(struct sip_msg *dummy_msg, str* ev_name,
 		return -1;
 	}
 
-	if (jsonrpc_build_buffer(ev_name, sock, params, &msg) < 0) {
+	if (stream_build_buffer(ev_name, sock, params, &msg) < 0) {
 		err_msg = "creating send buffer";
 		goto error;
 	}
 
-	if (jsonrpc_send(msg) < 0) {
+	if (stream_send(msg) < 0) {
 		err_msg = "raising event";
 		goto error;
 	}
 
 	return 0;
 error:
-	socket = jsonrpc_print(sock);
+	socket = stream_print(sock);
 	LM_ERR("%s %.*s to %.*s failed!\n", err_msg,
 			ev_name->len, ev_name->s, socket.len, socket.s);
 	return -1;
 }
 
-static void jsonrpc_free(evi_reply_sock *sock)
+static void stream_free(evi_reply_sock *sock)
 {
 	/* nothing special here */
 	shm_free(sock);
@@ -394,5 +394,5 @@ static void destroy(void)
 {
 	LM_NOTICE("destroy module ...\n");
 	/* closing sockets */
-	jsonrpc_destroy_pipe();
+	stream_destroy_pipe();
 }

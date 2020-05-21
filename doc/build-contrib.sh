@@ -598,6 +598,7 @@ mod_renames=(
   [stir_shaken]=stir
   [mi_http]=mi_json:1540473075:  # old_module:new_module_since:old_module_until
   [mi_html]=mi_http::1540473075
+  [event_stream]=event_jsonrpc
 )
 
 mk_git_handle() {

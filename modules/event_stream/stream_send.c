@@ -27,8 +27,8 @@
 #include "../../lib/osips_malloc.h"
 #include "../../lib/cJSON.h"
 #include "../../reactor.h"
-#include "jsonrpc_send.h"
-#include "event_jsonrpc.h"
+#include "stream_send.h"
+#include "event_stream.h"
 #include <sys/uio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -37,23 +37,23 @@
 
 #define JSONRPC_REQ_NEW		0
 #define JSONRPC_REQ_SENT	1
-#define JSONRPC_REACTOR_TIMEOUT  1 /* sec */
-#define JSONRPC_SEND_SUCCESS 0
-#define JSONRPC_SEND_FAIL -1
-#define JSONRPC_MAX_PENDING_READS 4
+#define STREAM_REACTOR_TIMEOUT  1 /* sec */
+#define STREAM_SEND_SUCCESS 0
+#define STREAM_SEND_FAIL -1
+#define STREAM_MAX_PENDING_READS 4
 #define IS_ERR(_err) (errno == _err)
-#define JSONRPC_ADDR(con) \
+#define STREAM_ADDR(con) \
 	inet_ntoa(con->addr.sin.sin_addr), ntohs(con->addr.sin.sin_port)
 
-int jsonrpc_timeout = JSONRPC_DEFAULT_TIMEOUT;
-char *jsonrpc_event_param;
-unsigned jsonrpc_sync_mode = 0;
+int stream_timeout = STREAM_DEFAULT_TIMEOUT;
+char *stream_event_param;
+unsigned stream_sync_mode = 0;
 static int jrpc_id_index = 0;
 
 /* used to communicate with the sending process */
-static int jsonrpc_pipe[2];
+static int stream_pipe[2];
 
-struct jsonrpc_con {
+struct stream_con {
 	union sockaddr_union addr;
 	int id;
 	int fd;
@@ -66,21 +66,21 @@ struct jsonrpc_con {
 
 struct jsonrpc_cmd {
 	int state;
-	jsonrpc_send_t *job;
+	stream_send_t *job;
 	struct list_head list;
 };
 
-struct list_head jsonrpc_conns;
+struct list_head stream_conns;
 
 /* creates communication pipe */
-static int jsonrpc_create_pipe(void)
+static int stream_create_pipe(void)
 {
 	int rc;
 
-	jsonrpc_pipe[0] = jsonrpc_pipe[1] = -1;
+	stream_pipe[0] = stream_pipe[1] = -1;
 	/* create pipe */
 	do {
-		rc = pipe(jsonrpc_pipe);
+		rc = pipe(stream_pipe);
 	} while (rc < 0 && IS_ERR(EINTR));
 
 	if (rc < 0) {
@@ -91,62 +91,62 @@ static int jsonrpc_create_pipe(void)
 	return 0;
 }
 
-int jsonrpc_init_process(void)
+int stream_init_process(void)
 {
-	INIT_LIST_HEAD(&jsonrpc_conns);
+	INIT_LIST_HEAD(&stream_conns);
 
-	return jsonrpc_create_pipe();
+	return stream_create_pipe();
 }
 
-void jsonrpc_destroy_pipe(void)
+void stream_destroy_pipe(void)
 {
-	if (jsonrpc_pipe[0] != -1)
-		close(jsonrpc_pipe[0]);
-	if (jsonrpc_pipe[1] != -1)
-		close(jsonrpc_pipe[1]);
+	if (stream_pipe[0] != -1)
+		close(stream_pipe[0]);
+	if (stream_pipe[1] != -1)
+		close(stream_pipe[1]);
 }
 
-int jsonrpc_send(jsonrpc_send_t* jsonrpcs)
+int stream_send(stream_send_t* streams)
 {
-	int rc, retries = JSONRPC_SEND_RETRY;
+	int rc, retries = STREAM_SEND_RETRY;
 	long send_status;
 
-	jsonrpcs->process_idx = process_no;
+	streams->process_idx = process_no;
 
 	do {
-		rc = write(jsonrpc_pipe[1], &jsonrpcs, sizeof(jsonrpc_send_t *));
+		rc = write(stream_pipe[1], &streams, sizeof(stream_send_t *));
 	} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
 
 	if (rc < 0) {
 		LM_ERR("unable to send jsonrpc send struct to worker\n");
-		shm_free(jsonrpcs);
-		return JSONRPC_SEND_FAIL;
+		shm_free(streams);
+		return STREAM_SEND_FAIL;
 	}
 	/* give a chance to the writer :) */
 	sched_yield();
 
-	if (jsonrpc_sync_mode) {
+	if (stream_sync_mode) {
 		if (ipc_recv_sync_reply((void **)(long *)&send_status) < 0) {
 			LM_ERR("cannot receive send status\n");
-			send_status = JSONRPC_SEND_FAIL;
+			send_status = STREAM_SEND_FAIL;
 		}
 
 		return (int)send_status;
 	} else
-		return JSONRPC_SEND_SUCCESS;
+		return STREAM_SEND_SUCCESS;
 }
 
-static jsonrpc_send_t * jsonrpc_receive(void)
+static stream_send_t * stream_receive(void)
 {
-	static jsonrpc_send_t * recv;
+	static stream_send_t * recv;
 	int rc;
-	int retries = JSONRPC_SEND_RETRY;
+	int retries = STREAM_SEND_RETRY;
 
-	if (jsonrpc_pipe[0] == -1)
+	if (stream_pipe[0] == -1)
 		return NULL;
 
 	do {
-		rc = read(jsonrpc_pipe[0], &recv, sizeof(jsonrpc_send_t*));
+		rc = read(stream_pipe[0], &recv, sizeof(stream_send_t*));
 	} while (rc < 0 && (IS_ERR(EINTR) || retries-- > 0));
 
 	if (rc < 0) {
@@ -156,51 +156,51 @@ static jsonrpc_send_t * jsonrpc_receive(void)
 	return recv;
 }
 
-int jsonrpc_init_writer(void)
+int stream_init_writer(void)
 {
 	int flags;
 
-	if (jsonrpc_pipe[0] != -1) {
-		close(jsonrpc_pipe[0]);
-		jsonrpc_pipe[0] = -1;
+	if (stream_pipe[0] != -1) {
+		close(stream_pipe[0]);
+		stream_pipe[0] = -1;
 	}
 
-	if (jsonrpc_sync_mode) {
+	if (stream_sync_mode) {
 		/* initilize indexes */
 		jrpc_id_index = my_pid() & USHRT_MAX;
 		jrpc_id_index |= rand() << sizeof(unsigned short);
 	}
 
 	/* Turn non-blocking mode on for sending*/
-	flags = fcntl(jsonrpc_pipe[1], F_GETFL);
+	flags = fcntl(stream_pipe[1], F_GETFL);
 	if (flags == -1) {
 		LM_ERR("fcntl failed: %s\n", strerror(errno));
 		goto error;
 	}
-	if (fcntl(jsonrpc_pipe[1], F_SETFL, flags | O_NONBLOCK) == -1) {
+	if (fcntl(stream_pipe[1], F_SETFL, flags | O_NONBLOCK) == -1) {
 		LM_ERR("fcntl: set non-blocking failed: %s\n", strerror(errno));
 		goto error;
 	}
 
 	return 0;
 error:
-	close(jsonrpc_pipe[1]);
-	jsonrpc_pipe[1] = -1;
+	close(stream_pipe[1]);
+	stream_pipe[1] = -1;
 	return -1;
 }
 
 static void jsonrpc_init_reader(void)
 {
-	if (jsonrpc_pipe[1] != -1) {
-		close(jsonrpc_pipe[1]);
-		jsonrpc_pipe[1] = -1;
+	if (stream_pipe[1] != -1) {
+		close(stream_pipe[1]);
+		stream_pipe[1] = -1;
 	}
 }
 
 
 static inline int jsonrpc_unique_id(void)
 {
-	if (!jsonrpc_sync_mode)
+	if (!stream_sync_mode)
 		return 0;
 	/*
 	 * the format is 'rand | my_pid'
@@ -212,13 +212,13 @@ static inline int jsonrpc_unique_id(void)
 	return jrpc_id_index < 0 ? -jrpc_id_index : jrpc_id_index;
 }
 
-static jsonrpc_send_t *jsonrpc_build_send_t(evi_reply_sock *sock,
+static stream_send_t *stream_build_send_t(evi_reply_sock *sock,
 		char *json, int id)
 {
 	int jlen = strlen(json);
-	int len = sizeof(jsonrpc_send_t) + jlen;
+	int len = sizeof(stream_send_t) + jlen;
 
-	jsonrpc_send_t *msg = shm_malloc(len);
+	stream_send_t *msg = shm_malloc(len);
 	if (!msg) {
 		LM_ERR("no more shm mem\n");
 		return NULL;
@@ -240,25 +240,25 @@ static jsonrpc_send_t *jsonrpc_build_send_t(evi_reply_sock *sock,
 }
 
 /* function to build jsonrpc buffer */
-int jsonrpc_build_buffer(str *event_name, evi_reply_sock *sock,
-		evi_params_t *params, jsonrpc_send_t ** msg)
+int stream_build_buffer(str *event_name, evi_reply_sock *sock,
+		evi_params_t *params, stream_send_t ** msg)
 {
 	char *s;
 	int id = jsonrpc_unique_id();
 	str *method = (sock->flags & EVI_PARAMS ? (str *)sock->params: event_name);
 	str extra_param = {0,0};
 
-	if (jsonrpc_event_param)
-		init_str(&extra_param, jsonrpc_event_param);
+	if (stream_event_param)
+		init_str(&extra_param, stream_event_param);
 
-	s = evi_build_payload(params, method, jsonrpc_sync_mode ? id : 0,
+	s = evi_build_payload(params, method, stream_sync_mode ? id : 0,
 		extra_param.s ? &extra_param : NULL, extra_param.s ? event_name : NULL);
 	if (!s) {
 		LM_ERR("Failed to build event payload\n");
 		return -1;
 	}
 
-	*msg = jsonrpc_build_send_t(sock, s, id);
+	*msg = stream_build_send_t(sock, s, id);
 	if (!*msg) {
 		LM_ERR("cannot build send msg\n");
 		evi_free_payload(s);
@@ -270,13 +270,13 @@ int jsonrpc_build_buffer(str *event_name, evi_reply_sock *sock,
 	return 0;
 }
 
-static struct jsonrpc_con *jsonrpc_get_con(union sockaddr_union *addr)
+static struct stream_con *stream_get_con(union sockaddr_union *addr)
 {
-	struct jsonrpc_con *con;
+	struct stream_con *con;
 	struct list_head *it;
 
-	list_for_each(it, &jsonrpc_conns) {
-		con = list_entry(it, struct jsonrpc_con, list);
+	list_for_each(it, &stream_conns) {
+		con = list_entry(it, struct stream_con, list);
 		if (memcmp(&con->addr, addr, sizeof(*addr)) == 0)
 			return con;
 	}
@@ -292,9 +292,9 @@ static struct jsonrpc_con *jsonrpc_get_con(union sockaddr_union *addr)
 #define F_EV_JSONRPC_CMD -1
 #define F_EV_JSONRPC_RPL -2
 
-static struct jsonrpc_con *jsonrpc_new_con(union sockaddr_union *addr)
+static struct stream_con *stream_new_con(union sockaddr_union *addr)
 {
-	struct jsonrpc_con *con;
+	struct stream_con *con;
 	int fd;
 	int flags;
 
@@ -344,7 +344,7 @@ static struct jsonrpc_con *jsonrpc_new_con(union sockaddr_union *addr)
 		goto close;
 	}
 
-	list_add(&con->list, &jsonrpc_conns);
+	list_add(&con->list, &stream_conns);
 	return con;
 close:
 	shutdown(fd, SHUT_RDWR);
@@ -367,13 +367,13 @@ static void jsonrpc_cmd_write(int process_idx, int send_status)
 static void jsonrpc_cmd_reply(struct jsonrpc_cmd *cmd, int send_status)
 {
 
-	if (!jsonrpc_sync_mode)
+	if (!stream_sync_mode)
 		return;
 
 	jsonrpc_cmd_write(cmd->job->process_idx, send_status);
 }
 
-static void jsonrpc_con_free(struct jsonrpc_con *con)
+static void stream_con_free(struct stream_con *con)
 {
 	struct list_head *it, *tmp;
 	struct jsonrpc_cmd *cmd;
@@ -385,11 +385,11 @@ static void jsonrpc_con_free(struct jsonrpc_con *con)
 	if (con->pending_buffer.len)
 		pkg_free(con->pending_buffer.s);
 
-	if (jsonrpc_sync_mode) {
+	if (stream_sync_mode) {
 		/* in sync mode, we need to send back error */
 		list_for_each_safe(it, tmp, &con->cmds) {
 			cmd = list_entry(it, struct jsonrpc_cmd, list);
-			jsonrpc_cmd_reply(cmd, JSONRPC_SEND_FAIL);
+			jsonrpc_cmd_reply(cmd, STREAM_SEND_FAIL);
 			list_del(&cmd->list);
 			jsonrpc_cmd_free(cmd);
 		}
@@ -402,15 +402,15 @@ static void jsonrpc_con_free(struct jsonrpc_con *con)
 }
 
 
-static void handle_new_jsonrpc(jsonrpc_send_t *jsonrpc)
+static void handle_new_stream(stream_send_t *stream)
 {
-	struct jsonrpc_con *con;
+	struct stream_con *con;
 	struct jsonrpc_cmd *cmd;
 
 	/* reuse ongoing connections */
-	con = jsonrpc_get_con(&jsonrpc->addr);
+	con = stream_get_con(&stream->addr);
 	if (!con) {
-		con = jsonrpc_new_con(&jsonrpc->addr);
+		con = stream_new_con(&stream->addr);
 		if (!con) {
 			LM_ERR("cannot create new connection!\n");
 			goto error;
@@ -420,30 +420,30 @@ static void handle_new_jsonrpc(jsonrpc_send_t *jsonrpc)
 	/* send the message */
 	cmd = pkg_malloc(sizeof *cmd);
 	if (!cmd) {
-		LM_ERR("cannot create new JSON-RPC command to %s:%hu!\n", JSONRPC_ADDR(con));
+		LM_ERR("cannot create new JSON-RPC command to %s:%hu!\n", STREAM_ADDR(con));
 		goto error;
 	}
 	con->pending_writes++;
 	cmd->state = JSONRPC_REQ_NEW;
-	cmd->job = jsonrpc;
+	cmd->job = stream;
 	list_add_tail(&cmd->list, &con->cmds);
 
 	if (con->pending_writes == 1 /* first write pending */) {
 		if (reactor_add_writer(con->fd, F_EV_JSONRPC_RPL, RCT_PRIO_ASYNC, con)<0){
-			LM_CRIT("failed to add write jsonrpc connection to reactor\n");
-			jsonrpc_con_free(con);
+			LM_CRIT("failed to add write event_stream connection to reactor\n");
+			stream_con_free(con);
 			return;
 		}
 	}
 
 error:
-	if (jsonrpc_sync_mode) {
+	if (stream_sync_mode) {
 		/* we need to notify the process that the connection failed! */
-		jsonrpc_cmd_write(jsonrpc->process_idx, JSONRPC_SEND_FAIL);
+		jsonrpc_cmd_write(stream->process_idx, STREAM_SEND_FAIL);
 	}
 }
 
-static int handle_cmd_reply(struct jsonrpc_con *con, cJSON *reply)
+static int handle_cmd_reply(struct stream_con *con, cJSON *reply)
 {
 	struct jsonrpc_cmd *cmd;
 	struct list_head *it, *tmp;
@@ -465,7 +465,7 @@ static int handle_cmd_reply(struct jsonrpc_con *con, cJSON *reply)
 
 	/* now check if there is an error */
 	aux = cJSON_GetObjectItem(reply, "error");
-	ret = (aux ? JSONRPC_SEND_FAIL : JSONRPC_SEND_SUCCESS);
+	ret = (aux ? STREAM_SEND_FAIL : STREAM_SEND_SUCCESS);
 
 	/* XXX: should we check the version too?! */
 
@@ -485,28 +485,28 @@ static int handle_cmd_reply(struct jsonrpc_con *con, cJSON *reply)
 	return 0;
 }
 
-static void handle_reply_jsonrpc(struct jsonrpc_con *con)
+static void handle_reply_jsonrpc(struct stream_con *con)
 {
 	/* got a reply on the connection */
 	str buf;
 	cJSON *reply;
 	int bytes_read;
 	const char *end;
-	char buffer[JSONRPC_BUFFER_SIZE + 1];
+	char buffer[STREAM_BUFFER_SIZE + 1];
 
 	do {
-		bytes_read = read(con->fd, buffer, JSONRPC_BUFFER_SIZE);
+		bytes_read = read(con->fd, buffer, STREAM_BUFFER_SIZE);
 	} while (bytes_read == -1 && errno == EINTR);
 	if (bytes_read < 0) {
-		LM_ERR("error while reading reply from %s:%hu\n", JSONRPC_ADDR(con));
+		LM_ERR("error while reading reply from %s:%hu\n", STREAM_ADDR(con));
 		goto error;
 	} else if (bytes_read == 0) {
-			LM_INFO("connection to %s:%hu closed!\n", JSONRPC_ADDR(con));
+			LM_INFO("connection to %s:%hu closed!\n", STREAM_ADDR(con));
 		goto error;
 	}
 
 	/* if not in sync mode, no one listens for the reply */
-	if (jsonrpc_sync_mode == 0)
+	if (stream_sync_mode == 0)
 		return;
 
 	/* got a reply - parse it and match a command */
@@ -557,7 +557,7 @@ static void handle_reply_jsonrpc(struct jsonrpc_con *con)
 			/* still have stuff to parse - move it in the connection */
 			if (con->pending_buffer.s) {
 				con->pending_reads++;
-				if (con->pending_reads > JSONRPC_MAX_PENDING_READS) {
+				if (con->pending_reads > STREAM_MAX_PENDING_READS) {
 					LM_ERR("too many reads retries: %d\n", con->pending_reads);
 					goto error;
 				}
@@ -586,10 +586,10 @@ static void handle_reply_jsonrpc(struct jsonrpc_con *con)
 
 	return;
 error:
-	jsonrpc_con_free(con);
+	stream_con_free(con);
 }
 
-static void handle_write_jsonrpc(struct jsonrpc_con *con)
+static void handle_write_jsonrpc(struct stream_con *con)
 {
 	struct list_head *it, *tmp;
 	struct jsonrpc_cmd *cmd;
@@ -611,13 +611,13 @@ static void handle_write_jsonrpc(struct jsonrpc_con *con)
 		if (bytes_written < 0) {
 			if (errno != EAGAIN && errno != EWOULDBLOCK) {
 				LM_ERR("error while writing on connection to %s:%hu\n",
-						JSONRPC_ADDR(con));
+						STREAM_ADDR(con));
 				goto error_free;
 			} else
 				break; /* check to see if there was anything written */
 		} else if (bytes_written == 0) {
 			LM_ERR("remote connection closed while trying to write to %s:%hu!\n",
-						JSONRPC_ADDR(con));
+						STREAM_ADDR(con));
 		}
 		/* there was a success */
 		bytes_written_total += bytes_written;
@@ -634,7 +634,7 @@ static void handle_write_jsonrpc(struct jsonrpc_con *con)
 
 		/* if sync mode was not used, we don't really care about the reply,
 		 * so we simply discard the job right here */
-		if (!jsonrpc_sync_mode) {
+		if (!stream_sync_mode) {
 			list_del(&cmd->list);
 			jsonrpc_cmd_free(cmd);
 		}
@@ -642,7 +642,7 @@ static void handle_write_jsonrpc(struct jsonrpc_con *con)
 
 	if (bytes_written_total == 0) {
 		LM_ERR("con fd %d in reactor but nothing was written to %s:%hu!\n",
-				con->fd, JSONRPC_ADDR(con));
+				con->fd, STREAM_ADDR(con));
 		goto error_free;
 	}
 
@@ -656,26 +656,26 @@ static void handle_write_jsonrpc(struct jsonrpc_con *con)
 	return;
 
 error_free:
-	jsonrpc_con_free(con);
+	stream_con_free(con);
 }
 
 static int handle_io(struct fd_map *fm, int idx, int event_type)
 {
-	jsonrpc_send_t *jsonrpcs;
-	struct jsonrpc_con *con;
+	stream_send_t *jsonrpcs;
+	struct stream_con *con;
 
 	switch (fm->type) {
 		case F_EV_JSONRPC_CMD:
-			jsonrpcs = jsonrpc_receive();
+			jsonrpcs = stream_receive();
 			if (!jsonrpcs) {
 				LM_ERR("invalid receive jsonrpc command\n");
 				return -1;
 			}
 
-			handle_new_jsonrpc(jsonrpcs);
+			handle_new_stream(jsonrpcs);
 			break;
 		case F_EV_JSONRPC_RPL:
-			con = (struct jsonrpc_con *)fm->data;
+			con = (struct stream_con *)fm->data;
 			if (event_type == IO_WATCH_READ)
 				handle_reply_jsonrpc(con);
 			else
@@ -688,20 +688,20 @@ static int handle_io(struct fd_map *fm, int idx, int event_type)
 	return 0;
 }
 
-static void jsonrpc_cleanup_old(void)
+static void stream_cleanup_old(void)
 {
 	struct list_head *it_con, *it_cmd, *tmp;
 	struct jsonrpc_cmd *cmd;
-	struct jsonrpc_con *con;
+	struct stream_con *con;
 
 	/* goes through each command and times it out */
-	list_for_each(it_con, &jsonrpc_conns) {
-		con = list_entry(it_con, struct jsonrpc_con, list);
+	list_for_each(it_con, &stream_conns) {
+		con = list_entry(it_con, struct stream_con, list);
 		list_for_each_safe(it_cmd, tmp, &con->cmds) {
 			cmd = list_entry(it_cmd, struct jsonrpc_cmd, list);
-			if (get_time_diff(&cmd->job->time) > jsonrpc_timeout * 1000) {
-				if (jsonrpc_sync_mode)
-					jsonrpc_cmd_reply(cmd, JSONRPC_SEND_FAIL);
+			if (get_time_diff(&cmd->job->time) > stream_timeout * 1000) {
+				if (stream_sync_mode)
+					jsonrpc_cmd_reply(cmd, STREAM_SEND_FAIL);
 				list_del(&cmd->list);
 				LM_INFO("Handling JSON-RPC command [%.*s] timed out!\n",
 						cmd->job->message.len, cmd->job->message.s);
@@ -712,21 +712,21 @@ static void jsonrpc_cleanup_old(void)
 }
 
 
-void jsonrpc_process(int rank)
+void stream_process(int rank)
 {
 
-	if (init_worker_reactor("JSON-RPC Sender", RCT_PRIO_MAX) != 0) {
-		LM_BUG("failed to init JSON-RPC reactor");
+	if (init_worker_reactor("event_stream Sender", RCT_PRIO_MAX) != 0) {
+		LM_BUG("failed to init event_stream reactor");
 		abort();
 	}
 	jsonrpc_init_reader();
 
-	if (reactor_add_reader(jsonrpc_pipe[0], F_EV_JSONRPC_CMD, RCT_PRIO_ASYNC, NULL)<0){
-		LM_CRIT("failed to add jsonrpc pipe to reactor\n");
+	if (reactor_add_reader(stream_pipe[0], F_EV_JSONRPC_CMD, RCT_PRIO_ASYNC, NULL)<0){
+		LM_CRIT("failed to add event_stream pipe to reactor\n");
 		abort();
 	}
 
-	reactor_main_loop(JSONRPC_REACTOR_TIMEOUT, out_err, jsonrpc_cleanup_old());
+	reactor_main_loop(STREAM_REACTOR_TIMEOUT, out_err, stream_cleanup_old());
 
 out_err:
 	destroy_io_wait(&_worker_io);

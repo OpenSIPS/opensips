@@ -2,7 +2,7 @@
 
 include ../../Makefile.defs
 auto_gen=
-NAME=event_jsonrpc.so
+NAME=event_stream.so
 LIBS=
 
 include ../../Makefile.modules

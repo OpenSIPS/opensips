@@ -19,15 +19,15 @@
  *
  */
 
-#ifndef _EV_JSONRPC_H_
-#define _EV_JSONRPC_H_
+#ifndef _EV_STREAM_H_
+#define _EV_STREAM_H_
 
 /* transport protocols name */
-#define JSONRPC_NAME		"jsonrpc"
-#define JSONRPC_STR		{ JSONRPC_NAME, sizeof(JSONRPC_NAME) - 1}
+#define TCP_NAME	"tcp"
+#define TCP_STR		{ TCP_NAME, sizeof(TCP_NAME) - 1}
 
 /* module flag */
-#define JSONRPC_FLAG		(1 << 23)
+#define STREAM_FLAG		(1 << 23)
 
 #define COLON_C			':'
 #define SLASH_C			'/'

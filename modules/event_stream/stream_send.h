@@ -19,37 +19,37 @@
  *
  */
 
-#ifndef _JSONRPC_SEND_H_
-#define _JSONRPC_SEND_H_
+#ifndef _STREAM_SEND_H_
+#define _STREAM_SEND_H_
 
-#define JSONRPC_SEND_RETRY 3
+#define STREAM_SEND_RETRY 3
 
 #include <sys/time.h>
 
-typedef struct _jsonrpc_send {
+typedef struct _stream_send {
 	union sockaddr_union addr;
 	struct timeval time;
 	int process_idx;
 	str message;
 	int id;
-} jsonrpc_send_t;
+} stream_send_t;
 
-void jsonrpc_process(int rank);
-int jsonrpc_init_process(void);
-void jsonrpc_destroy_pipe(void);
-int jsonrpc_init_writer(void);
-int jsonrpc_init_buffers(void);
-int jsonrpc_send(jsonrpc_send_t * jsonrpcs);
-void jsonrpc_destroy(evi_reply_sock *sock);
-int jsonrpc_build_buffer(str *,
-		evi_reply_sock*, evi_params_t *, jsonrpc_send_t **);
+void stream_process(int rank);
+int stream_init_process(void);
+void stream_destroy_pipe(void);
+int stream_init_writer(void);
+int stream_init_buffers(void);
+int stream_send(stream_send_t * streams);
+void stream_destroy(evi_reply_sock *sock);
+int stream_build_buffer(str *,
+		evi_reply_sock*, evi_params_t *, stream_send_t **);
 
-#define JSONRPC_DEFAULT_TIMEOUT 1000
-#define JSONRPC_BUFFER_SIZE 8192
+#define STREAM_DEFAULT_TIMEOUT 1000
+#define STREAM_BUFFER_SIZE 8192
 #define JSONRPC_VERSION "2.0"
 
-extern int jsonrpc_timeout;
-extern unsigned jsonrpc_sync_mode;
-extern char *jsonrpc_event_param;
+extern int stream_timeout;
+extern unsigned stream_sync_mode;
+extern char *stream_event_param;
 
 #endif
