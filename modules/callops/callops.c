@@ -21,8 +21,10 @@
 #include "../../sr_module.h"
 #include "../../mem/shm_mem.h"
 #include "../../mi/mi.h"
+#include "../../strcommon.h"
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
+#include "../../data_lump_rpl.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_event.h"
 
@@ -111,7 +113,7 @@ end:
 	return ret;
 }
 
-DECLARE_CALL_EVENT(BLIND_TRANSFER);
+DECLARE_CALL_EVENT(TRANSFER);
 
 static struct tm_binds call_tm_api;
 static struct dlg_binds call_dlg_api;
@@ -224,7 +226,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	INIT_CALL_EVENT(BLIND_TRANSFER, "transfered_callid", "transfered_leg",
+	INIT_CALL_EVENT(TRANSFER, "transfered_callid", "transfered_leg",
 			"new_callid", "destination", "state", "status", NULL);
 
 	return 0;
@@ -299,12 +301,15 @@ static void call_blind_transfer_dlg_unref(void *p)
 static inline void call_blind_raise_dlg(struct dlg_cell *dlg, str *callid, str *ruri,
 		str *state, str *status)
 {
-	str old_leg;
+	/* XXX: old leg is caller or callee, so it should be safe to use a buffer
+	 * of 6 bytes */
+	char buf[sizeof("caller")];
+	str old_leg = str_init(buf);
 
-	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &old_leg, 0) < 0)
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &old_leg, 1) < 0)
 		init_str(&old_leg, "unknown");
 
-	RAISE_CALL_EVENT(BLIND_TRANSFER, &dlg->callid, &old_leg,
+	RAISE_CALL_EVENT(TRANSFER, &dlg->callid, &old_leg,
 			callid, ruri, state, status, NULL);
 }
 
@@ -370,13 +375,13 @@ static int call_blind_transfer(struct sip_msg *msg, str *old_callid, str *old_le
 	/* we also need to "notice" him the callid that is replacing it */
 	call_dlg_api.store_dlg_value(old_dlg, &call_transfer_callid_param, new_callid);
 
-	RAISE_CALL_EVENT(BLIND_TRANSFER, old_callid, old_leg, new_callid,
+	RAISE_CALL_EVENT(TRANSFER, old_callid, old_leg, new_callid,
 			dst, &state, &empty_str, NULL);
 	if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, call_blind_transfer_reply,
 			old_dlg, call_blind_transfer_dlg_unref) <= 0) {
 		call_dlg_api.dlg_unref(old_dlg, 1);
 		LM_ERR("cannot register reply handler!\n");
-		RAISE_CALL_EVENT(BLIND_TRANSFER, old_callid, old_leg, new_callid,
+		RAISE_CALL_EVENT(TRANSFER, old_callid, old_leg, new_callid,
 				dst, &failure, &empty_str, NULL);
 		return -1;
 	}
@@ -476,8 +481,9 @@ static int mi_call_transfer_reply(struct sip_msg *msg, int status, void *param)
 	return (param?mi_call_async_reply(msg, status, param): 0);
 }
 
-static int call_blind_notify(struct dlg_cell *dlg, struct sip_msg *msg)
+static int call_handle_notify(struct dlg_cell *dlg, struct sip_msg *msg)
 {
+	str retry = str_init("Retry-After: 1 (not found)\n");
 	str state = str_init("notify");
 	int status_code;
 	str new_callid;
@@ -503,9 +509,11 @@ static int call_blind_notify(struct dlg_cell *dlg, struct sip_msg *msg)
 	if (status.len <= SIP_VERSION_LEN || memcmp(status.s, SIP_VERSION, SIP_VERSION_LEN))
 		goto reply;
 
-	status_code = 404;
-	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_callid_param, &new_callid, 0) < 0)
+	status_code = 480;
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_callid_param, &new_callid, 0) < 0) {
+		add_lump_rpl(msg, retry.s, retry.len, LUMP_RPL_HDR);
 		goto reply;
+	}
 	status.len -= SIP_VERSION_LEN;
 	status.s += SIP_VERSION_LEN;
 	trim(&status);
@@ -521,13 +529,13 @@ reply:
 	return 0;
 }
 
-static void call_blind_dlg_callback(struct dlg_cell* dlg, int type,
-		struct dlg_cb_params * params)
+static void call_transfer_dlg_callback(struct dlg_cell* dlg, int type,
+		struct dlg_cb_params *params)
 {
 	if (!params->msg)
 		return;
 
-	switch (call_blind_notify(dlg, params->msg)) {
+	switch (call_handle_notify(dlg, params->msg)) {
 		case 0:
 			LM_DBG("dropping Notify Refer event\n");
 			break;
@@ -593,7 +601,7 @@ static mi_response_t *mi_call_transfer(const mi_params_t *params,
 	 * - some devices don't even send the :) */
 	if (call_match_mode != CALL_MATCH_MANUAL)
 		call_dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
-				call_blind_dlg_callback, 0, 0);
+				call_transfer_dlg_callback, 0, 0);
 
 	if (call_dlg_api.send_indialog_request(dlg, &refer,
 			(caller?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL, refer_hdr,
@@ -633,5 +641,5 @@ static int call_transfer_notify(struct sip_msg *msg)
 		LM_WARN("dialog not found - call this function only after dialog has been matched\n");
 		return -1;
 	}
-	return call_blind_notify(dlg, msg);
+	return call_handle_notify(dlg, msg);
 }
