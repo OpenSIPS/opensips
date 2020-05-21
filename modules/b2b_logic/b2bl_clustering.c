@@ -61,6 +61,15 @@ static int unpack_context_vals(b2bl_tuple_t* tuple, bin_packet_t *storage)
 	int no_vals;
 	int i;
 	str name, val;
+	struct b2b_ctx_val *v;
+
+	/* clear existing values; this way, the values should always
+	 * be consistent between instances */
+	while (tuple->vals) {
+		v = tuple->vals;
+		tuple->vals = tuple->vals->next;
+		shm_free(v);
+	}
 
 	bin_pop_int(storage, &no_vals);
 	for (i = 0; i < no_vals; i++) {
