@@ -34,7 +34,7 @@
 #include "../presence/hash.h"
 #include "../presence/utils_func.h"
 #include "records.h"
-#include "b2bl_clustering.h"
+#include "entity_storage.h"
 
 static void _print_entity(int index, b2bl_entity_id_t* e, int level)
 {

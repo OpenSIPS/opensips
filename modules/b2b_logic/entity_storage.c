@@ -35,7 +35,7 @@
 
 #include "../../pt.h"
 #include "../../bin_interface.h"
-#include "b2bl_clustering.h"
+#include "entity_storage.h"
 #include "b2bl_db.h"
 #include "records.h"
 #include "b2b_logic.h"

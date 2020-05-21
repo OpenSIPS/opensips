@@ -30,7 +30,7 @@
 #include "../../db/db.h"
 #include "b2b_logic.h"
 #include "b2bl_db.h"
-#include "b2bl_clustering.h"
+#include "entity_storage.h"
 
 #define B2BL_FETCH_SIZE  128
 static str str_key_col         = str_init("si_key");

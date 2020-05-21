@@ -53,7 +53,7 @@
 #include "pidf.h"
 #include "b2b_logic.h"
 #include "b2bl_db.h"
-#include "b2bl_clustering.h"
+#include "entity_storage.h"
 
 #define BUF_LEN  128
 
