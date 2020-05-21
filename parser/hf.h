@@ -91,6 +91,7 @@ enum _hdr_types_t {
 	HDR_PROXY_AUTHENTICATE_T	     /**< Proxy-Authenticate header field */,
 	HDR_MIN_EXPIRES_T			     /**> Min-Expires header field */,
 	HDR_FEATURE_CAPS_T			     /**> Feature-Caps header field */,
+	HDR_REPLACES_T				     /**> Replaces header field */,
 	HDR_EOH_T					     /**< Some other header field */
 };
 
@@ -156,6 +157,7 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_PROXY_AUTHENTICATE_F	HDR_F_DEF(PROXY_AUTHENTICATE)
 #define HDR_MIN_EXPIRES_F			HDR_F_DEF(MIN_EXPIRES)
 #define HDR_FEATURE_CAPS_F			HDR_F_DEF(FEATURE_CAPS)
+#define HDR_REPLACES_F				HDR_F_DEF(REPLACES)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;

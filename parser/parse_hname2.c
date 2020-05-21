@@ -85,6 +85,7 @@ static inline char* skip_ws(char* p, char *end)
 #include "case_retr.h"     /* Retry-After */
 #include "case_www.h"      /* WWW-Authenticate */
 #include "case_feat.h"     /* Feature-Caps */
+#include "case_repl.h"     /* Replaces */
 
 
 #define READ(val) \
@@ -126,6 +127,7 @@ static inline char* skip_ws(char* p, char *end)
 	case _retr_: retr_CASE; \
 	case _www__: www_CASE;  \
 	case _feat_: feat_CASE; \
+	case _repl_: repl_CASE; \
 
 
 #define PARSE_COMPACT(id)      \
