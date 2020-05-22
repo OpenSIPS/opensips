@@ -119,7 +119,9 @@ static inline void signal_pkg_status(unsigned long proc_id)
 
 	t = time(NULL);
 	if (t>marker_t[proc_id]+1) {
-		if (pt[proc_id].pid) kill(pt[proc_id].pid, SIGUSR2);
+		if (pt[proc_id].pid > 0)
+			kill(pt[proc_id].pid, SIGUSR2);
+
 		marker_t[proc_id] = t;
 		usleep(20);
 	}
