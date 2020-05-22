@@ -1796,6 +1796,8 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	b2bl_tuple_t *tuple;
 	b2bl_entity_id_t *entity;
 	b2bl_entity_id_t *curr_entities[MAX_BRIDGE_ENT];
+	b2bl_entity_id_t dummy_entity;
+	b2b_dlginfo_t dummy_dlginfo;
 	str callid;
 	int i;
 
@@ -1845,16 +1847,42 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		}
 
 		if (!entity) {
-			LM_DBG("Unable to identify current entity in tuple: [%.*s]\n",
-				tuple->key->len, tuple->key->s);
-			goto ret_null;
+			if (local_ctx_tuple &&
+				msg->first_line.u.request.method_value == METHOD_INVITE) {
+				/* we must be in the client_new() function from the entities
+				 * API so we can take the callid/entity key from the SIP msg */
+				dummy_entity.key = callid;
+				dummy_dlginfo.callid = callid;
+				dummy_entity.dlginfo = &dummy_dlginfo;
+				entity = &dummy_entity;
+			} else {
+				LM_DBG("Unable to identify current entity in tuple: [%.*s]\n",
+					tuple->key->len, tuple->key->s);
+				goto ret_null;
+			}
 		}
 	} else {
 		entity = curr_entities[param->pvi.u.ival];
 		if (!entity) {
-			LM_DBG("No bridge entity at index: [%d] for tuple: [%.*s]\n",
-				param->pvi.u.ival, tuple->key->len, tuple->key->s);
-			goto ret_null;
+			if (local_ctx_tuple &&
+				msg->first_line.u.request.method_value == METHOD_INVITE) {
+				/* we must be in the client_new() function from the entities
+				 * API so we can take the callid/entity key from the SIP msg
+				 * XXX is this  */
+				if (get_callid(msg, &callid) < 0) {
+					LM_ERR("Failed to get callid from SIP message\n");
+					goto ret_null;
+				}
+
+				dummy_entity.key = callid;
+				dummy_dlginfo.callid = callid;
+				dummy_entity.dlginfo = &dummy_dlginfo;
+				entity = &dummy_entity;
+			} else {
+				LM_DBG("No bridge entity at index: [%d] for tuple: [%.*s]\n",
+					param->pvi.u.ival, tuple->key->len, tuple->key->s);
+				goto ret_null;
+			}
 		}
 	}
 
