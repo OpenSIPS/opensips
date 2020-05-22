@@ -69,7 +69,8 @@ int count_child_processes(void)
 
 #ifdef UNIT_TESTS
 #include "mem/test/test_hp_malloc.h"
-	proc_no += TEST_MALLOC_PROCS - 1;
+	if (testing_framework)
+		proc_no += TEST_MALLOC_PROCS - 1;
 #endif
 
 	return proc_no;
