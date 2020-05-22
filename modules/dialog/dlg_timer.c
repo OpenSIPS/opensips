@@ -1001,7 +1001,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER) {
 
 				if (!dlg_get_leg_hdrs(dlg, callee_idx(dlg),
-						DLG_CALLER_LEG, &content_type, &extra_headers)) {
+						DLG_CALLER_LEG, &content_type, NULL, &extra_headers)) {
 					LM_ERR("No more pkg for extra headers \n");
 					it = it->next;
 					continue;
@@ -1025,7 +1025,7 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
 
 				if (!dlg_get_leg_hdrs(dlg, DLG_CALLER_LEG,
-						callee_idx(dlg), &content_type, &extra_headers)) {
+						callee_idx(dlg), &content_type, NULL, &extra_headers)) {
 					LM_ERR("No more pkg for extra headers \n");
 					it = it->next;
 					continue;

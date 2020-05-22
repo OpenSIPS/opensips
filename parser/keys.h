@@ -171,6 +171,8 @@
 #define _ure__ 0x2d657275   /* "ure-" */
 #define _caps_ 0x73706163   /* "caps" */
 
+#define _repl_ 0x6c706572   /* "repl" for "replaces" */
+#define _aces_ 0x73656361  /* "aces" */
 
 
 #endif /* KEYS_H */

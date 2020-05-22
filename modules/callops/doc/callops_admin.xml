@@ -1,0 +1,410 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module provides a set of functions that allow the user to control
+		ongoing calls. It can be used to trigger a call (either blind or attended)
+		transfer, or put a call on hold from the proxy side, rather than the
+		end-device side.
+		The module binds on top of the <ulink url='dialog'>&osips; Dialog
+		module</ulink> to get information about the ongoing calls, as well as
+		storing information about new calls that will be started.
+	</para>
+	<para>
+		The module also triggers a set of events over Event Interface, providing
+		to external applications details about how calls are being transferred, and
+		how they link between them. These events can be used to track down all the
+		legs involved in a call transfer.
+	</para>
+	<para>
+		One of the biggest challenge when doing Call Transfer scenarios is linking
+		new calls to the old calls being transferred, especially in blind call
+		transfer scenarios. In order to solve this challenge, the module can be
+		configured to refer old legs in two different modes, changeable using the
+		<xref linkend="param_mode"/> parameter:
+		<itemizedlist>
+			<listitem>
+			<para>
+				Automatically (default mode), by adding a special parameter to the
+				destination URI that is being sent in the REFER. When the new call
+				comes back, the parameter will be present in the Request URI of the
+				new call. The module will find it, link the new call to the old call,
+				and remove the parameter from the URI.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				Manually, by using custom/external logic (such as a database, or
+				local storage), to match the old call. In this mode, the user has to
+				explicitly call the <xref linkend="func_call_blind_replace"/>
+				function to link the two calls together.
+			</para>
+			</listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		The module can also be used to catch <emphasis>Notify refer</emphasis> events
+		and reply to them from the &osips; level. However, note that in <emphasis>
+		auto</emphasis> mode even if the NOTIFY is handled when the dialog is matched,
+		the request will still continue its execution of the script, unlike when
+		<emphasis>manual</emphasis> mode is used with the
+		<xref linkend="func_call_transfer_notify"/> function. In order to avoid sending
+		the NOTIFY to the end-point, you have to drop it, like below:
+		<example>
+		<title>Drop automatically handled NOTIFY refer events</title>
+		<programlisting format="linespecific">
+...
+if (has_totag() &amp;&amp; loose_route() &amp;&amp;
+		is_method("NOTIFY") &amp;&amp; $hdr(Event) == "refer")
+	drop;
+...
+</programlisting>
+		</example>
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section id="callops_modules_dependencies">
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>TM</emphasis> - Transaction module.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>Dialog</emphasis> - Dialog module for keeping track of the proxied calls.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section id="callops_external_dependencies">
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_mode" xreflabel="mode">
+		<title><varname>mode</varname> (string/integer)</title>
+		<para>
+		This parameter can be used to change the mode that the module
+		uses to match a transferred leg. Supported values are:
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>param</emphasis> / <emphasis>0</emphasis> - when
+					doing a blind transfer, the destination sent in the
+					REFER message will contain a parameter used to identify
+					the dialog that is being replaced. This parameter will be
+					automatically removed when the new call is received.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>manual</emphasis> / <emphasis>1</emphasis> - the user
+					will create its own logic to match the new calls, and will
+					call the <xref linkend="func_call_blind_replace"/> function
+					to make &osips; aware of the pair. Note that this mode does
+					not handle automatically the <emphasis>Notify refer</emphasis>
+					either, so you also have to use the
+					<xref linkend="func_call_transfer_notify"/> function to handle
+					them.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 (auto mode using parameters)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("callops", "mode", "manual") # use your own logic
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_match_param" xreflabel="match_param">
+		<title><varname>match_param</varname> (string)</title>
+		<para>
+		The parameter used to match the different calls together. This is
+		mainly using in the <emphasis>param</emphasis> mode, but it is also
+		used internally to store different values inside the transferred
+		dialog - make sure it does not overlap with existing dialog values.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>osid</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>match_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("callops", "match_param", "call")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+		<section id="func_call_blind_replace" xreflabel="call_blind_replace()">
+			<title>
+			<function moreinfo="none">call_blind_replace(callid[, leg])</function>
+			</title>
+			<para>
+				When <emphasis>manual mode</emphasis> is used, this function is
+				called to create a mapping between the transferring call and the
+				transferred call. It should be called when &osips; receives a
+				new call that is transferring an existing call.
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>callid</emphasis> (string) - the existing call that
+						is being transferred.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>leg</emphasis> (string, optional) - the leg that is
+						being transferred. If not specified, and &osips; cannot
+						determine the leg based on its destination, the
+						<emphasis>unknown</emphasis> tag should be used.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used only from a request route.
+			</para>
+			<example>
+				<title>Use <function>call_blind_replace()</function> function to match
+					an existing leg.</title>
+			<programlisting format="linespecific">
+...
+if (!has_totag() &amp;&amp; is_method("INVITE")) {
+	if (cache_fetch("local", "callid_$si", $avp(callid))) {
+		call_blind_replace($avp(callid));
+	}
+}
+...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_call_transfer_notify" xreflabel="call_transfer_notify()">
+			<title>
+			<function moreinfo="none">call_transfer_notify()</function>
+			</title>
+			<para>
+				When <emphasis>manual mode</emphasis> is used, this function should
+				be called on in-dialog NOTIFY requests for an <emphasis>Event: refer</emphasis>
+				header, to handle them accordingly.
+			</para>
+			<para>
+				Note that if the function successfully handles the NOTIFY request,
+				the script no longer continues its execution.
+			</para>
+			<para>
+				This function can be used from a request route, failure route and local route.
+			</para>
+			<example>
+				<title>Use <function>call_transfer_notify()</function> function to handle
+					NOTIFY refer requests.</title>
+			<programlisting format="linespecific">
+...
+if (has_totag() &amp;&amp; is_method("NOTIFY") &amp;&amp; loose_route()) {
+	call_transfer_notify();
+}
+...
+	</programlisting>
+			</example>
+		</section>
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+		<section id="mi_call_transfer"
+			xreflabel="call_transfer">
+		<title>
+		<function moreinfo="none">call_transfer</function>
+		</title>
+		<para>
+		MI command to transfer an ongoing call to a new destination.
+		</para>
+		<para>
+		Depending on the parameters used, this command can do both
+		blind and attended transfers scenarios. When the
+		<emphasis>transfer_callid</emphasis> is used, then an attended
+		transfer is performed, other wise a blind transfer is issued.
+		</para>
+		<para>
+		Name: <emphasis>call_transfer</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> (string) - the callid of the
+					dialog that is being transferred.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>leg</emphasis> (string) - indicates the
+					leg of the <emphasis>callid</emphasis> call that is being
+					transferred/kept in the new transferring call.
+					Possible values are <quote>caller</quote>,
+					<quote>callee</quote> or <quote>both</quote>.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>destination</emphasis> (string, optional) - the URI
+					where the call is being transferred. This parameter is
+					mandatory for blind transfers, and optional for attended
+					transfers. In the case of an attended transfer, if it is
+					missing, the destination of the call is taken from the
+					URIs in the transfer dialog.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>transfer_callid</emphasis> (string, optional) -
+					mandatory in case of an attended transfer, to specify the
+					call of the Bleg in the new call.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>transfer_leg</emphasis> (string, optional) -
+					in case of an attended transfer, it specifies the participant
+					of the <emphasis>transfer_callid</emphasis> call that will be
+					bridged with the <emphasis>leg</emphasis> of the
+					<emphasis>callid</emphasis>. If missing,
+					<emphasis>transfer_fromtag</emphasis> and
+					<emphasis>transfer_totag</emphasis> must be used to identify
+					the tag.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>transfer_fromtag</emphasis> and
+					<emphasis>transfer_totag</emphasis> (string, optional) -
+					these parameters should always be specified together, and are
+					used in call attended transfer scenarios where the dialog of the
+					Bleg that is being transferred is not managed by &osips;.
+					Note that for these scenarios only the A-leg dialog will
+					receive events about the call transfer.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+# blind transfer to sip:agent@127.0.0.1
+opensips-cli -x mi call_transfer \
+	callid=4b664b48-5639-40bf-bff8-3a866c145c3b \
+	leg=caller \
+	destination=sip:agent@217.0.0.1
+		</programlisting>
+		<programlisting  format="linespecific">
+# attended transfer between two calls
+opensips-cli -x mi call_transfer \
+	callid=e8d024db-78e5-4d18-9794-5b8ba837bed4
+	leg=caller \
+	transfer_callid=559abf97-9834-4380-bba1-a036eb245450 \
+	transfer_leg=calee
+		</programlisting>
+		</section>
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_E_CALL_TRANSFER" xreflabel="E_CALL_TRANSFER">
+		<title>
+		<function moreinfo="none">E_CALL_TRANSFER</function>
+		</title>
+		<para>
+			This event is triggered during a call transfer scenario.
+		</para>
+		<para>
+			For a specific call transfer, multiple events are triggered,
+			starting when the transfer is initiated, until the transfer
+			is completed. The <emphasis>state</emphasis> parameter indicates
+			the state of the call transfer.
+		</para>
+		<para>
+			For a blind transfer scenario, only one set of events are
+			triggered, whereas for attended transfer, you will get a set
+			of events for both dialogs involved in the transfer, as long
+			as both are proxied through &osips;
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> - the callid of the call
+					that is being transferred.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>leg</emphasis> - the leg (<emphasis>caller
+				</emphasis> or <emphasis>callee</emphasis>) of the call
+					that is being transferred.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>transfer_callid</emphasis> - the callid of the
+					new call that is transferring the old <emphasis>callid
+					</emphasis> call.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>destination</emphasis> - the URI destination
+					where the <emphasis>leg</emphasis> is being transferred.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>state</emphasis> - the state of the transfer:
+				<itemizedlist>
+				<listitem><para><emphasis>start</emphasis> - triggered when the
+					REFER message is being sent out to the transferred participant.
+				</para></listitem>
+				<listitem><para><emphasis>notify</emphasis> - triggered when
+					a NOTIFY refer event is received from the transferred participant.
+					The <emphasis>status</emphasis> parameter contains extra
+					information about the status of the transferring call.
+				</para></listitem>
+				<listitem><para><emphasis>ok</emphasis> - triggered when
+					the transfer is completed - the call is answered by
+					the transferred participant.
+				</para></listitem>
+				<listitem><para><emphasis>fail</emphasis> - triggered when
+					a transfer has failed due to various reasons. If we were
+					unable to start the call transfer (i.e. send the REFER),
+					the <emphasis>status</emphasis> parameter is empty,
+					otherwise it contains information about the failure.
+				</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - contains extra information about
+					the success or failure of the call.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
+</chapter>

@@ -811,7 +811,7 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 	/* all good - send the invite to the client */
 	MSL_REF(msl);
 	if (media_dlg.send_indialog_request(dlg, &inv, MEDIA_SESSION_DLG_LEG(msl),
-			&body, &msg->content_type->body, media_session_exchange_server_reply, msl) < 0) {
+			&body, &msg->content_type->body, NULL, media_session_exchange_server_reply, msl) < 0) {
 		LM_ERR("could not send indialog request for callid %.*s\n", callid->len, callid->s);
 		MSL_UNREF(msl);
 		goto destroy;
@@ -1261,7 +1261,7 @@ static void handle_media_session_negative(struct media_session_leg *msl)
 	else
 		body = &sbody;
 	if (media_dlg.send_indialog_request(msl->ms->dlg,
-			&inv, dlg_leg, body, &content_type_sdp,
+			&inv, dlg_leg, body, &content_type_sdp, NULL,
 			media_session_exchange_negative_reply, msl) < 0) {
 		LM_ERR("could not forward INVITE!\n");
 		media_send_fail(p->t, msl->ms->dlg, dlg_leg);
