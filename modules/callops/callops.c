@@ -237,8 +237,8 @@ static int mod_init(void)
 		return -1;
 	}
 
-	INIT_CALL_EVENT(TRANSFER, "transfered_callid", "transfered_leg",
-			"new_callid", "destination", "state", "status", NULL);
+	INIT_CALL_EVENT(TRANSFER, "callid", "leg",
+			"transfer_callid", "destination", "state", "status", NULL);
 
 	return 0;
 }
@@ -346,7 +346,7 @@ static void call_transfer_reply(struct cell *t, int type, struct tmcb_params *ps
 		else
 			init_str(&state, "ok");
 	} else {
-		init_str(&state, "start-failed");
+		init_str(&state, "fail");
 		init_str(&status, "408 Request Timeout");
 	}
 
