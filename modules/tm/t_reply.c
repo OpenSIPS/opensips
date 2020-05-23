@@ -1466,7 +1466,7 @@ enum rps local_reply( struct cell *t, struct sip_msg *p_msg, int branch,
 		} else {
 			LM_DBG("local transaction completed\n");
 			if (!totag_retr && has_tran_tmcbs(t,TMCB_LOCAL_COMPLETED) ) {
-				run_trans_callbacks( TMCB_LOCAL_COMPLETED, t, 0,
+				run_trans_callbacks( TMCB_LOCAL_COMPLETED, t, t->uas.request,
 					winning_msg, winning_code );
 			}
 		}
