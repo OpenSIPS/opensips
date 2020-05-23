@@ -419,24 +419,17 @@ struct module_exports exports= {
 static int fixup_froute(void** param)
 {
 	int rt;
-	str rt_name_nt;
 
-	if (pkg_nt_str_dup(&rt_name_nt, (str*)*param) < 0) {
-		LM_ERR("No more pkg memory\n");
-		return -1;
-	}
-
-	rt = get_script_route_ID_by_name( rt_name_nt.s,
+	rt = get_script_route_ID_by_name_str( (str*)*param,
 			sroutes->failure, FAILURE_RT_NO);
 	if (rt==-1) {
-		LM_ERR("failure route <%s> does not exist\n",rt_name_nt.s);
-		pkg_free(rt_name_nt.s);
+		LM_ERR("failure route <%.*s> does not exist\n",
+			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
 	*param = (void*)(unsigned long int)rt;
 
-	pkg_free(rt_name_nt.s);
 	return 0;
 }
 
@@ -444,24 +437,17 @@ static int fixup_froute(void** param)
 static int fixup_rroute(void** param)
 {
 	int rt;
-	str rt_name_nt;
 
-	if (pkg_nt_str_dup(&rt_name_nt, (str*)*param) < 0) {
-		LM_ERR("No more pkg memory\n");
-		return -1;
-	}
-
-	rt = get_script_route_ID_by_name(rt_name_nt.s,
+	rt = get_script_route_ID_by_name_str( (str*)*param,
 		sroutes->onreply, ONREPLY_RT_NO);
 	if (rt==-1) {
-		LM_ERR("onreply route <%s> does not exist\n",rt_name_nt.s);
-		pkg_free(rt_name_nt.s);
+		LM_ERR("onreply route <%.*s> does not exist\n",
+			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
 	*param = (void*)(unsigned long int)rt;
 
-	pkg_free(rt_name_nt.s);
 	return 0;
 }
 
@@ -469,24 +455,17 @@ static int fixup_rroute(void** param)
 static int fixup_broute(void** param)
 {
 	int rt;
-	str rt_name_nt;
 
-	if (pkg_nt_str_dup(&rt_name_nt, (str*)*param) < 0) {
-		LM_ERR("No more pkg memory\n");
-		return -1;
-	}
-
-	rt = get_script_route_ID_by_name(rt_name_nt.s,
+	rt = get_script_route_ID_by_name_str( (str*)*param,
 		sroutes->branch, BRANCH_RT_NO);
 	if (rt==-1) {
-		LM_ERR("branch route <%s> does not exist\n",rt_name_nt.s);
-		pkg_free(rt_name_nt.s);
+		LM_ERR("branch route <%.*s> does not exist\n",
+			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
 	*param = (void*)(unsigned long int)rt;
-	
-	pkg_free(rt_name_nt.s);
+
 	return 0;
 }
 
