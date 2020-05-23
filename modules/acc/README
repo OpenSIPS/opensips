@@ -147,8 +147,8 @@ Chapter 1. Admin Guide
    The accounting module will log by default a fixed set of
    attributes for the transaction - if you customize your
    accounting by adding more information to be logged, please see
-   the next chapter about extra accounting - Section 1.2, "Extra
-   accounting".
+   the next chapter about extra accounting - Section 1.2, “Extra
+   accounting”.
 
    The fixed minimal accounting information is:
      * Request Method name
@@ -368,10 +368,10 @@ Note
    the listed modules must be loaded before this module):
      * tm -- Transaction Manager
      * a database module -- If SQL support is used.
-     * rr -- Record Route, if "detect_direction" module parameter
+     * rr -- Record Route, if “detect_direction” module parameter
        is enabled.
      * an aaa module
-     * dialog -- Dialog, if "cdr" option is used
+     * dialog -- Dialog, if “cdr” option is used
 
 1.5.2. External Libraries or Applications
 
@@ -421,7 +421,7 @@ modparam("acc", "detect_direction", 1)
 1.6.4. extra_fields (string)
 
    Defines the tag-log_value set to be used in extra fields
-   accounting. See Section 1.2, "Extra accounting" for a detailed
+   accounting. See Section 1.2, “Extra accounting” for a detailed
    description of the Extra accounting.
 
    If empty, extra accounting support will be disabled.
@@ -444,7 +444,7 @@ modparam("acc", "extra_fields","a->2345;b->2346")
 1.6.5. leg_fields (string)
 
    Defines the tag-log_value set to be used in multi-leg
-   accounting. See Section 1.3, "Multi Call-Legs accounting" for a
+   accounting. See Section 1.3, “Multi Call-Legs accounting” for a
    detailed description of the Multi Call-Legs accounting.
 
    If empty, multi-leg accounting support will be disabled.
@@ -492,7 +492,7 @@ modparam("acc", "log_facility", "LOG_DAEMON")
    If the parameter is set to empty string, the AAA accounting
    support will be disabled.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.8. Set aaa_url parameter
 ...
@@ -514,7 +514,7 @@ modparam("acc", "service_type", 15)
 
    Table name of accounting successful calls -- database specific.
 
-   Default value is "acc"
+   Default value is “acc”
 
    Example 1.10. db_table_acc example
 modparam("acc", "db_table_acc", "myacc_table")
@@ -523,7 +523,7 @@ modparam("acc", "db_table_acc", "myacc_table")
 
    Table name for accounting missed calls -- database specific.
 
-   Default value is "missed_calls"
+   Default value is “missed_calls”
 
    Example 1.11. db_table_missed_calls example
 modparam("acc", "db_table_missed_calls", "myMC_table")
@@ -533,7 +533,7 @@ modparam("acc", "db_table_missed_calls", "myMC_table")
    SQL address -- database specific. If is set to NULL or empty
    string, the SQL support is disabled.
 
-   Default value is "NULL" (SQL disabled).
+   Default value is “NULL” (SQL disabled).
 
    Example 1.12. db_url example
 modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
@@ -543,7 +543,7 @@ modparam("acc", "db_url", "mysql://user:password@localhost/opensips")
    Column name in accounting table to store the request's method
    name as string.
 
-   Default value is "method".
+   Default value is “method”.
 
    Example 1.13. acc_method_column example
 modparam("acc", "acc_method_column", "method")
@@ -553,7 +553,7 @@ modparam("acc", "acc_method_column", "method")
    Column name in accounting table to store the From header TAG
    parameter.
 
-   Default value is "from_tag".
+   Default value is “from_tag”.
 
    Example 1.14. acc_from_tag_column example
 modparam("acc", "acc_from_tag_column", "from_tag")
@@ -563,7 +563,7 @@ modparam("acc", "acc_from_tag_column", "from_tag")
    Column name in accounting table to store the To header TAG
    parameter.
 
-   Default value is "to_tag".
+   Default value is “to_tag”.
 
    Example 1.15. acc_to_tag_column example
 modparam("acc", "acc_to_tag_column", "to_tag")
@@ -573,7 +573,7 @@ modparam("acc", "acc_to_tag_column", "to_tag")
    Column name in accounting table to store the request's Callid
    value.
 
-   Default value is "callid".
+   Default value is “callid”.
 
    Example 1.16. acc_callid_column example
 modparam("acc", "acc_callid_column", "callid")
@@ -583,7 +583,7 @@ modparam("acc", "acc_callid_column", "callid")
    Column name in accounting table to store the final reply's
    numeric code value in string format.
 
-   Default value is "sip_code".
+   Default value is “sip_code”.
 
    Example 1.17. acc_sip_code_column example
 modparam("acc", "acc_sip_code_column", "sip_code")
@@ -593,7 +593,7 @@ modparam("acc", "acc_sip_code_column", "sip_code")
    Column name in accounting table to store the final reply's
    reason phrase value.
 
-   Default value is "sip_reason".
+   Default value is “sip_reason”.
 
    Example 1.18. acc_sip_reason_column example
 modparam("acc", "acc_sip_reason_column", "sip_reason")
@@ -603,7 +603,7 @@ modparam("acc", "acc_sip_reason_column", "sip_reason")
    Column name in accounting table to store the time stamp of the
    transaction completion in date-time format.
 
-   Default value is "time".
+   Default value is “time”.
 
    Example 1.19. acc_time_column example
 modparam("acc", "acc_time_column", "time")
@@ -794,7 +794,7 @@ acc_log_request("403 Destination not allowed");
 1.8.4.  acc_db_request(comment, table)
 
    Like acc_log_request, acc_db_request reports on a request. The
-   report is sent to database at "db_url", in the table referred
+   report is sent to database at “db_url”, in the table referred
    to in the second action parameter.
 
    Meaning of the parameters is as follows:
@@ -816,7 +816,7 @@ acc_db_request("$T_reply_code $(<reply>rr)","acc");
 1.8.5.  acc_aaa_request(comment)
 
    Like acc_log_request, acc_aaa_request reports on a request. It
-   reports to aaa server as configured in "aaa_url".
+   reports to aaa server as configured in “aaa_url”.
 
    Meaning of the parameters is as follows:
      * comment - Comment describing how the request completed -
@@ -1033,7 +1033,7 @@ Chapter 3. Contributors
    (@juha-h), Elena-Ramona Modroiu, Ryan Bullock (@rrb3942),
    Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Peter Nixon, Alex
    Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues,
-   Julien Blache, Juli�n Moreno Pati�o, Dusan Klinec, Edson
+   Julien Blache, Julián Moreno Patiño, Dusan Klinec, Edson
    Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1062,7 +1062,7 @@ Chapter 3. Contributors
    4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
    5.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
-   7.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Dusan Klinec                        Dec 2015 - Dec 2015
    9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
    10. Ryan Bullock (@rrb3942)             Mar 2012 - Sep 2012
@@ -1095,8 +1095,8 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright � 2009-2013 OpenSIPS Solutions
+   Copyright © 2009-2013 OpenSIPS Solutions
 
-   Copyright � 2004-2009 Voice Sistem SRL
+   Copyright © 2004-2009 Voice Sistem SRL
 
-   Copyright � 2002-2003 FhG FOKUS
+   Copyright © 2002-2003 FhG FOKUS

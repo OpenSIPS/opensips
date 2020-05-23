@@ -66,9 +66,9 @@ Chapter 1. Admin Guide
    the number of digits is at least 2 and at most 15. Out of this
    number enum_query forms a domain name, where the digits are in
    reverse order and separated by dots followed by domain suffix
-   that by default is "e164.arpa.". For example, if the user part
+   that by default is “e164.arpa.”. For example, if the user part
    is +35831234567, the domain name will be
-   "7.6.5.4.3.2.1.3.8.5.3.e164.arpa.". i_enum_query operates in a
+   “7.6.5.4.3.2.1.3.8.5.3.e164.arpa.”. i_enum_query operates in a
    similar fashion. The only difference is that it adds a label
    (default "i") to branch off from the default, user-ENUM tree to
    an infrastructure ENUM tree.
@@ -150,7 +150,7 @@ Chapter 1. Admin Guide
    the digits of an E164 number. Can be overridden by a parameter
    to enum_query.
 
-   Default value is "e164.arpa."
+   Default value is “e164.arpa.”
 
    Example 1.1. Setting domain_suffix module parameter
 modparam("enum", "domain_suffix", "e1234.arpa.")
@@ -166,7 +166,7 @@ Note
    at present tel_uri_params is appended as URI parameters to
    every URI.
 
-   Default value is ""
+   Default value is “”
 
    Example 1.2. Setting tel_uri_params module parameter
 modparam("enum", "tel_uri_params", ";npdi")
@@ -176,7 +176,7 @@ modparam("enum", "tel_uri_params", ";npdi")
    The domain suffix to be used for i_enum_query() lookups. Can be
    overridden by a parameter to i_enum_query.
 
-   Default value is "e164.arpa."
+   Default value is “e164.arpa.”
 
    Example 1.3. Setting i_enum_suffix module parameter
 modparam("enum", "i_enum_suffix", "e1234.arpa.")
@@ -186,7 +186,7 @@ modparam("enum", "i_enum_suffix", "e1234.arpa.")
    The domain suffix to be used for isn_query() lookups. Can be
    overridden by a parameter to isn_query.
 
-   Default value is "freenum.org."
+   Default value is “freenum.org.”
 
    Example 1.4. Setting isn_suffix module parameter
 modparam("enum", "isn_suffix", "freenum.org.")
@@ -196,7 +196,7 @@ modparam("enum", "isn_suffix", "freenum.org.")
    This parameter determines which label i_enum_query() will use
    to branch off to the infrastructure ENUM tree.
 
-   Default value is ""i""
+   Default value is “"i"”
 
    Example 1.5. Setting branchlabel module parameter
 modparam("enum", "branchlabel", "i")
@@ -239,7 +239,7 @@ pa
 9.9.9.8.7.6.5.i.4.3.2.1.e164.arpa. IN NAPTR "NAPTR content for  +1 234 5
 678 999"
 
-   Default value is "cc"
+   Default value is “cc”
 
    Example 1.8. Setting the bl_algorithm module parameter
 modparam("enum", "bl_algorithm", "txt")
@@ -449,4 +449,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright � 2002-2003 Juha Heinanen
+   Copyright © 2002-2003 Juha Heinanen

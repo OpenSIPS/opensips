@@ -66,7 +66,7 @@ Chapter 1. Admin Guide
    for sharing call appearances across access devices. Although
    SIP (RFC 3261) by itself offers no inherent semantics for
    supporting SCA features, when coupled with an appropriate
-   instantiation of the "SIP Specific Event Notification"
+   instantiation of the “SIP Specific Event Notification”
    framework (RFC 3265), these services can be deployed quite
    easily in a distributed network.
 
@@ -205,7 +205,7 @@ alice@example  presence  bob@example  watcher@example
 
    Enables or disables call_info event timeout notifications.
 
-   Default value is "1" (enabled).
+   Default value is “1” (enabled).
 
    Example 1.1. Set call_info_timeout_notification parameter
 ...
@@ -216,7 +216,7 @@ modparam("presence_callinfo", "call_info_timeout_notification", 0)
 
    Enables or disables line_seize event timeout notifications.
 
-   Default value is "0" (disabled).
+   Default value is “0” (disabled).
 
    Example 1.2. Set line_seize_timeout_notification parameter
 ...
@@ -230,7 +230,7 @@ modparam("presence_callinfo", "line_seize_timeout_notification", 1)
    be done via SIP PUBLISH from a third-party. See the wroking
    mode described in the beginning of this document.
 
-   Default value is "0" (not disabled).
+   Default value is “0” (not disabled).
 
    Example 1.3. Set disable_dialog_support_for_sca parameter
 ...
@@ -246,7 +246,7 @@ modparam("presence_callinfo", "disable_dialog_support_for_sca", 1)
    The value must be a power of 2. You may consider increasing the
    value if using a large set of lines (>1000).
 
-   Default value is "64".
+   Default value is “64”.
 
    Example 1.4. Set line_hash_size parameter
 ...
@@ -348,4 +348,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright � 2010-2013 VoIP Embedded, Inc.
+   Copyright © 2010-2013 VoIP Embedded, Inc.

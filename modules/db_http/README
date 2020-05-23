@@ -124,7 +124,7 @@ modparam("presence", "db_url","http://user:pass@www.some.com/some/some")
    If value is 1 the module will use https otherwise it will use
    http.
 
-   Default value is " 0 ".
+   Default value is “ 0 ”.
 
    Example 1.2. Set SSL parameter
 ...
@@ -135,7 +135,7 @@ modparam("db_http", "SSL",1)
 
    Whether or not the server supports raw queries.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.3. Set cap_raw_query parameter
 ...
@@ -146,7 +146,7 @@ modparam("db_http", "cap_raw_query", 1)
 
    Whether or not the server supports replace capabilities.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.4. Set cap_replace parameter
 ...
@@ -157,7 +157,7 @@ modparam("db_http", "cap_replace", 1)
 
    Whether or not the server supports insert_update capabilities.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.5. Set cap_insert_update parameter
 ...
@@ -169,7 +169,7 @@ modparam("db_http", "cap_insert_update", 1)
    Whether or not the server supports last_inserted_id
    capabilities.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.6. Set cap_last_inserted_id parameter
 ...
@@ -181,7 +181,7 @@ modparam("db_http", "cap_last_inserted_id", 1)
    Character to be used to delimit fields in the reply.Only one
    char may be set.
 
-   Default value is ";"
+   Default value is “;”
 
    Example 1.7. Set field_delimiter parameter
 ...
@@ -193,7 +193,7 @@ modparam("db_http", "field_delimiter",";")
    Character to be used to delimit rows in the reply.Only one char
    may be set.
 
-   Default value is "\n"
+   Default value is “\n”
 
    Example 1.8. Set row_delimiter parameter
 ...
@@ -205,7 +205,7 @@ modparam("db_http", "row_delimiter","\n")
    Character to be used to quote fields that require quoting in
    the reply.Only one char may be set.
 
-   Default value is "|"
+   Default value is “|”
 
    Example 1.9. Set quote_delimiter parameter
 ...
@@ -215,10 +215,10 @@ modparam("db_http", "quote_delimiter","|")
 1.3.9. value_delimiter (str)
 
    The delimiter used to separate multiple fields of a single
-   variable (see Section 1.5.2, "Variables"). Only one char may be
+   variable (see Section 1.5.2, “Variables”). Only one char may be
    set.
 
-   Default value is ","
+   Default value is “,”
 
    Example 1.10. Set value_delimiter parameter
 ...
@@ -230,7 +230,7 @@ modparam("db_http", "value_delimiter",";")
    The maximum number of milliseconds that the HTTP ops are
    allowed to last
 
-   Default value is "30000 ( 30 seconds )"
+   Default value is “30000 ( 30 seconds )”
 
    Example 1.11. Set timeout parameter
 ...
@@ -504,4 +504,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright � 2009 Voice Sistem SRL
+   Copyright © 2009 Voice Sistem SRL

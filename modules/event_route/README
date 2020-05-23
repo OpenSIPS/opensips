@@ -132,10 +132,10 @@ fetch_event_params("source=$avp(src);destination=$avp(dst)");
 1.7.1.  fetch_event_params(pvar_list)
 
    Retrieves the parameters of the event. For more information,
-   please read Section 1.2, "ROUTE events parameters".
+   please read Section 1.2, “ROUTE events parameters”.
 
    The the pseudo variables list as described in Section 1.2,
-   "ROUTE events parameters".
+   “ROUTE events parameters”.
 
    This function can be used from REQUEST_ROUTE and EVENT_ROUTE.
 
@@ -248,4 +248,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright � 2012 www.opensips-solutions.com
+   Copyright © 2012 www.opensips-solutions.com
