@@ -127,7 +127,7 @@ Chapter 1. Admin Guide
      * System ID - Also known as the User name that is used to
        authenticate to the SMSc.
      * Password - A password used to authenticate to the SMSc.
-     * System Type - Usually “SMPP”, this field is required by
+     * System Type - Usually "SMPP", this field is required by
        some SMPP providers.
      * Source Type of Number (TON) - Specifies the format of the
        number used to send messages from. Some comon values are:
@@ -266,7 +266,7 @@ modparam("proto_smpp", "outbound_uri", "sip:127.0.0.1:5060")
    The name of the database table containing definitions of the
    SMSc servers used to connect to.
 
-   Default value is “smpp”.
+   Default value is "smpp".
 
    Example 1.6. Set smpp_table parameter
 ...
@@ -279,7 +279,7 @@ modparam("proto_smpp", "smpp_table", "smsc")
    The name of the column that holds the SMSc identifier used by
    the send_smpp_message() function.
 
-   Default value is “name”.
+   Default value is "name".
 
    Example 1.7. Set name_col parameter
 ...
@@ -291,7 +291,7 @@ modparam("proto_smpp", "name_col", "smsc_name")
 
    The name of the column that holds the IP of the SMSc.
 
-   Default value is “ip”.
+   Default value is "ip".
 
    Example 1.8. Set ip_col parameter
 ...
@@ -303,7 +303,7 @@ modparam("proto_smpp", "ip_col", "smsc_ip")
 
    The name of the column that holds the SMSc port.
 
-   Default value is “port”.
+   Default value is "port".
 
    Example 1.9. Set port_col parameter
 ...
@@ -315,7 +315,7 @@ modparam("proto_smpp", "port_col", "smsc_port")
 
    The name of the column that holds the SMSc System ID.
 
-   Default value is “system_id”.
+   Default value is "system_id".
 
    Example 1.10. Set system_id_col parameter
 ...
@@ -327,7 +327,7 @@ modparam("proto_smpp", "system_id_col", "smsc_system_id")
 
    The name of the password column used to authenticate the SMSc.
 
-   Default value is “password”.
+   Default value is "password".
 
    Example 1.11. Set password_col parameter
 ...
@@ -339,7 +339,7 @@ modparam("proto_smpp", "password_col", "smsc_password")
 
    The name of the System Type column used to bind the SMSc.
 
-   Default value is “system_type”.
+   Default value is "system_type".
 
    Example 1.12. Set system_type_col parameter
 ...
@@ -351,7 +351,7 @@ modparam("proto_smpp", "system_type_col", "smsc_system_type")
 
    The name of the column that holds the Source TON values.
 
-   Default value is “src_ton”.
+   Default value is "src_ton".
 
    Example 1.13. Set src_ton_col parameter
 ...
@@ -363,7 +363,7 @@ modparam("proto_smpp", "src_ton_col", "smsc_src_ton")
 
    The name of the column that holds the Source NPI values.
 
-   Default value is “src_npi”.
+   Default value is "src_npi".
 
    Example 1.14. Set src_npi_col parameter
 ...
@@ -375,7 +375,7 @@ modparam("proto_smpp", "src_npi_col", "smsc_src_npi")
 
    The name of the column that holds the Destination TON values.
 
-   Default value is “dst_ton”.
+   Default value is "dst_ton".
 
    Example 1.15. Set dst_ton_col parameter
 ...
@@ -387,7 +387,7 @@ modparam("proto_smpp", "dst_ton_col", "smsc_dst_ton")
 
    The name of the column that holds the Destination NPI values.
 
-   Default value is “dst_npi”.
+   Default value is "dst_npi".
 
    Example 1.16. Set dst_npi_col parameter
 ...
@@ -399,7 +399,7 @@ modparam("proto_smpp", "dst_npi_col", "smsc_dst_npi")
 
    The name of the column that holds the Session Type of the SMSc.
 
-   Default value is “session_type”.
+   Default value is "session_type".
 
    Example 1.17. Set session_type_col parameter
 ...

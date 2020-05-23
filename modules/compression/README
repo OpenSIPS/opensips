@@ -135,14 +135,14 @@ modparam("mc", "mc_level", "3")
      * flags (string) - Specifies on what to apply the compression
        and where to put the result of the compression.
        The flags parameter can have the following values:
-          + “b” - specifies that the body of the message shall be
+          + "b" - specifies that the body of the message shall be
             compressed. Notice that if the message has no body,
             the flag will have no effect.
-          + “h” - specifies that all the headers, except the
+          + "h" - specifies that all the headers, except the
             mandatory ones (which will be specified in "whitelist"
             parameter section) and the ones in the whitelist shall
             be compressed.
-          + “s” - the headers and the body shall be compressed
+          + "s" - the headers and the body shall be compressed
             Separately, meaning that a new header named
             "Comp-Hdrs" will be created, and this header will keep
             the content of the compressed headers. Also,
@@ -151,7 +151,7 @@ modparam("mc", "mc_level", "3")
             this flag is not specified, the headers and the body
             (if 'b' and 'h' flags are specified) will be
             compressed alltogether in the new body of the message.
-          + “e” - specify that you want base64 Encoding. If you do
+          + "e" - specify that you want base64 Encoding. If you do
             not specify this flag, by default the module will send
             the raw compressed message in deflate/gzip format.
      * whitelist (string, optional) - header names list, separated
@@ -198,16 +198,16 @@ xlog("compression registered\n");
    mandatory. Lumps are not affected by this function, because it
    is applied after all messages changes are processed. done. The
    mc_compact supported short forms are:
-     * “c” - Content-Type (RFC 3261)
-     * “f” - From (RFC 3261)
-     * “i” - Call-ID (RFC 3261)
-     * “k” - Supported (RFC 3261)
-     * “l” - Content-Length (RFC 3261)
-     * “m” - Contact (RFC 3261)
-     * “s” - Subject (RFC 3261)
-     * “t” - To (RFC 3261)
-     * “v” - Via (RFC 3261)
-     * “x” - Session-Expires (RFC 4028)
+     * "c" - Content-Type (RFC 3261)
+     * "f" - From (RFC 3261)
+     * "i" - Call-ID (RFC 3261)
+     * "k" - Supported (RFC 3261)
+     * "l" - Content-Length (RFC 3261)
+     * "m" - Contact (RFC 3261)
+     * "s" - Subject (RFC 3261)
+     * "t" - To (RFC 3261)
+     * "v" - Via (RFC 3261)
+     * "x" - Session-Expires (RFC 4028)
 
    Meaning of the parameters is as follows:
      * whitelist (string, optional) - Whitelist of headers not to
@@ -289,7 +289,7 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 6 4 15 31
    4. Vlad Patrascu (@rvlad-patrascu) 6 4 8 11
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
-   6. Julián Moreno Patiño 3 1 2 2
+   6. Juli�n Moreno Pati�o 3 1 2 2
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
    8. Ryan Bullock (@rrb3942) 2 1 1 0
    9. Zero King 2 1 0 5
@@ -322,7 +322,7 @@ Chapter 2. Contributors
    6. Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
    7. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
-   9. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9. Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -337,4 +337,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2014 Voice Sistem SRL
+   Copyright � 2014 Voice Sistem SRL

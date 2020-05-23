@@ -142,7 +142,7 @@ modparam("mi_http", "trace_bwlist", "w: sip_trace")
 1.6. Examples
 
    This is an example showing the JSON-RPC request and reply over
-   HTTP for the “ps” MI command.
+   HTTP for the "ps" MI command.
 
    Example 1.4. JSON-RPC request
 
@@ -224,4 +224,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2013 shimaore.net
+   Copyright � 2013 shimaore.net

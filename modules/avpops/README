@@ -183,7 +183,7 @@ modparam("avpops","use_domain",1)
 
    Name of column containing the uuid (unique user id).
 
-   Default value is “uuid”.
+   Default value is "uuid".
 
    Example 1.5. Set uuid_column parameter
 ...
@@ -194,7 +194,7 @@ modparam("avpops","uuid_column","uuid")
 
    Name of column containing the username.
 
-   Default value is “username”.
+   Default value is "username".
 
    Example 1.6. Set username_column parameter
 ...
@@ -205,7 +205,7 @@ modparam("avpops","username_column","username")
 
    Name of column containing the domain name.
 
-   Default value is “domain”.
+   Default value is "domain".
 
    Example 1.7. Set domain_column parameter
 ...
@@ -216,7 +216,7 @@ modparam("avpops","domain_column","domain")
 
    Name of column containing the attribute name (AVP name).
 
-   Default value is “attribute”.
+   Default value is "attribute".
 
    Example 1.8. Set attribute_column parameter
 ...
@@ -227,7 +227,7 @@ modparam("avpops","attribute_column","attribute")
 
    Name of column containing the AVP value.
 
-   Default value is “value”.
+   Default value is "value".
 
    Example 1.9. Set value_column parameter
 ...
@@ -238,7 +238,7 @@ modparam("avpops","value_column","value")
 
    Name of column containing the AVP type.
 
-   Default value is “type”.
+   Default value is "type".
 
    Example 1.10. Set type_column parameter
 ...
@@ -260,7 +260,7 @@ modparam("avpops","type_column","type")
           + 'value_type='('integer'|'string')
           + 'table='string
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.11. Set db_scheme parameter
 ...
@@ -300,7 +300,7 @@ modparam("avpops","db_scheme",
             and 's'), the rest have the meaning descriped in 'AVP
             naming format' chapter.
      * db_id (int, optional) - reference to a defined DB URL (a
-       numerical id) - see the “db_url” module parameter.
+       numerical id) - see the "db_url" module parameter.
      * prefix (string, optional) - static string which will
        precede the names of the AVPs populated by this function.
 
@@ -381,14 +381,14 @@ avp_db_delete("$ru", "$avp(1)", 3);
        types of errors
      * res_col_avps (string, optional, no expand) - a list with
        AVP names where to store the result. The format is
-       “$avp(name1);$avp(name2);...”. If this parameter is
-       omitted, the result is stored in “$avp(1);$avp(2);...”. If
+       "$avp(name1);$avp(name2);...". If this parameter is
+       omitted, the result is stored in "$avp(1);$avp(2);...". If
        the result consists of multiple rows, then multiple AVPs
        with corresponding names will be added. The value type of
        the AVP (string or integer) will be derived from the type
        of the columns.
      * db_id (int, optional) - reference to a defined DB URL (a
-       numerical id) - see the “db_url” module parameter. It can
+       numerical id) - see the "db_url" module parameter. It can
        be either a constant, or a string/int variable.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -693,8 +693,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Andrei Pelinescu-Onciul, Anca
    Vamanu, Norman Brandinger (@NormB), Klaus Darilion, Andrey
-   Vorobiev, Olle E. Johansson, Kennard White, Julián Moreno
-   Patiño, Konstantin Bokarius, Walter Doekes (@wdoekes), Andreas
+   Vorobiev, Olle E. Johansson, Kennard White, Juli�n Moreno
+   Pati�o, Konstantin Bokarius, Walter Doekes (@wdoekes), Andreas
    Granig, Peter Lemenkov (@lemenkov), Sergio Gutierrez, Edson
    Gellert Schubert, Ovidiu Sas (@ovidiusas), Vlad Patrascu
    (@rvlad-patrascu).
@@ -725,7 +725,7 @@ Chapter 2. Contributors
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6.  Andrey Vorobiev                     Apr 2016 - Apr 2016
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
    8.  Ionut Ionita (@ionutrazvanionita)   Nov 2015 - Feb 2016
    9.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Jul 2015
    10. Walter Doekes (@wdoekes)            May 2014 - May 2014
@@ -756,4 +756,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2004-2008 Voice Sistem SRL
+   Copyright � 2004-2008 Voice Sistem SRL

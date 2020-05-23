@@ -239,8 +239,8 @@ Chapter 2. Contributors
    9. Ionut Ionita (@ionutrazvanionita) 3 1 17 1
    10. Ovidiu Sas (@ovidiusas) 3 1 15 2
 
-   All remaining contributors: Konstantin Bokarius, JuliÃ¡n Moreno
-   PatiÃ±o, Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
+   All remaining contributors: Konstantin Bokarius, Julián Moreno
+   Patiño, Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -268,7 +268,7 @@ Chapter 2. Contributors
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2006 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Apr 2017 - Apr 2017
-   7.  JuliÃ¡n Moreno PatiÃ±o                Feb 2016 - Feb 2016
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    8.  Vlad Paiu (@vladpaiu)               Jul 2010 - Feb 2011
    9.  Anca Vamanu                         Oct 2007 - Sep 2009
    10. Ovidiu Sas (@ovidiusas)             Jun 2008 - Jun 2008
@@ -292,6 +292,6 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2007-2017 OpenSIPS Project
+   Copyright © 2007-2017 OpenSIPS Project
 
-   Copyright Â© 2006 Voice Sistem SRL
+   Copyright © 2006 Voice Sistem SRL
