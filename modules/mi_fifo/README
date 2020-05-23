@@ -160,7 +160,7 @@ modparam("mi_fifo", "fifo_user", "root")
 
    Directory to be used for creating the reply FIFO files.
 
-   Default value is "/tmp/"
+   Default value is “/tmp/”
 
    Example 1.5. Set reply_dir parameter
 ...
@@ -172,7 +172,7 @@ modparam("mi_fifo", "reply_dir", "/home/opensips/tmp/")
    Indicates whether the JSONRPC responses sent through MI should
    be pretty-printed or not.
 
-   Default value is "0 - no pretty-printing".
+   Default value is “0 - no pretty-printing”.
 
    Example 1.6. Set pretty_printing parameter
 ...
@@ -237,7 +237,7 @@ modparam("mi_fifo", "trace_bwlist", "w: sip_trace")
 1.7. Example
 
    This is an example showing the FIFO format for the
-   "get_statistics dialog: tm:" MI commad: response.
+   “get_statistics dialog: tm:” MI commad: response.
 
    Example 1.9. FIFO request
 
@@ -263,8 +263,8 @@ Chapter 2. Contributors
    9. Konstantin Bokarius 3 1 2 5
    10. Bogdan Iancu 3 1 2 2
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Juli�n
-   Moreno Pati�o, Peter Lemenkov (@lemenkov), Edson Gellert
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Julián
+   Moreno Patiño, Peter Lemenkov (@lemenkov), Edson Gellert
    Schubert, Dusan Klinec, Vlad Patrascu (@rvlad-patrascu), Walter
    Doekes (@wdoekes).
 
@@ -296,7 +296,7 @@ Chapter 2. Contributors
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   9.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    10. Dusan Klinec                        Dec 2015 - Dec 2015
 
    All remaining contributors: Walter Doekes (@wdoekes),
@@ -319,4 +319,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2006 Voice Sistem SRL
+   Copyright © 2006 Voice Sistem SRL

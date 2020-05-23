@@ -154,7 +154,7 @@ modparam("mi_xmlrpc_ng", "trace_bwlist", "w: sip_trace")
 1.6. Example
 
    This is an example showing the xmlrpc format for the
-   "get_statistics net: shmem:" MI commad: response.
+   “get_statistics net: shmem:” MI commad: response.
 
    Example 1.4. XMLRPC request
 
@@ -275,4 +275,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2013 VoIP Embedded, Inc.
+   Copyright © 2013 VoIP Embedded, Inc.

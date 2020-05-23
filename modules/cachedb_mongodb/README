@@ -164,7 +164,7 @@ cache_fetch("mongodb:instance1", "key", $avp(10));
    last. Anything above the threshold will trigger a warning
    message to the log
 
-   Default value is "0 ( unlimited - no warnings )".
+   Default value is ‚Äú0 ( unlimited - no warnings )‚Äù.
 
    Example 1.5. Set exec_threshold parameter
 ...
@@ -182,7 +182,7 @@ modparam("cachedb_mongodb", "exec_threshold", 100000)
    Caveat: only the minimally required raw query options are
    supported in this mode.
 
-   Default value is "0 (disabled)".
+   Default value is ‚Äú0 (disabled)‚Äù.
 
    Example 1.6. Setting the compat_mode_2.4 parameter
 ...
@@ -200,7 +200,7 @@ modparam("cachedb_mongodb", "compat_mode_2.4", 1)
    Caveat: only the minimally required options for "find" raw
    queries are supported in this mode.
 
-   Default value is "0 (disabled)".
+   Default value is ‚Äú0 (disabled)‚Äù.
 
    Example 1.7. Setting the compat_mode_3.0 parameter
 ...
@@ -270,7 +270,7 @@ Chapter 2. Contributors
    5. Dan Pascu (@danpascu) 4 2 4 4
    6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
    7. @jalung 4 1 97 56
-   8. Juli·n Moreno PatiÒo 3 1 1 1
+   8. Juli√°n Moreno Pati√±o 3 1 1 1
    9. Peter Lemenkov (@lemenkov) 3 1 1 1
    10. Alessio Garzi (@Ozzyboshi) 2 1 1 0
 
@@ -304,7 +304,7 @@ Chapter 2. Contributors
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  @jalung                             Aug 2017 - Aug 2017
    8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   9.  Juli·n Moreno PatiÒo                Feb 2016 - Feb 2016
+   9.  Juli√°n Moreno Pati√±o                Feb 2016 - Feb 2016
    10. Vlad Paiu (@vladpaiu)               Jan 2013 - May 2015
 
    All remaining contributors: Ovidiu Sas (@ovidiusas).
@@ -317,8 +317,8 @@ Chapter 3. Documentation
 3.1. Contributors
 
    Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Juli·n Moreno PatiÒo, Vlad Paiu (@vladpaiu).
+   (@lemenkov), Juli√°n Moreno Pati√±o, Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 
-   Copyright © 2013-2017 www.opensips-solutions.com
+   Copyright ¬© 2013-2017 www.opensips-solutions.com

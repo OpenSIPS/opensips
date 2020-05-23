@@ -118,9 +118,9 @@ Chapter 1. Admin Guide
      * off - stores the value of the Path headers into usrloc
        without passing it back to the UAC in the reply.
      * lazy - stores the Path header and passes it back to the UAC
-       if Path-support is indicated by the "path" param in the
+       if Path-support is indicated by the “path” param in the
        Supported HF.
-     * strict - rejects the registration with "420 Bad Extension"
+     * strict - rejects the registration with “420 Bad Extension”
        if there's a Path header but no support for it is indicated
        by the UAC. Otherwise it's stored and passed back to the
        UAC.
@@ -134,7 +134,7 @@ Chapter 1. Admin Guide
 
    The whole process is transparent to the user, so no config
    changes are required beside setting the registrar-parameters
-   "use_path" and "path_mode".
+   “use_path” and “path_mode”.
 
 1.1.2. GRUU support
 
@@ -245,7 +245,7 @@ modparam("registrar", "default_q", 1000)
    The parameter specifies the message flag to be used to control
    the module behaviour regarding TCP connections. If the flag is
    set for a REGISTER via TCP containing a TCP contact, the
-   module, via the "save()" function, will set the lifetime of the
+   module, via the “save()” function, will set the lifetime of the
    TCP connection to the contact expire value. By doing this, the
    TCP connection will stay on as long as the contact is valid.
 
@@ -516,22 +516,22 @@ modparam("registrar", "disable_gruu", 0)
           + 'p1' (Path support - lazy mode) The Path header is
             saved into usrloc, but is only included in the reply
             if path support is indicated in the registration
-            request by the "path" option of the "Supported"
+            request by the “path” option of the “Supported”
             header.
           + 'p2' (Path support - strict mode) The path header is
             only saved into usrloc, if path support is indicated
-            in the registration request by the "path" option of
-            the "Supported" header. If no path support is
-            indicated, the request is rejected with "420 - Bad
-            Extension" and the header "Unsupported: path" is
-            included in the reply along with the received "Path"
+            in the registration request by the “path” option of
+            the “Supported” header. If no path support is
+            indicated, the request is rejected with “420 - Bad
+            Extension” and the header “Unsupported: path” is
+            included in the reply along with the received “Path”
             header. This mode is the one recommended by RFC-3327.
-          + 'v' (path receiVed) if set, the "received" parameter
+          + 'v' (path receiVed) if set, the “received” parameter
             of the first Path URI of a registration is set as
             received-uri and the NAT branch flag is set for this
             contact. This is useful if the registrar is placed
             behind a SIP loadbalancer, which passes the nat'ed UAC
-            address as "received" parameter in it's Path uri.
+            address as “received” parameter in it's Path uri.
        This parameter is a string composed of a set of flags.
      * aor (string, optional) - a custom AOR; if missing, the AOR
        will be taken from the default place - the TO header URI.
@@ -548,7 +548,7 @@ modparam("registrar", "disable_gruu", 0)
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   If you plan to use the "save()" function in reply route, please
+   If you plan to use the “save()” function in reply route, please
    refer to mcontact_avp module parameter.
 
    Example 1.17. save usage
@@ -864,7 +864,7 @@ if (is_method("REGISTER")) {
 1.4.7.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
-   "hdr_name" which contains the description of the received
+   “hdr_name” which contains the description of the received
    socket (proto:ip:port)
 
    This makes sense only in multiple replicated servers scenarios.
@@ -905,107 +905,107 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-        What happened with the old "append_branch" module parameter?
+   What happened with the old “append_branch” module parameter?
 
-        It was removed as global option, as the "lookup" function takes
-        this option via the flag "b" (append Branches) See the
-        documentation of the "lookup" function.
+   It was removed as global option, as the “lookup” function takes
+   this option via the flag "b" (append Branches) See the
+   documentation of the “lookup” function.
 
    2.2.
 
-        What happened with the old "method_filtering" module parameter?
+   What happened with the old “method_filtering” module parameter?
 
-        It was removed as global option, as the "lookup" function takes
-        this option via the flag "m" (Method filtering) See the
-        documentation of the "lookup" function.
+   It was removed as global option, as the “lookup” function takes
+   this option via the flag "m" (Method filtering) See the
+   documentation of the “lookup” function.
 
    2.3.
 
-        What happened with the old "sock_flag" module parameter?
+   What happened with the old “sock_flag” module parameter?
 
-        It was removed as global option, as the "save" function takes
-        this option via the flag "s" (Socket header) See the
-        documentation of the "save" function.
+   It was removed as global option, as the “save” function takes
+   this option via the flag "s" (Socket header) See the
+   documentation of the “save” function.
 
    2.4.
 
-        What happened with the old "use_path" and "path_mode" module
-        parameters?
+   What happened with the old “use_path” and “path_mode” module
+   parameters?
 
-        They were removed as global option, as the "save" function
-        takes these options via the flag "px" (path support) See the
-        documentation of the "save" function.
+   They were removed as global option, as the “save” function
+   takes these options via the flag "px" (path support) See the
+   documentation of the “save” function.
 
    2.5.
 
-        What happened with the old "path_use_received" module
-        parameter?
+   What happened with the old “path_use_received” module
+   parameter?
 
-        It was removed as global option, as the "save" function takes
-        this option via the flag "v" (path receiVed) See the
-        documentation of the "save" function.
+   It was removed as global option, as the “save” function takes
+   this option via the flag "v" (path receiVed) See the
+   documentation of the “save” function.
 
    2.6.
 
-        What happened with the old "nat_flag" module parameter?
+   What happened with the old “nat_flag” module parameter?
 
-        It was removed, as the module internally loads this value from
-        the "USRLOC" module (see the "nat_bflag" USRLOC parameter).
+   It was removed, as the module internally loads this value from
+   the “USRLOC” module (see the “nat_bflag” USRLOC parameter).
 
    2.7.
 
-        What happened with the old "use_domain" module parameter?
+   What happened with the old “use_domain” module parameter?
 
-        It was removed, as the module internally loads this option from
-        the "USRLOC" module. This was done in order to simplify the
-        configuration.
+   It was removed, as the module internally loads this option from
+   the “USRLOC” module. This was done in order to simplify the
+   configuration.
 
    2.8.
 
-        What happened with the old "save_noreply" and "save_memory"
-        functions?
+   What happened with the old “save_noreply” and “save_memory”
+   functions?
 
-        There functions were merged into the new "save(domain,flags)"
-        functions. If a reply should be sent or if the DB should be
-        updated also is controlled via the flags.
+   There functions were merged into the new “save(domain,flags)”
+   functions. If a reply should be sent or if the DB should be
+   updated also is controlled via the flags.
 
    2.9.
 
-        Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-        Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    2.10.
 
-        Where can I post a question about this module?
+   Where can I post a question about this module?
 
-        First at all check if your question was already answered on one
-        of our mailing lists:
-          * User Mailing List -
-            http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-          * Developer Mailing List -
-            http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-        E-mails regarding any stable OpenSIPS release should be sent to
-        <users@lists.opensips.org> and e-mails regarding development
-        versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-        If you want to keep the mail private, send it to
-        <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.11.
 
-        How can I report a bug?
+   How can I report a bug?
 
-        Please follow the guidelines provided at:
-        https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
    2.12.
 
-        What happened to the desc_time_order parameter?
+   What happened to the desc_time_order parameter?
 
-        It was removed, as its functionality was mmigrate into usrloc
-        module, were there is a parameter with the same name.
+   It was removed, as its functionality was mmigrate into usrloc
+   module, were there is a parameter with the same name.
 
 Chapter 3. Contributors
 
@@ -1031,10 +1031,10 @@ Chapter 3. Contributors
    Elena-Ramona Modroiu, Maksym Sobolyev (@sobomax), Peter
    Lemenkov (@lemenkov), Dan Pascu (@danpascu), Sergio Gutierrez,
    Carsten Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus
-   Hunger, Juli�n Moreno Pati�o, Phil D'Amore, Klaus Darilion,
+   Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus Darilion,
    Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius,
-   Jesus Rodrigues, Dusan Klinec, Ruslan Bukin, Sa�l Ibarra
-   Corretg� (@saghul), @jalung, Tolga Tarhan, Edson Gellert
+   Jesus Rodrigues, Dusan Klinec, Ruslan Bukin, Saúl Ibarra
+   Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
    Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1065,11 +1065,11 @@ Chapter 3. Contributors
    6.  @jalung                             Aug 2017 - Aug 2017
    7.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
    8.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
-   9.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    10. Dusan Klinec                        Dec 2015 - Dec 2015
 
    All remaining contributors: Nick Altmann (@nikbyte), Vlad Paiu
-   (@vladpaiu), Tolga Tarhan, Sa�l Ibarra Corretg� (@saghul),
+   (@vladpaiu), Tolga Tarhan, Saúl Ibarra Corretgé (@saghul),
    Ruslan Bukin, Irina-Maria Stanescu, Kobi Eshun (@ekobi), Phil
    D'Amore, Sergio Gutierrez, Klaus Darilion, Henning Westerholt
    (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
@@ -1090,7 +1090,7 @@ Chapter 4. Documentation
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
    Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
    Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Ionut
-   Ionita (@ionutrazvanionita), Juli�n Moreno Pati�o, Nick Altmann
+   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
    (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),
    Irina-Maria Stanescu, Kobi Eshun (@ekobi), Sergio Gutierrez,
    Klaus Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
@@ -1100,4 +1100,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2003 FhG FOKUS
+   Copyright © 2003 FhG FOKUS

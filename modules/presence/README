@@ -187,7 +187,7 @@ Chapter 1. Admin Guide
    Otherwise, it is used as a 'library', for its exported
    functions.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -215,10 +215,10 @@ modparam("presence", "fallback2db", 1)
    order to understand th concept of a cluster ID, please see the
    clusterer module.
 
-   For more on presence clustering see the Section 1.2, "Presence
-   clustering" chapter.
+   For more on presence clustering see the Section 1.2, “Presence
+   clustering” chapter.
 
-   Default value is "None".
+   Default value is “None”.
 
    Example 1.3. Set cluster_id parameter
 ...
@@ -233,10 +233,10 @@ modparam("presence", "cluster_id", 2)
    information via the clustering support. A non-zero value means
    enabled.
 
-   For more on presence clustering see the Section 1.2, "Presence
-   clustering" chapter.
+   For more on presence clustering see the Section 1.2, “Presence
+   clustering” chapter.
 
-   Default value is "0" (disabled).
+   Default value is “0” (disabled).
 
    Example 1.4. Set cluster_federation_mode parameter
 ...
@@ -249,10 +249,10 @@ modparam("presence", "cluster_federation_mode", 1)
    by the federated cluster - only presentities advertising one of
    these events will be broadcasted via the cluster.
 
-   For more on presence clustering see the Section 1.2, "Presence
-   clustering" chapter.
+   For more on presence clustering see the Section 1.2, “Presence
+   clustering” chapter.
 
-   Default value is "empty" (meaning all).
+   Default value is “empty” (meaning all).
 
    Example 1.5. Set cluster_pres_events parameter
 ...
@@ -264,7 +264,7 @@ ge-summary")
 
    The extra time to store a subscription/publication.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.6. Set expires_offset parameter
 ...
@@ -276,7 +276,7 @@ modparam("presence", "expires_offset", 10)
    The the maximum admissible expires value for SUBSCRIBE
    messages.
 
-   Default value is "3600".
+   Default value is “3600”.
 
    Example 1.7. Set max_expires_subscribe parameter
 ...
@@ -287,7 +287,7 @@ modparam("presence", "max_expires_subscribe", 3600)
 
    The the maximum admissible expires value for PUBLISH messages.
 
-   Default value is "3600".
+   Default value is “3600”.
 
    Example 1.8. Set max_expires_publish parameter
 ...
@@ -320,7 +320,7 @@ modparam("presence", "server_address", "sip:10.10.10.10:5060")
    should be avoided if this feature is not supported by the
    clients.
 
-   Default value is "0 ".
+   Default value is “0 ”.
 
    Example 1.10. Set enable_sphere_check parameter
 ...
@@ -335,7 +335,7 @@ modparam("presence", "enable_sphere_check", 1)
    user did not register sice the subscription and was not
    informed about it).
 
-   Default value is "3" days. Maximum accepted value is 30 days.
+   Default value is “3” days. Maximum accepted value is 30 days.
 
    Example 1.11. Set waiting_subs_daysno parameter
 ...
@@ -352,7 +352,7 @@ modparam("presence", "waiting_subs_daysno", 2)
    the dialoginfo modules, presence_dialoginfo, pua_dialoginfo,
    dialog and pua.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.12. Set mix_dialog_presence parameter
 ...
@@ -371,7 +371,7 @@ modparam("presence", "mix_dialog_presence", 1)
    of a pseudovariable and then set this pseudovariable to the
    desired URI before calling the handle_subscribe() function.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.13. Set bla_presentity_spec parameter
 ...
@@ -391,7 +391,7 @@ modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
    this parameter was introduced to disable this behaviour when
    needed.
 
-   Default value is "1".
+   Default value is “1”.
 
    Example 1.14. Set bla_fix_remote_target parameter
 ...
@@ -405,7 +405,7 @@ modparam("presence", "bla_fix_remote_target", 0)
    status 'closed' and use it when sending Notify, instead of
    notifying with no body.
 
-   Default value is "0".
+   Default value is “0”.
 
    Example 1.15. Set notify_offline_body parameter
 ...
@@ -418,7 +418,7 @@ modparam("presence", "notify_offline_body", 1)
    (destroyed) when receiving a SIP timeout (408) for a sent
    NOTIFY requests.
 
-   Default value is "1" (enabled).
+   Default value is “1” (enabled).
 
    Example 1.16. Set end_sub_on_timeout parameter
 ...
@@ -429,7 +429,7 @@ modparam("presence", "end_sub_on_timeout", 0)
 
    The period at which to clean the expired subscription dialogs.
 
-   Default value is "100". A zero or negative value disables this
+   Default value is “100”. A zero or negative value disables this
    activity.
 
    Example 1.17. Set clean_period parameter
@@ -442,7 +442,7 @@ modparam("presence", "clean_period", 100)
    The period at which to synchronize cached subscriber info with
    the database.
 
-   Default value is "100". A zero or negative value disables
+   Default value is “100”. A zero or negative value disables
    synchronization.
 
    Example 1.18. Set db_update_period parameter
@@ -454,7 +454,7 @@ modparam("presence", "db_update_period", 100)
 
    The name of the db table where Publish information are stored.
 
-   Default value is "presentity".
+   Default value is “presentity”.
 
    Example 1.19. Set presentity_table parameter
 ...
@@ -466,7 +466,7 @@ modparam("presence", "presentity_table", "presentity")
    The name of the db table where active subscription information
    are stored.
 
-   Default value is "active_watchers".
+   Default value is “active_watchers”.
 
    Example 1.20. Set active_watchers_table parameter
 ...
@@ -477,7 +477,7 @@ modparam("presence", "active_watchers_table", "active_watchers")
 
    The name of the db table where subscription states are stored.
 
-   Default value is "watchers".
+   Default value is “watchers”.
 
    Example 1.21. Set watchers_table parameter
 ...
@@ -490,7 +490,7 @@ modparam("presence", "watchers_table", "watchers")
    parameter will be used as the power of 2 when computing table
    size.
 
-   Default value is "9 (512)".
+   Default value is “9 (512)”.
 
    Example 1.22. Set subs_htable_size parameter
 ...
@@ -503,7 +503,7 @@ modparam("presence", "subs_htable_size", 11)
    parameter will be used as the power of 2 when computing table
    size.
 
-   Default value is "9 (512)".
+   Default value is “9 (512)”.
 
    Example 1.23. Set pres_htable_size parameter
 ...
@@ -574,8 +574,8 @@ modparam("presence", "pres_htable_size", 11)
      * sharing_tag (string, optional) - optional parameter telling
        the owner tag (for the subscription) in clusetering
        scenarios where the subscription data is shared between
-       multiple servers - see the Section 1.2, "Presence
-       clustering" chapter for more details.
+       multiple servers - see the Section 1.2, “Presence
+       clustering” chapter for more details.
 
    Ex:
         if($ru =~ "kphone@opensips.org")
@@ -1016,7 +1016,7 @@ Chapter 3. Contributors
    7. Vlad Patrascu (@rvlad-patrascu) 19 9 360 354
    8. Dan Pascu (@danpascu) 15 11 101 124
    9. Henning Westerholt (@henningw) 15 6 340 302
-   10. Sa�l Ibarra Corretg� (@saghul) 8 6 36 11
+   10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
 
    All remaining contributors: Walter Doekes (@wdoekes), Edson
    Gellert Schubert, Vlad Paiu (@vladpaiu), Juha Heinanen
@@ -1025,7 +1025,7 @@ Chapter 3. Contributors
    Carlos Oliva, Sergio Gutierrez, Kennard White, Elena-Ramona
    Modroiu, Vasil Kolev, Benny Prijono, James Criscuolo, Peter
    Lemenkov (@lemenkov), Vallimamod Abdullah, UnixDev, Denis
-   Bilenko, Juli�n Moreno Pati�o, John Riordan, Julien Blache.
+   Bilenko, Julián Moreno Patiño, John Riordan, Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1055,11 +1055,11 @@ Chapter 3. Contributors
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  James Criscuolo                     Mar 2016 - Mar 2016
    8.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
-   9.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    10. Dusan Klinec                        Dec 2015 - Dec 2015
 
    All remaining contributors: Carlos Oliva, Damien Sandras
-   (@dsandras), Vlad Paiu (@vladpaiu), Sa�l Ibarra Corretg�
+   (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra Corretgé
    (@saghul), Anca Vamanu, Walter Doekes (@wdoekes), Vallimamod
    Abdullah, Kennard White, Stanislaw Pitucha, Angel Marin, John
    Riordan, Vasil Kolev, UnixDev, Sergio Gutierrez, Kobi Eshun
@@ -1078,7 +1078,7 @@ Chapter 4. Documentation
    Last edited by: Dan Pascu (@danpascu), Liviu Chircu
    (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
    Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Sa�l Ibarra Corretg� (@saghul), Ovidiu
+   Lemenkov (@lemenkov), Saúl Ibarra Corretgé (@saghul), Ovidiu
    Sas (@ovidiusas), Anca Vamanu, Kennard White, Angel Marin, Kobi
    Eshun (@ekobi), Klaus Darilion, Henning Westerholt (@henningw),
    Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
@@ -1086,4 +1086,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2006 Voice Sistem SRL
+   Copyright © 2006 Voice Sistem SRL

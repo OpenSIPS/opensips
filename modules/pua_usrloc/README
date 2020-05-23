@@ -78,7 +78,7 @@ Chapter 1. Admin Guide
    The default domain to use when constructing the presentity uri
    if it is missing from recorded aor.
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.1. Set default_domain parameter
 ...
@@ -90,7 +90,7 @@ modparam("pua_usrloc", "default_domain", "opensips.org")
    The prefix when construstructing entity attribute to be added
    to presence node in xml pidf. (ex: pres:user@domain ).
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.2. Set presentity_prefix parameter
 ...
@@ -191,4 +191,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2006 Voice Sistem SRL
+   Copyright © 2006 Voice Sistem SRL
