@@ -217,13 +217,13 @@ modparam("aaa_radius", "fetch_all_values", 1)
    Parameters:
      * input_set_name (string) - the name of the set that contains
        the list of attributes and pvars that will form the
-       authentication request (see the “sets” module parameter).
+       authentication request (see the "sets" module parameter).
      * output_set_name (string) - the name of the set that
        contains the list of attributes and pvars that will be
-       extracted form the authentication reply (see the “sets”
+       extracted form the authentication reply (see the "sets"
        module parameter).
 
-   The sets must be defined using the “sets” exported parameter.
+   The sets must be defined using the "sets" exported parameter.
 
    The function return TRUE (retcode 1) if authentication was
    successful, FALSE (retcode -1) if an error (any kind of error)
@@ -284,13 +284,13 @@ radius_send_acct("set1");
    Parameters:
      * input_set_name (string) - the name of the set that contains
        the list of attributes and pvars that will form the
-       authentication request (see the “sets” module parameter).
+       authentication request (see the "sets" module parameter).
      * output_set_name (string) - the name of the set that
        contains the list of attributes and pvars that will be
-       extracted form the authentication reply (see the “sets”
+       extracted form the authentication reply (see the "sets"
        module parameter).
 
-   The sets must be defined using the “sets” exported parameter.
+   The sets must be defined using the "sets" exported parameter.
 
    The function return TRUE (retcode 1) if authentication was
    successful, FALSE (retcode -1) if an error (any kind of error)
@@ -402,10 +402,10 @@ Chapter 3. Contributors
    7. Boris Ratner 4 2 38 5
    8. Anca Vamanu 4 2 5 3
    9. Matt Lehner 3 1 32 3
-   10. Авдиенко Михаил 3 1 7 17
+   10. Avdienko Mihail 3 1 7 17
 
-   All remaining contributors: Alex Massover, Julián Moreno
-   Patiño, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes),
+   All remaining contributors: Alex Massover, Juli�n Moreno
+   Pati�o, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes),
    Zero King, Dan Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -436,11 +436,11 @@ Chapter 3. Contributors
    6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Ionut Ionita (@ionutrazvanionita)   Jun 2015 - Apr 2017
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
    10. Walter Doekes (@wdoekes)            Jun 2014 - Jun 2014
 
    All remaining contributors: Boris Ratner, Matt Lehner,
-   Irina-Maria Stanescu, Авдиенко Михаил, Alex Massover, Anca
+   Irina-Maria Stanescu, Avdienko Mihail, Alex Massover, Anca
    Vamanu.
 
    (1) including any documentation-related commits, excluding
@@ -458,6 +458,6 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2009 Irina-Maria Stanescu
+   Copyright � 2009 Irina-Maria Stanescu
 
-   Copyright © 2009 Voice Sistem SRL
+   Copyright � 2009 Voice Sistem SRL

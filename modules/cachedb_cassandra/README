@@ -138,7 +138,7 @@ cache_remove("cassandra:cluster1","key");
    The timeout in ms that will be triggered in case a connection
    attempt fails.
 
-   Default value is ‚Äú5000‚Äù.
+   Default value is "5000".
 
    Example 1.3. Set connect_timeout parameter
 ...
@@ -150,7 +150,7 @@ modparam("cachedb_cassandra", "connect_timeout",1000);
    The timeout in ms that will be triggered in case a Cassandra
    query takes too long.
 
-   Default value is ‚Äú5000‚Äù.
+   Default value is "5000".
 
    Example 1.4. Set query_timeout parameter
 ...
@@ -241,7 +241,7 @@ modparam("cachedb_cassandra", "rd_consistency_level", "quorum");
    query_timeout since any query taking longer than that value
    will be dropped anyway.
 
-   Default value is ‚Äú0 ( unlimited - no warnings )‚Äù.
+   Default value is "0 ( unlimited - no warnings )".
 
    Example 1.7. Set exec_threshold parameter
 ...
@@ -282,7 +282,7 @@ Chapter 2. Contributors
    4. Razvan Crainea (@razvancrainea) 7 5 15 13
    5. fabriziopicconi 4 2 5 5
    6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
-   7. Juli√°n Moreno Pati√±o 3 1 1 1
+   7. Juli·n Moreno PatiÒo 3 1 1 1
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
    9. Jarrod Baumann (@jarrodb) 2 1 2 0
 
@@ -311,7 +311,7 @@ Chapter 2. Contributors
    3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6. Juli√°n Moreno Pati√±o                Feb 2016 - Feb 2016
+   6. Juli·n Moreno PatiÒo                Feb 2016 - Feb 2016
    7. Jarrod Baumann (@jarrodb)           May 2015 - May 2015
    8. fabriziopicconi                     Apr 2014 - Apr 2014
    9. Vlad Paiu (@vladpaiu)               Dec 2011 - Nov 2013
@@ -324,9 +324,9 @@ Chapter 3. Documentation
 3.1. Contributors
 
    Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Juli√°n Moreno Pati√±o,
+   (@lemenkov), Liviu Chircu (@liviuchircu), Juli·n Moreno PatiÒo,
    Vlad Paiu (@vladpaiu), Razvan Crainea (@razvancrainea).
 
    Documentation Copyrights:
 
-   Copyright ¬© 2011 www.opensips-solutions.com
+   Copyright © 2011 www.opensips-solutions.com

@@ -16,6 +16,10 @@ signaling Module
 
               1.4.1. send_reply(code, reason)
 
+        1.5. Exported Variables
+
+              1.5.1. $sig_local_totag
+
    2. Contributors
 
         2.1. By Commit Statistics
@@ -35,6 +39,7 @@ signaling Module
    List of Examples
 
    1.1. sl_send_reply usage
+   1.2. Usage of $sig_local_totag variable
 
 Chapter 1. Admin Guide
 
@@ -112,6 +117,38 @@ send_reply(404, "Not found");
 send_reply($err.rcode, $err.rreason);
 ...
 
+1.5. Exported Variables
+
+1.5.1. $sig_local_totag
+
+   This variable returns the local To-tag that will be used by
+   OpenSIPS for locally sending replies to the current SIP
+   request. Yes, this variable should be used only in the context
+   of a SIP request and it should be used only in conjunction with
+   the using send_reply().
+
+   Whenever you use it, be sure that the function is used in the
+   same stateful / stateless SIP mode as the following replying
+   function. Otherwise you may get different values for the
+   To-tag!!
+
+   NOTE: the variable returns the To-Tag that will be used by
+   OpenSIPS in the locally generated reply. This may be completly
+   different from the To-tag in the replies received and forwarded
+   by OpenSIPS.
+
+   Example 1.2. Usage of $sig_local_totag variable
+...
+# stateful handling
+t_newtran();
+xlog("the To-tag to be used is $sig_local_totag \n");
+send_reply();  # or t_reply();
+...
+# stateless handling
+xlog("the To-tag to be used is $sig_local_totag \n");
+send_reply(); # or sl_send_reply();
+...
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -119,8 +156,8 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 11 9 28 35
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 53 22
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 12 9 131 23
+   2. Liviu Chircu (@liviuchircu) 11 9 28 35
    3. Anca Vamanu 9 3 524 2
    4. Razvan Crainea (@razvancrainea) 6 4 5 3
    5. Vlad Patrascu (@rvlad-patrascu) 6 3 23 76
@@ -147,7 +184,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2008 - Nov 2019
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2008 - May 2020
    2. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
    3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -162,10 +199,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), zhangst,
-   Bogdan-Andrei Iancu (@bogdan-iancu), Anca Vamanu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu
+   Chircu (@liviuchircu), zhangst, Anca Vamanu.
 
    Documentation Copyrights:
 
-   Copyright Â© 2008 FhG FOKUS
+   Copyright © 2008 FhG FOKUS

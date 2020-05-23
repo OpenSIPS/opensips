@@ -165,7 +165,7 @@ modparam("proto_wss", "wss_max_msg_chunks", 8)
    The resource queried for when a WebSocket handshake is
    initiated.
 
-   Default value is “/”.
+   Default value is "/".
 
    Example 1.4. Set wss_resource parameter
 ...
@@ -410,4 +410,4 @@ Chapter 4. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2015 www.opensips-solutions.com
+   Copyright � 2015 www.opensips-solutions.com

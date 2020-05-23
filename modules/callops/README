@@ -1,0 +1,348 @@
+Calling Operations Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. mode (string/integer)
+              1.3.2. match_param (string)
+
+        1.4. Exported Functions
+
+              1.4.1. call_blind_replace(callid[, leg])
+              1.4.2. call_transfer_notify()
+
+        1.5. Exported MI Functions
+
+              1.5.1. call_transfer
+
+        1.6. Exported Events
+
+              1.6.1. E_CALL_TRANSFER
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Drop automatically handled NOTIFY refer events
+   1.2. Set mode parameter
+   1.3. Set match_param parameter
+   1.4. Use call_blind_replace() function to match an existing
+          leg.
+
+   1.5. Use call_transfer_notify() function to handle NOTIFY refer
+          requests.
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides a set of functions that allow the user to
+   control ongoing calls. It can be used to trigger a call (either
+   blind or attended) transfer, or put a call on hold from the
+   proxy side, rather than the end-device side. The module binds
+   on top of the OpenSIPS Dialog module to get information about
+   the ongoing calls, as well as storing information about new
+   calls that will be started.
+
+   The module also triggers a set of events over Event Interface,
+   providing to external applications details about how calls are
+   being transferred, and how they link between them. These events
+   can be used to track down all the legs involved in a call
+   transfer.
+
+   One of the biggest challenge when doing Call Transfer scenarios
+   is linking new calls to the old calls being transferred,
+   especially in blind call transfer scenarios. In order to solve
+   this challenge, the module can be configured to refer old legs
+   in two different modes, changeable using the mode parameter:
+     * Automatically (default mode), by adding a special parameter
+       to the destination URI that is being sent in the REFER.
+       When the new call comes back, the parameter will be present
+       in the Request URI of the new call. The module will find
+       it, link the new call to the old call, and remove the
+       parameter from the URI.
+     * Manually, by using custom/external logic (such as a
+       database, or local storage), to match the old call. In this
+       mode, the user has to explicitly call the
+       call_blind_replace() function to link the two calls
+       together.
+
+   The module can also be used to catch Notify refer events and
+   reply to them from the OpenSIPS level. However, note that in
+   auto mode even if the NOTIFY is handled when the dialog is
+   matched, the request will still continue its execution of the
+   script, unlike when manual mode is used with the
+   call_transfer_notify() function. In order to avoid sending the
+   NOTIFY to the end-point, you have to drop it, like below:
+
+   Example 1.1. Drop automatically handled NOTIFY refer events
+...
+if (has_totag() && loose_route() &&
+                is_method("NOTIFY") && $hdr(Event) == "refer")
+        drop;
+...
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * TM - Transaction module.
+     * Dialog - Dialog module for keeping track of the proxied
+       calls.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. mode (string/integer)
+
+   This parameter can be used to change the mode that the module
+   uses to match a transferred leg. Supported values are:
+     * param / 0 - when doing a blind transfer, the destination
+       sent in the REFER message will contain a parameter used to
+       identify the dialog that is being replaced. This parameter
+       will be automatically removed when the new call is
+       received.
+     * manual / 1 - the user will create its own logic to match
+       the new calls, and will call the call_blind_replace()
+       function to make OpenSIPS aware of the pair. Note that this
+       mode does not handle automatically the Notify refer either,
+       so you also have to use the call_transfer_notify() function
+       to handle them.
+
+   Default value is "0 (auto mode using parameters)".
+
+   Example 1.2. Set mode parameter
+...
+modparam("callops", "mode", "manual") # use your own logic
+...
+
+1.3.2. match_param (string)
+
+   The parameter used to match the different calls together. This
+   is mainly using in the param mode, but it is also used
+   internally to store different values inside the transferred
+   dialog - make sure it does not overlap with existing dialog
+   values.
+
+   Default value is "osid".
+
+   Example 1.3. Set match_param parameter
+...
+modparam("callops", "match_param", "call")
+...
+
+1.4. Exported Functions
+
+1.4.1.  call_blind_replace(callid[, leg])
+
+   When manual mode is used, this function is called to create a
+   mapping between the transferring call and the transferred call.
+   It should be called when OpenSIPS receives a new call that is
+   transferring an existing call.
+
+   Parameters:
+     * callid (string) - the existing call that is being
+       transferred.
+     * leg (string, optional) - the leg that is being transferred.
+       If not specified, and OpenSIPS cannot determine the leg
+       based on its destination, the unknown tag should be used.
+
+   This function can be used only from a request route.
+
+   Example 1.4. Use call_blind_replace() function to match an
+   existing leg.
+...
+if (!has_totag() && is_method("INVITE")) {
+        if (cache_fetch("local", "callid_$si", $avp(callid))) {
+                call_blind_replace($avp(callid));
+        }
+}
+...
+
+1.4.2.  call_transfer_notify()
+
+   When manual mode is used, this function should be called on
+   in-dialog NOTIFY requests for an Event: refer header, to handle
+   them accordingly.
+
+   Note that if the function successfully handles the NOTIFY
+   request, the script no longer continues its execution.
+
+   This function can be used from a request route, failure route
+   and local route.
+
+   Example 1.5. Use call_transfer_notify() function to handle
+   NOTIFY refer requests.
+...
+if (has_totag() && is_method("NOTIFY") && loose_route()) {
+        call_transfer_notify();
+}
+...
+
+1.5. Exported MI Functions
+
+1.5.1.  call_transfer
+
+   MI command to transfer an ongoing call to a new destination.
+
+   Depending on the parameters used, this command can do both
+   blind and attended transfers scenarios. When the
+   transfer_callid is used, then an attended transfer is
+   performed, other wise a blind transfer is issued.
+
+   Name: call_transfer
+
+   Parameters
+     * callid (string) - the callid of the dialog that is being
+       transferred.
+     * leg (string) - indicates the leg of the callid call that is
+       being transferred/kept in the new transferring call.
+       Possible values are "caller", "callee" or "both".
+     * destination (string, optional) - the URI where the call is
+       being transferred. This parameter is mandatory for blind
+       transfers, and optional for attended transfers. In the case
+       of an attended transfer, if it is missing, the destination
+       of the call is taken from the URIs in the transfer dialog.
+     * transfer_callid (string, optional) - mandatory in case of
+       an attended transfer, to specify the call of the Bleg in
+       the new call.
+     * transfer_leg (string, optional) - in case of an attended
+       transfer, it specifies the participant of the
+       transfer_callid call that will be bridged with the leg of
+       the callid. If missing, transfer_fromtag and transfer_totag
+       must be used to identify the tag.
+     * transfer_fromtag and transfer_totag (string, optional) -
+       these parameters should always be specified together, and
+       are used in call attended transfer scenarios where the
+       dialog of the Bleg that is being transferred is not managed
+       by OpenSIPS. Note that for these scenarios only the A-leg
+       dialog will receive events about the call transfer.
+
+   MI FIFO Command Format:
+# blind transfer to sip:agent@127.0.0.1
+opensips-cli -x mi call_transfer \
+        callid=4b664b48-5639-40bf-bff8-3a866c145c3b \
+        leg=caller \
+        destination=sip:agent@217.0.0.1
+
+# attended transfer between two calls
+opensips-cli -x mi call_transfer \
+        callid=e8d024db-78e5-4d18-9794-5b8ba837bed4
+        leg=caller \
+        transfer_callid=559abf97-9834-4380-bba1-a036eb245450 \
+        transfer_leg=calee
+
+1.6. Exported Events
+
+1.6.1.  E_CALL_TRANSFER
+
+   This event is triggered during a call transfer scenario.
+
+   For a specific call transfer, multiple events are triggered,
+   starting when the transfer is initiated, until the transfer is
+   completed. The state parameter indicates the state of the call
+   transfer.
+
+   For a blind transfer scenario, only one set of events are
+   triggered, whereas for attended transfer, you will get a set of
+   events for both dialogs involved in the transfer, as long as
+   both are proxied through OpenSIPS
+
+   Parameters:
+     * callid - the callid of the call that is being transferred.
+     * leg - the leg (caller or callee) of the call that is being
+       transferred.
+     * transfer_callid - the callid of the new call that is
+       transferring the old callid call.
+     * destination - the URI destination where the leg is being
+       transferred.
+     * state - the state of the transfer:
+          + start - triggered when the REFER message is being sent
+            out to the transferred participant.
+          + notify - triggered when a NOTIFY refer event is
+            received from the transferred participant. The status
+            parameter contains extra information about the status
+            of the transferring call.
+          + ok - triggered when the transfer is completed - the
+            call is answered by the transferred participant.
+          + fail - triggered when a transfer has failed due to
+            various reasons. If we were unable to start the call
+            transfer (i.e. send the REFER), the status parameter
+            is empty, otherwise it contains information about the
+            failure.
+     * status - contains extra information about the success or
+       failure of the call.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea)    21       8      1450      44
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Razvan Crainea (@razvancrainea) May 2020 - May 2020
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Razvan Crainea (@razvancrainea).
+
+   Documentation Copyrights:
+
+   Copyright © 2020 www.opensips-solutions.com

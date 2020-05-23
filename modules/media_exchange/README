@@ -420,7 +420,7 @@ if (has_totag() && loose_route()) {
      * uri (string) - the destination URI of the new call
      * leg (string, optional) - indicates the participant leg that
        will have its RTP streamed in the new call. Possible values
-       are “caller”, “callee” or “both”. If missing, both media
+       are "caller", "callee" or "both". If missing, both media
        streams are forked
      * headers (string, optional) - extra headers to add to the
        outgoing request
@@ -448,8 +448,8 @@ opensips-cli -x mi media_fork_from_call_to_uri \
        it's leg mixed with the new call to the Media Server
      * uri (string) - the destination URI of the new call
      * leg (string) - indicates the participant that will have its
-       media pined into the new call. Possible values are “caller”
-       and “callee”.
+       media pined into the new call. Possible values are "caller"
+       and "callee".
      * headers (string, optional) - extra headers to add to the
        outgoing request
      * nohold (integer, optional) - if set to a non-zero value,
@@ -502,7 +502,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)   109      44      5541     1138
+   1. Razvan Crainea (@razvancrainea)   110      45      5544     1141
    2. Vlad Patrascu (@rvlad-patrascu)    5        3       15       9
    3. Zero King                          3        1       1        1
 
@@ -526,8 +526,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) Mar 2020 - Apr 2020
-   2. Razvan Crainea (@razvancrainea) Feb 2020 - Apr 2020
+   1. Razvan Crainea (@razvancrainea) Feb 2020 - May 2020
+   2. Vlad Patrascu (@rvlad-patrascu) Mar 2020 - Apr 2020
    3. Zero King                       Mar 2020 - Mar 2020
 
    (1) including any documentation-related commits, excluding
@@ -541,4 +541,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright © 2020 www.opensips-solutions.com
+   Copyright � 2020 www.opensips-solutions.com
