@@ -143,7 +143,7 @@ modparam("mi_http", "trace_bwlist", "w: sip_trace")
 1.6. Examples
 
    This is an example showing the JSON-RPC request and reply over
-   HTTP for the "ps" MI command.
+   HTTP for the “ps” MI command.
 
    Example 1.4. JSON-RPC request
 
@@ -167,7 +167,7 @@ dant"},{"ID":1,"PID":9468,"Type":"HTTPD127.0.0.1:8008"},{"ID":3,"PID":94
 
 
    This is an example showing the JSON-RPC request with params and
-   reply over HTTP for the "get_statistics" MI command.
+   reply over HTTP for the “get_statistics” MI command.
 
    Example 1.5. JSON-RPC request with params
 
@@ -257,4 +257,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2013 shimaore.net
+   Copyright © 2013 shimaore.net

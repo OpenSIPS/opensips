@@ -420,7 +420,7 @@ if (has_totag() && loose_route()) {
      * uri (string) - the destination URI of the new call
      * leg (string, optional) - indicates the participant leg that
        will have its RTP streamed in the new call. Possible values
-       are "caller", "callee" or "both". If missing, both media
+       are “caller”, “callee” or “both”. If missing, both media
        streams are forked
      * headers (string, optional) - extra headers to add to the
        outgoing request
@@ -448,8 +448,8 @@ opensips-cli -x mi media_fork_from_call_to_uri \
        it's leg mixed with the new call to the Media Server
      * uri (string) - the destination URI of the new call
      * leg (string) - indicates the participant that will have its
-       media pined into the new call. Possible values are "caller"
-       and "callee".
+       media pined into the new call. Possible values are “caller”
+       and “callee”.
      * headers (string, optional) - extra headers to add to the
        outgoing request
      * nohold (integer, optional) - if set to a non-zero value,
@@ -541,4 +541,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2020 www.opensips-solutions.com
+   Copyright © 2020 www.opensips-solutions.com

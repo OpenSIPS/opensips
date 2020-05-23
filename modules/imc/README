@@ -103,7 +103,7 @@ Chapter 1. Admin Guide
    The database url.
 
    The default value is
-   "mysql://opensips:opensipsrw@localhost/opensips".
+   “mysql://opensips:opensipsrw@localhost/opensips”.
 
    Example 1.1. Set db_url parameter
 ...
@@ -382,4 +382,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2006-2008 Voice Sistem SRL
+   Copyright © 2006-2008 Voice Sistem SRL

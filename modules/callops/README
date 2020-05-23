@@ -139,7 +139,7 @@ if (has_totag() && loose_route() &&
        so you also have to use the call_transfer_notify() function
        to handle them.
 
-   Default value is "0 (auto mode using parameters)".
+   Default value is “0 (auto mode using parameters)”.
 
    Example 1.2. Set mode parameter
 ...
@@ -154,7 +154,7 @@ modparam("callops", "mode", "manual") # use your own logic
    dialog - make sure it does not overlap with existing dialog
    values.
 
-   Default value is "osid".
+   Default value is “osid”.
 
    Example 1.3. Set match_param parameter
 ...
@@ -227,7 +227,7 @@ if (has_totag() && is_method("NOTIFY") && loose_route()) {
        transferred.
      * leg (string) - indicates the leg of the callid call that is
        being transferred/kept in the new transferring call.
-       Possible values are "caller", "callee" or "both".
+       Possible values are “caller”, “callee” or “both”.
      * destination (string, optional) - the URI where the call is
        being transferred. This parameter is mandatory for blind
        transfers, and optional for attended transfers. In the case
@@ -345,4 +345,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2020 www.opensips-solutions.com
+   Copyright © 2020 www.opensips-solutions.com

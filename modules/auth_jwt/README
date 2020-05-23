@@ -106,7 +106,7 @@ Chapter 1. Admin Guide
    the database resides.
 
    Default value is
-   "mysql://opensipsro:opensipsro@localhost/opensips".
+   “mysql://opensipsro:opensipsro@localhost/opensips”.
 
    Example 1.1. db_url parameter usage
 modparam("auth_jwt", "db_url", "dbdriver://username:password@dbhost/dbna
@@ -134,7 +134,7 @@ modparam("auth_jwt", "secrets_table", "my_secrets")
 
    Column holding the JWT profile tag.
 
-   Default value is "tag".
+   Default value is “tag”.
 
    Example 1.4. Set tag_column parameter
 ...
@@ -145,7 +145,7 @@ modparam("auth_jwt", "tag_column", "my_tag_column")
 
    Column holding the JWT profile associated SIP username.
 
-   Default value is "sip_username".
+   Default value is “sip_username”.
 
    Example 1.5. Set username_column parameter
 ...
@@ -156,7 +156,7 @@ modparam("auth_jwt", "username_column", "my_username_column")
 
    Column holding the JWT secret associated tag.
 
-   Default value is "corresponding_tag".
+   Default value is “corresponding_tag”.
 
    Example 1.6. Set secret_tag_column parameter
 ...
@@ -167,7 +167,7 @@ modparam("auth_jwt", "secret_tag_column", "my_secret_tag_column")
 
    Column holding the actual jwt signing secret.
 
-   default value is "secret".
+   default value is “secret”.
 
    Example 1.7. set secret_column parameter
 ...
@@ -178,7 +178,7 @@ modparam("auth_jwt", "secret_column", "my_secret_column")
 
    Column holding the JWT secret start UNIX timestamp.
 
-   default value is "start_ts".
+   default value is “start_ts”.
 
    Example 1.8. set start_ts parameter
 ...
@@ -189,7 +189,7 @@ modparam("auth_jwt", "start_ts", "my_start_ts_column")
 
    column holding the jwt secret end unix timestamp.
 
-   default value is "end_ts".
+   default value is “end_ts”.
 
    Example 1.9. set end_ts parameter
 ...
@@ -200,7 +200,7 @@ modparam("auth_jwt", "end_ts", "my_end_ts_column")
 
    The JWT claim which will be used to identify the JWT profile
 
-   default value is "tag".
+   default value is “tag”.
 
    Example 1.10. set tag_claim parameter
 ...
@@ -221,7 +221,7 @@ modparam("auth_jwt", "tag_claim", "my_tag_claim")
        (column_name)
      * avp_specification = '$avp(' + NAME + ')'
 
-   Default value of this parameter is "none ( empty )".
+   Default value of this parameter is “none ( empty )”.
 
    Example 1.11. load_credentials parameter usage
 # load my_extra_column into $avp(extra_jwt_info)

@@ -116,7 +116,7 @@ Chapter 1. Admin Guide
 
    The DB URL for querying the Vendors used by the module
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.1. Setting the vendors_db_url parameter
 ...
@@ -128,7 +128,7 @@ ocalhost/opensips")
 
    The DB Table for querying the Vendors used by the module
 
-   Default value is "rc_vendors".
+   Default value is “rc_vendors”.
 
    Example 1.2. Setting the vendors_db_table parameter
 ...
@@ -141,7 +141,7 @@ modparam("rate_cacher", "vendors_db_table", "my_vendors_view")
    A larger table is much faster but consumes more memory. The
    hash size must be a power of 2 number.
 
-   Default value is "256".
+   Default value is “256”.
 
    Example 1.3. Setting the vendors_hash_size parameter
 ...
@@ -152,7 +152,7 @@ modparam("rate_cacher", "vendors_hash_size", 1024)
 
    The DB URL for querying the Clients used by the module
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.4. Setting the clients_db_url parameter
 ...
@@ -164,7 +164,7 @@ ocalhost/opensips")
 
    The DB Table for querying the Clients used by the module
 
-   Default value is "rc_clients".
+   Default value is “rc_clients”.
 
    Example 1.5. Setting the clients_db_table parameter
 ...
@@ -177,7 +177,7 @@ modparam("rate_cacher", "clients_db_table", "my_clients_view")
    A larger table is much faster but consumes more memory. The
    hash size must be a power of 2 number.
 
-   Default value is "256".
+   Default value is “256”.
 
    Example 1.6. Setting the vendors_hash_size parameter
 ...
@@ -188,7 +188,7 @@ modparam("rate_cacher", "clients_hash_size", 1024)
 
    The DB URL for querying the Ratesheets used by the module
 
-   Default value is "NULL".
+   Default value is “NULL”.
 
    Example 1.7. Setting the rates_db_url parameter
 ...
@@ -200,7 +200,7 @@ alhost/opensips")
 
    The DB Table for querying the Ratesheets used by the module
 
-   Default value is "rc_ratesheets".
+   Default value is “rc_ratesheets”.
 
    Example 1.8. Setting the rates_db_table parameter
 ...

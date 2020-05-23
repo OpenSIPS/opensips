@@ -149,7 +149,7 @@ Chapter 1. Admin Guide
    In "contact mirroring" mode, the mid-registrar will only insert
    itself in the SIP traffic flow between end user and main
    registrar by altering the Contact header field values. See
-   section Section 1.3, "Auto-Insertion Into Future SIP Flows" for
+   section Section 1.3, “Auto-Insertion Into Future SIP Flows” for
    a detailed description of possible Contact-based insertion
    modes. The incoming REGISTER requests will be proxied further
    to the main registrar; the registered contact will be stored in
@@ -288,8 +288,8 @@ Chapter 1. Admin Guide
 
 1.5.1. mode (integer)
 
-   Working mode of the module. Refer to Section 1.2, "Working
-   modes" for more details.
+   Working mode of the module. Refer to Section 1.2, “Working
+   modes” for more details.
 
    The following is true for all working modes:
      * when a REGISTER is received, the script writer must call
@@ -341,7 +341,7 @@ modparam("mid_registrar", "mode", 2)
    Controls where the additional unique Contact identification
    information (64-bit, hex-encoded integer) will be placed within
    outgoing Contact header field URIs. Refer to Section 1.3,
-   "Auto-Insertion Into Future SIP Flows" for more details.
+   “Auto-Insertion Into Future SIP Flows” for more details.
 
    Possible values are:
      * "ct-param" (default) - the contact IDs shall be appended to
@@ -359,7 +359,7 @@ modparam("mid_registrar", "contact_id_insertion", "ct-username")
    by the module in order to match contacts and route SIP
    requests.
 
-   Default value is "ctid"
+   Default value is “ctid”
 
    Example 1.3. Setting the contact_id_param module parameter
 modparam("mid_registrar", "contact_id_param", "ctid")
@@ -820,7 +820,7 @@ ownership_tag]]]])
    location (without any additional scripting).
 
    In Contact/AOR throttling modes (more info about working modes
-   in Section 1.2, "Working modes"), the return value of this
+   in Section 1.2, “Working modes”), the return value of this
    function indicates whether the script writer must forward the
    REGISTER request to the main registrar, or just wrap up any
    left-over processing and exit script execution, as the current
@@ -893,22 +893,22 @@ ownership_tag]]]])
           + 'p1' (Path support - 'loose' mode) The Path header is
             always saved into usrloc, and is only included in the
             reply if Path support is indicated in the registration
-            request by the "path" option of the "Supported"
+            request by the “path” option of the “Supported”
             header.
           + 'p2' (Path support - 'strict' mode) The path header is
             only saved into usrloc if Path support is indicated in
-            the registration request by the "path" option of the
-            "Supported" header. If no Path support is indicated,
-            the request is rejected with "420 - Bad Extension" and
-            the header "Unsupported: path" is included in the
-            reply along with the received "Path" header. This mode
+            the registration request by the “path” option of the
+            “Supported” header. If no Path support is indicated,
+            the request is rejected with “420 - Bad Extension” and
+            the header “Unsupported: path” is included in the
+            reply along with the received “Path” header. This mode
             is the one recommended by RFC 3327.
-          + 'v' (path receiVed) if set, the "received" parameter
+          + 'v' (path receiVed) if set, the “received” parameter
             of the first Path URI of a registration is set as
             received-uri and the NAT branch flag is set for this
             contact. This is useful if the registrar is placed
             behind a SIP loadbalancer, which passes the nat'ed UAC
-            address as "received" parameter in it's Path uri.
+            address as “received” parameter in it's Path uri.
      * aor (string, optional) - a custom Address-of-Record. If not
        given, the AOR will be taken from the To header URI
      * outgoing_expires (int, optional) - only relevant in
@@ -1222,4 +1222,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2016-2020 OpenSIPS Solutions
+   Copyright © 2016-2020 OpenSIPS Solutions

@@ -307,7 +307,7 @@ modparam("call_center", "rt_db_url",
    name of this scenario from this file (which must be loaded via
    the b2b_logic module) must match the b2b_scenario parameter.
 
-   Default value is "call center".
+   Default value is “call center”.
 
    Example 1.4. Set b2b_scenario parameter
 ...
@@ -329,7 +329,7 @@ modparam("call_center", "b2b_scenario", "call center")
    this file (which must be loaded via the b2b_logic module) must
    match the b2b_scenario_agent parameter.
 
-   Default value is "call center agent".
+   Default value is “call center agent”.
 
    Example 1.5. Set b2b_scenario_agent parameter
 ...
@@ -348,7 +348,7 @@ modparam("call_center", "b2b_scenario_agent", "cc agent")
    This value may be overwritten by the per-agent value (if
    defined) and furher more, by the per-flow value (if defined).
 
-   Default value is "30 seconds".
+   Default value is “30 seconds”.
 
    Example 1.6. Set wrapup_time parameter
 ...
@@ -362,7 +362,7 @@ modparam("call_center", "wrapup_time", 45)
    server for onwait/queue playback. The position 0 means it is
    the next call to be delivered to an agent.
 
-   Default value is "empty(none)".
+   Default value is “empty(none)”.
 
    Example 1.7. Set queue_pos_param parameter
 ...
@@ -375,7 +375,7 @@ modparam("call_center", "queue_pos_param", "cc_pos")
    quueued if there are no logged in agents. Basically this allows
    call queueing on flows with no agents yet.
 
-   Default value is "1 (true)".
+   Default value is “1 (true)”.
 
    Example 1.8. Set reject_on_no_agents parameter
 ...
@@ -386,7 +386,7 @@ modparam("call_center", "reject_on_no_agents", 0)
 
    Name to be used for the table holding the agents.
 
-   Default value is "cc_agents".
+   Default value is “cc_agents”.
 
    Example 1.9. Set cc_agents_table parameter
 ...
@@ -398,7 +398,7 @@ modparam("call_center", "cc_agents_table", "my_agents")
    Name to be used for the "agent id" (unique DB id) column in the
    agents table.
 
-   Default value is "agentid".
+   Default value is “agentid”.
 
    Example 1.10. Set cca_agentid_column parameter
 ...
@@ -410,7 +410,7 @@ modparam("call_center", "cca_agentid_column", "cid")
    Name to be used for the "location" (SIP URI) column in the
    agents table.
 
-   Default value is "agentid".
+   Default value is “agentid”.
 
    Example 1.11. Set cca_location_column parameter
 ...
@@ -422,7 +422,7 @@ modparam("call_center", "cca_location_column", "sip_uri")
    Name to be used for the "skills" (list of skills) column in the
    agents table.
 
-   Default value is "skills".
+   Default value is “skills”.
 
    Example 1.12. Set cca_skills_column parameter
 ...
@@ -434,7 +434,7 @@ modparam("call_center", "cca_skills_column", "skills")
    Name to be used for the "logstate" (original login state)
    column in the agents table.
 
-   Default value is "logstate".
+   Default value is “logstate”.
 
    Example 1.13. Set cca_logstate_column parameter
 ...
@@ -446,7 +446,7 @@ modparam("call_center", "cca_logstate_column", "log_state")
    Name to be used for the "wrapuptime" (per-agent wrapup time)
    column in the agents table.
 
-   Default value is "wrapup_time".
+   Default value is “wrapup_time”.
 
    Example 1.14. Set cca_wrapuptime_column parameter
 ...
@@ -458,7 +458,7 @@ modparam("call_center", "cca_wrapuptime_column", "wtime")
    Name to be used for the "wrapupend" (timestamp when the wrapup
    ends) column in the agents table.
 
-   Default value is "wrapup_end_time".
+   Default value is “wrapup_end_time”.
 
    Example 1.15. Set cca_wrapupend_column parameter
 ...
@@ -470,7 +470,7 @@ modparam("call_center", "cca_wrapupend_column", "wrapup_ends")
    Name to be used for the table holding the definition of the
    flows/queues.
 
-   Default value is "cc_flows".
+   Default value is “cc_flows”.
 
    Example 1.16. Set cc_flows_table parameter
 ...
@@ -482,7 +482,7 @@ modparam("call_center", "cc_flows_table", "queues")
    Name to be used for the "flow id" (unique DB id) column in the
    flows table.
 
-   Default value is "flowid".
+   Default value is “flowid”.
 
    Example 1.17. Set ccf_flowid_column parameter
 ...
@@ -493,7 +493,7 @@ modparam("call_center", "ccf_flowid_column", "queue_id")
 
    Name to be used for the "priority" column in the flows table.
 
-   Default value is "priority".
+   Default value is “priority”.
 
    Example 1.18. Set ccf_priority_column parameter
 ...
@@ -504,7 +504,7 @@ modparam("call_center", "ccf_priority_column", "queue_prio")
 
    Name to be used for the "skill" column in the flows table.
 
-   Default value is "skill".
+   Default value is “skill”.
 
    Example 1.19. Set ccf_skill_column parameter
 ...
@@ -516,7 +516,7 @@ modparam("call_center", "ccf_skill_column", "queue_skill")
    Name to be used for the "caller ID prefix" column in the flows
    table.
 
-   Default value is "prependcid".
+   Default value is “prependcid”.
 
    Example 1.20. Set ccf_cid_column parameter
 ...
@@ -528,7 +528,7 @@ modparam("call_center", "ccf_cid_column", "queue_cli_prefix")
    Name to be used for the "max limit for wrapup time" column in
    the flows table.
 
-   Default value is "max_wrapup_time".
+   Default value is “max_wrapup_time”.
 
    Example 1.21. Set ccf_max_wrapup_column parameter
 ...
@@ -540,7 +540,7 @@ modparam("call_center", "ccf_max_wrapup_column", "queue_wrapup")
    Name to be used for the "hangup after dissuading" column in the
    flows table.
 
-   Default value is "dissuading_hangup".
+   Default value is “dissuading_hangup”.
 
    Example 1.22. Set ccf_dissuading_hangup_column parameter
 ...
@@ -553,7 +553,7 @@ ading")
    Name to be used for the "on-hold dissuading threshold" column
    in the flows table.
 
-   Default value is "dissuading_onhold_th".
+   Default value is “dissuading_onhold_th”.
 
    Example 1.23. Set ccf_dissuading_onhold_th_column parameter
 ...
@@ -566,7 +566,7 @@ ld")
    Name to be used for the "EWT dissuading threshold" column in
    the flows table.
 
-   Default value is "dissuading_ewt_th".
+   Default value is “dissuading_ewt_th”.
 
    Example 1.24. Set ccf_dissuading_ewt_th_column parameter
 ...
@@ -578,7 +578,7 @@ modparam("call_center", "ccf_dissuading_ewt_th_column", "th_diss_ewt")
    Name to be used for the "queue size dissuading threshold"
    column in the flows table.
 
-   Default value is "dissuading_qsize_th".
+   Default value is “dissuading_qsize_th”.
 
    Example 1.25. Set ccf_dissuading_qsize_th_column parameter
 ...
@@ -591,7 +591,7 @@ modparam("call_center", "ccf_dissuading_qsize_th_column", "th_diss_qsize
    Name to be used for the "audio message on welcome" column in
    the flows table.
 
-   Default value is "message_welcome".
+   Default value is “message_welcome”.
 
    Example 1.26. Set ccf_m_welcome_column parameter
 ...
@@ -603,7 +603,7 @@ modparam("call_center", "ccf_m_welcome_column", "audio_welcome")
    Name to be used for the "audio message on queueing" column in
    the flows table.
 
-   Default value is "message_queue".
+   Default value is “message_queue”.
 
    Example 1.27. Set ccf_m_queue_column parameter
 ...
@@ -615,7 +615,7 @@ modparam("call_center", "ccf_m_queue_column", "audio_queue")
    Name to be used for the "audio message on dissuading" column in
    the flows table.
 
-   Default value is "message_dissuading".
+   Default value is “message_dissuading”.
 
    Example 1.28. Set ccf_m_dissuading_column parameter
 ...
@@ -627,7 +627,7 @@ modparam("call_center", "ccf_m_dissuading_column", "audio_dissuading")
    Name to be used for the "audio message on identifying the flow"
    column in the flows table.
 
-   Default value is "message_flow_id".
+   Default value is “message_flow_id”.
 
    Example 1.29. Set ccf_m_flow_id_column parameter
 ...
@@ -994,4 +994,4 @@ Chapter 5. Documentation
 
    Documentation Copyrights:
 
-   Copyright � 2014 www.opensips-solutions.com
+   Copyright © 2014 www.opensips-solutions.com
