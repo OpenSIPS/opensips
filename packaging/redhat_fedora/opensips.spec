@@ -970,6 +970,7 @@ fi
 %{_libdir}/opensips/modules/cachedb_local.so
 %{_libdir}/opensips/modules/cachedb_sql.so
 %{_libdir}/opensips/modules/call_control.so
+%{_libdir}/opensips/modules/callops.so
 %{_libdir}/opensips/modules/cfgutils.so
 %{_libdir}/opensips/modules/clusterer.so
 %{_libdir}/opensips/modules/db_cachedb.so
@@ -1059,6 +1060,7 @@ fi
 %doc docdir/README.cachedb_local
 %doc docdir/README.cachedb_sql
 %doc docdir/README.call_control
+%doc docdir/README.callops
 %doc docdir/README.cfgutils
 %doc docdir/README.clusterer
 %doc docdir/README.db_flatstore
@@ -1450,7 +1452,7 @@ fi
 %changelog
 * Tue Feb 11 2020 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
 - Specification updated for opensips 3.1
-- New modules: media_exchange, presence_dfks, qrouting,
+- New modules: callops, media_exchange, presence_dfks, qrouting,
   rabbitmq_consumer, rate_cacher, stir_shaken, uuid
 - New package: stir-shaken-module
 - Obsoleted modules: seas, sms
