@@ -77,10 +77,10 @@ Chapter 1. Admin Guide
 1.3.1. decimal_digits (integer)
 
    The precision of the results returned by all the module
-   functions. The higher the ‚Äúdecimal_digits‚Äù value, the more
+   functions. The higher the "decimal_digits" value, the more
    decimal digits the results will have.
 
-   Default value is ‚Äú6‚Äù.
+   Default value is "6".
 
    Example 1.1. Setting the decimal_digits module parameter
 modparam("mathops", "decimal_digits", 10)
@@ -369,7 +369,7 @@ Chapter 2. Contributors
    3. Ryan Bullock (@rrb3942) 9 1 552 160
    4. Stephane Alnet 6 2 327 36
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 2 1
-   6. Juli√°n Moreno Pati√±o 3 1 3 3
+   6. Juli·n Moreno PatiÒo 3 1 3 3
    7. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -397,7 +397,7 @@ Chapter 2. Contributors
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Jun 2018
    4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    5. Ryan Bullock (@rrb3942)             Feb 2016 - Feb 2016
-   6. Juli√°n Moreno Pati√±o                Feb 2016 - Feb 2016
+   6. Juli·n Moreno PatiÒo                Feb 2016 - Feb 2016
    7. Stephane Alnet                      Nov 2013 - Nov 2013
 
    (1) including any documentation-related commits, excluding
@@ -408,9 +408,9 @@ Chapter 3. Documentation
 3.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ryan Bullock (@rrb3942), Juli√°n Moreno
-   Pati√±o, Stephane Alnet.
+   Chircu (@liviuchircu), Ryan Bullock (@rrb3942), Juli·n Moreno
+   PatiÒo, Stephane Alnet.
 
    doc copyrights:
 
-   Copyright ¬© 2013 www.opensips-solutions.com
+   Copyright © 2013 www.opensips-solutions.com

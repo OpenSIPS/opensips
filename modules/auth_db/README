@@ -98,7 +98,7 @@ Chapter 1. Admin Guide
    the database resides.
 
    Default value is
-   “mysql://opensipsro:opensipsro@localhost/opensips”.
+   "mysql://opensipsro:opensipsro@localhost/opensips".
 
    Example 1.1. db_url parameter usage
 modparam("auth_db", "db_url", "dbdriver://username:password@dbhost/dbnam
@@ -110,7 +110,7 @@ e")
    is fine for most people. Use the parameter if you really need
    to change it.
 
-   Default value is “username”.
+   Default value is "username".
 
    Example 1.2. user_column parameter usage
 modparam("auth_db", "user_column", "user")
@@ -121,7 +121,7 @@ modparam("auth_db", "user_column", "user")
    Default value is fine for most people. Use the parameter if you
    really need to change it.
 
-   Default value is “domain”.
+   Default value is "domain".
 
    Example 1.3. domain_column parameter usage
 modparam("auth_db", "domain_column", "domain")
@@ -135,7 +135,7 @@ modparam("auth_db", "domain_column", "domain")
    know plaintext passwords and they cannot be obtained from HA1
    strings.
 
-   Default value is “ha1”.
+   Default value is "ha1".
 
    Example 1.4. password_column parameter usage
 modparam("auth_db", "password_column", "password")
@@ -163,21 +163,21 @@ modparam("auth_db", "password_column_2", "ha1_2")
      * 1 (calculate HA1) - the loaded password is a plaintext
        password, so OpenSIPS will internally calculate the HA1. As
        the passwords will be loaded from the column specified in
-       the “password_column” parameter, be sure this parameter
+       the "password_column" parameter, be sure this parameter
        points to a column holding a plaintext password (by
-       default, this parameter points to “ha1” column);
+       default, this parameter points to "ha1" column);
      * 0 (do NOT calculate HA1) - the loaded password is an
        already computed HA1 value, so OpenSIPS does not have do
        any further computing (for HA1 value). Depending on the
-       presence of a “@domain” part (some user agents append the
+       presence of a "@domain" part (some user agents append the
        domain to the username credentials parameter too), the
        modules will load the password (pre-computed HA1) from the
-       “password_column_2” column (if domain present) or from the
-       “password_column” column (if domain not present). Usually,
+       "password_column_2" column (if domain present) or from the
+       "password_column" column (if domain not present). Usually,
        most of the UAs do NOT include a domain part in the
        username credentials parameter.
 
-   The “password_column_2” column contains also HA1 strings but
+   The "password_column_2" column contains also HA1 strings but
    they should be calculated including the domain in the username
    parameter (as opposed to password_column which (when containing
    HA1 strings) should always contain HA1 strings calculated
@@ -202,7 +202,7 @@ modparam("auth_db", "calculate_ha1", 1)
    IMPORTANT: before turning on this parameter, be sure that the
    domain column in subscriber table is properly populated.
 
-   Default value is “0 (false)”.
+   Default value is "0 (false)".
 
    Example 1.7. use_domain parameter usage
 modparam("auth_db", "use_domain", 1)
@@ -221,7 +221,7 @@ modparam("auth_db", "use_domain", 1)
        (column_name)
      * avp_specification = '$avp(' + NAME + ')'
 
-   Default value of this parameter is “rpid”.
+   Default value of this parameter is "rpid".
 
    Example 1.8. load_credentials parameter usage
 # load rpid column into $avp(13) and email_address column
@@ -234,7 +234,7 @@ modparam("auth_db", "load_credentials", "$avp(13)=rpid;email_address")
    This parameter should be set when a custom authentication table
    is used.
 
-   Default value is “0 (false)”.
+   Default value is "0 (false)".
 
    Example 1.9. skip_version_check parameter usage
 modparam("auth_db", "skip_version_check", 1)
@@ -265,7 +265,7 @@ modparam("auth_db", "skip_version_check", 1)
        should present to the user so it can decide what username
        and password to use. Usually this is domain of the host the
        server is running on.
-       If an empty string “” is used then the server will generate
+       If an empty string "" is used then the server will generate
        it from the request. In case of REGISTER requests To header
        field domain will be used (because this header field
        represents a user being registered), for all other messages
@@ -307,7 +307,7 @@ if (!www_authorize("siphub.net", "subscriber")) {
        should present to the user so it can decide what username
        and password to use. Usually this is domain of the host the
        server is running on.
-       If an empty string “” is used then the server will generate
+       If an empty string "" is used then the server will generate
        it from the request. From header field domain will be used
        as realm.
        The string may contain pseudo variables.
@@ -343,7 +343,7 @@ Chapter 2. Contributors
 
    All remaining contributors: Maksym Sobolyev (@sobomax), Anatoly
    Pidruchny, Kennard White, Konstantin Bokarius, Richard Revels,
-   Julián Moreno Patiño, Norman Brandinger (@NormB), Edson Gellert
+   Juli�n Moreno Pati�o, Norman Brandinger (@NormB), Edson Gellert
    Schubert, Ionut Ionita (@ionutrazvanionita), Vlad Patrascu
    (@rvlad-patrascu).
 
@@ -371,7 +371,7 @@ Chapter 2. Contributors
    2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   5.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
    6.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Jan 2015
    7.  Richard Revels                      Sep 2011 - Sep 2011
    8.  Kennard White                       Jun 2011 - Jun 2011
@@ -399,6 +399,6 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright © 2005 Voice Sistem SRL
+   Copyright � 2005 Voice Sistem SRL
 
-   Copyright © 2002-2003 FhG FOKUS
+   Copyright � 2002-2003 FhG FOKUS

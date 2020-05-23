@@ -331,7 +331,7 @@ modparam("snmpstats", "MsgQueueMajorThreshold", 5000)
    snmpget query to the master agent. You can use this parameter
    to set the path to your instance of SNMP's snmpget program.
 
-   Default value is ‚Äú/usr/local/bin/‚Äù.
+   Default value is "/usr/local/bin/".
 
    Example 1.6. Setting the snmpgetPath parameter
 ...
@@ -346,7 +346,7 @@ modparam("snmpstats", "snmpgetPath",     "/my/custom/path/")
    community string for the snmp daemon, you need to specify it
    with this parameter.
 
-   Default value is ‚Äúpublic‚Äù.
+   Default value is "public".
 
    Example 1.7. Setting the snmpCommunity parameter
 ...
@@ -701,7 +701,7 @@ Chapter 3. Contributors
    7. Anca Vamanu 6 2 161 111
    8. Henning Westerholt (@henningw) 5 3 5 5
    9. Jesus Rodrigues 3 1 7 7
-   10. Juli√°n Moreno Pati√±o 3 1 6 6
+   10. Juli·n Moreno PatiÒo 3 1 6 6
 
    All remaining contributors: Klaus Darilion, Konstantin
    Bokarius, Ionut Ionita (@ionutrazvanionita), Sergio Gutierrez,
@@ -732,7 +732,7 @@ Chapter 3. Contributors
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Juli√°n Moreno Pati√±o                Feb 2016 - Feb 2016
+   5.  Juli·n Moreno PatiÒo                Feb 2016 - Feb 2016
    6.  Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
    7.  Walter Doekes (@wdoekes)            May 2014 - May 2014
    8.  Ovidiu Sas (@ovidiusas)             Feb 2007 - Mar 2009
@@ -751,7 +751,7 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Juli√°n Moreno Pati√±o, Ionut Ionita
+   Chircu (@liviuchircu), Juli·n Moreno PatiÒo, Ionut Ionita
    (@ionutrazvanionita), Razvan Crainea (@razvancrainea), Henning
    Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
    Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
@@ -759,4 +759,4 @@ Chapter 4. Documentation
 
    doc copyrights:
 
-   Copyright ¬© 2006 SOMA Networks, Inc.
+   Copyright © 2006 SOMA Networks, Inc.

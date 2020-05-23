@@ -107,7 +107,7 @@ Chapter 1. Admin Guide
    skipped for further notifications. This parameter only affects
    the FAILOVER policy.
 
-   Default value is “30”.
+   Default value is "30".
 
    NOTE: This parameter is only available since OpenSIPS 2.4.7
 
@@ -180,4 +180,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright © 2015 www.opensips-solutions.com
+   Copyright � 2015 www.opensips-solutions.com

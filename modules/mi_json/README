@@ -144,7 +144,7 @@ modparam("mi_json", "trace_bwlist", "w: sip_trace")
 1.6. Examples
 
    This is an example showing the JSON format for the
-   “get_statistics net: uri:” MI command. Notice how the
+   "get_statistics net: uri:" MI command. Notice how the
    parameters are comma-separated then URI-encoded.
 
    Example 1.4. JSON request
@@ -162,7 +162,7 @@ Date: Fri, 01 Nov 2013 12:00:00 GMT
 , "uri:negative_checks = 0"]
 
 
-   Here is another example showing the JSON format for the “ps” MI
+   Here is another example showing the JSON format for the "ps" MI
    command.
 
    Example 1.5. JSON request
@@ -240,4 +240,4 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright © 2013 shimaore.net
+   Copyright � 2013 shimaore.net

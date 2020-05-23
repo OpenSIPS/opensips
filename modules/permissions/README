@@ -155,7 +155,7 @@ Chapter 1. Admin Guide
 
    Function for registration checking is called allow_register and
    the algorithm is very similar to the algorithm described in
-   Section 1.1.1, “Call Routing”. The only difference is in the
+   Section 1.1.1, "Call Routing". The only difference is in the
    way how pairs are created.
 
    Instead of From header field the function uses To header field
@@ -167,7 +167,7 @@ Chapter 1. Admin Guide
    1), (To, Contact 2), (To, Contact 3), and so on..
 
    The algorithm of matching is same as described in
-   Section 1.1.1, “Call Routing”.
+   Section 1.1.1, "Call Routing".
 
 1.1.3. URI Permissions
 
@@ -234,7 +234,7 @@ Chapter 1. Admin Guide
    don't specify full pathname then the directory in which is the
    main config file is located will be used.
 
-   Default value is “permissions.allow”.
+   Default value is "permissions.allow".
 
    Example 1.1. Set default_allow_file parameter
 ...
@@ -248,7 +248,7 @@ modparam("permissions", "default_allow_file", "/etc/permissions.allow")
    pathname then the directory in which the main config file is
    located will be used.
 
-   Default value is “permissions.deny”.
+   Default value is "permissions.deny".
 
    Example 1.2. Set default_deny_file parameter
 ...
@@ -283,7 +283,7 @@ Note
 
    Including leading dot.
 
-   Default value is “.allow”.
+   Default value is ".allow".
 
    Example 1.4. Set allow_suffix parameter
 ...
@@ -300,7 +300,7 @@ Note
 
    Including leading dot.
 
-   Default value is “.deny”.
+   Default value is ".deny".
 
    Example 1.5. Set deny_suffix parameter
 ...
@@ -310,17 +310,17 @@ modparam("permissions", "deny_suffix", ".deny")
 1.3.6. db_url (string)
 
    This is URL of the database to be used for loading the date
-   related to IP-based checking (“address” table).
+   related to IP-based checking ("address" table).
 
    This parameter is optional and it is needed only if you use
    functions related to IP-based checking. If you do so, you need
    to explicitly set this parameter (it is not covered by
-   “db_default_url”)
+   "db_default_url")
 
    Since version 2.2, this URL represents the db_url for the
-   “default” partition.
+   "default" partition.
 
-   Default value is “NULL”.
+   Default value is "NULL".
 
    Example 1.6. Set db_url parameter
 ...
@@ -332,9 +332,9 @@ bname")
 
    Name of database table containing matching rules used by
    allow_register function. Since version 2.2, this table name
-   represents the table name for the “default” partition.
+   represents the table name for the "default" partition.
 
-   Default value is “address”.
+   Default value is "address".
 
    Example 1.7. Set address_table parameter
 ...
@@ -355,8 +355,8 @@ modparam("permissions", "address_table", "pbx")
 
    Example 1.8. Set partition parameter
 ...
-modparam("permissions", "partition", "my_part: db_url=“some_url”; table_
-name=“some_table”;")
+modparam("permissions", "partition", "my_part: db_url="some_url"; table_
+name="some_table";")
 ...
 
 
@@ -365,7 +365,7 @@ name=“some_table”;")
    Name of address table column containing group identifier of the
    address.
 
-   Default value is “grp”.
+   Default value is "grp".
 
    Example 1.9. Set grp_col parameter
 ...
@@ -377,7 +377,7 @@ modparam("permissions", "grp_col", "group_id")
    Name of address table column containing IP address part of the
    address.
 
-   Default value is “ip”.
+   Default value is "ip".
 
    Example 1.10. Set ip_col parameter
 ...
@@ -390,7 +390,7 @@ modparam("permissions", "ip_col", "ipess")
    address. Possible values are 0-128. It should be up to 32 if
    the IP is v4 and up to 128 if the IP is v6.
 
-   Default value is “mask”.
+   Default value is "mask".
 
    Example 1.11. Set mask_col parameter
 ...
@@ -402,7 +402,7 @@ modparam("permissions", "mask_col", "subnet_length")
    Name of address table column containing port part of the
    address.
 
-   Default value is “port”.
+   Default value is "port".
 
    Example 1.12. Set port_col parameter
 ...
@@ -413,11 +413,11 @@ modparam("permissions", "port_col", "prt")
 
    Name of address table column containing transport protocol that
    is matched against transport protocol of received request.
-   Possible values that can be stored in proto_col are “any”,
-   “udp”, “tcp”, “tls”, “sctp”, and “none”. Value “any” matches
-   always and value “none” never.
+   Possible values that can be stored in proto_col are "any",
+   "udp", "tcp", "tls", "sctp", and "none". Value "any" matches
+   always and value "none" never.
 
-   Default value is “proto”.
+   Default value is "proto".
 
    Example 1.13. Set proto_col parameter
 ...
@@ -431,7 +431,7 @@ modparam("permissions", "proto_col", "transport")
    that is matched against the arguments received by check_address
    or check_source_address.
 
-   Default value is “pattern”.
+   Default value is "pattern".
 
    Example 1.14. Set pattern_col parameter
 ...
@@ -444,7 +444,7 @@ modparam("permissions", "pattern_col", "wildcard_col")
    as value to a pvar given as argument to check_address or
    check_source_address in case the function succedes.
 
-   Default value is “context_info”.
+   Default value is "context_info".
 
    Example 1.15. Set info_col parameter
 ...
@@ -456,7 +456,7 @@ modparam("permissions", "info_col", "info_col")
 1.4.1.  allow_routing()
 
    Returns true if all pairs constructed as described in
-   Section 1.1.1, “Call Routing” have appropriate permissions
+   Section 1.1.1, "Call Routing" have appropriate permissions
    according to the configuration files. This function uses
    default configuration files specified in default_allow_file and
    default_deny_file.
@@ -473,7 +473,7 @@ if (allow_routing()) {
 1.4.2.  allow_routing(basename)
 
    Returns true if all pairs constructed as described in
-   Section 1.1.1, “Call Routing” have appropriate permissions
+   Section 1.1.1, "Call Routing" have appropriate permissions
    according to the configuration files given as parameters.
 
    Meaning of the parameters is as follows:
@@ -496,7 +496,7 @@ if (allow_routing("basename")) {
 1.4.3.  allow_routing(allow_file,deny_file)
 
    Returns true if all pairs constructed as described in
-   Section 1.1.1, “Call Routing” have appropriate permissions
+   Section 1.1.1, "Call Routing" have appropriate permissions
    according to the configuration files given as parameters.
 
    Meaning of the parameters is as follows:
@@ -521,7 +521,7 @@ if (allow_routing("rules.allow", "rules.deny")) {
 1.4.4.  allow_register(basename)
 
    The function returns true if all pairs constructed as described
-   in Section 1.1.2, “Registration Permissions” have appropriate
+   in Section 1.1.2, "Registration Permissions" have appropriate
    permissions according to the configuration files given as
    parameters.
 
@@ -550,7 +550,7 @@ if ($rm=="REGISTER") {
 1.4.5.  allow_register(allow_file, deny_file)
 
    The function returns true if all pairs constructed as described
-   in Section 1.1.2, “Registration Permissions” have appropriate
+   in Section 1.1.2, "Registration Permissions" have appropriate
    permissions according to the configuration files given as
    parameters.
 
@@ -581,7 +581,7 @@ if ($rm=="REGISTER") {
 1.4.6.  allow_uri(basename, pvar)
 
    Returns true if the pair constructed as described in
-   Section 1.1.3, “URI Permissions” have appropriate permissions
+   Section 1.1.3, "URI Permissions" have appropriate permissions
    according to the configuration files specified by the
    parameter.
 
@@ -612,7 +612,7 @@ context_info [, pattern]])
 
    Returns 1 if group id, IP address, port and protocol given as
    arguments match an IP subnet found in cached address table, as
-   described in Section 1.1.4, “Address Permissions” . The
+   described in Section 1.1.4, "Address Permissions" . The
    function takes 4 mandatory arguments and 2 optional ones.
 
    This function can be useful to check if a request can be
@@ -625,7 +625,7 @@ context_info [, pattern]])
        argument is "0", the query can match any group in the
        cached address table. Since version 2.2, you can also
        specify the partition(either string or pv). If no partition
-       specified, the “default” one will be used.
+       specified, the "default" one will be used.
      * ip
        This argument represents the ip address to be matched. It
        can be an given directly as string or as a string pvar.
@@ -736,7 +736,7 @@ if (check_source_address("$avp(partition):4","$avp(ctx)")) {
    that group in the pvar parameter. If not returns -1. Port value
    0 in cached address and subnet table matches any port. Since
    version 2.2, you can also specify the partition(either string
-   or pv). If no partition specified, the “default” one will be
+   or pv). If no partition specified, the "default" one will be
    used.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
@@ -815,11 +815,11 @@ Chapter 2. Contributors
    10. Andrei Pelinescu-Onciul 11 7 136 107
 
    All remaining contributors: Miklos Tirpak, Dan Pascu
-   (@danpascu), Ancuta Onofrei, Saúl Ibarra Corretgé (@saghul),
+   (@danpascu), Ancuta Onofrei, Sa�l Ibarra Corretg� (@saghul),
    Jiri Kuthan (@jiriatipteldotorg), Elena-Ramona Modroiu, Vlad
    Patrascu (@rvlad-patrascu), Dusan Klinec, Anca Vamanu, wuhanck,
    Konstantin Bokarius, Norman Brandinger (@NormB), UnixDev,
-   Andreas Granig, Baptiste Cholley, Julián Moreno Patiño, Peter
+   Andreas Granig, Baptiste Cholley, Juli�n Moreno Pati�o, Peter
    Lemenkov (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -849,12 +849,12 @@ Chapter 2. Contributors
    5.  wuhanck                             Apr 2018 - Apr 2018
    6.  Dan Pascu (@danpascu)               Nov 2006 - Feb 2018
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Juli�n Moreno Pati�o                Feb 2016 - Feb 2016
    9.  Dusan Klinec                        Dec 2015 - Dec 2015
    10. Ionut Ionita (@ionutrazvanionita)   May 2015 - Nov 2015
 
-   All remaining contributors: Baptiste Cholley, Saúl Ibarra
-   Corretgé (@saghul), Irina-Maria Stanescu, Anca Vamanu, UnixDev,
+   All remaining contributors: Baptiste Cholley, Sa�l Ibarra
+   Corretg� (@saghul), Irina-Maria Stanescu, Anca Vamanu, UnixDev,
    Henning Westerholt (@henningw), Juha Heinanen (@juha-h),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Ancuta Onofrei, Elena-Ramona Modroiu, Norman
@@ -879,8 +879,8 @@ Chapter 3. Documentation
 
    doc copyrights:
 
-   Copyright © 2009 Irina-Maria Stanescu
+   Copyright � 2009 Irina-Maria Stanescu
 
-   Copyright © 2006-2008 Juha Heinanen
+   Copyright � 2006-2008 Juha Heinanen
 
-   Copyright © 2003 Miklos Tirpak
+   Copyright � 2003 Miklos Tirpak
