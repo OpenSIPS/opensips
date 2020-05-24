@@ -828,8 +828,6 @@ int ul_deprec_shp(modparam_t _, void *modparam)
 
 int ul_init_globals(void)
 {
-	int i;
-
 	init_db_url(db_url, 1 /* can be null */);
 
 	/* Compute the lengths of string parameters */
@@ -880,22 +878,6 @@ int ul_init_globals(void)
 			return -1;
 	}
 
-	if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
-		cid_keys = pkg_malloc(max_contact_delete *
-				(sizeof(db_key_t) + sizeof(db_val_t)));
-		if (!cid_keys) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-
-		cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
-		for (i = 0; i < max_contact_delete; i++) {
-			VAL_TYPE(cid_vals + i) = DB_BIGINT;
-			VAL_NULL(cid_vals + i) = 0;
-			cid_keys[i] = &contactid_col;
-		}
-	}
-
 	nat_bflag = get_flag_id_by_name(FLAG_TYPE_BRANCH, nat_bflag_str, 0);
 
 	if (nat_bflag == (unsigned int)-1) {
@@ -913,6 +895,7 @@ int ul_init_globals(void)
 int ul_check_db(void)
 {
 	unsigned int db_caps;
+	int i;
 
 	if (have_cdb_conns()) {
 		cdb_url.len = strlen(cdb_url.s);
@@ -957,6 +940,22 @@ int ul_check_db(void)
 				LM_ERR("cannot init rw lock\n");
 				return -1;
 			}
+		}
+	}
+
+	if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
+		cid_keys = pkg_malloc(max_contact_delete *
+				(sizeof(db_key_t) + sizeof(db_val_t)));
+		if (!cid_keys) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
+		for (i = 0; i < max_contact_delete; i++) {
+			VAL_TYPE(cid_vals + i) = DB_BIGINT;
+			VAL_NULL(cid_vals + i) = 0;
+			cid_keys[i] = &contactid_col;
 		}
 	}
 
