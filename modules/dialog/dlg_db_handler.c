@@ -1523,7 +1523,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 			&to_cseq_column,	&from_ping_cseq_column, &to_ping_cseq_column,
 			&vars_column,		&profiles_column,		&sflags_column,
 			&mflags_column,		&flags_column,			&rt_on_answer_column,
-			&rt_on_timeout_column,&rt_on_hangup_timeout};
+			&rt_on_timeout_column,&rt_on_hangup_column};
 
 	if (dialog_db_handle==0 || use_dialog_table()!=0)
 		return;
@@ -1625,7 +1625,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				SET_INT_VALUE(values+25, cell->flags &
 					~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
 
-				SET_ROUTE_VALUE(values+26, cell->rt_on_answer)
+				SET_ROUTE_VALUE(values+26, cell->rt_on_answer);
 				SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
 				SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
