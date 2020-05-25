@@ -26,6 +26,9 @@
 
 #include "ucontact.h"
 
+extern int timer_interval;
+extern int ct_refresh_timer;
+
 int ul_init_timers(void);
 void start_refresh_timer(ucontact_t *ct);
 void stop_refresh_timer(ucontact_t *ct);

@@ -84,7 +84,6 @@
 
 static int mod_init(void);        /*!< Module initialization */
 static void destroy(void);        /*!< Module destroy */
-static void synchronize_all_udomains(unsigned int ticks, void* param);
 static int child_init(int rank);  /*!< Per-child init function */
 static int mi_child_init(void);
 int ul_init_globals(void);
@@ -96,7 +95,6 @@ int ul_deprec_shp(modparam_t _, void *modparam);
 
 extern int bind_usrloc(usrloc_api_t* api);
 extern int ul_locks_no;
-extern rw_lock_t *sync_lock;
 
 /* Skip all DB operations when receiving replicated data */
 int skip_replicated_db_ops;
@@ -133,7 +131,6 @@ str contactid_col   = str_init(CONTACTID_COL);
 
 str db_url          = STR_NULL;					/*!< Database URL */
 str cdb_url         = STR_NULL;					/*!< Cache Database URL */
-int timer_interval  = 60;              /*!< Timer interval in seconds */
 enum usrloc_modes db_mode = NOT_SET;   /*!< XXX: DEPRECATED: DB sync scheme */
 char *runtime_preset;
 
@@ -156,7 +153,6 @@ int use_domain      = 0;   /*!< Whether usrloc should use domain part of aor */
 int desc_time_order = 0;   /*!< By default do not enable timestamp ordering */
 
 int ul_hash_size = 9;
-int ct_refresh_timer;
 
 /* flag */
 unsigned int nat_bflag = (unsigned int)-1;
@@ -389,15 +385,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* cache timer */
-	register_timer("ul-timer", synchronize_all_udomains, 0, timer_interval,
-	               TIMER_FLAG_DELAY_ON_DELAY);
-
-	/* contact-refresh timer */
-	if (ct_refresh_timer)
-		register_timer("ul-refresh-timer", trigger_ct_refreshes, 0,
-		               1, TIMER_FLAG_SKIP_ON_DELAY);
-
 	if (ul_init_cbs() < 0) {
 		LM_ERR("usrloc/callbacks initialization failed\n");
 		return -1;
@@ -449,12 +436,12 @@ int init_cachedb(void)
 
 static int child_init(int _rank)
 {
-	if (have_cdb_conns() && init_cachedb() < 0) {
+	if (have_cdb_con() && init_cachedb() < 0) {
 	    LM_ERR("cannot init cachedb feature\n");
 	    return -1;
 	}
 
-	if (!have_db_conns())
+	if (!have_sql_con())
 		return 0;
 
 	/* we need connection from SIP workers only */
@@ -487,7 +474,7 @@ static int mi_child_init(void)
 	if (done)
 		return 0;
 
-	if (have_db_conns()) {
+	if (have_sql_con()) {
 		ul_dbh = ul_dbf.init(&db_url);
 		if (!ul_dbh) {
 			LM_ERR("failed to connect to database\n");
@@ -506,7 +493,7 @@ static int mi_child_init(void)
 static void destroy(void)
 {
 	/* we need to sync DB in order to flush the cache */
-	if (have_db_conns() && ul_dbf.init) {
+	if (have_sql_con() && ul_dbf.init) {
 		ul_dbh = ul_dbf.init(&db_url); /* Get a new database connection */
 		if (!ul_dbh) {
 			LM_ERR("failed to connect to database\n");
@@ -537,20 +524,6 @@ static void destroy(void)
 	destroy_ulcb_list();
 }
 
-
-/*! \brief
- * Timer handler
- */
-static void synchronize_all_udomains(unsigned int ticks, void* param)
-{
-	if (sync_lock)
-		lock_start_read(sync_lock);
-	if (_synchronize_all_udomains() != 0) {
-		LM_ERR("synchronizing cache failed\n");
-	}
-	if (sync_lock)
-		lock_stop_read(sync_lock);
-}
 
 int ul_check_config(void)
 {
@@ -897,7 +870,7 @@ int ul_check_db(void)
 	unsigned int db_caps;
 	int i;
 
-	if (have_cdb_conns()) {
+	if (have_cdb_con()) {
 		cdb_url.len = strlen(cdb_url.s);
 
 		if (cachedb_bind_mod(&cdb_url, &cdbf) < 0) {
@@ -914,7 +887,7 @@ int ul_check_db(void)
 	}
 
 	/* use database if needed */
-	if (cluster_mode == CM_SQL_ONLY || rr_persist == RRP_LOAD_FROM_SQL) {
+	if (have_sql_con()) {
 		if (ZSTR(db_url)) {
 			LM_ERR("selected mode requires a db connection -> db_url \n");
 			return -1;
@@ -940,22 +913,21 @@ int ul_check_db(void)
 				LM_ERR("cannot init rw lock\n");
 				return -1;
 			}
-		}
-	}
 
-	if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
-		cid_keys = pkg_malloc(max_contact_delete *
-				(sizeof(db_key_t) + sizeof(db_val_t)));
-		if (!cid_keys) {
-			LM_ERR("oom\n");
-			return -1;
-		}
+			/* initialize the "merged contact deletes" array */
+			cid_keys = pkg_malloc(max_contact_delete *
+					(sizeof(db_key_t) + sizeof(db_val_t)));
+			if (!cid_keys) {
+				LM_ERR("oom\n");
+				return -1;
+			}
 
-		cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
-		for (i = 0; i < max_contact_delete; i++) {
-			VAL_TYPE(cid_vals + i) = DB_BIGINT;
-			VAL_NULL(cid_vals + i) = 0;
-			cid_keys[i] = &contactid_col;
+			cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
+			for (i = 0; i < max_contact_delete; i++) {
+				VAL_TYPE(cid_vals + i) = DB_BIGINT;
+				VAL_NULL(cid_vals + i) = 0;
+				cid_keys[i] = &contactid_col;
+			}
 		}
 	}
 

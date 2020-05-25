@@ -69,10 +69,10 @@ typedef enum ul_pinging_mode {
 #define bad_cluster_mode(mode) ((mode) < CM_NONE || (mode) > CM_SQL_ONLY)
 
 /* TODO: rewrite/optimize these 4 checks at mod init */
-#define have_db_conns() \
+#define have_sql_con() \
 	(cluster_mode == CM_SQL_ONLY || rr_persist == RRP_LOAD_FROM_SQL)
 
-#define have_cdb_conns() \
+#define have_cdb_con() \
 	(cluster_mode == CM_FEDERATION_CACHEDB || \
 	 cluster_mode == CM_FULL_SHARING_CACHEDB)
 
@@ -121,7 +121,6 @@ extern str last_mod_col;
 extern str sip_instance_col;
 
 extern str db_url;
-extern int timer_interval;
 extern enum usrloc_modes db_mode;
 extern int skip_replicated_db_ops;
 extern int use_domain;

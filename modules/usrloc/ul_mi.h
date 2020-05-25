@@ -29,6 +29,7 @@
 #ifndef _USRLOC_MI_H_
 #define _USRLOC_MI_H_
 
+#include "../../rw_locking.h"
 #include "../../mi/mi.h"
 
 #define MI_USRLOC_RM           "ul_rm"
@@ -40,6 +41,7 @@
 #define MI_USRLOC_SYNC         "ul_sync"
 #define MI_USRLOC_CL_SYNC      "ul_cluster_sync"
 
+extern rw_lock_t *sync_lock;
 
 mi_response_t *mi_usrloc_rm_aor(const mi_params_t *params,
 								struct mi_handler *async_hdl);

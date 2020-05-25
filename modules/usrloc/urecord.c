@@ -320,7 +320,7 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 
 	ptr = _r->contacts;
 
-	if (cluster_mode != CM_SQL_ONLY && persist_urecord_kv_store(_r) != 0)
+	if (rr_persist == RRP_LOAD_FROM_SQL && persist_urecord_kv_store(_r) != 0)
 		LM_DBG("failed to persist latest urecord K/V storage\n");
 
 	while(ptr) {
@@ -341,7 +341,8 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 			ptr = ptr->next;
 
 			/* Should we remove the contact from the database ? */
-			if (st_expired_ucontact(t) == 1 && !(t->flags & FL_MEM)) {
+			if (cid_vals && st_expired_ucontact(t) == 1
+			        && !(t->flags & FL_MEM)) {
 				VAL_BIGINT(cid_vals+cid_len) = t->contact_id;
 				if ((++cid_len) == max_contact_delete) {
 					if (db_multiple_ucontact_delete(_r->domain, cid_keys,
