@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2009-2020 OpenSIPS Solutions
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,16 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- * 2006-04-14  initial version (bogdan)
- * 2008-04-04  added direction reporting in dlg callbacks (bogdan)
- * 2008-04-14  DLGCB_CREATED may be registered before the module
- *              initialization (bogdan)
- * 2008-04-15  added new type of callback to be triggered when dialogs are
- *              loaded from DB (bogdan)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 

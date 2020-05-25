@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2008-2020 OpenSIPS Solutions
  * Copyright (C) 2007 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,14 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- * 2007-07-10  initial version (ancuta)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
-
-
 
 
 #ifndef DLG_REQUEST_WITHIN_H

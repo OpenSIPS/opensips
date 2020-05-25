@@ -1,7 +1,5 @@
 /*
- * dialog module - basic support for dialog tracking
- *
- * Copyright (C) 2013 OpenSIPS Solutions
+ * Copyright (C) 2013-2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -17,11 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2013-04-12 initial version (Liviu)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #include "dlg_hash.h"
@@ -83,6 +77,21 @@ static struct socket_info * fetch_socket_info(str *addr)
 		} \
 	} while (0)
 
+#define DLG_BIN_POP_ROUTE(_packet, _dlg, _type, _pre_linking_error) \
+do { \
+	str __s; \
+	DLG_BIN_POP(str, _packet, __s, _pre_linking_error);\
+	if (__s.len) {\
+		_dlg->rt_ ## _type = get_script_route_ID_by_name_str( &__s, \
+			sroutes->request, RT_NO); \
+		if (_dlg->rt_ ## _type==-1) { \
+			LM_WARN("replicated <%.*s>  ## _type route not found " \
+				"in the script\n", __s.len, __s.s); \
+			_dlg->rt_ ## _type = 0; \
+		} \
+	} else \
+		_dlg->rt_ ## _type = 0; \
+} while(0)
 
 /*  Binary Packet receiving functions   */
 
@@ -211,8 +220,14 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	dlg->flags |= DLG_FLAG_NEW;
 
 	DLG_BIN_POP(int, packet, dlg->tl.timeout, pre_linking_error);
-	DLG_BIN_POP(int, packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq, pre_linking_error);
-	DLG_BIN_POP(int, packet, dlg->legs[callee_idx(dlg)].last_gen_cseq, pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq,
+		pre_linking_error);
+	DLG_BIN_POP(int, packet, dlg->legs[callee_idx(dlg)].last_gen_cseq,
+		pre_linking_error);
+
+	DLG_BIN_POP_ROUTE( packet, dlg, on_answer, pre_linking_error);
+	DLG_BIN_POP_ROUTE( packet, dlg, on_timeout, pre_linking_error);
+	DLG_BIN_POP_ROUTE( packet, dlg, on_hangup, pre_linking_error);
 
 	if (dlg->tl.timeout <= (unsigned int) time(0))
 		dlg->tl.timeout = 0;
@@ -383,6 +398,9 @@ int dlg_replicated_update(bin_packet_t *packet)
 
 	bin_pop_int(packet, &timeout);
 	bin_skip_int(packet, 2);
+	DLG_BIN_POP_ROUTE( packet, dlg, on_answer, error);
+	DLG_BIN_POP_ROUTE( packet, dlg, on_timeout, error);
+	DLG_BIN_POP_ROUTE( packet, dlg, on_hangup, error);
 
 	timeout -= time(0);
 	LM_DBG("Received updated timeout of %d for dialog %.*s\n",
@@ -532,6 +550,19 @@ malformed:
 }
 #undef DLG_BIN_POP
 
+
+#define DLG_BIN_PUSH_ROUTE(_packet, _dlg, _type) \
+do { \
+	str __s; \
+	if (_dlg->rt_ ## _type>0) { \
+		__s.s = sroutes->request[_dlg->rt_ ## _type].name; \
+		__s.len = strlen(__s.s); \
+		bin_push_str(_packet, &__s); \
+	} else { \
+		bin_push_str(_packet, NULL); \
+	} \
+} while(0)
+
 void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 {
 	int callee_leg;
@@ -592,6 +623,10 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_int(packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(packet, dlg->legs[callee_leg].last_gen_cseq);
+
+	DLG_BIN_PUSH_ROUTE( packet, dlg, on_answer);
+	DLG_BIN_PUSH_ROUTE( packet, dlg, on_timeout);
+	DLG_BIN_PUSH_ROUTE( packet, dlg, on_hangup);
 }
 
 /*  Binary Packet sending functions   */

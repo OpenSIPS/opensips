@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2009-2020 OpenSIPS Solutions
  * Copyright (C) 2006 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,13 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- * 2006-04-14  initial version (bogdan)
- * 2007-03-06  to avoid races, tests on timer links are done under locks
- *             (bogdan)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 

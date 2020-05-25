@@ -1,6 +1,5 @@
 /*
- * dialog module - basic support for dialog tracking
- *
+ * Copyright (C) 2009-2020 OpenSIPS Solutions
  * Copyright (C) 2009 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -17,12 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2009-01-12 initial version (bogdan)
- */
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+*/
 
 #include "../../mem/shm_mem.h"
 #include "../../pt.h"

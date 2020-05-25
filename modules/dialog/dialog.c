@@ -1,7 +1,7 @@
 /*
  * dialog module - basic support for dialog tracking
  *
- * Copyright (C) 2008-2014 OpenSIPS Solutions
+ * Copyright (C) 2008-2020 OpenSIPS Solutions
  * Copyright (C) 2006 Voice Sistem SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -18,21 +18,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- *  2006-04-14 initial version (bogdan)
- *  2006-11-28 Added statistic support for the number of early and failed
- *              dialogs. (Jeffrey Magder - SOMA Networks)
- *  2007-04-30 added dialog matching without DID (dialog ID), but based only
- *              on RFC3261 elements - based on an original patch submitted
- *              by Michel Bensoussan <michel@extricom.com> (bogdan)
- *  2007-05-15 added saving dialogs' information to database (ancuta)
- *  2007-07-04 added saving dialog cseq, contact, record route
- *              and bind_addresses(sock_info) for caller and callee (ancuta)
- *  2008-04-14 added new type of callback to be triggered when dialogs are
- *              loaded from DB (bogdan)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -151,17 +137,23 @@ static int w_is_dlg_flag_set(struct sip_msg *msg, void *mask);
 static int w_store_dlg_value(struct sip_msg *msg, str *name, str *val);
 int w_fetch_dlg_value(struct sip_msg *msg, str *name, pv_spec_t *result);
 static int w_get_dlg_info(struct sip_msg *msg, str *attr, pv_spec_t *attr_val,
-			str *key, str *key_val, pv_spec_t *number_val);
-static int w_get_dlg_jsons_by_val(struct sip_msg *msg, str *attr, str *attr_val,
-			pv_spec_t *out, pv_spec_t *number_val);
-static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, str *attr, str *attr_val,
-				pv_spec_t *out, pv_spec_t *number_val);
+		str *key, str *key_val, pv_spec_t *number_val);
+static int w_get_dlg_jsons_by_val(struct sip_msg *msg,
+		str *attr, str *attr_val, pv_spec_t *out, pv_spec_t *number_val);
+static int w_get_dlg_jsons_by_profile(struct sip_msg *msg,
+		str *attr, str *attr_val, pv_spec_t *out, pv_spec_t *number_val);
 static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
-						pv_spec_t *v_val, str *callid);
+		pv_spec_t *v_val, str *callid);
 static int w_tsl_dlg_flag(struct sip_msg *msg, int *_idx, int *_val);
 static int w_set_dlg_shtag(struct sip_msg *msg, str *shtag);
 static int load_dlg_ctx(struct sip_msg *msg, str *callid, void* lmode);
 static int unload_dlg_ctx(struct sip_msg *msg);
+
+static int fixup_route(void** param);
+static int dlg_on_timeout(struct sip_msg* msg, void *route_id);
+static int dlg_on_answer(struct sip_msg* msg, void *route_id);
+static int dlg_on_hangup(struct sip_msg* msg, void *route_id);
+
 
 /* item/pseudo-variables functions */
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
@@ -262,6 +254,15 @@ static cmd_export_t cmds[]={
 		ALL_ROUTES},
 	{"unload_dialog_ctx",(cmd_function)unload_dlg_ctx,
 		{{0,0,0}}, ALL_ROUTES},
+	{"dlg_on_timeout", (cmd_function)dlg_on_timeout, {
+		{CMD_PARAM_STR, fixup_route, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+	{"dlg_on_answer", (cmd_function)dlg_on_answer, {
+		{CMD_PARAM_STR, fixup_route, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+	{"dlg_on_hangup", (cmd_function)dlg_on_hangup, {
+		{CMD_PARAM_STR, fixup_route, 0}, {0,0,0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{"load_dlg", (cmd_function)load_dlg, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
@@ -534,6 +535,24 @@ static int fixup_dlg_flag(void** param)
 static int fixup_mmode(void **param)
 {
 	*param = (void*)(unsigned long)dlg_match_mode_str_to_int((str*)*param);
+
+	return 0;
+}
+
+
+static int fixup_route(void** param)
+{
+	int rt;
+
+	rt = get_script_route_ID_by_name_str( (str*)*param,
+		sroutes->request, RT_NO);
+	if (rt==-1) {
+		LM_ERR("route <%.*s> does not exist\n",
+			((str*)*param)->len, ((str*)*param)->s);
+		return -1;
+	}
+
+	*param = (void*)(unsigned long int)rt;
 
 	return 0;
 }
@@ -2294,4 +2313,77 @@ static int unload_dlg_ctx(struct sip_msg *msg)
 
 	return 1;
 }
+
+
+static int dlg_on_timeout(struct sip_msg* msg, void *route_id)
+{
+	struct dlg_cell *dlg;
+
+	if ( (dlg=get_current_dialog())==NULL ) {
+		LM_WARN("no current dialog found. Have you created one?\n");
+		return -1;
+	}
+
+	dlg_lock_dlg(dlg);
+
+	if (dlg->state > DLG_STATE_EARLY) {
+		LM_WARN("too late to set the route, dialog already established\n");
+		dlg_unlock_dlg(dlg);
+		return -1;
+	}
+
+	dlg->rt_on_timeout = (unsigned int)(unsigned long)route_id;
+
+	dlg_unlock_dlg(dlg);
+	return 1;
+}
+
+
+static int dlg_on_answer(struct sip_msg* msg, void *route_id)
+{
+	struct dlg_cell *dlg;
+
+	if ( (dlg=get_current_dialog())==NULL ) {
+		LM_WARN("no current dialog found. Have you created one?\n");
+		return -1;
+	}
+
+	dlg_lock_dlg(dlg);
+
+	if (dlg->state > DLG_STATE_EARLY) {
+		LM_WARN("too late to set the route, dialog already established\n");
+		dlg_unlock_dlg(dlg);
+		return -1;
+	}
+
+	dlg->rt_on_answer = (unsigned int)(unsigned long)route_id;
+
+	dlg_unlock_dlg(dlg);
+	return 1;
+}
+
+
+static int dlg_on_hangup(struct sip_msg* msg, void *route_id)
+{
+	struct dlg_cell *dlg;
+
+	if ( (dlg=get_current_dialog())==NULL ) {
+		LM_WARN("no current dialog found. Have you created one?\n");
+		return -1;
+	}
+
+	dlg_lock_dlg(dlg);
+
+	if (dlg->state > DLG_STATE_EARLY) {
+		LM_WARN("too late to set the route, dialog already established\n");
+		dlg_unlock_dlg(dlg);
+		return -1;
+	}
+
+	dlg->rt_on_hangup = (unsigned int)(unsigned long)route_id;
+
+	dlg_unlock_dlg(dlg);
+	return 1;
+}
+
 

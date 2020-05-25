@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2008-2020 OpenSIPS Solutions
  * Copyright (C) 2007-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,14 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- * 2007-07-10  initial version (ancuta)
- * 2008-04-04  added direction reporting in dlg callbacks (bogdan)
- * 2009-09-09  support for early dialogs added; proper handling of cseq
- *             while PRACK is used (bogdan)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
 
 #include <stdlib.h>
@@ -221,6 +215,9 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 
 		LM_DBG("removing dialog with h_entry %u and h_id %u\n",
 			dlg->h_entry, dlg->h_id);
+
+		if (dlg->rt_on_hangup)
+			run_dlg_script_route( dlg, dlg->rt_on_hangup);
 
 		/*destroy linkers */
 		destroy_linkers(dlg);

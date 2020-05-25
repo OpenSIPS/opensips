@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2008-2020 OpenSIPS Solutions
  * Copyright (C) 2006 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -15,13 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- * 2006-04-14  initial version (bogdan)
- * 2007-03-06  syncronized state machine added for dialog state. New tranzition
- *             design based on events; removed num_1xx and num_2xx (bogdan)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -101,6 +96,19 @@ extern int ctx_lastdstleg_idx;
 #define ctx_lastdstleg_set(_lastleg) \
 	context_put_int(CONTEXT_GLOBAL,current_processing_ctx, ctx_lastdstleg_idx, _lastleg+1)
 
+typedef int (*validate_dialog_f) (struct sip_msg* req, struct dlg_cell *dlg);
+typedef int (*fix_route_dialog_f) (struct sip_msg *req,struct dlg_cell *dlg);
+/* the dialog is identified by callid if provided,
+ * otherwise by h_entry and h_id */
+typedef int (*terminate_dlg_f)(str *callid, unsigned int h_entry,
+		unsigned int h_id, str *reason);
+typedef int (*indialog_reply_f) (struct sip_msg *msg, int statuscode,
+		void *param);
+typedef int (*send_indialog_req_f)(struct dlg_cell *dlg, str *method,
+		int leg, str *body, str *ct, str *hdrs, indialog_reply_f func,
+		void *param);
+
+
 void init_dlg_handlers(int default_timeout);
 
 void destroy_dlg_handlers();
@@ -113,27 +121,22 @@ void dlg_onroute(struct sip_msg* req, str *rr_param, void *param);
 
 void dlg_ontimeout( struct dlg_tl *tl);
 
-typedef int (*validate_dialog_f) (struct sip_msg* req, struct dlg_cell *dlg);
 int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg);
 
-typedef int (*fix_route_dialog_f) (struct sip_msg *req,struct dlg_cell *dlg);
 int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg);
 
 int terminate_dlg(str *callid, unsigned int h_entry, unsigned int h_id,
-	str *reason);
+		str *reason);
 
-/* the dialog is identified by callid if provided,
- * otherwise by h_entry and h_id */
-typedef int (*terminate_dlg_f)(str *callid, unsigned int h_entry, unsigned int h_id,
-	str *reason);
-
-typedef int (*indialog_reply_f) (struct sip_msg *msg, int statuscode, void *param);
-typedef int (*send_indialog_req_f)(struct dlg_cell *dlg, str *method,
-		int leg, str *body, str *ct, str *hdrs, indialog_reply_f func, void *param);
 int send_indialog_request(struct dlg_cell *dlg, str *method,
-		int leg, str *body, str *ct, str *hdrs, indialog_reply_f func, void *param);
+		int leg, str *body, str *ct, str *hdrs, indialog_reply_f func,
+		void *param);
 
 void unreference_dialog(void *dialog);
+
+int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx);
+
+
 
 static inline int parse_dlg_rr_param(char *p, char *end,
 								unsigned int *h_entry, unsigned int *h_id)

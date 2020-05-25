@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 OpenSIPS Solutions
+ * Copyright (C) 2009-2020 OpenSIPS Solutions
  * Copyright (C) 2006-2009 Voice System SRL
  *
  * This file is part of opensips, a free SIP server.
@@ -16,32 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * --------
- * 2006-04-14  initial version (bogdan)
- * 2006-11-28  Added support for tracking the number of early dialogs, and the
- *             number of failed dialogs. This involved updates to dlg_onreply()
- *             (Jeffrey Magder - SOMA Networks)
- * 2007-03-06  syncronized state machine added for dialog state. New tranzition
- *             design based on events; removed num_1xx and num_2xx (bogdan)
- * 2007-04-30  added dialog matching without DID (dialog ID), but based only
- *             on RFC3261 elements - based on an original patch submitted
- *             by Michel Bensoussan <michel@extricom.com> (bogdan)
- * 2007-05-17  new feature: saving dialog info into a database if
- *             realtime update is set(ancuta)
- * 2007-07-06  support for saving additional dialog info : cseq, contact,
- *             route_set and socket_info for both caller and callee (ancuta)
- * 2007-07-10  Optimized dlg_match_mode 2 (DID_NONE), it now employs a proper
- *             hash table lookup and isn't dependant on the is_direction
- *             function (which requires an RR param like dlg_match_mode 0
- *             anyways.. ;) ; based on a patch from
- *             Tavis Paquette <tavis@galaxytelecom.net>
- *             and Peter Baer <pbaer@galaxytelecom.net>  (bogdan)
- * 2008-04-04  added direction reporting in dlg callbacks (bogdan)
- * 2009-09-09  support for early dialogs added; proper handling of cseq
- *             while PRACK is used (bogdan)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 
@@ -85,23 +60,61 @@ extern stat_var *processed_dlgs;
 extern stat_var *expired_dlgs;
 extern stat_var *failed_dlgs;
 
-int  ctx_lastdstleg_idx = -1;
-int  ctx_timeout_idx = -1;
+int ctx_lastdstleg_idx = -1;
+int ctx_timeout_idx = -1;
 
 static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
-											unsigned int leg);
+		unsigned int leg);
+
+static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
+		unsigned int leg);
+
 
 void init_dlg_handlers(int default_timeout_p)
 {
 	default_timeout = default_timeout_p;
 }
 
-static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
-		unsigned int leg);
 
 void destroy_dlg_handlers(void)
 {
 	shutdown_done = 1;
+}
+
+
+int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
+{
+	static struct sip_msg* fake_msg= NULL;
+	context_p old_ctx, *new_ctx;
+	int old_route_type;
+
+	/************* pre-run sequance ****************/
+
+	if (push_new_processing_context( dlg, &old_ctx, &new_ctx, &fake_msg)<0) {
+		LM_ERR("failed to prepare context for runing dlg route\n");
+		return -1;
+	}
+
+	swap_route_type(old_route_type, REQUEST_ROUTE);
+
+	/************* actual run sequance ****************/
+	run_top_route( sroutes->request[rt_idx].a, fake_msg);
+
+	/************* post-run sequance ****************/
+
+	set_route_type(old_route_type);
+
+	/* reset the processing context */
+	if (current_processing_ctx == NULL)
+		*new_ctx = NULL;
+	else
+		context_destroy(CONTEXT_GLOBAL, *new_ctx);
+	current_processing_ctx = old_ctx;
+
+	/* remove all added AVP - here we use all the time the default AVP list */
+	reset_avps( );
+
+	return 0;
 }
 
 
@@ -602,7 +615,16 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			update_dialog_dbinfo(dlg);
 
 		/* dialog confirmed */
-		run_dlg_callbacks(DLGCB_CONFIRMED, dlg, rpl, DLG_DIR_UPSTREAM, NULL, 0, 1);
+		run_dlg_callbacks(DLGCB_CONFIRMED, dlg, rpl, DLG_DIR_UPSTREAM,
+			NULL, 0, 1);
+
+		if (dlg->rt_on_answer) {
+			run_dlg_script_route( dlg, dlg->rt_on_answer);
+			/* also replicate an update, if some dlg data changed during
+			 * the execution of the on-timeout route */
+			if (dialog_repl_cluster && dlg->flags&DLG_FLAG_VP_CHANGED)
+				replicate_dialog_updated(dlg);
+		}
 
 		if (old_state==DLG_STATE_EARLY)
 			if_update_stat(dlg_enable_stats, early_dlgs, -1);
@@ -1743,6 +1765,9 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
 	old_state!=DLG_STATE_DELETED) {
 
+		if (dlg->rt_on_hangup)
+			run_dlg_script_route( dlg, dlg->rt_on_hangup);
+
 		/*destroy profile linkers */
 		destroy_linkers(dlg);
 		remove_dlg_prof_table(dlg,is_active);
@@ -2075,7 +2100,6 @@ early_check:
 }
 
 
-
 #define get_dlg_tl_payload(_tl_)  ((struct dlg_cell*)((char *)(_tl_)- \
 		(unsigned long)(&((struct dlg_cell*)0)->tl)))
 
@@ -2097,19 +2121,59 @@ void dlg_ontimeout(struct dlg_tl *tl)
 
 	LM_DBG("byeontimeout ? flags = %d , state = %d\n",dlg->flags,dlg->state);
 
-	if (dialog_repl_cluster)
+	if (dialog_repl_cluster) {
 		/* if dialog replication is used, send BYEs only if the current node
 		 * is "in charge" of the dialog (or if unable to fetch this info) */
 		do_expire_actions = get_shtag_state(dlg) != SHTAG_STATE_BACKUP;
 
+		/* if we are backup for a dialog with on-timeout route, wait 10 mins
+		 * more to see what decision the active takes, otherwise just expire
+		 * the dialog. We this self prolonging only once! */
+		if (!do_expire_actions && dlg->rt_on_timeout
+		&& dlg->state<DLG_STATE_DELETED
+		&& !(dlg->flags&DLG_FLAG_SELF_EXTENDED_TIMEOUT)) {
+			LM_DBG("self prolonging with 10 mins to see what the active"
+				"decides after the on-timeout route\n");
+			dlg->flags |= DLG_FLAG_SELF_EXTENDED_TIMEOUT;
+			tl->next = tl->prev = NULL;
+			/* inherit the ref here */
+			insert_dlg_timer( tl, 60*10);
+			return;
+		}
+	}
+
+	if (do_expire_actions && dlg->rt_on_timeout
+	&& dlg->state<DLG_STATE_DELETED) {
+		struct dlg_tl bk_tl = *tl;
+		/* allow the dialog to be re-inserted in the timer list */
+		tl->next = tl->prev = NULL;
+		/* run the on_timeout route - only the active server will do this */
+		run_dlg_script_route( dlg, dlg->rt_on_timeout);
+		/* let's see what happened */
+		if (tl->timeout) {
+			/* dialog is back on the timelist, inheriting the ref count;
+			 * also replicate an update, if some dlg data changed during
+			 * the execution of the on-timeout route */
+			if (dialog_repl_cluster && dlg->flags&DLG_FLAG_VP_CHANGED)
+				replicate_dialog_updated(dlg);
+			return;
+		}
+		/* continue with the handling of the timeout */
+		*tl = bk_tl;
+		/* there is no need to explicitly replicate the dialog termination
+		 * here, as the following code will do this for us later */
+	}
+
 	if ((dlg->flags&DLG_FLAG_BYEONTIMEOUT) &&
-		(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
+	(dlg->state==DLG_STATE_CONFIRMED_NA || dlg->state==DLG_STATE_CONFIRMED)) {
 
 		if (do_expire_actions) {
 			if (dlg->flags & DLG_FLAG_RACE_CONDITION_OCCURRED)
-				init_dlg_term_reason(dlg,"SIP Race Condition",sizeof("SIP Race Condition")-1);
+				init_dlg_term_reason(dlg,"SIP Race Condition",
+					sizeof("SIP Race Condition")-1);
 			else
-				init_dlg_term_reason(dlg,"Lifetime Timeout",sizeof("Lifetime Timeout")-1);
+				init_dlg_term_reason(dlg,"Lifetime Timeout",
+					sizeof("Lifetime Timeout")-1);
 		}
 		/* we just send the BYEs in both directions */
 		dlg_end_dlg(dlg, NULL, do_expire_actions);
