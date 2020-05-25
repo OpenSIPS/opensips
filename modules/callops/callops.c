@@ -25,6 +25,7 @@
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
 #include "../../data_lump_rpl.h"
+#include "../../parser/sdp/sdp.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_event.h"
 #include "../../parser/parse_replaces.h"
@@ -122,9 +123,13 @@ static int call_match_mode = CALL_MATCH_DEFAULT;
 static str call_match_param = str_init("osid");
 static str call_transfer_param = str_init("call_transfer_leg");
 static str call_transfer_callid_param = str_init("call_transfer_callid");
+static str call_hold_param;
+#define CALL_HOLD_PARAM "call_hold_"
+#define CALL_HOLD_PARAM_LEN (sizeof(CALL_HOLD_PARAM) - 1)
 
 
 static int mod_init(void);
+static int call_hold_leg_str_init(void);
 static int call_blind_replace(struct sip_msg *req, str *callid, str *leg);
 static int call_transfer_notify(struct sip_msg *req);
 static void call_dlg_created_CB(struct dlg_cell *did, int type,
@@ -132,6 +137,10 @@ static void call_dlg_created_CB(struct dlg_cell *did, int type,
 static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_call_hold(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_call_unhold(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 static dep_export_t deps = {
@@ -188,6 +197,14 @@ static mi_export_t mi_cmds[] = {
 			{"callid", "leg", "transfer_callid", "transfer_fromtag",
 				"transfer_totag", "transfer_destination", 0}},
 		{EMPTY_MI_RECIPE}}
+	},
+	{ "call_hold", 0, 0, 0, {
+		{mi_call_hold, {"callid", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "call_unhold", 0, 0, 0, {
+		{mi_call_unhold, {"callid", 0}},
+		{EMPTY_MI_RECIPE}}
 	}
 };
 
@@ -219,6 +236,11 @@ static int mod_init(void)
 	call_match_param.len = strlen(call_match_param.s);
 	if (call_match_param.len <= 0) {
 		LM_ERR("invalid matching param param!\n");
+		return -1;
+	}
+
+	if (call_hold_leg_str_init() < 0) {
+		LM_ERR("could not init call hold param!\n");
 		return -1;
 	}
 
@@ -931,6 +953,233 @@ unrefA:
 unrefB:
 	if (dlgB)
 		call_dlg_api.dlg_unref(dlgB, 1);
+	return ret;
+}
+
+static int call_get_hold_body(struct dlg_cell *dlg, int leg, str *new_body)
+{
+	static sdp_info_t sdp;
+	sdp_session_cell_t *session;
+	sdp_stream_cell_t *stream;
+	str body, session_hdr;
+	int attr_to_add = 0;
+	int len, streamnum;
+
+	new_body->len = 0;
+
+	body = dlg_get_out_sdp(dlg, leg);
+	if (parse_sdp_session(&body, 0, NULL, &sdp) < 0) {
+		LM_ERR("could not parse SDP for leg %d\n", leg);
+		return -1;
+	}
+
+	/* we only have one session, so there's no need to iterate */
+	streamnum = 0;
+	session = sdp.sessions;
+	session_hdr.s = session->body.s;
+	session_hdr.len = session->body.len;
+	for (stream = session->streams; stream; stream = stream->next) {
+		/* first stream indicates where session header ends */
+		if (session_hdr.len > stream->body.s - session->body.s)
+			session_hdr.len = stream->body.s - session->body.s;
+		if (stream->sendrecv_mode.len == 0)
+			attr_to_add++;
+		else if (strncasecmp(stream->sendrecv_mode.s, "inactive", 8) == 0)
+			continue; /* do not disable already disabled stream */
+		streamnum++;
+	}
+	if (!streamnum)
+		return 0; /* nothing to change */
+
+	new_body->s = pkg_malloc(body.len + attr_to_add * 12 /* a=inactive\r\n */);
+	if (!new_body->s) {
+		LM_ERR("oom for new body!\n");
+		return -1;
+	}
+
+	/* copy everything untill the first stream */
+	memcpy(new_body->s, session_hdr.s, session_hdr.len);
+	new_body->len = session_hdr.len;
+	for (streamnum = 0; streamnum < session->streams_num; streamnum++) {
+		for (stream = session->streams; stream; stream = stream->next) {
+			/* make sure the streams are in the same order */
+			if (stream->stream_num != streamnum)
+				continue;
+			if (stream->sendrecv_mode.len) {
+				len = stream->sendrecv_mode.s - stream->body.s;
+				memcpy(new_body->s + new_body->len, stream->body.s,
+						stream->sendrecv_mode.s - stream->body.s);
+				new_body->len += len;
+				memcpy(new_body->s + new_body->len, "inactive", 8);
+				new_body->len += 8;
+				len += stream->sendrecv_mode.len;
+				memcpy(new_body->s + new_body->len, stream->sendrecv_mode.s +
+						stream->sendrecv_mode.len, stream->body.len - len);
+				new_body->len += stream->body.len - len;
+			} else {
+				memcpy(new_body->s + new_body->len, stream->body.s, stream->body.len);
+				new_body->len += stream->body.len;
+				memcpy(new_body->s + new_body->len, "a=inactive\r\n", 12);
+				new_body->len += 12;
+			}
+		}
+	}
+
+	return 1;
+}
+
+static int call_hold_leg_str_init(void)
+{
+	call_hold_param.s = pkg_malloc(CALL_HOLD_PARAM_LEN + 3 /* maximum 3 legs */);
+	if (call_hold_param.s < 0)
+		return -1;
+	memcpy(call_hold_param.s, CALL_HOLD_PARAM, CALL_HOLD_PARAM_LEN);
+	return 0;
+}
+
+static str *call_hold_leg_str(int leg)
+{
+	str tmp;
+	tmp.s = int2str(leg, &tmp.len);
+	memcpy(call_hold_param.s + CALL_HOLD_PARAM_LEN, tmp.s, tmp.len);
+	call_hold_param.len = CALL_HOLD_PARAM_LEN + tmp.len;
+	return &call_hold_param;
+}
+
+static int call_put_leg_onhold(struct dlg_cell *dlg, int leg)
+{
+	int ret;
+	str body, tmp;
+	str invite = str_init("INVITE");
+	str ct = str_init("application/sdp");
+	str marker = str_init("onhold");
+	str *legstr = call_hold_leg_str(leg);
+
+	if (call_dlg_api.fetch_dlg_value(dlg, legstr, &tmp, 0) >= 0 &&
+			tmp.len != 0) {
+		LM_DBG("call leg %d already on hold\n", leg);
+		return 0;
+	}
+
+	if (call_get_hold_body(dlg, leg, &body) < 0)
+		return -1;
+	if (body.len == 0)
+		return 1; /* nothing to do */
+
+	/* send it out */
+	ret = call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
+			NULL, NULL, NULL);
+	pkg_free(body.s);
+	if (ret < 0) {
+		LM_ERR("could not send re-INVITE for leg %d\n", leg);
+		return -1;
+	}
+	if (call_dlg_api.store_dlg_value(dlg, call_hold_leg_str(leg), &marker) < 0)
+		LM_WARN("cannot store streams for leg %d - cannot unhold properly!\n", leg);
+	return 1;
+}
+
+static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg)
+{
+	str marker, body;
+	str invite = str_init("INVITE");
+	str ct = str_init("application/sdp");
+	str *legstr;
+
+	legstr = call_hold_leg_str(leg);
+
+	/* frist, check to see if the call was on hold */
+	if (call_dlg_api.fetch_dlg_value(dlg, legstr, &marker, 0) < 0
+			|| marker.len == 0) {
+		LM_DBG("leg %d is not on hold!\n", leg);
+		return 0;
+	}
+	body = dlg_get_out_sdp(dlg, leg);
+	if (call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
+			NULL, NULL, NULL) < 0) {
+		LM_ERR("could not resume leg %d\n", leg);
+		return -1;
+	}
+	/* mark the dialog that it is not on hold */
+	call_dlg_api.store_dlg_value(dlg, legstr, &empty_str);
+	return 1;
+}
+
+static mi_response_t *mi_call_hold(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str callid;
+	struct dlg_cell *dlg;
+	mi_response_t *ret = NULL;
+	int ret_callee;
+	int ret_caller;
+
+	if (get_mi_string_param(params, "callid",
+			&callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+
+	dlg = call_dlg_api.get_dlg_by_callid(&callid, 1);
+	if (!dlg)
+		return init_mi_error(404, MI_SSTR("Dialog not found"));
+
+	if (dlg->state >= DLG_STATE_DELETED) {
+		ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
+		goto unref;
+	}
+	if (dlg->state < DLG_STATE_CONFIRMED) {
+		ret = init_mi_error(410, MI_SSTR("Dialog not ready"));
+		goto unref;
+	}
+	ret_caller = call_put_leg_onhold(dlg, DLG_CALLER_LEG);
+	if (ret_caller < 0)
+		goto unref;
+	ret_callee = call_put_leg_onhold(dlg, callee_idx(dlg));
+	if (ret_callee < 0) {
+		if (ret_caller != 0)
+			call_resume_leg_onhold(dlg, DLG_CALLER_LEG);
+		goto unref;
+	}
+	if (ret_caller == 0 && ret_callee == 0)
+		ret = init_mi_error(480, MI_SSTR("Both dialog legs are on hold"));
+	else
+		ret = init_mi_result_ok();
+unref:
+	call_dlg_api.dlg_unref(dlg, 1);
+	return ret;
+}
+
+static mi_response_t *mi_call_unhold(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str callid;
+	struct dlg_cell *dlg;
+	mi_response_t *ret = NULL;
+	int ret_caller, ret_callee;
+
+	if (get_mi_string_param(params, "callid",
+			&callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+
+	dlg = call_dlg_api.get_dlg_by_callid(&callid, 1);
+	if (!dlg)
+		return init_mi_error(404, MI_SSTR("Dialog not found"));
+
+	if (dlg->state >= DLG_STATE_DELETED) {
+		ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
+		goto unref;
+	}
+	if (dlg->state < DLG_STATE_CONFIRMED) {
+		ret = init_mi_error(410, MI_SSTR("Dialog not ready"));
+		goto unref;
+	}
+	ret_callee = call_resume_leg_onhold(dlg, callee_idx(dlg));
+	ret_caller = call_resume_leg_onhold(dlg, DLG_CALLER_LEG);
+	if (ret_caller == 0 && ret_callee == 0)
+		ret = init_mi_error(480, MI_SSTR("No dialog legs on hold"));
+	else if (ret_caller > 0 || ret_callee > 0)
+		ret = init_mi_result_ok();
+unref:
+	call_dlg_api.dlg_unref(dlg, 1);
 	return ret;
 }
 

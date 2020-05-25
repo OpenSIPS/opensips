@@ -333,6 +333,72 @@ opensips-cli -x mi call_transfer \
 	transfer_leg=calee
 		</programlisting>
 		</section>
+
+		<section id="mi_call_hold"
+			xreflabel="call_hold">
+		<title>
+		<function moreinfo="none">call_hold</function>
+		</title>
+		<para>
+		MI command to put an ongoing call on hold.
+		</para>
+		<para>
+			Command returns <emphasis>OK</emphasis> if any of the legs
+			of the call have been put on hold. If the call is already
+			on hold, an error is returned.
+		</para>
+		<para>
+		Name: <emphasis>call_hold</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> (string) - the callid of the
+					dialog that is being put on hold.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+# put a call on hold
+opensips-cli -x mi call_hold \
+	callid=921b00e4-fec0-4a36-9397-a40ab74e1893
+		</programlisting>
+		</section>
+
+		<section id="mi_call_unhold"
+			xreflabel="call_unhold">
+		<title>
+		<function moreinfo="none">call_unhold</function>
+		</title>
+		<para>
+			MI command to resume a call from an onhold state put by the
+			<xref linkend="mi_call_hold"/> call.
+		</para>
+		<para>
+			Command returns <emphasis>OK</emphasis> if any of the legs
+			are resumed, or an error if no leg had been previously put
+			on hold.
+		</para>
+		<para>
+		Name: <emphasis>call_unhold</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> (string) - the callid of the
+					dialog that is being resumed.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi call_unhold \
+	callid=921b00e4-fec0-4a36-9397-a40ab74e1893
+		</programlisting>
+		</section>
 	</section>
 
 	<section id="exported_events" xreflabel="Exported Events">
