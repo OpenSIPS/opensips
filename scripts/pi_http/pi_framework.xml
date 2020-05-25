@@ -430,6 +430,9 @@
 		<column><field>script_flags</field><type>DB_INT</type></column>
 		<column><field>module_flags</field><type>DB_INT</type></column>
 		<column><field>flags</field><type>DB_INT</type></column>
+		<column><field>rt_on_answer</field><type>DB_STR</type></column>
+		<column><field>rt_on_timeout</field><type>DB_STR</type></column>
+		<column><field>rt_on_hangup</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of dialplan table-->
 	<db_table id="dialplan">
@@ -2551,6 +2554,9 @@
 				<col><field>script_flags</field></col>
 				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
+				<col><field>rt_on_answer</field></col>
+				<col><field>rt_on_timeout</field></col>
+				<col><field>rt_on_hangup</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -2583,6 +2589,9 @@
 				<col><field>script_flags</field></col>
 				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
+				<col><field>rt_on_answer</field></col>
+				<col><field>rt_on_timeout</field></col>
+				<col><field>rt_on_hangup</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -2617,6 +2626,9 @@
 				<col><field>script_flags</field></col>
 				<col><field>module_flags</field></col>
 				<col><field>flags</field></col>
+				<col><field>rt_on_answer</field></col>
+				<col><field>rt_on_timeout</field></col>
+				<col><field>rt_on_hangup</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

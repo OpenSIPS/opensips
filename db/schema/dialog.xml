@@ -9,7 +9,7 @@
 
 <table id="dialog" xmlns:db="http://docbook.org/ns/docbook">
 	<name>dialog</name>
-	<version>10</version>
+	<version>11</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>Persistent dialog information for the dialog module. More
@@ -226,4 +226,33 @@
 		<description>Internal flags used by the module.</description>
 	</column>
 
+	<column>
+		<name>rt_on_answer</name>
+		<type>string</type>
+		<size>64</size>
+		<default><null/></default>
+		<null/>
+		<description>The name of the script route to be executed
+		upon call answering</description>
+	</column>
+
+	<column>
+		<name>rt_on_timeout</name>
+		<type>string</type>
+		<size>64</size>
+		<default><null/></default>
+		<null/>
+		<description>The name of the script route to be executed
+		upon call timeout (as duration)</description>
+	</column>
+
+	<column>
+		<name>rt_on_hangup</name>
+		<type>string</type>
+		<size>64</size>
+		<default><null/></default>
+		<null/>
+		<description>The name of the script route to be executed
+		upon call hangup</description>
+	</column>
 </table>

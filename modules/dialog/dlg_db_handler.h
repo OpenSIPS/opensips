@@ -33,9 +33,6 @@
 #define FROM_TAG_COL			"from_tag"
 #define TO_URI_COL				"to_uri"
 #define TO_TAG_COL				"to_tag"
-#define HASH_ID_COL				"hash_id"
-#define HASH_ENTRY_COL			"hash_entry"
-#define USER_FLAGS_COL			"user_flags"
 #define STATE_COL				"state"
 #define START_TIME_COL			"start_time"
 #define TIMEOUT_COL				"timeout"
@@ -56,9 +53,13 @@
 #define SFLAGS_COL				"script_flags"
 #define MFLAGS_COL				"module_flags"
 #define FLAGS_COL				"flags"
-#define DIALOG_TABLE_NAME		"dialog"
+#define RT_ON_ANSWER_COL		"rt_on_answer"
+#define RT_ON_TIMEOUT_COL		"rt_on_timeout"
+#define RT_ON_HANGUP_COL		"rt_on_hangup"
+#define DIALOG_TABLE_TOTAL_COL_NO	29
 
-#define DLG_TABLE_VERSION		10
+#define DIALOG_TABLE_NAME		"dialog"
+#define DLG_TABLE_VERSION		11
 
 /*every minute the dialogs' information will be refreshed*/
 #define DB_DEFAULT_UPDATE_PERIOD	60
@@ -66,8 +67,6 @@
 #define DB_MODE_REALTIME			1
 #define DB_MODE_DELAYED				2
 #define DB_MODE_SHUTDOWN			3
-
-#define DIALOG_TABLE_TOTAL_COL_NO	26
 
 extern str dlg_id_column;
 extern str call_id_column;
@@ -93,7 +92,10 @@ extern str vars_column;
 extern str sflags_column;
 extern str mflags_column;
 extern str flags_column;
-extern str th_column;
+extern str rt_on_answer_column;
+extern str rt_on_timeout_column;
+extern str rt_on_hangup_column;
+
 extern str dialog_table_name;
 extern int dlg_db_mode;
 extern int db_flush_vp;

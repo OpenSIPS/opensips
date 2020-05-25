@@ -63,6 +63,9 @@ str profiles_column			=	str_init(PROFILES_COL);
 str sflags_column			=	str_init(SFLAGS_COL);
 str mflags_column			=	str_init(MFLAGS_COL);
 str flags_column			=	str_init(FLAGS_COL);
+str rt_on_answer_column		=	str_init(RT_ON_ANSWER_COL);
+str rt_on_timeout_column	=	str_init(RT_ON_TIMEOUT_COL);
+str rt_on_hangup_column		=	str_init(RT_ON_HANGUP_COL);
 str dialog_table_name		=	str_init(DIALOG_TABLE_NAME);
 int dlg_db_mode				=	DB_MODE_NONE;
 
@@ -100,6 +103,17 @@ static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
 		}\
 	}while(0);
 
+#define SET_ROUTE_VALUE(_val, _idx) \
+	do {\
+		if (_idx) { \
+			VAL_STRING((_val)) = sroutes->request[_idx].name;\
+			VAL_NULL((_val)) = 0;\
+		} else {\
+			VAL_STRING((_val)) = NULL;\
+			VAL_NULL((_val)) = 1;\
+		}\
+	}while(0)
+
 #define GET_STR_VALUE(_res, _values, _index, _not_null, _unref)\
 	do{\
 		if (VAL_NULL((_values)+ (_index))) { \
@@ -115,6 +129,24 @@ static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
 			(_res).len = strlen(VAL_STR((_values)+ (_index)).s);\
 		} \
 	}while(0);
+
+#define GET_ROUTE_VALUE(_res, _values, _index) \
+	do { \
+		if (VAL_NULL((_values)+ (_index))) { \
+			(_res) = 0; \
+		} else { \
+			str __s;\
+			__s.s = VAL_STR((_values)+ (_index)).s;\
+			__s.len = strlen(VAL_STR((_values)+ (_index)).s);\
+			(_res) =  get_script_route_ID_by_name_str( &__s, \
+				sroutes->request, RT_NO);\
+			if ((_res)==-1) { \
+				LM_WARN("loaded <%.*s> route not found " \
+				"in the script\n", __s.len, __s.s); \
+				(_res) = 0; \
+			}\
+		}\
+	} while(0)
 
 
 static int load_dialog_info_from_db(int dlg_hash_size);
@@ -222,11 +254,12 @@ static int select_entire_dialog_table(db_res_t ** res, int *no_rows)
 			&from_tag_column,	&to_uri_column,		&to_tag_column,
 			&start_time_column,	&state_column,		&timeout_column,
 			&from_cseq_column,	&to_cseq_column,	&from_route_column,
-			&to_route_column, 	&from_contact_column, &to_contact_column,
+			&to_route_column,	&from_contact_column,&to_contact_column,
 			&from_sock_column,	&to_sock_column,	&vars_column,
 			&profiles_column,	&sflags_column,		&from_ping_cseq_column,
-			&to_ping_cseq_column,&flags_column, &mangled_fu_column,&mangled_tu_column,
-			&mflags_column};
+			&to_ping_cseq_column,&flags_column,		&mangled_fu_column,
+			&mangled_tu_column,	&mflags_column,		&rt_on_answer_column,
+			&rt_on_timeout_column,&rt_on_hangup_column};
 
 	if(use_dialog_table() != 0){
 		return -1;
@@ -240,7 +273,8 @@ static int select_entire_dialog_table(db_res_t ** res, int *no_rows)
 			return -1;
 		}
 		*no_rows = estimate_available_rows( 4+255+128+64+128+64+64+64+11+11+4+4
-				+512+512+128+128+64+64+4+4+4+4096+512+4+4+4 ,DIALOG_TABLE_TOTAL_COL_NO );
+				+512+512+128+128+64+64+4+4+4+4096+512+4+4+4+16+16+16,
+				DIALOG_TABLE_TOTAL_COL_NO );
 
 		if (*no_rows==0) *no_rows = 10;
 		if(dialog_dbf.fetch_result(dialog_db_handle,res,*no_rows)<0){
@@ -647,6 +681,11 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				dlg->mod_flags = VAL_INT(values+25);
 			}
 
+			/* the script routes */
+			GET_ROUTE_VALUE( dlg->rt_on_answer, values, 26);
+			GET_ROUTE_VALUE( dlg->rt_on_timeout, values, 27);
+			GET_ROUTE_VALUE( dlg->rt_on_hangup, values, 28);
+
 			/* dialog flags */
 			dlg->flags = VAL_INT(values+22);
 			if (dlg_db_mode==DB_MODE_SHUTDOWN)
@@ -970,17 +1009,18 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 	int callee_leg;
 
 	db_key_t insert_keys[DIALOG_TABLE_TOTAL_COL_NO] = {
-			&dlg_id_column,      &call_id_column,     &from_uri_column,
-			&from_tag_column,    &to_uri_column,      &to_tag_column,
+			&dlg_id_column,      &call_id_column,      &from_uri_column,
+			&from_tag_column,    &to_uri_column,       &to_tag_column,
 			&from_sock_column,   &to_sock_column,
-			&start_time_column,  &mangled_fu_column,  &mangled_tu_column,
+			&start_time_column,  &mangled_fu_column,   &mangled_tu_column,
 
 			&state_column,       &timeout_column,
-			&from_cseq_column,   &to_cseq_column,     &from_ping_cseq_column,
+			&from_cseq_column,   &to_cseq_column,      &from_ping_cseq_column,
 			&to_ping_cseq_column,&flags_column,
-			&vars_column,        &profiles_column,    &sflags_column,
+			&vars_column,        &profiles_column,     &sflags_column,
 			&mflags_column,      &from_contact_column,
-			&to_contact_column,    &from_route_column,&to_route_column};
+			&to_contact_column,  &from_route_column,   &to_route_column,
+			&rt_on_answer_column,&rt_on_timeout_column,&rt_on_hangup_column};
 
 	if(use_dialog_table()!=0)
 		return -1;
@@ -1001,6 +1041,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) =
 		VAL_TYPE(values+22) = VAL_TYPE(values+23) = VAL_TYPE(values+24) =
 		VAL_TYPE(values+25) = DB_STR;
+		VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
+		DB_STRING;
 		VAL_TYPE(values+18) = DB_BLOB;
 
 		/* lock the entry */
@@ -1043,6 +1085,10 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+23, cell->legs[callee_leg].contact);
 		SET_STR_VALUE(values+24, cell->legs[DLG_CALLER_LEG].route_set);
 		SET_STR_VALUE(values+25, cell->legs[callee_leg].route_set);
+
+		SET_ROUTE_VALUE(values+26, cell->rt_on_answer);
+		SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
+		SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
 		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 
@@ -1476,7 +1522,8 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 			&state_column,		&timeout_column,		&from_cseq_column,
 			&to_cseq_column,	&from_ping_cseq_column, &to_ping_cseq_column,
 			&vars_column,		&profiles_column,		&sflags_column,
-			&mflags_column,		&flags_column};
+			&mflags_column,		&flags_column,			&rt_on_answer_column,
+			&rt_on_timeout_column,&rt_on_hangup_timeout};
 
 	if (dialog_db_handle==0 || use_dialog_table()!=0)
 		return;
@@ -1496,6 +1543,9 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
 	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
 	VAL_TYPE(values+22) = DB_STR;
+
+	VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
+	DB_STRING;
 
 	VAL_TYPE(values+21) = DB_BLOB;
 
@@ -1574,6 +1624,10 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				set_final_update_cols(values+21, cell, on_shutdown);
 				SET_INT_VALUE(values+25, cell->flags &
 					~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_DB_DELETED));
+
+				SET_ROUTE_VALUE(values+26, cell->rt_on_answer)
+				SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
+				SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
 				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
@@ -1834,6 +1888,10 @@ static int sync_dlg_db_mem(void)
 				if (!VAL_NULL(values+25)) {
 					dlg->mod_flags = VAL_INT(values+25);
 				}
+
+				GET_ROUTE_VALUE( dlg->rt_on_answer, values, 26);
+				GET_ROUTE_VALUE( dlg->rt_on_timeout, values, 27);
+				GET_ROUTE_VALUE( dlg->rt_on_hangup, values, 28);
 
 				/* top hiding */
 				dlg->flags = VAL_INT(values+22);
@@ -2099,6 +2157,11 @@ static int sync_dlg_db_mem(void)
 					if (dlg_db_mode==DB_MODE_SHUTDOWN)
 						known_dlg->flags |= DLG_FLAG_NEW;
 
+					/* update the routes too */
+					GET_ROUTE_VALUE( dlg->rt_on_answer, values, 26);
+					GET_ROUTE_VALUE( dlg->rt_on_timeout, values, 27);
+					GET_ROUTE_VALUE( dlg->rt_on_hangup, values, 28);
+
 					/* update script variables
 					 * if already found, delete the old one
 					 * and replace with new one */
@@ -2169,7 +2232,8 @@ static int restore_dlg_db(void)
 			&state_column,		&timeout_column,		&from_cseq_column,
 			&to_cseq_column,	&from_ping_cseq_column, &to_ping_cseq_column,
 			&vars_column,		&profiles_column,		&sflags_column,
-			&mflags_column,		&flags_column};
+			&mflags_column,		&flags_column,			&rt_on_answer_column,
+			&rt_on_timeout_column,&rt_on_hangup_column};
 
 	VAL_TYPE(values) = DB_BIGINT;
 	VAL_TYPE(values+8) =
@@ -2183,6 +2247,9 @@ static int restore_dlg_db(void)
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
 	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
 	VAL_TYPE(values+22) = DB_STR;
+
+	VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
+	DB_STRING;
 
 	VAL_TYPE(values+21) = DB_BLOB;
 
@@ -2247,6 +2314,10 @@ static int restore_dlg_db(void)
 			set_final_update_cols(values+21, cell, 1);
 			SET_INT_VALUE(values+25, cell->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|
 													 DLG_FLAG_VP_CHANGED));
+
+			SET_ROUTE_VALUE(values+26, cell->rt_on_answer);
+			SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
+			SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
 			CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
 			if (con_set_inslist(&dialog_dbf,dialog_db_handle,
