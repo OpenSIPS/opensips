@@ -365,10 +365,11 @@ int notify_ebr_subscriptions( ebr_event *ev, evi_params_t *params)
 	for ( sub=ev->subs ; sub ; sub_prev=sub,
 								sub=sub_next?sub_next:(sub?sub->next:NULL) ) {
 
-		/* discard expired NOTIFY subscriptions */
-		if (sub->flags&EBR_SUBS_TYPE_NOTY && sub->expire<my_time) {
-			LM_DBG("subscription type [NOTIFY]from process %d(pid %d) on "
+		/* discard expired subscriptions */
+		if (sub->expire<my_time) {
+			LM_DBG("subscription type [%s] from process %d(pid %d) on "
 				"event <%.*s> expired at %d\n",
+				(sub->flags&EBR_SUBS_TYPE_WAIT)?"WAIT":"NOTIFY",
 				sub->proc_no, pt[sub->proc_no].pid,
 				sub->event->event_name.len, sub->event->event_name.s,
 				sub->expire );
