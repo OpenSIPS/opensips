@@ -81,6 +81,38 @@ void destroy_dlg_handlers(void)
 	shutdown_done = 1;
 }
 
+static int dlg_get_did_buf(struct dlg_cell *dlg, str *buf)
+{
+	char *p;
+
+	p = buf->s;
+	if (int2reverse_hex(&p, &buf->len, dlg->h_entry) == -1)
+		return -1;
+
+	if (!buf->len)
+		return 01;
+
+	*(p++) = DLG_SEPARATOR;
+	buf->len--;
+
+	if (int2reverse_hex(&p, &buf->len, dlg->h_id) == -1)
+		return -1;
+	buf->len = p - buf->s;
+	return 0;
+}
+
+str *dlg_get_did(struct dlg_cell *dlg)
+{
+	static str did_str;
+	static char did_buf[DLG_DID_SIZE];
+
+	did_str.s = did_buf;
+	did_str.len = DLG_DID_SIZE;
+
+	if (dlg_get_did_buf(dlg, &did_str) < 0)
+		return NULL;
+	return &did_str;
+}
 
 int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
 {
@@ -118,34 +150,25 @@ int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
 }
 
 
-static inline int add_dlg_rr_param(struct sip_msg *req, unsigned int entry,
-													unsigned int id)
+static inline int add_dlg_rr_param(struct sip_msg *req, struct dlg_cell *dlg)
 {
 	static char buf[RR_DLG_PARAM_SIZE];
-	str s;
-	int n;
 	char *p;
+	str id;
 
-	s.s = p = buf;
+	p = buf;
 
 	*(p++) = ';';
 	memcpy(p, rr_param.s, rr_param.len);
 	p += rr_param.len;
 	*(p++) = '=';
 
-	n = RR_DLG_PARAM_SIZE - (p-buf);
-	if (int2reverse_hex( &p, &n, entry)==-1)
+	id.s = p;
+	id.len = RR_DLG_PARAM_SIZE - (p-buf);
+	if (dlg_get_did_buf(dlg, &id) < 0)
 		return -1;
 
-	*(p++) = DLG_SEPARATOR;
-
-	n = RR_DLG_PARAM_SIZE - (p-buf);
-	if (int2reverse_hex( &p, &n, id)==-1)
-		return -1;
-
-	s.len = p-buf;
-
-	if (d_rrb.add_rr_param( req, &s)<0) {
+	if (d_rrb.add_rr_param( req, &id)<0) {
 		LM_ERR("failed to add rr param\n");
 		return -1;
 	}
@@ -1485,7 +1508,7 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 	link_dlg( dlg , extra_ref);
 
 	if ( seq_match_mode!=SEQ_MATCH_NO_ID && has_rr() &&
-		add_dlg_rr_param( req, dlg->h_entry, dlg->h_id)<0 ) {
+		add_dlg_rr_param( req, dlg)<0 ) {
 		LM_ERR("failed to add RR param\n");
 		goto error;
 	}
@@ -1672,8 +1695,10 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		} else {
 			LM_DBG("route param is '%.*s' (len=%d)\n",val.len,val.s,val.len);
 
-			if ( parse_dlg_rr_param( val.s, val.s+val.len, &h_entry, &h_id)<0 )
+			if ( parse_dlg_did(&val, &h_entry, &h_id)<0 ) {
+				LM_ERR("malformed route param [%.*s]\n", val.len, val.s);
 				return;
+			}
 
 			dlg = lookup_dlg( h_entry, h_id);
 			if (dlg==0) {

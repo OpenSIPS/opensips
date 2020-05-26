@@ -3255,6 +3255,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	struct dlg_cell * dlg;
 	str dtmf_tag = {0, 0}, timeout_tag = {0, 0};
 	str notification_socket = rtpp_notify_socket;
+	str *did;
 
 	memset(&opts, '\0', sizeof(opts));
 	memset(&rep_opts, '\0', sizeof(rep_opts));
@@ -3512,7 +3513,16 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				goto error;
 			}
 			/* construct the notify tag from dialog ids */
-			timeout_tag.len= snprintf(buf, 32, "T%llu", dlg_get_did(dlg));
+			did = dlg_api.get_dlg_did(dlg);
+			if (!did) {
+				LM_ERR("could not get the dialog did!\n");
+				goto error;
+			}
+			if (did->len > 30) {
+				LM_ERR("did too large to fit!\n");
+				goto error;
+			}
+			timeout_tag.len= snprintf(buf, 32, "T%.*s", did->len, did->s);
 			timeout_tag.s = buf;
 			LM_DBG("timeout_tag= %s\n", timeout_tag.s);
 		} else if (enable_dtmf_catch) {
@@ -3527,7 +3537,16 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	if (enable_dtmf_catch) {
 		if (dlg_api.get_dlg && (dlg = dlg_api.get_dlg())) {
 			LM_DBG("using DTMF dialog %p identifier\n", dlg);
-			dtmf_tag.len = snprintf(dbuf, 128, "d%llu", dlg_get_did(dlg));
+			did = dlg_api.get_dlg_did(dlg);
+			if (!did) {
+				LM_ERR("could not get the dialog did!\n");
+				goto error;
+			}
+			if (did->len > 30) {
+				LM_ERR("did too large to fit!\n");
+				goto error;
+			}
+			dtmf_tag.len = snprintf(dbuf, 128, "d%.*s", did->len, did->s);
 		} else {
 			LM_DBG("using DTMF callid %.*s identifier\n", args->callid.len, args->callid.s);
 			dtmf_tag.len = snprintf(dbuf, 128, "c%.*s", args->callid.len, args->callid.s);

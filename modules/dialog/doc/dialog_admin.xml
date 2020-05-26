@@ -2644,7 +2644,7 @@ route[dlg_hangup] {
 		<itemizedlist>
 			<listitem><para>
 				<emphasis>dialog_id</emphasis> - this is an identifier
-				of the dialog - it can be either (1) the numerical unique ID 
+				of the dialog - it can be either (1) the unique ID 
 				of the dialog (as provided by dlg_list), either (2) the 
 				SIP Call-ID of the dialog.
 			</para></listitem>
@@ -2662,7 +2662,7 @@ route[dlg_hangup] {
 		</para>
 		<programlisting  format="linespecific">
 		# terminate the dialog via the internal Dialog-ID
-		opensips-cli -x mi dlg_end_dlg 1391569858236
+		opensips-cli -x mi dlg_end_dlg 6ae.4b38d013
 		# terminate the dialog via its SIP Call-ID
 		opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY
 		</programlisting>
@@ -3107,8 +3107,8 @@ route[dlg_hangup] {
 			<title><varname>$DLG_did</varname></title>
 			<para>
 			Returns the id of the dialog corresponding to
-			the processed sequential request. The output format is
-			entry ':' id (as returned by the dlg_list MI function). This PV will be
+			the processed sequential request. The output format is a string
+			identical to the one returned by the dlg_list MI function. This PV will be
 			available only for sequential requests, after doing loose_route().
 			</para>
 			<para>

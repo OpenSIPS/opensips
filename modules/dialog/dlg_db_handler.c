@@ -567,7 +567,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				continue;
 			}
 
-			dlg_parse_did(VAL_BIGINT(values), hash_entry, hash_id);
+			dlg_parse_db_id(VAL_BIGINT(values), hash_entry, hash_id);
 
 			if (VAL_NULL(values+6) || VAL_NULL(values+7)) {
 				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
@@ -861,7 +861,7 @@ int dlg_timer_remove_from_db(struct dlg_cell *cell)
 	}
 
 	/* store info in del holders */
-	VAL_BIGINT(dlg_del_values+dlg_del_curr_no) = dlg_get_did(cell);
+	VAL_BIGINT(dlg_del_values+dlg_del_curr_no) = dlg_get_db_id(cell);
 	dlg_del_holder[dlg_del_curr_no]=cell;
 	/* mark is as deleted so we don't care about it later
 	 * in the timer */
@@ -934,7 +934,7 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 	VAL_TYPE(values) = DB_BIGINT;
 	VAL_NULL(values) = 0;
 
-	VAL_BIGINT(values) = dlg_get_did(cell);
+	VAL_BIGINT(values) = dlg_get_db_id(cell);
 
 	CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
 
@@ -974,7 +974,7 @@ int update_dialog_timeout_info(struct dlg_cell * cell)
 	entry = (d_table->entries)[cell->h_entry];
 	dlg_lock( d_table, &entry);
 
-	SET_BIGINT_VALUE(values, dlg_get_did(cell));
+	SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 	SET_INT_VALUE(values+1, (unsigned int)( (unsigned int)time(0) +
 			 cell->tl.timeout - get_ticks()) );
 
@@ -1049,7 +1049,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		entry = (d_table->entries)[cell->h_entry];
 		dlg_lock( d_table, &entry);
 
-		SET_BIGINT_VALUE(values, dlg_get_did(cell));
+		SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 		/* to be later removed by timer */SET_STR_VALUE(values+1, cell->callid);
 
 		SET_STR_VALUE(values+2, cell->from_uri);
@@ -1118,7 +1118,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		entry = (d_table->entries)[cell->h_entry];
 		dlg_lock( d_table, &entry);
 
-		SET_BIGINT_VALUE(values, dlg_get_did(cell));
+		SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 		SET_INT_VALUE(values+11, cell->state);
 		SET_INT_VALUE(values+12, (unsigned int)( (unsigned int)time(0) +
 				 cell->tl.timeout - get_ticks()) );
@@ -1156,7 +1156,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		entry = (d_table->entries)[cell->h_entry];
 		dlg_lock( d_table, &entry);
 
-		SET_BIGINT_VALUE(values, dlg_get_did(cell));
+		SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 
 		set_final_update_cols(values+18, cell, 0);
 
@@ -1581,7 +1581,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				}
 				LM_DBG("inserting new dialog %p\n",cell);
 
-				SET_BIGINT_VALUE(values, dlg_get_did(cell));
+				SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 				SET_STR_VALUE(values+1, cell->callid);
 				SET_STR_VALUE(values+2, cell->from_uri);
 
@@ -1662,7 +1662,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 			} else if ( (cell->flags & DLG_FLAG_CHANGED)!=0 || on_shutdown ){
 				LM_DBG("updating existing dialog %p\n",cell);
 
-				SET_BIGINT_VALUE(values, dlg_get_did(cell));
+				SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 
 				SET_STR_VALUE(values+13, cell->legs[DLG_CALLER_LEG].contact);
 				SET_STR_VALUE(values+14,
@@ -1695,7 +1695,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				cell->flags &= ~(DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED);
 			} else if (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED)) {
 
-				SET_BIGINT_VALUE(values, dlg_get_did(cell));
+				SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 
 				set_final_update_cols(values+21, cell, on_shutdown);
 
@@ -1773,7 +1773,7 @@ static int sync_dlg_db_mem(void)
 				continue;
 			}
 
-			dlg_parse_did(VAL_BIGINT(values), hash_entry, hash_id);
+			dlg_parse_db_id(VAL_BIGINT(values), hash_entry, hash_id);
 
 			if (VAL_NULL(values+6) || VAL_NULL(values+7)) {
 				LM_ERR("columns %.*s or/and %.*s cannot be null -> skipping\n",
@@ -2271,7 +2271,7 @@ static int restore_dlg_db(void)
 
 			callee_leg = callee_idx(cell);
 
-			SET_BIGINT_VALUE(values, dlg_get_did(cell));
+			SET_BIGINT_VALUE(values, dlg_get_db_id(cell));
 			SET_STR_VALUE(values+1, cell->callid);
 			SET_STR_VALUE(values+2, cell->from_uri);
 

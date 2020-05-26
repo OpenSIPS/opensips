@@ -36,6 +36,7 @@
 #include "dlg_profile.h"
 #include "dlg_replication.h"
 #include "dlg_req_within.h"
+#include "dlg_handlers.h"
 #include "dlg_db_handler.h"
 #include "../../evi/evi_params.h"
 #include "../../evi/evi_modules.h"
@@ -891,11 +892,14 @@ struct dlg_cell* get_dlg_by_callid( str *callid, int active_only)
 }
 
 
-struct dlg_cell* get_dlg_by_did(unsigned int h_entry, unsigned int h_id,
-		int active_only)
+struct dlg_cell* get_dlg_by_did(str *did, int active_only)
 {
 	struct dlg_cell *dlg;
 	struct dlg_entry *d_entry;
+	unsigned h_entry, h_id;
+
+	if (parse_dlg_did(did, &h_entry, &h_id) < 0)
+		return NULL;
 
 	if (h_entry>=d_table->size)
 		return NULL;
@@ -916,6 +920,26 @@ struct dlg_cell* get_dlg_by_did(unsigned int h_entry, unsigned int h_id,
 
 	dlg_unlock( d_table, d_entry);
 	return NULL;
+}
+
+struct dlg_cell *get_dlg_by_dialog_id(str *dialog_id)
+{
+	struct dlg_cell *dlg;
+	unsigned int h_entry, h_id;
+
+	if (parse_dlg_did(dialog_id, &h_entry, &h_id) == 0) {
+		/* we might have a dialog did */
+		LM_DBG("ID: %*s (h_entry %u h_id %u)\n",
+				dialog_id->len, dialog_id->s, h_entry, h_id);
+		dlg = lookup_dlg(h_entry, h_id);
+	}
+	if (!dlg) {
+		/* the ID is not a number, so let's consider
+		 * the value a SIP call-id */
+		LM_DBG("Call-ID: <%.*s>\n", dialog_id->len, dialog_id->s);
+		dlg = get_dlg_by_callid(dialog_id, 1);
+	}
+	return dlg;
 }
 
 
@@ -1298,10 +1322,13 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 	int date_buf_len;
 	mi_item_t *callees_arr, *values_arr, *profiles_arr;
 	mi_item_t *context_obj, *callee_item, *values_item, *profiles_item;
+	str *did = dlg_get_did(dlg);
 
-	if (add_mi_string_fmt(dialog_obj, MI_SSTR("ID"), "%llu",
-		(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id) < 0)
+	if (add_mi_string(dialog_obj, MI_SSTR("ID"), did->s, did->len) < 0)
 		goto error;
+	if (add_mi_string_fmt(dialog_obj, MI_SSTR("db_id"), "%llu",
+			(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id) < 0)
+
 	if (add_mi_number(dialog_obj, MI_SSTR("state"), dlg->state) < 0)
 		goto error;
 	if (add_mi_number(dialog_obj, MI_SSTR("user_flags"), dlg->user_flags) < 0)
@@ -1704,10 +1731,7 @@ mi_response_t *mi_print_dlgs_cnt_ctx(const mi_params_t *params,
 mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	unsigned int h_entry, h_id;
-	unsigned long long d_id;
 	str dlg_var_name,dlg_var_value,dialog_id;
-	char bkp, *end;
 	struct dlg_cell * dlg = NULL;
 	int shtag_state = 1, db_update = 0;
 	mi_item_t *did_param_arr;
@@ -1715,8 +1739,6 @@ mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 
 	if ( d_table == NULL)
 		goto not_found;
-
-	h_entry = h_id = 0;
 
 	if (get_mi_string_param(params, "dlg_val_name",
 		&dlg_var_name.s, &dlg_var_name.len) < 0)
@@ -1737,30 +1759,8 @@ mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 		/* Get the dialog based of the dialog_id. This may be a
 		 * numerical DID or a string SIP Call-ID */
 
-		/* make value null terminated (in an ugly way) */
-		bkp = dialog_id.s[dialog_id.len];
-		dialog_id.s[dialog_id.len] = 0;
-
 		/* convert to unsigned long long */
-		d_id = strtoull(dialog_id.s, &end, 10);
-		dialog_id.s[dialog_id.len] = bkp;
-		if (end-dialog_id.s==dialog_id.len) {
-			/* the ID is numeric, so let's consider it DID */
-			dlg_parse_did(d_id, h_entry, h_id);
-			LM_DBG("ID: %llu (h_entry %u h_id %u)\n", d_id, h_entry, h_id);
-			dlg = lookup_dlg(h_entry, h_id);
-			if (dlg == NULL) {
-				LM_DBG("Faiure to match the ID as DLG_ID \n");
-				goto callid_lookup;
-			}
-		} else {
-callid_lookup:
-			/* the ID is not a number, so let's consider
-			 * the value a SIP call-id */
-			LM_DBG("Call-ID: <%.*s>\n", dialog_id.len, dialog_id.s);
-			dlg = get_dlg_by_callid( &dialog_id, 1 );
-		}
-
+		dlg = get_dlg_by_dialog_id(&dialog_id);
 		if (dlg == NULL) {
 			/* XXX - not_found or loop_end here ? */
 			continue;

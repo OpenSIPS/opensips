@@ -57,24 +57,6 @@ struct pollfd* pfds;
 
 #define IS_DIGIT(_c) ((_c) >= '0' && (_c) <= '9')
 
-static int parse_dlg_did(str *did, unsigned int *h_entry, unsigned int *h_id)
-{
-	unsigned long long ldid;
-	char *end, bk;
-
-	bk = did->s[did->len];
-	did->s[did->len] = 0;
-
-	ldid = strtoull(did->s, &end, 10);
-	did->s[did->len] = bk;
-	if (end - did->s != did->len) {
-		LM_ERR("could not parse did %.*s!\n", did->len, did->s);
-		return -1;
-	}
-	dlg_parse_did(ldid, *h_entry, *h_id);
-	return 0;
-}
-
 static int notification_handler(str *command)
 {
 	char cmd, *p;

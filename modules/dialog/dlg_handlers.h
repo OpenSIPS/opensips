@@ -57,7 +57,8 @@ static inline int dlg_match_mode_str_to_int(const str *in)
 	return SEQ_MATCH_DEFAULT;
 }
 
-#define RR_DLG_PARAM_SIZE  (2*2*sizeof(int)+3+MAX_DLG_RR_PARAM_NAME)
+#define DLG_DID_SIZE       (2*2*sizeof(int)+1)
+#define RR_DLG_PARAM_SIZE  (DLG_DID_SIZE+2+MAX_DLG_RR_PARAM_NAME)
 #define DLG_SEPARATOR      '.'
 
 struct _dlg_cseq{
@@ -121,6 +122,8 @@ void dlg_onroute(struct sip_msg* req, str *rr_param, void *param);
 
 void dlg_ontimeout( struct dlg_tl *tl);
 
+str *dlg_get_did(struct dlg_cell *dlg);
+
 int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg);
 
 int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg);
@@ -137,25 +140,23 @@ void unreference_dialog(void *dialog);
 int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx);
 
 
-
-static inline int parse_dlg_rr_param(char *p, char *end,
-								unsigned int *h_entry, unsigned int *h_id)
+static inline int parse_dlg_did(str *did, unsigned int *h_entry, unsigned int *h_id)
 {
-	char *s;
+	char *p, *end = did->s + did->len;
 
-	for ( s=p ; p<end && *p!=DLG_SEPARATOR ; p++ );
+	for ( p=did->s ; p<end && *p!=DLG_SEPARATOR ; p++ );
 	if (*p!=DLG_SEPARATOR) {
-		LM_ERR("malformed rr param '%.*s'\n", (int)(long)(end-s), s);
+		LM_DBG("malformed rr param '%.*s'\n", (int)(long)(end-did->s), did->s);
 		return -1;
 	}
 
-	if ( reverse_hex2int( s, p-s, h_entry)<0 ) {
-		LM_ERR("invalid hash entry '%.*s'\n", (int)(long)(p-s), s);
+	if ( reverse_hex2int( did->s, p-did->s, h_entry)<0 ) {
+		LM_DBG("invalid hash entry '%.*s'\n", (int)(long)(p-did->s), did->s);
 		return -1;
 	}
 
 	if ( reverse_hex2int( p+1, end-(p+1), h_id)<0 ) {
-		LM_ERR("invalid hash id '%.*s'\n", (int)(long)(end-(p+1)), p+1 );
+		LM_DBG("invalid hash id '%.*s'\n", (int)(long)(end-(p+1)), p+1 );
 		return -1;
 	}
 

@@ -616,6 +616,8 @@ int load_dlg( struct dlg_binds *dlgb )
 	dlgb->dlg_unref = unref_dlg_destroy_safe;
 
 	dlgb->get_direction = get_dlg_direction;
+	dlgb->get_dlg_did = dlg_get_did;
+	dlgb->get_dlg_by_did = get_dlg_by_did;
 	dlgb->get_dlg_by_callid = get_dlg_by_callid;
 	dlgb->send_indialog_request = send_indialog_request;
 
@@ -1616,13 +1618,11 @@ int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
-/* the maximum value we can have is 2 ints + ':' */
-static char buf_get_did[2 * INT2STR_MAX_LEN];
 int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	struct dlg_cell *dlg;
-	str aux;
+	str *did;
 
 	if(res==NULL)
 		return -1;
@@ -1630,27 +1630,10 @@ int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param,
 	if ( (dlg=get_current_dialog())==NULL )
 		return pv_get_null( msg, param, res);
 
-	res->rs.s = buf_get_did;
-
-	aux.s = int2str( (unsigned long)dlg->h_entry, &aux.len);
-	if (!aux.s || !aux.len) {
-		LM_ERR("invalid hash entry\n");
-		return -1;
-	}
-
-	memcpy(buf_get_did, aux.s, aux.len);
-	buf_get_did[aux.len] = ':';
-	res->rs.len = aux.len + 1;
-
-	aux.s = int2str( (unsigned long)dlg->h_id, &aux.len);
-	if (!aux.s || !aux.len) {
-		LM_ERR("invalid hash id\n");
-		return -1;
-	}
-
-	memcpy(buf_get_did + res->rs.len, aux.s, aux.len);
-	res->rs.len += aux.len;
-
+	did = dlg_get_did(dlg);
+	if (!dlg)
+		return pv_get_null( msg, param, res);
+	res->rs = *did;
 	res->flags = PV_VAL_STR;
 
 	return 0;
@@ -2232,27 +2215,8 @@ static int fixup_lmode(void **param)
 }
 
 
-static inline long long parse_dlg_id(str *id)
-{
-	long long r;
-	char *e;
-	char buf[21]; /* 20 + null termination */
-	if (id->len > 20 || id->len < 0)
-		return 0;
-	memcpy(buf, id->s, id->len);
-	buf[id->len] = 0;
-	r = strtoll(buf, &e, 10);
-	if (r == LLONG_MIN || r == LLONG_MAX)
-		return 0;
-	if (*e != '\0')
-		return 0;
-	return r;
-}
-
-
 static int load_dlg_ctx(struct sip_msg *msg, str *callid, void *lmode)
 {
-	long long dlg_id;
 	struct dlg_cell *dlg;
 	int mode;
 
@@ -2274,9 +2238,7 @@ static int load_dlg_ctx(struct sip_msg *msg, str *callid, void *lmode)
 
 		case DLG_CTX_LOAD_BY_DID:
 			/* did */
-			dlg_id = parse_dlg_id( callid );
-			dlg = get_dlg_by_did( (unsigned int )(dlg_id >> 32),
-				(unsigned int)(dlg_id & 0x00000000ffffffff), 0);
+			dlg = get_dlg_by_did( callid, 0);
 			break;
 	}
 

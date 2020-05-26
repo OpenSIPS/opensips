@@ -397,8 +397,9 @@ struct dlg_cell* get_dlg_by_val(str *attr, str *val);
 
 struct dlg_cell* get_dlg_by_callid( str *callid, int active_only);
 
-struct dlg_cell* get_dlg_by_did(unsigned int h_entry, unsigned int h_id,
-		int active_only);
+struct dlg_cell* get_dlg_by_did(str *did, int active_only);
+
+struct dlg_cell *get_dlg_by_dialog_id(str *dialog_id);
 
 int get_dlg_direction(void);
 
@@ -642,13 +643,14 @@ static inline void init_dlg_term_reason(struct dlg_cell *dlg,char *reason,int re
 	}
 }
 
+
 int state_changed_event_init(void);
 void state_changed_event_destroy(void);
 
-#define dlg_get_did(_dlg) \
+#define dlg_get_db_id(_dlg) \
 	(((unsigned long long)(_dlg)->h_entry << 32) | ((_dlg)->h_id))
 
-#define dlg_parse_did(_did, _h_entry, _h_id) \
+#define dlg_parse_db_id(_did, _h_entry, _h_id) \
 	do { \
 		(_h_entry) = (unsigned int)((_did) >> 32); \
 		(_h_id) = (unsigned int)((_did) & 0x00000000ffffffff); \

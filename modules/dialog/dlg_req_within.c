@@ -512,18 +512,12 @@ end:
 /*parameters from MI: dialog ID of the requested dialog*/
 mi_response_t *mi_terminate_dlg(const mi_params_t *params, str *extra_hdrs)
 {
-	unsigned int h_entry, h_id;
-	unsigned long long d_id;
 	struct dlg_cell * dlg = NULL;
 	str dialog_id;
-	char *end;
-	char bkp;
 	int shtag_state = 1;
 
 	if( d_table ==NULL)
 		return init_mi_error(404, MI_SSTR(MI_DIALOG_NOT_FOUND));
-
-	h_entry = h_id = 0;
 
 	if (get_mi_string_param(params, "dialog_id", &dialog_id.s, &dialog_id.len) < 0)
 		return init_mi_param_error();
@@ -531,24 +525,7 @@ mi_response_t *mi_terminate_dlg(const mi_params_t *params, str *extra_hdrs)
 	/* Get the dialog based of the dialog_id. This may be a
 	 * numerical DID or a string SIP Call-ID */
 
-	/* make value null terminated (in an ugly way) */
-	bkp = dialog_id.s[dialog_id.len];
-	dialog_id.s[dialog_id.len] = 0;
-	/* convert to unsigned long long */
-	d_id = strtoull(dialog_id.s, &end, 10);
-	dialog_id.s[dialog_id.len] = bkp;
-	if (end-dialog_id.s==dialog_id.len) {
-		/* the ID is numeric, so let's consider it DID */
-		dlg_parse_did(d_id, h_entry, h_id);
-		LM_DBG("ID: %llu (h_entry %u h_id %u)\n", d_id, h_entry, h_id);
-		dlg = lookup_dlg(h_entry, h_id);
-	} else {
-		/* the ID is not a number, so let's consider
-		 * the value a SIP call-id */
-		LM_DBG("Call-ID: <%.*s>\n", dialog_id.len, dialog_id.s);
-		dlg = get_dlg_by_callid( &dialog_id, 1 );
-	}
-
+	dlg = get_dlg_by_dialog_id(&dialog_id);
 	if (dlg) {
 		if (dialog_repl_cluster) {
 			shtag_state = get_shtag_state(dlg);

@@ -946,7 +946,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				ref_dlg_unsafe(dlg, 1);
 				dlg_unlock(d_table, &d_table->entries[i]);
 
-				LM_DBG("Drop DB loaded dialog ID=%llu\n", dlg_get_did(dlg));
+				LM_DBG("Drop DB loaded dialog ID=%llu\n", dlg_get_db_id(dlg));
 
 				/* simulate BYE received from caller */
 				next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_UPSTREAM, &old_state,
