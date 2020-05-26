@@ -924,7 +924,7 @@ struct dlg_cell* get_dlg_by_did(str *did, int active_only)
 
 struct dlg_cell *get_dlg_by_dialog_id(str *dialog_id)
 {
-	struct dlg_cell *dlg;
+	struct dlg_cell *dlg = NULL;
 	unsigned int h_entry, h_id;
 
 	if (parse_dlg_did(dialog_id, &h_entry, &h_id) == 0) {
