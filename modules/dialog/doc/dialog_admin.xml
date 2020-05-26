@@ -2470,6 +2470,63 @@ route[dlg_hangup] {
 		</example>
 	</section>
 
+	<section id="func_dlg_send_sequential" xreflabel="dlg_send_sequential()">
+		<title>
+			<function moreinfo="none">dlg_send_sequential(method, leg, [, body] [, content-type] [, headers])</function>
+		</title>
+		<para>
+		Used to send an in-dialog request towards one if the dialog's legs.
+		The function assumes that is runs inside a dialog context - if you
+		are running it from a different context (such as an event_route),
+		make sure you first load the dialog context using the
+			<xref linkend="func_load_dialog_ctx"/> function.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para><emphasis>method (string)</emphasis> -
+				the method of the request sent.
+			</para></listitem>
+			<listitem><para><emphasis>leg (string)</emphasis> - the leg
+				where the request is sent. Must be either
+				<emphasis>caller</emphasis> or <emphasis>callee</emphasis>.
+			</para></listitem>
+			<listitem><para><emphasis>body (string, optional)</emphasis> - an
+				optional body sent in the request. If missing, no body is sent.
+			</para></listitem>
+			<listitem><para><emphasis>content-type (string, optional)</emphasis> -
+				the content type of the body sent. Make sure you specify this
+				every time you send a request with a body, otherwise there are high
+				changes that your UAC will reject the request.
+			</para></listitem>
+			<listitem><para><emphasis>headers (string, optional)</emphasis> -
+				additional headers attached to the request sent.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from ANY route.
+		</para>
+		<example>
+		<title><function>dlg_send_sequential</function> usage to convert DTMF codes</title>
+		<programlisting format="linespecific">
+...
+event_route[E_RTPPROXY_DTMF] {
+    if (load_dialog_ctx("$param(id)", "did")) {
+        if ($param(stream) == 0) {
+            $var(direction) = "callee";
+        } else {
+            $var(direction) = "caller";
+        }
+        dlg_send_sequential($var(direction), "INFO",
+                "Signal=$param(digit)\nDuration=160",
+                "application/dtmf-relay");
+        unload_dialog_ctx();
+    }
+}
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 

@@ -131,6 +131,7 @@ static int fixup_dlg_flag(void** param);
 static int fixup_check_avp(void** param);
 static int fixup_check_var(void** param);
 static int fixup_lmode(void **param);
+static int fixup_leg(void **param);
 static int w_set_dlg_flag(struct sip_msg *msg, void *mask);
 static int w_reset_dlg_flag(struct sip_msg *msg, void *mask);
 static int w_is_dlg_flag_set(struct sip_msg *msg, void *mask);
@@ -153,6 +154,8 @@ static int fixup_route(void** param);
 static int dlg_on_timeout(struct sip_msg* msg, void *route_id);
 static int dlg_on_answer(struct sip_msg* msg, void *route_id);
 static int dlg_on_hangup(struct sip_msg* msg, void *route_id);
+static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
+		str *body, str *ct, str *headers);
 
 
 /* item/pseudo-variables functions */
@@ -263,6 +266,13 @@ static cmd_export_t cmds[]={
 	{"dlg_on_hangup", (cmd_function)dlg_on_hangup, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+	{"dlg_send_sequential", (cmd_function)dlg_send_sequential, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, fixup_leg, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		ALL_ROUTES},
 	{"load_dlg", (cmd_function)load_dlg, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
@@ -2214,6 +2224,24 @@ static int fixup_lmode(void **param)
 	return 0;
 }
 
+static int fixup_leg(void **param)
+{
+	str *s = (str*)*param;
+	if (s->len == 6) {
+		if (strncasecmp(s->s, "caller", 6) == 0) {
+			*param = (void*)(unsigned long)DLG_CALLER_LEG;
+			return 0;
+		} else if (strncasecmp(s->s, "callee", 6) == 0) {
+			*param = (void*)(unsigned long)DLG_FIRST_CALLEE_LEG;
+			return 0;
+		}
+	}
+
+	LM_ERR("unsupported dialog indetifier <%.*s>\n",
+		s->len, s->s);
+	return -1;
+}
+
 
 static int load_dlg_ctx(struct sip_msg *msg, str *callid, void *lmode)
 {
@@ -2358,3 +2386,24 @@ static int dlg_on_hangup(struct sip_msg* msg, void *route_id)
 }
 
 
+static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
+		str *body, str *ct, str *headers)
+{
+	struct dlg_cell *dlg = get_current_dialog();
+	str invite = str_init("INVITE");
+
+	if (!dlg) {
+		LM_WARN("no current dialog found. Make sure you call this "
+				"function inside a dialog  context\n");
+		return -1;
+	}
+	if (!method)
+		method = &invite;
+
+	if (body && !ct)
+		LM_WARN("body without content type! This request might be rejected by uac!\n");
+
+	return send_indialog_request(dlg, method, (leg == DLG_CALLER_LEG?leg:callee_idx(dlg)),
+			body, ct, headers, NULL, NULL) == 0?1:-1;
+
+}
