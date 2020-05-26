@@ -15,14 +15,14 @@
 
 ####### Global Parameters #########
 
+/* uncomment the following lines to enable debugging */
+#debug_mode=yes
+
 log_level=3
 log_stderror=no
 log_facility=LOG_LOCAL0
 
 udp_workers=4
-
-/* uncomment the following lines to enable debugging */
-#debug_mode=yes
 
 /* uncomment the next line to enable the auto temporary blacklisting of 
    not available destinations (default disabled) */
@@ -89,7 +89,7 @@ loadmodule "acc.so"
 modparam("acc", "early_media", 0)
 modparam("acc", "report_cancels", 0)
 /* by default we do not adjust the direct of the sequential requests.
-   if you enable this parameter, be sure the enable "append_fromtag"
+   if you enable this parameter, be sure to enable "append_fromtag"
    in "rr" module */
 modparam("acc", "detect_direction", 0)
 ifelse(USE_DBACC,`yes',`modparam("acc", "db_url",
@@ -137,13 +137,14 @@ loadmodule "proto_udp.so"
 ifelse(ENABLE_TCP, `yes', `loadmodule "proto_tcp.so"' , `')
 ifelse(ENABLE_TLS, `yes', `loadmodule "proto_tls.so"
 loadmodule "tls_mgm.so"
-modparam("tls_mgm","verify_cert", "1")
-modparam("tls_mgm","require_cert", "0")
-modparam("tls_mgm","tls_method", "TLSv1")
-modparam("tls_mgm","certificate", "/usr/local/etc/opensips/tls/user/user-cert.pem")
-modparam("tls_mgm","private_key", "/usr/local/etc/opensips/tls/user/user-privkey.pem")
-modparam("tls_mgm","ca_list", "/usr/local/etc/opensips/tls/user/user-calist.pem")
-
+modparam("tls_mgm","server_domain", "default")
+modparam("tls_mgm","match_ip_address", "[default]*")
+modparam("tls_mgm","verify_cert", "[default]1")
+modparam("tls_mgm","require_cert", "[default]0")
+modparam("tls_mgm","tls_method", "[default]SSLv1")
+modparam("tls_mgm","certificate", "[default]/etc/opensips/tls/user/user-cert.pem")
+modparam("tls_mgm","private_key", "[default]/etc/opensips/tls/user/user-privkey.pem")
+modparam("tls_mgm","ca_list", "[default]/etc/opensips/tls/user/user-calist.pem")
 ' , `')
 
 ####### Routing Logic ########
