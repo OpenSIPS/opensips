@@ -440,7 +440,7 @@ static int call_attended_transfer(struct dlg_cell *dlg, struct sip_msg *msg)
 		return 1;
 
 	/* we've got the callid that is being replaced - fetch it */
-	rpl_dlg = call_dlg_api.get_dlg_by_callid(&rpl.callid_val, 0);
+	rpl_dlg = call_dlg_api.get_dlg_by_callid(&rpl.callid_val, 1);
 	if (!rpl_dlg) {
 		/* TODO - check to see if we know any dialog that is being transfered
 		 * for this callid - should search by dialog value */
@@ -474,7 +474,7 @@ static int call_attended_transfer(struct dlg_cell *dlg, struct sip_msg *msg)
 	if (call_dlg_api.fetch_dlg_value(rpl_dlg, &call_transfer_callid_param,
 			&init_callid, 0) >= 0) {
 		/* search the initial dialog */
-		init_dlg = call_dlg_api.get_dlg_by_callid(&init_callid, 0);
+		init_dlg = call_dlg_api.get_dlg_by_callid(&init_callid, 1);
 		if (init_dlg) {
 			/* indicate that the current dialog is being replaced */
 			call_transfer_raise(init_dlg, &dlg->callid, ruri, &state, &empty_str);
@@ -759,10 +759,6 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 	if (!dlg)
 		return init_mi_error(404, MI_SSTR("Dialog not found"));
 
-	if (dlg->state >= DLG_STATE_DELETED) {
-		ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
-		goto unref;
-	}
 	/* check to see if the call is already in a transfer process */
 	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &tleg, 0) >= 0 &&
 			tleg.len >= 0) {
@@ -869,12 +865,6 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 			if (!dlgB)
 				return init_mi_error(404, MI_SSTR("Transfer dialog not found"));
 
-			if (dlgB->state >= DLG_STATE_DELETED) {
-				ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
-				call_dlg_api.dlg_unref(dlgB, 1);
-				goto unrefB;
-			}
-
 			if (callerB) {
 				fromtag = dlgB->legs[callee_idx(dlgB)].tag;
 				totag = dlgB->legs[DLG_CALLER_LEG].tag;
@@ -896,10 +886,6 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 		goto unrefB;
 	}
 
-	if (dlgA->state >= DLG_STATE_DELETED) {
-		ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
-		goto unrefA;
-	}
 	/* check to see if the call is already in a transfer process */
 	if (call_dlg_api.fetch_dlg_value(dlgA, &call_transfer_param, &tleg, 0) >= 0 &&
 			tleg.len >= 0) {
@@ -1122,10 +1108,6 @@ static mi_response_t *mi_call_hold(const mi_params_t *params,
 	if (!dlg)
 		return init_mi_error(404, MI_SSTR("Dialog not found"));
 
-	if (dlg->state >= DLG_STATE_DELETED) {
-		ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
-		goto unref;
-	}
 	if (dlg->state < DLG_STATE_CONFIRMED) {
 		ret = init_mi_error(410, MI_SSTR("Dialog not ready"));
 		goto unref;
@@ -1164,10 +1146,6 @@ static mi_response_t *mi_call_unhold(const mi_params_t *params,
 	if (!dlg)
 		return init_mi_error(404, MI_SSTR("Dialog not found"));
 
-	if (dlg->state >= DLG_STATE_DELETED) {
-		ret = init_mi_error(410, MI_SSTR("Dialog already closed"));
-		goto unref;
-	}
 	if (dlg->state < DLG_STATE_CONFIRMED) {
 		ret = init_mi_error(410, MI_SSTR("Dialog not ready"));
 		goto unref;
