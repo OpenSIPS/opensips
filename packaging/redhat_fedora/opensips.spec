@@ -13,7 +13,11 @@
 %global _with_cachedb_redis 1
 %endif
 
-%if 0%{?rhel} > 6 || 0%{?fedora} > 21
+%if 0%{?rhel} > 6 && 0%{?rhel} < 8
+%global _with_cachedb_mongodb 1
+%endif
+
+%if 0%{?fedora} > 21
 %global _with_cachedb_mongodb 1
 %endif
 
@@ -454,17 +458,9 @@ the OSP standard defined by ETSI (TS 101 321 V4.1.1).
 %package  perl-modules
 Summary:  Perl extensions and database driver for OpenSIPS
 Group:    System Environment/Daemons
-# require perl-devel for >F7 and perl for <=F6
-BuildRequires:  perl(ExtUtils::MakeMaker)
-%if 0%{?rhel} > 0 && 0%{?rhel} < 8
-BuildRequires:  perl(ExtUtils::Embed)
-%else
-%if 0%{?rhel} == 5
-BuildRequires:  perl(ExtUtils::Embed), perl-devel
-%else
-BuildRequires:  perl(ExtUtils::Embed)
-%endif
-%endif
+BuildRequires: perl(ExtUtils::MakeMaker)
+BuildRequires: perl-devel
+BuildRequires: perl(ExtUtils::Embed)
 Requires: %{name} = %{version}-%{release}
 Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 
