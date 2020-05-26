@@ -804,7 +804,7 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 	/* check to see if the call is already in a transfer process */
 	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &tleg, 0) >= 0 &&
 			tleg.len >= 0) {
-		LM_INFO("%.*s is already trasfering %.*s\n",
+		LM_INFO("%.*s is already transfering %.*s\n",
 				callid.len, callid.s, tleg.len, tleg.s);
 		ret = init_mi_error(491, MI_SSTR("Request Pending"));
 		goto unref;
@@ -931,7 +931,7 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 	/* check to see if the call is already in a transfer process */
 	if (call_dlg_api.fetch_dlg_value(dlgA, &call_transfer_param, &tleg, 0) >= 0 &&
 			tleg.len >= 0) {
-		LM_INFO("%.*s is already trasfering %.*s\n",
+		LM_INFO("%.*s is already transfering %.*s\n",
 				callidA.len, callidA.s, tleg.len, tleg.s);
 		ret = init_mi_error(491, MI_SSTR("Request Pending"));
 		goto unrefA;
@@ -1271,7 +1271,7 @@ static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
 	/* check to see if the call is already in a transfer process */
 	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &tleg, 0) >= 0 &&
 			tleg.len >= 0) {
-		LM_INFO("%.*s is already trasfering %.*s\n",
+		LM_INFO("%.*s is already transfering %.*s\n",
 				dlg->callid.len, dlg->callid.s, tleg.len, tleg.s);
 		return -1;
 	}
