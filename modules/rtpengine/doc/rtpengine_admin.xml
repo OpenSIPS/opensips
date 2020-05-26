@@ -1463,8 +1463,6 @@ $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZDQ
 				<emphasis>callid</emphasis> - the callid of the call this event is triggered for
 			</para></listitem>
 			<listitem><para>
-			</para></listitem>
-			<listitem><para>
 				<emphasis>source_tag</emphasis> - from tag of the call this event is triggered for
 			</para></listitem>
 			<listitem><para>
