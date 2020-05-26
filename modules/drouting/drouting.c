@@ -3660,7 +3660,11 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 			if (gw==NULL) {
 				LM_ERR("no GW found with ID <%.*s> -> ignorring\n",
 					id.len, id.s);
-			} else if ( push_gw_for_usage(msg, current_partition, &uri, NULL,
+			} else
+			if (gw->flags & DR_DST_STAT_DSBL_FLAG) {
+				/* is gateway disabled, skip it */
+			} else
+			if ( push_gw_for_usage(msg, current_partition, &uri, NULL,
 			&dst, -1, -1, idx ) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 						gw->id.len, gw->id.s);
