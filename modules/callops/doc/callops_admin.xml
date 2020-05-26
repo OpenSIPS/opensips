@@ -254,6 +254,44 @@ if (has_totag() &amp;&amp; is_method("NOTIFY") &amp;&amp; loose_route()) {
 	</programlisting>
 			</example>
 		</section>
+		<section id="func_call_transfer" xreflabel="call_transfer()">
+			<title>
+			<function moreinfo="none">call_transfer()</function>
+			</title>
+			<para>
+				This function triggers a blind call transfer by sending a REFER
+				message during an ongoing call. The function needs to be run inside
+				the context of the dialog you are transferring.
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>leg</emphasis> (string) - the leg that is
+						being transferred. Must be one of the <emphasis>caller</emphasis>
+						or <emphasis>callee</emphasis> values.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>destination</emphasis> (string) - SIP URI of the destination
+						where the leg is being transferred.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used from any route that has a dialog context.
+			</para>
+			<example>
+				<title>Use <function>call_transfer()</function> function to transfer
+					the caller to a new destination.</title>
+			<programlisting format="linespecific">
+...
+if (has_totag() &amp;&amp; &amp;&amp; loose_route()) {
+	call_transfer("caller", "sip:announcement@127.0.0.1");
+}
+...
+	</programlisting>
+			</example>
+		</section>
 	</section>
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">

@@ -130,9 +130,11 @@ static str call_hold_param;
 
 
 static int mod_init(void);
+static int fixup_leg(void **param);
 static int call_hold_leg_str_init(void);
 static int call_blind_replace(struct sip_msg *req, str *callid, str *leg);
 static int call_transfer_notify(struct sip_msg *req);
+static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst);
 static void call_dlg_created_CB(struct dlg_cell *did, int type,
 		struct dlg_cb_params * params);
 static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
@@ -160,6 +162,10 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE},
 	{ "call_transfer_notify", (cmd_function)call_transfer_notify, {{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{ "call_transfer", (cmd_function)w_call_blind_transfer, {
+		{CMD_PARAM_STR, fixup_leg,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -548,17 +554,21 @@ static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 		call_dlg_api.dlg_unref(old_dlg, 1);
 }
 
-static str *call_dlg_get_blind_refer_to(str *dst, str *id)
+static str *call_get_blind_refer_to(str *dst, str *id)
 {
 	static str refer_hdr;
+	int len;
 
-	if (!dst || !id) {
+	if (!dst) {
 		LM_ERR("bad params!\n");
 		return NULL;
 	}
 
-	refer_hdr.s = pkg_malloc(11 /* Refer-To: < */ + dst->len + 1 /* ; */ +
-			call_match_param.len + 1 /* = */ + id->len + 3/* >\r\n */);
+	len = 11 /* Refer-To: < */ + dst->len + 3 /* >\r\n */;
+	if (id)
+		len += 1 /* ; */ + call_match_param.len + 1 /* = */ + id->len;
+
+	refer_hdr.s = pkg_malloc(len);
 	if (!refer_hdr.s) {
 		LM_ERR("oom for refer hdr\n");
 		return NULL;
@@ -567,19 +577,21 @@ static str *call_dlg_get_blind_refer_to(str *dst, str *id)
 	refer_hdr.len = 11;
 	memcpy(refer_hdr.s + refer_hdr.len, dst->s, dst->len);
 	refer_hdr.len += dst->len;
-	refer_hdr.s[refer_hdr.len++] = ';';
-	memcpy(refer_hdr.s + refer_hdr.len, call_match_param.s, call_match_param.len);
-	refer_hdr.len += call_match_param.len;
-	refer_hdr.s[refer_hdr.len++] = '=';
-	memcpy(refer_hdr.s + refer_hdr.len, id->s, id->len);
-	refer_hdr.len += id->len;
+	if (id) {
+		refer_hdr.s[refer_hdr.len++] = ';';
+		memcpy(refer_hdr.s + refer_hdr.len, call_match_param.s, call_match_param.len);
+		refer_hdr.len += call_match_param.len;
+		refer_hdr.s[refer_hdr.len++] = '=';
+		memcpy(refer_hdr.s + refer_hdr.len, id->s, id->len);
+		refer_hdr.len += id->len;
+	}
 	memcpy(refer_hdr.s + refer_hdr.len, ">\r\n", 3);
 	refer_hdr.len += 3;
 
 	return &refer_hdr;
 }
 
-static str *call_dlg_get_attended_refer_to(str *dst, str *callid, str *fromtag, str *totag)
+static str *call_get_attended_refer_to(str *dst, str *callid, str *fromtag, str *totag)
 {
 	static str refer_hdr;
 	str tmp;
@@ -745,6 +757,21 @@ static void call_transfer_dlg_callback(struct dlg_cell* dlg, int type,
 	}
 }
 
+static str *call_dlg_get_blind_refer_to(struct dlg_cell *dlg, str *dst)
+{
+	switch (call_match_mode) {
+		case CALL_MATCH_MANUAL:
+			return call_get_blind_refer_to(dst, NULL);
+		case CALL_MATCH_CALLID:
+			return call_get_blind_refer_to(dst, &dlg->callid);
+		case CALL_MATCH_PARAM:
+			return call_get_blind_refer_to(dst, call_dlg_api.get_dlg_did(dlg));
+		default:
+			LM_BUG("unknown match mode %d\n", call_match_mode);
+			return NULL;
+	}
+}
+
 static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
@@ -784,21 +811,17 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 	}
 	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &leg);
 
-	if  (call_match_mode != CALL_MATCH_MANUAL) {
-		if (call_match_mode == CALL_MATCH_CALLID)
-			refer_hdr = call_dlg_get_blind_refer_to(&dst, &callid);
-		else
-			refer_hdr = call_dlg_get_blind_refer_to(&dst, call_dlg_api.get_dlg_did(dlg));
-		if (!refer_hdr)
-			goto unref;
+	refer_hdr = call_dlg_get_blind_refer_to(dlg, &dst);
+	if (!refer_hdr)
+		goto unref;
 
+	if (call_match_mode != CALL_MATCH_MANUAL) {
 		/* register callbacks for handling notifies - does not matter if this
 		 * fails, its not like we won't transfer if we don't get the notifications
 		 * - some devices don't even send the :) */
 		call_dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
 				call_transfer_dlg_callback, 0, 0);
 	}
-
 
 	if (call_dlg_api.send_indialog_request(dlg, &refer,
 			(caller?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL, refer_hdr,
@@ -916,7 +939,7 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 
 	/* if we are not aware of the other callid, we need to receive it in a
 	 * param */
-	refer_hdr = call_dlg_get_attended_refer_to(dst, &callidB, &fromtag, &totag);
+	refer_hdr = call_get_attended_refer_to(dst, &callidB, &fromtag, &totag);
 	if (!refer_hdr)
 		goto unrefA;
 
@@ -1211,4 +1234,70 @@ static int call_transfer_notify(struct sip_msg *msg)
 		return -1;
 	}
 	return call_handle_notify(dlg, msg);
+}
+
+static int fixup_leg(void **param)
+{
+	str *s = (str*)*param;
+	if (s->len == 6) {
+		if (strncasecmp(s->s, "caller", 6) == 0) {
+			*param = (void*)(unsigned long)DLG_CALLER_LEG;
+			return 0;
+		} else if (strncasecmp(s->s, "callee", 6) == 0) {
+			*param = (void*)(unsigned long)DLG_FIRST_CALLEE_LEG;
+			return 0;
+		}
+	}
+
+	LM_ERR("unsupported dialog indetifier <%.*s>\n",
+		s->len, s->s);
+	return -1;
+}
+
+
+static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
+{
+	int ret = -1;
+	str tleg;
+	str *refer_hdr;
+	static str refer = str_init("REFER");
+
+	struct dlg_cell *dlg = call_dlg_api.get_dlg();
+	if (!dlg) {
+		LM_WARN("dialog not found - call this function only after dialog has been matched\n");
+		return -1;
+	}
+
+	/* check to see if the call is already in a transfer process */
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &tleg, 0) >= 0 &&
+			tleg.len >= 0) {
+		LM_INFO("%.*s is already trasfering %.*s\n",
+				dlg->callid.len, dlg->callid.s, tleg.len, tleg.s);
+		return -1;
+	}
+	if (leg == DLG_CALLER_LEG)
+		init_str(&tleg, "caller");
+	else
+		init_str(&tleg, "callee");
+	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &tleg);
+
+	refer_hdr = call_dlg_get_blind_refer_to(dlg, dst);
+	if  (call_match_mode != CALL_MATCH_MANUAL) {
+		/* register callbacks for handling notifies - does not matter if this
+		 * fails, its not like we won't transfer if we don't get the notifications
+		 * - some devices don't even send the :) */
+		call_dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
+				call_transfer_dlg_callback, 0, 0);
+	}
+
+	if (call_dlg_api.send_indialog_request(dlg, &refer,
+			(leg == DLG_CALLER_LEG?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL,
+			refer_hdr, mi_call_transfer_reply, NULL) < 0) {
+		LM_ERR("could not send the transfer message!\n");
+		call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &empty_str);
+	} else {
+		ret = 1; /* success */
+	}
+	pkg_free(refer_hdr->s);
+	return ret;
 }
