@@ -3449,8 +3449,14 @@ static int route2_gw(struct sip_msg* msg, char* ch_part_gw, char* gw_att_pv)
 			LM_DBG("found and looking for gw id <%.*s>,len=%d\n",id.len, id.s, id.len);
 			gw = get_gw_by_id( (*current_partition->rdata)->pgw_tree, &id );
 			if (gw==NULL) {
-				LM_ERR("no GW found with ID <%.*s> -> ignorring\n", id.len, id.s);
-			} else if ( push_gw_for_usage(msg, current_partition, &uri, gw, NULL, NULL, idx ) ) {
+				LM_ERR("no GW found with ID <%.*s> -> ignorring\n",
+					id.len, id.s);
+			} else
+			if (gw->flags & DR_DST_STAT_DSBL_FLAG) {
+				/* is gateway disabled, skip it */
+			} else
+			if ( push_gw_for_usage(msg, current_partition, &uri, gw,
+			NULL, NULL, idx ) ) {
 				LM_ERR("failed to use gw <%.*s>, skipping\n",
 						gw->id.len, gw->id.s);
 			} else {
