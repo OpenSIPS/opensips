@@ -255,13 +255,13 @@ static cmd_export_t cmds[]={
 	{"unload_dialog_ctx",(cmd_function)unload_dlg_ctx,
 		{{0,0,0}}, ALL_ROUTES},
 	{"dlg_on_timeout", (cmd_function)dlg_on_timeout, {
-		{CMD_PARAM_STR, fixup_route, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{"dlg_on_answer", (cmd_function)dlg_on_answer, {
-		{CMD_PARAM_STR, fixup_route, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{"dlg_on_hangup", (cmd_function)dlg_on_hangup, {
-		{CMD_PARAM_STR, fixup_route, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{"load_dlg", (cmd_function)load_dlg, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
@@ -2294,6 +2294,9 @@ static int dlg_on_timeout(struct sip_msg* msg, void *route_id)
 		return -1;
 	}
 
+	/* if the parameter was missing, we get a NULL route_id, which
+	 * translate into a 0 rt_on_timeout, which translates into a reset */
+
 	dlg->rt_on_timeout = (unsigned int)(unsigned long)route_id;
 
 	dlg_unlock_dlg(dlg);
@@ -2318,6 +2321,9 @@ static int dlg_on_answer(struct sip_msg* msg, void *route_id)
 		return -1;
 	}
 
+	/* if the parameter was missing, we get a NULL route_id, which
+	 * translate into a 0 rt_on_timeout, which translates into a reset */
+
 	dlg->rt_on_answer = (unsigned int)(unsigned long)route_id;
 
 	dlg_unlock_dlg(dlg);
@@ -2341,6 +2347,9 @@ static int dlg_on_hangup(struct sip_msg* msg, void *route_id)
 		dlg_unlock_dlg(dlg);
 		return -1;
 	}
+
+	/* if the parameter was missing, we get a NULL route_id, which
+	 * translate into a 0 rt_on_timeout, which translates into a reset */
 
 	dlg->rt_on_hangup = (unsigned int)(unsigned long)route_id;
 

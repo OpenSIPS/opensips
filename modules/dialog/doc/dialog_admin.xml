@@ -2333,7 +2333,7 @@ set_dlg_sharing_tag("vip1");
 
 	<section id="func_dlg_on_answer" xreflabel="dlg_on_answer()">
 		<title>
-		<function moreinfo="none">dlg_on_answer(route_name)</function>
+		<function moreinfo="none">dlg_on_answer([route_name])</function>
 		</title>
 		<para>
 		The function arms a script route to be executed when the current
@@ -2345,11 +2345,15 @@ set_dlg_sharing_tag("vip1");
 		You must use this function AFTER creating the dialog and before the
 		dialog being answered.
 		</para>
+		<para>
+		If the parameter is missing, the function does a reset of any route
+		previously set; there will be no triggering.
+		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>route_name (string)</emphasis> - the name of the 
-				script route to be executed.
+				<emphasis>route_name (string,optional)</emphasis> - the name
+				of the script route to be executed.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2372,7 +2376,7 @@ route[dlg_answered] {
 
 	<section id="func_dlg_on_timeout" xreflabel="dlg_on_timeout()">
 		<title>
-		<function moreinfo="none">dlg_on_timeout(route_name)</function>
+		<function moreinfo="none">dlg_on_timeout([route_name])</function>
 		</title>
 		<para>
 		The function arms a script route to be executed when (and if) the 
@@ -2390,11 +2394,15 @@ route[dlg_answered] {
 		You must use this function AFTER creating the dialog and before the
 		dialog being answered.
 		</para>
+		<para>
+		You must use this function AFTER creating the dialog and before the
+		dialog being answered.
+		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>route_name (string)</emphasis> - the name of the 
-				script route to be executed.
+				<emphasis>route_name (string,optional)</emphasis> - the name
+				of the script route to be executed.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2420,7 +2428,7 @@ route[dlg_timeout] {
 
 	<section id="func_dlg_on_hangup" xreflabel="dlg_on_hangup()">
 		<title>
-		<function moreinfo="none">dlg_on_hangup(route_name)</function>
+		<function moreinfo="none">dlg_on_hangup([route_name])</function>
 		</title>
 		<para>
 		The function arms a script route to be executed when the current
@@ -2432,12 +2440,16 @@ route[dlg_timeout] {
 		<para>
 		You must use this function AFTER creating the dialog and before the
 		dialog being answered.
+		<para>
+		</para>
+		If the parameter is missing, the function does a reset of any route
+		previously set; there will be no triggering.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>route_name (string)</emphasis> - the name of the 
-				script route to be executed.
+				<emphasis>route_name (string,optional)</emphasis> - the name
+				of the script route to be executed.
 			</para></listitem>
 		</itemizedlist>
 		<para>
