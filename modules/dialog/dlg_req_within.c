@@ -128,7 +128,8 @@ error:
 
 
 
-dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char *reply_marker)
+dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,
+	char *reply_marker, int inc_cseq)
 {
 	dlg_t* td = NULL;
 	str cseq;
@@ -141,7 +142,9 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char 
 	}
 	memset(td, 0, sizeof(dlg_t));
 
-	if (cell->legs[dst_leg].last_gen_cseq == 0) {
+	loc_seq = cell->legs[dst_leg].last_gen_cseq;
+
+	if (loc_seq == 0) {
 		/*local sequence number*/
 		cseq = cell->legs[dst_leg].r_cseq;
 		if( !cseq.s || !cseq.len || str2int(&cseq, &loc_seq) != 0){
@@ -150,13 +153,13 @@ dlg_t * build_dialog_info(struct dlg_cell * cell, int dst_leg, int src_leg,char 
 		}
 
 		cell->legs[dst_leg].last_gen_cseq = loc_seq+1;
-	} else
+	} else if (inc_cseq)
 		cell->legs[dst_leg].last_gen_cseq++;
 
 	if (reply_marker)
 		*reply_marker = DLG_PING_PENDING;
 
-	td->loc_seq.value = cell->legs[dst_leg].last_gen_cseq -1;
+	td->loc_seq.value = loc_seq;
 
 	td->loc_seq.is_set = 1;
 
@@ -597,7 +600,8 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	}
 	*/
 
-	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg,reply_marker)) == 0)
+	if ((dialog_info = build_dialog_info(dlg, dst_leg, src_leg,reply_marker,
+		!(method->len == 3 && memcmp(method->s, "ACK", 3) == 0))) == 0)
 	{
 		LM_ERR("failed to create dlg_t\n");
 		return -1;
