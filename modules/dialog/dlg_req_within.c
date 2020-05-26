@@ -601,7 +601,7 @@ mi_response_t *mi_terminate_dlg_2(const mi_params_t *params,
 
 int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	str *hdrs,str *body,dlg_request_callback func,
-	void *param,dlg_release_func release,char *reply_marker, int no_ack)
+	void *param,dlg_release_func release,char *reply_marker)
 {
 	context_p old_ctx;
 	context_p *new_ctx;
@@ -638,8 +638,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 	if (push_new_processing_context( dlg, &old_ctx, &new_ctx, NULL)!=0)
 		return -1;
 
-	if (no_ack)
-		dialog_info->T_flags=T_NO_AUTOACK_FLAG;
+	dialog_info->T_flags=T_NO_AUTOACK_FLAG;
 
 	result = d_tmb.t_request_within
 		(method,         /* method*/
@@ -748,8 +747,8 @@ static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* p
 	p = (struct dlg_sequential_param *)(*ps->param);
 	dlg = p->dlg;
 
-	if (dlg_handle_seq_reply(dlg, rpl, statuscode, p->leg,
-	                         dlg_has_reinvite_pinging(dlg)) < 0) {
+	if (dlg_handle_seq_reply(dlg, rpl, statuscode, other_leg(dlg, p->leg),
+	    (p->method.len == 6 && memcmp(p->method.s, "INVITE", 6) == 0)) < 0) {
 		LM_ERR("Bad reply %d for callid %.*s\n",
 				statuscode, dlg->callid.len,dlg->callid.s);
 		dlg_async_response(p, rpl, statuscode);
@@ -800,7 +799,7 @@ static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* p
 	if (send_leg_msg(dlg, &p->method, other_leg(dlg, p->leg), p->leg,
 			&extra_headers, &body,
 			dlg_sequential_reply, p, dlg_sequential_free,
-			&dlg->legs[p->leg].reply_received, 0) < 0) {
+			&dlg->legs[p->leg].reply_received) < 0) {
 		LM_ERR("cannot send sequential message!\n");
 		goto error;
 	}
@@ -840,7 +839,8 @@ static mi_response_t *mi_send_sequential(struct dlg_cell *dlg, int sleg,
 
 	if (send_leg_msg(dlg, method, sleg, dleg, &extra_headers, body,
 			dlg_sequential_reply, param, dlg_sequential_free,
-			&dlg->legs[dleg].reply_received, 0) < 0) {
+			dlg_has_reinvite_pinging(dlg) ? &dlg->legs[dleg].reinvite_confirmed :
+			&dlg->legs[dleg].reply_received) < 0) {
 		pkg_free(extra_headers.s);
 		dlg_sequential_free(param);
 		LM_ERR("cannot send sequential message!\n");
