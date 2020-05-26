@@ -11,7 +11,7 @@ INSERT INTO version (table_name, table_version) values ('jwt_secrets','1');
 CREATE TABLE jwt_secrets (
     id SERIAL PRIMARY KEY NOT NULL,
     corresponding_tag VARCHAR(128) NOT NULL,
-    secret VARCHAR(2048) NOT NULL,
+    secret TEXT NOT NULL,
     start_ts INTEGER NOT NULL,
     end_ts INTEGER NOT NULL
 );

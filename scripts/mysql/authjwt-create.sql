@@ -10,7 +10,7 @@ INSERT INTO version (table_name, table_version) values ('jwt_secrets','1');
 CREATE TABLE jwt_secrets (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     corresponding_tag CHAR(128) NOT NULL,
-    secret CHAR(2048) NOT NULL,
+    secret TEXT NOT NULL,
     start_ts INT NOT NULL,
     end_ts INT NOT NULL
 ) ENGINE=InnoDB;

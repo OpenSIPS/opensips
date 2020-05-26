@@ -12,7 +12,7 @@
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>corresponding_tag</field><type>DB_STR</type></column>
-		<column><field>secret</field><type>DB_STR</type></column>
+		<column><field>secret</field><type>DB_BLOB</type></column>
 		<column><field>start_ts</field><type>DB_INT</type></column>
 		<column><field>end_ts</field><type>DB_INT</type></column>
 	</db_table>
