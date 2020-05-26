@@ -254,9 +254,9 @@ if (has_totag() &amp;&amp; is_method("NOTIFY") &amp;&amp; loose_route()) {
 	</programlisting>
 			</example>
 		</section>
-		<section id="func_call_transfer" xreflabel="call_transfer()">
+		<section id="func_call_blind_transfer" xreflabel="call_transfer()">
 			<title>
-			<function moreinfo="none">call_transfer()</function>
+			<function moreinfo="none">call_transfer(leg, destination)</function> or
 			</title>
 			<para>
 				This function triggers a blind call transfer by sending a REFER
@@ -281,12 +281,61 @@ if (has_totag() &amp;&amp; is_method("NOTIFY") &amp;&amp; loose_route()) {
 				This function can be used from any route that has a dialog context.
 			</para>
 			<example>
-				<title>Use <function>call_transfer()</function> function to transfer
-					the caller to a new destination.</title>
+				<title>Use <function>call_transfer()</function> function to do a blind
+					transfer of the caller to a new destination.</title>
 			<programlisting format="linespecific">
 ...
 if (has_totag() &amp;&amp; &amp;&amp; loose_route()) {
 	call_transfer("caller", "sip:announcement@127.0.0.1");
+}
+...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_call_attended_transfer" xreflabel="call_transfer()">
+			<title>
+				<function moreinfo="none">call_transfer(leg, transfer_callid, transfer_leg[, destination])</function> or
+			</title>
+			<para>
+				This function triggers an attended call transfer by sending a REFER
+				message during an ongoing call. The function needs to be run inside
+				the context of the dialog you are transferring.
+			</para>
+			<para>
+				Parameters:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>leg</emphasis> (string) - the leg that is
+						being transferred. Must be one of the <emphasis>caller</emphasis>
+						or <emphasis>callee</emphasis> values.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>transfer_callid</emphasis> (string) - the callid of the
+						second dialog that is being transferred.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>transfer_leg</emphasis> (string) - the leg within the
+						second call that will be transferred to <emphasis>leg</emphasis>.
+						Must be one of the <emphasis>caller</emphasis> or
+						<emphasis>callee</emphasis> values.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>destination</emphasis> (string, optional) - SIP URI of the
+						destination where the leg is being transferred. If missing, the
+						From/To URI of the initial call are used.
+				</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				This function can be used from any route that has a dialog context.
+			</para>
+			<example>
+				<title>Use <function>call_transfer()</function> function to do an
+					attended transfer of the caller to the callee of a different call.</title>
+			<programlisting format="linespecific">
+...
+if (has_totag() &amp;&amp; &amp;&amp; loose_route()) {
+	call_transfer("caller", "ba55b1b3-459d-4e84-a6f8-14c40e4f6ace", "callee");
 }
 ...
 	</programlisting>

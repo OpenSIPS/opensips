@@ -135,6 +135,8 @@ static int call_hold_leg_str_init(void);
 static int call_blind_replace(struct sip_msg *req, str *callid, str *leg);
 static int call_transfer_notify(struct sip_msg *req);
 static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst);
+static int w_call_attended_transfer(struct sip_msg *req, int leg,
+		str *callidB, int legB, str *dst);
 static void call_dlg_created_CB(struct dlg_cell *did, int type,
 		struct dlg_cb_params * params);
 static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
@@ -165,6 +167,12 @@ static cmd_export_t cmds[] = {
 	{ "call_transfer", (cmd_function)w_call_blind_transfer, {
 		{CMD_PARAM_STR, fixup_leg,0},
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		ALL_ROUTES},
+	{ "call_transfer", (cmd_function)w_call_attended_transfer, {
+		{CMD_PARAM_STR, fixup_leg,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR, fixup_leg,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
@@ -903,7 +911,7 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 				return init_mi_param_error();
 
 			/* fetch the callid and get its from and to tags */
-			dlgB = call_dlg_api.get_dlg_by_callid(&callidB, 0);
+			dlgB = call_dlg_api.get_dlg_by_callid(&callidB, 1);
 			if (!dlgB)
 				return init_mi_error(404, MI_SSTR("Transfer dialog not found"));
 
@@ -1268,6 +1276,11 @@ static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
 		return -1;
 	}
 
+	if (dlg->state < DLG_STATE_CONFIRMED || dlg->state >= DLG_STATE_DELETED) {
+		LM_WARN("invalid dialog state %d\n", dlg->state);
+		return -1;
+	}
+
 	/* check to see if the call is already in a transfer process */
 	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &tleg, 0) >= 0 &&
 			tleg.len >= 0) {
@@ -1299,5 +1312,90 @@ static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
 		ret = 1; /* success */
 	}
 	pkg_free(refer_hdr->s);
+	return ret;
+}
+
+static int w_call_attended_transfer(struct sip_msg *req, int leg,
+		str *callidB, int legB, str *dst)
+{
+	str tleg;
+	str fromtag, totag, legA;
+	str *refer_hdr;
+	static str refer = str_init("REFER");
+	struct dlg_cell *dlgB;
+	int ret = -1;
+
+	struct dlg_cell *dlgA = call_dlg_api.get_dlg();
+	if (!dlgA) {
+		LM_WARN("dialog not found - call this function only after dialog has been matched\n");
+		return -1;
+	}
+
+	if (dlgA->state < DLG_STATE_CONFIRMED || dlgA->state >= DLG_STATE_DELETED) {
+		LM_WARN("invalid dialog state %d\n", dlgA->state);
+		return -1;
+	}
+
+	dlgB = call_dlg_api.get_dlg_by_callid(callidB, 1);
+	if (!dlgB) {
+		LM_ERR("could not find dialog %.*s\n", callidB->len, callidB->s);
+		return -1;
+	}
+
+	/* check to see if the call is already in a transfer process */
+	if (call_dlg_api.fetch_dlg_value(dlgA, &call_transfer_param, &tleg, 0) >= 0 &&
+			tleg.len >= 0) {
+		LM_INFO("%.*s is already transferring %.*s\n",
+				dlgA->callid.len, dlgA->callid.s, tleg.len, tleg.s);
+		goto unref;
+	}
+
+	if (legB == DLG_CALLER_LEG) {
+		fromtag = dlgB->legs[callee_idx(dlgB)].tag;
+		totag = dlgB->legs[DLG_CALLER_LEG].tag;
+		if (!dst)
+			dst = &dlgB->from_uri;
+	} else {
+		fromtag = dlgB->legs[DLG_CALLER_LEG].tag;
+		totag = dlgB->legs[callee_idx(dlgB)].tag;
+		if (!dst)
+			dst = &dlgB->to_uri;
+	}
+
+	refer_hdr = call_get_attended_refer_to(dst, callidB, &fromtag, &totag);
+	if (!refer_hdr)
+		goto unref;
+
+	if (call_dlg_api.store_dlg_value(dlgB, &call_transfer_callid_param, &dlgA->callid) < 0) {
+		LM_ERR("can not store that A(%.*s) is replacing B(%.*s)\n",
+				dlgA->callid.len, dlgA->callid.s, callidB->len, callidB->s);
+		goto end;
+	}
+	if (leg == DLG_CALLER_LEG)
+		init_str(&legA, "caller");
+	else
+		init_str(&legA, "callee");
+
+	call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &legA);
+	/* register callbacks for handling notifies - does not matter if this
+	 * fails, its not like we won't transfer if we don't get the notifications
+	 * - some devices don't even send the :) */
+	if (call_match_mode != CALL_MATCH_MANUAL)
+		call_dlg_api.register_dlgcb(dlgA, DLGCB_REQ_WITHIN,
+				call_transfer_dlg_callback, 0, 0);
+
+	if (call_dlg_api.send_indialog_request(dlgA, &refer,
+			(leg == DLG_CALLER_LEG?DLG_CALLER_LEG:callee_idx(dlgA)), NULL, NULL,
+			refer_hdr, mi_call_transfer_reply, NULL) < 0) {
+		LM_ERR("could not send the transfer message!\n");
+		call_dlg_api.store_dlg_value(dlgB,
+				&call_transfer_callid_param, &empty_str);
+		goto end;
+	}
+	ret = 1;
+end:
+	pkg_free(refer_hdr->s);
+unref:
+	call_dlg_api.dlg_unref(dlgB, 1);
 	return ret;
 }
