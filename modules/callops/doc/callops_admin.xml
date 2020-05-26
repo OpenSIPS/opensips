@@ -117,8 +117,8 @@ if (has_totag() &amp;&amp; loose_route() &amp;&amp;
 			<para>
 				<emphasis>param</emphasis> / <emphasis>0</emphasis> - when
 					doing a blind transfer, the destination sent in the
-					REFER message will contain a parameter used to identify
-					the dialog that is being replaced. This parameter will be
+					refer message will contain a parameter used to identify
+					the dialog that is being replaced. this parameter will be
 					automatically removed when the new call is received.
 			</para>
 			</listitem>
@@ -132,6 +132,14 @@ if (has_totag() &amp;&amp; loose_route() &amp;&amp;
 					either, so you also have to use the
 					<xref linkend="func_call_transfer_notify"/> function to handle
 					them.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>callid</emphasis> / <emphasis>2</emphasis> - similar
+					to the <emphasis>param</emphasis> value, except that instead
+					of storing in the Request URI the dialog id of the call to
+					be transfered, the actual callid is used as identifier.
 			</para>
 			</listitem>
 		</itemizedlist>

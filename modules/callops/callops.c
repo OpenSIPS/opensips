@@ -32,6 +32,7 @@
 
 #define CALL_MATCH_PARAM  0
 #define CALL_MATCH_MANUAL 1
+#define CALL_MATCH_CALLID 2
 #define CALL_MATCH_DEFAULT CALL_MATCH_PARAM
 
 static str empty_str = str_init("");
@@ -169,6 +170,8 @@ static int calling_mode_func(modparam_t type, void *val)
 			call_match_mode = CALL_MATCH_PARAM;
 		} else if (strcasecmp((char *)val, "manual") == 0) {
 			call_match_mode = CALL_MATCH_MANUAL;
+		} else if (strcasecmp((char *)val, "callid") == 0) {
+			call_match_mode = CALL_MATCH_CALLID;
 		} else {
 			LM_ERR("unknown matching mode type %s\n", (char *)val);
 			return -1;
@@ -379,27 +382,22 @@ static void call_transfer_reply(struct cell *t, int type, struct tmcb_params *ps
 	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &empty_str);
 }
 
-static int call_blind_transfer(struct sip_msg *msg, str *old_callid, str *old_leg,
-		str *new_callid)
+/* expects the old_dlg to be reffed by the get_dlg* function
+ * NOTE: on error, the success, the caller should not unref the dialog! */
+static int call_blind_transfer(struct sip_msg *msg, struct dlg_cell *old_dlg,
+		str *old_leg, str *new_callid)
 {
-	struct dlg_cell *old_dlg;
 	static str state = str_init("start");
 	static str failure = str_init("fail");
 	str *dst = call_get_ruri(msg);
 	str tmp;
 
-	/* first make sure the call still exists */
-	old_dlg = call_dlg_api.get_dlg_by_callid(old_callid, 0);
-	if (!old_dlg) {
-		LM_DBG("no dialog available with callid %.*s\n", old_callid->len, old_callid->s);
-		return -2;
-	}
 	/* we have the previous callid - check to see if we have a leg */
 	if (old_leg) {
 		/* replacing the current old leg */
 		call_dlg_api.store_dlg_value(old_dlg, &call_transfer_param, old_leg);
 	} else if (call_dlg_api.fetch_dlg_value(old_dlg, &call_transfer_param, &tmp, 0) < 0) {
-		LM_DBG("call %.*s is not being transfered\n", old_callid->len, old_callid->s);
+		LM_DBG("call %.*s is not being transfered\n", old_dlg->callid.len, old_dlg->callid.s);
 		init_str(&tmp, "unknown");
 		old_leg = &tmp;
 	} else {
@@ -408,13 +406,12 @@ static int call_blind_transfer(struct sip_msg *msg, str *old_callid, str *old_le
 	/* we also need to "notice" him the callid that is replacing it */
 	call_dlg_api.store_dlg_value(old_dlg, &call_transfer_callid_param, new_callid);
 
-	RAISE_CALL_EVENT(TRANSFER, old_callid, old_leg, new_callid,
+	RAISE_CALL_EVENT(TRANSFER, &old_dlg->callid, old_leg, new_callid,
 			dst, &state, &empty_str, NULL);
 	if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, call_transfer_reply,
 			old_dlg, call_transfer_dlg_unref) <= 0) {
-		call_dlg_api.dlg_unref(old_dlg, 1);
 		LM_ERR("cannot register reply handler!\n");
-		RAISE_CALL_EVENT(TRANSFER, old_callid, old_leg, new_callid,
+		RAISE_CALL_EVENT(TRANSFER, &old_dlg->callid, old_leg, new_callid,
 				dst, &failure, &empty_str, NULL);
 		return -1;
 	}
@@ -514,7 +511,8 @@ unref_rpl:
 
 static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_params *params)
 {
-	str *old_callid;
+	str *param;
+	struct dlg_cell *old_dlg;
 
 	if (!params->msg)
 		return;
@@ -527,20 +525,37 @@ static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 		case CALL_MATCH_MANUAL:
 			return;
 		case CALL_MATCH_PARAM:
-			old_callid = call_dlg_get_uri_param(params->msg);
-			if (!old_callid) {
+		case CALL_MATCH_CALLID:
+			param = call_dlg_get_uri_param(params->msg);
+			if (!param) {
 				LM_DBG("parameter not found - call not handled\n");
 				return;
 			}
-			call_dlg_rm_uri_param(params->msg, old_callid);
-			call_blind_transfer(params->msg, old_callid, NULL, &dlg->callid);
+			if (call_match_mode == CALL_MATCH_CALLID)
+				old_dlg = call_dlg_api.get_dlg_by_callid(param, 1);
+			else
+				old_dlg = call_dlg_api.get_dlg_by_did(param, 1);
+			if (!old_dlg) {
+				LM_DBG("no dialog available with identifier %.*s (mode=%d)\n",
+						param->len, param->s, call_match_mode);
+				return;
+			}
 			break;
 	}
+
+	call_dlg_rm_uri_param(params->msg, param);
+	if (call_blind_transfer(params->msg, old_dlg, NULL, &dlg->callid) < 0)
+		call_dlg_api.dlg_unref(old_dlg, 1);
 }
 
 static str *call_dlg_get_blind_refer_to(str *dst, str *id)
 {
 	static str refer_hdr;
+
+	if (!dst || !id) {
+		LM_ERR("bad params!\n");
+		return NULL;
+	}
 
 	refer_hdr.s = pkg_malloc(11 /* Refer-To: < */ + dst->len + 1 /* ; */ +
 			call_match_param.len + 1 /* = */ + id->len + 3/* >\r\n */);
@@ -737,7 +752,7 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 	mi_response_t *ret = NULL;
 	str callid, leg, dst, tleg;
 	struct dlg_cell *dlg;
-	str *refer_hdr;
+	str *refer_hdr = NULL;
 	int caller = 0;
 
 	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
@@ -767,19 +782,23 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 		ret = init_mi_error(491, MI_SSTR("Request Pending"));
 		goto unref;
 	}
-
-	refer_hdr = call_dlg_get_blind_refer_to(&dst, &callid);
-	if (!refer_hdr)
-		goto unref;
-
 	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &leg);
 
-	/* register callbacks for handling notifies - does not matter if this
-	 * fails, its not like we won't transfer if we don't get the notifications
-	 * - some devices don't even send the :) */
-	if (call_match_mode != CALL_MATCH_MANUAL)
+	if  (call_match_mode != CALL_MATCH_MANUAL) {
+		if (call_match_mode == CALL_MATCH_CALLID)
+			refer_hdr = call_dlg_get_blind_refer_to(&dst, &callid);
+		else
+			refer_hdr = call_dlg_get_blind_refer_to(&dst, call_dlg_api.get_dlg_did(dlg));
+		if (!refer_hdr)
+			goto unref;
+
+		/* register callbacks for handling notifies - does not matter if this
+		 * fails, its not like we won't transfer if we don't get the notifications
+		 * - some devices don't even send the :) */
 		call_dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN,
 				call_transfer_dlg_callback, 0, 0);
+	}
+
 
 	if (call_dlg_api.send_indialog_request(dlg, &refer,
 			(caller?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL, refer_hdr,
@@ -1164,14 +1183,24 @@ unref:
 
 static int call_blind_replace(struct sip_msg *req, str *old_callid, str *old_leg)
 {
+	int ret;
 	str new_callid;
+	struct dlg_cell *old_dlg;
 
 	if (get_callid(req, &new_callid) < 0) {
 		LM_ERR("could not parse the callid!\n");
 		return -1;
 	}
-
-	return call_blind_transfer(req, old_callid, old_leg, &new_callid);
+	/* first make sure the call still exists */
+	old_dlg = call_dlg_api.get_dlg_by_callid(old_callid, 0);
+	if (!old_dlg) {
+		LM_DBG("no dialog available with callid %.*s\n", old_callid->len, old_callid->s);
+		return -2;
+	}
+	ret = call_blind_transfer(req, old_dlg, old_leg, &new_callid);
+	if (ret < 0)
+		call_dlg_api.dlg_unref(old_dlg, 1);
+	return ret;
 }
 
 static int call_transfer_notify(struct sip_msg *msg)
