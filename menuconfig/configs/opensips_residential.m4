@@ -89,7 +89,7 @@ modparam("usrloc", "nat_bflag", "NAT")
 ifelse(USE_DBUSRLOC,`yes',`modparam("usrloc", "working_mode_preset", "single-instance-sql-write-back")
 modparam("usrloc", "db_url",
 	"mysql://opensips:opensipsrw@localhost/opensips") # CUSTOMIZE ME
-', `modparam("usrloc", "db_mode", "single-instance-no-db")')
+', `modparam("usrloc", "working_mode_preset", "single-instance-no-db")')
 
 #### REGISTRAR module
 loadmodule "registrar.so"
