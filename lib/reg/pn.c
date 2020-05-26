@@ -271,7 +271,7 @@ static int pn_fcaps_match_provider(struct sip_msg *req, const str *prov)
 enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 {
 	struct sip_uri puri;
-	struct pn_provider *pvd;
+	struct pn_provider *pvd = NULL;
 	str_list *param;
 	int i, is_cap_query = 1, is_handled_upstream = 0;
 

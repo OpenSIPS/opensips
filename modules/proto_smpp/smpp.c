@@ -1366,7 +1366,7 @@ int send_submit_or_deliver_request(str *msg, int msg_type, str *src, str *dst,
 		smpp_session_t *session, int *delivery_confirmation)
 {
 	smpp_submit_sm_req_t *req;
-	int ret,chunks_no = 0,i,max_chunk_bytes;
+	int ret = 0,chunks_no = 0,i,max_chunk_bytes;
 	uint8_t chunk_group_id;
 	str chunked_msg;
 

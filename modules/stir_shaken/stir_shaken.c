@@ -1010,6 +1010,7 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	if (add_identity_hf(msg, pkey, date_ts, attest, cr_url,
 		orig_tn_p, dest_tn_p, origid) < 0) {
 		LM_ERR("Failed to add Identity header\n");
+		rc = -1;
 		goto error;
 	}
 

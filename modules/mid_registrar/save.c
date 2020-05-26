@@ -1499,7 +1499,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 	urecord_t *r = NULL;
 	contact_t *_c;
 	unsigned int cseq;
-	int e_out = -1, vct, was_valid;
+	int e_out = -1, vct = 0, was_valid;
 	int e_max = 0;
 	int tcp_check = 0;
 	struct sip_uri uri;
@@ -2275,7 +2275,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	ucontact_info_t *ci;
 	ucontact_t *c;
 	contact_t *ct;
-	int e_out, vct;
+	int e_out, vct = 0;
 	unsigned int last_reg_ts;
 	int_str_t *value;
 

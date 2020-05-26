@@ -2217,7 +2217,7 @@ static int fixup_lmode(void **param)
 
 static int load_dlg_ctx(struct sip_msg *msg, str *callid, void *lmode)
 {
-	struct dlg_cell *dlg;
+	struct dlg_cell *dlg = NULL;
 	int mode;
 
 	if (lmode)

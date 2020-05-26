@@ -1083,7 +1083,7 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 	static str flow_id_str = str_init("flow_id");
 
 	evi_params_p list;
-	str *txt;
+	str *txt = NULL;
 	int ts;
 
 	if (agent_evi_id == EVI_ERROR || !evi_probe_event(agent_evi_id))

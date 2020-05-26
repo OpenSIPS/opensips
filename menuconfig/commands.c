@@ -303,7 +303,10 @@ int generate_cfg(select_menu *menu,void *arg)
 			default:
 				error_msg = strerror(errno);
 		}
-		write(STDERR_FILENO, error_msg, strlen(error_msg));
+
+		if (write(STDERR_FILENO, error_msg, strlen(error_msg) < 0))
+			fprintf(output,"write error %d (%s)\n", errno, strerror(errno));
+
 		fprintf(output,"Error generating config: %s\n", error_msg);
 		exit(-1);
 	}

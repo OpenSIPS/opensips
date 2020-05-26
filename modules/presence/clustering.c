@@ -618,9 +618,12 @@ static void bin_packet_handler(bin_packet_t *packet)
 				break;
 			case SYNC_PACKET_TYPE:
 				_ensure_bin_version(pkt, BIN_VERSION, "presence sync packet");
+				rc = 0;
 				while (c_api.sync_chunk_iter(pkt))
-					if (handle_replicated_publish(pkt) < 0)
+					if (handle_replicated_publish(pkt) < 0) {
 						LM_WARN("failed to process sync chunk!\n");
+						rc = -1;
+					}
 				break;
 			default:
 				LM_ERR("Unknown binary packet %d received from node %d in "
