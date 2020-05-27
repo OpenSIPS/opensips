@@ -3301,7 +3301,7 @@ static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 
 static int rtpengine_stopmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
 {
-	return rtpe_function_call_simple(msg, OP_START_MEDIA, flags, spvar);
+	return rtpe_function_call_simple(msg, OP_STOP_MEDIA, flags, spvar);
 }
 
 static int rtpengine_blockmedia_f(struct sip_msg* msg, str *flags, pv_spec_t *spvar)
