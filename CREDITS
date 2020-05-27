@@ -1,0 +1,82 @@
+	This is a credits-file of people that have contributed with code
+	to the OpenSIPS 3.1 release, sorted by last name.  The fields are:
+	name (N), email (E).
+	Cheers,
+	                                                2020, May 27
+
+----------
+
+N: Nick Altmann
+E: nick.altmann@gmail.com
+
+N: Ryan Bullock
+E: rrb3942@gmail.com
+
+N: John Burke
+E: john@voxtelesys.net
+
+N: Liviu Chircu
+E: liviu@opensips.org
+
+N: Răzvan Crainea
+E: razvan@opensips.org
+
+N: Walter Doekes
+E: walter+github@wjd.nu
+
+N: Robert Dyck
+E: 58280584+robdyck@users.noreply.github.com
+
+N: Björn Esser
+E: besser82@fedoraproject.org
+
+N: Alessio Garzi
+E: gun101@email.it
+
+N: Fabian Gast
+E: fgast+git@only640k.net
+
+N: Callum Guy
+E: callum.guy@x-on.co.uk
+
+N: Jasper Hafkenscheid
+E: hafkensite@users.noreply.github.com
+
+N: Bogdan-Andrei Iancu
+E: bogdan@opensips.org
+
+N: Zero King
+E: l2dy@icloud.com
+
+N: Peter Lemenkov
+E: lemenkov@gmail.com
+
+N: Vlad Paiu
+E: vladpaiu@opensips.org
+
+N: Dan Pascu
+E: dan@ag-projects.com
+
+N: Vlad Pătrașcu
+E: vladp@opensips.org
+
+N: Aron Podrigal
+E: aronp@guaranteedplus.com
+
+N: Ovidiu Sas
+E: osas@voipembedded.com
+
+N: Roman Sevko
+E: apple@rom.by
+
+N: Maksym Sobolyev
+E: sobomax@sippysoft.com
+
+N: Mihai Țigănuș
+E: mtiganus@gmail.com
+
+N: Alexey Vasilyev
+E: alexei.vasilyev@gmail.com
+
+N: Ralf Zerres
+E: ralf.zerres@networkx.de
