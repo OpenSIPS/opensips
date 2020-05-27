@@ -117,6 +117,7 @@ end:
 }
 
 DECLARE_CALL_EVENT(TRANSFER);
+DECLARE_CALL_EVENT(HOLD);
 
 static struct tm_binds call_tm_api;
 static struct dlg_binds call_dlg_api;
@@ -124,14 +125,10 @@ static int call_match_mode = CALL_MATCH_DEFAULT;
 static str call_match_param = str_init("osid");
 static str call_transfer_param = str_init("call_transfer_leg");
 static str call_transfer_callid_param = str_init("call_transfer_callid");
-static str call_hold_param;
-#define CALL_HOLD_PARAM "call_hold_"
-#define CALL_HOLD_PARAM_LEN (sizeof(CALL_HOLD_PARAM) - 1)
 
 
 static int mod_init(void);
 static int fixup_leg(void **param);
-static int call_hold_leg_str_init(void);
 static int call_blind_replace(struct sip_msg *req, str *callid, str *leg);
 static int call_transfer_notify(struct sip_msg *req);
 static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst);
@@ -256,11 +253,6 @@ static int mod_init(void)
 		return -1;
 	}
 
-	if (call_hold_leg_str_init() < 0) {
-		LM_ERR("could not init call hold param!\n");
-		return -1;
-	}
-
 	if (load_tm_api(&call_tm_api) != 0) {
 		LM_ERR("tm module not loaded! Cannot use callops module\n");
 		return -1;
@@ -278,6 +270,8 @@ static int mod_init(void)
 
 	INIT_CALL_EVENT(TRANSFER, "callid", "leg",
 			"transfer_callid", "destination", "state", "status", NULL);
+
+	INIT_CALL_EVENT(HOLD, "callid", "leg", "action", "state", NULL);
 
 	return 0;
 }
@@ -698,6 +692,33 @@ static int mi_call_transfer_reply(struct sip_msg *msg, int status, void *param)
 	return (param?mi_call_async_reply(msg, status, param): 0);
 }
 
+static int mi_call_hold_reply(struct sip_msg *msg, int status, void *param)
+{
+	str callid, leg, action, state;
+	unsigned int p = (unsigned int)(long)param;
+
+	if (status < 200)
+		return 0;
+	if (status >= 300)
+		init_str(&state, "fail");
+	else
+		init_str(&state, "ok");
+	if (p & 0x1)
+		init_str(&leg, "callee");
+	else
+		init_str(&leg, "caller");
+	if (p & 0x2)
+		init_str(&action, "unhold");
+	else
+		init_str(&action, "hold");
+	if (get_callid(msg, &callid) < 0) {
+		LM_ERR("could not parse the callid!\n");
+		return -1;
+	}
+	RAISE_CALL_EVENT(HOLD, &callid, &leg, &action, &state, NULL);
+	return 0;
+}
+
 static int call_handle_notify(struct dlg_cell *dlg, struct sip_msg *msg)
 {
 	str retry = str_init("Retry-After: 1 (not found)\n");
@@ -1064,31 +1085,25 @@ static int call_get_hold_body(struct dlg_cell *dlg, int leg, str *new_body)
 	return 1;
 }
 
-static int call_hold_leg_str_init(void)
+static inline str *call_hold_leg_str(int leg)
 {
-	call_hold_param.s = pkg_malloc(CALL_HOLD_PARAM_LEN + 3 /* maximum 3 legs */);
-	if (call_hold_param.s < 0)
-		return -1;
-	memcpy(call_hold_param.s, CALL_HOLD_PARAM, CALL_HOLD_PARAM_LEN);
-	return 0;
-}
-
-static str *call_hold_leg_str(int leg)
-{
-	str tmp;
-	tmp.s = int2str(leg, &tmp.len);
-	memcpy(call_hold_param.s + CALL_HOLD_PARAM_LEN, tmp.s, tmp.len);
-	call_hold_param.len = CALL_HOLD_PARAM_LEN + tmp.len;
-	return &call_hold_param;
+	static str call_hold_param_caller = str_init("call_hold_caller");;
+	static str call_hold_param_callee = str_init("call_hold_callee");;
+	if (leg == DLG_CALLER_LEG)
+		return &call_hold_param_caller;
+	else
+		return &call_hold_param_callee;
 }
 
 static int call_put_leg_onhold(struct dlg_cell *dlg, int leg)
 {
 	int ret;
+	unsigned int param;
 	str body, tmp;
 	str invite = str_init("INVITE");
 	str ct = str_init("application/sdp");
-	str marker = str_init("onhold");
+	str action = str_init("hold");
+	str state = str_init("start");
 	str *legstr = call_hold_leg_str(leg);
 
 	if (call_dlg_api.fetch_dlg_value(dlg, legstr, &tmp, 0) >= 0 &&
@@ -1102,15 +1117,27 @@ static int call_put_leg_onhold(struct dlg_cell *dlg, int leg)
 	if (body.len == 0)
 		return 1; /* nothing to do */
 
+	if (leg == DLG_CALLER_LEG) {
+		init_str(&tmp, "caller");
+		param = 0x0;
+	} else {
+		init_str(&tmp, "callee");
+		param = 0x1;
+	}
+
+	RAISE_CALL_EVENT(HOLD, &dlg->callid, &tmp, &action, &state, NULL);
+
 	/* send it out */
 	ret = call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
-			NULL, NULL, NULL);
+			NULL, mi_call_hold_reply, (void *)(long)param);
 	pkg_free(body.s);
 	if (ret < 0) {
+		init_str(&state, "fail");
+		RAISE_CALL_EVENT(HOLD, &dlg->callid, &tmp, &action, &state, NULL);
 		LM_ERR("could not send re-INVITE for leg %d\n", leg);
 		return -1;
 	}
-	if (call_dlg_api.store_dlg_value(dlg, call_hold_leg_str(leg), &marker) < 0)
+	if (call_dlg_api.store_dlg_value(dlg, legstr, &action) < 0)
 		LM_WARN("cannot store streams for leg %d - cannot unhold properly!\n", leg);
 	return 1;
 }
@@ -1121,6 +1148,10 @@ static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg)
 	str invite = str_init("INVITE");
 	str ct = str_init("application/sdp");
 	str *legstr;
+	str sleg;
+	unsigned int param;
+	str action = str_init("unhold");
+	str state = str_init("start");
 
 	legstr = call_hold_leg_str(leg);
 
@@ -1130,9 +1161,22 @@ static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg)
 		LM_DBG("leg %d is not on hold!\n", leg);
 		return 0;
 	}
+
 	body = dlg_get_out_sdp(dlg, leg);
+	if (leg == DLG_CALLER_LEG) {
+		init_str(&sleg, "caller");
+		param = 0x0;
+	} else {
+		init_str(&sleg, "callee");
+		param = 0x1;
+	}
+	param |= 0x2;
+
+	RAISE_CALL_EVENT(HOLD, &dlg->callid, &sleg, &action, &state, NULL);
 	if (call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
-			NULL, NULL, NULL) < 0) {
+			NULL, mi_call_hold_reply, (void *)(long)param) < 0) {
+		init_str(&state, "fail");
+		RAISE_CALL_EVENT(HOLD, &dlg->callid, &sleg, &action, &state, NULL);
 		LM_ERR("could not resume leg %d\n", leg);
 		return -1;
 	}
@@ -1145,6 +1189,7 @@ static mi_response_t *mi_call_hold(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str callid;
+	str leg, action, state;
 	struct dlg_cell *dlg;
 	mi_response_t *ret = NULL;
 	int ret_callee;
@@ -1167,8 +1212,13 @@ static mi_response_t *mi_call_hold(const mi_params_t *params,
 		goto unref;
 	ret_callee = call_put_leg_onhold(dlg, callee_idx(dlg));
 	if (ret_callee < 0) {
-		if (ret_caller != 0)
+		if (ret_caller != 0) {
+			init_str(&leg, "caller");
+			init_str(&state, "state");
+			init_str(&action, "action");
+			RAISE_CALL_EVENT(HOLD, &dlg->callid, &leg, &action, &state, NULL);
 			call_resume_leg_onhold(dlg, DLG_CALLER_LEG);
+		}
 		goto unref;
 	}
 	if (ret_caller == 0 && ret_callee == 0)
