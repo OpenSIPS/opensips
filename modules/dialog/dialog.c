@@ -1832,9 +1832,9 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		p+=i;
 	}
 
-	memcpy(p,",\"callees\":[",11);
-	p+=11;
-	DEC_AND_CHECK_LEN(len,11);
+	memcpy(p,",\"callees\":[",12);
+	p+=12;
+	DEC_AND_CHECK_LEN(len,12);
 	
 	for( j=1 ; j < dlg->legs_no[DLG_LEGS_USED] ; j++  ) {
 		if (j != 1) {
@@ -1852,13 +1852,15 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		dlg->legs[j].out_sdp.len,dlg->legs[j].out_sdp.s);
 
 		if (i<0) {
-			LM_ERR("Failed to print dlg json \n");		
+			LM_ERR("Failed to print dlg json \n");
 			return NULL;
 		}
 		
 		p+=i;
 		DEC_AND_CHECK_LEN(len,i);
 	}
+	*p++=']';
+	DEC_AND_CHECK_LEN(len,1);
 
 	if (ctx && dlg->vals) {
 		memcpy(p,",\"values\":{",11);
