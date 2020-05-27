@@ -50,8 +50,8 @@ extern const char* cJSON_Version(void);
 #define cJSON_Object (1 << 6)
 #define cJSON_Raw    (1 << 7) /* raw json */
 
-#define cJSON_IsReference 256
-#define cJSON_StringIsConst 512
+#define cJSON_IsReference   (1 << 8)
+#define cJSON_StringIsConst (1 << 9)
 
 /* The cJSON structure: */
 typedef struct cJSON

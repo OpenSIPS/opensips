@@ -212,7 +212,7 @@ modparam("qrouting", "history_span", 15)
 		<para>
 		The duration (in seconds) of the statistics sampling window.  Every
 		<emphasis><xref linkend="param_sampling_interval"/></emphasis> seconds,
-		the accumulated statistics during the most recent sampling windows get
+		the accumulated statistics during the most recent sampling window get
 		added to each gateway, while the oldest sampled interval statistics are
 		subtracted (rotated away) from each gateway.
 		</para>
@@ -633,8 +633,8 @@ opensips-cli -x mi qr_reload
 
 opensips-cli -x mi qr_status
 opensips-cli -x mi qr_status pstn
-opensips-cli -x mi qr_status pstn MY-GW-3
-opensips-cli -x mi qr_status pstn MY-CARR-7
+opensips-cli -x mi qr_status pstn 11 MY-GW-3
+opensips-cli -x mi qr_status pstn 17 MY-CARR-7
 		</programlisting>
 	</section>
 

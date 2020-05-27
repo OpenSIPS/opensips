@@ -480,7 +480,7 @@ if (!stir_shaken_check_cert($var(cert))) {
 	<title><varname>identity</varname> usage</title>
 	<programlisting format="linespecific">
 ...
-	# aquire the certificate to use for the verification process
+	# acquire the certificate to use for the verification process
 	$var(rc) = rest_get($identity(x5u), $var(cert));
 	if ($var(rc) &lt; 0) {
 		send_reply(436, "Bad Identity Info");

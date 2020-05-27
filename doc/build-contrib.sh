@@ -138,6 +138,7 @@ github_handles=(
   ["Henning Westerholt"]="henningw"
   ["Ionel Cerghit"]="ionel-cerghit"
   ["Ionut Ionita"]="ionutrazvanionita"
+  ["Italo Rossi <italorossib@gmail.com>"]="italorossi"
   ["jamesabravo"]="jamesabravo"
   ["Jan Janak"]="janakj"
   ["Jarrod Baumann"]="jarrodb"

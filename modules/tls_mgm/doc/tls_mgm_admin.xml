@@ -973,13 +973,13 @@ modparam("tls_mgm", "tls_method", "[dom1]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom1]1")
 modparam("tls_mgm", "require_cert", "[dom1]1")
 
-#'biloxy' server domain
+#'biloxi' server domain
 modparam("tls_mgm", "server_domain", "dom2")
 modparam("tls_mgm", "match_ip_address", "[dom2]10.0.0.10:5061")
-modparam("tls_mgm", "match_sip_domain", "[dom2]biloxy.com")
+modparam("tls_mgm", "match_sip_domain", "[dom2]biloxi.com")
 
-modparam("tls_mgm", "certificate", "[dom2]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom2]/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "certificate", "[dom2]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom2]/certs/biloxi.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom2]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom2]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom2]1")
@@ -1010,13 +1010,13 @@ modparam("tls_mgm", "tls_method", "[dom4]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom4]1")
 modparam("tls_mgm", "require_cert", "[dom4]1")
 
-# 'biloxy' client domain
+# 'biloxi' client domain
 modparam("tls_mgm", "client_domain", "dom5")
 modparam("tls_mgm", "match_ip_address", "[dom5]*")
-modparam("tls_mgm", "match_sip_domain", "[dom5]biloxy.com")
+modparam("tls_mgm", "match_sip_domain", "[dom5]biloxi.com")
 
-modparam("tls_mgm", "certificate", "[dom5]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom5]/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "certificate", "[dom5]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom5]/certs/biloxi.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom5]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom5]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom5]1")

@@ -543,7 +543,7 @@ INPUT                  = ./ \
                          modules/enum \
                          modules/event_datagram \
                          modules/event_flatstore \
-                         modules/event_jsonrpc \
+                         modules/event_stream \
                          modules/event_rabbitmq \
                          modules/event_route \
                          modules/event_routing \

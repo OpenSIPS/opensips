@@ -209,7 +209,7 @@ static int mi_mods_no=0;
 
 static int is_id_valid(int id)
 {
-	/* mask is currehtly char, we might need to expand it to offer more space */
+	/* mask is currently char, we might need to expand it to offer more space */
 	if (id < 0 || id >= 8 * sizeof( *(((struct mi_cmd *)0)->trace_mask) ))
 		return 0;
 
