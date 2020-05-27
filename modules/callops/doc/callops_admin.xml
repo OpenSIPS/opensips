@@ -566,6 +566,51 @@ opensips-cli -x mi call_unhold \
 			</para></listitem>
 		</itemizedlist>
 	</section>
+	<section id="event_E_CALL_HOLD" xreflabel="E_CALL_HOLD">
+		<title>
+		<function moreinfo="none">E_CALL_HOLD</function>
+		</title>
+		<para>
+			Triggered during the process of putting a call on hold, or resuming
+			a call from an on hold state.
+		</para>
+		<para>
+			This event is triggered twice per each leg of the call - first when
+			the leg starts to be put on hold, and then when the leg accepts or
+			rejects the state.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>callid</emphasis> - the callid of the call
+					that is being put on hold, or resumed.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>leg</emphasis> - the leg (<emphasis>caller
+				</emphasis> or <emphasis>callee</emphasis>) affected
+					by the call on hold, or resumed.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>action</emphasis> - <emphasis>hold</emphasis> or
+					<emphasis>unhold</emphasis> action that is being performed.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>state</emphasis> - the state of the action that
+					is being performed.
+				<itemizedlist>
+				<listitem><para><emphasis>start</emphasis> - triggered when the
+					re-INVITE is being sent out to the participant being put on hold.
+				</para></listitem>
+				<listitem><para><emphasis>ok</emphasis> - triggered when
+					the on hold/resume action is successfully completed.
+				</para></listitem>
+				<listitem><para><emphasis>fail</emphasis> - triggered when
+					the action failed.
+				</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+		</itemizedlist>
+	</section>
 	</section>
 
 </chapter>
