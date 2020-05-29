@@ -3,12 +3,14 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
 <!ENTITY reg_module "<acronym>mid_registrar</acronym>">
+<!ENTITY reg_save_f "<emphasis><acronym>mid_registrar_save()</acronym></emphasis>">
 <!ENTITY reg_lookup_f "<emphasis><acronym>mid_registrar_lookup()</acronym></emphasis>">
 
 <!ENTITY admin SYSTEM "mid_registrar_admin.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Common registrar/mid-registrar documentation -->
+<!ENTITY supported_rfc SYSTEM "../../../lib/reg/doc/supported_rfc.xml">
 <!ENTITY reg_modparams SYSTEM "../../../lib/reg/doc/reg_modparams.xml">
 <!ENTITY pn_modparams SYSTEM "../../../lib/reg/doc/pn_modparams.xml">
 <!ENTITY pn_async_func SYSTEM "../../../lib/reg/doc/pn_async_func.xml">
