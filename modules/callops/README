@@ -20,14 +20,20 @@ Calling Operations Module
 
               1.4.1. call_blind_replace(callid[, leg])
               1.4.2. call_transfer_notify()
+              1.4.3. call_transfer(leg, destination) or
+              1.4.4. call_transfer(leg, transfer_callid,
+                      transfer_leg[, destination]) or
 
         1.5. Exported MI Functions
 
               1.5.1. call_transfer
+              1.5.2. call_hold
+              1.5.3. call_unhold
 
         1.6. Exported Events
 
               1.6.1. E_CALL_TRANSFER
+              1.6.2. E_CALL_HOLD
 
    2. Contributors
 
@@ -55,6 +61,12 @@ Calling Operations Module
 
    1.5. Use call_transfer_notify() function to handle NOTIFY refer
           requests.
+
+   1.6. Use call_transfer() function to do a blind transfer of the
+          caller to a new destination.
+
+   1.7. Use call_transfer() function to do an attended transfer of
+          the caller to the callee of a different call.
 
 Chapter 1. Admin Guide
 
@@ -128,8 +140,8 @@ if (has_totag() && loose_route() &&
    This parameter can be used to change the mode that the module
    uses to match a transferred leg. Supported values are:
      * param / 0 - when doing a blind transfer, the destination
-       sent in the REFER message will contain a parameter used to
-       identify the dialog that is being replaced. This parameter
+       sent in the refer message will contain a parameter used to
+       identify the dialog that is being replaced. this parameter
        will be automatically removed when the new call is
        received.
      * manual / 1 - the user will create its own logic to match
@@ -138,6 +150,10 @@ if (has_totag() && loose_route() &&
        mode does not handle automatically the Notify refer either,
        so you also have to use the call_transfer_notify() function
        to handle them.
+     * callid / 2 - similar to the param value, except that
+       instead of storing in the Request URI the dialog id of the
+       call to be transfered, the actual callid is used as
+       identifier.
 
    Default value is “0 (auto mode using parameters)”.
 
@@ -209,6 +225,60 @@ if (has_totag() && is_method("NOTIFY") && loose_route()) {
 }
 ...
 
+1.4.3.  call_transfer(leg, destination) or
+
+   This function triggers a blind call transfer by sending a REFER
+   message during an ongoing call. The function needs to be run
+   inside the context of the dialog you are transferring.
+
+   Parameters:
+     * leg (string) - the leg that is being transferred. Must be
+       one of the caller or callee values.
+     * destination (string) - SIP URI of the destination where the
+       leg is being transferred.
+
+   This function can be used from any route that has a dialog
+   context.
+
+   Example 1.6. Use call_transfer() function to do a blind
+   transfer of the caller to a new destination.
+...
+if (has_totag() && && loose_route()) {
+        call_transfer("caller", "sip:announcement@127.0.0.1");
+}
+...
+
+1.4.4.  call_transfer(leg, transfer_callid, transfer_leg[,
+destination]) or
+
+   This function triggers an attended call transfer by sending a
+   REFER message during an ongoing call. The function needs to be
+   run inside the context of the dialog you are transferring.
+
+   Parameters:
+     * leg (string) - the leg that is being transferred. Must be
+       one of the caller or callee values.
+     * transfer_callid (string) - the callid of the second dialog
+       that is being transferred.
+     * transfer_leg (string) - the leg within the second call that
+       will be transferred to leg. Must be one of the caller or
+       callee values.
+     * destination (string, optional) - SIP URI of the destination
+       where the leg is being transferred. If missing, the From/To
+       URI of the initial call are used.
+
+   This function can be used from any route that has a dialog
+   context.
+
+   Example 1.7. Use call_transfer() function to do an attended
+   transfer of the caller to the callee of a different call.
+...
+if (has_totag() && && loose_route()) {
+        call_transfer("caller", "ba55b1b3-459d-4e84-a6f8-14c40e4f6ace",
+"callee");
+}
+...
+
 1.5. Exported MI Functions
 
 1.5.1.  call_transfer
@@ -262,6 +332,42 @@ opensips-cli -x mi call_transfer \
         transfer_callid=559abf97-9834-4380-bba1-a036eb245450 \
         transfer_leg=calee
 
+1.5.2.  call_hold
+
+   MI command to put an ongoing call on hold.
+
+   Command returns OK if any of the legs of the call have been put
+   on hold. If the call is already on hold, an error is returned.
+
+   Name: call_hold
+
+   Parameters
+     * callid (string) - the callid of the dialog that is being
+       put on hold.
+
+   MI FIFO Command Format:
+# put a call on hold
+opensips-cli -x mi call_hold \
+        callid=921b00e4-fec0-4a36-9397-a40ab74e1893
+
+1.5.3.  call_unhold
+
+   MI command to resume a call from an onhold state put by the
+   call_hold call.
+
+   Command returns OK if any of the legs are resumed, or an error
+   if no leg had been previously put on hold.
+
+   Name: call_unhold
+
+   Parameters
+     * callid (string) - the callid of the dialog that is being
+       resumed.
+
+   MI FIFO Command Format:
+opensips-cli -x mi call_unhold \
+        callid=921b00e4-fec0-4a36-9397-a40ab74e1893
+
 1.6. Exported Events
 
 1.6.1.  E_CALL_TRANSFER
@@ -303,6 +409,28 @@ opensips-cli -x mi call_transfer \
      * status - contains extra information about the success or
        failure of the call.
 
+1.6.2.  E_CALL_HOLD
+
+   Triggered during the process of putting a call on hold, or
+   resuming a call from an on hold state.
+
+   This event is triggered twice per each leg of the call - first
+   when the leg starts to be put on hold, and then when the leg
+   accepts or rejects the state.
+
+   Parameters:
+     * callid - the callid of the call that is being put on hold,
+       or resumed.
+     * leg - the leg (caller or callee) affected by the call on
+       hold, or resumed.
+     * action - hold or unhold action that is being performed.
+     * state - the state of the action that is being performed.
+          + start - triggered when the re-INVITE is being sent out
+            to the participant being put on hold.
+          + ok - triggered when the on hold/resume action is
+            successfully completed.
+          + fail - triggered when the action failed.
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -310,7 +438,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    21       8      1450      44
+   1. Razvan Crainea (@razvancrainea)    38      16      2248     143
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

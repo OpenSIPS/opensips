@@ -60,7 +60,7 @@ usrloc Module
               1.5.38. latency_event_min_us_delta (integer)
               1.5.39. pinging_mode (string)
               1.5.40. mi_dump_kv_store (integer)
-              1.5.41. contact_refresh_timer (integer)
+              1.5.41. contact_refresh_timer (boolean)
 
         1.6. Exported Functions
         1.7. Exported MI Functions
@@ -237,19 +237,19 @@ Chapter 1. Admin Guide
    only publish some light "metadata" entries for any new
    Addresses-of-Record which are reachable from them. These
    entries will cause other nodes to also fork additional SIP
-   branches pointing to the above-mentioned registrar upon
-   receiving a call for the above-mentioned Addresses-of-Record.
+   branches pointing to the publisher registrar upon receiving
+   calls for its advertised Addresses-of-Record.
 
    The federation topology is an optimized solution for the
    following core problems:
-     * IP restrictions - In some cases, calls routed towards
-       registered contacts must necessarily egress through the
-       original registration nodes of these contacts. A classic
-       example of this situation is when an OpenSIPS registrar
-       sitting at the edge of the platform is directly facing a
-       NAT device on the way to the contact. Unless calls are sent
-       out from this exact registrar, they will not be able to
-       traverse the NAT device and reach the contact.
+     * IP address restrictions - In some cases, calls routed
+       towards registered contacts must necessarily pass through
+       the original registration nodes of these contacts. A
+       classic example of this situation is when an OpenSIPS
+       registrar sitting at the edge of the platform is directly
+       facing a NAT device on the way to the contact. Unless calls
+       are sent out from this exact registrar, they will not be
+       able to traverse the NAT device and reach the contact.
      * horizontal scalability - Avoiding global
        replication/contact broadcasting within the cluster not
        only dramatically improves contact storage performance, but
@@ -1058,7 +1058,7 @@ modparam("usrloc", "pinging_mode", "ownership")
 modparam("usrloc", "mi_dump_kv_store", 1)
 ...
 
-1.5.41. contact_refresh_timer (integer)
+1.5.41. contact_refresh_timer (boolean)
 
    Enable a timer which will periodically scan a sorted list of
    contacts and raise the E_UL_CONTACT_REFRESH for any of them
@@ -1066,11 +1066,11 @@ modparam("usrloc", "mi_dump_kv_store", 1)
    limit may given by registrar's pn_trigger_interval module
    parameter, for example.
 
-   Default value is “0 (disabled)”.
+   Default value is “false (disabled)”.
 
    Example 1.41. Set contact_refresh_timer parameter
 ...
-modparam("usrloc", "contact_refresh_timer", 1)
+modparam("usrloc", "contact_refresh_timer", true)
 ...
 
 1.6. Exported Functions
@@ -1256,8 +1256,8 @@ modparam("usrloc", "contact_refresh_timer", 1)
        determine if the current node owns the contact (e.g.
        possibly using the $cluster.sh_tag pseudo-variable in order
        to perform the check).
-       NOTICE: If a contact has no shared tag attached to it, this
-       key will map to a "" (empty string) value!
+       NOTICE: If a contact has no shared tag attached to it, the
+       value of this parameter will be "" (empty string)!
 
 1.9.4.  E_UL_CONTACT_DELETE
 
@@ -1534,11 +1534,11 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 291 175 7854 3181
+   2. Liviu Chircu (@liviuchircu) 295 177 7920 3232
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 242 148 4208 3614
    4. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    5. Ionut Ionita (@ionutrazvanionita) 40 24 1099 413
-   6. Vlad Patrascu (@rvlad-patrascu) 39 21 770 633
+   6. Vlad Patrascu (@rvlad-patrascu) 40 22 787 651
    7. Jiri Kuthan (@jiriatipteldotorg) 35 25 975 120
    8. Razvan Crainea (@razvancrainea) 28 22 380 121
    9. Henning Westerholt (@henningw) 21 11 462 356
@@ -1578,15 +1578,15 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - May 2020
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2020
-   3.  Zero King                           Mar 2020 - Mar 2020
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   5.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
-   6.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
-   7.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
-   8.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
-   9.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2020
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - May 2020
+   4.  Zero King                           Mar 2020 - Mar 2020
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   6.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
+   7.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
+   8.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
+   9.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
    10. Dan Pascu (@danpascu)               May 2019 - May 2019
 
    All remaining contributors: Walter Doekes (@wdoekes), Shlomi
