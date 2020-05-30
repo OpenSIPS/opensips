@@ -1144,7 +1144,8 @@ static void destroy_tls_dom(struct tls_domain *d)
 	int i;
 	if (d->ctx) {
 		for (i = 0; i < d->ctx_no; i++)
-			SSL_CTX_free(d->ctx[i]);
+			if (d->ctx[i])
+				SSL_CTX_free(d->ctx[i]);
 		shm_free(d->ctx);
 	}
 	lock_destroy(d->lock);
@@ -1158,7 +1159,6 @@ static int init_tls_dom(struct tls_domain *d)
 	int ca_from_file = 0;
 	int verify_mode = 0;
 	unsigned i, tcp_procs;
-	SSL_CTX *ctx;
 	char *ciphers_list = NULL;
 #if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 	int dh_from_file = 0;
@@ -1243,6 +1243,8 @@ static int init_tls_dom(struct tls_domain *d)
 		LM_ERR("cannot allocate ssl ctx per process!\n");
 		return 0;
 	}
+	memset(d->ctx, 0, tcp_procs * sizeof(SSL_CTX *));
+
 	d->ctx_no = tcp_procs;
 
 	for (i = 0; i < tcp_procs; i++) {
@@ -1250,11 +1252,11 @@ static int init_tls_dom(struct tls_domain *d)
 		 * create context
 		 */
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-		ctx = SSL_CTX_new(TLS_method());
+		d->ctx[i] = SSL_CTX_new(TLS_method());
 #else
-		ctx = SSL_CTX_new(ssl_methods[d->method - 1]);
+		d->ctx[i] = SSL_CTX_new(ssl_methods[d->method - 1]);
 #endif
-		if (ctx == NULL) {
+		if (d->ctx[i] == NULL) {
 			LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
 				d->name.len, ZSW(d->name.s));
 			return -1;
@@ -1262,9 +1264,9 @@ static int init_tls_dom(struct tls_domain *d)
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 		if (d->method != TLS_USE_SSLv23) {
-			if (!SSL_CTX_set_min_proto_version(ctx,
+			if (!SSL_CTX_set_min_proto_version(d->ctx[i],
 					ssl_versions[d->method - 1]) ||
-				!SSL_CTX_set_max_proto_version(ctx,
+				!SSL_CTX_set_max_proto_version(d->ctx[i],
 					ssl_versions[d->method_max - 1])) {
 				LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
 						d->name.len, ZSW(d->name.s));
@@ -1275,16 +1277,16 @@ static int init_tls_dom(struct tls_domain *d)
 
 #if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 		if (!(d->flags & DOM_FLAG_DB) || dh_from_file) {
-			if (d->dh_param.s && set_dh_params(ctx, d->dh_param.s) < 0)
+			if (d->dh_param.s && set_dh_params(d->ctx[i], d->dh_param.s) < 0)
 				return -1;
 		} else {
-			set_dh_params_db(ctx, &d->dh_param);
+			set_dh_params_db(d->ctx[i], &d->dh_param);
 		}
-		if (d->tls_ec_curve && set_ec_params(ctx, d->tls_ec_curve) < 0)
+		if (d->tls_ec_curve && set_ec_params(d->ctx[i], d->tls_ec_curve) < 0)
 			return -1;
 #endif
 
-		if (ciphers_list != 0 && SSL_CTX_set_cipher_list(ctx, d->ciphers_list) == 0 ) {
+		if (ciphers_list != 0 && SSL_CTX_set_cipher_list(d->ctx[i], d->ciphers_list) == 0 ) {
 			LM_ERR("failure to set SSL context "
 					"cipher list '%s'\n", d->ciphers_list);
 			return -1;
@@ -1295,57 +1297,55 @@ static int init_tls_dom(struct tls_domain *d)
 		 *     no session resumption
 		 *     choose cipher according to server's preference's*/
 
-		SSL_CTX_set_options(ctx,
+		SSL_CTX_set_options(d->ctx[i],
 				SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
 				SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION |
 				SSL_OP_CIPHER_SERVER_PREFERENCE);
 
 
-		SSL_CTX_set_verify(ctx, verify_mode, verify_callback);
-		SSL_CTX_set_verify_depth(ctx, VERIFY_DEPTH_S);
+		SSL_CTX_set_verify(d->ctx[i], verify_mode, verify_callback);
+		SSL_CTX_set_verify_depth(d->ctx[i], VERIFY_DEPTH_S);
 
 		//SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_SERVER );
-		SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_OFF );
-		SSL_CTX_set_session_id_context(ctx, OS_SSL_SESS_ID,
+		SSL_CTX_set_session_cache_mode(d->ctx[i], SSL_SESS_CACHE_OFF );
+		SSL_CTX_set_session_id_context(d->ctx[i], OS_SSL_SESS_ID,
 				OS_SSL_SESS_ID_LEN );
 
 		/* install callback for SNI */
 		if (d->flags & DOM_FLAG_SRV) {
-			SSL_CTX_set_tlsext_servername_callback(ctx, ssl_servername_cb);
-			SSL_CTX_set_tlsext_servername_arg(ctx, d);
+			SSL_CTX_set_tlsext_servername_callback(d->ctx[i], ssl_servername_cb);
+			SSL_CTX_set_tlsext_servername_arg(d->ctx[i], d);
 		}
 
 		/*
 		 * load certificate
 		 */
 		if (!(d->flags & DOM_FLAG_DB) || cert_from_file) {
-			if (load_certificate(ctx, d->cert.s) < 0)
+			if (load_certificate(d->ctx[i], d->cert.s) < 0)
 				return -1;
 		} else
-			if (load_certificate_db(ctx, &d->cert) < 0)
+			if (load_certificate_db(d->ctx[i], &d->cert) < 0)
 				return -1;
 
 		/**
 		 * load crl from directory
 		 */
-		if (d->crl_directory && load_crl(ctx, d->crl_directory, d->crl_check_all) < 0)
+		if (d->crl_directory && load_crl(d->ctx[i], d->crl_directory, d->crl_check_all) < 0)
 			return -1;
 
 		/*
 		 * load ca
 		 */
 		if (!(d->flags & DOM_FLAG_DB) || ca_from_file) {
-			if (d->ca.s && load_ca(ctx, d->ca.s) < 0)
+			if (d->ca.s && load_ca(d->ctx[i], d->ca.s) < 0)
 				return -1;
 		} else {
-			if (load_ca_db(ctx, &d->ca) < 0)
+			if (load_ca_db(d->ctx[i], &d->ca) < 0)
 				return -1;
 		}
 
-		if (d->ca_directory && load_ca_dir(ctx, d->ca_directory) < 0)
+		if (d->ca_directory && load_ca_dir(d->ctx[i], d->ca_directory) < 0)
 			return -1;
-
-		d->ctx[i] = ctx;
 	}
 
 	return 0;
