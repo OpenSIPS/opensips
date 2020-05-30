@@ -335,7 +335,7 @@ if (!stir_shaken_check_cert($var(cert))) {
 
    Example 1.11. identity usage
 ...
-        # aquire the certificate to use for the verification process
+        # acquire the certificate to use for the verification process
         $var(rc) = rest_get($identity(x5u), $var(cert));
         if ($var(rc) < 0) {
                 send_reply(436, "Bad Identity Info");
@@ -354,7 +354,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu)    48      20      2832     236
-   2. Liviu Chircu (@liviuchircu)        2        1       2        0
+   2. Liviu Chircu (@liviuchircu)        5        3       4        1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -376,8 +376,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Apr 2020
-   2. Liviu Chircu (@liviuchircu)     Nov 2019 - Nov 2019
+   1. Liviu Chircu (@liviuchircu)     Nov 2019 - May 2020
+   2. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Apr 2020
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -386,7 +386,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu).
 
    Documentation Copyrights:
 

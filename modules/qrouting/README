@@ -199,7 +199,7 @@ modparam("qrouting", "history_span", 15)
 
    The duration (in seconds) of the statistics sampling window.
    Every sampling_interval seconds, the accumulated statistics
-   during the most recent sampling windows get added to each
+   during the most recent sampling window get added to each
    gateway, while the oldest sampled interval statistics are
    subtracted (rotated away) from each gateway.
 
@@ -442,8 +442,8 @@ opensips-cli -x mi qr_reload
 
 opensips-cli -x mi qr_status
 opensips-cli -x mi qr_status pstn
-opensips-cli -x mi qr_status pstn MY-GW-3
-opensips-cli -x mi qr_status pstn MY-CARR-7
+opensips-cli -x mi qr_status pstn 11 MY-GW-3
+opensips-cli -x mi qr_status pstn 17 MY-CARR-7
 
 1.6.3. qr_disable_dst
 
@@ -496,7 +496,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 136 52 4753 2697
+   1. Liviu Chircu (@liviuchircu) 137 53 4756 2700
    2. Mihai Tiganus (@tallicamike) 49 15 2955 509
    3. Zero King 3 1 1 1
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 2 1 0 3
@@ -522,9 +522,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2020 - Mar 2020
-   2. Zero King                           Mar 2020 - Mar 2020
-   3. Liviu Chircu (@liviuchircu)         Jan 2020 - Feb 2020
+   1. Liviu Chircu (@liviuchircu)         Jan 2020 - May 2020
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2020 - Mar 2020
+   3. Zero King                           Mar 2020 - Mar 2020
    4. Razvan Crainea (@razvancrainea)     Feb 2020 - Feb 2020
    5. Mihai Tiganus (@tallicamike)        Aug 2014 - Nov 2014
 

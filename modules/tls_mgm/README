@@ -805,13 +805,13 @@ modparam("tls_mgm", "tls_method", "[dom1]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom1]1")
 modparam("tls_mgm", "require_cert", "[dom1]1")
 
-#'biloxy' server domain
+#'biloxi' server domain
 modparam("tls_mgm", "server_domain", "dom2")
 modparam("tls_mgm", "match_ip_address", "[dom2]10.0.0.10:5061")
-modparam("tls_mgm", "match_sip_domain", "[dom2]biloxy.com")
+modparam("tls_mgm", "match_sip_domain", "[dom2]biloxi.com")
 
-modparam("tls_mgm", "certificate", "[dom2]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom2]/certs/biloxy.com/privkey.pem"
+modparam("tls_mgm", "certificate", "[dom2]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom2]/certs/biloxi.com/privkey.pem"
 )
 modparam("tls_mgm", "ca_list", "[dom2]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom2]tlsv1")
@@ -844,13 +844,13 @@ modparam("tls_mgm", "tls_method", "[dom4]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom4]1")
 modparam("tls_mgm", "require_cert", "[dom4]1")
 
-# 'biloxy' client domain
+# 'biloxi' client domain
 modparam("tls_mgm", "client_domain", "dom5")
 modparam("tls_mgm", "match_ip_address", "[dom5]*")
-modparam("tls_mgm", "match_sip_domain", "[dom5]biloxy.com")
+modparam("tls_mgm", "match_sip_domain", "[dom5]biloxi.com")
 
-modparam("tls_mgm", "certificate", "[dom5]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom5]/certs/biloxy.com/privkey.pem"
+modparam("tls_mgm", "certificate", "[dom5]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom5]/certs/biloxi.com/privkey.pem"
 )
 modparam("tls_mgm", "ca_list", "[dom5]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom5]tlsv1")
@@ -1467,8 +1467,8 @@ Chapter 3. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 98 32 3280 2387
    2. Razvan Crainea (@razvancrainea) 72 51 1166 658
    3. Eseanu Marius Cristian (@eseanucristian) 52 11 4268 321
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 24 13 291 460
-   5. Liviu Chircu (@liviuchircu) 23 17 144 222
+   4. Liviu Chircu (@liviuchircu) 24 18 152 230
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 24 13 291 460
    6. Dan Pascu (@danpascu) 17 13 90 176
    7. Ionut Ionita (@ionutrazvanionita) 16 9 383 169
    8. Ionel Cerghit (@ionel-cerghit) 8 1 494 109
@@ -1499,8 +1499,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
-   2.  Liviu Chircu (@liviuchircu)         Oct 2015 - Mar 2020
+   1.  Liviu Chircu (@liviuchircu)         Oct 2015 - May 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
    3.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
    4.  Razvan Crainea (@razvancrainea)     Sep 2015 - Feb 2020
    5.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
@@ -1521,9 +1521,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Dan Pascu
-   (@danpascu), Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Callum Guy
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Dan Pascu (@danpascu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Callum Guy
    (@spacetourist), Peter Lemenkov (@lemenkov), Eseanu Marius
    Cristian (@eseanucristian).
 

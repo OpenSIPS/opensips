@@ -98,6 +98,11 @@ dialog Module
               1.7.19. store_dlg_value(name,val)
               1.7.20. fetch_dlg_value(name,val)
               1.7.21. set_dlg_sharing_tag(tag_name)
+              1.7.22. dlg_on_answer([route_name])
+              1.7.23. dlg_on_timeout([route_name])
+              1.7.24. dlg_on_hangup([route_name])
+              1.7.25. dlg_send_sequential(method, leg, [, body] [,
+                      content-type] [, headers])
 
         1.8. Exported Statistics
 
@@ -244,6 +249,10 @@ dialog Module
    1.69. store_dlg_value usage
    1.70. fetch_dlg_value usage
    1.71. set_dlg_sharing_tag usage
+   1.72. dlg_on_answer usage
+   1.73. dlg_on_timeout usage
+   1.74. dlg_on_hangup usage
+   1.75. dlg_send_sequential usage to convert DTMF codes
 
 Chapter 1. Admin Guide
 
@@ -1699,6 +1708,146 @@ $var(account) = $dlg_val(account_type);
 set_dlg_sharing_tag("vip1");
 ...
 
+1.7.22.  dlg_on_answer([route_name])
+
+   The function arms a script route to be executed when the
+   current dialog will be later answered. When the route will be
+   executed, the dialog context will be exposed, but with no valid
+   SIP message (just a phony one).
+
+   You must use this function AFTER creating the dialog and before
+   the dialog being answered.
+
+   If the parameter is missing, the function does a reset of any
+   route previously set; there will be no triggering.
+
+   Parameters:
+     * route_name (string,optional) - the name of the script route
+       to be executed.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.72. dlg_on_answer usage
+...
+create_dialog();
+dlg_on_answer("dlg_answered");
+...
+route[dlg_answered] {
+        xlog("The dialog $DLG_did was answered\n");
+}
+
+1.7.23.  dlg_on_timeout([route_name])
+
+   The function arms a script route to be executed when (and if)
+   the current dialog will timeout (as duration). When the route
+   will be executed, the dialog context will be exposed, but with
+   no valid SIP message (just a phony one)
+
+   When the route is executed, the dialog is not yet terminated,
+   just its lifetime reached the set limit. In the timeout route
+   you can increase the dialog expiration timeout (and the dialog
+   will continue) or you can let the dialog to be terminated
+   (after the end of this route).
+
+   You must use this function AFTER creating the dialog and before
+   the dialog being answered.
+
+   You must use this function AFTER creating the dialog and before
+   the dialog being answered.
+
+   Parameters:
+     * route_name (string,optional) - the name of the script route
+       to be executed.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.73. dlg_on_timeout usage
+...
+create_dialog();
+$DLG_timeout=120;
+dlg_on_timeout("dlg_timeout");
+...
+route[dlg_timeout] {
+        xlog("The dialog $DLG_did timed out\n");
+        if (_some_prolongation_condition)
+                $DLG_timeout = 60; # give it 1 min more
+}
+
+1.7.24.  dlg_on_hangup([route_name])
+
+   The function arms a script route to be executed when the
+   current dialog will be terminated. When the route will be
+   executed, the dialog context will be exposed, but with no valid
+   SIP message (just a phony one). Note that the dialog will be
+   already terminated and there is nothing you can do about it
+   besides reading data from its context.
+
+   You must use this function AFTER creating the dialog and before
+   the dialog being answered.
+
+   If the parameter is missing, the function does a reset of any
+   route previously set; there will be no triggering.
+
+   Parameters:
+     * route_name (string,optional) - the name of the script route
+       to be executed.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
+   REPLY_ROUTE and FAILURE_ROUTE.
+
+   Example 1.74. dlg_on_hangup usage
+...
+create_dialog();
+dlg_on_hangup("dlg_hangup");
+...
+route[dlg_hangup] {
+        xlog("The dialog $DLG_did terminated after $DLG_lifetime secs\n"
+);
+}
+
+1.7.25.  dlg_send_sequential(method, leg, [, body] [, content-type]
+[, headers])
+
+   Used to send an in-dialog request towards one if the dialog's
+   legs. The function assumes that is runs inside a dialog context
+   - if you are running it from a different context (such as an
+   event_route), make sure you first load the dialog context using
+   the load_dialog_ctx() function.
+
+   Parameters:
+     * method (string) - the method of the request sent.
+     * leg (string) - the leg where the request is sent. Must be
+       either caller or callee.
+     * body (string, optional) - an optional body sent in the
+       request. If missing, no body is sent.
+     * content-type (string, optional) - the content type of the
+       body sent. Make sure you specify this every time you send a
+       request with a body, otherwise there are high changes that
+       your UAC will reject the request.
+     * headers (string, optional) - additional headers attached to
+       the request sent.
+
+   This function can be used from ANY route.
+
+   Example 1.75. dlg_send_sequential usage to convert DTMF codes
+...
+event_route[E_RTPPROXY_DTMF] {
+    if (load_dialog_ctx("$param(id)", "did")) {
+        if ($param(stream) == 0) {
+            $var(direction) = "callee";
+        } else {
+            $var(direction) = "caller";
+        }
+        dlg_send_sequential($var(direction), "INFO",
+                "Signal=$param(digit)\nDuration=160",
+                "application/dtmf-relay");
+        unload_dialog_ctx();
+    }
+}
+...
+
 1.8. Exported Statistics
 
 1.8.1. active_dialogs
@@ -1816,9 +1965,8 @@ set_dlg_sharing_tag("vip1");
 
    Parameters are:
      * dialog_id - this is an identifier of the dialog - it can be
-       either (1) the numerical unique ID of the dialog (as
-       provided by dlg_list), either (2) the SIP Call-ID of the
-       dialog.
+       either (1) the unique ID of the dialog (as provided by
+       dlg_list), either (2) the SIP Call-ID of the dialog.
      * extra_hdrs - (optional) string containg the extra headers
        (full format) to be added to the BYE requests.
 
@@ -1826,7 +1974,7 @@ set_dlg_sharing_tag("vip1");
 
    MI FIFO Command Format:
                 # terminate the dialog via the internal Dialog-ID
-                opensips-cli -x mi dlg_end_dlg 1391569858236
+                opensips-cli -x mi dlg_end_dlg 6ae.4b38d013
                 # terminate the dialog via its SIP Call-ID
                 opensips-cli -x mi dlg_end_dlg Y2IwYjQ2YmE2ZDg5MWVkNDNkZ
 GIwZjAzNGM1ZDY
@@ -2111,8 +2259,8 @@ GIwZjAzNGM1ZDY
 1.10.6. $DLG_did
 
    Returns the id of the dialog corresponding to the processed
-   sequential request. The output format is entry ':' id (as
-   returned by the dlg_list MI function). This PV will be
+   sequential request. The output format is a string identical to
+   the one returned by the dlg_list MI function. This PV will be
    available only for sequential requests, after doing
    loose_route().
 
@@ -2319,11 +2467,11 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 418 266 12247 3128
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 433 272 12800 3380
    2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
-   3. Razvan Crainea (@razvancrainea) 217 161 4306 1167
-   4. Vlad Patrascu (@rvlad-patrascu) 157 78 3362 3093
-   5. Liviu Chircu (@liviuchircu) 140 99 2717 1075
+   3. Razvan Crainea (@razvancrainea) 223 164 4535 1319
+   4. Vlad Patrascu (@rvlad-patrascu) 159 80 3388 3114
+   5. Liviu Chircu (@liviuchircu) 141 100 2718 1076
    6. Dan Pascu (@danpascu) 30 25 233 179
    7. Ovidiu Sas (@ovidiusas) 27 21 482 107
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
@@ -2365,10 +2513,10 @@ Chapter 4. Contributors
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2020
    2.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2020
-   3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2020
-   5.  Zero King                           Mar 2020 - Mar 2020
-   6.  Liviu Chircu (@liviuchircu)         Aug 2012 - Feb 2020
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2020
+   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
+   5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
+   6.  Zero King                           Mar 2020 - Mar 2020
    7.  Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
@@ -2394,8 +2542,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
-   (@vladpaiu), Zero King, Razvan Crainea (@razvancrainea), Dan
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Vlad Paiu (@vladpaiu), Zero King, Dan
    Pascu (@danpascu), Liviu Chircu (@liviuchircu), Vlad Patrascu
    (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián Moreno
    Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
