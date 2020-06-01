@@ -277,7 +277,7 @@ int proto_sctp_send(struct socket_info *source, char *buf, unsigned len,
 
 	tolen=sockaddru_len(*to);
 again:
-	n=sctp_sendmsg(source->socket, buf, len, &to->s, tolen, 0, 0, 0, 0, 0);
+	n=sctp_sendmsg(source->socket, buf, len, &to->s, tolen, 0, SCTP_UNORDERED, 0, 0, 0);
 #ifdef XL_DEBUG
 	LM_INFO("send status: %d\n", n);
 #endif
