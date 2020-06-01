@@ -102,13 +102,18 @@ int proto_sctp_init_listener(struct socket_info* sock_info)
 	/* this sockopt causes a kernel panic in some sctp implementations.
 	 * commenting it out. -gmarmon */
 
-	/* tos
 	optval=tos;
-	if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
-			sizeof(optval)) ==-1){
-		LM_WARN("setsockopt tos: %s\n", strerror(errno));
+	if (addr->s.sa_family == AF_INET) {
+		if (setsockopt(sock_info->socket, IPPROTO_IP, IP_TOS, (void*)&optval,
+				sizeof(optval)) ==-1){
+			LM_WARN("setsockopt tos: %s\n", strerror(errno));
+		}
+	} else if (addr->s.sa_family == AF_INET6) {
+		if (setsockopt(sock_info->socket, IPPROTO_IPV6, IPV6_TCLASS, (void*)&optval,
+				sizeof(optval)) ==-1){
+			LM_WARN("setsockopt v6 tos: %s\n", strerror(errno));
+		}
 	}
-    */
 
 #if defined (__linux__) && defined(SCTP_ERRORS)
 	/* will SCTP_ERRORS ever be defined? -gmarmon */
