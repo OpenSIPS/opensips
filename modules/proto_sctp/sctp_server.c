@@ -89,6 +89,16 @@ int proto_sctp_init_listener(struct socket_info* sock_info)
 	}
 #endif
 
+#ifdef SCTP_EVENTS
+	struct sctp_event_subscribe ev_s = {0};
+	ev_s.sctp_association_event = 1;
+
+	if(setsockopt(sock_info->socket, IPPROTO_SCTP, SCTP_EVENTS, &ev_s, sizeof(ev_s)) == -1) {
+		LM_WARN("setsockopt SCTP_EVENTS: %s (%d)\n",
+				strerror(errno), errno);
+	}
+#endif
+
 	/* this sockopt causes a kernel panic in some sctp implementations.
 	 * commenting it out. -gmarmon */
 
@@ -150,11 +160,37 @@ error:
 	return -1;
 }
 
+static char *sctp_assoc_change_state2s(short int state)
+{
+	char *s;
+
+	switch(state) {
+		case SCTP_COMM_UP:
+			s = "SCTP_COMM_UP";
+			break;
+		case SCTP_COMM_LOST:
+			s = "SCTP_COMM_LOST";
+			break;
+		case SCTP_RESTART:
+			s = "SCTP_RESTART";
+			break;
+		case SCTP_SHUTDOWN_COMP:
+			s = "SCTP_SHUTDOWN_COMP";
+			break;
+		case SCTP_CANT_STR_ASSOC:
+			s = "SCTP_CANT_STR_ASSOC";
+			break;
+		default:
+			s = "UNKNOWN";
+			break;
+	};
+	return s;
+}
 
 int proto_sctp_read(struct socket_info *si, int* bytes_read)
 {
 	struct receive_info ri;
-	int len;
+	int len, msg_flags;
 	static char buf [BUF_SIZE+1];
 	char *tmp;
 	unsigned int fromlen;
@@ -162,7 +198,7 @@ int proto_sctp_read(struct socket_info *si, int* bytes_read)
 
 	fromlen=sockaddru_len(si->su);
 	len = sctp_recvmsg(si->socket, buf, BUF_SIZE, &ri.src_su.s, &fromlen,
-		&sinfo, 0);
+		&sinfo, &msg_flags);
 	if (len==-1){
 		if (errno==EAGAIN){
 			LM_DBG("packet with bad checksum received\n");
@@ -172,6 +208,34 @@ int proto_sctp_read(struct socket_info *si, int* bytes_read)
 			return -1;
 		LM_ERR("sctp_recvmsg:[%d] %s\n", errno, strerror(errno));
 		return -2;
+	}
+
+	if (msg_flags & MSG_NOTIFICATION) {
+		union sctp_notification *snp = (union sctp_notification *)buf;
+
+		switch(snp->sn_header.sn_type) {
+			case SCTP_ASSOC_CHANGE:
+				su2ip_addr(&ri.src_ip, &ri.src_su);
+				if (snp->sn_assoc_change.sac_state == SCTP_COMM_UP)
+					LM_NOTICE("SCTP_ASSOC_CHANGE assoc_id: %d, peer ip:%s,"
+						"peer port:%d, state: %s\n",
+						snp->sn_assoc_change.sac_assoc_id,
+						ip_addr2a(&ri.src_ip),
+						su_getport(&ri.src_su),
+						sctp_assoc_change_state2s(snp->sn_assoc_change.sac_state));
+				else
+					LM_ERR("SCTP_ASSOC_CHANGE assoc_id: %d, peer ip:%s, "
+						"peer port:%d, state: %s\n",
+						snp->sn_assoc_change.sac_assoc_id,
+						ip_addr2a(&ri.src_ip),
+						su_getport(&ri.src_su),
+						sctp_assoc_change_state2s(snp->sn_assoc_change.sac_state));
+				break;
+			default:
+				LM_INFO("unexpected sctp notification type: %d\n",
+					snp->sn_header.sn_type);
+		}
+		return 0;
 	}
 
 	/* we must 0-term the messages, receive_msg expects it */
