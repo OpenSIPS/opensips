@@ -27,6 +27,7 @@
 		<column><field>logstate</field><type>DB_INT</type></column>
 		<column><field>skills</field><type>DB_STR</type></column>
 		<column><field>wrapup_end_time</field><type>DB_INT</type></column>
+		<column><field>wrapup_time</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of cc_cdrs table-->
 	<db_table id="cc_cdrs">

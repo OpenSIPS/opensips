@@ -81,6 +81,7 @@
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
+				<col><field>wrapup_time</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -92,6 +93,7 @@
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
+				<col><field>wrapup_time</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -106,6 +108,7 @@
 				<col><field>logstate</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
+				<col><field>wrapup_time</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

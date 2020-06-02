@@ -1,1 +1,1 @@
-id(int,auto) agentid(string) location(string) logstate(int) skills(string) wrapup_end_time(int) 
+id(int,auto) agentid(string) location(string) logstate(int) skills(string) wrapup_end_time(int) wrapup_time(int) 
