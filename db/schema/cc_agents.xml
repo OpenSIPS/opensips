@@ -83,6 +83,17 @@
 		</description>
 	</column>
 
+	<column id="wrapup_time">
+		<name>wrapup_time</name>
+		<type>int</type>
+		<size>11</size>
+		<default>0</default>
+		<description>The duration in seconds needed by the agent to wrap
+		up the call he just completed. If set to 0, the global wraptup time
+		will be used for this agent.
+		</description>
+	</column>
+
     <index>
         <name>unique_agentid</name>
         <colref linkend="agentid"/>
