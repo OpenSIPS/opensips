@@ -25,6 +25,7 @@ CREATE TABLE cc_agents (
     logstate INT(10) UNSIGNED DEFAULT 0 NOT NULL,
     skills CHAR(255) NOT NULL,
     wrapup_end_time INT(11) DEFAULT 0 NOT NULL,
+    wrapup_time INT(11) DEFAULT 30 NOT NULL,
     CONSTRAINT unique_agentid UNIQUE (agentid)
 ) ENGINE=InnoDB;
 

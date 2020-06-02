@@ -33,6 +33,7 @@ CREATE TABLE cc_agents (
     logstate NUMBER(10) DEFAULT 0 NOT NULL,
     skills VARCHAR2(255),
     wrapup_end_time NUMBER(10) DEFAULT 0 NOT NULL,
+    wrapup_time NUMBER(10) DEFAULT 30 NOT NULL,
     CONSTRAINT cc_agents_unique_agentid  UNIQUE (agentid)
 );
 

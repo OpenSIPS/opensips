@@ -25,6 +25,7 @@ CREATE TABLE cc_agents (
     logstate INTEGER DEFAULT 0 NOT NULL,
     skills CHAR(255) NOT NULL,
     wrapup_end_time INTEGER DEFAULT 0 NOT NULL,
+    wrapup_time INTEGER DEFAULT 30 NOT NULL,
     CONSTRAINT cc_agents_unique_agentid  UNIQUE (agentid)
 );
 
