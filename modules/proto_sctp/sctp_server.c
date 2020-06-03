@@ -238,7 +238,6 @@ int proto_sctp_read(struct socket_info *si, int* bytes_read)
 						sctp_assoc_change_state2s(snp->sn_assoc_change.sac_state));
 				break;
 			case SCTP_SEND_FAILED:
-				su2ip_addr(&ri.src_ip, &ri.src_su);
 				LM_ERR("SCTP_SEND_FAILED assoc_id: %d, peer ip:%s, "
 					"peer port:%d, error: %d\n",
 					snp->sn_send_failed.ssf_assoc_id,
