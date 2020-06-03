@@ -9,6 +9,7 @@
 		<column><field>email_address</field><type>DB_STR</type></column>
 		<column><field>ha1</field><type>DB_STR</type></column>
 		<column><field>ha1b</field><type>DB_STR</type></column>
+		<column><field>uri_user</field><type>DB_STR</type></column>
 		<column><field>rpid</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of uri table-->

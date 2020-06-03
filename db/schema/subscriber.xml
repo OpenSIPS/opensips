@@ -77,6 +77,14 @@
     </column>
 
     <column>
+        <name>uri_user</name>
+        <type>string</type>
+        <size>&user_len;</size>
+        <default/>
+        <description>URI user</description>
+    </column>
+
+    <column>
         <name>rpid</name>
         <type>string</type>
         <size>&domain_len;</size>

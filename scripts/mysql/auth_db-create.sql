@@ -7,6 +7,7 @@ CREATE TABLE subscriber (
     email_address CHAR(64) DEFAULT '' NOT NULL,
     ha1 CHAR(64) DEFAULT '' NOT NULL,
     ha1b CHAR(64) DEFAULT '' NOT NULL,
+    uri_user CHAR(64) DEFAULT '' NOT NULL,
     rpid CHAR(64) DEFAULT NULL,
     CONSTRAINT account_idx UNIQUE (username, domain)
 ) ENGINE=InnoDB;

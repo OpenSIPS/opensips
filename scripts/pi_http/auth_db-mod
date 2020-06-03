@@ -11,6 +11,7 @@
 				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
 				<col><field>ha1b</field></col>
+				<col><field>uri_user</field></col>
 				<col><field>rpid</field></col>
 			</query_cols>
 		</cmd>
@@ -24,6 +25,7 @@
 				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
 				<col><field>ha1b</field></col>
+				<col><field>uri_user</field></col>
 				<col><field>rpid</field></col>
 			</query_cols>
 		</cmd>
@@ -40,6 +42,7 @@
 				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
 				<col><field>ha1b</field></col>
+				<col><field>uri_user</field></col>
 				<col><field>rpid</field></col>
 			</query_cols>
 		</cmd>
