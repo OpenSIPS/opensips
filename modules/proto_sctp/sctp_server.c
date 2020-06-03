@@ -43,6 +43,7 @@
 	#include <linux/types.h>
 	#include <linux/errqueue.h>
 #endif
+#include <fcntl.h>
 
 #include "../../mem/shm_mem.h"
 #include "../../sr_module.h"
@@ -152,6 +153,19 @@ int proto_sctp_init_listener(struct socket_info* sock_info)
 			LM_INFO("sctp bindx success to: %s\n",
 				inet_ntoa(((struct sockaddr_in *)&sctp_sec_addr)->sin_addr));
 	}
+
+	/* make non-blocking sending */
+	optval=fcntl(sock_info->socket, F_GETFL);
+	if (optval==-1){
+		LM_ERR("fnctl failed with %s [%d]\n", strerror(errno), errno);
+		goto error;
+	}
+	if (fcntl(sock_info->socket, F_SETFL, optval|O_NONBLOCK)==-1){
+		LM_ERR("fcntl: set non-blocking failed with %s [%d]\n",
+				strerror(errno), errno);
+		goto error;
+	}
+
 	if(listen(sock_info->socket, LISTEN_BACKLOG)<0){
 		LM_ERR("listen(%x, %d) on %s: %s\n",
 				sock_info->socket,
@@ -292,14 +306,16 @@ again:
 	LM_INFO("send status: %d\n", n);
 #endif
 	if (n==-1){
-		LM_ERR("sctp_sendmsg(sock,%p,%d,%p,%d,0,0,0,0,0): %s(%d)\n",
-				buf,len,&to->s,tolen, strerror(errno),errno);
-
 		if (errno==EINTR) goto again;
 		if (errno==EINVAL) {
 			LM_CRIT("invalid sendtoparameters\n"
 			"one possible reason is the server is bound to localhost and\n"
 			"attempts to send to the net\n");
+		} else if(errno == EAGAIN || errno == EWOULDBLOCK) {
+			LM_ERR(L_ERR, "sctp_sendmsg failed, send buffer full\n");
+		} else {
+			LM_ERR("sctp_sendmsg(sock,%p,%d,%p,%d...): %s(%d)\n",
+				buf,len,&to->s,tolen, strerror(errno),errno);
 		}
 	}
 	return n;
