@@ -342,7 +342,6 @@ extern int cfg_parse_only_routes;
 %token AVP_ALIASES
 %token LISTEN
 %token LISTEN_SCTP_SEC
-%token SCTP_SEND_TTL_MS
 %token MEMGROUP
 %token ALIAS
 %token AUTO_ALIASES
@@ -1147,9 +1146,6 @@ assign_stm: DEBUG EQUAL snumber
 							}
 						}
 		| LISTEN_SCTP_SEC EQUAL  error { yyerror("ip address expected"); }
-		| SCTP_SEND_TTL_MS EQUAL NUMBER { IFOR();
-								sctp_send_ttl_ms=$3; }
-		| SCTP_SEND_TTL_MS EQUAL error { yyerror("number expected"); }
 		| MEMGROUP EQUAL STRING COLON multi_string { IFOR();
 							/* convert STIRNG ($3) to an ID */
 							/* update the memstats type for each module */
