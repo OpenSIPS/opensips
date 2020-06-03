@@ -152,4 +152,5 @@ extern int enable_asserts;
 extern int abort_on_assert;
 
 extern union sockaddr_union sctp_sec_addr;
+extern uint32_t sctp_send_ttl_ms;
 #endif

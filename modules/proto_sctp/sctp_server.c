@@ -92,6 +92,7 @@ int proto_sctp_init_listener(struct socket_info* sock_info)
 #ifdef SCTP_EVENTS
 	struct sctp_event_subscribe ev_s = {0};
 	ev_s.sctp_association_event = 1;
+	ev_s.sctp_send_failure_event = 1;
 
 	if(setsockopt(sock_info->socket, IPPROTO_SCTP, SCTP_EVENTS, &ev_s, sizeof(ev_s)) == -1) {
 		LM_WARN("setsockopt SCTP_EVENTS: %s (%d)\n",
@@ -195,7 +196,7 @@ static char *sctp_assoc_change_state2s(short int state)
 int proto_sctp_read(struct socket_info *si, int* bytes_read)
 {
 	struct receive_info ri;
-	int len, msg_flags;
+	int len, msg_flags = 0;
 	static char buf [BUF_SIZE+1];
 	char *tmp;
 	unsigned int fromlen;
@@ -235,6 +236,15 @@ int proto_sctp_read(struct socket_info *si, int* bytes_read)
 						ip_addr2a(&ri.src_ip),
 						su_getport(&ri.src_su),
 						sctp_assoc_change_state2s(snp->sn_assoc_change.sac_state));
+				break;
+			case SCTP_SEND_FAILED:
+				su2ip_addr(&ri.src_ip, &ri.src_su);
+				LM_ERR("SCTP_SEND_FAILED assoc_id: %d, peer ip:%s, "
+					"peer port:%d, error: %d\n",
+					snp->sn_send_failed.ssf_assoc_id,
+					ip_addr2a(&ri.src_ip),
+					su_getport(&ri.src_su),
+					snp->sn_send_failed.ssf_error);
 				break;
 			default:
 				LM_INFO("unexpected sctp notification type: %d\n",
@@ -277,7 +287,7 @@ int proto_sctp_send(struct socket_info *source, char *buf, unsigned len,
 
 	tolen=sockaddru_len(*to);
 again:
-	n=sctp_sendmsg(source->socket, buf, len, &to->s, tolen, 0, SCTP_UNORDERED, 0, 0, 0);
+	n=sctp_sendmsg(source->socket, buf, len, &to->s, tolen, 0, SCTP_UNORDERED, 0, sctp_send_ttl_ms, 0);
 #ifdef XL_DEBUG
 	LM_INFO("send status: %d\n", n);
 #endif
