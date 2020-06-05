@@ -278,7 +278,8 @@ int solve_module_dependencies(struct sr_module *modules)
 		if (!dep_solved) {
 			switch (dep_type) {
 			case DEP_SILENT:
-				LM_DBG("module %s depends on %s%s%s%.*s%s%s, but %s loaded!\n",
+				LM_DBG("module %s soft-depends on "
+				           "%s%s%s%.*s%s%s, and %s loaded -- proceeding\n",
 						md->mod->exports->name,
 						md->dep.len == 0 ?
 							((md->mod_type == MOD_TYPE_SQLDB ||
