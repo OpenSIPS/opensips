@@ -108,7 +108,8 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 		int *t1u, int *t2s, int *t2u, pv_spec_t *_res);
-int check_time_rec(struct sip_msg *msg, str *time_str, unsigned int *ptime);
+int check_time_rec(struct sip_msg *msg, str *time_str, str *tz,
+                   unsigned int *ptime);
 
 #ifdef HAVE_TIMER_FD
 static int async_sleep(struct sip_msg* msg,
@@ -191,6 +192,7 @@ static cmd_export_t cmds[]={
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"check_time_rec", (cmd_function)check_time_rec, {
 		{CMD_PARAM_STR, fixup_str, fixup_free_str},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
@@ -844,11 +846,13 @@ static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 			1 - match
 			-1 - otherwise
  */
-int check_time_rec(struct sip_msg *msg, str *time_str, unsigned int *ptime)
+int check_time_rec(struct sip_msg *msg, str *time_str, str *tz,
+                   unsigned int *ptime)
 {
 	tmrec_p time_rec = 0;
 	char *p, *s;
 	ac_tm_t att;
+	time_t check_time;
 
 	p = time_str->s;
 
@@ -858,6 +862,18 @@ int check_time_rec(struct sip_msg *msg, str *time_str, unsigned int *ptime)
 	if (time_rec==0) {
 		LM_ERR("no more shm mem\n");
 		goto error;
+	}
+
+	if (!ptime)
+		check_time = time(NULL);
+	else
+		check_time = *ptime;
+
+	if (tz) {
+		check_time = tz_adjust_ts(check_time, tz);
+		tz_set(tz);
+	} else {
+		check_time = tz_adjust_ts(check_time, NULL);
 	}
 
 	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
@@ -884,7 +900,7 @@ done:
 	memset( &att, 0, sizeof(att));
 
 	/* set current time */
-	if ( ac_tm_set_time( &att, ptime?(time_t)*ptime:time(0) ) )
+	if (ac_tm_set_time(&att, check_time))
 		goto error;
 
 	/* does the recv_time match the specified interval?  */
@@ -894,6 +910,7 @@ done:
 success:
 	tmrec_free(time_rec);
 
+	tz_reset();
 	return 1;
 
 parse_error:
@@ -902,5 +919,7 @@ parse_error:
 error:
 	if (time_rec)
 		tmrec_free( time_rec );
+
+	tz_reset();
 	return -1;
 }

@@ -474,14 +474,14 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 	</section>
 	<section id="func_check_time_rec" xreflabel="check_time_rec()">
 		<title>
-			<function moreinfo="none">check_time_rec(time_string[,timestamp])</function>
+			<function moreinfo="none">check_time_rec(time_string, [timezone], [timestamp])</function>
 		</title>
 		<para>
 		The function returns a positive value if the specified time recurrence string
 		matches the current time, or a negative value otherwise.
 		</para>
 		<para>
-		For checking something else than the current time, the second parameter will
+		For checking something else than the current time, the third parameter will
 		contain the UNIX timestamp of the time to check.
 		</para>
 		<para>
@@ -504,20 +504,31 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 			string ends in multiple null fields, they can all be ommited.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>timezone (string, optional)</emphasis> - The
+			timezone that the time recurrence stamps are specified in.  By
+			default, the system time zone is used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>timestamp (string, optional)</emphasis> - A
+			specific UNIX time to check.  The function simply expects the
+			actual UNIX time here, there is no need to perform any timezone
+			adjustments.
+			</para>
+		</listitem>
 		</itemizedlist>
 		<example>
 			<title><function>check_time_rec</function> usage</title>
 			<programlisting format="linespecific">
 ...
 # Only passing if still in 2012
-if (check_time_rec("20120101T000000|20121231T235959")) {
-	xlog("Current time matches the given interval\n");
-}
+if (check_time_rec("20120101T000000|20130101T000000", "Europe/Bucharest"))
+	xlog("Current system time matches the given Romanian time interval\n");
 ...
 # Only passing if less than 30 days have passed from "dtstart"
-if (check_time_rec("20121101T000000||p30d")) {
+if (check_time_rec("20121101T000000||p30d"))
 	xlog("Current time matches the given interval\n");
-}
 ...
 			</programlisting>
 		</example>

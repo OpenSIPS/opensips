@@ -29,7 +29,7 @@
 #define REC_MATCH   0
 #define REC_NOMATCH 1
 
-#define _IS_SET(x) (((x)>0)?1:0)
+#define _IS_SET(x) ((x) > 0)
 #define _D(c) ((c) -'0')
 
 
@@ -71,13 +71,82 @@ int ac_tm_fill(ac_tm_p _atp, struct tm* _tm)
 	return 0;
 }
 
+
+#define TZ_INTACT ((char *)-1)
+static char *old_tz = TZ_INTACT;
+
+void tz_set(const str *tz)
+{
+#define TZBUF_SZ 50
+	char tzbuf[TZBUF_SZ];
+
+	if (tz->len >= TZBUF_SZ)
+		return;
+
+	LM_DBG("setting timezone to: '%.*s'\n", tz->len, tz->s);
+
+	memcpy(tzbuf, tz->s, tz->len);
+	tzbuf[tz->len] = '\0';
+
+	old_tz = getenv("TZ");
+
+	setenv("TZ", tzbuf, 1);
+	tzset();
+#undef TZBUF_SZ
+}
+
+
+void tz_reset(void)
+{
+	if (old_tz == TZ_INTACT)
+		return;
+
+	if (!old_tz) {
+		LM_DBG("resetting timezone to system default\n");
+		unsetenv("TZ");
+	} else {
+		LM_DBG("resetting timezone to '%s'\n", old_tz);
+		setenv("TZ", old_tz, 1);
+	}
+
+	tzset();
+	old_tz = TZ_INTACT;
+}
+
+
+time_t tz_adjust_ts(time_t unix_time, const str *tz)
+{
+	struct tm *local_tm;
+	time_t adj_ts;
+
+	tz_set(_str("UTC"));
+	local_tm = localtime(&unix_time);
+	tz_reset();
+
+	if (tz)
+		tz_set(tz);
+
+	adj_ts = mktime(local_tm);
+	tz_reset();
+
+	if (local_tm->tm_isdst > 0)
+		adj_ts -= 3600;
+
+	LM_DBG("UNIX ts: %ld, local-adjusted ts: %ld (%.*s, DST: %s)\n", unix_time,
+	       adj_ts, tz->len, tz->s, local_tm->tm_isdst == 1 ? "on" :
+	                               local_tm->tm_isdst == 0 ? "off":"unavail");
+	return adj_ts;
+}
+
+
+
 int ac_tm_set_time(ac_tm_p _atp, time_t _t)
 {
 	struct tm ltime;
-	if(!_atp)
-		return -1;
-	memset( _atp, 0, sizeof(ac_tm_t));
+
+	memset(_atp, 0, sizeof *_atp);
 	_atp->time = _t;
+
 	localtime_r(&_t, &ltime);
 	return ac_tm_fill(_atp, &ltime);
 }
@@ -925,7 +994,7 @@ int check_tmrec(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 	if(!_IS_SET(_trp->duration))
 		_trp->duration = _trp->dtend - _trp->dtstart;
 
-	if(_atp->time <= _trp->dtstart+_trp->duration)
+	if(_atp->time < _trp->dtstart+_trp->duration)
 	{
 		if(_tsw)
 		{

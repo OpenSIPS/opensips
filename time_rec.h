@@ -188,6 +188,15 @@ int ic_parse_wkst(char*);
 
 int check_tmrec(tmrec_p, ac_tm_p, tr_res_p);
 
+void tz_set(const str *tz);
+void tz_reset(void);
+
+/*
+ * obtain an equivalent to the @unix_time UNIX timestamp
+ * that matches the @tz timezone, including the current DST status
+ *
+ * Note: If @tz == NULL, @unix_time will be ajusted to local time
+ */
+time_t tz_adjust_ts(time_t unix_time, const str *tz);
 
 #endif
-
