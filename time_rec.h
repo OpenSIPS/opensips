@@ -64,6 +64,11 @@
 #define TSW_TSET	1
 #define TSW_RSET	2
 
+#define SEC_DAILY     (60 * 60 * 24)
+#define SEC_WEEKLY    (7 * SEC_DAILY)
+#define SEC_MONTHLY   (31 * SEC_DAILY)  /* maximally */
+#define SEC_YEARLY    (366 * SEC_DAILY) /* maximally */
+
 #define SHM_ALLOC	0
 #define PKG_ALLOC	1
 

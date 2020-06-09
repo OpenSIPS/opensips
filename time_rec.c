@@ -132,9 +132,11 @@ time_t tz_adjust_ts(time_t unix_time, const str *tz)
 	if (local_tm->tm_isdst > 0)
 		adj_ts -= 3600;
 
-	LM_DBG("UNIX ts: %ld, local-adjusted ts: %ld (%.*s, DST: %s)\n", unix_time,
-	       adj_ts, tz->len, tz->s, local_tm->tm_isdst == 1 ? "on" :
-	                               local_tm->tm_isdst == 0 ? "off":"unavail");
+	LM_DBG("UNIX ts: %ld, local-adjusted ts: %ld (tz: '%.*s', DST: %s)\n", unix_time,
+	       adj_ts, tz ? tz->len : 4, tz ? tz->s : "null",
+	       local_tm->tm_isdst == 1 ? "on" :
+	       local_tm->tm_isdst == 0 ? "off" : "unavail");
+
 	return adj_ts;
 }
 
@@ -1101,43 +1103,127 @@ int get_min_interval(tmrec_p _trp)
 int check_min_unit(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 {
 	int _v0, _v1;
+	long diff;
+	int min_itv, wd1, wd2, wdx;
+	struct tm end;
+	time_t t;
+
 	if(!_trp || !_atp)
 		return REC_ERR;
-	switch(get_min_interval(_trp))
-	{
-		case FREQ_DAILY:
+
+	end = _trp->ts;
+	end.tm_sec += _trp->duration;
+	t = mktime(&end);
+	localtime_r(&t, &end);
+
+	min_itv = get_min_interval(_trp);
+	switch (min_itv) {
+	case FREQ_DAILY:
+		if (_trp->duration >= SEC_DAILY)
+			return REC_MATCH;
+
+		diff = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec -
+				(_atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec);
 		break;
-		case FREQ_WEEKLY:
-			if(_trp->ts.tm_wday != _atp->t.tm_wday)
+
+	case FREQ_WEEKLY:
+		if (_trp->duration >= SEC_WEEKLY)
+			return REC_MATCH;
+
+		wd1 = _trp->ts.tm_wday;
+		wd2 = end.tm_wday;
+		wdx = _atp->t.tm_wday;
+
+		/* continuous interval (e.g. "M [ T W T F ] S S") */
+		if (wd1 < wd2) {
+			if (wdx < wd1 || wdx > wd2)
 				return REC_NOMATCH;
-		break;
-		case FREQ_MONTHLY:
-			if(_trp->ts.tm_mday != _atp->t.tm_mday)
+
+			if (wdx != wd1 && wdx != wd2)
+				return REC_MATCH;
+
+			if (wdx == wd1)
+				diff = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec -
+					(_trp->ts.tm_hour*3600 + _trp->ts.tm_min*60 + _trp->ts.tm_sec);
+			else
+				diff = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec -
+					(_atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec);
+
+			return diff > 0 ? REC_MATCH : REC_NOMATCH;
+
+		/* overlapping interval (e.g. "M T ] W T F [ S S") */
+		} else if (wd1 > wd2) {
+			if (wdx < wd1 && wdx > wd2)
 				return REC_NOMATCH;
-		break;
-		case FREQ_YEARLY:
-			if(_trp->ts.tm_mon != _atp->t.tm_mon
-					|| _trp->ts.tm_mday != _atp->t.tm_mday)
+
+			if (wdx != wd1 && wdx != wd2)
+				return REC_MATCH;
+
+			if (wdx == wd1)
+				diff = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec -
+					(_trp->ts.tm_hour*3600 + _trp->ts.tm_min*60 + _trp->ts.tm_sec);
+			else
+				diff = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec -
+					(_atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec);
+
+			return diff > 0 ? REC_MATCH : REC_NOMATCH;
+
+		} else if (wdx != wd1) {
+			if (_trp->duration <= SEC_DAILY)
 				return REC_NOMATCH;
+			else
+				return REC_MATCH;
+
+		} else {
+			diff = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec -
+				(_trp->ts.tm_hour*3600 + _trp->ts.tm_min*60 + _trp->ts.tm_sec);
+			if (diff < 0)
+				return REC_NOMATCH;
+
+			diff = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec -
+				(_atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec);
+			if (diff <= 0)
+				return REC_NOMATCH;
+
+			return REC_MATCH;
+		}
+
 		break;
-		default:
+
+	case FREQ_MONTHLY:
+		if (_trp->duration >= SEC_MONTHLY)
+			return REC_MATCH;
+		break;
+
+	case FREQ_YEARLY:
+		if (_trp->duration >= SEC_YEARLY)
+			return REC_MATCH;
+
+		if (_trp->ts.tm_mon != _atp->t.tm_mon
+				|| _trp->ts.tm_mday != _atp->t.tm_mday)
 			return REC_NOMATCH;
+		break;
+
+	default:
+		return REC_NOMATCH;
 	}
-	_v0 = _trp->ts.tm_hour*3600 + _trp->ts.tm_min*60 + _trp->ts.tm_sec;
-	_v1 = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec;
-	if(_v1 >= _v0 && _v1 < _v0 + _trp->duration)
+
+	_v0 = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec;
+	_v1 = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec;
+
+	if (_v1 - _v0)
 	{
 		if(_tsw)
 		{
 			if(_tsw->flag & TSW_RSET)
 			{
-				if(_tsw->rest>_v0+_trp->duration-_v1)
-					_tsw->rest = _v0 + _trp->duration - _v1;
+				if (_tsw->rest > _v1 - _v0)
+					_tsw->rest = _v1 - _v0;
 			}
 			else
 			{
 				_tsw->flag |= TSW_RSET;
-				_tsw->rest = _v0 + _trp->duration - _v1;
+				_tsw->rest = _v1 - _v0;
 			}
 		}
 		return REC_MATCH;
