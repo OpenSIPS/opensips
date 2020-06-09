@@ -146,10 +146,8 @@ static inline void add_xlog_data(trace_message message, void* param)
 static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 {
 	struct modify_trace mod_p;
-
 	xl_trace_t xtrace_param;
-
-	const int proto = IPPROTO_TCP;
+	str correlation_str;
 
 	if (msg == NULL || buf == NULL) {
 		LM_ERR("bad input!\n");
@@ -168,8 +166,15 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 
 	mod_p.param = &xtrace_param;
 
-	if (sip_context_trace(xlog_proto_id, 0, 0,
-				0, proto, &msg->callid->body, &mod_p) < 0) {
+	if (msg->callid && msg->callid->body.len) {
+		correlation_str = msg->callid->body;
+	} else {
+		correlation_str.s = "<null>";
+		correlation_str.len = 6;
+	}
+
+	if (sip_context_trace(xlog_proto_id, 0, 0, 0, IPPROTO_TCP,
+	&correlation_str, &mod_p) < 0) {
 		LM_ERR("failed to trace xlog message!\n");
 		return -1;
 	}
