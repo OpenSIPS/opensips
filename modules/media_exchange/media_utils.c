@@ -56,56 +56,79 @@ struct media_fork_info {
 
 str *media_session_get_hold_sdp(struct media_session_leg *msl)
 {
-	char *p;
+	static sdp_info_t sdp;
+	sdp_session_cell_t *session;
+	sdp_stream_cell_t *stream;
+	str session_hdr;
+	int attr_to_add = 0;
+	int len, streamnum;
 	static str new_body;
-	static str sendrecv = str_init("a=sendrecv");
-	static str sendonly = str_init("a=sendonly");
-	static str recvonly = str_init("a=recvonly");
 	/* NOTE: all the attributes have the same length as inactive */
-	static str inactive = str_init("a=inactive");
 	int leg = MEDIA_SESSION_DLG_OTHER_LEG(msl);
 	str body = dlg_get_out_sdp(msl->ms->dlg, leg);
 
-	/* search for sendrecv */
-	p = str_strstr(&body, &sendrecv);
-	if (!p) {
-		p = str_strstr(&body, &sendonly);
-		if (!p)
-			p = str_strstr(&body, &recvonly);
+	if (parse_sdp_session(&body, 0, NULL, &sdp) < 0) {
+		LM_ERR("could not parse SDP for leg %d\n", leg);
+		return NULL;
 	}
 
-	if (p && (p[inactive.len] == '\r' || p[inactive.len] == '\n')) {
-		/* we have the attribute - copy everything but the label */
-		new_body.s = pkg_malloc(body.len);
-		if (!new_body.s)
-			return NULL;
-		memcpy(new_body.s, body.s, p - body.s);
-		new_body.len = p - body.s;
-		p += inactive.len;
-		memcpy(new_body.s + new_body.len, inactive.s, inactive.len);
-		new_body.len += inactive.len;
-		memcpy(new_body.s + new_body.len, p, body.len - (p - body.s));
+	/* we only have one session, so there's no need to iterate */
+	streamnum = 0;
+	session = sdp.sessions;
+	session_hdr.s = session->body.s;
+	session_hdr.len = session->body.len;
+	for (stream = session->streams; stream; stream = stream->next) {
+		/* first stream indicates where session header ends */
+		if (session_hdr.len > stream->body.s - session->body.s)
+			session_hdr.len = stream->body.s - session->body.s;
+		if (stream->sendrecv_mode.len == 0)
+			attr_to_add++;
+		else if (strncasecmp(stream->sendrecv_mode.s, "inactive", 8) == 0)
+			continue; /* do not disable already disabled stream */
+		streamnum++;
+	}
+
+	new_body.s = pkg_malloc(body.len + attr_to_add * 12 /* a=inactive\r\n */);
+	if (!new_body.s) {
+		LM_ERR("oom for new body!\n");
+		return NULL;
+	}
+
+	if (!streamnum) {
+		/* duplicate the body as it is */
+		memcpy(new_body.s, body.s, body.len);
 		new_body.len = body.len;
-	} else {
-		/* no indication found */
-		if (str_strstr(&body, &inactive)) {
-			new_body.s = pkg_malloc(body.len);
-			if (!new_body.s)
-				return NULL;
-			memcpy(new_body.s, body.s, body.len);
-			new_body.len = body.len;
-		} else {
-			new_body.s = pkg_malloc(body.len + inactive.len + 2/* \r\n */);
-			if (!new_body.s)
-				return NULL;
-			memcpy(new_body.s, body.s, body.len);
-			new_body.len = body.len;
-			memcpy(new_body.s + new_body.len, inactive.s, inactive.len);
-			new_body.len += inactive.len;
-			new_body.s[new_body.len++] = '\r';
-			new_body.s[new_body.len++] = '\n';
+		return &new_body;
+	}
+
+	/* copy everything until the first stream */
+	memcpy(new_body.s, session_hdr.s, session_hdr.len);
+	new_body.len = session_hdr.len;
+	for (streamnum = 0; streamnum < session->streams_num; streamnum++) {
+		for (stream = session->streams; stream; stream = stream->next) {
+			/* make sure the streams are in the same order */
+			if (stream->stream_num != streamnum)
+				continue;
+			if (stream->sendrecv_mode.len) {
+				len = stream->sendrecv_mode.s - stream->body.s;
+				memcpy(new_body.s + new_body.len, stream->body.s,
+						stream->sendrecv_mode.s - stream->body.s);
+				new_body.len += len;
+				memcpy(new_body.s + new_body.len, "inactive", 8);
+				new_body.len += 8;
+				len += stream->sendrecv_mode.len;
+				memcpy(new_body.s + new_body.len, stream->sendrecv_mode.s +
+						stream->sendrecv_mode.len, stream->body.len - len);
+				new_body.len += stream->body.len - len;
+			} else {
+				memcpy(new_body.s + new_body.len, stream->body.s, stream->body.len);
+				new_body.len += stream->body.len;
+				memcpy(new_body.s + new_body.len, "a=inactive\r\n", 12);
+				new_body.len += 12;
+			}
 		}
 	}
+
 	return &new_body;
 }
 
