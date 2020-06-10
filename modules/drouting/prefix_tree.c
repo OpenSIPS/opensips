@@ -98,7 +98,7 @@ check_time(
 		return 0;
 
 	/* does the recv_time match the specified interval?  */
-	if (check_tmrec( time_rec, &att, 0)!=0)
+	if (check_tmrec( time_rec, &att)!=0)
 		return 0;
 
 	return 1;

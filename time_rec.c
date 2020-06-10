@@ -431,6 +431,7 @@ int tr_parse_freq(tmrec_p _trp, char *_in)
 {
 	if(!_trp || !_in)
 		return -1;
+
 	if(strlen(_in)<5)
 	{
 		_trp->freq = FREQ_NOFREQ;
@@ -969,7 +970,7 @@ error:
 
 /*** local headers ***/
 int get_min_interval(tmrec_p);
-int check_min_unit(tmrec_p, ac_tm_p, tr_res_p);
+int check_min_unit(tmrec_p _trp, ac_tm_p _atp);
 int check_freq_interval(tmrec_p _trp, ac_tm_p _atp);
 int check_byxxx(tmrec_p, ac_tm_p);
 
@@ -979,11 +980,8 @@ int check_byxxx(tmrec_p, ac_tm_p);
  *       -1/REC_ERR - error
  *        1/REC_NOMATCH - the time falls out
  */
-int check_tmrec(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
+int check_tmrec(tmrec_p _trp, ac_tm_p _atp)
 {
-	if(!_trp || !_atp)
-		return REC_ERR;
-
 	/* it is before start date */
 	if(_atp->time < _trp->dtstart)
 		return REC_NOMATCH;
@@ -996,23 +994,8 @@ int check_tmrec(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 	if(!_IS_SET(_trp->duration))
 		_trp->duration = _trp->dtend - _trp->dtstart;
 
-	if(_atp->time < _trp->dtstart+_trp->duration)
-	{
-		if(_tsw)
-		{
-			if(_tsw->flag & TSW_RSET)
-			{
-				if(_tsw->rest>_trp->dtstart+_trp->duration-_atp->time)
-					_tsw->rest = _trp->dtstart+_trp->duration - _atp->time;
-			}
-			else
-			{
-				_tsw->flag |= TSW_RSET;
-				_tsw->rest = _trp->dtstart+_trp->duration - _atp->time;
-			}
-		}
+	if (_atp->time < _trp->dtstart+_trp->duration)
 		return REC_MATCH;
-	}
 
 	/* after the bound of recurrence */
 	if(_IS_SET(_trp->until) && _atp->time >= _trp->until + _trp->duration)
@@ -1022,7 +1005,7 @@ int check_tmrec(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 	if(check_freq_interval(_trp, _atp)!=REC_MATCH)
 		return REC_NOMATCH;
 
-	if(check_min_unit(_trp, _atp, _tsw)!=REC_MATCH)
+	if(check_min_unit(_trp, _atp)!=REC_MATCH)
 		return REC_NOMATCH;
 
 	if(check_byxxx(_trp, _atp)!=REC_MATCH)
@@ -1100,16 +1083,92 @@ int get_min_interval(tmrec_p _trp)
 	return FREQ_NOFREQ;
 }
 
-int check_min_unit(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
+
+int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
+                    time_t dur, int freq)
 {
-	int _v0, _v1;
+	int d1, d2, dx;
 	long diff;
-	int min_itv, wd1, wd2, wdx;
+
+	switch (freq) {
+	case FREQ_YEARLY:
+		d1 = bgn->tm_yday;
+		d2 = end->tm_yday;
+		dx = x->tm_yday;
+		break;
+
+	case FREQ_MONTHLY:
+		d1 = bgn->tm_mday;
+		d2 = end->tm_mday;
+		dx = x->tm_mday;
+		break;
+
+	case FREQ_WEEKLY:
+		d1 = bgn->tm_wday;
+		d2 = end->tm_wday;
+		dx = x->tm_wday;
+		break;
+
+	case FREQ_DAILY:
+	default:
+		diff = end->tm_hour*3600 + end->tm_min*60 + end->tm_sec -
+				(x->tm_hour*3600 + x->tm_min*60 + x->tm_sec);
+
+		return diff > 0 ? REC_MATCH : REC_NOMATCH;
+	}
+
+	/* continuous interval (e.g. "M [ T W T F ] S S") */
+	if (d1 < d2) {
+		if (dx < d1 || dx > d2)
+			return REC_NOMATCH;
+
+		if (dx > d1 && dx < d2)
+			return REC_MATCH;
+
+	/* overlapping interval (e.g. "1 2 ... 20 ] 21 ... 29 [ 30 31") */
+	} else if (d2 < d1) {
+		if (dx > d2 && dx < d1)
+			return REC_NOMATCH;
+
+		if (dx < d2 || dx > d1)
+			return REC_MATCH;
+
+	} else if (dx != d1) {
+		if (dur <= SEC_DAILY)
+			return REC_NOMATCH;
+		else
+			return REC_MATCH;
+
+	} else {
+		diff = x->tm_hour*3600 + x->tm_min*60 + x->tm_sec -
+				(bgn->tm_hour*3600 + bgn->tm_min*60 + bgn->tm_sec);
+		if (diff < 0)
+			return REC_NOMATCH;
+
+		diff = end->tm_hour*3600 + end->tm_min*60 + end->tm_sec -
+				(x->tm_hour*3600 + x->tm_min*60 + x->tm_sec);
+		if (diff <= 0)
+			return REC_NOMATCH;
+
+		return REC_MATCH;
+	}
+
+	if (dx == d1)
+		diff = x->tm_hour*3600 + x->tm_min*60 + x->tm_sec -
+			(bgn->tm_hour*3600 + bgn->tm_min*60 + bgn->tm_sec);
+	else
+		diff = end->tm_hour*3600 + end->tm_min*60 + end->tm_sec -
+			(x->tm_hour*3600 + x->tm_min*60 + x->tm_sec);
+
+	return diff > 0 ? REC_MATCH : REC_NOMATCH;
+}
+
+
+int check_min_unit(tmrec_p _trp, ac_tm_p _atp)
+{
+	int min_itv;
 	struct tm end;
 	time_t t;
-
-	if(!_trp || !_atp)
-		return REC_ERR;
 
 	end = _trp->ts;
 	end.tm_sec += _trp->duration;
@@ -1121,115 +1180,28 @@ int check_min_unit(tmrec_p _trp, ac_tm_p _atp, tr_res_p _tsw)
 	case FREQ_DAILY:
 		if (_trp->duration >= SEC_DAILY)
 			return REC_MATCH;
-
-		diff = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec -
-				(_atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec);
 		break;
 
 	case FREQ_WEEKLY:
 		if (_trp->duration >= SEC_WEEKLY)
 			return REC_MATCH;
-
-		wd1 = _trp->ts.tm_wday;
-		wd2 = end.tm_wday;
-		wdx = _atp->t.tm_wday;
-
-		/* continuous interval (e.g. "M [ T W T F ] S S") */
-		if (wd1 < wd2) {
-			if (wdx < wd1 || wdx > wd2)
-				return REC_NOMATCH;
-
-			if (wdx != wd1 && wdx != wd2)
-				return REC_MATCH;
-
-			if (wdx == wd1)
-				diff = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec -
-					(_trp->ts.tm_hour*3600 + _trp->ts.tm_min*60 + _trp->ts.tm_sec);
-			else
-				diff = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec -
-					(_atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec);
-
-			return diff > 0 ? REC_MATCH : REC_NOMATCH;
-
-		/* overlapping interval (e.g. "M T ] W T F [ S S") */
-		} else if (wd1 > wd2) {
-			if (wdx < wd1 && wdx > wd2)
-				return REC_NOMATCH;
-
-			if (wdx != wd1 && wdx != wd2)
-				return REC_MATCH;
-
-			if (wdx == wd1)
-				diff = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec -
-					(_trp->ts.tm_hour*3600 + _trp->ts.tm_min*60 + _trp->ts.tm_sec);
-			else
-				diff = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec -
-					(_atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec);
-
-			return diff > 0 ? REC_MATCH : REC_NOMATCH;
-
-		} else if (wdx != wd1) {
-			if (_trp->duration <= SEC_DAILY)
-				return REC_NOMATCH;
-			else
-				return REC_MATCH;
-
-		} else {
-			diff = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec -
-				(_trp->ts.tm_hour*3600 + _trp->ts.tm_min*60 + _trp->ts.tm_sec);
-			if (diff < 0)
-				return REC_NOMATCH;
-
-			diff = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec -
-				(_atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec);
-			if (diff <= 0)
-				return REC_NOMATCH;
-
-			return REC_MATCH;
-		}
-
 		break;
 
 	case FREQ_MONTHLY:
-		if (_trp->duration >= SEC_MONTHLY)
+		if (_trp->duration >= SEC_MONTHLY_MAX)
 			return REC_MATCH;
 		break;
 
 	case FREQ_YEARLY:
-		if (_trp->duration >= SEC_YEARLY)
+		if (_trp->duration >= SEC_YEARLY_MAX)
 			return REC_MATCH;
-
-		if (_trp->ts.tm_mon != _atp->t.tm_mon
-				|| _trp->ts.tm_mday != _atp->t.tm_mday)
-			return REC_NOMATCH;
 		break;
 
 	default:
 		return REC_NOMATCH;
 	}
 
-	_v0 = _atp->t.tm_hour*3600 + _atp->t.tm_min*60 + _atp->t.tm_sec;
-	_v1 = end.tm_hour*3600 + end.tm_min*60 + end.tm_sec;
-
-	if (_v1 - _v0)
-	{
-		if(_tsw)
-		{
-			if(_tsw->flag & TSW_RSET)
-			{
-				if (_tsw->rest > _v1 - _v0)
-					_tsw->rest = _v1 - _v0;
-			}
-			else
-			{
-				_tsw->flag |= TSW_RSET;
-				_tsw->rest = _v1 - _v0;
-			}
-		}
-		return REC_MATCH;
-	}
-
-	return REC_NOMATCH;
+	return check_recur_itv(&_atp->t, &_trp->ts, &end, _trp->duration, min_itv);
 }
 
 int check_byxxx(tmrec_p _trp, ac_tm_p _atp)

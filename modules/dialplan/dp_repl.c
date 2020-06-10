@@ -353,7 +353,7 @@ static inline int check_time(tmrec_t *time_rec) {
 		return -1;
 
 	// Check_Tmrec will return 0 on successfully time recurrence match
-	if(check_tmrec(time_rec, &att, 0) != 0)
+	if(check_tmrec(time_rec, &att) != 0)
 		return 0;
 
 	// Recurrence Matched -- Validating Rule

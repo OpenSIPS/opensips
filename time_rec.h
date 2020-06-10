@@ -61,13 +61,10 @@
 #define WDAY_SA 6
 #define WDAY_NU 7
 
-#define TSW_TSET	1
-#define TSW_RSET	2
-
-#define SEC_DAILY     (60 * 60 * 24)
-#define SEC_WEEKLY    (7 * SEC_DAILY)
-#define SEC_MONTHLY   (31 * SEC_DAILY)  /* maximally */
-#define SEC_YEARLY    (366 * SEC_DAILY) /* maximally */
+#define SEC_DAILY        (60 * 60 * 24)
+#define SEC_WEEKLY       (7 * SEC_DAILY)
+#define SEC_MONTHLY_MAX  (31 * SEC_DAILY)
+#define SEC_YEARLY_MAX   (366 * SEC_DAILY)
 
 #define SHM_ALLOC	0
 #define PKG_ALLOC	1
@@ -146,12 +143,6 @@ typedef struct _tmrec
 	char flags;
 } tmrec_t, *tmrec_p;
 
-typedef struct _tr_res
-{
-	int flag;
-	time_t rest;
-} tr_res_t, *tr_res_p;
-
 
 int ac_tm_set_time(ac_tm_p, time_t);
 
@@ -191,17 +182,49 @@ tr_byxxx_p ic_parse_byday(char*, char);
 tr_byxxx_p ic_parse_byxxx(char*, char);
 int ic_parse_wkst(char*);
 
-int check_tmrec(tmrec_p, ac_tm_p, tr_res_p);
+int check_tmrec(tmrec_p _trp, ac_tm_p _atp);
 
+
+/**
+ * Check if @x falls within the recurring [@bgn, @end) time interval,
+ * according to @freq.
+ *
+ * @x: value to check
+ * @bgn: interval start
+ * @end: interval end
+ * @dur: duration of the interval (effectively: @end - @bgn)
+ * @freq: FREQ_WEEKLY / FREQ_MONTHLY / FREQ_YEARLY
+ *
+ * Return: REC_MATCH or REC_NOMATCH
+ */
+int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
+                    time_t dur, int freq);
+
+
+/**
+ * Set the current timezone to @tz while also making sure to back up the
+ * existing timezone such that tz_reset() can be later used to restore it.
+ *
+ * If @tz is an invalid timezone, no change will be made.
+ */
 void tz_set(const str *tz);
+
+
+/**
+ * Restore the timezone to the value stored by the last tz_set() call and clear
+ * the currently backed up timezone (i.e. subsequent calls to this function
+ * without calling tz_set() again will be NOPs).
+ */
 void tz_reset(void);
 
-/*
- * obtain an equivalent to the @unix_time UNIX timestamp
+
+/**
+ * Obtain an equivalent to the @unix_time UNIX timestamp
  * that matches the @tz timezone, including the current DST status
  *
  * Note: If @tz == NULL, @unix_time will be ajusted to local time
  */
 time_t tz_adjust_ts(time_t unix_time, const str *tz);
+
 
 #endif

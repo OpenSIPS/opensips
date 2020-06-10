@@ -813,7 +813,7 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 					goto script_error;
 				}
 				/* does the recv_time match the specified interval?  */
-				j = check_tmrec( trt, &att, 0);
+				j = check_tmrec( trt, &att);
 				/* restore the orig TZ */
 				if ( flags&(1<<7) )
 					set_TZ(cpl_env.orig_tz.s);
