@@ -281,11 +281,11 @@ static str *call_dlg_get_uri_param(struct sip_msg *msg)
 	int i;
 	struct sip_uri *r_uri;
 
-	if (msg->parsed_uri_ok == 0 && parse_sip_msg_uri(msg) < 0) {
+	if (msg->parsed_orig_ruri_ok == 0 && parse_orig_ruri(msg) < 0) {
 		LM_DBG("could not parse URI!\n");
 		return NULL;
 	}
-	r_uri = &msg->parsed_uri;
+	r_uri = &msg->parsed_orig_ruri;
 
 	for (i = 0; i < r_uri->u_params_no; i++)
 		if (str_match(&r_uri->u_name[i], &call_match_param) && r_uri->u_val[i].len)
