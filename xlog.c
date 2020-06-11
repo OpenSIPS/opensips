@@ -31,6 +31,7 @@
 #include "sr_module.h"
 #include "dprint.h"
 #include "error.h"
+#include "socket_info.h"
 #include "mem/mem.h"
 #include "xlog.h"
 
@@ -211,6 +212,7 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	struct modify_trace mod_p;
 	xl_trace_t xtrace_param;
 	str correlation_str;
+	union sockaddr_union su;
 
 	if (msg == NULL || buf == NULL) {
 		LM_ERR("bad input!\n");
@@ -236,7 +238,15 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 		correlation_str.len = 6;
 	}
 
-	if (sip_context_trace(xlog_proto_id, 0, 0, 0, IPPROTO_TCP,
+	if (msg->rcv.bind_address && msg->rcv.bind_address->port_no)
+		init_su( &su, &msg->rcv.bind_address->address,
+			msg->rcv.bind_address->port_no);
+	else
+		su.s.sa_family = 0;
+
+	if (sip_context_trace(xlog_proto_id,
+	su.s.sa_family ? &su : NULL /*src*/, su.s.sa_family ? &su : NULL /*dst*/,
+	0, IPPROTO_TCP,
 	&correlation_str, &mod_p) < 0) {
 		LM_ERR("failed to trace xlog message!\n");
 		return -1;
