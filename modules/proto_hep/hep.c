@@ -877,8 +877,8 @@ static trace_message create_hep12_message(union sockaddr_union* from_su, union s
 			hep_msg->u.hepv12.addr.hep_ipheader.hp_src = from_su->sin.sin_addr;
 			hep_msg->u.hepv12.addr.hep_ipheader.hp_dst = to_su->sin.sin_addr;
 
-			hep_msg->u.hepv12.hdr.hp_sport = htons(from_su->sin.sin_port); /* src port */
-			hep_msg->u.hepv12.hdr.hp_dport = htons(to_su->sin.sin_port); /* dst port */
+			hep_msg->u.hepv12.hdr.hp_sport = from_su->sin.sin_port; /* src port */
+			hep_msg->u.hepv12.hdr.hp_dport = to_su->sin.sin_port; /* dst port */
 
 			break;
 		case AF_INET6:
@@ -886,8 +886,8 @@ static trace_message create_hep12_message(union sockaddr_union* from_su, union s
 			hep_msg->u.hepv12.addr.hep_ip6header.hp6_src = from_su->sin6.sin6_addr;
 			hep_msg->u.hepv12.addr.hep_ip6header.hp6_dst = to_su->sin6.sin6_addr;
 
-			hep_msg->u.hepv12.hdr.hp_sport = htons(from_su->sin6.sin6_port); /* src port */
-			hep_msg->u.hepv12.hdr.hp_dport = htons(to_su->sin6.sin6_port); /* dst port */
+			hep_msg->u.hepv12.hdr.hp_sport = from_su->sin6.sin6_port; /* src port */
+			hep_msg->u.hepv12.hdr.hp_dport = to_su->sin6.sin6_port; /* dst port */
 			break;
      }
 
@@ -961,13 +961,13 @@ static trace_message create_hep3_message(union sockaddr_union* from_su, union so
 		/* SRC PORT */
 		hep_msg->u.hepv3.hg.src_port.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hep_msg->u.hepv3.hg.src_port.chunk.type_id   = htons(0x0007);
-		hep_msg->u.hepv3.hg.src_port.data = htons(from_su->sin.sin_port);
+		hep_msg->u.hepv3.hg.src_port.data = from_su->sin.sin_port;
 		hep_msg->u.hepv3.hg.src_port.chunk.length = htons(sizeof(hep_msg->u.hepv3.hg.src_port));
 
 		/* DST PORT */
 		hep_msg->u.hepv3.hg.dst_port.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hep_msg->u.hepv3.hg.dst_port.chunk.type_id   = htons(0x0008);
-		hep_msg->u.hepv3.hg.dst_port.data = htons(to_su->sin.sin_port);
+		hep_msg->u.hepv3.hg.dst_port.data = to_su->sin.sin_port;
 		hep_msg->u.hepv3.hg.dst_port.chunk.length = htons(sizeof(hep_msg->u.hepv3.hg.dst_port));
 	}
 	/* IPv6 */
@@ -989,13 +989,13 @@ static trace_message create_hep3_message(union sockaddr_union* from_su, union so
 		/* SRC PORT */
 		hep_msg->u.hepv3.hg.src_port.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hep_msg->u.hepv3.hg.src_port.chunk.type_id   = htons(0x0007);
-		hep_msg->u.hepv3.hg.src_port.data = htons(from_su->sin6.sin6_port);
+		hep_msg->u.hepv3.hg.src_port.data = from_su->sin6.sin6_port;
 		hep_msg->u.hepv3.hg.src_port.chunk.length = htons(sizeof(hep_msg->u.hepv3.hg.src_port));
 
 		/* DST PORT */
 		hep_msg->u.hepv3.hg.dst_port.chunk.vendor_id = htons(GENERIC_VENDOR_ID);
 		hep_msg->u.hepv3.hg.dst_port.chunk.type_id   = htons(0x0008);
-		hep_msg->u.hepv3.hg.dst_port.data = htons(to_su->sin6.sin6_port);
+		hep_msg->u.hepv3.hg.dst_port.data = to_su->sin6.sin6_port;
 		hep_msg->u.hepv3.hg.dst_port.chunk.length = htons(sizeof(hep_msg->u.hepv3.hg.dst_port));
 	}
 
