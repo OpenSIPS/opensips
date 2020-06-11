@@ -3095,7 +3095,7 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 	if (((ip_a = str2ip(&host_uri)) != 0)
 			|| ((ip_a = str2ip6 (&host_uri)) != 0)
 	) {
-		ip_addr2su(tmp_su, ip_a, ntohs(port));
+		ip_addr2su(tmp_su, ip_a, port);
 		return 0;
 	}
 
