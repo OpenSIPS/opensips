@@ -77,10 +77,10 @@ extern compression_api_t compression_api;
 
 struct hep_message_id hep_ids[] = {
 	{ "sip" ,  0x01},
-	{ "xlog",  0x56},
-	{ "mi"  ,  0x57},
-	{ "rest",  0x58},
-	{ "net", 0x59},
+	{ "xlog",  0x64},
+	{ "mi"  ,  0x57},    // not standard
+	{ "rest",  0x58},    // not standard
+	{ "net",   0x59},    // not standard
 	{ "control", 0x60},
 	{ NULL  ,  0   }
 };
