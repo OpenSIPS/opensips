@@ -316,7 +316,7 @@ static void call_dlg_rm_uri_param(struct sip_msg *msg, str *param)
 			(param->len?(1 /* = */ + param->len):0);
 
 	if (del.s < uri->s || del.s + del.len > uri->s + uri->len) {
-		LM_BUG("parameter  to delete %.*s(%d) not inside R-URI %.*s(%d) -> "
+		LM_DBG("parameter  to delete %.*s(%d) not inside R-URI %.*s(%d) -> "
 				"del.s=%p<uri.s=%p || del.s + del.len=%p > uri.s + uri.len=%p\n",
 				del.len, del.s, del.len, uri->len, uri->s, uri->len,
 				del.s, uri->s, del.s + del.len, uri->s + uri->len);
