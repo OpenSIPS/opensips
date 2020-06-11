@@ -1325,9 +1325,11 @@ static int handle_media_session_reply_exchange(struct media_session_leg *msl,
 		if (!msl->nohold && !media_session_other_leg(msl)) {
 			/* we need to put the other party on hold */
 			body = media_session_get_hold_sdp(msl);
-			if (media_send_ok(p->t, dlg, p->leg, body) < 0)
-				LM_ERR("could not copy send indialog reply for hold\n");
-			pkg_free(body->s);
+			if (body) {
+				if (media_send_ok(p->t, dlg, p->leg, body) < 0)
+					LM_ERR("could not copy send indialog reply for hold\n");
+				pkg_free(body->s);
+			}
 		} else {
 			sbody = dlg_get_out_sdp(dlg, other_leg(dlg, p->leg));
 			if (media_send_ok(p->t, dlg, other_leg(dlg, p->leg), &sbody) < 0)
