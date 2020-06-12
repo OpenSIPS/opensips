@@ -52,7 +52,7 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *method)
 
 		return real_SSL_CTX_new(method);
 	}
-};
+}
 
 void SSL_CTX_free(SSL_CTX *ctx)
 {
@@ -76,4 +76,4 @@ void SSL_CTX_free(SSL_CTX *ctx)
 
 		real_SSL_CTX_free(ctx);
 	}
-};
+}
