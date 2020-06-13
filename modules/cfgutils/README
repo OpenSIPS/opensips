@@ -31,7 +31,9 @@ cfgutils Module
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
                       t2_usec, delta)
 
-              1.4.13. check_time_rec(time_string[,timestamp])
+              1.4.13. check_time_rec(time_string, [timezone],
+                      [timestamp])
+
               1.4.14. get_static_lock(key)
               1.4.15. release_static_lock(key)
               1.4.16. get_dynamic_lock(key)
@@ -424,13 +426,13 @@ $var(next_gw_idx) = set_select_weight($avp(gw_success_rates));
 ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 ...
 
-1.4.13.  check_time_rec(time_string[,timestamp])
+1.4.13.  check_time_rec(time_string, [timezone], [timestamp])
 
    The function returns a positive value if the specified time
    recurrence string matches the current time, or a negative value
    otherwise.
 
-   For checking something else than the current time, the second
+   For checking something else than the current time, the third
    parameter will contain the UNIX timestamp of the time to check.
 
    The syntax of each field is identical to the corresponding
@@ -449,18 +451,24 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
        following "freq" is used unless "freq" is defined. If the
        string ends in multiple null fields, they can all be
        ommited.
+     * timezone (string, optional) - The timezone that the time
+       recurrence stamps are specified in. By default, the system
+       time zone is used.
+     * timestamp (string, optional) - A specific UNIX time to
+       check. The function simply expects the actual UNIX time
+       here, there is no need to perform any timezone adjustments.
 
    Example 1.18. check_time_rec usage
 ...
 # Only passing if still in 2012
-if (check_time_rec("20120101T000000|20121231T235959")) {
-        xlog("Current time matches the given interval\n");
-}
+if (check_time_rec("20120101T000000|20130101T000000", "Europe/Bucharest"
+))
+        xlog("Current system time matches the given Romanian time interv
+al\n");
 ...
 # Only passing if less than 30 days have passed from "dtstart"
-if (check_time_rec("20121101T000000||p30d")) {
+if (check_time_rec("20121101T000000||p30d"))
         xlog("Current time matches the given interval\n");
-}
 ...
 
 1.4.14.  get_static_lock(key)
@@ -863,7 +871,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 32 19 961 261
+   1. Liviu Chircu (@liviuchircu) 39 22 1284 332
    2. Henning Westerholt (@henningw) 29 18 1088 86
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 22 367 109
    4. Razvan Crainea (@razvancrainea) 20 15 289 79
@@ -898,8 +906,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jan 2020
-   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jan 2020
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2020
+   2.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jan 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
