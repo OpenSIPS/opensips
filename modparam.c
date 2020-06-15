@@ -79,7 +79,7 @@ int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 				if (strcmp(name, param->name) == 0) {
 					param_found = 1;
 
-					if (PARAM_TYPE_MASK(param->type) == type) {
+					if (PARAM_TYPE_MASK(param->type) & type) {
 						LM_DBG("found <%s> in module %s [%s]\n",
 							name, t->exports->name, t->path);
 
