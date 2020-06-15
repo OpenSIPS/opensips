@@ -223,7 +223,7 @@ static mi_export_t mi_cmds[] = {
 };
 
 struct module_exports exports= {
-	"calling",
+	"callops",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
