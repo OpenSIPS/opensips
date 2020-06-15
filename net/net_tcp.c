@@ -1160,8 +1160,10 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 
 			/* now that we completed the async connection, we also need to
 			 * listen for READ events, otherwise these will get lost */
-			if (tcpconn->flags & F_CONN_REMOVED_READ)
+			if (tcpconn->flags & F_CONN_REMOVED_READ) {
 				reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+				tcpconn->flags&=~F_CONN_REMOVED_READ;
+			}
 
 			goto async_write;
 		} else {
