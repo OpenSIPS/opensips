@@ -176,25 +176,21 @@ static cmd_export_t cmds[] = {
 
 static int calling_mode_func(modparam_t type, void *val)
 {
-	if (type == STR_PARAM) {
-		if (strcasecmp((char *)val, "param") == 0) {
-			call_match_mode = CALL_MATCH_PARAM;
-		} else if (strcasecmp((char *)val, "manual") == 0) {
-			call_match_mode = CALL_MATCH_MANUAL;
-		} else if (strcasecmp((char *)val, "callid") == 0) {
-			call_match_mode = CALL_MATCH_CALLID;
-		} else {
-			LM_ERR("unknown matching mode type %s\n", (char *)val);
-			return -1;
-		}
+	if (strcasecmp((char *)val, "param") == 0) {
+		call_match_mode = CALL_MATCH_PARAM;
+	} else if (strcasecmp((char *)val, "manual") == 0) {
+		call_match_mode = CALL_MATCH_MANUAL;
+	} else if (strcasecmp((char *)val, "callid") == 0) {
+		call_match_mode = CALL_MATCH_CALLID;
 	} else {
-		call_match_mode = (int)(long)val;
+		LM_ERR("unknown matching mode type %s\n", (char *)val);
+		return -1;
 	}
 	return 0;
 }
 
 static param_export_t params[] = {
-	{"mode", STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)calling_mode_func},
+	{"mode", STR_PARAM|USE_FUNC_PARAM, (void*)calling_mode_func},
 	{"match_param", STR_PARAM, &call_match_param.s},
 	{0, 0, 0}
 };

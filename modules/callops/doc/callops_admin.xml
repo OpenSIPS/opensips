@@ -108,14 +108,14 @@ if (has_totag() &amp;&amp; loose_route() &amp;&amp;
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	<section id="param_mode" xreflabel="mode">
-		<title><varname>mode</varname> (string/integer)</title>
+		<title><varname>mode</varname> (string)</title>
 		<para>
 		This parameter can be used to change the mode that the module
 		uses to match a transferred leg. Supported values are:
 		<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>param</emphasis> / <emphasis>0</emphasis> - when
+				<emphasis>param</emphasis> - when
 					doing a blind transfer, the destination sent in the
 					refer message will contain a parameter used to identify
 					the dialog that is being replaced. this parameter will be
@@ -124,7 +124,7 @@ if (has_totag() &amp;&amp; loose_route() &amp;&amp;
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>manual</emphasis> / <emphasis>1</emphasis> - the user
+				<emphasis>manual</emphasis> - the user
 					will create its own logic to match the new calls, and will
 					call the <xref linkend="func_call_blind_replace"/> function
 					to make &osips; aware of the pair. Note that this mode does
@@ -136,7 +136,7 @@ if (has_totag() &amp;&amp; loose_route() &amp;&amp;
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>callid</emphasis> / <emphasis>2</emphasis> - similar
+				<emphasis>callid</emphasis> - similar
 					to the <emphasis>param</emphasis> value, except that instead
 					of storing in the Request URI the dialog id of the call to
 					be transfered, the actual callid is used as identifier.
@@ -146,7 +146,7 @@ if (has_totag() &amp;&amp; loose_route() &amp;&amp;
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>0 (auto mode using parameters)</quote>.
+			Default value is <quote>auto mode using parameters</quote>.
 		</emphasis>
 		</para>
 		<example>
