@@ -272,6 +272,7 @@ static int wss_conn_init(struct tcp_connection* c)
 
 	ret = tls_conn_init(c, &tls_mgm_api);
 	if (ret < 0) {
+		c->proto_data = NULL;
 		LM_ERR("Cannot initiate the conn\n");
 		shm_free(d);
 	}
