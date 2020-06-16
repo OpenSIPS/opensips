@@ -2096,12 +2096,12 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<example>
 		<title><function>dr_gw_status</function> usage when <varname>use_partitions</varname> is set to 0</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi dr_gw_status 2
+$ opensips-cli -x mi dr_gw_status gw_id=2
 State:: Active
-$ opensips-cli -x mi dr_gw_status 2 0
-$ opensips-cli -x mi dr_gw_status 2
+$ opensips-cli -x mi dr_gw_status gw_id=2 status=0
+$ opensips-cli -x mi dr_gw_status gw_id=2
 Enabled:: Disabled MI
-$ opensips-cli -x mi dr_gw_status 3
+$ opensips-cli -x mi dr_gw_status gw_id=3
 Enabled:: Inactive
 </programlisting>
 		</example>
@@ -2109,13 +2109,13 @@ Enabled:: Inactive
 		<example>
 		<title><function>dr_gw_status</function> usage when <varname>use_partitions</varname>is set to 1</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi dr_gw_status part_1 my_gw
+$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
 State:: Active
-$ opensips-cli -x mi dr_gw_status part_1 my_gw 0
-$ opensips-cli -x mi dr_gw_status part_1 my_gw
-Enabled:: Disabled MI
-$ opensips-cli -x mi dr_gw_status partition8 3
-Enabled:: Inactive
+$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw status=0
+$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
+enabled:: disabled mi
+$ opensips-cli -x mi dr_gw_status partition_name=partition8 status=3
+enabled:: inactive
 </programlisting>
 		</example>
 	</section>
@@ -2165,20 +2165,20 @@ Enabled:: Inactive
 		<example>
 		<title><function>dr_carrier_status</function> usage when <varname>use_partitions</varname> is 0</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi dr_carrier_status CR1
+$ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: no
-$ opensips-cli -x mi dr_carrier_status CR1 1
-$ opensips-cli -x mi dr_carrier_status CR1
+$ opensips-cli -x mi dr_carrier_status carrier_id=CR1 status=1
+$ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: yes
 </programlisting>
 		</example>
 		<example>
 		<title><function>dr_carrier_status</function> usage when <varname>use_partitions</varname> is 1</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi dr_carrier_status my_partition CR1
+$ opensips-cli -x mi dr_carrier_status partition_name=my_partition carrier_id=CR1
 Enabled:: no
-$ opensips-cli -x mi dr_carrier_status partition_1 CR1 1
-$ opensips-cli -x mi dr_carrier_status partition_3 CR1
+$ opensips-cli -x mi dr_carrier_status partition_name=partition_1 carrier_id=CR1 status=1
+$ opensips-cli -x mi dr_carrier_status partition_name=partition_3 carrier_id=CR1
 Enabled:: yes
 </programlisting>
 		</example>
@@ -2243,10 +2243,10 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 					will have 3 parameters:
 					<itemizedlist>
 						<listitem>
-							<para><emphasis>partition name</emphasis></para>
+							<para><emphasis>partition_name</emphasis></para>
 						</listitem>
 						<listitem>
-							<para><emphasis>group id</emphasis> (optional) - the group id of the rules to
+							<para><emphasis>group_id</emphasis> (optional) - the group id of the rules to
 								check against </para>
 						</listitem>
 						<listitem>
@@ -2260,7 +2260,7 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 					if <varname>use_partition</varname> is set to 0 the function will have 2 parameters:
 					<itemizedlist>
 						<listitem><para>
-							<emphasis>group id</emphasis> (optional) - the group id of the rules to check against
+							<emphasis>group_id</emphasis> (optional) - the group id of the rules to check against
 						</para></listitem>
 						<listitem><para>
 							<emphasis>number</emphasis> - the number to test against
@@ -2273,7 +2273,7 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dr_number_routing part1 3 012340987
+		opensips-cli -x mi dr_number_routing partition_name=part1 group_id=3 number=012340987
 		</programlisting>
 	</section>
 
