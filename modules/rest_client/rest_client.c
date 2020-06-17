@@ -22,6 +22,7 @@
  * 2013-02-28: Created (Liviu)
  */
 
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +40,7 @@
 #include "../tls_mgm/api.h"
 
 #include "rest_methods.h"
+#include "../../ssl_init_tweaks.h"
 
 /*
  * Module parameters

@@ -9,5 +9,6 @@ include ../../Makefile.defs
 auto_gen=
 NAME=rest_client.so
 LIBS+=-lcurl
+LIBS += -dl -Bsymbolic
 
 include ../../Makefile.modules
