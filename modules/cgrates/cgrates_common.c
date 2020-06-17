@@ -694,6 +694,7 @@ int cgrc_async_read(struct cgr_conn *c,
 	struct cgr_engine *e = c->engine;
 	int ret = -1; /* if return is 0, we need to continue */
 	int final_ret = ret;
+	char *json_buf;
 
 	LM_DBG("Event on fd %d from %.*s:%d\n", c->fd, e->host.len, e->host.s, e->port);
 
@@ -720,6 +721,8 @@ try_again:
 
 	/* try to parse them */
 	jobj = json_tokener_parse_ex(c->jtok, buffer, bytes_read);
+	json_buf = buffer;
+	len = bytes_read;
 reprocess:
 	if (jobj) {
 		ret = cgrates_process(jobj, c, f, p);
@@ -748,12 +751,13 @@ reprocess:
 	/* now we need to see if there are any other bytes to read */
 	/* XXX: for now there is no other way to check if there are bytes left but
 	 * looking into the json tokener */
-	if (c->jtok->char_offset < bytes_read) {
-		len = c->jtok->char_offset;
+	if (c->jtok->char_offset < len) {
+		json_buf += c->jtok->char_offset;
+		len -= c->jtok->char_offset;
 		json_tokener_reset(c->jtok);
 		LM_DBG("%d more bytes to process in the new request: [%.*s]\n",
-				len, bytes_read - len, buffer + len);
-		jobj = json_tokener_parse_ex(c->jtok, buffer + len, bytes_read - len);
+				len, len, json_buf);
+		jobj = json_tokener_parse_ex(c->jtok, json_buf, len);
 		/* ret = 0 means that we are waiting for a reply
 		 * but did not get one yet */
 		if (ret)
