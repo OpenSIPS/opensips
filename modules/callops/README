@@ -13,7 +13,7 @@ Calling Operations Module
 
         1.3. Exported Parameters
 
-              1.3.1. mode (string/integer)
+              1.3.1. mode (string)
               1.3.2. match_param (string)
 
         1.4. Exported Functions
@@ -135,27 +135,26 @@ if (has_totag() && loose_route() &&
 
 1.3. Exported Parameters
 
-1.3.1. mode (string/integer)
+1.3.1. mode (string)
 
    This parameter can be used to change the mode that the module
    uses to match a transferred leg. Supported values are:
-     * param / 0 - when doing a blind transfer, the destination
-       sent in the refer message will contain a parameter used to
+     * param - when doing a blind transfer, the destination sent
+       in the refer message will contain a parameter used to
        identify the dialog that is being replaced. this parameter
        will be automatically removed when the new call is
        received.
-     * manual / 1 - the user will create its own logic to match
-       the new calls, and will call the call_blind_replace()
-       function to make OpenSIPS aware of the pair. Note that this
-       mode does not handle automatically the Notify refer either,
-       so you also have to use the call_transfer_notify() function
-       to handle them.
-     * callid / 2 - similar to the param value, except that
-       instead of storing in the Request URI the dialog id of the
-       call to be transfered, the actual callid is used as
-       identifier.
+     * manual - the user will create its own logic to match the
+       new calls, and will call the call_blind_replace() function
+       to make OpenSIPS aware of the pair. Note that this mode
+       does not handle automatically the Notify refer either, so
+       you also have to use the call_transfer_notify() function to
+       handle them.
+     * callid - similar to the param value, except that instead of
+       storing in the Request URI the dialog id of the call to be
+       transfered, the actual callid is used as identifier.
 
-   Default value is “0 (auto mode using parameters)”.
+   Default value is “auto mode using parameters”.
 
    Example 1.2. Set mode parameter
 ...
@@ -438,7 +437,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    40      18      2251     146
+   1. Razvan Crainea (@razvancrainea)    42      20      2258     157
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
