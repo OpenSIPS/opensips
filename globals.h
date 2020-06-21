@@ -107,6 +107,7 @@ extern unsigned long pkg_mem_size;
 extern int reply_to_via;
 
 extern int is_main;
+extern int is_pre_daemon;
 
 extern int memlog;  /*!< debugging level for printing memory debugs */
 extern int memdump; /*!< debugging level for dumping memory status */
