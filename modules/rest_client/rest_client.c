@@ -41,6 +41,7 @@
 
 #include "rest_methods.h"
 #include "../../ssl_init_tweaks.h"
+#include "../../pt.h"
 
 /*
  * Module parameters

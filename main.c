@@ -311,6 +311,9 @@ char **my_argv;
 
 int is_main = 1; /* flag = is this the  "main" process? */
 
+/* flag = is this an initial, pre-daemon process ? */
+int is_pre_daemon = 1;
+
 char* pid_file = 0; /* filename as asked by user */
 char* pgid_file = 0;
 
