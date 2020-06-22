@@ -338,8 +338,6 @@ static int child_init(int rank)
 static void destroy(void)
 {
 	LM_DBG("start\n");
-	if(pxml_db && pxml_dbf.close)
-		pxml_dbf.close(pxml_db);
 
 	free_xs_list(xs_list, SHM_MEM_TYPE);
 

@@ -180,7 +180,5 @@ static int mod_init(void)
  */
 static void destroy(void)
 {
-	if (db_handle)
-		db_funcs.close(db_handle);
 }
 

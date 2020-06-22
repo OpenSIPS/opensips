@@ -144,8 +144,6 @@ static int child_init(int rank)
 static void destroy(void)
 {
 	LM_NOTICE("destroy module dns_cache ...\n");
-	if (cdbc)
-		cdbf.destroy(cdbc);
 }
 
 static int rdata_struct_len=sizeof(struct rdata)-sizeof(void *) -

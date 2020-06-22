@@ -929,11 +929,6 @@ static void destroy(void)
 			pkg_free(last);
 		}
 
-		if (el->type == TYPE_DB) {
-			if (el->el.db->con) {
-				el->el.db->funcs.close(el->el.db->con);
-			}
-		}
 		last=el;
 		el=el->next;
 	}

@@ -125,10 +125,6 @@ static int child_init(int rank)
 	struct cachedb_url *it;
 	cachedb_con *con;
 
-	if(rank == PROC_MAIN || rank == PROC_TCP_MAIN) {
-		return 0;
-	}
-
 	for (it = couchbase_script_urls;it;it=it->next) {
 		LM_DBG("iterating through couchbase conns - [%.*s]\n",it->url.len,it->url.s);
 		con = couchbase_init(&it->url);

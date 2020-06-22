@@ -750,11 +750,16 @@ static void mod_destroy(void)
 
 	b2b_scenario_t* scenario, *next;
 
-	if(b2bl_db)
-	{
-		if(b2bl_db_mode==WRITE_BACK)
+	if (b2bl_db_mode==WRITE_BACK && b2bl_dbf.init) {
+
+		b2bl_db = b2bl_dbf.init(&db_url);
+		if(!b2bl_db)
+		{
+			LM_ERR("connecting to database failed\n");
+		} else {
 			b2b_logic_dump(1);
-		b2bl_dbf.close(b2bl_db);
+			b2bl_dbf.close(b2bl_db);
+		}
 	}
 
 	scenario = extern_scenarios;

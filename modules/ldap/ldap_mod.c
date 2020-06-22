@@ -171,9 +171,8 @@ static int child_init(int rank)
 	char* ld_name;
 
 	/* don't do anything for non-worker process */
-	if (rank==PROC_MAIN || rank==PROC_TCP_MAIN) {
+	if (rank<1)
 		return 0;
-	}
 
 	/*
 	* build ld_sessions and connect all sessions

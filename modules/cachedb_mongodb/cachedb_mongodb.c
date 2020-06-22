@@ -147,10 +147,6 @@ static int child_init(int rank)
 	struct cachedb_url *it;
 	cachedb_con *con;
 
-	if(rank == PROC_MAIN || rank == PROC_TCP_MAIN) {
-		return 0;
-	}
-
 	for (it = mongodb_script_urls;it;it=it->next) {
 		LM_DBG("iterating through conns - [%.*s]\n",it->url.len,it->url.s);
 		con = mongo_con_init(&it->url);

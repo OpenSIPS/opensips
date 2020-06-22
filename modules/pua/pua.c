@@ -289,7 +289,7 @@ static void destroy(void)
 	if (puacb_list)
 		destroy_puacb_list();
 
-	if(pua_db && HashT)
+	if (HashT && child_init(process_no)==0)
 		db_update(0,0);
 
 	if(HashT)

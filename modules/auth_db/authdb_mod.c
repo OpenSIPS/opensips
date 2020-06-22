@@ -231,10 +231,6 @@ static int mod_init(void)
 
 static void destroy(void)
 {
-	if (auth_db_handle) {
-		auth_dbf.close(auth_db_handle);
-		auth_db_handle = 0;
-	}
 	if (credentials) {
 		free_aaa_avp_list(credentials);
 		credentials = 0;

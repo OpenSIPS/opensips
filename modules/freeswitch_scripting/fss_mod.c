@@ -165,12 +165,13 @@ static int mod_init(void)
 
 	free_shm_str_dlist(&startup_fs_subs);
 
+	fss_db_close();
+
 	return 0;
 }
 
 static void mod_destroy(void)
 {
-	fss_db_close();
 }
 
 static int fixup_fs_esl(void **param, int param_no)

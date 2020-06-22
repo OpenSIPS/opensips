@@ -346,7 +346,7 @@ static int mod_init(void)
 
 static int child_init(int rank)
 {
-	if (sca_db_mode==DB_MODE_REALTIME &&  (rank>PROC_MAIN || rank==PROC_MODULE)) {
+	if (sca_db_mode==DB_MODE_REALTIME &&  (rank>=1 || rank==PROC_MODULE)) {
 		if (connect_sca_db(&db_url)) {
 			LM_ERR("failed to connect to database (rank=%d)\n",rank);
 			return -1;
@@ -359,9 +359,6 @@ static int child_init(int rank)
 
 static void mod_destroy(void)
 {
-	//if (sca_db_mode != DB_MODE_NONE) {
-	//	sca_update_db();
-	//}
 	destroy_b2b_sca_handlers();
 	destroy_b2b_sca_htable();
 

@@ -573,9 +573,6 @@ static void rpc_reload_sources(int sender_id, void *unused)
 
 static int child_init(int rank)
 {
-	if (rank==PROC_TCP_MAIN)
-		return 0;
-
 	if (db_init(&db_url, &db_table) != 0) return -1;
 	if (dt_init(&dt_root) != 0) return -1;
 
@@ -595,6 +592,5 @@ static void mod_destroy(void)
 {
 	destroy_source_list();
 	destroy_shmlock();
-	db_destroy();
 	dt_destroy(&dt_root);
 }

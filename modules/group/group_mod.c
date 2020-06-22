@@ -296,8 +296,6 @@ static int mod_init(void)
 
 static void destroy(void)
 {
-	if (!db_url.s)
-		group_db_close();
 }
 
 

@@ -682,13 +682,9 @@ void destroy(void)
 		}
 		pkg_free(pipes);
 	}
-	// cleaning MySQL connections
+
 	if(db_con != NULL)
-	{
-		for(i = 0; i<nrw; i++)
-			jabber_dbf.close(db_con[i]);
 		shm_free(db_con);
-	}
 
 	xj_wlist_free(jwl);
 	LM_DBG("unloaded ...\n");

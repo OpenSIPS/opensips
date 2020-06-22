@@ -351,10 +351,14 @@ static int child_init(int rank)
 /** Module destroy function */
 static void mod_destroy(void)
 {
-	if(b2be_db ) {
-		if(b2be_db_mode==WRITE_BACK)
+	if (b2be_dbf.init && b2be_db_mode==WRITE_BACK) {
+		b2be_db = b2be_dbf.init(&db_url);
+		if(!b2be_db) {
+			LM_ERR("connecting to database failed, unable to flush\n");
+		} else {
 			b2b_entities_dump(1);
-		b2be_dbf.close(b2be_db);
+			b2be_dbf.close(b2be_db);
+		}
 	}
 	destroy_b2b_htables();
 }

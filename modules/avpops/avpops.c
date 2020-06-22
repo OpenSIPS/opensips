@@ -310,8 +310,7 @@ error:
 
 static int avpops_child_init(int rank)
 {
-	/* skip main process and TCP manager process */
-	if (!need_db || rank==PROC_MAIN || rank==PROC_TCP_MAIN)
+	if (!need_db)
 		return 0;
 	/* init DB connection */
 	return avpops_db_init(&db_table, db_columns);

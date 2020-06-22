@@ -1868,16 +1868,8 @@ static void free_c_entry(cache_entry_t *c)
 
 static void destroy(void)
 {
-	db_handlers_t *db_hdls;
 	struct queried_key *q_it, *q_tmp;
 	cache_entry_t *c_it, *c_tmp;
-
-	for(db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next) {
-		if (db_hdls->cdbcon)
-			db_hdls->cdbf.destroy(db_hdls->cdbcon);
-		if (db_hdls->db_con)
-			db_hdls->db_funcs.close(db_hdls->db_con);
-	}
 
 	q_it = *queries_in_progress;
 	while (q_it) {

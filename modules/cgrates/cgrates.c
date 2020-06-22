@@ -282,8 +282,12 @@ static int child_init(int rank)
 	struct cgr_engine *e;
 	struct cgr_conn *c;
 
-	/* connect to all servers */
-	/* go through each server and initialize a single connection */
+	/* external procs don't have a reactor, so they won't be able
+	 * to run any commands received by CGRateS, nor they will generate cmds */
+	if (rank == PROC_MODULE)
+		return 0;
+
+	/* go through each server and initialize a default connection */
 	list_for_each(l, &cgrates_engines) {
 		e = list_entry(l, struct cgr_engine, list);
 		/* start a connection for everybody */

@@ -389,7 +389,7 @@ static int child_init(int rank)
 {
 	LM_DBG("init child\n");
 
-	if (rank <= PROC_MAIN)
+	if (rank < 1 )
 		return 0;
 
 	lock_get(index_lock);

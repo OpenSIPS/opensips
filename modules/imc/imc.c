@@ -39,6 +39,7 @@
 #include "../../ut.h"
 #include "../../timer.h"
 #include "../../str.h"
+#include "../../pt.h"
 #include "../../mem/shm_mem.h"
 #include "../../db/db.h"
 #include "../../parser/parse_from.h"
@@ -598,7 +599,7 @@ void destroy(void)
 
 	LM_DBG("destroy module ...\n");
 
-	if(imc_db==NULL)
+	if (child_init( process_no )<0)
 		goto done;
 
 	mq_cols[0] = &imc_col_username;

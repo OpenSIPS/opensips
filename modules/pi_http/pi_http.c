@@ -205,9 +205,6 @@ static int child_init(int rank)
 	int i;
 
 	LM_DBG("Child initialization\n");
-	if (rank==PROC_TCP_MAIN)
-		return 0;
-
 
 	for(i=0;i<ph_framework_data->ph_db_urls_size;i++){
 		LM_DBG("connecting to db[%d] [%s]\n",

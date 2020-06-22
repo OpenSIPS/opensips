@@ -538,21 +538,8 @@ static int child_init(int rank)
 				rank);
 		return -1;
 	}
-	else
-	{
-		if (rls_dbf.use_table(rls_db, &rlsubs_table) < 0)
-		{
-			LM_ERR("child %d: Error in use_table rlsubs_table\n", rank);
-			return -1;
-		}
-		if (rls_dbf.use_table(rls_db, &rlpres_table) < 0)
-		{
-			LM_ERR("child %d: Error in use_table rlpres_table\n", rank);
-			return -1;
-		}
 
-		LM_DBG("child %d: Database connection opened successfully\n", rank);
-	}
+	LM_DBG("child %d: Database connection opened successfully\n", rank);
 
 	pid= my_pid();
 	return 0;
@@ -567,7 +554,7 @@ void destroy(void)
 
 	if(rls_table)
 	{
-		if(rls_db)
+		if(rls_dbf.init && child_init(process_no)==0)
 			rlsubs_table_update(0, 0);
 		pres_destroy_shtable(rls_table, hash_size);
 	}

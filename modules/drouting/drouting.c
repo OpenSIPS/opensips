@@ -1779,15 +1779,8 @@ static int dr_child_init(int rank)
 {
 	struct head_db *head_db_it = head_db_start;
 
-	/* We need DB connection from:
-	 *   - attendant - for shutdown, flushing state
-	 *   - timer - may trigger routes with dr group
-	 *   - workers - execute routes with dr group
-	 *   - module's proc - ??? */
-	if (rank==PROC_TCP_MAIN)
-		return 0;
-
 	LM_DBG("Child initialization on rank %d \n",rank);
+
 	while( head_db_it!=NULL ) {
 		db_load_head( head_db_it );
 		head_db_it = head_db_it->next;
@@ -1811,11 +1804,9 @@ static int dr_exit(void)
 	while( it!=NULL ) {
 		to_clean = it;
 		it = it->next;
-		if (dr_persistent_state && to_clean->db_con && *(to_clean->db_con))
+		if (dr_persistent_state && to_clean->db_con && *(to_clean->db_con)) {
 			dr_state_flusher(to_clean);
 
-		/* close DB connection */
-		if (to_clean->db_con && *(to_clean->db_con)) {
 			(to_clean->db_funcs).close(*(to_clean->db_con));
 			*(to_clean->db_con) = 0;
 			pkg_free(to_clean->db_con);

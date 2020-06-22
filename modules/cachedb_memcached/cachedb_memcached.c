@@ -480,10 +480,6 @@ static int child_init(int rank)
 	struct cachedb_url *it;
 	cachedb_con *con;
 
-	if(rank == PROC_MAIN || rank == PROC_TCP_MAIN) {
-		return 0;
-	}
-
 	for (it = memcached_script_urls;it;it=it->next) {
 		con = memcached_init(&it->url);
 		if (con == NULL) {
