@@ -918,11 +918,10 @@ static int mod_init(void)
 #include "../../pt.h"
 static int ds_child_init(int rank)
 {
-	/* we need DB connection from the worker procs (for the flushing)
-	 * and from the main proc (for final flush on shutdown) */
-	if ( rank>=PROC_MAIN ) {
+	ds_partition_t *partition_it;
 
-		ds_partition_t *partition_it;
+	/* we need DB connection from the worker procs (for the flushing) */
+	if ( rank>=1 ) {
 
 		for (partition_it = partitions; partition_it;
 				partition_it = partition_it->next){
@@ -959,13 +958,22 @@ static int mi_child_init(void)
  */
 static void destroy(void)
 {
+	ds_partition_t *part_it = partitions, *aux;
+
 	LM_DBG("destroying module ...\n");
 
 	/* flush the state of the destinations */
-	if (ds_persistent_state)
-		ds_flusher_routine(0, NULL);
+	if (ds_persistent_state) {
+		/* open the DB conns*/
+		for (part_it = partitions; part_it; part_it = part_it->next) {
+			if (part_it->db_url.s)
+				if (ds_connect_db(part_it) != 0) {
+					LM_ERR("failed to do DB connect\n");
+				}
+		}
 
-	ds_partition_t *part_it = partitions, *aux;
+		ds_flusher_routine(0, NULL);
+	}
 
 	while (part_it) {
 		ds_destroy_data(part_it);

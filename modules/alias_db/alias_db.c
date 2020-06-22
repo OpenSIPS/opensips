@@ -216,9 +216,5 @@ static int mod_init(void)
  */
 static void destroy(void)
 {
-	if (db_handle) {
-		adbf.close(db_handle);
-		db_handle = 0;
-	}
 }
 

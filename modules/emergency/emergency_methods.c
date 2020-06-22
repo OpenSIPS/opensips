@@ -370,7 +370,7 @@ static int mod_init(void) {
 static int child_init(int rank) {
 	LM_DBG("Initializing child\n");
 
-	if (db_url.s && rank>PROC_MAIN) {
+	if (db_url.s && rank>=1) {
 		/* open a test connection */
 
 		if ((db_con = db_funcs.init(&db_url)) == 0) {
@@ -396,9 +396,6 @@ static int child_init(int rank) {
  */
 static void mod_destroy(void) {
 	curl_global_cleanup();
-
-	if (db_con != NULL && db_funcs.close != 0)
-		db_funcs.close(db_con);
 
 	if(ref_lock){
 		lock_destroy_rw( ref_lock );

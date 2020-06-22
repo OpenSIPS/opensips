@@ -838,19 +838,13 @@ static int main_loop(void)
 
 	if (testing_framework) {
 		if (init_child(1) < 0) {
-			LM_ERR("error in init_child for PROC_MAIN\n");
+			LM_ERR("error in init_child for First Worker\n");
 			report_failure_status();
 			goto error;
 		}
 
 		rc = run_unit_tests();
 		shutdown_opensips(rc);
-	}
-
-	if (init_child(PROC_MAIN) < 0) {
-		LM_ERR("error in init_child for PROC_MAIN\n");
-		report_failure_status();
-		goto error;
 	}
 
 	report_conditional_status( (!no_daemon_mode), 0);

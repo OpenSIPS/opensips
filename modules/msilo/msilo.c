@@ -1063,9 +1063,6 @@ void destroy(void)
 {
 	LM_DBG("msilo destroy module ...\n");
 	msg_list_free(ml);
-
-	if(db_con && msilo_dbf.close)
-		msilo_dbf.close(db_con);
 }
 
 /**
