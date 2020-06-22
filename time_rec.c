@@ -1111,10 +1111,31 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
 
 	case FREQ_DAILY:
 	default:
-		diff = end->tm_hour*3600 + end->tm_min*60 + end->tm_sec -
-				(x->tm_hour*3600 + x->tm_min*60 + x->tm_sec);
+		if (bgn->tm_mday == end->tm_mday) {
+			diff = x->tm_hour*3600 + x->tm_min*60 + x->tm_sec -
+					(bgn->tm_hour*3600 + bgn->tm_min*60 + bgn->tm_sec);
+			if (diff < 0)
+				return REC_NOMATCH;
 
-		return diff > 0 ? REC_MATCH : REC_NOMATCH;
+			diff = end->tm_hour*3600 + end->tm_min*60 + end->tm_sec -
+					(x->tm_hour*3600 + x->tm_min*60 + x->tm_sec);
+			if (diff <= 0)
+				return REC_NOMATCH;
+
+			return REC_MATCH;
+		} else {
+			diff = bgn->tm_hour*3600 + bgn->tm_min*60 + bgn->tm_sec -
+					(x->tm_hour*3600 + x->tm_min*60 + x->tm_sec);
+			if (diff <= 0)
+				return REC_MATCH;
+
+			diff = x->tm_hour*3600 + x->tm_min*60 + x->tm_sec -
+					(end->tm_hour*3600 + end->tm_min*60 + end->tm_sec);
+			if (diff < 0)
+				return REC_MATCH;
+
+			return REC_NOMATCH;
+		}
 	}
 
 	/* continuous interval (e.g. "M [ T W T F ] S S") */
