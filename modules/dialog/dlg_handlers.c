@@ -156,14 +156,13 @@ static inline int add_dlg_rr_param(struct sip_msg *req, struct dlg_cell *dlg)
 	char *p;
 	str id;
 
-	p = buf;
+	id.s = p = buf;
 
 	*(p++) = ';';
 	memcpy(p, rr_param.s, rr_param.len);
 	p += rr_param.len;
 	*(p++) = '=';
 
-	id.s = p;
 	id.len = RR_DLG_PARAM_SIZE - (p-buf);
 	if (dlg_get_did_buf(dlg, &id) < 0)
 		return -1;
