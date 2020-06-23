@@ -194,6 +194,29 @@ static inline void db_print_val(db_val_t *v)
  */
 #define VAL_BITMAP(dv) ((dv)->val.bitmap_val)
 
+#define get_int_from_dbval(_col_name, _val, _not_null, _not_zero,  _int,  _error_label) \
+        do{\
+                if ((_val)->nul) { \
+                        if(_not_null) { \
+                                LM_ERR("value in column %s cannot be null\n", _col_name); \
+                                goto _error_label; \
+                        } else { \
+				_int = 0; \
+			} \
+                } \
+		if ((_val)->type == DB_INT || (_val)->type == DB_BIGINT) { \
+			if (VAL_INT(_val) == 0 && _not_zero) { \
+			        LM_ERR("value in column %s cannot be zero\n", _col_name); \
+                                goto _error_label;\
+			} else { \
+				_int = VAL_INT(_val); \
+			} \
+		} else { \
+			LM_ERR("column %s does not have a int or bigint type (found %d)\n",\
+                                _col_name,(_val)->type); \
+                        goto _error_label;\
+		} \
+        }while(0);
 
 #define get_str_from_dbval( _col_name, _val, _not_null, _not_empty, _str, _error_label) \
 	do{\

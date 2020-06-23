@@ -997,11 +997,8 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		values = ROW_VALUES(rows+i);
 
 		/* id */
-		if (VAL_NULL(values)) {
-			LM_ERR("ds ID column cannot be NULL -> skipping\n");
-			continue;
-		}
-		id = VAL_INT(values);
+		get_int_from_dbval("ID",values,
+		        1/*not_null*/, 0/*not_zero*/, id, error2);
 
 		/* uri */
 		get_str_from_dbval( "URI", values+1,
@@ -1030,7 +1027,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		weight = 1;
 
 		/* weight */
-		if (values[3].type == DB_INT) {
+		if (VAL_TYPE(values+3) == DB_INT || VAL_TYPE(values+3) == DB_BIGINT) {
 			weight = VAL_INT(values+3);
 			memset(&weight_st, 0, sizeof weight_st);
 		} else {
@@ -1048,18 +1045,18 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			0/*not_null*/, 0/*not_empty*/, attrs, error2);
 
 		/* priority */
-		if (VAL_NULL(values+5))
-			prio = 0;
-		else
-			prio = VAL_INT(values+5);
+		get_int_from_dbval("PRIORITY", values+5,
+                        0/*not_null*/, 0/*not_zero*/, prio, error2);
 
 		/* state */
-		if (!use_state_col || VAL_NULL(values+7))
-			/* active state */
+		if(use_state_col) {
+			get_int_from_dbval("STATE",values+7,
+                                0/*not_null*/, 0/*not_zero*/, state, error2);
+		} else {
 			state = 0;
-		else
-			state = VAL_INT(values+7);
+		}
 
+		/* description */
 		get_str_from_dbval( "DESCRIPTION", values+6,
 			0/*not_null*/, 0/*not_empty*/, description, error2);
 
