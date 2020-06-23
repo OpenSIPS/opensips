@@ -90,7 +90,7 @@ static int dlg_get_did_buf(struct dlg_cell *dlg, str *buf)
 		return -1;
 
 	if (!buf->len)
-		return 01;
+		return -1;
 
 	*(p++) = DLG_SEPARATOR;
 	buf->len--;
@@ -168,6 +168,8 @@ static inline int add_dlg_rr_param(struct sip_msg *req, struct dlg_cell *dlg)
 	if (dlg_get_did_buf(dlg, &id) < 0)
 		return -1;
 
+	id.len += p - buf;
+	id.s -= p - buf;
 	if (d_rrb.add_rr_param( req, &id)<0) {
 		LM_ERR("failed to add rr param\n");
 		return -1;
