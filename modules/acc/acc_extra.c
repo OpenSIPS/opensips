@@ -363,6 +363,9 @@ static int parse_acc_list_generic(void* val, str2bkend str2bk,
 			token.len = tok_list_s.len;
 		}
 
+		if (token.len <= 0)
+			break;
+
 		/* we reached the end or there are probably some trailing spaces
 		 * after the last ';' */
 		str_trim_spaces_lr(token);
