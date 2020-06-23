@@ -170,7 +170,7 @@ unlock:
 int srec_register_callbacks(struct src_sess *sess)
 {
 	/* also, the b2b ref moves on the dialog */
-	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED,
+	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED|DLGCB_FAILED,
 			srec_dlg_end, sess, src_unref_session)){
 		LM_ERR("cannot register callback for dialog termination\n");
 		return -1;
