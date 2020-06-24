@@ -223,13 +223,10 @@ acc_ctx_t* try_fetch_ctx(void)
 	struct cell* t;
 	struct dlg_cell* dlg;
 
-	t = tmb.t_gett ? tmb.t_gett() : NULL;
-	t = t==T_UNDEFINED ? NULL : t;
-
-
 	if ((ret = ACC_GET_CTX()) == NULL) {
-		t = tmb.t_gett ? tmb.t_gett() : NULL;
-		t = (t==T_UNDEFINED) ? NULL : t;
+		if (!tmb.t_gett || (t = tmb.t_gett()) == T_UNDEFINED)
+			t = NULL;
+
 		dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;
 
 		/* search for the context in transaction context */
