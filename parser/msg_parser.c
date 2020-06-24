@@ -717,7 +717,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 				ZSW(fl->u.request.uri.s));
 			LM_DBG(" version: <%.*s>\n",fl->u.request.version.len,
 				ZSW(fl->u.request.version.s));
-			flags=HDR_VIA_F;
+			flags=HDR_EOH_F;
 			break;
 		case SIP_REPLY:
 			LM_DBG("SIP Reply  (status):\n");
@@ -727,7 +727,7 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 					ZSW(fl->u.reply.status.s));
 			LM_DBG(" reason:  <%.*s>\n", fl->u.reply.reason.len,
 					ZSW(fl->u.reply.reason.s));
-			flags=HDR_VIA_F;
+			flags=HDR_EOH_F;
 			break;
 		default:
 			LM_DBG("unknown type %d\n",fl->type);
