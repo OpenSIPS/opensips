@@ -150,8 +150,9 @@ struct socket_info* new_sock_info(	char* name,
 		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu", adv_port);
 		si->adv_port = adv_port;
 	}
-	if ( (si->proto==PROTO_TCP || si->proto==PROTO_TLS) && children) {
-		LM_WARN("number of children per TCP/TLS listener not supported -> ignoring...\n");
+	if ( si->proto!=PROTO_UDP && si->proto!=PROTO_SCTP && children) {
+		LM_WARN("number of workers per non UDP-based <%.*s> listener not "
+			"supported -> ignoring...\n", si->name.len, si->name.s);
 	} else {
 		si->children = children;
 	}
