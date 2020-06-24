@@ -665,8 +665,10 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		destroy_linkers(dlg);
 		remove_dlg_prof_table(dlg, 1);
 
-		/* dialog setup not completed (3456XX) */
+		/* dialog setup not completed (3456XX), but there is still a bit of
+		 * room to go *back* to 2XX if we're racing against a 200 OK! */
 		run_dlg_callbacks(DLGCB_FAILED, dlg, rpl, DLG_DIR_UPSTREAM, NULL, 0, 1);
+
 		/* do unref */
 		if (unref)
 			unref_dlg(dlg,unref);
