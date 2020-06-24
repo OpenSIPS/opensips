@@ -161,13 +161,13 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 		memcpy(si->tag.s, sid->tag, si->tag.len+1);
 	}
 
-	if ( si->proto!=PROTO_UDP ) {
+	if ( si->proto!=PROTO_UDP && si->proto!=PROTO_SCTP ) {
 		if (sid->workers)
-			LM_WARN("number of workers per non UDP <%.*s> listener not "
+			LM_WARN("number of workers per non UDP-based <%.*s> listener not "
 				"supported -> ignoring...\n", si->name.len, si->name.s);
 		if (sid->auto_scaling_profile)
-			LM_WARN("auto-scaling for non UDP <%.*s> listener not supported "
-				"-> ignoring...\n", si->name.len, si->name.s);
+			LM_WARN("auto-scaling for non UDP-based <%.*s> listener not "
+				"supported -> ignoring...\n", si->name.len, si->name.s);
 	} else {
 		if (sid->workers)
 			si->workers = sid->workers;
