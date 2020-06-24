@@ -1052,6 +1052,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		if(use_state_col) {
 			get_int_from_dbval("STATE",values+7,
                                 0/*not_null*/, 0/*not_zero*/, state, error2);
+                /*active state*/
 		} else {
 			state = 0;
 		}
