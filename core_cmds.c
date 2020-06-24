@@ -782,10 +782,12 @@ static int w_strip_tail(struct sip_msg *msg, int *nchars)
 static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
 {
 	int ret;
+	qvalue_t q = (int)(long)qvalue;
 
 	if (!uri) {
 		ret = append_branch(msg, 0, &msg->dst_uri, &msg->path_vec,
-			get_ruri_q(msg), getb0flags(msg), msg->force_send_socket);
+			(q==Q_UNSPECIFIED) ? get_ruri_q(msg) : q,
+			getb0flags(msg), msg->force_send_socket);
 		/* reset all branch info */
 		msg->force_send_socket = 0;
 		setb0flags(msg,0);
@@ -802,7 +804,7 @@ static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
 		return ret;
 	} else {
 		return append_branch(msg, uri, &msg->dst_uri,
-			&msg->path_vec, *qvalue, getb0flags(msg),
+			&msg->path_vec, q, getb0flags(msg),
 			msg->force_send_socket);
 	}
 }
