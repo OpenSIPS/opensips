@@ -57,8 +57,8 @@
 		OpenSIPS user location cluster, registrar nodes will only publish some
 		light "metadata" entries for any new Addresses-of-Record which are
 		reachable from them. These entries will cause other nodes to also fork
-		additional SIP branches pointing to the above-mentioned registrar upon
-		receiving a call for the above-mentioned Addresses-of-Record.
+		additional SIP branches pointing to the publisher registrar upon
+		receiving calls for its advertised Addresses-of-Record.
 		</para>
 		<para>
 		The <emphasis role='bold'>federation</emphasis> topology is an
@@ -66,9 +66,9 @@
 		<itemizedlist>
 			<listitem>
 			<para>
-			<emphasis role='bold'>IP restrictions</emphasis> - In some cases,
-			calls routed towards registered contacts must necessarily egress
-			through the original registration nodes of these contacts. A
+			<emphasis role='bold'>IP address restrictions</emphasis> - In some
+			cases, calls routed towards registered contacts must necessarily
+			pass through the original registration nodes of these contacts. A
 			classic example of this situation is when an OpenSIPS registrar
 			sitting at the edge of the platform is directly facing a NAT device
 			on the way to the contact. Unless calls are sent out from this
@@ -1794,7 +1794,8 @@ modparam("usrloc", "mi_dump_kv_store", 1)
 				</emphasis> pseudo-variable in order to perform the check).
 			</para>
 			<para><emphasis>NOTICE: </emphasis>If a contact has no shared tag
-				attached to it, this key will map to a "" (empty string) value!
+				attached to it, the value of this parameter will be "" (empty
+				string)!
 			</para></listitem>
 		</itemizedlist>
 	</section>

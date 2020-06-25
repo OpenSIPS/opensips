@@ -378,7 +378,7 @@ modparam("dispatcher", "ds_probing_mode", 1)
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>NULL(none)</quote>.
+			Default value is <quote>NULL (probe all sets)</quote>.
 		</emphasis>
 		</para>
 		<example>
