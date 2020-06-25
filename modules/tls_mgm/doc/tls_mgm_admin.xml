@@ -944,12 +944,12 @@ modparam("tls_mgm", "tls_method", "[dom1]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom1]1")
 modparam("tls_mgm", "require_cert", "[dom1]1")
 
-#'biloxy' server domain
+#'biloxi' server domain
 
 modparam("tls_mgm", "server_domain", "dom2=IP_3:port3")
 
-modparam("tls_mgm", "certificate", "[dom2]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom2]/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "certificate", "[dom2]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom2]/certs/biloxi.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom2]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom2]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom2]1")
@@ -965,11 +965,11 @@ modparam("tls_mgm", "tls_method", "[dom3]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom3]1")
 modparam("tls_mgm", "require_cert", "[dom3]1")
 
-#'biloxy' client domain
+#'biloxi' client domain
 modparam("tls_mgm", "client_domain", "dom4")
 
-modparam("tls_mgm", "certificate", "[dom4]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom4]/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "certificate", "[dom4]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom4]/certs/biloxi.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom4]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom4]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom4]1")
@@ -989,8 +989,8 @@ modparam("tls_mgm", "verify_cert", "[dom5]0")
 # GW IP: 1.2.3.4, GW port: 6677
 modparam("tls_mgm", "client_domain", "dom6=1.2.3.4:6677")
 
-modparam("tls_mgm", "certificate", "[dom6]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom6]/certs/biloxy.com/privkey.pem")
+modparam("tls_mgm", "certificate", "[dom6]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom6]/certs/biloxi.com/privkey.pem")
 modparam("tls_mgm", "ca_list", "[dom6]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom6]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom6]0")
@@ -998,10 +998,10 @@ modparam("tls_mgm", "verify_cert", "[dom6]0")
 ...
 route{
 ...
-    # for biloxy or atlanta domains we set the TLS client domain AVP
+    # for biloxi or atlanta domains we set the TLS client domain AVP
     if ($rd == "atlanta.com")
         $avp(tls_cli_dom) = "dom3";
-    else if ($rd == "biloxy.com")
+    else if ($rd == "biloxi.com")
         $avp(tls_cli_dom) = "dom4";
 ...
     # calls to other SIP domains

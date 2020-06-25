@@ -785,7 +785,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 										ucontact_t** _c, char is_replicated)
 {
-	int first_contact = _r->contacts == NULL ? 1 : 0;
+	int first_contact = !_r->contacts;
 
 	/* not used in db only mode */
 	if (_ci->contact_id == 0) {

@@ -235,7 +235,7 @@ static inline struct lump* get_display_anchor(struct sip_msg *msg,
  * Expand the @uri buffer to include its enclosing left-angle quotes
  * (< and >), if they are present within the given @llim and @rlim boundaries.
  */
-static void expand_aquotes(str *uri, const char *llim, const char *rlim)
+static inline void expand_aquotes(str *uri, const char *llim, const char *rlim)
 {
 	char *p;
 

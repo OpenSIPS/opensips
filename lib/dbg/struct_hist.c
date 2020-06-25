@@ -121,7 +121,7 @@ void shl_destroy(struct struct_hist_list *shl)
 	if (!shl)
 		return;
 
-	list_for_each_safe(el, next, &shl->objects) {
+	list_for_each_safe (el, next, &shl->objects) {
 		sh = list_entry(el, struct struct_hist, list);
 		sh_free(sh);
 	}
