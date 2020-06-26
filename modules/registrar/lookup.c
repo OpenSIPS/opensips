@@ -687,7 +687,7 @@ int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
 		LM_DBG("found AoR, searching for ct: '%.*s'\n", curi.len, curi.s);
 
 		for (c=r->contacts; c; c=c->next) {
-			if (!str_strcmp(&curi, &c->c))
+			if (str_match(&curi, &c->c))
 				goto out_found_unlock;
 		}
 	/* contact not defined; callid defined */
@@ -696,7 +696,7 @@ int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
 		       callid.len, callid.s);
 
 		for (c=r->contacts; c; c=c->next) {
-			if (!str_strcmp(&callid, &c->callid))
+			if (str_match(&callid, &c->callid))
 				goto out_found_unlock;
 		}
 	/* both callid and contact defined */
@@ -705,8 +705,7 @@ int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
 		       curi.len, curi.s, callid.len, callid.s);
 
 		for (c=r->contacts; c; c=c->next) {
-			if (!str_strcmp(&curi, &c->c) &&
-					!str_strcmp(&callid, &c->callid))
+			if (str_match(&curi, &c->c) && str_match(&callid, &c->callid))
 				goto out_found_unlock;
 		}
 	}
