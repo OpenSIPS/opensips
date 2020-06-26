@@ -947,11 +947,11 @@ static contact_t *match_contact(ucontact_id ctid, struct sip_msg *msg)
 				continue;
 			}
 
-			if (!str_strcmp(&ctid_str, &puri.u_val[idx]))
+			if (str_match(&ctid_str, &puri.u_val[idx]))
 				return c;
 
 		} else {
-			if (!str_strcmp(&ctid_str, &puri.user))
+			if (str_match(&ctid_str, &puri.user))
 				return c;
 		}
 	}

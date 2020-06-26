@@ -247,20 +247,19 @@ int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
 	/* callid not defined; contact might be defined or not */
 	if (!_cid) {
 		for (c=r->contacts; c; c=c->next) {
-			if (!str_strcmp(&curi, &c->c))
+			if (str_match(&curi, &c->c))
 				goto out_found_unlock;
 		}
 	/* contact not defined; callid defined */
 	} else if (!_c && _cid) {
 		for (c=r->contacts; c; c=c->next) {
-			if (!str_strcmp(&callid, &c->callid))
+			if (str_match(&callid, &c->callid))
 				goto out_found_unlock;
 		}
 	/* both callid and contact defined */
 	} else {
 		for (c=r->contacts; c; c=c->next) {
-			if (!str_strcmp(&curi, &c->c) &&
-					!str_strcmp(&callid, &c->callid))
+			if (str_match(&curi, &c->c) && str_match(&callid, &c->callid))
 				goto out_found_unlock;
 		}
 	}
