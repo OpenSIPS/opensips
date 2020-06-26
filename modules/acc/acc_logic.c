@@ -380,13 +380,11 @@ int w_acc_db_request(struct sip_msg *rq, str* comment, str *table)
 	env_set_comment( &accp );
 	env_set_text(table->s, table->len);
 
-	if (str_strcmp(table, &db_table_mc) == 0) {
+	if (str_match(table, &db_table_mc))
 		return acc_db_request(rq, NULL, &mc_ins_list, 0, 1);
-	}
 
-	if (str_strcmp(table, &db_table_acc) == 0) {
+	if (str_match(table, &db_table_acc))
 		return acc_db_request(rq, NULL, &acc_ins_list, 0, 0);
-	}
 
 	return acc_db_request( rq, NULL,NULL, 0, 0);
 }

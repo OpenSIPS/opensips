@@ -277,7 +277,7 @@ static int fixup_iter_param(void **param)
 	list_for_each(ele, &script_iters) {
 		iter = list_entry(ele, struct stat_iter, list);
 
-		if (str_strcmp((str*)*param, &iter->name) == 0) {
+		if (str_match((str *)*param, &iter->name)) {
 			*param = iter;
 			return 0;
 		}

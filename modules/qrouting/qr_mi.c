@@ -39,7 +39,7 @@ static qr_dst_t *qr_search_dst(qr_rule_t *rule, str *dst_name)
 		return NULL;
 
 	for (i = 0; i < rule->n; i++)
-		if (!str_strcmp(qr_get_dst_name(&rule->dest[i]), dst_name))
+		if (str_match(qr_get_dst_name(&rule->dest[i]), dst_name))
 			return &rule->dest[i];
 
 	return NULL;
