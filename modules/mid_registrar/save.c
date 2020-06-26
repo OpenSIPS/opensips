@@ -1747,10 +1747,17 @@ static inline void star(struct mid_reg_info *mri, struct sip_msg *_m)
 	urecord_t* r;
 	ucontact_t* c;
 	udomain_t *_d = mri->dom;
+	static int_str_t star_last_reg = {.is_str = 0, .i = 0};
 
 	ul.lock_udomain(_d, &mri->aor);
 
 	if (!ul.get_urecord(_d, &mri->aor, &r)) {
+		LM_DBG("deleting all contacts for aor %.*s\n", mri->aor.len, mri->aor.s);
+		/* When not in SQL_WRITE_THROUGH mode the record will still exist in memory,
+		 * update last_reg_ts so the next REGISTER will forward to main registrar. */
+		if (!ul.put_urecord_key(r, &ul_key_last_reg_ts, &star_last_reg))
+			LM_ERR("failed to update last_reg_ts %.*s\n", mri->aor.len, mri->aor.s);
+
 		c = r->contacts;
 		while(c) {
 			if (mri->reg_flags&REG_SAVE_MEMORY_FLAG) {
@@ -2221,6 +2228,10 @@ static int calc_max_ct_diff(urecord_t *urec)
 	int_str_t *valuep;
 
 	for (ct = urec->contacts; ct; ct = ct->next) {
+		/* ignore deleted contacts */
+		if (ct->expires == UL_EXPIRED_TIME)
+			continue;
+
 		valuep = ul.get_ucontact_key(ct, &ul_key_expires);
 		if (!valuep) {
 			LM_DBG("'expires' key not found!\n");
@@ -2307,8 +2318,10 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 		return -1;
 	}
 
-	for (c = urec->contacts; c; c = c->next)
-		ctno++;
+	for (c = urec->contacts; c; c = c->next) {
+		if (VALID_CONTACT(c, get_act_time()))
+			ctno++;
+	}
 
 	if (_sctx->max_contacts) {
 		for (c = urec->contacts, vct = 0; c; c = c->next) {
