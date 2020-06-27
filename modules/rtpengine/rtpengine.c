@@ -1972,14 +1972,17 @@ error:
 			(_fd) = -1; \
 		} \
 	} while (0)
+#define RTPENGINE_BUF_SIZE 0x10000
+#define OSIP_IOV_MAX 1024
 
 static char *
 send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 {
 	struct sockaddr_un addr;
 	int fd, len, i, vcnt;
+	int max_vcnt=OSIP_IOV_MAX;
 	char *cp;
-	static char buf[0x10000];
+	static char buf[RTPENGINE_BUF_SIZE];
 	struct pollfd fds[1];
 	struct iovec *v;
 
@@ -1987,6 +1990,32 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 	if (!v) {
 		LM_ERR("error converting bencode to iovec\n");
 		return NULL;
+	}
+#ifdef IOV_MAX
+	if (IOV_MAX < OSIP_IOV_MAX)
+		max_vcnt = IOV_MAX;
+#endif
+
+	if (vcnt > max_vcnt) {
+		int i, vec_len = 0;
+		/* use buf if possible :) */
+		for (i = max_vcnt - 1; i < vcnt; i++)
+			vec_len += v[i].iov_len;
+		/* use buf, error otherwise */
+		if (vec_len > RTPENGINE_BUF_SIZE) {
+			LM_ERR("Command too big %d - max %d\n", vec_len, RTPENGINE_BUF_SIZE);
+			return NULL;
+		}
+		cp = buf;
+		for (i = max_vcnt - 1; i < vcnt; i++) {
+			memcpy(cp, v[i].iov_base, v[i].iov_len);
+			cp += v[i].iov_len;
+		}
+		i = max_vcnt - 1;
+		v[i].iov_len = vec_len;
+		v[i].iov_base = buf;
+		/* finally solve the problem */
+		vcnt = max_vcnt;
 	}
 
 	len = 0;
