@@ -234,19 +234,19 @@ Chapter 1. Admin Guide
    only publish some light "metadata" entries for any new
    Addresses-of-Record which are reachable from them. These
    entries will cause other nodes to also fork additional SIP
-   branches pointing to the above-mentioned registrar upon
-   receiving a call for the above-mentioned Addresses-of-Record.
+   branches pointing to the publisher registrar upon receiving
+   calls for its advertised Addresses-of-Record.
 
    The federation topology is an optimized solution for the
    following core problems:
-     * IP restrictions - In some cases, calls routed towards
-       registered contacts must necessarily egress through the
-       original registration nodes of these contacts. A classic
-       example of this situation is when an OpenSIPS registrar
-       sitting at the edge of the platform is directly facing a
-       NAT device on the way to the contact. Unless calls are sent
-       out from this exact registrar, they will not be able to
-       traverse the NAT device and reach the contact.
+     * IP address restrictions - In some cases, calls routed
+       towards registered contacts must necessarily pass through
+       the original registration nodes of these contacts. A
+       classic example of this situation is when an OpenSIPS
+       registrar sitting at the edge of the platform is directly
+       facing a NAT device on the way to the contact. Unless calls
+       are sent out from this exact registrar, they will not be
+       able to traverse the NAT device and reach the contact.
      * horizontal scalability - Avoiding global
        replication/contact broadcasting within the cluster not
        only dramatically improves contact storage performance, but
@@ -1233,8 +1233,8 @@ modparam("usrloc", "mi_dump_kv_store", 1)
        determine if the current node owns the contact (e.g.
        possibly using the $cluster.sh_tag pseudo-variable in order
        to perform the check).
-       NOTICE: If a contact has no shared tag attached to it, this
-       key will map to a "" (empty string) value!
+       NOTICE: If a contact has no shared tag attached to it, the
+       value of this parameter will be "" (empty string)!
 
 1.9.4.  E_UL_CONTACT_DELETE
 
@@ -1501,8 +1501,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 421 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 240 152 6268 2080
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 239 143 3990 3539
+   2. Liviu Chircu (@liviuchircu) 241 153 6276 2087
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 240 144 3998 3542
    4. Ionut Ionita (@ionutrazvanionita) 41 24 1099 413
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    6. Vlad Patrascu (@rvlad-patrascu) 39 20 768 631
@@ -1544,10 +1544,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Mar 2020
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2020
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jun 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Jun 2020
+   3.  Zero King                           Mar 2020 - Mar 2020
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    5.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
    6.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
    7.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
@@ -1576,7 +1576,7 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Zero King, Liviu Chircu (@liviuchircu), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Zero King, Vlad
    Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
    Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
    (@razvancrainea), Ionut Ionita (@ionutrazvanionita), Eseanu
