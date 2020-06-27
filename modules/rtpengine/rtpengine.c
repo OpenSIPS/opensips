@@ -2043,8 +2043,8 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 		} while (len == -1 && errno == EINTR);
 		if (len <= 0) {
 			close(fd);
-			LM_ERR("can't send command to a RTP proxy (%d:%s)\n",
-					errno, strerror(errno));
+			LM_ERR("can't send (#%d iovec buffers) command to a RTP proxy (%d:%s)\n",
+					vcnt - 1, errno, strerror(errno));
 			goto badproxy;
 		}
 		do {
@@ -2088,8 +2088,8 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 				len = writev(rtpe_socks[node->idx], v, vcnt);
 			} while (len == -1 && (errno == EINTR || errno == ENOBUFS || errno == EMSGSIZE));
 			if (len <= 0) {
-				LM_ERR("can't send command to a RTP proxy (%d:%s)\n",
-						errno, strerror(errno));
+				LM_ERR("can't send (#%d iovec buffers) command to a RTP proxy (%d:%s)\n",
+						vcnt, errno, strerror(errno));
 				RTPE_IO_ERROR_CLOSE(rtpe_socks[node->idx]);
 				continue;
 			}
