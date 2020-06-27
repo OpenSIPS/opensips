@@ -2012,7 +2012,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 		}
 
 		do {
-			len = writev(fd, v + 1, vcnt);
+			len = writev(fd, v + 1, vcnt - 1);
 		} while (len == -1 && errno == EINTR);
 		if (len <= 0) {
 			close(fd);
@@ -2058,7 +2058,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 				goto badproxy;
 			}
 			do {
-				len = writev(rtpe_socks[node->idx], v, vcnt + 1);
+				len = writev(rtpe_socks[node->idx], v, vcnt);
 			} while (len == -1 && (errno == EINTR || errno == ENOBUFS || errno == EMSGSIZE));
 			if (len <= 0) {
 				LM_ERR("can't send command to a RTP proxy (%d:%s)\n",
