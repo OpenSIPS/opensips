@@ -813,12 +813,12 @@ modparam("tls_mgm", "tls_method", "[dom1]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom1]1")
 modparam("tls_mgm", "require_cert", "[dom1]1")
 
-#'biloxy' server domain
+#'biloxi' server domain
 
 modparam("tls_mgm", "server_domain", "dom2=IP_3:port3")
 
-modparam("tls_mgm", "certificate", "[dom2]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom2]/certs/biloxy.com/privkey.pem"
+modparam("tls_mgm", "certificate", "[dom2]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom2]/certs/biloxi.com/privkey.pem"
 )
 modparam("tls_mgm", "ca_list", "[dom2]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom2]tlsv1")
@@ -836,11 +836,11 @@ modparam("tls_mgm", "tls_method", "[dom3]tlsv1")
 modparam("tls_mgm", "verify_cert", "[dom3]1")
 modparam("tls_mgm", "require_cert", "[dom3]1")
 
-#'biloxy' client domain
+#'biloxi' client domain
 modparam("tls_mgm", "client_domain", "dom4")
 
-modparam("tls_mgm", "certificate", "[dom4]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom4]/certs/biloxy.com/privkey.pem"
+modparam("tls_mgm", "certificate", "[dom4]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom4]/certs/biloxi.com/privkey.pem"
 )
 modparam("tls_mgm", "ca_list", "[dom4]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom4]tlsv1")
@@ -864,8 +864,8 @@ modparam("tls_mgm", "verify_cert", "[dom5]0")
 # GW IP: 1.2.3.4, GW port: 6677
 modparam("tls_mgm", "client_domain", "dom6=1.2.3.4:6677")
 
-modparam("tls_mgm", "certificate", "[dom6]/certs/biloxy.com/cert.pem")
-modparam("tls_mgm", "private_key", "[dom6]/certs/biloxy.com/privkey.pem"
+modparam("tls_mgm", "certificate", "[dom6]/certs/biloxi.com/cert.pem")
+modparam("tls_mgm", "private_key", "[dom6]/certs/biloxi.com/privkey.pem"
 )
 modparam("tls_mgm", "ca_list", "[dom6]/certs/wellknownCAs")
 modparam("tls_mgm", "tls_method", "[dom6]tlsv1")
@@ -874,10 +874,10 @@ modparam("tls_mgm", "verify_cert", "[dom6]0")
 ...
 route{
 ...
-    # for biloxy or atlanta domains we set the TLS client domain AVP
+    # for biloxi or atlanta domains we set the TLS client domain AVP
     if ($rd == "atlanta.com")
         $avp(tls_cli_dom) = "dom3";
-    else if ($rd == "biloxy.com")
+    else if ($rd == "biloxi.com")
         $avp(tls_cli_dom) = "dom4";
 ...
     # calls to other SIP domains
@@ -1477,7 +1477,7 @@ Chapter 3. Contributors
    2. Vlad Patrascu (@rvlad-patrascu) 54 17 1837 1205
    3. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 22 10 269 448
-   5. Liviu Chircu (@liviuchircu) 20 14 131 210
+   5. Liviu Chircu (@liviuchircu) 21 15 141 220
    6. Ionut Ionita (@ionutrazvanionita) 17 9 383 169
    7. Ionel Cerghit (@ionel-cerghit) 7 1 494 109
    8. Dan Pascu (@danpascu) 5 3 0 77
@@ -1507,13 +1507,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2020
-   2.  Razvan Crainea (@razvancrainea)     Sep 2015 - Mar 2020
-   3.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
-   4.  Dan Pascu (@danpascu)               Jun 2019 - Aug 2019
-   5.  Alexey Vasilyev (@vasilevalex)      May 2019 - May 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Nov 2018
-   7.  Liviu Chircu (@liviuchircu)         Oct 2015 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jun 2020
+   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2020
+   3.  Razvan Crainea (@razvancrainea)     Sep 2015 - Mar 2020
+   4.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
+   5.  Dan Pascu (@danpascu)               Jun 2019 - Aug 2019
+   6.  Alexey Vasilyev (@vasilevalex)      May 2019 - May 2019
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Nov 2018
    8.  Callum Guy                          Jun 2018 - Jun 2018
    9.  Ovidiu Sas (@ovidiusas)             Jun 2017 - Jun 2017
    10. Ionut Ionita (@ionutrazvanionita)   Apr 2016 - Apr 2017
@@ -1529,10 +1529,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Callum
-   Guy, Liviu Chircu (@liviuchircu), Eseanu Marius Cristian
-   (@eseanucristian).
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Callum Guy, Eseanu Marius
+   Cristian (@eseanucristian).
 
    doc copyrights:
 

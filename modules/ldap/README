@@ -1355,7 +1355,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Christian Schlatter 57 6 5764 237
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 23 18 139 136
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 24 19 140 138
    3. Ionut Ionita (@ionutrazvanionita) 21 5 1359 252
    4. Razvan Crainea (@razvancrainea) 14 11 54 73
    5. Daniel-Constantin Mierla (@miconda) 12 9 84 83
@@ -1388,10 +1388,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2019
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Jun 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Jun 2020
+   2.  Zero King                           Mar 2020 - Mar 2020
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2019
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Jan 2017
    7.  Dusan Klinec                        Dec 2015 - Dec 2015
