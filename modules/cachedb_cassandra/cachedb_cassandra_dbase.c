@@ -118,6 +118,17 @@ int cassandra_new_connection(cassandra_con *con, char *host, int port)
 		return -1;
 	}
 
+#if CASS_VERSION_MAJOR >= 2 && CASS_VERSION_MINOR >= 15
+	/* since version 2.15, DSE support is available in the standard driver
+	 * and the protocol version defaults to DSEV2; as such we force the
+	 * protocol version to v4 */
+	if (cass_cluster_set_protocol_version(con->cluster,
+		CASS_PROTOCOL_VERSION_V4) != CASS_OK) {
+		LM_ERR("Failed to set the protocol version\n");
+		goto error;
+	}
+#endif
+
 	if (cass_cluster_set_contact_points(con->cluster, host)
 		!= CASS_OK) {
 		LM_ERR("Failed to set the Cassandra contact points\n");
