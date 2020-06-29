@@ -1747,7 +1747,7 @@ static inline void star(struct mid_reg_info *mri, struct sip_msg *_m)
 	urecord_t* r;
 	ucontact_t* c;
 	udomain_t *_d = mri->dom;
-	static int_str_t star_last_reg = {.is_str = 0, .i = 0};
+	static int_str_t star_last_reg = {{UL_EXPIRED_TIME}, 0};
 
 	ul.lock_udomain(_d, &mri->aor);
 
