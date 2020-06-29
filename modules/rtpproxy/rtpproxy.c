@@ -2256,8 +2256,8 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		} while (len == -1 && errno == EINTR);
 		if (len <= 0) {
 			close(fd);
-			LM_ERR("can't send command to a RTP proxy (%d:%s)\n",
-					errno, strerror(errno));
+			LM_ERR("can't send (#%d iovec buffers) command to a RTP proxy (%d:%s)\n",
+					vcnt - 1, errno, strerror(errno));
 			goto badproxy;
 		}
 		do {
@@ -2295,8 +2295,8 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 				len = writev(rtpp_socks[node->idx], v, vcnt);
 			} while (len == -1 && (errno == EINTR || errno == ENOBUFS));
 			if (len <= 0) {
-				LM_ERR("can't send command to a RTP proxy (%d:%s)\n",
-						errno, strerror(errno));
+				LM_ERR("can't send (#%d iovec buffers) command to a RTP proxy (%d:%s)\n",
+						vcnt, errno, strerror(errno));
 				goto badproxy;
 			}
 			while ((poll(fds, 1, rtpproxy_tout) == 1) &&
