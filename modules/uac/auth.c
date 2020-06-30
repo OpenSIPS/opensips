@@ -97,6 +97,62 @@ error:
 	return -1;
 }
 
+
+int force_master_cseq_change(struct sip_msg *msg, int new_cseq)
+{
+	int offset,len,olen;
+	struct lump *tmp;
+	char *obuf;
+	str pkg_cseq;
+
+	/* it should be already parsed, but anyhow.... */
+	if(parse_headers(msg, HDR_CSEQ_F, 0) <0 ) {
+		LM_ERR("failed to parse headers \n");
+		return -1;
+	}
+
+	obuf = int2str(new_cseq,&olen);
+	if (obuf == NULL) {
+		LM_ERR("Failed to convert new integer to string \n");
+		return -1;
+	}
+
+	pkg_cseq.s = pkg_malloc(2+olen+1+REQ_LINE(msg).method.len);
+	if (!pkg_cseq.s) {
+		LM_ERR("No more pkg mem \n");
+		return -1;
+	}
+
+	pkg_cseq.s[0] = ':';
+	pkg_cseq.s[1] = ' ';
+	memcpy(2+pkg_cseq.s,obuf,olen);
+	pkg_cseq.len = 2+olen;
+	pkg_cseq.s[pkg_cseq.len++] = ' ';
+	memcpy(pkg_cseq.s+pkg_cseq.len,REQ_LINE(msg).method.s,REQ_LINE(msg).method.len);
+	pkg_cseq.len += REQ_LINE(msg).method.len;
+
+	len = (msg->cseq->body.s + msg->cseq->body.len) - (msg->cseq->name.s + msg->cseq->name.len);
+	offset = msg->cseq->name.s + msg->cseq->name.len - msg->buf;
+
+	if ((tmp = del_lump(msg,offset,len,0)) == 0) {
+		LM_ERR("failed to remove the existing CSEQ\n");
+		pkg_free(pkg_cseq.s);
+		return -1;
+	}
+
+	if (insert_new_lump_after(tmp,pkg_cseq.s,pkg_cseq.len,0) == 0) {
+		LM_ERR("failed to insert new CSEQ\n");
+		pkg_free(pkg_cseq.s);
+		return -1;
+	}
+
+	LM_DBG("Cseq handling - replaced [%.*s] with [%.*s]\n",
+		len, msg->buf+offset, pkg_cseq.len, pkg_cseq.s);
+
+	return 0;
+}
+
+
 int apply_cseq_op(struct sip_msg *msg,int val)
 {
 	int offset,len,olen;
@@ -195,7 +251,7 @@ int uac_auth( struct sip_msg *msg)
 	struct cell *t;
 	HASHHEX response;
 	str *new_hdr;
-	str param;
+	str param, ttag;
 	char *p;
 	struct dlg_cell *dlg;
 
@@ -278,46 +334,79 @@ int uac_auth( struct sip_msg *msg)
 	 * along with the buffer, so detach the buffer from new_hdr var */
 	new_hdr->s = NULL; new_hdr->len = 0;
 
-	if ( (new_cseq = apply_cseq_op(msg,1)) < 0) {
-		LM_WARN("Failure to increment the CSEQ header - continue \n");
-		goto error;
-	}
+	/* gather some information about the context of this request,
+	 * like if initial or sequential, if dialog support is on */
+	get_totag(msg, &ttag);
+	if (dlg_api.get_dlg)
+		dlg = dlg_api.get_dlg();
 
-	/* only register the TMCB once per transaction */
-	if (!(msg->msg_flags & FL_USE_UAC_CSEQ || 
-	t->uas.request->msg_flags & FL_USE_UAC_CSEQ)) {
-		if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
-		apply_cseq_decrement,0,0)!=1) {
-			LM_ERR("Failed to register TMCB response fwded - continue \n");
+	if (ttag.s==NULL || dlg==NULL || (dlg->flags&DLG_FLAG_CSEQ_ENFORCE)==0) {
+
+		/* initial request or no dialog support
+		 * => do the changes over cseq from here */
+		if ( (new_cseq = apply_cseq_op(msg,1)) < 0) {
+			LM_WARN("Failure to increment the CSEQ header - continue \n");
 			goto error;
 		}
-	}
 
-	if (dlg_api.get_dlg && (dlg = dlg_api.get_dlg())) {
-		/* dlg->legs[dlg->legs_no[DLG_LEGS_USED]-1].last_gen_cseq = new_cseq; */
-		dlg->flags |= DLG_FLAG_CSEQ_ENFORCE;
+		/* only register the TMCB once per transaction */
+		if (!(msg->msg_flags & FL_USE_UAC_CSEQ || 
+		t->uas.request->msg_flags & FL_USE_UAC_CSEQ)) {
+			if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
+			apply_cseq_decrement,0,0)!=1) {
+				LM_ERR("Failed to register TMCB response fwded - continue \n");
+				goto error;
+			}
+		}
+
+		/* marking of the call (with or without dialog support) for further
+		 * CSEQ handling must be done only for intial request */
+		if (ttag.s==NULL) {
+			if (dlg) {
+				/* dlg->legs[dlg->legs_no[DLG_LEGS_USED]-1].last_gen_cseq = new_cseq; */
+				dlg->flags |= DLG_FLAG_CSEQ_ENFORCE;
+			} else {
+				param.len=rr_uac_cseq_param.len+3;
+				param.s=pkg_malloc(param.len);
+				if (!param.s) {
+					LM_ERR("No more pkg mem \n");
+					goto error;
+				}
+
+				p = param.s;
+				*p++=';';
+				memcpy(p,rr_uac_cseq_param.s,rr_uac_cseq_param.len);
+				p+=rr_uac_cseq_param.len;
+				*p++='=';
+				*p++='1';
+
+				if (uac_rrb.add_rr_param( msg, &param)!=0) {
+					LM_ERR("add_RR_param failed\n");
+					pkg_free(param.s);
+					goto error;
+				}
+
+				pkg_free(param.s);
+			}
+		}
+
 	} else {
-		param.len=rr_uac_cseq_param.len+3;
-		param.s=pkg_malloc(param.len);
-		if (!param.s) {
-			LM_ERR("No more pkg mem \n");
+
+		/* this is a sequential with dialog support, so the dialog module
+		 * is already managing the cseq => tell directly the dialog module
+		 * about the cseq increasing */
+		new_cseq = ++dlg->legs[dlg->legs_no[DLG_LEGS_USED]-1].last_gen_cseq;
+
+		/* as we expect to have the request already altered (by the dialog 
+		 * module) with a new cseq, to invalidate that change, we do a trick
+		 * by adding a new set of lumps (del+add) to cover the old one
+		 * (as start+len), so let's change the whole cseq hdr - anyhow
+		 * this is a per-branch change, so it will be discarded afterwards */
+		if ( (force_master_cseq_change( msg, new_cseq)) < 0) {
+			LM_ERR("failed to forced new in-dialog cseq\n");
 			goto error;
 		}
 
-		p = param.s;
-		*p++=';';
-		memcpy(p,rr_uac_cseq_param.s,rr_uac_cseq_param.len);
-		p+=rr_uac_cseq_param.len;
-		*p++='=';
-		*p++='1';
-
-		if (uac_rrb.add_rr_param( msg, &param)!=0) {
-			LM_ERR("add_RR_param failed\n");
-			pkg_free(param.s);
-			goto error;
-		}
-
-		pkg_free(param.s);
 	}
 
 	msg->msg_flags |= FL_USE_UAC_CSEQ;
