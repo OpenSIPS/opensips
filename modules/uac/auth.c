@@ -346,6 +346,8 @@ int uac_auth( struct sip_msg *msg)
 	get_totag(msg, &ttag);
 	if (dlg_api.get_dlg)
 		dlg = dlg_api.get_dlg();
+	else
+		dlg = NULL;
 
 	if (ttag.s==NULL || dlg==NULL || (dlg->flags&DLG_FLAG_CSEQ_ENFORCE)==0) {
 
