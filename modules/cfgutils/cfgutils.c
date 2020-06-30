@@ -869,12 +869,8 @@ int check_time_rec(struct sip_msg *msg, str *time_str, str *tz,
 	else
 		check_time = *ptime;
 
-	if (tz) {
-		check_time = tz_adjust_ts(check_time, tz);
+	if (tz)
 		tz_set(tz);
-	} else {
-		check_time = tz_adjust_ts(check_time, NULL);
-	}
 
 	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
 	load_TR_value( p, s, time_rec, tr_parse_dtend, parse_error, done);
@@ -910,7 +906,8 @@ done:
 success:
 	tmrec_free(time_rec);
 
-	tz_reset();
+	if (tz)
+		tz_reset();
 	return 1;
 
 parse_error:
@@ -920,6 +917,7 @@ error:
 	if (time_rec)
 		tmrec_free( time_rec );
 
-	tz_reset();
+	if (tz)
+		tz_reset();
 	return -1;
 }
