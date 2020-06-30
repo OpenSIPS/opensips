@@ -1,3 +1,1633 @@
+=========================== Release 3.0.3 ==============================
+
+2020-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [10b3e3bc9] :
+
+	Fixed potentially un-init dlg variable
+	Thanks to Trevis for its report :)
+	(cherry picked from commit 9de8dd193c1b948aff7d4cb6cff67a3816473ee6)
+
+
+2020-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c1824eb92] :
+
+	Fixed uac_auth() on sequential requests in dialogs were uac_auth() was already used
+	The fix solves the conflict between the changes over the cseq value coming from (1) dialog module, trying to increment the cseq to compensate the cseq change during INVITE auth and (2) the uac module incrementing the cseq again because of auth'ing a sequential request.
+
+	The solution was to first indetify such case in uac_auth() and to use a larger delete lump (when replacing the cseq) in uac_auth(). Such a larger/wider delete lump will invalidate the lump added by the dialog module.
+
+	This is a follow up on #1969
+
+	Credits to Ben Newlin for reporting and assisting with the testing
+	(cherry picked from commit 994ab68ffccc28a8cb0cd03bc586570ad8bc5dba)
+
+
+2020-06-29  Vlad Patrascu  <vladp at opensips dot org>
+	* [44f11b6a3] :
+
+	cachedb_cassandra: fix unsupported protocol version errors
+	This commit prevents the Cassandra driver with version >= 2.15 from throwing
+	errors while trying to negociate the appropriate protocol version.
+
+	Closes #2145
+	(cherry picked from commit d60830f49c9c0ac6c161b56cddbc2572c04d3c66)
+
+
+2020-06-29  Ovidiu Sas  <osas at voipembedded dot com>
+	* [1cc82cb84] :
+
+	rtpproxy: improve error logs: print # iovec buffers along errno/strerror on writev failure
+	(cherry picked from commit f4ba69bc6708e94faeefe8d008f48c0a80d66eb8)
+
+
+2020-06-29  Ovidiu Sas  <osas at voipembedded dot com>
+	* [0d796121e] :
+
+	rtpproxy: fix writev error 22:Invalid argument
+	 - align code with rtpengine implementation for systems with no IOV_MAX defined
+	(cherry picked from commit 565e25ba9b967bb5442d62f2ef5791c51787f078)
+
+
+2020-06-29  Liviu Chircu  <liviu at opensips dot org>
+	* [911ab3383] :
+
+	mid_registrar: Be compatible with gcc 4.x
+	... it seems named initializers were not supported back then.
+
+	This commit also makes the initialization more human-friendly by using
+	the "10" value (UL_EXPIRED_TIME) instead of the opaque "0" value -- the
+	end result is the same.
+
+	Thanks to Nick Altmann and Răzvan Crainea for their help!
+	(cherry picked from commit 84bea49d7e4392a23526790d135fbff816081ec3)
+
+
+2020-06-27  OpenSIPS  <github at opensips dot org>
+	* [bb5146e33] :
+
+	Rebuild documentation
+
+
+2020-06-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f69bca5b7] :
+
+	rtpengine: fix writev error 22:Invalid argument
+	 - this fix is based on a similar fix implemented in the rtpproxy module
+	 - if the # of iovec buffes is to high, concatenate last buffers and reduce the # of buffers
+	(cherry picked from commit eda6ec3b6260db52a8420d3a9f0cc2f82273af0f)
+
+
+2020-06-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [384d521d1] :
+
+	rtpengine: improve error logs: print # iovec buffers along errno/strerror on writev failure
+	(cherry picked from commit bd099afa394a8033f6d988f355ff0923592c8c0b)
+
+
+2020-06-27  Ovidiu Sas  <osas at voipembedded dot com>
+	* [680ddf69a] :
+
+	rtpengine: use proper buffer iovec count when calling writev to send commands to rtpengine daemon
+	 - this went undetected for a long time probably because the last buffer had a zero iov_len ...
+	(cherry picked from commit b1bf482df43320cae37207bf7975215785e825ab)
+
+
+2020-06-27  Liviu Chircu  <liviu at opensips dot org>
+	* [f3dbcf1ab] :
+
+	Merge pull request #2152 from ar45/fix_2138
+	Fixes #2138 - mid_reg_save()
+
+
+2020-06-25  Liviu Chircu  <liviu at opensips dot org>
+	* [0952c1922] :
+
+	rr: Fix ordering issues with add_rr_param() and create_dialog()
+	Commits bd1719dcf and c263182ee4d introduced regressions for
+	record_route() and record_route_preset(), respectively, which caused
+	add_rr_param() to not work anymore in the following sequence of function
+	calls:
+
+	create_dialog() with a "dlg_match_mode" != DID_NONE
+	record_route() or record_route_preset()
+	add_rr_param() # would not do anything, simply acting as a NOP
+
+	The reason is that the "fake" lump chain which was meant to hold
+	all add_rr_param() operations prior to an eventual record_route() call
+	would no longer be masked after the record_route() and would continue to
+	accumulate data from subsequent add_rr_param() calls.  Since it was
+	meant to be a "fake" chain from the beginning (maybe the user doesn't
+	call record_route() at all!), the data would simply be lost.
+
+	Many thanks to John Quick for the accurate report and instructions on
+	how to reproduce the issue!
+	(cherry picked from commit e3ca95ecd0b3f33b7f42f3a7eda4a6e686cb241d)
+
+
+2020-06-25  Liviu Chircu  <liviu at opensips dot org>
+	* [85811282d] :
+
+	TLS: Refresh expired default certificates
+	... and also extend their lifetime from 1 year -> 10 years
+	(cherry picked from commit 96517d4860e0a7d744f38ce496b92a5565c96574)
+
+
+2020-06-25  Liviu Chircu  <liviu at opensips dot org>
+	* [55ebe7b72] :
+
+	Fix various typos, phrases & small issues; Update contribs
+	(cherry picked from commit 86f6e0c3038025bfc53243a27cb0fe76869c324e)
+
+
+2020-06-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [775462db0] :
+
+	Fix wrong inheriting of Contact-Length hdr.
+	When moving from multi part to single part, do not inherite the Ct-len hdr of the part.
+	Fixes #1990
+	(cherry picked from commit 7dd1151341b8229cd30e335b246e56938551f6bd)
+
+
+2020-06-25  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [68afb702d] :
+
+	Proper detection/skipping of EOH in multipart.
+	Do not assume a len of 2 (not even checking the content). OpenSIPS accepts (for hdrs) a single \n or \r as EOH
+	(cherry picked from commit 3ec9d1b25430715f2b800c455c8518104a243f49)
+
+
+2020-06-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [fbc4f793f] :
+
+	Fix test of recognizing SCTP as UDP-based protocol
+	...and allow per-socket/listener definition of number of workers/processes
+
+	Closes #2125
+	(cherry picked from commit 749685c7ab6e7baa6562f9803bc52f2fc89ea82b)
+
+
+2020-06-24  Aron Podrigal  <aronp at guaranteedplus dot com>
+	* [6ee166455] :
+
+	Fixes #2138 - mid_reg_save()
+	mid_registrar_save() not forwarding REGISTER in aor throttling mode after unregister when in write-back mode.
+
+
+2020-06-24  Liviu Chircu  <liviu at opensips dot org>
+	* [e98b2356d] :
+
+	dialog API: Clarify documentation for DLGCB_FAILED
+	The DLGCB_FAILED callback is subject to the "200 OK" vs. "408 timeout"
+	SIP race condition during dialog establishment and developers should use
+	it with extra caution :)
+	(cherry picked from commit 1f2c8c4854f9494ff7b712be3dc1eba87cba57f7)
+
+
+2020-06-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [67af9fe2e] :
+
+	Delete expired subscription only with active tags
+	In clustering setup, the DB rutine handling subsscription should delete from DB and run the del handler only if the subscription has an active sharing tag.
+
+	Fixes #1848
+	(cherry picked from commit 929ab4d43c0ad1878d60d3ef27f2a71f905b80f0)
+
+
+2020-06-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f6a8ae9f7] :
+
+	Delete expired subscription only with active tags
+	In clustering setup, the DB rutine handling subsscription should delete from DB and run the del handler only if the subscription has an active sharing tag.
+
+	Fixes #1848
+	(cherry picked from commit 929ab4d43c0ad1878d60d3ef27f2a71f905b80f0)
+
+
+2020-06-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1de63fd09] :
+
+	Fix wrong type of lumps.
+	As the eoh (Enf Of Header) is determined during the on-demand parsing, the add_lump() may wrongly lable a lump as "header" or "body" (as the add_lump() may be used before the parsing reached the EOH).
+	So, better identify all headers asap, so the add_lump() will properly work all the time. This will not add any overhead, as in 99.9999% of the case, due the functions used in cfg, anyhow you end up parsing the whole message.
+
+	Fixes  #2144
+	This is a 100% safe fix, there are 0 chances for side effects.
+	(cherry picked from commit 23e098f0ec465b376eccfee587ce2f648331ccbc)
+
+
+2020-06-23  Razvan Crainea  <razvan at opensips dot org>
+	* [2161bae43] :
+
+	acc: fix no name tags in extra lists
+	Before this commit, extra_fields that were having spaces after the last
+	tag (such as: `last; ` would generate an extra field with no tag. This
+	commit fixes this case.
+	(cherry picked from commit a69e6ada6f57989e7a3af940e75d3b99ca8bced3)
+
+
+2020-06-23  Razvan Crainea  <razvan at opensips dot org>
+	* [9f7b0a4dd] :
+
+	siprec: send BYE for sessions not established
+	When a SIPREC session was started on a 183 reply, but the session was
+	not stopped, a BYE to the SIPREC server should be sent to close the
+	session.
+
+	Thanks go to Krunal Patel for reporting this and offering the fix.
+
+	Close #2136
+	(cherry picked from commit b4cd132731f8e2fc0a949ea52b22952879b345ca)
+
+
+2020-06-23  Razvan Crainea  <razvan at opensips dot org>
+	* [de98752e8] :
+
+	cgrates: properly parse multiple jsons in buffer
+	When CGRateS has issues multiple SessionSv1.GetActiveSessionIDs requests
+	to OpenSIPS in parallel, some of them get merged in a single buffer -
+	thus we need to treat this case by advancing the json buffer properly.
+
+	Credits go to @vtzan for reporting this and for offering detailed
+	explanations in ticket #2103.
+	(cherry picked from commit d105f2007bae37dde077feab9c804900d9ea0f7a)
+
+
+2020-06-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3a8f6f137] :
+
+	 The main process (attendant) is no longer running the child_init()
+	The main proc must stay free of any db connections, so it can later fork and child_init() other procs (due auto_scaling).
+	For the modules which were keeping a DB conn open in main proc for later usage, during module destroy, the new approach is to open the conn, on the spot, in the destroy handler.
+
+	Related to #2003
+
+	(cherry-pick from 7b62f2453bd226ec08b4f229017fa953d3876681)
+
+
+2020-06-22  Vlad Patrascu  <vladp at opensips dot org>
+	* [8d63f3a52] :
+
+	rest_client: complete fix in commit b977c1b
+	Related to #2115
+	(cherry picked from commit 31104219475b94b864c126f42f1e5abba8e41148)
+
+
+2020-06-20  OpenSIPS  <github at opensips dot org>
+	* [e58539e25] :
+
+	Rebuild documentation
+
+
+2020-06-17  Vlad Patrascu  <vladp at opensips dot org>
+	* [b977c1ba8] :
+
+	rest_client: fix crash when loading module along with tls_mgm
+	Closes #2115
+	(cherry picked from commit f4227fa77a22e3439718fb9fe4b8077ea6fc659a)
+
+
+2020-06-16  Razvan Crainea  <razvan at opensips dot org>
+	* [40b83c9f3] :
+
+	dialog: clarify usage scope of $DLG_dir
+	Reported by @imdrpn in #2132
+	(cherry picked from commit 896be267dba83b2e45d4b246a37c2de1dde5d6d1)
+
+
+2020-06-16  Razvan Crainea  <razvan at opensips dot org>
+	* [93e74149a] :
+
+	drouting: fix mi commands examples when names are required
+	Credits go to @kertor for reporting this
+	Close #2141
+	(cherry picked from commit 84211d8266607e5bf0269f10881f967d452fe9b7)
+
+
+2020-06-16  Razvan Crainea  <razvan at opensips dot org>
+	* [8d0079260] :
+
+	dialog: check advertised contract against peer's leg
+	Full credits go to @dioris-moreno for reporting this and providing a fix
+	in ticket #2108
+	(cherry picked from commit a41a859f4c6f78d899b8b79ad49e150ad9d54145)
+
+
+2020-06-16  Razvan Crainea  <razvan at opensips dot org>
+	* [70b68733f] :
+
+	net/tcp: mark connections as being added in reactor
+	This way we can "remember" to remove them from the reactor when the
+	connection times out.
+
+	Full credits go to @vitalikvoip for reporting, troubleshooting and
+	fixing this problem. Close #2134
+	(cherry picked from commit 3e862f0e34ab9fa7065e6132935ab7c429c730bb)
+
+
+2020-06-16  Razvan Crainea  <razvan at opensips dot org>
+	* [6bae525ca] :
+
+	proto_wss: proper cleanup wss connection in case of tls error
+	When TLS domain is not found, or the SSL context cannot be created, make
+	sure the connection does not keep an hanging `proto_data` that will be
+	later double-freed by the cleanup routine.
+
+	Credits go to Jonathan Hulme (@digipigeon) for reporting this.
+
+	Close #2123
+
+
+2020-06-13  OpenSIPS  <github at opensips dot org>
+	* [ac23e00c1] :
+
+	Rebuild documentation
+
+
+2020-06-13  Vlad Patrascu  <vladp at opensips dot org>
+	* [3836391a0] :
+
+	cachedb_mongodb: complete fix in commit a3e8727 for openssl < 1.1.0
+	(cherry picked from commit 9f454463e42f2148990bd5f307eeff0acecb18bb)
+
+
+2020-06-12  Vlad Patrascu  <vladp at opensips dot org>
+	* [a3e87277f] :
+
+	cachedb_mongodb: fix crashes when loading module along with tls_mgm
+	Loading the cachedb_mongodb module causes the openssl library to be
+	initialized in the pre-daemon process, by the mongoc library's
+	constuctor, before tls_mgm gets the chance to do its own initialization
+	in the attendant process.
+	This commit overwrites the openssl functions used by the mongoc library
+	in order to actually skip the initialization and leave it to tls_mgm.
+
+	Related to #2091
+
+
+2020-06-12  Vlad Patrascu  <vladp at opensips dot org>
+	* [c6ac01258] :
+
+	tls_mgm: fix a cleanup crash when failing to create a SSL_CTX
+
+
+2020-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [003358036] :
+
+	Fixed 3 x htons(), reducing to one :)
+	(cherry picked from commit 1856155a6c2093efae7448fce80371e97eedd42a)
+
+
+2020-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d754f3b66] :
+
+	Fix the src/dest info for the HEP "log" packages
+	This fixes the way the logs are displayed in the call flow of Homer
+	(cherry picked from commit 98c39776965527a4d91c25755239369029a5e023)
+
+
+2020-06-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [314e28761] :
+
+	Fixed the HEP type for the logs
+	Credits go to @bibace
+	Closes #2137
+	(cherry picked from commit 7b36e441a6314fbd54745d8084aa5cfe88c341d7)
+
+
+2020-06-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ddc744955] :
+
+	Fix crash in tracing xlogs from routes without SIP msg
+	(cherry picked from commit b0a63d96ca16a26b3b4a623484ff2359d5533811)
+
+
+2020-06-05  Liviu Chircu  <liviu at opensips dot org>
+	* [64960c612] :
+
+	Module dependencies: Improve debug log text
+	Suggested by Mark Farmer
+	(cherry picked from commit 128c545677bfa7a8bdfd27b4d4ac399937df7bc2)
+
+
+2020-05-30  OpenSIPS  <github at opensips dot org>
+	* [e0f59a519] :
+
+	Rebuild documentation
+
+
+2020-05-30  Liviu Chircu  <liviu at opensips dot org>
+	* [ea13cc505] :
+
+	db_perlvdb: Fix incorrect integer downcast
+	Credits to Aaron Meriwether for spotting the bug and suggesting the fix
+
+	Fixes #1952
+	(cherry picked from commit 3e83412d50b0d8dd5b8a0f7498fb8b66e96ef353)
+
+
+2020-05-28  Nick Altmann  <nick.altmann at gmail dot com>
+	* [25baf4fbd] :
+
+	RPM spec: don't build cachedb_mongodb for centos-8 because of removed libzstd, fix perl build deps
+
+
+2020-05-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [58bae4ad1] :
+
+	Fix building json when multiple callees are in dialog
+	Credits go to @fedkis
+	Closes #2120
+	(cherry picked from commit 1d09175b2b890c62b58715f2ec6572e06663f42c)
+
+
+2020-05-26  Vlad Patrascu  <vladp at opensips dot org>
+	* [0e02e4afe] :
+
+	dialog: fix CSEQ in ACKs for retransmitted replies of local re-INVITEs
+	Closes #2106
+	(cherry picked from commit da3923e9c8c46cd103bfa8bc00cfe3290d20b21d)
+
+
+2020-05-26  Vlad Patrascu  <vladp at opensips dot org>
+	* [1c3dedd61] :
+
+	dialog: always build the ACK with full Route set for re-INVITE
+	ACKs for re-INVITEs sent with the "dlg_send_sequential" MI command
+	would not have a full Route set as they were generated by TM instead
+	of the dialog module itself.
+	(cherry picked from commit eefd55e98ee85051ea4f0417624e082595756247)
+
+
+2020-05-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [4b6ebb080] :
+
+	EXpire the WAIT type subscriptions also (produced by async wait_for_event())
+	Credits go to @liviuchircu
+	Closes #2054
+	(cherry picked from commit fe9bfd9c9e17d9ec069b9b98010a151800d30d83)
+
+
+2020-05-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a43ee8d78] :
+
+	Skip the disabled GWs when using route_to_gw()
+	Closes #2072
+	(cherry picked from commit d0d05907099add7666e31820b4b9ecd2d4c85e7e)
+
+
+2020-05-23  OpenSIPS  <github at opensips dot org>
+	* [c08f0c839] :
+
+	Rebuild documentation
+
+
+2020-05-23  OpenSIPS  <github at opensips dot org>
+	* [a5c7d2ca1] :
+
+	Rebuild documentation
+
+
+2020-05-17  OpenSIPS  <github at opensips dot org>
+	* [288a155ac] :
+
+	Rebuild documentation
+
+
+2020-05-13  Liviu Chircu  <liviu at opensips dot org>
+	* [c9e61269f] :
+
+	dispatcher:  Fix missing "tmb" definition
+	(cherry picked from commit afbf2871a144466a16534db8c86d7d0377077e17)
+
+	Fixes #2110
+
+
+2020-05-13  Liviu Chircu  <liviu at opensips dot org>
+	* [aa483ef2b] :
+
+	[mid-]registrar: Add a helpful startup error log
+	(cherry picked from commit 1485b382adf02e0fd7791ae91613b83f0f620e05)
+
+
+2020-05-11  Walter Doekes  <walter+github at wjd dot nu>
+	* [46ee34b30] :
+
+	proto_hep: Fix HEPv3 IPv6 destination contents (send DST not SRC addr)
+	(cherry picked from commit 7667483bbfb43017ccdfc8929ffe91a37c10c71f)
+
+
+2020-05-11  Liviu Chircu  <liviu at opensips dot org>
+	* [b3f95b7bf] :
+
+	make: Prepare for upcoming gcc 10 (use -fno-common)
+	Per https://gcc.gnu.org/gcc-10/porting_to.html#common, -fno-common will
+	become a default in gcc 10, so variables defined within .h files will no
+	longer be allowed!
+
+	Thanks to Peter Lemenkov for the suggestion!
+	(cherry picked from commit b864b2915551fc25509a54eaf30df0cedbe1643f)
+
+
+2020-05-11  Peter Lemenkov  <lemenkov at gmail dot com>
+	* [eb249d816] :
+
+	rtpengine: Remove unused struct fields
+	These two fields were copied directly from rtpproxy module but never
+	used by this module.
+
+	(cherry picked from commit fd8262cee78a67e1dcca7f487f919239d0f13f33)
+
+
+2020-05-11  Peter Lemenkov  <lemenkov at gmail dot com>
+	* [298b09011] :
+
+	Fix building with gcc 10
+	GCC 10 started to use -no-common by default. Here is an official
+	explanation:
+
+	* https://gcc.gnu.org/gcc-10/porting_to.html#common
+
+	We have to mark all the declarations of global variables with extern
+	keyword and put the definitions into a proper file.
+
+	(cherry picked from commit 7b59ee14e95ea3500dd8c3368b081404b9731c9b)
+
+
+2020-05-11  Peter Lemenkov  <lemenkov at gmail dot com>
+	* [4dcaf5fc3] :
+
+	Add missing typedef keyword
+	Without this keyword these struct definitions are considered by GCC as a
+	variable definition.
+
+	This was catched because there is a more strict check about these
+	variable definitions since GCC 10:
+
+	* https://gcc.gnu.org/gcc-10/porting_to.html#common
+
+	(cherry picked from commit 242903711399ccb4eafeac614129424ffddb0e1b)
+
+
+2020-05-03  OpenSIPS  <github at opensips dot org>
+	* [20754ac34] :
+
+	Rebuild documentation
+
+
+2020-04-28  Liviu Chircu  <liviu at opensips dot org>
+	* [20ffc6c8c] :
+
+	drouting: Fix segfault during dr API reloads (fraud_detection)
+	(cherry picked from commit 362f8ffa49f2a1070ac16f5021a81871f568f4af)
+
+
+2020-04-27  Liviu Chircu  <liviu at opensips dot org>
+	* [f66d69a12] :
+
+	fraud_detection: Fix badly solved merge conflict
+
+
+2020-04-27  Liviu Chircu  <liviu at opensips dot org>
+	* [8b870af97] :
+
+	fraud_detection: Avoid random str_strcmp() error logs
+	(cherry picked from commit e1767c80d3a7852285797bca853e879a39fad18d)
+
+
+2020-04-26  OpenSIPS  <github at opensips dot org>
+	* [26bcfb77e] :
+
+	Rebuild documentation
+
+
+2020-04-22  Liviu Chircu  <liviu at opensips dot org>
+	* [eabdd2d10] :
+
+	async statement: Improve error log when tm is missing
+	(cherry picked from commit afb721ed164206855130202cf5b0ff4c83bf2394)
+
+
+2020-04-22  Liviu Chircu  <liviu at opensips dot org>
+	* [948a48fdf] :
+
+	rest_client: Disable "Expect: 100-continue" by default
+	Although the "100 Continue" flow sometimes saves bandwidth when the
+	server replies with an error response, it also has some drawbacks:
+
+	    * extra roundtrips, adding latency and complicating the async
+	        handling
+	    * the client body upload and server body download must be performed
+	        within the same curl_multi_perform() loop, during the async
+	        resume callback, limiting the amount of parallelism that can be
+	        obtained when compared to the simple flow
+
+	From now on, the "100 Continue" flow for POST/PUT requests with bodies
+	larger than 1024 bytes is disabled by default.  Developers may enable it
+	using a new, backwards-compatible, "enable_expect_100" module parameter.
+
+	Fixes #2081
+
+
+2020-04-20  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [5f9afd357] :
+
+	Merge pull request #2037 from l2dy/tracer
+	tracer: fix null pointer dereference
+	(cherry picked from commit d59715ec3614c5c9d5afb40aa17704d86fca6021)
+
+
+2020-04-19  OpenSIPS  <github at opensips dot org>
+	* [550f77302] :
+
+	Rebuild documentation
+
+
+2020-04-17  Vlad Patrascu  <vladp at opensips dot org>
+	* [ec9d7fc4b] :
+
+	xml: allow access to nodes with undefined namespace prefixes
+	Related to #1988
+	(cherry picked from commit 17b44ea1f2270be8e59b893ab70b3aac8d5a3826)
+
+
+2020-04-16  Vlad Patrascu  <vladp at opensips dot org>
+	* [ae403f0e4] :
+
+	Properly check script functions parameter types with the -c option
+	Also, do not omit from syntax checking functions that are part of
+	IF statement experssions.
+
+	Closes #1993
+	(cherry picked from commit 22cbb4e71a792d8b2ae38b987ce46739d761b790)
+
+
+2020-04-16  Liviu Chircu  <liviu at opensips dot org>
+	* [99b285081] :
+
+	proto2a(): Do not segfault on PROTO_NONE (0)
+	(cherry picked from commit 54064b4614d42164b49105b43f9a5dc1ce308a92)
+
+
+2020-04-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [980bd163b] :
+
+	[exec] improve docs on exec async + launch
+	Related to #2049
+	(cherry picked from commit bb7afdc2dc4363f24d8e28e00ab337c7c174d1e5)
+
+
+2020-04-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f94af1ec0] :
+
+	Removed extra space
+	(cherry picked from commit b47d7a617cd8384f2929655f497f3b52c554028d)
+
+
+2020-04-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [938ff2b08] :
+
+	Merge branch 'master' of https://github.com/robdyck/opensips into robdyck-master
+	(cherry picked from commit 4558e7af66240a2e359a1ffbeee114bad3b4f71d)
+
+
+2020-04-14  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [0bc4e92b8] :
+
+	Merge pull request #2074 from besser82/topic/besser82/json_c_014_so_5
+	Add support for upcoming json-c 0.14.0.
+	(cherry picked from commit fe24824e042486575daa01e20df2c8380b9e0b07)
+
+
+2020-04-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8af80a40b] :
+
+	Improve canceling of transactions doing only t_wait_for_new_branches().
+	If a transaction has no real signalling branch, but only doing t_wait_for_new_branches(), upon caller cancel inject a 487 reply on the phony/waiting branch in order to terminate the transaction on the spot.
+	The provious behavior was to wait (even after the cancel) for the phony/waiting branch timeout (fr_inv_timeout) and to generate an 408 timeout.
+	Now, there is no useless waiting and a proper 487 is generated.
+
+
+2020-04-13  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7221b984d] :
+
+	Fix un-released transaction upon t_wait_for_new_branches + cancel.
+	If t_wait_for_new_branches() is used and no real signaling branch is added, the caller canceling must not be ignored upon branch selection. The injected 408 timeout on the phony branch must be considered, leading the transaction termination.
+
+	Thanks to Chris Maciejewski for reporting and providing troubleshooting info.
+	Also thanks to Razvan Crainea ( @razvancrainea ) for investigating and reproducing the problem.
+
+
+2020-04-13  Liviu Chircu  <liviu at opensips dot org>
+	* [4d61b934d] :
+
+	Fix compilation warnings with -DUSE_FUTEX
+	It seems that whenever "time.h" is included without first enabling
+	_GNU_SOURCE, including "unistd.h" afterwards will leave the "syscall"
+	function undeclared, regardless whether _GNU_SOURCE is defined or not.
+
+	../../parser/../mem/../futex_lock.h: In function ‘get_lock’:
+	../../parser/../mem/../futex_lock.h:78:31: warning: implicit declaration
+	of function ‘syscall’; did you mean ‘sysconf’?
+	[-Wimplicit-function-declaration]
+	 #define futex_wait(lock, val) syscall(SYS_futex, lock, FUTEX_WAIT, val,
+	 0, 0, 0)
+	                               ^
+	../../parser/../mem/../futex_lock.h:268:4: note: in expansion of macro
+	‘futex_wait’
+	    futex_wait(lock, 2);
+	    ^~~~~~~~~~
+	(cherry picked from commit fa4e4fa70085db9da4dc72f856e0648341b0f5a6)
+
+
+2020-04-05  OpenSIPS  <github at opensips dot org>
+	* [d89d0ec2d] :
+
+	Rebuild documentation
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [7140c22bf] :
+
+	dialog: fix possible overflow
+	(cherry picked from commit 2132b1246d0490a7b22af7471065c92f83d9927f)
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [341c86976] :
+
+	tm: type cast before shift to avoid overflow
+	(cherry picked from commit eeaab52550fce37e3d2713308603e1531cc2e23e)
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [39a3a06fd] :
+
+	db_virtual: check NULL before log
+	(cherry picked from commit bbbe695ea8d64efe8a6152ed69aca88896d7a3dc)
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [b428f119f] :
+
+	rtpengine: check NULL before assignment
+	(cherry picked from commit f33f1d839102a24342a91f15a6902c05ee90ea45)
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [bcd723680] :
+
+	exec: fix NULL check after malloc
+	hf->next_other should be checked instead.
+	(cherry picked from commit 8d7e2f310d7f43535dea1dff6b6889df02d95c02)
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [9c2660c68] :
+
+	Add missing NULL check
+	(cherry picked from commit 7edd729e40d962d014f5caa9f1ec024543e93bc6)
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [4467d246b] :
+
+	Fix potential out-of-bounds access of sroutes->request
+	(cherry picked from commit b6e5d0127254e78ffe735185eef26ae06293552b)
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [a4da730c1] :
+
+	exec: fix potential use of uninitialized pointer
+	(cherry picked from commit 9da92ced576d18e5487cf5dfa584ee638c170520)
+
+
+2020-04-03  Zero King  <l2dy at icloud dot com>
+	* [8a6d458ec] :
+
+	osp: actually fix potential use of uninitialized pointer
+	If OSPPTransactionNew() failed, callids[0] is still uninitialized.
+	(cherry picked from commit c8a99ad3d1dea71ddaa73ed4cac42f4c56b49a38)
+
+
+2020-04-03  Liviu Chircu  <liviu at opensips dot org>
+	* [6e97055c8] :
+
+	HP_MALLOC: Aggregate SHM statistic updates
+	It is better to update the stats with a diff of the
+	attached/detached/split/merged fragment changes.  Updating the stats in
+	a "step by step" manner has the side-effect of creating temporarily
+	bogus values. (i.e. negative "used" and/or "real_used")
+
+
+2020-04-03  Liviu Chircu  <liviu at opensips dot org>
+	* [b62b9766a] :
+
+	HP_MALLOC: Add "re-scanning" logic
+	Given that HP_MALLOC has fine-grained locking, if the big fragment
+	shifts down from hash bucket N to bucket N-1 due to another
+	process performing the allocation, we may actually "lose" it during
+	our own scan, since bucket N-1 was empty and we're now waiting
+	for bucket N to unlock.  When it does unlock, it will also be empty.
+
+	As a solution: retry the scan up to N times, as long as it's feasible!
+
+
+2020-04-03  Liviu Chircu  <liviu at opensips dot org>
+	* [d5e8801eb] :
+
+	HP_MALLOC: Fix computation of PKG stats
+
+
+2020-04-03  Liviu Chircu  <liviu at opensips dot org>
+	* [1983e0cf5] :
+
+	HP_MALLOC: Dramatically reduce memory fragmentation
+	For HP_MALLOC to offer optimal parallel allocation performance, it
+	needs the memory to be fragmented: the more available chunks, the better
+	its performance.  However, there needs to be some coalescing as well,
+	otherwise variable-length allocations past the 10K range will
+	quickly deplete (fragment) even SHM pools of 10+ GB.
+
+	This patch adds the following heuristics to HP_MALLOC and HP_MALLOC_DBG:
+
+	    * shm_malloc(): only split a fragment if the resulting chunk is at
+	      least MIN_SPLIT_SIZE bytes (default 256 for PKG, 4096 for SHM)
+	    * shm_free(): try to coalesce the next fragment (enough to fix all
+	      fragmentation issues)
+
+	Many thanks to 46Labs for supporting this work!
+
+
+2020-03-31  Ovidiu Sas  <osas at voipembedded dot com>
+	* [f907c5695] :
+
+	trace: improve documentation for mi trace command
+	(cherry picked from commit 1897599fd8a57e306b256d04882e3a57beb9ca58)
+
+
+2020-03-29  OpenSIPS  <github at opensips dot org>
+	* [a68ee54f6] :
+
+	Rebuild documentation
+
+
+2020-03-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [7e623b302] :
+
+	dialog: fix a replicated profiles counting issue
+	The incorrect profile counting was caused by a race between the processing of
+	the replicated dialog create/update packets. While processing the create
+	packet, the lock was released before linking the dialog into a profile and
+	setting the sharing tag. As such, the process that handled the update packet
+	could insert the dialog into a profile itself, but with an improper sharing tag.
+
+	Thanks to 46Labs for reporting and help with troubleshooting this!
+
+
+2020-03-24  Liviu Chircu  <liviu at opensips dot org>
+	* [9dd89f792] :
+
+	acc: Improve oom handling
+	Do not populate bogus str values (e.g. {NULL, 3}) when out of SHM and
+	setting $acc_extra.
+	(cherry picked from commit 86ef10af2cbaad475dd92d41be64873af40e716e)
+
+
+2020-03-22  OpenSIPS  <github at opensips dot org>
+	* [23ed124f7] :
+
+	Rebuild documentation
+
+
+2020-03-20  Razvan Crainea  <razvan at opensips dot org>
+	* [4ae72cae6] :
+
+	tls_mgm: enforce at least TLSv1 when SSLv2.3 is used
+	Starting with Debian 10 (buster), the OpenSSL library is compiled with
+	TLSv1.2 as the minimum TLS version. Therefore, when specifying SSLv2.3,
+	basically only TLSv1.2 and TLSv1.3 can be used.
+	This commit sets the minimum version to TLSv1, since SSLv2.3 will soon
+	be deprecated.
+
+	Thanks go to @telematico for reporting this issue
+	Close #1986
+	(cherry picked from commit 5d6b98e6452574d2926c7f74aadc7abcea149b79)
+
+
+2020-03-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3e17ffce5] :
+
+	Avoid reusage of global ret code.
+	This will override the ret code of the actual action, returning a 0 value -> script gets stopped.
+
+	Fixes #2049
+	(cherry picked from commit 90c025cfb613fc1db48044f10af4a9756f554778)
+
+
+2020-03-19  Razvan Crainea  <razvan at opensips dot org>
+	* [5d4c83642] :
+
+	dialog: do not update topo hiding advertised contact
+	This commit fixes a bug introduced by commit 7b7a9fc2bf, that was
+	updating the contact *after* topology hiding has replaced it. This bug
+	would be triggered when a re-INVITE/UPDATE was triggered on a call that
+	had topology hiding enabled - in these scenarios OpenSIPS would re-learn
+	the contact advertised by topology hiding, that is OpenSIPS itself,
+	resulting in looped sequential requests.
+	(cherry picked from commit 5ec398183ee58ddbdcdda454b30ac9247b491783)
+
+
+2020-03-16  Zero King  <l2dy at icloud dot com>
+	* [9578c7fef] :
+
+	auth: return -1 on error in auth_get_ha1()
+	(cherry picked from commit 96fcb5f9fd95796e11ec00a8246426d6dfe11a58)
+
+
+2020-03-16  Zero King  <l2dy at icloud dot com>
+	* [72a3f08a9] :
+
+	Revert "auth: fix error check"
+	This reverts commit b7772a087e4bf5c57fa4655d9fd53e074ca4247e.
+	(cherry picked from commit d8ec4f3b05f2c4b21fe3363b3e146c1811ccf870)
+
+
+2020-03-16  Liviu Chircu  <liviu at opensips dot org>
+	* [ee64cf8ed] :
+
+	proto_help: Fix broken doc build
+	(cherry picked from commit b9a6292e9de47c02a9e5ae1dcc540c888f90be8a)
+
+
+2020-03-13  Razvan Crainea  <razvan at opensips dot org>
+	* [f53fdfd25] :
+
+	parser/content: handle \r for Accept folding lines
+	When receiving a heeader with folding lines, we also need to skip '\r'
+	when parsing the new lines. This way we can accept headers such as:
+	Accept: application/sdp,
+		application/isup,
+		multipart/mixed,
+		application/dtmf,
+		application/dtmf-relay
+
+	Thanks go to 46Labs for reporting this
+	(cherry picked from commit f7efd44c9e796e941452d2c173bac6aec4342bb3)
+
+
+2020-03-13  Zero King  <l2dy at icloud dot com>
+	* [0d8f8eb60] :
+
+	pua: fix bitmask check
+	(cherry picked from commit cd7dec8af8f71fa1024b69fb66e8f02ef3d43278)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [081b65402] :
+
+	b2b_logic: fix checking potentially uninitialized pointer
+	(cherry picked from commit fefd32149a97cdd2ad1b1ea0f19a4eeaa0809375)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [451fe1968] :
+
+	osp: fix use of uninitialized pointer
+	(cherry picked from commit fc5b59ea3eeeabac4e0a28302b5d0b0d1b5f507d)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [222a80153] :
+
+	msilo: fix excessive check
+	(cherry picked from commit 71b6088d888af32609b7dad87f0e250580c6c7ff)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [d3ba9c451] :
+
+	xsnprintf.c: fix excessive expression
+	(cherry picked from commit 99d35618a22daa7bed3d426cdb9db7eb87d507df)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [c27a528b4] :
+
+	dialplan: fix null printf
+	(cherry picked from commit b04d537723f5254476fc5011ef5458ff865d2563)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [f2279731c] :
+
+	auth: fix error check
+	auth_get_ha1() returns 1 on error.
+	(cherry picked from commit b7772a087e4bf5c57fa4655d9fd53e074ca4247e)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [2e9c06510] :
+
+	stats: fix loop variable
+	(cherry picked from commit a71272d7a1012df2f465b927690fefb9d76ed3de)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [b1eb427bd] :
+
+	usrloc: fix malloc size
+	(cherry picked from commit eecb094adfda7381fa67c6bc10316879d37fabdb)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [6e761eb4a] :
+
+	osp: fix NULL pointer dereference
+	(cherry picked from commit 4fbb4529ac943c3d18ab8819299a28f3c58f5746)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [7ce495f5f] :
+
+	dialplan: fix insert error condition
+	(cherry picked from commit 67b1f6445aa2db1d5df6b76a0436a0c17054be4e)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [c293ef700] :
+
+	osp: remove unused variable
+	(cherry picked from commit 6e062e6c6a5d88c2c4c75e5eb596d71c900ed3de)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [32aca4ca2] :
+
+	presence_xml: fix typo in NULL check
+	(cherry picked from commit 7bc6526a6107cf551044468db3c855fc3af2a925)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [e7a31e824] :
+
+	pua_dialoginfo: fix typo in NULL check
+	(cherry picked from commit 64f2710f81c2faf656d70ed1130591c0397a12a4)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [318b81015] :
+
+	osp: fix errorcode in log
+	(cherry picked from commit 73b6ba0a8a2dc56ce2f5090fadc4692f5510365c)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [576a20f71] :
+
+	compression: remove redundant check
+	(cherry picked from commit 921080e75cf3ef1c30acbf05f712cd86d923437f)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [a824550a5] :
+
+	mi_xmlrpc_ng: check return value of mi_xmlrpc_get_param
+	(cherry picked from commit b7a715cf126b7d092448c98eaabbcbb24743ab8d)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [e4e22735b] :
+
+	ldap: fix letter check
+	(cherry picked from commit 601091dad5e518ad2c6a224d3d35e5bcad304ab8)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [bdf0916f9] :
+
+	msg_translator: fix indentation
+	(cherry picked from commit d13318eac5238c540d651da4d60a907fbcfe8ea8)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [58fe89381] :
+
+	osp: remove obsolete callback type check
+	TMCB_ON_FAILURE_RO was removed but the corresponding debug check is
+	kept, overriding TMCB_ON_FAILURE.
+
+	See commit 2adbeacd3c7055f949048e793fa193119f3a6873.
+	(cherry picked from commit b3dc69206329e5ac8e98d3343c274ebd8cd85fb7)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [1fb3efda6] :
+
+	tracer: fix pointer null check
+	(cherry picked from commit afecf7ce4a87157894dad333a3ef29056408404a)
+
+
+2020-03-12  Zero King  <l2dy at icloud dot com>
+	* [053d70c0b] :
+
+	osp: fix pointer null check
+	(cherry picked from commit 5f1068c146460d795e6d7b24ceaea1883fd72215)
+
+
+2020-03-11  Zero King  <l2dy at icloud dot com>
+	* [38afc3357] :
+
+	Fix homepage URLs
+	(cherry picked from commit 94406117a406c3d98df5c71cdfa8fdcb301101ad)
+
+
+2020-03-11  Jasper Hafkenscheid  <hafkensite at users.noreply.github dot com>
+	* [fbe674b8a] :
+
+	Fixed titles of some code examples in nathelper docs.
+	(cherry picked from commit cea688535fc7dc355ac78dc57613f3686f1c85fe)
+
+
+2020-03-10  Liviu Chircu  <liviu at opensips dot org>
+	* [bd990edfd] :
+
+	Complete previous commit (0105ab4397e)
+	(cherry picked from commit 9056759bb9c6eb8d59ceb4c0028653968098b5d4)
+
+
+2020-03-10  Liviu Chircu  <liviu at opensips dot org>
+	* [88288a398] :
+
+	db_mysql/avpops: Properly return DOUBLE/DECIMAL values
+	This patch fixes avp_db_query() calls which fetch data from DOUBLE
+	columns in MySQL, which would otherwise return some strange errors.
+
+	Many thanks to Calvin Ellison and Brett Nemeroff for the report and
+	helping come up with the final fix!
+	(cherry picked from commit 0105ab4397efded8d5a3009d09de20d122aaa9f0)
+
+
+2020-03-10  Zero King  <l2dy at icloud dot com>
+	* [7cb7b5707] :
+
+	mi_fifo: fix NULL pointer dereference
+	(cherry picked from commit afb8ab95b55c3a1173207dfc76f7769e6270b778)
+
+
+2020-03-10  Zero King  <l2dy at icloud dot com>
+	* [9fb59d1e6] :
+
+	Fix malloc error handling
+	(cherry picked from commit c58df362b57727995fd629d80060f2628e338310)
+
+
+2020-03-10  Zero King  <l2dy at icloud dot com>
+	* [5d94d005e] :
+
+	sipcapture: remove duplicate assignment
+	(cherry picked from commit 53ff949b8cdf9d32a94f0974bdd331881e939054)
+
+
+2020-03-10  Liviu Chircu  <liviu at opensips dot org>
+	* [4ccf6078e] :
+
+	registrar: Fix segfault within debug log
+	Many thanks to Robert Dyck for the report!
+	(cherry picked from commit a2edd0d179204ac708304fc1d870db8dfadf2be5)
+
+
+2020-03-09  Zero King  <l2dy at icloud dot com>
+	* [2895e05d3] :
+
+	usrloc: fix typos
+	(cherry picked from commit 8dcf840ce00c57df85fa17327687b86b9b6660cb)
+
+
+2020-03-09  Zero King  <l2dy at icloud dot com>
+	* [472cf2128] :
+
+	Remove dead code
+	(cherry picked from commit 64daab83292a569cbab3cba216925fa27b9801bd)
+
+
+2020-03-09  Zero King  <l2dy at icloud dot com>
+	* [1751a6ace] :
+
+	Fix time comparison
+	?: has lower precedence than +.
+	(cherry picked from commit 0720c5e2b24223b53933b2e18482e2960d4fa381)
+
+
+2020-03-06  Vlad Patrascu  <vladp at opensips dot org>
+	* [424e247d6] :
+
+	rabbitmq_consumer: fix a bug in "connection_id" modparam parsing
+	Closes #1987
+	(cherry picked from commit 832ef451e894cfb277486fe08b392f930017aaf5)
+
+
+2020-03-05  Razvan Crainea  <razvan at opensips dot org>
+	* [bb943d89b] :
+
+	proto_hep: clarify homer5_on parameter doc
+	Thanks go to Shaun for reporting this on the mailing list
+	(cherry picked from commit 194398342ebee54cde9a642c0a7e5eb1ce8ca2df)
+
+
+2020-03-04  Razvan Crainea  <razvan at opensips dot org>
+	* [a8973b6d5] :
+
+	rtpengine: handle scenario where callid/from/to tags are missing
+	Instead of fetching the call coordinates at the beginning of the
+	function, try to see if it was custom provided in flags.
+
+	Thanks go to Rob Moore for spotting this
+	(cherry picked from commit 89b740394a9e84c3695886cdbee7a7e8ea6f758f)
+
+
+2020-03-04  Razvan Crainea  <razvan at opensips dot org>
+	* [f67c43d70] :
+
+	tm: fix t_reply_with_body doc - cannot be run from failure_route
+	(cherry picked from commit eae2a86eed9ee52605ca110467b8a40ee82bff00)
+
+
+2020-03-04  Razvan Crainea  <razvan at opensips dot org>
+	* [b583aef53] :
+
+	Revert "tm: Allow t_reply_with_body() from failure route"
+	This reverts commit b3da92d6b3ecf281976ad8a5e262cfb1aadf30ad.
+	(cherry picked from commit f360070095a77cb311f8ef188ef79da6885f9c70)
+
+
+2020-03-03  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7d75f49a2] :
+
+	[usrloc] Fixed the name of the table param in ul_add MI cmd
+
+
+2020-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [259dc1f82] :
+
+	tm: Allow t_reply_with_body() from failure route
+	This now also matches the docs, similarly to t_reply().
+
+	Credits to Nick Altmann
+	(cherry picked from commit b3da92d6b3ecf281976ad8a5e262cfb1aadf30ad)
+
+
+2020-03-01  OpenSIPS  <github at opensips dot org>
+	* [2ca0e98bf] :
+
+	Rebuild documentation
+
+
+2020-02-27  Liviu Chircu  <liviu at opensips dot org>
+	* [ef08be028] :
+
+	cachedb_mongodb: Fix memory leak in cache_raw_query()
+	Thanks to @ycxwoo for spotting this issue!
+
+	Fixes #1985
+	(cherry picked from commit e818ac259362fd5627d9234e8afb1e7ba3462783)
+
+
+2020-02-27  Liviu Chircu  <liviu at opensips dot org>
+	* [217a6892d] :
+
+	cachedb_mongodb: Fix possible off-by-one error
+	(cherry picked from commit b0d65e9af1146c2764b43f4038922f0c7f9ec27b)
+
+
+2020-02-27  Liviu Chircu  <liviu at opensips dot org>
+	* [b4fac39b5] :
+
+	mid_registrar: Remove copy-pasted docs
+	Closes #1984
+
+
+2020-02-26  Liviu Chircu  <liviu at opensips dot org>
+	* [b9511b91f] :
+
+	dialog: Fix some locking corner-cases
+	    * Re-INVITE pinging: synchronize writers and readers for the
+	       dlg->legs->adv_contact string, as well as the entire dlg->legs
+	       struct.  Example subtle race conditions:
+
+		 1. setting $DLG_timeout after t_relay() (read op) vs.
+		    concurrently processing a 200 OK (write op)
+
+		 2. calling MI "dlg_push_var" after t_relay() (read op) vs.
+		    concurrently processing a 200 OK (write op)
+
+		 3. in parallel forking, dlg_onreq_out() (read op) vs.
+		    concurrently processing 200 OK for prev. branch (write op)
+
+	    * DB load: to be 100% accurate, do not use ref_unsafe(), as we
+	       don't hold the lock -- use the safe version instead!
+	(cherry picked from commit 0dc968169a8d61cb6f9dea6143edb6dcf738e0d6)
+
+
+2020-02-24  Razvan Crainea  <razvan at opensips dot org>
+	* [3b2e5de99] :
+
+	rtpengine: always learn process local pid
+	Always learn the local process pid, even though there are no rtpengine
+	sockets loaded from either script or database - they might appear later
+	after an MI reload.
+
+	Reported in sipwise/rtpengine#935 by @MarcoHierl
+	(cherry picked from commit da636430df1335c2c2c59a1c053ff85ee21ef003)
+
+
+2020-02-23  OpenSIPS  <github at opensips dot org>
+	* [4662b65d3] :
+
+	Rebuild documentation
+
+
+2020-02-20  Razvan Crainea  <razvan at opensips dot org>
+	* [152269b52] :
+
+	siprec: reflect media_ip in o=line
+	Close #1979
+	(cherry picked from commit f1a2979b5be7f17300e35d984624167820f1c11b)
+
+
+2020-02-19  Razvan Crainea  <razvan at opensips dot org>
+	* [a7f801389] :
+
+	b2b_entities: don't try to insert in db nonprintable param
+	The b2b_entities module expects that the parameter provided during
+	entity registrations to be a string. It stores this string in the
+	database. However, there are cases where modules (such as siprec) force
+	their parameter to be a pointer to a structure, therefore the string
+	becomes non-printable. This breaks certain entities insertion in the
+	database.
+	This commit prevents the module from inserting a key that's not
+	printable. In the case of siprec this is not a problem, since the module
+	does not rely on the value that's stored in the parameter for restart -
+	it rebuilds the value anyway.
+
+	This is a temorary fix - ideally, the parameter should be able to be
+	serialized before written in the database; although this is not possible
+	now, it will be possible starting with 3.1. Hence this temporary fix.
+	(cherry picked from commit 0bd7fbe7d5568f45ffbde7dd5a669fce2993b30f)
+
+
+2020-02-19  Dan Pascu  <dan at ag-projects dot com>
+	* [7db2f0a1d] :
+
+	Fixed crashes and memory leaks due to improper memory cleanup
+	(cherry picked from commit d8c15f8a318640c75fedb0d76bc3829210f8c1fb)
+
+
+2020-02-19  Dan Pascu  <dan at ag-projects dot com>
+	* [0b36baa8d] :
+
+	Fixed log message
+	(cherry picked from commit 9c6931bff2df8fb29d45ff986bad310bdfb95438)
+
+
+2020-02-19  Dan Pascu  <dan at ag-projects dot com>
+	* [acd20ae2d] :
+
+	Fixed crash caused by invalid memory free (fixes #1974)
+	(cherry picked from commit 4432711762e8882583e376991d8e11f0297d4820)
+
+
+2020-02-19  Razvan Crainea  <razvan at opensips dot org>
+	* [ff997d76e] :
+
+	siprec: start recording as soon as we have 2-way audio
+	Engage recording even for 180/183 provisional replies, not only for 200.
+	Reported by @MikhailKalashnikov in ticket #1970
+	(cherry picked from commit d9245d223e7bea5edc9705a6e8b511ee769c1086)
+
+
+2020-02-19  Liviu Chircu  <liviu at opensips dot org>
+	* [a8370f86e] :
+
+	tm + subscribers:  Fix possible SHM leaks around tmb.t_req_within
+	The severity is medium, however, as these leaks would only occur once
+	the SHM pool is near depletion.
+	(cherry picked from commit 80bd901aa247287a5d6d2e4f8fcba27f97a0d524)
+
+
+2020-02-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ffb0577c4] :
+
+	Removed testing related line
+
+
+2020-02-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ba6957279] :
+
+	updated to 3.0
+
+
+2020-02-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [66984aba3] :
+
+	Fix computing the cseq for a branch.
+	Instead of assuming a +1 increment (to the cseq from request), better copy the cseq from the received reply.
+	Thanks to @razvancrainea for the brainstorming.
+	(cherry picked from commit b7b22d6e3f54711d64ecd4731a40bfa55211e9d6)
+
+
+2020-02-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a39552e5e] :
+
+	In UAS replies, preserve the CSEQ from the UAS request
+	Instead of computing the cseq for the forwarded replied, better use the cseq value from the original requests (like restoring).
+	Thanks to @razvancrainea for the brainstorming on the issue.
+
+	Fixes #1969
+	(cherry picked from commit 0200c0e1424c1a2b993cd3545507f2ccaf6c573a)
+
+
+2020-02-17  Liviu Chircu  <liviu at opensips dot org>
+	* [31b6ae5d8] :
+
+	$param variable: Improve behavior on error
+	    * hint that named params are only allowed within event_route
+
+	    * throw an error on accessing $param(name) from a route() call
+	      without parameters (i.e. avoid doing a quick-exit, be consistent).
+	      This will help users when migrating to 3.x, since
+	      fetch_event_params() used to work within a simple route.
+
+	    * skip the redundant "params_no == 0" check, since params is always
+	      NULL when "params_no == 0".   Even without this idea, the index
+	      check below will also catch this corner-case.
+
+	Thanks to Vlad Paiu for bringing this issue to attention!
+	(cherry picked from commit 675a10e2fb5115f1c210dd032c3ac120dee82e22)
+
+
+2020-02-16  OpenSIPS  <github at opensips dot org>
+	* [7b5d6546a] :
+
+	Rebuild documentation
+
+
+2020-02-09  OpenSIPS  <github at opensips dot org>
+	* [9106ec5e5] :
+
+	Rebuild documentation
+
+
+2020-02-07  Razvan Crainea  <razvan at opensips dot org>
+	* [3f3f496cf] :
+
+	core: fix string2hex returned length
+	Reported by @johandeclercqdemocon in Ticket #1957
+	(cherry picked from commit 01e0ff99f4f80cf7dc9e0d8ec45362810b624c5b)
+
+
+2020-02-06  Razvan Crainea  <razvan at opensips dot org>
+	* [59e1e9085] :
+
+	net: call initialize proto function for all connections
+	This code fixes proto ws and wss, by calling the `conn_init` function
+	even for connections that are not sent back to main.
+
+	Reported by @suharik71 in #1956
+	(cherry picked from commit 6c9c6efa8e668ad361e7a75b645951dc2c86e8b2)
+
+
+2020-02-05  Liviu Chircu  <liviu at opensips dot org>
+	* [0e25e055b] :
+
+	drouting: Fix missing MI recipe array terminations
+	(cherry picked from commit da22c0807db97c7b23050b7b56f3a1b5fd6c99cb)
+
+
+2020-02-04  Razvan Crainea  <razvan at opensips dot org>
+	* [540d1a498] :
+
+	hp_malloc: run check_double_free() under lock
+	(cherry picked from commit 41714f134943f76adb1dae43d8a3c9365924352e)
+
+
+2020-02-04  Razvan Crainea  <razvan at opensips dot org>
+	* [9e23dffc3] :
+
+	hp_malloc: populate DBG info for hp_free*
+	(cherry picked from commit 410c664c953f409b2c8143b1d46cc7fc28deac63)
+
+
+2020-02-04  Liviu Chircu  <liviu at opensips dot org>
+	* [1e3350c80] :
+
+	HP_MALLOC:  Fix a shm_realloc() concurrency issue
+	On a fragment shrink operation, we must also grab the lock on the
+	resulting fragment before inserting it (this cannot be an _unsafe
+	operation!)
+
+	Many thanks to 46Labs and Răzvan Crainea for helping troubleshoot this
+	(cherry picked from commit ff7ba6e2dd05fbc4989561d7a4582cb11cbb01ba)
+
+
+2020-02-03  Vlad Patrascu  <vladp at opensips dot org>
+	* [d3efbd533] :
+
+	b2b_entities: fix several missing keys in b2be_list MI output
+	(cherry picked from commit 7b4a54d78f9d9da816947f02a00fa72a2956c4c8)
+
+
+2020-02-02  OpenSIPS  <github at opensips dot org>
+	* [ed67a089b] :
+
+	Rebuild documentation
+
+
+2020-02-02  Razvan Crainea  <razvan at opensips dot org>
+	* [778bc7b87] :
+
+	tls: fix the length of masker key
+	(cherry picked from commit df3f537d70f64ecd0de0881e6fb39b75c50a16bc)
+
+
+2020-01-30  Razvan Crainea  <razvan at opensips dot org>
+	* [1463eb1e2] :
+
+	tls: make sure crypto rand functions are reentrant
+	Reported by @fgast in #1953
+	(cherry picked from commit af5ba52055af860723fe554e9069d4c9142f82af)
+
+
+2020-01-30  Fabian Gast  <fgast+git at only640k dot net>
+	* [7349dffce] :
+
+	fixes #1954  - change return value if we can not add crl files
+	(cherry picked from commit 7a84935b5cd2c4f2f2d21c3c9d978999f1697dd5)
+
+
+2020-01-29  Razvan Crainea  <razvan at opensips dot org>
+	* [43d479221] :
+
+	preproc: fix possible leak when errors trigger
+	Fix Coverity #199907
+	(cherry picked from commit 1534d26e4fda7ad614b07fd2914bf663a60e42d5)
+
+
+2020-01-29  Razvan Crainea  <razvan at opensips dot org>
+	* [674363701] :
+
+	async: fix small typo when printing fixup errors
+	Fix Coverity #199935
+	(cherry picked from commit cae397c89f47646a1f379279aebf994248fb64ad)
+
+
+2020-01-29  Razvan Crainea  <razvan at opensips dot org>
+	* [cbd86bf85] :
+
+	reload: fix possible FILE * leak when error
+	Fixes Coverity #199978
+	(cherry picked from commit 3b1b9d7d09da0fc33c901e0542b2dd9b4d66001a)
+
+
+2020-01-29  Razvan Crainea  <razvan at opensips dot org>
+	* [52376f8cf] :
+
+	auto_scale: prevent possible overflow in auto_scale detection
+	Fix Coverity #200080
+	(cherry picked from commit 52f071ed1dccff5453f49ed37baa6ae86183e373)
+
+
+2020-01-29  Razvan Crainea  <razvan at opensips dot org>
+	* [9e216d39d] :
+
+	pt: fix possible (yet highly unprobable) division by 0
+	Fixed Coverity #200087, #200079, #200002, #200015
+	(cherry picked from commit 009e8efc3ba39d1c441181f209cbbfa25d057be3)
+
+
+2020-01-29  Razvan Crainea  <razvan at opensips dot org>
+	* [f525231d4] :
+
+	transormation: properly check str2ipv6 transformation
+	Fix Coverity #200023
+
+
+2020-01-29  Razvan Crainea  <razvan at opensips dot org>
+	* [496cfdc0b] :
+
+	stats: initialize found to 0
+	Fix Coverity #207916
+	(cherry picked from commit 1b8a9acb90b83efe47e3abbcebb0f23585c7a661)
+
+
+2020-01-29  Razvan Crainea  <razvan at opensips dot org>
+	* [fc5534928] :
+
+	script: fix route index overrun
+	Fix Coverity #207926
+	(cherry picked from commit 784423afd1265358c9f193b7163277386dd903f3)
+
+
 =========================== Release 3.0.2 ==============================
 
 2020-01-28  Razvan Crainea  <razvan at opensips dot org>
