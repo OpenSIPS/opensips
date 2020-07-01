@@ -48,7 +48,7 @@
 #define _ensure_bin_version(pkt, needed, pkt_desc) \
 	do { \
 		if (get_bin_pkg_version(pkt) != (needed)) { \
-			if (pkt_desc) \
+			if (pkt_desc && *pkt_desc) \
 				LM_INFO("discarding %s, ver %d: need ver %d\n", \
 				        pkt_desc, get_bin_pkg_version(pkt), (needed)); \
 			else \
