@@ -931,7 +931,7 @@ listen=tls:IP_2:port2
 listen=tls:IP_3:port3
 ...
 # set the TLS client domain AVP
-modparam("proto_tls", "client_domain_avp", "tls_cli_dom")
+modparam("tls_mgm", "client_domain_avp", "tls_cli_dom")
 ...
 
 # 'atlanta' server domain
