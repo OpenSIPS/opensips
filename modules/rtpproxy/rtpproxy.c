@@ -209,8 +209,6 @@
 #define MI_PING_DISABLED_LEN		(sizeof(MI_PING_DISABLED)-1)
 #define MI_SET						"Set"
 #define MI_SET_LEN					(sizeof(MI_SET)-1)
-#define MI_NODE						"node"
-#define MI_NODE_LEN					(sizeof(MI_NODE)-1)
 #define MI_INDEX					"index"
 #define MI_INDEX_LEN				(sizeof(MI_INDEX)-1)
 #define MI_DISABLED					"disabled"
