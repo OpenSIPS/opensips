@@ -304,7 +304,9 @@ static void check_seed_flag(cluster_info_t **cl_list)
 		for (n = cl->node_list; n; n = n->next)
 			if (n->flags & NODE_IS_SEED)
 				break;
-		if (!n && !(cl->current_node->flags & NODE_IS_SEED)) {
+
+		if (!n && cl->current_node &&
+		        !(cl->current_node->flags & NODE_IS_SEED)) {
 			LM_NOTICE("No seed node defined in cluster: %d! Some clustering "
 			"capabilities might not be able to sync data\n", cl->cluster_id);
 		}
@@ -320,7 +322,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	int no_clusters;
 	int i;
 	int rc;
-	node_info_t *new_info = NULL;
+	node_info_t *_ = NULL;
 	db_key_t columns[NO_DB_COLS];	/* the columns from the db table */
 	db_res_t *res = NULL;
 	db_row_t *row;
@@ -376,7 +378,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 	}
 
 	if (RES_ROW_N(res) == 0) {
-		LM_WARN("No nodes found in cluster\n");
+		LM_WARN("Current node does not belong to any cluster\n");
 		return 1;
 	}
 
@@ -472,7 +474,7 @@ int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table,
 			strlen(str_vals[STR_VALS_DESCRIPTION_COL].s) : 0;
 
 		/* add info to backing list */
-		if ((rc = add_node_info(&new_info, cl_list, int_vals, str_vals)) != 0) {
+		if ((rc = add_node_info(&_, cl_list, int_vals, str_vals)) != 0) {
 			LM_ERR("Unable to add node info to backing list\n");
 			if (rc < 0)
 				return -1;

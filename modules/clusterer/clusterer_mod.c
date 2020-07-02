@@ -381,12 +381,19 @@ static int mod_init(void)
 		*cluster_list = NULL;
 	} else {
 		/* sanity check of my_node_id if node_id also set in a my_node_info param */
-		for (cl = *cluster_list; cl; cl = cl->next)
+		for (cl = *cluster_list; cl; cl = cl->next) {
+			if (!cl->current_node) {
+				LM_ERR("current node is not part of cluster %d\n",
+				       cl->cluster_id);
+				goto error;
+			}
+
 			if (cl->current_node->node_id != current_id) {
 				LM_ERR("Bad 'my_node_id' parameter, value: %d different than"
 					" the node_id property in the 'my_node_info' parameter\n", current_id);
 				goto error;
 			}
+		}
 	}
 
 	if (db_mode) {
