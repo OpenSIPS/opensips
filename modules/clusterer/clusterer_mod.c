@@ -336,12 +336,19 @@ static int mod_init(void)
 		*cluster_list = NULL;
 	} else {
 		/* sanity check of current_id if node_id also set in a current_info param */
-		for (cl = *cluster_list; cl; cl = cl->next)
+		for (cl = *cluster_list; cl; cl = cl->next) {
+			if (!cl->current_node) {
+				LM_ERR("current node is not part of cluster %d\n",
+				       cl->cluster_id);
+				goto error;
+			}
+
 			if (cl->current_node->node_id != current_id) {
 				LM_ERR("Bad current_id parameter, value: %d different than"
 					" the node_id property in the current_info parameter\n", current_id);
 				goto error;
 			}
+		}
 	}
 
 	if (db_mode) {
