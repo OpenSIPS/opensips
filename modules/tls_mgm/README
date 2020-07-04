@@ -799,7 +799,7 @@ listen=tls:IP_2:port2
 listen=tls:IP_3:port3
 ...
 # set the TLS client domain AVP
-modparam("proto_tls", "client_domain_avp", "tls_cli_dom")
+modparam("tls_mgm", "client_domain_avp", "tls_cli_dom")
 ...
 
 # 'atlanta' server domain
@@ -1476,8 +1476,8 @@ Chapter 3. Contributors
    1. Razvan Crainea (@razvancrainea) 63 44 1065 541
    2. Vlad Patrascu (@rvlad-patrascu) 54 17 1837 1205
    3. Eseanu Marius Cristian (@eseanucristian) 51 11 4268 321
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 22 10 269 448
-   5. Liviu Chircu (@liviuchircu) 21 15 141 220
+   4. Liviu Chircu (@liviuchircu) 22 16 142 221
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 22 10 269 448
    6. Ionut Ionita (@ionutrazvanionita) 17 9 383 169
    7. Ionel Cerghit (@ionel-cerghit) 7 1 494 109
    8. Dan Pascu (@danpascu) 5 3 0 77
@@ -1507,7 +1507,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jun 2020
+   1.  Liviu Chircu (@liviuchircu)         Oct 2015 - Jul 2020
    2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2020
    3.  Razvan Crainea (@razvancrainea)     Sep 2015 - Mar 2020
    4.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
