@@ -929,9 +929,9 @@ Chapter 3. Contributors
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
    4. Vlad Patrascu (@rvlad-patrascu) 23 8 362 699
    5. Liviu Chircu (@liviuchircu) 20 16 91 183
-   6. Vlad Paiu (@vladpaiu) 6 4 15 9
-   7. Peter Lemenkov (@lemenkov) 5 3 60 9
-   8. Ovidiu Sas (@ovidiusas) 5 3 15 11
+   6. Ovidiu Sas (@ovidiusas) 7 5 31 22
+   7. Vlad Paiu (@vladpaiu) 6 4 15 9
+   8. Peter Lemenkov (@lemenkov) 5 3 60 9
    9. Ryan Bullock (@rrb3942) 4 2 68 9
    10. robdyck 4 2 8 4
 
@@ -960,16 +960,16 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - May 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
-   3.  robdyck                             Apr 2020 - Apr 2020
-   4.  Zero King                           Mar 2020 - Mar 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   7.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
-   8.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
-   9.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
-   10. Ovidiu Sas (@ovidiusas)             Mar 2011 - Feb 2018
+   1.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
+   2.  Razvan Crainea (@razvancrainea)     Mar 2011 - May 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
+   4.  robdyck                             Apr 2020 - Apr 2020
+   5.  Zero King                           Mar 2020 - Mar 2020
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   8.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
+   9.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
+   10. Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
 
    All remaining contributors: Maksym Sobolyev (@sobomax), Julián
    Moreno Patiño, Vlad Paiu (@vladpaiu), Dusan Klinec, Dave
