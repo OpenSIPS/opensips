@@ -58,9 +58,8 @@ struct pm_part_struct {
 };
 
 
+int init_address_df_part(void);
 int parse_partition(modparam_t, void*);
-int set_default_table(modparam_t, void *val);
-int set_default_db_url(modparam_t, void *val);
 struct pm_partition *partition_set(void);
 struct pm_part_struct *get_part_structs(void);
 struct pm_part_struct *get_part_struct(str *name);
