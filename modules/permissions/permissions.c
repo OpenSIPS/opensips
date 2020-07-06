@@ -45,7 +45,6 @@
 #include "../../ut.h"
 
 
-
 static rule_file_t allow[MAX_RULE_FILES]; /* Parsed allow files */
 static rule_file_t deny[MAX_RULE_FILES];  /* Parsed deny files */
 static int rules_num;  /* Number of parsed allow/deny files */
@@ -57,20 +56,6 @@ static char* default_deny_file = DEFAULT_DENY_FILE;
 char* allow_suffix = ".allow";
 static char* deny_suffix = ".deny";
 
-
-/* for allow_address and allow_address function */
-str db_url = {NULL, 0};                    /* Don't connect to the database by default */
-
-/* for allow_address function */
-str address_table = str_init("address");	/* Name of address table */
-str ip_col = str_init("ip");				/* Name of ip column */
-str proto_col = str_init("proto");			/* Name of protocol column */
-str pattern_col = str_init("pattern"); 		/* Name of pattern column */
-str info_col = str_init("context_info");	/* Name of context info column */
-str grp_col = str_init("grp");				/* Name of address group column */
-str mask_col = str_init("mask");			/* Name of mask column */
-str port_col = str_init("port");			/* Name of port column */
-str id_col = str_init("id");				/* Name of id column */
 
 /*
  * By default we check all branches
@@ -164,10 +149,8 @@ static param_export_t params[] = {
 	{"deny_suffix",        STR_PARAM, &deny_suffix       },
 	{"partition",		   STR_PARAM|USE_FUNC_PARAM,
 							(void *)parse_partition      },
-	{"db_url",			   STR_PARAM|USE_FUNC_PARAM,
-						    (void *)set_default_db_url   },
-	{"address_table",      STR_PARAM|USE_FUNC_PARAM,
-							(void *)set_default_table    },
+	{"db_url",             STR_PARAM, &db_url            },
+	{"address_table",      STR_PARAM, &address_table     },
 	{"ip_col",             STR_PARAM, &ip_col.s          },
 	{"proto_col",          STR_PARAM, &proto_col.s       },
 	{"pattern_col",        STR_PARAM, &pattern_col.s     },
@@ -649,17 +632,7 @@ static int double_fixup(void** param, int param_no)
  */
 static int mod_init(void)
 {
-	struct pm_partition *el, *prev_el=NULL;
-
 	LM_DBG("initializing...\n");
-
-	ip_col.len = strlen(ip_col.s);
-	proto_col.len = strlen(proto_col.s);
-	pattern_col.len = strlen(pattern_col.s);
-	info_col.len = strlen(info_col.s);
-	grp_col.len = strlen(grp_col.s);
-	mask_col.len = strlen(mask_col.s);
-	port_col.len = strlen(port_col.s);
 
 	allow[0].filename = get_pathname(default_allow_file);
 	allow[0].rules = parse_config_file(allow[0].filename);
@@ -681,22 +654,9 @@ static int mod_init(void)
 			deny[0].filename);
 	}
 
-
-	el = get_partitions();
-	while (el) {
-		/* initialize table name if not done from script */
-		if (el->table.s == NULL) {
-			el->table.s = "address";
-			el->table.len = strlen(el->table.s);
-		}
-
-		if (init_address(el) != 0) {
-			LM_ERR("failed to initialize the allow_address function\n");
-			return -1;
-		}
-		prev_el = el;
-		el = el->next;
-		pkg_free(prev_el);
+	if (init_address() != 0) {
+		LM_ERR("failed to init or load DB partitions\n");
+		return -1;
 	}
 
 	rules_num = 1;

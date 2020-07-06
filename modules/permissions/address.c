@@ -51,6 +51,21 @@
 
 str def_part = str_init("default");
 
+/* table & column names */
+str db_url;
+str address_table = str_init("address");   /* Name of address table */
+str ip_col = str_init("ip");               /* Name of ip column */
+str proto_col = str_init("proto");         /* Name of protocol column */
+str pattern_col = str_init("pattern");     /* Name of pattern column */
+str info_col = str_init("context_info");   /* Name of context info column */
+str grp_col = str_init("grp");             /* Name of address group column */
+str mask_col = str_init("mask");           /* Name of mask column */
+str port_col = str_init("port");           /* Name of port column */
+str id_col = str_init("id");               /* Name of id column */
+
+int init_address_part(struct pm_partition*);
+
+
 static inline int proto_char2int(str *proto) {
 	int ret_proto;
 	if (proto->len==0 || (proto->len==3 && !strcasecmp(proto->s, "any")))
@@ -59,6 +74,45 @@ static inline int proto_char2int(str *proto) {
 		return -1;
 	return ret_proto;
 }
+
+
+int init_address(void)
+{
+	struct pm_partition *el, *prev_el;
+
+	if (db_url.s)
+		db_url.len = strlen(db_url.s);
+
+	address_table.len = strlen(address_table.s);
+	ip_col.len = strlen(ip_col.s);
+	proto_col.len = strlen(proto_col.s);
+	pattern_col.len = strlen(pattern_col.s);
+	info_col.len = strlen(info_col.s);
+	grp_col.len = strlen(grp_col.s);
+	mask_col.len = strlen(mask_col.s);
+	port_col.len = strlen(port_col.s);
+
+	if (init_address_df_part() != 0) {
+		LM_ERR("failed to init the 'default' partition\n");
+		return -1;
+	}
+
+	el = get_partitions();
+
+	while (el) {
+		if (init_address_part(el) != 0) {
+			LM_ERR("failed to initialize the '%.*s' partition\n",
+			       el->name.len, el->name.s);
+			return -1;
+		}
+		prev_el = el;
+		el = el->next;
+		pkg_free(prev_el);
+	}
+
+	return 0;
+}
+
 
 /*
  * Reload address table to new hash table and when done, make new hash table
@@ -291,7 +345,7 @@ error:
 /*
  * Initialize data structures
  */
-int init_address(struct pm_partition *partition)
+int init_address_part(struct pm_partition *partition)
 {
 	struct pm_part_struct *part_struct;
 	/* Check if hash table needs to be loaded from address table */
@@ -313,7 +367,7 @@ int init_address(struct pm_partition *partition)
 	part_struct->table = partition->table;
 
 	if (db_bind_mod(&partition->url, &part_struct->perm_dbf) < 0) {
-		LM_ERR("load a database support module\n");
+		LM_ERR("failed to load a database support module\n");
 		return -1;
 	}
 

@@ -26,10 +26,22 @@
 #include "../../parser/msg_parser.h"
 #include "partitions.h"
 
+extern str def_part;
+extern str db_url;        /* Database URL */
+extern str address_table; /* Name of address table */
+extern str ip_col;        /* Name of IP address column */
+extern str proto_col;     /* Name of protocol column */
+extern str pattern_col;   /* Name of pattern column */
+extern str info_col;      /* Name of context_info column */
+extern str grp_col;       /* Name of address group column */
+extern str mask_col;      /* Name of mask column */
+extern str port_col;      /* Name of port column */
+extern str id_col;        /* Name of id column */
+
 /*
- * Initialize data structures
+ * Initialize partitions & load data, if necessary
  */
-int init_address(struct pm_partition*);
+int init_address(void);
 
 
 /*

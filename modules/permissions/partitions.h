@@ -76,9 +76,8 @@ struct part_pvar {
 	gparam_p part;
 };
 
+int init_address_df_part(void);
 int parse_partition(modparam_t, void*);
-int set_default_table(modparam_t, void *val);
-int set_default_db_url(modparam_t, void *val);
 struct pm_partition *partition_set(void);
 int check_addr_param1(str *s, struct part_var *pv);
 struct pm_part_struct *get_part_structs(void);

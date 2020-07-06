@@ -22,22 +22,24 @@
  *
  */
 #include <stdio.h>
+#include "address.h"
 #include "partitions.h"
 #include "../../str.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../db/db.h"
+#include "../../lib/csv.h"
 
 #define ERR 1
 
-str part_db_url = {"db_url", sizeof("db_url") - 1};
-str part_table_name = {"table_name", sizeof("table_name") - 1};
+str part_db_url = str_init("db_url");
+str part_table_name = str_init("table_name");
 
 /* since default partition will probably be used the most
  * it deserves a pointer for its own*/
-struct pm_partition *partitions=NULL, *default_partition=NULL;
+struct pm_partition *partitions, *default_partition;
 
-struct pm_part_struct *part_structs=NULL;
+struct pm_part_struct *part_structs;
 
 static void *alloc_partitions(void)
 {
@@ -52,8 +54,7 @@ static void *alloc_default_partition(void)
 	default_partition = pkg_malloc(sizeof(struct pm_partition));
 	if (default_partition) {
 		memset(default_partition, 0, sizeof(struct pm_partition));
-		default_partition->name.s = "default";
-		default_partition->name.len = sizeof("default") - 1;
+		default_partition->name = def_part;
 
 		default_partition->next = partitions;
 		partitions = default_partition;
@@ -85,72 +86,33 @@ struct pm_partition *partition_set(void)
 	return partitions;
 }
 
-/*
- * set default partition url
- */
-int set_default_db_url(modparam_t type, void *val)
+int init_address_df_part(void)
 {
-	str db_str;
+	if (!db_url.s || default_partition)
+		return 0;
 
-	db_str.s = (char *)val;
-	db_str.len = strlen(db_str.s);
+	if (!alloc_default_partition()) {
+		LM_ERR("oom\n");
+		return -1;
+	}
 
-	str_trim_spaces_lr(db_str);
-
-	if (default_partition == NULL)
-		if (alloc_default_partition() == NULL)
-			goto out_nomem;
-
-	default_partition->url.s = (char *)val;
-	init_db_url( default_partition->url, 1 /* can be null */);
-
+	default_partition->url = db_url;
+	default_partition->table = address_table;
 	return 0;
-
-out_nomem:
-	LM_ERR("no more memory!\n");
-	return -1;
-
 }
-
-/*
- * set default partition table
- */
-int set_default_table(modparam_t type, void *val)
-{
-	str db_table;
-
-	db_table.s = (char *)val;
-	db_table.len = strlen(db_table.s);
-
-	str_trim_spaces_lr(db_table);
-
-	if (default_partition == NULL)
-		if (alloc_default_partition() == NULL)
-			goto out_nomem;
-
-	default_partition->table = db_table;
-
-	return 0;
-
-out_nomem:
-	LM_ERR("no more memory!\n");
-	return -1;
-
-}
-
 
 
 /*
  * parse a partition parameter of type
- * <part_name> : attr1=val1; attr2=val2;
+ * <part_name>: attr1=val1; attr2=val2
  */
 int parse_partition(modparam_t t, void *val)
 {
-	str type, value, token;
-	char *tok_end;
-	struct pm_partition *el, *it;
+	csv_record *name, *props, *params, *it;
+	str rem;
+	struct pm_partition *el, *part;
 
-	str decl = {(char*)val, strlen((char *)val)};
+	str in = {(char*)val, strlen((char *)val)};
 
 	if (get_partitions() == NULL) {
 		if (alloc_partitions() == NULL)
@@ -162,71 +124,76 @@ int parse_partition(modparam_t t, void *val)
 			goto out_memfault;
 		memset(el, 0, sizeof(struct pm_partition));
 
-		for (it=get_partitions(); it->next; it=it->next);
-		it->next = el;
+		for (part=get_partitions(); part->next; part=part->next);
+		part->next = el;
 	}
 
-	tok_end = q_memchr(decl.s, ':', decl.len);
-	if (tok_end == NULL)
-		goto out_invdef;
+	name = __parse_csv_record(&in, 0, ':');
+	if (!name)
+		goto bad_input;
 
-	value.s = decl.s;
-	value.len = tok_end - decl.s;
+	el->name = name->s;
+	if (str_match(&name->s, &def_part))
+		default_partition = el;
 
-	str_trim_spaces_lr(value);
-
-	el->name = value;
-
-	decl.len = decl.len - (++tok_end - decl.s);
-	decl.s = tok_end;
-
-	while (decl.len > 0 && decl.s) {
-		tok_end = q_memchr(decl.s, ';', decl.len);
-		if (tok_end == NULL)
-			break;
-
-		token.s = decl.s;
-		token.len = tok_end - token.s;
-
-		tok_end = q_memchr(token.s, '=', token.len);
-		if (tok_end == NULL)
-			break;
-
-		type.s = token.s;
-		type.len = tok_end - type.s;
-
-		value.s = tok_end + 1;
-		value.len = (token.s + token.len) - value.s;
-
-		decl.s += token.len + 1;
-		decl.len -= (token.len + 1);
-
-		str_trim_spaces_lr(type);
-		str_trim_spaces_lr(value);
-
-		if (!str_strcmp( &type, &part_db_url))
-			el->url = value;
-		 else if (!str_strcmp( &type, &part_table_name))
-			el->table = value;
-		else
-			goto out_invdef;
+	if (!name->next) {
+		free_csv_record(name);
+		goto empty_part;
 	}
 
-	if (el->url.s == NULL) {
-		LM_ERR("you should define an URL for this partition %.*s\n",
-				el->name.len, el->name.s);
-		return -1;
+	rem.s = name->next->s.s;
+	rem.len = in.len - (rem.s - in.s);
+	props = __parse_csv_record(&rem, 0, ';');
+	if (!props)
+		goto bad_input;
+
+	free_csv_record(name);
+
+	for (it = props; it; it = it->next) {
+		params = __parse_csv_record(&it->s, 0, '=');
+		if (!params)
+			goto bad_input;
+
+		if (str_match(&params->s, &part_db_url)) {
+			el->url = params->next->s;
+		} else if (str_match(&params->s, &part_table_name)) {
+			el->table = params->next->s;
+		} else if (!ZSTR(params->s)) {
+			LM_ERR("invalid token '%.*s' in partition '%.*s'\n",
+			       params->s.len, params->s.s, el->name.len, el->name.s);
+			goto bad_input;
+		}
+
+		free_csv_record(params);
 	}
+
+	free_csv_record(props);
+
+empty_part:
+	if (!el->url.s) {
+		if (db_url.s) {
+			init_str(&el->url, db_url.s);
+		} else if (db_default_url) {
+			init_str(&el->url, db_default_url);
+		} else {
+			LM_ERR("partition '%.*s' has no 'db_url'\n",
+			       el->name.len, el->name.s);
+			return -1;
+		}
+	}
+
+	if (!el->table.s)
+		init_str(&el->table, address_table.s);
 
 	return 0;
 
-out_invdef:
-	LM_ERR("invalid partition definition!\n");
-	return -ERR;
+bad_input:
+	LM_ERR("failed to parse partition: '%.*s'\n", in.len, in.s);
+	return -1;
 
 out_memfault:
 	LM_ERR("no more memory\n");
-	return -ERR;
+	return -1;
 }
 
 int check_addr_param1(str *s, struct part_var *pv)
