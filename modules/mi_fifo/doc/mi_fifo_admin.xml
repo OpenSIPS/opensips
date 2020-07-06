@@ -309,7 +309,7 @@ modparam("mi_fifo", "trace_bwlist", "w: sip_trace")
 		<title>FIFO request</title>
 		<programlisting format="linespecific">
 
-:reply_fifo:{"jsonrpc":"2.0","method":"get_statistics","id":"5672","params":["dialog:","tm:"]}
+:reply_fifo:{"jsonrpc":"2.0","method":"get_statistics","id":"5672","params":[["dialog:","tm:"]]}
 
 </programlisting>
 		</example>
