@@ -218,7 +218,7 @@ int ds_count(struct sip_msg *msg, int set_id, void *_cmp, pv_spec_p ret,
 				ds_partition_t *partition);
 
 int ds_is_in_list(struct sip_msg *_m, str *ip, int port, int set,
-                  ds_partition_t *partition, int active_only);
+                  ds_partition_t *partition, int active_only, str *pattern);
 
 int ds_push_script_attrs(struct sip_msg *_m, str *script_attrs, 
 		str *ip, int port, int set, ds_partition_t *partition);

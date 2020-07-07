@@ -1356,7 +1356,7 @@ if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
 
 	<section id="func_ds_is_in_list" xreflabel="ds_is_in_list()">
 		<title>
-		<function moreinfo="none">ds_is_in_list(ip, port, [set], [partition], [active_only])</function>
+		<function moreinfo="none">ds_is_in_list(ip, port, [set], [partition], [active_only], [pattern])</function>
 		</title>
 		<para>
 		This function returns <emphasis>true</emphasis> only if "ip" and "port" point to a
@@ -1390,6 +1390,12 @@ if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
 			<para><emphasis>active_only (int, optional)</emphasis> - specify
 			a non-zero value in order to only search through the active
 			destinations (ignore the ones in probing and inactive states)</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>pattern (string, optional)</emphasis> - a glob
+			pattern used to match destination attributes. If the destination
+			ip and port matches but the pattern does not match the destination's
+			attribute, the function will fail.
 		</listitem>
 		</itemizedlist>
 		<para>

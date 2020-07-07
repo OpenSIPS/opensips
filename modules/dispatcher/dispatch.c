@@ -46,6 +46,7 @@
 #include "../../db/db_res.h"
 #include "../../str.h"
 #include "../../rw_locking.h"
+#include <fnmatch.h>
 
 #include "dispatch.h"
 #include "ds_fixups.h"
@@ -2262,17 +2263,28 @@ int ds_set_state_repl(int group, str *address, int state, int type,
  * (set-id or -1 for all sets)
  */
 int ds_is_in_list(struct sip_msg *_m, str *_ip, int port, int set,
-                  ds_partition_t *partition, int active_only)
+                  ds_partition_t *partition, int active_only, str *pattern_s)
 {
 	pv_value_t val;
 	ds_set_p list;
 	struct ip_addr *ip;
 	int_str avp_val;
 	int j,k;
+	char *pattern = NULL;
 
 	if (!(ip = str2ip(_ip)) && !(ip = str2ip6(_ip))) {
 		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
 		return -1;
+	}
+
+	if (pattern_s) {
+		pattern = pkg_malloc(pattern_s->len + 1);
+		if (!pattern) {
+			LM_ERR("oom for pattern!\n");
+			return -1;
+		}
+		memcpy(pattern, pattern_s->s, pattern_s->len);
+		pattern[pattern_s->len] = '\0';
 	}
 
 	memset(&val, 0, sizeof(pv_value_t));
@@ -2293,6 +2305,13 @@ int ds_is_in_list(struct sip_msg *_m, str *_ip, int port, int set,
 						/* matching destination */
 						if (active_only && !dst_is_active(list->dlist[j]) )
 							continue;
+						/* matching pattern - already null terminated :D */
+						if (pattern) {
+							if (!list->dlist[j].attrs.s)
+								continue;
+							if (fnmatch(pattern, list->dlist[j].attrs.s, FNM_PERIOD) != 0)
+								continue;
+						}
 						if(set==-1 && ds_setid_pvname.s!=0) {
 							val.ri = list->id;
 							if(pv_set_value(_m, &ds_setid_pv,
@@ -2317,6 +2336,8 @@ int ds_is_in_list(struct sip_msg *_m, str *_ip, int port, int set,
 						}
 
 						lock_stop_read( partition->lock );
+						if (pattern)
+							pkg_free(pattern);
 						return 1;
 					}
 				}
@@ -2326,6 +2347,8 @@ int ds_is_in_list(struct sip_msg *_m, str *_ip, int port, int set,
 
 error:
 	lock_stop_read( partition->lock );
+	if (pattern)
+		pkg_free(pattern);
 	return -1;
 }
 

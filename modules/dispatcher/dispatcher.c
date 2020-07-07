@@ -167,7 +167,7 @@ static int w_ds_mark_dst(struct sip_msg *msg, str *flags, void *part);
 static int w_ds_count(struct sip_msg* msg, int *set, void *filter,
 						pv_spec_t *res_pv, void *part);
 static int w_ds_is_in_list(struct sip_msg *msg, str *ip, int *port,
-                           int *set, void *part, int *active_only);
+                           int *set, void *part, int *active_only, str *pattern);
 static int w_ds_push_script_attrs(struct sip_msg *msg, str* script_attrs,
 			str *ip, int *port,int *set,void *part);
 static int w_ds_get_script_attrs(struct sip_msg *msg, str *uri, int* set,
@@ -234,7 +234,8 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fixup_ds_part, 0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"ds_count",    (cmd_function)w_ds_count, {
@@ -1343,7 +1344,7 @@ mi_response_t *ds_mi_reload_1(const mi_params_t *params,
 }
 
 static int w_ds_is_in_list(struct sip_msg *msg, str *ip, int *port,
-                           int *set, void *part, int *active_only)
+                           int *set, void *part, int *active_only, str *pattern)
 {
 	ds_partition_t *partition = default_partition;
 
@@ -1356,7 +1357,7 @@ static int w_ds_is_in_list(struct sip_msg *msg, str *ip, int *port,
 	}
 
 	return ds_is_in_list(msg, ip, *port, set ? *set : -1, partition,
-							active_only ? *active_only : 0);
+							active_only ? *active_only : 0, pattern);
 
 	LM_ERR("wrong format for set argument\n");
 	return -1;
