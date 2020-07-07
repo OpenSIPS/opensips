@@ -95,15 +95,15 @@ typedef struct _ds_db_head
 
 ds_db_head_t default_db_head = {
 	str_init(DS_DEFAULT_PARTITION_NAME),
-	{NULL, 0},
-	{NULL, 0},
+	{NULL, -1},
+	{NULL, -1},
 
 
-	{NULL, 0},
-	{NULL, 0},
-	{NULL, 0},
-	{NULL, 0},
-	{NULL, 0},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
 	NULL
 };
 ds_db_head_t *ds_db_heads = NULL;
@@ -705,7 +705,7 @@ void set_default_head_values(ds_db_head_t *head)
 		str *p_val = partition_params[i].getter_func(head);
 		if (p_val->s == NULL)
 			*p_val = partition_params[i].default_value;
-		else
+		else if (p_val->len == -1)
 			p_val->len = strlen(p_val -> s);
 	}
 }
