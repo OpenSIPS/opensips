@@ -778,7 +778,7 @@ static mi_response_t *mi_show_partition_1(const mi_params_t *params,
 
 	el = dp_get_connection(&part);
 	if (!el)
-		return 0;
+		return init_mi_error(404, MI_SSTR("Partition Not Found"));
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
