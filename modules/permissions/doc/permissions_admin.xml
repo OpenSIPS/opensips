@@ -342,17 +342,17 @@ modparam("permissions", "deny_suffix", ".deny")
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		This is URL of the database to be used for loading the date related to
+		The URL of the database to be used for loading the data related to
 		IP-based checking (<quote>address</quote> table).
 		</para>
 		<para>
 		This parameter is optional and it is needed only if you use
 		functions related to IP-based checking. If you do so, you need to
-		explicitly set this parameter (it is not covered by 
+		explicitly set this parameter (it will not inherit from
 		<quote>db_default_url</quote>)
 		</para>
 		<para>
-		Since version 2.2, this URL represents the db_url for the 
+		Since version 2.2, this URL represents the db_url for the
 		<quote>default</quote> partition.
 		</para>
 		<para>
@@ -374,8 +374,8 @@ modparam("permissions", "db_url", "&exampledb;")
 		<para>
 		Name of database table containing matching rules used by
 		<function moreinfo="none">allow_register</function> function.
-		Since version 2.2, this table name represents the table name
-		for the <quote>default</quote> partition.
+		Since version 2.2, this table name also represents the default table
+		name for partitions without a 'table_name' setting.
 		</para>
 		<para>
 		<emphasis>
@@ -394,23 +394,23 @@ modparam("permissions", "address_table", "pbx")
 	<section id="param_partition" xreflabel="partition">
 		<title><varname>partition</varname> (string)</title>
 		<para>
-			Create a partition containg an url and a table name. Partitions
-		allow you to use different databases or different tables from
-		the same database. It is IMPORTANT that you split the paramteres by
-		";". Also, it is very IMPORTANT to put ";" after the last parameter,
-		elseway it will not be taken into consideration.
+		Specify a new IP-based checking partition (data source).  This
+		parameter may be set multiple times.  Each partition may have a
+		specific "db_url" and "table_name".  If not specified, these values
+		will be inherited from <xref linkend="param_db_url"/>, db_default_url
+		or <xref linkend="param_address_table"/>, respectively.  The name of
+		the default partition is 'default'.
 		</para>
 		<para>
-		<emphasis>
-			The db_url for a partition is mandatory. The table name, instead,
-		has a default value 'address'.
-		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>partition</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("permissions", "partition", "my_part: db_url=<quote>some_url</quote>; table_name=<quote>some_table</quote>;")
+modparam("permissions", "partition", "
+	inbound:
+		db_url = postgres://opensips:opensipsrw@127.0.0.1/opensips;
+		table_name = address")
 ...
 
 </programlisting>
@@ -460,7 +460,7 @@ modparam("permissions", "ip_col", "ipess")
 		<title><varname>mask_col</varname> (string)</title>
 		<para>
 		Name of address table column containing network mask of
-		the address.  Possible values are 0-128. It should be up to 32 if 
+		the address.  Possible values are 0-128. It should be up to 32 if
 		the IP is v4 and up to 128 if the IP is v6.
 		</para>
 		<para>
@@ -529,7 +529,7 @@ modparam("permissions", "proto_col", "transport")
 		<title><varname>pattern_col</varname> (string)</title>
 		<para>
 		Name of address table column containinga a pattern (a shell wildcard
-		pattern, like the ones used for file name matching) that is matched 
+		pattern, like the ones used for file name matching) that is matched
 		against the arguments received by
 		<function moreinfo="none">check_address</function>
 		or <function moreinfo="none">check_source_address</function>.

@@ -321,7 +321,7 @@
 		<title><varname>partition</varname> (string)</title>
 		<para>
 		Specify a new dialplan partition (data source).  This parameter may
-		be set multiple times.  Each partition may have a specific "db_url" or
+		be set multiple times.  Each partition may have a specific "db_url" and
 		"table_name".  If not specified, these values will be inherited from
 		<xref linkend="param_db_url"/>, db_default_url or
 		<xref linkend="param_table_name"/>, respectively.  The name of
