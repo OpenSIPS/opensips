@@ -2507,6 +2507,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 	ds_partition_t *partition;
 	dlg_t *dlg;
 	ds_set_p list;
+	int_str val;
 	int j;
 
 	if ( !ds_cluster_shtag_is_active() )
@@ -2558,6 +2559,18 @@ void ds_check_timer(unsigned int ticks, void* param)
 						LM_CRIT("No more shared memory\n");
 						continue;
 					}
+
+					if (partition->attrs_avp_name>=0) {
+						val.s = list->dlist[j].attrs;
+						dlg->avps = new_avp(
+							AVP_VAL_STR|partition->attrs_avp_type,
+							partition->attrs_avp_name, val);
+						// we do not care if the adding failed, there will
+						// be no attr AVP exposed in local route
+						if (dlg->avps)
+							dlg->avps->next = NULL;
+					}
+
 					cb_param->partition = partition;
 					cb_param->set_id = list->id;
 					if (tmb.t_request_within(&ds_ping_method,
