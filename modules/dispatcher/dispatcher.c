@@ -667,9 +667,7 @@ static int inherit_from_default_head(ds_db_head_t *head)
 
 		if (p_param->len == 0 && def_param->len > 0) {
 			/* Parameter not specified for function */
-			if (strstr(partition_params[i].name.s, "avp")
-				&& def_param->len > 0) {
-
+			if (strstr(partition_params[i].name.s, "avp"))  {
 				char *avp_end = q_memrchr(def_param->s, ')', def_param->len);
 				if (avp_end == NULL) {
 					LM_ERR ("wrong avp name %.*s\n", def_param->len,
@@ -692,9 +690,13 @@ static int inherit_from_default_head(ds_db_head_t *head)
 						head->partition_name.len);
 				memcpy(p_param->s + fix_len + 1 + head->partition_name.len,
 						def_param->s + fix_len, rem_len);
-			}
-			else
+
+				LM_DBG("built implicit AVP spec '%.*s' for part '%.*s'\n",
+				       p_param->len, p_param->s, head->partition_name.len,
+				       head->partition_name.s);
+			} else {
 				memcpy(p_param, def_param, sizeof(str));
+			}
 		}
 	}
 	return 0;
