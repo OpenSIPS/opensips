@@ -80,7 +80,12 @@ static inline str *str_cpy(str *dest, const str *src)
 
 #define STR_L(s) s, strlen(s)
 
-/* handy function for writing unit tests which compare str's */
+/**
+ * Handy function for writing unit tests which compare str's
+ *
+ * WARNING: _only_ use when passing (str *) to _basic_ functions,
+ *          since it is not re-entrant and may cause ugly bugs!
+ */
 static inline str *_str(const char *s)
 {
 	static str st;

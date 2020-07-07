@@ -55,10 +55,10 @@ typedef struct dp_head{
 
 
 extern dp_head_p dp_hlist;
+extern dp_head_p dp_df_head;
 extern dp_connection_list_p dp_conns;
 extern str default_dp_db_url;
 extern str default_dp_table;
-extern str dp_table_name;
 extern str dpid_column;
 extern str pr_column;
 extern str match_op_column;
