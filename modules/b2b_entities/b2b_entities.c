@@ -222,9 +222,12 @@ static int mod_init(void)
 		return -1;
 	}
 	memset(&b2be_dbf, 0, sizeof(db_func_t));
+
+	if(b2be_db_mode)
+		init_db_url(db_url, 1);
+
 	if(b2be_db_mode && db_url.s)
 	{
-		db_url.len = strlen(db_url.s);
 		b2be_dbtable.len = strlen(b2be_dbtable.s);
 
 		/* binding to database module  */
