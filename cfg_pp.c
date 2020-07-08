@@ -562,6 +562,7 @@ void cfg_dump_context(const char *file, int line, int colstart, int colend)
 		hiline = malloc(colend - colstart);
 		if (!hiline) {
 			LM_ERR("oom\n");
+			free(wsbuf);
 			return;
 		}
 		memset(hiline, '~', colend - colstart);
