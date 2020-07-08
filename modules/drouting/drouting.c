@@ -1750,8 +1750,8 @@ static int dr_init(void)
 
 		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drd_table, DRD_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_gateways "
-				"table \'%.*s\', for partition \'%.*s\'>\n",
+			LM_ERR("error during table version check (dr_gateways "
+				"table \'%.*s\', for partition \'%.*s\')\n",
 				db_part->drd_table.len, db_part->drd_table.s,
 				db_part->partition.len, db_part->partition.s);
 			goto error_cfg;
@@ -1759,8 +1759,8 @@ static int dr_init(void)
 
 		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drr_table, DRR_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_rules table \'%.*s\',"
-				" for partition \'%.*s\'>\n", db_part->drr_table.len,
+			LM_ERR("error during table version check (dr_rules table \'%.*s\',"
+				" for partition \'%.*s\')\n", db_part->drr_table.len,
 				db_part->drr_table.s, db_part->partition.len,
 				db_part->partition.s);
 			goto error_cfg;
@@ -1768,8 +1768,8 @@ static int dr_init(void)
 
 		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drg_table, DRG_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_groups table \'%.*s\',"
-				" for partition \'%.*s\'>\n", db_part->drg_table.len,
+			LM_ERR("error during table version check (dr_groups table \'%.*s\',"
+				" for partition \'%.*s\')\n", db_part->drg_table.len,
 				db_part->drg_table.s, db_part->partition.len,
 				db_part->partition.s);
 			goto error_cfg;
@@ -1777,8 +1777,8 @@ static int dr_init(void)
 
 		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drc_table, DRC_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_carriers "
-				"table \'%.*s\', for partition \'%.*s\'>\n",
+			LM_ERR("error during table version check (dr_carriers "
+				"table \'%.*s\', for partition \'%.*s\')\n",
 				db_part->drc_table.len, db_part->drc_table.s,
 				db_part->partition.len, db_part->partition.s);
 			goto error_cfg;
