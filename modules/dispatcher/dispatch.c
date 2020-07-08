@@ -802,9 +802,10 @@ int init_ds_db(ds_partition_t *partition)
 		LM_ERR("failed to query table version\n");
 		return -1;
 	} else if (!supported_ds_version(_ds_table_version)) {
-		LM_ERR("invalid table version (found %d , required %d)\n"
-			"(use opensips-cli to migrate to latest schema)\n",
-			_ds_table_version, DS_TABLE_VERSION );
+		LM_ERR("invalid version for table '%.*s' (found %d, required %d)\n"
+		    "(use opensips-cli to migrate to latest schema)\n",
+		    partition->table_name.len, partition->table_name.s,
+		    _ds_table_version, DS_TABLE_VERSION );
 		return -1;
 	}
 
