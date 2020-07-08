@@ -17,10 +17,11 @@
 	<para>
 	At startup, the module will load all transformation rules from one or more
 	dialplan-compatible tables. The data of each table will be stored in a
-	partition which is defined by the "db_url" and "table_name" parameters.
-	Every table row will be stored in memory as a translation rule. Each rule
-	will describe how the matching should be made, how the input value should
-	be modified and which attributes should be set for the matching transformation.
+	<emphasis>partition</emphasis> (data source), which is defined by the
+	"db_url" and "table_name" properties.  Every table row will be stored in
+	memory as a translation rule. Each rule will describe how the matching
+	should be made, how the input value should be modified and which attributes
+	should be set for the matching transformation.
 	</para>
 	<para>
 	A dialplan rule can be of two types:
@@ -319,31 +320,42 @@
 	<section id="param_partition" xreflabel="partition">
 		<title><varname>partition</varname> (string)</title>
 		<para>
-		This can be used to define new db_url and table_name parameters from which
-		to load the translation rules. These parameters will be held in partitions.
-		The db_url parameter is mandatory. The order of the parameters does not matter.
-		Multiple partitions can be defined and you can also define the default partition
-		here. The name of this partition is "default". In order to be able to use a table
-		from a partition, its name must be found in the "version" table belonging to the
-		database defined in the partition's db_url.
+		Specify a new dialplan partition (data source).  This parameter may
+		be set multiple times.  Each partition may have a specific "db_url" and
+		"table_name".  If not specified, these values will be inherited from
+		<xref linkend="param_db_url"/>, db_default_url or
+		<xref linkend="param_table_name"/>, respectively.  The name of
+		the default partition is 'default'.
+		</para>
+		<para>
+		Note: OpenSIPS will validate each partition, so make sure to add any
+		required entries in the "version" table of each database defined
+		through the 'db_url' property.
 		</para>
 
 		<example>
-		<title> Set <varname>partition</varname> parameter</title>
+		<title> Defining the <varname>'pstn'</varname> partition</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "partition",
-  "part2:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
+modparam("dialplan", "partition", "
+	pstn:
+		table_name = dialplan;
+		db_url = mysql://opensips:opensipsrw@127.0.0.1/opensips")
 ...
 		</programlisting>
 		</example>
 
 		<example>
-		<title> Set <varname>default partition</varname> with partition parameter</title>
+		<title> Define the 'pstn' partition and make it the 'default' partition, so we avoid loading the 'dialplan' table</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "partition",
-  "default:table_name=dialplan;db_url=mysql://user:pw@localhost/db;")
+db_default_url = "mysql://opensips:opensipsrw@localhost/opensips"
+
+loadmodule "dialplan.so"
+modparam("dialplan", "partition", "
+	pstn:
+		table_name = dialplan_pstn")
+modparam("dialplan", "partition", "default: pstn")
 ...
 		</programlisting>
 		</example>
@@ -352,19 +364,20 @@ modparam("dialplan", "partition",
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		The translation rules will be loaded using this database url.This
-		will be the db_url parameter value for the default partition.
+		The default DB connection of the module, overriding the global
+		'db_default_url' setting.  Once specified, partitions which are missing
+		the 'db_url' property will inherit their URL from this value.
 		</para>
 		<para>
-		NOTE: if you intend to use the default partition you have to explicity 
-		set this default db_url, otherwise OpenSIPS will not start (he value 
-		of global default db_url is not inherited here! ).
+		<emphasis>
+			Default value is NULL (not set).
+		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>db_url</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
+modparam("dialplan", "db_url", "mysql://user:passwd@localhost/db")
 ...
 		</programlisting>
 		</example>
@@ -373,10 +386,9 @@ modparam("dialplan", "db_url", "mysql://user:passwb@localhost/db")
 	<section id="param_table_name" xreflabel="table_name">
 		<title><varname>table_name</varname> (string)</title>
 		<para>
-		The table's name from which to load the translation rules.This
-		will be the table_name parameter value for the default partition.
-		The db_url must be defined for the default partition in order to
-		be able to define it's table name.
+		The default name of the table from which to load translation rules.
+		Partitions which are missing the 'table_name' property will inherit
+		their table name from this value.
 		</para>
 		<para>
 		<emphasis>
