@@ -170,6 +170,7 @@ int parse_disposition( str *s, struct disposition *disp)
 						break;
 					case TYPE:
 						disp->type.len = tmp - disp->type.s;
+						/* fall through */
 					case END_TYPE:
 					case END_VAL:
 						state = FIND_PARAM;
@@ -192,6 +193,7 @@ int parse_disposition( str *s, struct disposition *disp)
 						break;
 					case PARAM:
 						disp_p->name.len = tmp - disp_p->name.s;
+						/* fall through */
 					case END_PARAM:
 						state = FIND_VAL;
 						break;
@@ -390,6 +392,7 @@ int parse_content_disposition( struct sip_msg *msg )
 			set_err_info(OSER_EC_PARSER, OSER_EL_MEDIUM,
 				"error parsing DISPOSITION header");
 			set_err_reply(400, "bad headers");
+			/* fall through */
 		case -1:
 			/* error when parsing the body */
 			free_disposition( &disp );
