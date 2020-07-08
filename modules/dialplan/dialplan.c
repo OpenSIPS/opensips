@@ -268,6 +268,14 @@ static int dp_create_head(const str *in)
 		if (!params)
 			goto bad_input;
 
+		/* support for the "default: my_part" syntax */
+		if (!props->next && !params->next && !ZSTR(params->s)) {
+			dp_df_part = params->s;
+			LM_DBG("changing the default partition to '%.*s'\n",
+			       dp_df_part.len, dp_df_part.s);
+			return 0;
+		}
+
 		if (str_match(&params->s, _str(PARAM_URL))) {
 			have_db_url = 1;
 			dp_head_insert(DP_TYPE_URL, &params->next->s, &partition);
@@ -358,7 +366,7 @@ static int mod_init(void)
 	timerec_column.len      = strlen(timerec_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
-	if (!dp_df_head) {
+	if (!dp_df_head && str_match(&dp_df_part, _str(DEFAULT_PARTITION))) {
 		if (default_dp_db_url.s)
 			dp_head_insert(DP_TYPE_URL, &default_dp_db_url, &dp_df_part);
 
