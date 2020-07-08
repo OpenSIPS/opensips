@@ -392,6 +392,7 @@ static inline int write_to_fifo(char *fifo, int cnt )
 		switch(errno){
 			case ENXIO:
 				LM_ERR("nobody listening on [%s] fifo for reading!\n",fifo);
+				break;
 			default:
 				LM_ERR("failed to open [%s] fifo : %s\n", fifo,
 						strerror(errno));

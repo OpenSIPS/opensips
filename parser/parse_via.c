@@ -1864,6 +1864,7 @@ parse_again:
 					case P_PORT:
 						/*mark the end*/
 						vb->port_str.len=tmp-vb->port_str.s;
+						/* fall through */
 					case L_PORT:
 					case L_PARAM:
 						state=F_PARAM;

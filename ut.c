@@ -438,11 +438,14 @@ pad:
 		case 1:
 			*out++ = pad_char;
 			*out++ = pad_char;
+			/* fall through */
 		case 2:
 			*out++ = pad_char;
+			/* fall through */
 		case 3:
 			*out++ = pad_char;
 			*out++ = pad_char;
+			/* fall through */
 		case 4:
 			*out++ = pad_char;
 		}
