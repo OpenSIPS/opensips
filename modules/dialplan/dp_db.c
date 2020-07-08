@@ -169,6 +169,7 @@ void dp_disconnect_db(dp_connection_list_p dp_conn)
 int init_data(void)
 {
 	dp_head_p start, tmp;
+	int found_df_part = 0;
 
 	start = dp_hlist;
 	if (!start) {
@@ -179,6 +180,10 @@ int init_data(void)
 	while (start) {
 		LM_DBG("Adding partition with name [%.*s]\n",
 				start->partition.len, start->partition.s);
+
+		if (str_match(&start->partition, &dp_df_part))
+			found_df_part = 1;
+
 		if (!dp_add_connection(start)) {
 			LM_ERR("failed to initialize partition '%.*s'\n",
 					start->partition.len, start->partition.s);
@@ -188,6 +193,12 @@ int init_data(void)
 		tmp   = start;
 		start = start->next;
 		pkg_free(tmp);
+	}
+
+	if (!found_df_part) {
+		LM_ERR("partition '%.*s' is not defined\n",
+		       dp_df_part.len, dp_df_part.s);
+		return -1;
 	}
 
 	dp_hlist = NULL;
