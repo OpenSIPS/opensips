@@ -157,6 +157,12 @@ static int mod_init(void)
 	LM_INFO("initializing SMPP protocol\n");
 
 	init_db_url(db_url, 0 /* cannot be null */);
+
+	if (!smpp_outbound_uri.s) {
+		LM_ERR("missing modparam: 'smpp_outbound_uri'\n");
+		return -1;
+	}
+
 	smpp_outbound_uri.len = strlen(smpp_outbound_uri.s);
 
 	/* if we don't have a listener, we won't be able to connect, or send
