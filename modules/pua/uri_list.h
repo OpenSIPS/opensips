@@ -4,6 +4,7 @@
 #include <string.h>
 #include "../../dprint.h"
 #include "../../mem/mem.h"
+#include "../../ut.h"
 
 typedef struct list_entry
 {
@@ -36,7 +37,7 @@ static inline list_entry_t *list_insert(str *strng, list_entry_t *list, int *dup
 	if (list == NULL)
 		return p;
 
-	cmp = strncmp(list->strng->s, strng->s, strng->len);
+	cmp = str_strcmp(list->strng, strng);
 
 	if (cmp == 0)
         {
@@ -52,7 +53,7 @@ static inline list_entry_t *list_insert(str *strng, list_entry_t *list, int *dup
 	else
 	{
 		q = list;
-		while (q->next != NULL && (cmp = strncmp(q->next->strng->s, strng->s, strng->len)) < 0)
+		while (q->next != NULL && (cmp = str_strcmp(q->next->strng, strng)) < 0)
 			q = q->next;
 
 		if (cmp == 0) {
@@ -74,18 +75,20 @@ static inline list_entry_t *list_remove(str strng, list_entry_t *list)
 
 	if (list != NULL)
 	{
-		if (strncmp(p->strng->s, strng.s, strng.len) == 0)
+		if (str_match(p->strng, &strng))
 		{
 			pkg_free(p->strng->s);
 			pkg_free(p->strng);
-			pkg_free(p);
-			return list->next;
+
+			p = p->next;
+			pkg_free(list);
+			return p;
 		}
                 else
 		{
 			list_entry_t *p = list, *q;
 
-			while (p->next != NULL && (cmp = strncmp(p->next->strng->s, strng.s, strng.len)) < 0)
+			while (p->next != NULL && (cmp = str_strcmp(p->next->strng, &strng)) < 0)
 				p = p->next;
 
 			if (cmp == 0)
@@ -103,25 +106,17 @@ static inline list_entry_t *list_remove(str strng, list_entry_t *list)
 
 static inline str *list_pop(list_entry_t **list)
 {
-	str *ret = NULL;
+	str *ret;
 	list_entry_t *tmp;
 
-	if (*list != NULL)
-	{
-		ret = (*list)->strng;
+	if (!*list)
+		return NULL;
 
-		if ((*list)->next == NULL)
-		{
-			pkg_free(*list);
-			*list = NULL;
-		}
-		else
-		{
-			tmp = *list;
-			*list = (*list)->next;
-			pkg_free(tmp);
-		}
-	}
+	ret = (*list)->strng;
+
+	tmp = *list;
+	*list = (*list)->next;
+	pkg_free(tmp);
 
 	return ret;
 }
@@ -135,7 +130,6 @@ static inline void list_free(list_entry_t **list)
 		pkg_free(strng->s);
 		pkg_free(strng);
 	}
-	*list = NULL;
 }
 
 #endif /* _URI_LIST_H */
