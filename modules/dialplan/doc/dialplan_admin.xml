@@ -346,15 +346,16 @@ modparam("dialplan", "partition", "
 		</example>
 
 		<example>
-		<title> The 'default' partition inherits its URL from <varname>'db_default_url'</varname></title>
+		<title> Define the 'pstn' partition and make it the 'default' partition, so we avoid loading the 'dialplan' table</title>
 		<programlisting format="linespecific">
 ...
 db_default_url = "mysql://opensips:opensipsrw@localhost/opensips"
 
 loadmodule "dialplan.so"
 modparam("dialplan", "partition", "
-	default:
-		table_name = dialplan")
+	pstn:
+		table_name = dialplan_pstn")
+modparam("dialplan", "partition", "default: pstn")
 ...
 		</programlisting>
 		</example>

@@ -259,6 +259,14 @@ static int dp_create_head(const str *in)
 		if (!params)
 			goto bad_input;
 
+		/* support for the "default: my_part" syntax */
+		if (!props->next && !params->next && !ZSTR(params->s)) {
+			dp_df_part = params->s;
+			LM_DBG("changing the default partition to '%.*s'\n",
+			       dp_df_part.len, dp_df_part.s);
+			return 0;
+		}
+
 		if (str_match(&params->s, _str(PARAM_URL))) {
 			have_db_url = 1;
 			dp_head_insert(DP_TYPE_URL, &params->next->s, &partition);
@@ -349,7 +357,7 @@ static int mod_init(void)
 	timerec_column.len      = strlen(timerec_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
-	if (!dp_df_head) {
+	if (!dp_df_head && str_match(&dp_df_part, _str(DEFAULT_PARTITION))) {
 		if (default_dp_db_url.s)
 			dp_head_insert(DP_TYPE_URL, &default_dp_db_url, &dp_df_part);
 
@@ -482,13 +490,12 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 
 static int fix_partition(void** param)
 {
-	str def_str = str_init(DEFAULT_PARTITION);
 	str *s=(str*)*param;
 
 	/* handle the special case when the fix is triggered for 
 	   missing parameter */
 	if (s==NULL)
-		s = &def_str;
+		s = &dp_df_part;
 
 	*param = (void*)dp_get_connection( s );
 	if (*param==NULL) {
@@ -842,10 +849,9 @@ error:
 static mi_response_t *mi_translate2(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	str def_str = str_init(DEFAULT_PARTITION);
 	dp_connection_list_t *part;
 
-	part = dp_get_connection(&def_str);
+	part = dp_get_connection(&dp_df_part);
 	if (part==NULL){
 		LM_ERR("translating without partition, but no default defined\n");
 		return init_mi_error(404, MI_SSTR("'default' partition not found"));
