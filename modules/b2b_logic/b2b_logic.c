@@ -248,9 +248,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if(b2bl_db_mode)
+		init_db_url(db_url, 1);
+
 	if(b2bl_db_mode && db_url.s)
 	{
-		db_url.len = strlen(db_url.s);
 		b2bl_dbtable.len = strlen(b2bl_dbtable.s);
 		/* binding to database module  */
 		if (db_bind_mod(&db_url, &b2bl_dbf))
