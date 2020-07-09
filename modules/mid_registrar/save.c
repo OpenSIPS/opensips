@@ -565,7 +565,7 @@ int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri)
 
 	mri->cflags = getb0flags(req);
 
-	if (req && parse_allow(req) != -1)
+	if (parse_allow(req) != -1)
 		allowed = get_allow_methods(req);
 	else
 		allowed = ALL_METHODS;
