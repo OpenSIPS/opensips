@@ -1046,12 +1046,11 @@ static inline int handle_new_connect(struct socket_info* si)
 {
 	union sockaddr_union su;
 	struct tcp_connection* tcpconn;
-	socklen_t su_len;
+	socklen_t su_len = sizeof(su);
 	int new_sock;
 	int id;
 
-	/* got a connection on r */
-	su_len=sizeof(su);
+	/* coverity[overrun-buffer-arg: FALSE] - union has 28 bytes, CID #200070 */
 	new_sock=accept(si->socket, &(su.s), &su_len);
 	if (new_sock==-1){
 		if ((errno==EAGAIN)||(errno==EWOULDBLOCK))
