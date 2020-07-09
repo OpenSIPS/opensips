@@ -2761,8 +2761,9 @@ static int rtpe_fetch_stats(struct sip_msg *msg, bencode_buffer_t *retbuf, benco
 			LM_ERR("not enough pkg for stats!\n");
 			/* cannot store stats */
 			ctx = NULL;
+		} else {
+			memset(ctx->stats, 0, sizeof *ctx->stats);
 		}
-		memset(ctx->stats, 0, sizeof *ctx->stats);
 	}
 
 	dict = rtpe_function_call_ok(&bencbuf, msg, OP_QUERY, NULL, NULL, NULL);
@@ -3519,6 +3520,7 @@ static void rtpengine_notify_process(int rank)
 
 		p = shm_malloc(ret + 1);
 		if (!p) {
+			/* coverity[string_null] - false positive CID #211356 */
 			LM_ERR("could not allocate %d for buffer %.*s\n", ret, ret, buffer);
 			continue;
 		}
