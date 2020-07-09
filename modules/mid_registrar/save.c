@@ -1260,7 +1260,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req,
 	urecord_t *r;
 	contact_t *_c = NULL;
 	int_str_t value;
-	int e_out, vct = 0, was_valid;
+	int e_out = 0, vct = 0, was_valid;
 	int e_max = 0;
 	int tcp_check = 0;
 	struct sip_uri uri;
