@@ -65,15 +65,13 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *aor_uri,
 	str sip_instance = STR_NULL, call_id = STR_NULL;
 	regex_t ua_re;
 
-	if (!ZSTRP(sflags)) {
-		if (parse_lookup_flags(sflags, &flags, &ua_re, &regexp_flags,
-		                       &max_latency) != 0) {
-			LM_ERR("failed to parse flags: %.*s\n", sflags->len, sflags->s);
-			return LOOKUP_ERROR;
-		}
-
-		single_branch = flags & REG_LOOKUP_NOBRANCH_FLAG;
+	if (parse_lookup_flags(sflags, &flags, &ua_re, &regexp_flags,
+	                       &max_latency) != 0) {
+		LM_ERR("failed to parse flags: %.*s\n", sflags->len, sflags->s);
+		return LOOKUP_ERROR;
 	}
+
+	single_branch = flags & REG_LOOKUP_NOBRANCH_FLAG;
 
 	if (flags & REG_BRANCH_AOR_LOOKUP_FLAG) {
 		/* extract all the branches for further usage */
@@ -346,6 +344,9 @@ int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
 	int i, re_len = 0;
 
 	*flags = 0;
+	if (ZSTRP(input))
+		return 0;
+
 	for (i = 0; i < input->len; i++) {
 		switch (input->s[i]) {
 		case 'm': *flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
