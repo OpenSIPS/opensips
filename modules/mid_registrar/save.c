@@ -302,7 +302,10 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	adv_port = _get_adv_port(send_sock, req);
 
 	c = get_first_contact(req);
-	list_for_each(_, &mri->ct_mappings) {
+	list_for_each (_, &mri->ct_mappings) {
+		if (!c)
+			break;
+
 		ctmap = list_entry(_, struct ct_mapping, list);
 
 		/* if uri string points outside the original msg buffer, it means
