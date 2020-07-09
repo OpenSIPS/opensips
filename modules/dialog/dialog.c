@@ -901,7 +901,7 @@ static int mod_init(void)
 	}
 
 	/* initialized the hash table */
-	for( n=0 ; n<(8*sizeof(n)) ; n++) {
+	for( n=0 ; n<(8*sizeof(n)-1) ; n++) {
 		if (dlg_hash_size==(1<<n))
 			break;
 		if (dlg_hash_size<(1<<n)) {
@@ -1649,7 +1649,7 @@ int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null( msg, param, res);
 
 	did = dlg_get_did(dlg);
-	if (!dlg)
+	if (!did)
 		return pv_get_null( msg, param, res);
 	res->rs = *did;
 	res->flags = PV_VAL_STR;

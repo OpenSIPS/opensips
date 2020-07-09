@@ -1790,7 +1790,7 @@ static int sync_dlg_db_mem(void)
 			/*restore the dialog info*/
 			GET_STR_VALUE(callid, values, 1, 1, 0);
 			GET_STR_VALUE(from_tag, values, 3, 1, 0);
-			GET_STR_VALUE(to_tag, values, 5, 1, 1);
+			GET_STR_VALUE(to_tag, values, 5, 1, 0);
 
 			/* TODO - check about hash resize ? maybe hash was lowered & we overflow the hash */
 			known_dlg = 0;

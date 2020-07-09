@@ -404,6 +404,8 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	/* is the totag already known ?? */
 	for(leg=DLG_FIRST_CALLEE_LEG ; leg<dlg->legs_no[DLG_LEGS_USED] ; leg++ ) {
 		if ( dlg->legs[leg].tag.len==tag.len &&
+		/* coverity[var_deref_model] - false positivie - when tag.s = NULL,
+		 * len is 0, therefore returns earlier - CID #40640 */
 		strncmp(dlg->legs[leg].tag.s,tag.s,tag.len)==0 ) {
 			/* we have a match -> branch already known... */
 			LM_DBG("branch with tag <%.*s> already exists\n",tag.len,tag.s);
@@ -1971,6 +1973,8 @@ after_unlock5:
 				if (req->first_line.u.request.method_value == METHOD_INVITE) {
 					/* we did not generate any pings yet - still we need to store the INV cseq,
 					in case there's a race between the ACK for the INVITE and sending of new pings */
+					/* coverity[check_return] - we populated the cseq - it is
+					 * fine CID #150473 */
 					str2int(&((struct cseq_body *)req->cseq->parsed)->number,
 					&dlg->legs[dst_leg].last_inv_gen_cseq);
 				}
@@ -2166,7 +2170,16 @@ void dlg_ontimeout(struct dlg_tl *tl)
 			dlg->flags |= DLG_FLAG_SELF_EXTENDED_TIMEOUT;
 			tl->next = tl->prev = NULL;
 			/* inherit the ref here */
-			insert_dlg_timer( tl, 60*10);
+			if (insert_dlg_timer( tl, 60*10) != 0) {
+				LM_CRIT("Unable to insert dlg %p [%u:%u] in timer "
+						"with clid '%.*s' and tags '%.*s' '%.*s'\n",
+						dlg, dlg->h_entry, dlg->h_id,
+						dlg->callid.len, dlg->callid.s,
+						dlg->legs[DLG_CALLER_LEG].tag.len,
+						dlg->legs[DLG_CALLER_LEG].tag.s,
+						dlg->legs[callee_idx(dlg)].tag.len,
+						ZSW(dlg->legs[callee_idx(dlg)].tag.s));
+			}
 			return;
 		}
 	}
