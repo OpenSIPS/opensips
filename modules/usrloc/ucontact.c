@@ -939,7 +939,7 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		run_ul_callbacks( UL_CONTACT_UPDATE, _c);
 	}
 
-	if (_r && have_mem_storage())
+	if (have_mem_storage())
 		update_contact_pos( _r, _c);
 
 	st_update_ucontact(_c);
