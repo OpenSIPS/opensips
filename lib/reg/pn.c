@@ -870,7 +870,8 @@ int pn_add_reply_purr(const ucontact_t *ct)
 		if (str_match(&prov->name, &puri.pn_provider_val))
 			goto have_provider;
 
-	LM_DBG("skipping unknown provider '%.*s'\n", prov->name.len, prov->name.s);
+	LM_DBG("skipping unknown provider '%.*s'\n",
+	       puri.pn_provider_val.len, puri.pn_provider_val.s);
 	return 0;
 
 have_provider:
