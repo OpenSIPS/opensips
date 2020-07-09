@@ -774,6 +774,7 @@ out_err_pipes:
 	close(parent_r[0]);
 out_err:
 	fclose(flat_cfg);
+	free(cfgbuf);
 	return -1;
 }
 
