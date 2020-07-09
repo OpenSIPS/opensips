@@ -1124,12 +1124,14 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 #define __stop_expire_timer(begin,threshold,func_info, \
                            extra_s,extra_len,tcp,_slow_stat) \
 	do { \
-		int __usdiff__ = get_time_diff(&(begin)); \
-		if ((threshold) && __usdiff__ > (threshold)) { \
-			log_expiry(__usdiff__,(threshold),(func_info), \
-			           (extra_s),(extra_len),tcp); \
-			if (_slow_stat) \
-				inc_stat(_slow_stat); \
+		if (threshold) { \
+			int __usdiff__ = get_time_diff(&(begin)); \
+			if (__usdiff__ > (threshold)) { \
+				log_expiry(__usdiff__,(threshold),(func_info), \
+				           (extra_s),(extra_len),tcp); \
+				if (_slow_stat) \
+					inc_stat(_slow_stat); \
+			} \
 		} \
 	} while(0)
 
