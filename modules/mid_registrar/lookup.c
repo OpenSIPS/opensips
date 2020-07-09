@@ -62,15 +62,13 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *uri)
 	if (reg_mode == MID_REG_THROTTLE_AOR)
 		return lookup(req, d, sflags, uri, 0, 1);
 
-	if (!ZSTRP(sflags)) {
-		if (parse_lookup_flags(sflags, &flags, &ua_re, &regexp_flags,
-		                       &max_latency) != 0) {
-			LM_ERR("failed to parse flags: %.*s\n", sflags->len, sflags->s);
-			return LOOKUP_ERROR;
-		}
-
-		ruri_is_pushed = flags & REG_LOOKUP_NO_RURI_FLAG;
+	if (parse_lookup_flags(sflags, &flags, &ua_re, &regexp_flags,
+	                       &max_latency) != 0) {
+		LM_ERR("failed to parse flags: %.*s\n", sflags->len, sflags->s);
+		return LOOKUP_ERROR;
 	}
+
+	ruri_is_pushed = flags & REG_LOOKUP_NO_RURI_FLAG;
 
 	if (!uri)
 		uri = GET_RURI(req);
