@@ -176,6 +176,7 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 	}
 
 	if (msg->rcv.bind_address && msg->rcv.bind_address->port_no)
+		/* coverity[check_return] - CID #211391 */
 		init_su( &su, &msg->rcv.bind_address->address,
 			msg->rcv.bind_address->port_no);
 	else
