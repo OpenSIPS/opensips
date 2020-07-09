@@ -339,13 +339,13 @@ match_params:
 next_param:;
 	}
 
+	if (is_handled_upstream)
+		return PN_MATCH_PN_PARAMS;
+
 	if (is_cap_query) {
 		pvd->append_fcaps_query = 1;
 		return PN_LIST_ONE_PNS;
 	}
-
-	if (is_handled_upstream)
-		return PN_MATCH_PN_PARAMS;
 
 	pvd->append_fcaps = 1;
 	return PN_ON;
