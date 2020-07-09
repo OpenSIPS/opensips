@@ -517,8 +517,8 @@ unref_rpl:
 
 static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_params *params)
 {
-	str *param;
-	struct dlg_cell *old_dlg;
+	str *param = NULL;
+	struct dlg_cell *old_dlg = NULL;
 
 	if (!params->msg)
 		return;
