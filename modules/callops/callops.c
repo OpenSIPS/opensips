@@ -330,7 +330,7 @@ static void call_dlg_rm_uri_param(struct sip_msg *msg, str *param)
 	memcpy(buf.s + buf.len, del.s + del.len, uri->len - buf.len - del.len);
 	buf.len += uri->len - buf.len - del.len;
 
-	/* coverity[check_return] - done on purpose CID #211369 */
+	/* coverity[check_return: FALSE] - done on purpose CID #211369 */
 	set_ruri(msg, &buf);
 }
 
