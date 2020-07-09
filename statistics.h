@@ -208,7 +208,7 @@ extern gen_lock_t *stat_lock;
 		#define update_stat( _var, _n) \
 			do { \
 				if ( !((_var)->flags&STAT_IS_FUNC) ) {\
-					if (_n>=0) \
+					if ((long)(_n) >= 0L) \
 						atomic_add( _n, (_var)->u.val);\
 					else \
 						atomic_sub( -(_n), (_var)->u.val);\
