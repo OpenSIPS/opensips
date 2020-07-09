@@ -61,7 +61,7 @@ static int notification_handler(str *command)
 {
 	char cmd, *p;
 	str param, token;
-	unsigned int h_entry, h_id, is_callid;
+	unsigned int h_entry, h_id, is_callid = 0;
 	struct rtpp_dtmf_event *dtmf;
 	str terminate_reason = str_init("RTPProxy Timeout");
 
@@ -126,7 +126,8 @@ static int notification_handler(str *command)
 				if (p) {
 					token.s = param.s;
 					token.len = p - param.s;
-					str2int(&token, &dtmf->volume);
+					if (str2int(&token, &dtmf->volume) < 0)
+						dtmf->volume = 0;
 
 					param.s = p + 1;
 					param.len -= token.len + 1;
@@ -138,10 +139,11 @@ static int notification_handler(str *command)
 							token.len = param.len - (token.s - param.s);
 
 							param.len -= token.len + 1;
-							if (param.len >= 0)
-								str2int(&token, &dtmf->stream);
+							if (param.len >= 0 && str2int(&token, &dtmf->stream) < 0)
+								dtmf->stream = 0;
 						}
-						str2int(&param, &dtmf->duration);
+						if (str2int(&param, &dtmf->duration) < 0)
+							dtmf->duration = 0;
 					}
 				}
 			}
@@ -548,11 +550,17 @@ int compare_rtpp(struct rtpp_node *r_node, struct rtpp_notify_node *n_node)
 	char buffer[BUF_LEN];
 	char *p;
 	struct hostent *rtpp_server;
+	int len;
 
 	if (r_node->rn_umode != n_node->mode)
 		return 0;
+	len = strlen(r_node->rn_address) + 1 /* null terminator */;
+	if (len > BUF_LEN) {
+		LM_ERR("buffer too large %d vs %d\n", len, BUF_LEN);
+		return 0;
+	}
 
-	memcpy(buffer,r_node->rn_address,strlen(r_node->rn_address));
+	memcpy(buffer,r_node->rn_address,len);
 	p = strrchr(buffer, ':');
 	if (!p) {
 		LM_ERR("invalid address %s\n", r_node->rn_address);
@@ -650,8 +658,8 @@ void update_rtpproxy_list(void)
 				for (rl=rtpp_notify_h->rtpp_list; rl; rl=rl->next)
 					if (rl->index == nfds)
 						break;
-				if (!rtpp_lst) {
-					LM_ERR("BUG - rtpproxy index mismatch\n");
+				if (!rl) {
+					LM_BUG("rtpproxy index mismatch\n");
 					return;
 				}
 				rl->index = rtpp_lst->index;
