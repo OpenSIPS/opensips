@@ -403,9 +403,9 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 
 	/* is the totag already known ?? */
 	for(leg=DLG_FIRST_CALLEE_LEG ; leg<dlg->legs_no[DLG_LEGS_USED] ; leg++ ) {
-		if ( dlg->legs[leg].tag.len==tag.len &&
 		/* coverity[var_deref_model] - false positivie - when tag.s = NULL,
 		 * len is 0, therefore returns earlier - CID #40640 */
+		if ( dlg->legs[leg].tag.len==tag.len &&
 		strncmp(dlg->legs[leg].tag.s,tag.s,tag.len)==0 ) {
 			/* we have a match -> branch already known... */
 			LM_DBG("branch with tag <%.*s> already exists\n",tag.len,tag.s);
@@ -1973,7 +1973,7 @@ after_unlock5:
 				if (req->first_line.u.request.method_value == METHOD_INVITE) {
 					/* we did not generate any pings yet - still we need to store the INV cseq,
 					in case there's a race between the ACK for the INVITE and sending of new pings */
-					/* coverity[check_return] - we populated the cseq - it is
+					/* coverity[check_return: FALSE] - we populated the cseq - it is
 					 * fine CID #150473 */
 					str2int(&((struct cseq_body *)req->cseq->parsed)->number,
 					&dlg->legs[dst_leg].last_inv_gen_cseq);
