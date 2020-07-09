@@ -854,7 +854,7 @@ int pn_add_reply_purr(const ucontact_t *ct)
 	struct sip_uri puri;
 	struct pn_provider *prov;
 
-	if (!pn_enable_purr)
+	if (!pn_enable_purr || !ct)
 		return 0;
 
 	if (parse_uri(ct->c.s, ct->c.len, &puri) != 0) {
