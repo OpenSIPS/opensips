@@ -21,6 +21,7 @@ ifeq ($(HAS_MYSQLCFG),YES)
 	# use autodetection
 	DEFS += $(shell mysql_config --include)
 	LIBS = $(shell mysql_config --libs)
+	LIBS += -dl -Bsymbolic
 
 else
 
@@ -36,6 +37,7 @@ else
 		-L$(LOCALBASE)/mysql/lib \
 		-L$(SYSBASE)/lib64/mysql \
 		-lm -lmysqlclient -lz
+	LIBS += -dl -Bsymbolic
 
 endif
 
