@@ -450,9 +450,7 @@ error:
 	if (pl->qr_rules_start)
 		shm_free(pl->qr_rules_start);
 
-	if (pl)
-		shm_free(pl);
-
+	shm_free(pl);
 	qr_rld_list = NULL;
 }
 
