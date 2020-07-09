@@ -50,10 +50,15 @@ str qr_profiles_table = str_init("qr_profiles");
 static inline void add_profile(qr_profile_t *prof,
 		const int *int_vals, char * const *str_vals, const double *double_vals)
 {
-	int i;
+	int i, len;
 
 	prof->id = int_vals[INT_VALS_ID];
-	strncpy(prof->name, str_vals[STR_VALS_PROFILE_NAME], QR_NAME_COL_SZ + 1);
+
+	len = strlen(str_vals[STR_VALS_PROFILE_NAME]);
+	if (len > QR_NAME_COL_SZ)
+		len = QR_NAME_COL_SZ;
+	memcpy(prof->name, str_vals[STR_VALS_PROFILE_NAME], len);
+	prof->name[len] = '\0';
 
 	prof->asr1 = double_vals[DBL_VALS_WARN_ASR];
 	prof->ccr1 = double_vals[DBL_VALS_WARN_CCR];
