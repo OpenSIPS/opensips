@@ -77,6 +77,7 @@ int evi_param_set(evi_param_p element, void *param, int flags);
 
 /* sets an integer value to a parameter */
 #define evi_param_set_int(p_el, p_int) \
+		/* coverity[overrun-buffer-val] */ \
 		evi_param_set(p_el, p_int, EVI_INT_VAL)
 
 /* sets a string value to a parameter */
