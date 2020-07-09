@@ -75,6 +75,7 @@ static int call_event_init(event_id_t *event, str event_name, evi_params_p param
 		if (!evi_param_create(params, &tmp)) {
 			LM_ERR("could not initialize %s param for event %.*s\n", p,
 					event_name.len, event_name.s);
+			va_end(vl);
 			return -1;
 		}
 	}
@@ -333,6 +334,7 @@ static void call_dlg_rm_uri_param(struct sip_msg *msg, str *param)
 	memcpy(buf.s + buf.len, del.s + del.len, uri->len - buf.len - del.len);
 	buf.len += uri->len - buf.len - del.len;
 
+	/* coverity[check_return] - done on purpose CID #211369 */
 	set_ruri(msg, &buf);
 }
 
@@ -535,20 +537,24 @@ static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 		case CALL_MATCH_PARAM:
 		case CALL_MATCH_CALLID:
 			param = call_dlg_get_uri_param(params->msg);
-			if (!param) {
-				LM_DBG("parameter not found - call not handled\n");
-				return;
-			}
+			if (!param)
+				break;
 			if (call_match_mode == CALL_MATCH_CALLID)
 				old_dlg = call_dlg_api.get_dlg_by_callid(param, 1);
 			else
 				old_dlg = call_dlg_api.get_dlg_by_did(param, 1);
-			if (!old_dlg) {
-				LM_DBG("no dialog available with identifier %.*s (mode=%d)\n",
-						param->len, param->s, call_match_mode);
-				return;
-			}
 			break;
+	}
+
+	if (!param) {
+		LM_DBG("parameter not found - call not handled\n");
+		return;
+	}
+
+	if (!old_dlg) {
+		LM_DBG("no dialog available with identifier %.*s (mode=%d)\n",
+				param->len, param->s, call_match_mode);
+		return;
 	}
 
 	call_dlg_rm_uri_param(params->msg, param);
@@ -912,7 +918,6 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 
 	switch (try_get_mi_string_param(params, "transfer_leg", &legB.s, &legB.len)) {
 		case -2:
-		return init_mi_param_error();
 			return init_mi_param_error();
 		case -1:
 			/* we don't have a transfer_leg - we must have from and to tags */
