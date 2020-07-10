@@ -241,7 +241,7 @@ err:
 }
 
 static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint32_t command_id,
-		uint32_t command_status, uint32_t seq_no)
+		uint32_t command_status, uint32_t seq_no, char *system_id)
 {
 	if (!preq) {
 		LM_ERR("NULL params");
@@ -279,7 +279,7 @@ static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint
 
 	/* copy body fields */
 	smpp_bind_transceiver_resp_t transceiver_resp;
-	copy_var_str(body->system_id, transceiver_resp.system_id, MAX_SYSTEM_ID_LEN);
+	copy_var_str(transceiver_resp.system_id, system_id, MAX_SYSTEM_ID_LEN);
 
 	uint32_t body_len = get_payload_from_bind_transceiver_resp_body(req->payload.s + HEADER_SZ, &transceiver_resp);
 	header->command_length = HEADER_SZ + body_len;
@@ -1079,7 +1079,7 @@ void send_bind_resp(smpp_header_t *header, smpp_bind_transceiver_t *body, uint32
 	smpp_bind_transceiver_resp_req_t *req;
 	uint32_t seq_no = header->sequence_number;
 	uint32_t command_id = header->command_id + 0x80000000; // transform command to resp command
-	if (build_bind_resp_request(&req, command_id, command_status, seq_no)) {
+	if (build_bind_resp_request(&req, command_id, command_status, seq_no, body->system_id)) {
 		LM_ERR("error creating request\n");
 		return;
 	}
