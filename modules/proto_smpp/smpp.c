@@ -930,10 +930,12 @@ void enquire_link(unsigned int ticks, void *params)
 }
 
 
-static void smpp_parse_header(smpp_header_t *header, char *buffer)
+static int smpp_parse_header(smpp_header_t *header, char *buffer)
 {
-	if (!header || !buffer)
+	if (!header || !buffer) {
 		LM_ERR("NULL params");
+		return -1;
+	}
 
 	uint32_t *p = (uint32_t*)buffer;
 
@@ -941,6 +943,7 @@ static void smpp_parse_header(smpp_header_t *header, char *buffer)
 	header->command_id = ntohl(*p++);
 	header->command_status = ntohl(*p++);
 	header->sequence_number = ntohl(*p++);
+	return 0;
 }
 
 static void parse_submit_or_deliver_body(smpp_submit_sm_t *body, smpp_header_t *header, char *buffer)
@@ -1299,7 +1302,10 @@ static void handle_enquire_link_resp_cmd(smpp_header_t *header,
 void handle_smpp_msg(char *buffer, smpp_session_t *session, struct receive_info *rcv)
 {
 	smpp_header_t header;
-	smpp_parse_header(&header, buffer);
+	if (smpp_parse_header(&header, buffer) < 0) {
+		LM_ERR("could not parse SMPP header!\n");
+		return;
+	}
 	buffer += HEADER_SZ;
 
 	LM_DBG("Received SMPP command %08x\n", header.command_id);
