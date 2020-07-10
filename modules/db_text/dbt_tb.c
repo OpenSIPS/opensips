@@ -455,7 +455,7 @@ int dbt_table_check_row(dbt_table_p _dtp, dbt_row_p _drp)
 	for(i=0; i<_dtp->nrcols; i++)
 	{
 		if(!_drp->fields[i].nul
-				&& dbt_is_neq_type(_dtp->colv[i]->type, _drp->fields[i].type))
+				&& db_is_neq_type(_dtp->colv[i]->type, _drp->fields[i].type))
 		{
 			LM_ERR("incompatible types - field %d [%d/%d]\n",i,
 					_dtp->colv[i]->type, _drp->fields[i].type);
