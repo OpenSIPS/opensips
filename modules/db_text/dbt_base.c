@@ -34,6 +34,7 @@
 #include "dbtext.h"
 #include "dbt_res.h"
 #include "dbt_api.h"
+#include "../../db/db_ut.h"
 
 #ifndef CFG_DIR
 #define CFG_DIR "/tmp"
@@ -328,7 +329,7 @@ int dbt_insert(db_con_t* _h, db_key_t* _k, db_val_t* _v, int _n)
 	for(i=0; i<_n; i++)
 	{
 		j = lkey[i];
-		if(dbt_is_neq_type(_tbc->colv[j]->type, _v[i].type))
+		if(db_is_neq_type(_tbc->colv[j]->type, _v[i].type))
 		{
 			LM_ERR("incompatible types v[%d] - c[%d]!\n", i, j);
 			goto clean;
@@ -498,7 +499,7 @@ int dbt_update(db_con_t* _h, db_key_t* _k, db_op_t* _o, db_val_t* _v,
 		{ // update fields
 			for(i=0; i<_un; i++)
 			{
-				if(dbt_is_neq_type(_tbc->colv[lres[i]]->type, _uv[i].type))
+				if(db_is_neq_type(_tbc->colv[lres[i]]->type, _uv[i].type))
 				{
 					LM_ERR("incompatible types!\n");
 					goto error;

@@ -225,4 +225,9 @@ int db_print_set(const db_con_t* _c, char* _b, const int _l,
 	const db_key_t* _k, const db_val_t* _v, const int _n, int (*val2str)
 	(const db_con_t*, const db_val_t*, char*, int*));
 
+/**
+ * checkes if two types are not equivalent
+ */
+int db_is_neq_type(db_type_t _t0, db_type_t _t1);
+
 #endif
