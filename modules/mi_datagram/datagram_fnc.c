@@ -186,7 +186,7 @@ err_rx:
 
 int mi_init_datagram_buffer(void){
 
-	mi_buf = pkg_malloc(DATAGRAM_SOCK_BUF_SIZE);
+	mi_buf = pkg_malloc(DATAGRAM_SOCK_BUF_SIZE + 1);
 	if ( mi_buf==NULL) {
 		LM_ERR("no more pkg memory\n");
 		return -1;
@@ -509,15 +509,14 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 	f = 0;
 
 	while(1){/*read the datagram*/
-		memset(mi_buf, 0, DATAGRAM_SOCK_BUF_SIZE);
 		reply_addr_len = sizeof(reply_addr);
 
 		/* get the client's address */
 		ret = recvfrom(rx_sock, mi_buf, DATAGRAM_SOCK_BUF_SIZE, 0,
 					(struct sockaddr*)&reply_addr, &reply_addr_len);
 
-		if (ret == -1) {
-			LM_ERR("recvfrom: (%d) %s\n", errno, strerror(errno));
+		if (ret < 0) {
+			LM_ERR("recvfrom %d: (%d) %s\n", ret, errno, strerror(errno));
 			if ((errno == EINTR) ||
 				(errno == EAGAIN) ||
 				(errno == EWOULDBLOCK) ||
@@ -532,7 +531,8 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		if(ret == 0)
 			continue;
 
-		LM_DBG("received %.*s\n", ret, mi_buf);
+		mi_buf[ret] = '\0';
+		LM_DBG("received %d |%.*s|\n", ret, ret, mi_buf);
 
 		if(ret> DATAGRAM_SOCK_BUF_SIZE){
 				LM_ERR("buffer overflow\n");

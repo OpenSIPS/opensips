@@ -163,7 +163,7 @@ static int mi_mod_init(void)
 	LM_DBG("testing socket existence...\n");
 
 	if( mi_socket==NULL || *mi_socket == 0) {
-		LM_ERR("no DATAGRAM_ socket configured\n");
+		LM_ERR("missing modparam: 'socket_name'\n");
 		return -1;
 	}
 
