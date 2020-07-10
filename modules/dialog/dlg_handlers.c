@@ -1973,10 +1973,11 @@ after_unlock5:
 				if (req->first_line.u.request.method_value == METHOD_INVITE) {
 					/* we did not generate any pings yet - still we need to store the INV cseq,
 					in case there's a race between the ACK for the INVITE and sending of new pings */
-					/* coverity[check_return: FALSE]
-					 * we are the ones that populated the cseq, it is 100% OK - CID #150473 */
-					str2int(&((struct cseq_body *)req->cseq->parsed)->number,
-					&dlg->legs[dst_leg].last_inv_gen_cseq);
+					if (str2int(&((struct cseq_body *)req->cseq->parsed)->number,
+							&dlg->legs[dst_leg].last_inv_gen_cseq) < 0)
+						LM_ERR("invalid INVITE cseq [%.*s]\n",
+								((struct cseq_body *)req->cseq->parsed)->number.len,
+								((struct cseq_body *)req->cseq->parsed)->number.s);
 				}
 
 				dlg_unlock( d_table, d_entry );
