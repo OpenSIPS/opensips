@@ -901,10 +901,14 @@ static int mod_init(void)
 	}
 
 	/* initialized the hash table */
-	for( n=0 ; n<(8*sizeof(n)-1) ; n++) {
+	for( n=0 ; n<(8*sizeof(n)) ; n++) {
 		if (dlg_hash_size==(1<<n))
 			break;
 		if (dlg_hash_size<(1<<n)) {
+			/* make sure n does not go underflow - this is only possible if
+			 * hash_size is declared to 0, and we "fix" it to 1 */
+			if (n == 0)
+				n = 1;
 			LM_WARN("hash_size is not a power "
 				"of 2 as it should be -> rounding from %d to %d\n",
 				dlg_hash_size, 1<<(n-1));
