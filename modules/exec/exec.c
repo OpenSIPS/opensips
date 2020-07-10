@@ -578,8 +578,8 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 
 	do {
 		n=read( fd, buf+len, MAX_LINE_SIZE-len);
-		LM_DBG(" read %d [%.*s] \n",n, n<0?0:n,buf+len);
 		if (n<0) {
+			LM_DBG("read error: %d\n", n);
 			if (errno==EINTR) continue;
 			if (errno==EAGAIN || errno==EWOULDBLOCK) {
 				/* nothing more to read */
@@ -601,6 +601,10 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 			/* terminate everything */
 			goto error;
 		}
+
+		buf[len+n] = '\0';
+		LM_DBG("read %d [%.*s]\n", n, n, buf+len);
+
 		/* EOF ? */
 		if (n==0) {
 			if (len) {
@@ -616,7 +620,7 @@ int resume_async_exec(int fd, struct sip_msg *msg, void *param)
 			break;
 		}
 		/* successful reading  ( n>0 ) */
-		LM_DBG(" having %d [%.*s] \n", len+n, len+n, buf);
+		LM_DBG("buf is now %d [%.*s] \n", len+n, len+n, buf);
 		if (n+len==MAX_LINE_SIZE) {
 			/* we have full buffer, pack it as a line */
 			buf[n+len] = '\n';
