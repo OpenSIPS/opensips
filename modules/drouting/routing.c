@@ -491,7 +491,7 @@ add_dst(
 			goto err_exit;
 		}
 		memcpy(gwabuf, "sip:", 4);
-		memcpy(gwabuf+4, ip, l_ip);
+		strcpy(gwabuf+4, ip);
 		gwas.s = gwabuf;
 		gwas.len = 4+l_ip;
 	} else {
