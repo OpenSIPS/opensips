@@ -2084,7 +2084,7 @@ static int sync_dlg_db_mem(void)
 
 					/* skip flags - keep what we have - anyway can't tell which is new */
 
-					dlg->locked_by = process_no;
+					known_dlg->locked_by = process_no;
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
@@ -2092,7 +2092,7 @@ static int sync_dlg_db_mem(void)
 						read_dialog_profiles( VAL_STR(values+18).s,
 							strlen(VAL_STR(values+18).s), known_dlg, 1, 0);
 
-					dlg->locked_by = 0;
+					known_dlg->locked_by = 0;
 					dlg_unlock( d_table, d_entry);
 				} else {
 					/* DB has newer state, just update fields from DB */
@@ -2158,9 +2158,9 @@ static int sync_dlg_db_mem(void)
 						known_dlg->flags |= DLG_FLAG_NEW;
 
 					/* update the routes too */
-					GET_ROUTE_VALUE( dlg->rt_on_answer, values, 26);
-					GET_ROUTE_VALUE( dlg->rt_on_timeout, values, 27);
-					GET_ROUTE_VALUE( dlg->rt_on_hangup, values, 28);
+					GET_ROUTE_VALUE( known_dlg->rt_on_answer, values, 26);
+					GET_ROUTE_VALUE( known_dlg->rt_on_timeout, values, 27);
+					GET_ROUTE_VALUE( known_dlg->rt_on_hangup, values, 28);
 
 					/* update script variables
 					 * if already found, delete the old one
@@ -2174,7 +2174,7 @@ static int sync_dlg_db_mem(void)
 						}
 					}
 
-					dlg->locked_by = process_no;
+					known_dlg->locked_by = process_no;
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
@@ -2182,7 +2182,7 @@ static int sync_dlg_db_mem(void)
 						read_dialog_profiles( VAL_STR(values+18).s,
 							strlen(VAL_STR(values+18).s), known_dlg, 1, 0);
 
-					dlg->locked_by = 0;
+					known_dlg->locked_by = 0;
 					dlg_unlock( d_table, d_entry);
 				}
 			}
