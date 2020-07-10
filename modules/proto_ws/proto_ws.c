@@ -359,6 +359,10 @@ static int proto_ws_send(struct socket_info* send_sock,
 		if (tcp_no_new_conn) {
 			return -1;
 		}
+		if (!to) {
+			LM_ERR("Unknown destination - cannot open new ws connection\n");
+			return -1;
+		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
 		if ((c=ws_connect(send_sock, to, &fd))==0) {
