@@ -2696,7 +2696,7 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 	struct trace_filter *filters = NULL;
 	tlist_dyn_elem_p elem = NULL;
 	hid_list_t* hep_id = NULL;
-	int traced_scope, traced_type;
+	int traced_scope = 0, traced_type = 0;
 
 	if (get_mi_string_param(params, "id", &name.s, &name.len) < 0)
 		return init_mi_param_error();
