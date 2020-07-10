@@ -2664,6 +2664,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		LM_DBG("Got unmatching dlg [%p] dlg->uac_tran=[%p] for "
 			"transaction [%p]\n", dlg, dlg->uac_tran, t);
 		if(dlg_based_search)
+			/* coverity[swapped_arguments] */
 			dlg = b2b_search_htable_next_dlg( previous_dlg, htable, hash_index,
 				local_index, &from_tag, &to_tag, &callid);
 		else
@@ -3230,7 +3231,8 @@ b2b_route:
 			return;
 		}
 
-		b2be_db_update(dlg, etype);
+		if (b2be_db_update(dlg, etype) < 0)
+			LM_ERR("Failed to update in database\n");
 		lock_release(&htable[hash_index].lock);
 	} else if (b2b_ev != -1)
 		lock_release(&htable[hash_index].lock);

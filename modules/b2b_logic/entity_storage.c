@@ -200,6 +200,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 	switch (event_type) {
 	case B2B_EVENT_CREATE:
 		tuple_repl_new = 1;
+		/* fall through */
 	case B2B_EVENT_UPDATE:
 		if (!tuple) {
 			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
@@ -645,6 +646,7 @@ void entity_event_received(enum b2b_entity_type etype, str *entity_key,
 		if (!tuple) {
 			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
 			lock_release(&b2bl_htable[hash_index].lock);
+			return;
 		}
 
 		bin_pop_int(storage, &tuple_storage_type);
@@ -657,6 +659,7 @@ void entity_event_received(enum b2b_entity_type etype, str *entity_key,
 			break;
 		case REPL_TUPLE_NEW:
 			bin_skip_str(storage, 8);
+			/* fall through */
 		case REPL_TUPLE_UPDATE:
 			bin_skip_int(storage, 3);
 			if (unpack_context_vals(tuple, storage) < 0)

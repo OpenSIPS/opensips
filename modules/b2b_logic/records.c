@@ -394,8 +394,10 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 			{
 				case 0:
 					tuple->servers[0] = tuple->servers[1];
+					/* fall through */
 				case 1:
 					tuple->servers[1] = tuple->servers[2];
+					/* fall through */
 				case 2:
 					tuple->servers[2] = NULL;
 					for ( i=0 ; i<index ; i++ ) {
@@ -417,8 +419,10 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 			{
 				case 0:
 					tuple->clients[0] = tuple->clients[1];
+					/* fall through */
 				case 1:
 					tuple->clients[1] = tuple->clients[2];
+					/* fall through */
 				case 2:
 					tuple->clients[2] = NULL;
 					for ( i=0 ; i<index ; i++ ) {
@@ -880,7 +884,7 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs,
 	for(i = 0; i< hdrs_no; i++)
 		len += hdrs[i]->len;
 
-	if(init_callid_hdr.len && msg && msg->callid)
+	if(init_callid_hdr.len && msg->callid)
 		len+= init_callid_hdr.len + msg->callid->len;
 
 	if(custom_hdrs && custom_hdrs->s && custom_hdrs->len)
@@ -912,7 +916,7 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs,
 		p += custom_hdrs_len;
 	}
 
-	if(init_callid_hdr.s && msg && msg->callid)
+	if(init_callid_hdr.s && msg->callid)
 	{
 		memcpy(p, init_callid_hdr.s, init_callid_hdr.len);
 		p += init_callid_hdr.len;

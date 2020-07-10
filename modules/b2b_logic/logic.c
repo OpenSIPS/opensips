@@ -4336,7 +4336,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	bridging_entity = tuple->bridge_entities[entity_no];
 	old_entity = tuple->bridge_entities[(entity_no?0:1)];
 
-	if(old_entity->next || old_entity->prev)
+	if(!old_entity || old_entity->next || old_entity->prev)
 	{
 		LM_ERR("Can not disconnect multiple entities\n");
 		goto error;
@@ -4352,60 +4352,57 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 
 	b2bl_print_tuple(tuple, L_DBG);
 
-	if(old_entity)
+	LM_DBG("terminating b2bl_entity [%p]->[%.*s] type [%d]\n",
+				old_entity, old_entity->key.len, old_entity->key.s,
+				old_entity->type);
+	if(old_entity->disconnected)
 	{
-		LM_DBG("terminating b2bl_entity [%p]->[%.*s] type [%d]\n",
-					old_entity, old_entity->key.len, old_entity->key.s,
-					old_entity->type);
-		if(old_entity->disconnected)
-		{
-			memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
-			PREP_RPL_DATA(old_entity);
-			rpl_data.method =METHOD_BYE;
-			rpl_data.code =200;
-			rpl_data.text =&ok;
-			b2b_api.send_reply(&rpl_data);
-		}
-		else
-		{
-			memset(&req_data, 0, sizeof(b2b_req_data_t));
-			PREP_REQ_DATA(old_entity);
-			req_data.method =&method_bye;
-			req_data.no_cb = 1;
-			b2bl_htable[hash_index].locked_by = process_no;
-			b2b_api.send_request(&req_data);
-			b2bl_htable[hash_index].locked_by = -1;
-			old_entity->disconnected = 1;
-		}
-		if (old_entity->peer->peer == old_entity)
-			old_entity->peer->peer = NULL;
-		else
-		{
-			LM_ERR("Unexpected chain: old_entity=[%p] and "
-				"old_entity->peer->peer=[%p]\n",
-				old_entity, old_entity->peer->peer);
-			goto error;
-		}
-		old_entity->peer = NULL;
-
-		/* remove the disconected entity from the tuple */
-		if(0 == b2bl_drop_entity(old_entity, tuple))
-		{
-			LM_ERR("Inconsistent entity [%p] on tuple [%p]\n", old_entity, tuple);
-			b2bl_print_tuple(tuple, L_ERR);
-			goto error;
-		}
-
-		/* destroy the old_entity */
-		b2b_api.entity_delete(old_entity->type, &old_entity->key,
-			old_entity->dlginfo, 1, 1);
-		if(old_entity->dlginfo)
-			shm_free(old_entity->dlginfo);
-		shm_free(old_entity);
-		old_entity = NULL;
-
-		b2bl_print_tuple(tuple, L_DBG);
+		memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
+		PREP_RPL_DATA(old_entity);
+		rpl_data.method =METHOD_BYE;
+		rpl_data.code =200;
+		rpl_data.text =&ok;
+		b2b_api.send_reply(&rpl_data);
 	}
+	else
+	{
+		memset(&req_data, 0, sizeof(b2b_req_data_t));
+		PREP_REQ_DATA(old_entity);
+		req_data.method =&method_bye;
+		req_data.no_cb = 1;
+		b2bl_htable[hash_index].locked_by = process_no;
+		b2b_api.send_request(&req_data);
+		b2bl_htable[hash_index].locked_by = -1;
+		old_entity->disconnected = 1;
+	}
+	if (old_entity->peer->peer == old_entity)
+		old_entity->peer->peer = NULL;
+	else
+	{
+		LM_ERR("Unexpected chain: old_entity=[%p] and "
+			"old_entity->peer->peer=[%p]\n",
+			old_entity, old_entity->peer->peer);
+		goto error;
+	}
+	old_entity->peer = NULL;
+
+	/* remove the disconected entity from the tuple */
+	if(0 == b2bl_drop_entity(old_entity, tuple))
+	{
+		LM_ERR("Inconsistent entity [%p] on tuple [%p]\n", old_entity, tuple);
+		b2bl_print_tuple(tuple, L_ERR);
+		goto error;
+	}
+
+	/* destroy the old_entity */
+	b2b_api.entity_delete(old_entity->type, &old_entity->key,
+		old_entity->dlginfo, 1, 1);
+	if(old_entity->dlginfo)
+		shm_free(old_entity->dlginfo);
+	shm_free(old_entity);
+	old_entity = NULL;
+
+	b2bl_print_tuple(tuple, L_DBG);
 
 	b2b_api.apply_lumps(msg);
 
