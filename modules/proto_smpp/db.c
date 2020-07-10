@@ -169,6 +169,7 @@ int load_smpp_sessions_from_db(struct list_head *head)
 		if (!ip) {
 			LM_ERR("Invalid IP [%.*s] for row %d, %.*s\n",
 					ip_s.len, ip_s.s, i, name_s.len, name_s.s);
+			continue;
 		}
 		if (VAL_TYPE(val + 2) != DB_INT) {
 			LM_ERR("invalid column type %d for port (row %d, %.*s)\n",
