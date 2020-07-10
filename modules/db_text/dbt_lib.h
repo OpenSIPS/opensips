@@ -140,7 +140,6 @@ int dbt_table_update_flags(dbt_table_p, int, int, int);
 int dbt_check_mtime(const str *, const str *, time_t *);
 dbt_table_p dbt_load_file(const str *, const str *);
 int dbt_print_table(dbt_table_p, str *);
-int dbt_is_neq_type(db_type_t _t0, db_type_t _t1);
 
 #endif
 
