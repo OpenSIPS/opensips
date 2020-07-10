@@ -229,6 +229,7 @@ int rmq_reconnect(struct rmq_server *srv)
 		amqp_set_sockfd(srv->conn, socket);
 #endif
 		srv->state = RMQS_INIT;
+		/* fall through */
 	case RMQS_INIT:
 		if (rmq_error("Logging in", amqp_login(
 				srv->conn,
@@ -242,6 +243,7 @@ int rmq_reconnect(struct rmq_server *srv)
 			goto clean_rmq_server;
 		/* all good - return success */
 		srv->state = RMQS_CONN;
+		/* fall through */
 	case RMQS_CONN:
 		/* don't use more than 1 channel */
 		amqp_channel_open(srv->conn, 1);
@@ -249,6 +251,7 @@ int rmq_reconnect(struct rmq_server *srv)
 			goto clean_rmq_server;
 		LM_DBG("[%.*s] successfully connected!\n", srv->cid.len, srv->cid.s);
 		srv->state = RMQS_ON;
+		/* fall through */
 	case RMQS_ON:
 		return 0;
 	default:
