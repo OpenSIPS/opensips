@@ -1325,6 +1325,7 @@ int bdblib_recover(table_p _tp, int _rc)
 	{
 		case DB_LOCK_DEADLOCK:
 		LM_ERR("DB_LOCK_DEADLOCK detected !!\n");
+		/* fall through */
 
 		case DB_RUNRECOVERY:
 		LM_ERR("DB_RUNRECOVERY detected !! \n");

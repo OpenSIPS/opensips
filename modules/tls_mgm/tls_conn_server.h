@@ -469,6 +469,7 @@ static int tls_connect(struct tcp_connection *c, short *poll_events, trace_dest 
 			case SSL_ERROR_SYSCALL:
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
 					strerror(errno), errno);
+				/* fall through */
 			default:
 				LM_ERR("New TLS connection to %s:%d failed\n",
 					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);

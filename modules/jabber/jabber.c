@@ -622,6 +622,7 @@ prepare_job:
 		case XJ_GO_OFFLINE:
 			dst.len = 0;
 			dst.s = 0;
+			/* fall through */
 		case XJ_JOIN_JCONF:
 		case XJ_EXIT_JCONF:
 			jsmsg->msg.len = 0;
