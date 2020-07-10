@@ -367,8 +367,13 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 						if(ccol == dtp->auto_col)
 							max_auto = (max_auto<dtval.val.bigint_val)?
 									dtval.val.bigint_val:max_auto;
+						/* no need to do this as the values are already
+						 * overlapping in the dtval.val union, therefore the
+						 * operation is a no-op - Coverity CID #200004
+						 *
 						if (dtval.type!=DB_BIGINT)
 							dtval.val.int_val = (int)dtval.val.bigint_val;
+						 */
 					break;
 
 					case DB_DOUBLE:
