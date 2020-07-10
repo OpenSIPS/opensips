@@ -55,6 +55,9 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 	struct via_body via;
 	struct via_param branch;
 
+	/* cleanup the structure */
+	memset(&msg, 0, sizeof(msg));
+
 	msg.REQ_METHOD = METHOD_CANCEL;
 
 	msg.via1 = &via;
