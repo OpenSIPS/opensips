@@ -1575,18 +1575,13 @@ static int dr_init(void)
 	drg_domain_col.len = strlen(drg_domain_col.s);
 	drg_grpid_col.len = strlen(drg_grpid_col.s);
 
-	db_part = NULL;
 	for (it_head_config = head_start; it_head_config != NULL;
 			it_head_config = it_head_config->next) {
 
+		db_part = shm_malloc(sizeof(struct head_db));
 		if (!db_part) {
-			db_part = shm_malloc(sizeof(struct head_db));
-			if (!db_part) {
-				LM_ERR("could not allocate db part!\n");
-				goto error_cfg;
-			}
-		} else {
-			cleanup_head_db(db_part);
+			LM_ERR("could not allocate db part!\n");
+			goto error_cfg;
 		}
 		init_head_db(db_part);
 
@@ -1808,17 +1803,9 @@ static int dr_init(void)
 				fix_cache_sockets(cache);
 			}
 		}
-
-		db_part = NULL;
 	}
 	/* all good now - release the config */
 	cleanup_head_config_table();
-
-	/* free last head if left uninitialized */
-	if (db_part) {
-		cleanup_head_db(db_part);
-		shm_free(db_part);
-	}
 
 	if (init_dr_bls(head_db_start)!=0) {
 		LM_ERR("failed to init DR blacklists\n");
