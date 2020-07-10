@@ -547,7 +547,7 @@ parse_hep_uri(const str *token, str *uri, str *transport, str* version)
 					return -1;
 				}
 
-				if (_word_start == -1 || (value.len == 0 || value.s == 0)) {
+				if (_word_start == -1 || value.len == 0) {
 					LM_ERR("Invalid null value for <%.*s>!\n", name.len, name.s);
 					return -1;
 				}
