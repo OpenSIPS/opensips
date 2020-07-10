@@ -1108,11 +1108,13 @@ static void raise_state_changed_event(struct dlg_cell *dlg,
 		return;
 	}
 
+	/* coverity[overrun-buffer-val] */
 	if (evi_param_set_int(ostate_p, &ostate) < 0) {
 		LM_ERR("cannot set old state parameter\n");
 		return;
 	}
 
+	/* coverity[overrun-buffer-val] */
 	if (evi_param_set_int(nstate_p, &nstate) < 0) {
 		LM_ERR("cannot set new state parameter\n");
 		return;

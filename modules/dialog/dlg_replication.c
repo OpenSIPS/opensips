@@ -1208,8 +1208,8 @@ void receive_prof_repl(bin_packet_t *packet)
 				lock_release(&profile->noval_rcv_counters->lock);
 			} else {
 				/* XXX: hack to make sure we find the proper index */
-				/* coverity[uninit_use_in_call] - value was populated earlier
-				 * CID #199944 */
+				/* coverity[uninit_use_in_call]
+				 * value was populated earlier - CID #199944 */
 				i = core_hash(&value, NULL, profile->size);
 				lock_set_get(profile->locks, i);
 				/* if counter is 0 and we don't have it, don't try to create */
