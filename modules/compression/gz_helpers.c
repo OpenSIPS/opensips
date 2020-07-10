@@ -167,6 +167,7 @@ int gzip_uncompress(unsigned char* in, unsigned long ilen, str* out, unsigned lo
 		switch (rc) {
 			case Z_NEED_DICT:
 				rc = Z_DATA_ERROR;
+				/* fall through */
 		case Z_DATA_ERROR:
 		case Z_MEM_ERROR:
 		case Z_BUF_ERROR:

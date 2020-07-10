@@ -279,6 +279,7 @@ int h350_call_preferences(struct sip_msg* _msg, str* avp_name_prefix)
 				continue;
 			case REG_ESPACE:
 				LM_ERR("regexec returned REG_ESPACE - out of memory\n");
+				/* fall through */
 			default:
 				LM_ERR("regexec failed\n");
 				ldap_api.ldap_value_free_len(attr_vals);
