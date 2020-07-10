@@ -442,14 +442,13 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 	str print_buf;
 
 	while(1){/*read the datagram*/
-		memset(mi_buf, 0, DATAGRAM_SOCK_BUF_SIZE+1);
 		reply_addr_len = sizeof(reply_addr);
 
 		ret = recvfrom(rx_sock, mi_buf, DATAGRAM_SOCK_BUF_SIZE, 0,
 					(struct sockaddr*)&reply_addr, &reply_addr_len);
 
-		if (ret == -1) {
-			LM_ERR("recvfrom: (%d) %s\n", errno, strerror(errno));
+		if (ret < 0) {
+			LM_ERR("recvfrom %d: (%d) %s\n", ret, errno, strerror(errno));
 			if ((errno == EINTR) ||
 				(errno == EAGAIN) ||
 				(errno == EWOULDBLOCK) ||
@@ -464,7 +463,8 @@ void mi_datagram_server(int rx_sock, int tx_sock)
 		if(ret == 0)
 			continue;
 
-		LM_DBG("received %.*s\n", ret, mi_buf);
+		mi_buf[ret] = '\0';
+		LM_DBG("received %d |%.*s|\n", ret, ret, mi_buf);
 
 		if(ret> DATAGRAM_SOCK_BUF_SIZE){
 				LM_ERR("buffer overflow\n");
