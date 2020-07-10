@@ -1218,10 +1218,7 @@ ESL_DECLARE(esl_status_t) esl_recv_event_timed(esl_handle_t *handle, uint32_t ms
 		return ESL_BREAK;
 	}
 
-	if (activity < 0) { 
-		handle->connected = 0;
-		status = ESL_FAIL;
-	} else if (activity > 0 && (activity & ESL_POLL_READ)) {
+	if (activity & ESL_POLL_READ) {
 		if (esl_recv_event(handle, check_q, save_event)) {
 			status = ESL_FAIL;
 		}
@@ -1241,9 +1238,7 @@ static esl_ssize_t handle_recv(esl_handle_t *handle, void *data, esl_size_t data
 	
 	if (handle->connected) {
 		if ((activity = esl_wait_sock(handle->sock, 1000, ESL_POLL_READ|ESL_POLL_ERROR)) > 0) {
-			if (activity < 0) {
-				activity = -1;
-			} else if ((activity & ESL_POLL_ERROR)) {
+			if ((activity & ESL_POLL_ERROR)) {
 				activity = -1;
 			} else if ((activity & ESL_POLL_READ)) {
 				if (!(activity = recv(handle->sock, data, datalen, 0))) {
