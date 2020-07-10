@@ -310,6 +310,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 				break;
 			case WS_ERR_NONE:
 				WS_CODE(c) = WS_ERR_NORMAL;
+				/* fall through */
 			default:
 				ws_close(c);
 				break;
