@@ -780,6 +780,8 @@ error:
 		pkg_free(buf);
 	if(dialog)
 		pkg_free(dialog);
+	if (rlmi_doc)
+		xmlFreeDoc(rlmi_doc);
 }
 
 
