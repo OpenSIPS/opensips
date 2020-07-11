@@ -36,6 +36,7 @@
 #include "../../mem/mem.h"
 #include "../../dprint.h"
 #include "../../locking.h"
+#include "../../db/db_ut.h"
 
 #include "dbt_util.h"
 #include "dbt_lib.h"
