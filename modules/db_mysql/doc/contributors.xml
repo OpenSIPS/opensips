@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Nils Ohlmeier</entry>
-		<entry align="center">5</entry>
-		<entry align="center">3</entry>
-		<entry align="center">24</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">6</entry>
+		<entry align="center">4</entry>
+		<entry align="center">58</entry>
 		<entry align="center">3</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Konstantin Bokarius, Andreas Heise, Razvan Pistolea, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Sergio Gutierrez, Edson Gellert Schubert, Augusto Caringi.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Nils Ohlmeier, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Konstantin Bokarius, Andreas Heise, Razvan Pistolea, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Sergio Gutierrez, Edson Gellert Schubert, Augusto Caringi.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Apr 2017 - Jul 2020</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2014 - Mar 2020</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Feb 2011 - Dec 2019</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Oct 2011 - Sep 2019</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Apr 2017 - Sep 2018</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
