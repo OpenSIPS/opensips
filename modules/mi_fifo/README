@@ -242,7 +242,7 @@ modparam("mi_fifo", "trace_bwlist", "w: sip_trace")
    Example 1.9. FIFO request
 
 :reply_fifo:{"jsonrpc":"2.0","method":"get_statistics","id":"5672","para
-ms":["dialog:","tm:"]}
+ms":[["dialog:","tm:"]]}
 
 
 Chapter 2. Contributors
@@ -254,8 +254,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 55 32 2240 232
    2. Razvan Crainea (@razvancrainea) 37 13 542 1055
-   3. Daniel-Constantin Mierla (@miconda) 12 10 20 22
-   4. Liviu Chircu (@liviuchircu) 12 9 24 57
+   3. Liviu Chircu (@liviuchircu) 13 10 25 58
+   4. Daniel-Constantin Mierla (@miconda) 12 10 20 22
    5. Ionut Ionita (@ionutrazvanionita) 7 4 211 22
    6. Henning Westerholt (@henningw) 5 2 62 109
    7. Zero King 3 1 5 3
@@ -288,11 +288,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   3.  Bogdan Iancu                        Apr 2019 - Apr 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   2.  Zero King                           Mar 2020 - Mar 2020
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   4.  Bogdan Iancu                        Apr 2019 - Apr 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
@@ -311,8 +311,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Jerome Martin.
