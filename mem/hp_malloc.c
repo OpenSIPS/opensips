@@ -938,17 +938,17 @@ rescan:
 					goto found;
 
 			SHM_UNLOCK(hash);
-
-			/*
-			 * Given that HP_MALLOC has fine-grained locking, if the big frag
-			 * shifts down from hash bucket N to bucket N-1 due to another
-			 * process performing the allocation, we may actually "lose" it during
-			 * our own scan, since bucket N-1 was empty and we're now block-waiting
-			 * for bucket N to unlock.  So retry the scan as long as it's feasible!
-			 */
-			if (i++ < 10 && (long)hpb->size - get_stat_val(shm_rused) > 20L * size)
-				goto rescan;
 		}
+
+		/*
+		 * Given that HP_MALLOC has fine-grained locking, if the big frag
+		 * shifts down from hash bucket N to bucket N-1 due to another
+		 * process performing the allocation, we may actually "lose" it during
+		 * our own scan, since bucket N-1 was empty and we're now block-waiting
+		 * for bucket N to unlock.  So retry the scan as long as it's feasible!
+		 */
+		if (i++ < 10 && (long)hpb->size - get_stat_val(shm_rused) > 20L * size)
+			goto rescan;
 	} else {
 		/* optimized size. search through its own hash! */
 		for (hash = init_hash, sec_hash = HP_HASH_SIZE +

@@ -25,6 +25,7 @@
 #include "../../str.h"
 #include "../../ut.h"
 #include "../../pt.h"
+#include "../../modparam.h"
 #include "../../lib/list.h"
 #include "../../lib/osips_malloc.h"
 #include "../hp_malloc.h"
@@ -316,6 +317,12 @@ void init_hp_malloc_tests(void)
 {
 	if (load_module("mi_fifo.so") != 0) {
 		printf("failed to load mi_fifo\n");
+		exit(-1);
+	}
+
+	if (set_mod_param_regex("mi_fifo", "fifo_name", STR_PARAM,
+	    "/tmp/opensips_fifo") != 0) {
+		printf("failed to set FIFO name\n");
 		exit(-1);
 	}
 
