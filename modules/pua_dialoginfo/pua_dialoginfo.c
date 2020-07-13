@@ -203,9 +203,12 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 		entity->uri.len, entity->uri.s,
 		peer->uri.len, peer->uri.s, param->flags);
 
+	/* we shall always parse callid */
+	if (get_callid(msg, &callid) < 0)
+		return;
+
 	if (include_tags) {
-		if ( get_callid( msg, &callid)<0
-		|| parse_from_header( msg )<0
+		if(parse_from_header( msg )<0
 		|| parse_to_header( msg )<0 ) {
 			LM_ERR("failed to parse the reply\n");
 			return;
