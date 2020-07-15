@@ -545,6 +545,7 @@ int pv_get_xml(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* res)
 				xmlBufferFree(xml_buf);
 			else
 				xmlFree(xml_buf_s);
+			return pv_get_null( msg, pvp, res);
 		}
 
 		memcpy(res_buf.s, xml_buf_s, xml_buf_len);
