@@ -915,6 +915,8 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 		return E_BAD_URI;
 	}
 
+	memset( &delete_nh_he, 0, sizeof(struct hostent));
+
 	ul.lock_udomain((udomain_t *)udomain, &aor_user);
 
 	if (ul.get_urecord((udomain_t *)udomain, &aor_user, &record) != 0) {
