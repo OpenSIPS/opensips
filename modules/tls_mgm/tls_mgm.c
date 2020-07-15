@@ -679,7 +679,7 @@ int verify_callback(int pre_verify_ok, X509_STORE_CTX *ctx) {
  */
 int ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 {
-	str srvname;
+	str srvname = {NULL, 0};
 	struct tls_domain *dom, *new_dom;
 	struct tcp_connection *c;
 	str match_no_sni = str_init(MATCH_NO_SNI_VAL);
