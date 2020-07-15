@@ -2691,6 +2691,10 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 		} else {
 			gw = dst->dst.gw;
 		}
+
+	} else {
+		LM_BUG("invalid function call, no rule, no destination\n");
+		return -1;
 	}
 
 	/* build uri*/
