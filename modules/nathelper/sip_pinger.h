@@ -120,7 +120,11 @@ static int parse_branch(str branch)
 		return 1;
 	}
 
-	reverse_hex2int(branch.s, end - branch.s, &hash_id);
+	if (reverse_hex2int(branch.s, end - branch.s, &hash_id)<0
+	|| hash_id>=NH_TABLE_ENTRIES ) {
+		// invalid hash ID received
+		return -1;
+	}
 
 	branch.len -= (end - branch.s + 1);
 	branch.s = end + 1;
