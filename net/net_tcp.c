@@ -860,7 +860,11 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->rcv.bind_address = si;
 	c->rcv.dst_ip = si->address;
 	su_size = sockaddru_len(local_su);
-	getsockname(sock, (struct sockaddr *)&local_su, &su_size);
+	if (getsockname(sock, (struct sockaddr *)&local_su, &su_size)<0) {
+		LM_ERR("failed to get info on received interface/IP %d/%s\n",
+			errno, strerror(errno));
+		goto error;
+	}
 	c->rcv.dst_port = su_getport(&local_su);
 	print_ip("tcpconn_new: new tcp connection to: ", &c->rcv.src_ip, "\n");
 	LM_DBG("on port %d, proto %d\n", c->rcv.src_port, si->proto);
@@ -885,6 +889,7 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	tcp_connections_no++;
 	return c;
 
+error:
 	lock_destroy(&c->write_lock);
 error0:
 	shm_free(c);
