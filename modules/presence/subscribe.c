@@ -963,9 +963,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 		return -2;
 	}
 
-	get_body(msg, &subs->subs_body);
-
-	return 0;
+	return get_body(msg, &subs->subs_body);
 }
 
 
