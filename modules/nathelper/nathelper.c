@@ -514,15 +514,15 @@ mod_init(void)
 
 		sipping_flag=get_flag_id_by_name(FLAG_TYPE_BRANCH,
 			sipping_flag_str, 0);
-		sipping_flag = (sipping_flag==-1)?0:(1<<sipping_flag);
+		sipping_flag = (sipping_flag<0)?0:(1<<sipping_flag);
 
 		rm_on_to_flag=get_flag_id_by_name(FLAG_TYPE_BRANCH,
 			rm_on_to_flag_str, 0);
-		rm_on_to_flag = (rm_on_to_flag==-1)?0:(1<<rm_on_to_flag);
+		rm_on_to_flag = (rm_on_to_flag<0)?0:(1<<rm_on_to_flag);
 
 		sipping_latency_flag = get_flag_id_by_name(FLAG_TYPE_BRANCH,
 			sipping_latency_flag_str, 0);
-		sipping_latency_flag = (sipping_latency_flag==-1)?
+		sipping_latency_flag = (sipping_latency_flag<0)?
 		                                    0:(1<<sipping_latency_flag);
 
 		LM_DBG("sip ping flags: sipping_flag: %d rm_on_to_flag: %d "
