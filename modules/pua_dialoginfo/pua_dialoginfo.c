@@ -1054,7 +1054,7 @@ int set_branch_callee(struct sip_msg* msg, str* callee)
 	/* build var name */
 	build_branch_callee_var_names( branch, &name_d, &name_u );
 
-	if (callee->s!=NULL || callee->len!=0) {
+	if (callee->s!=NULL && callee->len!=0) {
 
 		/* parse input as nameaddr */
 		trim( callee );
