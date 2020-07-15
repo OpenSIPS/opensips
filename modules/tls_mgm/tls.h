@@ -48,7 +48,7 @@
 #include "tls_helper.h"
 #include "../../locking.h"
 
-#define OS_SSL_SESS_ID ((unsigned char*)NAME "-" VERSION)
+#define OS_SSL_SESS_ID (NAME "-" VERSION)
 #define OS_SSL_SESS_ID_LEN (sizeof(OS_SSL_SESS_ID)-1)
 
 #if OPENSSL_VERSION_NUMBER < 0x00908000L
