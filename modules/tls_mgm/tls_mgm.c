@@ -1312,7 +1312,7 @@ static int init_tls_dom(struct tls_domain *d)
 
 		//SSL_CTX_set_session_cache_mode(ctx, SSL_SESS_CACHE_SERVER );
 		SSL_CTX_set_session_cache_mode(d->ctx[i], SSL_SESS_CACHE_OFF );
-		SSL_CTX_set_session_id_context(d->ctx[i], OS_SSL_SESS_ID,
+		SSL_CTX_set_session_id_context(d->ctx[i], (unsigned char*)OS_SSL_SESS_ID,
 				OS_SSL_SESS_ID_LEN );
 
 		/* install callback for SNI */
