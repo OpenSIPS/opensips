@@ -865,7 +865,7 @@ static mi_response_t *mi_list_shtable(const mi_params_t *params, str *from, str 
 	/* to wildcard */
 	if (to) {
 		memcpy(to_w, to->s, to->len);
-		from_w[to->len] = 0;
+		to_w[to->len] = 0;
 	}
 
 	for (i = 0, j = 0; i < shtable_size; i++) {
