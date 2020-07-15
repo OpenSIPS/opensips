@@ -1023,10 +1023,13 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 	call->fst_flags |= FSTAT_INCALL;
 
 	/* get estimated wait time */
-	call->eta = (unsigned int) (( flow->avg_call_duration *
-		(float)get_stat_val(flow->st_queued_calls) ) /
-		(float)flow->logged_agents);
-	
+	if (flow->logged_agents)
+		call->eta = (unsigned int) (( flow->avg_call_duration *
+			(float)get_stat_val(flow->st_queued_calls) ) /
+			(float)flow->logged_agents);
+	else
+		call->eta = INT_MAX;
+
 	LM_DBG("avg_call_duration=%.2f queued_calls=%lu logedin_agents=%u\n",
 		flow->avg_call_duration, get_stat_val(flow->st_queued_calls),
 		flow->logged_agents);
