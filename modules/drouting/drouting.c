@@ -1919,13 +1919,6 @@ static int db_load_head(struct head_db *x) {
 				x->partition.s, x->db_url.len, x->db_url.s, x->db_url.len);
 		return -1;
 	}
-	if( x->db_con && *(x->db_con) &&
-			x->db_funcs.use_table( *(x->db_con), &(x->drg_table)) <0 ) {
-		LM_ERR("cannot select table (partition:%.*s, drg_table:%.*s\n",
-				x->partition.len, x->partition.s, (x->drg_table).len,
-				(x->drg_table).s);
-		return -1;
-	}
 	return 0;
 }
 
