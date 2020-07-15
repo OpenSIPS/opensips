@@ -1641,8 +1641,9 @@ extract_mediainfo(str *body, str *mediaport, str *payload_types)
 		payload_types->s = cp;
 		return 0;
 	}
+	LM_INFO("unsupported ptype [%.*s]\n", ptype.len, ptype.s);
 	/* Unproxyable protocol type. Generally it isn't error. */
-	return -1;
+	return 1;
 }
 
 static int alter_rtcp(struct sip_msg *msg,str * body1, str *newip, int newpf ,str* newport,
@@ -3616,9 +3617,14 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			}
 			tmpstr1.s = m1p;
 			tmpstr1.len = m2p - m1p;
-			if (extract_mediainfo(&tmpstr1, &oldport, &payload_types) == -1) {
-				LM_ERR("can't extract media port from the message\n");
-				goto error;
+			switch (extract_mediainfo(&tmpstr1, &oldport, &payload_types)) {
+				case -1:
+					LM_ERR("can't extract media port from the message\n");
+					goto error;
+				case 0:
+					break;
+				case 1:
+					continue;
 			}
 			++medianum;
 
