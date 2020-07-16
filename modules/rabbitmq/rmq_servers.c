@@ -517,12 +517,15 @@ free:
  */
 int fixup_rmq_server(void **param)
 {
-	*param = rmq_get_server((str*)*param);
-	if (!(*param)) {
+	void *srv = rmq_get_server((str*)*param);
+
+	if (!srv) {
 		LM_ERR("unknown connection id=%.*s\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return E_CFG;
 	}
+
+	*param = srv;
 
 	return 0;
 }
