@@ -1995,7 +1995,7 @@ static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist
 		if (ret == NULL) {
 			/* no price found for carrier, do not use it */
 			unlock_bucket_read( carr_entry->lock );
-			result[i] = 0;
+			result[i] = INT_MAX;
 			continue;
 		}
 
