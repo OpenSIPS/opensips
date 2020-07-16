@@ -307,6 +307,7 @@ static void rmq_close_conn(struct rmq_connection *conn, int channel_only)
 		}
 	case RMQ_CONN_LOGIN:
 	case RMQ_CONN_SOCK:
+		/* coverity[check_return: FALSE] */
 		rmq_rpc_error(conn, "closing connection",
 			amqp_connection_close(conn->amqp_conn, AMQP_REPLY_SUCCESS));
 		if (amqp_destroy_connection(conn->amqp_conn) < 0)
