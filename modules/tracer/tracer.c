@@ -1466,6 +1466,10 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		if (extra_len) {
 			instance->trace_attrs = trace_attrs;
 		}
+	} else if (!current_processing_ctx) {
+		LM_BUG("sip_trace() failed due to NULL context");
+		return -1;
+
 	/* for stateful transactions or dialogs
 	 * we need the structure in the shared memory */
 	} else if(trace_flags == TRACE_DIALOG ||
