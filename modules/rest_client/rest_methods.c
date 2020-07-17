@@ -553,6 +553,7 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 	w_curl_easy_setopt(sync_handle, CURLOPT_WRITEDATA, &res_body);
 
 	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERFUNCTION, header_func);
+	/* coverity[bad_sizeof] */
 	w_curl_easy_setopt(sync_handle, CURLOPT_HEADERDATA, &st);
 
 	if (rest_trace_enabled())
