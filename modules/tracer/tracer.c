@@ -827,7 +827,8 @@ static int mod_init(void)
 	*trace_on_flag = trace_on;
 
 	/* best effort - try to load any tracing protocol, if possible */
-	trace_prot_bind(TRACE_PROTO, &tprot);
+	if (trace_prot_bind(TRACE_PROTO, &tprot) != 0)
+		LM_DBG("failed to load a tracing protocol API\n");
 
 	/* initialize the trace IDs */
 	for (it=trace_list;it;it=it->next) {
@@ -930,7 +931,9 @@ static int mod_init(void)
 	/* load the module dependencies, best effort for now, as the strict
 	 * dependency will be checked later in fixup function, according to
 	 * the sip_trace() flags */
-	load_dlg_api(&dlgb);
+	if (load_dlg_api(&dlgb) != 0)
+		LM_DBG("failed to load the dialog API (dialog module not loaded?)\n");
+
 	load_tm_api(&tmb);
 
 	/* statelessly forwarded request callbacks */
@@ -1463,6 +1466,10 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		if (extra_len) {
 			instance->trace_attrs = trace_attrs;
 		}
+	} else if (!current_processing_ctx) {
+		LM_BUG("sip_trace() failed due to NULL context");
+		return -1;
+
 	/* for stateful transactions or dialogs
 	 * we need the structure in the shared memory */
 	} else if(trace_flags == TRACE_DIALOG ||

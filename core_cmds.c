@@ -1290,7 +1290,8 @@ static int w_script_trace(struct sip_msg *msg, int *log_level,
 		use_script_trace = 0;
 		return 1;
 	} else if (!log_level) {
-		LM_ERR("Missing 'log_level' parameter\n");
+		// this should not happen, it's just a super precaution
+		// and no LM_xxx here, as it assumes a valid log_level
 		return E_CFG;
 	} else if (!fmt_string) {
 		LM_ERR("Missing 'pv_format_string' parameter\n");

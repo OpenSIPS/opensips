@@ -797,7 +797,8 @@ int fix_socket_list(struct socket_info **list)
 						(l->name.len!=si->name.len)||
 						(strncmp(l->name.s, si->name.s, si->name.len)!=0))
 					)
-					add_alias(l->name.s, l->name.len, l->port_no, l->proto);
+					if (add_alias(l->name.s,l->name.len,l->port_no,l->proto)<0)
+						LM_ERR(" add_alias failed\n");
 
 				/* remove l*/
 				sock_listrm(list, l);

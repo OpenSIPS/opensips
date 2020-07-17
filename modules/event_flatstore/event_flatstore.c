@@ -554,15 +554,15 @@ static int flat_raise(struct sip_msg *msg, str* ev_name,
 	int nr_params = 0;
 	int f_idx;
 
+	if (!entry) {
+		LM_ERR("invalid socket specification\n");
+		return -1;
+	}
+
 	rotating(entry->file);
 
 	/* check list of files to be deleted */
 	verify_delete();
-
-	if (!sock || !(sock->params)) {
-		LM_ERR("invalid socket specification\n");
-		return -1;
-	}
 
 	if (io_param == NULL) {
 		io_param = pkg_malloc(cap_params * sizeof(struct iovec));

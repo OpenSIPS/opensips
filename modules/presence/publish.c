@@ -346,7 +346,8 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 		}
 		rules_doc= NULL;
 		/* delete from hash table */
-		if(delete_phtable_query(&p[i].uri, ev.parsed, &p[i].p->new_etag)< 0)
+		if(delete_phtable_query(&p[i].uri, p[i].p->event->evp->parsed,
+		&p[i].p->new_etag)< 0)
 		{
 			LM_ERR("deleting from pres hash table\n");
 		}

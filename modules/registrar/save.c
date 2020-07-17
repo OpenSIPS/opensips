@@ -648,11 +648,6 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		c = get_first_contact(_m);
 	}
 
-	if (pn_enable && pn_inspect_request(_m, &c->uri, &sctx) != 0) {
-		LM_DBG("SIP PN processing failed\n");
-		goto error;
-	}
-
 	update_act_time();
 
 	if (!uri)
@@ -674,6 +669,11 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		}
 	} else {
 		if (add_contacts(_m, c, (udomain_t*)_d, &sctx) < 0) goto error;
+
+		if (pn_enable && pn_inspect_request(_m, &c->uri, &sctx) != 0) {
+			LM_DBG("SIP PN processing failed\n");
+			goto error;
+		}
 	}
 
 	update_stat(accepted_registrations, 1);
@@ -907,6 +907,8 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 		LM_ERR("failed to extract Address Of Record\n");
 		return E_BAD_URI;
 	}
+
+	memset( &delete_nh_he, 0, sizeof(struct hostent));
 
 	ul.lock_udomain((udomain_t *)udomain, &aor_user);
 
