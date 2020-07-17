@@ -1487,7 +1487,9 @@ void hp_status(struct hp_block *hpb)
 
 			if (h > HP_LINEAR_HASH_SIZE) {
 				LM_GEN1(memdump, "[ %4d ][ %8d B -> %7d B ][ frags: %5d ]\n",
-						h, (int)UN_HASH(h), (int)UN_HASH(h+1) - (int)ROUNDTO, i);
+				        h, (int)UN_HASH(h),
+				        (int)UN_HASH(h == (HP_HASH_SIZE - 1) ? h : h+1) - (int)ROUNDTO, i);
+
 			} else
 				LM_GEN1(memdump, "[ %4d ][ %5d B ][ frags: %5d ]\n",
 						h, h * (int)ROUNDTO, i);
