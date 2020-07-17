@@ -971,6 +971,14 @@ static int w_create_dialog(struct sip_msg *req, str *flags_str)
 
 	flags = flags_str? parse_create_dlg_flags(flags_str): 0;
 
+	/* don't allow both Re-INVITE and OPTIONS pinging */
+	if ((flags & (DLG_FLAG_PING_CALLER|DLG_FLAG_REINVITE_PING_CALLER)) ==
+		(DLG_FLAG_PING_CALLER|DLG_FLAG_REINVITE_PING_CALLER))
+		flags &= ~DLG_FLAG_PING_CALLER;
+	if ((flags & (DLG_FLAG_PING_CALLEE|DLG_FLAG_REINVITE_PING_CALLEE)) ==
+		(DLG_FLAG_PING_CALLEE|DLG_FLAG_REINVITE_PING_CALLEE))
+		flags &= ~DLG_FLAG_PING_CALLEE;
+
 	t = d_tmb.t_gett();
 	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req, flags)!=0)
 		return -1;

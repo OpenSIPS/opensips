@@ -1394,6 +1394,11 @@ modparam("dialog", "replicate_profiles_expire", 10)
 			</para></listitem>
 		</itemizedlist>
 		<para>
+		NOTE: both RE-INVITE and OPTIONS pinging cannot be enabled at the same time
+		for a single dialog leg. If both flags ("<emphasis>PR</emphasis>" or
+		"<emphasis>pr</emphasis>") are provided only RE-INVITE pinging will be used.
+		</para>
+		<para>
 		The function returns true if the dialog was successfully created or
 		if the dialog was previously created.
 		</para>
