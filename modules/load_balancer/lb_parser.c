@@ -83,12 +83,12 @@ struct lb_res_str_list *parse_resources_list(char *r_list, int has_val)
 			*end = ';';
 		if (p) {
 			if (!has_val) {
-				LM_ERR("resource must not has value!\n");
+				LM_ERR("resource must not have value!\n");
 				goto error;
 			}
 		} else {
 			if (has_val) {
-				LM_ERR("resource must has value!\n");
+				LM_ERR("resource must have value!\n");
 				goto error;
 			}
 			p = end?end:(r_list+strlen(r_list));
