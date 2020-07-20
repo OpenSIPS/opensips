@@ -934,7 +934,7 @@ static mi_response_t *mi_list_shtable_2(const mi_params_t *params,
 	return mi_list_shtable(params, &from, &to);
 }
 
-int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
+int pres_update_status(subs_t *subs, str reason, db_key_t* query_cols,
         db_val_t* query_vals, int n_query_cols, subs_t** subs_array)
 {
 	static db_ps_t my_del_ps = NULL;
@@ -964,29 +964,29 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 	update_vals[u_reason_col].type= DB_STR;
 	n_update_cols++;
 
-	status= subs.status;
-	if(subs.event->get_auth_status(&subs)< 0)
+	status= subs->status;
+	if(subs->event->get_auth_status(subs)< 0)
 	{
 		LM_ERR( "getting status from rules document\n");
 		return -1;
 	}
-	LM_DBG("subs.status= %d\n", subs.status);
-	if(get_status_str(subs.status)== NULL)
+	LM_DBG("subs.status= %d\n", subs->status);
+	if(get_status_str(subs->status)== NULL)
 	{
-		LM_ERR("wrong status: %d\n", subs.status);
+		LM_ERR("wrong status: %d\n", subs->status);
 		return -1;
 	}
 
-	if(subs.status!= status || reason.len!= subs.reason.len ||
-		(reason.s && subs.reason.s && strncmp(reason.s, subs.reason.s,
+	if(subs->status!= status || reason.len!= subs->reason.len ||
+		(reason.s && subs->reason.s && strncmp(reason.s, subs->reason.s,
 											reason.len)))
 	{
 		/* update in watchers_table */
-		query_vals[q_wuser_col].val.str_val= subs.from_user;
-		query_vals[q_wdomain_col].val.str_val= subs.from_domain;
+		query_vals[q_wuser_col].val.str_val= subs->from_user;
+		query_vals[q_wdomain_col].val.str_val= subs->from_domain;
 
-		update_vals[u_status_col].val.int_val= subs.status;
-		update_vals[u_reason_col].val.str_val= subs.reason;
+		update_vals[u_status_col].val.int_val= subs->status;
+		update_vals[u_reason_col].val.str_val= subs->reason;
 
 		if (pa_dbf.use_table(pa_db, &watchers_table) < 0)
 		{
@@ -996,8 +996,8 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 
 		/* if status is terminated and reason="deactivated",
 		 * delete the record from table */
-		if(subs.status == TERMINATED_STATUS && subs.reason.len==11 &&
-				strncmp(subs.reason.s, "deactivated", 11)==0)
+		if(subs->status == TERMINATED_STATUS && subs->reason.len==11 &&
+				strncmp(subs->reason.s, "deactivated", 11)==0)
 		{
 			CON_PS_REFERENCE(pa_db) = &my_del_ps;
 			if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)<0)
@@ -1019,12 +1019,12 @@ int pres_update_status(subs_t subs, str reason, db_key_t* query_cols,
 
 		/* save in the list all affected dialogs */
 		/* if status switches to terminated -> delete dialog */
-		if(update_pw_dialogs(&subs, subs.db_flag, subs_array)< 0)
+		if(update_pw_dialogs(subs, subs->db_flag, subs_array)< 0)
 		{
 			LM_ERR( "extracting dialogs from [watcher]=%.*s@%.*s to"
-				" [presentity]=%.*s\n",	subs.from_user.len, subs.from_user.s,
-				subs.from_domain.len, subs.from_domain.s, subs.pres_uri.len,
-				subs.pres_uri.s);
+				" [presentity]=%.*s\n",	subs->from_user.len, subs->from_user.s,
+				subs->from_domain.len, subs->from_domain.s, subs->pres_uri.len,
+				subs->pres_uri.s);
 			return -1;
 		}
 	}
@@ -1270,7 +1270,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 			subs.status = ws_list[i].status;
 			memset(&subs.reason, 0, sizeof(str));
 
-			if( pres_update_status(subs, reason, query_cols, query_vals,
+			if( pres_update_status(&subs, reason, query_cols, query_vals,
 					n_query_cols, &subs_array)< 0)
 			{
 				LM_ERR("failed to update watcher status\n");
@@ -1313,7 +1313,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 		subs.status= status;
 		memset(&subs.reason, 0, sizeof(str));
 
- 		if( pres_update_status(subs,reason, query_cols, query_vals,
+		if( pres_update_status(&subs,reason, query_cols, query_vals,
 					n_query_cols, &subs_array)< 0)
 		{
 			LM_ERR("failed to update watcher status\n");
