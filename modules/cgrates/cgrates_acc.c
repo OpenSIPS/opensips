@@ -378,7 +378,7 @@ static json_object *cgr_get_start_acc_msg(struct sip_msg *msg,
 
 	/* ask to init the call */
 	if (!cgre_compat_mode &&
-			((s && !cgr_get_const_kv(&s->req_kvs, "InitSession")) || !s) &&
+			!cgr_get_const_kv(&s->req_kvs, "InitSession") &&
 			cgr_obj_push_bool(cmsg->opts, "InitSession", 1) < 0) {
 		LM_ERR("cannot push InitSession to request opts!\n");
 		goto error;
@@ -504,7 +504,7 @@ static json_object *cgr_get_stop_acc_msg(struct sip_msg *msg,
 
 	/* ask to terminate the call */
 	if (!cgre_compat_mode &&
-			((s && !cgr_get_const_kv(&s->req_kvs, "TerminateSession")) || !s) &&
+			!cgr_get_const_kv(&s->req_kvs, "TerminateSession") &&
 			cgr_obj_push_bool(cmsg->opts, "TerminateSession", 1) < 0) {
 		LM_ERR("cannot push TerminateSession to request opts!\n");
 		goto error;
