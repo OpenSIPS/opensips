@@ -2061,7 +2061,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 		su2ip_addr(&to_ip, to);
 		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
 			&to_ip,
-			(unsigned long)(send_sock->last_remote_real_port?
+			(unsigned long)(send_sock && send_sock->last_remote_real_port?
 				send_sock->last_remote_real_port:su_getport(to)),
 			proto);
 	}
@@ -2339,7 +2339,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 		su2ip_addr(&to_ip, &dst->to);
 		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
 			&to_ip,
-			(unsigned long)(dst->send_sock->last_remote_real_port?
+			(unsigned long)(dst->send_sock && dst->send_sock->last_remote_real_port?
 				dst->send_sock->last_remote_real_port:su_getport(&dst->to)),
 			dst->proto);
 	}
