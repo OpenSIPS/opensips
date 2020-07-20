@@ -648,7 +648,7 @@ static inline struct mi_handler* build_async_handler(char *name, int len, mi_ite
 
 void mi_fifo_server(FILE *fifo_stream)
 {
-	const char **parse_end = NULL;
+	const char *parse_end = NULL;
 	mi_request_t request;
 	int read_len, parse_len;
 	char *req_method = NULL;
@@ -721,14 +721,14 @@ void mi_fifo_server(FILE *fifo_stream)
 		/* make the command null terminated */
 		p[parse_len] = '\0';
 		memset(&request, 0, sizeof request);
-		if (parse_mi_request(p, parse_end, &request) < 0) {
+		if (parse_mi_request(p, &parse_end, &request) < 0) {
 			LM_ERR("cannot parse command: %.*s\n", parse_len, p);
 			continue;
 		}
 
-		if (parse_end) {
-			parse_len -= *parse_end - p;
-			p = (char *)*parse_end;
+		if (parse_end && parse_len != parse_end - p) {
+			parse_len -= parse_end - p;
+			p = (char *)parse_end;
 			memmove(mi_buf, p, parse_len);
 		} else
 			parse_len = 0;
