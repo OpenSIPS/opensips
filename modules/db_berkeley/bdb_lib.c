@@ -971,17 +971,20 @@ int load_metadata_logflags(table_p _tp)
 	return 0;
 }
 
+#define DB_BERKELEY_METADATA_SIZE 512
+
 int load_metadata_defaults(table_p _tp)
 {
 	int ret,n,len;
 	char dbuf[MAX_ROW_SIZE];
 	char * tmp;
 	char *s = NULL;
-	char cv[512];
+	char cv[DB_BERKELEY_METADATA_SIZE];
 	DB *db = NULL;
 	DBT key, data;
 	column_p col;
 	ret = n = len = 0;
+	int cvlen = DB_BERKELEY_METADATA_SIZE;
 
 	if(!_tp || !_tp->db)
 		return -1;
@@ -1028,7 +1031,13 @@ int load_metadata_defaults(table_p _tp)
 	s = strsep(&tmp, DELIM);
 	while(s!=NULL && n< _tp->ncols)
 	{
+		len = strlen(s);
+		if (len >= cvlen) {
+			LM_ERR("metadata %s too long %d\n", s, cvlen);
+			break;
+		}
 		strcpy(cv,s);
+		cvlen += len;
 		col = _tp->colp[n];
 		if( col )
 		{	/*set column default*/
