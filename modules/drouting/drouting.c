@@ -1001,7 +1001,6 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	pgw_t *gw, *old_gw;
 	pcr_t *cr, *old_cr;
 	time_t rawtime;
-	struct head_cache *cache = NULL;
 	struct dr_prepare_part_params pp;
 
 	void **dest;
@@ -1099,8 +1098,6 @@ success:
 error:
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
-	if (cache)
-		clean_head_cache(cache);
 	return -1;
 }
 
