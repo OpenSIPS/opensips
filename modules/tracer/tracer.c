@@ -2751,12 +2751,12 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 	/* default tracing scope is dialog */
 	if (try_get_mi_string_param(params, "scope", &aux.s, &aux.len) < 0 ||
 			((traced_scope = st_parse_flags(&aux)) == 0))
-		traced_type = TRACE_DIALOG;
+		traced_scope = TRACE_DIALOG;
 
 	/* default tracing scope is everything */
 	if (try_get_mi_string_param(params, "type", &aux.s, &aux.len) < 0 ||
-			((traced_scope = st_parse_types(&aux)) == 0))
-		traced_scope = 0xFFFF;
+			((traced_type = st_parse_types(&aux)) == 0))
+		traced_type = 0xFFFF;
 
 	filters = parse_trace_filters(params);
 
@@ -3400,7 +3400,7 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param)
 	for (it=*dyn_trace_list; it; it=it->next) {
 		el = trace_id_dyn(it);
 		/* check if it's worth tracing */
-		if (el->type == TRACE_DIALOG && !initial_invite)
+		if (el->scope == TRACE_DIALOG && !initial_invite)
 			goto skip;
 
 		for (filter = el->filters; filter; filter = filter->next) {
@@ -3432,7 +3432,7 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param)
 					break;
 			}
 		}
-		if (sip_trace_handle(msg, it, el->scope, el->type, NULL) == 1)
+		if (sip_trace_handle(msg, it, el->type, el->scope, NULL) == 1)
 			trace_id_ref(el);
 skip:
 		continue;
