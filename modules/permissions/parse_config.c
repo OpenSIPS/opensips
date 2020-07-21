@@ -122,6 +122,10 @@ static int parse_expression(char *str, expression **e, expression **e_exceptions
 		}
 	} else {
 		/* no exception */
+		if (strlen(str) > LINE_LENGTH) {
+			LM_ERR("rule too long [%s]!\n", str);
+			return -1;
+		}
 		strcpy(str2, str);
 		*e_exceptions = NULL;
 	}
