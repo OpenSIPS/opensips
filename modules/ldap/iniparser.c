@@ -177,11 +177,15 @@ is statically allocated, it will be modified at each function call
 	{
 		static char l[ASCIILINESZ+1];
 		char * last ;
+		int len;
 
 		if (s==NULL) return NULL ;
 		memset(l, 0, ASCIILINESZ+1);
+		len = strlen(s);
+		if (len > ASCIILINESZ) return NULL;
+
 		strcpy(l, s);
-		last = l + strlen(l);
+		last = l + len;
 		while (last > l) {
 			if (!isspace((int)*(last-1)))
 			break ;
