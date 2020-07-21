@@ -2395,7 +2395,6 @@ rtpengine_manage(struct sip_msg *msg, const char *flags, pv_spec_t *spvar, pv_sp
 	int nosdp;
 	int op = OP_ANSWER;
 	struct cell *t;
-	struct sip_msg req;
 
 	if(msg->cseq==NULL && ((parse_headers(msg, HDR_CSEQ_F, 0)==-1)
 				|| (msg->cseq==NULL)))
@@ -2419,14 +2418,24 @@ rtpengine_manage(struct sip_msg *msg, const char *flags, pv_spec_t *spvar, pv_sp
 		nosdp = parse_sdp(msg)?0:1;
 
 	if(msg->first_line.type == SIP_REQUEST) {
-		if(method==METHOD_ACK && nosdp==0)
-			return rtpengine_offer_answer(msg, flags, spvar, bpvar, OP_ANSWER);
-		if(method==METHOD_UPDATE && nosdp==0)
-			return rtpengine_offer_answer(msg, flags, spvar, bpvar, OP_OFFER);
-		if(method==METHOD_INVITE && nosdp==0) {
-			if(route_type==FAILURE_ROUTE)
-				return rtpengine_delete(msg, flags, spvar);
-			return rtpengine_offer_answer(msg, flags, spvar, bpvar, OP_OFFER);
+		if(nosdp==0) {
+			switch (method) {
+				case METHOD_ACK:
+					op = OP_ANSWER;
+					break;
+				case METHOD_INVITE:
+					if(route_type==FAILURE_ROUTE)
+						return rtpengine_delete(msg, flags, spvar);
+					/* fall through */
+				case METHOD_UPDATE:
+					op = OP_OFFER;
+					break;
+				default:
+					return -1;
+			}
+			return rtpengine_offer_answer(msg, flags, spvar, bpvar, op);
+		} else if (method==METHOD_INVITE) {
+			msg->msg_flags |= FL_BODY_NO_SDP;
 		}
 	} else if(msg->first_line.type == SIP_REPLY) {
 		if(msg->first_line.u.reply.statuscode>=300)
@@ -2436,14 +2445,8 @@ rtpengine_manage(struct sip_msg *msg, const char *flags, pv_spec_t *spvar, pv_sp
 				return rtpengine_offer_answer(msg, flags, spvar, bpvar, OP_ANSWER);
 			if (tmb.t_gett != NULL) {
 				t = tmb.t_gett();
-				if(t && t != T_UNDEFINED) {
-					/* dup the request so that we don't overlap with other
-					 * replies that might parse the request in the same time */
-					req = *t->uas.request;
-					if (!msg_has_sdp(&req))
-						op = OP_OFFER;
-					free_sip_body(req.body);
-				}
+				if(t && t != T_UNDEFINED && t->uas.request->msg_flags & FL_BODY_NO_SDP)
+					op = OP_OFFER;
 			}
 			/* op defaults to OP_ANSWER */
 			return rtpengine_offer_answer(msg, flags, spvar, bpvar, op);

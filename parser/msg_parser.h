@@ -120,6 +120,7 @@ enum request_method {
                                       * either in failure route or resume 
                                       * route */
 #define FL_TM_REPLICATED	 (1<<19) /* message received due to a tm replication */
+#define FL_BODY_NO_SDP       (1<<20) /* message does not have an SDP body */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10
