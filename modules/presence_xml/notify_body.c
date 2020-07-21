@@ -941,6 +941,7 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 	char* deviceID = NULL;
 	char* content = NULL;
 	char all_name[20];
+	int namelen;
 
 	strcpy(all_name, "all-");
 
@@ -980,7 +981,12 @@ str* get_final_notify_body( subs_t *subs, str* notify_body, xmlNodePtr rule_node
 			continue;
 
 		LM_DBG("transf_node->name:%s\n",node->name);
+		namelen = strlen((char *)node->name + 8);
 
+		if (namelen >= 15) {
+			LM_ERR("node name too large (%d) [%s]\n", namelen, (char *)node->name + 8);
+			continue;
+		}
 		strcpy((char*)name ,(char*)(node->name + 8));
 		strcpy(all_name+4, name);
 
