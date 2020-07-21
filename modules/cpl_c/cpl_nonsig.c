@@ -230,9 +230,15 @@ void cpl_aux_process( int cmd_out, char *log_dir)
 
 	/* set the path for logging */
 	if (log_dir) {
-		strcpy( file, log_dir);
-		file_ptr = file + strlen(log_dir);
-		*(file_ptr++) = '/';
+		len = strlen(log_dir);
+		if (len + 1 >= sizeof(file)) {
+			LM_ERR("log directory too long!\n");
+			file_ptr = log_dir;
+		} else {
+			strcpy( file, log_dir);
+			file_ptr = file + len;
+			*(file_ptr++) = '/';
+		}
 	}
 
 	while(1) {
