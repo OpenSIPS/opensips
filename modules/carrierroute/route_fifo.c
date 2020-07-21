@@ -386,8 +386,9 @@ mi_response_t *delete_host(const mi_params_t *params,
  *
  * @return mi node containing the route rules
  */
+#define CR_TREE_BUF_SIZE 256
 static int dump_tree_recursor (mi_item_t *rules_arr, struct route_tree_item *tree, char *prefix) {
-	char s[256];
+	char s[CR_TREE_BUF_SIZE];
 	char *p;
 	int i;
 	struct route_flags *rf;
@@ -395,9 +396,15 @@ static int dump_tree_recursor (mi_item_t *rules_arr, struct route_tree_item *tre
 	struct route_rule_p_list * rl;
 	double prob;
 	mi_item_t *rule_item;
+	int len = strlen(prefix);
 
-	strcpy (s, prefix);
-	p = s + strlen (s);
+	if (len + 2 >= CR_TREE_BUF_SIZE) {
+		LM_ERR("tree too large: %d vs %d\n", len + 2, CR_TREE_BUF_SIZE);
+		return -1;
+	}
+
+	memcpy(s, prefix, len);
+	p = s + len;
 	p[1] = '\0';
 	for (i = 0; i < 10; ++i) {
 		if (tree->nodes[i] != NULL) {
@@ -448,6 +455,7 @@ static int dump_tree_recursor (mi_item_t *rules_arr, struct route_tree_item *tre
 	}
 	return 0;
 }
+#undef CR_TREE_BUF_SIZE
 
 /**
  * parses the command line argument for options
