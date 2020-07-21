@@ -2393,6 +2393,9 @@ rtpengine_manage(struct sip_msg *msg, const char *flags, pv_spec_t *spvar, pv_sp
 {
 	int method;
 	int nosdp;
+	int op = OP_ANSWER;
+	struct cell *t;
+	struct sip_msg req;
 
 	if(msg->cseq==NULL && ((parse_headers(msg, HDR_CSEQ_F, 0)==-1)
 				|| (msg->cseq==NULL)))
@@ -2431,10 +2434,19 @@ rtpengine_manage(struct sip_msg *msg, const char *flags, pv_spec_t *spvar, pv_sp
 		if(nosdp==0) {
 			if(method==METHOD_UPDATE)
 				return rtpengine_offer_answer(msg, flags, spvar, bpvar, OP_ANSWER);
-			if(tmb.t_gett==NULL || tmb.t_gett()==NULL
-					|| tmb.t_gett()==T_UNDEFINED)
-				return rtpengine_offer_answer(msg, flags, spvar, bpvar, OP_ANSWER);
-			return rtpengine_offer_answer(msg, flags, spvar, bpvar, OP_OFFER);
+			if (tmb.t_gett != NULL) {
+				t = tmb.t_gett();
+				if(t && t != T_UNDEFINED) {
+					/* dup the request so that we don't overlap with other
+					 * replies that might parse the request in the same time */
+					req = *t->uas.request;
+					if (!msg_has_sdp(&req))
+						op = OP_OFFER;
+					free_sip_body(req.body);
+				}
+			}
+			/* op defaults to OP_ANSWER */
+			return rtpengine_offer_answer(msg, flags, spvar, bpvar, op);
 		}
 	}
 	return -1;
