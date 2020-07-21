@@ -116,26 +116,26 @@ void tz_reset(void)
 
 time_t tz_adjust_ts(time_t unix_time, const str *tz)
 {
-	struct tm *local_tm;
+	struct tm local_tm;
 	time_t adj_ts;
 
 	tz_set(_str("UTC"));
-	local_tm = localtime(&unix_time);
+	localtime_r(&unix_time, &local_tm );
 	tz_reset();
 
 	if (tz)
 		tz_set(tz);
 
-	adj_ts = mktime(local_tm);
+	adj_ts = mktime(&local_tm);
 	tz_reset();
 
-	if (local_tm->tm_isdst > 0)
+	if (local_tm.tm_isdst > 0)
 		adj_ts -= 3600;
 
 	LM_DBG("UNIX ts: %ld, local-adjusted ts: %ld (tz: '%.*s', DST: %s)\n", unix_time,
 	       adj_ts, tz ? tz->len : 4, tz ? tz->s : "null",
-	       local_tm->tm_isdst == 1 ? "on" :
-	       local_tm->tm_isdst == 0 ? "off" : "unavail");
+	       local_tm.tm_isdst == 1 ? "on" :
+	       local_tm.tm_isdst == 0 ? "off" : "unavail");
 
 	return adj_ts;
 }
