@@ -940,7 +940,24 @@ static inline int str_match(const str *a, const str *b)
  */
 static inline int str_casematch(const str *a, const str *b)
 {
-	return a->len == b->len && !strncasecmp(a->s, b->s, a->len);
+	char *p, *q, *end;
+
+	if (a->len != b->len)
+		return 0;
+
+	p = a->s;
+	q = b->s;
+	end = p + a->len;
+
+	if (p == end || p == q)
+		return 1;
+
+	do {
+		if (tolower(*p) != tolower(*q++))
+			return 0;
+	} while (++p < end);
+
+	return 1;
 }
 
 
