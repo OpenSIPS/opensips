@@ -169,13 +169,12 @@ module_stats* get_stat_module( str *module)
 	return 0;
 }
 
-static inline module_stats* __add_stat_module( char *module, int unsafe)
+static inline module_stats* __add_stat_module(str *module, int unsafe)
 {
 	module_stats *amods;
 	module_stats *mods;
-	int len;
 
-	if ( (module==0) || ((len = strlen(module))==0 ) )
+	if ( (module==0) || module->len==0 )
 		return NULL;
 
 	amods = unsafe ?
@@ -196,13 +195,13 @@ static inline module_stats* __add_stat_module( char *module, int unsafe)
 	mods = &amods[collector->mod_no-1];
 	memset( mods, 0, sizeof(module_stats) );
 
-	mods->name.s = unsafe ? shm_malloc_unsafe(len) : shm_malloc(len);
+	mods->name.s = unsafe ? shm_malloc_unsafe(module->len) : shm_malloc(module->len);
 	if (!mods->name.s) {
 	    LM_ERR("oom\n");
 	    return NULL;
 	}
-	memcpy(mods->name.s, module, len);
-	mods->name.len = len;
+	memcpy(mods->name.s, module->s, module->len);
+	mods->name.len = module->len;
 
 	mods->idx = collector->mod_no-1;
 
@@ -211,7 +210,9 @@ static inline module_stats* __add_stat_module( char *module, int unsafe)
 
 module_stats *add_stat_module(char *module)
 {
-	return __add_stat_module(module, 0);
+	str smodule;
+	init_str(&smodule, module);
+	return __add_stat_module(&smodule, 0);
 }
 
 
@@ -380,16 +381,14 @@ int stats_are_ready(void)
  * Note: certain statistics (e.g. shm statistics) require different handling,
  * hence the <unsafe> parameter
  */
-int register_stat2( char *module, char *name, stat_var **pvar,
+static int __register_stat(str *module, str *name, stat_var **pvar,
 					unsigned short flags, void *ctx, int unsafe)
 {
 	module_stats* mods;
 	stat_var **shash;
 	stat_var *stat;
 	stat_var *it;
-	str smodule;
 	int hash;
-	int name_len;
 
 	if (module==0 || name==0 || pvar==0) {
 		LM_ERR("invalid parameters module=%p, name=%p, pvar=%p \n",
@@ -397,18 +396,16 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 		goto error;
 	}
 
-	name_len = strlen(name);
-
 	if(flags&STAT_NOT_ALLOCATED){
 		stat = *pvar;
 		goto do_register;
 	}
 	stat = unsafe ?
 			(stat_var*)shm_malloc_unsafe(sizeof(stat_var) +
-			(((flags&STAT_SHM_NAME)==0)?name_len:0))
+			(((flags&STAT_SHM_NAME)==0)?name->len:0))
 			:
 			(stat_var*)shm_malloc(sizeof(stat_var) +
-			(((flags&STAT_SHM_NAME)==0)?name_len:0));
+			(((flags&STAT_SHM_NAME)==0)?name->len:0));
 
 	if (stat==0) {
 		LM_ERR("no more shm memory\n");
@@ -436,9 +433,7 @@ int register_stat2( char *module, char *name, stat_var **pvar,
 
 	/* is the module already recorded? */
 do_register:
-	smodule.s = module;
-	smodule.len = strlen(module);
-	mods = get_stat_module(&smodule);
+	mods = get_stat_module(module);
 	if (mods==0) {
 		mods = __add_stat_module(module, unsafe);
 		if (mods==0) {
@@ -450,16 +445,16 @@ do_register:
 	/* fill the stat record */
 	stat->mod_idx = mods->idx;
 
-	stat->name.len = name_len;
+	stat->name.len = name->len;
 	if ( (flags&STAT_SHM_NAME)==0 ) {
 		if(flags&STAT_NOT_ALLOCATED)
-			stat->name.s = shm_malloc_unsafe(name_len);
+			stat->name.s = shm_malloc_unsafe(name->len);
 		else
 			stat->name.s = (char*)(stat+1);
 			
-		memcpy(stat->name.s, name, name_len);
+		memcpy(stat->name.s, name->s, name->len);
 	} else {
-		stat->name.s = name;
+		stat->name.s = name->s;
 	}
 	stat->flags = flags;
 	stat->context = ctx;
@@ -551,36 +546,23 @@ error:
 	return -1;
 }
 
+int register_stat2( char *module, char *name, stat_var **pvar,
+					unsigned short flags, void *ctx, int unsafe)
+{
+	str smodule, sname;
+	init_str(&smodule, module);
+	init_str(&sname, name);
+	return __register_stat(&smodule, &sname, pvar, flags, ctx, unsafe);
+}
 
 int __register_dynamic_stat(str *group, str *name, stat_var **pvar)
 {
-	char *p;
-	int ret;
-	str nullgrp = {NULL, 0};
+	str dynamic_grp = str_init(DYNAMIC_MODULE_NAME);
 
 	if (!group)
-		group = &nullgrp;
+		group = &dynamic_grp;
 
-	/*FIXME - what we do here can be avoided - convert from str to
-	 * char and next function does the other way around - from char to
-	 * str - this is temporary, before fixing the register_stat2 function
-	 * prototype to accept str rather than char */
-	if ( (p=pkg_malloc(group->len + 1 + name->len + 1))==NULL ) {
-		LM_ERR("no more pkg mem (%d)\n",name->len + 1);
-		return -1;
-	}
-	memcpy(p, group->s, group->len);
-	p[group->len] = '\0';
-
-	memcpy(p + group->len + 1, name->s, name->len);
-	p[group->len + 1 + name->len] = '\0';
-
-	ret = register_stat(!*p ? DYNAMIC_MODULE_NAME : p, p + group->len + 1,
-	                    pvar, 0/*flags*/);
-
-	pkg_free(p);
-
-	return ret;
+	return __register_stat(group, name, pvar, 0/*flags*/, NULL, 0);
 }
 
 int register_dynamic_stat( str *name, stat_var **pvar)
