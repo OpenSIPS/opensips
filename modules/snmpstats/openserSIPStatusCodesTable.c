@@ -597,7 +597,7 @@ void openserSIPStatusCodesTable_set_action( netsnmp_request_group *rg )
 	if( undo_ctx && RS_IS_ACTIVE(undo_ctx->openserSIPStatusCodeRowStatus) &&
 		row_ctx && RS_IS_ACTIVE(row_ctx->openserSIPStatusCodeRowStatus))
 	{
-			row_err = 1;
+		LM_DBG("row error!\n");
 	}
 #endif
 

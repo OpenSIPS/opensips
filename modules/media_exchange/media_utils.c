@@ -1073,14 +1073,13 @@ int media_session_fork_update(struct media_session_leg *msl)
 					media_disabled = 1;
 				else
 					media_disabled = 0;
-				media_fork_add_stream(stream, media_disabled);
+				if (media_fork_add_stream(stream, media_disabled) < 0)
+					LM_ERR("could not fork stream!\n");
 			}
 	}
 	if (media_idx != 0) {
-		if (media_session_req(msl, "INVITE", MS_UTIL_BUF_STR) < 0) {
+		if (media_session_req(msl, "INVITE", MS_UTIL_BUF_STR) < 0)
 			LM_ERR("could not challenge media server!\n");
-			ret = -3;
-		}
 	}
 	ret = 0;
 error:
