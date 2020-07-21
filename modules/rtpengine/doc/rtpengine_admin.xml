@@ -771,13 +771,6 @@ rtpengine_delete();
 		</listitem>
 		<listitem>
 			<para>
-			If INVITE with SDP, when the tm module is loaded, mark transaction with
-			internal flag FL_SDP_BODY to know that the 1xx and 2xx are for
-			<function>rtpengine_answer()</function>
-			</para>
-		</listitem>
-		<listitem>
-			<para>
 			If ACK with SDP, then do <function>rtpengine_answer()</function>
 			</para>
 		</listitem>
