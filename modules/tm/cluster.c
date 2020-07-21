@@ -476,7 +476,7 @@ int tm_anycast_replicate(struct sip_msg *msg)
 		return -1;
 	}
 
-	if (msg->flags & FL_TM_REPLICATED) {
+	if (msg->msg_flags & FL_TM_REPLICATED) {
 		LM_DBG("message already replicated, shouldn't have got here\n");
 		return -2;
 	}
