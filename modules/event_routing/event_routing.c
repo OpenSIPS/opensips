@@ -44,8 +44,8 @@ static int wait_for_event(struct sip_msg* msg, async_ctx *ctx,
 
 
 /* EVI transport API */
-static int ebr_raise(struct sip_msg *msg, str* ev_name,
-		evi_reply_sock *sock, evi_params_t *params);
+static int ebr_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx);
 static evi_reply_sock* ebr_parse(str socket);
 static int ebr_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static str ebr_print(evi_reply_sock *sock);
@@ -471,8 +471,8 @@ static str ebr_print(evi_reply_sock *sock)
 }
 
 
-static int ebr_raise(struct sip_msg *msg, str* ev_name,
-							 evi_reply_sock *sock, evi_params_t *params)
+static int ebr_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx)
 {
 	if (!sock || !(sock->flags & EVI_PARAMS)) {
 		LM_ERR("no socket found\n");

@@ -38,8 +38,6 @@
 #define JSONRPC_REQ_NEW		0
 #define JSONRPC_REQ_SENT	1
 #define STREAM_REACTOR_TIMEOUT  1 /* sec */
-#define STREAM_SEND_SUCCESS 0
-#define STREAM_SEND_FAIL -1
 #define STREAM_MAX_PENDING_READS 4
 #define IS_ERR(_err) (errno == _err)
 #define STREAM_ADDR(con) \
@@ -47,7 +45,7 @@
 
 int stream_timeout = STREAM_DEFAULT_TIMEOUT;
 char *stream_event_param;
-unsigned stream_sync_mode = 0;
+unsigned stream_reliable_mode = 0;
 static int jrpc_id_index = 0;
 
 /* used to communicate with the sending process */
@@ -109,9 +107,6 @@ void stream_destroy_pipe(void)
 int stream_send(stream_send_t* streams)
 {
 	int rc, retries = STREAM_SEND_RETRY;
-	long send_status;
-
-	streams->process_idx = process_no;
 
 	do {
 		rc = write(stream_pipe[1], &streams, sizeof(stream_send_t *));
@@ -120,20 +115,10 @@ int stream_send(stream_send_t* streams)
 	if (rc < 0) {
 		LM_ERR("unable to send jsonrpc send struct to worker\n");
 		shm_free(streams);
-		return STREAM_SEND_FAIL;
+		return -1;
 	}
-	/* give a chance to the writer :) */
-	sched_yield();
 
-	if (stream_sync_mode) {
-		if (ipc_recv_sync_reply((void **)(long *)&send_status) < 0) {
-			LM_ERR("cannot receive send status\n");
-			send_status = STREAM_SEND_FAIL;
-		}
-
-		return (int)send_status;
-	} else
-		return STREAM_SEND_SUCCESS;
+	return 0;
 }
 
 static stream_send_t * stream_receive(void)
@@ -156,6 +141,34 @@ static stream_send_t * stream_receive(void)
 	return recv;
 }
 
+void stream_run_status_cb(int sender, void *param)
+{
+	struct stream_cb_ipc_param *cb_ipc_param =
+		(struct stream_cb_ipc_param *)param;
+
+	cb_ipc_param->async_ctx.status_cb(cb_ipc_param->async_ctx.cb_param,
+		cb_ipc_param->status);
+
+	shm_free(cb_ipc_param);
+}
+
+static void stream_dispatch_status_cb(evi_async_ctx_t *async_ctx,
+	enum evi_status status)
+{
+	struct stream_cb_ipc_param *cb_ipc_param;
+
+	cb_ipc_param = shm_malloc(sizeof *cb_ipc_param);
+	if (!cb_ipc_param) {
+		LM_ERR("oom!\n");
+		return;
+	}
+
+	cb_ipc_param->async_ctx = *async_ctx;
+	cb_ipc_param->status = status;
+
+	ipc_dispatch_rpc(stream_run_status_cb, cb_ipc_param);
+}
+
 int stream_init_writer(void)
 {
 	int flags;
@@ -165,7 +178,7 @@ int stream_init_writer(void)
 		stream_pipe[0] = -1;
 	}
 
-	if (stream_sync_mode) {
+	if (stream_reliable_mode) {
 		/* initilize indexes */
 		jrpc_id_index = my_pid() & USHRT_MAX;
 		jrpc_id_index |= rand() << sizeof(unsigned short);
@@ -200,7 +213,7 @@ static void jsonrpc_init_reader(void)
 
 static inline int jsonrpc_unique_id(void)
 {
-	if (!stream_sync_mode)
+	if (!stream_reliable_mode)
 		return 0;
 	/*
 	 * the format is 'rand | my_pid'
@@ -231,7 +244,6 @@ static stream_send_t *stream_build_send_t(evi_reply_sock *sock,
 	msg->message.len = jlen;
 	msg->id = id;
 
-	msg->process_idx = process_no;
 	gettimeofday(&msg->time, NULL);
 
 	/* finally add the socket info */
@@ -251,7 +263,7 @@ int stream_build_buffer(str *event_name, evi_reply_sock *sock,
 	if (stream_event_param)
 		init_str(&extra_param, stream_event_param);
 
-	s = evi_build_payload(params, method, stream_sync_mode ? id : 0,
+	s = evi_build_payload(params, method, stream_reliable_mode ? id : 0,
 		extra_param.s ? &extra_param : NULL, extra_param.s ? event_name : NULL);
 	if (!s) {
 		LM_ERR("Failed to build event payload %.*s\n", event_name->len, event_name->s);
@@ -358,21 +370,6 @@ static void jsonrpc_cmd_free(struct jsonrpc_cmd *cmd)
 	pkg_free(cmd);
 }
 
-static void jsonrpc_cmd_write(int process_idx, int send_status)
-{
-	if (ipc_send_sync_reply(process_idx, (void *)(long)send_status) < 0)
-		LM_ERR("cannot send status back to requesting process\n");
-}
-
-static void jsonrpc_cmd_reply(struct jsonrpc_cmd *cmd, int send_status)
-{
-
-	if (!stream_sync_mode)
-		return;
-
-	jsonrpc_cmd_write(cmd->job->process_idx, send_status);
-}
-
 static void stream_con_free(struct stream_con *con)
 {
 	struct list_head *it, *tmp;
@@ -385,15 +382,14 @@ static void stream_con_free(struct stream_con *con)
 	if (con->pending_buffer.len)
 		pkg_free(con->pending_buffer.s);
 
-	if (stream_sync_mode) {
-		/* in sync mode, we need to send back error */
-		list_for_each_safe(it, tmp, &con->cmds) {
-			cmd = list_entry(it, struct jsonrpc_cmd, list);
-			jsonrpc_cmd_reply(cmd, STREAM_SEND_FAIL);
-			list_del(&cmd->list);
-			jsonrpc_cmd_free(cmd);
-		}
+	list_for_each_safe(it, tmp, &con->cmds) {
+		cmd = list_entry(it, struct jsonrpc_cmd, list);
+		if (cmd->job->async_ctx.status_cb)
+			stream_dispatch_status_cb(&cmd->job->async_ctx, EVI_STATUS_FAIL);
+		list_del(&cmd->list);
+		jsonrpc_cmd_free(cmd);
 	}
+
 	shutdown(con->fd, SHUT_RDWR);
 	close(con->fd);
 	/* remove from the list */
@@ -437,10 +433,8 @@ static void handle_new_stream(stream_send_t *stream)
 	}
 
 error:
-	if (stream_sync_mode) {
-		/* we need to notify the process that the connection failed! */
-		jsonrpc_cmd_write(stream->process_idx, STREAM_SEND_FAIL);
-	}
+	if (stream->async_ctx.status_cb)
+		stream_dispatch_status_cb(&stream->async_ctx, EVI_STATUS_FAIL);
 }
 
 static int handle_cmd_reply(struct stream_con *con, cJSON *reply)
@@ -465,7 +459,7 @@ static int handle_cmd_reply(struct stream_con *con, cJSON *reply)
 
 	/* now check if there is an error */
 	aux = cJSON_GetObjectItem(reply, "error");
-	ret = (aux ? STREAM_SEND_FAIL : STREAM_SEND_SUCCESS);
+	ret = (aux ? EVI_STATUS_FAIL : EVI_STATUS_SUCCESS);
 
 	/* XXX: should we check the version too?! */
 
@@ -474,7 +468,8 @@ static int handle_cmd_reply(struct stream_con *con, cJSON *reply)
 		cmd = list_entry(it, struct jsonrpc_cmd, list);
 		if (id != cmd->job->id)
 			continue;
-		jsonrpc_cmd_reply(cmd, ret);
+		if (cmd->job->async_ctx.status_cb)
+			stream_dispatch_status_cb(&cmd->job->async_ctx, ret);
 		list_del(&cmd->list);
 		jsonrpc_cmd_free(cmd);
 		/* all good */
@@ -505,8 +500,8 @@ static void handle_reply_jsonrpc(struct stream_con *con)
 		goto error;
 	}
 
-	/* if not in sync mode, no one listens for the reply */
-	if (stream_sync_mode == 0)
+	/* if not in reliable mode, we are not interested in the reply */
+	if (stream_reliable_mode == 0)
 		return;
 
 	/* got a reply - parse it and match a command */
@@ -632,9 +627,9 @@ static void handle_write_jsonrpc(struct stream_con *con)
 		cmd->state = JSONRPC_REQ_SENT;
 		con->pending_writes--;
 
-		/* if sync mode was not used, we don't really care about the reply,
+		/* if reliable mode was not used, we don't really care about the reply,
 		 * so we simply discard the job right here */
-		if (!stream_sync_mode) {
+		if (!stream_reliable_mode) {
 			list_del(&cmd->list);
 			jsonrpc_cmd_free(cmd);
 		}
@@ -700,8 +695,8 @@ static void stream_cleanup_old(void)
 		list_for_each_safe(it_cmd, tmp, &con->cmds) {
 			cmd = list_entry(it_cmd, struct jsonrpc_cmd, list);
 			if (get_time_diff(&cmd->job->time) > stream_timeout * 1000) {
-				if (stream_sync_mode)
-					jsonrpc_cmd_reply(cmd, STREAM_SEND_FAIL);
+				if (cmd->job->async_ctx.status_cb)
+					stream_dispatch_status_cb(&cmd->job->async_ctx, EVI_STATUS_FAIL);
 				list_del(&cmd->list);
 				LM_INFO("Handling JSON-RPC command [%.*s] timed out!\n",
 						cmd->job->message.len, cmd->job->message.s);

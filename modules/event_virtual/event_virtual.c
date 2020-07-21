@@ -37,8 +37,10 @@ static void virtual_free(evi_reply_sock *sock);
 static str virtual_print(evi_reply_sock *sock);
 static int virtual_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static evi_reply_sock* virtual_parse(str socket);
-static int virtual_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t * params);
+static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx);
+
+static void virtual_status_cb(void *param, enum evi_status status);
 
 static struct virtual_socket **list_sockets;
 
@@ -417,9 +419,153 @@ static int parse_socket(struct sub_socket *socket) {
 	return 1;
 }
 
-static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock, evi_params_t *params) {
+static int failover_raise(struct sip_msg *msg, str *ev_name,
+	evi_params_t *params, struct sub_socket *cur_sock,
+	struct virtual_cb_param *cb_param)
+{
+	evi_async_ctx_t async_status;
+	int is_cb = (cb_param != NULL);
+
+	while (cur_sock) {
+		lock_get(cur_sock->lock);
+
+		if (cur_sock->last_failed &&
+			(get_ticks() - cur_sock->last_failed <= failover_timeout)) {
+			lock_release(cur_sock->lock);
+			LM_DBG("skipping already failed socket %.*s\n",
+				cur_sock->sock_str.len, cur_sock->sock_str.s);
+			cur_sock = cur_sock->next;
+			continue;
+		}
+
+		if (!cur_sock->trans_mod && !parse_socket(cur_sock)) {
+			cur_sock->last_failed = get_ticks();
+			lock_release(cur_sock->lock);
+			LM_DBG("unable to parse socket %.*s trying next socket\n",
+					cur_sock->sock_str.len, cur_sock->sock_str.s);
+			cur_sock = cur_sock->next;
+			continue;
+		}
+
+		if (cur_sock->sock->flags & EVI_ASYNC_STATUS) {
+			if (!cb_param) {
+				cb_param = shm_malloc(sizeof *cb_param + msg->len + ev_name->len);
+				if (!cb_param) {
+					lock_release(cur_sock->lock);
+					LM_ERR("oom!\n");
+					return -1;
+				}
+
+				cb_param->sip_msg_buf.len = msg->len;
+				cb_param->sip_msg_buf.s = (char *)(cb_param+1);
+				memcpy(cb_param->sip_msg_buf.s, msg->buf, msg->len);
+
+				cb_param->ev_name.len = ev_name->len;
+				cb_param->ev_name.s = (char *)(cb_param+1) + msg->len;
+				memcpy(cb_param->ev_name.s, ev_name->s, ev_name->len);
+
+				cb_param->evi_params = evi_dup_shm_params(params);
+				if (!cb_param->evi_params) {
+					LM_ERR("Failed to dup evi params in shm\n");
+					shm_free(cb_param);
+					return -1;
+				}
+			}
+
+			cb_param->current_sock = cur_sock;
+
+			async_status.status_cb = virtual_status_cb;
+		} else {
+			async_status.cb_param = NULL;
+		}
+
+		async_status.cb_param = cb_param;
+
+		cur_sock->last_failed = 0;
+
+		if (cur_sock->trans_mod->raise(msg, ev_name, cur_sock->sock, params,
+			&async_status)) {
+			cur_sock->last_failed = get_ticks();
+			lock_release(cur_sock->lock);
+			LM_DBG("unable to raise socket %.*s trying next socket\n",
+					cur_sock->sock_str.len, cur_sock->sock_str.s);
+			cur_sock = cur_sock->next;
+			continue;
+		}
+
+		lock_release(cur_sock->lock);
+
+		break;
+	}
+
+	if (!cur_sock) {
+		if (!is_cb && cb_param) {
+			evi_free_shm_params(cb_param->evi_params);
+			shm_free(cb_param);
+		}
+		return -1;
+	} else {
+		return 0;
+	}
+}
+
+static void virtual_status_cb(void *param, enum evi_status status)
+{
+	struct virtual_cb_param *cbp = (struct virtual_cb_param *)param;
+	struct sub_socket *cur_sock;
+	struct sip_msg msg;
+	int free_cbp = 1;
+
+	cur_sock = cbp->current_sock;
+
+	if (status == EVI_STATUS_FAIL) {
+		LM_DBG("unable to raise socket %.*s trying next socket\n",
+			cur_sock->sock_str.len, cur_sock->sock_str.s);
+
+		lock_get(cur_sock->lock);
+		cur_sock->last_failed = get_ticks();
+		lock_release(cur_sock->lock);
+
+		cur_sock = cbp->current_sock->next;
+
+		memset(&msg, 0, sizeof(struct sip_msg));
+		msg.buf = cbp->sip_msg_buf.s;
+		msg.len = cbp->sip_msg_buf.len;
+		if (parse_msg(msg.buf, msg.len, &msg)!=0) {
+			LM_ERR("Invalid SIP msg\n");
+			goto end_free;
+		}
+
+		if (!cur_sock || failover_raise(&msg, &cbp->ev_name, cbp->evi_params,
+			cur_sock, cbp) < 0) {
+			LM_ERR("unable to raise any socket for event: %.*s\n",
+				cbp->ev_name.len, cbp->ev_name.s);
+			free_sip_msg(&msg);
+			goto end_free;
+		}
+
+		free_cbp = 0;
+
+		free_sip_msg(&msg);
+	} else {
+		lock_get(cur_sock->lock);
+		cur_sock->last_failed = 0;
+		lock_release(cur_sock->lock);
+	}
+
+end_free:
+	if (free_cbp) {
+		evi_free_shm_params(cbp->evi_params);
+		shm_free(cbp);
+	}
+}
+
+static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *_)
+{
 	struct virtual_socket *vsock;
-	struct sub_socket *h_list;
+	struct sub_socket *cur_sock;
+	evi_async_ctx_t async_status = {NULL, NULL};
 
 	if (!sock || !(sock->params)) {
 		LM_ERR("invalid socket\n");
@@ -427,72 +573,34 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 	}
 
 	vsock = (struct virtual_socket *)sock->params;
-	h_list = vsock->list_sockets;
+	cur_sock = vsock->list_sockets;
 
 	switch (vsock->type) {
 		/* raise all the sockets at once*/
 		case PARALLEL_TYPE : {
-			while (h_list) {
-				if (!h_list->trans_mod && !parse_socket(h_list)) {
+			while (cur_sock) {
+				if (!cur_sock->trans_mod && !parse_socket(cur_sock)) {
 					LM_ERR("unable to parse socket %.*s\n",
-							h_list->sock_str.len, h_list->sock_str.s);
+							cur_sock->sock_str.len, cur_sock->sock_str.s);
 					return -1;
 				}
 
-				if (h_list->trans_mod->raise(msg, ev_name, h_list->sock, params)) {
+				if (cur_sock->trans_mod->raise(msg, ev_name, cur_sock->sock,
+					params, &async_status)) {
 					LM_ERR("unable to raise socket %.*s\n",
-							h_list->sock_str.len, h_list->sock_str.s);
+							cur_sock->sock_str.len, cur_sock->sock_str.s);
 					return -1;
 				}
 
-				h_list = h_list->next;
+				cur_sock = cur_sock->next;
 			}
 			break;
 		}
 		/* try to raise all sockets until first successful raise*/
 		case FAILOVER_TYPE : {
-			while (h_list) {
-				lock_get(h_list->lock);
-
-				if (h_list->last_failed &&
-					(get_ticks() - h_list->last_failed <= failover_timeout)) {
-					lock_release(h_list->lock);
-
-					LM_DBG("skipping already failed socket %.*s\n",
-						h_list->sock_str.len, h_list->sock_str.s);
-					h_list = h_list->next;
-					continue;
-				}
-
-				if (!h_list->trans_mod && !parse_socket(h_list)) {
-					h_list->last_failed = get_ticks();
-					lock_release(h_list->lock);
-
-					LM_DBG("unable to parse socket %.*s trying next socket\n",
-							h_list->sock_str.len, h_list->sock_str.s);
-					h_list = h_list->next;
-					continue;
-				}
-
-				if (h_list->trans_mod->raise(msg, ev_name, h_list->sock, params)) {
-					h_list->last_failed = get_ticks();
-					lock_release(h_list->lock);
-
-					LM_DBG("unable to raise socket %.*s trying next socket\n",
-							h_list->sock_str.len, h_list->sock_str.s);
-					h_list = h_list->next;
-					continue;
-				}
-
-				h_list->last_failed = 0;
-
-				lock_release(h_list->lock);
-
-				break;
-			}
-
-			if (!h_list) {
-				LM_ERR("unable to raise any socket\n");
+			if (failover_raise(msg, ev_name, params, cur_sock, NULL) < 0) {
+				LM_ERR("unable to raise any socket for event: %.*s\n",
+					ev_name->len, ev_name->s);
 				return -1;
 			}
 			break;
@@ -502,20 +610,20 @@ static int virtual_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock
 			lock_get(rrobin_lock);
 
 			if (!vsock->current_sock)
-				vsock->current_sock = h_list;
+				vsock->current_sock = cur_sock;
 
 			if (!vsock->current_sock->trans_mod && !parse_socket(vsock->current_sock)) {
-					LM_ERR("unable to parse socket %.*s\n",
-							vsock->current_sock->sock_str.len,
-							vsock->current_sock->sock_str.s);
-					return -1;
+				LM_ERR("unable to parse socket %.*s\n",
+						vsock->current_sock->sock_str.len,
+						vsock->current_sock->sock_str.s);
+				return -1;
 			}
 
 			if (vsock->current_sock->trans_mod->raise(msg, ev_name,
-												vsock->current_sock->sock, params)) {
-					LM_ERR("unable to raise socket %.*s\n",
-							vsock->current_sock->sock_str.len, vsock->current_sock->sock_str.s);
-					return -1;
+				vsock->current_sock->sock, params, &async_status)) {
+				LM_ERR("unable to raise socket %.*s\n",
+						vsock->current_sock->sock_str.len, vsock->current_sock->sock_str.s);
+				return -1;
 			}
 
 			vsock->current_sock = vsock->current_sock->next;

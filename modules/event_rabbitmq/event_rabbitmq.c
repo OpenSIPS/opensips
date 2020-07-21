@@ -44,7 +44,6 @@ static void destroy(void);
  * module parameters
  */
 static unsigned int heartbeat = 0;
-extern unsigned rmq_sync_mode;
 static int rmq_connect_timeout = RMQ_DEFAULT_CONNECT_TIMEOUT;
 struct timeval conn_timeout_tv;
 int use_tls;
@@ -55,8 +54,8 @@ struct tls_mgm_binds tls_api;
  * exported functions
  */
 static evi_reply_sock* rmq_parse(str socket);
-static int rmq_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t * params);
+static int rmq_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx);
 static int rmq_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static void rmq_free(evi_reply_sock *sock);
 static str rmq_print(evi_reply_sock *sock);
@@ -70,7 +69,6 @@ static proc_export_t procs[] = {
 /* module parameters */
 static param_export_t mod_params[] = {
 	{"heartbeat",					INT_PARAM, &heartbeat},
-	{"sync_mode",		INT_PARAM, &rmq_sync_mode},
 	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
 	{"use_tls", INT_PARAM, &use_tls},
 	{0,0,0}
@@ -459,7 +457,7 @@ success:
 
 	param->heartbeat = heartbeat;
 	sock->params = param;
-	sock->flags |= EVI_PARAMS | RMQ_FLAG;
+	sock->flags |= EVI_PARAMS | RMQ_FLAG | EVI_ASYNC_STATUS;
 
 	return sock;
 err:
@@ -529,8 +527,8 @@ end:
 }
 #undef DO_PRINT
 
-static int rmq_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t * params)
+static int rmq_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx)
 {
 	rmq_send_t *rmqs;
 	str buf;
@@ -564,6 +562,7 @@ static int rmq_raise(struct sip_msg *msg, str* ev_name,
 	evi_free_payload(buf.s);
 
 	rmqs->sock = sock;
+	rmqs->async_ctx = *async_ctx;
 
 	if (rmq_send(rmqs) < 0) {
 		LM_ERR("cannot send message\n");

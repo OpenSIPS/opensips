@@ -69,4 +69,11 @@ struct sub_socket {
 	struct sub_socket *next;
 };
 
+struct virtual_cb_param {
+	struct sub_socket *current_sock;
+	str sip_msg_buf;
+	str ev_name;
+	evi_params_t *evi_params;
+};
+
 #endif

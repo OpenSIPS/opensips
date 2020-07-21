@@ -34,16 +34,6 @@
 #define RMQ_SIZE (sizeof(rmq_send_t *))
 #define IS_ERR(_err) (errno == _err)
 
-#ifdef HAVE_SCHED_YIELD
-#include <sched.h>
-#else
-#include <unistd.h>
-/** Fake sched_yield if no unistd.h include is available */
-        #define sched_yield()   sleep(0)
-#endif
-
-unsigned rmq_sync_mode = 0;
-
 /* used to communicate with the sending process */
 static int rmq_pipe[2];
 
@@ -77,9 +67,6 @@ int rmq_send(rmq_send_t* rmqs)
 {
 	int rc;
 	int retries = RMQ_SEND_RETRY;
-	long send_status;
-
-	rmqs->process_idx = process_no;
 
 	do {
 		rc = write(rmq_pipe[1], &rmqs, RMQ_SIZE);
@@ -88,20 +75,10 @@ int rmq_send(rmq_send_t* rmqs)
 	if (rc < 0) {
 		LM_ERR("unable to send rmq send struct to worker\n");
 		shm_free(rmqs);
-		return RMQ_SEND_FAIL;
+		return -1;
 	}
-	/* give a change to the writer :) */
-	sched_yield();
 
-	if (rmq_sync_mode) {
-		if (ipc_recv_sync_reply((void **)(long *)&send_status) < 0) {
-			LM_ERR("cannot receive send status\n");
-			send_status = RMQ_SEND_FAIL;
-		}
-
-		return (int)send_status;
-	} else
-		return RMQ_SEND_SUCCESS;
+	return 0;
 }
 
 static rmq_send_t * rmq_receive(void)
@@ -524,9 +501,37 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 	return rtrn;
 }
 
+void rmq_run_status_cb(int sender, void *param)
+{
+	struct rmq_cb_ipc_param *cb_ipc_param =
+		(struct rmq_cb_ipc_param *)param;
+
+	cb_ipc_param->async_ctx.status_cb(cb_ipc_param->async_ctx.cb_param,
+		cb_ipc_param->status);
+
+	shm_free(cb_ipc_param);
+}
+
+static void rmq_dispatch_status_cb(evi_async_ctx_t *async_ctx,
+	enum evi_status status)
+{
+	struct rmq_cb_ipc_param *cb_ipc_param;
+
+	cb_ipc_param = shm_malloc(sizeof *cb_ipc_param);
+	if (!cb_ipc_param) {
+		LM_ERR("oom!\n");
+		return;
+	}
+
+	cb_ipc_param->async_ctx = *async_ctx;
+	cb_ipc_param->status = status;
+
+	ipc_dispatch_rpc(rmq_run_status_cb, cb_ipc_param);
+}
+
 void rmq_process(int rank)
 {
-	int send_status;
+	enum evi_status status;
 
 	/* init blocking reader */
 	rmq_init_reader();
@@ -548,23 +553,21 @@ void rmq_process(int rank)
 		/* check if we should reconnect */
 		if (rmq_reconnect(rmqs->sock) < 0) {
 			LM_ERR("cannot reconnect socket\n");
-			send_status = RMQ_SEND_FAIL;
-			goto send_status_reply;
+			if (rmqs->async_ctx.status_cb)
+				rmq_dispatch_status_cb(&rmqs->async_ctx, EVI_STATUS_FAIL);
+			goto end;
 		}
 
 		/* send msg */
 		if (rmq_sendmsg(rmqs)) {
 			LM_ERR("cannot send message\n");
-			send_status = RMQ_SEND_FAIL;
+			status = EVI_STATUS_FAIL;
 		} else {
-			send_status = RMQ_SEND_SUCCESS;
+			status = EVI_STATUS_SUCCESS;
 		}
 
-send_status_reply:
-		if (rmq_sync_mode) {
-			if (ipc_send_sync_reply(rmqs->process_idx, (void *)(long)send_status) < 0)
-				LM_ERR("cannot send status back to requesting process\n");
-		}
+		if (rmqs->async_ctx.status_cb)
+			rmq_dispatch_status_cb(&rmqs->async_ctx, status);
 end:
 		if (rmqs)
 			shm_free(rmqs);

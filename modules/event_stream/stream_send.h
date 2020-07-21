@@ -29,10 +29,15 @@
 typedef struct _stream_send {
 	union sockaddr_union addr;
 	struct timeval time;
-	int process_idx;
+	evi_async_ctx_t async_ctx;
 	str message;
 	int id;
 } stream_send_t;
+
+struct stream_cb_ipc_param {
+	evi_async_ctx_t async_ctx;
+	enum evi_status status;
+};
 
 void stream_process(int rank);
 int stream_init_process(void);
@@ -49,7 +54,7 @@ int stream_build_buffer(str *,
 #define JSONRPC_VERSION "2.0"
 
 extern int stream_timeout;
-extern unsigned stream_sync_mode;
+extern unsigned stream_reliable_mode;
 extern char *stream_event_param;
 
 #endif

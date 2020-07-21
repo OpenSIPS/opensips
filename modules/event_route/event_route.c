@@ -46,7 +46,7 @@ static int child_init(int rank);
  */
 static evi_reply_sock* scriptroute_parse(str socket);
 static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
-							 evi_reply_sock *sock, evi_params_t * params);
+	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx);
 static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static str scriptroute_print(evi_reply_sock *sock);
 
@@ -347,7 +347,7 @@ void route_run(struct script_route route, struct sip_msg* msg,
 }
 
 static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
-							 evi_reply_sock *sock, evi_params_t *params)
+	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx)
 {
 	route_send_t *buf = NULL;
 

@@ -41,8 +41,8 @@ static int child_init(int);
  * exported functions
  */
 static evi_reply_sock* stream_parse(str socket);
-static int stream_raise(struct sip_msg *msg, str* ev_name,
-						evi_reply_sock *sock, evi_params_t * params);
+static int stream_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx);
 static int stream_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static void stream_free(evi_reply_sock *sock);
 static str stream_print(evi_reply_sock *sock);
@@ -57,7 +57,7 @@ static proc_export_t procs[] = {
 
 /* module parameters */
 static param_export_t mod_params[] = {
-	{"sync_mode",		INT_PARAM, &stream_sync_mode},
+	{"reliable_mode",	INT_PARAM, &stream_reliable_mode},
 	{"event_param",		STR_PARAM, &stream_event_param},
 	{"timeout",			INT_PARAM, &stream_timeout},
 	{0,0,0}
@@ -252,7 +252,7 @@ static evi_reply_sock* stream_parse(str socket)
 		LM_ERR("failed to resolve %s\n", host.s);
 		goto error;
 	}
-	sock->flags |= EVI_SOCKET;
+	sock->flags |= EVI_SOCKET|EVI_ASYNC_STATUS;
 
 	/* address */
 	sock->address.s = (char*)(sock+1);
@@ -336,7 +336,7 @@ end:
 
 
 static int stream_raise(struct sip_msg *dummy_msg, str* ev_name,
-						evi_reply_sock *sock, evi_params_t * params)
+	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx)
 {
 	stream_send_t *msg = NULL;
 	str socket;
@@ -367,6 +367,8 @@ static int stream_raise(struct sip_msg *dummy_msg, str* ev_name,
 		err_msg = "creating send buffer";
 		goto error;
 	}
+
+	msg->async_ctx = *async_ctx;
 
 	if (stream_send(msg) < 0) {
 		err_msg = "raising event";

@@ -140,6 +140,7 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 int evi_raise_event_msg(struct sip_msg *msg, event_id_t id, evi_params_t* params)
 {
 	evi_subs_p subs, prev;
+	evi_async_ctx_t async_status = {NULL, NULL};
 	long now;
 	int flags, pflags = 0;
 	int ret = 0;
@@ -206,7 +207,7 @@ int evi_raise_event_msg(struct sip_msg *msg, event_id_t id, evi_params_t* params
 		lock_release(events[id].lock);
 
 		ret += (subs->trans_mod->raise)(msg, &events[id].name,
-					subs->reply_sock, params);
+					subs->reply_sock, params, &async_status);
 
 		lock_get(events[id].lock);
 		subs->reply_sock->flags = flags;

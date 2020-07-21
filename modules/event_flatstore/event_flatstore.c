@@ -49,8 +49,8 @@ static int flat_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static evi_reply_sock* flat_parse(str socket);
 mi_response_t *mi_rotate(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-static int flat_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t * params);
+static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx);
 
 static int *opened_fds;
 static int *rotate_version;
@@ -543,8 +543,8 @@ static void rotating(struct flat_file *file){
 		lock_release(global_lock);
 }
 
-static int flat_raise(struct sip_msg *msg, str* ev_name,
-					 evi_reply_sock *sock, evi_params_t *params) {
+static int flat_raise(struct sip_msg *msg, str* ev_name, evi_reply_sock *sock,
+	evi_params_t *params, evi_async_ctx_t *async_ctx) {
 
 	int idx = 0, offset_buff = 0, len, required_length = 0, nwritten;
 	evi_param_p param;

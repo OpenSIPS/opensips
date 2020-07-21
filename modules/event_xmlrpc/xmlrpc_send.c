@@ -37,7 +37,6 @@
 #define IS_ERR(_err) (errno == _err)
 
 unsigned xmlrpc_struct_on = 0;
-unsigned xmlrpc_sync_mode = 0;
 static char * xmlrpc_body_buf = 0;
 static struct iovec xmlrpc_iov[XMLRPC_IOVEC_MAX_SIZE];
 static unsigned xmlrpc_iov_len = 0;
@@ -94,9 +93,6 @@ void xmlrpc_destroy_pipe(void)
 int xmlrpc_send(xmlrpc_send_t* xmlrpcs)
 {
 	int rc, retries = XMLRPC_SEND_RETRY;
-	long send_status;
-
-	xmlrpcs->process_idx = process_no;
 
 	do {
 		rc = write(xmlrpc_pipe[1], &xmlrpcs, sizeof(xmlrpc_send_t *));
@@ -105,21 +101,10 @@ int xmlrpc_send(xmlrpc_send_t* xmlrpcs)
 	if (rc < 0) {
 		LM_ERR("unable to send xmlrpc send struct to worker\n");
 		shm_free(xmlrpcs);
-		return XMLRPC_SEND_FAIL;
+		return -1;
 	}
-	/* give a change to the writer :) */
-	sched_yield();
 
-	if (xmlrpc_sync_mode) {
-
-		if (ipc_recv_sync_reply((void **)(long *)&send_status) < 0) {
-			LM_ERR("cannot receive send status\n");
-			send_status = XMLRPC_SEND_FAIL;
-		}
-
-		return (int)send_status;
-	} else
-		return XMLRPC_SEND_SUCCESS;
+	return 0;
 }
 
 static xmlrpc_send_t * xmlrpc_receive(void)
@@ -497,10 +482,37 @@ static void xmlrpc_init_send_buf(void)
 }
 
 
+void xmlrpc_run_status_cb(int sender, void *param)
+{
+	struct xmlrpc_cb_ipc_param *cb_ipc_param =
+		(struct xmlrpc_cb_ipc_param *)param;
+
+	cb_ipc_param->async_ctx.status_cb(cb_ipc_param->async_ctx.cb_param,
+		cb_ipc_param->status);
+
+	shm_free(cb_ipc_param);
+}
+
+static void xmlrpc_dispatch_status_cb(evi_async_ctx_t *async_ctx,
+	enum evi_status status)
+{
+	struct xmlrpc_cb_ipc_param *cb_ipc_param;
+
+	cb_ipc_param = shm_malloc(sizeof *cb_ipc_param);
+	if (!cb_ipc_param) {
+		LM_ERR("oom!\n");
+		return;
+	}
+
+	cb_ipc_param->async_ctx = *async_ctx;
+	cb_ipc_param->status = status;
+
+	ipc_dispatch_rpc(xmlrpc_run_status_cb, cb_ipc_param);
+}
 
 void xmlrpc_process(int rank)
 {
-	int send_status;
+	enum evi_status status;
 
 	/* init blocking reader */
 	xmlrpc_init_reader();
@@ -518,14 +530,12 @@ void xmlrpc_process(int rank)
 		/* send msg */
 		if (xmlrpc_sendmsg(xmlrpcs)) {
 			LM_ERR("cannot send message\n");
-			send_status = XMLRPC_SEND_FAIL;
+			status = EVI_STATUS_FAIL;
 		} else
-			send_status = XMLRPC_SEND_SUCCESS;
+			status = EVI_STATUS_SUCCESS;
 
-		if (xmlrpc_sync_mode) {
-			if (ipc_send_sync_reply(xmlrpcs->process_idx, (void *)(long)send_status) < 0)
-				LM_ERR("cannot send status back to requesting process\n");
-		}
+		if (xmlrpcs->async_ctx.status_cb)
+			xmlrpc_dispatch_status_cb(&xmlrpcs->async_ctx, status);
 end:
 		if (xmlrpcs)
 			shm_free(xmlrpcs);
