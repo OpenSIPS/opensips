@@ -234,8 +234,9 @@ static struct route_rule * get_rule_by_hash(const struct route_flags * rf,
 	if (prob > rf->rule_num) {
 		LM_WARN("too large desired hash, taking highest\n");
 		act_hash = rf->rules[rf->rule_num - 1];
+	} else {
+		act_hash = rf->rules[prob - 1];
 	}
-	act_hash = rf->rules[prob - 1];
 
 	if (!act_hash->status) {
 		if (act_hash->backup && act_hash->backup->rr) {

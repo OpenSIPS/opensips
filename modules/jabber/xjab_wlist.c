@@ -600,8 +600,8 @@ int  xj_wlist_check_aliases(xj_wlist jwl, str *addr)
 		p0++;
 	if(p0 < p + ll)
 		ll = p0 - p;
-
-	ll = addr->s + addr->len - p;
+	else
+		ll = addr->s + addr->len - p;
 	if(jwl->aliases->jdm && jwl->aliases->jdm->len == ll &&
 			!strncasecmp(jwl->aliases->jdm->s, p, ll))
 		return 0;

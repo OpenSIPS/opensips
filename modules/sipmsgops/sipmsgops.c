@@ -1141,7 +1141,7 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 					goto failed;
 				}
 				memset(via_b, 0, sizeof(struct via_body));
-				e_aux = parse_via(hf->body.s,
+				parse_via(hf->body.s,
 						hf->body.s + hf->body.len, via_b);
 				if (via_b->error==PARSE_ERROR){
 					LM_DBG("bad via header\n");

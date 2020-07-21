@@ -712,7 +712,6 @@ void mi_fifo_server(FILE *fifo_stream)
 			f = get_reply_filename(file, file_sep - file);
 			if (f==NULL) {
 				LM_ERR("error trimming filename: %.*s\n", (int)(file_sep - file), file);
-				file = f;
 				goto skip_unparsed;
 			}
 			file = f;

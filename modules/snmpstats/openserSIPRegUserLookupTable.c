@@ -622,7 +622,7 @@ void openserSIPRegUserLookupTable_set_action( netsnmp_request_group *rg )
 #ifndef openserSIPRegUserLookupTable_CAN_MODIFY_ACTIVE_ROW
 	if( undo_ctx && RS_IS_ACTIVE(undo_ctx->openserSIPRegUserLookupRowStatus) &&
 		row_ctx && RS_IS_ACTIVE(row_ctx->openserSIPRegUserLookupRowStatus) ) {
-			row_err = 1;
+		LM_DBG("row error!\n");
 	}
 #endif
 
