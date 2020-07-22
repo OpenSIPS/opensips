@@ -803,6 +803,8 @@ static inline int check_if_default_head_is_ok(void)
  */
 static int mod_init(void)
 {
+	ds_db_head_t *aux;
+
 	LM_DBG("initializing ...\n");
 	init_db_url(default_db_head.db_url, 1 /* can be null */);
 
@@ -896,13 +898,13 @@ static int mod_init(void)
 
 		/* close DB connection */
 		ds_disconnect_db(partition);
-		ds_db_head_t *aux = head_it;
 
 		/* We keep track of corespondig default parition */
 		if (head_it == &default_db_head)
 			default_partition = partition;
 
 next_part:
+		aux = head_it;
 		head_it = head_it->next;
 		if (aux != &default_db_head)
 			pkg_free(aux);
