@@ -706,9 +706,6 @@ rtpengine_delete();
 
    Functionality:
      * If INVITE with SDP, then do rtpengine_offer()
-     * If INVITE with SDP, when the tm module is loaded, mark
-       transaction with internal flag FL_SDP_BODY to know that the
-       1xx and 2xx are for rtpengine_answer()
      * If ACK with SDP, then do rtpengine_answer()
      * If BYE or CANCEL, or called within a FAILURE_ROUTE[], then
        do rtpengine_delete()
@@ -1190,7 +1187,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 146 62 4896 2652
+   1. Razvan Crainea (@razvancrainea) 150 65 4932 2678
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 16 422 594
    3. Richard Fuchs 20 2 640 723
    4. Liviu Chircu (@liviuchircu) 15 11 66 131
@@ -1224,10 +1221,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jul 2020
-   2.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - May 2020
-   4.  Razvan Crainea (@razvancrainea)          Jun 2014 - May 2020
+   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Jul 2020
+   2.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jul 2020
+   3.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - May 2020
    5.  Zero King                                Mar 2020 - Mar 2020
    6.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2019
    7.  John Burke                               Jun 2019 - Jun 2019
