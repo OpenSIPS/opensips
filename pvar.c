@@ -2158,6 +2158,7 @@ static inline int get_socket_field( struct socket_info *si,
 				res->rs.len = 5;
 			} else
 				return pv_get_null( NULL, NULL, res);
+			res->flags = PV_VAL_STR|PV_VAL_INT;
 			break;
 		default:
 			LM_CRIT("BUG - unsupported ID %d\n",pvn->u.isname.name.n);
