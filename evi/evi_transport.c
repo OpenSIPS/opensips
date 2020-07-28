@@ -204,8 +204,6 @@ char *evi_build_payload(evi_params_t *params, str *method, int id,
 
 	if (id)
 		cJSON_AddNumberToObject(ret_obj, "id", id);
-	else
-		cJSON_AddNullToObject(ret_obj, "id");
 
 	cJSON_AddItemToObject(ret_obj, "jsonrpc",
 		cJSON_CreateString(JSONRPC_VERSION));
