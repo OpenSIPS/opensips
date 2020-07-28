@@ -245,7 +245,6 @@ modparam("event_stream", "event_param", "opensips_event")
 		<programlisting format="linespecific">
 <![CDATA[
 {
-	"id": null,
 	"jsonrpc": "2.0",
 	"method": "E_PIKE_BLOCKED",
 	"params": {
@@ -307,7 +306,6 @@ modparam("event_stream", "event_param", "opensips_event")
 
 # JSON-RPC command sent
 {
-	"id": null,
 	"jsonrpc": "2.0",
 	"method": "handle_cmd",
 	"params": {
@@ -350,7 +348,6 @@ route {
 
 # JSON-RPC command sent
 {
-	"id": null,
 	"jsonrpc": "2.0",
 	"method": "E_MY_EVENT",
 	"params": [3, 5]
