@@ -194,7 +194,6 @@ modparam("event_rabbitmq", "connect_timeout", 1000)
 		<programlisting format="linespecific">
 <![CDATA[
 {
-  "id": null,
   "jsonrpc": "2.0",
   "method": "E_PIKE_BLOCKED",
   "params": {
