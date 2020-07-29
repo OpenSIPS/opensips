@@ -983,13 +983,13 @@ opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 			Lists the registered capabilities and their states.
 		</para>
 		<para>
-		Name: <emphasis>clusterer_list</emphasis>
+		Name: <emphasis>clusterer_list_cap</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
 		<example>
 		<title><function>clusterer_list_cap</function> usage</title>
 		<programlisting format="linespecific">
-$ opensips-cli -x mi clusterer_list
+$ opensips-cli -x mi clusterer_list_cap
 {
     "Clusters": [
         {
