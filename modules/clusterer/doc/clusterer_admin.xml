@@ -942,7 +942,7 @@ Cluster:: 2
 			Lists the registered capabilities and their states.
 		</para>
 		<para>
-		Name: <emphasis>clusterer_list</emphasis>
+		Name: <emphasis>clusterer_list_cap</emphasis>
 		</para>
 		<para>Parameters:<emphasis>none</emphasis> </para>
 		<para>
@@ -955,7 +955,7 @@ Cluster:: 2
 		<example>
 		<title><function>clusterer_list_cap</function> usage</title>
 		<programlisting format="linespecific">
-$ ./opensipsctl fifo clusterer_list
+$ ./opensipsctl fifo clusterer_list_cap
 Cluster:: 1
 	Capability:: dialog-dlg-repl State=Ok
 	Capability:: usrloc-contact-repl State=not synced
