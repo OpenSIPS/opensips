@@ -667,7 +667,7 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 	return 0;
 }
 
-/* compatibility functions for openssl versions lower than 1.1 */
+/* compatibility function for openssl versions lower than 1.1.0 */
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
 {
@@ -686,16 +686,6 @@ int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
 
 	return tolen;
 }
-
-const BIGNUM *ECDSA_SIG_get0_r(const ECDSA_SIG *sig)
-{
-    return sig->r;
-}
-
-const BIGNUM *ECDSA_SIG_get0_s(const ECDSA_SIG *sig)
-{
-    return sig->s;
-}
 #endif
 
 static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
@@ -710,6 +700,7 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	struct lump* anchor;
 	EVP_MD_CTX *mdctx = NULL;
 	ECDSA_SIG *sig = NULL;
+	const BIGNUM *r, *s;
 	int len;
 
 	if (build_unsigned_pport(&unsigned_buf, date_ts, attest, cr_url,
@@ -762,12 +753,13 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	pkg_free(der_sig_buf.s);
 	der_sig_buf.s = NULL;
 
-	len = BN_bn2binpad(ECDSA_SIG_get0_r(sig), raw_sig_buf, R_S_INT_LEN);
+	ECDSA_SIG_get0(sig, &r, &s);
+	len = BN_bn2binpad(r, raw_sig_buf, R_S_INT_LEN);
 	if (len < 0 || len != R_S_INT_LEN) {
 		LM_ERR("Failed to convert R integer into binay represantation\n");
 		goto error;
 	}
-	len = BN_bn2binpad(ECDSA_SIG_get0_s(sig), raw_sig_buf + R_S_INT_LEN,
+	len = BN_bn2binpad(s, raw_sig_buf + R_S_INT_LEN,
 		R_S_INT_LEN);
 	if (len < 0 || len != R_S_INT_LEN) {
 		LM_ERR("Failed to convert S integer into binay represantation\n");
