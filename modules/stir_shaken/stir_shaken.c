@@ -686,6 +686,12 @@ int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen)
 
 	return tolen;
 }
+
+void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps)
+{
+	*pr = sig->r;
+	*ps = sig->s;
+}
 #endif
 
 static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
