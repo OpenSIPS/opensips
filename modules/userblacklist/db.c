@@ -107,7 +107,7 @@ int db_build_userbl_tree(const str *username, const str *domain, const str *tabl
 	if (RES_COL_N(res) > 1) {
 		for(i = 0; i < RES_ROW_N(res); i++) {
 			if ((!RES_ROWS(res)[i].values[0].nul) && (!RES_ROWS(res)[i].values[1].nul)) {
-				if ((RES_ROWS(res)[i].values[0].type == DB_STRING) &&
+				if ((RES_ROWS(res)[i].values[0].type == DB_STRING || RES_ROWS(res)[i].values[0].type == DB_STR) &&
 					(RES_ROWS(res)[i].values[1].type == DB_INT)) {
 
 					/* LM_DBG("insert into tree prefix %s, whitelist %d",
@@ -154,7 +154,7 @@ int db_reload_source(const str *table, struct dt_node_t *root)
 	if (RES_COL_N(res) > 1) {
 		for(i = 0; i < RES_ROW_N(res); i++) {
 			if ((!RES_ROWS(res)[i].values[0].nul) && (!RES_ROWS(res)[i].values[1].nul)) {
-				if ((RES_ROWS(res)[i].values[0].type == DB_STRING) &&
+				if ((RES_ROWS(res)[i].values[0].type == DB_STRING || RES_ROWS(res)[i].values[0].type == DB_STR) &&
 					(RES_ROWS(res)[i].values[1].type == DB_INT)) {
 
 					/* LM_DBG("insert into tree prefix %s, whitelist %d",
