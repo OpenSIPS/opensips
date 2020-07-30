@@ -75,6 +75,7 @@
 		<name>cpm_warning</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Warning threshold for calls per minute.</description>
 	</column>
 	
@@ -82,6 +83,7 @@
 		<name>cpm_critical</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Crtical threshold for calls per minute.</description>
 	</column>
 	
@@ -89,6 +91,7 @@
 		<name>call_duration_warning</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Warning threshold for calls per minute.</description>
 	</column>
 	
@@ -96,6 +99,7 @@
 		<name>call_duration_critical</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Crtical threshold for call duration.</description>
 	</column>
 		
@@ -103,6 +107,7 @@
 		<name>total_calls_warning</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Warning threshold for total calls.</description>
 	</column>
 	
@@ -110,6 +115,7 @@
 		<name>total_calls_critical</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Crtical threshold for total calls.</description>
 	</column>
 			
@@ -117,6 +123,7 @@
 		<name>concurrent_calls_warning</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Warning threshold for concurrent calls.</description>
 	</column>
 	
@@ -124,6 +131,7 @@
 		<name>concurrent_calls_critical</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Crtical threshold for concurrent calls.</description>
 	</column>
 			
@@ -131,6 +139,7 @@
 		<name>sequential_calls_warning</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Warning threshold for sequential calls.</description>
 	</column>
 	
@@ -138,6 +147,7 @@
 		<name>sequential_calls_critical</name>
 		<type>unsigned int</type>
 		<size>5</size>
+		<default>0</default>
 		<description>Crtical threshold for sequential calls.</description>
 	</column>
 

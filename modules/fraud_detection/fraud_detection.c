@@ -410,7 +410,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 	frd_thresholds_t *thr = (frd_thresholds_t*)rule->attrs.s;
 
 #define CHECK_AND_RAISE(pname, type) \
-	(se->stats.pname >= thr->pname ## _thr.type) { \
+	(thr->pname ## _thr.type && se->stats.pname >= thr->pname ## _thr.type) { \
 		raise_ ## type ## _event(&pname ## _name, &se->stats.pname,\
 				&thr->pname ## _thr.type, &user, &number, &rule->id);\
 		rc = rc_ ## type ## _thr;\
