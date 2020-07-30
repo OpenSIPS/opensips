@@ -1025,19 +1025,13 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		}
 
 		weight = 1;
-
-		/* weight */
-		if (VAL_TYPE(values+3) == DB_INT || VAL_TYPE(values+3) == DB_BIGINT) {
-			weight = VAL_INT(values+3);
-			memset(&weight_st, 0, sizeof weight_st);
-		} else {
-			/* dynamic weight, given as a communication socket string */
-			get_str_from_dbval("WEIGHT", values+3,
-			                   0/*not_null*/, 0/*not_empty*/, weight_st, error2);
-			if (!is_fs_url(&weight_st)) {
-				str2int(&weight_st, (unsigned int *)&weight);
-				memset(&weight_st, 0, sizeof weight_st);
-			}
+                /* weight */
+		/* dynamic weight, given as a communication socket string or a static weight*/
+		get_str_from_dbval("WEIGHT", values+3,
+		    0/*not_null*/, 0/*not_empty*/, weight_st, error2);
+		if (!is_fs_url(&weight_st)) {
+		    str2int(&weight_st, (unsigned int *)&weight);
+		    memset(&weight_st, 0, sizeof weight_st);
 		}
 
 		/* attrs */
