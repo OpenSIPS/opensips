@@ -197,10 +197,11 @@ int pn_cfg_validate(void)
 {
 	if (pn_enable_purr &&
 	        !is_script_func_used("record_route", -1) &&
-	        !is_script_func_used("record_route_preset", -1)) {
+	        !is_script_func_used("record_route_preset", -1) &&
+	        !is_script_func_used("topology_hiding", -1)) {
 		LM_ERR("you have enabled modparam 'pn_enable_purr' without "
-		       "'record_route()'ing yourself in the mid-dialog SIP flow, "
-		       "config not valid\n");
+		       "inserting yourself in the mid-dialog SIP flow "
+		       "(e.g. using record_route()), config not valid\n");
 		return 0;
 	}
 
