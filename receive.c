@@ -148,8 +148,12 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			tmp, rcv_info->src_port);
 		/* if a REQUEST msg was detected (first line was successfully parsed)
 		   we should trigger the error route */
-		if ( msg->first_line.type==SIP_REQUEST && sroutes->error.a!=NULL )
+		if ( msg->first_line.type==SIP_REQUEST && sroutes->error.a!=NULL ) {
+			if (existing_context == NULL)
+				prepare_context( ctx, parse_error );
+			current_processing_ctx = ctx;
 			run_error_route(msg, 1);
+		}
 		goto parse_error;
 	}
 	LM_DBG("After parse_msg...\n");
