@@ -93,7 +93,6 @@ Chapter 1. Admin Guide
    Example 1.1. E_PIKE_BLOCKED event
 
 {
-  "id": null,
   "jsonrpc": "2.0",
   "method": "E_PIKE_BLOCKED",
   "params": {
@@ -167,7 +166,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 24 16 854 37
    2. Liviu Chircu (@liviuchircu) 8 6 12 29
-   3. Vlad Patrascu (@rvlad-patrascu) 6 2 24 136
+   3. Vlad Patrascu (@rvlad-patrascu) 7 3 24 137
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
    5. Peter Lemenkov (@lemenkov) 3 1 1 1
 
@@ -191,7 +190,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2020
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2020
    2. Razvan Crainea (@razvancrainea)     May 2011 - Sep 2019
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    4. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
