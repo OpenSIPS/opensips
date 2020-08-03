@@ -612,7 +612,15 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 		<function moreinfo="none">show_fraud_stats</function>
 		</title>
 		<para>
-			Show the current statistics for a user to a given prefix and fraud profile.
+		Show the current statistics for all dials of a
+		<emphasis>user</emphasis> to a <emphasis>prefix</emphasis>.
+		</para>
+		<para>
+		NOTE: Since the fraud statistics are refreshed on-the-fly, as
+		check_fraud() is called, <emphasis role='bold'>this function will
+		return stale data</emphasis> if check_fraud() has not been called at
+		least once for the (user, prefix) pair within a newly matching time
+		interval!
 		</para>
 		<para>
 		Name: <emphasis>show_fraud_stats</emphasis>
@@ -622,8 +630,6 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 			<listitem><para>user</para></listitem>
 
 			<listitem><para>prefix</para></listitem>
-
-			<listitem><para>fraud_profile</para></listitem>
 		</itemizedlist>
 	</section>
 	<section id="mi_fraud_reload" xreflabel="fraud_reload">
