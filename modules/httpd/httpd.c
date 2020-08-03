@@ -59,6 +59,9 @@ static mi_response_t *mi_list_root_path(const mi_params_t *params,
 int port = 8888;
 str ip = {NULL, 0};
 str buffer = {NULL, 0};
+str tls_cert_file = {NULL, 0};
+str tls_key_file = {NULL, 0};
+str tls_ciphers = {"SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2", 45};
 int post_buf_size = DEFAULT_POST_BUF_SIZE;
 struct httpd_cb *httpd_cb_list = NULL;
 
@@ -75,6 +78,9 @@ static param_export_t params[] = {
 	{"ip",            STR_PARAM, &ip.s},
 	{"buf_size",      INT_PARAM, &buffer.len},
 	{"post_buf_size", INT_PARAM, &post_buf_size},
+	{"tls_cert_file", STR_PARAM, &tls_cert_file.s},
+	{"tls_key_file", STR_PARAM,  &tls_key_file.s},
+	{"tls_ciphers", STR_PARAM, &tls_ciphers.s},
 	{NULL, 0, NULL}
 };
 
@@ -261,5 +267,3 @@ error:
 	free_mi_response(resp);
 	return 0;
 }
-
-

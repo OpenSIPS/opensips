@@ -1,20 +1,29 @@
 <!-- Module User's Guide -->
 
 <chapter>
-	
+
 	<title>&adminguide;</title>
-	
+
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
 		This module provides an HTTP transport layer for &osips;.
 	</para>
 	<para>
-		Implementation of httpd module's http server is based on 
+		Implementation of httpd module's http server is based on
 		libmicrohttpd library.
 	</para>
 	</section>
-	
+
+	<section id="tlssupport" xreflabel="tlssupport">
+		<title>Overview</title>
+		<para>
+			TLS for the http server is enabled by setting  the <varname>tls_cert_file</varname>
+			and <varname>tls_key_file</varname> parameters. If this is enabled, support for plain
+			http is disabled.
+		</para>
+	</section>
+
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
@@ -125,6 +134,68 @@ modparam("httpd", "buf_size", 524288)
 		<programlisting format="linespecific">
 ...
 modparam("httpd", "post_buf_size", 4096)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_tls_cert_file" xreflabel="tls_cert_file">
+		<title><varname>tls_cert_file</varname> (string)</title>
+		<para>
+		Public certificate file for httpd. It will be used as server-side certificate for incoming TLS connections.
+		</para>
+		<para>
+		<emphasis> The default value is ""</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>tls_cert_file</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "tls_cert_file", "/etc/opensips/tls/server.pem")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_tls_key_file" xreflabel="tls_key_file">
+		<title><varname>tls_key_file</varname> (string)</title>
+		<para>
+		Private key of the above certificate. I must be kept in a safe place with tight permissions!
+		</para>
+		<para>
+		<emphasis> The default value is ""</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>tls_key_file</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "tls_key_file", "/etc/opensips/tls/server.key")
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_tls_ciphers" xreflabel="tls_ciphers">
+		<title><varname>tls_ciphers</varname> (string)</title>
+		<para>
+		You can specify the list of algorithms for authentication and encryption that you allow.
+		To obtain a list of ciphers
+		and then choose, use the gnutls-cli application:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>gnutls-cli -l</para>
+			</listitem>
+		</itemizedlist>
+		<warning><para>
+			Do not use the NULL algorithms (no encryption) ... never!!!
+		</para></warning>
+
+		<para>
+		<emphasis> The default value is  "SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2"</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>tls_key_file</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("httpd", "tls_ciphers", "SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2")
 ...
 </programlisting>
 		</example>
