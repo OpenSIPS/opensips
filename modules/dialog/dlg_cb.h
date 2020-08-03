@@ -116,7 +116,7 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
  *                care of generating proper BYEs for each participant)
  * Registration:  per-dialog, "dlg" must be given
  * Trigger count: 0 - 1 times per dialog, exclusive with DLGCB_EXPIRED, and one
- *                of these two will always be called for a dialog
+ *                of these two will always be called for an established dialog
  */
 #define DLGCB_TERMINATED      (1<<5)
 
@@ -129,7 +129,8 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
  * Registration:  per-dialog, "dlg" must be given
  * Trigger count:
  *                * 0 - 1 times per dialog, exclusive with DLGCB_TERMINATED,
- *                  and one of these two will always be called for a dialog
+ *                  and one of these two will always be called for an
+ *                  established dialog
  *
  *                * if using replication sharing tags, this callback is only
  *                  ran by the node that has the Active tag.
