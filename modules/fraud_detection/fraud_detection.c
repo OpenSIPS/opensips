@@ -455,7 +455,7 @@ static int check_fraud(struct sip_msg *msg, char *_user, char *_number, char *_p
 		param->calldur_warn = thr->call_duration_thr.warning;
 		param->calldur_crit = thr->call_duration_thr.critical;
 
-		if (dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED|DLGCB_FAILED|DLGCB_EXPIRED,
+		if (dlgb.register_dlgcb(dlgc, DLGCB_DESTROY,
 					dialog_terminate_CB, param, free_dialog_CB_param) != 0) {
 			LM_ERR("failed to register dialog terminated callback\n");
 			shm_free(param->number.s);
