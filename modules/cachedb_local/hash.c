@@ -167,8 +167,17 @@ int _lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires, i
 		cdb_slow_queries, cdb_total_queries);
 
 	/* replicate */
-	if (cluster_id && isrepl != 1)
-		replicate_cache_insert(&cache_col->col_name, attr, value, expires);
+	if (cluster_id && isrepl != 1) {
+		str grp;
+
+		if (((lcache_con *)con->data)->id->group_name) {
+			grp.s = ((lcache_con *)con->data)->id->group_name;
+			grp.len = strlen(grp.s);
+		} else
+			grp = cache_col->col_name;
+
+		replicate_cache_insert(&grp, attr, value, expires);
+	}
 
 	return 1;
 }
@@ -234,8 +243,17 @@ int _lcache_htable_remove(cachedb_con *con,str* attr, int isrepl)
 		"cachedb_local remove",attr->s,attr->len,0,
 		cdb_slow_queries, cdb_total_queries);
 
-	if (cluster_id && isrepl != 1)
-		replicate_cache_remove(&cache_col->col_name, attr);
+	if (cluster_id && isrepl != 1) {
+		str grp;
+
+		if (((lcache_con *)con->data)->id->group_name) {
+			grp.s = ((lcache_con *)con->data)->id->group_name;
+			grp.len = strlen(grp.s);
+		} else
+			grp = cache_col->col_name;
+
+		replicate_cache_remove(&grp, attr);
+	}
 
 	return 0;
 }
