@@ -226,8 +226,8 @@ typedef struct dr_part_gw {
 static int get_config_from_db();
 static int add_head_config();
 static int add_head_db();
-static int db_load_head(struct head_db*); /* used for populating head_db with
-											 db connections and db funcs */
+static int db_connect_head(struct head_db*); /* populate a db connection */
+
 static void trim_char(char**);
 static int fixup_dr_disable(void **,int);
 //static struct head_db * get_partition(const str *);
@@ -1503,9 +1503,6 @@ static int dr_init(void)
 			goto skip;
 		}
 
-		head_db_end->db_con = pkg_malloc(sizeof(db_con_t *));
-		(*(head_db_end->db_con)) = 0;
-
 		/* bind to the SQL module */
 		if (db_bind_mod( &(head_db_end->db_url), &( head_db_end->db_funcs ))) {
 			LM_CRIT("cannot bind to database module! "
@@ -1513,6 +1510,12 @@ static int dr_init(void)
 					db_url.len, db_url.s);
 			head_db_end->db_url.s = 0;
 			goto skip;
+		}
+
+		head_db_end->db_con = pkg_malloc(sizeof(db_con_t *));
+		if (!head_db_end->db_con) {
+			LM_ERR("oom\n");
+			return -1;
 		}
 
 		if( (*head_db_end->db_con =
@@ -1744,11 +1747,11 @@ error:
 }
 
 
-static int db_load_head(struct head_db *x) {
+static int db_connect_head(struct head_db *x) {
 
 	if( *(x->db_con) ) {
-		LM_ERR(" db_con already used\n");
-		return -1;
+		LM_INFO("db_con already present\n");
+		return 1;
 	}
 	if( x->db_url.s && (*(x->db_con) = x->db_funcs.init(&(x->db_url)))==0 ) {
 		LM_ERR("cannot initialize database connection"
@@ -1770,13 +1773,15 @@ static void rpc_dr_reload_data(int sender_id, void *unused)
 
 static int dr_child_init(int rank)
 {
-	struct head_db *head_db_it = head_db_start;
+	struct head_db *db = head_db_start;
 
 	LM_DBG("Child initialization on rank %d \n",rank);
 
-	while( head_db_it!=NULL ) {
-		db_load_head( head_db_it );
-		head_db_it = head_db_it->next;
+	for (db = head_db_start; db; db = db->next) {
+		if (db_connect_head(db) < 0) {
+			LM_ERR("failed to create DB connection\n");
+			return -1;
+		}
 	}
 
 	/* if child 1, send a job for itself to run the data loading after
