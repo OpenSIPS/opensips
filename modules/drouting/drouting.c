@@ -227,8 +227,7 @@ struct head_cache *get_head_cache(str *part);
 struct head_cache *add_head_cache(str *part);
 void clean_head_cache(struct head_cache *c);
 void init_head_db(struct head_db *new);
-static int db_load_head(struct head_db*); /* used for populating head_db with
-											 db connections and db funcs */
+static int db_connect_head(struct head_db*); /* populate a db connection */
 static char *extra_prefix_chars;
 
 
@@ -1904,11 +1903,11 @@ error:
 #undef add_partition_to_avp_name
 
 
-static int db_load_head(struct head_db *x) {
+static int db_connect_head(struct head_db *x) {
 
 	if( *(x->db_con) ) {
-		LM_ERR(" db_con already used\n");
-		return -1;
+		LM_INFO("db_con already present\n");
+		return 1;
 	}
 	if( x->db_url.s && (*(x->db_con) = x->db_funcs.init(&(x->db_url)))==0 ) {
 		LM_ERR("cannot initialize database connection"
@@ -1930,13 +1929,15 @@ static void rpc_dr_reload_data(int sender_id, void *unused)
 
 static int dr_child_init(int rank)
 {
-	struct head_db *head_db_it = head_db_start;
+	struct head_db *db = head_db_start;
 
 	LM_DBG("Child initialization on rank %d \n",rank);
 
-	while( head_db_it!=NULL ) {
-		db_load_head( head_db_it );
-		head_db_it = head_db_it->next;
+	for (db = head_db_start; db; db = db->next) {
+		if (db_connect_head(db) < 0) {
+			LM_ERR("failed to create DB connection\n");
+			return -1;
+		}
 	}
 
 	/* if child 1, send a job for itself to run the data loading after
@@ -1958,7 +1959,7 @@ static int dr_exit(void)
 		to_clean = it;
 		it = it->next;
 		if (dr_persistent_state && !to_clean->cache && 
-		db_load_head(to_clean)==0 ) {
+		db_connect_head(to_clean)==0 ) {
 			dr_state_flusher(to_clean);
 
 			(to_clean->db_funcs).close(*(to_clean->db_con));
