@@ -53,6 +53,9 @@ extern int port;
 extern str ip;
 extern str buffer;
 extern int post_buf_size;
+extern str tls_cert_file;
+extern str tls_key_file;
+extern str tls_ciphers;
 extern struct httpd_cb *httpd_cb_list;
 static union sockaddr_union httpd_server_info;
 
@@ -60,6 +63,8 @@ static const str MI_HTTP_U_URL = str_init("<html><body>"
 "Unable to parse URL!</body></html>");
 static const str MI_HTTP_U_METHOD = str_init("<html><body>"
 "Unsupported HTTP request!</body></html>");
+
+static char * load_file(char * );
 
 /**
  * Data structure to store inside elents of slinkedl_list list.
@@ -699,8 +704,51 @@ void httpd_proc(int rank)
 	}
 
 #ifdef LIBMICROHTTPD
+	unsigned int mhd_flags = MHD_USE_DEBUG;
+	int mhd_opt_n = 0;
+	char *key_pem;
+ 	char *cert_pem;
 	struct timeval tv;
 	struct sockaddr_in saddr_in;
+	struct MHD_OptionItem mhd_opts[4];
+
+	if (tls_key_file.s && tls_cert_file.s) {
+
+		key_pem = load_file(tls_key_file.s);
+		if (NULL == key_pem) {
+			LM_ERR("unable to load tls key\n");
+			return;
+		}
+
+  		cert_pem = load_file(tls_cert_file.s);
+		if (NULL == cert_pem) {
+			LM_ERR("unable to load tls certificate\n");
+			return;
+		}
+
+		mhd_flags = mhd_flags | MHD_USE_SSL;
+
+		mhd_opts[mhd_opt_n].option = MHD_OPTION_HTTPS_MEM_KEY;
+		mhd_opts[mhd_opt_n].value = 0;
+		mhd_opts[mhd_opt_n].ptr_value = key_pem;
+		mhd_opt_n++;
+		mhd_opts[mhd_opt_n].option = MHD_OPTION_HTTPS_MEM_CERT;
+		mhd_opts[mhd_opt_n].value = 0;
+		mhd_opts[mhd_opt_n].ptr_value = cert_pem;
+		mhd_opt_n++;
+		mhd_opts[mhd_opt_n].option = MHD_OPTION_HTTPS_PRIORITIES;
+		mhd_opts[mhd_opt_n].ptr_value = tls_ciphers.s;
+		mhd_opts[mhd_opt_n].value = 0;
+		mhd_opt_n++;
+
+	} else
+		mhd_flags = mhd_flags | MHD_NO_FLAG;
+
+	mhd_opts[mhd_opt_n].option = MHD_OPTION_END;
+	mhd_opts[mhd_opt_n].value = 0;
+	mhd_opts[mhd_opt_n].ptr_value = NULL;
+
+
 
 	memset(&saddr_in, 0, sizeof(saddr_in));
 	if (ip.s)
@@ -720,9 +768,10 @@ void httpd_proc(int rank)
 	LM_DBG("init_child [%d] - [%d] HTTP Server init [%s:%d]\n",
 		rank, getpid(), (ip.s?ip.s:"INADDR_ANY"), port);
 	set_proc_attrs("HTTPD %s:%d", (ip.s?ip.s:"INADDR_ANY"), port);
-	dmn = MHD_start_daemon(MHD_NO_FLAG|MHD_USE_DEBUG, port, NULL, NULL,
+	dmn = MHD_start_daemon(mhd_flags, port, NULL, NULL,
 			&(answer_to_connection), NULL,
 			MHD_OPTION_SOCK_ADDR, &saddr_in,
+			MHD_OPTION_ARRAY, mhd_opts,
 			MHD_OPTION_END);
 
 	if (NULL == dmn) {
@@ -775,4 +824,27 @@ void httpd_proc_destroy(void)
 	MHD_stop_daemon (dmn);
 #endif
 	return;
+}
+
+static char * load_file(char * filename)
+{
+	FILE *f = fopen(filename, "rb");
+	if(!f)
+		return NULL;
+
+	fseek(f, 0, SEEK_END);
+	long fsize = ftell(f);
+
+	if(fsize == 0)
+		return NULL;
+
+	fseek(f, 0, SEEK_SET);
+
+	char *string = malloc(fsize + 1);
+	fread(string, 1, fsize, f);
+	fclose(f);
+
+	string[fsize] = 0;
+
+	return string;
 }
