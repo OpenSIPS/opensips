@@ -117,10 +117,14 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	size_t len;
 	char *p;
 	struct tls_domain *d = *dom;
-	size_t cadir_len = strlen(str_vals[STR_VALS_CADIR_COL]);
-	size_t cplist_len = strlen(str_vals[STR_VALS_CPLIST_COL]);
-	size_t crl_dir_len = strlen(str_vals[STR_VALS_CRL_DIR_COL]);
-	size_t eccurve_len = strlen(str_vals[STR_VALS_ECCURVE_COL]);
+	size_t cadir_len = str_vals[STR_VALS_CADIR_COL] ?
+		strlen(str_vals[STR_VALS_CADIR_COL]) : 0;
+	size_t cplist_len = str_vals[STR_VALS_CPLIST_COL] ?
+		strlen(str_vals[STR_VALS_CPLIST_COL]) : 0;
+	size_t crl_dir_len = str_vals[STR_VALS_CRL_DIR_COL] ?
+		strlen(str_vals[STR_VALS_CRL_DIR_COL]) : 0;
+	size_t eccurve_len = str_vals[STR_VALS_ECCURVE_COL] ?
+		strlen(str_vals[STR_VALS_ECCURVE_COL]) : 0;
 	char name_buf[255];
 	int name_len;
 
