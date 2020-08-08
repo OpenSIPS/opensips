@@ -20,19 +20,19 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">37</entry>
+		<entry align="center">30</entry>
+		<entry align="center">258</entry>
+		<entry align="center">203</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>)</entry>
 		<entry align="center">37</entry>
 		<entry align="center">11</entry>
 		<entry align="center">2665</entry>
 		<entry align="center">235</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">34</entry>
-		<entry align="center">28</entry>
-		<entry align="center">248</entry>
-		<entry align="center">199</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -97,7 +97,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2015 - Jul 2020</entry>
+		<entry align="center">Mar 2015 - Aug 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -138,7 +138,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>).</para>
 </section>
 
 </chapter>
