@@ -747,6 +747,7 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	}
 
 	EVP_MD_CTX_destroy(mdctx);
+	mdctx = NULL;
 
 	/* convert from DER format to the internal structure in order to extract
 	 * the R and S values */
