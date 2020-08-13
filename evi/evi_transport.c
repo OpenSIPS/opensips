@@ -178,7 +178,7 @@ static int payload_add_params(cJSON *ret_obj, evi_params_t *params,
 		} else {
 			tmp = cJSON_CreateStr(param->val.s.s, param->val.s.len);
 			if (!tmp) {
-				LM_ERR("Failed to create JSON string\n");
+				LM_ERR("Failed to create JSON string %.*s\n", param->name.len, param->name.s);
 				return -1;
 			}
 		}
