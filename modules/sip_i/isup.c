@@ -1223,7 +1223,7 @@ struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_PARM_CORRELATION_ID, str_init("Correlation id"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_SCF_ID, str_init("SCF id"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_CALL_DIVERSION_TREATMENT_IND, str_init("Call diversion treatment indicators"), NULL, NULL, NULL, NULL, 0},
-	{ISUP_PARM_CALLED_IN_NUMBER, str_init("Called IN number"), NULL, NULL, NULL, NULL, 0},
+	{ISUP_PARM_CALLED_IN_NUMBER, str_init("Called IN number"), original_called_num_parsef, original_called_num_writef, original_called_num_subf, NULL, 0},
 	{ISUP_PARM_CALL_OFFERING_TREATMENT_IND, str_init("Call offering treatment indicators"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_CHARGED_PARTY_IDENT, str_init("Charged party identification"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_CONFERENCE_TREATMENT_IND, str_init("Conference treatment indicators"), NULL, NULL, NULL, NULL, 0},
