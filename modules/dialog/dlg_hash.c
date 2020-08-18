@@ -199,6 +199,10 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].out_sdp.s);
 			if (dlg->legs[i].in_sdp.s)
 				shm_free(dlg->legs[i].in_sdp.s);
+			if (dlg->legs[i].tmp_out_sdp.s)
+				shm_free(dlg->legs[i].tmp_out_sdp.s);
+			if (dlg->legs[i].tmp_in_sdp.s)
+				shm_free(dlg->legs[i].tmp_in_sdp.s);
 		}
 		shm_free(dlg->legs);
 	}
