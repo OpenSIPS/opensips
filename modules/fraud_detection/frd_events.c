@@ -165,7 +165,8 @@ void dialog_terminate_CB(struct dlg_cell *dlg, int type,
 	}
 
 	lock_get(&frdparam->stats->lock);
-	--frdparam->stats->stats.concurrent_calls;
+	if (frdparam->interval_id == frdparam->stats->interval_id)
+		--frdparam->stats->stats.concurrent_calls;
 	lock_release(&frdparam->stats->lock);
 }
 

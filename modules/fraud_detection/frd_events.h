@@ -44,6 +44,7 @@ typedef struct {
 	str user;
 	str number;
 	unsigned int ruleid;
+	unsigned int interval_id;
 
 	unsigned int calldur_warn;
 	unsigned int calldur_crit;
