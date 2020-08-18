@@ -161,7 +161,8 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 		memcpy(si->tag.s, sid->tag, si->tag.len+1);
 	}
 
-	if (!is_udp_based_proto(si->proto)) {
+	if (si->proto!=PROTO_UDP && si->proto!=PROTO_SCTP &&
+	        si->proto!=PROTO_HEP_UDP) {
 		if (sid->workers)
 			LM_WARN("number of workers per non UDP-based <%.*s> listener not "
 				"supported -> ignoring...\n", si->name.len, si->name.s);

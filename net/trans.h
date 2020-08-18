@@ -72,11 +72,9 @@ extern struct proto_info protos[];
  * params according to RFC 7118 - razvanc
  */
 
+/* NOTE: make sure trans_load() is called, or you will get false negatives! */
 #define is_udp_based_proto(_p) \
-	((_p==PROTO_HEP_UDP) || protos[_p].net.flags&PROTO_NET_USE_UDP)
-/* XXX: ^ the PROTO_NET_USE_UDP concept is currently broken, since the macro
- * may be used well before trans_load() is invoked, thus the "extra" protocols
- * from @protos are still uninitialized and the macro will fail to see them */
+	(protos[_p].net.flags&PROTO_NET_USE_UDP)
 
 #define proto_has_listeners(_p) \
 	(protos[_p].listeners != NULL)
