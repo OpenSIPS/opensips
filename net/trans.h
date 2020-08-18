@@ -73,7 +73,10 @@ extern struct proto_info protos[];
  */
 
 #define is_udp_based_proto(_p) \
-	(protos[_p].net.flags&PROTO_NET_USE_UDP)
+	((_p==PROTO_HEP_UDP) || protos[_p].net.flags&PROTO_NET_USE_UDP)
+/* XXX: ^ the PROTO_NET_USE_UDP concept is currently broken, since the macro
+ * may be used well before trans_load() is invoked, thus the "extra" protocols
+ * from @protos are still uninitialized and the macro will fail to see them */
 
 #define proto_has_listeners(_p) \
 	(protos[_p].listeners != NULL)
