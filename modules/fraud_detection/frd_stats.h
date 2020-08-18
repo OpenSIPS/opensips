@@ -51,6 +51,7 @@ typedef struct {
 typedef struct _frd_hash_item {
 	gen_lock_t            lock;
 	frd_stats_t           stats;
+	unsigned int          interval_id; /* version of the current interval */
 } frd_stats_entry_t;
 
 int init_stats_table(void);
