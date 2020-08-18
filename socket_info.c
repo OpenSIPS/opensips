@@ -150,7 +150,8 @@ struct socket_info* new_sock_info(	char* name,
 		si->adv_port_str.len=snprintf(si->adv_port_str.s, 10, "%hu", adv_port);
 		si->adv_port = adv_port;
 	}
-	if (!is_udp_based_proto(si->proto) && children) {
+	if (si->proto!=PROTO_UDP && si->proto!=PROTO_SCTP &&
+	        si->proto!=PROTO_HEP_UDP && children) {
 		LM_WARN("number of workers per non UDP-based <%.*s> listener not "
 			"supported -> ignoring...\n", si->name.len, si->name.s);
 	} else {
