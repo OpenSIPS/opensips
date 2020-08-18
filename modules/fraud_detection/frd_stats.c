@@ -118,6 +118,8 @@ frd_stats_entry_t* get_stats(str user, str prefix, str *shm_user)
 			LM_ERR ("cannot init lock\n");
 			return NULL;
 		}
+
+		(*stats_entry)->interval_id = 0;
 		memset(&(*stats_entry)->stats, 0, sizeof(frd_stats_t));
 	}
 
