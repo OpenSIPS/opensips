@@ -67,7 +67,10 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int leg);
 
 static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
-		unsigned int leg);
+		unsigned int leg, int tmp);
+
+static inline void dlg_sync_tmp_sdp(struct dlg_cell *dlg, unsigned int leg);
+static inline void dlg_clear_tmp_sdp(struct dlg_cell *dlg, unsigned int leg);
 
 
 void init_dlg_handlers(int default_timeout_p)
@@ -461,7 +464,7 @@ routing_info:
 		LM_DBG("Skipping %d ,%d, %d, %d \n",skip_rrs, dlg->from_rr_nb,t->relaied_reply_branch,t->uac[t->relaied_reply_branch].added_rr);
 		get_routing_info(rpl, 0, &skip_rrs, &contact, &rr_set);
 
-		dlg_update_sdp(dlg, rpl, leg);
+		dlg_update_sdp(dlg, rpl, leg, 0);
 		dlg_update_routing( dlg, leg, &rr_set, &contact);
 		if( rr_set.s )
 			pkg_free( rr_set.s);
@@ -767,10 +770,9 @@ static inline int update_msg_cseq(struct sip_msg *msg,str *new_cseq,
 }
 
 
-static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, struct sip_msg *msg)
+static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, struct sip_msg *msg, int tmp)
 {
 	str sdp;
-	char *tmp;
 	str *in_sdp, *out_sdp;
 
 	if (get_body(msg,&sdp) < 0) {
@@ -781,8 +783,13 @@ static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, st
 
 	dlg_lock_dlg(dlg);
 
-	in_sdp = &dlg->legs[in_leg].in_sdp;
-	out_sdp = &dlg->legs[out_leg].out_sdp;
+	if (tmp) {
+		in_sdp = &dlg->legs[in_leg].tmp_in_sdp;
+		out_sdp = &dlg->legs[out_leg].tmp_out_sdp;
+	} else {
+		in_sdp = &dlg->legs[in_leg].in_sdp;
+		out_sdp = &dlg->legs[out_leg].out_sdp;
+	}
 
 	if (in_sdp->len == sdp.len &&
 			memcmp(in_sdp->s, sdp.s, sdp.len) == 0) {
@@ -793,24 +800,10 @@ static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, st
 		goto end;
 	}
 
-	if (!out_sdp->s) {
-		out_sdp->s = shm_malloc(sdp.len);
-		if (!out_sdp->s) {
-			LM_ERR("Failed to allocate sdp\n");
-			goto end;
-		}
-	} else if (out_sdp->len < sdp.len) {
-		tmp = shm_realloc(out_sdp->s, sdp.len);
-		if (!tmp) {
-			LM_ERR("Failed to reallocate sdp \n");
-			goto end;
-		}
-		out_sdp->s = tmp;
-	}
-
-	out_sdp->len = sdp.len;
-	memcpy(out_sdp->s,sdp.s,sdp.len);
-	LM_DBG("update outbound sdp for leg %d\n", out_leg);
+	if (shm_str_sync(out_sdp, &sdp) < 0)
+		LM_ERR("Failed to (re)allocate sdp\n");
+	else
+		LM_DBG("update outbound sdp for leg %d\n", out_leg);
 end:
 	dlg_unlock_dlg(dlg);
 }
@@ -843,13 +836,16 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 	if (statuscode == 200) {
+		dlg_sync_tmp_sdp(dlg, DLG_CALLER_LEG);
+		dlg_update_sdp(dlg, rpl, callee_idx(dlg), 0);
+
 		buffer.s = ((str*)ps->extra1)->s;
 		buffer.len = ((str*)ps->extra1)->len;
 
 		msg=pkg_malloc(sizeof(struct sip_msg));
 		if (msg==0) {
 			LM_ERR("no pkg mem left for sip_msg\n");
-			return;
+			goto clear;
 		}
 
 		memset(msg,0, sizeof(struct sip_msg));
@@ -858,15 +854,17 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 
 		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
 			pkg_free(msg);
-			return;
+			goto clear;
 		}
 
 		dlg_update_contact(dlg, msg, callee_idx(dlg));
-		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
+		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 0);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
 	}
+clear:
+	dlg_clear_tmp_sdp(dlg, DLG_CALLER_LEG);
 }
 
 static void dlg_update_caller_sdp(struct cell* t, int type,
@@ -898,13 +896,16 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (statuscode == 200) {
+		dlg_sync_tmp_sdp(dlg, callee_idx(dlg));
+		dlg_update_sdp(dlg, rpl, DLG_CALLER_LEG, 0);
+
 		buffer.s = ((str*)ps->extra1)->s;
 		buffer.len = ((str*)ps->extra1)->len;
 
 		msg=pkg_malloc(sizeof(struct sip_msg));
 		if (msg==0) {
 			LM_ERR("no pkg mem left for sip_msg\n");
-			return;
+			goto clear;
 		}
 
 		memset(msg,0, sizeof(struct sip_msg));
@@ -913,15 +914,17 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 
 		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
 			pkg_free(msg);
-			return;
+			goto clear;
 		}
 
 		dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
-		dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg);
+		dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg, 0);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
 	}
+clear:
+	dlg_clear_tmp_sdp(dlg, callee_idx(dlg));
 }
 
 static void dlg_seq_up_onreply_mod_cseq(struct cell* t, int type,
@@ -1100,7 +1103,7 @@ static void dlg_onreply_out(struct cell* t, int type, struct tmcb_params *ps)
 			return;
 		}
 
-		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
+		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 0);
 
 		/* save the outgoing contact only if TH */
 		if (dlg->mod_flags & TOPOH_ONGOING) {
@@ -1158,7 +1161,7 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 
 	/* we use the initial request, which already has the contact parsed/fixed */
 	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
-	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg);
+	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg, 1);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1190,7 +1193,7 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 	}
 
 	dlg_update_contact(dlg, ps->req, callee_idx(dlg));
-	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
+	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 1);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1283,7 +1286,7 @@ static void dlg_onreq_out(struct cell* t, int type, struct tmcb_params *ps)
 
 	dlg_unlock_dlg(dlg);
 
-	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_leg, msg);
+	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_leg, msg, 0);
 
 	dlg_lock_dlg(dlg);
 
@@ -1369,11 +1372,35 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 	return 1;
 }
 
+static inline void dlg_clear_tmp_sdp(struct dlg_cell *dlg, unsigned int leg)
+{
+	if (dlg->legs[leg].tmp_in_sdp.s) {
+		shm_free(dlg->legs[leg].tmp_in_sdp.s);
+		dlg->legs[leg].tmp_in_sdp.s = 0;
+		dlg->legs[leg].tmp_in_sdp.len = 0;
+	}
+	if (dlg->legs[leg].tmp_out_sdp.s) {
+		shm_free(dlg->legs[leg].tmp_out_sdp.s);
+		dlg->legs[leg].tmp_out_sdp.s = 0;
+		dlg->legs[leg].tmp_out_sdp.len = 0;
+	}
+}
+
+static inline void dlg_sync_tmp_sdp(struct dlg_cell *dlg, unsigned int leg)
+{
+	if (dlg->legs[leg].tmp_in_sdp.s &&
+		shm_str_sync(&dlg->legs[leg].in_sdp, &dlg->legs[leg].tmp_in_sdp) < 0)
+			LM_ERR("could not update inbound SDP from temporary SDP!\n");
+	if (dlg->legs[leg].tmp_out_sdp.s &&
+		shm_str_sync(&dlg->legs[leg].out_sdp, &dlg->legs[leg].tmp_out_sdp) < 0)
+			LM_ERR("could not update outbound SDP from temporary SDP!\n");
+}
 
 static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
-		unsigned int leg)
+		unsigned int leg, int tmp)
 {
 	str sdp;
+	str *sync_sdp;
 
 	if (get_body(msg, &sdp) < 0)
 		return -1;
@@ -1387,7 +1414,9 @@ static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 		return 0;
 	}
 
-	if (shm_str_sync(&dlg->legs[leg].in_sdp, &sdp) != 0) {
+	sync_sdp = (tmp?&dlg->legs[leg].tmp_in_sdp:&dlg->legs[leg].in_sdp);
+
+	if (shm_str_sync(sync_sdp, &sdp) != 0) {
 		LM_ERR("cannot update inbound SDP!\n");
 		return -1;
 	}
@@ -1572,7 +1601,7 @@ static inline void update_sequential_sdp(struct dlg_cell *dlg, struct sip_msg *r
 		return;
 
 	dlg_lock_dlg(dlg);
-	ret = dlg_update_sdp(dlg, req, leg);
+	ret = dlg_update_sdp(dlg, req, leg, 1);
 	dlg_unlock_dlg(dlg);
 
 	/* if anything has changed in the meantime, also update replicate */
