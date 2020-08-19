@@ -684,7 +684,7 @@ int db_last_inserted_id(const db_con_t* _h)
 
 	CON_SET_CURR_PS(_h, &ps);
 #endif
-	ret = snprintf(sql_buf, SQL_BUF_LEN, "insert into %.*s (",
+	ret = snprintf(sql_buf, SQL_BUF_LEN, "insert or replace into %.*s (",
 		CON_TABLE(_h)->len, CON_TABLE(_h)->s);
 	if (ret < 0 || ret >= SQL_BUF_LEN) goto error;
 	off = ret;
@@ -702,15 +702,6 @@ int db_last_inserted_id(const db_con_t* _h)
 	off += ret;
 
 	*(sql_buf + off++) = ')';
-
-	ret = snprintf(sql_buf + off, SQL_BUF_LEN - off, " on duplicate key update ");
-	if (ret < 0 || ret >= (SQL_BUF_LEN - off)) goto error;
-	off += ret;
-
-	ret = db_print_set(_h, sql_buf + off, SQL_BUF_LEN - off, _k, _v, _n,
-		db_sqlite_val2str);
-	if (ret < 0) return -1;
-	off += ret;
 
 	sql_str.s = sql_buf;
 	sql_str.len = off;
