@@ -111,6 +111,7 @@ static char *tls_domain_avp = NULL;
 static char *sip_domain_avp = NULL;
 
 static int  mod_init(void);
+static int  child_init(int rank);
 static int  mod_load(void);
 static void mod_destroy(void);
 static int tls_get_handshake_timeout(void);
@@ -380,7 +381,7 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	mod_destroy,/* destroy function */
-	0,          /* per-child init function */
+	child_init, /* per-child init function */
 	0           /* reload confirm function */
 };
 
@@ -1951,6 +1952,9 @@ static int mod_init(void) {
 						*tls_server_domains, *tls_client_domains))
 			return -1;
 
+		dr_dbf.close(db_hdl);
+		db_hdl = NULL;
+
 		/* link the DB domains with the existing script domains */
 
 		if (*tls_server_domains && tls_server_domains_tmp) {
@@ -2034,6 +2038,19 @@ static int mod_init(void) {
 	return 0;
 }
 
+static int child_init(int rank)
+{
+	if (!tls_db_url.s || !(rank >= 1 || rank == PROC_MODULE))
+		return 0;
+
+	/* init DB connection */
+	if (!(db_hdl = dr_dbf.init(&tls_db_url))) {
+		LM_CRIT("failed to initialize database connection\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 static void mod_destroy(void)
 {
