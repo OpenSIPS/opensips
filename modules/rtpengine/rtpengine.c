@@ -1472,10 +1472,17 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				continue;
 
 			case 8:
-				if (str_eq(&key, "internal"))
-					iniface = key;
-				else if (str_eq(&key, "external"))
-					outiface = key;
+				if (str_eq(&key, "internal")) {
+					if (iniface.s)
+						outiface = key;
+					else
+						iniface = key;
+				} else if (str_eq(&key, "external")) {
+					if (iniface.s)
+						outiface = key;
+					else
+						iniface = key;
+				}
 				else if (str_eq(&key, "RTP/AVPF"))
 					ng_flags->transport = 0x102;
 				else if (str_eq(&key, "RTP/SAVP"))
