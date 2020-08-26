@@ -286,7 +286,7 @@ inline static void retransmission_handler( struct timer_link *retr_tl )
 	/* re-transmission */
 	if ( r_buf->activ_type==TYPE_LOCAL_CANCEL
 		|| r_buf->activ_type==TYPE_REQUEST ) {
-			LM_DBG("retransmission_handler : request resending"
+			LM_INFO("retransmission_handler : request resending"
 				" (t=%p, %.9s ... )\n", r_buf->my_T, r_buf->buffer.s);
 			set_t(r_buf->my_T);
 			if (SEND_BUFFER( r_buf )==0) {
