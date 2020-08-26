@@ -33,6 +33,7 @@ addons:
       - uuid-dev
       - python-dev
       - libmaxminddb-dev
+      - librdkafka-dev
 #      - libjwt-dev
 before_install: sh -x scripts/build/install_depends.sh
 script: sh -x scripts/build/do_build.sh

@@ -1,0 +1,259 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module is an implementation of an
+		<ulink url="https://kafka.apache.org/">Apache Kafka</ulink> producer.
+		It serves as a transport backend for the Event Interface and also provides a
+		stand-alone connector to be used from the OpenSIPS script in order to
+		publish messages to Kafka brokers. 
+	</para>
+	</section>
+
+	<section id="kafka_socket_syntax" xreflabel="Kafka socket syntax">
+	<title>Kafka socket syntax</title>
+	<para>
+		<para><emphasis>'kafka:' brokers '/' topic ['?' properties]</emphasis></para>
+	</para>
+	<para>
+		Meaning of the socket fields:
+		<itemizedlist>
+		<listitem><para>
+			<emphasis>brokers</emphasis> - comma-separated list of the addresses (as
+			host:port) of the Kafka brokers to connect to. These are the "bootstrap"
+			servers used by the client to discover the Kafka cluster. This
+			corresponds to the <emphasis>bootstrap.servers</emphasis> /
+			<emphasis>metadata.broker.list</emphasis> configuration property.
+		</para>	</listitem>
+		<listitem><para>
+			<emphasis>topic</emphasis> - Kafka topic used to publish messages to.
+		</para></listitem>
+		<listitem><para>
+			<emphasis>properties</emphasis> - configuration properties to be
+			transparently passed to the Kafka client library. The syntax is:
+			<para>
+			<emphasis>'g.'|'t.' property '=' value ['&amp;' 'g.'|'t.' property '=' value] ...</emphasis>
+			</para>
+			<para>
+				The <emphasis>g.</emphasis> or <emphasis>t.</emphasis> prefix before
+				each property name specifies whether it's a global or topic level
+				property, as classified by the Kafka library. Documentation for the
+				supported properties can be found
+				<ulink url="https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md">here</ulink>.
+			</para>
+			<para>
+				Note that some library properties have the <emphasis>topic.</emphasis>
+				prefix as part of their name, but still fall under the global category.
+			</para>
+			<para>
+				<emphasis>key=callid</emphasis> is an extra property that is not
+				passed to the Kafka library and is interpreted by OpenSIPS itself.
+				When enabling this property the record published to Kafka will also
+				include the Call-ID of the current SIP message as key.
+			</para>
+		</para>	</listitem>
+		</itemizedlist>
+	</para>
+	</section>
+
+	<section>
+	<title>Kafka events syntax</title>
+	<para>
+		The event payload is formated as a JSON-RPC notification, with the event
+		name as the <emphasis>method</emphasis> field and the event parameters as
+		the <emphasis>params</emphasis> field.
+	</para>
+	<para>
+		The record published to Kafka will also include the Call-ID of the current
+		SIP message as key, if the <emphasis>key=callid</emphasis> property is
+		provided in the event socket.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>librdkafka-dev</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			<emphasis>librdkafka-dev</emphasis> can be installed from the Confluent
+			<ulink url="https://docs.confluent.io/current/installation/installing_cp/deb-ubuntu.html#get-the-software">APT</ulink> or
+			<ulink url="https://docs.confluent.io/current/installation/installing_cp/rhel-centos.html#get-the-software">YUM</ulink>
+			repositories.
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_broker_id" xreflabel="broker_id">
+		<title><varname>broker_id</varname> (string)</title>
+		<para>
+			This parameter specifies the configuration for a Kafka broker
+			(or cluster) that can be used to publish messages directly
+			from the script, using the <xref linkend="func_kafka_publish"/> function.
+		</para>
+		<para>
+			The format of the parameter is: <emphasis>[ID]kafka_socket</emphasis>,
+			where <emphasis>ID</emphasis> is an identifier for this broker instance and
+			<emphasis>kafka_socket</emphasis> is a specification similar to the
+			<xref linkend="kafka_socket_syntax"/>.
+		</para>
+		<para>
+			The <emphasis>key=callid</emphasis> property does not have an effect for
+			brokers configured through this parameter.
+		</para>
+		<para>
+			This parameter can be set multiple times.
+		</para>
+		<example>
+		<title>Set <varname>broker_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_kafka", "broker_id", "[k1]127.0.0.1:9092/topic1?g.linger.ms=100&amp;t.acks=all")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_kafka_publish" xreflabel="kafka_publish()">
+		<title>
+			<function moreinfo="none">kafka_publish(broker_id, message, [key], 
+				[report_route])</function>
+		</title>
+		<para>
+			Publishes a message to a Kafka broker (or cluster). As the actual
+			send operation is done in an asynchronous manner, a report route
+			may be provided in order to check the message delivery status.
+		</para>
+		<para>
+			Returns <emphasis>1</emphasis> if the message was succesfully queued
+			for sending or <emphasis>-1</emphasis> otherwise.
+		</para>
+		<para>
+			This function can be used from any route.
+		</para>
+		<para>
+		The function has the following parameters:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					<emphasis>broker_id</emphasis> (string) - the ID of the Kafka broker
+					(or cluster).
+					Must be one of the IDs defined through the
+					<xref linkend="param_broker_id"/> modparam.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>message</emphasis> (string) - the payload of the Kafka
+					message to publish.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>key</emphasis> (string, optional) - the key of the Kafka
+					record to publish.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>report_route</emphasis> (string, static, optional) -
+					name of a script route to be executed when the message delivery
+					status is available. Information about the message publishing will
+					be available in this route through the following AVP variables:
+					<itemizedlist>
+					<listitem><para>
+						<emphasis>$avp(kafka_id)</emphasis> - broker ID
+					</para></listitem>
+					<listitem><para>
+						<emphasis>$avp(kafka_status)</emphasis> - delivery status,
+						0 if succesfull, -1 othewise
+					</para></listitem>
+					<listitem><para>
+						<emphasis>$avp(kafka_key)</emphasis> - message key
+					</para></listitem>
+					<listitem><para>
+						<emphasis>$avp(kafka_msg)</emphasis> - message payload
+					</para></listitem>
+					</itemizedlist>
+				</para>
+			</listitem>
+		</itemizedlist>
+		<example>
+		<title><function>kafka_publish()</function> function usage</title>
+		<programlisting format="linespecific">
+	...
+	$var(msg) = "my msg content";
+	kafka_publish("k1", $var(kmsg), $ci, "kafka_report");
+	...
+	route[kafka_report] {
+		xlog("Delivery status: $avp(kafka_status) for broker: $avp(kafka_id)\n");
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
+	</section>
+
+	<section>
+	<title>Examples</title>
+		<example>
+		<title>E_PIKE_BLOCKED event</title>
+		<programlisting format="linespecific">
+<![CDATA[
+{
+  "jsonrpc": "2.0",
+  "method": "E_PIKE_BLOCKED",
+  "params": {
+    "ip": "192.168.2.11"
+  }
+}
+]]>
+</programlisting>
+		</example>
+
+		<example>
+		<title>Kafka socket</title>
+		<programlisting format="linespecific">
+
+	kafka:127.0.0.1:9092/topic1?t.message.timeout.ms=1000&amp;key=callid
+
+</programlisting>
+		</example>
+
+	</section>
+	
+</chapter>
