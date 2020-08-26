@@ -54,6 +54,7 @@
 #include "../../data_lump.h"
 #include "../../parser/parse_to.h"
 #include "../../parser/parse_cseq.h"
+#include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/parse_cseq.h"
@@ -1208,16 +1209,27 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 {
 	str contact;
 	char *tmp;
+	int ret = 0;
+	contact_t *ct = NULL;
+
 	if (!msg->contact &&
 			(parse_headers(msg, HDR_CONTACT_F, 0) < 0 || !msg->contact)) {
 		LM_DBG("INVITE or UPDATE without a contact - not updating!\n");
 		return 0;
-	} else if (!msg->contact->parsed && parse_contact(msg->contact) < 0) {
-		LM_INFO("INVITE or UPDATE with broken contact - not updating!\n");
-		return 0;
+	}
+	if (!msg->contact->parsed) {
+		contact = msg->contact->body;
+		trim_leading(&contact);
+		if (parse_contacts(&contact, &ct) < 0) {
+			LM_INFO("INVITE or UPDATE with broken contact - not updating!\n");
+			return 0;
+		}
+		contact = ct->uri;
+		LM_INFO("DBG: Found unparsed contact [%.*s]\n", contact.len, contact.s);
+	} else {
+		contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
 	}
 
-	contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
 	dlg_lock_dlg(dlg);
 	if (dlg->legs[leg].contact.s) {
 		/* if the same contact, don't do anything */
@@ -1225,8 +1237,7 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 				strncmp(dlg->legs[leg].contact.s, contact.s, contact.len) == 0) {
 			LM_DBG("Using the same contact <%.*s> for dialog %p on leg %d\n",
 					contact.len, contact.s, dlg, leg);
-			dlg_unlock_dlg(dlg);
-			return 0;
+			goto end;
 		}
 		dlg->flags |= DLG_FLAG_CHANGED;
 		LM_DBG("Replacing old contact <%.*s> for dialog %p on leg %d\n",
@@ -1236,16 +1247,19 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		tmp = shm_malloc(contact.len);
 	if (!tmp) {
 		LM_ERR("not enough memory for new contact!\n");
-		dlg_unlock_dlg(dlg);
-		return -1;
+		ret = -1;
+		goto end;
 	}
 	dlg->legs[leg].contact.s = tmp;
 	dlg->legs[leg].contact.len = contact.len;
 	memcpy(dlg->legs[leg].contact.s, contact.s, contact.len);
 	LM_DBG("Updated contact to <%.*s> for dialog %p on leg %d\n",
 			contact.len, contact.s, dlg, leg);
+	ret = 1;
+end:
 	dlg_unlock_dlg(dlg);
-	return 1;
+	if (ct) free_contacts(&ct);
+	return ret;
 }
 
 static void dlg_update_caller_contact(struct cell* t, int type, struct tmcb_params *ps)
