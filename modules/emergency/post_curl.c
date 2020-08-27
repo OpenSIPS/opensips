@@ -120,5 +120,6 @@ int post(char*  url, char* xml, char** response){
 		return resp;
 	}
 	curl_global_cleanup();
+	free(data.data);
 	return  -1;
 }
