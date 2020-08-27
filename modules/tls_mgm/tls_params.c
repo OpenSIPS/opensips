@@ -215,7 +215,7 @@ int tlsp_set_method(modparam_t type, void *in)
 	str name;
 	str val;
 	str val_max;
-	enum tls_method method;
+	int method;
 	char *s;
 
 	if (split_param_val((char*)in, &name, &val) < 0)
