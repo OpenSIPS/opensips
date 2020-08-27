@@ -191,11 +191,11 @@ modparam("rtpengine", "rtpengine_retr", 2)
 	<section id="param_extra_id_pv" xreflabel="extra_id_pv">
 		<title><varname>extra_id_pv</varname> (string)</title>
 		<para>
-			The parameter sets the PV defination to use when the <quote>b</quote>
-			parameter is used on rtpengine_delete(), rtpengine_offer(),
-			rtpengine_answer() or rtpengine_manage() command.
+			The parameter sets the PV definition to use when the <quote>via-branch=extra</quote>
+			option is used on the rtpengine_delete(), rtpengine_offer(),
+			rtpengine_answer() or rtpengine_manage() commands.
 		</para><para>
-			Default is empty, the <quote>b</quote> parameter may not be used then.
+			Default is empty, the <quote>via-branch=extra</quote> option may not be used then.
 		</para>
 		<example>
 		<title>Set <varname>extra_id_pv</varname> parameter</title>
