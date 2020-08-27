@@ -168,7 +168,7 @@ static int parse_single_part(struct body_part *part, char * start, char * end)
 	if (*(end-1)=='\n') {
 		end--;
 		if (*(end-1)=='\r') end--;
-	} else if (*(end-1)=='\n') {
+	} else if (*(end-1)=='\r') {
 		end--;
 	} else {
 		LM_ERR("invalid separator between body and boundry [%x/%x]\n",
