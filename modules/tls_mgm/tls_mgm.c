@@ -1583,7 +1583,7 @@ enum tls_method get_ssl_max_method(void)
 	return ssl_versions_struct[SSL_VERSIONS_SIZE-1].method;
 }
 
-enum tls_method parse_ssl_method(str *name)
+int parse_ssl_method(str *name)
 {
 	int index;
 	for (index = 0; index < SSL_VERSIONS_SIZE; index++)
