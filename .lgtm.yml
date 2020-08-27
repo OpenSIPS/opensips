@@ -28,7 +28,7 @@ extraction:
         - librabbitmq-dev
         - liblua5.1-0-dev
         - libncurses5-dev
-        - libjson0-dev
+        - libjson-c-dev
         - uuid-dev
     before_index:
       - export FASTER=1
