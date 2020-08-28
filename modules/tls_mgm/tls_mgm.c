@@ -1592,6 +1592,60 @@ int parse_ssl_method(str *name)
 	return -1;
 }
 
+int tls_get_method(str *method_str,
+	enum tls_method *method, enum tls_method *method_max)
+{
+	str val = *method_str;
+	str val_max;
+	int m;
+	char *s;
+
+	/* search for a '-' to denote an interval */
+	s = q_memchr(val.s, '-', val.len);
+	if (s) {
+		val_max.s = s + 1;
+		val_max.len = val.len - (s - val.s) - 1;
+		val.len = s - val.s;
+		trim(&val_max);
+	}
+	trim(&val);
+	if (val.len == 0)
+		m = get_ssl_min_method();
+	else
+		m = parse_ssl_method(&val);
+	if (m < 0) {
+		LM_ERR("unsupported method [%s]\n",val.s);
+		return -1;
+	}
+
+	*method = m;
+
+	if (s) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+		if (m == TLS_USE_SSLv23)
+			LM_WARN("Using SSLv23/TLSany as the lower value for the method range makes no sense\n");
+
+		if (val_max.len == 0)
+			m = get_ssl_max_method();
+		else
+			m = parse_ssl_method(&val_max);
+		if (m < 0) {
+			LM_ERR("unsupported method [%s]\n",val_max.s);
+			return -1;
+		}
+
+		if (m == TLS_USE_SSLv23)
+			LM_WARN("Using SSLv23/TLSany as the higher value for the method range makes no sense\n");
+#else
+		LM_WARN("TLS method range not supported for versions lower than 1.1.0\n");
+#endif
+	}
+
+	*method_max = m;
+
+	return 0;
+}
+
 /* reloads data from the db */
 static int reload_data(void)
 {
