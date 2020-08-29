@@ -226,11 +226,13 @@ modparam("rtpengine", "rtpengine_retr", 2)
 
 1.4.5. extra_id_pv (string)
 
-   The parameter sets the PV defination to use when the “b”
-   parameter is used on rtpengine_delete(), rtpengine_offer(),
-   rtpengine_answer() or rtpengine_manage() command.
+   The parameter sets the PV definition to use when the
+   “via-branch=extra” option is used on the rtpengine_delete(),
+   rtpengine_offer(), rtpengine_answer() or rtpengine_manage()
+   commands.
 
-   Default is empty, the “b” parameter may not be used then.
+   Default is empty, the “via-branch=extra” option may not be used
+   then.
 
    Example 1.5. Set extra_id_pv parameter
 ...
@@ -869,10 +871,10 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 123 47 3910 2507
+   1. Razvan Crainea (@razvancrainea) 124 48 3919 2509
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 15 421 592
    3. Richard Fuchs 21 2 640 723
-   4. Liviu Chircu (@liviuchircu) 14 10 66 130
+   4. Liviu Chircu (@liviuchircu) 15 11 70 134
    5. Eric Tamme (@etamme) 7 5 42 19
    6. Ovidiu Sas (@ovidiusas) 5 3 36 7
    7. Peter Lemenkov (@lemenkov) 3 2 0 4
@@ -903,12 +905,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Jun 2014 - Aug 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jul 2020
-   3.  Peter Lemenkov (@lemenkov)               Feb 2020 - Jul 2020
-   4.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
-   5.  Zero King                                Mar 2020 - Mar 2020
-   6.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)              Jul 2014 - Aug 2020
+   2.  Razvan Crainea (@razvancrainea)          Jun 2014 - Aug 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jul 2020
+   4.  Peter Lemenkov (@lemenkov)               Feb 2020 - Jul 2020
+   5.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
+   6.  Zero King                                Mar 2020 - Mar 2020
    7.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
    8.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - May 2017
    9.  Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
@@ -924,8 +926,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
    Fuchs.
 
    doc copyrights:
