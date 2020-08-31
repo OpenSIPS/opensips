@@ -121,7 +121,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	db_res_t *res = NULL;
 	db_row_t *row;
 	db_val_t *val;
-	str uri, host, flag_list;
+	str flag_list;
 	int i, no_rows = 10;
 	time_t now;
 	char *p, *p1;
@@ -130,6 +130,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	int needed;
 	int shortage = 0;
 	uint64_t contact_id;
+	void *record_start;
 
 	/* Reserve space for terminating 0000 */
 	if (zero_end)
@@ -253,13 +254,36 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 				continue;
 			}
 
+			/* We cannot add items that point to p or p1 here,
+			 * unless they point into the buffer we're keeping.
+			 * So: we write to buf, but keep a pointer to the
+			 * start, so we can revert this record if needed. */
+			record_start = buf;
+
+			/* write received/contact */
+			memcpy(buf, &p_len, sizeof p_len);
+			buf += sizeof p_len;
+			memcpy(buf, p, p_len);
+			p = buf; /* point to to-be-kept copy of p */
+			buf += p_len;
+
+			/* write path */
+			memcpy(buf, &p1_len, sizeof p1_len);
+			buf += sizeof p1_len;
+			memcpy(buf, p1, (unsigned)p1_len);
+			p1 = buf; /* point to to-be-kept copy of p1 */
+			buf += p1_len;
+
 			/* determine and parse the URI of this contact's next hop */
 			if (p1_len > 0) {
 				/* send to first URI in path */
+				str uri, host;
 				host.s   = p1;
 				host.len = p1_len;
 				if (get_path_dst_uri(&host, &uri) < 0) {
 					LM_ERR("failed to get dst_uri for Path\n");
+					/* revert writing this record, continue with next */
+					buf = record_start;
 					continue;
 				}
 				if (parse_uri(uri.s, uri.len, &puri) < 0) {
@@ -275,23 +299,12 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 				}
 			}
 
-			/* write received/contact */
-			memcpy(buf, &p_len, sizeof p_len);
-			buf += sizeof p_len;
-			memcpy(buf, p, p_len);
-			buf += p_len;
-
-			/* write path */
-			memcpy(buf, &p1_len, sizeof p1_len);
-			buf += sizeof p1_len;
-			memcpy(buf, p1, (unsigned)p1_len);
-			buf += p1_len;
-
 			/* sock */
 			p  = (char*)VAL_STRING(ROW_VALUES(row) + 2);
 			if (VAL_NULL(ROW_VALUES(row)+2) || !p || *p == '\0') {
 				sock = NULL;
 			} else {
+				str host;
 				if (parse_phostport(p, strlen(p), &host.s, &host.len,
 				    &port, &proto) != 0) {
 					LM_ERR("bad socket <%s>...ignoring\n", p);
@@ -312,9 +325,8 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			memset(&next_hop, 0, sizeof next_hop);
 			next_hop.port  = puri.port_no;
 			next_hop.proto = puri.proto;
-			/* re-point next hop inside buffer */
 			next_hop.name.len  = puri.host.len;
-			next_hop.name.s  = puri.host.s;
+			next_hop.name.s  = puri.host.s; /* points into buffer already */
 
 			/* write the next hop */
 			memcpy(buf, &next_hop, sizeof next_hop);
@@ -379,8 +391,7 @@ cdb_pack_ping_data(const str *aor, const cdb_pair_t *contact,
 	unsigned int cflags = 0;
 	struct socket_info *sock = NULL;
 	struct proxy_l next_hop;
-	str ct_uri, received = STR_NULL, path = STR_NULL, next_hop_uri;
-	char *next_hop_host = NULL;
+	str ct_uri, received = STR_NULL, path = STR_NULL;
 	int needed;
 	char *cp = *cpos;
 	int cols_needed = COL_CONTACT | COL_RECEIVED | COL_PATH | COL_CFLAGS;
@@ -460,34 +471,16 @@ skip_coords:
 	if (*len < needed)
 		return needed;
 
-	/* determine the next hop towards this contact */
-	if (ZSTR(path)) {
-		next_hop_uri = ct_uri;
-	} else {
-		if (get_path_dst_uri(&path, &next_hop_uri) < 0) {
-			LM_ERR("failed to get dst_uri for Path\n");
-			goto out_free;
-		}
-	}
-
-	if (parse_uri(next_hop_uri.s, next_hop_uri.len, &puri) < 0) {
-		LM_ERR("failed to parse URI of next hop: '%.*s'\n",
-		       next_hop_uri.len, next_hop_uri.s);
-		goto out_free;
-	}
-
 	memcpy(cp, &ct_uri.len, sizeof ct_uri.len);
 	cp += sizeof ct_uri.len;
 	memcpy(cp, ct_uri.s, ct_uri.len);
-	if (path.len == 0)
-		next_hop_host = cp + (puri.host.s - next_hop_uri.s);
+	ct_uri.s = cp; /* point into to-be-kept buffer */
 	cp += ct_uri.len;
 
 	memcpy(cp, &path.len, sizeof path.len);
 	cp += sizeof path.len;
 	memcpy(cp, path.s, path.len);
-	if (path.len != 0)
-		next_hop_host = cp + (puri.host.s - next_hop_uri.s);
+	path.s = cp; /* point into to-be-kept buffer */
 	cp += path.len;
 
 	memcpy(cp, &sock, sizeof sock);
@@ -496,11 +489,29 @@ skip_coords:
 	memcpy(cp, &cflags, sizeof cflags);
 	cp += sizeof cflags;
 
+	/* determine the next hop towards this contact */
+	{
+		str next_hop_uri;
+		if (ZSTR(path)) {
+			next_hop_uri = ct_uri;
+		} else {
+			if (get_path_dst_uri(&path, &next_hop_uri) < 0) {
+				LM_ERR("failed to get dst_uri for Path\n");
+				goto out_free;
+			}
+		}
+		if (parse_uri(next_hop_uri.s, next_hop_uri.len, &puri) < 0) {
+			LM_ERR("failed to parse URI of next hop: '%.*s'\n",
+				   next_hop_uri.len, next_hop_uri.s);
+			goto out_free;
+		}
+	}
+
 	memset(&next_hop, 0, sizeof next_hop);
 	next_hop.port  = puri.port_no;
 	next_hop.proto = puri.proto;
 	next_hop.name.len = puri.host.len;
-	next_hop.name.s = next_hop_host;
+	next_hop.name.s = puri.host.s; /* points into buffer already */
 	memcpy(cp, &next_hop, sizeof next_hop);
 	cp += sizeof next_hop;
 
@@ -642,7 +653,6 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 	int needed;
 	int count;
 	int i = 0;
-	char *next_hop_host = NULL;
 	int cur_node_idx = 0, nr_nodes = 0;
 
 	cp = buf;
@@ -710,37 +720,43 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 					needed += sizeof(ucontact_coords);
 
 				if (*len >= needed) {
+					struct proxy_l next_hop;
+					memcpy(&next_hop, &c->next_hop, sizeof(c->next_hop));
+
 					if (c->received.s) {
 						memcpy(cp,&c->received.len,sizeof(c->received.len));
 						cp = (char*)cp + sizeof(c->received.len);
 						memcpy(cp, c->received.s, c->received.len);
-						/* next_hop_host needs to skip the 'sip:[...@]' part
-						 * of the uri */
+						/* next_hop host needs to skip the 'sip:[...@]' part
+						 * of the uri; it's already relative to c->received
+						 * (a potentially fragile assumption) */
 						if (c->path.len == 0)
-							next_hop_host = cp + (c->next_hop.name.s - c->received.s);
+							next_hop.name.s = cp + (c->next_hop.name.s - c->received.s);
 						cp = (char*)cp + c->received.len;
 					} else {
 						memcpy(cp,&c->c.len,sizeof(c->c.len));
 						cp = (char*)cp + sizeof(c->c.len);
 						memcpy(cp, c->c.s, c->c.len);
 						if (c->path.len == 0)
-							next_hop_host = cp + (c->next_hop.name.s - c->c.s);
+							/* c->next_hop.name is relative to c->c
+							 * (a potentially fragile assumption) */
+							next_hop.name.s = cp + (c->next_hop.name.s - c->c.s);
 						cp = (char*)cp + c->c.len;
 					}
 					memcpy(cp, &c->path.len, sizeof(c->path.len));
 					cp = (char*)cp + sizeof(c->path.len);
 					memcpy(cp, c->path.s, c->path.len);
 					if (c->path.len != 0)
-						next_hop_host = cp + (c->next_hop.name.s - c->path.s);
+						/* c->next_hop.name is relative to c->path
+						 * (a potentially fragile assumption) */
+						next_hop.name.s = cp + (c->next_hop.name.s - c->path.s);
 					cp = (char*)cp + c->path.len;
 					memcpy(cp, &c->sock, sizeof(c->sock));
 					cp = (char*)cp + sizeof(c->sock);
 					memcpy(cp, &c->cflags, sizeof(c->cflags));
 					cp = (char*)cp + sizeof(c->cflags);
-					memcpy(cp, &c->next_hop, sizeof(c->next_hop));
-					/* re-point the next hop inside buffer */
-					((struct proxy_l *)cp)->name.s = next_hop_host;
-					cp = (char*)cp + sizeof(c->next_hop);
+					memcpy(cp, &next_hop, sizeof(next_hop)); /* points into buffer already */
+					cp = (char*)cp + sizeof(next_hop);
 
 					*len -= needed;
 					if (!pack_coords)
