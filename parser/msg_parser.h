@@ -41,6 +41,7 @@
 #define MSG_PARSER_H
 
 #include <strings.h>
+#include <sys/time.h>
 
 #include "../str.h"
 #include "../lump_struct.h"
@@ -332,6 +333,12 @@ struct sip_msg {
 	str set_global_address;
 	str set_global_port;
 
+	/* used to store a particular time of the message - note that the time is
+	 * not stored when the message was received, but only the first time
+	 * someone gets interested in it - this way we have a consistent timestamp
+	 * of the message, without being affected by lazy callbacks */
+	struct timeval time;
+
 	struct msg_callback *msg_cb;
 };
 
@@ -554,5 +561,17 @@ void clear_path_vector(struct sip_msg* msg);
  * for FROM , TO , CSEQ and CALL-ID headers.
  */
 int extract_ftc_hdrs( char *buf, int len, str *from, str *to, str *cseq,str *callid);
+
+inline static struct timeval *get_msg_time(struct sip_msg *msg)
+{
+	static struct timeval static_time;
+	if (!msg || msg == (struct sip_msg *)-1) {
+		gettimeofday(&static_time, NULL);
+		return &static_time;
+	}
+	if (msg->time.tv_sec == 0 && msg->time.tv_usec == 0)
+		gettimeofday(&msg->time, NULL);
+	return &msg->time;
+}
 
 #endif
