@@ -789,24 +789,25 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 
 /*! \brief
  * Return list of all contacts for all currently registered
- * users in all domains. Caller must provide buffer of
- * sufficient length for fitting all those contacts. In the
- * case when buffer was exhausted, the function returns
- * estimated amount of additional space needed, in this
- * case the caller is expected to repeat the call using
- * this value as the hint.
+ * users in all domains. Caller must provide a buffer of
+ * sufficient length to fit all those contacts. If the buffer
+ * is exhausted, the function returns the estimated amount
+ * of additional space needed. In this case the caller is
+ * expected to repeat the call using this value as the hint.
  *
  * Information is packed into the buffer as follows:
  *
- * +------------+----------+-----+------+-----+----------------+
- * |contact1.len|contact1.s|sock1|flags1|path1|contact_coords1 |
- * +------------+----------+-----+------+-----+----------------+
- * |contact2.len|contact2.s|sock2|flags2|path1|contact_coords2 |
- * +------------+----------+-----+------+-----+----------------+
- * |..........................................|................|
- * +------------+----------+-----+------+-----+----------------+
- * |contactN.len|contactN.s|sockN|flagsN|pathN|contact_coordsN |
- * +------------+----------+-----+------+-----+----------------+
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |int         |char[]    |int      |char[] |socket_info*|unsigned|proxy_l |uint64         |
+ * +============+==========+=========+=======+============+========+========+===============+
+ * |contact1.len|contact1.s|path1.len|path1.s|sock1       |dbflags |next_hop|contact_coords1|
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |contact2.len|contact2.s|path2.len|path2.s|sock2       |dbflags |next_hop|contact_coords2|
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |........................................................................................|
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |contactN.len|contactN.s|pathN.len|pathN.s|sockN       |dbflags |next_hop|contact_coordsN|
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
  * |000000000000|
  * +------------+
  *
@@ -853,34 +854,32 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
 }
 
 
-
 /*! \brief
  * Return list of all contacts for all currently registered
- * users in given domain. Caller must provide buffer of
- * sufficient length for fitting all those contacts. In the
- * case when buffer was exhausted, the function returns
- * estimated amount of additional space needed, in this
- * case the caller is expected to repeat the call using
- * this value as the hint.
+ * users in the given domain. Caller must provide a buffer of
+ * sufficient length to fit all those contacts. If the buffer
+ * is exhausted, the function returns the estimated amount
+ * of additional space needed. In this case the caller is
+ * expected to repeat the call using this value as the hint.
  *
  * Information is packed into the buffer as follows:
  *
- * +------------+----------+-----+------+-----+-----------------+
- * |contact1.len|contact1.s|sock1|flags1|path1| contact_coords1 |
- * +------------+----------+-----+------+-----+-----------------+
- * |contact2.len|contact2.s|sock2|flags2|path1| contact_coords2 |
- * +------------+----------+-----+------+-----+-----------------+
- * |..........................................|.................|
- * +------------+----------+-----+------+-----+-----------------+
- * |contactN.len|contactN.s|sockN|flagsN|pathN| contact_coordsN |
- * +------------+----------+-----+------+-----+-----------------+
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |int         |char[]    |int      |char[] |socket_info*|unsigned|proxy_l |uint64         |
+ * +============+==========+=========+=======+============+========+========+===============+
+ * |contact1.len|contact1.s|path1.len|path1.s|sock1       |dbflags |next_hop|contact_coords1|
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |contact2.len|contact2.s|path2.len|path2.s|sock2       |dbflags |next_hop|contact_coords2|
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |........................................................................................|
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |contactN.len|contactN.s|pathN.len|pathN.s|sockN       |dbflags |next_hop|contact_coordsN|
+ * +------------+----------+---------+-------+------------+--------+--------+---------------+
  * |000000000000|
  * +------------+
  *
  * if @pack_coords is false, all "contact_coordsX" parts will be omitted
  */
-
-
 int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
                  unsigned int part_idx, unsigned int part_max, int pack_coords)
 {
@@ -894,9 +893,6 @@ int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
 		return get_domain_mem_ucontacts(d, buf, &len, flags,
 											part_idx, part_max, 1, pack_coords);
 }
-
-
-
 
 
 /*! \brief
