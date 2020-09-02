@@ -653,9 +653,11 @@ void empty_subnet_table(struct subnet *table)
 
 	for (i = 0; i < count; i++) {
 		if (table[i].info)
-    		        shm_free(table[i].info);
+			shm_free(table[i].info);
+		if (table[i].pattern)
+			shm_free(table[i].pattern);
 		if (table[i].subnet)
-		        shm_free(table[i].subnet);
+			shm_free(table[i].subnet);
 	}
 
 	table[PERM_MAX_SUBNETS].grp = 0;
