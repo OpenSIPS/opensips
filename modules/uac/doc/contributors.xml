@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Konstantin Bokarius, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Dusan Klinec, Jesus Rodrigues, Sergio Gutierrez.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Konstantin Bokarius, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Jesus Rodrigues, Sergio Gutierrez.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -153,7 +153,7 @@
 	</row>
 	<row>
 		<entry>6. </entry>
-		<entry>Dusan Klinec</entry>
+		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
 		<entry align="center">Dec 2015 - Dec 2015</entry>
 	</row>
 	<row>

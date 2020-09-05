@@ -936,9 +936,10 @@ Chapter 3. Contributors
    10. robdyck 4 2 8 4
 
    All remaining contributors: Dave Sidwell (@davesidwell),
-   Ezequiel Lovelle, Christophe Sollet (@csollet), Anca Vamanu,
-   Mikko Lehto, Dan Pascu (@danpascu), Walter Doekes (@wdoekes),
-   Dusan Klinec, Julián Moreno Patiño, Zero King.
+   Ezequiel Lovelle (@lovelle), Christophe Sollet (@csollet), Anca
+   Vamanu, Mikko Lehto, Dan Pascu (@danpascu), Walter Doekes
+   (@wdoekes), Dusan Klinec (@ph4r05), Julián Moreno Patiño, Zero
+   King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -964,7 +965,7 @@ Chapter 3. Contributors
    2.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
    4.  robdyck                             Apr 2020 - Apr 2020
-   5.  Zero King                           Mar 2020 - Mar 2020
+   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
    7.  Dan Pascu (@danpascu)               May 2019 - May 2019
    8.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
@@ -972,9 +973,10 @@ Chapter 3. Contributors
    10. Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
 
    All remaining contributors: Maksym Sobolyev (@sobomax), Julián
-   Moreno Patiño, Vlad Paiu (@vladpaiu), Dusan Klinec, Dave
-   Sidwell (@davesidwell), Ezequiel Lovelle, Mikko Lehto, Walter
-   Doekes (@wdoekes), Christophe Sollet (@csollet), Anca Vamanu.
+   Moreno Patiño, Vlad Paiu (@vladpaiu), Dusan Klinec (@ph4r05),
+   Dave Sidwell (@davesidwell), Ezequiel Lovelle (@lovelle), Mikko
+   Lehto, Walter Doekes (@wdoekes), Christophe Sollet (@csollet),
+   Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -983,11 +985,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Zero King,
-   Vlad Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu),
-   Peter Lemenkov (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei
-   Iancu (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942),
-   Maksym Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas).
+   Last edited by: Razvan Crainea (@razvancrainea), Zero King
+   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Julián Moreno
+   Patiño, Bogdan-Andrei Iancu (@bogdan-iancu), Mikko Lehto, Ryan
+   Bullock (@rrb3942), Maksym Sobolyev (@sobomax), Ovidiu Sas
+   (@ovidiusas).
 
    Documentation Copyrights:
 

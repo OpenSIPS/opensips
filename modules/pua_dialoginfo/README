@@ -533,8 +533,8 @@ Chapter 2. Contributors
    10. Vlad Paiu (@vladpaiu) 4 2 29 15
 
    All remaining contributors: Walter Doekes (@wdoekes), Stanislaw
-   Pitucha, Peter Lemenkov (@lemenkov), Zero King, Aron Podrigal
-   (@ar45).
+   Pitucha, Peter Lemenkov (@lemenkov), Zero King (@l2dy), Aron
+   Podrigal (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -558,7 +558,7 @@ Chapter 2. Contributors
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Jul 2020
    2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
-   3.  Zero King                           Mar 2020 - Mar 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Aron Podrigal (@ar45)               Jan 2019 - Jan 2019

@@ -1392,8 +1392,8 @@ Chapter 3. Contributors
    Carsten Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus
    Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus Darilion,
    Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius,
-   Jesus Rodrigues, Dusan Klinec, Ruslan Bukin, Saúl Ibarra
-   Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
+   Jesus Rodrigues, Dusan Klinec (@ph4r05), Ruslan Bukin, Saúl
+   Ibarra Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
    Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1425,7 +1425,7 @@ Chapter 3. Contributors
    7.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
    8.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
    9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Dusan Klinec                        Dec 2015 - Dec 2015
+   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
 
    All remaining contributors: Nick Altmann (@nikbyte), Vlad Paiu
    (@vladpaiu), Tolga Tarhan, Saúl Ibarra Corretgé (@saghul),

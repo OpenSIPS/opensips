@@ -445,10 +445,10 @@ Chapter 3. Contributors
    3. Liviu Chircu (@liviuchircu) 8 6 14 31
    4. Ovidiu Sas (@ovidiusas) 5 3 35 7
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 8 9
-   6. Ionut Ionita (@ionutrazvanionita) 4 2 52 25
-   7. franklyfox 4 2 44 5
-   8. Jarrod Baumann (@jarrodb) 4 2 2 2
-   9. Peter Lemenkov (@lemenkov) 4 2 1 2
+   6. Peter Lemenkov (@lemenkov) 5 3 2 3
+   7. Ionut Ionita (@ionutrazvanionita) 4 2 52 25
+   8. franklyfox 4 2 44 5
+   9. Jarrod Baumann (@jarrodb) 4 2 2 2
    10. Eric Tamme (@etamme) 3 1 1 2
 
    All remaining contributors: Julián Moreno Patiño, Vlad Paiu
@@ -474,8 +474,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2020
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2020
    3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jan 2020
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018

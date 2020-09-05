@@ -2487,14 +2487,14 @@ Chapter 4. Contributors
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Andrei
    Dragus, Walter Doekes (@wdoekes), John Riordan, Hugues
    Mitonneau, Carsten Bock, Jerome Martin, Klaus Darilion, Jarrod
-   Baumann (@jarrodb), Zero King, Michel Bensoussan, Richard
-   Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu
-   (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy Pyles,
-   Julián Moreno Patiño, Konstantin Bokarius, Alex Massover,
-   Damien Sandras (@dsandras), Alex Hermann, Dusan Klinec, Norman
-   Brandinger (@NormB), Peter Lemenkov (@lemenkov), UnixDev, Eliot
-   Gable, Ryan Bullock (@rrb3942), Nick Altmann (@nikbyte), Edson
-   Gellert Schubert.
+   Baumann (@jarrodb), Zero King (@l2dy), Michel Bensoussan,
+   Richard Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei
+   Datcu (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy
+   Pyles, Julián Moreno Patiño, Konstantin Bokarius, Alex
+   Massover, Damien Sandras (@dsandras), Alex Hermann, Dusan
+   Klinec (@ph4r05), Norman Brandinger (@NormB), Peter Lemenkov
+   (@lemenkov), UnixDev, Eliot Gable, Ryan Bullock (@rrb3942),
+   Nick Altmann (@nikbyte), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -2521,15 +2521,15 @@ Chapter 4. Contributors
    3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2020
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2020
    5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
-   6.  Zero King                           Mar 2020 - Mar 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    7.  Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Mar 2017
    10. Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Dec 2016
 
    All remaining contributors: Jarrod Baumann (@jarrodb), Ionut
-   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Dusan
-   Klinec, Walter Doekes (@wdoekes), Eseanu Marius Cristian
+   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Walter Doekes (@wdoekes), Eseanu Marius Cristian
    (@eseanucristian), Andrei Datcu (@andrei-datcu), Nick Altmann
    (@nikbyte), Norman Brandinger (@NormB), Damien Sandras
    (@dsandras), Ryan Bullock (@rrb3942), Anca Vamanu, Alex
@@ -2549,8 +2549,8 @@ Chapter 5. Documentation
 
    Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
    (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Paiu (@vladpaiu), Zero King, Dan Pascu (@danpascu), Liviu
-   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Julián
+   Paiu (@vladpaiu), Zero King (@l2dy), Dan Pascu (@danpascu),
+   Liviu Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Julián
    Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
    Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca

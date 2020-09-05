@@ -1233,8 +1233,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Julián Moreno Patiño, Ovidiu Sas
    (@ovidiusas), Sergio Gutierrez, Iouri Kharon, UnixDev, Zero
-   King, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes),
-   Edson Gellert Schubert.
+   King (@l2dy), Peter Lemenkov (@lemenkov), Walter Doekes
+   (@wdoekes), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1256,7 +1256,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
+   1.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019

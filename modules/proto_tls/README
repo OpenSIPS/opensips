@@ -529,7 +529,7 @@ Chapter 3. Contributors
    10. Julián Moreno Patiño 3 1 1 1
 
    All remaining contributors: Peter Lemenkov (@lemenkov), Zero
-   King, Maksym Sobolyev (@sobomax).
+   King (@l2dy), Maksym Sobolyev (@sobomax).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -553,7 +553,7 @@ Chapter 3. Contributors
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jul 2020
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2020
-   3.  Zero King                           Mar 2020 - Mar 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
    5.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
@@ -572,11 +572,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Zero King,
-   Razvan Crainea (@razvancrainea), Liviu Chircu (@liviuchircu),
-   Peter Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
-   Ionut Ionita (@ionutrazvanionita), Eseanu Marius Cristian
-   (@eseanucristian), Vlad Paiu (@vladpaiu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Zero King
+   (@l2dy), Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Eseanu
+   Marius Cristian (@eseanucristian), Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

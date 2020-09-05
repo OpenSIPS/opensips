@@ -1082,7 +1082,7 @@ Chapter 3. Contributors
    Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Peter Nixon, Alex
    Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues,
    Julien Blache, Julián Moreno Patiño, Peter Lemenkov
-   (@lemenkov), Dusan Klinec, Edson Gellert Schubert.
+   (@lemenkov), Dusan Klinec (@ph4r05), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1112,7 +1112,7 @@ Chapter 3. Contributors
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    10. Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
 
    All remaining contributors: Ryan Bullock (@rrb3942),

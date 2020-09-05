@@ -1197,11 +1197,11 @@ Chapter 3. Contributors
    6. Peter Lemenkov (@lemenkov) 8 6 27 34
    7. Eric Tamme (@etamme) 7 5 42 19
    8. Ovidiu Sas (@ovidiusas) 5 3 37 7
-   9. John Burke 4 1 172 31
-   10. Rob Gagnon (@rgagnon24) 3 1 22 22
+   9. Zero King (@l2dy) 4 2 5 4
+   10. John Burke 4 1 172 31
 
-   All remaining contributors: Zero King, Dan Pascu (@danpascu),
-   Oliver Severin Mulelid-Tynes (@olivermt).
+   All remaining contributors: Rob Gagnon (@rgagnon24), Dan Pascu
+   (@danpascu), Oliver Severin Mulelid-Tynes (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1223,12 +1223,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Jul 2014 - Aug 2020
-   2.  Razvan Crainea (@razvancrainea)          Jun 2014 - Aug 2020
-   3.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jul 2020
-   4.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - May 2020
-   6.  Zero King                                Mar 2020 - Mar 2020
+   1.  Zero King (@l2dy)                        Mar 2020 - Sep 2020
+   2.  Liviu Chircu (@liviuchircu)              Jul 2014 - Aug 2020
+   3.  Razvan Crainea (@razvancrainea)          Jun 2014 - Aug 2020
+   4.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jul 2020
+   5.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - May 2020
    7.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2019
    8.  John Burke                               Jun 2019 - Jun 2019
    9.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
