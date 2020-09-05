@@ -228,7 +228,7 @@ Chapter 2. Contributors
    7. Ionel Cerghit (@ionel-cerghit) 11 3 515 166
    8. Vlad Paiu (@vladpaiu) 3 2 0 6
    9. Peter Lemenkov (@lemenkov) 3 1 1 1
-   10. Zero King 3 1 1 1
+   10. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -250,7 +250,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
+   1.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    2.  Razvan Crainea (@razvancrainea)     Nov 2014 - Sep 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2019

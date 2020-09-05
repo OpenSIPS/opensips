@@ -432,11 +432,11 @@ Chapter 2. Contributors
    10. Dan Pascu (@danpascu) 6 4 18 11
 
    All remaining contributors: Alexandr Dubovikov (@adubovikov),
-   Dusan Klinec, Andreas Heise, Sergio Gutierrez, Bogdan Iancu,
-   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Konstantin
-   Bokarius, Iouri Kharon, Peter Lemenkov (@lemenkov), Zero King,
-   Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme
-   (@etamme).
+   Dusan Klinec (@ph4r05), Andreas Heise, Sergio Gutierrez, Bogdan
+   Iancu, Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes),
+   Konstantin Bokarius, Iouri Kharon, Peter Lemenkov (@lemenkov),
+   Zero King (@l2dy), Edson Gellert Schubert, Elena-Ramona
+   Modroiu, Eric Tamme (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -462,7 +462,7 @@ Chapter 2. Contributors
    2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jun 2020
    4.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
-   5.  Zero King                           Mar 2020 - Mar 2020
+   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    6.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    8.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
@@ -470,7 +470,7 @@ Chapter 2. Contributors
    10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
    All remaining contributors: Eric Tamme (@etamme), Ionut Ionita
-   (@ionutrazvanionita), Dusan Klinec, Andrei Datcu
+   (@ionutrazvanionita), Dusan Klinec (@ph4r05), Andrei Datcu
    (@andrei-datcu), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
    (@adubovikov), Sergio Gutierrez, Daniel-Constantin Mierla
    (@miconda), Iouri Kharon, Konstantin Bokarius, Edson Gellert

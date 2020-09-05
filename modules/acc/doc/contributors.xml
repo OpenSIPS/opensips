@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Irina-Maria Stanescu, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Karel Kozlik, Andrei Pelinescu-Onciul, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Elena-Ramona Modroiu, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues, Julien Blache, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dusan Klinec, Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Irina-Maria Stanescu, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Karel Kozlik, Andrei Pelinescu-Onciul, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Elena-Ramona Modroiu, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues, Julien Blache, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -168,7 +168,7 @@
 	</row>
 	<row>
 		<entry>9. </entry>
-		<entry>Dusan Klinec</entry>
+		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
 		<entry align="center">Dec 2015 - Dec 2015</entry>
 	</row>
 	<row>

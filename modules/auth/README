@@ -517,11 +517,11 @@ Chapter 2. Contributors
    10. Vlad Patrascu (@rvlad-patrascu) 8 4 73 157
 
    All remaining contributors: Andrei Pelinescu-Onciul, Juha
-   Heinanen (@juha-h), Dan Pascu (@danpascu), Zero King, Sergio
-   Gutierrez, Maksym Sobolyev (@sobomax), Anatoly Pidruchny,
-   Konstantin Bokarius, Vlad Paiu (@vladpaiu), Peter Lemenkov
-   (@lemenkov), Walter Doekes (@wdoekes), Nils Ohlmeier, Dusan
-   Klinec.
+   Heinanen (@juha-h), Dan Pascu (@danpascu), Zero King (@l2dy),
+   Sergio Gutierrez, Maksym Sobolyev (@sobomax), Anatoly
+   Pidruchny, Konstantin Bokarius, Vlad Paiu (@vladpaiu), Peter
+   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Nils Ohlmeier,
+   Dusan Klinec (@ph4r05).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -543,13 +543,13 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
+   1.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Apr 2019
    5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    8.  Walter Doekes (@wdoekes)            Feb 2014 - Feb 2014
    9.  Vlad Paiu (@vladpaiu)               Mar 2012 - Mar 2012
    10. Sergio Gutierrez                    Feb 2009 - Mar 2009

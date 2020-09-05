@@ -312,8 +312,8 @@ Chapter 3. Contributors
    10. Walter Doekes (@wdoekes) 3 1 4 4
 
    All remaining contributors: Julián Moreno Patiño, Konstantin
-   Bokarius, Dusan Klinec, Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert.
+   Bokarius, Dusan Klinec (@ph4r05), Peter Lemenkov (@lemenkov),
+   Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -342,7 +342,7 @@ Chapter 3. Contributors
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
    10. Henning Westerholt (@henningw)      Aug 2007 - Jul 2008
 

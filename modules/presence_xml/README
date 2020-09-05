@@ -208,8 +208,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Walter
    Doekes (@wdoekes), Konstantin Bokarius, Peter Lemenkov
-   (@lemenkov), UnixDev, Zero King, Edson Gellert Schubert, Denis
-   Bilenko, Vlad Patrascu (@rvlad-patrascu).
+   (@lemenkov), UnixDev, Zero King (@l2dy), Edson Gellert
+   Schubert, Denis Bilenko, Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -233,7 +233,7 @@ Chapter 3. Contributors
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Jun 2020
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2020
-   3.  Zero King                           Mar 2020 - Mar 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
    5.  Dan Pascu (@danpascu)               Oct 2007 - Nov 2018
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
