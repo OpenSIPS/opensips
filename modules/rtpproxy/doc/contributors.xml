@@ -92,7 +92,7 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Ezequiel Lovelle</entry>
+		<entry>Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">6</entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Anca Vamanu, Mikko Lehto, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Dusan Klinec, Julián Moreno Patiño, Zero King.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Anca Vamanu, Mikko Lehto, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Julián Moreno Patiño, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -143,7 +143,7 @@
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Zero King</entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
@@ -173,13 +173,13 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Dusan Klinec</entry>
+		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
 		<entry align="center">Dec 2015 - Dec 2015</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dave Sidwell (<ulink url="https://github.com/davesidwell">@davesidwell</ulink>), Ezequiel Lovelle, Mikko Lehto, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Anca Vamanu.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dave Sidwell (<ulink url="https://github.com/davesidwell">@davesidwell</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Mikko Lehto, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Anca Vamanu.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Zero King, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Julián Moreno Patiño, Mikko Lehto, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Julián Moreno Patiño, Mikko Lehto, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>).</para>
 </section>
 
 </chapter>

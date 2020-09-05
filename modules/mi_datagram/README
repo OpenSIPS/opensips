@@ -316,8 +316,9 @@ Chapter 3. Contributors
    9. Klaus Darilion 3 1 4 4
    10. Julián Moreno Patiño 3 1 3 3
 
-   All remaining contributors: Konstantin Bokarius, Dusan Klinec,
-   Vlad Patrascu (@rvlad-patrascu), Edson Gellert Schubert.
+   All remaining contributors: Konstantin Bokarius, Dusan Klinec
+   (@ph4r05), Vlad Patrascu (@rvlad-patrascu), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -346,7 +347,7 @@ Chapter 3. Contributors
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
    7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    9.  Henning Westerholt (@henningw)      Aug 2007 - Jul 2008
    10. Klaus Darilion                      Jul 2008 - Jul 2008
 

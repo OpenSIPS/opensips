@@ -615,8 +615,9 @@ Chapter 3. Contributors
    Hunger, Vlad Patrascu (@rvlad-patrascu), Klaus Darilion, Sergio
    Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi
    Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer, Jasper
-   Hafkenscheid, Konstantin Bokarius, John Riordan, Walter Doekes
-   (@wdoekes), Elena-Ramona Modroiu, Edson Gellert Schubert.
+   Hafkenscheid (@hafkensite), Konstantin Bokarius, John Riordan,
+   Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -639,7 +640,7 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
-   2.  Jasper Hafkenscheid                 Mar 2020 - Mar 2020
+   2.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
    3.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
    4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jul 2019
    5.  Shlomi Gutman                       Mar 2018 - Mar 2018
@@ -666,7 +667,7 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Jasper Hafkenscheid, Liviu Chircu
+   Last edited by: Jasper Hafkenscheid (@hafkensite), Liviu Chircu
    (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
    (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Razvan Crainea
    (@razvancrainea), Walter Doekes (@wdoekes), Christophe Sollet

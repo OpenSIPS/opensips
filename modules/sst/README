@@ -331,8 +331,8 @@ Chapter 2. Contributors
    All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
    Edson Gellert Schubert, Christophe Sollet (@csollet), Ionut
    Ionita (@ionutrazvanionita), Damien Sandras (@dsandras),
-   Konstantin Bokarius, Dan Pascu (@danpascu), Ezequiel Lovelle,
-   Elena-Ramona Modroiu.
+   Konstantin Bokarius, Dan Pascu (@danpascu), Ezequiel Lovelle
+   (@lovelle), Elena-Ramona Modroiu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -360,7 +360,7 @@ Chapter 2. Contributors
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
    5.  Ionut Ionita (@ionutrazvanionita)   Oct 2016 - Oct 2016
    6.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2015
-   7.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   7.  Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
    8.  Andrei Datcu (@andrei-datcu)        Jul 2014 - Jul 2014
    9.  Damien Sandras (@dsandras)          Jul 2013 - Jul 2013
    10. Christophe Sollet (@csollet)        Dec 2009 - Dec 2009

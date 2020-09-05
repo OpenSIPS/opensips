@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Edson Gellert Schubert, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle, Elena-Ramona Modroiu.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Edson Gellert Schubert, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Elena-Ramona Modroiu.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -158,7 +158,7 @@
 	</row>
 	<row>
 		<entry>7. </entry>
-		<entry>Ezequiel Lovelle</entry>
+		<entry>Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>)</entry>
 		<entry align="center">Oct 2014 - Oct 2014</entry>
 	</row>
 	<row>

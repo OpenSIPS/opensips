@@ -272,12 +272,12 @@ Chapter 3. Contributors
    5. Henning Westerholt (@henningw) 6 4 48 49
    6. Elena-Ramona Modroiu 5 3 92 39
    7. Vladimir Romanov 4 1 227 51
-   8. Sergey Khripchenko 3 1 18 22
+   8. Sergey Khripchenko (@shripchenko) 3 1 18 22
    9. Walter Doekes (@wdoekes) 3 1 5 5
    10. Sergio Gutierrez 3 1 4 4
 
    All remaining contributors: Konstantin Bokarius, Anca Vamanu,
-   Dusan Klinec, Edson Gellert Schubert, Vlad Patrascu
+   Dusan Klinec (@ph4r05), Edson Gellert Schubert, Vlad Patrascu
    (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -304,8 +304,8 @@ Chapter 3. Contributors
    2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Dusan Klinec                        Dec 2015 - Dec 2015
-   6.  Sergey Khripchenko                  Sep 2015 - Sep 2015
+   5.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   6.  Sergey Khripchenko (@shripchenko)   Sep 2015 - Sep 2015
    7.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2010
    8.  Anca Vamanu                         Sep 2009 - Sep 2009
    9.  Vladimir Romanov                    May 2009 - May 2009
@@ -323,11 +323,11 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Sergey Khripchenko, Razvan Crainea
-   (@razvancrainea), Walter Doekes (@wdoekes), Sergio Gutierrez,
-   Henning Westerholt (@henningw), Elena-Ramona Modroiu,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert.
+   Chircu (@liviuchircu), Sergey Khripchenko (@shripchenko),
+   Razvan Crainea (@razvancrainea), Walter Doekes (@wdoekes),
+   Sergio Gutierrez, Henning Westerholt (@henningw), Elena-Ramona
+   Modroiu, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert.
 
    doc copyrights:
 

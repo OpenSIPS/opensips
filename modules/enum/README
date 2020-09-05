@@ -397,7 +397,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Klaus Darilion, Konstantin
    Bokarius, Klaus Darilion, Andreas Granig, Edson Gellert
-   Schubert, Dusan Klinec, Vlad Patrascu (@rvlad-patrascu).
+   Schubert, Dusan Klinec (@ph4r05), Vlad Patrascu
+   (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -423,7 +424,7 @@ Chapter 2. Contributors
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2005 - Jun 2018
    3.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Dusan Klinec                        Dec 2015 - Dec 2015
+   5.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    6.  Juha Heinanen (@juha-h)             Jan 2003 - Apr 2008
    7.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
    8.  Konstantin Bokarius                 Mar 2008 - Mar 2008

@@ -304,8 +304,8 @@ Chapter 3. Contributors
    10. Henning Westerholt (@henningw) 4 2 15 15
 
    All remaining contributors: Konstantin Bokarius, Dan Pascu
-   (@danpascu), Dusan Klinec, Jesus Rodrigues, Sergio Gutierrez,
-   Vlad Patrascu (@rvlad-patrascu).
+   (@danpascu), Dusan Klinec (@ph4r05), Jesus Rodrigues, Sergio
+   Gutierrez, Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -331,7 +331,7 @@ Chapter 3. Contributors
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2020
    3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Dusan Klinec                        Dec 2015 - Dec 2015
+   5.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    6.  Vlad Paiu (@vladpaiu)               Aug 2011 - Sep 2015
    7.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Oct 2013
    8.  Sergio Gutierrez                    Nov 2008 - Nov 2008

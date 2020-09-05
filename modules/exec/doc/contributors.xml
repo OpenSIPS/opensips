@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Zero King, Anca Vamanu, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Elena-Ramona Modroiu, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andreas Granig, Julián Moreno Patiño, Octavian Cerna, Edson Gellert Schubert, Dror Wald, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Anca Vamanu, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Elena-Ramona Modroiu, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andreas Granig, Julián Moreno Patiño, Octavian Cerna, Edson Gellert Schubert, Dror Wald, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -138,7 +138,7 @@
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Zero King</entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>

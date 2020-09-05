@@ -68,7 +68,7 @@
 	</row>
 	<row>
 		<entry>7. </entry>
-		<entry>Zero King</entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">10</entry>
 		<entry align="center">8</entry>
 		<entry align="center">20</entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), fabriziopicconi, Andreas Granig, Ezequiel Lovelle, Julián Moreno Patiño, Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), fabriziopicconi, Andreas Granig, Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Julián Moreno Patiño, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,7 +128,7 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Zero King</entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
@@ -168,7 +168,7 @@
 	</row>
 	<row>
 		<entry>9. </entry>
-		<entry>Ezequiel Lovelle</entry>
+		<entry>Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>)</entry>
 		<entry align="center">Oct 2014 - Oct 2014</entry>
 	</row>
 	<row>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Zero King, Di-Shi Sun, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Di-Shi Sun (<ulink url="https://github.com/di-shi">@di-shi</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Dmitry Isakbayev.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Di-Shi Sun, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Di-Shi Sun (<ulink url="https://github.com/di-shi">@di-shi</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Dmitry Isakbayev.</para>
 </section>
 
 </chapter>

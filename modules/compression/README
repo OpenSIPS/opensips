@@ -304,7 +304,7 @@ Chapter 2. Contributors
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 3 1
    5. Julián Moreno Patiño 3 1 2 2
    6. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
-   7. Zero King 2 1 0 5
+   7. Zero King (@l2dy) 2 1 0 5
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -326,7 +326,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Zero King                           Mar 2020 - Mar 2020
+   1. Zero King (@l2dy)                   Mar 2020 - Mar 2020
    2. Razvan Crainea (@razvancrainea)     Dec 2014 - Sep 2019
    3. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2019
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Mar 2019

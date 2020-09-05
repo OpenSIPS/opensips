@@ -1362,11 +1362,12 @@ Chapter 3. Contributors
    6. Liviu Chircu (@liviuchircu) 11 8 18 59
    7. Razvan Pistolea 4 1 39 66
    8. Anca Vamanu 3 1 14 14
-   9. Dusan Klinec 3 1 6 3
+   9. Dusan Klinec (@ph4r05) 3 1 6 3
    10. Henning Westerholt (@henningw) 3 1 4 2
 
-   All remaining contributors: Konstantin Bokarius, Zero King,
-   Edson Gellert Schubert, Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Konstantin Bokarius, Zero King
+   (@l2dy), Edson Gellert Schubert, Vlad Patrascu
+   (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1389,12 +1390,12 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Jun 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
+   2.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2019
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Jan 2017
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
+   7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    8.  Anca Vamanu                         Sep 2009 - Sep 2009
    9.  Razvan Pistolea                     Sep 2009 - Sep 2009
    10. Henning Westerholt (@henningw)      Jun 2008 - Jun 2008

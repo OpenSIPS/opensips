@@ -1568,13 +1568,14 @@ Chapter 4. Contributors
    (@ionutrazvanionita), Maksym Sobolyev (@sobomax), Raphael
    Coeffic, Vlad Patrascu (@rvlad-patrascu), Nils Ohlmeier, Klaus
    Darilion, Andreas Granig, Elias Baixas, Marcus Hunger,
-   Christophe Sollet (@csollet), Jeffrey Magder, Ezequiel Lovelle,
-   Saúl Ibarra Corretgé (@saghul), Elena-Ramona Modroiu, John
-   Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues,
-   Konstantin Bokarius, Aron Podrigal (@ar45), Anonymous, Dusan
-   Klinec, Mark Dalby, Walter Doekes (@wdoekes), Alexey Vasilyev
-   (@vasilevalex), Nick Altmann (@nikbyte), Edson Gellert
-   Schubert, Ingo Wolfsberger, Daniel Hsueh.
+   Christophe Sollet (@csollet), Jeffrey Magder, Ezequiel Lovelle
+   (@lovelle), Saúl Ibarra Corretgé (@saghul), Elena-Ramona
+   Modroiu, John Riordan, Julián Moreno Patiño, Andrei Dragus,
+   Jesus Rodrigues, Konstantin Bokarius, Aron Podrigal (@ar45),
+   Anonymous, Dusan Klinec (@ph4r05), Mark Dalby, Walter Doekes
+   (@wdoekes), Alexey Vasilyev (@vasilevalex), Nick Altmann
+   (@nikbyte), Edson Gellert Schubert, Ingo Wolfsberger, Daniel
+   Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1608,15 +1609,15 @@ Chapter 4. Contributors
    10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
    All remaining contributors: Nick Altmann (@nikbyte), Ovidiu Sas
-   (@ovidiusas), Dusan Klinec, Ezequiel Lovelle, Walter Doekes
-   (@wdoekes), Christophe Sollet (@csollet), Maksym Sobolyev
-   (@sobomax), Saúl Ibarra Corretgé (@saghul), Anonymous, Mark
-   Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Henning
-   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jesus Rodrigues, Marcus Hunger, Juha Heinanen (@juha-h),
-   Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas Granig,
-   Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
+   (@ovidiusas), Dusan Klinec (@ph4r05), Ezequiel Lovelle
+   (@lovelle), Walter Doekes (@wdoekes), Christophe Sollet
+   (@csollet), Maksym Sobolyev (@sobomax), Saúl Ibarra Corretgé
+   (@saghul), Anonymous, Mark Dalby, Anca Vamanu, Andrei Dragus,
+   John Riordan, Henning Westerholt (@henningw), Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
+   (@juha-h), Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas
+   Granig, Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
    Pelinescu-Onciul, Jan Janak (@janakj), Jiri Kuthan
    (@jiriatipteldotorg), Raphael Coeffic, Nils Ohlmeier.
 

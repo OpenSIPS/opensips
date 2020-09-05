@@ -446,14 +446,14 @@ Chapter 3. Contributors
    5. Liviu Chircu (@liviuchircu) 17 14 68 90
    6. Jan Janak (@janakj) 10 7 124 106
    7. Ovidiu Sas (@ovidiusas) 7 5 61 8
-   8. Sergey Khripchenko 5 2 185 2
+   8. Sergey Khripchenko (@shripchenko) 5 2 185 2
    9. Jiri Kuthan (@jiriatipteldotorg) 4 2 8 6
    10. Vlad Patrascu (@rvlad-patrascu) 4 2 7 6
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
    Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman
-   Brandinger (@NormB), Edson Gellert Schubert, Dusan Klinec,
-   Andrei Pelinescu-Onciul.
+   Brandinger (@NormB), Edson Gellert Schubert, Dusan Klinec
+   (@ph4r05), Andrei Pelinescu-Onciul.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -480,8 +480,8 @@ Chapter 3. Contributors
    3.  Ovidiu Sas (@ovidiusas)             Dec 2012 - May 2019
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jun 2018
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2017
-   6.  Dusan Klinec                        Dec 2015 - Dec 2015
-   7.  Sergey Khripchenko                  Aug 2015 - Aug 2015
+   6.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   7.  Sergey Khripchenko (@shripchenko)   Aug 2015 - Aug 2015
    8.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
    9.  Razvan Pistolea                     Jul 2009 - Jul 2009
    10. Henning Westerholt (@henningw)      Aug 2007 - Mar 2009
@@ -500,11 +500,11 @@ Chapter 4. Documentation
 
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
    Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sergey
-   Khripchenko, Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw), Norman Brandinger (@NormB), Jan
-   Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
-   Pelinescu-Onciul.
+   Khripchenko (@shripchenko), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Norman
+   Brandinger (@NormB), Jan Janak (@janakj), Jiri Kuthan
+   (@jiriatipteldotorg), Andrei Pelinescu-Onciul.
 
    doc copyrights:
 

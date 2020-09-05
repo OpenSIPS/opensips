@@ -727,18 +727,18 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 103 62 3969 499
-   2. Liviu Chircu (@liviuchircu) 39 30 679 167
-   3. Razvan Crainea (@razvancrainea) 23 18 254 136
-   4. Sergey Khripchenko 19 6 649 366
+   2. Liviu Chircu (@liviuchircu) 41 31 680 168
+   3. Sergey Khripchenko (@shripchenko) 29 10 1058 516
+   4. Razvan Crainea (@razvancrainea) 23 18 254 136
    5. Vlad Patrascu (@rvlad-patrascu) 12 8 98 133
-   6. shripchenko 11 4 409 150
-   7. Vlad Paiu (@vladpaiu) 5 3 7 5
-   8. Walter Doekes (@wdoekes) 5 3 3 3
-   9. Jeremy Martinez 5 2 193 1
-   10. Ezequiel Lovelle 4 2 3 3
+   6. Vlad Paiu (@vladpaiu) 5 3 7 5
+   7. Walter Doekes (@wdoekes) 5 3 3 3
+   8. Jeremy Martinez (@JeremyMartinez51) 5 2 193 1
+   9. Ezequiel Lovelle (@lovelle) 4 2 3 3
+   10. Anca Vamanu 3 1 20 9
 
-   All remaining contributors: Anca Vamanu, Andrei Dragus, James
-   Van Vleet, Dusan Klinec, Zero King, TaoZhiying.
+   All remaining contributors: Andrei Dragus, James Van Vleet,
+   Dusan Klinec (@ph4r05), Zero King (@l2dy), TaoZhiying.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -760,20 +760,19 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Jul 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
-   3.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2019
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Sep 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Jul 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
    5.  TaoZhiying                          May 2019 - May 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Mar 2018
-   7.  Jeremy Martinez                     Feb 2017 - Feb 2017
-   8.  Dusan Klinec                        Dec 2015 - Dec 2015
-   9.  Sergey Khripchenko                  Nov 2014 - Oct 2015
-   10. Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   7.  Jeremy Martinez (@JeremyMartinez51) Feb 2017 - Feb 2017
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9.  Sergey Khripchenko (@shripchenko)   Oct 2014 - Oct 2015
+   10. Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
 
-   All remaining contributors: shripchenko, Walter Doekes
-   (@wdoekes), Vlad Paiu (@vladpaiu), Andrei Dragus, James Van
-   Vleet, Anca Vamanu.
+   All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
+   (@vladpaiu), Andrei Dragus, James Van Vleet, Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -782,10 +781,11 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Zero King, Bogdan-Andrei Iancu (@bogdan-iancu),
-   Liviu Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu),
-   Sergey Khripchenko, Razvan Crainea (@razvancrainea), Ezequiel
-   Lovelle, Walter Doekes (@wdoekes), Vlad Paiu (@vladpaiu).
+   Last edited by: Zero King (@l2dy), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Sergey Khripchenko (@shripchenko), Razvan
+   Crainea (@razvancrainea), Ezequiel Lovelle (@lovelle), Walter
+   Doekes (@wdoekes), Vlad Paiu (@vladpaiu).
 
    doc copyrights:
 
