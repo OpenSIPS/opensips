@@ -215,7 +215,8 @@ static int sipping_rpl_filter(struct sip_msg *rpl)
 	/* it's a reply to a SIP NAT ping -> absorb it and stop any
 	 * further processing of it */
 	if (!ignore_reply(rpl) && match_ctid &&
-	    parse_branch(rpl->via1->branch->value))
+	     (rpl->via1 && rpl->via1->branch &&
+	      parse_branch(rpl->via1->branch->value)))
 			goto skip;
 
 	return 0;
