@@ -1058,7 +1058,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 		return -1;
 	}
 
-	if (!(*trace_on_flag)) {
+	if (!(*trace_on_flag)&&(!dyn_trace_list)) {
 		LM_DBG("trace is off!\n");
 		return 0;
 	}
@@ -3181,7 +3181,7 @@ static int is_id_traced(int id, trace_instance_p info)
 	if (info==NULL || (trace_types=info->trace_types)==-1)
 		return 0;
 
-	if (!(*trace_on_flag)) {
+	if (!(*trace_on_flag)&&(!dyn_trace_list)) {
 		LM_DBG("trace is off!\n");
 		return 0;
 	}
@@ -3233,7 +3233,7 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		return 0;
 	}
 
-	if (!(*trace_on_flag)) {
+	if (!(*trace_on_flag)&&(!dyn_trace_list)) {
 		LM_DBG("trace is off!\n");
 		return 0;
 	}

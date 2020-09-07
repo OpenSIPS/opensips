@@ -32,17 +32,17 @@
 	The tracing tracing can be turned on/off using fifo command.
 	</para>
 	<para>
-	opensips-cli -x mi trace on
-	opensips-cli -x mi trace [some_trace_id] on
+	opensips-cli -x mi trace mode=on
+	opensips-cli -x mi trace id=[some_trace_id] mode=on
 	</para>
 	<para>
-	opensips-cli -x mi trace off
-	opensips-cli -x mi trace [some_trace_id] off
+	opensips-cli -x mi trace mode=off
+	opensips-cli -x mi trace id=[some_trace_id] mode=off
 	</para>
 
 	<para>
 		Starting with &osips; 3.0 you can use the <emphasis>trace_start</emphasis> to
-		create dynamic dynamic tracing destinations based on some custom filters.
+		create dynamic tracing destinations based on some custom filters.
 	</para>
 	</section>
 	<section id="dependencies" xreflabel="Dependencies">
