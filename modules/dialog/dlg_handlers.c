@@ -1213,19 +1213,20 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 	contact_t *ct = NULL;
 
 	if (!msg->contact &&
-			(parse_headers(msg, HDR_CONTACT_F, 0) < 0 || !msg->contact)) {
-		LM_DBG("INVITE or UPDATE without a contact - not updating!\n");
+		(parse_headers(msg, HDR_CONTACT_F, 0) < 0 || !msg->contact)) {
+		LM_DBG("INVITE or UPDATE w/o a contact - not updating!\n");
 		return 0;
 	}
 	if (!msg->contact->parsed) {
 		contact = msg->contact->body;
 		trim_leading(&contact);
 		if (parse_contacts(&contact, &ct) < 0) {
-			LM_INFO("INVITE or UPDATE with broken contact - not updating!\n");
+			LM_WARN("INVITE or UPDATE w/ broken contact [%.*s] - not updating!\n",
+				contact.len, contact.s);
 			return 0;
 		}
 		contact = ct->uri;
-		LM_INFO("DBG: Found unparsed contact [%.*s]\n", contact.len, contact.s);
+		LM_DBG("Found unparsed contact [%.*s]\n", contact.len, contact.s);
 	} else {
 		contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
 	}
