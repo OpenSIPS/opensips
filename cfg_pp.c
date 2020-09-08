@@ -116,6 +116,7 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
 	yyin = cfg_stream;
+	cfg_errors = 0;
 	if (yyparse() != 0 || cfg_errors) {
 		LM_ERR("bad config file (%d errors)\n", cfg_errors);
 		fclose(cfg_stream);
