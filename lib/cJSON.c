@@ -661,6 +661,7 @@ fail:
     if (out != NULL)
     {
         cJSON_free(out);
+        item->valuestring = NULL;
     }
 
     return NULL;
