@@ -2367,13 +2367,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			}
 			switch(statuscode)
 			{
-			case 401:
-				if (0 == parse_www_authenticate_header(msg))
-					auth = get_www_authenticate(msg);
+			case WWW_AUTH_CODE:
+				parse_www_authenticate_header(msg, &auth);
 				break;
-			case 407:
-				if (0 == parse_proxy_authenticate_header(msg))
-					auth = get_proxy_authenticate(msg);
+			case PROXY_AUTH_CODE:
+				parse_proxy_authenticate_header(msg, &auth);
 				break;
 			}
 			if(uac_auth_loaded && auth && dlg->state == B2B_NEW)
