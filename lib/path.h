@@ -39,7 +39,7 @@
 #define PATH_TRANS_PARAM	";transport="
 #define PATH_TRANS_PARAM_LEN	(sizeof(PATH_TRANS_PARAM)-1)
 
-#define PATH_ESC_TRANS_PARAM	"\%3btransport\%3d"
+#define PATH_ESC_TRANS_PARAM	"%%3btransport%%3d"
 #define PATH_ESC_TRANS_PARAM_LEN	(sizeof(PATH_ESC_TRANS_PARAM)-1)
 
 #define	PATH_CRLF		">\r\n"
