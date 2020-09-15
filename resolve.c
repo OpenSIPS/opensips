@@ -454,6 +454,7 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 #endif
         struct ip_addr* ip;
         str s;
+		struct timeval start;
 
         if (!no_ip_test) {
                 s.s = (char*)name;
@@ -475,7 +476,10 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
                         he = own_gethostbyname2(name,AF_INET6);
                 }
                 else {
+						start_expire_timer(start,execdnsthreshold);
                         he=gethostbyname2(name, AF_INET6);
+						stop_expire_timer(start,execdnsthreshold,"dns",
+							name,strlen(name),0);
                 }
 
         #elif defined HAVE_GETIPNODEBYNAME
@@ -483,7 +487,10 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
                  * after some time calls to it will fail with err=3
                  * solution: patch your solaris 8 installation */
                 if (he2) freehostent(he2);
+				start_expire_timer(start,execdnsthreshold);
                 he=he2=getipnodebyname(name, AF_INET6, 0, &err);
+				stop_expire_timer(start,execdnsthreshold,"dns",
+					name,strlen(name),0);
         #else
                 #error neither gethostbyname2 or getipnodebyname present
         #endif
@@ -496,7 +503,10 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
                 he = own_gethostbyname2(name,AF_INET);
         }
         else {
+				start_expire_timer(start,execdnsthreshold);
                 he=gethostbyname(name);
+				stop_expire_timer(start,execdnsthreshold,"dns",
+					name,strlen(name),0);
         }
         return he;
 }
