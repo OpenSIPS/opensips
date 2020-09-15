@@ -1541,7 +1541,7 @@ static int sip_validate_hdrs(struct sip_msg *msg)
 
 			case HDR_PROXY_AUTHENTICATE_T:
 			case HDR_WWW_AUTHENTICATE_T:
-				CHECK_HDR_FUNC(parse_authenticate_header, hf);
+				CHECK_HDR_FUNC(_parse_authenticate_header, hf);
 				break;
 
 			case HDR_CALLID_T:

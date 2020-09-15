@@ -44,16 +44,25 @@ struct authenticate_body {
 	str qop;
 };
 
-/* casting macro for accessing www/proxy authenticate body */
+/* casting macro for accessing the topmost www/proxy authenticate body */
 #define get_www_authenticate(p_msg)   ((struct authenticate_body*)(p_msg)->www_authenticate->parsed)
 #define get_proxy_authenticate(p_msg) ((struct authenticate_body*)(p_msg)->proxy_authenticate->parsed)
 
 /*
  * WWW/Proxy-Authenticate header field parser
  */
-int parse_proxy_authenticate_header( struct sip_msg *msg );
-int parse_www_authenticate_header( struct sip_msg *msg );
-int parse_authenticate_header(struct hdr_field *authenticate);
+int parse_proxy_authenticate_header(struct sip_msg *msg,
+                                    struct authenticate_body **picked_auth);
+int parse_www_authenticate_header(struct sip_msg *msg,
+                                  struct authenticate_body **picked_auth);
+int parse_authenticate_header(struct hdr_field *authenticate,
+                              struct authenticate_body **picked_auth);
+static inline int _parse_authenticate_header(struct hdr_field *authenticate)
+{
+	struct authenticate_body *_;
+	return parse_authenticate_header(authenticate, &_);
+}
+
 
 void free_authenticate(struct authenticate_body *authenticate_b);
 
