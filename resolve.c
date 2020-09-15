@@ -452,7 +452,7 @@ inline struct hostent* resolvehost(char* name, int no_ip_test)
 		int err;
 		static struct hostent* he2=0;
 #endif
-		struct ip_a88a57479addr* ip;
+		struct ip_addr* ip;
 		str s;
 		struct timeval start;
 
