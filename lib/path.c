@@ -114,14 +114,20 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 		goto out4;
 
 	src_ip = ip_addr2a(&_m->rcv.src_ip);
-	rcv_addr.s = pkg_malloc(4 + IP_ADDR_MAX_STR_SIZE + 7 +
+	rcv_addr.s = pkg_malloc(4 + 2/*ipv6*/ + IP_ADDR_MAX_STR_SIZE + 7 +
 		PATH_ESC_TRANS_PARAM_LEN + 4); /* sip:<ip>:<port>(\0|[%3btransport%3dxxxx]) */
 	if (!rcv_addr.s) {
 		LM_ERR("no pkg memory left for receive-address\n");
 		goto out5;
 	}
-	rcv_addr.len = snprintf(rcv_addr.s, 4 + IP_ADDR_MAX_STR_SIZE + 6,
-	                        "sip:%s:%u", src_ip, _m->rcv.src_port);
+	if ((&_m->rcv.src_ip)->af == AF_INET6) {
+		rcv_addr.len = snprintf(rcv_addr.s, 4 + 2 + IP_ADDR_MAX_STR_SIZE + 6,
+			"sip:[%s]:%u", src_ip, _m->rcv.src_port);
+	} else {
+		rcv_addr.len = snprintf(rcv_addr.s, 4 + IP_ADDR_MAX_STR_SIZE + 6,
+			"sip:%s:%u", src_ip, _m->rcv.src_port);
+	}
+
 	switch (_m->rcv.proto) {
 	case PROTO_TCP:
 		memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "tcp",
