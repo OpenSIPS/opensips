@@ -27,6 +27,7 @@
 #include "../mem/mem.h"
 #include "../data_lump.h"
 #include "../parser/parse_param.h"
+#include "../net/trans.h"
 
 #include "path.h"
 
@@ -37,7 +38,7 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 					str* user, int recv, int _inbound, int double_path)
 {
 	char *prefix, *lr, *crlf, *r2, *received;
-	int prefix_len;
+	int prefix_len, is_6;
 	str rcv_addr = {0, 0};
 	char *src_ip;
 
@@ -114,36 +115,24 @@ static int build_path(struct sip_msg* _m, struct lump* l, struct lump* l2,
 		goto out4;
 
 	src_ip = ip_addr2a(&_m->rcv.src_ip);
-	rcv_addr.s = pkg_malloc(4 + 2/*ipv6*/ + IP_ADDR_MAX_STR_SIZE + 7 +
-		PATH_ESC_TRANS_PARAM_LEN + 4); /* sip:<ip>:<port>(\0|[%3btransport%3dxxxx]) */
+	is_6 =  ((&_m->rcv.src_ip)->af == AF_INET6) ? 1 : 0;
+	rcv_addr.len = 4 + 2*is_6 + IP_ADDR_MAX_STR_SIZE + 7 +
+		PATH_ESC_TRANS_PARAM_LEN + 4; /* sip:<ip>:<port>(\0|[%3btransport%3dxxxx]) */
+	rcv_addr.s = pkg_malloc( rcv_addr.len );
 	if (!rcv_addr.s) {
 		LM_ERR("no pkg memory left for receive-address\n");
 		goto out5;
 	}
-	if ((&_m->rcv.src_ip)->af == AF_INET6) {
-		rcv_addr.len = snprintf(rcv_addr.s, 4 + 2 + IP_ADDR_MAX_STR_SIZE + 6,
-			"sip:[%s]:%u", src_ip, _m->rcv.src_port);
-	} else {
-		rcv_addr.len = snprintf(rcv_addr.s, 4 + IP_ADDR_MAX_STR_SIZE + 6,
-			"sip:%s:%u", src_ip, _m->rcv.src_port);
-	}
 
-	switch (_m->rcv.proto) {
-	case PROTO_TCP:
-		memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "tcp",
-		       PATH_ESC_TRANS_PARAM_LEN+3);
-		rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 3;
-		break;
-	case PROTO_TLS:
-		memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "tls",
-		       PATH_ESC_TRANS_PARAM_LEN+3);
-		rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 3;
-		break;
-	case PROTO_SCTP:
-		memcpy(rcv_addr.s+rcv_addr.len, PATH_ESC_TRANS_PARAM "sctp",
-		       PATH_ESC_TRANS_PARAM_LEN+4);
-		rcv_addr.len += PATH_ESC_TRANS_PARAM_LEN + 4;
-		break;
+	if (_m->rcv.proto==PROTO_UDP) {
+		rcv_addr.len = snprintf(rcv_addr.s, rcv_addr.len,
+			"sip:%s%s%s:%u",
+			is_6?"[":"", src_ip, is_6?"]":"", _m->rcv.src_port);
+	} else {
+		rcv_addr.len = snprintf(rcv_addr.s, rcv_addr.len,
+			"sip:%s%s%s:%u" PATH_ESC_TRANS_PARAM "%s",
+			is_6?"[":"", src_ip, is_6?"]":"", _m->rcv.src_port,
+			get_proto_name(_m->rcv.proto));
 	}
 
 	if (!(l = insert_new_lump_before(l, rcv_addr.s, rcv_addr.len, 0)))
