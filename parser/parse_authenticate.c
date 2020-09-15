@@ -142,7 +142,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 {
 	char *p;
 	char *end;
-	int  n;
+	int  n, ret = 0;
 	int state;
 	str name;
 	str val;
@@ -284,10 +284,20 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 			case ALGORITHM_STATE:
 				if (val.len==3)
 				{
-					if ( LOWER4B(GET3B(val.s))==0x6d6435ff) /*MD5*/
+					if ( LOWER4B(GET3B(val.s))==0x6d6435ff) /* MD5 */
 						auth->flags |= AUTHENTICATE_MD5;
+				} else if ((val.len == 11 && (              /* SHA-512-256 */
+					           LOWER4B(GET4B(val.s + 0)) == 0x7368612d &&
+					           LOWER4B(GET4B(val.s + 4)) == 0x3531322d &&
+					           LOWER4B(GET3B(val.s + 8)) == 0x323536ff)) ||
+					       (val.len == 7 && (               /* SHA-256 */
+					           LOWER4B(GET4B(val.s + 0)) == 0x7368612d &&
+					           LOWER4B(GET3B(val.s + 4)) == 0x323536ff))) {
+					LM_INFO("RFC 8760 (%.*s) is only available "
+					        "in OpenSIPS 3.2+\n", val.len, val.s);
+					ret = 1;
 				} else {
-					LM_ERR("unsupported algorithm \"%.*s\"\n",val.len,val.s);
+					LM_INFO("bad algorithm \"%.*s\"\n", val.len, val.s);
 					goto error;
 				}
 				break;
@@ -314,7 +324,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 		goto error;
 	}
 
-	return 0;
+	return ret;
 parse_error:
 	LM_ERR("parse error in <%.*s> around %ld\n", body->len, body->s, (long)(p-body->s));
 error:
@@ -322,35 +332,46 @@ error:
 }
 
 
-int parse_authenticate_header(struct hdr_field *authenticate)
+int parse_authenticate_header(struct hdr_field *authenticate,
+                              struct authenticate_body **picked_auth)
 {
-    void **parsed;
-    struct authenticate_body *auth_body;
+	void **parsed;
+	struct authenticate_body *auth_body;
+	int rc;
 
-    parsed = &(authenticate->parsed);
+	parsed = &(authenticate->parsed);
+	*picked_auth = NULL;
 
-    while(*parsed == NULL)
-    {
-	auth_body = pkg_malloc(sizeof(struct authenticate_body));
-	if (auth_body == NULL)
+	while(*parsed == NULL)
 	{
-	    LM_ERR("oom\n");
-	    return -1;
+		auth_body = pkg_malloc(sizeof(struct authenticate_body));
+		if (auth_body == NULL)
+		{
+			LM_ERR("oom\n");
+			*picked_auth = NULL;
+			return -1;
+		}
+
+		rc = parse_authenticate_body(&authenticate->body, auth_body);
+		if (rc < 0) {
+			*picked_auth = NULL;
+			return -1;
+		}
+
+		if (rc == 0 && !*picked_auth)
+			*picked_auth = auth_body;
+
+		*parsed = auth_body;
+
+		authenticate = authenticate->sibling;
+		if (authenticate)
+			parsed = &(authenticate->parsed);
+		else
+			break;
 	}
 
-	if (0 != parse_authenticate_body(&authenticate->body, auth_body))
-	    return -1;
-	*parsed = auth_body;
-
-	authenticate = authenticate->sibling;
-	if (authenticate)
-	    parsed = &(authenticate->parsed);
-	else
-	    break;
-    }
-    return 0;
+	return picked_auth ? 0 : -1;
 }
-
 
 /*
  * This method is used to parse WWW-Authenticate header.
@@ -359,14 +380,15 @@ int parse_authenticate_header(struct hdr_field *authenticate)
  * returns 0 on success,
  *        -1 on failure.
  */
-int parse_www_authenticate_header( struct sip_msg *msg )
+int parse_www_authenticate_header(struct sip_msg *msg,
+                                  struct authenticate_body **picked_auth)
 {
     if ( !msg->www_authenticate &&
 	(parse_headers(msg, HDR_WWW_AUTHENTICATE_F,0)==-1 || !msg->www_authenticate)) {
 	return -1;
     }
 
-    return parse_authenticate_header(msg->www_authenticate);
+    return parse_authenticate_header(msg->www_authenticate, picked_auth);
 }
 
 
@@ -377,14 +399,15 @@ int parse_www_authenticate_header( struct sip_msg *msg )
  * returns 0 on success,
  *        -1 on failure.
  */
-int parse_proxy_authenticate_header( struct sip_msg *msg )
+int parse_proxy_authenticate_header(struct sip_msg *msg,
+                                    struct authenticate_body **picked_auth)
 {
     if ( !msg->proxy_authenticate &&
 	(parse_headers(msg, HDR_PROXY_AUTHENTICATE_F,0)==-1 || !msg->proxy_authenticate)) {
 	return -1;
     }
 
-    return parse_authenticate_header(msg->proxy_authenticate);
+    return parse_authenticate_header(msg->proxy_authenticate, picked_auth);
 }
 
 
