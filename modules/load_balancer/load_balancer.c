@@ -864,7 +864,7 @@ mi_response_t *mi_lb_resize(const mi_params_t *params,
 		return init_mi_param_error();
 	if (get_mi_string_param(params, "res_name", &name.s, &name.len) < 0)
 		return init_mi_param_error();
-	if (get_mi_int_param(params, "destination_id", &size) < 0)
+	if (get_mi_int_param(params, "new_capacity", &size) < 0)
 		return init_mi_param_error();
 
 	lock_start_read( ref_lock );
