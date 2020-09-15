@@ -447,68 +447,68 @@ query:
 
 inline struct hostent* resolvehost(char* name, int no_ip_test)
 {
-        static struct hostent* he=0;
+		static struct hostent* he=0;
 #ifdef HAVE_GETIPNODEBYNAME
-        int err;
-        static struct hostent* he2=0;
+		int err;
+		static struct hostent* he2=0;
 #endif
-        struct ip_addr* ip;
-        str s;
+		struct ip_a88a57479addr* ip;
+		str s;
 		struct timeval start;
 
-        if (!no_ip_test) {
-                s.s = (char*)name;
-                s.len = strlen(name);
+		if (!no_ip_test) {
+				s.s = (char*)name;
+				s.len = strlen(name);
 
-                /* check if it's an ip address */
-                if ( ((ip=str2ip(&s))!=0)
-                        || ((ip=str2ip6(&s))!=0)
-                ){
-                        /* we are lucky, this is an ip address */
-                        return ip_addr2he(&s, ip);
-                }
-        }
+				/* check if it's an ip address */
+				if ( ((ip=str2ip(&s))!=0)
+						|| ((ip=str2ip6(&s))!=0)
+				){
+						/* we are lucky, this is an ip address */
+						return ip_addr2he(&s, ip);
+				}
+		}
 
-        if(dns_try_ipv6){
-                /*try ipv6*/
-        #ifdef HAVE_GETHOSTBYNAME2
-                if (dnscache_fetch_func != NULL) {
-                        he = own_gethostbyname2(name,AF_INET6);
-                }
-                else {
+		if(dns_try_ipv6){
+				/*try ipv6*/
+		#ifdef HAVE_GETHOSTBYNAME2
+				if (dnscache_fetch_func != NULL) {
+						he = own_gethostbyname2(name,AF_INET6);
+				}
+				else {
 						start_expire_timer(start,execdnsthreshold);
-                        he=gethostbyname2(name, AF_INET6);
+						he=gethostbyname2(name, AF_INET6);
 						stop_expire_timer(start,execdnsthreshold,"dns",
 							name,strlen(name),0);
-                }
+				}
 
-        #elif defined HAVE_GETIPNODEBYNAME
-                /* on solaris 8 getipnodebyname has a memory leak,
-                 * after some time calls to it will fail with err=3
-                 * solution: patch your solaris 8 installation */
-                if (he2) freehostent(he2);
+		#elif defined HAVE_GETIPNODEBYNAME
+				/* on solaris 8 getipnodebyname has a memory leak,
+				 * after some time calls to it will fail with err=3
+				 * solution: patch your solaris 8 installation */
+				if (he2) freehostent(he2);
 				start_expire_timer(start,execdnsthreshold);
-                he=he2=getipnodebyname(name, AF_INET6, 0, &err);
+				he=he2=getipnodebyname(name, AF_INET6, 0, &err);
 				stop_expire_timer(start,execdnsthreshold,"dns",
 					name,strlen(name),0);
-        #else
-                #error neither gethostbyname2 or getipnodebyname present
-        #endif
-                if (he != 0)
-                        /* return the inet6 result if exists */
-                        return he;
-        }
+		#else
+				#error neither gethostbyname2 or getipnodebyname present
+		#endif
+				if (he != 0)
+						/* return the inet6 result if exists */
+						return he;
+		}
 
-        if (dnscache_fetch_func != NULL) {
-                he = own_gethostbyname2(name,AF_INET);
-        }
-        else {
+		if (dnscache_fetch_func != NULL) {
+				he = own_gethostbyname2(name,AF_INET);
+		}
+		else {
 				start_expire_timer(start,execdnsthreshold);
-                he=gethostbyname(name);
+				he=gethostbyname(name);
 				stop_expire_timer(start,execdnsthreshold,"dns",
 					name,strlen(name),0);
-        }
-        return he;
+		}
+		return he;
 }
 
 struct hostent * own_gethostbyaddr(void *addr, socklen_t len, int af)
