@@ -1334,6 +1334,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 		goto error;
 	if (add_mi_string_fmt(dialog_obj, MI_SSTR("db_id"), "%llu",
 			(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id) < 0)
+		goto error;
 
 	if (add_mi_number(dialog_obj, MI_SSTR("state"), dlg->state) < 0)
 		goto error;
