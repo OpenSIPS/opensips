@@ -25,7 +25,14 @@
 #include "str.h"
 
 /* whitespace */
-#define is_ws(c) ((c) == ' ' || (c) == '\r' || (c) == '\n' || (c) == '\t')
+static inline int
+is_ws(unsigned char ch)
+{
+    const unsigned int mask = (1 << (' ' - 1)) | (1 << ('\r' - 1)) |
+        (1 << ('\n' - 1)) | (1 << ('\t' - 1));
+    ch--;
+    return ch < ' ' && ((1 << ch) & mask);
+}
 
 /*
  * trim leading ws
