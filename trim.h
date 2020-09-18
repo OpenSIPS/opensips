@@ -47,17 +47,7 @@
  * define characters that should be skipped
  * here.
  */
-#define TRIM_SWITCH(c) switch(c) {     \
-                       case ' ':       \
-                       case '\t':      \
-                       case '\r':      \
-                       case '\n':      \
-                               break;  \
-                                       \
-                       default:        \
-                               return; \
-                       }
-
+#define TRIM_SWITCH(c) {if (!is_ws(c)) return;}
 
 /*! \brief
  * Remove any leading whitechars, like spaces,
