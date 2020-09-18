@@ -193,7 +193,8 @@ modparam("presence_dfks", "set_route", "dfks_set")
 		MI FIFO Command Format:
 		</para>
 <programlisting  format="linespecific">
-opensips-cli -x mi dfks_set_feature 0 sip:alice@10.0.0.11 CallForwardingNoAnswer 1 ringCount/4 forwardTo/sip:bob@10.0.0.11
+opensips-cli -x mi dfks_set_feature sip:alice@10.0.0.11 CallForwardingNoAnswer 1 1 \
+ringCount/4 forwardTo/sip:bob@10.0.0.11
 </programlisting>
 		</section>
 	</section>
@@ -274,19 +275,22 @@ opensips-cli -x mi dfks_set_feature 0 sip:alice@10.0.0.11 CallForwardingNoAnswer
 	<programlisting format="linespecific">
 ...
 route[dfks_set] {
+    # CallForwardingAlways is not allowed
+    if ($dfks(feature) == "CallForwardingAlways")
+        $dfks(status) = 0;
+
     xlog("New status: $dfks(status) for feature '$dfks(feature)' of user '$dfks(presentity)'\n");
-    ...
 }
-...
 route[dfks_get] {
-    ...
     if ($dfks(feature) == "CallForwardingNoAnswer") {
         $dfks(status) = 1;
         $dfks(value/forwardTo) = "sip:bob@10.0.0.11";
         $dfks(value/ringCount) = "3";
-} else
-   $dfks(assigned) = 0;
-....
+    } else if ($dfks(feature) == "CallForwardingAlways")
+        $dfks(assigned) = 0;
+    } else {
+        ...
+    }
 }
 ...
 	</programlisting>
