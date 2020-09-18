@@ -55,6 +55,7 @@
 
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
+#include <openssl/err.h>
 #include <stdlib.h>
 
 #include "../../dprint.h"
@@ -539,6 +540,8 @@ static int build_unsigned_pport(str *buf, time_t iat_ts, str *attest,
 	}
 	hdr_json_str.len = strlen(hdr_json_str.s);
 
+	LM_DBG("Built PASSporT Header: %s\n", hdr_json_str.s);
+
 	payload_json_str.s = build_pport_payload_json(attest, orig_tn, dest_tn,
 		iat_ts, origid);
 	if (!payload_json_str.s) {
@@ -546,6 +549,8 @@ static int build_unsigned_pport(str *buf, time_t iat_ts, str *attest,
 		goto error;
 	}
 	payload_json_str.len = strlen(payload_json_str.s);
+
+	LM_DBG("Built PASSporT Payload: %s\n", payload_json_str.s);
 
 	buf->len = calc_base64_encode_len(hdr_json_str.len) + 1 /* '.' */ +
 		calc_base64_encode_len(payload_json_str.len);
@@ -618,7 +623,7 @@ static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 		body->parsed_uri.type != SIPS_URI_T && body->parsed_uri.type != TELS_URI_T) ||
 		((body->parsed_uri.type == SIP_URI_T || body->parsed_uri.type == SIPS_URI_T) &&
 		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
-		LM_INFO("tel URI required\n");
+		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter required\n");
 		return -3;
 	}
 
@@ -651,7 +656,7 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 	if ((body->parsed_uri.type != SIP_URI_T && body->parsed_uri.type != TEL_URI_T) ||
 		(body->parsed_uri.type == SIP_URI_T &&
 		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
-		LM_ERR("tel URI required\n");
+		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter required\n");
 		return -3;
 	}
 
@@ -854,7 +859,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 	/* parse end-entity certificate */
 	*cert = PEM_read_bio_X509(cbio, NULL, 0, NULL);
 	if (*cert == NULL) {
-		LM_ERR("Unable to load certificate from buffer\n");
+		LM_ERR("Failed to parse certificate\n");
 		BIO_free(cbio);
 		return -1;
 	}
@@ -1190,6 +1195,8 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 	}
 	parsed->dec_header.s[parsed->dec_header.len] = 0;
 
+	LM_DBG("PASSporT Header: %s\n", parsed->dec_header.s);
+
 	parsed->header = cJSON_Parse(parsed->dec_header.s);
 	if (!parsed->header) {
 		LM_INFO("Failed to parse PASSporT Header JSON\n");
@@ -1209,6 +1216,8 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 		goto invalid_hdr;
 	}
 	parsed->dec_payload.s[parsed->dec_payload.len] = 0;
+
+	LM_DBG("PASSporT Payload: %s\n", parsed->dec_payload.s);
 
 	parsed->payload = cJSON_Parse(parsed->dec_payload.s);
 	if (!parsed->payload) {
@@ -1409,6 +1418,7 @@ static int verify_signature(X509 *cert,
 	unsigned char *der_sig_p;
 	ECDSA_SIG *sig = NULL;
 	BIGNUM *r_int = NULL, *s_int = NULL;
+	char err_buf[256];
 
 	if (parsed->dec_signature.len != RAW_SIG_LEN) {
 		LM_ERR("Bad raw signature length [%d], should be [%d]\n",
@@ -1428,7 +1438,6 @@ static int verify_signature(X509 *cert,
 	}
 	if (EVP_DigestVerifyInit(mdctx, NULL, EVP_sha256(), NULL, pubkey) < 1) {
 		LM_ERR("Failed to init signature verification context\n");
-		rc = -1;
 		goto error;
 	}
 
@@ -1444,7 +1453,6 @@ static int verify_signature(X509 *cert,
 	if (build_unsigned_pport(&unsigned_buf, iat_ts, &attest_s, &x5u_s,
 		orig_tn, dest_tn, &origid_s) < 0) {
 		LM_ERR("Failed to build PASSporT\n");
-		rc = -1;
 		goto error;
 	}
 	if (EVP_DigestVerifyUpdate(mdctx, unsigned_buf.s, unsigned_buf.len) < 1) {
@@ -1502,10 +1510,11 @@ static int verify_signature(X509 *cert,
 
 	rc = EVP_DigestVerifyFinal(mdctx, (unsigned char*)der_sig_buf.s,
 		der_sig_buf.len);
-	if (rc == 0)
-		goto verify_fail;
-	else if (rc != 1)
+	if (rc < 0) {
+		ERR_error_string_n(ERR_peek_last_error(), err_buf, 256);
+		LM_ERR("openssl: %s\n", err_buf);
 		goto error;
+	}
 
 	ECDSA_SIG_free(sig);
 	EVP_PKEY_free(pubkey);
@@ -1513,10 +1522,8 @@ static int verify_signature(X509 *cert,
 	pkg_free(unsigned_buf.s);
 	pkg_free(der_sig_buf.s);
 
-	return 0;
+	return rc;
 
-verify_fail:
-	rc = -9;
 error:
 	if (sig)
 		ECDSA_SIG_free(sig);
@@ -1616,9 +1623,9 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if (!orig_tn_p) {
 		if ((rc = get_orig_tn_from_msg(msg, &orig_tn)) < 0) {
 			if (rc == -1)
-				LM_ERR("Error determining Originator's identity\n");
+				LM_ERR("Failed to get Originator identity\n");
 			else  /* rc == -3 */
-				LM_INFO("Originator's URI is not a telephone number\n");
+				LM_INFO("Improper URI for Originator identity\n");
 			return rc;
 		}
 		orig_tn_p = &orig_tn;
@@ -1626,9 +1633,9 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if (!dest_tn_p) {
 		if ((rc = get_dest_tn_from_msg(msg, &dest_tn)) < 0) {
 			if (rc == -1)
-				LM_ERR("Error determining Destinations's identity\n");
+				LM_ERR("Failed to get Destination identity\n");
 			else  /* rc == -3 */
-				LM_INFO("Destinations's URI is not a telephone number\n");
+				LM_INFO("Improper URI for Destination identity\n");
 			return rc;
 		}
 		dest_tn_p = &dest_tn;
@@ -1694,10 +1701,20 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	 * the signature verification would fail anyway */
 	pport_orig_tn.s = parsed->orig_tn->valuestring;
 	pport_orig_tn.len = strlen(pport_orig_tn.s);
+	if (str_strcmp(&pport_orig_tn, orig_tn_p)) {
+		LM_INFO("Differing identities in orig claim [%.*s] and PAI/From hdr [%.*s]\n",
+			pport_orig_tn.len, pport_orig_tn.s, orig_tn_p->len, orig_tn_p->s);
+		LM_INFO("Signature would not verify successfully\n");
+		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
+		rc = -9;
+		goto error;
+	}
+
 	pport_dest_tn.s = parsed->dest_tn->valuestring;
 	pport_dest_tn.len = strlen(pport_dest_tn.s);
-	if (str_strcmp(&pport_orig_tn, orig_tn_p) ||
-		str_strcmp(&pport_dest_tn, dest_tn_p)) {
+	if (str_strcmp(&pport_dest_tn, dest_tn_p)) {
+		LM_INFO("Differing identities in dest claim [%.*s] and To hdr [%.*s]\n",
+			pport_dest_tn.len, pport_dest_tn.s, dest_tn_p->len, dest_tn_p->s);
 		LM_INFO("Signature would not verify successfully\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -9;
@@ -1732,13 +1749,15 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if (iat_ts != date_ts && (now - iat_ts > verify_date_freshness))
 		iat_ts = date_ts;
 
-	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) < 0) {
-		if (rc == -1) {
-			LM_ERR("Error verifying signature\n");
+	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) <= 0) {
+		if (rc < 0) {
+			LM_ERR("Error while verifying signature\n");
+			rc = -1;
 			goto error;
-		} else {  /* rc == -9 */
+		} else {
 			LM_INFO("Signature did not verify successfully\n");
 			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
+			rc = -9;
 			goto error;
 		}
 	}
