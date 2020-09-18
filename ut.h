@@ -63,8 +63,7 @@ struct sip_msg;
 #define trim_len( _len, _begin, _mystr ) \
 	do{ 	static char _c; \
 		(_len)=(_mystr).len; \
-		while ((_len) && ((_c=(_mystr).s[(_len)-1])==0 || _c=='\r' || \
-					_c=='\n' || _c==' ' || _c=='\t' )) \
+		while ((_len) && ((_c=(_mystr).s[(_len)-1])==0 || is_ws(_c))) \
 			(_len)--; \
 		(_begin)=(_mystr).s; \
 		while ((_len) && ((_c=*(_begin))==' ' || _c=='\t')) { \
