@@ -1871,13 +1871,37 @@ modparam("usrloc", "contact_refresh_timer", true)
 		<function moreinfo="none">E_UL_CONTACT_REFRESH</function>
 		</title>
 		<para>
-		Set <xref linkend="param_contact_refresh_timer"/> to 1 in order to enable
-		this event.  The event is raised within reasonable time before a contact
+		Set <xref linkend="param_contact_refresh_timer"/> to
+		<emphasis>true</emphasis> in order to enable this event.  The event is
+		raised within reasonable time before a contact
 		binding will expire, such that the script writer can take action,
 		possibly force a registration refresh from the endpoint.
 		</para>
-		<para>Parameters: same as the
-			<xref linkend="event_E_UL_CONTACT_INSERT"/> event</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				all <xref linkend="event_E_UL_CONTACT_INSERT"/> event parameters
+			</para></listitem>
+			<listitem><para>
+				<emphasis>reason</emphasis> - the reason why the binding refresh
+				event was triggered.  Possible values:
+				<itemizedlist>
+					<listitem><para>
+						"reg-refresh" - periodic refresh triggered by OpenSIPS
+					</para></listitem>
+
+					<listitem><para>
+						"ini-INVITE", "ini-SUBSCRIBE", etc. - a refresh
+						triggered by an incoming initial SIP request
+					</para></listitem>
+
+					<listitem><para>
+						"mid-INVITE", "mid-BYE", etc. - a refresh triggered
+						by an incoming mid-dialog SIP request
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+		</itemizedlist>
 	</section>
 
 	<section id="event_E_UL_LATENCY_UPDATE" xreflabel="E_UL_LATENCY_UPDATE">
