@@ -122,6 +122,7 @@ void stop_refresh_timer(ucontact_t *ct)
 
 void trigger_ct_refreshes(unsigned int ticks, void *param)
 {
+	static const str reg_refresh_reason = str_init("reg-refresh");
 	struct list_head *el, *_;
 	ucontact_t *ct;
 	int now = time(NULL);
@@ -135,7 +136,7 @@ void trigger_ct_refreshes(unsigned int ticks, void *param)
 
 		LM_DBG("raising refresh event for aor: '%.*s', ct: '%.*s'\n",
 		       ct->aor->len, ct->aor->s, ct->c.len, ct->c.s);
-		ul_raise_contact_event(ei_c_refresh_id, ct);
+		ul_raise_ct_refresh_event(ct, &reg_refresh_reason);
 		list_del(&ct->refresh_list);
 		INIT_LIST_HEAD(&ct->refresh_list);
 	}
