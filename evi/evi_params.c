@@ -71,14 +71,17 @@ int evi_param_set(evi_param_p el, const void *param, int flags)
 		return -1;
 	}
 
-	LM_DBG("adding %s param\n", EVI_INT_VAL & flags ? "int" : "string");
-
 	el->flags = flags;
 
-	if (flags & EVI_INT_VAL)
+	if (flags & EVI_INT_VAL) {
 		el->val.n = *((int*)param);
-	else
+		LM_DBG("set int %.*s=%d\n", el->name.len, el->name.s,
+		       el->val.n);
+	} else {
 		memcpy(&el->val, param, sizeof(str));
+		LM_DBG("set str %.*s='%.*s'\n", el->name.len, el->name.s,
+		       el->val.s.len, el->val.s.s);
+	}
 
 	return 0;
 }
