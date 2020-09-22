@@ -663,17 +663,20 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 
 	if (c == 0) {
 		if (st) {
-			if (star((udomain_t*)_d, &sctx,_m) < 0) goto error;
+			if (star((udomain_t*)_d, &sctx,_m) < 0)
+				goto error;
 		} else {
-			if (no_contacts((udomain_t*)_d, &sctx, _m) < 0) goto error;
+			if (no_contacts((udomain_t*)_d, &sctx, _m) < 0)
+				goto error;
 		}
 	} else {
-		if (add_contacts(_m, c, (udomain_t*)_d, &sctx) < 0) goto error;
-
 		if (pn_enable && pn_inspect_request(_m, &c->uri, &sctx) != 0) {
 			LM_DBG("SIP PN processing failed\n");
 			goto error;
 		}
+
+		if (add_contacts(_m, c, (udomain_t*)_d, &sctx) < 0)
+			goto error;
 	}
 
 	update_stat(accepted_registrations, 1);

@@ -60,6 +60,7 @@ static str pn_param_str = str_init("pn-param");
 	(sizeof("Feature-Caps: +sip.pns=\"\";" \
 			"+sip.pnsreg=\"\";+sip.pnspurr=\"\"") + \
 			MAX_PROVIDER_LEN + INT2STR_MAX_LEN + MAX_PNSPURR_LEN + CRLF_LEN)
+#define PN_REASON_BUFSZ 32
 
 static ebr_api_t ebr;
 static ebr_event *ev_ct_update;
@@ -639,6 +640,8 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
                   const struct sip_uri *ct_uri)
 {
 	ebr_filter *f;
+	char _reason[PN_REASON_BUFSZ + 1];
+	str reason = {_reason, 0}, met;
 
 	/* fill in the EBR filters, so we can match the future reg event */
 	for (f = pn_ebr_filters; f; f = f->next) {
@@ -657,8 +660,13 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 		return -1;
 	}
 
-	ul.raise_ev_ct_refresh(ct, 1);
+	met = req->REQ_METHOD_S;
+	if (met.len > PN_REASON_BUFSZ - 4)
+		met.len = PN_REASON_BUFSZ - 4;
+	sprintf(reason.s, "ini-%.*s", met.len, met.s);
+	reason.len = 4 + met.len;
 
+	ul.raise_ev_ct_refresh(ct, &reason);
 	return 0;
 }
 
@@ -749,9 +757,10 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 
 int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 {
+	char _reason[PN_REASON_BUFSZ + 1];
 	ebr_filter *f;
 	struct sip_uri puri;
-	str *purr, *rt_uri;
+	str *purr, *rt_uri, reason = {_reason, 0}, met;
 	ucontact_id id;
 	urecord_t *r;
 	ucontact_t *c;
@@ -838,8 +847,14 @@ have_purr:
 		goto err_unlock;
 	}
 
+	met = req->REQ_METHOD_S;
+	if (met.len > PN_REASON_BUFSZ - 4)
+		met.len = PN_REASON_BUFSZ - 4;
+	sprintf(reason.s, "mid-%.*s", met.len, met.s);
+	reason.len = 4 + met.len;
+
 	/* trigger the Push Notification */
-	ul.raise_ev_ct_refresh(c, 1);
+	ul.raise_ev_ct_refresh(c, &reason);
 
 	ul.unlock_udomain(d, &r->aor);
 	return 1;
