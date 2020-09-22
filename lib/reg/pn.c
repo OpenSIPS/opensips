@@ -641,7 +641,7 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 {
 	ebr_filter *f;
 	char _reason[PN_REASON_BUFSZ + 1];
-	str reason = {_reason}, met;
+	str reason = {_reason, 0}, met;
 
 	/* fill in the EBR filters, so we can match the future reg event */
 	for (f = pn_ebr_filters; f; f = f->next) {
@@ -760,7 +760,7 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 	char _reason[PN_REASON_BUFSZ + 1];
 	ebr_filter *f;
 	struct sip_uri puri;
-	str *purr, *rt_uri, reason = {_reason}, met;
+	str *purr, *rt_uri, reason = {_reason, 0}, met;
 	ucontact_id id;
 	urecord_t *r;
 	ucontact_t *c;
