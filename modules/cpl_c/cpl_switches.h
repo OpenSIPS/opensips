@@ -735,8 +735,8 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 					LM_ERR("no more pkg error\n");
 					goto script_error;
 				}
-				if(ac_tm_set_time( &att, intr->recv_time))
-					goto runtime_error;
+				ac_tm_set_time( &att, intr->recv_time);
+
 				/* let's see how many attributes we have */
 				nr_attrs = NR_OF_ATTR(kid);
 				/* get the attributes */

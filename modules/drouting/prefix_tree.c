@@ -91,11 +91,8 @@ check_time(
 	if (time_rec->dtstart==0)
 		return 1;
 
-	memset( &att, 0, sizeof(att));
-
 	/* set current time */
-	if ( ac_tm_set_time( &att, time(0) ) )
-		return 0;
+	ac_tm_set_time(&att, time(0));
 
 	/* does the recv_time match the specified interval?  */
 	if (check_tmrec( time_rec, &att)!=0)

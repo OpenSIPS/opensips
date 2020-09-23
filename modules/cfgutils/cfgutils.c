@@ -893,11 +893,8 @@ done:
 	if (time_rec->dtstart==0)
 		goto success;
 
-	memset( &att, 0, sizeof(att));
-
 	/* set current time */
-	if (ac_tm_set_time(&att, check_time))
-		goto error;
+	ac_tm_set_time(&att, check_time);
 
 	/* does the recv_time match the specified interval?  */
 	if (check_tmrec( time_rec, &att)!=0)
