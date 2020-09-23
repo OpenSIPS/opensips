@@ -49,9 +49,9 @@ void test_check_time_rec(void)
 {
 	int rc1, rc2;
 	str utc = str_init("UTC"),
-	     us = str_init("America/Chihuahua"), /* DST: on */
-	     ro = str_init("Europe/Bucharest"),  /* DST: on */
-	     au = str_init("Pacific/Auckland");  /* DST: off */
+	     us = str_init("America/Chihuahua"), /* UTC-7, DST: on */
+	     ro = str_init("Europe/Bucharest"),  /* UTC+2, DST: on */
+	     au = str_init("Pacific/Auckland");  /* UTC+12, DST: off */
 	unsigned int now = 1591357895 /* 2020-06-05 (Friday), 11:51:35 UTC */;
 
 	tz_set(&us);
@@ -199,7 +199,135 @@ void test_check_time_rec(void)
 }
 
 
+void test_multi_time_rec(void)
+{
+	#define _1 "20200605T115135|20200605T115136"
+	#define _0 "20200605T115135|20200605T115135"
+	#define _ctr(_tr) ctr(_tr, &utc, &now)
+
+	str utc = str_init("UTC");
+	unsigned int now = 1591357895 /* 2020-06-05 (Friday), 11:51:35 UTC */;
+
+	/* OR operator: basic test */
+	ok(_ctr(_0 "/") == -2);
+	ok(_ctr(_1 "/") == -2);
+	ok(_ctr(_1 "/" _1 "/") == -2);
+	ok(_ctr(_1 "/ foobar") == -2);
+
+	ok(_ctr(_0 "/" _0) == -1);
+	ok(_ctr(_1 "/" _0) == 1);
+	ok(_ctr(_0 "/" _1) == 1);
+	ok(_ctr(_1 "/" _1) == 1);
+
+	/* OR operator: multiple operands */
+	ok(_ctr(_0 "/" _0 "/" _0 "/" _0) == -1);
+	ok(_ctr(_0 "/" _0 "/" _0 "/" _1) == 1);
+	ok(_ctr(_0 "/" _1 "/" _0 "/" _0) == 1);
+	ok(_ctr(_1 "/" _0 "/" _0 "/" _0) == 1);
+
+
+	/* AND operator: basic test */
+	ok(_ctr(_0 "&") == -2);
+	ok(_ctr(_1 "&") == -2);
+	ok(_ctr(_0 "&" _0 "&") == -2);
+	ok(_ctr(_0 "& foobar") == -2);
+
+	ok(_ctr(_0 "&" _0) == -1);
+	ok(_ctr(_1 "&" _0) == -1);
+	ok(_ctr(_0 "&" _1) == -1);
+	ok(_ctr(_1 "&" _1) == 1);
+
+	/* AND operator: multiple operands */
+	ok(_ctr(_0 "&" _0 "&" _0 "&" _0) == -1);
+	ok(_ctr(_0 "&" _0 "&" _0 "&" _1) == -1);
+	ok(_ctr(_1 "&" _0 "&" _0 "&" _0) == -1);
+	ok(_ctr(_1 "&" _1 "&" _0 "&" _1) == -1);
+	ok(_ctr(_1 "&" _1 "&" _1 "&" _1) == 1);
+
+
+	/* simple parenthesization */
+	ok(_ctr("("_0")") == -1);
+	ok(_ctr("("_1")") == 1);
+	ok(_ctr("("_1 "/" _1 "&" _1")") == -2);
+
+	ok(_ctr("("_0 "/" _0")") == -1);
+	ok(_ctr("("_1 "/" _0")") == 1);
+	ok(_ctr("("_1 "/" _0 "/" _0")") == 1);
+
+	ok(_ctr("("_0 "&" _0")") == -1);
+	ok(_ctr("("_1 "&" _0")") == -1);
+	ok(_ctr("("_1 "&" _0 "&" _1")") == -1);
+	ok(_ctr("("_1 "&" _1 "&" _1")") == 1);
+
+	ok(_ctr("("_1 "/" _0") &" _0) == -1);
+	ok(_ctr(_1 "/ ("_0 "&" _0")") == 1);
+
+	/* each singly parenthesized expression must contain one operator type */
+	ok(_ctr(_1 "&" _1 "/" _1) == -2);
+	ok(_ctr(_1 "/" _1 "&" _1) == -2);
+
+
+	/* complex parenthesization */
+	ok(_ctr("("_1 "/ (("_1"/"_0")&"_0") &" _0) == -1);
+	ok(_ctr(_1 "/ ((("_1"/"_0")&"_0") &" _0")") == 1);
+
+	/* test WS trimming (same expression as above) */
+	ok(_ctr(_1 "  /\
+				((\
+				  (\
+					"_1" /		"_0")&\
+				  "_0		") &	" _0\
+			    ")") == 1);
+
+
+	/* negation operator tests */
+	ok(_ctr("!" _0) == 1);
+	ok(_ctr("!" _1) == -1);
+	ok(_ctr("!(" _0")") == 1);
+	ok(_ctr("!(" _1")") == -1);
+	ok(_ctr("(!" _0")") == 1);
+	ok(_ctr("(!" _1")") == -1);
+
+	ok(_ctr("!(" _1") & " _1) == -1);
+	ok(_ctr("!(" _1") / !(" _1")") == -1);
+	ok(_ctr("!(" _0") & !(" _0")") == 1);
+
+
+	/* buggy, but still somewhat _reasonable_ corner-cases */
+	ok(_ctr("") == -1);
+	ok(_ctr("!") == 1);
+	ok(_ctr("()") == -1);
+	ok(_ctr("!()") == 1);
+	ok(_ctr("() / ()") == -1);
+	ok(_ctr("() / " _1) == 1);
+	ok(_ctr("!() & !()") == 1);
+	ok(_ctr("!() & " _0) == -1);
+
+
+	/* bad syntax TODO: add more such tests */
+	ok(_ctr("(") == -2);
+	ok(_ctr(")") == -2);
+	ok(_ctr(")(") == -2);
+	ok(_ctr("(()") == -2);
+	ok(_ctr("())") == -2);
+	ok(_ctr("!(") == -2);
+	ok(_ctr("!(()") == -2);
+	ok(_ctr("!())") == -2);
+	ok(_ctr("!()!") == -2);
+
+	ok(_ctr("()()") == -2);
+	ok(_ctr("("_1")"_0) == -2);
+	ok(_ctr(_1"("_0")") == -2);
+	ok(_ctr("("_1")("_0")") == -2);
+
+	#undef _1
+	#undef _0
+	#undef _ctr
+}
+
+
 void mod_tests(void)
 {
 	test_check_time_rec();
+	test_multi_time_rec();
 }
