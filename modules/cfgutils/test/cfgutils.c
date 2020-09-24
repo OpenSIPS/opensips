@@ -25,27 +25,29 @@
 #include "../../../ut.h"
 #include "../../../time_rec.h"
 
-extern int check_time_rec(struct sip_msg *_, str *time_str, str *tz,
-                          unsigned int *ptime);
+extern int check_single_tmrec(char *time_str, const str *tz,
+                              const unsigned int *ptime);
+extern int check_multi_tmrec(struct sip_msg *_, str *time_str, str *tz,
+                             unsigned int *ptime);
 
 int ctr(const char *_rec, str *tz, unsigned int *ts)
 {
-	str rec;
-	int rc;
+	char *rec;
+	int rc, len;
 
-	/* it seems check_time_rec() writes to the input buffer, so dup it! */
-	rec.len = strlen(_rec);
-	rec.s = shm_malloc(rec.len + 1);
-	memcpy(rec.s, _rec, rec.len);
-	rec.s[rec.len] = '\0';
+	/* it seems check_single_tmrec() writes to the input buffer, so dup it! */
+	len = strlen(_rec);
+	rec = shm_malloc(len + 1);
+	memcpy(rec, _rec, len);
+	rec[len] = '\0';
 
-	rc = check_time_rec(NULL, &rec, tz, ts);
-	shm_free(rec.s);
+	rc = check_single_tmrec(rec, tz, ts);
+	shm_free(rec);
 
 	return rc;
 }
 
-void test_check_time_rec(void)
+void test_check_single_tmrec(void)
 {
 	int rc1, rc2;
 	str utc = str_init("UTC"),
@@ -199,7 +201,7 @@ void test_check_time_rec(void)
 }
 
 
-void test_multi_time_rec(void)
+void test_check_multi_tmrec(void)
 {
 	#define _1 "20200605T115135|20200605T115136"
 	#define _0 "20200605T115135|20200605T115135"
@@ -328,6 +330,6 @@ void test_multi_time_rec(void)
 
 void mod_tests(void)
 {
-	test_check_time_rec();
-	test_multi_time_rec();
+	test_check_single_tmrec();
+	test_check_multi_tmrec();
 }

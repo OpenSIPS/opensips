@@ -108,8 +108,8 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 		int *t1u, int *t2s, int *t2u, pv_spec_t *_res);
-int check_time_rec(struct sip_msg *msg, str *time_str, str *tz,
-                   unsigned int *ptime);
+int check_multi_tmrec(struct sip_msg *msg, str *time_str, str *tz,
+                      unsigned int *ptime);
 
 #ifdef HAVE_TIMER_FD
 static int async_sleep(struct sip_msg* msg,
@@ -190,7 +190,7 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, fixup_static_lock, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"check_time_rec", (cmd_function)check_time_rec, {
+	{"check_time_rec", (cmd_function)check_multi_tmrec, {
 		{CMD_PARAM_STR, fixup_str, fixup_free_str},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},{0,0,0}},
@@ -841,27 +841,30 @@ static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 }
 
 /**
- *
  * return values:
 			1 - match
-			-1 - otherwise
+			-1 - no match
+			-2 - parse error (bad input)
+			-3 - internal error
+
+	NOTICE: @time_str must be write-able memory, otherwise I will segfault!
  */
-int check_time_rec(struct sip_msg *msg, str *time_str, str *tz,
-                   unsigned int *ptime)
+int check_single_tmrec(char *time_str, const str *tz, const unsigned int *ptime)
 {
 	tmrec_p time_rec = 0;
 	char *p, *s;
 	ac_tm_t att;
 	time_t check_time;
+	int rc = -1;
 
-	p = time_str->s;
+	p = time_str;
 
-	LM_DBG("Parsing : %.*s\n", time_str->len, time_str->s);
+	LM_DBG("Parsing: '%s'\n", p);
 
 	time_rec = tmrec_new(PKG_ALLOC);
 	if (time_rec==0) {
 		LM_ERR("no more shm mem\n");
-		goto error;
+		return -3;
 	}
 
 	if (!ptime)
@@ -884,23 +887,21 @@ int check_time_rec(struct sip_msg *msg, str *time_str, str *tz,
 	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
 	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
 
-	/* success */
-
 	LM_DBG("Time rec created\n");
 
 done:
 	/* shortcut: if there is no dstart, timerec is valid */
 	if (time_rec->dtstart==0)
-		goto success;
+		goto match;
 
 	/* set current time */
 	ac_tm_set_time(&att, check_time);
 
 	/* does the recv_time match the specified interval?  */
 	if (check_tmrec( time_rec, &att)!=0)
-		goto error;
+		goto no_match;
 
-success:
+match:
 	tmrec_free(time_rec);
 
 	if (tz)
@@ -908,13 +909,21 @@ success:
 	return 1;
 
 parse_error:
-	LM_ERR("parse error in <%s> around position %i\n",
-		time_str->s, (int)(long)(p-time_str->s));
-error:
+	LM_ERR("parse error in <%s> around position %ld\n", time_str, p - time_str);
+	rc = -2;
+
+no_match:
 	if (time_rec)
 		tmrec_free( time_rec );
 
 	if (tz)
 		tz_reset();
-	return -1;
+	return rc;
+}
+
+
+int check_multi_tmrec(struct sip_msg *_, str *time_str, str *tz,
+                      unsigned int *ptime)
+{
+	return check_single_tmrec(time_str->s, tz, ptime);
 }
