@@ -25,33 +25,55 @@
 #include "../../../ut.h"
 #include "../../../time_rec.h"
 
-extern int check_time_rec(struct sip_msg *_, str *time_str, str *tz,
-                          unsigned int *ptime);
+extern int check_single_tmrec(char *time_str, const str *tz,
+                              const unsigned int *ptime);
+extern int check_multi_tmrec(struct sip_msg *msg, char *time_rec, str *tz,
+                             unsigned int *ptime);
+
 
 int ctr(const char *_rec, str *tz, unsigned int *ts)
 {
-	str rec;
-	int rc;
+	char *rec;
+	int rc, len;
 
-	/* it seems check_time_rec() writes to the input buffer, so dup it! */
-	rec.len = strlen(_rec);
-	rec.s = shm_malloc(rec.len + 1);
-	memcpy(rec.s, _rec, rec.len);
-	rec.s[rec.len] = '\0';
+	/* it seems check_single_tmrec() writes to the input buffer, so dup it! */
+	len = strlen(_rec);
+	rec = shm_malloc(len + 1);
+	memcpy(rec, _rec, len);
+	rec[len] = '\0';
 
-	rc = check_time_rec(NULL, &rec, tz, ts);
-	shm_free(rec.s);
+	rc = check_single_tmrec(rec, tz, ts);
+	shm_free(rec);
 
 	return rc;
 }
 
-void test_check_time_rec(void)
+
+int cmtr(const char *_rec, str *tz, unsigned int *ts)
+{
+	char *rec;
+	int rc, len;
+
+	/* it seems check_single_tmrec() writes to the input buffer, so dup it! */
+	len = strlen(_rec);
+	rec = shm_malloc(len + 1);
+	memcpy(rec, _rec, len);
+	rec[len] = '\0';
+
+	rc = check_multi_tmrec(NULL, rec, tz, ts);
+	shm_free(rec);
+
+	return rc;
+}
+
+
+void test_check_single_tmrec(void)
 {
 	int rc1, rc2;
 	str utc = str_init("UTC"),
-	     us = str_init("America/Chihuahua"), /* DST: on */
-	     ro = str_init("Europe/Bucharest"),  /* DST: on */
-	     au = str_init("Pacific/Auckland");  /* DST: off */
+	     us = str_init("America/Chihuahua"), /* UTC-7, DST: on */
+	     ro = str_init("Europe/Bucharest"),  /* UTC+2, DST: on */
+	     au = str_init("Pacific/Auckland");  /* UTC+12, DST: off */
 	unsigned int now = 1591357895 /* 2020-06-05 (Friday), 11:51:35 UTC */;
 
 	tz_set(&us);
@@ -199,7 +221,169 @@ void test_check_time_rec(void)
 }
 
 
+void test_check_multi_tmrec(void)
+{
+	#define _1 "20200605T115135|20200605T115136"
+	#define _0 "20200605T115135|20200605T115135"
+	#define _ctr(_tr) cmtr(_tr, &utc, &now)
+
+	str utc = str_init("UTC");
+	unsigned int now = 1591357895 /* 2020-06-05 (Friday), 11:51:35 UTC */;
+
+	/* OR operator: basic test */
+	ok(_ctr(_0 "/") == -2);
+	ok(_ctr(_1 "/") == -2);
+	ok(_ctr(_1 "/" _1 "/") == -2);
+	ok(_ctr(_1 "/ foobar") == -2);
+
+	ok(_ctr(_0 "/" _0) == -1);
+	ok(_ctr(_1 "/" _0) == 1);
+	ok(_ctr(_0 "/" _1) == 1);
+	ok(_ctr(_1 "/" _1) == 1);
+	ok(_ctr(_0 " / " _0) == -1);
+	ok(_ctr(_1 " / " _0) == 1);
+	ok(_ctr(_0 " / " _1) == 1);
+	ok(_ctr(_1 " / " _1) == 1);
+
+	/* OR operator: multiple operands */
+	ok(_ctr(_0 "/" _0 "/" _0 "/" _0) == -1);
+	ok(_ctr(_0 "/" _0 "/" _0 "/" _1) == 1);
+	ok(_ctr(_0 "/" _1 "/" _0 "/" _0) == 1);
+	ok(_ctr(_1 "/" _0 "/" _0 "/" _0) == 1);
+
+
+	/* AND operator: basic test */
+	ok(_ctr(_0 "&") == -2);
+	ok(_ctr(_1 "&") == -2);
+	ok(_ctr(_0 "&" _0 "&") == -2);
+	ok(_ctr(_0 "& foobar") == -2);
+
+	ok(_ctr(_0 "&" _0) == -1);
+	ok(_ctr(_1 "&" _0) == -1);
+	ok(_ctr(_0 "&" _1) == -1);
+	ok(_ctr(_1 "&" _1) == 1);
+	ok(_ctr(_0 " &" _0) == -1);
+	ok(_ctr(_1 " &" _0) == -1);
+	ok(_ctr(_0 " &" _1) == -1);
+	ok(_ctr(_1 " &" _1) == 1);
+
+	/* AND operator: multiple operands */
+	ok(_ctr(_0 "&" _0 "&" _0 "&" _0) == -1);
+	ok(_ctr(_0 "&" _0 "&" _0 "&" _1) == -1);
+	ok(_ctr(_1 "&" _0 "&" _0 "&" _0) == -1);
+	ok(_ctr(_1 "&" _1 "&" _0 "&" _1) == -1);
+	ok(_ctr(_1 "&" _1 "&" _1 "&" _1) == 1);
+
+
+	/* simple parenthesization */
+	ok(_ctr("("_0")") == -1);
+	ok(_ctr("("_1")") == 1);
+	ok(_ctr("("_1 "/" _1 "&" _1")") == -2);
+	ok(_ctr("("_1 "&" _1 "/" _1")") == -2);
+	ok(_ctr("("_1 " / " _1 " & " _1")") == -2);
+	ok(_ctr("("_1 " & " _1 " / " _1")") == -2);
+
+	ok(_ctr("("_0 "/" _0")") == -1);
+	ok(_ctr("("_1 "/" _0")") == 1);
+	ok(_ctr("("_1 "/" _0 "/" _0")") == 1);
+
+	ok(_ctr("("_0 "&" _0")") == -1);
+	ok(_ctr("("_1 "&" _0")") == -1);
+	ok(_ctr("("_1 "&" _0 "&" _1")") == -1);
+	ok(_ctr("("_1 "&" _1 "&" _1")") == 1);
+
+	ok(_ctr("("_1 "/" _0") &" _0) == -1);
+	ok(_ctr(_1 "/ ("_0 "&" _0")") == 1);
+
+	/* each singly parenthesized expression must contain one operator type */
+	ok(_ctr(_1 "&" _1 "/" _1) == -2);
+	ok(_ctr(_1 "/" _1 "&" _1) == -2);
+	ok(_ctr(_1 " & " _1 " / " _1) == -2);
+	ok(_ctr(_1 " / " _1 " & " _1) == -2);
+
+
+	/* complex parenthesization */
+	ok(_ctr("("_1 "/ (("_1"/"_0")&"_0")) &" _0) == -1);
+	ok(_ctr(_1 "/ ((("_1"/"_0")&"_0") &" _0")") == 1);
+
+	/* test WS trimming (same expression as above) */
+	ok(_ctr(_1 "  /\
+				((\
+				  (\
+					"_1" /		"_0")&\
+				  "_0		") &	" _0\
+			    ")") == 1);
+
+
+	/* negation operator tests */
+	ok(_ctr("!" _0) == 1);
+	ok(_ctr("! !" _0) == -1);
+	ok(_ctr("!" _1) == -1);
+	ok(_ctr("!	!" _1) == 1);
+	ok(_ctr("!(" _0")") == 1);
+	ok(_ctr("!(" _1")") == -1);
+	ok(_ctr("(!" _0")") == 1);
+	ok(_ctr("(!" _1")") == -1);
+
+	ok(_ctr("!(" _1") & " _1) == -1);
+	ok(_ctr("!(" _1") / !(" _1")") == -1);
+	ok(_ctr("!(" _0") & !(" _0")") == 1);
+
+
+	/* buggy, but still somewhat _reasonable_ corner-cases */
+	ok(_ctr("") == -1);
+	ok(_ctr("!") == 1);
+	ok(_ctr("!!") == -1);
+	ok(_ctr("()") == -1);
+	ok(_ctr("!()") == 1);
+	ok(_ctr("() / ()") == -1);
+	ok(_ctr("() / " _1) == 1);
+	ok(_ctr("!() & !()") == 1);
+	ok(_ctr("!() & " _0) == -1);
+
+
+	/* bad syntax tests */
+	ok(_ctr("/") == -2);
+	ok(_ctr("(") == -2);
+	ok(_ctr(")") == -2);
+	ok(_ctr(")(") == -2);
+	ok(_ctr("(()") == -2);
+	ok(_ctr("())") == -2);
+	ok(_ctr("!(") == -2);
+	ok(_ctr("!(()") == -2);
+	ok(_ctr("!())") == -2);
+	ok(_ctr("!()!") == -2);
+
+	ok(_ctr("&") == -2);
+	ok(_ctr("/") == -2);
+	ok(_ctr("&()") == -2);
+	ok(_ctr("()&") == -2);
+	ok(_ctr("/()") == -2);
+	ok(_ctr("()/") == -2);
+
+	ok(_ctr("()()") == -2);
+	ok(_ctr(_0"(") == -2);
+	ok(_ctr(_0 _1) == -2);
+	ok(_ctr("("_1")"_0) == -2);
+	ok(_ctr(_1"("_0")") == -2);
+	ok(_ctr("("_1")("_0")") == -2);
+	ok(_ctr(_0 "&&" _1) == -2);
+	ok(_ctr(_0 "//" _1) == -2);
+
+	ok(_ctr("("_0 "&" _1 ") &&" _1) == -2);
+	ok(_ctr("("_0 "&" _1 ") //" _1) == -2);
+	ok(_ctr(_0 "//" "("_0 "&" _1 ")") == -2);
+	ok(_ctr(_0 "&&" "("_0 "&" _1 ")") == -2);
+	ok(_ctr("("_0 "&" _1 ") !" _1) == -2);
+
+	#undef _1
+	#undef _0
+	#undef _ctr
+}
+
+
 void mod_tests(void)
 {
-	test_check_time_rec();
+	test_check_single_tmrec();
+	test_check_multi_tmrec();
 }

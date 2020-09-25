@@ -348,9 +348,7 @@ static inline int check_time(tmrec_t *time_rec) {
 	// timerec_print(time_rec);
 
 	// Set Current Time
-	memset(&att, 0, sizeof(att));
-	if(ac_tm_set_time(&att, time(0)))
-		return -1;
+	ac_tm_set_time(&att, time(0));
 
 	// Check_Tmrec will return 0 on successfully time recurrence match
 	if(check_tmrec(time_rec, &att) != 0)

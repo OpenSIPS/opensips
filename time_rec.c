@@ -50,10 +50,8 @@ static inline int strz2int(char *_bp)
 	return _v;
 }
 
-int ac_tm_fill(ac_tm_p _atp, struct tm* _tm)
+static inline void ac_tm_fill(ac_tm_p _atp, struct tm* _tm)
 {
-	if(!_atp || !_tm)
-		return -1;
 	_atp->t.tm_sec = _tm->tm_sec;       /* seconds */
 	_atp->t.tm_min = _tm->tm_min;       /* minutes */
 	_atp->t.tm_hour = _tm->tm_hour;     /* hours */
@@ -68,7 +66,6 @@ int ac_tm_fill(ac_tm_p _atp, struct tm* _tm)
 	_atp->yweek = ac_get_yweek(_tm);
 	_atp->ywday = ac_get_wday_yr(_tm);
 	_atp->mwday = ac_get_wday_mr(_tm);
-	return 0;
 }
 
 
@@ -142,7 +139,7 @@ time_t tz_adjust_ts(time_t unix_time, const str *tz)
 
 
 
-int ac_tm_set_time(ac_tm_p _atp, time_t _t)
+void ac_tm_set_time(ac_tm_p _atp, time_t _t)
 {
 	struct tm ltime;
 
@@ -150,7 +147,7 @@ int ac_tm_set_time(ac_tm_p _atp, time_t _t)
 	_atp->time = _t;
 
 	localtime_r(&_t, &ltime);
-	return ac_tm_fill(_atp, &ltime);
+	ac_tm_fill(_atp, &ltime);
 }
 
 int ac_get_mweek(struct tm* _tm)

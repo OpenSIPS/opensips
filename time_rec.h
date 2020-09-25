@@ -144,7 +144,7 @@ typedef struct _tmrec
 } tmrec_t, *tmrec_p;
 
 
-int ac_tm_set_time(ac_tm_p, time_t);
+void ac_tm_set_time(ac_tm_p _atp, time_t _t);
 
 int ac_tm_reset(ac_tm_p);
 
