@@ -489,9 +489,8 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 		RFC 2445.
 		</para>
 		<para>
-			This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, 
-			FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE, TIMER_ROUTE,
-			EVENT_ROUTE.
+			This function may be used from any route.  It returns 1 on success
+			and -1, -2 or -3 on failure, parsing or internal errors, respectively.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
@@ -515,6 +514,39 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 			specific UNIX time to check.  The function simply expects the
 			actual UNIX time here, there is no need to perform any timezone
 			adjustments.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		Additionally, more complex time recurrence strings may be built by
+		connecting multiple time recurrence strings (described above) using
+		the logical AND ("&amp;"), OR ("/") and NEG ("!") operators.
+		Furthermore, the expressions may be paranthesized.  Some examples:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				20210104T090000|20210104T170000||WEEKLY|||MO,TU,WE,TH,FR
+					&amp;
+				!(20210405T000000|20210406T000000 / 20211227T000000|20211228T000000)
+			</para>
+			<para>
+				This example multi-recurrence expresses the working days schedule for
+				company X during 2021:  workdays from 9-17, except bank holidays
+				such as Easter Monday (April 5th) or Christmas Day (December 27th -
+				substitute day).
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				20210104T080000|20211231T180000||WEEKLY|||MO,TU,WE,TH,FR
+					&amp;
+				!20210104T120000|20211231T140000||WEEKLY|||MO,TU,WE,TH,FR
+			</para>
+			<para>
+				This example multi-recurrence expresses the working days schedule for
+				company Y during 2021:  workdays from 8-18, except the 12-14 interval,
+				when everyone is out for lunch break and the business is closed.
 			</para>
 		</listitem>
 		</itemizedlist>

@@ -194,8 +194,7 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, fixup_time_rec, fixup_free_time_rec},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},{0,0,0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+		ALL_ROUTES},
 	{"release_static_lock",(cmd_function)release_static_lock, {
 		{CMD_PARAM_STR, fixup_static_lock, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
