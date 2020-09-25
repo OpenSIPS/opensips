@@ -119,16 +119,16 @@ int parse_qop_value(str val, struct authenticate_body *auth)
 
 	if (val.len == 0)
 		return 0;
-	while (val.len > 0 && is_ws(*val.s))
-		STR_ADVANCE(&val);
+
+	trim_leading(&val);
+
 	if (val.len == 0)
 		return 0;
 	if (*val.s != ',')
 		return -1;
 postcomma:
 	STR_ADVANCE(&val);
-	while (val.len > 0 && is_ws(*val.s))
-		STR_ADVANCE(&val);
+	trim_leading(&val);
 
 	/* parse second token */
 	if (val.len < 4 || LOWER4B(GET4B(val.s))!=0x61757468)  /* "auth" */
