@@ -18,4 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-void test_oob(const str *, void (*)(const str *, void *), void *);
+enum oob_position {OOB_PRE, OOB_POST};
+
+void test_oob(const str *, void (*)(const str *, enum oob_position, void *), void *);

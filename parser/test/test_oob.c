@@ -25,7 +25,8 @@
 #include "../../str.h"
 #include "test_oob.h"
 
-void test_oob(const str *sarg, void (*tfunc)(const str *, void *), void *param)
+void test_oob(const str *sarg, void (*tfunc)(const str *, enum oob_position, void *),
+    void *param)
 {
 	char *mpages[3];
 	str targ;
@@ -40,13 +41,13 @@ void test_oob(const str *sarg, void (*tfunc)(const str *, void *), void *param)
 		assert(mprotect(mpages[0], page_size, PROT_WRITE) == 0);
 		memcpy(targ.s, sarg->s, targ.len);
 		assert(mprotect(mpages[0], page_size, PROT_READ) == 0);
-		tfunc(&targ, param);
+		tfunc(&targ, OOB_POST, param);
 
 		targ.s = mpages[2];
 		assert(mprotect(mpages[2], page_size, PROT_WRITE) == 0);
 		memcpy(targ.s, sarg->s, targ.len);
 		assert(mprotect(mpages[2], page_size, PROT_READ) == 0);
-		tfunc(&targ, param);
+		tfunc(&targ, OOB_PRE, param);
     }
     munmap(mpages[0], page_size * 3);
     return;
