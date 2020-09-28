@@ -18,6 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-enum oob_position {OOB_PRE, OOB_POST};
+enum oob_position {OOB_UNDERFLOW, OOB_OVERFLOW};
+
+#define OOB_CHECK_OK_MSG(fut, tstr, where) "oob check: %s(%s\"%.*s\"%s)", (fut), \
+    (where) == OOB_UNDERFLOW ? "->" : "", (tstr)->len, (tstr)->s, \
+    (where) == OOB_OVERFLOW ? "<-" : ""
 
 void test_oob(const str *, void (*)(const str *, enum oob_position, void *), void *);

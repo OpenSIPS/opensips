@@ -70,7 +70,5 @@ void test_parse_qop_oob(const str *tstr, enum oob_position where, void *farg)
 	struct authenticate_body *ap = farg;
 
 	parse_qop_value(*tstr, ap);
-	ok(1, "oob check: parse_qop_value(%s\"%.*s\"%s)",
-	    where == OOB_PRE ? "->" : "", tstr->len, tstr->s,
-	    where == OOB_POST ? "<-" : "");
+	ok(1, OOB_CHECK_OK_MSG("parse_qop_value", tstr, where));
 }

@@ -41,13 +41,13 @@ void test_oob(const str *sarg, void (*tfunc)(const str *, enum oob_position, voi
 		assert(mprotect(mpages[0], page_size, PROT_WRITE) == 0);
 		memcpy(targ.s, sarg->s, targ.len);
 		assert(mprotect(mpages[0], page_size, PROT_READ) == 0);
-		tfunc(&targ, OOB_POST, param);
+		tfunc(&targ, OOB_OVERFLOW, param);
 
 		targ.s = mpages[2];
 		assert(mprotect(mpages[2], page_size, PROT_WRITE) == 0);
 		memcpy(targ.s, sarg->s, targ.len);
 		assert(mprotect(mpages[2], page_size, PROT_READ) == 0);
-		tfunc(&targ, OOB_PRE, param);
+		tfunc(&targ, OOB_UNDERFLOW, param);
     }
     munmap(mpages[0], page_size * 3);
     return;

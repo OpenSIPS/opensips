@@ -87,7 +87,5 @@ void test_parse_authenticate_body_oob(const str *tstr, enum oob_position where, 
 	struct authenticate_body *ap = farg;
 
 	parse_authenticate_body(*tstr, ap);
-	ok(1, "oob check: parse_authenticate_body(%s\"%.*s\"%s)",
-	    where == OOB_PRE ? "->" : "", tstr->len, tstr->s,
-	    where == OOB_POST ? "<-" : "");
+	ok(1, OOB_CHECK_OK_MSG("parse_authenticate_body", tstr, where));
 }
