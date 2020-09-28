@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # do some routing with carrierroute route sets from mysql database
 
 # Copyright (C) 2007 1&1 Internet AG
