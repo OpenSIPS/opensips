@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # configuration with pseudo-variables, transformations and xlog output
 
 # Copyright (C) 2007 1&1 Internet AG

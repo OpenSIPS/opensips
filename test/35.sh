@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # check permissions module functionality
 
 # Copyright (C) 2008 1&1 Internet AG

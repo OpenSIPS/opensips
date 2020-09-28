@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # load all modules without external dependencies with postgres
 
 # Copyright (C) 2007 1&1 Internet AG

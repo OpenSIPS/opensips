@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # loads a carrierroute config for loadbalancing from mysql database
 
 # Copyright (C) 2007 1&1 Internet AG
