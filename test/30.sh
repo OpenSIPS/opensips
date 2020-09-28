@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # do some routing with carrierroute route sets from a config file
 
 # Copyright (C) 2007 1&1 Internet AG

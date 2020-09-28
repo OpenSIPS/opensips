@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # load all presence related modules with mysql
 
 # Copyright (C) 2008 1&1 Internet AG

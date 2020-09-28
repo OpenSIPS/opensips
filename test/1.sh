@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # load a minimal config
 
 # Copyright (C) 2007 1&1 Internet AG

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # database access with fetch_result for usrloc on postgres
 
 # Copyright (C) 2008 1&1 Internet AG

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # test cfgutils module
 
 # Copyright (C) 2008 1&1 Internet AG
