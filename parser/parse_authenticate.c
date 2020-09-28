@@ -155,7 +155,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 	str val;
 	int quoted_val;
 
-	if (body->s==0 || *body->s==0 )
+	if (body->len == 0)
 	{
 		LM_ERR("empty body\n");
 		goto error;
