@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Maksym Sobolyev
+ * Copyright (C) 2019 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,10 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-enum oob_position {OOB_UNDERFLOW, OOB_OVERFLOW};
+#ifndef __TEST_PARSE_AUTHB_H__
+#define __TEST_PARSE_AUTHB_H__
 
-#define OOB_CHECK_OK_MSG(fut, tstr, where) "oob check: %s(%s\"%.*s\"%s)", (fut), \
-    (where) == OOB_UNDERFLOW ? "->" : "", (tstr)->len, (tstr)->s, \
-    (where) == OOB_OVERFLOW ? "<-" : ""
+void test_parse_authenticate_body(void);
 
-void test_oob(const str *, void (*)(const str *, enum oob_position, void *), void *);
+#endif /* __TEST_PARSE_AUTHB_H__ */

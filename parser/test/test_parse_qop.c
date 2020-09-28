@@ -27,7 +27,7 @@
 
 #include "test_oob.h"
 
-void test_parse_qop_oob(const str *, void *);
+void test_parse_qop_oob(const str *, enum oob_position where, void *);
 
 void test_parse_qop_val(void)
 {
@@ -65,10 +65,10 @@ void test_parse_qop_val(void)
 	}
 }
 
-void test_parse_qop_oob(const str *tstr, void *farg)
+void test_parse_qop_oob(const str *tstr, enum oob_position where, void *farg)
 {
 	struct authenticate_body *ap = farg;
 
 	parse_qop_value(*tstr, ap);
-	ok(1, "oob check: parse_qop_value(\"%.*s\")", tstr->len, tstr->s);
+	ok(1, OOB_CHECK_OK_MSG("parse_qop_value", tstr, where));
 }

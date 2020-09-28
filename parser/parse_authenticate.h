@@ -56,6 +56,7 @@ int parse_www_authenticate_header( struct sip_msg *msg );
 int parse_authenticate_header(struct hdr_field *authenticate);
 
 int parse_qop_value(str val, struct authenticate_body *auth);
+int parse_authenticate_body(str body, struct authenticate_body *auth);
 
 void free_authenticate(struct authenticate_body *authenticate_b);
 
