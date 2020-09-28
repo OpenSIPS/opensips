@@ -30,35 +30,56 @@
 
 void test_parse_authenticate_body_oob(const str *, enum oob_position where, void *);
 
+static const struct tts {
+	const str ts;
+	int tres;
+	int aflags;
+	const char *anonce;
+	const char *aopaque;
+	const char *arealm;
+} tset[] = {
+	{
+	/* Case #1 */
+		.ts = str_init("Digest realm=\"[::1]\",nonce=\"ak/bKmGcoPPWdj0AUWv/ldViLInmkiJ2Kct5p/LapNo\","
+                               "qop=auth,algorithm=SHA-512-256"),
+		.tres = -1
+	}, {
+	/* Case #2 */
+		.ts = str_init("Digest realm=\"[::1]\",nonce=\"kp5XbciCMxVbeZm2d58YZCfaAjW/2T7XtuYwIeZoz1o\","
+                               "qop=auth,algorithm=SHA-256"),
+		.tres = -1
+	}, {
+	/* Case #3 */
+		.ts = str_init("Digest stale=false,realm=\"[::1]\",nonce=\"esWk1wFa4bUBKzkmfKId++Y83eWzD9edBCGTwLV4Juk\","
+                               "qop=auth,algorithm=MD5"),
+		.tres = 0,
+		.aflags = QOP_AUTH | AUTHENTICATE_MD5, .anonce = "esWk1wFa4bUBKzkmfKId++Y83eWzD9edBCGTwLV4Juk",
+		.arealm = "[::1]"
+	}, {
+	/* Case #4 */
+		.ts = str_init("Digest realm=\"sip.test.com\",qop=\"auth\",opaque=\"1234567890abcedef\","
+		               "nonce=\"145f5ca9aac6f0b9f93433188d446ae0d9f91a6ff80\",algorithm=MD5,stale=true"),
+		.tres = 0,
+		.aflags = QOP_AUTH | AUTHENTICATE_MD5 | AUTHENTICATE_STALE,
+		.anonce = "145f5ca9aac6f0b9f93433188d446ae0d9f91a6ff80", .aopaque = "1234567890abcedef",
+		.arealm = "sip.test.com"
+	}, {
+	/* Case #5 */
+		.ts = str_init("DiGeSt\r\n\trealm=\"a\",\r\n\tqop=\"auth-int, auth\",\r\n\tnonce=\"n\",\r\n\topaque=\"0\",\r\n\t"
+                               "algoriTHm=md5"),
+		.tres = 0,
+		.aflags = QOP_AUTH | AUTHENTICATE_MD5 | QOP_AUTH_INT,
+		.anonce = "n", .aopaque = "0", .arealm = "a"
+	}, {
+		.ts = STR_NULL
+	}
+};
+
+
 void test_parse_authenticate_body(void)
 {
 	struct authenticate_body auth;
 	int i;
-	struct tts {
-		const str ts;
-		int tres;
-		int aflags;
-		const char *anonce;
-		const char *aopaque;
-		const char *arealm;
-	} tset[] = {
-		{.ts = str_init("Digest realm=\"[::1]\",nonce=\"ak/bKmGcoPPWdj0AUWv/ldViLInmkiJ2Kct5p/LapNo\","
-		    "qop=auth,algorithm=SHA-512-256"), .tres = -1},
-		{.ts = str_init("Digest realm=\"[::1]\",nonce=\"kp5XbciCMxVbeZm2d58YZCfaAjW/2T7XtuYwIeZoz1o\","
-		    "qop=auth,algorithm=SHA-256"), .tres = -1},
-		{.ts = str_init("Digest stale=false,realm=\"[::1]\",nonce=\"esWk1wFa4bUBKzkmfKId++Y83eWzD9edBCGTwLV4Juk\","
-		    "qop=auth,algorithm=MD5"), .tres = 0, .aflags = QOP_AUTH | AUTHENTICATE_MD5,
-		    .anonce = "esWk1wFa4bUBKzkmfKId++Y83eWzD9edBCGTwLV4Juk", .arealm = "[::1]"},
-		{.ts = str_init("Digest realm=\"sip.test.com\",qop=\"auth\",opaque=\"1234567890abcedef\","
-		    "nonce=\"145f5ca9aac6f0b9f93433188d446ae0d9f91a6ff80\",algorithm=MD5,stale=true"),
-		    .tres = 0, .aflags = QOP_AUTH | AUTHENTICATE_MD5 | AUTHENTICATE_STALE,
-		    .anonce = "145f5ca9aac6f0b9f93433188d446ae0d9f91a6ff80", .aopaque = "1234567890abcedef",
-		    .arealm = "sip.test.com"},
-		{.ts = str_init("DiGeSt\r\n\trealm=\"a\",\r\n\tqop=\"auth-int, auth\",\r\n\tnonce=\"n\",\r\n\topaque=\"0\",\r\n\t"
-		    "algoriTHm=md5"), .tres = 0, .aflags = QOP_AUTH | AUTHENTICATE_MD5 | QOP_AUTH_INT,
-		    .anonce = "n", .aopaque = "0", .arealm = "a"},
-		{.ts = STR_NULL}
-	};
 
 	for (i = 0; tset[i].ts.s != NULL; i++) {
 		memset(&auth, 0, sizeof(struct authenticate_body));
