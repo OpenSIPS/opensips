@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # test publish and subscribe for presence
 
 # Copyright (C) 2008 Voice System
