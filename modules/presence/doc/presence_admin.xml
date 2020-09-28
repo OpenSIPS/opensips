@@ -182,7 +182,7 @@ modparam("presence", "cluster_id", 2)
 	</section>
 
 	<section id="param_cluster_federation_mode" xreflabel="cluster_federation_mode">
-		<title><varname>cluster_federation_mode</varname> (int)</title>
+		<title><varname>cluster_federation_mode</varname> (str)</title>
 		<para>
 		When enabling the federation mode, nodes inside the presence
 		cluster will start broadcasting the data to other nodes via the
@@ -215,7 +215,7 @@ modparam("presence", "cluster_id", 2)
 		<para>
 		If you don't want to use a shared database (via
 		<xref linkend="param_fallback2db"/>), but still want a
-		complete data set everywhere, you may choose mode 2.
+		complete data set everywhere, you may choose mode <emphasis>full-sharing</emphasis>.
 		This mode allows you to switch PUBLISH endpoints,
 		even for already published Event States, thus allowing
 		you to add and remove presence servers without losing
@@ -233,7 +233,7 @@ modparam("presence", "cluster_id", 2)
 		<title>Set <varname>cluster_federation_mode</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("presence", "cluster_federation_mode", 1)
+modparam("presence", "cluster_federation_mode", "full-sharing")
 ...
 </programlisting>
 		</example>
